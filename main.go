@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"math/big"
 	"os"
 	"os/signal"
 	"syscall"
@@ -39,7 +38,7 @@ func main() {
 	storage := NewStorage()
 
 	// Create and start ETH service
-	ethService, err := NewETHService(*ethEndpoint, *contractAddr, big.NewInt(0), storage)
+	ethService, err := NewETHService(*ethEndpoint, *contractAddr, storage)
 	if err != nil {
 		log.Fatalf("Failed to create ETH service: %s", err)
 	}

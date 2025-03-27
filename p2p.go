@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"math/big"
-	"offchain-middleware/bls"
 	"sync"
 	"time"
 
@@ -57,16 +56,14 @@ type SignatureMessage struct {
 
 // P2PService handles peer-to-peer communication and signature aggregation
 type P2PService struct {
-	ctx          context.Context
-	host         host.Host
-	peersMutex   sync.RWMutex
-	peers        map[peer.ID]struct{}
-	blsSecretKey *bls.SecretKey
-	storage      *Storage
+	ctx        context.Context
+	host       host.Host
+	peersMutex sync.RWMutex
+	peers      map[peer.ID]struct{}
 }
 
 // NewP2PService creates a new P2P service with the given configuration
-func NewP2PService(ctx context.Context, listenAddrs []multiaddr.Multiaddr, storage *Storage, privateKeyHex string) (*P2PService, error) {
+func NewP2PService(ctx context.Context, listenAddrs []multiaddr.Multiaddr) (*P2PService, error) {
 	// Create libp2p host
 	h, err := libp2p.New(
 		libp2p.ListenAddrs(listenAddrs...),
@@ -76,18 +73,10 @@ func NewP2PService(ctx context.Context, listenAddrs []multiaddr.Multiaddr, stora
 		return nil, fmt.Errorf("failed to create libp2p host: %w", err)
 	}
 
-	// Generate BLS key pair using gnark BN254 curve
-	secretKey, _, err := bls.GenerateKey()
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate BLS key pair: %w", err)
-	}
-
 	service := &P2PService{
-		ctx:          ctx,
-		host:         h,
-		peers:        make(map[peer.ID]struct{}),
-		blsSecretKey: secretKey,
-		storage:      storage,
+		ctx:   ctx,
+		host:  h,
+		peers: make(map[peer.ID]struct{}),
 	}
 
 	// Set up protocol handler
@@ -185,21 +174,6 @@ func (s *P2PService) handleSignature(msg Message) {
 		return
 	}
 
-	// Sign the message with BLS
-	signature, err := s.blsSecretKey.Sign(msgHashBytes)
-	if err != nil {
-		log.Printf("Error signing message: %s", err)
-		return
-	}
-
-	// Get public key
-	publicKey := s.blsSecretKey.Public()
-	pubKeyBytes, err := publicKey.MarshalBinary()
-	if err != nil {
-		log.Printf("Error marshaling public key: %s", err)
-		return
-	}
-
 	// Create the signature response
 	msg := SignatureMessage{
 		Epoch:       req.Epoch,
@@ -213,17 +187,6 @@ func (s *P2PService) handleSignature(msg Message) {
 
 // BroadcastSignature broadcasts a signature request to all peers
 func (s *P2PService) BroadcastSignature(epoch *big.Int, msgHash []byte) error {
-	// Sign the message ourselves
-	signature, err := s.blsSecretKey.Sign(msgHash)
-	if err != nil {
-		return fmt.Errorf("failed to sign message: %w", err)
-	}
-
-	pubKeyBytes, err := s.blsSecretKey.Public().MarshalBinary()
-	if err != nil {
-		return fmt.Errorf("failed to marshal public key: %w", err)
-	}
-
 	// Create signature request
 	req := SignatureMessage{
 		Epoch:       epoch,

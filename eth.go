@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
-	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -39,6 +38,7 @@ type Vault struct {
 }
 
 type Validator struct {
+	Version     uint8
 	Operator    common.Address
 	VotingPower *big.Int
 	IsActive    bool
@@ -47,18 +47,18 @@ type Validator struct {
 }
 
 type ValidatorSet struct {
+	Version                uint8
 	TotalActiveVotingPower *big.Int
 	Validators             []Validator
 }
 
-type ETHService struct {
+type EthClient struct {
 	client          *ethclient.Client
 	contractAddress common.Address
 	contractABI     abi.ABI
-	storage         *Storage
 }
 
-func NewETHService(rpcUrl string, contractAddress string, storage *Storage) (*ETHService, error) {
+func NewEthClient(rpcUrl string, contractAddress string) (*EthClient, error) {
 	contractABI, err := abi.JSON(strings.NewReader(contractABI))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse contract ABI: %w", err)
@@ -71,35 +71,18 @@ func NewETHService(rpcUrl string, contractAddress string, storage *Storage) (*ET
 
 	// get epoch start and duration
 
-	return &ETHService{
+	return &EthClient{
 		client:          client,
 		contractAddress: common.HexToAddress(contractAddress),
 		contractABI:     contractABI,
-		storage:         storage,
 	}, nil
 }
 
-// CheckSignatures checks for signatures in storage for the current epoch at regular intervals
-func (e *ETHService) Start(ctx context.Context, storage *Storage, interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			e.checkNewValidatorSet(ctx)
-			e.checkAndSubmitSignatures(ctx)
-		}
-	}
-}
-
-func (e *ETHService) Commit(messageHash string, signature []byte) error {
+func (e *EthClient) Commit(messageHash string, signature []byte) error {
 	return nil
 }
 
-func (e *ETHService) getMockValidatorSet() (ValidatorSet, error) {
+func (e *EthClient) getMockValidatorSet() (ValidatorSet, error) {
 	// This is a mock implementation of getValidatorSet
 	// In a real implementation, this would query the Ethereum contract
 	// to get the current validator set for the given epoch
@@ -178,53 +161,44 @@ func (e *ETHService) getMockValidatorSet() (ValidatorSet, error) {
 
 }
 
-func (e *ETHService) checkAndSubmitSignatures(ctx context.Context) error {
-	return nil
-}
+func (e *EthClient) getNewValidatorSet(ctx context.Context) (*ValidatorSet, error) {
+	isGenesisSet, err := e.getIsGenesisSet(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get is genesis set: %w", err)
+	}
 
-func (e *ETHService) checkNewValidatorSet(ctx context.Context) error {
-
-	// check set genesis
+	if !isGenesisSet {
+		return nil, fmt.Errorf("genesis not set")
+	}
 
 	phase, err := e.getCurrentPhase(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get current phase: %w", err)
+		return nil, fmt.Errorf("failed to get current phase: %w", err)
 	}
 
 	if phase != COMMIT {
-		return nil
-	}
-
-	epoch, err := e.getCurrentEpoch(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get current epoch: %w", err)
+		return nil, fmt.Errorf("current phase is not commit")
 	}
 
 	timestamp, err := e.getCurrentEpochStart(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get current epoch start: %w", err)
+		return nil, fmt.Errorf("failed to get current epoch start: %w", err)
 	}
 
 	blockNumber, err := e.findBlockByTimestamp(ctx, timestamp)
 	if err != nil {
-		return fmt.Errorf("failed to find block by timestamp: %w", err)
+		return nil, fmt.Errorf("failed to find block by timestamp: %w", err)
 	}
 
 	valset, err := e.getValidatorSet(ctx, blockNumber)
 	if err != nil {
-		return fmt.Errorf("failed to get validator set: %w", err)
+		return nil, fmt.Errorf("failed to get validator set: %w", err)
 	}
 
-	// form valsetHeader, generate proofs
-
-	// sign valsetHeader, proof
-
-	// e.storage.AddSignature(epoch, "messageHash", "signature")
-
-	return nil
+	return &valset, nil
 }
 
-func (e ETHService) getCurrentPhase(ctx context.Context) (Phase, error) {
+func (e EthClient) getCurrentPhase(ctx context.Context) (Phase, error) {
 	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "getCurrentPhase")
 	if err != nil {
 		return 0, fmt.Errorf("failed to construct call msg: %w", err)
@@ -244,7 +218,7 @@ func (e ETHService) getCurrentPhase(ctx context.Context) (Phase, error) {
 	return Phase(phase), nil
 }
 
-func (e ETHService) getCurrentEpoch(ctx context.Context) (*big.Int, error) {
+func (e EthClient) getCurrentEpoch(ctx context.Context) (*big.Int, error) {
 	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "getCurrentEpoch")
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
@@ -264,7 +238,7 @@ func (e ETHService) getCurrentEpoch(ctx context.Context) (*big.Int, error) {
 	return epoch, nil
 }
 
-func (e ETHService) getCurrentEpochStart(ctx context.Context) (*big.Int, error) {
+func (e EthClient) getCurrentEpochStart(ctx context.Context) (*big.Int, error) {
 	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "getCurrentEpochStart")
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
@@ -284,7 +258,27 @@ func (e ETHService) getCurrentEpochStart(ctx context.Context) (*big.Int, error) 
 	return epochStart, nil
 }
 
-func (e ETHService) getEpochDuration(ctx context.Context) (*big.Int, error) {
+func (e EthClient) getIsGenesisSet(ctx context.Context) (bool, error) {
+	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "isGenesisSet")
+	if err != nil {
+		return false, fmt.Errorf("failed to construct call msg: %w", err)
+	}
+
+	finalizedBlock, err := e.getFinalizedBlock()
+	if err != nil {
+		return false, fmt.Errorf("failed to get finalized block: %w", err)
+	}
+
+	result, err := e.callContract(ctx, finalizedBlock, callMsg)
+	if err != nil {
+		return false, fmt.Errorf("failed to call contract: %w", err)
+	}
+
+	isGenesisSet := new(big.Int).SetBytes(result).Uint64()
+	return isGenesisSet == 1, nil
+}
+
+func (e EthClient) getEpochDuration(ctx context.Context) (*big.Int, error) {
 	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "getEpochDuration")
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
@@ -304,7 +298,45 @@ func (e ETHService) getEpochDuration(ctx context.Context) (*big.Int, error) {
 	return epochDuration, nil
 }
 
-func (e *ETHService) getValidatorSet(ctx context.Context, blockNumber *big.Int) (ValidatorSet, error) {
+func (e *EthClient) getRequiredKeyTag(ctx context.Context) (uint8, error) {
+	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "getRequiredKeyTag")
+	if err != nil {
+		return 0, fmt.Errorf("failed to construct call msg: %w", err)
+	}
+
+	finalizedBlock, err := e.getFinalizedBlock()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get finalized block: %w", err)
+	}
+
+	result, err := e.callContract(ctx, finalizedBlock, callMsg)
+	if err != nil {
+		return 0, fmt.Errorf("failed to call contract: %w", err)
+	}
+
+	return uint8(new(big.Int).SetBytes(result).Uint64()), nil
+}
+
+func (e *EthClient) getQuorumThreshold(ctx context.Context) (*big.Int, error) {
+	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "getQuorumThreshold")
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct call msg: %w", err)
+	}
+
+	finalizedBlock, err := e.getFinalizedBlock()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get finalized block: %w", err)
+	}
+
+	result, err := e.callContract(ctx, finalizedBlock, callMsg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call contract: %w", err)
+	}
+
+	return new(big.Int).SetBytes(result), nil
+}
+
+func (e *EthClient) getValidatorSet(ctx context.Context, blockNumber *big.Int) (ValidatorSet, error) {
 	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "getValidatorSet")
 	if err != nil {
 		return ValidatorSet{}, fmt.Errorf("failed to construct call msg: %w", err)
@@ -324,7 +356,7 @@ func (e *ETHService) getValidatorSet(ctx context.Context, blockNumber *big.Int) 
 	return valset, nil
 }
 
-func (e ETHService) findBlockByTimestamp(ctx context.Context, timestamp *big.Int) (*big.Int, error) {
+func (e EthClient) findBlockByTimestamp(ctx context.Context, timestamp *big.Int) (*big.Int, error) {
 	// Get the latest block to use as upper bound
 	latestBlock, err := e.client.BlockByNumber(ctx, nil)
 	if err != nil {
@@ -376,7 +408,7 @@ func (e ETHService) findBlockByTimestamp(ctx context.Context, timestamp *big.Int
 	return closestBlock, nil
 }
 
-func (e ETHService) getFinalizedBlock() (*big.Int, error) {
+func (e EthClient) getFinalizedBlock() (*big.Int, error) {
 	// Get the latest finalized block number
 	var result []byte
 	err := e.client.Client().CallContext(context.Background(), &result, "eth_getBlockByNumber", "finalized", false)
@@ -392,7 +424,7 @@ func (e ETHService) getFinalizedBlock() (*big.Int, error) {
 	return blockNumber, nil
 }
 
-func (e ETHService) callContract(ctx context.Context, blockNumber *big.Int, callMsg ethereum.CallMsg) ([]byte, error) {
+func (e EthClient) callContract(ctx context.Context, blockNumber *big.Int, callMsg ethereum.CallMsg) ([]byte, error) {
 	result, err := e.client.CallContract(ctx, callMsg, blockNumber)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call contract: %w", err)
