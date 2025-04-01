@@ -8,7 +8,6 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 )
 
 // Constants from the Solidity BN254 library
@@ -123,9 +122,9 @@ func computeKeyPair(sk *SecretKey) *KeyPair {
 }
 
 // Sign creates a BLS signature on a message using the secret key
-func (kp *KeyPair) Sign(message []byte) (*G1, error) {
+func (kp *KeyPair) Sign(msgHash []byte) (*G1, error) {
 	// Hash the message to a point on G1
-	h1, err := hashToG1(message)
+	h1, err := hashToG1(msgHash)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash message to G1: %w", err)
 	}
@@ -136,15 +135,15 @@ func (kp *KeyPair) Sign(message []byte) (*G1, error) {
 
 	// Compute signature = h1 * sk
 	var sig G1
-	sig.ScalarMultiplication(h1, &skBig)
+	sig.ScalarMultiplication(h1.G1Affine, &skBig)
 
 	return &sig, nil
 }
 
 // Verify checks if a signature is valid for a message and public key
-func (pubkey *G2) Verify(signature *G1, message []byte) (bool, error) {
+func (pubkey *G2) Verify(signature *G1, msgHash []byte) (bool, error) {
 	// Hash the message to a point on G1
-	h1, err := hashToG1(message)
+	h1, err := hashToG1(msgHash)
 	if err != nil {
 		return false, fmt.Errorf("failed to hash message to G1: %w", err)
 	}
@@ -155,7 +154,7 @@ func (pubkey *G2) Verify(signature *G1, message []byte) (bool, error) {
 	var negSig bn254.G1Affine
 	negSig.Neg(signature.G1Affine)
 
-	P := [2]bn254.G1Affine{*h1, negSig}
+	P := [2]bn254.G1Affine{*h1.G1Affine, negSig}
 	Q := [2]bn254.G2Affine{*pubkey.G2Affine, g2}
 
 	ok, err := bn254.PairingCheck(P[:], Q[:])
@@ -165,36 +164,58 @@ func (pubkey *G2) Verify(signature *G1, message []byte) (bool, error) {
 	return ok, nil
 }
 
-// hashToG1 hashes a message to a point on the G1 curve
-func hashToG1(message []byte) (*bn254.G1Affine, error) {
-	// Use mimc hash which is efficient for BN254
-	mimcHash := mimc.NewMiMC()
+// HashToPoint hashes data to a point on the BN254 curve
+func hashToG1(data []byte) (*G1, error) {
+	// Convert data to a big integer
+	x := new(big.Int).SetBytes(data)
 
-	// Write the message to the hash
-	_, err := mimcHash.Write(message)
-	if err != nil {
-		return nil, err
+	// Ensure x is within the field
+	x.Mod(x, FpModulus)
+
+	for {
+		// Find y coordinate for the current x
+		beta, y, err := findYFromX(x)
+		if err != nil {
+			return nil, err
+		}
+
+		// Check if y^2 == beta
+		y2 := new(big.Int).Mul(y, y)
+		y2.Mod(y2, FpModulus)
+
+		if y2.Cmp(beta) == 0 {
+			// Create a G1 point with the found coordinates
+			var point bn254.G1Affine
+			point.X.SetBigInt(x)
+			point.Y.SetBigInt(y)
+
+			return &G1{G1Affine: &point}, nil
+		}
+
+		// Increment x and try again
+		x.Add(x, big.NewInt(1))
+		x.Mod(x, FpModulus)
+	}
+}
+
+// findYFromX calculates the y coordinate for a given x on the BN254 curve
+// Returns (beta, y) where beta = x^3 + 3 (mod p) and y = sqrt(beta) if it exists
+func findYFromX(x *big.Int) (*big.Int, *big.Int, error) {
+	// Calculate beta = x^3 + 3 mod p
+	beta := new(big.Int).Exp(x, big.NewInt(3), FpModulus) // x^3
+	beta.Add(beta, big.NewInt(3))                         // x^3 + 3
+	beta.Mod(beta, FpModulus)                             // (x^3 + 3) mod p
+
+	// Calculate y = beta^((p+1)/4) mod p
+	// The exponent (p+1)/4 for BN254 is 0xc19139cb84c680a6e14116da060561765e05aa45a1c72a34f082305b61f3f52
+	exponent, success := new(big.Int).SetString("c19139cb84c680a6e14116da060561765e05aa45a1c72a34f082305b61f3f52", 16)
+	if !success {
+		return nil, nil, fmt.Errorf("failed to set exponent")
 	}
 
-	// Get the hash output
-	hashOutput := mimcHash.Sum(nil)
+	y := new(big.Int).Exp(beta, exponent, FpModulus)
 
-	// Convert the hash to a scalar in Fr
-	var scalar fr.Element
-	scalar.SetBytes(hashOutput)
-
-	// Get the generator of G1
-	_, _, g1, _ := bn254.Generators()
-
-	// Convert scalar to big.Int
-	var scalarBig big.Int
-	scalar.BigInt(&scalarBig)
-
-	// Create a point on G1 by multiplying the generator by the scalar
-	var point bn254.G1Affine
-	point.ScalarMultiplication(&g1, &scalarBig)
-
-	return &point, nil
+	return beta, y, nil
 }
 
 // Add adds two G1 public keys together

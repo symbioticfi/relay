@@ -1,4 +1,4 @@
-package main
+package eth
 
 import (
 	"context"
@@ -16,41 +16,6 @@ import (
 const (
 	contractABI = `[{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"messageHash","type":"bytes32"},{"indexed":false,"internalType":"bytes","name":"signature","type":"bytes"},{"indexed":false,"internalType":"uint256","name":"timestamp","type":"uint256"}],"name":"AggregatedSignatureSubmitted","type":"event"},{"inputs":[{"internalType":"bytes32","name":"messageHash","type":"bytes32"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"submitAggregatedSignature","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"name":"processedMessages","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"}]`
 )
-
-// Phase represents the different phases of the protocol
-type Phase uint64
-
-const (
-	IDLE Phase = iota
-	COMMIT
-	ACCEPT
-	FAIL
-)
-
-type Key struct {
-	Tag     uint8
-	Payload []byte
-}
-
-type Vault struct {
-	VaultAddress common.Address
-	VotingPower  *big.Int
-}
-
-type Validator struct {
-	Version     uint8
-	Operator    common.Address
-	VotingPower *big.Int
-	IsActive    bool
-	Keys        []Key
-	Vaults      []Vault
-}
-
-type ValidatorSet struct {
-	Version                uint8
-	TotalActiveVotingPower *big.Int
-	Validators             []Validator
-}
 
 type EthClient struct {
 	client          *ethclient.Client
@@ -90,18 +55,18 @@ func (e *EthClient) getMockValidatorSet() (ValidatorSet, error) {
 	// Create a mock validator set with some test data
 	mockValidatorSet := ValidatorSet{
 		TotalActiveVotingPower: big.NewInt(1000),
-		Validators: []Validator{
-			{
+		Validators: []*Validator{
+			&Validator{
 				Operator:    common.HexToAddress("0x1111111111111111111111111111111111111111"),
 				VotingPower: big.NewInt(400),
 				IsActive:    true,
-				Keys: []Key{
+				Keys: []*Key{
 					{
 						Tag:     1,
 						Payload: []byte("validator1pubkey"),
 					},
 				},
-				Vaults: []Vault{
+				Vaults: []*Vault{
 					{
 						VaultAddress: common.HexToAddress("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
 						VotingPower:  big.NewInt(400),
@@ -112,13 +77,13 @@ func (e *EthClient) getMockValidatorSet() (ValidatorSet, error) {
 				Operator:    common.HexToAddress("0x2222222222222222222222222222222222222222"),
 				VotingPower: big.NewInt(300),
 				IsActive:    true,
-				Keys: []Key{
+				Keys: []*Key{
 					{
 						Tag:     2,
 						Payload: []byte("validator2pubkey"),
 					},
 				},
-				Vaults: []Vault{
+				Vaults: []*Vault{
 					{
 						VaultAddress: common.HexToAddress("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
 						VotingPower:  big.NewInt(300),
@@ -129,13 +94,13 @@ func (e *EthClient) getMockValidatorSet() (ValidatorSet, error) {
 				Operator:    common.HexToAddress("0x3333333333333333333333333333333333333333"),
 				VotingPower: big.NewInt(300),
 				IsActive:    true,
-				Keys: []Key{
+				Keys: []*Key{
 					{
 						Tag:     3,
 						Payload: []byte("validator3pubkey"),
 					},
 				},
-				Vaults: []Vault{
+				Vaults: []*Vault{
 					{
 						VaultAddress: common.HexToAddress("0xcccccccccccccccccccccccccccccccccccccccc"),
 						VotingPower:  big.NewInt(300),
@@ -146,13 +111,13 @@ func (e *EthClient) getMockValidatorSet() (ValidatorSet, error) {
 				Operator:    common.HexToAddress("0x4444444444444444444444444444444444444444"),
 				VotingPower: big.NewInt(0),
 				IsActive:    false,
-				Keys: []Key{
+				Keys: []*Key{
 					{
 						Tag:     4,
 						Payload: []byte("validator4pubkey"),
 					},
 				},
-				Vaults: []Vault{},
+				Vaults: []*Vault{},
 			},
 		},
 	}
@@ -161,8 +126,8 @@ func (e *EthClient) getMockValidatorSet() (ValidatorSet, error) {
 
 }
 
-func (e *EthClient) getNewValidatorSet(ctx context.Context) (*ValidatorSet, error) {
-	isGenesisSet, err := e.getIsGenesisSet(ctx)
+func (e *EthClient) GetNewValidatorSet(ctx context.Context) (*ValidatorSet, error) {
+	isGenesisSet, err := e.GetIsGenesisSet(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get is genesis set: %w", err)
 	}
@@ -171,7 +136,7 @@ func (e *EthClient) getNewValidatorSet(ctx context.Context) (*ValidatorSet, erro
 		return nil, fmt.Errorf("genesis not set")
 	}
 
-	phase, err := e.getCurrentPhase(ctx)
+	phase, err := e.GetCurrentPhase(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current phase: %w", err)
 	}
@@ -180,7 +145,7 @@ func (e *EthClient) getNewValidatorSet(ctx context.Context) (*ValidatorSet, erro
 		return nil, fmt.Errorf("current phase is not commit")
 	}
 
-	timestamp, err := e.getCurrentEpochStart(ctx)
+	timestamp, err := e.GetCurrentEpochStart(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current epoch start: %w", err)
 	}
@@ -190,7 +155,7 @@ func (e *EthClient) getNewValidatorSet(ctx context.Context) (*ValidatorSet, erro
 		return nil, fmt.Errorf("failed to find block by timestamp: %w", err)
 	}
 
-	valset, err := e.getValidatorSet(ctx, blockNumber)
+	valset, err := e.GetValidatorSet(ctx, blockNumber)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get validator set: %w", err)
 	}
@@ -198,13 +163,13 @@ func (e *EthClient) getNewValidatorSet(ctx context.Context) (*ValidatorSet, erro
 	return &valset, nil
 }
 
-func (e EthClient) getCurrentPhase(ctx context.Context) (Phase, error) {
+func (e EthClient) GetCurrentPhase(ctx context.Context) (Phase, error) {
 	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "getCurrentPhase")
 	if err != nil {
 		return 0, fmt.Errorf("failed to construct call msg: %w", err)
 	}
 
-	finalizedBlock, err := e.getFinalizedBlock()
+	finalizedBlock, err := e.GetFinalizedBlock()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get finalized block: %w", err)
 	}
@@ -218,13 +183,13 @@ func (e EthClient) getCurrentPhase(ctx context.Context) (Phase, error) {
 	return Phase(phase), nil
 }
 
-func (e EthClient) getCurrentEpoch(ctx context.Context) (*big.Int, error) {
+func (e EthClient) GetCurrentEpoch(ctx context.Context) (*big.Int, error) {
 	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "getCurrentEpoch")
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}
 
-	finalizedBlock, err := e.getFinalizedBlock()
+	finalizedBlock, err := e.GetFinalizedBlock()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get finalized block: %w", err)
 	}
@@ -238,13 +203,13 @@ func (e EthClient) getCurrentEpoch(ctx context.Context) (*big.Int, error) {
 	return epoch, nil
 }
 
-func (e EthClient) getCurrentEpochStart(ctx context.Context) (*big.Int, error) {
+func (e EthClient) GetCurrentEpochStart(ctx context.Context) (*big.Int, error) {
 	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "getCurrentEpochStart")
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}
 
-	finalizedBlock, err := e.getFinalizedBlock()
+	finalizedBlock, err := e.GetFinalizedBlock()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get finalized block: %w", err)
 	}
@@ -258,13 +223,13 @@ func (e EthClient) getCurrentEpochStart(ctx context.Context) (*big.Int, error) {
 	return epochStart, nil
 }
 
-func (e EthClient) getIsGenesisSet(ctx context.Context) (bool, error) {
+func (e EthClient) GetIsGenesisSet(ctx context.Context) (bool, error) {
 	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "isGenesisSet")
 	if err != nil {
 		return false, fmt.Errorf("failed to construct call msg: %w", err)
 	}
 
-	finalizedBlock, err := e.getFinalizedBlock()
+	finalizedBlock, err := e.GetFinalizedBlock()
 	if err != nil {
 		return false, fmt.Errorf("failed to get finalized block: %w", err)
 	}
@@ -278,13 +243,13 @@ func (e EthClient) getIsGenesisSet(ctx context.Context) (bool, error) {
 	return isGenesisSet == 1, nil
 }
 
-func (e EthClient) getEpochDuration(ctx context.Context) (*big.Int, error) {
+func (e EthClient) GetEpochDuration(ctx context.Context) (*big.Int, error) {
 	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "getEpochDuration")
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}
 
-	finalizedBlock, err := e.getFinalizedBlock()
+	finalizedBlock, err := e.GetFinalizedBlock()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get finalized block: %w", err)
 	}
@@ -298,13 +263,13 @@ func (e EthClient) getEpochDuration(ctx context.Context) (*big.Int, error) {
 	return epochDuration, nil
 }
 
-func (e *EthClient) getRequiredKeyTag(ctx context.Context) (uint8, error) {
+func (e *EthClient) GetRequiredKeyTag(ctx context.Context) (uint8, error) {
 	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "getRequiredKeyTag")
 	if err != nil {
 		return 0, fmt.Errorf("failed to construct call msg: %w", err)
 	}
 
-	finalizedBlock, err := e.getFinalizedBlock()
+	finalizedBlock, err := e.GetFinalizedBlock()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get finalized block: %w", err)
 	}
@@ -317,13 +282,13 @@ func (e *EthClient) getRequiredKeyTag(ctx context.Context) (uint8, error) {
 	return uint8(new(big.Int).SetBytes(result).Uint64()), nil
 }
 
-func (e *EthClient) getQuorumThreshold(ctx context.Context) (*big.Int, error) {
+func (e *EthClient) GetQuorumThreshold(ctx context.Context) (*big.Int, error) {
 	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "getQuorumThreshold")
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}
 
-	finalizedBlock, err := e.getFinalizedBlock()
+	finalizedBlock, err := e.GetFinalizedBlock()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get finalized block: %w", err)
 	}
@@ -336,7 +301,7 @@ func (e *EthClient) getQuorumThreshold(ctx context.Context) (*big.Int, error) {
 	return new(big.Int).SetBytes(result), nil
 }
 
-func (e *EthClient) getValidatorSet(ctx context.Context, blockNumber *big.Int) (ValidatorSet, error) {
+func (e *EthClient) GetValidatorSet(ctx context.Context, blockNumber *big.Int) (ValidatorSet, error) {
 	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "getValidatorSet")
 	if err != nil {
 		return ValidatorSet{}, fmt.Errorf("failed to construct call msg: %w", err)
@@ -408,7 +373,7 @@ func (e EthClient) findBlockByTimestamp(ctx context.Context, timestamp *big.Int)
 	return closestBlock, nil
 }
 
-func (e EthClient) getFinalizedBlock() (*big.Int, error) {
+func (e EthClient) GetFinalizedBlock() (*big.Int, error) {
 	// Get the latest finalized block number
 	var result []byte
 	err := e.client.Client().CallContext(context.Background(), &result, "eth_getBlockByNumber", "finalized", false)

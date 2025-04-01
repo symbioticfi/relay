@@ -10,6 +10,12 @@ import (
 	"syscall"
 	"time"
 
+	"offchain-middleware/bls"
+	"offchain-middleware/eth"
+	"offchain-middleware/network"
+	"offchain-middleware/p2p"
+	"offchain-middleware/storage"
+
 	"github.com/multiformats/go-multiaddr"
 )
 
@@ -35,28 +41,38 @@ func main() {
 	defer cancel()
 
 	// Create storage
-	storage := NewStorage()
+	storage := storage.NewStorage()
 
-	// Create and start ETH service
-	ethService, err := NewETHService(*ethEndpoint, *contractAddr, storage)
+	ethClient, err := eth.NewEthClient(*ethEndpoint, *contractAddr)
 	if err != nil {
 		log.Fatalf("Failed to create ETH service: %s", err)
 	}
 
-	// Start ETH service in background
-	go ethService.Start(ctx, storage, 30*time.Second)
-
 	// Create the P2P service
-	service, err := NewP2PService(ctx, []multiaddr.Multiaddr{addr}, storage, *privateKey)
+	p2pService, err := p2p.NewP2PService(ctx, []multiaddr.Multiaddr{addr}, storage)
 	if err != nil {
 		log.Fatalf("Failed to create P2P service: %s", err)
 	}
 
 	// Start the P2P service
-	if err := service.Start(); err != nil {
+	if err := p2pService.Start(); err != nil {
 		log.Fatalf("Failed to start service: %s", err)
 	}
-	defer service.Stop()
+	defer p2pService.Stop()
+
+	keyPair, err := bls.GenerateKeyOrLoad(*privateKey)
+	if err != nil {
+		log.Fatalf("Failed to create key pair: %s", err)
+	}
+
+	networkService, err := network.NewNetworkService(p2pService, ethClient, storage, keyPair)
+	if err != nil {
+		log.Fatalf("Failed to create network service: %s", err)
+	}
+
+	if err := networkService.Start(time.Minute); err != nil {
+		log.Fatalf("Failed to start network service: %s", err)
+	}
 
 	// Set up signal handling for graceful shutdown
 	sigCh := make(chan os.Signal, 1)

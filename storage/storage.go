@@ -1,4 +1,4 @@
-package main
+package storage
 
 import (
 	"log"
@@ -6,17 +6,17 @@ import (
 	"sync"
 )
 
-type Signature struct {
-	Signature []byte
-	PublicKey []byte
-}
-
 // actually RAM storage
 type Storage struct {
 	mutex sync.RWMutex
 	// epoch -> messageHash -> signatures
 	signatures map[*big.Int]map[string][]Signature
 	hasSigned  map[*big.Int]map[string]bool
+}
+
+type Signature struct {
+	Signature []byte
+	PublicKey []byte
 }
 
 func NewStorage() *Storage {

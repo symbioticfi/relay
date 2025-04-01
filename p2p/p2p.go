@@ -1,4 +1,4 @@
-package main
+package p2p
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"offchain-middleware/storage"
 	"sync"
 	"time"
 
@@ -28,42 +29,17 @@ const (
 	minSignatures         = 3 // Minimum signatures required for aggregation
 )
 
-// Message types
-const (
-	TypeSignatureRequest = "signature"
-)
-
-// Message is the basic unit of communication between peers
-type Message struct {
-	Type      string          `json:"type"`
-	Sender    string          `json:"sender"`
-	Timestamp int64           `json:"timestamp"`
-	Data      json.RawMessage `json:"data"`
-}
-
-// TextMessage is a simple text message payload
-type TextMessage struct {
-	Content string `json:"content"`
-}
-
-// SignatureMessage contains a peer's signature for a message
-type SignatureMessage struct {
-	Epoch       *big.Int `json:"epoch"`
-	MessageHash string   `json:"message_hash"`
-	Signature   string   `json:"signature"`
-	PublicKey   string   `json:"public_key"`
-}
-
 // P2PService handles peer-to-peer communication and signature aggregation
 type P2PService struct {
 	ctx        context.Context
 	host       host.Host
 	peersMutex sync.RWMutex
 	peers      map[peer.ID]struct{}
+	storage    *storage.Storage
 }
 
 // NewP2PService creates a new P2P service with the given configuration
-func NewP2PService(ctx context.Context, listenAddrs []multiaddr.Multiaddr) (*P2PService, error) {
+func NewP2PService(ctx context.Context, listenAddrs []multiaddr.Multiaddr, storage *storage.Storage) (*P2PService, error) {
 	// Create libp2p host
 	h, err := libp2p.New(
 		libp2p.ListenAddrs(listenAddrs...),
@@ -74,9 +50,10 @@ func NewP2PService(ctx context.Context, listenAddrs []multiaddr.Multiaddr) (*P2P
 	}
 
 	service := &P2PService{
-		ctx:   ctx,
-		host:  h,
-		peers: make(map[peer.ID]struct{}),
+		ctx:     ctx,
+		host:    h,
+		peers:   make(map[peer.ID]struct{}),
+		storage: storage,
 	}
 
 	// Set up protocol handler
@@ -93,11 +70,13 @@ func NewP2PService(ctx context.Context, listenAddrs []multiaddr.Multiaddr) (*P2P
 
 // Start begins the service operations
 func (s *P2PService) Start() error {
-	// Start mDNS discovery
-	discovery := mdns.NewMdnsService(s.host, mdnsServiceTag, s)
-	if err := discovery.Start(); err != nil {
-		return fmt.Errorf("failed to start mDNS discovery service: %w", err)
-	}
+	// Start mDNS discovery in a goroutine
+	go func() {
+		discovery := mdns.NewMdnsService(s.host, mdnsServiceTag, s)
+		if err := discovery.Start(); err != nil {
+			log.Printf("failed to start mDNS discovery service: %v", err)
+		}
+	}()
 
 	return nil
 }
@@ -167,32 +146,20 @@ func (s *P2PService) handleSignature(msg Message) {
 
 	log.Printf("Received signature request for message: %s", req.MessageHash)
 
-	// Convert message hash from hex to bytes
-	msgHashBytes, err := hex.DecodeString(req.MessageHash)
-	if err != nil {
-		log.Printf("Error decoding message hash: %s", err)
-		return
-	}
-
-	// Create the signature response
-	msg := SignatureMessage{
-		Epoch:       req.Epoch,
-		MessageHash: req.MessageHash,
-		Signature:   hex.EncodeToString(signature.Serialize()),
-		PublicKey:   hex.EncodeToString(pubKeyBytes),
-	}
-
-	s.storage.AddSignature(req.Epoch, req.MessageHash, msg)
+	s.storage.AddSignature(req.Epoch, req.MessageHash, storage.Signature{
+		Signature: req.Signature,
+		PublicKey: req.PublicKey,
+	})
 }
 
 // BroadcastSignature broadcasts a signature request to all peers
-func (s *P2PService) BroadcastSignature(epoch *big.Int, msgHash []byte) error {
+func (s *P2PService) BroadcastSignature(epoch *big.Int, msgHash []byte, signature []byte, pubKey []byte) error {
 	// Create signature request
 	req := SignatureMessage{
 		Epoch:       epoch,
 		MessageHash: hex.EncodeToString(msgHash),
-		Signature:   hex.EncodeToString(signature.Serialize()),
-		PublicKey:   hex.EncodeToString(pubKeyBytes),
+		Signature:   signature,
+		PublicKey:   pubKey,
 	}
 
 	data, err := json.Marshal(req)
