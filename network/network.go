@@ -13,6 +13,7 @@ import (
 	"offchain-middleware/storage"
 	"time"
 
+	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/karalabe/ssz"
 )
@@ -21,12 +22,12 @@ import (
 type NetworkService struct {
 	storage    *storage.Storage
 	p2pService *p2p.P2PService
-	ethClient  *eth.EthClient
+	ethClient  eth.IEthClient
 	keyPair    *bls.KeyPair
 }
 
 // NewNetworkService creates a new network service
-func NewNetworkService(p2pService *p2p.P2PService, ethClient *eth.EthClient, storage *storage.Storage, keyPair *bls.KeyPair) (*NetworkService, error) {
+func NewNetworkService(p2pService *p2p.P2PService, ethClient eth.IEthClient, storage *storage.Storage, keyPair *bls.KeyPair) (*NetworkService, error) {
 	return &NetworkService{
 		p2pService: p2pService,
 		ethClient:  ethClient,
@@ -39,10 +40,10 @@ func NewNetworkService(p2pService *p2p.P2PService, ethClient *eth.EthClient, sto
 func (n *NetworkService) Start(interval time.Duration) error {
 	go func() {
 		for {
-			time.Sleep(interval)
 			if err := n.signValidatorSet(context.Background()); err != nil {
 				log.Printf("failed to sign validator set: %v", err)
 			}
+			time.Sleep(interval)
 		}
 	}()
 
@@ -50,6 +51,7 @@ func (n *NetworkService) Start(interval time.Duration) error {
 }
 
 func (n *NetworkService) signValidatorSet(ctx context.Context) error {
+	log.Println("signing validator set")
 	epoch, err := n.ethClient.GetCurrentEpoch(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get current epoch: %w", err)
@@ -65,7 +67,9 @@ func (n *NetworkService) signValidatorSet(ctx context.Context) error {
 		return fmt.Errorf("failed to get required key tag: %w", err)
 	}
 
-	aggPubkeyG1 := new(bls.G1)
+	log.Println("validatorSet", validatorSet)
+
+	aggPubkeyG1 := &bls.G1{new(bn254.G1Affine)}
 
 	for _, validator := range validatorSet.Validators {
 		if !validator.IsActive {
@@ -85,11 +89,13 @@ func (n *NetworkService) signValidatorSet(ctx context.Context) error {
 	extraData := proof.HashValset(&valset)
 
 	validatorSetHeader := ValidatorSetHeader{
-		ActiveAggregatedKeys:   []bls.G1{*aggPubkeyG1},
+		ActiveAggregatedKeys:   []G1{FormatG1(aggPubkeyG1)},
 		TotalActiveVotingPower: validatorSet.TotalActiveVotingPower,
 		ValidatorsSszMRoot:     sszMroot,
 		ExtraData:              extraData,
 	}
+
+	log.Println("validatorSetHeader", validatorSetHeader)
 
 	validatorSetHeaderBytes, err := validatorSetHeader.Encode()
 	if err != nil {
@@ -98,10 +104,21 @@ func (n *NetworkService) signValidatorSet(ctx context.Context) error {
 
 	validatorSetHeaderHash := crypto.Keccak256(validatorSetHeaderBytes)
 
+	log.Println("validatorSetHeaderHash", validatorSetHeaderHash)
+
 	signature, err := n.keyPair.Sign(validatorSetHeaderHash)
 	if err != nil {
 		return fmt.Errorf("failed to sign validator set header: %w", err)
 	}
+
+	log.Println("signature", signature)
+
+	ok, err := n.keyPair.PublicKeyG2.Verify(signature, validatorSetHeaderHash)
+	if err != nil {
+		return fmt.Errorf("failed to verify validator set header: %w", err)
+	}
+
+	log.Println("ok", ok)
 
 	validatorSetHeaderHashString := hex.EncodeToString(validatorSetHeaderHash)
 
@@ -109,6 +126,11 @@ func (n *NetworkService) signValidatorSet(ctx context.Context) error {
 		Signature: signature.Marshal(),
 		PublicKey: n.keyPair.PublicKeyG1.Marshal(),
 	})
+
+	err = n.p2pService.BroadcastSignature(epoch, validatorSetHeaderHashString, signature.Marshal(), n.keyPair.PublicKeyG1.Marshal())
+	if err != nil {
+		return fmt.Errorf("failed to broadcast signature: %w", err)
+	}
 
 	return nil
 }

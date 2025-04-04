@@ -2,7 +2,6 @@ package p2p
 
 import (
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -43,7 +42,8 @@ func NewP2PService(ctx context.Context, listenAddrs []multiaddr.Multiaddr, stora
 	// Create libp2p host
 	h, err := libp2p.New(
 		libp2p.ListenAddrs(listenAddrs...),
-		libp2p.NATPortMap(),
+		libp2p.ForceReachabilityPrivate(),
+		libp2p.DisableRelay(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create libp2p host: %w", err)
@@ -153,11 +153,11 @@ func (s *P2PService) handleSignature(msg Message) {
 }
 
 // BroadcastSignature broadcasts a signature request to all peers
-func (s *P2PService) BroadcastSignature(epoch *big.Int, msgHash []byte, signature []byte, pubKey []byte) error {
+func (s *P2PService) BroadcastSignature(epoch *big.Int, msgHash string, signature []byte, pubKey []byte) error {
 	// Create signature request
 	req := SignatureMessage{
 		Epoch:       epoch,
-		MessageHash: hex.EncodeToString(msgHash),
+		MessageHash: msgHash,
 		Signature:   signature,
 		PublicKey:   pubKey,
 	}
@@ -177,6 +177,8 @@ func (s *P2PService) BroadcastSignature(epoch *big.Int, msgHash []byte, signatur
 	if err := s.broadcast(msg); err != nil {
 		return fmt.Errorf("failed to broadcast signature request: %w", err)
 	}
+
+	log.Println("Broadcasted signature request to all peers")
 
 	return nil
 }

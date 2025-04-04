@@ -2,6 +2,7 @@ package eth
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"fmt"
 	"math/big"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
@@ -17,13 +19,27 @@ const (
 	contractABI = `[{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"messageHash","type":"bytes32"},{"indexed":false,"internalType":"bytes","name":"signature","type":"bytes"},{"indexed":false,"internalType":"uint256","name":"timestamp","type":"uint256"}],"name":"AggregatedSignatureSubmitted","type":"event"},{"inputs":[{"internalType":"bytes32","name":"messageHash","type":"bytes32"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"submitAggregatedSignature","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"name":"processedMessages","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"}]`
 )
 
+type IEthClient interface {
+	GetNewValidatorSet(ctx context.Context) (*ValidatorSet, error)
+	GetCurrentPhase(ctx context.Context) (Phase, error)
+	GetCurrentEpoch(ctx context.Context) (*big.Int, error)
+	GetCurrentEpochStart(ctx context.Context) (*big.Int, error)
+	GetIsGenesisSet(ctx context.Context) (bool, error)
+	GetEpochDuration(ctx context.Context) (*big.Int, error)
+	GetRequiredKeyTag(ctx context.Context) (uint8, error)
+	GetQuorumThreshold(ctx context.Context) (*big.Int, error)
+	GetValidatorSet(ctx context.Context, blockNumber *big.Int) (ValidatorSet, error)
+	GetFinalizedBlock() (*big.Int, error)
+}
+
 type EthClient struct {
 	client          *ethclient.Client
 	contractAddress common.Address
 	contractABI     abi.ABI
+	privateKey      *ecdsa.PrivateKey
 }
 
-func NewEthClient(rpcUrl string, contractAddress string) (*EthClient, error) {
+func NewEthClient(rpcUrl string, contractAddress string, privateKey []byte) (*EthClient, error) {
 	contractABI, err := abi.JSON(strings.NewReader(contractABI))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse contract ABI: %w", err)
@@ -34,13 +50,26 @@ func NewEthClient(rpcUrl string, contractAddress string) (*EthClient, error) {
 		return nil, fmt.Errorf("failed to connect to Ethereum client: %w", err)
 	}
 
+	pk, err := crypto.ToECDSA(privateKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert private key: %w", err)
+	}
 	// get epoch start and duration
 
 	return &EthClient{
 		client:          client,
 		contractAddress: common.HexToAddress(contractAddress),
 		contractABI:     contractABI,
+		privateKey:      pk,
 	}, nil
+}
+
+func GeneratePrivateKey() ([]byte, error) {
+	pk, err := crypto.GenerateKey()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate private key: %w", err)
+	}
+	return crypto.FromECDSA(pk), nil
 }
 
 func (e *EthClient) Commit(messageHash string, signature []byte) error {

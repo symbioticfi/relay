@@ -1,10 +1,8 @@
 package bls
 
 import (
-	"crypto/rand"
 	"fmt"
 	"math/big"
-	"os"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
@@ -41,71 +39,31 @@ type G2 struct {
 }
 
 // GenerateKeyOrLoad generates a new BLS key pair or loads an existing one from the specified path
-func GenerateKeyOrLoad(path string) (*KeyPair, error) {
-	// Try to load the key from file if it exists
-	if keyPair, err := loadKeyFromFile(path); err == nil {
-		return keyPair, nil
-	}
+func GenerateKey() ([]byte, error) {
+	sk := new(fr.Element)
+	var err error
 
-	// Generate a new key if loading failed or file doesn't exist
-	return generateAndSaveKey(path)
-}
-
-// loadKeyFromFile attempts to load a key from the given file path
-func loadKeyFromFile(path string) (*KeyPair, error) {
-	// Check if file exists
-	if _, err := os.Stat(path); err != nil {
-		return nil, err
-	}
-
-	// Read the file
-	keyData, err := os.ReadFile(path)
+	sk, err = sk.SetRandom()
 	if err != nil {
-		return nil, err
-	}
-
-	// Parse the key
-	var sk SecretKey
-	if err := sk.SetBytes(keyData); err != nil {
 		return nil, fmt.Errorf("failed to parse secret key: %w", err)
 	}
 
-	// Compute public keys from secret key
-	return computeKeyPair(&sk), nil
+	return sk.Marshal(), nil
 }
 
-// generateAndSaveKey creates a new random key and saves it to the specified path
-func generateAndSaveKey(path string) (*KeyPair, error) {
-	// Generate random bytes for secret key
-	var skBytes [32]byte
-	if _, err := rand.Read(skBytes[:]); err != nil {
-		return nil, fmt.Errorf("failed to generate random bytes: %w", err)
-	}
-
-	// Create a secret key from the random bytes
-	var sk SecretKey
-	if err := sk.SetBytes(skBytes[:]); err != nil {
-		return nil, fmt.Errorf("failed to create secret key: %w", err)
-	}
-
-	// Compute the key pair
-	keyPair := computeKeyPair(&sk)
-
-	// Save the key to file
-	keyData := sk.Marshal()
-	if err := os.WriteFile(path, keyData, 0600); err != nil {
-		return nil, fmt.Errorf("failed to save key to file: %w", err)
-	}
-
-	return keyPair, nil
-}
-
-// computeKeyPair derives the public keys from a secret key
-func computeKeyPair(sk *SecretKey) *KeyPair {
-	var pkG1 G1
-	var pkG2 G2
+// ComputeKeyPair derives the public keys from a secret key
+func ComputeKeyPair(sk []byte) *KeyPair {
+	var pkG1 *G1
+	var pkG2 *G2
+	var secretKey *fr.Element
 	var skBig big.Int
-	sk.BigInt(&skBig)
+
+	secretKey = new(fr.Element)
+	pkG1 = ZeroG1()
+	pkG2 = ZeroG2()
+
+	secretKey.Unmarshal(sk)
+	skBig = *secretKey.BigInt(&skBig)
 
 	// Get the generators for G1 and G2
 	_, _, g1, g2 := bn254.Generators()
@@ -115,9 +73,9 @@ func computeKeyPair(sk *SecretKey) *KeyPair {
 	pkG2.ScalarMultiplication(&g2, &skBig)
 
 	return &KeyPair{
-		SecretKey:   *sk,
-		PublicKeyG1: pkG1,
-		PublicKeyG2: pkG2,
+		SecretKey:   SecretKey{secretKey},
+		PublicKeyG1: *pkG1,
+		PublicKeyG2: *pkG2,
 	}
 }
 
@@ -134,10 +92,10 @@ func (kp *KeyPair) Sign(msgHash []byte) (*G1, error) {
 	kp.SecretKey.BigInt(&skBig)
 
 	// Compute signature = h1 * sk
-	var sig G1
+	sig := ZeroG1()
 	sig.ScalarMultiplication(h1.G1Affine, &skBig)
 
-	return &sig, nil
+	return sig, nil
 }
 
 // Verify checks if a signature is valid for a message and public key
@@ -218,39 +176,35 @@ func findYFromX(x *big.Int) (*big.Int, *big.Int, error) {
 	return beta, y, nil
 }
 
+func ZeroG1() *G1 {
+	return &G1{G1Affine: new(bn254.G1Affine)}
+}
+
+func ZeroG2() *G2 {
+	return &G2{G2Affine: new(bn254.G2Affine)}
+}
+
 // Add adds two G1 public keys together
 func (p *G1) Add(other *G1) *G1 {
-	var result bn254.G1Affine
-	result.Add(p.G1Affine, other.G1Affine)
-	p.G1Affine = &result
+	p.G1Affine.Add(p.G1Affine, other.G1Affine)
 	return p
 }
 
 // Sub subtracts another G1 public key from this one
 func (p *G1) Sub(other *G1) *G1 {
-	var result bn254.G1Affine
-	var negOther bn254.G1Affine
-	negOther.Neg(other.G1Affine)
-	result.Add(p.G1Affine, &negOther)
-	p.G1Affine = &result
+	p.G1Affine.Sub(p.G1Affine, other.G1Affine)
 	return p
 }
 
 // Add adds two G2 public keys together
 func (p *G2) Add(other *G2) *G2 {
-	var result bn254.G2Affine
-	result.Add(p.G2Affine, other.G2Affine)
-	p.G2Affine = &result
+	p.G2Affine.Add(p.G2Affine, other.G2Affine)
 	return p
 }
 
 // Sub subtracts another G2 public key from this one
 func (p *G2) Sub(other *G2) *G2 {
-	var result bn254.G2Affine
-	var negOther bn254.G2Affine
-	negOther.Neg(other.G2Affine)
-	result.Add(p.G2Affine, &negOther)
-	p.G2Affine = &result
+	p.G2Affine.Sub(p.G2Affine, other.G2Affine)
 	return p
 }
 
@@ -265,13 +219,13 @@ func SerializeG2(g2 *G2) []byte {
 }
 
 func DeserializeG1(bytes []byte) *G1 {
-	var g1 G1
+	g1 := ZeroG1()
 	g1.G1Affine.SetBytes(bytes)
-	return &g1
+	return g1
 }
 
 func DeserializeG2(bytes []byte) *G2 {
-	var g2 G2
+	g2 := ZeroG2()
 	g2.G2Affine.SetBytes(bytes)
-	return &g2
+	return g2
 }
