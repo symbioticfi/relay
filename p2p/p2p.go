@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p"
+	crypto "github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -38,12 +39,11 @@ type P2PService struct {
 }
 
 // NewP2PService creates a new P2P service with the given configuration
-func NewP2PService(ctx context.Context, listenAddrs []multiaddr.Multiaddr, storage *storage.Storage) (*P2PService, error) {
+func NewP2PService(ctx context.Context, privateKey crypto.PrivKey, listenAddrs []multiaddr.Multiaddr, peers []string, storage *storage.Storage) (*P2PService, error) {
 	// Create libp2p host
 	h, err := libp2p.New(
 		libp2p.ListenAddrs(listenAddrs...),
-		libp2p.ForceReachabilityPrivate(),
-		libp2p.DisableRelay(),
+		libp2p.Identity(privateKey),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create libp2p host: %w", err)
@@ -63,6 +63,10 @@ func NewP2PService(ctx context.Context, listenAddrs []multiaddr.Multiaddr, stora
 	addrs := h.Addrs()
 	for _, addr := range addrs {
 		log.Printf("Listening on: %s/p2p/%s", addr, h.ID().ShortString())
+	}
+
+	if err := service.connectToPeers(peers); err != nil {
+		return nil, fmt.Errorf("failed to connect to peers: %w", err)
 	}
 
 	return service, nil
@@ -169,7 +173,7 @@ func (s *P2PService) BroadcastSignature(epoch *big.Int, msgHash string, signatur
 
 	msg := Message{
 		Type:      TypeSignatureRequest,
-		Sender:    s.host.ID().ShortString(),
+		Sender:    s.host.ID().String(),
 		Timestamp: time.Now().Unix(),
 		Data:      data,
 	}
@@ -189,8 +193,8 @@ func (s *P2PService) broadcast(msg Message) error {
 	defer s.peersMutex.RUnlock()
 
 	for peerID := range s.peers {
-		if err := s.sendToPeer(peerID.ShortString(), msg); err != nil {
-			log.Printf("Failed to send message to peer %s: %s", peerID.ShortString(), err)
+		if err := s.sendToPeer(peerID.String(), msg); err != nil {
+			log.Printf("Failed to send message to peer %s: %s", peerID.String(), err)
 		}
 	}
 
@@ -230,5 +234,27 @@ func (s *P2PService) Stop() error {
 	if err := s.host.Close(); err != nil {
 		return fmt.Errorf("failed to close host: %w", err)
 	}
+	return nil
+}
+
+func (s *P2PService) connectToPeers(peers []string) error {
+	for _, addrStr := range peers {
+		maddr, err := multiaddr.NewMultiaddr(addrStr)
+		if err != nil {
+			return fmt.Errorf("invalid multiaddr: %w", err)
+		}
+
+		info, err := peer.AddrInfoFromP2pAddr(maddr)
+		if err != nil {
+			return fmt.Errorf("failed to get peer info: %w", err)
+		}
+		ctx, cancel := context.WithTimeout(s.ctx, time.Second*10)
+		defer cancel()
+
+		if err := s.host.Connect(ctx, *info); err != nil {
+			return fmt.Errorf("failed to connect to peer %s: %w", info.ID.ShortString(), err)
+		}
+	}
+
 	return nil
 }

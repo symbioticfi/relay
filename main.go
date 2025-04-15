@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path"
 	"syscall"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"offchain-middleware/p2p"
 	"offchain-middleware/storage"
 
+	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -25,10 +27,11 @@ var cfgFile string
 // Config holds all application configuration
 type Config struct {
 	ListenAddr    string
-	EthEndpoint   string `mapstructure:"eth"`
-	ContractAddr  string `mapstructure:"contract"`
-	EthPrivateKey []byte `mapstructure:"eth-private-key"`
-	BlsPrivateKey []byte `mapstructure:"bls-private-key"`
+	EthEndpoint   string   `mapstructure:"eth"`
+	ContractAddr  string   `mapstructure:"contract"`
+	EthPrivateKey []byte   `mapstructure:"eth-private-key"`
+	BlsPrivateKey []byte   `mapstructure:"bls-private-key"`
+	Peers         []string `mapstructure:"peers"`
 }
 
 // App represents the application and its components
@@ -59,14 +62,22 @@ func (a *App) Initialize(ctx context.Context) error {
 	a.storage = storage.NewStorage()
 
 	// Create Ethereum client
-	// a.ethClient, err = eth.NewEthClient(a.config.EthEndpoint, a.config.ContractAddr, a.config.EthPrivateKey)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to create ETH service: %w", err)
-	// }
-	a.ethClient = eth.NewMockEthClient()
+	if !viper.GetBool("test") {
+		a.ethClient, err = eth.NewEthClient(a.config.EthEndpoint, a.config.ContractAddr, a.config.EthPrivateKey)
+		if err != nil {
+			return fmt.Errorf("failed to create ETH service: %w", err)
+		}
+	} else {
+		a.ethClient = eth.NewMockEthClient()
+	}
+
+	key, err := crypto.UnmarshalSecp256k1PrivateKey(a.config.EthPrivateKey)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal ETH private key: %w", err)
+	}
 
 	// Create the P2P service
-	a.p2pService, err = p2p.NewP2PService(ctx, []multiaddr.Multiaddr{addr}, a.storage)
+	a.p2pService, err = p2p.NewP2PService(ctx, key, []multiaddr.Multiaddr{addr}, a.config.Peers, a.storage)
 	if err != nil {
 		return fmt.Errorf("failed to create P2P service: %w", err)
 	}
@@ -123,7 +134,13 @@ var startCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalf("Unable to decode into struct, %v", err)
 		}
+
+		if len(config.BlsPrivateKey) == 0 {
+			log.Fatalf("Config is missing BLS private key")
+		}
+
 		config.ListenAddr = viper.GetString("listen")
+
 		// Create application
 		app := NewApp(config)
 
@@ -171,6 +188,16 @@ var generateConfigCmd = &cobra.Command{
 			log.Fatalf("Failed to generate BLS private key: %s", err)
 		}
 		viper.Set("bls-private-key", blsPrivateKey)
+		viper.Set("peers", []string{})
+
+		// Create config directory if it doesn't exist
+		configDir := path.Dir(viper.ConfigFileUsed())
+		if _, err := os.Stat(configDir); os.IsNotExist(err) {
+			if err := os.MkdirAll(configDir, 0755); err != nil {
+				log.Fatalf("Failed to create config directory: %s", err)
+			}
+			fmt.Printf("Created config directory: %s\n", configDir)
+		}
 
 		if err := viper.WriteConfig(); err != nil {
 			log.Fatalf("Failed to write config: %s", err)
@@ -215,10 +242,12 @@ func main() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.offchain-middleware.yaml)")
 
 	// Start command flags
-	startCmd.Flags().String("listen", "/ip4/127.0.0.1/tcp/9001", "Address to listen on")
+	startCmd.Flags().String("listen", "/ip4/127.0.0.1/tcp/8000", "Address to listen on")
+	startCmd.Flags().Bool("test", false, "Test mode, use mock eth client")
 
 	// Bind flags to viper
 	viper.BindPFlag("listen", startCmd.Flags().Lookup("listen"))
+	viper.BindPFlag("test", startCmd.Flags().Lookup("test"))
 
 	// Add commands
 	rootCmd.AddCommand(startCmd)
