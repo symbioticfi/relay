@@ -1,14 +1,41 @@
-package network
+package types
 
 import (
 	"math/big"
 	"offchain-middleware/bls"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
 )
 
-// ValidatorSetHeaderInput represents the input for validator set header
+type Key struct {
+	Tag     uint8  `ssz-size:"8"`
+	Payload []byte `ssz-max:"64"`
+}
+
+type Vault struct {
+	Vault       common.Address `ssz-size:"20"`
+	VotingPower *big.Int       `ssz-size:"32"`
+}
+
+type Validator struct {
+	// Version     uint8          `ssz-size:"8"` TODO: do we need this?
+	Operator    common.Address `ssz-size:"20"`
+	VotingPower *big.Int       `ssz-size:"32"`
+	IsActive    bool           `ssz-size:"1"`
+	Keys        []*Key         `ssz-max:"128"`
+	Vaults      []*Vault       `ssz-max:"10"`
+}
+
+type ValidatorSet struct {
+	Version                uint8
+	TotalActiveVotingPower *big.Int
+	Validators             []*Validator
+}
+
+// ValidatorSetHeader represents the input for validator set header
 type ValidatorSetHeader struct {
+	Version                uint8
 	ActiveAggregatedKeys   []G1
 	TotalActiveVotingPower *big.Int
 	ValidatorsSszMRoot     [32]byte
