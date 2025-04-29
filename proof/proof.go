@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"offchain-middleware/bls"
-	"offchain-middleware/eth"
+	"offchain-middleware/valset/types"
 	"os"
 
 	"github.com/consensys/gnark-crypto/ecc"
@@ -138,7 +138,7 @@ func setCircuitData(circuit *Circuit, valset *[]ValidatorData) {
 	circuit.ZeroPoint = sw_bn254.NewG1Affine(*zeroPoint)
 }
 
-func ToValidatorsData(validators []*eth.Validator, requiredKeyTag uint8) []ValidatorData {
+func ToValidatorsData(validators []*types.Validator, requiredKeyTag uint8) []ValidatorData {
 	valset := make([]ValidatorData, 0)
 	for i := 0; i < len(validators); i++ {
 		if !validators[i].IsActive {
@@ -153,19 +153,19 @@ func ToValidatorsData(validators []*eth.Validator, requiredKeyTag uint8) []Valid
 	return valset
 }
 
-func Prove(valset []ValidatorData) error {
+func Prove(valset []ValidatorData) ([]byte, error) {
 	// compiles our circuit into a R1CS
 	circuit := Circuit{
 		ValidatorData: make([]ValidatorDataCircuit, len(valset)),
 	}
 	ccs, err := frontend.Compile(ecc.BN254.ScalarField(), r1cs.NewBuilder, &circuit)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	pk, vk, err := groth16.Setup(ccs)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// set circuit valset to circuit data
@@ -179,7 +179,7 @@ func Prove(valset []ValidatorData) error {
 	// groth16: Prove & Verify
 	proof, err := groth16.Prove(ccs, pk, witness)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	fmt.Println("Proof:", proof)
@@ -191,13 +191,13 @@ func Prove(valset []ValidatorData) error {
 		panic("proof does not implement MarshalSolidity()")
 	}
 
-	proofStr := hex.EncodeToString(_proof.MarshalSolidity())
-	fmt.Println("Proof:", proofStr)
+	proofBytes := _proof.MarshalSolidity()
+	fmt.Println("Proof:", hex.EncodeToString(proofBytes))
 	// verify proof
 	err = groth16.Verify(proof, vk, publicWitness)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return proofBytes, nil
 }

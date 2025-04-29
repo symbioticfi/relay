@@ -67,12 +67,12 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 	for _, vp := range allVotingPowers {
 		operatorAddr := vp.Operator.Hex()
 		if _, exists := validatorsMap[operatorAddr]; !exists {
-			validatorsMap[operatorAddr] = &Validator{
+			validatorsMap[operatorAddr] = &types.Validator{
 				Operator:    vp.Operator,
 				VotingPower: big.NewInt(0),
 				IsActive:    true, // Default to active, will filter later
-				Keys:        []*Key{},
-				Vaults:      []*Vault{},
+				Keys:        []*types.Key{},
+				Vaults:      []*types.Vault{},
 			}
 		}
 
@@ -84,7 +84,7 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 			)
 
 			// Add vault to validator's vaults
-			validatorsMap[operatorAddr].Vaults = append(validatorsMap[operatorAddr].Vaults, &Vault{
+			validatorsMap[operatorAddr].Vaults = append(validatorsMap[operatorAddr].Vaults, &types.Vault{
 				Vault:       vault.Vault,
 				VotingPower: vault.VotingPower,
 			})
@@ -97,7 +97,7 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 		if validator, exists := validatorsMap[operatorAddr]; exists {
 			// Add all keys for this operator
 			for _, key := range rk.Keys {
-				validator.Keys = append(validator.Keys, &Key{
+				validator.Keys = append(validator.Keys, &types.Key{
 					Tag:     key.Tag,
 					Payload: key.Payload,
 				})

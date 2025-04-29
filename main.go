@@ -8,15 +8,14 @@ import (
 	"os/signal"
 	"path"
 	"syscall"
-	"time"
 
 	"offchain-middleware/bls"
+	"offchain-middleware/cmd/signer"
 	"offchain-middleware/eth"
 	"offchain-middleware/network"
-	"offchain-middleware/p2p"
-	"offchain-middleware/storage"
+	"offchain-middleware/signing"
+	"offchain-middleware/valset"
 
-	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -36,11 +35,8 @@ type Config struct {
 
 // App represents the application and its components
 type App struct {
-	config         Config
-	storage        *storage.Storage
-	ethClient      eth.IEthClient
-	p2pService     *p2p.P2PService
-	networkService *network.NetworkService
+	config Config
+	signer *signer.SignerClient
 }
 
 // NewApp creates a new application instance with the provided configuration
@@ -59,48 +55,51 @@ func (a *App) Initialize(ctx context.Context) error {
 	}
 
 	// Create storage
-	a.storage = storage.NewStorage()
+	// storage := storage.NewStorage()
+	var ethClient eth.IEthClient
 
 	// Create Ethereum client
 	if !viper.GetBool("test") {
-		a.ethClient, err = eth.NewEthClient(a.config.EthEndpoint, a.config.ContractAddr, a.config.EthPrivateKey)
+		ethClient, err = eth.NewEthClient(a.config.EthEndpoint, a.config.ContractAddr, a.config.EthPrivateKey)
 		if err != nil {
 			return fmt.Errorf("failed to create ETH service: %w", err)
 		}
 	} else {
-		a.ethClient = eth.NewMockEthClient()
-	}
-
-	key, err := crypto.UnmarshalSecp256k1PrivateKey(a.config.EthPrivateKey)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal ETH private key: %w", err)
+		ethClient = eth.NewMockEthClient()
 	}
 
 	// Create the P2P service
-	a.p2pService, err = p2p.NewP2PService(ctx, key, []multiaddr.Multiaddr{addr}, a.config.Peers, a.storage)
+	p2pService, err := network.NewP2PService(ctx, []multiaddr.Multiaddr{addr}, a.config.Peers)
 	if err != nil {
 		return fmt.Errorf("failed to create P2P service: %w", err)
 	}
 
-	// Create network service
-	a.networkService, err = network.NewNetworkService(a.p2pService, a.ethClient, a.storage, bls.ComputeKeyPair(a.config.BlsPrivateKey))
+	signing, err := signing.NewSigning(bls.ComputeKeyPair(a.config.BlsPrivateKey))
 	if err != nil {
-		return fmt.Errorf("failed to create network service: %w", err)
+		return fmt.Errorf("failed to create signing service: %w", err)
 	}
+
+	vd, err := valset.NewValsetDeriver(ethClient)
+	if err != nil {
+		return fmt.Errorf("failed to create valset deriver: %w", err)
+	}
+
+	vg, err := valset.NewValsetGenerator(vd, ethClient)
+	if err != nil {
+		return fmt.Errorf("failed to create valset generator: %w", err)
+	}
+
+	// Create network service
+	a.signer = signer.NewSignerClient(signing, vg, p2pService)
 
 	return nil
 }
 
 // Start begins all services
 func (a *App) Start() error {
-	// Start the P2P service
-	if err := a.p2pService.Start(); err != nil {
-		return fmt.Errorf("failed to start P2P service: %w", err)
-	}
-
-	// Start the network service
-	if err := a.networkService.Start(time.Minute); err != nil {
-		return fmt.Errorf("failed to start network service: %w", err)
+	// Start the signer service
+	if err := a.signer.Start("localhost:8000"); err != nil {
+		return fmt.Errorf("failed to start signer service: %w", err)
 	}
 
 	return nil
@@ -108,8 +107,8 @@ func (a *App) Start() error {
 
 // Stop gracefully shuts down all services
 func (a *App) Stop() {
-	if a.p2pService != nil {
-		a.p2pService.Stop()
+	if a.signer != nil {
+		a.signer.Stop()
 	}
 }
 

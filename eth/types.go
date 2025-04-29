@@ -12,31 +12,42 @@ type Phase uint64
 const (
 	IDLE Phase = iota
 	COMMIT
-	ACCEPT
 	FAIL
 )
 
+type CrossChainAddress struct {
+	Address common.Address
+	ChainId uint64
+}
+
+type MasterConfig struct {
+	VotingPowerProviders []CrossChainAddress
+	KeysProvider         CrossChainAddress
+	Replicas             []CrossChainAddress
+}
+
+type ValSetConfig struct {
+	MaxVotingPower          *big.Int
+	MinInclusionVotingPower *big.Int
+	MaxValidatorsCount      *big.Int
+}
+
+type VaultVotingPower struct {
+	Vault       common.Address
+	VotingPower *big.Int
+}
+
+type OperatorVotingPower struct {
+	Operator common.Address
+	Vaults   []VaultVotingPower
+}
+
 type Key struct {
-	Tag     uint8  `ssz-size:"8"`
-	Payload []byte `ssz-max:"64"`
+	Tag     uint8
+	Payload []byte
 }
 
-type Vault struct {
-	VaultAddress common.Address `ssz-size:"20"`
-	VotingPower  *big.Int       `ssz-size:"32"`
-}
-
-type Validator struct {
-	Version     uint8          `ssz-size:"8"`
-	Operator    common.Address `ssz-size:"20"`
-	VotingPower *big.Int       `ssz-size:"32"`
-	IsActive    bool           `ssz-size:"1"`
-	Keys        []*Key         `ssz-max:"128"`
-	Vaults      []*Vault       `ssz-max:"10"`
-}
-
-type ValidatorSet struct {
-	Version                uint8
-	TotalActiveVotingPower *big.Int
-	Validators             []*Validator
+type OperatorWithKeys struct {
+	Operator common.Address
+	Keys     []Key
 }

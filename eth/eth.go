@@ -19,24 +19,37 @@ const (
 	contractABI = `[{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"messageHash","type":"bytes32"},{"indexed":false,"internalType":"bytes","name":"signature","type":"bytes"},{"indexed":false,"internalType":"uint256","name":"timestamp","type":"uint256"}],"name":"AggregatedSignatureSubmitted","type":"event"},{"inputs":[{"internalType":"bytes32","name":"messageHash","type":"bytes32"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"submitAggregatedSignature","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"name":"processedMessages","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"}]`
 )
 
+var (
+	GET_MASTER_CONFIG_FUNCTION            = "getMasterConfigAt"
+	GET_VALSET_CONFIG_FUNCTION            = "getValSetConfigAt"
+	GET_IS_GENESIS_SET_FUNCTION           = "isGenesisSet"
+	GET_CURRENT_PHASE_FUNCTION            = "getCurrentPhase"
+	GET_CURRENT_VALSET_TIMESTAMP_FUNCTION = "getCurrentValsetTimestamp"
+	GET_CAPTURE_TIMESTAMP_FUNCTION        = "getCaptureTimestamp"
+	GET_VOTING_POWERS_FUNCTION            = "getVotingPowersAt"
+	GET_REQUIRED_KEYS_FUNCTION            = "getRequiredKeysAt"
+	GET_REQUIRED_KEY_TAG_FUNCTION         = "getRequiredKeyTagAt"
+	GET_QUORUM_THRESHOLD_FUNCTION         = "getQuorumThresholdAt"
+)
+
 type IEthClient interface {
-	GetNewValidatorSet(ctx context.Context) (*ValidatorSet, error)
-	GetCurrentPhase(ctx context.Context) (Phase, error)
-	GetCurrentEpoch(ctx context.Context) (*big.Int, error)
-	GetCurrentEpochStart(ctx context.Context) (*big.Int, error)
+	GetMasterConfig(ctx context.Context, timestamp *big.Int) (*MasterConfig, error)
+	GetValSetConfig(ctx context.Context, timestamp *big.Int) (*ValSetConfig, error)
 	GetIsGenesisSet(ctx context.Context) (bool, error)
-	GetEpochDuration(ctx context.Context) (*big.Int, error)
-	GetRequiredKeyTag(ctx context.Context) (uint8, error)
-	GetQuorumThreshold(ctx context.Context) (*big.Int, error)
-	GetValidatorSet(ctx context.Context, blockNumber *big.Int) (ValidatorSet, error)
-	GetFinalizedBlock() (*big.Int, error)
+	GetCurrentPhase(ctx context.Context) (Phase, error)
+	GetCurrentValsetTimestamp(ctx context.Context) (*big.Int, error)
+	GetCaptureTimestamp(ctx context.Context) (*big.Int, error)
+	GetVotingPowers(ctx context.Context, address common.Address, timestamp *big.Int) ([]OperatorVotingPower, error)
+	GetRequiredKeys(ctx context.Context, address common.Address, timestamp *big.Int) ([]OperatorWithKeys, error)
+	GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uint8, error)
+	GetQuorumThreshold(ctx context.Context, timestamp *big.Int, keyTag uint8) (*big.Int, error)
 }
 
 type EthClient struct {
-	client          *ethclient.Client
-	contractAddress common.Address
-	contractABI     abi.ABI
-	privateKey      *ecdsa.PrivateKey
+	client                *ethclient.Client
+	masterContractAddress common.Address
+	contractABI           abi.ABI
+	privateKey            *ecdsa.PrivateKey // could be nil for read-only access
 }
 
 func NewEthClient(rpcUrl string, contractAddress string, privateKey []byte) (*EthClient, error) {
@@ -57,10 +70,10 @@ func NewEthClient(rpcUrl string, contractAddress string, privateKey []byte) (*Et
 	// get epoch start and duration
 
 	return &EthClient{
-		client:          client,
-		contractAddress: common.HexToAddress(contractAddress),
-		contractABI:     contractABI,
-		privateKey:      pk,
+		client:                client,
+		masterContractAddress: common.HexToAddress(contractAddress),
+		contractABI:           contractABI,
+		privateKey:            pk,
 	}, nil
 }
 
@@ -76,194 +89,53 @@ func (e *EthClient) Commit(messageHash string, signature []byte) error {
 	return nil
 }
 
-func (e *EthClient) getMockValidatorSet() (ValidatorSet, error) {
-	// This is a mock implementation of getValidatorSet
-	// In a real implementation, this would query the Ethereum contract
-	// to get the current validator set for the given epoch
-
-	// Create a mock validator set with some test data
-	mockValidatorSet := ValidatorSet{
-		TotalActiveVotingPower: big.NewInt(1000),
-		Validators: []*Validator{
-			&Validator{
-				Operator:    common.HexToAddress("0x1111111111111111111111111111111111111111"),
-				VotingPower: big.NewInt(400),
-				IsActive:    true,
-				Keys: []*Key{
-					{
-						Tag:     1,
-						Payload: []byte("validator1pubkey"),
-					},
-				},
-				Vaults: []*Vault{
-					{
-						VaultAddress: common.HexToAddress("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
-						VotingPower:  big.NewInt(400),
-					},
-				},
-			},
-			{
-				Operator:    common.HexToAddress("0x2222222222222222222222222222222222222222"),
-				VotingPower: big.NewInt(300),
-				IsActive:    true,
-				Keys: []*Key{
-					{
-						Tag:     2,
-						Payload: []byte("validator2pubkey"),
-					},
-				},
-				Vaults: []*Vault{
-					{
-						VaultAddress: common.HexToAddress("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
-						VotingPower:  big.NewInt(300),
-					},
-				},
-			},
-			{
-				Operator:    common.HexToAddress("0x3333333333333333333333333333333333333333"),
-				VotingPower: big.NewInt(300),
-				IsActive:    true,
-				Keys: []*Key{
-					{
-						Tag:     3,
-						Payload: []byte("validator3pubkey"),
-					},
-				},
-				Vaults: []*Vault{
-					{
-						VaultAddress: common.HexToAddress("0xcccccccccccccccccccccccccccccccccccccccc"),
-						VotingPower:  big.NewInt(300),
-					},
-				},
-			},
-			{
-				Operator:    common.HexToAddress("0x4444444444444444444444444444444444444444"),
-				VotingPower: big.NewInt(0),
-				IsActive:    false,
-				Keys: []*Key{
-					{
-						Tag:     4,
-						Payload: []byte("validator4pubkey"),
-					},
-				},
-				Vaults: []*Vault{},
-			},
-		},
-	}
-
-	return mockValidatorSet, nil
-
-}
-
-func (e *EthClient) GetNewValidatorSet(ctx context.Context) (*ValidatorSet, error) {
-	isGenesisSet, err := e.GetIsGenesisSet(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get is genesis set: %w", err)
-	}
-
-	if !isGenesisSet {
-		return nil, fmt.Errorf("genesis not set")
-	}
-
-	phase, err := e.GetCurrentPhase(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get current phase: %w", err)
-	}
-
-	if phase != COMMIT {
-		return nil, fmt.Errorf("current phase is not commit")
-	}
-
-	timestamp, err := e.GetCurrentEpochStart(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get current epoch start: %w", err)
-	}
-
-	blockNumber, err := e.findBlockByTimestamp(ctx, timestamp)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find block by timestamp: %w", err)
-	}
-
-	valset, err := e.GetValidatorSet(ctx, blockNumber)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get validator set: %w", err)
-	}
-
-	return &valset, nil
-}
-
-func (e EthClient) GetCurrentPhase(ctx context.Context) (Phase, error) {
-	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "getCurrentPhase")
-	if err != nil {
-		return 0, fmt.Errorf("failed to construct call msg: %w", err)
-	}
-
-	finalizedBlock, err := e.GetFinalizedBlock()
-	if err != nil {
-		return 0, fmt.Errorf("failed to get finalized block: %w", err)
-	}
-
-	result, err := e.callContract(ctx, finalizedBlock, callMsg)
-	if err != nil {
-		return 0, fmt.Errorf("failed to call contract: %w", err)
-	}
-
-	phase := new(big.Int).SetBytes(result).Uint64()
-	return Phase(phase), nil
-}
-
-func (e EthClient) GetCurrentEpoch(ctx context.Context) (*big.Int, error) {
-	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "getCurrentEpoch")
+func (e *EthClient) GetMasterConfig(ctx context.Context, timestamp *big.Int) (*MasterConfig, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, e.contractABI, GET_MASTER_CONFIG_FUNCTION, timestamp, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}
 
-	finalizedBlock, err := e.GetFinalizedBlock()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get finalized block: %w", err)
-	}
-
-	result, err := e.callContract(ctx, finalizedBlock, callMsg)
+	result, err := e.callContract(ctx, callMsg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call contract: %w", err)
 	}
 
-	epoch := new(big.Int).SetBytes(result)
-	return epoch, nil
+	var masterConfig MasterConfig
+	err = e.contractABI.UnpackIntoInterface(&masterConfig, GET_MASTER_CONFIG_FUNCTION, result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unpack master config: %w", err)
+	}
+
+	return &masterConfig, nil
 }
 
-func (e EthClient) GetCurrentEpochStart(ctx context.Context) (*big.Int, error) {
-	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "getCurrentEpochStart")
+func (e *EthClient) GetValSetConfig(ctx context.Context, timestamp *big.Int) (*ValSetConfig, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, e.contractABI, GET_VALSET_CONFIG_FUNCTION, timestamp, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}
 
-	finalizedBlock, err := e.GetFinalizedBlock()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get finalized block: %w", err)
-	}
-
-	result, err := e.callContract(ctx, finalizedBlock, callMsg)
+	result, err := e.callContract(ctx, callMsg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call contract: %w", err)
 	}
 
-	epochStart := new(big.Int).SetBytes(result)
-	return epochStart, nil
+	var valSetConfig ValSetConfig
+	err = e.contractABI.UnpackIntoInterface(&valSetConfig, GET_VALSET_CONFIG_FUNCTION, result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unpack val set config: %w", err)
+	}
+
+	return &valSetConfig, nil
 }
 
-func (e EthClient) GetIsGenesisSet(ctx context.Context) (bool, error) {
-	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "isGenesisSet")
+func (e *EthClient) GetIsGenesisSet(ctx context.Context) (bool, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, e.contractABI, GET_IS_GENESIS_SET_FUNCTION)
 	if err != nil {
 		return false, fmt.Errorf("failed to construct call msg: %w", err)
 	}
 
-	finalizedBlock, err := e.GetFinalizedBlock()
-	if err != nil {
-		return false, fmt.Errorf("failed to get finalized block: %w", err)
-	}
-
-	result, err := e.callContract(ctx, finalizedBlock, callMsg)
+	result, err := e.callContract(ctx, callMsg)
 	if err != nil {
 		return false, fmt.Errorf("failed to call contract: %w", err)
 	}
@@ -272,57 +144,118 @@ func (e EthClient) GetIsGenesisSet(ctx context.Context) (bool, error) {
 	return isGenesisSet == 1, nil
 }
 
-func (e EthClient) GetEpochDuration(ctx context.Context) (*big.Int, error) {
-	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "getEpochDuration")
-	if err != nil {
-		return nil, fmt.Errorf("failed to construct call msg: %w", err)
-	}
-
-	finalizedBlock, err := e.GetFinalizedBlock()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get finalized block: %w", err)
-	}
-
-	result, err := e.callContract(ctx, finalizedBlock, callMsg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to call contract: %w", err)
-	}
-
-	epochDuration := new(big.Int).SetBytes(result)
-	return epochDuration, nil
-}
-
-func (e *EthClient) GetRequiredKeyTag(ctx context.Context) (uint8, error) {
-	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "getRequiredKeyTag")
+func (e *EthClient) GetCurrentPhase(ctx context.Context) (Phase, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, e.contractABI, GET_CURRENT_PHASE_FUNCTION)
 	if err != nil {
 		return 0, fmt.Errorf("failed to construct call msg: %w", err)
 	}
 
-	finalizedBlock, err := e.GetFinalizedBlock()
-	if err != nil {
-		return 0, fmt.Errorf("failed to get finalized block: %w", err)
-	}
-
-	result, err := e.callContract(ctx, finalizedBlock, callMsg)
+	result, err := e.callContract(ctx, callMsg)
 	if err != nil {
 		return 0, fmt.Errorf("failed to call contract: %w", err)
 	}
 
-	return uint8(new(big.Int).SetBytes(result).Uint64()), nil
+	phase := new(big.Int).SetBytes(result).Uint64()
+	return Phase(phase), nil
 }
 
-func (e *EthClient) GetQuorumThreshold(ctx context.Context) (*big.Int, error) {
-	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "getQuorumThreshold")
+func (e *EthClient) GetCurrentValsetTimestamp(ctx context.Context) (*big.Int, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, e.contractABI, GET_CURRENT_VALSET_TIMESTAMP_FUNCTION)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}
 
-	finalizedBlock, err := e.GetFinalizedBlock()
+	result, err := e.callContract(ctx, callMsg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get finalized block: %w", err)
+		return nil, fmt.Errorf("failed to call contract: %w", err)
 	}
 
-	result, err := e.callContract(ctx, finalizedBlock, callMsg)
+	timestamp := new(big.Int).SetBytes(result)
+	return timestamp, nil
+}
+
+func (e *EthClient) GetCaptureTimestamp(ctx context.Context) (*big.Int, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, e.contractABI, GET_CAPTURE_TIMESTAMP_FUNCTION)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct call msg: %w", err)
+	}
+
+	result, err := e.callContract(ctx, callMsg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call contract: %w", err)
+	}
+
+	timestamp := new(big.Int).SetBytes(result)
+	return timestamp, nil
+}
+
+func (e *EthClient) GetVotingPowers(ctx context.Context, address common.Address, timestamp *big.Int) ([]OperatorVotingPower, error) {
+	callMsg, err := constructCallMsg(address, e.contractABI, GET_VOTING_POWERS_FUNCTION, nil, timestamp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct call msg: %w", err)
+	}
+
+	result, err := e.callContract(ctx, callMsg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call contract: %w", err)
+	}
+
+	var votingPowers []OperatorVotingPower
+	err = e.contractABI.UnpackIntoInterface(&votingPowers, GET_VOTING_POWERS_FUNCTION, result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unpack voting powers: %w", err)
+	}
+
+	return votingPowers, nil
+}
+
+func (e *EthClient) GetRequiredKeys(ctx context.Context, address common.Address, timestamp *big.Int) ([]OperatorWithKeys, error) {
+	callMsg, err := constructCallMsg(address, e.contractABI, GET_REQUIRED_KEYS_FUNCTION, timestamp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct call msg: %w", err)
+	}
+
+	result, err := e.callContract(ctx, callMsg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call contract: %w", err)
+	}
+
+	var requiredKeys []OperatorWithKeys
+	err = e.contractABI.UnpackIntoInterface(&requiredKeys, GET_REQUIRED_KEYS_FUNCTION, result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unpack required keys: %w", err)
+	}
+
+	return requiredKeys, nil
+}
+
+func (e *EthClient) GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uint8, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, e.contractABI, GET_REQUIRED_KEY_TAG_FUNCTION, timestamp, nil)
+	if err != nil {
+		return 0, fmt.Errorf("failed to construct call msg: %w", err)
+	}
+
+	result, err := e.callContract(ctx, callMsg)
+	if err != nil {
+		return 0, fmt.Errorf("failed to call contract: %w", err)
+	}
+
+	var keyTag uint8
+	err = e.contractABI.UnpackIntoInterface(&keyTag, GET_REQUIRED_KEY_TAG_FUNCTION, result)
+	if err != nil {
+		return 0, fmt.Errorf("failed to unpack key tag: %w", err)
+	}
+
+	return keyTag, nil
+}
+
+func (e *EthClient) GetQuorumThreshold(ctx context.Context, timestamp *big.Int, keyTag uint8) (*big.Int, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, e.contractABI, GET_QUORUM_THRESHOLD_FUNCTION, keyTag, timestamp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct call msg: %w", err)
+	}
+
+	result, err := e.callContract(ctx, callMsg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call contract: %w", err)
 	}
@@ -330,101 +263,8 @@ func (e *EthClient) GetQuorumThreshold(ctx context.Context) (*big.Int, error) {
 	return new(big.Int).SetBytes(result), nil
 }
 
-func (e *EthClient) GetValidatorSet(ctx context.Context, blockNumber *big.Int) (ValidatorSet, error) {
-	callMsg, err := constructCallMsg(e.contractAddress, e.contractABI, "getValidatorSet")
-	if err != nil {
-		return ValidatorSet{}, fmt.Errorf("failed to construct call msg: %w", err)
-	}
-
-	result, err := e.callContract(ctx, blockNumber, callMsg)
-	if err != nil {
-		return ValidatorSet{}, fmt.Errorf("failed to call contract: %w", err)
-	}
-
-	var valset ValidatorSet
-	err = e.contractABI.UnpackIntoInterface(&valset, "getValidatorSet", result)
-	if err != nil {
-		return valset, err
-	}
-
-	return valset, nil
-}
-
-func (e EthClient) findBlockByTimestamp(ctx context.Context, timestamp *big.Int) (*big.Int, error) {
-	// Get the latest block to use as upper bound
-	latestBlock, err := e.client.BlockByNumber(ctx, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get latest block: %v", err)
-	}
-
-	high := latestBlock.Number()
-	low := big.NewInt(0)
-
-	// Binary search to find the block closest to the target timestamp
-	var mid *big.Int
-	var closestBlock *big.Int
-	var smallestDiff int64 = 1<<63 - 1 // Max int64 value
-
-	for low.Cmp(high) <= 0 {
-		mid = new(big.Int).Add(low, high)
-		mid = mid.Div(mid, big.NewInt(2))
-
-		// Get block at the middle
-		block, err := e.client.BlockByNumber(ctx, mid)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get block %s: %v", mid.String(), err)
-		}
-
-		blockTime := int64(block.Time())
-		diff := blockTime - timestamp.Int64()
-		if diff < 0 {
-			diff = -diff
-		}
-
-		// Update closest block if this is closer
-		if diff < smallestDiff {
-			smallestDiff = diff
-			closestBlock = new(big.Int).Set(mid)
-		}
-
-		// If this block's timestamp is earlier than target, search higher
-		if blockTime < timestamp.Int64() {
-			low = new(big.Int).Add(mid, big.NewInt(1))
-		} else if blockTime > timestamp.Int64() {
-			// If this block's timestamp is later than target, search lower
-			high = new(big.Int).Sub(mid, big.NewInt(1))
-		} else {
-			// Exact match
-			return mid, nil
-		}
-	}
-
-	return closestBlock, nil
-}
-
-func (e EthClient) GetFinalizedBlock() (*big.Int, error) {
-	// Get the latest finalized block number
-	var result []byte
-	err := e.client.Client().CallContext(context.Background(), &result, "eth_getBlockByNumber", "finalized", false)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get latest finalized block: %w", err)
-	}
-
-	blockNumber := new(big.Int).SetBytes(result)
-	if blockNumber.Cmp(big.NewInt(0)) == 0 {
-		return nil, fmt.Errorf("failed to parse block number: %s", result)
-	}
-
-	return blockNumber, nil
-}
-
-func (e EthClient) callContract(ctx context.Context, blockNumber *big.Int, callMsg ethereum.CallMsg) ([]byte, error) {
-	result, err := e.client.CallContract(ctx, callMsg, blockNumber)
-	if err != nil {
-		return nil, fmt.Errorf("failed to call contract: %w", err)
-	}
-
-	return result, nil
+func (e *EthClient) callContract(ctx context.Context, callMsg ethereum.CallMsg) (result []byte, err error) {
+	return e.client.CallContract(ctx, callMsg, nil)
 }
 
 func constructCallMsg(contractAddress common.Address, abi abi.ABI, method string, args ...interface{}) (ethereum.CallMsg, error) {

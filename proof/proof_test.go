@@ -1,6 +1,8 @@
 package proof
 
 import (
+	"encoding/hex"
+	"fmt"
 	"math/big"
 	"testing"
 )
@@ -24,8 +26,10 @@ func TestProof(t *testing.T) {
 	// generate valset
 	valset := genValset(100, []int{0, 1, 2})
 
-	err := Prove(valset)
+	proof, err := Prove(valset)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	fmt.Println("Proof:", hex.EncodeToString(proof))
 }

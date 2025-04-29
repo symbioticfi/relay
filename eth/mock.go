@@ -7,57 +7,86 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// MockEthClient implements EthClient interface for testing
+// MockEthClient implements IEthClient interface for testing
 type MockEthClient struct {
 	// Mock return values
-	MockValidatorSet      ValidatorSet
-	MockCurrentPhase      Phase
-	MockCurrentEpoch      *big.Int
-	MockCurrentEpochStart *big.Int
-	MockIsGenesisSet      bool
-	MockEpochDuration     *big.Int
-	MockRequiredKeyTag    uint8
-	MockQuorumThreshold   *big.Int
-	MockFinalizedBlock    *big.Int
-	MockCommitError       error
-	MockBlockForTimestamp *big.Int
+	MockMasterConfig           *MasterConfig
+	MockValSetConfig           *ValSetConfig
+	MockCurrentPhase           Phase
+	MockCurrentValsetTimestamp *big.Int
+	MockCaptureTimestamp       *big.Int
+	MockIsGenesisSet           bool
+	MockVotingPowers           []OperatorVotingPower
+	MockRequiredKeys           []OperatorWithKeys
+	MockRequiredKeyTag         uint8
+	MockQuorumThreshold        *big.Int
+	MockError                  error
 }
 
 // NewMockEthClient creates a new mock client with default values
 func NewMockEthClient() *MockEthClient {
-	mockValidators := createMockValidators(5)
-	totalVotingPower := big.NewInt(0)
-	for _, v := range mockValidators {
-		if v.IsActive {
-			totalVotingPower.Add(totalVotingPower, v.VotingPower)
-		}
-	}
-
 	return &MockEthClient{
-		MockValidatorSet: ValidatorSet{
-			Version:                1,
-			TotalActiveVotingPower: totalVotingPower,
-			Validators:             mockValidators,
+		MockMasterConfig: &MasterConfig{
+			VotingPowerProviders: []CrossChainAddress{
+				{
+					Address: common.HexToAddress("0x1111111111111111111111111111111111111111"),
+					ChainId: 1,
+				},
+			},
+			KeysProvider: CrossChainAddress{
+				Address: common.HexToAddress("0x2222222222222222222222222222222222222222"),
+				ChainId: 1,
+			},
+			Replicas: []CrossChainAddress{
+				{
+					Address: common.HexToAddress("0x3333333333333333333333333333333333333333"),
+					ChainId: 1,
+				},
+			},
 		},
-		MockCurrentPhase:      COMMIT,
-		MockCurrentEpoch:      big.NewInt(1),
-		MockCurrentEpochStart: big.NewInt(1000),
-		MockIsGenesisSet:      true,
-		MockEpochDuration:     big.NewInt(100),
-		MockRequiredKeyTag:    1,
-		MockQuorumThreshold:   big.NewInt(667), // 2/3 of 1000
-		MockFinalizedBlock:    big.NewInt(12345),
-		MockBlockForTimestamp: big.NewInt(12345),
+		MockValSetConfig: &ValSetConfig{
+			// Add mock ValSetConfig data here
+		},
+		MockCurrentPhase:           COMMIT,
+		MockCurrentValsetTimestamp: big.NewInt(1000),
+		MockCaptureTimestamp:       big.NewInt(900),
+		MockIsGenesisSet:           true,
+		MockVotingPowers:           createMockVotingPowers(5),
+		MockRequiredKeys:           createMockRequiredKeys(5),
+		MockRequiredKeyTag:         1,               // BLS key tag
+		MockQuorumThreshold:        big.NewInt(667), // 2/3 of 1000
 	}
 }
 
-// createMockValidators creates a list of mock validators for testing
-func createMockValidators(count int) []*Validator {
-	validators := make([]*Validator, count)
+// createMockVotingPowers creates mock voting powers for testing
+func createMockVotingPowers(count int) []OperatorVotingPower {
+	votingPowers := make([]OperatorVotingPower, count)
+
+	for i := 0; i < count; i++ {
+		vaults := make([]VaultVotingPower, 2)
+		for j := 0; j < 2; j++ {
+			vaults[j] = VaultVotingPower{
+				Vault:       common.HexToAddress(generateMockAddress(i*10 + j)),
+				VotingPower: big.NewInt(int64(100 + i*10 + j*5)),
+			}
+		}
+
+		votingPowers[i] = OperatorVotingPower{
+			Operator: common.HexToAddress(generateMockAddress(i + 100)),
+			Vaults:   vaults,
+		}
+	}
+
+	return votingPowers
+}
+
+// createMockRequiredKeys creates mock required keys for testing
+func createMockRequiredKeys(count int) []OperatorWithKeys {
+	operatorsWithKeys := make([]OperatorWithKeys, count)
 
 	for i := 0; i < count; i++ {
 		// Create BLS key
-		blsKey := &Key{
+		blsKey := Key{
 			Tag:     1, // BLS key tag
 			Payload: make([]byte, 48),
 		}
@@ -67,7 +96,7 @@ func createMockValidators(count int) []*Validator {
 		}
 
 		// Create ECDSA key
-		ecdsaKey := &Key{
+		ecdsaKey := Key{
 			Tag:     2, // ECDSA key tag
 			Payload: make([]byte, 33),
 		}
@@ -76,23 +105,13 @@ func createMockValidators(count int) []*Validator {
 			ecdsaKey.Payload[j] = byte(i + j + 100)
 		}
 
-		// Create a vault
-		vault := &Vault{
-			VaultAddress: common.HexToAddress(generateMockAddress(i)),
-			VotingPower:  big.NewInt(int64(200 + i*10)),
-		}
-
-		validators[i] = &Validator{
-			Version:     1,
-			Operator:    common.HexToAddress(generateMockAddress(i + 100)),
-			VotingPower: big.NewInt(int64(200 + i*10)),
-			IsActive:    true,
-			Keys:        []*Key{blsKey, ecdsaKey},
-			Vaults:      []*Vault{vault},
+		operatorsWithKeys[i] = OperatorWithKeys{
+			Operator: common.HexToAddress(generateMockAddress(i + 100)),
+			Keys:     []Key{blsKey, ecdsaKey},
 		}
 	}
 
-	return validators
+	return operatorsWithKeys
 }
 
 // generateMockAddress creates a mock Ethereum address for testing
@@ -129,62 +148,52 @@ func padLeft(str string, length int, pad byte) string {
 	return string(padding) + str
 }
 
-// Commit mocks the Commit method
-func (m *MockEthClient) Commit(messageHash string, signature []byte) error {
-	return nil
+// GetMasterConfig mocks the GetMasterConfig method
+func (m *MockEthClient) GetMasterConfig(ctx context.Context, timestamp *big.Int) (*MasterConfig, error) {
+	return m.MockMasterConfig, m.MockError
 }
 
-// GetNewValidatorSet mocks the GetNewValidatorSet method
-func (m *MockEthClient) GetNewValidatorSet(ctx context.Context) (*ValidatorSet, error) {
-	return &m.MockValidatorSet, nil
-}
-
-// GetCurrentPhase mocks the GetCurrentPhase method
-func (m *MockEthClient) GetCurrentPhase(ctx context.Context) (Phase, error) {
-	return m.MockCurrentPhase, nil
-}
-
-// GetCurrentEpoch mocks the GetCurrentEpoch method
-func (m *MockEthClient) GetCurrentEpoch(ctx context.Context) (*big.Int, error) {
-	return m.MockCurrentEpoch, nil
-}
-
-// GetCurrentEpochStart mocks the GetCurrentEpochStart method
-func (m *MockEthClient) GetCurrentEpochStart(ctx context.Context) (*big.Int, error) {
-	return m.MockCurrentEpochStart, nil
+// GetValSetConfig mocks the GetValSetConfig method
+func (m *MockEthClient) GetValSetConfig(ctx context.Context, timestamp *big.Int) (*ValSetConfig, error) {
+	return m.MockValSetConfig, m.MockError
 }
 
 // GetIsGenesisSet mocks the GetIsGenesisSet method
 func (m *MockEthClient) GetIsGenesisSet(ctx context.Context) (bool, error) {
-	return m.MockIsGenesisSet, nil
+	return m.MockIsGenesisSet, m.MockError
 }
 
-// GetEpochDuration mocks the GetEpochDuration method
-func (m *MockEthClient) GetEpochDuration(ctx context.Context) (*big.Int, error) {
-	return m.MockEpochDuration, nil
+// GetCurrentPhase mocks the GetCurrentPhase method
+func (m *MockEthClient) GetCurrentPhase(ctx context.Context) (Phase, error) {
+	return m.MockCurrentPhase, m.MockError
+}
+
+// GetCurrentValsetTimestamp mocks the GetCurrentValsetTimestamp method
+func (m *MockEthClient) GetCurrentValsetTimestamp(ctx context.Context) (*big.Int, error) {
+	return m.MockCurrentValsetTimestamp, m.MockError
+}
+
+// GetCaptureTimestamp mocks the GetCaptureTimestamp method
+func (m *MockEthClient) GetCaptureTimestamp(ctx context.Context) (*big.Int, error) {
+	return m.MockCaptureTimestamp, m.MockError
+}
+
+// GetVotingPowers mocks the GetVotingPowers method
+func (m *MockEthClient) GetVotingPowers(ctx context.Context, address common.Address, timestamp *big.Int) ([]OperatorVotingPower, error) {
+	return m.MockVotingPowers, m.MockError
+}
+
+// GetRequiredKeys mocks the GetRequiredKeys method
+func (m *MockEthClient) GetRequiredKeys(ctx context.Context, address common.Address, timestamp *big.Int) ([]OperatorWithKeys, error) {
+	return m.MockRequiredKeys, m.MockError
 }
 
 // GetRequiredKeyTag mocks the GetRequiredKeyTag method
-func (m *MockEthClient) GetRequiredKeyTag(ctx context.Context) (uint8, error) {
-	return m.MockRequiredKeyTag, nil
+func (m *MockEthClient) GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uint8, error) {
+	return m.MockRequiredKeyTag, m.MockError
 }
 
 // GetQuorumThreshold mocks the GetQuorumThreshold method
-func (m *MockEthClient) GetQuorumThreshold(ctx context.Context) (*big.Int, error) {
-	return m.MockQuorumThreshold, nil
-}
-
-// GetValidatorSet mocks the GetValidatorSet method
-func (m *MockEthClient) GetValidatorSet(ctx context.Context, blockNumber *big.Int) (ValidatorSet, error) {
-	return m.MockValidatorSet, nil
-}
-
-// GetFinalizedBlock mocks the GetFinalizedBlock method
-func (m *MockEthClient) GetFinalizedBlock() (*big.Int, error) {
-	return m.MockFinalizedBlock, nil
-}
-
-// findBlockByTimestamp mocks the findBlockByTimestamp method
-func (m *MockEthClient) findBlockByTimestamp(ctx context.Context, timestamp *big.Int) (*big.Int, error) {
-	return m.MockBlockForTimestamp, nil
+func (m *MockEthClient) GetQuorumThreshold(ctx context.Context, timestamp *big.Int, keyTag uint8) (*big.Int, error) {
+	return m.MockQuorumThreshold, m.MockError
 }

@@ -1,6 +1,7 @@
 package types
 
 import (
+	"github.com/ethereum/go-ethereum/crypto"
 	"math/big"
 	"offchain-middleware/bls"
 
@@ -50,6 +51,11 @@ func FormatG1(g1 *bls.G1) G1 {
 	g1.G1Affine.X.BigInt(G1[0])
 	g1.G1Affine.Y.BigInt(G1[1])
 	return G1
+}
+
+func (v *ValidatorSetHeader) Hash() []byte {
+	bytes, _ := v.Encode() // TODO: mock
+	return crypto.Keccak256(bytes)
 }
 
 func (v *ValidatorSetHeader) Encode() ([]byte, error) {

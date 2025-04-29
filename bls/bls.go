@@ -81,6 +81,10 @@ func ComputeKeyPair(sk []byte) *KeyPair {
 
 // Sign creates a BLS signature on a message using the secret key
 func (kp *KeyPair) Sign(msgHash []byte) (*G1, error) {
+	if len(msgHash) != 32 {
+		return nil, fmt.Errorf("message hash must be 32 bytes")
+	}
+
 	// Hash the message to a point on G1
 	h1, err := hashToG1(msgHash)
 	if err != nil {
@@ -100,6 +104,10 @@ func (kp *KeyPair) Sign(msgHash []byte) (*G1, error) {
 
 // Verify checks if a signature is valid for a message and public key
 func (pubkey *G2) Verify(signature *G1, msgHash []byte) (bool, error) {
+	if len(msgHash) != 32 {
+		return false, fmt.Errorf("message hash must be 32 bytes")
+	}
+
 	// Hash the message to a point on G1
 	h1, err := hashToG1(msgHash)
 	if err != nil {
