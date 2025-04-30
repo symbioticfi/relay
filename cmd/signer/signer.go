@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+
 	"offchain-middleware/network"
 	"offchain-middleware/signing"
 	"offchain-middleware/valset"
@@ -29,10 +30,6 @@ func NewSignerClient(signing *signing.Signing, vg *valset.ValsetGenerator, p2p *
 func (s *SignerClient) Start(addr string) error {
 	http.HandleFunc("/sign", s.handleSignRequest)
 	log.Printf("Starting signer HTTP server on %s", addr)
-
-	if err := s.p2p.Start(s.handleStream); err != nil {
-		return fmt.Errorf("failed to start P2P service: %w", err)
-	}
 
 	return http.ListenAndServe(addr, nil)
 }

@@ -9,6 +9,8 @@ import (
 	"path"
 	"syscall"
 
+	"github.com/libp2p/go-libp2p"
+
 	"offchain-middleware/bls"
 	"offchain-middleware/cmd/signer"
 	"offchain-middleware/eth"
@@ -68,8 +70,13 @@ func (a *App) Initialize(ctx context.Context) error {
 		ethClient = eth.NewMockEthClient()
 	}
 
+	host, err := libp2p.New(libp2p.ListenAddrs(addr))
+	if err != nil {
+		return fmt.Errorf("failed to create libp2p host: %w", err)
+	}
+
 	// Create the P2P service
-	p2pService, err := network.NewP2PService(ctx, []multiaddr.Multiaddr{addr}, a.config.Peers)
+	p2pService, err := network.NewP2PService(ctx, host)
 	if err != nil {
 		return fmt.Errorf("failed to create P2P service: %w", err)
 	}

@@ -4,87 +4,91 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"sync"
 	"time"
 
-	"github.com/libp2p/go-libp2p"
+	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/libp2p/go-libp2p/core/protocol"
-	"github.com/libp2p/go-libp2p/p2p/discovery/mdns"
 	"github.com/multiformats/go-multiaddr"
+	"github.com/samber/lo"
+
+	log2 "offchain-middleware/pkg/log"
 )
 
 // Configuration
 const (
-	protocolID            = "/p2p/messaging/1.0.0"
-	mdnsServiceTag        = "p2p-messaging"
-	mdnsDiscoveryInterval = time.Second * 10
+	protocolID = "/p2p/messaging/1.0.0"
 )
 
 // P2PService handles peer-to-peer communication and signature aggregation
 type P2PService struct {
-	ctx        context.Context
-	host       host.Host
-	peersMutex sync.RWMutex
-	peers      map[peer.ID]struct{}
+	ctx            context.Context
+	host           host.Host
+	peersMutex     sync.RWMutex
+	peers          map[peer.ID]struct{}
+	messageHandler func(msg Message) error
 }
 
 // NewP2PService creates a new P2P service with the given configuration
-func NewP2PService(ctx context.Context, listenAddrs []multiaddr.Multiaddr, peers []string) (*P2PService, error) {
-	// Create libp2p host
-	h, err := libp2p.New(
-		libp2p.ListenAddrs(listenAddrs...),
-	)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to create libp2p host: %w", err)
-	}
+func NewP2PService(ctx context.Context, host host.Host) (*P2PService, error) {
+	slog.InfoContext(ctx, "Listening on", "addrs", host.Addrs())
 
 	service := &P2PService{
-		ctx:   ctx,
-		host:  h,
+		ctx:   log2.WithAttrs(ctx, slog.String("component", "p2p")),
+		host:  host,
 		peers: make(map[peer.ID]struct{}),
 	}
-
-	// Print node info
-	addrs := h.Addrs()
-	for _, addr := range addrs {
-		log.Printf("Listening on: %s/p2p/%s", addr, h.ID().ShortString())
-	}
-
-	if err := service.connectToPeers(peers); err != nil {
-		return nil, fmt.Errorf("failed to connect to peers: %w", err)
-	}
-
+	host.SetStreamHandler(protocolID, service.HandleStream)
+	host.Network().Notify(service)
 	return service, nil
 }
 
-// Start begins the service operations
-func (s *P2PService) Start(handler func(network.Stream)) error {
-	// Set up protocol handler
-	s.host.SetStreamHandler(protocol.ID(protocolID), handler)
+func (s *P2PService) HandleStream(stream network.Stream) {
+	if err := s.handleStream(stream); err != nil {
+		slog.ErrorContext(s.ctx, "Failed to handle stream", "error", err)
+	}
+}
 
-	// Start mDNS discovery in a goroutine
-	go func() {
-		discovery := mdns.NewMdnsService(s.host, mdnsServiceTag, s)
-		if err := discovery.Start(); err != nil {
-			log.Printf("failed to start mDNS discovery service: %v", err)
-		}
-	}()
+func (s *P2PService) SetMessageHandler(mh func(msg Message) error) {
+	s.messageHandler = mh // todo ilya check if nil
+}
+
+func (s *P2PService) handleStream(stream network.Stream) error {
+	defer stream.Close()
+
+	data := make([]byte, 1024)
+	n, err := stream.Read(data)
+	if err != nil {
+		return fmt.Errorf("failed to read from stream: %w", err)
+	}
+	var message Message
+	if err := json.Unmarshal(data[:n], &message); err != nil {
+		return fmt.Errorf("failed to unmarshal message: %w", err)
+	}
+
+	if err := s.messageHandler(message); err != nil {
+		return fmt.Errorf("failed to handle message: %w", err)
+	}
 
 	return nil
 }
 
-// HandlePeerFound is called when a peer is discovered via mDNS
-func (s *P2PService) HandlePeerFound(pi peer.AddrInfo) {
+func (s *P2PService) AddPeer(pi peer.AddrInfo) error {
 	if pi.ID == s.host.ID() {
-		return // Skip self
+		return nil
 	}
 
-	log.Printf("Discovered peer: %s", pi.ID.ShortString())
+	slog.InfoContext(s.ctx, "Trying to add peer", "peer", pi.ID)
+
+	ctx, cancel := context.WithTimeout(s.ctx, time.Second*10)
+	defer cancel()
+
+	if err := s.host.Connect(ctx, pi); err != nil {
+		return errors.Errorf("failed to connect to peer %s: %w", pi.ID.ShortString(), err)
+	}
 
 	s.peersMutex.Lock()
 	if _, found := s.peers[pi.ID]; !found {
@@ -92,25 +96,20 @@ func (s *P2PService) HandlePeerFound(pi peer.AddrInfo) {
 	}
 	s.peersMutex.Unlock()
 
-	ctx, cancel := context.WithTimeout(s.ctx, time.Second*10)
-	defer cancel()
+	slog.InfoContext(ctx, "Connected to peer", "peer", pi.ID, "totalPeers", len(s.peers))
 
-	if err := s.host.Connect(ctx, pi); err != nil {
-		log.Printf("Failed to connect to peer %s: %s", pi.ID.ShortString(), err)
-		return
-	}
-
-	log.Printf("Connected to peer: %s", pi.ID.ShortString())
+	return nil
 }
 
 // Broadcast sends a message to all connected peers
 func (s *P2PService) Broadcast(msg Message) error {
 	s.peersMutex.RLock()
-	defer s.peersMutex.RUnlock()
+	peers := lo.Keys(s.peers)
+	s.peersMutex.RUnlock()
 
-	for peerID := range s.peers {
-		if err := s.sendToPeer(peerID.String(), msg); err != nil {
-			log.Printf("Failed to send message to peer %s: %s", peerID.String(), err)
+	for _, peerID := range peers {
+		if err := s.sendToPeer(peerID, msg); err != nil {
+			return err // todo ilya send parallel + join errors + timeout
 		}
 	}
 
@@ -118,14 +117,9 @@ func (s *P2PService) Broadcast(msg Message) error {
 }
 
 // sendToPeer sends a message to a specific peer
-func (s *P2PService) sendToPeer(peerIDStr string, msg Message) error {
-	peerID, err := peer.Decode(peerIDStr)
-	if err != nil {
-		return fmt.Errorf("invalid peer ID: %w", err)
-	}
-
+func (s *P2PService) sendToPeer(peerID peer.ID, msg Message) error {
 	// Open a stream to the peer
-	stream, err := s.host.NewStream(s.ctx, peerID, protocol.ID(protocolID))
+	stream, err := s.host.NewStream(s.ctx, peerID, protocolID)
 	if err != nil {
 		return fmt.Errorf("failed to open stream: %w", err)
 	}
@@ -153,28 +147,22 @@ func (s *P2PService) Stop() error {
 	return nil
 }
 
-func (s *P2PService) connectToPeers(peers []string) error {
-	for _, addrStr := range peers {
-		maddr, err := multiaddr.NewMultiaddr(addrStr)
-		if err != nil {
-			return fmt.Errorf("invalid multiaddr: %w", err)
-		}
-
-		info, err := peer.AddrInfoFromP2pAddr(maddr)
-		if err != nil {
-			return fmt.Errorf("failed to get peer info: %w", err)
-		}
-		ctx, cancel := context.WithTimeout(s.ctx, time.Second*10)
-		defer cancel()
-
-		if err := s.host.Connect(ctx, *info); err != nil {
-			return fmt.Errorf("failed to connect to peer %s: %w", info.ID.ShortString(), err)
-		}
-	}
-
-	return nil
+func (s *P2PService) HostID() peer.ID { // todo ilya do we need this?
+	return s.host.ID()
 }
 
-func (s *P2PService) HostID() peer.ID {
-	return s.host.ID()
+func (s *P2PService) Listen(n network.Network, multiaddr multiaddr.Multiaddr) {
+}
+
+func (s *P2PService) ListenClose(n network.Network, multiaddr multiaddr.Multiaddr) {
+}
+
+func (s *P2PService) Connected(n network.Network, conn network.Conn) {
+}
+
+func (s *P2PService) Disconnected(n network.Network, conn network.Conn) {
+	s.peersMutex.Lock()
+	delete(s.peers, conn.RemotePeer())
+	s.peersMutex.Unlock()
+	slog.InfoContext(s.ctx, "Disconnected from peer", "peer", conn.RemotePeer())
 }
