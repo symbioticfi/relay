@@ -5,21 +5,33 @@ import (
 	"fmt"
 	"maps"
 	"math/big"
-	"offchain-middleware/eth"
-	"offchain-middleware/valset/types"
 	"slices"
 	"sort"
+
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/symbioticfi/middleware-offchain/internal/entity"
+	"github.com/symbioticfi/middleware-offchain/valset/types"
 )
 
 const VALSET_VERSION = 1
 
+type ethClient interface {
+	GetCaptureTimestamp(ctx context.Context) (*big.Int, error)
+	GetMasterConfig(ctx context.Context, timestamp *big.Int) (*entity.MasterConfig, error)
+	GetValSetConfig(ctx context.Context, timestamp *big.Int) (*entity.ValSetConfig, error)
+	GetVotingPowers(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorVotingPower, error)
+	GetRequiredKeys(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorWithKeys, error)
+	GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uint8, error)
+}
+
 // ValsetDeriver coordinates the ETH services
 type ValsetDeriver struct {
-	ethClient eth.IEthClient
+	ethClient ethClient
 }
 
 // NewValsetDeriver creates a new valset deriver
-func NewValsetDeriver(ethClient eth.IEthClient) (*ValsetDeriver, error) {
+func NewValsetDeriver(ethClient ethClient) (*ValsetDeriver, error) {
 	return &ValsetDeriver{
 		ethClient: ethClient,
 	}, nil
@@ -45,7 +57,7 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 	}
 
 	// Get voting powers from all voting power providers
-	var allVotingPowers []eth.OperatorVotingPower
+	var allVotingPowers []entity.OperatorVotingPower
 	for _, provider := range masterConfig.VotingPowerProviders {
 		votingPowers, err := v.ethClient.GetVotingPowers(ctx, provider.Address, timestamp)
 		if err != nil {

@@ -1,4 +1,4 @@
-package network
+package p2p
 
 import (
 	"context"
@@ -9,10 +9,12 @@ import (
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/stretchr/testify/require"
+
+	"github.com/symbioticfi/middleware-offchain/internal/entity"
 )
 
 func TestP2P(t *testing.T) {
-	var gotMessageIn2 Message
+	var gotMessageIn2 entity.P2PMessage
 	ctx := context.Background()
 
 	h1, err := libp2p.New()
@@ -21,12 +23,12 @@ func TestP2P(t *testing.T) {
 	h2, err := libp2p.New()
 	require.NoError(t, err)
 
-	p2p1, err := NewP2PService(ctx, h1)
+	p2p1, err := NewService(ctx, h1)
 	require.NoError(t, err)
 
-	p2p2, err := NewP2PService(ctx, h2)
+	p2p2, err := NewService(ctx, h2)
 	require.NoError(t, err)
-	p2p2.SetMessageHandler(func(msg Message) error {
+	p2p2.SetMessageHandler(func(msg entity.P2PMessage) error {
 		gotMessageIn2 = msg
 		return nil
 	})
@@ -42,7 +44,7 @@ func TestP2P(t *testing.T) {
 		Addrs: h1.Addrs(),
 	})
 
-	err = p2p1.Broadcast(Message{
+	err = p2p1.Broadcast(entity.P2PMessage{
 		Type:      "helloType",
 		Sender:    "helloSender",
 		Timestamp: time.Now().Unix(),
@@ -68,11 +70,11 @@ func TestP2PMany(t *testing.T) {
 		mainHost.Close()
 	})
 
-	mainService, err := NewP2PService(ctx, mainHost)
+	mainService, err := NewService(ctx, mainHost)
 	require.NoError(t, err)
 
 	const countPeers = 10
-	gotMessages := make([]Message, countPeers)
+	gotMessages := make([]entity.P2PMessage, countPeers)
 	for i := 0; i < countPeers; i++ {
 		otherHost, err := libp2p.New()
 		require.NoError(t, err)
@@ -80,9 +82,9 @@ func TestP2PMany(t *testing.T) {
 			otherHost.Close()
 		})
 
-		p2p2, err := NewP2PService(ctx, otherHost)
+		p2p2, err := NewService(ctx, otherHost)
 		require.NoError(t, err)
-		p2p2.SetMessageHandler(func(msg Message) error {
+		p2p2.SetMessageHandler(func(msg entity.P2PMessage) error {
 			gotMessages[i] = msg
 			return nil
 		})
@@ -94,7 +96,7 @@ func TestP2PMany(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	err = mainService.Broadcast(Message{
+	err = mainService.Broadcast(entity.P2PMessage{
 		Type:      "helloType",
 		Sender:    "helloSender",
 		Timestamp: time.Now().Unix(),

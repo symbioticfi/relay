@@ -1,4 +1,4 @@
-package eth
+package entity
 
 import (
 	"math/big"

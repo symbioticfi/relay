@@ -3,120 +3,41 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
-	"path"
 	"syscall"
+	"time"
 
-	"github.com/libp2p/go-libp2p"
-
-	"offchain-middleware/bls"
-	"offchain-middleware/cmd/signer"
-	"offchain-middleware/eth"
-	"offchain-middleware/network"
-	"offchain-middleware/signing"
-	"offchain-middleware/valset"
-
-	"github.com/multiformats/go-multiaddr"
+	"github.com/go-errors/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/symbioticfi/middleware-offchain/internal/app"
+	"github.com/symbioticfi/middleware-offchain/internal/client/eth"
+	"github.com/symbioticfi/middleware-offchain/internal/client/p2p"
+	"github.com/symbioticfi/middleware-offchain/pkg/log"
 )
 
-var cfgFile string
+func main() {
+	cobra.OnInitialize(initConfig)
 
-// Config holds all application configuration
-type Config struct {
-	ListenAddr    string
-	EthEndpoint   string   `mapstructure:"eth"`
-	ContractAddr  string   `mapstructure:"contract"`
-	EthPrivateKey []byte   `mapstructure:"eth-private-key"`
-	BlsPrivateKey []byte   `mapstructure:"bls-private-key"`
-	Peers         []string `mapstructure:"peers"`
-}
+	log.Init()
+	// Start command flags
+	startCmd.Flags().String("listen", "/ip4/127.0.0.1/tcp/8000", "Address to listen on")
 
-// App represents the application and its components
-type App struct {
-	config Config
-	signer *signer.SignerClient
-}
+	// Bind flags to viper
+	viper.BindPFlag("listen", startCmd.Flags().Lookup("listen"))
 
-// NewApp creates a new application instance with the provided configuration
-func NewApp(config Config) *App {
-	return &App{
-		config: config,
+	// Add commands
+	rootCmd.AddCommand(startCmd)
+
+	// Execute the root command
+	if err := rootCmd.Execute(); err != nil && !errors.Is(err, context.Canceled) {
+		slog.Error("error executing command", "error", err)
+		os.Exit(1)
 	}
-}
-
-// Initialize sets up all components of the application
-func (a *App) Initialize(ctx context.Context) error {
-	// Parse the listen address
-	addr, err := multiaddr.NewMultiaddr(a.config.ListenAddr)
-	if err != nil {
-		return fmt.Errorf("invalid listen address: %w", err)
-	}
-
-	// Create storage
-	// storage := storage.NewStorage()
-	var ethClient eth.IEthClient
-
-	// Create Ethereum client
-	if !viper.GetBool("test") {
-		ethClient, err = eth.NewEthClient(a.config.EthEndpoint, a.config.ContractAddr, a.config.EthPrivateKey)
-		if err != nil {
-			return fmt.Errorf("failed to create ETH service: %w", err)
-		}
-	} else {
-		ethClient = eth.NewMockEthClient()
-	}
-
-	host, err := libp2p.New(libp2p.ListenAddrs(addr))
-	if err != nil {
-		return fmt.Errorf("failed to create libp2p host: %w", err)
-	}
-
-	// Create the P2P service
-	p2pService, err := network.NewP2PService(ctx, host)
-	if err != nil {
-		return fmt.Errorf("failed to create P2P service: %w", err)
-	}
-
-	signing, err := signing.NewSigning(bls.ComputeKeyPair(a.config.BlsPrivateKey))
-	if err != nil {
-		return fmt.Errorf("failed to create signing service: %w", err)
-	}
-
-	vd, err := valset.NewValsetDeriver(ethClient)
-	if err != nil {
-		return fmt.Errorf("failed to create valset deriver: %w", err)
-	}
-
-	vg, err := valset.NewValsetGenerator(vd, ethClient)
-	if err != nil {
-		return fmt.Errorf("failed to create valset generator: %w", err)
-	}
-
-	// Create network service
-	a.signer = signer.NewSignerClient(signing, vg, p2pService)
-
-	return nil
-}
-
-// Start begins all services
-func (a *App) Start() error {
-	// Start the signer service
-	if err := a.signer.Start("localhost:8000"); err != nil {
-		return fmt.Errorf("failed to start signer service: %w", err)
-	}
-
-	return nil
-}
-
-// Stop gracefully shuts down all services
-func (a *App) Stop() {
-	if a.signer != nil {
-		a.signer.Stop()
-	}
+	slog.Info("Offchain middleware completed successfully")
 }
 
 // rootCmd represents the base command when called without any subcommands
@@ -126,142 +47,96 @@ var rootCmd = &cobra.Command{
 	Long:  `A P2P service for collecting and aggregating signatures for Ethereum contracts.`,
 }
 
+type config struct {
+	EthEndpoint   string `mapstructure:"eth_endpoint"`
+	ContractAddr  string `mapstructure:"contract_addr"`
+	EthPrivateKey string `mapstructure:"eth_private_key"`
+}
+
 // startCmd represents the start command
 var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start the offchain middleware service",
-	Long:  `Start the offchain middleware service with the specified configuration.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		// Create config from viper
-		// Create an instance of AppConfig
-		var config Config
-		// Unmarshal the config file into the AppConfig struct
-		err := viper.Unmarshal(&config)
+	Long:  "Start the offchain middleware service with the specified configuration.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := signalContext(context.Background())
+		listenAddr := viper.GetString("listen")
+
+		var cfg config
+		err := viper.Unmarshal(&cfg)
 		if err != nil {
-			log.Fatalf("Unable to decode into struct, %v", err)
+			return errors.Errorf("failed to unmarshal config: %w", err)
 		}
 
-		if len(config.BlsPrivateKey) == 0 {
-			log.Fatalf("Config is missing BLS private key")
+		ethClient, err := eth.NewEthClient(cfg.EthEndpoint, cfg.ContractAddr, []byte(cfg.EthPrivateKey))
+		if err != nil {
+			return errors.Errorf("failed to create eth client: %w", err)
 		}
 
-		config.ListenAddr = viper.GetString("listen")
+		p2pService, err := p2p.NewService(ctx, listenAddr)
+		if err != nil {
+			return errors.Errorf("failed to create p2p service: %w", err)
+		}
+		slog.InfoContext(ctx, "created p2p service", "listenAddr", listenAddr)
+		defer p2pService.Close()
 
-		// Create application
-		app := NewApp(config)
+		discoveryService, err := p2p.NewDiscoveryService(ctx, p2pService, listenAddr)
+		if err != nil {
+			return errors.Errorf("failed to create discovery service: %w", err)
+		}
+		defer discoveryService.Close()
+		slog.InfoContext(ctx, "created discovery service", "listenAddr", listenAddr)
+		if err := discoveryService.Start(); err != nil {
+			return errors.Errorf("failed to start discovery service: %w", err)
+		}
+		slog.InfoContext(ctx, "started discovery service", "listenAddr", listenAddr)
 
-		// Create context with cancellation
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		signerApp, err := app.NewSignerApp(app.Config{
+			PollingInterval: time.Second * 30,
+			EthClient:       ethClient,
+			P2PService:      p2pService,
+		})
+		if err != nil {
+			return errors.Errorf("failed to create signer app: %w", err)
+		}
+		slog.InfoContext(ctx, "created signer app, starting")
 
-		// Initialize application
-		if err := app.Initialize(ctx); err != nil {
-			log.Fatalf("Failed to initialize application: %s", err)
+		if err := signerApp.Start(ctx); err != nil {
+			return errors.Errorf("failed to start app: %w", err)
 		}
 
-		// Start application
-		if err := app.Start(); err != nil {
-			log.Fatalf("Failed to start application: %s", err)
-		}
-		defer app.Stop()
-
-		// Set up signal handling for graceful shutdown
-		sigCh := make(chan os.Signal, 1)
-		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-
-		// Wait for termination signal
-		<-sigCh
-		fmt.Println("Shutting down...")
+		return nil
 	},
 }
 
-// generateConfigCmd represents the generate config command
-var generateConfigCmd = &cobra.Command{
-	Use:   "generate-config",
-	Short: "Generate a default configuration file",
-	Long:  `Generate a default configuration file with all available options.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		// Set default values
-		viper.Set("eth", "http://localhost:8545")
-		viper.Set("contract", "")
-		ethPrivateKey, err := eth.GeneratePrivateKey()
-		if err != nil {
-			log.Fatalf("Failed to generate ETH private key: %s", err)
-		}
-		viper.Set("eth-private-key", ethPrivateKey)
-		blsPrivateKey, err := bls.GenerateKey()
-		if err != nil {
-			log.Fatalf("Failed to generate BLS private key: %s", err)
-		}
-		viper.Set("bls-private-key", blsPrivateKey)
-		viper.Set("peers", []string{})
+// signalContext returns a context that is canceled if either SIGTERM or SIGINT signal is received.
+func signalContext(ctx context.Context) context.Context {
+	cnCtx, cancel := context.WithCancel(ctx)
 
-		// Create config directory if it doesn't exist
-		configDir := path.Dir(viper.ConfigFileUsed())
-		if _, err := os.Stat(configDir); os.IsNotExist(err) {
-			if err := os.MkdirAll(configDir, 0755); err != nil {
-				log.Fatalf("Failed to create config directory: %s", err)
-			}
-			fmt.Printf("Created config directory: %s\n", configDir)
-		}
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGTERM, syscall.SIGINT)
 
-		if err := viper.WriteConfig(); err != nil {
-			log.Fatalf("Failed to write config: %s", err)
-		}
+	go func() {
+		sig := <-c
+		slog.Info("received signal", "signal", sig)
+		cancel()
+	}()
 
-		fmt.Printf("Configuration file generated at: %s\n", viper.ConfigFileUsed())
-	},
+	return cnCtx
 }
 
 // initConfig reads in config file and ENV variables if set
 func initConfig() {
 	viper.SetConfigType("yaml")
 
-	if cfgFile != "" {
-		// Use config file from the flag
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory
-		home, err := os.UserHomeDir()
-		if err != nil {
-			log.Fatalf("Failed to find home directory: %s", err)
-		}
-
-		// Search config in home directory with name ".offchain-middleware" (without extension)
-		viper.AddConfigPath(home)
-		viper.AddConfigPath(".")
-		viper.SetConfigName("config")
-	}
+	viper.AddConfigPath(".")
+	viper.SetConfigName("middleware-offchain.config.yaml")
 
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in
-	if err := viper.ReadInConfig(); err == nil {
+	err := viper.ReadInConfig()
+	if err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	}
-}
-
-func main() {
-	cobra.OnInitialize(initConfig)
-
-	// Global flags
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.offchain-middleware.yaml)")
-
-	// Start command flags
-	startCmd.Flags().String("listen", "/ip4/127.0.0.1/tcp/8000", "Address to listen on")
-	startCmd.Flags().Bool("test", false, "Test mode, use mock eth client")
-
-	// Bind flags to viper
-	viper.BindPFlag("listen", startCmd.Flags().Lookup("listen"))
-	viper.BindPFlag("test", startCmd.Flags().Lookup("test"))
-
-	// Add commands
-	rootCmd.AddCommand(startCmd)
-	rootCmd.AddCommand(generateConfigCmd)
-
-	// Execute the root command
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
 	}
 }

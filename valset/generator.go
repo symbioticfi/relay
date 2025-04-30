@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"offchain-middleware/bls"
-	"offchain-middleware/eth"
-	"offchain-middleware/proof"
-	"offchain-middleware/valset/types"
+
+	"github.com/symbioticfi/middleware-offchain/bls"
+	"github.com/symbioticfi/middleware-offchain/proof"
+	"github.com/symbioticfi/middleware-offchain/valset/types"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -18,11 +18,11 @@ import (
 // ValsetGenerator handles the generation of validator set headers
 type ValsetGenerator struct {
 	deriver   *ValsetDeriver
-	ethClient eth.IEthClient
+	ethClient ethClient
 }
 
 // NewValsetGenerator creates a new validator set generator
-func NewValsetGenerator(deriver *ValsetDeriver, ethClient eth.IEthClient) (*ValsetGenerator, error) {
+func NewValsetGenerator(deriver *ValsetDeriver, ethClient ethClient) (*ValsetGenerator, error) {
 	return &ValsetGenerator{
 		deriver:   deriver,
 		ethClient: ethClient,
@@ -30,22 +30,22 @@ func NewValsetGenerator(deriver *ValsetDeriver, ethClient eth.IEthClient) (*Vals
 }
 
 // GenerateValidatorSetHeader generates a validator set header for the current epoch
-func (v ValsetGenerator) GenerateValidatorSetHeader(ctx context.Context) (*types.ValidatorSetHeader, error) {
+func (v *ValsetGenerator) GenerateValidatorSetHeader(ctx context.Context) (types.ValidatorSetHeader, error) {
 	log.Println("Generating validator set header")
 
 	timestamp, err := v.ethClient.GetCaptureTimestamp(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get capture timestamp: %w", err)
+		return types.ValidatorSetHeader{}, fmt.Errorf("failed to get capture timestamp: %w", err)
 	}
 
 	validatorSet, err := v.deriver.GetValidatorSet(ctx, timestamp)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get validator set: %w", err)
+		return types.ValidatorSetHeader{}, fmt.Errorf("failed to get validator set: %w", err)
 	}
 
 	requiredKeyTag, err := v.ethClient.GetRequiredKeyTag(ctx, timestamp)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get required key tag: %w", err)
+		return types.ValidatorSetHeader{}, fmt.Errorf("failed to get required key tag: %w", err)
 	}
 
 	log.Println("Processing validator set")
@@ -89,16 +89,14 @@ func (v ValsetGenerator) GenerateValidatorSetHeader(ctx context.Context) (*types
 		formattedKeys[i] = types.FormatG1(key)
 	}
 
-	validatorSetHeader := &types.ValidatorSetHeader{
+	log.Println("Generated validator set header")
+
+	return types.ValidatorSetHeader{
 		ActiveAggregatedKeys:   formattedKeys,
 		TotalActiveVotingPower: validatorSet.TotalActiveVotingPower,
 		ValidatorsSszMRoot:     sszMroot,
 		ExtraData:              extraData,
-	}
-
-	log.Println("Generated validator set header")
-
-	return validatorSetHeader, nil
+	}, nil
 }
 
 func (v ValsetGenerator) GenerateValidatorSetHeaderHash(ctx context.Context, validatorSetHeader *types.ValidatorSetHeader) ([]byte, error) {

@@ -1,4 +1,4 @@
-package network
+package p2p
 
 import (
 	"context"
@@ -9,13 +9,15 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
+	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/samber/lo"
 
-	log2 "offchain-middleware/pkg/log"
+	"github.com/symbioticfi/middleware-offchain/internal/entity"
+	log2 "github.com/symbioticfi/middleware-offchain/pkg/log"
 )
 
 // Configuration
@@ -23,40 +25,45 @@ const (
 	protocolID = "/p2p/messaging/1.0.0"
 )
 
-// P2PService handles peer-to-peer communication and signature aggregation
-type P2PService struct {
+// Service handles peer-to-peer communication and signature aggregation
+type Service struct {
 	ctx            context.Context
 	host           host.Host
 	peersMutex     sync.RWMutex
 	peers          map[peer.ID]struct{}
-	messageHandler func(msg Message) error
+	messageHandler func(msg entity.P2PMessage) error
 }
 
-// NewP2PService creates a new P2P service with the given configuration
-func NewP2PService(ctx context.Context, host host.Host) (*P2PService, error) {
-	slog.InfoContext(ctx, "Listening on", "addrs", host.Addrs())
+// NewService creates a new P2P service with the given configuration
+func NewService(ctx context.Context, listenAddrs ...string) (*Service, error) {
+	slog.InfoContext(ctx, "Listening on", "addrs", listenAddrs)
 
-	service := &P2PService{
+	h, err := libp2p.New(libp2p.ListenAddrStrings(listenAddrs...))
+	if err != nil {
+		return nil, errors.Errorf("failed to create libp2p host: %w", err)
+	}
+
+	service := &Service{
 		ctx:   log2.WithAttrs(ctx, slog.String("component", "p2p")),
-		host:  host,
+		host:  h,
 		peers: make(map[peer.ID]struct{}),
 	}
-	host.SetStreamHandler(protocolID, service.HandleStream)
-	host.Network().Notify(service)
+	h.SetStreamHandler(protocolID, service.HandleStream)
+	h.Network().Notify(service)
 	return service, nil
 }
 
-func (s *P2PService) HandleStream(stream network.Stream) {
+func (s *Service) HandleStream(stream network.Stream) {
 	if err := s.handleStream(stream); err != nil {
 		slog.ErrorContext(s.ctx, "Failed to handle stream", "error", err)
 	}
 }
 
-func (s *P2PService) SetMessageHandler(mh func(msg Message) error) {
+func (s *Service) SetMessageHandler(mh func(msg entity.P2PMessage) error) {
 	s.messageHandler = mh // todo ilya check if nil
 }
 
-func (s *P2PService) handleStream(stream network.Stream) error {
+func (s *Service) handleStream(stream network.Stream) error {
 	defer stream.Close()
 
 	data := make([]byte, 1024)
@@ -64,7 +71,7 @@ func (s *P2PService) handleStream(stream network.Stream) error {
 	if err != nil {
 		return fmt.Errorf("failed to read from stream: %w", err)
 	}
-	var message Message
+	var message entity.P2PMessage
 	if err := json.Unmarshal(data[:n], &message); err != nil {
 		return fmt.Errorf("failed to unmarshal message: %w", err)
 	}
@@ -76,7 +83,7 @@ func (s *P2PService) handleStream(stream network.Stream) error {
 	return nil
 }
 
-func (s *P2PService) AddPeer(pi peer.AddrInfo) error {
+func (s *Service) AddPeer(pi peer.AddrInfo) error {
 	if pi.ID == s.host.ID() {
 		return nil
 	}
@@ -102,7 +109,7 @@ func (s *P2PService) AddPeer(pi peer.AddrInfo) error {
 }
 
 // Broadcast sends a message to all connected peers
-func (s *P2PService) Broadcast(msg Message) error {
+func (s *Service) Broadcast(msg entity.P2PMessage) error {
 	s.peersMutex.RLock()
 	peers := lo.Keys(s.peers)
 	s.peersMutex.RUnlock()
@@ -117,7 +124,7 @@ func (s *P2PService) Broadcast(msg Message) error {
 }
 
 // sendToPeer sends a message to a specific peer
-func (s *P2PService) sendToPeer(peerID peer.ID, msg Message) error {
+func (s *Service) sendToPeer(peerID peer.ID, msg entity.P2PMessage) error {
 	// Open a stream to the peer
 	stream, err := s.host.NewStream(s.ctx, peerID, protocolID)
 	if err != nil {
@@ -139,30 +146,31 @@ func (s *P2PService) sendToPeer(peerID peer.ID, msg Message) error {
 	return nil
 }
 
-// Stop gracefully stops the service
-func (s *P2PService) Stop() error {
+// Close gracefully stops the service
+func (s *Service) Close() error {
 	if err := s.host.Close(); err != nil {
 		return fmt.Errorf("failed to close host: %w", err)
 	}
+
 	return nil
 }
 
-func (s *P2PService) HostID() peer.ID { // todo ilya do we need this?
+func (s *Service) HostID() peer.ID { // todo ilya do we need this?
 	return s.host.ID()
 }
 
-func (s *P2PService) Listen(n network.Network, multiaddr multiaddr.Multiaddr) {
+func (s *Service) Listen(n network.Network, multiaddr multiaddr.Multiaddr) {
 }
 
-func (s *P2PService) ListenClose(n network.Network, multiaddr multiaddr.Multiaddr) {
+func (s *Service) ListenClose(n network.Network, multiaddr multiaddr.Multiaddr) {
 }
 
-func (s *P2PService) Connected(n network.Network, conn network.Conn) {
+func (s *Service) Connected(n network.Network, conn network.Conn) {
 }
 
-func (s *P2PService) Disconnected(n network.Network, conn network.Conn) {
+func (s *Service) Disconnected(n network.Network, conn network.Conn) {
 	s.peersMutex.Lock()
 	delete(s.peers, conn.RemotePeer())
 	s.peersMutex.Unlock()
-	slog.InfoContext(s.ctx, "Disconnected from peer", "peer", conn.RemotePeer())
+	slog.InfoContext(s.ctx, "Disconnected from peer", "remotePeer", conn.RemotePeer(), "localPeer", conn.LocalPeer(), "totalPeers", len(s.peers))
 }

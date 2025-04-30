@@ -1,11 +1,11 @@
-package network
+package entity
 
 import (
 	"encoding/json"
 )
 
-// Message is the basic unit of communication between peers
-type Message struct {
+// P2PMessage is the basic unit of communication between peers
+type P2PMessage struct {
 	Type      string          `json:"type"`
 	Sender    string          `json:"sender"`
 	Timestamp int64           `json:"timestamp"`

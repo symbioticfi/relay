@@ -3,7 +3,10 @@ package types
 import (
 	"fmt"
 	"math/big"
-	"offchain-middleware/bls"
+
+	"github.com/ethereum/go-ethereum/crypto"
+
+	"github.com/symbioticfi/middleware-offchain/bls"
 
 	"github.com/ethereum/go-ethereum/crypto"
 
@@ -58,7 +61,7 @@ func FormatG1(g1 *bls.G1) G1 {
 func Hash(v *ValidatorSetHeader) ([]byte, error) {
 	bytes, err := v.Encode()
 	if err != nil {
-		return nil, fmt.Errorf("")
+		return nil, fmt.Errorf("") // todo ilya
 	}
 
 	return crypto.Keccak256(bytes), nil

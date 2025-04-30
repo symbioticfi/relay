@@ -1,0 +1,3 @@
+eth_endpoint: https://ethereum-holesky-rpc.publicnode.com
+contract_addr: 0x3F3823a719841321aF8b203b190212FEcaB7AfA6
+eth_private_key: 0xYourPrivateKey
