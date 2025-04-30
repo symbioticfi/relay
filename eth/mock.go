@@ -20,6 +20,9 @@ type MockEthClient struct {
 	MockRequiredKeys           []OperatorWithKeys
 	MockRequiredKeyTag         uint8
 	MockQuorumThreshold        *big.Int
+	MockCurrentEpoch           *big.Int
+	MockSubnetwork             []byte
+	MockEip712Domain           *Eip712Domain
 	MockError                  error
 }
 
@@ -55,6 +58,12 @@ func NewMockEthClient() *MockEthClient {
 		MockRequiredKeys:           createMockRequiredKeys(5),
 		MockRequiredKeyTag:         1,               // BLS key tag
 		MockQuorumThreshold:        big.NewInt(667), // 2/3 of 1000
+		MockCurrentEpoch:           big.NewInt(42),
+		MockSubnetwork:             []byte{0x01, 0x02, 0x03, 0x04},
+		MockEip712Domain: &Eip712Domain{
+			Name:    "TestDomain",
+			Version: "1",
+		},
 	}
 }
 
@@ -163,6 +172,11 @@ func (m *MockEthClient) GetIsGenesisSet(ctx context.Context) (bool, error) {
 	return m.MockIsGenesisSet, m.MockError
 }
 
+// GetCurrentEpoch mocks the GetCurrentEpoch method
+func (m *MockEthClient) GetCurrentEpoch(ctx context.Context) (*big.Int, error) {
+	return m.MockCurrentEpoch, m.MockError
+}
+
 // GetCurrentPhase mocks the GetCurrentPhase method
 func (m *MockEthClient) GetCurrentPhase(ctx context.Context) (Phase, error) {
 	return m.MockCurrentPhase, m.MockError
@@ -196,4 +210,14 @@ func (m *MockEthClient) GetRequiredKeyTag(ctx context.Context, timestamp *big.In
 // GetQuorumThreshold mocks the GetQuorumThreshold method
 func (m *MockEthClient) GetQuorumThreshold(ctx context.Context, timestamp *big.Int, keyTag uint8) (*big.Int, error) {
 	return m.MockQuorumThreshold, m.MockError
+}
+
+// GetSubnetwork mocks the GetSubnetwork method
+func (m *MockEthClient) GetSubnetwork(ctx context.Context) ([]byte, error) {
+	return m.MockSubnetwork, m.MockError
+}
+
+// GetEip712Domain mocks the GetEip712Domain method
+func (m *MockEthClient) GetEip712Domain(ctx context.Context) (*Eip712Domain, error) {
+	return m.MockEip712Domain, m.MockError
 }

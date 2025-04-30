@@ -23,6 +23,7 @@ var (
 	GET_MASTER_CONFIG_FUNCTION            = "getMasterConfigAt"
 	GET_VALSET_CONFIG_FUNCTION            = "getValSetConfigAt"
 	GET_IS_GENESIS_SET_FUNCTION           = "isGenesisSet"
+	GET_CURRENT_EPOCH_FUNCTION            = "getCurrentEpoch"
 	GET_CURRENT_PHASE_FUNCTION            = "getCurrentPhase"
 	GET_CURRENT_VALSET_TIMESTAMP_FUNCTION = "getCurrentValsetTimestamp"
 	GET_CAPTURE_TIMESTAMP_FUNCTION        = "getCaptureTimestamp"
@@ -30,12 +31,15 @@ var (
 	GET_REQUIRED_KEYS_FUNCTION            = "getRequiredKeysAt"
 	GET_REQUIRED_KEY_TAG_FUNCTION         = "getRequiredKeyTagAt"
 	GET_QUORUM_THRESHOLD_FUNCTION         = "getQuorumThresholdAt"
+	GET_SUBNETWORK_FUNCTION               = "SUBNETWORK"
+	GET_EIP_712_DOMAIN_FUNCTION           = "eip712Domain"
 )
 
 type IEthClient interface {
 	GetMasterConfig(ctx context.Context, timestamp *big.Int) (*MasterConfig, error)
 	GetValSetConfig(ctx context.Context, timestamp *big.Int) (*ValSetConfig, error)
 	GetIsGenesisSet(ctx context.Context) (bool, error)
+	GetCurrentEpoch(ctx context.Context) (*big.Int, error)
 	GetCurrentPhase(ctx context.Context) (Phase, error)
 	GetCurrentValsetTimestamp(ctx context.Context) (*big.Int, error)
 	GetCaptureTimestamp(ctx context.Context) (*big.Int, error)
@@ -43,6 +47,8 @@ type IEthClient interface {
 	GetRequiredKeys(ctx context.Context, address common.Address, timestamp *big.Int) ([]OperatorWithKeys, error)
 	GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uint8, error)
 	GetQuorumThreshold(ctx context.Context, timestamp *big.Int, keyTag uint8) (*big.Int, error)
+	GetSubnetwork(ctx context.Context) ([]byte, error)
+	GetEip712Domain(ctx context.Context) (*Eip712Domain, error)
 }
 
 type EthClient struct {
@@ -142,6 +148,21 @@ func (e *EthClient) GetIsGenesisSet(ctx context.Context) (bool, error) {
 
 	isGenesisSet := new(big.Int).SetBytes(result).Uint64()
 	return isGenesisSet == 1, nil
+}
+
+func (e *EthClient) GetCurrentEpoch(ctx context.Context) (*big.Int, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, e.contractABI, GET_CURRENT_EPOCH_FUNCTION)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct call msg: %w", err)
+	}
+
+	result, err := e.callContract(ctx, callMsg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call contract: %w", err)
+	}
+
+	epoch := new(big.Int).SetBytes(result)
+	return epoch, nil
 }
 
 func (e *EthClient) GetCurrentPhase(ctx context.Context) (Phase, error) {
@@ -261,6 +282,40 @@ func (e *EthClient) GetQuorumThreshold(ctx context.Context, timestamp *big.Int, 
 	}
 
 	return new(big.Int).SetBytes(result), nil
+}
+
+func (e *EthClient) GetSubnetwork(ctx context.Context) ([]byte, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, e.contractABI, GET_SUBNETWORK_FUNCTION)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct call msg: %w", err)
+	}
+
+	result, err := e.callContract(ctx, callMsg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call contract: %w", err)
+	}
+
+	return result, nil
+}
+
+func (e *EthClient) GetEip712Domain(ctx context.Context) (*Eip712Domain, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, e.contractABI, GET_EIP_712_DOMAIN_FUNCTION)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct call msg: %w", err)
+	}
+
+	result, err := e.callContract(ctx, callMsg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call contract: %w", err)
+	}
+
+	var eip712Domain Eip712Domain
+	err = e.contractABI.UnpackIntoInterface(&eip712Domain, GET_EIP_712_DOMAIN_FUNCTION, result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unpack eip712 domain: %w", err)
+	}
+
+	return &eip712Domain, nil
 }
 
 func (e *EthClient) callContract(ctx context.Context, callMsg ethereum.CallMsg) (result []byte, err error) {

@@ -51,3 +51,13 @@ type OperatorWithKeys struct {
 	Operator common.Address
 	Keys     []Key
 }
+
+type Eip712Domain struct {
+	Fields            [1]byte
+	Name              string
+	Version           string
+	ChainId           *big.Int
+	VerifyingContract common.Address
+	Salt              *big.Int
+	Extensions        []big.Int
+}

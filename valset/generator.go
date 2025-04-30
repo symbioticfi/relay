@@ -10,6 +10,8 @@ import (
 	"offchain-middleware/valset/types"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 	"github.com/karalabe/ssz"
 )
 
@@ -97,4 +99,72 @@ func (v ValsetGenerator) GenerateValidatorSetHeader(ctx context.Context) (*types
 	log.Println("Generated validator set header")
 
 	return validatorSetHeader, nil
+}
+
+func (v ValsetGenerator) GenerateValidatorSetHeaderHash(ctx context.Context, validatorSetHeader *types.ValidatorSetHeader) ([]byte, error) {
+	hash, err := types.Hash(validatorSetHeader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash validator set header: %w", err)
+	}
+
+	domainEip712, err := v.ethClient.GetEip712Domain(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get eip712 domain: %w", err)
+	}
+
+	domain := apitypes.TypedDataDomain{
+		Name:    domainEip712.Name,
+		Version: domainEip712.Version,
+	}
+
+	currentEpoch, err := v.ethClient.GetCurrentEpoch(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current epoch: %w", err)
+	}
+
+	subnetwork, err := v.ethClient.GetSubnetwork(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get subnetwork: %w", err)
+	}
+
+	typedData := apitypes.TypedData{
+		Types: apitypes.Types{
+			"EIP712Domain": []apitypes.Type{
+				{Name: "name", Type: "string"},
+				{Name: "version", Type: "string"},
+			},
+			"ValSetHeaderCommit": []apitypes.Type{
+				{Name: "Subnetwork", Type: "bytes32"},
+				{Name: "Epoch", Type: "uint256"},
+				{Name: "HeaderHash", Type: "bytes32"},
+			},
+		},
+		Domain:      domain,
+		PrimaryType: "ValSetHeaderCommit",
+	}
+
+	// Set up the message data
+	message := map[string]interface{}{
+		"Subnetwork": subnetwork,
+		"Epoch":      currentEpoch,
+		"HeaderHash": hash,
+	}
+	typedData.Message = message
+
+	// 3. Calculate the hash of the EIP-712 message (ValSetHeaderCommit) type
+	domainSeparator, err := typedData.HashStruct("EIP712Domain", typedData.Domain.Map())
+	if err != nil {
+		return nil, fmt.Errorf("error hashing domain: %w", err)
+	}
+
+	typeHash, err := typedData.HashStruct(typedData.PrimaryType, typedData.Message)
+	if err != nil {
+		return nil, fmt.Errorf("error hashing message: %w", err)
+	}
+
+	// 4. Calculate the final digest (to be signed)
+	rawData := []byte(fmt.Sprintf("\x19\x01%s%s", string(domainSeparator), string(typeHash)))
+	digest := crypto.Keccak256(rawData)
+
+	return digest, nil
 }
