@@ -1,9 +1,11 @@
 package types
 
 import (
-	"github.com/ethereum/go-ethereum/crypto"
+	"fmt"
 	"math/big"
 	"offchain-middleware/bls"
+
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -53,9 +55,13 @@ func FormatG1(g1 *bls.G1) G1 {
 	return G1
 }
 
-func (v *ValidatorSetHeader) Hash() []byte {
-	bytes, _ := v.Encode() // TODO: mock
-	return crypto.Keccak256(bytes)
+func Hash(v *ValidatorSetHeader) ([]byte, error) {
+	bytes, err := v.Encode()
+	if err != nil {
+		return nil, fmt.Errorf("")
+	}
+
+	return crypto.Keccak256(bytes), nil
 }
 
 func (v *ValidatorSetHeader) Encode() ([]byte, error) {
