@@ -145,24 +145,44 @@ func (e *EthClient) GetMasterConfig(ctx context.Context, timestamp *big.Int) (en
 	return mcc.MasterConfig.toEntity(), nil
 }
 
-func (e *EthClient) GetValSetConfig(ctx context.Context, timestamp *big.Int) (*entity.ValSetConfig, error) {
+type valSetConfigDTO struct {
+	MaxVotingPower          *big.Int `json:"max_voting_power"`
+	MinInclusionVotingPower *big.Int `json:"min_inclusion_voting_power"`
+	MaxValidatorsCount      *big.Int `json:"max_validators_count"`
+	RequiredKeyTags         []byte   `json:"required_key_tags"`
+}
+
+type valSetConfigContainer struct {
+	ValSetConfig valSetConfigDTO
+}
+
+func (c valSetConfigDTO) toEntity() entity.ValSetConfig {
+	return entity.ValSetConfig{
+		MaxVotingPower:          c.MaxVotingPower,
+		MinInclusionVotingPower: c.MinInclusionVotingPower,
+		MaxValidatorsCount:      c.MaxValidatorsCount,
+		RequiredKeyTags:         c.RequiredKeyTags,
+	}
+}
+
+func (e *EthClient) GetValSetConfig(ctx context.Context, timestamp *big.Int) (entity.ValSetConfig, error) {
 	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_VALSET_CONFIG_FUNCTION, timestamp, []byte{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to construct call msg: %w", err)
+		return entity.ValSetConfig{}, fmt.Errorf("failed to construct call msg: %w", err)
 	}
 
 	result, err := e.callContract(ctx, callMsg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to call contract: %w", err)
+		return entity.ValSetConfig{}, fmt.Errorf("failed to call contract: %w", err)
 	}
 
-	var valSetConfig entity.ValSetConfig
+	var valSetConfig valSetConfigContainer
 	err = contractABI.UnpackIntoInterface(&valSetConfig, GET_VALSET_CONFIG_FUNCTION, result)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unpack val set config: %w", err)
+		return entity.ValSetConfig{}, fmt.Errorf("failed to unpack val set config: %w", err)
 	}
 
-	return &entity.ValSetConfig{}, nil
+	return valSetConfig.ValSetConfig.toEntity(), nil
 }
 
 func (e *EthClient) GetIsGenesisSet(ctx context.Context) (bool, error) {

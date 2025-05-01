@@ -30,6 +30,7 @@ type ValSetConfig struct {
 	MaxVotingPower          *big.Int
 	MinInclusionVotingPower *big.Int
 	MaxValidatorsCount      *big.Int
+	RequiredKeyTags         []byte
 }
 
 type VaultVotingPower struct {
