@@ -18,11 +18,14 @@ const VALSET_VERSION = 1
 
 type ethClient interface {
 	GetCaptureTimestamp(ctx context.Context) (*big.Int, error)
-	GetMasterConfig(ctx context.Context, timestamp *big.Int) (*entity.MasterConfig, error)
+	GetMasterConfig(ctx context.Context, timestamp *big.Int) (entity.MasterConfig, error)
 	GetValSetConfig(ctx context.Context, timestamp *big.Int) (*entity.ValSetConfig, error)
 	GetVotingPowers(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorVotingPower, error)
 	GetRequiredKeys(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorWithKeys, error)
 	GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uint8, error)
+	GetEip712Domain(ctx context.Context) (*entity.Eip712Domain, error)
+	GetCurrentEpoch(ctx context.Context) (*big.Int, error)
+	GetSubnetwork(ctx context.Context) ([]byte, error)
 }
 
 // ValsetDeriver coordinates the ETH services

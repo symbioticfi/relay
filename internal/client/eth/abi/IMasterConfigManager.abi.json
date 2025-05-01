@@ -1,0 +1,293 @@
+[
+  {
+    "type": "function",
+    "name": "MasterConfigManager_VERSION",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "addReplica",
+    "inputs": [
+      {
+        "name": "replica",
+        "type": "tuple",
+        "internalType": "struct IMasterConfigManager.CrossChainAddress",
+        "components": [
+          {
+            "name": "addr",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "chainId",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "addVotingPowerProvider",
+    "inputs": [
+      {
+        "name": "votingPowerProvider",
+        "type": "tuple",
+        "internalType": "struct IMasterConfigManager.CrossChainAddress",
+        "components": [
+          {
+            "name": "addr",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "chainId",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "getMasterConfig",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct IMasterConfigManager.MasterConfig",
+        "components": [
+          {
+            "name": "votingPowerProviders",
+            "type": "tuple[]",
+            "internalType": "struct IMasterConfigManager.CrossChainAddress[]",
+            "components": [
+              {
+                "name": "addr",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "chainId",
+                "type": "uint64",
+                "internalType": "uint64"
+              }
+            ]
+          },
+          {
+            "name": "keysProvider",
+            "type": "tuple",
+            "internalType": "struct IMasterConfigManager.CrossChainAddress",
+            "components": [
+              {
+                "name": "addr",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "chainId",
+                "type": "uint64",
+                "internalType": "uint64"
+              }
+            ]
+          },
+          {
+            "name": "replicas",
+            "type": "tuple[]",
+            "internalType": "struct IMasterConfigManager.CrossChainAddress[]",
+            "components": [
+              {
+                "name": "addr",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "chainId",
+                "type": "uint64",
+                "internalType": "uint64"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMasterConfigAt",
+    "inputs": [
+      {
+        "name": "timestamp",
+        "type": "uint48",
+        "internalType": "uint48"
+      },
+      {
+        "name": "hints",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct IMasterConfigManager.MasterConfig",
+        "components": [
+          {
+            "name": "votingPowerProviders",
+            "type": "tuple[]",
+            "internalType": "struct IMasterConfigManager.CrossChainAddress[]",
+            "components": [
+              {
+                "name": "addr",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "chainId",
+                "type": "uint64",
+                "internalType": "uint64"
+              }
+            ]
+          },
+          {
+            "name": "keysProvider",
+            "type": "tuple",
+            "internalType": "struct IMasterConfigManager.CrossChainAddress",
+            "components": [
+              {
+                "name": "addr",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "chainId",
+                "type": "uint64",
+                "internalType": "uint64"
+              }
+            ]
+          },
+          {
+            "name": "replicas",
+            "type": "tuple[]",
+            "internalType": "struct IMasterConfigManager.CrossChainAddress[]",
+            "components": [
+              {
+                "name": "addr",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "chainId",
+                "type": "uint64",
+                "internalType": "uint64"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "removeReplica",
+    "inputs": [
+      {
+        "name": "replica",
+        "type": "tuple",
+        "internalType": "struct IMasterConfigManager.CrossChainAddress",
+        "components": [
+          {
+            "name": "addr",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "chainId",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "removeVotingPowerProvider",
+    "inputs": [
+      {
+        "name": "votingPowerProvider",
+        "type": "tuple",
+        "internalType": "struct IMasterConfigManager.CrossChainAddress",
+        "components": [
+          {
+            "name": "addr",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "chainId",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setKeysProvider",
+    "inputs": [
+      {
+        "name": "keysProvider",
+        "type": "tuple",
+        "internalType": "struct IMasterConfigManager.CrossChainAddress",
+        "components": [
+          {
+            "name": "addr",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "chainId",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "error",
+    "name": "MasterConfigManager_AlreadyAdded",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MasterConfigManager_NotAdded",
+    "inputs": []
+  }
+]
