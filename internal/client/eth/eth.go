@@ -23,14 +23,6 @@ import (
 var contractAbiJSON []byte
 var contractABI abi.ABI
 
-//go:embed abi/EpochManager.abi.json
-var epochManagerJSON []byte
-var epochManagerABI abi.ABI
-
-//go:embed abi/IMasterConfigManager.abi.json
-var masterConfigManagerJSON []byte
-var masterConfigManagerABI abi.ABI
-
 var (
 	GET_MASTER_CONFIG_FUNCTION            = "getMasterConfigAt"
 	GET_VALSET_CONFIG_FUNCTION            = "getValSetConfigAt"
@@ -81,14 +73,6 @@ func initABI() error {
 	if err != nil {
 		return fmt.Errorf("failed to parse contract ABI: %w", err)
 	}
-	epochManagerABI, err = abi.JSON(bytes.NewReader(epochManagerJSON))
-	if err != nil {
-		return fmt.Errorf("failed to parse epoch manager ABI: %w", err)
-	}
-	masterConfigManagerABI, err = abi.JSON(bytes.NewReader(masterConfigManagerJSON))
-	if err != nil {
-		return fmt.Errorf("failed to parse master config manager ABI: %w", err)
-	}
 
 	return nil
 }
@@ -107,7 +91,7 @@ func (e *EthClient) Commit(messageHash string, signature []byte) error {
 
 type crossChainAddressDTO struct {
 	Addr    common.Address `json:"addr"`
-	ChainID uint64         `json:"chainId"`
+	ChainId uint64         `json:"chainId"`
 }
 
 type masterConfigDTO struct {
@@ -121,28 +105,28 @@ func (c masterConfigDTO) toEntity() entity.MasterConfig {
 		VotingPowerProviders: lo.Map(c.VotingPowerProviders, func(v crossChainAddressDTO, _ int) entity.CrossChainAddress {
 			return entity.CrossChainAddress{
 				Address: v.Addr,
-				ChainID: v.ChainID,
+				ChainID: v.ChainId,
 			}
 		}),
 		KeysProvider: entity.CrossChainAddress{
 			Address: c.KeysProvider.Addr,
-			ChainID: c.KeysProvider.ChainID,
+			ChainID: c.KeysProvider.ChainId,
 		},
 		Replicas: lo.Map(c.Replicas, func(v crossChainAddressDTO, _ int) entity.CrossChainAddress {
 			return entity.CrossChainAddress{
 				Address: v.Addr,
-				ChainID: v.ChainID,
+				ChainID: v.ChainId,
 			}
 		}),
 	}
 }
 
 type masterConfigContainer struct {
-	masterConfig masterConfigDTO
+	MasterConfig masterConfigDTO
 }
 
 func (e *EthClient) GetMasterConfig(ctx context.Context, timestamp *big.Int) (entity.MasterConfig, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterConfigManagerABI, GET_MASTER_CONFIG_FUNCTION, timestamp, []byte{})
+	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_MASTER_CONFIG_FUNCTION, timestamp, []byte{})
 	if err != nil {
 		return entity.MasterConfig{}, errors.Errorf("failed to construct call msg: %w", err)
 	}
@@ -152,17 +136,17 @@ func (e *EthClient) GetMasterConfig(ctx context.Context, timestamp *big.Int) (en
 		return entity.MasterConfig{}, errors.Errorf("failed to call contract: %w", err)
 	}
 
-	mcc := &masterConfigContainer{}
-	err = masterConfigManagerABI.UnpackIntoInterface(mcc, GET_MASTER_CONFIG_FUNCTION, result)
+	mcc := masterConfigContainer{}
+	err = contractABI.UnpackIntoInterface(&mcc, GET_MASTER_CONFIG_FUNCTION, result)
 	if err != nil {
 		return entity.MasterConfig{}, errors.Errorf("failed to unpack master config: %w", err)
 	}
 
-	return mcc.masterConfig.toEntity(), nil
+	return mcc.MasterConfig.toEntity(), nil
 }
 
 func (e *EthClient) GetValSetConfig(ctx context.Context, timestamp *big.Int) (*entity.ValSetConfig, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_VALSET_CONFIG_FUNCTION, timestamp, nil)
+	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_VALSET_CONFIG_FUNCTION, timestamp, []byte{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}
@@ -242,7 +226,7 @@ func (e *EthClient) GetCurrentValsetTimestamp(ctx context.Context) (*big.Int, er
 }
 
 func (e *EthClient) GetCaptureTimestamp(ctx context.Context) (*big.Int, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, epochManagerABI, GET_CAPTURE_TIMESTAMP_FUNCTION)
+	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_CAPTURE_TIMESTAMP_FUNCTION)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}
