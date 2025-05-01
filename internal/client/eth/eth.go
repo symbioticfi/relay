@@ -23,6 +23,10 @@ import (
 var contractAbiJSON []byte
 var contractABI abi.ABI
 
+//go:embed VaultManager.abi.json
+var vaultManagerAbiJSON []byte
+var vaultManagerABI abi.ABI
+
 var (
 	GET_MASTER_CONFIG_FUNCTION            = "getMasterConfigAt"
 	GET_VALSET_CONFIG_FUNCTION            = "getValSetConfigAt"
@@ -72,6 +76,11 @@ func initABI() error {
 	contractABI, err = abi.JSON(bytes.NewReader(contractAbiJSON))
 	if err != nil {
 		return fmt.Errorf("failed to parse contract ABI: %w", err)
+	}
+
+	vaultManagerABI, err = abi.JSON(bytes.NewReader(vaultManagerAbiJSON))
+	if err != nil {
+		return fmt.Errorf("failed to parse vault manager ABI: %w", err)
 	}
 
 	return nil
@@ -261,7 +270,7 @@ func (e *EthClient) GetCaptureTimestamp(ctx context.Context) (*big.Int, error) {
 }
 
 func (e *EthClient) GetVotingPowers(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorVotingPower, error) {
-	callMsg, err := constructCallMsg(address, contractABI, GET_VOTING_POWERS_FUNCTION, nil, timestamp, nil)
+	callMsg, err := constructCallMsg(address, vaultManagerABI, GET_VOTING_POWERS_FUNCTION, [][]byte{}, timestamp, []byte{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}
