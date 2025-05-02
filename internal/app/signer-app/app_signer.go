@@ -1,4 +1,4 @@
-package app
+package signer_app
 
 import (
 	"context"

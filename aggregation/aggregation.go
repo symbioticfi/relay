@@ -1,27 +1,32 @@
 package aggregation
 
-//
 //import (
 //	"context"
 //	"fmt"
+//	"math/big"
+//
 //	"github.com/symbioticfi/middleware-offchain/bls"
-//	"github.com/symbioticfi/middleware-offchain/internal/client/eth"
 //	"github.com/symbioticfi/middleware-offchain/proof"
 //	"github.com/symbioticfi/middleware-offchain/storage"
 //	"github.com/symbioticfi/middleware-offchain/valset"
 //	"github.com/symbioticfi/middleware-offchain/valset/types"
 //)
 //
+//type ethClient interface {
+//	GetCurrentValsetTimestamp(ctx context.Context) (*big.Int, error)
+//	GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uint8, error)
+//}
+//
 //// AggregatorService coordinates the P2P and ETH services
 //type Aggregation struct {
 //	storage         *storage.Storage
-//	ethClient       eth.IEthClient
+//	ethClient       ethClient
 //	valsetGenerator *valset.ValsetGenerator
 //	valsetDeriver   *valset.ValsetDeriver
 //}
 //
 //// NewAggregation creates a new aggregation
-//func NewAggregation(ethClient eth.IEthClient, storage *storage.Storage, valsetGenerator *valset.ValsetGenerator, valsetDeriver *valset.ValsetDeriver) (*Aggregation, error) {
+//func NewAggregation(ethClient ethClient, storage *storage.Storage, valsetGenerator *valset.ValsetGenerator, valsetDeriver *valset.ValsetDeriver) (*Aggregation, error) {
 //	return &Aggregation{
 //		ethClient:       ethClient,
 //		storage:         storage,

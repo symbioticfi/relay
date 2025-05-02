@@ -4,10 +4,22 @@ import (
 	"encoding/json"
 )
 
+type P2PMessageType string
+
+const (
+	TypeSignatureRequest P2PMessageType = "signature"
+)
+
 // P2PMessage is the basic unit of communication between peers
 type P2PMessage struct {
-	Type      string          `json:"type"`
+	Type      P2PMessageType  `json:"type"`
 	Sender    string          `json:"sender"`
 	Timestamp int64           `json:"timestamp"`
 	Data      json.RawMessage `json:"data"`
+}
+
+type SignatureMessage struct {
+	MessageHash string `json:"message_hash"`
+	Signature   []byte `json:"signature"`
+	PublicKey   []byte `json:"public_key"`
 }

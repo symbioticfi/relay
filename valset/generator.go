@@ -99,7 +99,7 @@ func (v *ValsetGenerator) GenerateValidatorSetHeader(ctx context.Context) (types
 	}, nil
 }
 
-func (v ValsetGenerator) GenerateValidatorSetHeaderHash(ctx context.Context, validatorSetHeader *types.ValidatorSetHeader) ([]byte, error) {
+func (v *ValsetGenerator) GenerateValidatorSetHeaderHash(ctx context.Context, validatorSetHeader *types.ValidatorSetHeader) ([]byte, error) {
 	hash, err := types.Hash(validatorSetHeader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash validator set header: %w", err)
