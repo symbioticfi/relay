@@ -16,8 +16,8 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/samber/lo"
 
-	"github.com/symbioticfi/middleware-offchain/internal/entity"
-	log2 "github.com/symbioticfi/middleware-offchain/pkg/log"
+	"middleware-offchain/internal/entity"
+	log2 "middleware-offchain/pkg/log"
 )
 
 // Configuration

@@ -2,8 +2,8 @@ package aggregator
 
 //
 //import (
-//	"github.com/symbioticfi/middleware-offchain/aggregation"
-//	"github.com/symbioticfi/middleware-offchain/storage"
+//	"middleware-offchain/aggregation"
+//	"middleware-offchain/storage"
 //)
 //
 //type AggregatorClient struct {

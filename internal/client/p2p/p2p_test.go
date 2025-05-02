@@ -10,7 +10,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/stretchr/testify/require"
 
-	"github.com/symbioticfi/middleware-offchain/internal/entity"
+	"middleware-offchain/internal/entity"
 )
 
 func TestP2P(t *testing.T) {

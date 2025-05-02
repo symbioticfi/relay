@@ -16,7 +16,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
 
-	"github.com/symbioticfi/middleware-offchain/internal/entity"
+	"middleware-offchain/internal/entity"
 )
 
 //go:embed contract.abi.json

@@ -6,8 +6,8 @@ import (
 	"math/big"
 	"os"
 
-	"github.com/symbioticfi/middleware-offchain/bls"
-	"github.com/symbioticfi/middleware-offchain/valset/types"
+	"middleware-offchain/bls"
+	"middleware-offchain/valset/types"
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark-crypto/ecc/bn254"

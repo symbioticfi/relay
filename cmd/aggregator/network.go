@@ -3,8 +3,8 @@ package aggregator
 //
 //import (
 //	"encoding/json"
-//	"github.com/symbioticfi/middleware-offchain/cmd/signer"
-//	"github.com/symbioticfi/middleware-offchain/network"
+//	"middleware-offchain/cmd/signer"
+//	"middleware-offchain/network"
 //	"log"
 //
 //	net "github.com/libp2p/go-libp2p/core/network"

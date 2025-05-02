@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/symbioticfi/middleware-offchain/bls"
-	"github.com/symbioticfi/middleware-offchain/proof"
-	"github.com/symbioticfi/middleware-offchain/valset/types"
+	"middleware-offchain/bls"
+	"middleware-offchain/proof"
+	"middleware-offchain/valset/types"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/ethereum/go-ethereum/crypto"

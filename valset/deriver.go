@@ -10,8 +10,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/symbioticfi/middleware-offchain/internal/entity"
-	"github.com/symbioticfi/middleware-offchain/valset/types"
+	"middleware-offchain/internal/entity"
+	"middleware-offchain/valset/types"
 )
 
 const VALSET_VERSION = 1

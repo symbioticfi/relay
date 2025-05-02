@@ -13,10 +13,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/symbioticfi/middleware-offchain/internal/app"
-	"github.com/symbioticfi/middleware-offchain/internal/client/eth"
-	"github.com/symbioticfi/middleware-offchain/internal/client/p2p"
-	"github.com/symbioticfi/middleware-offchain/pkg/log"
+	"middleware-offchain/internal/app"
+	"middleware-offchain/internal/client/eth"
+	"middleware-offchain/internal/client/p2p"
+	"middleware-offchain/pkg/log"
 )
 
 func main() {

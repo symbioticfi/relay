@@ -5,11 +5,11 @@ package aggregation
 //	"fmt"
 //	"math/big"
 //
-//	"github.com/symbioticfi/middleware-offchain/bls"
-//	"github.com/symbioticfi/middleware-offchain/proof"
-//	"github.com/symbioticfi/middleware-offchain/storage"
-//	"github.com/symbioticfi/middleware-offchain/valset"
-//	"github.com/symbioticfi/middleware-offchain/valset/types"
+//	"middleware-offchain/bls"
+//	"middleware-offchain/proof"
+//	"middleware-offchain/storage"
+//	"middleware-offchain/valset"
+//	"middleware-offchain/valset/types"
 //)
 //
 //type ethClient interface {

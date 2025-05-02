@@ -13,9 +13,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/symbioticfi/middleware-offchain/internal/client/eth"
-	"github.com/symbioticfi/middleware-offchain/pkg/log"
-	"github.com/symbioticfi/middleware-offchain/valset"
+	"middleware-offchain/internal/client/eth"
+	"middleware-offchain/pkg/log"
+	"middleware-offchain/valset"
 )
 
 func main() {

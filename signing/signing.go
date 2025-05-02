@@ -2,7 +2,7 @@ package signing
 
 import (
 	"fmt"
-	"github.com/symbioticfi/middleware-offchain/bls"
+	"middleware-offchain/bls"
 
 	"github.com/ethereum/go-ethereum/crypto"
 )

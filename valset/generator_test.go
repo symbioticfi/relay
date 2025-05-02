@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/symbioticfi/middleware-offchain/internal/client/eth"
+	"middleware-offchain/internal/client/eth"
 )
 
 func TestGenerator(t *testing.T) {

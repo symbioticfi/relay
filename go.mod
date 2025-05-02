@@ -1,4 +1,4 @@
-module github.com/symbioticfi/middleware-offchain
+module middleware-offchain
 
 go 1.23.2
 
