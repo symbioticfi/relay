@@ -2,6 +2,7 @@ package valset
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"testing"
@@ -32,5 +33,8 @@ func TestGenerator(t *testing.T) {
 	header, err := generator.GenerateValidatorSetHeader(context.Background())
 	require.NoError(t, err)
 
-	fmt.Println(header)
+	encoded, err := header.Encode()
+	require.NoError(t, err)
+
+	fmt.Println(hex.EncodeToString(encoded))
 }
