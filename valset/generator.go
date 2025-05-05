@@ -3,7 +3,7 @@ package valset
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"middleware-offchain/bls"
 	"middleware-offchain/proof"
@@ -31,12 +31,14 @@ func NewValsetGenerator(deriver *ValsetDeriver, ethClient ethClient) (*ValsetGen
 
 // GenerateValidatorSetHeader generates a validator set header for the current epoch
 func (v *ValsetGenerator) GenerateValidatorSetHeader(ctx context.Context) (types.ValidatorSetHeader, error) {
-	log.Println("Generating validator set header")
+	slog.InfoContext(ctx, "Generating validator set header")
 
+	slog.DebugContext(ctx, "Trying to get capture timestamp")
 	timestamp, err := v.ethClient.GetCaptureTimestamp(ctx)
 	if err != nil {
 		return types.ValidatorSetHeader{}, fmt.Errorf("failed to get capture timestamp: %w", err)
 	}
+	slog.InfoContext(ctx, "Got capture timestamp", "timestamp", timestamp.String())
 
 	validatorSet, err := v.deriver.GetValidatorSet(ctx, timestamp)
 	if err != nil {
@@ -48,7 +50,7 @@ func (v *ValsetGenerator) GenerateValidatorSetHeader(ctx context.Context) (types
 		return types.ValidatorSetHeader{}, fmt.Errorf("failed to get required key tag: %w", err)
 	}
 
-	log.Println("Processing validator set")
+	slog.InfoContext(ctx, "Got validator set", "validatorSet", validatorSet)
 
 	tags := []uint8{uint8(len(validatorSet.Validators[0].Keys))}
 	for _, key := range validatorSet.Validators[0].Keys {
@@ -71,7 +73,11 @@ func (v *ValsetGenerator) GenerateValidatorSetHeader(ctx context.Context) (types
 		for _, key := range validator.Keys {
 			for i, tag := range tags {
 				if key.Tag == tag {
-					aggPubkeysG1[i] = aggPubkeysG1[i].Add(bls.DeserializeG1(key.Payload))
+					g1, err := bls.DeserializeG1(key.Payload)
+					if err != nil {
+						return types.ValidatorSetHeader{}, fmt.Errorf("failed to deserialize G1: %w", err)
+					}
+					aggPubkeysG1[i] = aggPubkeysG1[i].Add(g1)
 				}
 			}
 		}
@@ -80,16 +86,22 @@ func (v *ValsetGenerator) GenerateValidatorSetHeader(ctx context.Context) (types
 	sszMroot := ssz.HashSequential(validatorSet)
 
 	// Use the first key tag for proof generation
-	valset := proof.ToValidatorsData(validatorSet.Validators, requiredKeyTag)
+	valset, err := proof.ToValidatorsData(validatorSet.Validators, requiredKeyTag)
+	if err != nil {
+		return types.ValidatorSetHeader{}, fmt.Errorf("failed to convert validators to data: %w", err)
+	}
 	extraData := proof.HashValset(&valset)
 
 	// Format all aggregated keys for the header
-	formattedKeys := make([]types.G1, len(aggPubkeysG1))
+	formattedKeys := make([]types.Key, len(aggPubkeysG1))
 	for i, key := range aggPubkeysG1 {
-		formattedKeys[i] = types.FormatG1(key)
+		formattedKeys[i] = types.Key{
+			Tag:     0,
+			Payload: bls.SerializeG1(key),
+		}
 	}
 
-	log.Println("Generated validator set header")
+	slog.InfoContext(ctx, "Generated validator set header", "formattedKeys", formattedKeys)
 
 	return types.ValidatorSetHeader{
 		ActiveAggregatedKeys:   formattedKeys,
@@ -99,7 +111,7 @@ func (v *ValsetGenerator) GenerateValidatorSetHeader(ctx context.Context) (types
 	}, nil
 }
 
-func (v *ValsetGenerator) GenerateValidatorSetHeaderHash(ctx context.Context, validatorSetHeader *types.ValidatorSetHeader) ([]byte, error) {
+func (v *ValsetGenerator) GenerateValidatorSetHeaderHash(ctx context.Context, validatorSetHeader types.ValidatorSetHeader) ([]byte, error) {
 	hash, err := types.Hash(validatorSetHeader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash validator set header: %w", err)

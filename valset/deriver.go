@@ -42,43 +42,39 @@ func NewValsetDeriver(ethClient ethClient) (*ValsetDeriver, error) {
 }
 
 func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) (*types.ValidatorSet, error) {
-	if timestamp == nil {
-		var err error
-		timestamp, err = v.ethClient.GetCaptureTimestamp(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get capture timestamp: %w", err)
-		}
-	}
-
-	slog.InfoContext(ctx, "Trying to fetch master config", "timestamp", timestamp.String())
+	slog.DebugContext(ctx, "Trying to fetch master config", "timestamp", timestamp.String())
 	masterConfig, err := v.ethClient.GetMasterConfig(ctx, timestamp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get master config: %w", err)
 	}
+	slog.InfoContext(ctx, "Got master config", "timestamp", timestamp.String(), "config", masterConfig)
 
-	slog.InfoContext(ctx, "Trying to getch val set config", "timestamp", timestamp.String())
+	slog.DebugContext(ctx, "Trying to getch val set config", "timestamp", timestamp.String())
 	valSetConfig, err := v.ethClient.GetValSetConfig(ctx, timestamp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get val set config: %w", err)
 	}
+	slog.InfoContext(ctx, "Got val set config", "timestamp", timestamp.String(), "config", valSetConfig)
 
 	// Get voting powers from all voting power providers
 	var allVotingPowers []entity.OperatorVotingPower
 	for _, provider := range masterConfig.VotingPowerProviders {
-		slog.InfoContext(ctx, "Trying to fetch voting powers from provider", "provider", provider.Address.Hex())
+		slog.DebugContext(ctx, "Trying to fetch voting powers from provider", "provider", provider.Address.Hex())
 		votingPowers, err := v.ethClient.GetVotingPowers(ctx, provider.Address, timestamp)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
 		}
 		allVotingPowers = append(allVotingPowers, votingPowers...)
+		slog.InfoContext(ctx, "Got voting powers from provider", "provider", provider.Address.Hex(), "votingPowers", votingPowers)
 	}
 
 	// Get keys from the keys provider
-	slog.InfoContext(ctx, "Trying to fetch keys from provider", "provider", masterConfig.KeysProvider.Address.Hex())
+	slog.DebugContext(ctx, "Trying to fetch keys from provider", "provider", masterConfig.KeysProvider.Address.Hex())
 	keys, err := v.ethClient.GetKeys(ctx, masterConfig.KeysProvider.Address, timestamp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get keys: %w", err)
 	}
+	slog.InfoContext(ctx, "Got keys from provider", "provider", masterConfig.KeysProvider.Address.Hex(), "keys", keys)
 
 	// Create validators map to consolidate voting powers and keys
 	validatorsMap := make(map[string]*types.Validator)

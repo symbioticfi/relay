@@ -226,10 +226,10 @@ func SerializeG2(g2 *G2) []byte {
 	return bytes[:]
 }
 
-func DeserializeG1(bytes []byte) *G1 {
+func DeserializeG1(bytes []byte) (*G1, error) {
 	g1 := ZeroG1()
-	g1.G1Affine.SetBytes(bytes)
-	return g1
+	_, err := g1.G1Affine.SetBytes(bytes)
+	return g1, err
 }
 
 func DeserializeG2(bytes []byte) *G2 {

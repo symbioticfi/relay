@@ -1,10 +1,10 @@
 package types
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/go-errors/errors"
 
 	"middleware-offchain/bls"
 
@@ -40,7 +40,7 @@ type ValidatorSet struct {
 // ValidatorSetHeader represents the input for validator set header
 type ValidatorSetHeader struct {
 	Version                uint8
-	ActiveAggregatedKeys   []*Key
+	ActiveAggregatedKeys   []Key
 	TotalActiveVotingPower *big.Int
 	ValidatorsSszMRoot     [32]byte
 	ExtraData              []byte
@@ -56,20 +56,20 @@ func FormatG1(g1 *bls.G1) G1 {
 	return G1
 }
 
-func Hash(v *ValidatorSetHeader) ([]byte, error) {
+func Hash(v ValidatorSetHeader) ([]byte, error) {
 	bytes, err := v.Encode()
 	if err != nil {
-		return nil, fmt.Errorf("") // todo ilya
+		return nil, errors.Errorf("failed to hash validator set header: %w", err)
 	}
 
 	return crypto.Keccak256(bytes), nil
 }
 
-func (v *ValidatorSetHeader) Encode() ([]byte, error) {
+func (v ValidatorSetHeader) Encode() ([]byte, error) {
 	arguments := abi.Arguments{
 		{
 			Type: abi.Type{
-				T: abi.UintTy,
+				T:    abi.UintTy,
 				Size: 8,
 			},
 		},
@@ -102,5 +102,5 @@ func (v *ValidatorSetHeader) Encode() ([]byte, error) {
 		},
 	}
 
-	return arguments.Pack(v.ActiveAggregatedKeys, v.TotalActiveVotingPower, v.ValidatorsSszMRoot, v.ExtraData)
+	return arguments.Pack(v.Version, v.ActiveAggregatedKeys, v.TotalActiveVotingPower, v.ValidatorsSszMRoot, v.ExtraData)
 }
