@@ -40,7 +40,7 @@ type ValidatorSet struct {
 // ValidatorSetHeader represents the input for validator set header
 type ValidatorSetHeader struct {
 	Version                uint8
-	ActiveAggregatedKeys   []G1
+	ActiveAggregatedKeys   []*Key
 	TotalActiveVotingPower *big.Int
 	ValidatorsSszMRoot     [32]byte
 	ExtraData              []byte
@@ -67,6 +67,12 @@ func Hash(v *ValidatorSetHeader) ([]byte, error) {
 
 func (v *ValidatorSetHeader) Encode() ([]byte, error) {
 	arguments := abi.Arguments{
+		{
+			Type: abi.Type{
+				T: abi.UintTy,
+				Size: 8,
+			},
+		},
 		{
 			Type: abi.Type{
 				T: abi.SliceTy,
