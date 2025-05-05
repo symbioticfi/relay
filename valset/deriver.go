@@ -21,7 +21,7 @@ type ethClient interface {
 	GetMasterConfig(ctx context.Context, timestamp *big.Int) (entity.MasterConfig, error)
 	GetValSetConfig(ctx context.Context, timestamp *big.Int) (entity.ValSetConfig, error)
 	GetVotingPowers(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorVotingPower, error)
-	GetRequiredKeys(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorWithKeys, error)
+	GetKeys(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorWithKeys, error)
 	GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uint8, error)
 	GetEip712Domain(ctx context.Context) (*entity.Eip712Domain, error)
 	GetCurrentEpoch(ctx context.Context) (*big.Int, error)
@@ -69,10 +69,10 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 		allVotingPowers = append(allVotingPowers, votingPowers...)
 	}
 
-	// Get required keys from the keys provider
-	requiredKeys, err := v.ethClient.GetRequiredKeys(ctx, masterConfig.KeysProvider.Address, timestamp)
+	// Get keys from the keys provider
+	keys, err := v.ethClient.GetKeys(ctx, masterConfig.KeysProvider.Address, timestamp)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get required keys: %w", err)
+		return nil, fmt.Errorf("failed to get keys: %w", err)
 	}
 
 	// Create validators map to consolidate voting powers and keys
@@ -107,7 +107,7 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 	}
 
 	// Process required keys
-	for _, rk := range requiredKeys {
+	for _, rk := range keys {
 		operatorAddr := rk.Operator.Hex()
 		if validator, exists := validatorsMap[operatorAddr]; exists {
 			// Add all keys for this operator

@@ -19,7 +19,7 @@ func TestGenerator(t *testing.T) {
 	// Convert to bytes
 	privateKeyBytes := privateKeyInt.Bytes()
 
-	client, err := eth.NewEthClient("http://127.0.0.1:8545", "0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154", privateKeyBytes)
+	client, err := eth.NewEthClient("http://127.0.0.1:8545", "0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f", privateKeyBytes)
 	require.NoError(t, err)
 
 	deriver, err := NewValsetDeriver(client)

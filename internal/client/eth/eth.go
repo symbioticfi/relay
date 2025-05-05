@@ -36,7 +36,7 @@ var (
 	GET_CURRENT_VALSET_TIMESTAMP_FUNCTION = "getCurrentValsetTimestamp"
 	GET_CAPTURE_TIMESTAMP_FUNCTION        = "getCaptureTimestamp"
 	GET_VOTING_POWERS_FUNCTION            = "getVotingPowersAt"
-	GET_REQUIRED_KEYS_FUNCTION            = "getRequiredKeysAt"
+	GET_KEYS_FUNCTION            = "getKeysAt"
 	GET_REQUIRED_KEY_TAG_FUNCTION         = "getRequiredKeyTagAt"
 	GET_QUORUM_THRESHOLD_FUNCTION         = "getQuorumThresholdAt"
 	GET_SUBNETWORK_FUNCTION               = "SUBNETWORK"
@@ -144,7 +144,7 @@ func (e *EthClient) GetMasterConfig(ctx context.Context, timestamp *big.Int) (en
 	if err != nil {
 		return entity.MasterConfig{}, errors.Errorf("failed to call contract: %w", err)
 	}
-
+	
 	mcc := masterConfigContainer{}
 	err = contractABI.UnpackIntoInterface(&mcc, GET_MASTER_CONFIG_FUNCTION, result)
 	if err != nil {
@@ -289,8 +289,8 @@ func (e *EthClient) GetVotingPowers(ctx context.Context, address common.Address,
 	return votingPowers, nil
 }
 
-func (e *EthClient) GetRequiredKeys(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorWithKeys, error) {
-	callMsg, err := constructCallMsg(address, contractABI, GET_REQUIRED_KEYS_FUNCTION, timestamp, nil)
+func (e *EthClient) GetKeys(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorWithKeys, error) {
+	callMsg, err := constructCallMsg(address, contractABI, GET_KEYS_FUNCTION, timestamp, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}
@@ -300,13 +300,13 @@ func (e *EthClient) GetRequiredKeys(ctx context.Context, address common.Address,
 		return nil, fmt.Errorf("failed to call contract: %w", err)
 	}
 
-	var requiredKeys []entity.OperatorWithKeys
-	err = contractABI.UnpackIntoInterface(&requiredKeys, GET_REQUIRED_KEYS_FUNCTION, result)
+	var keys []entity.OperatorWithKeys
+	err = contractABI.UnpackIntoInterface(&keys, GET_KEYS_FUNCTION, result)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unpack required keys: %w", err)
+		return nil, fmt.Errorf("failed to unpack keys: %w", err)
 	}
 
-	return requiredKeys, nil
+	return keys, nil
 }
 
 func (e *EthClient) GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uint8, error) {
