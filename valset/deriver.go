@@ -3,6 +3,7 @@ package valset
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"maps"
 	"math/big"
 	"slices"
@@ -49,11 +50,13 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 		}
 	}
 
+	slog.InfoContext(ctx, "Trying to fetch master config", "timestamp", timestamp.String())
 	masterConfig, err := v.ethClient.GetMasterConfig(ctx, timestamp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get master config: %w", err)
 	}
 
+	slog.InfoContext(ctx, "Trying to getch val set config", "timestamp", timestamp.String())
 	valSetConfig, err := v.ethClient.GetValSetConfig(ctx, timestamp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get val set config: %w", err)
@@ -62,6 +65,7 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 	// Get voting powers from all voting power providers
 	var allVotingPowers []entity.OperatorVotingPower
 	for _, provider := range masterConfig.VotingPowerProviders {
+		slog.InfoContext(ctx, "Trying to fetch voting powers from provider", "provider", provider.Address.Hex())
 		votingPowers, err := v.ethClient.GetVotingPowers(ctx, provider.Address, timestamp)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
