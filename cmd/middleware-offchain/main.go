@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math/big"
 	"os"
 	"os/signal"
 	"syscall"
@@ -68,10 +69,15 @@ var startCmd = &cobra.Command{
 			return errors.Errorf("failed to unmarshal config: %w", err)
 		}
 
+		privateKeyInt, ok := new(big.Int).SetString(cfg.EthPrivateKey, 10)
+		if !ok {
+			return errors.Errorf("failed to parse private key: %s", cfg.EthPrivateKey)
+		}
+
 		ethClient, err := eth.NewEthClient(eth.Config{
 			MasterRPCURL:  cfg.EthEndpoint,
 			MasterAddress: cfg.ContractAddr,
-			PrivateKey:    []byte(cfg.EthPrivateKey),
+			PrivateKey:    privateKeyInt.Bytes(),
 		})
 		if err != nil {
 			return errors.Errorf("failed to create eth client: %w", err)
