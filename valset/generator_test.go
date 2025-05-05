@@ -33,8 +33,11 @@ func TestGenerator(t *testing.T) {
 	header, err := generator.GenerateValidatorSetHeader(context.Background())
 	require.NoError(t, err)
 
-	encoded, err := header.Encode()
+	encoded, err := header.EncodeJSON()
 	require.NoError(t, err)
+	fmt.Println(string(encoded))
 
+	encoded, err = header.Encode()
+	require.NoError(t, err)
 	fmt.Println(hex.EncodeToString(encoded))
 }

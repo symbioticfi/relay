@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -91,12 +90,12 @@ var startCmd = &cobra.Command{
 			return errors.Errorf("failed to generate valset header: %w", err)
 		}
 
-		encoded, err := header.Encode()
+		encodedJSON, err := header.EncodeJSON()
 		if err != nil {
 			return errors.Errorf("failed to encode valset header: %w", err)
 		}
 
-		fmt.Println(hex.EncodeToString(encoded))
+		fmt.Println(string(encodedJSON))
 
 		return nil
 	},

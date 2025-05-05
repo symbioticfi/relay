@@ -1,10 +1,13 @@
 package types
 
 import (
+	"encoding/hex"
+	"encoding/json"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
+	"github.com/samber/lo"
 
 	"middleware-offchain/bls"
 
@@ -103,4 +106,38 @@ func (v ValidatorSetHeader) Encode() ([]byte, error) {
 	}
 
 	return arguments.Pack(v.Version, v.ActiveAggregatedKeys, v.TotalActiveVotingPower, v.ValidatorsSszMRoot, v.ExtraData)
+}
+
+type jsonHexBytes []byte
+
+func (j jsonHexBytes) MarshalJSON() ([]byte, error) {
+	return json.Marshal(hex.EncodeToString(j))
+}
+
+func (v ValidatorSetHeader) EncodeJSON() ([]byte, error) {
+	type keyDTO struct {
+		Tag     uint8        `json:"tag"`
+		Payload jsonHexBytes `json:"payload"`
+	}
+	type valSetHeaderDTO struct {
+		Version                uint8        `json:"version"`
+		ActiveAggregatedKeys   []keyDTO     `json:"activeAggregatedKeys"`
+		TotalActiveVotingPower *big.Int     `json:"total_active_voting_power"`
+		ValidatorsSszMRoot     jsonHexBytes `json:"validatorsSszMRoot"`
+		ExtraData              jsonHexBytes `json:"extraData"`
+	}
+
+	valSetHeader := valSetHeaderDTO{
+		Version:                v.Version,
+		ActiveAggregatedKeys:   lo.Map(v.ActiveAggregatedKeys, func(k Key, _ int) keyDTO { return keyDTO{Tag: k.Tag, Payload: k.Payload} }),
+		TotalActiveVotingPower: v.TotalActiveVotingPower,
+		ValidatorsSszMRoot:     v.ValidatorsSszMRoot[:],
+		ExtraData:              v.ExtraData,
+	}
+
+	data, err := json.Marshal(&valSetHeader)
+	if err != nil {
+		return nil, errors.Errorf("failed to marshal validator set header: %w", err)
+	}
+	return data, nil
 }
