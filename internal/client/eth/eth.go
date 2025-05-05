@@ -28,6 +28,10 @@ var contractABI abi.ABI
 var vaultManagerAbiJSON []byte
 var vaultManagerABI abi.ABI
 
+//go:embed KeyRegistry.abi.json
+var keyRegistryAbiJSON []byte
+var keyRegistryABI abi.ABI
+
 var (
 	GET_MASTER_CONFIG_FUNCTION            = "getMasterConfigAt"
 	GET_VALSET_CONFIG_FUNCTION            = "getValSetConfigAt"
@@ -105,6 +109,11 @@ func initABI() error {
 	vaultManagerABI, err = abi.JSON(bytes.NewReader(vaultManagerAbiJSON))
 	if err != nil {
 		return fmt.Errorf("failed to parse vault manager ABI: %w", err)
+	}
+
+	keyRegistryABI, err = abi.JSON(bytes.NewReader(keyRegistryAbiJSON))
+	if err != nil {
+		return fmt.Errorf("failed to parse key registry ABI: %w", err)
 	}
 
 	return nil
@@ -314,7 +323,7 @@ func (e *Client) GetVotingPowers(ctx context.Context, address common.Address, ti
 }
 
 func (e *Client) GetKeys(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorWithKeys, error) {
-	callMsg, err := constructCallMsg(address, contractABI, GET_KEYS_FUNCTION, timestamp, nil)
+	callMsg, err := constructCallMsg(address, keyRegistryABI, GET_KEYS_FUNCTION, timestamp, []byte{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}
@@ -325,7 +334,7 @@ func (e *Client) GetKeys(ctx context.Context, address common.Address, timestamp 
 	}
 
 	var keys []entity.OperatorWithKeys
-	err = contractABI.UnpackIntoInterface(&keys, GET_KEYS_FUNCTION, result)
+	err = keyRegistryABI.UnpackIntoInterface(&keys, GET_KEYS_FUNCTION, result)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unpack keys: %w", err)
 	}
@@ -334,7 +343,7 @@ func (e *Client) GetKeys(ctx context.Context, address common.Address, timestamp 
 }
 
 func (e *Client) GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uint8, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_REQUIRED_KEY_TAG_FUNCTION, timestamp, nil)
+	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_REQUIRED_KEY_TAG_FUNCTION, timestamp, []byte{})
 	if err != nil {
 		return 0, fmt.Errorf("failed to construct call msg: %w", err)
 	}

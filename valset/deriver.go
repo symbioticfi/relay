@@ -74,6 +74,7 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 	}
 
 	// Get keys from the keys provider
+	slog.InfoContext(ctx, "Trying to fetch keys from provider", "provider", masterConfig.KeysProvider.Address.Hex())
 	keys, err := v.ethClient.GetKeys(ctx, masterConfig.KeysProvider.Address, timestamp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get keys: %w", err)
