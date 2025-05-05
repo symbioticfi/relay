@@ -305,7 +305,7 @@ func (e *Client) GetVotingPowers(ctx context.Context, address common.Address, ti
 	}
 
 	var votingPowers []entity.OperatorVotingPower
-	err = contractABI.UnpackIntoInterface(&votingPowers, GET_VOTING_POWERS_FUNCTION, result)
+	err = vaultManagerABI.UnpackIntoInterface(&votingPowers, GET_VOTING_POWERS_FUNCTION, result)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unpack voting powers: %w", err)
 	}
