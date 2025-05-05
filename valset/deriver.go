@@ -86,7 +86,7 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 			validatorsMap[operatorAddr] = &types.Validator{
 				Operator:    vp.Operator,
 				VotingPower: big.NewInt(0),
-				IsActive:    true, // Default to active, will filter later
+				IsActive:    false, // Default to active, will filter later
 				Keys:        []*types.Key{},
 				Vaults:      []*types.Vault{},
 			}
@@ -108,7 +108,7 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 	}
 
 	// Process required keys
-	for _, rk := range keys {
+	for _, rk := range keys { // TODO: get required key tags from validator set config and fill with nills if needed
 		operatorAddr := rk.Operator.Hex()
 		if validator, exists := validatorsMap[operatorAddr]; exists {
 			// Add all keys for this operator
@@ -133,39 +133,31 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 	totalActive := 0
 
 	for i := range validators {
-		totalActive++
 		// Check minimum voting power if configured
-		if valSetConfig.MinInclusionVotingPower.Int64() != 0 {
-			if validators[i].VotingPower.Cmp(valSetConfig.MinInclusionVotingPower) < 0 {
-				validators[i].IsActive = false
-			}
+		if validators[i].VotingPower.Cmp(valSetConfig.MinInclusionVotingPower) < 0 {
+			break
 		}
 
 		// Check if validator has at least one key
 		if len(validators[i].Keys) == 0 {
-			validators[i].IsActive = false
+			continue
 		}
+		
+		totalActive++
+		validators[i].IsActive = true
 
-		if valSetConfig.MaxValidatorsCount.Int64() != 0 {
-			if totalActive > int(valSetConfig.MaxValidatorsCount.Int64()) {
-				validators[i].IsActive = false
-			}
-
-			if !validators[i].IsActive {
-				totalActive--
-			}
-		}
-
-		// Cap voting power to max if configured
 		if valSetConfig.MaxVotingPower.Int64() != 0 {
 			if validators[i].VotingPower.Cmp(valSetConfig.MaxVotingPower) > 0 {
 				validators[i].VotingPower = new(big.Int).Set(valSetConfig.MaxVotingPower)
 			}
 		}
-
 		// Add to total active voting power if validator is active
-		if validators[i].IsActive {
-			totalActiveVotingPower = new(big.Int).Add(totalActiveVotingPower, validators[i].VotingPower)
+		totalActiveVotingPower = new(big.Int).Add(totalActiveVotingPower, validators[i].VotingPower)
+		
+		if valSetConfig.MaxValidatorsCount.Int64() != 0 {
+			if (totalActive >= int(valSetConfig.MaxValidatorsCount.Int64())) {
+				break
+			}
 		}
 	}
 

@@ -54,13 +54,13 @@ func (v *ValsetGenerator) GenerateValidatorSetHeader(ctx context.Context) (types
 
 	tags := []uint8{uint8(len(validatorSet.Validators[0].Keys))}
 	for _, key := range validatorSet.Validators[0].Keys {
-		if key.Tag == requiredKeyTag {
+		if key.Tag == requiredKeyTag { // TODO: major - get required key tags from validator set config
 			tags = append(tags, key.Tag)
 		}
 	}
 
 	// Create aggregated pubkeys for each required key tag
-	aggPubkeysG1 := make([]*bls.G1, len(tags))
+	aggPubkeysG1 := make([]*bls.G1, len(tags)) // TODO: minor - potentially not only BLS
 	for i := range tags {
 		aggPubkeysG1[i] = &bls.G1{G1Affine: new(bn254.G1Affine)}
 	}
@@ -96,7 +96,7 @@ func (v *ValsetGenerator) GenerateValidatorSetHeader(ctx context.Context) (types
 	formattedKeys := make([]types.Key, len(aggPubkeysG1))
 	for i, key := range aggPubkeysG1 {
 		formattedKeys[i] = types.Key{
-			Tag:     0,
+			Tag:     tags[i],
 			Payload: bls.SerializeG1(key),
 		}
 	}
@@ -104,6 +104,7 @@ func (v *ValsetGenerator) GenerateValidatorSetHeader(ctx context.Context) (types
 	slog.InfoContext(ctx, "Generated validator set header", "formattedKeys", formattedKeys)
 
 	return types.ValidatorSetHeader{
+		Version:                validatorSet.Version,
 		ActiveAggregatedKeys:   formattedKeys,
 		TotalActiveVotingPower: validatorSet.TotalActiveVotingPower,
 		ValidatorsSszMRoot:     sszMroot,
