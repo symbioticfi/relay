@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-errors/errors"
+	"github.com/go-playground/validator/v10"
 	"github.com/samber/lo"
 
 	"middleware-offchain/internal/entity"
@@ -36,37 +37,60 @@ var (
 	GET_CURRENT_VALSET_TIMESTAMP_FUNCTION = "getCurrentValsetTimestamp"
 	GET_CAPTURE_TIMESTAMP_FUNCTION        = "getCaptureTimestamp"
 	GET_VOTING_POWERS_FUNCTION            = "getVotingPowersAt"
-	GET_KEYS_FUNCTION            = "getKeysAt"
+	GET_KEYS_FUNCTION                     = "getKeysAt"
 	GET_REQUIRED_KEY_TAG_FUNCTION         = "getRequiredKeyTagAt"
 	GET_QUORUM_THRESHOLD_FUNCTION         = "getQuorumThresholdAt"
 	GET_SUBNETWORK_FUNCTION               = "SUBNETWORK"
 	GET_EIP_712_DOMAIN_FUNCTION           = "eip712Domain"
 )
 
-type EthClient struct {
+type Config struct {
+	MasterRPCURL  string `validate:"required"`
+	MasterAddress string `validate:"required"`
+	PrivateKey    []byte `validate:"required"`
+}
+
+func (c Config) Validate() error {
+	if err := validator.New().Struct(c); err != nil {
+		return errors.Errorf("failed to validate config: %w", err)
+	}
+
+	_, err := crypto.ToECDSA(c.PrivateKey)
+	if err != nil {
+		return fmt.Errorf("failed to convert private key: %w", err)
+	}
+
+	return nil
+}
+
+type Client struct {
 	client                *ethclient.Client
 	masterContractAddress common.Address
 	privateKey            *ecdsa.PrivateKey // could be nil for read-only access
 }
 
-func NewEthClient(rpcUrl string, contractAddress string, privateKey []byte) (*EthClient, error) {
+func NewEthClient(cfg Config) (*Client, error) {
+	if err := cfg.Validate(); err != nil {
+		return nil, fmt.Errorf("failed to validate config: %w", err)
+	}
+
 	if err := initABI(); err != nil {
 		return nil, fmt.Errorf("failed to initialize ABI: %w", err)
 	}
 
-	client, err := ethclient.Dial(rpcUrl)
+	client, err := ethclient.Dial(cfg.MasterRPCURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to Ethereum client: %w", err)
 	}
 
-	pk, err := crypto.ToECDSA(privateKey)
+	pk, err := crypto.ToECDSA(cfg.PrivateKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert private key: %w", err)
 	}
 
-	return &EthClient{
+	return &Client{
 		client:                client,
-		masterContractAddress: common.HexToAddress(contractAddress),
+		masterContractAddress: common.HexToAddress(cfg.MasterAddress),
 		privateKey:            pk,
 	}, nil
 }
@@ -94,7 +118,7 @@ func GeneratePrivateKey() ([]byte, error) {
 	return crypto.FromECDSA(pk), nil
 }
 
-func (e *EthClient) Commit(messageHash string, signature []byte) error {
+func (e *Client) Commit(messageHash string, signature []byte) error {
 	return nil
 }
 
@@ -134,7 +158,7 @@ type masterConfigContainer struct {
 	MasterConfig masterConfigDTO
 }
 
-func (e *EthClient) GetMasterConfig(ctx context.Context, timestamp *big.Int) (entity.MasterConfig, error) {
+func (e *Client) GetMasterConfig(ctx context.Context, timestamp *big.Int) (entity.MasterConfig, error) {
 	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_MASTER_CONFIG_FUNCTION, timestamp, []byte{})
 	if err != nil {
 		return entity.MasterConfig{}, errors.Errorf("failed to construct call msg: %w", err)
@@ -144,7 +168,7 @@ func (e *EthClient) GetMasterConfig(ctx context.Context, timestamp *big.Int) (en
 	if err != nil {
 		return entity.MasterConfig{}, errors.Errorf("failed to call contract: %w", err)
 	}
-	
+
 	mcc := masterConfigContainer{}
 	err = contractABI.UnpackIntoInterface(&mcc, GET_MASTER_CONFIG_FUNCTION, result)
 	if err != nil {
@@ -174,7 +198,7 @@ func (c valSetConfigDTO) toEntity() entity.ValSetConfig {
 	}
 }
 
-func (e *EthClient) GetValSetConfig(ctx context.Context, timestamp *big.Int) (entity.ValSetConfig, error) {
+func (e *Client) GetValSetConfig(ctx context.Context, timestamp *big.Int) (entity.ValSetConfig, error) {
 	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_VALSET_CONFIG_FUNCTION, timestamp, []byte{})
 	if err != nil {
 		return entity.ValSetConfig{}, fmt.Errorf("failed to construct call msg: %w", err)
@@ -194,7 +218,7 @@ func (e *EthClient) GetValSetConfig(ctx context.Context, timestamp *big.Int) (en
 	return valSetConfig.ValSetConfig.toEntity(), nil
 }
 
-func (e *EthClient) GetIsGenesisSet(ctx context.Context) (bool, error) {
+func (e *Client) GetIsGenesisSet(ctx context.Context) (bool, error) {
 	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_IS_GENESIS_SET_FUNCTION)
 	if err != nil {
 		return false, fmt.Errorf("failed to construct call msg: %w", err)
@@ -209,7 +233,7 @@ func (e *EthClient) GetIsGenesisSet(ctx context.Context) (bool, error) {
 	return isGenesisSet == 1, nil
 }
 
-func (e *EthClient) GetCurrentEpoch(ctx context.Context) (*big.Int, error) {
+func (e *Client) GetCurrentEpoch(ctx context.Context) (*big.Int, error) {
 	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_CURRENT_EPOCH_FUNCTION)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
@@ -224,7 +248,7 @@ func (e *EthClient) GetCurrentEpoch(ctx context.Context) (*big.Int, error) {
 	return epoch, nil
 }
 
-func (e *EthClient) GetCurrentPhase(ctx context.Context) (entity.Phase, error) {
+func (e *Client) GetCurrentPhase(ctx context.Context) (entity.Phase, error) {
 	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_CURRENT_PHASE_FUNCTION)
 	if err != nil {
 		return 0, fmt.Errorf("failed to construct call msg: %w", err)
@@ -239,7 +263,7 @@ func (e *EthClient) GetCurrentPhase(ctx context.Context) (entity.Phase, error) {
 	return entity.Phase(phase), nil
 }
 
-func (e *EthClient) GetCurrentValsetTimestamp(ctx context.Context) (*big.Int, error) {
+func (e *Client) GetCurrentValsetTimestamp(ctx context.Context) (*big.Int, error) {
 	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_CURRENT_VALSET_TIMESTAMP_FUNCTION)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
@@ -254,7 +278,7 @@ func (e *EthClient) GetCurrentValsetTimestamp(ctx context.Context) (*big.Int, er
 	return timestamp, nil
 }
 
-func (e *EthClient) GetCaptureTimestamp(ctx context.Context) (*big.Int, error) {
+func (e *Client) GetCaptureTimestamp(ctx context.Context) (*big.Int, error) {
 	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_CAPTURE_TIMESTAMP_FUNCTION)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
@@ -269,7 +293,7 @@ func (e *EthClient) GetCaptureTimestamp(ctx context.Context) (*big.Int, error) {
 	return timestamp, nil
 }
 
-func (e *EthClient) GetVotingPowers(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorVotingPower, error) {
+func (e *Client) GetVotingPowers(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorVotingPower, error) {
 	callMsg, err := constructCallMsg(address, vaultManagerABI, GET_VOTING_POWERS_FUNCTION, [][]byte{}, timestamp, []byte{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
@@ -289,7 +313,7 @@ func (e *EthClient) GetVotingPowers(ctx context.Context, address common.Address,
 	return votingPowers, nil
 }
 
-func (e *EthClient) GetKeys(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorWithKeys, error) {
+func (e *Client) GetKeys(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorWithKeys, error) {
 	callMsg, err := constructCallMsg(address, contractABI, GET_KEYS_FUNCTION, timestamp, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
@@ -309,7 +333,7 @@ func (e *EthClient) GetKeys(ctx context.Context, address common.Address, timesta
 	return keys, nil
 }
 
-func (e *EthClient) GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uint8, error) {
+func (e *Client) GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uint8, error) {
 	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_REQUIRED_KEY_TAG_FUNCTION, timestamp, nil)
 	if err != nil {
 		return 0, fmt.Errorf("failed to construct call msg: %w", err)
@@ -329,7 +353,7 @@ func (e *EthClient) GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (
 	return keyTag, nil
 }
 
-func (e *EthClient) GetQuorumThreshold(ctx context.Context, timestamp *big.Int, keyTag uint8) (*big.Int, error) {
+func (e *Client) GetQuorumThreshold(ctx context.Context, timestamp *big.Int, keyTag uint8) (*big.Int, error) {
 	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_QUORUM_THRESHOLD_FUNCTION, keyTag, timestamp, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
@@ -343,7 +367,7 @@ func (e *EthClient) GetQuorumThreshold(ctx context.Context, timestamp *big.Int, 
 	return new(big.Int).SetBytes(result), nil
 }
 
-func (e *EthClient) GetSubnetwork(ctx context.Context) ([]byte, error) {
+func (e *Client) GetSubnetwork(ctx context.Context) ([]byte, error) {
 	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_SUBNETWORK_FUNCTION)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
@@ -357,7 +381,7 @@ func (e *EthClient) GetSubnetwork(ctx context.Context) ([]byte, error) {
 	return result, nil
 }
 
-func (e *EthClient) GetEip712Domain(ctx context.Context) (*entity.Eip712Domain, error) {
+func (e *Client) GetEip712Domain(ctx context.Context) (*entity.Eip712Domain, error) {
 	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_EIP_712_DOMAIN_FUNCTION)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
@@ -377,7 +401,7 @@ func (e *EthClient) GetEip712Domain(ctx context.Context) (*entity.Eip712Domain, 
 	return &eip712Domain, nil
 }
 
-func (e *EthClient) callContract(ctx context.Context, callMsg ethereum.CallMsg) (result []byte, err error) {
+func (e *Client) callContract(ctx context.Context, callMsg ethereum.CallMsg) (result []byte, err error) {
 	return e.client.CallContract(ctx, callMsg, nil)
 }
 
