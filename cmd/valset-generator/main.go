@@ -61,7 +61,11 @@ var startCmd = &cobra.Command{
 			return errors.Errorf("failed to unmarshal config: %w", err)
 		}
 
-		ethClient, err := eth.NewEthClient(cfg.EthEndpoint, cfg.ContractAddr, []byte(cfg.EthPrivateKey))
+		ethClient, err := eth.NewEthClient(eth.Config{
+			MasterRPCURL:  cfg.EthEndpoint,
+			MasterAddress: cfg.ContractAddr,
+			PrivateKey:    []byte(cfg.EthPrivateKey),
+		})
 		if err != nil {
 			return errors.Errorf("failed to create eth client: %w", err)
 		}

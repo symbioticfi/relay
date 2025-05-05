@@ -16,10 +16,11 @@ func TestGenerator(t *testing.T) {
 	privateKeyInt := new(big.Int)
 	privateKeyInt.SetString("87191036493798670866484781455694320176667203290824056510541300741498740913410", 10)
 
-	// Convert to bytes
-	privateKeyBytes := privateKeyInt.Bytes()
-
-	client, err := eth.NewEthClient("http://127.0.0.1:8545", "0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f", privateKeyBytes)
+	client, err := eth.NewEthClient(eth.Config{
+		MasterRPCURL:  "http://127.0.0.1:8545",
+		MasterAddress: "0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f",
+		PrivateKey:    privateKeyInt.Bytes(),
+	})
 	require.NoError(t, err)
 
 	deriver, err := NewValsetDeriver(client)

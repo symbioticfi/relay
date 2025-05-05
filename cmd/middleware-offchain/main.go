@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"middleware-offchain/internal/app"
+	app "middleware-offchain/internal/app/signer-app"
 	"middleware-offchain/internal/client/eth"
 	"middleware-offchain/internal/client/p2p"
 	"middleware-offchain/pkg/log"
@@ -68,7 +68,11 @@ var startCmd = &cobra.Command{
 			return errors.Errorf("failed to unmarshal config: %w", err)
 		}
 
-		ethClient, err := eth.NewEthClient(cfg.EthEndpoint, cfg.ContractAddr, []byte(cfg.EthPrivateKey))
+		ethClient, err := eth.NewEthClient(eth.Config{
+			MasterRPCURL:  cfg.EthEndpoint,
+			MasterAddress: cfg.ContractAddr,
+			PrivateKey:    []byte(cfg.EthPrivateKey),
+		})
 		if err != nil {
 			return errors.Errorf("failed to create eth client: %w", err)
 		}
