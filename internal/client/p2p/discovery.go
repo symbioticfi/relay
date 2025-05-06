@@ -42,7 +42,7 @@ func (dn *DiscoveryNorifee) Start() error {
 	if err := dn.discovery.Start(); err != nil {
 		return errors.Errorf("failed to start discovery: %w", err)
 	}
-	slog.InfoContext(dn.ctx, "Discovery started", "localPeerID", dn.host.ID(), "localAddrs", dn.host.Addrs())
+	slog.InfoContext(dn.ctx, "discovery started", "localPeerID", dn.host.ID(), "localAddrs", dn.host.Addrs())
 	return nil
 }
 

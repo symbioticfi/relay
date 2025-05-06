@@ -1,4 +1,4 @@
-package signer_app
+package valset_header_generator_app
 
 import (
 	"context"
@@ -37,7 +37,7 @@ type SignerApp struct {
 	cfg Config
 }
 
-func NewSignerApp(cfg Config) (*SignerApp, error) {
+func NewValsetHeaderGeneratorApp(cfg Config) (*SignerApp, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, errors.Errorf("failed to validate config: %w", err)
 	}

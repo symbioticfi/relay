@@ -36,7 +36,7 @@ type Service struct {
 
 // NewService creates a new P2P service with the given configuration
 func NewService(ctx context.Context, listenAddrs ...string) (*Service, error) {
-	slog.InfoContext(ctx, "Listening on", "addrs", listenAddrs)
+	slog.InfoContext(ctx, "listening on", "addrs", listenAddrs)
 
 	h, err := libp2p.New(libp2p.ListenAddrStrings(listenAddrs...))
 	if err != nil {
