@@ -41,8 +41,8 @@ func (c Config) Validate() error {
 }
 
 type SignerApp struct {
-	cfg          Config
-	currentPhase entity.Phase
+	cfg           Config
+	previousPhase entity.Phase
 }
 
 func NewValsetHeaderGeneratorApp(cfg Config) (*SignerApp, error) {
@@ -51,8 +51,8 @@ func NewValsetHeaderGeneratorApp(cfg Config) (*SignerApp, error) {
 	}
 
 	return &SignerApp{
-		cfg:          cfg,
-		currentPhase: entity.IDLE,
+		cfg:           cfg,
+		previousPhase: entity.IDLE,
 	}, nil
 }
 
@@ -85,7 +85,6 @@ func (s *SignerApp) Start(ctx context.Context) error {
 }
 
 func (s *SignerApp) waitForCommitPhase(ctx context.Context) error {
-	// todo ilya do not generate valset header if already generated once
 	timer := time.NewTimer(0)
 	defer timer.Stop()
 	slog.InfoContext(ctx, "waiting for commit phase", "timeout", s.cfg.PollingInterval)
@@ -102,14 +101,21 @@ func (s *SignerApp) waitForCommitPhase(ctx context.Context) error {
 				return errors.Errorf("failed to get current phase: %w", err)
 			}
 
-			slog.InfoContext(ctx, "got current phase", "phase", phase)
+			slog.DebugContext(ctx, "got current phase", "phase", phase)
 
 			switch phase {
 			case entity.COMMIT:
+				if s.previousPhase == entity.COMMIT {
+					slog.DebugContext(ctx, "current phase is COMMIT, waiting for next cycle")
+					timer.Reset(s.cfg.PollingInterval)
+					continue
+				}
+				s.previousPhase = entity.COMMIT
 				return nil
 			case entity.FAIL:
 				return errors.Errorf("current phase is FAIL: %w", entity.ErrPhaseFail)
 			case entity.IDLE:
+				s.previousPhase = entity.IDLE
 				slog.DebugContext(ctx, "current phase is IDLE, waiting for commit phase", "timeout", s.cfg.PollingInterval)
 				timer.Reset(s.cfg.PollingInterval)
 			default:
