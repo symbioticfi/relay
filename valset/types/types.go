@@ -16,8 +16,9 @@ import (
 )
 
 type Key struct {
-	Tag     uint8  `ssz-size:"8"`
-	Payload []byte `ssz-max:"64"`
+	Tag     uint8  `ssz-size:"1"`
+	Payload []byte
+	PayloadHash [32]byte `ssz-size:"32"`
 }
 
 type Vault struct {
@@ -32,13 +33,13 @@ type Validator struct {
 	VotingPower *big.Int       `ssz-size:"32"`
 	IsActive    bool           `ssz-size:"1"`
 	Keys        []*Key         `ssz-max:"128"`
-	Vaults      []*Vault       `ssz-max:"10"`
+	Vaults      []*Vault       `ssz-max:"32"`
 }
 
 type ValidatorSet struct {
 	Version                uint8
 	TotalActiveVotingPower *big.Int
-	Validators             []*Validator
+	Validators             []*Validator `ssz-max:"1048576"`
 }
 
 // ValidatorSetHeader represents the input for validator set header

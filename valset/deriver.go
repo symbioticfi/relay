@@ -10,6 +10,7 @@ import (
 	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"middleware-offchain/internal/entity"
 	"middleware-offchain/valset/types"
@@ -116,6 +117,7 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 				validator.Keys = append(validator.Keys, &types.Key{
 					Tag:     key.Tag,
 					Payload: key.Payload,
+					PayloadHash: crypto.Keccak256Hash(key.Payload),
 				})
 			}
 		}
