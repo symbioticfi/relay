@@ -114,7 +114,7 @@ func (s *Service) Broadcast(typ entity.P2PMessageType, obj Data) error {
 	peers := lo.Keys(s.peers)
 	s.peersMutex.RUnlock()
 
-	data, err := json.Marshal(obj)
+	data, err := obj.MarshalData()
 	if err != nil {
 		return fmt.Errorf("failed to marshal object: %w", err)
 	}

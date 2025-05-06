@@ -83,6 +83,7 @@ var rootCmd = &cobra.Command{
 
 		p2pService.SetMessageHandler(func(msg entity.P2PMessage) error {
 			slog.InfoContext(ctx, "received message", "message", msg)
+			fmt.Println(string(msg.Data))
 			return nil
 		})
 		slog.InfoContext(ctx, "p2p listener created, waiting for messages")
