@@ -43,6 +43,7 @@ func TestP2P(t *testing.T) {
 		ID:    h1.ID(),
 		Addrs: h1.Addrs(),
 	})
+	require.NoError(t, err)
 
 	err = p2p1.Broadcast(entity.P2PMessage{
 		Type:      "helloType",

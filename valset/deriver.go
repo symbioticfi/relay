@@ -115,8 +115,8 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 			// Add all keys for this operator
 			for _, key := range rk.Keys {
 				validator.Keys = append(validator.Keys, &types.Key{
-					Tag:     key.Tag,
-					Payload: key.Payload,
+					Tag:         key.Tag,
+					Payload:     key.Payload,
 					PayloadHash: crypto.Keccak256Hash(key.Payload),
 				})
 			}

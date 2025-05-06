@@ -91,7 +91,7 @@ func (s *SignerApp) waitForCommitPhase(ctx context.Context) error {
 				slog.DebugContext(ctx, "current phase is IDLE, waiting for commit phase", "timeout", s.cfg.PollingInterval)
 				timer.Reset(s.cfg.PollingInterval)
 			default:
-				return errors.Errorf("unknown phase: %s", phase)
+				return errors.Errorf("unknown phase: %v", phase)
 			}
 		}
 	}

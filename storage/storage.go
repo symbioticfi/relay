@@ -24,11 +24,12 @@ func (s *Storage) AddSignature(messageHash string, pubKey []byte, sig []byte) {
 	s.signatures[messageHash][string(pubKey)+string(sig)] = true
 }
 
-func (s *Storage) GetSignatures(messageHash string) ([][]byte, [][]byte) {
+func (s *Storage) GetSignatures(messageHash string) (pubKeys [][]byte, sigs [][]byte) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	var pubKeys, sigs [][]byte
+	pubKeys = make([][]byte, 0, len(s.signatures[messageHash]))
+	sigs = make([][]byte, 0, len(s.signatures[messageHash]))
 
 	for sigKey := range s.signatures[messageHash] {
 		pubKeyLen := len(sigKey) / 2

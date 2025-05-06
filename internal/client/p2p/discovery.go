@@ -5,7 +5,6 @@ import (
 	"log/slog"
 
 	"github.com/go-errors/errors"
-	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/p2p/discovery/mdns"
@@ -24,11 +23,7 @@ type DiscoveryNorifee struct {
 	peerAddable peerAddable
 }
 
-func NewDiscoveryService(ctx context.Context, pa peerAddable, listenAddrs ...string) (*DiscoveryNorifee, error) {
-	h, err := libp2p.New(libp2p.ListenAddrStrings(listenAddrs...))
-	if err != nil {
-		return nil, errors.Errorf("failed to create libp2p host: %w", err)
-	}
+func NewDiscoveryService(ctx context.Context, pa peerAddable, h host.Host) (*DiscoveryNorifee, error) {
 	dn := &DiscoveryNorifee{
 		ctx:         ctx,
 		host:        h,

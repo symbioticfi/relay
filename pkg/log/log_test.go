@@ -11,7 +11,7 @@ import (
 
 func TestLog(t *testing.T) {
 	t.Setenv("LOG_MODE", "local")
-	Init()
+	Init("debug")
 
 	slog.Info("calculations completed")
 	slog.Error("oh, no", "err", myFund(), "someTime", time.Now(), "result", 42, "duration", time.Second)
@@ -24,7 +24,7 @@ func myFund() error {
 }
 
 func TestSplit(t *testing.T) {
-	Init()
+	Init("debug")
 	slog.Info("hello", "there", "world")
 	slog.DebugContext(context.Background(), "hello debug", "there1", "world1")
 	slog.Error("hello error", "there2", "world2")

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
-	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -35,14 +34,7 @@ type Service struct {
 }
 
 // NewService creates a new P2P service with the given configuration
-func NewService(ctx context.Context, listenAddrs ...string) (*Service, error) {
-	slog.InfoContext(ctx, "listening on", "addrs", listenAddrs)
-
-	h, err := libp2p.New(libp2p.ListenAddrStrings(listenAddrs...))
-	if err != nil {
-		return nil, errors.Errorf("failed to create libp2p host: %w", err)
-	}
-
+func NewService(ctx context.Context, h host.Host) (*Service, error) {
 	service := &Service{
 		ctx:   log2.WithAttrs(ctx, slog.String("component", "p2p")),
 		host:  h,
@@ -66,11 +58,12 @@ func (s *Service) SetMessageHandler(mh func(msg entity.P2PMessage) error) {
 func (s *Service) handleStream(stream network.Stream) error {
 	defer stream.Close()
 
-	data := make([]byte, 1024)
+	data := make([]byte, 1024*1024) // 1MB buffer
 	n, err := stream.Read(data)
 	if err != nil {
 		return fmt.Errorf("failed to read from stream: %w", err)
 	}
+
 	var message entity.P2PMessage
 	if err := json.Unmarshal(data[:n], &message); err != nil {
 		return fmt.Errorf("failed to unmarshal message: %w", err)
@@ -85,15 +78,17 @@ func (s *Service) handleStream(stream network.Stream) error {
 
 func (s *Service) AddPeer(pi peer.AddrInfo) error {
 	if pi.ID == s.host.ID() {
+		slog.InfoContext(s.ctx, "Skipping self-connection", "peer", pi.ID)
 		return nil
 	}
 
-	slog.InfoContext(s.ctx, "Trying to add peer", "peer", pi.ID)
+	slog.InfoContext(s.ctx, "Trying to add peer", "peer", pi.ID, "addrs", pi.Addrs)
 
 	ctx, cancel := context.WithTimeout(s.ctx, time.Second*10)
 	defer cancel()
 
 	if err := s.host.Connect(ctx, pi); err != nil {
+		slog.ErrorContext(s.ctx, "Failed to connect to peer", "peer", pi.ID, "error", err)
 		return errors.Errorf("failed to connect to peer %s: %w", pi.ID.ShortString(), err)
 	}
 

@@ -1,10 +1,7 @@
 package signing
 
 import (
-	"fmt"
 	"middleware-offchain/bls"
-
-	"github.com/ethereum/go-ethereum/crypto"
 )
 
 // Signing coordinates the P2P and ETH services
@@ -20,13 +17,13 @@ func NewSigning(keyPair *bls.KeyPair) (*Signing, error) {
 }
 
 // SignMessage signs a message
-func (n Signing) SignMessage(msg []byte) ([]byte, []byte, []byte, error) {
-	msgHash := crypto.Keccak256(msg)
-
-	signature, err := n.keyPair.Sign(msgHash)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to sign message: %w", err)
-	}
-
-	return n.keyPair.PublicKeyG1.Marshal(), signature.Marshal(), msgHash, nil
-}
+//func (n Signing) SignMessage(msg []byte) (pubKey []byte, signatureBytes []byte, msgHash []byte, err error) {
+//	msgHash = crypto.Keccak256(msg)
+//
+//	signature, err := n.keyPair.Sign(msgHash)
+//	if err != nil {
+//		return nil, nil, nil, fmt.Errorf("failed to sign message: %w", err)
+//	}
+//
+//	return n.keyPair.PublicKeyG1.Marshal(), signature.Marshal(), msgHash, nil
+//}

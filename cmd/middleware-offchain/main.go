@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
+	"github.com/libp2p/go-libp2p"
 	"github.com/spf13/cobra"
 
 	app "middleware-offchain/internal/app/valset-header-generator-app"
@@ -74,14 +75,19 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to create eth client: %w", err)
 		}
 
-		p2pService, err := p2p.NewService(ctx, cfg.listenAddress)
+		h, err := libp2p.New(libp2p.ListenAddrStrings(cfg.listenAddress))
+		if err != nil {
+			return errors.Errorf("failed to create libp2p host: %w", err)
+		}
+
+		p2pService, err := p2p.NewService(ctx, h)
 		if err != nil {
 			return errors.Errorf("failed to create p2p service: %w", err)
 		}
 		slog.InfoContext(ctx, "created p2p service", "listenAddr", cfg.listenAddress)
 		defer p2pService.Close()
 
-		discoveryService, err := p2p.NewDiscoveryService(ctx, p2pService, cfg.listenAddress)
+		discoveryService, err := p2p.NewDiscoveryService(ctx, p2pService, h)
 		if err != nil {
 			return errors.Errorf("failed to create discovery service: %w", err)
 		}

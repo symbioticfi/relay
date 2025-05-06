@@ -18,7 +18,7 @@ import (
 
 // generate_genesis --master-address 0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f --rpc-url http://127.0.0.1:8545
 func main() {
-	fmt.Println(os.Args)
+	slog.Info("Running generate_genesis command", "args", os.Args)
 
 	if err := run(); err != nil && !errors.Is(err, context.Canceled) {
 		slog.Error("error executing command", "error", err)
@@ -92,12 +92,12 @@ var rootCmd = &cobra.Command{
 		}
 
 		if cfg.outputFile != "" {
-			err = os.WriteFile(cfg.outputFile, jsonData, 0644)
+			err = os.WriteFile(cfg.outputFile, jsonData, 0600)
 			if err != nil {
 				return errors.Errorf("failed to write output file: %w", err)
 			}
 		} else {
-			fmt.Println(string(jsonData))
+			fmt.Println(string(jsonData)) //noling:forbidigo // ok to print result to stdout
 		}
 
 		return nil

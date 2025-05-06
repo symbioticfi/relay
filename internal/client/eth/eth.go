@@ -416,7 +416,12 @@ func (e *Client) GetEip712Domain(ctx context.Context) (*entity.Eip712Domain, err
 }
 
 func (e *Client) callContract(ctx context.Context, callMsg ethereum.CallMsg) (result []byte, err error) {
-	return e.client.CallContract(ctx, callMsg, nil)
+	result, err = e.client.CallContract(ctx, callMsg, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call contract: %w", err)
+	}
+
+	return result, nil
 }
 
 func constructCallMsg(contractAddress common.Address, abi abi.ABI, method string, args ...interface{}) (ethereum.CallMsg, error) {

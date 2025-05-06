@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/crypto"
@@ -55,11 +54,11 @@ type ValidatorSetHeader struct {
 type G1 [2]*big.Int
 
 func FormatG1(g1 *bls.G1) G1 {
-	G1 := G1{new(big.Int), new(big.Int)}
+	newG1 := G1{new(big.Int), new(big.Int)}
 
-	g1.G1Affine.X.BigInt(G1[0])
-	g1.G1Affine.Y.BigInt(G1[1])
-	return G1
+	g1.X.BigInt(newG1[0])
+	g1.Y.BigInt(newG1[1])
+	return newG1
 }
 
 func Hash(v ValidatorSetHeader) ([]byte, error) {
@@ -113,23 +112,21 @@ func (v ValidatorSetHeader) Encode() ([]byte, error) {
 
 func (v ValidatorSetHeader) EncodeJSON() ([]byte, error) {
 	// Convert byte arrays to hex strings before JSON marshaling
+	type key struct {
+		Tag     uint8  `json:"tag"`
+		Payload string `json:"payload"` // hex string
+	}
 	type jsonHeader struct {
-		Version              uint8 `json:"version"`
-		ActiveAggregatedKeys []struct {
-			Tag     uint8  `json:"tag"`
-			Payload string `json:"payload"` // hex string
-		} `json:"activeAggregatedKeys"`
+		Version                uint8    `json:"version"`
+		ActiveAggregatedKeys   []key    `json:"activeAggregatedKeys"`
 		ValidatorsSszMRoot     string   `json:"validatorsSszMRoot"` // hex string
 		ExtraData              string   `json:"extraData"`
 		TotalActiveVotingPower *big.Int `json:"totalActiveVotingPower"`
 	}
 
 	jsonHeaderData := jsonHeader{
-		Version: v.Version,
-		ActiveAggregatedKeys: make([]struct {
-			Tag     uint8  `json:"tag"`
-			Payload string `json:"payload"`
-		}, len(v.ActiveAggregatedKeys)),
+		Version:                v.Version,
+		ActiveAggregatedKeys:   make([]key, len(v.ActiveAggregatedKeys)),
 		ValidatorsSszMRoot:     fmt.Sprintf("0x%064x", v.ValidatorsSszMRoot),
 		ExtraData:              formatPayload(v.ExtraData),
 		TotalActiveVotingPower: v.TotalActiveVotingPower,
@@ -142,7 +139,7 @@ func (v ValidatorSetHeader) EncodeJSON() ([]byte, error) {
 
 	jsonData, err := json.MarshalIndent(jsonHeaderData, "", "  ")
 	if err != nil {
-		log.Fatalf("Failed to marshal header to JSON: %v", err)
+		return nil, errors.Errorf("failed to marshal header to JSON: %w", err)
 	}
 
 	return jsonData, nil

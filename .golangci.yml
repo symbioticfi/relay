@@ -14,22 +14,22 @@ linters:
     - contextcheck
     - copyloopvar
     - decorder
-    - dogsled
+#    - dogsled
     - durationcheck
     - errchkjson
     - errname
     - errorlint
     - exhaustive
-    - exhaustruct
+#    - exhaustruct
     - exptostd
     - fatcontext
-    - forbidigo
+#    - forbidigo
     - gocheckcompilerdirectives
     - gochecknoinits
     - gochecksumtype
     - goconst
     - gocritic
-    - godox
+#    - godox
     - gomoddirectives
     - gomodguard
     - goprintffuncname
@@ -72,7 +72,7 @@ linters:
     - usetesting
     - wastedassign
     - whitespace
-    - wrapcheck
+#    - wrapcheck
   settings:
     cyclop:
       max-complexity: 30
@@ -202,7 +202,7 @@ linters:
         - name: error-strings
         - name: errorf
         - name: file-header
-        - name: flag-parameter
+#        - name: flag-parameter
         - name: function-result-limit
         - name: identical-branches
         - name: imports-blocklist

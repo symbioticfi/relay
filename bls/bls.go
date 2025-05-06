@@ -6,6 +6,7 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
+	"github.com/go-errors/errors"
 )
 
 // Constants from the Solidity BN254 library
@@ -82,7 +83,7 @@ func ComputeKeyPair(sk []byte) *KeyPair {
 // Sign creates a BLS signature on a message using the secret key
 func (kp *KeyPair) Sign(msgHash []byte) (*G1, error) {
 	if len(msgHash) != 32 {
-		return nil, fmt.Errorf("message hash must be 32 bytes")
+		return nil, errors.New("message hash must be 32 bytes")
 	}
 
 	// Hash the message to a point on G1
@@ -103,9 +104,9 @@ func (kp *KeyPair) Sign(msgHash []byte) (*G1, error) {
 }
 
 // Verify checks if a signature is valid for a message and public key
-func (pubkey *G2) Verify(signature *G1, msgHash []byte) (bool, error) {
+func (p *G2) Verify(signature *G1, msgHash []byte) (bool, error) {
 	if len(msgHash) != 32 {
-		return false, fmt.Errorf("message hash must be 32 bytes")
+		return false, errors.New("message hash must be 32 bytes")
 	}
 
 	// Hash the message to a point on G1
@@ -120,12 +121,12 @@ func (pubkey *G2) Verify(signature *G1, msgHash []byte) (bool, error) {
 	var negSig bn254.G1Affine
 	negSig.Neg(signature.G1Affine)
 
-	P := [2]bn254.G1Affine{*h1.G1Affine, negSig}
-	Q := [2]bn254.G2Affine{*pubkey.G2Affine, g2}
+	g1P := [2]bn254.G1Affine{*h1.G1Affine, negSig}
+	g1Q := [2]bn254.G2Affine{*p.G2Affine, g2}
 
-	ok, err := bn254.PairingCheck(P[:], Q[:])
+	ok, err := bn254.PairingCheck(g1P[:], g1Q[:])
 	if err != nil {
-		return false, nil
+		return false, errors.Errorf("pairing check failed: %w", err)
 	}
 	return ok, nil
 }
@@ -166,20 +167,20 @@ func hashToG1(data []byte) (*G1, error) {
 
 // findYFromX calculates the y coordinate for a given x on the BN254 curve
 // Returns (beta, y) where beta = x^3 + 3 (mod p) and y = sqrt(beta) if it exists
-func findYFromX(x *big.Int) (*big.Int, *big.Int, error) {
+func findYFromX(x *big.Int) (beta *big.Int, y *big.Int, err error) {
 	// Calculate beta = x^3 + 3 mod p
-	beta := new(big.Int).Exp(x, big.NewInt(3), FpModulus) // x^3
-	beta.Add(beta, big.NewInt(3))                         // x^3 + 3
-	beta.Mod(beta, FpModulus)                             // (x^3 + 3) mod p
+	beta = new(big.Int).Exp(x, big.NewInt(3), FpModulus) // x^3
+	beta.Add(beta, big.NewInt(3))                        // x^3 + 3
+	beta.Mod(beta, FpModulus)                            // (x^3 + 3) mod p
 
 	// Calculate y = beta^((p+1)/4) mod p
 	// The exponent (p+1)/4 for BN254 is 0xc19139cb84c680a6e14116da060561765e05aa45a1c72a34f082305b61f3f52
 	exponent, success := new(big.Int).SetString("c19139cb84c680a6e14116da060561765e05aa45a1c72a34f082305b61f3f52", 16)
 	if !success {
-		return nil, nil, fmt.Errorf("failed to set exponent")
+		return nil, nil, errors.New("failed to set exponent")
 	}
 
-	y := new(big.Int).Exp(beta, exponent, FpModulus)
+	y = new(big.Int).Exp(beta, exponent, FpModulus)
 
 	return beta, y, nil
 }
@@ -217,23 +218,23 @@ func (p *G2) Sub(other *G2) *G2 {
 }
 
 func SerializeG1(g1 *G1) []byte {
-	bytes := g1.G1Affine.RawBytes()
+	bytes := g1.RawBytes()
 	return bytes[:]
 }
 
 func SerializeG2(g2 *G2) []byte {
-	bytes := g2.G2Affine.RawBytes()
+	bytes := g2.RawBytes()
 	return bytes[:]
 }
 
 func DeserializeG1(bytes []byte) (*G1, error) {
 	g1 := ZeroG1()
-	_, err := g1.G1Affine.SetBytes(bytes)
+	_, err := g1.SetBytes(bytes)
 	return g1, err
 }
 
-func DeserializeG2(bytes []byte) *G2 {
+func DeserializeG2(bytes []byte) (*G2, error) {
 	g2 := ZeroG2()
-	g2.G2Affine.SetBytes(bytes)
-	return g2
+	_, err := g2.SetBytes(bytes)
+	return g2, err
 }
