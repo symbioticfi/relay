@@ -47,14 +47,14 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get master config: %w", err)
 	}
-	slog.InfoContext(ctx, "Got master config", "timestamp", timestamp.String(), "config", masterConfig)
+	slog.DebugContext(ctx, "Got master config", "timestamp", timestamp.String(), "config", masterConfig)
 
 	slog.DebugContext(ctx, "Trying to getch val set config", "timestamp", timestamp.String())
 	valSetConfig, err := v.ethClient.GetValSetConfig(ctx, timestamp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get val set config: %w", err)
 	}
-	slog.InfoContext(ctx, "Got val set config", "timestamp", timestamp.String(), "config", valSetConfig)
+	slog.DebugContext(ctx, "Got val set config", "timestamp", timestamp.String(), "config", valSetConfig)
 
 	// Get voting powers from all voting power providers
 	var allVotingPowers []entity.OperatorVotingPower
@@ -65,7 +65,7 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 			return nil, fmt.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
 		}
 		allVotingPowers = append(allVotingPowers, votingPowers...)
-		slog.InfoContext(ctx, "Got voting powers from provider", "provider", provider.Address.Hex(), "votingPowers", votingPowers)
+		slog.DebugContext(ctx, "Got voting powers from provider", "provider", provider.Address.Hex(), "votingPowers", votingPowers)
 	}
 
 	// Get keys from the keys provider
@@ -74,7 +74,7 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get keys: %w", err)
 	}
-	slog.InfoContext(ctx, "Got keys from provider", "provider", masterConfig.KeysProvider.Address.Hex(), "keys", keys)
+	slog.DebugContext(ctx, "Got keys from provider", "provider", masterConfig.KeysProvider.Address.Hex(), "keys", keys)
 
 	// Create validators map to consolidate voting powers and keys
 	validatorsMap := make(map[string]*types.Validator)
@@ -142,7 +142,7 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 		if len(validators[i].Keys) == 0 {
 			continue
 		}
-		
+
 		totalActive++
 		validators[i].IsActive = true
 
@@ -153,9 +153,9 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 		}
 		// Add to total active voting power if validator is active
 		totalActiveVotingPower = new(big.Int).Add(totalActiveVotingPower, validators[i].VotingPower)
-		
+
 		if valSetConfig.MaxValidatorsCount.Int64() != 0 {
-			if (totalActive >= int(valSetConfig.MaxValidatorsCount.Int64())) {
+			if totalActive >= int(valSetConfig.MaxValidatorsCount.Int64()) {
 				break
 			}
 		}

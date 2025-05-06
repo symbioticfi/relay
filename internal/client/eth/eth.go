@@ -51,7 +51,7 @@ var (
 type Config struct {
 	MasterRPCURL  string `validate:"required"`
 	MasterAddress string `validate:"required"`
-	PrivateKey    []byte `validate:"required"`
+	PrivateKey    *[]byte
 }
 
 func (c Config) Validate() error {
@@ -59,9 +59,11 @@ func (c Config) Validate() error {
 		return errors.Errorf("failed to validate config: %w", err)
 	}
 
-	_, err := crypto.ToECDSA(c.PrivateKey)
-	if err != nil {
-		return fmt.Errorf("failed to convert private key: %w", err)
+	if c.PrivateKey != nil {
+		_, err := crypto.ToECDSA(*c.PrivateKey)
+		if err != nil {
+			return fmt.Errorf("failed to convert private key: %w", err)
+		}
 	}
 
 	return nil
@@ -87,9 +89,12 @@ func NewEthClient(cfg Config) (*Client, error) {
 		return nil, fmt.Errorf("failed to connect to Ethereum client: %w", err)
 	}
 
-	pk, err := crypto.ToECDSA(cfg.PrivateKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert private key: %w", err)
+	var pk *ecdsa.PrivateKey
+	if cfg.PrivateKey != nil {
+		pk, err = crypto.ToECDSA(*cfg.PrivateKey)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert private key: %w", err)
+		}
 	}
 
 	return &Client{

@@ -31,14 +31,14 @@ func NewValsetGenerator(deriver *ValsetDeriver, ethClient ethClient) (*ValsetGen
 
 // GenerateValidatorSetHeader generates a validator set header for the current epoch
 func (v *ValsetGenerator) GenerateValidatorSetHeader(ctx context.Context) (types.ValidatorSetHeader, error) {
-	slog.InfoContext(ctx, "Generating validator set header")
+	slog.DebugContext(ctx, "Generating validator set header")
 
 	slog.DebugContext(ctx, "Trying to get capture timestamp")
 	timestamp, err := v.ethClient.GetCaptureTimestamp(ctx)
 	if err != nil {
 		return types.ValidatorSetHeader{}, fmt.Errorf("failed to get capture timestamp: %w", err)
 	}
-	slog.InfoContext(ctx, "Got capture timestamp", "timestamp", timestamp.String())
+	slog.DebugContext(ctx, "Got capture timestamp", "timestamp", timestamp.String())
 
 	validatorSet, err := v.deriver.GetValidatorSet(ctx, timestamp)
 	if err != nil {
@@ -50,7 +50,7 @@ func (v *ValsetGenerator) GenerateValidatorSetHeader(ctx context.Context) (types
 		return types.ValidatorSetHeader{}, fmt.Errorf("failed to get required key tag: %w", err)
 	}
 
-	slog.InfoContext(ctx, "Got validator set", "validatorSet", validatorSet)
+	slog.DebugContext(ctx, "Got validator set", "validatorSet", validatorSet)
 
 	tags := []uint8{uint8(len(validatorSet.Validators[0].Keys))}
 	for _, key := range validatorSet.Validators[0].Keys {
@@ -101,7 +101,7 @@ func (v *ValsetGenerator) GenerateValidatorSetHeader(ctx context.Context) (types
 		}
 	}
 
-	slog.InfoContext(ctx, "Generated validator set header", "formattedKeys", formattedKeys)
+	slog.DebugContext(ctx, "Generated validator set header", "formattedKeys", formattedKeys)
 
 	return types.ValidatorSetHeader{
 		Version:                validatorSet.Version,
