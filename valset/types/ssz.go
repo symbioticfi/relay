@@ -40,7 +40,7 @@ func (validator *Validator) DefineSSZ(codec *ssz.Codec) {
 	ssz.DefineBool(codec, &validator.IsActive)
 	ssz.DefineSliceOfStaticObjectsOffset(codec, &validator.Keys, 128)
 	ssz.DefineSliceOfStaticObjectsOffset(codec, &validator.Vaults, 32)
-	ssz.DefineSliceOfStaticObjectsOffset(codec, &validator.Keys, 128)
+	ssz.DefineSliceOfStaticObjectsContent(codec, &validator.Keys, 128)
 	ssz.DefineSliceOfStaticObjectsContent(codec, &validator.Vaults, 32)
 }
 
