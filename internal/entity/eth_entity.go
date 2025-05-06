@@ -17,7 +17,7 @@ const (
 
 type CrossChainAddress struct {
 	Address common.Address
-	ChainID uint64
+	ChainId uint64
 }
 
 type MasterConfig struct {

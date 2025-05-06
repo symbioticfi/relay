@@ -21,12 +21,13 @@ type Key struct {
 }
 
 type Vault struct {
+	ChainId     uint64         `ssz-size:"8"`
 	Vault       common.Address `ssz-size:"20"`
 	VotingPower *big.Int       `ssz-size:"32"`
 }
 
 type Validator struct {
-	// Version     uint8          `ssz-size:"8"` TODO: do we need this?
+	// Version     uint8          `ssz-size:"1"` TODO: do we need this?
 	Operator    common.Address `ssz-size:"20"`
 	VotingPower *big.Int       `ssz-size:"32"`
 	IsActive    bool           `ssz-size:"1"`

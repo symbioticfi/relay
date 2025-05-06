@@ -147,17 +147,17 @@ func (c masterConfigDTO) toEntity() entity.MasterConfig {
 		VotingPowerProviders: lo.Map(c.VotingPowerProviders, func(v crossChainAddressDTO, _ int) entity.CrossChainAddress {
 			return entity.CrossChainAddress{
 				Address: v.Addr,
-				ChainID: v.ChainId,
+				ChainId: v.ChainId,
 			}
 		}),
 		KeysProvider: entity.CrossChainAddress{
 			Address: c.KeysProvider.Addr,
-			ChainID: c.KeysProvider.ChainId,
+			ChainId: c.KeysProvider.ChainId,
 		},
 		Replicas: lo.Map(c.Replicas, func(v crossChainAddressDTO, _ int) entity.CrossChainAddress {
 			return entity.CrossChainAddress{
 				Address: v.Addr,
-				ChainID: v.ChainId,
+				ChainId: v.ChainId,
 			}
 		}),
 	}
