@@ -52,7 +52,7 @@ func (s *Service) HandleStream(stream network.Stream) {
 }
 
 func (s *Service) SetMessageHandler(mh func(msg entity.P2PMessage) error) {
-	s.messageHandler = mh // todo ilya check if nil
+	s.messageHandler = mh // todo ilya check if nil + mutex
 }
 
 func (s *Service) handleStream(stream network.Stream) error {
@@ -103,11 +103,28 @@ func (s *Service) AddPeer(pi peer.AddrInfo) error {
 	return nil
 }
 
+type Data interface {
+	MarshalData() ([]byte, error)
+	UnmarshalData(data []byte) error
+}
+
 // Broadcast sends a message to all connected peers
-func (s *Service) Broadcast(msg entity.P2PMessage) error {
+func (s *Service) Broadcast(typ entity.P2PMessageType, obj Data) error {
 	s.peersMutex.RLock()
 	peers := lo.Keys(s.peers)
 	s.peersMutex.RUnlock()
+
+	data, err := json.Marshal(obj)
+	if err != nil {
+		return fmt.Errorf("failed to marshal object: %w", err)
+	}
+
+	msg := entity.P2PMessage{
+		Type:      typ,
+		Sender:    s.host.ID().String(),
+		Timestamp: time.Now().Unix(),
+		Data:      data,
+	}
 
 	for _, peerID := range peers {
 		if err := s.sendToPeer(peerID, msg); err != nil {

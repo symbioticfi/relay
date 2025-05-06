@@ -7,7 +7,7 @@ import (
 type P2PMessageType string
 
 const (
-	TypeSignatureRequest P2PMessageType = "signature"
+	TypeValsetGenerated P2PMessageType = "valset_generated"
 )
 
 // P2PMessage is the basic unit of communication between peers

@@ -17,6 +17,7 @@ import (
 	"middleware-offchain/internal/client/eth"
 	"middleware-offchain/internal/client/p2p"
 	"middleware-offchain/pkg/log"
+	"middleware-offchain/valset"
 )
 
 // offchain_middleware --master-address 0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f --rpc-url http://127.0.0.1:8545
@@ -75,6 +76,16 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to create eth client: %w", err)
 		}
 
+		deriver, err := valset.NewValsetDeriver(ethClient)
+		if err != nil {
+			return errors.Errorf("failed to create valset deriver: %w", err)
+		}
+
+		generator, err := valset.NewValsetGenerator(deriver, ethClient)
+		if err != nil {
+			return errors.Errorf("failed to create valset generator: %w", err)
+		}
+
 		h, err := libp2p.New(libp2p.ListenAddrStrings(cfg.listenAddress))
 		if err != nil {
 			return errors.Errorf("failed to create libp2p host: %w", err)
@@ -100,6 +111,7 @@ var rootCmd = &cobra.Command{
 
 		signerApp, err := app.NewValsetHeaderGeneratorApp(app.Config{
 			PollingInterval: time.Second * 10,
+			ValsetGenerator: generator,
 			EthClient:       ethClient,
 			P2PService:      p2pService,
 		})
