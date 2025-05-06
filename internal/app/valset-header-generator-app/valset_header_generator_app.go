@@ -77,10 +77,14 @@ func (s *SignerApp) Start(ctx context.Context) error {
 			return errors.Errorf("failed to generate valset header: %w", err)
 		}
 
+		slog.InfoContext(ctx, "valset header generated, sending via p2p", "valset", header)
+
 		err = s.cfg.P2PService.Broadcast(entity.TypeValsetGenerated, &header)
 		if err != nil {
 			return errors.Errorf("failed to broadcast valset header: %w", err)
 		}
+
+		slog.InfoContext(ctx, "valset header sent p2p, waiting for the next cycle")
 	}
 }
 
