@@ -18,6 +18,18 @@ gen-abi:
 		--type IMasterConfigManager \
 		--out internal/client/eth/abi/IMasterConfigManager.go
 
+build-generate-genesis-linux:
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static'" -o generate_genesis_linux_amd64 ./cmd/generate-genesis && \
+		chmod a+x generate_genesis_linux_amd64
+
+build-generate-genesis-mac:
+	GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static'" -o generate_genesis_darwin_arm64 ./cmd/generate-genesis && \
+		chmod a+x generate_genesis_darwin_arm64
+
+build-middleware-offchain-mac:
+	GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static'" -o middleware_offchain_darwin_arm64 ./cmd/middleware-offchain && \
+		chmod a+x middleware_offchain_darwin_arm64
+
 #gen-abi:
 #	@for file in internal/client/eth/abi*.abi.json; do \
 #		filename=$$(basename $$file .abi.json); \

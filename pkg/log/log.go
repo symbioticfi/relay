@@ -17,13 +17,15 @@ import (
 
 var once sync.Once
 
-func Init() {
-	once.Do(internalInit)
+func Init(levelStr string) {
+	level := parseLogLevel(levelStr)
+
+	once.Do(func() {
+		internalInit(level)
+	})
 }
 
-func internalInit() {
-	level := parseLogLevel(os.Getenv("LOG_LEVEL"))
-
+func internalInit(level slog.Level) {
 	logMode := os.Getenv("LOG_MODE")
 	if logMode == "local" {
 		initPretty(level)

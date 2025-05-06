@@ -3,11 +3,12 @@ package types
 import (
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"log"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
-	"github.com/samber/lo"
 
 	"middleware-offchain/bls"
 
@@ -16,8 +17,8 @@ import (
 )
 
 type Key struct {
-	Tag     uint8  `ssz-size:"1"`
-	Payload []byte
+	Tag         uint8 `ssz-size:"1"`
+	Payload     []byte
 	PayloadHash [32]byte `ssz-size:"32"`
 }
 
@@ -110,36 +111,46 @@ func (v ValidatorSetHeader) Encode() ([]byte, error) {
 	return arguments.Pack(v.Version, v.ActiveAggregatedKeys, v.TotalActiveVotingPower, v.ValidatorsSszMRoot, v.ExtraData)
 }
 
-type jsonHexBytes []byte
+func (v ValidatorSetHeader) EncodeJSON() ([]byte, error) {
+	// Convert byte arrays to hex strings before JSON marshaling
+	type jsonHeader struct {
+		Version              uint8 `json:"version"`
+		ActiveAggregatedKeys []struct {
+			Tag     uint8  `json:"tag"`
+			Payload string `json:"payload"` // hex string
+		} `json:"activeAggregatedKeys"`
+		ValidatorsSszMRoot     string   `json:"validatorsSszMRoot"` // hex string
+		ExtraData              string   `json:"extraData"`
+		TotalActiveVotingPower *big.Int `json:"totalActiveVotingPower"`
+	}
 
-func (j jsonHexBytes) MarshalJSON() ([]byte, error) {
-	return json.Marshal(hex.EncodeToString(j))
+	jsonHeaderData := jsonHeader{
+		Version: v.Version,
+		ActiveAggregatedKeys: make([]struct {
+			Tag     uint8  `json:"tag"`
+			Payload string `json:"payload"`
+		}, len(v.ActiveAggregatedKeys)),
+		ValidatorsSszMRoot:     fmt.Sprintf("0x%064x", v.ValidatorsSszMRoot),
+		ExtraData:              formatPayload(v.ExtraData),
+		TotalActiveVotingPower: v.TotalActiveVotingPower,
+	}
+
+	for i, key := range v.ActiveAggregatedKeys {
+		jsonHeaderData.ActiveAggregatedKeys[i].Tag = key.Tag
+		jsonHeaderData.ActiveAggregatedKeys[i].Payload = formatPayload(key.Payload)
+	}
+
+	jsonData, err := json.MarshalIndent(jsonHeaderData, "", "  ")
+	if err != nil {
+		log.Fatalf("Failed to marshal header to JSON: %v", err)
+	}
+
+	return jsonData, nil
 }
 
-func (v ValidatorSetHeader) EncodeJSON() ([]byte, error) {
-	type keyDTO struct {
-		Tag     uint8        `json:"tag"`
-		Payload jsonHexBytes `json:"payload"`
-	}
-	type valSetHeaderDTO struct {
-		Version                uint8        `json:"version"`
-		ActiveAggregatedKeys   []keyDTO     `json:"activeAggregatedKeys"`
-		TotalActiveVotingPower *big.Int     `json:"total_active_voting_power"`
-		ValidatorsSszMRoot     jsonHexBytes `json:"validatorsSszMRoot"`
-		ExtraData              jsonHexBytes `json:"extraData"`
-	}
+func formatPayload(payload []byte) string {
+	lengthHex := fmt.Sprintf("%064x", len(payload)) // 64 hex digits (32 bytes) for length
+	payloadHex := hex.EncodeToString(payload)       // raw bytes → hex
 
-	valSetHeader := valSetHeaderDTO{
-		Version:                v.Version,
-		ActiveAggregatedKeys:   lo.Map(v.ActiveAggregatedKeys, func(k Key, _ int) keyDTO { return keyDTO{Tag: k.Tag, Payload: k.Payload} }),
-		TotalActiveVotingPower: v.TotalActiveVotingPower,
-		ValidatorsSszMRoot:     v.ValidatorsSszMRoot[:],
-		ExtraData:              v.ExtraData,
-	}
-
-	data, err := json.Marshal(&valSetHeader)
-	if err != nil {
-		return nil, errors.Errorf("failed to marshal validator set header: %w", err)
-	}
-	return data, nil
+	return "0x" + lengthHex + payloadHex
 }

@@ -2,9 +2,6 @@ package valset
 
 import (
 	"context"
-	"encoding/hex"
-	"encoding/json"
-	"fmt"
 	"log/slog"
 	"math/big"
 	"testing"
@@ -37,46 +34,11 @@ func TestGenerator(t *testing.T) {
 	header, err := generator.GenerateValidatorSetHeader(context.Background())
 	require.NoError(t, err)
 
-	// Convert byte arrays to hex strings before JSON marshaling
-	type jsonHeader struct {
-		Version uint8 `json:"version"`
-		ActiveAggregatedKeys []struct {
-			Tag     uint8  `json:"tag"`
-			Payload string `json:"payload"` // hex string
-		} `json:"activeAggregatedKeys"`
-		ValidatorsSszMRoot string `json:"validatorsSszMRoot"` // hex string
-		ExtraData string `json:"extraData"`
-		TotalActiveVotingPower *big.Int `json:"totalActiveVotingPower"`
-	}
-
-	jsonHeaderData := jsonHeader{
-		Version: header.Version,
-		ActiveAggregatedKeys: make([]struct {
-			Tag     uint8  `json:"tag"`
-			Payload string `json:"payload"`
-		}, len(header.ActiveAggregatedKeys)),
-		ValidatorsSszMRoot: fmt.Sprintf("0x%064x", header.ValidatorsSszMRoot),
-		ExtraData: FormatPayload(header.ExtraData),
-		TotalActiveVotingPower: header.TotalActiveVotingPower,
-	}
-
-	for i, key := range header.ActiveAggregatedKeys {
-		jsonHeaderData.ActiveAggregatedKeys[i].Tag = key.Tag
-		jsonHeaderData.ActiveAggregatedKeys[i].Payload = FormatPayload(key.Payload)
-	}
-
-	jsonData, err := json.MarshalIndent(jsonHeaderData, "", "  ")
+	jsonData, err := header.EncodeJSON()
 	if err != nil {
 		t.Fatalf("Failed to marshal header to JSON: %v", err)
 	}
 	slog.Debug("Generated validator set header", "json", string(jsonData))
 
 	//fmt.Println(hex.EncodeToString(encoded))
-}
-
-func FormatPayload(payload []byte) string {
-lengthHex  := fmt.Sprintf("%064x", len(payload)) // 64 hex digits (32 bytes) for length
-payloadHex := hex.EncodeToString(payload)        // raw bytes → hex
-
-return "0x" + lengthHex + payloadHex
 }
