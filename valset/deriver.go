@@ -176,16 +176,9 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 	})
 
 	// Create the validator set
-	validatorSet := types.ValidatorSet{
+	return &types.ValidatorSet{
 		Version:                VALSET_VERSION,
 		TotalActiveVotingPower: totalActiveVotingPower,
 		Validators:             validators,
-	}
-
-	sszMroot, err := validatorSet.HashTreeRoot()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get hash tree root: %w", err)
-	}
-
-	return &validatorSet, nil
+	}, nil
 }
