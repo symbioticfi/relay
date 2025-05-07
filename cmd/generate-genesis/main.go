@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/go-errors/errors"
 	"github.com/spf13/cobra"
@@ -61,9 +62,10 @@ var rootCmd = &cobra.Command{
 		ctx := signalContext(context.Background())
 
 		client, err := eth.NewEthClient(eth.Config{
-			MasterRPCURL:  cfg.rpcURL,
-			MasterAddress: cfg.masterAddress,
-			PrivateKey:    nil,
+			MasterRPCURL:   cfg.rpcURL,
+			MasterAddress:  cfg.masterAddress,
+			PrivateKey:     nil,
+			RequestTimeout: time.Second * 5,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create eth client: %w", err)

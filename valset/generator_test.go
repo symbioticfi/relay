@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/samber/lo"
 
@@ -19,9 +20,10 @@ func TestGenerator(t *testing.T) {
 	privateKeyInt.SetString("87191036493798670866484781455694320176667203290824056510541300741498740913410", 10)
 
 	client, err := eth.NewEthClient(eth.Config{
-		MasterRPCURL:  "http://127.0.0.1:8545",
-		MasterAddress: "0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f",
-		PrivateKey:    lo.ToPtr(privateKeyInt.Bytes()),
+		MasterRPCURL:   "http://127.0.0.1:8545",
+		MasterAddress:  "0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f",
+		PrivateKey:     lo.ToPtr(privateKeyInt.Bytes()),
+		RequestTimeout: time.Minute,
 	})
 	require.NoError(t, err)
 

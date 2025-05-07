@@ -100,7 +100,13 @@ func (s *SignerApp) waitForCommitPhase(ctx context.Context) error {
 			return ctx.Err()
 
 		case <-timer.C:
+			slog.DebugContext(ctx, "trying to get current phase")
 			phase, err := s.cfg.EthClient.GetCurrentPhase(ctx)
+			if errors.Is(err, context.DeadlineExceeded) {
+				slog.DebugContext(ctx, "context deadline exceeded while getting current phase, retrying")
+				timer.Reset(s.cfg.PollingInterval)
+				continue
+			}
 			if err != nil {
 				return errors.Errorf("failed to get current phase: %w", err)
 			}

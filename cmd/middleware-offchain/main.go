@@ -69,8 +69,9 @@ var rootCmd = &cobra.Command{
 		ctx := signalContext(context.Background())
 
 		ethClient, err := eth.NewEthClient(eth.Config{
-			MasterRPCURL:  cfg.rpcURL,
-			MasterAddress: cfg.masterAddress,
+			MasterRPCURL:   cfg.rpcURL,
+			MasterAddress:  cfg.masterAddress,
+			RequestTimeout: time.Second * 5,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create eth client: %w", err)

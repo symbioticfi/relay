@@ -7,6 +7,7 @@ import (
 	_ "embed"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -49,9 +50,10 @@ var (
 )
 
 type Config struct {
-	MasterRPCURL  string `validate:"required"`
-	MasterAddress string `validate:"required"`
-	PrivateKey    *[]byte
+	MasterRPCURL   string `validate:"required"`
+	MasterAddress  string `validate:"required"`
+	PrivateKey     *[]byte
+	RequestTimeout time.Duration `validate:"required,gt=0"`
 }
 
 func (c Config) Validate() error {
@@ -73,6 +75,7 @@ type Client struct {
 	client                *ethclient.Client
 	masterContractAddress common.Address
 	privateKey            *ecdsa.PrivateKey // could be nil for read-only access
+	cfg                   Config
 }
 
 func NewEthClient(cfg Config) (*Client, error) {
@@ -101,6 +104,7 @@ func NewEthClient(cfg Config) (*Client, error) {
 		client:                client,
 		masterContractAddress: common.HexToAddress(cfg.MasterAddress),
 		privateKey:            pk,
+		cfg:                   cfg,
 	}, nil
 }
 
@@ -416,7 +420,10 @@ func (e *Client) GetEip712Domain(ctx context.Context) (*entity.Eip712Domain, err
 }
 
 func (e *Client) callContract(ctx context.Context, callMsg ethereum.CallMsg) (result []byte, err error) {
-	result, err = e.client.CallContract(ctx, callMsg, nil)
+	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
+	defer cancel()
+
+	result, err = e.client.CallContract(tmCtx, callMsg, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call contract: %w", err)
 	}
