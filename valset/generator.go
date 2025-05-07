@@ -12,7 +12,6 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-	"github.com/karalabe/ssz"
 )
 
 // ValsetGenerator handles the generation of validator set headers
@@ -83,7 +82,10 @@ func (v *ValsetGenerator) GenerateValidatorSetHeader(ctx context.Context) (types
 		}
 	}
 
-	sszMroot := ssz.HashSequential(validatorSet)
+	sszMroot, err := validatorSet.HashTreeRoot()
+	if err != nil {
+		return types.ValidatorSetHeader{}, fmt.Errorf("failed to get hash tree root: %w", err)
+	}
 
 	// Use the first key tag for proof generation
 	valset, err := proof.ToValidatorsData(validatorSet.Validators, requiredKeyTag)

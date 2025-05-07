@@ -106,6 +106,12 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 				VotingPower: vault.VotingPower,
 			})
 		}
+
+		// Sort vaults by address in ascending order
+		sort.Slice(validatorsMap[operatorAddr].Vaults, func(i, j int) bool {
+			// Compare voting powers (higher first)
+			return validatorsMap[operatorAddr].Vaults[i].Vault.Cmp(validatorsMap[operatorAddr].Vaults[j].Vault) < 0
+		})
 	}
 
 	// Process required keys
@@ -163,11 +169,22 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 		}
 	}
 
+	// Sort validators by address in ascending order
+	sort.Slice(validators, func(i, j int) bool {
+		// Compare voting powers (higher first)
+		return validators[i].Operator.Cmp(validators[j].Operator) < 0
+	})
+
 	// Create the validator set
 	validatorSet := types.ValidatorSet{
 		Version:                VALSET_VERSION,
 		TotalActiveVotingPower: totalActiveVotingPower,
 		Validators:             validators,
+	}
+
+	sszMroot, err := validatorSet.HashTreeRoot()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get hash tree root: %w", err)
 	}
 
 	return &validatorSet, nil
