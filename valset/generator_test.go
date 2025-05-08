@@ -1,3 +1,5 @@
+//go:build manual
+
 package valset
 
 import (

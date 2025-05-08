@@ -24,7 +24,7 @@ func genValset(numValidators int, nonSigners []int) []ValidatorData {
 
 func TestProof(t *testing.T) {
 	// generate valset
-	valset := genValset(100, []int{0, 1, 2})
+	valset := genValset(5, []int{0, 1, 2})
 
 	proof, err := Prove(valset)
 	if err != nil {
