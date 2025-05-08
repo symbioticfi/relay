@@ -23,7 +23,7 @@ linters:
 #    - exhaustruct
     - exptostd
     - fatcontext
-#    - forbidigo
+    - forbidigo
     - gocheckcompilerdirectives
     - gochecknoinits
     - gochecksumtype
@@ -252,6 +252,7 @@ linters:
     rules:
       - linters:
           - exhaustruct
+          - forbidigo
         path: _test\.go
       - path: (.+)\.go$
         text: ST1003

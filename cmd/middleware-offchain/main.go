@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -22,7 +21,7 @@ import (
 
 // offchain_middleware --master-address 0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f --rpc-url http://127.0.0.1:8545
 func main() {
-	fmt.Println(os.Args)
+	slog.Info("Running offchain_middleware command", "args", os.Args)
 
 	if err := run(); err != nil && !errors.Is(err, context.Canceled) {
 		slog.Error("error executing command", "error", err)

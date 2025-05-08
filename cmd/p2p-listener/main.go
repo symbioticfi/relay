@@ -19,7 +19,7 @@ import (
 
 // p2p_listener
 func main() {
-	fmt.Println(os.Args)
+	slog.Info("Running p2p_listener command", "args", os.Args)
 
 	if err := run(); err != nil && !errors.Is(err, context.Canceled) {
 		slog.Error("error executing command", "error", err)
@@ -83,7 +83,7 @@ var rootCmd = &cobra.Command{
 
 		p2pService.SetMessageHandler(func(msg entity.P2PMessage) error {
 			slog.InfoContext(ctx, "received message", "message", msg)
-			fmt.Println(string(msg.Data))
+			fmt.Println(string(msg.Data)) //nolint:forbidigo // ok for this app
 			return nil
 		})
 		slog.InfoContext(ctx, "p2p listener created, waiting for messages")

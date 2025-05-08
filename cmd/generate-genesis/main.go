@@ -99,7 +99,7 @@ var rootCmd = &cobra.Command{
 				return errors.Errorf("failed to write output file: %w", err)
 			}
 		} else {
-			fmt.Println(string(jsonData)) //noling:forbidigo // ok to print result to stdout
+			fmt.Println(string(jsonData)) //nolint:forbidigo // ok to print result to stdout
 		}
 
 		return nil
