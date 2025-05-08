@@ -3,19 +3,44 @@
 package types
 
 import (
-	"encoding/hex"
 	"fmt"
+	"sort"
 
 	ssz "github.com/ferranbt/fastssz"
-	"github.com/samber/lo"
 
 	"github.com/ethereum/go-ethereum/common"
 )
 
-const MaxValidators = 1048576
-const MaxVaults = 32
-const MaxKeys = 128
+const (
+	ValidatorsListLocalPosition       = 0
+	OperatorLocalPosition             = 0
+	ValidatorVotingPowerLocalPosition = 1
+	IsActiveLocalPosition             = 2
+	KeysListLocalPosition             = 3
+	VaultsListLocalPosition           = 4
+	TagLocalPosition                  = 0
+	PayloadHashLocalPosition          = 1
+	ChainIdLocalPosition              = 0
+	VaultLocalPosition                = 1
+	VaultVotingPowerLocalPosition     = 2
+)
 
+const (
+	ValidatorSetElements      = 1
+	ValidatorSetTreeHeight    = 0 // ceil(log2(ValidatorSetElements))
+	ValidatorElements         = 5
+	ValidatorTreeHeight       = 3 // ceil(log2(ValidatorElements))
+	VaultElements             = 3
+	VaultTreeHeight           = 2 // ceil(log2(VaultElements))
+	KeyElements               = 2
+	KeyTreeHeight             = 1 // ceil(log2(KeyElements))
+	ValidatorsListMaxElements = 1048576
+	ValidatorsListTreeHeight  = 20 // ceil(log2(ValidatorsListMaxElements))
+	KeysListMaxElements       = 128
+	KeysListTreeHeight        = 7 // ceil(log2(KeysListMaxElements))
+	VaultsListMaxElements     = 32
+	VaultsListTreeHeight      = 5 // ceil(log2(VaultsListMaxElements))
+)
 
 // MarshalSSZ ssz marshals the Key object
 func (k *Key) MarshalSSZ() ([]byte, error) {
@@ -183,8 +208,8 @@ func (v *Validator) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = ssz.WriteOffset(dst, offset)
 
 	// Field (3) 'Keys'
-	if size := len(v.Keys); size > 128 {
-		err = ssz.ErrListTooBigFn("Validator.Keys", size, 128)
+	if size := len(v.Keys); size > KeysListMaxElements {
+		err = ssz.ErrListTooBigFn("Validator.Keys", size, KeysListMaxElements)
 		return
 	}
 	for ii := 0; ii < len(v.Keys); ii++ {
@@ -194,8 +219,8 @@ func (v *Validator) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	}
 
 	// Field (4) 'Vaults'
-	if size := len(v.Vaults); size > 32 {
-		err = ssz.ErrListTooBigFn("Validator.Vaults", size, 32)
+	if size := len(v.Vaults); size > VaultsListMaxElements {
+		err = ssz.ErrListTooBigFn("Validator.Vaults", size, VaultsListMaxElements)
 		return
 	}
 	for ii := 0; ii < len(v.Vaults); ii++ {
@@ -244,7 +269,7 @@ func (v *Validator) UnmarshalSSZ(buf []byte) error {
 	// Field (3) 'Keys'
 	{
 		buf = tail[o3:o4]
-		num, err := ssz.DivideInt2(len(buf), 33, 128)
+		num, err := ssz.DivideInt2(len(buf), 33, KeysListMaxElements)
 		if err != nil {
 			return err
 		}
@@ -262,7 +287,7 @@ func (v *Validator) UnmarshalSSZ(buf []byte) error {
 	// Field (4) 'Vaults'
 	{
 		buf = tail[o4:]
-		num, err := ssz.DivideInt2(len(buf), 60, 32)
+		num, err := ssz.DivideInt2(len(buf), 60, VaultsListMaxElements)
 		if err != nil {
 			return err
 		}
@@ -314,7 +339,7 @@ func (v *Validator) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 	{
 		subIndx := hh.Index()
 		num := uint64(len(v.Keys))
-		if num > 128 {
+		if num > KeysListMaxElements {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -323,14 +348,14 @@ func (v *Validator) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 128)
+		hh.MerkleizeWithMixin(subIndx, num, KeysListMaxElements)
 	}
 
 	// Field (4) 'Vaults'
 	{
 		subIndx := hh.Index()
 		num := uint64(len(v.Vaults))
-		if num > 32 {
+		if num > VaultsListMaxElements {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -339,7 +364,7 @@ func (v *Validator) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 32)
+		hh.MerkleizeWithMixin(subIndx, num, VaultsListMaxElements)
 	}
 
 	hh.Merkleize(indx)
@@ -365,8 +390,8 @@ func (v *ValidatorSet) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = ssz.WriteOffset(dst, offset)
 
 	// Field (0) 'Validators'
-	if size := len(v.Validators); size > 1048576 {
-		err = ssz.ErrListTooBigFn("ValidatorSet.Validators", size, 1048576)
+	if size := len(v.Validators); size > ValidatorsListMaxElements {
+		err = ssz.ErrListTooBigFn("ValidatorSet.Validators", size, ValidatorsListMaxElements)
 		return
 	}
 	{
@@ -408,7 +433,7 @@ func (v *ValidatorSet) UnmarshalSSZ(buf []byte) error {
 	// Field (0) 'Validators'
 	{
 		buf = tail[o0:]
-		num, err := ssz.DecodeDynamicLength(buf, 1048576)
+		num, err := ssz.DecodeDynamicLength(buf, ValidatorsListMaxElements)
 		if err != nil {
 			return err
 		}
@@ -455,7 +480,7 @@ func (v *ValidatorSet) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 	{
 		subIndx := hh.Index()
 		num := uint64(len(v.Validators))
-		if num > 1048576 {
+		if num > ValidatorsListMaxElements {
 			err = ssz.ErrIncorrectListSize
 			return
 		}
@@ -464,7 +489,7 @@ func (v *ValidatorSet) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 				return
 			}
 		}
-		hh.MerkleizeWithMixin(subIndx, num, 1048576)
+		hh.MerkleizeWithMixin(subIndx, num, ValidatorsListMaxElements)
 	}
 
 	hh.Merkleize(indx)
@@ -476,55 +501,234 @@ func (v *ValidatorSet) GetTree() (*ssz.Node, error) {
 	return ssz.ProofTree(v)
 }
 
-func (v *ValidatorSet) GetValidatorRootIndex(operator common.Address) (int) {
-	for i, validator := range v.Validators {
-		if validator.Operator.Cmp(operator) == 0 {
-			validatorRootIndex := 1 << 0 + 0
-			validatorRootIndex <<= 1
-			validatorRootIndex = validatorRootIndex * MaxValidators + i
-
-			localValidatorRootIndex := 0
-			localValidatorRootIndex <<= 1
-			localValidatorRootIndex = localValidatorRootIndex * MaxValidators + i
-
-			node, err := v.GetTree()
-			if err != nil {
-				return -1
-			}
-
-			fmt.Printf("operator: %x\n", operator)
-			fmt.Printf("root: %x\n", node.Hash())
-			
-			first, _ := node.Get(validatorRootIndex)
-			
-			fmt.Printf("first: %x\n", first.Hash())
-			fmt.Printf("validatorRootIndex: %d\n", validatorRootIndex)
-			fmt.Printf("localValidatorRootIndex: %d\n", localValidatorRootIndex)
-			validatorRootProof, _ := node.Prove(validatorRootIndex)
-			fmt.Printf("validatorRootProof leaf: %x\n", validatorRootProof.Leaf)
-			fmt.Printf("validatorRootProof hashes: %s\n", lo.Map(validatorRootProof.Hashes, func(hash []byte, _ int) string {
-				return fmt.Sprintf("0x%s,", hex.EncodeToString(hash))
-			}))
-
-			operatorIndex := 1 << 3 + 0 
-
-			second, _ := first.Get(operatorIndex)
-
-			fmt.Printf("second: %x\n", second.Hash())
-			fmt.Printf("operatorIndex: %d\n", operatorIndex)
-			
-			operatorProof, _ := first.Prove(operatorIndex)
-			fmt.Printf("operatorProof leaf: %x\n", operatorProof.Leaf)
-			fmt.Printf("operatorProof hashes: %s\n", lo.Map(operatorProof.Hashes, func(hash []byte, _ int) string {
-				return fmt.Sprintf("0x%s,", hex.EncodeToString(hash))
-			}))
-
-			// validatorRootIndexNode, _ := node.Get(validatorRootIndex)
-			// fmt.Printf("node.Get(validatorRootIndex): %x\n", validatorRootIndexNode.Hash())
-
-			return validatorRootIndex
-		}
+func (v *ValidatorSet) ProveValidatorRoot(operator common.Address) (*Validator, int, *ssz.Proof, error) {
+	validatorIndex := sort.Search(len(v.Validators), func(i int) bool {
+		return v.Validators[i].Operator.Cmp(operator) >= 0
+	})
+	if validatorIndex >= len(v.Validators) || v.Validators[validatorIndex].Operator.Cmp(operator) != 0 {
+		return nil, 0, nil, fmt.Errorf("validator %s not found", operator)
 	}
-	
-	return -1
+
+	// go to ValidatorSet.Validators
+	validatorRootTreeIndex := 1<<ValidatorSetTreeHeight + ValidatorsListLocalPosition
+	// consider List's length mix-in
+	validatorRootTreeIndex <<= 1
+	// go to ValidatorSet.Validators[validatorIndex]
+	validatorRootTreeIndex = validatorRootTreeIndex*ValidatorsListMaxElements + validatorIndex
+
+	validatorRootTreeLocalIndex := ValidatorsListLocalPosition
+	validatorRootTreeLocalIndex <<= 1
+	validatorRootTreeLocalIndex = validatorRootTreeLocalIndex*ValidatorsListMaxElements + validatorIndex
+
+	validatorSetRootNode, err := v.GetTree()
+	if err != nil {
+		return nil, 0, nil, fmt.Errorf("failed to get validator set root node: %w", err)
+	}
+
+	validatorRootProof, err := validatorSetRootNode.Prove(validatorRootTreeIndex)
+	if err != nil {
+		return nil, 0, nil, fmt.Errorf("failed to get validator root proof: %w", err)
+	}
+
+	return v.Validators[validatorIndex], validatorRootTreeLocalIndex, validatorRootProof, nil
+}
+
+func (v *Validator) ProveOperator() (*ssz.Proof, error) {
+	validatorRootNode, err := v.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get validator root node: %w", err)
+	}
+
+	// go to Validator.Operator
+	operatorTreeIndex := 1<<ValidatorTreeHeight + OperatorLocalPosition
+
+	operatorProof, err := validatorRootNode.Prove(operatorTreeIndex)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get operator proof: %w", err)
+	}
+
+	return operatorProof, nil
+}
+
+func (v *Validator) ProveValidatorVotingPower() (*ssz.Proof, error) {
+	validatorRootNode, err := v.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get validator root node: %w", err)
+	}
+
+	// go to Validator.VotingPower
+	validatorVotingPowerTreeIndex := 1<<ValidatorTreeHeight + ValidatorVotingPowerLocalPosition
+
+	validatorVotingPowerProof, err := validatorRootNode.Prove(validatorVotingPowerTreeIndex)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get validator voting power proof: %w", err)
+	}
+
+	return validatorVotingPowerProof, nil
+}
+
+func (v *Validator) ProveIsActive() (*ssz.Proof, error) {
+	validatorRootNode, err := v.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get validator root node: %w", err)
+	}
+
+	// go to Validator.IsActive
+	isActiveTreeIndex := 1<<ValidatorTreeHeight + IsActiveLocalPosition
+
+	isActiveProof, err := validatorRootNode.Prove(isActiveTreeIndex)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get validator is active proof: %w", err)
+	}
+
+	return isActiveProof, nil
+}
+
+func (v *Validator) ProveKeyRoot(keyTag uint8) (*Key, int, *ssz.Proof, error) {
+	keyIndex := sort.Search(len(v.Keys), func(i int) bool {
+		return v.Keys[i].Tag >= keyTag
+	})
+	if keyIndex >= len(v.Keys) || v.Keys[keyIndex].Tag != keyTag {
+		return nil, 0, nil, fmt.Errorf("key %d not found", keyTag)
+	}
+
+	validatorRootNode, err := v.GetTree()
+	if err != nil {
+		return nil, 0, nil, fmt.Errorf("failed to get validator root node: %w", err)
+	}
+
+	// go to Validator.Keys
+	keyRootTreeIndex := 1<<ValidatorTreeHeight + KeysListLocalPosition
+	// consider List's length mix-in
+	keyRootTreeIndex <<= 1
+	// go to Validator.Keys[keyIndex]
+	keyRootTreeIndex = keyRootTreeIndex*KeysListMaxElements + keyIndex
+
+	keyRootTreeLocalIndex := KeysListLocalPosition
+	keyRootTreeLocalIndex <<= 1
+	keyRootTreeLocalIndex = keyRootTreeLocalIndex*KeysListMaxElements + keyIndex
+
+	keyRootProof, err := validatorRootNode.Prove(keyRootTreeIndex)
+	if err != nil {
+		return nil, 0, nil, fmt.Errorf("failed to get validator keys proof: %w", err)
+	}
+
+	return v.Keys[keyIndex], keyRootTreeLocalIndex, keyRootProof, nil
+}
+
+func (k *Key) ProveTag() (*ssz.Proof, error) {
+	keyRootNode, err := k.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get key root node: %w", err)
+	}
+
+	// go to Key.Tag
+	tagTreeIndex := 1<<KeyTreeHeight + TagLocalPosition
+
+	tagProof, err := keyRootNode.Prove(tagTreeIndex)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get key tag proof: %w", err)
+	}
+
+	return tagProof, nil
+}
+
+func (k *Key) ProvePayloadHash() (*ssz.Proof, error) {
+	keyRootNode, err := k.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get key root node: %w", err)
+	}
+
+	// go to Key.PayloadHash
+	payloadHashTreeIndex := 1<<KeyTreeHeight + PayloadHashLocalPosition
+
+	payloadHashProof, err := keyRootNode.Prove(payloadHashTreeIndex)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get key payload hash proof: %w", err)
+	}
+
+	return payloadHashProof, nil
+}
+
+func (v *Validator) ProveVaultRoot(vault common.Address) (*Vault, int, *ssz.Proof, error) {
+	vaultIndex := sort.Search(len(v.Vaults), func(i int) bool {
+		return v.Vaults[i].Vault.Cmp(vault) >= 0
+	})
+	if vaultIndex >= len(v.Vaults) || v.Vaults[vaultIndex].Vault.Cmp(vault) != 0 {
+		return nil, 0, nil, fmt.Errorf("vault %s not found", vault)
+	}
+
+	validatorRootNode, err := v.GetTree()
+	if err != nil {
+		return nil, 0, nil, fmt.Errorf("failed to get validator root node: %w", err)
+	}
+
+	// go to Validator.Vaults
+	vaultRootTreeIndex := 1<<ValidatorTreeHeight + VaultsListLocalPosition
+	// consider List's length mix-in
+	vaultRootTreeIndex <<= 1
+	// go to Validator.Vaults[vaultIndex]
+	vaultRootTreeIndex = vaultRootTreeIndex*VaultsListMaxElements + vaultIndex
+
+	vaultRootTreeLocalIndex := VaultsListLocalPosition
+	vaultRootTreeLocalIndex <<= 1
+	vaultRootTreeLocalIndex = vaultRootTreeLocalIndex*VaultsListMaxElements + vaultIndex
+
+	vaultRootProof, err := validatorRootNode.Prove(vaultRootTreeIndex)
+	if err != nil {
+		return nil, 0, nil, fmt.Errorf("failed to get validator vaults proof: %w", err)
+	}
+
+	return v.Vaults[vaultIndex], vaultRootTreeLocalIndex, vaultRootProof, nil
+}
+
+func (v *Validator) ProveChainId() (*ssz.Proof, error) {
+	validatorRootNode, err := v.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get validator root node: %w", err)
+	}
+
+	// go to Validator.ChainId
+	chainIdTreeIndex := 1<<ValidatorTreeHeight + ChainIdLocalPosition
+
+	chainIdProof, err := validatorRootNode.Prove(chainIdTreeIndex)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get validator chain id proof: %w", err)
+	}
+
+	return chainIdProof, nil
+}
+
+func (v *Vault) ProveVault() (*ssz.Proof, error) {
+	vaultRootNode, err := v.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get vault root node: %w", err)
+	}
+
+	// go to Vault.Vault
+	vaultTreeIndex := 1<<VaultTreeHeight + VaultLocalPosition
+
+	vaultProof, err := vaultRootNode.Prove(vaultTreeIndex)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get vault proof: %w", err)
+	}
+
+	return vaultProof, nil
+}
+
+func (v *Vault) ProveVaultVotingPower() (*ssz.Proof, error) {
+	vaultRootNode, err := v.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get vault root node: %w", err)
+	}
+
+	// go to Vault.VotingPower
+	vaultVotingPowerTreeIndex := 1<<VaultTreeHeight + VaultVotingPowerLocalPosition
+
+	vaultVotingPowerProof, err := vaultRootNode.Prove(vaultVotingPowerTreeIndex)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get vault voting power proof: %w", err)
+	}
+
+	return vaultVotingPowerProof, nil
 }
