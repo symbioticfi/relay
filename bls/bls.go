@@ -29,12 +29,12 @@ type SecretKey struct {
 	*fr.Element
 }
 
-// PublicKeyG1 represents a BLS public key (a point on G1)
+// G1 represents a BLS public key (a point on G1)
 type G1 struct {
 	*bn254.G1Affine
 }
 
-// PublicKeyG2 represents a BLS public key (a point on G2)
+// G2 represents a BLS public key (a point on G2)
 type G2 struct {
 	*bn254.G2Affine
 }
@@ -131,7 +131,7 @@ func (p *G2) Verify(signature *G1, msgHash []byte) (bool, error) {
 	return ok, nil
 }
 
-// HashToPoint hashes data to a point on the BN254 curve
+// hashToG1 hashes data to a point on the BN254 curve
 func hashToG1(data []byte) (*G1, error) {
 	// Convert data to a big integer
 	x := new(big.Int).SetBytes(data)

@@ -8,13 +8,13 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	"middleware-offchain/internal/client/p2p"
+	"middleware-offchain/bls"
 	"middleware-offchain/internal/entity"
 	"middleware-offchain/valset/types"
 )
 
 type p2pService interface {
-	Broadcast(typ entity.P2PMessageType, obj p2p.Data) error
+	BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error
 }
 
 type ethClient interface {
@@ -23,6 +23,7 @@ type ethClient interface {
 
 type valsetGenerator interface {
 	GenerateValidatorSetHeader(ctx context.Context) (types.ValidatorSetHeader, error)
+	GenerateValidatorSetHeaderHash(ctx context.Context, validatorSetHeader types.ValidatorSetHeader) ([]byte, error)
 }
 
 type Config struct {
@@ -30,6 +31,7 @@ type Config struct {
 	ValsetGenerator valsetGenerator `validate:"required"`
 	EthClient       ethClient       `validate:"required"`
 	P2PService      p2pService      `validate:"required"`
+	KeyPair         *bls.KeyPair    `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -77,9 +79,27 @@ func (s *SignerApp) Start(ctx context.Context) error {
 			return errors.Errorf("failed to generate valset header: %w", err)
 		}
 
-		slog.InfoContext(ctx, "valset header generated, sending via p2p", "valset", header)
+		slog.DebugContext(ctx, "valset header generated, generating hash", "header", header)
 
-		err = s.cfg.P2PService.Broadcast(entity.TypeValsetGenerated, &header)
+		headerHash, err := s.cfg.ValsetGenerator.GenerateValidatorSetHeaderHash(ctx, header)
+		if err != nil {
+			return errors.Errorf("failed to generate valset header hash: %w", err)
+		}
+
+		slog.DebugContext(ctx, "valset header hash generated, signing", "headerHash", headerHash)
+
+		headerSignature, err := s.cfg.KeyPair.Sign(headerHash)
+		if err != nil {
+			return errors.Errorf("failed to sign valset header hash: %w", err)
+		}
+
+		slog.DebugContext(ctx, "valset header hash signed, sending via p2p", "headerSignature", headerSignature)
+
+		err = s.cfg.P2PService.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureMessage{
+			MessageHash: headerHash,
+			Signature:   headerSignature.Marshal(),
+			PublicKey:   nil,
+		})
 		if err != nil {
 			return errors.Errorf("failed to broadcast valset header: %w", err)
 		}

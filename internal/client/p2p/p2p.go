@@ -103,21 +103,11 @@ func (s *Service) AddPeer(pi peer.AddrInfo) error {
 	return nil
 }
 
-type Data interface {
-	MarshalData() ([]byte, error)
-	UnmarshalData(data []byte) error
-}
-
-// Broadcast sends a message to all connected peers
-func (s *Service) Broadcast(typ entity.P2PMessageType, obj Data) error {
+// broadcast sends a message to all connected peers
+func (s *Service) broadcast(ctx context.Context, typ entity.P2PMessageType, data []byte) error {
 	s.peersMutex.RLock()
 	peers := lo.Keys(s.peers)
 	s.peersMutex.RUnlock()
-
-	data, err := obj.MarshalData()
-	if err != nil {
-		return fmt.Errorf("failed to marshal object: %w", err)
-	}
 
 	msg := entity.P2PMessage{
 		Type:      typ,
@@ -127,7 +117,7 @@ func (s *Service) Broadcast(typ entity.P2PMessageType, obj Data) error {
 	}
 
 	for _, peerID := range peers {
-		if err := s.sendToPeer(peerID, msg); err != nil {
+		if err := s.sendToPeer(ctx, peerID, msg); err != nil {
 			return err // todo ilya send parallel + join errors + timeout
 		}
 	}
@@ -136,9 +126,9 @@ func (s *Service) Broadcast(typ entity.P2PMessageType, obj Data) error {
 }
 
 // sendToPeer sends a message to a specific peer
-func (s *Service) sendToPeer(peerID peer.ID, msg entity.P2PMessage) error {
+func (s *Service) sendToPeer(ctx context.Context, peerID peer.ID, msg entity.P2PMessage) error {
 	// Open a stream to the peer
-	stream, err := s.host.NewStream(s.ctx, peerID, protocolID)
+	stream, err := s.host.NewStream(ctx, peerID, protocolID)
 	if err != nil {
 		return fmt.Errorf("failed to open stream: %w", err)
 	}

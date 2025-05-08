@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log/slog"
+	"math/big"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,6 +13,7 @@ import (
 	"github.com/libp2p/go-libp2p"
 	"github.com/spf13/cobra"
 
+	"middleware-offchain/bls"
 	app "middleware-offchain/internal/app/valset-header-generator-app"
 	"middleware-offchain/internal/client/eth"
 	"middleware-offchain/internal/client/p2p"
@@ -35,12 +37,16 @@ func run() error {
 	rootCmd.PersistentFlags().StringVar(&cfg.masterAddress, "master-address", "", "Master contract address")
 	rootCmd.PersistentFlags().StringVar(&cfg.logLevel, "log-level", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVar(&cfg.listenAddress, "p2p-listen", "/ip4/127.0.0.1/tcp/8000", "P2P listen address")
+	rootCmd.PersistentFlags().StringVar(&cfg.secretKey, "secret-key", "", "Secret key for BLS signature generation")
 
 	if err := rootCmd.MarkPersistentFlagRequired("rpc-url"); err != nil {
 		return errors.Errorf("failed to mark rpc-url as required: %w", err)
 	}
 	if err := rootCmd.MarkPersistentFlagRequired("master-address"); err != nil {
 		return errors.Errorf("failed to mark master-address as required: %w", err)
+	}
+	if err := rootCmd.MarkPersistentFlagRequired("secret-key"); err != nil {
+		return errors.Errorf("failed to mark secret-key as required: %w", err)
 	}
 
 	return rootCmd.Execute()
@@ -51,6 +57,7 @@ type config struct {
 	masterAddress string
 	logLevel      string
 	listenAddress string
+	secretKey     string
 }
 
 var cfg config
@@ -66,6 +73,9 @@ var rootCmd = &cobra.Command{
 		log.Init(cfg.logLevel)
 
 		ctx := signalContext(context.Background())
+
+		b := new(big.Int).SetBytes([]byte(cfg.secretKey))
+		keyPair := bls.ComputeKeyPair(b.Bytes())
 
 		ethClient, err := eth.NewEthClient(eth.Config{
 			MasterRPCURL:   cfg.rpcURL,
@@ -114,6 +124,7 @@ var rootCmd = &cobra.Command{
 			ValsetGenerator: generator,
 			EthClient:       ethClient,
 			P2PService:      p2pService,
+			KeyPair:         keyPair,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create valset header generator app: %w", err)

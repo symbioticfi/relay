@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"middleware-offchain/internal/entity"
-	"middleware-offchain/valset/types"
 )
 
 func TestP2P(t *testing.T) {
@@ -46,12 +45,10 @@ func TestP2P(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	err = p2p1.Broadcast(entity.TypeValsetGenerated, &types.ValidatorSetHeader{
-		Version:                33,
-		ActiveAggregatedKeys:   nil,
-		TotalActiveVotingPower: nil,
-		ValidatorsSszMRoot:     [32]byte{},
-		ExtraData:              []byte("hello"),
+	err = p2p1.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureMessage{
+		MessageHash: []byte("hello hash"),
+		Signature:   []byte("hello signature"),
+		PublicKey:   []byte("hello public key"),
 	})
 	require.NoError(t, err)
 
@@ -99,12 +96,10 @@ func TestP2PMany(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	err = mainService.Broadcast(entity.TypeValsetGenerated, &types.ValidatorSetHeader{
-		Version:                33,
-		ActiveAggregatedKeys:   nil,
-		TotalActiveVotingPower: nil,
-		ValidatorsSszMRoot:     [32]byte{},
-		ExtraData:              []byte("hello"),
+	err = mainService.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureMessage{
+		MessageHash: []byte("hello hash"),
+		Signature:   []byte("hello signature"),
+		PublicKey:   []byte("hello public key"),
 	})
 	require.NoError(t, err)
 
