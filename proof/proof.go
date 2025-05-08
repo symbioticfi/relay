@@ -4,9 +4,12 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
-	"offchain-middleware/bls"
-	"offchain-middleware/valset/types"
 	"os"
+
+	"github.com/go-errors/errors"
+
+	"middleware-offchain/bls"
+	"middleware-offchain/valset/types"
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark-crypto/ecc/bn254"
@@ -138,7 +141,7 @@ func setCircuitData(circuit *Circuit, valset *[]ValidatorData) {
 	circuit.ZeroPoint = sw_bn254.NewG1Affine(*zeroPoint)
 }
 
-func ToValidatorsData(validators []*types.Validator, requiredKeyTag uint8) []ValidatorData {
+func ToValidatorsData(validators []*types.Validator, requiredKeyTag uint8) ([]ValidatorData, error) {
 	valset := make([]ValidatorData, 0)
 	for i := 0; i < len(validators); i++ {
 		if !validators[i].IsActive {
@@ -146,11 +149,15 @@ func ToValidatorsData(validators []*types.Validator, requiredKeyTag uint8) []Val
 		}
 		for _, key := range validators[i].Keys {
 			if key.Tag == requiredKeyTag {
-				valset = append(valset, ValidatorData{Key: *bls.DeserializeG1(key.Payload).G1Affine, VotingPower: *validators[i].VotingPower})
+				g1, err := bls.DeserializeG1(key.Payload)
+				if err != nil {
+					return nil, errors.Errorf("failed to deserialize G1: %w", err)
+				}
+				valset = append(valset, ValidatorData{Key: *g1.G1Affine, VotingPower: *validators[i].VotingPower})
 			}
 		}
 	}
-	return valset
+	return valset, nil
 }
 
 func Prove(valset []ValidatorData) ([]byte, error) {

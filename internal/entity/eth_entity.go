@@ -1,4 +1,4 @@
-package eth
+package entity
 
 import (
 	"math/big"
@@ -30,6 +30,7 @@ type ValSetConfig struct {
 	MaxVotingPower          *big.Int
 	MinInclusionVotingPower *big.Int
 	MaxValidatorsCount      *big.Int
+	RequiredKeyTags         []byte
 }
 
 type VaultVotingPower struct {
