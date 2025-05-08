@@ -114,6 +114,7 @@ func (v *ValsetGenerator) GenerateValidatorSetHeader(ctx context.Context) (types
 	}, nil
 }
 
+// hash
 func (v *ValsetGenerator) GenerateValidatorSetHeaderHash(ctx context.Context, validatorSetHeader types.ValidatorSetHeader) ([]byte, error) {
 	hash, err := types.Hash(validatorSetHeader)
 	if err != nil {

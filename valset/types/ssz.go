@@ -48,8 +48,8 @@ func (k *Key) MarshalSSZ() ([]byte, error) {
 }
 
 // MarshalSSZTo ssz marshals the Key object to a target array
-func (k *Key) MarshalSSZTo(buf []byte) (dst []byte, err error) {
-	dst = buf
+func (k *Key) MarshalSSZTo(buf []byte) ([]byte, error) {
+	dst := buf
 
 	// Field (0) 'Tag'
 	dst = ssz.MarshalUint8(dst, k.Tag)
@@ -57,7 +57,7 @@ func (k *Key) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	// Field (1) 'PayloadHash'
 	dst = append(dst, k.PayloadHash[:]...)
 
-	return
+	return dst, nil
 }
 
 // UnmarshalSSZ ssz unmarshals the Key object
@@ -78,9 +78,8 @@ func (k *Key) UnmarshalSSZ(buf []byte) error {
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the Key object
-func (k *Key) SizeSSZ() (size int) {
-	size = 33
-	return
+func (k *Key) SizeSSZ() int {
+	return 33
 }
 
 // HashTreeRoot ssz hashes the Key object
@@ -89,7 +88,7 @@ func (k *Key) HashTreeRoot() ([32]byte, error) {
 }
 
 // HashTreeRootWith ssz hashes the Key object with a hasher
-func (k *Key) HashTreeRootWith(hh ssz.HashWalker) (err error) {
+func (k *Key) HashTreeRootWith(hh ssz.HashWalker) error {
 	indx := hh.Index()
 
 	// Field (0) 'Tag'
@@ -99,7 +98,8 @@ func (k *Key) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 	hh.PutBytes(k.PayloadHash[:])
 
 	hh.Merkleize(indx)
-	return
+
+	return nil
 }
 
 // GetTree ssz hashes the Key object
@@ -113,8 +113,8 @@ func (v *Vault) MarshalSSZ() ([]byte, error) {
 }
 
 // MarshalSSZTo ssz marshals the Vault object to a target array
-func (v *Vault) MarshalSSZTo(buf []byte) (dst []byte, err error) {
-	dst = buf
+func (v *Vault) MarshalSSZTo(buf []byte) ([]byte, error) {
+	dst := buf
 
 	// Field (0) 'ChainId'
 	dst = ssz.MarshalUint64(dst, v.ChainId)
@@ -125,7 +125,7 @@ func (v *Vault) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	// Field (2) 'VotingPower'
 	dst = append(dst, v.VotingPower.Bytes()...)
 
-	return
+	return dst, nil
 }
 
 // UnmarshalSSZ ssz unmarshals the Vault object
@@ -149,9 +149,8 @@ func (v *Vault) UnmarshalSSZ(buf []byte) error {
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the Vault object
-func (v *Vault) SizeSSZ() (size int) {
-	size = 60
-	return
+func (v *Vault) SizeSSZ() int {
+	return 60
 }
 
 // HashTreeRoot ssz hashes the Vault object
@@ -160,7 +159,7 @@ func (v *Vault) HashTreeRoot() ([32]byte, error) {
 }
 
 // HashTreeRootWith ssz hashes the Vault object with a hasher
-func (v *Vault) HashTreeRootWith(hh ssz.HashWalker) (err error) {
+func (v *Vault) HashTreeRootWith(hh ssz.HashWalker) error {
 	indx := hh.Index()
 
 	// Field (0) 'ChainId'
@@ -173,7 +172,8 @@ func (v *Vault) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 	hh.PutBytes(v.VotingPower.Bytes())
 
 	hh.Merkleize(indx)
-	return
+
+	return nil
 }
 
 // GetTree ssz hashes the Vault object
@@ -187,8 +187,8 @@ func (v *Validator) MarshalSSZ() ([]byte, error) {
 }
 
 // MarshalSSZTo ssz marshals the Validator object to a target array
-func (v *Validator) MarshalSSZTo(buf []byte) (dst []byte, err error) {
-	dst = buf
+func (v *Validator) MarshalSSZTo(buf []byte) ([]byte, error) {
+	dst := buf
 	offset := int(61)
 
 	// Field (0) 'Operator'
@@ -209,27 +209,28 @@ func (v *Validator) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 
 	// Field (3) 'Keys'
 	if size := len(v.Keys); size > KeysListMaxElements {
-		err = ssz.ErrListTooBigFn("Validator.Keys", size, KeysListMaxElements)
-		return
+		return nil, ssz.ErrListTooBigFn("Validator.Keys", size, KeysListMaxElements)
 	}
 	for ii := 0; ii < len(v.Keys); ii++ {
-		if dst, err = v.Keys[ii].MarshalSSZTo(dst); err != nil {
-			return
+		var err error
+		dst, err = v.Keys[ii].MarshalSSZTo(dst)
+		if err != nil {
+			return nil, err
 		}
 	}
 
 	// Field (4) 'Vaults'
 	if size := len(v.Vaults); size > VaultsListMaxElements {
-		err = ssz.ErrListTooBigFn("Validator.Vaults", size, VaultsListMaxElements)
-		return
+		return nil, ssz.ErrListTooBigFn("Validator.Vaults", size, VaultsListMaxElements)
 	}
 	for ii := 0; ii < len(v.Vaults); ii++ {
-		if dst, err = v.Vaults[ii].MarshalSSZTo(dst); err != nil {
-			return
+		var err error
+		dst, err = v.Vaults[ii].MarshalSSZTo(dst)
+		if err != nil {
+			return nil, err
 		}
 	}
-
-	return
+	return dst, nil
 }
 
 // UnmarshalSSZ ssz unmarshals the Validator object
@@ -305,8 +306,8 @@ func (v *Validator) UnmarshalSSZ(buf []byte) error {
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the Validator object
-func (v *Validator) SizeSSZ() (size int) {
-	size = 61
+func (v *Validator) SizeSSZ() int {
+	size := 61
 
 	// Field (3) 'Keys'
 	size += len(v.Keys) * 33
@@ -314,7 +315,7 @@ func (v *Validator) SizeSSZ() (size int) {
 	// Field (4) 'Vaults'
 	size += len(v.Vaults) * 60
 
-	return
+	return size
 }
 
 // HashTreeRoot ssz hashes the Validator object
@@ -323,7 +324,7 @@ func (v *Validator) HashTreeRoot() ([32]byte, error) {
 }
 
 // HashTreeRootWith ssz hashes the Validator object with a hasher
-func (v *Validator) HashTreeRootWith(hh ssz.HashWalker) (err error) {
+func (v *Validator) HashTreeRootWith(hh ssz.HashWalker) error {
 	indx := hh.Index()
 
 	// Field (0) 'Operator'
@@ -340,12 +341,11 @@ func (v *Validator) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 		subIndx := hh.Index()
 		num := uint64(len(v.Keys))
 		if num > KeysListMaxElements {
-			err = ssz.ErrIncorrectListSize
-			return
+			return ssz.ErrIncorrectListSize
 		}
 		for _, elem := range v.Keys {
-			if err = elem.HashTreeRootWith(hh); err != nil {
-				return
+			if err := elem.HashTreeRootWith(hh); err != nil {
+				return err
 			}
 		}
 		hh.MerkleizeWithMixin(subIndx, num, KeysListMaxElements)
@@ -356,19 +356,18 @@ func (v *Validator) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 		subIndx := hh.Index()
 		num := uint64(len(v.Vaults))
 		if num > VaultsListMaxElements {
-			err = ssz.ErrIncorrectListSize
-			return
+			return ssz.ErrIncorrectListSize
 		}
 		for _, elem := range v.Vaults {
-			if err = elem.HashTreeRootWith(hh); err != nil {
-				return
+			if err := elem.HashTreeRootWith(hh); err != nil {
+				return err
 			}
 		}
 		hh.MerkleizeWithMixin(subIndx, num, VaultsListMaxElements)
 	}
 
 	hh.Merkleize(indx)
-	return
+	return nil
 }
 
 // GetTree ssz hashes the Validator object
@@ -382,8 +381,8 @@ func (v *ValidatorSet) MarshalSSZ() ([]byte, error) {
 }
 
 // MarshalSSZTo ssz marshals the ValidatorSet object to a target array
-func (v *ValidatorSet) MarshalSSZTo(buf []byte) (dst []byte, err error) {
-	dst = buf
+func (v *ValidatorSet) MarshalSSZTo(buf []byte) ([]byte, error) {
+	dst := buf
 	offset := int(4)
 
 	// Offset (0) 'Validators'
@@ -391,8 +390,7 @@ func (v *ValidatorSet) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 
 	// Field (0) 'Validators'
 	if size := len(v.Validators); size > ValidatorsListMaxElements {
-		err = ssz.ErrListTooBigFn("ValidatorSet.Validators", size, ValidatorsListMaxElements)
-		return
+		return nil, ssz.ErrListTooBigFn("ValidatorSet.Validators", size, ValidatorsListMaxElements)
 	}
 	{
 		offset = 4 * len(v.Validators)
@@ -402,12 +400,14 @@ func (v *ValidatorSet) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 		}
 	}
 	for ii := 0; ii < len(v.Validators); ii++ {
-		if dst, err = v.Validators[ii].MarshalSSZTo(dst); err != nil {
-			return
+		var err error
+		dst, err = v.Validators[ii].MarshalSSZTo(dst)
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	return
+	return dst, nil
 }
 
 // UnmarshalSSZ ssz unmarshals the ValidatorSet object
@@ -455,8 +455,8 @@ func (v *ValidatorSet) UnmarshalSSZ(buf []byte) error {
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the ValidatorSet object
-func (v *ValidatorSet) SizeSSZ() (size int) {
-	size = 4
+func (v *ValidatorSet) SizeSSZ() int {
+	size := 4
 
 	// Field (0) 'Validators'
 	for ii := 0; ii < len(v.Validators); ii++ {
@@ -464,7 +464,7 @@ func (v *ValidatorSet) SizeSSZ() (size int) {
 		size += v.Validators[ii].SizeSSZ()
 	}
 
-	return
+	return size
 }
 
 // HashTreeRoot ssz hashes the ValidatorSet object
@@ -473,7 +473,7 @@ func (v *ValidatorSet) HashTreeRoot() ([32]byte, error) {
 }
 
 // HashTreeRootWith ssz hashes the ValidatorSet object with a hasher
-func (v *ValidatorSet) HashTreeRootWith(hh ssz.HashWalker) (err error) {
+func (v *ValidatorSet) HashTreeRootWith(hh ssz.HashWalker) error {
 	indx := hh.Index()
 
 	// Field (0) 'Validators'
@@ -481,19 +481,19 @@ func (v *ValidatorSet) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 		subIndx := hh.Index()
 		num := uint64(len(v.Validators))
 		if num > ValidatorsListMaxElements {
-			err = ssz.ErrIncorrectListSize
-			return
+			return ssz.ErrIncorrectListSize
 		}
 		for _, elem := range v.Validators {
-			if err = elem.HashTreeRootWith(hh); err != nil {
-				return
+			if err := elem.HashTreeRootWith(hh); err != nil {
+				return err
 			}
 		}
 		hh.MerkleizeWithMixin(subIndx, num, ValidatorsListMaxElements)
 	}
 
 	hh.Merkleize(indx)
-	return
+
+	return nil
 }
 
 // GetTree ssz hashes the ValidatorSet object

@@ -203,7 +203,7 @@ linters:
         - name: errorf
         - name: file-header
 #        - name: flag-parameter
-        - name: function-result-limit
+#        - name: function-result-limit
         - name: identical-branches
         - name: imports-blocklist
         - name: increment-decrement
