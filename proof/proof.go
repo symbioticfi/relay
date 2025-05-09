@@ -16,6 +16,7 @@ import (
 	mimc_native "github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/backend/groth16"
+	"github.com/consensys/gnark/backend/solidity"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
 	"github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
@@ -42,8 +43,8 @@ type Circuit struct {
 	NonSignersAggKey         sw_emulated.AffinePoint[emulated.BN254Fp] `gnark:",public"`
 	Hash                     frontend.Variable                         `gnark:",public"`
 	NonSignersAggVotingPower frontend.Variable                         `gnark:",public"`
-	ValidatorData            []ValidatorDataCircuit
-	ZeroPoint                sw_emulated.AffinePoint[emulated.BN254Fp]
+	ValidatorData            []ValidatorDataCircuit                    `gnark:",private"`
+	ZeroPoint                sw_emulated.AffinePoint[emulated.BN254Fp] `gnark:",private"`
 }
 
 // Define declares the circuit's constraints
@@ -182,12 +183,12 @@ func Prove(valset []ValidatorData) ([]byte, error) {
 		ValidatorData: make([]ValidatorDataCircuit, len(valset)),
 	}
 
-	ccs, err := frontend.Compile(ecc.BN254.ScalarField(), r1cs.NewBuilder, &circuit)
+	r1cs, err := frontend.Compile(ecc.BN254.ScalarField(), r1cs.NewBuilder, &circuit)
 	if err != nil {
 		return nil, err
 	}
 
-	pk, vk, err := groth16.Setup(ccs)
+	pk, vk, err := groth16.Setup(r1cs)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +202,7 @@ func Prove(valset []ValidatorData) ([]byte, error) {
 	fmt.Println()
 
 	// groth16: Prove & Verify
-	proof, err := groth16.Prove(ccs, pk, witness, backend.WithProverHashToFieldFunction(sha256.New()))
+	proof, err := groth16.Prove(r1cs, pk, witness, backend.WithProverHashToFieldFunction(sha256.New()))
 	fmt.Println(proof.CurveID())
 	if err != nil {
 		return nil, err
@@ -222,10 +223,12 @@ func Prove(valset []ValidatorData) ([]byte, error) {
 	}
 
 	var solidityBuffer bytes.Buffer
-	err = vk.ExportSolidity(&solidityBuffer)
+	err = vk.ExportSolidity(&solidityBuffer, solidity.WithHashToFieldFunction(sha256.New()))
 	if err != nil {
 		// Handle error
 	}
+
+	fmt.Printf("solidityBuffer: %s\n", solidityBuffer.String())
 
 	// Write the Solidity contract to a file
 	err = os.WriteFile("Verifier.sol", solidityBuffer.Bytes(), 0644)
