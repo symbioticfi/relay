@@ -17,5 +17,7 @@ type P2PMessage struct {
 type SignatureMessage struct {
 	MessageHash []byte
 	Signature   []byte
-	PublicKey   []byte
+	PublicKeyG1 []byte
+	PublicKeyG2 []byte
+	KeyTag      uint64
 }

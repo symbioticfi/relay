@@ -21,7 +21,7 @@ import (
 
 // Configuration
 const (
-	protocolID = "/p2p/messaging/1.0.0"
+	protocolID = "/p2p/messaging/1.0.0/signedHash"
 )
 
 // Service handles peer-to-peer communication and signature aggregation

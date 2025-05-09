@@ -97,8 +97,10 @@ func (s *SignerApp) Start(ctx context.Context) error {
 
 		err = s.cfg.P2PService.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureMessage{
 			MessageHash: headerHash,
+			KeyTag:      15, // todo ilya
 			Signature:   headerSignature.Marshal(),
-			PublicKey:   nil,
+			PublicKeyG1: s.cfg.KeyPair.PublicKeyG1.Marshal(),
+			PublicKeyG2: s.cfg.KeyPair.PublicKeyG2.Marshal(),
 		})
 		if err != nil {
 			return errors.Errorf("failed to broadcast valset header: %w", err)

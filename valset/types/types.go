@@ -51,14 +51,6 @@ type ValidatorSetHeader struct {
 	ExtraData              []byte
 }
 
-func (v ValidatorSetHeader) MarshalData() ([]byte, error) {
-	return v.EncodeJSON()
-}
-
-func (v *ValidatorSetHeader) UnmarshalData(data []byte) error {
-	panic("implement me")
-}
-
 type G1 [2]*big.Int
 
 func FormatG1(g1 *bls.G1) G1 {
