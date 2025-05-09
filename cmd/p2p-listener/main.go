@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -81,9 +80,8 @@ var rootCmd = &cobra.Command{
 		}
 		slog.InfoContext(ctx, "started discovery service", "listenAddr", cfg.listenAddress)
 
-		p2pService.SetMessageHandler(func(msg entity.P2PMessage) error {
+		p2pService.SetSignatureHashMessageHandler(func(msg entity.P2PSignatureHashMessage) error {
 			slog.InfoContext(ctx, "received message", "message", msg)
-			fmt.Println(string(msg.Data)) //nolint:forbidigo // ok for this app
 			return nil
 		})
 		slog.InfoContext(ctx, "p2p listener created, waiting for messages")

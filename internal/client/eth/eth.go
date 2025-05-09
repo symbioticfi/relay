@@ -411,10 +411,17 @@ func (e *Client) GetEip712Domain(ctx context.Context) (*entity.Eip712Domain, err
 	}
 
 	var eip712Domain entity.Eip712Domain
-	err = contractABI.UnpackIntoInterface(&eip712Domain, GET_EIP_712_DOMAIN_FUNCTION, result)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unpack eip712 domain: %w", err)
-	}
+
+	out, err := contractABI.Unpack(GET_EIP_712_DOMAIN_FUNCTION, result)
+
+	eip712Domain.Fields = *abi.ConvertType(out[0], new([1]byte)).(*[1]byte)
+	eip712Domain.Name = *abi.ConvertType(out[1], new(string)).(*string)
+	eip712Domain.Version = *abi.ConvertType(out[2], new(string)).(*string)
+	eip712Domain.ChainId = *abi.ConvertType(out[3], new(*big.Int)).(**big.Int)
+	eip712Domain.VerifyingContract = *abi.ConvertType(out[4], new(common.Address)).(*common.Address)
+	salt := *abi.ConvertType(out[5], new([32]byte)).(*[32]byte)
+	eip712Domain.Salt = new(big.Int).SetBytes(salt[:])
+	eip712Domain.Extensions = *abi.ConvertType(out[6], new([]*big.Int)).(*[]*big.Int)
 
 	return &eip712Domain, nil
 }

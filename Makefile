@@ -14,10 +14,9 @@ build-for-linux:
 
 gen-abi:
 	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
-		--abi internal/client/eth/abi/IMasterConfigManager.abi.json \
+		--abi internal/client/eth/contract.abi.json \
 		--pkg eth \
-		--type IMasterConfigManager \
-		--out internal/client/eth/abi/IMasterConfigManager.go
+		--out internal/client/eth/contract.go
 
 build-generate-genesis-linux:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static'" -o generate_genesis_linux_amd64 ./cmd/generate-genesis && \

@@ -1,4 +1,4 @@
-package valset_header_generator_app
+package signer_app
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 )
 
 type p2pService interface {
-	BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error
+	BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureHashMessage) error
 }
 
 type ethClient interface {
@@ -47,7 +47,7 @@ type SignerApp struct {
 	previousPhase entity.Phase
 }
 
-func NewValsetHeaderGeneratorApp(cfg Config) (*SignerApp, error) {
+func NewSignerApp(cfg Config) (*SignerApp, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, errors.Errorf("failed to validate config: %w", err)
 	}
@@ -95,9 +95,9 @@ func (s *SignerApp) Start(ctx context.Context) error {
 
 		slog.DebugContext(ctx, "valset header hash signed, sending via p2p", "headerSignature", headerSignature)
 
-		err = s.cfg.P2PService.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureMessage{
+		err = s.cfg.P2PService.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureHashMessage{
 			MessageHash: headerHash,
-			KeyTag:      15, // todo ilya
+			KeyTag:      15, // todo ilya: pass from config or from another place
 			Signature:   headerSignature.Marshal(),
 			PublicKeyG1: s.cfg.KeyPair.PublicKeyG1.Marshal(),
 			PublicKeyG2: s.cfg.KeyPair.PublicKeyG2.Marshal(),

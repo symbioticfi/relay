@@ -42,18 +42,18 @@ func NewValsetDeriver(ethClient ethClient) (*ValsetDeriver, error) {
 	}, nil
 }
 
-func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) (*types.ValidatorSet, error) {
+func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) (types.ValidatorSet, error) {
 	slog.DebugContext(ctx, "Trying to fetch master config", "timestamp", timestamp.String())
 	masterConfig, err := v.ethClient.GetMasterConfig(ctx, timestamp)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get master config: %w", err)
+		return types.ValidatorSet{}, fmt.Errorf("failed to get master config: %w", err)
 	}
 	slog.DebugContext(ctx, "Got master config", "timestamp", timestamp.String(), "config", masterConfig)
 
 	slog.DebugContext(ctx, "Trying to getch val set config", "timestamp", timestamp.String())
 	valSetConfig, err := v.ethClient.GetValSetConfig(ctx, timestamp)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get val set config: %w", err)
+		return types.ValidatorSet{}, fmt.Errorf("failed to get val set config: %w", err)
 	}
 	slog.DebugContext(ctx, "Got val set config", "timestamp", timestamp.String(), "config", valSetConfig)
 
@@ -63,7 +63,7 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 		slog.DebugContext(ctx, "Trying to fetch voting powers from provider", "provider", provider.Address.Hex())
 		votingPowers, err := v.ethClient.GetVotingPowers(ctx, provider.Address, timestamp)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
+			return types.ValidatorSet{}, fmt.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
 		}
 		allVotingPowers = append(allVotingPowers, votingPowers...)
 		slog.DebugContext(ctx, "Got voting powers from provider", "provider", provider.Address.Hex(), "votingPowers", votingPowers)
@@ -73,7 +73,7 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 	slog.DebugContext(ctx, "Trying to fetch keys from provider", "provider", masterConfig.KeysProvider.Address.Hex())
 	keys, err := v.ethClient.GetKeys(ctx, masterConfig.KeysProvider.Address, timestamp)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get keys: %w", err)
+		return types.ValidatorSet{}, fmt.Errorf("failed to get keys: %w", err)
 	}
 	slog.DebugContext(ctx, "Got keys from provider", "provider", masterConfig.KeysProvider.Address.Hex(), "keys", keys)
 
@@ -115,7 +115,7 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 	}
 
 	// Process required keys
-	for _, rk := range keys { // TODO: get required key tags from validator set config and fill with nills if needed
+	for _, rk := range keys { // TODO: get required key tags from validator set config and fill with nils if needed
 		operatorAddr := rk.Operator.Hex()
 		if validator, exists := validatorsMap[operatorAddr]; exists {
 			// Add all keys for this operator
@@ -176,7 +176,7 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 	})
 
 	// Create the validator set
-	return &types.ValidatorSet{
+	return types.ValidatorSet{
 		Version:                VALSET_VERSION,
 		TotalActiveVotingPower: totalActiveVotingPower,
 		Validators:             validators,

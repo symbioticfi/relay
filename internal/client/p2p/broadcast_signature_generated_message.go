@@ -3,13 +3,14 @@ package p2p
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/go-errors/errors"
 
 	"middleware-offchain/internal/entity"
 )
 
-func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error {
+func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureHashMessage) error {
 	dto := signatureGeneratedDTO{
 		MessageHash: msg.MessageHash,
 		Signature:   msg.Signature,
@@ -23,7 +24,20 @@ func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg en
 		return errors.Errorf("failed to marshal signature generated message: %w", err)
 	}
 
-	return s.broadcast(ctx, entity.SignatureGenerated, data)
+	// send to ourselves first
+	err = s.signatureHashMessageHandler(ctx, entity.P2PSignatureHashMessage{
+		Message: msg,
+		Info: entity.SenderInfo{
+			Type:      entity.P2PMessageTypeSignatureHash,
+			Sender:    "",
+			Timestamp: time.Now().Unix(),
+		},
+	})
+	if err != nil {
+		return errors.Errorf("failed to handle signature generated message: %w", err)
+	}
+
+	return s.broadcast(ctx, entity.P2PMessageTypeSignatureHash, data)
 }
 
 type signatureGeneratedDTO struct {
@@ -31,5 +45,5 @@ type signatureGeneratedDTO struct {
 	Signature   []byte `json:"signature"`
 	PublicKeyG1 []byte `json:"public_key_g1"`
 	PublicKeyG2 []byte `json:"public_key_g2"`
-	KeyTag      uint64 `json:"key_tag"`
+	KeyTag      uint8  `json:"key_tag"`
 }

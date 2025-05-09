@@ -60,5 +60,5 @@ type Eip712Domain struct {
 	ChainId           *big.Int
 	VerifyingContract common.Address
 	Salt              *big.Int
-	Extensions        []big.Int
+	Extensions        []*big.Int
 }

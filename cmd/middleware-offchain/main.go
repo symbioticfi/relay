@@ -12,9 +12,11 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 
 	"middleware-offchain/bls"
-	app "middleware-offchain/internal/app/valset-header-generator-app"
+	aggregator "middleware-offchain/internal/app/aggregator-app"
+	app "middleware-offchain/internal/app/signer-app"
 	"middleware-offchain/internal/client/eth"
 	"middleware-offchain/internal/client/p2p"
 	"middleware-offchain/pkg/log"
@@ -38,6 +40,8 @@ func run() error {
 	rootCmd.PersistentFlags().StringVar(&cfg.logLevel, "log-level", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVar(&cfg.listenAddress, "p2p-listen", "/ip4/127.0.0.1/tcp/8000", "P2P listen address")
 	rootCmd.PersistentFlags().StringVar(&cfg.secretKey, "secret-key", "", "Secret key for BLS signature generation")
+	rootCmd.PersistentFlags().BoolVar(&cfg.isAggregator, "aggregator", false, "Is Aggregator")
+	rootCmd.PersistentFlags().BoolVar(&cfg.isSigner, "signer", true, "Is Signer")
 
 	if err := rootCmd.MarkPersistentFlagRequired("rpc-url"); err != nil {
 		return errors.Errorf("failed to mark rpc-url as required: %w", err)
@@ -58,6 +62,8 @@ type config struct {
 	logLevel      string
 	listenAddress string
 	secretKey     string
+	isAggregator  bool
+	isSigner      bool
 }
 
 var cfg config
@@ -119,7 +125,7 @@ var rootCmd = &cobra.Command{
 		}
 		slog.InfoContext(ctx, "started discovery service", "listenAddr", cfg.listenAddress)
 
-		signerApp, err := app.NewValsetHeaderGeneratorApp(app.Config{
+		signerApp, err := app.NewSignerApp(app.Config{
 			PollingInterval: time.Second * 10,
 			ValsetGenerator: generator,
 			EthClient:       ethClient,
@@ -127,15 +133,40 @@ var rootCmd = &cobra.Command{
 			KeyPair:         keyPair,
 		})
 		if err != nil {
-			return errors.Errorf("failed to create valset header generator app: %w", err)
+			return errors.Errorf("failed to create signer app: %w", err)
 		}
-		slog.InfoContext(ctx, "created valset header generator app, starting")
+		slog.InfoContext(ctx, "created signer app, starting")
 
-		if err := signerApp.Start(ctx); err != nil {
-			return errors.Errorf("failed to start app: %w", err)
+		eg, egCtx := errgroup.WithContext(ctx)
+		if cfg.isSigner {
+			eg.Go(func() error {
+				if err := signerApp.Start(egCtx); err != nil {
+					return errors.Errorf("failed to start signer app: %w", err)
+				}
+				return nil
+			})
 		}
 
-		return nil
+		if cfg.isAggregator {
+			aggregatorApp, err := aggregator.NewAggregatorApp(ctx, aggregator.Config{
+				EthClient:     ethClient,
+				ValsetDeriver: deriver,
+			})
+			if err != nil {
+				return errors.Errorf("failed to create aggregator app: %w", err)
+			}
+			slog.DebugContext(ctx, "created aggregator app, starting")
+			p2pService.SetSignatureHashMessageHandler(aggregatorApp.HandleSignatureGeneratedMessage)
+
+			eg.Go(func() error {
+				if err := aggregatorApp.Start(egCtx); err != nil {
+					return errors.Errorf("failed to start aggregator app: %w", err)
+				}
+				return nil
+			})
+		}
+
+		return eg.Wait()
 	},
 }
 

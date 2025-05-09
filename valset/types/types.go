@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"slices"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
+	"github.com/samber/lo"
 
 	"middleware-offchain/bls"
 
@@ -40,6 +42,17 @@ type ValidatorSet struct {
 	Version                uint8
 	TotalActiveVotingPower *big.Int
 	Validators             []*Validator `ssz-max:"1048576"`
+}
+
+func (v *ValidatorSet) FindValidatorByKey(g1 []byte) (Validator, bool) {
+	for _, validator := range v.Validators {
+		for _, key := range validator.Keys {
+			if slices.Equal(key.Payload, g1) {
+				return *validator, true
+			}
+		}
+	}
+	return Validator{}, false
 }
 
 // ValidatorSetHeader represents the input for validator set header
@@ -82,9 +95,17 @@ func (v ValidatorSetHeader) Encode() ([]byte, error) {
 			Type: abi.Type{
 				T: abi.SliceTy,
 				Elem: &abi.Type{
-					T:    abi.ArrayTy,
-					Size: 2,
-					Elem: &abi.Type{T: abi.UintTy, Size: 256}, // G1 points as array of two uint256
+					T:    abi.UintTy,
+					Size: 8,
+				},
+			},
+		},
+		{
+			Type: abi.Type{
+				T: abi.SliceTy,
+				Elem: &abi.Type{
+					T:    abi.FixedBytesTy,
+					Size: 32,
 				},
 			},
 		},
@@ -107,7 +128,13 @@ func (v ValidatorSetHeader) Encode() ([]byte, error) {
 		},
 	}
 
-	return arguments.Pack(v.Version, v.ActiveAggregatedKeys, v.TotalActiveVotingPower, v.ValidatorsSszMRoot, v.ExtraData)
+	tags := lo.Map(v.ActiveAggregatedKeys, func(item Key, index int) uint8 {
+		return item.Tag
+	})
+	hashes := lo.Map(v.ActiveAggregatedKeys, func(item Key, index int) [32]byte {
+		return item.PayloadHash
+	})
+	return arguments.Pack(v.Version, tags, hashes, v.TotalActiveVotingPower, v.ValidatorsSszMRoot, v.ExtraData)
 }
 
 func (v ValidatorSetHeader) EncodeJSON() ([]byte, error) {

@@ -28,7 +28,7 @@ func TestP2P(t *testing.T) {
 
 	p2p2, err := NewService(ctx, h2)
 	require.NoError(t, err)
-	p2p2.SetMessageHandler(func(msg entity.P2PMessage) error {
+	p2p2.SetSignatureHashMessageHandler(func(msg entity.P2PMessage) error {
 		gotMessageIn2 = msg
 		return nil
 	})
@@ -45,10 +45,11 @@ func TestP2P(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	err = p2p1.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureMessage{
+	err = p2p1.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureHashMessage{
 		MessageHash: []byte("hello hash"),
 		Signature:   []byte("hello signature"),
-		PublicKey:   []byte("hello public key"),
+		PublicKeyG1: []byte("hello public key g1"),
+		PublicKeyG2: []byte("hello public key g2"),
 	})
 	require.NoError(t, err)
 
@@ -84,7 +85,7 @@ func TestP2PMany(t *testing.T) {
 
 		p2p2, err := NewService(ctx, otherHost)
 		require.NoError(t, err)
-		p2p2.SetMessageHandler(func(msg entity.P2PMessage) error {
+		p2p2.SetSignatureHashMessageHandler(func(msg entity.P2PMessage) error {
 			gotMessages[i] = msg
 			return nil
 		})
@@ -96,10 +97,11 @@ func TestP2PMany(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	err = mainService.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureMessage{
+	err = mainService.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureHashMessage{
 		MessageHash: []byte("hello hash"),
 		Signature:   []byte("hello signature"),
-		PublicKey:   []byte("hello public key"),
+		PublicKeyG1: []byte("hello public key g1"),
+		PublicKeyG2: []byte("hello public key g2"),
 	})
 	require.NoError(t, err)
 

@@ -1,3 +1,4 @@
+//nolint:forbidigo // ignore this linter for now todo ilya
 package proof
 
 import (
@@ -6,9 +7,12 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"os"
+
+	"github.com/go-errors/errors"
+
 	"middleware-offchain/bls"
 	"middleware-offchain/valset/types"
-	"os"
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark-crypto/ecc/bn254"
@@ -165,7 +169,6 @@ func ToValidatorsData(validators []*types.Validator, requiredKeyTag uint8) ([]Va
 		}
 		for _, key := range validators[i].Keys {
 			if key.Tag == requiredKeyTag {
-
 				g1, err := bls.DeserializeG1(key.Payload)
 				if err != nil {
 					return nil, fmt.Errorf("failed to deserialize G1: %w", err)
@@ -203,14 +206,14 @@ func Prove(valset []ValidatorData) ([]byte, error) {
 
 	// groth16: Prove & Verify
 	proof, err := groth16.Prove(r1cs, pk, witness, backend.WithProverHashToFieldFunction(sha256.New()))
-	fmt.Println(proof.CurveID())
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("failed to prove: %w", err)
 	}
+	fmt.Println(proof.CurveID())
 
 	publicInputs := publicWitness.Vector().(fr.Vector)
 	// Format for the specific Solidity interface
-	var formattedInputs []*big.Int
+	formattedInputs := make([]*big.Int, 0, len(publicInputs))
 
 	// Format the vector of public inputs as hex strings
 	for _, input := range publicInputs {
@@ -225,15 +228,15 @@ func Prove(valset []ValidatorData) ([]byte, error) {
 	var solidityBuffer bytes.Buffer
 	err = vk.ExportSolidity(&solidityBuffer, solidity.WithHashToFieldFunction(sha256.New()))
 	if err != nil {
-		// Handle error
+		return nil, errors.Errorf("failed to export solidity: %w", err)
 	}
 
 	fmt.Printf("solidityBuffer: %s\n", solidityBuffer.String())
 
 	// Write the Solidity contract to a file
-	err = os.WriteFile("Verifier.sol", solidityBuffer.Bytes(), 0644)
+	err = os.WriteFile("Verifier.sol", solidityBuffer.Bytes(), 0600)
 	if err != nil {
-		// Handle error
+		return nil, errors.Errorf("failed to write Solidity file: %w", err)
 	}
 
 	_proof, ok := proof.(interface{ MarshalSolidity() []byte })
@@ -254,10 +257,10 @@ func Prove(valset []ValidatorData) ([]byte, error) {
 	var proofBuffer bytes.Buffer
 	_, err = proof.WriteRawTo(&proofBuffer)
 	if err != nil {
-		// Handle error
+		return nil, errors.Errorf("failed to write proof: %w", err)
 	}
 	proofBytes = proofBuffer.Bytes()
-	fmt.Println("proofBytes:", proofBytes)
+	fmt.Println("proofBytes:", proofBytes) //nolint:staticcheck // will fix later
 	fmt.Println("hex:", common.Bytes2Hex(proofBytes))
 
 	// Assuming fpSize is 32 bytes for BN254
