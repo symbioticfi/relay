@@ -38,7 +38,7 @@ func run() error {
 	rootCmd.PersistentFlags().StringVar(&cfg.rpcURL, "rpc-url", "", "RPC URL")
 	rootCmd.PersistentFlags().StringVar(&cfg.masterAddress, "master-address", "", "Master contract address")
 	rootCmd.PersistentFlags().StringVar(&cfg.logLevel, "log-level", "info", "Log level (debug, info, warn, error)")
-	rootCmd.PersistentFlags().StringVar(&cfg.listenAddress, "p2p-listen", "/ip4/127.0.0.1/tcp/8000", "P2P listen address")
+	rootCmd.PersistentFlags().StringVar(&cfg.listenAddress, "p2p-listen", "", "P2P listen address")
 	rootCmd.PersistentFlags().StringVar(&cfg.secretKey, "secret-key", "", "Secret key for BLS signature generation")
 	rootCmd.PersistentFlags().BoolVar(&cfg.isAggregator, "aggregator", false, "Is Aggregator")
 	rootCmd.PersistentFlags().BoolVar(&cfg.isSigner, "signer", true, "Is Signer")
@@ -105,7 +105,11 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to create valset generator: %w", err)
 		}
 
-		h, err := libp2p.New(libp2p.ListenAddrStrings(cfg.listenAddress))
+		var opts []libp2p.Option
+		if cfg.listenAddress != "" {
+			opts = append(opts, libp2p.ListenAddrStrings(cfg.listenAddress))
+		}
+		h, err := libp2p.New(opts...)
 		if err != nil {
 			return errors.Errorf("failed to create libp2p host: %w", err)
 		}

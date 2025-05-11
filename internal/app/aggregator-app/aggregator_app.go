@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-errors/errors"
 	validate "github.com/go-playground/validator/v10"
+	"github.com/shopspring/decimal"
 
 	"middleware-offchain/internal/entity"
 	"middleware-offchain/valset/types"
@@ -75,30 +76,53 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 }
 
 func (s *AggregatorApp) handleSignatureGeneratedMessage(ctx context.Context, msg entity.P2PSignatureHashMessage) error {
-	slog.InfoContext(ctx, "received signature hash generated message", "message", msg)
+	slog.DebugContext(ctx, "received signature hash generated message", "message", msg)
 
 	validator, found := s.validatorSet.FindValidatorByKey(msg.Message.PublicKeyG1)
 	if !found {
 		return errors.Errorf("validator not found for public key: %x", msg.Message.PublicKeyG1)
 	}
 
-	totalVotingPower, err := s.hashStore.PutHash(msg.Message, validator)
+	slog.DebugContext(ctx, "found validator", "validator", validator)
+
+	currentVotingPower, err := s.hashStore.PutHash(msg.Message, validator)
 	if err != nil {
 		return errors.Errorf("failed to put hash: %w", err)
 	}
+
+	slog.DebugContext(ctx, "total voting power", "currentVotingPower", currentVotingPower.String())
 
 	quorumThreshold, err := s.cfg.EthClient.GetQuorumThreshold(ctx, big.NewInt(time.Now().Unix()), msg.Message.KeyTag)
 	if err != nil {
 		return errors.Errorf("failed to get quorum threshold: %w", err)
 	}
 
-	slog.DebugContext(ctx, "quorum threshold", "quorumThreshold", quorumThreshold)
+	slog.DebugContext(ctx, "got quorum threshold", "quorumThreshold", quorumThreshold.String())
 
-	if totalVotingPower.Cmp(quorumThreshold) < 0 {
-		slog.DebugContext(ctx, "quorum not reached yet", "totalVotingPower", totalVotingPower)
+	coef1e18 := big.NewInt(1e18)
+
+	vpMul1e18 := new(big.Int).Mul(currentVotingPower, coef1e18)
+	percent1e18 := new(big.Int).Div(vpMul1e18, s.validatorSet.TotalActiveVotingPower)
+
+	thresholdReaches := percent1e18.Cmp(quorumThreshold) >= 0
+
+	if !thresholdReaches {
+		slog.DebugContext(ctx, "quorum not reached yet",
+			"percentReached", decimal.NewFromBigInt(percent1e18, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
+			"percentQuorumThreshold", decimal.NewFromBigInt(quorumThreshold, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
+			"currentVotingPower", currentVotingPower,
+			"quorumThreshold", quorumThreshold,
+			"totalActiveVotingPower", s.validatorSet.TotalActiveVotingPower,
+		)
 		return nil
 	}
 
-	slog.InfoContext(ctx, "!!!!! quorum reached, generating signature hash")
+	slog.InfoContext(ctx, "quorum reached",
+		"percentReached", decimal.NewFromBigInt(percent1e18, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
+		"percentQuorumThreshold", decimal.NewFromBigInt(quorumThreshold, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
+		"currentVotingPower", currentVotingPower,
+		"quorumThreshold", quorumThreshold,
+		"totalActiveVotingPower", s.validatorSet.TotalActiveVotingPower,
+	)
 	return nil
 }

@@ -17,6 +17,7 @@ require (
 	github.com/multiformats/go-multiaddr v0.15.0
 	github.com/samber/lo v1.50.0
 	github.com/samber/slog-multi v1.4.0
+	github.com/shopspring/decimal v1.4.0
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/sync v0.14.0

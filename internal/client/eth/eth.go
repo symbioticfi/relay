@@ -372,7 +372,7 @@ func (e *Client) GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uin
 }
 
 func (e *Client) GetQuorumThreshold(ctx context.Context, timestamp *big.Int, keyTag uint8) (*big.Int, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_QUORUM_THRESHOLD_FUNCTION, keyTag, timestamp, nil)
+	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_QUORUM_THRESHOLD_FUNCTION, keyTag, timestamp, []byte{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}

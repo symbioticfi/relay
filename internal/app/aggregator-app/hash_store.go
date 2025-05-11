@@ -35,6 +35,10 @@ func (h *hashStore) PutHash(msg entity.SignatureHashMessage, val types.Validator
 	if _, ok := validators[val.Operator]; ok {
 		return nil, errors.Errorf("hash already exists for validator %s", val.Operator.Hex())
 	}
+	validators[val.Operator] = hashWithValidator{
+		validator: val,
+		hash:      msg,
+	}
 
 	totalVotingPower := new(big.Int)
 	for _, validator := range validators {
