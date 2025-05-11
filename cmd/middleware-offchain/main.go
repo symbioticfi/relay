@@ -80,7 +80,10 @@ var rootCmd = &cobra.Command{
 
 		ctx := signalContext(context.Background())
 
-		b := new(big.Int).SetBytes([]byte(cfg.secretKey))
+		b, ok := new(big.Int).SetString(cfg.secretKey, 10)
+		if !ok {
+			return errors.Errorf("failed to parse secret key as big.Int")
+		}
 		keyPair := bls.ComputeKeyPair(b.Bytes())
 
 		ethClient, err := eth.NewEthClient(eth.Config{
