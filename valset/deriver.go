@@ -16,8 +16,9 @@ import (
 	"middleware-offchain/valset/types"
 )
 
-const VALSET_VERSION = 1
+const valsetVersion = 1
 
+//go:generate mockgen -source=deriver.go -destination=mocks/deriver.go -package=mocks
 type ethClient interface {
 	GetCaptureTimestamp(ctx context.Context) (*big.Int, error)
 	GetMasterConfig(ctx context.Context, timestamp *big.Int) (entity.MasterConfig, error)
@@ -42,7 +43,7 @@ func NewValsetDeriver(ethClient ethClient) (*ValsetDeriver, error) {
 	}, nil
 }
 
-func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) (types.ValidatorSet, error) {
+func (v *ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) (types.ValidatorSet, error) {
 	slog.DebugContext(ctx, "Trying to fetch master config", "timestamp", timestamp.String())
 	masterConfig, err := v.ethClient.GetMasterConfig(ctx, timestamp)
 	if err != nil {
@@ -65,16 +66,20 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 		if err != nil {
 			return types.ValidatorSet{}, fmt.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
 		}
-		allVotingPowers = append(allVotingPowers, votingPowers...)
+
 		slog.DebugContext(ctx, "Got voting powers from provider", "provider", provider.Address.Hex(), "votingPowers", votingPowers)
+
+		allVotingPowers = append(allVotingPowers, votingPowers...)
 	}
 
 	// Get keys from the keys provider
 	slog.DebugContext(ctx, "Trying to fetch keys from provider", "provider", masterConfig.KeysProvider.Address.Hex())
+
 	keys, err := v.ethClient.GetKeys(ctx, masterConfig.KeysProvider.Address, timestamp)
 	if err != nil {
 		return types.ValidatorSet{}, fmt.Errorf("failed to get keys: %w", err)
 	}
+
 	slog.DebugContext(ctx, "Got keys from provider", "provider", masterConfig.KeysProvider.Address.Hex(), "keys", keys)
 
 	// Create validators map to consolidate voting powers and keys
@@ -177,7 +182,7 @@ func (v ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) 
 
 	// Create the validator set
 	return types.ValidatorSet{
-		Version:                VALSET_VERSION,
+		Version:                valsetVersion,
 		TotalActiveVotingPower: totalActiveVotingPower,
 		Validators:             validators,
 	}, nil

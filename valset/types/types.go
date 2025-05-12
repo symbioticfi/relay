@@ -18,7 +18,7 @@ import (
 )
 
 type Key struct {
-	Tag         uint8 `ssz-size:"1"`
+	Tag         uint8 `ssz-size:"1"` // todo ilya: move this tags from entity objects to local dtos
 	Payload     []byte
 	PayloadHash [32]byte `ssz-size:"32"`
 }
@@ -40,11 +40,11 @@ type Validator struct {
 
 type ValidatorSet struct {
 	Version                uint8
-	TotalActiveVotingPower *big.Int
+	TotalActiveVotingPower *big.Int     // todo ilya: do we need this field or be able to calculate when needed
 	Validators             []*Validator `ssz-max:"1048576"`
 }
 
-func (v *ValidatorSet) FindValidatorByKey(g1 []byte) (Validator, bool) {
+func (v ValidatorSet) FindValidatorByKey(g1 []byte) (Validator, bool) {
 	for _, validator := range v.Validators {
 		for _, key := range validator.Keys {
 			if slices.Equal(key.Payload, g1) {

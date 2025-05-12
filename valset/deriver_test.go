@@ -1,59 +1,131 @@
-//go:build manual
-
 package valset
 
 import (
 	"context"
-	"fmt"
-	"log/slog"
 	"math/big"
 	"testing"
-	"time"
 
-	"github.com/samber/lo"
-
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
-	"middleware-offchain/internal/client/eth"
+	"middleware-offchain/internal/entity"
+	"middleware-offchain/valset/mocks"
+	"middleware-offchain/valset/types"
 )
 
-func TestDeriver(t *testing.T) {
-	// Define the large number
-	privateKeyInt := new(big.Int)
-	privateKeyInt.SetString("87191036493798670866484781455694320176667203290824056510541300741498740913410", 10)
+func TestValsetDeriver_GetValidatorSet(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-	client, err := eth.NewEthClient(eth.Config{
-		MasterRPCURL:   "http://127.0.0.1:8545",
-		MasterAddress:  "0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f",
-		PrivateKey:     lo.ToPtr(privateKeyInt.Bytes()),
-		RequestTimeout: time.Minute,
-	})
+	mockEthClient := mocks.NewMockethClient(ctrl)
+
+	valsetDeriver, err := NewValsetDeriver(mockEthClient)
 	require.NoError(t, err)
 
-	deriver, err := NewValsetDeriver(client)
-	require.NoError(t, err)
+	ctx := context.Background()
 
-	timestamp, err := client.GetCaptureTimestamp(context.Background())
-	require.NoError(t, err)
-	slog.DebugContext(context.Background(), "Got capture timestamp", "timestamp", timestamp.String())
+	vpAddress := common.BytesToAddress([]byte{1})
+	kpAddress := common.BytesToAddress([]byte{2})
+	operatorAddress := common.BytesToAddress([]byte{3})
+	vaultAddress := common.BytesToAddress([]byte{4})
 
-	validatorSet, err := deriver.GetValidatorSet(context.Background(), timestamp)
-	require.NoError(t, err)
+	timestamp := big.NewInt(1234567890)
+	keyPayload := []byte{1, 2, 3, 4}
+	keyTag := uint8(6)
 
-	validator, validatorRootTreeLocalIndex, validatorRootProof, err := validatorSet.ProveValidatorRoot(validatorSet.Validators[1].Operator)
-	require.NoError(t, err)
+	tests := []struct {
+		name        string
+		mockSetup   func()
+		expectedSet types.ValidatorSet
+		expectedErr error
+	}{
+		{
+			name: "successfully fetch validator set",
+			mockSetup: func() {
+				mockEthClient.EXPECT().
+					GetMasterConfig(ctx, timestamp).
+					Return(entity.MasterConfig{
+						VotingPowerProviders: []entity.CrossChainAddress{{Address: vpAddress}},
+						KeysProvider:         entity.CrossChainAddress{Address: kpAddress},
+					}, nil)
 
-	fmt.Printf("validatorRootProof: %x\n", validatorRootProof)
-	fmt.Printf("validatorRootTreeLocalIndex: %d\n", validatorRootTreeLocalIndex)
-	vault, vaultIndex, vaultRootProof, err := validator.ProveVaultRoot(validator.Vaults[1].Vault)
-	require.NoError(t, err)
+				mockEthClient.EXPECT().
+					GetValSetConfig(ctx, timestamp).
+					Return(entity.ValSetConfig{
+						MinInclusionVotingPower: big.NewInt(100),
+						MaxVotingPower:          big.NewInt(1000),
+						MaxValidatorsCount:      big.NewInt(10),
+					}, nil)
 
-	fmt.Printf("vaultRootProof: %x\n", vaultRootProof)
-	fmt.Printf("vaultIndex: %d\n", vaultIndex)
+				mockEthClient.EXPECT().
+					GetVotingPowers(ctx, vpAddress, timestamp).
+					Return([]entity.OperatorVotingPower{{
+						Operator: operatorAddress,
+						Vaults: []entity.VaultVotingPower{{
+							Vault:       vaultAddress,
+							VotingPower: big.NewInt(500),
+						}},
+					}}, nil)
 
-	vaultVotingPowerProof, err := vault.ProveVaultVotingPower()
-	require.NoError(t, err)
+				mockEthClient.EXPECT().
+					GetKeys(ctx, kpAddress, timestamp).
+					Return([]entity.OperatorWithKeys{{
+						Operator: operatorAddress,
+						Keys: []entity.Key{
+							{
+								Tag:     keyTag,
+								Payload: keyPayload,
+							},
+						},
+					}}, nil)
+			},
+			expectedSet: types.ValidatorSet{
+				Version: 1,
+				Validators: []*types.Validator{{
+					Operator:    operatorAddress,
+					VotingPower: big.NewInt(500),
+					IsActive:    true,
+					Keys: []*types.Key{{
+						Tag:         keyTag,
+						Payload:     keyPayload,
+						PayloadHash: crypto.Keccak256Hash(keyPayload),
+					}},
+					Vaults: []*types.Vault{
+						{Vault: vaultAddress, VotingPower: big.NewInt(500)},
+					},
+				}},
+				TotalActiveVotingPower: big.NewInt(500),
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "error fetching master config",
+			mockSetup: func() {
+				mockEthClient.EXPECT().
+					GetMasterConfig(ctx, timestamp).
+					Return(entity.MasterConfig{}, errors.New("failed to fetch master config"))
+			},
+			expectedSet: types.ValidatorSet{},
+			expectedErr: errors.New("failed to get master config: failed to fetch master config"),
+		},
+	}
 
-	fmt.Printf("vaultVotingPowerProof: %x\n", vaultVotingPowerProof)
-	fmt.Printf("vaultVotingPower: %x\n", vault.VotingPower)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockSetup()
+
+			result, err := valsetDeriver.GetValidatorSet(ctx, timestamp)
+
+			if tt.expectedErr != nil {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.expectedErr.Error())
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.expectedSet, result)
+			}
+		})
+	}
 }

@@ -311,6 +311,16 @@ func (e *Client) GetCaptureTimestamp(ctx context.Context) (*big.Int, error) {
 	return timestamp, nil
 }
 
+type operatorVotingPowerDTO struct {
+	Operator common.Address
+	Vaults   []vaultVotingPowerDTO
+}
+
+type vaultVotingPowerDTO struct {
+	Vault       common.Address
+	VotingPower *big.Int
+}
+
 func (e *Client) GetVotingPowers(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorVotingPower, error) {
 	callMsg, err := constructCallMsg(address, vaultManagerABI, GET_VOTING_POWERS_FUNCTION, [][]byte{}, timestamp, []byte{})
 	if err != nil {
@@ -322,13 +332,23 @@ func (e *Client) GetVotingPowers(ctx context.Context, address common.Address, ti
 		return nil, fmt.Errorf("failed to call contract: %w", err)
 	}
 
-	var votingPowers []entity.OperatorVotingPower
+	var votingPowers []operatorVotingPowerDTO
 	err = vaultManagerABI.UnpackIntoInterface(&votingPowers, GET_VOTING_POWERS_FUNCTION, result)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unpack voting powers: %w", err)
 	}
 
-	return votingPowers, nil
+	return lo.Map(votingPowers, func(item operatorVotingPowerDTO, index int) entity.OperatorVotingPower {
+		return entity.OperatorVotingPower{
+			Operator: item.Operator,
+			Vaults: lo.Map(item.Vaults, func(vault vaultVotingPowerDTO, index int) entity.VaultVotingPower {
+				return entity.VaultVotingPower{
+					Vault:       vault.Vault,
+					VotingPower: vault.VotingPower,
+				}
+			}),
+		}
+	}), nil
 }
 
 func (e *Client) GetKeys(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorWithKeys, error) {
@@ -413,6 +433,9 @@ func (e *Client) GetEip712Domain(ctx context.Context) (*entity.Eip712Domain, err
 	var eip712Domain entity.Eip712Domain
 
 	out, err := contractABI.Unpack(GET_EIP_712_DOMAIN_FUNCTION, result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unpack eip712 domain: %w", err)
+	}
 
 	eip712Domain.Fields = *abi.ConvertType(out[0], new([1]byte)).(*[1]byte)
 	eip712Domain.Name = *abi.ConvertType(out[1], new(string)).(*string)

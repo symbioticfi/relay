@@ -122,9 +122,10 @@ func (s *Service) AddPeer(pi peer.AddrInfo) error {
 	if _, found := s.peers[pi.ID]; !found {
 		s.peers[pi.ID] = struct{}{}
 	}
-	s.peersMutex.Unlock()
 
 	slog.InfoContext(ctx, "Connected to peer", "peer", pi.ID, "totalPeers", len(s.peers))
+
+	s.peersMutex.Unlock()
 
 	return nil
 }
@@ -191,10 +192,6 @@ func (s *Service) Close() error {
 	return nil
 }
 
-func (s *Service) HostID() peer.ID { // todo ilya do we need this?
-	return s.host.ID()
-}
-
 func (s *Service) Listen(n network.Network, multiaddr multiaddr.Multiaddr) {
 }
 
@@ -206,8 +203,10 @@ func (s *Service) Connected(n network.Network, conn network.Conn) {
 
 func (s *Service) Disconnected(n network.Network, conn network.Conn) {
 	s.peersMutex.Lock()
+
 	delete(s.peers, conn.RemotePeer())
-	s.peersMutex.Unlock()
 
 	slog.InfoContext(s.ctx, "Disconnected from peer", "remotePeer", conn.RemotePeer(), "localPeer", conn.LocalPeer(), "totalPeers", len(s.peers))
+
+	s.peersMutex.Unlock()
 }

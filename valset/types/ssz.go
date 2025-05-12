@@ -410,7 +410,7 @@ func (v *ValidatorSet) MarshalSSZTo(buf []byte) ([]byte, error) {
 	return dst, nil
 }
 
-// UnmarshalSSZ ssz unmarshals the ValidatorSet object
+// UnmarshalSSZ ssz unmarshalls the ValidatorSet object
 func (v *ValidatorSet) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))

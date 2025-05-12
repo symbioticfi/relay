@@ -3,6 +3,8 @@ package p2p
 import (
 	"context"
 	"log/slog"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -14,7 +16,7 @@ import (
 )
 
 func TestP2P(t *testing.T) {
-	var gotMessageIn2 entity.P2PMessage
+	v := atomic.Value{}
 	ctx := context.Background()
 
 	h1, err := libp2p.New()
@@ -28,8 +30,8 @@ func TestP2P(t *testing.T) {
 
 	p2p2, err := NewService(ctx, h2)
 	require.NoError(t, err)
-	p2p2.SetSignatureHashMessageHandler(func(msg entity.P2PMessage) error {
-		gotMessageIn2 = msg
+	p2p2.SetSignatureHashMessageHandler(func(ctx context.Context, msg entity.P2PSignatureHashMessage) error {
+		v.Store(msg)
 		return nil
 	})
 
@@ -54,9 +56,10 @@ func TestP2P(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Eventuallyf(t, func() bool {
-		return gotMessageIn2.Timestamp != 0
+		msg := v.Load().(entity.P2PSignatureHashMessage)
+		return msg.Info.Timestamp != 0
 	}, time.Second, time.Millisecond*100, "Message not received in time")
-	slog.InfoContext(ctx, "gotMessageIn2", "msg", gotMessageIn2)
+	slog.InfoContext(ctx, "gotMessageIn2", "msg", v.Load())
 
 	require.NoError(t, h1.Close())
 	require.NoError(t, h2.Close())
@@ -75,7 +78,9 @@ func TestP2PMany(t *testing.T) {
 	require.NoError(t, err)
 
 	const countPeers = 10
-	gotMessages := make([]entity.P2PMessage, countPeers)
+	gotMessages := make([]entity.P2PSignatureHashMessage, countPeers)
+	mu := sync.Mutex{}
+
 	for i := 0; i < countPeers; i++ {
 		otherHost, err := libp2p.New()
 		require.NoError(t, err)
@@ -85,7 +90,10 @@ func TestP2PMany(t *testing.T) {
 
 		p2p2, err := NewService(ctx, otherHost)
 		require.NoError(t, err)
-		p2p2.SetSignatureHashMessageHandler(func(msg entity.P2PMessage) error {
+		p2p2.SetSignatureHashMessageHandler(func(ctx context.Context, msg entity.P2PSignatureHashMessage) error {
+			mu.Lock()
+			defer mu.Unlock()
+
 			gotMessages[i] = msg
 			return nil
 		})
@@ -106,12 +114,14 @@ func TestP2PMany(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Eventuallyf(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+
 		for _, message := range gotMessages {
-			if message.Timestamp == 0 {
+			if message.Info.Timestamp == 0 {
 				return false
 			}
 		}
 		return true
 	}, time.Second, time.Millisecond*100, "Message not received in time")
-	slog.InfoContext(ctx, "gotMessageIn2", "msg", gotMessages)
 }

@@ -1,7 +1,8 @@
-package signer_app
+package aggregator_app
 
 import (
 	"math/big"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
@@ -12,8 +13,8 @@ import (
 )
 
 type hashStore struct {
-	m map[string]map[common.Address]hashWithValidator
-	// todo ilya add mutex
+	mu sync.Mutex
+	m  map[string]map[common.Address]hashWithValidator
 }
 
 type hashWithValidator struct {
@@ -28,12 +29,14 @@ func newHashStore() *hashStore {
 }
 
 func (h *hashStore) PutHash(msg entity.SignatureHashMessage, val types.Validator) (*big.Int, *bls.G1, *bls.G1, *bls.G2, error) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
 	validators, ok := h.m[string(msg.MessageHash)]
 	if !ok {
 		validators = make(map[common.Address]hashWithValidator)
 		h.m[string(msg.MessageHash)] = validators
 	}
-	if _, ok := validators[val.Operator]; ok {
+	if _, ok = validators[val.Operator]; ok {
 		return nil, nil, nil, nil, errors.Errorf("hash already exists for validator %s", val.Operator.Hex())
 	}
 	validators[val.Operator] = hashWithValidator{

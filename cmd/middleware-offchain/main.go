@@ -164,13 +164,6 @@ var rootCmd = &cobra.Command{
 			}
 			slog.DebugContext(ctx, "created aggregator app, starting")
 			p2pService.SetSignatureHashMessageHandler(aggregatorApp.HandleSignatureGeneratedMessage)
-
-			eg.Go(func() error {
-				if err := aggregatorApp.Start(egCtx); err != nil {
-					return errors.Errorf("failed to start aggregator app: %w", err)
-				}
-				return nil
-			})
 		}
 
 		return eg.Wait()

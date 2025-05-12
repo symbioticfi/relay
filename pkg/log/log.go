@@ -26,12 +26,7 @@ func Init(levelStr string) {
 }
 
 func internalInit(level slog.Level) {
-	logMode := os.Getenv("LOG_MODE")
-	if logMode == "local" {
-		initPretty(level)
-	} else {
-		initText(level)
-	}
+	initText(level)
 }
 
 func parseLogLevel(levelStr string) slog.Level {
@@ -47,18 +42,6 @@ func parseLogLevel(levelStr string) slog.Level {
 	default:
 		return slog.LevelDebug
 	}
-}
-
-func initPretty(level slog.Level) {
-	prettyHandler := NewHandler(&slog.HandlerOptions{
-		AddSource:   false,
-		Level:       level,
-		ReplaceAttr: replaceAttr,
-	})
-
-	handler := ContextHandler{Handler: prettyHandler}
-
-	slog.SetDefault(slog.New(handler))
 }
 
 func initText(level slog.Level) {

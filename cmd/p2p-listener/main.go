@@ -80,7 +80,7 @@ var rootCmd = &cobra.Command{
 		}
 		slog.InfoContext(ctx, "started discovery service", "listenAddr", cfg.listenAddress)
 
-		p2pService.SetSignatureHashMessageHandler(func(msg entity.P2PSignatureHashMessage) error {
+		p2pService.SetSignatureHashMessageHandler(func(ctx context.Context, msg entity.P2PSignatureHashMessage) error {
 			slog.InfoContext(ctx, "received message", "message", msg)
 			return nil
 		})

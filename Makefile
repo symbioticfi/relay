@@ -1,9 +1,14 @@
 lint:
-	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.2 -v run ./...
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6 -v run ./...
 
-unit-test::
-	go test ./... -v -covermode atomic -coverprofile=cover.out.tmp  -coverpkg=./...
-# -race
+install-mocks:
+	go install go.uber.org/mock/mockgen@latest
+
+gen-mocks:
+	go generate ./...
+
+unit-test:
+	go test ./... -v -covermode atomic -race -coverprofile=cover.out.tmp  -coverpkg=./...
 	cat cover.out.tmp | grep -v "gen"  | grep -v "mocks" > coverage.txt # strip out generated files
 	go tool cover -func coverage.txt
 	rm cover.out.tmp coverage.txt

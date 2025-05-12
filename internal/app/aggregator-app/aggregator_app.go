@@ -1,4 +1,4 @@
-package signer_app
+package aggregator_app
 
 import (
 	"context"
@@ -15,6 +15,7 @@ import (
 	"middleware-offchain/valset/types"
 )
 
+//go:generate mockgen -source=aggregator_app.go -destination=mocks/aggregator_app.go -package=mocks
 type ethClient interface {
 	GetQuorumThreshold(ctx context.Context, timestamp *big.Int, keyTag uint8) (*big.Int, error)
 }
@@ -61,21 +62,7 @@ func NewAggregatorApp(ctx context.Context, cfg Config) (*AggregatorApp, error) {
 	}, nil
 }
 
-func (s *AggregatorApp) Start(ctx context.Context) error {
-	return nil
-}
-
 func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg entity.P2PSignatureHashMessage) error {
-	if err := s.handleSignatureGeneratedMessage(ctx, msg); err != nil {
-		slog.ErrorContext(ctx, "Failed to handle signature generated message", "error", err)
-		return nil
-	}
-	slog.DebugContext(ctx, "Successfully handled signature generated message", "message", msg)
-
-	return nil
-}
-
-func (s *AggregatorApp) handleSignatureGeneratedMessage(ctx context.Context, msg entity.P2PSignatureHashMessage) error {
 	slog.DebugContext(ctx, "received signature hash generated message", "message", msg)
 
 	validator, found := s.validatorSet.FindValidatorByKey(msg.Message.PublicKeyG1)
@@ -104,9 +91,8 @@ func (s *AggregatorApp) handleSignatureGeneratedMessage(ctx context.Context, msg
 	vpMul1e18 := new(big.Int).Mul(currentVotingPower, coef1e18)
 	percent1e18 := new(big.Int).Div(vpMul1e18, s.validatorSet.TotalActiveVotingPower)
 
-	thresholdReaches := percent1e18.Cmp(quorumThreshold) >= 0
-
-	if !thresholdReaches {
+	thresholdReached := percent1e18.Cmp(quorumThreshold) >= 0
+	if !thresholdReached {
 		slog.DebugContext(ctx, "quorum not reached yet",
 			"percentReached", decimal.NewFromBigInt(percent1e18, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
 			"percentQuorumThreshold", decimal.NewFromBigInt(quorumThreshold, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
@@ -127,5 +113,6 @@ func (s *AggregatorApp) handleSignatureGeneratedMessage(ctx context.Context, msg
 		"quorumThreshold", quorumThreshold,
 		"totalActiveVotingPower", s.validatorSet.TotalActiveVotingPower,
 	)
+
 	return nil
 }
