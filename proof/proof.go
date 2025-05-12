@@ -21,6 +21,7 @@ import (
 	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/backend/solidity"
+	"github.com/consensys/gnark/constraint"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
 	"github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
@@ -28,6 +29,21 @@ import (
 	"github.com/consensys/gnark/std/hash/mimc"
 	"github.com/consensys/gnark/std/math/emulated"
 	"github.com/ethereum/go-ethereum/common"
+)
+
+var (
+	MaxValidators = []int{10, 50}
+)
+
+const (
+	circuitsDir = "circuits"
+)
+
+const (
+	r1csPathTmp = circuitsDir + "/circuit_%s.r1cs"
+	pkPathTmp   = circuitsDir + "/circuit_%s.pk"
+	vkPathTmp   = circuitsDir + "/circuit_%s.vk"
+	solPathTmp  = circuitsDir + "/Verifier_%s.sol"
 )
 
 type ValidatorDataCircuit struct {
@@ -66,7 +82,7 @@ func (circuit *Circuit) Define(api frontend.API) error {
 	// check if zero point is zero
 	api.AssertIsEqual(field.IsZero(&circuit.ZeroPoint.X), 1)
 	api.AssertIsEqual(field.IsZero(&circuit.ZeroPoint.Y), 1)
-	// WTF have to take zero point from circuit ...
+
 	aggKey := &circuit.ZeroPoint
 	aggVotingPower := frontend.Variable(0)
 
@@ -90,10 +106,6 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		point := curve.Select(circuit.ValidatorData[i].IsNonSigner, &circuit.ValidatorData[i].Key, &circuit.ZeroPoint)
 		aggKey = curve.AddUnified(aggKey, point)
 	}
-
-	fmt.Println("calc", aggKey.X)
-	fmt.Println("calc", aggKey.Y)
-	fmt.Println("calc", circuit.NonSignersAggKey)
 
 	curve.AssertIsEqual(aggKey, &circuit.NonSignersAggKey)
 	api.AssertIsEqual(aggVotingPower, circuit.NonSignersAggVotingPower)
@@ -119,7 +131,9 @@ func HashValset(valset *[]ValidatorData) []byte {
 
 		innerHash.Write(xBytes[:])
 		innerHash.Write(yBytes[:])
-		innerHash.Write((*valset)[i].VotingPower.Bytes())
+		votingPowerBuf := make([]byte, 32)
+		(*valset)[i].VotingPower.FillBytes(votingPowerBuf)
+		innerHash.Write(votingPowerBuf)
 
 		outerHash.Write(innerHash.Sum(nil))
 	}
@@ -153,7 +167,6 @@ func setCircuitData(circuit *Circuit, valset *[]ValidatorData) {
 
 	aggKey, aggVotingPower := getNonSignersData(valset)
 	circuit.NonSignersAggKey = sw_bn254.NewG1Affine(*aggKey)
-	fmt.Println("agg", circuit.NonSignersAggKey)
 	circuit.NonSignersAggVotingPower = *aggVotingPower
 	circuit.Hash = HashValset(valset)
 	zeroPoint := new(bn254.G1Affine)
@@ -181,19 +194,11 @@ func ToValidatorsData(validators []*types.Validator, requiredKeyTag uint8) ([]Va
 }
 
 func Prove(valset []ValidatorData) ([]byte, error) {
-	// compiles our circuit into a R1CS
-	circuit := Circuit{
-		ValidatorData: make([]ValidatorDataCircuit, len(valset)),
-	}
-
-	r1cs, err := frontend.Compile(ecc.BN254.ScalarField(), r1cs.NewBuilder, &circuit)
+	valset = normalizeValset(valset)
+	fmt.Println("valset", valset)
+	r1cs, pk, vk, err := loadOrInit(valset)
 	if err != nil {
-		return nil, err
-	}
-
-	pk, vk, err := groth16.Setup(r1cs)
-	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("failed to load or init: %w", err)
 	}
 
 	// witness definition
@@ -223,18 +228,6 @@ func Prove(valset []ValidatorData) ([]byte, error) {
 	// If more than 10 inputs (unlikely), you'll need to adapt the interface
 	if len(formattedInputs) > 10 {
 		fmt.Println("Warning: More public inputs than the interface supports")
-	}
-
-	var solidityBuffer bytes.Buffer
-	err = vk.ExportSolidity(&solidityBuffer, solidity.WithHashToFieldFunction(sha256.New()))
-	if err != nil {
-		return nil, errors.Errorf("failed to export solidity: %w", err)
-	}
-
-	// Write the Solidity contract to a file
-	err = os.WriteFile("Verifier.sol", solidityBuffer.Bytes(), 0600)
-	if err != nil {
-		return nil, errors.Errorf("failed to write Solidity file: %w", err)
 	}
 
 	_proof, ok := proof.(interface{ MarshalSolidity() []byte })
@@ -293,6 +286,111 @@ func Prove(valset []ValidatorData) ([]byte, error) {
 	//}
 
 	return proofBytes, nil
+}
+
+func loadOrInit(valset []ValidatorData) (r1csCS constraint.ConstraintSystem, pk groth16.ProvingKey, vk groth16.VerifyingKey, err error) {
+	suffix := fmt.Sprintf("%d", len(valset))
+	r1csP := fmt.Sprintf(r1csPathTmp, suffix)
+	pkP := fmt.Sprintf(pkPathTmp, suffix)
+	vkP := fmt.Sprintf(vkPathTmp, suffix)
+	solP := fmt.Sprintf(solPathTmp, suffix)
+
+	if exists(r1csP) && exists(pkP) && exists(vkP) && exists(solP) {
+		r1csCS = groth16.NewCS(bn254.ID)
+		data, _ := os.ReadFile(r1csP)
+		r1csCS.ReadFrom(bytes.NewReader(data))
+		pk = groth16.NewProvingKey(bn254.ID)
+		data, _ = os.ReadFile(pkP)
+		pk.ReadFrom(bytes.NewReader(data))
+		vk = groth16.NewVerifyingKey(bn254.ID)
+		data, _ = os.ReadFile(vkP)
+		vk.ReadFrom(bytes.NewReader(data))
+		return
+	}
+
+	if err = os.MkdirAll(circuitsDir, 0o755); err != nil {
+		return nil, nil, nil, err
+	}
+
+	for _, m := range MaxValidators {
+		suf := fmt.Sprintf("%d", m)
+		r1csFile := fmt.Sprintf(r1csPathTmp, suf)
+		pkFile := fmt.Sprintf(pkPathTmp, suf)
+		vkFile := fmt.Sprintf(vkPathTmp, suf)
+		solFile := fmt.Sprintf(solPathTmp, suf)
+
+		if exists(r1csFile) && exists(pkFile) && exists(vkFile) && exists(solFile) {
+			continue
+		}
+
+		circ := Circuit{
+			ValidatorData: make([]ValidatorDataCircuit, m),
+		}
+
+		cs_i, err := frontend.Compile(bn254.ID.ScalarField(), r1cs.NewBuilder, &circ)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		pk_i, vk_i, err := groth16.Setup(cs_i)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
+		{
+			var buf bytes.Buffer
+			cs_i.WriteTo(&buf)
+			os.WriteFile(r1csFile, buf.Bytes(), 0644)
+		}
+		{
+			f, _ := os.Create(pkFile)
+			pk_i.WriteRawTo(f)
+			f.Close()
+			f, _ = os.Create(vkFile)
+			vk_i.WriteRawTo(f)
+			f.Close()
+		}
+		{
+			f, _ := os.Create(solFile)
+			vk_i.ExportSolidity(f, solidity.WithHashToFieldFunction(sha256.New()))
+			f.Close()
+		}
+	}
+
+	return loadOrInit(valset)
+}
+
+func normalizeValset(valset []ValidatorData) []ValidatorData {
+	n := getOptimalN(len(valset))
+	normalizedValset := make([]ValidatorData, n)
+	for i := 0; i < n; i++ {
+		if i < len(valset) {
+			normalizedValset[i] = valset[i]
+		} else {
+			zeroPoint := new(bn254.G1Affine)
+			zeroPoint.SetInfinity()
+			normalizedValset[i] = ValidatorData{Key: *zeroPoint, VotingPower: *big.NewInt(0), IsNonSigner: false}
+		}
+	}
+	return normalizedValset
+}
+
+func getOptimalN(valsetLength int) int {
+	var capSize int
+	for _, m := range MaxValidators {
+		if m >= valsetLength {
+			capSize = m
+			break
+		}
+	}
+	if capSize == 0 {
+		return 0
+	}
+	return capSize
+}
+
+func exists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }
 
 //0000000a000000000000000a
