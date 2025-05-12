@@ -231,8 +231,6 @@ func Prove(valset []ValidatorData) ([]byte, error) {
 		return nil, errors.Errorf("failed to export solidity: %w", err)
 	}
 
-	fmt.Printf("solidityBuffer: %s\n", solidityBuffer.String())
-
 	// Write the Solidity contract to a file
 	err = os.WriteFile("Verifier.sol", solidityBuffer.Bytes(), 0600)
 	if err != nil {

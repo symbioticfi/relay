@@ -1,9 +1,8 @@
-//go:build manual
-
 package valset
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"math/big"
 	"testing"
@@ -44,5 +43,5 @@ func TestGenerator(t *testing.T) {
 	}
 	slog.Debug("Generated validator set header", "json", string(jsonData))
 
-	//fmt.Println(hex.EncodeToString(encoded))
+	fmt.Println("Header:", string(jsonData))
 }
