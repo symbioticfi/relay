@@ -1,19 +1,16 @@
 package valset
 
 import (
-	"context"
 	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
 	"middleware-offchain/internal/entity"
 	"middleware-offchain/valset/mocks"
-	"middleware-offchain/valset/types"
 )
 
 func TestValsetDeriver_GetValidatorSet(t *testing.T) {
@@ -25,7 +22,7 @@ func TestValsetDeriver_GetValidatorSet(t *testing.T) {
 	valsetDeriver, err := NewValsetDeriver(mockEthClient)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	vpAddress := common.BytesToAddress([]byte{1})
 	kpAddress := common.BytesToAddress([]byte{2})
@@ -39,7 +36,7 @@ func TestValsetDeriver_GetValidatorSet(t *testing.T) {
 	tests := []struct {
 		name        string
 		mockSetup   func()
-		expectedSet types.ValidatorSet
+		expectedSet entity.ValidatorSet
 		expectedErr error
 	}{
 		{
@@ -82,20 +79,20 @@ func TestValsetDeriver_GetValidatorSet(t *testing.T) {
 						},
 					}}, nil)
 			},
-			expectedSet: types.ValidatorSet{
+			expectedSet: entity.ValidatorSet{
 				Version: 1,
-				Validators: []*types.Validator{{
+				Validators: []entity.Validator{{
 					Operator:    operatorAddress,
 					VotingPower: big.NewInt(500),
 					IsActive:    true,
-					Keys: []*types.Key{{
-						Tag:         keyTag,
-						Payload:     keyPayload,
-						PayloadHash: crypto.Keccak256Hash(keyPayload),
+					Keys: []entity.Key{{
+						Tag:     keyTag,
+						Payload: keyPayload,
 					}},
-					Vaults: []*types.Vault{
-						{Vault: vaultAddress, VotingPower: big.NewInt(500)},
-					},
+					Vaults: []entity.Vault{{
+						Vault:       vaultAddress,
+						VotingPower: big.NewInt(500),
+					}},
 				}},
 				TotalActiveVotingPower: big.NewInt(500),
 			},
@@ -108,7 +105,7 @@ func TestValsetDeriver_GetValidatorSet(t *testing.T) {
 					GetMasterConfig(ctx, timestamp).
 					Return(entity.MasterConfig{}, errors.New("failed to fetch master config"))
 			},
-			expectedSet: types.ValidatorSet{},
+			expectedSet: entity.ValidatorSet{},
 			expectedErr: errors.New("failed to get master config: failed to fetch master config"),
 		},
 	}

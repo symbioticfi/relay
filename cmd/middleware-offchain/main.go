@@ -14,11 +14,11 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	"middleware-offchain/bls"
 	aggregator "middleware-offchain/internal/app/aggregator-app"
 	app "middleware-offchain/internal/app/signer-app"
 	"middleware-offchain/internal/client/eth"
 	"middleware-offchain/internal/client/p2p"
+	"middleware-offchain/pkg/bls"
 	"middleware-offchain/pkg/log"
 	"middleware-offchain/valset"
 )

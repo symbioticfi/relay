@@ -4,16 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"maps"
 	"math/big"
-	"slices"
 	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/samber/lo"
 
 	"middleware-offchain/internal/entity"
-	"middleware-offchain/valset/types"
 )
 
 const valsetVersion = 1
@@ -43,18 +40,18 @@ func NewValsetDeriver(ethClient ethClient) (*ValsetDeriver, error) {
 	}, nil
 }
 
-func (v *ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) (types.ValidatorSet, error) {
+func (v *ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) (entity.ValidatorSet, error) {
 	slog.DebugContext(ctx, "Trying to fetch master config", "timestamp", timestamp.String())
 	masterConfig, err := v.ethClient.GetMasterConfig(ctx, timestamp)
 	if err != nil {
-		return types.ValidatorSet{}, fmt.Errorf("failed to get master config: %w", err)
+		return entity.ValidatorSet{}, fmt.Errorf("failed to get master config: %w", err)
 	}
 	slog.DebugContext(ctx, "Got master config", "timestamp", timestamp.String(), "config", masterConfig)
 
 	slog.DebugContext(ctx, "Trying to getch val set config", "timestamp", timestamp.String())
 	valSetConfig, err := v.ethClient.GetValSetConfig(ctx, timestamp)
 	if err != nil {
-		return types.ValidatorSet{}, fmt.Errorf("failed to get val set config: %w", err)
+		return entity.ValidatorSet{}, fmt.Errorf("failed to get val set config: %w", err)
 	}
 	slog.DebugContext(ctx, "Got val set config", "timestamp", timestamp.String(), "config", valSetConfig)
 
@@ -64,7 +61,7 @@ func (v *ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int)
 		slog.DebugContext(ctx, "Trying to fetch voting powers from provider", "provider", provider.Address.Hex())
 		votingPowers, err := v.ethClient.GetVotingPowers(ctx, provider.Address, timestamp)
 		if err != nil {
-			return types.ValidatorSet{}, fmt.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
+			return entity.ValidatorSet{}, fmt.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
 		}
 
 		slog.DebugContext(ctx, "Got voting powers from provider", "provider", provider.Address.Hex(), "votingPowers", votingPowers)
@@ -77,24 +74,24 @@ func (v *ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int)
 
 	keys, err := v.ethClient.GetKeys(ctx, masterConfig.KeysProvider.Address, timestamp)
 	if err != nil {
-		return types.ValidatorSet{}, fmt.Errorf("failed to get keys: %w", err)
+		return entity.ValidatorSet{}, fmt.Errorf("failed to get keys: %w", err)
 	}
 
 	slog.DebugContext(ctx, "Got keys from provider", "provider", masterConfig.KeysProvider.Address.Hex(), "keys", keys)
 
 	// Create validators map to consolidate voting powers and keys
-	validatorsMap := make(map[string]*types.Validator)
+	validatorsMap := make(map[string]*entity.Validator)
 
 	// Process voting powers
 	for _, vp := range allVotingPowers {
 		operatorAddr := vp.Operator.Hex()
 		if _, exists := validatorsMap[operatorAddr]; !exists {
-			validatorsMap[operatorAddr] = &types.Validator{
+			validatorsMap[operatorAddr] = &entity.Validator{
 				Operator:    vp.Operator,
 				VotingPower: big.NewInt(0),
 				IsActive:    false, // Default to active, will filter later
-				Keys:        []*types.Key{},
-				Vaults:      []*types.Vault{},
+				Keys:        []entity.Key{},
+				Vaults:      []entity.Vault{},
 			}
 		}
 
@@ -106,7 +103,7 @@ func (v *ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int)
 			)
 
 			// Add vault to validator's vaults
-			validatorsMap[operatorAddr].Vaults = append(validatorsMap[operatorAddr].Vaults, &types.Vault{
+			validatorsMap[operatorAddr].Vaults = append(validatorsMap[operatorAddr].Vaults, entity.Vault{
 				Vault:       vault.Vault,
 				VotingPower: vault.VotingPower,
 			})
@@ -125,16 +122,17 @@ func (v *ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int)
 		if validator, exists := validatorsMap[operatorAddr]; exists {
 			// Add all keys for this operator
 			for _, key := range rk.Keys {
-				validator.Keys = append(validator.Keys, &types.Key{
-					Tag:         key.Tag,
-					Payload:     key.Payload,
-					PayloadHash: crypto.Keccak256Hash(key.Payload),
+				validator.Keys = append(validator.Keys, entity.Key{
+					Tag:     key.Tag,
+					Payload: key.Payload,
 				})
 			}
 		}
 	}
 
-	validators := slices.Collect(maps.Values(validatorsMap))
+	validators := lo.Map(lo.Values(validatorsMap), func(item *entity.Validator, _ int) entity.Validator {
+		return *item
+	})
 	// Sort validators by voting power in descending order
 	sort.Slice(validators, func(i, j int) bool {
 		// Compare voting powers (higher first)
@@ -142,9 +140,9 @@ func (v *ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int)
 	})
 
 	// Apply filters from valSetConfig
-	totalActiveVotingPower := big.NewInt(0)
 	totalActive := 0
 
+	totalActiveVotingPower := big.NewInt(0)
 	for i := range validators {
 		// Check minimum voting power if configured
 		if validators[i].VotingPower.Cmp(valSetConfig.MinInclusionVotingPower) < 0 {
@@ -181,7 +179,7 @@ func (v *ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int)
 	})
 
 	// Create the validator set
-	return types.ValidatorSet{
+	return entity.ValidatorSet{
 		Version:                valsetVersion,
 		TotalActiveVotingPower: totalActiveVotingPower,
 		Validators:             validators,

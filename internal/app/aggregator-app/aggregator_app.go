@@ -12,7 +12,6 @@ import (
 	"github.com/shopspring/decimal"
 
 	"middleware-offchain/internal/entity"
-	"middleware-offchain/valset/types"
 )
 
 //go:generate mockgen -source=aggregator_app.go -destination=mocks/aggregator_app.go -package=mocks
@@ -21,7 +20,7 @@ type ethClient interface {
 }
 
 type valsetDeriver interface {
-	GetValidatorSet(ctx context.Context, timestamp *big.Int) (types.ValidatorSet, error)
+	GetValidatorSet(ctx context.Context, timestamp *big.Int) (entity.ValidatorSet, error)
 }
 
 type Config struct {
@@ -40,7 +39,7 @@ func (c Config) Validate() error {
 type AggregatorApp struct {
 	cfg          Config
 	hashStore    *hashStore
-	validatorSet types.ValidatorSet
+	validatorSet entity.ValidatorSet
 }
 
 func NewAggregatorApp(ctx context.Context, cfg Config) (*AggregatorApp, error) {

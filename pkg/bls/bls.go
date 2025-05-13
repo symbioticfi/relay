@@ -39,7 +39,7 @@ type G2 struct {
 	*bn254.G2Affine
 }
 
-// GenerateKeyOrLoad generates a new BLS key pair or loads an existing one from the specified path
+// GenerateKey generates a new BLS key pair or loads an existing one from the specified path
 func GenerateKey() ([]byte, error) {
 	sk := new(fr.Element)
 	var err error
@@ -53,27 +53,22 @@ func GenerateKey() ([]byte, error) {
 }
 
 // ComputeKeyPair derives the public keys from a secret key
-func ComputeKeyPair(sk []byte) *KeyPair {
-	var pkG1 *G1
-	var pkG2 *G2
-	var secretKey *fr.Element
-	var skBig big.Int
-
-	secretKey = new(fr.Element)
-	pkG1 = ZeroG1()
-	pkG2 = ZeroG2()
+func ComputeKeyPair(sk []byte) KeyPair {
+	secretKey := new(fr.Element)
+	pkG1 := ZeroG1()
+	pkG2 := ZeroG2()
 
 	secretKey.Unmarshal(sk)
-	skBig = *secretKey.BigInt(&skBig)
+	skBig := secretKey.BigInt(new(big.Int))
 
 	// Get the generators for G1 and G2
 	_, _, g1, g2 := bn254.Generators()
 
 	// Compute public keys by scalar multiplication with generators
-	pkG1.ScalarMultiplication(&g1, &skBig)
-	pkG2.ScalarMultiplication(&g2, &skBig)
+	pkG1.ScalarMultiplication(&g1, skBig)
+	pkG2.ScalarMultiplication(&g2, skBig)
 
-	return &KeyPair{
+	return KeyPair{
 		SecretKey:   SecretKey{secretKey},
 		PublicKeyG1: *pkG1,
 		PublicKeyG2: *pkG2,

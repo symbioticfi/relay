@@ -12,7 +12,7 @@ package mocks
 import (
 	context "context"
 	big "math/big"
-	types "middleware-offchain/valset/types"
+	entity "middleware-offchain/internal/entity"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
@@ -82,10 +82,10 @@ func (m *MockvalsetDeriver) EXPECT() *MockvalsetDeriverMockRecorder {
 }
 
 // GetValidatorSet mocks base method.
-func (m *MockvalsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) (types.ValidatorSet, error) {
+func (m *MockvalsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) (entity.ValidatorSet, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorSet", ctx, timestamp)
-	ret0, _ := ret[0].(types.ValidatorSet)
+	ret0, _ := ret[0].(entity.ValidatorSet)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

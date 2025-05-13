@@ -17,7 +17,7 @@ import (
 
 func TestP2P(t *testing.T) {
 	v := atomic.Value{}
-	ctx := context.Background()
+	ctx := t.Context()
 
 	h1, err := libp2p.New()
 	require.NoError(t, err)
@@ -66,7 +66,7 @@ func TestP2P(t *testing.T) {
 }
 
 func TestP2PMany(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	mainHost, err := libp2p.New()
 	require.NoError(t, err)

@@ -43,11 +43,6 @@ type OperatorVotingPower struct {
 	Vaults   []VaultVotingPower
 }
 
-type Key struct {
-	Tag     uint8
-	Payload []byte
-}
-
 type OperatorWithKeys struct {
 	Operator common.Address
 	Keys     []Key

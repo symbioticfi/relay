@@ -1,7 +1,6 @@
 package aggregator_app
 
 import (
-	"context"
 	"math/big"
 	"testing"
 
@@ -12,7 +11,6 @@ import (
 
 	"middleware-offchain/internal/app/aggregator-app/mocks"
 	"middleware-offchain/internal/entity"
-	"middleware-offchain/valset/types"
 )
 
 func TestHandleSignatureGeneratedMessage(t *testing.T) {
@@ -30,13 +28,13 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 	mockEthClient := mocks.NewMockethClient(ctrl)
 	mockValsetDeriver := mocks.NewMockvalsetDeriver(ctrl)
 
-	validatorSet := types.ValidatorSet{
-		Validators: []*types.Validator{
+	validatorSet := entity.ValidatorSet{
+		Validators: []entity.Validator{
 			{
 				Operator:    operatorAddress1,
 				IsActive:    true,
 				VotingPower: big.NewInt(101),
-				Keys: []*types.Key{{
+				Keys: []entity.Key{{
 					Tag:     keyTag,
 					Payload: key1,
 				}},
@@ -45,7 +43,7 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 				Operator:    operatorAddress2,
 				IsActive:    true,
 				VotingPower: big.NewInt(201),
-				Keys: []*types.Key{{
+				Keys: []entity.Key{{
 					Tag:     keyTag,
 					Payload: key2,
 				}},
@@ -54,7 +52,7 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 				Operator:    operatorAddress3,
 				IsActive:    true,
 				VotingPower: big.NewInt(301),
-				Keys: []*types.Key{{
+				Keys: []entity.Key{{
 					Tag:     keyTag,
 					Payload: key3,
 				}},
@@ -71,7 +69,7 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 		ValsetDeriver: mockValsetDeriver,
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	app, err := NewAggregatorApp(ctx, cfg)
 	require.NoError(t, err)

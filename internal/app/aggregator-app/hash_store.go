@@ -9,7 +9,6 @@ import (
 
 	"middleware-offchain/bls"
 	"middleware-offchain/internal/entity"
-	"middleware-offchain/valset/types"
 )
 
 type hashStore struct {
@@ -18,7 +17,7 @@ type hashStore struct {
 }
 
 type hashWithValidator struct {
-	validator types.Validator
+	validator entity.Validator
 	hash      entity.SignatureHashMessage
 }
 
@@ -28,7 +27,7 @@ func newHashStore() *hashStore {
 	}
 }
 
-func (h *hashStore) PutHash(msg entity.SignatureHashMessage, val types.Validator) (*big.Int, *bls.G1, *bls.G1, *bls.G2, error) {
+func (h *hashStore) PutHash(msg entity.SignatureHashMessage, val entity.Validator) (*big.Int, *bls.G1, *bls.G1, *bls.G2, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	validators, ok := h.m[string(msg.MessageHash)]

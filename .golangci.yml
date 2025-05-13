@@ -24,6 +24,7 @@ linters:
     - exptostd
     - fatcontext
     - forbidigo
+    - funcorder
     - gocheckcompilerdirectives
     - gochecknoinits
     - gochecksumtype
@@ -242,6 +243,9 @@ linters:
       ignore-package-globs:
         - middleware-offchain/internal/*
         - golang.org/x/sync/errgroup
+    funcorder:
+      constructor: true
+      struct-method: false
   exclusions:
     generated: lax
     presets:

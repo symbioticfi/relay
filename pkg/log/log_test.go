@@ -1,7 +1,6 @@
 package log
 
 import (
-	"context"
 	"log/slog"
 	"testing"
 	"time"
@@ -26,10 +25,10 @@ func myFund() error {
 func TestSplit(t *testing.T) {
 	Init("debug")
 	slog.Info("hello", "there", "world")
-	slog.DebugContext(context.Background(), "hello debug", "there1", "world1")
+	slog.DebugContext(t.Context(), "hello debug", "there1", "world1")
 	slog.Error("hello error", "there2", "world2")
 
-	ctx := WithAttrs(context.Background(), slog.String("key", "value"))
+	ctx := WithAttrs(t.Context(), slog.String("key", "value"))
 
 	time.Sleep(time.Second)
 

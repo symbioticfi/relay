@@ -8,9 +8,8 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	"middleware-offchain/bls"
 	"middleware-offchain/internal/entity"
-	"middleware-offchain/valset/types"
+	"middleware-offchain/pkg/bls"
 )
 
 type p2pService interface {
@@ -22,8 +21,8 @@ type ethClient interface {
 }
 
 type valsetGenerator interface {
-	GenerateValidatorSetHeader(ctx context.Context) (types.ValidatorSetHeader, error)
-	GenerateValidatorSetHeaderHash(ctx context.Context, validatorSetHeader types.ValidatorSetHeader) ([]byte, error)
+	GenerateValidatorSetHeader(ctx context.Context) (entity.ValidatorSetHeader, error)
+	GenerateValidatorSetHeaderHash(ctx context.Context, validatorSetHeader entity.ValidatorSetHeader) ([]byte, error)
 }
 
 type Config struct {
@@ -31,7 +30,7 @@ type Config struct {
 	ValsetGenerator valsetGenerator `validate:"required"`
 	EthClient       ethClient       `validate:"required"`
 	P2PService      p2pService      `validate:"required"`
-	KeyPair         *bls.KeyPair    `validate:"required"`
+	KeyPair         bls.KeyPair     `validate:"required"`
 }
 
 func (c Config) Validate() error {

@@ -11,8 +11,8 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/bls"
-	"middleware-offchain/valset/types"
+	"middleware-offchain/internal/entity"
+	"middleware-offchain/pkg/bls"
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark-crypto/ecc/bn254"
@@ -174,7 +174,7 @@ func setCircuitData(circuit *Circuit, valset *[]ValidatorData) {
 	circuit.ZeroPoint = sw_bn254.NewG1Affine(*zeroPoint)
 }
 
-func ToValidatorsData(validators []*types.Validator, requiredKeyTag uint8) ([]ValidatorData, error) {
+func ToValidatorsData(validators []entity.Validator, requiredKeyTag uint8) ([]ValidatorData, error) {
 	valset := make([]ValidatorData, 0)
 	for i := 0; i < len(validators); i++ {
 		if !validators[i].IsActive {
