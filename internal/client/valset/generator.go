@@ -62,7 +62,9 @@ func (v *Generator) GenerateValidatorSetHeader(ctx context.Context) (entity.Vali
 	// Create aggregated pubkeys for each required key tag
 	aggPubkeysG1 := make([]*bls.G1, len(tags)) // TODO: minor - potentially not only BLS
 	for i := range tags {
-		aggPubkeysG1[i] = &bls.G1{G1Affine: new(bn254.G1Affine)}
+		if tags[i]>>4 == 0 {
+			aggPubkeysG1[i] = &bls.G1{G1Affine: new(bn254.G1Affine)}
+		}
 	}
 
 	for _, validator := range validatorSet.Validators {
@@ -73,11 +75,13 @@ func (v *Generator) GenerateValidatorSetHeader(ctx context.Context) (entity.Vali
 		for _, key := range validator.Keys {
 			for i, tag := range tags {
 				if key.Tag == tag {
-					g1, err := bls.DeserializeG1(key.Payload)
-					if err != nil {
-						return entity.ValidatorSetHeader{}, fmt.Errorf("failed to deserialize G1: %w", err)
+					if tag>>4 == 0 {
+						g1, err := bls.DeserializeG1(key.Payload)
+						if err != nil {
+							return entity.ValidatorSetHeader{}, fmt.Errorf("failed to deserialize G1: %w", err)
+						}
+						aggPubkeysG1[i] = aggPubkeysG1[i].Add(g1)
 					}
-					aggPubkeysG1[i] = aggPubkeysG1[i].Add(g1)
 				}
 			}
 		}
@@ -96,11 +100,13 @@ func (v *Generator) GenerateValidatorSetHeader(ctx context.Context) (entity.Vali
 	extraData := proof.HashValset(&valset)
 
 	// Format all aggregated keys for the header
-	formattedKeys := make([]entity.Key, len(aggPubkeysG1))
+	formattedKeys := make([]entity.Key, 0, len(aggPubkeysG1))
 	for i, key := range aggPubkeysG1 {
-		formattedKeys[i] = entity.Key{
-			Tag:     tags[i],
-			Payload: bls.SerializeG1(key),
+		if key != nil && !key.IsInfinity() {
+			formattedKeys = append(formattedKeys, entity.Key{
+				Tag:     tags[i],
+				Payload: bls.SerializeG1(key),
+			})
 		}
 	}
 

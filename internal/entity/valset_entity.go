@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -144,13 +143,13 @@ func (v ValidatorSetHeader) EncodeJSON() ([]byte, error) {
 		Version:                v.Version,
 		ActiveAggregatedKeys:   make([]key, len(v.ActiveAggregatedKeys)),
 		ValidatorsSszMRoot:     fmt.Sprintf("0x%064x", v.ValidatorsSszMRoot),
-		ExtraData:              formatPayload(v.ExtraData),
+		ExtraData:              fmt.Sprintf("0x%064x", v.ExtraData),
 		TotalActiveVotingPower: v.TotalActiveVotingPower,
 	}
 
 	for i, key := range v.ActiveAggregatedKeys {
 		jsonHeaderData.ActiveAggregatedKeys[i].Tag = key.Tag
-		jsonHeaderData.ActiveAggregatedKeys[i].Payload = formatPayload(key.Payload)
+		jsonHeaderData.ActiveAggregatedKeys[i].Payload = fmt.Sprintf("0x%0128x", key.Payload)
 	}
 
 	jsonData, err := json.MarshalIndent(jsonHeaderData, "", "  ")
@@ -159,11 +158,4 @@ func (v ValidatorSetHeader) EncodeJSON() ([]byte, error) {
 	}
 
 	return jsonData, nil
-}
-
-func formatPayload(payload []byte) string {
-	lengthHex := fmt.Sprintf("%064x", len(payload)) // 64 hex digits (32 bytes) for length
-	payloadHex := hex.EncodeToString(payload)       // raw bytes → hex
-
-	return "0x" + lengthHex + payloadHex
 }
