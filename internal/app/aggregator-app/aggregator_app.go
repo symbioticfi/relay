@@ -85,7 +85,7 @@ func (s *AggregatorApp) handleSignatureGeneratedMessage(ctx context.Context, msg
 
 	slog.DebugContext(ctx, "found validator", "validator", validator)
 
-	currentVotingPower, err := s.hashStore.PutHash(msg.Message, validator)
+	currentVotingPower, aggSignature, aggPublicKeyG1, aggPublicKeyG2, err := s.hashStore.PutHash(msg.Message, validator)
 	if err != nil {
 		return errors.Errorf("failed to put hash: %w", err)
 	}
@@ -113,6 +113,9 @@ func (s *AggregatorApp) handleSignatureGeneratedMessage(ctx context.Context, msg
 			"currentVotingPower", currentVotingPower,
 			"quorumThreshold", quorumThreshold,
 			"totalActiveVotingPower", s.validatorSet.TotalActiveVotingPower,
+			"aggSignature", aggSignature,
+			"aggPublicKeyG1", aggPublicKeyG1,
+			"aggPublicKeyG2", aggPublicKeyG2,
 		)
 		return nil
 	}
