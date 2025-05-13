@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	"middleware-offchain/internal/client/valset/mocks"
 	"middleware-offchain/internal/entity"
-	"middleware-offchain/valset/mocks"
 )
 
 func TestValsetDeriver_GetValidatorSet(t *testing.T) {
@@ -19,7 +19,7 @@ func TestValsetDeriver_GetValidatorSet(t *testing.T) {
 
 	mockEthClient := mocks.NewMockethClient(ctrl)
 
-	valsetDeriver, err := NewValsetDeriver(mockEthClient)
+	valsetDeriver, err := NewDeriver(mockEthClient)
 	require.NoError(t, err)
 
 	ctx := t.Context()

@@ -30,10 +30,10 @@ func TestGenerator(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	deriver, err := NewValsetDeriver(client)
+	deriver, err := NewDeriver(client)
 	require.NoError(t, err)
 
-	generator, err := NewValsetGenerator(deriver, client)
+	generator, err := NewGenerator(deriver, client)
 	require.NoError(t, err)
 
 	header, err := generator.GenerateValidatorSetHeader(context.Background())

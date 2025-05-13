@@ -76,7 +76,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		return errors.Errorf("failed to put hash: %w", err)
 	}
 
-	slog.DebugContext(ctx, "total voting power", "currentVotingPower", current.totalVotingPower.String())
+	slog.DebugContext(ctx, "total voting power", "currentVotingPower", current.votingPower.String())
 
 	quorumThreshold, err := s.cfg.EthClient.GetQuorumThreshold(ctx, big.NewInt(time.Now().Unix()), msg.Message.KeyTag)
 	if err != nil {
@@ -87,7 +87,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 
 	coef1e18 := big.NewInt(1e18)
 
-	vpMul1e18 := new(big.Int).Mul(current.totalVotingPower, coef1e18)
+	vpMul1e18 := new(big.Int).Mul(current.votingPower, coef1e18)
 	percent1e18 := new(big.Int).Div(vpMul1e18, s.validatorSet.TotalActiveVotingPower)
 
 	thresholdReached := percent1e18.Cmp(quorumThreshold) >= 0
@@ -95,7 +95,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		slog.DebugContext(ctx, "quorum not reached yet",
 			"percentReached", decimal.NewFromBigInt(percent1e18, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
 			"percentQuorumThreshold", decimal.NewFromBigInt(quorumThreshold, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
-			"currentVotingPower", current.totalVotingPower,
+			"currentVotingPower", current.votingPower,
 			"quorumThreshold", quorumThreshold,
 			"totalActiveVotingPower", s.validatorSet.TotalActiveVotingPower,
 			"aggSignature", current.aggSignature,
@@ -108,7 +108,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 	slog.InfoContext(ctx, "quorum reached",
 		"percentReached", decimal.NewFromBigInt(percent1e18, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
 		"percentQuorumThreshold", decimal.NewFromBigInt(quorumThreshold, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
-		"currentVotingPower", current.totalVotingPower,
+		"currentVotingPower", current.votingPower,
 		"quorumThreshold", quorumThreshold,
 		"totalActiveVotingPower", s.validatorSet.TotalActiveVotingPower,
 	)

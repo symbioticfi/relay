@@ -11,26 +11,26 @@ import (
 
 	"middleware-offchain/internal/entity"
 	"middleware-offchain/pkg/bls"
+	"middleware-offchain/pkg/proof"
 	"middleware-offchain/pkg/ssz"
-	"middleware-offchain/proof"
 )
 
-// ValsetGenerator handles the generation of validator set headers
-type ValsetGenerator struct {
-	deriver   *ValsetDeriver
+// Generator handles the generation of validator set headers
+type Generator struct {
+	deriver   *Deriver
 	ethClient ethClient
 }
 
-// NewValsetGenerator creates a new validator set generator
-func NewValsetGenerator(deriver *ValsetDeriver, ethClient ethClient) (*ValsetGenerator, error) {
-	return &ValsetGenerator{
+// NewGenerator creates a new validator set generator
+func NewGenerator(deriver *Deriver, ethClient ethClient) (*Generator, error) {
+	return &Generator{
 		deriver:   deriver,
 		ethClient: ethClient,
 	}, nil
 }
 
 // GenerateValidatorSetHeader generates a validator set header for the current epoch
-func (v *ValsetGenerator) GenerateValidatorSetHeader(ctx context.Context) (entity.ValidatorSetHeader, error) {
+func (v *Generator) GenerateValidatorSetHeader(ctx context.Context) (entity.ValidatorSetHeader, error) {
 	slog.DebugContext(ctx, "Generating validator set header")
 
 	slog.DebugContext(ctx, "Trying to get capture timestamp")
@@ -115,7 +115,7 @@ func (v *ValsetGenerator) GenerateValidatorSetHeader(ctx context.Context) (entit
 	}, nil
 }
 
-func (v *ValsetGenerator) GenerateValidatorSetHeaderHash(ctx context.Context, validatorSetHeader entity.ValidatorSetHeader) ([]byte, error) {
+func (v *Generator) GenerateValidatorSetHeaderHash(ctx context.Context, validatorSetHeader entity.ValidatorSetHeader) ([]byte, error) {
 	hash, err := validatorSetHeader.Hash()
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash validator set header: %w", err)

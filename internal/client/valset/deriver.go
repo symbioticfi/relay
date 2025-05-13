@@ -28,19 +28,19 @@ type ethClient interface {
 	GetSubnetwork(ctx context.Context) ([]byte, error)
 }
 
-// ValsetDeriver coordinates the ETH services
-type ValsetDeriver struct {
+// Deriver coordinates the ETH services
+type Deriver struct {
 	ethClient ethClient
 }
 
-// NewValsetDeriver creates a new valset deriver
-func NewValsetDeriver(ethClient ethClient) (*ValsetDeriver, error) {
-	return &ValsetDeriver{
+// NewDeriver creates a new valset deriver
+func NewDeriver(ethClient ethClient) (*Deriver, error) {
+	return &Deriver{
 		ethClient: ethClient,
 	}, nil
 }
 
-func (v *ValsetDeriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) (entity.ValidatorSet, error) {
+func (v *Deriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) (entity.ValidatorSet, error) {
 	slog.DebugContext(ctx, "Trying to fetch master config", "timestamp", timestamp.String())
 	masterConfig, err := v.ethClient.GetMasterConfig(ctx, timestamp)
 	if err != nil {

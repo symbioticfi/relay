@@ -28,10 +28,10 @@ func newHashStore() *hashStore {
 }
 
 type currentValues struct {
-	totalVotingPower *big.Int
-	aggSignature     *bls.G1
-	aggPublicKeyG1   *bls.G1
-	aggPublicKeyG2   *bls.G2
+	votingPower    *big.Int
+	aggSignature   *bls.G1
+	aggPublicKeyG1 *bls.G1
+	aggPublicKeyG2 *bls.G2
 }
 
 func (h *hashStore) PutHash(msg entity.SignatureHashMessage, val entity.Validator) (currentValues, error) {
@@ -74,9 +74,9 @@ func (h *hashStore) PutHash(msg entity.SignatureHashMessage, val entity.Validato
 	}
 
 	return currentValues{
-		totalVotingPower: totalVotingPower,
-		aggSignature:     aggSignature,
-		aggPublicKeyG1:   aggPublicKeyG1,
-		aggPublicKeyG2:   aggPublicKeyG2,
+		votingPower:    totalVotingPower,
+		aggSignature:   aggSignature,
+		aggPublicKeyG1: aggPublicKeyG1,
+		aggPublicKeyG2: aggPublicKeyG2,
 	}, nil
 }

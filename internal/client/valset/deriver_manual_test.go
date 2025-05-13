@@ -30,7 +30,7 @@ func TestDeriverManual(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	deriver, err := NewValsetDeriver(client)
+	deriver, err := NewDeriver(client)
 	require.NoError(t, err)
 
 	timestamp, err := client.GetCaptureTimestamp(context.Background())

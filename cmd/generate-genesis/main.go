@@ -13,8 +13,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"middleware-offchain/internal/client/eth"
+	"middleware-offchain/internal/client/valset"
 	"middleware-offchain/pkg/log"
-	"middleware-offchain/valset"
 )
 
 // generate_genesis --master-address 0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f --rpc-url http://127.0.0.1:8545
@@ -71,12 +71,12 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to create eth client: %w", err)
 		}
 
-		deriver, err := valset.NewValsetDeriver(client)
+		deriver, err := valset.NewDeriver(client)
 		if err != nil {
 			return errors.Errorf("failed to create valset deriver: %w", err)
 		}
 
-		generator, err := valset.NewValsetGenerator(deriver, client)
+		generator, err := valset.NewGenerator(deriver, client)
 		if err != nil {
 			return errors.Errorf("failed to create valset generator: %w", err)
 		}

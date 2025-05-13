@@ -18,9 +18,9 @@ import (
 	app "middleware-offchain/internal/app/signer-app"
 	"middleware-offchain/internal/client/eth"
 	"middleware-offchain/internal/client/p2p"
+	"middleware-offchain/internal/client/valset"
 	"middleware-offchain/pkg/bls"
 	"middleware-offchain/pkg/log"
-	"middleware-offchain/valset"
 )
 
 // offchain_middleware --master-address 0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f --rpc-url http://127.0.0.1:8545
@@ -95,12 +95,12 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to create eth client: %w", err)
 		}
 
-		deriver, err := valset.NewValsetDeriver(ethClient)
+		deriver, err := valset.NewDeriver(ethClient)
 		if err != nil {
 			return errors.Errorf("failed to create valset deriver: %w", err)
 		}
 
-		generator, err := valset.NewValsetGenerator(deriver, ethClient)
+		generator, err := valset.NewGenerator(deriver, ethClient)
 		if err != nil {
 			return errors.Errorf("failed to create valset generator: %w", err)
 		}
