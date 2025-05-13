@@ -1,6 +1,6 @@
 // Hash: 8c67e0de1079a95336f540c6c73e42f4633fd2cb9841d83ab84b052439e4f3c7
 // Version: 0.1.3
-package types
+package ssz
 
 import (
 	"fmt"

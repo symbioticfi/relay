@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"strconv"
 
 	"github.com/go-errors/errors"
 
@@ -288,32 +289,32 @@ func Prove(valset []ValidatorData) ([]byte, error) {
 	return proofBytes, nil
 }
 
-func loadOrInit(valset []ValidatorData) (r1csCS constraint.ConstraintSystem, pk groth16.ProvingKey, vk groth16.VerifyingKey, err error) {
-	suffix := fmt.Sprintf("%d", len(valset))
+func loadOrInit(valset []ValidatorData) (constraint.ConstraintSystem, groth16.ProvingKey, groth16.VerifyingKey, error) {
+	suffix := strconv.Itoa(len(valset))
 	r1csP := fmt.Sprintf(r1csPathTmp, suffix)
 	pkP := fmt.Sprintf(pkPathTmp, suffix)
 	vkP := fmt.Sprintf(vkPathTmp, suffix)
 	solP := fmt.Sprintf(solPathTmp, suffix)
 
 	if exists(r1csP) && exists(pkP) && exists(vkP) && exists(solP) {
-		r1csCS = groth16.NewCS(bn254.ID)
+		r1csCS := groth16.NewCS(bn254.ID)
 		data, _ := os.ReadFile(r1csP)
 		r1csCS.ReadFrom(bytes.NewReader(data))
-		pk = groth16.NewProvingKey(bn254.ID)
+		pk := groth16.NewProvingKey(bn254.ID)
 		data, _ = os.ReadFile(pkP)
 		pk.ReadFrom(bytes.NewReader(data))
-		vk = groth16.NewVerifyingKey(bn254.ID)
+		vk := groth16.NewVerifyingKey(bn254.ID)
 		data, _ = os.ReadFile(vkP)
 		vk.ReadFrom(bytes.NewReader(data))
-		return
+		return r1csCS, pk, vk, nil
 	}
 
-	if err = os.MkdirAll(circuitsDir, 0o755); err != nil {
+	if err := os.MkdirAll(circuitsDir, 0o755); err != nil {
 		return nil, nil, nil, err
 	}
 
 	for _, m := range MaxValidators {
-		suf := fmt.Sprintf("%d", m)
+		suf := strconv.Itoa(m)
 		r1csFile := fmt.Sprintf(r1csPathTmp, suf)
 		pkFile := fmt.Sprintf(pkPathTmp, suf)
 		vkFile := fmt.Sprintf(vkPathTmp, suf)
@@ -339,7 +340,7 @@ func loadOrInit(valset []ValidatorData) (r1csCS constraint.ConstraintSystem, pk 
 		{
 			var buf bytes.Buffer
 			cs_i.WriteTo(&buf)
-			os.WriteFile(r1csFile, buf.Bytes(), 0644)
+			os.WriteFile(r1csFile, buf.Bytes(), 0600)
 		}
 		{
 			f, _ := os.Create(pkFile)

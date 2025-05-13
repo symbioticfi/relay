@@ -11,6 +11,7 @@ import (
 
 	"middleware-offchain/internal/app/aggregator-app/mocks"
 	"middleware-offchain/internal/entity"
+	"middleware-offchain/pkg/bls"
 )
 
 func TestHandleSignatureGeneratedMessage(t *testing.T) {
@@ -21,9 +22,25 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 	operatorAddress1 := common.BytesToAddress([]byte{1})
 	operatorAddress2 := common.BytesToAddress([]byte{2})
 	operatorAddress3 := common.BytesToAddress([]byte{3})
-	key1 := []byte{1, 2, 3}
-	key2 := []byte{3, 2, 1}
-	key3 := []byte{7, 7, 7}
+
+	bi1, ok := big.NewInt(0).SetString("87191036493798670866484781455694320176667203290824056510541300741498740913410", 10)
+	require.True(t, ok)
+	bi2, ok := big.NewInt(0).SetString("11008377096554045051122023680185802911050337017631086444859313200352654461863", 10)
+	require.True(t, ok)
+	bi3, ok := big.NewInt(0).SetString("26972876870930381973856869753776124637336739336929668162870464864826929175089", 10)
+	require.True(t, ok)
+
+	key1 := bls.ComputeKeyPair(bi1.Bytes())
+	key2 := bls.ComputeKeyPair(bi2.Bytes())
+	key3 := bls.ComputeKeyPair(bi3.Bytes())
+
+	bytes := [32]byte{1, 2, 3}
+	sign1, err := key1.Sign(bytes[:])
+	require.NoError(t, err)
+	sign2, err := key2.Sign(bytes[:])
+	require.NoError(t, err)
+	sign3, err := key3.Sign(bytes[:])
+	require.NoError(t, err)
 
 	mockEthClient := mocks.NewMockethClient(ctrl)
 	mockValsetDeriver := mocks.NewMockvalsetDeriver(ctrl)
@@ -36,7 +53,7 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 				VotingPower: big.NewInt(101),
 				Keys: []entity.Key{{
 					Tag:     keyTag,
-					Payload: key1,
+					Payload: key1.PublicKeyG1.Marshal(),
 				}},
 			},
 			{
@@ -45,7 +62,7 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 				VotingPower: big.NewInt(201),
 				Keys: []entity.Key{{
 					Tag:     keyTag,
-					Payload: key2,
+					Payload: key2.PublicKeyG1.Marshal(),
 				}},
 			},
 			{
@@ -54,7 +71,7 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 				VotingPower: big.NewInt(301),
 				Keys: []entity.Key{{
 					Tag:     keyTag,
-					Payload: key3,
+					Payload: key3.PublicKeyG1.Marshal(),
 				}},
 			},
 		},
@@ -98,8 +115,10 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 			name: "quorum not reached",
 			message: entity.P2PSignatureHashMessage{
 				Message: entity.SignatureHashMessage{
-					PublicKeyG1: key1,
+					PublicKeyG1: key1.PublicKeyG1.Marshal(),
+					PublicKeyG2: key1.PublicKeyG2.Marshal(),
 					KeyTag:      keyTag,
+					Signature:   bls.SerializeG1(sign1),
 				},
 			},
 			mockSetup: func() {
@@ -113,8 +132,10 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 			name: "quorum reached",
 			message: entity.P2PSignatureHashMessage{
 				Message: entity.SignatureHashMessage{
-					PublicKeyG1: key3,
+					PublicKeyG1: key3.PublicKeyG1.Marshal(),
+					PublicKeyG2: key3.PublicKeyG2.Marshal(),
 					KeyTag:      keyTag,
+					Signature:   bls.SerializeG1(sign3),
 				},
 			},
 			mockSetup: func() {
@@ -128,8 +149,10 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 			name: "error getting quorum threshold",
 			message: entity.P2PSignatureHashMessage{
 				Message: entity.SignatureHashMessage{
-					PublicKeyG1: key2,
+					PublicKeyG1: key2.PublicKeyG1.Marshal(),
+					PublicKeyG2: key2.PublicKeyG2.Marshal(),
 					KeyTag:      keyTag,
+					Signature:   bls.SerializeG1(sign2),
 				},
 			},
 			mockSetup: func() {

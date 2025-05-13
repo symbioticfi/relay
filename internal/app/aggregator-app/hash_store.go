@@ -7,8 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/bls"
 	"middleware-offchain/internal/entity"
+	"middleware-offchain/pkg/bls"
 )
 
 type hashStore struct {
@@ -27,7 +27,14 @@ func newHashStore() *hashStore {
 	}
 }
 
-func (h *hashStore) PutHash(msg entity.SignatureHashMessage, val entity.Validator) (*big.Int, *bls.G1, *bls.G1, *bls.G2, error) {
+type currentValues struct {
+	totalVotingPower *big.Int
+	aggSignature     *bls.G1
+	aggPublicKeyG1   *bls.G1
+	aggPublicKeyG2   *bls.G2
+}
+
+func (h *hashStore) PutHash(msg entity.SignatureHashMessage, val entity.Validator) (currentValues, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	validators, ok := h.m[string(msg.MessageHash)]
@@ -36,7 +43,7 @@ func (h *hashStore) PutHash(msg entity.SignatureHashMessage, val entity.Validato
 		h.m[string(msg.MessageHash)] = validators
 	}
 	if _, ok = validators[val.Operator]; ok {
-		return nil, nil, nil, nil, errors.Errorf("hash already exists for validator %s", val.Operator.Hex())
+		return currentValues{}, errors.Errorf("hash already exists for validator %s", val.Operator.Hex())
 	}
 	validators[val.Operator] = hashWithValidator{
 		validator: val,
@@ -51,20 +58,25 @@ func (h *hashStore) PutHash(msg entity.SignatureHashMessage, val entity.Validato
 		totalVotingPower = totalVotingPower.Add(totalVotingPower, validator.validator.VotingPower)
 		signature, err := bls.DeserializeG1(validator.hash.Signature)
 		if err != nil {
-			return nil, nil, nil, nil, errors.Errorf("failed to deserialize signature: %w", err)
+			return currentValues{}, errors.Errorf("failed to deserialize signature: %w", err)
 		}
 		publicKeyG1, err := bls.DeserializeG1(validator.hash.PublicKeyG1)
 		if err != nil {
-			return nil, nil, nil, nil, errors.Errorf("failed to deserialize public key G1: %w", err)
+			return currentValues{}, errors.Errorf("failed to deserialize public key G1: %w", err)
 		}
 		publicKeyG2, err := bls.DeserializeG2(validator.hash.PublicKeyG2)
 		if err != nil {
-			return nil, nil, nil, nil, errors.Errorf("failed to deserialize public key G2: %w", err)
+			return currentValues{}, errors.Errorf("failed to deserialize public key G2: %w", err)
 		}
 		aggSignature = aggSignature.Add(signature)
 		aggPublicKeyG1 = aggPublicKeyG1.Add(publicKeyG1)
 		aggPublicKeyG2 = aggPublicKeyG2.Add(publicKeyG2)
 	}
 
-	return totalVotingPower, aggSignature, aggPublicKeyG1, aggPublicKeyG2, nil
+	return currentValues{
+		totalVotingPower: totalVotingPower,
+		aggSignature:     aggSignature,
+		aggPublicKeyG1:   aggPublicKeyG1,
+		aggPublicKeyG2:   aggPublicKeyG2,
+	}, nil
 }

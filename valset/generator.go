@@ -11,8 +11,8 @@ import (
 
 	"middleware-offchain/internal/entity"
 	"middleware-offchain/pkg/bls"
+	"middleware-offchain/pkg/ssz"
 	"middleware-offchain/proof"
-	"middleware-offchain/valset/types"
 )
 
 // ValsetGenerator handles the generation of validator set headers
@@ -83,7 +83,7 @@ func (v *ValsetGenerator) GenerateValidatorSetHeader(ctx context.Context) (entit
 		}
 	}
 
-	sszMroot, err := types.HashTreeRoot(validatorSet)
+	sszMroot, err := ssz.HashTreeRoot(validatorSet)
 	if err != nil {
 		return entity.ValidatorSetHeader{}, fmt.Errorf("failed to get hash tree root: %w", err)
 	}
