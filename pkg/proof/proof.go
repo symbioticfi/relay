@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"sort"
 	"strconv"
 
 	"github.com/go-errors/errors"
@@ -205,11 +206,10 @@ func ToValidatorsData(validators []entity.Validator, requiredKeyTag uint8) ([]Va
 			}
 		}
 	}
-	return valset, nil
+	return normalizeValset(valset), nil
 }
 
 func Prove(valset []ValidatorData) ([]byte, error) {
-	valset = normalizeValset(valset)
 	fmt.Println("valset", valset)
 	r1cs, pk, vk, err := loadOrInit(valset)
 	if err != nil {
@@ -316,10 +316,11 @@ func loadOrInit(valset []ValidatorData) (constraint.ConstraintSystem, groth16.Pr
 		r1csCS.ReadFrom(bytes.NewReader(data))
 		pk := groth16.NewProvingKey(bn254.ID)
 		data, _ = os.ReadFile(pkP)
-		pk.ReadFrom(bytes.NewReader(data))
+		pk.UnsafeReadFrom(bytes.NewReader(data))
 		vk := groth16.NewVerifyingKey(bn254.ID)
 		data, _ = os.ReadFile(vkP)
-		vk.ReadFrom(bytes.NewReader(data))
+		vk.UnsafeReadFrom(bytes.NewReader(data))
+
 		return r1csCS, pk, vk, nil
 	}
 
@@ -375,6 +376,11 @@ func loadOrInit(valset []ValidatorData) (constraint.ConstraintSystem, groth16.Pr
 }
 
 func normalizeValset(valset []ValidatorData) []ValidatorData {
+	// Sort validators by key in ascending order
+	sort.Slice(valset, func(i, j int) bool {
+		// Compare keys (lower first)
+		return valset[i].Key.X.Cmp(&valset[j].Key.X) > 0 || valset[i].Key.Y.Cmp(&valset[j].Key.Y) > 0
+	})
 	n := getOptimalN(len(valset))
 	normalizedValset := make([]ValidatorData, n)
 	for i := 0; i < n; i++ {
