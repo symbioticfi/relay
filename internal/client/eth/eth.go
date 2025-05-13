@@ -18,12 +18,13 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/samber/lo"
 
+	"middleware-offchain/internal/client/eth/gen"
 	"middleware-offchain/internal/entity"
 )
 
-//go:embed contract.abi.json
-var contractAbiJSON []byte
-var contractABI abi.ABI
+//go:embed Master.abi.json
+var masterAbiJSON []byte
+var masterABI abi.ABI
 
 //go:embed VaultManager.abi.json
 var vaultManagerAbiJSON []byte
@@ -34,25 +35,25 @@ var keyRegistryAbiJSON []byte
 var keyRegistryABI abi.ABI
 
 var (
-	GET_MASTER_CONFIG_FUNCTION            = "getMasterConfigAt"
-	GET_VALSET_CONFIG_FUNCTION            = "getValSetConfigAt"
-	GET_IS_GENESIS_SET_FUNCTION           = "isGenesisSet"
-	GET_CURRENT_EPOCH_FUNCTION            = "getCurrentEpoch"
-	GET_CURRENT_PHASE_FUNCTION            = "getCurrentPhase"
-	GET_CURRENT_VALSET_TIMESTAMP_FUNCTION = "getCurrentValsetTimestamp"
-	GET_CAPTURE_TIMESTAMP_FUNCTION        = "getCaptureTimestamp"
-	GET_VOTING_POWERS_FUNCTION            = "getVotingPowersAt"
-	GET_KEYS_FUNCTION                     = "getKeysAt"
-	GET_REQUIRED_KEY_TAG_FUNCTION         = "getRequiredKeyTagAt"
-	GET_QUORUM_THRESHOLD_FUNCTION         = "getQuorumThresholdAt"
-	GET_SUBNETWORK_FUNCTION               = "SUBNETWORK"
-	GET_EIP_712_DOMAIN_FUNCTION           = "eip712Domain"
+	getMasterConfigFunction           = "getMasterConfigAt"
+	getValsetConfigFunction           = "getValSetConfigAt"
+	getIsGenesisSetFunction           = "isGenesisSet"
+	getCurrentEpochFunction           = "getCurrentEpoch"
+	getCurrentPhaseFunction           = "getCurrentPhase"
+	getCurrentValsetTimestampFunction = "getCurrentValsetTimestamp"
+	getCaptureTimestampFunction       = "getCaptureTimestamp"
+	getVotingPowersFunction           = "getVotingPowersAt"
+	getKeysFunction                   = "getKeysAt"
+	getRequiredKeyTagFunction         = "getRequiredKeyTagAt"
+	getQuorumThresholdFunction        = "getQuorumThresholdAt"
+	getSubnetworkFunction             = "SUBNETWORK"
+	getEip712DomainFunction           = "eip712Domain"
 )
 
 type Config struct {
 	MasterRPCURL   string `validate:"required"`
 	MasterAddress  string `validate:"required"`
-	PrivateKey     *[]byte
+	PrivateKey     []byte
 	RequestTimeout time.Duration `validate:"required,gt=0"`
 }
 
@@ -62,7 +63,7 @@ func (c Config) Validate() error {
 	}
 
 	if c.PrivateKey != nil {
-		_, err := crypto.ToECDSA(*c.PrivateKey)
+		_, err := crypto.ToECDSA(c.PrivateKey)
 		if err != nil {
 			return fmt.Errorf("failed to convert private key: %w", err)
 		}
@@ -74,8 +75,10 @@ func (c Config) Validate() error {
 type Client struct {
 	client                *ethclient.Client
 	masterContractAddress common.Address
-	privateKey            *ecdsa.PrivateKey // could be nil for read-only access
 	cfg                   Config
+
+	masterPK *ecdsa.PrivateKey // could be nil for read-only access
+	master   *gen.Master       // could be nil for read-only access
 }
 
 func NewEthClient(cfg Config) (*Client, error) {
@@ -92,9 +95,14 @@ func NewEthClient(cfg Config) (*Client, error) {
 		return nil, fmt.Errorf("failed to connect to Ethereum client: %w", err)
 	}
 
+	master, err := gen.NewMaster(common.HexToAddress(cfg.MasterAddress), client)
+	if err != nil {
+		return nil, errors.Errorf("failed to create new master contract: %w", err)
+	}
+
 	var pk *ecdsa.PrivateKey
 	if cfg.PrivateKey != nil {
-		pk, err = crypto.ToECDSA(*cfg.PrivateKey)
+		pk, err = crypto.ToECDSA(cfg.PrivateKey)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert private key: %w", err)
 		}
@@ -103,14 +111,15 @@ func NewEthClient(cfg Config) (*Client, error) {
 	return &Client{
 		client:                client,
 		masterContractAddress: common.HexToAddress(cfg.MasterAddress),
-		privateKey:            pk,
+		masterPK:              pk,
 		cfg:                   cfg,
+		master:                master,
 	}, nil
 }
 
 func initABI() error {
 	var err error
-	contractABI, err = abi.JSON(bytes.NewReader(contractAbiJSON))
+	masterABI, err = abi.JSON(bytes.NewReader(masterAbiJSON))
 	if err != nil {
 		return fmt.Errorf("failed to parse contract ABI: %w", err)
 	}
@@ -177,7 +186,7 @@ type masterConfigContainer struct {
 }
 
 func (e *Client) GetMasterConfig(ctx context.Context, timestamp *big.Int) (entity.MasterConfig, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_MASTER_CONFIG_FUNCTION, timestamp, []byte{})
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getMasterConfigFunction, timestamp, []byte{})
 	if err != nil {
 		return entity.MasterConfig{}, errors.Errorf("failed to construct call msg: %w", err)
 	}
@@ -188,7 +197,7 @@ func (e *Client) GetMasterConfig(ctx context.Context, timestamp *big.Int) (entit
 	}
 
 	mcc := masterConfigContainer{}
-	err = contractABI.UnpackIntoInterface(&mcc, GET_MASTER_CONFIG_FUNCTION, result)
+	err = masterABI.UnpackIntoInterface(&mcc, getMasterConfigFunction, result)
 	if err != nil {
 		return entity.MasterConfig{}, errors.Errorf("failed to unpack master config: %w", err)
 	}
@@ -217,7 +226,7 @@ func (c valSetConfigDTO) toEntity() entity.ValSetConfig {
 }
 
 func (e *Client) GetValSetConfig(ctx context.Context, timestamp *big.Int) (entity.ValSetConfig, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_VALSET_CONFIG_FUNCTION, timestamp, []byte{})
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getValsetConfigFunction, timestamp, []byte{})
 	if err != nil {
 		return entity.ValSetConfig{}, fmt.Errorf("failed to construct call msg: %w", err)
 	}
@@ -228,7 +237,7 @@ func (e *Client) GetValSetConfig(ctx context.Context, timestamp *big.Int) (entit
 	}
 
 	var valSetConfig valSetConfigContainer
-	err = contractABI.UnpackIntoInterface(&valSetConfig, GET_VALSET_CONFIG_FUNCTION, result)
+	err = masterABI.UnpackIntoInterface(&valSetConfig, getValsetConfigFunction, result)
 	if err != nil {
 		return entity.ValSetConfig{}, fmt.Errorf("failed to unpack val set config: %w", err)
 	}
@@ -237,7 +246,7 @@ func (e *Client) GetValSetConfig(ctx context.Context, timestamp *big.Int) (entit
 }
 
 func (e *Client) GetIsGenesisSet(ctx context.Context) (bool, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_IS_GENESIS_SET_FUNCTION)
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getIsGenesisSetFunction)
 	if err != nil {
 		return false, fmt.Errorf("failed to construct call msg: %w", err)
 	}
@@ -252,7 +261,7 @@ func (e *Client) GetIsGenesisSet(ctx context.Context) (bool, error) {
 }
 
 func (e *Client) GetCurrentEpoch(ctx context.Context) (*big.Int, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_CURRENT_EPOCH_FUNCTION)
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getCurrentEpochFunction)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}
@@ -267,7 +276,7 @@ func (e *Client) GetCurrentEpoch(ctx context.Context) (*big.Int, error) {
 }
 
 func (e *Client) GetCurrentPhase(ctx context.Context) (entity.Phase, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_CURRENT_PHASE_FUNCTION)
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getCurrentPhaseFunction)
 	if err != nil {
 		return 0, fmt.Errorf("failed to construct call msg: %w", err)
 	}
@@ -282,7 +291,7 @@ func (e *Client) GetCurrentPhase(ctx context.Context) (entity.Phase, error) {
 }
 
 func (e *Client) GetCurrentValsetTimestamp(ctx context.Context) (*big.Int, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_CURRENT_VALSET_TIMESTAMP_FUNCTION)
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getCurrentValsetTimestampFunction)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}
@@ -297,7 +306,7 @@ func (e *Client) GetCurrentValsetTimestamp(ctx context.Context) (*big.Int, error
 }
 
 func (e *Client) GetCaptureTimestamp(ctx context.Context) (*big.Int, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_CAPTURE_TIMESTAMP_FUNCTION)
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getCaptureTimestampFunction)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}
@@ -322,7 +331,7 @@ type vaultVotingPowerDTO struct {
 }
 
 func (e *Client) GetVotingPowers(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorVotingPower, error) {
-	callMsg, err := constructCallMsg(address, vaultManagerABI, GET_VOTING_POWERS_FUNCTION, [][]byte{}, timestamp, []byte{})
+	callMsg, err := constructCallMsg(address, vaultManagerABI, getVotingPowersFunction, [][]byte{}, timestamp, []byte{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}
@@ -333,7 +342,7 @@ func (e *Client) GetVotingPowers(ctx context.Context, address common.Address, ti
 	}
 
 	var votingPowers []operatorVotingPowerDTO
-	err = vaultManagerABI.UnpackIntoInterface(&votingPowers, GET_VOTING_POWERS_FUNCTION, result)
+	err = vaultManagerABI.UnpackIntoInterface(&votingPowers, getVotingPowersFunction, result)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unpack voting powers: %w", err)
 	}
@@ -352,7 +361,7 @@ func (e *Client) GetVotingPowers(ctx context.Context, address common.Address, ti
 }
 
 func (e *Client) GetKeys(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorWithKeys, error) {
-	callMsg, err := constructCallMsg(address, keyRegistryABI, GET_KEYS_FUNCTION, timestamp, []byte{})
+	callMsg, err := constructCallMsg(address, keyRegistryABI, getKeysFunction, timestamp, []byte{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}
@@ -363,7 +372,7 @@ func (e *Client) GetKeys(ctx context.Context, address common.Address, timestamp 
 	}
 
 	var keys []entity.OperatorWithKeys
-	err = keyRegistryABI.UnpackIntoInterface(&keys, GET_KEYS_FUNCTION, result)
+	err = keyRegistryABI.UnpackIntoInterface(&keys, getKeysFunction, result)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unpack keys: %w", err)
 	}
@@ -372,7 +381,7 @@ func (e *Client) GetKeys(ctx context.Context, address common.Address, timestamp 
 }
 
 func (e *Client) GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uint8, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_REQUIRED_KEY_TAG_FUNCTION, timestamp, []byte{})
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getRequiredKeyTagFunction, timestamp, []byte{})
 	if err != nil {
 		return 0, fmt.Errorf("failed to construct call msg: %w", err)
 	}
@@ -383,7 +392,7 @@ func (e *Client) GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uin
 	}
 
 	var keyTag uint8
-	err = contractABI.UnpackIntoInterface(&keyTag, GET_REQUIRED_KEY_TAG_FUNCTION, result)
+	err = masterABI.UnpackIntoInterface(&keyTag, getRequiredKeyTagFunction, result)
 	if err != nil {
 		return 0, fmt.Errorf("failed to unpack key tag: %w", err)
 	}
@@ -392,7 +401,7 @@ func (e *Client) GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uin
 }
 
 func (e *Client) GetQuorumThreshold(ctx context.Context, timestamp *big.Int, keyTag uint8) (*big.Int, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_QUORUM_THRESHOLD_FUNCTION, keyTag, timestamp, []byte{})
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getQuorumThresholdFunction, keyTag, timestamp, []byte{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}
@@ -406,7 +415,7 @@ func (e *Client) GetQuorumThreshold(ctx context.Context, timestamp *big.Int, key
 }
 
 func (e *Client) GetSubnetwork(ctx context.Context) ([]byte, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_SUBNETWORK_FUNCTION)
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getSubnetworkFunction)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}
@@ -420,7 +429,7 @@ func (e *Client) GetSubnetwork(ctx context.Context) ([]byte, error) {
 }
 
 func (e *Client) GetEip712Domain(ctx context.Context) (*entity.Eip712Domain, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, contractABI, GET_EIP_712_DOMAIN_FUNCTION)
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getEip712DomainFunction)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}
@@ -432,7 +441,7 @@ func (e *Client) GetEip712Domain(ctx context.Context) (*entity.Eip712Domain, err
 
 	var eip712Domain entity.Eip712Domain
 
-	out, err := contractABI.Unpack(GET_EIP_712_DOMAIN_FUNCTION, result)
+	out, err := masterABI.Unpack(getEip712DomainFunction, result)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unpack eip712 domain: %w", err)
 	}

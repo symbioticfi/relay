@@ -1,9 +1,14 @@
 package entity
 
+import (
+	"middleware-offchain/pkg/bls"
+)
+
 type P2PMessageType string
 
 const (
-	P2PMessageTypeSignatureHash P2PMessageType = "signature_hash_generated"
+	P2PMessageTypeSignatureHash        P2PMessageType = "signature_hash_generated"
+	P2PMessageTypeSignaturesAggregated P2PMessageType = "signatures_aggregated"
 )
 
 type SignatureHashMessage struct {
@@ -14,6 +19,11 @@ type SignatureHashMessage struct {
 	KeyTag      uint8
 }
 
+type SignaturesAggregatedMessage struct {
+	PublicKeyG1 *bls.G1
+	Proof       []byte
+}
+
 type SenderInfo struct {
 	Type      P2PMessageType
 	Sender    string
@@ -22,5 +32,10 @@ type SenderInfo struct {
 
 type P2PSignatureHashMessage struct {
 	Message SignatureHashMessage
+	Info    SenderInfo
+}
+
+type P2PSignaturesAggregatedMessage struct {
+	Message SignaturesAggregatedMessage
 	Info    SenderInfo
 }

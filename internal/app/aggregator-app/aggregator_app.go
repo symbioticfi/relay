@@ -12,6 +12,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	"middleware-offchain/internal/entity"
+	"middleware-offchain/pkg/proof"
 )
 
 //go:generate mockgen -source=aggregator_app.go -destination=mocks/aggregator_app.go -package=mocks
@@ -23,9 +24,14 @@ type valsetDeriver interface {
 	GetValidatorSet(ctx context.Context, timestamp *big.Int) (entity.ValidatorSet, error)
 }
 
+type p2pClient interface {
+	BroadcastSignatureAggregatedMessage(ctx context.Context, msg entity.SignaturesAggregatedMessage) error
+}
+
 type Config struct {
 	EthClient     ethClient     `validate:"required"`
 	ValsetDeriver valsetDeriver `validate:"required"`
+	P2PClient     p2pClient     `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -105,13 +111,29 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		return nil
 	}
 
-	slog.InfoContext(ctx, "quorum reached",
+	slog.DebugContext(ctx, "quorum reached, aggregating signatures",
 		"percentReached", decimal.NewFromBigInt(percent1e18, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
 		"percentQuorumThreshold", decimal.NewFromBigInt(quorumThreshold, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
 		"currentVotingPower", current.votingPower,
 		"quorumThreshold", quorumThreshold,
 		"totalActiveVotingPower", s.validatorSet.TotalActiveVotingPower,
 	)
+
+	proofData, err := proof.DoProve(current.validators, msg.Message.KeyTag)
+	if err != nil {
+		return fmt.Errorf("failed to prove: %w", err)
+	}
+
+	slog.DebugContext(ctx, "proof created, trying to send aggregated signature message", "message", current.aggSignature)
+	err = s.cfg.P2PClient.BroadcastSignatureAggregatedMessage(ctx, entity.SignaturesAggregatedMessage{
+		PublicKeyG1: current.aggPublicKeyG1,
+		Proof:       proofData,
+	})
+	if err != nil {
+		return errors.Errorf("failed to broadcast signature aggregated message: %w", err)
+	}
+
+	slog.DebugContext(ctx, "proof sent via p2p", "message", current.aggSignature)
 
 	return nil
 }

@@ -44,6 +44,7 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 
 	mockEthClient := mocks.NewMockethClient(ctrl)
 	mockValsetDeriver := mocks.NewMockvalsetDeriver(ctrl)
+	mockP2P := mocks.NewMockp2pClient(ctrl)
 
 	validatorSet := entity.ValidatorSet{
 		Validators: []entity.Validator{
@@ -84,6 +85,7 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 	cfg := Config{
 		EthClient:     mockEthClient,
 		ValsetDeriver: mockValsetDeriver,
+		P2PClient:     mockP2P,
 	}
 
 	ctx := t.Context()
@@ -142,6 +144,8 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 				mockEthClient.EXPECT().
 					GetQuorumThreshold(ctx, gomock.Any(), keyTag).
 					Return(big.NewInt(500000000000000000), nil)
+
+				mockP2P.EXPECT().BroadcastSignatureAggregatedMessage(ctx, gomock.Any()).Return(nil)
 			},
 			expectedErr: nil,
 		},

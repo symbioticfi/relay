@@ -61,9 +61,6 @@ func (s *SignerApp) Start(ctx context.Context) error {
 	for {
 		err := s.waitForCommitPhase(ctx)
 		if err != nil {
-			if errors.Is(err, entity.ErrPhaseFail) {
-				return errors.Errorf("failed to wait for commit phase: %w", err)
-			}
 			if errors.Is(err, context.Canceled) {
 				return err
 			}
@@ -105,14 +102,14 @@ func (s *SignerApp) Start(ctx context.Context) error {
 			return errors.Errorf("failed to broadcast valset header: %w", err)
 		}
 
-		slog.InfoContext(ctx, "valset header sent p2p, waiting for the next cycle")
+		slog.DebugContext(ctx, "valset header sent p2p, waiting for the next cycle")
 	}
 }
 
 func (s *SignerApp) waitForCommitPhase(ctx context.Context) error {
 	timer := time.NewTimer(0)
 	defer timer.Stop()
-	slog.InfoContext(ctx, "waiting for commit phase", "timeout", s.cfg.PollingInterval)
+	slog.DebugContext(ctx, "waiting for commit phase", "timeout", s.cfg.PollingInterval)
 
 	for {
 		select {
@@ -144,7 +141,9 @@ func (s *SignerApp) waitForCommitPhase(ctx context.Context) error {
 				s.previousPhase = entity.COMMIT
 				return nil
 			case entity.FAIL:
-				return errors.Errorf("current phase is FAIL: %w", entity.ErrPhaseFail)
+				s.previousPhase = entity.FAIL
+				slog.DebugContext(ctx, "current phase is FAIL, waiting for commit phase", "timeout", s.cfg.PollingInterval)
+				timer.Reset(s.cfg.PollingInterval)
 			case entity.IDLE:
 				s.previousPhase = entity.IDLE
 				slog.DebugContext(ctx, "current phase is IDLE, waiting for commit phase", "timeout", s.cfg.PollingInterval)

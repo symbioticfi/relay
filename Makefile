@@ -19,9 +19,11 @@ build-for-linux:
 
 gen-abi:
 	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
-		--abi internal/client/eth/contract.abi.json \
-		--pkg eth \
-		--out internal/client/eth/contract.go
+		--abi internal/client/eth/Master.abi.json \
+		--type Master \
+		--pkg gen \
+		--out internal/client/eth/gen/master.go
+
 
 build-generate-genesis-linux:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static'" -o generate_genesis_linux_amd64 ./cmd/generate-genesis && \
@@ -34,14 +36,3 @@ build-generate-genesis-mac:
 build-middleware-offchain-mac:
 	GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static'" -o middleware_offchain_darwin_arm64 ./cmd/middleware-offchain && \
 		chmod a+x middleware_offchain_darwin_arm64
-
-#gen-abi:
-#	@for file in internal/client/eth/abi*.abi.json; do \
-#		filename=$$(basename $$file .abi.json); \
-#		echo "Generating $$filename..."; \
-#		go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
-#			--abi $$file \
-#			--pkg eth \
-#			--type $$filename \
-#			--out internal/client/eth/$$filename.go; \
-#	done

@@ -95,3 +95,41 @@ func (mr *MockvalsetDeriverMockRecorder) GetValidatorSet(ctx, timestamp any) *go
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSet", reflect.TypeOf((*MockvalsetDeriver)(nil).GetValidatorSet), ctx, timestamp)
 }
+
+// Mockp2pClient is a mock of p2pClient interface.
+type Mockp2pClient struct {
+	ctrl     *gomock.Controller
+	recorder *Mockp2pClientMockRecorder
+	isgomock struct{}
+}
+
+// Mockp2pClientMockRecorder is the mock recorder for Mockp2pClient.
+type Mockp2pClientMockRecorder struct {
+	mock *Mockp2pClient
+}
+
+// NewMockp2pClient creates a new mock instance.
+func NewMockp2pClient(ctrl *gomock.Controller) *Mockp2pClient {
+	mock := &Mockp2pClient{ctrl: ctrl}
+	mock.recorder = &Mockp2pClientMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *Mockp2pClient) EXPECT() *Mockp2pClientMockRecorder {
+	return m.recorder
+}
+
+// BroadcastSignatureAggregatedMessage mocks base method.
+func (m *Mockp2pClient) BroadcastSignatureAggregatedMessage(ctx context.Context, msg entity.SignaturesAggregatedMessage) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BroadcastSignatureAggregatedMessage", ctx, msg)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// BroadcastSignatureAggregatedMessage indicates an expected call of BroadcastSignatureAggregatedMessage.
+func (mr *Mockp2pClientMockRecorder) BroadcastSignatureAggregatedMessage(ctx, msg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BroadcastSignatureAggregatedMessage", reflect.TypeOf((*Mockp2pClient)(nil).BroadcastSignatureAggregatedMessage), ctx, msg)
+}

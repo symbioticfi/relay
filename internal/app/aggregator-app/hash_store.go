@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
+	"github.com/samber/lo"
 
 	"middleware-offchain/internal/entity"
 	"middleware-offchain/pkg/bls"
@@ -32,6 +33,7 @@ type currentValues struct {
 	aggSignature   *bls.G1
 	aggPublicKeyG1 *bls.G1
 	aggPublicKeyG2 *bls.G2
+	validators     []entity.Validator
 }
 
 func (h *hashStore) PutHash(msg entity.SignatureHashMessage, val entity.Validator) (currentValues, error) {
@@ -45,6 +47,7 @@ func (h *hashStore) PutHash(msg entity.SignatureHashMessage, val entity.Validato
 	if _, ok = validators[val.Operator]; ok {
 		return currentValues{}, errors.Errorf("hash already exists for validator %s", val.Operator.Hex())
 	}
+
 	validators[val.Operator] = hashWithValidator{
 		validator: val,
 		hash:      msg,
@@ -78,5 +81,8 @@ func (h *hashStore) PutHash(msg entity.SignatureHashMessage, val entity.Validato
 		aggSignature:   aggSignature,
 		aggPublicKeyG1: aggPublicKeyG1,
 		aggPublicKeyG2: aggPublicKeyG2,
+		validators: lo.Map(lo.Values(validators), func(v hashWithValidator, _ int) entity.Validator {
+			return v.validator
+		}),
 	}, nil
 }

@@ -175,6 +175,20 @@ func setCircuitData(circuit *Circuit, valset *[]ValidatorData) {
 	circuit.ZeroPoint = sw_bn254.NewG1Affine(*zeroPoint)
 }
 
+func DoProve(validators []entity.Validator, requiredKeyTag uint8) ([]byte, error) {
+	data, err := ToValidatorsData(validators, requiredKeyTag)
+	if err != nil {
+		return nil, errors.Errorf("failed to convert validators to data: %w", err)
+	}
+
+	prove, err := Prove(data)
+	if err != nil {
+		return nil, errors.Errorf("failed to prove: %w", err)
+	}
+
+	return prove, nil
+}
+
 func ToValidatorsData(validators []entity.Validator, requiredKeyTag uint8) ([]ValidatorData, error) {
 	valset := make([]ValidatorData, 0)
 	for i := 0; i < len(validators); i++ {

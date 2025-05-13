@@ -15,6 +15,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	aggregator "middleware-offchain/internal/app/aggregator-app"
+	committer "middleware-offchain/internal/app/committer-app"
 	app "middleware-offchain/internal/app/signer-app"
 	"middleware-offchain/internal/client/eth"
 	"middleware-offchain/internal/client/p2p"
@@ -42,6 +43,7 @@ func run() error {
 	rootCmd.PersistentFlags().StringVar(&cfg.secretKey, "secret-key", "", "Secret key for BLS signature generation")
 	rootCmd.PersistentFlags().BoolVar(&cfg.isAggregator, "aggregator", false, "Is Aggregator")
 	rootCmd.PersistentFlags().BoolVar(&cfg.isSigner, "signer", true, "Is Signer")
+	rootCmd.PersistentFlags().BoolVar(&cfg.isCommitter, "committer", false, "Is Committer")
 
 	if err := rootCmd.MarkPersistentFlagRequired("rpc-url"); err != nil {
 		return errors.Errorf("failed to mark rpc-url as required: %w", err)
@@ -64,6 +66,7 @@ type config struct {
 	secretKey     string
 	isAggregator  bool
 	isSigner      bool
+	isCommitter   bool
 }
 
 var cfg config
@@ -90,6 +93,7 @@ var rootCmd = &cobra.Command{
 			MasterRPCURL:   cfg.rpcURL,
 			MasterAddress:  cfg.masterAddress,
 			RequestTimeout: time.Second * 5,
+			PrivateKey:     b.Bytes(),
 		})
 		if err != nil {
 			return errors.Errorf("failed to create eth client: %w", err)
@@ -158,12 +162,25 @@ var rootCmd = &cobra.Command{
 			aggregatorApp, err := aggregator.NewAggregatorApp(ctx, aggregator.Config{
 				EthClient:     ethClient,
 				ValsetDeriver: deriver,
+				P2PClient:     p2pService,
 			})
 			if err != nil {
 				return errors.Errorf("failed to create aggregator app: %w", err)
 			}
 			slog.DebugContext(ctx, "created aggregator app, starting")
 			p2pService.SetSignatureHashMessageHandler(aggregatorApp.HandleSignatureGeneratedMessage)
+		}
+
+		if cfg.isCommitter {
+			committerApp, err := committer.NewCommitterApp(committer.Config{
+				ValsetGenerator: generator,
+				EthClient:       ethClient,
+			})
+			if err != nil {
+				return errors.Errorf("failed to create committer app: %w", err)
+			}
+			slog.DebugContext(ctx, "created committer app, starting")
+			p2pService.SetSignaturesAggregatedMessageHandler(committerApp.HandleSignaturesAggregatedMessage)
 		}
 
 		return eg.Wait()
