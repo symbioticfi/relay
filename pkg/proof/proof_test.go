@@ -25,7 +25,7 @@ func genValset(numValidators int, nonSigners []int) []ValidatorData {
 func TestProof(t *testing.T) {
 	// t.Skipf("it works too long, so set skip here. For local debugging can remove this skip")
 	// generate valset
-	valset := genValset(5, []int{})
+	valset := genValset(9, []int{0, 1, 2, 3, 4})
 
 	proof, err := Prove(normalizeValset(valset))
 	if err != nil {
