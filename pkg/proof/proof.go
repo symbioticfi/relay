@@ -70,7 +70,6 @@ type Circuit struct {
 	Hash                     [2]frontend.Variable                      `gnark:",private"`
 	NonSignersAggVotingPower frontend.Variable                         `gnark:",private"` // 254 bits
 	ValidatorData            []ValidatorDataCircuit                    `gnark:",private"`
-	ZeroPoint                sw_emulated.AffinePoint[emulated.BN254Fp] `gnark:",private"`
 }
 
 // Define declares the circuit's constraints
@@ -129,11 +128,10 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		return err
 	}
 
-	// check if zero point is zero
-	api.AssertIsEqual(field.IsZero(&circuit.ZeroPoint.X), 1)
-	api.AssertIsEqual(field.IsZero(&circuit.ZeroPoint.Y), 1)
-
-	aggKey := &circuit.ZeroPoint
+	aggKey := &sw_emulated.AffinePoint[emulated.BN254Fp]{
+		X: emulated.ValueOf[emulated.BN254Fp](0),
+		Y: emulated.ValueOf[emulated.BN254Fp](0),
+	}
 	aggVotingPower := frontend.Variable(0)
 
 	mimcOuter, err := mimc.NewMiMC(api)
@@ -159,7 +157,10 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		aggVotingPower = api.Add(aggVotingPower, pow)
 
 		// get key if non-signer otherwise zero point
-		point := curve.Select(circuit.ValidatorData[i].IsNonSigner, &circuit.ValidatorData[i].Key, &circuit.ZeroPoint)
+		point := curve.Select(circuit.ValidatorData[i].IsNonSigner, &circuit.ValidatorData[i].Key, &sw_emulated.AffinePoint[emulated.BN254Fp]{
+			X: emulated.ValueOf[emulated.BN254Fp](0),
+			Y: emulated.ValueOf[emulated.BN254Fp](0),
+		})
 		aggKey = curve.AddUnified(aggKey, point)
 	}
 
@@ -271,9 +272,6 @@ func setCircuitData(circuit *Circuit, valset *[]ValidatorData) {
 	circuit.NonSignersAggVotingPower = *aggVotingPower
 	valsetHash := HashValset(valset)
 	circuit.Hash = [2]frontend.Variable{valsetHash[:16], valsetHash[16:]}
-	zeroPoint := new(bn254.G1Affine)
-	zeroPoint.SetInfinity()
-	circuit.ZeroPoint = sw_bn254.NewG1Affine(*zeroPoint)
 
 	aggKeyBytes := aggKey.RawBytes()
 	aggVotingPowerBuffer := make([]byte, 32)
