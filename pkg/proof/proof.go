@@ -37,7 +37,7 @@ import (
 )
 
 var (
-	MaxValidators = []int{10, 50}
+	MaxValidators = []int{10, 50, 1000}
 )
 
 const (
@@ -52,7 +52,7 @@ const (
 )
 
 type ValidatorDataCircuit struct {
-	Key         sw_emulated.AffinePoint[emulated.BN254Fp]
+	Key         sw_bn254.G1Affine
 	VotingPower frontend.Variable
 	IsNonSigner frontend.Variable
 }
@@ -65,11 +65,14 @@ type ValidatorData struct {
 
 // Circuit defines a pre-image knowledge proof
 type Circuit struct {
-	InputHash                [2]frontend.Variable                      `gnark:",public"`
-	NonSignersAggKey         sw_emulated.AffinePoint[emulated.BN254Fp] `gnark:",private"`
-	Hash                     [2]frontend.Variable                      `gnark:",private"`
-	NonSignersAggVotingPower frontend.Variable                         `gnark:",private"` // 254 bits
-	ValidatorData            []ValidatorDataCircuit                    `gnark:",private"`
+	InputHash                [2]frontend.Variable   `gnark:",public"`
+	NonSignersAggKey         sw_bn254.G1Affine      `gnark:",private"`
+	Hash                     [2]frontend.Variable   `gnark:",private"` // virtually public
+	NonSignersAggVotingPower frontend.Variable      `gnark:",private"` // 254 bits, virtually public
+	ValidatorData            []ValidatorDataCircuit `gnark:",private"`
+	// TotalAggKey              sw_bn254.G1Affine `gnark:",private"`
+	// Signature                sw_bn254.G1Affine `gnark:",private"`
+	// SignersAggKeyG2          sw_bn254.G2Affine `gnark:",private"`
 }
 
 // Define declares the circuit's constraints
@@ -114,7 +117,7 @@ func (circuit *Circuit) Define(api frontend.API) error {
 	}
 	InputHashBytes := append(InputHashBytesRaw[16:], InputHashBytes2Raw[16:]...)
 	InputDataHash := sha2.Sum()
-	for i := 0; i < 32; i++ {
+	for i := range 32 {
 		u64api.ByteAssertEq(InputDataHash[i], InputHashBytes[i])
 	}
 
@@ -128,7 +131,7 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		return err
 	}
 
-	aggKey := &sw_emulated.AffinePoint[emulated.BN254Fp]{
+	aggKey := &sw_bn254.G1Affine{
 		X: emulated.ValueOf[emulated.BN254Fp](0),
 		Y: emulated.ValueOf[emulated.BN254Fp](0),
 	}
@@ -143,7 +146,7 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		return err
 	}
 
-	for i := 0; i < len(circuit.ValidatorData); i++ {
+	for i := range circuit.ValidatorData {
 		mimcInner.Reset()
 		xVar := field.ToBits(&circuit.ValidatorData[i].Key.X)
 		yVar := field.ToBits(&circuit.ValidatorData[i].Key.Y)
@@ -157,7 +160,7 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		aggVotingPower = api.Add(aggVotingPower, pow)
 
 		// get key if non-signer otherwise zero point
-		point := curve.Select(circuit.ValidatorData[i].IsNonSigner, &circuit.ValidatorData[i].Key, &sw_emulated.AffinePoint[emulated.BN254Fp]{
+		point := curve.Select(circuit.ValidatorData[i].IsNonSigner, &circuit.ValidatorData[i].Key, &sw_bn254.G1Affine{
 			X: emulated.ValueOf[emulated.BN254Fp](0),
 			Y: emulated.ValueOf[emulated.BN254Fp](0),
 		})
@@ -170,10 +173,10 @@ func (circuit *Circuit) Define(api frontend.API) error {
 	if err != nil {
 		return err
 	}
-	for i := 0; i < 16; i++ {
+	for i := range 16 {
 		u64api.ByteAssertEq(HashBytes1[i], mimcOuterBytes[i])
 	}
-	for i := 0; i < 16; i++ {
+	for i := range 16 {
 		u64api.ByteAssertEq(HashBytes2[i], mimcOuterBytes[16+i])
 	}
 
