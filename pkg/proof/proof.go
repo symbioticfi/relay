@@ -37,7 +37,7 @@ import (
 )
 
 var (
-	MaxValidators = []int{10}
+	MaxValidators = []int{10, 50, 300, 1000}
 )
 
 const (
@@ -65,9 +65,9 @@ type ValidatorData struct {
 
 // Circuit defines a pre-image knowledge proof
 type Circuit struct {
-	InputHash                [4]uints.U64                              `gnark:",public"`
+	InputHash                frontend.Variable                         `gnark:",public"`
 	NonSignersAggKey         sw_emulated.AffinePoint[emulated.BN254Fp] `gnark:",private"`
-	Hash                     [4]uints.U64                              `gnark:",private"`
+	Hash                     frontend.Variable                         `gnark:",private"`
 	NonSignersAggVotingPower frontend.Variable                         `gnark:",private"` // 254 bits
 	ValidatorData            []ValidatorDataCircuit                    `gnark:",private"`
 	ZeroPoint                sw_emulated.AffinePoint[emulated.BN254Fp] `gnark:",private"`
@@ -88,9 +88,9 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		return err
 	}
 	sha2.Write(NonSignersAggKeyBytes)
-	HashBytes := make([]uints.U8, 0, 32)
-	for i := range circuit.Hash {
-		HashBytes = append(HashBytes, u64api.UnpackMSB(circuit.Hash[i])...)
+	HashBytes, err := variableToBytes(api, u64api, circuit.Hash)
+	if err != nil {
+		return err
 	}
 	sha2.Write(HashBytes)
 	aggVotingPowerBytes, err := variableToBytes(api, u64api, circuit.NonSignersAggVotingPower)
@@ -98,11 +98,12 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		return err
 	}
 	sha2.Write(aggVotingPowerBytes)
-	InputHashBytes := make([]uints.U8, 0, 32)
-	for i := range circuit.InputHash {
-		InputHashBytes = append(InputHashBytes, u64api.UnpackMSB(circuit.InputHash[i])...)
+	InputHashBytes, err := variableToBytes(api, u64api, circuit.InputHash)
+	if err != nil {
+		return err
 	}
 	InputDataHash := sha2.Sum()
+	InputDataHash[0] = u64api.ByteValueOf(u64api.ToValue(u64api.And(u64api.ValueOf(InputDataHash[0].Val), uints.NewU64(0x3f)))) // zero two first bits
 	for i := 0; i < len(InputHashBytes); i++ {
 		u64api.ByteAssertEq(InputDataHash[i], InputHashBytes[i])
 	}
@@ -255,19 +256,10 @@ func setCircuitData(circuit *Circuit, valset *[]ValidatorData) {
 	circuit.NonSignersAggKey = sw_bn254.NewG1Affine(*aggKey)
 	circuit.NonSignersAggVotingPower = *aggVotingPower
 	valsetHash := HashValset(valset)
-	hashPublic := [4]uints.U64{}
-	for i := 0; i < 4; i++ {
-		hashPart := uint64(valsetHash[8*i+0]) << 56
-		hashPart = hashPart | (uint64(valsetHash[8*i+1]) << 48)
-		hashPart = hashPart | (uint64(valsetHash[8*i+2]) << 40)
-		hashPart = hashPart | (uint64(valsetHash[8*i+3]) << 32)
-		hashPart = hashPart | (uint64(valsetHash[8*i+4]) << 24)
-		hashPart = hashPart | (uint64(valsetHash[8*i+5]) << 16)
-		hashPart = hashPart | (uint64(valsetHash[8*i+6]) << 8)
-		hashPart = hashPart | (uint64(valsetHash[8*i+7]) << 0)
-		hashPublic[i] = uints.NewU64(hashPart)
-	}
-	circuit.Hash = hashPublic
+	mask, _ := big.NewInt(0).SetString("3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)
+	valsetHashInt := new(big.Int).SetBytes(valsetHash)
+	valsetHashInt.And(valsetHashInt, mask)
+	circuit.Hash = valsetHashInt
 	zeroPoint := new(bn254.G1Affine)
 	zeroPoint.SetInfinity()
 	circuit.ZeroPoint = sw_bn254.NewG1Affine(*zeroPoint)
@@ -276,22 +268,12 @@ func setCircuitData(circuit *Circuit, valset *[]ValidatorData) {
 	aggVotingPowerBuffer := make([]byte, 32)
 	aggVotingPower.FillBytes(aggVotingPowerBuffer)
 	InputHashBytes := aggKeyBytes[:]
-	InputHashBytes = append(InputHashBytes, valsetHash...)
+	InputHashBytes = append(InputHashBytes, valsetHashInt.Bytes()...)
 	InputHashBytes = append(InputHashBytes, aggVotingPowerBuffer...)
 	inputHash := sha256.Sum256(InputHashBytes)
-	inputHashPublic := [4]uints.U64{}
-	for i := 0; i < 4; i++ {
-		inputHashPart := uint64(inputHash[8*i+0]) << 56
-		inputHashPart = inputHashPart | (uint64(inputHash[8*i+1]) << 48)
-		inputHashPart = inputHashPart | (uint64(inputHash[8*i+2]) << 40)
-		inputHashPart = inputHashPart | (uint64(inputHash[8*i+3]) << 32)
-		inputHashPart = inputHashPart | (uint64(inputHash[8*i+4]) << 24)
-		inputHashPart = inputHashPart | (uint64(inputHash[8*i+5]) << 16)
-		inputHashPart = inputHashPart | (uint64(inputHash[8*i+6]) << 8)
-		inputHashPart = inputHashPart | (uint64(inputHash[8*i+7]) << 0)
-		inputHashPublic[i] = uints.NewU64(inputHashPart)
-	}
-	circuit.InputHash = inputHashPublic
+	inputHashInt := new(big.Int).SetBytes(inputHash[:])
+	inputHashInt.And(inputHashInt, mask)
+	circuit.InputHash = inputHashInt
 }
 
 func DoProve(validators []entity.Validator, requiredKeyTag uint8) ([]byte, error) {
