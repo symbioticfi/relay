@@ -2,6 +2,3 @@
 go.sum
 .env
 .DS_Store
-
-proof/circuits/
-circuits/
