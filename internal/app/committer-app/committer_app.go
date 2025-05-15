@@ -18,9 +18,14 @@ type ethClient interface {
 	CommitValsetHeader(ctx context.Context, valsetHeader entity.ValidatorSetHeader, proof []byte) error
 }
 
+type p2pClient interface {
+	SetSignaturesAggregatedMessageHandler(mh func(ctx context.Context, msg entity.P2PSignaturesAggregatedMessage) error)
+}
+
 type Config struct {
 	ValsetGenerator valsetGenerator `validate:"required"`
 	EthClient       ethClient       `validate:"required"`
+	P2PClient       p2pClient       `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -36,9 +41,13 @@ func NewCommitterApp(cfg Config) (*CommitterApp, error) {
 		return nil, errors.Errorf("failed to validate config: %w", err)
 	}
 
-	return &CommitterApp{
+	app := &CommitterApp{
 		cfg: cfg,
-	}, nil
+	}
+
+	cfg.P2PClient.SetSignaturesAggregatedMessageHandler(app.HandleSignaturesAggregatedMessage)
+
+	return app, nil
 }
 
 func (c *CommitterApp) HandleSignaturesAggregatedMessage(ctx context.Context, msg entity.P2PSignaturesAggregatedMessage) error {

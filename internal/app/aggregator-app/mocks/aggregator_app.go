@@ -133,3 +133,15 @@ func (mr *Mockp2pClientMockRecorder) BroadcastSignatureAggregatedMessage(ctx, ms
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BroadcastSignatureAggregatedMessage", reflect.TypeOf((*Mockp2pClient)(nil).BroadcastSignatureAggregatedMessage), ctx, msg)
 }
+
+// SetSignatureHashMessageHandler mocks base method.
+func (m *Mockp2pClient) SetSignatureHashMessageHandler(mh func(context.Context, entity.P2PSignatureHashMessage) error) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetSignatureHashMessageHandler", mh)
+}
+
+// SetSignatureHashMessageHandler indicates an expected call of SetSignatureHashMessageHandler.
+func (mr *Mockp2pClientMockRecorder) SetSignatureHashMessageHandler(mh any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSignatureHashMessageHandler", reflect.TypeOf((*Mockp2pClient)(nil).SetSignatureHashMessageHandler), mh)
+}
