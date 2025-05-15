@@ -6,6 +6,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"github.com/consensys/gnark/std/evmprecompiles"
+	"github.com/consensys/gnark/std/math/bits"
 	"math/big"
 	"os"
 	"sort"
@@ -29,15 +31,12 @@ import (
 	"github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 	"github.com/consensys/gnark/std/algebra/emulated/sw_emulated"
 	"github.com/consensys/gnark/std/hash/mimc"
-	"github.com/consensys/gnark/std/hash/sha2"
-	"github.com/consensys/gnark/std/math/bits"
 	"github.com/consensys/gnark/std/math/emulated"
-	"github.com/consensys/gnark/std/math/uints"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 var (
-	MaxValidators = []int{10, 50, 1000}
+	MaxValidators = []int{10}
 )
 
 const (
@@ -58,70 +57,43 @@ type ValidatorDataCircuit struct {
 }
 
 type ValidatorData struct {
+	PrivateKey  big.Int
 	Key         bn254.G1Affine
+	KeyG2       bn254.G2Affine
 	VotingPower big.Int
 	IsNonSigner bool
 }
 
 // Circuit defines a pre-image knowledge proof
 type Circuit struct {
-	InputHash                [2]frontend.Variable   `gnark:",public"`
-	NonSignersAggKey         sw_bn254.G1Affine      `gnark:",private"`
-	Hash                     [2]frontend.Variable   `gnark:",private"` // virtually public
-	NonSignersAggVotingPower frontend.Variable      `gnark:",private"` // 254 bits, virtually public
-	ValidatorData            []ValidatorDataCircuit `gnark:",private"`
+	Hash                     frontend.Variable      `gnark:",public"` // 254 bits
+	NonSignersAggVotingPower frontend.Variable      `gnark:",public"` // 254 bits
+	Message                  sw_bn254.G1Affine      `gnark:",private"`
 	Signature                sw_bn254.G1Affine      `gnark:",private"`
-	TotalAggKey              sw_bn254.G1Affine      `gnark:",private"`
 	SignersAggKeyG2          sw_bn254.G2Affine      `gnark:",private"`
-	Message                  sw_bn254.G1Affine      `gnark:",private"` // virtually public
+	ValidatorData            []ValidatorDataCircuit `gnark:",private"`
+}
+
+func hashAffineG1(api frontend.API, fp *emulated.Field[emulated.BN254Fp], h *mimc.MiMC, g1 *sw_bn254.G1Affine) {
+	xVar := fp.ToBits(&g1.X)
+	yVar := fp.ToBits(&g1.Y)
+	h.Write(api.FromBinary(xVar...))
+	h.Write(api.FromBinary(yVar...))
+}
+
+func hashAffineG2(api frontend.API, fp *emulated.Field[emulated.BN254Fp], h *mimc.MiMC, g2 *sw_bn254.G2Affine) {
+	xVar1 := fp.ToBits(&g2.P.X.A0)
+	xVar2 := fp.ToBits(&g2.P.X.A1)
+	yVar1 := fp.ToBits(&g2.P.Y.A0)
+	yVar2 := fp.ToBits(&g2.P.Y.A1)
+	h.Write(api.FromBinary(xVar1...))
+	h.Write(api.FromBinary(xVar2...))
+	h.Write(api.FromBinary(yVar1...))
+	h.Write(api.FromBinary(yVar2...))
 }
 
 // Define declares the circuit's constraints
 func (circuit *Circuit) Define(api frontend.API) error {
-	sha2, err := sha2.New(api)
-	if err != nil {
-		return err
-	}
-	u64api, err := uints.New[uints.U64](api)
-	if err != nil {
-		return err
-	}
-	NonSignersAggKeyBytes, err := keyG1ToBytes(u64api, &circuit.NonSignersAggKey)
-	if err != nil {
-		return err
-	}
-	sha2.Write(NonSignersAggKeyBytes)
-	HashBytes1Raw, err := variableToBytes32(api, u64api, circuit.Hash[0])
-	if err != nil {
-		return err
-	}
-	HashBytes1 := HashBytes1Raw[16:]
-	sha2.Write(HashBytes1)
-	HashBytes2Raw, err := variableToBytes32(api, u64api, circuit.Hash[1])
-	if err != nil {
-		return err
-	}
-	HashBytes2 := HashBytes2Raw[16:]
-	sha2.Write(HashBytes2)
-	aggVotingPowerBytes, err := variableToBytes32(api, u64api, circuit.NonSignersAggVotingPower)
-	if err != nil {
-		return err
-	}
-	sha2.Write(aggVotingPowerBytes)
-	InputHashBytesRaw, err := variableToBytes32(api, u64api, circuit.InputHash[0])
-	if err != nil {
-		return err
-	}
-	InputHashBytes2Raw, err := variableToBytes32(api, u64api, circuit.InputHash[1])
-	if err != nil {
-		return err
-	}
-	InputHashBytes := append(InputHashBytesRaw[16:], InputHashBytes2Raw[16:]...)
-	InputDataHash := sha2.Sum()
-	for i := range 32 {
-		u64api.ByteAssertEq(InputDataHash[i], InputHashBytes[i])
-	}
-
 	curve, err := sw_emulated.New[emulated.BN254Fp, emulated.BN254Fr](api, sw_emulated.GetBN254Params())
 	if err != nil {
 		return err
@@ -132,99 +104,71 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		return err
 	}
 
-	aggKey := &sw_bn254.G1Affine{
-		X: emulated.ValueOf[emulated.BN254Fp](0),
-		Y: emulated.ValueOf[emulated.BN254Fp](0),
-	}
-	aggVotingPower := frontend.Variable(0)
-
-	mimcOuter, err := mimc.NewMiMC(api)
-	if err != nil {
-		return err
-	}
-	mimcInner, err := mimc.NewMiMC(api)
-	if err != nil {
-		return err
-	}
-
-	for i := range circuit.ValidatorData {
-		mimcInner.Reset()
-		xVar := fieldFp.ToBits(&circuit.ValidatorData[i].Key.X)
-		yVar := fieldFp.ToBits(&circuit.ValidatorData[i].Key.Y)
-		mimcInner.Write(api.FromBinary(xVar...))
-		mimcInner.Write(api.FromBinary(yVar...))
-		mimcInner.Write(circuit.ValidatorData[i].VotingPower)
-		mimcOuter.Write(mimcInner.Sum())
-
-		// get power if non-signer otherwise 0
-		pow := api.Select(circuit.ValidatorData[i].IsNonSigner, circuit.ValidatorData[i].VotingPower, frontend.Variable(0))
-		aggVotingPower = api.Add(aggVotingPower, pow)
-
-		// get key if non-signer otherwise zero point
-		point := curve.Select(circuit.ValidatorData[i].IsNonSigner, &circuit.ValidatorData[i].Key, &sw_bn254.G1Affine{
-			X: emulated.ValueOf[emulated.BN254Fp](0),
-			Y: emulated.ValueOf[emulated.BN254Fp](0),
-		})
-		aggKey = curve.AddUnified(aggKey, point)
-	}
-
-	curve.AssertIsEqual(aggKey, &circuit.NonSignersAggKey)
-	api.AssertIsEqual(aggVotingPower, circuit.NonSignersAggVotingPower)
-	mimcOuterBytes, err := variableToBytes32(api, u64api, mimcOuter.Sum())
-	if err != nil {
-		return err
-	}
-	for i := range 16 {
-		u64api.ByteAssertEq(HashBytes1[i], mimcOuterBytes[i])
-	}
-	for i := range 16 {
-		u64api.ByteAssertEq(HashBytes2[i], mimcOuterBytes[16+i])
-	}
-
-	mimcOuter.Reset()
-	signatureBytes, err := keyG1ToBytes(u64api, &circuit.Signature)
-	if err != nil {
-		return err
-	}
-	mimcOuter.Write(signatureBytes)
-	signersAggKey := curve.AddUnified(&circuit.TotalAggKey, curve.Neg(&circuit.NonSignersAggKey))
-	signersAggKeyBytes, err := keyG1ToBytes(u64api, signersAggKey)
-	if err != nil {
-		return err
-	}
-	mimcOuter.Write(signersAggKeyBytes)
-	signersAggKeyG2Bytes, err := keyG2ToBytes(u64api, &circuit.SignersAggKeyG2)
-	if err != nil {
-		return err
-	}
-	mimcOuter.Write(signersAggKeyG2Bytes)
-	messageBytes, err := keyG1ToBytes(u64api, &circuit.Message)
-	if err != nil {
-		return err
-	}
-	mimcOuter.Write(messageBytes)
-	alpha := mimcOuter.Sum()
-
-	pairing, err := sw_bn254.NewPairing(api)
-	if err != nil {
-		return err
-	}
-
-	_, _, g1Gen, g2Gen := bn254.Generators()
-	g1Affine := sw_bn254.NewG1Affine(g1Gen)
-	negG2Affine := sw_bn254.NewG2Affine(*g2Gen.Neg(&g2Gen))
 	fieldFr, err := emulated.NewField[emulated.BN254Fr](api)
 	if err != nil {
 		return err
 	}
 
-	pairing.PairingCheck(
+	mimcOuter, err := mimc.NewMiMC(api)
+	if err != nil {
+		return err
+	}
+
+	mimcInner, err := mimc.NewMiMC(api)
+	if err != nil {
+		return err
+	}
+
+	signersAggKey := &sw_bn254.G1Affine{
+		X: emulated.ValueOf[emulated.BN254Fp](0),
+		Y: emulated.ValueOf[emulated.BN254Fp](0),
+	}
+	nonSignersAggVotingPower := frontend.Variable(0)
+
+	// calc valset hash, agg key and agg voting power
+	for i := range circuit.ValidatorData {
+		mimcInner.Reset()
+		hashAffineG1(api, fieldFp, &mimcInner, &circuit.ValidatorData[i].Key)
+		mimcInner.Write(circuit.ValidatorData[i].VotingPower)
+		mimcOuter.Write(mimcInner.Sum())
+
+		// get power if NON-SIGNER otherwise 0
+		pow := api.Select(circuit.ValidatorData[i].IsNonSigner, circuit.ValidatorData[i].VotingPower, frontend.Variable(0))
+		nonSignersAggVotingPower = api.Add(nonSignersAggVotingPower, pow)
+
+		// get key if SIGNER otherwise zero point
+		point := curve.Select(api.IsZero(circuit.ValidatorData[i].IsNonSigner), &circuit.ValidatorData[i].Key, &sw_bn254.G1Affine{
+			X: emulated.ValueOf[emulated.BN254Fp](0),
+			Y: emulated.ValueOf[emulated.BN254Fp](0),
+		})
+		signersAggKey = curve.AddUnified(signersAggKey, point)
+	}
+	valsetHash := mimcOuter.Sum()
+
+	// compare with public inputs
+	api.AssertIsEqual(nonSignersAggVotingPower, circuit.NonSignersAggVotingPower)
+	api.AssertIsEqual(valsetHash, circuit.Hash)
+
+	// calc alpha
+	mimcOuter.Reset()
+	hashAffineG1(api, fieldFp, &mimcOuter, &circuit.Signature)
+	hashAffineG1(api, fieldFp, &mimcOuter, signersAggKey)
+	hashAffineG2(api, fieldFp, &mimcOuter, &circuit.SignersAggKeyG2)
+	hashAffineG1(api, fieldFp, &mimcOuter, &circuit.Message)
+	// TODO optimize
+	alpha := fieldFr.FromBits(bits.ToBinary(api, mimcOuter.Sum())...)
+
+	// pairing check
+	_, _, g1Gen, g2Gen := bn254.Generators()
+	g1GenAffine := sw_bn254.NewG1Affine(g1Gen)
+	negG2GenAffine := sw_bn254.NewG2Affine(*g2Gen.Neg(&g2Gen))
+	evmprecompiles.ECPair(api,
 		[]*sw_bn254.G1Affine{
-			curve.AddUnified(&circuit.Signature, curve.ScalarMul(&g1Affine, fieldFr.NewElement(alpha))),
-			curve.AddUnified(&circuit.Message, curve.ScalarMul(&g1Affine, fieldFr.NewElement(alpha))),
+			curve.AddUnified(&circuit.Signature, curve.ScalarMul(signersAggKey, alpha)),
+			curve.AddUnified(&circuit.Message, curve.ScalarMul(&g1GenAffine, alpha)),
 		},
 		[]*sw_bn254.G2Affine{
-			&negG2Affine,
+			&negG2GenAffine,
 			&circuit.SignersAggKeyG2,
 		},
 	)
@@ -232,54 +176,7 @@ func (circuit *Circuit) Define(api frontend.API) error {
 	return nil
 }
 
-func variableToBytes32(api frontend.API, u64api *uints.BinaryField[uints.U64], variable frontend.Variable) ([]uints.U8, error) {
-	res := make([]uints.U8, 32)
-	hex := bits.ToBinary(api, variable, bits.WithNbDigits(256))
-	for i := 0; i < 32; i++ {
-		res[i] = u64api.ByteValueOf(api.Add(
-			api.Mul(1<<7, hex[8*(32-i)-1]),
-			api.Mul(1<<6, hex[8*(32-i)-2]),
-			api.Mul(1<<5, hex[8*(32-i)-3]),
-			api.Mul(1<<4, hex[8*(32-i)-4]),
-			api.Mul(1<<3, hex[8*(32-i)-5]),
-			api.Mul(1<<2, hex[8*(32-i)-6]),
-			api.Mul(1<<1, hex[8*(32-i)-7]),
-			api.Mul(1<<0, hex[8*(32-i)-8]),
-		))
-	}
-
-	return res, nil
-}
-
-func keyG1ToBytes(u64api *uints.BinaryField[uints.U64], key *sw_bn254.G1Affine) ([]uints.U8, error) {
-	result := limbsToBytes(u64api, key.X.Limbs)
-	return append(result, limbsToBytes(u64api, key.Y.Limbs)...), nil
-}
-
-func keyG2ToBytes(u64api *uints.BinaryField[uints.U64], key *sw_bn254.G2Affine) ([]uints.U8, error) {
-	result := limbsToBytes(u64api, key.P.X.A0.Limbs)
-	result = append(result, limbsToBytes(u64api, key.P.X.A1.Limbs)...)
-	result = append(result, limbsToBytes(u64api, key.P.Y.A0.Limbs)...)
-	return append(result, limbsToBytes(u64api, key.P.Y.A1.Limbs)...), nil
-}
-
-func limbsToBytes(u64api *uints.BinaryField[uints.U64], limbs []frontend.Variable) []uints.U8 {
-	result := make([]uints.U8, 0, len(limbs)*8)
-	for i := range limbs {
-		u64 := u64api.ValueOf(limbs[len(limbs)-1-i])
-		result = append(result, u64api.UnpackMSB(u64)...)
-	}
-	return result
-}
-
 // helper functions
-func getPubkey(pk *big.Int) bn254.G1Affine {
-	_, _, g1Aff, _ := bn254.Generators()
-	var p bn254.G1Affine
-	p.ScalarMultiplication(&g1Aff, pk)
-	return p
-}
-
 func HashValset(valset *[]ValidatorData) []byte {
 	outerHash := mimc_native.NewMiMC()
 	for i := 0; i < len(*valset); i++ {
@@ -298,6 +195,20 @@ func HashValset(valset *[]ValidatorData) []byte {
 	return outerHash.Sum(nil)
 }
 
+func getPubkeyG1(pk *big.Int) bn254.G1Affine {
+	_, _, g1Aff, _ := bn254.Generators()
+	var p bn254.G1Affine
+	p.ScalarMultiplication(&g1Aff, pk)
+	return p
+}
+
+func getPubkeyG2(pk *big.Int) bn254.G2Affine {
+	_, _, _, g2Aff := bn254.Generators()
+	var p bn254.G2Affine
+	p.ScalarMultiplication(&g2Aff, pk)
+	return p
+}
+
 func getNonSignersData(valset *[]ValidatorData) (aggKey *bn254.G1Affine, aggVotingPower *big.Int) {
 	aggVotingPower = big.NewInt(0)
 	aggKey = new(bn254.G1Affine)
@@ -309,6 +220,29 @@ func getNonSignersData(valset *[]ValidatorData) (aggKey *bn254.G1Affine, aggVoti
 		}
 	}
 	return aggKey, aggVotingPower
+}
+
+func getAggSignature(message bn254.G1Affine, valset *[]ValidatorData) (signature *bn254.G1Affine, aggKeyG2 *bn254.G2Affine, aggKeyG1 *bn254.G1Affine) {
+	aggKeyG2 = new(bn254.G2Affine)
+	aggKeyG2.SetInfinity()
+
+	aggSignature := new(bn254.G1Affine)
+	aggSignature.SetInfinity()
+
+	aggKeyG1 = new(bn254.G1Affine)
+	aggKeyG1.SetInfinity()
+
+	for i := 0; i < len(*valset); i++ {
+		if !(*valset)[i].IsNonSigner {
+			aggKeyG2 = aggKeyG2.Add(aggKeyG2, &(*valset)[i].KeyG2)
+			aggKeyG1 = aggKeyG1.Add(aggKeyG1, &(*valset)[i].Key)
+			msg := bn254.G1Affine{X: message.X, Y: message.Y} // have to copy msg since ScalarMultiplication rewrite it
+			sig := msg.ScalarMultiplication(&msg, &(*valset)[i].PrivateKey)
+			aggSignature = aggSignature.Add(aggSignature, sig)
+		}
+	}
+
+	return aggSignature, aggKeyG2, aggKeyG1
 }
 
 func setCircuitData(circuit *Circuit, valset *[]ValidatorData) {
@@ -323,20 +257,18 @@ func setCircuitData(circuit *Circuit, valset *[]ValidatorData) {
 		}
 	}
 
-	aggKey, aggVotingPower := getNonSignersData(valset)
-	circuit.NonSignersAggKey = sw_bn254.NewG1Affine(*aggKey)
-	circuit.NonSignersAggVotingPower = *aggVotingPower
-	valsetHash := HashValset(valset)
-	circuit.Hash = [2]frontend.Variable{valsetHash[:16], valsetHash[16:]}
+	_, _, message, _ := bn254.Generators()
+	message = *message.ScalarMultiplication(&message, big.NewInt(101))
 
-	aggKeyBytes := aggKey.RawBytes()
-	aggVotingPowerBuffer := make([]byte, 32)
-	aggVotingPower.FillBytes(aggVotingPowerBuffer)
-	InputHashBytes := aggKeyBytes[:]
-	InputHashBytes = append(InputHashBytes, valsetHash...)
-	InputHashBytes = append(InputHashBytes, aggVotingPowerBuffer...)
-	inputHash := sha256.Sum256(InputHashBytes)
-	circuit.InputHash = [2]frontend.Variable{inputHash[:16], inputHash[16:]}
+	_, aggVotingPower := getNonSignersData(valset)
+	aggSignature, aggKeyG2, _ := getAggSignature(message, valset)
+	valsetHash := HashValset(valset)
+
+	circuit.NonSignersAggVotingPower = *aggVotingPower
+	circuit.Hash = valsetHash
+	circuit.Signature = sw_bn254.NewG1Affine(*aggSignature)
+	circuit.Message = sw_bn254.NewG1Affine(message)
+	circuit.SignersAggKeyG2 = sw_bn254.NewG2Affine(*aggKeyG2)
 }
 
 func DoProve(validators []entity.Validator, requiredKeyTag uint8) ([]byte, error) {
@@ -551,7 +483,9 @@ func normalizeValset(valset []ValidatorData) []ValidatorData {
 		} else {
 			zeroPoint := new(bn254.G1Affine)
 			zeroPoint.SetInfinity()
-			normalizedValset[i] = ValidatorData{Key: *zeroPoint, VotingPower: *big.NewInt(0), IsNonSigner: false}
+			zeroPointG2 := new(bn254.G2Affine)
+			zeroPointG2.SetInfinity()
+			normalizedValset[i] = ValidatorData{Key: *zeroPoint, KeyG2: *zeroPointG2, VotingPower: *big.NewInt(0), IsNonSigner: false}
 		}
 	}
 	return normalizedValset
