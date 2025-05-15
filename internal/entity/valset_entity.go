@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"reflect"
 	"slices"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
-	"github.com/samber/lo"
 )
 
 type Key struct {
@@ -74,55 +74,51 @@ func (v ValidatorSetHeader) Hash() ([]byte, error) {
 func (v ValidatorSetHeader) Encode() ([]byte, error) {
 	arguments := abi.Arguments{
 		{
-			Type: abi.Type{
-				T:    abi.UintTy,
-				Size: 8,
-			},
+			Name: "version",
+			Type: abi.Type{T: abi.UintTy, Size: 8},
 		},
 		{
+			Name: "activeAggregatedKeys",
 			Type: abi.Type{
 				T: abi.SliceTy,
 				Elem: &abi.Type{
-					T:    abi.UintTy,
-					Size: 8,
+					T: abi.TupleTy,
+					TupleElems: []*abi.Type{
+						{T: abi.UintTy, Size: 8},
+						{T: abi.BytesTy},
+					},
+					TupleRawNames: []string{"tag", "payload"},
+					TupleType:     reflect.TypeOf(Key{}),
 				},
 			},
 		},
 		{
-			Type: abi.Type{
-				T: abi.SliceTy,
-				Elem: &abi.Type{
-					T:    abi.FixedBytesTy,
-					Size: 32,
-				},
-			},
+			Name: "totalActiveVotingPower",
+			Type: abi.Type{T: abi.UintTy, Size: 256},
 		},
 		{
-			Type: abi.Type{
-				T:    abi.UintTy,
-				Size: 256,
-			},
+			Name: "validatorsSszMRoot",
+			Type: abi.Type{T: abi.FixedBytesTy, Size: 32},
 		},
 		{
-			Type: abi.Type{
-				T:    abi.FixedBytesTy,
-				Size: 32,
-			},
-		},
-		{
-			Type: abi.Type{
-				T: abi.BytesTy,
-			},
+			Name: "extraData",
+			Type: abi.Type{T: abi.BytesTy},
 		},
 	}
 
-	tags := lo.Map(v.ActiveAggregatedKeys, func(item Key, index int) uint8 {
-		return item.Tag
-	})
-	hashes := lo.Map(v.ActiveAggregatedKeys, func(item Key, index int) [32]byte {
-		return crypto.Keccak256Hash(item.Payload)
-	})
-	return arguments.Pack(v.Version, tags, hashes, v.TotalActiveVotingPower, v.ValidatorsSszMRoot, v.ExtraData)
+	// Prepend the initial 32-byte offset (value 32 = 0x20)
+	initialOffset := make([]byte, 32)
+	offsetValue := big.NewInt(32)
+	// FillBytes puts the big.Int's value into the byte slice, padded left with zeros
+	offsetBytes := offsetValue.FillBytes(make([]byte, 32))
+	copy(initialOffset, offsetBytes) // Copy the padded value into our prefix slice
+
+	pack, err := arguments.Pack(v.Version, v.ActiveAggregatedKeys, v.TotalActiveVotingPower, v.ValidatorsSszMRoot, v.ExtraData)
+	if err != nil {
+		return nil, errors.Errorf("failed to pack arguments: %w", err)
+	}
+
+	return append(initialOffset, pack...), err
 }
 
 func (v ValidatorSetHeader) EncodeJSON() ([]byte, error) {

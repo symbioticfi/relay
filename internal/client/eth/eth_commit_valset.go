@@ -2,12 +2,15 @@ package eth
 
 import (
 	"context"
+	"encoding/hex"
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
+	"golang.org/x/crypto/sha3"
 
 	"middleware-offchain/internal/client/eth/gen"
 	"middleware-offchain/internal/entity"
@@ -41,7 +44,7 @@ func (e *Client) CommitValsetHeader(ctx context.Context, header entity.Validator
 
 	tx, err := e.master.CommitValSetHeader(txOpts, headerDTO, proof)
 	if err != nil {
-		return errors.Errorf("failed to commit valset header: %w", err)
+		return e.formatEthError(err)
 	}
 
 	receipt, err := bind.WaitMined(ctx, e.client, tx)
@@ -54,4 +57,46 @@ func (e *Client) CommitValsetHeader(ctx context.Context, header entity.Validator
 	}
 
 	return nil
+}
+
+// SettlementManager_VerificationFailed();
+func (e *Client) formatEthError(err error) error {
+	type jsonError interface {
+		ErrorData() interface{}
+		ErrorCode() int
+	}
+	var errData jsonError
+	if !errors.As(err, &errData) {
+		return errors.Errorf("failed to commit valset header: %w", err)
+	}
+	if errData.ErrorCode() != 3 && errData.ErrorData() == nil {
+		return errors.Errorf("failed to commit valset header: %w", err)
+	}
+
+	errSelector, ok := errData.ErrorData().(string)
+	if !ok {
+		return errors.Errorf("failed to commit valset header: %w", err)
+	}
+
+	for name, errDef := range masterABI.Errors {
+		selector := keccak4(errDef.String())
+		if "0x"+selector == errSelector {
+			fmt.Printf("🧩 Найдено совпадение: %s => 0x%s\n", errDef.Sig, selector)
+			return errors.Errorf("failed to commit valset header: %s", name)
+		}
+	}
+
+	masterErr, ok := masterABI.Errors[errSelector]
+	if !ok {
+		return errors.Errorf("failed to commit valset header: %w", err)
+	}
+
+	return errors.Errorf("failed to commit valset header: %s", masterErr)
+}
+
+// keccak256(signature)[:4]
+func keccak4(sig string) string {
+	hash := sha3.NewLegacyKeccak256()
+	hash.Write([]byte(sig))
+	return hex.EncodeToString(hash.Sum(nil)[:4])
 }

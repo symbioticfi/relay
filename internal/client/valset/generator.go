@@ -2,6 +2,7 @@ package valset
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"log/slog"
 
@@ -155,13 +156,19 @@ func (v *Generator) GenerateValidatorSetHeaderHash(ctx context.Context, validato
 			},
 			"ValSetHeaderCommit": []apitypes.Type{
 				{Name: "Subnetwork", Type: "bytes32"},
-				{Name: "Epoch", Type: "uint256"},
+				{Name: "Epoch", Type: "uint48"},
 				{Name: "HeaderHash", Type: "bytes32"},
 			},
 		},
 		Domain:      domain,
 		PrimaryType: "ValSetHeaderCommit",
 	}
+
+	fmt.Println("!!!",
+		"subnetwork", hex.EncodeToString(subnetwork),
+		"currentEpoch", currentEpoch,
+		"hash", hex.EncodeToString(hash),
+	) // TODO ilya remove
 
 	// Set up the message data
 	message := map[string]interface{}{

@@ -131,7 +131,6 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 	}
 
 	slog.DebugContext(ctx, "proof created, trying to send aggregated signature message",
-		"message", current.aggSignature,
 		"duration", time.Since(start).String(),
 	)
 	err = s.cfg.P2PClient.BroadcastSignatureAggregatedMessage(ctx, entity.SignaturesAggregatedMessage{
