@@ -70,9 +70,10 @@ type Circuit struct {
 	Hash                     [2]frontend.Variable   `gnark:",private"` // virtually public
 	NonSignersAggVotingPower frontend.Variable      `gnark:",private"` // 254 bits, virtually public
 	ValidatorData            []ValidatorDataCircuit `gnark:",private"`
-	// TotalAggKey              sw_bn254.G1Affine `gnark:",private"`
-	// Signature                sw_bn254.G1Affine `gnark:",private"`
-	// SignersAggKeyG2          sw_bn254.G2Affine `gnark:",private"`
+	Signature                sw_bn254.G1Affine      `gnark:",private"`
+	TotalAggKey              sw_bn254.G1Affine      `gnark:",private"`
+	SignersAggKeyG2          sw_bn254.G2Affine      `gnark:",private"`
+	Message                  sw_bn254.G1Affine      `gnark:",private"` // virtually public
 }
 
 // Define declares the circuit's constraints
@@ -85,7 +86,7 @@ func (circuit *Circuit) Define(api frontend.API) error {
 	if err != nil {
 		return err
 	}
-	NonSignersAggKeyBytes, err := keyToBytes(u64api, &circuit.NonSignersAggKey)
+	NonSignersAggKeyBytes, err := keyG1ToBytes(u64api, &circuit.NonSignersAggKey)
 	if err != nil {
 		return err
 	}
@@ -126,7 +127,7 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		return err
 	}
 
-	field, err := emulated.NewField[emulated.BN254Fp](api)
+	fieldFp, err := emulated.NewField[emulated.BN254Fp](api)
 	if err != nil {
 		return err
 	}
@@ -148,8 +149,8 @@ func (circuit *Circuit) Define(api frontend.API) error {
 
 	for i := range circuit.ValidatorData {
 		mimcInner.Reset()
-		xVar := field.ToBits(&circuit.ValidatorData[i].Key.X)
-		yVar := field.ToBits(&circuit.ValidatorData[i].Key.Y)
+		xVar := fieldFp.ToBits(&circuit.ValidatorData[i].Key.X)
+		yVar := fieldFp.ToBits(&circuit.ValidatorData[i].Key.Y)
 		mimcInner.Write(api.FromBinary(xVar...))
 		mimcInner.Write(api.FromBinary(yVar...))
 		mimcInner.Write(circuit.ValidatorData[i].VotingPower)
@@ -180,6 +181,54 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		u64api.ByteAssertEq(HashBytes2[i], mimcOuterBytes[16+i])
 	}
 
+	mimcOuter.Reset()
+	signatureBytes, err := keyG1ToBytes(u64api, &circuit.Signature)
+	if err != nil {
+		return err
+	}
+	mimcOuter.Write(signatureBytes)
+	signersAggKey := curve.AddUnified(&circuit.TotalAggKey, curve.Neg(&circuit.NonSignersAggKey))
+	signersAggKeyBytes, err := keyG1ToBytes(u64api, signersAggKey)
+	if err != nil {
+		return err
+	}
+	mimcOuter.Write(signersAggKeyBytes)
+	signersAggKeyG2Bytes, err := keyG2ToBytes(u64api, &circuit.SignersAggKeyG2)
+	if err != nil {
+		return err
+	}
+	mimcOuter.Write(signersAggKeyG2Bytes)
+	messageBytes, err := keyG1ToBytes(u64api, &circuit.Message)
+	if err != nil {
+		return err
+	}
+	mimcOuter.Write(messageBytes)
+	alpha := mimcOuter.Sum()
+
+	pairing, err := sw_bn254.NewPairing(api)
+	if err != nil {
+		return err
+	}
+
+	_, _, g1Gen, g2Gen := bn254.Generators()
+	g1Affine := sw_bn254.NewG1Affine(g1Gen)
+	negG2Affine := sw_bn254.NewG2Affine(*g2Gen.Neg(&g2Gen))
+	fieldFr, err := emulated.NewField[emulated.BN254Fr](api)
+	if err != nil {
+		return err
+	}
+
+	pairing.PairingCheck(
+		[]*sw_bn254.G1Affine{
+			curve.AddUnified(&circuit.Signature, curve.ScalarMul(&g1Affine, fieldFr.NewElement(alpha))),
+			curve.AddUnified(&circuit.Message, curve.ScalarMul(&g1Affine, fieldFr.NewElement(alpha))),
+		},
+		[]*sw_bn254.G2Affine{
+			&negG2Affine,
+			&circuit.SignersAggKeyG2,
+		},
+	)
+
 	return nil
 }
 
@@ -202,12 +251,16 @@ func variableToBytes32(api frontend.API, u64api *uints.BinaryField[uints.U64], v
 	return res, nil
 }
 
-func keyToBytes(u64api *uints.BinaryField[uints.U64], key *sw_emulated.AffinePoint[emulated.BN254Fp]) ([]uints.U8, error) {
-	xLimbs := key.X.Limbs
-	yLimbs := key.Y.Limbs
+func keyG1ToBytes(u64api *uints.BinaryField[uints.U64], key *sw_bn254.G1Affine) ([]uints.U8, error) {
+	result := limbsToBytes(u64api, key.X.Limbs)
+	return append(result, limbsToBytes(u64api, key.Y.Limbs)...), nil
+}
 
-	result := limbsToBytes(u64api, xLimbs)
-	return append(result, limbsToBytes(u64api, yLimbs)...), nil
+func keyG2ToBytes(u64api *uints.BinaryField[uints.U64], key *sw_bn254.G2Affine) ([]uints.U8, error) {
+	result := limbsToBytes(u64api, key.P.X.A0.Limbs)
+	result = append(result, limbsToBytes(u64api, key.P.X.A1.Limbs)...)
+	result = append(result, limbsToBytes(u64api, key.P.Y.A0.Limbs)...)
+	return append(result, limbsToBytes(u64api, key.P.Y.A1.Limbs)...), nil
 }
 
 func limbsToBytes(u64api *uints.BinaryField[uints.U64], limbs []frontend.Variable) []uints.U8 {
