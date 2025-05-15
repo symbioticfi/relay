@@ -26,6 +26,7 @@ type valsetDeriver interface {
 
 type p2pClient interface {
 	BroadcastSignatureAggregatedMessage(ctx context.Context, msg entity.SignaturesAggregatedMessage) error
+	SetSignatureHashMessageHandler(mh func(ctx context.Context, msg entity.P2PSignatureHashMessage) error)
 }
 
 type Config struct {
@@ -60,11 +61,15 @@ func NewAggregatorApp(ctx context.Context, cfg Config) (*AggregatorApp, error) {
 		return nil, fmt.Errorf("failed to get validator set: %w", err)
 	}
 
-	return &AggregatorApp{
+	app := &AggregatorApp{
 		cfg:          cfg,
 		validatorSet: validatorSet,
 		hashStore:    newHashStore(),
-	}, nil
+	}
+
+	cfg.P2PClient.SetSignatureHashMessageHandler(app.HandleSignatureGeneratedMessage)
+
+	return app, nil
 }
 
 func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg entity.P2PSignatureHashMessage) error {
@@ -119,12 +124,16 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		"totalActiveVotingPower", s.validatorSet.TotalActiveVotingPower,
 	)
 
+	start := time.Now()
 	proofData, err := proof.DoProve(current.validators, msg.Message.KeyTag)
 	if err != nil {
 		return fmt.Errorf("failed to prove: %w", err)
 	}
 
-	slog.DebugContext(ctx, "proof created, trying to send aggregated signature message", "message", current.aggSignature)
+	slog.DebugContext(ctx, "proof created, trying to send aggregated signature message",
+		"message", current.aggSignature,
+		"duration", time.Since(start).String(),
+	)
 	err = s.cfg.P2PClient.BroadcastSignatureAggregatedMessage(ctx, entity.SignaturesAggregatedMessage{
 		PublicKeyG1: current.aggPublicKeyG1,
 		Proof:       proofData,

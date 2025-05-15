@@ -159,7 +159,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		if cfg.isAggregator {
-			aggregatorApp, err := aggregator.NewAggregatorApp(ctx, aggregator.Config{
+			_, err := aggregator.NewAggregatorApp(ctx, aggregator.Config{
 				EthClient:     ethClient,
 				ValsetDeriver: deriver,
 				P2PClient:     p2pService,
@@ -168,19 +168,18 @@ var rootCmd = &cobra.Command{
 				return errors.Errorf("failed to create aggregator app: %w", err)
 			}
 			slog.DebugContext(ctx, "created aggregator app, starting")
-			p2pService.SetSignatureHashMessageHandler(aggregatorApp.HandleSignatureGeneratedMessage)
 		}
 
 		if cfg.isCommitter {
-			committerApp, err := committer.NewCommitterApp(committer.Config{
+			_, err := committer.NewCommitterApp(committer.Config{
 				ValsetGenerator: generator,
 				EthClient:       ethClient,
+				P2PClient:       p2pService,
 			})
 			if err != nil {
 				return errors.Errorf("failed to create committer app: %w", err)
 			}
 			slog.DebugContext(ctx, "created committer app, starting")
-			p2pService.SetSignaturesAggregatedMessageHandler(committerApp.HandleSignaturesAggregatedMessage)
 		}
 
 		return eg.Wait()

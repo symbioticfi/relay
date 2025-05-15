@@ -45,6 +45,7 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 	mockEthClient := mocks.NewMockethClient(ctrl)
 	mockValsetDeriver := mocks.NewMockvalsetDeriver(ctrl)
 	mockP2P := mocks.NewMockp2pClient(ctrl)
+	mockP2P.EXPECT().SetSignatureHashMessageHandler(gomock.Any())
 
 	validatorSet := entity.ValidatorSet{
 		Validators: []entity.Validator{
