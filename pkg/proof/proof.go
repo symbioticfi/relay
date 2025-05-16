@@ -68,38 +68,27 @@ type ValidatorData struct {
 type Circuit struct {
 	Hash                     frontend.Variable      `gnark:",public"` // 254 bits
 	NonSignersAggVotingPower frontend.Variable      `gnark:",public"` // 254 bits
-	Message                  sw_bn254.G1Affine      `gnark:",private"`
+	Message                  sw_bn254.G1Affine      `gnark:",public"`
 	Signature                sw_bn254.G1Affine      `gnark:",private"`
 	SignersAggKeyG2          sw_bn254.G2Affine      `gnark:",private"`
 	ValidatorData            []ValidatorDataCircuit `gnark:",private"`
 }
 
-func hashAffineG1(api frontend.API, fp *emulated.Field[emulated.BN254Fp], h *mimc.MiMC, g1 *sw_bn254.G1Affine) {
-	xVar := fp.ToBits(&g1.X)
-	yVar := fp.ToBits(&g1.Y)
-	h.Write(api.FromBinary(xVar...))
-	h.Write(api.FromBinary(yVar...))
+func hashAffineG1(h *mimc.MiMC, g1 *sw_bn254.G1Affine) {
+	h.Write(g1.X.Limbs...)
+	h.Write(g1.Y.Limbs...)
 }
 
-func hashAffineG2(api frontend.API, fp *emulated.Field[emulated.BN254Fp], h *mimc.MiMC, g2 *sw_bn254.G2Affine) {
-	xVar1 := fp.ToBits(&g2.P.X.A0)
-	xVar2 := fp.ToBits(&g2.P.X.A1)
-	yVar1 := fp.ToBits(&g2.P.Y.A0)
-	yVar2 := fp.ToBits(&g2.P.Y.A1)
-	h.Write(api.FromBinary(xVar1...))
-	h.Write(api.FromBinary(xVar2...))
-	h.Write(api.FromBinary(yVar1...))
-	h.Write(api.FromBinary(yVar2...))
+func hashAffineG2(h *mimc.MiMC, g2 *sw_bn254.G2Affine) {
+	h.Write(g2.P.X.A0.Limbs...)
+	h.Write(g2.P.X.A1.Limbs...)
+	h.Write(g2.P.Y.A0.Limbs...)
+	h.Write(g2.P.Y.A1.Limbs...)
 }
 
 // Define declares the circuit's constraints
 func (circuit *Circuit) Define(api frontend.API) error {
 	curve, err := sw_emulated.New[emulated.BN254Fp, emulated.BN254Fr](api, sw_emulated.GetBN254Params())
-	if err != nil {
-		return err
-	}
-
-	fieldFp, err := emulated.NewField[emulated.BN254Fp](api)
 	if err != nil {
 		return err
 	}
@@ -128,7 +117,7 @@ func (circuit *Circuit) Define(api frontend.API) error {
 	// calc valset hash, agg key and agg voting power
 	for i := range circuit.ValidatorData {
 		mimcInner.Reset()
-		hashAffineG1(api, fieldFp, &mimcInner, &circuit.ValidatorData[i].Key)
+		hashAffineG1(&mimcInner, &circuit.ValidatorData[i].Key)
 		mimcInner.Write(circuit.ValidatorData[i].VotingPower)
 		mimcOuter.Write(mimcInner.Sum())
 
@@ -151,10 +140,10 @@ func (circuit *Circuit) Define(api frontend.API) error {
 
 	// calc alpha
 	mimcOuter.Reset()
-	hashAffineG1(api, fieldFp, &mimcOuter, &circuit.Signature)
-	hashAffineG1(api, fieldFp, &mimcOuter, signersAggKey)
-	hashAffineG2(api, fieldFp, &mimcOuter, &circuit.SignersAggKeyG2)
-	hashAffineG1(api, fieldFp, &mimcOuter, &circuit.Message)
+	hashAffineG1(&mimcOuter, &circuit.Signature)
+	hashAffineG1(&mimcOuter, signersAggKey)
+	hashAffineG2(&mimcOuter, &circuit.SignersAggKeyG2)
+	hashAffineG1(&mimcOuter, &circuit.Message)
 	// TODO optimize
 	alpha := fieldFr.FromBits(bits.ToBinary(api, mimcOuter.Sum())...)
 
@@ -184,8 +173,17 @@ func HashValset(valset *[]ValidatorData) []byte {
 		xBytes := (*valset)[i].Key.X.Bytes()
 		yBytes := (*valset)[i].Key.Y.Bytes()
 
-		innerHash.Write(xBytes[:])
-		innerHash.Write(yBytes[:])
+		// hash by limbs as it's done inside circuit
+		innerHash.Write(xBytes[24:32])
+		innerHash.Write(xBytes[16:24])
+		innerHash.Write(xBytes[8:16])
+		innerHash.Write(xBytes[0:8])
+
+		innerHash.Write(yBytes[24:32])
+		innerHash.Write(yBytes[16:24])
+		innerHash.Write(yBytes[8:16])
+		innerHash.Write(yBytes[0:8])
+
 		votingPowerBuf := make([]byte, 32)
 		(*valset)[i].VotingPower.FillBytes(votingPowerBuf)
 		innerHash.Write(votingPowerBuf)
