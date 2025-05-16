@@ -59,7 +59,6 @@ func (e *Client) CommitValsetHeader(ctx context.Context, header entity.Validator
 	return nil
 }
 
-// SettlementManager_VerificationFailed();
 func (e *Client) formatEthError(err error) error {
 	type jsonError interface {
 		ErrorData() interface{}
@@ -81,7 +80,9 @@ func (e *Client) formatEthError(err error) error {
 	for name, errDef := range masterABI.Errors {
 		selector := keccak4(errDef.String())
 		if "0x"+selector == errSelector {
-			fmt.Printf("🧩 Найдено совпадение: %s => 0x%s\n", errDef.Sig, selector)
+			// SettlementManager_VerificationFailed();
+			// 0xfb6101e9
+			fmt.Printf("🧩 Найдено совпадение: %s => 0x%s\n", errDef.Sig, selector) //nolint:forbidigo // todo ilya fix
 			return errors.Errorf("failed to commit valset header: %s", name)
 		}
 	}

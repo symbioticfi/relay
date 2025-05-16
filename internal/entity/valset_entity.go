@@ -118,7 +118,7 @@ func (v ValidatorSetHeader) Encode() ([]byte, error) {
 		return nil, errors.Errorf("failed to pack arguments: %w", err)
 	}
 
-	return append(initialOffset, pack...), err
+	return append(initialOffset, pack...), err //nolint:makezero // intentionally appending to the initial offset
 }
 
 func (v ValidatorSetHeader) EncodeJSON() ([]byte, error) {

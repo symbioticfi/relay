@@ -37,6 +37,7 @@ func TestValidatorSetHeaderEncode(t *testing.T) {
 }
 
 func decodeHex(t *testing.T, s string) []byte {
+	t.Helper()
 	b, err := hex.DecodeString(s)
 	require.NoError(t, err)
 	return b
