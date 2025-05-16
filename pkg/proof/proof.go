@@ -6,12 +6,14 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/consensys/gnark/std/evmprecompiles"
-	"github.com/consensys/gnark/std/math/bits"
 	"math/big"
 	"os"
 	"sort"
 	"strconv"
+
+	"github.com/consensys/gnark/std/evmprecompiles"
+	"github.com/consensys/gnark/std/math/bits"
+	"github.com/consensys/gnark/std/math/uints"
 
 	"github.com/go-errors/errors"
 
@@ -31,8 +33,10 @@ import (
 	"github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 	"github.com/consensys/gnark/std/algebra/emulated/sw_emulated"
 	"github.com/consensys/gnark/std/hash/mimc"
+	"github.com/consensys/gnark/std/hash/sha3"
 	"github.com/consensys/gnark/std/math/emulated"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 var (
@@ -66,9 +70,10 @@ type ValidatorData struct {
 
 // Circuit defines a pre-image knowledge proof
 type Circuit struct {
-	Hash                     frontend.Variable      `gnark:",public"` // 254 bits
-	NonSignersAggVotingPower frontend.Variable      `gnark:",public"` // 254 bits
-	Message                  sw_bn254.G1Affine      `gnark:",public"`
+	InputHash                frontend.Variable      `gnark:",public"`  // 254 bits
+	Hash                     frontend.Variable      `gnark:",private"` // 254 bits, virtually public
+	NonSignersAggVotingPower frontend.Variable      `gnark:",private"` // 254 bits, virtually public
+	Message                  sw_bn254.G1Affine      `gnark:",private"` // 254 bits, virtually public
 	Signature                sw_bn254.G1Affine      `gnark:",private"`
 	SignersAggKeyG2          sw_bn254.G2Affine      `gnark:",private"`
 	ValidatorData            []ValidatorDataCircuit `gnark:",private"`
@@ -86,8 +91,82 @@ func hashAffineG2(h *mimc.MiMC, g2 *sw_bn254.G2Affine) {
 	h.Write(g2.P.Y.A1.Limbs...)
 }
 
+func variableToBytes(api frontend.API, u64api *uints.BinaryField[uints.U64], variable frontend.Variable) ([]uints.U8, error) {
+	res := make([]uints.U8, 32)
+	hex := bits.ToBinary(api, variable, bits.WithNbDigits(256))
+	for i := range 32 {
+		res[i] = u64api.ByteValueOf(api.Add(
+			api.Mul(1<<7, hex[8*(32-i)-1]),
+			api.Mul(1<<6, hex[8*(32-i)-2]),
+			api.Mul(1<<5, hex[8*(32-i)-3]),
+			api.Mul(1<<4, hex[8*(32-i)-4]),
+			api.Mul(1<<3, hex[8*(32-i)-5]),
+			api.Mul(1<<2, hex[8*(32-i)-6]),
+			api.Mul(1<<1, hex[8*(32-i)-7]),
+			api.Mul(1<<0, hex[8*(32-i)-8]),
+		))
+	}
+
+	return res, nil
+}
+
+func keyToBytes(u64api *uints.BinaryField[uints.U64], key *sw_bn254.G1Affine) ([]uints.U8, error) {
+	xLimbs := key.X.Limbs
+	yLimbs := key.Y.Limbs
+
+	result := limbsToBytes(u64api, xLimbs)
+	return append(result, limbsToBytes(u64api, yLimbs)...), nil
+}
+
+func limbsToBytes(u64api *uints.BinaryField[uints.U64], limbs []frontend.Variable) []uints.U8 {
+	result := make([]uints.U8, 0, len(limbs)*8)
+	for i := range limbs {
+		u64 := u64api.ValueOf(limbs[len(limbs)-1-i])
+		result = append(result, u64api.UnpackMSB(u64)...)
+	}
+	return result
+}
+
 // Define declares the circuit's constraints
 func (circuit *Circuit) Define(api frontend.API) error {
+	keccak256, err := sha3.NewLegacyKeccak256(api)
+	if err != nil {
+		return err
+	}
+	u64api, err := uints.New[uints.U64](api)
+	if err != nil {
+		return err
+	}
+
+	HashBytes, err := variableToBytes(api, u64api, circuit.Hash)
+	if err != nil {
+		return err
+	}
+	api.Println("HashBytes:", HashBytes)
+	keccak256.Write(HashBytes)
+	aggVotingPowerBytes, err := variableToBytes(api, u64api, circuit.NonSignersAggVotingPower)
+	if err != nil {
+		return err
+	}
+	api.Println("aggVotingPowerBytes:", aggVotingPowerBytes)
+	keccak256.Write(aggVotingPowerBytes)
+	MessageBytes, err := keyToBytes(u64api, &circuit.Message)
+	if err != nil {
+		return err
+	}
+	api.Println("MessageBytes:", MessageBytes)
+	keccak256.Write(MessageBytes)
+	InputDataHash := keccak256.Sum()
+	api.Println("InputDataHash:", InputDataHash)
+	InputHashBytes, err := variableToBytes(api, u64api, circuit.InputHash)
+	if err != nil {
+		return err
+	}
+	InputDataHash[0] = u64api.ByteValueOf(u64api.ToValue(u64api.And(u64api.ValueOf(InputDataHash[0].Val), uints.NewU64(0x3f)))) // zero two first bits
+	for i := range InputHashBytes {
+		u64api.ByteAssertEq(InputDataHash[i], InputHashBytes[i])
+	}
+
 	curve, err := sw_emulated.New[emulated.BN254Fp, emulated.BN254Fr](api, sw_emulated.GetBN254Params())
 	if err != nil {
 		return err
@@ -168,7 +247,7 @@ func (circuit *Circuit) Define(api frontend.API) error {
 // helper functions
 func HashValset(valset *[]ValidatorData) []byte {
 	outerHash := mimc_native.NewMiMC()
-	for i := 0; i < len(*valset); i++ {
+	for i := range *valset {
 		innerHash := mimc_native.NewMiMC()
 		xBytes := (*valset)[i].Key.X.Bytes()
 		yBytes := (*valset)[i].Key.Y.Bytes()
@@ -211,7 +290,7 @@ func getNonSignersData(valset *[]ValidatorData) (aggKey *bn254.G1Affine, aggVoti
 	aggVotingPower = big.NewInt(0)
 	aggKey = new(bn254.G1Affine)
 	aggKey.SetInfinity()
-	for i := 0; i < len(*valset); i++ {
+	for i := range *valset {
 		if (*valset)[i].IsNonSigner {
 			aggKey = aggKey.Add(aggKey, &(*valset)[i].Key)
 			aggVotingPower = aggVotingPower.Add(aggVotingPower, &(*valset)[i].VotingPower)
@@ -230,7 +309,7 @@ func getAggSignature(message bn254.G1Affine, valset *[]ValidatorData) (signature
 	aggKeyG1 = new(bn254.G1Affine)
 	aggKeyG1.SetInfinity()
 
-	for i := 0; i < len(*valset); i++ {
+	for i := range *valset {
 		if !(*valset)[i].IsNonSigner {
 			aggKeyG2 = aggKeyG2.Add(aggKeyG2, &(*valset)[i].KeyG2)
 			aggKeyG1 = aggKeyG1.Add(aggKeyG1, &(*valset)[i].Key)
@@ -245,7 +324,7 @@ func getAggSignature(message bn254.G1Affine, valset *[]ValidatorData) (signature
 
 func setCircuitData(circuit *Circuit, valset *[]ValidatorData) {
 	circuit.ValidatorData = make([]ValidatorDataCircuit, len(*valset))
-	for i := 0; i < len(*valset); i++ {
+	for i := range *valset {
 		circuit.ValidatorData[i].Key = sw_bn254.NewG1Affine((*valset)[i].Key)
 		circuit.ValidatorData[i].VotingPower = (*valset)[i].VotingPower
 		circuit.ValidatorData[i].IsNonSigner = *big.NewInt(0)
@@ -267,6 +346,21 @@ func setCircuitData(circuit *Circuit, valset *[]ValidatorData) {
 	circuit.Signature = sw_bn254.NewG1Affine(*aggSignature)
 	circuit.Message = sw_bn254.NewG1Affine(message)
 	circuit.SignersAggKeyG2 = sw_bn254.NewG2Affine(*aggKeyG2)
+
+	messageBytes := message.RawBytes()
+	aggVotingPowerBuffer := make([]byte, 32)
+	aggVotingPower.FillBytes(aggVotingPowerBuffer)
+	InputHashBytes := valsetHash
+	InputHashBytes = append(InputHashBytes, aggVotingPowerBuffer...)
+	InputHashBytes = append(InputHashBytes, messageBytes[:]...)
+	inputHash := crypto.Keccak256(InputHashBytes)
+
+	fmt.Println("InputHashBytes:", InputHashBytes)
+	fmt.Println("inputHash:", inputHash)
+	inputHashInt := new(big.Int).SetBytes(inputHash[:])
+	mask, _ := big.NewInt(0).SetString("3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)
+	inputHashInt.And(inputHashInt, mask)
+	circuit.InputHash = inputHashInt
 }
 
 func DoProve(validators []entity.Validator, requiredKeyTag uint8) ([]byte, error) {
@@ -285,7 +379,7 @@ func DoProve(validators []entity.Validator, requiredKeyTag uint8) ([]byte, error
 
 func ToValidatorsData(validators []entity.Validator, requiredKeyTag uint8) ([]ValidatorData, error) {
 	valset := make([]ValidatorData, 0)
-	for i := 0; i < len(validators); i++ {
+	for i := range validators {
 		if !validators[i].IsActive {
 			continue
 		}
@@ -475,7 +569,7 @@ func normalizeValset(valset []ValidatorData) []ValidatorData {
 	})
 	n := getOptimalN(len(valset))
 	normalizedValset := make([]ValidatorData, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		if i < len(valset) {
 			normalizedValset[i] = valset[i]
 		} else {
