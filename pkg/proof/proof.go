@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"math/big"
 	"os"
 	"sort"
@@ -279,17 +280,19 @@ func getPubkeyG2(pk *big.Int) bn254.G2Affine {
 	return p
 }
 
-func getNonSignersData(valset *[]ValidatorData) (aggKey *bn254.G1Affine, aggVotingPower *big.Int) {
+func getNonSignersData(valset *[]ValidatorData) (aggKey *bn254.G1Affine, aggVotingPower *big.Int, totalVotingPower *big.Int) {
 	aggVotingPower = big.NewInt(0)
 	aggKey = new(bn254.G1Affine)
 	aggKey.SetInfinity()
+	totalVotingPower = big.NewInt(0)
 	for i := range *valset {
 		if (*valset)[i].IsNonSigner {
 			aggKey = aggKey.Add(aggKey, &(*valset)[i].Key)
 			aggVotingPower = aggVotingPower.Add(aggVotingPower, &(*valset)[i].VotingPower)
 		}
+		totalVotingPower = totalVotingPower.Add(totalVotingPower, &(*valset)[i].VotingPower)
 	}
-	return aggKey, aggVotingPower
+	return aggKey, aggVotingPower, totalVotingPower
 }
 
 func getAggSignature(message bn254.G1Affine, valset *[]ValidatorData) (signature *bn254.G1Affine, aggKeyG2 *bn254.G2Affine, aggKeyG1 *bn254.G1Affine) {
@@ -327,31 +330,41 @@ func setCircuitData(circuit *Circuit, valset *[]ValidatorData) {
 		}
 	}
 
-	_, _, message, _ := bn254.Generators()
-	message = *message.ScalarMultiplication(&message, big.NewInt(101))
+	message := big.NewInt(101).Bytes()
+	messageG1, err := bls.HashToG1(message)
+	if err != nil {
+		log.Fatalf("Failed to hash message to G1: %v", err)
+	}
+	messageG1Bn254 := bn254.G1Affine{X: messageG1.X, Y: messageG1.Y}
 
-	_, aggVotingPower := getNonSignersData(valset)
-	aggSignature, aggKeyG2, _ := getAggSignature(message, valset)
+	_, aggVotingPower, totalVotingPower := getNonSignersData(valset)
+	aggSignature, aggKeyG2, _ := getAggSignature(messageG1Bn254, valset)
 	valsetHash := HashValset(valset)
 
 	circuit.NonSignersAggVotingPower = *aggVotingPower
 	circuit.Signature = sw_bn254.NewG1Affine(*aggSignature)
-	circuit.Message = sw_bn254.NewG1Affine(message)
+	circuit.Message = sw_bn254.NewG1Affine(messageG1Bn254)
 	circuit.SignersAggKeyG2 = sw_bn254.NewG2Affine(*aggKeyG2)
 
-	messageBytes := message.RawBytes()
+	messageBytes := messageG1Bn254.RawBytes()
 	aggVotingPowerBuffer := make([]byte, 32)
 	aggVotingPower.FillBytes(aggVotingPowerBuffer)
+
+	fmt.Println("aggVotingPower:", aggVotingPower)
+	fmt.Println("totalVotingPower:", totalVotingPower)
 	InputHashBytes := valsetHash
 	InputHashBytes = append(InputHashBytes, aggVotingPowerBuffer...)
 	InputHashBytes = append(InputHashBytes, messageBytes[:]...)
 	inputHash := crypto.Keccak256(InputHashBytes)
 
 	fmt.Println("InputHashBytes:", InputHashBytes)
+	fmt.Println(hex.EncodeToString(InputHashBytes))
 	fmt.Println("inputHash:", inputHash)
 	inputHashInt := new(big.Int).SetBytes(inputHash[:])
 	mask, _ := big.NewInt(0).SetString("1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)
 	inputHashInt.And(inputHashInt, mask)
+
+	fmt.Println("inputHashHex:", inputHashInt.Text(16))
 	circuit.InputHash = inputHashInt
 }
 

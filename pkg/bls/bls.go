@@ -82,7 +82,7 @@ func (kp *KeyPair) Sign(msgHash []byte) (*G1, error) {
 	}
 
 	// Hash the message to a point on G1
-	h1, err := hashToG1(msgHash)
+	h1, err := HashToG1(msgHash)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash message to G1: %w", err)
 	}
@@ -105,7 +105,7 @@ func (p *G2) Verify(signature *G1, msgHash []byte) (bool, error) {
 	}
 
 	// Hash the message to a point on G1
-	h1, err := hashToG1(msgHash)
+	h1, err := HashToG1(msgHash)
 	if err != nil {
 		return false, fmt.Errorf("failed to hash message to G1: %w", err)
 	}
@@ -127,7 +127,7 @@ func (p *G2) Verify(signature *G1, msgHash []byte) (bool, error) {
 }
 
 // hashToG1 hashes data to a point on the BN254 curve
-func hashToG1(data []byte) (*G1, error) {
+func HashToG1(data []byte) (*G1, error) {
 	// Convert data to a big integer
 	x := new(big.Int).SetBytes(data)
 
