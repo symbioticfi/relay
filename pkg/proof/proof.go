@@ -39,7 +39,7 @@ import (
 )
 
 var (
-	MaxValidators = []int{10}
+	MaxValidators = []int{10, 100}
 )
 
 const (
@@ -204,7 +204,7 @@ func (circuit *Circuit) Define(api frontend.API) error {
 	api.Println("InputDataHash:", InputDataHash)
 	InputHashBytes := variableToBytes(api, u64Api, circuit.InputHash)
 
-	InputDataHash[0] = u64Api.ByteValueOf(u64Api.ToValue(u64Api.And(u64Api.ValueOf(InputDataHash[0].Val), uints.NewU64(0x3f)))) // zero two first bits
+	InputDataHash[0] = u64Api.ByteValueOf(u64Api.ToValue(u64Api.And(u64Api.ValueOf(InputDataHash[0].Val), uints.NewU64(0x1f)))) // zero two first bits
 	for i := range InputHashBytes {
 		u64Api.ByteAssertEq(InputDataHash[i], InputHashBytes[i])
 	}
@@ -350,7 +350,7 @@ func setCircuitData(circuit *Circuit, valset *[]ValidatorData) {
 	fmt.Println("InputHashBytes:", InputHashBytes)
 	fmt.Println("inputHash:", inputHash)
 	inputHashInt := new(big.Int).SetBytes(inputHash[:])
-	mask, _ := big.NewInt(0).SetString("3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)
+	mask, _ := big.NewInt(0).SetString("1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)
 	inputHashInt.And(inputHashInt, mask)
 	circuit.InputHash = inputHashInt
 }
