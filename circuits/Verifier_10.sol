@@ -178,7 +178,7 @@ contract Verifier {
         x = exp(a, EXP_SQRT_FP);
         if (mulmod(x, x, P) != a) {
             // Square root does not exist or a is not reduced.
-            // Happens when G1 point is not on curve.
+            // Happens when G1 point is not on curveApi.
             revert ProofInvalid();
         }
     }
@@ -226,7 +226,7 @@ contract Verifier {
 
     /// Compress a G1 point.
     /// @notice Reverts with InvalidProof if the coordinates are not reduced
-    /// or if the point is not on the curve.
+    /// or if the point is not on the curveApi.
     /// @notice The point at infinity is encoded as (0,0) and compressed to 0.
     /// @param x The X coordinate in Fp.
     /// @param y The Y coordinate in Fp.
@@ -248,7 +248,7 @@ contract Verifier {
         } else if (y == negate(y_pos)) {
             return (x << 1) | 1;
         } else {
-            // G1 point not on curve.
+            // G1 point not on curveApi.
             revert ProofInvalid();
         }
     }
@@ -260,7 +260,7 @@ contract Verifier {
     /// @return x The X coordinate in Fp.
     /// @return y The Y coordinate in Fp.
     function decompress_g1(uint256 c) internal view returns (uint256 x, uint256 y) {
-        // Note that X = 0 is not on the curve since 0³ + 3 = 3 is not a square.
+        // Note that X = 0 is not on the curveApi since 0³ + 3 = 3 is not a square.
         // so we can use it to represent the point at infinity.
         if (c == 0) {
             // Point at infinity as encoded in EIP196 and EIP197.
@@ -275,7 +275,7 @@ contract Verifier {
 
         // Note: (x³ + 3) is irreducible in Fp, so it can not be zero and therefore
         //       y can not be zero.
-        // Note: sqrt_Fp reverts if there is no solution, i.e. the point is not on the curve.
+        // Note: sqrt_Fp reverts if there is no solution, i.e. the point is not on the curveApi.
         y = sqrt_Fp(addmod(mulmod(mulmod(x, x, P), x, P), 3, P));
         if (negate_point) {
             y = negate(y);
@@ -284,8 +284,8 @@ contract Verifier {
 
     /// Compress a G2 point.
     /// @notice Reverts with InvalidProof if the coefficients are not reduced
-    /// or if the point is not on the curve.
-    /// @notice The G2 curve is defined over the complex extension Fp[i]/(i^2 + 1)
+    /// or if the point is not on the curveApi.
+    /// @notice The G2 curveApi is defined over the complex extension Fp[i]/(i^2 + 1)
     /// with coordinates (x0 + x1 ⋅ i, y0 + y1 ⋅ i).
     /// @notice The point at infinity is encoded as (0,0,0,0) and compressed to (0,0).
     /// @param x0 The real part of the X coordinate.
@@ -318,7 +318,7 @@ contract Verifier {
         }
 
         // Determine hint bit
-        // If this sqrt fails the x coordinate is not on the curve.
+        // If this sqrt fails the x coordinate is not on the curveApi.
         bool hint;
         {
             uint256 d = sqrt_Fp(addmod(mulmod(y0_pos, y0_pos, P), mulmod(y1_pos, y1_pos, P), P));
@@ -334,14 +334,14 @@ contract Verifier {
             c0 = (x0 << 2) | (hint ? 2  : 0) | 1;
             c1 = x1;
         } else {
-            // G1 point not on curve.
+            // G1 point not on curveApi.
             revert ProofInvalid();
         }
     }
 
     /// Decompress a G2 point.
     /// @notice Reverts with InvalidProof if the input does not represent a valid point.
-    /// @notice The G2 curve is defined over the complex extension Fp[i]/(i^2 + 1)
+    /// @notice The G2 curveApi is defined over the complex extension Fp[i]/(i^2 + 1)
     /// with coordinates (x0 + x1 ⋅ i, y0 + y1 ⋅ i).
     /// @notice The point at infinity is encoded as (0,0,0,0) and compressed to (0,0).
     /// @param c0 The first half of the compresed point (x0 with two signal bits).
@@ -352,7 +352,7 @@ contract Verifier {
     /// @return y1 The imaginary part of the Y coordinate.
     function decompress_g2(uint256 c0, uint256 c1)
     internal view returns (uint256 x0, uint256 x1, uint256 y0, uint256 y1) {
-        // Note that X = (0, 0) is not on the curve since 0³ + 3/(9 + i) is not a square.
+        // Note that X = (0, 0) is not on the curveApi since 0³ + 3/(9 + i) is not a square.
         // so we can use it to represent the point at infinity.
         if (c0 == 0 && c1 == 0) {
             // Point at infinity as encoded in EIP197.
@@ -374,7 +374,7 @@ contract Verifier {
         y0 = addmod(FRACTION_27_82_FP, addmod(a_3, mulmod(n3ab, x1, P), P), P);
         y1 = negate(addmod(FRACTION_3_82_FP,  addmod(b_3, mulmod(n3ab, x0, P), P), P));
 
-        // Note: sqrt_Fp2 reverts if there is no solution, i.e. the point is not on the curve.
+        // Note: sqrt_Fp2 reverts if there is no solution, i.e. the point is not on the curveApi.
         // Note: (X³ + 3/(9 + i)) is irreducible in Fp2, so y can not be zero.
         //       But y0 or y1 may still independently be zero.
         (y0, y1) = sqrt_Fp2(y0, y1, hint);
@@ -506,7 +506,7 @@ contract Verifier {
     }
 
     /// Compress a proof.
-    /// @notice Will revert with InvalidProof if the curve points are invalid,
+    /// @notice Will revert with InvalidProof if the curveApi points are invalid,
     /// but does not verify the proof itself.
     /// @param proof The uncompressed Groth16 proof. Elements are in the same order as for
     /// verifyProof. I.e. Groth16 points (A, B, C) encoded as in EIP-197.
