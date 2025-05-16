@@ -33,7 +33,7 @@ import (
 	"github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 	"github.com/consensys/gnark/std/algebra/emulated/sw_emulated"
 	"github.com/consensys/gnark/std/hash/mimc"
-	"github.com/consensys/gnark/std/hash/sha3"
+	gnarkSha3 "github.com/consensys/gnark/std/hash/sha3"
 	"github.com/consensys/gnark/std/math/emulated"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -71,9 +71,8 @@ type ValidatorData struct {
 // Circuit defines a pre-image knowledge proof
 type Circuit struct {
 	InputHash                frontend.Variable      `gnark:",public"`  // 254 bits
-	Hash                     frontend.Variable      `gnark:",private"` // 254 bits, virtually public
 	NonSignersAggVotingPower frontend.Variable      `gnark:",private"` // 254 bits, virtually public
-	Message                  sw_bn254.G1Affine      `gnark:",private"` // 254 bits, virtually public
+	Message                  sw_bn254.G1Affine      `gnark:",private"` // virtually public
 	Signature                sw_bn254.G1Affine      `gnark:",private"`
 	SignersAggKeyG2          sw_bn254.G2Affine      `gnark:",private"`
 	ValidatorData            []ValidatorDataCircuit `gnark:",private"`
@@ -129,44 +128,7 @@ func limbsToBytes(u64api *uints.BinaryField[uints.U64], limbs []frontend.Variabl
 
 // Define declares the circuit's constraints
 func (circuit *Circuit) Define(api frontend.API) error {
-	keccak256, err := sha3.NewLegacyKeccak256(api)
-	if err != nil {
-		return err
-	}
-	u64api, err := uints.New[uints.U64](api)
-	if err != nil {
-		return err
-	}
-
-	HashBytes, err := variableToBytes(api, u64api, circuit.Hash)
-	if err != nil {
-		return err
-	}
-	api.Println("HashBytes:", HashBytes)
-	keccak256.Write(HashBytes)
-	aggVotingPowerBytes, err := variableToBytes(api, u64api, circuit.NonSignersAggVotingPower)
-	if err != nil {
-		return err
-	}
-	api.Println("aggVotingPowerBytes:", aggVotingPowerBytes)
-	keccak256.Write(aggVotingPowerBytes)
-	MessageBytes, err := keyToBytes(u64api, &circuit.Message)
-	if err != nil {
-		return err
-	}
-	api.Println("MessageBytes:", MessageBytes)
-	keccak256.Write(MessageBytes)
-	InputDataHash := keccak256.Sum()
-	api.Println("InputDataHash:", InputDataHash)
-	InputHashBytes, err := variableToBytes(api, u64api, circuit.InputHash)
-	if err != nil {
-		return err
-	}
-	InputDataHash[0] = u64api.ByteValueOf(u64api.ToValue(u64api.And(u64api.ValueOf(InputDataHash[0].Val), uints.NewU64(0x3f)))) // zero two first bits
-	for i := range InputHashBytes {
-		u64api.ByteAssertEq(InputDataHash[i], InputHashBytes[i])
-	}
-
+	// --------------------------------------- Prove ValSet consistency ---------------------------------------
 	curve, err := sw_emulated.New[emulated.BN254Fp, emulated.BN254Fr](api, sw_emulated.GetBN254Params())
 	if err != nil {
 		return err
@@ -215,7 +177,48 @@ func (circuit *Circuit) Define(api frontend.API) error {
 
 	// compare with public inputs
 	api.AssertIsEqual(nonSignersAggVotingPower, circuit.NonSignersAggVotingPower)
-	api.AssertIsEqual(valsetHash, circuit.Hash)
+
+	// --------------------------------------- Prove Input consistency ---------------------------------------
+
+	keccak256, err := gnarkSha3.NewLegacyKeccak256(api)
+	if err != nil {
+		return err
+	}
+	u64api, err := uints.New[uints.U64](api)
+	if err != nil {
+		return err
+	}
+
+	HashBytes, err := variableToBytes(api, u64api, valsetHash)
+	if err != nil {
+		return err
+	}
+	api.Println("HashBytes:", HashBytes)
+	keccak256.Write(HashBytes)
+	aggVotingPowerBytes, err := variableToBytes(api, u64api, circuit.NonSignersAggVotingPower)
+	if err != nil {
+		return err
+	}
+	api.Println("aggVotingPowerBytes:", aggVotingPowerBytes)
+	keccak256.Write(aggVotingPowerBytes)
+	MessageBytes, err := keyToBytes(u64api, &circuit.Message)
+	if err != nil {
+		return err
+	}
+	api.Println("MessageBytes:", MessageBytes)
+	keccak256.Write(MessageBytes)
+	InputDataHash := keccak256.Sum()
+	api.Println("InputDataHash:", InputDataHash)
+	InputHashBytes, err := variableToBytes(api, u64api, circuit.InputHash)
+	if err != nil {
+		return err
+	}
+	InputDataHash[0] = u64api.ByteValueOf(u64api.ToValue(u64api.And(u64api.ValueOf(InputDataHash[0].Val), uints.NewU64(0x3f)))) // zero two first bits
+	for i := range InputHashBytes {
+		u64api.ByteAssertEq(InputDataHash[i], InputHashBytes[i])
+	}
+
+	// --------------------------------------- Verify Signature ---------------------------------------
 
 	// calc alpha
 	mimcOuter.Reset()
@@ -342,7 +345,6 @@ func setCircuitData(circuit *Circuit, valset *[]ValidatorData) {
 	valsetHash := HashValset(valset)
 
 	circuit.NonSignersAggVotingPower = *aggVotingPower
-	circuit.Hash = valsetHash
 	circuit.Signature = sw_bn254.NewG1Affine(*aggSignature)
 	circuit.Message = sw_bn254.NewG1Affine(message)
 	circuit.SignersAggKeyG2 = sw_bn254.NewG2Affine(*aggKeyG2)
