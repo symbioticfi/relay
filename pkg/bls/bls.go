@@ -88,12 +88,12 @@ func (kp *KeyPair) Sign(msgHash []byte) (*G1, error) {
 	}
 
 	// Convert secret key to big.Int
-	var skBig big.Int
-	kp.SecretKey.BigInt(&skBig)
+	skBig := new(big.Int)
+	kp.SecretKey.BigInt(skBig)
 
 	// Compute signature = h1 * sk
 	sig := ZeroG1()
-	sig.ScalarMultiplication(h1.G1Affine, &skBig)
+	sig.ScalarMultiplication(h1.G1Affine, skBig)
 
 	return sig, nil
 }
