@@ -76,6 +76,7 @@ func TestCommitValsetHeader(t *testing.T) {
 	fmt.Println("proof_>>>", hex.EncodeToString(proofData[:256]))
 	fmt.Println("Commitments>>>", hex.EncodeToString(proofData[260:324]))
 	fmt.Println("commitmentPok>>>", hex.EncodeToString(proofData[324:388]))
+	fmt.Println("validatorSet.TotalActiveVotingPower.String()>>>", validatorSet.TotalActiveVotingPower.String())
 
 	result.Write(aggSignature.Marshal())   // abi.encode(aggSigG1)
 	result.Write(aggPublicKeyG2.Marshal()) // abi.encode(aggKeyG2)
@@ -84,7 +85,7 @@ func TestCommitValsetHeader(t *testing.T) {
 	result.Write(proofData[324:388])       // slice(commitmentPok, 324, 388)
 	result.Write(inputs(t))                // zkProof.input
 
-	fmt.Println("fullProof>>>", hex.EncodeToString(result.Bytes())) // TODO remove
+	fmt.Println("fullProof>>>", hex.EncodeToString(result.Bytes()))
 
 	err = svc.eth1.CommitValsetHeader(t.Context(), header, result.Bytes())
 	require.NoError(t, err)

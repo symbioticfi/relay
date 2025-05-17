@@ -143,6 +143,8 @@ func (v *Generator) GenerateValidatorSetHeaderHash(ctx context.Context, validato
 		return nil, fmt.Errorf("failed to get current epoch: %w", err)
 	}
 
+	fmt.Println("current epoch>>>", currentEpoch.String())
+
 	subnetwork, err := v.ethClient.GetSubnetwork(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get subnetwork: %w", err)
