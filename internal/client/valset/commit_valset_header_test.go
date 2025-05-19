@@ -136,6 +136,7 @@ func Test_CommitValsetHeaderUnit(t *testing.T) {
 }
 
 func inputs(t *testing.T) []byte {
+	t.Helper()
 	arguments := abi.Arguments{
 		{
 			Name: "activeAggregatedKeys",

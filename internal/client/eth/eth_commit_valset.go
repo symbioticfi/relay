@@ -118,20 +118,6 @@ func (e *Client) CommitValsetHeader(ctx context.Context, header entity.Validator
 		ExtraData:              header.ExtraData,
 	}
 
-	pack, err := masterABI.Pack("commitValSetHeader", headerDTO, proof)
-	if err != nil {
-		return errors.Errorf("failed to pack commit valset header: %w", err)
-	}
-
-	fmt.Println("header.Version>>>", header.Version)
-	fmt.Println("header.ActiveAggregatedKeys[0].Tag>>>", header.ActiveAggregatedKeys[0].Tag)
-	fmt.Println("hex.EncodeToString(header.ActiveAggregatedKeys[0].Payload)>>>", hex.EncodeToString(header.ActiveAggregatedKeys[0].Payload))
-	fmt.Println("header.TotalActiveVotingPower", header.TotalActiveVotingPower.String())
-	fmt.Println("header.ValidatorsSszMRoot", hex.EncodeToString(header.ValidatorsSszMRoot[:]))
-	fmt.Println("header.ExtraData", hex.EncodeToString(header.ExtraData))
-	fmt.Println("proof", hex.EncodeToString(proof))
-	fmt.Println("pack", hex.EncodeToString(pack))
-
 	tx, err := e.master.CommitValSetHeader(txOpts, headerDTO, proof)
 	if err != nil {
 		return e.formatEthError(err)

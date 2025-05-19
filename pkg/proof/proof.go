@@ -241,7 +241,6 @@ func ToValidatorsData(validators []entity.Validator, requiredKeyTag uint8) ([]Va
 //}
 
 func Prove(valset []ValidatorData) ([]byte, error) {
-	fmt.Println("valset", valset)
 	r1cs, pk, vk, err := loadOrInit(valset)
 	if err != nil {
 		return nil, errors.Errorf("failed to load or init: %w", err)

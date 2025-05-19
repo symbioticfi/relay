@@ -95,7 +95,7 @@ func TestCommitValsetHeader(t *testing.T) {
 func inputs(t *testing.T) []byte {
 	arguments := abi.Arguments{
 		{
-			Name: "activeAggregatedKeys",
+			Name: "inputs",
 			Type: abi.Type{
 				T: abi.SliceTy,
 				Elem: &abi.Type{
@@ -116,7 +116,7 @@ func inputs(t *testing.T) []byte {
 	pack, err := arguments.Pack(result)
 	require.NoError(t, err)
 
-	return pack[64:] //todo ilya wtf?
+	return pack[64:]
 }
 
 func initValsetTestServices(t *testing.T) *valsetTestServices {
