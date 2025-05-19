@@ -56,7 +56,7 @@ type ValidatorDataCircuit struct {
 
 type ValidatorData struct {
 	Key         bn254.G1Affine
-	VotingPower big.Int
+	VotingPower *big.Int
 	IsNonSigner bool
 }
 
@@ -124,17 +124,17 @@ func getPubkey(pk *big.Int) bn254.G1Affine {
 	return p
 }
 
-func HashValset(valset *[]ValidatorData) []byte {
+func HashValset(valset []ValidatorData) []byte {
 	outerHash := mimc_native.NewMiMC()
-	for i := 0; i < len(*valset); i++ {
+	for i := 0; i < len(valset); i++ {
 		innerHash := mimc_native.NewMiMC()
-		xBytes := (*valset)[i].Key.X.Bytes()
-		yBytes := (*valset)[i].Key.Y.Bytes()
+		xBytes := valset[i].Key.X.Bytes()
+		yBytes := valset[i].Key.Y.Bytes()
 
 		innerHash.Write(xBytes[:])
 		innerHash.Write(yBytes[:])
 		votingPowerBuf := make([]byte, 32)
-		(*valset)[i].VotingPower.FillBytes(votingPowerBuf)
+		valset[i].VotingPower.FillBytes(votingPowerBuf)
 		innerHash.Write(votingPowerBuf)
 
 		outerHash.Write(innerHash.Sum(nil))
@@ -142,27 +142,27 @@ func HashValset(valset *[]ValidatorData) []byte {
 	return outerHash.Sum(nil)
 }
 
-func getNonSignersData(valset *[]ValidatorData) (aggKey *bn254.G1Affine, aggVotingPower *big.Int) {
+func getNonSignersData(valset []ValidatorData) (aggKey *bn254.G1Affine, aggVotingPower *big.Int) {
 	aggVotingPower = big.NewInt(0)
 	aggKey = new(bn254.G1Affine)
 	aggKey.SetInfinity()
-	for i := 0; i < len(*valset); i++ {
-		if (*valset)[i].IsNonSigner {
-			aggKey = aggKey.Add(aggKey, &(*valset)[i].Key)
-			aggVotingPower = aggVotingPower.Add(aggVotingPower, &(*valset)[i].VotingPower)
+	for i := 0; i < len(valset); i++ {
+		if valset[i].IsNonSigner {
+			aggKey = aggKey.Add(aggKey, &(valset)[i].Key)
+			aggVotingPower = aggVotingPower.Add(aggVotingPower, valset[i].VotingPower)
 		}
 	}
 	return aggKey, aggVotingPower
 }
 
-func setCircuitData(circuit *Circuit, valset *[]ValidatorData) {
-	circuit.ValidatorData = make([]ValidatorDataCircuit, len(*valset))
-	for i := 0; i < len(*valset); i++ {
-		circuit.ValidatorData[i].Key = sw_bn254.NewG1Affine((*valset)[i].Key)
-		circuit.ValidatorData[i].VotingPower = (*valset)[i].VotingPower
+func setCircuitData(circuit *Circuit, valset []ValidatorData) {
+	circuit.ValidatorData = make([]ValidatorDataCircuit, len(valset))
+	for i := 0; i < len(valset); i++ {
+		circuit.ValidatorData[i].Key = sw_bn254.NewG1Affine(valset[i].Key)
+		circuit.ValidatorData[i].VotingPower = valset[i].VotingPower
 		circuit.ValidatorData[i].IsNonSigner = *big.NewInt(0)
 
-		if (*valset)[i].IsNonSigner {
+		if valset[i].IsNonSigner {
 			circuit.ValidatorData[i].IsNonSigner = *big.NewInt(1)
 		}
 	}
@@ -202,7 +202,7 @@ func ToValidatorsData(validators []entity.Validator, requiredKeyTag uint8) ([]Va
 				if err != nil {
 					return nil, fmt.Errorf("failed to deserialize G1: %w", err)
 				}
-				valset = append(valset, ValidatorData{Key: *g1.G1Affine, VotingPower: *validators[i].VotingPower})
+				valset = append(valset, ValidatorData{Key: *g1.G1Affine, VotingPower: validators[i].VotingPower})
 			}
 		}
 	}
@@ -225,7 +225,7 @@ func ToValidatorsData(validators []entity.Validator, requiredKeyTag uint8) ([]Va
 //				if err != nil {
 //					return nil, fmt.Errorf("failed to deserialize G1: %w", err)
 //				}
-//				validatorData := ValidatorData{Key: *g1.G1Affine, VotingPower: *activeValidators[i].VotingPower, IsNonSigner: true}
+//				validatorData := ValidatorData{Key: *g1.G1Affine, VotingPower: activeValidators[i].VotingPower, IsNonSigner: true}
 //
 //				for _, signer := range signerValidators {
 //					if signer.Operator.Cmp(activeValidators[i].Operator) == 0 {
@@ -248,11 +248,9 @@ func Prove(valset []ValidatorData) ([]byte, error) {
 
 	// witness definition
 	assignment := Circuit{}
-	setCircuitData(&assignment, &valset)
+	setCircuitData(&assignment, valset)
 	witness, _ := frontend.NewWitness(&assignment, ecc.BN254.ScalarField())
 	publicWitness, _ := witness.Public()
-
-	fmt.Println()
 
 	// groth16: Prove & Verify
 	proof, err := groth16.Prove(r1cs, pk, witness, backend.WithProverHashToFieldFunction(sha256.New()))
@@ -419,7 +417,7 @@ func normalizeValset(valset []ValidatorData) []ValidatorData {
 		} else {
 			zeroPoint := new(bn254.G1Affine)
 			zeroPoint.SetInfinity()
-			normalizedValset[i] = ValidatorData{Key: *zeroPoint, VotingPower: *big.NewInt(0), IsNonSigner: false}
+			normalizedValset[i] = ValidatorData{Key: *zeroPoint, VotingPower: big.NewInt(0), IsNonSigner: false}
 		}
 	}
 	return normalizedValset

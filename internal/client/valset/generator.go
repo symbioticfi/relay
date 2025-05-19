@@ -102,7 +102,7 @@ func (v *Generator) GenerateValidatorSetHeader(ctx context.Context) (entity.Vali
 	if err != nil {
 		return entity.ValidatorSetHeader{}, fmt.Errorf("failed to convert validators to data: %w", err)
 	}
-	extraData := proof.HashValset(&valset)
+	extraData := proof.HashValset(valset)
 
 	// Format all aggregated keys for the header
 	formattedKeys := make([]entity.Key, 0, len(aggPubkeysG1))
