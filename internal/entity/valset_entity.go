@@ -60,6 +60,9 @@ type ValidatorSetHeader struct {
 	TotalActiveVotingPower *big.Int
 	ValidatorsSszMRoot     [32]byte
 	ExtraData              []byte
+	Epoch                  *big.Int
+	DomainEip712           Eip712Domain
+	Subnetwork             []byte
 }
 
 func (v ValidatorSetHeader) Hash() ([]byte, error) {

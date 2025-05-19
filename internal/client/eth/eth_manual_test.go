@@ -22,3 +22,16 @@ func TestManual_GetEip712Domain(t *testing.T) {
 	require.NoError(t, err)
 	fmt.Println(domain) // TODO remove
 }
+
+func TestManual_GetCurrentValsetTimestamp(t *testing.T) {
+	eth, err := NewEthClient(Config{
+		MasterRPCURL:   "http://127.0.0.1:8545",
+		MasterAddress:  "0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f",
+		RequestTimeout: time.Minute,
+	})
+	require.NoError(t, err)
+
+	domain, err := eth.GetCurrentValsetTimestamp(t.Context())
+	require.NoError(t, err)
+	fmt.Println(domain) // TODO remove
+}

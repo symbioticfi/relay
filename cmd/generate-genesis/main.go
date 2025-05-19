@@ -81,7 +81,7 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to create valset generator: %w", err)
 		}
 
-		header, err := generator.GenerateValidatorSetHeader(ctx)
+		header, err := generator.GenerateValidatorSetHeaderOnCapture(ctx)
 		if err != nil {
 			return errors.Errorf("failed to generate validator set header: %w", err)
 		}

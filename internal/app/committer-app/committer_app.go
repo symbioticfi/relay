@@ -11,7 +11,7 @@ import (
 )
 
 type valsetGenerator interface {
-	GenerateValidatorSetHeader(ctx context.Context) (entity.ValidatorSetHeader, error)
+	GenerateCurrentValidatorSetHeader(ctx context.Context) (entity.ValidatorSetHeader, error)
 }
 
 type ethClient interface {
@@ -53,7 +53,7 @@ func NewCommitterApp(cfg Config) (*CommitterApp, error) {
 func (c *CommitterApp) HandleSignaturesAggregatedMessage(ctx context.Context, msg entity.P2PSignaturesAggregatedMessage) error {
 	slog.DebugContext(ctx, "got signatures aggregated message", "message", msg)
 
-	header, err := c.cfg.ValsetGenerator.GenerateValidatorSetHeader(ctx)
+	header, err := c.cfg.ValsetGenerator.GenerateCurrentValidatorSetHeader(ctx)
 	if err != nil {
 		return errors.Errorf("failed to generate valset header: %w", err)
 	}
