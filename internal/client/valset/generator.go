@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math/big"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -15,14 +16,19 @@ import (
 	"middleware-offchain/pkg/ssz"
 )
 
+//go:generate mockgen -source=generator.go -destination=mocks/generator.go -package=mocks
+type deriver interface {
+	GetValidatorSet(ctx context.Context, timestamp *big.Int) (entity.ValidatorSet, error)
+}
+
 // Generator handles the generation of validator set headers
 type Generator struct {
-	deriver   *Deriver
+	deriver   deriver
 	ethClient ethClient
 }
 
 // NewGenerator creates a new validator set generator
-func NewGenerator(deriver *Deriver, ethClient ethClient) (*Generator, error) {
+func NewGenerator(deriver deriver, ethClient ethClient) (*Generator, error) {
 	return &Generator{
 		deriver:   deriver,
 		ethClient: ethClient,
@@ -132,15 +138,12 @@ func (v *Generator) GenerateValidatorSetHeaderHash(ctx context.Context, validato
 		return nil, fmt.Errorf("failed to get eip712 domain: %w", err)
 	}
 
-	domain := apitypes.TypedDataDomain{
-		Name:    domainEip712.Name,
-		Version: domainEip712.Version,
-	}
-
 	currentEpoch, err := v.ethClient.GetCurrentEpoch(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current epoch: %w", err)
 	}
+
+	fmt.Println("current epoch>>>", currentEpoch.String())
 
 	subnetwork, err := v.ethClient.GetSubnetwork(ctx)
 	if err != nil {
@@ -154,24 +157,23 @@ func (v *Generator) GenerateValidatorSetHeaderHash(ctx context.Context, validato
 				{Name: "version", Type: "string"},
 			},
 			"ValSetHeaderCommit": []apitypes.Type{
-				{Name: "Subnetwork", Type: "bytes32"},
-				{Name: "Epoch", Type: "uint256"},
-				{Name: "HeaderHash", Type: "bytes32"},
+				{Name: "subnetwork", Type: "bytes32"},
+				{Name: "epoch", Type: "uint48"},
+				{Name: "headerHash", Type: "bytes32"},
 			},
 		},
-		Domain:      domain,
+		Domain: apitypes.TypedDataDomain{
+			Name:    domainEip712.Name,
+			Version: domainEip712.Version,
+		},
 		PrimaryType: "ValSetHeaderCommit",
+		Message: map[string]interface{}{
+			"subnetwork": subnetwork,
+			"epoch":      currentEpoch,
+			"headerHash": hash,
+		},
 	}
 
-	// Set up the message data
-	message := map[string]interface{}{
-		"Subnetwork": subnetwork,
-		"Epoch":      currentEpoch,
-		"HeaderHash": hash,
-	}
-	typedData.Message = message
-
-	// 3. Calculate the hash of the EIP-712 message (ValSetHeaderCommit) type
 	domainSeparator, err := typedData.HashStruct("EIP712Domain", typedData.Domain.Map())
 	if err != nil {
 		return nil, fmt.Errorf("error hashing domain: %w", err)
@@ -182,9 +184,7 @@ func (v *Generator) GenerateValidatorSetHeaderHash(ctx context.Context, validato
 		return nil, fmt.Errorf("error hashing message: %w", err)
 	}
 
-	// 4. Calculate the final digest (to be signed)
 	rawData := []byte(fmt.Sprintf("\x19\x01%s%s", string(domainSeparator), string(typeHash)))
-	digest := crypto.Keccak256(rawData)
 
-	return digest, nil
+	return crypto.Keccak256(rawData), nil
 }

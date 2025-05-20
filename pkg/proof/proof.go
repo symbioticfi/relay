@@ -401,6 +401,37 @@ func ToValidatorsData(validators []entity.Validator, requiredKeyTag uint8) ([]Va
 	return normalizeValset(valset), nil
 }
 
+// todo ilya
+//func ToValidatorsData(signerValidators []entity.Validator, allValidators []entity.Validator, requiredKeyTag uint8) ([]ValidatorData, error) {
+//	activeValidators := make([]entity.Validator, 0)
+//	for _, validator := range allValidators {
+//		if validator.IsActive {
+//			activeValidators = append(activeValidators, validator)
+//		}
+//	}
+//	valset := make([]ValidatorData, 0)
+//	for i := 0; i < len(activeValidators); i++ {
+//		for _, key := range activeValidators[i].Keys {
+//			if key.Tag == requiredKeyTag {
+//				g1, err := bls.DeserializeG1(key.Payload)
+//				if err != nil {
+//					return nil, fmt.Errorf("failed to deserialize G1: %w", err)
+//				}
+//				validatorData := ValidatorData{Key: *g1.G1Affine, VotingPower: *activeValidators[i].VotingPower, IsNonSigner: true}
+//
+//				for _, signer := range signerValidators {
+//					if signer.Operator.Cmp(activeValidators[i].Operator) == 0 {
+//						validatorData.IsNonSigner = false
+//					}
+//				}
+//
+//				valset = append(valset, validatorData)
+//			}
+//		}
+//	}
+//	return normalizeValset(valset), nil
+//}
+
 func Prove(valset []ValidatorData) ([]byte, error) {
 	r1cs, pk, vk, err := loadOrInit(valset)
 	if err != nil {

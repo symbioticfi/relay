@@ -1,49 +1,65 @@
-//go:build manual
-
 package valset
 
 import (
-	"context"
-	"fmt"
-	"log/slog"
+	"encoding/hex"
 	"math/big"
 	"testing"
-	"time"
-
-	"github.com/samber/lo"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
-	"middleware-offchain/internal/client/eth"
+	"middleware-offchain/internal/client/valset/mocks"
+	"middleware-offchain/internal/entity"
 )
 
-func TestGenerator(t *testing.T) {
-	// Define the large number
-	privateKeyInt := new(big.Int)
-	privateKeyInt.SetString("87191036493798670866484781455694320176667203290824056510541300741498740913410", 10)
+func TestGenerator_GenerateValidatorSetHeaderHash(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-	client, err := eth.NewEthClient(eth.Config{
-		MasterRPCURL:   "http://127.0.0.1:8545",
-		MasterAddress:  "0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f",
-		PrivateKey:     lo.ToPtr(privateKeyInt.Bytes()),
-		RequestTimeout: time.Minute,
-	})
-	require.NoError(t, err)
+	mockDeriver := mocks.NewMockderiver(ctrl)
+	mockEthClient := mocks.NewMockethClient(ctrl)
 
-	deriver, err := NewDeriver(client)
-	require.NoError(t, err)
-
-	generator, err := NewGenerator(deriver, client)
-	require.NoError(t, err)
-
-	header, err := generator.GenerateValidatorSetHeader(context.Background())
-	require.NoError(t, err)
-
-	jsonData, err := header.EncodeJSON()
-	if err != nil {
-		t.Fatalf("Failed to marshal header to JSON: %v", err)
+	v := entity.ValidatorSetHeader{
+		Version: 1,
+		ActiveAggregatedKeys: []entity.Key{{
+			Tag:     15,
+			Payload: decodeHex(t, "264621561abeb4dac9a497cb21f305b8f41b56389734832656d7c7adde2247081ffa73b25b82c16096babd6a15d259a24a8304cd96ee6c27e790ff27d8744a5b"),
+		}},
+		TotalActiveVotingPower: new(big.Int).SetInt64(30000000000000),
+		ValidatorsSszMRoot:     [32]byte(decodeHex(t, "d9354a3cf52fba5126422c86d35db53d566d46f9208faa86c7b9155d7dcf3926")),
+		ExtraData:              decodeHex(t, "2695ed079545bb906f5868716071ab237e36d04fdc1aa07b06bd98c81185067d"),
 	}
-	slog.Debug("Generated validator set header", "json", string(jsonData))
 
-	fmt.Println("Header:", string(jsonData))
+	eip := &entity.Eip712Domain{
+		Name:    "Middleware",
+		Version: "1",
+		ChainId: new(big.Int).SetInt64(111),
+	}
+
+	mockEthClient.EXPECT().
+		GetEip712Domain(t.Context()).
+		Return(eip, nil)
+	mockEthClient.EXPECT().
+		GetCurrentEpoch(t.Context()).
+		Return(new(big.Int).SetInt64(1), nil)
+	mockEthClient.EXPECT().
+		GetSubnetwork(t.Context()).
+		Return(decodeHex(t, "f39fd6e51aad88f6f4ce6ab8827279cfffb92266000000000000000000000000"), nil)
+
+	generator, err := NewGenerator(mockDeriver, mockEthClient)
+	require.NoError(t, err)
+
+	hashBytes, err := generator.GenerateValidatorSetHeaderHash(t.Context(), v)
+	require.NoError(t, err)
+
+	inContract := "a296e61b893375cafbc989aff8eef893b604237d12ea7a4a5912b99b4372e0eb"
+
+	require.Equal(t, inContract, hex.EncodeToString(hashBytes))
+}
+
+func decodeHex(t *testing.T, s string) []byte {
+	t.Helper()
+	b, err := hex.DecodeString(s)
+	require.NoError(t, err)
+	return b
 }
