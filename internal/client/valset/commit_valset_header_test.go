@@ -136,6 +136,7 @@ func Test_CommitValsetHeaderUnit(t *testing.T) {
 }
 
 func inputs(t *testing.T) []byte {
+	t.Helper()
 	arguments := abi.Arguments{
 		{
 			Name: "activeAggregatedKeys",
@@ -159,7 +160,7 @@ func inputs(t *testing.T) []byte {
 	pack, err := arguments.Pack(result)
 	require.NoError(t, err)
 
-	return pack[64:] //todo ilya wtf?
+	return pack[64:] // remove first 64 bytes of dynamic array prefix, we need only bytes of inputs
 }
 
 func bytesFromPK(t *testing.T, pk1 string) []byte {

@@ -11,10 +11,10 @@ func genValset(numValidators int, nonSigners []int) []ValidatorData {
 	valset := make([]ValidatorData, numValidators)
 	for i := 0; i < numValidators; i++ {
 		pk := big.NewInt(int64(i + 10))
-		valset[i].PrivateKey = *pk
+		valset[i].PrivateKey = pk
 		valset[i].Key = getPubkeyG1(pk)
 		valset[i].KeyG2 = getPubkeyG2(pk)
-		valset[i].VotingPower = *big.NewInt(100)
+		valset[i].VotingPower = big.NewInt(100)
 		valset[i].IsNonSigner = false
 	}
 

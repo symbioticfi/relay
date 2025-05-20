@@ -1,17 +1,20 @@
 package aggregator_app
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/go-errors/errors"
 	validate "github.com/go-playground/validator/v10"
 	"github.com/shopspring/decimal"
 
 	"middleware-offchain/internal/entity"
+	"middleware-offchain/pkg/bls"
 	"middleware-offchain/pkg/proof"
 )
 
@@ -47,6 +50,7 @@ type AggregatorApp struct {
 	cfg          Config
 	hashStore    *hashStore
 	validatorSet entity.ValidatorSet
+	inputsBytes  []byte
 }
 
 func NewAggregatorApp(ctx context.Context, cfg Config) (*AggregatorApp, error) {
@@ -61,10 +65,16 @@ func NewAggregatorApp(ctx context.Context, cfg Config) (*AggregatorApp, error) {
 		return nil, fmt.Errorf("failed to get validator set: %w", err)
 	}
 
+	zkInputs, err := initInputs()
+	if err != nil {
+		return nil, fmt.Errorf("failed to init inputs: %w", err)
+	}
+
 	app := &AggregatorApp{
 		cfg:          cfg,
 		validatorSet: validatorSet,
 		hashStore:    newHashStore(),
+		inputsBytes:  zkInputs,
 	}
 
 	cfg.P2PClient.SetSignatureHashMessageHandler(app.HandleSignatureGeneratedMessage)
@@ -124,6 +134,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		"totalActiveVotingPower", s.validatorSet.TotalActiveVotingPower,
 	)
 
+	// todo ilya, make proof only once when threshold is reached
 	start := time.Now()
 	proofData, err := proof.DoProve(current.validators, msg.Message.KeyTag)
 	if err != nil {
@@ -135,7 +146,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 	)
 	err = s.cfg.P2PClient.BroadcastSignatureAggregatedMessage(ctx, entity.SignaturesAggregatedMessage{
 		PublicKeyG1: current.aggPublicKeyG1,
-		Proof:       proofData,
+		Proof:       s.makeProofBytes(proofData, current.aggSignature, current.aggPublicKeyG2),
 	})
 	if err != nil {
 		return errors.Errorf("failed to broadcast signature aggregated message: %w", err)
@@ -144,4 +155,47 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 	slog.DebugContext(ctx, "proof sent via p2p", "message", current.aggSignature)
 
 	return nil
+}
+
+func (s *AggregatorApp) makeProofBytes(proofData []byte, aggSignature *bls.G1, aggKeyG2 *bls.G2) []byte {
+	var result bytes.Buffer
+
+	result.Write(aggSignature.Marshal()) // abi.encode(aggSigG1)
+	result.Write(aggKeyG2.Marshal())     // abi.encode(aggKeyG2)
+	result.Write(proofData[:256])        // slice(proof_, 0, 256)
+	result.Write(proofData[260:324])     // slice(commitments, 260, 324)
+	result.Write(proofData[324:388])     // slice(commitmentPok, 324, 388)
+	result.Write(s.inputsBytes)          // zkProof.input
+
+	return result.Bytes()
+}
+
+func initInputs() ([]byte, error) {
+	arguments := abi.Arguments{
+		{
+			Name: "inputs",
+			Type: abi.Type{
+				T: abi.SliceTy,
+				Elem: &abi.Type{
+					T: abi.UintTy, Size: 256,
+				},
+			},
+		},
+	}
+
+	in := []string{"0", "0", "0", "0", "0", "0", "0", "0", "17452784377140135873242247846499243451530443834097508626974155003329264289405", "0"}
+	result := make([]*big.Int, 0, len(in))
+	for _, s := range in {
+		b, ok := new(big.Int).SetString(s, 10)
+		if !ok {
+			return nil, errors.Errorf("failed to set string: %s", s)
+		}
+		result = append(result, b)
+	}
+	pack, err := arguments.Pack(result)
+	if err != nil {
+		return nil, errors.Errorf("failed to pack arguments: %w", err)
+	}
+
+	return pack[64:], nil // remove first 64 bytes of dynamic array prefix, we need only bytes of inputs
 }

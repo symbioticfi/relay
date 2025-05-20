@@ -7,7 +7,6 @@ import (
 	"math/big"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 
 	"middleware-offchain/internal/entity"
@@ -103,7 +102,7 @@ func (v *Generator) GenerateValidatorSetHeader(ctx context.Context) (entity.Vali
 	if err != nil {
 		return entity.ValidatorSetHeader{}, fmt.Errorf("failed to convert validators to data: %w", err)
 	}
-	extraData := proof.HashValset(&valset)
+	extraData := proof.HashValset(valset)
 
 	// Format all aggregated keys for the header
 	formattedKeys := make([]entity.Key, 0, len(aggPubkeysG1))
@@ -143,8 +142,6 @@ func (v *Generator) GenerateValidatorSetHeaderHash(ctx context.Context, validato
 		return nil, fmt.Errorf("failed to get current epoch: %w", err)
 	}
 
-	fmt.Println("current epoch>>>", currentEpoch.String())
-
 	subnetwork, err := v.ethClient.GetSubnetwork(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get subnetwork: %w", err)
@@ -174,17 +171,10 @@ func (v *Generator) GenerateValidatorSetHeaderHash(ctx context.Context, validato
 		},
 	}
 
-	domainSeparator, err := typedData.HashStruct("EIP712Domain", typedData.Domain.Map())
+	hashBytes, _, err := apitypes.TypedDataAndHash(typedData)
 	if err != nil {
-		return nil, fmt.Errorf("error hashing domain: %w", err)
+		return nil, fmt.Errorf("failed to get typed data hash: %w", err)
 	}
 
-	typeHash, err := typedData.HashStruct(typedData.PrimaryType, typedData.Message)
-	if err != nil {
-		return nil, fmt.Errorf("error hashing message: %w", err)
-	}
-
-	rawData := []byte(fmt.Sprintf("\x19\x01%s%s", string(domainSeparator), string(typeHash)))
-
-	return crypto.Keccak256(rawData), nil
+	return hashBytes, nil
 }
