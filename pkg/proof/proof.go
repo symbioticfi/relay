@@ -40,7 +40,7 @@ import (
 )
 
 var (
-	MaxValidators = []int{10, 100}
+	MaxValidators = []int{10}
 )
 
 const (
