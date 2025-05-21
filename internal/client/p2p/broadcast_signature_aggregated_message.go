@@ -15,6 +15,8 @@ func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg e
 	dto := signaturesAggregatedDTO{
 		PublicKeyG1: bls.SerializeG1(msg.PublicKeyG1),
 		Proof:       msg.Proof,
+		Message:     msg.Message,
+		HashType:    string(msg.HashType),
 	}
 
 	data, err := json.Marshal(dto)
@@ -41,4 +43,6 @@ func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg e
 type signaturesAggregatedDTO struct {
 	PublicKeyG1 []byte `json:"public_key_g1"`
 	Proof       []byte `json:"proof"`
+	Message     []byte `json:"message"`
+	HashType    string `json:"hash_type"`
 }

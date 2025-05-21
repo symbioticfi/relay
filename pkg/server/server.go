@@ -1,0 +1,84 @@
+package server
+
+import (
+	"context"
+	"log/slog"
+	"net/http"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-errors/errors"
+	"github.com/go-playground/validator/v10"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+)
+
+type Config struct {
+	Address           string        `validate:"required"`
+	ReadHeaderTimeout time.Duration `validate:"required,gt=0"`
+	ShutdownTimeout   time.Duration `validate:"required,gt=0"`
+	Prefix            string        `validate:"required"`
+	APIHandler        http.Handler  `validate:"required"`
+}
+
+func (c Config) Validate() error {
+	return validator.New().Struct(c)
+}
+
+type Server struct {
+	cfg Config
+	srv *http.Server
+}
+
+func New(cfg Config) (*Server, error) {
+	if err := cfg.Validate(); err != nil {
+		return nil, errors.Errorf("failed to validate config: %w", err)
+	}
+	return &Server{
+		cfg: cfg,
+		srv: &http.Server{
+			Addr:              cfg.Address,
+			Handler:           initHandler(cfg),
+			ReadHeaderTimeout: cfg.ReadHeaderTimeout,
+		},
+	}, nil
+}
+
+func initHandler(cfg Config) http.Handler {
+	r := chi.NewRouter()
+	r.Use(
+		middleware.Recoverer,
+	)
+
+	r.Handle("/metrics", promhttp.Handler())
+
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.RequestID)
+		r.Use(middleware.RequestLogger(logFormatter{}))
+		r.Mount(cfg.Prefix, cfg.APIHandler)
+	})
+
+	return r
+}
+
+func (s *Server) Serve(ctx context.Context) error {
+	go func() {
+		<-ctx.Done()
+		ctxShutdown, cancel := context.WithTimeout(context.Background(), s.cfg.ShutdownTimeout)
+		defer cancel()
+
+		if err := s.srv.Shutdown(ctxShutdown); err != nil { //nolint:contextcheck // we must use separate context for shutdown
+			slog.WarnContext(ctx, "failed to shutdown server", "error", err)
+		}
+	}()
+
+	slog.InfoContext(ctx, "server started", "address", s.cfg.Address)
+
+	if err := s.srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+		return errors.Errorf("failed to listen and serve: %w", err)
+	}
+
+	slog.InfoContext(ctx, "server stopped")
+
+	return nil
+}

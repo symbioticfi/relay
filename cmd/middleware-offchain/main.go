@@ -22,6 +22,7 @@ import (
 	"middleware-offchain/internal/client/valset"
 	"middleware-offchain/pkg/bls"
 	"middleware-offchain/pkg/log"
+	"middleware-offchain/pkg/server"
 )
 
 // offchain_middleware --master-address 0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f --rpc-url http://127.0.0.1:8545
@@ -40,6 +41,7 @@ func run() error {
 	rootCmd.PersistentFlags().StringVar(&cfg.masterAddress, "master-address", "", "Master contract address")
 	rootCmd.PersistentFlags().StringVar(&cfg.logLevel, "log-level", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVar(&cfg.listenAddress, "p2p-listen", "", "P2P listen address")
+	rootCmd.PersistentFlags().StringVar(&cfg.httpListenAddress, "http-listen", "", "Http listener address")
 	rootCmd.PersistentFlags().StringVar(&cfg.secretKey, "secret-key", "", "Secret key for BLS signature generation")
 	rootCmd.PersistentFlags().BoolVar(&cfg.isAggregator, "aggregator", false, "Is Aggregator")
 	rootCmd.PersistentFlags().BoolVar(&cfg.isSigner, "signer", true, "Is Signer")
@@ -59,14 +61,15 @@ func run() error {
 }
 
 type config struct {
-	rpcURL        string
-	masterAddress string
-	logLevel      string
-	listenAddress string
-	secretKey     string
-	isAggregator  bool
-	isSigner      bool
-	isCommitter   bool
+	rpcURL            string
+	masterAddress     string
+	logLevel          string
+	listenAddress     string
+	httpListenAddress string
+	secretKey         string
+	isAggregator      bool
+	isSigner          bool
+	isCommitter       bool
 }
 
 var cfg config
@@ -148,11 +151,29 @@ var rootCmd = &cobra.Command{
 		}
 		slog.InfoContext(ctx, "created signer app, starting")
 
+		srv, err := server.New(server.Config{
+			Address:           cfg.httpListenAddress,
+			ReadHeaderTimeout: time.Second,
+			ShutdownTimeout:   time.Second * 5,
+			Prefix:            "/api/v1",
+			APIHandler:        signerApp.Handler(),
+		})
+		if err != nil {
+			return errors.Errorf("failed to create server: %w", err)
+		}
+		slog.InfoContext(ctx, "created server, starting")
+
 		eg, egCtx := errgroup.WithContext(ctx)
 		if cfg.isSigner {
 			eg.Go(func() error {
 				if err := signerApp.Start(egCtx); err != nil {
 					return errors.Errorf("failed to start signer app: %w", err)
+				}
+				return nil
+			})
+			eg.Go(func() error {
+				if err := srv.Serve(egCtx); err != nil {
+					return errors.Errorf("failed to start signer server: %w", err)
 				}
 				return nil
 			})

@@ -82,8 +82,6 @@ func TestCommitValsetHeader(t *testing.T) {
 	header, err := svc.generator1.GenerateValidatorSetHeaderOnCapture(t.Context())
 	require.NoError(t, err)
 
-	var result bytes.Buffer
-
 	fmt.Println("G2>>>", hex.EncodeToString(aggPublicKeyG2.Marshal()))
 	fmt.Println("aggSigG1>>>", hex.EncodeToString(aggSignature.Marshal()))
 	fmt.Println("proof_>>>", hex.EncodeToString(proofData.Proof))
@@ -91,16 +89,9 @@ func TestCommitValsetHeader(t *testing.T) {
 	fmt.Println("commitmentPok>>>", hex.EncodeToString(proofData.CommitmentPok))
 	fmt.Println("validatorSet.TotalActiveVotingPower.String()>>>", validatorSet.TotalActiveVotingPower.String())
 
-	result.Write(proofData.Proof)
-	result.Write(proofData.Commitments)
-	result.Write(proofData.CommitmentPok)
-	nonSignersAggVotingPowerBuffer := make([]byte, 32)
-	proofData.NonSignersAggVotingPower.FillBytes(nonSignersAggVotingPowerBuffer)
-	result.Write(nonSignersAggVotingPowerBuffer)
+	fmt.Println("fullProof>>>", hex.EncodeToString(proofData.Marshall()))
 
-	fmt.Println("fullProof>>>", hex.EncodeToString(result.Bytes()))
-
-	err = svc.eth1.CommitValsetHeader(t.Context(), header, result.Bytes())
+	err = svc.eth1.CommitValsetHeader(t.Context(), header, proofData.Marshall())
 	require.NoError(t, err)
 }
 

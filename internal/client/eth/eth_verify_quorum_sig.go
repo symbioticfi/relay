@@ -19,5 +19,6 @@ func (e *Client) VerifyQuorumSig(ctx context.Context, message []byte, keyTag uin
 		return false, fmt.Errorf("failed to call contract: %w", err)
 	}
 
-	return *abi.ConvertType(result[0], new(bool)).(*bool), nil
+	okUint := *abi.ConvertType(result[0], new(uint8)).(*uint8)
+	return okUint == 1, nil
 }

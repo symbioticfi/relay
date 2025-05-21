@@ -1,0 +1,24 @@
+
+### send message for signing 1
+POST http://localhost:8081/api/v1/signMessage
+Content-Type: application/json
+
+{
+  "data": "SGVsbG8sIHdvcmxkIQ=="
+}
+
+### send message for signing 2
+POST http://localhost:8082/api/v1/signMessage
+Content-Type: application/json
+
+{
+  "data": "SGVsbG8sIHdvcmxkIQ=="
+}
+
+### send message for signing 3
+POST http://localhost:8083/api/v1/signMessage
+Content-Type: application/json
+
+{
+  "data": "SGVsbG8sIHdvcmxkIQ=="
+}
