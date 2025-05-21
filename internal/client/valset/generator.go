@@ -34,10 +34,18 @@ func NewGenerator(deriver deriver, ethClient ethClient) (*Generator, error) {
 	}, nil
 }
 
-// GenerateValidatorSetHeader generates a validator set header for the current epoch
-func (v *Generator) GenerateValidatorSetHeader(ctx context.Context) (entity.ValidatorSetHeader, error) {
-	slog.DebugContext(ctx, "Generating validator set header")
+func (v *Generator) GenerateCurrentValidatorSetHeader(ctx context.Context) (entity.ValidatorSetHeader, error) {
+	slog.DebugContext(ctx, "Trying to get capture timestamp")
+	timestamp, err := v.ethClient.GetCurrentValsetTimestamp(ctx)
+	if err != nil {
+		return entity.ValidatorSetHeader{}, fmt.Errorf("failed to get current timestamp: %w", err)
+	}
+	slog.DebugContext(ctx, "Got current valset timestamp", "timestamp", timestamp.String())
 
+	return v.generateValidatorSetHeader(ctx, timestamp)
+}
+
+func (v *Generator) GenerateValidatorSetHeaderOnCapture(ctx context.Context) (entity.ValidatorSetHeader, error) {
 	slog.DebugContext(ctx, "Trying to get capture timestamp")
 	timestamp, err := v.ethClient.GetCaptureTimestamp(ctx)
 	if err != nil {
@@ -45,17 +53,39 @@ func (v *Generator) GenerateValidatorSetHeader(ctx context.Context) (entity.Vali
 	}
 	slog.DebugContext(ctx, "Got capture timestamp", "timestamp", timestamp.String())
 
+	return v.generateValidatorSetHeader(ctx, timestamp)
+}
+
+// generateValidatorSetHeader generates a validator set header for the current epoch
+func (v *Generator) generateValidatorSetHeader(ctx context.Context, timestamp *big.Int) (entity.ValidatorSetHeader, error) {
+	slog.DebugContext(ctx, "Generating validator set header")
+
 	validatorSet, err := v.deriver.GetValidatorSet(ctx, timestamp)
 	if err != nil {
 		return entity.ValidatorSetHeader{}, fmt.Errorf("failed to get validator set: %w", err)
 	}
+
+	slog.DebugContext(ctx, "Got validator set", "validatorSet", validatorSet)
 
 	requiredKeyTag, err := v.ethClient.GetRequiredKeyTag(ctx, timestamp)
 	if err != nil {
 		return entity.ValidatorSetHeader{}, fmt.Errorf("failed to get required key tag: %w", err)
 	}
 
-	slog.DebugContext(ctx, "Got validator set", "validatorSet", validatorSet)
+	domainEip712, err := v.ethClient.GetEip712Domain(ctx)
+	if err != nil {
+		return entity.ValidatorSetHeader{}, fmt.Errorf("failed to get eip712 domain: %w", err)
+	}
+
+	currentEpoch, err := v.ethClient.GetCurrentEpoch(ctx)
+	if err != nil {
+		return entity.ValidatorSetHeader{}, fmt.Errorf("failed to get current epoch: %w", err)
+	}
+
+	subnetwork, err := v.ethClient.GetSubnetwork(ctx)
+	if err != nil {
+		return entity.ValidatorSetHeader{}, fmt.Errorf("failed to get subnetwork: %w", err)
+	}
 
 	tags := []uint8{uint8(len(validatorSet.Validators[0].Keys))}
 	for _, key := range validatorSet.Validators[0].Keys {
@@ -123,28 +153,16 @@ func (v *Generator) GenerateValidatorSetHeader(ctx context.Context) (entity.Vali
 		TotalActiveVotingPower: validatorSet.TotalActiveVotingPower,
 		ValidatorsSszMRoot:     sszMroot,
 		ExtraData:              extraData,
+		Epoch:                  currentEpoch,
+		DomainEip712:           domainEip712,
+		Subnetwork:             subnetwork,
 	}, nil
 }
 
-func (v *Generator) GenerateValidatorSetHeaderHash(ctx context.Context, validatorSetHeader entity.ValidatorSetHeader) ([]byte, error) {
+func (v *Generator) GenerateValidatorSetHeaderHash(validatorSetHeader entity.ValidatorSetHeader) ([]byte, error) {
 	hash, err := validatorSetHeader.Hash()
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash validator set header: %w", err)
-	}
-
-	domainEip712, err := v.ethClient.GetEip712Domain(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get eip712 domain: %w", err)
-	}
-
-	currentEpoch, err := v.ethClient.GetCurrentEpoch(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get current epoch: %w", err)
-	}
-
-	subnetwork, err := v.ethClient.GetSubnetwork(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get subnetwork: %w", err)
 	}
 
 	typedData := apitypes.TypedData{
@@ -160,13 +178,13 @@ func (v *Generator) GenerateValidatorSetHeaderHash(ctx context.Context, validato
 			},
 		},
 		Domain: apitypes.TypedDataDomain{
-			Name:    domainEip712.Name,
-			Version: domainEip712.Version,
+			Name:    validatorSetHeader.DomainEip712.Name,
+			Version: validatorSetHeader.DomainEip712.Version,
 		},
 		PrimaryType: "ValSetHeaderCommit",
 		Message: map[string]interface{}{
-			"subnetwork": subnetwork,
-			"epoch":      currentEpoch,
+			"subnetwork": validatorSetHeader.Subnetwork,
+			"epoch":      validatorSetHeader.Epoch,
 			"headerHash": hash,
 		},
 	}

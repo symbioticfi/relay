@@ -40,7 +40,7 @@ var (
 	getIsGenesisSetFunction           = "isGenesisSet"
 	getCurrentEpochFunction           = "getCurrentEpoch"
 	getCurrentPhaseFunction           = "getCurrentPhase"
-	getCurrentValsetTimestampFunction = "getCurrentValsetTimestamp"
+	getCurrentValsetTimestampFunction = "getCurrentValSetTimestamp"
 	getCaptureTimestampFunction       = "getCaptureTimestamp"
 	getVotingPowersFunction           = "getVotingPowersAt"
 	getKeysFunction                   = "getKeysAt"
@@ -48,6 +48,7 @@ var (
 	getQuorumThresholdFunction        = "getQuorumThresholdAt"
 	getSubnetworkFunction             = "SUBNETWORK"
 	getEip712DomainFunction           = "eip712Domain"
+	verifyQuorumSigFunction           = "verifyQuorumSig"
 )
 
 type Config struct {
@@ -428,22 +429,22 @@ func (e *Client) GetSubnetwork(ctx context.Context) ([]byte, error) {
 	return result, nil
 }
 
-func (e *Client) GetEip712Domain(ctx context.Context) (*entity.Eip712Domain, error) {
+func (e *Client) GetEip712Domain(ctx context.Context) (entity.Eip712Domain, error) {
 	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getEip712DomainFunction)
 	if err != nil {
-		return nil, fmt.Errorf("failed to construct call msg: %w", err)
+		return entity.Eip712Domain{}, fmt.Errorf("failed to construct call msg: %w", err)
 	}
 
 	result, err := e.callContract(ctx, callMsg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to call contract: %w", err)
+		return entity.Eip712Domain{}, fmt.Errorf("failed to call contract: %w", err)
 	}
 
 	var eip712Domain entity.Eip712Domain
 
 	out, err := masterABI.Unpack(getEip712DomainFunction, result)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unpack eip712 domain: %w", err)
+		return entity.Eip712Domain{}, fmt.Errorf("failed to unpack eip712 domain: %w", err)
 	}
 
 	eip712Domain.Fields = *abi.ConvertType(out[0], new([1]byte)).(*[1]byte)
@@ -455,7 +456,7 @@ func (e *Client) GetEip712Domain(ctx context.Context) (*entity.Eip712Domain, err
 	eip712Domain.Salt = new(big.Int).SetBytes(salt[:])
 	eip712Domain.Extensions = *abi.ConvertType(out[6], new([]*big.Int)).(*[]*big.Int)
 
-	return &eip712Domain, nil
+	return eip712Domain, nil
 }
 
 func (e *Client) callContract(ctx context.Context, callMsg ethereum.CallMsg) (result []byte, err error) {

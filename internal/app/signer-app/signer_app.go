@@ -21,8 +21,8 @@ type ethClient interface {
 }
 
 type valsetGenerator interface {
-	GenerateValidatorSetHeader(ctx context.Context) (entity.ValidatorSetHeader, error)
-	GenerateValidatorSetHeaderHash(ctx context.Context, validatorSetHeader entity.ValidatorSetHeader) ([]byte, error)
+	GenerateCurrentValidatorSetHeader(ctx context.Context) (entity.ValidatorSetHeader, error)
+	GenerateValidatorSetHeaderHash(validatorSetHeader entity.ValidatorSetHeader) ([]byte, error)
 }
 
 type Config struct {
@@ -70,14 +70,14 @@ func (s *SignerApp) Start(ctx context.Context) error {
 
 		slog.InfoContext(ctx, "commit phase started, generating valset header")
 
-		header, err := s.cfg.ValsetGenerator.GenerateValidatorSetHeader(ctx)
+		header, err := s.cfg.ValsetGenerator.GenerateCurrentValidatorSetHeader(ctx)
 		if err != nil {
 			return errors.Errorf("failed to generate valset header: %w", err)
 		}
 
 		slog.DebugContext(ctx, "valset header generated, generating hash", "header", header)
 
-		headerHash, err := s.cfg.ValsetGenerator.GenerateValidatorSetHeaderHash(ctx, header)
+		headerHash, err := s.cfg.ValsetGenerator.GenerateValidatorSetHeaderHash(header)
 		if err != nil {
 			return errors.Errorf("failed to generate valset header hash: %w", err)
 		}

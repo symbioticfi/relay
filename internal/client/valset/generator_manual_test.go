@@ -34,7 +34,7 @@ func TestManual_GenerateValidatorSetHeader(t *testing.T) {
 	generator, err := NewGenerator(deriver, client)
 	require.NoError(t, err)
 
-	header, err := generator.GenerateValidatorSetHeader(context.Background())
+	header, err := generator.GenerateValidatorSetHeaderOnCapture(context.Background())
 	require.NoError(t, err)
 
 	jsonData, err := header.EncodeJSON()

@@ -79,7 +79,7 @@ func TestCommitValsetHeader(t *testing.T) {
 
 	//proofData := decodeHex(t, "01c70454a912bf226d9b0a7b38dfef9319f92b893115fd5b168f0061c56a11e30d8c66ed7585aafd81e6c20cdbe81d385ee13871ef1da2b041e218076fbfd88e0cf9e7f5e7b25f241973a4a4ae6a7f29d430af5c243cd254d5035e7ad1883d9d1f0c0f76011867ebb6115185f5b9fe538de1181a39cd9e5efa03046b031c64df0b86f9a8fcb28738e82eabe0237a57bc47a02158841039f0d12ec3abb3d9ee2d12185fed2304764a978ba5405c684093479e18d934c7c8ba9e031981c836d4ff028f842b327dd18be5ba410bc423ce989f6807f1766acdae5669dea546d8cd591f98ba029d5e2a77520b2639234354c2e3983ce9590efbee7b293a8ee32bfbf80000000124997c0ef7b3e53580aaa97c84ae4682a7a7ec617110c5790ce06ca6bf837600114ec9b6c4503e96f11bcdb0e4601fecd83b5b8e4c7d9df6204aea2a4b7617471e9bada9e6dd91bf84b89967925bf1a90aa162f5f2883c4713522263f983f5ec101464ab309ff2a609396c898689eb0e5e4f703d350adc6ed69d6dfdc1a5bbbd")
 
-	header, err := svc.generator1.GenerateValidatorSetHeader(t.Context())
+	header, err := svc.generator1.GenerateValidatorSetHeaderOnCapture(t.Context())
 	require.NoError(t, err)
 
 	var result bytes.Buffer
@@ -162,12 +162,12 @@ func initValsetTestServices(t *testing.T) *valsetTestServices {
 	generator3, err := valset.NewGenerator(deriver3, eth3)
 	require.NoError(t, err)
 
-	header1, err := generator1.GenerateValidatorSetHeader(t.Context())
+	header1, err := generator1.GenerateValidatorSetHeaderOnCapture(t.Context())
 	require.NoError(t, err)
 
 	fmt.Println("header1>>>", hex.EncodeToString(header1.ExtraData))
 
-	headerHash1, err := generator1.GenerateValidatorSetHeaderHash(t.Context(), header1)
+	headerHash1, err := generator1.GenerateValidatorSetHeaderHash(header1)
 	require.NoError(t, err)
 
 	fmt.Println(hex.EncodeToString(headerHash1))
@@ -175,19 +175,19 @@ func initValsetTestServices(t *testing.T) *valsetTestServices {
 	headerSignature1, err := keyPair1.Sign(headerHash1)
 	require.NoError(t, err)
 
-	header2, err := generator2.GenerateValidatorSetHeader(t.Context())
+	header2, err := generator2.GenerateValidatorSetHeaderOnCapture(t.Context())
 	require.NoError(t, err)
 
-	headerHash2, err := generator2.GenerateValidatorSetHeaderHash(t.Context(), header2)
+	headerHash2, err := generator2.GenerateValidatorSetHeaderHash(header2)
 	require.NoError(t, err)
 
 	headerSignature2, err := keyPair2.Sign(headerHash2)
 	require.NoError(t, err)
 
-	header3, err := generator3.GenerateValidatorSetHeader(t.Context())
+	header3, err := generator3.GenerateValidatorSetHeaderOnCapture(t.Context())
 	require.NoError(t, err)
 
-	headerHash3, err := generator3.GenerateValidatorSetHeaderHash(t.Context(), header3)
+	headerHash3, err := generator3.GenerateValidatorSetHeaderHash(header3)
 	require.NoError(t, err)
 
 	headerSignature3, err := keyPair3.Sign(headerHash3)

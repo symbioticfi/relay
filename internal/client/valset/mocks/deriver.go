@@ -73,11 +73,26 @@ func (mr *MockethClientMockRecorder) GetCurrentEpoch(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentEpoch", reflect.TypeOf((*MockethClient)(nil).GetCurrentEpoch), ctx)
 }
 
+// GetCurrentValsetTimestamp mocks base method.
+func (m *MockethClient) GetCurrentValsetTimestamp(ctx context.Context) (*big.Int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCurrentValsetTimestamp", ctx)
+	ret0, _ := ret[0].(*big.Int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCurrentValsetTimestamp indicates an expected call of GetCurrentValsetTimestamp.
+func (mr *MockethClientMockRecorder) GetCurrentValsetTimestamp(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentValsetTimestamp", reflect.TypeOf((*MockethClient)(nil).GetCurrentValsetTimestamp), ctx)
+}
+
 // GetEip712Domain mocks base method.
-func (m *MockethClient) GetEip712Domain(ctx context.Context) (*entity.Eip712Domain, error) {
+func (m *MockethClient) GetEip712Domain(ctx context.Context) (entity.Eip712Domain, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetEip712Domain", ctx)
-	ret0, _ := ret[0].(*entity.Eip712Domain)
+	ret0, _ := ret[0].(entity.Eip712Domain)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
