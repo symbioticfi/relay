@@ -8,8 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 )
 
-func (e *Client) VerifyQuorumSig(ctx context.Context, message []byte, keyTag uint8, threshold *big.Int, proof []byte) (bool, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, verifyQuorumSigFunction, message, keyTag, threshold, proof)
+func (e *Client) VerifyQuorumSig(ctx context.Context, epoch *big.Int, message []byte, keyTag uint8, threshold *big.Int, proof []byte) (bool, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, verifyQuorumSigFunction, epoch, message, keyTag, threshold, proof)
 	if err != nil {
 		return false, fmt.Errorf("failed to construct call msg: %w", err)
 	}

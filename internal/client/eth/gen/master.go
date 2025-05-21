@@ -41,24 +41,24 @@ type IEpochManagerEpochManagerInitParams struct {
 	EpochDurationTimestamp *big.Int
 }
 
-// IMasterConfigManagerCrossChainAddress is an auto generated low-level Go binding around an user-defined struct.
-type IMasterConfigManagerCrossChainAddress struct {
+// IMasterConfigProviderCrossChainAddress is an auto generated low-level Go binding around an user-defined struct.
+type IMasterConfigProviderCrossChainAddress struct {
 	Addr    common.Address
 	ChainId uint64
 }
 
-// IMasterConfigManagerMasterConfig is an auto generated low-level Go binding around an user-defined struct.
-type IMasterConfigManagerMasterConfig struct {
-	VotingPowerProviders []IMasterConfigManagerCrossChainAddress
-	KeysProvider         IMasterConfigManagerCrossChainAddress
-	Replicas             []IMasterConfigManagerCrossChainAddress
+// IMasterConfigProviderMasterConfig is an auto generated low-level Go binding around an user-defined struct.
+type IMasterConfigProviderMasterConfig struct {
+	VotingPowerProviders []IMasterConfigProviderCrossChainAddress
+	KeysProvider         IMasterConfigProviderCrossChainAddress
+	Replicas             []IMasterConfigProviderCrossChainAddress
 }
 
-// IMasterConfigManagerMasterConfigManagerInitParams is an auto generated low-level Go binding around an user-defined struct.
-type IMasterConfigManagerMasterConfigManagerInitParams struct {
-	VotingPowerProviders []IMasterConfigManagerCrossChainAddress
-	KeysProvider         IMasterConfigManagerCrossChainAddress
-	Replicas             []IMasterConfigManagerCrossChainAddress
+// IMasterConfigProviderMasterConfigProviderInitParams is an auto generated low-level Go binding around an user-defined struct.
+type IMasterConfigProviderMasterConfigProviderInitParams struct {
+	VotingPowerProviders []IMasterConfigProviderCrossChainAddress
+	KeysProvider         IMasterConfigProviderCrossChainAddress
+	Replicas             []IMasterConfigProviderCrossChainAddress
 }
 
 // INetworkManagerNetworkManagerInitParams is an auto generated low-level Go binding around an user-defined struct.
@@ -73,25 +73,25 @@ type IOzEIP712OzEIP712InitParams struct {
 	Version string
 }
 
-// ISettlementManagerQuorumThreshold is an auto generated low-level Go binding around an user-defined struct.
-type ISettlementManagerQuorumThreshold struct {
+// ISettlementQuorumThreshold is an auto generated low-level Go binding around an user-defined struct.
+type ISettlementQuorumThreshold struct {
 	KeyTag    uint8
 	Threshold *big.Int
 }
 
-// ISettlementManagerSettlementManagerInitParams is an auto generated low-level Go binding around an user-defined struct.
-type ISettlementManagerSettlementManagerInitParams struct {
+// ISettlementSettlementInitParams is an auto generated low-level Go binding around an user-defined struct.
+type ISettlementSettlementInitParams struct {
 	NetworkManagerInitParams INetworkManagerNetworkManagerInitParams
 	EpochManagerInitParams   IEpochManagerEpochManagerInitParams
 	OzEip712InitParams       IOzEIP712OzEIP712InitParams
-	QuorumThresholds         []ISettlementManagerQuorumThreshold
+	QuorumThresholds         []ISettlementQuorumThreshold
 	CommitDuration           *big.Int
 	RequiredKeyTag           uint8
 	SigVerifier              common.Address
 }
 
-// ISettlementManagerValSetHeader is an auto generated low-level Go binding around an user-defined struct.
-type ISettlementManagerValSetHeader struct {
+// ISettlementValSetHeader is an auto generated low-level Go binding around an user-defined struct.
+type ISettlementValSetHeader struct {
 	Version                uint8
 	ActiveAggregatedKeys   []IBaseKeyManagerKey
 	TotalActiveVotingPower *big.Int
@@ -99,16 +99,16 @@ type ISettlementManagerValSetHeader struct {
 	ExtraData              []byte
 }
 
-// IValSetConfigManagerValSetConfig is an auto generated low-level Go binding around an user-defined struct.
-type IValSetConfigManagerValSetConfig struct {
+// IValSetConfigProviderValSetConfig is an auto generated low-level Go binding around an user-defined struct.
+type IValSetConfigProviderValSetConfig struct {
 	MaxVotingPower          *big.Int
 	MinInclusionVotingPower *big.Int
 	MaxValidatorsCount      *big.Int
 	RequiredKeyTags         []uint8
 }
 
-// IValSetConfigManagerValSetConfigManagerInitParams is an auto generated low-level Go binding around an user-defined struct.
-type IValSetConfigManagerValSetConfigManagerInitParams struct {
+// IValSetConfigProviderValSetConfigProviderInitParams is an auto generated low-level Go binding around an user-defined struct.
+type IValSetConfigProviderValSetConfigProviderInitParams struct {
 	MaxVotingPower          *big.Int
 	MinInclusionVotingPower *big.Int
 	MaxValidatorsCount      *big.Int
@@ -117,7 +117,7 @@ type IValSetConfigManagerValSetConfigManagerInitParams struct {
 
 // MasterMetaData contains all meta data concerning the Master contract.
 var MasterMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"DEFAULT_ADMIN_ROLE\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"EpochManager_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"MasterConfigManager_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"NETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"NetworkManager_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"OzAccessControl_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"OzEIP712_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"PermissionManager_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK_IDENTIFIER\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SettlementManager_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"VALIDATOR_SET_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"ValSetConfigManager_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"addReplica\",\"inputs\":[{\"name\":\"replica\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigManager.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigManager.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"commitValSetHeader\",\"inputs\":[{\"name\":\"header\",\"type\":\"tuple\",\"internalType\":\"structISettlementManager.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"activeAggregatedKeys\",\"type\":\"tuple[]\",\"internalType\":\"structIBaseKeyManager.Key[]\",\"components\":[{\"name\":\"tag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"payload\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"totalActiveVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"extraData\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"eip712Domain\",\"inputs\":[],\"outputs\":[{\"name\":\"fields\",\"type\":\"bytes1\",\"internalType\":\"bytes1\"},{\"name\":\"name\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"version\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"chainId\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"verifyingContract\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"extensions\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getActiveAggregatedKeyFromValSetHeader\",\"inputs\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getActiveAggregatedKeyFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCaptureTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCommitDuration\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCommitDurationAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpoch\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpochDuration\",\"inputs\":[],\"outputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpochStart\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentPhase\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"enumISettlementManager.ValSetPhase\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentValSetTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochDuration\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochIndex\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochStart\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getExtraDataFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getExtraDataFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMasterConfig\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigManager.MasterConfig\",\"components\":[{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigManager.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigManager.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"replicas\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigManager.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMasterConfigAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hints\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigManager.MasterConfig\",\"components\":[{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigManager.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigManager.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"replicas\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigManager.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextEpoch\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextEpochStart\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQuorumThreshold\",\"inputs\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQuorumThresholdAt\",\"inputs\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTag\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTagAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRole\",\"inputs\":[{\"name\":\"selector\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRoleAdmin\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSigVerifier\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSigVerifierAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTotalActiveVotingPowerFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTotalActiveVotingPowerFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValSetConfig\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIValSetConfigManager.ValSetConfig\",\"components\":[{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxValidatorsCount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValSetConfigAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hints\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIValSetConfigManager.ValSetConfig\",\"components\":[{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxValidatorsCount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"header\",\"type\":\"tuple\",\"internalType\":\"structISettlementManager.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"activeAggregatedKeys\",\"type\":\"tuple[]\",\"internalType\":\"structIBaseKeyManager.Key[]\",\"components\":[{\"name\":\"tag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"payload\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"totalActiveVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"extraData\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structISettlementManager.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"activeAggregatedKeys\",\"type\":\"tuple[]\",\"internalType\":\"structIBaseKeyManager.Key[]\",\"components\":[{\"name\":\"tag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"payload\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"totalActiveVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"extraData\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValidatorsSszMRootFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValidatorsSszMRootFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVersionFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVersionFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"grantRole\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"hasRole\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hashTypedDataV4\",\"inputs\":[{\"name\":\"structHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hashTypedDataV4Multichain\",\"inputs\":[{\"name\":\"structHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"settlementManagerInitParams\",\"type\":\"tuple\",\"internalType\":\"structISettlementManager.SettlementManagerInitParams\",\"components\":[{\"name\":\"networkManagerInitParams\",\"type\":\"tuple\",\"internalType\":\"structINetworkManager.NetworkManagerInitParams\",\"components\":[{\"name\":\"network\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"subnetworkID\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"epochManagerInitParams\",\"type\":\"tuple\",\"internalType\":\"structIEpochManager.EpochManagerInitParams\",\"components\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"epochDurationTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}]},{\"name\":\"ozEip712InitParams\",\"type\":\"tuple\",\"internalType\":\"structIOzEIP712.OzEIP712InitParams\",\"components\":[{\"name\":\"name\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"version\",\"type\":\"string\",\"internalType\":\"string\"}]},{\"name\":\"quorumThresholds\",\"type\":\"tuple[]\",\"internalType\":\"structISettlementManager.QuorumThreshold[]\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"threshold\",\"type\":\"uint208\",\"internalType\":\"uint208\"}]},{\"name\":\"commitDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"sigVerifier\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"valSetConfigManagerInitParams\",\"type\":\"tuple\",\"internalType\":\"structIValSetConfigManager.ValSetConfigManagerInitParams\",\"components\":[{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxValidatorsCount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}]},{\"name\":\"masterConfigManagerInitParams\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigManager.MasterConfigManagerInitParams\",\"components\":[{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigManager.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigManager.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"replicas\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigManager.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}]},{\"name\":\"defaultAdmin\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"isValSetHeaderSubmitted\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isValSetHeaderSubmittedAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"multicall\",\"inputs\":[{\"name\":\"data\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"outputs\":[{\"name\":\"results\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeReplica\",\"inputs\":[{\"name\":\"replica\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigManager.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigManager.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"renounceRole\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"callerConfirmation\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"revokeRole\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setCommitDuration\",\"inputs\":[{\"name\":\"commitDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setEpochDuration\",\"inputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setGenesis\",\"inputs\":[{\"name\":\"valSetHeader\",\"type\":\"tuple\",\"internalType\":\"structISettlementManager.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"activeAggregatedKeys\",\"type\":\"tuple[]\",\"internalType\":\"structIBaseKeyManager.Key[]\",\"components\":[{\"name\":\"tag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"payload\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"totalActiveVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"extraData\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setKeysProvider\",\"inputs\":[{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigManager.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMaxValidatorsCount\",\"inputs\":[{\"name\":\"maxValidatorsCount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMaxVotingPower\",\"inputs\":[{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMinInclusionVotingPower\",\"inputs\":[{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setQuorumThreshold\",\"inputs\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setRequiredKeyTag\",\"inputs\":[{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setRequiredKeyTags\",\"inputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setSigVerifier\",\"inputs\":[{\"name\":\"sigVerifier\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"staticDelegateCall\",\"inputs\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"supportsInterface\",\"inputs\":[{\"name\":\"interfaceId\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"verifyQuorumSig\",\"inputs\":[{\"name\":\"message\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"EIP712DomainChanged\",\"inputs\":[],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RoleAdminChanged\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"previousAdminRole\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"newAdminRole\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RoleGranted\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"sender\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RoleRevoked\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"sender\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SelectorRoleSet\",\"inputs\":[{\"name\":\"selector\",\"type\":\"bytes4\",\"indexed\":false,\"internalType\":\"bytes4\"},{\"name\":\"role\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AccessControlBadConfirmation\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"AccessControlUnauthorizedAccount\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"neededRole\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"type\":\"error\",\"name\":\"AddressEmptyCode\",\"inputs\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"CheckpointUnorderedInsertion\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_InvalidEpochDuration\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_InvalidEpochDurationIndex\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_InvalidEpochDurationTimestamp\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_NoCheckpoint\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"FailedCall\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidInitialization\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidLength\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"MasterConfigManager_AlreadyAdded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"MasterConfigManager_NotAdded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotInitializing\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SafeCastOverflowedUintDowncast\",\"inputs\":[{\"name\":\"bits\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"type\":\"error\",\"name\":\"SettlementManager_Duplicate\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SettlementManager_EpochDurationTooShort\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SettlementManager_InvalidKey\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SettlementManager_InvalidPhase\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SettlementManager_InvalidVersion\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SettlementManager_VerificationFailed\",\"inputs\":[]}]",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"DEFAULT_ADMIN_ROLE\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"EpochManager_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"MasterConfigProvider_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"NETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"NetworkManager_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"OzAccessControl_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"OzEIP712_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"PermissionManager_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK_IDENTIFIER\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"Settlement_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"VALIDATOR_SET_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"ValSetConfigProvider_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"addReplica\",\"inputs\":[{\"name\":\"replica\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"commitValSetHeader\",\"inputs\":[{\"name\":\"header\",\"type\":\"tuple\",\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"activeAggregatedKeys\",\"type\":\"tuple[]\",\"internalType\":\"structIBaseKeyManager.Key[]\",\"components\":[{\"name\":\"tag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"payload\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"totalActiveVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"extraData\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"eip712Domain\",\"inputs\":[],\"outputs\":[{\"name\":\"fields\",\"type\":\"bytes1\",\"internalType\":\"bytes1\"},{\"name\":\"name\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"version\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"chainId\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"verifyingContract\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"extensions\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getActiveAggregatedKeyFromValSetHeader\",\"inputs\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getActiveAggregatedKeyFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getActiveReplicas\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getActiveReplicasAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hints\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getActiveVotingPowerProviders\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getActiveVotingPowerProvidersAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hints\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCaptureTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCommitDuration\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCommitDurationAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpoch\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpochDuration\",\"inputs\":[],\"outputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpochStart\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentPhase\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"enumISettlement.ValSetPhase\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentValSetEpoch\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentValSetTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochDuration\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochIndex\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochStart\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getExtraDataFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getExtraDataFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getKeysProvider\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getKeysProviderAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMasterConfig\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.MasterConfig\",\"components\":[{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"replicas\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMasterConfigAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hints\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.MasterConfig\",\"components\":[{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"replicas\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxValidatorsCount\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxValidatorsCountAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxVotingPower\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxVotingPowerAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMinInclusionVotingPower\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMinInclusionVotingPowerAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextEpoch\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextEpochStart\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQuorumThreshold\",\"inputs\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQuorumThresholdAt\",\"inputs\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTag\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTagAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTags\",\"inputs\":[],\"outputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTagsAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRole\",\"inputs\":[{\"name\":\"selector\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRoleAdmin\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSigVerifier\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSigVerifierAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTotalActiveVotingPowerFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTotalActiveVotingPowerFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValSetConfig\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIValSetConfigProvider.ValSetConfig\",\"components\":[{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxValidatorsCount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValSetConfigAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hints\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIValSetConfigProvider.ValSetConfig\",\"components\":[{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxValidatorsCount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"header\",\"type\":\"tuple\",\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"activeAggregatedKeys\",\"type\":\"tuple[]\",\"internalType\":\"structIBaseKeyManager.Key[]\",\"components\":[{\"name\":\"tag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"payload\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"totalActiveVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"extraData\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"activeAggregatedKeys\",\"type\":\"tuple[]\",\"internalType\":\"structIBaseKeyManager.Key[]\",\"components\":[{\"name\":\"tag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"payload\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"totalActiveVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"extraData\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValidatorsSszMRootFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValidatorsSszMRootFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVersionFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVersionFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"grantRole\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"hasRole\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hashTypedDataV4\",\"inputs\":[{\"name\":\"structHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hashTypedDataV4CrossChain\",\"inputs\":[{\"name\":\"structHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"settlementInitParams\",\"type\":\"tuple\",\"internalType\":\"structISettlement.SettlementInitParams\",\"components\":[{\"name\":\"networkManagerInitParams\",\"type\":\"tuple\",\"internalType\":\"structINetworkManager.NetworkManagerInitParams\",\"components\":[{\"name\":\"network\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"subnetworkID\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"epochManagerInitParams\",\"type\":\"tuple\",\"internalType\":\"structIEpochManager.EpochManagerInitParams\",\"components\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"epochDurationTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}]},{\"name\":\"ozEip712InitParams\",\"type\":\"tuple\",\"internalType\":\"structIOzEIP712.OzEIP712InitParams\",\"components\":[{\"name\":\"name\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"version\",\"type\":\"string\",\"internalType\":\"string\"}]},{\"name\":\"quorumThresholds\",\"type\":\"tuple[]\",\"internalType\":\"structISettlement.QuorumThreshold[]\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"threshold\",\"type\":\"uint208\",\"internalType\":\"uint208\"}]},{\"name\":\"commitDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"sigVerifier\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"valSetConfigProviderInitParams\",\"type\":\"tuple\",\"internalType\":\"structIValSetConfigProvider.ValSetConfigProviderInitParams\",\"components\":[{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxValidatorsCount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}]},{\"name\":\"masterConfigProviderInitParams\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.MasterConfigProviderInitParams\",\"components\":[{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"replicas\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}]},{\"name\":\"defaultAdmin\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"isReplicaActive\",\"inputs\":[{\"name\":\"replica\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isReplicaActiveAt\",\"inputs\":[{\"name\":\"replica\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isValSetHeaderSubmitted\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isValSetHeaderSubmittedAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isVotingPowerProviderActive\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isVotingPowerProviderActiveAt\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"multicall\",\"inputs\":[{\"name\":\"data\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"outputs\":[{\"name\":\"results\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeReplica\",\"inputs\":[{\"name\":\"replica\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"renounceRole\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"callerConfirmation\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"revokeRole\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setCommitDuration\",\"inputs\":[{\"name\":\"commitDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setEpochDuration\",\"inputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setGenesis\",\"inputs\":[{\"name\":\"valSetHeader\",\"type\":\"tuple\",\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"activeAggregatedKeys\",\"type\":\"tuple[]\",\"internalType\":\"structIBaseKeyManager.Key[]\",\"components\":[{\"name\":\"tag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"payload\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"totalActiveVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"extraData\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setKeysProvider\",\"inputs\":[{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMaxValidatorsCount\",\"inputs\":[{\"name\":\"maxValidatorsCount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMaxVotingPower\",\"inputs\":[{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMinInclusionVotingPower\",\"inputs\":[{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setQuorumThreshold\",\"inputs\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setRequiredKeyTag\",\"inputs\":[{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setRequiredKeyTags\",\"inputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setSigVerifier\",\"inputs\":[{\"name\":\"sigVerifier\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"staticDelegateCall\",\"inputs\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"supportsInterface\",\"inputs\":[{\"name\":\"interfaceId\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"verifyQuorumSig\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"message\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"EIP712DomainChanged\",\"inputs\":[],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RoleAdminChanged\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"previousAdminRole\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"newAdminRole\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RoleGranted\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"sender\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RoleRevoked\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"sender\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SelectorRoleSet\",\"inputs\":[{\"name\":\"selector\",\"type\":\"bytes4\",\"indexed\":false,\"internalType\":\"bytes4\"},{\"name\":\"role\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AccessControlBadConfirmation\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"AccessControlUnauthorizedAccount\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"neededRole\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"type\":\"error\",\"name\":\"AddressEmptyCode\",\"inputs\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"EpochManager_InvalidEpochDuration\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_InvalidEpochDurationIndex\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_InvalidEpochDurationTimestamp\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_NoCheckpoint\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"FailedCall\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidInitialization\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"MasterConfigProvider_AlreadyAdded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"MasterConfigProvider_NotAdded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotInitializing\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_Duplicate\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_EpochDurationTooShort\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_InvalidKey\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_InvalidPhase\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_InvalidVersion\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_VerificationFailed\",\"inputs\":[]}]",
 }
 
 // MasterABI is the input ABI used to generate the binding from.
@@ -328,12 +328,12 @@ func (_Master *MasterCallerSession) EpochManagerVERSION() (uint64, error) {
 	return _Master.Contract.EpochManagerVERSION(&_Master.CallOpts)
 }
 
-// MasterConfigManagerVERSION is a free data retrieval call binding the contract method 0x444bcd7d.
+// MasterConfigProviderVERSION is a free data retrieval call binding the contract method 0xd1c5a7c4.
 //
-// Solidity: function MasterConfigManager_VERSION() view returns(uint64)
-func (_Master *MasterCaller) MasterConfigManagerVERSION(opts *bind.CallOpts) (uint64, error) {
+// Solidity: function MasterConfigProvider_VERSION() pure returns(uint64)
+func (_Master *MasterCaller) MasterConfigProviderVERSION(opts *bind.CallOpts) (uint64, error) {
 	var out []interface{}
-	err := _Master.contract.Call(opts, &out, "MasterConfigManager_VERSION")
+	err := _Master.contract.Call(opts, &out, "MasterConfigProvider_VERSION")
 
 	if err != nil {
 		return *new(uint64), err
@@ -345,18 +345,18 @@ func (_Master *MasterCaller) MasterConfigManagerVERSION(opts *bind.CallOpts) (ui
 
 }
 
-// MasterConfigManagerVERSION is a free data retrieval call binding the contract method 0x444bcd7d.
+// MasterConfigProviderVERSION is a free data retrieval call binding the contract method 0xd1c5a7c4.
 //
-// Solidity: function MasterConfigManager_VERSION() view returns(uint64)
-func (_Master *MasterSession) MasterConfigManagerVERSION() (uint64, error) {
-	return _Master.Contract.MasterConfigManagerVERSION(&_Master.CallOpts)
+// Solidity: function MasterConfigProvider_VERSION() pure returns(uint64)
+func (_Master *MasterSession) MasterConfigProviderVERSION() (uint64, error) {
+	return _Master.Contract.MasterConfigProviderVERSION(&_Master.CallOpts)
 }
 
-// MasterConfigManagerVERSION is a free data retrieval call binding the contract method 0x444bcd7d.
+// MasterConfigProviderVERSION is a free data retrieval call binding the contract method 0xd1c5a7c4.
 //
-// Solidity: function MasterConfigManager_VERSION() view returns(uint64)
-func (_Master *MasterCallerSession) MasterConfigManagerVERSION() (uint64, error) {
-	return _Master.Contract.MasterConfigManagerVERSION(&_Master.CallOpts)
+// Solidity: function MasterConfigProvider_VERSION() pure returns(uint64)
+func (_Master *MasterCallerSession) MasterConfigProviderVERSION() (uint64, error) {
+	return _Master.Contract.MasterConfigProviderVERSION(&_Master.CallOpts)
 }
 
 // NETWORK is a free data retrieval call binding the contract method 0x8759e6d1.
@@ -576,12 +576,12 @@ func (_Master *MasterCallerSession) SUBNETWORKIDENTIFIER() (*big.Int, error) {
 	return _Master.Contract.SUBNETWORKIDENTIFIER(&_Master.CallOpts)
 }
 
-// SettlementManagerVERSION is a free data retrieval call binding the contract method 0xfd2f5407.
+// SettlementVERSION is a free data retrieval call binding the contract method 0xce934e06.
 //
-// Solidity: function SettlementManager_VERSION() view returns(uint64)
-func (_Master *MasterCaller) SettlementManagerVERSION(opts *bind.CallOpts) (uint64, error) {
+// Solidity: function Settlement_VERSION() pure returns(uint64)
+func (_Master *MasterCaller) SettlementVERSION(opts *bind.CallOpts) (uint64, error) {
 	var out []interface{}
-	err := _Master.contract.Call(opts, &out, "SettlementManager_VERSION")
+	err := _Master.contract.Call(opts, &out, "Settlement_VERSION")
 
 	if err != nil {
 		return *new(uint64), err
@@ -593,23 +593,23 @@ func (_Master *MasterCaller) SettlementManagerVERSION(opts *bind.CallOpts) (uint
 
 }
 
-// SettlementManagerVERSION is a free data retrieval call binding the contract method 0xfd2f5407.
+// SettlementVERSION is a free data retrieval call binding the contract method 0xce934e06.
 //
-// Solidity: function SettlementManager_VERSION() view returns(uint64)
-func (_Master *MasterSession) SettlementManagerVERSION() (uint64, error) {
-	return _Master.Contract.SettlementManagerVERSION(&_Master.CallOpts)
+// Solidity: function Settlement_VERSION() pure returns(uint64)
+func (_Master *MasterSession) SettlementVERSION() (uint64, error) {
+	return _Master.Contract.SettlementVERSION(&_Master.CallOpts)
 }
 
-// SettlementManagerVERSION is a free data retrieval call binding the contract method 0xfd2f5407.
+// SettlementVERSION is a free data retrieval call binding the contract method 0xce934e06.
 //
-// Solidity: function SettlementManager_VERSION() view returns(uint64)
-func (_Master *MasterCallerSession) SettlementManagerVERSION() (uint64, error) {
-	return _Master.Contract.SettlementManagerVERSION(&_Master.CallOpts)
+// Solidity: function Settlement_VERSION() pure returns(uint64)
+func (_Master *MasterCallerSession) SettlementVERSION() (uint64, error) {
+	return _Master.Contract.SettlementVERSION(&_Master.CallOpts)
 }
 
 // VALIDATORSETVERSION is a free data retrieval call binding the contract method 0x321d7b8d.
 //
-// Solidity: function VALIDATOR_SET_VERSION() view returns(uint8)
+// Solidity: function VALIDATOR_SET_VERSION() pure returns(uint8)
 func (_Master *MasterCaller) VALIDATORSETVERSION(opts *bind.CallOpts) (uint8, error) {
 	var out []interface{}
 	err := _Master.contract.Call(opts, &out, "VALIDATOR_SET_VERSION")
@@ -626,24 +626,24 @@ func (_Master *MasterCaller) VALIDATORSETVERSION(opts *bind.CallOpts) (uint8, er
 
 // VALIDATORSETVERSION is a free data retrieval call binding the contract method 0x321d7b8d.
 //
-// Solidity: function VALIDATOR_SET_VERSION() view returns(uint8)
+// Solidity: function VALIDATOR_SET_VERSION() pure returns(uint8)
 func (_Master *MasterSession) VALIDATORSETVERSION() (uint8, error) {
 	return _Master.Contract.VALIDATORSETVERSION(&_Master.CallOpts)
 }
 
 // VALIDATORSETVERSION is a free data retrieval call binding the contract method 0x321d7b8d.
 //
-// Solidity: function VALIDATOR_SET_VERSION() view returns(uint8)
+// Solidity: function VALIDATOR_SET_VERSION() pure returns(uint8)
 func (_Master *MasterCallerSession) VALIDATORSETVERSION() (uint8, error) {
 	return _Master.Contract.VALIDATORSETVERSION(&_Master.CallOpts)
 }
 
-// ValSetConfigManagerVERSION is a free data retrieval call binding the contract method 0xbddf2d51.
+// ValSetConfigProviderVERSION is a free data retrieval call binding the contract method 0xecaad2a1.
 //
-// Solidity: function ValSetConfigManager_VERSION() view returns(uint64)
-func (_Master *MasterCaller) ValSetConfigManagerVERSION(opts *bind.CallOpts) (uint64, error) {
+// Solidity: function ValSetConfigProvider_VERSION() pure returns(uint64)
+func (_Master *MasterCaller) ValSetConfigProviderVERSION(opts *bind.CallOpts) (uint64, error) {
 	var out []interface{}
-	err := _Master.contract.Call(opts, &out, "ValSetConfigManager_VERSION")
+	err := _Master.contract.Call(opts, &out, "ValSetConfigProvider_VERSION")
 
 	if err != nil {
 		return *new(uint64), err
@@ -655,18 +655,18 @@ func (_Master *MasterCaller) ValSetConfigManagerVERSION(opts *bind.CallOpts) (ui
 
 }
 
-// ValSetConfigManagerVERSION is a free data retrieval call binding the contract method 0xbddf2d51.
+// ValSetConfigProviderVERSION is a free data retrieval call binding the contract method 0xecaad2a1.
 //
-// Solidity: function ValSetConfigManager_VERSION() view returns(uint64)
-func (_Master *MasterSession) ValSetConfigManagerVERSION() (uint64, error) {
-	return _Master.Contract.ValSetConfigManagerVERSION(&_Master.CallOpts)
+// Solidity: function ValSetConfigProvider_VERSION() pure returns(uint64)
+func (_Master *MasterSession) ValSetConfigProviderVERSION() (uint64, error) {
+	return _Master.Contract.ValSetConfigProviderVERSION(&_Master.CallOpts)
 }
 
-// ValSetConfigManagerVERSION is a free data retrieval call binding the contract method 0xbddf2d51.
+// ValSetConfigProviderVERSION is a free data retrieval call binding the contract method 0xecaad2a1.
 //
-// Solidity: function ValSetConfigManager_VERSION() view returns(uint64)
-func (_Master *MasterCallerSession) ValSetConfigManagerVERSION() (uint64, error) {
-	return _Master.Contract.ValSetConfigManagerVERSION(&_Master.CallOpts)
+// Solidity: function ValSetConfigProvider_VERSION() pure returns(uint64)
+func (_Master *MasterCallerSession) ValSetConfigProviderVERSION() (uint64, error) {
+	return _Master.Contract.ValSetConfigProviderVERSION(&_Master.CallOpts)
 }
 
 // Eip712Domain is a free data retrieval call binding the contract method 0x84b0196e.
@@ -799,6 +799,130 @@ func (_Master *MasterSession) GetActiveAggregatedKeyFromValSetHeaderAt(epoch *bi
 // Solidity: function getActiveAggregatedKeyFromValSetHeaderAt(uint48 epoch, uint8 keyTag) view returns(bytes)
 func (_Master *MasterCallerSession) GetActiveAggregatedKeyFromValSetHeaderAt(epoch *big.Int, keyTag uint8) ([]byte, error) {
 	return _Master.Contract.GetActiveAggregatedKeyFromValSetHeaderAt(&_Master.CallOpts, epoch, keyTag)
+}
+
+// GetActiveReplicas is a free data retrieval call binding the contract method 0x5cc43174.
+//
+// Solidity: function getActiveReplicas() view returns((address,uint64)[])
+func (_Master *MasterCaller) GetActiveReplicas(opts *bind.CallOpts) ([]IMasterConfigProviderCrossChainAddress, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getActiveReplicas")
+
+	if err != nil {
+		return *new([]IMasterConfigProviderCrossChainAddress), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]IMasterConfigProviderCrossChainAddress)).(*[]IMasterConfigProviderCrossChainAddress)
+
+	return out0, err
+
+}
+
+// GetActiveReplicas is a free data retrieval call binding the contract method 0x5cc43174.
+//
+// Solidity: function getActiveReplicas() view returns((address,uint64)[])
+func (_Master *MasterSession) GetActiveReplicas() ([]IMasterConfigProviderCrossChainAddress, error) {
+	return _Master.Contract.GetActiveReplicas(&_Master.CallOpts)
+}
+
+// GetActiveReplicas is a free data retrieval call binding the contract method 0x5cc43174.
+//
+// Solidity: function getActiveReplicas() view returns((address,uint64)[])
+func (_Master *MasterCallerSession) GetActiveReplicas() ([]IMasterConfigProviderCrossChainAddress, error) {
+	return _Master.Contract.GetActiveReplicas(&_Master.CallOpts)
+}
+
+// GetActiveReplicasAt is a free data retrieval call binding the contract method 0x02eb1000.
+//
+// Solidity: function getActiveReplicasAt(uint48 timestamp, bytes[] hints) view returns((address,uint64)[])
+func (_Master *MasterCaller) GetActiveReplicasAt(opts *bind.CallOpts, timestamp *big.Int, hints [][]byte) ([]IMasterConfigProviderCrossChainAddress, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getActiveReplicasAt", timestamp, hints)
+
+	if err != nil {
+		return *new([]IMasterConfigProviderCrossChainAddress), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]IMasterConfigProviderCrossChainAddress)).(*[]IMasterConfigProviderCrossChainAddress)
+
+	return out0, err
+
+}
+
+// GetActiveReplicasAt is a free data retrieval call binding the contract method 0x02eb1000.
+//
+// Solidity: function getActiveReplicasAt(uint48 timestamp, bytes[] hints) view returns((address,uint64)[])
+func (_Master *MasterSession) GetActiveReplicasAt(timestamp *big.Int, hints [][]byte) ([]IMasterConfigProviderCrossChainAddress, error) {
+	return _Master.Contract.GetActiveReplicasAt(&_Master.CallOpts, timestamp, hints)
+}
+
+// GetActiveReplicasAt is a free data retrieval call binding the contract method 0x02eb1000.
+//
+// Solidity: function getActiveReplicasAt(uint48 timestamp, bytes[] hints) view returns((address,uint64)[])
+func (_Master *MasterCallerSession) GetActiveReplicasAt(timestamp *big.Int, hints [][]byte) ([]IMasterConfigProviderCrossChainAddress, error) {
+	return _Master.Contract.GetActiveReplicasAt(&_Master.CallOpts, timestamp, hints)
+}
+
+// GetActiveVotingPowerProviders is a free data retrieval call binding the contract method 0xfda10c48.
+//
+// Solidity: function getActiveVotingPowerProviders() view returns((address,uint64)[])
+func (_Master *MasterCaller) GetActiveVotingPowerProviders(opts *bind.CallOpts) ([]IMasterConfigProviderCrossChainAddress, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getActiveVotingPowerProviders")
+
+	if err != nil {
+		return *new([]IMasterConfigProviderCrossChainAddress), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]IMasterConfigProviderCrossChainAddress)).(*[]IMasterConfigProviderCrossChainAddress)
+
+	return out0, err
+
+}
+
+// GetActiveVotingPowerProviders is a free data retrieval call binding the contract method 0xfda10c48.
+//
+// Solidity: function getActiveVotingPowerProviders() view returns((address,uint64)[])
+func (_Master *MasterSession) GetActiveVotingPowerProviders() ([]IMasterConfigProviderCrossChainAddress, error) {
+	return _Master.Contract.GetActiveVotingPowerProviders(&_Master.CallOpts)
+}
+
+// GetActiveVotingPowerProviders is a free data retrieval call binding the contract method 0xfda10c48.
+//
+// Solidity: function getActiveVotingPowerProviders() view returns((address,uint64)[])
+func (_Master *MasterCallerSession) GetActiveVotingPowerProviders() ([]IMasterConfigProviderCrossChainAddress, error) {
+	return _Master.Contract.GetActiveVotingPowerProviders(&_Master.CallOpts)
+}
+
+// GetActiveVotingPowerProvidersAt is a free data retrieval call binding the contract method 0xd74bc508.
+//
+// Solidity: function getActiveVotingPowerProvidersAt(uint48 timestamp, bytes[] hints) view returns((address,uint64)[])
+func (_Master *MasterCaller) GetActiveVotingPowerProvidersAt(opts *bind.CallOpts, timestamp *big.Int, hints [][]byte) ([]IMasterConfigProviderCrossChainAddress, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getActiveVotingPowerProvidersAt", timestamp, hints)
+
+	if err != nil {
+		return *new([]IMasterConfigProviderCrossChainAddress), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]IMasterConfigProviderCrossChainAddress)).(*[]IMasterConfigProviderCrossChainAddress)
+
+	return out0, err
+
+}
+
+// GetActiveVotingPowerProvidersAt is a free data retrieval call binding the contract method 0xd74bc508.
+//
+// Solidity: function getActiveVotingPowerProvidersAt(uint48 timestamp, bytes[] hints) view returns((address,uint64)[])
+func (_Master *MasterSession) GetActiveVotingPowerProvidersAt(timestamp *big.Int, hints [][]byte) ([]IMasterConfigProviderCrossChainAddress, error) {
+	return _Master.Contract.GetActiveVotingPowerProvidersAt(&_Master.CallOpts, timestamp, hints)
+}
+
+// GetActiveVotingPowerProvidersAt is a free data retrieval call binding the contract method 0xd74bc508.
+//
+// Solidity: function getActiveVotingPowerProvidersAt(uint48 timestamp, bytes[] hints) view returns((address,uint64)[])
+func (_Master *MasterCallerSession) GetActiveVotingPowerProvidersAt(timestamp *big.Int, hints [][]byte) ([]IMasterConfigProviderCrossChainAddress, error) {
+	return _Master.Contract.GetActiveVotingPowerProvidersAt(&_Master.CallOpts, timestamp, hints)
 }
 
 // GetCaptureTimestamp is a free data retrieval call binding the contract method 0xdb3adf12.
@@ -1018,6 +1142,37 @@ func (_Master *MasterCallerSession) GetCurrentPhase() (uint8, error) {
 	return _Master.Contract.GetCurrentPhase(&_Master.CallOpts)
 }
 
+// GetCurrentValSetEpoch is a free data retrieval call binding the contract method 0xbb72f2e8.
+//
+// Solidity: function getCurrentValSetEpoch() view returns(uint48)
+func (_Master *MasterCaller) GetCurrentValSetEpoch(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getCurrentValSetEpoch")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetCurrentValSetEpoch is a free data retrieval call binding the contract method 0xbb72f2e8.
+//
+// Solidity: function getCurrentValSetEpoch() view returns(uint48)
+func (_Master *MasterSession) GetCurrentValSetEpoch() (*big.Int, error) {
+	return _Master.Contract.GetCurrentValSetEpoch(&_Master.CallOpts)
+}
+
+// GetCurrentValSetEpoch is a free data retrieval call binding the contract method 0xbb72f2e8.
+//
+// Solidity: function getCurrentValSetEpoch() view returns(uint48)
+func (_Master *MasterCallerSession) GetCurrentValSetEpoch() (*big.Int, error) {
+	return _Master.Contract.GetCurrentValSetEpoch(&_Master.CallOpts)
+}
+
 // GetCurrentValSetTimestamp is a free data retrieval call binding the contract method 0x1bd046bb.
 //
 // Solidity: function getCurrentValSetTimestamp() view returns(uint48)
@@ -1204,18 +1359,80 @@ func (_Master *MasterCallerSession) GetExtraDataFromValSetHeaderAt(epoch *big.In
 	return _Master.Contract.GetExtraDataFromValSetHeaderAt(&_Master.CallOpts, epoch)
 }
 
+// GetKeysProvider is a free data retrieval call binding the contract method 0x297d29b8.
+//
+// Solidity: function getKeysProvider() view returns((address,uint64))
+func (_Master *MasterCaller) GetKeysProvider(opts *bind.CallOpts) (IMasterConfigProviderCrossChainAddress, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getKeysProvider")
+
+	if err != nil {
+		return *new(IMasterConfigProviderCrossChainAddress), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(IMasterConfigProviderCrossChainAddress)).(*IMasterConfigProviderCrossChainAddress)
+
+	return out0, err
+
+}
+
+// GetKeysProvider is a free data retrieval call binding the contract method 0x297d29b8.
+//
+// Solidity: function getKeysProvider() view returns((address,uint64))
+func (_Master *MasterSession) GetKeysProvider() (IMasterConfigProviderCrossChainAddress, error) {
+	return _Master.Contract.GetKeysProvider(&_Master.CallOpts)
+}
+
+// GetKeysProvider is a free data retrieval call binding the contract method 0x297d29b8.
+//
+// Solidity: function getKeysProvider() view returns((address,uint64))
+func (_Master *MasterCallerSession) GetKeysProvider() (IMasterConfigProviderCrossChainAddress, error) {
+	return _Master.Contract.GetKeysProvider(&_Master.CallOpts)
+}
+
+// GetKeysProviderAt is a free data retrieval call binding the contract method 0xb405b818.
+//
+// Solidity: function getKeysProviderAt(uint48 timestamp, bytes hint) view returns((address,uint64))
+func (_Master *MasterCaller) GetKeysProviderAt(opts *bind.CallOpts, timestamp *big.Int, hint []byte) (IMasterConfigProviderCrossChainAddress, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getKeysProviderAt", timestamp, hint)
+
+	if err != nil {
+		return *new(IMasterConfigProviderCrossChainAddress), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(IMasterConfigProviderCrossChainAddress)).(*IMasterConfigProviderCrossChainAddress)
+
+	return out0, err
+
+}
+
+// GetKeysProviderAt is a free data retrieval call binding the contract method 0xb405b818.
+//
+// Solidity: function getKeysProviderAt(uint48 timestamp, bytes hint) view returns((address,uint64))
+func (_Master *MasterSession) GetKeysProviderAt(timestamp *big.Int, hint []byte) (IMasterConfigProviderCrossChainAddress, error) {
+	return _Master.Contract.GetKeysProviderAt(&_Master.CallOpts, timestamp, hint)
+}
+
+// GetKeysProviderAt is a free data retrieval call binding the contract method 0xb405b818.
+//
+// Solidity: function getKeysProviderAt(uint48 timestamp, bytes hint) view returns((address,uint64))
+func (_Master *MasterCallerSession) GetKeysProviderAt(timestamp *big.Int, hint []byte) (IMasterConfigProviderCrossChainAddress, error) {
+	return _Master.Contract.GetKeysProviderAt(&_Master.CallOpts, timestamp, hint)
+}
+
 // GetMasterConfig is a free data retrieval call binding the contract method 0x063c0c5c.
 //
 // Solidity: function getMasterConfig() view returns(((address,uint64)[],(address,uint64),(address,uint64)[]))
-func (_Master *MasterCaller) GetMasterConfig(opts *bind.CallOpts) (IMasterConfigManagerMasterConfig, error) {
+func (_Master *MasterCaller) GetMasterConfig(opts *bind.CallOpts) (IMasterConfigProviderMasterConfig, error) {
 	var out []interface{}
 	err := _Master.contract.Call(opts, &out, "getMasterConfig")
 
 	if err != nil {
-		return *new(IMasterConfigManagerMasterConfig), err
+		return *new(IMasterConfigProviderMasterConfig), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(IMasterConfigManagerMasterConfig)).(*IMasterConfigManagerMasterConfig)
+	out0 := *abi.ConvertType(out[0], new(IMasterConfigProviderMasterConfig)).(*IMasterConfigProviderMasterConfig)
 
 	return out0, err
 
@@ -1224,29 +1441,29 @@ func (_Master *MasterCaller) GetMasterConfig(opts *bind.CallOpts) (IMasterConfig
 // GetMasterConfig is a free data retrieval call binding the contract method 0x063c0c5c.
 //
 // Solidity: function getMasterConfig() view returns(((address,uint64)[],(address,uint64),(address,uint64)[]))
-func (_Master *MasterSession) GetMasterConfig() (IMasterConfigManagerMasterConfig, error) {
+func (_Master *MasterSession) GetMasterConfig() (IMasterConfigProviderMasterConfig, error) {
 	return _Master.Contract.GetMasterConfig(&_Master.CallOpts)
 }
 
 // GetMasterConfig is a free data retrieval call binding the contract method 0x063c0c5c.
 //
 // Solidity: function getMasterConfig() view returns(((address,uint64)[],(address,uint64),(address,uint64)[]))
-func (_Master *MasterCallerSession) GetMasterConfig() (IMasterConfigManagerMasterConfig, error) {
+func (_Master *MasterCallerSession) GetMasterConfig() (IMasterConfigProviderMasterConfig, error) {
 	return _Master.Contract.GetMasterConfig(&_Master.CallOpts)
 }
 
 // GetMasterConfigAt is a free data retrieval call binding the contract method 0x9288968d.
 //
 // Solidity: function getMasterConfigAt(uint48 timestamp, bytes hints) view returns(((address,uint64)[],(address,uint64),(address,uint64)[]))
-func (_Master *MasterCaller) GetMasterConfigAt(opts *bind.CallOpts, timestamp *big.Int, hints []byte) (IMasterConfigManagerMasterConfig, error) {
+func (_Master *MasterCaller) GetMasterConfigAt(opts *bind.CallOpts, timestamp *big.Int, hints []byte) (IMasterConfigProviderMasterConfig, error) {
 	var out []interface{}
 	err := _Master.contract.Call(opts, &out, "getMasterConfigAt", timestamp, hints)
 
 	if err != nil {
-		return *new(IMasterConfigManagerMasterConfig), err
+		return *new(IMasterConfigProviderMasterConfig), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(IMasterConfigManagerMasterConfig)).(*IMasterConfigManagerMasterConfig)
+	out0 := *abi.ConvertType(out[0], new(IMasterConfigProviderMasterConfig)).(*IMasterConfigProviderMasterConfig)
 
 	return out0, err
 
@@ -1255,15 +1472,201 @@ func (_Master *MasterCaller) GetMasterConfigAt(opts *bind.CallOpts, timestamp *b
 // GetMasterConfigAt is a free data retrieval call binding the contract method 0x9288968d.
 //
 // Solidity: function getMasterConfigAt(uint48 timestamp, bytes hints) view returns(((address,uint64)[],(address,uint64),(address,uint64)[]))
-func (_Master *MasterSession) GetMasterConfigAt(timestamp *big.Int, hints []byte) (IMasterConfigManagerMasterConfig, error) {
+func (_Master *MasterSession) GetMasterConfigAt(timestamp *big.Int, hints []byte) (IMasterConfigProviderMasterConfig, error) {
 	return _Master.Contract.GetMasterConfigAt(&_Master.CallOpts, timestamp, hints)
 }
 
 // GetMasterConfigAt is a free data retrieval call binding the contract method 0x9288968d.
 //
 // Solidity: function getMasterConfigAt(uint48 timestamp, bytes hints) view returns(((address,uint64)[],(address,uint64),(address,uint64)[]))
-func (_Master *MasterCallerSession) GetMasterConfigAt(timestamp *big.Int, hints []byte) (IMasterConfigManagerMasterConfig, error) {
+func (_Master *MasterCallerSession) GetMasterConfigAt(timestamp *big.Int, hints []byte) (IMasterConfigProviderMasterConfig, error) {
 	return _Master.Contract.GetMasterConfigAt(&_Master.CallOpts, timestamp, hints)
+}
+
+// GetMaxValidatorsCount is a free data retrieval call binding the contract method 0x06ce894d.
+//
+// Solidity: function getMaxValidatorsCount() view returns(uint256)
+func (_Master *MasterCaller) GetMaxValidatorsCount(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getMaxValidatorsCount")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetMaxValidatorsCount is a free data retrieval call binding the contract method 0x06ce894d.
+//
+// Solidity: function getMaxValidatorsCount() view returns(uint256)
+func (_Master *MasterSession) GetMaxValidatorsCount() (*big.Int, error) {
+	return _Master.Contract.GetMaxValidatorsCount(&_Master.CallOpts)
+}
+
+// GetMaxValidatorsCount is a free data retrieval call binding the contract method 0x06ce894d.
+//
+// Solidity: function getMaxValidatorsCount() view returns(uint256)
+func (_Master *MasterCallerSession) GetMaxValidatorsCount() (*big.Int, error) {
+	return _Master.Contract.GetMaxValidatorsCount(&_Master.CallOpts)
+}
+
+// GetMaxValidatorsCountAt is a free data retrieval call binding the contract method 0x2e1f3b08.
+//
+// Solidity: function getMaxValidatorsCountAt(uint48 timestamp, bytes hint) view returns(uint256)
+func (_Master *MasterCaller) GetMaxValidatorsCountAt(opts *bind.CallOpts, timestamp *big.Int, hint []byte) (*big.Int, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getMaxValidatorsCountAt", timestamp, hint)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetMaxValidatorsCountAt is a free data retrieval call binding the contract method 0x2e1f3b08.
+//
+// Solidity: function getMaxValidatorsCountAt(uint48 timestamp, bytes hint) view returns(uint256)
+func (_Master *MasterSession) GetMaxValidatorsCountAt(timestamp *big.Int, hint []byte) (*big.Int, error) {
+	return _Master.Contract.GetMaxValidatorsCountAt(&_Master.CallOpts, timestamp, hint)
+}
+
+// GetMaxValidatorsCountAt is a free data retrieval call binding the contract method 0x2e1f3b08.
+//
+// Solidity: function getMaxValidatorsCountAt(uint48 timestamp, bytes hint) view returns(uint256)
+func (_Master *MasterCallerSession) GetMaxValidatorsCountAt(timestamp *big.Int, hint []byte) (*big.Int, error) {
+	return _Master.Contract.GetMaxValidatorsCountAt(&_Master.CallOpts, timestamp, hint)
+}
+
+// GetMaxVotingPower is a free data retrieval call binding the contract method 0x9f9c3080.
+//
+// Solidity: function getMaxVotingPower() view returns(uint256)
+func (_Master *MasterCaller) GetMaxVotingPower(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getMaxVotingPower")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetMaxVotingPower is a free data retrieval call binding the contract method 0x9f9c3080.
+//
+// Solidity: function getMaxVotingPower() view returns(uint256)
+func (_Master *MasterSession) GetMaxVotingPower() (*big.Int, error) {
+	return _Master.Contract.GetMaxVotingPower(&_Master.CallOpts)
+}
+
+// GetMaxVotingPower is a free data retrieval call binding the contract method 0x9f9c3080.
+//
+// Solidity: function getMaxVotingPower() view returns(uint256)
+func (_Master *MasterCallerSession) GetMaxVotingPower() (*big.Int, error) {
+	return _Master.Contract.GetMaxVotingPower(&_Master.CallOpts)
+}
+
+// GetMaxVotingPowerAt is a free data retrieval call binding the contract method 0xab94b4e6.
+//
+// Solidity: function getMaxVotingPowerAt(uint48 timestamp, bytes hint) view returns(uint256)
+func (_Master *MasterCaller) GetMaxVotingPowerAt(opts *bind.CallOpts, timestamp *big.Int, hint []byte) (*big.Int, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getMaxVotingPowerAt", timestamp, hint)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetMaxVotingPowerAt is a free data retrieval call binding the contract method 0xab94b4e6.
+//
+// Solidity: function getMaxVotingPowerAt(uint48 timestamp, bytes hint) view returns(uint256)
+func (_Master *MasterSession) GetMaxVotingPowerAt(timestamp *big.Int, hint []byte) (*big.Int, error) {
+	return _Master.Contract.GetMaxVotingPowerAt(&_Master.CallOpts, timestamp, hint)
+}
+
+// GetMaxVotingPowerAt is a free data retrieval call binding the contract method 0xab94b4e6.
+//
+// Solidity: function getMaxVotingPowerAt(uint48 timestamp, bytes hint) view returns(uint256)
+func (_Master *MasterCallerSession) GetMaxVotingPowerAt(timestamp *big.Int, hint []byte) (*big.Int, error) {
+	return _Master.Contract.GetMaxVotingPowerAt(&_Master.CallOpts, timestamp, hint)
+}
+
+// GetMinInclusionVotingPower is a free data retrieval call binding the contract method 0xb6a94695.
+//
+// Solidity: function getMinInclusionVotingPower() view returns(uint256)
+func (_Master *MasterCaller) GetMinInclusionVotingPower(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getMinInclusionVotingPower")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetMinInclusionVotingPower is a free data retrieval call binding the contract method 0xb6a94695.
+//
+// Solidity: function getMinInclusionVotingPower() view returns(uint256)
+func (_Master *MasterSession) GetMinInclusionVotingPower() (*big.Int, error) {
+	return _Master.Contract.GetMinInclusionVotingPower(&_Master.CallOpts)
+}
+
+// GetMinInclusionVotingPower is a free data retrieval call binding the contract method 0xb6a94695.
+//
+// Solidity: function getMinInclusionVotingPower() view returns(uint256)
+func (_Master *MasterCallerSession) GetMinInclusionVotingPower() (*big.Int, error) {
+	return _Master.Contract.GetMinInclusionVotingPower(&_Master.CallOpts)
+}
+
+// GetMinInclusionVotingPowerAt is a free data retrieval call binding the contract method 0x02c2b11f.
+//
+// Solidity: function getMinInclusionVotingPowerAt(uint48 timestamp, bytes hint) view returns(uint256)
+func (_Master *MasterCaller) GetMinInclusionVotingPowerAt(opts *bind.CallOpts, timestamp *big.Int, hint []byte) (*big.Int, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getMinInclusionVotingPowerAt", timestamp, hint)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetMinInclusionVotingPowerAt is a free data retrieval call binding the contract method 0x02c2b11f.
+//
+// Solidity: function getMinInclusionVotingPowerAt(uint48 timestamp, bytes hint) view returns(uint256)
+func (_Master *MasterSession) GetMinInclusionVotingPowerAt(timestamp *big.Int, hint []byte) (*big.Int, error) {
+	return _Master.Contract.GetMinInclusionVotingPowerAt(&_Master.CallOpts, timestamp, hint)
+}
+
+// GetMinInclusionVotingPowerAt is a free data retrieval call binding the contract method 0x02c2b11f.
+//
+// Solidity: function getMinInclusionVotingPowerAt(uint48 timestamp, bytes hint) view returns(uint256)
+func (_Master *MasterCallerSession) GetMinInclusionVotingPowerAt(timestamp *big.Int, hint []byte) (*big.Int, error) {
+	return _Master.Contract.GetMinInclusionVotingPowerAt(&_Master.CallOpts, timestamp, hint)
 }
 
 // GetNextEpoch is a free data retrieval call binding the contract method 0xefe97d05.
@@ -1450,6 +1853,68 @@ func (_Master *MasterSession) GetRequiredKeyTagAt(epoch *big.Int, hint []byte) (
 // Solidity: function getRequiredKeyTagAt(uint48 epoch, bytes hint) view returns(uint8)
 func (_Master *MasterCallerSession) GetRequiredKeyTagAt(epoch *big.Int, hint []byte) (uint8, error) {
 	return _Master.Contract.GetRequiredKeyTagAt(&_Master.CallOpts, epoch, hint)
+}
+
+// GetRequiredKeyTags is a free data retrieval call binding the contract method 0xf9bfa78a.
+//
+// Solidity: function getRequiredKeyTags() view returns(uint8[] requiredKeyTags)
+func (_Master *MasterCaller) GetRequiredKeyTags(opts *bind.CallOpts) ([]uint8, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getRequiredKeyTags")
+
+	if err != nil {
+		return *new([]uint8), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]uint8)).(*[]uint8)
+
+	return out0, err
+
+}
+
+// GetRequiredKeyTags is a free data retrieval call binding the contract method 0xf9bfa78a.
+//
+// Solidity: function getRequiredKeyTags() view returns(uint8[] requiredKeyTags)
+func (_Master *MasterSession) GetRequiredKeyTags() ([]uint8, error) {
+	return _Master.Contract.GetRequiredKeyTags(&_Master.CallOpts)
+}
+
+// GetRequiredKeyTags is a free data retrieval call binding the contract method 0xf9bfa78a.
+//
+// Solidity: function getRequiredKeyTags() view returns(uint8[] requiredKeyTags)
+func (_Master *MasterCallerSession) GetRequiredKeyTags() ([]uint8, error) {
+	return _Master.Contract.GetRequiredKeyTags(&_Master.CallOpts)
+}
+
+// GetRequiredKeyTagsAt is a free data retrieval call binding the contract method 0x6803a63e.
+//
+// Solidity: function getRequiredKeyTagsAt(uint48 timestamp, bytes hint) view returns(uint8[] requiredKeyTags)
+func (_Master *MasterCaller) GetRequiredKeyTagsAt(opts *bind.CallOpts, timestamp *big.Int, hint []byte) ([]uint8, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getRequiredKeyTagsAt", timestamp, hint)
+
+	if err != nil {
+		return *new([]uint8), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]uint8)).(*[]uint8)
+
+	return out0, err
+
+}
+
+// GetRequiredKeyTagsAt is a free data retrieval call binding the contract method 0x6803a63e.
+//
+// Solidity: function getRequiredKeyTagsAt(uint48 timestamp, bytes hint) view returns(uint8[] requiredKeyTags)
+func (_Master *MasterSession) GetRequiredKeyTagsAt(timestamp *big.Int, hint []byte) ([]uint8, error) {
+	return _Master.Contract.GetRequiredKeyTagsAt(&_Master.CallOpts, timestamp, hint)
+}
+
+// GetRequiredKeyTagsAt is a free data retrieval call binding the contract method 0x6803a63e.
+//
+// Solidity: function getRequiredKeyTagsAt(uint48 timestamp, bytes hint) view returns(uint8[] requiredKeyTags)
+func (_Master *MasterCallerSession) GetRequiredKeyTagsAt(timestamp *big.Int, hint []byte) ([]uint8, error) {
+	return _Master.Contract.GetRequiredKeyTagsAt(&_Master.CallOpts, timestamp, hint)
 }
 
 // GetRole is a free data retrieval call binding the contract method 0xa846156d.
@@ -1641,15 +2106,15 @@ func (_Master *MasterCallerSession) GetTotalActiveVotingPowerFromValSetHeaderAt(
 // GetValSetConfig is a free data retrieval call binding the contract method 0x991bac99.
 //
 // Solidity: function getValSetConfig() view returns((uint256,uint256,uint256,uint8[]))
-func (_Master *MasterCaller) GetValSetConfig(opts *bind.CallOpts) (IValSetConfigManagerValSetConfig, error) {
+func (_Master *MasterCaller) GetValSetConfig(opts *bind.CallOpts) (IValSetConfigProviderValSetConfig, error) {
 	var out []interface{}
 	err := _Master.contract.Call(opts, &out, "getValSetConfig")
 
 	if err != nil {
-		return *new(IValSetConfigManagerValSetConfig), err
+		return *new(IValSetConfigProviderValSetConfig), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(IValSetConfigManagerValSetConfig)).(*IValSetConfigManagerValSetConfig)
+	out0 := *abi.ConvertType(out[0], new(IValSetConfigProviderValSetConfig)).(*IValSetConfigProviderValSetConfig)
 
 	return out0, err
 
@@ -1658,29 +2123,29 @@ func (_Master *MasterCaller) GetValSetConfig(opts *bind.CallOpts) (IValSetConfig
 // GetValSetConfig is a free data retrieval call binding the contract method 0x991bac99.
 //
 // Solidity: function getValSetConfig() view returns((uint256,uint256,uint256,uint8[]))
-func (_Master *MasterSession) GetValSetConfig() (IValSetConfigManagerValSetConfig, error) {
+func (_Master *MasterSession) GetValSetConfig() (IValSetConfigProviderValSetConfig, error) {
 	return _Master.Contract.GetValSetConfig(&_Master.CallOpts)
 }
 
 // GetValSetConfig is a free data retrieval call binding the contract method 0x991bac99.
 //
 // Solidity: function getValSetConfig() view returns((uint256,uint256,uint256,uint8[]))
-func (_Master *MasterCallerSession) GetValSetConfig() (IValSetConfigManagerValSetConfig, error) {
+func (_Master *MasterCallerSession) GetValSetConfig() (IValSetConfigProviderValSetConfig, error) {
 	return _Master.Contract.GetValSetConfig(&_Master.CallOpts)
 }
 
 // GetValSetConfigAt is a free data retrieval call binding the contract method 0x9029c8fe.
 //
 // Solidity: function getValSetConfigAt(uint48 timestamp, bytes hints) view returns((uint256,uint256,uint256,uint8[]))
-func (_Master *MasterCaller) GetValSetConfigAt(opts *bind.CallOpts, timestamp *big.Int, hints []byte) (IValSetConfigManagerValSetConfig, error) {
+func (_Master *MasterCaller) GetValSetConfigAt(opts *bind.CallOpts, timestamp *big.Int, hints []byte) (IValSetConfigProviderValSetConfig, error) {
 	var out []interface{}
 	err := _Master.contract.Call(opts, &out, "getValSetConfigAt", timestamp, hints)
 
 	if err != nil {
-		return *new(IValSetConfigManagerValSetConfig), err
+		return *new(IValSetConfigProviderValSetConfig), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(IValSetConfigManagerValSetConfig)).(*IValSetConfigManagerValSetConfig)
+	out0 := *abi.ConvertType(out[0], new(IValSetConfigProviderValSetConfig)).(*IValSetConfigProviderValSetConfig)
 
 	return out0, err
 
@@ -1689,29 +2154,29 @@ func (_Master *MasterCaller) GetValSetConfigAt(opts *bind.CallOpts, timestamp *b
 // GetValSetConfigAt is a free data retrieval call binding the contract method 0x9029c8fe.
 //
 // Solidity: function getValSetConfigAt(uint48 timestamp, bytes hints) view returns((uint256,uint256,uint256,uint8[]))
-func (_Master *MasterSession) GetValSetConfigAt(timestamp *big.Int, hints []byte) (IValSetConfigManagerValSetConfig, error) {
+func (_Master *MasterSession) GetValSetConfigAt(timestamp *big.Int, hints []byte) (IValSetConfigProviderValSetConfig, error) {
 	return _Master.Contract.GetValSetConfigAt(&_Master.CallOpts, timestamp, hints)
 }
 
 // GetValSetConfigAt is a free data retrieval call binding the contract method 0x9029c8fe.
 //
 // Solidity: function getValSetConfigAt(uint48 timestamp, bytes hints) view returns((uint256,uint256,uint256,uint8[]))
-func (_Master *MasterCallerSession) GetValSetConfigAt(timestamp *big.Int, hints []byte) (IValSetConfigManagerValSetConfig, error) {
+func (_Master *MasterCallerSession) GetValSetConfigAt(timestamp *big.Int, hints []byte) (IValSetConfigProviderValSetConfig, error) {
 	return _Master.Contract.GetValSetConfigAt(&_Master.CallOpts, timestamp, hints)
 }
 
 // GetValSetHeader is a free data retrieval call binding the contract method 0xadc91fc8.
 //
 // Solidity: function getValSetHeader() view returns((uint8,(uint8,bytes)[],uint256,bytes32,bytes) header)
-func (_Master *MasterCaller) GetValSetHeader(opts *bind.CallOpts) (ISettlementManagerValSetHeader, error) {
+func (_Master *MasterCaller) GetValSetHeader(opts *bind.CallOpts) (ISettlementValSetHeader, error) {
 	var out []interface{}
 	err := _Master.contract.Call(opts, &out, "getValSetHeader")
 
 	if err != nil {
-		return *new(ISettlementManagerValSetHeader), err
+		return *new(ISettlementValSetHeader), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(ISettlementManagerValSetHeader)).(*ISettlementManagerValSetHeader)
+	out0 := *abi.ConvertType(out[0], new(ISettlementValSetHeader)).(*ISettlementValSetHeader)
 
 	return out0, err
 
@@ -1720,29 +2185,29 @@ func (_Master *MasterCaller) GetValSetHeader(opts *bind.CallOpts) (ISettlementMa
 // GetValSetHeader is a free data retrieval call binding the contract method 0xadc91fc8.
 //
 // Solidity: function getValSetHeader() view returns((uint8,(uint8,bytes)[],uint256,bytes32,bytes) header)
-func (_Master *MasterSession) GetValSetHeader() (ISettlementManagerValSetHeader, error) {
+func (_Master *MasterSession) GetValSetHeader() (ISettlementValSetHeader, error) {
 	return _Master.Contract.GetValSetHeader(&_Master.CallOpts)
 }
 
 // GetValSetHeader is a free data retrieval call binding the contract method 0xadc91fc8.
 //
 // Solidity: function getValSetHeader() view returns((uint8,(uint8,bytes)[],uint256,bytes32,bytes) header)
-func (_Master *MasterCallerSession) GetValSetHeader() (ISettlementManagerValSetHeader, error) {
+func (_Master *MasterCallerSession) GetValSetHeader() (ISettlementValSetHeader, error) {
 	return _Master.Contract.GetValSetHeader(&_Master.CallOpts)
 }
 
 // GetValSetHeaderAt is a free data retrieval call binding the contract method 0x4addaee7.
 //
 // Solidity: function getValSetHeaderAt(uint48 epoch) view returns((uint8,(uint8,bytes)[],uint256,bytes32,bytes))
-func (_Master *MasterCaller) GetValSetHeaderAt(opts *bind.CallOpts, epoch *big.Int) (ISettlementManagerValSetHeader, error) {
+func (_Master *MasterCaller) GetValSetHeaderAt(opts *bind.CallOpts, epoch *big.Int) (ISettlementValSetHeader, error) {
 	var out []interface{}
 	err := _Master.contract.Call(opts, &out, "getValSetHeaderAt", epoch)
 
 	if err != nil {
-		return *new(ISettlementManagerValSetHeader), err
+		return *new(ISettlementValSetHeader), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(ISettlementManagerValSetHeader)).(*ISettlementManagerValSetHeader)
+	out0 := *abi.ConvertType(out[0], new(ISettlementValSetHeader)).(*ISettlementValSetHeader)
 
 	return out0, err
 
@@ -1751,14 +2216,14 @@ func (_Master *MasterCaller) GetValSetHeaderAt(opts *bind.CallOpts, epoch *big.I
 // GetValSetHeaderAt is a free data retrieval call binding the contract method 0x4addaee7.
 //
 // Solidity: function getValSetHeaderAt(uint48 epoch) view returns((uint8,(uint8,bytes)[],uint256,bytes32,bytes))
-func (_Master *MasterSession) GetValSetHeaderAt(epoch *big.Int) (ISettlementManagerValSetHeader, error) {
+func (_Master *MasterSession) GetValSetHeaderAt(epoch *big.Int) (ISettlementValSetHeader, error) {
 	return _Master.Contract.GetValSetHeaderAt(&_Master.CallOpts, epoch)
 }
 
 // GetValSetHeaderAt is a free data retrieval call binding the contract method 0x4addaee7.
 //
 // Solidity: function getValSetHeaderAt(uint48 epoch) view returns((uint8,(uint8,bytes)[],uint256,bytes32,bytes))
-func (_Master *MasterCallerSession) GetValSetHeaderAt(epoch *big.Int) (ISettlementManagerValSetHeader, error) {
+func (_Master *MasterCallerSession) GetValSetHeaderAt(epoch *big.Int) (ISettlementValSetHeader, error) {
 	return _Master.Contract.GetValSetHeaderAt(&_Master.CallOpts, epoch)
 }
 
@@ -1948,12 +2413,12 @@ func (_Master *MasterCallerSession) HashTypedDataV4(structHash [32]byte) ([32]by
 	return _Master.Contract.HashTypedDataV4(&_Master.CallOpts, structHash)
 }
 
-// HashTypedDataV4Multichain is a free data retrieval call binding the contract method 0x0cef4489.
+// HashTypedDataV4CrossChain is a free data retrieval call binding the contract method 0x518dcf3b.
 //
-// Solidity: function hashTypedDataV4Multichain(bytes32 structHash) view returns(bytes32)
-func (_Master *MasterCaller) HashTypedDataV4Multichain(opts *bind.CallOpts, structHash [32]byte) ([32]byte, error) {
+// Solidity: function hashTypedDataV4CrossChain(bytes32 structHash) view returns(bytes32)
+func (_Master *MasterCaller) HashTypedDataV4CrossChain(opts *bind.CallOpts, structHash [32]byte) ([32]byte, error) {
 	var out []interface{}
-	err := _Master.contract.Call(opts, &out, "hashTypedDataV4Multichain", structHash)
+	err := _Master.contract.Call(opts, &out, "hashTypedDataV4CrossChain", structHash)
 
 	if err != nil {
 		return *new([32]byte), err
@@ -1965,18 +2430,80 @@ func (_Master *MasterCaller) HashTypedDataV4Multichain(opts *bind.CallOpts, stru
 
 }
 
-// HashTypedDataV4Multichain is a free data retrieval call binding the contract method 0x0cef4489.
+// HashTypedDataV4CrossChain is a free data retrieval call binding the contract method 0x518dcf3b.
 //
-// Solidity: function hashTypedDataV4Multichain(bytes32 structHash) view returns(bytes32)
-func (_Master *MasterSession) HashTypedDataV4Multichain(structHash [32]byte) ([32]byte, error) {
-	return _Master.Contract.HashTypedDataV4Multichain(&_Master.CallOpts, structHash)
+// Solidity: function hashTypedDataV4CrossChain(bytes32 structHash) view returns(bytes32)
+func (_Master *MasterSession) HashTypedDataV4CrossChain(structHash [32]byte) ([32]byte, error) {
+	return _Master.Contract.HashTypedDataV4CrossChain(&_Master.CallOpts, structHash)
 }
 
-// HashTypedDataV4Multichain is a free data retrieval call binding the contract method 0x0cef4489.
+// HashTypedDataV4CrossChain is a free data retrieval call binding the contract method 0x518dcf3b.
 //
-// Solidity: function hashTypedDataV4Multichain(bytes32 structHash) view returns(bytes32)
-func (_Master *MasterCallerSession) HashTypedDataV4Multichain(structHash [32]byte) ([32]byte, error) {
-	return _Master.Contract.HashTypedDataV4Multichain(&_Master.CallOpts, structHash)
+// Solidity: function hashTypedDataV4CrossChain(bytes32 structHash) view returns(bytes32)
+func (_Master *MasterCallerSession) HashTypedDataV4CrossChain(structHash [32]byte) ([32]byte, error) {
+	return _Master.Contract.HashTypedDataV4CrossChain(&_Master.CallOpts, structHash)
+}
+
+// IsReplicaActive is a free data retrieval call binding the contract method 0x545ae7bb.
+//
+// Solidity: function isReplicaActive((address,uint64) replica) view returns(bool)
+func (_Master *MasterCaller) IsReplicaActive(opts *bind.CallOpts, replica IMasterConfigProviderCrossChainAddress) (bool, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "isReplicaActive", replica)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsReplicaActive is a free data retrieval call binding the contract method 0x545ae7bb.
+//
+// Solidity: function isReplicaActive((address,uint64) replica) view returns(bool)
+func (_Master *MasterSession) IsReplicaActive(replica IMasterConfigProviderCrossChainAddress) (bool, error) {
+	return _Master.Contract.IsReplicaActive(&_Master.CallOpts, replica)
+}
+
+// IsReplicaActive is a free data retrieval call binding the contract method 0x545ae7bb.
+//
+// Solidity: function isReplicaActive((address,uint64) replica) view returns(bool)
+func (_Master *MasterCallerSession) IsReplicaActive(replica IMasterConfigProviderCrossChainAddress) (bool, error) {
+	return _Master.Contract.IsReplicaActive(&_Master.CallOpts, replica)
+}
+
+// IsReplicaActiveAt is a free data retrieval call binding the contract method 0x53cd1864.
+//
+// Solidity: function isReplicaActiveAt((address,uint64) replica, uint48 timestamp, bytes hint) view returns(bool)
+func (_Master *MasterCaller) IsReplicaActiveAt(opts *bind.CallOpts, replica IMasterConfigProviderCrossChainAddress, timestamp *big.Int, hint []byte) (bool, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "isReplicaActiveAt", replica, timestamp, hint)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsReplicaActiveAt is a free data retrieval call binding the contract method 0x53cd1864.
+//
+// Solidity: function isReplicaActiveAt((address,uint64) replica, uint48 timestamp, bytes hint) view returns(bool)
+func (_Master *MasterSession) IsReplicaActiveAt(replica IMasterConfigProviderCrossChainAddress, timestamp *big.Int, hint []byte) (bool, error) {
+	return _Master.Contract.IsReplicaActiveAt(&_Master.CallOpts, replica, timestamp, hint)
+}
+
+// IsReplicaActiveAt is a free data retrieval call binding the contract method 0x53cd1864.
+//
+// Solidity: function isReplicaActiveAt((address,uint64) replica, uint48 timestamp, bytes hint) view returns(bool)
+func (_Master *MasterCallerSession) IsReplicaActiveAt(replica IMasterConfigProviderCrossChainAddress, timestamp *big.Int, hint []byte) (bool, error) {
+	return _Master.Contract.IsReplicaActiveAt(&_Master.CallOpts, replica, timestamp, hint)
 }
 
 // IsValSetHeaderSubmitted is a free data retrieval call binding the contract method 0x29c29c9c.
@@ -2041,6 +2568,68 @@ func (_Master *MasterCallerSession) IsValSetHeaderSubmittedAt(epoch *big.Int) (b
 	return _Master.Contract.IsValSetHeaderSubmittedAt(&_Master.CallOpts, epoch)
 }
 
+// IsVotingPowerProviderActive is a free data retrieval call binding the contract method 0x9290f2de.
+//
+// Solidity: function isVotingPowerProviderActive((address,uint64) votingPowerProvider) view returns(bool)
+func (_Master *MasterCaller) IsVotingPowerProviderActive(opts *bind.CallOpts, votingPowerProvider IMasterConfigProviderCrossChainAddress) (bool, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "isVotingPowerProviderActive", votingPowerProvider)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsVotingPowerProviderActive is a free data retrieval call binding the contract method 0x9290f2de.
+//
+// Solidity: function isVotingPowerProviderActive((address,uint64) votingPowerProvider) view returns(bool)
+func (_Master *MasterSession) IsVotingPowerProviderActive(votingPowerProvider IMasterConfigProviderCrossChainAddress) (bool, error) {
+	return _Master.Contract.IsVotingPowerProviderActive(&_Master.CallOpts, votingPowerProvider)
+}
+
+// IsVotingPowerProviderActive is a free data retrieval call binding the contract method 0x9290f2de.
+//
+// Solidity: function isVotingPowerProviderActive((address,uint64) votingPowerProvider) view returns(bool)
+func (_Master *MasterCallerSession) IsVotingPowerProviderActive(votingPowerProvider IMasterConfigProviderCrossChainAddress) (bool, error) {
+	return _Master.Contract.IsVotingPowerProviderActive(&_Master.CallOpts, votingPowerProvider)
+}
+
+// IsVotingPowerProviderActiveAt is a free data retrieval call binding the contract method 0x01054538.
+//
+// Solidity: function isVotingPowerProviderActiveAt((address,uint64) votingPowerProvider, uint48 timestamp, bytes hint) view returns(bool)
+func (_Master *MasterCaller) IsVotingPowerProviderActiveAt(opts *bind.CallOpts, votingPowerProvider IMasterConfigProviderCrossChainAddress, timestamp *big.Int, hint []byte) (bool, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "isVotingPowerProviderActiveAt", votingPowerProvider, timestamp, hint)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsVotingPowerProviderActiveAt is a free data retrieval call binding the contract method 0x01054538.
+//
+// Solidity: function isVotingPowerProviderActiveAt((address,uint64) votingPowerProvider, uint48 timestamp, bytes hint) view returns(bool)
+func (_Master *MasterSession) IsVotingPowerProviderActiveAt(votingPowerProvider IMasterConfigProviderCrossChainAddress, timestamp *big.Int, hint []byte) (bool, error) {
+	return _Master.Contract.IsVotingPowerProviderActiveAt(&_Master.CallOpts, votingPowerProvider, timestamp, hint)
+}
+
+// IsVotingPowerProviderActiveAt is a free data retrieval call binding the contract method 0x01054538.
+//
+// Solidity: function isVotingPowerProviderActiveAt((address,uint64) votingPowerProvider, uint48 timestamp, bytes hint) view returns(bool)
+func (_Master *MasterCallerSession) IsVotingPowerProviderActiveAt(votingPowerProvider IMasterConfigProviderCrossChainAddress, timestamp *big.Int, hint []byte) (bool, error) {
+	return _Master.Contract.IsVotingPowerProviderActiveAt(&_Master.CallOpts, votingPowerProvider, timestamp, hint)
+}
+
 // SupportsInterface is a free data retrieval call binding the contract method 0x01ffc9a7.
 //
 // Solidity: function supportsInterface(bytes4 interfaceId) view returns(bool)
@@ -2072,12 +2661,12 @@ func (_Master *MasterCallerSession) SupportsInterface(interfaceId [4]byte) (bool
 	return _Master.Contract.SupportsInterface(&_Master.CallOpts, interfaceId)
 }
 
-// VerifyQuorumSig is a free data retrieval call binding the contract method 0x1789844c.
+// VerifyQuorumSig is a free data retrieval call binding the contract method 0x71ef1c11.
 //
-// Solidity: function verifyQuorumSig(bytes message, uint8 keyTag, uint208 quorumThreshold, bytes proof) view returns(bool)
-func (_Master *MasterCaller) VerifyQuorumSig(opts *bind.CallOpts, message []byte, keyTag uint8, quorumThreshold *big.Int, proof []byte) (bool, error) {
+// Solidity: function verifyQuorumSig(uint48 epoch, bytes message, uint8 keyTag, uint208 quorumThreshold, bytes proof) view returns(bool)
+func (_Master *MasterCaller) VerifyQuorumSig(opts *bind.CallOpts, epoch *big.Int, message []byte, keyTag uint8, quorumThreshold *big.Int, proof []byte) (bool, error) {
 	var out []interface{}
-	err := _Master.contract.Call(opts, &out, "verifyQuorumSig", message, keyTag, quorumThreshold, proof)
+	err := _Master.contract.Call(opts, &out, "verifyQuorumSig", epoch, message, keyTag, quorumThreshold, proof)
 
 	if err != nil {
 		return *new(bool), err
@@ -2089,80 +2678,80 @@ func (_Master *MasterCaller) VerifyQuorumSig(opts *bind.CallOpts, message []byte
 
 }
 
-// VerifyQuorumSig is a free data retrieval call binding the contract method 0x1789844c.
+// VerifyQuorumSig is a free data retrieval call binding the contract method 0x71ef1c11.
 //
-// Solidity: function verifyQuorumSig(bytes message, uint8 keyTag, uint208 quorumThreshold, bytes proof) view returns(bool)
-func (_Master *MasterSession) VerifyQuorumSig(message []byte, keyTag uint8, quorumThreshold *big.Int, proof []byte) (bool, error) {
-	return _Master.Contract.VerifyQuorumSig(&_Master.CallOpts, message, keyTag, quorumThreshold, proof)
+// Solidity: function verifyQuorumSig(uint48 epoch, bytes message, uint8 keyTag, uint208 quorumThreshold, bytes proof) view returns(bool)
+func (_Master *MasterSession) VerifyQuorumSig(epoch *big.Int, message []byte, keyTag uint8, quorumThreshold *big.Int, proof []byte) (bool, error) {
+	return _Master.Contract.VerifyQuorumSig(&_Master.CallOpts, epoch, message, keyTag, quorumThreshold, proof)
 }
 
-// VerifyQuorumSig is a free data retrieval call binding the contract method 0x1789844c.
+// VerifyQuorumSig is a free data retrieval call binding the contract method 0x71ef1c11.
 //
-// Solidity: function verifyQuorumSig(bytes message, uint8 keyTag, uint208 quorumThreshold, bytes proof) view returns(bool)
-func (_Master *MasterCallerSession) VerifyQuorumSig(message []byte, keyTag uint8, quorumThreshold *big.Int, proof []byte) (bool, error) {
-	return _Master.Contract.VerifyQuorumSig(&_Master.CallOpts, message, keyTag, quorumThreshold, proof)
+// Solidity: function verifyQuorumSig(uint48 epoch, bytes message, uint8 keyTag, uint208 quorumThreshold, bytes proof) view returns(bool)
+func (_Master *MasterCallerSession) VerifyQuorumSig(epoch *big.Int, message []byte, keyTag uint8, quorumThreshold *big.Int, proof []byte) (bool, error) {
+	return _Master.Contract.VerifyQuorumSig(&_Master.CallOpts, epoch, message, keyTag, quorumThreshold, proof)
 }
 
 // AddReplica is a paid mutator transaction binding the contract method 0x5c0bc730.
 //
 // Solidity: function addReplica((address,uint64) replica) returns()
-func (_Master *MasterTransactor) AddReplica(opts *bind.TransactOpts, replica IMasterConfigManagerCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterTransactor) AddReplica(opts *bind.TransactOpts, replica IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.contract.Transact(opts, "addReplica", replica)
 }
 
 // AddReplica is a paid mutator transaction binding the contract method 0x5c0bc730.
 //
 // Solidity: function addReplica((address,uint64) replica) returns()
-func (_Master *MasterSession) AddReplica(replica IMasterConfigManagerCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterSession) AddReplica(replica IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.Contract.AddReplica(&_Master.TransactOpts, replica)
 }
 
 // AddReplica is a paid mutator transaction binding the contract method 0x5c0bc730.
 //
 // Solidity: function addReplica((address,uint64) replica) returns()
-func (_Master *MasterTransactorSession) AddReplica(replica IMasterConfigManagerCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterTransactorSession) AddReplica(replica IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.Contract.AddReplica(&_Master.TransactOpts, replica)
 }
 
 // AddVotingPowerProvider is a paid mutator transaction binding the contract method 0x88514824.
 //
 // Solidity: function addVotingPowerProvider((address,uint64) votingPowerProvider) returns()
-func (_Master *MasterTransactor) AddVotingPowerProvider(opts *bind.TransactOpts, votingPowerProvider IMasterConfigManagerCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterTransactor) AddVotingPowerProvider(opts *bind.TransactOpts, votingPowerProvider IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.contract.Transact(opts, "addVotingPowerProvider", votingPowerProvider)
 }
 
 // AddVotingPowerProvider is a paid mutator transaction binding the contract method 0x88514824.
 //
 // Solidity: function addVotingPowerProvider((address,uint64) votingPowerProvider) returns()
-func (_Master *MasterSession) AddVotingPowerProvider(votingPowerProvider IMasterConfigManagerCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterSession) AddVotingPowerProvider(votingPowerProvider IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.Contract.AddVotingPowerProvider(&_Master.TransactOpts, votingPowerProvider)
 }
 
 // AddVotingPowerProvider is a paid mutator transaction binding the contract method 0x88514824.
 //
 // Solidity: function addVotingPowerProvider((address,uint64) votingPowerProvider) returns()
-func (_Master *MasterTransactorSession) AddVotingPowerProvider(votingPowerProvider IMasterConfigManagerCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterTransactorSession) AddVotingPowerProvider(votingPowerProvider IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.Contract.AddVotingPowerProvider(&_Master.TransactOpts, votingPowerProvider)
 }
 
 // CommitValSetHeader is a paid mutator transaction binding the contract method 0x81408a08.
 //
 // Solidity: function commitValSetHeader((uint8,(uint8,bytes)[],uint256,bytes32,bytes) header, bytes proof) returns()
-func (_Master *MasterTransactor) CommitValSetHeader(opts *bind.TransactOpts, header ISettlementManagerValSetHeader, proof []byte) (*types.Transaction, error) {
+func (_Master *MasterTransactor) CommitValSetHeader(opts *bind.TransactOpts, header ISettlementValSetHeader, proof []byte) (*types.Transaction, error) {
 	return _Master.contract.Transact(opts, "commitValSetHeader", header, proof)
 }
 
 // CommitValSetHeader is a paid mutator transaction binding the contract method 0x81408a08.
 //
 // Solidity: function commitValSetHeader((uint8,(uint8,bytes)[],uint256,bytes32,bytes) header, bytes proof) returns()
-func (_Master *MasterSession) CommitValSetHeader(header ISettlementManagerValSetHeader, proof []byte) (*types.Transaction, error) {
+func (_Master *MasterSession) CommitValSetHeader(header ISettlementValSetHeader, proof []byte) (*types.Transaction, error) {
 	return _Master.Contract.CommitValSetHeader(&_Master.TransactOpts, header, proof)
 }
 
 // CommitValSetHeader is a paid mutator transaction binding the contract method 0x81408a08.
 //
 // Solidity: function commitValSetHeader((uint8,(uint8,bytes)[],uint256,bytes32,bytes) header, bytes proof) returns()
-func (_Master *MasterTransactorSession) CommitValSetHeader(header ISettlementManagerValSetHeader, proof []byte) (*types.Transaction, error) {
+func (_Master *MasterTransactorSession) CommitValSetHeader(header ISettlementValSetHeader, proof []byte) (*types.Transaction, error) {
 	return _Master.Contract.CommitValSetHeader(&_Master.TransactOpts, header, proof)
 }
 
@@ -2189,23 +2778,23 @@ func (_Master *MasterTransactorSession) GrantRole(role [32]byte, account common.
 
 // Initialize is a paid mutator transaction binding the contract method 0xed2293cf.
 //
-// Solidity: function initialize(((address,uint96),(uint48,uint48),(string,string),(uint8,uint208)[],uint48,uint8,address) settlementManagerInitParams, (uint256,uint256,uint256,uint8[]) valSetConfigManagerInitParams, ((address,uint64)[],(address,uint64),(address,uint64)[]) masterConfigManagerInitParams, address defaultAdmin) returns()
-func (_Master *MasterTransactor) Initialize(opts *bind.TransactOpts, settlementManagerInitParams ISettlementManagerSettlementManagerInitParams, valSetConfigManagerInitParams IValSetConfigManagerValSetConfigManagerInitParams, masterConfigManagerInitParams IMasterConfigManagerMasterConfigManagerInitParams, defaultAdmin common.Address) (*types.Transaction, error) {
-	return _Master.contract.Transact(opts, "initialize", settlementManagerInitParams, valSetConfigManagerInitParams, masterConfigManagerInitParams, defaultAdmin)
+// Solidity: function initialize(((address,uint96),(uint48,uint48),(string,string),(uint8,uint208)[],uint48,uint8,address) settlementInitParams, (uint256,uint256,uint256,uint8[]) valSetConfigProviderInitParams, ((address,uint64)[],(address,uint64),(address,uint64)[]) masterConfigProviderInitParams, address defaultAdmin) returns()
+func (_Master *MasterTransactor) Initialize(opts *bind.TransactOpts, settlementInitParams ISettlementSettlementInitParams, valSetConfigProviderInitParams IValSetConfigProviderValSetConfigProviderInitParams, masterConfigProviderInitParams IMasterConfigProviderMasterConfigProviderInitParams, defaultAdmin common.Address) (*types.Transaction, error) {
+	return _Master.contract.Transact(opts, "initialize", settlementInitParams, valSetConfigProviderInitParams, masterConfigProviderInitParams, defaultAdmin)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0xed2293cf.
 //
-// Solidity: function initialize(((address,uint96),(uint48,uint48),(string,string),(uint8,uint208)[],uint48,uint8,address) settlementManagerInitParams, (uint256,uint256,uint256,uint8[]) valSetConfigManagerInitParams, ((address,uint64)[],(address,uint64),(address,uint64)[]) masterConfigManagerInitParams, address defaultAdmin) returns()
-func (_Master *MasterSession) Initialize(settlementManagerInitParams ISettlementManagerSettlementManagerInitParams, valSetConfigManagerInitParams IValSetConfigManagerValSetConfigManagerInitParams, masterConfigManagerInitParams IMasterConfigManagerMasterConfigManagerInitParams, defaultAdmin common.Address) (*types.Transaction, error) {
-	return _Master.Contract.Initialize(&_Master.TransactOpts, settlementManagerInitParams, valSetConfigManagerInitParams, masterConfigManagerInitParams, defaultAdmin)
+// Solidity: function initialize(((address,uint96),(uint48,uint48),(string,string),(uint8,uint208)[],uint48,uint8,address) settlementInitParams, (uint256,uint256,uint256,uint8[]) valSetConfigProviderInitParams, ((address,uint64)[],(address,uint64),(address,uint64)[]) masterConfigProviderInitParams, address defaultAdmin) returns()
+func (_Master *MasterSession) Initialize(settlementInitParams ISettlementSettlementInitParams, valSetConfigProviderInitParams IValSetConfigProviderValSetConfigProviderInitParams, masterConfigProviderInitParams IMasterConfigProviderMasterConfigProviderInitParams, defaultAdmin common.Address) (*types.Transaction, error) {
+	return _Master.Contract.Initialize(&_Master.TransactOpts, settlementInitParams, valSetConfigProviderInitParams, masterConfigProviderInitParams, defaultAdmin)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0xed2293cf.
 //
-// Solidity: function initialize(((address,uint96),(uint48,uint48),(string,string),(uint8,uint208)[],uint48,uint8,address) settlementManagerInitParams, (uint256,uint256,uint256,uint8[]) valSetConfigManagerInitParams, ((address,uint64)[],(address,uint64),(address,uint64)[]) masterConfigManagerInitParams, address defaultAdmin) returns()
-func (_Master *MasterTransactorSession) Initialize(settlementManagerInitParams ISettlementManagerSettlementManagerInitParams, valSetConfigManagerInitParams IValSetConfigManagerValSetConfigManagerInitParams, masterConfigManagerInitParams IMasterConfigManagerMasterConfigManagerInitParams, defaultAdmin common.Address) (*types.Transaction, error) {
-	return _Master.Contract.Initialize(&_Master.TransactOpts, settlementManagerInitParams, valSetConfigManagerInitParams, masterConfigManagerInitParams, defaultAdmin)
+// Solidity: function initialize(((address,uint96),(uint48,uint48),(string,string),(uint8,uint208)[],uint48,uint8,address) settlementInitParams, (uint256,uint256,uint256,uint8[]) valSetConfigProviderInitParams, ((address,uint64)[],(address,uint64),(address,uint64)[]) masterConfigProviderInitParams, address defaultAdmin) returns()
+func (_Master *MasterTransactorSession) Initialize(settlementInitParams ISettlementSettlementInitParams, valSetConfigProviderInitParams IValSetConfigProviderValSetConfigProviderInitParams, masterConfigProviderInitParams IMasterConfigProviderMasterConfigProviderInitParams, defaultAdmin common.Address) (*types.Transaction, error) {
+	return _Master.Contract.Initialize(&_Master.TransactOpts, settlementInitParams, valSetConfigProviderInitParams, masterConfigProviderInitParams, defaultAdmin)
 }
 
 // Multicall is a paid mutator transaction binding the contract method 0xac9650d8.
@@ -2232,42 +2821,42 @@ func (_Master *MasterTransactorSession) Multicall(data [][]byte) (*types.Transac
 // RemoveReplica is a paid mutator transaction binding the contract method 0x65f764f0.
 //
 // Solidity: function removeReplica((address,uint64) replica) returns()
-func (_Master *MasterTransactor) RemoveReplica(opts *bind.TransactOpts, replica IMasterConfigManagerCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterTransactor) RemoveReplica(opts *bind.TransactOpts, replica IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.contract.Transact(opts, "removeReplica", replica)
 }
 
 // RemoveReplica is a paid mutator transaction binding the contract method 0x65f764f0.
 //
 // Solidity: function removeReplica((address,uint64) replica) returns()
-func (_Master *MasterSession) RemoveReplica(replica IMasterConfigManagerCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterSession) RemoveReplica(replica IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.Contract.RemoveReplica(&_Master.TransactOpts, replica)
 }
 
 // RemoveReplica is a paid mutator transaction binding the contract method 0x65f764f0.
 //
 // Solidity: function removeReplica((address,uint64) replica) returns()
-func (_Master *MasterTransactorSession) RemoveReplica(replica IMasterConfigManagerCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterTransactorSession) RemoveReplica(replica IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.Contract.RemoveReplica(&_Master.TransactOpts, replica)
 }
 
 // RemoveVotingPowerProvider is a paid mutator transaction binding the contract method 0xb01139a1.
 //
 // Solidity: function removeVotingPowerProvider((address,uint64) votingPowerProvider) returns()
-func (_Master *MasterTransactor) RemoveVotingPowerProvider(opts *bind.TransactOpts, votingPowerProvider IMasterConfigManagerCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterTransactor) RemoveVotingPowerProvider(opts *bind.TransactOpts, votingPowerProvider IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.contract.Transact(opts, "removeVotingPowerProvider", votingPowerProvider)
 }
 
 // RemoveVotingPowerProvider is a paid mutator transaction binding the contract method 0xb01139a1.
 //
 // Solidity: function removeVotingPowerProvider((address,uint64) votingPowerProvider) returns()
-func (_Master *MasterSession) RemoveVotingPowerProvider(votingPowerProvider IMasterConfigManagerCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterSession) RemoveVotingPowerProvider(votingPowerProvider IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.Contract.RemoveVotingPowerProvider(&_Master.TransactOpts, votingPowerProvider)
 }
 
 // RemoveVotingPowerProvider is a paid mutator transaction binding the contract method 0xb01139a1.
 //
 // Solidity: function removeVotingPowerProvider((address,uint64) votingPowerProvider) returns()
-func (_Master *MasterTransactorSession) RemoveVotingPowerProvider(votingPowerProvider IMasterConfigManagerCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterTransactorSession) RemoveVotingPowerProvider(votingPowerProvider IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.Contract.RemoveVotingPowerProvider(&_Master.TransactOpts, votingPowerProvider)
 }
 
@@ -2358,42 +2947,42 @@ func (_Master *MasterTransactorSession) SetEpochDuration(epochDuration *big.Int)
 // SetGenesis is a paid mutator transaction binding the contract method 0x7eaa4932.
 //
 // Solidity: function setGenesis((uint8,(uint8,bytes)[],uint256,bytes32,bytes) valSetHeader) returns()
-func (_Master *MasterTransactor) SetGenesis(opts *bind.TransactOpts, valSetHeader ISettlementManagerValSetHeader) (*types.Transaction, error) {
+func (_Master *MasterTransactor) SetGenesis(opts *bind.TransactOpts, valSetHeader ISettlementValSetHeader) (*types.Transaction, error) {
 	return _Master.contract.Transact(opts, "setGenesis", valSetHeader)
 }
 
 // SetGenesis is a paid mutator transaction binding the contract method 0x7eaa4932.
 //
 // Solidity: function setGenesis((uint8,(uint8,bytes)[],uint256,bytes32,bytes) valSetHeader) returns()
-func (_Master *MasterSession) SetGenesis(valSetHeader ISettlementManagerValSetHeader) (*types.Transaction, error) {
+func (_Master *MasterSession) SetGenesis(valSetHeader ISettlementValSetHeader) (*types.Transaction, error) {
 	return _Master.Contract.SetGenesis(&_Master.TransactOpts, valSetHeader)
 }
 
 // SetGenesis is a paid mutator transaction binding the contract method 0x7eaa4932.
 //
 // Solidity: function setGenesis((uint8,(uint8,bytes)[],uint256,bytes32,bytes) valSetHeader) returns()
-func (_Master *MasterTransactorSession) SetGenesis(valSetHeader ISettlementManagerValSetHeader) (*types.Transaction, error) {
+func (_Master *MasterTransactorSession) SetGenesis(valSetHeader ISettlementValSetHeader) (*types.Transaction, error) {
 	return _Master.Contract.SetGenesis(&_Master.TransactOpts, valSetHeader)
 }
 
 // SetKeysProvider is a paid mutator transaction binding the contract method 0x48fb6e2b.
 //
 // Solidity: function setKeysProvider((address,uint64) keysProvider) returns()
-func (_Master *MasterTransactor) SetKeysProvider(opts *bind.TransactOpts, keysProvider IMasterConfigManagerCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterTransactor) SetKeysProvider(opts *bind.TransactOpts, keysProvider IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.contract.Transact(opts, "setKeysProvider", keysProvider)
 }
 
 // SetKeysProvider is a paid mutator transaction binding the contract method 0x48fb6e2b.
 //
 // Solidity: function setKeysProvider((address,uint64) keysProvider) returns()
-func (_Master *MasterSession) SetKeysProvider(keysProvider IMasterConfigManagerCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterSession) SetKeysProvider(keysProvider IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.Contract.SetKeysProvider(&_Master.TransactOpts, keysProvider)
 }
 
 // SetKeysProvider is a paid mutator transaction binding the contract method 0x48fb6e2b.
 //
 // Solidity: function setKeysProvider((address,uint64) keysProvider) returns()
-func (_Master *MasterTransactorSession) SetKeysProvider(keysProvider IMasterConfigManagerCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterTransactorSession) SetKeysProvider(keysProvider IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.Contract.SetKeysProvider(&_Master.TransactOpts, keysProvider)
 }
 

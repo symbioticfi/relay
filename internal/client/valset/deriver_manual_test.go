@@ -22,7 +22,7 @@ package valset
 //
 //	client, err := eth.NewEthClient(eth.Config{
 //		MasterRPCURL:   "http://127.0.0.1:8545",
-//		MasterAddress:  "0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f",
+//		MasterAddress:  "0x04C89607413713Ec9775E14b954286519d836FEf",
 //		PrivateKey:     privateKeyInt.Bytes(),
 //		RequestTimeout: time.Minute,
 //	})

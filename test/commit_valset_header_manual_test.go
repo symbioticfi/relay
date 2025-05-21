@@ -107,7 +107,7 @@ func initValsetTestServices(t *testing.T) *valsetTestServices {
 
 	eth1, err := eth.NewEthClient(eth.Config{
 		MasterRPCURL:   "http://localhost:8545",
-		MasterAddress:  "0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f",
+		MasterAddress:  "0x04C89607413713Ec9775E14b954286519d836FEf",
 		PrivateKey:     bytesFromPK(t, pk1),
 		RequestTimeout: time.Minute,
 	})
@@ -115,7 +115,7 @@ func initValsetTestServices(t *testing.T) *valsetTestServices {
 
 	eth2, err := eth.NewEthClient(eth.Config{
 		MasterRPCURL:   "http://localhost:8545",
-		MasterAddress:  "0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f",
+		MasterAddress:  "0x04C89607413713Ec9775E14b954286519d836FEf",
 		PrivateKey:     bytesFromPK(t, pk2),
 		RequestTimeout: time.Minute,
 	})
@@ -123,7 +123,7 @@ func initValsetTestServices(t *testing.T) *valsetTestServices {
 
 	eth3, err := eth.NewEthClient(eth.Config{
 		MasterRPCURL:   "http://localhost:8545",
-		MasterAddress:  "0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f",
+		MasterAddress:  "0x04C89607413713Ec9775E14b954286519d836FEf",
 		PrivateKey:     bytesFromPK(t, pk3),
 		RequestTimeout: time.Minute,
 	})
@@ -215,7 +215,7 @@ func waitCommitPhase(t *testing.T) {
 	t.Helper()
 	eth1, err := eth.NewEthClient(eth.Config{
 		MasterRPCURL:   "http://localhost:8545",
-		MasterAddress:  "0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f",
+		MasterAddress:  "0x04C89607413713Ec9775E14b954286519d836FEf",
 		PrivateKey:     bytesFromPK(t, "87191036493798670866484781455694320176667203290824056510541300741498740913410"),
 		RequestTimeout: time.Minute,
 	})
