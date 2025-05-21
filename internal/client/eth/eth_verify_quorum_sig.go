@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-
-	"github.com/ethereum/go-ethereum/accounts/abi"
 )
 
 func (e *Client) VerifyQuorumSig(ctx context.Context, epoch *big.Int, message []byte, keyTag uint8, threshold *big.Int, proof []byte) (bool, error) {
@@ -19,6 +17,5 @@ func (e *Client) VerifyQuorumSig(ctx context.Context, epoch *big.Int, message []
 		return false, fmt.Errorf("failed to call contract: %w", err)
 	}
 
-	okUint := *abi.ConvertType(result[0], new(uint8)).(*uint8)
-	return okUint == 1, nil
+	return new(big.Int).SetBytes(result).Cmp(big.NewInt(1)) == 0, nil
 }
