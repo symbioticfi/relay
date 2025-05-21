@@ -48,6 +48,7 @@ var (
 	getQuorumThresholdFunction        = "getQuorumThresholdAt"
 	getSubnetworkFunction             = "SUBNETWORK"
 	getEip712DomainFunction           = "eip712Domain"
+	verifyQuorumSigFunction           = "verifyQuorumSig"
 )
 
 type Config struct {
