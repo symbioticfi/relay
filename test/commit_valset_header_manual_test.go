@@ -105,6 +105,7 @@ func TestCommitValsetHeader(t *testing.T) {
 }
 
 func initValsetTestServices(t *testing.T) *valsetTestServices {
+	t.Helper()
 	pk1 := "87191036493798670866484781455694320176667203290824056510541300741498740913410"
 	pk2 := "26972876870930381973856869753776124637336739336929668162870464864826929175089"
 	pk3 := "11008377096554045051122023680185802911050337017631086444859313200352654461863"
@@ -220,6 +221,7 @@ func bytesFromPK(t *testing.T, pk1 string) []byte {
 }
 
 func waitCommitPhase(t *testing.T) {
+	t.Helper()
 	eth1, err := eth.NewEthClient(eth.Config{
 		MasterRPCURL:   "http://localhost:8545",
 		MasterAddress:  "0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f",
@@ -242,11 +244,4 @@ func waitCommitPhase(t *testing.T) {
 			return
 		}
 	}
-}
-
-func decodeHex(t *testing.T, s string) []byte {
-	t.Helper()
-	b, err := hex.DecodeString(s)
-	require.NoError(t, err)
-	return b
 }

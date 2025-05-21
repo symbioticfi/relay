@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"math/big"
 	"os"
 	"sort"
@@ -211,25 +210,25 @@ func (circuit *Circuit) Define(api frontend.API) error {
 	// --------------------------------------- Prove Input consistency ---------------------------------------
 
 	// valset consistency checked against InputHash which is Hash{valset-hash|non-signers-vp|message}
-	HashBytes := variableToBytes(api, u64Api, valsetHash)
+	hashBytes := variableToBytes(api, u64Api, valsetHash)
 
-	api.Println("HashBytes:", HashBytes)
-	keccak256Api.Write(HashBytes)
+	api.Println("HashBytes:", hashBytes)
+	keccak256Api.Write(hashBytes)
 	aggVotingPowerBytes := variableToBytes(api, u64Api, circuit.NonSignersAggVotingPower)
 
 	api.Println("aggVotingPowerBytes:", aggVotingPowerBytes)
 	keccak256Api.Write(aggVotingPowerBytes)
-	MessageBytes := keyToBytes(u64Api, &circuit.Message)
+	messageBytes := keyToBytes(u64Api, &circuit.Message)
 
-	api.Println("MessageBytes:", MessageBytes)
-	keccak256Api.Write(MessageBytes)
-	InputDataHash := keccak256Api.Sum()
-	api.Println("InputDataHash:", InputDataHash)
-	InputHashBytes := variableToBytes(api, u64Api, circuit.InputHash)
+	api.Println("MessageBytes:", messageBytes)
+	keccak256Api.Write(messageBytes)
+	inputDataHash := keccak256Api.Sum()
+	api.Println("InputDataHash:", inputDataHash)
+	inputHashBytes := variableToBytes(api, u64Api, circuit.InputHash)
 
-	InputDataHash[0] = u64Api.ByteValueOf(u64Api.ToValue(u64Api.And(u64Api.ValueOf(InputDataHash[0].Val), uints.NewU64(0x1f)))) // zero two first bits
-	for i := range InputHashBytes {
-		u64Api.ByteAssertEq(InputDataHash[i], InputHashBytes[i])
+	inputDataHash[0] = u64Api.ByteValueOf(u64Api.ToValue(u64Api.And(u64Api.ValueOf(inputDataHash[0].Val), uints.NewU64(0x1f)))) // zero two first bits
+	for i := range inputHashBytes {
+		u64Api.ByteAssertEq(inputDataHash[i], inputHashBytes[i])
 	}
 
 	// --------------------------------------- Verify Signature ---------------------------------------
@@ -302,7 +301,7 @@ func getPubkeyG2(pk *big.Int) bn254.G2Affine {
 	return p
 }
 
-func getNonSignersData(valset []ValidatorData) (aggKey *bn254.G1Affine, aggVotingPower *big.Int) {
+func getNonSignersData(valset []ValidatorData) (aggKey *bn254.G1Affine, aggVotingPower *big.Int) { //nolint:unparam // maybe needed later
 	aggVotingPower = big.NewInt(0)
 	aggKey = new(bn254.G1Affine)
 	aggKey.SetInfinity()
@@ -338,7 +337,7 @@ func getAggSignature(message bn254.G1Affine, valset *[]ValidatorData) (signature
 	return aggSignature, aggKeyG2, aggKeyG1
 }
 
-func setCircuitData(circuit *Circuit, proveInput ProveInput) {
+func setCircuitData(circuit *Circuit, proveInput ProveInput) error {
 	circuit.ValidatorData = make([]ValidatorDataCircuit, len(proveInput.ValidatorData))
 	for i := range proveInput.ValidatorData {
 		circuit.ValidatorData[i].Key = sw_bn254.NewG1Affine(proveInput.ValidatorData[i].Key)
@@ -352,7 +351,7 @@ func setCircuitData(circuit *Circuit, proveInput ProveInput) {
 
 	messageG1, err := bls.HashToG1(proveInput.Message)
 	if err != nil {
-		log.Fatalf("Failed to hash message to G1: %v", err)
+		return errors.Errorf("failed to hash message to G1: %w", err)
 	}
 	messageG1Bn254 := bn254.G1Affine{X: messageG1.X, Y: messageG1.Y}
 
@@ -375,20 +374,22 @@ func setCircuitData(circuit *Circuit, proveInput ProveInput) {
 	nonSignersAggVotingPower.FillBytes(aggVotingPowerBuffer)
 
 	fmt.Println("nonSignersAggVotingPower:", nonSignersAggVotingPower)
-	InputHashBytes := valsetHash
-	InputHashBytes = append(InputHashBytes, aggVotingPowerBuffer...)
-	InputHashBytes = append(InputHashBytes, messageBytes[:]...)
-	inputHash := crypto.Keccak256(InputHashBytes)
+	inputHashBytes := valsetHash
+	inputHashBytes = append(inputHashBytes, aggVotingPowerBuffer...)
+	inputHashBytes = append(inputHashBytes, messageBytes[:]...)
+	inputHash := crypto.Keccak256(inputHashBytes)
 
-	fmt.Println("InputHashBytes:", InputHashBytes)
-	fmt.Println(hex.EncodeToString(InputHashBytes))
-	fmt.Println("inputHash:", inputHash)
-	inputHashInt := new(big.Int).SetBytes(inputHash[:])
+	fmt.Println("InputHashBytes:", hex.EncodeToString(inputHashBytes))
+	fmt.Println(hex.EncodeToString(inputHashBytes))
+	fmt.Println("inputHash:", hex.EncodeToString(inputHash))
+	inputHashInt := new(big.Int).SetBytes(inputHash)
 	mask, _ := big.NewInt(0).SetString("1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)
 	inputHashInt.And(inputHashInt, mask)
 
 	fmt.Println("inputHashHex:", inputHashInt.Text(16))
 	circuit.InputHash = inputHashInt
+
+	return nil
 }
 
 func DoProve(rawProveInput RawProveInput) (ProofData, error) {
@@ -451,7 +452,9 @@ func Prove(proveInput ProveInput) (ProofData, error) {
 
 	// witness definition
 	assignment := Circuit{}
-	setCircuitData(&assignment, proveInput)
+	if err := setCircuitData(&assignment, proveInput); err != nil {
+		return ProofData{}, errors.Errorf("failed to set circuit data: %w", err)
+	}
 	witness, _ := frontend.NewWitness(&assignment, ecc.BN254.ScalarField())
 	publicWitness, _ := witness.Public()
 
@@ -549,14 +552,34 @@ func loadOrInit(valset []ValidatorData) (constraint.ConstraintSystem, groth16.Pr
 
 	if exists(r1csP) && exists(pkP) && exists(vkP) && exists(solP) {
 		r1csCS := groth16.NewCS(bn254.ID)
-		data, _ := os.ReadFile(r1csP)
-		r1csCS.ReadFrom(bytes.NewReader(data))
+		data, err := os.Open(r1csP)
+		if err != nil {
+			return nil, nil, nil, errors.Errorf("failed to open r1cs: %w", err)
+		}
+		defer data.Close()
+		if _, err := r1csCS.ReadFrom(data); err != nil {
+			return nil, nil, nil, errors.Errorf("failed to read r1cs: %w", err)
+		}
+
 		pk := groth16.NewProvingKey(bn254.ID)
-		data, _ = os.ReadFile(pkP)
-		pk.UnsafeReadFrom(bytes.NewReader(data))
+		data, err = os.Open(pkP)
+		if err != nil {
+			return nil, nil, nil, errors.Errorf("failed to open pk: %w", err)
+		}
+		defer data.Close()
+		if _, err := pk.UnsafeReadFrom(data); err != nil {
+			return nil, nil, nil, errors.Errorf("failed to read pk: %w", err)
+		}
+
 		vk := groth16.NewVerifyingKey(bn254.ID)
-		data, _ = os.ReadFile(vkP)
-		vk.UnsafeReadFrom(bytes.NewReader(data))
+		data, err = os.Open(vkP)
+		if err != nil {
+			return nil, nil, nil, errors.Errorf("failed to open vk: %w", err)
+		}
+		defer data.Close()
+		if _, err := vk.UnsafeReadFrom(data); err != nil {
+			return nil, nil, nil, errors.Errorf("failed to read vk: %w", err)
+		}
 
 		return r1csCS, pk, vk, nil
 	}
