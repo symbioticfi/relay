@@ -54,10 +54,26 @@ const (
 	solPathTmp  = circuitsDir + "/Verifier_%s.sol"
 )
 
-type ValidatorDataCircuit struct {
-	Key         sw_bn254.G1Affine
-	VotingPower frontend.Variable
-	IsNonSigner frontend.Variable
+type ProofData struct {
+	Proof                    []byte
+	Commitments              []byte
+	CommitmentPok            []byte
+	NonSignersAggVotingPower *big.Int
+}
+type RawProveInput struct {
+	SignerValidators []entity.Validator
+	AllValidators    []entity.Validator
+	RequiredKeyTag   uint8
+	Message          []byte
+	Signature        bls.G1
+	SignersAggKeyG2  bls.G2
+}
+
+type ProveInput struct {
+	ValidatorData   []ValidatorData
+	Message         []byte
+	Signature       bn254.G1Affine
+	SignersAggKeyG2 bn254.G2Affine
 }
 
 type ValidatorData struct {
@@ -66,6 +82,12 @@ type ValidatorData struct {
 	KeyG2       bn254.G2Affine
 	VotingPower *big.Int
 	IsNonSigner bool
+}
+
+type ValidatorDataCircuit struct {
+	Key         sw_bn254.G1Affine
+	VotingPower frontend.Variable
+	IsNonSigner frontend.Variable
 }
 
 // Circuit defines a pre-image knowledge proof
@@ -280,19 +302,17 @@ func getPubkeyG2(pk *big.Int) bn254.G2Affine {
 	return p
 }
 
-func getNonSignersData(valset []ValidatorData) (aggKey *bn254.G1Affine, aggVotingPower *big.Int, totalVotingPower *big.Int) {
+func getNonSignersData(valset []ValidatorData) (aggKey *bn254.G1Affine, aggVotingPower *big.Int) {
 	aggVotingPower = big.NewInt(0)
 	aggKey = new(bn254.G1Affine)
 	aggKey.SetInfinity()
-	totalVotingPower = big.NewInt(0)
 	for i := range valset {
 		if valset[i].IsNonSigner {
 			aggKey = aggKey.Add(aggKey, &(valset)[i].Key)
 			aggVotingPower = aggVotingPower.Add(aggVotingPower, valset[i].VotingPower)
 		}
-		totalVotingPower = totalVotingPower.Add(totalVotingPower, valset[i].VotingPower)
 	}
-	return aggKey, aggVotingPower, totalVotingPower
+	return aggKey, aggVotingPower
 }
 
 func getAggSignature(message bn254.G1Affine, valset *[]ValidatorData) (signature *bn254.G1Affine, aggKeyG2 *bn254.G2Affine, aggKeyG1 *bn254.G1Affine) {
@@ -318,40 +338,43 @@ func getAggSignature(message bn254.G1Affine, valset *[]ValidatorData) (signature
 	return aggSignature, aggKeyG2, aggKeyG1
 }
 
-func setCircuitData(circuit *Circuit, valset []ValidatorData) {
-	circuit.ValidatorData = make([]ValidatorDataCircuit, len(valset))
-	for i := range valset {
-		circuit.ValidatorData[i].Key = sw_bn254.NewG1Affine(valset[i].Key)
-		circuit.ValidatorData[i].VotingPower = valset[i].VotingPower
+func setCircuitData(circuit *Circuit, proveInput ProveInput) {
+	circuit.ValidatorData = make([]ValidatorDataCircuit, len(proveInput.ValidatorData))
+	for i := range proveInput.ValidatorData {
+		circuit.ValidatorData[i].Key = sw_bn254.NewG1Affine(proveInput.ValidatorData[i].Key)
+		circuit.ValidatorData[i].VotingPower = proveInput.ValidatorData[i].VotingPower
 		circuit.ValidatorData[i].IsNonSigner = *big.NewInt(0)
 
-		if valset[i].IsNonSigner {
+		if proveInput.ValidatorData[i].IsNonSigner {
 			circuit.ValidatorData[i].IsNonSigner = *big.NewInt(1)
 		}
 	}
 
-	message := big.NewInt(101).Bytes()
-	messageG1, err := bls.HashToG1(message)
+	messageG1, err := bls.HashToG1(proveInput.Message)
 	if err != nil {
 		log.Fatalf("Failed to hash message to G1: %v", err)
 	}
 	messageG1Bn254 := bn254.G1Affine{X: messageG1.X, Y: messageG1.Y}
 
-	_, aggVotingPower, totalVotingPower := getNonSignersData(valset)
-	aggSignature, aggKeyG2, _ := getAggSignature(messageG1Bn254, &valset)
-	valsetHash := HashValset(valset)
+	_, nonSignersAggVotingPower := getNonSignersData(proveInput.ValidatorData)
+	valsetHash := HashValset(proveInput.ValidatorData)
 
-	circuit.NonSignersAggVotingPower = *aggVotingPower
-	circuit.Signature = sw_bn254.NewG1Affine(*aggSignature)
+	circuit.NonSignersAggVotingPower = *nonSignersAggVotingPower
+
+	fmt.Println("proveInput.ValidatorData:", proveInput.ValidatorData)
+	fmt.Println("proveInput.Signature:", proveInput.Signature)
+	fmt.Println("messageG1Bn254.X:", messageG1Bn254)
+	fmt.Println("proveInput.SignersAggKeyG2:", proveInput.SignersAggKeyG2)
+
+	circuit.Signature = sw_bn254.NewG1Affine(proveInput.Signature)
 	circuit.Message = sw_bn254.NewG1Affine(messageG1Bn254)
-	circuit.SignersAggKeyG2 = sw_bn254.NewG2Affine(*aggKeyG2)
+	circuit.SignersAggKeyG2 = sw_bn254.NewG2Affine(proveInput.SignersAggKeyG2)
 
 	messageBytes := messageG1Bn254.RawBytes()
 	aggVotingPowerBuffer := make([]byte, 32)
-	aggVotingPower.FillBytes(aggVotingPowerBuffer)
+	nonSignersAggVotingPower.FillBytes(aggVotingPowerBuffer)
 
-	fmt.Println("aggVotingPower:", aggVotingPower)
-	fmt.Println("totalVotingPower:", totalVotingPower)
+	fmt.Println("nonSignersAggVotingPower:", nonSignersAggVotingPower)
 	InputHashBytes := valsetHash
 	InputHashBytes = append(InputHashBytes, aggVotingPowerBuffer...)
 	InputHashBytes = append(InputHashBytes, messageBytes[:]...)
@@ -368,86 +391,74 @@ func setCircuitData(circuit *Circuit, valset []ValidatorData) {
 	circuit.InputHash = inputHashInt
 }
 
-func DoProve(validators []entity.Validator, requiredKeyTag uint8) ([]byte, error) {
-	data, err := ToValidatorsData(validators, requiredKeyTag)
+func DoProve(rawProveInput RawProveInput) (ProofData, error) {
+	data, err := ToValidatorsData(rawProveInput.SignerValidators, rawProveInput.AllValidators, rawProveInput.RequiredKeyTag)
 	if err != nil {
-		return nil, errors.Errorf("failed to convert validators to data: %w", err)
+		return ProofData{}, errors.Errorf("failed to convert validators to data: %w", err)
 	}
 
-	prove, err := Prove(data)
+	proofData, err := Prove(ProveInput{
+		ValidatorData:   data,
+		Message:         rawProveInput.Message,
+		Signature:       bn254.G1Affine{X: rawProveInput.Signature.X, Y: rawProveInput.Signature.Y},
+		SignersAggKeyG2: bn254.G2Affine{X: rawProveInput.SignersAggKeyG2.X, Y: rawProveInput.SignersAggKeyG2.Y},
+	})
 	if err != nil {
-		return nil, errors.Errorf("failed to prove: %w", err)
+		return ProofData{}, errors.Errorf("failed to prove: %w", err)
 	}
 
-	return prove, nil
+	return proofData, nil
 }
 
-func ToValidatorsData(validators []entity.Validator, requiredKeyTag uint8) ([]ValidatorData, error) {
-	valset := make([]ValidatorData, 0)
-	for i := range validators {
-		if !validators[i].IsActive {
-			continue
+// todo ilya
+func ToValidatorsData(signerValidators []entity.Validator, allValidators []entity.Validator, requiredKeyTag uint8) ([]ValidatorData, error) {
+	activeValidators := make([]entity.Validator, 0)
+	for _, validator := range allValidators {
+		if validator.IsActive {
+			activeValidators = append(activeValidators, validator)
 		}
-		for _, key := range validators[i].Keys {
+	}
+	valset := make([]ValidatorData, 0)
+	for i := range activeValidators {
+		for _, key := range activeValidators[i].Keys {
 			if key.Tag == requiredKeyTag {
 				g1, err := bls.DeserializeG1(key.Payload)
 				if err != nil {
 					return nil, fmt.Errorf("failed to deserialize G1: %w", err)
 				}
-				valset = append(valset, ValidatorData{Key: *g1.G1Affine, VotingPower: validators[i].VotingPower})
+				validatorData := ValidatorData{Key: *g1.G1Affine, VotingPower: activeValidators[i].VotingPower, IsNonSigner: true}
+
+				for _, signer := range signerValidators {
+					if signer.Operator.Cmp(activeValidators[i].Operator) == 0 {
+						validatorData.IsNonSigner = false
+						break
+					}
+				}
+
+				valset = append(valset, validatorData)
+				break
 			}
 		}
 	}
 	return normalizeValset(valset), nil
 }
 
-// todo ilya
-//func ToValidatorsData(signerValidators []entity.Validator, allValidators []entity.Validator, requiredKeyTag uint8) ([]ValidatorData, error) {
-//	activeValidators := make([]entity.Validator, 0)
-//	for _, validator := range allValidators {
-//		if validator.IsActive {
-//			activeValidators = append(activeValidators, validator)
-//		}
-//	}
-//	valset := make([]ValidatorData, 0)
-//	for i := 0; i < len(activeValidators); i++ {
-//		for _, key := range activeValidators[i].Keys {
-//			if key.Tag == requiredKeyTag {
-//				g1, err := bls.DeserializeG1(key.Payload)
-//				if err != nil {
-//					return nil, fmt.Errorf("failed to deserialize G1: %w", err)
-//				}
-//				validatorData := ValidatorData{Key: *g1.G1Affine, VotingPower: activeValidators[i].VotingPower, IsNonSigner: true}
-//
-//				for _, signer := range signerValidators {
-//					if signer.Operator.Cmp(activeValidators[i].Operator) == 0 {
-//						validatorData.IsNonSigner = false
-//					}
-//				}
-//
-//				valset = append(valset, validatorData)
-//			}
-//		}
-//	}
-//	return normalizeValset(valset), nil
-//}
-
-func Prove(valset []ValidatorData) ([]byte, error) {
-	r1cs, pk, vk, err := loadOrInit(valset)
+func Prove(proveInput ProveInput) (ProofData, error) {
+	r1cs, pk, vk, err := loadOrInit(proveInput.ValidatorData)
 	if err != nil {
-		return nil, errors.Errorf("failed to load or init: %w", err)
+		return ProofData{}, errors.Errorf("failed to load or init: %w", err)
 	}
 
 	// witness definition
 	assignment := Circuit{}
-	setCircuitData(&assignment, valset)
+	setCircuitData(&assignment, proveInput)
 	witness, _ := frontend.NewWitness(&assignment, ecc.BN254.ScalarField())
 	publicWitness, _ := witness.Public()
 
 	// groth16: Prove & Verify
 	proof, err := groth16.Prove(r1cs, pk, witness, backend.WithProverHashToFieldFunction(sha256.New()))
 	if err != nil {
-		return nil, errors.Errorf("failed to prove: %w", err)
+		return ProofData{}, errors.Errorf("failed to prove: %w", err)
 	}
 	fmt.Println(proof.CurveID())
 
@@ -476,14 +487,14 @@ func Prove(valset []ValidatorData) ([]byte, error) {
 	// verify proof
 	err = groth16.Verify(proof, vk, publicWitness, backend.WithVerifierHashToFieldFunction(sha256.New()))
 	if err != nil {
-		return nil, err
+		return ProofData{}, err
 	}
 
 	// Serialize the proof
 	var proofBuffer bytes.Buffer
 	_, err = proof.WriteRawTo(&proofBuffer)
 	if err != nil {
-		return nil, errors.Errorf("failed to write proof: %w", err)
+		return ProofData{}, errors.Errorf("failed to write proof: %w", err)
 	}
 	proofBytes = proofBuffer.Bytes()
 	fmt.Println("proofBytes:", proofBytes) //nolint:staticcheck // will fix later
@@ -520,7 +531,13 @@ func Prove(valset []ValidatorData) ([]byte, error) {
 	//	publicInputs[i] = new(big.Int).SetBytes(val.Bytes())
 	//}
 
-	return proofBytes, nil
+	_, nonSignersAggVotingPower := getNonSignersData(proveInput.ValidatorData)
+	return ProofData{
+		Proof:                    proofBytes[:256],
+		Commitments:              proofBytes[260:324],
+		CommitmentPok:            proofBytes[324:388],
+		NonSignersAggVotingPower: nonSignersAggVotingPower,
+	}, nil
 }
 
 func loadOrInit(valset []ValidatorData) (constraint.ConstraintSystem, groth16.ProvingKey, groth16.VerifyingKey, error) {
@@ -611,7 +628,7 @@ func normalizeValset(valset []ValidatorData) []ValidatorData {
 			zeroPoint.SetInfinity()
 			zeroPointG2 := new(bn254.G2Affine)
 			zeroPointG2.SetInfinity()
-			normalizedValset[i] = ValidatorData{Key: *zeroPoint, KeyG2: *zeroPointG2, VotingPower: big.NewInt(0), IsNonSigner: false}
+			normalizedValset[i] = ValidatorData{PrivateKey: big.NewInt(0), Key: *zeroPoint, KeyG2: *zeroPointG2, VotingPower: big.NewInt(0), IsNonSigner: false}
 		}
 	}
 	return normalizedValset

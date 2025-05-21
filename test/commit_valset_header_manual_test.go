@@ -1,5 +1,3 @@
-//go:build manual
-
 package test
 
 import (
@@ -11,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/stretchr/testify/require"
 
 	"middleware-offchain/internal/client/eth"
@@ -38,6 +35,10 @@ type valsetTestServices struct {
 	headerSignature2 *bls.G1
 	headerSignature3 *bls.G1
 	deriver1         *valset.Deriver
+
+	headerHash1 []byte
+	headerHash2 []byte
+	headerHash3 []byte
 }
 
 func TestCommitValsetHeader(t *testing.T) {
@@ -48,6 +49,10 @@ func TestCommitValsetHeader(t *testing.T) {
 	validatorSet, err := svc.deriver1.GetValidatorSet(t.Context(), new(big.Int).SetInt64(time.Now().Unix()))
 	require.NoError(t, err)
 	_ = validatorSet
+
+	if !bytes.Equal(svc.headerHash1, svc.headerHash2) || !bytes.Equal(svc.headerHash1, svc.headerHash3) {
+		t.Fatal("headerHash1 and headerHash2 are not equal")
+	}
 
 	aggSignature := bls.ZeroG1().
 		Add(svc.headerSignature1).
@@ -62,7 +67,14 @@ func TestCommitValsetHeader(t *testing.T) {
 		Add(&svc.keyPair2.PublicKeyG2).
 		Add(&svc.keyPair3.PublicKeyG2)
 
-	proofData, err := proof.DoProve(validatorSet.Validators, 15)
+	proofData, err := proof.DoProve(proof.RawProveInput{
+		AllValidators:    validatorSet.Validators,
+		SignerValidators: validatorSet.Validators,
+		RequiredKeyTag:   15,
+		Message:          svc.headerHash1,
+		Signature:        *aggSignature,
+		SignersAggKeyG2:  *aggPublicKeyG2,
+	})
 	require.NoError(t, err)
 
 	//proofData := decodeHex(t, "01c70454a912bf226d9b0a7b38dfef9319f92b893115fd5b168f0061c56a11e30d8c66ed7585aafd81e6c20cdbe81d385ee13871ef1da2b041e218076fbfd88e0cf9e7f5e7b25f241973a4a4ae6a7f29d430af5c243cd254d5035e7ad1883d9d1f0c0f76011867ebb6115185f5b9fe538de1181a39cd9e5efa03046b031c64df0b86f9a8fcb28738e82eabe0237a57bc47a02158841039f0d12ec3abb3d9ee2d12185fed2304764a978ba5405c684093479e18d934c7c8ba9e031981c836d4ff028f842b327dd18be5ba410bc423ce989f6807f1766acdae5669dea546d8cd591f98ba029d5e2a77520b2639234354c2e3983ce9590efbee7b293a8ee32bfbf80000000124997c0ef7b3e53580aaa97c84ae4682a7a7ec617110c5790ce06ca6bf837600114ec9b6c4503e96f11bcdb0e4601fecd83b5b8e4c7d9df6204aea2a4b7617471e9bada9e6dd91bf84b89967925bf1a90aa162f5f2883c4713522263f983f5ec101464ab309ff2a609396c898689eb0e5e4f703d350adc6ed69d6dfdc1a5bbbd")
@@ -74,49 +86,22 @@ func TestCommitValsetHeader(t *testing.T) {
 
 	fmt.Println("G2>>>", hex.EncodeToString(aggPublicKeyG2.Marshal()))
 	fmt.Println("aggSigG1>>>", hex.EncodeToString(aggSignature.Marshal()))
-	fmt.Println("proof_>>>", hex.EncodeToString(proofData[:256]))
-	fmt.Println("Commitments>>>", hex.EncodeToString(proofData[260:324]))
-	fmt.Println("commitmentPok>>>", hex.EncodeToString(proofData[324:388]))
+	fmt.Println("proof_>>>", hex.EncodeToString(proofData.Proof))
+	fmt.Println("Commitments>>>", hex.EncodeToString(proofData.Commitments))
+	fmt.Println("commitmentPok>>>", hex.EncodeToString(proofData.CommitmentPok))
 	fmt.Println("validatorSet.TotalActiveVotingPower.String()>>>", validatorSet.TotalActiveVotingPower.String())
 
-	result.Write(aggSignature.Marshal())   // abi.encode(aggSigG1)
-	result.Write(aggPublicKeyG2.Marshal()) // abi.encode(aggKeyG2)
-	result.Write(proofData[:256])          // slice(proof_, 0, 256)
-	result.Write(proofData[260:324])       // slice(commitments, 260, 324)
-	result.Write(proofData[324:388])       // slice(commitmentPok, 324, 388)
-	result.Write(inputs(t))                // zkProof.input
+	result.Write(proofData.Proof)
+	result.Write(proofData.Commitments)
+	result.Write(proofData.CommitmentPok)
+	nonSignersAggVotingPowerBuffer := make([]byte, 32)
+	proofData.NonSignersAggVotingPower.FillBytes(nonSignersAggVotingPowerBuffer)
+	result.Write(nonSignersAggVotingPowerBuffer)
 
 	fmt.Println("fullProof>>>", hex.EncodeToString(result.Bytes()))
 
 	err = svc.eth1.CommitValsetHeader(t.Context(), header, result.Bytes())
 	require.NoError(t, err)
-}
-
-func inputs(t *testing.T) []byte {
-	arguments := abi.Arguments{
-		{
-			Name: "inputs",
-			Type: abi.Type{
-				T: abi.SliceTy,
-				Elem: &abi.Type{
-					T: abi.UintTy, Size: 256,
-				},
-			},
-		},
-	}
-
-	t.Helper()
-	in := []string{"0", "0", "0", "0", "0", "0", "0", "0", "17452784377140135873242247846499243451530443834097508626974155003329264289405", "0"}
-	result := make([]*big.Int, 0, len(in))
-	for _, s := range in {
-		b, ok := new(big.Int).SetString(s, 10)
-		require.True(t, ok)
-		result = append(result, b)
-	}
-	pack, err := arguments.Pack(result)
-	require.NoError(t, err)
-
-	return pack[64:]
 }
 
 func initValsetTestServices(t *testing.T) *valsetTestServices {
@@ -179,6 +164,8 @@ func initValsetTestServices(t *testing.T) *valsetTestServices {
 	header1, err := generator1.GenerateValidatorSetHeader(t.Context())
 	require.NoError(t, err)
 
+	fmt.Println("header1>>>", hex.EncodeToString(header1.ExtraData))
+
 	headerHash1, err := generator1.GenerateValidatorSetHeaderHash(t.Context(), header1)
 	require.NoError(t, err)
 
@@ -219,6 +206,9 @@ func initValsetTestServices(t *testing.T) *valsetTestServices {
 		headerSignature1: headerSignature1,
 		headerSignature2: headerSignature2,
 		headerSignature3: headerSignature3,
+		headerHash1:      headerHash1,
+		headerHash2:      headerHash2,
+		headerHash3:      headerHash3,
 	}
 }
 
