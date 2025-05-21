@@ -9,14 +9,10 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-errors/errors"
-	"github.com/samber/lo"
 	"golang.org/x/crypto/sha3"
-
-	"middleware-offchain/internal/client/eth/gen"
-	"middleware-offchain/internal/entity"
 )
 
-func (e *Client) CommitValsetHeader(ctx context.Context, header entity.ValidatorSetHeader, proof []byte) error {
+func (e *Client) VerifyQuorumSig(ctx context.Context, message []byte, keyTag uint8, threshold *big.Int, proof []byte) error {
 	if e.masterPK == nil {
 		return errors.New("master private key is not set")
 	}
@@ -29,20 +25,7 @@ func (e *Client) CommitValsetHeader(ctx context.Context, header entity.Validator
 	}
 	txOpts.Context = tmCtx
 
-	headerDTO := gen.ISettlementManagerValSetHeader{
-		Version: header.Version,
-		ActiveAggregatedKeys: lo.Map(header.ActiveAggregatedKeys, func(key entity.Key, _ int) gen.IBaseKeyManagerKey {
-			return gen.IBaseKeyManagerKey{
-				Tag:     key.Tag,
-				Payload: key.Payload,
-			}
-		}),
-		TotalActiveVotingPower: header.TotalActiveVotingPower,
-		ValidatorsSszMRoot:     header.ValidatorsSszMRoot,
-		ExtraData:              header.ExtraData,
-	}
-
-	tx, err := e.master.CommitValSetHeader(txOpts, headerDTO, proof)
+	tx, err := e.master.VerifyQuorumSig(txOpts, message, keyTag, threshold, proof)
 	if err != nil {
 		return e.formatEthError(err)
 	}
