@@ -4,6 +4,17 @@
 
 Offchain Middleware is a peer-to-peer service designed to collect and aggregate BLS signatures from validators, form validator sets (valsets), and post the aggregated signatures to on-chain middleware contracts. This service facilitates efficient signature collection and aggregation in a decentralized manner.
 
+## Repo init
+This repo uses git-lsf, so make sure to install it first:
+```bash
+brew install git-lfs
+git lfs install
+git lfs pull
+```
+Then check that file content are downloaded
+```bash
+cat circuit/circuit_10.r1cs
+```
 ## Commands
 
 The application supports two commands:

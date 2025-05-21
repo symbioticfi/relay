@@ -128,7 +128,7 @@ func (v *Generator) generateValidatorSetHeader(ctx context.Context, timestamp *b
 	}
 
 	// Use the first key tag for proof generation
-	valset, err := proof.ToValidatorsData(validatorSet.Validators, requiredKeyTag)
+	valset, err := proof.ToValidatorsData(validatorSet.Validators, validatorSet.Validators, requiredKeyTag)
 	if err != nil {
 		return entity.ValidatorSetHeader{}, fmt.Errorf("failed to convert validators to data: %w", err)
 	}

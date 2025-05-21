@@ -14,7 +14,6 @@ import (
 	"github.com/shopspring/decimal"
 
 	"middleware-offchain/internal/entity"
-	"middleware-offchain/pkg/bls"
 	"middleware-offchain/pkg/proof"
 )
 
@@ -136,7 +135,14 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 
 	// todo ilya, make proof only once when threshold is reached
 	start := time.Now()
-	proofData, err := proof.DoProve(current.validators, msg.Message.KeyTag)
+	proofData, err := proof.DoProve(proof.RawProveInput{
+		SignerValidators: current.validators,
+		AllValidators:    s.validatorSet.Validators,
+		RequiredKeyTag:   msg.Message.KeyTag,
+		Message:          msg.Message.MessageHash,
+		Signature:        *current.aggSignature,
+		SignersAggKeyG2:  *current.aggPublicKeyG2,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to prove: %w", err)
 	}
@@ -146,7 +152,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 	)
 	err = s.cfg.P2PClient.BroadcastSignatureAggregatedMessage(ctx, entity.SignaturesAggregatedMessage{
 		PublicKeyG1: current.aggPublicKeyG1,
-		Proof:       s.makeProofBytes(proofData, current.aggSignature, current.aggPublicKeyG2),
+		Proof:       s.makeProofBytes(proofData),
 	})
 	if err != nil {
 		return errors.Errorf("failed to broadcast signature aggregated message: %w", err)
@@ -157,15 +163,15 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 	return nil
 }
 
-func (s *AggregatorApp) makeProofBytes(proofData []byte, aggSignature *bls.G1, aggKeyG2 *bls.G2) []byte {
+func (s *AggregatorApp) makeProofBytes(proofData proof.ProofData) []byte {
 	var result bytes.Buffer
 
-	result.Write(aggSignature.Marshal()) // abi.encode(aggSigG1)
-	result.Write(aggKeyG2.Marshal())     // abi.encode(aggKeyG2)
-	result.Write(proofData[:256])        // slice(proof_, 0, 256)
-	result.Write(proofData[260:324])     // slice(commitments, 260, 324)
-	result.Write(proofData[324:388])     // slice(commitmentPok, 324, 388)
-	result.Write(s.inputsBytes)          // zkProof.input
+	result.Write(proofData.Proof)
+	result.Write(proofData.Commitments)
+	result.Write(proofData.CommitmentPok)
+	nonSignersAggVotingPowerBuffer := make([]byte, 32)
+	proofData.NonSignersAggVotingPower.FillBytes(nonSignersAggVotingPowerBuffer)
+	result.Write(nonSignersAggVotingPowerBuffer)
 
 	return result.Bytes()
 }
