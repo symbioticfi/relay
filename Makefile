@@ -36,3 +36,6 @@ build-generate-genesis-mac:
 build-middleware-offchain-mac:
 	GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static'" -o middleware_offchain_darwin_arm64 ./cmd/middleware-offchain && \
 		chmod a+x middleware_offchain_darwin_arm64
+
+build-docker:
+	docker build -t middleware-offchain .
