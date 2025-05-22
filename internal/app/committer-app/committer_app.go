@@ -84,8 +84,7 @@ func (c *CommitterApp) commitValsetHeader(ctx context.Context, msg entity.P2PSig
 }
 
 func (c *CommitterApp) verifyQuorumSig(ctx context.Context, msg entity.P2PSignaturesAggregatedMessage) error {
-	epoch := new(big.Int).SetInt64(10) // todo ilya pass from signer
-	isOK, err := c.cfg.EthClient.VerifyQuorumSig(ctx, epoch, msg.Message.Message, 15, new(big.Int).SetInt64(1e18) /*1%*/, msg.Message.Proof)
+	isOK, err := c.cfg.EthClient.VerifyQuorumSig(ctx, msg.Message.Epoch, msg.Message.Message, 15, new(big.Int).SetInt64(1e18) /*1%*/, msg.Message.Proof)
 	if err != nil {
 		return errors.Errorf("failed to verify quorum signature: %w", err)
 	}

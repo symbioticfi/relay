@@ -142,6 +142,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		Proof:       proofData.Marshall(),
 		Message:     msg.Message.MessageHash,
 		HashType:    msg.Message.HashType,
+		Epoch:       msg.Message.Epoch,
 	})
 	if err != nil {
 		return errors.Errorf("failed to broadcast signature aggregated message: %w", err)

@@ -28,6 +28,7 @@ type SignatureHashMessage struct {
 	KeyTag                uint8
 	HashType              HashType
 	ValsetHeaderTimestamp *big.Int
+	Epoch                 *big.Int
 }
 
 type SignaturesAggregatedMessage struct {
@@ -35,6 +36,7 @@ type SignaturesAggregatedMessage struct {
 	Proof       []byte
 	Message     []byte
 	HashType    HashType
+	Epoch       *big.Int
 }
 
 type SenderInfo struct {

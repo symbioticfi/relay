@@ -41,6 +41,7 @@ var (
 	getCurrentEpochFunction           = "getCurrentEpoch"
 	getCurrentPhaseFunction           = "getCurrentPhase"
 	getCurrentValsetTimestampFunction = "getCurrentValSetTimestamp"
+	getCurrentValsetEpochFunction     = "getCurrentValSetEpoch"
 	getCaptureTimestampFunction       = "getCaptureTimestamp"
 	getVotingPowersFunction           = "getVotingPowersAt"
 	getKeysFunction                   = "getKeysAt"
@@ -263,6 +264,21 @@ func (e *Client) GetIsGenesisSet(ctx context.Context) (bool, error) {
 
 func (e *Client) GetCurrentEpoch(ctx context.Context) (*big.Int, error) {
 	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getCurrentEpochFunction)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct call msg: %w", err)
+	}
+
+	result, err := e.callContract(ctx, callMsg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call contract: %w", err)
+	}
+
+	epoch := new(big.Int).SetBytes(result)
+	return epoch, nil
+}
+
+func (e *Client) GetCurrentValsetEpoch(ctx context.Context) (*big.Int, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getCurrentValsetEpochFunction)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}

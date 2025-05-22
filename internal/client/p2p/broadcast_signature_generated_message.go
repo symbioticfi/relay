@@ -20,6 +20,7 @@ func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg en
 		KeyTag:                msg.KeyTag,
 		HashType:              string(msg.HashType),
 		ValsetHeaderTimestamp: msg.ValsetHeaderTimestamp,
+		Epoch:                 msg.Epoch,
 	}
 
 	data, err := json.Marshal(dto)
@@ -51,4 +52,5 @@ type signatureGeneratedDTO struct {
 	KeyTag                uint8    `json:"key_tag"`
 	HashType              string   `json:"hash_type"`
 	ValsetHeaderTimestamp *big.Int `json:"valset_header_timestamp"`
+	Epoch                 *big.Int `json:"epoch"`
 }

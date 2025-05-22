@@ -3,6 +3,7 @@ package signer_app
 import (
 	"context"
 	"log/slog"
+	"math/big"
 	"time"
 
 	"github.com/go-errors/errors"
@@ -18,6 +19,7 @@ type p2pService interface {
 
 type ethClient interface {
 	GetCurrentPhase(ctx context.Context) (entity.Phase, error)
+	GetCurrentValsetEpoch(ctx context.Context) (*big.Int, error)
 }
 
 type valsetGenerator interface {
@@ -99,6 +101,7 @@ func (s *SignerApp) Start(ctx context.Context) error {
 			PublicKeyG2:           bls.SerializeG2(&s.cfg.KeyPair.PublicKeyG2),
 			HashType:              entity.HashTypeValsetHeader,
 			ValsetHeaderTimestamp: header.Timestamp,
+			Epoch:                 header.Epoch,
 		})
 		if err != nil {
 			return errors.Errorf("failed to broadcast valset header: %w", err)

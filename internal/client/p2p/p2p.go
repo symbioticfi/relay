@@ -97,6 +97,7 @@ func (s *Service) handleStreamInternal(stream network.Stream) error {
 				KeyTag:                signatureGenerated.KeyTag,
 				HashType:              entity.HashType(signatureGenerated.HashType),
 				ValsetHeaderTimestamp: signatureGenerated.ValsetHeaderTimestamp,
+				Epoch:                 signatureGenerated.Epoch,
 			},
 			Info: entity.SenderInfo{
 				Type:      message.Type,
@@ -122,6 +123,7 @@ func (s *Service) handleStreamInternal(stream network.Stream) error {
 				Proof:       signaturesAggregated.Proof,
 				Message:     signaturesAggregated.Message,
 				HashType:    entity.HashType(signaturesAggregated.HashType),
+				Epoch:       signaturesAggregated.Epoch,
 			},
 			Info: entity.SenderInfo{
 				Type:      message.Type,
