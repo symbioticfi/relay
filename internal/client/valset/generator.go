@@ -154,6 +154,7 @@ func (v *Generator) generateValidatorSetHeader(ctx context.Context, timestamp *b
 		ValidatorsSszMRoot:     sszMroot,
 		ExtraData:              extraData,
 		Epoch:                  currentEpoch,
+		Timestamp:              timestamp,
 		DomainEip712:           domainEip712,
 		Subnetwork:             subnetwork,
 	}, nil

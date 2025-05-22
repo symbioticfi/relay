@@ -94,8 +94,6 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 	app, err := NewAggregatorApp(ctx, cfg)
 	require.NoError(t, err)
 
-	app.validatorSet = validatorSet
-
 	tests := []struct {
 		name           string
 		message        entity.P2PSignatureHashMessage

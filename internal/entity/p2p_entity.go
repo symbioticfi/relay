@@ -1,6 +1,8 @@
 package entity
 
 import (
+	"math/big"
+
 	"middleware-offchain/pkg/bls"
 )
 
@@ -19,12 +21,13 @@ const (
 )
 
 type SignatureHashMessage struct {
-	MessageHash []byte
-	Signature   []byte
-	PublicKeyG1 []byte
-	PublicKeyG2 []byte
-	KeyTag      uint8
-	HashType    HashType
+	MessageHash           []byte
+	Signature             []byte
+	PublicKeyG1           []byte
+	PublicKeyG2           []byte
+	KeyTag                uint8
+	HashType              HashType
+	ValsetHeaderTimestamp *big.Int
 }
 
 type SignaturesAggregatedMessage struct {
