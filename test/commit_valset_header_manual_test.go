@@ -82,8 +82,6 @@ func TestCommitValsetHeader(t *testing.T) {
 	header, err := svc.generator1.GenerateValidatorSetHeaderOnCapture(t.Context())
 	require.NoError(t, err)
 
-	var result bytes.Buffer
-
 	fmt.Println("G2>>>", hex.EncodeToString(aggPublicKeyG2.Marshal()))
 	fmt.Println("aggSigG1>>>", hex.EncodeToString(aggSignature.Marshal()))
 	fmt.Println("proof_>>>", hex.EncodeToString(proofData.Proof))
@@ -91,16 +89,9 @@ func TestCommitValsetHeader(t *testing.T) {
 	fmt.Println("commitmentPok>>>", hex.EncodeToString(proofData.CommitmentPok))
 	fmt.Println("validatorSet.TotalActiveVotingPower.String()>>>", validatorSet.TotalActiveVotingPower.String())
 
-	result.Write(proofData.Proof)
-	result.Write(proofData.Commitments)
-	result.Write(proofData.CommitmentPok)
-	nonSignersAggVotingPowerBuffer := make([]byte, 32)
-	proofData.NonSignersAggVotingPower.FillBytes(nonSignersAggVotingPowerBuffer)
-	result.Write(nonSignersAggVotingPowerBuffer)
+	fmt.Println("fullProof>>>", hex.EncodeToString(proofData.Marshall()))
 
-	fmt.Println("fullProof>>>", hex.EncodeToString(result.Bytes()))
-
-	err = svc.eth1.CommitValsetHeader(t.Context(), header, result.Bytes())
+	err = svc.eth1.CommitValsetHeader(t.Context(), header, proofData.Marshall())
 	require.NoError(t, err)
 }
 
@@ -116,7 +107,7 @@ func initValsetTestServices(t *testing.T) *valsetTestServices {
 
 	eth1, err := eth.NewEthClient(eth.Config{
 		MasterRPCURL:   "http://localhost:8545",
-		MasterAddress:  "0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f",
+		MasterAddress:  "0x04C89607413713Ec9775E14b954286519d836FEf",
 		PrivateKey:     bytesFromPK(t, pk1),
 		RequestTimeout: time.Minute,
 	})
@@ -124,7 +115,7 @@ func initValsetTestServices(t *testing.T) *valsetTestServices {
 
 	eth2, err := eth.NewEthClient(eth.Config{
 		MasterRPCURL:   "http://localhost:8545",
-		MasterAddress:  "0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f",
+		MasterAddress:  "0x04C89607413713Ec9775E14b954286519d836FEf",
 		PrivateKey:     bytesFromPK(t, pk2),
 		RequestTimeout: time.Minute,
 	})
@@ -132,7 +123,7 @@ func initValsetTestServices(t *testing.T) *valsetTestServices {
 
 	eth3, err := eth.NewEthClient(eth.Config{
 		MasterRPCURL:   "http://localhost:8545",
-		MasterAddress:  "0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f",
+		MasterAddress:  "0x04C89607413713Ec9775E14b954286519d836FEf",
 		PrivateKey:     bytesFromPK(t, pk3),
 		RequestTimeout: time.Minute,
 	})
@@ -224,7 +215,7 @@ func waitCommitPhase(t *testing.T) {
 	t.Helper()
 	eth1, err := eth.NewEthClient(eth.Config{
 		MasterRPCURL:   "http://localhost:8545",
-		MasterAddress:  "0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f",
+		MasterAddress:  "0x04C89607413713Ec9775E14b954286519d836FEf",
 		PrivateKey:     bytesFromPK(t, "87191036493798670866484781455694320176667203290824056510541300741498740913410"),
 		RequestTimeout: time.Minute,
 	})

@@ -59,6 +59,20 @@ type ProofData struct {
 	CommitmentPok            []byte
 	NonSignersAggVotingPower *big.Int
 }
+
+func (p ProofData) Marshall() []byte {
+	var result bytes.Buffer
+
+	result.Write(p.Proof)
+	result.Write(p.Commitments)
+	result.Write(p.CommitmentPok)
+	nonSignersAggVotingPowerBuffer := make([]byte, 32)
+	p.NonSignersAggVotingPower.FillBytes(nonSignersAggVotingPowerBuffer)
+	result.Write(nonSignersAggVotingPowerBuffer)
+
+	return result.Bytes()
+}
+
 type RawProveInput struct {
 	SignerValidators []entity.Validator
 	AllValidators    []entity.Validator

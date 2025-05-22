@@ -1,7 +1,6 @@
 package aggregator_app
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
@@ -152,7 +151,9 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 	)
 	err = s.cfg.P2PClient.BroadcastSignatureAggregatedMessage(ctx, entity.SignaturesAggregatedMessage{
 		PublicKeyG1: current.aggPublicKeyG1,
-		Proof:       s.makeProofBytes(proofData),
+		Proof:       proofData.Marshall(),
+		Message:     msg.Message.MessageHash,
+		HashType:    msg.Message.HashType,
 	})
 	if err != nil {
 		return errors.Errorf("failed to broadcast signature aggregated message: %w", err)
@@ -161,19 +162,6 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 	slog.DebugContext(ctx, "proof sent via p2p", "message", current.aggSignature)
 
 	return nil
-}
-
-func (s *AggregatorApp) makeProofBytes(proofData proof.ProofData) []byte {
-	var result bytes.Buffer
-
-	result.Write(proofData.Proof)
-	result.Write(proofData.Commitments)
-	result.Write(proofData.CommitmentPok)
-	nonSignersAggVotingPowerBuffer := make([]byte, 32)
-	proofData.NonSignersAggVotingPower.FillBytes(nonSignersAggVotingPowerBuffer)
-	result.Write(nonSignersAggVotingPowerBuffer)
-
-	return result.Bytes()
 }
 
 func initInputs() ([]byte, error) {

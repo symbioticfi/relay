@@ -11,17 +11,27 @@ const (
 	P2PMessageTypeSignaturesAggregated P2PMessageType = "signatures_aggregated"
 )
 
+type HashType string
+
+const (
+	HashTypeValsetHeader HashType = "valset_header"
+	HashTypeMessage      HashType = "message"
+)
+
 type SignatureHashMessage struct {
 	MessageHash []byte
 	Signature   []byte
 	PublicKeyG1 []byte
 	PublicKeyG2 []byte
 	KeyTag      uint8
+	HashType    HashType
 }
 
 type SignaturesAggregatedMessage struct {
 	PublicKeyG1 *bls.G1
 	Proof       []byte
+	Message     []byte
+	HashType    HashType
 }
 
 type SenderInfo struct {

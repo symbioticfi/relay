@@ -97,6 +97,7 @@ func (s *SignerApp) Start(ctx context.Context) error {
 			Signature:   bls.SerializeG1(headerSignature),
 			PublicKeyG1: bls.SerializeG1(&s.cfg.KeyPair.PublicKeyG1),
 			PublicKeyG2: bls.SerializeG2(&s.cfg.KeyPair.PublicKeyG2),
+			HashType:    entity.HashTypeValsetHeader,
 		})
 		if err != nil {
 			return errors.Errorf("failed to broadcast valset header: %w", err)

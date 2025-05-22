@@ -29,7 +29,7 @@ func (e *Client) CommitValsetHeader(ctx context.Context, header entity.Validator
 	}
 	txOpts.Context = tmCtx
 
-	headerDTO := gen.ISettlementManagerValSetHeader{
+	headerDTO := gen.ISettlementValSetHeader{
 		Version: header.Version,
 		ActiveAggregatedKeys: lo.Map(header.ActiveAggregatedKeys, func(key entity.Key, _ int) gen.IBaseKeyManagerKey {
 			return gen.IBaseKeyManagerKey{

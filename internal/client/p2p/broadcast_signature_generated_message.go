@@ -17,6 +17,7 @@ func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg en
 		PublicKeyG1: msg.PublicKeyG1,
 		PublicKeyG2: msg.PublicKeyG2,
 		KeyTag:      msg.KeyTag,
+		HashType:    string(msg.HashType),
 	}
 
 	data, err := json.Marshal(dto)
@@ -46,4 +47,5 @@ type signatureGeneratedDTO struct {
 	PublicKeyG1 []byte `json:"public_key_g1"`
 	PublicKeyG2 []byte `json:"public_key_g2"`
 	KeyTag      uint8  `json:"key_tag"`
+	HashType    string `json:"hash_type"`
 }

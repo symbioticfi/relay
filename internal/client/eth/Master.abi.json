@@ -32,7 +32,7 @@
   },
   {
     "type": "function",
-    "name": "MasterConfigManager_VERSION",
+    "name": "MasterConfigProvider_VERSION",
     "inputs": [],
     "outputs": [
       {
@@ -41,7 +41,7 @@
         "internalType": "uint64"
       }
     ],
-    "stateMutability": "view"
+    "stateMutability": "pure"
   },
   {
     "type": "function",
@@ -136,7 +136,7 @@
   },
   {
     "type": "function",
-    "name": "SettlementManager_VERSION",
+    "name": "Settlement_VERSION",
     "inputs": [],
     "outputs": [
       {
@@ -145,7 +145,7 @@
         "internalType": "uint64"
       }
     ],
-    "stateMutability": "view"
+    "stateMutability": "pure"
   },
   {
     "type": "function",
@@ -158,11 +158,11 @@
         "internalType": "uint8"
       }
     ],
-    "stateMutability": "view"
+    "stateMutability": "pure"
   },
   {
     "type": "function",
-    "name": "ValSetConfigManager_VERSION",
+    "name": "ValSetConfigProvider_VERSION",
     "inputs": [],
     "outputs": [
       {
@@ -171,7 +171,7 @@
         "internalType": "uint64"
       }
     ],
-    "stateMutability": "view"
+    "stateMutability": "pure"
   },
   {
     "type": "function",
@@ -180,7 +180,7 @@
       {
         "name": "replica",
         "type": "tuple",
-        "internalType": "struct IMasterConfigManager.CrossChainAddress",
+        "internalType": "struct IMasterConfigProvider.CrossChainAddress",
         "components": [
           {
             "name": "addr",
@@ -205,7 +205,7 @@
       {
         "name": "votingPowerProvider",
         "type": "tuple",
-        "internalType": "struct IMasterConfigManager.CrossChainAddress",
+        "internalType": "struct IMasterConfigProvider.CrossChainAddress",
         "components": [
           {
             "name": "addr",
@@ -230,7 +230,7 @@
       {
         "name": "header",
         "type": "tuple",
-        "internalType": "struct ISettlementManager.ValSetHeader",
+        "internalType": "struct ISettlement.ValSetHeader",
         "components": [
           {
             "name": "version",
@@ -368,6 +368,128 @@
   },
   {
     "type": "function",
+    "name": "getActiveReplicas",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple[]",
+        "internalType": "struct IMasterConfigProvider.CrossChainAddress[]",
+        "components": [
+          {
+            "name": "addr",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "chainId",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getActiveReplicasAt",
+    "inputs": [
+      {
+        "name": "timestamp",
+        "type": "uint48",
+        "internalType": "uint48"
+      },
+      {
+        "name": "hints",
+        "type": "bytes[]",
+        "internalType": "bytes[]"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple[]",
+        "internalType": "struct IMasterConfigProvider.CrossChainAddress[]",
+        "components": [
+          {
+            "name": "addr",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "chainId",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getActiveVotingPowerProviders",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple[]",
+        "internalType": "struct IMasterConfigProvider.CrossChainAddress[]",
+        "components": [
+          {
+            "name": "addr",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "chainId",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getActiveVotingPowerProvidersAt",
+    "inputs": [
+      {
+        "name": "timestamp",
+        "type": "uint48",
+        "internalType": "uint48"
+      },
+      {
+        "name": "hints",
+        "type": "bytes[]",
+        "internalType": "bytes[]"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple[]",
+        "internalType": "struct IMasterConfigProvider.CrossChainAddress[]",
+        "components": [
+          {
+            "name": "addr",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "chainId",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "getCaptureTimestamp",
     "inputs": [],
     "outputs": [
@@ -463,7 +585,20 @@
       {
         "name": "",
         "type": "uint8",
-        "internalType": "enum ISettlementManager.ValSetPhase"
+        "internalType": "enum ISettlement.ValSetPhase"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getCurrentValSetEpoch",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint48",
+        "internalType": "uint48"
       }
     ],
     "stateMutability": "view"
@@ -587,18 +722,79 @@
   },
   {
     "type": "function",
+    "name": "getKeysProvider",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct IMasterConfigProvider.CrossChainAddress",
+        "components": [
+          {
+            "name": "addr",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "chainId",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getKeysProviderAt",
+    "inputs": [
+      {
+        "name": "timestamp",
+        "type": "uint48",
+        "internalType": "uint48"
+      },
+      {
+        "name": "hint",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct IMasterConfigProvider.CrossChainAddress",
+        "components": [
+          {
+            "name": "addr",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "chainId",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "getMasterConfig",
     "inputs": [],
     "outputs": [
       {
         "name": "",
         "type": "tuple",
-        "internalType": "struct IMasterConfigManager.MasterConfig",
+        "internalType": "struct IMasterConfigProvider.MasterConfig",
         "components": [
           {
             "name": "votingPowerProviders",
             "type": "tuple[]",
-            "internalType": "struct IMasterConfigManager.CrossChainAddress[]",
+            "internalType": "struct IMasterConfigProvider.CrossChainAddress[]",
             "components": [
               {
                 "name": "addr",
@@ -615,7 +811,7 @@
           {
             "name": "keysProvider",
             "type": "tuple",
-            "internalType": "struct IMasterConfigManager.CrossChainAddress",
+            "internalType": "struct IMasterConfigProvider.CrossChainAddress",
             "components": [
               {
                 "name": "addr",
@@ -632,7 +828,7 @@
           {
             "name": "replicas",
             "type": "tuple[]",
-            "internalType": "struct IMasterConfigManager.CrossChainAddress[]",
+            "internalType": "struct IMasterConfigProvider.CrossChainAddress[]",
             "components": [
               {
                 "name": "addr",
@@ -670,12 +866,12 @@
       {
         "name": "",
         "type": "tuple",
-        "internalType": "struct IMasterConfigManager.MasterConfig",
+        "internalType": "struct IMasterConfigProvider.MasterConfig",
         "components": [
           {
             "name": "votingPowerProviders",
             "type": "tuple[]",
-            "internalType": "struct IMasterConfigManager.CrossChainAddress[]",
+            "internalType": "struct IMasterConfigProvider.CrossChainAddress[]",
             "components": [
               {
                 "name": "addr",
@@ -692,7 +888,7 @@
           {
             "name": "keysProvider",
             "type": "tuple",
-            "internalType": "struct IMasterConfigManager.CrossChainAddress",
+            "internalType": "struct IMasterConfigProvider.CrossChainAddress",
             "components": [
               {
                 "name": "addr",
@@ -709,7 +905,7 @@
           {
             "name": "replicas",
             "type": "tuple[]",
-            "internalType": "struct IMasterConfigManager.CrossChainAddress[]",
+            "internalType": "struct IMasterConfigProvider.CrossChainAddress[]",
             "components": [
               {
                 "name": "addr",
@@ -724,6 +920,117 @@
             ]
           }
         ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMaxValidatorsCount",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMaxValidatorsCountAt",
+    "inputs": [
+      {
+        "name": "timestamp",
+        "type": "uint48",
+        "internalType": "uint48"
+      },
+      {
+        "name": "hint",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMaxVotingPower",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMaxVotingPowerAt",
+    "inputs": [
+      {
+        "name": "timestamp",
+        "type": "uint48",
+        "internalType": "uint48"
+      },
+      {
+        "name": "hint",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMinInclusionVotingPower",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getMinInclusionVotingPowerAt",
+    "inputs": [
+      {
+        "name": "timestamp",
+        "type": "uint48",
+        "internalType": "uint48"
+      },
+      {
+        "name": "hint",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -835,6 +1142,43 @@
         "name": "",
         "type": "uint8",
         "internalType": "uint8"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getRequiredKeyTags",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "requiredKeyTags",
+        "type": "uint8[]",
+        "internalType": "uint8[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getRequiredKeyTagsAt",
+    "inputs": [
+      {
+        "name": "timestamp",
+        "type": "uint48",
+        "internalType": "uint48"
+      },
+      {
+        "name": "hint",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "requiredKeyTags",
+        "type": "uint8[]",
+        "internalType": "uint8[]"
       }
     ],
     "stateMutability": "view"
@@ -954,7 +1298,7 @@
       {
         "name": "",
         "type": "tuple",
-        "internalType": "struct IValSetConfigManager.ValSetConfig",
+        "internalType": "struct IValSetConfigProvider.ValSetConfig",
         "components": [
           {
             "name": "maxVotingPower",
@@ -1000,7 +1344,7 @@
       {
         "name": "",
         "type": "tuple",
-        "internalType": "struct IValSetConfigManager.ValSetConfig",
+        "internalType": "struct IValSetConfigProvider.ValSetConfig",
         "components": [
           {
             "name": "maxVotingPower",
@@ -1035,7 +1379,7 @@
       {
         "name": "header",
         "type": "tuple",
-        "internalType": "struct ISettlementManager.ValSetHeader",
+        "internalType": "struct ISettlement.ValSetHeader",
         "components": [
           {
             "name": "version",
@@ -1093,7 +1437,7 @@
       {
         "name": "",
         "type": "tuple",
-        "internalType": "struct ISettlementManager.ValSetHeader",
+        "internalType": "struct ISettlement.ValSetHeader",
         "components": [
           {
             "name": "version",
@@ -1264,7 +1608,7 @@
   },
   {
     "type": "function",
-    "name": "hashTypedDataV4Multichain",
+    "name": "hashTypedDataV4CrossChain",
     "inputs": [
       {
         "name": "structHash",
@@ -1286,9 +1630,9 @@
     "name": "initialize",
     "inputs": [
       {
-        "name": "settlementManagerInitParams",
+        "name": "settlementInitParams",
         "type": "tuple",
-        "internalType": "struct ISettlementManager.SettlementManagerInitParams",
+        "internalType": "struct ISettlement.SettlementInitParams",
         "components": [
           {
             "name": "networkManagerInitParams",
@@ -1344,7 +1688,7 @@
           {
             "name": "quorumThresholds",
             "type": "tuple[]",
-            "internalType": "struct ISettlementManager.QuorumThreshold[]",
+            "internalType": "struct ISettlement.QuorumThreshold[]",
             "components": [
               {
                 "name": "keyTag",
@@ -1376,9 +1720,9 @@
         ]
       },
       {
-        "name": "valSetConfigManagerInitParams",
+        "name": "valSetConfigProviderInitParams",
         "type": "tuple",
-        "internalType": "struct IValSetConfigManager.ValSetConfigManagerInitParams",
+        "internalType": "struct IValSetConfigProvider.ValSetConfigProviderInitParams",
         "components": [
           {
             "name": "maxVotingPower",
@@ -1403,14 +1747,14 @@
         ]
       },
       {
-        "name": "masterConfigManagerInitParams",
+        "name": "masterConfigProviderInitParams",
         "type": "tuple",
-        "internalType": "struct IMasterConfigManager.MasterConfigManagerInitParams",
+        "internalType": "struct IMasterConfigProvider.MasterConfigProviderInitParams",
         "components": [
           {
             "name": "votingPowerProviders",
             "type": "tuple[]",
-            "internalType": "struct IMasterConfigManager.CrossChainAddress[]",
+            "internalType": "struct IMasterConfigProvider.CrossChainAddress[]",
             "components": [
               {
                 "name": "addr",
@@ -1427,7 +1771,7 @@
           {
             "name": "keysProvider",
             "type": "tuple",
-            "internalType": "struct IMasterConfigManager.CrossChainAddress",
+            "internalType": "struct IMasterConfigProvider.CrossChainAddress",
             "components": [
               {
                 "name": "addr",
@@ -1444,7 +1788,7 @@
           {
             "name": "replicas",
             "type": "tuple[]",
-            "internalType": "struct IMasterConfigManager.CrossChainAddress[]",
+            "internalType": "struct IMasterConfigProvider.CrossChainAddress[]",
             "components": [
               {
                 "name": "addr",
@@ -1471,6 +1815,78 @@
   },
   {
     "type": "function",
+    "name": "isReplicaActive",
+    "inputs": [
+      {
+        "name": "replica",
+        "type": "tuple",
+        "internalType": "struct IMasterConfigProvider.CrossChainAddress",
+        "components": [
+          {
+            "name": "addr",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "chainId",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "isReplicaActiveAt",
+    "inputs": [
+      {
+        "name": "replica",
+        "type": "tuple",
+        "internalType": "struct IMasterConfigProvider.CrossChainAddress",
+        "components": [
+          {
+            "name": "addr",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "chainId",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      },
+      {
+        "name": "timestamp",
+        "type": "uint48",
+        "internalType": "uint48"
+      },
+      {
+        "name": "hint",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "isValSetHeaderSubmitted",
     "inputs": [],
     "outputs": [
@@ -1490,6 +1906,78 @@
         "name": "epoch",
         "type": "uint48",
         "internalType": "uint48"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "isVotingPowerProviderActive",
+    "inputs": [
+      {
+        "name": "votingPowerProvider",
+        "type": "tuple",
+        "internalType": "struct IMasterConfigProvider.CrossChainAddress",
+        "components": [
+          {
+            "name": "addr",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "chainId",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "isVotingPowerProviderActiveAt",
+    "inputs": [
+      {
+        "name": "votingPowerProvider",
+        "type": "tuple",
+        "internalType": "struct IMasterConfigProvider.CrossChainAddress",
+        "components": [
+          {
+            "name": "addr",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "chainId",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      },
+      {
+        "name": "timestamp",
+        "type": "uint48",
+        "internalType": "uint48"
+      },
+      {
+        "name": "hint",
+        "type": "bytes",
+        "internalType": "bytes"
       }
     ],
     "outputs": [
@@ -1527,7 +2015,7 @@
       {
         "name": "replica",
         "type": "tuple",
-        "internalType": "struct IMasterConfigManager.CrossChainAddress",
+        "internalType": "struct IMasterConfigProvider.CrossChainAddress",
         "components": [
           {
             "name": "addr",
@@ -1552,7 +2040,7 @@
       {
         "name": "votingPowerProvider",
         "type": "tuple",
-        "internalType": "struct IMasterConfigManager.CrossChainAddress",
+        "internalType": "struct IMasterConfigProvider.CrossChainAddress",
         "components": [
           {
             "name": "addr",
@@ -1639,7 +2127,7 @@
       {
         "name": "valSetHeader",
         "type": "tuple",
-        "internalType": "struct ISettlementManager.ValSetHeader",
+        "internalType": "struct ISettlement.ValSetHeader",
         "components": [
           {
             "name": "version",
@@ -1691,7 +2179,7 @@
       {
         "name": "keysProvider",
         "type": "tuple",
-        "internalType": "struct IMasterConfigManager.CrossChainAddress",
+        "internalType": "struct IMasterConfigProvider.CrossChainAddress",
         "components": [
           {
             "name": "addr",
@@ -1846,6 +2334,11 @@
     "type": "function",
     "name": "verifyQuorumSig",
     "inputs": [
+      {
+        "name": "epoch",
+        "type": "uint48",
+        "internalType": "uint48"
+      },
       {
         "name": "message",
         "type": "bytes",
@@ -2023,11 +2516,6 @@
   },
   {
     "type": "error",
-    "name": "CheckpointUnorderedInsertion",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "EpochManager_InvalidEpochDuration",
     "inputs": []
   },
@@ -2058,17 +2546,12 @@
   },
   {
     "type": "error",
-    "name": "InvalidLength",
+    "name": "MasterConfigProvider_AlreadyAdded",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MasterConfigManager_AlreadyAdded",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "MasterConfigManager_NotAdded",
+    "name": "MasterConfigProvider_NotAdded",
     "inputs": []
   },
   {
@@ -2078,48 +2561,32 @@
   },
   {
     "type": "error",
-    "name": "SafeCastOverflowedUintDowncast",
-    "inputs": [
-      {
-        "name": "bits",
-        "type": "uint8",
-        "internalType": "uint8"
-      },
-      {
-        "name": "value",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "SettlementManager_Duplicate",
+    "name": "Settlement_Duplicate",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "SettlementManager_EpochDurationTooShort",
+    "name": "Settlement_EpochDurationTooShort",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "SettlementManager_InvalidKey",
+    "name": "Settlement_InvalidKey",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "SettlementManager_InvalidPhase",
+    "name": "Settlement_InvalidPhase",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "SettlementManager_InvalidVersion",
+    "name": "Settlement_InvalidVersion",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "SettlementManager_VerificationFailed",
+    "name": "Settlement_VerificationFailed",
     "inputs": []
   }
 ]

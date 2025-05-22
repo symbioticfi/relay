@@ -9,10 +9,12 @@ require (
 	github.com/ferranbt/fastssz v0.1.4
 	github.com/getsentry/sentry-go v0.32.0
 	github.com/getsentry/sentry-go/slog v0.32.0
+	github.com/go-chi/chi/v5 v5.2.1
 	github.com/go-errors/errors v1.5.1
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/libp2p/go-libp2p v0.41.1
 	github.com/multiformats/go-multiaddr v0.15.0
+	github.com/prometheus/client_golang v1.22.0
 	github.com/samber/lo v1.50.0
 	github.com/samber/slog-multi v1.4.0
 	github.com/shopspring/decimal v1.4.0
@@ -123,7 +125,6 @@ require (
 	github.com/pion/webrtc/v4 v4.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.22.0 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.63.0 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect

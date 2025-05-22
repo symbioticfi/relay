@@ -18,27 +18,15 @@ cat circuit/circuit_10.r1cs
 ## Commands
 
 The application supports two commands:
-
-1. **generate-config**: Generates a default configuration file with all available options
-   ```
-   offchain-middleware generate-config
-   ```
-
-2. **start**: Starts the offchain middleware service
-   ```
-   offchain-middleware start [flags]
-   ```
-   
-   Flags:
-   - `--listen`: Address to listen on (e.g., `/ip4/127.0.0.1/tcp/8000`)
-   - `--test`: Boolean flag that enables test mode with a mock Ethereum client
-
-## Configuration
-
-You need to configure the following parameters in your `config.yaml` file:
-
-- `contract`: The Ethereum address of the middleware contract
-- `eth`: Ethereum RPC URL (e.g., `http://localhost:8545`)
-- `bls-private-key`: Your BLS private key for signing (byte array)
-- `eth-private-key`: Your Ethereum private key for transactions (byte array)
-- `peers`: List of initial peer addresses to connect to
+Signer1 + Aggregator + Commitor:
+```bash
+middleware_offchain --master-address 0x04C89607413713Ec9775E14b954286519d836FEf --rpc-url http://127.0.0.1:8545 --log-level debug --secret-key 87191036493798670866484781455694320176667203290824056510541300741498740913410 --signer true --aggregator true --committer true --http-listen :8081
+```
+Signer2
+```bash
+middleware_offchain --master-address 0x04C89607413713Ec9775E14b954286519d836FEf --rpc-url http://127.0.0.1:8545 --log-level debug --secret-key 11008377096554045051122023680185802911050337017631086444859313200352654461863 --signer true --http-listen :8082
+```
+Signer3
+```bash
+middleware_offchain --master-address 0x04C89607413713Ec9775E14b954286519d836FEf --rpc-url http://127.0.0.1:8545 --log-level debug --secret-key 26972876870930381973856869753776124637336739336929668162870464864826929175089 --signer true --http-listen :8083
+```

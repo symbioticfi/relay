@@ -3,6 +3,7 @@ package committer_app
 import (
 	"context"
 	"log/slog"
+	"math/big"
 
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
@@ -16,6 +17,7 @@ type valsetGenerator interface {
 
 type ethClient interface {
 	CommitValsetHeader(ctx context.Context, valsetHeader entity.ValidatorSetHeader, proof []byte) error
+	VerifyQuorumSig(ctx context.Context, epoch *big.Int, message []byte, keyTag uint8, threshold *big.Int, proof []byte) (bool, error)
 }
 
 type p2pClient interface {
@@ -53,6 +55,17 @@ func NewCommitterApp(cfg Config) (*CommitterApp, error) {
 func (c *CommitterApp) HandleSignaturesAggregatedMessage(ctx context.Context, msg entity.P2PSignaturesAggregatedMessage) error {
 	slog.DebugContext(ctx, "got signatures aggregated message", "message", msg)
 
+	switch msg.Message.HashType {
+	case entity.HashTypeValsetHeader:
+		return c.commitValsetHeader(ctx, msg)
+	case entity.HashTypeMessage:
+		return c.verifyQuorumSig(ctx, msg)
+	}
+
+	return errors.Errorf("unsupported hash type: %s", msg.Message.HashType)
+}
+
+func (c *CommitterApp) commitValsetHeader(ctx context.Context, msg entity.P2PSignaturesAggregatedMessage) error {
 	header, err := c.cfg.ValsetGenerator.GenerateCurrentValidatorSetHeader(ctx)
 	if err != nil {
 		return errors.Errorf("failed to generate valset header: %w", err)
@@ -67,5 +80,19 @@ func (c *CommitterApp) HandleSignaturesAggregatedMessage(ctx context.Context, ms
 
 	slog.DebugContext(ctx, "valset header committed successfully")
 
+	return nil
+}
+
+func (c *CommitterApp) verifyQuorumSig(ctx context.Context, msg entity.P2PSignaturesAggregatedMessage) error {
+	epoch := new(big.Int).SetInt64(10) // todo ilya pass from signer
+	isOK, err := c.cfg.EthClient.VerifyQuorumSig(ctx, epoch, msg.Message.Message, 15, new(big.Int).SetInt64(1e18) /*1%*/, msg.Message.Proof)
+	if err != nil {
+		return errors.Errorf("failed to verify quorum signature: %w", err)
+	}
+	if !isOK {
+		return errors.New("quorum signature verification failed")
+	}
+
+	slog.DebugContext(ctx, "quorum signature verified successfully")
 	return nil
 }

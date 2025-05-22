@@ -95,6 +95,7 @@ func (s *Service) handleStreamInternal(stream network.Stream) error {
 				PublicKeyG1: signatureGenerated.PublicKeyG1,
 				PublicKeyG2: signatureGenerated.PublicKeyG2,
 				KeyTag:      signatureGenerated.KeyTag,
+				HashType:    entity.HashType(signatureGenerated.HashType),
 			},
 			Info: entity.SenderInfo{
 				Type:      message.Type,
@@ -118,6 +119,8 @@ func (s *Service) handleStreamInternal(stream network.Stream) error {
 			Message: entity.SignaturesAggregatedMessage{
 				PublicKeyG1: g1,
 				Proof:       signaturesAggregated.Proof,
+				Message:     signaturesAggregated.Message,
+				HashType:    entity.HashType(signaturesAggregated.HashType),
 			},
 			Info: entity.SenderInfo{
 				Type:      message.Type,
