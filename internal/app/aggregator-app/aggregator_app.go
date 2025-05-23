@@ -99,7 +99,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 
 	thresholdReached := percent1e18.Cmp(quorumThreshold) >= 0
 	if !thresholdReached {
-		slog.DebugContext(ctx, "quorum not reached yet",
+		slog.InfoContext(ctx, "quorum not reached yet",
 			"percentReached", decimal.NewFromBigInt(percent1e18, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
 			"percentQuorumThreshold", decimal.NewFromBigInt(quorumThreshold, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
 			"currentVotingPower", current.votingPower,
@@ -112,7 +112,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		return nil
 	}
 
-	slog.DebugContext(ctx, "quorum reached, aggregating signatures",
+	slog.InfoContext(ctx, "quorum reached, aggregating signatures and creating proof",
 		"percentReached", decimal.NewFromBigInt(percent1e18, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
 		"percentQuorumThreshold", decimal.NewFromBigInt(quorumThreshold, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
 		"currentVotingPower", current.votingPower,
@@ -134,7 +134,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		return fmt.Errorf("failed to prove: %w", err)
 	}
 
-	slog.DebugContext(ctx, "proof created, trying to send aggregated signature message",
+	slog.InfoContext(ctx, "proof created, trying to send aggregated signature message",
 		"duration", time.Since(start).String(),
 	)
 	err = s.cfg.P2PClient.BroadcastSignatureAggregatedMessage(ctx, entity.SignaturesAggregatedMessage{
@@ -148,7 +148,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		return errors.Errorf("failed to broadcast signature aggregated message: %w", err)
 	}
 
-	slog.DebugContext(ctx, "proof sent via p2p", "message", current.aggSignature)
+	slog.InfoContext(ctx, "proof sent via p2p")
 
 	return nil
 }

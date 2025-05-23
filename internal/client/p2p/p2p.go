@@ -147,7 +147,7 @@ func (s *Service) AddPeer(pi peer.AddrInfo) error {
 		return nil
 	}
 
-	slog.InfoContext(s.ctx, "Trying to add peer", "peer", pi.ID, "addrs", pi.Addrs)
+	slog.DebugContext(s.ctx, "Trying to add peer", "peer", pi.ID, "addrs", pi.Addrs)
 
 	ctx, cancel := context.WithTimeout(s.ctx, time.Second*10)
 	defer cancel()

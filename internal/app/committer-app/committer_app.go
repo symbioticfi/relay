@@ -78,7 +78,7 @@ func (c *CommitterApp) commitValsetHeader(ctx context.Context, msg entity.P2PSig
 		return errors.Errorf("failed to commit valset header: %w", err)
 	}
 
-	slog.DebugContext(ctx, "valset header committed successfully")
+	slog.InfoContext(ctx, "valset header committed successfully")
 
 	return nil
 }

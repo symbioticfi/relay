@@ -49,8 +49,8 @@ func (dn *DiscoveryNorifee) Close() error {
 }
 
 func (dn *DiscoveryNorifee) HandlePeerFound(pi peer.AddrInfo) {
+	slog.DebugContext(dn.ctx, "peer found", "peer", pi.ID)
 	err := dn.peerAddable.AddPeer(pi)
-	slog.InfoContext(dn.ctx, "peer found", "peer", pi.ID)
 
 	if err != nil {
 		slog.ErrorContext(dn.ctx, "failed to add peer", "peer", pi.ID, "err", err)

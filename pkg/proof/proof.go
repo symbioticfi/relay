@@ -4,7 +4,6 @@ package proof
 import (
 	"bytes"
 	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"math/big"
 	"os"
@@ -34,7 +33,6 @@ import (
 	"github.com/consensys/gnark/std/hash/mimc"
 	gnarkSha3 "github.com/consensys/gnark/std/hash/sha3"
 	"github.com/consensys/gnark/std/math/emulated"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -374,10 +372,10 @@ func setCircuitData(circuit *Circuit, proveInput ProveInput) error {
 
 	circuit.NonSignersAggVotingPower = *nonSignersAggVotingPower
 
-	fmt.Println("proveInput.ValidatorData:", proveInput.ValidatorData)
-	fmt.Println("proveInput.Signature:", proveInput.Signature)
-	fmt.Println("messageG1Bn254.X:", messageG1Bn254)
-	fmt.Println("proveInput.SignersAggKeyG2:", proveInput.SignersAggKeyG2)
+	//fmt.Println("proveInput.ValidatorData:", proveInput.ValidatorData)
+	//fmt.Println("proveInput.Signature:", proveInput.Signature)
+	//fmt.Println("messageG1Bn254.X:", messageG1Bn254)
+	//fmt.Println("proveInput.SignersAggKeyG2:", proveInput.SignersAggKeyG2)
 
 	circuit.Signature = sw_bn254.NewG1Affine(proveInput.Signature)
 	circuit.Message = sw_bn254.NewG1Affine(messageG1Bn254)
@@ -387,20 +385,20 @@ func setCircuitData(circuit *Circuit, proveInput ProveInput) error {
 	aggVotingPowerBuffer := make([]byte, 32)
 	nonSignersAggVotingPower.FillBytes(aggVotingPowerBuffer)
 
-	fmt.Println("nonSignersAggVotingPower:", nonSignersAggVotingPower)
+	//fmt.Println("nonSignersAggVotingPower:", nonSignersAggVotingPower)
 	inputHashBytes := valsetHash
 	inputHashBytes = append(inputHashBytes, aggVotingPowerBuffer...)
 	inputHashBytes = append(inputHashBytes, messageBytes[:]...)
 	inputHash := crypto.Keccak256(inputHashBytes)
 
-	fmt.Println("InputHashBytes:", hex.EncodeToString(inputHashBytes))
-	fmt.Println(hex.EncodeToString(inputHashBytes))
-	fmt.Println("inputHash:", hex.EncodeToString(inputHash))
+	//fmt.Println("InputHashBytes:", hex.EncodeToString(inputHashBytes))
+	//fmt.Println(hex.EncodeToString(inputHashBytes))
+	//fmt.Println("inputHash:", hex.EncodeToString(inputHash))
 	inputHashInt := new(big.Int).SetBytes(inputHash)
 	mask, _ := big.NewInt(0).SetString("1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)
 	inputHashInt.And(inputHashInt, mask)
 
-	fmt.Println("inputHashHex:", inputHashInt.Text(16))
+	//fmt.Println("inputHashHex:", inputHashInt.Text(16))
 	circuit.InputHash = inputHashInt
 
 	return nil
@@ -477,7 +475,7 @@ func Prove(proveInput ProveInput) (ProofData, error) {
 	if err != nil {
 		return ProofData{}, errors.Errorf("failed to prove: %w", err)
 	}
-	fmt.Println(proof.CurveID())
+	//fmt.Println(proof.CurveID())
 
 	publicInputs := publicWitness.Vector().(fr.Vector)
 	// Format for the specific Solidity interface
@@ -499,8 +497,8 @@ func Prove(proveInput ProveInput) (ProofData, error) {
 	}
 
 	proofBytes := _proof.MarshalSolidity()
-	fmt.Println(len(proofBytes))
-	fmt.Println("Proof:", hex.EncodeToString(proofBytes))
+	//fmt.Println(len(proofBytes))
+	//fmt.Println("Proof:", hex.EncodeToString(proofBytes))
 	// verify proof
 	err = groth16.Verify(proof, vk, publicWitness, backend.WithVerifierHashToFieldFunction(sha256.New()))
 	if err != nil {
@@ -514,8 +512,8 @@ func Prove(proveInput ProveInput) (ProofData, error) {
 		return ProofData{}, errors.Errorf("failed to write proof: %w", err)
 	}
 	proofBytes = proofBuffer.Bytes()
-	fmt.Println("proofBytes:", proofBytes) //nolint:staticcheck // will fix later
-	fmt.Println("hex:", common.Bytes2Hex(proofBytes))
+	//fmt.Println("proofBytes:", proofBytes) //nolint:staticcheck // will fix later
+	//fmt.Println("hex:", common.Bytes2Hex(proofBytes))
 
 	// Assuming fpSize is 32 bytes for BN254
 	const fpSize = 32
@@ -538,10 +536,10 @@ func Prove(proveInput ProveInput) (ProofData, error) {
 	commitmentPok[0] = new(big.Int).SetBytes(proofBytes[4+fpSize*10 : 4+fpSize*11]) // CommitmentPok.x
 	commitmentPok[1] = new(big.Int).SetBytes(proofBytes[4+fpSize*11 : 4+fpSize*12]) // CommitmentPok.y
 
-	fmt.Println("proof: ", standardProof)
-	fmt.Println("commitments: ", commitments)
-	fmt.Println("commitmentPok: ", commitmentPok)
-	fmt.Println("inputs", formattedInputs)
+	//fmt.Println("proof: ", standardProof)
+	//fmt.Println("commitments: ", commitments)
+	//fmt.Println("commitmentPok: ", commitmentPok)
+	//fmt.Println("inputs", formattedInputs)
 	//// Extract public inputs
 	//for i := 0; i < publicWitness.Vector(); i++ {
 	//	val, _ := publicWitness.GetValue(i)
