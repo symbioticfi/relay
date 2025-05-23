@@ -7,7 +7,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/go-errors/errors"
 	validate "github.com/go-playground/validator/v10"
 	"github.com/shopspring/decimal"
@@ -45,10 +44,8 @@ func (c Config) Validate() error {
 }
 
 type AggregatorApp struct {
-	cfg          Config
-	hashStore    *hashStore
-	validatorSet entity.ValidatorSet
-	inputsBytes  []byte
+	cfg       Config
+	hashStore *hashStore
 }
 
 func NewAggregatorApp(ctx context.Context, cfg Config) (*AggregatorApp, error) {
@@ -56,23 +53,9 @@ func NewAggregatorApp(ctx context.Context, cfg Config) (*AggregatorApp, error) {
 		return nil, errors.Errorf("failed to validate config: %w", err)
 	}
 
-	nowBig := big.NewInt(time.Now().Unix())
-
-	validatorSet, err := cfg.ValsetDeriver.GetValidatorSet(ctx, nowBig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get validator set: %w", err)
-	}
-
-	zkInputs, err := initInputs()
-	if err != nil {
-		return nil, fmt.Errorf("failed to init inputs: %w", err)
-	}
-
 	app := &AggregatorApp{
-		cfg:          cfg,
-		validatorSet: validatorSet,
-		hashStore:    newHashStore(),
-		inputsBytes:  zkInputs,
+		cfg:       cfg,
+		hashStore: newHashStore(),
 	}
 
 	cfg.P2PClient.SetSignatureHashMessageHandler(app.HandleSignatureGeneratedMessage)
@@ -83,7 +66,12 @@ func NewAggregatorApp(ctx context.Context, cfg Config) (*AggregatorApp, error) {
 func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg entity.P2PSignatureHashMessage) error {
 	slog.DebugContext(ctx, "received signature hash generated message", "message", msg)
 
-	validator, found := s.validatorSet.FindValidatorByKey(msg.Message.PublicKeyG1)
+	validatorSet, err := s.cfg.ValsetDeriver.GetValidatorSet(ctx, msg.Message.ValsetHeaderTimestamp)
+	if err != nil {
+		return fmt.Errorf("failed to get validator set: %w", err)
+	}
+
+	validator, found := validatorSet.FindValidatorByKey(msg.Message.PublicKeyG1)
 	if !found {
 		return errors.Errorf("validator not found for public key: %x", msg.Message.PublicKeyG1)
 	}
@@ -107,7 +95,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 	coef1e18 := big.NewInt(1e18)
 
 	vpMul1e18 := new(big.Int).Mul(current.votingPower, coef1e18)
-	percent1e18 := new(big.Int).Div(vpMul1e18, s.validatorSet.TotalActiveVotingPower)
+	percent1e18 := new(big.Int).Div(vpMul1e18, validatorSet.TotalActiveVotingPower)
 
 	thresholdReached := percent1e18.Cmp(quorumThreshold) >= 0
 	if !thresholdReached {
@@ -116,7 +104,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 			"percentQuorumThreshold", decimal.NewFromBigInt(quorumThreshold, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
 			"currentVotingPower", current.votingPower,
 			"quorumThreshold", quorumThreshold,
-			"totalActiveVotingPower", s.validatorSet.TotalActiveVotingPower,
+			"totalActiveVotingPower", validatorSet.TotalActiveVotingPower,
 			"aggSignature", current.aggSignature,
 			"aggPublicKeyG1", current.aggPublicKeyG1,
 			"aggPublicKeyG2", current.aggPublicKeyG2,
@@ -129,14 +117,14 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		"percentQuorumThreshold", decimal.NewFromBigInt(quorumThreshold, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
 		"currentVotingPower", current.votingPower,
 		"quorumThreshold", quorumThreshold,
-		"totalActiveVotingPower", s.validatorSet.TotalActiveVotingPower,
+		"totalActiveVotingPower", validatorSet.TotalActiveVotingPower,
 	)
 
 	// todo ilya, make proof only once when threshold is reached
 	start := time.Now()
 	proofData, err := proof.DoProve(proof.RawProveInput{
 		SignerValidators: current.validators,
-		AllValidators:    s.validatorSet.Validators,
+		AllValidators:    validatorSet.Validators,
 		RequiredKeyTag:   msg.Message.KeyTag,
 		Message:          msg.Message.MessageHash,
 		Signature:        *current.aggSignature,
@@ -154,6 +142,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		Proof:       proofData.Marshall(),
 		Message:     msg.Message.MessageHash,
 		HashType:    msg.Message.HashType,
+		Epoch:       msg.Message.Epoch,
 	})
 	if err != nil {
 		return errors.Errorf("failed to broadcast signature aggregated message: %w", err)
@@ -162,34 +151,4 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 	slog.DebugContext(ctx, "proof sent via p2p", "message", current.aggSignature)
 
 	return nil
-}
-
-func initInputs() ([]byte, error) {
-	arguments := abi.Arguments{
-		{
-			Name: "inputs",
-			Type: abi.Type{
-				T: abi.SliceTy,
-				Elem: &abi.Type{
-					T: abi.UintTy, Size: 256,
-				},
-			},
-		},
-	}
-
-	in := []string{"0", "0", "0", "0", "0", "0", "0", "0", "17452784377140135873242247846499243451530443834097508626974155003329264289405", "0"}
-	result := make([]*big.Int, 0, len(in))
-	for _, s := range in {
-		b, ok := new(big.Int).SetString(s, 10)
-		if !ok {
-			return nil, errors.Errorf("failed to set string: %s", s)
-		}
-		result = append(result, b)
-	}
-	pack, err := arguments.Pack(result)
-	if err != nil {
-		return nil, errors.Errorf("failed to pack arguments: %w", err)
-	}
-
-	return pack[64:], nil // remove first 64 bytes of dynamic array prefix, we need only bytes of inputs
 }

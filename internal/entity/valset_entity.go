@@ -63,6 +63,7 @@ type ValidatorSetHeader struct {
 	Epoch                  *big.Int
 	DomainEip712           Eip712Domain
 	Subnetwork             []byte
+	Timestamp              *big.Int
 }
 
 func (v ValidatorSetHeader) Hash() ([]byte, error) {

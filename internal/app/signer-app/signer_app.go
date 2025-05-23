@@ -3,6 +3,7 @@ package signer_app
 import (
 	"context"
 	"log/slog"
+	"math/big"
 	"time"
 
 	"github.com/go-errors/errors"
@@ -18,6 +19,7 @@ type p2pService interface {
 
 type ethClient interface {
 	GetCurrentPhase(ctx context.Context) (entity.Phase, error)
+	GetCurrentValsetEpoch(ctx context.Context) (*big.Int, error)
 }
 
 type valsetGenerator interface {
@@ -92,12 +94,14 @@ func (s *SignerApp) Start(ctx context.Context) error {
 		slog.DebugContext(ctx, "valset header hash signed, sending via p2p", "headerSignature", headerSignature)
 
 		err = s.cfg.P2PService.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureHashMessage{
-			MessageHash: headerHash,
-			KeyTag:      15, // todo ilya: pass from config or from another place
-			Signature:   bls.SerializeG1(headerSignature),
-			PublicKeyG1: bls.SerializeG1(&s.cfg.KeyPair.PublicKeyG1),
-			PublicKeyG2: bls.SerializeG2(&s.cfg.KeyPair.PublicKeyG2),
-			HashType:    entity.HashTypeValsetHeader,
+			MessageHash:           headerHash,
+			KeyTag:                15, // todo ilya: pass from config or from another place
+			Signature:             bls.SerializeG1(headerSignature),
+			PublicKeyG1:           bls.SerializeG1(&s.cfg.KeyPair.PublicKeyG1),
+			PublicKeyG2:           bls.SerializeG2(&s.cfg.KeyPair.PublicKeyG2),
+			HashType:              entity.HashTypeValsetHeader,
+			ValsetHeaderTimestamp: header.Timestamp,
+			Epoch:                 header.Epoch,
 		})
 		if err != nil {
 			return errors.Errorf("failed to broadcast valset header: %w", err)
@@ -127,7 +131,9 @@ func (s *SignerApp) waitForCommitPhase(ctx context.Context) error {
 				continue
 			}
 			if err != nil {
-				return errors.Errorf("failed to get current phase: %w", err)
+				slog.WarnContext(ctx, "failed to get current phase, retrying", "error", err)
+				timer.Reset(s.cfg.PollingInterval)
+				continue
 			}
 
 			slog.DebugContext(ctx, "got current phase", "phase", phase)

@@ -29,14 +29,14 @@ import (
 func main() {
 	slog.Info("Running offchain_middleware command", "args", os.Args)
 
-	if err := run(); err != nil && !errors.Is(err, context.Canceled) {
+	if err := runRootCMD(); err != nil && !errors.Is(err, context.Canceled) {
 		slog.Error("error executing command", "error", err)
 		os.Exit(1)
 	}
 	slog.Info("Offchain middleware completed successfully")
 }
 
-func run() error {
+func runRootCMD() error {
 	rootCmd.PersistentFlags().StringVar(&cfg.rpcURL, "rpc-url", "", "RPC URL")
 	rootCmd.PersistentFlags().StringVar(&cfg.masterAddress, "master-address", "", "Master contract address")
 	rootCmd.PersistentFlags().StringVar(&cfg.logLevel, "log-level", "info", "Log level (debug, info, warn, error)")
