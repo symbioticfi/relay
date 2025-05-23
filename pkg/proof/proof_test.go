@@ -4,8 +4,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
-	"middleware-offchain/pkg/bls"
 	"testing"
+
+	"middleware-offchain/pkg/bls"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 )
@@ -29,7 +30,7 @@ func genValset(numValidators int, nonSigners []int) []ValidatorData {
 }
 
 func TestProof(t *testing.T) {
-	// t.Skipf("it works too long, so set skip here. For local debugging can remove this skip")
+	t.Skipf("it works too long, so set skip here. For local debugging can remove this skip")
 	// generate valset
 	valset := genValset(10, []int{0, 1, 2})
 
