@@ -92,6 +92,6 @@ func (c *CommitterApp) verifyQuorumSig(ctx context.Context, msg entity.P2PSignat
 		return errors.New("quorum signature verification failed")
 	}
 
-	slog.DebugContext(ctx, "quorum signature verified successfully")
+	slog.InfoContext(ctx, "quorum signature verified successfully")
 	return nil
 }
