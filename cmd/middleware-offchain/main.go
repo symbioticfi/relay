@@ -140,7 +140,7 @@ var rootCmd = &cobra.Command{
 		slog.InfoContext(ctx, "started discovery service", "listenAddr", cfg.listenAddress)
 
 		signerApp, err := app.NewSignerApp(app.Config{
-			PollingInterval: time.Second * 10,
+			PollingInterval: time.Second * 3,
 			ValsetGenerator: generator,
 			EthClient:       ethClient,
 			P2PService:      p2pService,
