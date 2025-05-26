@@ -112,7 +112,7 @@ var rootCmd = &cobra.Command{
 		}
 		slog.DebugContext(ctx, "created eth client")
 
-		message := strconv.FormatFloat(rand.Float64(), 'f', 10, 64)
+		message := strconv.FormatFloat(rand.Float64(), 'f', 10, 64) //nolint:gosec // This is just a random message for testing purposes.
 
 		closableCtx, cancel := context.WithCancel(ctx)
 

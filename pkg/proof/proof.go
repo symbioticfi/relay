@@ -491,12 +491,12 @@ func Prove(proveInput ProveInput) (ProofData, error) {
 		fmt.Println("Warning: More public inputs than the interface supports")
 	}
 
-	_proof, ok := proof.(interface{ MarshalSolidity() []byte })
-	if !ok {
-		panic("proof does not implement MarshalSolidity()")
-	}
+	//_proof, ok := proof.(interface{ MarshalSolidity() []byte })
+	//if !ok {
+	//	panic("proof does not implement MarshalSolidity()")
+	//}
 
-	proofBytes := _proof.MarshalSolidity()
+	//proofBytes := _proof.MarshalSolidity()
 	//fmt.Println(len(proofBytes))
 	//fmt.Println("Proof:", hex.EncodeToString(proofBytes))
 	// verify proof
@@ -511,7 +511,7 @@ func Prove(proveInput ProveInput) (ProofData, error) {
 	if err != nil {
 		return ProofData{}, errors.Errorf("failed to write proof: %w", err)
 	}
-	proofBytes = proofBuffer.Bytes()
+	proofBytes := proofBuffer.Bytes()
 	//fmt.Println("proofBytes:", proofBytes) //nolint:staticcheck // will fix later
 	//fmt.Println("hex:", common.Bytes2Hex(proofBytes))
 
