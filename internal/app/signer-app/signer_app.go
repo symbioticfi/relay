@@ -8,6 +8,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
+	"middleware-offchain/internal/client/valset"
 	"middleware-offchain/internal/entity"
 	"middleware-offchain/pkg/bls"
 )
@@ -22,7 +23,8 @@ type ethClient interface {
 
 type valsetGenerator interface {
 	GenerateCurrentValidatorSetHeader(ctx context.Context) (entity.ValidatorSetHeader, error)
-	GenerateValidatorSetHeaderHash(validatorSetHeader entity.ValidatorSetHeader) ([]byte, error)
+	GenerateExtraData(ctx context.Context, valsetHeader entity.ValidatorSetHeader, verificationType uint32) ([]entity.ExtraData, error)
+	GenerateValidatorSetHeaderHash(validatorSetHeader entity.ValidatorSetHeader, extraData []entity.ExtraData) ([]byte, error)
 }
 
 type Config struct {
@@ -75,9 +77,14 @@ func (s *SignerApp) Start(ctx context.Context) error {
 			return errors.Errorf("failed to generate valset header: %w", err)
 		}
 
+		extraData, err := s.cfg.ValsetGenerator.GenerateExtraData(ctx, header, valset.ZkVerificationType)
+		if err != nil {
+			return errors.Errorf("failed to generate extra data: %w", err)
+		}
+
 		slog.DebugContext(ctx, "valset header generated, generating hash", "header", header)
 
-		headerHash, err := s.cfg.ValsetGenerator.GenerateValidatorSetHeaderHash(header)
+		headerHash, err := s.cfg.ValsetGenerator.GenerateValidatorSetHeaderHash(header, extraData)
 		if err != nil {
 			return errors.Errorf("failed to generate valset header hash: %w", err)
 		}

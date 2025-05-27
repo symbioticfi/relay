@@ -1,176 +1,94 @@
 [
-  {
-    "type": "constructor",
-    "inputs": [],
-    "stateMutability": "nonpayable"
-  },
+  { "type": "constructor", "inputs": [], "stateMutability": "nonpayable" },
   {
     "type": "function",
     "name": "DEFAULT_ADMIN_ROLE",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "EpochManager_VERSION",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint64", "internalType": "uint64" }],
     "stateMutability": "pure"
   },
   {
     "type": "function",
     "name": "MasterConfigProvider_VERSION",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint64", "internalType": "uint64" }],
     "stateMutability": "pure"
   },
   {
     "type": "function",
     "name": "NETWORK",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "NetworkManager_VERSION",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint64", "internalType": "uint64" }],
     "stateMutability": "pure"
   },
   {
     "type": "function",
     "name": "OzAccessControl_VERSION",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint64", "internalType": "uint64" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "OzEIP712_VERSION",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint64", "internalType": "uint64" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "PermissionManager_VERSION",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint64", "internalType": "uint64" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "SUBNETWORK",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "SUBNETWORK_IDENTIFIER",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint96",
-        "internalType": "uint96"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint96", "internalType": "uint96" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "Settlement_VERSION",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint64", "internalType": "uint64" }],
     "stateMutability": "pure"
   },
   {
     "type": "function",
     "name": "VALIDATOR_SET_VERSION",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint8",
-        "internalType": "uint8"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint8", "internalType": "uint8" }],
     "stateMutability": "pure"
   },
   {
     "type": "function",
     "name": "ValSetConfigProvider_VERSION",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint64", "internalType": "uint64" }],
     "stateMutability": "pure"
   },
   {
@@ -182,16 +100,8 @@
         "type": "tuple",
         "internalType": "struct IMasterConfigProvider.CrossChainAddress",
         "components": [
-          {
-            "name": "addr",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "chainId",
-            "type": "uint64",
-            "internalType": "uint64"
-          }
+          { "name": "addr", "type": "address", "internalType": "address" },
+          { "name": "chainId", "type": "uint64", "internalType": "uint64" }
         ]
       }
     ],
@@ -207,16 +117,8 @@
         "type": "tuple",
         "internalType": "struct IMasterConfigProvider.CrossChainAddress",
         "components": [
-          {
-            "name": "addr",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "chainId",
-            "type": "uint64",
-            "internalType": "uint64"
-          }
+          { "name": "addr", "type": "address", "internalType": "address" },
+          { "name": "chainId", "type": "uint64", "internalType": "uint64" }
         ]
       }
     ],
@@ -232,30 +134,20 @@
         "type": "tuple",
         "internalType": "struct ISettlement.ValSetHeader",
         "components": [
+          { "name": "version", "type": "uint8", "internalType": "uint8" },
           {
-            "name": "version",
+            "name": "requiredKeyTag",
             "type": "uint8",
             "internalType": "uint8"
           },
+          { "name": "epoch", "type": "uint48", "internalType": "uint48" },
           {
-            "name": "activeAggregatedKeys",
-            "type": "tuple[]",
-            "internalType": "struct IBaseKeyManager.Key[]",
-            "components": [
-              {
-                "name": "tag",
-                "type": "uint8",
-                "internalType": "uint8"
-              },
-              {
-                "name": "payload",
-                "type": "bytes",
-                "internalType": "bytes"
-              }
-            ]
+            "name": "captureTimestamp",
+            "type": "uint48",
+            "internalType": "uint48"
           },
           {
-            "name": "totalActiveVotingPower",
+            "name": "quorumThreshold",
             "type": "uint256",
             "internalType": "uint256"
           },
@@ -265,17 +157,23 @@
             "internalType": "bytes32"
           },
           {
-            "name": "extraData",
-            "type": "bytes",
-            "internalType": "bytes"
+            "name": "previousHeaderHash",
+            "type": "bytes32",
+            "internalType": "bytes32"
           }
         ]
       },
       {
-        "name": "proof",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
+        "name": "extraData",
+        "type": "tuple[]",
+        "internalType": "struct ISettlement.ExtraData[]",
+        "components": [
+          { "name": "key", "type": "bytes32", "internalType": "bytes32" },
+          { "name": "value", "type": "bytes32", "internalType": "bytes32" }
+        ]
+      },
+      { "name": "proof", "type": "bytes", "internalType": "bytes" },
+      { "name": "hint", "type": "bytes", "internalType": "bytes" }
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
@@ -285,83 +183,20 @@
     "name": "eip712Domain",
     "inputs": [],
     "outputs": [
-      {
-        "name": "fields",
-        "type": "bytes1",
-        "internalType": "bytes1"
-      },
-      {
-        "name": "name",
-        "type": "string",
-        "internalType": "string"
-      },
-      {
-        "name": "version",
-        "type": "string",
-        "internalType": "string"
-      },
-      {
-        "name": "chainId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
+      { "name": "fields", "type": "bytes1", "internalType": "bytes1" },
+      { "name": "name", "type": "string", "internalType": "string" },
+      { "name": "version", "type": "string", "internalType": "string" },
+      { "name": "chainId", "type": "uint256", "internalType": "uint256" },
       {
         "name": "verifyingContract",
         "type": "address",
         "internalType": "address"
       },
-      {
-        "name": "salt",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
+      { "name": "salt", "type": "bytes32", "internalType": "bytes32" },
       {
         "name": "extensions",
         "type": "uint256[]",
         "internalType": "uint256[]"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getActiveAggregatedKeyFromValSetHeader",
-    "inputs": [
-      {
-        "name": "keyTag",
-        "type": "uint8",
-        "internalType": "uint8"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getActiveAggregatedKeyFromValSetHeaderAt",
-    "inputs": [
-      {
-        "name": "epoch",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "keyTag",
-        "type": "uint8",
-        "internalType": "uint8"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes",
-        "internalType": "bytes"
       }
     ],
     "stateMutability": "view"
@@ -376,16 +211,8 @@
         "type": "tuple[]",
         "internalType": "struct IMasterConfigProvider.CrossChainAddress[]",
         "components": [
-          {
-            "name": "addr",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "chainId",
-            "type": "uint64",
-            "internalType": "uint64"
-          }
+          { "name": "addr", "type": "address", "internalType": "address" },
+          { "name": "chainId", "type": "uint64", "internalType": "uint64" }
         ]
       }
     ],
@@ -395,16 +222,8 @@
     "type": "function",
     "name": "getActiveReplicasAt",
     "inputs": [
-      {
-        "name": "timestamp",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "hints",
-        "type": "bytes[]",
-        "internalType": "bytes[]"
-      }
+      { "name": "timestamp", "type": "uint48", "internalType": "uint48" },
+      { "name": "hints", "type": "bytes[]", "internalType": "bytes[]" }
     ],
     "outputs": [
       {
@@ -412,16 +231,8 @@
         "type": "tuple[]",
         "internalType": "struct IMasterConfigProvider.CrossChainAddress[]",
         "components": [
-          {
-            "name": "addr",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "chainId",
-            "type": "uint64",
-            "internalType": "uint64"
-          }
+          { "name": "addr", "type": "address", "internalType": "address" },
+          { "name": "chainId", "type": "uint64", "internalType": "uint64" }
         ]
       }
     ],
@@ -437,16 +248,8 @@
         "type": "tuple[]",
         "internalType": "struct IMasterConfigProvider.CrossChainAddress[]",
         "components": [
-          {
-            "name": "addr",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "chainId",
-            "type": "uint64",
-            "internalType": "uint64"
-          }
+          { "name": "addr", "type": "address", "internalType": "address" },
+          { "name": "chainId", "type": "uint64", "internalType": "uint64" }
         ]
       }
     ],
@@ -456,16 +259,8 @@
     "type": "function",
     "name": "getActiveVotingPowerProvidersAt",
     "inputs": [
-      {
-        "name": "timestamp",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "hints",
-        "type": "bytes[]",
-        "internalType": "bytes[]"
-      }
+      { "name": "timestamp", "type": "uint48", "internalType": "uint48" },
+      { "name": "hints", "type": "bytes[]", "internalType": "bytes[]" }
     ],
     "outputs": [
       {
@@ -473,16 +268,8 @@
         "type": "tuple[]",
         "internalType": "struct IMasterConfigProvider.CrossChainAddress[]",
         "components": [
-          {
-            "name": "addr",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "chainId",
-            "type": "uint64",
-            "internalType": "uint64"
-          }
+          { "name": "addr", "type": "address", "internalType": "address" },
+          { "name": "chainId", "type": "uint64", "internalType": "uint64" }
         ]
       }
     ],
@@ -492,63 +279,45 @@
     "type": "function",
     "name": "getCaptureTimestamp",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint48", "internalType": "uint48" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getCaptureTimestampFromValSetHeader",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint48", "internalType": "uint48" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getCaptureTimestampFromValSetHeaderAt",
+    "inputs": [{ "name": "epoch", "type": "uint48", "internalType": "uint48" }],
+    "outputs": [{ "name": "", "type": "uint48", "internalType": "uint48" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "getCommitDuration",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint48", "internalType": "uint48" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "getCommitDurationAt",
     "inputs": [
-      {
-        "name": "epoch",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
+      { "name": "timestamp", "type": "uint48", "internalType": "uint48" },
+      { "name": "hint", "type": "bytes", "internalType": "bytes" }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint48", "internalType": "uint48" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "getCurrentEpoch",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint48", "internalType": "uint48" }],
     "stateMutability": "view"
   },
   {
@@ -556,11 +325,7 @@
     "name": "getCurrentEpochDuration",
     "inputs": [],
     "outputs": [
-      {
-        "name": "epochDuration",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
+      { "name": "epochDuration", "type": "uint48", "internalType": "uint48" }
     ],
     "stateMutability": "view"
   },
@@ -568,13 +333,7 @@
     "type": "function",
     "name": "getCurrentEpochStart",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint48", "internalType": "uint48" }],
     "stateMutability": "view"
   },
   {
@@ -594,49 +353,25 @@
     "type": "function",
     "name": "getCurrentValSetEpoch",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint48", "internalType": "uint48" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "getCurrentValSetTimestamp",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint48", "internalType": "uint48" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "getEpochDuration",
     "inputs": [
-      {
-        "name": "epoch",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
+      { "name": "epoch", "type": "uint48", "internalType": "uint48" },
+      { "name": "hint", "type": "bytes", "internalType": "bytes" }
     ],
     "outputs": [
-      {
-        "name": "epochDuration",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
+      { "name": "epochDuration", "type": "uint48", "internalType": "uint48" }
     ],
     "stateMutability": "view"
   },
@@ -644,80 +379,37 @@
     "type": "function",
     "name": "getEpochIndex",
     "inputs": [
-      {
-        "name": "timestamp",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
+      { "name": "timestamp", "type": "uint48", "internalType": "uint48" },
+      { "name": "hint", "type": "bytes", "internalType": "bytes" }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint48", "internalType": "uint48" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "getEpochStart",
     "inputs": [
-      {
-        "name": "epoch",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
+      { "name": "epoch", "type": "uint48", "internalType": "uint48" },
+      { "name": "hint", "type": "bytes", "internalType": "bytes" }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint48", "internalType": "uint48" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
-    "name": "getExtraDataFromValSetHeader",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
-    ],
+    "name": "getExtraData",
+    "inputs": [{ "name": "key", "type": "bytes32", "internalType": "bytes32" }],
+    "outputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
-    "name": "getExtraDataFromValSetHeaderAt",
+    "name": "getExtraDataAt",
     "inputs": [
-      {
-        "name": "epoch",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
+      { "name": "epoch", "type": "uint48", "internalType": "uint48" },
+      { "name": "key", "type": "bytes32", "internalType": "bytes32" }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],
     "stateMutability": "view"
   },
   {
@@ -730,16 +422,8 @@
         "type": "tuple",
         "internalType": "struct IMasterConfigProvider.CrossChainAddress",
         "components": [
-          {
-            "name": "addr",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "chainId",
-            "type": "uint64",
-            "internalType": "uint64"
-          }
+          { "name": "addr", "type": "address", "internalType": "address" },
+          { "name": "chainId", "type": "uint64", "internalType": "uint64" }
         ]
       }
     ],
@@ -749,16 +433,8 @@
     "type": "function",
     "name": "getKeysProviderAt",
     "inputs": [
-      {
-        "name": "timestamp",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
+      { "name": "timestamp", "type": "uint48", "internalType": "uint48" },
+      { "name": "hint", "type": "bytes", "internalType": "bytes" }
     ],
     "outputs": [
       {
@@ -766,19 +442,18 @@
         "type": "tuple",
         "internalType": "struct IMasterConfigProvider.CrossChainAddress",
         "components": [
-          {
-            "name": "addr",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "chainId",
-            "type": "uint64",
-            "internalType": "uint64"
-          }
+          { "name": "addr", "type": "address", "internalType": "address" },
+          { "name": "chainId", "type": "uint64", "internalType": "uint64" }
         ]
       }
     ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getLastCommittedHeaderCaptureTimestamp",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint48", "internalType": "uint48" }],
     "stateMutability": "view"
   },
   {
@@ -841,6 +516,11 @@
                 "internalType": "uint64"
               }
             ]
+          },
+          {
+            "name": "verificationType",
+            "type": "uint32",
+            "internalType": "uint32"
           }
         ]
       }
@@ -851,16 +531,8 @@
     "type": "function",
     "name": "getMasterConfigAt",
     "inputs": [
-      {
-        "name": "timestamp",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "hints",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
+      { "name": "timestamp", "type": "uint48", "internalType": "uint48" },
+      { "name": "hints", "type": "bytes", "internalType": "bytes" }
     ],
     "outputs": [
       {
@@ -918,6 +590,11 @@
                 "internalType": "uint64"
               }
             ]
+          },
+          {
+            "name": "verificationType",
+            "type": "uint32",
+            "internalType": "uint32"
           }
         ]
       }
@@ -928,222 +605,131 @@
     "type": "function",
     "name": "getMaxValidatorsCount",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "getMaxValidatorsCountAt",
     "inputs": [
-      {
-        "name": "timestamp",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
+      { "name": "timestamp", "type": "uint48", "internalType": "uint48" },
+      { "name": "hint", "type": "bytes", "internalType": "bytes" }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "getMaxVotingPower",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "getMaxVotingPowerAt",
     "inputs": [
-      {
-        "name": "timestamp",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
+      { "name": "timestamp", "type": "uint48", "internalType": "uint48" },
+      { "name": "hint", "type": "bytes", "internalType": "bytes" }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "getMinInclusionVotingPower",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "getMinInclusionVotingPowerAt",
     "inputs": [
-      {
-        "name": "timestamp",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
+      { "name": "timestamp", "type": "uint48", "internalType": "uint48" },
+      { "name": "hint", "type": "bytes", "internalType": "bytes" }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "getNextEpoch",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint48", "internalType": "uint48" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "getNextEpochStart",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint48", "internalType": "uint48" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
-    "name": "getQuorumThreshold",
-    "inputs": [
-      {
-        "name": "keyTag",
-        "type": "uint8",
-        "internalType": "uint8"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint208",
-        "internalType": "uint208"
-      }
-    ],
+    "name": "getPreviousHeaderHashFromValSetHeader",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
-    "name": "getQuorumThresholdAt",
-    "inputs": [
-      {
-        "name": "keyTag",
-        "type": "uint8",
-        "internalType": "uint8"
-      },
-      {
-        "name": "epoch",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint208",
-        "internalType": "uint208"
-      }
-    ],
+    "name": "getPreviousHeaderHashFromValSetHeaderAt",
+    "inputs": [{ "name": "epoch", "type": "uint48", "internalType": "uint48" }],
+    "outputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getProlongDuration",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint48", "internalType": "uint48" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getQuorumThresholdFromValSetHeader",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getQuorumThresholdFromValSetHeaderAt",
+    "inputs": [{ "name": "epoch", "type": "uint48", "internalType": "uint48" }],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "getRequiredKeyTag",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint8",
-        "internalType": "uint8"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint8", "internalType": "uint8" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "getRequiredKeyTagAt",
     "inputs": [
-      {
-        "name": "epoch",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
+      { "name": "timestamp", "type": "uint48", "internalType": "uint48" },
+      { "name": "hint", "type": "bytes", "internalType": "bytes" }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint8",
-        "internalType": "uint8"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint8", "internalType": "uint8" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getRequiredKeyTagFromValSetHeader",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint8", "internalType": "uint8" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getRequiredKeyTagFromValSetHeaderAt",
+    "inputs": [{ "name": "epoch", "type": "uint48", "internalType": "uint48" }],
+    "outputs": [{ "name": "", "type": "uint8", "internalType": "uint8" }],
     "stateMutability": "view"
   },
   {
@@ -1163,16 +749,8 @@
     "type": "function",
     "name": "getRequiredKeyTagsAt",
     "inputs": [
-      {
-        "name": "timestamp",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
+      { "name": "timestamp", "type": "uint48", "internalType": "uint48" },
+      { "name": "hint", "type": "bytes", "internalType": "bytes" }
     ],
     "outputs": [
       {
@@ -1187,107 +765,35 @@
     "type": "function",
     "name": "getRole",
     "inputs": [
-      {
-        "name": "selector",
-        "type": "bytes4",
-        "internalType": "bytes4"
-      }
+      { "name": "selector", "type": "bytes4", "internalType": "bytes4" }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "getRoleAdmin",
     "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
+      { "name": "role", "type": "bytes32", "internalType": "bytes32" }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "getSigVerifier",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "getSigVerifierAt",
     "inputs": [
-      {
-        "name": "epoch",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
+      { "name": "timestamp", "type": "uint48", "internalType": "uint48" },
+      { "name": "hint", "type": "bytes", "internalType": "bytes" }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getTotalActiveVotingPowerFromValSetHeader",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getTotalActiveVotingPowerFromValSetHeaderAt",
-    "inputs": [
-      {
-        "name": "epoch",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
     "stateMutability": "view"
   },
   {
@@ -1329,16 +835,8 @@
     "type": "function",
     "name": "getValSetConfigAt",
     "inputs": [
-      {
-        "name": "timestamp",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "hints",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
+      { "name": "timestamp", "type": "uint48", "internalType": "uint48" },
+      { "name": "hints", "type": "bytes", "internalType": "bytes" }
     ],
     "outputs": [
       {
@@ -1381,30 +879,20 @@
         "type": "tuple",
         "internalType": "struct ISettlement.ValSetHeader",
         "components": [
+          { "name": "version", "type": "uint8", "internalType": "uint8" },
           {
-            "name": "version",
+            "name": "requiredKeyTag",
             "type": "uint8",
             "internalType": "uint8"
           },
+          { "name": "epoch", "type": "uint48", "internalType": "uint48" },
           {
-            "name": "activeAggregatedKeys",
-            "type": "tuple[]",
-            "internalType": "struct IBaseKeyManager.Key[]",
-            "components": [
-              {
-                "name": "tag",
-                "type": "uint8",
-                "internalType": "uint8"
-              },
-              {
-                "name": "payload",
-                "type": "bytes",
-                "internalType": "bytes"
-              }
-            ]
+            "name": "captureTimestamp",
+            "type": "uint48",
+            "internalType": "uint48"
           },
           {
-            "name": "totalActiveVotingPower",
+            "name": "quorumThreshold",
             "type": "uint256",
             "internalType": "uint256"
           },
@@ -1414,9 +902,9 @@
             "internalType": "bytes32"
           },
           {
-            "name": "extraData",
-            "type": "bytes",
-            "internalType": "bytes"
+            "name": "previousHeaderHash",
+            "type": "bytes32",
+            "internalType": "bytes32"
           }
         ]
       }
@@ -1426,43 +914,27 @@
   {
     "type": "function",
     "name": "getValSetHeaderAt",
-    "inputs": [
-      {
-        "name": "epoch",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
-    ],
+    "inputs": [{ "name": "epoch", "type": "uint48", "internalType": "uint48" }],
     "outputs": [
       {
         "name": "",
         "type": "tuple",
         "internalType": "struct ISettlement.ValSetHeader",
         "components": [
+          { "name": "version", "type": "uint8", "internalType": "uint8" },
           {
-            "name": "version",
+            "name": "requiredKeyTag",
             "type": "uint8",
             "internalType": "uint8"
           },
+          { "name": "epoch", "type": "uint48", "internalType": "uint48" },
           {
-            "name": "activeAggregatedKeys",
-            "type": "tuple[]",
-            "internalType": "struct IBaseKeyManager.Key[]",
-            "components": [
-              {
-                "name": "tag",
-                "type": "uint8",
-                "internalType": "uint8"
-              },
-              {
-                "name": "payload",
-                "type": "bytes",
-                "internalType": "bytes"
-              }
-            ]
+            "name": "captureTimestamp",
+            "type": "uint48",
+            "internalType": "uint48"
           },
           {
-            "name": "totalActiveVotingPower",
+            "name": "quorumThreshold",
             "type": "uint256",
             "internalType": "uint256"
           },
@@ -1472,9 +944,9 @@
             "internalType": "bytes32"
           },
           {
-            "name": "extraData",
-            "type": "bytes",
-            "internalType": "bytes"
+            "name": "previousHeaderHash",
+            "type": "bytes32",
+            "internalType": "bytes32"
           }
         ]
       }
@@ -1485,80 +957,53 @@
     "type": "function",
     "name": "getValidatorsSszMRootFromValSetHeader",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "getValidatorsSszMRootFromValSetHeaderAt",
+    "inputs": [{ "name": "epoch", "type": "uint48", "internalType": "uint48" }],
+    "outputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getVerificationType",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint32", "internalType": "uint32" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getVerificationTypeAt",
     "inputs": [
-      {
-        "name": "epoch",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
+      { "name": "timestamp", "type": "uint48", "internalType": "uint48" },
+      { "name": "hint", "type": "bytes", "internalType": "bytes" }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint32", "internalType": "uint32" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "getVersionFromValSetHeader",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint8",
-        "internalType": "uint8"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint8", "internalType": "uint8" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "getVersionFromValSetHeaderAt",
-    "inputs": [
-      {
-        "name": "epoch",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint8",
-        "internalType": "uint8"
-      }
-    ],
+    "inputs": [{ "name": "epoch", "type": "uint48", "internalType": "uint48" }],
+    "outputs": [{ "name": "", "type": "uint8", "internalType": "uint8" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "grantRole",
     "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "account",
-        "type": "address",
-        "internalType": "address"
-      }
+      { "name": "role", "type": "bytes32", "internalType": "bytes32" },
+      { "name": "account", "type": "address", "internalType": "address" }
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
@@ -1567,62 +1012,28 @@
     "type": "function",
     "name": "hasRole",
     "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "account",
-        "type": "address",
-        "internalType": "address"
-      }
+      { "name": "role", "type": "bytes32", "internalType": "bytes32" },
+      { "name": "account", "type": "address", "internalType": "address" }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "hashTypedDataV4",
     "inputs": [
-      {
-        "name": "structHash",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
+      { "name": "structHash", "type": "bytes32", "internalType": "bytes32" }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "hashTypedDataV4CrossChain",
     "inputs": [
-      {
-        "name": "structHash",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
+      { "name": "structHash", "type": "bytes32", "internalType": "bytes32" }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],
     "stateMutability": "view"
   },
   {
@@ -1673,11 +1084,7 @@
             "type": "tuple",
             "internalType": "struct IOzEIP712.OzEIP712InitParams",
             "components": [
-              {
-                "name": "name",
-                "type": "string",
-                "internalType": "string"
-              },
+              { "name": "name", "type": "string", "internalType": "string" },
               {
                 "name": "version",
                 "type": "string",
@@ -1686,24 +1093,12 @@
             ]
           },
           {
-            "name": "quorumThresholds",
-            "type": "tuple[]",
-            "internalType": "struct ISettlement.QuorumThreshold[]",
-            "components": [
-              {
-                "name": "keyTag",
-                "type": "uint8",
-                "internalType": "uint8"
-              },
-              {
-                "name": "threshold",
-                "type": "uint208",
-                "internalType": "uint208"
-              }
-            ]
+            "name": "commitDuration",
+            "type": "uint48",
+            "internalType": "uint48"
           },
           {
-            "name": "commitDuration",
+            "name": "prolongDuration",
             "type": "uint48",
             "internalType": "uint48"
           },
@@ -1801,14 +1196,15 @@
                 "internalType": "uint64"
               }
             ]
+          },
+          {
+            "name": "verificationType",
+            "type": "uint32",
+            "internalType": "uint32"
           }
         ]
       },
-      {
-        "name": "defaultAdmin",
-        "type": "address",
-        "internalType": "address"
-      }
+      { "name": "defaultAdmin", "type": "address", "internalType": "address" }
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
@@ -1822,26 +1218,12 @@
         "type": "tuple",
         "internalType": "struct IMasterConfigProvider.CrossChainAddress",
         "components": [
-          {
-            "name": "addr",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "chainId",
-            "type": "uint64",
-            "internalType": "uint64"
-          }
+          { "name": "addr", "type": "address", "internalType": "address" },
+          { "name": "chainId", "type": "uint64", "internalType": "uint64" }
         ]
       }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
     "stateMutability": "view"
   },
   {
@@ -1853,68 +1235,28 @@
         "type": "tuple",
         "internalType": "struct IMasterConfigProvider.CrossChainAddress",
         "components": [
-          {
-            "name": "addr",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "chainId",
-            "type": "uint64",
-            "internalType": "uint64"
-          }
+          { "name": "addr", "type": "address", "internalType": "address" },
+          { "name": "chainId", "type": "uint64", "internalType": "uint64" }
         ]
       },
-      {
-        "name": "timestamp",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
+      { "name": "timestamp", "type": "uint48", "internalType": "uint48" },
+      { "name": "hint", "type": "bytes", "internalType": "bytes" }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
-    "name": "isValSetHeaderSubmitted",
+    "name": "isValSetHeaderCommitted",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
-    "name": "isValSetHeaderSubmittedAt",
-    "inputs": [
-      {
-        "name": "epoch",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
+    "name": "isValSetHeaderCommittedAt",
+    "inputs": [{ "name": "epoch", "type": "uint48", "internalType": "uint48" }],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
     "stateMutability": "view"
   },
   {
@@ -1926,26 +1268,12 @@
         "type": "tuple",
         "internalType": "struct IMasterConfigProvider.CrossChainAddress",
         "components": [
-          {
-            "name": "addr",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "chainId",
-            "type": "uint64",
-            "internalType": "uint64"
-          }
+          { "name": "addr", "type": "address", "internalType": "address" },
+          { "name": "chainId", "type": "uint64", "internalType": "uint64" }
         ]
       }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
     "stateMutability": "view"
   },
   {
@@ -1957,54 +1285,24 @@
         "type": "tuple",
         "internalType": "struct IMasterConfigProvider.CrossChainAddress",
         "components": [
-          {
-            "name": "addr",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "chainId",
-            "type": "uint64",
-            "internalType": "uint64"
-          }
+          { "name": "addr", "type": "address", "internalType": "address" },
+          { "name": "chainId", "type": "uint64", "internalType": "uint64" }
         ]
       },
-      {
-        "name": "timestamp",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
+      { "name": "timestamp", "type": "uint48", "internalType": "uint48" },
+      { "name": "hint", "type": "bytes", "internalType": "bytes" }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "multicall",
     "inputs": [
-      {
-        "name": "data",
-        "type": "bytes[]",
-        "internalType": "bytes[]"
-      }
+      { "name": "data", "type": "bytes[]", "internalType": "bytes[]" }
     ],
     "outputs": [
-      {
-        "name": "results",
-        "type": "bytes[]",
-        "internalType": "bytes[]"
-      }
+      { "name": "results", "type": "bytes[]", "internalType": "bytes[]" }
     ],
     "stateMutability": "nonpayable"
   },
@@ -2017,16 +1315,8 @@
         "type": "tuple",
         "internalType": "struct IMasterConfigProvider.CrossChainAddress",
         "components": [
-          {
-            "name": "addr",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "chainId",
-            "type": "uint64",
-            "internalType": "uint64"
-          }
+          { "name": "addr", "type": "address", "internalType": "address" },
+          { "name": "chainId", "type": "uint64", "internalType": "uint64" }
         ]
       }
     ],
@@ -2042,16 +1332,8 @@
         "type": "tuple",
         "internalType": "struct IMasterConfigProvider.CrossChainAddress",
         "components": [
-          {
-            "name": "addr",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "chainId",
-            "type": "uint64",
-            "internalType": "uint64"
-          }
+          { "name": "addr", "type": "address", "internalType": "address" },
+          { "name": "chainId", "type": "uint64", "internalType": "uint64" }
         ]
       }
     ],
@@ -2062,11 +1344,7 @@
     "type": "function",
     "name": "renounceRole",
     "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
+      { "name": "role", "type": "bytes32", "internalType": "bytes32" },
       {
         "name": "callerConfirmation",
         "type": "address",
@@ -2080,16 +1358,8 @@
     "type": "function",
     "name": "revokeRole",
     "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "account",
-        "type": "address",
-        "internalType": "address"
-      }
+      { "name": "role", "type": "bytes32", "internalType": "bytes32" },
+      { "name": "account", "type": "address", "internalType": "address" }
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
@@ -2098,11 +1368,7 @@
     "type": "function",
     "name": "setCommitDuration",
     "inputs": [
-      {
-        "name": "commitDuration",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
+      { "name": "commitDuration", "type": "uint48", "internalType": "uint48" }
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
@@ -2111,11 +1377,7 @@
     "type": "function",
     "name": "setEpochDuration",
     "inputs": [
-      {
-        "name": "epochDuration",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
+      { "name": "epochDuration", "type": "uint48", "internalType": "uint48" }
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
@@ -2129,30 +1391,20 @@
         "type": "tuple",
         "internalType": "struct ISettlement.ValSetHeader",
         "components": [
+          { "name": "version", "type": "uint8", "internalType": "uint8" },
           {
-            "name": "version",
+            "name": "requiredKeyTag",
             "type": "uint8",
             "internalType": "uint8"
           },
+          { "name": "epoch", "type": "uint48", "internalType": "uint48" },
           {
-            "name": "activeAggregatedKeys",
-            "type": "tuple[]",
-            "internalType": "struct IBaseKeyManager.Key[]",
-            "components": [
-              {
-                "name": "tag",
-                "type": "uint8",
-                "internalType": "uint8"
-              },
-              {
-                "name": "payload",
-                "type": "bytes",
-                "internalType": "bytes"
-              }
-            ]
+            "name": "captureTimestamp",
+            "type": "uint48",
+            "internalType": "uint48"
           },
           {
-            "name": "totalActiveVotingPower",
+            "name": "quorumThreshold",
             "type": "uint256",
             "internalType": "uint256"
           },
@@ -2162,10 +1414,19 @@
             "internalType": "bytes32"
           },
           {
-            "name": "extraData",
-            "type": "bytes",
-            "internalType": "bytes"
+            "name": "previousHeaderHash",
+            "type": "bytes32",
+            "internalType": "bytes32"
           }
+        ]
+      },
+      {
+        "name": "extraData",
+        "type": "tuple[]",
+        "internalType": "struct ISettlement.ExtraData[]",
+        "components": [
+          { "name": "key", "type": "bytes32", "internalType": "bytes32" },
+          { "name": "value", "type": "bytes32", "internalType": "bytes32" }
         ]
       }
     ],
@@ -2181,16 +1442,8 @@
         "type": "tuple",
         "internalType": "struct IMasterConfigProvider.CrossChainAddress",
         "components": [
-          {
-            "name": "addr",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "chainId",
-            "type": "uint64",
-            "internalType": "uint64"
-          }
+          { "name": "addr", "type": "address", "internalType": "address" },
+          { "name": "chainId", "type": "uint64", "internalType": "uint64" }
         ]
       }
     ],
@@ -2238,31 +1491,9 @@
   },
   {
     "type": "function",
-    "name": "setQuorumThreshold",
-    "inputs": [
-      {
-        "name": "keyTag",
-        "type": "uint8",
-        "internalType": "uint8"
-      },
-      {
-        "name": "quorumThreshold",
-        "type": "uint208",
-        "internalType": "uint208"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
     "name": "setRequiredKeyTag",
     "inputs": [
-      {
-        "name": "requiredKeyTag",
-        "type": "uint8",
-        "internalType": "uint8"
-      }
+      { "name": "requiredKeyTag", "type": "uint8", "internalType": "uint8" }
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
@@ -2284,10 +1515,19 @@
     "type": "function",
     "name": "setSigVerifier",
     "inputs": [
+      { "name": "sigVerifier", "type": "address", "internalType": "address" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setVerificationType",
+    "inputs": [
       {
-        "name": "sigVerifier",
-        "type": "address",
-        "internalType": "address"
+        "name": "verificationType",
+        "type": "uint32",
+        "internalType": "uint32"
       }
     ],
     "outputs": [],
@@ -2297,16 +1537,8 @@
     "type": "function",
     "name": "staticDelegateCall",
     "inputs": [
-      {
-        "name": "target",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "data",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
+      { "name": "target", "type": "address", "internalType": "address" },
+      { "name": "data", "type": "bytes", "internalType": "bytes" }
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
@@ -2315,58 +1547,27 @@
     "type": "function",
     "name": "supportsInterface",
     "inputs": [
-      {
-        "name": "interfaceId",
-        "type": "bytes4",
-        "internalType": "bytes4"
-      }
+      { "name": "interfaceId", "type": "bytes4", "internalType": "bytes4" }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "verifyQuorumSig",
     "inputs": [
-      {
-        "name": "epoch",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "message",
-        "type": "bytes",
-        "internalType": "bytes"
-      },
-      {
-        "name": "keyTag",
-        "type": "uint8",
-        "internalType": "uint8"
-      },
+      { "name": "epoch", "type": "uint48", "internalType": "uint48" },
+      { "name": "message", "type": "bytes", "internalType": "bytes" },
+      { "name": "keyTag", "type": "uint8", "internalType": "uint8" },
       {
         "name": "quorumThreshold",
-        "type": "uint208",
-        "internalType": "uint208"
+        "type": "uint256",
+        "internalType": "uint256"
       },
-      {
-        "name": "proof",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
+      { "name": "proof", "type": "bytes", "internalType": "bytes" },
+      { "name": "hint", "type": "bytes", "internalType": "bytes" }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
     "stateMutability": "view"
   },
   {
@@ -2482,36 +1683,20 @@
     ],
     "anonymous": false
   },
-  {
-    "type": "error",
-    "name": "AccessControlBadConfirmation",
-    "inputs": []
-  },
+  { "type": "error", "name": "AccessControlBadConfirmation", "inputs": [] },
   {
     "type": "error",
     "name": "AccessControlUnauthorizedAccount",
     "inputs": [
-      {
-        "name": "account",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "neededRole",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
+      { "name": "account", "type": "address", "internalType": "address" },
+      { "name": "neededRole", "type": "bytes32", "internalType": "bytes32" }
     ]
   },
   {
     "type": "error",
     "name": "AddressEmptyCode",
     "inputs": [
-      {
-        "name": "target",
-        "type": "address",
-        "internalType": "address"
-      }
+      { "name": "target", "type": "address", "internalType": "address" }
     ]
   },
   {
@@ -2529,41 +1714,17 @@
     "name": "EpochManager_InvalidEpochDurationTimestamp",
     "inputs": []
   },
-  {
-    "type": "error",
-    "name": "EpochManager_NoCheckpoint",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "FailedCall",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidInitialization",
-    "inputs": []
-  },
+  { "type": "error", "name": "EpochManager_NoCheckpoint", "inputs": [] },
+  { "type": "error", "name": "FailedCall", "inputs": [] },
+  { "type": "error", "name": "InvalidInitialization", "inputs": [] },
   {
     "type": "error",
     "name": "MasterConfigProvider_AlreadyAdded",
     "inputs": []
   },
-  {
-    "type": "error",
-    "name": "MasterConfigProvider_NotAdded",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "NotInitializing",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "Settlement_Duplicate",
-    "inputs": []
-  },
+  { "type": "error", "name": "MasterConfigProvider_NotAdded", "inputs": [] },
+  { "type": "error", "name": "NotInitializing", "inputs": [] },
+  { "type": "error", "name": "Settlement_Duplicate", "inputs": [] },
   {
     "type": "error",
     "name": "Settlement_EpochDurationTooShort",
@@ -2571,22 +1732,17 @@
   },
   {
     "type": "error",
-    "name": "Settlement_InvalidKey",
+    "name": "Settlement_InvalidCaptureTimestamp",
     "inputs": []
   },
+  { "type": "error", "name": "Settlement_InvalidEpoch", "inputs": [] },
+  { "type": "error", "name": "Settlement_InvalidKey", "inputs": [] },
+  { "type": "error", "name": "Settlement_InvalidPhase", "inputs": [] },
+  { "type": "error", "name": "Settlement_InvalidVersion", "inputs": [] },
   {
     "type": "error",
-    "name": "Settlement_InvalidPhase",
+    "name": "Settlement_ValSetHeaderAlreadySubmitted",
     "inputs": []
   },
-  {
-    "type": "error",
-    "name": "Settlement_InvalidVersion",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "Settlement_VerificationFailed",
-    "inputs": []
-  }
+  { "type": "error", "name": "Settlement_VerificationFailed", "inputs": [] }
 ]

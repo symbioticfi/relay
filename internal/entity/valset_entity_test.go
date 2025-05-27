@@ -18,7 +18,7 @@ func TestValidatorSetHeaderEncode(t *testing.T) {
 		}},
 		TotalActiveVotingPower: new(big.Int).SetInt64(30000000000000),
 		ValidatorsSszMRoot:     [32]byte(decodeHex(t, "d9354a3cf52fba5126422c86d35db53d566d46f9208faa86c7b9155d7dcf3926")),
-		ExtraData:              decodeHex(t, "2695ed079545bb906f5868716071ab237e36d04fdc1aa07b06bd98c81185067d"),
+		PreviousHeaderHash:     [32]byte(decodeHex(t, "2695ed079545bb906f5868716071ab237e36d04fdc1aa07b06bd98c81185067d")),
 	}
 
 	encode, err := v.Encode()

@@ -55,12 +55,12 @@ func mockValset() []ValidatorData {
 func TestProof(t *testing.T) {
 	// t.Skipf("it works too long, so set skip here. For local debugging can remove this skip")
 	// generate valset
-	// valset := genValset(10, []int{0, 1, 2})
-	valset := mockValset()
+	valset := genValset(11, []int{})
+	// valset := mockValset()
 
 	validatorData := normalizeValset(valset)
 
-	messageString := "204e0c470c62e2f8426b236c004b581084dd3aaa935ed3afe24dc37e0d040823"
+	messageString := "658bc250cfe17f8ad77a5f5d92afb6e9316088b5c89c6df2db63785116b22948"
 	message, err := hex.DecodeString(messageString)
 	if err != nil {
 		t.Fatal(err)

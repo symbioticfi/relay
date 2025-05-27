@@ -10,6 +10,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/consensys/gnark/std/math/bits"
 	"github.com/consensys/gnark/std/math/uints"
@@ -39,7 +40,7 @@ import (
 )
 
 var (
-	MaxValidators = []int{10}
+	MaxValidators = []int{10, 100, 1000}
 )
 
 const (
@@ -169,6 +170,11 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		return err
 	}
 
+	fieldFpApi, err := emulated.NewField[emulated.BN254Fp](api)
+	if err != nil {
+		return err
+	}
+
 	fieldFrApi, err := emulated.NewField[emulated.BN254Fr](api)
 	if err != nil {
 		return err
@@ -194,6 +200,7 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		return err
 	}
 
+	valsetHash := frontend.Variable(0)
 	signersAggKey := &sw_bn254.G1Affine{
 		X: emulated.ValueOf[emulated.BN254Fp](0),
 		Y: emulated.ValueOf[emulated.BN254Fp](0),
@@ -204,6 +211,13 @@ func (circuit *Circuit) Define(api frontend.API) error {
 	for i := range circuit.ValidatorData {
 		hashAffineG1(&mimcApi, &circuit.ValidatorData[i].Key)
 		mimcApi.Write(circuit.ValidatorData[i].VotingPower)
+		valsetHashTemp := mimcApi.Sum()
+
+		valsetHash = api.Select(
+			api.And(fieldFpApi.IsZero(&circuit.ValidatorData[i].Key.X), fieldFpApi.IsZero(&circuit.ValidatorData[i].Key.Y)),
+			valsetHash,
+			valsetHashTemp,
+		)
 
 		// get power if NON-SIGNER otherwise 0
 		pow := api.Select(circuit.ValidatorData[i].IsNonSigner, frontend.Variable(0), circuit.ValidatorData[i].VotingPower)
@@ -216,7 +230,6 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		})
 		signersAggKey = curveApi.AddUnified(signersAggKey, point)
 	}
-	valsetHash := mimcApi.Sum()
 
 	// compare with public inputs
 	api.AssertIsEqual(signersAggVotingPower, circuit.SignersAggVotingPower)
@@ -277,7 +290,13 @@ func (circuit *Circuit) Define(api frontend.API) error {
 // helper functions
 func HashValset(valset []ValidatorData) []byte {
 	h := mimc_native.NewMiMC()
+	zeroPoint := new(bn254.G1Affine)
+	zeroPoint.SetInfinity()
 	for i := range valset {
+		if valset[i].Key.X.Cmp(&zeroPoint.X) == 0 && valset[i].Key.Y.Cmp(&zeroPoint.Y) == 0 {
+			break
+		}
+
 		xBytes := valset[i].Key.X.Bytes()
 		yBytes := valset[i].Key.Y.Bytes()
 
@@ -428,14 +447,19 @@ func DoProve(rawProveInput RawProveInput) (ProofData, error) {
 	return proofData, nil
 }
 
-// todo ilya
-func ToValidatorsData(signerValidators []entity.Validator, allValidators []entity.Validator, requiredKeyTag uint8) ([]ValidatorData, error) {
+func GetActiveValidators(allValidators []entity.Validator) []entity.Validator {
 	activeValidators := make([]entity.Validator, 0)
 	for _, validator := range allValidators {
 		if validator.IsActive {
 			activeValidators = append(activeValidators, validator)
 		}
 	}
+	return activeValidators
+}
+
+// todo ilya
+func ToValidatorsData(signerValidators []entity.Validator, allValidators []entity.Validator, requiredKeyTag uint8) ([]ValidatorData, error) {
+	activeValidators := GetActiveValidators(allValidators)
 	valset := make([]ValidatorData, 0)
 	for i := range activeValidators {
 		for _, key := range activeValidators[i].Keys {
@@ -476,7 +500,10 @@ func Prove(proveInput ProveInput) (ProofData, error) {
 	publicWitness, _ := witness.Public()
 
 	// groth16: Prove & Verify
+	startTime := time.Now()
 	proof, err := groth16.Prove(r1cs, pk, witness, backend.WithProverHashToFieldFunction(sha256.New()))
+	elapsed := time.Since(startTime)
+	fmt.Printf("groth16.Prove execution time: %s\n", elapsed)
 	if err != nil {
 		return ProofData{}, errors.Errorf("failed to prove: %w", err)
 	}

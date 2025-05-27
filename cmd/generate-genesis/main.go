@@ -14,10 +14,11 @@ import (
 
 	"middleware-offchain/internal/client/eth"
 	"middleware-offchain/internal/client/valset"
+	"middleware-offchain/internal/entity"
 	"middleware-offchain/pkg/log"
 )
 
-// generate_genesis --master-address 0x04C89607413713Ec9775E14b954286519d836FEf --rpc-url http://127.0.0.1:8545
+// generate_genesis --master-address 0xCa6ad8510F888ca63DBe8bA5Eb57916acb4A5449 --rpc-url http://127.0.0.1:8545
 func main() {
 	slog.Info("Running generate_genesis command", "args", os.Args)
 
@@ -86,9 +87,24 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to generate validator set header: %w", err)
 		}
 
+		fmt.Println("header>>>", header)
+
 		slog.Info("Valset header generated!")
 
-		jsonData, err := header.EncodeJSON()
+		extraData, err := generator.GenerateExtraData(ctx, header, valset.ZkVerificationType)
+		if err != nil {
+			return errors.Errorf("failed to generate extra data: %w", err)
+		}
+
+		fmt.Println("extraData>>>", extraData)
+
+		jsonData, err := entity.ValidatorSetHeaderWithExtraData{
+			ValidatorSetHeader: header,
+			ExtraDataList:      extraData,
+		}.EncodeJSON()
+
+		fmt.Println("jsonData>>>", string(jsonData))
+
 		if err != nil {
 			return errors.Errorf("failed to marshal header to JSON: %w", err)
 		}

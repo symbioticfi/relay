@@ -8,16 +8,18 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
+	"middleware-offchain/internal/client/valset"
 	"middleware-offchain/internal/entity"
 )
 
 type valsetGenerator interface {
 	GenerateCurrentValidatorSetHeader(ctx context.Context) (entity.ValidatorSetHeader, error)
+	GenerateExtraData(ctx context.Context, valsetHeader entity.ValidatorSetHeader, verificationType uint32) ([]entity.ExtraData, error)
 }
 
 type ethClient interface {
-	CommitValsetHeader(ctx context.Context, valsetHeader entity.ValidatorSetHeader, proof []byte) error
-	VerifyQuorumSig(ctx context.Context, epoch *big.Int, message []byte, keyTag uint8, threshold *big.Int, proof []byte) (bool, error)
+	CommitValsetHeader(ctx context.Context, valsetHeader entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte, hint []byte) error
+	VerifyQuorumSig(ctx context.Context, epoch *big.Int, message []byte, keyTag uint8, threshold *big.Int, proof []byte, hint []byte) (bool, error)
 }
 
 type p2pClient interface {
@@ -71,9 +73,14 @@ func (c *CommitterApp) commitValsetHeader(ctx context.Context, msg entity.P2PSig
 		return errors.Errorf("failed to generate valset header: %w", err)
 	}
 
+	extraData, err := c.cfg.ValsetGenerator.GenerateExtraData(ctx, header, valset.ZkVerificationType)
+	if err != nil {
+		return errors.Errorf("failed to generate extra data: %w", err)
+	}
+
 	slog.DebugContext(ctx, "generated valset header, committing", "header", header)
 
-	err = c.cfg.EthClient.CommitValsetHeader(ctx, header, msg.Message.Proof)
+	err = c.cfg.EthClient.CommitValsetHeader(ctx, header, extraData, msg.Message.Proof, []byte{})
 	if err != nil {
 		return errors.Errorf("failed to commit valset header: %w", err)
 	}
@@ -85,7 +92,7 @@ func (c *CommitterApp) commitValsetHeader(ctx context.Context, msg entity.P2PSig
 
 func (c *CommitterApp) verifyQuorumSig(ctx context.Context, msg entity.P2PSignaturesAggregatedMessage) error {
 	epoch := new(big.Int).SetInt64(10) // todo ilya pass from signer
-	isOK, err := c.cfg.EthClient.VerifyQuorumSig(ctx, epoch, msg.Message.Message, 15, new(big.Int).SetInt64(1e18) /*1%*/, msg.Message.Proof)
+	isOK, err := c.cfg.EthClient.VerifyQuorumSig(ctx, epoch, msg.Message.Message, 15, new(big.Int).SetInt64(1e18) /*1%*/, msg.Message.Proof, []byte{})
 	if err != nil {
 		return errors.Errorf("failed to verify quorum signature: %w", err)
 	}

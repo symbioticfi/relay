@@ -5,14 +5,43 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"reflect"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 
 	"middleware-offchain/internal/entity"
 	"middleware-offchain/pkg/bls"
 	"middleware-offchain/pkg/proof"
 	"middleware-offchain/pkg/ssz"
+)
+
+const (
+	ZkVerificationType     = 0
+	SimpleVerificationType = 1
+)
+
+const (
+	ExtraDataGlobalKeyPrefix = "symbiotic.Settlement.extraData."
+	ExtraDataKeyTagPrefix    = "keyTag."
+)
+
+const (
+	ZkVerificationTotalActiveValidators = "totalActiveValidators"
+	ZkVerificationValidatorSetHashMimc  = "validatorSetHashMimc"
+)
+
+const (
+	SimpleVerificationValidatorSetHashKeccak256 = "validatorSetHashKeccak256"
+	SimpleVerificationTotalVotingPower          = "totalVotingPower"
+	SimpleVerificationAggPublicKeyG1            = "aggPublicKeyG1"
+)
+
+var (
+	QuorumThresholdBase       = big.NewInt(1e18)
+	QuorumThresholdPercentage = big.NewInt(666666666666666667)
 )
 
 //go:generate mockgen -source=generator.go -destination=mocks/generator.go -package=mocks
@@ -127,13 +156,6 @@ func (v *Generator) generateValidatorSetHeader(ctx context.Context, timestamp *b
 		return entity.ValidatorSetHeader{}, fmt.Errorf("failed to get hash tree root: %w", err)
 	}
 
-	// Use the first key tag for proof generation
-	valset, err := proof.ToValidatorsData(validatorSet.Validators, validatorSet.Validators, requiredKeyTag)
-	if err != nil {
-		return entity.ValidatorSetHeader{}, fmt.Errorf("failed to convert validators to data: %w", err)
-	}
-	extraData := proof.HashValset(valset)
-
 	// Format all aggregated keys for the header
 	formattedKeys := make([]entity.Key, 0, len(aggPubkeysG1))
 	for i, key := range aggPubkeysG1 {
@@ -145,24 +167,113 @@ func (v *Generator) generateValidatorSetHeader(ctx context.Context, timestamp *b
 		}
 	}
 
+	formattedHashesMimc := make([]entity.ValidatorSetHash, 0, len(formattedKeys))
+	for _, key := range formattedKeys {
+		validatorsData, err := proof.ToValidatorsData(validatorSet.Validators, validatorSet.Validators, key.Tag)
+		fmt.Println("validatorsData>>>", validatorsData)
+		if err != nil {
+			return entity.ValidatorSetHeader{}, fmt.Errorf("failed to convert validators to data: %w", err)
+		}
+		hash := proof.HashValset(validatorsData)
+		formattedHashesMimc = append(formattedHashesMimc, entity.ValidatorSetHash{
+			KeyTag: key.Tag,
+			Hash:   [32]byte(hash),
+		})
+	}
+
+	fmt.Println("formattedHashesMimc>>>", formattedHashesMimc)
+
+	formattedHashesKeccak256 := make([]entity.ValidatorSetHash, 0, len(formattedKeys)) // TODO: prettify/check
+	type validatorDataTuple struct {
+		X, Y, VotingPower *big.Int
+	}
+	u256, _ := abi.NewType("uint256", "", nil)
+
+	tupleType := abi.Type{
+		T:             abi.TupleTy,
+		TupleElems:    []*abi.Type{&u256, &u256, &u256},
+		TupleRawNames: []string{"X", "Y", "votingPower"},
+		TupleType:     reflect.TypeOf(validatorDataTuple{}),
+	}
+
+	arrayType := abi.Type{
+		T:    abi.SliceTy,
+		Elem: &tupleType,
+	}
+
+	args := abi.Arguments{{Type: arrayType}}
+	for _, key := range formattedKeys {
+		validatorsData := make([]validatorDataTuple, 0, len(validatorSet.Validators))
+		for _, validator := range validatorSet.Validators {
+			validatorVotingPower := validator.VotingPower
+			for _, validatorKey := range validator.Keys {
+				if validatorKey.Tag == key.Tag {
+					validatorKeyG1, err := bls.DeserializeG1(validatorKey.Payload)
+					if err != nil {
+						return entity.ValidatorSetHeader{}, fmt.Errorf("failed to deserialize G1: %w", err)
+					}
+					x := validatorKeyG1.X.BigInt(new(big.Int))
+					y := validatorKeyG1.Y.BigInt(new(big.Int))
+
+					votingPower := validatorVotingPower
+
+					validatorsData = append(validatorsData, validatorDataTuple{
+						X:           x,
+						Y:           y,
+						VotingPower: votingPower,
+					})
+				}
+			}
+		}
+
+		packed, err := args.Pack(validatorsData)
+		if err != nil {
+			return entity.ValidatorSetHeader{}, fmt.Errorf("failed to pack arguments: %w", err)
+		}
+		hash := crypto.Keccak256Hash(packed)
+		formattedHashesKeccak256 = append(formattedHashesKeccak256, entity.ValidatorSetHash{
+			KeyTag: key.Tag,
+			Hash:   hash,
+		})
+	}
+
+	quorumThreshold := new(big.Int).Mul(validatorSet.TotalActiveVotingPower, QuorumThresholdPercentage)
+	quorumThreshold.Add(quorumThreshold, QuorumThresholdBase)
+	quorumThreshold.Sub(quorumThreshold, big.NewInt(1))
+	quorumThreshold.Div(quorumThreshold, QuorumThresholdBase)
+
+	previousHeaderHash := [32]byte{} // TODO: get previous header hash from the previous header
+	big.NewInt(0).FillBytes(previousHeaderHash[:])
+
 	slog.DebugContext(ctx, "Generated validator set header", "formattedKeys", formattedKeys)
 
 	return entity.ValidatorSetHeader{
-		Version:                validatorSet.Version,
-		ActiveAggregatedKeys:   formattedKeys,
-		TotalActiveVotingPower: validatorSet.TotalActiveVotingPower,
-		ValidatorsSszMRoot:     sszMroot,
-		ExtraData:              extraData,
-		Epoch:                  currentEpoch,
-		DomainEip712:           domainEip712,
-		Subnetwork:             subnetwork,
+		Version:                     validatorSet.Version,
+		TotalActiveValidators:       new(big.Int).SetInt64(int64(len(proof.GetActiveValidators(validatorSet.Validators)))),
+		ActiveAggregatedKeys:        formattedKeys,
+		TotalActiveVotingPower:      validatorSet.TotalActiveVotingPower,
+		ValidatorsSszMRoot:          sszMroot,
+		Epoch:                       currentEpoch,
+		DomainEip712:                domainEip712,
+		Subnetwork:                  subnetwork,
+		ValidatorSetHashesMimc:      formattedHashesMimc,
+		ValidatorSetHashesKeccak256: formattedHashesKeccak256,
+		RequiredKeyTag:              requiredKeyTag,
+		CaptureTimestamp:            timestamp,
+		QuorumThreshold:             quorumThreshold,
+		PreviousHeaderHash:          previousHeaderHash,
 	}, nil
 }
 
-func (v *Generator) GenerateValidatorSetHeaderHash(validatorSetHeader entity.ValidatorSetHeader) ([]byte, error) {
-	hash, err := validatorSetHeader.Hash()
+func (v *Generator) GenerateValidatorSetHeaderHash(validatorSetHeader entity.ValidatorSetHeader, extraData []entity.ExtraData) ([]byte, error) {
+	headerHash, err := validatorSetHeader.Hash()
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash validator set header: %w", err)
+	}
+
+	extraDataHash, err := entity.ExtraDataList(extraData).Hash()
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash extra data: %w", err)
 	}
 
 	typedData := apitypes.TypedData{
@@ -175,6 +286,7 @@ func (v *Generator) GenerateValidatorSetHeaderHash(validatorSetHeader entity.Val
 				{Name: "subnetwork", Type: "bytes32"},
 				{Name: "epoch", Type: "uint48"},
 				{Name: "headerHash", Type: "bytes32"},
+				{Name: "extraData", Type: "bytes32"},
 			},
 		},
 		Domain: apitypes.TypedDataDomain{
@@ -185,7 +297,8 @@ func (v *Generator) GenerateValidatorSetHeaderHash(validatorSetHeader entity.Val
 		Message: map[string]interface{}{
 			"subnetwork": validatorSetHeader.Subnetwork,
 			"epoch":      validatorSetHeader.Epoch,
-			"headerHash": hash,
+			"headerHash": headerHash,
+			"extraData":  extraDataHash,
 		},
 	}
 
@@ -195,4 +308,148 @@ func (v *Generator) GenerateValidatorSetHeaderHash(validatorSetHeader entity.Val
 	}
 
 	return hashBytes, nil
+}
+
+func (v *Generator) GetExtraDataKey(verificationType uint32, name string) ([32]byte, error) {
+	strTy, _ := abi.NewType("string", "", nil)
+	u32Ty, _ := abi.NewType("uint32", "", nil)
+
+	args := abi.Arguments{
+		{Type: strTy},
+		{Type: u32Ty},
+		{Type: strTy},
+	}
+
+	packed, err := args.Pack(ExtraDataGlobalKeyPrefix, verificationType, name)
+	if err != nil {
+		return [32]byte{}, err
+	}
+	return crypto.Keccak256Hash(packed), nil
+}
+
+func (v *Generator) GetExtraDataKeyTagged(verificationType uint32, keyTag uint8, name string) ([32]byte, error) {
+	strTy, _ := abi.NewType("string", "", nil)
+	u32Ty, _ := abi.NewType("uint32", "", nil)
+	u8Ty, _ := abi.NewType("uint8", "", nil)
+
+	args := abi.Arguments{
+		{Type: strTy},
+		{Type: u32Ty},
+		{Type: strTy},
+		{Type: u8Ty},
+		{Type: strTy},
+	}
+
+	packed, err := args.Pack(ExtraDataGlobalKeyPrefix, verificationType, ExtraDataKeyTagPrefix, keyTag, name)
+	if err != nil {
+		return [32]byte{}, err
+	}
+	return crypto.Keccak256Hash(packed), nil
+}
+
+func (v *Generator) GetExtraDataKeyIndexed(
+	verificationType uint32,
+	keyTag uint8,
+	name string,
+	index *big.Int,
+) ([32]byte, error) {
+
+	baseHash, err := v.GetExtraDataKeyTagged(verificationType, keyTag, name)
+	if err != nil {
+		return [32]byte{}, err
+	}
+
+	sum := new(big.Int).Add(new(big.Int).SetBytes(baseHash[:]), index)
+	var out [32]byte
+	sum.FillBytes(out[:])
+	return out, nil
+}
+
+func (v *Generator) GenerateExtraData(ctx context.Context, valsetHeader entity.ValidatorSetHeader, verificationType uint32) ([]entity.ExtraData, error) {
+	extraData := make([]entity.ExtraData, 0)
+
+	switch verificationType {
+	case ZkVerificationType:
+		{
+			totalActiveValidatorsKey, err := v.GetExtraDataKey(verificationType, ZkVerificationTotalActiveValidators)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get extra data key: %w", err)
+			}
+			totalActiveValidatorsBytes32 := [32]byte{}
+			valsetHeader.TotalActiveValidators.FillBytes(totalActiveValidatorsBytes32[:])
+			extraData = append(extraData, entity.ExtraData{
+				Key:   totalActiveValidatorsKey,
+				Value: totalActiveValidatorsBytes32,
+			})
+
+			for _, validatorSetHash := range valsetHeader.ValidatorSetHashesMimc {
+				validatorSetHashKey, err := v.GetExtraDataKeyTagged(verificationType, validatorSetHash.KeyTag, ZkVerificationValidatorSetHashMimc)
+				if err != nil {
+					return nil, fmt.Errorf("failed to get extra data key: %w", err)
+				}
+
+				extraData = append(extraData, entity.ExtraData{
+					Key:   validatorSetHashKey,
+					Value: validatorSetHash.Hash,
+				})
+			}
+		}
+	case SimpleVerificationType: // TODO: prettify/check
+		totalActiveValidatorsKey, err := v.GetExtraDataKey(verificationType, SimpleVerificationTotalVotingPower)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get extra data key: %w", err)
+		}
+		totalActiveValidatorsBytes32 := [32]byte{}
+		valsetHeader.TotalActiveValidators.FillBytes(totalActiveValidatorsBytes32[:])
+		extraData = append(extraData, entity.ExtraData{
+			Key:   totalActiveValidatorsKey,
+			Value: totalActiveValidatorsBytes32,
+		})
+
+		for _, validatorSetHash := range valsetHeader.ValidatorSetHashesKeccak256 {
+			validatorSetHashKey, err := v.GetExtraDataKeyTagged(verificationType, validatorSetHash.KeyTag, SimpleVerificationValidatorSetHashKeccak256)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get extra data key: %w", err)
+			}
+
+			extraData = append(extraData, entity.ExtraData{
+				Key:   validatorSetHashKey,
+				Value: validatorSetHash.Hash,
+			})
+		}
+
+		for _, activeAggregatedKey := range valsetHeader.ActiveAggregatedKeys {
+
+			activeAggregatedKeyKey, err := v.GetExtraDataKeyTagged(verificationType, activeAggregatedKey.Tag, SimpleVerificationAggPublicKeyG1)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get extra data key: %w", err)
+			}
+			keyG1Raw, err := bls.DeserializeG1(activeAggregatedKey.Payload)
+			if err != nil {
+				return nil, fmt.Errorf("failed to deserialize G1: %w", err)
+			}
+
+			x := keyG1Raw.X.BigInt(new(big.Int))
+			y := keyG1Raw.Y.BigInt(new(big.Int))
+			_, derivedY, err := bls.FindYFromX(x)
+			if err != nil {
+				return nil, fmt.Errorf("failed to find Y from X: %w", err)
+			}
+
+			flag := y.Cmp(derivedY) != 0
+			compressedKeyG1 := new(big.Int).Mul(x, big.NewInt(2))
+			if flag {
+				compressedKeyG1.Add(compressedKeyG1, big.NewInt(1))
+			}
+
+			compressedKeyG1Bytes := [32]byte{}
+			compressedKeyG1.FillBytes(compressedKeyG1Bytes[:])
+			extraData = append(extraData, entity.ExtraData{
+				Key:   activeAggregatedKeyKey,
+				Value: compressedKeyG1Bytes,
+			})
+		}
+	}
+
+	return extraData, nil
 }

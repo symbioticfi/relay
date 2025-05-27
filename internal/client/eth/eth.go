@@ -159,6 +159,7 @@ type masterConfigDTO struct {
 	VotingPowerProviders []crossChainAddressDTO `json:"votingPowerProviders"`
 	KeysProvider         crossChainAddressDTO   `json:"keysProvider"`
 	Replicas             []crossChainAddressDTO `json:"replicas"`
+	VerificationType     uint32                 `json:"verificationType"`
 }
 
 func (c masterConfigDTO) toEntity() entity.MasterConfig {
@@ -179,6 +180,7 @@ func (c masterConfigDTO) toEntity() entity.MasterConfig {
 				ChainId: v.ChainId,
 			}
 		}),
+		VerificationType: c.VerificationType,
 	}
 }
 
@@ -192,10 +194,14 @@ func (e *Client) GetMasterConfig(ctx context.Context, timestamp *big.Int) (entit
 		return entity.MasterConfig{}, errors.Errorf("failed to construct call msg: %w", err)
 	}
 
+	fmt.Println("callMsg>>>", callMsg)
+
 	result, err := e.callContract(ctx, callMsg)
 	if err != nil {
 		return entity.MasterConfig{}, errors.Errorf("failed to call contract: %w", err)
 	}
+
+	fmt.Println("result>>>", result)
 
 	mcc := masterConfigContainer{}
 	err = masterABI.UnpackIntoInterface(&mcc, getMasterConfigFunction, result)
