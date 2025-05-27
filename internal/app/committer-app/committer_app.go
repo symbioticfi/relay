@@ -9,6 +9,7 @@ import (
 	"github.com/go-playground/validator/v10"
 
 	"middleware-offchain/internal/entity"
+	"middleware-offchain/pkg/log"
 )
 
 type valsetGenerator interface {
@@ -16,7 +17,7 @@ type valsetGenerator interface {
 }
 
 type ethClient interface {
-	CommitValsetHeader(ctx context.Context, valsetHeader entity.ValidatorSetHeader, proof []byte) error
+	CommitValsetHeader(ctx context.Context, valsetHeader entity.ValidatorSetHeader, proof []byte) (entity.CommitValsetHeaderResult, error)
 	VerifyQuorumSig(ctx context.Context, epoch *big.Int, message []byte, keyTag uint8, threshold *big.Int, proof []byte) (bool, error)
 }
 
@@ -53,6 +54,7 @@ func NewCommitterApp(cfg Config) (*CommitterApp, error) {
 }
 
 func (c *CommitterApp) HandleSignaturesAggregatedMessage(ctx context.Context, msg entity.P2PSignaturesAggregatedMessage) error {
+	ctx = log.WithComponent(ctx, "committer")
 	slog.DebugContext(ctx, "got signatures aggregated message", "message", msg)
 
 	switch msg.Message.HashType {
@@ -73,12 +75,12 @@ func (c *CommitterApp) commitValsetHeader(ctx context.Context, msg entity.P2PSig
 
 	slog.DebugContext(ctx, "generated valset header, committing", "header", header)
 
-	err = c.cfg.EthClient.CommitValsetHeader(ctx, header, msg.Message.Proof)
+	result, err := c.cfg.EthClient.CommitValsetHeader(ctx, header, msg.Message.Proof)
 	if err != nil {
 		return errors.Errorf("failed to commit valset header: %w", err)
 	}
 
-	slog.InfoContext(ctx, "valset header committed successfully")
+	slog.InfoContext(ctx, "valset header committed successfully", "txHash", result.TxHash)
 
 	return nil
 }

@@ -92,7 +92,7 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 
 	ctx := t.Context()
 
-	app, err := NewAggregatorApp(ctx, cfg)
+	app, err := NewAggregatorApp(cfg)
 	require.NoError(t, err)
 
 	tests := []struct {

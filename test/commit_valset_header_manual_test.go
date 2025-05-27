@@ -93,7 +93,7 @@ func TestCommitValsetHeader(t *testing.T) {
 
 	fmt.Println("fullProof>>>", hex.EncodeToString(proofData.Marshall()))
 
-	err = svc.eth1.CommitValsetHeader(t.Context(), header, proofData.Marshall())
+	_, err = svc.eth1.CommitValsetHeader(t.Context(), header, proofData.Marshall())
 	require.NoError(t, err)
 }
 

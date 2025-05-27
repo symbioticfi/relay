@@ -12,6 +12,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	"middleware-offchain/internal/entity"
+	"middleware-offchain/pkg/log"
 	"middleware-offchain/pkg/proof"
 )
 
@@ -48,7 +49,7 @@ type AggregatorApp struct {
 	hashStore *hashStore
 }
 
-func NewAggregatorApp(ctx context.Context, cfg Config) (*AggregatorApp, error) {
+func NewAggregatorApp(cfg Config) (*AggregatorApp, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, errors.Errorf("failed to validate config: %w", err)
 	}
@@ -64,6 +65,8 @@ func NewAggregatorApp(ctx context.Context, cfg Config) (*AggregatorApp, error) {
 }
 
 func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg entity.P2PSignatureHashMessage) error {
+	ctx = log.WithComponent(ctx, "aggregator")
+
 	slog.DebugContext(ctx, "received signature hash generated message", "message", msg)
 
 	validatorSet, err := s.cfg.ValsetDeriver.GetValidatorSet(ctx, msg.Message.ValsetHeaderTimestamp)

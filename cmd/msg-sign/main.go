@@ -41,6 +41,7 @@ func run() error {
 	rootCmd.PersistentFlags().StringVar(&cfg.rpcURL, "rpc-url", "", "RPC URL")
 	rootCmd.PersistentFlags().StringVar(&cfg.masterAddress, "master-address", "", "Master contract address")
 	rootCmd.PersistentFlags().StringVar(&cfg.logLevel, "log-level", "info", "Log level (debug, info, warn, error)")
+	rootCmd.PersistentFlags().StringVar(&cfg.logMode, "log-mode", "text", "Log mode (text, pretty)")
 	rootCmd.PersistentFlags().StringVar(&cfg.listenAddress, "p2p-listen", "", "P2P listen address, for example '/ip4/127.0.0.1/tcp/8000'")
 	rootCmd.PersistentFlags().StringArrayVar(&cfg.signAddresses, "sign-address", []string{"http://localhost:8081/api/v1/signMessage", "http://localhost:8082/api/v1/signMessage", "http://localhost:8083/api/v1/signMessage"}, "Addresses of signer servers'")
 
@@ -59,6 +60,7 @@ type config struct {
 	masterAddress string
 
 	logLevel      string
+	logMode       string
 	listenAddress string
 	signAddresses []string
 }
@@ -71,7 +73,7 @@ var rootCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Init(cfg.logLevel)
+		log.Init(cfg.logLevel, cfg.logMode)
 
 		ctx := signalContext(context.Background())
 

@@ -40,6 +40,7 @@ func runRootCMD() error {
 	rootCmd.PersistentFlags().StringVar(&cfg.rpcURL, "rpc-url", "", "RPC URL")
 	rootCmd.PersistentFlags().StringVar(&cfg.masterAddress, "master-address", "", "Master contract address")
 	rootCmd.PersistentFlags().StringVar(&cfg.logLevel, "log-level", "info", "Log level (debug, info, warn, error)")
+	rootCmd.PersistentFlags().StringVar(&cfg.logMode, "log-mode", "text", "Log mode (text, pretty)")
 	rootCmd.PersistentFlags().StringVar(&cfg.listenAddress, "p2p-listen", "", "P2P listen address")
 	rootCmd.PersistentFlags().StringVar(&cfg.httpListenAddress, "http-listen", "", "Http listener address")
 	rootCmd.PersistentFlags().StringVar(&cfg.secretKey, "secret-key", "", "Secret key for BLS signature generation")
@@ -64,6 +65,7 @@ type config struct {
 	rpcURL            string
 	masterAddress     string
 	logLevel          string
+	logMode           string
 	listenAddress     string
 	httpListenAddress string
 	secretKey         string
@@ -82,7 +84,7 @@ var rootCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Init(cfg.logLevel)
+		log.Init(cfg.logLevel, cfg.logMode)
 
 		ctx := signalContext(context.Background())
 
@@ -166,7 +168,8 @@ var rootCmd = &cobra.Command{
 		eg, egCtx := errgroup.WithContext(ctx)
 		if cfg.isSigner {
 			eg.Go(func() error {
-				if err := signerApp.Start(egCtx); err != nil {
+				logCtx := log.WithComponent(egCtx, "signer")
+				if err := signerApp.Start(logCtx); err != nil {
 					return errors.Errorf("failed to start signer app: %w", err)
 				}
 				return nil
@@ -180,7 +183,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		if cfg.isAggregator {
-			_, err := aggregator.NewAggregatorApp(ctx, aggregator.Config{
+			_, err := aggregator.NewAggregatorApp(aggregator.Config{
 				EthClient:     ethClient,
 				ValsetDeriver: deriver,
 				P2PClient:     p2pService,
