@@ -19,25 +19,29 @@ type attrsKey struct{}
 
 var attrsKeyValue attrsKey
 
+func WithComponent(ctx context.Context, component string) context.Context {
+	return WithAttrs(ctx, slog.String("component", component))
+}
+
 func WithAttrs(ctx context.Context, as ...slog.Attr) context.Context {
 	if len(as) == 0 {
 		return ctx
 	}
 
 	parentAttrs := getAttrs(ctx)
-	newAttrs := copyAttrs(parentAttrs)
+	newAttrs := copyAttrs(parentAttrs, len(as))
 
 	newAttrs = append(newAttrs, as...)
 
 	return context.WithValue(ctx, attrsKeyValue, newAttrs)
 }
 
-func copyAttrs(parentAttrs []slog.Attr) []slog.Attr {
+func copyAttrs(parentAttrs []slog.Attr, addCapacity int) []slog.Attr {
 	if parentAttrs == nil {
 		return nil
 	}
 
-	newAttrs := make([]slog.Attr, len(parentAttrs))
+	newAttrs := make([]slog.Attr, len(parentAttrs), len(parentAttrs)+addCapacity)
 	copy(newAttrs, parentAttrs)
 	return newAttrs
 }

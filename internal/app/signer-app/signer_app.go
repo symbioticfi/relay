@@ -91,7 +91,7 @@ func (s *SignerApp) Start(ctx context.Context) error {
 			return errors.Errorf("failed to sign valset header hash: %w", err)
 		}
 
-		slog.DebugContext(ctx, "valset header hash signed, sending via p2p", "headerSignature", headerSignature)
+		slog.InfoContext(ctx, "valset header hash signed, sending via p2p", "headerSignature", headerSignature)
 
 		err = s.cfg.P2PService.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureHashMessage{
 			MessageHash:           headerHash,
@@ -107,7 +107,7 @@ func (s *SignerApp) Start(ctx context.Context) error {
 			return errors.Errorf("failed to broadcast valset header: %w", err)
 		}
 
-		slog.DebugContext(ctx, "valset header sent p2p, waiting for the next cycle")
+		slog.InfoContext(ctx, "valset header sent p2p, waiting for the next cycle")
 	}
 }
 
@@ -141,7 +141,7 @@ func (s *SignerApp) waitForCommitPhase(ctx context.Context) error {
 			switch phase {
 			case entity.COMMIT:
 				if s.previousPhase == entity.COMMIT {
-					slog.DebugContext(ctx, "current phase is COMMIT, waiting for next cycle")
+					slog.InfoContext(ctx, "current phase is COMMIT, waiting for next cycle")
 					timer.Reset(s.cfg.PollingInterval)
 					continue
 				}
@@ -149,11 +149,11 @@ func (s *SignerApp) waitForCommitPhase(ctx context.Context) error {
 				return nil
 			case entity.FAIL:
 				s.previousPhase = entity.FAIL
-				slog.DebugContext(ctx, "current phase is FAIL, waiting for commit phase", "timeout", s.cfg.PollingInterval)
+				slog.WarnContext(ctx, "current phase is FAIL, waiting for commit phase", "timeout", s.cfg.PollingInterval)
 				timer.Reset(s.cfg.PollingInterval)
 			case entity.IDLE:
 				s.previousPhase = entity.IDLE
-				slog.DebugContext(ctx, "current phase is IDLE, waiting for commit phase", "timeout", s.cfg.PollingInterval)
+				slog.InfoContext(ctx, "current phase is IDLE, waiting for commit phase", "timeout", s.cfg.PollingInterval)
 				timer.Reset(s.cfg.PollingInterval)
 			default:
 				return errors.Errorf("unknown phase: %v", phase)

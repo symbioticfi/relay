@@ -159,3 +159,7 @@ func (v ValidatorSetHeader) EncodeJSON() ([]byte, error) {
 
 	return jsonData, nil
 }
+
+type CommitValsetHeaderResult struct {
+	TxHash common.Hash
+}

@@ -2,12 +2,14 @@ package log
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"runtime"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/getsentry/sentry-go"
 	sentryslog "github.com/getsentry/sentry-go/slog"
@@ -17,15 +19,23 @@ import (
 
 var once sync.Once
 
-func Init(levelStr string) {
+func Init(levelStr, mode string) {
 	level := parseLogLevel(levelStr)
 
+	if mode != "text" && mode != "pretty" {
+		mode = "text"
+	}
+
 	once.Do(func() {
-		internalInit(level)
+		internalInit(level, mode)
 	})
 }
 
-func internalInit(level slog.Level) {
+func internalInit(level slog.Level, mode string) {
+	if mode == "pretty" {
+		initPretty(level)
+		return
+	}
 	initText(level)
 }
 
@@ -42,6 +52,18 @@ func parseLogLevel(levelStr string) slog.Level {
 	default:
 		return slog.LevelDebug
 	}
+}
+
+func initPretty(level slog.Level) {
+	prettyHandler := NewHandler(&slog.HandlerOptions{
+		AddSource:   false,
+		Level:       level,
+		ReplaceAttr: replaceAttr,
+	})
+
+	handler := ContextHandler{Handler: prettyHandler}
+
+	slog.SetDefault(slog.New(handler))
 }
 
 func initText(level slog.Level) {
@@ -95,12 +117,21 @@ func notErrorLevel(_ context.Context, r slog.Record) bool {
 	return r.Level != slog.LevelError
 }
 
+type humanDuration time.Duration
+
+func (d humanDuration) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`"%s"`, time.Duration(d).String())), nil
+}
+
 func replaceAttr(groups []string, a slog.Attr) slog.Attr {
 	if a.Value.Kind() == slog.KindAny {
 		val := a.Value.Any()
 		if errVal, ok := val.(error); ok {
 			a.Value = fmtErr(errVal)
 		}
+	}
+	if a.Value.Kind() == slog.KindDuration {
+		a.Value = slog.AnyValue(humanDuration(a.Value.Duration()))
 	}
 
 	return a

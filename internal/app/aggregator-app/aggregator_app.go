@@ -12,6 +12,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	"middleware-offchain/internal/entity"
+	"middleware-offchain/pkg/log"
 	"middleware-offchain/pkg/proof"
 )
 
@@ -48,7 +49,7 @@ type AggregatorApp struct {
 	hashStore *hashStore
 }
 
-func NewAggregatorApp(ctx context.Context, cfg Config) (*AggregatorApp, error) {
+func NewAggregatorApp(cfg Config) (*AggregatorApp, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, errors.Errorf("failed to validate config: %w", err)
 	}
@@ -64,6 +65,8 @@ func NewAggregatorApp(ctx context.Context, cfg Config) (*AggregatorApp, error) {
 }
 
 func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg entity.P2PSignatureHashMessage) error {
+	ctx = log.WithComponent(ctx, "aggregator")
+
 	slog.DebugContext(ctx, "received signature hash generated message", "message", msg)
 
 	validatorSet, err := s.cfg.ValsetDeriver.GetValidatorSet(ctx, msg.Message.ValsetHeaderTimestamp)
@@ -99,7 +102,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 
 	thresholdReached := percent1e18.Cmp(quorumThreshold) >= 0
 	if !thresholdReached {
-		slog.DebugContext(ctx, "quorum not reached yet",
+		slog.InfoContext(ctx, "quorum not reached yet",
 			"percentReached", decimal.NewFromBigInt(percent1e18, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
 			"percentQuorumThreshold", decimal.NewFromBigInt(quorumThreshold, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
 			"currentVotingPower", current.votingPower,
@@ -112,7 +115,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		return nil
 	}
 
-	slog.DebugContext(ctx, "quorum reached, aggregating signatures",
+	slog.InfoContext(ctx, "quorum reached, aggregating signatures and creating proof",
 		"percentReached", decimal.NewFromBigInt(percent1e18, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
 		"percentQuorumThreshold", decimal.NewFromBigInt(quorumThreshold, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
 		"currentVotingPower", current.votingPower,
@@ -134,7 +137,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		return fmt.Errorf("failed to prove: %w", err)
 	}
 
-	slog.DebugContext(ctx, "proof created, trying to send aggregated signature message",
+	slog.InfoContext(ctx, "proof created, trying to send aggregated signature message",
 		"duration", time.Since(start).String(),
 	)
 	err = s.cfg.P2PClient.BroadcastSignatureAggregatedMessage(ctx, entity.SignaturesAggregatedMessage{
@@ -148,7 +151,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		return errors.Errorf("failed to broadcast signature aggregated message: %w", err)
 	}
 
-	slog.DebugContext(ctx, "proof sent via p2p", "message", current.aggSignature)
+	slog.InfoContext(ctx, "proof sent via p2p")
 
 	return nil
 }

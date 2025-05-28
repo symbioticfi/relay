@@ -2,6 +2,7 @@ package signer_app
 
 import (
 	"context"
+	"encoding/hex"
 	"log/slog"
 	"math/big"
 	"time"
@@ -15,6 +16,12 @@ import (
 
 func (s *SignerApp) signMessage(ctx context.Context, message []byte) error {
 	messageHash := crypto.Keccak256(message)
+
+	slog.InfoContext(ctx, "got request to sign message",
+		"originalMessage", hex.EncodeToString(message),
+		"messageHash", hex.EncodeToString(messageHash),
+	)
+
 	headerSignature, err := s.cfg.KeyPair.Sign(messageHash)
 	if err != nil {
 		return errors.Errorf("failed to sign message hash: %w", err)

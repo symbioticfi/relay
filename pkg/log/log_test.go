@@ -10,7 +10,7 @@ import (
 
 func TestLog(t *testing.T) {
 	t.Setenv("LOG_MODE", "local")
-	Init("debug")
+	Init("debug", "pretty")
 
 	slog.Info("calculations completed")
 	slog.Error("oh, no", "err", myFund(), "someTime", time.Now(), "result", 42, "duration", time.Second)
@@ -18,12 +18,22 @@ func TestLog(t *testing.T) {
 	slog.Error("oh, no", "err", errors.Errorf("hello error: %w", myFund()))
 }
 
+func TestComponent(t *testing.T) {
+	Init("debug", "pretty")
+
+	ctx := WithComponent(t.Context(), "aggregator")
+	slog.InfoContext(ctx, "calculations completed")
+	slog.ErrorContext(ctx, "oh, no", "err", myFund(), "someTime", time.Now(), "result", 42, "duration", time.Second)
+	slog.InfoContext(ctx, "calculations completed", "someTime", time.Now(), "result", 42, "duration", time.Second)
+	slog.ErrorContext(ctx, "oh, no", "err", errors.Errorf("hello error: %w", myFund()))
+}
+
 func myFund() error {
 	return errors.New("my error")
 }
 
 func TestSplit(t *testing.T) {
-	Init("debug")
+	Init("debug", "pretty")
 	slog.Info("hello", "there", "world")
 	slog.DebugContext(t.Context(), "hello debug", "there1", "world1")
 	slog.Error("hello error", "there2", "world2")

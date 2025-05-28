@@ -33,6 +33,7 @@ func run() error {
 	rootCmd.PersistentFlags().StringVar(&cfg.masterAddress, "master-address", "", "Master contract address")
 	rootCmd.PersistentFlags().StringVarP(&cfg.outputFile, "output", "o", "", "Output file path (default: stdout)")
 	rootCmd.PersistentFlags().StringVar(&cfg.logLevel, "log-level", "info", "Log level (debug, info, warn, error)")
+	rootCmd.PersistentFlags().StringVar(&cfg.logMode, "log-mode", "text", "Log mode (text, pretty)")
 
 	if err := rootCmd.MarkPersistentFlagRequired("rpc-url"); err != nil {
 		return errors.Errorf("failed to mark rpc-url as required: %w", err)
@@ -49,6 +50,7 @@ type config struct {
 	masterAddress string
 	outputFile    string
 	logLevel      string
+	logMode       string
 }
 
 var cfg config
@@ -57,7 +59,7 @@ var rootCmd = &cobra.Command{
 	Use:   "generate_genesis",
 	Short: "Generate genesis validator set header",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Init(cfg.logLevel)
+		log.Init(cfg.logLevel, cfg.logMode)
 
 		ctx := signalContext(context.Background())
 
