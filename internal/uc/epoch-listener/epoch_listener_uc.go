@@ -117,7 +117,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) (mo.Option[entity.Va
 	}
 
 	if phase == entity.FAIL {
-		return mo.None[entity.ValidatorSetExtra](), errors.New("current phase is FAIL, skipping epoch processing")
+		return mo.None[entity.ValidatorSetExtra](), errors.New(entity.ErrPhaseFail)
 	}
 
 	currentOnchainEpoch, err := s.cfg.Eth.GetCurrentEpoch(ctx)
