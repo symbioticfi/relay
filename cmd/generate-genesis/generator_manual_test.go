@@ -1,6 +1,6 @@
 //go:build manual
 
-package valset
+package main
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"middleware-offchain/internal/client/eth"
+	"middleware-offchain/internal/client/valset"
 )
 
 func TestManual_GenerateValidatorSetHeader(t *testing.T) {
@@ -28,16 +29,16 @@ func TestManual_GenerateValidatorSetHeader(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	deriver, err := NewDeriver(client)
+	deriver, err := valset.NewDeriver(client)
 	require.NoError(t, err)
 
-	generator, err := NewGenerator(deriver, client)
+	generator, err := valset.NewGenerator(deriver, client)
 	require.NoError(t, err)
 
 	header, err := generator.GenerateValidatorSetHeaderOnCapture(context.Background())
 	require.NoError(t, err)
 
-	jsonData, err := header.EncodeJSON()
+	jsonData, err := valsetHeaderMarshalJSON(header)
 	if err != nil {
 		t.Fatalf("Failed to marshal header to JSON: %v", err)
 	}

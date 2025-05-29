@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 	"log/slog"
-	"math/big"
-	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
@@ -29,20 +27,20 @@ func (s *SignerApp) signMessage(ctx context.Context, message []byte) error {
 
 	slog.DebugContext(ctx, "message hash signed, sending via p2p", "headerSignature", headerSignature)
 
-	epoch, err := s.cfg.EthClient.GetCurrentValsetEpoch(ctx)
-	if err != nil {
-		return errors.Errorf("failed to get current epoch: %w", err)
-	}
+	// TODO ilya
+	//epoch, err := s.cfg.EthClient.GetCurrentValsetEpoch(ctx)
+	//if err != nil {
+	//	return errors.Errorf("failed to get current epoch: %w", err)
+	//}
 
 	err = s.cfg.P2PService.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureHashMessage{
-		MessageHash:           messageHash,
-		KeyTag:                15, // todo ilya: pass from config or from another place
-		Signature:             bls.SerializeG1(headerSignature),
-		PublicKeyG1:           bls.SerializeG1(&s.cfg.KeyPair.PublicKeyG1),
-		PublicKeyG2:           bls.SerializeG2(&s.cfg.KeyPair.PublicKeyG2),
-		HashType:              entity.HashTypeMessage,
-		ValsetHeaderTimestamp: new(big.Int).SetInt64(time.Now().Unix()),
-		Epoch:                 epoch,
+		MessageHash: messageHash,
+		KeyTag:      15, // todo ilya: pass from config or from another place
+		Signature:   bls.SerializeG1(headerSignature),
+		PublicKeyG1: bls.SerializeG1(&s.cfg.KeyPair.PublicKeyG1),
+		PublicKeyG2: bls.SerializeG2(&s.cfg.KeyPair.PublicKeyG2),
+		HashType:    entity.HashTypeMessage,
+		//Epoch:                 epoch,
 	})
 	if err != nil {
 		return errors.Errorf("failed to broadcast signed hash message: %w", err)

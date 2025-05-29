@@ -13,14 +13,14 @@ import (
 
 func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureHashMessage) error {
 	dto := signatureGeneratedDTO{
-		MessageHash:           msg.MessageHash,
-		Signature:             msg.Signature,
-		PublicKeyG1:           msg.PublicKeyG1,
-		PublicKeyG2:           msg.PublicKeyG2,
-		KeyTag:                msg.KeyTag,
-		HashType:              string(msg.HashType),
-		ValsetHeaderTimestamp: msg.ValsetHeaderTimestamp,
-		Epoch:                 msg.Epoch,
+		MessageHash: msg.MessageHash,
+		Signature:   msg.Signature,
+		PublicKeyG1: msg.PublicKeyG1,
+		PublicKeyG2: msg.PublicKeyG2,
+		KeyTag:      msg.KeyTag,
+		HashType:    string(msg.HashType),
+		//ValsetHeaderTimestamp: msg.ValsetHeaderTimestamp, // todo ilya
+		Epoch: msg.Epoch,
 	}
 
 	data, err := json.Marshal(dto)

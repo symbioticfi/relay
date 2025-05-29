@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
+	"math/big"
 	"os"
 	"os/signal"
 	"syscall"
@@ -14,6 +16,7 @@ import (
 
 	"middleware-offchain/internal/client/eth"
 	"middleware-offchain/internal/client/valset"
+	"middleware-offchain/internal/entity"
 	"middleware-offchain/pkg/log"
 )
 
@@ -90,7 +93,7 @@ var rootCmd = &cobra.Command{
 
 		slog.Info("Valset header generated!")
 
-		jsonData, err := header.EncodeJSON()
+		jsonData, err := valsetHeaderMarshalJSON(header)
 		if err != nil {
 			return errors.Errorf("failed to marshal header to JSON: %w", err)
 		}
@@ -106,6 +109,41 @@ var rootCmd = &cobra.Command{
 
 		return nil
 	},
+}
+
+func valsetHeaderMarshalJSON(v entity.ValidatorSetHeader) ([]byte, error) {
+	// Convert byte arrays to hex strings before JSON marshaling
+	type key struct {
+		Tag     uint8  `json:"tag"`
+		Payload string `json:"payload"` // hex string
+	}
+	type jsonHeader struct {
+		Version                uint8    `json:"version"`
+		ActiveAggregatedKeys   []key    `json:"activeAggregatedKeys"`
+		ValidatorsSszMRoot     string   `json:"validatorsSszMRoot"` // hex string
+		ExtraData              string   `json:"extraData"`
+		TotalActiveVotingPower *big.Int `json:"totalActiveVotingPower"`
+	}
+
+	jsonHeaderData := jsonHeader{
+		Version:                v.Version,
+		ActiveAggregatedKeys:   make([]key, len(v.ActiveAggregatedKeys)),
+		ValidatorsSszMRoot:     fmt.Sprintf("0x%064x", v.ValidatorsSszMRoot),
+		ExtraData:              fmt.Sprintf("0x%064x", v.ExtraData),
+		TotalActiveVotingPower: v.TotalActiveVotingPower,
+	}
+
+	for i, key := range v.ActiveAggregatedKeys {
+		jsonHeaderData.ActiveAggregatedKeys[i].Tag = key.Tag
+		jsonHeaderData.ActiveAggregatedKeys[i].Payload = fmt.Sprintf("0x%0128x", key.Payload)
+	}
+
+	jsonData, err := json.MarshalIndent(jsonHeaderData, "", "  ")
+	if err != nil {
+		return nil, errors.Errorf("failed to marshal header to JSON: %w", err)
+	}
+
+	return jsonData, nil
 }
 
 // signalContext returns a context that is canceled if either SIGTERM or SIGINT signal is received.

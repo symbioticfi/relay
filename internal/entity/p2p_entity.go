@@ -21,14 +21,13 @@ const (
 )
 
 type SignatureHashMessage struct {
-	MessageHash           []byte
-	Signature             []byte
-	PublicKeyG1           []byte
-	PublicKeyG2           []byte
-	KeyTag                uint8
-	HashType              HashType
-	ValsetHeaderTimestamp *big.Int
-	Epoch                 *big.Int
+	MessageHash []byte
+	Signature   []byte
+	PublicKeyG1 []byte
+	PublicKeyG2 []byte
+	KeyTag      uint8
+	HashType    HashType
+	Epoch       *big.Int
 }
 
 type SignaturesAggregatedMessage struct {

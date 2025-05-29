@@ -16,6 +16,7 @@ require (
 	github.com/multiformats/go-multiaddr v0.15.0
 	github.com/prometheus/client_golang v1.22.0
 	github.com/samber/lo v1.50.0
+	github.com/samber/mo v1.14.0
 	github.com/samber/slog-multi v1.4.0
 	github.com/shopspring/decimal v1.4.0
 	github.com/spf13/cobra v1.9.1
@@ -23,6 +24,7 @@ require (
 	go.uber.org/mock v0.5.2
 	golang.org/x/crypto v0.38.0
 	golang.org/x/sync v0.14.0
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
@@ -155,7 +157,6 @@ require (
 	golang.org/x/text v0.25.0 // indirect
 	golang.org/x/tools v0.33.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	lukechampine.com/blake3 v1.4.1 // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
