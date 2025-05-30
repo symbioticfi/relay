@@ -1,4 +1,4 @@
-package valset
+package valsetDeriver
 
 import (
 	"context"
@@ -36,14 +36,9 @@ type ethClient interface {
 	GetSubnetwork(ctx context.Context) ([]byte, error)
 }
 
-type repo interface {
-	GetLatestValsetExtra(ctx context.Context) (entity.ValidatorSetExtra, error)
-}
-
 // Deriver coordinates the ETH services
 type Deriver struct {
 	ethClient ethClient
-	repo      repo
 }
 
 // NewDeriver creates a new valset deriver

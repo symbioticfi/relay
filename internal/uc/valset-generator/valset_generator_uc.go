@@ -1,4 +1,4 @@
-package epoch_listener
+package valset_generator
 
 import (
 	"context"
@@ -26,6 +26,7 @@ type repo interface {
 	GetLatestValsetExtra(ctx context.Context) (mo.Option[entity.ValidatorSetExtra], error)
 	SaveValsetExtra(ctx context.Context, extra entity.ValidatorSetExtra) error
 	SaveLatestSignedValsetExtra(ctx context.Context, extra entity.ValidatorSetExtra) error
+	GetLatestSignedValsetExtra(_ context.Context) (entity.ValidatorSetExtra, error)
 }
 
 type deriver interface {
@@ -70,7 +71,7 @@ func (s *Service) Start(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-timer.C:
-			if err := s.processEpochs(ctx); err != nil {
+			if err := s.process(ctx); err != nil {
 				slog.ErrorContext(ctx, "failed to process epochs", "error", err)
 			}
 			timer.Reset(s.cfg.PollingInterval)
@@ -78,10 +79,10 @@ func (s *Service) Start(ctx context.Context) error {
 	}
 }
 
-func (s *Service) processEpochs(ctx context.Context) error {
-	newValsetExtra, err := s.tryLoadMissingEpochs(ctx)
+func (s *Service) process(ctx context.Context) error {
+	newValsetExtra, err := s.tryDetectNewEpochToCommit(ctx)
 	if err != nil {
-		return errors.Errorf("failed to load missing epochs: %w", err)
+		return errors.Errorf("failed to detect new epoch to commit: %w", err)
 	}
 	if !newValsetExtra.IsPresent() {
 		// no new validator set extra found, nothing to do
@@ -93,7 +94,6 @@ func (s *Service) processEpochs(ctx context.Context) error {
 		return errors.Errorf("failed to make validator set header hash: %w", err)
 	}
 
-	// todo ilya what to do if we failed to sign?
 	err = s.cfg.Signer.Sign(ctx, entity.SignatureRequest{
 		KeyTag:        entity.ValsetHeaderKeyTag,
 		RequiredEpoch: newValsetExtra.MustGet().Epoch,
@@ -110,14 +110,14 @@ func (s *Service) processEpochs(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) tryLoadMissingEpochs(ctx context.Context) (mo.Option[entity.ValidatorSetExtra], error) {
+func (s *Service) tryDetectNewEpochToCommit(ctx context.Context) (mo.Option[entity.ValidatorSetExtra], error) {
 	phase, err := s.cfg.Eth.GetCurrentPhase(ctx)
 	if err != nil {
 		return mo.None[entity.ValidatorSetExtra](), errors.Errorf("failed to get current phase: %w", err)
 	}
 
-	if phase == entity.FAIL {
-		return mo.None[entity.ValidatorSetExtra](), errors.New(entity.ErrPhaseFail)
+	if phase != entity.COMMIT {
+		return mo.None[entity.ValidatorSetExtra](), errors.New(entity.ErrPhaseNotCommit)
 	}
 
 	currentOnchainEpoch, err := s.cfg.Eth.GetCurrentEpoch(ctx)
@@ -125,45 +125,23 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) (mo.Option[entity.Va
 		return mo.None[entity.ValidatorSetExtra](), errors.Errorf("failed to get current epoch: %w", err)
 	}
 
-	latest, err := s.cfg.Repo.GetLatestValsetExtra(ctx)
+	latest, err := s.cfg.Repo.GetLatestSignedValsetExtra(ctx)
 	if err != nil {
-		return mo.None[entity.ValidatorSetExtra](), errors.Errorf("failed to get latest validator set extra: %w", err)
+		return mo.None[entity.ValidatorSetExtra](), errors.Errorf("failed to getlatest validator set extra: %w", err)
 	}
 
-	currentStoredEpoch := new(big.Int).SetInt64(1)
-	if latest.IsPresent() {
-		currentStoredEpoch = latest.MustGet().Epoch
+	if isGreaterOrEqual(latest.Epoch, currentOnchainEpoch) {
+		return mo.None[entity.ValidatorSetExtra](), nil
 	}
 
-	for {
-		latestEpoch := new(big.Int).SetInt64(1)
-		if latest.IsPresent() {
-			latestEpoch = latest.MustGet().Epoch
-		}
-
-		diff := new(big.Int).Sub(currentOnchainEpoch, latestEpoch)
-		if diff.Cmp(big.NewInt(0)) <= 0 {
-			break
-		}
-		nextEpoch := new(big.Int).Add(latestEpoch, big.NewInt(1))
-
-		nextValsetExtra, err := s.cfg.Deriver.GetValidatorSetExtraForEpoch(ctx, nextEpoch)
-		if err != nil {
-			return mo.None[entity.ValidatorSetExtra](), errors.Errorf("failed to derive validator set extra for epoch %s: %w", nextEpoch.String(), err)
-		}
-
-		// TODO ilya: check valset integrity: valset.headerHash() == master.valsetHeaderHash(epoch)
-
-		if err := s.cfg.Repo.SaveValsetExtra(ctx, nextValsetExtra); err != nil {
-			return mo.None[entity.ValidatorSetExtra](), errors.Errorf("failed to save validator set extra for epoch %s: %w", nextEpoch.String(), err)
-		}
-
-		latest = mo.Some(nextValsetExtra)
+	newValset, err := s.cfg.Deriver.GetValidatorSetExtraForEpoch(ctx, currentOnchainEpoch)
+	if err != nil {
+		return mo.None[entity.ValidatorSetExtra](), errors.Errorf("failed to get validator set extra for epoch %s: %w", currentOnchainEpoch, err)
 	}
 
-	if currentOnchainEpoch.Cmp(currentStoredEpoch) != 0 {
-		return latest, nil
-	}
+	return mo.Some(newValset), nil
+}
 
-	return mo.None[entity.ValidatorSetExtra](), nil
+func isGreaterOrEqual(latest *big.Int, current *big.Int) bool {
+	return latest.Cmp(current) >= 0
 }

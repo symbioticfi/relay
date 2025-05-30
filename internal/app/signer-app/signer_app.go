@@ -76,10 +76,9 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 	if !latestValsetExtra.IsPresent() {
 		return errors.New("no latest valset extra found")
 	}
-	// todo ilya check logic
-	diffEpochs := new(big.Int).Sub(latestValsetExtra.MustGet().Epoch, req.RequiredEpoch)
-	if diffEpochs.Cmp(new(big.Int).SetInt64(entity.MaxSavedEpochs)) > 0 {
-		return errors.Errorf("epoch difference is too large: %s, max allowed: %d", diffEpochs, entity.MaxSavedEpochs)
+
+	if !isRecentEpoch(latestValsetExtra.MustGet().Epoch, req.RequiredEpoch) {
+		return errors.Errorf("epoch difference is too large: max allowed: %d", entity.MaxSavedEpochs)
 	}
 
 	epochValsetExtra, err := s.cfg.Repo.GetValsetExtraByEpoch(ctx, req.RequiredEpoch)
@@ -123,4 +122,9 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 	}
 
 	return nil
+}
+
+func isRecentEpoch(latestValsetEpoch, requiredEpoch *big.Int) bool {
+	diffEpochs := new(big.Int).Sub(latestValsetEpoch, requiredEpoch)
+	return diffEpochs.Cmp(new(big.Int).SetInt64(entity.MaxSavedEpochs)) > 0
 }

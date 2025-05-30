@@ -15,8 +15,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"middleware-offchain/internal/client/eth"
-	"middleware-offchain/internal/client/valset"
 	"middleware-offchain/internal/entity"
+	valsetDeriver "middleware-offchain/internal/uc/valset-deriver"
 	"middleware-offchain/pkg/log"
 )
 
@@ -69,24 +69,28 @@ var rootCmd = &cobra.Command{
 		client, err := eth.NewEthClient(eth.Config{
 			MasterRPCURL:   cfg.rpcURL,
 			MasterAddress:  cfg.masterAddress,
-			PrivateKey:     nil,
 			RequestTimeout: time.Second * 5,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create eth client: %w", err)
 		}
 
-		deriver, err := valset.NewDeriver(client)
+		deriver, err := valsetDeriver.NewDeriver(client)
 		if err != nil {
 			return errors.Errorf("failed to create valset deriver: %w", err)
 		}
 
-		generator, err := valset.NewGenerator(deriver, client)
+		currentOnchainEpoch, err := client.GetCurrentEpoch(ctx)
 		if err != nil {
-			return errors.Errorf("failed to create valset generator: %w", err)
+			return errors.Errorf("failed to get current epoch: %w", err)
 		}
 
-		header, err := generator.GenerateValidatorSetHeaderOnCapture(ctx)
+		newValset, err := deriver.GetValidatorSetExtraForEpoch(ctx, currentOnchainEpoch)
+		if err != nil {
+			return errors.Errorf("failed to get validator set extra for epoch %s: %w", currentOnchainEpoch, err)
+		}
+
+		header, err := deriver.MakeValsetHeader(ctx, newValset)
 		if err != nil {
 			return errors.Errorf("failed to generate validator set header: %w", err)
 		}

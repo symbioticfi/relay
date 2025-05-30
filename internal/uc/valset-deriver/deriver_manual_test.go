@@ -1,6 +1,6 @@
 //go:build manual
 
-package valset
+package valsetDeriver
 
 //import (
 //	"context"

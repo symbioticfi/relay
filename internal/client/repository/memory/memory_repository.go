@@ -73,6 +73,18 @@ func (r *Repository) SaveLatestSignedValsetExtra(ctx context.Context, extra enti
 	return nil
 }
 
+func (r *Repository) GetLatestSignedValsetExtra(_ context.Context) (entity.ValidatorSetExtra, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if len(r.signed) == 0 {
+		return entity.ValidatorSetExtra{}, errors.New(entity.ErrEntityNotFound)
+	}
+
+	latestSignedExtra := r.signed[len(r.signed)-1]
+	return latestSignedExtra, nil
+}
+
 // todo ilya get rid of mo.Option in favor of returning error
 func (r *Repository) GetSignatureRequest(_ context.Context, req entity.SignatureRequest) (mo.Option[entity.SignatureRequest], error) {
 	hash := signRequestHash(req)

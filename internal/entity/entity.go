@@ -11,7 +11,8 @@ func (e StringError) Error() string {
 }
 
 const (
-	ErrPhaseFail              = StringError("phase is fail")
+	ErrEntityNotFound         = StringError("entity not found")
+	ErrPhaseNotCommit         = StringError("phase is not commit")
 	ErrSignatureRequestExists = StringError("signature request already exists")
 )
 

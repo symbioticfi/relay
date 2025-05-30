@@ -57,7 +57,7 @@ type ValidatorSetHeader struct {
 	ActiveAggregatedKeys   []Key
 	TotalActiveVotingPower *big.Int
 	ValidatorsSszMRoot     [32]byte
-	ExtraData              []byte
+	ExtraData              []byte // todo ilya move out from header, Make method MakeValsetHeader of ValidatorSet
 }
 
 type CommitValsetHeaderResult struct {
