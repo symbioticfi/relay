@@ -39,3 +39,6 @@ build-middleware-offchain-mac:
 
 build-docker:
 	docker build -t middleware-offchain .
+
+fix-goimports:
+	go run golang.org/x/tools/cmd/goimports@latest -w .
