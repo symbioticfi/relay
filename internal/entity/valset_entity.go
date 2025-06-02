@@ -32,6 +32,14 @@ type ValidatorSet struct {
 	TotalActiveVotingPower *big.Int
 }
 
+// Signature signer.sign() -> Signature
+type Signature struct {
+	MessageHash []byte // scheme depends on KeyTag
+	Signature   []byte // parse based on KeyTag
+	PublicKey   []byte // parse based on KeyTag
+}
+
+// todo ilya make g1 G1 not bytes
 func (v ValidatorSet) FindValidatorByKey(g1 []byte) (Validator, bool) {
 	for _, validator := range v.Validators {
 		for _, key := range validator.Keys {
@@ -49,7 +57,7 @@ type ValidatorSetHeader struct {
 	ActiveAggregatedKeys   []Key
 	TotalActiveVotingPower *big.Int
 	ValidatorsSszMRoot     [32]byte
-	ExtraData              []byte
+	ExtraData              []byte // todo ilya move out from header, Make method MakeValsetHeader of ValidatorSet
 }
 
 type CommitValsetHeaderResult struct {

@@ -20,8 +20,9 @@ import (
 	"middleware-offchain/internal/client/eth"
 	"middleware-offchain/internal/client/p2p"
 	"middleware-offchain/internal/client/repository/memory"
-	epoch_listener "middleware-offchain/internal/uc/epoch-listener"
-	"middleware-offchain/internal/uc/valset"
+	valsetDeriver "middleware-offchain/internal/uc/valset-deriver"
+	valsetGenerator "middleware-offchain/internal/uc/valset-generator"
+	valsetListener "middleware-offchain/internal/uc/valset-listener"
 	"middleware-offchain/pkg/bls"
 	"middleware-offchain/pkg/log"
 	"middleware-offchain/pkg/server"
@@ -106,7 +107,7 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to create eth client: %w", err)
 		}
 
-		deriver, err := valset.NewDeriver(ethClient)
+		deriver, err := valsetDeriver.NewDeriver(ethClient)
 		if err != nil {
 			return errors.Errorf("failed to create valset deriver: %w", err)
 		}
@@ -153,7 +154,17 @@ var rootCmd = &cobra.Command{
 		}
 		slog.InfoContext(ctx, "created signer app, starting")
 
-		listener, err := epoch_listener.New(epoch_listener.Config{
+		listener, err := valsetListener.New(valsetListener.Config{
+			Eth:             ethClient,
+			Repo:            repo,
+			Deriver:         deriver,
+			PollingInterval: time.Second * 5,
+		})
+		if err != nil {
+			return errors.Errorf("failed to create epoch listener: %w", err)
+		}
+
+		generator, err := valsetGenerator.New(valsetGenerator.Config{
 			Signer:          signerApp,
 			Eth:             ethClient,
 			Repo:            repo,
@@ -177,14 +188,23 @@ var rootCmd = &cobra.Command{
 		slog.InfoContext(ctx, "created server, starting")
 
 		eg, egCtx := errgroup.WithContext(ctx)
+		eg.Go(func() error {
+			logCtx := log.WithComponent(egCtx, "listener")
+			if err := listener.Start(logCtx); err != nil {
+				return errors.Errorf("failed to start valset listener: %w", err)
+			}
+			return nil
+		})
+
 		if cfg.isSigner {
 			eg.Go(func() error {
-				logCtx := log.WithComponent(egCtx, "signer")
-				if err := listener.Start(logCtx); err != nil {
-					return errors.Errorf("failed to start epoch listener: %w", err)
+				logCtx := log.WithComponent(egCtx, "generator")
+				if err := generator.Start(logCtx); err != nil {
+					return errors.Errorf("failed to start valset generator: %w", err)
 				}
 				return nil
 			})
+
 			eg.Go(func() error {
 				if err := srv.Serve(egCtx); err != nil {
 					return errors.Errorf("failed to start epoch listener server: %w", err)
