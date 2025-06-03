@@ -1,6 +1,5 @@
 package valsetDeriver
 
-//
 //import (
 //	"encoding/hex"
 //	"math/big"
@@ -28,7 +27,6 @@ package valsetDeriver
 //		}},
 //		TotalActiveVotingPower: new(big.Int).SetInt64(30000000000000),
 //		ValidatorsSszMRoot:     [32]byte(decodeHex(t, "d9354a3cf52fba5126422c86d35db53d566d46f9208faa86c7b9155d7dcf3926")),
-//		ExtraData:              decodeHex(t, "2695ed079545bb906f5868716071ab237e36d04fdc1aa07b06bd98c81185067d"),
 //		Epoch:                  new(big.Int).SetInt64(1),
 //		DomainEip712: entity.Eip712Domain{
 //			Name:    "Middleware",
@@ -38,10 +36,17 @@ package valsetDeriver
 //		Subnetwork: decodeHex(t, "f39fd6e51aad88f6f4ce6ab8827279cfffb92266000000000000000000000000"),
 //	}
 //
+//	extraData := []entity.ExtraData{
+//		{
+//			Key:   [32]byte(decodeHex(t, "2695ed079545bb906f5868716071ab237e36d04fdc1aa07b06bd98c81185067d")),
+//			Value: [32]byte(decodeHex(t, "2695ed079545bb906f5868716071ab237e36d04fdc1aa07b06bd98c81185067d")),
+//		},
+//	}
+//
 //	generator, err := NewGenerator(mockDeriver, mockEthClient)
 //	require.NoError(t, err)
 //
-//	hashBytes, err := generator.GenerateValidatorSetHeaderHash(v)
+//	hashBytes, err := generator.GenerateValidatorSetHeaderHash(v, extraData)
 //	require.NoError(t, err)
 //
 //	inContract := "a296e61b893375cafbc989aff8eef893b604237d12ea7a4a5912b99b4372e0eb"

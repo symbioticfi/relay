@@ -14,11 +14,12 @@ import (
 
 type valsetGenerator interface {
 	GenerateCurrentValidatorSetHeader(ctx context.Context) (entity.ValidatorSetHeader, error)
+	GenerateExtraData(ctx context.Context, valsetHeader entity.ValidatorSetHeader, verificationType uint32) ([]entity.ExtraData, error)
 }
 
 type ethClient interface {
-	CommitValsetHeader(ctx context.Context, valsetHeader entity.ValidatorSetHeader, proof []byte) (entity.CommitValsetHeaderResult, error)
-	VerifyQuorumSig(ctx context.Context, epoch *big.Int, message []byte, keyTag uint8, threshold *big.Int, proof []byte) (bool, error)
+	CommitValsetHeader(ctx context.Context, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof, hint []byte) (entity.CommitValsetHeaderResult, error)
+	VerifyQuorumSig(ctx context.Context, epoch *big.Int, message []byte, keyTag uint8, threshold *big.Int, proof []byte, hint []byte) (bool, error)
 }
 
 type p2pClient interface {
@@ -75,7 +76,12 @@ func (c *CommitterApp) commitValsetHeader(ctx context.Context, msg entity.P2PSig
 
 	slog.DebugContext(ctx, "generated valset header, committing", "header", header)
 
-	result, err := c.cfg.EthClient.CommitValsetHeader(ctx, header, msg.Message.Proof)
+	extraData, err := c.cfg.ValsetGenerator.GenerateExtraData(ctx, header, entity.ZkVerificationType)
+	if err != nil {
+		return errors.Errorf("failed to generate extra data: %w", err)
+	}
+
+	result, err := c.cfg.EthClient.CommitValsetHeader(ctx, header, extraData, msg.Message.Proof, []byte{})
 	if err != nil {
 		return errors.Errorf("failed to commit valset header: %w", err)
 	}
@@ -86,7 +92,7 @@ func (c *CommitterApp) commitValsetHeader(ctx context.Context, msg entity.P2PSig
 }
 
 func (c *CommitterApp) verifyQuorumSig(ctx context.Context, msg entity.P2PSignaturesAggregatedMessage) error {
-	isOK, err := c.cfg.EthClient.VerifyQuorumSig(ctx, msg.Message.Epoch, msg.Message.Message, 15, new(big.Int).SetInt64(1e18) /*1%*/, msg.Message.Proof)
+	isOK, err := c.cfg.EthClient.VerifyQuorumSig(ctx, msg.Message.Epoch, msg.Message.Message, 15, new(big.Int).SetInt64(1e18) /*1%*/, msg.Message.Proof, []byte{})
 	if err != nil {
 		return errors.Errorf("failed to verify quorum signature: %w", err)
 	}

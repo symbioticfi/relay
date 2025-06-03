@@ -130,7 +130,7 @@ var rootCmd = &cobra.Command{
 			)
 
 			quorumThresholdPercent := new(big.Int).Mul(big.NewInt(66), big.NewInt(1e16))
-			verifyResult, err := ethClient.VerifyQuorumSig(ctx, msg.Message.Epoch, msg.Message.Message, 15, quorumThresholdPercent, msg.Message.Proof)
+			verifyResult, err := ethClient.VerifyQuorumSig(ctx, msg.Message.Epoch, msg.Message.Message, 15, quorumThresholdPercent, msg.Message.Proof, []byte{})
 			if err != nil {
 				return errors.Errorf("failed to verify quorum signature: %w", err)
 			}

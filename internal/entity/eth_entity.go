@@ -24,6 +24,7 @@ type MasterConfig struct {
 	VotingPowerProviders []CrossChainAddress
 	KeysProvider         CrossChainAddress
 	Replicas             []CrossChainAddress
+	VerificationType     uint32
 }
 
 type ValSetConfig struct {

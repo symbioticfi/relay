@@ -31,3 +31,29 @@ type AggregationProof struct {
 	MessageHash      []byte // scheme depends on KeyTag
 	Proof            []byte // parse based on KeyTag & VerificationType
 }
+
+const (
+	ZkVerificationType     = 0
+	SimpleVerificationType = 1
+)
+
+const (
+	ExtraDataGlobalKeyPrefix = "symbiotic.Settlement.extraData."
+	ExtraDataKeyTagPrefix    = "keyTag."
+)
+
+const (
+	ZkVerificationTotalActiveValidators = "totalActiveValidators"
+	ZkVerificationValidatorSetHashMimc  = "validatorSetHashMimc"
+)
+
+const (
+	SimpleVerificationValidatorSetHashKeccak256 = "validatorSetHashKeccak256"
+	SimpleVerificationTotalVotingPower          = "totalVotingPower"
+	SimpleVerificationAggPublicKeyG1            = "aggPublicKeyG1"
+)
+
+var (
+	QuorumThresholdBase       = big.NewInt(1e18)
+	QuorumThresholdPercentage = big.NewInt(666666666666666667)
+)

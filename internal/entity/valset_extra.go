@@ -17,6 +17,7 @@ type ValidatorSetExtra struct {
 	Keys                 []OperatorWithKeys
 	OperatorVotingPowers []OperatorVotingPower
 	Epoch                *big.Int
+	CaptureTimestamp     *big.Int
 }
 
 func (v ValidatorSetExtra) MakeValidatorSet() ValidatorSet {

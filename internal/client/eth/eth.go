@@ -35,22 +35,23 @@ var keyRegistryAbiJSON []byte
 var keyRegistryABI abi.ABI
 
 var (
-	getMasterConfigFunction           = "getMasterConfigAt"
-	getValsetConfigFunction           = "getValSetConfigAt"
-	getIsGenesisSetFunction           = "isGenesisSet"
-	getCurrentEpochFunction           = "getCurrentEpoch"
-	getEpochStartFunction             = "getEpochStart"
-	getCurrentPhaseFunction           = "getCurrentPhase"
-	getCurrentValsetTimestampFunction = "getCurrentValSetTimestamp"
-	getCurrentValsetEpochFunction     = "getCurrentValSetEpoch"
-	getCaptureTimestampFunction       = "getCaptureTimestamp"
-	getVotingPowersFunction           = "getVotingPowersAt"
-	getKeysFunction                   = "getKeysAt"
-	getRequiredKeyTagFunction         = "getRequiredKeyTagAt"
-	getQuorumThresholdFunction        = "getQuorumThresholdAt"
-	getSubnetworkFunction             = "SUBNETWORK"
-	getEip712DomainFunction           = "eip712Domain"
-	verifyQuorumSigFunction           = "verifyQuorumSig"
+	getMasterConfigFunction                       = "getMasterConfigAt"
+	getValsetConfigFunction                       = "getValSetConfigAt"
+	getIsGenesisSetFunction                       = "isGenesisSet"
+	getCurrentEpochFunction                       = "getCurrentEpoch"
+	getEpochStartFunction                         = "getEpochStart"
+	getCurrentPhaseFunction                       = "getCurrentPhase"
+	getCurrentValsetTimestampFunction             = "getCurrentValSetTimestamp"
+	getCurrentValsetEpochFunction                 = "getCurrentValSetEpoch"
+	getCaptureTimestampFunction                   = "getCaptureTimestamp"
+	getCaptureTimestampFromValsetHeaderAtFunction = "getCaptureTimestampFromValSetHeaderAt"
+	getVotingPowersFunction                       = "getVotingPowersAt"
+	getKeysFunction                               = "getKeysAt"
+	getRequiredKeyTagFunction                     = "getRequiredKeyTagAt"
+	getQuorumThresholdFunction                    = "getQuorumThresholdAt"
+	getSubnetworkFunction                         = "SUBNETWORK"
+	getEip712DomainFunction                       = "eip712Domain"
+	verifyQuorumSigFunction                       = "verifyQuorumSig"
 )
 
 type Config struct {
@@ -161,6 +162,7 @@ type masterConfigDTO struct {
 	VotingPowerProviders []crossChainAddressDTO `json:"votingPowerProviders"`
 	KeysProvider         crossChainAddressDTO   `json:"keysProvider"`
 	Replicas             []crossChainAddressDTO `json:"replicas"`
+	VerificationType     uint32                 `json:"verificationType"`
 }
 
 func (c masterConfigDTO) toEntity() entity.MasterConfig {
@@ -181,6 +183,7 @@ func (c masterConfigDTO) toEntity() entity.MasterConfig {
 				ChainId: v.ChainId,
 			}
 		}),
+		VerificationType: c.VerificationType,
 	}
 }
 
@@ -340,6 +343,21 @@ func (e *Client) GetCurrentValsetTimestamp(ctx context.Context) (*big.Int, error
 
 func (e *Client) GetCaptureTimestamp(ctx context.Context) (*big.Int, error) {
 	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getCaptureTimestampFunction)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct call msg: %w", err)
+	}
+
+	result, err := e.callContract(ctx, callMsg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call contract: %w", err)
+	}
+
+	timestamp := new(big.Int).SetBytes(result)
+	return timestamp, nil
+}
+
+func (e *Client) GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, epoch *big.Int) (*big.Int, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getCaptureTimestampFromValsetHeaderAtFunction, epoch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}

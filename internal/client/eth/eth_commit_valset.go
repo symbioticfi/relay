@@ -9,14 +9,13 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-errors/errors"
-	"github.com/samber/lo"
 	"golang.org/x/crypto/sha3"
 
 	"middleware-offchain/internal/client/eth/gen"
 	"middleware-offchain/internal/entity"
 )
 
-func (e *Client) CommitValsetHeader(ctx context.Context, header entity.ValidatorSetHeader, proof []byte) (entity.CommitValsetHeaderResult, error) {
+func (e *Client) CommitValsetHeader(ctx context.Context, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof, hint []byte) (entity.CommitValsetHeaderResult, error) {
 	if e.masterPK == nil {
 		return entity.CommitValsetHeaderResult{}, errors.New("master private key is not set")
 	}
@@ -30,19 +29,22 @@ func (e *Client) CommitValsetHeader(ctx context.Context, header entity.Validator
 	txOpts.Context = tmCtx
 
 	headerDTO := gen.ISettlementValSetHeader{
-		Version: header.Version,
-		ActiveAggregatedKeys: lo.Map(header.ActiveAggregatedKeys, func(key entity.Key, _ int) gen.IBaseKeyManagerKey {
-			return gen.IBaseKeyManagerKey{
-				Tag:     key.Tag,
-				Payload: key.Payload,
-			}
-		}),
-		TotalActiveVotingPower: header.TotalActiveVotingPower,
-		ValidatorsSszMRoot:     header.ValidatorsSszMRoot,
-		ExtraData:              header.ExtraData,
+		Version:            header.Version,
+		RequiredKeyTag:     header.RequiredKeyTag,
+		Epoch:              header.Epoch,
+		CaptureTimestamp:   header.CaptureTimestamp,
+		QuorumThreshold:    header.QuorumThreshold,
+		ValidatorsSszMRoot: header.ValidatorsSszMRoot,
+		PreviousHeaderHash: header.PreviousHeaderHash,
 	}
 
-	tx, err := e.master.CommitValSetHeader(txOpts, headerDTO, proof)
+	extraDataDTO := make([]gen.ISettlementExtraData, len(extraData))
+	for i, extraData := range extraData {
+		extraDataDTO[i].Key = extraData.Key
+		extraDataDTO[i].Value = extraData.Value
+	}
+
+	tx, err := e.master.CommitValSetHeader(txOpts, headerDTO, extraDataDTO, proof, hint)
 	if err != nil {
 		return entity.CommitValsetHeaderResult{}, e.formatEthError(err)
 	}
