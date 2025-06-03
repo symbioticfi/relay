@@ -20,18 +20,15 @@ type CrossChainAddress struct {
 	ChainId uint64
 }
 
-type MasterConfig struct {
-	VotingPowerProviders []CrossChainAddress
-	KeysProvider         CrossChainAddress
-	Replicas             []CrossChainAddress
-	VerificationType     uint32
-}
-
-type ValSetConfig struct {
+type Config struct {
+	VotingPowerProviders    []CrossChainAddress
+	KeysProvider            CrossChainAddress
+	Replicas                []CrossChainAddress
+	VerificationType        uint32
 	MaxVotingPower          *big.Int
 	MinInclusionVotingPower *big.Int
 	MaxValidatorsCount      *big.Int
-	RequiredKeyTags         []byte
+	RequiredKeyTags         []uint8
 }
 
 type VaultVotingPower struct {

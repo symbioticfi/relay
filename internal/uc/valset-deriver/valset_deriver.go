@@ -26,8 +26,7 @@ type ethClient interface {
 	GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, epoch *big.Int) (*big.Int, error)
 	GetEpochStart(ctx context.Context, epoch *big.Int) (*big.Int, error)
 	GetCurrentValsetTimestamp(ctx context.Context) (*big.Int, error)
-	GetMasterConfig(ctx context.Context, timestamp *big.Int) (entity.MasterConfig, error)
-	GetValSetConfig(ctx context.Context, timestamp *big.Int) (entity.ValSetConfig, error)
+	GetConfig(ctx context.Context, timestamp *big.Int) (entity.Config, error)
 	GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp *big.Int) ([]entity.OperatorVotingPower, error)
 	GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp *big.Int) ([]entity.OperatorWithKeys, error)
 	GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uint8, error)
@@ -57,22 +56,15 @@ func (v *Deriver) GetValidatorSetExtraForEpoch(ctx context.Context, epoch *big.I
 	slog.DebugContext(ctx, "Got current valset timestamp", "timestamp", timestamp.String(), "epoch", epoch.String())
 
 	slog.DebugContext(ctx, "Trying to fetch master config", "timestamp", timestamp.String())
-	masterConfig, err := v.ethClient.GetMasterConfig(ctx, timestamp)
+	config, err := v.ethClient.GetConfig(ctx, timestamp)
 	if err != nil {
 		return entity.ValidatorSetExtra{}, fmt.Errorf("failed to get master config: %w", err)
 	}
-	slog.DebugContext(ctx, "Got master config", "timestamp", timestamp.String(), "config", masterConfig)
-
-	slog.DebugContext(ctx, "Trying to getch val set config", "timestamp", timestamp.String())
-	valSetConfig, err := v.ethClient.GetValSetConfig(ctx, timestamp)
-	if err != nil {
-		return entity.ValidatorSetExtra{}, fmt.Errorf("failed to get val set config: %w", err)
-	}
-	slog.DebugContext(ctx, "Got val set config", "timestamp", timestamp.String(), "config", valSetConfig)
+	slog.DebugContext(ctx, "Got config", "timestamp", timestamp.String(), "config", config)
 
 	// Get voting powers from all voting power providers
 	var allVotingPowers []entity.OperatorVotingPower
-	for _, provider := range masterConfig.VotingPowerProviders {
+	for _, provider := range config.VotingPowerProviders {
 		slog.DebugContext(ctx, "Trying to fetch voting powers from provider", "provider", provider.Address.Hex())
 		votingPowers, err := v.ethClient.GetVotingPowers(ctx, provider, timestamp)
 		if err != nil {
@@ -85,9 +77,9 @@ func (v *Deriver) GetValidatorSetExtraForEpoch(ctx context.Context, epoch *big.I
 	}
 
 	// Get keys from the keys provider
-	slog.DebugContext(ctx, "Trying to fetch keys from provider", "provider", masterConfig.KeysProvider.Address.Hex())
+	slog.DebugContext(ctx, "Trying to fetch keys from provider", "provider", config.KeysProvider.Address.Hex())
 
-	keys, err := v.ethClient.GetKeys(ctx, masterConfig.KeysProvider, timestamp)
+	keys, err := v.ethClient.GetKeys(ctx, config.KeysProvider, timestamp)
 	if err != nil {
 		return entity.ValidatorSetExtra{}, fmt.Errorf("failed to get keys: %w", err)
 	}
@@ -115,8 +107,7 @@ func (v *Deriver) GetValidatorSetExtraForEpoch(ctx context.Context, epoch *big.I
 	return entity.ValidatorSetExtra{
 		Version:              valsetVersion,
 		RequiredKeyTag:       requiredKeyTag,
-		MasterConfig:         masterConfig,
-		ValSetConfig:         valSetConfig,
+		Config:               config,
 		CaptureTimestamp:     captureTimestamp,
 		DomainEip712:         domainEip712,
 		Keys:                 keys,

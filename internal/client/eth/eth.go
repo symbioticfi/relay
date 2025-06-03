@@ -35,8 +35,7 @@ var keyRegistryAbiJSON []byte
 var keyRegistryABI abi.ABI
 
 var (
-	getMasterConfigFunction                       = "getMasterConfigAt"
-	getValsetConfigFunction                       = "getValSetConfigAt"
+	getConfigFunction                             = "getConfigAt"
 	getIsGenesisSetFunction                       = "isGenesisSet"
 	getCurrentEpochFunction                       = "getCurrentEpoch"
 	getEpochStartFunction                         = "getEpochStart"
@@ -158,15 +157,19 @@ type crossChainAddressDTO struct {
 	ChainId uint64         `json:"chainId"`
 }
 
-type masterConfigDTO struct {
-	VotingPowerProviders []crossChainAddressDTO `json:"votingPowerProviders"`
-	KeysProvider         crossChainAddressDTO   `json:"keysProvider"`
-	Replicas             []crossChainAddressDTO `json:"replicas"`
-	VerificationType     uint32                 `json:"verificationType"`
+type configDTO struct {
+	VotingPowerProviders    []crossChainAddressDTO `json:"votingPowerProviders"`
+	KeysProvider            crossChainAddressDTO   `json:"keysProvider"`
+	Replicas                []crossChainAddressDTO `json:"replicas"`
+	VerificationType        uint32                 `json:"verificationType"`
+	MaxVotingPower          *big.Int               `json:"maxVotingPower"`
+	MinInclusionVotingPower *big.Int               `json:"minInclusionVotingPower"`
+	MaxValidatorsCount      *big.Int               `json:"maxValidatorsCount"`
+	RequiredKeyTags         []uint8                `json:"requiredKeyTags"`
 }
 
-func (c masterConfigDTO) toEntity() entity.MasterConfig {
-	return entity.MasterConfig{
+func (c configDTO) toEntity() entity.Config {
+	return entity.Config{
 		VotingPowerProviders: lo.Map(c.VotingPowerProviders, func(v crossChainAddressDTO, _ int) entity.CrossChainAddress {
 			return entity.CrossChainAddress{
 				Address: v.Addr,
@@ -183,47 +186,7 @@ func (c masterConfigDTO) toEntity() entity.MasterConfig {
 				ChainId: v.ChainId,
 			}
 		}),
-		VerificationType: c.VerificationType,
-	}
-}
-
-type masterConfigContainerDTO struct {
-	MasterConfig masterConfigDTO
-}
-
-func (e *Client) GetMasterConfig(ctx context.Context, timestamp *big.Int) (entity.MasterConfig, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getMasterConfigFunction, timestamp, []byte{})
-	if err != nil {
-		return entity.MasterConfig{}, errors.Errorf("failed to construct call msg: %w", err)
-	}
-
-	result, err := e.callContract(ctx, callMsg)
-	if err != nil {
-		return entity.MasterConfig{}, errors.Errorf("failed to call contract: %w", err)
-	}
-
-	mcc := masterConfigContainerDTO{}
-	err = masterABI.UnpackIntoInterface(&mcc, getMasterConfigFunction, result)
-	if err != nil {
-		return entity.MasterConfig{}, errors.Errorf("failed to unpack master config: %w", err)
-	}
-
-	return mcc.MasterConfig.toEntity(), nil
-}
-
-type valSetConfigDTO struct {
-	MaxVotingPower          *big.Int `json:"max_voting_power"`
-	MinInclusionVotingPower *big.Int `json:"min_inclusion_voting_power"`
-	MaxValidatorsCount      *big.Int `json:"max_validators_count"`
-	RequiredKeyTags         []byte   `json:"required_key_tags"`
-}
-
-type valSetConfigContainerDTO struct {
-	ValSetConfig valSetConfigDTO
-}
-
-func (c valSetConfigDTO) toEntity() entity.ValSetConfig {
-	return entity.ValSetConfig{
+		VerificationType:        c.VerificationType,
 		MaxVotingPower:          c.MaxVotingPower,
 		MinInclusionVotingPower: c.MinInclusionVotingPower,
 		MaxValidatorsCount:      c.MaxValidatorsCount,
@@ -231,24 +194,28 @@ func (c valSetConfigDTO) toEntity() entity.ValSetConfig {
 	}
 }
 
-func (e *Client) GetValSetConfig(ctx context.Context, timestamp *big.Int) (entity.ValSetConfig, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getValsetConfigFunction, timestamp, []byte{})
+type configContainer struct {
+	Config configDTO
+}
+
+func (e *Client) GetConfig(ctx context.Context, timestamp *big.Int) (entity.Config, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getConfigFunction, timestamp, []byte{})
 	if err != nil {
-		return entity.ValSetConfig{}, fmt.Errorf("failed to construct call msg: %w", err)
+		return entity.Config{}, errors.Errorf("failed to construct call msg: %w", err)
 	}
 
 	result, err := e.callContract(ctx, callMsg)
 	if err != nil {
-		return entity.ValSetConfig{}, fmt.Errorf("failed to call contract: %w", err)
+		return entity.Config{}, errors.Errorf("failed to call contract: %w", err)
 	}
 
-	var valSetConfig valSetConfigContainerDTO
-	err = masterABI.UnpackIntoInterface(&valSetConfig, getValsetConfigFunction, result)
+	c := configContainer{}
+	err = masterABI.UnpackIntoInterface(&c, getConfigFunction, result)
 	if err != nil {
-		return entity.ValSetConfig{}, fmt.Errorf("failed to unpack val set config: %w", err)
+		return entity.Config{}, errors.Errorf("failed to unpack config: %w", err)
 	}
 
-	return valSetConfig.ValSetConfig.toEntity(), nil
+	return c.Config.toEntity(), nil
 }
 
 func (e *Client) GetIsGenesisSet(ctx context.Context) (bool, error) {
