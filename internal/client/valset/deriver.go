@@ -19,8 +19,7 @@ const valsetVersion = 1
 type ethClient interface {
 	GetCaptureTimestamp(ctx context.Context) (*big.Int, error)
 	GetCurrentValsetTimestamp(ctx context.Context) (*big.Int, error)
-	GetMasterConfig(ctx context.Context, timestamp *big.Int) (entity.MasterConfig, error)
-	GetValSetConfig(ctx context.Context, timestamp *big.Int) (entity.ValSetConfig, error)
+	GetConfig(ctx context.Context, timestamp *big.Int) (entity.Config, error)
 	GetVotingPowers(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorVotingPower, error)
 	GetKeys(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorWithKeys, error)
 	GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uint8, error)
@@ -43,22 +42,17 @@ func NewDeriver(ethClient ethClient) (*Deriver, error) {
 
 func (v *Deriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) (entity.ValidatorSet, error) {
 	slog.DebugContext(ctx, "Trying to fetch master config", "timestamp", timestamp.String())
-	masterConfig, err := v.ethClient.GetMasterConfig(ctx, timestamp)
+	config, err := v.ethClient.GetConfig(ctx, timestamp)
 	if err != nil {
-		return entity.ValidatorSet{}, fmt.Errorf("failed to get master config: %w", err)
+		return entity.ValidatorSet{}, fmt.Errorf("failed to get config: %w", err)
 	}
-	slog.DebugContext(ctx, "Got master config", "timestamp", timestamp.String(), "config", masterConfig)
+	slog.DebugContext(ctx, "Got master config", "timestamp", timestamp.String(), "config", config)
 
 	slog.DebugContext(ctx, "Trying to getch val set config", "timestamp", timestamp.String())
-	valSetConfig, err := v.ethClient.GetValSetConfig(ctx, timestamp)
-	if err != nil {
-		return entity.ValidatorSet{}, fmt.Errorf("failed to get val set config: %w", err)
-	}
-	slog.DebugContext(ctx, "Got val set config", "timestamp", timestamp.String(), "config", valSetConfig)
 
 	// Get voting powers from all voting power providers
 	var allVotingPowers []entity.OperatorVotingPower
-	for _, provider := range masterConfig.VotingPowerProviders {
+	for _, provider := range config.VotingPowerProviders {
 		slog.DebugContext(ctx, "Trying to fetch voting powers from provider", "provider", provider.Address.Hex())
 		votingPowers, err := v.ethClient.GetVotingPowers(ctx, provider.Address, timestamp)
 		if err != nil {
@@ -71,14 +65,14 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) (enti
 	}
 
 	// Get keys from the keys provider
-	slog.DebugContext(ctx, "Trying to fetch keys from provider", "provider", masterConfig.KeysProvider.Address.Hex())
+	slog.DebugContext(ctx, "Trying to fetch keys from provider", "provider", config.KeysProvider.Address.Hex())
 
-	keys, err := v.ethClient.GetKeys(ctx, masterConfig.KeysProvider.Address, timestamp)
+	keys, err := v.ethClient.GetKeys(ctx, config.KeysProvider.Address, timestamp)
 	if err != nil {
 		return entity.ValidatorSet{}, fmt.Errorf("failed to get keys: %w", err)
 	}
 
-	slog.DebugContext(ctx, "Got keys from provider", "provider", masterConfig.KeysProvider.Address.Hex(), "keys", keys)
+	slog.DebugContext(ctx, "Got keys from provider", "provider", config.KeysProvider.Address.Hex(), "keys", keys)
 
 	// Create validators map to consolidate voting powers and keys
 	validatorsMap := make(map[string]*entity.Validator)
@@ -140,13 +134,13 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) (enti
 		return validators[i].VotingPower.Cmp(validators[j].VotingPower) > 0
 	})
 
-	// Apply filters from valSetConfig
+	// Apply filters from config
 	totalActive := 0
 
 	totalActiveVotingPower := big.NewInt(0)
 	for i := range validators {
 		// Check minimum voting power if configured
-		if validators[i].VotingPower.Cmp(valSetConfig.MinInclusionVotingPower) < 0 {
+		if validators[i].VotingPower.Cmp(config.MinInclusionVotingPower) < 0 {
 			break
 		}
 
@@ -158,16 +152,16 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, timestamp *big.Int) (enti
 		totalActive++
 		validators[i].IsActive = true
 
-		if valSetConfig.MaxVotingPower.Int64() != 0 {
-			if validators[i].VotingPower.Cmp(valSetConfig.MaxVotingPower) > 0 {
-				validators[i].VotingPower = new(big.Int).Set(valSetConfig.MaxVotingPower)
+		if config.MaxVotingPower.Int64() != 0 {
+			if validators[i].VotingPower.Cmp(config.MaxVotingPower) > 0 {
+				validators[i].VotingPower = new(big.Int).Set(config.MaxVotingPower)
 			}
 		}
 		// Add to total active voting power if validator is active
 		totalActiveVotingPower = new(big.Int).Add(totalActiveVotingPower, validators[i].VotingPower)
 
-		if valSetConfig.MaxValidatorsCount.Int64() != 0 {
-			if totalActive >= int(valSetConfig.MaxValidatorsCount.Int64()) {
+		if config.MaxValidatorsCount.Int64() != 0 {
+			if totalActive >= int(config.MaxValidatorsCount.Int64()) {
 				break
 			}
 		}

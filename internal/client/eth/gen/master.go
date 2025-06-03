@@ -29,32 +29,40 @@ var (
 	_ = abi.ConvertType
 )
 
-// IEpochManagerEpochManagerInitParams is an auto generated low-level Go binding around an user-defined struct.
-type IEpochManagerEpochManagerInitParams struct {
-	EpochDuration          *big.Int
-	EpochDurationTimestamp *big.Int
+// IConfigProviderConfig is an auto generated low-level Go binding around an user-defined struct.
+type IConfigProviderConfig struct {
+	VotingPowerProviders    []IConfigProviderCrossChainAddress
+	KeysProvider            IConfigProviderCrossChainAddress
+	Replicas                []IConfigProviderCrossChainAddress
+	VerificationType        uint32
+	MaxVotingPower          *big.Int
+	MinInclusionVotingPower *big.Int
+	MaxValidatorsCount      *big.Int
+	RequiredKeyTags         []uint8
 }
 
-// IMasterConfigProviderCrossChainAddress is an auto generated low-level Go binding around an user-defined struct.
-type IMasterConfigProviderCrossChainAddress struct {
+// IConfigProviderConfigProviderInitParams is an auto generated low-level Go binding around an user-defined struct.
+type IConfigProviderConfigProviderInitParams struct {
+	VotingPowerProviders    []IConfigProviderCrossChainAddress
+	KeysProvider            IConfigProviderCrossChainAddress
+	Replicas                []IConfigProviderCrossChainAddress
+	VerificationType        uint32
+	MaxVotingPower          *big.Int
+	MinInclusionVotingPower *big.Int
+	MaxValidatorsCount      *big.Int
+	RequiredKeyTags         []uint8
+}
+
+// IConfigProviderCrossChainAddress is an auto generated low-level Go binding around an user-defined struct.
+type IConfigProviderCrossChainAddress struct {
 	Addr    common.Address
 	ChainId uint64
 }
 
-// IMasterConfigProviderMasterConfig is an auto generated low-level Go binding around an user-defined struct.
-type IMasterConfigProviderMasterConfig struct {
-	VotingPowerProviders []IMasterConfigProviderCrossChainAddress
-	KeysProvider         IMasterConfigProviderCrossChainAddress
-	Replicas             []IMasterConfigProviderCrossChainAddress
-	VerificationType     uint32
-}
-
-// IMasterConfigProviderMasterConfigProviderInitParams is an auto generated low-level Go binding around an user-defined struct.
-type IMasterConfigProviderMasterConfigProviderInitParams struct {
-	VotingPowerProviders []IMasterConfigProviderCrossChainAddress
-	KeysProvider         IMasterConfigProviderCrossChainAddress
-	Replicas             []IMasterConfigProviderCrossChainAddress
-	VerificationType     uint32
+// IEpochManagerEpochManagerInitParams is an auto generated low-level Go binding around an user-defined struct.
+type IEpochManagerEpochManagerInitParams struct {
+	EpochDuration          *big.Int
+	EpochDurationTimestamp *big.Int
 }
 
 // INetworkManagerNetworkManagerInitParams is an auto generated low-level Go binding around an user-defined struct.
@@ -97,25 +105,9 @@ type ISettlementValSetHeader struct {
 	PreviousHeaderHash [32]byte
 }
 
-// IValSetConfigProviderValSetConfig is an auto generated low-level Go binding around an user-defined struct.
-type IValSetConfigProviderValSetConfig struct {
-	MaxVotingPower          *big.Int
-	MinInclusionVotingPower *big.Int
-	MaxValidatorsCount      *big.Int
-	RequiredKeyTags         []uint8
-}
-
-// IValSetConfigProviderValSetConfigProviderInitParams is an auto generated low-level Go binding around an user-defined struct.
-type IValSetConfigProviderValSetConfigProviderInitParams struct {
-	MaxVotingPower          *big.Int
-	MinInclusionVotingPower *big.Int
-	MaxValidatorsCount      *big.Int
-	RequiredKeyTags         []uint8
-}
-
 // MasterMetaData contains all meta data concerning the Master contract.
 var MasterMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"DEFAULT_ADMIN_ROLE\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"EpochManager_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"MasterConfigProvider_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"NETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"NetworkManager_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"OzAccessControl_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"OzEIP712_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"PermissionManager_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK_IDENTIFIER\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"Settlement_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"VALIDATOR_SET_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"ValSetConfigProvider_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"addReplica\",\"inputs\":[{\"name\":\"replica\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"commitValSetHeader\",\"inputs\":[{\"name\":\"header\",\"type\":\"tuple\",\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"captureTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"previousHeaderHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"extraData\",\"type\":\"tuple[]\",\"internalType\":\"structISettlement.ExtraData[]\",\"components\":[{\"name\":\"key\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"value\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"eip712Domain\",\"inputs\":[],\"outputs\":[{\"name\":\"fields\",\"type\":\"bytes1\",\"internalType\":\"bytes1\"},{\"name\":\"name\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"version\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"chainId\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"verifyingContract\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"extensions\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getActiveReplicas\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getActiveReplicasAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hints\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getActiveVotingPowerProviders\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getActiveVotingPowerProvidersAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hints\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCaptureTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCaptureTimestampFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCaptureTimestampFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCommitDuration\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCommitDurationAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpoch\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpochDuration\",\"inputs\":[],\"outputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpochStart\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentPhase\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"enumISettlement.ValSetPhase\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentValSetEpoch\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentValSetTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochDuration\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochIndex\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochStart\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getExtraData\",\"inputs\":[{\"name\":\"key\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getExtraDataAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"key\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getKeysProvider\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getKeysProviderAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getLastCommittedHeaderCaptureTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMasterConfig\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.MasterConfig\",\"components\":[{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"replicas\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"verificationType\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMasterConfigAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hints\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.MasterConfig\",\"components\":[{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"replicas\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"verificationType\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxValidatorsCount\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxValidatorsCountAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxVotingPower\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxVotingPowerAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMinInclusionVotingPower\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMinInclusionVotingPowerAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextEpoch\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextEpochStart\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getPreviousHeaderHashFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getPreviousHeaderHashFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getProlongDuration\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQuorumThresholdFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQuorumThresholdFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTag\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTagAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTagFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTagFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTags\",\"inputs\":[],\"outputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTagsAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRole\",\"inputs\":[{\"name\":\"selector\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRoleAdmin\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSigVerifier\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSigVerifierAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValSetConfig\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIValSetConfigProvider.ValSetConfig\",\"components\":[{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxValidatorsCount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValSetConfigAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hints\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIValSetConfigProvider.ValSetConfig\",\"components\":[{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxValidatorsCount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"header\",\"type\":\"tuple\",\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"captureTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"previousHeaderHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"captureTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"previousHeaderHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValidatorsSszMRootFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValidatorsSszMRootFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVerificationType\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVerificationTypeAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVersionFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVersionFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"grantRole\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"hasRole\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hashTypedDataV4\",\"inputs\":[{\"name\":\"structHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hashTypedDataV4CrossChain\",\"inputs\":[{\"name\":\"structHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"settlementInitParams\",\"type\":\"tuple\",\"internalType\":\"structISettlement.SettlementInitParams\",\"components\":[{\"name\":\"networkManagerInitParams\",\"type\":\"tuple\",\"internalType\":\"structINetworkManager.NetworkManagerInitParams\",\"components\":[{\"name\":\"network\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"subnetworkID\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"epochManagerInitParams\",\"type\":\"tuple\",\"internalType\":\"structIEpochManager.EpochManagerInitParams\",\"components\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"epochDurationTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}]},{\"name\":\"ozEip712InitParams\",\"type\":\"tuple\",\"internalType\":\"structIOzEIP712.OzEIP712InitParams\",\"components\":[{\"name\":\"name\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"version\",\"type\":\"string\",\"internalType\":\"string\"}]},{\"name\":\"commitDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"prolongDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"sigVerifier\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"valSetConfigProviderInitParams\",\"type\":\"tuple\",\"internalType\":\"structIValSetConfigProvider.ValSetConfigProviderInitParams\",\"components\":[{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxValidatorsCount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}]},{\"name\":\"masterConfigProviderInitParams\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.MasterConfigProviderInitParams\",\"components\":[{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"replicas\",\"type\":\"tuple[]\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"verificationType\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"defaultAdmin\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"isReplicaActive\",\"inputs\":[{\"name\":\"replica\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isReplicaActiveAt\",\"inputs\":[{\"name\":\"replica\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isValSetHeaderCommitted\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isValSetHeaderCommittedAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isVotingPowerProviderActive\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isVotingPowerProviderActiveAt\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"multicall\",\"inputs\":[{\"name\":\"data\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"outputs\":[{\"name\":\"results\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeReplica\",\"inputs\":[{\"name\":\"replica\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"renounceRole\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"callerConfirmation\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"revokeRole\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setCommitDuration\",\"inputs\":[{\"name\":\"commitDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setEpochDuration\",\"inputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setGenesis\",\"inputs\":[{\"name\":\"valSetHeader\",\"type\":\"tuple\",\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"captureTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"previousHeaderHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"extraData\",\"type\":\"tuple[]\",\"internalType\":\"structISettlement.ExtraData[]\",\"components\":[{\"name\":\"key\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"value\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setKeysProvider\",\"inputs\":[{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIMasterConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMaxValidatorsCount\",\"inputs\":[{\"name\":\"maxValidatorsCount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMaxVotingPower\",\"inputs\":[{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMinInclusionVotingPower\",\"inputs\":[{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setRequiredKeyTag\",\"inputs\":[{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setRequiredKeyTags\",\"inputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setSigVerifier\",\"inputs\":[{\"name\":\"sigVerifier\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setVerificationType\",\"inputs\":[{\"name\":\"verificationType\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"staticDelegateCall\",\"inputs\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"supportsInterface\",\"inputs\":[{\"name\":\"interfaceId\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"verifyQuorumSig\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"message\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"EIP712DomainChanged\",\"inputs\":[],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RoleAdminChanged\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"previousAdminRole\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"newAdminRole\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RoleGranted\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"sender\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RoleRevoked\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"sender\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SelectorRoleSet\",\"inputs\":[{\"name\":\"selector\",\"type\":\"bytes4\",\"indexed\":false,\"internalType\":\"bytes4\"},{\"name\":\"role\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AccessControlBadConfirmation\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"AccessControlUnauthorizedAccount\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"neededRole\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"type\":\"error\",\"name\":\"AddressEmptyCode\",\"inputs\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"EpochManager_InvalidEpochDuration\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_InvalidEpochDurationIndex\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_InvalidEpochDurationTimestamp\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_NoCheckpoint\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"FailedCall\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidInitialization\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"MasterConfigProvider_AlreadyAdded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"MasterConfigProvider_NotAdded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotInitializing\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_Duplicate\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_EpochDurationTooShort\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_InvalidCaptureTimestamp\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_InvalidEpoch\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_InvalidKey\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_InvalidPhase\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_InvalidVersion\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_ValSetHeaderAlreadySubmitted\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_VerificationFailed\",\"inputs\":[]}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"ConfigProvider_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"DEFAULT_ADMIN_ROLE\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"EpochManager_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"NETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"NetworkManager_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"OzAccessControl_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"OzEIP712_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"PermissionManager_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK_IDENTIFIER\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"Settlement_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"VALIDATOR_SET_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"addReplica\",\"inputs\":[{\"name\":\"replica\",\"type\":\"tuple\",\"internalType\":\"structIConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"commitValSetHeader\",\"inputs\":[{\"name\":\"header\",\"type\":\"tuple\",\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"captureTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"previousHeaderHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"extraData\",\"type\":\"tuple[]\",\"internalType\":\"structISettlement.ExtraData[]\",\"components\":[{\"name\":\"key\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"value\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"eip712Domain\",\"inputs\":[],\"outputs\":[{\"name\":\"fields\",\"type\":\"bytes1\",\"internalType\":\"bytes1\"},{\"name\":\"name\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"version\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"chainId\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"verifyingContract\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"extensions\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCaptureTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCaptureTimestampFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCaptureTimestampFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCommitDuration\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCommitDurationAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getConfig\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIConfigProvider.Config\",\"components\":[{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"replicas\",\"type\":\"tuple[]\",\"internalType\":\"structIConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"verificationType\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxValidatorsCount\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getConfigAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hints\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIConfigProvider.Config\",\"components\":[{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"replicas\",\"type\":\"tuple[]\",\"internalType\":\"structIConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"verificationType\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxValidatorsCount\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpoch\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpochDuration\",\"inputs\":[],\"outputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpochStart\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentPhase\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"enumISettlement.ValSetPhase\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentValSetEpoch\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentValSetTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochDuration\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochIndex\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochStart\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getExtraData\",\"inputs\":[{\"name\":\"key\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getExtraDataAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"key\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getKeysProvider\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getKeysProviderAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getLastCommittedHeaderEpoch\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxValidatorsCount\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxValidatorsCountAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxVotingPower\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxVotingPowerAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMinInclusionVotingPower\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMinInclusionVotingPowerAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextEpoch\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextEpochDuration\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextEpochStart\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getPreviousHeaderHashFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getPreviousHeaderHashFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getProlongDuration\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getProlongDurationAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQuorumThresholdFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQuorumThresholdFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getReplicas\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getReplicasAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hints\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTag\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTagAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTagFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTagFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTags\",\"inputs\":[],\"outputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTagsAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRole\",\"inputs\":[{\"name\":\"selector\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRoleAdmin\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSigVerifier\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSigVerifierAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"header\",\"type\":\"tuple\",\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"captureTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"previousHeaderHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"captureTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"previousHeaderHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValidatorsSszMRootFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValidatorsSszMRootFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVerificationType\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVerificationTypeAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVersionFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVersionFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVotingPowerProviders\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVotingPowerProvidersAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hints\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"grantRole\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"hasRole\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hashTypedDataV4\",\"inputs\":[{\"name\":\"structHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hashTypedDataV4CrossChain\",\"inputs\":[{\"name\":\"structHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"settlementInitParams\",\"type\":\"tuple\",\"internalType\":\"structISettlement.SettlementInitParams\",\"components\":[{\"name\":\"networkManagerInitParams\",\"type\":\"tuple\",\"internalType\":\"structINetworkManager.NetworkManagerInitParams\",\"components\":[{\"name\":\"network\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"subnetworkID\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"epochManagerInitParams\",\"type\":\"tuple\",\"internalType\":\"structIEpochManager.EpochManagerInitParams\",\"components\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"epochDurationTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}]},{\"name\":\"ozEip712InitParams\",\"type\":\"tuple\",\"internalType\":\"structIOzEIP712.OzEIP712InitParams\",\"components\":[{\"name\":\"name\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"version\",\"type\":\"string\",\"internalType\":\"string\"}]},{\"name\":\"commitDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"prolongDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"sigVerifier\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"configProviderInitParams\",\"type\":\"tuple\",\"internalType\":\"structIConfigProvider.ConfigProviderInitParams\",\"components\":[{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"replicas\",\"type\":\"tuple[]\",\"internalType\":\"structIConfigProvider.CrossChainAddress[]\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"verificationType\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxValidatorsCount\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}]},{\"name\":\"defaultAdmin\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"isReplicaRegistered\",\"inputs\":[{\"name\":\"replica\",\"type\":\"tuple\",\"internalType\":\"structIConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isReplicaRegisteredAt\",\"inputs\":[{\"name\":\"replica\",\"type\":\"tuple\",\"internalType\":\"structIConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isValSetHeaderCommitted\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isValSetHeaderCommittedAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isVotingPowerProviderRegistered\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isVotingPowerProviderRegisteredAt\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"multicall\",\"inputs\":[{\"name\":\"data\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"outputs\":[{\"name\":\"results\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeReplica\",\"inputs\":[{\"name\":\"replica\",\"type\":\"tuple\",\"internalType\":\"structIConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"renounceRole\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"callerConfirmation\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"revokeRole\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setCommitDuration\",\"inputs\":[{\"name\":\"commitDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setEpochDuration\",\"inputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setGenesis\",\"inputs\":[{\"name\":\"valSetHeader\",\"type\":\"tuple\",\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"captureTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"previousHeaderHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"extraData\",\"type\":\"tuple[]\",\"internalType\":\"structISettlement.ExtraData[]\",\"components\":[{\"name\":\"key\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"value\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setKeysProvider\",\"inputs\":[{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMaxValidatorsCount\",\"inputs\":[{\"name\":\"maxValidatorsCount\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMaxVotingPower\",\"inputs\":[{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMinInclusionVotingPower\",\"inputs\":[{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setProlongDuration\",\"inputs\":[{\"name\":\"prolongDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setRequiredKeyTag\",\"inputs\":[{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setRequiredKeyTags\",\"inputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setSigVerifier\",\"inputs\":[{\"name\":\"sigVerifier\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setVerificationType\",\"inputs\":[{\"name\":\"verificationType\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"staticDelegateCall\",\"inputs\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"supportsInterface\",\"inputs\":[{\"name\":\"interfaceId\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"verifyQuorumSig\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"message\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"AddReplica\",\"inputs\":[{\"name\":\"replica\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"AddVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"CommitValSetHeader\",\"inputs\":[{\"name\":\"valSetHeader\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"captureTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"previousHeaderHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"extraData\",\"type\":\"tuple[]\",\"indexed\":false,\"internalType\":\"structISettlement.ExtraData[]\",\"components\":[{\"name\":\"key\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"value\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"EIP712DomainChanged\",\"inputs\":[],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitCommitDuration\",\"inputs\":[{\"name\":\"commitDuration\",\"type\":\"uint48\",\"indexed\":false,\"internalType\":\"uint48\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitEIP712\",\"inputs\":[{\"name\":\"name\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"},{\"name\":\"version\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitEpochDuration\",\"inputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"indexed\":false,\"internalType\":\"uint48\"},{\"name\":\"epochDurationTimestamp\",\"type\":\"uint48\",\"indexed\":false,\"internalType\":\"uint48\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitProlongDuration\",\"inputs\":[{\"name\":\"prolongDuration\",\"type\":\"uint48\",\"indexed\":false,\"internalType\":\"uint48\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitRequiredKeyTag\",\"inputs\":[{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitSigVerifier\",\"inputs\":[{\"name\":\"sigVerifier\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitSubnetwork\",\"inputs\":[{\"name\":\"network\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"subnetworkID\",\"type\":\"uint96\",\"indexed\":false,\"internalType\":\"uint96\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RemoveReplica\",\"inputs\":[{\"name\":\"replica\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RemoveVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RoleAdminChanged\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"previousAdminRole\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"newAdminRole\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RoleGranted\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"sender\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RoleRevoked\",\"inputs\":[{\"name\":\"role\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"sender\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetCommitDuration\",\"inputs\":[{\"name\":\"commitDuration\",\"type\":\"uint48\",\"indexed\":false,\"internalType\":\"uint48\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetEpochDuration\",\"inputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"indexed\":false,\"internalType\":\"uint48\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetGenesis\",\"inputs\":[{\"name\":\"valSetHeader\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"captureTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"previousHeaderHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"extraData\",\"type\":\"tuple[]\",\"indexed\":false,\"internalType\":\"structISettlement.ExtraData[]\",\"components\":[{\"name\":\"key\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"value\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetKeysProvider\",\"inputs\":[{\"name\":\"keysProvider\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIConfigProvider.CrossChainAddress\",\"components\":[{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetMaxValidatorsCount\",\"inputs\":[{\"name\":\"maxValidatorsCount\",\"type\":\"uint208\",\"indexed\":false,\"internalType\":\"uint208\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetMaxVotingPower\",\"inputs\":[{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetMinInclusionVotingPower\",\"inputs\":[{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetProlongDuration\",\"inputs\":[{\"name\":\"prolongDuration\",\"type\":\"uint48\",\"indexed\":false,\"internalType\":\"uint48\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetRequiredKeyTag\",\"inputs\":[{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetRequiredKeyTags\",\"inputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"indexed\":false,\"internalType\":\"uint8[]\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetSelectorRole\",\"inputs\":[{\"name\":\"selector\",\"type\":\"bytes4\",\"indexed\":true,\"internalType\":\"bytes4\"},{\"name\":\"role\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetSigVerifier\",\"inputs\":[{\"name\":\"sigVerifier\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetVerificationType\",\"inputs\":[{\"name\":\"verificationType\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AccessControlBadConfirmation\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"AccessControlUnauthorizedAccount\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"neededRole\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"type\":\"error\",\"name\":\"AddressEmptyCode\",\"inputs\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"ConfigProvider_AlreadyAdded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ConfigProvider_NotAdded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_InvalidEpochDuration\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_InvalidEpochDurationIndex\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_InvalidEpochDurationTimestamp\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_NoCheckpoint\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"FailedCall\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidInitialization\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotInitializing\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_CommitDurationTooLong\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_CommitDurationTooShort\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_Duplicate\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_EpochDurationTooShort\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_InvalidCaptureTimestamp\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_InvalidEpoch\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_InvalidKey\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_InvalidPhase\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_InvalidVersion\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_ValSetHeaderAlreadySubmitted\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_VerificationFailed\",\"inputs\":[]}]",
 }
 
 // MasterABI is the input ABI used to generate the binding from.
@@ -264,6 +256,37 @@ func (_Master *MasterTransactorRaw) Transact(opts *bind.TransactOpts, method str
 	return _Master.Contract.contract.Transact(opts, method, params...)
 }
 
+// ConfigProviderVERSION is a free data retrieval call binding the contract method 0x00ff780d.
+//
+// Solidity: function ConfigProvider_VERSION() pure returns(uint64)
+func (_Master *MasterCaller) ConfigProviderVERSION(opts *bind.CallOpts) (uint64, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "ConfigProvider_VERSION")
+
+	if err != nil {
+		return *new(uint64), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint64)).(*uint64)
+
+	return out0, err
+
+}
+
+// ConfigProviderVERSION is a free data retrieval call binding the contract method 0x00ff780d.
+//
+// Solidity: function ConfigProvider_VERSION() pure returns(uint64)
+func (_Master *MasterSession) ConfigProviderVERSION() (uint64, error) {
+	return _Master.Contract.ConfigProviderVERSION(&_Master.CallOpts)
+}
+
+// ConfigProviderVERSION is a free data retrieval call binding the contract method 0x00ff780d.
+//
+// Solidity: function ConfigProvider_VERSION() pure returns(uint64)
+func (_Master *MasterCallerSession) ConfigProviderVERSION() (uint64, error) {
+	return _Master.Contract.ConfigProviderVERSION(&_Master.CallOpts)
+}
+
 // DEFAULTADMINROLE is a free data retrieval call binding the contract method 0xa217fddf.
 //
 // Solidity: function DEFAULT_ADMIN_ROLE() view returns(bytes32)
@@ -324,37 +347,6 @@ func (_Master *MasterSession) EpochManagerVERSION() (uint64, error) {
 // Solidity: function EpochManager_VERSION() pure returns(uint64)
 func (_Master *MasterCallerSession) EpochManagerVERSION() (uint64, error) {
 	return _Master.Contract.EpochManagerVERSION(&_Master.CallOpts)
-}
-
-// MasterConfigProviderVERSION is a free data retrieval call binding the contract method 0xd1c5a7c4.
-//
-// Solidity: function MasterConfigProvider_VERSION() pure returns(uint64)
-func (_Master *MasterCaller) MasterConfigProviderVERSION(opts *bind.CallOpts) (uint64, error) {
-	var out []interface{}
-	err := _Master.contract.Call(opts, &out, "MasterConfigProvider_VERSION")
-
-	if err != nil {
-		return *new(uint64), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(uint64)).(*uint64)
-
-	return out0, err
-
-}
-
-// MasterConfigProviderVERSION is a free data retrieval call binding the contract method 0xd1c5a7c4.
-//
-// Solidity: function MasterConfigProvider_VERSION() pure returns(uint64)
-func (_Master *MasterSession) MasterConfigProviderVERSION() (uint64, error) {
-	return _Master.Contract.MasterConfigProviderVERSION(&_Master.CallOpts)
-}
-
-// MasterConfigProviderVERSION is a free data retrieval call binding the contract method 0xd1c5a7c4.
-//
-// Solidity: function MasterConfigProvider_VERSION() pure returns(uint64)
-func (_Master *MasterCallerSession) MasterConfigProviderVERSION() (uint64, error) {
-	return _Master.Contract.MasterConfigProviderVERSION(&_Master.CallOpts)
 }
 
 // NETWORK is a free data retrieval call binding the contract method 0x8759e6d1.
@@ -636,37 +628,6 @@ func (_Master *MasterCallerSession) VALIDATORSETVERSION() (uint8, error) {
 	return _Master.Contract.VALIDATORSETVERSION(&_Master.CallOpts)
 }
 
-// ValSetConfigProviderVERSION is a free data retrieval call binding the contract method 0xecaad2a1.
-//
-// Solidity: function ValSetConfigProvider_VERSION() pure returns(uint64)
-func (_Master *MasterCaller) ValSetConfigProviderVERSION(opts *bind.CallOpts) (uint64, error) {
-	var out []interface{}
-	err := _Master.contract.Call(opts, &out, "ValSetConfigProvider_VERSION")
-
-	if err != nil {
-		return *new(uint64), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(uint64)).(*uint64)
-
-	return out0, err
-
-}
-
-// ValSetConfigProviderVERSION is a free data retrieval call binding the contract method 0xecaad2a1.
-//
-// Solidity: function ValSetConfigProvider_VERSION() pure returns(uint64)
-func (_Master *MasterSession) ValSetConfigProviderVERSION() (uint64, error) {
-	return _Master.Contract.ValSetConfigProviderVERSION(&_Master.CallOpts)
-}
-
-// ValSetConfigProviderVERSION is a free data retrieval call binding the contract method 0xecaad2a1.
-//
-// Solidity: function ValSetConfigProvider_VERSION() pure returns(uint64)
-func (_Master *MasterCallerSession) ValSetConfigProviderVERSION() (uint64, error) {
-	return _Master.Contract.ValSetConfigProviderVERSION(&_Master.CallOpts)
-}
-
 // Eip712Domain is a free data retrieval call binding the contract method 0x84b0196e.
 //
 // Solidity: function eip712Domain() view returns(bytes1 fields, string name, string version, uint256 chainId, address verifyingContract, bytes32 salt, uint256[] extensions)
@@ -735,130 +696,6 @@ func (_Master *MasterCallerSession) Eip712Domain() (struct {
 	Extensions        []*big.Int
 }, error) {
 	return _Master.Contract.Eip712Domain(&_Master.CallOpts)
-}
-
-// GetActiveReplicas is a free data retrieval call binding the contract method 0x5cc43174.
-//
-// Solidity: function getActiveReplicas() view returns((address,uint64)[])
-func (_Master *MasterCaller) GetActiveReplicas(opts *bind.CallOpts) ([]IMasterConfigProviderCrossChainAddress, error) {
-	var out []interface{}
-	err := _Master.contract.Call(opts, &out, "getActiveReplicas")
-
-	if err != nil {
-		return *new([]IMasterConfigProviderCrossChainAddress), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new([]IMasterConfigProviderCrossChainAddress)).(*[]IMasterConfigProviderCrossChainAddress)
-
-	return out0, err
-
-}
-
-// GetActiveReplicas is a free data retrieval call binding the contract method 0x5cc43174.
-//
-// Solidity: function getActiveReplicas() view returns((address,uint64)[])
-func (_Master *MasterSession) GetActiveReplicas() ([]IMasterConfigProviderCrossChainAddress, error) {
-	return _Master.Contract.GetActiveReplicas(&_Master.CallOpts)
-}
-
-// GetActiveReplicas is a free data retrieval call binding the contract method 0x5cc43174.
-//
-// Solidity: function getActiveReplicas() view returns((address,uint64)[])
-func (_Master *MasterCallerSession) GetActiveReplicas() ([]IMasterConfigProviderCrossChainAddress, error) {
-	return _Master.Contract.GetActiveReplicas(&_Master.CallOpts)
-}
-
-// GetActiveReplicasAt is a free data retrieval call binding the contract method 0x02eb1000.
-//
-// Solidity: function getActiveReplicasAt(uint48 timestamp, bytes[] hints) view returns((address,uint64)[])
-func (_Master *MasterCaller) GetActiveReplicasAt(opts *bind.CallOpts, timestamp *big.Int, hints [][]byte) ([]IMasterConfigProviderCrossChainAddress, error) {
-	var out []interface{}
-	err := _Master.contract.Call(opts, &out, "getActiveReplicasAt", timestamp, hints)
-
-	if err != nil {
-		return *new([]IMasterConfigProviderCrossChainAddress), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new([]IMasterConfigProviderCrossChainAddress)).(*[]IMasterConfigProviderCrossChainAddress)
-
-	return out0, err
-
-}
-
-// GetActiveReplicasAt is a free data retrieval call binding the contract method 0x02eb1000.
-//
-// Solidity: function getActiveReplicasAt(uint48 timestamp, bytes[] hints) view returns((address,uint64)[])
-func (_Master *MasterSession) GetActiveReplicasAt(timestamp *big.Int, hints [][]byte) ([]IMasterConfigProviderCrossChainAddress, error) {
-	return _Master.Contract.GetActiveReplicasAt(&_Master.CallOpts, timestamp, hints)
-}
-
-// GetActiveReplicasAt is a free data retrieval call binding the contract method 0x02eb1000.
-//
-// Solidity: function getActiveReplicasAt(uint48 timestamp, bytes[] hints) view returns((address,uint64)[])
-func (_Master *MasterCallerSession) GetActiveReplicasAt(timestamp *big.Int, hints [][]byte) ([]IMasterConfigProviderCrossChainAddress, error) {
-	return _Master.Contract.GetActiveReplicasAt(&_Master.CallOpts, timestamp, hints)
-}
-
-// GetActiveVotingPowerProviders is a free data retrieval call binding the contract method 0xfda10c48.
-//
-// Solidity: function getActiveVotingPowerProviders() view returns((address,uint64)[])
-func (_Master *MasterCaller) GetActiveVotingPowerProviders(opts *bind.CallOpts) ([]IMasterConfigProviderCrossChainAddress, error) {
-	var out []interface{}
-	err := _Master.contract.Call(opts, &out, "getActiveVotingPowerProviders")
-
-	if err != nil {
-		return *new([]IMasterConfigProviderCrossChainAddress), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new([]IMasterConfigProviderCrossChainAddress)).(*[]IMasterConfigProviderCrossChainAddress)
-
-	return out0, err
-
-}
-
-// GetActiveVotingPowerProviders is a free data retrieval call binding the contract method 0xfda10c48.
-//
-// Solidity: function getActiveVotingPowerProviders() view returns((address,uint64)[])
-func (_Master *MasterSession) GetActiveVotingPowerProviders() ([]IMasterConfigProviderCrossChainAddress, error) {
-	return _Master.Contract.GetActiveVotingPowerProviders(&_Master.CallOpts)
-}
-
-// GetActiveVotingPowerProviders is a free data retrieval call binding the contract method 0xfda10c48.
-//
-// Solidity: function getActiveVotingPowerProviders() view returns((address,uint64)[])
-func (_Master *MasterCallerSession) GetActiveVotingPowerProviders() ([]IMasterConfigProviderCrossChainAddress, error) {
-	return _Master.Contract.GetActiveVotingPowerProviders(&_Master.CallOpts)
-}
-
-// GetActiveVotingPowerProvidersAt is a free data retrieval call binding the contract method 0xd74bc508.
-//
-// Solidity: function getActiveVotingPowerProvidersAt(uint48 timestamp, bytes[] hints) view returns((address,uint64)[])
-func (_Master *MasterCaller) GetActiveVotingPowerProvidersAt(opts *bind.CallOpts, timestamp *big.Int, hints [][]byte) ([]IMasterConfigProviderCrossChainAddress, error) {
-	var out []interface{}
-	err := _Master.contract.Call(opts, &out, "getActiveVotingPowerProvidersAt", timestamp, hints)
-
-	if err != nil {
-		return *new([]IMasterConfigProviderCrossChainAddress), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new([]IMasterConfigProviderCrossChainAddress)).(*[]IMasterConfigProviderCrossChainAddress)
-
-	return out0, err
-
-}
-
-// GetActiveVotingPowerProvidersAt is a free data retrieval call binding the contract method 0xd74bc508.
-//
-// Solidity: function getActiveVotingPowerProvidersAt(uint48 timestamp, bytes[] hints) view returns((address,uint64)[])
-func (_Master *MasterSession) GetActiveVotingPowerProvidersAt(timestamp *big.Int, hints [][]byte) ([]IMasterConfigProviderCrossChainAddress, error) {
-	return _Master.Contract.GetActiveVotingPowerProvidersAt(&_Master.CallOpts, timestamp, hints)
-}
-
-// GetActiveVotingPowerProvidersAt is a free data retrieval call binding the contract method 0xd74bc508.
-//
-// Solidity: function getActiveVotingPowerProvidersAt(uint48 timestamp, bytes[] hints) view returns((address,uint64)[])
-func (_Master *MasterCallerSession) GetActiveVotingPowerProvidersAt(timestamp *big.Int, hints [][]byte) ([]IMasterConfigProviderCrossChainAddress, error) {
-	return _Master.Contract.GetActiveVotingPowerProvidersAt(&_Master.CallOpts, timestamp, hints)
 }
 
 // GetCaptureTimestamp is a free data retrieval call binding the contract method 0xdb3adf12.
@@ -1014,6 +851,68 @@ func (_Master *MasterSession) GetCommitDurationAt(timestamp *big.Int, hint []byt
 // Solidity: function getCommitDurationAt(uint48 timestamp, bytes hint) view returns(uint48)
 func (_Master *MasterCallerSession) GetCommitDurationAt(timestamp *big.Int, hint []byte) (*big.Int, error) {
 	return _Master.Contract.GetCommitDurationAt(&_Master.CallOpts, timestamp, hint)
+}
+
+// GetConfig is a free data retrieval call binding the contract method 0xc3f909d4.
+//
+// Solidity: function getConfig() view returns(((address,uint64)[],(address,uint64),(address,uint64)[],uint32,uint256,uint256,uint208,uint8[]))
+func (_Master *MasterCaller) GetConfig(opts *bind.CallOpts) (IConfigProviderConfig, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getConfig")
+
+	if err != nil {
+		return *new(IConfigProviderConfig), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(IConfigProviderConfig)).(*IConfigProviderConfig)
+
+	return out0, err
+
+}
+
+// GetConfig is a free data retrieval call binding the contract method 0xc3f909d4.
+//
+// Solidity: function getConfig() view returns(((address,uint64)[],(address,uint64),(address,uint64)[],uint32,uint256,uint256,uint208,uint8[]))
+func (_Master *MasterSession) GetConfig() (IConfigProviderConfig, error) {
+	return _Master.Contract.GetConfig(&_Master.CallOpts)
+}
+
+// GetConfig is a free data retrieval call binding the contract method 0xc3f909d4.
+//
+// Solidity: function getConfig() view returns(((address,uint64)[],(address,uint64),(address,uint64)[],uint32,uint256,uint256,uint208,uint8[]))
+func (_Master *MasterCallerSession) GetConfig() (IConfigProviderConfig, error) {
+	return _Master.Contract.GetConfig(&_Master.CallOpts)
+}
+
+// GetConfigAt is a free data retrieval call binding the contract method 0xf633dfc6.
+//
+// Solidity: function getConfigAt(uint48 timestamp, bytes hints) view returns(((address,uint64)[],(address,uint64),(address,uint64)[],uint32,uint256,uint256,uint208,uint8[]))
+func (_Master *MasterCaller) GetConfigAt(opts *bind.CallOpts, timestamp *big.Int, hints []byte) (IConfigProviderConfig, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getConfigAt", timestamp, hints)
+
+	if err != nil {
+		return *new(IConfigProviderConfig), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(IConfigProviderConfig)).(*IConfigProviderConfig)
+
+	return out0, err
+
+}
+
+// GetConfigAt is a free data retrieval call binding the contract method 0xf633dfc6.
+//
+// Solidity: function getConfigAt(uint48 timestamp, bytes hints) view returns(((address,uint64)[],(address,uint64),(address,uint64)[],uint32,uint256,uint256,uint208,uint8[]))
+func (_Master *MasterSession) GetConfigAt(timestamp *big.Int, hints []byte) (IConfigProviderConfig, error) {
+	return _Master.Contract.GetConfigAt(&_Master.CallOpts, timestamp, hints)
+}
+
+// GetConfigAt is a free data retrieval call binding the contract method 0xf633dfc6.
+//
+// Solidity: function getConfigAt(uint48 timestamp, bytes hints) view returns(((address,uint64)[],(address,uint64),(address,uint64)[],uint32,uint256,uint256,uint208,uint8[]))
+func (_Master *MasterCallerSession) GetConfigAt(timestamp *big.Int, hints []byte) (IConfigProviderConfig, error) {
+	return _Master.Contract.GetConfigAt(&_Master.CallOpts, timestamp, hints)
 }
 
 // GetCurrentEpoch is a free data retrieval call binding the contract method 0xb97dd9e2.
@@ -1360,15 +1259,15 @@ func (_Master *MasterCallerSession) GetExtraDataAt(epoch *big.Int, key [32]byte)
 // GetKeysProvider is a free data retrieval call binding the contract method 0x297d29b8.
 //
 // Solidity: function getKeysProvider() view returns((address,uint64))
-func (_Master *MasterCaller) GetKeysProvider(opts *bind.CallOpts) (IMasterConfigProviderCrossChainAddress, error) {
+func (_Master *MasterCaller) GetKeysProvider(opts *bind.CallOpts) (IConfigProviderCrossChainAddress, error) {
 	var out []interface{}
 	err := _Master.contract.Call(opts, &out, "getKeysProvider")
 
 	if err != nil {
-		return *new(IMasterConfigProviderCrossChainAddress), err
+		return *new(IConfigProviderCrossChainAddress), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(IMasterConfigProviderCrossChainAddress)).(*IMasterConfigProviderCrossChainAddress)
+	out0 := *abi.ConvertType(out[0], new(IConfigProviderCrossChainAddress)).(*IConfigProviderCrossChainAddress)
 
 	return out0, err
 
@@ -1377,29 +1276,29 @@ func (_Master *MasterCaller) GetKeysProvider(opts *bind.CallOpts) (IMasterConfig
 // GetKeysProvider is a free data retrieval call binding the contract method 0x297d29b8.
 //
 // Solidity: function getKeysProvider() view returns((address,uint64))
-func (_Master *MasterSession) GetKeysProvider() (IMasterConfigProviderCrossChainAddress, error) {
+func (_Master *MasterSession) GetKeysProvider() (IConfigProviderCrossChainAddress, error) {
 	return _Master.Contract.GetKeysProvider(&_Master.CallOpts)
 }
 
 // GetKeysProvider is a free data retrieval call binding the contract method 0x297d29b8.
 //
 // Solidity: function getKeysProvider() view returns((address,uint64))
-func (_Master *MasterCallerSession) GetKeysProvider() (IMasterConfigProviderCrossChainAddress, error) {
+func (_Master *MasterCallerSession) GetKeysProvider() (IConfigProviderCrossChainAddress, error) {
 	return _Master.Contract.GetKeysProvider(&_Master.CallOpts)
 }
 
 // GetKeysProviderAt is a free data retrieval call binding the contract method 0xb405b818.
 //
 // Solidity: function getKeysProviderAt(uint48 timestamp, bytes hint) view returns((address,uint64))
-func (_Master *MasterCaller) GetKeysProviderAt(opts *bind.CallOpts, timestamp *big.Int, hint []byte) (IMasterConfigProviderCrossChainAddress, error) {
+func (_Master *MasterCaller) GetKeysProviderAt(opts *bind.CallOpts, timestamp *big.Int, hint []byte) (IConfigProviderCrossChainAddress, error) {
 	var out []interface{}
 	err := _Master.contract.Call(opts, &out, "getKeysProviderAt", timestamp, hint)
 
 	if err != nil {
-		return *new(IMasterConfigProviderCrossChainAddress), err
+		return *new(IConfigProviderCrossChainAddress), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(IMasterConfigProviderCrossChainAddress)).(*IMasterConfigProviderCrossChainAddress)
+	out0 := *abi.ConvertType(out[0], new(IConfigProviderCrossChainAddress)).(*IConfigProviderCrossChainAddress)
 
 	return out0, err
 
@@ -1408,23 +1307,23 @@ func (_Master *MasterCaller) GetKeysProviderAt(opts *bind.CallOpts, timestamp *b
 // GetKeysProviderAt is a free data retrieval call binding the contract method 0xb405b818.
 //
 // Solidity: function getKeysProviderAt(uint48 timestamp, bytes hint) view returns((address,uint64))
-func (_Master *MasterSession) GetKeysProviderAt(timestamp *big.Int, hint []byte) (IMasterConfigProviderCrossChainAddress, error) {
+func (_Master *MasterSession) GetKeysProviderAt(timestamp *big.Int, hint []byte) (IConfigProviderCrossChainAddress, error) {
 	return _Master.Contract.GetKeysProviderAt(&_Master.CallOpts, timestamp, hint)
 }
 
 // GetKeysProviderAt is a free data retrieval call binding the contract method 0xb405b818.
 //
 // Solidity: function getKeysProviderAt(uint48 timestamp, bytes hint) view returns((address,uint64))
-func (_Master *MasterCallerSession) GetKeysProviderAt(timestamp *big.Int, hint []byte) (IMasterConfigProviderCrossChainAddress, error) {
+func (_Master *MasterCallerSession) GetKeysProviderAt(timestamp *big.Int, hint []byte) (IConfigProviderCrossChainAddress, error) {
 	return _Master.Contract.GetKeysProviderAt(&_Master.CallOpts, timestamp, hint)
 }
 
-// GetLastCommittedHeaderCaptureTimestamp is a free data retrieval call binding the contract method 0x80901a56.
+// GetLastCommittedHeaderEpoch is a free data retrieval call binding the contract method 0x65b0849b.
 //
-// Solidity: function getLastCommittedHeaderCaptureTimestamp() view returns(uint48)
-func (_Master *MasterCaller) GetLastCommittedHeaderCaptureTimestamp(opts *bind.CallOpts) (*big.Int, error) {
+// Solidity: function getLastCommittedHeaderEpoch() view returns(uint48)
+func (_Master *MasterCaller) GetLastCommittedHeaderEpoch(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _Master.contract.Call(opts, &out, "getLastCommittedHeaderCaptureTimestamp")
+	err := _Master.contract.Call(opts, &out, "getLastCommittedHeaderEpoch")
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -1436,85 +1335,23 @@ func (_Master *MasterCaller) GetLastCommittedHeaderCaptureTimestamp(opts *bind.C
 
 }
 
-// GetLastCommittedHeaderCaptureTimestamp is a free data retrieval call binding the contract method 0x80901a56.
+// GetLastCommittedHeaderEpoch is a free data retrieval call binding the contract method 0x65b0849b.
 //
-// Solidity: function getLastCommittedHeaderCaptureTimestamp() view returns(uint48)
-func (_Master *MasterSession) GetLastCommittedHeaderCaptureTimestamp() (*big.Int, error) {
-	return _Master.Contract.GetLastCommittedHeaderCaptureTimestamp(&_Master.CallOpts)
+// Solidity: function getLastCommittedHeaderEpoch() view returns(uint48)
+func (_Master *MasterSession) GetLastCommittedHeaderEpoch() (*big.Int, error) {
+	return _Master.Contract.GetLastCommittedHeaderEpoch(&_Master.CallOpts)
 }
 
-// GetLastCommittedHeaderCaptureTimestamp is a free data retrieval call binding the contract method 0x80901a56.
+// GetLastCommittedHeaderEpoch is a free data retrieval call binding the contract method 0x65b0849b.
 //
-// Solidity: function getLastCommittedHeaderCaptureTimestamp() view returns(uint48)
-func (_Master *MasterCallerSession) GetLastCommittedHeaderCaptureTimestamp() (*big.Int, error) {
-	return _Master.Contract.GetLastCommittedHeaderCaptureTimestamp(&_Master.CallOpts)
-}
-
-// GetMasterConfig is a free data retrieval call binding the contract method 0x063c0c5c.
-//
-// Solidity: function getMasterConfig() view returns(((address,uint64)[],(address,uint64),(address,uint64)[],uint32))
-func (_Master *MasterCaller) GetMasterConfig(opts *bind.CallOpts) (IMasterConfigProviderMasterConfig, error) {
-	var out []interface{}
-	err := _Master.contract.Call(opts, &out, "getMasterConfig")
-
-	if err != nil {
-		return *new(IMasterConfigProviderMasterConfig), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(IMasterConfigProviderMasterConfig)).(*IMasterConfigProviderMasterConfig)
-
-	return out0, err
-
-}
-
-// GetMasterConfig is a free data retrieval call binding the contract method 0x063c0c5c.
-//
-// Solidity: function getMasterConfig() view returns(((address,uint64)[],(address,uint64),(address,uint64)[],uint32))
-func (_Master *MasterSession) GetMasterConfig() (IMasterConfigProviderMasterConfig, error) {
-	return _Master.Contract.GetMasterConfig(&_Master.CallOpts)
-}
-
-// GetMasterConfig is a free data retrieval call binding the contract method 0x063c0c5c.
-//
-// Solidity: function getMasterConfig() view returns(((address,uint64)[],(address,uint64),(address,uint64)[],uint32))
-func (_Master *MasterCallerSession) GetMasterConfig() (IMasterConfigProviderMasterConfig, error) {
-	return _Master.Contract.GetMasterConfig(&_Master.CallOpts)
-}
-
-// GetMasterConfigAt is a free data retrieval call binding the contract method 0x9288968d.
-//
-// Solidity: function getMasterConfigAt(uint48 timestamp, bytes hints) view returns(((address,uint64)[],(address,uint64),(address,uint64)[],uint32))
-func (_Master *MasterCaller) GetMasterConfigAt(opts *bind.CallOpts, timestamp *big.Int, hints []byte) (IMasterConfigProviderMasterConfig, error) {
-	var out []interface{}
-	err := _Master.contract.Call(opts, &out, "getMasterConfigAt", timestamp, hints)
-
-	if err != nil {
-		return *new(IMasterConfigProviderMasterConfig), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(IMasterConfigProviderMasterConfig)).(*IMasterConfigProviderMasterConfig)
-
-	return out0, err
-
-}
-
-// GetMasterConfigAt is a free data retrieval call binding the contract method 0x9288968d.
-//
-// Solidity: function getMasterConfigAt(uint48 timestamp, bytes hints) view returns(((address,uint64)[],(address,uint64),(address,uint64)[],uint32))
-func (_Master *MasterSession) GetMasterConfigAt(timestamp *big.Int, hints []byte) (IMasterConfigProviderMasterConfig, error) {
-	return _Master.Contract.GetMasterConfigAt(&_Master.CallOpts, timestamp, hints)
-}
-
-// GetMasterConfigAt is a free data retrieval call binding the contract method 0x9288968d.
-//
-// Solidity: function getMasterConfigAt(uint48 timestamp, bytes hints) view returns(((address,uint64)[],(address,uint64),(address,uint64)[],uint32))
-func (_Master *MasterCallerSession) GetMasterConfigAt(timestamp *big.Int, hints []byte) (IMasterConfigProviderMasterConfig, error) {
-	return _Master.Contract.GetMasterConfigAt(&_Master.CallOpts, timestamp, hints)
+// Solidity: function getLastCommittedHeaderEpoch() view returns(uint48)
+func (_Master *MasterCallerSession) GetLastCommittedHeaderEpoch() (*big.Int, error) {
+	return _Master.Contract.GetLastCommittedHeaderEpoch(&_Master.CallOpts)
 }
 
 // GetMaxValidatorsCount is a free data retrieval call binding the contract method 0x06ce894d.
 //
-// Solidity: function getMaxValidatorsCount() view returns(uint256)
+// Solidity: function getMaxValidatorsCount() view returns(uint208)
 func (_Master *MasterCaller) GetMaxValidatorsCount(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Master.contract.Call(opts, &out, "getMaxValidatorsCount")
@@ -1531,21 +1368,21 @@ func (_Master *MasterCaller) GetMaxValidatorsCount(opts *bind.CallOpts) (*big.In
 
 // GetMaxValidatorsCount is a free data retrieval call binding the contract method 0x06ce894d.
 //
-// Solidity: function getMaxValidatorsCount() view returns(uint256)
+// Solidity: function getMaxValidatorsCount() view returns(uint208)
 func (_Master *MasterSession) GetMaxValidatorsCount() (*big.Int, error) {
 	return _Master.Contract.GetMaxValidatorsCount(&_Master.CallOpts)
 }
 
 // GetMaxValidatorsCount is a free data retrieval call binding the contract method 0x06ce894d.
 //
-// Solidity: function getMaxValidatorsCount() view returns(uint256)
+// Solidity: function getMaxValidatorsCount() view returns(uint208)
 func (_Master *MasterCallerSession) GetMaxValidatorsCount() (*big.Int, error) {
 	return _Master.Contract.GetMaxValidatorsCount(&_Master.CallOpts)
 }
 
 // GetMaxValidatorsCountAt is a free data retrieval call binding the contract method 0x2e1f3b08.
 //
-// Solidity: function getMaxValidatorsCountAt(uint48 timestamp, bytes hint) view returns(uint256)
+// Solidity: function getMaxValidatorsCountAt(uint48 timestamp, bytes hint) view returns(uint208)
 func (_Master *MasterCaller) GetMaxValidatorsCountAt(opts *bind.CallOpts, timestamp *big.Int, hint []byte) (*big.Int, error) {
 	var out []interface{}
 	err := _Master.contract.Call(opts, &out, "getMaxValidatorsCountAt", timestamp, hint)
@@ -1562,14 +1399,14 @@ func (_Master *MasterCaller) GetMaxValidatorsCountAt(opts *bind.CallOpts, timest
 
 // GetMaxValidatorsCountAt is a free data retrieval call binding the contract method 0x2e1f3b08.
 //
-// Solidity: function getMaxValidatorsCountAt(uint48 timestamp, bytes hint) view returns(uint256)
+// Solidity: function getMaxValidatorsCountAt(uint48 timestamp, bytes hint) view returns(uint208)
 func (_Master *MasterSession) GetMaxValidatorsCountAt(timestamp *big.Int, hint []byte) (*big.Int, error) {
 	return _Master.Contract.GetMaxValidatorsCountAt(&_Master.CallOpts, timestamp, hint)
 }
 
 // GetMaxValidatorsCountAt is a free data retrieval call binding the contract method 0x2e1f3b08.
 //
-// Solidity: function getMaxValidatorsCountAt(uint48 timestamp, bytes hint) view returns(uint256)
+// Solidity: function getMaxValidatorsCountAt(uint48 timestamp, bytes hint) view returns(uint208)
 func (_Master *MasterCallerSession) GetMaxValidatorsCountAt(timestamp *big.Int, hint []byte) (*big.Int, error) {
 	return _Master.Contract.GetMaxValidatorsCountAt(&_Master.CallOpts, timestamp, hint)
 }
@@ -1729,6 +1566,37 @@ func (_Master *MasterCallerSession) GetNextEpoch() (*big.Int, error) {
 	return _Master.Contract.GetNextEpoch(&_Master.CallOpts)
 }
 
+// GetNextEpochDuration is a free data retrieval call binding the contract method 0x038cf1c0.
+//
+// Solidity: function getNextEpochDuration() view returns(uint48)
+func (_Master *MasterCaller) GetNextEpochDuration(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getNextEpochDuration")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetNextEpochDuration is a free data retrieval call binding the contract method 0x038cf1c0.
+//
+// Solidity: function getNextEpochDuration() view returns(uint48)
+func (_Master *MasterSession) GetNextEpochDuration() (*big.Int, error) {
+	return _Master.Contract.GetNextEpochDuration(&_Master.CallOpts)
+}
+
+// GetNextEpochDuration is a free data retrieval call binding the contract method 0x038cf1c0.
+//
+// Solidity: function getNextEpochDuration() view returns(uint48)
+func (_Master *MasterCallerSession) GetNextEpochDuration() (*big.Int, error) {
+	return _Master.Contract.GetNextEpochDuration(&_Master.CallOpts)
+}
+
 // GetNextEpochStart is a free data retrieval call binding the contract method 0x65c5f94a.
 //
 // Solidity: function getNextEpochStart() view returns(uint48)
@@ -1853,6 +1721,37 @@ func (_Master *MasterCallerSession) GetProlongDuration() (*big.Int, error) {
 	return _Master.Contract.GetProlongDuration(&_Master.CallOpts)
 }
 
+// GetProlongDurationAt is a free data retrieval call binding the contract method 0x3586b9ea.
+//
+// Solidity: function getProlongDurationAt(uint48 timestamp, bytes hint) view returns(uint48)
+func (_Master *MasterCaller) GetProlongDurationAt(opts *bind.CallOpts, timestamp *big.Int, hint []byte) (*big.Int, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getProlongDurationAt", timestamp, hint)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetProlongDurationAt is a free data retrieval call binding the contract method 0x3586b9ea.
+//
+// Solidity: function getProlongDurationAt(uint48 timestamp, bytes hint) view returns(uint48)
+func (_Master *MasterSession) GetProlongDurationAt(timestamp *big.Int, hint []byte) (*big.Int, error) {
+	return _Master.Contract.GetProlongDurationAt(&_Master.CallOpts, timestamp, hint)
+}
+
+// GetProlongDurationAt is a free data retrieval call binding the contract method 0x3586b9ea.
+//
+// Solidity: function getProlongDurationAt(uint48 timestamp, bytes hint) view returns(uint48)
+func (_Master *MasterCallerSession) GetProlongDurationAt(timestamp *big.Int, hint []byte) (*big.Int, error) {
+	return _Master.Contract.GetProlongDurationAt(&_Master.CallOpts, timestamp, hint)
+}
+
 // GetQuorumThresholdFromValSetHeader is a free data retrieval call binding the contract method 0xe586b38e.
 //
 // Solidity: function getQuorumThresholdFromValSetHeader() view returns(uint256)
@@ -1913,6 +1812,68 @@ func (_Master *MasterSession) GetQuorumThresholdFromValSetHeaderAt(epoch *big.In
 // Solidity: function getQuorumThresholdFromValSetHeaderAt(uint48 epoch) view returns(uint256)
 func (_Master *MasterCallerSession) GetQuorumThresholdFromValSetHeaderAt(epoch *big.Int) (*big.Int, error) {
 	return _Master.Contract.GetQuorumThresholdFromValSetHeaderAt(&_Master.CallOpts, epoch)
+}
+
+// GetReplicas is a free data retrieval call binding the contract method 0x4df9ffb4.
+//
+// Solidity: function getReplicas() view returns((address,uint64)[])
+func (_Master *MasterCaller) GetReplicas(opts *bind.CallOpts) ([]IConfigProviderCrossChainAddress, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getReplicas")
+
+	if err != nil {
+		return *new([]IConfigProviderCrossChainAddress), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]IConfigProviderCrossChainAddress)).(*[]IConfigProviderCrossChainAddress)
+
+	return out0, err
+
+}
+
+// GetReplicas is a free data retrieval call binding the contract method 0x4df9ffb4.
+//
+// Solidity: function getReplicas() view returns((address,uint64)[])
+func (_Master *MasterSession) GetReplicas() ([]IConfigProviderCrossChainAddress, error) {
+	return _Master.Contract.GetReplicas(&_Master.CallOpts)
+}
+
+// GetReplicas is a free data retrieval call binding the contract method 0x4df9ffb4.
+//
+// Solidity: function getReplicas() view returns((address,uint64)[])
+func (_Master *MasterCallerSession) GetReplicas() ([]IConfigProviderCrossChainAddress, error) {
+	return _Master.Contract.GetReplicas(&_Master.CallOpts)
+}
+
+// GetReplicasAt is a free data retrieval call binding the contract method 0xf9d85e6d.
+//
+// Solidity: function getReplicasAt(uint48 timestamp, bytes[] hints) view returns((address,uint64)[])
+func (_Master *MasterCaller) GetReplicasAt(opts *bind.CallOpts, timestamp *big.Int, hints [][]byte) ([]IConfigProviderCrossChainAddress, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getReplicasAt", timestamp, hints)
+
+	if err != nil {
+		return *new([]IConfigProviderCrossChainAddress), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]IConfigProviderCrossChainAddress)).(*[]IConfigProviderCrossChainAddress)
+
+	return out0, err
+
+}
+
+// GetReplicasAt is a free data retrieval call binding the contract method 0xf9d85e6d.
+//
+// Solidity: function getReplicasAt(uint48 timestamp, bytes[] hints) view returns((address,uint64)[])
+func (_Master *MasterSession) GetReplicasAt(timestamp *big.Int, hints [][]byte) ([]IConfigProviderCrossChainAddress, error) {
+	return _Master.Contract.GetReplicasAt(&_Master.CallOpts, timestamp, hints)
+}
+
+// GetReplicasAt is a free data retrieval call binding the contract method 0xf9d85e6d.
+//
+// Solidity: function getReplicasAt(uint48 timestamp, bytes[] hints) view returns((address,uint64)[])
+func (_Master *MasterCallerSession) GetReplicasAt(timestamp *big.Int, hints [][]byte) ([]IConfigProviderCrossChainAddress, error) {
+	return _Master.Contract.GetReplicasAt(&_Master.CallOpts, timestamp, hints)
 }
 
 // GetRequiredKeyTag is a free data retrieval call binding the contract method 0x2e897f93.
@@ -2225,68 +2186,6 @@ func (_Master *MasterCallerSession) GetSigVerifierAt(timestamp *big.Int, hint []
 	return _Master.Contract.GetSigVerifierAt(&_Master.CallOpts, timestamp, hint)
 }
 
-// GetValSetConfig is a free data retrieval call binding the contract method 0x991bac99.
-//
-// Solidity: function getValSetConfig() view returns((uint256,uint256,uint256,uint8[]))
-func (_Master *MasterCaller) GetValSetConfig(opts *bind.CallOpts) (IValSetConfigProviderValSetConfig, error) {
-	var out []interface{}
-	err := _Master.contract.Call(opts, &out, "getValSetConfig")
-
-	if err != nil {
-		return *new(IValSetConfigProviderValSetConfig), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(IValSetConfigProviderValSetConfig)).(*IValSetConfigProviderValSetConfig)
-
-	return out0, err
-
-}
-
-// GetValSetConfig is a free data retrieval call binding the contract method 0x991bac99.
-//
-// Solidity: function getValSetConfig() view returns((uint256,uint256,uint256,uint8[]))
-func (_Master *MasterSession) GetValSetConfig() (IValSetConfigProviderValSetConfig, error) {
-	return _Master.Contract.GetValSetConfig(&_Master.CallOpts)
-}
-
-// GetValSetConfig is a free data retrieval call binding the contract method 0x991bac99.
-//
-// Solidity: function getValSetConfig() view returns((uint256,uint256,uint256,uint8[]))
-func (_Master *MasterCallerSession) GetValSetConfig() (IValSetConfigProviderValSetConfig, error) {
-	return _Master.Contract.GetValSetConfig(&_Master.CallOpts)
-}
-
-// GetValSetConfigAt is a free data retrieval call binding the contract method 0x9029c8fe.
-//
-// Solidity: function getValSetConfigAt(uint48 timestamp, bytes hints) view returns((uint256,uint256,uint256,uint8[]))
-func (_Master *MasterCaller) GetValSetConfigAt(opts *bind.CallOpts, timestamp *big.Int, hints []byte) (IValSetConfigProviderValSetConfig, error) {
-	var out []interface{}
-	err := _Master.contract.Call(opts, &out, "getValSetConfigAt", timestamp, hints)
-
-	if err != nil {
-		return *new(IValSetConfigProviderValSetConfig), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(IValSetConfigProviderValSetConfig)).(*IValSetConfigProviderValSetConfig)
-
-	return out0, err
-
-}
-
-// GetValSetConfigAt is a free data retrieval call binding the contract method 0x9029c8fe.
-//
-// Solidity: function getValSetConfigAt(uint48 timestamp, bytes hints) view returns((uint256,uint256,uint256,uint8[]))
-func (_Master *MasterSession) GetValSetConfigAt(timestamp *big.Int, hints []byte) (IValSetConfigProviderValSetConfig, error) {
-	return _Master.Contract.GetValSetConfigAt(&_Master.CallOpts, timestamp, hints)
-}
-
-// GetValSetConfigAt is a free data retrieval call binding the contract method 0x9029c8fe.
-//
-// Solidity: function getValSetConfigAt(uint48 timestamp, bytes hints) view returns((uint256,uint256,uint256,uint8[]))
-func (_Master *MasterCallerSession) GetValSetConfigAt(timestamp *big.Int, hints []byte) (IValSetConfigProviderValSetConfig, error) {
-	return _Master.Contract.GetValSetConfigAt(&_Master.CallOpts, timestamp, hints)
-}
-
 // GetValSetHeader is a free data retrieval call binding the contract method 0xadc91fc8.
 //
 // Solidity: function getValSetHeader() view returns((uint8,uint8,uint48,uint48,uint256,bytes32,bytes32) header)
@@ -2535,6 +2434,68 @@ func (_Master *MasterCallerSession) GetVersionFromValSetHeaderAt(epoch *big.Int)
 	return _Master.Contract.GetVersionFromValSetHeaderAt(&_Master.CallOpts, epoch)
 }
 
+// GetVotingPowerProviders is a free data retrieval call binding the contract method 0x3e39b8db.
+//
+// Solidity: function getVotingPowerProviders() view returns((address,uint64)[])
+func (_Master *MasterCaller) GetVotingPowerProviders(opts *bind.CallOpts) ([]IConfigProviderCrossChainAddress, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getVotingPowerProviders")
+
+	if err != nil {
+		return *new([]IConfigProviderCrossChainAddress), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]IConfigProviderCrossChainAddress)).(*[]IConfigProviderCrossChainAddress)
+
+	return out0, err
+
+}
+
+// GetVotingPowerProviders is a free data retrieval call binding the contract method 0x3e39b8db.
+//
+// Solidity: function getVotingPowerProviders() view returns((address,uint64)[])
+func (_Master *MasterSession) GetVotingPowerProviders() ([]IConfigProviderCrossChainAddress, error) {
+	return _Master.Contract.GetVotingPowerProviders(&_Master.CallOpts)
+}
+
+// GetVotingPowerProviders is a free data retrieval call binding the contract method 0x3e39b8db.
+//
+// Solidity: function getVotingPowerProviders() view returns((address,uint64)[])
+func (_Master *MasterCallerSession) GetVotingPowerProviders() ([]IConfigProviderCrossChainAddress, error) {
+	return _Master.Contract.GetVotingPowerProviders(&_Master.CallOpts)
+}
+
+// GetVotingPowerProvidersAt is a free data retrieval call binding the contract method 0x5bf4eef7.
+//
+// Solidity: function getVotingPowerProvidersAt(uint48 timestamp, bytes[] hints) view returns((address,uint64)[])
+func (_Master *MasterCaller) GetVotingPowerProvidersAt(opts *bind.CallOpts, timestamp *big.Int, hints [][]byte) ([]IConfigProviderCrossChainAddress, error) {
+	var out []interface{}
+	err := _Master.contract.Call(opts, &out, "getVotingPowerProvidersAt", timestamp, hints)
+
+	if err != nil {
+		return *new([]IConfigProviderCrossChainAddress), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]IConfigProviderCrossChainAddress)).(*[]IConfigProviderCrossChainAddress)
+
+	return out0, err
+
+}
+
+// GetVotingPowerProvidersAt is a free data retrieval call binding the contract method 0x5bf4eef7.
+//
+// Solidity: function getVotingPowerProvidersAt(uint48 timestamp, bytes[] hints) view returns((address,uint64)[])
+func (_Master *MasterSession) GetVotingPowerProvidersAt(timestamp *big.Int, hints [][]byte) ([]IConfigProviderCrossChainAddress, error) {
+	return _Master.Contract.GetVotingPowerProvidersAt(&_Master.CallOpts, timestamp, hints)
+}
+
+// GetVotingPowerProvidersAt is a free data retrieval call binding the contract method 0x5bf4eef7.
+//
+// Solidity: function getVotingPowerProvidersAt(uint48 timestamp, bytes[] hints) view returns((address,uint64)[])
+func (_Master *MasterCallerSession) GetVotingPowerProvidersAt(timestamp *big.Int, hints [][]byte) ([]IConfigProviderCrossChainAddress, error) {
+	return _Master.Contract.GetVotingPowerProvidersAt(&_Master.CallOpts, timestamp, hints)
+}
+
 // HasRole is a free data retrieval call binding the contract method 0x91d14854.
 //
 // Solidity: function hasRole(bytes32 role, address account) view returns(bool)
@@ -2628,12 +2589,12 @@ func (_Master *MasterCallerSession) HashTypedDataV4CrossChain(structHash [32]byt
 	return _Master.Contract.HashTypedDataV4CrossChain(&_Master.CallOpts, structHash)
 }
 
-// IsReplicaActive is a free data retrieval call binding the contract method 0x545ae7bb.
+// IsReplicaRegistered is a free data retrieval call binding the contract method 0x77958baa.
 //
-// Solidity: function isReplicaActive((address,uint64) replica) view returns(bool)
-func (_Master *MasterCaller) IsReplicaActive(opts *bind.CallOpts, replica IMasterConfigProviderCrossChainAddress) (bool, error) {
+// Solidity: function isReplicaRegistered((address,uint64) replica) view returns(bool)
+func (_Master *MasterCaller) IsReplicaRegistered(opts *bind.CallOpts, replica IConfigProviderCrossChainAddress) (bool, error) {
 	var out []interface{}
-	err := _Master.contract.Call(opts, &out, "isReplicaActive", replica)
+	err := _Master.contract.Call(opts, &out, "isReplicaRegistered", replica)
 
 	if err != nil {
 		return *new(bool), err
@@ -2645,26 +2606,26 @@ func (_Master *MasterCaller) IsReplicaActive(opts *bind.CallOpts, replica IMaste
 
 }
 
-// IsReplicaActive is a free data retrieval call binding the contract method 0x545ae7bb.
+// IsReplicaRegistered is a free data retrieval call binding the contract method 0x77958baa.
 //
-// Solidity: function isReplicaActive((address,uint64) replica) view returns(bool)
-func (_Master *MasterSession) IsReplicaActive(replica IMasterConfigProviderCrossChainAddress) (bool, error) {
-	return _Master.Contract.IsReplicaActive(&_Master.CallOpts, replica)
+// Solidity: function isReplicaRegistered((address,uint64) replica) view returns(bool)
+func (_Master *MasterSession) IsReplicaRegistered(replica IConfigProviderCrossChainAddress) (bool, error) {
+	return _Master.Contract.IsReplicaRegistered(&_Master.CallOpts, replica)
 }
 
-// IsReplicaActive is a free data retrieval call binding the contract method 0x545ae7bb.
+// IsReplicaRegistered is a free data retrieval call binding the contract method 0x77958baa.
 //
-// Solidity: function isReplicaActive((address,uint64) replica) view returns(bool)
-func (_Master *MasterCallerSession) IsReplicaActive(replica IMasterConfigProviderCrossChainAddress) (bool, error) {
-	return _Master.Contract.IsReplicaActive(&_Master.CallOpts, replica)
+// Solidity: function isReplicaRegistered((address,uint64) replica) view returns(bool)
+func (_Master *MasterCallerSession) IsReplicaRegistered(replica IConfigProviderCrossChainAddress) (bool, error) {
+	return _Master.Contract.IsReplicaRegistered(&_Master.CallOpts, replica)
 }
 
-// IsReplicaActiveAt is a free data retrieval call binding the contract method 0x53cd1864.
+// IsReplicaRegisteredAt is a free data retrieval call binding the contract method 0x5456ee40.
 //
-// Solidity: function isReplicaActiveAt((address,uint64) replica, uint48 timestamp, bytes hint) view returns(bool)
-func (_Master *MasterCaller) IsReplicaActiveAt(opts *bind.CallOpts, replica IMasterConfigProviderCrossChainAddress, timestamp *big.Int, hint []byte) (bool, error) {
+// Solidity: function isReplicaRegisteredAt((address,uint64) replica, uint48 timestamp, bytes hint) view returns(bool)
+func (_Master *MasterCaller) IsReplicaRegisteredAt(opts *bind.CallOpts, replica IConfigProviderCrossChainAddress, timestamp *big.Int, hint []byte) (bool, error) {
 	var out []interface{}
-	err := _Master.contract.Call(opts, &out, "isReplicaActiveAt", replica, timestamp, hint)
+	err := _Master.contract.Call(opts, &out, "isReplicaRegisteredAt", replica, timestamp, hint)
 
 	if err != nil {
 		return *new(bool), err
@@ -2676,18 +2637,18 @@ func (_Master *MasterCaller) IsReplicaActiveAt(opts *bind.CallOpts, replica IMas
 
 }
 
-// IsReplicaActiveAt is a free data retrieval call binding the contract method 0x53cd1864.
+// IsReplicaRegisteredAt is a free data retrieval call binding the contract method 0x5456ee40.
 //
-// Solidity: function isReplicaActiveAt((address,uint64) replica, uint48 timestamp, bytes hint) view returns(bool)
-func (_Master *MasterSession) IsReplicaActiveAt(replica IMasterConfigProviderCrossChainAddress, timestamp *big.Int, hint []byte) (bool, error) {
-	return _Master.Contract.IsReplicaActiveAt(&_Master.CallOpts, replica, timestamp, hint)
+// Solidity: function isReplicaRegisteredAt((address,uint64) replica, uint48 timestamp, bytes hint) view returns(bool)
+func (_Master *MasterSession) IsReplicaRegisteredAt(replica IConfigProviderCrossChainAddress, timestamp *big.Int, hint []byte) (bool, error) {
+	return _Master.Contract.IsReplicaRegisteredAt(&_Master.CallOpts, replica, timestamp, hint)
 }
 
-// IsReplicaActiveAt is a free data retrieval call binding the contract method 0x53cd1864.
+// IsReplicaRegisteredAt is a free data retrieval call binding the contract method 0x5456ee40.
 //
-// Solidity: function isReplicaActiveAt((address,uint64) replica, uint48 timestamp, bytes hint) view returns(bool)
-func (_Master *MasterCallerSession) IsReplicaActiveAt(replica IMasterConfigProviderCrossChainAddress, timestamp *big.Int, hint []byte) (bool, error) {
-	return _Master.Contract.IsReplicaActiveAt(&_Master.CallOpts, replica, timestamp, hint)
+// Solidity: function isReplicaRegisteredAt((address,uint64) replica, uint48 timestamp, bytes hint) view returns(bool)
+func (_Master *MasterCallerSession) IsReplicaRegisteredAt(replica IConfigProviderCrossChainAddress, timestamp *big.Int, hint []byte) (bool, error) {
+	return _Master.Contract.IsReplicaRegisteredAt(&_Master.CallOpts, replica, timestamp, hint)
 }
 
 // IsValSetHeaderCommitted is a free data retrieval call binding the contract method 0x39e28545.
@@ -2752,12 +2713,12 @@ func (_Master *MasterCallerSession) IsValSetHeaderCommittedAt(epoch *big.Int) (b
 	return _Master.Contract.IsValSetHeaderCommittedAt(&_Master.CallOpts, epoch)
 }
 
-// IsVotingPowerProviderActive is a free data retrieval call binding the contract method 0x9290f2de.
+// IsVotingPowerProviderRegistered is a free data retrieval call binding the contract method 0xd89751f1.
 //
-// Solidity: function isVotingPowerProviderActive((address,uint64) votingPowerProvider) view returns(bool)
-func (_Master *MasterCaller) IsVotingPowerProviderActive(opts *bind.CallOpts, votingPowerProvider IMasterConfigProviderCrossChainAddress) (bool, error) {
+// Solidity: function isVotingPowerProviderRegistered((address,uint64) votingPowerProvider) view returns(bool)
+func (_Master *MasterCaller) IsVotingPowerProviderRegistered(opts *bind.CallOpts, votingPowerProvider IConfigProviderCrossChainAddress) (bool, error) {
 	var out []interface{}
-	err := _Master.contract.Call(opts, &out, "isVotingPowerProviderActive", votingPowerProvider)
+	err := _Master.contract.Call(opts, &out, "isVotingPowerProviderRegistered", votingPowerProvider)
 
 	if err != nil {
 		return *new(bool), err
@@ -2769,26 +2730,26 @@ func (_Master *MasterCaller) IsVotingPowerProviderActive(opts *bind.CallOpts, vo
 
 }
 
-// IsVotingPowerProviderActive is a free data retrieval call binding the contract method 0x9290f2de.
+// IsVotingPowerProviderRegistered is a free data retrieval call binding the contract method 0xd89751f1.
 //
-// Solidity: function isVotingPowerProviderActive((address,uint64) votingPowerProvider) view returns(bool)
-func (_Master *MasterSession) IsVotingPowerProviderActive(votingPowerProvider IMasterConfigProviderCrossChainAddress) (bool, error) {
-	return _Master.Contract.IsVotingPowerProviderActive(&_Master.CallOpts, votingPowerProvider)
+// Solidity: function isVotingPowerProviderRegistered((address,uint64) votingPowerProvider) view returns(bool)
+func (_Master *MasterSession) IsVotingPowerProviderRegistered(votingPowerProvider IConfigProviderCrossChainAddress) (bool, error) {
+	return _Master.Contract.IsVotingPowerProviderRegistered(&_Master.CallOpts, votingPowerProvider)
 }
 
-// IsVotingPowerProviderActive is a free data retrieval call binding the contract method 0x9290f2de.
+// IsVotingPowerProviderRegistered is a free data retrieval call binding the contract method 0xd89751f1.
 //
-// Solidity: function isVotingPowerProviderActive((address,uint64) votingPowerProvider) view returns(bool)
-func (_Master *MasterCallerSession) IsVotingPowerProviderActive(votingPowerProvider IMasterConfigProviderCrossChainAddress) (bool, error) {
-	return _Master.Contract.IsVotingPowerProviderActive(&_Master.CallOpts, votingPowerProvider)
+// Solidity: function isVotingPowerProviderRegistered((address,uint64) votingPowerProvider) view returns(bool)
+func (_Master *MasterCallerSession) IsVotingPowerProviderRegistered(votingPowerProvider IConfigProviderCrossChainAddress) (bool, error) {
+	return _Master.Contract.IsVotingPowerProviderRegistered(&_Master.CallOpts, votingPowerProvider)
 }
 
-// IsVotingPowerProviderActiveAt is a free data retrieval call binding the contract method 0x01054538.
+// IsVotingPowerProviderRegisteredAt is a free data retrieval call binding the contract method 0x9156e8b4.
 //
-// Solidity: function isVotingPowerProviderActiveAt((address,uint64) votingPowerProvider, uint48 timestamp, bytes hint) view returns(bool)
-func (_Master *MasterCaller) IsVotingPowerProviderActiveAt(opts *bind.CallOpts, votingPowerProvider IMasterConfigProviderCrossChainAddress, timestamp *big.Int, hint []byte) (bool, error) {
+// Solidity: function isVotingPowerProviderRegisteredAt((address,uint64) votingPowerProvider, uint48 timestamp, bytes hint) view returns(bool)
+func (_Master *MasterCaller) IsVotingPowerProviderRegisteredAt(opts *bind.CallOpts, votingPowerProvider IConfigProviderCrossChainAddress, timestamp *big.Int, hint []byte) (bool, error) {
 	var out []interface{}
-	err := _Master.contract.Call(opts, &out, "isVotingPowerProviderActiveAt", votingPowerProvider, timestamp, hint)
+	err := _Master.contract.Call(opts, &out, "isVotingPowerProviderRegisteredAt", votingPowerProvider, timestamp, hint)
 
 	if err != nil {
 		return *new(bool), err
@@ -2800,18 +2761,18 @@ func (_Master *MasterCaller) IsVotingPowerProviderActiveAt(opts *bind.CallOpts, 
 
 }
 
-// IsVotingPowerProviderActiveAt is a free data retrieval call binding the contract method 0x01054538.
+// IsVotingPowerProviderRegisteredAt is a free data retrieval call binding the contract method 0x9156e8b4.
 //
-// Solidity: function isVotingPowerProviderActiveAt((address,uint64) votingPowerProvider, uint48 timestamp, bytes hint) view returns(bool)
-func (_Master *MasterSession) IsVotingPowerProviderActiveAt(votingPowerProvider IMasterConfigProviderCrossChainAddress, timestamp *big.Int, hint []byte) (bool, error) {
-	return _Master.Contract.IsVotingPowerProviderActiveAt(&_Master.CallOpts, votingPowerProvider, timestamp, hint)
+// Solidity: function isVotingPowerProviderRegisteredAt((address,uint64) votingPowerProvider, uint48 timestamp, bytes hint) view returns(bool)
+func (_Master *MasterSession) IsVotingPowerProviderRegisteredAt(votingPowerProvider IConfigProviderCrossChainAddress, timestamp *big.Int, hint []byte) (bool, error) {
+	return _Master.Contract.IsVotingPowerProviderRegisteredAt(&_Master.CallOpts, votingPowerProvider, timestamp, hint)
 }
 
-// IsVotingPowerProviderActiveAt is a free data retrieval call binding the contract method 0x01054538.
+// IsVotingPowerProviderRegisteredAt is a free data retrieval call binding the contract method 0x9156e8b4.
 //
-// Solidity: function isVotingPowerProviderActiveAt((address,uint64) votingPowerProvider, uint48 timestamp, bytes hint) view returns(bool)
-func (_Master *MasterCallerSession) IsVotingPowerProviderActiveAt(votingPowerProvider IMasterConfigProviderCrossChainAddress, timestamp *big.Int, hint []byte) (bool, error) {
-	return _Master.Contract.IsVotingPowerProviderActiveAt(&_Master.CallOpts, votingPowerProvider, timestamp, hint)
+// Solidity: function isVotingPowerProviderRegisteredAt((address,uint64) votingPowerProvider, uint48 timestamp, bytes hint) view returns(bool)
+func (_Master *MasterCallerSession) IsVotingPowerProviderRegisteredAt(votingPowerProvider IConfigProviderCrossChainAddress, timestamp *big.Int, hint []byte) (bool, error) {
+	return _Master.Contract.IsVotingPowerProviderRegisteredAt(&_Master.CallOpts, votingPowerProvider, timestamp, hint)
 }
 
 // SupportsInterface is a free data retrieval call binding the contract method 0x01ffc9a7.
@@ -2879,42 +2840,42 @@ func (_Master *MasterCallerSession) VerifyQuorumSig(epoch *big.Int, message []by
 // AddReplica is a paid mutator transaction binding the contract method 0x5c0bc730.
 //
 // Solidity: function addReplica((address,uint64) replica) returns()
-func (_Master *MasterTransactor) AddReplica(opts *bind.TransactOpts, replica IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterTransactor) AddReplica(opts *bind.TransactOpts, replica IConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.contract.Transact(opts, "addReplica", replica)
 }
 
 // AddReplica is a paid mutator transaction binding the contract method 0x5c0bc730.
 //
 // Solidity: function addReplica((address,uint64) replica) returns()
-func (_Master *MasterSession) AddReplica(replica IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterSession) AddReplica(replica IConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.Contract.AddReplica(&_Master.TransactOpts, replica)
 }
 
 // AddReplica is a paid mutator transaction binding the contract method 0x5c0bc730.
 //
 // Solidity: function addReplica((address,uint64) replica) returns()
-func (_Master *MasterTransactorSession) AddReplica(replica IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterTransactorSession) AddReplica(replica IConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.Contract.AddReplica(&_Master.TransactOpts, replica)
 }
 
 // AddVotingPowerProvider is a paid mutator transaction binding the contract method 0x88514824.
 //
 // Solidity: function addVotingPowerProvider((address,uint64) votingPowerProvider) returns()
-func (_Master *MasterTransactor) AddVotingPowerProvider(opts *bind.TransactOpts, votingPowerProvider IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterTransactor) AddVotingPowerProvider(opts *bind.TransactOpts, votingPowerProvider IConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.contract.Transact(opts, "addVotingPowerProvider", votingPowerProvider)
 }
 
 // AddVotingPowerProvider is a paid mutator transaction binding the contract method 0x88514824.
 //
 // Solidity: function addVotingPowerProvider((address,uint64) votingPowerProvider) returns()
-func (_Master *MasterSession) AddVotingPowerProvider(votingPowerProvider IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterSession) AddVotingPowerProvider(votingPowerProvider IConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.Contract.AddVotingPowerProvider(&_Master.TransactOpts, votingPowerProvider)
 }
 
 // AddVotingPowerProvider is a paid mutator transaction binding the contract method 0x88514824.
 //
 // Solidity: function addVotingPowerProvider((address,uint64) votingPowerProvider) returns()
-func (_Master *MasterTransactorSession) AddVotingPowerProvider(votingPowerProvider IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterTransactorSession) AddVotingPowerProvider(votingPowerProvider IConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.Contract.AddVotingPowerProvider(&_Master.TransactOpts, votingPowerProvider)
 }
 
@@ -2960,25 +2921,25 @@ func (_Master *MasterTransactorSession) GrantRole(role [32]byte, account common.
 	return _Master.Contract.GrantRole(&_Master.TransactOpts, role, account)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0x5253609d.
+// Initialize is a paid mutator transaction binding the contract method 0xa267b54d.
 //
-// Solidity: function initialize(((address,uint96),(uint48,uint48),(string,string),uint48,uint48,uint8,address) settlementInitParams, (uint256,uint256,uint256,uint8[]) valSetConfigProviderInitParams, ((address,uint64)[],(address,uint64),(address,uint64)[],uint32) masterConfigProviderInitParams, address defaultAdmin) returns()
-func (_Master *MasterTransactor) Initialize(opts *bind.TransactOpts, settlementInitParams ISettlementSettlementInitParams, valSetConfigProviderInitParams IValSetConfigProviderValSetConfigProviderInitParams, masterConfigProviderInitParams IMasterConfigProviderMasterConfigProviderInitParams, defaultAdmin common.Address) (*types.Transaction, error) {
-	return _Master.contract.Transact(opts, "initialize", settlementInitParams, valSetConfigProviderInitParams, masterConfigProviderInitParams, defaultAdmin)
+// Solidity: function initialize(((address,uint96),(uint48,uint48),(string,string),uint48,uint48,uint8,address) settlementInitParams, ((address,uint64)[],(address,uint64),(address,uint64)[],uint32,uint256,uint256,uint208,uint8[]) configProviderInitParams, address defaultAdmin) returns()
+func (_Master *MasterTransactor) Initialize(opts *bind.TransactOpts, settlementInitParams ISettlementSettlementInitParams, configProviderInitParams IConfigProviderConfigProviderInitParams, defaultAdmin common.Address) (*types.Transaction, error) {
+	return _Master.contract.Transact(opts, "initialize", settlementInitParams, configProviderInitParams, defaultAdmin)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0x5253609d.
+// Initialize is a paid mutator transaction binding the contract method 0xa267b54d.
 //
-// Solidity: function initialize(((address,uint96),(uint48,uint48),(string,string),uint48,uint48,uint8,address) settlementInitParams, (uint256,uint256,uint256,uint8[]) valSetConfigProviderInitParams, ((address,uint64)[],(address,uint64),(address,uint64)[],uint32) masterConfigProviderInitParams, address defaultAdmin) returns()
-func (_Master *MasterSession) Initialize(settlementInitParams ISettlementSettlementInitParams, valSetConfigProviderInitParams IValSetConfigProviderValSetConfigProviderInitParams, masterConfigProviderInitParams IMasterConfigProviderMasterConfigProviderInitParams, defaultAdmin common.Address) (*types.Transaction, error) {
-	return _Master.Contract.Initialize(&_Master.TransactOpts, settlementInitParams, valSetConfigProviderInitParams, masterConfigProviderInitParams, defaultAdmin)
+// Solidity: function initialize(((address,uint96),(uint48,uint48),(string,string),uint48,uint48,uint8,address) settlementInitParams, ((address,uint64)[],(address,uint64),(address,uint64)[],uint32,uint256,uint256,uint208,uint8[]) configProviderInitParams, address defaultAdmin) returns()
+func (_Master *MasterSession) Initialize(settlementInitParams ISettlementSettlementInitParams, configProviderInitParams IConfigProviderConfigProviderInitParams, defaultAdmin common.Address) (*types.Transaction, error) {
+	return _Master.Contract.Initialize(&_Master.TransactOpts, settlementInitParams, configProviderInitParams, defaultAdmin)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0x5253609d.
+// Initialize is a paid mutator transaction binding the contract method 0xa267b54d.
 //
-// Solidity: function initialize(((address,uint96),(uint48,uint48),(string,string),uint48,uint48,uint8,address) settlementInitParams, (uint256,uint256,uint256,uint8[]) valSetConfigProviderInitParams, ((address,uint64)[],(address,uint64),(address,uint64)[],uint32) masterConfigProviderInitParams, address defaultAdmin) returns()
-func (_Master *MasterTransactorSession) Initialize(settlementInitParams ISettlementSettlementInitParams, valSetConfigProviderInitParams IValSetConfigProviderValSetConfigProviderInitParams, masterConfigProviderInitParams IMasterConfigProviderMasterConfigProviderInitParams, defaultAdmin common.Address) (*types.Transaction, error) {
-	return _Master.Contract.Initialize(&_Master.TransactOpts, settlementInitParams, valSetConfigProviderInitParams, masterConfigProviderInitParams, defaultAdmin)
+// Solidity: function initialize(((address,uint96),(uint48,uint48),(string,string),uint48,uint48,uint8,address) settlementInitParams, ((address,uint64)[],(address,uint64),(address,uint64)[],uint32,uint256,uint256,uint208,uint8[]) configProviderInitParams, address defaultAdmin) returns()
+func (_Master *MasterTransactorSession) Initialize(settlementInitParams ISettlementSettlementInitParams, configProviderInitParams IConfigProviderConfigProviderInitParams, defaultAdmin common.Address) (*types.Transaction, error) {
+	return _Master.Contract.Initialize(&_Master.TransactOpts, settlementInitParams, configProviderInitParams, defaultAdmin)
 }
 
 // Multicall is a paid mutator transaction binding the contract method 0xac9650d8.
@@ -3005,42 +2966,42 @@ func (_Master *MasterTransactorSession) Multicall(data [][]byte) (*types.Transac
 // RemoveReplica is a paid mutator transaction binding the contract method 0x65f764f0.
 //
 // Solidity: function removeReplica((address,uint64) replica) returns()
-func (_Master *MasterTransactor) RemoveReplica(opts *bind.TransactOpts, replica IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterTransactor) RemoveReplica(opts *bind.TransactOpts, replica IConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.contract.Transact(opts, "removeReplica", replica)
 }
 
 // RemoveReplica is a paid mutator transaction binding the contract method 0x65f764f0.
 //
 // Solidity: function removeReplica((address,uint64) replica) returns()
-func (_Master *MasterSession) RemoveReplica(replica IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterSession) RemoveReplica(replica IConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.Contract.RemoveReplica(&_Master.TransactOpts, replica)
 }
 
 // RemoveReplica is a paid mutator transaction binding the contract method 0x65f764f0.
 //
 // Solidity: function removeReplica((address,uint64) replica) returns()
-func (_Master *MasterTransactorSession) RemoveReplica(replica IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterTransactorSession) RemoveReplica(replica IConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.Contract.RemoveReplica(&_Master.TransactOpts, replica)
 }
 
 // RemoveVotingPowerProvider is a paid mutator transaction binding the contract method 0xb01139a1.
 //
 // Solidity: function removeVotingPowerProvider((address,uint64) votingPowerProvider) returns()
-func (_Master *MasterTransactor) RemoveVotingPowerProvider(opts *bind.TransactOpts, votingPowerProvider IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterTransactor) RemoveVotingPowerProvider(opts *bind.TransactOpts, votingPowerProvider IConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.contract.Transact(opts, "removeVotingPowerProvider", votingPowerProvider)
 }
 
 // RemoveVotingPowerProvider is a paid mutator transaction binding the contract method 0xb01139a1.
 //
 // Solidity: function removeVotingPowerProvider((address,uint64) votingPowerProvider) returns()
-func (_Master *MasterSession) RemoveVotingPowerProvider(votingPowerProvider IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterSession) RemoveVotingPowerProvider(votingPowerProvider IConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.Contract.RemoveVotingPowerProvider(&_Master.TransactOpts, votingPowerProvider)
 }
 
 // RemoveVotingPowerProvider is a paid mutator transaction binding the contract method 0xb01139a1.
 //
 // Solidity: function removeVotingPowerProvider((address,uint64) votingPowerProvider) returns()
-func (_Master *MasterTransactorSession) RemoveVotingPowerProvider(votingPowerProvider IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterTransactorSession) RemoveVotingPowerProvider(votingPowerProvider IConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.Contract.RemoveVotingPowerProvider(&_Master.TransactOpts, votingPowerProvider)
 }
 
@@ -3152,41 +3113,41 @@ func (_Master *MasterTransactorSession) SetGenesis(valSetHeader ISettlementValSe
 // SetKeysProvider is a paid mutator transaction binding the contract method 0x48fb6e2b.
 //
 // Solidity: function setKeysProvider((address,uint64) keysProvider) returns()
-func (_Master *MasterTransactor) SetKeysProvider(opts *bind.TransactOpts, keysProvider IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterTransactor) SetKeysProvider(opts *bind.TransactOpts, keysProvider IConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.contract.Transact(opts, "setKeysProvider", keysProvider)
 }
 
 // SetKeysProvider is a paid mutator transaction binding the contract method 0x48fb6e2b.
 //
 // Solidity: function setKeysProvider((address,uint64) keysProvider) returns()
-func (_Master *MasterSession) SetKeysProvider(keysProvider IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterSession) SetKeysProvider(keysProvider IConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.Contract.SetKeysProvider(&_Master.TransactOpts, keysProvider)
 }
 
 // SetKeysProvider is a paid mutator transaction binding the contract method 0x48fb6e2b.
 //
 // Solidity: function setKeysProvider((address,uint64) keysProvider) returns()
-func (_Master *MasterTransactorSession) SetKeysProvider(keysProvider IMasterConfigProviderCrossChainAddress) (*types.Transaction, error) {
+func (_Master *MasterTransactorSession) SetKeysProvider(keysProvider IConfigProviderCrossChainAddress) (*types.Transaction, error) {
 	return _Master.Contract.SetKeysProvider(&_Master.TransactOpts, keysProvider)
 }
 
-// SetMaxValidatorsCount is a paid mutator transaction binding the contract method 0x582dffec.
+// SetMaxValidatorsCount is a paid mutator transaction binding the contract method 0xd2384cd3.
 //
-// Solidity: function setMaxValidatorsCount(uint256 maxValidatorsCount) returns()
+// Solidity: function setMaxValidatorsCount(uint208 maxValidatorsCount) returns()
 func (_Master *MasterTransactor) SetMaxValidatorsCount(opts *bind.TransactOpts, maxValidatorsCount *big.Int) (*types.Transaction, error) {
 	return _Master.contract.Transact(opts, "setMaxValidatorsCount", maxValidatorsCount)
 }
 
-// SetMaxValidatorsCount is a paid mutator transaction binding the contract method 0x582dffec.
+// SetMaxValidatorsCount is a paid mutator transaction binding the contract method 0xd2384cd3.
 //
-// Solidity: function setMaxValidatorsCount(uint256 maxValidatorsCount) returns()
+// Solidity: function setMaxValidatorsCount(uint208 maxValidatorsCount) returns()
 func (_Master *MasterSession) SetMaxValidatorsCount(maxValidatorsCount *big.Int) (*types.Transaction, error) {
 	return _Master.Contract.SetMaxValidatorsCount(&_Master.TransactOpts, maxValidatorsCount)
 }
 
-// SetMaxValidatorsCount is a paid mutator transaction binding the contract method 0x582dffec.
+// SetMaxValidatorsCount is a paid mutator transaction binding the contract method 0xd2384cd3.
 //
-// Solidity: function setMaxValidatorsCount(uint256 maxValidatorsCount) returns()
+// Solidity: function setMaxValidatorsCount(uint208 maxValidatorsCount) returns()
 func (_Master *MasterTransactorSession) SetMaxValidatorsCount(maxValidatorsCount *big.Int) (*types.Transaction, error) {
 	return _Master.Contract.SetMaxValidatorsCount(&_Master.TransactOpts, maxValidatorsCount)
 }
@@ -3231,6 +3192,27 @@ func (_Master *MasterSession) SetMinInclusionVotingPower(minInclusionVotingPower
 // Solidity: function setMinInclusionVotingPower(uint256 minInclusionVotingPower) returns()
 func (_Master *MasterTransactorSession) SetMinInclusionVotingPower(minInclusionVotingPower *big.Int) (*types.Transaction, error) {
 	return _Master.Contract.SetMinInclusionVotingPower(&_Master.TransactOpts, minInclusionVotingPower)
+}
+
+// SetProlongDuration is a paid mutator transaction binding the contract method 0xbf667981.
+//
+// Solidity: function setProlongDuration(uint48 prolongDuration) returns()
+func (_Master *MasterTransactor) SetProlongDuration(opts *bind.TransactOpts, prolongDuration *big.Int) (*types.Transaction, error) {
+	return _Master.contract.Transact(opts, "setProlongDuration", prolongDuration)
+}
+
+// SetProlongDuration is a paid mutator transaction binding the contract method 0xbf667981.
+//
+// Solidity: function setProlongDuration(uint48 prolongDuration) returns()
+func (_Master *MasterSession) SetProlongDuration(prolongDuration *big.Int) (*types.Transaction, error) {
+	return _Master.Contract.SetProlongDuration(&_Master.TransactOpts, prolongDuration)
+}
+
+// SetProlongDuration is a paid mutator transaction binding the contract method 0xbf667981.
+//
+// Solidity: function setProlongDuration(uint48 prolongDuration) returns()
+func (_Master *MasterTransactorSession) SetProlongDuration(prolongDuration *big.Int) (*types.Transaction, error) {
+	return _Master.Contract.SetProlongDuration(&_Master.TransactOpts, prolongDuration)
 }
 
 // SetRequiredKeyTag is a paid mutator transaction binding the contract method 0xaf09ee17.
@@ -3336,6 +3318,409 @@ func (_Master *MasterSession) StaticDelegateCall(target common.Address, data []b
 // Solidity: function staticDelegateCall(address target, bytes data) returns()
 func (_Master *MasterTransactorSession) StaticDelegateCall(target common.Address, data []byte) (*types.Transaction, error) {
 	return _Master.Contract.StaticDelegateCall(&_Master.TransactOpts, target, data)
+}
+
+// MasterAddReplicaIterator is returned from FilterAddReplica and is used to iterate over the raw logs and unpacked data for AddReplica events raised by the Master contract.
+type MasterAddReplicaIterator struct {
+	Event *MasterAddReplica // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterAddReplicaIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterAddReplica)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterAddReplica)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterAddReplicaIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterAddReplicaIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterAddReplica represents a AddReplica event raised by the Master contract.
+type MasterAddReplica struct {
+	Replica IConfigProviderCrossChainAddress
+	Raw     types.Log // Blockchain specific contextual infos
+}
+
+// FilterAddReplica is a free log retrieval operation binding the contract event 0x9c1d65d2b492b934ead150223b8db47248b2143ec0856e59ff4e9ef81fe818c5.
+//
+// Solidity: event AddReplica((address,uint64) replica)
+func (_Master *MasterFilterer) FilterAddReplica(opts *bind.FilterOpts) (*MasterAddReplicaIterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "AddReplica")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterAddReplicaIterator{contract: _Master.contract, event: "AddReplica", logs: logs, sub: sub}, nil
+}
+
+// WatchAddReplica is a free log subscription operation binding the contract event 0x9c1d65d2b492b934ead150223b8db47248b2143ec0856e59ff4e9ef81fe818c5.
+//
+// Solidity: event AddReplica((address,uint64) replica)
+func (_Master *MasterFilterer) WatchAddReplica(opts *bind.WatchOpts, sink chan<- *MasterAddReplica) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "AddReplica")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterAddReplica)
+				if err := _Master.contract.UnpackLog(event, "AddReplica", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseAddReplica is a log parse operation binding the contract event 0x9c1d65d2b492b934ead150223b8db47248b2143ec0856e59ff4e9ef81fe818c5.
+//
+// Solidity: event AddReplica((address,uint64) replica)
+func (_Master *MasterFilterer) ParseAddReplica(log types.Log) (*MasterAddReplica, error) {
+	event := new(MasterAddReplica)
+	if err := _Master.contract.UnpackLog(event, "AddReplica", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MasterAddVotingPowerProviderIterator is returned from FilterAddVotingPowerProvider and is used to iterate over the raw logs and unpacked data for AddVotingPowerProvider events raised by the Master contract.
+type MasterAddVotingPowerProviderIterator struct {
+	Event *MasterAddVotingPowerProvider // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterAddVotingPowerProviderIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterAddVotingPowerProvider)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterAddVotingPowerProvider)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterAddVotingPowerProviderIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterAddVotingPowerProviderIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterAddVotingPowerProvider represents a AddVotingPowerProvider event raised by the Master contract.
+type MasterAddVotingPowerProvider struct {
+	VotingPowerProvider IConfigProviderCrossChainAddress
+	Raw                 types.Log // Blockchain specific contextual infos
+}
+
+// FilterAddVotingPowerProvider is a free log retrieval operation binding the contract event 0x5b7921a35f3056f811d439a3b44c680d09bbbdc5a1ff8796bcb834a3d3bc7ce4.
+//
+// Solidity: event AddVotingPowerProvider((address,uint64) votingPowerProvider)
+func (_Master *MasterFilterer) FilterAddVotingPowerProvider(opts *bind.FilterOpts) (*MasterAddVotingPowerProviderIterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "AddVotingPowerProvider")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterAddVotingPowerProviderIterator{contract: _Master.contract, event: "AddVotingPowerProvider", logs: logs, sub: sub}, nil
+}
+
+// WatchAddVotingPowerProvider is a free log subscription operation binding the contract event 0x5b7921a35f3056f811d439a3b44c680d09bbbdc5a1ff8796bcb834a3d3bc7ce4.
+//
+// Solidity: event AddVotingPowerProvider((address,uint64) votingPowerProvider)
+func (_Master *MasterFilterer) WatchAddVotingPowerProvider(opts *bind.WatchOpts, sink chan<- *MasterAddVotingPowerProvider) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "AddVotingPowerProvider")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterAddVotingPowerProvider)
+				if err := _Master.contract.UnpackLog(event, "AddVotingPowerProvider", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseAddVotingPowerProvider is a log parse operation binding the contract event 0x5b7921a35f3056f811d439a3b44c680d09bbbdc5a1ff8796bcb834a3d3bc7ce4.
+//
+// Solidity: event AddVotingPowerProvider((address,uint64) votingPowerProvider)
+func (_Master *MasterFilterer) ParseAddVotingPowerProvider(log types.Log) (*MasterAddVotingPowerProvider, error) {
+	event := new(MasterAddVotingPowerProvider)
+	if err := _Master.contract.UnpackLog(event, "AddVotingPowerProvider", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MasterCommitValSetHeaderIterator is returned from FilterCommitValSetHeader and is used to iterate over the raw logs and unpacked data for CommitValSetHeader events raised by the Master contract.
+type MasterCommitValSetHeaderIterator struct {
+	Event *MasterCommitValSetHeader // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterCommitValSetHeaderIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterCommitValSetHeader)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterCommitValSetHeader)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterCommitValSetHeaderIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterCommitValSetHeaderIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterCommitValSetHeader represents a CommitValSetHeader event raised by the Master contract.
+type MasterCommitValSetHeader struct {
+	ValSetHeader ISettlementValSetHeader
+	ExtraData    []ISettlementExtraData
+	Raw          types.Log // Blockchain specific contextual infos
+}
+
+// FilterCommitValSetHeader is a free log retrieval operation binding the contract event 0xb60178009515032571e0da79d8bbc5cd2781acdd8eb0b4e41f7f7479a8fadb65.
+//
+// Solidity: event CommitValSetHeader((uint8,uint8,uint48,uint48,uint256,bytes32,bytes32) valSetHeader, (bytes32,bytes32)[] extraData)
+func (_Master *MasterFilterer) FilterCommitValSetHeader(opts *bind.FilterOpts) (*MasterCommitValSetHeaderIterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "CommitValSetHeader")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterCommitValSetHeaderIterator{contract: _Master.contract, event: "CommitValSetHeader", logs: logs, sub: sub}, nil
+}
+
+// WatchCommitValSetHeader is a free log subscription operation binding the contract event 0xb60178009515032571e0da79d8bbc5cd2781acdd8eb0b4e41f7f7479a8fadb65.
+//
+// Solidity: event CommitValSetHeader((uint8,uint8,uint48,uint48,uint256,bytes32,bytes32) valSetHeader, (bytes32,bytes32)[] extraData)
+func (_Master *MasterFilterer) WatchCommitValSetHeader(opts *bind.WatchOpts, sink chan<- *MasterCommitValSetHeader) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "CommitValSetHeader")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterCommitValSetHeader)
+				if err := _Master.contract.UnpackLog(event, "CommitValSetHeader", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseCommitValSetHeader is a log parse operation binding the contract event 0xb60178009515032571e0da79d8bbc5cd2781acdd8eb0b4e41f7f7479a8fadb65.
+//
+// Solidity: event CommitValSetHeader((uint8,uint8,uint48,uint48,uint256,bytes32,bytes32) valSetHeader, (bytes32,bytes32)[] extraData)
+func (_Master *MasterFilterer) ParseCommitValSetHeader(log types.Log) (*MasterCommitValSetHeader, error) {
+	event := new(MasterCommitValSetHeader)
+	if err := _Master.contract.UnpackLog(event, "CommitValSetHeader", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
 }
 
 // MasterEIP712DomainChangedIterator is returned from FilterEIP712DomainChanged and is used to iterate over the raw logs and unpacked data for EIP712DomainChanged events raised by the Master contract.
@@ -3471,6 +3856,947 @@ func (_Master *MasterFilterer) ParseEIP712DomainChanged(log types.Log) (*MasterE
 	return event, nil
 }
 
+// MasterInitCommitDurationIterator is returned from FilterInitCommitDuration and is used to iterate over the raw logs and unpacked data for InitCommitDuration events raised by the Master contract.
+type MasterInitCommitDurationIterator struct {
+	Event *MasterInitCommitDuration // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterInitCommitDurationIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterInitCommitDuration)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterInitCommitDuration)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterInitCommitDurationIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterInitCommitDurationIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterInitCommitDuration represents a InitCommitDuration event raised by the Master contract.
+type MasterInitCommitDuration struct {
+	CommitDuration *big.Int
+	Raw            types.Log // Blockchain specific contextual infos
+}
+
+// FilterInitCommitDuration is a free log retrieval operation binding the contract event 0x1645b3abdf9aaf0a7cea7c5fa9cb5d186b29d8767b77f32f71535d690d415a3b.
+//
+// Solidity: event InitCommitDuration(uint48 commitDuration)
+func (_Master *MasterFilterer) FilterInitCommitDuration(opts *bind.FilterOpts) (*MasterInitCommitDurationIterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "InitCommitDuration")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterInitCommitDurationIterator{contract: _Master.contract, event: "InitCommitDuration", logs: logs, sub: sub}, nil
+}
+
+// WatchInitCommitDuration is a free log subscription operation binding the contract event 0x1645b3abdf9aaf0a7cea7c5fa9cb5d186b29d8767b77f32f71535d690d415a3b.
+//
+// Solidity: event InitCommitDuration(uint48 commitDuration)
+func (_Master *MasterFilterer) WatchInitCommitDuration(opts *bind.WatchOpts, sink chan<- *MasterInitCommitDuration) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "InitCommitDuration")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterInitCommitDuration)
+				if err := _Master.contract.UnpackLog(event, "InitCommitDuration", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseInitCommitDuration is a log parse operation binding the contract event 0x1645b3abdf9aaf0a7cea7c5fa9cb5d186b29d8767b77f32f71535d690d415a3b.
+//
+// Solidity: event InitCommitDuration(uint48 commitDuration)
+func (_Master *MasterFilterer) ParseInitCommitDuration(log types.Log) (*MasterInitCommitDuration, error) {
+	event := new(MasterInitCommitDuration)
+	if err := _Master.contract.UnpackLog(event, "InitCommitDuration", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MasterInitEIP712Iterator is returned from FilterInitEIP712 and is used to iterate over the raw logs and unpacked data for InitEIP712 events raised by the Master contract.
+type MasterInitEIP712Iterator struct {
+	Event *MasterInitEIP712 // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterInitEIP712Iterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterInitEIP712)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterInitEIP712)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterInitEIP712Iterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterInitEIP712Iterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterInitEIP712 represents a InitEIP712 event raised by the Master contract.
+type MasterInitEIP712 struct {
+	Name    string
+	Version string
+	Raw     types.Log // Blockchain specific contextual infos
+}
+
+// FilterInitEIP712 is a free log retrieval operation binding the contract event 0x98790bb3996c909e6f4279ffabdfe70fa6c0d49b8fa04656d6161decfc442e0a.
+//
+// Solidity: event InitEIP712(string name, string version)
+func (_Master *MasterFilterer) FilterInitEIP712(opts *bind.FilterOpts) (*MasterInitEIP712Iterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "InitEIP712")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterInitEIP712Iterator{contract: _Master.contract, event: "InitEIP712", logs: logs, sub: sub}, nil
+}
+
+// WatchInitEIP712 is a free log subscription operation binding the contract event 0x98790bb3996c909e6f4279ffabdfe70fa6c0d49b8fa04656d6161decfc442e0a.
+//
+// Solidity: event InitEIP712(string name, string version)
+func (_Master *MasterFilterer) WatchInitEIP712(opts *bind.WatchOpts, sink chan<- *MasterInitEIP712) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "InitEIP712")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterInitEIP712)
+				if err := _Master.contract.UnpackLog(event, "InitEIP712", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseInitEIP712 is a log parse operation binding the contract event 0x98790bb3996c909e6f4279ffabdfe70fa6c0d49b8fa04656d6161decfc442e0a.
+//
+// Solidity: event InitEIP712(string name, string version)
+func (_Master *MasterFilterer) ParseInitEIP712(log types.Log) (*MasterInitEIP712, error) {
+	event := new(MasterInitEIP712)
+	if err := _Master.contract.UnpackLog(event, "InitEIP712", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MasterInitEpochDurationIterator is returned from FilterInitEpochDuration and is used to iterate over the raw logs and unpacked data for InitEpochDuration events raised by the Master contract.
+type MasterInitEpochDurationIterator struct {
+	Event *MasterInitEpochDuration // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterInitEpochDurationIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterInitEpochDuration)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterInitEpochDuration)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterInitEpochDurationIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterInitEpochDurationIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterInitEpochDuration represents a InitEpochDuration event raised by the Master contract.
+type MasterInitEpochDuration struct {
+	EpochDuration          *big.Int
+	EpochDurationTimestamp *big.Int
+	Raw                    types.Log // Blockchain specific contextual infos
+}
+
+// FilterInitEpochDuration is a free log retrieval operation binding the contract event 0xf688b7b02a20c2dda7d7de03a41637b274af7706eb975ea4af45858648370f55.
+//
+// Solidity: event InitEpochDuration(uint48 epochDuration, uint48 epochDurationTimestamp)
+func (_Master *MasterFilterer) FilterInitEpochDuration(opts *bind.FilterOpts) (*MasterInitEpochDurationIterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "InitEpochDuration")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterInitEpochDurationIterator{contract: _Master.contract, event: "InitEpochDuration", logs: logs, sub: sub}, nil
+}
+
+// WatchInitEpochDuration is a free log subscription operation binding the contract event 0xf688b7b02a20c2dda7d7de03a41637b274af7706eb975ea4af45858648370f55.
+//
+// Solidity: event InitEpochDuration(uint48 epochDuration, uint48 epochDurationTimestamp)
+func (_Master *MasterFilterer) WatchInitEpochDuration(opts *bind.WatchOpts, sink chan<- *MasterInitEpochDuration) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "InitEpochDuration")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterInitEpochDuration)
+				if err := _Master.contract.UnpackLog(event, "InitEpochDuration", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseInitEpochDuration is a log parse operation binding the contract event 0xf688b7b02a20c2dda7d7de03a41637b274af7706eb975ea4af45858648370f55.
+//
+// Solidity: event InitEpochDuration(uint48 epochDuration, uint48 epochDurationTimestamp)
+func (_Master *MasterFilterer) ParseInitEpochDuration(log types.Log) (*MasterInitEpochDuration, error) {
+	event := new(MasterInitEpochDuration)
+	if err := _Master.contract.UnpackLog(event, "InitEpochDuration", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MasterInitProlongDurationIterator is returned from FilterInitProlongDuration and is used to iterate over the raw logs and unpacked data for InitProlongDuration events raised by the Master contract.
+type MasterInitProlongDurationIterator struct {
+	Event *MasterInitProlongDuration // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterInitProlongDurationIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterInitProlongDuration)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterInitProlongDuration)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterInitProlongDurationIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterInitProlongDurationIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterInitProlongDuration represents a InitProlongDuration event raised by the Master contract.
+type MasterInitProlongDuration struct {
+	ProlongDuration *big.Int
+	Raw             types.Log // Blockchain specific contextual infos
+}
+
+// FilterInitProlongDuration is a free log retrieval operation binding the contract event 0x79728126a42e80f49fc6905f6e1ea6632294402d214398093cdbc526bdeb5608.
+//
+// Solidity: event InitProlongDuration(uint48 prolongDuration)
+func (_Master *MasterFilterer) FilterInitProlongDuration(opts *bind.FilterOpts) (*MasterInitProlongDurationIterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "InitProlongDuration")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterInitProlongDurationIterator{contract: _Master.contract, event: "InitProlongDuration", logs: logs, sub: sub}, nil
+}
+
+// WatchInitProlongDuration is a free log subscription operation binding the contract event 0x79728126a42e80f49fc6905f6e1ea6632294402d214398093cdbc526bdeb5608.
+//
+// Solidity: event InitProlongDuration(uint48 prolongDuration)
+func (_Master *MasterFilterer) WatchInitProlongDuration(opts *bind.WatchOpts, sink chan<- *MasterInitProlongDuration) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "InitProlongDuration")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterInitProlongDuration)
+				if err := _Master.contract.UnpackLog(event, "InitProlongDuration", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseInitProlongDuration is a log parse operation binding the contract event 0x79728126a42e80f49fc6905f6e1ea6632294402d214398093cdbc526bdeb5608.
+//
+// Solidity: event InitProlongDuration(uint48 prolongDuration)
+func (_Master *MasterFilterer) ParseInitProlongDuration(log types.Log) (*MasterInitProlongDuration, error) {
+	event := new(MasterInitProlongDuration)
+	if err := _Master.contract.UnpackLog(event, "InitProlongDuration", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MasterInitRequiredKeyTagIterator is returned from FilterInitRequiredKeyTag and is used to iterate over the raw logs and unpacked data for InitRequiredKeyTag events raised by the Master contract.
+type MasterInitRequiredKeyTagIterator struct {
+	Event *MasterInitRequiredKeyTag // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterInitRequiredKeyTagIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterInitRequiredKeyTag)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterInitRequiredKeyTag)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterInitRequiredKeyTagIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterInitRequiredKeyTagIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterInitRequiredKeyTag represents a InitRequiredKeyTag event raised by the Master contract.
+type MasterInitRequiredKeyTag struct {
+	RequiredKeyTag uint8
+	Raw            types.Log // Blockchain specific contextual infos
+}
+
+// FilterInitRequiredKeyTag is a free log retrieval operation binding the contract event 0x277cc578e04aceb9647006598e72834d06583784f6c39002b444396f8be20f81.
+//
+// Solidity: event InitRequiredKeyTag(uint8 requiredKeyTag)
+func (_Master *MasterFilterer) FilterInitRequiredKeyTag(opts *bind.FilterOpts) (*MasterInitRequiredKeyTagIterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "InitRequiredKeyTag")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterInitRequiredKeyTagIterator{contract: _Master.contract, event: "InitRequiredKeyTag", logs: logs, sub: sub}, nil
+}
+
+// WatchInitRequiredKeyTag is a free log subscription operation binding the contract event 0x277cc578e04aceb9647006598e72834d06583784f6c39002b444396f8be20f81.
+//
+// Solidity: event InitRequiredKeyTag(uint8 requiredKeyTag)
+func (_Master *MasterFilterer) WatchInitRequiredKeyTag(opts *bind.WatchOpts, sink chan<- *MasterInitRequiredKeyTag) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "InitRequiredKeyTag")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterInitRequiredKeyTag)
+				if err := _Master.contract.UnpackLog(event, "InitRequiredKeyTag", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseInitRequiredKeyTag is a log parse operation binding the contract event 0x277cc578e04aceb9647006598e72834d06583784f6c39002b444396f8be20f81.
+//
+// Solidity: event InitRequiredKeyTag(uint8 requiredKeyTag)
+func (_Master *MasterFilterer) ParseInitRequiredKeyTag(log types.Log) (*MasterInitRequiredKeyTag, error) {
+	event := new(MasterInitRequiredKeyTag)
+	if err := _Master.contract.UnpackLog(event, "InitRequiredKeyTag", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MasterInitSigVerifierIterator is returned from FilterInitSigVerifier and is used to iterate over the raw logs and unpacked data for InitSigVerifier events raised by the Master contract.
+type MasterInitSigVerifierIterator struct {
+	Event *MasterInitSigVerifier // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterInitSigVerifierIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterInitSigVerifier)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterInitSigVerifier)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterInitSigVerifierIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterInitSigVerifierIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterInitSigVerifier represents a InitSigVerifier event raised by the Master contract.
+type MasterInitSigVerifier struct {
+	SigVerifier common.Address
+	Raw         types.Log // Blockchain specific contextual infos
+}
+
+// FilterInitSigVerifier is a free log retrieval operation binding the contract event 0x8c698070f0c9ef92ff032a24e5c83ef7783fd360fde9c6af8ed5fca9fa5abbb7.
+//
+// Solidity: event InitSigVerifier(address sigVerifier)
+func (_Master *MasterFilterer) FilterInitSigVerifier(opts *bind.FilterOpts) (*MasterInitSigVerifierIterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "InitSigVerifier")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterInitSigVerifierIterator{contract: _Master.contract, event: "InitSigVerifier", logs: logs, sub: sub}, nil
+}
+
+// WatchInitSigVerifier is a free log subscription operation binding the contract event 0x8c698070f0c9ef92ff032a24e5c83ef7783fd360fde9c6af8ed5fca9fa5abbb7.
+//
+// Solidity: event InitSigVerifier(address sigVerifier)
+func (_Master *MasterFilterer) WatchInitSigVerifier(opts *bind.WatchOpts, sink chan<- *MasterInitSigVerifier) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "InitSigVerifier")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterInitSigVerifier)
+				if err := _Master.contract.UnpackLog(event, "InitSigVerifier", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseInitSigVerifier is a log parse operation binding the contract event 0x8c698070f0c9ef92ff032a24e5c83ef7783fd360fde9c6af8ed5fca9fa5abbb7.
+//
+// Solidity: event InitSigVerifier(address sigVerifier)
+func (_Master *MasterFilterer) ParseInitSigVerifier(log types.Log) (*MasterInitSigVerifier, error) {
+	event := new(MasterInitSigVerifier)
+	if err := _Master.contract.UnpackLog(event, "InitSigVerifier", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MasterInitSubnetworkIterator is returned from FilterInitSubnetwork and is used to iterate over the raw logs and unpacked data for InitSubnetwork events raised by the Master contract.
+type MasterInitSubnetworkIterator struct {
+	Event *MasterInitSubnetwork // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterInitSubnetworkIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterInitSubnetwork)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterInitSubnetwork)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterInitSubnetworkIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterInitSubnetworkIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterInitSubnetwork represents a InitSubnetwork event raised by the Master contract.
+type MasterInitSubnetwork struct {
+	Network      common.Address
+	SubnetworkID *big.Int
+	Raw          types.Log // Blockchain specific contextual infos
+}
+
+// FilterInitSubnetwork is a free log retrieval operation binding the contract event 0x469c2e982e7d76d34cf5d1e72abee29749bb9971942c180e9023cea09f5f8e83.
+//
+// Solidity: event InitSubnetwork(address network, uint96 subnetworkID)
+func (_Master *MasterFilterer) FilterInitSubnetwork(opts *bind.FilterOpts) (*MasterInitSubnetworkIterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "InitSubnetwork")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterInitSubnetworkIterator{contract: _Master.contract, event: "InitSubnetwork", logs: logs, sub: sub}, nil
+}
+
+// WatchInitSubnetwork is a free log subscription operation binding the contract event 0x469c2e982e7d76d34cf5d1e72abee29749bb9971942c180e9023cea09f5f8e83.
+//
+// Solidity: event InitSubnetwork(address network, uint96 subnetworkID)
+func (_Master *MasterFilterer) WatchInitSubnetwork(opts *bind.WatchOpts, sink chan<- *MasterInitSubnetwork) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "InitSubnetwork")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterInitSubnetwork)
+				if err := _Master.contract.UnpackLog(event, "InitSubnetwork", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseInitSubnetwork is a log parse operation binding the contract event 0x469c2e982e7d76d34cf5d1e72abee29749bb9971942c180e9023cea09f5f8e83.
+//
+// Solidity: event InitSubnetwork(address network, uint96 subnetworkID)
+func (_Master *MasterFilterer) ParseInitSubnetwork(log types.Log) (*MasterInitSubnetwork, error) {
+	event := new(MasterInitSubnetwork)
+	if err := _Master.contract.UnpackLog(event, "InitSubnetwork", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
 // MasterInitializedIterator is returned from FilterInitialized and is used to iterate over the raw logs and unpacked data for Initialized events raised by the Master contract.
 type MasterInitializedIterator struct {
 	Event *MasterInitialized // Event containing the contract specifics and raw log
@@ -3599,6 +4925,274 @@ func (_Master *MasterFilterer) WatchInitialized(opts *bind.WatchOpts, sink chan<
 func (_Master *MasterFilterer) ParseInitialized(log types.Log) (*MasterInitialized, error) {
 	event := new(MasterInitialized)
 	if err := _Master.contract.UnpackLog(event, "Initialized", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MasterRemoveReplicaIterator is returned from FilterRemoveReplica and is used to iterate over the raw logs and unpacked data for RemoveReplica events raised by the Master contract.
+type MasterRemoveReplicaIterator struct {
+	Event *MasterRemoveReplica // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterRemoveReplicaIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterRemoveReplica)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterRemoveReplica)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterRemoveReplicaIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterRemoveReplicaIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterRemoveReplica represents a RemoveReplica event raised by the Master contract.
+type MasterRemoveReplica struct {
+	Replica IConfigProviderCrossChainAddress
+	Raw     types.Log // Blockchain specific contextual infos
+}
+
+// FilterRemoveReplica is a free log retrieval operation binding the contract event 0x786c47cb2e925115cd5f876a5d539abae89d23218b6da9607162ace8d3a4d29b.
+//
+// Solidity: event RemoveReplica((address,uint64) replica)
+func (_Master *MasterFilterer) FilterRemoveReplica(opts *bind.FilterOpts) (*MasterRemoveReplicaIterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "RemoveReplica")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterRemoveReplicaIterator{contract: _Master.contract, event: "RemoveReplica", logs: logs, sub: sub}, nil
+}
+
+// WatchRemoveReplica is a free log subscription operation binding the contract event 0x786c47cb2e925115cd5f876a5d539abae89d23218b6da9607162ace8d3a4d29b.
+//
+// Solidity: event RemoveReplica((address,uint64) replica)
+func (_Master *MasterFilterer) WatchRemoveReplica(opts *bind.WatchOpts, sink chan<- *MasterRemoveReplica) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "RemoveReplica")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterRemoveReplica)
+				if err := _Master.contract.UnpackLog(event, "RemoveReplica", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseRemoveReplica is a log parse operation binding the contract event 0x786c47cb2e925115cd5f876a5d539abae89d23218b6da9607162ace8d3a4d29b.
+//
+// Solidity: event RemoveReplica((address,uint64) replica)
+func (_Master *MasterFilterer) ParseRemoveReplica(log types.Log) (*MasterRemoveReplica, error) {
+	event := new(MasterRemoveReplica)
+	if err := _Master.contract.UnpackLog(event, "RemoveReplica", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MasterRemoveVotingPowerProviderIterator is returned from FilterRemoveVotingPowerProvider and is used to iterate over the raw logs and unpacked data for RemoveVotingPowerProvider events raised by the Master contract.
+type MasterRemoveVotingPowerProviderIterator struct {
+	Event *MasterRemoveVotingPowerProvider // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterRemoveVotingPowerProviderIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterRemoveVotingPowerProvider)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterRemoveVotingPowerProvider)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterRemoveVotingPowerProviderIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterRemoveVotingPowerProviderIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterRemoveVotingPowerProvider represents a RemoveVotingPowerProvider event raised by the Master contract.
+type MasterRemoveVotingPowerProvider struct {
+	VotingPowerProvider IConfigProviderCrossChainAddress
+	Raw                 types.Log // Blockchain specific contextual infos
+}
+
+// FilterRemoveVotingPowerProvider is a free log retrieval operation binding the contract event 0xfa08af0a4f2329b2baeb1b6c7b9ebc7bf6247abd9efb7e735a644bc98e921075.
+//
+// Solidity: event RemoveVotingPowerProvider((address,uint64) votingPowerProvider)
+func (_Master *MasterFilterer) FilterRemoveVotingPowerProvider(opts *bind.FilterOpts) (*MasterRemoveVotingPowerProviderIterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "RemoveVotingPowerProvider")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterRemoveVotingPowerProviderIterator{contract: _Master.contract, event: "RemoveVotingPowerProvider", logs: logs, sub: sub}, nil
+}
+
+// WatchRemoveVotingPowerProvider is a free log subscription operation binding the contract event 0xfa08af0a4f2329b2baeb1b6c7b9ebc7bf6247abd9efb7e735a644bc98e921075.
+//
+// Solidity: event RemoveVotingPowerProvider((address,uint64) votingPowerProvider)
+func (_Master *MasterFilterer) WatchRemoveVotingPowerProvider(opts *bind.WatchOpts, sink chan<- *MasterRemoveVotingPowerProvider) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "RemoveVotingPowerProvider")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterRemoveVotingPowerProvider)
+				if err := _Master.contract.UnpackLog(event, "RemoveVotingPowerProvider", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseRemoveVotingPowerProvider is a log parse operation binding the contract event 0xfa08af0a4f2329b2baeb1b6c7b9ebc7bf6247abd9efb7e735a644bc98e921075.
+//
+// Solidity: event RemoveVotingPowerProvider((address,uint64) votingPowerProvider)
+func (_Master *MasterFilterer) ParseRemoveVotingPowerProvider(log types.Log) (*MasterRemoveVotingPowerProvider, error) {
+	event := new(MasterRemoveVotingPowerProvider)
+	if err := _Master.contract.UnpackLog(event, "RemoveVotingPowerProvider", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -4091,9 +5685,9 @@ func (_Master *MasterFilterer) ParseRoleRevoked(log types.Log) (*MasterRoleRevok
 	return event, nil
 }
 
-// MasterSelectorRoleSetIterator is returned from FilterSelectorRoleSet and is used to iterate over the raw logs and unpacked data for SelectorRoleSet events raised by the Master contract.
-type MasterSelectorRoleSetIterator struct {
-	Event *MasterSelectorRoleSet // Event containing the contract specifics and raw log
+// MasterSetCommitDurationIterator is returned from FilterSetCommitDuration and is used to iterate over the raw logs and unpacked data for SetCommitDuration events raised by the Master contract.
+type MasterSetCommitDurationIterator struct {
+	Event *MasterSetCommitDuration // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -4107,7 +5701,7 @@ type MasterSelectorRoleSetIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *MasterSelectorRoleSetIterator) Next() bool {
+func (it *MasterSetCommitDurationIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -4116,7 +5710,7 @@ func (it *MasterSelectorRoleSetIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(MasterSelectorRoleSet)
+			it.Event = new(MasterSetCommitDuration)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -4131,7 +5725,7 @@ func (it *MasterSelectorRoleSetIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(MasterSelectorRoleSet)
+		it.Event = new(MasterSetCommitDuration)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -4147,42 +5741,41 @@ func (it *MasterSelectorRoleSetIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *MasterSelectorRoleSetIterator) Error() error {
+func (it *MasterSetCommitDurationIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *MasterSelectorRoleSetIterator) Close() error {
+func (it *MasterSetCommitDurationIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// MasterSelectorRoleSet represents a SelectorRoleSet event raised by the Master contract.
-type MasterSelectorRoleSet struct {
-	Selector [4]byte
-	Role     [32]byte
-	Raw      types.Log // Blockchain specific contextual infos
+// MasterSetCommitDuration represents a SetCommitDuration event raised by the Master contract.
+type MasterSetCommitDuration struct {
+	CommitDuration *big.Int
+	Raw            types.Log // Blockchain specific contextual infos
 }
 
-// FilterSelectorRoleSet is a free log retrieval operation binding the contract event 0xb579d5e7e95ac8795a9c9ecce0ee2e2d189dce9827bac2e35ebbd3a68be7d423.
+// FilterSetCommitDuration is a free log retrieval operation binding the contract event 0xae8dc913d64bd44cca39779903f29196e6986435d34e6d5341e5c34c29cdb25e.
 //
-// Solidity: event SelectorRoleSet(bytes4 selector, bytes32 role)
-func (_Master *MasterFilterer) FilterSelectorRoleSet(opts *bind.FilterOpts) (*MasterSelectorRoleSetIterator, error) {
+// Solidity: event SetCommitDuration(uint48 commitDuration)
+func (_Master *MasterFilterer) FilterSetCommitDuration(opts *bind.FilterOpts) (*MasterSetCommitDurationIterator, error) {
 
-	logs, sub, err := _Master.contract.FilterLogs(opts, "SelectorRoleSet")
+	logs, sub, err := _Master.contract.FilterLogs(opts, "SetCommitDuration")
 	if err != nil {
 		return nil, err
 	}
-	return &MasterSelectorRoleSetIterator{contract: _Master.contract, event: "SelectorRoleSet", logs: logs, sub: sub}, nil
+	return &MasterSetCommitDurationIterator{contract: _Master.contract, event: "SetCommitDuration", logs: logs, sub: sub}, nil
 }
 
-// WatchSelectorRoleSet is a free log subscription operation binding the contract event 0xb579d5e7e95ac8795a9c9ecce0ee2e2d189dce9827bac2e35ebbd3a68be7d423.
+// WatchSetCommitDuration is a free log subscription operation binding the contract event 0xae8dc913d64bd44cca39779903f29196e6986435d34e6d5341e5c34c29cdb25e.
 //
-// Solidity: event SelectorRoleSet(bytes4 selector, bytes32 role)
-func (_Master *MasterFilterer) WatchSelectorRoleSet(opts *bind.WatchOpts, sink chan<- *MasterSelectorRoleSet) (event.Subscription, error) {
+// Solidity: event SetCommitDuration(uint48 commitDuration)
+func (_Master *MasterFilterer) WatchSetCommitDuration(opts *bind.WatchOpts, sink chan<- *MasterSetCommitDuration) (event.Subscription, error) {
 
-	logs, sub, err := _Master.contract.WatchLogs(opts, "SelectorRoleSet")
+	logs, sub, err := _Master.contract.WatchLogs(opts, "SetCommitDuration")
 	if err != nil {
 		return nil, err
 	}
@@ -4192,8 +5785,8 @@ func (_Master *MasterFilterer) WatchSelectorRoleSet(opts *bind.WatchOpts, sink c
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(MasterSelectorRoleSet)
-				if err := _Master.contract.UnpackLog(event, "SelectorRoleSet", log); err != nil {
+				event := new(MasterSetCommitDuration)
+				if err := _Master.contract.UnpackLog(event, "SetCommitDuration", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -4214,12 +5807,1640 @@ func (_Master *MasterFilterer) WatchSelectorRoleSet(opts *bind.WatchOpts, sink c
 	}), nil
 }
 
-// ParseSelectorRoleSet is a log parse operation binding the contract event 0xb579d5e7e95ac8795a9c9ecce0ee2e2d189dce9827bac2e35ebbd3a68be7d423.
+// ParseSetCommitDuration is a log parse operation binding the contract event 0xae8dc913d64bd44cca39779903f29196e6986435d34e6d5341e5c34c29cdb25e.
 //
-// Solidity: event SelectorRoleSet(bytes4 selector, bytes32 role)
-func (_Master *MasterFilterer) ParseSelectorRoleSet(log types.Log) (*MasterSelectorRoleSet, error) {
-	event := new(MasterSelectorRoleSet)
-	if err := _Master.contract.UnpackLog(event, "SelectorRoleSet", log); err != nil {
+// Solidity: event SetCommitDuration(uint48 commitDuration)
+func (_Master *MasterFilterer) ParseSetCommitDuration(log types.Log) (*MasterSetCommitDuration, error) {
+	event := new(MasterSetCommitDuration)
+	if err := _Master.contract.UnpackLog(event, "SetCommitDuration", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MasterSetEpochDurationIterator is returned from FilterSetEpochDuration and is used to iterate over the raw logs and unpacked data for SetEpochDuration events raised by the Master contract.
+type MasterSetEpochDurationIterator struct {
+	Event *MasterSetEpochDuration // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterSetEpochDurationIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterSetEpochDuration)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterSetEpochDuration)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterSetEpochDurationIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterSetEpochDurationIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterSetEpochDuration represents a SetEpochDuration event raised by the Master contract.
+type MasterSetEpochDuration struct {
+	EpochDuration *big.Int
+	Raw           types.Log // Blockchain specific contextual infos
+}
+
+// FilterSetEpochDuration is a free log retrieval operation binding the contract event 0xc950f06b73b224f8b32d39245a5905020aebfc426a15833a70ac2e4e2ebe098c.
+//
+// Solidity: event SetEpochDuration(uint48 epochDuration)
+func (_Master *MasterFilterer) FilterSetEpochDuration(opts *bind.FilterOpts) (*MasterSetEpochDurationIterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "SetEpochDuration")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterSetEpochDurationIterator{contract: _Master.contract, event: "SetEpochDuration", logs: logs, sub: sub}, nil
+}
+
+// WatchSetEpochDuration is a free log subscription operation binding the contract event 0xc950f06b73b224f8b32d39245a5905020aebfc426a15833a70ac2e4e2ebe098c.
+//
+// Solidity: event SetEpochDuration(uint48 epochDuration)
+func (_Master *MasterFilterer) WatchSetEpochDuration(opts *bind.WatchOpts, sink chan<- *MasterSetEpochDuration) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "SetEpochDuration")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterSetEpochDuration)
+				if err := _Master.contract.UnpackLog(event, "SetEpochDuration", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseSetEpochDuration is a log parse operation binding the contract event 0xc950f06b73b224f8b32d39245a5905020aebfc426a15833a70ac2e4e2ebe098c.
+//
+// Solidity: event SetEpochDuration(uint48 epochDuration)
+func (_Master *MasterFilterer) ParseSetEpochDuration(log types.Log) (*MasterSetEpochDuration, error) {
+	event := new(MasterSetEpochDuration)
+	if err := _Master.contract.UnpackLog(event, "SetEpochDuration", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MasterSetGenesisIterator is returned from FilterSetGenesis and is used to iterate over the raw logs and unpacked data for SetGenesis events raised by the Master contract.
+type MasterSetGenesisIterator struct {
+	Event *MasterSetGenesis // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterSetGenesisIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterSetGenesis)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterSetGenesis)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterSetGenesisIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterSetGenesisIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterSetGenesis represents a SetGenesis event raised by the Master contract.
+type MasterSetGenesis struct {
+	ValSetHeader ISettlementValSetHeader
+	ExtraData    []ISettlementExtraData
+	Raw          types.Log // Blockchain specific contextual infos
+}
+
+// FilterSetGenesis is a free log retrieval operation binding the contract event 0x9bd53a9a031f528c533d7ad36096850d291dd1ddef9a2dc0b41c5623d99fec9f.
+//
+// Solidity: event SetGenesis((uint8,uint8,uint48,uint48,uint256,bytes32,bytes32) valSetHeader, (bytes32,bytes32)[] extraData)
+func (_Master *MasterFilterer) FilterSetGenesis(opts *bind.FilterOpts) (*MasterSetGenesisIterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "SetGenesis")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterSetGenesisIterator{contract: _Master.contract, event: "SetGenesis", logs: logs, sub: sub}, nil
+}
+
+// WatchSetGenesis is a free log subscription operation binding the contract event 0x9bd53a9a031f528c533d7ad36096850d291dd1ddef9a2dc0b41c5623d99fec9f.
+//
+// Solidity: event SetGenesis((uint8,uint8,uint48,uint48,uint256,bytes32,bytes32) valSetHeader, (bytes32,bytes32)[] extraData)
+func (_Master *MasterFilterer) WatchSetGenesis(opts *bind.WatchOpts, sink chan<- *MasterSetGenesis) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "SetGenesis")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterSetGenesis)
+				if err := _Master.contract.UnpackLog(event, "SetGenesis", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseSetGenesis is a log parse operation binding the contract event 0x9bd53a9a031f528c533d7ad36096850d291dd1ddef9a2dc0b41c5623d99fec9f.
+//
+// Solidity: event SetGenesis((uint8,uint8,uint48,uint48,uint256,bytes32,bytes32) valSetHeader, (bytes32,bytes32)[] extraData)
+func (_Master *MasterFilterer) ParseSetGenesis(log types.Log) (*MasterSetGenesis, error) {
+	event := new(MasterSetGenesis)
+	if err := _Master.contract.UnpackLog(event, "SetGenesis", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MasterSetKeysProviderIterator is returned from FilterSetKeysProvider and is used to iterate over the raw logs and unpacked data for SetKeysProvider events raised by the Master contract.
+type MasterSetKeysProviderIterator struct {
+	Event *MasterSetKeysProvider // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterSetKeysProviderIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterSetKeysProvider)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterSetKeysProvider)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterSetKeysProviderIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterSetKeysProviderIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterSetKeysProvider represents a SetKeysProvider event raised by the Master contract.
+type MasterSetKeysProvider struct {
+	KeysProvider IConfigProviderCrossChainAddress
+	Raw          types.Log // Blockchain specific contextual infos
+}
+
+// FilterSetKeysProvider is a free log retrieval operation binding the contract event 0xc7810d91e677f4ec97a34d6ec4b8d67e94f7ece239370f2a319b9792abc72251.
+//
+// Solidity: event SetKeysProvider((address,uint64) keysProvider)
+func (_Master *MasterFilterer) FilterSetKeysProvider(opts *bind.FilterOpts) (*MasterSetKeysProviderIterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "SetKeysProvider")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterSetKeysProviderIterator{contract: _Master.contract, event: "SetKeysProvider", logs: logs, sub: sub}, nil
+}
+
+// WatchSetKeysProvider is a free log subscription operation binding the contract event 0xc7810d91e677f4ec97a34d6ec4b8d67e94f7ece239370f2a319b9792abc72251.
+//
+// Solidity: event SetKeysProvider((address,uint64) keysProvider)
+func (_Master *MasterFilterer) WatchSetKeysProvider(opts *bind.WatchOpts, sink chan<- *MasterSetKeysProvider) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "SetKeysProvider")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterSetKeysProvider)
+				if err := _Master.contract.UnpackLog(event, "SetKeysProvider", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseSetKeysProvider is a log parse operation binding the contract event 0xc7810d91e677f4ec97a34d6ec4b8d67e94f7ece239370f2a319b9792abc72251.
+//
+// Solidity: event SetKeysProvider((address,uint64) keysProvider)
+func (_Master *MasterFilterer) ParseSetKeysProvider(log types.Log) (*MasterSetKeysProvider, error) {
+	event := new(MasterSetKeysProvider)
+	if err := _Master.contract.UnpackLog(event, "SetKeysProvider", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MasterSetMaxValidatorsCountIterator is returned from FilterSetMaxValidatorsCount and is used to iterate over the raw logs and unpacked data for SetMaxValidatorsCount events raised by the Master contract.
+type MasterSetMaxValidatorsCountIterator struct {
+	Event *MasterSetMaxValidatorsCount // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterSetMaxValidatorsCountIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterSetMaxValidatorsCount)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterSetMaxValidatorsCount)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterSetMaxValidatorsCountIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterSetMaxValidatorsCountIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterSetMaxValidatorsCount represents a SetMaxValidatorsCount event raised by the Master contract.
+type MasterSetMaxValidatorsCount struct {
+	MaxValidatorsCount *big.Int
+	Raw                types.Log // Blockchain specific contextual infos
+}
+
+// FilterSetMaxValidatorsCount is a free log retrieval operation binding the contract event 0x37ca3532b507cfa33b11765ae8b499cb6830421b982a7f8837ee71ca5a3119c8.
+//
+// Solidity: event SetMaxValidatorsCount(uint208 maxValidatorsCount)
+func (_Master *MasterFilterer) FilterSetMaxValidatorsCount(opts *bind.FilterOpts) (*MasterSetMaxValidatorsCountIterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "SetMaxValidatorsCount")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterSetMaxValidatorsCountIterator{contract: _Master.contract, event: "SetMaxValidatorsCount", logs: logs, sub: sub}, nil
+}
+
+// WatchSetMaxValidatorsCount is a free log subscription operation binding the contract event 0x37ca3532b507cfa33b11765ae8b499cb6830421b982a7f8837ee71ca5a3119c8.
+//
+// Solidity: event SetMaxValidatorsCount(uint208 maxValidatorsCount)
+func (_Master *MasterFilterer) WatchSetMaxValidatorsCount(opts *bind.WatchOpts, sink chan<- *MasterSetMaxValidatorsCount) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "SetMaxValidatorsCount")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterSetMaxValidatorsCount)
+				if err := _Master.contract.UnpackLog(event, "SetMaxValidatorsCount", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseSetMaxValidatorsCount is a log parse operation binding the contract event 0x37ca3532b507cfa33b11765ae8b499cb6830421b982a7f8837ee71ca5a3119c8.
+//
+// Solidity: event SetMaxValidatorsCount(uint208 maxValidatorsCount)
+func (_Master *MasterFilterer) ParseSetMaxValidatorsCount(log types.Log) (*MasterSetMaxValidatorsCount, error) {
+	event := new(MasterSetMaxValidatorsCount)
+	if err := _Master.contract.UnpackLog(event, "SetMaxValidatorsCount", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MasterSetMaxVotingPowerIterator is returned from FilterSetMaxVotingPower and is used to iterate over the raw logs and unpacked data for SetMaxVotingPower events raised by the Master contract.
+type MasterSetMaxVotingPowerIterator struct {
+	Event *MasterSetMaxVotingPower // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterSetMaxVotingPowerIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterSetMaxVotingPower)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterSetMaxVotingPower)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterSetMaxVotingPowerIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterSetMaxVotingPowerIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterSetMaxVotingPower represents a SetMaxVotingPower event raised by the Master contract.
+type MasterSetMaxVotingPower struct {
+	MaxVotingPower *big.Int
+	Raw            types.Log // Blockchain specific contextual infos
+}
+
+// FilterSetMaxVotingPower is a free log retrieval operation binding the contract event 0xe891886eac9e583940fb0844098689693a4d105206ec1f789d119b4314383b95.
+//
+// Solidity: event SetMaxVotingPower(uint256 maxVotingPower)
+func (_Master *MasterFilterer) FilterSetMaxVotingPower(opts *bind.FilterOpts) (*MasterSetMaxVotingPowerIterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "SetMaxVotingPower")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterSetMaxVotingPowerIterator{contract: _Master.contract, event: "SetMaxVotingPower", logs: logs, sub: sub}, nil
+}
+
+// WatchSetMaxVotingPower is a free log subscription operation binding the contract event 0xe891886eac9e583940fb0844098689693a4d105206ec1f789d119b4314383b95.
+//
+// Solidity: event SetMaxVotingPower(uint256 maxVotingPower)
+func (_Master *MasterFilterer) WatchSetMaxVotingPower(opts *bind.WatchOpts, sink chan<- *MasterSetMaxVotingPower) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "SetMaxVotingPower")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterSetMaxVotingPower)
+				if err := _Master.contract.UnpackLog(event, "SetMaxVotingPower", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseSetMaxVotingPower is a log parse operation binding the contract event 0xe891886eac9e583940fb0844098689693a4d105206ec1f789d119b4314383b95.
+//
+// Solidity: event SetMaxVotingPower(uint256 maxVotingPower)
+func (_Master *MasterFilterer) ParseSetMaxVotingPower(log types.Log) (*MasterSetMaxVotingPower, error) {
+	event := new(MasterSetMaxVotingPower)
+	if err := _Master.contract.UnpackLog(event, "SetMaxVotingPower", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MasterSetMinInclusionVotingPowerIterator is returned from FilterSetMinInclusionVotingPower and is used to iterate over the raw logs and unpacked data for SetMinInclusionVotingPower events raised by the Master contract.
+type MasterSetMinInclusionVotingPowerIterator struct {
+	Event *MasterSetMinInclusionVotingPower // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterSetMinInclusionVotingPowerIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterSetMinInclusionVotingPower)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterSetMinInclusionVotingPower)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterSetMinInclusionVotingPowerIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterSetMinInclusionVotingPowerIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterSetMinInclusionVotingPower represents a SetMinInclusionVotingPower event raised by the Master contract.
+type MasterSetMinInclusionVotingPower struct {
+	MinInclusionVotingPower *big.Int
+	Raw                     types.Log // Blockchain specific contextual infos
+}
+
+// FilterSetMinInclusionVotingPower is a free log retrieval operation binding the contract event 0x7ea1f11872caff0567f050bd06f29f128a1407e56e3272abbadef87f6cbb6188.
+//
+// Solidity: event SetMinInclusionVotingPower(uint256 minInclusionVotingPower)
+func (_Master *MasterFilterer) FilterSetMinInclusionVotingPower(opts *bind.FilterOpts) (*MasterSetMinInclusionVotingPowerIterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "SetMinInclusionVotingPower")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterSetMinInclusionVotingPowerIterator{contract: _Master.contract, event: "SetMinInclusionVotingPower", logs: logs, sub: sub}, nil
+}
+
+// WatchSetMinInclusionVotingPower is a free log subscription operation binding the contract event 0x7ea1f11872caff0567f050bd06f29f128a1407e56e3272abbadef87f6cbb6188.
+//
+// Solidity: event SetMinInclusionVotingPower(uint256 minInclusionVotingPower)
+func (_Master *MasterFilterer) WatchSetMinInclusionVotingPower(opts *bind.WatchOpts, sink chan<- *MasterSetMinInclusionVotingPower) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "SetMinInclusionVotingPower")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterSetMinInclusionVotingPower)
+				if err := _Master.contract.UnpackLog(event, "SetMinInclusionVotingPower", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseSetMinInclusionVotingPower is a log parse operation binding the contract event 0x7ea1f11872caff0567f050bd06f29f128a1407e56e3272abbadef87f6cbb6188.
+//
+// Solidity: event SetMinInclusionVotingPower(uint256 minInclusionVotingPower)
+func (_Master *MasterFilterer) ParseSetMinInclusionVotingPower(log types.Log) (*MasterSetMinInclusionVotingPower, error) {
+	event := new(MasterSetMinInclusionVotingPower)
+	if err := _Master.contract.UnpackLog(event, "SetMinInclusionVotingPower", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MasterSetProlongDurationIterator is returned from FilterSetProlongDuration and is used to iterate over the raw logs and unpacked data for SetProlongDuration events raised by the Master contract.
+type MasterSetProlongDurationIterator struct {
+	Event *MasterSetProlongDuration // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterSetProlongDurationIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterSetProlongDuration)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterSetProlongDuration)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterSetProlongDurationIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterSetProlongDurationIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterSetProlongDuration represents a SetProlongDuration event raised by the Master contract.
+type MasterSetProlongDuration struct {
+	ProlongDuration *big.Int
+	Raw             types.Log // Blockchain specific contextual infos
+}
+
+// FilterSetProlongDuration is a free log retrieval operation binding the contract event 0xc0c12bfa4224ca9e540947f48e95231ff35184a4108680b0e7c0c379554f0ae9.
+//
+// Solidity: event SetProlongDuration(uint48 prolongDuration)
+func (_Master *MasterFilterer) FilterSetProlongDuration(opts *bind.FilterOpts) (*MasterSetProlongDurationIterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "SetProlongDuration")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterSetProlongDurationIterator{contract: _Master.contract, event: "SetProlongDuration", logs: logs, sub: sub}, nil
+}
+
+// WatchSetProlongDuration is a free log subscription operation binding the contract event 0xc0c12bfa4224ca9e540947f48e95231ff35184a4108680b0e7c0c379554f0ae9.
+//
+// Solidity: event SetProlongDuration(uint48 prolongDuration)
+func (_Master *MasterFilterer) WatchSetProlongDuration(opts *bind.WatchOpts, sink chan<- *MasterSetProlongDuration) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "SetProlongDuration")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterSetProlongDuration)
+				if err := _Master.contract.UnpackLog(event, "SetProlongDuration", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseSetProlongDuration is a log parse operation binding the contract event 0xc0c12bfa4224ca9e540947f48e95231ff35184a4108680b0e7c0c379554f0ae9.
+//
+// Solidity: event SetProlongDuration(uint48 prolongDuration)
+func (_Master *MasterFilterer) ParseSetProlongDuration(log types.Log) (*MasterSetProlongDuration, error) {
+	event := new(MasterSetProlongDuration)
+	if err := _Master.contract.UnpackLog(event, "SetProlongDuration", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MasterSetRequiredKeyTagIterator is returned from FilterSetRequiredKeyTag and is used to iterate over the raw logs and unpacked data for SetRequiredKeyTag events raised by the Master contract.
+type MasterSetRequiredKeyTagIterator struct {
+	Event *MasterSetRequiredKeyTag // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterSetRequiredKeyTagIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterSetRequiredKeyTag)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterSetRequiredKeyTag)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterSetRequiredKeyTagIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterSetRequiredKeyTagIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterSetRequiredKeyTag represents a SetRequiredKeyTag event raised by the Master contract.
+type MasterSetRequiredKeyTag struct {
+	RequiredKeyTag uint8
+	Raw            types.Log // Blockchain specific contextual infos
+}
+
+// FilterSetRequiredKeyTag is a free log retrieval operation binding the contract event 0x0c2213b81cfe15af86bbbff49cc144fa8f808a3733295605e9850388a5793a14.
+//
+// Solidity: event SetRequiredKeyTag(uint8 requiredKeyTag)
+func (_Master *MasterFilterer) FilterSetRequiredKeyTag(opts *bind.FilterOpts) (*MasterSetRequiredKeyTagIterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "SetRequiredKeyTag")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterSetRequiredKeyTagIterator{contract: _Master.contract, event: "SetRequiredKeyTag", logs: logs, sub: sub}, nil
+}
+
+// WatchSetRequiredKeyTag is a free log subscription operation binding the contract event 0x0c2213b81cfe15af86bbbff49cc144fa8f808a3733295605e9850388a5793a14.
+//
+// Solidity: event SetRequiredKeyTag(uint8 requiredKeyTag)
+func (_Master *MasterFilterer) WatchSetRequiredKeyTag(opts *bind.WatchOpts, sink chan<- *MasterSetRequiredKeyTag) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "SetRequiredKeyTag")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterSetRequiredKeyTag)
+				if err := _Master.contract.UnpackLog(event, "SetRequiredKeyTag", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseSetRequiredKeyTag is a log parse operation binding the contract event 0x0c2213b81cfe15af86bbbff49cc144fa8f808a3733295605e9850388a5793a14.
+//
+// Solidity: event SetRequiredKeyTag(uint8 requiredKeyTag)
+func (_Master *MasterFilterer) ParseSetRequiredKeyTag(log types.Log) (*MasterSetRequiredKeyTag, error) {
+	event := new(MasterSetRequiredKeyTag)
+	if err := _Master.contract.UnpackLog(event, "SetRequiredKeyTag", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MasterSetRequiredKeyTagsIterator is returned from FilterSetRequiredKeyTags and is used to iterate over the raw logs and unpacked data for SetRequiredKeyTags events raised by the Master contract.
+type MasterSetRequiredKeyTagsIterator struct {
+	Event *MasterSetRequiredKeyTags // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterSetRequiredKeyTagsIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterSetRequiredKeyTags)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterSetRequiredKeyTags)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterSetRequiredKeyTagsIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterSetRequiredKeyTagsIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterSetRequiredKeyTags represents a SetRequiredKeyTags event raised by the Master contract.
+type MasterSetRequiredKeyTags struct {
+	RequiredKeyTags []uint8
+	Raw             types.Log // Blockchain specific contextual infos
+}
+
+// FilterSetRequiredKeyTags is a free log retrieval operation binding the contract event 0x14f8998266f37e593027a05efebf63b8710681d1cdbd39e6d7a156ff7e1485cd.
+//
+// Solidity: event SetRequiredKeyTags(uint8[] requiredKeyTags)
+func (_Master *MasterFilterer) FilterSetRequiredKeyTags(opts *bind.FilterOpts) (*MasterSetRequiredKeyTagsIterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "SetRequiredKeyTags")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterSetRequiredKeyTagsIterator{contract: _Master.contract, event: "SetRequiredKeyTags", logs: logs, sub: sub}, nil
+}
+
+// WatchSetRequiredKeyTags is a free log subscription operation binding the contract event 0x14f8998266f37e593027a05efebf63b8710681d1cdbd39e6d7a156ff7e1485cd.
+//
+// Solidity: event SetRequiredKeyTags(uint8[] requiredKeyTags)
+func (_Master *MasterFilterer) WatchSetRequiredKeyTags(opts *bind.WatchOpts, sink chan<- *MasterSetRequiredKeyTags) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "SetRequiredKeyTags")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterSetRequiredKeyTags)
+				if err := _Master.contract.UnpackLog(event, "SetRequiredKeyTags", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseSetRequiredKeyTags is a log parse operation binding the contract event 0x14f8998266f37e593027a05efebf63b8710681d1cdbd39e6d7a156ff7e1485cd.
+//
+// Solidity: event SetRequiredKeyTags(uint8[] requiredKeyTags)
+func (_Master *MasterFilterer) ParseSetRequiredKeyTags(log types.Log) (*MasterSetRequiredKeyTags, error) {
+	event := new(MasterSetRequiredKeyTags)
+	if err := _Master.contract.UnpackLog(event, "SetRequiredKeyTags", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MasterSetSelectorRoleIterator is returned from FilterSetSelectorRole and is used to iterate over the raw logs and unpacked data for SetSelectorRole events raised by the Master contract.
+type MasterSetSelectorRoleIterator struct {
+	Event *MasterSetSelectorRole // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterSetSelectorRoleIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterSetSelectorRole)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterSetSelectorRole)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterSetSelectorRoleIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterSetSelectorRoleIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterSetSelectorRole represents a SetSelectorRole event raised by the Master contract.
+type MasterSetSelectorRole struct {
+	Selector [4]byte
+	Role     [32]byte
+	Raw      types.Log // Blockchain specific contextual infos
+}
+
+// FilterSetSelectorRole is a free log retrieval operation binding the contract event 0x205ddee47edfee0f39b93f29e45a801cd7c9cffe0ca9a2da19e547227b2a0504.
+//
+// Solidity: event SetSelectorRole(bytes4 indexed selector, bytes32 indexed role)
+func (_Master *MasterFilterer) FilterSetSelectorRole(opts *bind.FilterOpts, selector [][4]byte, role [][32]byte) (*MasterSetSelectorRoleIterator, error) {
+
+	var selectorRule []interface{}
+	for _, selectorItem := range selector {
+		selectorRule = append(selectorRule, selectorItem)
+	}
+	var roleRule []interface{}
+	for _, roleItem := range role {
+		roleRule = append(roleRule, roleItem)
+	}
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "SetSelectorRole", selectorRule, roleRule)
+	if err != nil {
+		return nil, err
+	}
+	return &MasterSetSelectorRoleIterator{contract: _Master.contract, event: "SetSelectorRole", logs: logs, sub: sub}, nil
+}
+
+// WatchSetSelectorRole is a free log subscription operation binding the contract event 0x205ddee47edfee0f39b93f29e45a801cd7c9cffe0ca9a2da19e547227b2a0504.
+//
+// Solidity: event SetSelectorRole(bytes4 indexed selector, bytes32 indexed role)
+func (_Master *MasterFilterer) WatchSetSelectorRole(opts *bind.WatchOpts, sink chan<- *MasterSetSelectorRole, selector [][4]byte, role [][32]byte) (event.Subscription, error) {
+
+	var selectorRule []interface{}
+	for _, selectorItem := range selector {
+		selectorRule = append(selectorRule, selectorItem)
+	}
+	var roleRule []interface{}
+	for _, roleItem := range role {
+		roleRule = append(roleRule, roleItem)
+	}
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "SetSelectorRole", selectorRule, roleRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterSetSelectorRole)
+				if err := _Master.contract.UnpackLog(event, "SetSelectorRole", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseSetSelectorRole is a log parse operation binding the contract event 0x205ddee47edfee0f39b93f29e45a801cd7c9cffe0ca9a2da19e547227b2a0504.
+//
+// Solidity: event SetSelectorRole(bytes4 indexed selector, bytes32 indexed role)
+func (_Master *MasterFilterer) ParseSetSelectorRole(log types.Log) (*MasterSetSelectorRole, error) {
+	event := new(MasterSetSelectorRole)
+	if err := _Master.contract.UnpackLog(event, "SetSelectorRole", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MasterSetSigVerifierIterator is returned from FilterSetSigVerifier and is used to iterate over the raw logs and unpacked data for SetSigVerifier events raised by the Master contract.
+type MasterSetSigVerifierIterator struct {
+	Event *MasterSetSigVerifier // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterSetSigVerifierIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterSetSigVerifier)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterSetSigVerifier)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterSetSigVerifierIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterSetSigVerifierIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterSetSigVerifier represents a SetSigVerifier event raised by the Master contract.
+type MasterSetSigVerifier struct {
+	SigVerifier common.Address
+	Raw         types.Log // Blockchain specific contextual infos
+}
+
+// FilterSetSigVerifier is a free log retrieval operation binding the contract event 0x3cb2fcfd41e182e933eb967bdeaac4f8ff69c80b6fd24fea9561dfbdec127942.
+//
+// Solidity: event SetSigVerifier(address sigVerifier)
+func (_Master *MasterFilterer) FilterSetSigVerifier(opts *bind.FilterOpts) (*MasterSetSigVerifierIterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "SetSigVerifier")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterSetSigVerifierIterator{contract: _Master.contract, event: "SetSigVerifier", logs: logs, sub: sub}, nil
+}
+
+// WatchSetSigVerifier is a free log subscription operation binding the contract event 0x3cb2fcfd41e182e933eb967bdeaac4f8ff69c80b6fd24fea9561dfbdec127942.
+//
+// Solidity: event SetSigVerifier(address sigVerifier)
+func (_Master *MasterFilterer) WatchSetSigVerifier(opts *bind.WatchOpts, sink chan<- *MasterSetSigVerifier) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "SetSigVerifier")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterSetSigVerifier)
+				if err := _Master.contract.UnpackLog(event, "SetSigVerifier", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseSetSigVerifier is a log parse operation binding the contract event 0x3cb2fcfd41e182e933eb967bdeaac4f8ff69c80b6fd24fea9561dfbdec127942.
+//
+// Solidity: event SetSigVerifier(address sigVerifier)
+func (_Master *MasterFilterer) ParseSetSigVerifier(log types.Log) (*MasterSetSigVerifier, error) {
+	event := new(MasterSetSigVerifier)
+	if err := _Master.contract.UnpackLog(event, "SetSigVerifier", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MasterSetVerificationTypeIterator is returned from FilterSetVerificationType and is used to iterate over the raw logs and unpacked data for SetVerificationType events raised by the Master contract.
+type MasterSetVerificationTypeIterator struct {
+	Event *MasterSetVerificationType // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MasterSetVerificationTypeIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MasterSetVerificationType)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MasterSetVerificationType)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MasterSetVerificationTypeIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MasterSetVerificationTypeIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MasterSetVerificationType represents a SetVerificationType event raised by the Master contract.
+type MasterSetVerificationType struct {
+	VerificationType uint32
+	Raw              types.Log // Blockchain specific contextual infos
+}
+
+// FilterSetVerificationType is a free log retrieval operation binding the contract event 0x2acc7be3ff5df4b911488f72502071dcf3f4a8f778a8abc351af3220bcd15b7f.
+//
+// Solidity: event SetVerificationType(uint32 verificationType)
+func (_Master *MasterFilterer) FilterSetVerificationType(opts *bind.FilterOpts) (*MasterSetVerificationTypeIterator, error) {
+
+	logs, sub, err := _Master.contract.FilterLogs(opts, "SetVerificationType")
+	if err != nil {
+		return nil, err
+	}
+	return &MasterSetVerificationTypeIterator{contract: _Master.contract, event: "SetVerificationType", logs: logs, sub: sub}, nil
+}
+
+// WatchSetVerificationType is a free log subscription operation binding the contract event 0x2acc7be3ff5df4b911488f72502071dcf3f4a8f778a8abc351af3220bcd15b7f.
+//
+// Solidity: event SetVerificationType(uint32 verificationType)
+func (_Master *MasterFilterer) WatchSetVerificationType(opts *bind.WatchOpts, sink chan<- *MasterSetVerificationType) (event.Subscription, error) {
+
+	logs, sub, err := _Master.contract.WatchLogs(opts, "SetVerificationType")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MasterSetVerificationType)
+				if err := _Master.contract.UnpackLog(event, "SetVerificationType", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseSetVerificationType is a log parse operation binding the contract event 0x2acc7be3ff5df4b911488f72502071dcf3f4a8f778a8abc351af3220bcd15b7f.
+//
+// Solidity: event SetVerificationType(uint32 verificationType)
+func (_Master *MasterFilterer) ParseSetVerificationType(log types.Log) (*MasterSetVerificationType, error) {
+	event := new(MasterSetVerificationType)
+	if err := _Master.contract.UnpackLog(event, "SetVerificationType", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

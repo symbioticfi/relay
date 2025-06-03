@@ -13,7 +13,7 @@ import (
 func TestManual_GetEip712Domain(t *testing.T) {
 	eth, err := NewEthClient(Config{
 		MasterRPCURL:   "http://127.0.0.1:8545",
-		MasterAddress:  "0xF91E4B4166AD3eafDE95FeB6402560FCAb881690",
+		MasterAddress:  "0x63d855589514F1277527f4fD8D464836F8Ca73Ba",
 		RequestTimeout: time.Minute,
 	})
 	require.NoError(t, err)
@@ -26,7 +26,7 @@ func TestManual_GetEip712Domain(t *testing.T) {
 func TestManual_GetCurrentValsetTimestamp(t *testing.T) {
 	eth, err := NewEthClient(Config{
 		MasterRPCURL:   "http://127.0.0.1:8545",
-		MasterAddress:  "0xF91E4B4166AD3eafDE95FeB6402560FCAb881690",
+		MasterAddress:  "0x63d855589514F1277527f4fD8D464836F8Ca73Ba",
 		RequestTimeout: time.Minute,
 	})
 	require.NoError(t, err)

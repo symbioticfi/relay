@@ -123,7 +123,7 @@ func initValsetTestServices(t *testing.T) *valsetTestServices {
 		pk.FillBytes(pkBytes[:])
 		eth_, err := eth.NewEthClient(eth.Config{
 			MasterRPCURL:   "http://localhost:8545",
-			MasterAddress:  "0xF91E4B4166AD3eafDE95FeB6402560FCAb881690",
+			MasterAddress:  "0x63d855589514F1277527f4fD8D464836F8Ca73Ba",
 			PrivateKey:     pkBytes[:],
 			RequestTimeout: time.Minute,
 		})
@@ -218,7 +218,7 @@ func waitCommitPhase(t *testing.T) {
 	zeroPk.FillBytes(pkBytes[:])
 	eth1, err := eth.NewEthClient(eth.Config{
 		MasterRPCURL:   "http://localhost:8545",
-		MasterAddress:  "0xF91E4B4166AD3eafDE95FeB6402560FCAb881690",
+		MasterAddress:  "0x63d855589514F1277527f4fD8D464836F8Ca73Ba",
 		PrivateKey:     pkBytes[:],
 		RequestTimeout: time.Minute,
 	})

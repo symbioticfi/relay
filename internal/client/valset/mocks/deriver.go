@@ -118,19 +118,19 @@ func (mr *MockethClientMockRecorder) GetKeys(ctx, address, timestamp any) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKeys", reflect.TypeOf((*MockethClient)(nil).GetKeys), ctx, address, timestamp)
 }
 
-// GetMasterConfig mocks base method.
-func (m *MockethClient) GetMasterConfig(ctx context.Context, timestamp *big.Int) (entity.MasterConfig, error) {
+// GetConfig mocks base method.
+func (m *MockethClient) GetConfig(ctx context.Context, timestamp *big.Int) (entity.Config, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetMasterConfig", ctx, timestamp)
-	ret0, _ := ret[0].(entity.MasterConfig)
+	ret := m.ctrl.Call(m, "GetConfig", ctx, timestamp)
+	ret0, _ := ret[0].(entity.Config)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetMasterConfig indicates an expected call of GetMasterConfig.
-func (mr *MockethClientMockRecorder) GetMasterConfig(ctx, timestamp any) *gomock.Call {
+// GetConfig indicates an expected call of GetConfig.
+func (mr *MockethClientMockRecorder) GetConfig(ctx, timestamp any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMasterConfig", reflect.TypeOf((*MockethClient)(nil).GetMasterConfig), ctx, timestamp)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfig", reflect.TypeOf((*MockethClient)(nil).GetConfig), ctx, timestamp)
 }
 
 // GetRequiredKeyTag mocks base method.
@@ -161,21 +161,6 @@ func (m *MockethClient) GetSubnetwork(ctx context.Context) ([]byte, error) {
 func (mr *MockethClientMockRecorder) GetSubnetwork(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubnetwork", reflect.TypeOf((*MockethClient)(nil).GetSubnetwork), ctx)
-}
-
-// GetValSetConfig mocks base method.
-func (m *MockethClient) GetValSetConfig(ctx context.Context, timestamp *big.Int) (entity.ValSetConfig, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetValSetConfig", ctx, timestamp)
-	ret0, _ := ret[0].(entity.ValSetConfig)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetValSetConfig indicates an expected call of GetValSetConfig.
-func (mr *MockethClientMockRecorder) GetValSetConfig(ctx, timestamp any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValSetConfig", reflect.TypeOf((*MockethClient)(nil).GetValSetConfig), ctx, timestamp)
 }
 
 // GetVotingPowers mocks base method.

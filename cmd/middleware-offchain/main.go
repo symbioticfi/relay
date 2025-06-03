@@ -25,7 +25,7 @@ import (
 	"middleware-offchain/pkg/server"
 )
 
-// offchain_middleware --master-address 0xF91E4B4166AD3eafDE95FeB6402560FCAb881690 --rpc-url http://127.0.0.1:8545
+// offchain_middleware --master-address 0x63d855589514F1277527f4fD8D464836F8Ca73Ba --rpc-url http://127.0.0.1:8545
 func main() {
 	slog.Info("Running offchain_middleware command", "args", os.Args)
 

@@ -43,15 +43,10 @@ func TestValsetDeriver_GetValidatorSet(t *testing.T) {
 			name: "successfully fetch validator set",
 			mockSetup: func() {
 				mockEthClient.EXPECT().
-					GetMasterConfig(ctx, timestamp).
-					Return(entity.MasterConfig{
-						VotingPowerProviders: []entity.CrossChainAddress{{Address: vpAddress}},
-						KeysProvider:         entity.CrossChainAddress{Address: kpAddress},
-					}, nil)
-
-				mockEthClient.EXPECT().
-					GetValSetConfig(ctx, timestamp).
-					Return(entity.ValSetConfig{
+					GetConfig(ctx, timestamp).
+					Return(entity.Config{
+						VotingPowerProviders:    []entity.CrossChainAddress{{Address: vpAddress}},
+						KeysProvider:            entity.CrossChainAddress{Address: kpAddress},
 						MinInclusionVotingPower: big.NewInt(100),
 						MaxVotingPower:          big.NewInt(1000),
 						MaxValidatorsCount:      big.NewInt(10),
@@ -102,11 +97,11 @@ func TestValsetDeriver_GetValidatorSet(t *testing.T) {
 			name: "error fetching master config",
 			mockSetup: func() {
 				mockEthClient.EXPECT().
-					GetMasterConfig(ctx, timestamp).
-					Return(entity.MasterConfig{}, errors.New("failed to fetch master config"))
+					GetConfig(ctx, timestamp).
+					Return(entity.Config{}, errors.New("failed to fetch config"))
 			},
 			expectedSet: entity.ValidatorSet{},
-			expectedErr: errors.New("failed to get master config: failed to fetch master config"),
+			expectedErr: errors.New("failed to get config: failed to fetch config"),
 		},
 	}
 
