@@ -23,7 +23,7 @@ const valsetVersion = 1
 
 //go:generate mockgen -source=deriver.go -destination=mocks/deriver.go -package=mocks
 type ethClient interface {
-	GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, epoch *big.Int) (*big.Int, error)
+	GetCaptureTimestamp(ctx context.Context) (*big.Int, error)
 	GetEpochStart(ctx context.Context, epoch *big.Int) (*big.Int, error)
 	GetCurrentValsetTimestamp(ctx context.Context) (*big.Int, error)
 	GetConfig(ctx context.Context, timestamp *big.Int) (entity.Config, error)
@@ -55,10 +55,10 @@ func (v *Deriver) GetValidatorSetExtraForEpoch(ctx context.Context, epoch *big.I
 	}
 	slog.DebugContext(ctx, "Got current valset timestamp", "timestamp", timestamp.String(), "epoch", epoch.String())
 
-	slog.DebugContext(ctx, "Trying to fetch master config", "timestamp", timestamp.String())
+	slog.DebugContext(ctx, "Trying to fetch config", "timestamp", timestamp.String())
 	config, err := v.ethClient.GetConfig(ctx, timestamp)
 	if err != nil {
-		return entity.ValidatorSetExtra{}, fmt.Errorf("failed to get master config: %w", err)
+		return entity.ValidatorSetExtra{}, fmt.Errorf("failed to get config: %w", err)
 	}
 	slog.DebugContext(ctx, "Got config", "timestamp", timestamp.String(), "config", config)
 
@@ -89,7 +89,7 @@ func (v *Deriver) GetValidatorSetExtraForEpoch(ctx context.Context, epoch *big.I
 		return entity.ValidatorSetExtra{}, fmt.Errorf("failed to get required key tag: %w", err)
 	}
 
-	captureTimestamp, err := v.ethClient.GetCaptureTimestampFromValsetHeaderAt(ctx, epoch)
+	captureTimestamp, err := v.ethClient.GetEpochStart(ctx, epoch)
 	if err != nil {
 		return entity.ValidatorSetExtra{}, fmt.Errorf("failed to get capture timestamp: %w", err)
 	}
@@ -254,6 +254,10 @@ func (v *Deriver) MakeValsetHeader(ctx context.Context, extra entity.ValidatorSe
 		ActiveAggregatedKeys:        formattedKeys,
 		TotalActiveVotingPower:      validatorSet.TotalActiveVotingPower,
 		ValidatorsSszMRoot:          sszMroot,
+		Epoch:                       extra.Epoch,
+		RequiredKeyTag:              extra.RequiredKeyTag,
+		CaptureTimestamp:            extra.CaptureTimestamp,
+		VerificationType:            extra.Config.VerificationType,
 		ValidatorSetHashesMimc:      formattedHashesMimc,
 		ValidatorSetHashesKeccak256: formattedHashesKeccak256,
 		QuorumThreshold:             quorumThreshold,

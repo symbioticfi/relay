@@ -503,6 +503,10 @@ func (e *Client) callContract(ctx context.Context, callMsg ethereum.CallMsg) (re
 	if err != nil {
 		return nil, fmt.Errorf("failed to call contract: %w", err)
 	}
+	if len(result) == 0 {
+		// most probably we use incorrect contract address
+		return nil, fmt.Errorf("no data returned from contract call")
+	}
 
 	return result, nil
 }

@@ -10,9 +10,10 @@ import (
 type Phase uint64
 
 const (
-	IDLE Phase = iota
-	COMMIT
-	FAIL
+	IDLE    Phase = 0
+	COMMIT  Phase = 1
+	PROLONG Phase = 2
+	FAIL    Phase = 3
 )
 
 type CrossChainAddress struct {
