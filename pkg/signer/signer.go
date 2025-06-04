@@ -57,7 +57,7 @@ func (s *Signer) Sign(keyTag uint8, message []byte) (entity.Signature, error) {
 
 		return sig, nil
 
-		//case keyprovider.KeyTypeEcdsaSecp256k1:
+	case keyprovider.KeyTypeEcdsaSecp256k1:
 		// same but for another key type
 	}
 
