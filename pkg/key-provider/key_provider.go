@@ -10,11 +10,6 @@ const (
 	KeyTypeEcdsaSecp256k1 uint8 = 1
 )
 
-type KeyProvider interface {
-	GetPrivateKey(keyTag uint8) ([]byte, error)
-	HasKey(keyTag uint8) (bool, error)
-}
-
 func typeToStr(keyType uint8) (string, error) {
 	switch keyType {
 	case KeyTypeBlsBn254:

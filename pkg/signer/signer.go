@@ -9,20 +9,25 @@ import (
 	keyprovider "middleware-offchain/pkg/key-provider"
 )
 
-type Signer struct {
-	kp keyprovider.KeyProvider
+type keyProvider interface {
+	GetPrivateKey(keyTag uint8) ([]byte, error)
+	HasKey(keyTag uint8) (bool, error)
 }
 
-func NewSigner(kp keyprovider.KeyProvider) *Signer {
+type Signer struct {
+	kp keyProvider
+}
+
+func NewSigner(kp keyProvider) *Signer {
 	return &Signer{kp: kp}
 }
 
 func (s *Signer) Hash(keyTag uint8, message []byte) ([]byte, error) {
 	keyType := keyTag >> 4
-	if keyType == keyprovider.KeyTypeBlsBn254 {
+	switch keyType {
+	case keyprovider.KeyTypeBlsBn254:
 		return crypto.Keccak256(message), nil
-	}
-	if keyType == keyprovider.KeyTypeEcdsaSecp256k1 {
+	case keyprovider.KeyTypeEcdsaSecp256k1:
 		return crypto.Keccak256(message), nil
 	}
 
