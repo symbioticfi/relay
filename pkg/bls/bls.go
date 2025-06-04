@@ -150,7 +150,7 @@ func HashToG1(data []byte) (*G1, error) {
 
 	for {
 		// Find y coordinate for the current x
-		beta, y, err := findYFromX(x)
+		beta, y, err := FindYFromX(x)
 		if err != nil {
 			return nil, err
 		}
@@ -174,9 +174,9 @@ func HashToG1(data []byte) (*G1, error) {
 	}
 }
 
-// findYFromX calculates the y coordinate for a given x on the BN254 curve
+// FindYFromX calculates the y coordinate for a given x on the BN254 curve
 // Returns (beta, y) where beta = x^3 + 3 (mod p) and y = sqrt(beta) if it exists
-func findYFromX(x *big.Int) (beta *big.Int, y *big.Int, err error) {
+func FindYFromX(x *big.Int) (beta *big.Int, y *big.Int, err error) {
 	// Calculate beta = x^3 + 3 mod p
 	beta = new(big.Int).Exp(x, big.NewInt(3), FpModulus) // x^3
 	beta.Add(beta, big.NewInt(3))                        // x^3 + 3

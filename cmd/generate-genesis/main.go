@@ -13,11 +13,12 @@ import (
 	"github.com/spf13/cobra"
 
 	"middleware-offchain/internal/client/eth"
-	"middleware-offchain/internal/client/valset"
+	"middleware-offchain/internal/entity"
+	valsetDeriver "middleware-offchain/internal/uc/valset-deriver"
 	"middleware-offchain/pkg/log"
 )
 
-// generate_genesis --master-address 0x04C89607413713Ec9775E14b954286519d836FEf --rpc-url http://127.0.0.1:8545
+// generate_genesis --master-address 0x63d855589514F1277527f4fD8D464836F8Ca73Ba --rpc-url http://127.0.0.1:8545
 func main() {
 	slog.Info("Running generate_genesis command", "args", os.Args)
 
@@ -66,33 +67,45 @@ var rootCmd = &cobra.Command{
 		client, err := eth.NewEthClient(eth.Config{
 			MasterRPCURL:   cfg.rpcURL,
 			MasterAddress:  cfg.masterAddress,
-			PrivateKey:     nil,
 			RequestTimeout: time.Second * 5,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create eth client: %w", err)
 		}
 
-		deriver, err := valset.NewDeriver(client)
+		deriver, err := valsetDeriver.NewDeriver(client)
 		if err != nil {
 			return errors.Errorf("failed to create valset deriver: %w", err)
 		}
 
-		generator, err := valset.NewGenerator(deriver, client)
+		currentOnchainEpoch, err := client.GetCurrentEpoch(ctx)
 		if err != nil {
-			return errors.Errorf("failed to create valset generator: %w", err)
+			return errors.Errorf("failed to get current epoch: %w", err)
 		}
 
-		header, err := generator.GenerateValidatorSetHeaderOnCapture(ctx)
+		newValset, err := deriver.GetValidatorSetExtraForEpoch(ctx, currentOnchainEpoch)
+		if err != nil {
+			return errors.Errorf("failed to get validator set extra for epoch %s: %w", currentOnchainEpoch, err)
+		}
+
+		header, err := deriver.MakeValsetHeader(ctx, newValset)
 		if err != nil {
 			return errors.Errorf("failed to generate validator set header: %w", err)
 		}
 
 		slog.Info("Valset header generated!")
 
-		jsonData, err := header.EncodeJSON()
+		extraData, err := deriver.GenerateExtraData(ctx, header, entity.ZkVerificationType)
 		if err != nil {
-			return errors.Errorf("failed to marshal header to JSON: %w", err)
+			return errors.Errorf("failed to generate extra data: %w", err)
+		}
+
+		jsonData, err := entity.ValidatorSetHeaderWithExtraData{
+			ValidatorSetHeader: header,
+			ExtraDataList:      extraData,
+		}.EncodeJSON()
+		if err != nil {
+			return errors.Errorf("failed to encode validator set header with extra data to JSON: %w", err)
 		}
 
 		if cfg.outputFile != "" {

@@ -35,21 +35,22 @@ var keyRegistryAbiJSON []byte
 var keyRegistryABI abi.ABI
 
 var (
-	getMasterConfigFunction           = "getMasterConfigAt"
-	getValsetConfigFunction           = "getValSetConfigAt"
-	getIsGenesisSetFunction           = "isGenesisSet"
-	getCurrentEpochFunction           = "getCurrentEpoch"
-	getCurrentPhaseFunction           = "getCurrentPhase"
-	getCurrentValsetTimestampFunction = "getCurrentValSetTimestamp"
-	getCurrentValsetEpochFunction     = "getCurrentValSetEpoch"
-	getCaptureTimestampFunction       = "getCaptureTimestamp"
-	getVotingPowersFunction           = "getVotingPowersAt"
-	getKeysFunction                   = "getKeysAt"
-	getRequiredKeyTagFunction         = "getRequiredKeyTagAt"
-	getQuorumThresholdFunction        = "getQuorumThresholdAt"
-	getSubnetworkFunction             = "SUBNETWORK"
-	getEip712DomainFunction           = "eip712Domain"
-	verifyQuorumSigFunction           = "verifyQuorumSig"
+	getConfigFunction                             = "getConfigAt"
+	getIsGenesisSetFunction                       = "isGenesisSet"
+	getCurrentEpochFunction                       = "getCurrentEpoch"
+	getEpochStartFunction                         = "getEpochStart"
+	getCurrentPhaseFunction                       = "getCurrentPhase"
+	getCurrentValsetTimestampFunction             = "getCurrentValSetTimestamp"
+	getCurrentValsetEpochFunction                 = "getCurrentValSetEpoch"
+	getCaptureTimestampFunction                   = "getCaptureTimestamp"
+	getCaptureTimestampFromValsetHeaderAtFunction = "getCaptureTimestampFromValSetHeaderAt"
+	getVotingPowersFunction                       = "getVotingPowersAt"
+	getKeysFunction                               = "getKeysAt"
+	getRequiredKeyTagFunction                     = "getRequiredKeyTagAt"
+	getQuorumThresholdFunction                    = "getQuorumThresholdAt"
+	getSubnetworkFunction                         = "SUBNETWORK"
+	getEip712DomainFunction                       = "eip712Domain"
+	verifyQuorumSigFunction                       = "verifyQuorumSig"
 )
 
 type Config struct {
@@ -156,14 +157,19 @@ type crossChainAddressDTO struct {
 	ChainId uint64         `json:"chainId"`
 }
 
-type masterConfigDTO struct {
-	VotingPowerProviders []crossChainAddressDTO `json:"votingPowerProviders"`
-	KeysProvider         crossChainAddressDTO   `json:"keysProvider"`
-	Replicas             []crossChainAddressDTO `json:"replicas"`
+type configDTO struct {
+	VotingPowerProviders    []crossChainAddressDTO `json:"votingPowerProviders"`
+	KeysProvider            crossChainAddressDTO   `json:"keysProvider"`
+	Replicas                []crossChainAddressDTO `json:"replicas"`
+	VerificationType        uint32                 `json:"verificationType"`
+	MaxVotingPower          *big.Int               `json:"maxVotingPower"`
+	MinInclusionVotingPower *big.Int               `json:"minInclusionVotingPower"`
+	MaxValidatorsCount      *big.Int               `json:"maxValidatorsCount"`
+	RequiredKeyTags         []uint8                `json:"requiredKeyTags"`
 }
 
-func (c masterConfigDTO) toEntity() entity.MasterConfig {
-	return entity.MasterConfig{
+func (c configDTO) toEntity() entity.Config {
+	return entity.Config{
 		VotingPowerProviders: lo.Map(c.VotingPowerProviders, func(v crossChainAddressDTO, _ int) entity.CrossChainAddress {
 			return entity.CrossChainAddress{
 				Address: v.Addr,
@@ -180,46 +186,7 @@ func (c masterConfigDTO) toEntity() entity.MasterConfig {
 				ChainId: v.ChainId,
 			}
 		}),
-	}
-}
-
-type masterConfigContainer struct {
-	MasterConfig masterConfigDTO
-}
-
-func (e *Client) GetMasterConfig(ctx context.Context, timestamp *big.Int) (entity.MasterConfig, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getMasterConfigFunction, timestamp, []byte{})
-	if err != nil {
-		return entity.MasterConfig{}, errors.Errorf("failed to construct call msg: %w", err)
-	}
-
-	result, err := e.callContract(ctx, callMsg)
-	if err != nil {
-		return entity.MasterConfig{}, errors.Errorf("failed to call contract: %w", err)
-	}
-
-	mcc := masterConfigContainer{}
-	err = masterABI.UnpackIntoInterface(&mcc, getMasterConfigFunction, result)
-	if err != nil {
-		return entity.MasterConfig{}, errors.Errorf("failed to unpack master config: %w", err)
-	}
-
-	return mcc.MasterConfig.toEntity(), nil
-}
-
-type valSetConfigDTO struct {
-	MaxVotingPower          *big.Int `json:"max_voting_power"`
-	MinInclusionVotingPower *big.Int `json:"min_inclusion_voting_power"`
-	MaxValidatorsCount      *big.Int `json:"max_validators_count"`
-	RequiredKeyTags         []byte   `json:"required_key_tags"`
-}
-
-type valSetConfigContainer struct {
-	ValSetConfig valSetConfigDTO
-}
-
-func (c valSetConfigDTO) toEntity() entity.ValSetConfig {
-	return entity.ValSetConfig{
+		VerificationType:        c.VerificationType,
 		MaxVotingPower:          c.MaxVotingPower,
 		MinInclusionVotingPower: c.MinInclusionVotingPower,
 		MaxValidatorsCount:      c.MaxValidatorsCount,
@@ -227,24 +194,28 @@ func (c valSetConfigDTO) toEntity() entity.ValSetConfig {
 	}
 }
 
-func (e *Client) GetValSetConfig(ctx context.Context, timestamp *big.Int) (entity.ValSetConfig, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getValsetConfigFunction, timestamp, []byte{})
+type configContainer struct {
+	Config configDTO
+}
+
+func (e *Client) GetConfig(ctx context.Context, timestamp *big.Int) (entity.Config, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getConfigFunction, timestamp, []byte{})
 	if err != nil {
-		return entity.ValSetConfig{}, fmt.Errorf("failed to construct call msg: %w", err)
+		return entity.Config{}, errors.Errorf("failed to construct call msg: %w", err)
 	}
 
 	result, err := e.callContract(ctx, callMsg)
 	if err != nil {
-		return entity.ValSetConfig{}, fmt.Errorf("failed to call contract: %w", err)
+		return entity.Config{}, errors.Errorf("failed to call contract: %w", err)
 	}
 
-	var valSetConfig valSetConfigContainer
-	err = masterABI.UnpackIntoInterface(&valSetConfig, getValsetConfigFunction, result)
+	c := configContainer{}
+	err = masterABI.UnpackIntoInterface(&c, getConfigFunction, result)
 	if err != nil {
-		return entity.ValSetConfig{}, fmt.Errorf("failed to unpack val set config: %w", err)
+		return entity.Config{}, errors.Errorf("failed to unpack config: %w", err)
 	}
 
-	return valSetConfig.ValSetConfig.toEntity(), nil
+	return c.Config.toEntity(), nil
 }
 
 func (e *Client) GetIsGenesisSet(ctx context.Context) (bool, error) {
@@ -275,6 +246,21 @@ func (e *Client) GetCurrentEpoch(ctx context.Context) (*big.Int, error) {
 
 	epoch := new(big.Int).SetBytes(result)
 	return epoch, nil
+}
+
+func (e *Client) GetEpochStart(ctx context.Context, epoch *big.Int) (*big.Int, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getEpochStartFunction, epoch, []byte{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct call msg: %w", err)
+	}
+
+	result, err := e.callContract(ctx, callMsg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call contract: %w", err)
+	}
+
+	timestamp := new(big.Int).SetBytes(result)
+	return timestamp, nil
 }
 
 func (e *Client) GetCurrentValsetEpoch(ctx context.Context) (*big.Int, error) {
@@ -337,6 +323,21 @@ func (e *Client) GetCaptureTimestamp(ctx context.Context) (*big.Int, error) {
 	return timestamp, nil
 }
 
+func (e *Client) GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, epoch *big.Int) (*big.Int, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getCaptureTimestampFromValsetHeaderAtFunction, epoch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct call msg: %w", err)
+	}
+
+	result, err := e.callContract(ctx, callMsg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call contract: %w", err)
+	}
+
+	timestamp := new(big.Int).SetBytes(result)
+	return timestamp, nil
+}
+
 type operatorVotingPowerDTO struct {
 	Operator common.Address
 	Vaults   []vaultVotingPowerDTO
@@ -347,8 +348,8 @@ type vaultVotingPowerDTO struct {
 	VotingPower *big.Int
 }
 
-func (e *Client) GetVotingPowers(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorVotingPower, error) {
-	callMsg, err := constructCallMsg(address, vaultManagerABI, getVotingPowersFunction, [][]byte{}, timestamp, []byte{})
+func (e *Client) GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp *big.Int) ([]entity.OperatorVotingPower, error) {
+	callMsg, err := constructCallMsg(address.Address, vaultManagerABI, getVotingPowersFunction, [][]byte{}, timestamp, []byte{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}
@@ -377,8 +378,17 @@ func (e *Client) GetVotingPowers(ctx context.Context, address common.Address, ti
 	}), nil
 }
 
-func (e *Client) GetKeys(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorWithKeys, error) {
-	callMsg, err := constructCallMsg(address, keyRegistryABI, getKeysFunction, timestamp, []byte{})
+type keyDTO struct {
+	Tag     uint8
+	Payload []byte
+}
+type operatorWithKeysDTO struct {
+	Operator common.Address
+	Keys     []keyDTO
+}
+
+func (e *Client) GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp *big.Int) ([]entity.OperatorWithKeys, error) {
+	callMsg, err := constructCallMsg(address.Address, keyRegistryABI, getKeysFunction, timestamp, []byte{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}
@@ -388,13 +398,23 @@ func (e *Client) GetKeys(ctx context.Context, address common.Address, timestamp 
 		return nil, fmt.Errorf("failed to call contract: %w", err)
 	}
 
-	var keys []entity.OperatorWithKeys
+	var keys []operatorWithKeysDTO
 	err = keyRegistryABI.UnpackIntoInterface(&keys, getKeysFunction, result)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unpack keys: %w", err)
 	}
 
-	return keys, nil
+	return lo.Map(keys, func(item operatorWithKeysDTO, _ int) entity.OperatorWithKeys {
+		return entity.OperatorWithKeys{
+			Operator: item.Operator,
+			Keys: lo.Map(item.Keys, func(key keyDTO, _ int) entity.Key {
+				return entity.Key{
+					Tag:     key.Tag,
+					Payload: key.Payload,
+				}
+			}),
+		}
+	}), nil
 }
 
 func (e *Client) GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uint8, error) {
@@ -482,6 +502,10 @@ func (e *Client) callContract(ctx context.Context, callMsg ethereum.CallMsg) (re
 	result, err = e.client.CallContract(tmCtx, callMsg, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call contract: %w", err)
+	}
+	if len(result) == 0 {
+		// most probably we use incorrect contract address
+		return nil, fmt.Errorf("no data returned from contract call")
 	}
 
 	return result, nil

@@ -19,13 +19,16 @@ import (
 	app "middleware-offchain/internal/app/signer-app"
 	"middleware-offchain/internal/client/eth"
 	"middleware-offchain/internal/client/p2p"
-	"middleware-offchain/internal/client/valset"
+	"middleware-offchain/internal/client/repository/memory"
+	valsetDeriver "middleware-offchain/internal/uc/valset-deriver"
+	valsetGenerator "middleware-offchain/internal/uc/valset-generator"
+	valsetListener "middleware-offchain/internal/uc/valset-listener"
 	"middleware-offchain/pkg/bls"
 	"middleware-offchain/pkg/log"
 	"middleware-offchain/pkg/server"
 )
 
-// offchain_middleware --master-address 0x04C89607413713Ec9775E14b954286519d836FEf --rpc-url http://127.0.0.1:8545
+// offchain_middleware --master-address 0x63d855589514F1277527f4fD8D464836F8Ca73Ba --rpc-url http://127.0.0.1:8545
 func main() {
 	slog.Info("Running offchain_middleware command", "args", os.Args)
 
@@ -104,14 +107,9 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to create eth client: %w", err)
 		}
 
-		deriver, err := valset.NewDeriver(ethClient)
+		deriver, err := valsetDeriver.NewDeriver(ethClient)
 		if err != nil {
 			return errors.Errorf("failed to create valset deriver: %w", err)
-		}
-
-		generator, err := valset.NewGenerator(deriver, ethClient)
-		if err != nil {
-			return errors.Errorf("failed to create valset generator: %w", err)
 		}
 
 		var opts []libp2p.Option
@@ -141,17 +139,41 @@ var rootCmd = &cobra.Command{
 		}
 		slog.InfoContext(ctx, "started discovery service", "listenAddr", cfg.listenAddress)
 
+		repo, err := memory.New()
+		if err != nil {
+			return errors.Errorf("failed to create memory repository: %w", err)
+		}
+
 		signerApp, err := app.NewSignerApp(app.Config{
-			PollingInterval: time.Second * 3,
-			ValsetGenerator: generator,
-			EthClient:       ethClient,
-			P2PService:      p2pService,
-			KeyPair:         keyPair,
+			P2PService: p2pService,
+			KeyPair:    keyPair,
+			Repo:       repo,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create signer app: %w", err)
 		}
 		slog.InfoContext(ctx, "created signer app, starting")
+
+		listener, err := valsetListener.New(valsetListener.Config{
+			Eth:             ethClient,
+			Repo:            repo,
+			Deriver:         deriver,
+			PollingInterval: time.Second * 5,
+		})
+		if err != nil {
+			return errors.Errorf("failed to create epoch listener: %w", err)
+		}
+
+		generator, err := valsetGenerator.New(valsetGenerator.Config{
+			Signer:          signerApp,
+			Eth:             ethClient,
+			Repo:            repo,
+			Deriver:         deriver,
+			PollingInterval: time.Second * 5,
+		})
+		if err != nil {
+			return errors.Errorf("failed to create epoch listener: %w", err)
+		}
 
 		srv, err := server.New(server.Config{
 			Address:           cfg.httpListenAddress,
@@ -166,17 +188,26 @@ var rootCmd = &cobra.Command{
 		slog.InfoContext(ctx, "created server, starting")
 
 		eg, egCtx := errgroup.WithContext(ctx)
+		eg.Go(func() error {
+			logCtx := log.WithComponent(egCtx, "listener")
+			if err := listener.Start(logCtx); err != nil {
+				return errors.Errorf("failed to start valset listener: %w", err)
+			}
+			return nil
+		})
+
 		if cfg.isSigner {
 			eg.Go(func() error {
-				logCtx := log.WithComponent(egCtx, "signer")
-				if err := signerApp.Start(logCtx); err != nil {
-					return errors.Errorf("failed to start signer app: %w", err)
+				logCtx := log.WithComponent(egCtx, "generator")
+				if err := generator.Start(logCtx); err != nil {
+					return errors.Errorf("failed to start valset generator: %w", err)
 				}
 				return nil
 			})
+
 			eg.Go(func() error {
 				if err := srv.Serve(egCtx); err != nil {
-					return errors.Errorf("failed to start signer server: %w", err)
+					return errors.Errorf("failed to start epoch listener server: %w", err)
 				}
 				return nil
 			})
@@ -184,9 +215,8 @@ var rootCmd = &cobra.Command{
 
 		if cfg.isAggregator {
 			_, err := aggregator.NewAggregatorApp(aggregator.Config{
-				EthClient:     ethClient,
-				ValsetDeriver: deriver,
-				P2PClient:     p2pService,
+				EthClient: ethClient,
+				P2PClient: p2pService,
 			})
 			if err != nil {
 				return errors.Errorf("failed to create aggregator app: %w", err)
@@ -196,9 +226,8 @@ var rootCmd = &cobra.Command{
 
 		if cfg.isCommitter {
 			_, err := committer.NewCommitterApp(committer.Config{
-				ValsetGenerator: generator,
-				EthClient:       ethClient,
-				P2PClient:       p2pService,
+				EthClient: ethClient,
+				P2PClient: p2pService,
 			})
 			if err != nil {
 				return errors.Errorf("failed to create committer app: %w", err)

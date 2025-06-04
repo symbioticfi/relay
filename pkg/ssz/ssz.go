@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	ssz "github.com/ferranbt/fastssz"
 	"github.com/samber/lo"
 
@@ -50,6 +51,10 @@ func HashTreeRoot(v entity.ValidatorSet) ([32]byte, error) {
 	return dto.HashTreeRoot()
 }
 
+func keyPayloadHash(k entity.Key) common.Hash {
+	return crypto.Keccak256Hash(k.Payload)
+}
+
 func validatorSetToDTO(v entity.ValidatorSet) validatorSet {
 	return validatorSet{
 		Validators: lo.Map(v.Validators, func(v entity.Validator, _ int) *validator {
@@ -60,7 +65,7 @@ func validatorSetToDTO(v entity.ValidatorSet) validatorSet {
 				Keys: lo.Map(v.Keys, func(k entity.Key, _ int) *key {
 					return &key{
 						Tag:         k.Tag,
-						PayloadHash: k.PayloadHash(),
+						PayloadHash: keyPayloadHash(k),
 					}
 				}),
 				Vaults: lo.Map(v.Vaults, func(v entity.Vault, _ int) *vault {

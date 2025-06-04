@@ -17,6 +17,7 @@ require (
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
 	github.com/prometheus/client_golang v1.22.0
 	github.com/samber/lo v1.50.0
+	github.com/samber/mo v1.14.0
 	github.com/samber/slog-multi v1.4.0
 	github.com/shopspring/decimal v1.4.0
 	github.com/spf13/cobra v1.9.1

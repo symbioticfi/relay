@@ -69,7 +69,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 
 	slog.DebugContext(ctx, "received signature hash generated message", "message", msg)
 
-	validatorSet, err := s.cfg.ValsetDeriver.GetValidatorSet(ctx, msg.Message.ValsetHeaderTimestamp)
+	validatorSet, err := s.cfg.ValsetDeriver.GetValidatorSet(ctx /*msg.Message.ValsetHeaderTimestamp*/, nil) // todo ilya
 	if err != nil {
 		return fmt.Errorf("failed to get validator set: %w", err)
 	}
