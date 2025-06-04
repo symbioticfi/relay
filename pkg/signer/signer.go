@@ -1,21 +1,20 @@
 package signer
 
 import (
-	"errors"
-
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/go-errors/errors"
 
+	"middleware-offchain/internal/entity"
 	"middleware-offchain/pkg/bls"
-	"middleware-offchain/pkg/key-provider"
-	"middleware-offchain/pkg/types"
+	keyprovider "middleware-offchain/pkg/key-provider"
 )
 
 type Signer struct {
-	Kp keyprovider.KeyProvider
+	kp keyprovider.KeyProvider
 }
 
 func NewSigner(kp keyprovider.KeyProvider) *Signer {
-	return &Signer{Kp: kp}
+	return &Signer{kp: kp}
 }
 
 func (s *Signer) Hash(keyTag uint8, message []byte) ([]byte, error) {
@@ -30,35 +29,38 @@ func (s *Signer) Hash(keyTag uint8, message []byte) ([]byte, error) {
 	return nil, errors.New("invalid key type")
 }
 
-func (s *Signer) Sign(keyTag uint8, message []byte) (*types.Signature, error) {
-	pk, err := s.Kp.GetPrivateKey(keyTag)
+func (s *Signer) Sign(keyTag uint8, message []byte) (entity.Signature, error) {
+	pk, err := s.kp.GetPrivateKey(keyTag)
 	if err != nil {
-		return nil, err
+		return entity.Signature{}, err
 	}
 
 	keyType := keyTag >> 4
 	hash, err := s.Hash(keyTag, message)
 	if err != nil {
-		return nil, err
+		return entity.Signature{}, err
 	}
 
-	if keyType == keyprovider.KeyTypeBlsBn254 {
+	switch keyType {
+	case keyprovider.KeyTypeBlsBn254:
 		keyPair := bls.ComputeKeyPair(pk)
 		blsSig, err := keyPair.Sign(hash)
 		if err != nil {
-			return nil, err
+			return entity.Signature{}, err
 		}
 
-		sig := &types.Signature{}
-		sig.MessageHash = hash
-		sig.Signature = blsSig.Marshal()
-		sig.PublicKey = keyPair.PackPublicG1G2()
+		sig := entity.Signature{
+			MessageHash: hash,
+			Signature:   blsSig.Marshal(),
+			PublicKey:   keyPair.PackPublicG1G2(),
+		}
+
 		return sig, nil
-	}
-	if keyType == keyprovider.KeyTypeEcdsaSecp256k1 {
+
+		//case keyprovider.KeyTypeEcdsaSecp256k1:
 		// same but for another key type
 	}
 
 	// assert, should not reach the code
-	return nil, errors.New("invalid key type")
+	return entity.Signature{}, errors.Errorf("unsupported key type: %d", keyType)
 }

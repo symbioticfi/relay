@@ -19,10 +19,25 @@ const (
 const ValsetHeaderKeyTag uint8 = 15
 const MaxSavedEpochs int64 = 10
 
+// SignatureRequest signature request message
+// RequestHash = sha256(SignatureRequest) (use as identifier later)
 type SignatureRequest struct {
 	KeyTag        uint8
 	RequiredEpoch *big.Int
 	Message       []byte
+}
+
+type SignatureMessage struct {
+	RequestHash [32]byte
+	KeyTag      uint8
+	Epoch       uint64
+	Signature   Signature // parse based on KeyTag
+}
+
+type AggregationState struct {
+	SignaturesCnt       uint32
+	CurrentVotingPower  *big.Int
+	RequiredVotingPower *big.Int
 }
 
 // AggregationProof aggregator.proof(signatures []Signature) -> AggregationProof
@@ -30,6 +45,13 @@ type AggregationProof struct {
 	VerificationType uint32 // proof verification type
 	MessageHash      []byte // scheme depends on KeyTag
 	Proof            []byte // parse based on KeyTag & VerificationType
+}
+
+type AggregatedSignatureMessage struct {
+	RequestHash      [32]byte
+	KeyTag           uint8
+	Epoch            uint64
+	AggregationProof AggregationProof
 }
 
 const (

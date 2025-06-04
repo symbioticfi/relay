@@ -2,10 +2,11 @@ package signer
 
 import (
 	"bytes"
-	"github.com/consensys/gnark-crypto/ecc/bn254"
-	"github.com/ethereum/go-ethereum/crypto"
 	"middleware-offchain/pkg/bls"
 	"testing"
+
+	"github.com/consensys/gnark-crypto/ecc/bn254"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 type MockKeyProvider struct {

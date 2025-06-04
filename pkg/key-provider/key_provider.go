@@ -7,7 +7,7 @@ import (
 
 const (
 	KeyTypeBlsBn254       uint8 = 0
-	KeyTypeEcdsaSecp256k1       = 1
+	KeyTypeEcdsaSecp256k1 uint8 = 1
 )
 
 type KeyProvider interface {

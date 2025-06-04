@@ -2,11 +2,11 @@ package keyprovider
 
 import (
 	"errors"
+	"log/slog"
 	"os"
 	"time"
 
 	"github.com/pavlo-v-chernykh/keystore-go/v4"
-	"log/slog"
 )
 
 type KeystoreProvider struct {

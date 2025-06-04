@@ -170,27 +170,31 @@ type configDTO struct {
 
 func (c configDTO) toEntity() entity.Config {
 	return entity.Config{
-		VotingPowerProviders: lo.Map(c.VotingPowerProviders, func(v crossChainAddressDTO, _ int) entity.CrossChainAddress {
-			return entity.CrossChainAddress{
-				Address: v.Addr,
-				ChainId: v.ChainId,
-			}
-		}),
-		KeysProvider: entity.CrossChainAddress{
-			Address: c.KeysProvider.Addr,
-			ChainId: c.KeysProvider.ChainId,
+		MasterConfig: entity.MasterConfig{
+			VotingPowerProviders: lo.Map(c.VotingPowerProviders, func(v crossChainAddressDTO, _ int) entity.CrossChainAddress {
+				return entity.CrossChainAddress{
+					Address: v.Addr,
+					ChainId: v.ChainId,
+				}
+			}),
+			KeysProvider: entity.CrossChainAddress{
+				Address: c.KeysProvider.Addr,
+				ChainId: c.KeysProvider.ChainId,
+			},
+			Replicas: lo.Map(c.Replicas, func(v crossChainAddressDTO, _ int) entity.CrossChainAddress {
+				return entity.CrossChainAddress{
+					Address: v.Addr,
+					ChainId: v.ChainId,
+				}
+			}),
+			VerificationType: c.VerificationType,
 		},
-		Replicas: lo.Map(c.Replicas, func(v crossChainAddressDTO, _ int) entity.CrossChainAddress {
-			return entity.CrossChainAddress{
-				Address: v.Addr,
-				ChainId: v.ChainId,
-			}
-		}),
-		VerificationType:        c.VerificationType,
-		MaxVotingPower:          c.MaxVotingPower,
-		MinInclusionVotingPower: c.MinInclusionVotingPower,
-		MaxValidatorsCount:      c.MaxValidatorsCount,
-		RequiredKeyTags:         c.RequiredKeyTags,
+		VotingPowerConfig: entity.VotingPowerConfig{
+			MaxVotingPower:          c.MaxVotingPower,
+			MinInclusionVotingPower: c.MinInclusionVotingPower,
+			MaxValidatorsCount:      c.MaxValidatorsCount,
+			RequiredKeyTags:         c.RequiredKeyTags,
+		},
 	}
 }
 
@@ -501,11 +505,11 @@ func (e *Client) callContract(ctx context.Context, callMsg ethereum.CallMsg) (re
 
 	result, err = e.client.CallContract(tmCtx, callMsg, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to call contract: %w", err)
+		return nil, errors.Errorf("failed to call contract: %w", err)
 	}
 	if len(result) == 0 {
 		// most probably we use incorrect contract address
-		return nil, fmt.Errorf("no data returned from contract call")
+		return nil, errors.New("no data returned from contract call")
 	}
 
 	return result, nil

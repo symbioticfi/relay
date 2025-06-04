@@ -257,6 +257,7 @@ linters:
       - linters:
           - exhaustruct
           - forbidigo
+          - goconst
         path: _test\.go
       - path: (.+)\.go$
         text: ST1003

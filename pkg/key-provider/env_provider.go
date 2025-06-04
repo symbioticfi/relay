@@ -20,15 +20,19 @@ func (e *EnvKeyProvider) GetPrivateKey(keyTag uint8) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	val := os.Getenv(strings.ToUpper(alias))
+
+	val := os.Getenv(strings.ToUpper(alias)) // todo ilya: research if it's safe to read private keys from environment variables
 	if val == "" {
 		return nil, errors.New("key not found in environment")
 	}
+
 	decoded, err := base64.StdEncoding.DecodeString(val)
 	if err != nil {
 		return nil, err
 	}
+
 	e.cache[keyTag] = decoded
+
 	return decoded, nil
 }
 
