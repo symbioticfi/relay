@@ -163,7 +163,6 @@ func (mr *MockethClientMockRecorder) GetSubnetwork(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubnetwork", reflect.TypeOf((*MockethClient)(nil).GetSubnetwork), ctx)
 }
 
-
 // GetVotingPowers mocks base method.
 func (m *MockethClient) GetVotingPowers(ctx context.Context, address common.Address, timestamp *big.Int) ([]entity.OperatorVotingPower, error) {
 	m.ctrl.T.Helper()

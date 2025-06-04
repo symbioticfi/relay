@@ -21,15 +21,38 @@ type CrossChainAddress struct {
 	ChainId uint64
 }
 
-type Config struct {
-	VotingPowerProviders    []CrossChainAddress
-	KeysProvider            CrossChainAddress
-	Replicas                []CrossChainAddress
-	VerificationType        uint32
+//	VotingPowerProviders []CrossChainAddress
+//	KeysProvider         CrossChainAddress
+//	Replicas             []CrossChainAddress
+//	VerificationType     uint32
+
+// MaxVotingPower          *big.Int
+// MinInclusionVotingPower *big.Int
+// MaxValidatorsCount      *big.Int
+// RequiredKeyTags         []uint8
+
+// MasterConfig
+// https://github.com/symbioticfi/middleware-sdk-mirror/blob/change-header/src/interfaces/implementations/settlement/IMasterConfigProvider.sol
+type MasterConfig struct {
+	VotingPowerProviders []CrossChainAddress
+	KeysProvider         CrossChainAddress
+	Replicas             []CrossChainAddress
+	VerificationType     uint32
+}
+
+// VotingPowerConfig
+// https://github.com/symbioticfi/middleware-sdk-mirror/blob/change-header/src/interfaces/implementations/settlement/IValSetConfigProvider.sol
+type VotingPowerConfig struct {
 	MaxVotingPower          *big.Int
 	MinInclusionVotingPower *big.Int
 	MaxValidatorsCount      *big.Int
 	RequiredKeyTags         []uint8
+}
+
+type Config struct {
+	MasterConfig
+
+	VotingPowerConfig
 }
 
 type VaultVotingPower struct {

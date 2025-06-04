@@ -126,6 +126,20 @@ func (p *G2) Verify(signature *G1, msgHash []byte) (bool, error) {
 	return ok, nil
 }
 
+func (kp *KeyPair) PackPublicG1G2() []byte {
+	g1Bytes := kp.PublicKeyG1.Bytes()
+	g2Bytes := kp.PublicKeyG2.Bytes()
+
+	totalBytes := make([]byte, 32+64)
+	for i := 0; i < 32; i++ {
+		totalBytes[i] = g1Bytes[i]
+	}
+	for i := 0; i < 64; i++ {
+		totalBytes[32+i] = g2Bytes[i]
+	}
+	return totalBytes
+}
+
 // hashToG1 hashes data to a point on the BN254 curve
 func HashToG1(data []byte) (*G1, error) {
 	// Convert data to a big integer

@@ -14,6 +14,7 @@ require (
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/libp2p/go-libp2p v0.41.1
 	github.com/multiformats/go-multiaddr v0.15.0
+	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
 	github.com/prometheus/client_golang v1.22.0
 	github.com/samber/lo v1.50.0
 	github.com/samber/mo v1.14.0

@@ -33,8 +33,13 @@ type Validator struct {
 
 type ValidatorSet struct {
 	Version                uint8
+	RequiredKeyTag         uint8    // key tag required to commit next valset
+	Epoch                  uint64   // valset epoch
+	CaptureTimestamp       uint64   // epoch capture timestamp
+	QuorumThreshold        *big.Int // absolute number now, not a percent
+	PreviousHeaderHash     [32]byte // previous valset header hash
 	Validators             []Validator
-	TotalActiveVotingPower *big.Int
+	TotalActiveVotingPower *big.Int // todo ilya maybe remove
 }
 
 // Signature signer.sign() -> Signature
