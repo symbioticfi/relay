@@ -10,13 +10,13 @@ import (
 type ValidatorSetExtra struct {
 	Version              uint8
 	RequiredKeyTag       uint8
-	MasterConfig         MasterConfig
-	ValSetConfig         ValSetConfig
+	Config               Config
 	DomainEip712         Eip712Domain
 	Subnetwork           []byte
 	Keys                 []OperatorWithKeys
 	OperatorVotingPowers []OperatorVotingPower
 	Epoch                *big.Int
+	CaptureTimestamp     *big.Int
 }
 
 func (v ValidatorSetExtra) MakeValidatorSet() ValidatorSet {
@@ -80,13 +80,12 @@ func (v ValidatorSetExtra) MakeValidatorSet() ValidatorSet {
 		return validators[i].VotingPower.Cmp(validators[j].VotingPower) > 0
 	})
 
-	// Apply filters from valSetConfig
 	totalActive := 0
 
 	totalActiveVotingPower := big.NewInt(0)
 	for i := range validators {
 		// Check minimum voting power if configured
-		if validators[i].VotingPower.Cmp(v.ValSetConfig.MinInclusionVotingPower) < 0 {
+		if validators[i].VotingPower.Cmp(v.Config.MinInclusionVotingPower) < 0 {
 			break
 		}
 
@@ -98,16 +97,16 @@ func (v ValidatorSetExtra) MakeValidatorSet() ValidatorSet {
 		totalActive++
 		validators[i].IsActive = true
 
-		if v.ValSetConfig.MaxVotingPower.Int64() != 0 {
-			if validators[i].VotingPower.Cmp(v.ValSetConfig.MaxVotingPower) > 0 {
-				validators[i].VotingPower = new(big.Int).Set(v.ValSetConfig.MaxVotingPower)
+		if v.Config.MaxVotingPower.Int64() != 0 {
+			if validators[i].VotingPower.Cmp(v.Config.MaxVotingPower) > 0 {
+				validators[i].VotingPower = new(big.Int).Set(v.Config.MaxVotingPower)
 			}
 		}
 		// Add to total active voting power if validator is active
 		totalActiveVotingPower = new(big.Int).Add(totalActiveVotingPower, validators[i].VotingPower)
 
-		if v.ValSetConfig.MaxValidatorsCount.Int64() != 0 {
-			if totalActive >= int(v.ValSetConfig.MaxValidatorsCount.Int64()) {
+		if v.Config.MaxValidatorsCount.Int64() != 0 {
+			if totalActive >= int(v.Config.MaxValidatorsCount.Int64()) {
 				break
 			}
 		}

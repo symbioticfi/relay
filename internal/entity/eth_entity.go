@@ -10,9 +10,10 @@ import (
 type Phase uint64
 
 const (
-	IDLE Phase = iota
-	COMMIT
-	FAIL
+	IDLE    Phase = 0
+	COMMIT  Phase = 1
+	PROLONG Phase = 2
+	FAIL    Phase = 3
 )
 
 type CrossChainAddress struct {
@@ -20,17 +21,15 @@ type CrossChainAddress struct {
 	ChainId uint64
 }
 
-type MasterConfig struct {
-	VotingPowerProviders []CrossChainAddress
-	KeysProvider         CrossChainAddress
-	Replicas             []CrossChainAddress
-}
-
-type ValSetConfig struct {
+type Config struct {
+	VotingPowerProviders    []CrossChainAddress
+	KeysProvider            CrossChainAddress
+	Replicas                []CrossChainAddress
+	VerificationType        uint32
 	MaxVotingPower          *big.Int
 	MinInclusionVotingPower *big.Int
 	MaxValidatorsCount      *big.Int
-	RequiredKeyTags         []byte
+	RequiredKeyTags         []uint8
 }
 
 type VaultVotingPower struct {

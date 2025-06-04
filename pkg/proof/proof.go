@@ -4,11 +4,13 @@ package proof
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"os"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/consensys/gnark/std/math/bits"
 	"github.com/consensys/gnark/std/math/uints"
@@ -33,29 +35,43 @@ import (
 	"github.com/consensys/gnark/std/hash/mimc"
 	gnarkSha3 "github.com/consensys/gnark/std/hash/sha3"
 	"github.com/consensys/gnark/std/math/emulated"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
 var (
-	MaxValidators = []int{10}
+	MaxValidators = []int{10, 100, 1000}
 )
 
-const (
+func InitCircuitsDir(newCircuitsDir string) {
+	circuitsDir = newCircuitsDir
+}
+
+var (
 	circuitsDir = "circuits"
 )
 
-const (
-	r1csPathTmp = circuitsDir + "/circuit_%s.r1cs"
-	pkPathTmp   = circuitsDir + "/circuit_%s.pk"
-	vkPathTmp   = circuitsDir + "/circuit_%s.vk"
-	solPathTmp  = circuitsDir + "/Verifier_%s.sol"
-)
+func r1csPathTmp(suffix string) string {
+	return fmt.Sprintf(circuitsDir+"/circuit_%s.r1cs", suffix)
+}
+
+func pkPathTmp(suffix string) string {
+	return fmt.Sprintf(circuitsDir+"/circuit_%s.pk", suffix)
+}
+
+func vkPathTmp(suffix string) string {
+	return fmt.Sprintf(circuitsDir+"/circuit_%s.vk", suffix)
+}
+
+func solPathTmp(suffix string) string {
+	return fmt.Sprintf(circuitsDir+"/Verifier_%s.vk", suffix)
+}
 
 type ProofData struct {
-	Proof                    []byte
-	Commitments              []byte
-	CommitmentPok            []byte
-	NonSignersAggVotingPower *big.Int
+	Proof                 []byte
+	Commitments           []byte
+	CommitmentPok         []byte
+	SignersAggVotingPower *big.Int
 }
 
 func (p ProofData) Marshall() []byte {
@@ -64,9 +80,9 @@ func (p ProofData) Marshall() []byte {
 	result.Write(p.Proof)
 	result.Write(p.Commitments)
 	result.Write(p.CommitmentPok)
-	nonSignersAggVotingPowerBuffer := make([]byte, 32)
-	p.NonSignersAggVotingPower.FillBytes(nonSignersAggVotingPowerBuffer)
-	result.Write(nonSignersAggVotingPowerBuffer)
+	signersAggVotingPowerBuffer := make([]byte, 32)
+	p.SignersAggVotingPower.FillBytes(signersAggVotingPowerBuffer)
+	result.Write(signersAggVotingPowerBuffer)
 
 	return result.Bytes()
 }
@@ -103,12 +119,12 @@ type ValidatorDataCircuit struct {
 
 // Circuit defines a pre-image knowledge proof
 type Circuit struct {
-	InputHash                frontend.Variable      `gnark:",public"`  // 254 bits
-	NonSignersAggVotingPower frontend.Variable      `gnark:",private"` // 254 bits, virtually public
-	Message                  sw_bn254.G1Affine      `gnark:",private"` // virtually public
-	Signature                sw_bn254.G1Affine      `gnark:",private"`
-	SignersAggKeyG2          sw_bn254.G2Affine      `gnark:",private"`
-	ValidatorData            []ValidatorDataCircuit `gnark:",private"`
+	InputHash             frontend.Variable      `gnark:",public"`  // 254 bits
+	SignersAggVotingPower frontend.Variable      `gnark:",private"` // 254 bits, virtually public
+	Message               sw_bn254.G1Affine      `gnark:",private"` // virtually public
+	Signature             sw_bn254.G1Affine      `gnark:",private"`
+	SignersAggKeyG2       sw_bn254.G2Affine      `gnark:",private"`
+	ValidatorData         []ValidatorDataCircuit `gnark:",private"`
 }
 
 func hashAffineG1(h *mimc.MiMC, g1 *sw_bn254.G1Affine) {
@@ -167,6 +183,11 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		return err
 	}
 
+	fieldFpApi, err := emulated.NewField[emulated.BN254Fp](api)
+	if err != nil {
+		return err
+	}
+
 	fieldFrApi, err := emulated.NewField[emulated.BN254Fr](api)
 	if err != nil {
 		return err
@@ -192,20 +213,28 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		return err
 	}
 
+	valsetHash := frontend.Variable(0)
 	signersAggKey := &sw_bn254.G1Affine{
 		X: emulated.ValueOf[emulated.BN254Fp](0),
 		Y: emulated.ValueOf[emulated.BN254Fp](0),
 	}
-	nonSignersAggVotingPower := frontend.Variable(0)
+	signersAggVotingPower := frontend.Variable(0)
 
 	// calc valset hash, agg key and agg voting power
 	for i := range circuit.ValidatorData {
 		hashAffineG1(&mimcApi, &circuit.ValidatorData[i].Key)
 		mimcApi.Write(circuit.ValidatorData[i].VotingPower)
+		valsetHashTemp := mimcApi.Sum()
+
+		valsetHash = api.Select(
+			api.And(fieldFpApi.IsZero(&circuit.ValidatorData[i].Key.X), fieldFpApi.IsZero(&circuit.ValidatorData[i].Key.Y)),
+			valsetHash,
+			valsetHashTemp,
+		)
 
 		// get power if NON-SIGNER otherwise 0
-		pow := api.Select(circuit.ValidatorData[i].IsNonSigner, circuit.ValidatorData[i].VotingPower, frontend.Variable(0))
-		nonSignersAggVotingPower = api.Add(nonSignersAggVotingPower, pow)
+		pow := api.Select(circuit.ValidatorData[i].IsNonSigner, frontend.Variable(0), circuit.ValidatorData[i].VotingPower)
+		signersAggVotingPower = api.Add(signersAggVotingPower, pow)
 
 		// get key if SIGNER otherwise zero point
 		point := curveApi.Select(api.IsZero(circuit.ValidatorData[i].IsNonSigner), &circuit.ValidatorData[i].Key, &sw_bn254.G1Affine{
@@ -214,10 +243,9 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		})
 		signersAggKey = curveApi.AddUnified(signersAggKey, point)
 	}
-	valsetHash := mimcApi.Sum()
 
 	// compare with public inputs
-	api.AssertIsEqual(nonSignersAggVotingPower, circuit.NonSignersAggVotingPower)
+	api.AssertIsEqual(signersAggVotingPower, circuit.SignersAggVotingPower)
 
 	// --------------------------------------- Prove Input consistency ---------------------------------------
 
@@ -226,7 +254,7 @@ func (circuit *Circuit) Define(api frontend.API) error {
 
 	api.Println("HashBytes:", hashBytes)
 	keccak256Api.Write(hashBytes)
-	aggVotingPowerBytes := variableToBytes(api, u64Api, circuit.NonSignersAggVotingPower)
+	aggVotingPowerBytes := variableToBytes(api, u64Api, circuit.SignersAggVotingPower)
 
 	api.Println("aggVotingPowerBytes:", aggVotingPowerBytes)
 	keccak256Api.Write(aggVotingPowerBytes)
@@ -275,7 +303,13 @@ func (circuit *Circuit) Define(api frontend.API) error {
 // helper functions
 func HashValset(valset []ValidatorData) []byte {
 	h := mimc_native.NewMiMC()
+	zeroPoint := new(bn254.G1Affine)
+	zeroPoint.SetInfinity()
 	for i := range valset {
+		if valset[i].Key.X.Cmp(&zeroPoint.X) == 0 && valset[i].Key.Y.Cmp(&zeroPoint.Y) == 0 {
+			break
+		}
+
 		xBytes := valset[i].Key.X.Bytes()
 		yBytes := valset[i].Key.Y.Bytes()
 
@@ -313,8 +347,9 @@ func getPubkeyG2(pk *big.Int) bn254.G2Affine {
 	return p
 }
 
-func getNonSignersData(valset []ValidatorData) (aggKey *bn254.G1Affine, aggVotingPower *big.Int) { //nolint:unparam // maybe needed later
+func getNonSignersData(valset []ValidatorData) (aggKey *bn254.G1Affine, aggVotingPower *big.Int, totalVotingPower *big.Int) { //nolint:unparam // maybe needed later
 	aggVotingPower = big.NewInt(0)
+	totalVotingPower = big.NewInt(0)
 	aggKey = new(bn254.G1Affine)
 	aggKey.SetInfinity()
 	for i := range valset {
@@ -322,8 +357,9 @@ func getNonSignersData(valset []ValidatorData) (aggKey *bn254.G1Affine, aggVotin
 			aggKey = aggKey.Add(aggKey, &(valset)[i].Key)
 			aggVotingPower = aggVotingPower.Add(aggVotingPower, valset[i].VotingPower)
 		}
+		totalVotingPower = totalVotingPower.Add(totalVotingPower, valset[i].VotingPower)
 	}
-	return aggKey, aggVotingPower
+	return aggKey, aggVotingPower, totalVotingPower
 }
 
 func getAggSignature(message bn254.G1Affine, valset *[]ValidatorData) (signature *bn254.G1Affine, aggKeyG2 *bn254.G2Affine, aggKeyG1 *bn254.G1Affine) {
@@ -367,15 +403,16 @@ func setCircuitData(circuit *Circuit, proveInput ProveInput) error {
 	}
 	messageG1Bn254 := bn254.G1Affine{X: messageG1.X, Y: messageG1.Y}
 
-	_, nonSignersAggVotingPower := getNonSignersData(proveInput.ValidatorData)
+	_, nonSignersAggVotingPower, totalVotingPower := getNonSignersData(proveInput.ValidatorData)
+	signersAggVotingPower := new(big.Int).Sub(totalVotingPower, nonSignersAggVotingPower)
 	valsetHash := HashValset(proveInput.ValidatorData)
 
-	circuit.NonSignersAggVotingPower = *nonSignersAggVotingPower
+	circuit.SignersAggVotingPower = *signersAggVotingPower
 
-	//fmt.Println("proveInput.ValidatorData:", proveInput.ValidatorData)
-	//fmt.Println("proveInput.Signature:", proveInput.Signature)
-	//fmt.Println("messageG1Bn254.X:", messageG1Bn254)
-	//fmt.Println("proveInput.SignersAggKeyG2:", proveInput.SignersAggKeyG2)
+	fmt.Println("proveInput.ValidatorData:", proveInput.ValidatorData)
+	fmt.Println("proveInput.Signature:", proveInput.Signature)
+	fmt.Println("messageG1Bn254.X:", messageG1Bn254)
+	fmt.Println("proveInput.SignersAggKeyG2:", proveInput.SignersAggKeyG2)
 
 	circuit.Signature = sw_bn254.NewG1Affine(proveInput.Signature)
 	circuit.Message = sw_bn254.NewG1Affine(messageG1Bn254)
@@ -383,22 +420,22 @@ func setCircuitData(circuit *Circuit, proveInput ProveInput) error {
 
 	messageBytes := messageG1Bn254.RawBytes()
 	aggVotingPowerBuffer := make([]byte, 32)
-	nonSignersAggVotingPower.FillBytes(aggVotingPowerBuffer)
+	signersAggVotingPower.FillBytes(aggVotingPowerBuffer)
 
-	//fmt.Println("nonSignersAggVotingPower:", nonSignersAggVotingPower)
+	fmt.Println("signersAggVotingPower:", signersAggVotingPower)
 	inputHashBytes := valsetHash
 	inputHashBytes = append(inputHashBytes, aggVotingPowerBuffer...)
 	inputHashBytes = append(inputHashBytes, messageBytes[:]...)
 	inputHash := crypto.Keccak256(inputHashBytes)
 
-	//fmt.Println("InputHashBytes:", hex.EncodeToString(inputHashBytes))
-	//fmt.Println(hex.EncodeToString(inputHashBytes))
-	//fmt.Println("inputHash:", hex.EncodeToString(inputHash))
+	fmt.Println("InputHashBytes:", hex.EncodeToString(inputHashBytes))
+	fmt.Println(hex.EncodeToString(inputHashBytes))
+	fmt.Println("inputHash:", hex.EncodeToString(inputHash))
 	inputHashInt := new(big.Int).SetBytes(inputHash)
 	mask, _ := big.NewInt(0).SetString("1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)
 	inputHashInt.And(inputHashInt, mask)
 
-	//fmt.Println("inputHashHex:", inputHashInt.Text(16))
+	fmt.Println("inputHashHex:", inputHashInt.Text(16))
 	circuit.InputHash = inputHashInt
 
 	return nil
@@ -423,14 +460,19 @@ func DoProve(rawProveInput RawProveInput) (ProofData, error) {
 	return proofData, nil
 }
 
-// todo ilya
-func ToValidatorsData(signerValidators []entity.Validator, allValidators []entity.Validator, requiredKeyTag uint8) ([]ValidatorData, error) {
+func GetActiveValidators(allValidators []entity.Validator) []entity.Validator {
 	activeValidators := make([]entity.Validator, 0)
 	for _, validator := range allValidators {
 		if validator.IsActive {
 			activeValidators = append(activeValidators, validator)
 		}
 	}
+	return activeValidators
+}
+
+// todo ilya
+func ToValidatorsData(signerValidators []entity.Validator, allValidators []entity.Validator, requiredKeyTag uint8) ([]ValidatorData, error) {
+	activeValidators := GetActiveValidators(allValidators)
 	valset := make([]ValidatorData, 0)
 	for i := range activeValidators {
 		for _, key := range activeValidators[i].Keys {
@@ -471,11 +513,14 @@ func Prove(proveInput ProveInput) (ProofData, error) {
 	publicWitness, _ := witness.Public()
 
 	// groth16: Prove & Verify
+	startTime := time.Now()
 	proof, err := groth16.Prove(r1cs, pk, witness, backend.WithProverHashToFieldFunction(sha256.New()))
+	elapsed := time.Since(startTime)
+	fmt.Printf("groth16.Prove execution time: %s\n", elapsed)
 	if err != nil {
 		return ProofData{}, errors.Errorf("failed to prove: %w", err)
 	}
-	//fmt.Println(proof.CurveID())
+	fmt.Println(proof.CurveID())
 
 	publicInputs := publicWitness.Vector().(fr.Vector)
 	// Format for the specific Solidity interface
@@ -491,14 +536,14 @@ func Prove(proveInput ProveInput) (ProofData, error) {
 		fmt.Println("Warning: More public inputs than the interface supports")
 	}
 
-	//_proof, ok := proof.(interface{ MarshalSolidity() []byte })
-	//if !ok {
-	//	panic("proof does not implement MarshalSolidity()")
-	//}
+	_proof, ok := proof.(interface{ MarshalSolidity() []byte })
+	if !ok {
+		panic("proof does not implement MarshalSolidity()")
+	}
 
-	//proofBytes := _proof.MarshalSolidity()
-	//fmt.Println(len(proofBytes))
-	//fmt.Println("Proof:", hex.EncodeToString(proofBytes))
+	proofBytes := _proof.MarshalSolidity()
+	fmt.Println(len(proofBytes))
+	fmt.Println("Proof:", hex.EncodeToString(proofBytes))
 	// verify proof
 	err = groth16.Verify(proof, vk, publicWitness, backend.WithVerifierHashToFieldFunction(sha256.New()))
 	if err != nil {
@@ -511,9 +556,9 @@ func Prove(proveInput ProveInput) (ProofData, error) {
 	if err != nil {
 		return ProofData{}, errors.Errorf("failed to write proof: %w", err)
 	}
-	proofBytes := proofBuffer.Bytes()
-	//fmt.Println("proofBytes:", proofBytes) //nolint:staticcheck // will fix later
-	//fmt.Println("hex:", common.Bytes2Hex(proofBytes))
+	proofBytes = proofBuffer.Bytes()
+	fmt.Println("proofBytes:", proofBytes) //nolint:staticcheck // will fix later
+	fmt.Println("hex:", common.Bytes2Hex(proofBytes))
 
 	// Assuming fpSize is 32 bytes for BN254
 	const fpSize = 32
@@ -536,31 +581,31 @@ func Prove(proveInput ProveInput) (ProofData, error) {
 	commitmentPok[0] = new(big.Int).SetBytes(proofBytes[4+fpSize*10 : 4+fpSize*11]) // CommitmentPok.x
 	commitmentPok[1] = new(big.Int).SetBytes(proofBytes[4+fpSize*11 : 4+fpSize*12]) // CommitmentPok.y
 
-	//fmt.Println("proof: ", standardProof)
-	//fmt.Println("commitments: ", commitments)
-	//fmt.Println("commitmentPok: ", commitmentPok)
-	//fmt.Println("inputs", formattedInputs)
+	fmt.Println("proof: ", standardProof)
+	fmt.Println("commitments: ", commitments)
+	fmt.Println("commitmentPok: ", commitmentPok)
+	fmt.Println("inputs", formattedInputs)
 	//// Extract public inputs
 	//for i := 0; i < publicWitness.Vector(); i++ {
 	//	val, _ := publicWitness.GetValue(i)
 	//	publicInputs[i] = new(big.Int).SetBytes(val.Bytes())
 	//}
 
-	_, nonSignersAggVotingPower := getNonSignersData(proveInput.ValidatorData)
+	_, nonSignersAggVotingPower, totalVotingPower := getNonSignersData(proveInput.ValidatorData)
 	return ProofData{
-		Proof:                    proofBytes[:256],
-		Commitments:              proofBytes[260:324],
-		CommitmentPok:            proofBytes[324:388],
-		NonSignersAggVotingPower: nonSignersAggVotingPower,
+		Proof:                 proofBytes[:256],
+		Commitments:           proofBytes[260:324],
+		CommitmentPok:         proofBytes[324:388],
+		SignersAggVotingPower: new(big.Int).Sub(totalVotingPower, nonSignersAggVotingPower),
 	}, nil
 }
 
 func loadOrInit(valset []ValidatorData) (constraint.ConstraintSystem, groth16.ProvingKey, groth16.VerifyingKey, error) {
 	suffix := strconv.Itoa(len(valset))
-	r1csP := fmt.Sprintf(r1csPathTmp, suffix)
-	pkP := fmt.Sprintf(pkPathTmp, suffix)
-	vkP := fmt.Sprintf(vkPathTmp, suffix)
-	solP := fmt.Sprintf(solPathTmp, suffix)
+	r1csP := r1csPathTmp(suffix)
+	pkP := pkPathTmp(suffix)
+	vkP := vkPathTmp(suffix)
+	solP := solPathTmp(suffix)
 
 	if exists(r1csP) && exists(pkP) && exists(vkP) && exists(solP) {
 		r1csCS := groth16.NewCS(bn254.ID)
@@ -602,10 +647,10 @@ func loadOrInit(valset []ValidatorData) (constraint.ConstraintSystem, groth16.Pr
 
 	for _, m := range MaxValidators {
 		suf := strconv.Itoa(m)
-		r1csFile := fmt.Sprintf(r1csPathTmp, suf)
-		pkFile := fmt.Sprintf(pkPathTmp, suf)
-		vkFile := fmt.Sprintf(vkPathTmp, suf)
-		solFile := fmt.Sprintf(solPathTmp, suf)
+		r1csFile := r1csPathTmp(suf)
+		pkFile := pkPathTmp(suf)
+		vkFile := vkPathTmp(suf)
+		solFile := solPathTmp(suf)
 
 		if exists(r1csFile) && exists(pkFile) && exists(vkFile) && exists(solFile) {
 			continue

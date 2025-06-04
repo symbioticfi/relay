@@ -24,7 +24,6 @@ type repo interface {
 
 type deriver interface {
 	GetValidatorSetExtraForEpoch(ctx context.Context, epoch *big.Int) (entity.ValidatorSetExtra, error)
-	MakeValidatorSetHeaderHash(ctx context.Context, extra entity.ValidatorSetExtra) ([]byte, error)
 }
 
 type Config struct {

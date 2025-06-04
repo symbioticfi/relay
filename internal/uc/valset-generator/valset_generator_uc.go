@@ -31,7 +31,9 @@ type repo interface {
 
 type deriver interface {
 	GetValidatorSetExtraForEpoch(ctx context.Context, epoch *big.Int) (entity.ValidatorSetExtra, error)
-	MakeValidatorSetHeaderHash(ctx context.Context, extra entity.ValidatorSetExtra) ([]byte, error)
+	MakeValidatorSetHeaderHash(ctx context.Context, extra entity.ValidatorSetExtra, data []entity.ExtraData) ([]byte, error)
+	MakeValsetHeader(ctx context.Context, extra entity.ValidatorSetExtra) (entity.ValidatorSetHeader, error)
+	GenerateExtraData(ctx context.Context, valsetHeader entity.ValidatorSetHeader, verificationType uint32) ([]entity.ExtraData, error)
 }
 
 type Config struct {
@@ -89,7 +91,16 @@ func (s *Service) process(ctx context.Context) error {
 		return nil
 	}
 
-	headerHash, err := s.cfg.Deriver.MakeValidatorSetHeaderHash(ctx, newValsetExtra.MustGet())
+	valsetHeader, err := s.cfg.Deriver.MakeValsetHeader(ctx, newValsetExtra.MustGet())
+	if err != nil {
+		return errors.Errorf("failed to generate validator set header: %w", err)
+	}
+	extraData, err := s.cfg.Deriver.GenerateExtraData(ctx, valsetHeader, entity.ZkVerificationType)
+	if err != nil {
+		return errors.Errorf("failed to generate extra data: %w", err)
+	}
+
+	headerHash, err := s.cfg.Deriver.MakeValidatorSetHeaderHash(ctx, newValsetExtra.MustGet(), extraData)
 	if err != nil {
 		return errors.Errorf("failed to make validator set header hash: %w", err)
 	}

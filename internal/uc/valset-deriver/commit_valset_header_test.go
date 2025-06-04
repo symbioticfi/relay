@@ -18,7 +18,6 @@ package valsetDeriver
 //)
 //
 //func Test_CommitValsetHeaderUnit(t *testing.T) {
-//	t.Skip("need fix")
 //	pk1 := "87191036493798670866484781455694320176667203290824056510541300741498740913410"
 //	pk2 := "26972876870930381973856869753776124637336739336929668162870464864826929175089"
 //	pk3 := "11008377096554045051122023680185802911050337017631086444859313200352654461863"
@@ -55,13 +54,19 @@ package valsetDeriver
 //		}},
 //		TotalActiveVotingPower: new(big.Int).SetInt64(30000000000000),
 //		ValidatorsSszMRoot:     [32]byte(decodeHex(t, "d9354a3cf52fba5126422c86d35db53d566d46f9208faa86c7b9155d7dcf3926")),
-//		ExtraData:              decodeHex(t, "2695ed079545bb906f5868716071ab237e36d04fdc1aa07b06bd98c81185067d"),
 //		Epoch:                  new(big.Int).SetInt64(1),
 //		DomainEip712: entity.Eip712Domain{
 //			Name:    "Middleware",
 //			Version: "1",
 //		},
 //		Subnetwork: decodeHex(t, "f39fd6e51aad88f6f4ce6ab8827279cfffb92266000000000000000000000000"),
+//	}
+//
+//	extraData1 := []entity.ExtraData{
+//		{
+//			Key:   [32]byte(decodeHex(t, "2695ed079545bb906f5868716071ab237e36d04fdc1aa07b06bd98c81185067d")),
+//			Value: [32]byte(decodeHex(t, "2695ed079545bb906f5868716071ab237e36d04fdc1aa07b06bd98c81185067d")),
+//		},
 //	}
 //
 //	ctrl := gomock.NewController(t)
@@ -71,17 +76,17 @@ package valsetDeriver
 //	generator, err := NewGenerator(der, eth)
 //	require.NoError(t, err)
 //
-//	headerHash1, err := generator.GenerateValidatorSetHeaderHash(valsetHeader1)
+//	headerHash1, err := generator.GenerateValidatorSetHeaderHash(valsetHeader1, extraData1)
 //	require.NoError(t, err)
 //	headerSignature1, err := keyPair1.Sign(headerHash1)
 //	require.NoError(t, err)
 //
-//	headerHash2, err := generator.GenerateValidatorSetHeaderHash(valsetHeader1)
+//	headerHash2, err := generator.GenerateValidatorSetHeaderHash(valsetHeader1, extraData1)
 //	require.NoError(t, err)
 //	headerSignature2, err := keyPair2.Sign(headerHash2)
 //	require.NoError(t, err)
 //
-//	headerHash3, err := generator.GenerateValidatorSetHeaderHash(valsetHeader1)
+//	headerHash3, err := generator.GenerateValidatorSetHeaderHash(valsetHeader1, extraData1)
 //	require.NoError(t, err)
 //	headerSignature3, err := keyPair3.Sign(headerHash3)
 //	require.NoError(t, err)
