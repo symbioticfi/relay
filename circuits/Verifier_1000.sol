@@ -24,7 +24,7 @@ contract Verifier {
     /// The commitment is invalid
     /// @dev This can mean that provided commitment points and/or proof of knowledge are not on their
     /// curves, that pairing equation fails, or that the commitment and/or proof of knowledge is not for the
-    /// commitment key.
+    /// commitment SszKey.
     error CommitmentInvalid();
 
     // Addresses of precompiles
@@ -369,7 +369,7 @@ contract Verifier {
     /// Compute the public input linear combination.
     /// @notice Reverts with PublicInputNotInField if the input is not in the field.
     /// @notice Computes the multi-scalar-multiplication of the public input
-    /// elements and the verification key including the constant term.
+    /// elements and the verification SszKey including the constant term.
     /// @param input The public inputs. These are elements of the scalar field Fr.
     /// @param publicCommitments public inputs generated from pedersen commitments.
     /// @param commitments The Pedersen commitments from the proof.
@@ -418,8 +418,8 @@ contract Verifier {
             y := mload(add(f, 0x20))
         }
         if (!success) {
-            // Either Public input not in field, or verification key invalid.
-            // We assume the contract is correctly generated, so the verification key is valid.
+            // Either Public input not in field, or verification SszKey invalid.
+            // We assume the contract is correctly generated, so the verification SszKey is valid.
             revert PublicInputNotInField();
         }
     }
@@ -563,8 +563,8 @@ contract Verifier {
                 success := staticcall(gas(), PRECOMPILE_VERIFY, pairings, 0x300, output, 0x20)
             }
             if (!success || output[0] != 1) {
-                // Either proof or verification key invalid.
-                // We assume the contract is correctly generated, so the verification key is valid.
+                // Either proof or verification SszKey invalid.
+                // We assume the contract is correctly generated, so the verification SszKey is valid.
                 revert ProofInvalid();
             }
         }
@@ -666,8 +666,8 @@ contract Verifier {
             success := and(success, mload(f))
         }
         if (!success) {
-            // Either proof or verification key invalid.
-            // We assume the contract is correctly generated, so the verification key is valid.
+            // Either proof or verification SszKey invalid.
+            // We assume the contract is correctly generated, so the verification SszKey is valid.
             revert ProofInvalid();
         }
     }

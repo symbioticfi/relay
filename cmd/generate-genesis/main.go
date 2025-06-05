@@ -83,19 +83,31 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to get current epoch: %w", err)
 		}
 
-		newValset, err := deriver.GetValidatorSetExtraForEpoch(ctx, currentOnchainEpoch)
+		captureTimestamp, err := client.GetCaptureTimestamp(ctx)
+		if err != nil {
+			return errors.Errorf("failed to get capture timestamp: %w", err)
+		}
+
+		networkConfig, err := client.GetConfig(ctx, captureTimestamp)
+		if err != nil {
+			return errors.Errorf("failed to get config: %w", err)
+		}
+
+		newValset, err := deriver.GetValidatorSet(ctx, currentOnchainEpoch, &networkConfig)
 		if err != nil {
 			return errors.Errorf("failed to get validator set extra for epoch %s: %w", currentOnchainEpoch, err)
 		}
 
-		header, err := deriver.MakeValsetHeader(ctx, newValset)
+		// header generation is clear now
+		header, err := newValset.GetHeader()
 		if err != nil {
 			return errors.Errorf("failed to generate validator set header: %w", err)
 		}
 
 		slog.Info("Valset header generated!")
 
-		extraData, err := deriver.GenerateExtraData(ctx, header, entity.ZkVerificationType)
+		// extra data generation is also clear but still in deriver
+		extraData, err := deriver.GenerateExtraData(&newValset, &networkConfig)
 		if err != nil {
 			return errors.Errorf("failed to generate extra data: %w", err)
 		}

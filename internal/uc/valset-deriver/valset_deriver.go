@@ -3,36 +3,38 @@ package valsetDeriver
 import (
 	"context"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/samber/lo"
 	"log/slog"
 	"math/big"
 	"reflect"
+	"sort"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-	"github.com/go-errors/errors"
-
 	"middleware-offchain/internal/entity"
 	"middleware-offchain/pkg/bls"
 	"middleware-offchain/pkg/proof"
-	"middleware-offchain/pkg/ssz"
 )
 
 const valsetVersion = 1
 
 //go:generate mockgen -source=deriver.go -destination=mocks/deriver.go -package=mocks
 type ethClient interface {
-	GetCaptureTimestamp(ctx context.Context) (*big.Int, error)
-	GetEpochStart(ctx context.Context, epoch *big.Int) (*big.Int, error)
-	GetCurrentValsetTimestamp(ctx context.Context) (*big.Int, error)
-	GetConfig(ctx context.Context, timestamp *big.Int) (entity.Config, error)
-	GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp *big.Int) ([]entity.OperatorVotingPower, error)
-	GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp *big.Int) ([]entity.OperatorWithKeys, error)
-	GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uint8, error)
+	GetCaptureTimestamp(ctx context.Context) (uint64, error)
+	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
+	GetCurrentValsetTimestamp(ctx context.Context) (uint64, error)
+	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
+	GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorVotingPower, error)
+	GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorWithKeys, error)
+	GetRequiredKeyTag(ctx context.Context, timestamp uint64) (uint8, error)
 	GetEip712Domain(ctx context.Context) (entity.Eip712Domain, error)
-	GetCurrentEpoch(ctx context.Context) (*big.Int, error)
-	GetSubnetwork(ctx context.Context) ([]byte, error)
+	GetCurrentEpoch(ctx context.Context) (uint64, error)
+	GetSubnetwork(ctx context.Context) ([32]byte, error)
+	GetNetworkAddress(ctx context.Context) (*common.Address, error)
+	GetPreviousHeaderHash(ctx context.Context) ([32]byte, error)
 }
 
 // Deriver coordinates the ETH services
@@ -47,20 +49,41 @@ func NewDeriver(ethClient ethClient) (*Deriver, error) {
 	}, nil
 }
 
-func (v *Deriver) GetValidatorSetExtraForEpoch(ctx context.Context, epoch *big.Int) (entity.ValidatorSetExtra, error) {
-	slog.DebugContext(ctx, "Trying to fetch current valset timestamp", "epoch", epoch.String())
+func (v *Deriver) GetNetworkData(ctx context.Context) (entity.NetworkData, error) {
+	address, err := v.ethClient.GetNetworkAddress(ctx)
+	if err != nil {
+		return entity.NetworkData{}, fmt.Errorf("failed to get network address: %w", err)
+	}
+
+	subnetwork, err := v.ethClient.GetSubnetwork(ctx)
+	if err != nil {
+		return entity.NetworkData{}, fmt.Errorf("failed to get subnetwork: %w", err)
+	}
+
+	eip712Data, err := v.ethClient.GetEip712Domain(ctx)
+	if err != nil {
+		return entity.NetworkData{}, fmt.Errorf("failed to get eip712 domain: %w", err)
+	}
+
+	return entity.NetworkData{
+		Address:    *address,
+		Subnetwork: subnetwork,
+		Eip712Data: eip712Data,
+	}, nil
+}
+
+func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config *entity.NetworkConfig) (entity.ValidatorSet, error) {
+	slog.DebugContext(ctx, "Trying to fetch current valset timestamp", "epoch", epoch)
 	timestamp, err := v.ethClient.GetEpochStart(ctx, epoch)
 	if err != nil {
-		return entity.ValidatorSetExtra{}, fmt.Errorf("failed to get epoch start timestamp: %w", err)
+		return entity.ValidatorSet{}, fmt.Errorf("failed to get epoch start timestamp: %w", err)
 	}
-	slog.DebugContext(ctx, "Got current valset timestamp", "timestamp", timestamp.String(), "epoch", epoch.String())
+	slog.DebugContext(ctx, "Got current valset timestamp", "timestamp", timestamp, "epoch", epoch)
 
-	slog.DebugContext(ctx, "Trying to fetch config", "timestamp", timestamp.String())
-	config, err := v.ethClient.GetConfig(ctx, timestamp)
 	if err != nil {
-		return entity.ValidatorSetExtra{}, fmt.Errorf("failed to get config: %w", err)
+		return entity.ValidatorSet{}, fmt.Errorf("failed to get config: %w", err)
 	}
-	slog.DebugContext(ctx, "Got config", "timestamp", timestamp.String(), "config", config)
+	slog.DebugContext(ctx, "Got config", "timestamp", timestamp, "config", config)
 
 	// Get voting powers from all voting power providers
 	var allVotingPowers []entity.OperatorVotingPower
@@ -68,7 +91,7 @@ func (v *Deriver) GetValidatorSetExtraForEpoch(ctx context.Context, epoch *big.I
 		slog.DebugContext(ctx, "Trying to fetch voting powers from provider", "provider", provider.Address.Hex())
 		votingPowers, err := v.ethClient.GetVotingPowers(ctx, provider, timestamp)
 		if err != nil {
-			return entity.ValidatorSetExtra{}, fmt.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
+			return entity.ValidatorSet{}, fmt.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
 		}
 
 		slog.DebugContext(ctx, "Got voting powers from provider", "provider", provider.Address.Hex(), "votingPowers", votingPowers)
@@ -81,197 +104,46 @@ func (v *Deriver) GetValidatorSetExtraForEpoch(ctx context.Context, epoch *big.I
 
 	keys, err := v.ethClient.GetKeys(ctx, config.KeysProvider, timestamp)
 	if err != nil {
-		return entity.ValidatorSetExtra{}, fmt.Errorf("failed to get keys: %w", err)
+		return entity.ValidatorSet{}, fmt.Errorf("failed to get keys: %w", err)
 	}
+
+	// form validators list from voting powers and keys using config
+	validators, totalVP := v.formValidators(config, allVotingPowers, keys)
+
+	// calc new quorum threshold
+	quorumThreshold := v.calcQuorumThreshold(config, totalVP)
 
 	requiredKeyTag, err := v.ethClient.GetRequiredKeyTag(ctx, timestamp)
 	if err != nil {
-		return entity.ValidatorSetExtra{}, fmt.Errorf("failed to get required key tag: %w", err)
+		return entity.ValidatorSet{}, fmt.Errorf("failed to get required key tag: %w", err)
 	}
 
 	captureTimestamp, err := v.ethClient.GetEpochStart(ctx, epoch)
 	if err != nil {
-		return entity.ValidatorSetExtra{}, fmt.Errorf("failed to get capture timestamp: %w", err)
+		return entity.ValidatorSet{}, fmt.Errorf("failed to get capture timestamp: %w", err)
 	}
 
-	domainEip712, err := v.ethClient.GetEip712Domain(ctx)
-	if err != nil {
-		return entity.ValidatorSetExtra{}, fmt.Errorf("failed to get eip712 domain: %w", err)
-	}
+	previousHeaderHash, err := v.ethClient.GetPreviousHeaderHash(ctx)
 
-	subnetwork, err := v.ethClient.GetSubnetwork(ctx)
-	if err != nil {
-		return entity.ValidatorSetExtra{}, fmt.Errorf("failed to get subnetwork: %w", err)
-	}
-
-	return entity.ValidatorSetExtra{
-		Version:              valsetVersion,
-		RequiredKeyTag:       requiredKeyTag,
-		Config:               config,
-		CaptureTimestamp:     captureTimestamp,
-		DomainEip712:         domainEip712,
-		Keys:                 keys,
-		Subnetwork:           subnetwork,
-		OperatorVotingPowers: allVotingPowers,
-		Epoch:                epoch,
+	return entity.ValidatorSet{
+		Version:                valsetVersion,
+		RequiredKeyTag:         requiredKeyTag,
+		Epoch:                  epoch,
+		CaptureTimestamp:       captureTimestamp,
+		QuorumThreshold:        quorumThreshold,
+		PreviousHeaderHash:     previousHeaderHash,
+		Validators:             validators,
+		TotalActiveVotingPower: totalVP,
 	}, nil
 }
 
-func (v *Deriver) MakeValsetHeader(ctx context.Context, extra entity.ValidatorSetExtra) (entity.ValidatorSetHeader, error) {
-	validatorSet := extra.MakeValidatorSet()
-
-	tags := []uint8{uint8(len(validatorSet.Validators[0].Keys))}
-	for _, key := range validatorSet.Validators[0].Keys {
-		if key.Tag == extra.RequiredKeyTag { // TODO: major - get required key tags from validator set config
-			tags = append(tags, key.Tag)
-		}
-	}
-
-	// Create aggregated pubkeys for each required key tag
-	aggPubkeysG1 := make([]*bls.G1, len(tags)) // TODO: minor - potentially not only BLS
-	for i := range tags {
-		if tags[i]>>4 == 0 {
-			aggPubkeysG1[i] = &bls.G1{G1Affine: new(bn254.G1Affine)}
-		}
-	}
-
-	for _, validator := range validatorSet.Validators {
-		if !validator.IsActive {
-			continue
-		}
-
-		for _, key := range validator.Keys {
-			for i, tag := range tags {
-				if key.Tag == tag {
-					if tag>>4 == 0 {
-						g1, err := bls.DeserializeG1(key.Payload)
-						if err != nil {
-							return entity.ValidatorSetHeader{}, fmt.Errorf("failed to deserialize G1: %w", err)
-						}
-						aggPubkeysG1[i] = aggPubkeysG1[i].Add(g1)
-					}
-				}
-			}
-		}
-	}
-
-	sszMroot, err := ssz.HashTreeRoot(validatorSet)
-	if err != nil {
-		return entity.ValidatorSetHeader{}, fmt.Errorf("failed to get hash tree root: %w", err)
-	}
-
-	// Format all aggregated keys for the header
-	formattedKeys := make([]entity.Key, 0, len(aggPubkeysG1))
-	for i, key := range aggPubkeysG1 {
-		if key != nil && !key.IsInfinity() {
-			formattedKeys = append(formattedKeys, entity.Key{
-				Tag:     tags[i],
-				Payload: bls.SerializeG1(key),
-			})
-		}
-	}
-
-	formattedHashesMimc := make([]entity.ValidatorSetHash, 0, len(formattedKeys))
-	for _, key := range formattedKeys {
-		validatorsData, err := proof.ToValidatorsData(validatorSet.Validators, validatorSet.Validators, key.Tag)
-		if err != nil {
-			return entity.ValidatorSetHeader{}, fmt.Errorf("failed to convert validators to data: %w", err)
-		}
-		hash := proof.HashValset(validatorsData)
-		formattedHashesMimc = append(formattedHashesMimc, entity.ValidatorSetHash{
-			KeyTag: key.Tag,
-			Hash:   [32]byte(hash),
-		})
-	}
-
-	formattedHashesKeccak256 := make([]entity.ValidatorSetHash, 0, len(formattedKeys)) // TODO: prettify/check
-	type validatorDataTuple struct {
-		X, Y, VotingPower *big.Int
-	}
-	u256, _ := abi.NewType("uint256", "", nil)
-
-	tupleType := abi.Type{
-		T:             abi.TupleTy,
-		TupleElems:    []*abi.Type{&u256, &u256, &u256},
-		TupleRawNames: []string{"X", "Y", "votingPower"},
-		TupleType:     reflect.TypeOf(validatorDataTuple{}),
-	}
-
-	arrayType := abi.Type{
-		T:    abi.SliceTy,
-		Elem: &tupleType,
-	}
-
-	args := abi.Arguments{{Type: arrayType}}
-	for _, key := range formattedKeys {
-		validatorsData := make([]validatorDataTuple, 0, len(validatorSet.Validators))
-		for _, validator := range validatorSet.Validators {
-			validatorVotingPower := validator.VotingPower
-			for _, validatorKey := range validator.Keys {
-				if validatorKey.Tag == key.Tag {
-					validatorKeyG1, err := bls.DeserializeG1(validatorKey.Payload)
-					if err != nil {
-						return entity.ValidatorSetHeader{}, fmt.Errorf("failed to deserialize G1: %w", err)
-					}
-					x := validatorKeyG1.X.BigInt(new(big.Int))
-					y := validatorKeyG1.Y.BigInt(new(big.Int))
-
-					votingPower := validatorVotingPower
-
-					validatorsData = append(validatorsData, validatorDataTuple{
-						X:           x,
-						Y:           y,
-						VotingPower: votingPower,
-					})
-				}
-			}
-		}
-
-		packed, err := args.Pack(validatorsData)
-		if err != nil {
-			return entity.ValidatorSetHeader{}, fmt.Errorf("failed to pack arguments: %w", err)
-		}
-		hash := crypto.Keccak256Hash(packed)
-		formattedHashesKeccak256 = append(formattedHashesKeccak256, entity.ValidatorSetHash{
-			KeyTag: key.Tag,
-			Hash:   hash,
-		})
-	}
-
-	quorumThreshold := new(big.Int).Mul(validatorSet.TotalActiveVotingPower, entity.QuorumThresholdPercentage)
-	quorumThreshold.Add(quorumThreshold, entity.QuorumThresholdBase)
-	quorumThreshold.Sub(quorumThreshold, big.NewInt(1))
-	quorumThreshold.Div(quorumThreshold, entity.QuorumThresholdBase)
-
-	previousHeaderHash := [32]byte{} // TODO: get previous header hash from the previous header
-	big.NewInt(0).FillBytes(previousHeaderHash[:])
-
-	slog.DebugContext(ctx, "Generated validator set header", "formattedKeys", formattedKeys)
-
-	return entity.ValidatorSetHeader{
-		Version:                     validatorSet.Version,
-		TotalActiveValidators:       new(big.Int).SetInt64(int64(len(proof.GetActiveValidators(validatorSet.Validators)))),
-		ActiveAggregatedKeys:        formattedKeys,
-		TotalActiveVotingPower:      validatorSet.TotalActiveVotingPower,
-		ValidatorsSszMRoot:          sszMroot,
-		Epoch:                       extra.Epoch,
-		RequiredKeyTag:              extra.RequiredKeyTag,
-		CaptureTimestamp:            extra.CaptureTimestamp,
-		VerificationType:            extra.Config.VerificationType,
-		ValidatorSetHashesMimc:      formattedHashesMimc,
-		ValidatorSetHashesKeccak256: formattedHashesKeccak256,
-		QuorumThreshold:             quorumThreshold,
-		PreviousHeaderHash:          previousHeaderHash,
-	}, nil
-}
-
-func (v *Deriver) MakeValidatorSetHeaderHash(ctx context.Context, valsetExtra entity.ValidatorSetExtra, extraData []entity.ExtraData) ([]byte, error) {
-	header, err := v.MakeValsetHeader(ctx, valsetExtra)
-	if err != nil {
-		return nil, fmt.Errorf("failed to make valset header: %w", err)
-	}
-
-	headerHash, err := hashHeader(header, valsetExtra)
+// TODO move to commiter?
+func (v *Deriver) HeaderCommitmentHash(
+	networkData *entity.NetworkData,
+	header *entity.ValidatorSetHeader,
+	extraData []entity.ExtraData,
+) ([]byte, error) {
+	headerHash, err := header.Hash()
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash valset header: %w", err)
 	}
@@ -294,13 +166,13 @@ func (v *Deriver) MakeValidatorSetHeaderHash(ctx context.Context, valsetExtra en
 			},
 		},
 		Domain: apitypes.TypedDataDomain{
-			Name:    valsetExtra.DomainEip712.Name,
-			Version: valsetExtra.DomainEip712.Version,
+			Name:    networkData.Eip712Data.Name,
+			Version: networkData.Eip712Data.Version,
 		},
 		PrimaryType: "ValSetHeaderCommit",
 		Message: map[string]interface{}{
-			"subnetwork": valsetExtra.Subnetwork,
-			"epoch":      valsetExtra.Epoch,
+			"subnetwork": networkData.Subnetwork,
+			"epoch":      header.Epoch,
 			"headerHash": headerHash,
 			"extraData":  extraDataHash,
 		},
@@ -314,175 +186,198 @@ func (v *Deriver) MakeValidatorSetHeaderHash(ctx context.Context, valsetExtra en
 	return hashBytes, nil
 }
 
-func hashHeader(v entity.ValidatorSetHeader, extra entity.ValidatorSetExtra) ([]byte, error) {
-	bytes, err := encodeHeader(v, extra)
-	if err != nil {
-		return nil, errors.Errorf("failed to hash validator set header: %w", err)
+func (v *Deriver) formValidators(
+	config *entity.NetworkConfig,
+	votingPowers []entity.OperatorVotingPower,
+	keys []entity.OperatorWithKeys,
+) ([]entity.Validator, *big.Int) {
+	// Create validators map to consolidate voting powers and keys
+	validatorsMap := make(map[string]*entity.Validator)
+
+	// Process voting powers
+	for _, vp := range votingPowers {
+		operatorAddr := vp.Operator.Hex()
+		if _, exists := validatorsMap[operatorAddr]; !exists {
+			validatorsMap[operatorAddr] = &entity.Validator{
+				Operator:    vp.Operator,
+				VotingPower: big.NewInt(0),
+				IsActive:    false, // Default to active, will filter later
+				Keys:        []entity.Key{},
+				Vaults:      []entity.ValidatorVault{},
+			}
+		}
+
+		// Add vaults and their voting powers
+		for _, vault := range vp.Vaults {
+			validatorsMap[operatorAddr].VotingPower = new(big.Int).Add(
+				validatorsMap[operatorAddr].VotingPower,
+				vault.VotingPower,
+			)
+
+			// Add vault to validator's vaults
+			validatorsMap[operatorAddr].Vaults = append(validatorsMap[operatorAddr].Vaults, entity.ValidatorVault{
+				Vault:       vault.Vault,
+				VotingPower: vault.VotingPower,
+			})
+		}
+
+		// Sort vaults by address in ascending order
+		sort.Slice(validatorsMap[operatorAddr].Vaults, func(i, j int) bool {
+			// Compare voting powers (higher first)
+			return validatorsMap[operatorAddr].Vaults[i].Vault.Cmp(validatorsMap[operatorAddr].Vaults[j].Vault) < 0
+		})
 	}
 
-	return crypto.Keccak256(bytes), nil
+	// Process required keys
+	for _, rk := range keys { // TODO: get required key tags from validator set config and fill with nils if needed
+		operatorAddr := rk.Operator.Hex()
+		if validator, exists := validatorsMap[operatorAddr]; exists {
+			// Add all keys for this operator
+			for _, key := range rk.Keys {
+				validator.Keys = append(validator.Keys, entity.Key{
+					Tag:     key.Tag,
+					Payload: key.Payload,
+				})
+			}
+		}
+	}
+
+	validators := lo.Map(lo.Values(validatorsMap), func(item *entity.Validator, _ int) entity.Validator {
+		return *item
+	})
+	// Sort validators by voting power in descending order
+	sort.Slice(validators, func(i, j int) bool {
+		// Compare voting powers (higher first)
+		return validators[i].VotingPower.Cmp(validators[j].VotingPower) > 0
+	})
+
+	totalActive := 0
+
+	totalActiveVotingPower := big.NewInt(0)
+	for i := range validators {
+		// Check minimum voting power if configured
+		if validators[i].VotingPower.Cmp(config.MinInclusionVotingPower) < 0 {
+			break
+		}
+
+		// Check if validator has at least one key
+		if len(validators[i].Keys) == 0 {
+			continue
+		}
+
+		totalActive++
+		validators[i].IsActive = true
+
+		if config.MaxVotingPower.Int64() != 0 {
+			if validators[i].VotingPower.Cmp(config.MaxVotingPower) > 0 {
+				validators[i].VotingPower = new(big.Int).Set(config.MaxVotingPower)
+			}
+		}
+		// Add to total active voting power if validator is active
+		totalActiveVotingPower = new(big.Int).Add(totalActiveVotingPower, validators[i].VotingPower)
+
+		if config.MaxValidatorsCount.Int64() != 0 {
+			if totalActive >= int(config.MaxValidatorsCount.Int64()) {
+				break
+			}
+		}
+	}
+
+	// Sort validators by address in ascending order
+	sort.Slice(validators, func(i, j int) bool {
+		// Compare voting powers (higher first)
+		return validators[i].Operator.Cmp(validators[j].Operator) < 0
+	})
+	return validators, totalActiveVotingPower
 }
 
-func encodeHeader(v entity.ValidatorSetHeader, extra entity.ValidatorSetExtra) ([]byte, error) {
-	arguments := abi.Arguments{
-		{
-			Name: "version",
-			Type: abi.Type{T: abi.UintTy, Size: 8},
-		},
-		{
-			Name: "requiredKeyTag",
-			Type: abi.Type{T: abi.UintTy, Size: 8},
-		},
-		{
-			Name: "epoch",
-			Type: abi.Type{T: abi.UintTy, Size: 48},
-		},
-		{
-			Name: "captureTimestamp",
-			Type: abi.Type{T: abi.UintTy, Size: 48},
-		},
-		{
-			Name: "verificationType",
-			Type: abi.Type{T: abi.UintTy, Size: 32},
-		},
-		{
-			Name: "quorumThreshold",
-			Type: abi.Type{T: abi.UintTy, Size: 256},
-		},
-		{
-			Name: "validatorsSszMRoot",
-			Type: abi.Type{T: abi.FixedBytesTy, Size: 32},
-		},
-		{
-			Name: "previousHeaderHash",
-			Type: abi.Type{T: abi.FixedBytesTy, Size: 32},
-		},
-	}
-
-	// Prepend the initial 32-byte offset (value 32 = 0x20)
-	initialOffset := make([]byte, 32)
-	offsetValue := big.NewInt(32)
-	// FillBytes puts the big.Int's value into the byte slice, padded left with zeros
-	offsetBytes := offsetValue.FillBytes(make([]byte, 32))
-	copy(initialOffset, offsetBytes) // Copy the padded value into our prefix slice
-
-	pack, err := arguments.Pack(v.Version, extra.RequiredKeyTag, extra.Epoch, extra.CaptureTimestamp, v.QuorumThreshold, v.ValidatorsSszMRoot, v.PreviousHeaderHash)
-	if err != nil {
-		return nil, errors.Errorf("failed to pack arguments: %w", err)
-	}
-
-	return append(initialOffset, pack...), err //nolint:makezero // intentionally appending to the initial offset
+func (v *Deriver) calcQuorumThreshold(_ *entity.NetworkConfig, totalVP *big.Int) *big.Int {
+	// not using config now but later can
+	mul := big.NewInt(1).Mul(totalVP, big.NewInt(2))
+	div := big.NewInt(1).Div(mul, big.NewInt(3))
+	return big.NewInt(0).Add(div, big.NewInt(1))
 }
 
-func (v *Deriver) GetExtraDataKey(verificationType uint32, name string) ([32]byte, error) {
-	strTy, _ := abi.NewType("string", "", nil)
-	u32Ty, _ := abi.NewType("uint32", "", nil)
-
-	args := abi.Arguments{
-		{Type: strTy},
-		{Type: u32Ty},
-		{Type: strTy},
-	}
-
-	packed, err := args.Pack(entity.ExtraDataGlobalKeyPrefix, verificationType, name)
-	if err != nil {
-		return [32]byte{}, err
-	}
-	return crypto.Keccak256Hash(packed), nil
-}
-
-func (v *Deriver) GetExtraDataKeyTagged(verificationType uint32, keyTag uint8, name string) ([32]byte, error) {
-	strTy, _ := abi.NewType("string", "", nil)
-	u32Ty, _ := abi.NewType("uint32", "", nil)
-	u8Ty, _ := abi.NewType("uint8", "", nil)
-
-	args := abi.Arguments{
-		{Type: strTy},
-		{Type: u32Ty},
-		{Type: strTy},
-		{Type: u8Ty},
-		{Type: strTy},
-	}
-
-	packed, err := args.Pack(entity.ExtraDataGlobalKeyPrefix, verificationType, entity.ExtraDataKeyTagPrefix, keyTag, name)
-	if err != nil {
-		return [32]byte{}, err
-	}
-	return crypto.Keccak256Hash(packed), nil
-}
-
-func (v *Deriver) GetExtraDataKeyIndexed(
-	verificationType uint32,
-	keyTag uint8,
-	name string,
-	index *big.Int,
-) ([32]byte, error) {
-	baseHash, err := v.GetExtraDataKeyTagged(verificationType, keyTag, name)
-	if err != nil {
-		return [32]byte{}, err
-	}
-
-	sum := new(big.Int).Add(new(big.Int).SetBytes(baseHash[:]), index)
-	var out [32]byte
-	sum.FillBytes(out[:])
-	return out, nil
-}
-
-func (v *Deriver) GenerateExtraData(ctx context.Context, valsetHeader entity.ValidatorSetHeader, verificationType uint32) ([]entity.ExtraData, error) {
+// TODO need to move to aggregator maybe
+func (v *Deriver) GenerateExtraData(
+	valset *entity.ValidatorSet,
+	config *entity.NetworkConfig,
+) ([]entity.ExtraData, error) {
 	extraData := make([]entity.ExtraData, 0)
 
-	switch verificationType {
+	switch config.VerificationType {
 	case entity.ZkVerificationType:
 		{
-			totalActiveValidatorsKey, err := v.GetExtraDataKey(verificationType, entity.ZkVerificationTotalActiveValidators)
+			totalActiveValidatorsKey, err := v.getExtraDataKey(config.VerificationType, entity.ZkVerificationTotalActiveValidators)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get extra data key: %w", err)
 			}
+
+			totalActiveValidators := big.NewInt(valset.GetTotalActiveValidators())
 			totalActiveValidatorsBytes32 := [32]byte{}
-			valsetHeader.TotalActiveValidators.FillBytes(totalActiveValidatorsBytes32[:])
+			totalActiveValidators.FillBytes(totalActiveValidatorsBytes32[:])
 			extraData = append(extraData, entity.ExtraData{
 				Key:   totalActiveValidatorsKey,
 				Value: totalActiveValidatorsBytes32,
 			})
 
-			for _, validatorSetHash := range valsetHeader.ValidatorSetHashesMimc {
-				validatorSetHashKey, err := v.GetExtraDataKeyTagged(verificationType, validatorSetHash.KeyTag, entity.ZkVerificationValidatorSetHashMimc)
+			aggregatedPubKeys := v.getAggregatedPubKeys(valset, config)
+
+			for _, key := range aggregatedPubKeys {
+				mimcAccumulator, err := proof.ValidatorSetMimcAccumulator(valset.Validators, key.Tag)
+				if err != nil {
+					return nil, fmt.Errorf("failed to generate validator set mimc accumulator: %w", err)
+				}
+
+				validatorSetHashKey, err := v.getExtraDataKeyTagged(config.VerificationType, key.Tag, entity.ZkVerificationValidatorSetHashMimc)
 				if err != nil {
 					return nil, fmt.Errorf("failed to get extra data key: %w", err)
 				}
 
 				extraData = append(extraData, entity.ExtraData{
 					Key:   validatorSetHashKey,
-					Value: validatorSetHash.Hash,
+					Value: mimcAccumulator,
 				})
 			}
 		}
 	case entity.SimpleVerificationType: // TODO: prettify/check
-		totalActiveValidatorsKey, err := v.GetExtraDataKey(verificationType, entity.SimpleVerificationTotalVotingPower)
+		totalActiveValidatorsKey, err := v.getExtraDataKey(config.VerificationType, entity.SimpleVerificationTotalVotingPower)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get extra data key: %w", err)
 		}
+
+		totalActiveValidators := big.NewInt(valset.GetTotalActiveValidators())
 		totalActiveValidatorsBytes32 := [32]byte{}
-		valsetHeader.TotalActiveValidators.FillBytes(totalActiveValidatorsBytes32[:])
+		totalActiveValidators.FillBytes(totalActiveValidatorsBytes32[:])
 		extraData = append(extraData, entity.ExtraData{
 			Key:   totalActiveValidatorsKey,
 			Value: totalActiveValidatorsBytes32,
 		})
 
-		for _, validatorSetHash := range valsetHeader.ValidatorSetHashesKeccak256 {
-			validatorSetHashKey, err := v.GetExtraDataKeyTagged(verificationType, validatorSetHash.KeyTag, entity.SimpleVerificationValidatorSetHashKeccak256)
+		aggregatedPubKeys := v.getAggregatedPubKeys(valset, config)
+
+		// pack keccak accumulators per keyTag
+		for _, key := range aggregatedPubKeys {
+			validatorSetHashKey, err := v.getExtraDataKeyTagged(config.VerificationType, key.Tag, entity.SimpleVerificationValidatorSetHashKeccak256)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get extra data key: %w", err)
 			}
 
+			keccakHashAccumulator, err := calcKeccakAccumulator(valset.Validators, key.Tag)
+			if err != nil {
+				return nil, fmt.Errorf("failed to generate validator set mimc accumulator: %w", err)
+			}
+
 			extraData = append(extraData, entity.ExtraData{
 				Key:   validatorSetHashKey,
-				Value: validatorSetHash.Hash,
+				Value: keccakHashAccumulator,
 			})
+
 		}
 
-		for _, activeAggregatedKey := range valsetHeader.ActiveAggregatedKeys {
-			activeAggregatedKeyKey, err := v.GetExtraDataKeyTagged(verificationType, activeAggregatedKey.Tag, entity.SimpleVerificationAggPublicKeyG1)
+		// pack aggregated keys per keyTag
+		for _, activeAggregatedKey := range aggregatedPubKeys {
+			activeAggregatedKeyKey, err := v.getExtraDataKeyTagged(config.VerificationType, activeAggregatedKey.Tag, entity.SimpleVerificationAggPublicKeyG1)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get extra data key: %w", err)
 			}
@@ -514,4 +409,154 @@ func (v *Deriver) GenerateExtraData(ctx context.Context, valsetHeader entity.Val
 	}
 
 	return extraData, nil
+}
+
+func (v *Deriver) getExtraDataKey(verificationType uint32, name string) ([32]byte, error) {
+	strTy, _ := abi.NewType("string", "", nil)
+	u32Ty, _ := abi.NewType("uint32", "", nil)
+
+	args := abi.Arguments{
+		{Type: strTy},
+		{Type: u32Ty},
+		{Type: strTy},
+	}
+
+	packed, err := args.Pack(entity.ExtraDataGlobalKeyPrefix, verificationType, name)
+	if err != nil {
+		return [32]byte{}, err
+	}
+	return crypto.Keccak256Hash(packed), nil
+}
+
+func (v *Deriver) getExtraDataKeyTagged(verificationType uint32, keyTag uint8, name string) ([32]byte, error) {
+	strTy, _ := abi.NewType("string", "", nil)
+	u32Ty, _ := abi.NewType("uint32", "", nil)
+	u8Ty, _ := abi.NewType("uint8", "", nil)
+
+	args := abi.Arguments{
+		{Type: strTy},
+		{Type: u32Ty},
+		{Type: strTy},
+		{Type: u8Ty},
+		{Type: strTy},
+	}
+
+	packed, err := args.Pack(entity.ExtraDataGlobalKeyPrefix, verificationType, entity.ExtraDataKeyTagPrefix, keyTag, name)
+	if err != nil {
+		return [32]byte{}, err
+	}
+	return crypto.Keccak256Hash(packed), nil
+}
+
+func (v *Deriver) getExtraDataKeyIndexed(
+	verificationType uint32,
+	keyTag uint8,
+	name string,
+	index *big.Int,
+) ([32]byte, error) {
+	baseHash, err := v.getExtraDataKeyTagged(verificationType, keyTag, name)
+	if err != nil {
+		return [32]byte{}, err
+	}
+
+	sum := new(big.Int).Add(new(big.Int).SetBytes(baseHash[:]), index)
+	var out [32]byte
+	sum.FillBytes(out[:])
+	return out, nil
+}
+
+func (v *Deriver) getAggregatedPubKeys(
+	valset *entity.ValidatorSet,
+	config *entity.NetworkConfig,
+) []entity.Key {
+	needToAggregateTags := map[uint8]interface{}{}
+	for _, tag := range config.RequiredKeyTags {
+		// only bn254 bls for now
+		if tag>>4 == entity.KeyTypeBlsBn254 {
+			needToAggregateTags[tag] = new(bn254.G1Affine)
+		}
+	}
+
+	for _, validator := range valset.Validators {
+		if !validator.IsActive {
+			continue
+		}
+
+		for _, key := range validator.Keys {
+			if keyValue, ok := needToAggregateTags[key.Tag]; ok {
+				if key.Tag>>4 == entity.KeyTypeBlsBn254 {
+					aggG1Key := keyValue.(*bn254.G1Affine)
+					valG1Key := new(bn254.G1Affine)
+					valG1Key.SetBytes(key.Payload)
+					// aggregate and save in map
+					needToAggregateTags[key.Tag] = aggG1Key.Add(aggG1Key, valG1Key)
+				}
+			}
+		}
+	}
+
+	aggregatedPubKeys := []entity.Key{}
+	for tag, keyValue := range needToAggregateTags {
+		if tag>>4 == entity.KeyTypeBlsBn254 {
+			aggG1Key := keyValue.(*bn254.G1Affine)
+			// pack g1 point to bytes and add to list
+			aggG1KeyBytes := aggG1Key.Bytes()
+			aggregatedPubKeys = append(aggregatedPubKeys, entity.Key{
+				Tag:     tag,
+				Payload: aggG1KeyBytes[:],
+			})
+		}
+	}
+
+	return aggregatedPubKeys
+}
+
+func calcKeccakAccumulator(validators []entity.Validator, requiredKeyTag uint8) ([32]byte, error) {
+	type validatorDataTuple struct {
+		X, Y, VotingPower *big.Int
+	}
+	u256, _ := abi.NewType("uint256", "", nil)
+
+	tupleType := abi.Type{
+		T:             abi.TupleTy,
+		TupleElems:    []*abi.Type{&u256, &u256, &u256},
+		TupleRawNames: []string{"X", "Y", "votingPower"},
+		TupleType:     reflect.TypeOf(validatorDataTuple{}),
+	}
+
+	arrayType := abi.Type{
+		T:    abi.SliceTy,
+		Elem: &tupleType,
+	}
+
+	args := abi.Arguments{{Type: arrayType}}
+	validatorsData := make([]validatorDataTuple, 0, len(validators))
+	for _, validator := range validators {
+		validatorVotingPower := validator.VotingPower
+		for _, validatorKey := range validator.Keys {
+			if validatorKey.Tag == requiredKeyTag {
+				validatorKeyG1, err := bls.DeserializeG1(validatorKey.Payload)
+				if err != nil {
+					return [32]byte{}, fmt.Errorf("failed to deserialize G1: %w", err)
+				}
+				x := validatorKeyG1.X.BigInt(new(big.Int))
+				y := validatorKeyG1.Y.BigInt(new(big.Int))
+
+				votingPower := validatorVotingPower
+
+				validatorsData = append(validatorsData, validatorDataTuple{
+					X:           x,
+					Y:           y,
+					VotingPower: votingPower,
+				})
+			}
+		}
+	}
+
+	packed, err := args.Pack(validatorsData)
+	if err != nil {
+		return [32]byte{}, fmt.Errorf("failed to pack arguments: %w", err)
+	}
+	hash := crypto.Keccak256Hash(packed)
+	return hash, nil
 }
