@@ -13,7 +13,7 @@ package test
 //
 //	"github.com/stretchr/testify/require"
 //
-//	"middleware-offchain/internal/client/eth"
+//	"middleware-offchain/internal/client/symbiotic"
 //	"middleware-offchain/internal/client/valset"
 //	"middleware-offchain/internal/entity"
 //	"middleware-offchain/pkg/bls"
@@ -23,7 +23,7 @@ package test
 //type valsetTestServices struct {
 //	keyPairs []bls.KeyPair
 //
-//	eths []*eth.Client
+//	eths []*symbiotic.Client
 //
 //	derivers   []*valset.Deriver
 //	generators []*valset.Generator
@@ -118,12 +118,12 @@ package test
 //		keyPairs = append(keyPairs, bls.ComputeKeyPair(pkBytes[:]))
 //	}
 //
-//	eths := make([]*eth.Client, 0, len(keyPairs))
+//	eths := make([]*symbiotic.Client, 0, len(keyPairs))
 //	for i, _ := range keyPairs {
 //		pk := new(big.Int).Add(base, big.NewInt(int64(i)))
 //		pkBytes := [32]byte{}
 //		pk.FillBytes(pkBytes[:])
-//		eth_, err := eth.NewEthClient(eth.Config{
+//		eth_, err := symbiotic.NewEthClient(symbiotic.Config{
 //			MasterRPCURL:   "http://localhost:8545",
 //			MasterAddress:  "0x63d855589514F1277527f4fD8D464836F8Ca73Ba",
 //			PrivateKey:     pkBytes[:],
@@ -140,8 +140,8 @@ package test
 //	slog.InfoContext(t.Context(), "current phase", "phase", phase)
 //
 //	derivers := make([]*valset.Deriver, 0, len(eths))
-//	for _, eth := range eths {
-//		deriver, err := valset.NewDeriver(eth)
+//	for _, symbiotic := range eths {
+//		deriver, err := valset.NewDeriver(symbiotic)
 //		require.NoError(t, err)
 //		derivers = append(derivers, deriver)
 //	}
@@ -218,7 +218,7 @@ package test
 //	zeroPk := new(big.Int).Add(base, big.NewInt(int64(0)))
 //	pkBytes := [32]byte{}
 //	zeroPk.FillBytes(pkBytes[:])
-//	eth1, err := eth.NewEthClient(eth.Config{
+//	eth1, err := symbiotic.NewEthClient(symbiotic.Config{
 //		MasterRPCURL:   "http://localhost:8545",
 //		MasterAddress:  "0x63d855589514F1277527f4fD8D464836F8Ca73Ba",
 //		PrivateKey:     pkBytes[:],

@@ -3,7 +3,9 @@ package entity
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/samber/lo"
 	"math/big"
+	"middleware-offchain/pkg/ssz"
 	"slices"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -17,18 +19,18 @@ type Key struct {
 	Payload []byte
 }
 
-type Vault struct {
-	ChainID     uint64
-	Vault       common.Address
-	VotingPower *big.Int
+type ValidatorVault struct {
+	ChainID     uint64         `json:"chainId"`
+	Vault       common.Address `json:"vault"`
+	VotingPower *big.Int       `json:"votingPower"`
 }
 
 type Validator struct {
-	Operator    common.Address
-	VotingPower *big.Int
-	IsActive    bool
-	Keys        []Key
-	Vaults      []Vault
+	Operator    common.Address   `json:"operator"`
+	VotingPower *big.Int         `json:"votingPower"`
+	IsActive    bool             `json:"isActive"`
+	Keys        []Key            `json:"keys"`
+	Vaults      []ValidatorVault `json:"vaults"`
 }
 
 type ValidatorSet struct {
@@ -69,18 +71,11 @@ type ValidatorSetHash struct {
 type ValidatorSetHeader struct {
 	Version            uint8
 	RequiredKeyTag     KeyTag
-	Epoch              *big.Int
-	CaptureTimestamp   *big.Int
-	VerificationType   uint32
+	Epoch              uint64
+	CaptureTimestamp   uint64
 	QuorumThreshold    *big.Int
 	ValidatorsSszMRoot [32]byte
 	PreviousHeaderHash [32]byte
-
-	TotalActiveValidators       *big.Int
-	ActiveAggregatedKeys        []Key
-	TotalActiveVotingPower      *big.Int
-	ValidatorSetHashesMimc      []ValidatorSetHash
-	ValidatorSetHashesKeccak256 []ValidatorSetHash
 }
 
 type ExtraData struct {
@@ -91,14 +86,14 @@ type ExtraData struct {
 type ExtraDataList []ExtraData
 
 func (e ExtraDataList) Hash() ([]byte, error) {
-	bytes, err := e.Encode()
+	bytes, err := e.AbiEncode()
 	if err != nil {
 		return nil, errors.Errorf("failed to hash extra data: %w", err)
 	}
 	return crypto.Keccak256(bytes), nil
 }
 
-func (e ExtraDataList) Encode() ([]byte, error) {
+func (e ExtraDataList) AbiEncode() ([]byte, error) {
 	tupleArr, err := abi.NewType(
 		"tuple[]",
 		"",
@@ -116,6 +111,138 @@ func (e ExtraDataList) Encode() ([]byte, error) {
 	}
 
 	return args.Pack(e)
+}
+
+func (v ValidatorSet) GetTotalActiveVotingPower() *big.Int {
+	totalVotingPower := big.NewInt(0)
+	for _, validator := range v.Validators {
+		if validator.IsActive {
+			totalVotingPower = totalVotingPower.Add(totalVotingPower, validator.VotingPower)
+		}
+	}
+	return totalVotingPower
+}
+
+func (v ValidatorSet) GetTotalActiveValidators() int64 {
+	totalActive := int64(0)
+	for _, validator := range v.Validators {
+		if validator.IsActive {
+			totalActive++
+		}
+	}
+	return totalActive
+}
+
+func (v ValidatorSet) GetHeader() (ValidatorSetHeader, error) {
+	sszMroot, err := sszTreeRoot(&v)
+	if err != nil {
+		return ValidatorSetHeader{}, fmt.Errorf("failed to get hash tree root: %w", err)
+	}
+
+	return ValidatorSetHeader{
+		Version:            v.Version,
+		RequiredKeyTag:     v.RequiredKeyTag,
+		Epoch:              v.Epoch,
+		CaptureTimestamp:   v.CaptureTimestamp,
+		QuorumThreshold:    v.QuorumThreshold,
+		PreviousHeaderHash: v.PreviousHeaderHash,
+		ValidatorsSszMRoot: sszMroot,
+	}, nil
+}
+
+func sszTreeRoot(v *ValidatorSet) ([32]byte, error) {
+	sszType := validatorSetToSszValidators(v)
+	return sszType.HashTreeRoot()
+}
+
+func keyPayloadHash(k Key) common.Hash {
+	return crypto.Keccak256Hash(k.Payload)
+}
+
+func validatorSetToSszValidators(v *ValidatorSet) ssz.SszValidatorSet {
+	return ssz.SszValidatorSet{
+		Validators: lo.Map(v.Validators, func(v Validator, _ int) *ssz.SszValidator {
+			return &ssz.SszValidator{
+				Operator:    v.Operator,
+				VotingPower: v.VotingPower,
+				IsActive:    v.IsActive,
+				Keys: lo.Map(v.Keys, func(k Key, _ int) *ssz.SszKey {
+					return &ssz.SszKey{
+						Tag:         k.Tag,
+						PayloadHash: keyPayloadHash(k),
+					}
+				}),
+				Vaults: lo.Map(v.Vaults, func(v ValidatorVault, _ int) *ssz.SszVault {
+					return &ssz.SszVault{
+						ChainId:     v.ChainID,
+						Vault:       v.Vault,
+						VotingPower: v.VotingPower,
+					}
+				}),
+			}
+		}),
+		Version: v.Version,
+	}
+}
+
+func (v ValidatorSetHeader) AbiEncode() ([]byte, error) {
+	arguments := abi.Arguments{
+		{
+			Name: "version",
+			Type: abi.Type{T: abi.UintTy, Size: 8},
+		},
+		{
+			Name: "requiredKeyTag",
+			Type: abi.Type{T: abi.UintTy, Size: 8},
+		},
+		{
+			Name: "epoch",
+			Type: abi.Type{T: abi.UintTy, Size: 48},
+		},
+		{
+			Name: "captureTimestamp",
+			Type: abi.Type{T: abi.UintTy, Size: 48},
+		},
+		{
+			Name: "verificationType",
+			Type: abi.Type{T: abi.UintTy, Size: 32},
+		},
+		{
+			Name: "quorumThreshold",
+			Type: abi.Type{T: abi.UintTy, Size: 256},
+		},
+		{
+			Name: "validatorsSszMRoot",
+			Type: abi.Type{T: abi.FixedBytesTy, Size: 32},
+		},
+		{
+			Name: "previousHeaderHash",
+			Type: abi.Type{T: abi.FixedBytesTy, Size: 32},
+		},
+	}
+
+	// Prepend the initial 32-byte offset (value 32 = 0x20)
+	initialOffset := make([]byte, 32)
+	offsetValue := big.NewInt(32)
+	// FillBytes puts the big.Int's value into the byte slice, padded left with zeros
+	offsetBytes := offsetValue.FillBytes(make([]byte, 32))
+	copy(initialOffset, offsetBytes) // Copy the padded value into our prefix slice
+
+	pack, err := arguments.Pack(v.Version, v.RequiredKeyTag, v.Epoch, v.CaptureTimestamp, v.QuorumThreshold, v.ValidatorsSszMRoot, v.PreviousHeaderHash)
+	if err != nil {
+		return nil, errors.Errorf("failed to pack arguments: %w", err)
+	}
+
+	return append(initialOffset, pack...), err
+}
+
+func (v ValidatorSetHeader) Hash() ([32]byte, error) {
+	abiEncoded, err := v.AbiEncode()
+	if err != nil {
+		return [32]byte{}, errors.Errorf("failed to hash validator set header: %w", err)
+	}
+
+	return [32]byte(crypto.Keccak256(abiEncoded)), nil
 }
 
 //func (v ValidatorSetHeader) EncodeJSONFull() ([]byte, error) {
@@ -260,9 +387,9 @@ func (v ValidatorSetHeaderWithExtraData) EncodeJSON() ([]byte, error) {
 	type jsonHeader struct {
 		Version            uint8    `json:"version"`
 		ValidatorsSszMRoot string   `json:"validatorsSszMRoot"` // hex string
-		Epoch              *big.Int `json:"epoch"`
+		Epoch              uint64   `json:"epoch"`
 		RequiredKeyTag     KeyTag   `json:"requiredKeyTag"`
-		CaptureTimestamp   *big.Int `json:"captureTimestamp"`
+		CaptureTimestamp   uint64   `json:"captureTimestamp"`
 		QuorumThreshold    *big.Int `json:"quorumThreshold"`
 		PreviousHeaderHash string   `json:"previousHeaderHash"` // hex string
 	}

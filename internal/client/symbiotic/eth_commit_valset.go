@@ -1,4 +1,4 @@
-package eth
+package symbiotic
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"github.com/go-errors/errors"
 	"golang.org/x/crypto/sha3"
 
-	"middleware-offchain/internal/client/eth/gen"
+	"middleware-offchain/internal/client/symbiotic/gen"
 	"middleware-offchain/internal/entity"
 )
 

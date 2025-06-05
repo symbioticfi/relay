@@ -11,6 +11,11 @@ func (e StringError) Error() string {
 }
 
 const (
+	KeyTypeBlsBn254       uint8 = 0
+	KeyTypeEcdsaSecp256k1 uint8 = 1
+)
+
+const (
 	ErrEntityNotFound         = StringError("entity not found")
 	ErrPhaseNotCommit         = StringError("phase is not commit")
 	ErrSignatureRequestExists = StringError("signature request already exists")

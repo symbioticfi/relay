@@ -6,13 +6,9 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	ssz "github.com/ferranbt/fastssz"
-	"github.com/samber/lo"
 
 	"github.com/ethereum/go-ethereum/common"
-
-	"middleware-offchain/internal/entity"
 )
 
 const (
@@ -46,48 +42,13 @@ const (
 	VaultsListTreeHeight      = 5 // ceil(log2(VaultsListMaxElements))
 )
 
-func HashTreeRoot(v entity.ValidatorSet) ([32]byte, error) {
-	dto := validatorSetToDTO(v)
-	return dto.HashTreeRoot()
-}
-
-func keyPayloadHash(k entity.Key) common.Hash {
-	return crypto.Keccak256Hash(k.Payload)
-}
-
-func validatorSetToDTO(v entity.ValidatorSet) validatorSet {
-	return validatorSet{
-		Validators: lo.Map(v.Validators, func(v entity.Validator, _ int) *validator {
-			return &validator{
-				Operator:    v.Operator,
-				VotingPower: v.VotingPower,
-				IsActive:    v.IsActive,
-				Keys: lo.Map(v.Keys, func(k entity.Key, _ int) *key {
-					return &key{
-						Tag:         uint8(k.Tag),
-						PayloadHash: keyPayloadHash(k),
-					}
-				}),
-				Vaults: lo.Map(v.Vaults, func(v entity.Vault, _ int) *vault {
-					return &vault{
-						ChainId:     v.ChainID,
-						Vault:       v.Vault,
-						VotingPower: v.VotingPower,
-					}
-				}),
-			}
-		}),
-		Version: v.Version,
-	}
-}
-
 // MarshalSSZ ssz marshals the Key object
-func (k *key) MarshalSSZ() ([]byte, error) {
+func (k *SszKey) MarshalSSZ() ([]byte, error) {
 	return ssz.MarshalSSZ(k)
 }
 
 // MarshalSSZTo ssz marshals the Key object to a target array
-func (k *key) MarshalSSZTo(buf []byte) ([]byte, error) {
+func (k *SszKey) MarshalSSZTo(buf []byte) ([]byte, error) {
 	dst := buf
 
 	// Field (0) 'Tag'
@@ -100,7 +61,7 @@ func (k *key) MarshalSSZTo(buf []byte) ([]byte, error) {
 }
 
 // UnmarshalSSZ ssz unmarshals the Key object
-func (k *key) UnmarshalSSZ(buf []byte) error {
+func (k *SszKey) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
 	if size != 33 {
@@ -117,17 +78,17 @@ func (k *key) UnmarshalSSZ(buf []byte) error {
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the Key object
-func (k *key) SizeSSZ() int {
+func (k *SszKey) SizeSSZ() int {
 	return 33
 }
 
 // HashTreeRoot ssz hashes the Key object
-func (k *key) HashTreeRoot() ([32]byte, error) {
+func (k *SszKey) HashTreeRoot() ([32]byte, error) {
 	return ssz.HashWithDefaultHasher(k)
 }
 
 // HashTreeRootWith ssz hashes the Key object with a hasher
-func (k *key) HashTreeRootWith(hh ssz.HashWalker) error {
+func (k *SszKey) HashTreeRootWith(hh ssz.HashWalker) error {
 	indx := hh.Index()
 
 	// Field (0) 'Tag'
@@ -142,23 +103,23 @@ func (k *key) HashTreeRootWith(hh ssz.HashWalker) error {
 }
 
 // GetTree ssz hashes the Key object
-func (k *key) GetTree() (*ssz.Node, error) {
+func (k *SszKey) GetTree() (*ssz.Node, error) {
 	return ssz.ProofTree(k)
 }
 
 // MarshalSSZ ssz marshals the Vault object
-func (v *vault) MarshalSSZ() ([]byte, error) {
+func (v *SszVault) MarshalSSZ() ([]byte, error) {
 	return ssz.MarshalSSZ(v)
 }
 
 // MarshalSSZTo ssz marshals the Vault object to a target array
-func (v *vault) MarshalSSZTo(buf []byte) ([]byte, error) {
+func (v *SszVault) MarshalSSZTo(buf []byte) ([]byte, error) {
 	dst := buf
 
 	// Field (0) 'ChainId'
 	dst = ssz.MarshalUint64(dst, v.ChainId)
 
-	// Field (1) 'Vault'
+	// Field (1) 'OperatorVault'
 	dst = append(dst, v.Vault.Bytes()...)
 
 	// Field (2) 'VotingPower'
@@ -168,7 +129,7 @@ func (v *vault) MarshalSSZTo(buf []byte) ([]byte, error) {
 }
 
 // UnmarshalSSZ ssz unmarshals the Vault object
-func (v *vault) UnmarshalSSZ(buf []byte) error {
+func (v *SszVault) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
 	if size != 60 {
@@ -178,7 +139,7 @@ func (v *vault) UnmarshalSSZ(buf []byte) error {
 	// Field (0) 'ChainId'
 	v.ChainId = ssz.UnmarshallUint64(buf[0:8])
 
-	// Field (1) 'Vault'
+	// Field (1) 'OperatorVault'
 	copy(v.Vault.Bytes(), buf[8:28])
 
 	// Field (2) 'VotingPower'
@@ -188,23 +149,23 @@ func (v *vault) UnmarshalSSZ(buf []byte) error {
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the Vault object
-func (v *vault) SizeSSZ() int {
+func (v *SszVault) SizeSSZ() int {
 	return 60
 }
 
 // HashTreeRoot ssz hashes the Vault object
-func (v *vault) HashTreeRoot() ([32]byte, error) {
+func (v *SszVault) HashTreeRoot() ([32]byte, error) {
 	return ssz.HashWithDefaultHasher(v)
 }
 
 // HashTreeRootWith ssz hashes the Vault object with a hasher
-func (v *vault) HashTreeRootWith(hh ssz.HashWalker) error {
+func (v *SszVault) HashTreeRootWith(hh ssz.HashWalker) error {
 	indx := hh.Index()
 
 	// Field (0) 'ChainId'
 	hh.PutUint64(v.ChainId)
 
-	// Field (1) 'Vault'
+	// Field (1) 'OperatorVault'
 	hh.PutBytes(v.Vault.Bytes())
 
 	// Field (2) 'VotingPower'
@@ -216,17 +177,17 @@ func (v *vault) HashTreeRootWith(hh ssz.HashWalker) error {
 }
 
 // GetTree ssz hashes the Vault object
-func (v *vault) GetTree() (*ssz.Node, error) {
+func (v *SszVault) GetTree() (*ssz.Node, error) {
 	return ssz.ProofTree(v)
 }
 
 // MarshalSSZ ssz marshals the Validator object
-func (v *validator) MarshalSSZ() ([]byte, error) {
+func (v *SszValidator) MarshalSSZ() ([]byte, error) {
 	return ssz.MarshalSSZ(v)
 }
 
 // MarshalSSZTo ssz marshals the Validator object to a target array
-func (v *validator) MarshalSSZTo(buf []byte) ([]byte, error) {
+func (v *SszValidator) MarshalSSZTo(buf []byte) ([]byte, error) {
 	dst := buf
 	offset := int(61)
 
@@ -273,7 +234,7 @@ func (v *validator) MarshalSSZTo(buf []byte) ([]byte, error) {
 }
 
 // UnmarshalSSZ ssz unmarshals the Validator object
-func (v *validator) UnmarshalSSZ(buf []byte) error {
+func (v *SszValidator) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
 	if size < 61 {
@@ -313,10 +274,10 @@ func (v *validator) UnmarshalSSZ(buf []byte) error {
 		if err != nil {
 			return err
 		}
-		v.Keys = make([]*key, num)
+		v.Keys = make([]*SszKey, num)
 		for ii := 0; ii < num; ii++ {
 			if v.Keys[ii] == nil {
-				v.Keys[ii] = new(key)
+				v.Keys[ii] = new(SszKey)
 			}
 			if err = v.Keys[ii].UnmarshalSSZ(buf[ii*33 : (ii+1)*33]); err != nil {
 				return err
@@ -331,10 +292,10 @@ func (v *validator) UnmarshalSSZ(buf []byte) error {
 		if err != nil {
 			return err
 		}
-		v.Vaults = make([]*vault, num)
+		v.Vaults = make([]*SszVault, num)
 		for ii := 0; ii < num; ii++ {
 			if v.Vaults[ii] == nil {
-				v.Vaults[ii] = new(vault)
+				v.Vaults[ii] = new(SszVault)
 			}
 			if err = v.Vaults[ii].UnmarshalSSZ(buf[ii*60 : (ii+1)*60]); err != nil {
 				return err
@@ -345,7 +306,7 @@ func (v *validator) UnmarshalSSZ(buf []byte) error {
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the Validator object
-func (v *validator) SizeSSZ() int {
+func (v *SszValidator) SizeSSZ() int {
 	size := 61
 
 	// Field (3) 'Keys'
@@ -358,12 +319,12 @@ func (v *validator) SizeSSZ() int {
 }
 
 // HashTreeRoot ssz hashes the Validator object
-func (v *validator) HashTreeRoot() ([32]byte, error) {
+func (v *SszValidator) HashTreeRoot() ([32]byte, error) {
 	return ssz.HashWithDefaultHasher(v)
 }
 
 // HashTreeRootWith ssz hashes the Validator object with a hasher
-func (v *validator) HashTreeRootWith(hh ssz.HashWalker) error {
+func (v *SszValidator) HashTreeRootWith(hh ssz.HashWalker) error {
 	indx := hh.Index()
 
 	// Field (0) 'Operator'
@@ -410,17 +371,17 @@ func (v *validator) HashTreeRootWith(hh ssz.HashWalker) error {
 }
 
 // GetTree ssz hashes the Validator object
-func (v *validator) GetTree() (*ssz.Node, error) {
+func (v *SszValidator) GetTree() (*ssz.Node, error) {
 	return ssz.ProofTree(v)
 }
 
-// MarshalSSZ ssz marshals the ValidatorSet object
-func (v *validatorSet) MarshalSSZ() ([]byte, error) {
+// MarshalSSZ ssz marshals the SszValidatorSet object
+func (v *SszValidatorSet) MarshalSSZ() ([]byte, error) {
 	return ssz.MarshalSSZ(v)
 }
 
-// MarshalSSZTo ssz marshals the ValidatorSet object to a target array
-func (v *validatorSet) MarshalSSZTo(buf []byte) ([]byte, error) {
+// MarshalSSZTo ssz marshals the SszValidatorSet object to a target array
+func (v *SszValidatorSet) MarshalSSZTo(buf []byte) ([]byte, error) {
 	dst := buf
 	offset := int(4)
 
@@ -429,7 +390,7 @@ func (v *validatorSet) MarshalSSZTo(buf []byte) ([]byte, error) {
 
 	// Field (0) 'Validators'
 	if size := len(v.Validators); size > ValidatorsListMaxElements {
-		return nil, ssz.ErrListTooBigFn("ValidatorSet.Validators", size, ValidatorsListMaxElements)
+		return nil, ssz.ErrListTooBigFn("SszValidatorSet.Validators", size, ValidatorsListMaxElements)
 	}
 	{
 		offset = 4 * len(v.Validators)
@@ -449,8 +410,8 @@ func (v *validatorSet) MarshalSSZTo(buf []byte) ([]byte, error) {
 	return dst, nil
 }
 
-// UnmarshalSSZ ssz unmarshalls the ValidatorSet object
-func (v *validatorSet) UnmarshalSSZ(buf []byte) error {
+// UnmarshalSSZ ssz unmarshalls the SszValidatorSet object
+func (v *SszValidatorSet) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
 	if size < 4 {
@@ -476,10 +437,10 @@ func (v *validatorSet) UnmarshalSSZ(buf []byte) error {
 		if err != nil {
 			return err
 		}
-		v.Validators = make([]*validator, num)
+		v.Validators = make([]*SszValidator, num)
 		err = ssz.UnmarshalDynamic(buf, num, func(indx int, buf []byte) (err error) {
 			if v.Validators[indx] == nil {
-				v.Validators[indx] = new(validator)
+				v.Validators[indx] = new(SszValidator)
 			}
 			if err = v.Validators[indx].UnmarshalSSZ(buf); err != nil {
 				return err
@@ -493,8 +454,8 @@ func (v *validatorSet) UnmarshalSSZ(buf []byte) error {
 	return err
 }
 
-// SizeSSZ returns the ssz encoded size in bytes for the ValidatorSet object
-func (v *validatorSet) SizeSSZ() int {
+// SizeSSZ returns the ssz encoded size in bytes for the SszValidatorSet object
+func (v *SszValidatorSet) SizeSSZ() int {
 	size := 4
 
 	// Field (0) 'Validators'
@@ -506,13 +467,13 @@ func (v *validatorSet) SizeSSZ() int {
 	return size
 }
 
-// HashTreeRoot ssz hashes the ValidatorSet object
-func (v *validatorSet) HashTreeRoot() ([32]byte, error) {
+// HashTreeRoot ssz hashes the SszValidatorSet object
+func (v *SszValidatorSet) HashTreeRoot() ([32]byte, error) {
 	return ssz.HashWithDefaultHasher(v)
 }
 
-// HashTreeRootWith ssz hashes the ValidatorSet object with a hasher
-func (v *validatorSet) HashTreeRootWith(hh ssz.HashWalker) error {
+// HashTreeRootWith ssz hashes the SszValidatorSet object with a hasher
+func (v *SszValidatorSet) HashTreeRootWith(hh ssz.HashWalker) error {
 	indx := hh.Index()
 
 	// Field (0) 'Validators'
@@ -535,12 +496,12 @@ func (v *validatorSet) HashTreeRootWith(hh ssz.HashWalker) error {
 	return nil
 }
 
-// GetTree ssz hashes the ValidatorSet object
-func (v *validatorSet) GetTree() (*ssz.Node, error) {
+// GetTree ssz hashes the SszValidatorSet object
+func (v *SszValidatorSet) GetTree() (*ssz.Node, error) {
 	return ssz.ProofTree(v)
 }
 
-func (v *validatorSet) ProveValidatorRoot(operator common.Address) (*validator, int, *ssz.Proof, error) {
+func (v *SszValidatorSet) ProveValidatorRoot(operator common.Address) (*SszValidator, int, *ssz.Proof, error) {
 	validatorIndex := sort.Search(len(v.Validators), func(i int) bool {
 		return v.Validators[i].Operator.Cmp(operator) >= 0
 	})
@@ -548,11 +509,11 @@ func (v *validatorSet) ProveValidatorRoot(operator common.Address) (*validator, 
 		return nil, 0, nil, fmt.Errorf("validator %s not found", operator)
 	}
 
-	// go to ValidatorSet.Validators
+	// go to SszValidatorSet.Validators
 	validatorRootTreeIndex := 1<<ValidatorSetTreeHeight + ValidatorsListLocalPosition
 	// consider List's length mix-in
 	validatorRootTreeIndex <<= 1
-	// go to ValidatorSet.Validators[validatorIndex]
+	// go to SszValidatorSet.Validators[validatorIndex]
 	validatorRootTreeIndex = validatorRootTreeIndex*ValidatorsListMaxElements + validatorIndex
 
 	validatorRootTreeLocalIndex := ValidatorsListLocalPosition
@@ -572,7 +533,7 @@ func (v *validatorSet) ProveValidatorRoot(operator common.Address) (*validator, 
 	return v.Validators[validatorIndex], validatorRootTreeLocalIndex, validatorRootProof, nil
 }
 
-func (v *validator) ProveOperator() (*ssz.Proof, error) {
+func (v *SszValidator) ProveOperator() (*ssz.Proof, error) {
 	validatorRootNode, err := v.GetTree()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get validator root node: %w", err)
@@ -589,7 +550,7 @@ func (v *validator) ProveOperator() (*ssz.Proof, error) {
 	return operatorProof, nil
 }
 
-func (v *validator) ProveValidatorVotingPower() (*ssz.Proof, error) {
+func (v *SszValidator) ProveValidatorVotingPower() (*ssz.Proof, error) {
 	validatorRootNode, err := v.GetTree()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get validator root node: %w", err)
@@ -606,7 +567,7 @@ func (v *validator) ProveValidatorVotingPower() (*ssz.Proof, error) {
 	return validatorVotingPowerProof, nil
 }
 
-func (v *validator) ProveIsActive() (*ssz.Proof, error) {
+func (v *SszValidator) ProveIsActive() (*ssz.Proof, error) {
 	validatorRootNode, err := v.GetTree()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get validator root node: %w", err)
@@ -623,12 +584,12 @@ func (v *validator) ProveIsActive() (*ssz.Proof, error) {
 	return isActiveProof, nil
 }
 
-func (v *validator) ProveKeyRoot(keyTag entity.KeyTag) (*key, int, *ssz.Proof, error) {
+func (v *SszValidator) ProveKeyRoot(keyTag entity.KeyTag) (*SszKey, int, *ssz.Proof, error) {
 	keyIndex := sort.Search(len(v.Keys), func(i int) bool {
 		return v.Keys[i].Tag >= uint8(keyTag)
 	})
 	if keyIndex >= len(v.Keys) || v.Keys[keyIndex].Tag != uint8(keyTag) {
-		return nil, 0, nil, fmt.Errorf("key %d not found", keyTag)
+		return nil, 0, nil, fmt.Errorf("SszKey %d not found", keyTag)
 	}
 
 	validatorRootNode, err := v.GetTree()
@@ -655,10 +616,10 @@ func (v *validator) ProveKeyRoot(keyTag entity.KeyTag) (*key, int, *ssz.Proof, e
 	return v.Keys[keyIndex], keyRootTreeLocalIndex, keyRootProof, nil
 }
 
-func (k *key) ProveTag() (*ssz.Proof, error) {
+func (k *SszKey) ProveTag() (*ssz.Proof, error) {
 	keyRootNode, err := k.GetTree()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get key root node: %w", err)
+		return nil, fmt.Errorf("failed to get SszKey root node: %w", err)
 	}
 
 	// go to Key.Tag
@@ -666,16 +627,16 @@ func (k *key) ProveTag() (*ssz.Proof, error) {
 
 	tagProof, err := keyRootNode.Prove(tagTreeIndex)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get key tag proof: %w", err)
+		return nil, fmt.Errorf("failed to get SszKey tag proof: %w", err)
 	}
 
 	return tagProof, nil
 }
 
-func (k *key) ProvePayloadHash() (*ssz.Proof, error) {
+func (k *SszKey) ProvePayloadHash() (*ssz.Proof, error) {
 	keyRootNode, err := k.GetTree()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get key root node: %w", err)
+		return nil, fmt.Errorf("failed to get SszKey root node: %w", err)
 	}
 
 	// go to Key.PayloadHash
@@ -683,13 +644,13 @@ func (k *key) ProvePayloadHash() (*ssz.Proof, error) {
 
 	payloadHashProof, err := keyRootNode.Prove(payloadHashTreeIndex)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get key payload hash proof: %w", err)
+		return nil, fmt.Errorf("failed to get SszKey payload hash proof: %w", err)
 	}
 
 	return payloadHashProof, nil
 }
 
-func (v *validator) ProveVaultRoot(vault common.Address) (*vault, int, *ssz.Proof, error) {
+func (v *SszValidator) ProveVaultRoot(vault common.Address) (*SszVault, int, *ssz.Proof, error) {
 	vaultIndex := sort.Search(len(v.Vaults), func(i int) bool {
 		return v.Vaults[i].Vault.Cmp(vault) >= 0
 	})
@@ -721,7 +682,7 @@ func (v *validator) ProveVaultRoot(vault common.Address) (*vault, int, *ssz.Proo
 	return v.Vaults[vaultIndex], vaultRootTreeLocalIndex, vaultRootProof, nil
 }
 
-func (v *validator) ProveChainId() (*ssz.Proof, error) {
+func (v *SszValidator) ProveChainId() (*ssz.Proof, error) {
 	validatorRootNode, err := v.GetTree()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get validator root node: %w", err)
@@ -738,13 +699,13 @@ func (v *validator) ProveChainId() (*ssz.Proof, error) {
 	return chainIdProof, nil
 }
 
-func (v *vault) ProveVault() (*ssz.Proof, error) {
+func (v *SszValidator) ProveVault() (*ssz.Proof, error) {
 	vaultRootNode, err := v.GetTree()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get vault root node: %w", err)
 	}
 
-	// go to Vault.Vault
+	// go to OperatorVault.OperatorVault
 	vaultTreeIndex := 1<<VaultTreeHeight + VaultLocalPosition
 
 	vaultProof, err := vaultRootNode.Prove(vaultTreeIndex)
@@ -755,13 +716,13 @@ func (v *vault) ProveVault() (*ssz.Proof, error) {
 	return vaultProof, nil
 }
 
-func (v *vault) ProveVaultVotingPower() (*ssz.Proof, error) {
+func (v *SszValidator) ProveVaultVotingPower() (*ssz.Proof, error) {
 	vaultRootNode, err := v.GetTree()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get vault root node: %w", err)
 	}
 
-	// go to Vault.VotingPower
+	// go to OperatorVault.VotingPower
 	vaultVotingPowerTreeIndex := 1<<VaultTreeHeight + VaultVotingPowerLocalPosition
 
 	vaultVotingPowerProof, err := vaultRootNode.Prove(vaultVotingPowerTreeIndex)

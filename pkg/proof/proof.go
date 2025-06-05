@@ -333,6 +333,14 @@ func HashValset(valset []ValidatorData) []byte {
 	return h.Sum(nil)
 }
 
+func ValidatorSetMimcAccumulator(valset []entity.Validator, requiredKeyTag uint8) ([32]byte, error) {
+	validatorsData, err := ToValidatorsData([]entity.Validator{}, valset, requiredKeyTag)
+	if err != nil {
+		return [32]byte{}, err
+	}
+	return [32]byte(HashValset(validatorsData)), nil
+}
+
 func getPubkeyG1(pk *big.Int) bn254.G1Affine {
 	_, _, g1Aff, _ := bn254.Generators()
 	var p bn254.G1Affine

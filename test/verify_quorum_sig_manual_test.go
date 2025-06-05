@@ -12,7 +12,7 @@ package test
 //
 //	"github.com/stretchr/testify/require"
 //
-//	"middleware-offchain/internal/client/eth"
+//	"middleware-offchain/internal/client/symbiotic"
 //	"middleware-offchain/internal/client/valset"
 //	"middleware-offchain/internal/entity"
 //	"middleware-offchain/pkg/bls"
@@ -35,7 +35,7 @@ package test
 //	zeroPk := new(big.Int).Add(base, big.NewInt(int64(0)))
 //	pkBytes := [32]byte{}
 //	zeroPk.FillBytes(pkBytes[:])
-//	eth1, err := eth.NewEthClient(eth.Config{
+//	eth1, err := symbiotic.NewEthClient(symbiotic.Config{
 //		MasterRPCURL:   "http://localhost:8545",
 //		MasterAddress:  "0x63d855589514F1277527f4fD8D464836F8Ca73Ba",
 //		PrivateKey:     pkBytes[:],
@@ -131,7 +131,7 @@ package test
 //	zeroPk := new(big.Int).Add(base, big.NewInt(int64(0)))
 //	pkBytes := [32]byte{}
 //	zeroPk.FillBytes(pkBytes[:])
-//	eth1, err := eth.NewEthClient(eth.Config{
+//	eth1, err := symbiotic.NewEthClient(symbiotic.Config{
 //		MasterRPCURL:   "http://localhost:8545",
 //		MasterAddress:  "0x63d855589514F1277527f4fD8D464836F8Ca73Ba",
 //		PrivateKey:     pkBytes[:],

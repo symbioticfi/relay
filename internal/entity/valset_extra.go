@@ -10,7 +10,7 @@ import (
 type ValidatorSetExtra struct {
 	Version              uint8
 	RequiredKeyTag       KeyTag
-	Config               Config
+	Config               NetworkConfig
 	DomainEip712         Eip712Domain
 	Subnetwork           []byte
 	Keys                 []OperatorWithKeys
@@ -32,7 +32,7 @@ func (v ValidatorSetExtra) MakeValidatorSet() ValidatorSet {
 				VotingPower: big.NewInt(0),
 				IsActive:    false, // Default to active, will filter later
 				Keys:        []Key{},
-				Vaults:      []Vault{},
+				Vaults:      []ValidatorVault{},
 			}
 		}
 
@@ -44,7 +44,7 @@ func (v ValidatorSetExtra) MakeValidatorSet() ValidatorSet {
 			)
 
 			// Add vault to validator's vaults
-			validatorsMap[operatorAddr].Vaults = append(validatorsMap[operatorAddr].Vaults, Vault{
+			validatorsMap[operatorAddr].Vaults = append(validatorsMap[operatorAddr].Vaults, ValidatorVault{
 				Vault:       vault.Vault,
 				VotingPower: vault.VotingPower,
 			})

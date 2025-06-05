@@ -21,8 +21,8 @@ import (
 	"github.com/libp2p/go-libp2p"
 	"github.com/spf13/cobra"
 
-	"middleware-offchain/internal/client/eth"
 	"middleware-offchain/internal/client/p2p"
+	"middleware-offchain/internal/client/symbiotic"
 	"middleware-offchain/internal/entity"
 	"middleware-offchain/pkg/log"
 )
@@ -104,15 +104,15 @@ var rootCmd = &cobra.Command{
 		}
 		slog.InfoContext(ctx, "started discovery service", "listenAddr", cfg.listenAddress)
 
-		ethClient, err := eth.NewEthClient(eth.Config{
+		ethClient, err := symbiotic.NewEVMClient(symbiotic.Config{
 			MasterRPCURL:   cfg.rpcURL,
 			MasterAddress:  cfg.masterAddress,
 			RequestTimeout: time.Second * 10,
 		})
 		if err != nil {
-			return errors.Errorf("failed to create eth client: %w", err)
+			return errors.Errorf("failed to create symbiotic client: %w", err)
 		}
-		slog.DebugContext(ctx, "created eth client")
+		slog.DebugContext(ctx, "created symbiotic client")
 
 		message := strconv.FormatFloat(rand.Float64(), 'f', 10, 64) //nolint:gosec // This is just a random message for testing purposes.
 

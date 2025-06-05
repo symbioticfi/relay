@@ -1,6 +1,6 @@
 //go:build manual
 
-package eth
+package symbiotic
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 )
 
 func TestManual_GetEip712Domain(t *testing.T) {
-	eth, err := NewEthClient(Config{
+	eth, err := NewEVMClient(Config{
 		MasterRPCURL:   "http://127.0.0.1:8545",
 		MasterAddress:  "0x63d855589514F1277527f4fD8D464836F8Ca73Ba",
 		RequestTimeout: time.Minute,
@@ -24,7 +24,7 @@ func TestManual_GetEip712Domain(t *testing.T) {
 }
 
 func TestManual_GetCurrentValsetTimestamp(t *testing.T) {
-	eth, err := NewEthClient(Config{
+	eth, err := NewEVMClient(Config{
 		MasterRPCURL:   "http://127.0.0.1:8545",
 		MasterAddress:  "0x63d855589514F1277527f4fD8D464836F8Ca73Ba",
 		RequestTimeout: time.Minute,

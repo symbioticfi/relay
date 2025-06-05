@@ -12,7 +12,7 @@ package valsetDeriver
 //
 //	"github.com/stretchr/testify/require"
 //
-//	"middleware-offchain/internal/client/eth"
+//	"middleware-offchain/internal/client/symbiotic"
 //)
 //
 //func TestDeriverManual(t *testing.T) {
@@ -20,7 +20,7 @@ package valsetDeriver
 //	privateKeyInt := new(big.Int)
 //	privateKeyInt.SetString("87191036493798670866484781455694320176667203290824056510541300741498740913410", 10)
 //
-//	client, err := eth.NewEthClient(eth.Config{
+//	client, err := symbiotic.NewEthClient(symbiotic.Config{
 //		MasterRPCURL:   "http://127.0.0.1:8545",
 //		MasterAddress:  "0x63d855589514F1277527f4fD8D464836F8Ca73Ba",
 //		PrivateKey:     privateKeyInt.Bytes(),

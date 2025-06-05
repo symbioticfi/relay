@@ -71,9 +71,9 @@ package valsetDeriver
 //
 //	ctrl := gomock.NewController(t)
 //	der := mocks.NewMockderiver(ctrl)
-//	eth := mocks.NewMockethClient(ctrl)
+//	symbiotic := mocks.NewMockethClient(ctrl)
 //
-//	generator, err := NewGenerator(der, eth)
+//	generator, err := NewGenerator(der, symbiotic)
 //	require.NoError(t, err)
 //
 //	headerHash1, err := generator.GenerateValidatorSetHeaderHash(valsetHeader1, extraData1)
