@@ -19,10 +19,10 @@ build-for-linux:
 
 gen-abi:
 	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
-		--abi internal/client/eth/Master.abi.json \
+		--abi internal/client/symbiotic/Master.abi.json \
 		--type Master \
 		--pkg gen \
-		--out internal/client/eth/gen/master.go
+		--out internal/client/symbiotic/gen/master.go
 
 
 build-generate-genesis-linux:

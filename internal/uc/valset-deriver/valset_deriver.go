@@ -1,6 +1,7 @@
 package valsetDeriver
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
@@ -36,7 +37,10 @@ type ethClient interface {
 	GetCurrentEpoch(ctx context.Context) (uint64, error)
 	GetSubnetwork(ctx context.Context) ([32]byte, error)
 	GetNetworkAddress(ctx context.Context) (*common.Address, error)
-	GetPreviousHeaderHash(ctx context.Context) ([32]byte, error)
+	GetLatestHeaderHash(ctx context.Context) ([32]byte, error)
+	IsValsetHeaderCommittedAt(ctx context.Context, epoch uint64) (bool, error)
+	GetPreviousHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, error)
+	GetHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, error)
 }
 
 // Deriver coordinates the ETH services
@@ -117,23 +121,57 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 		return entity.ValidatorSet{}, fmt.Errorf("failed to get required key tag: %w", err)
 	}
 
-	captureTimestamp, err := v.ethClient.GetEpochStart(ctx, epoch)
+	isValsetCommitted, err := v.ethClient.IsValsetHeaderCommittedAt(ctx, epoch)
 	if err != nil {
-		return entity.ValidatorSet{}, fmt.Errorf("failed to get capture timestamp: %w", err)
+		return entity.ValidatorSet{}, fmt.Errorf("failed to check if validator committed at epoch %d: %w", epoch, err)
 	}
 
-	previousHeaderHash, err := v.ethClient.GetPreviousHeaderHash(ctx)
-
-	return entity.ValidatorSet{
+	valset := entity.ValidatorSet{
 		Version:                valsetVersion,
 		RequiredKeyTag:         requiredKeyTag,
 		Epoch:                  epoch,
-		CaptureTimestamp:       captureTimestamp,
+		CaptureTimestamp:       timestamp,
 		QuorumThreshold:        quorumThreshold,
-		PreviousHeaderHash:     previousHeaderHash,
 		Validators:             validators,
 		TotalActiveVotingPower: totalVP,
-	}, nil
+	}
+
+	if isValsetCommitted {
+		slog.DebugContext(ctx, "Validator set committed at epoch already, checking integrity", "epoch", epoch)
+		previousHeaderHash, err := v.ethClient.GetPreviousHeaderHashAt(ctx, epoch)
+		if err != nil {
+			return entity.ValidatorSet{}, fmt.Errorf("failed to get previous header hash: %w", err)
+		}
+		valset.PreviousHeaderHash = previousHeaderHash
+
+		// valset integrity check
+		committedHash, err := v.ethClient.GetHeaderHashAt(ctx, epoch)
+		if err != nil {
+			return entity.ValidatorSet{}, fmt.Errorf("failed to get header hash: %w", err)
+		}
+		valsetHeader, err := valset.GetHeader()
+		if err != nil {
+			return entity.ValidatorSet{}, fmt.Errorf("failed to get header hash: %w", err)
+		}
+		calculatedHash, err := valsetHeader.Hash()
+		if err != nil {
+			return entity.ValidatorSet{}, fmt.Errorf("failed to get header hash: %w", err)
+		}
+		if !bytes.Equal(committedHash[:], calculatedHash[:]) {
+			slog.DebugContext(ctx, "committed header hash", "hash", committedHash)
+			slog.DebugContext(ctx, "calculated header hash", "hash", calculatedHash)
+			return entity.ValidatorSet{}, fmt.Errorf("validator set hash mistmach at epoch %d: %w", epoch, err)
+		}
+	} else {
+		slog.DebugContext(ctx, "Validator set is not committed at epoch ", "epoch", epoch)
+		previousHeaderHash, err := v.ethClient.GetLatestHeaderHash(ctx)
+		if err != nil {
+			return entity.ValidatorSet{}, fmt.Errorf("failed to get latest header hash: %w", err)
+		}
+		valset.PreviousHeaderHash = previousHeaderHash
+	}
+
+	return valset, nil
 }
 
 // TODO move to commiter?

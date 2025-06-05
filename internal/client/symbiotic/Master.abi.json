@@ -894,6 +894,20 @@
   },
   {
     "type": "function",
+    "name": "getValSetHeaderHash",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getValSetHeaderHashAt",
+    "inputs": [{ "name": "epoch", "type": "uint48", "internalType": "uint48" }],
+    "outputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "getValidatorsSszMRootFromValSetHeader",
     "inputs": [],
     "outputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],

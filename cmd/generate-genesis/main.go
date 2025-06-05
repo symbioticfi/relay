@@ -18,7 +18,7 @@ import (
 	"middleware-offchain/pkg/log"
 )
 
-// generate_genesis --master-address 0x63d855589514F1277527f4fD8D464836F8Ca73Ba --rpc-url http://127.0.0.1:8545
+// generate_genesis --master-address 0xE82319C323a3e20dE10e83C6a107C852A5D75408 --rpc-url http://127.0.0.1:8545
 func main() {
 	slog.Info("Running generate_genesis command", "args", os.Args)
 

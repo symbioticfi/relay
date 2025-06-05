@@ -52,8 +52,12 @@ var (
 	getSubnetworkFunction                         = "SUBNETWORK"
 	getNetworkFunction                            = "NETWORK"
 	getPreviousHeaderHashFunction                 = "getPreviousHeaderHashFromValSetHeader"
+	getPreviousHeaderHashAtFunction               = "getPreviousHeaderHashFromValSetHeaderAt"
 	getEip712DomainFunction                       = "eip712Domain"
 	verifyQuorumSigFunction                       = "verifyQuorumSig"
+	getLatestHeaderHashFunction                   = "getValSetHeaderHash"
+	getLatestHeaderHashAtFunction                 = "getValSetHeaderHashAt"
+	isValSetHeaderCommittedAtFunction             = "isValSetHeaderCommittedAt"
 )
 
 type Config struct {
@@ -235,6 +239,21 @@ func (e *Client) GetIsGenesisSet(ctx context.Context) (bool, error) {
 	return isGenesisSet == 1, nil
 }
 
+func (e *Client) IsValsetHeaderCommittedAt(ctx context.Context, epoch uint64) (bool, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, isValSetHeaderCommittedAtFunction, new(big.Int).SetUint64(epoch))
+	if err != nil {
+		return false, fmt.Errorf("failed to construct call msg: %w", err)
+	}
+
+	result, err := e.callContract(ctx, callMsg)
+	if err != nil {
+		return false, fmt.Errorf("failed to call contract: %w", err)
+	}
+
+	flag := new(big.Int).SetBytes(result).Uint64()
+	return flag == 1, nil
+}
+
 func (e *Client) GetCurrentEpoch(ctx context.Context) (uint64, error) {
 	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getCurrentEpochFunction)
 	if err != nil {
@@ -252,6 +271,48 @@ func (e *Client) GetCurrentEpoch(ctx context.Context) (uint64, error) {
 
 func (e *Client) GetPreviousHeaderHash(ctx context.Context) ([32]byte, error) {
 	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getPreviousHeaderHashFunction)
+	if err != nil {
+		return [32]byte{}, fmt.Errorf("failed to construct call msg: %w", err)
+	}
+
+	result, err := e.callContract(ctx, callMsg)
+	if err != nil {
+		return [32]byte{}, fmt.Errorf("failed to call contract: %w", err)
+	}
+
+	return [32]byte(result), nil
+}
+
+func (e *Client) GetPreviousHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getPreviousHeaderHashAtFunction, new(big.Int).SetUint64(epoch))
+	if err != nil {
+		return [32]byte{}, fmt.Errorf("failed to construct call msg: %w", err)
+	}
+
+	result, err := e.callContract(ctx, callMsg)
+	if err != nil {
+		return [32]byte{}, fmt.Errorf("failed to call contract: %w", err)
+	}
+
+	return [32]byte(result), nil
+}
+
+func (e *Client) GetLatestHeaderHash(ctx context.Context) ([32]byte, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getLatestHeaderHashFunction)
+	if err != nil {
+		return [32]byte{}, fmt.Errorf("failed to construct call msg: %w", err)
+	}
+
+	result, err := e.callContract(ctx, callMsg)
+	if err != nil {
+		return [32]byte{}, fmt.Errorf("failed to call contract: %w", err)
+	}
+
+	return [32]byte(result), nil
+}
+
+func (e *Client) GetHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getLatestHeaderHashAtFunction, new(big.Int).SetUint64(epoch))
 	if err != nil {
 		return [32]byte{}, fmt.Errorf("failed to construct call msg: %w", err)
 	}
