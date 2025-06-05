@@ -162,7 +162,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 		if !bytes.Equal(committedHash[:], calculatedHash[:]) {
 			slog.DebugContext(ctx, "committed header hash", "hash", committedHash)
 			slog.DebugContext(ctx, "calculated header hash", "hash", calculatedHash)
-			//return entity.ValidatorSet{}, errors.Errorf("validator set hash mistmach at epoch %d", epoch) // todo check and turn on
+			return entity.ValidatorSet{}, errors.Errorf("validator set hash mistmach at epoch %d", epoch)
 		}
 
 		valset.Status = entity.HeaderCommitted

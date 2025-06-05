@@ -229,19 +229,12 @@ func (v ValidatorSetHeader) AbiEncode() ([]byte, error) {
 		},
 	}
 
-	// Prepend the initial 32-byte offset (value 32 = 0x20)
-	initialOffset := make([]byte, 32)
-	offsetValue := big.NewInt(32)
-	// FillBytes puts the big.Int's value into the byte slice, padded left with zeros
-	offsetBytes := offsetValue.FillBytes(make([]byte, 32))
-	copy(initialOffset, offsetBytes) // Copy the padded value into our prefix slice
-
 	pack, err := arguments.Pack(v.Version, v.RequiredKeyTag, new(big.Int).SetUint64(v.Epoch), new(big.Int).SetUint64(v.CaptureTimestamp), v.QuorumThreshold, v.ValidatorsSszMRoot, v.PreviousHeaderHash)
 	if err != nil {
 		return nil, errors.Errorf("failed to pack arguments: %w", err)
 	}
 
-	return append(initialOffset, pack...), err
+	return pack, nil
 }
 
 func (v ValidatorSetHeader) Hash() ([32]byte, error) {

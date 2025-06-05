@@ -58,6 +58,7 @@ var (
 	getLatestHeaderHashFunction                   = "getValSetHeaderHash"
 	getLatestHeaderHashAtFunction                 = "getValSetHeaderHashAt"
 	isValSetHeaderCommittedAtFunction             = "isValSetHeaderCommittedAt"
+	getValSetHeaderAtFunction                     = "getValSetHeaderAt"
 )
 
 type Config struct {
@@ -555,6 +556,48 @@ func (e *Client) GetNetworkAddress(ctx context.Context) (*common.Address, error)
 	}
 
 	return abi.ConvertType(result, new(common.Address)).(*common.Address), nil
+}
+
+func (e *Client) GetValSetHeaderAt(ctx context.Context, epoch uint64) (entity.ValidatorSetHeader, error) {
+	type dtoValsetHeader struct {
+		Version            uint8
+		RequiredKeyTag     uint8
+		Epoch              *big.Int
+		CaptureTimestamp   *big.Int
+		QuorumThreshold    *big.Int
+		ValidatorsSszMRoot [32]byte
+		PreviousHeaderHash [32]byte
+	}
+	type dtoValsetHeaderContainer struct {
+		DTOValsetHeader dtoValsetHeader
+	}
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getValSetHeaderAtFunction, new(big.Int).SetUint64(epoch))
+	if err != nil {
+		return entity.ValidatorSetHeader{}, fmt.Errorf("failed to construct call msg: %w", err)
+	}
+
+	result, err := e.callContract(ctx, callMsg)
+	if err != nil {
+		return entity.ValidatorSetHeader{}, fmt.Errorf("failed to call contract: %w", err)
+	}
+
+	dtoContainer := dtoValsetHeaderContainer{}
+	err = masterABI.UnpackIntoInterface(&dtoContainer, getValSetHeaderAtFunction, result)
+	if err != nil {
+		return entity.ValidatorSetHeader{}, errors.Errorf("failed to unpack config: %w", err)
+	}
+
+	valsetHeader := dtoContainer.DTOValsetHeader
+
+	return entity.ValidatorSetHeader{
+		Version:            valsetHeader.Version,
+		RequiredKeyTag:     entity.KeyTag(valsetHeader.RequiredKeyTag),
+		Epoch:              valsetHeader.Epoch.Uint64(),
+		CaptureTimestamp:   valsetHeader.CaptureTimestamp.Uint64(),
+		QuorumThreshold:    valsetHeader.QuorumThreshold,
+		ValidatorsSszMRoot: valsetHeader.ValidatorsSszMRoot,
+		PreviousHeaderHash: valsetHeader.PreviousHeaderHash,
+	}, nil
 }
 
 func (e *Client) GetEip712Domain(ctx context.Context) (entity.Eip712Domain, error) {
