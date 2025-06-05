@@ -42,6 +42,7 @@ type ethClient interface {
 	IsValsetHeaderCommittedAt(ctx context.Context, epoch uint64) (bool, error)
 	GetPreviousHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, error)
 	GetHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, error)
+	GetCurrentValsetEpoch(ctx context.Context) (uint64, error)
 }
 
 // Deriver coordinates the ETH services
@@ -128,13 +129,12 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 	}
 
 	valset := entity.ValidatorSet{
-		Version:                valsetVersion,
-		RequiredKeyTag:         requiredKeyTag,
-		Epoch:                  epoch,
-		CaptureTimestamp:       timestamp,
-		QuorumThreshold:        quorumThreshold,
-		Validators:             validators,
-		TotalActiveVotingPower: totalVP,
+		Version:          valsetVersion,
+		RequiredKeyTag:   requiredKeyTag,
+		Epoch:            epoch,
+		CaptureTimestamp: timestamp,
+		QuorumThreshold:  quorumThreshold,
+		Validators:       validators,
 	}
 
 	if isValsetCommitted {
@@ -164,13 +164,27 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 			slog.DebugContext(ctx, "calculated header hash", "hash", calculatedHash)
 			//return entity.ValidatorSet{}, errors.Errorf("validator set hash mistmach at epoch %d", epoch) // todo check and turn on
 		}
+
+		valset.Status = entity.HeaderCommitted
 	} else {
-		slog.DebugContext(ctx, "Validator set is not committed at epoch", "epoch", epoch)
-		previousHeaderHash, err := v.ethClient.GetLatestHeaderHash(ctx)
+		latestCommittedEpoch, err := v.ethClient.GetCurrentValsetEpoch(ctx)
 		if err != nil {
-			return entity.ValidatorSet{}, errors.Errorf("failed to get latest header hash: %w", err)
+			return entity.ValidatorSet{}, fmt.Errorf("failed to get current valset epoch: %w", err)
 		}
-		valset.PreviousHeaderHash = previousHeaderHash
+
+		if epoch < latestCommittedEpoch {
+			valset.Status = entity.HeaderMissed
+			// zero PreviousHeaderHash cos header is orphaned
+		} else {
+			slog.DebugContext(ctx, "Validator set is not committed at epoch", "epoch", epoch)
+			previousHeaderHash, err := v.ethClient.GetLatestHeaderHash(ctx)
+			if err != nil {
+				return entity.ValidatorSet{}, errors.Errorf("failed to get latest header hash: %w", err)
+			}
+			// trying to link to latest committed header
+			valset.PreviousHeaderHash = previousHeaderHash
+			valset.Status = entity.HeaderPending
+		}
 	}
 
 	return valset, nil

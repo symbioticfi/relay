@@ -35,15 +35,25 @@ type Validator struct {
 	Vaults      []ValidatorVault `json:"vaults"`
 }
 
+type ValidatorSetStatus int
+
+const (
+	HeaderPending ValidatorSetStatus = iota
+	HeaderMissed
+	HeaderCommitted
+)
+
 type ValidatorSet struct {
-	Version                uint8
-	RequiredKeyTag         KeyTag   // key tag required to commit next valset
-	Epoch                  uint64   // valset epoch
-	CaptureTimestamp       uint64   // epoch capture timestamp
-	QuorumThreshold        *big.Int // absolute number now, not a percent
-	PreviousHeaderHash     [32]byte // previous valset header hash
-	Validators             []Validator
-	TotalActiveVotingPower *big.Int // todo ilya maybe remove
+	Version            uint8
+	RequiredKeyTag     KeyTag   // key tag required to commit next valset
+	Epoch              uint64   // valset epoch
+	CaptureTimestamp   uint64   // epoch capture timestamp
+	QuorumThreshold    *big.Int // absolute number now, not a percent
+	PreviousHeaderHash [32]byte // previous valset header hash
+	Validators         []Validator
+
+	// internal usage only
+	Status ValidatorSetStatus
 }
 
 // Signature signer.sign() -> Signature
