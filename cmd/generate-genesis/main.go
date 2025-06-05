@@ -93,7 +93,7 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to get config: %w", err)
 		}
 
-		newValset, err := deriver.GetValidatorSet(ctx, currentOnchainEpoch, &networkConfig)
+		newValset, err := deriver.GetValidatorSet(ctx, currentOnchainEpoch, networkConfig)
 		if err != nil {
 			return errors.Errorf("failed to get validator set extra for epoch %s: %w", currentOnchainEpoch, err)
 		}
