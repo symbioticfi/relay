@@ -42,7 +42,7 @@ type ethClient interface {
 	IsValsetHeaderCommittedAt(ctx context.Context, epoch uint64) (bool, error)
 	GetPreviousHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, error)
 	GetHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, error)
-	GetCurrentValsetEpoch(ctx context.Context) (uint64, error)
+	GetLastCommittedHeaderEpoch(ctx context.Context) (uint64, error)
 }
 
 // Deriver coordinates the ETH services
@@ -167,7 +167,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 
 		valset.Status = entity.HeaderCommitted
 	} else {
-		latestCommittedEpoch, err := v.ethClient.GetCurrentValsetEpoch(ctx)
+		latestCommittedEpoch, err := v.ethClient.GetLastCommittedHeaderEpoch(ctx)
 		if err != nil {
 			return entity.ValidatorSet{}, fmt.Errorf("failed to get current valset epoch: %w", err)
 		}

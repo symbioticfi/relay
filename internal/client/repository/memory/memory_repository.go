@@ -104,6 +104,16 @@ func (r *Repository) GetSignatureRequest(_ context.Context, req entity.Signature
 	return mo.None[entity.SignatureRequest](), nil
 }
 
+func (r *Repository) SaveSignatureRequest(_ context.Context, req entity.SignatureRequest) error {
+	hash := signRequestHash(req)
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	r.signRequests[hash] = req
+
+	return nil
+}
+
 func (r *Repository) GetAggregationProof(ctx context.Context, req entity.SignatureRequest) (mo.Option[entity.AggregationProof], error) {
 	hash := signRequestHash(req)
 	r.mu.Lock()

@@ -12,7 +12,7 @@ import (
 )
 
 type eth interface {
-	GetCurrentValsetEpoch(ctx context.Context) (uint64, error)
+	GetLastCommittedHeaderEpoch(ctx context.Context) (uint64, error)
 	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
 	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
 }
@@ -72,7 +72,7 @@ func (s *Service) Start(ctx context.Context) error {
 }
 
 func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
-	latestCommitedOnchainEpoch, err := s.cfg.Eth.GetCurrentValsetEpoch(ctx)
+	latestCommitedOnchainEpoch, err := s.cfg.Eth.GetLastCommittedHeaderEpoch(ctx)
 	if err != nil {
 		return errors.Errorf("failed to get current epoch: %w", err)
 	}

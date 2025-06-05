@@ -18,6 +18,7 @@ type repo interface {
 	GetAggregationProof(ctx context.Context, req entity.SignatureRequest) (mo.Option[entity.AggregationProof], error)
 	GetValsetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 	SaveSignature(ctx context.Context, req entity.SignatureRequest, sig entity.Signature) error
+	SaveSignatureRequest(_ context.Context, req entity.SignatureRequest) error
 }
 
 type p2pService interface {
@@ -68,7 +69,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.Errorf("failed to get signature request: %w", err)
 	}
 	if existed.IsPresent() {
-		return errors.New(entity.ErrSignatureRequestExists)
+		return nil
 	}
 
 	existedProof, err := s.cfg.Repo.GetAggregationProof(ctx, req)
@@ -124,6 +125,10 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 	})
 	if err != nil {
 		return errors.Errorf("failed to broadcast valset header: %w", err)
+	}
+
+	if err := s.cfg.Repo.SaveSignatureRequest(ctx, req); err != nil {
+		return errors.Errorf("failed to save signature request: %w", err)
 	}
 
 	return nil

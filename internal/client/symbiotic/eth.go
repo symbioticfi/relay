@@ -42,7 +42,7 @@ var (
 	getEpochStartFunction                         = "getEpochStart"
 	getCurrentPhaseFunction                       = "getCurrentPhase"
 	getCurrentValsetTimestampFunction             = "getCurrentValSetTimestamp"
-	getCurrentValsetEpochFunction                 = "getCurrentValSetEpoch"
+	getLastCommittedHeaderEpochFunction           = "getLastCommittedHeaderEpoch"
 	getCaptureTimestampFunction                   = "getCaptureTimestamp"
 	getCaptureTimestampFromValsetHeaderAtFunction = "getCaptureTimestampFromValSetHeaderAt"
 	getVotingPowersFunction                       = "getVotingPowersAt"
@@ -340,8 +340,8 @@ func (e *Client) GetEpochStart(ctx context.Context, epoch uint64) (uint64, error
 	return timestamp, nil
 }
 
-func (e *Client) GetCurrentValsetEpoch(ctx context.Context) (uint64, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getCurrentValsetEpochFunction)
+func (e *Client) GetLastCommittedHeaderEpoch(ctx context.Context) (uint64, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getLastCommittedHeaderEpochFunction)
 	if err != nil {
 		return 0, fmt.Errorf("failed to construct call msg: %w", err)
 	}

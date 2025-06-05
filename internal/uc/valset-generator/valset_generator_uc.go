@@ -54,7 +54,8 @@ func (c Config) Validate() error {
 }
 
 type Service struct {
-	cfg Config
+	cfg            Config
+	generatedEpoch uint64
 }
 
 func New(cfg Config) (*Service, error) {
@@ -92,6 +93,11 @@ func (s *Service) process(ctx context.Context) error {
 		return nil
 	}
 
+	if s.generatedEpoch >= valSet.Epoch {
+		slog.DebugContext(ctx, "no new epoch to commit, already generated for this epoch", "epoch", valSet.Epoch)
+		return nil
+	}
+
 	networkData, err := s.cfg.Deriver.GetNetworkData(ctx)
 	if err != nil {
 		return errors.Errorf("failed to get network data: %w", err)
@@ -124,6 +130,8 @@ func (s *Service) process(ctx context.Context) error {
 	if err != nil {
 		return errors.Errorf("failed to sign new validator set extra: %w", err)
 	}
+
+	s.generatedEpoch = header.Epoch
 
 	return nil
 }
