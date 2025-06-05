@@ -1,4 +1,4 @@
-package eth
+package symbiotic
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 	"crypto/ecdsa"
 	_ "embed"
 	"fmt"
+	"github.com/samber/lo"
 	"math/big"
 	"time"
 
@@ -16,7 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
-	"middleware-offchain/internal/client/eth/gen"
+	"middleware-offchain/internal/client/symbiotic/gen"
 	"middleware-offchain/internal/entity"
 )
 
@@ -84,7 +85,7 @@ type Client struct {
 	master   *gen.Master       // could be nil for read-only access
 }
 
-func NewEthClient(cfg Config) (*Client, error) {
+func NewEVMClient(cfg Config) (*Client, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("failed to validate config: %w", err)
 	}
@@ -152,7 +153,29 @@ func (e *Client) Commit(messageHash string, signature []byte) error {
 	return nil
 }
 
+type dtoCrossChainAddress struct {
+	Address common.Address
+	ChainId uint64
+}
+
+func (d dtoCrossChainAddress) toEntity() entity.CrossChainAddress {
+	return entity.CrossChainAddress{
+		ChainId: d.ChainId,
+		Address: d.Address,
+	}
+}
+
 func (e *Client) GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error) {
+	type dtoNetworkConfig struct {
+		VotingPowerProviders    []dtoCrossChainAddress
+		KeysProvider            dtoCrossChainAddress
+		Replicas                []dtoCrossChainAddress
+		VerificationType        uint32
+		MaxVotingPower          *big.Int
+		MinInclusionVotingPower *big.Int
+		MaxValidatorsCount      *big.Int
+		RequiredKeyTags         []uint8
+	}
 	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getConfigFunction, timestamp, []byte{})
 	if err != nil {
 		return entity.NetworkConfig{}, errors.Errorf("failed to construct call msg: %w", err)
@@ -163,13 +186,29 @@ func (e *Client) GetConfig(ctx context.Context, timestamp uint64) (entity.Networ
 		return entity.NetworkConfig{}, errors.Errorf("failed to call contract: %w", err)
 	}
 
-	c := entity.NetworkConfig{}
-	err = masterABI.UnpackIntoInterface(&c, getConfigFunction, result)
+	dtoConfig := dtoNetworkConfig{}
+	err = masterABI.UnpackIntoInterface(&dtoConfig, getConfigFunction, result)
 	if err != nil {
 		return entity.NetworkConfig{}, errors.Errorf("failed to unpack config: %w", err)
 	}
 
-	return c, nil
+	return entity.NetworkConfig{
+		VotingPowerProviders: lo.Map(dtoConfig.VotingPowerProviders, func(v dtoCrossChainAddress, _ int) entity.CrossChainAddress {
+			return v.toEntity()
+		}),
+		KeysProvider: entity.CrossChainAddress{
+			Address: dtoConfig.KeysProvider.Address,
+			ChainId: dtoConfig.KeysProvider.ChainId,
+		},
+		Replicas: lo.Map(dtoConfig.Replicas, func(v dtoCrossChainAddress, _ int) entity.CrossChainAddress {
+			return v.toEntity()
+		}),
+		VerificationType:        dtoConfig.VerificationType,
+		MaxVotingPower:          dtoConfig.MaxVotingPower,
+		MinInclusionVotingPower: dtoConfig.MinInclusionVotingPower,
+		MaxValidatorsCount:      dtoConfig.MaxValidatorsCount,
+		RequiredKeyTags:         dtoConfig.RequiredKeyTags,
+	}, nil
 }
 
 func (e *Client) GetIsGenesisSet(ctx context.Context) (bool, error) {
@@ -307,6 +346,15 @@ func (e *Client) GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, epoc
 }
 
 func (e *Client) GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorVotingPower, error) {
+	type dtoVaultVotingPower struct {
+		Vault       common.Address
+		VotingPower *big.Int
+	}
+	type dtoOperatorVotingPower struct {
+		Operator common.Address
+		Vaults   []dtoVaultVotingPower
+	}
+
 	callMsg, err := constructCallMsg(address.Address, vaultManagerABI, getVotingPowersFunction, [][]byte{}, timestamp, []byte{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
@@ -317,16 +365,36 @@ func (e *Client) GetVotingPowers(ctx context.Context, address entity.CrossChainA
 		return nil, fmt.Errorf("failed to call contract: %w", err)
 	}
 
-	var votingPowers []entity.OperatorVotingPower
-	err = vaultManagerABI.UnpackIntoInterface(&votingPowers, getVotingPowersFunction, result)
+	var dto []dtoOperatorVotingPower
+	err = vaultManagerABI.UnpackIntoInterface(&dto, getVotingPowersFunction, result)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unpack voting powers: %w", err)
 	}
 
-	return votingPowers, nil
+	return lo.Map(dto, func(v dtoOperatorVotingPower, _ int) entity.OperatorVotingPower {
+		return entity.OperatorVotingPower{
+			Operator: v.Operator,
+			Vaults: lo.Map(v.Vaults, func(v dtoVaultVotingPower, _ int) entity.VaultVotingPower {
+				return entity.VaultVotingPower{
+					Vault:       v.Vault,
+					VotingPower: v.VotingPower,
+				}
+			}),
+		}
+	}), nil
 }
 
 func (e *Client) GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorWithKeys, error) {
+	type dtoKey struct {
+		Tag     uint8
+		Payload []byte
+	}
+
+	type dtoOperatorWithKeys struct {
+		Operator common.Address
+		Keys     []dtoKey
+	}
+
 	callMsg, err := constructCallMsg(address.Address, keyRegistryABI, getKeysFunction, timestamp, []byte{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
@@ -337,13 +405,24 @@ func (e *Client) GetKeys(ctx context.Context, address entity.CrossChainAddress, 
 		return nil, fmt.Errorf("failed to call contract: %w", err)
 	}
 
-	var keys []entity.OperatorWithKeys
-	err = keyRegistryABI.UnpackIntoInterface(&keys, getKeysFunction, result)
+	var dto []dtoOperatorWithKeys
+
+	err = keyRegistryABI.UnpackIntoInterface(&dto, getKeysFunction, result)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unpack keys: %w", err)
 	}
 
-	return keys, nil
+	return lo.Map(dto, func(v dtoOperatorWithKeys, _ int) entity.OperatorWithKeys {
+		return entity.OperatorWithKeys{
+			Operator: v.Operator,
+			Keys: lo.Map(v.Keys, func(v dtoKey, _ int) entity.Key {
+				return entity.Key{
+					Tag:     v.Tag,
+					Payload: v.Payload,
+				}
+			}),
+		}
+	}), nil
 }
 
 func (e *Client) GetRequiredKeyTag(ctx context.Context, timestamp uint64) (uint8, error) {
@@ -395,7 +474,7 @@ func (e *Client) GetSubnetwork(ctx context.Context) ([32]byte, error) {
 }
 
 func (e *Client) GetNetworkAddress(ctx context.Context) (*common.Address, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getSubnetworkFunction)
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getNetworkFunction)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)
 	}

@@ -12,7 +12,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/spf13/cobra"
 
-	"middleware-offchain/internal/client/eth"
+	"middleware-offchain/internal/client/symbiotic"
 	"middleware-offchain/internal/entity"
 	valsetDeriver "middleware-offchain/internal/uc/valset-deriver"
 	"middleware-offchain/pkg/log"
@@ -64,13 +64,13 @@ var rootCmd = &cobra.Command{
 
 		ctx := signalContext(context.Background())
 
-		client, err := eth.NewEthClient(eth.Config{
+		client, err := symbiotic.NewEVMClient(symbiotic.Config{
 			MasterRPCURL:   cfg.rpcURL,
 			MasterAddress:  cfg.masterAddress,
 			RequestTimeout: time.Second * 5,
 		})
 		if err != nil {
-			return errors.Errorf("failed to create eth client: %w", err)
+			return errors.Errorf("failed to create symbiotic client: %w", err)
 		}
 
 		deriver, err := valsetDeriver.NewDeriver(client)
