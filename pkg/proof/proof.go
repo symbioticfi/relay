@@ -64,7 +64,7 @@ func vkPathTmp(suffix string) string {
 }
 
 func solPathTmp(suffix string) string {
-	return fmt.Sprintf(circuitsDir+"/Verifier_%s.vk", suffix)
+	return fmt.Sprintf(circuitsDir+"/Verifier_%s.sol", suffix)
 }
 
 type ProofData struct {

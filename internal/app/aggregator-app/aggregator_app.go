@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"math/big"
 	"time"
 
 	"github.com/go-errors/errors"
@@ -17,12 +16,8 @@ import (
 )
 
 //go:generate mockgen -source=aggregator_app.go -destination=mocks/aggregator_app.go -package=mocks
-type ethClient interface {
-	GetQuorumThreshold(ctx context.Context, timestamp uint64, keyTag entity.KeyTag) (uint64, error)
-}
-
-type valsetDeriver interface {
-	GetValidatorSet(ctx context.Context, timestamp *big.Int) (entity.ValidatorSet, error)
+type repository interface {
+	GetValsetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 }
 
 type p2pClient interface {
@@ -31,9 +26,8 @@ type p2pClient interface {
 }
 
 type Config struct {
-	EthClient     ethClient     `validate:"required"`
-	ValsetDeriver valsetDeriver `validate:"required"`
-	P2PClient     p2pClient     `validate:"required"`
+	Repo      repository `validate:"required"`
+	P2PClient p2pClient  `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -69,7 +63,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 
 	slog.DebugContext(ctx, "received signature hash generated message", "message", msg)
 
-	validatorSet, err := s.cfg.ValsetDeriver.GetValidatorSet(ctx /*msg.Message.ValsetHeaderTimestamp*/, nil) // todo ilya
+	validatorSet, err := s.cfg.Repo.GetValsetByEpoch(ctx, msg.Message.Epoch)
 	if err != nil {
 		return fmt.Errorf("failed to get validator set: %w", err)
 	}
@@ -109,7 +103,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 	slog.InfoContext(ctx, "quorum reached, aggregating signatures and creating proof",
 		"currentVotingPower", current.votingPower,
 		"quorumThreshold", validatorSet.QuorumThreshold,
-		"totalActiveVotingPower", validatorSet.TotalActiveVotingPower,
+		"totalActiveVotingPower", validatorSet.GetTotalActiveVotingPower(),
 	)
 
 	// todo ilya, make proof only once when threshold is reached

@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
+	aggregator_app "middleware-offchain/internal/app/aggregator-app"
 	signer_app "middleware-offchain/internal/app/signer-app"
 	"middleware-offchain/internal/client/p2p"
 	"middleware-offchain/internal/client/repository/memory"
@@ -227,17 +228,17 @@ var rootCmd = &cobra.Command{
 			})
 		}
 
-		//if cfg.isAggregator {
-		//	_, err := aggregator.NewAggregatorApp(aggregator.Config{
-		//		EthClient: ethClient,
-		//		P2PClient: p2pService,
-		//	})
-		//	if err != nil {
-		//		return errors.Errorf("failed to create aggregator app: %w", err)
-		//	}
-		//	slog.DebugContext(ctx, "created aggregator app, starting")
-		//}
-		//
+		if cfg.isAggregator {
+			_, err := aggregator_app.NewAggregatorApp(aggregator_app.Config{
+				Repo:      repo,
+				P2PClient: p2pService,
+			})
+			if err != nil {
+				return errors.Errorf("failed to create aggregator app: %w", err)
+			}
+			slog.DebugContext(ctx, "created aggregator app, starting")
+		}
+
 		//if cfg.isCommitter {
 		//	_, err := committer.NewCommitterApp(committer.Config{
 		//		EthClient: ethClient,
