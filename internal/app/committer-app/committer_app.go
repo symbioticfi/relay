@@ -19,7 +19,7 @@ type valsetGenerator interface {
 
 type ethClient interface {
 	CommitValsetHeader(ctx context.Context, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) (entity.CommitValsetHeaderResult, error)
-	VerifyQuorumSig(ctx context.Context, epoch *big.Int, message []byte, keyTag entity.KeyTag, threshold *big.Int, proof []byte) (bool, error)
+	VerifyQuorumSig(ctx context.Context, epoch uint64, message []byte, keyTag entity.KeyTag, threshold *big.Int, proof []byte) (bool, error)
 }
 
 type p2pClient interface {

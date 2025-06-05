@@ -3,10 +3,12 @@ package entity
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/samber/lo"
 	"math/big"
-	"middleware-offchain/pkg/ssz"
 	"slices"
+
+	"github.com/samber/lo"
+
+	"middleware-offchain/pkg/ssz"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -35,7 +37,7 @@ type Validator struct {
 
 type ValidatorSet struct {
 	Version                uint8
-	RequiredKeyTag         uint8    // key tag required to commit next valset
+	RequiredKeyTag         KeyTag   // key tag required to commit next valset
 	Epoch                  uint64   // valset epoch
 	CaptureTimestamp       uint64   // epoch capture timestamp
 	QuorumThreshold        *big.Int // absolute number now, not a percent
@@ -168,7 +170,7 @@ func validatorSetToSszValidators(v *ValidatorSet) ssz.SszValidatorSet {
 				IsActive:    v.IsActive,
 				Keys: lo.Map(v.Keys, func(k Key, _ int) *ssz.SszKey {
 					return &ssz.SszKey{
-						Tag:         k.Tag,
+						Tag:         uint8(k.Tag),
 						PayloadHash: keyPayloadHash(k),
 					}
 				}),
@@ -338,9 +340,9 @@ func (v ValidatorSetHeader) EncodeJSON() ([]byte, error) {
 	type jsonHeader struct {
 		Version            uint8    `json:"version"`
 		ValidatorsSszMRoot string   `json:"validatorsSszMRoot"` // hex string
-		Epoch              *big.Int `json:"epoch"`
+		Epoch              uint64   `json:"epoch"`
 		RequiredKeyTag     KeyTag   `json:"requiredKeyTag"`
-		CaptureTimestamp   *big.Int `json:"captureTimestamp"`
+		CaptureTimestamp   uint64   `json:"captureTimestamp"`
 		QuorumThreshold    *big.Int `json:"quorumThreshold"`
 		PreviousHeaderHash string   `json:"previousHeaderHash"` // hex string
 	}

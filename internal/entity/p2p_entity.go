@@ -1,8 +1,6 @@
 package entity
 
 import (
-	"math/big"
-
 	"middleware-offchain/pkg/bls"
 )
 
@@ -26,7 +24,7 @@ type SignatureHashMessage struct {
 	PublicKey   []byte
 	KeyTag      KeyTag
 	HashType    HashType
-	Epoch       *big.Int
+	Epoch       uint64
 }
 
 type SignaturesAggregatedMessage struct {
@@ -34,7 +32,7 @@ type SignaturesAggregatedMessage struct {
 	Proof       []byte
 	Message     []byte
 	HashType    HashType
-	Epoch       *big.Int
+	Epoch       uint64
 }
 
 type SenderInfo struct {

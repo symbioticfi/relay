@@ -3,27 +3,28 @@ package valset_listener
 import (
 	"context"
 	"log/slog"
-	"math/big"
 	"time"
 
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
-	"github.com/samber/mo"
 
 	"middleware-offchain/internal/entity"
 )
 
 type eth interface {
-	GetCurrentValsetEpoch(ctx context.Context) (*big.Int, error)
+	GetCurrentValsetEpoch(ctx context.Context) (uint64, error)
+	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
+	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
 }
 
 type repo interface {
-	GetLatestValsetExtra(ctx context.Context) (mo.Option[entity.ValidatorSetExtra], error)
-	SaveValsetExtra(ctx context.Context, extra entity.ValidatorSetExtra) error
+	GetLatestValset(ctx context.Context) (entity.ValidatorSet, error)
+	SaveConfig(ctx context.Context, config entity.NetworkConfig, epoch uint64) error
+	SaveValidatorSet(ctx context.Context, valset entity.ValidatorSet) error
 }
 
 type deriver interface {
-	GetValidatorSetExtraForEpoch(ctx context.Context, epoch *big.Int) (entity.ValidatorSetExtra, error)
+	GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error)
 }
 
 type Config struct {
@@ -76,31 +77,45 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		return errors.Errorf("failed to get current epoch: %w", err)
 	}
 
-	latest, err := s.cfg.Repo.GetLatestValsetExtra(ctx)
-	if err != nil {
+	latest, err := s.cfg.Repo.GetLatestValset(ctx)
+	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return errors.Errorf("failed to get latest validator set extra: %w", err)
 	}
 
-	latestEpoch := new(big.Int).SetInt64(1)
-	if latest.IsPresent() {
-		latestEpoch = latest.MustGet().Epoch
+	latestEpoch := uint64(1)
+	if err == nil {
+		latestEpoch = latest.Epoch
 	}
 
-	for new(big.Int).Sub(latestCommitedOnchainEpoch, latestEpoch).Cmp(big.NewInt(0)) > 0 {
-		nextEpoch := new(big.Int).Add(latestEpoch, big.NewInt(1))
+	for latestCommitedOnchainEpoch > latestEpoch {
+		nextEpoch := latestEpoch + 1
 
-		nextValsetExtra, err := s.cfg.Deriver.GetValidatorSetExtraForEpoch(ctx, nextEpoch)
+		epochStart, err := s.cfg.Eth.GetEpochStart(ctx, nextEpoch)
 		if err != nil {
-			return errors.Errorf("failed to derive validator set extra for epoch %s: %w", nextEpoch.String(), err)
+			return errors.Errorf("failed to get epoch start for epoch %d: %w", nextEpoch, err)
+		}
+
+		config, err := s.cfg.Eth.GetConfig(ctx, epochStart)
+		if err != nil {
+			return errors.Errorf("failed to get network config for epoch %d: %w", nextEpoch, err)
+		}
+
+		nextValset, err := s.cfg.Deriver.GetValidatorSet(ctx, nextEpoch, config)
+		if err != nil {
+			return errors.Errorf("failed to derive validator set extra for epoch %s: %w", nextEpoch, err)
 		}
 
 		// TODO ilya: check valset integrity: valset.headerHash() == master.valsetHeaderHash(epoch)
 
-		if err := s.cfg.Repo.SaveValsetExtra(ctx, nextValsetExtra); err != nil {
-			return errors.Errorf("failed to save validator set extra for epoch %s: %w", nextEpoch.String(), err)
+		if err := s.cfg.Repo.SaveConfig(ctx, config, nextEpoch); err != nil {
+			return errors.Errorf("failed to save validator set extra for epoch %s: %w", nextEpoch, err)
 		}
 
-		latestEpoch = nextValsetExtra.Epoch
+		if err := s.cfg.Repo.SaveValidatorSet(ctx, nextValset); err != nil {
+			return errors.Errorf("failed to save validator set extra for epoch %s: %w", nextEpoch, err)
+		}
+
+		latestEpoch = nextValset.Epoch
 	}
 
 	return nil

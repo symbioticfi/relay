@@ -3,17 +3,19 @@ package valsetDeriver
 import (
 	"context"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/samber/lo"
 	"log/slog"
 	"math/big"
 	"reflect"
 	"sort"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/samber/lo"
+
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
+
 	"middleware-offchain/internal/entity"
 	"middleware-offchain/pkg/bls"
 	"middleware-offchain/pkg/proof"
@@ -72,7 +74,7 @@ func (v *Deriver) GetNetworkData(ctx context.Context) (entity.NetworkData, error
 	}, nil
 }
 
-func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config *entity.NetworkConfig) (entity.ValidatorSet, error) {
+func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error) {
 	slog.DebugContext(ctx, "Trying to fetch current valset timestamp", "epoch", epoch)
 	timestamp, err := v.ethClient.GetEpochStart(ctx, epoch)
 	if err != nil {
@@ -80,9 +82,6 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config *ent
 	}
 	slog.DebugContext(ctx, "Got current valset timestamp", "timestamp", timestamp, "epoch", epoch)
 
-	if err != nil {
-		return entity.ValidatorSet{}, fmt.Errorf("failed to get config: %w", err)
-	}
 	slog.DebugContext(ctx, "Got config", "timestamp", timestamp, "config", config)
 
 	// Get voting powers from all voting power providers
@@ -139,8 +138,8 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config *ent
 
 // TODO move to commiter?
 func (v *Deriver) HeaderCommitmentHash(
-	networkData *entity.NetworkData,
-	header *entity.ValidatorSetHeader,
+	networkData entity.NetworkData,
+	header entity.ValidatorSetHeader,
 	extraData []entity.ExtraData,
 ) ([]byte, error) {
 	headerHash, err := header.Hash()
@@ -187,7 +186,7 @@ func (v *Deriver) HeaderCommitmentHash(
 }
 
 func (v *Deriver) formValidators(
-	config *entity.NetworkConfig,
+	config entity.NetworkConfig,
 	votingPowers []entity.OperatorVotingPower,
 	keys []entity.OperatorWithKeys,
 ) ([]entity.Validator, *big.Int) {
@@ -291,7 +290,7 @@ func (v *Deriver) formValidators(
 	return validators, totalActiveVotingPower
 }
 
-func (v *Deriver) calcQuorumThreshold(_ *entity.NetworkConfig, totalVP *big.Int) *big.Int {
+func (v *Deriver) calcQuorumThreshold(_ entity.NetworkConfig, totalVP *big.Int) *big.Int {
 	// not using config now but later can
 	mul := big.NewInt(1).Mul(totalVP, big.NewInt(2))
 	div := big.NewInt(1).Div(mul, big.NewInt(3))
@@ -428,7 +427,7 @@ func (v *Deriver) getExtraDataKey(verificationType uint32, name string) ([32]byt
 	return crypto.Keccak256Hash(packed), nil
 }
 
-func (v *Deriver) getExtraDataKeyTagged(verificationType uint32, keyTag uint8, name string) ([32]byte, error) {
+func (v *Deriver) getExtraDataKeyTagged(verificationType uint32, keyTag entity.KeyTag, name string) ([32]byte, error) {
 	strTy, _ := abi.NewType("string", "", nil)
 	u32Ty, _ := abi.NewType("uint32", "", nil)
 	u8Ty, _ := abi.NewType("uint8", "", nil)
@@ -450,7 +449,7 @@ func (v *Deriver) getExtraDataKeyTagged(verificationType uint32, keyTag uint8, n
 
 func (v *Deriver) getExtraDataKeyIndexed(
 	verificationType uint32,
-	keyTag uint8,
+	keyTag entity.KeyTag,
 	name string,
 	index *big.Int,
 ) ([32]byte, error) {
@@ -469,10 +468,10 @@ func (v *Deriver) getAggregatedPubKeys(
 	valset *entity.ValidatorSet,
 	config *entity.NetworkConfig,
 ) []entity.Key {
-	needToAggregateTags := map[uint8]interface{}{}
+	needToAggregateTags := map[entity.KeyTag]interface{}{}
 	for _, tag := range config.RequiredKeyTags {
 		// only bn254 bls for now
-		if tag>>4 == entity.KeyTypeBlsBn254 {
+		if tag.Type() == entity.KeyTypeBlsBn254 {
 			needToAggregateTags[tag] = new(bn254.G1Affine)
 		}
 	}
@@ -484,7 +483,7 @@ func (v *Deriver) getAggregatedPubKeys(
 
 		for _, key := range validator.Keys {
 			if keyValue, ok := needToAggregateTags[key.Tag]; ok {
-				if key.Tag>>4 == entity.KeyTypeBlsBn254 {
+				if key.Tag.Type() == entity.KeyTypeBlsBn254 {
 					aggG1Key := keyValue.(*bn254.G1Affine)
 					valG1Key := new(bn254.G1Affine)
 					valG1Key.SetBytes(key.Payload)
@@ -497,7 +496,7 @@ func (v *Deriver) getAggregatedPubKeys(
 
 	aggregatedPubKeys := []entity.Key{}
 	for tag, keyValue := range needToAggregateTags {
-		if tag>>4 == entity.KeyTypeBlsBn254 {
+		if tag.Type() == entity.KeyTypeBlsBn254 {
 			aggG1Key := keyValue.(*bn254.G1Affine)
 			// pack g1 point to bytes and add to list
 			aggG1KeyBytes := aggG1Key.Bytes()
@@ -511,7 +510,7 @@ func (v *Deriver) getAggregatedPubKeys(
 	return aggregatedPubKeys
 }
 
-func calcKeccakAccumulator(validators []entity.Validator, requiredKeyTag uint8) ([32]byte, error) {
+func calcKeccakAccumulator(validators []entity.Validator, requiredKeyTag entity.KeyTag) ([32]byte, error) {
 	type validatorDataTuple struct {
 		X, Y, VotingPower *big.Int
 	}

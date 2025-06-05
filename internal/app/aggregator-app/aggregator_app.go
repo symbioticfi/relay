@@ -9,7 +9,6 @@ import (
 
 	"github.com/go-errors/errors"
 	validate "github.com/go-playground/validator/v10"
-	"github.com/shopspring/decimal"
 
 	"middleware-offchain/internal/entity"
 	"middleware-offchain/pkg/bls"
@@ -19,7 +18,7 @@ import (
 
 //go:generate mockgen -source=aggregator_app.go -destination=mocks/aggregator_app.go -package=mocks
 type ethClient interface {
-	GetQuorumThreshold(ctx context.Context, timestamp *big.Int, keyTag entity.KeyTag) (*big.Int, error)
+	GetQuorumThreshold(ctx context.Context, timestamp uint64, keyTag entity.KeyTag) (uint64, error)
 }
 
 type valsetDeriver interface {
@@ -94,26 +93,12 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 
 	slog.DebugContext(ctx, "total voting power", "currentVotingPower", current.votingPower.String())
 
-	quorumThreshold, err := s.cfg.EthClient.GetQuorumThreshold(ctx, big.NewInt(time.Now().Unix()), msg.Message.KeyTag)
-	if err != nil {
-		return errors.Errorf("failed to get quorum threshold: %w", err)
-	}
-
-	slog.DebugContext(ctx, "got quorum threshold", "quorumThreshold", quorumThreshold.String())
-
-	coef1e18 := big.NewInt(1e18)
-
-	vpMul1e18 := new(big.Int).Mul(current.votingPower, coef1e18)
-	percent1e18 := new(big.Int).Div(vpMul1e18, validatorSet.TotalActiveVotingPower)
-
-	thresholdReached := percent1e18.Cmp(quorumThreshold) >= 0
+	thresholdReached := current.votingPower.Cmp(validatorSet.QuorumThreshold) >= 0
 	if !thresholdReached {
 		slog.InfoContext(ctx, "quorum not reached yet",
-			"percentReached", decimal.NewFromBigInt(percent1e18, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
-			"percentQuorumThreshold", decimal.NewFromBigInt(quorumThreshold, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
 			"currentVotingPower", current.votingPower,
-			"quorumThreshold", quorumThreshold,
-			"totalActiveVotingPower", validatorSet.TotalActiveVotingPower,
+			"quorumThreshold", validatorSet.QuorumThreshold,
+			"totalActiveVotingPower", validatorSet.GetTotalActiveVotingPower(),
 			"aggSignature", current.aggSignature,
 			"aggPublicKeyG1", current.aggPublicKeyG1,
 			"aggPublicKeyG2", current.aggPublicKeyG2,
@@ -122,10 +107,8 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 	}
 
 	slog.InfoContext(ctx, "quorum reached, aggregating signatures and creating proof",
-		"percentReached", decimal.NewFromBigInt(percent1e18, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
-		"percentQuorumThreshold", decimal.NewFromBigInt(quorumThreshold, 0).Div(decimal.NewFromBigInt(coef1e18, 0)).String(),
 		"currentVotingPower", current.votingPower,
-		"quorumThreshold", quorumThreshold,
+		"quorumThreshold", validatorSet.QuorumThreshold,
 		"totalActiveVotingPower", validatorSet.TotalActiveVotingPower,
 	)
 

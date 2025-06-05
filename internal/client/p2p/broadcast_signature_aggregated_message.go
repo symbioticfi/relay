@@ -3,7 +3,6 @@ package p2p
 import (
 	"context"
 	"encoding/json"
-	"math/big"
 	"time"
 
 	"github.com/go-errors/errors"
@@ -43,9 +42,9 @@ func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg e
 }
 
 type signaturesAggregatedDTO struct {
-	PublicKeyG1 []byte   `json:"public_key_g1"`
-	Proof       []byte   `json:"proof"`
-	Message     []byte   `json:"message"`
-	HashType    string   `json:"hash_type"`
-	Epoch       *big.Int `json:"epoch"`
+	PublicKeyG1 []byte `json:"public_key_g1"`
+	Proof       []byte `json:"proof"`
+	Message     []byte `json:"message"`
+	HashType    string `json:"hash_type"`
+	Epoch       uint64 `json:"epoch"`
 }

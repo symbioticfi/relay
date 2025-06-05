@@ -333,7 +333,7 @@ func HashValset(valset []ValidatorData) []byte {
 	return h.Sum(nil)
 }
 
-func ValidatorSetMimcAccumulator(valset []entity.Validator, requiredKeyTag uint8) ([32]byte, error) {
+func ValidatorSetMimcAccumulator(valset []entity.Validator, requiredKeyTag entity.KeyTag) ([32]byte, error) {
 	validatorsData, err := ToValidatorsData([]entity.Validator{}, valset, requiredKeyTag)
 	if err != nil {
 		return [32]byte{}, err

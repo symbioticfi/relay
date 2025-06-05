@@ -3,12 +3,10 @@ package valset_generator
 import (
 	"context"
 	"log/slog"
-	"math/big"
 	"time"
 
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
-	"github.com/samber/mo"
 
 	"middleware-offchain/internal/entity"
 )
@@ -18,22 +16,24 @@ type signer interface {
 }
 
 type eth interface {
-	GetCurrentEpoch(ctx context.Context) (*big.Int, error)
+	GetCurrentEpoch(ctx context.Context) (uint64, error)
 	GetCurrentPhase(ctx context.Context) (entity.Phase, error)
+	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
+	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
 }
 
 type repo interface {
-	GetLatestValsetExtra(ctx context.Context) (mo.Option[entity.ValidatorSetExtra], error)
-	SaveValsetExtra(ctx context.Context, extra entity.ValidatorSetExtra) error
-	SaveLatestSignedValsetExtra(ctx context.Context, extra entity.ValidatorSetExtra) error
-	GetLatestSignedValsetExtra(_ context.Context) (entity.ValidatorSetExtra, error)
+	GetLatestSignedValset(_ context.Context) (entity.ValidatorSet, error)
 }
 
 type deriver interface {
-	GetValidatorSetExtraForEpoch(ctx context.Context, epoch *big.Int) (entity.ValidatorSetExtra, error)
-	MakeValidatorSetHeaderHash(ctx context.Context, extra entity.ValidatorSetExtra, data []entity.ExtraData) ([]byte, error)
-	MakeValsetHeader(ctx context.Context, extra entity.ValidatorSetExtra) (entity.ValidatorSetHeader, error)
-	GenerateExtraData(ctx context.Context, valsetHeader entity.ValidatorSetHeader, verificationType uint32) ([]entity.ExtraData, error)
+	GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error)
+	GetNetworkData(ctx context.Context) (entity.NetworkData, error)
+	GenerateExtraData(
+		valset *entity.ValidatorSet,
+		config *entity.NetworkConfig,
+	) ([]entity.ExtraData, error)
+	HeaderCommitmentHash(networkData entity.NetworkData, header entity.ValidatorSetHeader, extraData []entity.ExtraData) ([]byte, error)
 }
 
 type Config struct {
@@ -82,77 +82,84 @@ func (s *Service) Start(ctx context.Context) error {
 }
 
 func (s *Service) process(ctx context.Context) error {
-	newValsetExtra, err := s.tryDetectNewEpochToCommit(ctx)
+	valSet, config, err := s.tryDetectNewEpochToCommit(ctx)
 	if err != nil {
 		return errors.Errorf("failed to detect new epoch to commit: %w", err)
 	}
-	if !newValsetExtra.IsPresent() {
+	if valSet == nil {
 		// no new validator set extra found, nothing to do
 		return nil
 	}
 
-	valsetHeader, err := s.cfg.Deriver.MakeValsetHeader(ctx, newValsetExtra.MustGet())
+	networkData, err := s.cfg.Deriver.GetNetworkData(ctx)
 	if err != nil {
-		return errors.Errorf("failed to generate validator set header: %w", err)
+		return errors.Errorf("failed to get network data: %w", err)
 	}
-	extraData, err := s.cfg.Deriver.GenerateExtraData(ctx, valsetHeader, entity.ZkVerificationType)
+
+	extraData, err := s.cfg.Deriver.GenerateExtraData(valSet, config)
 	if err != nil {
 		return errors.Errorf("failed to generate extra data: %w", err)
 	}
 
-	headerHash, err := s.cfg.Deriver.MakeValidatorSetHeaderHash(ctx, newValsetExtra.MustGet(), extraData)
+	header, err := valSet.GetHeader()
 	if err != nil {
-		return errors.Errorf("failed to make validator set header hash: %w", err)
+		return errors.Errorf("failed to get validator set header: %w", err)
+	}
+	hash, err := s.cfg.Deriver.HeaderCommitmentHash(networkData, header, extraData)
+	if err != nil {
+		return errors.Errorf("failed to get header commitment hash: %w", err)
 	}
 
 	err = s.cfg.Signer.Sign(ctx, entity.SignatureRequest{
 		KeyTag:        entity.ValsetHeaderKeyTag,
-		RequiredEpoch: newValsetExtra.MustGet().Epoch,
-		Message:       headerHash,
+		RequiredEpoch: valSet.Epoch,
+		Message:       hash,
 	})
 	if err != nil {
 		return errors.Errorf("failed to sign new validator set extra: %w", err)
 	}
 
-	if err := s.cfg.Repo.SaveLatestSignedValsetExtra(ctx, newValsetExtra.MustGet()); err != nil {
-		return errors.Errorf("failed to save latest signed validator set extra: %w", err)
-	}
-
 	return nil
 }
 
-func (s *Service) tryDetectNewEpochToCommit(ctx context.Context) (mo.Option[entity.ValidatorSetExtra], error) {
+func (s *Service) tryDetectNewEpochToCommit(ctx context.Context) (*entity.ValidatorSet, *entity.NetworkConfig, error) {
 	phase, err := s.cfg.Eth.GetCurrentPhase(ctx)
 	if err != nil {
-		return mo.None[entity.ValidatorSetExtra](), errors.Errorf("failed to get current phase: %w", err)
+		return nil, nil, errors.Errorf("failed to get current phase: %w", err)
 	}
 
 	if phase != entity.COMMIT {
-		return mo.None[entity.ValidatorSetExtra](), errors.New(entity.ErrPhaseNotCommit)
+		return nil, nil, errors.New(entity.ErrPhaseNotCommit)
 	}
 
 	currentOnchainEpoch, err := s.cfg.Eth.GetCurrentEpoch(ctx)
 	if err != nil {
-		return mo.None[entity.ValidatorSetExtra](), errors.Errorf("failed to get current epoch: %w", err)
+		return nil, nil, errors.Errorf("failed to get current epoch: %w", err)
 	}
 
-	latest, err := s.cfg.Repo.GetLatestSignedValsetExtra(ctx)
+	latest, err := s.cfg.Repo.GetLatestSignedValset(ctx)
 	if err != nil {
-		return mo.None[entity.ValidatorSetExtra](), errors.Errorf("failed to getlatest validator set extra: %w", err)
+		return nil, nil, errors.Errorf("failed to getlatest validator set extra: %w", err)
 	}
 
-	if isGreaterOrEqual(latest.Epoch, currentOnchainEpoch) {
-		return mo.None[entity.ValidatorSetExtra](), nil
+	if latest.Epoch >= currentOnchainEpoch {
+		return nil, nil, nil
 	}
 
-	newValset, err := s.cfg.Deriver.GetValidatorSetExtraForEpoch(ctx, currentOnchainEpoch)
+	epochStart, err := s.cfg.Eth.GetEpochStart(ctx, currentOnchainEpoch)
 	if err != nil {
-		return mo.None[entity.ValidatorSetExtra](), errors.Errorf("failed to get validator set extra for epoch %s: %w", currentOnchainEpoch, err)
+		return nil, nil, errors.Errorf("failed to get epoch start for epoch %d: %w", currentOnchainEpoch, err)
 	}
 
-	return mo.Some(newValset), nil
-}
+	config, err := s.cfg.Eth.GetConfig(ctx, epochStart)
+	if err != nil {
+		return nil, nil, errors.Errorf("failed to get network config for epoch %d: %w", currentOnchainEpoch, err)
+	}
 
-func isGreaterOrEqual(latest *big.Int, current *big.Int) bool {
-	return latest.Cmp(current) >= 0
+	newValset, err := s.cfg.Deriver.GetValidatorSet(ctx, currentOnchainEpoch, config)
+	if err != nil {
+		return nil, nil, errors.Errorf("failed to get validator set extra for epoch %s: %w", currentOnchainEpoch, err)
+	}
+
+	return &newValset, &config, nil
 }

@@ -29,7 +29,7 @@ type NetworkConfig struct {
 	MaxVotingPower          *big.Int            `json:"maxVotingPower"`
 	MinInclusionVotingPower *big.Int            `json:"minInclusionVotingPower"`
 	MaxValidatorsCount      *big.Int            `json:"maxValidatorsCount"`
-	RequiredKeyTags         []uint8             `json:"requiredKeyTags"`
+	RequiredKeyTags         []KeyTag            `json:"requiredKeyTags"`
 }
 
 type NetworkData struct {

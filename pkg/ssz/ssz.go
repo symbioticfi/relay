@@ -584,7 +584,7 @@ func (v *SszValidator) ProveIsActive() (*ssz.Proof, error) {
 	return isActiveProof, nil
 }
 
-func (v *SszValidator) ProveKeyRoot(keyTag entity.KeyTag) (*SszKey, int, *ssz.Proof, error) {
+func (v *SszValidator) ProveKeyRoot(keyTag uint8) (*SszKey, int, *ssz.Proof, error) {
 	keyIndex := sort.Search(len(v.Keys), func(i int) bool {
 		return v.Keys[i].Tag >= uint8(keyTag)
 	})

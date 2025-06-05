@@ -15,8 +15,8 @@ type ValidatorSetExtra struct {
 	Subnetwork           []byte
 	Keys                 []OperatorWithKeys
 	OperatorVotingPowers []OperatorVotingPower
-	Epoch                *big.Int
-	CaptureTimestamp     *big.Int
+	Epoch                uint64
+	CaptureTimestamp     uint64
 }
 
 func (v ValidatorSetExtra) MakeValidatorSet() ValidatorSet {

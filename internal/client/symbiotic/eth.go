@@ -6,9 +6,10 @@ import (
 	"crypto/ecdsa"
 	_ "embed"
 	"fmt"
-	"github.com/samber/lo"
 	"math/big"
 	"time"
+
+	"github.com/samber/lo"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -17,6 +18,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
+
 	"middleware-offchain/internal/client/symbiotic/gen"
 	"middleware-offchain/internal/entity"
 )
@@ -207,7 +209,9 @@ func (e *Client) GetConfig(ctx context.Context, timestamp uint64) (entity.Networ
 		MaxVotingPower:          dtoConfig.MaxVotingPower,
 		MinInclusionVotingPower: dtoConfig.MinInclusionVotingPower,
 		MaxValidatorsCount:      dtoConfig.MaxValidatorsCount,
-		RequiredKeyTags:         dtoConfig.RequiredKeyTags,
+		RequiredKeyTags: lo.Map(dtoConfig.RequiredKeyTags, func(v uint8, _ int) entity.KeyTag {
+			return entity.KeyTag(v)
+		}),
 	}, nil
 }
 

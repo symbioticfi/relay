@@ -36,6 +36,7 @@ func (k *SimpleKeystoreProvider) GetPrivateKey(keyTag entity.KeyTag) ([]byte, er
 	return entry, nil
 }
 
+// todo ilya move this method to signer.go
 func (k *SimpleKeystoreProvider) GetPublic(keyTag entity.KeyTag) ([]byte, error) {
 	k.mu.RLock()
 	defer k.mu.RUnlock()

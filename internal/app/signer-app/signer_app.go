@@ -15,8 +15,7 @@ import (
 type repo interface {
 	GetSignatureRequest(ctx context.Context, req entity.SignatureRequest) (mo.Option[entity.SignatureRequest], error)
 	GetAggregationProof(ctx context.Context, req entity.SignatureRequest) (mo.Option[entity.AggregationProof], error)
-	GetLatestValsetExtra(ctx context.Context) (mo.Option[entity.ValidatorSetExtra], error)
-	GetValsetExtraByEpoch(ctx context.Context, epoch *big.Int) (entity.ValidatorSetExtra, error)
+	GetValsetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 	SaveSignature(ctx context.Context, req entity.SignatureRequest, sig entity.Signature) error
 }
 
@@ -79,29 +78,20 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.New("aggregation proof already exists for this request")
 	}
 
-	latestValsetExtra, err := s.cfg.Repo.GetLatestValsetExtra(ctx)
+	valset, err := s.cfg.Repo.GetValsetByEpoch(ctx, req.RequiredEpoch)
 	if err != nil {
 		return errors.Errorf("failed to get latest valset extra: %w", err)
 	}
-	if !latestValsetExtra.IsPresent() {
-		return errors.New("no latest valset extra found")
-	}
 
-	if !isRecentEpoch(latestValsetExtra.MustGet().Epoch, req.RequiredEpoch) {
-		return errors.Errorf("epoch difference is too large: max allowed: %d", entity.MaxSavedEpochs)
-	}
-
-	epochValsetExtra, err := s.cfg.Repo.GetValsetExtraByEpoch(ctx, req.RequiredEpoch)
-	if err != nil {
-		return errors.Errorf("failed to get valset extra by epoch %s: %w", req.RequiredEpoch, err)
-	}
-	epochValset := epochValsetExtra.MakeValidatorSet()
+	//if valset.Epoch >= req.RequiredEpoch-uint64(entity.MaxSavedEpochs) {
+	//	return errors.Errorf("epoch difference is too large: max allowed: %d", entity.MaxSavedEpochs)
+	//}
 
 	public, err := s.cfg.KeyProvider.GetPublic(req.KeyTag)
 	if err != nil {
 		return errors.Errorf("failed to get public key for key tag %d: %w", req.KeyTag, err)
 	}
-	_, found := epochValset.FindValidatorByKey(req.KeyTag, public)
+	_, found := valset.FindValidatorByKey(req.KeyTag, public)
 	if !found {
 		return errors.Errorf("validator not found in epoch valset for public key")
 	}
