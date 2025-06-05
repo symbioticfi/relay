@@ -134,6 +134,11 @@ func (s *Service) tryDetectNewEpochToCommit(ctx context.Context) (*entity.Valida
 		return nil, nil, errors.Errorf("failed to get current phase: %w", err)
 	}
 
+	if phase == entity.IDLE {
+		slog.DebugContext(ctx, "current phase is IDLE, no new epoch to commit")
+		return nil, nil, nil // no new epoch to commit, idle phase
+	}
+
 	if phase != entity.COMMIT {
 		return nil, nil, errors.Errorf("current phase is not COMMIT, got: %d: %w", phase, entity.ErrPhaseNotCommit)
 	}

@@ -30,6 +30,7 @@ func New() (*Repository, error) {
 		mu:             sync.Mutex{},
 		networkConfigs: make(map[uint64]entity.NetworkConfig),
 		validatorSets:  make(map[uint64]entity.ValidatorSet),
+		signatures:     make(map[common.Hash]entity.Signature),
 		signRequests:   make(map[common.Hash]entity.SignatureRequest),
 		aggProofs:      make(map[common.Hash]entity.AggregationProof),
 	}, nil

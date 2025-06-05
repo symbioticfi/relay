@@ -95,11 +95,14 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to parse secret key as big.Int")
 		}
 
+		pkBytes := [32]byte{}
+		b.FillBytes(pkBytes[:])
+
 		ethClient, err := symbiotic.NewEVMClient(symbiotic.Config{
 			MasterRPCURL:   cfg.rpcURL,
 			MasterAddress:  cfg.masterAddress,
 			RequestTimeout: time.Second * 5,
-			PrivateKey:     b.Bytes(),
+			PrivateKey:     pkBytes[:],
 		})
 		if err != nil {
 			return errors.Errorf("failed to create symbiotic client: %w", err)
