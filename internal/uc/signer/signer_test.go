@@ -1,73 +1,43 @@
 package signer
 
 import (
-	"bytes"
-	"middleware-offchain/internal/entity"
-	"middleware-offchain/pkg/bls"
 	"testing"
 
-	"github.com/consensys/gnark-crypto/ecc/bn254"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/stretchr/testify/require"
+
+	"middleware-offchain/internal/entity"
+	keyprovider "middleware-offchain/internal/uc/key-provider"
+	"middleware-offchain/pkg/bls"
 )
 
-type MockKeyProvider struct {
-}
-
-func (*MockKeyProvider) GetPrivateKey(keyTag entity.KeyTag) ([]byte, error) {
-	return []byte("testrandomkey"), nil
-}
-
-func (*MockKeyProvider) HasKey(keyTag entity.KeyTag) (bool, error) {
-	return true, nil
-}
-
 func TestBLSBn254(t *testing.T) {
-	signer := NewSigner(&MockKeyProvider{})
+	kp, err := keyprovider.NewSimpleKeystoreProvider()
+	require.NoError(t, err)
+	key := []byte("testrandomkey")
+	require.NoError(t, kp.AddKey(entity.ValsetHeaderKeyTag, key))
+
+	signer := NewSigner(kp)
 
 	msg := []byte("message")
-	signature, err := signer.Sign(15, msg)
-	if err != nil {
-		t.Fatalf("signer returned an error: %v", err)
-	}
 
-	keyPair := bls.ComputeKeyPair([]byte("testrandomkey"))
+	hash, err := signer.Hash(entity.ValsetHeaderKeyTag, msg)
+	require.NoError(t, err)
 
-	g1Sig := bls.G1{
-		G1Affine: new(bn254.G1Affine),
-	}
-	_, err = g1Sig.SetBytes(signature.Signature)
-	if err != nil {
-		t.Fatalf("SetBytes returned an error: %v", err)
-	}
-	result, err := keyPair.PublicKeyG2.Verify(&g1Sig, crypto.Keccak256(msg))
-	if err != nil {
-		t.Fatalf("Verifying returned an error: %v", err)
-	}
-	if !result {
-		t.Fatalf("Verifying returned false")
-	}
+	signature, err := signer.Sign(entity.ValsetHeaderKeyTag, msg)
+	require.NoError(t, err)
+	require.Equal(t, hash, signature.MessageHash)
 
-	if !bytes.Equal(signature.MessageHash, crypto.Keccak256(msg)) {
-		t.Fatalf("Signature returned wrong message")
-	}
+	public, err := kp.GetPublic(entity.ValsetHeaderKeyTag)
+	require.NoError(t, err)
+	require.Len(t, public, 96)
 
-	if len(signature.PublicKey) != 96 {
-		t.Fatalf("Public key length is incorrect")
-	}
+	_, g2, err := bls.UnpackPublicG1G2(public)
+	require.NoError(t, err)
 
-	g1Pubkey := bls.G1{
-		G1Affine: new(bn254.G1Affine),
-	}
-	g2Pubkey := bls.G2{
-		G2Affine: new(bn254.G2Affine),
-	}
-	g1Pubkey.SetBytes(signature.PublicKey[:32])
-	g2Pubkey.SetBytes(signature.PublicKey[32:])
+	g1Sig, err := bls.DeserializeG1(signature.Signature)
+	require.NoError(t, err)
 
-	if !keyPair.PublicKeyG1.Equal(g1Pubkey.G1Affine) {
-		t.Fatalf("PublicKey returned wrong public key")
-	}
-	if !keyPair.PublicKeyG2.Equal(g2Pubkey.G2Affine) {
-		t.Fatalf("PublicKeyG2 returned wrong public key")
-	}
+	result, err := g2.Verify(g1Sig, hash)
+	require.NoError(t, err)
+	require.True(t, result)
 }
