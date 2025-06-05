@@ -20,12 +20,12 @@ package ssz
 //		PreviousHeaderHash:     [32]byte{1, 2, 3},
 //	}
 //
-//	fmt.Println(v.Encode())
+//	fmt.Println(v.AbiEncode())
 //
 //	e := entity.ExtraData{
 //		Key:   [32]byte{1, 2, 3},
 //		Value: [32]byte{4, 5, 6},
 //	}
 //
-//	fmt.Println(entity.ExtraDataList{e}.Encode())
+//	fmt.Println(entity.ExtraDataList{e}.AbiEncode())
 //}

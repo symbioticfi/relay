@@ -119,10 +119,10 @@ func (mr *MockethClientMockRecorder) GetKeys(ctx, address, timestamp any) *gomoc
 }
 
 // GetConfig mocks base method.
-func (m *MockethClient) GetConfig(ctx context.Context, timestamp *big.Int) (entity.Config, error) {
+func (m *MockethClient) GetConfig(ctx context.Context, timestamp *big.Int) (entity.NetworkConfig, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConfig", ctx, timestamp)
-	ret0, _ := ret[0].(entity.Config)
+	ret0, _ := ret[0].(entity.NetworkConfig)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

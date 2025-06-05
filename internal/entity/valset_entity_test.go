@@ -12,7 +12,7 @@ package entity
 //		ExtraData:              decodeHex(t, "2695ed079545bb906f5868716071ab237e36d04fdc1aa07b06bd98c81185067d"),
 //	}
 //
-//	encode, err := v.Encode()
+//	encode, err := v.AbiEncode()
 //	require.NoError(t, err)
 //	fmt.Println(hex.EncodeToString(encode)) // TODO remove
 //

@@ -17,65 +17,48 @@ const (
 )
 
 type CrossChainAddress struct {
-	Address common.Address
-	ChainId uint64
+	Address common.Address `json:"addr"`
+	ChainId uint64         `json:"chainId"`
 }
 
-//	VotingPowerProviders []CrossChainAddress
-//	KeysProvider         CrossChainAddress
-//	Replicas             []CrossChainAddress
-//	VerificationType     uint32
-
-// MaxVotingPower          *big.Int
-// MinInclusionVotingPower *big.Int
-// MaxValidatorsCount      *big.Int
-// RequiredKeyTags         []uint8
-
-// MasterConfig
-// https://github.com/symbioticfi/middleware-sdk-mirror/blob/change-header/src/interfaces/implementations/settlement/IMasterConfigProvider.sol
-type MasterConfig struct {
-	VotingPowerProviders []CrossChainAddress
-	KeysProvider         CrossChainAddress
-	Replicas             []CrossChainAddress
-	VerificationType     uint32
+type NetworkConfig struct {
+	VotingPowerProviders    []CrossChainAddress `json:"votingPowerProviders"`
+	KeysProvider            CrossChainAddress   `json:"keysProvider"`
+	Replicas                []CrossChainAddress `json:"replicas"`
+	VerificationType        uint32              `json:"verificationType"`
+	MaxVotingPower          *big.Int            `json:"maxVotingPower"`
+	MinInclusionVotingPower *big.Int            `json:"minInclusionVotingPower"`
+	MaxValidatorsCount      *big.Int            `json:"maxValidatorsCount"`
+	RequiredKeyTags         []uint8             `json:"requiredKeyTags"`
 }
 
-// VotingPowerConfig
-// https://github.com/symbioticfi/middleware-sdk-mirror/blob/change-header/src/interfaces/implementations/settlement/IValSetConfigProvider.sol
-type VotingPowerConfig struct {
-	MaxVotingPower          *big.Int
-	MinInclusionVotingPower *big.Int
-	MaxValidatorsCount      *big.Int
-	RequiredKeyTags         []uint8
-}
-
-type Config struct {
-	MasterConfig
-
-	VotingPowerConfig
+type NetworkData struct {
+	Address    common.Address `json:"address"`
+	Subnetwork [32]byte       `json:"subnetwork"`
+	Eip712Data Eip712Domain   `json:"eip712Data"`
 }
 
 type VaultVotingPower struct {
-	Vault       common.Address
-	VotingPower *big.Int
+	Vault       common.Address `json:"vault"`
+	VotingPower *big.Int       `json:"votingPower"`
 }
 
 type OperatorVotingPower struct {
-	Operator common.Address
-	Vaults   []VaultVotingPower
+	Operator common.Address     `json:"operator"`
+	Vaults   []VaultVotingPower `json:"vaults"`
 }
 
 type OperatorWithKeys struct {
-	Operator common.Address
-	Keys     []Key
+	Operator common.Address `json:"operator"`
+	Keys     []Key          `json:"keys"`
 }
 
 type Eip712Domain struct {
-	Fields            [1]byte
-	Name              string
-	Version           string
-	ChainId           *big.Int
-	VerifyingContract common.Address
-	Salt              *big.Int
-	Extensions        []*big.Int
+	Fields            [1]byte        `json:"fields"`
+	Name              string         `json:"name"`
+	Version           string         `json:"version"`
+	ChainId           *big.Int       `json:"chainId"`
+	VerifyingContract common.Address `json:"verifyingContract"`
+	Salt              *big.Int       `json:"salt"`
+	Extensions        []*big.Int     `json:"extensions"`
 }

@@ -98,8 +98,8 @@ type ISettlementSettlementInitParams struct {
 type ISettlementValSetHeader struct {
 	Version            uint8
 	RequiredKeyTag     uint8
-	Epoch              *big.Int
-	CaptureTimestamp   *big.Int
+	Epoch              uint64
+	CaptureTimestamp   uint64
 	QuorumThreshold    *big.Int
 	ValidatorsSszMRoot [32]byte
 	PreviousHeaderHash [32]byte

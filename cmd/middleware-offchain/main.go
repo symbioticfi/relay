@@ -17,9 +17,9 @@ import (
 	aggregator "middleware-offchain/internal/app/aggregator-app"
 	committer "middleware-offchain/internal/app/committer-app"
 	app "middleware-offchain/internal/app/signer-app"
-	"middleware-offchain/internal/client/eth"
 	"middleware-offchain/internal/client/p2p"
 	"middleware-offchain/internal/client/repository/memory"
+	"middleware-offchain/internal/client/symbiotic"
 	valsetDeriver "middleware-offchain/internal/uc/valset-deriver"
 	valsetGenerator "middleware-offchain/internal/uc/valset-generator"
 	valsetListener "middleware-offchain/internal/uc/valset-listener"
@@ -97,14 +97,14 @@ var rootCmd = &cobra.Command{
 		}
 		keyPair := bls.ComputeKeyPair(b.Bytes())
 
-		ethClient, err := eth.NewEthClient(eth.Config{
+		ethClient, err := symbiotic.NewEVMClient(symbiotic.Config{
 			MasterRPCURL:   cfg.rpcURL,
 			MasterAddress:  cfg.masterAddress,
 			RequestTimeout: time.Second * 5,
 			PrivateKey:     b.Bytes(),
 		})
 		if err != nil {
-			return errors.Errorf("failed to create eth client: %w", err)
+			return errors.Errorf("failed to create symbiotic client: %w", err)
 		}
 
 		deriver, err := valsetDeriver.NewDeriver(ethClient)

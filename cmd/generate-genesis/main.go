@@ -12,7 +12,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/spf13/cobra"
 
-	"middleware-offchain/internal/client/eth"
+	"middleware-offchain/internal/client/symbiotic"
 	"middleware-offchain/internal/entity"
 	valsetDeriver "middleware-offchain/internal/uc/valset-deriver"
 	"middleware-offchain/pkg/log"
@@ -64,13 +64,13 @@ var rootCmd = &cobra.Command{
 
 		ctx := signalContext(context.Background())
 
-		client, err := eth.NewEthClient(eth.Config{
+		client, err := symbiotic.NewEVMClient(symbiotic.Config{
 			MasterRPCURL:   cfg.rpcURL,
 			MasterAddress:  cfg.masterAddress,
 			RequestTimeout: time.Second * 5,
 		})
 		if err != nil {
-			return errors.Errorf("failed to create eth client: %w", err)
+			return errors.Errorf("failed to create symbiotic client: %w", err)
 		}
 
 		deriver, err := valsetDeriver.NewDeriver(client)
@@ -83,19 +83,31 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to get current epoch: %w", err)
 		}
 
-		newValset, err := deriver.GetValidatorSetExtraForEpoch(ctx, currentOnchainEpoch)
+		captureTimestamp, err := client.GetCaptureTimestamp(ctx)
+		if err != nil {
+			return errors.Errorf("failed to get capture timestamp: %w", err)
+		}
+
+		networkConfig, err := client.GetConfig(ctx, captureTimestamp)
+		if err != nil {
+			return errors.Errorf("failed to get config: %w", err)
+		}
+
+		newValset, err := deriver.GetValidatorSet(ctx, currentOnchainEpoch, &networkConfig)
 		if err != nil {
 			return errors.Errorf("failed to get validator set extra for epoch %s: %w", currentOnchainEpoch, err)
 		}
 
-		header, err := deriver.MakeValsetHeader(ctx, newValset)
+		// header generation is clear now
+		header, err := newValset.GetHeader()
 		if err != nil {
 			return errors.Errorf("failed to generate validator set header: %w", err)
 		}
 
 		slog.Info("Valset header generated!")
 
-		extraData, err := deriver.GenerateExtraData(ctx, header, entity.ZkVerificationType)
+		// extra data generation is also clear but still in deriver
+		extraData, err := deriver.GenerateExtraData(&newValset, &networkConfig)
 		if err != nil {
 			return errors.Errorf("failed to generate extra data: %w", err)
 		}
