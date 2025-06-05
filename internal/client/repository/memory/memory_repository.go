@@ -27,7 +27,11 @@ type Repository struct {
 
 func New() (*Repository, error) {
 	return &Repository{
-		mu: sync.Mutex{},
+		mu:             sync.Mutex{},
+		networkConfigs: make(map[uint64]entity.NetworkConfig),
+		validatorSets:  make(map[uint64]entity.ValidatorSet),
+		signRequests:   make(map[common.Hash]entity.SignatureRequest),
+		aggProofs:      make(map[common.Hash]entity.AggregationProof),
 	}, nil
 }
 
