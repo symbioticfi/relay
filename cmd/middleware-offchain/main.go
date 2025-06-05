@@ -20,10 +20,11 @@ import (
 	"middleware-offchain/internal/client/eth"
 	"middleware-offchain/internal/client/p2p"
 	"middleware-offchain/internal/client/repository/memory"
+	keyprovider "middleware-offchain/internal/uc/key-provider"
+	"middleware-offchain/internal/uc/signer"
 	valsetDeriver "middleware-offchain/internal/uc/valset-deriver"
 	valsetGenerator "middleware-offchain/internal/uc/valset-generator"
 	valsetListener "middleware-offchain/internal/uc/valset-listener"
-	"middleware-offchain/pkg/bls"
 	"middleware-offchain/pkg/log"
 	"middleware-offchain/pkg/server"
 )
@@ -95,7 +96,6 @@ var rootCmd = &cobra.Command{
 		if !ok {
 			return errors.Errorf("failed to parse secret key as big.Int")
 		}
-		keyPair := bls.ComputeKeyPair(b.Bytes())
 
 		ethClient, err := eth.NewEthClient(eth.Config{
 			MasterRPCURL:   cfg.rpcURL,
@@ -144,10 +144,22 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to create memory repository: %w", err)
 		}
 
+		keystoreProvider, err := keyprovider.NewSimpleKeystoreProvider()
+		if err != nil {
+			return errors.Errorf("failed to create keystore provider: %w", err)
+		}
+		err = keystoreProvider.AddKey(15, b.Bytes())
+		if err != nil {
+			return errors.Errorf("failed to add key to keystore provider: %w", err)
+		}
+
+		signerLib := signer.NewSigner(keystoreProvider)
+
 		signerApp, err := app.NewSignerApp(app.Config{
-			P2PService: p2pService,
-			KeyPair:    keyPair,
-			Repo:       repo,
+			P2PService:  p2pService,
+			Signer:      signerLib,
+			KeyProvider: keystoreProvider,
+			Repo:        repo,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create signer app: %w", err)

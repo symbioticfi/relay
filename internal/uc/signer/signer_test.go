@@ -2,6 +2,7 @@ package signer
 
 import (
 	"bytes"
+	"middleware-offchain/internal/entity"
 	"middleware-offchain/pkg/bls"
 	"testing"
 
@@ -12,11 +13,11 @@ import (
 type MockKeyProvider struct {
 }
 
-func (*MockKeyProvider) GetPrivateKey(keyTag uint8) ([]byte, error) {
+func (*MockKeyProvider) GetPrivateKey(keyTag entity.KeyTag) ([]byte, error) {
 	return []byte("testrandomkey"), nil
 }
 
-func (*MockKeyProvider) HasKey(keyTag uint8) (bool, error) {
+func (*MockKeyProvider) HasKey(keyTag entity.KeyTag) (bool, error) {
 	return true, nil
 }
 
@@ -64,7 +65,7 @@ func TestBLSBn254(t *testing.T) {
 	g2Pubkey.SetBytes(signature.PublicKey[32:])
 
 	if !keyPair.PublicKeyG1.Equal(g1Pubkey.G1Affine) {
-		t.Fatalf("PublicKeyG1 returned wrong public key")
+		t.Fatalf("PublicKey returned wrong public key")
 	}
 	if !keyPair.PublicKeyG2.Equal(g2Pubkey.G2Affine) {
 		t.Fatalf("PublicKeyG2 returned wrong public key")

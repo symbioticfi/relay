@@ -413,7 +413,7 @@ func (e *Client) GetKeys(ctx context.Context, address entity.CrossChainAddress, 
 			Operator: item.Operator,
 			Keys: lo.Map(item.Keys, func(key keyDTO, _ int) entity.Key {
 				return entity.Key{
-					Tag:     key.Tag,
+					Tag:     entity.KeyTag(key.Tag),
 					Payload: key.Payload,
 				}
 			}),
@@ -421,7 +421,7 @@ func (e *Client) GetKeys(ctx context.Context, address entity.CrossChainAddress, 
 	}), nil
 }
 
-func (e *Client) GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uint8, error) {
+func (e *Client) GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (entity.KeyTag, error) {
 	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getRequiredKeyTagFunction, timestamp, []byte{})
 	if err != nil {
 		return 0, fmt.Errorf("failed to construct call msg: %w", err)
@@ -438,10 +438,10 @@ func (e *Client) GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uin
 		return 0, fmt.Errorf("failed to unpack key tag: %w", err)
 	}
 
-	return keyTag, nil
+	return entity.KeyTag(keyTag), nil
 }
 
-func (e *Client) GetQuorumThreshold(ctx context.Context, timestamp *big.Int, keyTag uint8) (*big.Int, error) {
+func (e *Client) GetQuorumThreshold(ctx context.Context, timestamp *big.Int, keyTag entity.KeyTag) (*big.Int, error) {
 	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getQuorumThresholdFunction, keyTag, timestamp, []byte{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct call msg: %w", err)

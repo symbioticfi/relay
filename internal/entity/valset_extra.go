@@ -9,7 +9,7 @@ import (
 
 type ValidatorSetExtra struct {
 	Version              uint8
-	RequiredKeyTag       uint8
+	RequiredKeyTag       KeyTag
 	Config               Config
 	DomainEip712         Eip712Domain
 	Subnetwork           []byte

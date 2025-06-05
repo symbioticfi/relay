@@ -96,9 +96,9 @@ package valsetDeriver
 //		Add(headerSignature2).
 //		Add(headerSignature3)
 //	//aggPublicKeyG1 := bls.ZeroG1().
-//	//	Add(&svc.keyPair1.PublicKeyG1).
-//	//	Add(&svc.keyPair2.PublicKeyG1).
-//	//	Add(&svc.keyPair3.PublicKeyG1)
+//	//	Add(&svc.keyPair1.PublicKey).
+//	//	Add(&svc.keyPair2.PublicKey).
+//	//	Add(&svc.keyPair3.PublicKey)
 //	aggPublicKeyG2 := bls.ZeroG2().
 //		Add(&keyPair1.PublicKeyG2).
 //		Add(&keyPair2.PublicKeyG2).

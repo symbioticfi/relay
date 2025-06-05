@@ -6,12 +6,11 @@ import (
 
 	"middleware-offchain/internal/entity"
 	"middleware-offchain/pkg/bls"
-	keyprovider "middleware-offchain/pkg/key-provider"
 )
 
 type keyProvider interface {
-	GetPrivateKey(keyTag uint8) ([]byte, error)
-	HasKey(keyTag uint8) (bool, error)
+	GetPrivateKey(keyTag entity.KeyTag) ([]byte, error)
+	HasKey(keyTag entity.KeyTag) (bool, error)
 }
 
 type Signer struct {
@@ -22,32 +21,30 @@ func NewSigner(kp keyProvider) *Signer {
 	return &Signer{kp: kp}
 }
 
-func (s *Signer) Hash(keyTag uint8, message []byte) ([]byte, error) {
-	keyType := keyTag >> 4
-	switch keyType {
-	case keyprovider.KeyTypeBlsBn254:
+func (s *Signer) Hash(keyTag entity.KeyTag, message []byte) ([]byte, error) {
+	switch keyTag.Type() {
+	case entity.KeyTypeBlsBn254:
 		return crypto.Keccak256(message), nil
-	case keyprovider.KeyTypeEcdsaSecp256k1:
+	case entity.KeyTypeEcdsaSecp256k1:
 		return crypto.Keccak256(message), nil
 	}
 
 	return nil, errors.New("invalid key type")
 }
 
-func (s *Signer) Sign(keyTag uint8, message []byte) (entity.Signature, error) {
+func (s *Signer) Sign(keyTag entity.KeyTag, message []byte) (entity.Signature, error) {
 	pk, err := s.kp.GetPrivateKey(keyTag)
 	if err != nil {
 		return entity.Signature{}, err
 	}
 
-	keyType := keyTag >> 4
 	hash, err := s.Hash(keyTag, message)
 	if err != nil {
 		return entity.Signature{}, err
 	}
 
-	switch keyType {
-	case keyprovider.KeyTypeBlsBn254:
+	switch keyTag.Type() {
+	case entity.KeyTypeBlsBn254:
 		keyPair := bls.ComputeKeyPair(pk)
 		blsSig, err := keyPair.Sign(hash)
 		if err != nil {
@@ -62,10 +59,10 @@ func (s *Signer) Sign(keyTag uint8, message []byte) (entity.Signature, error) {
 
 		return sig, nil
 
-	case keyprovider.KeyTypeEcdsaSecp256k1:
+	case entity.KeyTypeEcdsaSecp256k1:
 		// same but for another key type
 	}
 
 	// assert, should not reach the code
-	return entity.Signature{}, errors.Errorf("unsupported key type: %d", keyType)
+	return entity.Signature{}, errors.Errorf("unsupported key type: %d", keyTag.Type())
 }

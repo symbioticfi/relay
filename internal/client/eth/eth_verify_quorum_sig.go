@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+
+	"middleware-offchain/internal/entity"
 )
 
-func (e *Client) VerifyQuorumSig(ctx context.Context, epoch *big.Int, message []byte, keyTag uint8, threshold *big.Int, proof, hint []byte) (bool, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, verifyQuorumSigFunction, epoch, message, keyTag, threshold, proof, hint)
+func (e *Client) VerifyQuorumSig(ctx context.Context, epoch *big.Int, message []byte, keyTag entity.KeyTag, threshold *big.Int, proof []byte) (bool, error) {
+	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, verifyQuorumSigFunction, epoch, message, keyTag, threshold, proof, []byte{})
 	if err != nil {
 		return false, fmt.Errorf("failed to construct call msg: %w", err)
 	}

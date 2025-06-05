@@ -6,20 +6,22 @@ import (
 	"os"
 	"strings"
 	"sync"
+
+	"middleware-offchain/internal/entity"
 )
 
 type EnvKeyProvider struct {
-	cache map[uint8][]byte
+	cache map[entity.KeyTag][]byte
 	mu    sync.RWMutex
 }
 
 func NewEnvKeyProvider() *EnvKeyProvider {
 	return &EnvKeyProvider{
-		cache: make(map[uint8][]byte),
+		cache: make(map[entity.KeyTag][]byte),
 	}
 }
 
-func (e *EnvKeyProvider) GetPrivateKey(keyTag uint8) ([]byte, error) {
+func (e *EnvKeyProvider) GetPrivateKey(keyTag entity.KeyTag) ([]byte, error) {
 	e.mu.RLock()
 
 	key, ok := e.cache[keyTag]
@@ -51,7 +53,7 @@ func (e *EnvKeyProvider) GetPrivateKey(keyTag uint8) ([]byte, error) {
 	return decoded, nil
 }
 
-func (e *EnvKeyProvider) HasKey(keyTag uint8) (bool, error) {
+func (e *EnvKeyProvider) HasKey(keyTag entity.KeyTag) (bool, error) {
 	e.mu.RLock()
 	_, ok := e.cache[keyTag]
 	e.mu.RUnlock()

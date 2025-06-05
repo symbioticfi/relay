@@ -138,5 +138,5 @@ func (r *Repository) SaveSignature(ctx context.Context, req entity.SignatureRequ
 }
 
 func signRequestHash(req entity.SignatureRequest) common.Hash {
-	return crypto.Keccak256Hash([]byte{req.KeyTag}, req.RequiredEpoch.Bytes(), req.Message)
+	return crypto.Keccak256Hash([]byte{uint8(req.KeyTag)}, req.RequiredEpoch.Bytes(), req.Message)
 }

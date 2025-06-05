@@ -64,7 +64,7 @@ func validatorSetToDTO(v entity.ValidatorSet) validatorSet {
 				IsActive:    v.IsActive,
 				Keys: lo.Map(v.Keys, func(k entity.Key, _ int) *key {
 					return &key{
-						Tag:         k.Tag,
+						Tag:         uint8(k.Tag),
 						PayloadHash: keyPayloadHash(k),
 					}
 				}),
@@ -623,11 +623,11 @@ func (v *validator) ProveIsActive() (*ssz.Proof, error) {
 	return isActiveProof, nil
 }
 
-func (v *validator) ProveKeyRoot(keyTag uint8) (*key, int, *ssz.Proof, error) {
+func (v *validator) ProveKeyRoot(keyTag entity.KeyTag) (*key, int, *ssz.Proof, error) {
 	keyIndex := sort.Search(len(v.Keys), func(i int) bool {
-		return v.Keys[i].Tag >= keyTag
+		return v.Keys[i].Tag >= uint8(keyTag)
 	})
-	if keyIndex >= len(v.Keys) || v.Keys[keyIndex].Tag != keyTag {
+	if keyIndex >= len(v.Keys) || v.Keys[keyIndex].Tag != uint8(keyTag) {
 		return nil, 0, nil, fmt.Errorf("key %d not found", keyTag)
 	}
 

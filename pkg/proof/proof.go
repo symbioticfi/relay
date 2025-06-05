@@ -90,7 +90,7 @@ func (p ProofData) Marshall() []byte {
 type RawProveInput struct {
 	SignerValidators []entity.Validator
 	AllValidators    []entity.Validator
-	RequiredKeyTag   uint8
+	RequiredKeyTag   entity.KeyTag
 	Message          []byte
 	Signature        bls.G1
 	SignersAggKeyG2  bls.G2
@@ -471,7 +471,7 @@ func GetActiveValidators(allValidators []entity.Validator) []entity.Validator {
 }
 
 // todo ilya
-func ToValidatorsData(signerValidators []entity.Validator, allValidators []entity.Validator, requiredKeyTag uint8) ([]ValidatorData, error) {
+func ToValidatorsData(signerValidators []entity.Validator, allValidators []entity.Validator, requiredKeyTag entity.KeyTag) ([]ValidatorData, error) {
 	activeValidators := GetActiveValidators(allValidators)
 	valset := make([]ValidatorData, 0)
 	for i := range activeValidators {

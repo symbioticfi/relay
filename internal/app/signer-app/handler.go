@@ -8,6 +8,8 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+
+	"middleware-offchain/internal/entity"
 )
 
 func (s *SignerApp) Handler() http.Handler {
@@ -19,7 +21,8 @@ func (s *SignerApp) Handler() http.Handler {
 }
 
 type signMessageRequest struct {
-	Data []byte `json:"data"`
+	Data   []byte        `json:"data"`
+	KeyTag entity.KeyTag `json:"keyTag"`
 }
 
 func (s *SignerApp) signMessageHandler(w http.ResponseWriter, r *http.Request) {
@@ -30,7 +33,7 @@ func (s *SignerApp) signMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.signMessage(ctx, req.Data); err != nil {
+	if err := s.signMessage(ctx, req.Data, req.KeyTag); err != nil {
 		handleError(ctx, w, err)
 		return
 	}

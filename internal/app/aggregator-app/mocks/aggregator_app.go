@@ -43,7 +43,7 @@ func (m *MockethClient) EXPECT() *MockethClientMockRecorder {
 }
 
 // GetQuorumThreshold mocks base method.
-func (m *MockethClient) GetQuorumThreshold(ctx context.Context, timestamp *big.Int, keyTag uint8) (*big.Int, error) {
+func (m *MockethClient) GetQuorumThreshold(ctx context.Context, timestamp *big.Int, keyTag entity.KeyTag) (*big.Int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetQuorumThreshold", ctx, timestamp, keyTag)
 	ret0, _ := ret[0].(*big.Int)

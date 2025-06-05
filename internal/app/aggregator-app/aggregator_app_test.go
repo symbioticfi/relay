@@ -19,7 +19,7 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	keyTag := uint8(7)
+	keyTag := entity.KeyTag(7)
 	operatorAddress1 := common.BytesToAddress([]byte{1})
 	operatorAddress2 := common.BytesToAddress([]byte{2})
 	operatorAddress3 := common.BytesToAddress([]byte{3})
@@ -106,8 +106,8 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 			name: "validator not found",
 			message: entity.P2PSignatureHashMessage{
 				Message: entity.SignatureHashMessage{
-					PublicKeyG1: []byte{0x02},
-					KeyTag:      keyTag,
+					PublicKey: []byte{0x02},
+					KeyTag:    keyTag,
 				},
 			},
 			mockSetup:   func() {},
@@ -117,10 +117,9 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 			name: "quorum not reached",
 			message: entity.P2PSignatureHashMessage{
 				Message: entity.SignatureHashMessage{
-					PublicKeyG1: key1.PublicKeyG1.Marshal(),
-					PublicKeyG2: key1.PublicKeyG2.Marshal(),
-					KeyTag:      keyTag,
-					Signature:   bls.SerializeG1(sign1),
+					PublicKey: key1.PackPublicG1G2(),
+					KeyTag:    keyTag,
+					Signature: bls.SerializeG1(sign1),
 				},
 			},
 			mockSetup: func() {
@@ -134,10 +133,9 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 			name: "quorum reached",
 			message: entity.P2PSignatureHashMessage{
 				Message: entity.SignatureHashMessage{
-					PublicKeyG1: key3.PublicKeyG1.Marshal(),
-					PublicKeyG2: key3.PublicKeyG2.Marshal(),
-					KeyTag:      keyTag,
-					Signature:   bls.SerializeG1(sign3),
+					PublicKey: key3.PackPublicG1G2(),
+					KeyTag:    keyTag,
+					Signature: bls.SerializeG1(sign3),
 				},
 			},
 			mockSetup: func() {
@@ -153,10 +151,9 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 			name: "error getting quorum threshold",
 			message: entity.P2PSignatureHashMessage{
 				Message: entity.SignatureHashMessage{
-					PublicKeyG1: key2.PublicKeyG1.Marshal(),
-					PublicKeyG2: key2.PublicKeyG2.Marshal(),
-					KeyTag:      keyTag,
-					Signature:   bls.SerializeG1(sign2),
+					PublicKey: key2.PackPublicG1G2(),
+					KeyTag:    keyTag,
+					Signature: bls.SerializeG1(sign2),
 				},
 			},
 			mockSetup: func() {

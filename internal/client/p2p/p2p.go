@@ -92,9 +92,8 @@ func (s *Service) handleStreamInternal(stream network.Stream) error {
 			Message: entity.SignatureHashMessage{
 				MessageHash: signatureGenerated.MessageHash,
 				Signature:   signatureGenerated.Signature,
-				PublicKeyG1: signatureGenerated.PublicKeyG1,
-				PublicKeyG2: signatureGenerated.PublicKeyG2,
-				KeyTag:      signatureGenerated.KeyTag,
+				PublicKey:   signatureGenerated.PublicKey,
+				KeyTag:      entity.KeyTag(signatureGenerated.KeyTag),
 				HashType:    entity.HashType(signatureGenerated.HashType),
 				//ValsetHeaderTimestamp: signatureGenerated.ValsetHeaderTimestamp, // todo ilya
 				Epoch: signatureGenerated.Epoch,

@@ -140,7 +140,35 @@ func (kp *KeyPair) PackPublicG1G2() []byte {
 	return totalBytes
 }
 
-// hashToG1 hashes data to a point on the BN254 curve
+func UnpackPublicG1G2(g1g2 []byte) (G1, G2, error) {
+	if len(g1g2) != 96 {
+		return G1{}, G2{}, errors.New("invalid length for G1 and G2 public keys")
+	}
+
+	g1Bytes := make([]byte, 32)
+	g2Bytes := make([]byte, 64)
+
+	for i := 0; i < 32; i++ {
+		g1Bytes[i] = g1g2[i]
+	}
+	for i := 0; i < 64; i++ {
+		g2Bytes[i] = g1g2[32+i]
+	}
+
+	g1, err := DeserializeG1(g1Bytes)
+	if err != nil {
+		return G1{}, G2{}, fmt.Errorf("failed to deserialize G1: %w", err)
+	}
+
+	g2, err := DeserializeG2(g2Bytes)
+	if err != nil {
+		return G1{}, G2{}, fmt.Errorf("failed to deserialize G2: %w", err)
+	}
+
+	return *g1, *g2, nil
+}
+
+// HashToG1 hashes data to a point on the BN254 curve
 func HashToG1(data []byte) (*G1, error) {
 	// Convert data to a big integer
 	x := new(big.Int).SetBytes(data)

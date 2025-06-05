@@ -12,13 +12,14 @@ import (
 	"github.com/shopspring/decimal"
 
 	"middleware-offchain/internal/entity"
+	"middleware-offchain/pkg/bls"
 	"middleware-offchain/pkg/log"
 	"middleware-offchain/pkg/proof"
 )
 
 //go:generate mockgen -source=aggregator_app.go -destination=mocks/aggregator_app.go -package=mocks
 type ethClient interface {
-	GetQuorumThreshold(ctx context.Context, timestamp *big.Int, keyTag uint8) (*big.Int, error)
+	GetQuorumThreshold(ctx context.Context, timestamp *big.Int, keyTag entity.KeyTag) (*big.Int, error)
 }
 
 type valsetDeriver interface {
@@ -74,16 +75,21 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		return fmt.Errorf("failed to get validator set: %w", err)
 	}
 
-	validator, found := validatorSet.FindValidatorByKey(msg.Message.PublicKeyG1)
+	g1, _, err := bls.UnpackPublicG1G2(msg.Message.PublicKey) // todo ilya discuss how to get rid of dependency on bls package here
+	if err != nil {
+		return errors.Errorf("failed to unpack public key: %w", err)
+	}
+
+	validator, found := validatorSet.FindValidatorByKey(msg.Message.KeyTag, g1.Marshal())
 	if !found {
-		return errors.Errorf("validator not found for public key: %x", msg.Message.PublicKeyG1)
+		return errors.Errorf("validator not found for public key: %x", msg.Message.PublicKey)
 	}
 
 	slog.DebugContext(ctx, "found validator", "validator", validator)
 
 	current, err := s.hashStore.PutHash(msg.Message, validator)
 	if err != nil {
-		return errors.Errorf("failed to put hash: %w", err)
+		return errors.Errorf("failed to put signature: %w", err)
 	}
 
 	slog.DebugContext(ctx, "total voting power", "currentVotingPower", current.votingPower.String())

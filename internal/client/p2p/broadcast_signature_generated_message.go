@@ -15,9 +15,8 @@ func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg en
 	dto := signatureGeneratedDTO{
 		MessageHash: msg.MessageHash,
 		Signature:   msg.Signature,
-		PublicKeyG1: msg.PublicKeyG1,
-		PublicKeyG2: msg.PublicKeyG2,
-		KeyTag:      msg.KeyTag,
+		PublicKey:   msg.PublicKey,
+		KeyTag:      uint8(msg.KeyTag),
 		HashType:    string(msg.HashType),
 		//ValsetHeaderTimestamp: msg.ValsetHeaderTimestamp, // todo ilya
 		Epoch: msg.Epoch,
@@ -45,10 +44,10 @@ func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg en
 }
 
 type signatureGeneratedDTO struct {
+	// todo ilya add version
 	MessageHash           []byte   `json:"message_hash"`
 	Signature             []byte   `json:"signature"`
-	PublicKeyG1           []byte   `json:"public_key_g1"`
-	PublicKeyG2           []byte   `json:"public_key_g2"`
+	PublicKey             []byte   `json:"public_key"`
 	KeyTag                uint8    `json:"key_tag"`
 	HashType              string   `json:"hash_type"`
 	ValsetHeaderTimestamp *big.Int `json:"valset_header_timestamp"`

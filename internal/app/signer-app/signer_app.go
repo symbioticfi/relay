@@ -10,7 +10,6 @@ import (
 	"github.com/samber/mo"
 
 	"middleware-offchain/internal/entity"
-	"middleware-offchain/pkg/bls"
 )
 
 type repo interface {
@@ -25,10 +24,20 @@ type p2pService interface {
 	BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureHashMessage) error
 }
 
+type signer interface {
+	Sign(keyTag entity.KeyTag, message []byte) (entity.Signature, error)
+	Hash(keyTag entity.KeyTag, message []byte) ([]byte, error)
+}
+
+type keyProvider interface {
+	GetPublic(keyTag entity.KeyTag) ([]byte, error)
+}
+
 type Config struct {
-	P2PService p2pService  `validate:"required"`
-	KeyPair    bls.KeyPair `validate:"required"`
-	Repo       repo        `validate:"required"`
+	P2PService  p2pService  `validate:"required"`
+	Signer      signer      `validate:"required"`
+	Repo        repo        `validate:"required"`
+	KeyProvider keyProvider `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -69,6 +78,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 	if existedProof.IsPresent() {
 		return errors.New("aggregation proof already exists for this request")
 	}
+
 	latestValsetExtra, err := s.cfg.Repo.GetLatestValsetExtra(ctx)
 	if err != nil {
 		return errors.Errorf("failed to get latest valset extra: %w", err)
@@ -86,34 +96,32 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.Errorf("failed to get valset extra by epoch %s: %w", req.RequiredEpoch, err)
 	}
 	epochValset := epochValsetExtra.MakeValidatorSet()
-	_, found := epochValset.FindValidatorByKey(s.cfg.KeyPair.PublicKeyG1.Marshal())
+
+	public, err := s.cfg.KeyProvider.GetPublic(req.KeyTag)
+	if err != nil {
+		return errors.Errorf("failed to get public key for key tag %d: %w", req.KeyTag, err)
+	}
+	_, found := epochValset.FindValidatorByKey(req.KeyTag, public)
 	if !found {
 		return errors.Errorf("validator not found in epoch valset for public key")
 	}
 
-	headerSignature, err := s.cfg.KeyPair.Sign(req.Message)
+	signature, err := s.cfg.Signer.Sign(req.KeyTag, req.Message)
 	if err != nil {
 		return errors.Errorf("failed to sign valset header hash: %w", err)
 	}
 
-	sig := entity.Signature{
-		MessageHash: req.Message,
-		Signature:   headerSignature.Marshal(),
-		PublicKey:   s.cfg.KeyPair.PublicKeyG1.Marshal(),
-	}
-
-	if err := s.cfg.Repo.SaveSignature(ctx, req, sig); err != nil {
+	if err := s.cfg.Repo.SaveSignature(ctx, req, signature); err != nil {
 		return errors.Errorf("failed to save signature: %w", err)
 	}
 
-	slog.InfoContext(ctx, "valset header hash signed, sending via p2p", "headerSignature", headerSignature)
+	slog.InfoContext(ctx, "valset header hash signed, sending via p2p", "headerSignature", signature)
 
 	err = s.cfg.P2PService.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureHashMessage{
 		MessageHash: req.Message,
 		KeyTag:      req.KeyTag,
-		Signature:   bls.SerializeG1(headerSignature),
-		PublicKeyG1: bls.SerializeG1(&s.cfg.KeyPair.PublicKeyG1),
-		PublicKeyG2: bls.SerializeG2(&s.cfg.KeyPair.PublicKeyG2),
+		Signature:   signature.Signature,
+		PublicKey:   signature.PublicKey,
 		HashType:    entity.HashTypeValsetHeader,
 		Epoch:       req.RequiredEpoch,
 	})

@@ -16,13 +16,13 @@ const (
 	ErrSignatureRequestExists = StringError("signature request already exists")
 )
 
-const ValsetHeaderKeyTag uint8 = 15
+const ValsetHeaderKeyTag = KeyTag(15)
 const MaxSavedEpochs int64 = 10
 
 // SignatureRequest signature request message
 // RequestHash = sha256(SignatureRequest) (use as identifier later)
 type SignatureRequest struct {
-	KeyTag        uint8
+	KeyTag        KeyTag
 	RequiredEpoch *big.Int
 	Message       []byte
 }

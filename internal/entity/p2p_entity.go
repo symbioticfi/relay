@@ -23,9 +23,8 @@ const (
 type SignatureHashMessage struct {
 	MessageHash []byte
 	Signature   []byte
-	PublicKeyG1 []byte
-	PublicKeyG2 []byte
-	KeyTag      uint8
+	PublicKey   []byte
+	KeyTag      KeyTag
 	HashType    HashType
 	Epoch       *big.Int
 }

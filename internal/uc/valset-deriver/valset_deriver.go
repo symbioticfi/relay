@@ -29,7 +29,7 @@ type ethClient interface {
 	GetConfig(ctx context.Context, timestamp *big.Int) (entity.Config, error)
 	GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp *big.Int) ([]entity.OperatorVotingPower, error)
 	GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp *big.Int) ([]entity.OperatorWithKeys, error)
-	GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (uint8, error)
+	GetRequiredKeyTag(ctx context.Context, timestamp *big.Int) (entity.KeyTag, error)
 	GetEip712Domain(ctx context.Context) (entity.Eip712Domain, error)
 	GetCurrentEpoch(ctx context.Context) (*big.Int, error)
 	GetSubnetwork(ctx context.Context) ([]byte, error)
@@ -120,7 +120,7 @@ func (v *Deriver) GetValidatorSetExtraForEpoch(ctx context.Context, epoch *big.I
 func (v *Deriver) MakeValsetHeader(ctx context.Context, extra entity.ValidatorSetExtra) (entity.ValidatorSetHeader, error) {
 	validatorSet := extra.MakeValidatorSet()
 
-	tags := []uint8{uint8(len(validatorSet.Validators[0].Keys))}
+	tags := make([]entity.KeyTag, 0, len(validatorSet.Validators[0].Keys))
 	for _, key := range validatorSet.Validators[0].Keys {
 		if key.Tag == extra.RequiredKeyTag { // TODO: major - get required key tags from validator set config
 			tags = append(tags, key.Tag)
@@ -391,7 +391,7 @@ func (v *Deriver) GetExtraDataKey(verificationType uint32, name string) ([32]byt
 	return crypto.Keccak256Hash(packed), nil
 }
 
-func (v *Deriver) GetExtraDataKeyTagged(verificationType uint32, keyTag uint8, name string) ([32]byte, error) {
+func (v *Deriver) GetExtraDataKeyTagged(verificationType uint32, keyTag entity.KeyTag, name string) ([32]byte, error) {
 	strTy, _ := abi.NewType("string", "", nil)
 	u32Ty, _ := abi.NewType("uint32", "", nil)
 	u8Ty, _ := abi.NewType("uint8", "", nil)
@@ -413,7 +413,7 @@ func (v *Deriver) GetExtraDataKeyTagged(verificationType uint32, keyTag uint8, n
 
 func (v *Deriver) GetExtraDataKeyIndexed(
 	verificationType uint32,
-	keyTag uint8,
+	keyTag entity.KeyTag,
 	name string,
 	index *big.Int,
 ) ([32]byte, error) {

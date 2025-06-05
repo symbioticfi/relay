@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/pavlo-v-chernykh/keystore-go/v4"
+
+	"middleware-offchain/internal/entity"
 )
 
 type KeystoreProvider struct {
@@ -34,7 +36,7 @@ func NewKeystoreProvider(filePath, password string) (*KeystoreProvider, error) {
 	return &KeystoreProvider{ks: ks, filePath: filePath}, nil
 }
 
-func (k *KeystoreProvider) GetPrivateKey(keyTag uint8) ([]byte, error) {
+func (k *KeystoreProvider) GetPrivateKey(keyTag entity.KeyTag) ([]byte, error) {
 	alias, err := getAlias(keyTag)
 	if err != nil {
 		return nil, err
@@ -47,7 +49,7 @@ func (k *KeystoreProvider) GetPrivateKey(keyTag uint8) ([]byte, error) {
 	return entry.PrivateKey, nil
 }
 
-func (k *KeystoreProvider) HasKey(keyTag uint8) (bool, error) {
+func (k *KeystoreProvider) HasKey(keyTag entity.KeyTag) (bool, error) {
 	alias, err := getAlias(keyTag)
 	if err != nil {
 		return false, err
@@ -55,7 +57,7 @@ func (k *KeystoreProvider) HasKey(keyTag uint8) (bool, error) {
 	return k.ks.IsPrivateKeyEntry(alias), nil
 }
 
-func (k *KeystoreProvider) AddKey(keyTag uint8, privateKey []byte, password string) error {
+func (k *KeystoreProvider) AddKey(keyTag entity.KeyTag, privateKey []byte, password string) error {
 	exists, err := k.HasKey(keyTag)
 	if err != nil {
 		return err
@@ -87,7 +89,7 @@ func (k *KeystoreProvider) AddKey(keyTag uint8, privateKey []byte, password stri
 	return nil
 }
 
-func (k *KeystoreProvider) DeleteKey(keyTag uint8, password string) error {
+func (k *KeystoreProvider) DeleteKey(keyTag entity.KeyTag, password string) error {
 	exists, err := k.HasKey(keyTag)
 	if err != nil {
 		return err

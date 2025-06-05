@@ -13,7 +13,7 @@ import (
 )
 
 type Key struct {
-	Tag     uint8
+	Tag     KeyTag
 	Payload []byte
 }
 
@@ -49,8 +49,7 @@ type Signature struct {
 	PublicKey   []byte // parse based on KeyTag
 }
 
-// todo ilya make g1 G1 not bytes
-func (v ValidatorSet) FindValidatorByKey(g1 []byte) (Validator, bool) {
+func (v ValidatorSet) FindValidatorByKey(keyTag KeyTag, g1 []byte) (Validator, bool) {
 	for _, validator := range v.Validators {
 		for _, key := range validator.Keys {
 			if slices.Equal(key.Payload, g1) {
@@ -62,14 +61,14 @@ func (v ValidatorSet) FindValidatorByKey(g1 []byte) (Validator, bool) {
 }
 
 type ValidatorSetHash struct {
-	KeyTag uint8
+	KeyTag KeyTag
 	Hash   [32]byte
 }
 
 // ValidatorSetHeader represents the input for validator set header
 type ValidatorSetHeader struct {
 	Version            uint8
-	RequiredKeyTag     uint8
+	RequiredKeyTag     KeyTag
 	Epoch              *big.Int
 	CaptureTimestamp   *big.Int
 	VerificationType   uint32
@@ -213,7 +212,7 @@ func (v ValidatorSetHeader) EncodeJSON() ([]byte, error) {
 		Version            uint8    `json:"version"`
 		ValidatorsSszMRoot string   `json:"validatorsSszMRoot"` // hex string
 		Epoch              *big.Int `json:"epoch"`
-		RequiredKeyTag     uint8    `json:"requiredKeyTag"`
+		RequiredKeyTag     KeyTag   `json:"requiredKeyTag"`
 		CaptureTimestamp   *big.Int `json:"captureTimestamp"`
 		QuorumThreshold    *big.Int `json:"quorumThreshold"`
 		PreviousHeaderHash string   `json:"previousHeaderHash"` // hex string
@@ -262,7 +261,7 @@ func (v ValidatorSetHeaderWithExtraData) EncodeJSON() ([]byte, error) {
 		Version            uint8    `json:"version"`
 		ValidatorsSszMRoot string   `json:"validatorsSszMRoot"` // hex string
 		Epoch              *big.Int `json:"epoch"`
-		RequiredKeyTag     uint8    `json:"requiredKeyTag"`
+		RequiredKeyTag     KeyTag   `json:"requiredKeyTag"`
 		CaptureTimestamp   *big.Int `json:"captureTimestamp"`
 		QuorumThreshold    *big.Int `json:"quorumThreshold"`
 		PreviousHeaderHash string   `json:"previousHeaderHash"` // hex string

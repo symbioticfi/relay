@@ -18,8 +18,8 @@ type hashStore struct {
 }
 
 type hashWithValidator struct {
-	validator entity.Validator
-	hash      entity.SignatureHashMessage
+	validator        entity.Validator
+	signatureMessage entity.SignatureHashMessage
 }
 
 func newHashStore() *hashStore {
@@ -45,12 +45,12 @@ func (h *hashStore) PutHash(msg entity.SignatureHashMessage, val entity.Validato
 		h.m[string(msg.MessageHash)] = validators
 	}
 	if _, ok = validators[val.Operator]; ok {
-		return currentValues{}, errors.Errorf("hash already exists for validator %s", val.Operator.Hex())
+		return currentValues{}, errors.Errorf("signature already exists for validator %s", val.Operator.Hex())
 	}
 
 	validators[val.Operator] = hashWithValidator{
-		validator: val,
-		hash:      msg,
+		validator:        val,
+		signatureMessage: msg,
 	}
 
 	totalVotingPower := new(big.Int)
@@ -59,21 +59,19 @@ func (h *hashStore) PutHash(msg entity.SignatureHashMessage, val entity.Validato
 	aggPublicKeyG2 := bls.ZeroG2()
 	for _, validator := range validators {
 		totalVotingPower = totalVotingPower.Add(totalVotingPower, validator.validator.VotingPower)
-		signature, err := bls.DeserializeG1(validator.hash.Signature)
+		signature, err := bls.DeserializeG1(validator.signatureMessage.Signature)
 		if err != nil {
 			return currentValues{}, errors.Errorf("failed to deserialize signature: %w", err)
 		}
-		publicKeyG1, err := bls.DeserializeG1(validator.hash.PublicKeyG1)
+
+		publicKeyG1, publicKeyG2, err := bls.UnpackPublicG1G2(validator.signatureMessage.PublicKey)
 		if err != nil {
-			return currentValues{}, errors.Errorf("failed to deserialize public key G1: %w", err)
+			return currentValues{}, errors.Errorf("failed to unpack public key G1 and G2: %w", err)
 		}
-		publicKeyG2, err := bls.DeserializeG2(validator.hash.PublicKeyG2)
-		if err != nil {
-			return currentValues{}, errors.Errorf("failed to deserialize public key G2: %w", err)
-		}
+
 		aggSignature = aggSignature.Add(signature)
-		aggPublicKeyG1 = aggPublicKeyG1.Add(publicKeyG1)
-		aggPublicKeyG2 = aggPublicKeyG2.Add(publicKeyG2)
+		aggPublicKeyG1 = aggPublicKeyG1.Add(&publicKeyG1)
+		aggPublicKeyG2 = aggPublicKeyG2.Add(&publicKeyG2)
 	}
 
 	return currentValues{
