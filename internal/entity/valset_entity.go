@@ -206,10 +206,6 @@ func (v ValidatorSetHeader) AbiEncode() ([]byte, error) {
 			Type: abi.Type{T: abi.UintTy, Size: 48},
 		},
 		{
-			Name: "verificationType",
-			Type: abi.Type{T: abi.UintTy, Size: 32},
-		},
-		{
 			Name: "quorumThreshold",
 			Type: abi.Type{T: abi.UintTy, Size: 256},
 		},
@@ -230,7 +226,7 @@ func (v ValidatorSetHeader) AbiEncode() ([]byte, error) {
 	offsetBytes := offsetValue.FillBytes(make([]byte, 32))
 	copy(initialOffset, offsetBytes) // Copy the padded value into our prefix slice
 
-	pack, err := arguments.Pack(v.Version, v.RequiredKeyTag, v.Epoch, v.CaptureTimestamp, v.QuorumThreshold, v.ValidatorsSszMRoot, v.PreviousHeaderHash)
+	pack, err := arguments.Pack(v.Version, v.RequiredKeyTag, new(big.Int).SetUint64(v.Epoch), new(big.Int).SetUint64(v.CaptureTimestamp), v.QuorumThreshold, v.ValidatorsSszMRoot, v.PreviousHeaderHash)
 	if err != nil {
 		return nil, errors.Errorf("failed to pack arguments: %w", err)
 	}

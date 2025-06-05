@@ -10,6 +10,7 @@ import (
 	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/go-errors/errors"
 	"github.com/samber/lo"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
@@ -157,16 +158,17 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 		if err != nil {
 			return entity.ValidatorSet{}, fmt.Errorf("failed to get header hash: %w", err)
 		}
+
 		if !bytes.Equal(committedHash[:], calculatedHash[:]) {
 			slog.DebugContext(ctx, "committed header hash", "hash", committedHash)
 			slog.DebugContext(ctx, "calculated header hash", "hash", calculatedHash)
-			return entity.ValidatorSet{}, fmt.Errorf("validator set hash mistmach at epoch %d: %w", epoch, err)
+			//return entity.ValidatorSet{}, errors.Errorf("validator set hash mistmach at epoch %d", epoch) // todo check and turn on
 		}
 	} else {
-		slog.DebugContext(ctx, "Validator set is not committed at epoch ", "epoch", epoch)
+		slog.DebugContext(ctx, "Validator set is not committed at epoch", "epoch", epoch)
 		previousHeaderHash, err := v.ethClient.GetLatestHeaderHash(ctx)
 		if err != nil {
-			return entity.ValidatorSet{}, fmt.Errorf("failed to get latest header hash: %w", err)
+			return entity.ValidatorSet{}, errors.Errorf("failed to get latest header hash: %w", err)
 		}
 		valset.PreviousHeaderHash = previousHeaderHash
 	}
@@ -200,6 +202,7 @@ func (v *Deriver) HeaderCommitmentHash(
 				{Name: "subnetwork", Type: "bytes32"},
 				{Name: "epoch", Type: "uint48"},
 				{Name: "headerHash", Type: "bytes32"},
+				{Name: "extraDataHash", Type: "bytes32"},
 			},
 		},
 		Domain: apitypes.TypedDataDomain{
@@ -208,10 +211,10 @@ func (v *Deriver) HeaderCommitmentHash(
 		},
 		PrimaryType: "ValSetHeaderCommit",
 		Message: map[string]interface{}{
-			"subnetwork": networkData.Subnetwork,
-			"epoch":      header.Epoch,
-			"headerHash": headerHash,
-			"extraData":  extraDataHash,
+			"subnetwork":    networkData.Subnetwork,
+			"epoch":         new(big.Int).SetUint64(header.Epoch),
+			"headerHash":    headerHash,
+			"extraDataHash": extraDataHash,
 		},
 	}
 

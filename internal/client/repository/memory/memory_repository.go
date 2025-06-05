@@ -44,7 +44,7 @@ func (r *Repository) GetLatestValset(ctx context.Context) (entity.ValidatorSet, 
 	}
 
 	latestValset := lo.MaxBy(lo.Values(r.validatorSets), func(a entity.ValidatorSet, b entity.ValidatorSet) bool {
-		return a.Epoch < b.Epoch
+		return a.Epoch > b.Epoch
 	})
 
 	return r.validatorSets[latestValset.Epoch], nil

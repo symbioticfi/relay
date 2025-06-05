@@ -14,12 +14,17 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
+	signer_app "middleware-offchain/internal/app/signer-app"
 	"middleware-offchain/internal/client/p2p"
 	"middleware-offchain/internal/client/repository/memory"
 	"middleware-offchain/internal/client/symbiotic"
+	keyprovider "middleware-offchain/internal/uc/key-provider"
+	"middleware-offchain/internal/uc/signer"
 	valsetDeriver "middleware-offchain/internal/uc/valset-deriver"
+	valset_generator "middleware-offchain/internal/uc/valset-generator"
 	valsetListener "middleware-offchain/internal/uc/valset-listener"
 	"middleware-offchain/pkg/log"
+	"middleware-offchain/pkg/server"
 )
 
 // offchain_middleware --master-address 0xE82319C323a3e20dE10e83C6a107C852A5D75408 --rpc-url http://127.0.0.1:8545
@@ -137,27 +142,27 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to create memory repository: %w", err)
 		}
 
-		//keystoreProvider, err := keyprovider.NewSimpleKeystoreProvider()
-		//if err != nil {
-		//	return errors.Errorf("failed to create keystore provider: %w", err)
-		//}
-		//err = keystoreProvider.AddKey(15, b.Bytes())
-		//if err != nil {
-		//	return errors.Errorf("failed to add key to keystore provider: %w", err)
-		//}
+		keystoreProvider, err := keyprovider.NewSimpleKeystoreProvider()
+		if err != nil {
+			return errors.Errorf("failed to create keystore provider: %w", err)
+		}
+		err = keystoreProvider.AddKey(15, b.Bytes())
+		if err != nil {
+			return errors.Errorf("failed to add key to keystore provider: %w", err)
+		}
 
-		//signerLib := signer.NewSigner(keystoreProvider)
-		//
-		//signerApp, err := app.NewSignerApp(app.Config{
-		//	P2PService:  p2pService,
-		//	Signer:      signerLib,
-		//	KeyProvider: keystoreProvider,
-		//	Repo:        repo,
-		//})
-		//if err != nil {
-		//	return errors.Errorf("failed to create signer app: %w", err)
-		//}
-		//slog.InfoContext(ctx, "created signer app, starting")
+		signerLib := signer.NewSigner(keystoreProvider)
+
+		signerApp, err := signer_app.NewSignerApp(signer_app.Config{
+			P2PService:  p2pService,
+			Signer:      signerLib,
+			KeyProvider: keystoreProvider,
+			Repo:        repo,
+		})
+		if err != nil {
+			return errors.Errorf("failed to create signer app: %w", err)
+		}
+		slog.InfoContext(ctx, "created signer app, starting")
 
 		listener, err := valsetListener.New(valsetListener.Config{
 			Eth:             ethClient,
@@ -169,27 +174,27 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to create epoch listener: %w", err)
 		}
 
-		//generator, err := valsetGenerator.New(valsetGenerator.Config{
-		//	Signer:          signerApp,
-		//	Eth:             ethClient,
-		//	Repo:            repo,
-		//	Deriver:         deriver,
-		//	PollingInterval: time.Second * 5,
-		//})
-		//if err != nil {
-		//	return errors.Errorf("failed to create epoch listener: %w", err)
-		//}
-		//
-		//srv, err := server.New(server.Config{
-		//	Address:           cfg.httpListenAddress,
-		//	ReadHeaderTimeout: time.Second,
-		//	ShutdownTimeout:   time.Second * 5,
-		//	Prefix:            "/api/v1",
-		//	APIHandler:        signerApp.Handler(),
-		//})
-		//if err != nil {
-		//	return errors.Errorf("failed to create server: %w", err)
-		//}
+		generator, err := valset_generator.New(valset_generator.Config{
+			Signer:          signerApp,
+			Eth:             ethClient,
+			Repo:            repo,
+			Deriver:         deriver,
+			PollingInterval: time.Second * 5,
+		})
+		if err != nil {
+			return errors.Errorf("failed to create epoch listener: %w", err)
+		}
+
+		srv, err := server.New(server.Config{
+			Address:           cfg.httpListenAddress,
+			ReadHeaderTimeout: time.Second,
+			ShutdownTimeout:   time.Second * 5,
+			Prefix:            "/api/v1",
+			APIHandler:        signerApp.Handler(),
+		})
+		if err != nil {
+			return errors.Errorf("failed to create server: %w", err)
+		}
 		slog.InfoContext(ctx, "created server, starting")
 
 		eg, egCtx := errgroup.WithContext(ctx)
@@ -201,23 +206,24 @@ var rootCmd = &cobra.Command{
 			return nil
 		})
 
-		//if cfg.isSigner {
-		//	eg.Go(func() error {
-		//		logCtx := log.WithComponent(egCtx, "generator")
-		//		if err := generator.Start(logCtx); err != nil {
-		//			return errors.Errorf("failed to start valset generator: %w", err)
-		//		}
-		//		return nil
-		//	})
-		//
-		//	eg.Go(func() error {
-		//		if err := srv.Serve(egCtx); err != nil {
-		//			return errors.Errorf("failed to start epoch listener server: %w", err)
-		//		}
-		//		return nil
-		//	})
-		//}
-		//
+		if cfg.isSigner {
+			eg.Go(func() error {
+				logCtx := log.WithComponent(egCtx, "generator")
+
+				if err := generator.Start(logCtx); err != nil {
+					return errors.Errorf("failed to start valset generator: %w", err)
+				}
+				return nil
+			})
+
+			eg.Go(func() error {
+				if err := srv.Serve(egCtx); err != nil {
+					return errors.Errorf("failed to start epoch listener server: %w", err)
+				}
+				return nil
+			})
+		}
+
 		//if cfg.isAggregator {
 		//	_, err := aggregator.NewAggregatorApp(aggregator.Config{
 		//		EthClient: ethClient,

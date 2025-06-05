@@ -10,6 +10,7 @@ import (
 	"github.com/samber/mo"
 
 	"middleware-offchain/internal/entity"
+	"middleware-offchain/pkg/bls"
 )
 
 type repo interface {
@@ -91,7 +92,13 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 	if err != nil {
 		return errors.Errorf("failed to get public key for key tag %d: %w", req.KeyTag, err)
 	}
-	_, found := valset.FindValidatorByKey(req.KeyTag, public)
+
+	g1, _, err := bls.UnpackPublicG1G2(public)
+	if err != nil {
+		return errors.Errorf("failed to unpack public key for key tag %d: %w", req.KeyTag, err)
+	}
+
+	_, found := valset.FindValidatorByKey(req.KeyTag, g1.Marshal())
 	if !found {
 		return errors.Errorf("validator not found in epoch valset for public key")
 	}

@@ -102,7 +102,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 
 		nextValset, err := s.cfg.Deriver.GetValidatorSet(ctx, nextEpoch, config)
 		if err != nil {
-			return errors.Errorf("failed to derive validator set extra for epoch %s: %w", nextEpoch, err)
+			return errors.Errorf("failed to derive validator set extra for epoch %d: %w", nextEpoch, err)
 		}
 
 		// TODO ilya: check valset integrity: valset.headerHash() == master.valsetHeaderHash(epoch)

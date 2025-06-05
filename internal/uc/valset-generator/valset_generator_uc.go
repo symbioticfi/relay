@@ -24,6 +24,7 @@ type eth interface {
 
 type repo interface {
 	GetLatestSignedValset(_ context.Context) (entity.ValidatorSet, error)
+	GetLatestValset(ctx context.Context) (entity.ValidatorSet, error)
 }
 
 type deriver interface {
@@ -110,9 +111,14 @@ func (s *Service) process(ctx context.Context) error {
 		return errors.Errorf("failed to get header commitment hash: %w", err)
 	}
 
+	latestValset, err := s.cfg.Repo.GetLatestValset(ctx)
+	if err != nil {
+		return errors.Errorf("failed to get latest validator set extra: %w", err)
+	}
+
 	err = s.cfg.Signer.Sign(ctx, entity.SignatureRequest{
 		KeyTag:        entity.ValsetHeaderKeyTag,
-		RequiredEpoch: valSet.Epoch,
+		RequiredEpoch: latestValset.Epoch,
 		Message:       hash,
 	})
 	if err != nil {
@@ -129,21 +135,12 @@ func (s *Service) tryDetectNewEpochToCommit(ctx context.Context) (*entity.Valida
 	}
 
 	if phase != entity.COMMIT {
-		return nil, nil, errors.New(entity.ErrPhaseNotCommit)
+		return nil, nil, errors.Errorf("current phase is not COMMIT, got: %d: %w", phase, entity.ErrPhaseNotCommit)
 	}
 
 	currentOnchainEpoch, err := s.cfg.Eth.GetCurrentEpoch(ctx)
 	if err != nil {
 		return nil, nil, errors.Errorf("failed to get current epoch: %w", err)
-	}
-
-	latest, err := s.cfg.Repo.GetLatestSignedValset(ctx)
-	if err != nil {
-		return nil, nil, errors.Errorf("failed to getlatest validator set extra: %w", err)
-	}
-
-	if latest.Epoch >= currentOnchainEpoch {
-		return nil, nil, nil
 	}
 
 	epochStart, err := s.cfg.Eth.GetEpochStart(ctx, currentOnchainEpoch)
