@@ -586,9 +586,9 @@ func (v *SszValidator) ProveIsActive() (*ssz.Proof, error) {
 
 func (v *SszValidator) ProveKeyRoot(keyTag uint8) (*SszKey, int, *ssz.Proof, error) {
 	keyIndex := sort.Search(len(v.Keys), func(i int) bool {
-		return v.Keys[i].Tag >= uint8(keyTag)
+		return v.Keys[i].Tag >= keyTag
 	})
-	if keyIndex >= len(v.Keys) || v.Keys[keyIndex].Tag != uint8(keyTag) {
+	if keyIndex >= len(v.Keys) || v.Keys[keyIndex].Tag != keyTag {
 		return nil, 0, nil, fmt.Errorf("SszKey %d not found", keyTag)
 	}
 

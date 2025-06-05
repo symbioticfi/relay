@@ -95,7 +95,7 @@ var rootCmd = &cobra.Command{
 
 		newValset, err := deriver.GetValidatorSet(ctx, currentOnchainEpoch, networkConfig)
 		if err != nil {
-			return errors.Errorf("failed to get validator set extra for epoch %s: %w", currentOnchainEpoch, err)
+			return errors.Errorf("failed to get validator set extra for epoch %d: %w", currentOnchainEpoch, err)
 		}
 
 		// header generation is clear now

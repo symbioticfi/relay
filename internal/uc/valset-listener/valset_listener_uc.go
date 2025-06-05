@@ -108,11 +108,11 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		// TODO ilya: check valset integrity: valset.headerHash() == master.valsetHeaderHash(epoch)
 
 		if err := s.cfg.Repo.SaveConfig(ctx, config, nextEpoch); err != nil {
-			return errors.Errorf("failed to save validator set extra for epoch %s: %w", nextEpoch, err)
+			return errors.Errorf("failed to save validator set extra for epoch %d: %w", nextEpoch, err)
 		}
 
 		if err := s.cfg.Repo.SaveValidatorSet(ctx, nextValset); err != nil {
-			return errors.Errorf("failed to save validator set extra for epoch %s: %w", nextEpoch, err)
+			return errors.Errorf("failed to save validator set extra for epoch %d: %w", nextEpoch, err)
 		}
 
 		latestEpoch = nextValset.Epoch

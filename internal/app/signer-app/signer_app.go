@@ -3,7 +3,6 @@ package signer_app
 import (
 	"context"
 	"log/slog"
-	"math/big"
 
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
@@ -132,9 +131,4 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 	}
 
 	return nil
-}
-
-func isRecentEpoch(latestValsetEpoch, requiredEpoch *big.Int) bool {
-	diffEpochs := new(big.Int).Sub(latestValsetEpoch, requiredEpoch)
-	return diffEpochs.Cmp(new(big.Int).SetInt64(entity.MaxSavedEpochs)) > 0
 }

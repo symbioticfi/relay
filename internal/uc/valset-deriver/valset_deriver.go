@@ -426,7 +426,6 @@ func (v *Deriver) GenerateExtraData(
 				Key:   validatorSetHashKey,
 				Value: keccakHashAccumulator,
 			})
-
 		}
 
 		// pack aggregated keys per keyTag
@@ -502,6 +501,7 @@ func (v *Deriver) getExtraDataKeyTagged(verificationType uint32, keyTag entity.K
 	return crypto.Keccak256Hash(packed), nil
 }
 
+//nolint:unused // will be used later
 func (v *Deriver) getExtraDataKeyIndexed(
 	verificationType uint32,
 	keyTag entity.KeyTag,

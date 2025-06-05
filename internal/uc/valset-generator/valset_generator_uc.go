@@ -168,7 +168,7 @@ func (s *Service) tryDetectNewEpochToCommit(ctx context.Context) (*entity.Valida
 
 	newValset, err := s.cfg.Deriver.GetValidatorSet(ctx, currentOnchainEpoch, config)
 	if err != nil {
-		return nil, nil, errors.Errorf("failed to get validator set extra for epoch %s: %w", currentOnchainEpoch, err)
+		return nil, nil, errors.Errorf("failed to get validator set extra for epoch %d: %w", currentOnchainEpoch, err)
 	}
 
 	return &newValset, &config, nil

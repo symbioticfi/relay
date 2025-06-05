@@ -78,16 +78,13 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 				}},
 			},
 		},
-		TotalActiveVotingPower: big.NewInt(101 + 201 + 301),
 	}
 	mockValsetDeriver.EXPECT().
 		GetValidatorSet(gomock.Any(), gomock.Any()).
 		Return(validatorSet, nil)
 
 	cfg := Config{
-		EthClient:     mockEthClient,
-		ValsetDeriver: mockValsetDeriver,
-		P2PClient:     mockP2P,
+		P2PClient: mockP2P,
 	}
 
 	ctx := t.Context()
