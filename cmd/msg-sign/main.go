@@ -124,13 +124,17 @@ var rootCmd = &cobra.Command{
 
 		p2pService.SetSignaturesAggregatedMessageHandler(func(ctx context.Context, msg entity.P2PSignaturesAggregatedMessage) error {
 			slog.InfoContext(ctx, "received message with proof",
-				"messageHash", hex.EncodeToString(msg.Message.RequestHash.Bytes()),
+				"messageHash", hex.EncodeToString(msg.Message.AggregationProof.MessageHash),
 				"ourMessage", hex.EncodeToString([]byte(message)),
 				"ourMessageHash", hex.EncodeToString(crypto.Keccak256([]byte(message))),
 			)
 
-			quorumThresholdPercent := new(big.Int).SetInt64(66 * 1e16) // 66% quorum threshold
-			verifyResult, err := ethClient.VerifyQuorumSig(ctx, msg.Message.Epoch, msg.Message.RequestHash.Bytes(), entity.ValsetHeaderKeyTag, quorumThresholdPercent, msg.Message.AggregationProof.Proof)
+			ourHash := crypto.Keccak256([]byte(message))
+
+			//quorumThresholdPercent := new(big.Int).SetInt64(66 * 1e16) // 66% quorum threshold
+			quorumBytes := msg.Message.AggregationProof.Proof[len(msg.Message.AggregationProof.Proof)-32:]
+			quorumInt := new(big.Int).SetBytes(quorumBytes)
+			verifyResult, err := ethClient.VerifyQuorumSig(ctx, msg.Message.Epoch, ourHash, entity.ValsetHeaderKeyTag, quorumInt, msg.Message.AggregationProof.Proof)
 			if err != nil {
 				return errors.Errorf("failed to verify quorum signature: %w", err)
 			}
