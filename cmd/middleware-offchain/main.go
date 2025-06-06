@@ -170,7 +170,6 @@ var rootCmd = &cobra.Command{
 		signerApp, err := signerApp.NewSignerApp(signerApp.Config{
 			P2PService:     p2pService,
 			Signer:         signerLib,
-			KeyProvider:    keystoreProvider,
 			Repo:           repo,
 			AggProofSignal: aggProofReadySignal,
 			Aggregator:     aggregator,

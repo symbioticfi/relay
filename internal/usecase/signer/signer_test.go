@@ -27,7 +27,7 @@ func TestBLSBn254(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, hash, signature.MessageHash)
 
-	public, err := kp.GetPublic(entity.ValsetHeaderKeyTag)
+	public := bls.ComputeKeyPair(key).PackPublicG1G2()
 	require.NoError(t, err)
 	require.Len(t, public, 96)
 

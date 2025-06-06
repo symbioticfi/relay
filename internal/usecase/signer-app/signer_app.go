@@ -30,9 +30,6 @@ type p2pService interface {
 type signer interface {
 	Sign(keyTag entity.KeyTag, message []byte) (entity.Signature, error)
 	Hash(keyTag entity.KeyTag, message []byte) ([]byte, error)
-}
-
-type keyProvider interface {
 	GetPublic(keyTag entity.KeyTag) ([]byte, error)
 }
 
@@ -52,7 +49,6 @@ type Config struct {
 	P2PService     p2pService     `validate:"required"`
 	Signer         signer         `validate:"required"`
 	Repo           repo           `validate:"required"`
-	KeyProvider    keyProvider    `validate:"required"`
 	AggProofSignal aggProofSignal `validate:"required"`
 	Aggregator     aggregator     `validate:"required"`
 }
@@ -106,7 +102,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.Errorf("failed to get valset by epoch %d: %w", req.RequiredEpoch, err)
 	}
 
-	public, err := s.cfg.KeyProvider.GetPublic(req.KeyTag)
+	public, err := s.cfg.Signer.GetPublic(req.KeyTag)
 	if err != nil {
 		return errors.Errorf("failed to get public key for key tag %d: %w", req.KeyTag, err)
 	}

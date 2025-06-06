@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"middleware-offchain/internal/entity"
-	"middleware-offchain/pkg/bls"
 )
 
 type SimpleKeystoreProvider struct {
@@ -34,32 +33,6 @@ func (k *SimpleKeystoreProvider) GetPrivateKey(keyTag entity.KeyTag) ([]byte, er
 	}
 
 	return entry, nil
-}
-
-// todo ilya move this method to signer.go
-func (k *SimpleKeystoreProvider) GetPublic(keyTag entity.KeyTag) ([]byte, error) {
-	k.mu.RLock()
-	defer k.mu.RUnlock()
-
-	alias, err := getAlias(keyTag)
-	if err != nil {
-		return nil, err
-	}
-
-	sk, ok := k.keys[alias]
-	if !ok {
-		return nil, errors.New("key not found")
-	}
-
-	switch keyTag.Type() {
-	case entity.KeyTypeBlsBn254:
-		kp := bls.ComputeKeyPair(sk)
-		return kp.PackPublicG1G2(), nil
-	case entity.KeyTypeEcdsaSecp256k1:
-		return nil, errors.New("ECDSA key type not supported in this provider")
-	}
-
-	return sk, nil
 }
 
 func (k *SimpleKeystoreProvider) HasKey(keyTag entity.KeyTag) (bool, error) {

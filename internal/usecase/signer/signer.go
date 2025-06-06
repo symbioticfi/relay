@@ -89,3 +89,20 @@ func (s *Signer) Sign(keyTag entity.KeyTag, message []byte) (entity.Signature, e
 	// assert, should not reach the code
 	return entity.Signature{}, errors.Errorf("unsupported key type: %d", keyTag.Type())
 }
+
+func (s *Signer) GetPublic(keyTag entity.KeyTag) ([]byte, error) {
+	sk, err := s.kp.GetPrivateKey(keyTag)
+	if err != nil {
+		return nil, err
+	}
+
+	switch keyTag.Type() {
+	case entity.KeyTypeBlsBn254:
+		kp := bls.ComputeKeyPair(sk)
+		return kp.PackPublicG1G2(), nil
+	case entity.KeyTypeEcdsaSecp256k1:
+		return nil, errors.New("ECDSA key type not supported in this provider")
+	}
+
+	return sk, nil
+}
