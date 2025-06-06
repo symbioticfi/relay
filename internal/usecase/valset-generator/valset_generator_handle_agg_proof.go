@@ -36,7 +36,7 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 
 	header, err := valset.GetHeader()
 	slog.DebugContext(ctx, "On commit header", "header", header)
-	slog.DebugContext(ctx, "On commit extra data", "header", extraData)
+	slog.DebugContext(ctx, "On commit extra data", "extraData", extraData)
 	if err != nil {
 		return errors.Errorf("failed to get validator set header: %w", err)
 	}

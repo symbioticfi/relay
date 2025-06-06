@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"math/big"
+	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -148,11 +149,11 @@ func (a *Aggregator) simpleAggregate(
 		Y [2]*big.Int
 	}
 	type dtoValidatorData struct {
-		g1PubKey    dtoG1Point
-		votingPower *big.Int
+		G1PubKey    dtoG1Point
+		VotingPower *big.Int
+		isNonSigner bool
 	}
 	var validatorsData []dtoValidatorData
-	var isNonSigners []bool
 
 	aggG1Sig := bls.ZeroG1()
 	aggG2Key := bls.ZeroG2()
@@ -188,48 +189,92 @@ func (a *Aggregator) simpleAggregate(
 			}
 
 			validatorsData = append(validatorsData, dtoValidatorData{
-				g1PubKey: dtoG1Point{
-					X: new(big.Int).SetBytes(g1Key.X.Marshal()),
-					Y: new(big.Int).SetBytes(g1Key.Y.Marshal()),
+				G1PubKey: dtoG1Point{
+					X: g1Key.X.BigInt(new(big.Int)),
+					Y: g1Key.Y.BigInt(new(big.Int)),
 				},
-				votingPower: val.VotingPower,
+				VotingPower: val.VotingPower,
+				isNonSigner: !isSinger,
 			})
 
-			isNonSigners = append(isNonSigners, !isSinger)
 		}
 	}
 
+	var isNonSigners []bool
+
+	sort.Slice(validatorsData, func(i, j int) bool {
+		// Compare keys (lower first)
+		return validatorsData[i].G1PubKey.X.Cmp(validatorsData[j].G1PubKey.X) > 0 || validatorsData[i].G1PubKey.Y.Cmp(validatorsData[j].G1PubKey.Y) > 0
+	})
+
+	for _, val := range validatorsData {
+		isNonSigners = append(isNonSigners, val.isNonSigner)
+	}
+
 	dtoG1AggSig := dtoG1Point{
-		X: new(big.Int).SetBytes(aggG1Sig.X.Marshal()),
-		Y: new(big.Int).SetBytes(aggG1Sig.Y.Marshal()),
+		X: aggG1Sig.X.BigInt(new(big.Int)),
+		Y: aggG1Sig.Y.BigInt(new(big.Int)),
 	}
 
 	dtoG2AggKey := dtoG2Point{}
-	dtoG2AggKey.X[0] = new(big.Int).SetBytes(aggG2Key.X.A0.Marshal())
-	dtoG2AggKey.X[1] = new(big.Int).SetBytes(aggG2Key.X.A1.Marshal())
-	dtoG2AggKey.Y[0] = new(big.Int).SetBytes(aggG2Key.Y.A0.Marshal())
-	dtoG2AggKey.Y[1] = new(big.Int).SetBytes(aggG2Key.Y.A1.Marshal())
+	dtoG2AggKey.X[1] = aggG2Key.X.A0.BigInt(new(big.Int))
+	dtoG2AggKey.X[0] = aggG2Key.X.A1.BigInt(new(big.Int))
+	dtoG2AggKey.Y[1] = aggG2Key.Y.A0.BigInt(new(big.Int))
+	dtoG2AggKey.Y[0] = aggG2Key.Y.A1.BigInt(new(big.Int))
+
+	g2Type, err := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
+		{Name: "X", Type: "uint256[2]"},
+		{Name: "Y", Type: "uint256[2]"},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	g1Type, err := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
+		{Name: "X", Type: "uint256"},
+		{Name: "Y", Type: "uint256"},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	validatorsDataType, err := abi.NewType("tuple[]", "", []abi.ArgumentMarshaling{
+		{Name: "g1PubKey", Type: "tuple", Components: []abi.ArgumentMarshaling{
+			{Name: "X", Type: "uint256"},
+			{Name: "Y", Type: "uint256"},
+		}},
+		{Name: "VotingPower", Type: "uint256"},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	isNonSignersType, err := abi.NewType("bool[]", "", []abi.ArgumentMarshaling{})
+	if err != nil {
+		return nil, err
+	}
 
 	g1PointAbiArgs := abi.Arguments{
 		{
-			Type: abiMustNewType("tuple(uint256,uint256)"),
-		},
-	}
-	g2PointAbiArgs := abi.Arguments{
-		{
-			Type: abiMustNewType("tuple(uint256[2],uint256[2])"),
+			Type: g1Type,
 		},
 	}
 
-	isNonSignersAbiArgs := abi.Arguments{
+	g2PointAbiArgs := abi.Arguments{
 		{
-			Type: abiMustNewType("bool[]"),
+			Type: g2Type,
 		},
 	}
 
 	validatorsDataAbiArgs := abi.Arguments{
 		{
-			Type: abiMustNewType("tuple(tuple(uint256,uint256),uint256)[]"),
+			Type: validatorsDataType,
+		},
+	}
+
+	isNonSignersAbiArgs := abi.Arguments{
+		{
+			Type: isNonSignersType,
 		},
 	}
 
@@ -253,7 +298,7 @@ func (a *Aggregator) simpleAggregate(
 		return nil, err
 	}
 
-	proofBytes := aggG1SigBytes
+	proofBytes := bytes.Clone(aggG1SigBytes)
 	proofBytes = append(proofBytes, aggG2KeyBytes...)
 	proofBytes = append(proofBytes, validatorsDataBytes...)
 	proofBytes = append(proofBytes, isNonSignersBytes...)
@@ -263,14 +308,6 @@ func (a *Aggregator) simpleAggregate(
 		MessageHash:      messageHash,
 		VerificationType: entity.VerificationTypeSimple,
 	}, nil
-}
-
-func abiMustNewType(t string) abi.Type {
-	typ, err := abi.NewType(t, "", nil)
-	if err != nil {
-		panic(err)
-	}
-	return typ
 }
 
 func (a *Aggregator) zkVerify(
@@ -316,5 +353,6 @@ func (a *Aggregator) simpleVerify(
 	keyTag entity.KeyTag,
 	aggregationProof *entity.AggregationProof,
 ) (bool, error) {
+	//TODO local verify
 	return true, nil
 }

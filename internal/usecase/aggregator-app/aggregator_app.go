@@ -148,6 +148,9 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 	if err != nil {
 		return errors.Errorf("failed to get network config: %w", err)
 	}
+
+	slog.DebugContext(ctx, "received network config", "networkConfig", networkConfig)
+
 	proofData, err := s.cfg.Aggregator.Aggregate(
 		&validatorSet,
 		msg.Message.KeyTag,

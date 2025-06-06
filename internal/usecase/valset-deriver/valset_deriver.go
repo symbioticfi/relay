@@ -340,17 +340,17 @@ func (v *Deriver) GenerateExtraData(valset entity.ValidatorSet, config entity.Ne
 			}
 		}
 	case entity.VerificationTypeSimple: // TODO: prettify/check
-		totalActiveValidatorsKey, err := v.getExtraDataKey(config.VerificationType, entity.SimpleVerificationTotalVotingPower)
+		totalActiveVotingPowerKey, err := v.getExtraDataKey(config.VerificationType, entity.SimpleVerificationTotalVotingPower)
 		if err != nil {
 			return nil, errors.Errorf("failed to get extra data key: %w", err)
 		}
 
-		totalActiveValidators := big.NewInt(valset.GetTotalActiveValidators())
-		totalActiveValidatorsBytes32 := [32]byte{}
-		totalActiveValidators.FillBytes(totalActiveValidatorsBytes32[:])
+		totalActiveVotingPower := valset.GetTotalActiveVotingPower()
+		totalActiveVotingPowerBytes32 := [32]byte{}
+		totalActiveVotingPower.FillBytes(totalActiveVotingPowerBytes32[:])
 		extraData = append(extraData, entity.ExtraData{
-			Key:   totalActiveValidatorsKey,
-			Value: totalActiveValidatorsBytes32,
+			Key:   totalActiveVotingPowerKey,
+			Value: totalActiveVotingPowerBytes32,
 		})
 
 		aggregatedPubKeys := v.getAggregatedPubKeys(valset, config)
@@ -362,7 +362,7 @@ func (v *Deriver) GenerateExtraData(valset entity.ValidatorSet, config entity.Ne
 				return nil, errors.Errorf("failed to get extra data key: %w", err)
 			}
 
-			keccakHashAccumulator, err := calcKeccakAccumulator(valset.Validators, key.Tag)
+			keccakHashAccumulator, err := CalcKeccakAccumulator(valset.Validators, key.Tag)
 			if err != nil {
 				return nil, errors.Errorf("failed to generate validator set mimc accumulator: %w", err)
 			}
@@ -510,7 +510,8 @@ func (v *Deriver) getAggregatedPubKeys(
 	return aggregatedPubKeys
 }
 
-func calcKeccakAccumulator(validators []entity.Validator, requiredKeyTag entity.KeyTag) ([32]byte, error) {
+func CalcKeccakAccumulator(validators []entity.Validator, requiredKeyTag entity.KeyTag) ([32]byte, error) {
+
 	type validatorDataTuple struct {
 		X, Y, VotingPower *big.Int
 	}
@@ -551,6 +552,11 @@ func calcKeccakAccumulator(validators []entity.Validator, requiredKeyTag entity.
 			}
 		}
 	}
+
+	sort.Slice(validatorsData, func(i, j int) bool {
+		// Compare keys (lower first)
+		return validatorsData[i].X.Cmp(validatorsData[j].X) > 0 || validatorsData[i].Y.Cmp(validatorsData[j].Y) > 0
+	})
 
 	packed, err := args.Pack(validatorsData)
 	if err != nil {

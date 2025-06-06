@@ -148,7 +148,7 @@ func (s *Service) process(ctx context.Context) error {
 	}
 
 	slog.DebugContext(ctx, "Signed header", "header", header)
-	slog.DebugContext(ctx, "Signed extra data", "header", extraData)
+	slog.DebugContext(ctx, "Signed extra data", "extraData", extraData)
 	err = s.cfg.Repo.SavePendingValset(ctx, r.Hash(), *valSet)
 	if err != nil {
 		return errors.Errorf("failed to save pending valset: %w", err)
