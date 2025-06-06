@@ -13,7 +13,7 @@ import (
 func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error {
 	dto := signatureGeneratedDTO{
 		RequestHash: msg.RequestHash,
-		KeyTag:      msg.KeyTag,
+		KeyTag:      uint8(msg.KeyTag),
 		Epoch:       msg.Epoch,
 		Signature: signatureDTO{
 			MessageHash: msg.Signature.MessageHash,

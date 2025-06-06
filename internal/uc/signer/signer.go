@@ -51,6 +51,8 @@ func (s *Signer) Verify(keyTag entity.KeyTag, signature entity.Signature) (bool,
 	case entity.KeyTypeEcdsaSecp256k1:
 		return true, nil
 	}
+
+	return false, errors.Errorf("unsupported key type: %d", keyTag.Type())
 }
 
 func (s *Signer) Sign(keyTag entity.KeyTag, message []byte) (entity.Signature, error) {
