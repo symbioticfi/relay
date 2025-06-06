@@ -34,11 +34,16 @@ type keyProvider interface {
 	GetPublic(keyTag entity.KeyTag) ([]byte, error)
 }
 
+type aggProofSignal interface {
+	Emit(ctx context.Context, payload entity.SignaturesAggregatedMessage)
+}
+
 type Config struct {
-	P2PService  p2pService  `validate:"required"`
-	Signer      signer      `validate:"required"`
-	Repo        repo        `validate:"required"`
-	KeyProvider keyProvider `validate:"required"`
+	P2PService     p2pService     `validate:"required"`
+	Signer         signer         `validate:"required"`
+	Repo           repo           `validate:"required"`
+	KeyProvider    keyProvider    `validate:"required"`
+	AggProofSignal aggProofSignal `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -87,7 +92,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 
 	valset, err := s.cfg.Repo.GetValsetByEpoch(ctx, req.RequiredEpoch)
 	if err != nil {
-		return errors.Errorf("failed to get latest valset extra: %w", err)
+		return errors.Errorf("failed to get valset by epoch %d: %w", req.RequiredEpoch, err)
 	}
 
 	public, err := s.cfg.KeyProvider.GetPublic(req.KeyTag)

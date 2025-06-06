@@ -3,6 +3,7 @@ package valset_generator
 import (
 	"context"
 	"log/slog"
+	"math/big"
 	"time"
 
 	"github.com/go-errors/errors"
@@ -20,20 +21,24 @@ type eth interface {
 	GetCurrentPhase(ctx context.Context) (entity.Phase, error)
 	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
 	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
+
+	CommitValsetHeader(ctx context.Context, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) (entity.CommitValsetHeaderResult, error)
+	VerifyQuorumSig(ctx context.Context, epoch uint64, message []byte, keyTag entity.KeyTag, threshold *big.Int, proof []byte) (bool, error)
 }
 
 type repo interface {
 	GetLatestSignedValset(_ context.Context) (entity.ValidatorSet, error)
 	GetLatestValset(ctx context.Context) (entity.ValidatorSet, error)
+
+	GetValsetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
+	GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error)
+	GetAggregationProof(ctx context.Context, req entity.SignatureRequest) (entity.AggregationProof, error)
 }
 
 type deriver interface {
 	GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error)
 	GetNetworkData(ctx context.Context) (entity.NetworkData, error)
-	GenerateExtraData(
-		valset *entity.ValidatorSet,
-		config *entity.NetworkConfig,
-	) ([]entity.ExtraData, error)
+	GenerateExtraData(valset entity.ValidatorSet, config entity.NetworkConfig) ([]entity.ExtraData, error)
 	HeaderCommitmentHash(networkData entity.NetworkData, header entity.ValidatorSetHeader, extraData []entity.ExtraData) ([]byte, error)
 }
 
@@ -88,7 +93,7 @@ func (s *Service) process(ctx context.Context) error {
 	if err != nil {
 		return errors.Errorf("failed to detect new epoch to commit: %w", err)
 	}
-	if valSet == nil {
+	if valSet == nil || config == nil {
 		// no new validator set extra found, nothing to do
 		return nil
 	}
@@ -103,7 +108,7 @@ func (s *Service) process(ctx context.Context) error {
 		return errors.Errorf("failed to get network data: %w", err)
 	}
 
-	extraData, err := s.cfg.Deriver.GenerateExtraData(valSet, config)
+	extraData, err := s.cfg.Deriver.GenerateExtraData(*valSet, *config)
 	if err != nil {
 		return errors.Errorf("failed to generate extra data: %w", err)
 	}

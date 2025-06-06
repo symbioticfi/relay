@@ -48,9 +48,13 @@ func TestP2P(t *testing.T) {
 	require.NoError(t, err)
 
 	err = p2p1.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureHashMessage{
-		MessageHash: []byte("hello hash"),
-		Signature:   []byte("hello signature"),
-		PublicKey:   []byte("hello public key"),
+		Request: entity.SignatureRequest{
+			KeyTag:        0,
+			RequiredEpoch: 0,
+			Message:       []byte("hello hash"),
+		},
+		Signature: []byte("hello signature"),
+		PublicKey: []byte("hello public key"),
 	})
 	require.NoError(t, err)
 
@@ -105,9 +109,13 @@ func TestP2PMany(t *testing.T) {
 	}
 
 	err = mainService.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureHashMessage{
-		MessageHash: []byte("hello hash"),
-		Signature:   []byte("hello signature"),
-		PublicKey:   []byte("hello public key"),
+		Request: entity.SignatureRequest{
+			KeyTag:        0,
+			RequiredEpoch: 0,
+			Message:       []byte("hello hash"),
+		},
+		Signature: []byte("hello signature"),
+		PublicKey: []byte("hello public key"),
 	})
 	require.NoError(t, err)
 

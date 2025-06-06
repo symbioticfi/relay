@@ -353,10 +353,7 @@ func (v *Deriver) calcQuorumThreshold(_ entity.NetworkConfig, totalVP *big.Int) 
 }
 
 // TODO need to move to aggregator maybe
-func (v *Deriver) GenerateExtraData(
-	valset *entity.ValidatorSet,
-	config *entity.NetworkConfig,
-) ([]entity.ExtraData, error) {
+func (v *Deriver) GenerateExtraData(valset entity.ValidatorSet, config entity.NetworkConfig) ([]entity.ExtraData, error) {
 	extraData := make([]entity.ExtraData, 0)
 
 	switch config.VerificationType {
@@ -520,8 +517,8 @@ func (v *Deriver) getExtraDataKeyIndexed(
 }
 
 func (v *Deriver) getAggregatedPubKeys(
-	valset *entity.ValidatorSet,
-	config *entity.NetworkConfig,
+	valset entity.ValidatorSet,
+	config entity.NetworkConfig,
 ) []entity.Key {
 	needToAggregateTags := map[entity.KeyTag]interface{}{}
 	for _, tag := range config.RequiredKeyTags {
@@ -549,7 +546,7 @@ func (v *Deriver) getAggregatedPubKeys(
 		}
 	}
 
-	aggregatedPubKeys := []entity.Key{}
+	var aggregatedPubKeys []entity.Key
 	for tag, keyValue := range needToAggregateTags {
 		if tag.Type() == entity.KeyTypeBlsBn254 {
 			aggG1Key := keyValue.(*bn254.G1Affine)

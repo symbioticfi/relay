@@ -39,7 +39,7 @@ func (r *Repository) GetLatestValset(ctx context.Context) (entity.ValidatorSet, 
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if len(r.networkConfigs) == 0 {
+	if len(r.validatorSets) == 0 {
 		return entity.ValidatorSet{}, errors.New(entity.ErrEntityNotFound)
 	}
 
@@ -54,26 +54,34 @@ func (r *Repository) SaveConfig(ctx context.Context, config entity.NetworkConfig
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	// Check if the config already exists
 	if _, ok := r.networkConfigs[epoch]; ok {
 		return errors.New("validator set config for this epoch already exists")
 	}
 
-	// Append the new config to the slice
 	r.networkConfigs[epoch] = config
 	return nil
+}
+
+func (r *Repository) GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	config, ok := r.networkConfigs[epoch]
+	if !ok {
+		return entity.NetworkConfig{}, errors.New(entity.ErrEntityNotFound)
+	}
+
+	return config, nil
 }
 
 func (r *Repository) SaveValidatorSet(ctx context.Context, valset entity.ValidatorSet) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	// Check if the config already exists
 	if _, ok := r.validatorSets[valset.Epoch]; ok {
 		return errors.New("validator set for this epoch already exists")
 	}
 
-	// Append the new config to the slice
 	r.validatorSets[valset.Epoch] = valset
 	return nil
 }

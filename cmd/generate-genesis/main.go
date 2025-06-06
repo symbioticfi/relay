@@ -107,7 +107,7 @@ var rootCmd = &cobra.Command{
 		slog.Info("Valset header generated!")
 
 		// extra data generation is also clear but still in deriver
-		extraData, err := deriver.GenerateExtraData(&newValset, &networkConfig)
+		extraData, err := deriver.GenerateExtraData(newValset, networkConfig)
 		if err != nil {
 			return errors.Errorf("failed to generate extra data: %w", err)
 		}

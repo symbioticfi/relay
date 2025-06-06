@@ -13,5 +13,7 @@ func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, msg e
 		return err
 	}
 
+	s.cfg.AggProofSignal.Emit(ctx, msg.Message)
+
 	return nil
 }

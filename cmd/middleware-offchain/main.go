@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p"
+	"github.com/maniartech/signals"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
@@ -19,6 +20,7 @@ import (
 	"middleware-offchain/internal/client/p2p"
 	"middleware-offchain/internal/client/repository/memory"
 	"middleware-offchain/internal/client/symbiotic"
+	"middleware-offchain/internal/entity"
 	keyprovider "middleware-offchain/internal/uc/key-provider"
 	"middleware-offchain/internal/uc/signer"
 	valsetDeriver "middleware-offchain/internal/uc/valset-deriver"
@@ -157,11 +159,15 @@ var rootCmd = &cobra.Command{
 
 		signerLib := signer.NewSigner(keystoreProvider)
 
+		// todo ilya extract to lib package in order to get rid of vendor lock on specific lib
+		aggProofReadySignal := signals.New[entity.SignaturesAggregatedMessage]()
+
 		signerApp, err := signer_app.NewSignerApp(signer_app.Config{
-			P2PService:  p2pService,
-			Signer:      signerLib,
-			KeyProvider: keystoreProvider,
-			Repo:        repo,
+			P2PService:     p2pService,
+			Signer:         signerLib,
+			KeyProvider:    keystoreProvider,
+			Repo:           repo,
+			AggProofSignal: aggProofReadySignal,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create signer app: %w", err)
@@ -188,6 +194,15 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return errors.Errorf("failed to create epoch listener: %w", err)
 		}
+
+		aggProofReadySignal.AddListener(func(ctx context.Context, msg entity.SignaturesAggregatedMessage) {
+			err := generator.HandleProofAggregated(ctx, msg)
+			if err != nil {
+				slog.ErrorContext(ctx, "failed to handle proof aggregated", "error", err)
+			} else {
+				slog.DebugContext(ctx, "handled proof aggregated", "request", msg)
+			}
+		})
 
 		srv, err := server.New(server.Config{
 			Address:           cfg.httpListenAddress,
