@@ -1,10 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/hex"
-	"fmt"
+	"encoding/json"
 	"log/slog"
 	"math/big"
 	"math/rand"
@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -114,23 +113,24 @@ var rootCmd = &cobra.Command{
 		}
 		slog.DebugContext(ctx, "created symbiotic client")
 
+		epoch, err := ethClient.GetCurrentEpoch(ctx)
+		if err != nil {
+			return errors.Errorf("failed to get current epoch: %w", err)
+		}
+
 		message := strconv.FormatFloat(rand.Float64(), 'f', 10, 64) //nolint:gosec // This is just a random message for testing purposes.
 
 		closableCtx, cancel := context.WithCancel(ctx)
 
 		p2pService.SetSignaturesAggregatedMessageHandler(func(ctx context.Context, msg entity.P2PSignaturesAggregatedMessage) error {
-			if msg.Message.HashType == entity.HashTypeValsetHeader {
-				return nil
-			}
-
 			slog.InfoContext(ctx, "received message with proof",
-				"messageHash", hex.EncodeToString(msg.Message.Request.Message),
+				"messageHash", hex.EncodeToString(msg.Message.RequestHash.Bytes()),
 				"ourMessage", hex.EncodeToString([]byte(message)),
 				"ourMessageHash", hex.EncodeToString(crypto.Keccak256([]byte(message))),
 			)
 
-			quorumThresholdPercent := new(big.Int).Mul(big.NewInt(66), big.NewInt(1e16))
-			verifyResult, err := ethClient.VerifyQuorumSig(ctx, msg.Message.Request.RequiredEpoch, msg.Message.Request.Message, 15, quorumThresholdPercent, msg.Message.Proof.Proof)
+			quorumThresholdPercent := new(big.Int).SetInt64(66 * 1e16) // 66% quorum threshold
+			verifyResult, err := ethClient.VerifyQuorumSig(ctx, msg.Message.Epoch, msg.Message.RequestHash.Bytes(), entity.ValsetHeaderKeyTag, quorumThresholdPercent, msg.Message.AggregationProof.Proof)
 			if err != nil {
 				return errors.Errorf("failed to verify quorum signature: %w", err)
 			}
@@ -144,7 +144,7 @@ var rootCmd = &cobra.Command{
 		slog.InfoContext(ctx, "sign message p2p listener created, waiting for messages")
 
 		slog.DebugContext(ctx, "trying to send sign requests", "message", message)
-		if err := sendSignRequests(ctx, cfg, message); err != nil {
+		if err := sendSignRequests(ctx, cfg, message, entity.ValsetHeaderKeyTag, epoch); err != nil {
 			return errors.Errorf("failed to send sign request: %w", err)
 		}
 
@@ -154,11 +154,26 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func sendSignRequests(ctx context.Context, cfg config, message string) error {
-	body := fmt.Sprintf(`{"data": "%s"}`, base64.StdEncoding.EncodeToString([]byte(message)))
+type signMessageRequest struct {
+	Data   []byte `json:"data"`
+	KeyTag uint8  `json:"keyTag"`
+	Epoch  uint64 `json:"epoch"`
+}
+
+func sendSignRequests(ctx context.Context, cfg config, message string, keyTag entity.KeyTag, epoch uint64) error {
+	req := signMessageRequest{
+		Data:   []byte(message),
+		KeyTag: uint8(keyTag),
+		Epoch:  epoch,
+	}
+
+	body, err := json.Marshal(&req)
+	if err != nil {
+		return errors.Errorf("failed to marshal sign message request: %w", err)
+	}
 
 	for _, signAddress := range cfg.signAddresses {
-		request, err := http.NewRequestWithContext(ctx, http.MethodPost, signAddress, strings.NewReader(body))
+		request, err := http.NewRequestWithContext(ctx, http.MethodPost, signAddress, bytes.NewReader(body))
 		if err != nil {
 			return errors.Errorf("failed to create new request: %w", err)
 		}
