@@ -35,6 +35,15 @@ type Validator struct {
 	Vaults      []ValidatorVault `json:"vaults"`
 }
 
+func (v Validator) FindKeyByKeyTag(keyTag KeyTag) ([]byte, bool) {
+	for _, key := range v.Keys {
+		if key.Tag == keyTag {
+			return key.Payload, true
+		}
+	}
+	return nil, false
+}
+
 type ValidatorSetStatus int
 
 const (

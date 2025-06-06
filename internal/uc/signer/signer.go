@@ -32,6 +32,27 @@ func (s *Signer) Hash(keyTag entity.KeyTag, message []byte) ([]byte, error) {
 	return nil, errors.New("invalid key type")
 }
 
+func (s *Signer) Verify(keyTag entity.KeyTag, signature entity.Signature) (bool, error) {
+	switch keyTag.Type() {
+	case entity.KeyTypeBlsBn254:
+		_, g2PubKey, err := bls.UnpackPublicG1G2(signature.PublicKey)
+		if err != nil {
+			return false, err
+		}
+		g1Sig, err := bls.DeserializeG1(signature.Signature)
+		if err != nil {
+			return false, err
+		}
+		ok, err := bls.Verify(&g2PubKey, g1Sig, signature.MessageHash)
+		if err != nil {
+			return false, err
+		}
+		return ok, nil
+	case entity.KeyTypeEcdsaSecp256k1:
+		return true, nil
+	}
+}
+
 func (s *Signer) Sign(keyTag entity.KeyTag, message []byte) (entity.Signature, error) {
 	pk, err := s.kp.GetPrivateKey(keyTag)
 	if err != nil {

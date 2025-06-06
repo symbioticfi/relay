@@ -34,7 +34,11 @@ func (s *SignerApp) signMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.signMessage(ctx, req.Data, req.KeyTag, req.Epoch); err != nil {
+	if err := s.Sign(ctx, entity.SignatureRequest{
+		KeyTag:        req.KeyTag,
+		RequiredEpoch: req.Epoch,
+		Message:       req.Data,
+	}); err != nil {
 		handleError(ctx, w, err)
 		return
 	}

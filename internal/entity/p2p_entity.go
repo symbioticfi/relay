@@ -39,11 +39,11 @@ type SenderInfo struct {
 }
 
 type P2PSignatureHashMessage struct {
-	Message SignatureHashMessage
+	Message SignatureMessage
 	Info    SenderInfo
 }
 
 type P2PSignaturesAggregatedMessage struct {
-	Message SignaturesAggregatedMessage
+	Message AggregatedSignatureMessage
 	Info    SenderInfo
 }

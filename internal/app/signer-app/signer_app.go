@@ -2,6 +2,7 @@ package signer_app
 
 import (
 	"context"
+	"github.com/ethereum/go-ethereum/common"
 	"log/slog"
 
 	"github.com/go-errors/errors"
@@ -12,16 +13,16 @@ import (
 )
 
 type repo interface {
-	GetSignatureRequest(ctx context.Context, req entity.SignatureRequest) (entity.SignatureRequest, error)
-	GetAggregationProof(ctx context.Context, req entity.SignatureRequest) (entity.AggregationProof, error)
-	SaveAggregationProof(ctx context.Context, req entity.SignatureRequest, ap entity.AggregationProof) error
+	GetSignatureRequest(ctx context.Context, reqHash common.Hash) (entity.SignatureRequest, error)
+	GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error)
+	SaveAggregationProof(ctx context.Context, reqHash common.Hash, ap entity.AggregationProof) error
 	GetValsetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
-	SaveSignature(ctx context.Context, req entity.SignatureRequest, sig entity.Signature) error
+	SaveSignature(ctx context.Context, reqHash common.Hash, key [32]byte, sig entity.Signature) error
 	SaveSignatureRequest(_ context.Context, req entity.SignatureRequest) error
 }
 
 type p2pService interface {
-	BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureHashMessage) error
+	BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error
 	SetSignaturesAggregatedMessageHandler(mh func(ctx context.Context, msg entity.P2PSignaturesAggregatedMessage) error)
 }
 
@@ -35,7 +36,15 @@ type keyProvider interface {
 }
 
 type aggProofSignal interface {
-	Emit(ctx context.Context, payload entity.SignaturesAggregatedMessage)
+	Emit(ctx context.Context, payload entity.AggregatedSignatureMessage)
+}
+
+type aggregator interface {
+	Verify(
+		valset *entity.ValidatorSet,
+		keyTag entity.KeyTag,
+		aggregationProof *entity.AggregationProof,
+	) (bool, error)
 }
 
 type Config struct {
@@ -44,6 +53,7 @@ type Config struct {
 	Repo           repo           `validate:"required"`
 	KeyProvider    keyProvider    `validate:"required"`
 	AggProofSignal aggProofSignal `validate:"required"`
+	Aggregator     aggregator     `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -73,7 +83,7 @@ func NewSignerApp(cfg Config) (*SignerApp, error) {
 }
 
 func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error {
-	_, err := s.cfg.Repo.GetSignatureRequest(ctx, req)
+	_, err := s.cfg.Repo.GetSignatureRequest(ctx, req.Hash())
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return errors.Errorf("failed to get signature request: %w", err)
 	}
@@ -82,7 +92,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return nil
 	}
 
-	_, err = s.cfg.Repo.GetAggregationProof(ctx, req)
+	_, err = s.cfg.Repo.GetAggregationProof(ctx, req.Hash())
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return errors.Errorf("failed to get aggregation proof: %w", err)
 	}
@@ -115,21 +125,17 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.Errorf("failed to sign valset header hash: %w", err)
 	}
 
-	if err := s.cfg.Repo.SaveSignature(ctx, req, signature); err != nil {
+	if err := s.cfg.Repo.SaveSignature(ctx, req.Hash(), g1.Bytes(), signature); err != nil {
 		return errors.Errorf("failed to save signature: %w", err)
 	}
 
 	slog.InfoContext(ctx, "valset header hash signed, sending via p2p", "headerSignature", signature)
 
-	err = s.cfg.P2PService.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureHashMessage{
-		Request: entity.SignatureRequest{
-			KeyTag:        req.KeyTag,
-			RequiredEpoch: req.RequiredEpoch,
-			Message:       req.Message,
-		},
-		Signature: signature.Signature,
-		PublicKey: signature.PublicKey,
-		HashType:  entity.HashTypeValsetHeader,
+	err = s.cfg.P2PService.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureMessage{
+		RequestHash: req.Hash(),
+		KeyTag:      req.KeyTag,
+		Epoch:       req.RequiredEpoch,
+		Signature:   signature,
 	})
 	if err != nil {
 		return errors.Errorf("failed to broadcast valset header: %w", err)

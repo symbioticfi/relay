@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 	"math/big"
+	"middleware-offchain/internal/uc/aggregator"
+	"middleware-offchain/pkg/proof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -157,10 +159,12 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to add key to keystore provider: %w", err)
 		}
 
+		aggregator := aggregator.NewAggregator(proof.NewZkProver())
+
 		signerLib := signer.NewSigner(keystoreProvider)
 
 		// todo ilya extract to lib package in order to get rid of vendor lock on specific lib
-		aggProofReadySignal := signals.New[entity.SignaturesAggregatedMessage]()
+		aggProofReadySignal := signals.New[entity.AggregatedSignatureMessage]()
 
 		signerApp, err := signer_app.NewSignerApp(signer_app.Config{
 			P2PService:     p2pService,
@@ -168,6 +172,7 @@ var rootCmd = &cobra.Command{
 			KeyProvider:    keystoreProvider,
 			Repo:           repo,
 			AggProofSignal: aggProofReadySignal,
+			Aggregator:     aggregator,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create signer app: %w", err)
@@ -195,7 +200,7 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to create epoch listener: %w", err)
 		}
 
-		aggProofReadySignal.AddListener(func(ctx context.Context, msg entity.SignaturesAggregatedMessage) {
+		aggProofReadySignal.AddListener(func(ctx context.Context, msg entity.AggregatedSignatureMessage) {
 			err := generator.HandleProofAggregated(ctx, msg)
 			if err != nil {
 				slog.ErrorContext(ctx, "failed to handle proof aggregated", "error", err)
@@ -245,8 +250,9 @@ var rootCmd = &cobra.Command{
 
 		if cfg.isAggregator {
 			_, err := aggregator_app.NewAggregatorApp(aggregator_app.Config{
-				Repo:      repo,
-				P2PClient: p2pService,
+				Repo:       repo,
+				P2PClient:  p2pService,
+				Aggregator: aggregator,
 			})
 			if err != nil {
 				return errors.Errorf("failed to create aggregator app: %w", err)

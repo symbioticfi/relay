@@ -19,7 +19,7 @@ type hashStore struct {
 
 type hashWithValidator struct {
 	validator        entity.Validator
-	signatureMessage entity.SignatureHashMessage
+	signatureMessage entity.Signature
 }
 
 func newHashStore() *hashStore {
@@ -36,13 +36,13 @@ type currentValues struct {
 	validators     []entity.Validator
 }
 
-func (h *hashStore) PutHash(msg entity.SignatureHashMessage, val entity.Validator) (currentValues, error) {
+func (h *hashStore) PutHash(msg entity.Signature, val entity.Validator) (currentValues, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	validators, ok := h.m[string(msg.Request.Message)]
+	validators, ok := h.m[string(msg.MessageHash)]
 	if !ok {
 		validators = make(map[common.Address]hashWithValidator)
-		h.m[string(msg.Request.Message)] = validators
+		h.m[string(msg.MessageHash)] = validators
 	}
 	if _, ok = validators[val.Operator]; ok {
 		return currentValues{}, errors.Errorf("signature already exists for validator %s", val.Operator.Hex())

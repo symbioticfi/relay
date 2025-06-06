@@ -1,6 +1,8 @@
 package entity
 
 import (
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"math/big"
 )
 
@@ -27,9 +29,13 @@ type SignatureRequest struct {
 	Message       []byte
 }
 
+func (r SignatureRequest) Hash() common.Hash {
+	return crypto.Keccak256Hash([]byte{uint8(r.KeyTag)}, new(big.Int).SetInt64(int64(r.RequiredEpoch)).Bytes(), r.Message)
+}
+
 type SignatureMessage struct {
 	RequestHash [32]byte
-	KeyTag      uint8
+	KeyTag      KeyTag
 	Epoch       uint64
 	Signature   Signature // parse based on KeyTag
 }
@@ -49,7 +55,7 @@ type AggregationProof struct {
 
 type AggregatedSignatureMessage struct {
 	RequestHash      [32]byte
-	KeyTag           uint8
+	KeyTag           KeyTag
 	Epoch            uint64
 	AggregationProof AggregationProof
 }

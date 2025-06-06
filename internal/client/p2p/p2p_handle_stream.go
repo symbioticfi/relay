@@ -9,7 +9,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 
 	"middleware-offchain/internal/entity"
-	"middleware-offchain/pkg/bls"
 )
 
 func handleStreamWrapper(ctx context.Context, f func(ctx context.Context, stream network.Stream) error) func(stream network.Stream) {
@@ -28,15 +27,15 @@ func (s *Service) handleStreamSignedHash(ctx context.Context, stream network.Str
 	}
 
 	entityMessage := entity.P2PSignatureHashMessage{
-		Message: entity.SignatureHashMessage{
-			Request: entity.SignatureRequest{
-				KeyTag:        entity.KeyTag(signatureGenerated.Request.KeyTag),
-				RequiredEpoch: signatureGenerated.Request.RequiredEpoch,
-				Message:       signatureGenerated.Request.MessageHash,
+		Message: entity.SignatureMessage{
+			RequestHash: signatureGenerated.RequestHash,
+			KeyTag:      entity.KeyTag(signatureGenerated.KeyTag),
+			Epoch:       signatureGenerated.Epoch,
+			Signature: entity.Signature{
+				PublicKey:   signatureGenerated.Signature.PublicKey,
+				Signature:   signatureGenerated.Signature.Signature,
+				MessageHash: signatureGenerated.Signature.MessageHash,
 			},
-			Signature: signatureGenerated.Signature,
-			PublicKey: signatureGenerated.PublicKey,
-			HashType:  entity.HashType(signatureGenerated.HashType),
 		},
 		Info: entity.SenderInfo{
 			Type:      info.Type,
@@ -60,24 +59,16 @@ func (s *Service) handleStreamAggregatedProof(ctx context.Context, stream networ
 		return fmt.Errorf("failed to unmarshal signatureGenerated message: %w", err)
 	}
 
-	g1, err := bls.DeserializeG1(signaturesAggregated.PublicKeyG1)
-	if err != nil {
-		return fmt.Errorf("failed to deserialize G1 public key: %w", err)
-	}
 	entityMessage := entity.P2PSignaturesAggregatedMessage{
-		Message: entity.SignaturesAggregatedMessage{
-			PublicKeyG1: g1,
-			Request: entity.SignatureRequest{
-				KeyTag:        entity.KeyTag(signaturesAggregated.Request.KeyTag),
-				RequiredEpoch: signaturesAggregated.Request.RequiredEpoch,
-				Message:       signaturesAggregated.Request.MessageHash,
+		Message: entity.AggregatedSignatureMessage{
+			RequestHash: signaturesAggregated.RequestHash,
+			KeyTag:      entity.KeyTag(signaturesAggregated.KeyTag),
+			Epoch:       signaturesAggregated.Epoch,
+			AggregationProof: entity.AggregationProof{
+				VerificationType: entity.VerificationType(signaturesAggregated.AggregationProof.VerificationType),
+				MessageHash:      signaturesAggregated.AggregationProof.MessageHash,
+				Proof:            signaturesAggregated.AggregationProof.Proof,
 			},
-			Proof: entity.AggregationProof{
-				VerificationType: entity.VerificationType(signaturesAggregated.Proof.VerificationType),
-				MessageHash:      signaturesAggregated.Proof.MessageHash,
-				Proof:            signaturesAggregated.Proof.Proof,
-			},
-			HashType: entity.HashType(signaturesAggregated.HashType),
 		},
 		Info: entity.SenderInfo{
 			Type:      info.Type,

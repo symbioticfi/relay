@@ -126,6 +126,33 @@ func (p *G2) Verify(signature *G1, msgHash []byte) (bool, error) {
 	return ok, nil
 }
 
+func Verify(g2PubKey *G2, signature *G1, msgHash []byte) (bool, error) {
+	if len(msgHash) != 32 {
+		return false, errors.New("message hash must be 32 bytes")
+	}
+
+	// Hash the message to a point on G1
+	h1, err := HashToG1(msgHash)
+	if err != nil {
+		return false, fmt.Errorf("failed to hash message to G1: %w", err)
+	}
+
+	// Get the G2 generator
+	_, _, _, g2 := bn254.Generators()
+
+	var negSig bn254.G1Affine
+	negSig.Neg(signature.G1Affine)
+
+	g1P := [2]bn254.G1Affine{*h1.G1Affine, negSig}
+	g1Q := [2]bn254.G2Affine{*g2PubKey.G2Affine, g2}
+
+	ok, err := bn254.PairingCheck(g1P[:], g1Q[:])
+	if err != nil {
+		return false, errors.Errorf("pairing check failed: %w", err)
+	}
+	return ok, nil
+}
+
 func (kp *KeyPair) PackPublicG1G2() []byte {
 	g1Bytes := kp.PublicKeyG1.Bytes()
 	g2Bytes := kp.PublicKeyG2.Bytes()

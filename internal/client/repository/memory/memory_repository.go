@@ -2,7 +2,9 @@ package memory
 
 import (
 	"context"
+	"maps"
 	"math/big"
+	"slices"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -19,7 +21,7 @@ type Repository struct {
 	networkConfigs map[uint64]entity.NetworkConfig
 	validatorSets  map[uint64]entity.ValidatorSet
 	signed         []entity.ValidatorSet
-	signatures     map[common.Hash]entity.Signature
+	signatures     map[common.Hash]map[[32]byte]entity.Signature
 	signRequests   map[common.Hash]entity.SignatureRequest
 	aggProofs      map[common.Hash]entity.AggregationProof
 }
@@ -29,7 +31,7 @@ func New() (*Repository, error) {
 		mu:             sync.Mutex{},
 		networkConfigs: make(map[uint64]entity.NetworkConfig),
 		validatorSets:  make(map[uint64]entity.ValidatorSet),
-		signatures:     make(map[common.Hash]entity.Signature),
+		signatures:     make(map[common.Hash]map[[32]byte]entity.Signature),
 		signRequests:   make(map[common.Hash]entity.SignatureRequest),
 		aggProofs:      make(map[common.Hash]entity.AggregationProof),
 	}, nil
@@ -98,12 +100,11 @@ func (r *Repository) GetLatestSignedValset(_ context.Context) (entity.ValidatorS
 	return latestSignedExtra, nil
 }
 
-func (r *Repository) GetSignatureRequest(_ context.Context, req entity.SignatureRequest) (entity.SignatureRequest, error) {
-	hash := signRequestHash(req)
+func (r *Repository) GetSignatureRequest(_ context.Context, reqHash common.Hash) (entity.SignatureRequest, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	existingReq, exists := r.signRequests[hash]
+	existingReq, exists := r.signRequests[reqHash]
 	if !exists {
 		return entity.SignatureRequest{}, errors.New(entity.ErrEntityNotFound)
 	}
@@ -121,13 +122,11 @@ func (r *Repository) SaveSignatureRequest(_ context.Context, req entity.Signatur
 	return nil
 }
 
-func (r *Repository) GetAggregationProof(ctx context.Context, req entity.SignatureRequest) (entity.AggregationProof, error) {
-	hash := signRequestHash(req)
-
+func (r *Repository) GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	proof, exists := r.aggProofs[hash]
+	proof, exists := r.aggProofs[reqHash]
 	if exists {
 		return proof, nil
 	}
@@ -135,16 +134,15 @@ func (r *Repository) GetAggregationProof(ctx context.Context, req entity.Signatu
 	return entity.AggregationProof{}, errors.New(entity.ErrEntityNotFound)
 }
 
-func (r *Repository) SaveAggregationProof(ctx context.Context, req entity.SignatureRequest, ap entity.AggregationProof) error {
-	hash := signRequestHash(req)
+func (r *Repository) SaveAggregationProof(ctx context.Context, reqHash common.Hash, ap entity.AggregationProof) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if _, exists := r.aggProofs[hash]; exists {
+	if _, exists := r.aggProofs[reqHash]; exists {
 		return errors.Errorf("aggregation proof for this request already exists: %w", entity.ErrEntityAlreadyExist)
 	}
 
-	r.aggProofs[hash] = ap
+	r.aggProofs[reqHash] = ap
 
 	return nil
 }
@@ -161,18 +159,34 @@ func (r *Repository) GetValsetByEpoch(ctx context.Context, epoch uint64) (entity
 	return valset, nil
 }
 
-func (r *Repository) SaveSignature(ctx context.Context, req entity.SignatureRequest, sig entity.Signature) error {
-	hash := signRequestHash(req)
+func (r *Repository) SaveSignature(ctx context.Context, reqHash common.Hash, key [32]byte, sig entity.Signature) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if _, exists := r.signatures[hash]; exists {
-		return errors.New("signature for this request already exists")
+	_, exists := r.signatures[reqHash]
+	if !exists {
+		r.signatures[reqHash] = make(map[[32]byte]entity.Signature)
 	}
 
-	r.signatures[hash] = sig
+	if _, exists := r.signatures[reqHash][key]; exists {
+		return errors.Errorf("signature for this request already exists: %w", entity.ErrEntityAlreadyExist)
+	}
+
+	r.signatures[reqHash][key] = sig
 
 	return nil
+}
+
+func (r *Repository) GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.Signature, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	_, exists := r.signatures[reqHash]
+	if !exists {
+		return []entity.Signature{}, nil
+	}
+
+	return slices.Collect(maps.Values(r.signatures[reqHash])), nil
 }
 
 func signRequestHash(req entity.SignatureRequest) common.Hash {

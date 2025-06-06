@@ -9,24 +9,19 @@ import (
 	"middleware-offchain/internal/entity"
 )
 
-func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.SignaturesAggregatedMessage) error {
-	if msg.HashType != entity.HashTypeValsetHeader {
-		slog.InfoContext(ctx, "ignoring non-valset header aggregated message", "hashType", msg.HashType)
-		return nil
-	}
-
-	aggProof, err := s.cfg.Repo.GetAggregationProof(ctx, msg.Request)
+func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
+	aggProof, err := s.cfg.Repo.GetAggregationProof(ctx, msg.RequestHash)
 	if err != nil {
 		return errors.Errorf("failed to get aggregation proof: %w", err)
 	}
-	config, err := s.cfg.Repo.GetConfigByEpoch(ctx, msg.Request.RequiredEpoch)
+	config, err := s.cfg.Repo.GetConfigByEpoch(ctx, msg.Epoch)
 	if err != nil {
-		return errors.Errorf("failed to get config for epoch %d: %w", msg.Request.RequiredEpoch, err)
+		return errors.Errorf("failed to get config for epoch %d: %w", msg.Epoch, err)
 	}
 
-	validatorSet, err := s.cfg.Repo.GetValsetByEpoch(ctx, msg.Request.RequiredEpoch)
+	validatorSet, err := s.cfg.Repo.GetValsetByEpoch(ctx, msg.Epoch)
 	if err != nil {
-		return errors.Errorf("failed to get validator set for epoch %d: %w", msg.Request.RequiredEpoch, err)
+		return errors.Errorf("failed to get validator set for epoch %d: %w", msg.Epoch, err)
 	}
 
 	extraData, err := s.cfg.Deriver.GenerateExtraData(validatorSet, config)
@@ -44,7 +39,7 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Signatur
 		return errors.Errorf("failed to commit valset header: %w", err)
 	}
 
-	slog.InfoContext(ctx, "valset header committed", "txHash", result.TxHash.String(), "epoch", msg.Request.RequiredEpoch)
+	slog.InfoContext(ctx, "valset header committed", "txHash", result.TxHash.String(), "epoch", msg.Epoch)
 
 	return nil
 }

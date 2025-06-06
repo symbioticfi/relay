@@ -8,23 +8,18 @@ import (
 	"github.com/go-errors/errors"
 
 	"middleware-offchain/internal/entity"
-	"middleware-offchain/pkg/bls"
 )
 
-func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg entity.SignaturesAggregatedMessage) error {
+func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
 	dto := signaturesAggregatedDTO{
-		Request: signatureRequestDTO{
-			KeyTag:        uint8(msg.Request.KeyTag),
-			RequiredEpoch: msg.Request.RequiredEpoch,
-			MessageHash:   msg.Request.Message,
+		RequestHash: msg.RequestHash,
+		KeyTag:      uint8(msg.KeyTag),
+		Epoch:       msg.Epoch,
+		AggregationProof: aggregationProofDTO{
+			MessageHash:      msg.AggregationProof.MessageHash,
+			Proof:            msg.AggregationProof.Proof,
+			VerificationType: uint32(msg.AggregationProof.VerificationType),
 		},
-		PublicKeyG1: bls.SerializeG1(msg.PublicKeyG1),
-		Proof: aggregationProofDTO{
-			VerificationType: uint32(msg.Proof.VerificationType),
-			MessageHash:      msg.Proof.MessageHash,
-			Proof:            msg.Proof.Proof,
-		},
-		HashType: string(msg.HashType),
 	}
 
 	data, err := json.Marshal(dto)
@@ -49,13 +44,13 @@ func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg e
 }
 
 type aggregationProofDTO struct {
-	VerificationType uint32 `json:"verification_type"`
-	MessageHash      []byte `json:"message_hash"`
+	VerificationType uint32 `json:"verificationType"`
+	MessageHash      []byte `json:"messageHash"`
 	Proof            []byte `json:"proof"`
 }
 type signaturesAggregatedDTO struct {
-	Request     signatureRequestDTO `json:"request"`
-	PublicKeyG1 []byte              `json:"public_key_g1"`
-	Proof       aggregationProofDTO `json:"proof"`
-	HashType    string              `json:"hash_type"`
+	RequestHash      [32]byte            `json:"requestHash"`
+	KeyTag           uint8               `json:"keyTag"`
+	Epoch            uint64              `json:"epoch"`
+	AggregationProof aggregationProofDTO `json:"proof"`
 }

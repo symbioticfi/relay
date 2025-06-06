@@ -2,6 +2,7 @@ package valset_generator
 
 import (
 	"context"
+	"github.com/ethereum/go-ethereum/common"
 	"log/slog"
 	"math/big"
 	"time"
@@ -32,7 +33,7 @@ type repo interface {
 
 	GetValsetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 	GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error)
-	GetAggregationProof(ctx context.Context, req entity.SignatureRequest) (entity.AggregationProof, error)
+	GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error)
 }
 
 type deriver interface {

@@ -10,16 +10,16 @@ import (
 	"middleware-offchain/internal/entity"
 )
 
-func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureHashMessage) error {
+func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error {
 	dto := signatureGeneratedDTO{
-		Request: signatureRequestDTO{
-			KeyTag:        uint8(msg.Request.KeyTag),
-			RequiredEpoch: msg.Request.RequiredEpoch,
-			MessageHash:   msg.Request.Message,
+		RequestHash: msg.RequestHash,
+		KeyTag:      msg.KeyTag,
+		Epoch:       msg.Epoch,
+		Signature: signatureDTO{
+			MessageHash: msg.Signature.MessageHash,
+			PublicKey:   msg.Signature.PublicKey,
+			Signature:   msg.Signature.Signature,
 		},
-		Signature: msg.Signature,
-		PublicKey: msg.PublicKey,
-		HashType:  string(msg.HashType),
 	}
 
 	data, err := json.Marshal(dto)
@@ -43,15 +43,14 @@ func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg en
 	return s.broadcast(ctx, entity.P2PMessageTypeSignatureHash, data)
 }
 
-type signatureRequestDTO struct {
-	KeyTag        uint8  `json:"key_tag"`
-	RequiredEpoch uint64 `json:"required_epoch"`
-	MessageHash   []byte `json:"message_hash"`
+type signatureDTO struct {
+	MessageHash []byte `json:"messageHash"`
+	Signature   []byte `json:"signature"`
+	PublicKey   []byte `json:"publicKey"`
 }
 type signatureGeneratedDTO struct {
-	Request               signatureRequestDTO `json:"request"`
-	Signature             []byte              `json:"signature"`
-	PublicKey             []byte              `json:"public_key"`
-	HashType              string              `json:"hash_type"`
-	ValsetHeaderTimestamp uint64              `json:"valset_header_timestamp"`
+	RequestHash [32]byte     `json:"requestHash"`
+	KeyTag      uint8        `json:"keyTag"`
+	Epoch       uint64       `json:"epoch"`
+	Signature   signatureDTO `json:"signature"`
 }
