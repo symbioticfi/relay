@@ -3,8 +3,9 @@ package valset_generator
 import (
 	"context"
 	"encoding/hex"
-	"github.com/go-errors/errors"
 	"log/slog"
+
+	"github.com/go-errors/errors"
 
 	"middleware-offchain/internal/entity"
 )
@@ -18,7 +19,7 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 	valset, err := s.cfg.Repo.GetPendingValset(ctx, msg.RequestHash)
 	if err != nil {
 		slog.DebugContext(ctx, "no pending valset, skipping proof commitment")
-		return nil
+		return nil //nolint:nilerr // if no pending valset, nothing to commit
 	}
 
 	slog.DebugContext(ctx, "proof data", "proof", hex.EncodeToString(msg.AggregationProof.Proof))

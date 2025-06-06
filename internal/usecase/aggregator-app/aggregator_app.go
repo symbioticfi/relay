@@ -3,9 +3,10 @@ package aggregator_app
 import (
 	"context"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
 	"log/slog"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/go-errors/errors"
 	validate "github.com/go-playground/validator/v10"

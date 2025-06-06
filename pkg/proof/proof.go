@@ -1,4 +1,3 @@
-//nolint:forbidigo // ignore this linter for now todo ilya
 package proof
 
 import (
@@ -6,16 +5,17 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/consensys/gnark/std/math/bits"
-	"github.com/consensys/gnark/std/math/uints"
+	"log/slog"
 	"math/big"
 	"os"
 	"sort"
 	"strconv"
 
+	"github.com/consensys/gnark/std/math/bits"
+	"github.com/consensys/gnark/std/math/uints"
+
 	"github.com/go-errors/errors"
 
-	"log/slog"
 	"middleware-offchain/internal/entity"
 	"middleware-offchain/pkg/bls"
 

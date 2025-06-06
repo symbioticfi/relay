@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 	"log/slog"
 	"math/big"
 	"time"
+
+	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 
 	"github.com/ethereum/go-ethereum/common"
 

@@ -14,7 +14,7 @@ import (
 
 	"middleware-offchain/internal/client/symbiotic"
 	"middleware-offchain/internal/entity"
-	valsetDeriver "middleware-offchain/internal/uc/valset-deriver"
+	valsetDeriver "middleware-offchain/internal/usecase/valset-deriver"
 	"middleware-offchain/pkg/log"
 )
 

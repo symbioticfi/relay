@@ -170,7 +170,7 @@ func (r *Repository) SaveSignature(ctx context.Context, reqHash common.Hash, key
 		r.signatures[reqHash] = make(map[[32]byte]entity.Signature)
 	}
 
-	if _, exists := r.signatures[reqHash][key]; exists {
+	if _, exists = r.signatures[reqHash][key]; exists {
 		return nil
 	}
 

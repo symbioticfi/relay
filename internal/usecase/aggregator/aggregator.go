@@ -3,9 +3,11 @@ package aggregator
 import (
 	"bytes"
 	"fmt"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
+
 	"middleware-offchain/internal/entity"
 	"middleware-offchain/pkg/bls"
 	"middleware-offchain/pkg/proof"
@@ -42,7 +44,7 @@ func (a *Aggregator) Aggregate(
 }
 
 func compareMessageHasher(signatures []entity.Signature) bool {
-	for i, _ := range signatures {
+	for i := range signatures {
 		if i > 0 {
 			if !bytes.Equal(signatures[i-1].MessageHash, signatures[i].MessageHash) {
 				return false

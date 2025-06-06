@@ -2,8 +2,9 @@ package signer_app
 
 import (
 	"context"
-	"github.com/ethereum/go-ethereum/common"
 	"log/slog"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"

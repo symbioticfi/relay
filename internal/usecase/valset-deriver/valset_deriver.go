@@ -16,6 +16,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/crypto"
+
 	"middleware-offchain/internal/entity"
 	"middleware-offchain/pkg/bls"
 	"middleware-offchain/pkg/proof"
@@ -23,7 +24,7 @@ import (
 
 const valsetVersion = 1
 
-//go:generate mockgen -source=deriver.go -destination=mocks/deriver.go -package=mocks
+//go:generate mockgen -source=valset_deriver.go -destination=mocks/deriver.go -package=mocks
 type ethClient interface {
 	GetCaptureTimestamp(ctx context.Context) (uint64, error)
 	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
