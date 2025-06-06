@@ -27,6 +27,7 @@ type eth interface {
 	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
 	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
 
+	IsValsetHeaderCommittedAt(ctx context.Context, epoch uint64) (bool, error)
 	CommitValsetHeader(ctx context.Context, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) (entity.CommitValsetHeaderResult, error)
 	VerifyQuorumSig(ctx context.Context, epoch uint64, message []byte, keyTag entity.KeyTag, threshold *big.Int, proof []byte) (bool, error)
 }
@@ -137,6 +138,9 @@ func (s *Service) process(ctx context.Context) error {
 		return errors.Errorf("failed to get latest validator set extra: %w", err)
 	}
 
+	if latestValset.Epoch < valSet.Epoch-10 {
+		slog.WarnContext(ctx, "Header is not committed for much epochs", "latest committed", latestValset.Epoch, "current", valSet.Epoch)
+	}
 	r := entity.SignatureRequest{
 		KeyTag:        entity.ValsetHeaderKeyTag,
 		RequiredEpoch: latestValset.Epoch,
@@ -161,23 +165,19 @@ func (s *Service) process(ctx context.Context) error {
 }
 
 func (s *Service) tryDetectNewEpochToCommit(ctx context.Context) (*entity.ValidatorSet, *entity.NetworkConfig, error) {
-	phase, err := s.cfg.Eth.GetCurrentPhase(ctx)
-	if err != nil {
-		return nil, nil, errors.Errorf("failed to get current phase: %w", err)
-	}
-
-	if phase == entity.IDLE {
-		slog.DebugContext(ctx, "current phase is IDLE, no new epoch to commit")
-		return nil, nil, nil // no new epoch to commit, idle phase
-	}
-
-	if phase != entity.COMMIT {
-		return nil, nil, errors.Errorf("current phase is not COMMIT, got: %d: %w", phase, entity.ErrPhaseNotCommit)
-	}
-
 	currentOnchainEpoch, err := s.cfg.Eth.GetCurrentEpoch(ctx)
 	if err != nil {
 		return nil, nil, errors.Errorf("failed to get current epoch: %w", err)
+	}
+
+	isCommitted, err := s.cfg.Eth.IsValsetHeaderCommittedAt(ctx, currentOnchainEpoch)
+	if err != nil {
+		return nil, nil, errors.Errorf("failed to check if committed validator set header is committed: %w", err)
+	}
+
+	if isCommitted {
+		slog.DebugContext(ctx, "Epoch is committed already, skipping", "epoch", currentOnchainEpoch)
+		return nil, nil, nil
 	}
 
 	epochStart, err := s.cfg.Eth.GetEpochStart(ctx, currentOnchainEpoch)
