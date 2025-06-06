@@ -392,7 +392,7 @@ func getAggSignature(message bn254.G1Affine, valset *[]ValidatorData) (signature
 	return aggSignature, aggKeyG2, aggKeyG1
 }
 
-func setCircuitData(circuit *Circuit, proveInput ProveInput) ([32]byte, error) {
+func setCircuitData(circuit *Circuit, proveInput ProveInput) error {
 	circuit.ValidatorData = make([]ValidatorDataCircuit, len(proveInput.ValidatorData))
 	for i := range proveInput.ValidatorData {
 		circuit.ValidatorData[i].Key = sw_bn254.NewG1Affine(proveInput.ValidatorData[i].Key)
@@ -406,7 +406,7 @@ func setCircuitData(circuit *Circuit, proveInput ProveInput) ([32]byte, error) {
 
 	messageG1, err := bls.HashToG1(proveInput.Message)
 	if err != nil {
-		return [32]byte{}, errors.Errorf("failed to hash message to G1: %w", err)
+		return errors.Errorf("failed to hash message to G1: %w", err)
 	}
 	messageG1Bn254 := bn254.G1Affine{X: messageG1.X, Y: messageG1.Y}
 
@@ -453,7 +453,7 @@ func setCircuitData(circuit *Circuit, proveInput ProveInput) ([32]byte, error) {
 
 	slog.Debug("[Prove] input hash", "hash", hex.EncodeToString(inputHashInt.Bytes()))
 
-	return [32]byte(inputHashInt.Bytes()), nil
+	return nil
 }
 
 type ZkProver struct {
@@ -492,7 +492,7 @@ func (p *ZkProver) DoProve(rawProveInput RawProveInput) (ProofData, error) {
 		return ProofData{}, errors.Errorf("failed to convert validators to data: %w", err)
 	}
 
-	proofData, _, err := p.Prove(ProveInput{
+	proofData, err := p.Prove(ProveInput{
 		ValidatorData:   data,
 		Message:         rawProveInput.Message,
 		Signature:       bn254.G1Affine{X: rawProveInput.Signature.X, Y: rawProveInput.Signature.Y},
@@ -540,19 +540,19 @@ func (p *ZkProver) Verify(valsetLen int, publicInputHash [32]byte, proofBytes []
 	return true, nil
 }
 
-func (p *ZkProver) Prove(proveInput ProveInput) (ProofData, [32]byte, error) {
+func (p *ZkProver) Prove(proveInput ProveInput) (ProofData, error) {
 	pk := p.pk[len(proveInput.ValidatorData)]
 	vk := p.vk[len(proveInput.ValidatorData)]
 	r1cs, ok := p.cs[len(proveInput.ValidatorData)]
 	if !ok {
-		return ProofData{}, [32]byte{}, errors.Errorf("failed to load cs, vk, pk for valset size: %d", len(proveInput.ValidatorData))
+		return ProofData{}, errors.Errorf("failed to load cs, vk, pk for valset size: %d", len(proveInput.ValidatorData))
 	}
 
 	// witness definition
 	assignment := Circuit{}
-	pubInpHash, err := setCircuitData(&assignment, proveInput)
+	err := setCircuitData(&assignment, proveInput)
 	if err != nil {
-		return ProofData{}, [32]byte{}, errors.Errorf("failed to set circuit data: %w", err)
+		return ProofData{}, errors.Errorf("failed to set circuit data: %w", err)
 	}
 	witness, _ := frontend.NewWitness(&assignment, ecc.BN254.ScalarField())
 	publicWitness, _ := witness.Public()
@@ -560,7 +560,7 @@ func (p *ZkProver) Prove(proveInput ProveInput) (ProofData, [32]byte, error) {
 	// groth16: Prove & Verify
 	proof, err := groth16.Prove(r1cs, pk, witness, backend.WithProverHashToFieldFunction(sha256.New()))
 	if err != nil {
-		return ProofData{}, [32]byte{}, errors.Errorf("failed to prove: %w", err)
+		return ProofData{}, errors.Errorf("failed to prove: %w", err)
 	}
 
 	publicInputs := publicWitness.Vector().(fr.Vector)
@@ -574,7 +574,7 @@ func (p *ZkProver) Prove(proveInput ProveInput) (ProofData, [32]byte, error) {
 
 	// If more than 10 inputs (unlikely), you'll need to adapt the interface
 	if len(formattedInputs) > 10 {
-		return ProofData{}, [32]byte{}, errors.Errorf("more than 10 public inputs")
+		return ProofData{}, errors.Errorf("more than 10 public inputs")
 	}
 
 	_, ok = proof.(interface{ MarshalSolidity() []byte })
@@ -585,14 +585,14 @@ func (p *ZkProver) Prove(proveInput ProveInput) (ProofData, [32]byte, error) {
 	// verify proof
 	err = groth16.Verify(proof, vk, publicWitness, backend.WithVerifierHashToFieldFunction(sha256.New()))
 	if err != nil {
-		return ProofData{}, [32]byte{}, err
+		return ProofData{}, err
 	}
 
 	// Serialize the proof
 	var proofBuffer bytes.Buffer
 	_, err = proof.WriteRawTo(&proofBuffer)
 	if err != nil {
-		return ProofData{}, [32]byte{}, errors.Errorf("failed to write proof: %w", err)
+		return ProofData{}, errors.Errorf("failed to write proof: %w", err)
 	}
 	proofBytes := proofBuffer.Bytes()
 	//fmt.Println("proofBytes:", proofBytes) //nolint:staticcheck // will fix later
@@ -635,7 +635,7 @@ func (p *ZkProver) Prove(proveInput ProveInput) (ProofData, [32]byte, error) {
 		Commitments:           proofBytes[260:324],
 		CommitmentPok:         proofBytes[324:388],
 		SignersAggVotingPower: new(big.Int).Sub(totalVotingPower, nonSignersAggVotingPower),
-	}, pubInpHash, nil
+	}, nil
 }
 
 func GetActiveValidators(allValidators []entity.Validator) []entity.Validator {

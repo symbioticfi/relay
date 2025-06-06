@@ -120,13 +120,13 @@ func (a *Aggregator) zkAggregate(
 		Signature:       *aggG1Sig.G1Affine,
 		SignersAggKeyG2: *aggG2Key.G2Affine,
 	}
-	proofData, _, err := a.zkProver.Prove(proverInput)
+	proofData, err := a.zkProver.Prove(proverInput)
 	if err != nil {
 		return nil, err
 	}
 	return &entity.AggregationProof{
 		VerificationType: entity.VerificationTypeZK,
-		MessageHash:      signatures[0].MessageHash,
+		MessageHash:      messageHash,
 		Proof:            proofData.Marshall(),
 	}, nil
 }

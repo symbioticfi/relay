@@ -16,8 +16,6 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-
 	"middleware-offchain/internal/entity"
 	"middleware-offchain/pkg/bls"
 	"middleware-offchain/pkg/proof"
@@ -188,56 +186,6 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 	}
 
 	return valset, nil
-}
-
-// TODO move to commiter?
-func (v *Deriver) HeaderCommitmentHash(
-	networkData entity.NetworkData,
-	header entity.ValidatorSetHeader,
-	extraData []entity.ExtraData,
-) ([]byte, error) {
-	headerHash, err := header.Hash()
-	if err != nil {
-		return nil, fmt.Errorf("failed to hash valset header: %w", err)
-	}
-
-	extraDataHash, err := entity.ExtraDataList(extraData).Hash()
-	if err != nil {
-		return nil, fmt.Errorf("failed to hash extra data: %w", err)
-	}
-
-	typedData := apitypes.TypedData{
-		Types: apitypes.Types{
-			"EIP712Domain": []apitypes.Type{
-				{Name: "name", Type: "string"},
-				{Name: "version", Type: "string"},
-			},
-			"ValSetHeaderCommit": []apitypes.Type{
-				{Name: "subnetwork", Type: "bytes32"},
-				{Name: "epoch", Type: "uint48"},
-				{Name: "headerHash", Type: "bytes32"},
-				{Name: "extraDataHash", Type: "bytes32"},
-			},
-		},
-		Domain: apitypes.TypedDataDomain{
-			Name:    networkData.Eip712Data.Name,
-			Version: networkData.Eip712Data.Version,
-		},
-		PrimaryType: "ValSetHeaderCommit",
-		Message: map[string]interface{}{
-			"subnetwork":    networkData.Subnetwork,
-			"epoch":         new(big.Int).SetUint64(header.Epoch),
-			"headerHash":    headerHash,
-			"extraDataHash": extraDataHash,
-		},
-	}
-
-	hashBytes, _, err := apitypes.TypedDataAndHash(typedData)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get typed data hash: %w", err)
-	}
-
-	return hashBytes, nil
 }
 
 func (v *Deriver) formValidators(

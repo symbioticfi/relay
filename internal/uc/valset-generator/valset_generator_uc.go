@@ -3,6 +3,8 @@ package valset_generator
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
+	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 	"log/slog"
 	"math/big"
 	"time"
@@ -45,7 +47,6 @@ type deriver interface {
 	GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error)
 	GetNetworkData(ctx context.Context) (entity.NetworkData, error)
 	GenerateExtraData(valset entity.ValidatorSet, config entity.NetworkConfig) ([]entity.ExtraData, error)
-	HeaderCommitmentHash(networkData entity.NetworkData, header entity.ValidatorSetHeader, extraData []entity.ExtraData) ([]byte, error)
 }
 
 type Config struct {
@@ -124,12 +125,12 @@ func (s *Service) process(ctx context.Context) error {
 	if err != nil {
 		return errors.Errorf("failed to get validator set header: %w", err)
 	}
-	hash, err := s.cfg.Deriver.HeaderCommitmentHash(networkData, header, extraData)
+	data, err := s.headerCommitmentData(networkData, header, extraData)
 	if err != nil {
 		return errors.Errorf("failed to get header commitment hash: %w", err)
 	}
 
-	slog.DebugContext(ctx, "generated commitment hash", "hash", hex.EncodeToString(hash))
+	slog.DebugContext(ctx, "generated commitment data", "hash", hex.EncodeToString(data))
 
 	latestValset, err := s.cfg.Repo.GetLatestValset(ctx)
 	if err != nil {
@@ -139,7 +140,7 @@ func (s *Service) process(ctx context.Context) error {
 	r := entity.SignatureRequest{
 		KeyTag:        entity.ValsetHeaderKeyTag,
 		RequiredEpoch: latestValset.Epoch,
-		Message:       hash,
+		Message:       data,
 	}
 
 	slog.DebugContext(ctx, "Signed header", "header", header)
@@ -195,4 +196,53 @@ func (s *Service) tryDetectNewEpochToCommit(ctx context.Context) (*entity.Valida
 	}
 
 	return &newValset, &config, nil
+}
+
+func (s *Service) headerCommitmentData(
+	networkData entity.NetworkData,
+	header entity.ValidatorSetHeader,
+	extraData []entity.ExtraData,
+) ([]byte, error) {
+	headerHash, err := header.Hash()
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash valset header: %w", err)
+	}
+
+	extraDataHash, err := entity.ExtraDataList(extraData).Hash()
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash extra data: %w", err)
+	}
+
+	typedData := apitypes.TypedData{
+		Types: apitypes.Types{
+			"EIP712Domain": []apitypes.Type{
+				{Name: "name", Type: "string"},
+				{Name: "version", Type: "string"},
+			},
+			"ValSetHeaderCommit": []apitypes.Type{
+				{Name: "subnetwork", Type: "bytes32"},
+				{Name: "epoch", Type: "uint48"},
+				{Name: "headerHash", Type: "bytes32"},
+				{Name: "extraDataHash", Type: "bytes32"},
+			},
+		},
+		Domain: apitypes.TypedDataDomain{
+			Name:    networkData.Eip712Data.Name,
+			Version: networkData.Eip712Data.Version,
+		},
+		PrimaryType: "ValSetHeaderCommit",
+		Message: map[string]interface{}{
+			"subnetwork":    networkData.Subnetwork,
+			"epoch":         new(big.Int).SetUint64(header.Epoch),
+			"headerHash":    headerHash,
+			"extraDataHash": extraDataHash,
+		},
+	}
+
+	_, data, err := apitypes.TypedDataAndHash(typedData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get typed data hash: %w", err)
+	}
+
+	return []byte(data), nil
 }

@@ -3,9 +3,8 @@ package valset_generator
 import (
 	"context"
 	"encoding/hex"
-	"log/slog"
-
 	"github.com/go-errors/errors"
+	"log/slog"
 
 	"middleware-offchain/internal/entity"
 )
@@ -16,14 +15,10 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		return nil
 	}
 
-	aggProof, err := s.cfg.Repo.GetAggregationProof(ctx, msg.RequestHash)
-	if err != nil {
-		return errors.Errorf("failed to get aggregation proof: %w", err)
-	}
-
 	valset, err := s.cfg.Repo.GetPendingValset(ctx, msg.RequestHash)
 	if err != nil {
-		return errors.Errorf("failed to get pending valset: %w", err)
+		slog.DebugContext(ctx, "no pending valset, skipping proof commitment")
+		return nil
 	}
 
 	slog.DebugContext(ctx, "proof data", "proof", hex.EncodeToString(msg.AggregationProof.Proof))
@@ -45,23 +40,12 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		return errors.Errorf("failed to get validator set header: %w", err)
 	}
 
-	networkData, err := s.cfg.Deriver.GetNetworkData(ctx)
-	if err != nil {
-		return errors.Errorf("failed to get network data: %w", err)
-	}
-
-	hash, err := s.cfg.Deriver.HeaderCommitmentHash(networkData, header, extraData)
-	if err != nil {
-		return errors.Errorf("failed to get header commitment hash: %w", err)
-	}
-	slog.DebugContext(ctx, "committing commitment hash", "hash", hex.EncodeToString(hash))
-
-	result, err := s.cfg.Eth.CommitValsetHeader(ctx, header, extraData, aggProof.Proof)
+	result, err := s.cfg.Eth.CommitValsetHeader(ctx, header, extraData, msg.AggregationProof.Proof)
 	if err != nil {
 		return errors.Errorf("failed to commit valset header: %w", err)
 	}
 
-	slog.InfoContext(ctx, "valset header committed", "txHash", result.TxHash.String(), "epoch", msg.Epoch)
+	slog.InfoContext(ctx, "valset header committed", "txHash", result.TxHash.String(), "epoch", valset.Epoch)
 
 	return nil
 }
