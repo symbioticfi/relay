@@ -1,7 +1,6 @@
 package bls
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
@@ -46,7 +45,7 @@ func GenerateKey() ([]byte, error) {
 
 	sk, err = sk.SetRandom()
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse secret key: %w", err)
+		return nil, errors.Errorf("failed to parse secret key: %w", err)
 	}
 
 	return sk.Marshal(), nil
@@ -84,7 +83,7 @@ func (kp *KeyPair) Sign(msgHash []byte) (*G1, error) {
 	// Hash the message to a point on G1
 	h1, err := HashToG1(msgHash)
 	if err != nil {
-		return nil, fmt.Errorf("failed to hash message to G1: %w", err)
+		return nil, errors.Errorf("failed to hash message to G1: %w", err)
 	}
 
 	// Convert secret key to big.Int
@@ -107,7 +106,7 @@ func (p *G2) Verify(signature *G1, msgHash []byte) (bool, error) {
 	// Hash the message to a point on G1
 	h1, err := HashToG1(msgHash)
 	if err != nil {
-		return false, fmt.Errorf("failed to hash message to G1: %w", err)
+		return false, errors.Errorf("failed to hash message to G1: %w", err)
 	}
 
 	// Get the G2 generator
@@ -134,7 +133,7 @@ func Verify(g2PubKey *G2, signature *G1, msgHash []byte) (bool, error) {
 	// Hash the message to a point on G1
 	h1, err := HashToG1(msgHash)
 	if err != nil {
-		return false, fmt.Errorf("failed to hash message to G1: %w", err)
+		return false, errors.Errorf("failed to hash message to G1: %w", err)
 	}
 
 	// Get the G2 generator
@@ -184,12 +183,12 @@ func UnpackPublicG1G2(g1g2 []byte) (G1, G2, error) {
 
 	g1, err := DeserializeG1(g1Bytes)
 	if err != nil {
-		return G1{}, G2{}, fmt.Errorf("failed to deserialize G1: %w", err)
+		return G1{}, G2{}, errors.Errorf("failed to deserialize G1: %w", err)
 	}
 
 	g2, err := DeserializeG2(g2Bytes)
 	if err != nil {
-		return G1{}, G2{}, fmt.Errorf("failed to deserialize G2: %w", err)
+		return G1{}, G2{}, errors.Errorf("failed to deserialize G2: %w", err)
 	}
 
 	return *g1, *g2, nil

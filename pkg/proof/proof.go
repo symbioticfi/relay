@@ -525,17 +525,17 @@ func (p *ZkProver) Verify(valsetLen int, publicInputHash [32]byte, proofBytes []
 	proof := groth16.NewProof(ecc.BN254)
 	_, err := proof.ReadFrom(reader)
 	if err != nil {
-		return false, fmt.Errorf("failed to read proof: %w", err)
+		return false, errors.Errorf("failed to read proof: %w", err)
 	}
 
 	vk, ok := p.vk[valsetLen]
 	if !ok {
-		return false, fmt.Errorf("failed to find verification key for valset length %d", valsetLen)
+		return false, errors.Errorf("failed to find verification key for valset length %d", valsetLen)
 	}
 
 	err = groth16.Verify(proof, vk, publicWitness, backend.WithVerifierHashToFieldFunction(sha256.New()))
 	if err != nil {
-		return false, fmt.Errorf("failed to verify: %w", err)
+		return false, errors.Errorf("failed to verify: %w", err)
 	}
 	return true, nil
 }
@@ -657,7 +657,7 @@ func ToValidatorsData(signerValidators []entity.Validator, allValidators []entit
 			if key.Tag == requiredKeyTag {
 				g1, err := bls.DeserializeG1(key.Payload)
 				if err != nil {
-					return nil, fmt.Errorf("failed to deserialize G1: %w", err)
+					return nil, errors.Errorf("failed to deserialize G1: %w", err)
 				}
 				validatorData := ValidatorData{Key: *g1.G1Affine, VotingPower: activeValidators[i].VotingPower, IsNonSigner: true}
 

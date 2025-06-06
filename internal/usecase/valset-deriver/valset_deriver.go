@@ -3,7 +3,6 @@ package valsetDeriver
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"log/slog"
 	"math/big"
 	"reflect"
@@ -59,17 +58,17 @@ func NewDeriver(ethClient ethClient) (*Deriver, error) {
 func (v *Deriver) GetNetworkData(ctx context.Context) (entity.NetworkData, error) {
 	address, err := v.ethClient.GetNetworkAddress(ctx)
 	if err != nil {
-		return entity.NetworkData{}, fmt.Errorf("failed to get network address: %w", err)
+		return entity.NetworkData{}, errors.Errorf("failed to get network address: %w", err)
 	}
 
 	subnetwork, err := v.ethClient.GetSubnetwork(ctx)
 	if err != nil {
-		return entity.NetworkData{}, fmt.Errorf("failed to get subnetwork: %w", err)
+		return entity.NetworkData{}, errors.Errorf("failed to get subnetwork: %w", err)
 	}
 
 	eip712Data, err := v.ethClient.GetEip712Domain(ctx)
 	if err != nil {
-		return entity.NetworkData{}, fmt.Errorf("failed to get eip712 domain: %w", err)
+		return entity.NetworkData{}, errors.Errorf("failed to get eip712 domain: %w", err)
 	}
 
 	return entity.NetworkData{
@@ -83,7 +82,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 	slog.DebugContext(ctx, "Trying to fetch current valset timestamp", "epoch", epoch)
 	timestamp, err := v.ethClient.GetEpochStart(ctx, epoch)
 	if err != nil {
-		return entity.ValidatorSet{}, fmt.Errorf("failed to get epoch start timestamp: %w", err)
+		return entity.ValidatorSet{}, errors.Errorf("failed to get epoch start timestamp: %w", err)
 	}
 	slog.DebugContext(ctx, "Got current valset timestamp", "timestamp", timestamp, "epoch", epoch)
 
@@ -95,7 +94,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 		slog.DebugContext(ctx, "Trying to fetch voting powers from provider", "provider", provider.Address.Hex())
 		votingPowers, err := v.ethClient.GetVotingPowers(ctx, provider, timestamp)
 		if err != nil {
-			return entity.ValidatorSet{}, fmt.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
+			return entity.ValidatorSet{}, errors.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
 		}
 
 		slog.DebugContext(ctx, "Got voting powers from provider", "provider", provider.Address.Hex(), "votingPowers", votingPowers)
@@ -108,7 +107,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 
 	keys, err := v.ethClient.GetKeys(ctx, config.KeysProvider, timestamp)
 	if err != nil {
-		return entity.ValidatorSet{}, fmt.Errorf("failed to get keys: %w", err)
+		return entity.ValidatorSet{}, errors.Errorf("failed to get keys: %w", err)
 	}
 
 	// form validators list from voting powers and keys using config
@@ -119,12 +118,12 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 
 	requiredKeyTag, err := v.ethClient.GetRequiredKeyTag(ctx, timestamp)
 	if err != nil {
-		return entity.ValidatorSet{}, fmt.Errorf("failed to get required key tag: %w", err)
+		return entity.ValidatorSet{}, errors.Errorf("failed to get required key tag: %w", err)
 	}
 
 	isValsetCommitted, err := v.ethClient.IsValsetHeaderCommittedAt(ctx, epoch)
 	if err != nil {
-		return entity.ValidatorSet{}, fmt.Errorf("failed to check if validator committed at epoch %d: %w", epoch, err)
+		return entity.ValidatorSet{}, errors.Errorf("failed to check if validator committed at epoch %d: %w", epoch, err)
 	}
 
 	valset := entity.ValidatorSet{
@@ -140,22 +139,22 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 		slog.DebugContext(ctx, "Validator set committed at epoch already, checking integrity", "epoch", epoch)
 		previousHeaderHash, err := v.ethClient.GetPreviousHeaderHashAt(ctx, epoch)
 		if err != nil {
-			return entity.ValidatorSet{}, fmt.Errorf("failed to get previous header hash: %w", err)
+			return entity.ValidatorSet{}, errors.Errorf("failed to get previous header hash: %w", err)
 		}
 		valset.PreviousHeaderHash = previousHeaderHash
 
 		// valset integrity check
 		committedHash, err := v.ethClient.GetHeaderHashAt(ctx, epoch)
 		if err != nil {
-			return entity.ValidatorSet{}, fmt.Errorf("failed to get header hash: %w", err)
+			return entity.ValidatorSet{}, errors.Errorf("failed to get header hash: %w", err)
 		}
 		valsetHeader, err := valset.GetHeader()
 		if err != nil {
-			return entity.ValidatorSet{}, fmt.Errorf("failed to get header hash: %w", err)
+			return entity.ValidatorSet{}, errors.Errorf("failed to get header hash: %w", err)
 		}
 		calculatedHash, err := valsetHeader.Hash()
 		if err != nil {
-			return entity.ValidatorSet{}, fmt.Errorf("failed to get header hash: %w", err)
+			return entity.ValidatorSet{}, errors.Errorf("failed to get header hash: %w", err)
 		}
 
 		if !bytes.Equal(committedHash[:], calculatedHash[:]) {
@@ -168,7 +167,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 	} else {
 		latestCommittedEpoch, err := v.ethClient.GetLastCommittedHeaderEpoch(ctx)
 		if err != nil {
-			return entity.ValidatorSet{}, fmt.Errorf("failed to get current valset epoch: %w", err)
+			return entity.ValidatorSet{}, errors.Errorf("failed to get current valset epoch: %w", err)
 		}
 
 		if epoch < latestCommittedEpoch {
@@ -310,7 +309,7 @@ func (v *Deriver) GenerateExtraData(valset entity.ValidatorSet, config entity.Ne
 		{
 			totalActiveValidatorsKey, err := v.getExtraDataKey(config.VerificationType, entity.ZkVerificationTotalActiveValidators)
 			if err != nil {
-				return nil, fmt.Errorf("failed to get extra data key: %w", err)
+				return nil, errors.Errorf("failed to get extra data key: %w", err)
 			}
 
 			totalActiveValidators := big.NewInt(valset.GetTotalActiveValidators())
@@ -326,12 +325,12 @@ func (v *Deriver) GenerateExtraData(valset entity.ValidatorSet, config entity.Ne
 			for _, key := range aggregatedPubKeys {
 				mimcAccumulator, err := proof.ValidatorSetMimcAccumulator(valset.Validators, key.Tag)
 				if err != nil {
-					return nil, fmt.Errorf("failed to generate validator set mimc accumulator: %w", err)
+					return nil, errors.Errorf("failed to generate validator set mimc accumulator: %w", err)
 				}
 
 				validatorSetHashKey, err := v.getExtraDataKeyTagged(config.VerificationType, key.Tag, entity.ZkVerificationValidatorSetHashMimc)
 				if err != nil {
-					return nil, fmt.Errorf("failed to get extra data key: %w", err)
+					return nil, errors.Errorf("failed to get extra data key: %w", err)
 				}
 
 				extraData = append(extraData, entity.ExtraData{
@@ -343,7 +342,7 @@ func (v *Deriver) GenerateExtraData(valset entity.ValidatorSet, config entity.Ne
 	case entity.VerificationTypeSimple: // TODO: prettify/check
 		totalActiveValidatorsKey, err := v.getExtraDataKey(config.VerificationType, entity.SimpleVerificationTotalVotingPower)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get extra data key: %w", err)
+			return nil, errors.Errorf("failed to get extra data key: %w", err)
 		}
 
 		totalActiveValidators := big.NewInt(valset.GetTotalActiveValidators())
@@ -360,12 +359,12 @@ func (v *Deriver) GenerateExtraData(valset entity.ValidatorSet, config entity.Ne
 		for _, key := range aggregatedPubKeys {
 			validatorSetHashKey, err := v.getExtraDataKeyTagged(config.VerificationType, key.Tag, entity.SimpleVerificationValidatorSetHashKeccak256)
 			if err != nil {
-				return nil, fmt.Errorf("failed to get extra data key: %w", err)
+				return nil, errors.Errorf("failed to get extra data key: %w", err)
 			}
 
 			keccakHashAccumulator, err := calcKeccakAccumulator(valset.Validators, key.Tag)
 			if err != nil {
-				return nil, fmt.Errorf("failed to generate validator set mimc accumulator: %w", err)
+				return nil, errors.Errorf("failed to generate validator set mimc accumulator: %w", err)
 			}
 
 			extraData = append(extraData, entity.ExtraData{
@@ -378,18 +377,18 @@ func (v *Deriver) GenerateExtraData(valset entity.ValidatorSet, config entity.Ne
 		for _, activeAggregatedKey := range aggregatedPubKeys {
 			activeAggregatedKeyKey, err := v.getExtraDataKeyTagged(config.VerificationType, activeAggregatedKey.Tag, entity.SimpleVerificationAggPublicKeyG1)
 			if err != nil {
-				return nil, fmt.Errorf("failed to get extra data key: %w", err)
+				return nil, errors.Errorf("failed to get extra data key: %w", err)
 			}
 			keyG1Raw, err := bls.DeserializeG1(activeAggregatedKey.Payload)
 			if err != nil {
-				return nil, fmt.Errorf("failed to deserialize G1: %w", err)
+				return nil, errors.Errorf("failed to deserialize G1: %w", err)
 			}
 
 			x := keyG1Raw.X.BigInt(new(big.Int))
 			y := keyG1Raw.Y.BigInt(new(big.Int))
 			_, derivedY, err := bls.FindYFromX(x)
 			if err != nil {
-				return nil, fmt.Errorf("failed to find Y from X: %w", err)
+				return nil, errors.Errorf("failed to find Y from X: %w", err)
 			}
 
 			flag := y.Cmp(derivedY) != 0
@@ -537,7 +536,7 @@ func calcKeccakAccumulator(validators []entity.Validator, requiredKeyTag entity.
 			if validatorKey.Tag == requiredKeyTag {
 				validatorKeyG1, err := bls.DeserializeG1(validatorKey.Payload)
 				if err != nil {
-					return [32]byte{}, fmt.Errorf("failed to deserialize G1: %w", err)
+					return [32]byte{}, errors.Errorf("failed to deserialize G1: %w", err)
 				}
 				x := validatorKeyG1.X.BigInt(new(big.Int))
 				y := validatorKeyG1.Y.BigInt(new(big.Int))
@@ -555,7 +554,7 @@ func calcKeccakAccumulator(validators []entity.Validator, requiredKeyTag entity.
 
 	packed, err := args.Pack(validatorsData)
 	if err != nil {
-		return [32]byte{}, fmt.Errorf("failed to pack arguments: %w", err)
+		return [32]byte{}, errors.Errorf("failed to pack arguments: %w", err)
 	}
 	hash := crypto.Keccak256Hash(packed)
 	return hash, nil

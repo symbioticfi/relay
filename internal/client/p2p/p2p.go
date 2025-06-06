@@ -3,7 +3,6 @@ package p2p
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -128,24 +127,24 @@ func (s *Service) broadcast(ctx context.Context, typ entity.P2PMessageType, data
 func (s *Service) sendToPeer(ctx context.Context, peerID peer.ID, msg p2pMessage) error {
 	protocolID, err := getProtocolIDByMessageType(msg.Type)
 	if err != nil {
-		return fmt.Errorf("failed to get protocol ID: %w", err)
+		return errors.Errorf("failed to get protocol ID: %w", err)
 	}
 
 	stream, err := s.host.NewStream(ctx, peerID, protocolID)
 	if err != nil {
-		return fmt.Errorf("failed to open stream: %w", err)
+		return errors.Errorf("failed to open stream: %w", err)
 	}
 	defer stream.Close()
 
 	// Marshal and send the message
 	data, err := json.Marshal(msg)
 	if err != nil {
-		return fmt.Errorf("failed to marshal message: %w", err)
+		return errors.Errorf("failed to marshal message: %w", err)
 	}
 
 	_, err = stream.Write(data)
 	if err != nil {
-		return fmt.Errorf("failed to write to stream: %w", err)
+		return errors.Errorf("failed to write to stream: %w", err)
 	}
 
 	return nil
@@ -165,7 +164,7 @@ func getProtocolIDByMessageType(messageType entity.P2PMessageType) (protocol.ID,
 // Close gracefully stops the service
 func (s *Service) Close() error {
 	if err := s.host.Close(); err != nil {
-		return fmt.Errorf("failed to close host: %w", err)
+		return errors.Errorf("failed to close host: %w", err)
 	}
 
 	return nil

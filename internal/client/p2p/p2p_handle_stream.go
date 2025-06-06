@@ -3,9 +3,9 @@ package p2p
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 
+	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p/core/network"
 
 	"middleware-offchain/internal/entity"
@@ -23,7 +23,7 @@ func (s *Service) handleStreamSignedHash(ctx context.Context, stream network.Str
 	var signatureGenerated signatureGeneratedDTO
 	info, err := unmarshalMessage(stream, &signatureGenerated)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal signatureGenerated message: %w", err)
+		return errors.Errorf("failed to unmarshal signatureGenerated message: %w", err)
 	}
 
 	entityMessage := entity.P2PSignatureHashMessage{
@@ -46,7 +46,7 @@ func (s *Service) handleStreamSignedHash(ctx context.Context, stream network.Str
 
 	err = s.signatureHashHandler(ctx, entityMessage)
 	if err != nil {
-		return fmt.Errorf("failed to handle message: %w", err)
+		return errors.Errorf("failed to handle message: %w", err)
 	}
 
 	return nil
@@ -56,7 +56,7 @@ func (s *Service) handleStreamAggregatedProof(ctx context.Context, stream networ
 	var signaturesAggregated signaturesAggregatedDTO
 	info, err := unmarshalMessage(stream, &signaturesAggregated)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal signatureGenerated message: %w", err)
+		return errors.Errorf("failed to unmarshal signatureGenerated message: %w", err)
 	}
 
 	entityMessage := entity.P2PSignaturesAggregatedMessage{
@@ -79,7 +79,7 @@ func (s *Service) handleStreamAggregatedProof(ctx context.Context, stream networ
 
 	err = s.signaturesAggregatedHandler(ctx, entityMessage)
 	if err != nil {
-		return fmt.Errorf("failed to handle message: %w", err)
+		return errors.Errorf("failed to handle message: %w", err)
 	}
 
 	return nil
@@ -91,16 +91,16 @@ func unmarshalMessage(stream network.Stream, v interface{}) (entity.SenderInfo, 
 	data := make([]byte, 1024*1024) // 1MB buffer
 	n, err := stream.Read(data)
 	if err != nil {
-		return entity.SenderInfo{}, fmt.Errorf("failed to read from stream: %w", err)
+		return entity.SenderInfo{}, errors.Errorf("failed to read from stream: %w", err)
 	}
 
 	var message p2pMessage
 	if err := json.Unmarshal(data[:n], &message); err != nil {
-		return entity.SenderInfo{}, fmt.Errorf("failed to unmarshal message: %w", err)
+		return entity.SenderInfo{}, errors.Errorf("failed to unmarshal message: %w", err)
 	}
 
 	if err := json.Unmarshal(message.Data, v); err != nil {
-		return entity.SenderInfo{}, fmt.Errorf("failed to unmarshal signatureGenerated message: %w", err)
+		return entity.SenderInfo{}, errors.Errorf("failed to unmarshal signatureGenerated message: %w", err)
 	}
 
 	return entity.SenderInfo{

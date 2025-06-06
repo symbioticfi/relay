@@ -157,7 +157,7 @@ func (v ValidatorSet) GetTotalActiveValidators() int64 {
 func (v ValidatorSet) GetHeader() (ValidatorSetHeader, error) {
 	sszMroot, err := sszTreeRoot(&v)
 	if err != nil {
-		return ValidatorSetHeader{}, fmt.Errorf("failed to get hash tree root: %w", err)
+		return ValidatorSetHeader{}, errors.Errorf("failed to get hash tree root: %w", err)
 	}
 
 	return ValidatorSetHeader{

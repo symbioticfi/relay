@@ -3,7 +3,6 @@ package valset_generator
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"log/slog"
 	"math/big"
 	"time"
@@ -206,12 +205,12 @@ func (s *Service) headerCommitmentData(
 ) ([]byte, error) {
 	headerHash, err := header.Hash()
 	if err != nil {
-		return nil, fmt.Errorf("failed to hash valset header: %w", err)
+		return nil, errors.Errorf("failed to hash valset header: %w", err)
 	}
 
 	extraDataHash, err := entity.ExtraDataList(extraData).Hash()
 	if err != nil {
-		return nil, fmt.Errorf("failed to hash extra data: %w", err)
+		return nil, errors.Errorf("failed to hash extra data: %w", err)
 	}
 
 	typedData := apitypes.TypedData{
@@ -242,7 +241,7 @@ func (s *Service) headerCommitmentData(
 
 	_, data, err := apitypes.TypedDataAndHash(typedData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get typed data hash: %w", err)
+		return nil, errors.Errorf("failed to get typed data hash: %w", err)
 	}
 
 	return []byte(data), nil

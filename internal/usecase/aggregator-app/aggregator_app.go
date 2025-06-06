@@ -2,7 +2,6 @@ package aggregator_app
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"time"
 
@@ -79,7 +78,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 
 	validatorSet, err := s.cfg.Repo.GetValsetByEpoch(ctx, msg.Message.Epoch)
 	if err != nil {
-		return fmt.Errorf("failed to get validator set: %w", err)
+		return errors.Errorf("failed to get validator set: %w", err)
 	}
 
 	g1, _, err := bls.UnpackPublicG1G2(msg.Message.Signature.PublicKey) // todo ilya discuss how to get rid of dependency on bls package here
@@ -94,7 +93,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 
 	err = s.cfg.Repo.SaveSignature(ctx, msg.Message.RequestHash, g1.Bytes(), msg.Message.Signature)
 	if err != nil {
-		return fmt.Errorf("failed to save signature: %w", err)
+		return errors.Errorf("failed to save signature: %w", err)
 	}
 
 	slog.DebugContext(ctx, "found validator", "validator", validator)
@@ -128,7 +127,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 	sigs, err := s.cfg.Repo.GetAllSignatures(ctx, msg.Message.RequestHash)
 	slog.DebugContext(ctx, "total received signatures", "sigs", len(sigs))
 	if err != nil {
-		return fmt.Errorf("failed to get signature aggregated message: %w", err)
+		return errors.Errorf("failed to get signature aggregated message: %w", err)
 	}
 
 	// todo ilya, make proof only once when threshold is reached
@@ -136,7 +135,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 	// todo fix aggregation type
 	proofData, err := s.cfg.Aggregator.Aggregate(&validatorSet, msg.Message.KeyTag, entity.VerificationTypeZK, msg.Message.Signature.MessageHash, sigs)
 	if err != nil {
-		return fmt.Errorf("failed to prove: %w", err)
+		return errors.Errorf("failed to prove: %w", err)
 	}
 
 	slog.InfoContext(ctx, "proof created, trying to send aggregated signature message",

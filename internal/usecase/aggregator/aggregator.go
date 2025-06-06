@@ -2,7 +2,6 @@ package aggregator
 
 import (
 	"bytes"
-	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -105,7 +104,7 @@ func (a *Aggregator) zkAggregate(
 			_, isSinger := signers[val.Operator]
 			g1Key, err := bls.DeserializeG1(keyBytes)
 			if err != nil {
-				return nil, fmt.Errorf("failed to deserialize G1 key: %w", err)
+				return nil, errors.Errorf("failed to deserialize G1 key: %w", err)
 			}
 
 			validatorsData = append(validatorsData, proof.ValidatorData{
