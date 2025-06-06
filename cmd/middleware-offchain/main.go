@@ -4,12 +4,13 @@ import (
 	"context"
 	"log/slog"
 	"math/big"
-	"middleware-offchain/internal/uc/aggregator"
-	"middleware-offchain/pkg/proof"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"middleware-offchain/internal/uc/aggregator"
+	"middleware-offchain/pkg/proof"
 
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p"
@@ -195,6 +196,7 @@ var rootCmd = &cobra.Command{
 			Repo:            repo,
 			Deriver:         deriver,
 			PollingInterval: time.Second * 5,
+			IsCommitter:     cfg.isCommitter,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create epoch listener: %w", err)
@@ -259,17 +261,6 @@ var rootCmd = &cobra.Command{
 			}
 			slog.DebugContext(ctx, "created aggregator app, starting")
 		}
-
-		//if cfg.isCommitter {
-		//	_, err := committer.NewCommitterApp(committer.Config{
-		//		EthClient: ethClient,
-		//		P2PClient: p2pService,
-		//	})
-		//	if err != nil {
-		//		return errors.Errorf("failed to create committer app: %w", err)
-		//	}
-		//	slog.DebugContext(ctx, "created committer app, starting")
-		//}
 
 		return eg.Wait()
 	},

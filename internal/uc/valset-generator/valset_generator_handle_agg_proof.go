@@ -11,6 +11,11 @@ import (
 )
 
 func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
+	if !s.cfg.IsCommitter {
+		slog.DebugContext(ctx, "not a committer, skipping proof commitment")
+		return nil
+	}
+
 	aggProof, err := s.cfg.Repo.GetAggregationProof(ctx, msg.RequestHash)
 	if err != nil {
 		return errors.Errorf("failed to get aggregation proof: %w", err)

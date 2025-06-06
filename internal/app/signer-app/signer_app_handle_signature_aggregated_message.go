@@ -21,7 +21,6 @@ func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, msg e
 		return fmt.Errorf("aggregation proof invalid")
 	}
 
-	// todo ilya validate proof before saving
 	err = s.cfg.Repo.SaveAggregationProof(ctx, msg.Message.RequestHash, msg.Message.AggregationProof)
 	if err != nil {
 		return err

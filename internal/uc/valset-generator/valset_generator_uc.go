@@ -3,10 +3,11 @@ package valset_generator
 import (
 	"context"
 	"encoding/hex"
-	"github.com/ethereum/go-ethereum/common"
 	"log/slog"
 	"math/big"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
@@ -53,6 +54,7 @@ type Config struct {
 	Repo            repo          `validate:"required"`
 	Deriver         deriver       `validate:"required"`
 	PollingInterval time.Duration `validate:"required,gt=0"`
+	IsCommitter     bool
 }
 
 func (c Config) Validate() error {
