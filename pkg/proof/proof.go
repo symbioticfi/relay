@@ -37,7 +37,8 @@ import (
 )
 
 var (
-	MaxValidators = []int{10, 100, 1000}
+	//MaxValidators = []int{10, 100, 1000}
+	MaxValidators = []int{10}
 )
 
 func InitCircuitsDir(newCircuitsDir string) {
@@ -499,6 +500,8 @@ func (p *ZkProver) Verify(valsetLen int, publicInputHash [32]byte, proofBytes []
 	valsetLen = getOptimalN(valsetLen)
 	assignment := Circuit{}
 	publicInputHashInt := new(big.Int).SetBytes(publicInputHash[:])
+	mask, _ := big.NewInt(0).SetString("1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)
+	publicInputHashInt.And(publicInputHashInt, mask)
 	assignment.InputHash = publicInputHashInt
 
 	witness, _ := frontend.NewWitness(&assignment, ecc.BN254.ScalarField(), frontend.PublicOnly())

@@ -76,7 +76,11 @@ func (a *Aggregator) zkAggregate(
 	aggG2Key := bls.ZeroG2()
 	signers := make(map[common.Address]bool)
 	for _, sig := range signatures {
-		val, ok := valset.FindValidatorByKey(keyTag, sig.PublicKey[:32])
+		g1, g2Key, err := bls.UnpackPublicG1G2(sig.PublicKey)
+		if err != nil {
+			return nil, err
+		}
+		val, ok := valset.FindValidatorByKey(keyTag, g1.Marshal())
 		if !ok {
 			return nil, errors.New("failed to find validator by key")
 		}
@@ -84,12 +88,8 @@ func (a *Aggregator) zkAggregate(
 		if err != nil {
 			return nil, err
 		}
-		g2Key, err := bls.DeserializeG2(sig.PublicKey[32:])
-		if err != nil {
-			return nil, err
-		}
 		aggG1Sig = aggG1Sig.Add(g1Sig)
-		aggG2Key = aggG2Key.Add(g2Key)
+		aggG2Key = aggG2Key.Add(&g2Key)
 		signers[val.Operator] = true
 	}
 
