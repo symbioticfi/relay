@@ -20,6 +20,7 @@ type repository interface {
 	GetValsetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 	SaveSignature(ctx context.Context, reqHash common.Hash, key [32]byte, sig entity.Signature) error
 	GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.Signature, error)
+	GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error)
 }
 
 type p2pClient interface {
@@ -81,9 +82,21 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		return errors.Errorf("failed to get validator set: %w", err)
 	}
 
-	g1, _, err := bls.UnpackPublicG1G2(msg.Message.Signature.PublicKey) // todo ilya discuss how to get rid of dependency on bls package here
+	g1, g2, err := bls.UnpackPublicG1G2(msg.Message.Signature.PublicKey) // todo ilya discuss how to get rid of dependency on bls package here
 	if err != nil {
 		return errors.Errorf("failed to unpack public key: %w", err)
+	}
+
+	g1Sig, err := bls.DeserializeG1(msg.Message.Signature.Signature)
+	if err != nil {
+		return errors.Errorf("failed to deserialize signature: %w", err)
+	}
+	ok, err := bls.Verify(&g2, g1Sig, msg.Message.Signature.MessageHash)
+	if err != nil {
+		return errors.Errorf("failed to verify signature: %w", err)
+	}
+	if !ok {
+		return errors.New("signature verification failed")
 	}
 
 	validator, found := validatorSet.FindValidatorByKey(msg.Message.KeyTag, g1.Marshal())
@@ -130,10 +143,18 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		return errors.Errorf("failed to get signature aggregated message: %w", err)
 	}
 
-	// todo ilya, make proof only once when threshold is reached
 	start := time.Now()
-	// todo fix aggregation type
-	proofData, err := s.cfg.Aggregator.Aggregate(&validatorSet, msg.Message.KeyTag, entity.VerificationTypeZK, msg.Message.Signature.MessageHash, sigs)
+	networkConfig, err := s.cfg.Repo.GetConfigByEpoch(ctx, msg.Message.Epoch)
+	if err != nil {
+		return errors.Errorf("failed to get network config: %w", err)
+	}
+	proofData, err := s.cfg.Aggregator.Aggregate(
+		&validatorSet,
+		msg.Message.KeyTag,
+		networkConfig.VerificationType,
+		msg.Message.Signature.MessageHash,
+		sigs,
+	)
 	if err != nil {
 		return errors.Errorf("failed to prove: %w", err)
 	}
