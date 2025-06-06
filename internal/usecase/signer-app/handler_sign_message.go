@@ -16,6 +16,7 @@ func (s *SignerApp) Handler() http.Handler {
 	r := chi.NewRouter()
 
 	r.Post("/signMessage", s.signMessageHandler)
+	r.Get("/getAggregationProof", s.getAggregationProof)
 
 	return r
 }
@@ -34,17 +35,35 @@ func (s *SignerApp) signMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.Sign(ctx, entity.SignatureRequest{
+	request := entity.SignatureRequest{
 		KeyTag:        req.KeyTag,
 		RequiredEpoch: req.Epoch,
 		Message:       req.Data,
-	}); err != nil {
+	}
+	err := s.Sign(ctx, request)
+
+	if err != nil {
+		handleError(ctx, w, err)
+		return
+	}
+
+	type response struct {
+		RequestHash string `json:"requestHash"`
+	}
+
+	resp := response{
+		RequestHash: request.Hash().Hex(),
+	}
+
+	respData, err := json.Marshal(resp)
+	if err != nil {
 		handleError(ctx, w, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	w.Write(respData)
 }
 
 type errorStatusCode struct {
