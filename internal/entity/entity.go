@@ -34,7 +34,7 @@ func (r SignatureRequest) Hash() common.Hash {
 }
 
 type SignatureMessage struct {
-	RequestHash [32]byte
+	RequestHash common.Hash
 	KeyTag      KeyTag
 	Epoch       uint64
 	Signature   Signature // parse based on KeyTag
@@ -54,7 +54,7 @@ type AggregationProof struct {
 }
 
 type AggregatedSignatureMessage struct {
-	RequestHash      [32]byte
+	RequestHash      common.Hash
 	KeyTag           KeyTag
 	Epoch            uint64
 	AggregationProof AggregationProof

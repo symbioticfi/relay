@@ -24,6 +24,7 @@ type Repository struct {
 	signatures     map[common.Hash]map[[32]byte]entity.Signature
 	signRequests   map[common.Hash]entity.SignatureRequest
 	aggProofs      map[common.Hash]entity.AggregationProof
+	pendingValsets map[common.Hash]entity.ValidatorSet
 }
 
 func New() (*Repository, error) {
@@ -34,6 +35,7 @@ func New() (*Repository, error) {
 		signatures:     make(map[common.Hash]map[[32]byte]entity.Signature),
 		signRequests:   make(map[common.Hash]entity.SignatureRequest),
 		aggProofs:      make(map[common.Hash]entity.AggregationProof),
+		pendingValsets: make(map[common.Hash]entity.ValidatorSet),
 	}, nil
 }
 
@@ -169,7 +171,7 @@ func (r *Repository) SaveSignature(ctx context.Context, reqHash common.Hash, key
 	}
 
 	if _, exists := r.signatures[reqHash][key]; exists {
-		return errors.Errorf("signature for this request already exists: %w", entity.ErrEntityAlreadyExist)
+		return nil
 	}
 
 	r.signatures[reqHash][key] = sig
@@ -187,6 +189,30 @@ func (r *Repository) GetAllSignatures(ctx context.Context, reqHash common.Hash) 
 	}
 
 	return slices.Collect(maps.Values(r.signatures[reqHash])), nil
+}
+
+func (r *Repository) SavePendingValset(ctx context.Context, reqHash common.Hash, valset entity.ValidatorSet) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	_, exists := r.pendingValsets[reqHash]
+	if exists {
+		return errors.Errorf("pending valset for this request already exists: %w", entity.ErrEntityAlreadyExist)
+	}
+
+	r.pendingValsets[reqHash] = valset
+	return nil
+}
+
+func (r *Repository) GetPendingValset(ctx context.Context, reqHash common.Hash) (entity.ValidatorSet, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	valset, ok := r.pendingValsets[reqHash]
+	if !ok {
+		return entity.ValidatorSet{}, errors.New(entity.ErrEntityNotFound)
+	}
+	return valset, nil
 }
 
 func signRequestHash(req entity.SignatureRequest) common.Hash {

@@ -4,6 +4,7 @@ package proof
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"github.com/consensys/gnark/std/math/bits"
 	"github.com/consensys/gnark/std/math/uints"
@@ -434,6 +435,12 @@ func setCircuitData(circuit *Circuit, proveInput ProveInput) ([32]byte, error) {
 	inputHashBytes = append(inputHashBytes, messageBytes[:]...)
 	inputHash := crypto.Keccak256(inputHashBytes)
 
+	slog.Debug("signersAggVotingPower", "vp", signersAggVotingPower.String())
+	slog.Debug("signed message", "message", messageG1Bn254.String())
+	slog.Debug("signed message", "message.X", messageG1Bn254.X.String())
+	slog.Debug("signed message", "message.Y", messageG1Bn254.Y.String())
+	slog.Debug("mimc hash", "hash", hex.EncodeToString(valsetHash))
+
 	//fmt.Println("InputHashBytes:", hex.EncodeToString(inputHashBytes))
 	//fmt.Println(hex.EncodeToString(inputHashBytes))
 	//fmt.Println("inputHash:", hex.EncodeToString(inputHash))
@@ -443,6 +450,8 @@ func setCircuitData(circuit *Circuit, proveInput ProveInput) ([32]byte, error) {
 
 	//fmt.Println("inputHashHex:", inputHashInt.Text(16))
 	circuit.InputHash = inputHashInt
+
+	slog.Debug("[Prove] input hash", "hash", hex.EncodeToString(inputHashInt.Bytes()))
 
 	return [32]byte(inputHashInt.Bytes()), nil
 }
@@ -503,6 +512,8 @@ func (p *ZkProver) Verify(valsetLen int, publicInputHash [32]byte, proofBytes []
 	mask, _ := big.NewInt(0).SetString("1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)
 	publicInputHashInt.And(publicInputHashInt, mask)
 	assignment.InputHash = publicInputHashInt
+
+	slog.Debug("[Verify] input hash", "hash", hex.EncodeToString(publicInputHashInt.Bytes()))
 
 	witness, _ := frontend.NewWitness(&assignment, ecc.BN254.ScalarField(), frontend.PublicOnly())
 	publicWitness, _ := witness.Public()

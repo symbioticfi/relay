@@ -82,14 +82,12 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		return errors.Errorf("failed to get latest validator set extra: %w", err)
 	}
 
-	latestEpoch := uint64(1)
+	nextEpoch := uint64(0)
 	if err == nil {
-		latestEpoch = latest.Epoch
+		nextEpoch = latest.Epoch + 1
 	}
 
-	for latestCommitedOnchainEpoch > latestEpoch {
-		nextEpoch := latestEpoch + 1
-
+	for latestCommitedOnchainEpoch >= nextEpoch {
 		epochStart, err := s.cfg.Eth.GetEpochStart(ctx, nextEpoch)
 		if err != nil {
 			return errors.Errorf("failed to get epoch start for epoch %d: %w", nextEpoch, err)
@@ -106,7 +104,6 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		}
 
 		// TODO ilya: check valset integrity: valset.headerHash() == master.valsetHeaderHash(epoch)
-
 		if err := s.cfg.Repo.SaveConfig(ctx, config, nextEpoch); err != nil {
 			return errors.Errorf("failed to save validator set extra for epoch %d: %w", nextEpoch, err)
 		}
@@ -115,7 +112,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 			return errors.Errorf("failed to save validator set extra for epoch %d: %w", nextEpoch, err)
 		}
 
-		latestEpoch = nextValset.Epoch
+		nextEpoch = nextValset.Epoch + 1
 	}
 
 	return nil

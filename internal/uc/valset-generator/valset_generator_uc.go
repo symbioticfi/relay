@@ -2,6 +2,7 @@ package valset_generator
 
 import (
 	"context"
+	"encoding/hex"
 	"github.com/ethereum/go-ethereum/common"
 	"log/slog"
 	"math/big"
@@ -34,6 +35,9 @@ type repo interface {
 	GetValsetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 	GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error)
 	GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error)
+	GetSignatureRequest(ctx context.Context, reqHash common.Hash) (entity.SignatureRequest, error)
+	SavePendingValset(ctx context.Context, reqHash common.Hash, valset entity.ValidatorSet) error
+	GetPendingValset(ctx context.Context, reqHash common.Hash) (entity.ValidatorSet, error)
 }
 
 type deriver interface {
@@ -123,16 +127,27 @@ func (s *Service) process(ctx context.Context) error {
 		return errors.Errorf("failed to get header commitment hash: %w", err)
 	}
 
+	slog.DebugContext(ctx, "generated commitment hash", "hash", hex.EncodeToString(hash))
+
 	latestValset, err := s.cfg.Repo.GetLatestValset(ctx)
 	if err != nil {
 		return errors.Errorf("failed to get latest validator set extra: %w", err)
 	}
 
-	err = s.cfg.Signer.Sign(ctx, entity.SignatureRequest{
+	r := entity.SignatureRequest{
 		KeyTag:        entity.ValsetHeaderKeyTag,
 		RequiredEpoch: latestValset.Epoch,
 		Message:       hash,
-	})
+	}
+
+	slog.DebugContext(ctx, "Signed header", "header", header)
+	slog.DebugContext(ctx, "Signed extra data", "header", extraData)
+	err = s.cfg.Repo.SavePendingValset(ctx, r.Hash(), *valSet)
+	if err != nil {
+		return errors.Errorf("failed to save pending valset: %w", err)
+	}
+
+	err = s.cfg.Signer.Sign(ctx, r)
 	if err != nil {
 		return errors.Errorf("failed to sign new validator set extra: %w", err)
 	}

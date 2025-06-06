@@ -91,6 +91,11 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		return errors.Errorf("validator not found for public key: %x", msg.Message.Signature.PublicKey)
 	}
 
+	err = s.cfg.Repo.SaveSignature(ctx, msg.Message.RequestHash, g1.Bytes(), msg.Message.Signature)
+	if err != nil {
+		return fmt.Errorf("failed to save signature: %w", err)
+	}
+
 	slog.DebugContext(ctx, "found validator", "validator", validator)
 
 	current, err := s.hashStore.PutHash(msg.Message.Signature, validator)
@@ -120,6 +125,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 	)
 
 	sigs, err := s.cfg.Repo.GetAllSignatures(ctx, msg.Message.RequestHash)
+	slog.DebugContext(ctx, "total received signatures", "sigs", len(sigs))
 	if err != nil {
 		return fmt.Errorf("failed to get signature aggregated message: %w", err)
 	}

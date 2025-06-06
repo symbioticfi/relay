@@ -54,11 +54,11 @@ const (
 
 type ValidatorSet struct {
 	Version            uint8
-	RequiredKeyTag     KeyTag   // key tag required to commit next valset
-	Epoch              uint64   // valset epoch
-	CaptureTimestamp   uint64   // epoch capture timestamp
-	QuorumThreshold    *big.Int // absolute number now, not a percent
-	PreviousHeaderHash [32]byte // previous valset header hash
+	RequiredKeyTag     KeyTag      // key tag required to commit next valset
+	Epoch              uint64      // valset epoch
+	CaptureTimestamp   uint64      // epoch capture timestamp
+	QuorumThreshold    *big.Int    // absolute number now, not a percent
+	PreviousHeaderHash common.Hash // previous valset header hash
 	Validators         []Validator
 
 	// internal usage only
@@ -95,13 +95,13 @@ type ValidatorSetHeader struct {
 	Epoch              uint64
 	CaptureTimestamp   uint64
 	QuorumThreshold    *big.Int
-	ValidatorsSszMRoot [32]byte
-	PreviousHeaderHash [32]byte
+	ValidatorsSszMRoot common.Hash
+	PreviousHeaderHash common.Hash
 }
 
 type ExtraData struct {
-	Key   [32]byte
-	Value [32]byte
+	Key   common.Hash
+	Value common.Hash
 }
 
 type ExtraDataList []ExtraData
