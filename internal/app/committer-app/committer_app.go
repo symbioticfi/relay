@@ -14,7 +14,7 @@ import (
 
 type valsetGenerator interface {
 	GenerateCurrentValidatorSetHeader(ctx context.Context) (entity.ValidatorSetHeader, error)
-	GenerateExtraData(ctx context.Context, valsetHeader entity.ValidatorSetHeader, verificationType uint32) ([]entity.ExtraData, error)
+	GenerateExtraData(ctx context.Context, valsetHeader entity.ValidatorSetHeader, verificationType entity.VerificationType) ([]entity.ExtraData, error)
 }
 
 type ethClient interface {
@@ -76,12 +76,12 @@ func (c *CommitterApp) commitValsetHeader(ctx context.Context, msg entity.P2PSig
 
 	slog.DebugContext(ctx, "generated valset header, committing", "header", header)
 
-	extraData, err := c.cfg.ValsetGenerator.GenerateExtraData(ctx, header, entity.ZkVerificationType)
+	extraData, err := c.cfg.ValsetGenerator.GenerateExtraData(ctx, header, entity.VerificationTypeZK)
 	if err != nil {
 		return errors.Errorf("failed to generate extra data: %w", err)
 	}
 
-	result, err := c.cfg.EthClient.CommitValsetHeader(ctx, header, extraData, msg.Message.Proof)
+	result, err := c.cfg.EthClient.CommitValsetHeader(ctx, header, extraData, msg.Message.Proof.Proof)
 	if err != nil {
 		return errors.Errorf("failed to commit valset header: %w", err)
 	}
@@ -92,7 +92,7 @@ func (c *CommitterApp) commitValsetHeader(ctx context.Context, msg entity.P2PSig
 }
 
 func (c *CommitterApp) verifyQuorumSig(ctx context.Context, msg entity.P2PSignaturesAggregatedMessage) error {
-	isOK, err := c.cfg.EthClient.VerifyQuorumSig(ctx, msg.Message.Epoch, msg.Message.Message, 15, new(big.Int).SetInt64(1e18), msg.Message.Proof)
+	isOK, err := c.cfg.EthClient.VerifyQuorumSig(ctx, msg.Message.Request.RequiredEpoch, msg.Message.Request.Message, 15, new(big.Int).SetInt64(1e18), msg.Message.Proof.Proof)
 	if err != nil {
 		return errors.Errorf("failed to verify quorum signature: %w", err)
 	}

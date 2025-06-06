@@ -124,13 +124,13 @@ var rootCmd = &cobra.Command{
 			}
 
 			slog.InfoContext(ctx, "received message with proof",
-				"messageHash", hex.EncodeToString(msg.Message.Message),
+				"messageHash", hex.EncodeToString(msg.Message.Request.Message),
 				"ourMessage", hex.EncodeToString([]byte(message)),
 				"ourMessageHash", hex.EncodeToString(crypto.Keccak256([]byte(message))),
 			)
 
 			quorumThresholdPercent := new(big.Int).Mul(big.NewInt(66), big.NewInt(1e16))
-			verifyResult, err := ethClient.VerifyQuorumSig(ctx, msg.Message.Epoch, msg.Message.Message, 15, quorumThresholdPercent, msg.Message.Proof)
+			verifyResult, err := ethClient.VerifyQuorumSig(ctx, msg.Message.Request.RequiredEpoch, msg.Message.Request.Message, 15, quorumThresholdPercent, msg.Message.Proof.Proof)
 			if err != nil {
 				return errors.Errorf("failed to verify quorum signature: %w", err)
 			}

@@ -13,11 +13,18 @@ import (
 
 func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg entity.SignaturesAggregatedMessage) error {
 	dto := signaturesAggregatedDTO{
+		Request: signatureRequestDTO{
+			KeyTag:        uint8(msg.Request.KeyTag),
+			RequiredEpoch: msg.Request.RequiredEpoch,
+			MessageHash:   msg.Request.Message,
+		},
 		PublicKeyG1: bls.SerializeG1(msg.PublicKeyG1),
-		Proof:       msg.Proof,
-		Message:     msg.Message,
-		HashType:    string(msg.HashType),
-		Epoch:       msg.Epoch,
+		Proof: aggregationProofDTO{
+			VerificationType: uint32(msg.Proof.VerificationType),
+			MessageHash:      msg.Proof.MessageHash,
+			Proof:            msg.Proof.Proof,
+		},
+		HashType: string(msg.HashType),
 	}
 
 	data, err := json.Marshal(dto)
@@ -41,10 +48,14 @@ func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg e
 	return s.broadcast(ctx, entity.P2PMessageTypeSignaturesAggregated, data)
 }
 
+type aggregationProofDTO struct {
+	VerificationType uint32 `json:"verification_type"`
+	MessageHash      []byte `json:"message_hash"`
+	Proof            []byte `json:"proof"`
+}
 type signaturesAggregatedDTO struct {
-	PublicKeyG1 []byte `json:"public_key_g1"`
-	Proof       []byte `json:"proof"`
-	Message     []byte `json:"message"`
-	HashType    string `json:"hash_type"`
-	Epoch       uint64 `json:"epoch"`
+	Request     signatureRequestDTO `json:"request"`
+	PublicKeyG1 []byte              `json:"public_key_g1"`
+	Proof       aggregationProofDTO `json:"proof"`
+	HashType    string              `json:"hash_type"`
 }

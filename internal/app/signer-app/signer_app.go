@@ -6,15 +6,15 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
-	"github.com/samber/mo"
 
 	"middleware-offchain/internal/entity"
 	"middleware-offchain/pkg/bls"
 )
 
 type repo interface {
-	GetSignatureRequest(ctx context.Context, req entity.SignatureRequest) (mo.Option[entity.SignatureRequest], error)
-	GetAggregationProof(ctx context.Context, req entity.SignatureRequest) (mo.Option[entity.AggregationProof], error)
+	GetSignatureRequest(ctx context.Context, req entity.SignatureRequest) (entity.SignatureRequest, error)
+	GetAggregationProof(ctx context.Context, req entity.SignatureRequest) (entity.AggregationProof, error)
+	SaveAggregationProof(ctx context.Context, req entity.SignatureRequest, ap entity.AggregationProof) error
 	GetValsetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 	SaveSignature(ctx context.Context, req entity.SignatureRequest, sig entity.Signature) error
 	SaveSignatureRequest(_ context.Context, req entity.SignatureRequest) error
@@ -22,6 +22,7 @@ type repo interface {
 
 type p2pService interface {
 	BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureHashMessage) error
+	SetSignaturesAggregatedMessageHandler(mh func(ctx context.Context, msg entity.P2PSignaturesAggregatedMessage) error)
 }
 
 type signer interface {
@@ -57,25 +58,30 @@ func NewSignerApp(cfg Config) (*SignerApp, error) {
 		return nil, errors.Errorf("failed to validate config: %w", err)
 	}
 
-	return &SignerApp{
+	app := &SignerApp{
 		cfg: cfg,
-	}, nil
+	}
+
+	cfg.P2PService.SetSignaturesAggregatedMessageHandler(app.HandleSignaturesAggregatedMessage)
+
+	return app, nil
 }
 
 func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error {
-	existed, err := s.cfg.Repo.GetSignatureRequest(ctx, req)
-	if err != nil {
+	_, err := s.cfg.Repo.GetSignatureRequest(ctx, req)
+	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return errors.Errorf("failed to get signature request: %w", err)
 	}
-	if existed.IsPresent() {
+	if entityFound := !errors.Is(err, entity.ErrEntityNotFound); entityFound {
+		slog.DebugContext(ctx, "signature request already exists", "request", req)
 		return nil
 	}
 
-	existedProof, err := s.cfg.Repo.GetAggregationProof(ctx, req)
-	if err != nil {
+	_, err = s.cfg.Repo.GetAggregationProof(ctx, req)
+	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return errors.Errorf("failed to get aggregation proof: %w", err)
 	}
-	if existedProof.IsPresent() {
+	if !errors.Is(err, entity.ErrEntityNotFound) {
 		return errors.New("aggregation proof already exists for this request")
 	}
 
@@ -83,10 +89,6 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 	if err != nil {
 		return errors.Errorf("failed to get latest valset extra: %w", err)
 	}
-
-	//if valset.Epoch >= req.RequiredEpoch-uint64(entity.MaxSavedEpochs) {
-	//	return errors.Errorf("epoch difference is too large: max allowed: %d", entity.MaxSavedEpochs)
-	//}
 
 	public, err := s.cfg.KeyProvider.GetPublic(req.KeyTag)
 	if err != nil {
@@ -115,12 +117,14 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 	slog.InfoContext(ctx, "valset header hash signed, sending via p2p", "headerSignature", signature)
 
 	err = s.cfg.P2PService.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureHashMessage{
-		MessageHash: req.Message,
-		KeyTag:      req.KeyTag,
-		Signature:   signature.Signature,
-		PublicKey:   signature.PublicKey,
-		HashType:    entity.HashTypeValsetHeader,
-		Epoch:       req.RequiredEpoch,
+		Request: entity.SignatureRequest{
+			KeyTag:        req.KeyTag,
+			RequiredEpoch: req.RequiredEpoch,
+			Message:       req.Message,
+		},
+		Signature: signature.Signature,
+		PublicKey: signature.PublicKey,
+		HashType:  entity.HashTypeValsetHeader,
 	})
 	if err != nil {
 		return errors.Errorf("failed to broadcast valset header: %w", err)

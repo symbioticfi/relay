@@ -17,13 +17,13 @@ import (
 	"github.com/samber/lo"
 
 	"middleware-offchain/internal/entity"
-	"middleware-offchain/pkg/bls"
-	log2 "middleware-offchain/pkg/log"
+	"middleware-offchain/pkg/log"
 )
 
 // Configuration
 const (
-	signatureHashProtocolID protocol.ID = "/p2p/messaging/1.0.0/signedHash"
+	signedHashProtocolID      protocol.ID = "/p2p/messaging/1.0.0/signedHash"
+	aggregatedProofProtocolID protocol.ID = "/p2p/messaging/1.0.0/aggregatedProof"
 )
 
 // Service handles peer-to-peer communication and signature aggregation
@@ -39,7 +39,7 @@ type Service struct {
 // NewService creates a new P2P service with the given configuration
 func NewService(ctx context.Context, h host.Host) (*Service, error) {
 	service := &Service{
-		ctx:   log2.WithAttrs(ctx, slog.String("component", "p2p")),
+		ctx:   log.WithAttrs(ctx, slog.String("component", "p2p")),
 		host:  h,
 		peers: make(map[peer.ID]struct{}),
 		signatureHashHandler: func(ctx context.Context, msg entity.P2PSignatureHashMessage) error {
@@ -49,15 +49,13 @@ func NewService(ctx context.Context, h host.Host) (*Service, error) {
 			return nil
 		},
 	}
-	h.SetStreamHandler(signatureHashProtocolID, service.handleStream)
-	h.Network().Notify(service)
-	return service, nil
-}
 
-func (s *Service) handleStream(stream network.Stream) {
-	if err := s.handleStreamInternal(stream); err != nil {
-		slog.ErrorContext(s.ctx, "Failed to handle stream", "error", err)
-	}
+	h.SetStreamHandler(signedHashProtocolID, handleStreamWrapper(ctx, service.handleStreamSignedHash))
+	h.SetStreamHandler(aggregatedProofProtocolID, handleStreamWrapper(ctx, service.handleStreamAggregatedProof))
+
+	h.Network().Notify(service)
+
+	return service, nil
 }
 
 func (s *Service) SetSignatureHashMessageHandler(mh func(ctx context.Context, msg entity.P2PSignatureHashMessage) error) {
@@ -66,78 +64,6 @@ func (s *Service) SetSignatureHashMessageHandler(mh func(ctx context.Context, ms
 
 func (s *Service) SetSignaturesAggregatedMessageHandler(mh func(ctx context.Context, msg entity.P2PSignaturesAggregatedMessage) error) {
 	s.signaturesAggregatedHandler = mh // todo ilya check if nil + mutex
-}
-
-func (s *Service) handleStreamInternal(stream network.Stream) error {
-	defer stream.Close()
-
-	data := make([]byte, 1024*1024) // 1MB buffer
-	n, err := stream.Read(data)
-	if err != nil {
-		return fmt.Errorf("failed to read from stream: %w", err)
-	}
-
-	var message p2pMessage
-	if err := json.Unmarshal(data[:n], &message); err != nil {
-		return fmt.Errorf("failed to unmarshal message: %w", err)
-	}
-
-	switch message.Type {
-	case entity.P2PMessageTypeSignatureHash:
-		var signatureGenerated signatureGeneratedDTO
-		if err := json.Unmarshal(message.Data, &signatureGenerated); err != nil {
-			return fmt.Errorf("failed to unmarshal signatureGenerated message: %w", err)
-		}
-		entityMessage := entity.P2PSignatureHashMessage{
-			Message: entity.SignatureHashMessage{
-				MessageHash: signatureGenerated.MessageHash,
-				Signature:   signatureGenerated.Signature,
-				PublicKey:   signatureGenerated.PublicKey,
-				KeyTag:      entity.KeyTag(signatureGenerated.KeyTag),
-				HashType:    entity.HashType(signatureGenerated.HashType),
-				//ValsetHeaderTimestamp: signatureGenerated.ValsetHeaderTimestamp, // todo ilya
-				Epoch: signatureGenerated.Epoch,
-			},
-			Info: entity.SenderInfo{
-				Type:      message.Type,
-				Sender:    message.Sender,
-				Timestamp: message.Timestamp,
-			},
-		}
-		if err := s.signatureHashHandler(s.ctx, entityMessage); err != nil {
-			return fmt.Errorf("failed to handle message: %w", err)
-		}
-	case entity.P2PMessageTypeSignaturesAggregated:
-		var signaturesAggregated signaturesAggregatedDTO
-		if err := json.Unmarshal(message.Data, &signaturesAggregated); err != nil {
-			return fmt.Errorf("failed to unmarshal signaturesAggregated message: %w", err)
-		}
-		g1, err := bls.DeserializeG1(signaturesAggregated.PublicKeyG1)
-		if err != nil {
-			return fmt.Errorf("failed to deserialize G1 public key: %w", err)
-		}
-		entityMessage := entity.P2PSignaturesAggregatedMessage{
-			Message: entity.SignaturesAggregatedMessage{
-				PublicKeyG1: g1,
-				Proof:       signaturesAggregated.Proof,
-				Message:     signaturesAggregated.Message,
-				HashType:    entity.HashType(signaturesAggregated.HashType),
-				Epoch:       signaturesAggregated.Epoch,
-			},
-			Info: entity.SenderInfo{
-				Type:      message.Type,
-				Sender:    message.Sender,
-				Timestamp: message.Timestamp,
-			},
-		}
-		if err := s.signaturesAggregatedHandler(s.ctx, entityMessage); err != nil {
-			return fmt.Errorf("failed to handle message: %w", err)
-		}
-	default:
-		return fmt.Errorf("unknown message type: %s", message.Type)
-	}
-
-	return nil
 }
 
 func (s *Service) AddPeer(pi peer.AddrInfo) error {
@@ -228,9 +154,9 @@ func (s *Service) sendToPeer(ctx context.Context, peerID peer.ID, msg p2pMessage
 func getProtocolIDByMessageType(messageType entity.P2PMessageType) (protocol.ID, error) {
 	switch messageType {
 	case entity.P2PMessageTypeSignatureHash:
-		return signatureHashProtocolID, nil
+		return signedHashProtocolID, nil
 	case entity.P2PMessageTypeSignaturesAggregated:
-		return signatureHashProtocolID, nil
+		return aggregatedProofProtocolID, nil
 	default:
 		return "", errors.Errorf("unknown message type: %s", messageType)
 	}

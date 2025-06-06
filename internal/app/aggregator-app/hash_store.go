@@ -39,10 +39,10 @@ type currentValues struct {
 func (h *hashStore) PutHash(msg entity.SignatureHashMessage, val entity.Validator) (currentValues, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	validators, ok := h.m[string(msg.MessageHash)]
+	validators, ok := h.m[string(msg.Request.Message)]
 	if !ok {
 		validators = make(map[common.Address]hashWithValidator)
-		h.m[string(msg.MessageHash)] = validators
+		h.m[string(msg.Request.Message)] = validators
 	}
 	if _, ok = validators[val.Operator]; ok {
 		return currentValues{}, errors.Errorf("signature already exists for validator %s", val.Operator.Hex())

@@ -360,7 +360,7 @@ func (v *Deriver) GenerateExtraData(
 	extraData := make([]entity.ExtraData, 0)
 
 	switch config.VerificationType {
-	case entity.ZkVerificationType:
+	case entity.VerificationTypeZK:
 		{
 			totalActiveValidatorsKey, err := v.getExtraDataKey(config.VerificationType, entity.ZkVerificationTotalActiveValidators)
 			if err != nil {
@@ -394,7 +394,7 @@ func (v *Deriver) GenerateExtraData(
 				})
 			}
 		}
-	case entity.SimpleVerificationType: // TODO: prettify/check
+	case entity.VerificationTypeSimple: // TODO: prettify/check
 		totalActiveValidatorsKey, err := v.getExtraDataKey(config.VerificationType, entity.SimpleVerificationTotalVotingPower)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get extra data key: %w", err)
@@ -464,7 +464,7 @@ func (v *Deriver) GenerateExtraData(
 	return extraData, nil
 }
 
-func (v *Deriver) getExtraDataKey(verificationType uint32, name string) ([32]byte, error) {
+func (v *Deriver) getExtraDataKey(verificationType entity.VerificationType, name string) ([32]byte, error) {
 	strTy, _ := abi.NewType("string", "", nil)
 	u32Ty, _ := abi.NewType("uint32", "", nil)
 
@@ -474,14 +474,14 @@ func (v *Deriver) getExtraDataKey(verificationType uint32, name string) ([32]byt
 		{Type: strTy},
 	}
 
-	packed, err := args.Pack(entity.ExtraDataGlobalKeyPrefix, verificationType, name)
+	packed, err := args.Pack(entity.ExtraDataGlobalKeyPrefix, uint32(verificationType), name)
 	if err != nil {
 		return [32]byte{}, err
 	}
 	return crypto.Keccak256Hash(packed), nil
 }
 
-func (v *Deriver) getExtraDataKeyTagged(verificationType uint32, keyTag entity.KeyTag, name string) ([32]byte, error) {
+func (v *Deriver) getExtraDataKeyTagged(verificationType entity.VerificationType, keyTag entity.KeyTag, name string) ([32]byte, error) {
 	strTy, _ := abi.NewType("string", "", nil)
 	u32Ty, _ := abi.NewType("uint32", "", nil)
 	u8Ty, _ := abi.NewType("uint8", "", nil)
@@ -494,7 +494,7 @@ func (v *Deriver) getExtraDataKeyTagged(verificationType uint32, keyTag entity.K
 		{Type: strTy},
 	}
 
-	packed, err := args.Pack(entity.ExtraDataGlobalKeyPrefix, verificationType, entity.ExtraDataKeyTagPrefix, keyTag, name)
+	packed, err := args.Pack(entity.ExtraDataGlobalKeyPrefix, uint32(verificationType), entity.ExtraDataKeyTagPrefix, keyTag, name)
 	if err != nil {
 		return [32]byte{}, err
 	}
@@ -503,7 +503,7 @@ func (v *Deriver) getExtraDataKeyTagged(verificationType uint32, keyTag entity.K
 
 //nolint:unused // will be used later
 func (v *Deriver) getExtraDataKeyIndexed(
-	verificationType uint32,
+	verificationType entity.VerificationType,
 	keyTag entity.KeyTag,
 	name string,
 	index *big.Int,

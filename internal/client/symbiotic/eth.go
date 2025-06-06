@@ -215,7 +215,7 @@ func (e *Client) GetConfig(ctx context.Context, timestamp uint64) (entity.Networ
 		Replicas: lo.Map(dtoConfig.Replicas, func(v dtoCrossChainAddress, _ int) entity.CrossChainAddress {
 			return v.toEntity()
 		}),
-		VerificationType:        dtoConfig.VerificationType,
+		VerificationType:        entity.VerificationType(dtoConfig.VerificationType),
 		MaxVotingPower:          dtoConfig.MaxVotingPower,
 		MinInclusionVotingPower: dtoConfig.MinInclusionVotingPower,
 		MaxValidatorsCount:      dtoConfig.MaxValidatorsCount,

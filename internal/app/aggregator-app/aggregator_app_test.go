@@ -104,7 +104,7 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 			message: entity.P2PSignatureHashMessage{
 				Message: entity.SignatureHashMessage{
 					PublicKey: []byte{0x02},
-					KeyTag:    keyTag,
+					//KeyTag:    keyTag,
 				},
 			},
 			mockSetup:   func() {},
@@ -115,7 +115,7 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 			message: entity.P2PSignatureHashMessage{
 				Message: entity.SignatureHashMessage{
 					PublicKey: key1.PackPublicG1G2(),
-					KeyTag:    keyTag,
+					//KeyTag:    keyTag,
 					Signature: bls.SerializeG1(sign1),
 				},
 			},
@@ -131,7 +131,7 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 			message: entity.P2PSignatureHashMessage{
 				Message: entity.SignatureHashMessage{
 					PublicKey: key3.PackPublicG1G2(),
-					KeyTag:    keyTag,
+					//KeyTag:    keyTag,
 					Signature: bls.SerializeG1(sign3),
 				},
 			},
@@ -149,7 +149,7 @@ func TestHandleSignatureGeneratedMessage(t *testing.T) {
 			message: entity.P2PSignatureHashMessage{
 				Message: entity.SignatureHashMessage{
 					PublicKey: key2.PackPublicG1G2(),
-					KeyTag:    keyTag,
+					//KeyTag:    keyTag,
 					Signature: bls.SerializeG1(sign2),
 				},
 			},

@@ -10,7 +10,7 @@ import (
 	"middleware-offchain/internal/entity"
 )
 
-func (s *SignerApp) signMessage(ctx context.Context, message []byte, keyTag entity.KeyTag) error {
+func (s *SignerApp) signMessage(ctx context.Context, message []byte, keyTag entity.KeyTag, epoch uint64) error {
 	messageHash, err := s.cfg.Signer.Hash(keyTag, message)
 	if err != nil {
 		return errors.Errorf("failed to hash message: %w", err)
@@ -28,19 +28,15 @@ func (s *SignerApp) signMessage(ctx context.Context, message []byte, keyTag enti
 
 	slog.DebugContext(ctx, "message hash signed, sending via p2p", "headerSignature", messageSignature)
 
-	// TODO ilya
-	//epoch, err := s.cfg.EthClient.GetCurrentValsetEpoch(ctx)
-	//if err != nil {
-	//	return errors.Errorf("failed to get current epoch: %w", err)
-	//}
-
 	err = s.cfg.P2PService.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureHashMessage{
-		MessageHash: messageHash,
-		KeyTag:      keyTag,
-		Signature:   messageSignature.Signature,
-		PublicKey:   messageSignature.PublicKey,
-		HashType:    entity.HashTypeMessage,
-		//Epoch:                 epoch,
+		Request: entity.SignatureRequest{
+			KeyTag:        keyTag,
+			RequiredEpoch: epoch,
+			Message:       messageHash,
+		},
+		Signature: messageSignature.Signature,
+		PublicKey: messageSignature.PublicKey,
+		HashType:  entity.HashTypeMessage,
 	})
 	if err != nil {
 		return errors.Errorf("failed to broadcast signed hash message: %w", err)

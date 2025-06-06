@@ -22,43 +22,43 @@ type CrossChainAddress struct {
 }
 
 type NetworkConfig struct {
-	VotingPowerProviders    []CrossChainAddress `json:"votingPowerProviders"`
-	KeysProvider            CrossChainAddress   `json:"keysProvider"`
-	Replicas                []CrossChainAddress `json:"replicas"`
-	VerificationType        uint32              `json:"verificationType"`
-	MaxVotingPower          *big.Int            `json:"maxVotingPower"`
-	MinInclusionVotingPower *big.Int            `json:"minInclusionVotingPower"`
-	MaxValidatorsCount      *big.Int            `json:"maxValidatorsCount"`
-	RequiredKeyTags         []KeyTag            `json:"requiredKeyTags"`
+	VotingPowerProviders    []CrossChainAddress
+	KeysProvider            CrossChainAddress
+	Replicas                []CrossChainAddress
+	VerificationType        VerificationType
+	MaxVotingPower          *big.Int
+	MinInclusionVotingPower *big.Int
+	MaxValidatorsCount      *big.Int
+	RequiredKeyTags         []KeyTag
 }
 
 type NetworkData struct {
-	Address    common.Address `json:"address"`
-	Subnetwork [32]byte       `json:"subnetwork"`
-	Eip712Data Eip712Domain   `json:"eip712Data"`
+	Address    common.Address
+	Subnetwork [32]byte
+	Eip712Data Eip712Domain
 }
 
 type VaultVotingPower struct {
-	Vault       common.Address `json:"vault"`
-	VotingPower *big.Int       `json:"votingPower"`
+	Vault       common.Address
+	VotingPower *big.Int
 }
 
 type OperatorVotingPower struct {
-	Operator common.Address     `json:"operator"`
-	Vaults   []VaultVotingPower `json:"vaults"`
+	Operator common.Address
+	Vaults   []VaultVotingPower
 }
 
 type OperatorWithKeys struct {
-	Operator common.Address `json:"operator"`
-	Keys     []Key          `json:"keys"`
+	Operator common.Address
+	Keys     []Key
 }
 
 type Eip712Domain struct {
-	Fields            [1]byte        `json:"fields"`
-	Name              string         `json:"name"`
-	Version           string         `json:"version"`
-	ChainId           *big.Int       `json:"chainId"`
-	VerifyingContract common.Address `json:"verifyingContract"`
-	Salt              *big.Int       `json:"salt"`
-	Extensions        []*big.Int     `json:"extensions"`
+	Fields            [1]byte
+	Name              string
+	Version           string
+	ChainId           *big.Int
+	VerifyingContract common.Address
+	Salt              *big.Int
+	Extensions        []*big.Int
 }

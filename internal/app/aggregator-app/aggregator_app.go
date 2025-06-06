@@ -63,7 +63,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 
 	slog.DebugContext(ctx, "received signature hash generated message", "message", msg)
 
-	validatorSet, err := s.cfg.Repo.GetValsetByEpoch(ctx, msg.Message.Epoch)
+	validatorSet, err := s.cfg.Repo.GetValsetByEpoch(ctx, msg.Message.Request.RequiredEpoch)
 	if err != nil {
 		return fmt.Errorf("failed to get validator set: %w", err)
 	}
@@ -73,7 +73,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		return errors.Errorf("failed to unpack public key: %w", err)
 	}
 
-	validator, found := validatorSet.FindValidatorByKey(msg.Message.KeyTag, g1.Marshal())
+	validator, found := validatorSet.FindValidatorByKey(msg.Message.Request.KeyTag, g1.Marshal())
 	if !found {
 		return errors.Errorf("validator not found for public key: %x", msg.Message.PublicKey)
 	}
@@ -111,8 +111,8 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 	proofData, err := proof.DoProve(proof.RawProveInput{
 		SignerValidators: current.validators,
 		AllValidators:    validatorSet.Validators,
-		RequiredKeyTag:   msg.Message.KeyTag,
-		Message:          msg.Message.MessageHash,
+		RequiredKeyTag:   msg.Message.Request.KeyTag,
+		Message:          msg.Message.Request.Message,
 		Signature:        *current.aggSignature,
 		SignersAggKeyG2:  *current.aggPublicKeyG2,
 	})
@@ -124,11 +124,15 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		"duration", time.Since(start).String(),
 	)
 	err = s.cfg.P2PClient.BroadcastSignatureAggregatedMessage(ctx, entity.SignaturesAggregatedMessage{
+		Request:     msg.Message.Request,
 		PublicKeyG1: current.aggPublicKeyG1,
-		Proof:       proofData.Marshall(),
-		Message:     msg.Message.MessageHash,
-		HashType:    msg.Message.HashType,
-		Epoch:       msg.Message.Epoch,
+
+		Proof: entity.AggregationProof{
+			VerificationType: entity.VerificationTypeZK, //todo ilya which type to use?
+			MessageHash:      msg.Message.Request.Message,
+			Proof:            proofData.Marshall(),
+		},
+		HashType: msg.Message.HashType,
 	})
 	if err != nil {
 		return errors.Errorf("failed to broadcast signature aggregated message: %w", err)

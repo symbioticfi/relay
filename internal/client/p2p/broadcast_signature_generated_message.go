@@ -12,12 +12,14 @@ import (
 
 func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureHashMessage) error {
 	dto := signatureGeneratedDTO{
-		MessageHash: msg.MessageHash,
-		Signature:   msg.Signature,
-		PublicKey:   msg.PublicKey,
-		KeyTag:      uint8(msg.KeyTag),
-		HashType:    string(msg.HashType),
-		Epoch:       msg.Epoch,
+		Request: signatureRequestDTO{
+			KeyTag:        uint8(msg.Request.KeyTag),
+			RequiredEpoch: msg.Request.RequiredEpoch,
+			MessageHash:   msg.Request.Message,
+		},
+		Signature: msg.Signature,
+		PublicKey: msg.PublicKey,
+		HashType:  string(msg.HashType),
 	}
 
 	data, err := json.Marshal(dto)
@@ -41,12 +43,15 @@ func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg en
 	return s.broadcast(ctx, entity.P2PMessageTypeSignatureHash, data)
 }
 
+type signatureRequestDTO struct {
+	KeyTag        uint8  `json:"key_tag"`
+	RequiredEpoch uint64 `json:"required_epoch"`
+	MessageHash   []byte `json:"message_hash"`
+}
 type signatureGeneratedDTO struct {
-	MessageHash           []byte `json:"message_hash"`
-	Signature             []byte `json:"signature"`
-	PublicKey             []byte `json:"public_key"`
-	KeyTag                uint8  `json:"key_tag"`
-	HashType              string `json:"hash_type"`
-	ValsetHeaderTimestamp uint64 `json:"valset_header_timestamp"`
-	Epoch                 uint64 `json:"epoch"`
+	Request               signatureRequestDTO `json:"request"`
+	Signature             []byte              `json:"signature"`
+	PublicKey             []byte              `json:"public_key"`
+	HashType              string              `json:"hash_type"`
+	ValsetHeaderTimestamp uint64              `json:"valset_header_timestamp"`
 }

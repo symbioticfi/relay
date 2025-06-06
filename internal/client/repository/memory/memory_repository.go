@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
-	"github.com/samber/mo"
 
 	"middleware-offchain/internal/entity"
 )
@@ -91,17 +90,17 @@ func (r *Repository) GetLatestSignedValset(_ context.Context) (entity.ValidatorS
 	return latestSignedExtra, nil
 }
 
-// todo ilya get rid of mo.Option in favor of returning error
-func (r *Repository) GetSignatureRequest(_ context.Context, req entity.SignatureRequest) (mo.Option[entity.SignatureRequest], error) {
+func (r *Repository) GetSignatureRequest(_ context.Context, req entity.SignatureRequest) (entity.SignatureRequest, error) {
 	hash := signRequestHash(req)
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if existingReq, exists := r.signRequests[hash]; exists {
-		return mo.Some(existingReq), nil
+	existingReq, exists := r.signRequests[hash]
+	if !exists {
+		return entity.SignatureRequest{}, errors.New(entity.ErrEntityNotFound)
 	}
 
-	return mo.None[entity.SignatureRequest](), nil
+	return existingReq, nil
 }
 
 func (r *Repository) SaveSignatureRequest(_ context.Context, req entity.SignatureRequest) error {
@@ -114,16 +113,32 @@ func (r *Repository) SaveSignatureRequest(_ context.Context, req entity.Signatur
 	return nil
 }
 
-func (r *Repository) GetAggregationProof(ctx context.Context, req entity.SignatureRequest) (mo.Option[entity.AggregationProof], error) {
+func (r *Repository) GetAggregationProof(ctx context.Context, req entity.SignatureRequest) (entity.AggregationProof, error) {
+	hash := signRequestHash(req)
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	proof, exists := r.aggProofs[hash]
+	if exists {
+		return proof, nil
+	}
+
+	return entity.AggregationProof{}, errors.New(entity.ErrEntityNotFound)
+}
+
+func (r *Repository) SaveAggregationProof(ctx context.Context, req entity.SignatureRequest, ap entity.AggregationProof) error {
 	hash := signRequestHash(req)
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if proof, exists := r.aggProofs[hash]; exists {
-		return mo.Some(proof), nil
+	if _, exists := r.aggProofs[hash]; exists {
+		return errors.Errorf("aggregation proof for this request already exists: %w", entity.ErrEntityAlreadyExist)
 	}
 
-	return mo.None[entity.AggregationProof](), nil
+	r.aggProofs[hash] = ap
+
+	return nil
 }
 
 func (r *Repository) GetValsetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error) {

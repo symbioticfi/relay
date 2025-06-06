@@ -19,20 +19,17 @@ const (
 )
 
 type SignatureHashMessage struct {
-	MessageHash []byte
-	Signature   []byte
-	PublicKey   []byte
-	KeyTag      KeyTag
-	HashType    HashType
-	Epoch       uint64
+	Request   SignatureRequest
+	Signature []byte
+	PublicKey []byte
+	HashType  HashType
 }
 
 type SignaturesAggregatedMessage struct {
+	Request     SignatureRequest
+	Proof       AggregationProof
 	PublicKeyG1 *bls.G1
-	Proof       []byte
-	Message     []byte
 	HashType    HashType
-	Epoch       uint64
 }
 
 type SenderInfo struct {

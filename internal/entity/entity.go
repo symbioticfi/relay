@@ -11,9 +11,9 @@ func (e StringError) Error() string {
 }
 
 const (
-	ErrEntityNotFound         = StringError("entity not found")
-	ErrPhaseNotCommit         = StringError("phase is not commit")
-	ErrSignatureRequestExists = StringError("signature request already exists")
+	ErrEntityNotFound     = StringError("entity not found")
+	ErrEntityAlreadyExist = StringError("entity already exists")
+	ErrPhaseNotCommit     = StringError("phase is not commit")
 )
 
 const ValsetHeaderKeyTag = KeyTag(15)
@@ -42,9 +42,9 @@ type AggregationState struct {
 
 // AggregationProof aggregator.proof(signatures []Signature) -> AggregationProof
 type AggregationProof struct {
-	VerificationType uint32 // proof verification type
-	MessageHash      []byte // scheme depends on KeyTag
-	Proof            []byte // parse based on KeyTag & VerificationType
+	VerificationType VerificationType // proof verification type
+	MessageHash      []byte           // scheme depends on KeyTag
+	Proof            []byte           // parse based on KeyTag & VerificationType
 }
 
 type AggregatedSignatureMessage struct {
@@ -54,9 +54,11 @@ type AggregatedSignatureMessage struct {
 	AggregationProof AggregationProof
 }
 
+type VerificationType uint32
+
 const (
-	ZkVerificationType     = 0
-	SimpleVerificationType = 1
+	VerificationTypeZK     VerificationType = 0
+	VerificationTypeSimple VerificationType = 1
 )
 
 const (
@@ -73,9 +75,4 @@ const (
 	SimpleVerificationValidatorSetHashKeccak256 = "validatorSetHashKeccak256"
 	SimpleVerificationTotalVotingPower          = "totalVotingPower"
 	SimpleVerificationAggPublicKeyG1            = "aggPublicKeyG1"
-)
-
-var (
-	QuorumThresholdBase       = big.NewInt(1e18)
-	QuorumThresholdPercentage = big.NewInt(666666666666666667)
 )
