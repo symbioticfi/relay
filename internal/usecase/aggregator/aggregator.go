@@ -206,7 +206,7 @@ func (a *Aggregator) simpleAggregate(
 
 	sort.Slice(validatorsData, func(i, j int) bool {
 		// Compare keys (lower first)
-		return validatorsData[i].G1PubKey.X.Cmp(validatorsData[j].G1PubKey.X) > 0 || validatorsData[i].G1PubKey.Y.Cmp(validatorsData[j].G1PubKey.Y) > 0
+		return validatorsData[i].G1PubKey.X.Cmp(validatorsData[j].G1PubKey.X) < 0 || validatorsData[i].G1PubKey.Y.Cmp(validatorsData[j].G1PubKey.Y) < 0
 	})
 
 	for _, val := range validatorsData {
@@ -377,7 +377,7 @@ func (a *Aggregator) simpleVerify(
 	}
 
 	validatorsDataType, err := abi.NewType("tuple[]", "", []abi.ArgumentMarshaling{
-		{Name: "g1PubKey", Type: "tuple", Components: []abi.ArgumentMarshaling{
+		{Name: "G1PubKey", Type: "tuple", Components: []abi.ArgumentMarshaling{
 			{Name: "X", Type: "uint256"},
 			{Name: "Y", Type: "uint256"},
 		}},
@@ -416,40 +416,49 @@ func (a *Aggregator) simpleVerify(
 		},
 	}
 
+	fmt.Println("Here")
+
 	offset := 0
-
-	aggG1SigTuple, err := g1PointAbiArgs.Unpack(aggregationProof.Proof[offset:])
+	length := 64
+	aggG1SigTuple, err := g1PointAbiArgs.Unpack(aggregationProof.Proof[offset : offset+length])
 	if err != nil {
 		return false, err
 	}
-	offset += 64
+	offset += length
 
-	aggG2KeyTuple, err := g2PointAbiArgs.Unpack(aggregationProof.Proof[offset:])
+	length = 128
+	aggG2KeyTuple, err := g2PointAbiArgs.Unpack(aggregationProof.Proof[offset : offset+length])
 	if err != nil {
 		return false, err
 	}
-	offset += 128
+	offset += length
 
-	validatorsDataRaw, err := validatorsDataAbiArgs.Unpack(aggregationProof.Proof[offset:])
+	lengthBig := new(big.Int).SetBytes(aggregationProof.Proof[offset+32 : offset+64])
+	length = 64 + 96*int(lengthBig.Int64())
+	validatorsDataRaw, err := validatorsDataAbiArgs.Unpack(aggregationProof.Proof[offset : offset+length])
 	if err != nil {
 		return false, err
 	}
-	offset += 64 + len(validatorsDataRaw)*96
+	offset += length
 
 	isNonSignersRaw, err := isNonSignersAbiArgs.Unpack(aggregationProof.Proof[offset:])
 	if err != nil {
 		return false, err
 	}
 
-	type dtoG1Point struct {
-		X *big.Int
-		Y *big.Int
-	}
-	type dtoValidatorData struct {
-		G1PubKey    dtoG1Point
+	type ValidatorData struct {
+		G1PubKey struct {
+			X *big.Int
+			Y *big.Int
+		}
 		VotingPower *big.Int
 	}
-	validatorsData := validatorsDataRaw[0].([]dtoValidatorData)
+
+	validatorsData := make([]ValidatorData, 0)
+	for _, val := range validatorsDataRaw[0].([]any) {
+		validatorsData = append(validatorsData, val.(ValidatorData))
+	}
+
 	isNonSigners := isNonSignersRaw[0].([]bool)
 
 	aggG1SigData := aggG1SigTuple[0].(struct {
@@ -481,6 +490,10 @@ func (a *Aggregator) simpleVerify(
 			valsetSorted = append(valsetSorted, val)
 		}
 	}
+	if len(valsetSorted) != len(validatorsData) {
+		return false, fmt.Errorf("active validators mismatch")
+	}
+
 	sort.Slice(valsetSorted, func(i, j int) bool {
 		keyBytes1, ok := valsetSorted[i].FindKeyByKeyTag(keyTag)
 		if !ok {
@@ -502,33 +515,23 @@ func (a *Aggregator) simpleVerify(
 	})
 
 	aggPubKeyG1 := new(bn254.G1Affine)
-	idx := 0
-	for _, val := range valset.Validators {
-		if val.IsActive {
-			if idx >= len(validatorsData) {
-				return false, fmt.Errorf("validator mismatch: not enough validators in proof")
-			}
-			keyBytes, ok := val.FindKeyByKeyTag(keyTag)
-			if !ok {
-				return false, fmt.Errorf("keyTag not found for validator %s", val.Operator.Hex())
-			}
-			g1Key, err := bls.DeserializeG1(keyBytes)
-			if err != nil {
-				return false, fmt.Errorf("failed to deserialize G1 key from valset: %w", err)
-			}
-			if g1Key.X.BigInt(new(big.Int)).Cmp(validatorsData[idx].G1PubKey.X) != 0 ||
-				g1Key.Y.BigInt(new(big.Int)).Cmp(validatorsData[idx].G1PubKey.Y) != 0 {
-				return false, fmt.Errorf("mismatch in validator G1 pubkey for val %s", val.Operator.Hex())
-			}
-			if val.VotingPower.Cmp(validatorsData[idx].VotingPower) != 0 {
-				return false, fmt.Errorf("voting power mismatch for val %s", val.Operator.Hex())
-			}
-			aggPubKeyG1 = new(bn254.G1Affine).Add(aggPubKeyG1, g1Key.G1Affine)
-			idx++
+	for i, val := range valsetSorted {
+		keyBytes, ok := val.FindKeyByKeyTag(keyTag)
+		if !ok {
+			return false, fmt.Errorf("keyTag not found for validator %s", val.Operator.Hex())
 		}
-	}
-	if idx != len(validatorsData) {
-		return false, fmt.Errorf("proof has more active validators than valset")
+		g1Key, err := bls.DeserializeG1(keyBytes)
+		if err != nil {
+			return false, fmt.Errorf("failed to deserialize G1 key from valset: %w", err)
+		}
+		if g1Key.X.BigInt(new(big.Int)).Cmp(validatorsData[i].G1PubKey.X) != 0 ||
+			g1Key.Y.BigInt(new(big.Int)).Cmp(validatorsData[i].G1PubKey.Y) != 0 {
+			return false, fmt.Errorf("mismatch in validator G1 pubkey for val %s", val.Operator.Hex())
+		}
+		if val.VotingPower.Cmp(validatorsData[i].VotingPower) != 0 {
+			return false, fmt.Errorf("voting power mismatch for val %s", val.Operator.Hex())
+		}
+		aggPubKeyG1 = new(bn254.G1Affine).Add(aggPubKeyG1, g1Key.G1Affine)
 	}
 
 	var nonSignersVotingPower, totalVotingPower big.Int
@@ -586,7 +589,6 @@ func (a *Aggregator) simpleVerify(
 	)
 	alpha = alpha.Mod(alpha, bls.FrModulus)
 
-	// Get the G2 generator
 	_, _, g1, g2 := bn254.Generators()
 	negG2 := new(bn254.G2Affine).Neg(&g2)
 
