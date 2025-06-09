@@ -9,7 +9,6 @@ import (
 	"github.com/samber/lo"
 
 	"middleware-offchain/internal/entity"
-	"middleware-offchain/pkg/bls"
 )
 
 type hashStore struct {
@@ -29,11 +28,8 @@ func newHashStore() *hashStore {
 }
 
 type currentValues struct {
-	votingPower    *big.Int
-	aggSignature   *bls.G1
-	aggPublicKeyG1 *bls.G1
-	aggPublicKeyG2 *bls.G2
-	validators     []entity.Validator
+	votingPower *big.Int
+	validators  []entity.Validator
 }
 
 func (h *hashStore) PutHash(msg entity.Signature, val entity.Validator) (currentValues, error) {
@@ -54,31 +50,12 @@ func (h *hashStore) PutHash(msg entity.Signature, val entity.Validator) (current
 	}
 
 	totalVotingPower := new(big.Int)
-	aggSignature := bls.ZeroG1()
-	aggPublicKeyG1 := bls.ZeroG1()
-	aggPublicKeyG2 := bls.ZeroG2()
 	for _, validator := range validators {
 		totalVotingPower = totalVotingPower.Add(totalVotingPower, validator.validator.VotingPower)
-		signature, err := bls.DeserializeG1(validator.signatureMessage.Signature)
-		if err != nil {
-			return currentValues{}, errors.Errorf("failed to deserialize signature: %w", err)
-		}
-
-		publicKeyG1, publicKeyG2, err := bls.UnpackPublicG1G2(validator.signatureMessage.PublicKey)
-		if err != nil {
-			return currentValues{}, errors.Errorf("failed to unpack public key G1 and G2: %w", err)
-		}
-
-		aggSignature = aggSignature.Add(signature)
-		aggPublicKeyG1 = aggPublicKeyG1.Add(&publicKeyG1)
-		aggPublicKeyG2 = aggPublicKeyG2.Add(&publicKeyG2)
 	}
 
 	return currentValues{
-		votingPower:    totalVotingPower,
-		aggSignature:   aggSignature,
-		aggPublicKeyG1: aggPublicKeyG1,
-		aggPublicKeyG2: aggPublicKeyG2,
+		votingPower: totalVotingPower,
 		validators: lo.Map(lo.Values(validators), func(v hashWithValidator, _ int) entity.Validator {
 			return v.validator
 		}),

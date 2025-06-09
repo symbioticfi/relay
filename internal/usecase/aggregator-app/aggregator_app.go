@@ -124,9 +124,6 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 			"currentVotingPower", current.votingPower,
 			"quorumThreshold", validatorSet.QuorumThreshold,
 			"totalActiveVotingPower", validatorSet.GetTotalActiveVotingPower(),
-			"aggSignature", current.aggSignature,
-			"aggPublicKeyG1", current.aggPublicKeyG1,
-			"aggPublicKeyG2", current.aggPublicKeyG2,
 		)
 		return nil
 	}
