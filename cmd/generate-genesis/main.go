@@ -14,8 +14,10 @@ import (
 
 	"middleware-offchain/internal/client/symbiotic"
 	"middleware-offchain/internal/entity"
+	"middleware-offchain/internal/usecase/aggregator"
 	valsetDeriver "middleware-offchain/internal/usecase/valset-deriver"
 	"middleware-offchain/pkg/log"
+	"middleware-offchain/pkg/proof"
 )
 
 // generate_genesis --master-address 0x1f5fE7682E49c20289C20a4cFc8b45d5EB410690 --rpc-url http://127.0.0.1:8545
@@ -106,8 +108,10 @@ var rootCmd = &cobra.Command{
 
 		slog.Info("Valset header generated!")
 
+		aggregator := aggregator.NewAggregator(proof.NewZkProver())
+
 		// extra data generation is also clear but still in deriver
-		extraData, err := deriver.GenerateExtraData(newValset, networkConfig)
+		extraData, err := aggregator.GenerateExtraData(newValset, networkConfig)
 		if err != nil {
 			return errors.Errorf("failed to generate extra data: %w", err)
 		}

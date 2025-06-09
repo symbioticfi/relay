@@ -194,6 +194,7 @@ var rootCmd = &cobra.Command{
 			Eth:             ethClient,
 			Repo:            repo,
 			Deriver:         deriver,
+			Aggregator:      aggregator,
 			PollingInterval: time.Second * 5,
 			IsCommitter:     cfg.isCommitter,
 		})
