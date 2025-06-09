@@ -225,7 +225,7 @@ func (v *Deriver) formValidators(
 
 		// Sort vaults by address in ascending order
 		sort.Slice(validatorsMap[operatorAddr].Vaults, func(i, j int) bool {
-			// Compare voting powers (higher first)
+			// Compare voting powers (lower first)
 			return validatorsMap[operatorAddr].Vaults[i].Vault.Cmp(validatorsMap[operatorAddr].Vaults[j].Vault) < 0
 		})
 	}
@@ -287,7 +287,7 @@ func (v *Deriver) formValidators(
 
 	// Sort validators by address in ascending order
 	sort.Slice(validators, func(i, j int) bool {
-		// Compare voting powers (higher first)
+		// Compare voting powers (lower first)
 		return validators[i].Operator.Cmp(validators[j].Operator) < 0
 	})
 	return validators, totalActiveVotingPower
@@ -555,7 +555,7 @@ func CalcKeccakAccumulator(validators []entity.Validator, requiredKeyTag entity.
 
 	sort.Slice(validatorsData, func(i, j int) bool {
 		// Compare keys (lower first)
-		return validatorsData[i].X.Cmp(validatorsData[j].X) > 0 || validatorsData[i].Y.Cmp(validatorsData[j].Y) > 0
+		return validatorsData[i].X.Cmp(validatorsData[j].X) < 0 || validatorsData[i].Y.Cmp(validatorsData[j].Y) < 0
 	})
 
 	packed, err := args.Pack(validatorsData)
