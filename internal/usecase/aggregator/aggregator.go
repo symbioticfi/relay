@@ -198,11 +198,10 @@ func (a *Aggregator) simpleAggregate(
 				VotingPower: val.VotingPower,
 				isNonSigner: !isSinger,
 			})
-
 		}
 	}
 
-	var isNonSigners []bool
+	isNonSigners := make([]bool, 0, len(validatorsData))
 
 	sort.Slice(validatorsData, func(i, j int) bool {
 		// Compare keys (lower first)
@@ -447,7 +446,7 @@ func (a *Aggregator) simpleVerify(
 	offset += length
 
 	if offset != len(aggregationProof.Proof) {
-		return false, fmt.Errorf("length mismatch")
+		return false, errors.Errorf("length mismatch in aggregation proof unpacking: expected %d, got %d", len(aggregationProof.Proof), offset)
 	}
 
 	validatorsData := validatorsDataRaw[0].([]struct {
@@ -486,7 +485,7 @@ func (a *Aggregator) simpleVerify(
 		}
 	}
 	if len(valsetSorted) != len(validatorsData) {
-		return false, fmt.Errorf("active validators length mismatch")
+		return false, errors.Errorf("active validators length mismatch: got %d, expected %d", len(valsetSorted), len(validatorsData))
 	}
 
 	sort.Slice(valsetSorted, func(i, j int) bool {
@@ -535,7 +534,7 @@ func (a *Aggregator) simpleVerify(
 	}
 
 	if signersVotingPower.Cmp(valset.QuorumThreshold) < 0 {
-		return false, fmt.Errorf("signers do not meet threshold voting power")
+		return false, errors.Errorf("signers do not meet threshold voting power (%s < %s)", signersVotingPower.String(), valset.QuorumThreshold.String())
 	}
 
 	if len(aggregationProof.MessageHash) != 32 {
@@ -582,13 +581,13 @@ func (a *Aggregator) simpleVerify(
 	_, _, g1, g2 := bn254.Generators()
 	negG2 := new(bn254.G2Affine).Neg(&g2)
 
-	P := [2]bn254.G1Affine{
+	p := [2]bn254.G1Affine{
 		*new(bn254.G1Affine).Add(aggSig, new(bn254.G1Affine).ScalarMultiplication(aggPubKeyG1, alpha)),
 		*new(bn254.G1Affine).Add(messageHashG1.G1Affine, new(bn254.G1Affine).ScalarMultiplication(&g1, alpha)),
 	}
-	Q := [2]bn254.G2Affine{*negG2, *aggPubKeyG2}
+	q := [2]bn254.G2Affine{*negG2, *aggPubKeyG2}
 
-	ok, err := bn254.PairingCheck(P[:], Q[:])
+	ok, err := bn254.PairingCheck(p[:], q[:])
 	if err != nil {
 		return false, errors.Errorf("pairing check failed: %w", err)
 	}

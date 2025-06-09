@@ -511,7 +511,6 @@ func (v *Deriver) getAggregatedPubKeys(
 }
 
 func CalcKeccakAccumulator(validators []entity.Validator, requiredKeyTag entity.KeyTag) ([32]byte, error) {
-
 	type validatorDataTuple struct {
 		X, Y, VotingPower *big.Int
 	}

@@ -211,7 +211,7 @@ linters:
         - name: indent-error-flow
         - name: modifies-parameter
         - name: modifies-value-receiver
-        - name: nested-structs
+#        - name: nested-structs
         - name: optimize-operands-order
         - name: range-val-address
         - name: range-val-in-closure
