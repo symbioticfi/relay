@@ -1,0 +1,26 @@
+version: 2
+updates:
+
+  # Enable version updates for docker
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    target-branch: "dev"
+  
+  # Enable version updates for go
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    target-branch: "dev"
+
+  # Enable version updates for github-actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    target-branch: "dev"

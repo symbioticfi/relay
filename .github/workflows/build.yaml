@@ -1,0 +1,36 @@
+---
+name: Build
+on:
+  workflow_call:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pin@v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # pin@5.5.0
+        with:
+          go-version: 1.24.3
+
+      - name: Build generate-genesis-linux
+        run: make build-generate-genesis-linux
+      - name: Upload artifact linux_amd64
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pin@4.6.2
+        with:
+          name: generate_genesis_linux_amd64
+          path: generate_genesis_linux_amd64
+
+      - name: Build generate-genesis-mac
+        run: make build-generate-genesis-mac
+      - name: Upload artifact darwin_arm64
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pin@4.6.2
+        with:
+          name: generate_genesis_darwin_arm64
+          path: generate_genesis_darwin_arm64

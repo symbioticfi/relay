@@ -1,0 +1,58 @@
+---
+name: Release
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  tests:
+    name: Tests
+    uses: ./.github/workflows/tests.yaml
+  build:
+    needs: 
+      - tests
+    name: Build
+    uses: ./.github/workflows/build.yaml
+  release:
+    name: Release
+    needs: 
+      - tests
+      - build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pin@v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Get previous tag
+        id: get_previous_tag
+        run: |
+          echo "tag=$(git describe --tags --abbrev=0 HEAD^)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          echo "Generating changelog between ${{ steps.get_previous_tag.outputs.tag }} and ${{ github.ref_name }}"
+          git log ${{ steps.get_previous_tag.outputs.tag }}..${{ github.ref_name }} --pretty=format:"- %s (%an)" > CHANGELOG.md
+          cat CHANGELOG.md
+
+      - name: Download artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # pin@4.3.0
+        with:
+          pattern: generate_genesis_*
+          merge-multiple: true
+      
+      - name: Release
+        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # pin@2.2.2
+        with:
+          draft: true
+          body_path: CHANGELOG.md
+          files: |
+            generate_genesis_linux_amd64
+            generate_genesis_darwin_arm64

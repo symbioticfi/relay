@@ -1,0 +1,31 @@
+
+
+# Ignore build outputs
+dist
+out
+
+# Ignore environment files
+.env
+.env.*
+
+# Ignore Docker-related files
+Dockerfile
+docker-compose.yml
+
+# Ignore version control files
+.git
+.gitignore
+
+# Ignore editor and OS-specific files
+*.swp
+*.DS_Store
+Thumbs.db
+
+test/circuits
+pkg/proof/circuits
+internal/app/aggregator-app/circuits
+internal/client/valset/circuits
+
+# Ignore IDE-specific files
+.idea/
+.vscode/
