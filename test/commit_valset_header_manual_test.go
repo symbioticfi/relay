@@ -58,7 +58,7 @@ package test
 //
 //	aggPublicKeyG1 := bls.ZeroG1()
 //	for _, keyPair := range svc.keyPairs {
-//		aggPublicKeyG1 = aggPublicKeyG1.Add(&keyPair.PublicKeyG1)
+//		aggPublicKeyG1 = aggPublicKeyG1.Add(&keyPair.PublicKey)
 //	}
 //
 //	aggPublicKeyG2 := bls.ZeroG2()

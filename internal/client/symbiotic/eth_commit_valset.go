@@ -15,7 +15,7 @@ import (
 	"middleware-offchain/internal/entity"
 )
 
-func (e *Client) CommitValsetHeader(ctx context.Context, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof, hint []byte) (entity.CommitValsetHeaderResult, error) {
+func (e *Client) CommitValsetHeader(ctx context.Context, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) (entity.CommitValsetHeaderResult, error) {
 	if e.masterPK == nil {
 		return entity.CommitValsetHeaderResult{}, errors.New("master private key is not set")
 	}
@@ -30,9 +30,9 @@ func (e *Client) CommitValsetHeader(ctx context.Context, header entity.Validator
 
 	headerDTO := gen.ISettlementValSetHeader{
 		Version:            header.Version,
-		RequiredKeyTag:     header.RequiredKeyTag,
-		Epoch:              header.Epoch,
-		CaptureTimestamp:   header.CaptureTimestamp,
+		RequiredKeyTag:     uint8(header.RequiredKeyTag),
+		Epoch:              new(big.Int).SetUint64(header.Epoch),
+		CaptureTimestamp:   new(big.Int).SetUint64(header.CaptureTimestamp),
 		QuorumThreshold:    header.QuorumThreshold,
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot,
 		PreviousHeaderHash: header.PreviousHeaderHash,
@@ -44,7 +44,7 @@ func (e *Client) CommitValsetHeader(ctx context.Context, header entity.Validator
 		extraDataDTO[i].Value = extraData.Value
 	}
 
-	tx, err := e.master.CommitValSetHeader(txOpts, headerDTO, extraDataDTO, proof, hint)
+	tx, err := e.master.CommitValSetHeader(txOpts, headerDTO, extraDataDTO, proof, []byte{})
 	if err != nil {
 		return entity.CommitValsetHeaderResult{}, e.formatEthError(err)
 	}

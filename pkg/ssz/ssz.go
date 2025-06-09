@@ -3,10 +3,10 @@
 package ssz
 
 import (
-	"fmt"
 	"sort"
 
 	ssz "github.com/ferranbt/fastssz"
+	"github.com/go-errors/errors"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -506,7 +506,7 @@ func (v *SszValidatorSet) ProveValidatorRoot(operator common.Address) (*SszValid
 		return v.Validators[i].Operator.Cmp(operator) >= 0
 	})
 	if validatorIndex >= len(v.Validators) || v.Validators[validatorIndex].Operator.Cmp(operator) != 0 {
-		return nil, 0, nil, fmt.Errorf("validator %s not found", operator)
+		return nil, 0, nil, errors.Errorf("validator %s not found", operator)
 	}
 
 	// go to SszValidatorSet.Validators
@@ -522,12 +522,12 @@ func (v *SszValidatorSet) ProveValidatorRoot(operator common.Address) (*SszValid
 
 	validatorSetRootNode, err := v.GetTree()
 	if err != nil {
-		return nil, 0, nil, fmt.Errorf("failed to get validator set root node: %w", err)
+		return nil, 0, nil, errors.Errorf("failed to get validator set root node: %w", err)
 	}
 
 	validatorRootProof, err := validatorSetRootNode.Prove(validatorRootTreeIndex)
 	if err != nil {
-		return nil, 0, nil, fmt.Errorf("failed to get validator root proof: %w", err)
+		return nil, 0, nil, errors.Errorf("failed to get validator root proof: %w", err)
 	}
 
 	return v.Validators[validatorIndex], validatorRootTreeLocalIndex, validatorRootProof, nil
@@ -536,7 +536,7 @@ func (v *SszValidatorSet) ProveValidatorRoot(operator common.Address) (*SszValid
 func (v *SszValidator) ProveOperator() (*ssz.Proof, error) {
 	validatorRootNode, err := v.GetTree()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get validator root node: %w", err)
+		return nil, errors.Errorf("failed to get validator root node: %w", err)
 	}
 
 	// go to Validator.Operator
@@ -544,7 +544,7 @@ func (v *SszValidator) ProveOperator() (*ssz.Proof, error) {
 
 	operatorProof, err := validatorRootNode.Prove(operatorTreeIndex)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get operator proof: %w", err)
+		return nil, errors.Errorf("failed to get operator proof: %w", err)
 	}
 
 	return operatorProof, nil
@@ -553,7 +553,7 @@ func (v *SszValidator) ProveOperator() (*ssz.Proof, error) {
 func (v *SszValidator) ProveValidatorVotingPower() (*ssz.Proof, error) {
 	validatorRootNode, err := v.GetTree()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get validator root node: %w", err)
+		return nil, errors.Errorf("failed to get validator root node: %w", err)
 	}
 
 	// go to Validator.VotingPower
@@ -561,7 +561,7 @@ func (v *SszValidator) ProveValidatorVotingPower() (*ssz.Proof, error) {
 
 	validatorVotingPowerProof, err := validatorRootNode.Prove(validatorVotingPowerTreeIndex)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get validator voting power proof: %w", err)
+		return nil, errors.Errorf("failed to get validator voting power proof: %w", err)
 	}
 
 	return validatorVotingPowerProof, nil
@@ -570,7 +570,7 @@ func (v *SszValidator) ProveValidatorVotingPower() (*ssz.Proof, error) {
 func (v *SszValidator) ProveIsActive() (*ssz.Proof, error) {
 	validatorRootNode, err := v.GetTree()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get validator root node: %w", err)
+		return nil, errors.Errorf("failed to get validator root node: %w", err)
 	}
 
 	// go to Validator.IsActive
@@ -578,7 +578,7 @@ func (v *SszValidator) ProveIsActive() (*ssz.Proof, error) {
 
 	isActiveProof, err := validatorRootNode.Prove(isActiveTreeIndex)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get validator is active proof: %w", err)
+		return nil, errors.Errorf("failed to get validator is active proof: %w", err)
 	}
 
 	return isActiveProof, nil
@@ -589,12 +589,12 @@ func (v *SszValidator) ProveKeyRoot(keyTag uint8) (*SszKey, int, *ssz.Proof, err
 		return v.Keys[i].Tag >= keyTag
 	})
 	if keyIndex >= len(v.Keys) || v.Keys[keyIndex].Tag != keyTag {
-		return nil, 0, nil, fmt.Errorf("SszKey %d not found", keyTag)
+		return nil, 0, nil, errors.Errorf("SszKey %d not found", keyTag)
 	}
 
 	validatorRootNode, err := v.GetTree()
 	if err != nil {
-		return nil, 0, nil, fmt.Errorf("failed to get validator root node: %w", err)
+		return nil, 0, nil, errors.Errorf("failed to get validator root node: %w", err)
 	}
 
 	// go to Validator.Keys
@@ -610,7 +610,7 @@ func (v *SszValidator) ProveKeyRoot(keyTag uint8) (*SszKey, int, *ssz.Proof, err
 
 	keyRootProof, err := validatorRootNode.Prove(keyRootTreeIndex)
 	if err != nil {
-		return nil, 0, nil, fmt.Errorf("failed to get validator keys proof: %w", err)
+		return nil, 0, nil, errors.Errorf("failed to get validator keys proof: %w", err)
 	}
 
 	return v.Keys[keyIndex], keyRootTreeLocalIndex, keyRootProof, nil
@@ -619,7 +619,7 @@ func (v *SszValidator) ProveKeyRoot(keyTag uint8) (*SszKey, int, *ssz.Proof, err
 func (k *SszKey) ProveTag() (*ssz.Proof, error) {
 	keyRootNode, err := k.GetTree()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get SszKey root node: %w", err)
+		return nil, errors.Errorf("failed to get SszKey root node: %w", err)
 	}
 
 	// go to Key.Tag
@@ -627,7 +627,7 @@ func (k *SszKey) ProveTag() (*ssz.Proof, error) {
 
 	tagProof, err := keyRootNode.Prove(tagTreeIndex)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get SszKey tag proof: %w", err)
+		return nil, errors.Errorf("failed to get SszKey tag proof: %w", err)
 	}
 
 	return tagProof, nil
@@ -636,7 +636,7 @@ func (k *SszKey) ProveTag() (*ssz.Proof, error) {
 func (k *SszKey) ProvePayloadHash() (*ssz.Proof, error) {
 	keyRootNode, err := k.GetTree()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get SszKey root node: %w", err)
+		return nil, errors.Errorf("failed to get SszKey root node: %w", err)
 	}
 
 	// go to Key.PayloadHash
@@ -644,7 +644,7 @@ func (k *SszKey) ProvePayloadHash() (*ssz.Proof, error) {
 
 	payloadHashProof, err := keyRootNode.Prove(payloadHashTreeIndex)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get SszKey payload hash proof: %w", err)
+		return nil, errors.Errorf("failed to get SszKey payload hash proof: %w", err)
 	}
 
 	return payloadHashProof, nil
@@ -655,12 +655,12 @@ func (v *SszValidator) ProveVaultRoot(vault common.Address) (*SszVault, int, *ss
 		return v.Vaults[i].Vault.Cmp(vault) >= 0
 	})
 	if vaultIndex >= len(v.Vaults) || v.Vaults[vaultIndex].Vault.Cmp(vault) != 0 {
-		return nil, 0, nil, fmt.Errorf("vault %s not found", vault)
+		return nil, 0, nil, errors.Errorf("vault %s not found", vault)
 	}
 
 	validatorRootNode, err := v.GetTree()
 	if err != nil {
-		return nil, 0, nil, fmt.Errorf("failed to get validator root node: %w", err)
+		return nil, 0, nil, errors.Errorf("failed to get validator root node: %w", err)
 	}
 
 	// go to Validator.Vaults
@@ -676,7 +676,7 @@ func (v *SszValidator) ProveVaultRoot(vault common.Address) (*SszVault, int, *ss
 
 	vaultRootProof, err := validatorRootNode.Prove(vaultRootTreeIndex)
 	if err != nil {
-		return nil, 0, nil, fmt.Errorf("failed to get validator vaults proof: %w", err)
+		return nil, 0, nil, errors.Errorf("failed to get validator vaults proof: %w", err)
 	}
 
 	return v.Vaults[vaultIndex], vaultRootTreeLocalIndex, vaultRootProof, nil
@@ -685,7 +685,7 @@ func (v *SszValidator) ProveVaultRoot(vault common.Address) (*SszVault, int, *ss
 func (v *SszValidator) ProveChainId() (*ssz.Proof, error) {
 	validatorRootNode, err := v.GetTree()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get validator root node: %w", err)
+		return nil, errors.Errorf("failed to get validator root node: %w", err)
 	}
 
 	// go to Validator.ChainId
@@ -693,7 +693,7 @@ func (v *SszValidator) ProveChainId() (*ssz.Proof, error) {
 
 	chainIdProof, err := validatorRootNode.Prove(chainIdTreeIndex)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get validator chain id proof: %w", err)
+		return nil, errors.Errorf("failed to get validator chain id proof: %w", err)
 	}
 
 	return chainIdProof, nil
@@ -702,7 +702,7 @@ func (v *SszValidator) ProveChainId() (*ssz.Proof, error) {
 func (v *SszValidator) ProveVault() (*ssz.Proof, error) {
 	vaultRootNode, err := v.GetTree()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get vault root node: %w", err)
+		return nil, errors.Errorf("failed to get vault root node: %w", err)
 	}
 
 	// go to OperatorVault.OperatorVault
@@ -710,7 +710,7 @@ func (v *SszValidator) ProveVault() (*ssz.Proof, error) {
 
 	vaultProof, err := vaultRootNode.Prove(vaultTreeIndex)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get vault proof: %w", err)
+		return nil, errors.Errorf("failed to get vault proof: %w", err)
 	}
 
 	return vaultProof, nil
@@ -719,7 +719,7 @@ func (v *SszValidator) ProveVault() (*ssz.Proof, error) {
 func (v *SszValidator) ProveVaultVotingPower() (*ssz.Proof, error) {
 	vaultRootNode, err := v.GetTree()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get vault root node: %w", err)
+		return nil, errors.Errorf("failed to get vault root node: %w", err)
 	}
 
 	// go to OperatorVault.VotingPower
@@ -727,7 +727,7 @@ func (v *SszValidator) ProveVaultVotingPower() (*ssz.Proof, error) {
 
 	vaultVotingPowerProof, err := vaultRootNode.Prove(vaultVotingPowerTreeIndex)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get vault voting power proof: %w", err)
+		return nil, errors.Errorf("failed to get vault voting power proof: %w", err)
 	}
 
 	return vaultVotingPowerProof, nil

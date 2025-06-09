@@ -3,7 +3,6 @@ package p2p
 import (
 	"context"
 	"encoding/json"
-	"math/big"
 	"time"
 
 	"github.com/go-errors/errors"
@@ -11,16 +10,16 @@ import (
 	"middleware-offchain/internal/entity"
 )
 
-func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureHashMessage) error {
+func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error {
 	dto := signatureGeneratedDTO{
-		MessageHash: msg.MessageHash,
-		Signature:   msg.Signature,
-		PublicKeyG1: msg.PublicKeyG1,
-		PublicKeyG2: msg.PublicKeyG2,
-		KeyTag:      msg.KeyTag,
-		HashType:    string(msg.HashType),
-		//ValsetHeaderTimestamp: msg.ValsetHeaderTimestamp, // todo ilya
-		Epoch: msg.Epoch,
+		RequestHash: msg.RequestHash,
+		KeyTag:      uint8(msg.KeyTag),
+		Epoch:       msg.Epoch,
+		Signature: signatureDTO{
+			MessageHash: msg.Signature.MessageHash,
+			PublicKey:   msg.Signature.PublicKey,
+			Signature:   msg.Signature.Signature,
+		},
 	}
 
 	data, err := json.Marshal(dto)
@@ -44,13 +43,14 @@ func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg en
 	return s.broadcast(ctx, entity.P2PMessageTypeSignatureHash, data)
 }
 
+type signatureDTO struct {
+	MessageHash []byte `json:"messageHash"`
+	Signature   []byte `json:"signature"`
+	PublicKey   []byte `json:"publicKey"`
+}
 type signatureGeneratedDTO struct {
-	MessageHash           []byte   `json:"message_hash"`
-	Signature             []byte   `json:"signature"`
-	PublicKeyG1           []byte   `json:"public_key_g1"`
-	PublicKeyG2           []byte   `json:"public_key_g2"`
-	KeyTag                uint8    `json:"key_tag"`
-	HashType              string   `json:"hash_type"`
-	ValsetHeaderTimestamp *big.Int `json:"valset_header_timestamp"`
-	Epoch                 *big.Int `json:"epoch"`
+	RequestHash [32]byte     `json:"requestHash"`
+	KeyTag      uint8        `json:"keyTag"`
+	Epoch       uint64       `json:"epoch"`
+	Signature   signatureDTO `json:"signature"`
 }

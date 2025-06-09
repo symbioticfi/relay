@@ -9,26 +9,31 @@ import (
 	"syscall"
 	"time"
 
+	"middleware-offchain/internal/usecase/aggregator"
+	"middleware-offchain/pkg/proof"
+
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p"
+	"github.com/maniartech/signals"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	aggregator "middleware-offchain/internal/app/aggregator-app"
-	committer "middleware-offchain/internal/app/committer-app"
-	app "middleware-offchain/internal/app/signer-app"
 	"middleware-offchain/internal/client/p2p"
 	"middleware-offchain/internal/client/repository/memory"
 	"middleware-offchain/internal/client/symbiotic"
-	valsetDeriver "middleware-offchain/internal/uc/valset-deriver"
-	valsetGenerator "middleware-offchain/internal/uc/valset-generator"
-	valsetListener "middleware-offchain/internal/uc/valset-listener"
-	"middleware-offchain/pkg/bls"
+	"middleware-offchain/internal/entity"
+	aggregatorApp "middleware-offchain/internal/usecase/aggregator-app"
+	keyprovider "middleware-offchain/internal/usecase/key-provider"
+	"middleware-offchain/internal/usecase/signer"
+	signerApp "middleware-offchain/internal/usecase/signer-app"
+	valsetDeriver "middleware-offchain/internal/usecase/valset-deriver"
+	valsetGenerator "middleware-offchain/internal/usecase/valset-generator"
+	valsetListener "middleware-offchain/internal/usecase/valset-listener"
 	"middleware-offchain/pkg/log"
 	"middleware-offchain/pkg/server"
 )
 
-// offchain_middleware --master-address 0x63d855589514F1277527f4fD8D464836F8Ca73Ba --rpc-url http://127.0.0.1:8545
+// offchain_middleware --master-address 0x1f5fE7682E49c20289C20a4cFc8b45d5EB410690 --rpc-url http://127.0.0.1:8545
 func main() {
 	slog.Info("Running offchain_middleware command", "args", os.Args)
 
@@ -95,13 +100,15 @@ var rootCmd = &cobra.Command{
 		if !ok {
 			return errors.Errorf("failed to parse secret key as big.Int")
 		}
-		keyPair := bls.ComputeKeyPair(b.Bytes())
+
+		pkBytes := [32]byte{}
+		b.FillBytes(pkBytes[:])
 
 		ethClient, err := symbiotic.NewEVMClient(symbiotic.Config{
 			MasterRPCURL:   cfg.rpcURL,
 			MasterAddress:  cfg.masterAddress,
 			RequestTimeout: time.Second * 5,
-			PrivateKey:     b.Bytes(),
+			PrivateKey:     pkBytes[:],
 		})
 		if err != nil {
 			return errors.Errorf("failed to create symbiotic client: %w", err)
@@ -144,10 +151,28 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to create memory repository: %w", err)
 		}
 
-		signerApp, err := app.NewSignerApp(app.Config{
-			P2PService: p2pService,
-			KeyPair:    keyPair,
-			Repo:       repo,
+		keystoreProvider, err := keyprovider.NewSimpleKeystoreProvider()
+		if err != nil {
+			return errors.Errorf("failed to create keystore provider: %w", err)
+		}
+		err = keystoreProvider.AddKey(15, b.Bytes())
+		if err != nil {
+			return errors.Errorf("failed to add key to keystore provider: %w", err)
+		}
+
+		aggregator := aggregator.NewAggregator(proof.NewZkProver())
+
+		signerLib := signer.NewSigner(keystoreProvider)
+
+		// todo ilya extract to lib package in order to get rid of vendor lock on specific lib
+		aggProofReadySignal := signals.New[entity.AggregatedSignatureMessage]()
+
+		signerApp, err := signerApp.NewSignerApp(signerApp.Config{
+			P2PService:     p2pService,
+			Signer:         signerLib,
+			Repo:           repo,
+			AggProofSignal: aggProofReadySignal,
+			Aggregator:     aggregator,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create signer app: %w", err)
@@ -170,10 +195,20 @@ var rootCmd = &cobra.Command{
 			Repo:            repo,
 			Deriver:         deriver,
 			PollingInterval: time.Second * 5,
+			IsCommitter:     cfg.isCommitter,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create epoch listener: %w", err)
 		}
+
+		aggProofReadySignal.AddListener(func(ctx context.Context, msg entity.AggregatedSignatureMessage) {
+			err := generator.HandleProofAggregated(ctx, msg)
+			if err != nil {
+				slog.ErrorContext(ctx, "failed to handle proof aggregated", "error", err)
+			} else {
+				slog.DebugContext(ctx, "handled proof aggregated", "request", msg)
+			}
+		})
 
 		srv, err := server.New(server.Config{
 			Address:           cfg.httpListenAddress,
@@ -199,6 +234,7 @@ var rootCmd = &cobra.Command{
 		if cfg.isSigner {
 			eg.Go(func() error {
 				logCtx := log.WithComponent(egCtx, "generator")
+
 				if err := generator.Start(logCtx); err != nil {
 					return errors.Errorf("failed to start valset generator: %w", err)
 				}
@@ -214,25 +250,15 @@ var rootCmd = &cobra.Command{
 		}
 
 		if cfg.isAggregator {
-			_, err := aggregator.NewAggregatorApp(aggregator.Config{
-				EthClient: ethClient,
-				P2PClient: p2pService,
+			_, err := aggregatorApp.NewAggregatorApp(aggregatorApp.Config{
+				Repo:       repo,
+				P2PClient:  p2pService,
+				Aggregator: aggregator,
 			})
 			if err != nil {
 				return errors.Errorf("failed to create aggregator app: %w", err)
 			}
 			slog.DebugContext(ctx, "created aggregator app, starting")
-		}
-
-		if cfg.isCommitter {
-			_, err := committer.NewCommitterApp(committer.Config{
-				EthClient: ethClient,
-				P2PClient: p2pService,
-			})
-			if err != nil {
-				return errors.Errorf("failed to create committer app: %w", err)
-			}
-			slog.DebugContext(ctx, "created committer app, starting")
 		}
 
 		return eg.Wait()

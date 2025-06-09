@@ -2,6 +2,9 @@ package entity
 
 import (
 	"math/big"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 type StringError string
@@ -11,30 +14,29 @@ func (e StringError) Error() string {
 }
 
 const (
-	KeyTypeBlsBn254       uint8 = 0
-	KeyTypeEcdsaSecp256k1 uint8 = 1
+	ErrEntityNotFound     = StringError("entity not found")
+	ErrEntityAlreadyExist = StringError("entity already exists")
+	ErrPhaseNotCommit     = StringError("phase is not commit")
 )
 
-const (
-	ErrEntityNotFound         = StringError("entity not found")
-	ErrPhaseNotCommit         = StringError("phase is not commit")
-	ErrSignatureRequestExists = StringError("signature request already exists")
-)
-
-const ValsetHeaderKeyTag uint8 = 15
+const ValsetHeaderKeyTag = KeyTag(15)
 const MaxSavedEpochs int64 = 10
 
 // SignatureRequest signature request message
 // RequestHash = sha256(SignatureRequest) (use as identifier later)
 type SignatureRequest struct {
-	KeyTag        uint8
-	RequiredEpoch *big.Int
+	KeyTag        KeyTag
+	RequiredEpoch uint64
 	Message       []byte
 }
 
+func (r SignatureRequest) Hash() common.Hash {
+	return crypto.Keccak256Hash([]byte{uint8(r.KeyTag)}, new(big.Int).SetInt64(int64(r.RequiredEpoch)).Bytes(), r.Message)
+}
+
 type SignatureMessage struct {
-	RequestHash [32]byte
-	KeyTag      uint8
+	RequestHash common.Hash
+	KeyTag      KeyTag
 	Epoch       uint64
 	Signature   Signature // parse based on KeyTag
 }
@@ -47,21 +49,23 @@ type AggregationState struct {
 
 // AggregationProof aggregator.proof(signatures []Signature) -> AggregationProof
 type AggregationProof struct {
-	VerificationType uint32 // proof verification type
-	MessageHash      []byte // scheme depends on KeyTag
-	Proof            []byte // parse based on KeyTag & VerificationType
+	VerificationType VerificationType // proof verification type
+	MessageHash      []byte           // scheme depends on KeyTag
+	Proof            []byte           // parse based on KeyTag & VerificationType
 }
 
 type AggregatedSignatureMessage struct {
-	RequestHash      [32]byte
-	KeyTag           uint8
+	RequestHash      common.Hash
+	KeyTag           KeyTag
 	Epoch            uint64
 	AggregationProof AggregationProof
 }
 
+type VerificationType uint32
+
 const (
-	ZkVerificationType     = 0
-	SimpleVerificationType = 1
+	VerificationTypeZK     VerificationType = 0
+	VerificationTypeSimple VerificationType = 1
 )
 
 const (
@@ -78,9 +82,4 @@ const (
 	SimpleVerificationValidatorSetHashKeccak256 = "validatorSetHashKeccak256"
 	SimpleVerificationTotalVotingPower          = "totalVotingPower"
 	SimpleVerificationAggPublicKeyG1            = "aggPublicKeyG1"
-)
-
-var (
-	QuorumThresholdBase       = big.NewInt(1e18)
-	QuorumThresholdPercentage = big.NewInt(666666666666666667)
 )

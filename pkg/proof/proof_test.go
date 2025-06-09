@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"testing"
+	"time"
 
 	"middleware-offchain/pkg/bls"
 
@@ -56,11 +57,16 @@ func mockValset() []ValidatorData {
 
 func TestProof(t *testing.T) {
 	t.Skipf("it works too long, so set skip here. For local debugging can remove this skip")
+
+	startTime := time.Now()
+	prover := NewZkProver()
+	fmt.Printf("prover initialation took %v\n", time.Since(startTime))
+
 	// generate valset
 	valset := genValset(11, []int{})
 	// valset := mockValset()
 
-	validatorData := normalizeValset(valset)
+	validatorData := NormalizeValset(valset)
 
 	messageString := "658bc250cfe17f8ad77a5f5d92afb6e9316088b5c89c6df2db63785116b22948"
 	message, err := hex.DecodeString(messageString)
@@ -83,13 +89,26 @@ func TestProof(t *testing.T) {
 		SignersAggKeyG2: *aggKeyG2,
 	}
 
-	proofData, err := Prove(proveInput)
+	startTime = time.Now()
+	proofData, err := prover.Prove(proveInput)
 	if err != nil {
 		t.Fatal(err)
 	}
+	fmt.Printf("proving took %v\n", time.Since(startTime))
 
 	fmt.Println("Proof:", hex.EncodeToString(proofData.Proof))
 	fmt.Println("Commitments:", hex.EncodeToString(proofData.Commitments))
 	fmt.Println("CommitmentPok:", hex.EncodeToString(proofData.CommitmentPok))
 	fmt.Println("SignersAggVotingPower:", proofData.SignersAggVotingPower.String())
+
+	//startTime = time.Now()
+	//res, err := prover.Verify(len(validatorData), pubInpHash, proofData.Marshall())
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//fmt.Printf("verification took %v\n", time.Since(startTime))
+	//
+	//if !res {
+	//	t.Fatal("failed to verify")
+	//}
 }

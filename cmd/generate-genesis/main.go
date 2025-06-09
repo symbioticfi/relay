@@ -14,11 +14,11 @@ import (
 
 	"middleware-offchain/internal/client/symbiotic"
 	"middleware-offchain/internal/entity"
-	valsetDeriver "middleware-offchain/internal/uc/valset-deriver"
+	valsetDeriver "middleware-offchain/internal/usecase/valset-deriver"
 	"middleware-offchain/pkg/log"
 )
 
-// generate_genesis --master-address 0x63d855589514F1277527f4fD8D464836F8Ca73Ba --rpc-url http://127.0.0.1:8545
+// generate_genesis --master-address 0x1f5fE7682E49c20289C20a4cFc8b45d5EB410690 --rpc-url http://127.0.0.1:8545
 func main() {
 	slog.Info("Running generate_genesis command", "args", os.Args)
 
@@ -93,9 +93,9 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to get config: %w", err)
 		}
 
-		newValset, err := deriver.GetValidatorSet(ctx, currentOnchainEpoch, &networkConfig)
+		newValset, err := deriver.GetValidatorSet(ctx, currentOnchainEpoch, networkConfig)
 		if err != nil {
-			return errors.Errorf("failed to get validator set extra for epoch %s: %w", currentOnchainEpoch, err)
+			return errors.Errorf("failed to get validator set extra for epoch %d: %w", currentOnchainEpoch, err)
 		}
 
 		// header generation is clear now
@@ -107,7 +107,7 @@ var rootCmd = &cobra.Command{
 		slog.Info("Valset header generated!")
 
 		// extra data generation is also clear but still in deriver
-		extraData, err := deriver.GenerateExtraData(&newValset, &networkConfig)
+		extraData, err := deriver.GenerateExtraData(newValset, networkConfig)
 		if err != nil {
 			return errors.Errorf("failed to generate extra data: %w", err)
 		}

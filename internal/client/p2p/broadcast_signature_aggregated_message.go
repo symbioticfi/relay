@@ -3,22 +3,23 @@ package p2p
 import (
 	"context"
 	"encoding/json"
-	"math/big"
 	"time"
 
 	"github.com/go-errors/errors"
 
 	"middleware-offchain/internal/entity"
-	"middleware-offchain/pkg/bls"
 )
 
-func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg entity.SignaturesAggregatedMessage) error {
+func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
 	dto := signaturesAggregatedDTO{
-		PublicKeyG1: bls.SerializeG1(msg.PublicKeyG1),
-		Proof:       msg.Proof,
-		Message:     msg.Message,
-		HashType:    string(msg.HashType),
+		RequestHash: msg.RequestHash,
+		KeyTag:      uint8(msg.KeyTag),
 		Epoch:       msg.Epoch,
+		AggregationProof: aggregationProofDTO{
+			MessageHash:      msg.AggregationProof.MessageHash,
+			Proof:            msg.AggregationProof.Proof,
+			VerificationType: uint32(msg.AggregationProof.VerificationType),
+		},
 	}
 
 	data, err := json.Marshal(dto)
@@ -42,10 +43,14 @@ func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg e
 	return s.broadcast(ctx, entity.P2PMessageTypeSignaturesAggregated, data)
 }
 
+type aggregationProofDTO struct {
+	VerificationType uint32 `json:"verificationType"`
+	MessageHash      []byte `json:"messageHash"`
+	Proof            []byte `json:"proof"`
+}
 type signaturesAggregatedDTO struct {
-	PublicKeyG1 []byte   `json:"public_key_g1"`
-	Proof       []byte   `json:"proof"`
-	Message     []byte   `json:"message"`
-	HashType    string   `json:"hash_type"`
-	Epoch       *big.Int `json:"epoch"`
+	RequestHash      [32]byte            `json:"requestHash"`
+	KeyTag           uint8               `json:"keyTag"`
+	Epoch            uint64              `json:"epoch"`
+	AggregationProof aggregationProofDTO `json:"proof"`
 }
