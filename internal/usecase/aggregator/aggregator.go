@@ -416,8 +416,6 @@ func (a *Aggregator) simpleVerify(
 		},
 	}
 
-	fmt.Println("Here")
-
 	offset := 0
 	length := 64
 	aggG1SigTuple, err := g1PointAbiArgs.Unpack(aggregationProof.Proof[offset : offset+length])
@@ -441,48 +439,45 @@ func (a *Aggregator) simpleVerify(
 	}
 	offset += length
 
-	isNonSignersRaw, err := isNonSignersAbiArgs.Unpack(aggregationProof.Proof[offset:])
+	length = 64 + 32*int(lengthBig.Int64())
+	isNonSignersRaw, err := isNonSignersAbiArgs.Unpack(aggregationProof.Proof[offset : offset+length])
 	if err != nil {
 		return false, err
 	}
+	offset += length
 
-	type ValidatorData struct {
+	if offset != len(aggregationProof.Proof) {
+		return false, fmt.Errorf("length mismatch")
+	}
+
+	validatorsData := validatorsDataRaw[0].([]struct {
 		G1PubKey struct {
-			X *big.Int
-			Y *big.Int
-		}
-		VotingPower *big.Int
-	}
-
-	validatorsData := make([]ValidatorData, 0)
-	for _, val := range validatorsDataRaw[0].([]any) {
-		validatorsData = append(validatorsData, val.(ValidatorData))
-	}
+			X *big.Int `json:"X"`
+			Y *big.Int `json:"Y"`
+		} `json:"G1PubKey"`
+		VotingPower *big.Int `json:"VotingPower"`
+	})
 
 	isNonSigners := isNonSignersRaw[0].([]bool)
 
 	aggG1SigData := aggG1SigTuple[0].(struct {
-		X *big.Int
-		Y *big.Int
+		X *big.Int `json:"X"`
+		Y *big.Int `json:"Y"`
 	})
 
 	aggSig := new(bn254.G1Affine)
 	aggSig.X.SetBigInt(aggG1SigData.X)
 	aggSig.Y.SetBigInt(aggG1SigData.Y)
 
-	type dtoG2Point struct {
-		X [2]*big.Int
-		Y [2]*big.Int
-	}
 	aggG2KeyData := aggG2KeyTuple[0].(struct {
-		X [2]*big.Int
-		Y [2]*big.Int
+		X [2]*big.Int `json:"X"`
+		Y [2]*big.Int `json:"Y"`
 	})
 	aggPubKeyG2 := new(bn254.G2Affine)
-	aggPubKeyG2.X.A0.SetBigInt(aggG2KeyData.X[0])
-	aggPubKeyG2.X.A1.SetBigInt(aggG2KeyData.X[1])
-	aggPubKeyG2.Y.A0.SetBigInt(aggG2KeyData.Y[0])
-	aggPubKeyG2.Y.A1.SetBigInt(aggG2KeyData.Y[1])
+	aggPubKeyG2.X.A0.SetBigInt(aggG2KeyData.X[1])
+	aggPubKeyG2.X.A1.SetBigInt(aggG2KeyData.X[0])
+	aggPubKeyG2.Y.A0.SetBigInt(aggG2KeyData.Y[1])
+	aggPubKeyG2.Y.A1.SetBigInt(aggG2KeyData.Y[0])
 
 	valsetSorted := make([]entity.Validator, 0, len(valset.Validators))
 	for _, val := range valset.Validators {
@@ -491,10 +486,11 @@ func (a *Aggregator) simpleVerify(
 		}
 	}
 	if len(valsetSorted) != len(validatorsData) {
-		return false, fmt.Errorf("active validators mismatch")
+		return false, fmt.Errorf("active validators length mismatch")
 	}
 
 	sort.Slice(valsetSorted, func(i, j int) bool {
+		// Compare keys (lower first)
 		keyBytes1, ok := valsetSorted[i].FindKeyByKeyTag(keyTag)
 		if !ok {
 			return false
@@ -511,10 +507,11 @@ func (a *Aggregator) simpleVerify(
 		if err != nil {
 			return false
 		}
-		return g1Key1.X.BigInt(new(big.Int)).Cmp(g1Key2.X.BigInt(new(big.Int))) > 0 || g1Key1.Y.BigInt(new(big.Int)).Cmp(g1Key2.Y.BigInt(new(big.Int))) > 0
+		return g1Key1.X.BigInt(new(big.Int)).Cmp(g1Key2.X.BigInt(new(big.Int))) < 0 || g1Key1.Y.BigInt(new(big.Int)).Cmp(g1Key2.Y.BigInt(new(big.Int))) < 0
 	})
 
 	aggPubKeyG1 := new(bn254.G1Affine)
+	var signersVotingPower big.Int
 	for i, val := range valsetSorted {
 		keyBytes, ok := val.FindKeyByKeyTag(keyTag)
 		if !ok {
@@ -531,18 +528,12 @@ func (a *Aggregator) simpleVerify(
 		if val.VotingPower.Cmp(validatorsData[i].VotingPower) != 0 {
 			return false, fmt.Errorf("voting power mismatch for val %s", val.Operator.Hex())
 		}
-		aggPubKeyG1 = new(bn254.G1Affine).Add(aggPubKeyG1, g1Key.G1Affine)
-	}
-
-	var nonSignersVotingPower, totalVotingPower big.Int
-	for i, vData := range validatorsData {
-		totalVotingPower.Add(&totalVotingPower, vData.VotingPower)
-		if isNonSigners[i] {
-			nonSignersVotingPower.Add(&nonSignersVotingPower, vData.VotingPower)
+		if !isNonSigners[i] {
+			aggPubKeyG1 = new(bn254.G1Affine).Add(aggPubKeyG1, g1Key.G1Affine)
+			signersVotingPower.Add(&signersVotingPower, val.VotingPower)
 		}
 	}
 
-	signersVotingPower := new(big.Int).Sub(&totalVotingPower, &nonSignersVotingPower)
 	if signersVotingPower.Cmp(valset.QuorumThreshold) < 0 {
 		return false, fmt.Errorf("signers do not meet threshold voting power")
 	}
@@ -551,7 +542,6 @@ func (a *Aggregator) simpleVerify(
 		return false, errors.New("message hash must be 32 bytes")
 	}
 
-	// Hash the message to a point on G1
 	messageHashG1, err := bls.HashToG1(aggregationProof.MessageHash)
 	if err != nil {
 		return false, errors.Errorf("failed to hash message to G1: %w", err)
@@ -559,20 +549,20 @@ func (a *Aggregator) simpleVerify(
 
 	aggPubKeyG1XBytes := make([]byte, 32)
 	aggPubKeyG1YBytes := make([]byte, 32)
-	aggPubKeyG1.X.SetBytes(aggPubKeyG1XBytes)
-	aggPubKeyG1.Y.SetBytes(aggPubKeyG1YBytes)
+	aggPubKeyG1.X.BigInt(new(big.Int)).FillBytes(aggPubKeyG1XBytes)
+	aggPubKeyG1.Y.BigInt(new(big.Int)).FillBytes(aggPubKeyG1YBytes)
 	aggPubKeyG2X0Bytes := make([]byte, 32)
 	aggPubKeyG2X1Bytes := make([]byte, 32)
 	aggPubKeyG2Y0Bytes := make([]byte, 32)
 	aggPubKeyG2Y1Bytes := make([]byte, 32)
-	aggPubKeyG2.X.A0.SetBytes(aggPubKeyG2X0Bytes)
-	aggPubKeyG2.X.A1.SetBytes(aggPubKeyG2X1Bytes)
-	aggPubKeyG2.Y.A0.SetBytes(aggPubKeyG2Y0Bytes)
-	aggPubKeyG2.Y.A1.SetBytes(aggPubKeyG2Y1Bytes)
+	aggPubKeyG2.X.A0.BigInt(new(big.Int)).FillBytes(aggPubKeyG2X0Bytes)
+	aggPubKeyG2.X.A1.BigInt(new(big.Int)).FillBytes(aggPubKeyG2X1Bytes)
+	aggPubKeyG2.Y.A0.BigInt(new(big.Int)).FillBytes(aggPubKeyG2Y0Bytes)
+	aggPubKeyG2.Y.A1.BigInt(new(big.Int)).FillBytes(aggPubKeyG2Y1Bytes)
 	aggSigXBytes := make([]byte, 32)
 	aggSigYBytes := make([]byte, 32)
-	aggSig.X.SetBytes(aggSigXBytes)
-	aggSig.Y.SetBytes(aggSigYBytes)
+	aggSig.X.BigInt(new(big.Int)).FillBytes(aggSigXBytes)
+	aggSig.Y.BigInt(new(big.Int)).FillBytes(aggSigYBytes)
 
 	alpha := new(big.Int).SetBytes(
 		crypto.Keccak256(
@@ -587,19 +577,18 @@ func (a *Aggregator) simpleVerify(
 			aggSigYBytes,
 		),
 	)
-	alpha = alpha.Mod(alpha, bls.FrModulus)
+	alpha = new(big.Int).Mod(alpha, bls.FrModulus)
 
 	_, _, g1, g2 := bn254.Generators()
 	negG2 := new(bn254.G2Affine).Neg(&g2)
 
-	g1P := [2]bn254.G1Affine{
+	P := [2]bn254.G1Affine{
 		*new(bn254.G1Affine).Add(aggSig, new(bn254.G1Affine).ScalarMultiplication(aggPubKeyG1, alpha)),
 		*new(bn254.G1Affine).Add(messageHashG1.G1Affine, new(bn254.G1Affine).ScalarMultiplication(&g1, alpha)),
 	}
-	g1Q := [2]bn254.G2Affine{*negG2, *aggPubKeyG2}
+	Q := [2]bn254.G2Affine{*negG2, *aggPubKeyG2}
 
-	ok, err := bn254.PairingCheck(g1P[:], g1Q[:])
-
+	ok, err := bn254.PairingCheck(P[:], Q[:])
 	if err != nil {
 		return false, errors.Errorf("pairing check failed: %w", err)
 	}
