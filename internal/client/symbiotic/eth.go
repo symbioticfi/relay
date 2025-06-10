@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/samber/lo"
 
 	"github.com/ethereum/go-ethereum"
@@ -633,7 +634,7 @@ func (e *Client) callContract(ctx context.Context, callMsg ethereum.CallMsg) (re
 	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 
-	result, err = e.client.CallContract(tmCtx, callMsg, nil)
+	result, err = e.client.CallContract(tmCtx, callMsg, new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()))
 	if err != nil {
 		return nil, errors.Errorf("failed to call contract: %w", err)
 	}

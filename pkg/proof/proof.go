@@ -638,7 +638,6 @@ func GetActiveValidators(allValidators []entity.Validator) []entity.Validator {
 	return activeValidators
 }
 
-// todo ilya
 func ToValidatorsData(signerValidators []entity.Validator, allValidators []entity.Validator, requiredKeyTag entity.KeyTag) ([]ValidatorData, error) {
 	activeValidators := GetActiveValidators(allValidators)
 	valset := make([]ValidatorData, 0)
