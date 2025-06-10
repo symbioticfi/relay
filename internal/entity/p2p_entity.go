@@ -1,9 +1,5 @@
 package entity
 
-import (
-	"middleware-offchain/pkg/bls"
-)
-
 type P2PMessageType string
 
 const (
@@ -11,25 +7,10 @@ const (
 	P2PMessageTypeSignaturesAggregated P2PMessageType = "signatures_aggregated"
 )
 
-type HashType string
-
-const (
-	HashTypeValsetHeader HashType = "valset_header"
-	HashTypeMessage      HashType = "message"
-)
-
 type SignatureHashMessage struct {
 	Request   SignatureRequest
 	Signature []byte
 	PublicKey []byte
-	HashType  HashType
-}
-
-type SignaturesAggregatedMessage struct {
-	Request     SignatureRequest
-	Proof       AggregationProof
-	PublicKeyG1 *bls.G1
-	HashType    HashType
 }
 
 type SenderInfo struct {

@@ -11,14 +11,13 @@ import (
 	validate "github.com/go-playground/validator/v10"
 
 	"middleware-offchain/internal/entity"
-	"middleware-offchain/pkg/bls"
 	"middleware-offchain/pkg/log"
 )
 
 //go:generate mockgen -source=aggregator_app.go -destination=mocks/aggregator_app.go -package=mocks
 type repository interface {
 	GetValsetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
-	SaveSignature(ctx context.Context, reqHash common.Hash, key [32]byte, sig entity.Signature) error
+	SaveSignature(ctx context.Context, reqHash common.Hash, key []byte, sig entity.Signature) error
 	GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.Signature, error)
 	GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error)
 }
@@ -38,10 +37,15 @@ type aggregator interface {
 	) (*entity.AggregationProof, error)
 }
 
+type verifier interface {
+	Verify(keyTag entity.KeyTag, signature entity.Signature) ([]byte, bool, error)
+}
+
 type Config struct {
 	Repo       repository `validate:"required"`
 	P2PClient  p2pClient  `validate:"required"`
 	Aggregator aggregator `validate:"required"`
+	Verifier   verifier   `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -82,16 +86,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		return errors.Errorf("failed to get validator set: %w", err)
 	}
 
-	g1, g2, err := bls.UnpackPublicG1G2(msg.Message.Signature.PublicKey) // todo ilya discuss how to get rid of dependency on bls package here
-	if err != nil {
-		return errors.Errorf("failed to unpack public key: %w", err)
-	}
-
-	g1Sig, err := bls.DeserializeG1(msg.Message.Signature.Signature)
-	if err != nil {
-		return errors.Errorf("failed to deserialize signature: %w", err)
-	}
-	ok, err := bls.Verify(&g2, g1Sig, msg.Message.Signature.MessageHash)
+	publicKey, ok, err := s.cfg.Verifier.Verify(msg.Message.KeyTag, msg.Message.Signature)
 	if err != nil {
 		return errors.Errorf("failed to verify signature: %w", err)
 	}
@@ -99,12 +94,12 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		return errors.New("signature verification failed")
 	}
 
-	validator, found := validatorSet.FindValidatorByKey(msg.Message.KeyTag, g1.Marshal())
+	validator, found := validatorSet.FindValidatorByKey(msg.Message.KeyTag, publicKey)
 	if !found {
 		return errors.Errorf("validator not found for public key: %x", msg.Message.Signature.PublicKey)
 	}
 
-	err = s.cfg.Repo.SaveSignature(ctx, msg.Message.RequestHash, g1.Bytes(), msg.Message.Signature)
+	err = s.cfg.Repo.SaveSignature(ctx, msg.Message.RequestHash, publicKey, msg.Message.Signature)
 	if err != nil {
 		return errors.Errorf("failed to save signature: %w", err)
 	}

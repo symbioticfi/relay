@@ -416,11 +416,6 @@ func setCircuitData(circuit *Circuit, proveInput ProveInput) error {
 
 	circuit.SignersAggVotingPower = *signersAggVotingPower
 
-	//fmt.Println("proveInput.ValidatorData:", proveInput.ValidatorData)
-	//fmt.Println("proveInput.Signature:", proveInput.Signature)
-	//fmt.Println("messageG1Bn254.X:", messageG1Bn254)
-	//fmt.Println("proveInput.SignersAggKeyG2:", proveInput.SignersAggKeyG2)
-
 	circuit.Signature = sw_bn254.NewG1Affine(proveInput.Signature)
 	circuit.Message = sw_bn254.NewG1Affine(messageG1Bn254)
 	circuit.SignersAggKeyG2 = sw_bn254.NewG2Affine(proveInput.SignersAggKeyG2)
@@ -429,7 +424,6 @@ func setCircuitData(circuit *Circuit, proveInput ProveInput) error {
 	aggVotingPowerBuffer := make([]byte, 32)
 	signersAggVotingPower.FillBytes(aggVotingPowerBuffer)
 
-	//fmt.Println("signersAggVotingPower:", signersAggVotingPower)
 	inputHashBytes := valsetHash
 	inputHashBytes = append(inputHashBytes, aggVotingPowerBuffer...)
 	inputHashBytes = append(inputHashBytes, messageBytes[:]...)
@@ -441,14 +435,10 @@ func setCircuitData(circuit *Circuit, proveInput ProveInput) error {
 	slog.Debug("signed message", "message.Y", messageG1Bn254.Y.String())
 	slog.Debug("mimc hash", "hash", hex.EncodeToString(valsetHash))
 
-	//fmt.Println("InputHashBytes:", hex.EncodeToString(inputHashBytes))
-	//fmt.Println(hex.EncodeToString(inputHashBytes))
-	//fmt.Println("inputHash:", hex.EncodeToString(inputHash))
 	inputHashInt := new(big.Int).SetBytes(inputHash)
 	mask, _ := big.NewInt(0).SetString("1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)
 	inputHashInt.And(inputHashInt, mask)
 
-	//fmt.Println("inputHashHex:", inputHashInt.Text(16))
 	circuit.InputHash = inputHashInt
 
 	slog.Debug("[Prove] input hash", "hash", hex.EncodeToString(inputHashInt.Bytes()))

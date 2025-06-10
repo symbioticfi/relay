@@ -255,6 +255,7 @@ var rootCmd = &cobra.Command{
 				Repo:       repo,
 				P2PClient:  p2pService,
 				Aggregator: aggregator,
+				Verifier:   signerLib,
 			})
 			if err != nil {
 				return errors.Errorf("failed to create aggregator app: %w", err)

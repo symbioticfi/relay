@@ -69,7 +69,8 @@ type ValidatorSet struct {
 type Signature struct {
 	MessageHash []byte // scheme depends on KeyTag
 	Signature   []byte // parse based on KeyTag
-	PublicKey   []byte // parse based on KeyTag
+	// PublicKey for bls will contain g1+g2
+	PublicKey []byte // parse based on KeyTag
 }
 
 func (v ValidatorSet) FindValidatorByKey(keyTag KeyTag, g1 []byte) (Validator, bool) {
