@@ -374,6 +374,6 @@ func (v ValidatorSetHeader) Hash() ([32]byte, error) {
 	return [32]byte(crypto.Keccak256(abiEncoded)), nil
 }
 
-type CommitValsetHeaderResult struct {
+type TxResult struct {
 	TxHash common.Hash
 }
