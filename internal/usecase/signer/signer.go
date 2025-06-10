@@ -32,27 +32,31 @@ func (s *Signer) Hash(keyTag entity.KeyTag, message []byte) ([]byte, error) {
 	return nil, errors.New("invalid key type")
 }
 
-func (s *Signer) Verify(keyTag entity.KeyTag, signature entity.Signature) (bool, error) {
+// Verify returns the compressed public key, for bls it will be G1 point
+func (s *Signer) Verify(keyTag entity.KeyTag, signature entity.Signature) ([]byte, bool, error) {
 	switch keyTag.Type() {
 	case entity.KeyTypeBlsBn254:
-		_, g2PubKey, err := bls.UnpackPublicG1G2(signature.PublicKey)
+		g1PubKey, g2PubKey, err := bls.UnpackPublicG1G2(signature.PublicKey)
 		if err != nil {
-			return false, err
+			return nil, false, err
 		}
+
 		g1Sig, err := bls.DeserializeG1(signature.Signature)
 		if err != nil {
-			return false, err
+			return nil, false, err
 		}
+
 		ok, err := bls.Verify(&g2PubKey, g1Sig, signature.MessageHash)
 		if err != nil {
-			return false, err
+			return nil, false, err
 		}
-		return ok, nil
+
+		return g1PubKey.Marshal(), ok, nil
 	case entity.KeyTypeEcdsaSecp256k1:
-		return true, nil
+		return nil, false, nil
 	}
 
-	return false, errors.Errorf("unsupported key type: %d", keyTag.Type())
+	return nil, false, errors.Errorf("unsupported key type: %d", keyTag.Type())
 }
 
 func (s *Signer) Sign(keyTag entity.KeyTag, message []byte) (entity.Signature, error) {
@@ -90,7 +94,7 @@ func (s *Signer) Sign(keyTag entity.KeyTag, message []byte) (entity.Signature, e
 	return entity.Signature{}, errors.Errorf("unsupported key type: %d", keyTag.Type())
 }
 
-func (s *Signer) GetPublic(keyTag entity.KeyTag) ([]byte, error) {
+func (s *Signer) GetPublicKey(keyTag entity.KeyTag) ([]byte, error) {
 	sk, err := s.kp.GetPrivateKey(keyTag)
 	if err != nil {
 		return nil, err
@@ -99,7 +103,7 @@ func (s *Signer) GetPublic(keyTag entity.KeyTag) ([]byte, error) {
 	switch keyTag.Type() {
 	case entity.KeyTypeBlsBn254:
 		kp := bls.ComputeKeyPair(sk)
-		return kp.PackPublicG1G2(), nil
+		return kp.PublicKeyG1.Marshal(), nil
 	case entity.KeyTypeEcdsaSecp256k1:
 		return nil, errors.New("ECDSA key type not supported in this provider")
 	}

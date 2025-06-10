@@ -161,20 +161,22 @@ func (r *Repository) GetValsetByEpoch(ctx context.Context, epoch uint64) (entity
 	return valset, nil
 }
 
-func (r *Repository) SaveSignature(ctx context.Context, reqHash common.Hash, key [32]byte, sig entity.Signature) error {
+func (r *Repository) SaveSignature(ctx context.Context, reqHash common.Hash, key []byte, sig entity.Signature) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
+	keyHash := crypto.Keccak256Hash(key)
 
 	_, exists := r.signatures[reqHash]
 	if !exists {
 		r.signatures[reqHash] = make(map[[32]byte]entity.Signature)
 	}
 
-	if _, exists = r.signatures[reqHash][key]; exists {
+	if _, exists = r.signatures[reqHash][keyHash]; exists {
 		return nil
 	}
 
-	r.signatures[reqHash][key] = sig
+	r.signatures[reqHash][keyHash] = sig
 
 	return nil
 }

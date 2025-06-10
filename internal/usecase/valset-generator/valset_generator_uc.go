@@ -47,6 +47,9 @@ type repo interface {
 type deriver interface {
 	GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error)
 	GetNetworkData(ctx context.Context) (entity.NetworkData, error)
+}
+
+type aggregator interface {
 	GenerateExtraData(valset entity.ValidatorSet, config entity.NetworkConfig) ([]entity.ExtraData, error)
 }
 
@@ -57,6 +60,7 @@ type Config struct {
 	Deriver         deriver       `validate:"required"`
 	PollingInterval time.Duration `validate:"required,gt=0"`
 	IsCommitter     bool
+	Aggregator      aggregator
 }
 
 func (c Config) Validate() error {
@@ -117,7 +121,7 @@ func (s *Service) process(ctx context.Context) error {
 		return errors.Errorf("failed to get network data: %w", err)
 	}
 
-	extraData, err := s.cfg.Deriver.GenerateExtraData(*valSet, *config)
+	extraData, err := s.cfg.Aggregator.GenerateExtraData(*valSet, *config)
 	if err != nil {
 		return errors.Errorf("failed to generate extra data: %w", err)
 	}

@@ -3,7 +3,6 @@ package p2p
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"github.com/go-errors/errors"
 
@@ -28,19 +27,14 @@ func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg en
 	}
 
 	// send to ourselves first
-	err = s.signatureHashHandler(ctx, entity.P2PSignatureHashMessage{
-		Message: msg,
-		Info: entity.SenderInfo{
-			Type:      entity.P2PMessageTypeSignatureHash,
-			Sender:    "",
-			Timestamp: time.Now().Unix(),
-		},
-	})
+	err = s.signatureHashHandler(ctx, entity.SenderInfo{
+		Sender: "",
+	}, msg)
 	if err != nil {
 		return errors.Errorf("failed to handle signature generated message: %w", err)
 	}
 
-	return s.broadcast(ctx, entity.P2PMessageTypeSignatureHash, data)
+	return s.broadcast(ctx, messageTypeSignatureHash, data)
 }
 
 type signatureDTO struct {

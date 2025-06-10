@@ -10,7 +10,6 @@ import (
 	"github.com/go-playground/validator/v10"
 
 	"middleware-offchain/internal/entity"
-	"middleware-offchain/pkg/bls"
 )
 
 type repo interface {
@@ -18,19 +17,19 @@ type repo interface {
 	GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error)
 	SaveAggregationProof(ctx context.Context, reqHash common.Hash, ap entity.AggregationProof) error
 	GetValsetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
-	SaveSignature(ctx context.Context, reqHash common.Hash, key [32]byte, sig entity.Signature) error
+	SaveSignature(ctx context.Context, reqHash common.Hash, key []byte, sig entity.Signature) error
 	SaveSignatureRequest(_ context.Context, req entity.SignatureRequest) error
 }
 
 type p2pService interface {
 	BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error
-	SetSignaturesAggregatedMessageHandler(mh func(ctx context.Context, msg entity.P2PSignaturesAggregatedMessage) error)
+	SetSignaturesAggregatedMessageHandler(mh func(ctx context.Context, si entity.SenderInfo, msg entity.AggregatedSignatureMessage) error)
 }
 
 type signer interface {
 	Sign(keyTag entity.KeyTag, message []byte) (entity.Signature, error)
 	Hash(keyTag entity.KeyTag, message []byte) ([]byte, error)
-	GetPublic(keyTag entity.KeyTag) ([]byte, error)
+	GetPublicKey(keyTag entity.KeyTag) ([]byte, error)
 }
 
 type aggProofSignal interface {
@@ -102,17 +101,12 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.Errorf("failed to get valset by epoch %d: %w", req.RequiredEpoch, err)
 	}
 
-	public, err := s.cfg.Signer.GetPublic(req.KeyTag)
+	public, err := s.cfg.Signer.GetPublicKey(req.KeyTag)
 	if err != nil {
 		return errors.Errorf("failed to get public key for key tag %d: %w", req.KeyTag, err)
 	}
 
-	g1, _, err := bls.UnpackPublicG1G2(public)
-	if err != nil {
-		return errors.Errorf("failed to unpack public key for key tag %d: %w", req.KeyTag, err)
-	}
-
-	_, found := valset.FindValidatorByKey(req.KeyTag, g1.Marshal())
+	_, found := valset.FindValidatorByKey(req.KeyTag, public)
 	if !found {
 		return errors.Errorf("validator not found in epoch valset for public key")
 	}
@@ -122,7 +116,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.Errorf("failed to sign valset header hash: %w", err)
 	}
 
-	if err := s.cfg.Repo.SaveSignature(ctx, req.Hash(), g1.Bytes(), signature); err != nil {
+	if err := s.cfg.Repo.SaveSignature(ctx, req.Hash(), public, signature); err != nil {
 		return errors.Errorf("failed to save signature: %w", err)
 	}
 
