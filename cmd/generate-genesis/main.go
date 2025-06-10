@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math/big"
 	"os"
 	"os/signal"
 	"syscall"
@@ -16,7 +17,6 @@ import (
 	"middleware-offchain/internal/usecase/aggregator"
 	valsetDeriver "middleware-offchain/internal/usecase/valset-deriver"
 	"middleware-offchain/pkg/log"
-	"middleware-offchain/pkg/proof"
 )
 
 // generate_genesis --master-address 0x1f5fE7682E49c20289C20a4cFc8b45d5EB410690 --rpc-url http://127.0.0.1:8545
@@ -33,6 +33,8 @@ func main() {
 func run() error {
 	rootCmd.PersistentFlags().StringVar(&cfg.rpcURL, "rpc-url", "", "RPC URL")
 	rootCmd.PersistentFlags().StringVar(&cfg.masterAddress, "master-address", "", "Master contract address")
+	rootCmd.PersistentFlags().BoolVar(&cfg.commit, "commit", false, "Commit genesis flag (default: false)")
+	rootCmd.PersistentFlags().StringVar(&cfg.secretKey, "secret-key", "", "Secret key for genesis commit")
 	rootCmd.PersistentFlags().StringVarP(&cfg.outputFile, "output", "o", "", "Output file path (default: stdout)")
 	rootCmd.PersistentFlags().StringVar(&cfg.logLevel, "log-level", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVar(&cfg.logMode, "log-mode", "text", "Log mode (text, pretty)")
@@ -50,6 +52,8 @@ func run() error {
 type config struct {
 	rpcURL        string
 	masterAddress string
+	commit        bool
+	secretKey     string
 	outputFile    string
 	logLevel      string
 	logMode       string
@@ -65,10 +69,28 @@ var rootCmd = &cobra.Command{
 
 		ctx := signalContext(context.Background())
 
+		if cfg.commit && cfg.secretKey == "" {
+			return errors.New("if commit true secret-key must be set")
+		}
+
+		var privateKey []byte
+
+		if cfg.secretKey != "" {
+			b, ok := new(big.Int).SetString(cfg.secretKey, 10)
+			if !ok {
+				return errors.Errorf("failed to parse secret key as big.Int")
+			}
+
+			pkBytes := [32]byte{}
+			b.FillBytes(pkBytes[:])
+			privateKey = pkBytes[:]
+		}
+
 		client, err := symbiotic.NewEVMClient(symbiotic.Config{
 			MasterRPCURL:   cfg.rpcURL,
 			MasterAddress:  cfg.masterAddress,
 			RequestTimeout: time.Second * 5,
+			PrivateKey:     privateKey,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create symbiotic client: %w", err)
@@ -107,7 +129,7 @@ var rootCmd = &cobra.Command{
 
 		slog.Info("Valset header generated!")
 
-		aggregator := aggregator.NewAggregator(proof.NewZkProver())
+		aggregator := aggregator.NewAggregator(nil)
 
 		// extra data generation is also clear but still in deriver
 		extraData, err := aggregator.GenerateExtraData(newValset, networkConfig)
@@ -128,6 +150,17 @@ var rootCmd = &cobra.Command{
 		} else {
 			fmt.Println(string(jsonData)) //nolint:forbidigo // ok to print result to stdout
 		}
+
+		if !cfg.commit {
+			return nil
+		}
+
+		result, err := client.SetGenesis(ctx, header, extraData)
+		if err != nil {
+			return errors.Errorf("failed to commit valset header: %w", err)
+		}
+
+		slog.InfoContext(ctx, "genesis valset committed", "txHash", result.TxHash.String(), "epoch", newValset.Epoch)
 
 		return nil
 	},

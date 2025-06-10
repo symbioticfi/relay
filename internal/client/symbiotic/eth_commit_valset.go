@@ -15,16 +15,16 @@ import (
 	"middleware-offchain/internal/entity"
 )
 
-func (e *Client) CommitValsetHeader(ctx context.Context, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) (entity.CommitValsetHeaderResult, error) {
+func (e *Client) CommitValsetHeader(ctx context.Context, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) (entity.TxResult, error) {
 	if e.masterPK == nil {
-		return entity.CommitValsetHeaderResult{}, errors.New("master private key is not set")
+		return entity.TxResult{}, errors.New("master private key is not set")
 	}
 	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 
 	txOpts, err := bind.NewKeyedTransactorWithChainID(e.masterPK, big.NewInt(111)) // todo ilya, pass chain id from config
 	if err != nil {
-		return entity.CommitValsetHeaderResult{}, errors.Errorf("failed to create new keyed transactor: %w", err)
+		return entity.TxResult{}, errors.Errorf("failed to create new keyed transactor: %w", err)
 	}
 	txOpts.Context = tmCtx
 
@@ -46,19 +46,67 @@ func (e *Client) CommitValsetHeader(ctx context.Context, header entity.Validator
 
 	tx, err := e.master.CommitValSetHeader(txOpts, headerDTO, extraDataDTO, proof, []byte{})
 	if err != nil {
-		return entity.CommitValsetHeaderResult{}, e.formatEthError(err)
+		return entity.TxResult{}, e.formatEthError(err)
 	}
 
 	receipt, err := bind.WaitMined(ctx, e.client, tx)
 	if err != nil {
-		return entity.CommitValsetHeaderResult{}, errors.Errorf("failed to wait for tx mining: %w", err)
+		return entity.TxResult{}, errors.Errorf("failed to wait for tx mining: %w", err)
 	}
 
 	if receipt.Status == types.ReceiptStatusFailed {
-		return entity.CommitValsetHeaderResult{}, errors.New("transaction reverted on chain")
+		return entity.TxResult{}, errors.New("transaction reverted on chain")
 	}
 
-	return entity.CommitValsetHeaderResult{
+	return entity.TxResult{
+		TxHash: receipt.TxHash,
+	}, nil
+}
+
+func (e *Client) SetGenesis(ctx context.Context, header entity.ValidatorSetHeader, extraData []entity.ExtraData) (entity.TxResult, error) {
+	if e.masterPK == nil {
+		return entity.TxResult{}, errors.New("master private key is not set")
+	}
+	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
+	defer cancel()
+
+	txOpts, err := bind.NewKeyedTransactorWithChainID(e.masterPK, big.NewInt(111)) // todo ilya, pass chain id from config
+	if err != nil {
+		return entity.TxResult{}, errors.Errorf("failed to create new keyed transactor: %w", err)
+	}
+	txOpts.Context = tmCtx
+
+	headerDTO := gen.ISettlementValSetHeader{
+		Version:            header.Version,
+		RequiredKeyTag:     uint8(header.RequiredKeyTag),
+		Epoch:              new(big.Int).SetUint64(header.Epoch),
+		CaptureTimestamp:   new(big.Int).SetUint64(header.CaptureTimestamp),
+		QuorumThreshold:    header.QuorumThreshold,
+		ValidatorsSszMRoot: header.ValidatorsSszMRoot,
+		PreviousHeaderHash: header.PreviousHeaderHash,
+	}
+
+	extraDataDTO := make([]gen.ISettlementExtraData, len(extraData))
+	for i, extraData := range extraData {
+		extraDataDTO[i].Key = extraData.Key
+		extraDataDTO[i].Value = extraData.Value
+	}
+
+	tx, err := e.master.SetGenesis(txOpts, headerDTO, extraDataDTO)
+	if err != nil {
+		return entity.TxResult{}, e.formatEthError(err)
+	}
+
+	receipt, err := bind.WaitMined(ctx, e.client, tx)
+	if err != nil {
+		return entity.TxResult{}, errors.Errorf("failed to wait for tx mining: %w", err)
+	}
+
+	if receipt.Status == types.ReceiptStatusFailed {
+		return entity.TxResult{}, errors.New("transaction reverted on chain")
+	}
+
+	return entity.TxResult{
 		TxHash: receipt.TxHash,
 	}, nil
 }
