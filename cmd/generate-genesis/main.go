@@ -13,7 +13,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"middleware-offchain/internal/client/symbiotic"
-	"middleware-offchain/internal/entity"
 	"middleware-offchain/internal/usecase/aggregator"
 	valsetDeriver "middleware-offchain/internal/usecase/valset-deriver"
 	"middleware-offchain/pkg/log"
@@ -116,10 +115,7 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to generate extra data: %w", err)
 		}
 
-		jsonData, err := entity.ValidatorSetHeaderWithExtraData{
-			ValidatorSetHeader: header,
-			ExtraDataList:      extraData,
-		}.EncodeJSON()
+		jsonData, err := EncodeValidatorSetHeaderWithExtraDataToJSON(header, extraData)
 		if err != nil {
 			return errors.Errorf("failed to encode validator set header with extra data to JSON: %w", err)
 		}

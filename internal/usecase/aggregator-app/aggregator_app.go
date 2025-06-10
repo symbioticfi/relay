@@ -24,7 +24,7 @@ type repository interface {
 
 type p2pClient interface {
 	BroadcastSignatureAggregatedMessage(ctx context.Context, msg entity.AggregatedSignatureMessage) error
-	SetSignatureHashMessageHandler(mh func(ctx context.Context, msg entity.P2PSignatureHashMessage) error)
+	SetSignatureHashMessageHandler(mh func(ctx context.Context, si entity.SenderInfo, msg entity.SignatureMessage) error)
 }
 
 type aggregator interface {
@@ -76,17 +76,17 @@ func NewAggregatorApp(cfg Config) (*AggregatorApp, error) {
 	return app, nil
 }
 
-func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg entity.P2PSignatureHashMessage) error {
+func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, _ entity.SenderInfo, msg entity.SignatureMessage) error {
 	ctx = log.WithComponent(ctx, "aggregator")
 
 	slog.DebugContext(ctx, "received signature hash generated message", "message", msg)
 
-	validatorSet, err := s.cfg.Repo.GetValsetByEpoch(ctx, msg.Message.Epoch)
+	validatorSet, err := s.cfg.Repo.GetValsetByEpoch(ctx, msg.Epoch)
 	if err != nil {
 		return errors.Errorf("failed to get validator set: %w", err)
 	}
 
-	publicKey, ok, err := s.cfg.Verifier.Verify(msg.Message.KeyTag, msg.Message.Signature)
+	publicKey, ok, err := s.cfg.Verifier.Verify(msg.KeyTag, msg.Signature)
 	if err != nil {
 		return errors.Errorf("failed to verify signature: %w", err)
 	}
@@ -94,19 +94,19 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		return errors.New("signature verification failed")
 	}
 
-	validator, found := validatorSet.FindValidatorByKey(msg.Message.KeyTag, publicKey)
+	validator, found := validatorSet.FindValidatorByKey(msg.KeyTag, publicKey)
 	if !found {
-		return errors.Errorf("validator not found for public key: %x", msg.Message.Signature.PublicKey)
+		return errors.Errorf("validator not found for public key: %x", msg.Signature.PublicKey)
 	}
 
-	err = s.cfg.Repo.SaveSignature(ctx, msg.Message.RequestHash, publicKey, msg.Message.Signature)
+	err = s.cfg.Repo.SaveSignature(ctx, msg.RequestHash, publicKey, msg.Signature)
 	if err != nil {
 		return errors.Errorf("failed to save signature: %w", err)
 	}
 
 	slog.DebugContext(ctx, "found validator", "validator", validator)
 
-	current, err := s.hashStore.PutHash(msg.Message.Signature, validator)
+	current, err := s.hashStore.PutHash(msg.Signature, validator)
 	if err != nil {
 		return errors.Errorf("failed to put signature: %w", err)
 	}
@@ -129,14 +129,14 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		"totalActiveVotingPower", validatorSet.GetTotalActiveVotingPower(),
 	)
 
-	sigs, err := s.cfg.Repo.GetAllSignatures(ctx, msg.Message.RequestHash)
+	sigs, err := s.cfg.Repo.GetAllSignatures(ctx, msg.RequestHash)
 	slog.DebugContext(ctx, "total received signatures", "sigs", len(sigs))
 	if err != nil {
 		return errors.Errorf("failed to get signature aggregated message: %w", err)
 	}
 
 	start := time.Now()
-	networkConfig, err := s.cfg.Repo.GetConfigByEpoch(ctx, msg.Message.Epoch)
+	networkConfig, err := s.cfg.Repo.GetConfigByEpoch(ctx, msg.Epoch)
 	if err != nil {
 		return errors.Errorf("failed to get network config: %w", err)
 	}
@@ -145,9 +145,9 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 
 	proofData, err := s.cfg.Aggregator.Aggregate(
 		&validatorSet,
-		msg.Message.KeyTag,
+		msg.KeyTag,
 		networkConfig.VerificationType,
-		msg.Message.Signature.MessageHash,
+		msg.Signature.MessageHash,
 		sigs,
 	)
 	if err != nil {
@@ -158,9 +158,9 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		"duration", time.Since(start).String(),
 	)
 	err = s.cfg.P2PClient.BroadcastSignatureAggregatedMessage(ctx, entity.AggregatedSignatureMessage{
-		RequestHash:      msg.Message.RequestHash,
-		KeyTag:           msg.Message.KeyTag,
-		Epoch:            msg.Message.Epoch,
+		RequestHash:      msg.RequestHash,
+		KeyTag:           msg.KeyTag,
+		Epoch:            msg.Epoch,
 		AggregationProof: *proofData,
 	})
 	if err != nil {

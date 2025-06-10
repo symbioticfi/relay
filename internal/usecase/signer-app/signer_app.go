@@ -23,7 +23,7 @@ type repo interface {
 
 type p2pService interface {
 	BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error
-	SetSignaturesAggregatedMessageHandler(mh func(ctx context.Context, msg entity.P2PSignaturesAggregatedMessage) error)
+	SetSignaturesAggregatedMessageHandler(mh func(ctx context.Context, si entity.SenderInfo, msg entity.AggregatedSignatureMessage) error)
 }
 
 type signer interface {

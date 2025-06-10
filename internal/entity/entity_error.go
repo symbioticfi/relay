@@ -1,0 +1,12 @@
+package entity
+
+type StringError string
+
+func (e StringError) Error() string {
+	return string(e)
+}
+
+const (
+	ErrEntityNotFound     = StringError("entity not found")
+	ErrEntityAlreadyExist = StringError("entity already exists")
+)

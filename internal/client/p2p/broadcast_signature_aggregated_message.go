@@ -3,7 +3,6 @@ package p2p
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"github.com/go-errors/errors"
 
@@ -28,19 +27,14 @@ func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg e
 	}
 
 	// send to ourselves first
-	err = s.signaturesAggregatedHandler(ctx, entity.P2PSignaturesAggregatedMessage{
-		Message: msg,
-		Info: entity.SenderInfo{
-			Type:      entity.P2PMessageTypeSignatureHash,
-			Sender:    "",
-			Timestamp: time.Now().Unix(),
-		},
-	})
+	err = s.signaturesAggregatedHandler(ctx, entity.SenderInfo{
+		Sender: "",
+	}, msg)
 	if err != nil {
 		return errors.Errorf("failed to handle signatures aggregated message: %w", err)
 	}
 
-	return s.broadcast(ctx, entity.P2PMessageTypeSignaturesAggregated, data)
+	return s.broadcast(ctx, messageTypeSignaturesAggregated, data)
 }
 
 type aggregationProofDTO struct {

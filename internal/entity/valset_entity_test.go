@@ -1,5 +1,6 @@
 package entity
 
+// todo ilya uncomment and fix
 //func TestValidatorSetHeaderEncode(t *testing.T) {
 //	v := ValidatorSetHeader{
 //		Version: 1,
