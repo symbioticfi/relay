@@ -8,7 +8,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
 )
 
 type eth interface {

@@ -19,8 +19,8 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/spf13/cobra"
 
-	"middleware-offchain/internal/client/symbiotic"
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/client/symbiotic"
+	"middleware-offchain/core/entity"
 	"middleware-offchain/pkg/log"
 )
 

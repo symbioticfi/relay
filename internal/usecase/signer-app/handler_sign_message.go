@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
 )
 
 func (s *SignerApp) Handler() http.Handler {

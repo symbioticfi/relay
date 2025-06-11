@@ -9,27 +9,26 @@ import (
 	"syscall"
 	"time"
 
-	"middleware-offchain/internal/usecase/aggregator"
-	"middleware-offchain/pkg/proof"
-
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p"
 	"github.com/maniartech/signals"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
+	"middleware-offchain/core/client/symbiotic"
+	"middleware-offchain/core/entity"
+	"middleware-offchain/core/usecase/aggregator"
+	"middleware-offchain/core/usecase/signer"
+	valsetDeriver "middleware-offchain/core/usecase/valset-deriver"
 	"middleware-offchain/internal/client/p2p"
 	"middleware-offchain/internal/client/repository/memory"
-	"middleware-offchain/internal/client/symbiotic"
-	"middleware-offchain/internal/entity"
 	aggregatorApp "middleware-offchain/internal/usecase/aggregator-app"
 	keyprovider "middleware-offchain/internal/usecase/key-provider"
-	"middleware-offchain/internal/usecase/signer"
 	signerApp "middleware-offchain/internal/usecase/signer-app"
-	valsetDeriver "middleware-offchain/internal/usecase/valset-deriver"
 	valsetGenerator "middleware-offchain/internal/usecase/valset-generator"
 	valsetListener "middleware-offchain/internal/usecase/valset-listener"
 	"middleware-offchain/pkg/log"
+	"middleware-offchain/pkg/proof"
 	"middleware-offchain/pkg/server"
 )
 

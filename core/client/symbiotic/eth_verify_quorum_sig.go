@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
 )
 
 func (e *Client) VerifyQuorumSig(ctx context.Context, epoch uint64, message []byte, keyTag entity.KeyTag, threshold *big.Int, proof []byte) (bool, error) {

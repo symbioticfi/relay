@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strconv"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
 )
 
 func typeToStr(keyType entity.KeyType) (string, error) {

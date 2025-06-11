@@ -9,7 +9,8 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p/core/network"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
+	p2pEntity "middleware-offchain/internal/entity"
 )
 
 func handleStreamWrapper(ctx context.Context, f func(ctx context.Context, stream network.Stream) error) func(stream network.Stream) {
@@ -38,7 +39,7 @@ func (s *Service) handleStreamSignedHash(ctx context.Context, stream network.Str
 		},
 	}
 
-	si := entity.SenderInfo{
+	si := p2pEntity.SenderInfo{
 		Sender: stream.Conn().RemotePeer().String(),
 	}
 
@@ -67,7 +68,7 @@ func (s *Service) handleStreamAggregatedProof(ctx context.Context, stream networ
 			Proof:            signaturesAggregated.AggregationProof.Proof,
 		},
 	}
-	si := entity.SenderInfo{
+	si := p2pEntity.SenderInfo{
 		Sender: stream.Conn().RemotePeer().String(),
 	}
 

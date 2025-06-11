@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
 	keyprovider "middleware-offchain/internal/usecase/key-provider"
 	"middleware-offchain/pkg/bls"
 )

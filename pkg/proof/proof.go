@@ -16,7 +16,7 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
 	"middleware-offchain/pkg/bls"
 
 	"github.com/consensys/gnark-crypto/ecc"

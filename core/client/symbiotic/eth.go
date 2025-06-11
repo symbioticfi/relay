@@ -19,8 +19,8 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	"middleware-offchain/internal/client/symbiotic/gen"
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/client/symbiotic/gen"
+	"middleware-offchain/core/entity"
 )
 
 //go:embed Master.abi.json

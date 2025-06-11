@@ -15,7 +15,8 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/samber/lo"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
+	p2pEntity "middleware-offchain/internal/entity"
 	"middleware-offchain/pkg/log"
 )
 
@@ -38,8 +39,8 @@ type Service struct {
 	host                        host.Host
 	peersMutex                  sync.RWMutex
 	peers                       map[peer.ID]struct{}
-	signatureHashHandler        func(ctx context.Context, si entity.SenderInfo, msg entity.SignatureMessage) error
-	signaturesAggregatedHandler func(ctx context.Context, si entity.SenderInfo, msg entity.AggregatedSignatureMessage) error
+	signatureHashHandler        func(ctx context.Context, si p2pEntity.SenderInfo, msg entity.SignatureMessage) error
+	signaturesAggregatedHandler func(ctx context.Context, si p2pEntity.SenderInfo, msg entity.AggregatedSignatureMessage) error
 }
 
 // NewService creates a new P2P service with the given configuration
@@ -48,10 +49,10 @@ func NewService(ctx context.Context, h host.Host) (*Service, error) {
 		ctx:   log.WithAttrs(ctx, slog.String("component", "p2p")),
 		host:  h,
 		peers: make(map[peer.ID]struct{}),
-		signatureHashHandler: func(ctx context.Context, si entity.SenderInfo, msg entity.SignatureMessage) error {
+		signatureHashHandler: func(ctx context.Context, si p2pEntity.SenderInfo, msg entity.SignatureMessage) error {
 			return nil
 		},
-		signaturesAggregatedHandler: func(ctx context.Context, si entity.SenderInfo, msg entity.AggregatedSignatureMessage) error {
+		signaturesAggregatedHandler: func(ctx context.Context, si p2pEntity.SenderInfo, msg entity.AggregatedSignatureMessage) error {
 			return nil
 		},
 	}
@@ -64,11 +65,11 @@ func NewService(ctx context.Context, h host.Host) (*Service, error) {
 	return service, nil
 }
 
-func (s *Service) SetSignatureHashMessageHandler(mh func(ctx context.Context, si entity.SenderInfo, msg entity.SignatureMessage) error) {
+func (s *Service) SetSignatureHashMessageHandler(mh func(ctx context.Context, si p2pEntity.SenderInfo, msg entity.SignatureMessage) error) {
 	s.signatureHashHandler = mh // todo ilya check if nil + mutex
 }
 
-func (s *Service) SetSignaturesAggregatedMessageHandler(mh func(ctx context.Context, si entity.SenderInfo, msg entity.AggregatedSignatureMessage) error) {
+func (s *Service) SetSignaturesAggregatedMessageHandler(mh func(ctx context.Context, si p2pEntity.SenderInfo, msg entity.AggregatedSignatureMessage) error) {
 	s.signaturesAggregatedHandler = mh // todo ilya check if nil + mutex
 }
 

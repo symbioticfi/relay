@@ -11,7 +11,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
 )
 
 const valsetVersion = 1

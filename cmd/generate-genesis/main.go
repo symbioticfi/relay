@@ -13,9 +13,9 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/spf13/cobra"
 
-	"middleware-offchain/internal/client/symbiotic"
-	"middleware-offchain/internal/usecase/aggregator"
-	valsetDeriver "middleware-offchain/internal/usecase/valset-deriver"
+	"middleware-offchain/core/client/symbiotic"
+	"middleware-offchain/core/usecase/aggregator"
+	valsetDeriver "middleware-offchain/core/usecase/valset-deriver"
 	"middleware-offchain/pkg/log"
 )
 

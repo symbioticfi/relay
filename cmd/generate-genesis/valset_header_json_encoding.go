@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
 )
 
 func EncodeValidatorSetHeaderWithExtraDataToJSON(validatorSetHeader entity.ValidatorSetHeader, extraDataList entity.ExtraDataList) ([]byte, error) {
