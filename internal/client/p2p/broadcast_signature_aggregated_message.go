@@ -28,12 +28,10 @@ func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg e
 	}
 
 	// send to ourselves first
-	err = s.signaturesAggregatedHandler(ctx, p2pEntity.SenderInfo{
-		Sender: "",
-	}, msg)
-	if err != nil {
-		return errors.Errorf("failed to handle signatures aggregated message: %w", err)
-	}
+	s.signaturesAggregatedHandler.Emit(ctx, p2pEntity.P2PAggregatedSignatureMessage{
+		SenderInfo: p2pEntity.SenderInfo{},
+		Message:    msg,
+	})
 
 	return s.broadcast(ctx, messageTypeSignaturesAggregated, data)
 }

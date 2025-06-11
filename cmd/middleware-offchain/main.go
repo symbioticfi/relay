@@ -11,7 +11,6 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p"
-	"github.com/maniartech/signals"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
@@ -30,6 +29,7 @@ import (
 	"middleware-offchain/pkg/log"
 	"middleware-offchain/pkg/proof"
 	"middleware-offchain/pkg/server"
+	"middleware-offchain/pkg/signals"
 )
 
 // offchain_middleware --master-address 0x1f5fE7682E49c20289C20a4cFc8b45d5EB410690 --rpc-url http://127.0.0.1:8545
@@ -163,7 +163,6 @@ var rootCmd = &cobra.Command{
 
 		signerLib := signer.NewSigner(keystoreProvider)
 
-		// todo ilya extract to lib package in order to get rid of vendor lock on specific lib
 		aggProofReadySignal := signals.New[entity.AggregatedSignatureMessage]()
 
 		signerApp, err := signerApp.NewSignerApp(signerApp.Config{
@@ -176,6 +175,8 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return errors.Errorf("failed to create signer app: %w", err)
 		}
+		p2pService.AddSignaturesAggregatedMessageListener(signerApp.HandleSignaturesAggregatedMessage, "signerAppSignaturesAggregatedListener")
+
 		slog.InfoContext(ctx, "created signer app, starting")
 
 		listener, err := valsetListener.New(valsetListener.Config{
@@ -201,14 +202,15 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to create epoch listener: %w", err)
 		}
 
-		aggProofReadySignal.AddListener(func(ctx context.Context, msg entity.AggregatedSignatureMessage) {
+		aggProofReadySignal.AddListener(func(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
 			err := generator.HandleProofAggregated(ctx, msg)
 			if err != nil {
-				slog.ErrorContext(ctx, "failed to handle proof aggregated", "error", err)
-			} else {
-				slog.DebugContext(ctx, "handled proof aggregated", "request", msg)
+				return errors.Errorf("failed to handle proof aggregated: %w", err)
 			}
-		})
+			slog.DebugContext(ctx, "handled proof aggregated", "request", msg)
+
+			return nil
+		}, "aggregatedProofReadySignalListener")
 
 		srv, err := server.New(server.Config{
 			Address:           cfg.httpListenAddress,
@@ -250,7 +252,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		if cfg.isAggregator {
-			_, err := aggregatorApp.NewAggregatorApp(aggregatorApp.Config{
+			aggApp, err := aggregatorApp.NewAggregatorApp(aggregatorApp.Config{
 				Repo:       repo,
 				P2PClient:  p2pService,
 				Aggregator: aggregator,
@@ -259,6 +261,8 @@ var rootCmd = &cobra.Command{
 			if err != nil {
 				return errors.Errorf("failed to create aggregator app: %w", err)
 			}
+			p2pService.AddSignatureMessageListener(aggApp.HandleSignatureGeneratedMessage, "aggregatorAppSignatureGeneratedListener")
+
 			slog.DebugContext(ctx, "created aggregator app, starting")
 		}
 

@@ -28,12 +28,10 @@ func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg en
 	}
 
 	// send to ourselves first
-	err = s.signatureHashHandler(ctx, p2pEntity.SenderInfo{
-		Sender: "",
-	}, msg)
-	if err != nil {
-		return errors.Errorf("failed to handle signature generated message: %w", err)
-	}
+	s.signatureHashHandler.Emit(ctx, p2pEntity.P2PSignatureMessage{
+		SenderInfo: p2pEntity.SenderInfo{},
+		Message:    msg,
+	})
 
 	return s.broadcast(ctx, messageTypeSignatureHash, data)
 }
