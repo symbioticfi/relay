@@ -9,7 +9,8 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
+	p2pEntity "middleware-offchain/internal/entity"
 )
 
 type repo interface {
@@ -23,7 +24,7 @@ type repo interface {
 
 type p2pService interface {
 	BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error
-	SetSignaturesAggregatedMessageHandler(mh func(ctx context.Context, si entity.SenderInfo, msg entity.AggregatedSignatureMessage) error)
+	SetSignaturesAggregatedMessageHandler(mh func(ctx context.Context, si p2pEntity.SenderInfo, msg entity.AggregatedSignatureMessage) error)
 }
 
 type signer interface {
@@ -37,11 +38,7 @@ type aggProofSignal interface {
 }
 
 type aggregator interface {
-	Verify(
-		valset *entity.ValidatorSet,
-		keyTag entity.KeyTag,
-		aggregationProof *entity.AggregationProof,
-	) (bool, error)
+	Verify(valset entity.ValidatorSet, keyTag entity.KeyTag, aggregationProof entity.AggregationProof) (bool, error)
 }
 
 type Config struct {

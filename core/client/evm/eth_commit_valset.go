@@ -1,4 +1,4 @@
-package symbiotic
+package evm
 
 import (
 	"context"
@@ -11,8 +11,8 @@ import (
 	"github.com/go-errors/errors"
 	"golang.org/x/crypto/sha3"
 
-	"middleware-offchain/internal/client/symbiotic/gen"
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/client/evm/gen"
+	"middleware-offchain/core/entity"
 )
 
 func (e *Client) CommitValsetHeader(ctx context.Context, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) (entity.TxResult, error) {

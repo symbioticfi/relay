@@ -11,7 +11,8 @@ package mocks
 
 import (
 	context "context"
-	entity "middleware-offchain/internal/entity"
+	entity "middleware-offchain/core/entity"
+	entity0 "middleware-offchain/internal/entity"
 	reflect "reflect"
 
 	common "github.com/ethereum/go-ethereum/common"
@@ -140,7 +141,7 @@ func (mr *Mockp2pClientMockRecorder) BroadcastSignatureAggregatedMessage(ctx, ms
 }
 
 // SetSignatureHashMessageHandler mocks base method.
-func (m *Mockp2pClient) SetSignatureHashMessageHandler(mh func(context.Context, entity.SenderInfo, entity.SignatureMessage) error) {
+func (m *Mockp2pClient) SetSignatureHashMessageHandler(mh func(context.Context, entity0.SenderInfo, entity.SignatureMessage) error) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetSignatureHashMessageHandler", mh)
 }
@@ -176,10 +177,10 @@ func (m *Mockaggregator) EXPECT() *MockaggregatorMockRecorder {
 }
 
 // Aggregate mocks base method.
-func (m *Mockaggregator) Aggregate(valset *entity.ValidatorSet, keyTag entity.KeyTag, verificationType entity.VerificationType, messageHash []byte, signatures []entity.Signature) (*entity.AggregationProof, error) {
+func (m *Mockaggregator) Aggregate(valset entity.ValidatorSet, keyTag entity.KeyTag, verificationType entity.VerificationType, messageHash []byte, signatures []entity.Signature) (entity.AggregationProof, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Aggregate", valset, keyTag, verificationType, messageHash, signatures)
-	ret0, _ := ret[0].(*entity.AggregationProof)
+	ret0, _ := ret[0].(entity.AggregationProof)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

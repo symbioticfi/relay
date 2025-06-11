@@ -10,7 +10,8 @@ import (
 	"github.com/go-errors/errors"
 	validate "github.com/go-playground/validator/v10"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
+	p2pEntity "middleware-offchain/internal/entity"
 	"middleware-offchain/pkg/log"
 )
 
@@ -24,17 +25,17 @@ type repository interface {
 
 type p2pClient interface {
 	BroadcastSignatureAggregatedMessage(ctx context.Context, msg entity.AggregatedSignatureMessage) error
-	SetSignatureHashMessageHandler(mh func(ctx context.Context, si entity.SenderInfo, msg entity.SignatureMessage) error)
+	SetSignatureHashMessageHandler(mh func(ctx context.Context, si p2pEntity.SenderInfo, msg entity.SignatureMessage) error)
 }
 
 type aggregator interface {
 	Aggregate(
-		valset *entity.ValidatorSet,
+		valset entity.ValidatorSet,
 		keyTag entity.KeyTag,
 		verificationType entity.VerificationType,
 		messageHash []byte,
 		signatures []entity.Signature,
-	) (*entity.AggregationProof, error)
+	) (entity.AggregationProof, error)
 }
 
 type verifier interface {
@@ -76,7 +77,7 @@ func NewAggregatorApp(cfg Config) (*AggregatorApp, error) {
 	return app, nil
 }
 
-func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, _ entity.SenderInfo, msg entity.SignatureMessage) error {
+func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, _ p2pEntity.SenderInfo, msg entity.SignatureMessage) error {
 	ctx = log.WithComponent(ctx, "aggregator")
 
 	slog.DebugContext(ctx, "received signature hash generated message", "message", msg)
@@ -144,7 +145,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, _ e
 	slog.DebugContext(ctx, "received network config", "networkConfig", networkConfig)
 
 	proofData, err := s.cfg.Aggregator.Aggregate(
-		&validatorSet,
+		validatorSet,
 		msg.KeyTag,
 		networkConfig.VerificationType,
 		msg.Signature.MessageHash,
@@ -161,7 +162,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, _ e
 		RequestHash:      msg.RequestHash,
 		KeyTag:           msg.KeyTag,
 		Epoch:            msg.Epoch,
-		AggregationProof: *proofData,
+		AggregationProof: proofData,
 	})
 	if err != nil {
 		return errors.Errorf("failed to broadcast signature aggregated message: %w", err)

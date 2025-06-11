@@ -5,16 +5,17 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
+	p2pEntity "middleware-offchain/internal/entity"
 )
 
-func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, _ entity.SenderInfo, msg entity.AggregatedSignatureMessage) error {
+func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, _ p2pEntity.SenderInfo, msg entity.AggregatedSignatureMessage) error {
 	validatorSet, err := s.cfg.Repo.GetValsetByEpoch(ctx, msg.Epoch)
 	if err != nil {
 		return errors.Errorf("failed to get validator set: %w", err)
 	}
 
-	ok, err := s.cfg.Aggregator.Verify(&validatorSet, msg.KeyTag, &msg.AggregationProof)
+	ok, err := s.cfg.Aggregator.Verify(validatorSet, msg.KeyTag, msg.AggregationProof)
 	if err != nil {
 		return errors.Errorf("failed to verify aggregation proof: %w", err)
 	}

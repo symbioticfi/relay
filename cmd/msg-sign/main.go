@@ -19,8 +19,8 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/spf13/cobra"
 
-	"middleware-offchain/internal/client/symbiotic"
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/client/evm"
+	"middleware-offchain/core/entity"
 	"middleware-offchain/pkg/log"
 )
 
@@ -72,7 +72,7 @@ var rootCmd = &cobra.Command{
 
 		ctx := signalContext(context.Background())
 
-		ethClient, err := symbiotic.NewEVMClient(symbiotic.Config{
+		ethClient, err := evm.NewEVMClient(evm.Config{
 			MasterRPCURL:   cfg.rpcURL,
 			MasterAddress:  cfg.masterAddress,
 			RequestTimeout: time.Second * 10,
@@ -119,7 +119,7 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func verifyQuorumSig(ctx context.Context, proof entity.AggregationProof, message string, eth *symbiotic.Client, epoch uint64) error {
+func verifyQuorumSig(ctx context.Context, proof entity.AggregationProof, message string, eth *evm.Client, epoch uint64) error {
 	slog.InfoContext(ctx, "received message with proof",
 		"messageHash", hex.EncodeToString(proof.MessageHash),
 		"ourMessage", hex.EncodeToString([]byte(message)),

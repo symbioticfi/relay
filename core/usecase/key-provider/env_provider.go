@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
 )
 
 type EnvKeyProvider struct {

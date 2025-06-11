@@ -12,7 +12,7 @@ package mocks
 import (
 	context "context"
 	big "math/big"
-	entity "middleware-offchain/internal/entity"
+	entity "middleware-offchain/core/entity"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"

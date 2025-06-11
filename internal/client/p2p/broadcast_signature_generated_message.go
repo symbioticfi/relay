@@ -6,7 +6,8 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
+	p2pEntity "middleware-offchain/internal/entity"
 )
 
 func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error {
@@ -27,7 +28,7 @@ func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg en
 	}
 
 	// send to ourselves first
-	err = s.signatureHashHandler(ctx, entity.SenderInfo{
+	err = s.signatureHashHandler(ctx, p2pEntity.SenderInfo{
 		Sender: "",
 	}, msg)
 	if err != nil {

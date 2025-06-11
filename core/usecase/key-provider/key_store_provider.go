@@ -8,7 +8,7 @@ import (
 
 	"github.com/pavlo-v-chernykh/keystore-go/v4"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
 )
 
 type KeystoreProvider struct {

@@ -13,30 +13,35 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
 	"middleware-offchain/pkg/bls"
 	"middleware-offchain/pkg/proof"
 )
 
-type Aggregator struct {
-	zkProver *proof.ZkProver
+type prover interface {
+	Prove(proveInput proof.ProveInput) (proof.ProofData, error)
+	Verify(valsetLen int, publicInputHash [32]byte, proofBytes []byte) (bool, error)
 }
 
-func NewAggregator(prover *proof.ZkProver) *Aggregator {
+type Aggregator struct {
+	zkProver prover
+}
+
+func NewAggregator(prover prover) *Aggregator {
 	return &Aggregator{
 		zkProver: prover,
 	}
 }
 
 func (a *Aggregator) Aggregate(
-	valset *entity.ValidatorSet,
+	valset entity.ValidatorSet,
 	keyTag entity.KeyTag,
 	verificationType entity.VerificationType,
 	messageHash []byte,
 	signatures []entity.Signature,
-) (*entity.AggregationProof, error) {
+) (entity.AggregationProof, error) {
 	if !compareMessageHasher(signatures, messageHash) {
-		return nil, errors.New("message hashes mismatch")
+		return entity.AggregationProof{}, errors.New("message hashes mismatch")
 	}
 
 	switch verificationType {
@@ -45,7 +50,7 @@ func (a *Aggregator) Aggregate(
 	case entity.VerificationTypeSimple:
 		return a.simpleAggregate(valset, keyTag, messageHash, signatures)
 	}
-	return nil, errors.New("unknown verification type")
+	return entity.AggregationProof{}, errors.New("unknown verification type")
 }
 
 func compareMessageHasher(signatures []entity.Signature, msgHash []byte) bool {
@@ -58,9 +63,9 @@ func compareMessageHasher(signatures []entity.Signature, msgHash []byte) bool {
 }
 
 func (a *Aggregator) Verify(
-	valset *entity.ValidatorSet,
+	valset entity.ValidatorSet,
 	keyTag entity.KeyTag,
-	aggregationProof *entity.AggregationProof,
+	aggregationProof entity.AggregationProof,
 ) (bool, error) {
 	switch aggregationProof.VerificationType {
 	case entity.VerificationTypeZK:
@@ -72,26 +77,26 @@ func (a *Aggregator) Verify(
 }
 
 func (a *Aggregator) zkAggregate(
-	valset *entity.ValidatorSet,
+	valset entity.ValidatorSet,
 	keyTag entity.KeyTag,
 	messageHash []byte,
 	signatures []entity.Signature,
-) (*entity.AggregationProof, error) {
+) (entity.AggregationProof, error) {
 	aggG1Sig := bls.ZeroG1()
 	aggG2Key := bls.ZeroG2()
 	signers := make(map[common.Address]bool)
 	for _, sig := range signatures {
 		g1, g2Key, err := bls.UnpackPublicG1G2(sig.PublicKey)
 		if err != nil {
-			return nil, err
+			return entity.AggregationProof{}, err
 		}
 		val, ok := valset.FindValidatorByKey(keyTag, g1.Marshal())
 		if !ok {
-			return nil, errors.New("failed to find validator by key")
+			return entity.AggregationProof{}, errors.New("failed to find validator by key")
 		}
 		g1Sig, err := bls.DeserializeG1(sig.Signature)
 		if err != nil {
-			return nil, err
+			return entity.AggregationProof{}, err
 		}
 		aggG1Sig = aggG1Sig.Add(g1Sig)
 		aggG2Key = aggG2Key.Add(&g2Key)
@@ -103,12 +108,12 @@ func (a *Aggregator) zkAggregate(
 		if val.IsActive {
 			keyBytes, ok := val.FindKeyByKeyTag(keyTag)
 			if !ok {
-				return nil, errors.New("failed to find key by keyTag")
+				return entity.AggregationProof{}, errors.New("failed to find key by keyTag")
 			}
 			_, isSinger := signers[val.Operator]
 			g1Key, err := bls.DeserializeG1(keyBytes)
 			if err != nil {
-				return nil, errors.Errorf("failed to deserialize G1 key: %w", err)
+				return entity.AggregationProof{}, errors.Errorf("failed to deserialize G1 key: %w", err)
 			}
 
 			validatorsData = append(validatorsData, proof.ValidatorData{
@@ -127,9 +132,10 @@ func (a *Aggregator) zkAggregate(
 	}
 	proofData, err := a.zkProver.Prove(proverInput)
 	if err != nil {
-		return nil, err
+		return entity.AggregationProof{}, err
 	}
-	return &entity.AggregationProof{
+
+	return entity.AggregationProof{
 		VerificationType: entity.VerificationTypeZK,
 		MessageHash:      messageHash,
 		Proof:            proofData.Marshall(),
@@ -137,11 +143,11 @@ func (a *Aggregator) zkAggregate(
 }
 
 func (a *Aggregator) simpleAggregate(
-	valset *entity.ValidatorSet,
+	valset entity.ValidatorSet,
 	keyTag entity.KeyTag,
 	messageHash []byte,
 	signatures []entity.Signature,
-) (*entity.AggregationProof, error) {
+) (entity.AggregationProof, error) {
 	type dtoG1Point struct {
 		X *big.Int
 		Y *big.Int
@@ -163,15 +169,15 @@ func (a *Aggregator) simpleAggregate(
 	for _, sig := range signatures {
 		g1, g2Key, err := bls.UnpackPublicG1G2(sig.PublicKey)
 		if err != nil {
-			return nil, err
+			return entity.AggregationProof{}, err
 		}
 		val, ok := valset.FindValidatorByKey(keyTag, g1.Marshal())
 		if !ok {
-			return nil, errors.New("failed to find validator by key")
+			return entity.AggregationProof{}, errors.New("failed to find validator by key")
 		}
 		g1Sig, err := bls.DeserializeG1(sig.Signature)
 		if err != nil {
-			return nil, err
+			return entity.AggregationProof{}, err
 		}
 		aggG1Sig = aggG1Sig.Add(g1Sig)
 		aggG2Key = aggG2Key.Add(&g2Key)
@@ -182,12 +188,12 @@ func (a *Aggregator) simpleAggregate(
 		if val.IsActive {
 			keyBytes, ok := val.FindKeyByKeyTag(keyTag)
 			if !ok {
-				return nil, errors.New("failed to find key by keyTag")
+				return entity.AggregationProof{}, errors.New("failed to find key by keyTag")
 			}
 			_, isSinger := signers[val.Operator]
 			g1Key, err := bls.DeserializeG1(keyBytes)
 			if err != nil {
-				return nil, fmt.Errorf("failed to deserialize G1 key: %w", err)
+				return entity.AggregationProof{}, fmt.Errorf("failed to deserialize G1 key: %w", err)
 			}
 
 			validatorsData = append(validatorsData, dtoValidatorData{
@@ -228,7 +234,7 @@ func (a *Aggregator) simpleAggregate(
 		{Name: "Y", Type: "uint256[2]"},
 	})
 	if err != nil {
-		return nil, err
+		return entity.AggregationProof{}, err
 	}
 
 	g1Type, err := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
@@ -236,7 +242,7 @@ func (a *Aggregator) simpleAggregate(
 		{Name: "Y", Type: "uint256"},
 	})
 	if err != nil {
-		return nil, err
+		return entity.AggregationProof{}, err
 	}
 
 	validatorsDataType, err := abi.NewType("tuple[]", "", []abi.ArgumentMarshaling{
@@ -247,12 +253,12 @@ func (a *Aggregator) simpleAggregate(
 		{Name: "VotingPower", Type: "uint256"},
 	})
 	if err != nil {
-		return nil, err
+		return entity.AggregationProof{}, err
 	}
 
 	isNonSignersType, err := abi.NewType("bool[]", "", []abi.ArgumentMarshaling{})
 	if err != nil {
-		return nil, err
+		return entity.AggregationProof{}, err
 	}
 
 	g1PointAbiArgs := abi.Arguments{
@@ -281,22 +287,22 @@ func (a *Aggregator) simpleAggregate(
 
 	aggG1SigBytes, err := g1PointAbiArgs.Pack(dtoG1AggSig)
 	if err != nil {
-		return nil, err
+		return entity.AggregationProof{}, err
 	}
 
 	aggG2KeyBytes, err := g2PointAbiArgs.Pack(dtoG2AggKey)
 	if err != nil {
-		return nil, err
+		return entity.AggregationProof{}, err
 	}
 
 	isNonSignersBytes, err := isNonSignersAbiArgs.Pack(isNonSigners)
 	if err != nil {
-		return nil, err
+		return entity.AggregationProof{}, err
 	}
 
 	validatorsDataBytes, err := validatorsDataAbiArgs.Pack(validatorsData)
 	if err != nil {
-		return nil, err
+		return entity.AggregationProof{}, err
 	}
 
 	proofBytes := bytes.Clone(aggG1SigBytes)
@@ -304,7 +310,7 @@ func (a *Aggregator) simpleAggregate(
 	proofBytes = append(proofBytes, validatorsDataBytes...)
 	proofBytes = append(proofBytes, isNonSignersBytes...)
 
-	return &entity.AggregationProof{
+	return entity.AggregationProof{
 		Proof:            proofBytes,
 		MessageHash:      messageHash,
 		VerificationType: entity.VerificationTypeSimple,
@@ -312,9 +318,9 @@ func (a *Aggregator) simpleAggregate(
 }
 
 func (a *Aggregator) zkVerify(
-	valset *entity.ValidatorSet,
+	valset entity.ValidatorSet,
 	keyTag entity.KeyTag,
-	aggregationProof *entity.AggregationProof,
+	aggregationProof entity.AggregationProof,
 ) (bool, error) {
 	activeVals := 0
 	for _, val := range valset.Validators {
@@ -355,9 +361,9 @@ func (a *Aggregator) zkVerify(
 }
 
 func (a *Aggregator) simpleVerify(
-	valset *entity.ValidatorSet,
+	valset entity.ValidatorSet,
 	keyTag entity.KeyTag,
-	aggregationProof *entity.AggregationProof,
+	aggregationProof entity.AggregationProof,
 ) (bool, error) {
 	g2Type, err := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
 		{Name: "X", Type: "uint256[2]"},

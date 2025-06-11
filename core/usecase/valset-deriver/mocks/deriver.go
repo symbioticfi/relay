@@ -11,7 +11,7 @@ package mocks
 
 import (
 	context "context"
-	entity "middleware-offchain/internal/entity"
+	entity "middleware-offchain/core/entity"
 	reflect "reflect"
 
 	common "github.com/ethereum/go-ethereum/common"

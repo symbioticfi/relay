@@ -6,7 +6,8 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
+	p2pEntity "middleware-offchain/internal/entity"
 )
 
 func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
@@ -27,7 +28,7 @@ func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg e
 	}
 
 	// send to ourselves first
-	err = s.signaturesAggregatedHandler(ctx, entity.SenderInfo{
+	err = s.signaturesAggregatedHandler(ctx, p2pEntity.SenderInfo{
 		Sender: "",
 	}, msg)
 	if err != nil {
