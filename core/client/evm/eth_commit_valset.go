@@ -1,4 +1,4 @@
-package symbiotic
+package evm
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"github.com/go-errors/errors"
 	"golang.org/x/crypto/sha3"
 
-	"middleware-offchain/core/client/symbiotic/gen"
+	"middleware-offchain/core/client/evm/gen"
 	"middleware-offchain/core/entity"
 )
 

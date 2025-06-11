@@ -1,6 +1,6 @@
 //go:build manual
 
-package symbiotic
+package evm
 
 import (
 	"fmt"

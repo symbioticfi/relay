@@ -13,7 +13,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/spf13/cobra"
 
-	"middleware-offchain/core/client/symbiotic"
+	"middleware-offchain/core/client/evm"
 	"middleware-offchain/core/usecase/aggregator"
 	valsetDeriver "middleware-offchain/core/usecase/valset-deriver"
 	"middleware-offchain/pkg/log"
@@ -86,7 +86,7 @@ var rootCmd = &cobra.Command{
 			privateKey = pkBytes[:]
 		}
 
-		client, err := symbiotic.NewEVMClient(symbiotic.Config{
+		client, err := evm.NewEVMClient(evm.Config{
 			MasterRPCURL:   cfg.rpcURL,
 			MasterAddress:  cfg.masterAddress,
 			RequestTimeout: time.Second * 5,

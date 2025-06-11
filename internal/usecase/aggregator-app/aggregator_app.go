@@ -30,12 +30,12 @@ type p2pClient interface {
 
 type aggregator interface {
 	Aggregate(
-		valset *entity.ValidatorSet,
+		valset entity.ValidatorSet,
 		keyTag entity.KeyTag,
 		verificationType entity.VerificationType,
 		messageHash []byte,
 		signatures []entity.Signature,
-	) (*entity.AggregationProof, error)
+	) (entity.AggregationProof, error)
 }
 
 type verifier interface {
@@ -145,7 +145,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, _ p
 	slog.DebugContext(ctx, "received network config", "networkConfig", networkConfig)
 
 	proofData, err := s.cfg.Aggregator.Aggregate(
-		&validatorSet,
+		validatorSet,
 		msg.KeyTag,
 		networkConfig.VerificationType,
 		msg.Signature.MessageHash,
@@ -162,7 +162,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, _ p
 		RequestHash:      msg.RequestHash,
 		KeyTag:           msg.KeyTag,
 		Epoch:            msg.Epoch,
-		AggregationProof: *proofData,
+		AggregationProof: proofData,
 	})
 	if err != nil {
 		return errors.Errorf("failed to broadcast signature aggregated message: %w", err)

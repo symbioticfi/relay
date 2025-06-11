@@ -1,4 +1,4 @@
-package symbiotic
+package evm
 
 import (
 	"bytes"
@@ -19,7 +19,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	"middleware-offchain/core/client/symbiotic/gen"
+	"middleware-offchain/core/client/evm/gen"
 	"middleware-offchain/core/entity"
 )
 
@@ -145,18 +145,6 @@ func initABI() error {
 		return errors.Errorf("failed to parse key registry ABI: %w", err)
 	}
 
-	return nil
-}
-
-func GeneratePrivateKey() ([]byte, error) {
-	pk, err := crypto.GenerateKey()
-	if err != nil {
-		return nil, errors.Errorf("failed to generate private key: %w", err)
-	}
-	return crypto.FromECDSA(pk), nil
-}
-
-func (e *Client) Commit(messageHash string, signature []byte) error {
 	return nil
 }
 

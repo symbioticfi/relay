@@ -38,11 +38,7 @@ type aggProofSignal interface {
 }
 
 type aggregator interface {
-	Verify(
-		valset *entity.ValidatorSet,
-		keyTag entity.KeyTag,
-		aggregationProof *entity.AggregationProof,
-	) (bool, error)
+	Verify(valset entity.ValidatorSet, keyTag entity.KeyTag, aggregationProof entity.AggregationProof) (bool, error)
 }
 
 type Config struct {

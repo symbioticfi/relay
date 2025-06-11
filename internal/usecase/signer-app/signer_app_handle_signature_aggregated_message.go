@@ -15,7 +15,7 @@ func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, _ p2p
 		return errors.Errorf("failed to get validator set: %w", err)
 	}
 
-	ok, err := s.cfg.Aggregator.Verify(&validatorSet, msg.KeyTag, &msg.AggregationProof)
+	ok, err := s.cfg.Aggregator.Verify(validatorSet, msg.KeyTag, msg.AggregationProof)
 	if err != nil {
 		return errors.Errorf("failed to verify aggregation proof: %w", err)
 	}

@@ -177,10 +177,10 @@ func (m *Mockaggregator) EXPECT() *MockaggregatorMockRecorder {
 }
 
 // Aggregate mocks base method.
-func (m *Mockaggregator) Aggregate(valset *entity.ValidatorSet, keyTag entity.KeyTag, verificationType entity.VerificationType, messageHash []byte, signatures []entity.Signature) (*entity.AggregationProof, error) {
+func (m *Mockaggregator) Aggregate(valset entity.ValidatorSet, keyTag entity.KeyTag, verificationType entity.VerificationType, messageHash []byte, signatures []entity.Signature) (entity.AggregationProof, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Aggregate", valset, keyTag, verificationType, messageHash, signatures)
-	ret0, _ := ret[0].(*entity.AggregationProof)
+	ret0, _ := ret[0].(entity.AggregationProof)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

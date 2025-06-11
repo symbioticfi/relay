@@ -15,15 +15,15 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	"middleware-offchain/core/client/symbiotic"
+	"middleware-offchain/core/client/evm"
 	"middleware-offchain/core/entity"
 	"middleware-offchain/core/usecase/aggregator"
+	keyprovider "middleware-offchain/core/usecase/key-provider"
 	"middleware-offchain/core/usecase/signer"
 	valsetDeriver "middleware-offchain/core/usecase/valset-deriver"
 	"middleware-offchain/internal/client/p2p"
 	"middleware-offchain/internal/client/repository/memory"
 	aggregatorApp "middleware-offchain/internal/usecase/aggregator-app"
-	keyprovider "middleware-offchain/internal/usecase/key-provider"
 	signerApp "middleware-offchain/internal/usecase/signer-app"
 	valsetGenerator "middleware-offchain/internal/usecase/valset-generator"
 	valsetListener "middleware-offchain/internal/usecase/valset-listener"
@@ -103,7 +103,7 @@ var rootCmd = &cobra.Command{
 		pkBytes := [32]byte{}
 		b.FillBytes(pkBytes[:])
 
-		ethClient, err := symbiotic.NewEVMClient(symbiotic.Config{
+		ethClient, err := evm.NewEVMClient(evm.Config{
 			MasterRPCURL:   cfg.rpcURL,
 			MasterAddress:  cfg.masterAddress,
 			RequestTimeout: time.Second * 5,
