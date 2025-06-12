@@ -25,7 +25,6 @@ type repository interface {
 
 type p2pClient interface {
 	BroadcastSignatureAggregatedMessage(ctx context.Context, msg entity.AggregatedSignatureMessage) error
-	SetSignatureHashMessageHandler(mh func(ctx context.Context, si p2pEntity.SenderInfo, msg entity.SignatureMessage) error)
 }
 
 type aggregator interface {
@@ -72,13 +71,13 @@ func NewAggregatorApp(cfg Config) (*AggregatorApp, error) {
 		hashStore: newHashStore(),
 	}
 
-	cfg.P2PClient.SetSignatureHashMessageHandler(app.HandleSignatureGeneratedMessage)
-
 	return app, nil
 }
 
-func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, _ p2pEntity.SenderInfo, msg entity.SignatureMessage) error {
+func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2pMsg p2pEntity.P2PMessage[entity.SignatureMessage]) error {
 	ctx = log.WithComponent(ctx, "aggregator")
+
+	msg := p2pMsg.Message
 
 	slog.DebugContext(ctx, "received signature hash generated message", "message", msg)
 

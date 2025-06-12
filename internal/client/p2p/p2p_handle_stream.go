@@ -43,10 +43,10 @@ func (s *Service) handleStreamSignedHash(ctx context.Context, stream network.Str
 		Sender: stream.Conn().RemotePeer().String(),
 	}
 
-	err = s.signatureHashHandler(ctx, si, msg)
-	if err != nil {
-		return errors.Errorf("failed to handle message: %w", err)
-	}
+	s.signatureHashHandler.Emit(ctx, p2pEntity.P2PMessage[entity.SignatureMessage]{
+		SenderInfo: si,
+		Message:    msg,
+	})
 
 	return nil
 }
@@ -72,10 +72,10 @@ func (s *Service) handleStreamAggregatedProof(ctx context.Context, stream networ
 		Sender: stream.Conn().RemotePeer().String(),
 	}
 
-	err = s.signaturesAggregatedHandler(ctx, si, msg)
-	if err != nil {
-		return errors.Errorf("failed to handle message: %w", err)
-	}
+	s.signaturesAggregatedHandler.Emit(ctx, p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]{
+		SenderInfo: si,
+		Message:    msg,
+	})
 
 	return nil
 }

@@ -9,7 +9,8 @@ import (
 	p2pEntity "middleware-offchain/internal/entity"
 )
 
-func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, _ p2pEntity.SenderInfo, msg entity.AggregatedSignatureMessage) error {
+func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, p2pMsg p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]) error {
+	msg := p2pMsg.Message
 	validatorSet, err := s.cfg.Repo.GetValsetByEpoch(ctx, msg.Epoch)
 	if err != nil {
 		return errors.Errorf("failed to get validator set: %w", err)
