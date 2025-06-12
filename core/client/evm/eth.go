@@ -5,7 +5,9 @@ import (
 	"context"
 	"crypto/ecdsa"
 	_ "embed"
+	"encoding/hex"
 	"math/big"
+	"regexp"
 	"time"
 
 	"github.com/ethereum/go-ethereum/rpc"
@@ -84,9 +86,9 @@ func (c Config) Validate() error {
 }
 
 type Client struct {
-	client                *ethclient.Client
-	masterContractAddress common.Address
-	cfg                   Config
+	client        *ethclient.Client
+	masterAddress entity.CrossChainAddress
+	cfg           Config
 
 	masterPK *ecdsa.PrivateKey // could be nil for read-only access
 	master   *gen.Master       // could be nil for read-only access
@@ -120,11 +122,14 @@ func NewEVMClient(cfg Config) (*Client, error) {
 	}
 
 	return &Client{
-		client:                client,
-		masterContractAddress: common.HexToAddress(cfg.MasterAddress),
-		masterPK:              pk,
-		cfg:                   cfg,
-		master:                master,
+		client: client,
+		masterAddress: entity.CrossChainAddress{
+			Address: common.HexToAddress(cfg.MasterAddress),
+			ChainId: 111,
+		},
+		masterPK: pk,
+		cfg:      cfg,
+		master:   master,
 	}, nil
 }
 
@@ -174,7 +179,7 @@ func (e *Client) GetConfig(ctx context.Context, timestamp uint64) (entity.Networ
 	type dtoConfigContainer struct {
 		Config dtoNetworkConfig
 	}
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getConfigFunction, new(big.Int).SetUint64(timestamp), []byte{})
+	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getConfigFunction, new(big.Int).SetUint64(timestamp), []byte{})
 	if err != nil {
 		return entity.NetworkConfig{}, errors.Errorf("failed to construct call msg: %w", err)
 	}
@@ -214,7 +219,7 @@ func (e *Client) GetConfig(ctx context.Context, timestamp uint64) (entity.Networ
 }
 
 func (e *Client) GetIsGenesisSet(ctx context.Context) (bool, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getIsGenesisSetFunction)
+	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getIsGenesisSetFunction)
 	if err != nil {
 		return false, errors.Errorf("failed to construct call msg: %w", err)
 	}
@@ -229,7 +234,7 @@ func (e *Client) GetIsGenesisSet(ctx context.Context) (bool, error) {
 }
 
 func (e *Client) IsValsetHeaderCommittedAt(ctx context.Context, epoch uint64) (bool, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, isValSetHeaderCommittedAtFunction, new(big.Int).SetUint64(epoch))
+	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, isValSetHeaderCommittedAtFunction, new(big.Int).SetUint64(epoch))
 	if err != nil {
 		return false, errors.Errorf("failed to construct call msg: %w", err)
 	}
@@ -244,7 +249,7 @@ func (e *Client) IsValsetHeaderCommittedAt(ctx context.Context, epoch uint64) (b
 }
 
 func (e *Client) GetCurrentEpoch(ctx context.Context) (uint64, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getCurrentEpochFunction)
+	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getCurrentEpochFunction)
 	if err != nil {
 		return 0, errors.Errorf("failed to construct call msg: %w", err)
 	}
@@ -259,7 +264,7 @@ func (e *Client) GetCurrentEpoch(ctx context.Context) (uint64, error) {
 }
 
 func (e *Client) GetPreviousHeaderHash(ctx context.Context) ([32]byte, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getPreviousHeaderHashFunction)
+	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getPreviousHeaderHashFunction)
 	if err != nil {
 		return [32]byte{}, errors.Errorf("failed to construct call msg: %w", err)
 	}
@@ -273,7 +278,7 @@ func (e *Client) GetPreviousHeaderHash(ctx context.Context) ([32]byte, error) {
 }
 
 func (e *Client) GetPreviousHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getPreviousHeaderHashAtFunction, new(big.Int).SetUint64(epoch))
+	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getPreviousHeaderHashAtFunction, new(big.Int).SetUint64(epoch))
 	if err != nil {
 		return [32]byte{}, errors.Errorf("failed to construct call msg: %w", err)
 	}
@@ -287,7 +292,7 @@ func (e *Client) GetPreviousHeaderHashAt(ctx context.Context, epoch uint64) ([32
 }
 
 func (e *Client) GetLatestHeaderHash(ctx context.Context) ([32]byte, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getLatestHeaderHashFunction)
+	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getLatestHeaderHashFunction)
 	if err != nil {
 		return [32]byte{}, errors.Errorf("failed to construct call msg: %w", err)
 	}
@@ -301,7 +306,7 @@ func (e *Client) GetLatestHeaderHash(ctx context.Context) ([32]byte, error) {
 }
 
 func (e *Client) GetHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getLatestHeaderHashAtFunction, new(big.Int).SetUint64(epoch))
+	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getLatestHeaderHashAtFunction, new(big.Int).SetUint64(epoch))
 	if err != nil {
 		return [32]byte{}, errors.Errorf("failed to construct call msg: %w", err)
 	}
@@ -315,7 +320,7 @@ func (e *Client) GetHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, e
 }
 
 func (e *Client) GetEpochStart(ctx context.Context, epoch uint64) (uint64, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getEpochStartFunction, new(big.Int).SetUint64(epoch), []byte{})
+	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getEpochStartFunction, new(big.Int).SetUint64(epoch), []byte{})
 	if err != nil {
 		return 0, errors.Errorf("failed to construct call msg: %w", err)
 	}
@@ -330,7 +335,7 @@ func (e *Client) GetEpochStart(ctx context.Context, epoch uint64) (uint64, error
 }
 
 func (e *Client) GetLastCommittedHeaderEpoch(ctx context.Context) (uint64, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getLastCommittedHeaderEpochFunction)
+	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getLastCommittedHeaderEpochFunction)
 	if err != nil {
 		return 0, errors.Errorf("failed to construct call msg: %w", err)
 	}
@@ -345,7 +350,7 @@ func (e *Client) GetLastCommittedHeaderEpoch(ctx context.Context) (uint64, error
 }
 
 func (e *Client) GetCurrentPhase(ctx context.Context) (entity.Phase, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getCurrentPhaseFunction)
+	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getCurrentPhaseFunction)
 	if err != nil {
 		return 0, errors.Errorf("failed to construct call msg: %w", err)
 	}
@@ -360,7 +365,7 @@ func (e *Client) GetCurrentPhase(ctx context.Context) (entity.Phase, error) {
 }
 
 func (e *Client) GetCurrentValsetTimestamp(ctx context.Context) (uint64, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getCurrentValsetTimestampFunction)
+	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getCurrentValsetTimestampFunction)
 	if err != nil {
 		return 0, errors.Errorf("failed to construct call msg: %w", err)
 	}
@@ -375,7 +380,7 @@ func (e *Client) GetCurrentValsetTimestamp(ctx context.Context) (uint64, error) 
 }
 
 func (e *Client) GetCaptureTimestamp(ctx context.Context) (uint64, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getCaptureTimestampFunction)
+	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getCaptureTimestampFunction)
 	if err != nil {
 		return 0, errors.Errorf("failed to construct call msg: %w", err)
 	}
@@ -390,7 +395,7 @@ func (e *Client) GetCaptureTimestamp(ctx context.Context) (uint64, error) {
 }
 
 func (e *Client) GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, epoch uint64) (uint64, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getCaptureTimestampFromValsetHeaderAtFunction, epoch)
+	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getCaptureTimestampFromValsetHeaderAtFunction, epoch)
 	if err != nil {
 		return 0, errors.Errorf("failed to construct call msg: %w", err)
 	}
@@ -485,7 +490,7 @@ func (e *Client) GetKeys(ctx context.Context, address entity.CrossChainAddress, 
 }
 
 func (e *Client) GetRequiredKeyTag(ctx context.Context, timestamp uint64) (entity.KeyTag, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getRequiredKeyTagFunction, new(big.Int).SetUint64(timestamp), []byte{})
+	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getRequiredKeyTagFunction, new(big.Int).SetUint64(timestamp), []byte{})
 	if err != nil {
 		return 0, errors.Errorf("failed to construct call msg: %w", err)
 	}
@@ -505,7 +510,7 @@ func (e *Client) GetRequiredKeyTag(ctx context.Context, timestamp uint64) (entit
 }
 
 func (e *Client) GetQuorumThreshold(ctx context.Context, timestamp uint64, keyTag entity.KeyTag) (uint64, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getQuorumThresholdFunction, keyTag, timestamp, []byte{})
+	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getQuorumThresholdFunction, keyTag, timestamp, []byte{})
 	if err != nil {
 		return 0, errors.Errorf("failed to construct call msg: %w", err)
 	}
@@ -519,7 +524,7 @@ func (e *Client) GetQuorumThreshold(ctx context.Context, timestamp uint64, keyTa
 }
 
 func (e *Client) GetSubnetwork(ctx context.Context) ([32]byte, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getSubnetworkFunction)
+	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getSubnetworkFunction)
 	if err != nil {
 		return [32]byte{}, errors.Errorf("failed to construct call msg: %w", err)
 	}
@@ -533,7 +538,7 @@ func (e *Client) GetSubnetwork(ctx context.Context) ([32]byte, error) {
 }
 
 func (e *Client) GetNetworkAddress(ctx context.Context) (*common.Address, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getNetworkFunction)
+	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getNetworkFunction)
 	if err != nil {
 		return nil, errors.Errorf("failed to construct call msg: %w", err)
 	}
@@ -559,7 +564,7 @@ func (e *Client) GetValSetHeaderAt(ctx context.Context, epoch uint64) (entity.Va
 	type dtoValsetHeaderContainer struct {
 		DTOValsetHeader dtoValsetHeader
 	}
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getValSetHeaderAtFunction, new(big.Int).SetUint64(epoch))
+	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getValSetHeaderAtFunction, new(big.Int).SetUint64(epoch))
 	if err != nil {
 		return entity.ValidatorSetHeader{}, errors.Errorf("failed to construct call msg: %w", err)
 	}
@@ -589,7 +594,7 @@ func (e *Client) GetValSetHeaderAt(ctx context.Context, epoch uint64) (entity.Va
 }
 
 func (e *Client) GetEip712Domain(ctx context.Context) (entity.Eip712Domain, error) {
-	callMsg, err := constructCallMsg(e.masterContractAddress, masterABI, getEip712DomainFunction)
+	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getEip712DomainFunction)
 	if err != nil {
 		return entity.Eip712Domain{}, errors.Errorf("failed to construct call msg: %w", err)
 	}
@@ -644,4 +649,44 @@ func constructCallMsg(contractAddress common.Address, abi abi.ABI, method string
 		To:   &contractAddress,
 		Data: data,
 	}, nil
+}
+
+var customErrRegExp = regexp.MustCompile(`0x[0-9a-fA-F]{8}`)
+
+func (e *Client) formatEVMError(err error) error {
+	type jsonError interface {
+		Error() string
+		ErrorData() interface{}
+		ErrorCode() int
+	}
+	var errData jsonError
+	if !errors.As(err, &errData) {
+		return err
+	}
+	if errData.ErrorCode() != 3 && errData.ErrorData() == nil {
+		return err
+	}
+
+	matches := customErrRegExp.FindStringSubmatch(errData.Error())
+	if len(matches) < 1 {
+		return err
+	}
+
+	errDef, ok := findErrorBySelector(matches[0])
+	if !ok {
+		return err
+	}
+
+	return errors.Errorf("%w: %s", err, errDef.String())
+}
+
+func findErrorBySelector(errSelector string) (abi.Error, bool) {
+	for _, errDef := range masterABI.Errors {
+		selector := hex.EncodeToString(crypto.Keccak256([]byte(errDef.Sig))[:4])
+		if "0x"+selector == errSelector {
+			return errDef, true
+		}
+	}
+
+	return abi.Error{}, false
 }
