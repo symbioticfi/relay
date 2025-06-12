@@ -27,7 +27,7 @@ type Repository struct {
 
 func New(cfg Config) (*Repository, error) {
 	opts := badger.DefaultOptions(cfg.Dir)
-	opts.Logger = &badgerLog{log: slog.With(slog.String("component", "badger"))}
+	opts.Logger = doNothingLog{}
 
 	db, err := badger.Open(opts)
 	if err != nil {
@@ -62,3 +62,10 @@ func (l badgerLog) Infof(s string, args ...interface{}) {
 func (l badgerLog) Debugf(s string, args ...interface{}) {
 	l.log.Debug(fmt.Sprintf(s, args...))
 }
+
+type doNothingLog struct{}
+
+func (l doNothingLog) Errorf(s string, args ...interface{})   {}
+func (l doNothingLog) Warningf(s string, args ...interface{}) {}
+func (l doNothingLog) Infof(s string, args ...interface{})    {}
+func (l doNothingLog) Debugf(s string, args ...interface{})   {}
