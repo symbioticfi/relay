@@ -18,7 +18,7 @@ type eth interface {
 }
 
 type repo interface {
-	GetLatestValset(ctx context.Context) (entity.ValidatorSet, error)
+	GetLatestValidatorSet(ctx context.Context) (entity.ValidatorSet, error)
 	SaveConfig(ctx context.Context, config entity.NetworkConfig, epoch uint64) error
 	SaveValidatorSet(ctx context.Context, valset entity.ValidatorSet) error
 }
@@ -77,7 +77,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		return errors.Errorf("failed to get current epoch: %w", err)
 	}
 
-	latest, err := s.cfg.Repo.GetLatestValset(ctx)
+	latest, err := s.cfg.Repo.GetLatestValidatorSet(ctx)
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return errors.Errorf("failed to get latest validator set extra: %w", err)
 	}

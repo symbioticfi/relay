@@ -17,7 +17,7 @@ import (
 
 //go:generate mockgen -source=aggregator_app.go -destination=mocks/aggregator_app.go -package=mocks
 type repository interface {
-	GetValsetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
+	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 	SaveSignature(ctx context.Context, reqHash common.Hash, key []byte, sig entity.Signature) error
 	GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.Signature, error)
 	GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error)
@@ -81,7 +81,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 
 	slog.DebugContext(ctx, "received signature hash generated message", "message", msg)
 
-	validatorSet, err := s.cfg.Repo.GetValsetByEpoch(ctx, msg.Epoch)
+	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, msg.Epoch)
 	if err != nil {
 		return errors.Errorf("failed to get validator set: %w", err)
 	}

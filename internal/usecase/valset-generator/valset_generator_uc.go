@@ -34,15 +34,14 @@ type eth interface {
 }
 
 type repo interface {
-	GetLatestSignedValset(_ context.Context) (entity.ValidatorSet, error)
-	GetLatestValset(ctx context.Context) (entity.ValidatorSet, error)
+	GetLatestValidatorSet(ctx context.Context) (entity.ValidatorSet, error)
 
-	GetValsetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
+	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 	GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error)
 	GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error)
 	GetSignatureRequest(ctx context.Context, reqHash common.Hash) (entity.SignatureRequest, error)
-	SavePendingValset(ctx context.Context, reqHash common.Hash, valset entity.ValidatorSet) error
-	GetPendingValset(ctx context.Context, reqHash common.Hash) (entity.ValidatorSet, error)
+	SavePendingValidatorSet(ctx context.Context, reqHash common.Hash, valset entity.ValidatorSet) error
+	GetPendingValidatorSet(ctx context.Context, reqHash common.Hash) (entity.ValidatorSet, error)
 }
 
 type deriver interface {
@@ -138,7 +137,7 @@ func (s *Service) process(ctx context.Context) error {
 
 	slog.DebugContext(ctx, "generated commitment data", "hash", hex.EncodeToString(data))
 
-	latestValset, err := s.cfg.Repo.GetLatestValset(ctx)
+	latestValset, err := s.cfg.Repo.GetLatestValidatorSet(ctx)
 	if err != nil {
 		return errors.Errorf("failed to get latest validator set extra: %w", err)
 	}
@@ -154,7 +153,7 @@ func (s *Service) process(ctx context.Context) error {
 
 	slog.DebugContext(ctx, "Signed header", "header", header)
 	slog.DebugContext(ctx, "Signed extra data", "extraData", extraData)
-	err = s.cfg.Repo.SavePendingValset(ctx, r.Hash(), *valSet)
+	err = s.cfg.Repo.SavePendingValidatorSet(ctx, r.Hash(), *valSet)
 	if err != nil {
 		return errors.Errorf("failed to save pending valset: %w", err)
 	}

@@ -16,7 +16,7 @@ type repo interface {
 	GetSignatureRequest(ctx context.Context, reqHash common.Hash) (entity.SignatureRequest, error)
 	GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error)
 	SaveAggregationProof(ctx context.Context, reqHash common.Hash, ap entity.AggregationProof) error
-	GetValsetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
+	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 	SaveSignature(ctx context.Context, reqHash common.Hash, key []byte, sig entity.Signature) error
 	SaveSignatureRequest(_ context.Context, req entity.SignatureRequest) error
 }
@@ -89,7 +89,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.New("aggregation proof already exists for this request")
 	}
 
-	valset, err := s.cfg.Repo.GetValsetByEpoch(ctx, req.RequiredEpoch)
+	valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, req.RequiredEpoch)
 	if err != nil {
 		return errors.Errorf("failed to get valset by epoch %d: %w", req.RequiredEpoch, err)
 	}
