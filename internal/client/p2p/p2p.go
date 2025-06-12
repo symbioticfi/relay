@@ -116,13 +116,16 @@ func (s *Service) broadcast(ctx context.Context, typ messageType, data []byte) e
 		Data:      data,
 	}
 
-	for _, peerID := range peers {
-		if err := s.sendToPeer(ctx, typ, peerID, msg); err != nil {
-			return err // todo ilya send parallel + join errors + timeout
-		}
+	errs := make([]error, len(peers))
+	for i, peerID := range peers {
+		go func(i int) {
+			if err := s.sendToPeer(ctx, typ, peerID, msg); err != nil {
+				errs[i] = err
+			}
+		}(i)
 	}
 
-	return nil
+	return errors.Join(errs...)
 }
 
 // sendToPeer sends a message to a specific peer
@@ -144,6 +147,11 @@ func (s *Service) sendToPeer(ctx context.Context, typ messageType, peerID peer.I
 		return errors.Errorf("failed to marshal message: %w", err)
 	}
 
+	if deadline, ok := ctx.Deadline(); ok {
+		if err := stream.SetWriteDeadline(deadline); err != nil {
+			return errors.Errorf("failed to set stream deadline: %w", err)
+		}
+	}
 	_, err = stream.Write(data)
 	if err != nil {
 		return errors.Errorf("failed to write to stream: %w", err)
