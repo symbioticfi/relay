@@ -28,7 +28,7 @@ func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg en
 	}
 
 	// send to ourselves first
-	s.signatureHashHandler.Emit(ctx, p2pEntity.P2PSignatureMessage{
+	s.signatureHashHandler.Emit(ctx, p2pEntity.P2PMessage[entity.SignatureMessage]{
 		SenderInfo: p2pEntity.SenderInfo{},
 		Message:    msg,
 	})

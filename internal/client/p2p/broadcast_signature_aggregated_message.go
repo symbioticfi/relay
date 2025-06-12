@@ -28,7 +28,7 @@ func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg e
 	}
 
 	// send to ourselves first
-	s.signaturesAggregatedHandler.Emit(ctx, p2pEntity.P2PAggregatedSignatureMessage{
+	s.signaturesAggregatedHandler.Emit(ctx, p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]{
 		SenderInfo: p2pEntity.SenderInfo{},
 		Message:    msg,
 	})

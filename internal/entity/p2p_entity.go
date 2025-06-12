@@ -1,20 +1,12 @@
 package entity
 
-import (
-	"middleware-offchain/core/entity"
-)
-
 type SenderInfo struct {
 	// Sender is a p2p peer id
 	Sender string
 }
 
-type P2PSignatureMessage struct {
+// P2PMessage is a generic message structure for P2P communication, containing SenderInfo and a message of type T.
+type P2PMessage[T any] struct {
 	SenderInfo SenderInfo
-	Message    entity.SignatureMessage
-}
-
-type P2PAggregatedSignatureMessage struct {
-	SenderInfo SenderInfo
-	Message    entity.AggregatedSignatureMessage
+	Message    T
 }

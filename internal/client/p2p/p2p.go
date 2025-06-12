@@ -15,6 +15,7 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/samber/lo"
 
+	"middleware-offchain/core/entity"
 	p2pEntity "middleware-offchain/internal/entity"
 	"middleware-offchain/pkg/log"
 	"middleware-offchain/pkg/signals"
@@ -39,8 +40,8 @@ type Service struct {
 	host                        host.Host
 	peersMutex                  sync.RWMutex
 	peers                       map[peer.ID]struct{}
-	signatureHashHandler        *signals.Signal[p2pEntity.P2PSignatureMessage]
-	signaturesAggregatedHandler *signals.Signal[p2pEntity.P2PAggregatedSignatureMessage]
+	signatureHashHandler        *signals.Signal[p2pEntity.P2PMessage[entity.SignatureMessage]]
+	signaturesAggregatedHandler *signals.Signal[p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]]
 }
 
 // NewService creates a new P2P service with the given configuration
@@ -49,8 +50,8 @@ func NewService(ctx context.Context, h host.Host) (*Service, error) {
 		ctx:                         log.WithAttrs(ctx, slog.String("component", "p2p")),
 		host:                        h,
 		peers:                       make(map[peer.ID]struct{}),
-		signatureHashHandler:        signals.New[p2pEntity.P2PSignatureMessage](),
-		signaturesAggregatedHandler: signals.New[p2pEntity.P2PAggregatedSignatureMessage](),
+		signatureHashHandler:        signals.New[p2pEntity.P2PMessage[entity.SignatureMessage]](),
+		signaturesAggregatedHandler: signals.New[p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]](),
 	}
 
 	h.SetStreamHandler(signedHashProtocolID, handleStreamWrapper(ctx, service.handleStreamSignedHash))
@@ -61,11 +62,11 @@ func NewService(ctx context.Context, h host.Host) (*Service, error) {
 	return service, nil
 }
 
-func (s *Service) AddSignatureMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PSignatureMessage) error, key string) {
+func (s *Service) AddSignatureMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PMessage[entity.SignatureMessage]) error, key string) {
 	s.signatureHashHandler.AddListener(mh, key)
 }
 
-func (s *Service) AddSignaturesAggregatedMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PAggregatedSignatureMessage) error, key string) {
+func (s *Service) AddSignaturesAggregatedMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]) error, key string) {
 	s.signaturesAggregatedHandler.AddListener(mh, key)
 }
 

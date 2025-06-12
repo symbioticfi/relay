@@ -5,10 +5,11 @@ import (
 
 	"github.com/go-errors/errors"
 
+	"middleware-offchain/core/entity"
 	p2pEntity "middleware-offchain/internal/entity"
 )
 
-func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, p2pMsg p2pEntity.P2PAggregatedSignatureMessage) error {
+func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, p2pMsg p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]) error {
 	msg := p2pMsg.Message
 	validatorSet, err := s.cfg.Repo.GetValsetByEpoch(ctx, msg.Epoch)
 	if err != nil {
