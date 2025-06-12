@@ -1,0 +1,64 @@
+package badger
+
+import (
+	"fmt"
+	"log/slog"
+
+	"github.com/go-playground/validator/v10"
+
+	"github.com/dgraph-io/badger/v4"
+	"github.com/go-errors/errors"
+)
+
+type Config struct {
+	Dir string `validate:"required"`
+}
+
+func (c Config) Validate() error {
+	if err := validator.New().Struct(c); err != nil {
+		return errors.Errorf("badger repository config validation failed: %w", err)
+	}
+	return nil
+}
+
+type Repository struct {
+	db *badger.DB
+}
+
+func New(cfg Config) (*Repository, error) {
+	opts := badger.DefaultOptions(cfg.Dir)
+	opts.Logger = &badgerLog{log: slog.With(slog.String("component", "badger"))}
+
+	db, err := badger.Open(opts)
+	if err != nil {
+		return nil, errors.Errorf("failed to open badger database: %w", err)
+	}
+
+	return &Repository{
+		db: db,
+	}, nil
+}
+
+func (r *Repository) Close() error {
+	return r.db.Close()
+}
+
+type badgerLog struct {
+	log *slog.Logger
+}
+
+func (l badgerLog) Errorf(s string, args ...interface{}) {
+	l.log.Error(fmt.Sprintf(s, args...))
+}
+
+func (l badgerLog) Warningf(s string, args ...interface{}) {
+	l.log.Warn(fmt.Sprintf(s, args...))
+}
+
+func (l badgerLog) Infof(s string, args ...interface{}) {
+	l.log.Info(fmt.Sprintf(s, args...))
+}
+
+func (l badgerLog) Debugf(s string, args ...interface{}) {
+	l.log.Debug(fmt.Sprintf(s, args...))
+}
