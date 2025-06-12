@@ -12,7 +12,7 @@ import (
 	"middleware-offchain/core/entity"
 )
 
-func (e *Client) CommitValsetHeader(ctx context.Context, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) (entity.TxResult, error) {
+func (e *Client) SetGenesis(ctx context.Context, header entity.ValidatorSetHeader, extraData []entity.ExtraData) (entity.TxResult, error) {
 	if e.masterPK == nil {
 		return entity.TxResult{}, errors.New("master private key is not set")
 	}
@@ -41,7 +41,7 @@ func (e *Client) CommitValsetHeader(ctx context.Context, header entity.Validator
 		extraDataDTO[i].Value = extraData.Value
 	}
 
-	tx, err := e.master.CommitValSetHeader(txOpts, headerDTO, extraDataDTO, proof, []byte{})
+	tx, err := e.master.SetGenesis(txOpts, headerDTO, extraDataDTO)
 	if err != nil {
 		return entity.TxResult{}, e.formatEVMError(err)
 	}
