@@ -11,7 +11,8 @@ import (
 	"middleware-offchain/core/entity"
 )
 
-func TestBadgerRepository(t *testing.T) {
+func TestBadgerRepository_NetworkConfig(t *testing.T) {
+	t.Parallel()
 	repo, err := New(Config{Dir: t.TempDir()})
 	require.NoError(t, err)
 
@@ -28,6 +29,30 @@ func TestBadgerRepository(t *testing.T) {
 	require.ErrorIs(t, err, entity.ErrEntityAlreadyExist)
 }
 
+func TestBadgerRepository_SignatureRequest(t *testing.T) {
+	t.Parallel()
+	repo, err := New(Config{Dir: t.TempDir()})
+	require.NoError(t, err)
+
+	req := randomSignatureRequest(t)
+
+	err = repo.SaveSignatureRequest(t.Context(), req)
+	require.NoError(t, err)
+
+	loadedConfig, err := repo.GetSignatureRequest(t.Context(), req.Hash())
+	require.NoError(t, err)
+	require.Equal(t, req, loadedConfig)
+}
+
+func randomSignatureRequest(t *testing.T) entity.SignatureRequest {
+	t.Helper()
+	return entity.SignatureRequest{
+		KeyTag:        entity.KeyTag(15),
+		RequiredEpoch: randomBigInt(t).Uint64(),
+		Message:       randomBytes(t, 32),
+	}
+}
+
 func randomNetworkConfig(t *testing.T) entity.NetworkConfig {
 	t.Helper()
 	return entity.NetworkConfig{
@@ -42,17 +67,22 @@ func randomNetworkConfig(t *testing.T) entity.NetworkConfig {
 	}
 }
 
-func randomAddr(t *testing.T) entity.CrossChainAddress {
+func randomBytes(t *testing.T, n int) []byte {
 	t.Helper()
-	b := make([]byte, 20) // 20 bytes for Ethereum address
+	b := make([]byte, n)
 	_, err := rand.Read(b)
 	require.NoError(t, err)
+	return b
+}
+
+func randomAddr(t *testing.T) entity.CrossChainAddress {
+	t.Helper()
 
 	chainID, err := rand.Int(rand.Reader, big.NewInt(10000))
 	require.NoError(t, err)
 
 	return entity.CrossChainAddress{
-		Address: common.BytesToAddress(b),
+		Address: common.BytesToAddress(randomBytes(t, 20)),
 		ChainId: chainID.Uint64(),
 	}
 }

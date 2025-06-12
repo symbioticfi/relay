@@ -3,7 +3,6 @@ package memory
 import (
 	"context"
 	"maps"
-	"math/big"
 	"slices"
 	"sync"
 
@@ -114,7 +113,7 @@ func (r *Repository) GetSignatureRequest(_ context.Context, reqHash common.Hash)
 }
 
 func (r *Repository) SaveSignatureRequest(_ context.Context, req entity.SignatureRequest) error {
-	hash := signRequestHash(req)
+	hash := req.Hash()
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -202,8 +201,4 @@ func (r *Repository) GetPendingValidatorSet(_ context.Context, reqHash common.Ha
 		return entity.ValidatorSet{}, errors.New(entity.ErrEntityNotFound)
 	}
 	return valset, nil
-}
-
-func signRequestHash(req entity.SignatureRequest) common.Hash {
-	return crypto.Keccak256Hash([]byte{uint8(req.KeyTag)}, new(big.Int).SetInt64(int64(req.RequiredEpoch)).Bytes(), req.Message)
 }
