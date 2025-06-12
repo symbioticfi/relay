@@ -1,9 +1,6 @@
 package badger
 
 import (
-	"fmt"
-	"log/slog"
-
 	"github.com/go-playground/validator/v10"
 
 	"github.com/dgraph-io/badger/v4"
@@ -41,26 +38,6 @@ func New(cfg Config) (*Repository, error) {
 
 func (r *Repository) Close() error {
 	return r.db.Close()
-}
-
-type badgerLog struct {
-	log *slog.Logger
-}
-
-func (l badgerLog) Errorf(s string, args ...interface{}) {
-	l.log.Error(fmt.Sprintf(s, args...))
-}
-
-func (l badgerLog) Warningf(s string, args ...interface{}) {
-	l.log.Warn(fmt.Sprintf(s, args...))
-}
-
-func (l badgerLog) Infof(s string, args ...interface{}) {
-	l.log.Info(fmt.Sprintf(s, args...))
-}
-
-func (l badgerLog) Debugf(s string, args ...interface{}) {
-	l.log.Debug(fmt.Sprintf(s, args...))
 }
 
 type doNothingLog struct{}
