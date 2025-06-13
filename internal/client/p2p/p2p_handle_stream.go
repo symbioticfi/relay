@@ -3,6 +3,7 @@ package p2p
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"log/slog"
 
 	"github.com/go-errors/errors"
@@ -90,7 +91,7 @@ func unmarshalMessage(stream network.Stream, v interface{}) (entity.SenderInfo, 
 
 	data := make([]byte, 1024*1024) // 1MB buffer
 	n, err := stream.Read(data)
-	if err != nil {
+	if err != nil && !errors.Is(err, io.EOF) {
 		return entity.SenderInfo{}, errors.Errorf("failed to read from stream: %w", err)
 	}
 
