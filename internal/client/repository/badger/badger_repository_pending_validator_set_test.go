@@ -12,17 +12,16 @@ import (
 )
 
 func TestRepository_PendingValidatorSet(t *testing.T) {
-	repo, err := New(Config{Dir: t.TempDir()})
-	require.NoError(t, err)
+	repo := setupTestRepository(t)
 
 	// Create two validator sets for different request hashes
 	reqHash1 := common.BytesToHash(randomBytes(t, 32))
 
 	// Create a validator set with some test data
-	vs1 := randomPendingValidatorSet(t)
+	vs1 := randomValidatorSet(t, 100, entity.HeaderPending)
 
 	// Save the first validator set
-	err = repo.SavePendingValidatorSet(t.Context(), reqHash1, vs1)
+	err := repo.SavePendingValidatorSet(t.Context(), reqHash1, vs1)
 	require.NoError(t, err)
 
 	// Try to save the same validator set again (should fail)
@@ -42,11 +41,12 @@ func TestRepository_PendingValidatorSet(t *testing.T) {
 	require.True(t, errors.Is(err, entity.ErrEntityNotFound))
 }
 
-func randomPendingValidatorSet(t *testing.T) entity.ValidatorSet {
+func randomValidatorSet(t *testing.T, epoch uint64, status entity.ValidatorSetStatus) entity.ValidatorSet {
+	t.Helper()
 	return entity.ValidatorSet{
 		Version:            1,
 		RequiredKeyTag:     entity.KeyTag(15),
-		Epoch:              100,
+		Epoch:              epoch,
 		CaptureTimestamp:   1234567890,
 		QuorumThreshold:    big.NewInt(1000),
 		PreviousHeaderHash: common.BytesToHash(randomBytes(t, 32)),
@@ -70,6 +70,6 @@ func randomPendingValidatorSet(t *testing.T) entity.ValidatorSet {
 				},
 			},
 		},
-		Status: entity.HeaderPending,
+		Status: status,
 	}
 }

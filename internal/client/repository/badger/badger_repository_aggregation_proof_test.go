@@ -11,15 +11,16 @@ import (
 
 func TestBadgerRepository_AggregationProof(t *testing.T) {
 	t.Parallel()
-	repo, err := New(Config{Dir: t.TempDir()})
-	require.NoError(t, err)
+	repo := setupTestRepository(t)
 
 	ap := randomAggregationProof(t)
 
 	hash := common.BytesToHash(randomBytes(t, 32))
 
-	err = repo.SaveAggregationProof(t.Context(), hash, ap)
+	err := repo.SaveAggregationProof(t.Context(), hash, ap)
 	require.NoError(t, err)
+	err = repo.SaveAggregationProof(t.Context(), hash, ap)
+	require.ErrorIs(t, err, entity.ErrEntityAlreadyExist)
 
 	loadedConfig, err := repo.GetAggregationProof(t.Context(), hash)
 	require.NoError(t, err)

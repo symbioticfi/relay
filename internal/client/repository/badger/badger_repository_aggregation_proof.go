@@ -45,6 +45,9 @@ func (r *Repository) GetAggregationProof(_ context.Context, reqHash common.Hash)
 	return ap, r.db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get(keyAggregationProof(reqHash))
 		if err != nil {
+			if errors.Is(err, badger.ErrKeyNotFound) {
+				return errors.Errorf("no aggregation proof found for hash %s: %w", reqHash.Hex(), entity.ErrEntityNotFound)
+			}
 			return errors.Errorf("failed to get aggregation proof: %w", err)
 		}
 

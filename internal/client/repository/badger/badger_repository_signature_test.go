@@ -12,8 +12,7 @@ import (
 
 func TestBadgerRepository_Signature(t *testing.T) {
 	t.Parallel()
-	repo, err := New(Config{Dir: t.TempDir()})
-	require.NoError(t, err)
+	repo := setupTestRepository(t)
 
 	// Create two signatures for the same request hash
 	reqHash1 := common.BytesToHash(randomBytes(t, 32))
@@ -25,7 +24,7 @@ func TestBadgerRepository_Signature(t *testing.T) {
 	sig3 := randomSignature(t)
 
 	// Save all signatures
-	err = repo.SaveSignature(t.Context(), reqHash1, sig1.PublicKey, sig1)
+	err := repo.SaveSignature(t.Context(), reqHash1, sig1.PublicKey, sig1)
 	require.NoError(t, err)
 	err = repo.SaveSignature(t.Context(), reqHash1, sig2.PublicKey, sig2)
 	require.NoError(t, err)

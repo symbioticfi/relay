@@ -10,12 +10,11 @@ import (
 
 func TestBadgerRepository_SignatureRequest(t *testing.T) {
 	t.Parallel()
-	repo, err := New(Config{Dir: t.TempDir()})
-	require.NoError(t, err)
+	repo := setupTestRepository(t)
 
 	req := randomSignatureRequest(t)
 
-	err = repo.SaveSignatureRequest(t.Context(), req)
+	err := repo.SaveSignatureRequest(t.Context(), req)
 	require.NoError(t, err)
 
 	loadedConfig, err := repo.GetSignatureRequest(t.Context(), req.Hash())

@@ -10,12 +10,11 @@ import (
 
 func TestBadgerRepository_NetworkConfig(t *testing.T) {
 	t.Parallel()
-	repo, err := New(Config{Dir: t.TempDir()})
-	require.NoError(t, err)
+	repo := setupTestRepository(t)
 
 	config := randomNetworkConfig(t)
 
-	err = repo.SaveConfig(t.Context(), config, 1)
+	err := repo.SaveConfig(t.Context(), config, 1)
 	require.NoError(t, err)
 
 	loadedConfig, err := repo.GetConfigByEpoch(t.Context(), 1)

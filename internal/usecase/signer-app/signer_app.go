@@ -85,7 +85,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return errors.Errorf("failed to get aggregation proof: %w", err)
 	}
-	if !errors.Is(err, entity.ErrEntityNotFound) {
+	if err == nil {
 		return errors.New("aggregation proof already exists for this request")
 	}
 

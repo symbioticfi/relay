@@ -162,11 +162,11 @@ func bytesToValidatorSet(data []byte) (entity.ValidatorSet, error) {
 					}
 				}),
 				Vaults: lo.Map(v.Vaults, func(v validatorVaultDTO, _ int) entity.ValidatorVault {
-					votingPower, _ := new(big.Int).SetString(v.VotingPower, 10)
+					vaultVotingPower, _ := new(big.Int).SetString(v.VotingPower, 10)
 					return entity.ValidatorVault{
 						ChainID:     v.ChainID,
 						Vault:       common.HexToAddress(v.Vault),
-						VotingPower: votingPower,
+						VotingPower: vaultVotingPower,
 					}
 				}),
 			}
