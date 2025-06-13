@@ -21,7 +21,7 @@ import (
 	"middleware-offchain/core/usecase/signer"
 	valsetDeriver "middleware-offchain/core/usecase/valset-deriver"
 	"middleware-offchain/internal/client/p2p"
-	"middleware-offchain/internal/client/repository/memory"
+	"middleware-offchain/internal/client/repository/badger"
 	aggregatorApp "middleware-offchain/internal/usecase/aggregator-app"
 	signerApp "middleware-offchain/internal/usecase/signer-app"
 	valsetGenerator "middleware-offchain/internal/usecase/valset-generator"
@@ -54,6 +54,7 @@ func runRootCMD() error {
 	rootCmd.PersistentFlags().BoolVar(&cfg.isAggregator, "aggregator", false, "Is Aggregator")
 	rootCmd.PersistentFlags().BoolVar(&cfg.isSigner, "signer", true, "Is Signer")
 	rootCmd.PersistentFlags().BoolVar(&cfg.isCommitter, "committer", false, "Is Committer")
+	rootCmd.PersistentFlags().StringVar(&cfg.storageDir, "storage-dir", ".data", "Dir to store data")
 
 	if err := rootCmd.MarkPersistentFlagRequired("rpc-url"); err != nil {
 		return errors.Errorf("failed to mark rpc-url as required: %w", err)
@@ -79,6 +80,7 @@ type config struct {
 	isAggregator      bool
 	isSigner          bool
 	isCommitter       bool
+	storageDir        string
 }
 
 var cfg config
@@ -145,7 +147,7 @@ var rootCmd = &cobra.Command{
 		}
 		slog.InfoContext(ctx, "started discovery service", "listenAddr", cfg.listenAddress)
 
-		repo, err := memory.New()
+		repo, err := badger.New(badger.Config{Dir: cfg.storageDir})
 		if err != nil {
 			return errors.Errorf("failed to create memory repository: %w", err)
 		}

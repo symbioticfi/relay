@@ -16,7 +16,7 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		return nil
 	}
 
-	valset, err := s.cfg.Repo.GetPendingValset(ctx, msg.RequestHash)
+	valset, err := s.cfg.Repo.GetPendingValidatorSet(ctx, msg.RequestHash)
 	if err != nil {
 		slog.DebugContext(ctx, "no pending valset, skipping proof commitment")
 		return nil //nolint:nilerr // if no pending valset, nothing to commit
