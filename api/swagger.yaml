@@ -1,0 +1,122 @@
+openapi: 3.0.3
+
+info:
+  title: Symbnode API
+  version: 1.0.0
+  description: |
+    Symbnode API provides access to the Symbiosis protocol data.
+
+tags:
+  - name: signer
+    description: Signer operations
+  - name: getter
+    description: Getter operations
+
+servers:
+  - url: http://localhost:8081/api/v1
+    description: local server
+
+paths:
+  /signMessage:
+    post:
+      summary: Sign a message
+      tags:
+        - signer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignatureRequest"
+      responses:
+        '200':
+          description: Request hash
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requestHash:
+                    type: string
+                required:
+                  - requestHash
+        default:
+          description: General Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /getAggregationProof:
+    get:
+      summary: Get aggregation proof
+      tags:
+        - getter
+      parameters:
+        - name: requestHash
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Aggregation proof
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AggregationProof"
+        default:
+          description: General Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  schemas:
+    SignatureRequest:
+      type: object
+      properties:
+        data:
+          type: string
+          format: byte
+        keyTag:
+          type: integer
+          format: uint8
+        epoch:
+          type: integer
+          format: uint64
+      required:
+        - data
+        - keyTag
+        - epoch
+
+    AggregationProof:
+      type: object
+      properties:
+        verificationType:
+          type: integer
+          format: uint32
+        messageHash:
+          type: string
+          format: byte
+        proof:
+          type: string
+          format: byte
+      required:
+        - verificationType
+        - messageHash
+        - proof
+
+    Error:
+      type: object
+      properties:
+        errorMessage:
+          type: string
+          description: user-friendly error message
+        errorCode:
+          type: string
+          enum: [ 'noData', 'ooops' ]
+      required:
+        - errorMessage
+        - errorCode

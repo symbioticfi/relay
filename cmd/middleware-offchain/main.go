@@ -23,12 +23,12 @@ import (
 	"middleware-offchain/internal/client/p2p"
 	"middleware-offchain/internal/client/repository/badger"
 	aggregatorApp "middleware-offchain/internal/usecase/aggregator-app"
+	apiApp "middleware-offchain/internal/usecase/api-app"
 	signerApp "middleware-offchain/internal/usecase/signer-app"
 	valsetGenerator "middleware-offchain/internal/usecase/valset-generator"
 	valsetListener "middleware-offchain/internal/usecase/valset-listener"
 	"middleware-offchain/pkg/log"
 	"middleware-offchain/pkg/proof"
-	"middleware-offchain/pkg/server"
 	"middleware-offchain/pkg/signals"
 )
 
@@ -129,7 +129,10 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to create libp2p host: %w", err)
 		}
 
-		p2pService, err := p2p.NewService(ctx, h)
+		p2pService, err := p2p.NewService(ctx, p2p.Config{
+			Host:        h,
+			SendTimeout: time.Second * 10,
+		})
 		if err != nil {
 			return errors.Errorf("failed to create p2p service: %w", err)
 		}
@@ -214,17 +217,17 @@ var rootCmd = &cobra.Command{
 			return nil
 		}, "aggregatedProofReadySignalListener")
 
-		srv, err := server.New(server.Config{
+		api, err := apiApp.NewAPIApp(apiApp.Config{
 			Address:           cfg.httpListenAddress,
 			ReadHeaderTimeout: time.Second,
 			ShutdownTimeout:   time.Second * 5,
 			Prefix:            "/api/v1",
-			APIHandler:        signerApp.Handler(),
+			Signer:            signerApp,
+			Repo:              repo,
 		})
 		if err != nil {
-			return errors.Errorf("failed to create server: %w", err)
+			return errors.Errorf("failed to create api app: %w", err)
 		}
-		slog.InfoContext(ctx, "created server, starting")
 
 		eg, egCtx := errgroup.WithContext(ctx)
 		eg.Go(func() error {
@@ -246,8 +249,8 @@ var rootCmd = &cobra.Command{
 			})
 
 			eg.Go(func() error {
-				if err := srv.Serve(egCtx); err != nil {
-					return errors.Errorf("failed to start epoch listener server: %w", err)
+				if err := api.Start(egCtx); err != nil {
+					return errors.Errorf("failed to start api server: %w", err)
 				}
 				return nil
 			})

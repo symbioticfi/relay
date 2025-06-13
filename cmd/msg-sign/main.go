@@ -165,6 +165,7 @@ func sendSignRequests(ctx context.Context, cfg config, message string, keyTag en
 		if err != nil {
 			return "", errors.Errorf("failed to create new request: %w", err)
 		}
+		request.Header.Set("Content-Type", "application/json")
 		err = func() error {
 			resp, err := http.DefaultClient.Do(request)
 			if err != nil {
@@ -203,6 +204,7 @@ func sendGetAggregationProofRequest(ctx context.Context, c config, hash string) 
 	if err != nil {
 		return entity.AggregationProof{}, errors.Errorf("failed to create new request: %w", err)
 	}
+	request.Header.Set("Content-Type", "application/json")
 
 	var aggProof entity.AggregationProof
 	err = func() error {
