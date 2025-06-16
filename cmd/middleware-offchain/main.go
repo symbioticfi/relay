@@ -105,7 +105,7 @@ var rootCmd = &cobra.Command{
 		pkBytes := [32]byte{}
 		b.FillBytes(pkBytes[:])
 
-		ethClient, err := evm.NewEVMClient(evm.Config{
+		evmClient, err := evm.NewEVMClient(evm.Config{
 			MasterRPCURL:   cfg.rpcURL,
 			MasterAddress:  cfg.masterAddress,
 			RequestTimeout: time.Second * 5,
@@ -115,7 +115,7 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to create symbiotic client: %w", err)
 		}
 
-		deriver, err := valsetDeriver.NewDeriver(ethClient)
+		deriver, err := valsetDeriver.NewDeriver(evmClient)
 		if err != nil {
 			return errors.Errorf("failed to create valset deriver: %w", err)
 		}
@@ -185,7 +185,7 @@ var rootCmd = &cobra.Command{
 		slog.InfoContext(ctx, "created signer app, starting")
 
 		listener, err := valsetListener.New(valsetListener.Config{
-			Eth:             ethClient,
+			Eth:             evmClient,
 			Repo:            repo,
 			Deriver:         deriver,
 			PollingInterval: time.Second * 5,
@@ -196,7 +196,7 @@ var rootCmd = &cobra.Command{
 
 		generator, err := valsetGenerator.New(valsetGenerator.Config{
 			Signer:          signerApp,
-			Eth:             ethClient,
+			Eth:             evmClient,
 			Repo:            repo,
 			Deriver:         deriver,
 			Aggregator:      aggregator,
@@ -224,6 +224,7 @@ var rootCmd = &cobra.Command{
 			Prefix:            "/api/v1",
 			Signer:            signerApp,
 			Repo:              repo,
+			EVMClient:         evmClient,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create api app: %w", err)

@@ -1,0 +1,2 @@
+### Get current epoch
+GET {{addr}}/api/v1/getCurrentEpoch

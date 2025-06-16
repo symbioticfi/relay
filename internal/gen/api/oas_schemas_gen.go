@@ -4,6 +4,7 @@ package api
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/go-faster/errors"
 )
@@ -141,6 +142,31 @@ func (s *ErrorStatusCode) SetStatusCode(val int) {
 // SetResponse sets the value of Response.
 func (s *ErrorStatusCode) SetResponse(val Error) {
 	s.Response = val
+}
+
+type GetCurrentEpochGetOK struct {
+	Epoch     uint64    `json:"epoch"`
+	StartTime time.Time `json:"startTime"`
+}
+
+// GetEpoch returns the value of Epoch.
+func (s *GetCurrentEpochGetOK) GetEpoch() uint64 {
+	return s.Epoch
+}
+
+// GetStartTime returns the value of StartTime.
+func (s *GetCurrentEpochGetOK) GetStartTime() time.Time {
+	return s.StartTime
+}
+
+// SetEpoch sets the value of Epoch.
+func (s *GetCurrentEpochGetOK) SetEpoch(val uint64) {
+	s.Epoch = val
+}
+
+// SetStartTime sets the value of StartTime.
+func (s *GetCurrentEpochGetOK) SetStartTime(val time.Time) {
+	s.StartTime = val
 }
 
 type SignMessagePostOK struct {

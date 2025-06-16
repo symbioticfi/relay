@@ -7,5 +7,6 @@ type OperationName = string
 
 const (
 	GetAggregationProofGetOperation OperationName = "GetAggregationProofGet"
+	GetCurrentEpochGetOperation     OperationName = "GetCurrentEpochGet"
 	SignMessagePostOperation        OperationName = "SignMessagePost"
 )

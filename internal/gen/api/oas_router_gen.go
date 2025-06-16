@@ -60,24 +60,58 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			switch elem[0] {
-			case 'g': // Prefix: "getAggregationProof"
+			case 'g': // Prefix: "get"
 
-				if l := len("getAggregationProof"); len(elem) >= l && elem[0:l] == "getAggregationProof" {
+				if l := len("get"); len(elem) >= l && elem[0:l] == "get" {
 					elem = elem[l:]
 				} else {
 					break
 				}
 
 				if len(elem) == 0 {
-					// Leaf node.
-					switch r.Method {
-					case "GET":
-						s.handleGetAggregationProofGetRequest([0]string{}, elemIsEscaped, w, r)
-					default:
-						s.notAllowed(w, r, "GET")
+					break
+				}
+				switch elem[0] {
+				case 'A': // Prefix: "AggregationProof"
+
+					if l := len("AggregationProof"); len(elem) >= l && elem[0:l] == "AggregationProof" {
+						elem = elem[l:]
+					} else {
+						break
 					}
 
-					return
+					if len(elem) == 0 {
+						// Leaf node.
+						switch r.Method {
+						case "GET":
+							s.handleGetAggregationProofGetRequest([0]string{}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, "GET")
+						}
+
+						return
+					}
+
+				case 'C': // Prefix: "CurrentEpoch"
+
+					if l := len("CurrentEpoch"); len(elem) >= l && elem[0:l] == "CurrentEpoch" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch r.Method {
+						case "GET":
+							s.handleGetCurrentEpochGetRequest([0]string{}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, "GET")
+						}
+
+						return
+					}
+
 				}
 
 			case 's': // Prefix: "signMessage"
@@ -194,28 +228,66 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 				break
 			}
 			switch elem[0] {
-			case 'g': // Prefix: "getAggregationProof"
+			case 'g': // Prefix: "get"
 
-				if l := len("getAggregationProof"); len(elem) >= l && elem[0:l] == "getAggregationProof" {
+				if l := len("get"); len(elem) >= l && elem[0:l] == "get" {
 					elem = elem[l:]
 				} else {
 					break
 				}
 
 				if len(elem) == 0 {
-					// Leaf node.
-					switch method {
-					case "GET":
-						r.name = GetAggregationProofGetOperation
-						r.summary = "Get aggregation proof"
-						r.operationID = ""
-						r.pathPattern = "/getAggregationProof"
-						r.args = args
-						r.count = 0
-						return r, true
-					default:
-						return
+					break
+				}
+				switch elem[0] {
+				case 'A': // Prefix: "AggregationProof"
+
+					if l := len("AggregationProof"); len(elem) >= l && elem[0:l] == "AggregationProof" {
+						elem = elem[l:]
+					} else {
+						break
 					}
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch method {
+						case "GET":
+							r.name = GetAggregationProofGetOperation
+							r.summary = "Get aggregation proof"
+							r.operationID = ""
+							r.pathPattern = "/getAggregationProof"
+							r.args = args
+							r.count = 0
+							return r, true
+						default:
+							return
+						}
+					}
+
+				case 'C': // Prefix: "CurrentEpoch"
+
+					if l := len("CurrentEpoch"); len(elem) >= l && elem[0:l] == "CurrentEpoch" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch method {
+						case "GET":
+							r.name = GetCurrentEpochGetOperation
+							r.summary = "Get current epoch"
+							r.operationID = ""
+							r.pathPattern = "/getCurrentEpoch"
+							r.args = args
+							r.count = 0
+							return r, true
+						default:
+							return
+						}
+					}
+
 				}
 
 			case 's': // Prefix: "signMessage"

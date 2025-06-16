@@ -22,14 +22,20 @@ type repo interface {
 	GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error)
 }
 
+type evmClient interface {
+	GetCurrentEpoch(ctx context.Context) (uint64, error)
+	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
+}
+
 type Config struct {
 	Address           string        `validate:"required"`
 	Prefix            string        `validate:"required"`
 	ReadHeaderTimeout time.Duration `validate:"required,gt=0"`
 	ShutdownTimeout   time.Duration `validate:"required,gt=0"`
 
-	Signer signer `validate:"required"`
-	Repo   repo   `validate:"required"`
+	Signer    signer    `validate:"required"`
+	Repo      repo      `validate:"required"`
+	EVMClient evmClient `validate:"required"`
 }
 
 func (c Config) Validate() error {

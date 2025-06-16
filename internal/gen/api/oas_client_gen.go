@@ -33,6 +33,12 @@ type Invoker interface {
 	//
 	// GET /getAggregationProof
 	GetAggregationProofGet(ctx context.Context, params GetAggregationProofGetParams) (*AggregationProof, error)
+	// GetCurrentEpochGet invokes GET /getCurrentEpoch operation.
+	//
+	// Get current epoch.
+	//
+	// GET /getCurrentEpoch
+	GetCurrentEpochGet(ctx context.Context) (*GetCurrentEpochGetOK, error)
 	// SignMessagePost invokes POST /signMessage operation.
 	//
 	// Sign a message.
@@ -170,6 +176,77 @@ func (c *Client) sendGetAggregationProofGet(ctx context.Context, params GetAggre
 
 	stage = "DecodeResponse"
 	result, err := decodeGetAggregationProofGetResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetCurrentEpochGet invokes GET /getCurrentEpoch operation.
+//
+// Get current epoch.
+//
+// GET /getCurrentEpoch
+func (c *Client) GetCurrentEpochGet(ctx context.Context) (*GetCurrentEpochGetOK, error) {
+	res, err := c.sendGetCurrentEpochGet(ctx)
+	return res, err
+}
+
+func (c *Client) sendGetCurrentEpochGet(ctx context.Context) (res *GetCurrentEpochGetOK, err error) {
+	otelAttrs := []attribute.KeyValue{
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/getCurrentEpoch"),
+	}
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetCurrentEpochGetOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/getCurrentEpoch"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	defer resp.Body.Close()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetCurrentEpochGetResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

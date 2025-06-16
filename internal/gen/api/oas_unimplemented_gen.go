@@ -22,6 +22,15 @@ func (UnimplementedHandler) GetAggregationProofGet(ctx context.Context, params G
 	return r, ht.ErrNotImplemented
 }
 
+// GetCurrentEpochGet implements GET /getCurrentEpoch operation.
+//
+// Get current epoch.
+//
+// GET /getCurrentEpoch
+func (UnimplementedHandler) GetCurrentEpochGet(ctx context.Context) (r *GetCurrentEpochGetOK, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // SignMessagePost implements POST /signMessage operation.
 //
 // Sign a message.

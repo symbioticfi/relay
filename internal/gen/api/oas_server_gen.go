@@ -14,6 +14,12 @@ type Handler interface {
 	//
 	// GET /getAggregationProof
 	GetAggregationProofGet(ctx context.Context, params GetAggregationProofGetParams) (*AggregationProof, error)
+	// GetCurrentEpochGet implements GET /getCurrentEpoch operation.
+	//
+	// Get current epoch.
+	//
+	// GET /getCurrentEpoch
+	GetCurrentEpochGet(ctx context.Context) (*GetCurrentEpochGetOK, error)
 	// SignMessagePost implements POST /signMessage operation.
 	//
 	// Sign a message.
