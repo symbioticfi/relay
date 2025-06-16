@@ -10,8 +10,8 @@ import (
 func (h *handler) SignMessagePost(ctx context.Context, reqRaw *api.SignatureRequest) (*api.SignMessagePostOK, error) {
 	req := entity.SignatureRequest{
 		KeyTag:        entity.KeyTag(reqRaw.KeyTag),
-		RequiredEpoch: reqRaw.Epoch,
-		Message:       reqRaw.Data,
+		Message:       reqRaw.Message,
+		RequiredEpoch: reqRaw.RequiredEpoch,
 	}
 
 	err := h.cfg.Signer.Sign(ctx, req)

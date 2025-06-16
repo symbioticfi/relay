@@ -294,14 +294,9 @@ func (s *Signature) SetPublicKey(val []byte) {
 
 // Ref: #/components/schemas/SignatureRequest
 type SignatureRequest struct {
-	Data   []byte `json:"data"`
-	KeyTag uint8  `json:"keyTag"`
-	Epoch  uint64 `json:"epoch"`
-}
-
-// GetData returns the value of Data.
-func (s *SignatureRequest) GetData() []byte {
-	return s.Data
+	KeyTag        uint8  `json:"keyTag"`
+	Message       []byte `json:"message"`
+	RequiredEpoch uint64 `json:"requiredEpoch"`
 }
 
 // GetKeyTag returns the value of KeyTag.
@@ -309,14 +304,14 @@ func (s *SignatureRequest) GetKeyTag() uint8 {
 	return s.KeyTag
 }
 
-// GetEpoch returns the value of Epoch.
-func (s *SignatureRequest) GetEpoch() uint64 {
-	return s.Epoch
+// GetMessage returns the value of Message.
+func (s *SignatureRequest) GetMessage() []byte {
+	return s.Message
 }
 
-// SetData sets the value of Data.
-func (s *SignatureRequest) SetData(val []byte) {
-	s.Data = val
+// GetRequiredEpoch returns the value of RequiredEpoch.
+func (s *SignatureRequest) GetRequiredEpoch() uint64 {
+	return s.RequiredEpoch
 }
 
 // SetKeyTag sets the value of KeyTag.
@@ -324,9 +319,14 @@ func (s *SignatureRequest) SetKeyTag(val uint8) {
 	s.KeyTag = val
 }
 
-// SetEpoch sets the value of Epoch.
-func (s *SignatureRequest) SetEpoch(val uint64) {
-	s.Epoch = val
+// SetMessage sets the value of Message.
+func (s *SignatureRequest) SetMessage(val []byte) {
+	s.Message = val
+}
+
+// SetRequiredEpoch sets the value of RequiredEpoch.
+func (s *SignatureRequest) SetRequiredEpoch(val uint64) {
+	s.RequiredEpoch = val
 }
 
 // Ref: #/components/schemas/Validator

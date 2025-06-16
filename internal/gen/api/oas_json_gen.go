@@ -756,23 +756,23 @@ func (s *SignatureRequest) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *SignatureRequest) encodeFields(e *jx.Encoder) {
 	{
-		e.FieldStart("data")
-		e.Base64(s.Data)
-	}
-	{
 		e.FieldStart("keyTag")
 		e.UInt8(s.KeyTag)
 	}
 	{
-		e.FieldStart("epoch")
-		e.UInt64(s.Epoch)
+		e.FieldStart("message")
+		e.Base64(s.Message)
+	}
+	{
+		e.FieldStart("requiredEpoch")
+		e.UInt64(s.RequiredEpoch)
 	}
 }
 
 var jsonFieldsNameOfSignatureRequest = [3]string{
-	0: "data",
-	1: "keyTag",
-	2: "epoch",
+	0: "keyTag",
+	1: "message",
+	2: "requiredEpoch",
 }
 
 // Decode decodes SignatureRequest from json.
@@ -784,20 +784,8 @@ func (s *SignatureRequest) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "data":
-			requiredBitSet[0] |= 1 << 0
-			if err := func() error {
-				v, err := d.Base64()
-				s.Data = []byte(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"data\"")
-			}
 		case "keyTag":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
 				v, err := d.UInt8()
 				s.KeyTag = uint8(v)
@@ -808,17 +796,29 @@ func (s *SignatureRequest) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"keyTag\"")
 			}
-		case "epoch":
-			requiredBitSet[0] |= 1 << 2
+		case "message":
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
-				v, err := d.UInt64()
-				s.Epoch = uint64(v)
+				v, err := d.Base64()
+				s.Message = []byte(v)
 				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"epoch\"")
+				return errors.Wrap(err, "decode field \"message\"")
+			}
+		case "requiredEpoch":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.UInt64()
+				s.RequiredEpoch = uint64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"requiredEpoch\"")
 			}
 		default:
 			return d.Skip()

@@ -20,12 +20,18 @@ type Handler interface {
 	//
 	// GET /getCurrentEpoch
 	GetCurrentEpochGet(ctx context.Context) (*GetCurrentEpochGetOK, error)
-	// GetSignatureGet implements GET /getSignature operation.
+	// GetSignatureRequestGet implements GET /getSignatureRequest operation.
+	//
+	// Get signature request by request hash.
+	//
+	// GET /getSignatureRequest
+	GetSignatureRequestGet(ctx context.Context, params GetSignatureRequestGetParams) (*SignatureRequest, error)
+	// GetSignaturesGet implements GET /getSignatures operation.
 	//
 	// Get signature by request hash.
 	//
-	// GET /getSignature
-	GetSignatureGet(ctx context.Context, params GetSignatureGetParams) (*Signature, error)
+	// GET /getSignatures
+	GetSignaturesGet(ctx context.Context, params GetSignaturesGetParams) ([]Signature, error)
 	// GetValidatorSetGet implements GET /getValidatorSet operation.
 	//
 	// Get current validator set.

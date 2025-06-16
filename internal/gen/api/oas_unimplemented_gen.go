@@ -31,12 +31,21 @@ func (UnimplementedHandler) GetCurrentEpochGet(ctx context.Context) (r *GetCurre
 	return r, ht.ErrNotImplemented
 }
 
-// GetSignatureGet implements GET /getSignature operation.
+// GetSignatureRequestGet implements GET /getSignatureRequest operation.
+//
+// Get signature request by request hash.
+//
+// GET /getSignatureRequest
+func (UnimplementedHandler) GetSignatureRequestGet(ctx context.Context, params GetSignatureRequestGetParams) (r *SignatureRequest, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetSignaturesGet implements GET /getSignatures operation.
 //
 // Get signature by request hash.
 //
-// GET /getSignature
-func (UnimplementedHandler) GetSignatureGet(ctx context.Context, params GetSignatureGetParams) (r *Signature, _ error) {
+// GET /getSignatures
+func (UnimplementedHandler) GetSignaturesGet(ctx context.Context, params GetSignaturesGetParams) (r []Signature, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

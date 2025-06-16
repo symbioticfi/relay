@@ -101,7 +101,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
-  /getSignature:
+  /getSignatures:
     get:
       summary: Get signature by request hash
       tags:
@@ -114,11 +114,38 @@ paths:
             type: string
       responses:
         '200':
-          description: Signature data
+          description: Signatures
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Signature"
+                type: array
+                items:
+                  $ref: "#/components/schemas/Signature"
+        default:
+          description: General Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /getSignatureRequest:
+    get:
+      summary: Get signature request by request hash
+      tags:
+        - getter
+      parameters:
+        - name: requestHash
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Signature request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignatureRequest"
         default:
           description: General Error
           content:
@@ -158,19 +185,19 @@ components:
     SignatureRequest:
       type: object
       properties:
-        data:
-          type: string
-          format: byte
         keyTag:
           type: integer
           format: uint8
-        epoch:
+        message:
+          type: string
+          format: byte
+        requiredEpoch:
           type: integer
           format: uint64
       required:
-        - data
         - keyTag
-        - epoch
+        - message
+        - requiredEpoch
 
     AggregationProof:
       type: object

@@ -68,12 +68,12 @@ func decodeGetAggregationProofGetParams(args [0]string, argsEscaped bool, r *htt
 	return params, nil
 }
 
-// GetSignatureGetParams is parameters of GET /getSignature operation.
-type GetSignatureGetParams struct {
+// GetSignatureRequestGetParams is parameters of GET /getSignatureRequest operation.
+type GetSignatureRequestGetParams struct {
 	RequestHash string
 }
 
-func unpackGetSignatureGetParams(packed middleware.Parameters) (params GetSignatureGetParams) {
+func unpackGetSignatureRequestGetParams(packed middleware.Parameters) (params GetSignatureRequestGetParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "requestHash",
@@ -84,7 +84,64 @@ func unpackGetSignatureGetParams(packed middleware.Parameters) (params GetSignat
 	return params
 }
 
-func decodeGetSignatureGetParams(args [0]string, argsEscaped bool, r *http.Request) (params GetSignatureGetParams, _ error) {
+func decodeGetSignatureRequestGetParams(args [0]string, argsEscaped bool, r *http.Request) (params GetSignatureRequestGetParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: requestHash.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "requestHash",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.RequestHash = c
+				return nil
+			}); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "requestHash",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetSignaturesGetParams is parameters of GET /getSignatures operation.
+type GetSignaturesGetParams struct {
+	RequestHash string
+}
+
+func unpackGetSignaturesGetParams(packed middleware.Parameters) (params GetSignaturesGetParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "requestHash",
+			In:   "query",
+		}
+		params.RequestHash = packed[key].(string)
+	}
+	return params
+}
+
+func decodeGetSignaturesGetParams(args [0]string, argsEscaped bool, r *http.Request) (params GetSignaturesGetParams, _ error) {
 	q := uri.NewQueryDecoder(r.URL.Query())
 	// Decode query: requestHash.
 	if err := func() error {
