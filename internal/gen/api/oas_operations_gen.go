@@ -6,10 +6,11 @@ package api
 type OperationName = string
 
 const (
-	GetAggregationProofGetOperation OperationName = "GetAggregationProofGet"
-	GetCurrentEpochGetOperation     OperationName = "GetCurrentEpochGet"
-	GetSignatureRequestGetOperation OperationName = "GetSignatureRequestGet"
-	GetSignaturesGetOperation       OperationName = "GetSignaturesGet"
-	GetValidatorSetGetOperation     OperationName = "GetValidatorSetGet"
-	SignMessagePostOperation        OperationName = "SignMessagePost"
+	GetAggregationProofGetOperation  OperationName = "GetAggregationProofGet"
+	GetAggregationStatusGetOperation OperationName = "GetAggregationStatusGet"
+	GetCurrentEpochGetOperation      OperationName = "GetCurrentEpochGet"
+	GetSignatureRequestGetOperation  OperationName = "GetSignatureRequestGet"
+	GetSignaturesGetOperation        OperationName = "GetSignaturesGet"
+	GetValidatorSetGetOperation      OperationName = "GetValidatorSetGet"
+	SignMessagePostOperation         OperationName = "SignMessagePost"
 )

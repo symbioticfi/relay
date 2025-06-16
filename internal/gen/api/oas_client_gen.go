@@ -33,6 +33,12 @@ type Invoker interface {
 	//
 	// GET /getAggregationProof
 	GetAggregationProofGet(ctx context.Context, params GetAggregationProofGetParams) (*AggregationProof, error)
+	// GetAggregationStatusGet invokes GET /getAggregationStatus operation.
+	//
+	// Get aggregation status, can be sent only to aggregator nodes.
+	//
+	// GET /getAggregationStatus
+	GetAggregationStatusGet(ctx context.Context, params GetAggregationStatusGetParams) (*AggregationStatus, error)
 	// GetCurrentEpochGet invokes GET /getCurrentEpoch operation.
 	//
 	// Get current epoch.
@@ -194,6 +200,95 @@ func (c *Client) sendGetAggregationProofGet(ctx context.Context, params GetAggre
 
 	stage = "DecodeResponse"
 	result, err := decodeGetAggregationProofGetResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetAggregationStatusGet invokes GET /getAggregationStatus operation.
+//
+// Get aggregation status, can be sent only to aggregator nodes.
+//
+// GET /getAggregationStatus
+func (c *Client) GetAggregationStatusGet(ctx context.Context, params GetAggregationStatusGetParams) (*AggregationStatus, error) {
+	res, err := c.sendGetAggregationStatusGet(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetAggregationStatusGet(ctx context.Context, params GetAggregationStatusGetParams) (res *AggregationStatus, err error) {
+	otelAttrs := []attribute.KeyValue{
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/getAggregationStatus"),
+	}
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetAggregationStatusGetOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/getAggregationStatus"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "requestHash" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "requestHash",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.StringToString(params.RequestHash))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	defer resp.Body.Close()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetAggregationStatusGetResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

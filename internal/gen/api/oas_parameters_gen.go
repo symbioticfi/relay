@@ -68,6 +68,63 @@ func decodeGetAggregationProofGetParams(args [0]string, argsEscaped bool, r *htt
 	return params, nil
 }
 
+// GetAggregationStatusGetParams is parameters of GET /getAggregationStatus operation.
+type GetAggregationStatusGetParams struct {
+	RequestHash string
+}
+
+func unpackGetAggregationStatusGetParams(packed middleware.Parameters) (params GetAggregationStatusGetParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "requestHash",
+			In:   "query",
+		}
+		params.RequestHash = packed[key].(string)
+	}
+	return params
+}
+
+func decodeGetAggregationStatusGetParams(args [0]string, argsEscaped bool, r *http.Request) (params GetAggregationStatusGetParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: requestHash.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "requestHash",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.RequestHash = c
+				return nil
+			}); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "requestHash",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // GetSignatureRequestGetParams is parameters of GET /getSignatureRequest operation.
 type GetSignatureRequestGetParams struct {
 	RequestHash string

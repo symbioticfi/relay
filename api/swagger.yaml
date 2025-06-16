@@ -153,6 +153,32 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /getAggregationStatus:
+    get:
+      summary: Get aggregation status, can be sent only to aggregator nodes
+      tags:
+        - getter
+      parameters:
+        - name: requestHash
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Aggregation status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AggregationStatus"
+        default:
+          description: General Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+
   /getValidatorSet:
     get:
       summary: Get current validator set
@@ -215,6 +241,22 @@ components:
         - verificationType
         - messageHash
         - proof
+
+    AggregationStatus:
+      type: object
+      properties:
+        currentVotingPower:
+          type: string
+          format: big-int
+          description: Current voting power of the aggregator
+        signerOperators:
+          type: array
+          items:
+            type: string
+            description: List of operator addresses that signed the request
+      required:
+        - currentVotingPower
+        - signerOperators
 
     Signature:
       type: object
@@ -335,7 +377,7 @@ components:
           description: user-friendly error message
         errorCode:
           type: string
-          enum: [ 'noData', 'ooops' ]
+          enum: [ 'noData', 'ooops', 'notAnAggregator' ]
       required:
         - errorMessage
         - errorCode

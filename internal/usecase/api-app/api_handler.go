@@ -50,6 +50,14 @@ func errorWithHTTPCode(ctx context.Context, err error) *api.ErrorStatusCode {
 	switch {
 	case errors.Is(err, ht.ErrNotImplemented):
 		resp.StatusCode = http.StatusNotImplemented
+	case errors.Is(err, entity.ErrNotAnAggregator):
+		resp = &api.ErrorStatusCode{
+			StatusCode: http.StatusMethodNotAllowed,
+			Response: api.Error{
+				ErrorMessage: "Not an aggregator",
+				ErrorCode:    api.ErrorErrorCodeNotAnAggregator,
+			},
+		}
 	case errors.As(err, &ctError):
 		resp.StatusCode = http.StatusUnsupportedMediaType
 	case errors.As(err, &decodeParamError):

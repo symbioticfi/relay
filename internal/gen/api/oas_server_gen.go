@@ -14,6 +14,12 @@ type Handler interface {
 	//
 	// GET /getAggregationProof
 	GetAggregationProofGet(ctx context.Context, params GetAggregationProofGetParams) (*AggregationProof, error)
+	// GetAggregationStatusGet implements GET /getAggregationStatus operation.
+	//
+	// Get aggregation status, can be sent only to aggregator nodes.
+	//
+	// GET /getAggregationStatus
+	GetAggregationStatusGet(ctx context.Context, params GetAggregationStatusGetParams) (*AggregationStatus, error)
 	// GetCurrentEpochGet implements GET /getCurrentEpoch operation.
 	//
 	// Get current epoch.

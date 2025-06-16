@@ -217,19 +217,6 @@ var rootCmd = &cobra.Command{
 			return nil
 		}, "aggregatedProofReadySignalListener")
 
-		api, err := apiApp.NewAPIApp(apiApp.Config{
-			Address:           cfg.httpListenAddress,
-			ReadHeaderTimeout: time.Second,
-			ShutdownTimeout:   time.Second * 5,
-			Prefix:            "/api/v1",
-			Signer:            signerApp,
-			Repo:              repo,
-			EVMClient:         evmClient,
-		})
-		if err != nil {
-			return errors.Errorf("failed to create api app: %w", err)
-		}
-
 		eg, egCtx := errgroup.WithContext(ctx)
 		eg.Go(func() error {
 			logCtx := log.WithComponent(egCtx, "listener")
@@ -248,17 +235,11 @@ var rootCmd = &cobra.Command{
 				}
 				return nil
 			})
-
-			eg.Go(func() error {
-				if err := api.Start(egCtx); err != nil {
-					return errors.Errorf("failed to start api server: %w", err)
-				}
-				return nil
-			})
 		}
 
+		var aggApp *aggregatorApp.AggregatorApp
 		if cfg.isAggregator {
-			aggApp, err := aggregatorApp.NewAggregatorApp(aggregatorApp.Config{
+			aggApp, err = aggregatorApp.NewAggregatorApp(aggregatorApp.Config{
 				Repo:       repo,
 				P2PClient:  p2pService,
 				Aggregator: aggregator,
@@ -271,6 +252,27 @@ var rootCmd = &cobra.Command{
 
 			slog.DebugContext(ctx, "created aggregator app, starting")
 		}
+
+		api, err := apiApp.NewAPIApp(apiApp.Config{
+			Address:           cfg.httpListenAddress,
+			ReadHeaderTimeout: time.Second,
+			ShutdownTimeout:   time.Second * 5,
+			Prefix:            "/api/v1",
+			Signer:            signerApp,
+			Repo:              repo,
+			EVMClient:         evmClient,
+			Aggregator:        aggApp,
+		})
+		if err != nil {
+			return errors.Errorf("failed to create api app: %w", err)
+		}
+
+		eg.Go(func() error {
+			if err := api.Start(egCtx); err != nil {
+				return errors.Errorf("failed to start api server: %w", err)
+			}
+			return nil
+		})
 
 		return eg.Wait()
 	},

@@ -22,6 +22,15 @@ func (UnimplementedHandler) GetAggregationProofGet(ctx context.Context, params G
 	return r, ht.ErrNotImplemented
 }
 
+// GetAggregationStatusGet implements GET /getAggregationStatus operation.
+//
+// Get aggregation status, can be sent only to aggregator nodes.
+//
+// GET /getAggregationStatus
+func (UnimplementedHandler) GetAggregationStatusGet(ctx context.Context, params GetAggregationStatusGetParams) (r *AggregationStatus, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetCurrentEpochGet implements GET /getCurrentEpoch operation.
 //
 // Get current epoch.

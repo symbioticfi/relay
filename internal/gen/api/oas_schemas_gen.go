@@ -50,6 +50,33 @@ func (s *AggregationProof) SetProof(val []byte) {
 	s.Proof = val
 }
 
+// Ref: #/components/schemas/AggregationStatus
+type AggregationStatus struct {
+	// Current voting power of the aggregator.
+	CurrentVotingPower string   `json:"currentVotingPower"`
+	SignerOperators    []string `json:"signerOperators"`
+}
+
+// GetCurrentVotingPower returns the value of CurrentVotingPower.
+func (s *AggregationStatus) GetCurrentVotingPower() string {
+	return s.CurrentVotingPower
+}
+
+// GetSignerOperators returns the value of SignerOperators.
+func (s *AggregationStatus) GetSignerOperators() []string {
+	return s.SignerOperators
+}
+
+// SetCurrentVotingPower sets the value of CurrentVotingPower.
+func (s *AggregationStatus) SetCurrentVotingPower(val string) {
+	s.CurrentVotingPower = val
+}
+
+// SetSignerOperators sets the value of SignerOperators.
+func (s *AggregationStatus) SetSignerOperators(val []string) {
+	s.SignerOperators = val
+}
+
 // Ref: #/components/schemas/Error
 type Error struct {
 	// User-friendly error message.
@@ -80,8 +107,9 @@ func (s *Error) SetErrorCode(val ErrorErrorCode) {
 type ErrorErrorCode string
 
 const (
-	ErrorErrorCodeNoData ErrorErrorCode = "noData"
-	ErrorErrorCodeOoops  ErrorErrorCode = "ooops"
+	ErrorErrorCodeNoData          ErrorErrorCode = "noData"
+	ErrorErrorCodeOoops           ErrorErrorCode = "ooops"
+	ErrorErrorCodeNotAnAggregator ErrorErrorCode = "notAnAggregator"
 )
 
 // AllValues returns all ErrorErrorCode values.
@@ -89,6 +117,7 @@ func (ErrorErrorCode) AllValues() []ErrorErrorCode {
 	return []ErrorErrorCode{
 		ErrorErrorCodeNoData,
 		ErrorErrorCodeOoops,
+		ErrorErrorCodeNotAnAggregator,
 	}
 }
 
@@ -98,6 +127,8 @@ func (s ErrorErrorCode) MarshalText() ([]byte, error) {
 	case ErrorErrorCodeNoData:
 		return []byte(s), nil
 	case ErrorErrorCodeOoops:
+		return []byte(s), nil
+	case ErrorErrorCodeNotAnAggregator:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -112,6 +143,9 @@ func (s *ErrorErrorCode) UnmarshalText(data []byte) error {
 		return nil
 	case ErrorErrorCodeOoops:
 		*s = ErrorErrorCodeOoops
+		return nil
+	case ErrorErrorCodeNotAnAggregator:
+		*s = ErrorErrorCodeNotAnAggregator
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)

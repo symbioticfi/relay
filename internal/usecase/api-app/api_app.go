@@ -10,6 +10,7 @@ import (
 
 	swag "middleware-offchain/api"
 	"middleware-offchain/core/entity"
+	p2pEntity "middleware-offchain/internal/entity"
 	"middleware-offchain/internal/gen/api"
 	"middleware-offchain/pkg/server"
 )
@@ -30,15 +31,20 @@ type evmClient interface {
 	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
 }
 
+type aggregator interface {
+	GetAggregationStatus(ctx context.Context, requestHash common.Hash) (p2pEntity.AggregationStatus, error)
+}
+
 type Config struct {
 	Address           string        `validate:"required"`
 	Prefix            string        `validate:"required"`
 	ReadHeaderTimeout time.Duration `validate:"required,gt=0"`
 	ShutdownTimeout   time.Duration `validate:"required,gt=0"`
 
-	Signer    signer    `validate:"required"`
-	Repo      repo      `validate:"required"`
-	EVMClient evmClient `validate:"required"`
+	Signer     signer     `validate:"required"`
+	Repo       repo       `validate:"required"`
+	EVMClient  evmClient  `validate:"required"`
+	Aggregator aggregator `validate:"required"`
 }
 
 func (c Config) Validate() error {
