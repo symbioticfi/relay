@@ -41,10 +41,10 @@ type Config struct {
 	ReadHeaderTimeout time.Duration `validate:"required,gt=0"`
 	ShutdownTimeout   time.Duration `validate:"required,gt=0"`
 
-	Signer     signer     `validate:"required"`
-	Repo       repo       `validate:"required"`
-	EVMClient  evmClient  `validate:"required"`
-	Aggregator aggregator `validate:"required"`
+	Signer     signer    `validate:"required"`
+	Repo       repo      `validate:"required"`
+	EVMClient  evmClient `validate:"required"`
+	Aggregator aggregator
 }
 
 func (c Config) Validate() error {
