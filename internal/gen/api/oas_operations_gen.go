@@ -8,5 +8,7 @@ type OperationName = string
 const (
 	GetAggregationProofGetOperation OperationName = "GetAggregationProofGet"
 	GetCurrentEpochGetOperation     OperationName = "GetCurrentEpochGet"
+	GetSignatureGetOperation        OperationName = "GetSignatureGet"
+	GetValidatorSetGetOperation     OperationName = "GetValidatorSetGet"
 	SignMessagePostOperation        OperationName = "SignMessagePost"
 )

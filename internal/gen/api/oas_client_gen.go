@@ -39,6 +39,18 @@ type Invoker interface {
 	//
 	// GET /getCurrentEpoch
 	GetCurrentEpochGet(ctx context.Context) (*GetCurrentEpochGetOK, error)
+	// GetSignatureGet invokes GET /getSignature operation.
+	//
+	// Get signature by request hash.
+	//
+	// GET /getSignature
+	GetSignatureGet(ctx context.Context, params GetSignatureGetParams) (*Signature, error)
+	// GetValidatorSetGet invokes GET /getValidatorSet operation.
+	//
+	// Get current validator set.
+	//
+	// GET /getValidatorSet
+	GetValidatorSetGet(ctx context.Context, params GetValidatorSetGetParams) (*ValidatorSet, error)
 	// SignMessagePost invokes POST /signMessage operation.
 	//
 	// Sign a message.
@@ -247,6 +259,187 @@ func (c *Client) sendGetCurrentEpochGet(ctx context.Context) (res *GetCurrentEpo
 
 	stage = "DecodeResponse"
 	result, err := decodeGetCurrentEpochGetResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetSignatureGet invokes GET /getSignature operation.
+//
+// Get signature by request hash.
+//
+// GET /getSignature
+func (c *Client) GetSignatureGet(ctx context.Context, params GetSignatureGetParams) (*Signature, error) {
+	res, err := c.sendGetSignatureGet(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetSignatureGet(ctx context.Context, params GetSignatureGetParams) (res *Signature, err error) {
+	otelAttrs := []attribute.KeyValue{
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/getSignature"),
+	}
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetSignatureGetOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/getSignature"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "requestHash" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "requestHash",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.StringToString(params.RequestHash))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	defer resp.Body.Close()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetSignatureGetResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetValidatorSetGet invokes GET /getValidatorSet operation.
+//
+// Get current validator set.
+//
+// GET /getValidatorSet
+func (c *Client) GetValidatorSetGet(ctx context.Context, params GetValidatorSetGetParams) (*ValidatorSet, error) {
+	res, err := c.sendGetValidatorSetGet(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetValidatorSetGet(ctx context.Context, params GetValidatorSetGetParams) (res *ValidatorSet, err error) {
+	otelAttrs := []attribute.KeyValue{
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/getValidatorSet"),
+	}
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetValidatorSetGetOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/getValidatorSet"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "epoch" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "epoch",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Epoch.Get(); ok {
+				return e.EncodeValue(conv.Uint64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	defer resp.Body.Close()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetValidatorSetGetResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

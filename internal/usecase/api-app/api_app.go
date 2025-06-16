@@ -20,6 +20,7 @@ type signer interface {
 
 type repo interface {
 	GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error)
+	GetValidatorSetByEpoch(_ context.Context, epoch uint64) (entity.ValidatorSet, error)
 }
 
 type evmClient interface {

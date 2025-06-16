@@ -112,6 +112,46 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 
+				case 'S': // Prefix: "Signature"
+
+					if l := len("Signature"); len(elem) >= l && elem[0:l] == "Signature" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch r.Method {
+						case "GET":
+							s.handleGetSignatureGetRequest([0]string{}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, "GET")
+						}
+
+						return
+					}
+
+				case 'V': // Prefix: "ValidatorSet"
+
+					if l := len("ValidatorSet"); len(elem) >= l && elem[0:l] == "ValidatorSet" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch r.Method {
+						case "GET":
+							s.handleGetValidatorSetGetRequest([0]string{}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, "GET")
+						}
+
+						return
+					}
+
 				}
 
 			case 's': // Prefix: "signMessage"
@@ -280,6 +320,54 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							r.summary = "Get current epoch"
 							r.operationID = ""
 							r.pathPattern = "/getCurrentEpoch"
+							r.args = args
+							r.count = 0
+							return r, true
+						default:
+							return
+						}
+					}
+
+				case 'S': // Prefix: "Signature"
+
+					if l := len("Signature"); len(elem) >= l && elem[0:l] == "Signature" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch method {
+						case "GET":
+							r.name = GetSignatureGetOperation
+							r.summary = "Get signature by request hash"
+							r.operationID = ""
+							r.pathPattern = "/getSignature"
+							r.args = args
+							r.count = 0
+							return r, true
+						default:
+							return
+						}
+					}
+
+				case 'V': // Prefix: "ValidatorSet"
+
+					if l := len("ValidatorSet"); len(elem) >= l && elem[0:l] == "ValidatorSet" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch method {
+						case "GET":
+							r.name = GetValidatorSetGetOperation
+							r.summary = "Get current validator set"
+							r.operationID = ""
+							r.pathPattern = "/getValidatorSet"
 							r.args = args
 							r.count = 0
 							return r, true

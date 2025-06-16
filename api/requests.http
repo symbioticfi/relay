@@ -1,2 +1,6 @@
 ### Get current epoch
 GET {{addr}}/api/v1/getCurrentEpoch
+
+
+### Get validator set
+GET {{addr}}/api/v1/getValidatorSet?epoch=20

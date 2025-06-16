@@ -22,6 +22,6 @@ func (h *handler) GetCurrentEpochGet(ctx context.Context) (*api.GetCurrentEpochG
 
 	return &api.GetCurrentEpochGetOK{
 		Epoch:     currentEpoch,
-		StartTime: time.Unix(int64(epochStart), 0),
+		StartTime: time.Unix(int64(epochStart), 0).UTC(),
 	}, nil
 }

@@ -101,6 +101,58 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /getSignature:
+    get:
+      summary: Get signature by request hash
+      tags:
+        - getter
+      parameters:
+        - name: requestHash
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Signature data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Signature"
+        default:
+          description: General Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /getValidatorSet:
+    get:
+      summary: Get current validator set
+      tags:
+        - getter
+      parameters:
+        - name: epoch
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: uint64
+          description: If not provided, the current epoch will be used
+      responses:
+        '200':
+          description: Validator set data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidatorSet"
+        default:
+          description: General Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
   schemas:
     SignatureRequest:
@@ -136,6 +188,117 @@ components:
         - verificationType
         - messageHash
         - proof
+
+    Signature:
+      type: object
+      properties:
+        signature:
+          type: string
+          format: byte
+        messageHash:
+          type: string
+          format: byte
+        publicKey:
+          type: string
+          format: byte
+      required:
+        - signature
+        - messageHash
+        - publicKey
+
+    ValidatorSet:
+      type: object
+      properties:
+        version:
+          type: integer
+          format: uint8
+        requiredKeyTag:
+          type: integer
+          description: Key tag required to commit next valset
+          format: uint8
+        epoch:
+          type: integer
+          format: uint64
+          description: Valset epoch
+        captureTimestamp:
+          type: string
+          format: date-time
+          description: Epoch capture timestamp
+        quorumThreshold:
+          type: string
+          format: big-int
+        previousHeaderHash:
+          type: string
+          description: Previous valset header hash hex
+        validators:
+          type: array
+          items:
+            $ref: "#/components/schemas/Validator"
+      required:
+        - version
+        - requiredKeyTag
+        - epoch
+        - captureTimestamp
+        - quorumThreshold
+        - previousHeaderHash
+        - validators
+
+    Validator:
+      type: object
+      properties:
+        operator:
+          type: string
+          description: Operator address hex
+        votingPower:
+          type: string
+          format: big-int
+          description: Voting power of the validator
+        isActive:
+          type: boolean
+          description: Indicates if the validator is active
+        keys:
+          type: array
+          items:
+            $ref: "#/components/schemas/Key"
+        vaults:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidatorVault"
+      required:
+        - operator
+        - votingPower
+        - isActive
+        - keys
+        - vaults
+
+    Key:
+      type: object
+      properties:
+        tag:
+          type: integer
+          format: uint8
+        payload:
+          type: string
+          format: byte
+      required:
+        - tag
+        - payload
+
+    ValidatorVault:
+      type: object
+      properties:
+        chainId:
+          type: integer
+          format: uint64
+        vault:
+          type: string
+        votingPower:
+          type: string
+          format: big-int
+      required:
+        - chainId
+        - vault
+        - votingPower
 
     Error:
       type: object

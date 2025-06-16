@@ -169,6 +169,78 @@ func (s *GetCurrentEpochGetOK) SetStartTime(val time.Time) {
 	s.StartTime = val
 }
 
+// Ref: #/components/schemas/Key
+type Key struct {
+	Tag     uint8  `json:"tag"`
+	Payload []byte `json:"payload"`
+}
+
+// GetTag returns the value of Tag.
+func (s *Key) GetTag() uint8 {
+	return s.Tag
+}
+
+// GetPayload returns the value of Payload.
+func (s *Key) GetPayload() []byte {
+	return s.Payload
+}
+
+// SetTag sets the value of Tag.
+func (s *Key) SetTag(val uint8) {
+	s.Tag = val
+}
+
+// SetPayload sets the value of Payload.
+func (s *Key) SetPayload(val []byte) {
+	s.Payload = val
+}
+
+// NewOptUint64 returns new OptUint64 with value set to v.
+func NewOptUint64(v uint64) OptUint64 {
+	return OptUint64{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptUint64 is optional uint64.
+type OptUint64 struct {
+	Value uint64
+	Set   bool
+}
+
+// IsSet returns true if OptUint64 was set.
+func (o OptUint64) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptUint64) Reset() {
+	var v uint64
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptUint64) SetTo(v uint64) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptUint64) Get() (v uint64, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptUint64) Or(d uint64) uint64 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 type SignMessagePostOK struct {
 	RequestHash string `json:"requestHash"`
 }
@@ -181,6 +253,43 @@ func (s *SignMessagePostOK) GetRequestHash() string {
 // SetRequestHash sets the value of RequestHash.
 func (s *SignMessagePostOK) SetRequestHash(val string) {
 	s.RequestHash = val
+}
+
+// Ref: #/components/schemas/Signature
+type Signature struct {
+	Signature   []byte `json:"signature"`
+	MessageHash []byte `json:"messageHash"`
+	PublicKey   []byte `json:"publicKey"`
+}
+
+// GetSignature returns the value of Signature.
+func (s *Signature) GetSignature() []byte {
+	return s.Signature
+}
+
+// GetMessageHash returns the value of MessageHash.
+func (s *Signature) GetMessageHash() []byte {
+	return s.MessageHash
+}
+
+// GetPublicKey returns the value of PublicKey.
+func (s *Signature) GetPublicKey() []byte {
+	return s.PublicKey
+}
+
+// SetSignature sets the value of Signature.
+func (s *Signature) SetSignature(val []byte) {
+	s.Signature = val
+}
+
+// SetMessageHash sets the value of MessageHash.
+func (s *Signature) SetMessageHash(val []byte) {
+	s.MessageHash = val
+}
+
+// SetPublicKey sets the value of PublicKey.
+func (s *Signature) SetPublicKey(val []byte) {
+	s.PublicKey = val
 }
 
 // Ref: #/components/schemas/SignatureRequest
@@ -218,4 +327,188 @@ func (s *SignatureRequest) SetKeyTag(val uint8) {
 // SetEpoch sets the value of Epoch.
 func (s *SignatureRequest) SetEpoch(val uint64) {
 	s.Epoch = val
+}
+
+// Ref: #/components/schemas/Validator
+type Validator struct {
+	// Operator address hex.
+	Operator string `json:"operator"`
+	// Voting power of the validator.
+	VotingPower string `json:"votingPower"`
+	// Indicates if the validator is active.
+	IsActive bool             `json:"isActive"`
+	Keys     []Key            `json:"keys"`
+	Vaults   []ValidatorVault `json:"vaults"`
+}
+
+// GetOperator returns the value of Operator.
+func (s *Validator) GetOperator() string {
+	return s.Operator
+}
+
+// GetVotingPower returns the value of VotingPower.
+func (s *Validator) GetVotingPower() string {
+	return s.VotingPower
+}
+
+// GetIsActive returns the value of IsActive.
+func (s *Validator) GetIsActive() bool {
+	return s.IsActive
+}
+
+// GetKeys returns the value of Keys.
+func (s *Validator) GetKeys() []Key {
+	return s.Keys
+}
+
+// GetVaults returns the value of Vaults.
+func (s *Validator) GetVaults() []ValidatorVault {
+	return s.Vaults
+}
+
+// SetOperator sets the value of Operator.
+func (s *Validator) SetOperator(val string) {
+	s.Operator = val
+}
+
+// SetVotingPower sets the value of VotingPower.
+func (s *Validator) SetVotingPower(val string) {
+	s.VotingPower = val
+}
+
+// SetIsActive sets the value of IsActive.
+func (s *Validator) SetIsActive(val bool) {
+	s.IsActive = val
+}
+
+// SetKeys sets the value of Keys.
+func (s *Validator) SetKeys(val []Key) {
+	s.Keys = val
+}
+
+// SetVaults sets the value of Vaults.
+func (s *Validator) SetVaults(val []ValidatorVault) {
+	s.Vaults = val
+}
+
+// Ref: #/components/schemas/ValidatorSet
+type ValidatorSet struct {
+	Version uint8 `json:"version"`
+	// Key tag required to commit next valset.
+	RequiredKeyTag uint8 `json:"requiredKeyTag"`
+	// Valset epoch.
+	Epoch uint64 `json:"epoch"`
+	// Epoch capture timestamp.
+	CaptureTimestamp time.Time `json:"captureTimestamp"`
+	QuorumThreshold  string    `json:"quorumThreshold"`
+	// Previous valset header hash hex.
+	PreviousHeaderHash string      `json:"previousHeaderHash"`
+	Validators         []Validator `json:"validators"`
+}
+
+// GetVersion returns the value of Version.
+func (s *ValidatorSet) GetVersion() uint8 {
+	return s.Version
+}
+
+// GetRequiredKeyTag returns the value of RequiredKeyTag.
+func (s *ValidatorSet) GetRequiredKeyTag() uint8 {
+	return s.RequiredKeyTag
+}
+
+// GetEpoch returns the value of Epoch.
+func (s *ValidatorSet) GetEpoch() uint64 {
+	return s.Epoch
+}
+
+// GetCaptureTimestamp returns the value of CaptureTimestamp.
+func (s *ValidatorSet) GetCaptureTimestamp() time.Time {
+	return s.CaptureTimestamp
+}
+
+// GetQuorumThreshold returns the value of QuorumThreshold.
+func (s *ValidatorSet) GetQuorumThreshold() string {
+	return s.QuorumThreshold
+}
+
+// GetPreviousHeaderHash returns the value of PreviousHeaderHash.
+func (s *ValidatorSet) GetPreviousHeaderHash() string {
+	return s.PreviousHeaderHash
+}
+
+// GetValidators returns the value of Validators.
+func (s *ValidatorSet) GetValidators() []Validator {
+	return s.Validators
+}
+
+// SetVersion sets the value of Version.
+func (s *ValidatorSet) SetVersion(val uint8) {
+	s.Version = val
+}
+
+// SetRequiredKeyTag sets the value of RequiredKeyTag.
+func (s *ValidatorSet) SetRequiredKeyTag(val uint8) {
+	s.RequiredKeyTag = val
+}
+
+// SetEpoch sets the value of Epoch.
+func (s *ValidatorSet) SetEpoch(val uint64) {
+	s.Epoch = val
+}
+
+// SetCaptureTimestamp sets the value of CaptureTimestamp.
+func (s *ValidatorSet) SetCaptureTimestamp(val time.Time) {
+	s.CaptureTimestamp = val
+}
+
+// SetQuorumThreshold sets the value of QuorumThreshold.
+func (s *ValidatorSet) SetQuorumThreshold(val string) {
+	s.QuorumThreshold = val
+}
+
+// SetPreviousHeaderHash sets the value of PreviousHeaderHash.
+func (s *ValidatorSet) SetPreviousHeaderHash(val string) {
+	s.PreviousHeaderHash = val
+}
+
+// SetValidators sets the value of Validators.
+func (s *ValidatorSet) SetValidators(val []Validator) {
+	s.Validators = val
+}
+
+// Ref: #/components/schemas/ValidatorVault
+type ValidatorVault struct {
+	ChainId     uint64 `json:"chainId"`
+	Vault       string `json:"vault"`
+	VotingPower string `json:"votingPower"`
+}
+
+// GetChainId returns the value of ChainId.
+func (s *ValidatorVault) GetChainId() uint64 {
+	return s.ChainId
+}
+
+// GetVault returns the value of Vault.
+func (s *ValidatorVault) GetVault() string {
+	return s.Vault
+}
+
+// GetVotingPower returns the value of VotingPower.
+func (s *ValidatorVault) GetVotingPower() string {
+	return s.VotingPower
+}
+
+// SetChainId sets the value of ChainId.
+func (s *ValidatorVault) SetChainId(val uint64) {
+	s.ChainId = val
+}
+
+// SetVault sets the value of Vault.
+func (s *ValidatorVault) SetVault(val string) {
+	s.Vault = val
+}
+
+// SetVotingPower sets the value of VotingPower.
+func (s *ValidatorVault) SetVotingPower(val string) {
+	s.VotingPower = val
 }

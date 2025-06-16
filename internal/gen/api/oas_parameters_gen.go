@@ -67,3 +67,125 @@ func decodeGetAggregationProofGetParams(args [0]string, argsEscaped bool, r *htt
 	}
 	return params, nil
 }
+
+// GetSignatureGetParams is parameters of GET /getSignature operation.
+type GetSignatureGetParams struct {
+	RequestHash string
+}
+
+func unpackGetSignatureGetParams(packed middleware.Parameters) (params GetSignatureGetParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "requestHash",
+			In:   "query",
+		}
+		params.RequestHash = packed[key].(string)
+	}
+	return params
+}
+
+func decodeGetSignatureGetParams(args [0]string, argsEscaped bool, r *http.Request) (params GetSignatureGetParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: requestHash.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "requestHash",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.RequestHash = c
+				return nil
+			}); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "requestHash",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetValidatorSetGetParams is parameters of GET /getValidatorSet operation.
+type GetValidatorSetGetParams struct {
+	// If not provided, the current epoch will be used.
+	Epoch OptUint64
+}
+
+func unpackGetValidatorSetGetParams(packed middleware.Parameters) (params GetValidatorSetGetParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "epoch",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Epoch = v.(OptUint64)
+		}
+	}
+	return params
+}
+
+func decodeGetValidatorSetGetParams(args [0]string, argsEscaped bool, r *http.Request) (params GetValidatorSetGetParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: epoch.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "epoch",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotEpochVal uint64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToUint64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotEpochVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Epoch.SetTo(paramsDotEpochVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "epoch",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}

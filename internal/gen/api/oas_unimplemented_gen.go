@@ -31,6 +31,24 @@ func (UnimplementedHandler) GetCurrentEpochGet(ctx context.Context) (r *GetCurre
 	return r, ht.ErrNotImplemented
 }
 
+// GetSignatureGet implements GET /getSignature operation.
+//
+// Get signature by request hash.
+//
+// GET /getSignature
+func (UnimplementedHandler) GetSignatureGet(ctx context.Context, params GetSignatureGetParams) (r *Signature, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetValidatorSetGet implements GET /getValidatorSet operation.
+//
+// Get current validator set.
+//
+// GET /getValidatorSet
+func (UnimplementedHandler) GetValidatorSetGet(ctx context.Context, params GetValidatorSetGetParams) (r *ValidatorSet, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // SignMessagePost implements POST /signMessage operation.
 //
 // Sign a message.
