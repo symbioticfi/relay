@@ -2,6 +2,7 @@ package aggregator
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"math/big"
 	"sort"
@@ -209,15 +210,16 @@ func (a *Aggregator) simpleAggregate(
 		}
 	}
 
-	isNonSigners := make([]bool, 0, len(validatorsData))
-
 	sort.Slice(validatorsData, func(i, j int) bool {
 		// Compare keys (lower first)
 		return validatorsData[i].KeySerialized.Cmp(validatorsData[j].KeySerialized) < 0
 	})
 
-	for _, val := range validatorsData {
-		isNonSigners = append(isNonSigners, val.isNonSigner)
+	nonSigners := make([]int, 0, len(validatorsData))
+	for i, val := range validatorsData {
+		if val.isNonSigner {
+			nonSigners = append(nonSigners, i)
+		}
 	}
 
 	dtoG1AggSig := dtoG1Point{
@@ -255,11 +257,6 @@ func (a *Aggregator) simpleAggregate(
 		return entity.AggregationProof{}, err
 	}
 
-	isNonSignersType, err := abi.NewType("bool[]", "", []abi.ArgumentMarshaling{})
-	if err != nil {
-		return entity.AggregationProof{}, err
-	}
-
 	g1PointAbiArgs := abi.Arguments{
 		{
 			Type: g1Type,
@@ -278,12 +275,6 @@ func (a *Aggregator) simpleAggregate(
 		},
 	}
 
-	isNonSignersAbiArgs := abi.Arguments{
-		{
-			Type: isNonSignersType,
-		},
-	}
-
 	aggG1SigBytes, err := g1PointAbiArgs.Pack(dtoG1AggSig)
 	if err != nil {
 		return entity.AggregationProof{}, err
@@ -294,9 +285,11 @@ func (a *Aggregator) simpleAggregate(
 		return entity.AggregationProof{}, err
 	}
 
-	isNonSignersBytes, err := isNonSignersAbiArgs.Pack(isNonSigners)
-	if err != nil {
-		return entity.AggregationProof{}, err
+	nonSignersBytes := make([]byte, 0, len(nonSigners)*2)
+	for _, nonSigner := range nonSigners {
+		littleEndianBytes := make([]byte, 2)
+		binary.LittleEndian.PutUint16(littleEndianBytes, uint16(nonSigner))
+		nonSignersBytes = append(nonSignersBytes, littleEndianBytes...)
 	}
 
 	validatorsDataBytes, err := validatorsDataAbiArgs.Pack(validatorsData)
@@ -307,7 +300,7 @@ func (a *Aggregator) simpleAggregate(
 	proofBytes := bytes.Clone(aggG1SigBytes)
 	proofBytes = append(proofBytes, aggG2KeyBytes...)
 	proofBytes = append(proofBytes, validatorsDataBytes...)
-	proofBytes = append(proofBytes, isNonSignersBytes...)
+	proofBytes = append(proofBytes, nonSignersBytes...)
 
 	return entity.AggregationProof{
 		Proof:            proofBytes,
