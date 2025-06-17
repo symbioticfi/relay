@@ -105,7 +105,7 @@ type NetworkConfig struct {
 
 type NetworkData struct {
 	Address    common.Address
-	Subnetwork [32]byte
+	Subnetwork common.Hash
 	Eip712Data Eip712Domain
 }
 
@@ -204,7 +204,7 @@ func (v ValidatorSet) FindValidatorByKey(keyTag KeyTag, publicKey []byte) (Valid
 
 type ValidatorSetHash struct {
 	KeyTag KeyTag
-	Hash   [32]byte
+	Hash   common.Hash
 }
 
 // ValidatorSetHeader represents the input for validator set header
@@ -290,7 +290,7 @@ func (v ValidatorSet) GetHeader() (ValidatorSetHeader, error) {
 	}, nil
 }
 
-func sszTreeRoot(v *ValidatorSet) ([32]byte, error) {
+func sszTreeRoot(v *ValidatorSet) (common.Hash, error) {
 	sszType := validatorSetToSszValidators(v)
 	return sszType.HashTreeRoot()
 }
@@ -365,13 +365,13 @@ func (v ValidatorSetHeader) AbiEncode() ([]byte, error) {
 	return pack, nil
 }
 
-func (v ValidatorSetHeader) Hash() ([32]byte, error) {
+func (v ValidatorSetHeader) Hash() (common.Hash, error) {
 	abiEncoded, err := v.AbiEncode()
 	if err != nil {
-		return [32]byte{}, errors.Errorf("failed to hash validator set header: %w", err)
+		return common.Hash{}, errors.Errorf("failed to hash validator set header: %w", err)
 	}
 
-	return [32]byte(crypto.Keccak256(abiEncoded)), nil
+	return common.Hash(crypto.Keccak256(abiEncoded)), nil
 }
 
 type TxResult struct {
