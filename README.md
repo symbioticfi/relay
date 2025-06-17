@@ -41,7 +41,7 @@ To simplify local development we've prepared docker image with anvil node and de
 
 NOTES: 
  - use repo https://github.com/symbioticfi/middleware-sdk-mirror
- - use branch `stable`, commit: `1f90492442fbdecadb149b007cb4327a3f2360eb`
+ - use branch `stable`, commit: `8c8c5aefdc3cdaa6729cb49fccaefb4499e7e3b8`
 
 ### Build docker image
 
