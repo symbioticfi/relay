@@ -81,9 +81,7 @@ var rootCmd = &cobra.Command{
 				return errors.Errorf("failed to parse secret key as big.Int")
 			}
 
-			pkBytes := [32]byte{}
-			b.FillBytes(pkBytes[:])
-			privateKey = pkBytes[:]
+			privateKey = b.FillBytes(make([]byte, 32))
 		}
 
 		client, err := evm.NewEVMClient(evm.Config{
