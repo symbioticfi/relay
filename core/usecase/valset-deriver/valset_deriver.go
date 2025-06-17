@@ -293,7 +293,6 @@ func (v *Deriver) calcQuorumThreshold(config entity.NetworkConfig, totalVP *big.
 	}
 	maxThreshold := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
 
-	// not using config now but later can
 	mul := new(big.Int).Mul(totalVP, quorumThresholdPercent)
 	div := new(big.Int).Div(mul, maxThreshold)
 	// add 1 to apply up rounding

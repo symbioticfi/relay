@@ -157,9 +157,9 @@ func (a *Aggregator) simpleAggregate(
 		Y [2]*big.Int
 	}
 	type dtoValidatorData struct {
-		G1PubKey    dtoG1Point
-		VotingPower *big.Int
-		isNonSigner bool
+		KeySerialized common.Hash
+		VotingPower   *big.Int
+		isNonSigner   bool
 	}
 	var validatorsData []dtoValidatorData
 
@@ -196,13 +196,15 @@ func (a *Aggregator) simpleAggregate(
 				return entity.AggregationProof{}, fmt.Errorf("failed to deserialize G1 key: %w", err)
 			}
 
+			compressedKeyG1, err := bls.Compress(g1Key)
+			if err != nil {
+				return entity.AggregationProof{}, fmt.Errorf("failed to compress G1 key: %w", err)
+			}
+
 			validatorsData = append(validatorsData, dtoValidatorData{
-				G1PubKey: dtoG1Point{
-					X: g1Key.X.BigInt(new(big.Int)),
-					Y: g1Key.Y.BigInt(new(big.Int)),
-				},
-				VotingPower: val.VotingPower,
-				isNonSigner: !isSinger,
+				KeySerialized: compressedKeyG1,
+				VotingPower:   val.VotingPower,
+				isNonSigner:   !isSinger,
 			})
 		}
 	}
@@ -211,7 +213,7 @@ func (a *Aggregator) simpleAggregate(
 
 	sort.Slice(validatorsData, func(i, j int) bool {
 		// Compare keys (lower first)
-		return validatorsData[i].G1PubKey.X.Cmp(validatorsData[j].G1PubKey.X) < 0 || validatorsData[i].G1PubKey.Y.Cmp(validatorsData[j].G1PubKey.Y) < 0
+		return validatorsData[i].KeySerialized.Cmp(validatorsData[j].KeySerialized) < 0
 	})
 
 	for _, val := range validatorsData {
@@ -246,10 +248,7 @@ func (a *Aggregator) simpleAggregate(
 	}
 
 	validatorsDataType, err := abi.NewType("tuple[]", "", []abi.ArgumentMarshaling{
-		{Name: "g1PubKey", Type: "tuple", Components: []abi.ArgumentMarshaling{
-			{Name: "X", Type: "uint256"},
-			{Name: "Y", Type: "uint256"},
-		}},
+		{Name: "keySerialized", Type: "bytes32"},
 		{Name: "VotingPower", Type: "uint256"},
 	})
 	if err != nil {

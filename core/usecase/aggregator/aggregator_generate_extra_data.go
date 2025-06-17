@@ -7,6 +7,7 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 
@@ -21,7 +22,7 @@ func (a *Aggregator) GenerateExtraData(valset entity.ValidatorSet, config entity
 	switch config.VerificationType {
 	case entity.VerificationTypeZK:
 		{
-			totalActiveValidatorsKey, err := a.getExtraDataKey(config.VerificationType, entity.ZkVerificationTotalActiveValidators)
+			totalActiveValidatorsKey, err := a.getExtraDataKey(config.VerificationType, entity.ZkVerificationTotalActiveValidatorsHash)
 			if err != nil {
 				return nil, errors.Errorf("failed to get extra data key: %w", err)
 			}
@@ -42,7 +43,7 @@ func (a *Aggregator) GenerateExtraData(valset entity.ValidatorSet, config entity
 					return nil, errors.Errorf("failed to generate validator set mimc accumulator: %w", err)
 				}
 
-				validatorSetHashKey, err := a.getExtraDataKeyTagged(config.VerificationType, key.Tag, entity.ZkVerificationValidatorSetHashMimc)
+				validatorSetHashKey, err := a.getExtraDataKeyTagged(config.VerificationType, key.Tag, entity.ZkVerificationValidatorSetHashMimcHash)
 				if err != nil {
 					return nil, errors.Errorf("failed to get extra data key: %w", err)
 				}
@@ -54,7 +55,7 @@ func (a *Aggregator) GenerateExtraData(valset entity.ValidatorSet, config entity
 			}
 		}
 	case entity.VerificationTypeSimple: // TODO: prettify/check
-		totalActiveVotingPowerKey, err := a.getExtraDataKey(config.VerificationType, entity.SimpleVerificationTotalVotingPower)
+		totalActiveVotingPowerKey, err := a.getExtraDataKey(config.VerificationType, entity.SimpleVerificationTotalVotingPowerHash)
 		if err != nil {
 			return nil, errors.Errorf("failed to get extra data key: %w", err)
 		}
@@ -71,7 +72,7 @@ func (a *Aggregator) GenerateExtraData(valset entity.ValidatorSet, config entity
 
 		// pack keccak accumulators per keyTag
 		for _, key := range aggregatedPubKeys {
-			validatorSetHashKey, err := a.getExtraDataKeyTagged(config.VerificationType, key.Tag, entity.SimpleVerificationValidatorSetHashKeccak256)
+			validatorSetHashKey, err := a.getExtraDataKeyTagged(config.VerificationType, key.Tag, entity.SimpleVerificationValidatorSetHashKeccak256Hash)
 			if err != nil {
 				return nil, errors.Errorf("failed to get extra data key: %w", err)
 			}
@@ -89,7 +90,7 @@ func (a *Aggregator) GenerateExtraData(valset entity.ValidatorSet, config entity
 
 		// pack aggregated keys per keyTag
 		for _, activeAggregatedKey := range aggregatedPubKeys {
-			activeAggregatedKeyKey, err := a.getExtraDataKeyTagged(config.VerificationType, activeAggregatedKey.Tag, entity.SimpleVerificationAggPublicKeyG1)
+			activeAggregatedKeyKey, err := a.getExtraDataKeyTagged(config.VerificationType, activeAggregatedKey.Tag, entity.SimpleVerificationAggPublicKeyG1Hash)
 			if err != nil {
 				return nil, errors.Errorf("failed to get extra data key: %w", err)
 			}
@@ -98,24 +99,14 @@ func (a *Aggregator) GenerateExtraData(valset entity.ValidatorSet, config entity
 				return nil, errors.Errorf("failed to deserialize G1: %w", err)
 			}
 
-			x := keyG1Raw.X.BigInt(new(big.Int))
-			y := keyG1Raw.Y.BigInt(new(big.Int))
-			_, derivedY, err := bls.FindYFromX(x)
+			compressedKeyG1, err := bls.Compress(keyG1Raw)
 			if err != nil {
-				return nil, errors.Errorf("failed to find Y from X: %w", err)
+				return nil, errors.Errorf("failed to compress G1: %w", err)
 			}
 
-			flag := y.Cmp(derivedY) != 0
-			compressedKeyG1 := new(big.Int).Mul(x, big.NewInt(2))
-			if flag {
-				compressedKeyG1.Add(compressedKeyG1, big.NewInt(1))
-			}
-
-			compressedKeyG1Bytes := [32]byte{}
-			compressedKeyG1.FillBytes(compressedKeyG1Bytes[:])
 			extraData = append(extraData, entity.ExtraData{
 				Key:   activeAggregatedKeyKey,
-				Value: compressedKeyG1Bytes,
+				Value: compressedKeyG1,
 			})
 		}
 	}
@@ -123,7 +114,7 @@ func (a *Aggregator) GenerateExtraData(valset entity.ValidatorSet, config entity
 	return extraData, nil
 }
 
-func (a *Aggregator) getExtraDataKey(verificationType entity.VerificationType, name string) ([32]byte, error) {
+func (a *Aggregator) getExtraDataKey(verificationType entity.VerificationType, nameHash common.Hash) ([32]byte, error) {
 	bytes32Ty, _ := abi.NewType("bytes32", "", nil)
 	u32Ty, _ := abi.NewType("uint32", "", nil)
 
@@ -134,9 +125,9 @@ func (a *Aggregator) getExtraDataKey(verificationType entity.VerificationType, n
 	}
 
 	packed, err := args.Pack(
-		crypto.Keccak256Hash([]byte(entity.ExtraDataGlobalKeyPrefix)),
+		entity.ExtraDataGlobalKeyPrefixHash,
 		uint32(verificationType),
-		crypto.Keccak256Hash([]byte(name)),
+		nameHash,
 	)
 	if err != nil {
 		return [32]byte{}, err
@@ -144,7 +135,7 @@ func (a *Aggregator) getExtraDataKey(verificationType entity.VerificationType, n
 	return crypto.Keccak256Hash(packed), nil
 }
 
-func (a *Aggregator) getExtraDataKeyTagged(verificationType entity.VerificationType, keyTag entity.KeyTag, name string) ([32]byte, error) {
+func (a *Aggregator) getExtraDataKeyTagged(verificationType entity.VerificationType, keyTag entity.KeyTag, nameHash common.Hash) ([32]byte, error) {
 	bytes32Ty, _ := abi.NewType("bytes32", "", nil)
 	u32Ty, _ := abi.NewType("uint32", "", nil)
 	u8Ty, _ := abi.NewType("uint8", "", nil)
@@ -158,11 +149,11 @@ func (a *Aggregator) getExtraDataKeyTagged(verificationType entity.VerificationT
 	}
 
 	packed, err := args.Pack(
-		crypto.Keccak256Hash([]byte(entity.ExtraDataGlobalKeyPrefix)),
+		entity.ExtraDataGlobalKeyPrefixHash,
 		uint32(verificationType),
-		crypto.Keccak256Hash([]byte(entity.ExtraDataKeyTagPrefix)),
+		entity.ExtraDataKeyTagPrefixHash,
 		keyTag,
-		crypto.Keccak256Hash([]byte(name)),
+		nameHash,
 	)
 	if err != nil {
 		return [32]byte{}, err
@@ -220,10 +211,10 @@ func (a *Aggregator) getAggregatedPubKeys(
 func (a *Aggregator) getExtraDataKeyIndexed(
 	verificationType entity.VerificationType,
 	keyTag entity.KeyTag,
-	name string,
+	nameHash common.Hash,
 	index *big.Int,
 ) ([32]byte, error) {
-	baseHash, err := a.getExtraDataKeyTagged(verificationType, keyTag, name)
+	baseHash, err := a.getExtraDataKeyTagged(verificationType, keyTag, nameHash)
 	if err != nil {
 		return [32]byte{}, err
 	}
@@ -236,14 +227,16 @@ func (a *Aggregator) getExtraDataKeyIndexed(
 
 func calcKeccakAccumulator(validators []entity.Validator, requiredKeyTag entity.KeyTag) ([32]byte, error) {
 	type validatorDataTuple struct {
-		X, Y, VotingPower *big.Int
+		KeySerialized common.Hash
+		VotingPower   *big.Int
 	}
 	u256, _ := abi.NewType("uint256", "", nil)
+	b32, _ := abi.NewType("bytes32", "", nil)
 
 	tupleType := abi.Type{
 		T:             abi.TupleTy,
-		TupleElems:    []*abi.Type{&u256, &u256, &u256},
-		TupleRawNames: []string{"X", "Y", "votingPower"},
+		TupleElems:    []*abi.Type{&b32, &u256},
+		TupleRawNames: []string{"keySerialized", "votingPower"},
 		TupleType:     reflect.TypeOf(validatorDataTuple{}),
 	}
 
@@ -262,15 +255,17 @@ func calcKeccakAccumulator(validators []entity.Validator, requiredKeyTag entity.
 				if err != nil {
 					return [32]byte{}, errors.Errorf("failed to deserialize G1: %w", err)
 				}
-				x := validatorKeyG1.X.BigInt(new(big.Int))
-				y := validatorKeyG1.Y.BigInt(new(big.Int))
+
+				compressedKeyG1, err := bls.Compress(validatorKeyG1)
+				if err != nil {
+					return [32]byte{}, errors.Errorf("failed to compress G1: %w", err)
+				}
 
 				votingPower := validatorVotingPower
 
 				validatorsData = append(validatorsData, validatorDataTuple{
-					X:           x,
-					Y:           y,
-					VotingPower: votingPower,
+					KeySerialized: compressedKeyG1,
+					VotingPower:   votingPower,
 				})
 			}
 		}
@@ -278,13 +273,13 @@ func calcKeccakAccumulator(validators []entity.Validator, requiredKeyTag entity.
 
 	sort.Slice(validatorsData, func(i, j int) bool {
 		// Compare keys (lower first)
-		return validatorsData[i].X.Cmp(validatorsData[j].X) < 0 || validatorsData[i].Y.Cmp(validatorsData[j].Y) < 0
+		return validatorsData[i].KeySerialized.Cmp(validatorsData[j].KeySerialized) < 0
 	})
 
 	packed, err := args.Pack(validatorsData)
 	if err != nil {
 		return [32]byte{}, errors.Errorf("failed to pack arguments: %w", err)
 	}
-	hash := crypto.Keccak256Hash(packed)
+	hash := crypto.Keccak256Hash(packed[32:])
 	return hash, nil
 }

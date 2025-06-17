@@ -61,20 +61,20 @@ const (
 	VerificationTypeSimple VerificationType = 1
 )
 
-const (
-	ExtraDataGlobalKeyPrefix = "symbiotic.Settlement.extraData."
-	ExtraDataKeyTagPrefix    = "keyTag."
+var (
+	ExtraDataGlobalKeyPrefixHash = crypto.Keccak256Hash([]byte("symbiotic.Settlement.extraData."))
+	ExtraDataKeyTagPrefixHash    = crypto.Keccak256Hash([]byte("keyTag."))
 )
 
-const (
-	ZkVerificationTotalActiveValidators = "totalActiveValidators"
-	ZkVerificationValidatorSetHashMimc  = "validatorSetHashMimc"
+var (
+	ZkVerificationTotalActiveValidatorsHash = crypto.Keccak256Hash([]byte("totalActiveValidators"))
+	ZkVerificationValidatorSetHashMimcHash  = crypto.Keccak256Hash([]byte("validatorSetHashMimc"))
 )
 
-const (
-	SimpleVerificationValidatorSetHashKeccak256 = "validatorSetHashKeccak256"
-	SimpleVerificationTotalVotingPower          = "totalVotingPower"
-	SimpleVerificationAggPublicKeyG1            = "aggPublicKeyG1"
+var (
+	SimpleVerificationValidatorSetHashKeccak256Hash = crypto.Keccak256Hash([]byte("validatorSetHashKeccak256"))
+	SimpleVerificationTotalVotingPowerHash          = crypto.Keccak256Hash([]byte("totalVotingPower"))
+	SimpleVerificationAggPublicKeyG1Hash            = crypto.Keccak256Hash([]byte("aggPublicKeyG1"))
 )
 
 // Phase represents the different phases of the protocol
