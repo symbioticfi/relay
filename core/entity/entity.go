@@ -88,8 +88,8 @@ const (
 )
 
 type CrossChainAddress struct {
-	Address common.Address `json:"addr"`
 	ChainId uint64         `json:"chainId"`
+	Address common.Address `json:"addr"`
 }
 
 type QuorumThreshold struct {

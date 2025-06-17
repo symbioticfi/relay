@@ -117,8 +117,8 @@ func NewEVMClient(cfg Config) (*Client, error) {
 	return &Client{
 		client: client,
 		masterAddress: entity.CrossChainAddress{
-			Address: common.HexToAddress(cfg.DriverAddress),
 			ChainId: 111,
+			Address: common.HexToAddress(cfg.DriverAddress),
 		},
 		masterPK:   pk,
 		cfg:        cfg,
