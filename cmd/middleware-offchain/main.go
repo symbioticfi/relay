@@ -23,12 +23,12 @@ import (
 	"middleware-offchain/internal/client/p2p"
 	"middleware-offchain/internal/client/repository/badger"
 	aggregatorApp "middleware-offchain/internal/usecase/aggregator-app"
+	apiApp "middleware-offchain/internal/usecase/api-app"
 	signerApp "middleware-offchain/internal/usecase/signer-app"
 	valsetGenerator "middleware-offchain/internal/usecase/valset-generator"
 	valsetListener "middleware-offchain/internal/usecase/valset-listener"
 	"middleware-offchain/pkg/log"
 	"middleware-offchain/pkg/proof"
-	"middleware-offchain/pkg/server"
 	"middleware-offchain/pkg/signals"
 )
 
@@ -105,7 +105,7 @@ var rootCmd = &cobra.Command{
 		pkBytes := [32]byte{}
 		b.FillBytes(pkBytes[:])
 
-		ethClient, err := evm.NewEVMClient(evm.Config{
+		evmClient, err := evm.NewEVMClient(evm.Config{
 			MasterRPCURL:   cfg.rpcURL,
 			MasterAddress:  cfg.masterAddress,
 			RequestTimeout: time.Second * 5,
@@ -115,7 +115,7 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to create symbiotic client: %w", err)
 		}
 
-		deriver, err := valsetDeriver.NewDeriver(ethClient)
+		deriver, err := valsetDeriver.NewDeriver(evmClient)
 		if err != nil {
 			return errors.Errorf("failed to create valset deriver: %w", err)
 		}
@@ -129,7 +129,10 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to create libp2p host: %w", err)
 		}
 
-		p2pService, err := p2p.NewService(ctx, h)
+		p2pService, err := p2p.NewService(ctx, p2p.Config{
+			Host:        h,
+			SendTimeout: time.Second * 10,
+		})
 		if err != nil {
 			return errors.Errorf("failed to create p2p service: %w", err)
 		}
@@ -182,7 +185,7 @@ var rootCmd = &cobra.Command{
 		slog.InfoContext(ctx, "created signer app, starting")
 
 		listener, err := valsetListener.New(valsetListener.Config{
-			Eth:             ethClient,
+			Eth:             evmClient,
 			Repo:            repo,
 			Deriver:         deriver,
 			PollingInterval: time.Second * 5,
@@ -193,7 +196,7 @@ var rootCmd = &cobra.Command{
 
 		generator, err := valsetGenerator.New(valsetGenerator.Config{
 			Signer:          signerApp,
-			Eth:             ethClient,
+			Eth:             evmClient,
 			Repo:            repo,
 			Deriver:         deriver,
 			Aggregator:      aggregator,
@@ -214,18 +217,6 @@ var rootCmd = &cobra.Command{
 			return nil
 		}, "aggregatedProofReadySignalListener")
 
-		srv, err := server.New(server.Config{
-			Address:           cfg.httpListenAddress,
-			ReadHeaderTimeout: time.Second,
-			ShutdownTimeout:   time.Second * 5,
-			Prefix:            "/api/v1",
-			APIHandler:        signerApp.Handler(),
-		})
-		if err != nil {
-			return errors.Errorf("failed to create server: %w", err)
-		}
-		slog.InfoContext(ctx, "created server, starting")
-
 		eg, egCtx := errgroup.WithContext(ctx)
 		eg.Go(func() error {
 			logCtx := log.WithComponent(egCtx, "listener")
@@ -244,17 +235,11 @@ var rootCmd = &cobra.Command{
 				}
 				return nil
 			})
-
-			eg.Go(func() error {
-				if err := srv.Serve(egCtx); err != nil {
-					return errors.Errorf("failed to start epoch listener server: %w", err)
-				}
-				return nil
-			})
 		}
 
+		var aggApp *aggregatorApp.AggregatorApp
 		if cfg.isAggregator {
-			aggApp, err := aggregatorApp.NewAggregatorApp(aggregatorApp.Config{
+			aggApp, err = aggregatorApp.NewAggregatorApp(aggregatorApp.Config{
 				Repo:       repo,
 				P2PClient:  p2pService,
 				Aggregator: aggregator,
@@ -267,6 +252,27 @@ var rootCmd = &cobra.Command{
 
 			slog.DebugContext(ctx, "created aggregator app, starting")
 		}
+
+		api, err := apiApp.NewAPIApp(apiApp.Config{
+			Address:           cfg.httpListenAddress,
+			ReadHeaderTimeout: time.Second,
+			ShutdownTimeout:   time.Second * 5,
+			Prefix:            "/api/v1",
+			Signer:            signerApp,
+			Repo:              repo,
+			EVMClient:         evmClient,
+			Aggregator:        aggApp,
+		})
+		if err != nil {
+			return errors.Errorf("failed to create api app: %w", err)
+		}
+
+		eg.Go(func() error {
+			if err := api.Start(egCtx); err != nil {
+				return errors.Errorf("failed to start api server: %w", err)
+			}
+			return nil
+		})
 
 		return eg.Wait()
 	},

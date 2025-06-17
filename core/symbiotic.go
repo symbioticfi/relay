@@ -53,6 +53,10 @@ type Symbiotic struct {
 }
 
 func NewSymbiotic(cfg Config) (*Symbiotic, error) {
+	if err := cfg.Validate(); err != nil {
+		return nil, errors.Errorf("failed to validate config: %w", err)
+	}
+
 	evmClient, err := evm.NewEVMClient(evm.Config{
 		MasterRPCURL:   cfg.MasterRPCURL,
 		MasterAddress:  cfg.MasterAddress,

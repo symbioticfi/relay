@@ -141,16 +141,16 @@ func verifyQuorumSig(ctx context.Context, proof entity.AggregationProof, message
 }
 
 type signMessageRequest struct {
-	Data   []byte `json:"data"`
-	KeyTag uint8  `json:"keyTag"`
-	Epoch  uint64 `json:"epoch"`
+	Message       []byte `json:"message"`
+	KeyTag        uint8  `json:"keyTag"`
+	RequiredEpoch uint64 `json:"requiredEpoch"`
 }
 
 func sendSignRequests(ctx context.Context, cfg config, message string, keyTag entity.KeyTag, epoch uint64) (string, error) {
 	req := signMessageRequest{
-		Data:   []byte(message),
-		KeyTag: uint8(keyTag),
-		Epoch:  epoch,
+		Message:       []byte(message),
+		KeyTag:        uint8(keyTag),
+		RequiredEpoch: epoch,
 	}
 
 	body, err := json.Marshal(&req)
@@ -165,6 +165,7 @@ func sendSignRequests(ctx context.Context, cfg config, message string, keyTag en
 		if err != nil {
 			return "", errors.Errorf("failed to create new request: %w", err)
 		}
+		request.Header.Set("Content-Type", "application/json")
 		err = func() error {
 			resp, err := http.DefaultClient.Do(request)
 			if err != nil {
@@ -203,6 +204,7 @@ func sendGetAggregationProofRequest(ctx context.Context, c config, hash string) 
 	if err != nil {
 		return entity.AggregationProof{}, errors.Errorf("failed to create new request: %w", err)
 	}
+	request.Header.Set("Content-Type", "application/json")
 
 	var aggProof entity.AggregationProof
 	err = func() error {

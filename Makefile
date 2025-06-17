@@ -7,6 +7,9 @@ install-mocks:
 gen-mocks:
 	go generate ./...
 
+gen-api:
+	go run github.com/ogen-go/ogen/cmd/ogen@v1.14.0 -v -clean  -package api -target internal/gen/api api/swagger.yaml
+
 unit-test:
 	go test ./... -v -covermode atomic -race -coverprofile=cover.out.tmp  -coverpkg=./...
 	cat cover.out.tmp | grep -v "gen"  | grep -v "mocks" > coverage.tmp.txt # strip out generated files
