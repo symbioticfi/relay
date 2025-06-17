@@ -22,10 +22,15 @@ build-for-linux:
 
 gen-abi:
 	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
-		--abi internal/client/symbiotic/Master.abi.json \
-		--type Master \
+		--abi core/client/evm/abi/IValSetDriver.abi.json \
+		--type IValSetDriver \
 		--pkg gen \
-		--out internal/client/symbiotic/gen/master.go
+		--out core/client/evm/gen/valsetDriver.go
+	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
+		--abi core/client/evm/abi/ISettlement.abi.json \
+		--type ISettlement \
+		--pkg gen \
+		--out core/client/evm/gen/settlement.go
 
 
 build-generate-genesis-linux:

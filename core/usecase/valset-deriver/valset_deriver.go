@@ -18,18 +18,15 @@ const valsetVersion = 1
 
 //go:generate mockgen -source=valset_deriver.go -destination=mocks/deriver.go -package=mocks
 type ethClient interface {
-	GetCaptureTimestamp(ctx context.Context) (uint64, error)
 	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
-	GetCurrentValsetTimestamp(ctx context.Context) (uint64, error)
 	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
 	GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorVotingPower, error)
 	GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorWithKeys, error)
-	GetRequiredKeyTag(ctx context.Context, timestamp uint64) (entity.KeyTag, error)
 	GetEip712Domain(ctx context.Context) (entity.Eip712Domain, error)
 	GetCurrentEpoch(ctx context.Context) (uint64, error)
 	GetSubnetwork(ctx context.Context) (common.Hash, error)
 	GetNetworkAddress(ctx context.Context) (*common.Address, error)
-	GetLatestHeaderHash(ctx context.Context) (common.Hash, error)
+	GetHeaderHash(ctx context.Context) (common.Hash, error)
 	IsValsetHeaderCommittedAt(ctx context.Context, epoch uint64) (bool, error)
 	GetPreviousHeaderHashAt(ctx context.Context, epoch uint64) (common.Hash, error)
 	GetHeaderHashAt(ctx context.Context, epoch uint64) (common.Hash, error)
@@ -107,11 +104,9 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 	validators, totalVP := v.formValidators(config, allVotingPowers, keys)
 
 	// calc new quorum threshold
-	quorumThreshold := v.calcQuorumThreshold(config, totalVP)
-
-	requiredKeyTag, err := v.ethClient.GetRequiredKeyTag(ctx, timestamp)
+	quorumThreshold, err := v.calcQuorumThreshold(config, totalVP)
 	if err != nil {
-		return entity.ValidatorSet{}, errors.Errorf("failed to get required key tag: %w", err)
+		return entity.ValidatorSet{}, errors.Errorf("failed to calc quorum threshold: %w", err)
 	}
 
 	isValsetCommitted, err := v.ethClient.IsValsetHeaderCommittedAt(ctx, epoch)
@@ -121,7 +116,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 
 	valset := entity.ValidatorSet{
 		Version:          valsetVersion,
-		RequiredKeyTag:   requiredKeyTag,
+		RequiredKeyTag:   config.RequiredHeaderKeyTag,
 		Epoch:            epoch,
 		CaptureTimestamp: timestamp,
 		QuorumThreshold:  quorumThreshold,
@@ -168,7 +163,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 			// zero PreviousHeaderHash cos header is orphaned
 		} else {
 			slog.DebugContext(ctx, "Validator set is not committed at epoch", "epoch", epoch)
-			previousHeaderHash, err := v.ethClient.GetLatestHeaderHash(ctx)
+			previousHeaderHash, err := v.ethClient.GetHeaderHash(ctx)
 			if err != nil {
 				return entity.ValidatorSet{}, errors.Errorf("failed to get latest header hash: %w", err)
 			}
@@ -286,9 +281,20 @@ func (v *Deriver) formValidators(
 	return validators, totalActiveVotingPower
 }
 
-func (v *Deriver) calcQuorumThreshold(_ entity.NetworkConfig, totalVP *big.Int) *big.Int {
-	// not using config now but later can
-	mul := big.NewInt(1).Mul(totalVP, big.NewInt(2))
-	div := big.NewInt(1).Div(mul, big.NewInt(3))
-	return big.NewInt(0).Add(div, big.NewInt(1))
+func (v *Deriver) calcQuorumThreshold(config entity.NetworkConfig, totalVP *big.Int) (*big.Int, error) {
+	quorumThresholdPercent := big.NewInt(0)
+	for _, quorumThreshold := range config.QuorumThresholds {
+		if quorumThreshold.KeyTag == config.RequiredHeaderKeyTag {
+			quorumThresholdPercent = quorumThreshold.QuorumThreshold
+		}
+	}
+	if quorumThresholdPercent.Cmp(big.NewInt(0)) == 0 {
+		return nil, errors.Errorf("quorum threshold is zero")
+	}
+	maxThreshold := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
+
+	mul := new(big.Int).Mul(totalVP, quorumThresholdPercent)
+	div := new(big.Int).Div(mul, maxThreshold)
+	// add 1 to apply up rounding
+	return new(big.Int).Add(div, big.NewInt(1)), nil
 }

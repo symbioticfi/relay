@@ -36,7 +36,7 @@ func main() {
 
 func run() error {
 	rootCmd.PersistentFlags().StringVar(&cfg.rpcURL, "rpc-url", "", "RPC URL")
-	rootCmd.PersistentFlags().StringVar(&cfg.masterAddress, "master-address", "", "Master contract address")
+	rootCmd.PersistentFlags().StringVar(&cfg.driverAddress, "driver-address", "", "Driver contract address")
 	rootCmd.PersistentFlags().StringVar(&cfg.logLevel, "log-level", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVar(&cfg.logMode, "log-mode", "text", "Log mode (text, pretty)")
 	rootCmd.PersistentFlags().StringArrayVar(&cfg.signAddresses, "sign-address", []string{"http://localhost:8081/api/v1", "http://localhost:8082/api/v1", "http://localhost:8083/api/v1"}, "Addresses of signer servers'")
@@ -44,8 +44,8 @@ func run() error {
 	if err := rootCmd.MarkPersistentFlagRequired("rpc-url"); err != nil {
 		return errors.Errorf("failed to mark rpc-url as required: %w", err)
 	}
-	if err := rootCmd.MarkPersistentFlagRequired("master-address"); err != nil {
-		return errors.Errorf("failed to mark master-address as required: %w", err)
+	if err := rootCmd.MarkPersistentFlagRequired("driver-address"); err != nil {
+		return errors.Errorf("failed to mark driver-address as required: %w", err)
 	}
 
 	return rootCmd.Execute()
@@ -53,7 +53,7 @@ func run() error {
 
 type config struct {
 	rpcURL        string
-	masterAddress string
+	driverAddress string
 
 	logLevel      string
 	logMode       string
@@ -74,7 +74,7 @@ var rootCmd = &cobra.Command{
 
 		ethClient, err := evm.NewEVMClient(evm.Config{
 			MasterRPCURL:   cfg.rpcURL,
-			MasterAddress:  cfg.masterAddress,
+			DriverAddress:  cfg.driverAddress,
 			RequestTimeout: time.Second * 10,
 		})
 		if err != nil {

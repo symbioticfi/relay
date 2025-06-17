@@ -29,7 +29,7 @@ func (s *Signal[T]) AddListener(listener func(context.Context, T) error, key str
 	return s.sig.AddListener(func(ctx context.Context, t T) {
 		err := listener(ctx, t)
 		if err != nil {
-			slog.ErrorContext(ctx, "Failed to handle event in listener", "key", key, "event", t)
+			slog.ErrorContext(ctx, "Failed to handle event in listener", "key", key, "event", t, "err", err)
 		}
 	}, key)
 }

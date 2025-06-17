@@ -28,12 +28,13 @@ type keyProvider interface {
 }
 
 type Config struct {
-	MasterRPCURL   string `validate:"required"`
-	MasterAddress  string `validate:"required"`
-	PrivateKey     []byte
-	RequestTimeout time.Duration `validate:"required,gt=0"`
-	Prover         prover        `validate:"required"`
-	KeyProvider    keyProvider   `validate:"required"`
+	MasterRPCURL      string `validate:"required"`
+	DriverAddress     string `validate:"required"`
+	SettlementAddress string `validate:"required"`
+	PrivateKey        []byte
+	RequestTimeout    time.Duration `validate:"required,gt=0"`
+	Prover            prover        `validate:"required"`
+	KeyProvider       keyProvider   `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -58,10 +59,10 @@ func NewSymbiotic(cfg Config) (*Symbiotic, error) {
 	}
 
 	evmClient, err := evm.NewEVMClient(evm.Config{
-		MasterRPCURL:   cfg.MasterRPCURL,
-		MasterAddress:  cfg.MasterAddress,
-		PrivateKey:     cfg.PrivateKey,
-		RequestTimeout: cfg.RequestTimeout,
+		MasterRPCURL:      cfg.MasterRPCURL,
+		DriverAddress:     cfg.DriverAddress,
+		PrivateKey:        cfg.PrivateKey,
+		RequestTimeout:    cfg.RequestTimeout,
 	})
 	if err != nil {
 		return nil, errors.Errorf("failed to create EVM client: %w", err)
@@ -129,10 +130,6 @@ func (s *Symbiotic) GetConfig(ctx context.Context, timestamp uint64) (entity.Net
 	return s.evmClient.GetConfig(ctx, timestamp)
 }
 
-func (s *Symbiotic) GetIsGenesisSet(ctx context.Context) (bool, error) {
-	return s.evmClient.GetIsGenesisSet(ctx)
-}
-
 func (s *Symbiotic) IsValsetHeaderCommittedAt(ctx context.Context, epoch uint64) (bool, error) {
 	return s.evmClient.IsValsetHeaderCommittedAt(ctx, epoch)
 }
@@ -149,8 +146,8 @@ func (s *Symbiotic) GetPreviousHeaderHashAt(ctx context.Context, epoch uint64) (
 	return s.evmClient.GetPreviousHeaderHashAt(ctx, epoch)
 }
 
-func (s *Symbiotic) GetLatestHeaderHash(ctx context.Context) (common.Hash, error) {
-	return s.evmClient.GetLatestHeaderHash(ctx)
+func (s *Symbiotic) GetHeaderHash(ctx context.Context) (common.Hash, error) {
+	return s.evmClient.GetHeaderHash(ctx)
 }
 
 func (s *Symbiotic) GetHeaderHashAt(ctx context.Context, epoch uint64) (common.Hash, error) {
@@ -165,18 +162,6 @@ func (s *Symbiotic) GetLastCommittedHeaderEpoch(ctx context.Context) (uint64, er
 	return s.evmClient.GetLastCommittedHeaderEpoch(ctx)
 }
 
-func (s *Symbiotic) GetCurrentPhase(ctx context.Context) (entity.Phase, error) {
-	return s.evmClient.GetCurrentPhase(ctx)
-}
-
-func (s *Symbiotic) GetCurrentValsetTimestamp(ctx context.Context) (uint64, error) {
-	return s.evmClient.GetCurrentValsetTimestamp(ctx)
-}
-
-func (s *Symbiotic) GetCaptureTimestamp(ctx context.Context) (uint64, error) {
-	return s.evmClient.GetCaptureTimestamp(ctx)
-}
-
 func (s *Symbiotic) GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, epoch uint64) (uint64, error) {
 	return s.evmClient.GetCaptureTimestampFromValsetHeaderAt(ctx, epoch)
 }
@@ -187,14 +172,6 @@ func (s *Symbiotic) GetVotingPowers(ctx context.Context, address entity.CrossCha
 
 func (s *Symbiotic) GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorWithKeys, error) {
 	return s.evmClient.GetKeys(ctx, address, timestamp)
-}
-
-func (s *Symbiotic) GetRequiredKeyTag(ctx context.Context, timestamp uint64) (entity.KeyTag, error) {
-	return s.evmClient.GetRequiredKeyTag(ctx, timestamp)
-}
-
-func (s *Symbiotic) GetQuorumThreshold(ctx context.Context, timestamp uint64, keyTag entity.KeyTag) (uint64, error) {
-	return s.evmClient.GetQuorumThreshold(ctx, timestamp, keyTag)
 }
 
 func (s *Symbiotic) GetSubnetwork(ctx context.Context) (common.Hash, error) {

@@ -5,6 +5,7 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 )
 
@@ -246,6 +247,26 @@ func FindYFromX(x *big.Int) (beta *big.Int, y *big.Int, err error) {
 	y = new(big.Int).Exp(beta, exponent, FpModulus)
 
 	return beta, y, nil
+}
+
+func Compress(g1 *G1) (common.Hash, error) {
+	x := g1.X.BigInt(new(big.Int))
+	y := g1.Y.BigInt(new(big.Int))
+	_, derivedY, err := FindYFromX(x)
+	if err != nil {
+		return common.Hash{}, errors.New("failed to find Y from X")
+	}
+
+	flag := y.Cmp(derivedY) != 0
+	compressedKeyG1 := new(big.Int).Mul(x, big.NewInt(2))
+	if flag {
+		compressedKeyG1.Add(compressedKeyG1, big.NewInt(1))
+	}
+
+	compressedKeyG1Bytes := [32]byte{}
+	compressedKeyG1.FillBytes(compressedKeyG1Bytes[:])
+
+	return common.Hash(compressedKeyG1Bytes), nil
 }
 
 func ZeroG1() *G1 {
