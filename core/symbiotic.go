@@ -28,13 +28,12 @@ type keyProvider interface {
 }
 
 type Config struct {
-	MasterRPCURL      string `validate:"required"`
-	DriverAddress     string `validate:"required"`
-	SettlementAddress string `validate:"required"`
-	PrivateKey        []byte
-	RequestTimeout    time.Duration `validate:"required,gt=0"`
-	Prover            prover        `validate:"required"`
-	KeyProvider       keyProvider   `validate:"required"`
+	MasterRPCURL   string `validate:"required"`
+	DriverAddress  string `validate:"required"`
+	PrivateKey     []byte
+	RequestTimeout time.Duration `validate:"required,gt=0"`
+	Prover         prover        `validate:"required"`
+	KeyProvider    keyProvider   `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -59,10 +58,10 @@ func NewSymbiotic(cfg Config) (*Symbiotic, error) {
 	}
 
 	evmClient, err := evm.NewEVMClient(evm.Config{
-		MasterRPCURL:      cfg.MasterRPCURL,
-		DriverAddress:     cfg.DriverAddress,
-		PrivateKey:        cfg.PrivateKey,
-		RequestTimeout:    cfg.RequestTimeout,
+		MasterRPCURL:   cfg.MasterRPCURL,
+		DriverAddress:  cfg.DriverAddress,
+		PrivateKey:     cfg.PrivateKey,
+		RequestTimeout: cfg.RequestTimeout,
 	})
 	if err != nil {
 		return nil, errors.Errorf("failed to create EVM client: %w", err)

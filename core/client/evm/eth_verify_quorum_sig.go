@@ -2,9 +2,10 @@ package evm
 
 import (
 	"context"
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/rpc"
-	"math/big"
 
 	"middleware-offchain/core/entity"
 )
