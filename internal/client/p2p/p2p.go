@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
+	"github.com/go-playground/validator/v10"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -34,6 +35,19 @@ const (
 	messageTypeSignaturesAggregated messageType = "signatures_aggregated"
 )
 
+type Config struct {
+	Host        host.Host     `validate:"required"`
+	SendTimeout time.Duration `validate:"required,gt=0"`
+}
+
+func (c Config) Validate() error {
+	if err := validator.New().Struct(c); err != nil {
+		return errors.Errorf("invalid P2P config: %w", err)
+	}
+
+	return nil
+}
+
 // Service handles peer-to-peer communication and signature aggregation
 type Service struct {
 	ctx                         context.Context
@@ -42,16 +56,23 @@ type Service struct {
 	peers                       map[peer.ID]struct{}
 	signatureHashHandler        *signals.Signal[p2pEntity.P2PMessage[entity.SignatureMessage]]
 	signaturesAggregatedHandler *signals.Signal[p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]]
+	sendTimeout                 time.Duration
 }
 
 // NewService creates a new P2P service with the given configuration
-func NewService(ctx context.Context, h host.Host) (*Service, error) {
+func NewService(ctx context.Context, cfg Config) (*Service, error) {
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+
+	h := cfg.Host
 	service := &Service{
 		ctx:                         log.WithAttrs(ctx, slog.String("component", "p2p")),
 		host:                        h,
 		peers:                       make(map[peer.ID]struct{}),
 		signatureHashHandler:        signals.New[p2pEntity.P2PMessage[entity.SignatureMessage]](),
 		signaturesAggregatedHandler: signals.New[p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]](),
+		sendTimeout:                 cfg.SendTimeout,
 	}
 
 	h.SetStreamHandler(signedHashProtocolID, handleStreamWrapper(ctx, service.handleStreamSignedHash))
@@ -117,14 +138,23 @@ func (s *Service) broadcast(ctx context.Context, typ messageType, data []byte) e
 		Data:      data,
 	}
 
+	wg := sync.WaitGroup{}
 	errs := make([]error, len(peers))
+	tmCtx, cancel := context.WithTimeout(ctx, s.sendTimeout)
+	defer cancel()
+
 	for i, peerID := range peers {
+		wg.Add(1)
 		go func(i int) {
-			if err := s.sendToPeer(ctx, typ, peerID, msg); err != nil {
+			defer wg.Done()
+
+			if err := s.sendToPeer(tmCtx, typ, peerID, msg); err != nil {
 				errs[i] = err
 			}
 		}(i)
 	}
+
+	wg.Wait()
 
 	return errors.Join(errs...)
 }

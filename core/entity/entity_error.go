@@ -9,4 +9,5 @@ func (e StringError) Error() string {
 const (
 	ErrEntityNotFound     = StringError("entity not found")
 	ErrEntityAlreadyExist = StringError("entity already exists")
+	ErrNotAnAggregator    = StringError("not an aggregator")
 )

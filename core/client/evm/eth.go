@@ -217,7 +217,7 @@ func (e *Client) GetEpochStart(ctx context.Context, epoch uint64) (uint64, error
 	return epochStart.Uint64(), nil
 }
 
-func (e *Client) GetSubnetwork(ctx context.Context) ([32]byte, error) {
+func (e *Client) GetSubnetwork(ctx context.Context) (common.Hash, error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 
@@ -226,7 +226,7 @@ func (e *Client) GetSubnetwork(ctx context.Context) ([32]byte, error) {
 		Context:     toCtx,
 	})
 	if err != nil {
-		return [32]byte{}, errors.Errorf("failed to call getSubnetwork: %w", err)
+		return common.Hash{}, errors.Errorf("failed to call getSubnetwork: %w", err)
 	}
 
 	return subnetwork, nil
@@ -261,7 +261,7 @@ func (e *Client) IsValsetHeaderCommittedAt(ctx context.Context, epoch uint64) (b
 	return ok, nil
 }
 
-func (e *Client) GetPreviousHeaderHash(ctx context.Context) ([32]byte, error) {
+func (e *Client) GetPreviousHeaderHash(ctx context.Context) (common.Hash, error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 
@@ -270,13 +270,13 @@ func (e *Client) GetPreviousHeaderHash(ctx context.Context) ([32]byte, error) {
 		Context:     toCtx,
 	})
 	if err != nil {
-		return [32]byte{}, errors.Errorf("failed to call getPreviousHeaderHash: %w", err)
+		return common.Hash{}, errors.Errorf("failed to call getPreviousHeaderHash: %w", err)
 	}
 
 	return hash, nil
 }
 
-func (e *Client) GetPreviousHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, error) {
+func (e *Client) GetPreviousHeaderHashAt(ctx context.Context, epoch uint64) (common.Hash, error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 
@@ -285,13 +285,13 @@ func (e *Client) GetPreviousHeaderHashAt(ctx context.Context, epoch uint64) ([32
 		Context:     toCtx,
 	}, new(big.Int).SetUint64(epoch))
 	if err != nil {
-		return [32]byte{}, errors.Errorf("failed to call getPreviousHeaderHashAt: %w", err)
+		return common.Hash{}, errors.Errorf("failed to call getPreviousHeaderHashAt: %w", err)
 	}
 
 	return hash, nil
 }
 
-func (e *Client) GetHeaderHash(ctx context.Context) ([32]byte, error) {
+func (e *Client) GetHeaderHash(ctx context.Context) (common.Hash, error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 
@@ -300,13 +300,13 @@ func (e *Client) GetHeaderHash(ctx context.Context) ([32]byte, error) {
 		Context:     toCtx,
 	})
 	if err != nil {
-		return [32]byte{}, errors.Errorf("failed to call getValSetHeaderHash: %w", err)
+		return common.Hash{}, errors.Errorf("failed to call getValSetHeaderHash: %w", err)
 	}
 
 	return hash, nil
 }
 
-func (e *Client) GetHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, error) {
+func (e *Client) GetHeaderHashAt(ctx context.Context, epoch uint64) (common.Hash, error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 
@@ -315,7 +315,7 @@ func (e *Client) GetHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, e
 		Context:     toCtx,
 	}, new(big.Int).SetUint64(epoch))
 	if err != nil {
-		return [32]byte{}, errors.Errorf("failed to call getValSetHeaderHashAt: %w", err)
+		return common.Hash{}, errors.Errorf("failed to call getValSetHeaderHashAt: %w", err)
 	}
 
 	return hash, nil

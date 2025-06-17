@@ -111,12 +111,12 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 		return errors.Errorf("failed to put signature: %w", err)
 	}
 
-	slog.DebugContext(ctx, "total voting power", "currentVotingPower", current.votingPower.String())
+	slog.DebugContext(ctx, "total voting power", "currentVotingPower", current.VotingPower.String())
 
-	thresholdReached := current.votingPower.Cmp(validatorSet.QuorumThreshold) >= 0
+	thresholdReached := current.VotingPower.Cmp(validatorSet.QuorumThreshold) >= 0
 	if !thresholdReached {
 		slog.InfoContext(ctx, "quorum not reached yet",
-			"currentVotingPower", current.votingPower,
+			"currentVotingPower", current.VotingPower,
 			"quorumThreshold", validatorSet.QuorumThreshold,
 			"totalActiveVotingPower", validatorSet.GetTotalActiveVotingPower(),
 		)
@@ -124,7 +124,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 	}
 
 	slog.InfoContext(ctx, "quorum reached, aggregating signatures and creating proof",
-		"currentVotingPower", current.votingPower,
+		"currentVotingPower", current.VotingPower,
 		"quorumThreshold", validatorSet.QuorumThreshold,
 		"totalActiveVotingPower", validatorSet.GetTotalActiveVotingPower(),
 	)
@@ -170,4 +170,13 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 	slog.InfoContext(ctx, "proof sent via p2p")
 
 	return nil
+}
+
+func (s *AggregatorApp) GetAggregationStatus(ctx context.Context, requestHash common.Hash) (p2pEntity.AggregationStatus, error) {
+	current, err := s.hashStore.GetStatus(requestHash)
+	if err != nil {
+		return p2pEntity.AggregationStatus{}, errors.Errorf("failed to get aggregation status: %w", err)
+	}
+
+	return current, nil
 }

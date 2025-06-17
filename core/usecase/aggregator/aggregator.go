@@ -20,7 +20,7 @@ import (
 
 type prover interface {
 	Prove(proveInput proof.ProveInput) (proof.ProofData, error)
-	Verify(valsetLen int, publicInputHash [32]byte, proofBytes []byte) (bool, error)
+	Verify(valsetLen int, publicInputHash common.Hash, proofBytes []byte) (bool, error)
 }
 
 type Aggregator struct {

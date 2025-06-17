@@ -12,7 +12,6 @@ package mocks
 import (
 	context "context"
 	entity "middleware-offchain/core/entity"
-	entity0 "middleware-offchain/internal/entity"
 	reflect "reflect"
 
 	common "github.com/ethereum/go-ethereum/common"
@@ -73,19 +72,19 @@ func (mr *MockrepositoryMockRecorder) GetConfigByEpoch(ctx, epoch any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigByEpoch", reflect.TypeOf((*Mockrepository)(nil).GetConfigByEpoch), ctx, epoch)
 }
 
-// GetValsetByEpoch mocks base method.
-func (m *Mockrepository) GetValsetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error) {
+// GetValidatorSetByEpoch mocks base method.
+func (m *Mockrepository) GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetValsetByEpoch", ctx, epoch)
+	ret := m.ctrl.Call(m, "GetValidatorSetByEpoch", ctx, epoch)
 	ret0, _ := ret[0].(entity.ValidatorSet)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetValsetByEpoch indicates an expected call of GetValsetByEpoch.
-func (mr *MockrepositoryMockRecorder) GetValsetByEpoch(ctx, epoch any) *gomock.Call {
+// GetValidatorSetByEpoch indicates an expected call of GetValidatorSetByEpoch.
+func (mr *MockrepositoryMockRecorder) GetValidatorSetByEpoch(ctx, epoch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValsetByEpoch", reflect.TypeOf((*Mockrepository)(nil).GetValsetByEpoch), ctx, epoch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSetByEpoch", reflect.TypeOf((*Mockrepository)(nil).GetValidatorSetByEpoch), ctx, epoch)
 }
 
 // SaveSignature mocks base method.
@@ -138,18 +137,6 @@ func (m *Mockp2pClient) BroadcastSignatureAggregatedMessage(ctx context.Context,
 func (mr *Mockp2pClientMockRecorder) BroadcastSignatureAggregatedMessage(ctx, msg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BroadcastSignatureAggregatedMessage", reflect.TypeOf((*Mockp2pClient)(nil).BroadcastSignatureAggregatedMessage), ctx, msg)
-}
-
-// SetSignatureHashMessageHandler mocks base method.
-func (m *Mockp2pClient) SetSignatureHashMessageHandler(mh func(context.Context, entity0.SenderInfo, entity.SignatureMessage) error) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetSignatureHashMessageHandler", mh)
-}
-
-// SetSignatureHashMessageHandler indicates an expected call of SetSignatureHashMessageHandler.
-func (mr *Mockp2pClientMockRecorder) SetSignatureHashMessageHandler(mh any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSignatureHashMessageHandler", reflect.TypeOf((*Mockp2pClient)(nil).SetSignatureHashMessageHandler), mh)
 }
 
 // Mockaggregator is a mock of aggregator interface.
