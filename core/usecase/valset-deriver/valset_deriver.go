@@ -27,12 +27,12 @@ type ethClient interface {
 	GetRequiredKeyTag(ctx context.Context, timestamp uint64) (entity.KeyTag, error)
 	GetEip712Domain(ctx context.Context) (entity.Eip712Domain, error)
 	GetCurrentEpoch(ctx context.Context) (uint64, error)
-	GetSubnetwork(ctx context.Context) ([32]byte, error)
+	GetSubnetwork(ctx context.Context) (common.Hash, error)
 	GetNetworkAddress(ctx context.Context) (*common.Address, error)
-	GetLatestHeaderHash(ctx context.Context) ([32]byte, error)
+	GetLatestHeaderHash(ctx context.Context) (common.Hash, error)
 	IsValsetHeaderCommittedAt(ctx context.Context, epoch uint64) (bool, error)
-	GetPreviousHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, error)
-	GetHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, error)
+	GetPreviousHeaderHashAt(ctx context.Context, epoch uint64) (common.Hash, error)
+	GetHeaderHashAt(ctx context.Context, epoch uint64) (common.Hash, error)
 	GetLastCommittedHeaderEpoch(ctx context.Context) (uint64, error)
 }
 

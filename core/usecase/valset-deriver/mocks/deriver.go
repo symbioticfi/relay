@@ -133,10 +133,10 @@ func (mr *MockethClientMockRecorder) GetEpochStart(ctx, epoch any) *gomock.Call 
 }
 
 // GetHeaderHashAt mocks base method.
-func (m *MockethClient) GetHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, error) {
+func (m *MockethClient) GetHeaderHashAt(ctx context.Context, epoch uint64) (common.Hash, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetHeaderHashAt", ctx, epoch)
-	ret0, _ := ret[0].([32]byte)
+	ret0, _ := ret[0].(common.Hash)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -178,10 +178,10 @@ func (mr *MockethClientMockRecorder) GetLastCommittedHeaderEpoch(ctx any) *gomoc
 }
 
 // GetLatestHeaderHash mocks base method.
-func (m *MockethClient) GetLatestHeaderHash(ctx context.Context) ([32]byte, error) {
+func (m *MockethClient) GetLatestHeaderHash(ctx context.Context) (common.Hash, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLatestHeaderHash", ctx)
-	ret0, _ := ret[0].([32]byte)
+	ret0, _ := ret[0].(common.Hash)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -208,10 +208,10 @@ func (mr *MockethClientMockRecorder) GetNetworkAddress(ctx any) *gomock.Call {
 }
 
 // GetPreviousHeaderHashAt mocks base method.
-func (m *MockethClient) GetPreviousHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, error) {
+func (m *MockethClient) GetPreviousHeaderHashAt(ctx context.Context, epoch uint64) (common.Hash, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPreviousHeaderHashAt", ctx, epoch)
-	ret0, _ := ret[0].([32]byte)
+	ret0, _ := ret[0].(common.Hash)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -238,10 +238,10 @@ func (mr *MockethClientMockRecorder) GetRequiredKeyTag(ctx, timestamp any) *gomo
 }
 
 // GetSubnetwork mocks base method.
-func (m *MockethClient) GetSubnetwork(ctx context.Context) ([32]byte, error) {
+func (m *MockethClient) GetSubnetwork(ctx context.Context) (common.Hash, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSubnetwork", ctx)
-	ret0, _ := ret[0].([32]byte)
+	ret0, _ := ret[0].(common.Hash)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

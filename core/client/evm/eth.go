@@ -263,60 +263,60 @@ func (e *Client) GetCurrentEpoch(ctx context.Context) (uint64, error) {
 	return epoch, nil
 }
 
-func (e *Client) GetPreviousHeaderHash(ctx context.Context) ([32]byte, error) {
+func (e *Client) GetPreviousHeaderHash(ctx context.Context) (common.Hash, error) {
 	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getPreviousHeaderHashFunction)
 	if err != nil {
-		return [32]byte{}, errors.Errorf("failed to construct call msg: %w", err)
+		return common.Hash{}, errors.Errorf("failed to construct call msg: %w", err)
 	}
 
 	result, err := e.callContract(ctx, callMsg)
 	if err != nil {
-		return [32]byte{}, errors.Errorf("failed to call contract: %w", err)
+		return common.Hash{}, errors.Errorf("failed to call contract: %w", err)
 	}
 
-	return [32]byte(result), nil
+	return common.BytesToHash(result), nil
 }
 
-func (e *Client) GetPreviousHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, error) {
+func (e *Client) GetPreviousHeaderHashAt(ctx context.Context, epoch uint64) (common.Hash, error) {
 	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getPreviousHeaderHashAtFunction, new(big.Int).SetUint64(epoch))
 	if err != nil {
-		return [32]byte{}, errors.Errorf("failed to construct call msg: %w", err)
+		return common.Hash{}, errors.Errorf("failed to construct call msg: %w", err)
 	}
 
 	result, err := e.callContract(ctx, callMsg)
 	if err != nil {
-		return [32]byte{}, errors.Errorf("failed to call contract: %w", err)
+		return common.Hash{}, errors.Errorf("failed to call contract: %w", err)
 	}
 
-	return [32]byte(result), nil
+	return common.BytesToHash(result), nil
 }
 
-func (e *Client) GetLatestHeaderHash(ctx context.Context) ([32]byte, error) {
+func (e *Client) GetLatestHeaderHash(ctx context.Context) (common.Hash, error) {
 	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getLatestHeaderHashFunction)
 	if err != nil {
-		return [32]byte{}, errors.Errorf("failed to construct call msg: %w", err)
+		return common.Hash{}, errors.Errorf("failed to construct call msg: %w", err)
 	}
 
 	result, err := e.callContract(ctx, callMsg)
 	if err != nil {
-		return [32]byte{}, errors.Errorf("failed to call contract: %w", err)
+		return common.Hash{}, errors.Errorf("failed to call contract: %w", err)
 	}
 
-	return [32]byte(result), nil
+	return common.BytesToHash(result), nil
 }
 
-func (e *Client) GetHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, error) {
+func (e *Client) GetHeaderHashAt(ctx context.Context, epoch uint64) (common.Hash, error) {
 	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getLatestHeaderHashAtFunction, new(big.Int).SetUint64(epoch))
 	if err != nil {
-		return [32]byte{}, errors.Errorf("failed to construct call msg: %w", err)
+		return common.Hash{}, errors.Errorf("failed to construct call msg: %w", err)
 	}
 
 	result, err := e.callContract(ctx, callMsg)
 	if err != nil {
-		return [32]byte{}, errors.Errorf("failed to call contract: %w", err)
+		return common.Hash{}, errors.Errorf("failed to call contract: %w", err)
 	}
 
-	return [32]byte(result), nil
+	return common.BytesToHash(result), nil
 }
 
 func (e *Client) GetEpochStart(ctx context.Context, epoch uint64) (uint64, error) {
@@ -523,18 +523,18 @@ func (e *Client) GetQuorumThreshold(ctx context.Context, timestamp uint64, keyTa
 	return new(big.Int).SetBytes(result).Uint64(), nil
 }
 
-func (e *Client) GetSubnetwork(ctx context.Context) ([32]byte, error) {
+func (e *Client) GetSubnetwork(ctx context.Context) (common.Hash, error) {
 	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, getSubnetworkFunction)
 	if err != nil {
-		return [32]byte{}, errors.Errorf("failed to construct call msg: %w", err)
+		return common.Hash{}, errors.Errorf("failed to construct call msg: %w", err)
 	}
 
 	result, err := e.callContract(ctx, callMsg)
 	if err != nil {
-		return [32]byte{}, errors.Errorf("failed to call contract: %w", err)
+		return common.Hash{}, errors.Errorf("failed to call contract: %w", err)
 	}
 
-	return [32]byte(result), nil
+	return common.BytesToHash(result), nil
 }
 
 func (e *Client) GetNetworkAddress(ctx context.Context) (*common.Address, error) {

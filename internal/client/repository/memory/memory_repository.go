@@ -19,7 +19,7 @@ type Repository struct {
 
 	networkConfigs map[uint64]entity.NetworkConfig
 	validatorSets  map[uint64]entity.ValidatorSet
-	signatures     map[common.Hash]map[[32]byte]entity.Signature
+	signatures     map[common.Hash]map[common.Hash]entity.Signature
 	signRequests   map[common.Hash]entity.SignatureRequest
 	aggProofs      map[common.Hash]entity.AggregationProof
 	pendingValsets map[common.Hash]entity.ValidatorSet
@@ -30,7 +30,7 @@ func New() (*Repository, error) {
 		mu:             sync.Mutex{},
 		networkConfigs: make(map[uint64]entity.NetworkConfig),
 		validatorSets:  make(map[uint64]entity.ValidatorSet),
-		signatures:     make(map[common.Hash]map[[32]byte]entity.Signature),
+		signatures:     make(map[common.Hash]map[common.Hash]entity.Signature),
 		signRequests:   make(map[common.Hash]entity.SignatureRequest),
 		aggProofs:      make(map[common.Hash]entity.AggregationProof),
 		pendingValsets: make(map[common.Hash]entity.ValidatorSet),
@@ -155,7 +155,7 @@ func (r *Repository) SaveSignature(_ context.Context, reqHash common.Hash, key [
 
 	_, exists := r.signatures[reqHash]
 	if !exists {
-		r.signatures[reqHash] = make(map[[32]byte]entity.Signature)
+		r.signatures[reqHash] = make(map[common.Hash]entity.Signature)
 	}
 
 	if _, exists = r.signatures[reqHash][keyHash]; exists {

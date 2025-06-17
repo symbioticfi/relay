@@ -13,6 +13,7 @@ import (
 
 	"github.com/consensys/gnark/std/math/bits"
 	"github.com/consensys/gnark/std/math/uints"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/go-errors/errors"
 
@@ -332,12 +333,12 @@ func HashValset(valset []ValidatorData) []byte {
 	return h.Sum(nil)
 }
 
-func ValidatorSetMimcAccumulator(valset []entity.Validator, requiredKeyTag entity.KeyTag) ([32]byte, error) {
+func ValidatorSetMimcAccumulator(valset []entity.Validator, requiredKeyTag entity.KeyTag) (common.Hash, error) {
 	validatorsData, err := ToValidatorsData([]entity.Validator{}, valset, requiredKeyTag)
 	if err != nil {
-		return [32]byte{}, err
+		return common.Hash{}, err
 	}
-	return [32]byte(HashValset(validatorsData)), nil
+	return common.Hash(HashValset(validatorsData)), nil
 }
 
 func getPubkeyG1(pk *big.Int) bn254.G1Affine {
@@ -495,7 +496,7 @@ func (p *ZkProver) DoProve(rawProveInput RawProveInput) (ProofData, error) {
 	return proofData, nil
 }
 
-func (p *ZkProver) Verify(valsetLen int, publicInputHash [32]byte, proofBytes []byte) (bool, error) {
+func (p *ZkProver) Verify(valsetLen int, publicInputHash common.Hash, proofBytes []byte) (bool, error) {
 	valsetLen = getOptimalN(valsetLen)
 	assignment := Circuit{}
 	publicInputHashInt := new(big.Int).SetBytes(publicInputHash[:])
