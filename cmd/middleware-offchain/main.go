@@ -32,7 +32,7 @@ import (
 	"middleware-offchain/pkg/signals"
 )
 
-// offchain_middleware --master-address 0x1f5fE7682E49c20289C20a4cFc8b45d5EB410690 --rpc-url http://127.0.0.1:8545
+// offchain_middleware --driver-address 0x1f5fE7682E49c20289C20a4cFc8b45d5EB410690 --rpc-url http://127.0.0.1:8545
 func main() {
 	slog.Info("Running offchain_middleware command", "args", os.Args)
 
@@ -45,7 +45,7 @@ func main() {
 
 func runRootCMD() error {
 	rootCmd.PersistentFlags().StringVar(&cfg.rpcURL, "rpc-url", "", "RPC URL")
-	rootCmd.PersistentFlags().StringVar(&cfg.masterAddress, "master-address", "", "Master contract address")
+	rootCmd.PersistentFlags().StringVar(&cfg.driverAddress, "driver-address", "", "Driver contract address")
 	rootCmd.PersistentFlags().StringVar(&cfg.logLevel, "log-level", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVar(&cfg.logMode, "log-mode", "text", "Log mode (text, pretty)")
 	rootCmd.PersistentFlags().StringVar(&cfg.listenAddress, "p2p-listen", "", "P2P listen address")
@@ -59,8 +59,8 @@ func runRootCMD() error {
 	if err := rootCmd.MarkPersistentFlagRequired("rpc-url"); err != nil {
 		return errors.Errorf("failed to mark rpc-url as required: %w", err)
 	}
-	if err := rootCmd.MarkPersistentFlagRequired("master-address"); err != nil {
-		return errors.Errorf("failed to mark master-address as required: %w", err)
+	if err := rootCmd.MarkPersistentFlagRequired("driver-address"); err != nil {
+		return errors.Errorf("failed to mark driver-address as required: %w", err)
 	}
 	if err := rootCmd.MarkPersistentFlagRequired("secret-key"); err != nil {
 		return errors.Errorf("failed to mark secret-key as required: %w", err)
@@ -71,7 +71,7 @@ func runRootCMD() error {
 
 type config struct {
 	rpcURL            string
-	masterAddress     string
+	driverAddress     string
 	logLevel          string
 	logMode           string
 	listenAddress     string
@@ -107,7 +107,7 @@ var rootCmd = &cobra.Command{
 
 		ethClient, err := evm.NewEVMClient(evm.Config{
 			MasterRPCURL:   cfg.rpcURL,
-			MasterAddress:  cfg.masterAddress,
+			DriverAddress:  cfg.driverAddress,
 			RequestTimeout: time.Second * 5,
 			PrivateKey:     pkBytes[:],
 		})

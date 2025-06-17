@@ -41,7 +41,7 @@ func (e *Client) CommitValsetHeader(ctx context.Context, header entity.Validator
 		extraDataDTO[i].Value = extraData.Value
 	}
 
-	tx, err := e.master.CommitValSetHeader(txOpts, headerDTO, extraDataDTO, proof, []byte{})
+	tx, err := e.settlement.CommitValSetHeader(txOpts, headerDTO, extraDataDTO, proof)
 	if err != nil {
 		return entity.TxResult{}, e.formatEVMError(err)
 	}

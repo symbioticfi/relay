@@ -1,34 +1,35 @@
 [
   {
-    "type": "constructor",
-    "inputs": [],
+    "type": "function",
+    "name": "__KeyRegistry_init",
+    "inputs": [
+      {
+        "name": "keyRegistryInitParams",
+        "type": "tuple",
+        "internalType": "struct IKeyRegistry.KeyRegistryInitParams",
+        "components": [
+          {
+            "name": "ozEip712InitParams",
+            "type": "tuple",
+            "internalType": "struct IOzEIP712.OzEIP712InitParams",
+            "components": [
+              {
+                "name": "name",
+                "type": "string",
+                "internalType": "string"
+              },
+              {
+                "name": "version",
+                "type": "string",
+                "internalType": "string"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "outputs": [],
     "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "KeyManager_VERSION",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
-    "stateMutability": "pure"
-  },
-  {
-    "type": "function",
-    "name": "OzEIP712_VERSION",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
-    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -137,9 +138,9 @@
     "inputs": [],
     "outputs": [
       {
-        "name": "",
+        "name": "operatorsKeys",
         "type": "tuple[]",
-        "internalType": "struct IBaseKeyManager.OperatorWithKeys[]",
+        "internalType": "struct IKeyRegistry.OperatorWithKeys[]",
         "components": [
           {
             "name": "operator",
@@ -149,7 +150,7 @@
           {
             "name": "keys",
             "type": "tuple[]",
-            "internalType": "struct IBaseKeyManager.Key[]",
+            "internalType": "struct IKeyRegistry.Key[]",
             "components": [
               {
                 "name": "tag",
@@ -180,9 +181,9 @@
     ],
     "outputs": [
       {
-        "name": "",
+        "name": "keys",
         "type": "tuple[]",
-        "internalType": "struct IBaseKeyManager.Key[]",
+        "internalType": "struct IKeyRegistry.Key[]",
         "components": [
           {
             "name": "tag",
@@ -207,18 +208,13 @@
         "name": "timestamp",
         "type": "uint48",
         "internalType": "uint48"
-      },
-      {
-        "name": "hints",
-        "type": "bytes",
-        "internalType": "bytes"
       }
     ],
     "outputs": [
       {
-        "name": "",
+        "name": "operatorsKeys",
         "type": "tuple[]",
-        "internalType": "struct IBaseKeyManager.OperatorWithKeys[]",
+        "internalType": "struct IKeyRegistry.OperatorWithKeys[]",
         "components": [
           {
             "name": "operator",
@@ -228,7 +224,7 @@
           {
             "name": "keys",
             "type": "tuple[]",
-            "internalType": "struct IBaseKeyManager.Key[]",
+            "internalType": "struct IKeyRegistry.Key[]",
             "components": [
               {
                 "name": "tag",
@@ -269,9 +265,9 @@
     ],
     "outputs": [
       {
-        "name": "",
+        "name": "keys",
         "type": "tuple[]",
-        "internalType": "struct IBaseKeyManager.Key[]",
+        "internalType": "struct IKeyRegistry.Key[]",
         "components": [
           {
             "name": "tag",
@@ -284,6 +280,51 @@
             "internalType": "bytes"
           }
         ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getKeysOperators",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]",
+        "internalType": "address[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getKeysOperatorsAt",
+    "inputs": [
+      {
+        "name": "timestamp",
+        "type": "uint48",
+        "internalType": "uint48"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]",
+        "internalType": "address[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getKeysOperatorsLength",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -309,80 +350,6 @@
   },
   {
     "type": "function",
-    "name": "getOperators",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address[]",
-        "internalType": "address[]"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getOperatorsAt",
-    "inputs": [
-      {
-        "name": "timestamp",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "hints",
-        "type": "bytes[]",
-        "internalType": "bytes[]"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address[]",
-        "internalType": "address[]"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getOperatorsLength",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getOperatorsLengthAt",
-    "inputs": [
-      {
-        "name": "timestamp",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "hashTypedDataV4",
     "inputs": [
       {
@@ -402,7 +369,7 @@
   },
   {
     "type": "function",
-    "name": "hashTypedDataV4Multichain",
+    "name": "hashTypedDataV4CrossChain",
     "inputs": [
       {
         "name": "structHash",
@@ -418,31 +385,6 @@
       }
     ],
     "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "initialize",
-    "inputs": [
-      {
-        "name": "ozEip712InitParams",
-        "type": "tuple",
-        "internalType": "struct IOzEIP712.OzEIP712InitParams",
-        "components": [
-          {
-            "name": "name",
-            "type": "string",
-            "internalType": "string"
-          },
-          {
-            "name": "version",
-            "type": "string",
-            "internalType": "string"
-          }
-        ]
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -499,6 +441,25 @@
   },
   {
     "type": "event",
+    "name": "InitEIP712",
+    "inputs": [
+      {
+        "name": "name",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      },
+      {
+        "name": "version",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "Initialized",
     "inputs": [
       {
@@ -506,6 +467,37 @@
         "type": "uint64",
         "indexed": false,
         "internalType": "uint64"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "SetKey",
+    "inputs": [
+      {
+        "name": "operator",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "tag",
+        "type": "uint8",
+        "indexed": true,
+        "internalType": "uint8"
+      },
+      {
+        "name": "key",
+        "type": "bytes",
+        "indexed": true,
+        "internalType": "bytes"
+      },
+      {
+        "name": "extraData",
+        "type": "bytes",
+        "indexed": false,
+        "internalType": "bytes"
       }
     ],
     "anonymous": false
@@ -523,6 +515,38 @@
   },
   {
     "type": "error",
+    "name": "CheckpointUnorderedInsertion",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ECDSAInvalidSignature",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ECDSAInvalidSignatureLength",
+    "inputs": [
+      {
+        "name": "length",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ECDSAInvalidSignatureS",
+    "inputs": [
+      {
+        "name": "s",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ]
+  },
+  {
+    "type": "error",
     "name": "FailedCall",
     "inputs": []
   },
@@ -533,42 +557,73 @@
   },
   {
     "type": "error",
-    "name": "KeyManager_AlreadyUsed",
+    "name": "InvalidLength_InvalidLength",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "KeyManager_Duplicate",
+    "name": "KeyBlsBn254_InvalidBytes",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "KeyManager_InvalidBLSKeySignature",
+    "name": "KeyBlsBn254_InvalidKey",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "KeyManager_InvalidECDSAKeySignature",
+    "name": "KeyEcdsaSecp256k1_InvalidBytes",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "KeyManager_InvalidEdDSAKeySignature",
+    "name": "KeyRegistry_AlreadyUsed",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "KeyManager_InvalidKeyType",
+    "name": "KeyRegistry_Duplicate",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "KeyManager_OnlyPredeterminedKeyTagsAllowed",
+    "name": "KeyRegistry_InvalidKeySignature",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "KeyRegistry_InvalidKeyType",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "KeyRegistry_OnlyPredeterminedKeyTagsAllowed",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "KeyTags_InvalidKeyTag",
     "inputs": []
   },
   {
     "type": "error",
     "name": "NotInitializing",
     "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "SafeCastOverflowedUintDowncast",
+    "inputs": [
+      {
+        "name": "bits",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
   }
 ]

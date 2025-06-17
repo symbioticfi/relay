@@ -92,6 +92,11 @@ type CrossChainAddress struct {
 	ChainId uint64         `json:"chainId"`
 }
 
+type QuorumThreshold struct {
+	KeyTag          KeyTag
+	QuorumThreshold *big.Int
+}
+
 type NetworkConfig struct {
 	VotingPowerProviders    []CrossChainAddress
 	KeysProvider            CrossChainAddress
@@ -101,6 +106,8 @@ type NetworkConfig struct {
 	MinInclusionVotingPower *big.Int
 	MaxValidatorsCount      *big.Int
 	RequiredKeyTags         []KeyTag
+	RequiredHeaderKeyTag    KeyTag
+	QuorumThresholds        []QuorumThreshold
 }
 
 type NetworkData struct {

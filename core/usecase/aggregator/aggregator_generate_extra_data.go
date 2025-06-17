@@ -124,16 +124,20 @@ func (a *Aggregator) GenerateExtraData(valset entity.ValidatorSet, config entity
 }
 
 func (a *Aggregator) getExtraDataKey(verificationType entity.VerificationType, name string) ([32]byte, error) {
-	strTy, _ := abi.NewType("string", "", nil)
+	bytes32Ty, _ := abi.NewType("bytes32", "", nil)
 	u32Ty, _ := abi.NewType("uint32", "", nil)
 
 	args := abi.Arguments{
-		{Type: strTy},
+		{Type: bytes32Ty},
 		{Type: u32Ty},
-		{Type: strTy},
+		{Type: bytes32Ty},
 	}
 
-	packed, err := args.Pack(entity.ExtraDataGlobalKeyPrefix, uint32(verificationType), name)
+	packed, err := args.Pack(
+		crypto.Keccak256Hash([]byte(entity.ExtraDataGlobalKeyPrefix)),
+		uint32(verificationType),
+		crypto.Keccak256Hash([]byte(name)),
+	)
 	if err != nil {
 		return [32]byte{}, err
 	}
@@ -141,19 +145,25 @@ func (a *Aggregator) getExtraDataKey(verificationType entity.VerificationType, n
 }
 
 func (a *Aggregator) getExtraDataKeyTagged(verificationType entity.VerificationType, keyTag entity.KeyTag, name string) ([32]byte, error) {
-	strTy, _ := abi.NewType("string", "", nil)
+	bytes32Ty, _ := abi.NewType("bytes32", "", nil)
 	u32Ty, _ := abi.NewType("uint32", "", nil)
 	u8Ty, _ := abi.NewType("uint8", "", nil)
 
 	args := abi.Arguments{
-		{Type: strTy},
+		{Type: bytes32Ty},
 		{Type: u32Ty},
-		{Type: strTy},
+		{Type: bytes32Ty},
 		{Type: u8Ty},
-		{Type: strTy},
+		{Type: bytes32Ty},
 	}
 
-	packed, err := args.Pack(entity.ExtraDataGlobalKeyPrefix, uint32(verificationType), entity.ExtraDataKeyTagPrefix, keyTag, name)
+	packed, err := args.Pack(
+		crypto.Keccak256Hash([]byte(entity.ExtraDataGlobalKeyPrefix)),
+		uint32(verificationType),
+		crypto.Keccak256Hash([]byte(entity.ExtraDataKeyTagPrefix)),
+		keyTag,
+		crypto.Keccak256Hash([]byte(name)),
+	)
 	if err != nil {
 		return [32]byte{}, err
 	}

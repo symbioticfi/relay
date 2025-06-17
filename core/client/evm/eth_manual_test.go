@@ -36,7 +36,7 @@ func initClient(t *testing.T) *Client {
 
 	eth, err := NewEVMClient(Config{
 		MasterRPCURL:   "http://127.0.0.1:8545",
-		MasterAddress:  "0x63d855589514F1277527f4fD8D464836F8Ca73Ba",
+		DriverAddress:  "0x63d855589514F1277527f4fD8D464836F8Ca73Ba",
 		RequestTimeout: time.Minute,
 		PrivateKey:     pkBytes[:],
 	})

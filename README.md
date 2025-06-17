@@ -41,7 +41,7 @@ To simplify local development we've prepared docker image with anvil node and de
 
 NOTES: 
  - use repo https://github.com/symbioticfi/middleware-sdk-mirror
- - use branch `stable`
+ - use branch `stable`, commit: `1f90492442fbdecadb149b007cb4327a3f2360eb`
 
 ### Build docker image
 
@@ -86,19 +86,19 @@ go build -o middleware-offchain ./cmd/middleware-offchain
 ### Running node 1 (signer only)
 
 ```bash
-./middleware-offchain --master-address 0xA65C4ca1b06BD89aC03A395b3cA0919bF5F58869 --rpc-url http://127.0.0.1:8545 --log-level info --log-mode pretty --secret-key 1000000000000000000 --signer true --http-listen :8081
+./middleware-offchain --driver-address 0xA65C4ca1b06BD89aC03A395b3cA0919bF5F58869 --rpc-url http://127.0.0.1:8545 --log-level info --log-mode pretty --secret-key 1000000000000000000 --signer true --http-listen :8081
 ```
 
 ### Running node 2 (signer + committer)
 
 ```bash
-./middleware-offchain --master-address 0xA65C4ca1b06BD89aC03A395b3cA0919bF5F58869 --rpc-url http://127.0.0.1:8545 --log-level info --log-mode pretty --secret-key 1000000000000000001 --signer true --committer true --http-listen :8082
+./middleware-offchain --driver-address 0xA65C4ca1b06BD89aC03A395b3cA0919bF5F58869 --rpc-url http://127.0.0.1:8545 --log-level info --log-mode pretty --secret-key 1000000000000000001 --signer true --committer true --http-listen :8082
 ```
 
 ### Running node 3 (signer + aggregator)
 
 ```bash
-./middleware-offchain --master-address 0xA65C4ca1b06BD89aC03A395b3cA0919bF5F58869 --rpc-url http://127.0.0.1:8545 --log-level info --log-mode pretty --secret-key 1000000000000000002 --signer true --aggregator true --http-listen :8083
+./middleware-offchain --driver-address 0xA65C4ca1b06BD89aC03A395b3cA0919bF5F58869 --rpc-url http://127.0.0.1:8545 --log-level info --log-mode pretty --secret-key 1000000000000000002 --signer true --aggregator true --http-listen :8083
 ```
 
 Notes:
@@ -126,7 +126,7 @@ go build -o msg-sign ./cmd/msg-sign
 ### Run application
 
 ```bash
-./msg-sign --master-address 0xA65C4ca1b06BD89aC03A395b3cA0919bF5F58869 --rpc-url http://127.0.0.1:8545 --sign-address http://localhost:8081/api/v1 --sign-address http://localhost:8082/api/v1 --sign-address http://localhost:8083/api/v1
+./msg-sign --driver-address 0xA65C4ca1b06BD89aC03A395b3cA0919bF5F58869 --rpc-url http://127.0.0.1:8545 --sign-address http://localhost:8081/api/v1 --sign-address http://localhost:8082/api/v1 --sign-address http://localhost:8083/api/v1
 ```
 
 If you see `Quorum signature verification succeeded` in logs that means that sgining & verification passed successfully.

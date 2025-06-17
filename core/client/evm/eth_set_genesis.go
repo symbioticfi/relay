@@ -41,7 +41,7 @@ func (e *Client) SetGenesis(ctx context.Context, header entity.ValidatorSetHeade
 		extraDataDTO[i].Value = extraData.Value
 	}
 
-	tx, err := e.master.SetGenesis(txOpts, headerDTO, extraDataDTO)
+	tx, err := e.settlement.SetGenesis(txOpts, headerDTO, extraDataDTO)
 	if err != nil {
 		return entity.TxResult{}, e.formatEVMError(err)
 	}
