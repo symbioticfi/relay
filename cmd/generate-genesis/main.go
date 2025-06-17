@@ -50,14 +50,13 @@ func run() error {
 }
 
 type config struct {
-	rpcURL            string
-	driverAddress     string
-	settlementAddress string
-	commit            bool
-	secretKey         string
-	outputFile        string
-	logLevel          string
-	logMode           string
+	rpcURL        string
+	driverAddress string
+	commit        bool
+	secretKey     string
+	outputFile    string
+	logLevel      string
+	logMode       string
 }
 
 var cfg config
