@@ -7,6 +7,7 @@ import (
 	_ "embed"
 	"encoding/hex"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"math/big"
 	"regexp"
 	"time"
@@ -197,7 +198,7 @@ func (e *Client) GetCurrentEpoch(ctx context.Context) (uint64, error) {
 		Context:     toCtx,
 	})
 	if err != nil {
-		return 0, errors.Errorf("failed to call getCurrentEpoch: %w", err)
+		return 0, errors.Errorf("failed to call getCurrentEpoch: %w", e.formatEVMContractError(gen.IValSetDriverMetaData, err))
 	}
 	return epoch.Uint64(), nil
 }
@@ -211,7 +212,7 @@ func (e *Client) GetEpochStart(ctx context.Context, epoch uint64) (uint64, error
 		Context:     toCtx,
 	}, new(big.Int).SetUint64(epoch), []byte{})
 	if err != nil {
-		return 0, errors.Errorf("failed to call getEpochStart: %w", err)
+		return 0, errors.Errorf("failed to call getEpochStart: %w", e.formatEVMContractError(gen.IValSetDriverMetaData, err))
 	}
 	return epochStart.Uint64(), nil
 }
@@ -530,6 +531,51 @@ func constructCallMsg(contractAddress common.Address, abi abi.ABI, method string
 }
 
 var customErrRegExp = regexp.MustCompile(`0x[0-9a-fA-F]{8}`)
+
+type metadata interface {
+	GetAbi() (*abi.ABI, error)
+}
+
+func (e *Client) formatEVMContractError(meta metadata, err error) error {
+	type jsonError interface {
+		Error() string
+		ErrorData() interface{}
+		ErrorCode() int
+	}
+	var errData jsonError
+	if !errors.As(err, &errData) {
+		return err
+	}
+	if errData.ErrorCode() != 3 && errData.ErrorData() == nil {
+		return err
+	}
+
+	matches := customErrRegExp.FindStringSubmatch(errData.Error())
+	if len(matches) < 1 {
+		return err
+	}
+
+	parsedAbi, err := meta.GetAbi()
+	if err != nil {
+		return err
+	}
+
+	hexSelector, err := hexutil.Decode(matches[0])
+	if err != nil {
+		return err
+	}
+
+	if len(hexSelector) < 4 {
+		return errors.New("too short hex selector")
+	}
+
+	contractError, err := parsedAbi.ErrorByID([4]byte(hexSelector[:4]))
+	if err != nil {
+		return err
+	}
+
+	return errors.Errorf("%w: %s", err, contractError.String())
+}
 
 func (e *Client) formatEVMError(err error) error {
 	type jsonError interface {

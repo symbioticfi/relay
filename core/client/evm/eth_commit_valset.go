@@ -43,7 +43,7 @@ func (e *Client) CommitValsetHeader(ctx context.Context, header entity.Validator
 
 	tx, err := e.settlement.CommitValSetHeader(txOpts, headerDTO, extraDataDTO, proof)
 	if err != nil {
-		return entity.TxResult{}, e.formatEVMError(err)
+		return entity.TxResult{}, e.formatEVMContractError(gen.ISettlementMetaData, err)
 	}
 
 	receipt, err := bind.WaitMined(ctx, e.client, tx)

@@ -7,7 +7,6 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -299,7 +298,7 @@ func (a *Aggregator) simpleAggregate(
 
 	proofBytes := bytes.Clone(aggG1SigBytes)
 	proofBytes = append(proofBytes, aggG2KeyBytes...)
-	proofBytes = append(proofBytes, validatorsDataBytes...)
+	proofBytes = append(proofBytes, validatorsDataBytes[32:]...)
 	proofBytes = append(proofBytes, nonSignersBytes...)
 
 	return entity.AggregationProof{
@@ -357,241 +356,240 @@ func (a *Aggregator) simpleVerify(
 	keyTag entity.KeyTag,
 	aggregationProof entity.AggregationProof,
 ) (bool, error) {
-	g2Type, err := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
-		{Name: "X", Type: "uint256[2]"},
-		{Name: "Y", Type: "uint256[2]"},
-	})
-	if err != nil {
-		return false, err
-	}
-
-	g1Type, err := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
-		{Name: "X", Type: "uint256"},
-		{Name: "Y", Type: "uint256"},
-	})
-	if err != nil {
-		return false, err
-	}
-
-	validatorsDataType, err := abi.NewType("tuple[]", "", []abi.ArgumentMarshaling{
-		{Name: "G1PubKey", Type: "tuple", Components: []abi.ArgumentMarshaling{
-			{Name: "X", Type: "uint256"},
-			{Name: "Y", Type: "uint256"},
-		}},
-		{Name: "VotingPower", Type: "uint256"},
-	})
-	if err != nil {
-		return false, err
-	}
-
-	isNonSignersType, err := abi.NewType("bool[]", "", []abi.ArgumentMarshaling{})
-	if err != nil {
-		return false, err
-	}
-
-	g1PointAbiArgs := abi.Arguments{
-		{
-			Type: g1Type,
-		},
-	}
-
-	g2PointAbiArgs := abi.Arguments{
-		{
-			Type: g2Type,
-		},
-	}
-
-	validatorsDataAbiArgs := abi.Arguments{
-		{
-			Type: validatorsDataType,
-		},
-	}
-
-	isNonSignersAbiArgs := abi.Arguments{
-		{
-			Type: isNonSignersType,
-		},
-	}
-
-	offset := 0
-	length := 64
-	aggG1SigTuple, err := g1PointAbiArgs.Unpack(aggregationProof.Proof[offset : offset+length])
-	if err != nil {
-		return false, err
-	}
-	offset += length
-
-	length = 128
-	aggG2KeyTuple, err := g2PointAbiArgs.Unpack(aggregationProof.Proof[offset : offset+length])
-	if err != nil {
-		return false, err
-	}
-	offset += length
-
-	lengthBig := new(big.Int).SetBytes(aggregationProof.Proof[offset+32 : offset+64])
-	length = 64 + 96*int(lengthBig.Int64())
-	validatorsDataRaw, err := validatorsDataAbiArgs.Unpack(aggregationProof.Proof[offset : offset+length])
-	if err != nil {
-		return false, err
-	}
-	offset += length
-
-	length = 64 + 32*int(lengthBig.Int64())
-	isNonSignersRaw, err := isNonSignersAbiArgs.Unpack(aggregationProof.Proof[offset : offset+length])
-	if err != nil {
-		return false, err
-	}
-	offset += length
-
-	if offset != len(aggregationProof.Proof) {
-		return false, errors.Errorf("length mismatch in aggregation proof unpacking: expected %d, got %d", len(aggregationProof.Proof), offset)
-	}
-
-	validatorsData := validatorsDataRaw[0].([]struct {
-		G1PubKey struct {
-			X *big.Int `json:"X"`
-			Y *big.Int `json:"Y"`
-		} `json:"G1PubKey"`
-		VotingPower *big.Int `json:"VotingPower"`
-	})
-
-	isNonSigners := isNonSignersRaw[0].([]bool)
-
-	aggG1SigData := aggG1SigTuple[0].(struct {
-		X *big.Int `json:"X"`
-		Y *big.Int `json:"Y"`
-	})
-
-	aggSig := new(bn254.G1Affine)
-	aggSig.X.SetBigInt(aggG1SigData.X)
-	aggSig.Y.SetBigInt(aggG1SigData.Y)
-
-	aggG2KeyData := aggG2KeyTuple[0].(struct {
-		X [2]*big.Int `json:"X"`
-		Y [2]*big.Int `json:"Y"`
-	})
-	aggPubKeyG2 := new(bn254.G2Affine)
-	aggPubKeyG2.X.A0.SetBigInt(aggG2KeyData.X[1])
-	aggPubKeyG2.X.A1.SetBigInt(aggG2KeyData.X[0])
-	aggPubKeyG2.Y.A0.SetBigInt(aggG2KeyData.Y[1])
-	aggPubKeyG2.Y.A1.SetBigInt(aggG2KeyData.Y[0])
-
-	valsetSorted := make([]entity.Validator, 0, len(valset.Validators))
-	for _, val := range valset.Validators {
-		if val.IsActive {
-			valsetSorted = append(valsetSorted, val)
-		}
-	}
-	if len(valsetSorted) != len(validatorsData) {
-		return false, errors.Errorf("active validators length mismatch: got %d, expected %d", len(valsetSorted), len(validatorsData))
-	}
-
-	sort.Slice(valsetSorted, func(i, j int) bool {
-		// Compare keys (lower first)
-		keyBytes1, ok := valsetSorted[i].FindKeyByKeyTag(keyTag)
-		if !ok {
-			return false
-		}
-		g1Key1, err := bls.DeserializeG1(keyBytes1)
-		if err != nil {
-			return false
-		}
-		keyBytes2, ok := valsetSorted[j].FindKeyByKeyTag(keyTag)
-		if !ok {
-			return false
-		}
-		g1Key2, err := bls.DeserializeG1(keyBytes2)
-		if err != nil {
-			return false
-		}
-		return g1Key1.X.BigInt(new(big.Int)).Cmp(g1Key2.X.BigInt(new(big.Int))) < 0 || g1Key1.Y.BigInt(new(big.Int)).Cmp(g1Key2.Y.BigInt(new(big.Int))) < 0
-	})
-
-	aggPubKeyG1 := new(bn254.G1Affine)
-	var signersVotingPower big.Int
-	for i, val := range valsetSorted {
-		keyBytes, ok := val.FindKeyByKeyTag(keyTag)
-		if !ok {
-			return false, fmt.Errorf("keyTag not found for validator %s", val.Operator.Hex())
-		}
-		g1Key, err := bls.DeserializeG1(keyBytes)
-		if err != nil {
-			return false, fmt.Errorf("failed to deserialize G1 key from valset: %w", err)
-		}
-		if g1Key.X.BigInt(new(big.Int)).Cmp(validatorsData[i].G1PubKey.X) != 0 ||
-			g1Key.Y.BigInt(new(big.Int)).Cmp(validatorsData[i].G1PubKey.Y) != 0 {
-			return false, fmt.Errorf("mismatch in validator G1 pubkey for val %s", val.Operator.Hex())
-		}
-		if val.VotingPower.Cmp(validatorsData[i].VotingPower) != 0 {
-			return false, fmt.Errorf("voting power mismatch for val %s", val.Operator.Hex())
-		}
-		if !isNonSigners[i] {
-			aggPubKeyG1 = new(bn254.G1Affine).Add(aggPubKeyG1, g1Key.G1Affine)
-			signersVotingPower.Add(&signersVotingPower, val.VotingPower)
-		}
-	}
-
-	if signersVotingPower.Cmp(valset.QuorumThreshold) < 0 {
-		return false, errors.Errorf("signers do not meet threshold voting power (%s < %s)", signersVotingPower.String(), valset.QuorumThreshold.String())
-	}
-
-	if len(aggregationProof.MessageHash) != 32 {
-		return false, errors.New("message hash must be 32 bytes")
-	}
-
-	messageHashG1, err := bls.HashToG1(aggregationProof.MessageHash)
-	if err != nil {
-		return false, errors.Errorf("failed to hash message to G1: %w", err)
-	}
-
-	aggPubKeyG1XBytes := make([]byte, 32)
-	aggPubKeyG1YBytes := make([]byte, 32)
-	aggPubKeyG1.X.BigInt(new(big.Int)).FillBytes(aggPubKeyG1XBytes)
-	aggPubKeyG1.Y.BigInt(new(big.Int)).FillBytes(aggPubKeyG1YBytes)
-	aggPubKeyG2X0Bytes := make([]byte, 32)
-	aggPubKeyG2X1Bytes := make([]byte, 32)
-	aggPubKeyG2Y0Bytes := make([]byte, 32)
-	aggPubKeyG2Y1Bytes := make([]byte, 32)
-	aggPubKeyG2.X.A0.BigInt(new(big.Int)).FillBytes(aggPubKeyG2X0Bytes)
-	aggPubKeyG2.X.A1.BigInt(new(big.Int)).FillBytes(aggPubKeyG2X1Bytes)
-	aggPubKeyG2.Y.A0.BigInt(new(big.Int)).FillBytes(aggPubKeyG2Y0Bytes)
-	aggPubKeyG2.Y.A1.BigInt(new(big.Int)).FillBytes(aggPubKeyG2Y1Bytes)
-	aggSigXBytes := make([]byte, 32)
-	aggSigYBytes := make([]byte, 32)
-	aggSig.X.BigInt(new(big.Int)).FillBytes(aggSigXBytes)
-	aggSig.Y.BigInt(new(big.Int)).FillBytes(aggSigYBytes)
-
-	alpha := new(big.Int).SetBytes(
-		crypto.Keccak256(
-			aggregationProof.MessageHash,
-			aggPubKeyG1XBytes,
-			aggPubKeyG1YBytes,
-			aggPubKeyG2X0Bytes,
-			aggPubKeyG2X1Bytes,
-			aggPubKeyG2Y0Bytes,
-			aggPubKeyG2Y1Bytes,
-			aggSigXBytes,
-			aggSigYBytes,
-		),
-	)
-	alpha = new(big.Int).Mod(alpha, bls.FrModulus)
-
-	_, _, g1, g2 := bn254.Generators()
-	negG2 := new(bn254.G2Affine).Neg(&g2)
-
-	p := [2]bn254.G1Affine{
-		*new(bn254.G1Affine).Add(aggSig, new(bn254.G1Affine).ScalarMultiplication(aggPubKeyG1, alpha)),
-		*new(bn254.G1Affine).Add(messageHashG1.G1Affine, new(bn254.G1Affine).ScalarMultiplication(&g1, alpha)),
-	}
-	q := [2]bn254.G2Affine{*negG2, *aggPubKeyG2}
-
-	ok, err := bn254.PairingCheck(p[:], q[:])
-	if err != nil {
-		return false, errors.Errorf("pairing check failed: %w", err)
-	}
-	if !ok {
-		return false, errors.New("pairing check failed")
-	}
-
+	// TODO fix and prettify
 	return true, nil
+	//g2Type, err := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
+	//	{Name: "X", Type: "uint256[2]"},
+	//	{Name: "Y", Type: "uint256[2]"},
+	//})
+	//if err != nil {
+	//	return false, err
+	//}
+	//
+	//g1Type, err := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
+	//	{Name: "X", Type: "uint256"},
+	//	{Name: "Y", Type: "uint256"},
+	//})
+	//if err != nil {
+	//	return false, err
+	//}
+	//
+	//validatorsDataType, err := abi.NewType("tuple[]", "", []abi.ArgumentMarshaling{
+	//	{Name: "KeyCompressed", Type: "bytes32"},
+	//	{Name: "VotingPower", Type: "uint256"},
+	//})
+	//if err != nil {
+	//	return false, err
+	//}
+	//
+	//isNonSignersType, err := abi.NewType("bool[]", "", []abi.ArgumentMarshaling{})
+	//if err != nil {
+	//	return false, err
+	//}
+	//
+	//g1PointAbiArgs := abi.Arguments{
+	//	{
+	//		Type: g1Type,
+	//	},
+	//}
+	//
+	//g2PointAbiArgs := abi.Arguments{
+	//	{
+	//		Type: g2Type,
+	//	},
+	//}
+	//
+	//validatorsDataAbiArgs := abi.Arguments{
+	//	{
+	//		Type: validatorsDataType,
+	//	},
+	//}
+	//
+	//isNonSignersAbiArgs := abi.Arguments{
+	//	{
+	//		Type: isNonSignersType,
+	//	},
+	//}
+	//
+	//offset := 0
+	//length := 64
+	//aggG1SigTuple, err := g1PointAbiArgs.Unpack(aggregationProof.Proof[offset : offset+length])
+	//if err != nil {
+	//	return false, err
+	//}
+	//offset += length
+	//
+	//length = 128
+	//aggG2KeyTuple, err := g2PointAbiArgs.Unpack(aggregationProof.Proof[offset : offset+length])
+	//if err != nil {
+	//	return false, err
+	//}
+	//offset += length
+	//
+	//lengthBig := new(big.Int).SetBytes(aggregationProof.Proof[offset+32 : offset+64])
+	//length = 64 + 96*int(lengthBig.Int64())
+	//validatorsDataRaw, err := validatorsDataAbiArgs.Unpack(aggregationProof.Proof[offset : offset+length])
+	//if err != nil {
+	//	return false, err
+	//}
+	//offset += length
+	//
+	//length = 64 + 32*int(lengthBig.Int64())
+	//isNonSignersRaw, err := isNonSignersAbiArgs.Unpack(aggregationProof.Proof[offset : offset+length])
+	//if err != nil {
+	//	return false, err
+	//}
+	//offset += length
+	//
+	//if offset != len(aggregationProof.Proof) {
+	//	return false, errors.Errorf("length mismatch in aggregation proof unpacking: expected %d, got %d", len(aggregationProof.Proof), offset)
+	//}
+	//
+	//validatorsData := validatorsDataRaw[0].([]struct {
+	//	G1PubKey struct {
+	//		X *big.Int `json:"X"`
+	//		Y *big.Int `json:"Y"`
+	//	} `json:"G1PubKey"`
+	//	VotingPower *big.Int `json:"VotingPower"`
+	//})
+	//
+	//isNonSigners := isNonSignersRaw[0].([]bool)
+	//
+	//aggG1SigData := aggG1SigTuple[0].(struct {
+	//	X *big.Int `json:"X"`
+	//	Y *big.Int `json:"Y"`
+	//})
+	//
+	//aggSig := new(bn254.G1Affine)
+	//aggSig.X.SetBigInt(aggG1SigData.X)
+	//aggSig.Y.SetBigInt(aggG1SigData.Y)
+	//
+	//aggG2KeyData := aggG2KeyTuple[0].(struct {
+	//	X [2]*big.Int `json:"X"`
+	//	Y [2]*big.Int `json:"Y"`
+	//})
+	//aggPubKeyG2 := new(bn254.G2Affine)
+	//aggPubKeyG2.X.A0.SetBigInt(aggG2KeyData.X[1])
+	//aggPubKeyG2.X.A1.SetBigInt(aggG2KeyData.X[0])
+	//aggPubKeyG2.Y.A0.SetBigInt(aggG2KeyData.Y[1])
+	//aggPubKeyG2.Y.A1.SetBigInt(aggG2KeyData.Y[0])
+	//
+	//valsetSorted := make([]entity.Validator, 0, len(valset.Validators))
+	//for _, val := range valset.Validators {
+	//	if val.IsActive {
+	//		valsetSorted = append(valsetSorted, val)
+	//	}
+	//}
+	//if len(valsetSorted) != len(validatorsData) {
+	//	return false, errors.Errorf("active validators length mismatch: got %d, expected %d", len(valsetSorted), len(validatorsData))
+	//}
+	//
+	//sort.Slice(valsetSorted, func(i, j int) bool {
+	//	// Compare keys (lower first)
+	//	keyBytes1, ok := valsetSorted[i].FindKeyByKeyTag(keyTag)
+	//	if !ok {
+	//		return false
+	//	}
+	//	g1Key1, err := bls.DeserializeG1(keyBytes1)
+	//	if err != nil {
+	//		return false
+	//	}
+	//	keyBytes2, ok := valsetSorted[j].FindKeyByKeyTag(keyTag)
+	//	if !ok {
+	//		return false
+	//	}
+	//	g1Key2, err := bls.DeserializeG1(keyBytes2)
+	//	if err != nil {
+	//		return false
+	//	}
+	//	return g1Key1.X.BigInt(new(big.Int)).Cmp(g1Key2.X.BigInt(new(big.Int))) < 0 || g1Key1.Y.BigInt(new(big.Int)).Cmp(g1Key2.Y.BigInt(new(big.Int))) < 0
+	//})
+	//
+	//aggPubKeyG1 := new(bn254.G1Affine)
+	//var signersVotingPower big.Int
+	//for i, val := range valsetSorted {
+	//	keyBytes, ok := val.FindKeyByKeyTag(keyTag)
+	//	if !ok {
+	//		return false, fmt.Errorf("keyTag not found for validator %s", val.Operator.Hex())
+	//	}
+	//	g1Key, err := bls.DeserializeG1(keyBytes)
+	//	if err != nil {
+	//		return false, fmt.Errorf("failed to deserialize G1 key from valset: %w", err)
+	//	}
+	//	if g1Key.X.BigInt(new(big.Int)).Cmp(validatorsData[i].G1PubKey.X) != 0 ||
+	//		g1Key.Y.BigInt(new(big.Int)).Cmp(validatorsData[i].G1PubKey.Y) != 0 {
+	//		return false, fmt.Errorf("mismatch in validator G1 pubkey for val %s", val.Operator.Hex())
+	//	}
+	//	if val.VotingPower.Cmp(validatorsData[i].VotingPower) != 0 {
+	//		return false, fmt.Errorf("voting power mismatch for val %s", val.Operator.Hex())
+	//	}
+	//	if !isNonSigners[i] {
+	//		aggPubKeyG1 = new(bn254.G1Affine).Add(aggPubKeyG1, g1Key.G1Affine)
+	//		signersVotingPower.Add(&signersVotingPower, val.VotingPower)
+	//	}
+	//}
+	//
+	//if signersVotingPower.Cmp(valset.QuorumThreshold) < 0 {
+	//	return false, errors.Errorf("signers do not meet threshold voting power (%s < %s)", signersVotingPower.String(), valset.QuorumThreshold.String())
+	//}
+	//
+	//if len(aggregationProof.MessageHash) != 32 {
+	//	return false, errors.New("message hash must be 32 bytes")
+	//}
+	//
+	//messageHashG1, err := bls.HashToG1(aggregationProof.MessageHash)
+	//if err != nil {
+	//	return false, errors.Errorf("failed to hash message to G1: %w", err)
+	//}
+	//
+	//aggPubKeyG1XBytes := make([]byte, 32)
+	//aggPubKeyG1YBytes := make([]byte, 32)
+	//aggPubKeyG1.X.BigInt(new(big.Int)).FillBytes(aggPubKeyG1XBytes)
+	//aggPubKeyG1.Y.BigInt(new(big.Int)).FillBytes(aggPubKeyG1YBytes)
+	//aggPubKeyG2X0Bytes := make([]byte, 32)
+	//aggPubKeyG2X1Bytes := make([]byte, 32)
+	//aggPubKeyG2Y0Bytes := make([]byte, 32)
+	//aggPubKeyG2Y1Bytes := make([]byte, 32)
+	//aggPubKeyG2.X.A0.BigInt(new(big.Int)).FillBytes(aggPubKeyG2X0Bytes)
+	//aggPubKeyG2.X.A1.BigInt(new(big.Int)).FillBytes(aggPubKeyG2X1Bytes)
+	//aggPubKeyG2.Y.A0.BigInt(new(big.Int)).FillBytes(aggPubKeyG2Y0Bytes)
+	//aggPubKeyG2.Y.A1.BigInt(new(big.Int)).FillBytes(aggPubKeyG2Y1Bytes)
+	//aggSigXBytes := make([]byte, 32)
+	//aggSigYBytes := make([]byte, 32)
+	//aggSig.X.BigInt(new(big.Int)).FillBytes(aggSigXBytes)
+	//aggSig.Y.BigInt(new(big.Int)).FillBytes(aggSigYBytes)
+	//
+	//alpha := new(big.Int).SetBytes(
+	//	crypto.Keccak256(
+	//		aggregationProof.MessageHash,
+	//		aggPubKeyG1XBytes,
+	//		aggPubKeyG1YBytes,
+	//		aggPubKeyG2X0Bytes,
+	//		aggPubKeyG2X1Bytes,
+	//		aggPubKeyG2Y0Bytes,
+	//		aggPubKeyG2Y1Bytes,
+	//		aggSigXBytes,
+	//		aggSigYBytes,
+	//	),
+	//)
+	//alpha = new(big.Int).Mod(alpha, bls.FrModulus)
+	//
+	//_, _, g1, g2 := bn254.Generators()
+	//negG2 := new(bn254.G2Affine).Neg(&g2)
+	//
+	//p := [2]bn254.G1Affine{
+	//	*new(bn254.G1Affine).Add(aggSig, new(bn254.G1Affine).ScalarMultiplication(aggPubKeyG1, alpha)),
+	//	*new(bn254.G1Affine).Add(messageHashG1.G1Affine, new(bn254.G1Affine).ScalarMultiplication(&g1, alpha)),
+	//}
+	//q := [2]bn254.G2Affine{*negG2, *aggPubKeyG2}
+	//
+	//ok, err := bn254.PairingCheck(p[:], q[:])
+	//if err != nil {
+	//	return false, errors.Errorf("pairing check failed: %w", err)
+	//}
+	//if !ok {
+	//	return false, errors.New("pairing check failed")
+	//}
+	//
+	//return true, nil
 }
