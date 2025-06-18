@@ -4,13 +4,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"math/big"
 	"testing"
 	"time"
 
-	"middleware-offchain/pkg/bls"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 )
@@ -57,7 +56,7 @@ func mockValset() []ValidatorData {
 	return valset
 }
 
-func calculateInputHash(validatorSetHash []byte, signersVotingPower *big.Int, messageG1 *bls.G1) common.Hash {
+func calculateInputHash(validatorSetHash []byte, signersVotingPower *big.Int, messageG1 *bn254.G1Affine) common.Hash {
 	var packed []byte
 
 	packed = append(packed, validatorSetHash[:32]...)
@@ -75,7 +74,7 @@ func calculateInputHash(validatorSetHash []byte, signersVotingPower *big.Int, me
 }
 
 func TestProof(t *testing.T) {
-	t.Skipf("it works too long, so set skip here. For local debugging can remove this skip")
+	//t.Skipf("it works too long, so set skip here. For local debugging can remove this skip")
 
 	startTime := time.Now()
 	prover := NewZkProver()
@@ -87,23 +86,17 @@ func TestProof(t *testing.T) {
 
 	validatorData := NormalizeValset(valset)
 
-	messageString := "658bc250cfe17f8ad77a5f5d92afb6e9316088b5c89c6df2db63785116b22948"
-	message, err := hex.DecodeString(messageString)
-	if err != nil {
+	messageG1Hex := "04c3256b0d7e3f3766d9d3f08fad062e025db392f7b8d8d86322602365b82eba2370c94328160af53802c073a5ddafe012a4073eca842339acc5caae83e1b922"
+	messageG1 := &bn254.G1Affine{}
+	if err := messageG1.Unmarshal(common.Hex2Bytes(messageG1Hex)); err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println("message:", hex.EncodeToString(message))
-	messageG1, err := bls.HashToG1(message)
-	if err != nil {
-		t.Fatal(err)
-	}
-	messageG1Bn254 := bn254.G1Affine{X: messageG1.X, Y: messageG1.Y}
 
-	aggSignature, aggKeyG2, _ := getAggSignature(messageG1Bn254, &validatorData)
+	aggSignature, aggKeyG2, _ := getAggSignature(*messageG1, &validatorData)
 
 	proveInput := ProveInput{
 		ValidatorData:   validatorData,
-		Message:         message,
+		MessageG1:       *messageG1,
 		Signature:       *aggSignature,
 		SignersAggKeyG2: *aggKeyG2,
 	}
@@ -122,7 +115,7 @@ func TestProof(t *testing.T) {
 
 	inputHash := calculateInputHash(HashValset(valset), proofData.SignersAggVotingPower, messageG1)
 	startTime = time.Now()
-	res, err := prover.Verify(len(validatorData), inputHash, proofData.Marshall())
+	res, err := prover.Verify(len(validatorData), inputHash, proofData.Marshal())
 	if err != nil {
 		t.Fatal(err)
 	}

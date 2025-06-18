@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
-	"middleware-offchain/core/entity"
-	"middleware-offchain/pkg/bls"
 	"os"
 	"strconv"
 
@@ -63,15 +61,6 @@ type ProofData struct {
 	SignersAggVotingPower *big.Int
 }
 
-type RawProveInput struct {
-	SignerValidators []entity.Validator
-	AllValidators    []entity.Validator
-	RequiredKeyTag   entity.KeyTag
-	Message          []byte
-	Signature        bls.G1
-	SignersAggKeyG2  bls.G2
-}
-
 type ValidatorData struct {
 	PrivateKey  *big.Int
 	Key         bn254.G1Affine
@@ -108,25 +97,6 @@ func (p *ZkProver) init() {
 		p.vk[size] = vk
 	}
 	slog.Info("ZK prover initialization is done")
-}
-
-func (p *ZkProver) DoProve(rawProveInput RawProveInput) (ProofData, error) {
-	data, err := ToValidatorsData(rawProveInput.SignerValidators, rawProveInput.AllValidators, rawProveInput.RequiredKeyTag)
-	if err != nil {
-		return ProofData{}, errors.Errorf("failed to convert validators to data: %w", err)
-	}
-
-	proofData, err := p.Prove(ProveInput{
-		ValidatorData:   data,
-		Message:         rawProveInput.Message,
-		Signature:       bn254.G1Affine{X: rawProveInput.Signature.X, Y: rawProveInput.Signature.Y},
-		SignersAggKeyG2: bn254.G2Affine{X: rawProveInput.SignersAggKeyG2.X, Y: rawProveInput.SignersAggKeyG2.Y},
-	})
-	if err != nil {
-		return ProofData{}, errors.Errorf("failed to prove: %w", err)
-	}
-
-	return proofData, nil
 }
 
 func (p *ZkProver) Verify(valsetLen int, publicInputHash common.Hash, proofBytes []byte) (bool, error) {
@@ -174,10 +144,8 @@ func (p *ZkProver) Prove(proveInput ProveInput) (ProofData, error) {
 
 	// witness definition
 	assignment := Circuit{}
-	err := setCircuitData(&assignment, proveInput)
-	if err != nil {
-		return ProofData{}, errors.Errorf("failed to set circuit data: %w", err)
-	}
+	setCircuitData(&assignment, proveInput)
+
 	witness, _ := frontend.NewWitness(&assignment, ecc.BN254.ScalarField())
 	publicWitness, _ := witness.Public()
 

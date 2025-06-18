@@ -2,6 +2,9 @@ package proof
 
 import (
 	"bytes"
+	"math/big"
+	"sort"
+
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	mimc_native "github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/consensys/gnark/frontend"
@@ -9,15 +12,9 @@ import (
 	"github.com/consensys/gnark/std/hash/mimc"
 	"github.com/consensys/gnark/std/math/bits"
 	"github.com/consensys/gnark/std/math/uints"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/go-errors/errors"
-	"math/big"
-	"middleware-offchain/core/entity"
-	"middleware-offchain/pkg/bls"
-	"sort"
 )
 
-func (p ProofData) Marshall() []byte {
+func (p ProofData) Marshal() []byte {
 	var result bytes.Buffer
 
 	result.Write(p.Proof)
@@ -110,14 +107,6 @@ func HashValset(valset []ValidatorData) []byte {
 	return h.Sum(nil)
 }
 
-func ValidatorSetMimcAccumulator(valset []entity.Validator, requiredKeyTag entity.KeyTag) (common.Hash, error) {
-	validatorsData, err := ToValidatorsData([]entity.Validator{}, valset, requiredKeyTag)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	return common.Hash(HashValset(validatorsData)), nil
-}
-
 func getPubkeyG1(pk *big.Int) bn254.G1Affine {
 	_, _, g1Aff, _ := bn254.Generators()
 	var p bn254.G1Affine
@@ -168,43 +157,6 @@ func getAggSignature(message bn254.G1Affine, valset *[]ValidatorData) (signature
 	}
 
 	return aggSignature, aggKeyG2, aggKeyG1
-}
-
-func GetActiveValidators(allValidators []entity.Validator) []entity.Validator {
-	activeValidators := make([]entity.Validator, 0)
-	for _, validator := range allValidators {
-		if validator.IsActive {
-			activeValidators = append(activeValidators, validator)
-		}
-	}
-	return activeValidators
-}
-
-func ToValidatorsData(signerValidators []entity.Validator, allValidators []entity.Validator, requiredKeyTag entity.KeyTag) ([]ValidatorData, error) {
-	activeValidators := GetActiveValidators(allValidators)
-	valset := make([]ValidatorData, 0)
-	for i := range activeValidators {
-		for _, key := range activeValidators[i].Keys {
-			if key.Tag == requiredKeyTag {
-				g1, err := bls.DeserializeG1(key.Payload)
-				if err != nil {
-					return nil, errors.Errorf("failed to deserialize G1: %w", err)
-				}
-				validatorData := ValidatorData{Key: *g1.G1Affine, VotingPower: activeValidators[i].VotingPower, IsNonSigner: true}
-
-				for _, signer := range signerValidators {
-					if signer.Operator.Cmp(activeValidators[i].Operator) == 0 {
-						validatorData.IsNonSigner = false
-						break
-					}
-				}
-
-				valset = append(valset, validatorData)
-				break
-			}
-		}
-	}
-	return NormalizeValset(valset), nil
 }
 
 func NormalizeValset(valset []ValidatorData) []ValidatorData {

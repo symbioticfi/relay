@@ -7,6 +7,8 @@ import (
 	"math/big"
 	"sort"
 
+	"github.com/consensys/gnark-crypto/ecc/bn254"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -124,9 +126,15 @@ func (a *Aggregator) zkAggregate(
 		}
 	}
 
+	messageG1, err := bls.HashToG1(messageHash)
+	if err != nil {
+		return entity.AggregationProof{}, err
+	}
+	messageG1Bn254 := bn254.G1Affine{X: messageG1.X, Y: messageG1.Y}
+
 	proverInput := proof.ProveInput{
 		ValidatorData:   proof.NormalizeValset(validatorsData),
-		Message:         messageHash,
+		MessageG1:       messageG1Bn254,
 		Signature:       *aggG1Sig.G1Affine,
 		SignersAggKeyG2: *aggG2Key.G2Affine,
 	}
@@ -138,7 +146,7 @@ func (a *Aggregator) zkAggregate(
 	return entity.AggregationProof{
 		VerificationType: entity.VerificationTypeZK,
 		MessageHash:      messageHash,
-		Proof:            proofData.Marshall(),
+		Proof:            proofData.Marshal(),
 	}, nil
 }
 
@@ -320,7 +328,7 @@ func (a *Aggregator) zkVerify(
 		}
 	}
 
-	mimcAccum, err := proof.ValidatorSetMimcAccumulator(valset.Validators, keyTag)
+	mimcAccum, err := validatorSetMimcAccumulator(valset.Validators, keyTag)
 	if err != nil {
 		return false, err
 	}

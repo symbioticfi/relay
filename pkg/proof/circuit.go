@@ -2,6 +2,9 @@ package proof
 
 import (
 	"encoding/hex"
+	"log/slog"
+	"math/big"
+
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
@@ -12,10 +15,6 @@ import (
 	"github.com/consensys/gnark/std/math/emulated"
 	"github.com/consensys/gnark/std/math/uints"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/go-errors/errors"
-	"log/slog"
-	"math/big"
-	"middleware-offchain/pkg/bls"
 )
 
 // Circuit defines a pre-image knowledge proof
@@ -36,7 +35,7 @@ type ValidatorDataCircuit struct {
 
 type ProveInput struct {
 	ValidatorData   []ValidatorData
-	Message         []byte
+	MessageG1       bn254.G1Affine
 	Signature       bn254.G1Affine
 	SignersAggKeyG2 bn254.G2Affine
 }
@@ -166,7 +165,7 @@ func (circuit *Circuit) Define(api frontend.API) error {
 	return err
 }
 
-func setCircuitData(circuit *Circuit, proveInput ProveInput) error {
+func setCircuitData(circuit *Circuit, proveInput ProveInput) {
 	circuit.ValidatorData = make([]ValidatorDataCircuit, len(proveInput.ValidatorData))
 	for i := range proveInput.ValidatorData {
 		circuit.ValidatorData[i].Key = sw_bn254.NewG1Affine(proveInput.ValidatorData[i].Key)
@@ -178,12 +177,6 @@ func setCircuitData(circuit *Circuit, proveInput ProveInput) error {
 		}
 	}
 
-	messageG1, err := bls.HashToG1(proveInput.Message)
-	if err != nil {
-		return errors.Errorf("failed to hash message to G1: %w", err)
-	}
-	messageG1Bn254 := bn254.G1Affine{X: messageG1.X, Y: messageG1.Y}
-
 	_, nonSignersAggVotingPower, totalVotingPower := getNonSignersData(proveInput.ValidatorData)
 	signersAggVotingPower := new(big.Int).Sub(totalVotingPower, nonSignersAggVotingPower)
 	valsetHash := HashValset(proveInput.ValidatorData)
@@ -191,10 +184,10 @@ func setCircuitData(circuit *Circuit, proveInput ProveInput) error {
 	circuit.SignersAggVotingPower = *signersAggVotingPower
 
 	circuit.Signature = sw_bn254.NewG1Affine(proveInput.Signature)
-	circuit.Message = sw_bn254.NewG1Affine(messageG1Bn254)
+	circuit.Message = sw_bn254.NewG1Affine(proveInput.MessageG1)
 	circuit.SignersAggKeyG2 = sw_bn254.NewG2Affine(proveInput.SignersAggKeyG2)
 
-	messageBytes := messageG1Bn254.RawBytes()
+	messageBytes := proveInput.MessageG1.RawBytes()
 	aggVotingPowerBuffer := make([]byte, 32)
 	signersAggVotingPower.FillBytes(aggVotingPowerBuffer)
 
@@ -204,9 +197,9 @@ func setCircuitData(circuit *Circuit, proveInput ProveInput) error {
 	inputHash := crypto.Keccak256(inputHashBytes)
 
 	slog.Debug("signersAggVotingPower", "vp", signersAggVotingPower.String())
-	slog.Debug("signed message", "message", messageG1Bn254.String())
-	slog.Debug("signed message", "message.X", messageG1Bn254.X.String())
-	slog.Debug("signed message", "message.Y", messageG1Bn254.Y.String())
+	slog.Debug("signed message", "message", proveInput.MessageG1.String())
+	slog.Debug("signed message", "message.X", proveInput.MessageG1.X.String())
+	slog.Debug("signed message", "message.Y", proveInput.MessageG1.Y.String())
 	slog.Debug("mimc hash", "hash", hex.EncodeToString(valsetHash))
 
 	inputHashInt := new(big.Int).SetBytes(inputHash)
@@ -216,6 +209,4 @@ func setCircuitData(circuit *Circuit, proveInput ProveInput) error {
 	circuit.InputHash = inputHashInt
 
 	slog.Debug("[Prove] input hash", "hash", hex.EncodeToString(inputHashInt.Bytes()))
-
-	return nil
 }
