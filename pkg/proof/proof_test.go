@@ -4,6 +4,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"math/big"
 	"testing"
 	"time"
@@ -55,15 +57,32 @@ func mockValset() []ValidatorData {
 	return valset
 }
 
+func calculateInputHash(validatorSetHash []byte, signersVotingPower *big.Int, messageG1 *bls.G1) common.Hash {
+	var packed []byte
+
+	packed = append(packed, validatorSetHash[:32]...)
+
+	signersVPBytes := make([]byte, 32)
+	signersVotingPower.FillBytes(signersVPBytes)
+	packed = append(packed, signersVPBytes...)
+
+	packed = append(packed, messageG1.X.Marshal()...)
+	packed = append(packed, messageG1.Y.Marshal()...)
+
+	hashBytes := crypto.Keccak256(packed)
+
+	return common.BytesToHash(hashBytes)
+}
+
 func TestProof(t *testing.T) {
-	t.Skipf("it works too long, so set skip here. For local debugging can remove this skip")
+	//t.Skipf("it works too long, so set skip here. For local debugging can remove this skip")
 
 	startTime := time.Now()
 	prover := NewZkProver()
 	fmt.Printf("prover initialation took %v\n", time.Since(startTime))
 
 	// generate valset
-	valset := genValset(11, []int{})
+	valset := genValset(10, []int{})
 	// valset := mockValset()
 
 	validatorData := NormalizeValset(valset)
@@ -101,14 +120,15 @@ func TestProof(t *testing.T) {
 	fmt.Println("CommitmentPok:", hex.EncodeToString(proofData.CommitmentPok))
 	fmt.Println("SignersAggVotingPower:", proofData.SignersAggVotingPower.String())
 
-	//startTime = time.Now()
-	//res, err := prover.Verify(len(validatorData), pubInpHash, proofData.Marshall())
-	//if err != nil {
-	//	t.Fatal(err)
-	//}
-	//fmt.Printf("verification took %v\n", time.Since(startTime))
-	//
-	//if !res {
-	//	t.Fatal("failed to verify")
-	//}
+	inputHash := calculateInputHash(HashValset(valset), proofData.SignersAggVotingPower, messageG1)
+	startTime = time.Now()
+	res, err := prover.Verify(len(validatorData), inputHash, proofData.Marshall())
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Printf("verification took %v\n", time.Since(startTime))
+
+	if !res {
+		t.Fatal("failed to verify")
+	}
 }
