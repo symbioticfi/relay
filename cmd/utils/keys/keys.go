@@ -1,36 +1,33 @@
 package keys
 
 import (
-	"fmt"
+	"log/slog"
+	"middleware-offchain/core/entity"
+	keyprovider "middleware-offchain/core/usecase/key-provider"
+	"middleware-offchain/pkg/bls"
+	"syscall"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
-	"log/slog"
-	"middleware-offchain/core/entity"
-	keyprovider "middleware-offchain/core/usecase/key-provider"
-	"middleware-offchain/pkg/bls"
-	"middleware-offchain/pkg/log"
-	"syscall"
 )
 
 type config struct {
 	path       string
+	password   string
 	keyTag     uint8
 	privateKey string
 	generate   bool
 	force      bool
-	logLevel   string
-	logMode    string
 }
 
 var cfg config
 
 func NewKeysCmd() (*cobra.Command, error) {
 	keysCmd.PersistentFlags().StringVarP(&cfg.path, "path", "p", "./keystore.jks", "path to keystore")
-	keysCmd.PersistentFlags().StringVar(&cfg.logLevel, "log-level", "info", "log level")
-	keysCmd.PersistentFlags().StringVar(&cfg.logMode, "log-mode", "debug", "log mode")
+	keysCmd.PersistentFlags().StringVar(&cfg.password, "password", "", "keystore password")
 
 	addKeyCmd.PersistentFlags().Uint8Var(&cfg.keyTag, "key-tag", 0, "key tag")
 	addKeyCmd.PersistentFlags().StringVar(&cfg.privateKey, "private-key", "", "private key")
@@ -65,21 +62,22 @@ func NewKeysCmd() (*cobra.Command, error) {
 var keysCmd = &cobra.Command{
 	Use:   "keys",
 	Short: "Keys tool",
-	PreRun: func(cmd *cobra.Command, args []string) {
-		log.Init(cfg.logLevel, cfg.logMode)
-	},
 }
 
 var printKeysCmd = &cobra.Command{
 	Use:   "list",
 	Short: "Print all keys",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		password, err := getPassword()
-		if err != nil {
-			return err
+		var err error
+
+		if cfg.password == "" {
+			cfg.password, err = getPassword()
+			if err != nil {
+				return err
+			}
 		}
 
-		keyStore, err := keyprovider.NewKeystoreProvider(cfg.path, password)
+		keyStore, err := keyprovider.NewKeystoreProvider(cfg.path, cfg.password)
 		if err != nil {
 			return err
 		}
@@ -107,7 +105,9 @@ var printKeysCmd = &cobra.Command{
 				if err != nil {
 					return err
 				}
-				publicKeyStr = "E([" + ecdsaPk.PublicKey.X.String() + "," + ecdsaPk.PublicKey.Y.String() + "])"
+				publicKeyStr = "E([" + ecdsaPk.X.String() + "," + ecdsaPk.Y.String() + "])"
+			case entity.KeyTypeInvalid:
+				publicKeyStr = "invalid"
 			default:
 				return errors.Errorf("unsupported key tag type: %s", alias)
 			}
@@ -127,17 +127,25 @@ var addKeyCmd = &cobra.Command{
 			return errors.New("Add --generate if private key omitted")
 		}
 
-		password, err := getPassword()
+		if cfg.generate {
+			cfg.privateKey = "random" // TODO: for each key tag make pk generator
+		}
+
+		var err error
+
+		if cfg.password == "" {
+			cfg.password, err = getPassword()
+			if err != nil {
+				return err
+			}
+		}
+
+		keyStore, err := keyprovider.NewKeystoreProvider(cfg.path, cfg.password)
 		if err != nil {
 			return err
 		}
 
-		keyStore, err := keyprovider.NewKeystoreProvider(cfg.path, password)
-		if err != nil {
-			return err
-		}
-
-		if err = keyStore.AddKey(entity.KeyTag(cfg.keyTag), common.Hex2Bytes(cfg.privateKey), password, cfg.force); err != nil {
+		if err = keyStore.AddKey(entity.KeyTag(cfg.keyTag), common.Hex2Bytes(cfg.privateKey), cfg.password, cfg.force); err != nil {
 			return err
 		}
 
@@ -149,17 +157,21 @@ var removeKeyCmd = &cobra.Command{
 	Use:   "remove",
 	Short: "Remove key",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		password, err := getPassword()
+		var err error
+
+		if cfg.password == "" {
+			cfg.password, err = getPassword()
+			if err != nil {
+				return err
+			}
+		}
+
+		keyStore, err := keyprovider.NewKeystoreProvider(cfg.path, cfg.password)
 		if err != nil {
 			return err
 		}
 
-		keyStore, err := keyprovider.NewKeystoreProvider(cfg.path, password)
-		if err != nil {
-			return err
-		}
-
-		if err = keyStore.DeleteKey(entity.KeyTag(cfg.keyTag), password); err != nil {
+		if err = keyStore.DeleteKey(entity.KeyTag(cfg.keyTag), cfg.password); err != nil {
 			return err
 		}
 
@@ -171,12 +183,16 @@ var updateKeyCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update key",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		password, err := getPassword()
-		if err != nil {
-			return err
+		var err error
+
+		if cfg.password == "" {
+			cfg.password, err = getPassword()
+			if err != nil {
+				return err
+			}
 		}
 
-		keyStore, err := keyprovider.NewKeystoreProvider(cfg.path, password)
+		keyStore, err := keyprovider.NewKeystoreProvider(cfg.path, cfg.password)
 		if err != nil {
 			return err
 		}
@@ -191,7 +207,7 @@ var updateKeyCmd = &cobra.Command{
 			return errors.New("Key doesn't exist")
 		}
 
-		if err = keyStore.AddKey(keyTag, common.Hex2Bytes(cfg.privateKey), password, true); err != nil {
+		if err = keyStore.AddKey(keyTag, common.Hex2Bytes(cfg.privateKey), cfg.password, true); err != nil {
 			return err
 		}
 
@@ -200,9 +216,8 @@ var updateKeyCmd = &cobra.Command{
 }
 
 func getPassword() (string, error) {
-	fmt.Print("Enter password: ")
-	passwordBytes, err := term.ReadPassword(int(syscall.Stdin))
-	fmt.Println()
+	slog.Info("Enter password: ")
+	passwordBytes, err := term.ReadPassword(syscall.Stdin)
 	if err != nil {
 		return "", err
 	}

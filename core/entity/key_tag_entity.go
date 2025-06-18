@@ -1,23 +1,20 @@
 package entity
 
-<<<<<<< feat-keystore
-import "errors"
-=======
-import "fmt"
->>>>>>> dev
+import (
+	"errors"
+	"fmt"
+)
 
 type KeyType uint8
 
 const (
 	KeyTypeBlsBn254       KeyType = 0
 	KeyTypeEcdsaSecp256k1 KeyType = 1
+	KeyTypeInvalid        KeyType = 255
 
-<<<<<<< feat-keystore
 	BLS_BN254_TYPE       = "bls_bn254"
 	ECDSA_SECP256K1_TYPE = "ecdsa_secp256k1"
-=======
-	KeyTypeInvalid KeyType = 255
->>>>>>> dev
+	INVALID_TYPE         = "invalid"
 )
 
 type KeyTag uint8
@@ -53,6 +50,8 @@ func (kt KeyType) String() (string, error) {
 		return BLS_BN254_TYPE, nil
 	case KeyTypeEcdsaSecp256k1:
 		return ECDSA_SECP256K1_TYPE, nil
+	case KeyTypeInvalid:
+		return INVALID_TYPE, nil
 	}
 	return "", errors.New("invalid key type")
 }
@@ -63,6 +62,8 @@ func KeyTypeFromString(typeStr string) (KeyType, error) {
 		return KeyTypeBlsBn254, nil
 	case ECDSA_SECP256K1_TYPE:
 		return KeyTypeEcdsaSecp256k1, nil
+	case INVALID_TYPE:
+		return KeyTypeInvalid, nil
 	}
 	return 0, errors.New("invalid key type")
 }
