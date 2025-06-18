@@ -27,8 +27,9 @@ func (s *Signer) Hash(keyTag entity.KeyTag, message []byte) ([]byte, error) {
 		return crypto.Keccak256(message), nil
 	case entity.KeyTypeEcdsaSecp256k1:
 		return crypto.Keccak256(message), nil
+	case entity.KeyTypeInvalid:
+		return nil, errors.New("invalid key type")
 	}
-
 	return nil, errors.New("invalid key type")
 }
 
@@ -54,8 +55,9 @@ func (s *Signer) Verify(keyTag entity.KeyTag, signature entity.Signature) ([]byt
 		return g1PubKey.Marshal(), ok, nil
 	case entity.KeyTypeEcdsaSecp256k1:
 		return nil, false, nil
+	case entity.KeyTypeInvalid:
+		return nil, false, errors.Errorf("unsupported key type: %d", keyTag.Type())
 	}
-
 	return nil, false, errors.Errorf("unsupported key type: %d", keyTag.Type())
 }
 
@@ -88,6 +90,8 @@ func (s *Signer) Sign(keyTag entity.KeyTag, message []byte) (entity.Signature, e
 
 	case entity.KeyTypeEcdsaSecp256k1:
 		// same but for another key type
+	case entity.KeyTypeInvalid:
+		return entity.Signature{}, errors.Errorf("unsupported key type: %d", keyTag.Type())
 	}
 
 	// assert, should not reach the code
@@ -106,6 +110,8 @@ func (s *Signer) GetPublicKey(keyTag entity.KeyTag) ([]byte, error) {
 		return kp.PublicKeyG1.Marshal(), nil
 	case entity.KeyTypeEcdsaSecp256k1:
 		return nil, errors.New("ECDSA key type not supported in this provider")
+	case entity.KeyTypeInvalid:
+		return sk, nil
 	}
 
 	return sk, nil

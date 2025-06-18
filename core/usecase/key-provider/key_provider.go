@@ -13,6 +13,8 @@ func typeToStr(keyType entity.KeyType) (string, error) {
 		return "BLS-BN254", nil
 	case entity.KeyTypeEcdsaSecp256k1:
 		return "ECDSA-SECP256K1", nil
+	case entity.KeyTypeInvalid:
+		return "Invalid", nil
 	}
 	return "", errors.New("invalid key type")
 }

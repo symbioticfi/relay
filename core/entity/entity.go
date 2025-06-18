@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"fmt"
 	"math/big"
 	"slices"
 
@@ -77,15 +78,15 @@ var (
 	SimpleVerificationAggPublicKeyG1Hash            = crypto.Keccak256Hash([]byte("aggPublicKeyG1"))
 )
 
-// Phase represents the different phases of the protocol
-type Phase uint64
-
-const (
-	IDLE    Phase = 0
-	COMMIT  Phase = 1
-	PROLONG Phase = 2
-	FAIL    Phase = 3
-)
+func (vt VerificationType) MarshalText() (text []byte, err error) {
+	switch vt {
+	case VerificationTypeZK:
+		return []byte(fmt.Sprintf("%d (BLS-BN254-ZK)", uint32(vt))), nil
+	case VerificationTypeSimple:
+		return []byte(fmt.Sprintf("%d (BLS-BN254-SIMPLE)", uint32(vt))), nil
+	}
+	return []byte(fmt.Sprintf("%d (UNKNOWN)", uint32(vt))), nil
+}
 
 type CrossChainAddress struct {
 	ChainId uint64         `json:"chainId"`
