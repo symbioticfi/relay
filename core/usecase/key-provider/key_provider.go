@@ -3,30 +3,40 @@ package keyprovider
 import (
 	"errors"
 	"strconv"
+	"strings"
 
 	"middleware-offchain/core/entity"
 )
-
-func typeToStr(keyType entity.KeyType) (string, error) {
-	switch keyType {
-	case entity.KeyTypeBlsBn254:
-		return "BLS-BN254", nil
-	case entity.KeyTypeEcdsaSecp256k1:
-		return "ECDSA-SECP256K1", nil
-	}
-	return "", errors.New("invalid key type")
-}
 
 func getAlias(keyTag entity.KeyTag) (string, error) {
 	// https://github.com/symbioticfi/middleware-sdk-mirror/blob/change-header/src/contracts/libraries/utils/KeyTags.sol#L24-L40
 	keyId := keyTag & 0x0F
 
-	keyTypeStr, err := typeToStr(keyTag.Type())
+	keyTypeStr, err := keyTag.Type().String()
 	if err != nil {
 		return "", err
 	}
 
-	ketIdStr := strconv.Itoa(int(keyId))
+	keyIdStr := strconv.Itoa(int(keyId))
 
-	return "KEY-SYMB-" + keyTypeStr + "-" + ketIdStr, nil
+	return "key-symb-" + keyTypeStr + "-" + keyIdStr, nil
+}
+
+func AliasToTag(alias string) (entity.KeyTag, error) {
+	keyTagParts := strings.Split(alias, "-")
+	if len(keyTagParts) != 4 {
+		return 0, errors.New("invalid alias")
+	}
+
+	keyType, err := entity.KeyTypeFromString(keyTagParts[2])
+	if err != nil {
+		return 0, err
+	}
+
+	keyId, err := strconv.Atoi(keyTagParts[3])
+	if err != nil {
+		return 0, err
+	}
+
+	return entity.KeyTag(uint8(keyType)<<4 + uint8(keyId)), nil
 }
