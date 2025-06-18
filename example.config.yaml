@@ -1,0 +1,10 @@
+rpc-url: "hello" #"http://127.0.0.1:8545"
+driver-address: "0x1f5fE7682E49c20289C20a4cFc8b45d5EB410690"
+log-level: "debug"
+log-mode: "pretty"
+http-listen: ":8081"
+secret-key: "1000000000000000000"
+aggregator: true
+signer: true
+committer: true
+storage-dir: ".data"

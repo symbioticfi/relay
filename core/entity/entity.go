@@ -89,8 +89,8 @@ func (vt VerificationType) MarshalText() (text []byte, err error) {
 }
 
 type CrossChainAddress struct {
-	ChainId uint64         `json:"chainId"`
-	Address common.Address `json:"addr"`
+	ChainId uint64
+	Address common.Address
 }
 
 type QuorumThreshold struct {
