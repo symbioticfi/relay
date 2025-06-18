@@ -2,26 +2,33 @@ package main
 
 import (
 	"context"
+	"io/fs"
 	"strings"
 
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
+	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
+// The config can be populated from command-line flags, environment variables, and a config.yaml file.
+// Priority order (highest to lowest):
+// 1. Command-line flags
+// 2. Environment variables (prefixed with SYMB_ and dashes replaced by underscores)
+// 3. config.yaml file (specified by --config or default "config.yaml")
 type config struct {
-	RPCURL           string `mapstructure:"rpc_url" validate:"required,url"`
-	DriverAddress    string `mapstructure:"driver_address" validate:"required"`
-	LogLevel         string `mapstructure:"log_level" validate:"oneof=debug info warn error"`
-	LogMode          string `mapstructure:"log_mode" validate:"oneof=text pretty"`
-	P2PListenAddress string `mapstructure:"p2p_listen"`
-	HTTPListenAddr   string `mapstructure:"http_listen"`
-	SecretKey        string `mapstructure:"secret_key" validate:"required"`
+	RPCURL           string `mapstructure:"rpc-url" validate:"required,url"`
+	DriverAddress    string `mapstructure:"driver-address" validate:"required"`
+	LogLevel         string `mapstructure:"log-level" validate:"oneof=debug info warn error"`
+	LogMode          string `mapstructure:"log-mode" validate:"oneof=text pretty"`
+	P2PListenAddress string `mapstructure:"p2p-listen"`
+	HTTPListenAddr   string `mapstructure:"http-listen" validate:"required"`
+	SecretKey        string `mapstructure:"secret-key" validate:"required"`
 	IsAggregator     bool   `mapstructure:"aggregator"`
 	IsSigner         bool   `mapstructure:"signer"`
 	IsCommitter      bool   `mapstructure:"committer"`
-	StorageDir       string `mapstructure:"storage_dir"`
+	StorageDir       string `mapstructure:"storage-dir"`
 }
 
 func (c config) Validate() error {
@@ -99,7 +106,8 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 
-	if err := v.ReadInConfig(); err != nil && !errors.Is(err, viper.ConfigFileNotFoundError{}) {
+	err := v.ReadInConfig()
+	if err != nil && !errors.Is(err, viper.ConfigFileNotFoundError{}) && !errors.As(err, lo.ToPtr(&fs.PathError{})) {
 		return errors.Errorf("failed to read config file: %w", err)
 	}
 
