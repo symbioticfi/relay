@@ -87,8 +87,8 @@ func networkConfigToBytes(config entity.NetworkConfig) ([]byte, error) {
 	networkConfigDTOFromEntity := networkConfigDTO{
 		VotingPowerProviders: lo.Map(config.VotingPowerProviders, func(addr entity.CrossChainAddress, _ int) crossChainAddressDTO {
 			return crossChainAddressDTO{
-				Address: addr.Address.Hex(),
 				ChainId: addr.ChainId,
+				Address: addr.Address.Hex(),
 			}
 		}),
 		KeysProvider: crossChainAddressDTO{
@@ -97,8 +97,8 @@ func networkConfigToBytes(config entity.NetworkConfig) ([]byte, error) {
 		},
 		Replicas: lo.Map(config.Replicas, func(addr entity.CrossChainAddress, _ int) crossChainAddressDTO {
 			return crossChainAddressDTO{
-				Address: addr.Address.Hex(),
 				ChainId: addr.ChainId,
+				Address: addr.Address.Hex(),
 			}
 		}),
 		VerificationType:        uint32(config.VerificationType),
@@ -120,18 +120,18 @@ func bytesToNetworkConfig(data []byte) (entity.NetworkConfig, error) {
 	return entity.NetworkConfig{
 		VotingPowerProviders: lo.Map(dto.VotingPowerProviders, func(addr crossChainAddressDTO, _ int) entity.CrossChainAddress {
 			return entity.CrossChainAddress{
-				Address: common.HexToAddress(addr.Address),
 				ChainId: addr.ChainId,
+				Address: common.HexToAddress(addr.Address),
 			}
 		}),
 		KeysProvider: entity.CrossChainAddress{
-			Address: common.HexToAddress(dto.KeysProvider.Address),
 			ChainId: dto.KeysProvider.ChainId,
+			Address: common.HexToAddress(dto.KeysProvider.Address),
 		},
 		Replicas: lo.Map(dto.Replicas, func(addr crossChainAddressDTO, _ int) entity.CrossChainAddress {
 			return entity.CrossChainAddress{
-				Address: common.HexToAddress(addr.Address),
 				ChainId: addr.ChainId,
+				Address: common.HexToAddress(addr.Address),
 			}
 		}),
 		VerificationType:        entity.VerificationType(dto.VerificationType),

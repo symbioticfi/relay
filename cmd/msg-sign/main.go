@@ -36,7 +36,7 @@ func main() {
 
 func run() error {
 	rootCmd.PersistentFlags().StringVar(&cfg.rpcURL, "rpc-url", "", "RPC URL")
-	rootCmd.PersistentFlags().StringVar(&cfg.masterAddress, "master-address", "", "Master contract address")
+	rootCmd.PersistentFlags().StringVar(&cfg.driverAddress, "driver-address", "", "Driver contract address")
 	rootCmd.PersistentFlags().StringVar(&cfg.logLevel, "log-level", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVar(&cfg.logMode, "log-mode", "text", "Log mode (text, pretty)")
 	rootCmd.PersistentFlags().StringArrayVar(&cfg.signAddresses, "sign-address", []string{"http://localhost:8081/api/v1", "http://localhost:8082/api/v1", "http://localhost:8083/api/v1"}, "Addresses of signer servers'")
@@ -44,8 +44,8 @@ func run() error {
 	if err := rootCmd.MarkPersistentFlagRequired("rpc-url"); err != nil {
 		return errors.Errorf("failed to mark rpc-url as required: %w", err)
 	}
-	if err := rootCmd.MarkPersistentFlagRequired("master-address"); err != nil {
-		return errors.Errorf("failed to mark master-address as required: %w", err)
+	if err := rootCmd.MarkPersistentFlagRequired("driver-address"); err != nil {
+		return errors.Errorf("failed to mark driver-address as required: %w", err)
 	}
 
 	return rootCmd.Execute()
@@ -53,7 +53,7 @@ func run() error {
 
 type config struct {
 	rpcURL        string
-	masterAddress string
+	driverAddress string
 
 	logLevel      string
 	logMode       string
@@ -74,7 +74,7 @@ var rootCmd = &cobra.Command{
 
 		ethClient, err := evm.NewEVMClient(evm.Config{
 			MasterRPCURL:   cfg.rpcURL,
-			MasterAddress:  cfg.masterAddress,
+			DriverAddress:  cfg.driverAddress,
 			RequestTimeout: time.Second * 10,
 		})
 		if err != nil {
@@ -141,16 +141,16 @@ func verifyQuorumSig(ctx context.Context, proof entity.AggregationProof, message
 }
 
 type signMessageRequest struct {
-	Data   []byte `json:"data"`
-	KeyTag uint8  `json:"keyTag"`
-	Epoch  uint64 `json:"epoch"`
+	Message       []byte `json:"message"`
+	KeyTag        uint8  `json:"keyTag"`
+	RequiredEpoch uint64 `json:"requiredEpoch"`
 }
 
 func sendSignRequests(ctx context.Context, cfg config, message string, keyTag entity.KeyTag, epoch uint64) (string, error) {
 	req := signMessageRequest{
-		Data:   []byte(message),
-		KeyTag: uint8(keyTag),
-		Epoch:  epoch,
+		Message:       []byte(message),
+		KeyTag:        uint8(keyTag),
+		RequiredEpoch: epoch,
 	}
 
 	body, err := json.Marshal(&req)
@@ -165,6 +165,7 @@ func sendSignRequests(ctx context.Context, cfg config, message string, keyTag en
 		if err != nil {
 			return "", errors.Errorf("failed to create new request: %w", err)
 		}
+		request.Header.Set("Content-Type", "application/json")
 		err = func() error {
 			resp, err := http.DefaultClient.Do(request)
 			if err != nil {
@@ -203,6 +204,7 @@ func sendGetAggregationProofRequest(ctx context.Context, c config, hash string) 
 	if err != nil {
 		return entity.AggregationProof{}, errors.Errorf("failed to create new request: %w", err)
 	}
+	request.Header.Set("Content-Type", "application/json")
 
 	var aggProof entity.AggregationProof
 	err = func() error {

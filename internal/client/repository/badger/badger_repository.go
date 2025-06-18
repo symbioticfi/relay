@@ -23,6 +23,10 @@ type Repository struct {
 }
 
 func New(cfg Config) (*Repository, error) {
+	if err := validator.New().Struct(cfg); err != nil {
+		return nil, errors.Errorf("failed to validate config: %w", err)
+	}
+
 	opts := badger.DefaultOptions(cfg.Dir)
 	opts.Logger = doNothingLog{}
 

@@ -19,7 +19,7 @@ import (
 
 type prover interface {
 	Prove(proveInput proof.ProveInput) (proof.ProofData, error)
-	Verify(valsetLen int, publicInputHash [32]byte, proofBytes []byte) (bool, error)
+	Verify(valsetLen int, publicInputHash common.Hash, proofBytes []byte) (bool, error)
 }
 
 type keyProvider interface {
@@ -29,7 +29,7 @@ type keyProvider interface {
 
 type Config struct {
 	MasterRPCURL   string `validate:"required"`
-	MasterAddress  string `validate:"required"`
+	DriverAddress  string `validate:"required"`
 	PrivateKey     []byte
 	RequestTimeout time.Duration `validate:"required,gt=0"`
 	Prover         prover        `validate:"required"`
@@ -53,9 +53,13 @@ type Symbiotic struct {
 }
 
 func NewSymbiotic(cfg Config) (*Symbiotic, error) {
+	if err := cfg.Validate(); err != nil {
+		return nil, errors.Errorf("failed to validate config: %w", err)
+	}
+
 	evmClient, err := evm.NewEVMClient(evm.Config{
 		MasterRPCURL:   cfg.MasterRPCURL,
-		MasterAddress:  cfg.MasterAddress,
+		DriverAddress:  cfg.DriverAddress,
 		PrivateKey:     cfg.PrivateKey,
 		RequestTimeout: cfg.RequestTimeout,
 	})
@@ -125,10 +129,6 @@ func (s *Symbiotic) GetConfig(ctx context.Context, timestamp uint64) (entity.Net
 	return s.evmClient.GetConfig(ctx, timestamp)
 }
 
-func (s *Symbiotic) GetIsGenesisSet(ctx context.Context) (bool, error) {
-	return s.evmClient.GetIsGenesisSet(ctx)
-}
-
 func (s *Symbiotic) IsValsetHeaderCommittedAt(ctx context.Context, epoch uint64) (bool, error) {
 	return s.evmClient.IsValsetHeaderCommittedAt(ctx, epoch)
 }
@@ -137,19 +137,19 @@ func (s *Symbiotic) GetCurrentEpoch(ctx context.Context) (uint64, error) {
 	return s.evmClient.GetCurrentEpoch(ctx)
 }
 
-func (s *Symbiotic) GetPreviousHeaderHash(ctx context.Context) ([32]byte, error) {
+func (s *Symbiotic) GetPreviousHeaderHash(ctx context.Context) (common.Hash, error) {
 	return s.evmClient.GetPreviousHeaderHash(ctx)
 }
 
-func (s *Symbiotic) GetPreviousHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, error) {
+func (s *Symbiotic) GetPreviousHeaderHashAt(ctx context.Context, epoch uint64) (common.Hash, error) {
 	return s.evmClient.GetPreviousHeaderHashAt(ctx, epoch)
 }
 
-func (s *Symbiotic) GetLatestHeaderHash(ctx context.Context) ([32]byte, error) {
-	return s.evmClient.GetLatestHeaderHash(ctx)
+func (s *Symbiotic) GetHeaderHash(ctx context.Context) (common.Hash, error) {
+	return s.evmClient.GetHeaderHash(ctx)
 }
 
-func (s *Symbiotic) GetHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, error) {
+func (s *Symbiotic) GetHeaderHashAt(ctx context.Context, epoch uint64) (common.Hash, error) {
 	return s.evmClient.GetHeaderHashAt(ctx, epoch)
 }
 
@@ -159,18 +159,6 @@ func (s *Symbiotic) GetEpochStart(ctx context.Context, epoch uint64) (uint64, er
 
 func (s *Symbiotic) GetLastCommittedHeaderEpoch(ctx context.Context) (uint64, error) {
 	return s.evmClient.GetLastCommittedHeaderEpoch(ctx)
-}
-
-func (s *Symbiotic) GetCurrentPhase(ctx context.Context) (entity.Phase, error) {
-	return s.evmClient.GetCurrentPhase(ctx)
-}
-
-func (s *Symbiotic) GetCurrentValsetTimestamp(ctx context.Context) (uint64, error) {
-	return s.evmClient.GetCurrentValsetTimestamp(ctx)
-}
-
-func (s *Symbiotic) GetCaptureTimestamp(ctx context.Context) (uint64, error) {
-	return s.evmClient.GetCaptureTimestamp(ctx)
 }
 
 func (s *Symbiotic) GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, epoch uint64) (uint64, error) {
@@ -185,15 +173,7 @@ func (s *Symbiotic) GetKeys(ctx context.Context, address entity.CrossChainAddres
 	return s.evmClient.GetKeys(ctx, address, timestamp)
 }
 
-func (s *Symbiotic) GetRequiredKeyTag(ctx context.Context, timestamp uint64) (entity.KeyTag, error) {
-	return s.evmClient.GetRequiredKeyTag(ctx, timestamp)
-}
-
-func (s *Symbiotic) GetQuorumThreshold(ctx context.Context, timestamp uint64, keyTag entity.KeyTag) (uint64, error) {
-	return s.evmClient.GetQuorumThreshold(ctx, timestamp, keyTag)
-}
-
-func (s *Symbiotic) GetSubnetwork(ctx context.Context) ([32]byte, error) {
+func (s *Symbiotic) GetSubnetwork(ctx context.Context) (common.Hash, error) {
 	return s.evmClient.GetSubnetwork(ctx)
 }
 

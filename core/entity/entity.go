@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"fmt"
 	"math/big"
 	"slices"
 
@@ -61,35 +62,40 @@ const (
 	VerificationTypeSimple VerificationType = 1
 )
 
-const (
-	ExtraDataGlobalKeyPrefix = "symbiotic.Settlement.extraData."
-	ExtraDataKeyTagPrefix    = "keyTag."
+var (
+	ExtraDataGlobalKeyPrefixHash = crypto.Keccak256Hash([]byte("symbiotic.Settlement.extraData."))
+	ExtraDataKeyTagPrefixHash    = crypto.Keccak256Hash([]byte("keyTag."))
 )
 
-const (
-	ZkVerificationTotalActiveValidators = "totalActiveValidators"
-	ZkVerificationValidatorSetHashMimc  = "validatorSetHashMimc"
+var (
+	ZkVerificationTotalActiveValidatorsHash = crypto.Keccak256Hash([]byte("totalActiveValidators"))
+	ZkVerificationValidatorSetHashMimcHash  = crypto.Keccak256Hash([]byte("validatorSetHashMimc"))
 )
 
-const (
-	SimpleVerificationValidatorSetHashKeccak256 = "validatorSetHashKeccak256"
-	SimpleVerificationTotalVotingPower          = "totalVotingPower"
-	SimpleVerificationAggPublicKeyG1            = "aggPublicKeyG1"
+var (
+	SimpleVerificationValidatorSetHashKeccak256Hash = crypto.Keccak256Hash([]byte("validatorSetHashKeccak256"))
+	SimpleVerificationTotalVotingPowerHash          = crypto.Keccak256Hash([]byte("totalVotingPower"))
+	SimpleVerificationAggPublicKeyG1Hash            = crypto.Keccak256Hash([]byte("aggPublicKeyG1"))
 )
 
-// Phase represents the different phases of the protocol
-type Phase uint64
-
-const (
-	IDLE    Phase = 0
-	COMMIT  Phase = 1
-	PROLONG Phase = 2
-	FAIL    Phase = 3
-)
+func (vt VerificationType) MarshalText() (text []byte, err error) {
+	switch vt {
+	case VerificationTypeZK:
+		return []byte(fmt.Sprintf("%d (BLS-BN254-ZK)", uint32(vt))), nil
+	case VerificationTypeSimple:
+		return []byte(fmt.Sprintf("%d (BLS-BN254-SIMPLE)", uint32(vt))), nil
+	}
+	return []byte(fmt.Sprintf("%d (UNKNOWN)", uint32(vt))), nil
+}
 
 type CrossChainAddress struct {
-	Address common.Address `json:"addr"`
-	ChainId uint64         `json:"chainId"`
+	ChainId uint64
+	Address common.Address
+}
+
+type QuorumThreshold struct {
+	KeyTag          KeyTag
+	QuorumThreshold *big.Int
 }
 
 type NetworkConfig struct {
@@ -101,11 +107,13 @@ type NetworkConfig struct {
 	MinInclusionVotingPower *big.Int
 	MaxValidatorsCount      *big.Int
 	RequiredKeyTags         []KeyTag
+	RequiredHeaderKeyTag    KeyTag
+	QuorumThresholds        []QuorumThreshold
 }
 
 type NetworkData struct {
 	Address    common.Address
-	Subnetwork [32]byte
+	Subnetwork common.Hash
 	Eip712Data Eip712Domain
 }
 
@@ -204,7 +212,7 @@ func (v ValidatorSet) FindValidatorByKey(keyTag KeyTag, publicKey []byte) (Valid
 
 type ValidatorSetHash struct {
 	KeyTag KeyTag
-	Hash   [32]byte
+	Hash   common.Hash
 }
 
 // ValidatorSetHeader represents the input for validator set header
@@ -290,7 +298,7 @@ func (v ValidatorSet) GetHeader() (ValidatorSetHeader, error) {
 	}, nil
 }
 
-func sszTreeRoot(v *ValidatorSet) ([32]byte, error) {
+func sszTreeRoot(v *ValidatorSet) (common.Hash, error) {
 	sszType := validatorSetToSszValidators(v)
 	return sszType.HashTreeRoot()
 }
@@ -365,13 +373,13 @@ func (v ValidatorSetHeader) AbiEncode() ([]byte, error) {
 	return pack, nil
 }
 
-func (v ValidatorSetHeader) Hash() ([32]byte, error) {
+func (v ValidatorSetHeader) Hash() (common.Hash, error) {
 	abiEncoded, err := v.AbiEncode()
 	if err != nil {
-		return [32]byte{}, errors.Errorf("failed to hash validator set header: %w", err)
+		return common.Hash{}, errors.Errorf("failed to hash validator set header: %w", err)
 	}
 
-	return [32]byte(crypto.Keccak256(abiEncoded)), nil
+	return common.Hash(crypto.Keccak256(abiEncoded)), nil
 }
 
 type TxResult struct {

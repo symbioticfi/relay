@@ -42,21 +42,6 @@ func (m *MockethClient) EXPECT() *MockethClientMockRecorder {
 	return m.recorder
 }
 
-// GetCaptureTimestamp mocks base method.
-func (m *MockethClient) GetCaptureTimestamp(ctx context.Context) (uint64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCaptureTimestamp", ctx)
-	ret0, _ := ret[0].(uint64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetCaptureTimestamp indicates an expected call of GetCaptureTimestamp.
-func (mr *MockethClientMockRecorder) GetCaptureTimestamp(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCaptureTimestamp", reflect.TypeOf((*MockethClient)(nil).GetCaptureTimestamp), ctx)
-}
-
 // GetConfig mocks base method.
 func (m *MockethClient) GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error) {
 	m.ctrl.T.Helper()
@@ -85,21 +70,6 @@ func (m *MockethClient) GetCurrentEpoch(ctx context.Context) (uint64, error) {
 func (mr *MockethClientMockRecorder) GetCurrentEpoch(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentEpoch", reflect.TypeOf((*MockethClient)(nil).GetCurrentEpoch), ctx)
-}
-
-// GetCurrentValsetTimestamp mocks base method.
-func (m *MockethClient) GetCurrentValsetTimestamp(ctx context.Context) (uint64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCurrentValsetTimestamp", ctx)
-	ret0, _ := ret[0].(uint64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetCurrentValsetTimestamp indicates an expected call of GetCurrentValsetTimestamp.
-func (mr *MockethClientMockRecorder) GetCurrentValsetTimestamp(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentValsetTimestamp", reflect.TypeOf((*MockethClient)(nil).GetCurrentValsetTimestamp), ctx)
 }
 
 // GetEip712Domain mocks base method.
@@ -132,11 +102,26 @@ func (mr *MockethClientMockRecorder) GetEpochStart(ctx, epoch any) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEpochStart", reflect.TypeOf((*MockethClient)(nil).GetEpochStart), ctx, epoch)
 }
 
+// GetHeaderHash mocks base method.
+func (m *MockethClient) GetHeaderHash(ctx context.Context) (common.Hash, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetHeaderHash", ctx)
+	ret0, _ := ret[0].(common.Hash)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetHeaderHash indicates an expected call of GetHeaderHash.
+func (mr *MockethClientMockRecorder) GetHeaderHash(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHeaderHash", reflect.TypeOf((*MockethClient)(nil).GetHeaderHash), ctx)
+}
+
 // GetHeaderHashAt mocks base method.
-func (m *MockethClient) GetHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, error) {
+func (m *MockethClient) GetHeaderHashAt(ctx context.Context, epoch uint64) (common.Hash, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetHeaderHashAt", ctx, epoch)
-	ret0, _ := ret[0].([32]byte)
+	ret0, _ := ret[0].(common.Hash)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -177,21 +162,6 @@ func (mr *MockethClientMockRecorder) GetLastCommittedHeaderEpoch(ctx any) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastCommittedHeaderEpoch", reflect.TypeOf((*MockethClient)(nil).GetLastCommittedHeaderEpoch), ctx)
 }
 
-// GetLatestHeaderHash mocks base method.
-func (m *MockethClient) GetLatestHeaderHash(ctx context.Context) ([32]byte, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLatestHeaderHash", ctx)
-	ret0, _ := ret[0].([32]byte)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetLatestHeaderHash indicates an expected call of GetLatestHeaderHash.
-func (mr *MockethClientMockRecorder) GetLatestHeaderHash(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestHeaderHash", reflect.TypeOf((*MockethClient)(nil).GetLatestHeaderHash), ctx)
-}
-
 // GetNetworkAddress mocks base method.
 func (m *MockethClient) GetNetworkAddress(ctx context.Context) (*common.Address, error) {
 	m.ctrl.T.Helper()
@@ -208,10 +178,10 @@ func (mr *MockethClientMockRecorder) GetNetworkAddress(ctx any) *gomock.Call {
 }
 
 // GetPreviousHeaderHashAt mocks base method.
-func (m *MockethClient) GetPreviousHeaderHashAt(ctx context.Context, epoch uint64) ([32]byte, error) {
+func (m *MockethClient) GetPreviousHeaderHashAt(ctx context.Context, epoch uint64) (common.Hash, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPreviousHeaderHashAt", ctx, epoch)
-	ret0, _ := ret[0].([32]byte)
+	ret0, _ := ret[0].(common.Hash)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -222,26 +192,11 @@ func (mr *MockethClientMockRecorder) GetPreviousHeaderHashAt(ctx, epoch any) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPreviousHeaderHashAt", reflect.TypeOf((*MockethClient)(nil).GetPreviousHeaderHashAt), ctx, epoch)
 }
 
-// GetRequiredKeyTag mocks base method.
-func (m *MockethClient) GetRequiredKeyTag(ctx context.Context, timestamp uint64) (entity.KeyTag, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRequiredKeyTag", ctx, timestamp)
-	ret0, _ := ret[0].(entity.KeyTag)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetRequiredKeyTag indicates an expected call of GetRequiredKeyTag.
-func (mr *MockethClientMockRecorder) GetRequiredKeyTag(ctx, timestamp any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRequiredKeyTag", reflect.TypeOf((*MockethClient)(nil).GetRequiredKeyTag), ctx, timestamp)
-}
-
 // GetSubnetwork mocks base method.
-func (m *MockethClient) GetSubnetwork(ctx context.Context) ([32]byte, error) {
+func (m *MockethClient) GetSubnetwork(ctx context.Context) (common.Hash, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSubnetwork", ctx)
-	ret0, _ := ret[0].([32]byte)
+	ret0, _ := ret[0].(common.Hash)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

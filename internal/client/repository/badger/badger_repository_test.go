@@ -26,8 +26,8 @@ func randomAddr(t *testing.T) entity.CrossChainAddress {
 	require.NoError(t, err)
 
 	return entity.CrossChainAddress{
-		Address: common.BytesToAddress(randomBytes(t, 20)),
 		ChainId: chainID.Uint64(),
+		Address: common.BytesToAddress(randomBytes(t, 20)),
 	}
 }
 

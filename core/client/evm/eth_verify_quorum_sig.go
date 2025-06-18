@@ -4,21 +4,24 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/go-errors/errors"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/rpc"
 
 	"middleware-offchain/core/entity"
 )
 
 func (e *Client) VerifyQuorumSig(ctx context.Context, epoch uint64, message []byte, keyTag entity.KeyTag, threshold *big.Int, proof []byte) (bool, error) {
-	callMsg, err := constructCallMsg(e.masterAddress.Address, masterABI, verifyQuorumSigFunction, new(big.Int).SetUint64(epoch), message, uint8(keyTag), threshold, proof, []byte{})
+	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
+	defer cancel()
+
+	result, err := e.settlement.VerifyQuorumSigAt(&bind.CallOpts{
+		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
+		Context:     toCtx,
+	}, message, uint8(keyTag), threshold, proof, new(big.Int).SetUint64(epoch), []byte{})
+
 	if err != nil {
-		return false, errors.Errorf("failed to construct call msg: %w", err)
+		return false, err
 	}
 
-	result, err := e.callContract(ctx, callMsg)
-	if err != nil {
-		return false, errors.Errorf("failed to call contract: %w", err)
-	}
-
-	return new(big.Int).SetBytes(result).Cmp(big.NewInt(1)) == 0, nil
+	return result, nil
 }

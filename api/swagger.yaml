@@ -1,0 +1,383 @@
+openapi: 3.0.3
+
+info:
+  title: Symbnode API
+  version: 1.0.0
+  description: |
+    Symbnode API provides access to the Symbiosis protocol data.
+
+tags:
+  - name: signer
+    description: Signer operations
+  - name: getter
+    description: Getter operations
+
+servers:
+  - url: http://localhost:8081/api/v1
+    description: local server
+
+paths:
+  /signMessage:
+    post:
+      summary: Sign a message
+      tags:
+        - signer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignatureRequest"
+      responses:
+        '200':
+          description: Request hash
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requestHash:
+                    type: string
+                required:
+                  - requestHash
+        default:
+          description: General Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /getAggregationProof:
+    get:
+      summary: Get aggregation proof
+      tags:
+        - getter
+      parameters:
+        - name: requestHash
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Aggregation proof
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AggregationProof"
+        default:
+          description: General Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /getCurrentEpoch:
+    get:
+      summary: Get current epoch
+      tags:
+        - getter
+      responses:
+        '200':
+          description: Current epoch number
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  epoch:
+                    type: integer
+                    format: uint64
+                  startTime:
+                    type: string
+                    format: date-time
+                required:
+                  - epoch
+                  - startTime
+        default:
+          description: General Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /getSignatures:
+    get:
+      summary: Get signature by request hash
+      tags:
+        - getter
+      parameters:
+        - name: requestHash
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Signatures
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Signature"
+        default:
+          description: General Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /getSignatureRequest:
+    get:
+      summary: Get signature request by request hash
+      tags:
+        - getter
+      parameters:
+        - name: requestHash
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Signature request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignatureRequest"
+        default:
+          description: General Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /getAggregationStatus:
+    get:
+      summary: Get aggregation status, can be sent only to aggregator nodes
+      tags:
+        - getter
+      parameters:
+        - name: requestHash
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Aggregation status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AggregationStatus"
+        default:
+          description: General Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+
+  /getValidatorSet:
+    get:
+      summary: Get current validator set
+      tags:
+        - getter
+      parameters:
+        - name: epoch
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: uint64
+          description: If not provided, the current epoch will be used
+      responses:
+        '200':
+          description: Validator set data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidatorSet"
+        default:
+          description: General Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  schemas:
+    SignatureRequest:
+      type: object
+      properties:
+        keyTag:
+          type: integer
+          format: uint8
+        message:
+          type: string
+          format: byte
+        requiredEpoch:
+          type: integer
+          format: uint64
+      required:
+        - keyTag
+        - message
+        - requiredEpoch
+
+    AggregationProof:
+      type: object
+      properties:
+        verificationType:
+          type: integer
+          format: uint32
+        messageHash:
+          type: string
+          format: byte
+        proof:
+          type: string
+          format: byte
+      required:
+        - verificationType
+        - messageHash
+        - proof
+
+    AggregationStatus:
+      type: object
+      properties:
+        currentVotingPower:
+          type: string
+          format: big-int
+          description: Current voting power of the aggregator
+        signerOperators:
+          type: array
+          items:
+            type: string
+            description: List of operator addresses that signed the request
+      required:
+        - currentVotingPower
+        - signerOperators
+
+    Signature:
+      type: object
+      properties:
+        signature:
+          type: string
+          format: byte
+        messageHash:
+          type: string
+          format: byte
+        publicKey:
+          type: string
+          format: byte
+      required:
+        - signature
+        - messageHash
+        - publicKey
+
+    ValidatorSet:
+      type: object
+      properties:
+        version:
+          type: integer
+          format: uint8
+        requiredKeyTag:
+          type: integer
+          description: Key tag required to commit next valset
+          format: uint8
+        epoch:
+          type: integer
+          format: uint64
+          description: Valset epoch
+        captureTimestamp:
+          type: string
+          format: date-time
+          description: Epoch capture timestamp
+        quorumThreshold:
+          type: string
+          format: big-int
+        previousHeaderHash:
+          type: string
+          description: Previous valset header hash hex
+        validators:
+          type: array
+          items:
+            $ref: "#/components/schemas/Validator"
+      required:
+        - version
+        - requiredKeyTag
+        - epoch
+        - captureTimestamp
+        - quorumThreshold
+        - previousHeaderHash
+        - validators
+
+    Validator:
+      type: object
+      properties:
+        operator:
+          type: string
+          description: Operator address hex
+        votingPower:
+          type: string
+          format: big-int
+          description: Voting power of the validator
+        isActive:
+          type: boolean
+          description: Indicates if the validator is active
+        keys:
+          type: array
+          items:
+            $ref: "#/components/schemas/Key"
+        vaults:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidatorVault"
+      required:
+        - operator
+        - votingPower
+        - isActive
+        - keys
+        - vaults
+
+    Key:
+      type: object
+      properties:
+        tag:
+          type: integer
+          format: uint8
+        payload:
+          type: string
+          format: byte
+      required:
+        - tag
+        - payload
+
+    ValidatorVault:
+      type: object
+      properties:
+        chainId:
+          type: integer
+          format: uint64
+        vault:
+          type: string
+        votingPower:
+          type: string
+          format: big-int
+      required:
+        - chainId
+        - vault
+        - votingPower
+
+    Error:
+      type: object
+      properties:
+        errorMessage:
+          type: string
+          description: user-friendly error message
+        errorCode:
+          type: string
+          enum: [ 'noData', 'ooops', 'notAnAggregator' ]
+      required:
+        - errorMessage
+        - errorCode

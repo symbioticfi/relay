@@ -23,7 +23,6 @@ type signer interface {
 
 type eth interface {
 	GetCurrentEpoch(ctx context.Context) (uint64, error)
-	GetCurrentPhase(ctx context.Context) (entity.Phase, error)
 	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
 	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
 

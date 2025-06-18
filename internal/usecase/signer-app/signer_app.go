@@ -113,7 +113,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.Errorf("failed to save signature: %w", err)
 	}
 
-	slog.InfoContext(ctx, "valset header hash signed, sending via p2p", "headerSignature", signature)
+	slog.InfoContext(ctx, "message signed, sending via p2p", "signature", signature)
 
 	err = s.cfg.P2PService.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureMessage{
 		RequestHash: req.Hash(),
@@ -122,7 +122,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		Signature:   signature,
 	})
 	if err != nil {
-		return errors.Errorf("failed to broadcast valset header: %w", err)
+		return errors.Errorf("failed to broadcast signature: %w", err)
 	}
 
 	if err := s.cfg.Repo.SaveSignatureRequest(ctx, req); err != nil {

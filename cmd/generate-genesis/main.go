@@ -32,7 +32,7 @@ func main() {
 
 func run() error {
 	rootCmd.PersistentFlags().StringVar(&cfg.rpcURL, "rpc-url", "", "RPC URL")
-	rootCmd.PersistentFlags().StringVar(&cfg.masterAddress, "master-address", "", "Master contract address")
+	rootCmd.PersistentFlags().StringVar(&cfg.driverAddress, "driver-address", "", "Driver contract address")
 	rootCmd.PersistentFlags().BoolVar(&cfg.commit, "commit", false, "Commit genesis flag (default: false)")
 	rootCmd.PersistentFlags().StringVar(&cfg.secretKey, "secret-key", "", "Secret key for genesis commit")
 	rootCmd.PersistentFlags().StringVarP(&cfg.outputFile, "output", "o", "", "Output file path (default: stdout)")
@@ -42,8 +42,8 @@ func run() error {
 	if err := rootCmd.MarkPersistentFlagRequired("rpc-url"); err != nil {
 		return errors.Errorf("failed to mark rpc-url as required: %w", err)
 	}
-	if err := rootCmd.MarkPersistentFlagRequired("master-address"); err != nil {
-		return errors.Errorf("failed to mark master-address as required: %w", err)
+	if err := rootCmd.MarkPersistentFlagRequired("driver-address"); err != nil {
+		return errors.Errorf("failed to mark driver-address as required: %w", err)
 	}
 
 	return rootCmd.Execute()
@@ -51,7 +51,7 @@ func run() error {
 
 type config struct {
 	rpcURL        string
-	masterAddress string
+	driverAddress string
 	commit        bool
 	secretKey     string
 	outputFile    string
@@ -81,14 +81,12 @@ var rootCmd = &cobra.Command{
 				return errors.Errorf("failed to parse secret key as big.Int")
 			}
 
-			pkBytes := [32]byte{}
-			b.FillBytes(pkBytes[:])
-			privateKey = pkBytes[:]
+			privateKey = b.FillBytes(make([]byte, 32))
 		}
 
 		client, err := evm.NewEVMClient(evm.Config{
 			MasterRPCURL:   cfg.rpcURL,
-			MasterAddress:  cfg.masterAddress,
+			DriverAddress:  cfg.driverAddress,
 			RequestTimeout: time.Second * 5,
 			PrivateKey:     privateKey,
 		})
@@ -106,7 +104,7 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to get current epoch: %w", err)
 		}
 
-		captureTimestamp, err := client.GetCaptureTimestamp(ctx)
+		captureTimestamp, err := client.GetEpochStart(ctx, currentOnchainEpoch)
 		if err != nil {
 			return errors.Errorf("failed to get capture timestamp: %w", err)
 		}

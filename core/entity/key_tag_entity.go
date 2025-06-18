@@ -1,6 +1,10 @@
 package entity
 
+<<<<<<< feat-keystore
 import "errors"
+=======
+import "fmt"
+>>>>>>> dev
 
 type KeyType uint8
 
@@ -8,8 +12,12 @@ const (
 	KeyTypeBlsBn254       KeyType = 0
 	KeyTypeEcdsaSecp256k1 KeyType = 1
 
+<<<<<<< feat-keystore
 	BLS_BN254_TYPE       = "bls_bn254"
 	ECDSA_SECP256K1_TYPE = "ecdsa_secp256k1"
+=======
+	KeyTypeInvalid KeyType = 255
+>>>>>>> dev
 )
 
 type KeyTag uint8
@@ -21,8 +29,22 @@ func (kt KeyTag) Type() KeyType {
 	case 1:
 		return KeyTypeEcdsaSecp256k1
 	default:
-		return 0 // Invalid key type
+		return KeyTypeInvalid // Invalid key type
 	}
+}
+
+func (kt KeyTag) MarshalText() (text []byte, err error) {
+	keyType := kt.Type()
+	keyTag := uint8(keyType) & 0x0F
+	switch keyType {
+	case KeyTypeBlsBn254:
+		return []byte(fmt.Sprintf("%d (BLS-BN254/%d)", uint8(kt), keyTag)), nil
+	case KeyTypeEcdsaSecp256k1:
+		return []byte(fmt.Sprintf("%d (ECDSA-SECP256K1/%d)", uint8(kt), keyTag)), nil
+	case KeyTypeInvalid:
+		return []byte(fmt.Sprintf("%d (UNKNOWN/%d)", uint8(kt), keyTag)), nil
+	}
+	return nil, fmt.Errorf("unsupported key type: %d", keyType)
 }
 
 func (kt KeyType) String() (string, error) {
