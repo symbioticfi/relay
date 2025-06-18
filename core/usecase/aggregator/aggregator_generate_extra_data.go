@@ -13,7 +13,6 @@ import (
 
 	"middleware-offchain/core/entity"
 	"middleware-offchain/pkg/bls"
-	"middleware-offchain/pkg/proof"
 )
 
 func (a *Aggregator) GenerateExtraData(valset entity.ValidatorSet, config entity.NetworkConfig) ([]entity.ExtraData, error) {
@@ -38,7 +37,7 @@ func (a *Aggregator) GenerateExtraData(valset entity.ValidatorSet, config entity
 			aggregatedPubKeys := a.getAggregatedPubKeys(valset, config)
 
 			for _, key := range aggregatedPubKeys {
-				mimcAccumulator, err := proof.ValidatorSetMimcAccumulator(valset.Validators, key.Tag)
+				mimcAccumulator, err := validatorSetMimcAccumulator(valset.Validators, key.Tag)
 				if err != nil {
 					return nil, errors.Errorf("failed to generate validator set mimc accumulator: %w", err)
 				}
