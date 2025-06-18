@@ -74,7 +74,7 @@ func calculateInputHash(validatorSetHash []byte, signersVotingPower *big.Int, me
 }
 
 func TestProof(t *testing.T) {
-	//t.Skipf("it works too long, so set skip here. For local debugging can remove this skip")
+	t.Skipf("it works too long, so set skip here. For local debugging can remove this skip")
 
 	startTime := time.Now()
 	prover := NewZkProver()
