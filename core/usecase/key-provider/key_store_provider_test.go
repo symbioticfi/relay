@@ -22,7 +22,25 @@ func TestAddKey(t *testing.T) {
 	require.NoError(t, err)
 
 	pk := []byte{'a', 'b', 'c', 'd', 'e', 'f', 'g'}
-	err = kp.AddKey(15, pk, password)
+	err = kp.AddKey(15, pk, password, false)
+	require.NoError(t, err)
+}
+
+func TestForceAddKey(t *testing.T) {
+	path := t.TempDir() + "/TMP-keystore"
+	password := "password"
+
+	kp, err := NewKeystoreProvider(path, password)
+	require.NoError(t, err)
+
+	pk := []byte{'a', 'b', 'c', 'd', 'e', 'f', 'g'}
+	err = kp.AddKey(15, pk, password, false)
+	require.NoError(t, err)
+
+	err = kp.AddKey(15, pk, password, false)
+	require.Error(t, err)
+
+	err = kp.AddKey(15, pk, password, true)
 	require.NoError(t, err)
 }
 
@@ -34,7 +52,7 @@ func TestCreateAndReopen(t *testing.T) {
 	require.NoError(t, err)
 
 	pk := []byte{'a', 'b', 'c', 'd', 'e', 'f', 'g'}
-	err = kp.AddKey(15, pk, password)
+	err = kp.AddKey(15, pk, password, false)
 	require.NoError(t, err)
 
 	kp, err = NewKeystoreProvider(path, password)

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/pavlo-v-chernykh/keystore-go/v4"
@@ -36,6 +37,10 @@ func NewKeystoreProvider(filePath, password string) (*KeystoreProvider, error) {
 	return &KeystoreProvider{ks: ks, filePath: filePath}, nil
 }
 
+func (k *KeystoreProvider) GetAliases() []string {
+	return k.ks.Aliases()
+}
+
 func (k *KeystoreProvider) GetPrivateKey(keyTag entity.KeyTag) ([]byte, error) {
 	alias, err := getAlias(keyTag)
 	if err != nil {
@@ -57,13 +62,13 @@ func (k *KeystoreProvider) HasKey(keyTag entity.KeyTag) (bool, error) {
 	return k.ks.IsPrivateKeyEntry(alias), nil
 }
 
-func (k *KeystoreProvider) AddKey(keyTag entity.KeyTag, privateKey []byte, password string) error {
+func (k *KeystoreProvider) AddKey(keyTag entity.KeyTag, privateKey []byte, password string, force bool) error {
 	exists, err := k.HasKey(keyTag)
 	if err != nil {
 		return err
 	}
 
-	if exists {
+	if exists && !force {
 		return errors.New("key already exists")
 	}
 
@@ -84,6 +89,10 @@ func (k *KeystoreProvider) AddKey(keyTag entity.KeyTag, privateKey []byte, passw
 	err = k.dump(password)
 	if err != nil {
 		return err
+	}
+
+	if exists {
+		slog.Info("Key was updated!")
 	}
 
 	return nil
@@ -115,6 +124,11 @@ func (k *KeystoreProvider) DeleteKey(keyTag entity.KeyTag, password string) erro
 }
 
 func (k *KeystoreProvider) dump(password string) error {
+	dir := filepath.Dir(k.filePath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+
 	f, err := os.Create(k.filePath)
 	if err != nil {
 		slog.Error(err.Error())

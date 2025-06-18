@@ -136,3 +136,20 @@ If you see `Quorum signature verification succeeded` in logs that means that sgi
 ```bash
 docker stop symbiotic-node
 ```
+
+## Running utils application
+
+For utility functions we provided `utils` binary that:
+- manages keys with encrypted keystore (list, add, remove, update)
+
+### Build application
+
+```bash
+go build -o utils ./cmd/utils
+```
+
+### Run application
+
+```bash
+./utils --help
+```
