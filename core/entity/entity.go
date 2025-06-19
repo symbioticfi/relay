@@ -39,6 +39,14 @@ var (
 	SimpleVerificationAggPublicKeyG1Hash            = crypto.Keccak256Hash([]byte("aggPublicKeyG1"))
 )
 
+type ValidatorSetStatus int
+
+const (
+	HeaderPending ValidatorSetStatus = iota
+	HeaderMissed
+	HeaderCommitted
+)
+
 const ValsetHeaderKeyTag = KeyTag(15)
 
 type RawSignature []byte
@@ -105,6 +113,19 @@ func (q QuorumThresholdPct) MarshalJSON() ([]byte, error) {
 	share := new(big.Float).Quo(new(big.Float).SetInt(q.Int), new(big.Float).SetInt(maxQ))
 	pct := new(big.Float).Mul(share, big.NewFloat(100.0))
 	return []byte(fmt.Sprintf("\"%s %%\"", pct.Text('f', 5))), nil
+}
+
+func (s ValidatorSetStatus) MarshalJSON() ([]byte, error) {
+	switch s {
+	case HeaderPending:
+		return []byte("\"Pending\""), nil
+	case HeaderMissed:
+		return []byte("\"Missed\""), nil
+	case HeaderCommitted:
+		return []byte("\"Committed\""), nil
+	default:
+		return []byte("\"Unknown\""), nil
+	}
 }
 
 // SignatureRequest signature request message
@@ -246,14 +267,6 @@ func (v Validator) FindKeyByKeyTag(keyTag KeyTag) ([]byte, bool) {
 	return nil, false
 }
 
-type ValidatorSetStatus int
-
-const (
-	HeaderPending ValidatorSetStatus = iota
-	HeaderMissed
-	HeaderCommitted
-)
-
 type ValidatorSet struct {
 	Version            uint8
 	RequiredKeyTag     KeyTag      // key tag required to commit next valset
@@ -329,14 +342,14 @@ func (e ExtraDataList) AbiEncode() ([]byte, error) {
 	return args.Pack(e)
 }
 
-func (v ValidatorSet) GetTotalActiveVotingPower() *VotingPower {
+func (v ValidatorSet) GetTotalActiveVotingPower() VotingPower {
 	totalVotingPower := big.NewInt(0)
 	for _, validator := range v.Validators {
 		if validator.IsActive {
 			totalVotingPower = totalVotingPower.Add(totalVotingPower, validator.VotingPower.Int)
 		}
 	}
-	return &VotingPower{totalVotingPower}
+	return VotingPower{totalVotingPower}
 }
 
 func (v ValidatorSet) GetTotalActiveValidators() int64 {

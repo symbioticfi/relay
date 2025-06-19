@@ -44,6 +44,8 @@ func (c Config) Validate() error {
 
 type Service struct {
 	cfg Config
+
+	latestProcessedEpoch uint64
 }
 
 func New(cfg Config) (*Service, error) {
@@ -52,7 +54,8 @@ func New(cfg Config) (*Service, error) {
 	}
 
 	return &Service{
-		cfg: cfg,
+		cfg:                  cfg,
+		latestProcessedEpoch: 0,
 	}, nil
 }
 
@@ -87,7 +90,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		nextEpoch = latest.Epoch + 1
 	}
 
-	for latestCommitedOnchainEpoch >= nextEpoch {
+	for latestCommitedOnchainEpoch >= nextEpoch && nextEpoch > s.latestProcessedEpoch {
 		epochStart, err := s.cfg.Eth.GetEpochStart(ctx, nextEpoch)
 		if err != nil {
 			return errors.Errorf("failed to get epoch start for epoch %d: %w", nextEpoch, err)
@@ -112,6 +115,9 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 			return errors.Errorf("failed to save validator set extra for epoch %d: %w", nextEpoch, err)
 		}
 
+		slog.DebugContext(ctx, "Synced validator set", "epoch", nextEpoch, "config", config, "valset", nextValset)
+
+		s.latestProcessedEpoch = nextEpoch
 		nextEpoch = nextValset.Epoch + 1
 	}
 

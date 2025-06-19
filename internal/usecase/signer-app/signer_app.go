@@ -95,14 +95,10 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 
 	private, err := s.cfg.KeyProvider.GetPrivateKey(req.KeyTag)
 	if err != nil {
-		slog.DebugContext(ctx, "failed to get private key", "err", err)
+		return errors.Errorf("failed to get private key: %w", err)
 	}
 
 	public := private.PublicKey()
-	if err != nil {
-		return errors.Errorf("failed to get public key for key tag %d: %w", req.KeyTag, err)
-	}
-
 	_, found := valset.FindValidatorByKey(req.KeyTag, public.OnChain())
 	if !found {
 		return errors.Errorf("validator not found in epoch valset for public key")
@@ -123,7 +119,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.Errorf("failed to save signature: %w", err)
 	}
 
-	slog.InfoContext(ctx, "message signed, sending via p2p", "signature", signature)
+	slog.InfoContext(ctx, "Message signed, sending via p2p", "hash", hash, "signature", signature)
 
 	err = s.cfg.P2PService.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureMessage{
 		RequestHash: req.Hash(),

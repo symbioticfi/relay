@@ -46,7 +46,7 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		return errors.Errorf("failed to commit valset header: %w", err)
 	}
 
-	slog.InfoContext(ctx, "valset header committed", "txHash", result.TxHash.String(), "epoch", valset.Epoch)
+	slog.InfoContext(ctx, "Validator set header committed", "epoch", valset.Epoch, "txHash", result.TxHash.String())
 
 	return nil
 }

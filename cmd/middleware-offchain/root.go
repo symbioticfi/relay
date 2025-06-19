@@ -92,12 +92,12 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create keystore provider: %w", err)
 	}
 
-	pk, err := symbioticCrypto.NewPrivateKey(15, b.Bytes())
+	pk, err := symbioticCrypto.NewPrivateKey(entity.ValsetHeaderKeyTag, b.Bytes())
 	if err != nil {
 		return errors.Errorf("failed to create private key: %w", err)
 	}
-	//TODO fix
-	err = keystoreProvider.AddKey(15, pk)
+	//TODO use keystore
+	err = keystoreProvider.AddKey(entity.ValsetHeaderKeyTag, pk)
 	if err != nil {
 		return errors.Errorf("failed to add key to keystore provider: %w", err)
 	}

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"math/big"
 	"sort"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
@@ -69,19 +70,15 @@ func (v *Deriver) GetNetworkData(ctx context.Context) (entity.NetworkData, error
 }
 
 func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error) {
-	slog.DebugContext(ctx, "Trying to fetch current valset timestamp", "epoch", epoch)
 	timestamp, err := v.ethClient.GetEpochStart(ctx, epoch)
 	if err != nil {
 		return entity.ValidatorSet{}, errors.Errorf("failed to get epoch start timestamp: %w", err)
 	}
-	slog.DebugContext(ctx, "Got current valset timestamp", "timestamp", timestamp, "epoch", epoch)
-
-	slog.DebugContext(ctx, "Got config", "timestamp", timestamp, "config", config)
+	slog.DebugContext(ctx, "Got current valset timestamp", "timestamp", strconv.Itoa(int(timestamp)), "epoch", epoch)
 
 	// Get voting powers from all voting power providers
 	var allVotingPowers []entity.OperatorVotingPower
 	for _, provider := range config.VotingPowerProviders {
-		slog.DebugContext(ctx, "Trying to fetch voting powers from provider", "provider", provider.Address.Hex())
 		votingPowers, err := v.ethClient.GetVotingPowers(ctx, provider, timestamp)
 		if err != nil {
 			return entity.ValidatorSet{}, errors.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
@@ -93,12 +90,11 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 	}
 
 	// Get keys from the keys provider
-	slog.DebugContext(ctx, "Trying to fetch keys from provider", "provider", config.KeysProvider.Address.Hex())
-
 	keys, err := v.ethClient.GetKeys(ctx, config.KeysProvider, timestamp)
 	if err != nil {
 		return entity.ValidatorSet{}, errors.Errorf("failed to get keys: %w", err)
 	}
+	slog.DebugContext(ctx, "Got keys from provider", "provider", config.KeysProvider.Address.Hex(), "keys", keys)
 
 	// form validators list from voting powers and keys using config
 	validators, totalVP := v.formValidators(config, allVotingPowers, keys)
@@ -124,7 +120,6 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 	}
 
 	if isValsetCommitted {
-		slog.DebugContext(ctx, "Validator set committed at epoch already, checking integrity", "epoch", epoch)
 		previousHeaderHash, err := v.ethClient.GetPreviousHeaderHashAt(ctx, epoch)
 		if err != nil {
 			return entity.ValidatorSet{}, errors.Errorf("failed to get previous header hash: %w", err)
@@ -146,10 +141,10 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 		}
 
 		if !bytes.Equal(committedHash[:], calculatedHash[:]) {
-			slog.DebugContext(ctx, "committed header hash", "hash", committedHash)
-			slog.DebugContext(ctx, "calculated header hash", "hash", calculatedHash)
+			slog.DebugContext(ctx, "Validator set integrity check failed", "committed hash", committedHash, "calculated hash", calculatedHash)
 			return entity.ValidatorSet{}, errors.Errorf("validator set hash mistmach at epoch %d", epoch)
 		}
+		slog.DebugContext(ctx, "Validator set integrity check passed", "hash", committedHash)
 
 		valset.Status = entity.HeaderCommitted
 	} else {
@@ -159,10 +154,11 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 		}
 
 		if epoch < latestCommittedEpoch {
+			slog.DebugContext(ctx, "Header is not committed [missed header]", "epoch", epoch)
 			valset.Status = entity.HeaderMissed
 			// zero PreviousHeaderHash cos header is orphaned
 		} else {
-			slog.DebugContext(ctx, "Validator set is not committed at epoch", "epoch", epoch)
+			slog.DebugContext(ctx, "Header is not committed [new header]", "epoch", epoch)
 			previousHeaderHash, err := v.ethClient.GetHeaderHash(ctx)
 			if err != nil {
 				return entity.ValidatorSet{}, errors.Errorf("failed to get latest header hash: %w", err)
