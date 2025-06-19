@@ -103,12 +103,12 @@ func validatorSetToBytes(vs entity.ValidatorSet) ([]byte, error) {
 		RequiredKeyTag:     uint8(vs.RequiredKeyTag),
 		Epoch:              vs.Epoch,
 		CaptureTimestamp:   vs.CaptureTimestamp,
-		QuorumThreshold:    string(vs.QuorumThreshold.Bytes()),
+		QuorumThreshold:    vs.QuorumThreshold.String(),
 		PreviousHeaderHash: vs.PreviousHeaderHash.Hex(),
 		Validators: lo.Map(vs.Validators, func(v entity.Validator, _ int) validatorDTO {
 			return validatorDTO{
 				Operator:    v.Operator.Hex(),
-				VotingPower: string(v.VotingPower.Bytes()),
+				VotingPower: v.VotingPower.String(),
 				IsActive:    v.IsActive,
 				Keys: lo.Map(v.Keys, func(k entity.ValidatorKey, _ int) keyDTO {
 					return keyDTO{
@@ -137,7 +137,10 @@ func bytesToValidatorSet(data []byte) (entity.ValidatorSet, error) {
 		return entity.ValidatorSet{}, fmt.Errorf("failed to unmarshal validator set: %w", err)
 	}
 
-	quorumThreshold := new(big.Int).SetBytes([]byte(dto.QuorumThreshold))
+	quorumThreshold, ok := new(big.Int).SetString(dto.QuorumThreshold, 10)
+	if !ok {
+		return entity.ValidatorSet{}, fmt.Errorf("failed to parse quorum threshold: %s", dto.QuorumThreshold)
+	}
 
 	return entity.ValidatorSet{
 		Version:            dto.Version,
@@ -147,7 +150,7 @@ func bytesToValidatorSet(data []byte) (entity.ValidatorSet, error) {
 		QuorumThreshold:    entity.ToVotingPower(quorumThreshold),
 		PreviousHeaderHash: common.HexToHash(dto.PreviousHeaderHash),
 		Validators: lo.Map(dto.Validators, func(v validatorDTO, _ int) entity.Validator {
-			votingPower := new(big.Int).SetBytes([]byte(v.VotingPower))
+			votingPower, _ := new(big.Int).SetString(v.VotingPower, 10)
 			return entity.Validator{
 				Operator:    common.HexToAddress(v.Operator),
 				VotingPower: entity.ToVotingPower(votingPower),

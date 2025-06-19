@@ -2,6 +2,7 @@ package evm
 
 import (
 	"context"
+	"log/slog"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -54,6 +55,8 @@ func (e *Client) CommitValsetHeader(ctx context.Context, header entity.Validator
 	if receipt.Status == types.ReceiptStatusFailed {
 		return entity.TxResult{}, errors.New("transaction reverted on chain")
 	}
+
+	slog.DebugContext(ctx, "Valset header committed", "receipt", receipt)
 
 	return entity.TxResult{
 		TxHash: receipt.TxHash,
