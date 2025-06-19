@@ -76,5 +76,5 @@ func TestCreateAndReopen(t *testing.T) {
 	storedPk, err := kp.GetPrivateKey(15)
 	require.NoError(t, err)
 
-	require.Equal(t, storedPk, pk)
+	require.Equal(t, storedPk.Bytes(), pk)
 }
