@@ -31,6 +31,16 @@ gen-abi:
 		--type ISettlement \
 		--pkg gen \
 		--out core/client/evm/gen/settlement.go
+	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
+		--abi core/client/evm/abi/IKeyRegistry.abi.json \
+		--type IKeyRegistry \
+		--pkg gen \
+		--out core/client/evm/gen/keyRegistry.go
+	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
+		--abi core/client/evm/abi/IVotingPowerProvider.abi.json \
+		--type IVotingPowerProvider \
+		--pkg gen \
+		--out core/client/evm/gen/votingPowerProvider.go
 
 
 build-generate-genesis-linux:

@@ -13,14 +13,20 @@ import (
 	"middleware-offchain/core/entity"
 )
 
-func (e *Client) CommitValsetHeader(ctx context.Context, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) (entity.TxResult, error) {
+func (e *Client) CommitValsetHeader(
+	ctx context.Context,
+	addr entity.CrossChainAddress,
+	header entity.ValidatorSetHeader,
+	extraData []entity.ExtraData,
+	proof []byte,
+) (entity.TxResult, error) {
 	if e.masterPK == nil {
 		return entity.TxResult{}, errors.New("master private key is not set")
 	}
 	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 
-	txOpts, err := bind.NewKeyedTransactorWithChainID(e.masterPK, new(big.Int).SetUint64(e.masterAddress.ChainId))
+	txOpts, err := bind.NewKeyedTransactorWithChainID(e.masterPK, new(big.Int).SetUint64(e.driverAddress.ChainId))
 	if err != nil {
 		return entity.TxResult{}, errors.Errorf("failed to create new keyed transactor: %w", err)
 	}
@@ -42,12 +48,17 @@ func (e *Client) CommitValsetHeader(ctx context.Context, header entity.Validator
 		extraDataDTO[i].Value = extraData.Value
 	}
 
-	tx, err := e.settlement.CommitValSetHeader(txOpts, headerDTO, extraDataDTO, proof)
+	settlement, err := e.getSettlementContract(addr)
+	if err != nil {
+		return entity.TxResult{}, errors.Errorf("failed to get settlement contract: %w", err)
+	}
+
+	tx, err := settlement.CommitValSetHeader(txOpts, headerDTO, extraDataDTO, proof)
 	if err != nil {
 		return entity.TxResult{}, e.formatEVMContractError(gen.ISettlementMetaData, err)
 	}
 
-	receipt, err := bind.WaitMined(ctx, e.client, tx)
+	receipt, err := bind.WaitMined(ctx, e.conns[addr.ChainId], tx)
 	if err != nil {
 		return entity.TxResult{}, errors.Errorf("failed to wait for tx mining: %w", err)
 	}

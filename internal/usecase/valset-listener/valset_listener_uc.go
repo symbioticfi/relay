@@ -12,7 +12,8 @@ import (
 )
 
 type eth interface {
-	GetLastCommittedHeaderEpoch(ctx context.Context) (uint64, error)
+	GetCurrentEpoch(ctx context.Context) (uint64, error)
+	GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (uint64, error)
 	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
 	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
 }
@@ -75,7 +76,20 @@ func (s *Service) Start(ctx context.Context) error {
 }
 
 func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
-	latestCommitedOnchainEpoch, err := s.cfg.Eth.GetLastCommittedHeaderEpoch(ctx)
+	currentEpoch, err := s.cfg.Eth.GetCurrentEpoch(ctx)
+	if err != nil {
+		return errors.Errorf("failed to get current epoch: %w", err)
+	}
+	currentEpochStart, err := s.cfg.Eth.GetEpochStart(ctx, currentEpoch)
+	if err != nil {
+		return errors.Errorf("failed to get current epoch start: %w", err)
+	}
+	config, err := s.cfg.Eth.GetConfig(ctx, currentEpochStart)
+	if err != nil {
+		return errors.Errorf("failed to get network config for current epoch: %w", err)
+	}
+
+	latestCommitedOnchainEpoch, err := s.getLastCommittedHeaderEpoch(ctx, config)
 	if err != nil {
 		return errors.Errorf("failed to get current epoch: %w", err)
 	}
@@ -96,18 +110,18 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 			return errors.Errorf("failed to get epoch start for epoch %d: %w", nextEpoch, err)
 		}
 
-		config, err := s.cfg.Eth.GetConfig(ctx, epochStart)
+		nextEpochConfig, err := s.cfg.Eth.GetConfig(ctx, epochStart)
 		if err != nil {
 			return errors.Errorf("failed to get network config for epoch %d: %w", nextEpoch, err)
 		}
 
-		nextValset, err := s.cfg.Deriver.GetValidatorSet(ctx, nextEpoch, config)
+		nextValset, err := s.cfg.Deriver.GetValidatorSet(ctx, nextEpoch, nextEpochConfig)
 		if err != nil {
 			return errors.Errorf("failed to derive validator set extra for epoch %d: %w", nextEpoch, err)
 		}
 
 		// TODO ilya: check valset integrity: valset.headerHash() == master.valsetHeaderHash(epoch)
-		if err := s.cfg.Repo.SaveConfig(ctx, config, nextEpoch); err != nil {
+		if err := s.cfg.Repo.SaveConfig(ctx, nextEpochConfig, nextEpoch); err != nil {
 			return errors.Errorf("failed to save validator set extra for epoch %d: %w", nextEpoch, err)
 		}
 
@@ -122,4 +136,21 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (s *Service) getLastCommittedHeaderEpoch(ctx context.Context, config entity.NetworkConfig) (uint64, error) {
+	maxEpoch := uint64(0)
+
+	for _, addr := range config.Replicas {
+		epoch, err := s.cfg.Eth.GetLastCommittedHeaderEpoch(ctx, addr)
+		if err != nil {
+			return 0, errors.Errorf("failed to get last committed header epoch for address %s: %w", addr.Address.Hex(), err)
+		}
+
+		if epoch > maxEpoch {
+			maxEpoch = epoch
+		}
+	}
+
+	return maxEpoch, nil
 }

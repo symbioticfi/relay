@@ -7,8 +7,10 @@ import (
 	keyprovider "middleware-offchain/core/usecase/key-provider"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p"
+	"github.com/samber/lo"
 	"golang.org/x/sync/errgroup"
 
 	"middleware-offchain/core/client/evm"
@@ -37,9 +39,17 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to parse secret key as big.Int")
 	}
 
-	evmClient, err := evm.NewEVMClient(evm.Config{
-		MasterRPCURL:   cfg.RPCURL,
-		DriverAddress:  cfg.DriverAddress,
+	evmClient, err := evm.NewEVMClient(ctx, evm.Config{
+		Chains: lo.Map(cfg.Chains, func(chainCfg chainURL, _ int) entity.ChainURL {
+			return entity.ChainURL{
+				ChainID: chainCfg.ChainID,
+				RPCURL:  chainCfg.RPCURL,
+			}
+		}),
+		DriverAddress: entity.CrossChainAddress{
+			ChainId: cfg.DriverAddress.ChainID,
+			Address: common.HexToAddress(cfg.DriverAddress.Address),
+		},
 		RequestTimeout: time.Second * 5,
 		PrivateKey:     b.FillBytes(make([]byte, 32)),
 	})

@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 	"github.com/spf13/cobra"
@@ -72,9 +73,13 @@ var rootCmd = &cobra.Command{
 
 		ctx := signalContext(context.Background())
 
-		ethClient, err := evm.NewEVMClient(evm.Config{
-			MasterRPCURL:   cfg.rpcURL,
-			DriverAddress:  cfg.driverAddress,
+		driverAddress := entity.CrossChainAddress{ChainId: 111, Address: common.HexToAddress(cfg.driverAddress)}
+		ethClient, err := evm.NewEVMClient(ctx, evm.Config{
+			Chains: []entity.ChainURL{{
+				ChainID: 111,
+				RPCURL:  cfg.rpcURL,
+			}},
+			DriverAddress:  driverAddress,
 			RequestTimeout: time.Second * 10,
 		})
 		if err != nil {
@@ -82,7 +87,7 @@ var rootCmd = &cobra.Command{
 		}
 		slog.DebugContext(ctx, "created symbiotic client")
 
-		epoch, err := ethClient.GetLastCommittedHeaderEpoch(ctx)
+		epoch, err := ethClient.GetLastCommittedHeaderEpoch(ctx, driverAddress)
 		if err != nil {
 			return errors.Errorf("failed to get current epoch: %w", err)
 		}
@@ -106,7 +111,7 @@ var rootCmd = &cobra.Command{
 					continue
 				}
 
-				if err := verifyQuorumSig(ctx, resp, message, ethClient, epoch); err != nil {
+				if err := verifyQuorumSig(ctx, driverAddress, resp, message, ethClient, epoch); err != nil {
 					return errors.Errorf("failed to verify quorum signature: %w", err)
 				}
 
@@ -119,7 +124,7 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func verifyQuorumSig(ctx context.Context, proof entity.AggregationProof, message string, eth *evm.Client, epoch uint64) error {
+func verifyQuorumSig(ctx context.Context, address entity.CrossChainAddress, proof entity.AggregationProof, message string, eth *evm.Client, epoch uint64) error {
 	slog.InfoContext(ctx, "received message with proof",
 		"messageHash", hex.EncodeToString(proof.MessageHash),
 		"ourMessage", hex.EncodeToString([]byte(message)),
@@ -130,7 +135,7 @@ func verifyQuorumSig(ctx context.Context, proof entity.AggregationProof, message
 
 	quorumBytes := proof.Proof[len(proof.Proof)-32:]
 	quorumInt := new(big.Int).SetBytes(quorumBytes)
-	verifyResult, err := eth.VerifyQuorumSig(ctx, epoch, ourHash, entity.ValsetHeaderKeyTag, quorumInt, proof.Proof)
+	verifyResult, err := eth.VerifyQuorumSig(ctx, address, epoch, ourHash, entity.ValsetHeaderKeyTag, quorumInt, proof.Proof)
 	if err != nil {
 		return errors.Errorf("failed to verify quorum signature: %w", err)
 	}

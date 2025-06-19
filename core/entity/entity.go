@@ -466,3 +466,8 @@ func (v ValidatorSetHeader) Hash() (common.Hash, error) {
 type TxResult struct {
 	TxHash common.Hash
 }
+
+type ChainURL struct {
+	ChainID uint64
+	RPCURL  string
+}

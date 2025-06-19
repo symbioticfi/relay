@@ -18,17 +18,27 @@ import (
 // 2. Environment variables (prefixed with SYMB_ and dashes replaced by underscores)
 // 3. config.yaml file (specified by --config or default "config.yaml")
 type config struct {
-	RPCURL           string `mapstructure:"rpc-url" validate:"required,url"`
-	DriverAddress    string `mapstructure:"driver-address" validate:"required"`
-	LogLevel         string `mapstructure:"log-level" validate:"oneof=debug info warn error"`
-	LogMode          string `mapstructure:"log-mode" validate:"oneof=text pretty"`
-	P2PListenAddress string `mapstructure:"p2p-listen"`
-	HTTPListenAddr   string `mapstructure:"http-listen" validate:"required"`
-	SecretKey        string `mapstructure:"secret-key" validate:"required"`
-	IsAggregator     bool   `mapstructure:"aggregator"`
-	IsSigner         bool   `mapstructure:"signer"`
-	IsCommitter      bool   `mapstructure:"committer"`
-	StorageDir       string `mapstructure:"storage-dir"`
+	DriverAddress    crossChainAddress `mapstructure:"driver-address" validate:"required"`
+	LogLevel         string            `mapstructure:"log-level" validate:"oneof=debug info warn error"`
+	LogMode          string            `mapstructure:"log-mode" validate:"oneof=text pretty"`
+	P2PListenAddress string            `mapstructure:"p2p-listen"`
+	HTTPListenAddr   string            `mapstructure:"http-listen" validate:"required"`
+	SecretKey        string            `mapstructure:"secret-key" validate:"required"`
+	IsAggregator     bool              `mapstructure:"aggregator"`
+	IsSigner         bool              `mapstructure:"signer"`
+	IsCommitter      bool              `mapstructure:"committer"`
+	StorageDir       string            `mapstructure:"storage-dir"`
+	Chains           []chainURL        `mapstructure:"chains" validate:"required"`
+}
+
+type crossChainAddress struct {
+	ChainID uint64 `mapstructure:"chain-id" validate:"required"`
+	Address string `mapstructure:"address" validate:"required"`
+}
+
+type chainURL struct {
+	ChainID uint64 `mapstructure:"chain-id" validate:"required"`
+	RPCURL  string `mapstructure:"rpc-url" validate:"required,url"`
 }
 
 func (c config) Validate() error {
