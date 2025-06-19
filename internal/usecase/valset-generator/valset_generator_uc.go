@@ -26,10 +26,10 @@ type eth interface {
 	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
 	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
 
-	IsValsetHeaderCommittedAt(ctx context.Context, epoch uint64) (bool, error)
-	CommitValsetHeader(ctx context.Context, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) (entity.TxResult, error)
-	SetGenesis(ctx context.Context, header entity.ValidatorSetHeader, extraData []entity.ExtraData) (entity.TxResult, error)
-	VerifyQuorumSig(ctx context.Context, epoch uint64, message []byte, keyTag entity.KeyTag, threshold *big.Int, proof []byte) (bool, error)
+	IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (bool, error)
+	CommitValsetHeader(ctx context.Context, addr entity.CrossChainAddress, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) (entity.TxResult, error)
+	SetGenesis(ctx context.Context, addr entity.CrossChainAddress, header entity.ValidatorSetHeader, extraData []entity.ExtraData) (entity.TxResult, error)
+	VerifyQuorumSig(ctx context.Context, addr entity.CrossChainAddress, epoch uint64, message []byte, keyTag entity.KeyTag, threshold *big.Int, proof []byte) (bool, error)
 }
 
 type repo interface {
@@ -45,7 +45,7 @@ type repo interface {
 
 type deriver interface {
 	GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error)
-	GetNetworkData(ctx context.Context) (entity.NetworkData, error)
+	GetNetworkData(ctx context.Context, addr entity.CrossChainAddress) (entity.NetworkData, error)
 }
 
 type aggregator interface {
@@ -115,7 +115,7 @@ func (s *Service) process(ctx context.Context) error {
 		return nil
 	}
 
-	networkData, err := s.cfg.Deriver.GetNetworkData(ctx)
+	networkData, err := s.getNetworkData(ctx, *config)
 	if err != nil {
 		return errors.Errorf("failed to get network data: %w", err)
 	}
@@ -164,13 +164,36 @@ func (s *Service) process(ctx context.Context) error {
 	return nil
 }
 
+func (s *Service) getNetworkData(ctx context.Context, config entity.NetworkConfig) (entity.NetworkData, error) {
+	for _, replica := range config.Replicas {
+		networkData, err := s.cfg.Deriver.GetNetworkData(ctx, replica)
+		if err != nil {
+			slog.WarnContext(ctx, "failed to get network data for replica", "replica", replica, "error", err)
+			continue
+		}
+		return networkData, nil
+	}
+
+	return entity.NetworkData{}, errors.New("failed to get network data for any replica")
+}
+
 func (s *Service) tryDetectNewEpochToCommit(ctx context.Context) (*entity.ValidatorSet, *entity.NetworkConfig, error) {
 	currentOnchainEpoch, err := s.cfg.Eth.GetCurrentEpoch(ctx)
 	if err != nil {
 		return nil, nil, errors.Errorf("failed to get current epoch: %w", err)
 	}
 
-	isCommitted, err := s.cfg.Eth.IsValsetHeaderCommittedAt(ctx, currentOnchainEpoch)
+	epochStart, err := s.cfg.Eth.GetEpochStart(ctx, currentOnchainEpoch)
+	if err != nil {
+		return nil, nil, errors.Errorf("failed to get current epoch start: %w", err)
+	}
+
+	config, err := s.cfg.Eth.GetConfig(ctx, epochStart)
+	if err != nil {
+		return nil, nil, errors.Errorf("failed to get network config for current epoch %d: %w", currentOnchainEpoch, err)
+	}
+
+	_, isCommitted, err := s.isValsetHeaderCommitted(ctx, config, currentOnchainEpoch)
 	if err != nil {
 		return nil, nil, errors.Errorf("failed to check if committed validator set header is committed: %w", err)
 	}
@@ -180,22 +203,25 @@ func (s *Service) tryDetectNewEpochToCommit(ctx context.Context) (*entity.Valida
 		return nil, nil, nil
 	}
 
-	epochStart, err := s.cfg.Eth.GetEpochStart(ctx, currentOnchainEpoch)
-	if err != nil {
-		return nil, nil, errors.Errorf("failed to get epoch start for epoch %d: %w", currentOnchainEpoch, err)
-	}
-
-	config, err := s.cfg.Eth.GetConfig(ctx, epochStart)
-	if err != nil {
-		return nil, nil, errors.Errorf("failed to get network config for epoch %d: %w", currentOnchainEpoch, err)
-	}
-
 	newValset, err := s.cfg.Deriver.GetValidatorSet(ctx, currentOnchainEpoch, config)
 	if err != nil {
 		return nil, nil, errors.Errorf("failed to get validator set extra for epoch %d: %w", currentOnchainEpoch, err)
 	}
 
 	return &newValset, &config, nil
+}
+
+func (s *Service) isValsetHeaderCommitted(ctx context.Context, config entity.NetworkConfig, epoch uint64) (entity.CrossChainAddress, bool, error) {
+	for _, addr := range config.Replicas {
+		isCommitted, err := s.cfg.Eth.IsValsetHeaderCommittedAt(ctx, addr, epoch)
+		if err != nil {
+			return entity.CrossChainAddress{}, false, errors.Errorf("failed to check if valset header is committed at epoch %d: %w", epoch, err)
+		}
+		if isCommitted {
+			return addr, true, nil
+		}
+	}
+	return entity.CrossChainAddress{}, false, nil
 }
 
 func (s *Service) headerCommitmentData(

@@ -10,10 +10,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/spf13/cobra"
 
 	"middleware-offchain/core/client/evm"
+	"middleware-offchain/core/entity"
 	"middleware-offchain/core/usecase/aggregator"
 	valsetDeriver "middleware-offchain/core/usecase/valset-deriver"
 	"middleware-offchain/pkg/log"
@@ -84,9 +86,13 @@ var rootCmd = &cobra.Command{
 			privateKey = b.FillBytes(make([]byte, 32))
 		}
 
-		client, err := evm.NewEVMClient(evm.Config{
-			MasterRPCURL:   cfg.rpcURL,
-			DriverAddress:  cfg.driverAddress,
+		driverAddress := entity.CrossChainAddress{ChainId: 111, Address: common.HexToAddress(cfg.driverAddress)}
+		client, err := evm.NewEVMClient(ctx, evm.Config{
+			Chains: []entity.ChainURL{{
+				ChainID: 111,
+				RPCURL:  cfg.rpcURL,
+			}},
+			DriverAddress:  driverAddress,
 			RequestTimeout: time.Second * 5,
 			PrivateKey:     privateKey,
 		})
@@ -153,12 +159,19 @@ var rootCmd = &cobra.Command{
 			return nil
 		}
 
-		result, err := client.SetGenesis(ctx, header, extraData)
-		if err != nil {
+		errs := make([]error, len(networkConfig.Replicas))
+		for i, replica := range networkConfig.Replicas {
+			var txResult entity.TxResult
+			txResult, errs[i] = client.SetGenesis(ctx, driverAddress, header, extraData)
+			if errs[i] != nil {
+				slog.ErrorContext(ctx, "failed to set genesis on replica", "replica", replica, "error", errs[i])
+			} else {
+				slog.InfoContext(ctx, "genesis valset set on replica", "replica", replica, "txHash", txResult.TxHash.String())
+			}
+		}
+		if err := errors.Join(errs...); err != nil {
 			return errors.Errorf("failed to commit valset header: %w", err)
 		}
-
-		slog.InfoContext(ctx, "genesis valset committed", "txHash", result.TxHash.String(), "epoch", newValset.Epoch)
 
 		return nil
 	},

@@ -41,12 +41,30 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		return errors.Errorf("failed to get validator set header: %w", err)
 	}
 
-	result, err := s.cfg.Eth.CommitValsetHeader(ctx, header, extraData, msg.AggregationProof.Proof)
+	err = s.commitValsetToAllSettlements(ctx, config, header, extraData, msg.AggregationProof.Proof)
 	if err != nil {
 		return errors.Errorf("failed to commit valset header: %w", err)
 	}
 
-	slog.InfoContext(ctx, "Validator set header committed", "epoch", valset.Epoch, "txHash", result.TxHash.String())
-
 	return nil
+}
+
+func (s *Service) commitValsetToAllSettlements(ctx context.Context, config entity.NetworkConfig, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) error {
+	errs := make([]error, len(config.Replicas))
+	for i, replica := range config.Replicas {
+		slog.DebugContext(ctx, "trying to commit valset header to settlement", "replica", replica)
+
+		result, err := s.cfg.Eth.CommitValsetHeader(ctx, replica, header, extraData, proof)
+		if err != nil {
+			errs[i] = errors.Errorf("failed to commit valset header to settlement %s: %w", replica.Address.Hex(), err)
+		}
+
+		slog.DebugContext(ctx, "Validator set header committed",
+			"epoch", header.Epoch,
+			"replica", replica,
+			"txHash", result.TxHash,
+		)
+	}
+
+	return errors.Join(errs...)
 }
