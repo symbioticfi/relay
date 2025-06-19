@@ -190,7 +190,7 @@ func (v *Deriver) formValidators(
 		if _, exists := validatorsMap[operatorAddr]; !exists {
 			validatorsMap[operatorAddr] = &entity.Validator{
 				Operator:    vp.Operator,
-				VotingPower: big.NewInt(0),
+				VotingPower: entity.ToVotingPower(big.NewInt(0)),
 				IsActive:    false, // Default to active, will filter later
 				Keys:        []entity.ValidatorKey{},
 				Vaults:      []entity.ValidatorVault{},
@@ -199,10 +199,10 @@ func (v *Deriver) formValidators(
 
 		// Add vaults and their voting powers
 		for _, vault := range vp.Vaults {
-			validatorsMap[operatorAddr].VotingPower = new(big.Int).Add(
-				validatorsMap[operatorAddr].VotingPower,
-				vault.VotingPower,
-			)
+			validatorsMap[operatorAddr].VotingPower = entity.ToVotingPower(new(big.Int).Add(
+				validatorsMap[operatorAddr].VotingPower.Int,
+				vault.VotingPower.Int,
+			))
 
 			// Add vault to validator's vaults
 			validatorsMap[operatorAddr].Vaults = append(validatorsMap[operatorAddr].Vaults, entity.ValidatorVault{
@@ -238,7 +238,7 @@ func (v *Deriver) formValidators(
 	// Sort validators by voting power in descending order
 	sort.Slice(validators, func(i, j int) bool {
 		// Compare voting powers (higher first)
-		return validators[i].VotingPower.Cmp(validators[j].VotingPower) > 0
+		return validators[i].VotingPower.Cmp(validators[j].VotingPower.Int) > 0
 	})
 
 	totalActive := 0
@@ -246,7 +246,7 @@ func (v *Deriver) formValidators(
 	totalActiveVotingPower := big.NewInt(0)
 	for i := range validators {
 		// Check minimum voting power if configured
-		if validators[i].VotingPower.Cmp(config.MinInclusionVotingPower) < 0 {
+		if validators[i].VotingPower.Cmp(config.MinInclusionVotingPower.Int) < 0 {
 			break
 		}
 
@@ -259,12 +259,12 @@ func (v *Deriver) formValidators(
 		validators[i].IsActive = true
 
 		if config.MaxVotingPower.Int64() != 0 {
-			if validators[i].VotingPower.Cmp(config.MaxVotingPower) > 0 {
-				validators[i].VotingPower = new(big.Int).Set(config.MaxVotingPower)
+			if validators[i].VotingPower.Cmp(config.MaxVotingPower.Int) > 0 {
+				validators[i].VotingPower = entity.ToVotingPower(new(big.Int).Set(config.MaxVotingPower.Int))
 			}
 		}
 		// Add to total active voting power if validator is active
-		totalActiveVotingPower = new(big.Int).Add(totalActiveVotingPower, validators[i].VotingPower)
+		totalActiveVotingPower = new(big.Int).Add(totalActiveVotingPower, validators[i].VotingPower.Int)
 
 		if config.MaxValidatorsCount.Int64() != 0 {
 			if totalActive >= int(config.MaxValidatorsCount.Int64()) {
@@ -281,20 +281,20 @@ func (v *Deriver) formValidators(
 	return validators, totalActiveVotingPower
 }
 
-func (v *Deriver) calcQuorumThreshold(config entity.NetworkConfig, totalVP *big.Int) (*big.Int, error) {
+func (v *Deriver) calcQuorumThreshold(config entity.NetworkConfig, totalVP *big.Int) (entity.VotingPower, error) {
 	quorumThresholdPercent := big.NewInt(0)
 	for _, quorumThreshold := range config.QuorumThresholds {
 		if quorumThreshold.KeyTag == config.RequiredHeaderKeyTag {
-			quorumThresholdPercent = quorumThreshold.QuorumThreshold
+			quorumThresholdPercent = quorumThreshold.QuorumThreshold.Int
 		}
 	}
 	if quorumThresholdPercent.Cmp(big.NewInt(0)) == 0 {
-		return nil, errors.Errorf("quorum threshold is zero")
+		return entity.VotingPower{}, errors.Errorf("quorum threshold is zero")
 	}
 	maxThreshold := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
 
 	mul := new(big.Int).Mul(totalVP, quorumThresholdPercent)
 	div := new(big.Int).Div(mul, maxThreshold)
 	// add 1 to apply up rounding
-	return new(big.Int).Add(div, big.NewInt(1)), nil
+	return entity.ToVotingPower(new(big.Int).Add(div, big.NewInt(1))), nil
 }

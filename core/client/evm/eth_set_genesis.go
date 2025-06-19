@@ -30,7 +30,7 @@ func (e *Client) SetGenesis(ctx context.Context, header entity.ValidatorSetHeade
 		RequiredKeyTag:     uint8(header.RequiredKeyTag),
 		Epoch:              new(big.Int).SetUint64(header.Epoch),
 		CaptureTimestamp:   new(big.Int).SetUint64(header.CaptureTimestamp),
-		QuorumThreshold:    header.QuorumThreshold,
+		QuorumThreshold:    header.QuorumThreshold.Int,
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot,
 		PreviousHeaderHash: header.PreviousHeaderHash,
 	}

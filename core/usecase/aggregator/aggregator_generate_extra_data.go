@@ -264,7 +264,7 @@ func calcKeccakAccumulator(validators []entity.Validator, requiredKeyTag entity.
 
 				validatorsData = append(validatorsData, validatorDataTuple{
 					KeySerialized: compressedKeyG1,
-					VotingPower:   votingPower,
+					VotingPower:   votingPower.Int,
 				})
 			}
 		}

@@ -121,7 +121,7 @@ func (a *Aggregator) zkAggregate(
 			validatorsData = append(validatorsData, proof.ValidatorData{
 				Key:         *g1Key.G1Affine,
 				IsNonSigner: !isSinger,
-				VotingPower: val.VotingPower,
+				VotingPower: val.VotingPower.Int,
 			})
 		}
 	}
@@ -211,7 +211,7 @@ func (a *Aggregator) simpleAggregate(
 
 			validatorsData = append(validatorsData, dtoValidatorData{
 				KeySerialized: compressedKeyG1,
-				VotingPower:   val.VotingPower,
+				VotingPower:   val.VotingPower.Int,
 				isNonSigner:   !isSinger,
 			})
 		}
@@ -352,7 +352,7 @@ func (a *Aggregator) zkVerify(
 	}
 
 	aggVotingPower := new(big.Int).SetBytes(aggVotingPowerBytes)
-	if aggVotingPower.Cmp(valset.QuorumThreshold) < 0 {
+	if aggVotingPower.Cmp(valset.QuorumThreshold.Int) < 0 {
 		return false, fmt.Errorf("agg voting power %s is less than quorum threshold %s", aggVotingPower.String(), valset.QuorumThreshold.String())
 	}
 

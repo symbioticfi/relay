@@ -17,6 +17,6 @@ func (h *handler) GetSignatureRequestGet(ctx context.Context, params api.GetSign
 	return &api.SignatureRequest{
 		KeyTag:        uint8(signatureRequest.KeyTag),
 		Message:       signatureRequest.Message,
-		RequiredEpoch: signatureRequest.RequiredEpoch,
+		RequiredEpoch: uint64(signatureRequest.RequiredEpoch),
 	}, nil
 }

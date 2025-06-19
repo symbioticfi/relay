@@ -146,7 +146,7 @@ func (s *Service) process(ctx context.Context) error {
 	}
 	r := entity.SignatureRequest{
 		KeyTag:        entity.ValsetHeaderKeyTag,
-		RequiredEpoch: latestValset.Epoch,
+		RequiredEpoch: entity.Epoch(latestValset.Epoch),
 		Message:       data,
 	}
 

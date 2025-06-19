@@ -103,12 +103,12 @@ func validatorSetToBytes(vs entity.ValidatorSet) ([]byte, error) {
 		RequiredKeyTag:     uint8(vs.RequiredKeyTag),
 		Epoch:              vs.Epoch,
 		CaptureTimestamp:   vs.CaptureTimestamp,
-		QuorumThreshold:    vs.QuorumThreshold.String(),
+		QuorumThreshold:    string(vs.QuorumThreshold.Bytes()),
 		PreviousHeaderHash: vs.PreviousHeaderHash.Hex(),
 		Validators: lo.Map(vs.Validators, func(v entity.Validator, _ int) validatorDTO {
 			return validatorDTO{
 				Operator:    v.Operator.Hex(),
-				VotingPower: v.VotingPower.String(),
+				VotingPower: string(v.VotingPower.Bytes()),
 				IsActive:    v.IsActive,
 				Keys: lo.Map(v.Keys, func(k entity.ValidatorKey, _ int) keyDTO {
 					return keyDTO{
@@ -137,23 +137,20 @@ func bytesToValidatorSet(data []byte) (entity.ValidatorSet, error) {
 		return entity.ValidatorSet{}, fmt.Errorf("failed to unmarshal validator set: %w", err)
 	}
 
-	quorumThreshold, ok := new(big.Int).SetString(dto.QuorumThreshold, 10)
-	if !ok {
-		return entity.ValidatorSet{}, fmt.Errorf("failed to parse quorum threshold: %s", dto.QuorumThreshold)
-	}
+	quorumThreshold := new(big.Int).SetBytes([]byte(dto.QuorumThreshold))
 
 	return entity.ValidatorSet{
 		Version:            dto.Version,
 		RequiredKeyTag:     entity.KeyTag(dto.RequiredKeyTag),
 		Epoch:              dto.Epoch,
 		CaptureTimestamp:   dto.CaptureTimestamp,
-		QuorumThreshold:    quorumThreshold,
+		QuorumThreshold:    entity.ToVotingPower(quorumThreshold),
 		PreviousHeaderHash: common.HexToHash(dto.PreviousHeaderHash),
 		Validators: lo.Map(dto.Validators, func(v validatorDTO, _ int) entity.Validator {
-			votingPower, _ := new(big.Int).SetString(v.VotingPower, 10)
+			votingPower := new(big.Int).SetBytes([]byte(v.VotingPower))
 			return entity.Validator{
 				Operator:    common.HexToAddress(v.Operator),
-				VotingPower: votingPower,
+				VotingPower: entity.ToVotingPower(votingPower),
 				IsActive:    v.IsActive,
 				Keys: lo.Map(v.Keys, func(k keyDTO, _ int) entity.ValidatorKey {
 					return entity.ValidatorKey{
@@ -166,7 +163,7 @@ func bytesToValidatorSet(data []byte) (entity.ValidatorSet, error) {
 					return entity.ValidatorVault{
 						ChainID:     v.ChainID,
 						Vault:       common.HexToAddress(v.Vault),
-						VotingPower: vaultVotingPower,
+						VotingPower: entity.ToVotingPower(vaultVotingPower),
 					}
 				}),
 			}

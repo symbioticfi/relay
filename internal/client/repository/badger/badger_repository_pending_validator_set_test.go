@@ -48,12 +48,12 @@ func randomValidatorSet(t *testing.T, epoch uint64, status entity.ValidatorSetSt
 		RequiredKeyTag:     entity.KeyTag(15),
 		Epoch:              epoch,
 		CaptureTimestamp:   1234567890,
-		QuorumThreshold:    big.NewInt(1000),
+		QuorumThreshold:    entity.ToVotingPower(big.NewInt(1000)),
 		PreviousHeaderHash: common.BytesToHash(randomBytes(t, 32)),
 		Validators: []entity.Validator{
 			{
 				Operator:    common.BytesToAddress(randomBytes(t, 20)),
-				VotingPower: big.NewInt(500),
+				VotingPower: entity.ToVotingPower(big.NewInt(500)),
 				IsActive:    true,
 				Keys: []entity.ValidatorKey{
 					{
@@ -65,7 +65,7 @@ func randomValidatorSet(t *testing.T, epoch uint64, status entity.ValidatorSetSt
 					{
 						ChainID:     1,
 						Vault:       common.BytesToAddress(randomBytes(t, 20)),
-						VotingPower: big.NewInt(500),
+						VotingPower: entity.ToVotingPower(big.NewInt(500)),
 					},
 				},
 			},

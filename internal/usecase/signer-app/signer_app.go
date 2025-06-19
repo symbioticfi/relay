@@ -88,7 +88,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.New("aggregation proof already exists for this request")
 	}
 
-	valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, req.RequiredEpoch)
+	valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(req.RequiredEpoch))
 	if err != nil {
 		return errors.Errorf("failed to get valset by epoch %d: %w", req.RequiredEpoch, err)
 	}

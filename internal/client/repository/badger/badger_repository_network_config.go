@@ -102,9 +102,9 @@ func networkConfigToBytes(config entity.NetworkConfig) ([]byte, error) {
 			}
 		}),
 		VerificationType:        uint32(config.VerificationType),
-		MaxVotingPower:          config.MaxVotingPower,
-		MinInclusionVotingPower: config.MinInclusionVotingPower,
-		MaxValidatorsCount:      config.MaxValidatorsCount,
+		MaxVotingPower:          config.MaxVotingPower.Int,
+		MinInclusionVotingPower: config.MinInclusionVotingPower.Int,
+		MaxValidatorsCount:      config.MaxValidatorsCount.Int,
 		RequiredKeyTags:         lo.Map(config.RequiredKeyTags, func(tag entity.KeyTag, _ int) uint8 { return uint8(tag) }),
 	}
 
@@ -135,9 +135,9 @@ func bytesToNetworkConfig(data []byte) (entity.NetworkConfig, error) {
 			}
 		}),
 		VerificationType:        entity.VerificationType(dto.VerificationType),
-		MaxVotingPower:          dto.MaxVotingPower,
-		MinInclusionVotingPower: dto.MinInclusionVotingPower,
-		MaxValidatorsCount:      dto.MaxValidatorsCount,
+		MaxVotingPower:          entity.ToVotingPower(dto.MaxVotingPower),
+		MinInclusionVotingPower: entity.ToVotingPower(dto.MinInclusionVotingPower),
+		MaxValidatorsCount:      entity.ToVotingPower(dto.MaxValidatorsCount),
 		RequiredKeyTags:         lo.Map(dto.RequiredKeyTags, func(tag uint8, _ int) entity.KeyTag { return entity.KeyTag(tag) }),
 	}, nil
 }

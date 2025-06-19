@@ -77,7 +77,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 
 	slog.DebugContext(ctx, "received signature hash generated message", "message", msg)
 
-	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, msg.Epoch)
+	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
 	if err != nil {
 		return errors.Errorf("failed to get validator set: %w", err)
 	}
@@ -110,7 +110,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 
 	slog.DebugContext(ctx, "total voting power", "currentVotingPower", current.VotingPower.String())
 
-	thresholdReached := current.VotingPower.Cmp(validatorSet.QuorumThreshold) >= 0
+	thresholdReached := current.VotingPower.Cmp(validatorSet.QuorumThreshold.Int) >= 0
 	if !thresholdReached {
 		slog.InfoContext(ctx, "quorum not reached yet",
 			"currentVotingPower", current.VotingPower,
@@ -133,7 +133,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 	}
 
 	start := time.Now()
-	networkConfig, err := s.cfg.Repo.GetConfigByEpoch(ctx, msg.Epoch)
+	networkConfig, err := s.cfg.Repo.GetConfigByEpoch(ctx, uint64(msg.Epoch))
 	if err != nil {
 		return errors.Errorf("failed to get network config: %w", err)
 	}

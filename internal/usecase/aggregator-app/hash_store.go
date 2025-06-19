@@ -48,7 +48,7 @@ func (h *hashStore) PutHash(msg entity.SignatureExtended, val entity.Validator) 
 
 	totalVotingPower := new(big.Int)
 	for _, validator := range validators {
-		totalVotingPower = totalVotingPower.Add(totalVotingPower, validator.validator.VotingPower)
+		totalVotingPower = totalVotingPower.Add(totalVotingPower, validator.validator.VotingPower.Int)
 	}
 
 	return aggEntity.AggregationStatus{
@@ -70,7 +70,7 @@ func (h *hashStore) GetStatus(hash common.Hash) (aggEntity.AggregationStatus, er
 
 	totalVotingPower := new(big.Int)
 	for _, validator := range validators {
-		totalVotingPower = totalVotingPower.Add(totalVotingPower, validator.validator.VotingPower)
+		totalVotingPower = totalVotingPower.Add(totalVotingPower, validator.validator.VotingPower.Int)
 	}
 
 	return aggEntity.AggregationStatus{

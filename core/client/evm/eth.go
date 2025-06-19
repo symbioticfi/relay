@@ -173,9 +173,9 @@ func (e *Client) GetConfig(ctx context.Context, timestamp uint64) (entity.Networ
 			}
 		}),
 		VerificationType:        entity.VerificationType(dtoConfig.VerificationType),
-		MaxVotingPower:          dtoConfig.MaxVotingPower,
-		MinInclusionVotingPower: dtoConfig.MinInclusionVotingPower,
-		MaxValidatorsCount:      dtoConfig.MaxValidatorsCount,
+		MaxVotingPower:          entity.ToVotingPower(dtoConfig.MaxVotingPower),
+		MinInclusionVotingPower: entity.ToVotingPower(dtoConfig.MinInclusionVotingPower),
+		MaxValidatorsCount:      entity.ToVotingPower(dtoConfig.MaxValidatorsCount),
 		RequiredKeyTags: lo.Map(dtoConfig.RequiredKeyTags, func(v uint8, _ int) entity.KeyTag {
 			return entity.KeyTag(v)
 		}),
@@ -183,7 +183,7 @@ func (e *Client) GetConfig(ctx context.Context, timestamp uint64) (entity.Networ
 		QuorumThresholds: lo.Map(dtoConfig.QuorumThresholds, func(v gen.IValSetDriverQuorumThreshold, _ int) entity.QuorumThreshold {
 			return entity.QuorumThreshold{
 				KeyTag:          entity.KeyTag(v.KeyTag),
-				QuorumThreshold: v.QuorumThreshold,
+				QuorumThreshold: entity.ToQuorumThresholdPct(v.QuorumThreshold),
 			}
 		}),
 	}, nil
@@ -370,7 +370,7 @@ func (e *Client) GetValSetHeaderAt(ctx context.Context, epoch uint64) (entity.Va
 		RequiredKeyTag:     entity.KeyTag(header.RequiredKeyTag),
 		Epoch:              header.Epoch.Uint64(),
 		CaptureTimestamp:   header.CaptureTimestamp.Uint64(),
-		QuorumThreshold:    header.QuorumThreshold,
+		QuorumThreshold:    entity.ToVotingPower(header.QuorumThreshold),
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot,
 		PreviousHeaderHash: header.PreviousHeaderHash,
 	}, nil
@@ -393,7 +393,7 @@ func (e *Client) GetValSetHeader(ctx context.Context) (entity.ValidatorSetHeader
 		RequiredKeyTag:     entity.KeyTag(header.RequiredKeyTag),
 		Epoch:              header.Epoch.Uint64(),
 		CaptureTimestamp:   header.CaptureTimestamp.Uint64(),
-		QuorumThreshold:    header.QuorumThreshold,
+		QuorumThreshold:    entity.ToVotingPower(header.QuorumThreshold),
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot,
 		PreviousHeaderHash: header.PreviousHeaderHash,
 	}, nil
@@ -454,7 +454,7 @@ func (e *Client) GetVotingPowers(ctx context.Context, address entity.CrossChainA
 			Vaults: lo.Map(v.Vaults, func(v dtoVaultVotingPower, _ int) entity.VaultVotingPower {
 				return entity.VaultVotingPower{
 					Vault:       v.Vault,
-					VotingPower: v.VotingPower,
+					VotingPower: entity.ToVotingPower(v.VotingPower),
 				}
 			}),
 		}

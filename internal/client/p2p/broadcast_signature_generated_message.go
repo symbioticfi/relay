@@ -14,7 +14,7 @@ func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg en
 	dto := signatureGeneratedDTO{
 		RequestHash: msg.RequestHash,
 		KeyTag:      uint8(msg.KeyTag),
-		Epoch:       msg.Epoch,
+		Epoch:       uint64(msg.Epoch),
 		Signature: signatureDTO{
 			MessageHash: msg.Signature.MessageHash,
 			PublicKey:   msg.Signature.PublicKey,
