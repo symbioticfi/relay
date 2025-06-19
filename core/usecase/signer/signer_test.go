@@ -1,17 +1,17 @@
 package signer
 
 import (
+	"middleware-offchain/core/usecase/key-provider"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	"middleware-offchain/core/entity"
-	keyprovider "middleware-offchain/core/usecase/key-provider"
 	"middleware-offchain/pkg/bls"
 )
 
 func TestBLSBn254(t *testing.T) {
-	kp, err := keyprovider.NewSimpleKeystoreProvider()
+	kp, err := keyprovider.keyprovider.NewSimpleKeystoreProvider()
 	require.NoError(t, err)
 	key := []byte("testrandomkey")
 	require.NoError(t, kp.AddKey(entity.ValsetHeaderKeyTag, key))

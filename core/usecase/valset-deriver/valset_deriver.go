@@ -192,7 +192,7 @@ func (v *Deriver) formValidators(
 				Operator:    vp.Operator,
 				VotingPower: big.NewInt(0),
 				IsActive:    false, // Default to active, will filter later
-				Keys:        []entity.Key{},
+				Keys:        []entity.ValidatorKey{},
 				Vaults:      []entity.ValidatorVault{},
 			}
 		}
@@ -224,7 +224,7 @@ func (v *Deriver) formValidators(
 		if validator, exists := validatorsMap[operatorAddr]; exists {
 			// Add all keys for this operator
 			for _, key := range rk.Keys {
-				validator.Keys = append(validator.Keys, entity.Key{
+				validator.Keys = append(validator.Keys, entity.ValidatorKey{
 					Tag:     key.Tag,
 					Payload: key.Payload,
 				})

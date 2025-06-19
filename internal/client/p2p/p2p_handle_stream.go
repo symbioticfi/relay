@@ -32,7 +32,7 @@ func (s *Service) handleStreamSignedHash(ctx context.Context, stream network.Str
 		RequestHash: signatureGenerated.RequestHash,
 		KeyTag:      entity.KeyTag(signatureGenerated.KeyTag),
 		Epoch:       signatureGenerated.Epoch,
-		Signature: entity.Signature{
+		Signature: entity.SignatureExtended{
 			PublicKey:   signatureGenerated.Signature.PublicKey,
 			Signature:   signatureGenerated.Signature.Signature,
 			MessageHash: signatureGenerated.Signature.MessageHash,

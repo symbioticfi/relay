@@ -23,7 +23,7 @@ func keySignaturePrefix(reqHash common.Hash) []byte {
 	return []byte("signature:" + reqHash.Hex() + ":")
 }
 
-func (r *Repository) SaveSignature(_ context.Context, reqHash common.Hash, inKey []byte, sig entity.Signature) error {
+func (r *Repository) SaveSignature(_ context.Context, reqHash common.Hash, inKey []byte, sig entity.SignatureExtended) error {
 	bytes, err := signatureToBytes(sig)
 	if err != nil {
 		return errors.Errorf("failed to marshal signature: %w", err)
@@ -39,8 +39,8 @@ func (r *Repository) SaveSignature(_ context.Context, reqHash common.Hash, inKey
 	})
 }
 
-func (r *Repository) GetAllSignatures(_ context.Context, reqHash common.Hash) ([]entity.Signature, error) {
-	var signatures []entity.Signature
+func (r *Repository) GetAllSignatures(_ context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error) {
+	var signatures []entity.SignatureExtended
 
 	return signatures, r.db.View(func(txn *badger.Txn) error {
 		prefix := keySignaturePrefix(reqHash)
@@ -75,7 +75,7 @@ type signatureDTO struct {
 	PublicKey   []byte `json:"public_key"`
 }
 
-func signatureToBytes(sig entity.Signature) ([]byte, error) {
+func signatureToBytes(sig entity.SignatureExtended) ([]byte, error) {
 	dto := signatureDTO{
 		MessageHash: sig.MessageHash,
 		Signature:   sig.Signature,
@@ -88,13 +88,13 @@ func signatureToBytes(sig entity.Signature) ([]byte, error) {
 	return data, nil
 }
 
-func bytesToSignature(value []byte) (entity.Signature, error) {
+func bytesToSignature(value []byte) (entity.SignatureExtended, error) {
 	var dto signatureDTO
 	if err := json.Unmarshal(value, &dto); err != nil {
-		return entity.Signature{}, fmt.Errorf("failed to unmarshal signature: %w", err)
+		return entity.SignatureExtended{}, fmt.Errorf("failed to unmarshal signature: %w", err)
 	}
 
-	return entity.Signature{
+	return entity.SignatureExtended{
 		MessageHash: dto.MessageHash,
 		Signature:   dto.Signature,
 		PublicKey:   dto.PublicKey,

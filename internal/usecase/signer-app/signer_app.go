@@ -3,6 +3,7 @@ package signer_app
 import (
 	"context"
 	"log/slog"
+	"middleware-offchain/core/usecase/crypto/key-types"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -17,7 +18,7 @@ type repo interface {
 	GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error)
 	SaveAggregationProof(ctx context.Context, reqHash common.Hash, ap entity.AggregationProof) error
 	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
-	SaveSignature(ctx context.Context, reqHash common.Hash, key []byte, sig entity.Signature) error
+	SaveSignature(ctx context.Context, reqHash common.Hash, key []byte, sig entity.SignatureExtended) error
 	SaveSignatureRequest(_ context.Context, req entity.SignatureRequest) error
 }
 
@@ -26,9 +27,7 @@ type p2pService interface {
 }
 
 type signer interface {
-	Sign(keyTag entity.KeyTag, message []byte) (entity.Signature, error)
-	Hash(keyTag entity.KeyTag, message []byte) ([]byte, error)
-	GetPublicKey(keyTag entity.KeyTag) ([]byte, error)
+	GetPrivateKey(keyTag entity.KeyTag) (key_types.PrivateKey, error)
 }
 
 type aggProofSignal interface {
@@ -94,22 +93,33 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.Errorf("failed to get valset by epoch %d: %w", req.RequiredEpoch, err)
 	}
 
-	public, err := s.cfg.Signer.GetPublicKey(req.KeyTag)
+	private, err := s.cfg.Signer.GetPrivateKey(req.KeyTag)
+	if err != nil {
+		slog.DebugContext(ctx, "failed to get private key", "err", err)
+	}
+
+	public := private.PublicKey()
 	if err != nil {
 		return errors.Errorf("failed to get public key for key tag %d: %w", req.KeyTag, err)
 	}
 
-	_, found := valset.FindValidatorByKey(req.KeyTag, public)
+	_, found := valset.FindValidatorByKey(req.KeyTag, public.OnChain())
 	if !found {
 		return errors.Errorf("validator not found in epoch valset for public key")
 	}
 
-	signature, err := s.cfg.Signer.Sign(req.KeyTag, req.Message)
+	signature, hash, err := private.Sign(req.Message)
 	if err != nil {
 		return errors.Errorf("failed to sign valset header hash: %w", err)
 	}
 
-	if err := s.cfg.Repo.SaveSignature(ctx, req.Hash(), public, signature); err != nil {
+	extendedSignature := entity.SignatureExtended{
+		MessageHash: hash,
+		Signature:   signature,
+		PublicKey:   public.Raw(),
+	}
+
+	if err := s.cfg.Repo.SaveSignature(ctx, req.Hash(), public.Raw(), extendedSignature); err != nil {
 		return errors.Errorf("failed to save signature: %w", err)
 	}
 
@@ -119,7 +129,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		RequestHash: req.Hash(),
 		KeyTag:      req.KeyTag,
 		Epoch:       req.RequiredEpoch,
-		Signature:   signature,
+		Signature:   extendedSignature,
 	})
 	if err != nil {
 		return errors.Errorf("failed to broadcast signature: %w", err)

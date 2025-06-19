@@ -3,7 +3,7 @@ package keys
 import (
 	"log/slog"
 	"middleware-offchain/core/entity"
-	keyprovider "middleware-offchain/core/usecase/key-provider"
+	"middleware-offchain/core/usecase/key-provider"
 	"middleware-offchain/pkg/bls"
 	"syscall"
 

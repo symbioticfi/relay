@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"math/big"
+	"middleware-offchain/core/usecase/key-provider"
 	"time"
 
 	"github.com/go-errors/errors"
@@ -13,7 +14,6 @@ import (
 	"middleware-offchain/core/client/evm"
 	"middleware-offchain/core/entity"
 	"middleware-offchain/core/usecase/aggregator"
-	keyprovider "middleware-offchain/core/usecase/key-provider"
 	"middleware-offchain/core/usecase/signer"
 	valsetDeriver "middleware-offchain/core/usecase/valset-deriver"
 	"middleware-offchain/internal/client/p2p"
@@ -175,7 +175,6 @@ func runApp(ctx context.Context) error {
 			Repo:       repo,
 			P2PClient:  p2pService,
 			Aggregator: aggregatorLib,
-			Verifier:   signerLib,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create aggregator app: %w", err)

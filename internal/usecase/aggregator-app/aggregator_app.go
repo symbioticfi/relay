@@ -3,6 +3,7 @@ package aggregator_app
 import (
 	"context"
 	"log/slog"
+	"middleware-offchain/core/usecase/crypto"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -18,8 +19,8 @@ import (
 //go:generate mockgen -source=aggregator_app.go -destination=mocks/aggregator_app.go -package=mocks
 type repository interface {
 	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
-	SaveSignature(ctx context.Context, reqHash common.Hash, key []byte, sig entity.Signature) error
-	GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.Signature, error)
+	SaveSignature(ctx context.Context, reqHash common.Hash, key []byte, sig entity.SignatureExtended) error
+	GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error)
 	GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error)
 }
 
@@ -33,19 +34,14 @@ type aggregator interface {
 		keyTag entity.KeyTag,
 		verificationType entity.VerificationType,
 		messageHash []byte,
-		signatures []entity.Signature,
+		signatures []entity.SignatureExtended,
 	) (entity.AggregationProof, error)
-}
-
-type verifier interface {
-	Verify(keyTag entity.KeyTag, signature entity.Signature) ([]byte, bool, error)
 }
 
 type Config struct {
 	Repo       repository `validate:"required"`
 	P2PClient  p2pClient  `validate:"required"`
 	Aggregator aggregator `validate:"required"`
-	Verifier   verifier   `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -86,20 +82,21 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 		return errors.Errorf("failed to get validator set: %w", err)
 	}
 
-	publicKey, ok, err := s.cfg.Verifier.Verify(msg.KeyTag, msg.Signature)
+	publicKey, err := crypto.NewPublicKey(msg.KeyTag, msg.Signature.PublicKey)
+	if err != nil {
+		return errors.Errorf("failed to get public key: %w", err)
+	}
+	err = publicKey.VerifyWithHash(msg.Signature.MessageHash, msg.Signature.Signature)
 	if err != nil {
 		return errors.Errorf("failed to verify signature: %w", err)
 	}
-	if !ok {
-		return errors.New("signature verification failed")
-	}
 
-	validator, found := validatorSet.FindValidatorByKey(msg.KeyTag, publicKey)
+	validator, found := validatorSet.FindValidatorByKey(msg.KeyTag, publicKey.OnChain())
 	if !found {
 		return errors.Errorf("validator not found for public key: %x", msg.Signature.PublicKey)
 	}
 
-	err = s.cfg.Repo.SaveSignature(ctx, msg.RequestHash, publicKey, msg.Signature)
+	err = s.cfg.Repo.SaveSignature(ctx, msg.RequestHash, publicKey.Raw(), msg.Signature)
 	if err != nil {
 		return errors.Errorf("failed to save signature: %w", err)
 	}

@@ -492,8 +492,8 @@ func (e *Client) GetKeys(ctx context.Context, address entity.CrossChainAddress, 
 	return lo.Map(dto, func(v dtoOperatorWithKeys, _ int) entity.OperatorWithKeys {
 		return entity.OperatorWithKeys{
 			Operator: v.Operator,
-			Keys: lo.Map(v.Keys, func(v dtoKey, _ int) entity.Key {
-				return entity.Key{
+			Keys: lo.Map(v.Keys, func(v dtoKey, _ int) entity.ValidatorKey {
+				return entity.ValidatorKey{
 					Tag:     entity.KeyTag(v.Tag),
 					Payload: v.Payload,
 				}

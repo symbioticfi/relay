@@ -32,7 +32,7 @@ type SignatureMessage struct {
 	RequestHash common.Hash
 	KeyTag      KeyTag
 	Epoch       uint64
-	Signature   Signature // parse based on KeyTag
+	Signature   SignatureExtended // parse based on KeyTag
 }
 
 type AggregationState struct {
@@ -41,7 +41,7 @@ type AggregationState struct {
 	RequiredVotingPower *big.Int
 }
 
-// AggregationProof aggregator.proof(signatures []Signature) -> AggregationProof
+// AggregationProof aggregator.proof(signatures []SignatureExtended) -> AggregationProof
 type AggregationProof struct {
 	VerificationType VerificationType // proof verification type
 	MessageHash      []byte           // scheme depends on KeyTag
@@ -129,7 +129,7 @@ type OperatorVotingPower struct {
 
 type OperatorWithKeys struct {
 	Operator common.Address
-	Keys     []Key
+	Keys     []ValidatorKey
 }
 
 type Eip712Domain struct {
@@ -142,9 +142,11 @@ type Eip712Domain struct {
 	Extensions        []*big.Int
 }
 
-type Key struct {
+type CompactPublicKey []byte
+
+type ValidatorKey struct {
 	Tag     KeyTag
-	Payload []byte
+	Payload CompactPublicKey
 }
 
 type ValidatorVault struct {
@@ -157,7 +159,7 @@ type Validator struct {
 	Operator    common.Address   `json:"operator"`
 	VotingPower *big.Int         `json:"votingPower"`
 	IsActive    bool             `json:"isActive"`
-	Keys        []Key            `json:"keys"`
+	Keys        []ValidatorKey   `json:"keys"`
 	Vaults      []ValidatorVault `json:"vaults"`
 }
 
@@ -191,12 +193,16 @@ type ValidatorSet struct {
 	Status ValidatorSetStatus
 }
 
-// Signature signer.sign() -> Signature
-type Signature struct {
-	MessageHash []byte // scheme depends on KeyTag
-	Signature   []byte // parse based on KeyTag
+type RawSignature []byte
+type RawMessageHash []byte
+type RawPublicKey []byte
+
+// SignatureExtended signer.sign() -> SignatureExtended
+type SignatureExtended struct {
+	MessageHash RawMessageHash // scheme depends on KeyTag
+	Signature   RawSignature   // parse based on KeyTag
 	// PublicKey for bls will contain g1+g2
-	PublicKey []byte // parse based on KeyTag
+	PublicKey RawPublicKey // parse based on KeyTag
 }
 
 func (v ValidatorSet) FindValidatorByKey(keyTag KeyTag, publicKey []byte) (Validator, bool) {
@@ -303,7 +309,7 @@ func sszTreeRoot(v *ValidatorSet) (common.Hash, error) {
 	return sszType.HashTreeRoot()
 }
 
-func keyPayloadHash(k Key) common.Hash {
+func keyPayloadHash(k ValidatorKey) common.Hash {
 	return crypto.Keccak256Hash(k.Payload)
 }
 
@@ -314,7 +320,7 @@ func validatorSetToSszValidators(v *ValidatorSet) ssz.SszValidatorSet {
 				Operator:    v.Operator,
 				VotingPower: v.VotingPower,
 				IsActive:    v.IsActive,
-				Keys: lo.Map(v.Keys, func(k Key, _ int) *ssz.SszKey {
+				Keys: lo.Map(v.Keys, func(k ValidatorKey, _ int) *ssz.SszKey {
 					return &ssz.SszKey{
 						Tag:         uint8(k.Tag),
 						PayloadHash: keyPayloadHash(k),

@@ -163,7 +163,7 @@ func (a *Aggregator) getExtraDataKeyTagged(verificationType entity.VerificationT
 func (a *Aggregator) getAggregatedPubKeys(
 	valset entity.ValidatorSet,
 	config entity.NetworkConfig,
-) []entity.Key {
+) []entity.ValidatorKey {
 	needToAggregateTags := map[entity.KeyTag]interface{}{}
 	for _, tag := range config.RequiredKeyTags {
 		// only bn254 bls for now
@@ -190,13 +190,13 @@ func (a *Aggregator) getAggregatedPubKeys(
 		}
 	}
 
-	var aggregatedPubKeys []entity.Key
+	var aggregatedPubKeys []entity.ValidatorKey
 	for tag, keyValue := range needToAggregateTags {
 		if tag.Type() == entity.KeyTypeBlsBn254 {
 			aggG1Key := keyValue.(*bn254.G1Affine)
 			// pack g1 point to bytes and add to list
 			aggG1KeyBytes := aggG1Key.Bytes()
-			aggregatedPubKeys = append(aggregatedPubKeys, entity.Key{
+			aggregatedPubKeys = append(aggregatedPubKeys, entity.ValidatorKey{
 				Tag:     tag,
 				Payload: aggG1KeyBytes[:],
 			})

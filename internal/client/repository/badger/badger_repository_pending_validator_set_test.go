@@ -55,7 +55,7 @@ func randomValidatorSet(t *testing.T, epoch uint64, status entity.ValidatorSetSt
 				Operator:    common.BytesToAddress(randomBytes(t, 20)),
 				VotingPower: big.NewInt(500),
 				IsActive:    true,
-				Keys: []entity.Key{
+				Keys: []entity.ValidatorKey{
 					{
 						Tag:     entity.KeyTag(15),
 						Payload: randomBytes(t, 32),

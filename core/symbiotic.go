@@ -83,11 +83,11 @@ func NewSymbiotic(cfg Config) (*Symbiotic, error) {
 
 // ========== Signer methods ==========
 
-func (s *Symbiotic) Verify(keyTag entity.KeyTag, signature entity.Signature) ([]byte, bool, error) {
+func (s *Symbiotic) Verify(keyTag entity.KeyTag, signature entity.SignatureExtended) ([]byte, bool, error) {
 	return s.signer.Verify(keyTag, signature)
 }
 
-func (s *Symbiotic) Sign(keyTag entity.KeyTag, message []byte) (entity.Signature, error) {
+func (s *Symbiotic) Sign(keyTag entity.KeyTag, message []byte) (entity.SignatureExtended, error) {
 	return s.signer.Sign(keyTag, message)
 }
 
@@ -101,7 +101,7 @@ func (s *Symbiotic) GetPublicKey(keyTag entity.KeyTag) ([]byte, error) {
 
 // ========== Aggregator methods ==========
 
-func (s *Symbiotic) Aggregate(valset entity.ValidatorSet, keyTag entity.KeyTag, verificationType entity.VerificationType, messageHash []byte, signatures []entity.Signature) (entity.AggregationProof, error) {
+func (s *Symbiotic) Aggregate(valset entity.ValidatorSet, keyTag entity.KeyTag, verificationType entity.VerificationType, messageHash []byte, signatures []entity.SignatureExtended) (entity.AggregationProof, error) {
 	return s.aggregator.Aggregate(valset, keyTag, verificationType, messageHash, signatures)
 }
 

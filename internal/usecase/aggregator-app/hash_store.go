@@ -19,7 +19,7 @@ type hashStore struct {
 
 type hashWithValidator struct {
 	validator        entity.Validator
-	signatureMessage entity.Signature
+	signatureMessage entity.SignatureExtended
 }
 
 func newHashStore() *hashStore {
@@ -28,7 +28,7 @@ func newHashStore() *hashStore {
 	}
 }
 
-func (h *hashStore) PutHash(msg entity.Signature, val entity.Validator) (aggEntity.AggregationStatus, error) {
+func (h *hashStore) PutHash(msg entity.SignatureExtended, val entity.Validator) (aggEntity.AggregationStatus, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 

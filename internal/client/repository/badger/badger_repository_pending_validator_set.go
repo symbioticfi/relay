@@ -110,7 +110,7 @@ func validatorSetToBytes(vs entity.ValidatorSet) ([]byte, error) {
 				Operator:    v.Operator.Hex(),
 				VotingPower: v.VotingPower.String(),
 				IsActive:    v.IsActive,
-				Keys: lo.Map(v.Keys, func(k entity.Key, _ int) keyDTO {
+				Keys: lo.Map(v.Keys, func(k entity.ValidatorKey, _ int) keyDTO {
 					return keyDTO{
 						Tag:     uint8(k.Tag),
 						Payload: k.Payload,
@@ -155,8 +155,8 @@ func bytesToValidatorSet(data []byte) (entity.ValidatorSet, error) {
 				Operator:    common.HexToAddress(v.Operator),
 				VotingPower: votingPower,
 				IsActive:    v.IsActive,
-				Keys: lo.Map(v.Keys, func(k keyDTO, _ int) entity.Key {
-					return entity.Key{
+				Keys: lo.Map(v.Keys, func(k keyDTO, _ int) entity.ValidatorKey {
+					return entity.ValidatorKey{
 						Tag:     entity.KeyTag(k.Tag),
 						Payload: k.Payload,
 					}

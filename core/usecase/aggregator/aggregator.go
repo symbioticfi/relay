@@ -40,7 +40,7 @@ func (a *Aggregator) Aggregate(
 	keyTag entity.KeyTag,
 	verificationType entity.VerificationType,
 	messageHash []byte,
-	signatures []entity.Signature,
+	signatures []entity.SignatureExtended,
 ) (entity.AggregationProof, error) {
 	if !compareMessageHasher(signatures, messageHash) {
 		return entity.AggregationProof{}, errors.New("message hashes mismatch")
@@ -55,7 +55,7 @@ func (a *Aggregator) Aggregate(
 	return entity.AggregationProof{}, errors.New("unknown verification type")
 }
 
-func compareMessageHasher(signatures []entity.Signature, msgHash []byte) bool {
+func compareMessageHasher(signatures []entity.SignatureExtended, msgHash []byte) bool {
 	for i := range signatures {
 		if !bytes.Equal(msgHash, signatures[i].MessageHash) {
 			return false
@@ -82,7 +82,7 @@ func (a *Aggregator) zkAggregate(
 	valset entity.ValidatorSet,
 	keyTag entity.KeyTag,
 	messageHash []byte,
-	signatures []entity.Signature,
+	signatures []entity.SignatureExtended,
 ) (entity.AggregationProof, error) {
 	aggG1Sig := bls.ZeroG1()
 	aggG2Key := bls.ZeroG2()
@@ -154,7 +154,7 @@ func (a *Aggregator) simpleAggregate(
 	valset entity.ValidatorSet,
 	keyTag entity.KeyTag,
 	messageHash []byte,
-	signatures []entity.Signature,
+	signatures []entity.SignatureExtended,
 ) (entity.AggregationProof, error) {
 	type dtoG1Point struct {
 		X *big.Int

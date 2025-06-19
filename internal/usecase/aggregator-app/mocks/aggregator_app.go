@@ -43,10 +43,10 @@ func (m *Mockrepository) EXPECT() *MockrepositoryMockRecorder {
 }
 
 // GetAllSignatures mocks base method.
-func (m *Mockrepository) GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.Signature, error) {
+func (m *Mockrepository) GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllSignatures", ctx, reqHash)
-	ret0, _ := ret[0].([]entity.Signature)
+	ret0, _ := ret[0].([]entity.SignatureExtended)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -88,7 +88,7 @@ func (mr *MockrepositoryMockRecorder) GetValidatorSetByEpoch(ctx, epoch any) *go
 }
 
 // SaveSignature mocks base method.
-func (m *Mockrepository) SaveSignature(ctx context.Context, reqHash common.Hash, key []byte, sig entity.Signature) error {
+func (m *Mockrepository) SaveSignature(ctx context.Context, reqHash common.Hash, key []byte, sig entity.SignatureExtended) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SaveSignature", ctx, reqHash, key, sig)
 	ret0, _ := ret[0].(error)
@@ -164,7 +164,7 @@ func (m *Mockaggregator) EXPECT() *MockaggregatorMockRecorder {
 }
 
 // Aggregate mocks base method.
-func (m *Mockaggregator) Aggregate(valset entity.ValidatorSet, keyTag entity.KeyTag, verificationType entity.VerificationType, messageHash []byte, signatures []entity.Signature) (entity.AggregationProof, error) {
+func (m *Mockaggregator) Aggregate(valset entity.ValidatorSet, keyTag entity.KeyTag, verificationType entity.VerificationType, messageHash []byte, signatures []entity.SignatureExtended) (entity.AggregationProof, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Aggregate", valset, keyTag, verificationType, messageHash, signatures)
 	ret0, _ := ret[0].(entity.AggregationProof)
@@ -203,7 +203,7 @@ func (m *Mockverifier) EXPECT() *MockverifierMockRecorder {
 }
 
 // Verify mocks base method.
-func (m *Mockverifier) Verify(keyTag entity.KeyTag, signature entity.Signature) ([]byte, bool, error) {
+func (m *Mockverifier) Verify(keyTag entity.KeyTag, signature entity.SignatureExtended) ([]byte, bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Verify", keyTag, signature)
 	ret0, _ := ret[0].([]byte)
