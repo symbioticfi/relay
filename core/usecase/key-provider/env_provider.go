@@ -2,26 +2,28 @@ package keyprovider
 
 import (
 	"encoding/base64"
-	"errors"
+	"middleware-offchain/core/usecase/crypto"
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/go-errors/errors"
 
 	"middleware-offchain/core/entity"
 )
 
 type EnvKeyProvider struct {
-	cache map[entity.KeyTag][]byte
+	cache map[entity.KeyTag]crypto.PrivateKey
 	mu    sync.RWMutex
 }
 
 func NewEnvKeyProvider() *EnvKeyProvider {
 	return &EnvKeyProvider{
-		cache: make(map[entity.KeyTag][]byte),
+		cache: make(map[entity.KeyTag]crypto.PrivateKey),
 	}
 }
 
-func (e *EnvKeyProvider) GetPrivateKey(keyTag entity.KeyTag) ([]byte, error) {
+func (e *EnvKeyProvider) GetPrivateKey(keyTag entity.KeyTag) (crypto.PrivateKey, error) {
 	e.mu.RLock()
 
 	key, ok := e.cache[keyTag]
@@ -46,11 +48,16 @@ func (e *EnvKeyProvider) GetPrivateKey(keyTag entity.KeyTag) ([]byte, error) {
 		return nil, err
 	}
 
+	key, err = crypto.NewPrivateKey(keyTag, decoded)
+	if err != nil {
+		return nil, errors.Errorf("failed to create private key: %s", err)
+	}
+
 	e.mu.Lock()
-	e.cache[keyTag] = decoded
+	e.cache[keyTag] = key
 	e.mu.Unlock()
 
-	return decoded, nil
+	return key, nil
 }
 
 func (e *EnvKeyProvider) HasKey(keyTag entity.KeyTag) (bool, error) {
@@ -62,10 +69,10 @@ func (e *EnvKeyProvider) HasKey(keyTag entity.KeyTag) (bool, error) {
 		return true, nil
 	}
 
-	pk, err := e.GetPrivateKey(keyTag)
+	_, err := e.GetPrivateKey(keyTag)
 	if err != nil {
 		return false, err
 	}
 
-	return len(pk) > 0, nil
+	return true, nil
 }

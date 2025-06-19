@@ -19,7 +19,7 @@ type hashStore struct {
 
 type hashWithValidator struct {
 	validator        entity.Validator
-	signatureMessage entity.Signature
+	signatureMessage entity.SignatureExtended
 }
 
 func newHashStore() *hashStore {
@@ -28,7 +28,7 @@ func newHashStore() *hashStore {
 	}
 }
 
-func (h *hashStore) PutHash(msg entity.Signature, val entity.Validator) (aggEntity.AggregationStatus, error) {
+func (h *hashStore) PutHash(msg entity.SignatureExtended, val entity.Validator) (aggEntity.AggregationStatus, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -48,7 +48,7 @@ func (h *hashStore) PutHash(msg entity.Signature, val entity.Validator) (aggEnti
 
 	totalVotingPower := new(big.Int)
 	for _, validator := range validators {
-		totalVotingPower = totalVotingPower.Add(totalVotingPower, validator.validator.VotingPower)
+		totalVotingPower = totalVotingPower.Add(totalVotingPower, validator.validator.VotingPower.Int)
 	}
 
 	return aggEntity.AggregationStatus{
@@ -70,7 +70,7 @@ func (h *hashStore) GetStatus(hash common.Hash) (aggEntity.AggregationStatus, er
 
 	totalVotingPower := new(big.Int)
 	for _, validator := range validators {
-		totalVotingPower = totalVotingPower.Add(totalVotingPower, validator.validator.VotingPower)
+		totalVotingPower = totalVotingPower.Add(totalVotingPower, validator.validator.VotingPower.Int)
 	}
 
 	return aggEntity.AggregationStatus{

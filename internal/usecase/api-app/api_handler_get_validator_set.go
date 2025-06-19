@@ -41,7 +41,7 @@ func convertValidatorSetToAPI(valSet entity.ValidatorSet) *api.ValidatorSet {
 				Operator:    v.Operator.Hex(),
 				VotingPower: v.VotingPower.String(),
 				IsActive:    v.IsActive,
-				Keys: lo.Map(v.Keys, func(k entity.Key, _ int) api.Key {
+				Keys: lo.Map(v.Keys, func(k entity.ValidatorKey, _ int) api.Key {
 					return api.Key{
 						Tag:     uint8(k.Tag),
 						Payload: k.Payload,

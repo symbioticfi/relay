@@ -19,7 +19,7 @@ type Repository struct {
 
 	networkConfigs map[uint64]entity.NetworkConfig
 	validatorSets  map[uint64]entity.ValidatorSet
-	signatures     map[common.Hash]map[common.Hash]entity.Signature
+	signatures     map[common.Hash]map[common.Hash]entity.SignatureExtended
 	signRequests   map[common.Hash]entity.SignatureRequest
 	aggProofs      map[common.Hash]entity.AggregationProof
 	pendingValsets map[common.Hash]entity.ValidatorSet
@@ -30,7 +30,7 @@ func New() (*Repository, error) {
 		mu:             sync.Mutex{},
 		networkConfigs: make(map[uint64]entity.NetworkConfig),
 		validatorSets:  make(map[uint64]entity.ValidatorSet),
-		signatures:     make(map[common.Hash]map[common.Hash]entity.Signature),
+		signatures:     make(map[common.Hash]map[common.Hash]entity.SignatureExtended),
 		signRequests:   make(map[common.Hash]entity.SignatureRequest),
 		aggProofs:      make(map[common.Hash]entity.AggregationProof),
 		pendingValsets: make(map[common.Hash]entity.ValidatorSet),
@@ -147,7 +147,7 @@ func (r *Repository) SaveAggregationProof(_ context.Context, reqHash common.Hash
 	return nil
 }
 
-func (r *Repository) SaveSignature(_ context.Context, reqHash common.Hash, key []byte, sig entity.Signature) error {
+func (r *Repository) SaveSignature(_ context.Context, reqHash common.Hash, key []byte, sig entity.SignatureExtended) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -155,7 +155,7 @@ func (r *Repository) SaveSignature(_ context.Context, reqHash common.Hash, key [
 
 	_, exists := r.signatures[reqHash]
 	if !exists {
-		r.signatures[reqHash] = make(map[common.Hash]entity.Signature)
+		r.signatures[reqHash] = make(map[common.Hash]entity.SignatureExtended)
 	}
 
 	if _, exists = r.signatures[reqHash][keyHash]; exists {
@@ -167,13 +167,13 @@ func (r *Repository) SaveSignature(_ context.Context, reqHash common.Hash, key [
 	return nil
 }
 
-func (r *Repository) GetAllSignatures(_ context.Context, reqHash common.Hash) ([]entity.Signature, error) {
+func (r *Repository) GetAllSignatures(_ context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	_, exists := r.signatures[reqHash]
 	if !exists {
-		return []entity.Signature{}, nil
+		return []entity.SignatureExtended{}, nil
 	}
 
 	return slices.Collect(maps.Values(r.signatures[reqHash])), nil

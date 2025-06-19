@@ -26,7 +26,7 @@ func randomSignatureRequest(t *testing.T) entity.SignatureRequest {
 	t.Helper()
 	return entity.SignatureRequest{
 		KeyTag:        entity.KeyTag(15),
-		RequiredEpoch: randomBigInt(t).Uint64(),
+		RequiredEpoch: entity.Epoch(randomBigInt(t).Uint64()),
 		Message:       randomBytes(t, 32),
 	}
 }

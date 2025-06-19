@@ -42,7 +42,7 @@ func (r *Repository) SaveSignatureRequest(_ context.Context, req entity.Signatur
 func signatureRequestToBytes(req entity.SignatureRequest) ([]byte, error) {
 	dto := signatureRequestDTO{
 		KeyTag:        uint8(req.KeyTag),
-		RequiredEpoch: req.RequiredEpoch,
+		RequiredEpoch: uint64(req.RequiredEpoch),
 		Message:       req.Message,
 	}
 	return json.Marshal(dto)
@@ -56,7 +56,7 @@ func bytesToSignatureRequest(data []byte) (entity.SignatureRequest, error) {
 
 	return entity.SignatureRequest{
 		KeyTag:        entity.KeyTag(dto.KeyTag),
-		RequiredEpoch: dto.RequiredEpoch,
+		RequiredEpoch: entity.Epoch(dto.RequiredEpoch),
 		Message:       dto.Message,
 	}, nil
 }

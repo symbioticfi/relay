@@ -14,7 +14,7 @@ func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg e
 	dto := signaturesAggregatedDTO{
 		RequestHash: msg.RequestHash,
 		KeyTag:      uint8(msg.KeyTag),
-		Epoch:       msg.Epoch,
+		Epoch:       uint64(msg.Epoch),
 		AggregationProof: aggregationProofDTO{
 			MessageHash:      msg.AggregationProof.MessageHash,
 			Proof:            msg.AggregationProof.Proof,

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"math/big"
 	"sort"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
@@ -69,19 +70,15 @@ func (v *Deriver) GetNetworkData(ctx context.Context) (entity.NetworkData, error
 }
 
 func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error) {
-	slog.DebugContext(ctx, "Trying to fetch current valset timestamp", "epoch", epoch)
 	timestamp, err := v.ethClient.GetEpochStart(ctx, epoch)
 	if err != nil {
 		return entity.ValidatorSet{}, errors.Errorf("failed to get epoch start timestamp: %w", err)
 	}
-	slog.DebugContext(ctx, "Got current valset timestamp", "timestamp", timestamp, "epoch", epoch)
-
-	slog.DebugContext(ctx, "Got config", "timestamp", timestamp, "config", config)
+	slog.DebugContext(ctx, "Got current valset timestamp", "timestamp", strconv.Itoa(int(timestamp)), "epoch", epoch)
 
 	// Get voting powers from all voting power providers
 	var allVotingPowers []entity.OperatorVotingPower
 	for _, provider := range config.VotingPowerProviders {
-		slog.DebugContext(ctx, "Trying to fetch voting powers from provider", "provider", provider.Address.Hex())
 		votingPowers, err := v.ethClient.GetVotingPowers(ctx, provider, timestamp)
 		if err != nil {
 			return entity.ValidatorSet{}, errors.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
@@ -93,12 +90,11 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 	}
 
 	// Get keys from the keys provider
-	slog.DebugContext(ctx, "Trying to fetch keys from provider", "provider", config.KeysProvider.Address.Hex())
-
 	keys, err := v.ethClient.GetKeys(ctx, config.KeysProvider, timestamp)
 	if err != nil {
 		return entity.ValidatorSet{}, errors.Errorf("failed to get keys: %w", err)
 	}
+	slog.DebugContext(ctx, "Got keys from provider", "provider", config.KeysProvider.Address.Hex(), "keys", keys)
 
 	// form validators list from voting powers and keys using config
 	validators, totalVP := v.formValidators(config, allVotingPowers, keys)
@@ -124,7 +120,6 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 	}
 
 	if isValsetCommitted {
-		slog.DebugContext(ctx, "Validator set committed at epoch already, checking integrity", "epoch", epoch)
 		previousHeaderHash, err := v.ethClient.GetPreviousHeaderHashAt(ctx, epoch)
 		if err != nil {
 			return entity.ValidatorSet{}, errors.Errorf("failed to get previous header hash: %w", err)
@@ -146,10 +141,10 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 		}
 
 		if !bytes.Equal(committedHash[:], calculatedHash[:]) {
-			slog.DebugContext(ctx, "committed header hash", "hash", committedHash)
-			slog.DebugContext(ctx, "calculated header hash", "hash", calculatedHash)
+			slog.DebugContext(ctx, "Validator set integrity check failed", "committed hash", committedHash, "calculated hash", calculatedHash)
 			return entity.ValidatorSet{}, errors.Errorf("validator set hash mistmach at epoch %d", epoch)
 		}
+		slog.DebugContext(ctx, "Validator set integrity check passed", "hash", committedHash)
 
 		valset.Status = entity.HeaderCommitted
 	} else {
@@ -159,10 +154,11 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 		}
 
 		if epoch < latestCommittedEpoch {
+			slog.DebugContext(ctx, "Header is not committed [missed header]", "epoch", epoch)
 			valset.Status = entity.HeaderMissed
 			// zero PreviousHeaderHash cos header is orphaned
 		} else {
-			slog.DebugContext(ctx, "Validator set is not committed at epoch", "epoch", epoch)
+			slog.DebugContext(ctx, "Header is not committed [new header]", "epoch", epoch)
 			previousHeaderHash, err := v.ethClient.GetHeaderHash(ctx)
 			if err != nil {
 				return entity.ValidatorSet{}, errors.Errorf("failed to get latest header hash: %w", err)
@@ -190,19 +186,19 @@ func (v *Deriver) formValidators(
 		if _, exists := validatorsMap[operatorAddr]; !exists {
 			validatorsMap[operatorAddr] = &entity.Validator{
 				Operator:    vp.Operator,
-				VotingPower: big.NewInt(0),
+				VotingPower: entity.ToVotingPower(big.NewInt(0)),
 				IsActive:    false, // Default to active, will filter later
-				Keys:        []entity.Key{},
+				Keys:        []entity.ValidatorKey{},
 				Vaults:      []entity.ValidatorVault{},
 			}
 		}
 
 		// Add vaults and their voting powers
 		for _, vault := range vp.Vaults {
-			validatorsMap[operatorAddr].VotingPower = new(big.Int).Add(
-				validatorsMap[operatorAddr].VotingPower,
-				vault.VotingPower,
-			)
+			validatorsMap[operatorAddr].VotingPower = entity.ToVotingPower(new(big.Int).Add(
+				validatorsMap[operatorAddr].VotingPower.Int,
+				vault.VotingPower.Int,
+			))
 
 			// Add vault to validator's vaults
 			validatorsMap[operatorAddr].Vaults = append(validatorsMap[operatorAddr].Vaults, entity.ValidatorVault{
@@ -224,7 +220,7 @@ func (v *Deriver) formValidators(
 		if validator, exists := validatorsMap[operatorAddr]; exists {
 			// Add all keys for this operator
 			for _, key := range rk.Keys {
-				validator.Keys = append(validator.Keys, entity.Key{
+				validator.Keys = append(validator.Keys, entity.ValidatorKey{
 					Tag:     key.Tag,
 					Payload: key.Payload,
 				})
@@ -238,7 +234,7 @@ func (v *Deriver) formValidators(
 	// Sort validators by voting power in descending order
 	sort.Slice(validators, func(i, j int) bool {
 		// Compare voting powers (higher first)
-		return validators[i].VotingPower.Cmp(validators[j].VotingPower) > 0
+		return validators[i].VotingPower.Cmp(validators[j].VotingPower.Int) > 0
 	})
 
 	totalActive := 0
@@ -246,7 +242,7 @@ func (v *Deriver) formValidators(
 	totalActiveVotingPower := big.NewInt(0)
 	for i := range validators {
 		// Check minimum voting power if configured
-		if validators[i].VotingPower.Cmp(config.MinInclusionVotingPower) < 0 {
+		if validators[i].VotingPower.Cmp(config.MinInclusionVotingPower.Int) < 0 {
 			break
 		}
 
@@ -259,12 +255,12 @@ func (v *Deriver) formValidators(
 		validators[i].IsActive = true
 
 		if config.MaxVotingPower.Int64() != 0 {
-			if validators[i].VotingPower.Cmp(config.MaxVotingPower) > 0 {
-				validators[i].VotingPower = new(big.Int).Set(config.MaxVotingPower)
+			if validators[i].VotingPower.Cmp(config.MaxVotingPower.Int) > 0 {
+				validators[i].VotingPower = entity.ToVotingPower(new(big.Int).Set(config.MaxVotingPower.Int))
 			}
 		}
 		// Add to total active voting power if validator is active
-		totalActiveVotingPower = new(big.Int).Add(totalActiveVotingPower, validators[i].VotingPower)
+		totalActiveVotingPower = new(big.Int).Add(totalActiveVotingPower, validators[i].VotingPower.Int)
 
 		if config.MaxValidatorsCount.Int64() != 0 {
 			if totalActive >= int(config.MaxValidatorsCount.Int64()) {
@@ -281,20 +277,20 @@ func (v *Deriver) formValidators(
 	return validators, totalActiveVotingPower
 }
 
-func (v *Deriver) calcQuorumThreshold(config entity.NetworkConfig, totalVP *big.Int) (*big.Int, error) {
+func (v *Deriver) calcQuorumThreshold(config entity.NetworkConfig, totalVP *big.Int) (entity.VotingPower, error) {
 	quorumThresholdPercent := big.NewInt(0)
 	for _, quorumThreshold := range config.QuorumThresholds {
 		if quorumThreshold.KeyTag == config.RequiredHeaderKeyTag {
-			quorumThresholdPercent = quorumThreshold.QuorumThreshold
+			quorumThresholdPercent = quorumThreshold.QuorumThreshold.Int
 		}
 	}
 	if quorumThresholdPercent.Cmp(big.NewInt(0)) == 0 {
-		return nil, errors.Errorf("quorum threshold is zero")
+		return entity.VotingPower{}, errors.Errorf("quorum threshold is zero")
 	}
 	maxThreshold := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
 
 	mul := new(big.Int).Mul(totalVP, quorumThresholdPercent)
 	div := new(big.Int).Div(mul, maxThreshold)
 	// add 1 to apply up rounding
-	return new(big.Int).Add(div, big.NewInt(1)), nil
+	return entity.ToVotingPower(new(big.Int).Add(div, big.NewInt(1))), nil
 }

@@ -12,7 +12,6 @@ import (
 	"middleware-offchain/core/client/evm"
 	"middleware-offchain/core/entity"
 	"middleware-offchain/core/usecase/aggregator"
-	"middleware-offchain/core/usecase/signer"
 	valsetDeriver "middleware-offchain/core/usecase/valset-deriver"
 	"middleware-offchain/pkg/proof"
 )
@@ -22,18 +21,12 @@ type prover interface {
 	Verify(valsetLen int, publicInputHash common.Hash, proofBytes []byte) (bool, error)
 }
 
-type keyProvider interface {
-	GetPrivateKey(keyTag entity.KeyTag) ([]byte, error)
-	HasKey(keyTag entity.KeyTag) (bool, error)
-}
-
 type Config struct {
 	MasterRPCURL   string `validate:"required"`
 	DriverAddress  string `validate:"required"`
 	PrivateKey     []byte
 	RequestTimeout time.Duration `validate:"required,gt=0"`
 	Prover         prover        `validate:"required"`
-	KeyProvider    keyProvider   `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -48,7 +41,6 @@ func (c Config) Validate() error {
 type Symbiotic struct {
 	evmClient  *evm.Client
 	aggregator *aggregator.Aggregator
-	signer     *signer.Signer
 	deriver    *valsetDeriver.Deriver
 }
 
@@ -68,7 +60,6 @@ func NewSymbiotic(cfg Config) (*Symbiotic, error) {
 	}
 
 	agg := aggregator.NewAggregator(cfg.Prover)
-	sign := signer.NewSigner(cfg.KeyProvider)
 	deriver, err := valsetDeriver.NewDeriver(evmClient)
 	if err != nil {
 		return nil, errors.Errorf("failed to create validator set deriver: %w", err)
@@ -76,32 +67,13 @@ func NewSymbiotic(cfg Config) (*Symbiotic, error) {
 	return &Symbiotic{
 		evmClient:  evmClient,
 		aggregator: agg,
-		signer:     sign,
 		deriver:    deriver,
 	}, nil
 }
 
-// ========== Signer methods ==========
-
-func (s *Symbiotic) Verify(keyTag entity.KeyTag, signature entity.Signature) ([]byte, bool, error) {
-	return s.signer.Verify(keyTag, signature)
-}
-
-func (s *Symbiotic) Sign(keyTag entity.KeyTag, message []byte) (entity.Signature, error) {
-	return s.signer.Sign(keyTag, message)
-}
-
-func (s *Symbiotic) Hash(keyTag entity.KeyTag, message []byte) ([]byte, error) {
-	return s.signer.Hash(keyTag, message)
-}
-
-func (s *Symbiotic) GetPublicKey(keyTag entity.KeyTag) ([]byte, error) {
-	return s.signer.GetPublicKey(keyTag)
-}
-
 // ========== Aggregator methods ==========
 
-func (s *Symbiotic) Aggregate(valset entity.ValidatorSet, keyTag entity.KeyTag, verificationType entity.VerificationType, messageHash []byte, signatures []entity.Signature) (entity.AggregationProof, error) {
+func (s *Symbiotic) Aggregate(valset entity.ValidatorSet, keyTag entity.KeyTag, verificationType entity.VerificationType, messageHash []byte, signatures []entity.SignatureExtended) (entity.AggregationProof, error) {
 	return s.aggregator.Aggregate(valset, keyTag, verificationType, messageHash, signatures)
 }
 

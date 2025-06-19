@@ -29,7 +29,7 @@ func toValidatorsData(signerValidators []entity.Validator, allValidators []entit
 				if err != nil {
 					return nil, errors.Errorf("failed to deserialize G1: %w", err)
 				}
-				validatorData := proof.ValidatorData{Key: *g1.G1Affine, VotingPower: activeValidators[i].VotingPower, IsNonSigner: true}
+				validatorData := proof.ValidatorData{Key: *g1.G1Affine, VotingPower: activeValidators[i].VotingPower.Int, IsNonSigner: true}
 
 				for _, signer := range signerValidators {
 					if signer.Operator.Cmp(activeValidators[i].Operator) == 0 {

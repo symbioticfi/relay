@@ -1,6 +1,7 @@
 package keyprovider
 
 import (
+	"middleware-offchain/core/usecase/crypto"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -22,7 +23,10 @@ func TestAddKey(t *testing.T) {
 	require.NoError(t, err)
 
 	pk := []byte{'a', 'b', 'c', 'd', 'e', 'f', 'g'}
-	err = kp.AddKey(15, pk, password, false)
+	key, err := crypto.NewPrivateKey(15, pk)
+	require.NoError(t, err)
+
+	err = kp.AddKey(15, key, password, false)
 	require.NoError(t, err)
 }
 
@@ -34,13 +38,16 @@ func TestForceAddKey(t *testing.T) {
 	require.NoError(t, err)
 
 	pk := []byte{'a', 'b', 'c', 'd', 'e', 'f', 'g'}
-	err = kp.AddKey(15, pk, password, false)
+	key, err := crypto.NewPrivateKey(15, pk)
 	require.NoError(t, err)
 
-	err = kp.AddKey(15, pk, password, false)
+	err = kp.AddKey(15, key, password, false)
+	require.NoError(t, err)
+
+	err = kp.AddKey(15, key, password, false)
 	require.Error(t, err)
 
-	err = kp.AddKey(15, pk, password, true)
+	err = kp.AddKey(15, key, password, true)
 	require.NoError(t, err)
 }
 
@@ -52,7 +59,10 @@ func TestCreateAndReopen(t *testing.T) {
 	require.NoError(t, err)
 
 	pk := []byte{'a', 'b', 'c', 'd', 'e', 'f', 'g'}
-	err = kp.AddKey(15, pk, password, false)
+	key, err := crypto.NewPrivateKey(15, pk)
+	require.NoError(t, err)
+
+	err = kp.AddKey(15, key, password, false)
 	require.NoError(t, err)
 
 	kp, err = NewKeystoreProvider(path, password)
@@ -66,5 +76,5 @@ func TestCreateAndReopen(t *testing.T) {
 	storedPk, err := kp.GetPrivateKey(15)
 	require.NoError(t, err)
 
-	require.Equal(t, storedPk, pk)
+	require.Equal(t, storedPk.Bytes(), pk)
 }

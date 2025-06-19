@@ -111,7 +111,7 @@ func (s *Service) process(ctx context.Context) error {
 	}
 
 	if s.generatedEpoch >= valSet.Epoch {
-		slog.DebugContext(ctx, "no new epoch to commit, already generated for this epoch", "epoch", valSet.Epoch)
+		slog.DebugContext(ctx, "Already signed for this epoch, skipping", "epoch", valSet.Epoch)
 		return nil
 	}
 
@@ -134,24 +134,21 @@ func (s *Service) process(ctx context.Context) error {
 		return errors.Errorf("failed to get header commitment hash: %w", err)
 	}
 
-	slog.DebugContext(ctx, "generated commitment data", "hash", hex.EncodeToString(data))
-
 	latestValset, err := s.cfg.Repo.GetLatestValidatorSet(ctx)
 	if err != nil {
 		return errors.Errorf("failed to get latest validator set extra: %w", err)
 	}
 
 	if latestValset.Epoch < valSet.Epoch-10 {
-		slog.WarnContext(ctx, "Header is not committed for much epochs", "latest committed", latestValset.Epoch, "current", valSet.Epoch)
+		slog.WarnContext(ctx, "More than 10 missed epochs", "latest committed", latestValset.Epoch, "current", valSet.Epoch)
 	}
 	r := entity.SignatureRequest{
 		KeyTag:        entity.ValsetHeaderKeyTag,
-		RequiredEpoch: latestValset.Epoch,
+		RequiredEpoch: entity.Epoch(latestValset.Epoch),
 		Message:       data,
 	}
 
-	slog.DebugContext(ctx, "Signed header", "header", header)
-	slog.DebugContext(ctx, "Signed extra data", "extraData", extraData)
+	slog.DebugContext(ctx, "Signed validator set", "header", header, "extra data", extraData, "hash", hex.EncodeToString(data))
 	err = s.cfg.Repo.SavePendingValidatorSet(ctx, r.Hash(), *valSet)
 	if err != nil {
 		return errors.Errorf("failed to save pending valset: %w", err)

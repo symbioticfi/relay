@@ -11,7 +11,7 @@ func (h *handler) SignMessagePost(ctx context.Context, reqRaw *api.SignatureRequ
 	req := entity.SignatureRequest{
 		KeyTag:        entity.KeyTag(reqRaw.KeyTag),
 		Message:       reqRaw.Message,
-		RequiredEpoch: reqRaw.RequiredEpoch,
+		RequiredEpoch: entity.Epoch(reqRaw.RequiredEpoch),
 	}
 
 	err := h.cfg.Signer.Sign(ctx, req)

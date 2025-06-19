@@ -5,6 +5,8 @@ import (
 	"math/big"
 	"slices"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -13,47 +15,6 @@ import (
 
 	"middleware-offchain/pkg/ssz"
 )
-
-const ValsetHeaderKeyTag = KeyTag(15)
-
-// SignatureRequest signature request message
-// RequestHash = sha256(SignatureRequest) (use as identifier later)
-type SignatureRequest struct {
-	KeyTag        KeyTag
-	RequiredEpoch uint64
-	Message       []byte
-}
-
-func (r SignatureRequest) Hash() common.Hash {
-	return crypto.Keccak256Hash([]byte{uint8(r.KeyTag)}, new(big.Int).SetInt64(int64(r.RequiredEpoch)).Bytes(), r.Message)
-}
-
-type SignatureMessage struct {
-	RequestHash common.Hash
-	KeyTag      KeyTag
-	Epoch       uint64
-	Signature   Signature // parse based on KeyTag
-}
-
-type AggregationState struct {
-	SignaturesCnt       uint32
-	CurrentVotingPower  *big.Int
-	RequiredVotingPower *big.Int
-}
-
-// AggregationProof aggregator.proof(signatures []Signature) -> AggregationProof
-type AggregationProof struct {
-	VerificationType VerificationType // proof verification type
-	MessageHash      []byte           // scheme depends on KeyTag
-	Proof            []byte           // parse based on KeyTag & VerificationType
-}
-
-type AggregatedSignatureMessage struct {
-	RequestHash      common.Hash
-	KeyTag           KeyTag
-	Epoch            uint64
-	AggregationProof AggregationProof
-}
 
 type VerificationType uint32
 
@@ -78,6 +39,142 @@ var (
 	SimpleVerificationAggPublicKeyG1Hash            = crypto.Keccak256Hash([]byte("aggPublicKeyG1"))
 )
 
+type ValidatorSetStatus int
+
+const (
+	HeaderPending ValidatorSetStatus = iota
+	HeaderMissed
+	HeaderCommitted
+)
+
+const ValsetHeaderKeyTag = KeyTag(15)
+
+type RawSignature []byte
+type RawMessageHash []byte
+type RawPublicKey []byte
+type CompactPublicKey []byte
+type RawMessage []byte
+type RawProof []byte
+type VotingPower struct {
+	*big.Int
+}
+type QuorumThresholdPct struct {
+	*big.Int
+}
+
+func ToVotingPower(val *big.Int) VotingPower {
+	return VotingPower{Int: val}
+}
+
+func ToQuorumThresholdPct(val *big.Int) QuorumThresholdPct {
+	return QuorumThresholdPct{Int: val}
+}
+
+type Epoch uint64
+type Timestamp uint64
+
+func (raw RawSignature) MarshalText() ([]byte, error) {
+	return []byte(hexutil.Encode(raw)), nil
+}
+
+func (raw RawMessageHash) MarshalText() ([]byte, error) {
+	return []byte(hexutil.Encode(raw)), nil
+}
+
+func (raw RawPublicKey) MarshalText() ([]byte, error) {
+	return []byte(hexutil.Encode(raw)), nil
+}
+
+func (raw CompactPublicKey) MarshalText() ([]byte, error) {
+	return []byte(hexutil.Encode(raw)), nil
+}
+
+func (raw RawProof) MarshalText() ([]byte, error) {
+	return []byte(hexutil.Encode(raw)), nil
+}
+
+func (vp VotingPower) MarshalJSON() ([]byte, error) {
+	// dirty hack to force using string instead of float in json
+	return []byte(fmt.Sprintf("\"%s\"", vp.String())), nil
+}
+
+func (e Epoch) MarshalJSON() ([]byte, error) {
+	// dirty hack to force using string instead of float in json
+	return []byte(fmt.Sprintf("\"%d\"", e)), nil
+}
+
+func (e Timestamp) MarshalJSON() ([]byte, error) {
+	// dirty hack to force using string instead of float in json
+	return []byte(fmt.Sprintf("\"%d\"", e)), nil
+}
+
+func (q QuorumThresholdPct) MarshalJSON() ([]byte, error) {
+	maxQ := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
+	share := new(big.Float).Quo(new(big.Float).SetInt(q.Int), new(big.Float).SetInt(maxQ))
+	pct := new(big.Float).Mul(share, big.NewFloat(100.0))
+	return []byte(fmt.Sprintf("\"%s %%\"", pct.Text('f', 5))), nil
+}
+
+func (s ValidatorSetStatus) MarshalJSON() ([]byte, error) {
+	switch s {
+	case HeaderPending:
+		return []byte("\"Pending\""), nil
+	case HeaderMissed:
+		return []byte("\"Missed\""), nil
+	case HeaderCommitted:
+		return []byte("\"Committed\""), nil
+	default:
+		return []byte("\"Unknown\""), nil
+	}
+}
+
+// SignatureRequest signature request message
+// RequestHash = sha256(SignatureRequest) (use as identifier later)
+type SignatureRequest struct {
+	KeyTag        KeyTag
+	RequiredEpoch Epoch
+	Message       RawMessage
+}
+
+func (r SignatureRequest) Hash() common.Hash {
+	return crypto.Keccak256Hash([]byte{uint8(r.KeyTag)}, new(big.Int).SetInt64(int64(r.RequiredEpoch)).Bytes(), r.Message)
+}
+
+// SignatureExtended signer.sign() -> SignatureExtended
+type SignatureExtended struct {
+	MessageHash RawMessageHash // scheme depends on KeyTag
+	Signature   RawSignature   // parse based on KeyTag
+	// PublicKey for bls will contain g1+g2
+	PublicKey RawPublicKey // parse based on KeyTag
+}
+
+type SignatureMessage struct {
+	RequestHash common.Hash
+	KeyTag      KeyTag
+	Epoch       Epoch
+	Signature   SignatureExtended // parse based on KeyTag
+}
+
+// AggregationProof aggregator.proof(signatures []SignatureExtended) -> AggregationProof
+type AggregationProof struct {
+	VerificationType VerificationType // proof verification type
+	MessageHash      RawMessageHash   // scheme depends on KeyTag
+	Proof            RawProof         // parse based on KeyTag & VerificationType
+}
+
+type AggregatedSignatureMessage struct {
+	RequestHash      common.Hash
+	KeyTag           KeyTag
+	Epoch            Epoch
+	AggregationProof AggregationProof
+}
+
+type AggregationState struct {
+	SignaturesCnt       uint32
+	CurrentVotingPower  VotingPower
+	RequiredVotingPower VotingPower
+}
+
 func (vt VerificationType) MarshalText() (text []byte, err error) {
 	switch vt {
 	case VerificationTypeZK:
@@ -95,7 +192,7 @@ type CrossChainAddress struct {
 
 type QuorumThreshold struct {
 	KeyTag          KeyTag
-	QuorumThreshold *big.Int
+	QuorumThreshold QuorumThresholdPct
 }
 
 type NetworkConfig struct {
@@ -103,9 +200,9 @@ type NetworkConfig struct {
 	KeysProvider            CrossChainAddress
 	Replicas                []CrossChainAddress
 	VerificationType        VerificationType
-	MaxVotingPower          *big.Int
-	MinInclusionVotingPower *big.Int
-	MaxValidatorsCount      *big.Int
+	MaxVotingPower          VotingPower
+	MinInclusionVotingPower VotingPower
+	MaxValidatorsCount      VotingPower
 	RequiredKeyTags         []KeyTag
 	RequiredHeaderKeyTag    KeyTag
 	QuorumThresholds        []QuorumThreshold
@@ -119,7 +216,7 @@ type NetworkData struct {
 
 type VaultVotingPower struct {
 	Vault       common.Address
-	VotingPower *big.Int
+	VotingPower VotingPower
 }
 
 type OperatorVotingPower struct {
@@ -129,7 +226,7 @@ type OperatorVotingPower struct {
 
 type OperatorWithKeys struct {
 	Operator common.Address
-	Keys     []Key
+	Keys     []ValidatorKey
 }
 
 type Eip712Domain struct {
@@ -142,22 +239,22 @@ type Eip712Domain struct {
 	Extensions        []*big.Int
 }
 
-type Key struct {
+type ValidatorKey struct {
 	Tag     KeyTag
-	Payload []byte
+	Payload CompactPublicKey
 }
 
 type ValidatorVault struct {
 	ChainID     uint64         `json:"chainId"`
 	Vault       common.Address `json:"vault"`
-	VotingPower *big.Int       `json:"votingPower"`
+	VotingPower VotingPower    `json:"votingPower"`
 }
 
 type Validator struct {
 	Operator    common.Address   `json:"operator"`
-	VotingPower *big.Int         `json:"votingPower"`
+	VotingPower VotingPower      `json:"votingPower"`
 	IsActive    bool             `json:"isActive"`
-	Keys        []Key            `json:"keys"`
+	Keys        []ValidatorKey   `json:"keys"`
 	Vaults      []ValidatorVault `json:"vaults"`
 }
 
@@ -170,33 +267,17 @@ func (v Validator) FindKeyByKeyTag(keyTag KeyTag) ([]byte, bool) {
 	return nil, false
 }
 
-type ValidatorSetStatus int
-
-const (
-	HeaderPending ValidatorSetStatus = iota
-	HeaderMissed
-	HeaderCommitted
-)
-
 type ValidatorSet struct {
 	Version            uint8
 	RequiredKeyTag     KeyTag      // key tag required to commit next valset
 	Epoch              uint64      // valset epoch
 	CaptureTimestamp   uint64      // epoch capture timestamp
-	QuorumThreshold    *big.Int    // absolute number now, not a percent
+	QuorumThreshold    VotingPower // absolute number now, not a percent
 	PreviousHeaderHash common.Hash // previous valset header hash
 	Validators         []Validator
 
 	// internal usage only
 	Status ValidatorSetStatus
-}
-
-// Signature signer.sign() -> Signature
-type Signature struct {
-	MessageHash []byte // scheme depends on KeyTag
-	Signature   []byte // parse based on KeyTag
-	// PublicKey for bls will contain g1+g2
-	PublicKey []byte // parse based on KeyTag
 }
 
 func (v ValidatorSet) FindValidatorByKey(keyTag KeyTag, publicKey []byte) (Validator, bool) {
@@ -221,7 +302,7 @@ type ValidatorSetHeader struct {
 	RequiredKeyTag     KeyTag
 	Epoch              uint64
 	CaptureTimestamp   uint64
-	QuorumThreshold    *big.Int
+	QuorumThreshold    VotingPower
 	ValidatorsSszMRoot common.Hash
 	PreviousHeaderHash common.Hash
 }
@@ -261,14 +342,14 @@ func (e ExtraDataList) AbiEncode() ([]byte, error) {
 	return args.Pack(e)
 }
 
-func (v ValidatorSet) GetTotalActiveVotingPower() *big.Int {
+func (v ValidatorSet) GetTotalActiveVotingPower() VotingPower {
 	totalVotingPower := big.NewInt(0)
 	for _, validator := range v.Validators {
 		if validator.IsActive {
-			totalVotingPower = totalVotingPower.Add(totalVotingPower, validator.VotingPower)
+			totalVotingPower = totalVotingPower.Add(totalVotingPower, validator.VotingPower.Int)
 		}
 	}
-	return totalVotingPower
+	return VotingPower{totalVotingPower}
 }
 
 func (v ValidatorSet) GetTotalActiveValidators() int64 {
@@ -303,7 +384,7 @@ func sszTreeRoot(v *ValidatorSet) (common.Hash, error) {
 	return sszType.HashTreeRoot()
 }
 
-func keyPayloadHash(k Key) common.Hash {
+func keyPayloadHash(k ValidatorKey) common.Hash {
 	return crypto.Keccak256Hash(k.Payload)
 }
 
@@ -312,9 +393,9 @@ func validatorSetToSszValidators(v *ValidatorSet) ssz.SszValidatorSet {
 		Validators: lo.Map(v.Validators, func(v Validator, _ int) *ssz.SszValidator {
 			return &ssz.SszValidator{
 				Operator:    v.Operator,
-				VotingPower: v.VotingPower,
+				VotingPower: v.VotingPower.Int,
 				IsActive:    v.IsActive,
-				Keys: lo.Map(v.Keys, func(k Key, _ int) *ssz.SszKey {
+				Keys: lo.Map(v.Keys, func(k ValidatorKey, _ int) *ssz.SszKey {
 					return &ssz.SszKey{
 						Tag:         uint8(k.Tag),
 						PayloadHash: keyPayloadHash(k),
@@ -324,7 +405,7 @@ func validatorSetToSszValidators(v *ValidatorSet) ssz.SszValidatorSet {
 					return &ssz.SszVault{
 						ChainId:     v.ChainID,
 						Vault:       v.Vault,
-						VotingPower: v.VotingPower,
+						VotingPower: v.VotingPower.Int,
 					}
 				}),
 			}
@@ -365,7 +446,7 @@ func (v ValidatorSetHeader) AbiEncode() ([]byte, error) {
 		},
 	}
 
-	pack, err := arguments.Pack(v.Version, v.RequiredKeyTag, new(big.Int).SetUint64(v.Epoch), new(big.Int).SetUint64(v.CaptureTimestamp), v.QuorumThreshold, v.ValidatorsSszMRoot, v.PreviousHeaderHash)
+	pack, err := arguments.Pack(v.Version, v.RequiredKeyTag, new(big.Int).SetUint64(v.Epoch), new(big.Int).SetUint64(v.CaptureTimestamp), v.QuorumThreshold.Int, v.ValidatorsSszMRoot, v.PreviousHeaderHash)
 	if err != nil {
 		return nil, errors.Errorf("failed to pack arguments: %w", err)
 	}

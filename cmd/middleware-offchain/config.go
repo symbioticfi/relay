@@ -54,9 +54,9 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().String("p2p-listen", "", "P2P listen address")
 	rootCmd.PersistentFlags().String("http-listen", "", "Http listener address")
 	rootCmd.PersistentFlags().String("secret-key", "", "Secret key for BLS signature generation")
-	rootCmd.PersistentFlags().Bool("aggregator", false, "Is Aggregator")
-	rootCmd.PersistentFlags().Bool("signer", true, "Is Signer")
-	rootCmd.PersistentFlags().Bool("committer", false, "Is Committer")
+	rootCmd.PersistentFlags().Bool("aggregator", false, "Is Aggregator Node")
+	rootCmd.PersistentFlags().Bool("signer", true, "Is Signer Node")
+	rootCmd.PersistentFlags().Bool("committer", false, "Is Committer Node")
 	rootCmd.PersistentFlags().String("storage-dir", ".data", "Dir to store data")
 }
 

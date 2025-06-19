@@ -37,7 +37,7 @@ func EncodeValidatorSetHeaderWithExtraDataToJSON(validatorSetHeader entity.Valid
 		Epoch:              validatorSetHeader.Epoch,
 		RequiredKeyTag:     uint8(validatorSetHeader.RequiredKeyTag),
 		CaptureTimestamp:   validatorSetHeader.CaptureTimestamp,
-		QuorumThreshold:    validatorSetHeader.QuorumThreshold,
+		QuorumThreshold:    validatorSetHeader.QuorumThreshold.Int,
 		PreviousHeaderHash: fmt.Sprintf("0x%064x", validatorSetHeader.PreviousHeaderHash),
 	}
 

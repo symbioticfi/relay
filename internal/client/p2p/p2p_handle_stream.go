@@ -31,8 +31,8 @@ func (s *Service) handleStreamSignedHash(ctx context.Context, stream network.Str
 	msg := entity.SignatureMessage{
 		RequestHash: signatureGenerated.RequestHash,
 		KeyTag:      entity.KeyTag(signatureGenerated.KeyTag),
-		Epoch:       signatureGenerated.Epoch,
-		Signature: entity.Signature{
+		Epoch:       entity.Epoch(signatureGenerated.Epoch),
+		Signature: entity.SignatureExtended{
 			PublicKey:   signatureGenerated.Signature.PublicKey,
 			Signature:   signatureGenerated.Signature.Signature,
 			MessageHash: signatureGenerated.Signature.MessageHash,
@@ -61,7 +61,7 @@ func (s *Service) handleStreamAggregatedProof(ctx context.Context, stream networ
 	msg := entity.AggregatedSignatureMessage{
 		RequestHash: signaturesAggregated.RequestHash,
 		KeyTag:      entity.KeyTag(signaturesAggregated.KeyTag),
-		Epoch:       signaturesAggregated.Epoch,
+		Epoch:       entity.Epoch(signaturesAggregated.Epoch),
 		AggregationProof: entity.AggregationProof{
 			VerificationType: entity.VerificationType(signaturesAggregated.AggregationProof.VerificationType),
 			MessageHash:      signaturesAggregated.AggregationProof.MessageHash,

@@ -20,13 +20,13 @@ func (h *handler) GetSignaturesGet(ctx context.Context, params api.GetSignatures
 	return convertSignaturesToAPI(signatures), nil
 }
 
-func convertSignaturesToAPI(signatures []entity.Signature) []api.Signature {
-	return lo.Map(signatures, func(sig entity.Signature, _ int) api.Signature {
+func convertSignaturesToAPI(signatures []entity.SignatureExtended) []api.Signature {
+	return lo.Map(signatures, func(sig entity.SignatureExtended, _ int) api.Signature {
 		return convertSignatureToAPI(sig)
 	})
 }
 
-func convertSignatureToAPI(sig entity.Signature) api.Signature {
+func convertSignatureToAPI(sig entity.SignatureExtended) api.Signature {
 	return api.Signature{
 		Signature:   sig.Signature,
 		MessageHash: sig.MessageHash,

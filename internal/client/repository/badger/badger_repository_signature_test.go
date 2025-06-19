@@ -62,9 +62,9 @@ func TestBadgerRepository_Signature(t *testing.T) {
 	require.True(t, bytes.Equal(signatures[0].PublicKey, sig3.PublicKey))
 }
 
-func randomSignature(t *testing.T) entity.Signature {
+func randomSignature(t *testing.T) entity.SignatureExtended {
 	t.Helper()
-	return entity.Signature{
+	return entity.SignatureExtended{
 		MessageHash: randomBytes(t, 32),
 		Signature:   randomBytes(t, 65), // Typical ECDSA signature length
 		PublicKey:   randomBytes(t, 33), // Compressed public key length
