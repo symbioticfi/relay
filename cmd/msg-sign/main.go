@@ -38,6 +38,7 @@ func main() {
 func run() error {
 	rootCmd.PersistentFlags().StringVar(&cfg.rpcURL, "rpc-url", "", "RPC URL")
 	rootCmd.PersistentFlags().StringVar(&cfg.driverAddress, "driver-address", "", "Driver contract address")
+	rootCmd.PersistentFlags().Uint64Var(&cfg.driverChainID, "driver-chain-id", 111, "Driver chain id")
 	rootCmd.PersistentFlags().StringVar(&cfg.logLevel, "log-level", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVar(&cfg.logMode, "log-mode", "text", "Log mode (text, pretty)")
 	rootCmd.PersistentFlags().StringArrayVar(&cfg.signAddresses, "sign-address", []string{"http://localhost:8081/api/v1", "http://localhost:8082/api/v1", "http://localhost:8083/api/v1"}, "Addresses of signer servers'")
@@ -55,6 +56,7 @@ func run() error {
 type config struct {
 	rpcURL        string
 	driverAddress string
+	driverChainID uint64
 
 	logLevel      string
 	logMode       string
@@ -76,7 +78,7 @@ var rootCmd = &cobra.Command{
 		driverAddress := entity.CrossChainAddress{ChainId: 111, Address: common.HexToAddress(cfg.driverAddress)}
 		ethClient, err := evm.NewEVMClient(ctx, evm.Config{
 			Chains: []entity.ChainURL{{
-				ChainID: 111,
+				ChainID: cfg.driverChainID,
 				RPCURL:  cfg.rpcURL,
 			}},
 			DriverAddress:  driverAddress,
@@ -87,7 +89,7 @@ var rootCmd = &cobra.Command{
 		}
 		slog.DebugContext(ctx, "created symbiotic client")
 
-		epoch, err := ethClient.GetLastCommittedHeaderEpoch(ctx, driverAddress)
+		networkConfig, epoch, err := getLastCommittedHeaderEpoch(ctx, ethClient)
 		if err != nil {
 			return errors.Errorf("failed to get current epoch: %w", err)
 		}
@@ -111,9 +113,7 @@ var rootCmd = &cobra.Command{
 					continue
 				}
 
-				if err := verifyQuorumSig(ctx, driverAddress, resp, message, ethClient, epoch); err != nil {
-					return errors.Errorf("failed to verify quorum signature: %w", err)
-				}
+				verifyQuorumSig(ctx, networkConfig, resp, message, ethClient, epoch)
 
 				return nil
 			case <-ctx.Done():
@@ -124,7 +124,7 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func verifyQuorumSig(ctx context.Context, address entity.CrossChainAddress, proof entity.AggregationProof, message string, eth *evm.Client, epoch uint64) error {
+func verifyQuorumSig(ctx context.Context, networkConfig entity.NetworkConfig, proof entity.AggregationProof, message string, eth *evm.Client, epoch uint64) {
 	slog.InfoContext(ctx, "received message with proof",
 		"messageHash", hex.EncodeToString(proof.MessageHash),
 		"ourMessage", hex.EncodeToString([]byte(message)),
@@ -135,14 +135,16 @@ func verifyQuorumSig(ctx context.Context, address entity.CrossChainAddress, proo
 
 	quorumBytes := proof.Proof[len(proof.Proof)-32:]
 	quorumInt := new(big.Int).SetBytes(quorumBytes)
-	verifyResult, err := eth.VerifyQuorumSig(ctx, address, epoch, ourHash, entity.ValsetHeaderKeyTag, quorumInt, proof.Proof)
-	if err != nil {
-		return errors.Errorf("failed to verify quorum signature: %w", err)
+
+	for _, replica := range networkConfig.Replicas {
+		verifyResult, err := eth.VerifyQuorumSig(ctx, replica, epoch, ourHash, entity.ValsetHeaderKeyTag, quorumInt, proof.Proof)
+		if err != nil {
+			slog.ErrorContext(ctx, "failed to verify quorum signature", "replica", replica.Address.Hex(), "error", err)
+			continue
+		}
+
+		slog.InfoContext(ctx, "quorum signature verification result", "result", verifyResult)
 	}
-
-	slog.InfoContext(ctx, "quorum signature verification result", "result", verifyResult)
-
-	return nil
 }
 
 type signMessageRequest struct {
@@ -247,6 +249,36 @@ func sendGetAggregationProofRequest(ctx context.Context, c config, hash string) 
 	}
 
 	return aggProof, nil
+}
+
+func getLastCommittedHeaderEpoch(ctx context.Context, ethClient *evm.Client) (entity.NetworkConfig, uint64, error) {
+	currentEpoch, err := ethClient.GetCurrentEpoch(ctx)
+	if err != nil {
+		return entity.NetworkConfig{}, 0, errors.Errorf("failed to get current epoch: %w", err)
+	}
+	epochStart, err := ethClient.GetEpochStart(ctx, currentEpoch)
+	if err != nil {
+		return entity.NetworkConfig{}, 0, errors.Errorf("failed to get epoch start: %w", err)
+	}
+	networkConfig, err := ethClient.GetConfig(ctx, epochStart)
+	if err != nil {
+		return entity.NetworkConfig{}, 0, errors.Errorf("failed to get network config: %w", err)
+	}
+
+	maxEpoch := uint64(0)
+
+	for _, addr := range networkConfig.Replicas {
+		epoch, err := ethClient.GetLastCommittedHeaderEpoch(ctx, addr)
+		if err != nil {
+			return entity.NetworkConfig{}, 0, errors.Errorf("failed to get last committed header epoch for address %s: %w", addr.Address.Hex(), err)
+		}
+
+		if epoch > maxEpoch {
+			maxEpoch = epoch
+		}
+	}
+
+	return networkConfig, maxEpoch, nil
 }
 
 // signalContext returns a context that is canceled if either SIGTERM or SIGINT signal is received.

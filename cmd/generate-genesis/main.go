@@ -159,12 +159,19 @@ var rootCmd = &cobra.Command{
 			return nil
 		}
 
-		result, err := client.SetGenesis(ctx, driverAddress, header, extraData)
-		if err != nil {
+		errs := make([]error, len(networkConfig.Replicas))
+		for i, replica := range networkConfig.Replicas {
+			var txResult entity.TxResult
+			txResult, errs[i] = client.SetGenesis(ctx, driverAddress, header, extraData)
+			if errs[i] != nil {
+				slog.ErrorContext(ctx, "failed to set genesis on replica", "replica", replica, "error", errs[i])
+			} else {
+				slog.InfoContext(ctx, "genesis valset set on replica", "replica", replica, "txHash", txResult.TxHash.String())
+			}
+		}
+		if err := errors.Join(errs...); err != nil {
 			return errors.Errorf("failed to commit valset header: %w", err)
 		}
-
-		slog.InfoContext(ctx, "genesis valset committed", "txHash", result.TxHash.String(), "epoch", newValset.Epoch)
 
 		return nil
 	},
