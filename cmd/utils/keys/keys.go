@@ -3,12 +3,10 @@ package keys
 import (
 	"log/slog"
 	"middleware-offchain/core/entity"
-	"middleware-offchain/core/usecase/key-provider"
-	"middleware-offchain/pkg/bls"
+	"middleware-offchain/core/usecase/crypto"
+	keyprovider "middleware-offchain/core/usecase/key-provider"
 	"syscall"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -94,25 +92,7 @@ var printKeysCmd = &cobra.Command{
 				return err
 			}
 
-			var publicKeyStr string
-
-			switch keyTag.Type() {
-			case entity.KeyTypeBlsBn254:
-				keyPair := bls.ComputeKeyPair(pk)
-				publicKeyStr = keyPair.PublicKeyG1.String()
-			case entity.KeyTypeEcdsaSecp256k1:
-				ecdsaPk, err := crypto.ToECDSA(pk)
-				if err != nil {
-					return err
-				}
-				publicKeyStr = "E([" + ecdsaPk.X.String() + "," + ecdsaPk.Y.String() + "])"
-			case entity.KeyTypeInvalid:
-				publicKeyStr = "invalid"
-			default:
-				return errors.Errorf("unsupported key tag type: %s", alias)
-			}
-
-			slog.Info("key:", "idx", i, "alias", alias, "public_key", publicKeyStr)
+			slog.Info("key:", "idx", i, "alias", alias, "public_key", pk.PublicKey())
 		}
 
 		return nil
@@ -145,7 +125,12 @@ var addKeyCmd = &cobra.Command{
 			return err
 		}
 
-		if err = keyStore.AddKey(entity.KeyTag(cfg.keyTag), common.Hex2Bytes(cfg.privateKey), cfg.password, cfg.force); err != nil {
+		key, err := crypto.NewPrivateKey(entity.KeyTag(cfg.keyTag), []byte(cfg.privateKey))
+		if err != nil {
+			return err
+		}
+
+		if err = keyStore.AddKey(entity.KeyTag(cfg.keyTag), key, cfg.password, cfg.force); err != nil {
 			return err
 		}
 
@@ -207,7 +192,12 @@ var updateKeyCmd = &cobra.Command{
 			return errors.New("Key doesn't exist")
 		}
 
-		if err = keyStore.AddKey(keyTag, common.Hex2Bytes(cfg.privateKey), cfg.password, true); err != nil {
+		key, err := crypto.NewPrivateKey(entity.KeyTag(cfg.keyTag), []byte(cfg.privateKey))
+		if err != nil {
+			return err
+		}
+
+		if err = keyStore.AddKey(entity.KeyTag(cfg.keyTag), key, cfg.password, true); err != nil {
 			return err
 		}
 

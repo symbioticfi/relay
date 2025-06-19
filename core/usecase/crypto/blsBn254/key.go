@@ -2,14 +2,17 @@ package blsBn254
 
 import (
 	"fmt"
+	"math/big"
+	"middleware-offchain/core/entity"
+	symbKeys "middleware-offchain/core/usecase/crypto/key-types"
+
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
+
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fp"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
-	"math/big"
-	"middleware-offchain/core/entity"
-	symbKeys "middleware-offchain/core/usecase/crypto/key-types"
 )
 
 type Signature = entity.RawSignature
@@ -39,6 +42,20 @@ func Hash(msg []byte) MessageHash {
 func NewPrivateKey(b []byte) (*PrivateKey, error) {
 	return &PrivateKey{
 		privateKey: new(big.Int).SetBytes(b),
+	}, nil
+}
+
+func GenerateKey() (*PrivateKey, error) {
+	sk := new(fr.Element)
+	var err error
+
+	sk, err = sk.SetRandom()
+	if err != nil {
+		return nil, errors.Errorf("blsBn254: failed to generate key: %w", err)
+	}
+
+	return &PrivateKey{
+		privateKey: sk.BigInt(new(big.Int)),
 	}, nil
 }
 
@@ -129,6 +146,13 @@ func (k *PrivateKey) PublicKey() symbKeys.PublicKey {
 	g1PubKey.ScalarMultiplication(&g1Gen, k.privateKey)
 	g2PubKey.ScalarMultiplication(&g2Gen, k.privateKey)
 
+	return &PublicKey{
+		g1PubKey: g1PubKey,
+		g2PubKey: g2PubKey,
+	}
+}
+
+func NewPublicKey(g1PubKey bn254.G1Affine, g2PubKey bn254.G2Affine) *PublicKey {
 	return &PublicKey{
 		g1PubKey: g1PubKey,
 		g2PubKey: g2PubKey,
@@ -247,11 +271,4 @@ func FromRaw(rawKey RawPublicKey) (*PublicKey, error) {
 
 func FromPrivateKey(privateKey *PrivateKey) symbKeys.PublicKey {
 	return privateKey.PublicKey()
-}
-
-func NewPublicKey(g1PubKey bn254.G1Affine, g2PubKey bn254.G2Affine) *PublicKey {
-	return &PublicKey{
-		g1PubKey: g1PubKey,
-		g2PubKey: g2PubKey,
-	}
 }

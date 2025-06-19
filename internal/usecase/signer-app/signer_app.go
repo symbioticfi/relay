@@ -3,7 +3,7 @@ package signer_app
 import (
 	"context"
 	"log/slog"
-	"middleware-offchain/core/usecase/crypto/key-types"
+	key_types "middleware-offchain/core/usecase/crypto/key-types"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -26,7 +26,7 @@ type p2pService interface {
 	BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error
 }
 
-type signer interface {
+type keyProvider interface {
 	GetPrivateKey(keyTag entity.KeyTag) (key_types.PrivateKey, error)
 }
 
@@ -40,7 +40,7 @@ type aggregator interface {
 
 type Config struct {
 	P2PService     p2pService     `validate:"required"`
-	Signer         signer         `validate:"required"`
+	KeyProvider    keyProvider    `validate:"required"`
 	Repo           repo           `validate:"required"`
 	AggProofSignal aggProofSignal `validate:"required"`
 	Aggregator     aggregator     `validate:"required"`
@@ -93,7 +93,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.Errorf("failed to get valset by epoch %d: %w", req.RequiredEpoch, err)
 	}
 
-	private, err := s.cfg.Signer.GetPrivateKey(req.KeyTag)
+	private, err := s.cfg.KeyProvider.GetPrivateKey(req.KeyTag)
 	if err != nil {
 		slog.DebugContext(ctx, "failed to get private key", "err", err)
 	}

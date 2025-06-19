@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"math/big"
-	"middleware-offchain/core/usecase/key-provider"
+	keyprovider "middleware-offchain/core/usecase/key-provider"
 	"time"
 
 	"github.com/go-errors/errors"
@@ -14,7 +14,7 @@ import (
 	"middleware-offchain/core/client/evm"
 	"middleware-offchain/core/entity"
 	"middleware-offchain/core/usecase/aggregator"
-	"middleware-offchain/core/usecase/signer"
+	symbioticCrypto "middleware-offchain/core/usecase/crypto"
 	valsetDeriver "middleware-offchain/core/usecase/valset-deriver"
 	"middleware-offchain/internal/client/p2p"
 	"middleware-offchain/internal/client/repository/badger"
@@ -91,20 +91,24 @@ func runApp(ctx context.Context) error {
 	if err != nil {
 		return errors.Errorf("failed to create keystore provider: %w", err)
 	}
-	err = keystoreProvider.AddKey(15, b.Bytes())
+
+	pk, err := symbioticCrypto.NewPrivateKey(15, b.Bytes())
+	if err != nil {
+		return errors.Errorf("failed to create private key: %w", err)
+	}
+	//TODO fix
+	err = keystoreProvider.AddKey(15, pk)
 	if err != nil {
 		return errors.Errorf("failed to add key to keystore provider: %w", err)
 	}
 
 	aggregatorLib := aggregator.NewAggregator(proof.NewZkProver())
 
-	signerLib := signer.NewSigner(keystoreProvider)
-
 	aggProofReadySignal := signals.New[entity.AggregatedSignatureMessage]()
 
 	signerApp, err := signerApp.NewSignerApp(signerApp.Config{
 		P2PService:     p2pService,
-		Signer:         signerLib,
+		KeyProvider:    keystoreProvider,
 		Repo:           repo,
 		AggProofSignal: aggProofReadySignal,
 		Aggregator:     aggregatorLib,

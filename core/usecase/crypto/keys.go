@@ -1,11 +1,12 @@
 package crypto
 
 import (
-	"github.com/go-errors/errors"
 	"middleware-offchain/core/entity"
 	"middleware-offchain/core/usecase/crypto/blsBn254"
 	"middleware-offchain/core/usecase/crypto/ecdsaSecp256k1"
-	"middleware-offchain/core/usecase/crypto/key-types"
+	key_types "middleware-offchain/core/usecase/crypto/key-types"
+
+	"github.com/go-errors/errors"
 )
 
 type PublicKey = key_types.PublicKey

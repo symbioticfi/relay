@@ -2,13 +2,16 @@ package ecdsaSecp256k1
 
 import (
 	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/go-errors/errors"
 	"math/big"
 	"middleware-offchain/core/entity"
 	symbKeys "middleware-offchain/core/usecase/crypto/key-types"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/go-errors/errors"
 )
 
 type Signature = entity.RawSignature
@@ -42,6 +45,14 @@ func NewPrivateKey(b []byte) (*PrivateKey, error) {
 	return &PrivateKey{privateKey: *k}, nil
 }
 
+func GenerateKey() (*PrivateKey, error) {
+	pk, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return nil, errors.Errorf("ecdsaSecp256l1: failed to generate key %w", err)
+	}
+	return &PrivateKey{privateKey: *pk}, nil
+}
+
 func (k *PrivateKey) Bytes() []byte {
 	return k.privateKey.D.Bytes()
 }
@@ -64,6 +75,15 @@ func (k *PrivateKey) PublicKey() symbKeys.PublicKey {
 	return &pub
 }
 
+func NewPublicKey(x *big.Int, y *big.Int) *PublicKey {
+	return &PublicKey{
+		pubKey: ecdsa.PublicKey{
+			X: x,
+			Y: y,
+		},
+	}
+}
+
 func (k *PublicKey) Verify(msg Message, sig Signature) error {
 	return k.VerifyWithHash(Hash(msg), sig)
 }
@@ -75,7 +95,7 @@ func (k *PublicKey) VerifyWithHash(msgHash MessageHash, sig Signature) error {
 
 	ok := crypto.VerifySignature(crypto.FromECDSAPub(&k.pubKey), msgHash, sig)
 	if !ok {
-		return errors.Errorf("ecdsaSecp256l1: failed to verify signature %w", sig)
+		return errors.Errorf("ecdsaSecp256l1: failed to verify signature %s", sig)
 	}
 	return nil
 }
@@ -111,13 +131,4 @@ func FromRaw(rawKey RawPublicKey) (*PublicKey, error) {
 
 func FromPrivateKey(privateKey *PrivateKey) symbKeys.PublicKey {
 	return privateKey.PublicKey()
-}
-
-func NewPublicKey(x *big.Int, y *big.Int) *PublicKey {
-	return &PublicKey{
-		pubKey: ecdsa.PublicKey{
-			X: x,
-			Y: y,
-		},
-	}
 }

@@ -2,23 +2,24 @@ package keyprovider
 
 import (
 	"errors"
+	"middleware-offchain/core/usecase/crypto"
 	"sync"
 
 	"middleware-offchain/core/entity"
 )
 
 type SimpleKeystoreProvider struct {
-	keys map[string][]byte
+	keys map[string]crypto.PrivateKey
 	mu   sync.RWMutex
 }
 
 func NewSimpleKeystoreProvider() (*SimpleKeystoreProvider, error) {
 	return &SimpleKeystoreProvider{
-		keys: make(map[string][]byte),
+		keys: make(map[string]crypto.PrivateKey),
 	}, nil
 }
 
-func (k *SimpleKeystoreProvider) GetPrivateKey(keyTag entity.KeyTag) ([]byte, error) {
+func (k *SimpleKeystoreProvider) GetPrivateKey(keyTag entity.KeyTag) (crypto.PrivateKey, error) {
 	k.mu.RLock()
 	defer k.mu.RUnlock()
 
@@ -50,7 +51,7 @@ func (k *SimpleKeystoreProvider) HasKey(keyTag entity.KeyTag) (bool, error) {
 	return ok, nil
 }
 
-func (k *SimpleKeystoreProvider) AddKey(keyTag entity.KeyTag, privateKey []byte) error {
+func (k *SimpleKeystoreProvider) AddKey(keyTag entity.KeyTag, privateKey crypto.PrivateKey) error {
 	k.mu.Lock()
 	defer k.mu.Unlock()
 

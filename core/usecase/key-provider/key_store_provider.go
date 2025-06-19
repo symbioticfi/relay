@@ -3,6 +3,7 @@ package keyprovider
 import (
 	"errors"
 	"log/slog"
+	"middleware-offchain/core/usecase/crypto"
 	"os"
 	"path/filepath"
 	"time"
@@ -41,7 +42,7 @@ func (k *KeystoreProvider) GetAliases() []string {
 	return k.ks.Aliases()
 }
 
-func (k *KeystoreProvider) GetPrivateKey(keyTag entity.KeyTag) ([]byte, error) {
+func (k *KeystoreProvider) GetPrivateKey(keyTag entity.KeyTag) (crypto.PrivateKey, error) {
 	alias, err := getAlias(keyTag)
 	if err != nil {
 		return nil, err
@@ -51,7 +52,7 @@ func (k *KeystoreProvider) GetPrivateKey(keyTag entity.KeyTag) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return entry.PrivateKey, nil
+	return crypto.NewPrivateKey(keyTag, entry.PrivateKey)
 }
 
 func (k *KeystoreProvider) HasKey(keyTag entity.KeyTag) (bool, error) {
@@ -62,7 +63,7 @@ func (k *KeystoreProvider) HasKey(keyTag entity.KeyTag) (bool, error) {
 	return k.ks.IsPrivateKeyEntry(alias), nil
 }
 
-func (k *KeystoreProvider) AddKey(keyTag entity.KeyTag, privateKey []byte, password string, force bool) error {
+func (k *KeystoreProvider) AddKey(keyTag entity.KeyTag, privateKey crypto.PrivateKey, password string, force bool) error {
 	exists, err := k.HasKey(keyTag)
 	if err != nil {
 		return err
@@ -79,7 +80,7 @@ func (k *KeystoreProvider) AddKey(keyTag entity.KeyTag, privateKey []byte, passw
 
 	err = k.ks.SetPrivateKeyEntry(alias, keystore.PrivateKeyEntry{
 		CreationTime:     time.Now(),
-		PrivateKey:       privateKey,
+		PrivateKey:       privateKey.Bytes(),
 		CertificateChain: nil,
 	}, []byte{})
 	if err != nil {
