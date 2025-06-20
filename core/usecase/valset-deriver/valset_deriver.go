@@ -82,8 +82,8 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 	slog.DebugContext(ctx, "Got current valset timestamp", "timestamp", strconv.Itoa(int(timestamp)), "epoch", epoch)
 
 	// Get voting powers from all voting power providers
-	var allVotingPowers []dtoOperatorVotingPower
-	for _, provider := range config.VotingPowerProviders {
+	allVotingPowers := make([]dtoOperatorVotingPower, len(config.VotingPowerProviders))
+	for i, provider := range config.VotingPowerProviders {
 		votingPowers, err := v.ethClient.GetVotingPowers(ctx, provider, timestamp)
 		if err != nil {
 			return entity.ValidatorSet{}, errors.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
@@ -91,10 +91,10 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 
 		slog.DebugContext(ctx, "Got voting powers from provider", "provider", provider.Address.Hex(), "votingPowers", votingPowers)
 
-		allVotingPowers = append(allVotingPowers, dtoOperatorVotingPower{
+		allVotingPowers[i] = dtoOperatorVotingPower{
 			chainId:      provider.ChainId,
 			votingPowers: votingPowers,
-		})
+		}
 	}
 
 	// Get keys from the keys provider
