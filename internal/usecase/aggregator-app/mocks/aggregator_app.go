@@ -11,7 +11,7 @@ package mocks
 
 import (
 	context "context"
-	entity "middleware-offchain/internal/entity"
+	entity "middleware-offchain/core/entity"
 	reflect "reflect"
 
 	common "github.com/ethereum/go-ethereum/common"
@@ -43,10 +43,10 @@ func (m *Mockrepository) EXPECT() *MockrepositoryMockRecorder {
 }
 
 // GetAllSignatures mocks base method.
-func (m *Mockrepository) GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.Signature, error) {
+func (m *Mockrepository) GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllSignatures", ctx, reqHash)
-	ret0, _ := ret[0].([]entity.Signature)
+	ret0, _ := ret[0].([]entity.SignatureExtended)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -57,23 +57,38 @@ func (mr *MockrepositoryMockRecorder) GetAllSignatures(ctx, reqHash any) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllSignatures", reflect.TypeOf((*Mockrepository)(nil).GetAllSignatures), ctx, reqHash)
 }
 
-// GetValsetByEpoch mocks base method.
-func (m *Mockrepository) GetValsetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error) {
+// GetConfigByEpoch mocks base method.
+func (m *Mockrepository) GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetValsetByEpoch", ctx, epoch)
+	ret := m.ctrl.Call(m, "GetConfigByEpoch", ctx, epoch)
+	ret0, _ := ret[0].(entity.NetworkConfig)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetConfigByEpoch indicates an expected call of GetConfigByEpoch.
+func (mr *MockrepositoryMockRecorder) GetConfigByEpoch(ctx, epoch any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigByEpoch", reflect.TypeOf((*Mockrepository)(nil).GetConfigByEpoch), ctx, epoch)
+}
+
+// GetValidatorSetByEpoch mocks base method.
+func (m *Mockrepository) GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetValidatorSetByEpoch", ctx, epoch)
 	ret0, _ := ret[0].(entity.ValidatorSet)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetValsetByEpoch indicates an expected call of GetValsetByEpoch.
-func (mr *MockrepositoryMockRecorder) GetValsetByEpoch(ctx, epoch any) *gomock.Call {
+// GetValidatorSetByEpoch indicates an expected call of GetValidatorSetByEpoch.
+func (mr *MockrepositoryMockRecorder) GetValidatorSetByEpoch(ctx, epoch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValsetByEpoch", reflect.TypeOf((*Mockrepository)(nil).GetValsetByEpoch), ctx, epoch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSetByEpoch", reflect.TypeOf((*Mockrepository)(nil).GetValidatorSetByEpoch), ctx, epoch)
 }
 
 // SaveSignature mocks base method.
-func (m *Mockrepository) SaveSignature(ctx context.Context, reqHash common.Hash, key [32]byte, sig entity.Signature) error {
+func (m *Mockrepository) SaveSignature(ctx context.Context, reqHash common.Hash, key []byte, sig entity.SignatureExtended) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SaveSignature", ctx, reqHash, key, sig)
 	ret0, _ := ret[0].(error)
@@ -124,18 +139,6 @@ func (mr *Mockp2pClientMockRecorder) BroadcastSignatureAggregatedMessage(ctx, ms
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BroadcastSignatureAggregatedMessage", reflect.TypeOf((*Mockp2pClient)(nil).BroadcastSignatureAggregatedMessage), ctx, msg)
 }
 
-// SetSignatureHashMessageHandler mocks base method.
-func (m *Mockp2pClient) SetSignatureHashMessageHandler(mh func(context.Context, entity.P2PSignatureHashMessage) error) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetSignatureHashMessageHandler", mh)
-}
-
-// SetSignatureHashMessageHandler indicates an expected call of SetSignatureHashMessageHandler.
-func (mr *Mockp2pClientMockRecorder) SetSignatureHashMessageHandler(mh any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSignatureHashMessageHandler", reflect.TypeOf((*Mockp2pClient)(nil).SetSignatureHashMessageHandler), mh)
-}
-
 // Mockaggregator is a mock of aggregator interface.
 type Mockaggregator struct {
 	ctrl     *gomock.Controller
@@ -161,10 +164,10 @@ func (m *Mockaggregator) EXPECT() *MockaggregatorMockRecorder {
 }
 
 // Aggregate mocks base method.
-func (m *Mockaggregator) Aggregate(valset *entity.ValidatorSet, keyTag entity.KeyTag, verificationType entity.VerificationType, messageHash []byte, signatures []entity.Signature) (*entity.AggregationProof, error) {
+func (m *Mockaggregator) Aggregate(valset entity.ValidatorSet, keyTag entity.KeyTag, verificationType entity.VerificationType, messageHash []byte, signatures []entity.SignatureExtended) (entity.AggregationProof, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Aggregate", valset, keyTag, verificationType, messageHash, signatures)
-	ret0, _ := ret[0].(*entity.AggregationProof)
+	ret0, _ := ret[0].(entity.AggregationProof)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -173,4 +176,44 @@ func (m *Mockaggregator) Aggregate(valset *entity.ValidatorSet, keyTag entity.Ke
 func (mr *MockaggregatorMockRecorder) Aggregate(valset, keyTag, verificationType, messageHash, signatures any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Aggregate", reflect.TypeOf((*Mockaggregator)(nil).Aggregate), valset, keyTag, verificationType, messageHash, signatures)
+}
+
+// Mockverifier is a mock of verifier interface.
+type Mockverifier struct {
+	ctrl     *gomock.Controller
+	recorder *MockverifierMockRecorder
+	isgomock struct{}
+}
+
+// MockverifierMockRecorder is the mock recorder for Mockverifier.
+type MockverifierMockRecorder struct {
+	mock *Mockverifier
+}
+
+// NewMockverifier creates a new mock instance.
+func NewMockverifier(ctrl *gomock.Controller) *Mockverifier {
+	mock := &Mockverifier{ctrl: ctrl}
+	mock.recorder = &MockverifierMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *Mockverifier) EXPECT() *MockverifierMockRecorder {
+	return m.recorder
+}
+
+// Verify mocks base method.
+func (m *Mockverifier) Verify(keyTag entity.KeyTag, signature entity.SignatureExtended) ([]byte, bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Verify", keyTag, signature)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// Verify indicates an expected call of Verify.
+func (mr *MockverifierMockRecorder) Verify(keyTag, signature any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Verify", reflect.TypeOf((*Mockverifier)(nil).Verify), keyTag, signature)
 }

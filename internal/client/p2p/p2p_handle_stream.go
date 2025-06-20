@@ -9,7 +9,8 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p/core/network"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
+	p2pEntity "middleware-offchain/internal/entity"
 )
 
 func handleStreamWrapper(ctx context.Context, f func(ctx context.Context, stream network.Stream) error) func(stream network.Stream) {
@@ -22,91 +23,80 @@ func handleStreamWrapper(ctx context.Context, f func(ctx context.Context, stream
 
 func (s *Service) handleStreamSignedHash(ctx context.Context, stream network.Stream) error {
 	var signatureGenerated signatureGeneratedDTO
-	info, err := unmarshalMessage(stream, &signatureGenerated)
+	err := unmarshalMessage(stream, &signatureGenerated)
 	if err != nil {
 		return errors.Errorf("failed to unmarshal signatureGenerated message: %w", err)
 	}
 
-	entityMessage := entity.P2PSignatureHashMessage{
-		Message: entity.SignatureMessage{
-			RequestHash: signatureGenerated.RequestHash,
-			KeyTag:      entity.KeyTag(signatureGenerated.KeyTag),
-			Epoch:       signatureGenerated.Epoch,
-			Signature: entity.Signature{
-				PublicKey:   signatureGenerated.Signature.PublicKey,
-				Signature:   signatureGenerated.Signature.Signature,
-				MessageHash: signatureGenerated.Signature.MessageHash,
-			},
-		},
-		Info: entity.SenderInfo{
-			Type:      info.Type,
-			Sender:    info.Sender,
-			Timestamp: info.Timestamp,
+	msg := entity.SignatureMessage{
+		RequestHash: signatureGenerated.RequestHash,
+		KeyTag:      entity.KeyTag(signatureGenerated.KeyTag),
+		Epoch:       entity.Epoch(signatureGenerated.Epoch),
+		Signature: entity.SignatureExtended{
+			PublicKey:   signatureGenerated.Signature.PublicKey,
+			Signature:   signatureGenerated.Signature.Signature,
+			MessageHash: signatureGenerated.Signature.MessageHash,
 		},
 	}
 
-	err = s.signatureHashHandler(ctx, entityMessage)
-	if err != nil {
-		return errors.Errorf("failed to handle message: %w", err)
+	si := p2pEntity.SenderInfo{
+		Sender: stream.Conn().RemotePeer().String(),
 	}
+
+	s.signatureHashHandler.Emit(ctx, p2pEntity.P2PMessage[entity.SignatureMessage]{
+		SenderInfo: si,
+		Message:    msg,
+	})
 
 	return nil
 }
 
 func (s *Service) handleStreamAggregatedProof(ctx context.Context, stream network.Stream) error {
 	var signaturesAggregated signaturesAggregatedDTO
-	info, err := unmarshalMessage(stream, &signaturesAggregated)
+	err := unmarshalMessage(stream, &signaturesAggregated)
 	if err != nil {
 		return errors.Errorf("failed to unmarshal signatureGenerated message: %w", err)
 	}
 
-	entityMessage := entity.P2PSignaturesAggregatedMessage{
-		Message: entity.AggregatedSignatureMessage{
-			RequestHash: signaturesAggregated.RequestHash,
-			KeyTag:      entity.KeyTag(signaturesAggregated.KeyTag),
-			Epoch:       signaturesAggregated.Epoch,
-			AggregationProof: entity.AggregationProof{
-				VerificationType: entity.VerificationType(signaturesAggregated.AggregationProof.VerificationType),
-				MessageHash:      signaturesAggregated.AggregationProof.MessageHash,
-				Proof:            signaturesAggregated.AggregationProof.Proof,
-			},
+	msg := entity.AggregatedSignatureMessage{
+		RequestHash: signaturesAggregated.RequestHash,
+		KeyTag:      entity.KeyTag(signaturesAggregated.KeyTag),
+		Epoch:       entity.Epoch(signaturesAggregated.Epoch),
+		AggregationProof: entity.AggregationProof{
+			VerificationType: entity.VerificationType(signaturesAggregated.AggregationProof.VerificationType),
+			MessageHash:      signaturesAggregated.AggregationProof.MessageHash,
+			Proof:            signaturesAggregated.AggregationProof.Proof,
 		},
-		Info: entity.SenderInfo{
-			Type:      info.Type,
-			Sender:    info.Sender,
-			Timestamp: info.Timestamp,
-		},
+	}
+	si := p2pEntity.SenderInfo{
+		Sender: stream.Conn().RemotePeer().String(),
 	}
 
-	err = s.signaturesAggregatedHandler(ctx, entityMessage)
-	if err != nil {
-		return errors.Errorf("failed to handle message: %w", err)
-	}
+	s.signaturesAggregatedHandler.Emit(ctx, p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]{
+		SenderInfo: si,
+		Message:    msg,
+	})
 
 	return nil
 }
 
-func unmarshalMessage(stream network.Stream, v interface{}) (entity.SenderInfo, error) {
+func unmarshalMessage(stream network.Stream, v interface{}) error {
 	defer stream.Close()
 
 	data := make([]byte, 1024*1024) // 1MB buffer
 	n, err := stream.Read(data)
 	if err != nil && !errors.Is(err, io.EOF) {
-		return entity.SenderInfo{}, errors.Errorf("failed to read from stream: %w", err)
+		return errors.Errorf("failed to read from stream: %w", err)
 	}
 
 	var message p2pMessage
 	if err := json.Unmarshal(data[:n], &message); err != nil {
-		return entity.SenderInfo{}, errors.Errorf("failed to unmarshal message: %w", err)
+		return errors.Errorf("failed to unmarshal message: %w", err)
 	}
 
 	if err := json.Unmarshal(message.Data, v); err != nil {
-		return entity.SenderInfo{}, errors.Errorf("failed to unmarshal signatureGenerated message: %w", err)
+		return errors.Errorf("failed to unmarshal signatureGenerated message: %w", err)
 	}
 
-	return entity.SenderInfo{
-		Type:      message.Type,
-		Sender:    message.Sender,
-		Timestamp: message.Timestamp,
-	}, nil
+	return nil
 }

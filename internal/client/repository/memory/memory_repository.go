@@ -3,7 +3,6 @@ package memory
 import (
 	"context"
 	"maps"
-	"math/big"
 	"slices"
 	"sync"
 
@@ -12,7 +11,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
 )
 
 type Repository struct {
@@ -20,8 +19,7 @@ type Repository struct {
 
 	networkConfigs map[uint64]entity.NetworkConfig
 	validatorSets  map[uint64]entity.ValidatorSet
-	signed         []entity.ValidatorSet
-	signatures     map[common.Hash]map[[32]byte]entity.Signature
+	signatures     map[common.Hash]map[common.Hash]entity.SignatureExtended
 	signRequests   map[common.Hash]entity.SignatureRequest
 	aggProofs      map[common.Hash]entity.AggregationProof
 	pendingValsets map[common.Hash]entity.ValidatorSet
@@ -32,14 +30,38 @@ func New() (*Repository, error) {
 		mu:             sync.Mutex{},
 		networkConfigs: make(map[uint64]entity.NetworkConfig),
 		validatorSets:  make(map[uint64]entity.ValidatorSet),
-		signatures:     make(map[common.Hash]map[[32]byte]entity.Signature),
+		signatures:     make(map[common.Hash]map[common.Hash]entity.SignatureExtended),
 		signRequests:   make(map[common.Hash]entity.SignatureRequest),
 		aggProofs:      make(map[common.Hash]entity.AggregationProof),
 		pendingValsets: make(map[common.Hash]entity.ValidatorSet),
 	}, nil
 }
 
-func (r *Repository) GetLatestValset(ctx context.Context) (entity.ValidatorSet, error) {
+func (r *Repository) SaveConfig(_ context.Context, config entity.NetworkConfig, epoch uint64) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if _, ok := r.networkConfigs[epoch]; ok {
+		return errors.New("validator set config for this epoch already exists")
+	}
+
+	r.networkConfigs[epoch] = config
+	return nil
+}
+
+func (r *Repository) GetConfigByEpoch(_ context.Context, epoch uint64) (entity.NetworkConfig, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	config, ok := r.networkConfigs[epoch]
+	if !ok {
+		return entity.NetworkConfig{}, errors.New(entity.ErrEntityNotFound)
+	}
+
+	return config, nil
+}
+
+func (r *Repository) GetLatestValidatorSet(_ context.Context) (entity.ValidatorSet, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -54,31 +76,7 @@ func (r *Repository) GetLatestValset(ctx context.Context) (entity.ValidatorSet, 
 	return r.validatorSets[latestValset.Epoch], nil
 }
 
-func (r *Repository) SaveConfig(ctx context.Context, config entity.NetworkConfig, epoch uint64) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	if _, ok := r.networkConfigs[epoch]; ok {
-		return errors.New("validator set config for this epoch already exists")
-	}
-
-	r.networkConfigs[epoch] = config
-	return nil
-}
-
-func (r *Repository) GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	config, ok := r.networkConfigs[epoch]
-	if !ok {
-		return entity.NetworkConfig{}, errors.New(entity.ErrEntityNotFound)
-	}
-
-	return config, nil
-}
-
-func (r *Repository) SaveValidatorSet(ctx context.Context, valset entity.ValidatorSet) error {
+func (r *Repository) SaveValidatorSet(_ context.Context, valset entity.ValidatorSet) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -90,16 +88,16 @@ func (r *Repository) SaveValidatorSet(ctx context.Context, valset entity.Validat
 	return nil
 }
 
-func (r *Repository) GetLatestSignedValset(_ context.Context) (entity.ValidatorSet, error) {
+func (r *Repository) GetValidatorSetByEpoch(_ context.Context, epoch uint64) (entity.ValidatorSet, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if len(r.signed) == 0 {
+	valset, ok := r.validatorSets[epoch]
+	if !ok {
 		return entity.ValidatorSet{}, errors.New(entity.ErrEntityNotFound)
 	}
 
-	latestSignedExtra := r.signed[len(r.signed)-1]
-	return latestSignedExtra, nil
+	return valset, nil
 }
 
 func (r *Repository) GetSignatureRequest(_ context.Context, reqHash common.Hash) (entity.SignatureRequest, error) {
@@ -115,7 +113,7 @@ func (r *Repository) GetSignatureRequest(_ context.Context, reqHash common.Hash)
 }
 
 func (r *Repository) SaveSignatureRequest(_ context.Context, req entity.SignatureRequest) error {
-	hash := signRequestHash(req)
+	hash := req.Hash()
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -124,7 +122,7 @@ func (r *Repository) SaveSignatureRequest(_ context.Context, req entity.Signatur
 	return nil
 }
 
-func (r *Repository) GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error) {
+func (r *Repository) GetAggregationProof(_ context.Context, reqHash common.Hash) (entity.AggregationProof, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -136,7 +134,7 @@ func (r *Repository) GetAggregationProof(ctx context.Context, reqHash common.Has
 	return entity.AggregationProof{}, errors.New(entity.ErrEntityNotFound)
 }
 
-func (r *Repository) SaveAggregationProof(ctx context.Context, reqHash common.Hash, ap entity.AggregationProof) error {
+func (r *Repository) SaveAggregationProof(_ context.Context, reqHash common.Hash, ap entity.AggregationProof) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -149,49 +147,39 @@ func (r *Repository) SaveAggregationProof(ctx context.Context, reqHash common.Ha
 	return nil
 }
 
-func (r *Repository) GetValsetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error) {
+func (r *Repository) SaveSignature(_ context.Context, reqHash common.Hash, key []byte, sig entity.SignatureExtended) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	valset, ok := r.validatorSets[epoch]
-	if !ok {
-		return entity.ValidatorSet{}, errors.New(entity.ErrEntityNotFound)
-	}
-
-	return valset, nil
-}
-
-func (r *Repository) SaveSignature(ctx context.Context, reqHash common.Hash, key [32]byte, sig entity.Signature) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	keyHash := crypto.Keccak256Hash(key)
 
 	_, exists := r.signatures[reqHash]
 	if !exists {
-		r.signatures[reqHash] = make(map[[32]byte]entity.Signature)
+		r.signatures[reqHash] = make(map[common.Hash]entity.SignatureExtended)
 	}
 
-	if _, exists = r.signatures[reqHash][key]; exists {
+	if _, exists = r.signatures[reqHash][keyHash]; exists {
 		return nil
 	}
 
-	r.signatures[reqHash][key] = sig
+	r.signatures[reqHash][keyHash] = sig
 
 	return nil
 }
 
-func (r *Repository) GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.Signature, error) {
+func (r *Repository) GetAllSignatures(_ context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	_, exists := r.signatures[reqHash]
 	if !exists {
-		return []entity.Signature{}, nil
+		return []entity.SignatureExtended{}, nil
 	}
 
 	return slices.Collect(maps.Values(r.signatures[reqHash])), nil
 }
 
-func (r *Repository) SavePendingValset(ctx context.Context, reqHash common.Hash, valset entity.ValidatorSet) error {
+func (r *Repository) SavePendingValidatorSet(_ context.Context, reqHash common.Hash, valset entity.ValidatorSet) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -204,7 +192,7 @@ func (r *Repository) SavePendingValset(ctx context.Context, reqHash common.Hash,
 	return nil
 }
 
-func (r *Repository) GetPendingValset(ctx context.Context, reqHash common.Hash) (entity.ValidatorSet, error) {
+func (r *Repository) GetPendingValidatorSet(_ context.Context, reqHash common.Hash) (entity.ValidatorSet, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -213,8 +201,4 @@ func (r *Repository) GetPendingValset(ctx context.Context, reqHash common.Hash) 
 		return entity.ValidatorSet{}, errors.New(entity.ErrEntityNotFound)
 	}
 	return valset, nil
-}
-
-func signRequestHash(req entity.SignatureRequest) common.Hash {
-	return crypto.Keccak256Hash([]byte{uint8(req.KeyTag)}, new(big.Int).SetInt64(int64(req.RequiredEpoch)).Bytes(), req.Message)
 }

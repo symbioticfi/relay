@@ -3,18 +3,18 @@ package p2p
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
+	p2pEntity "middleware-offchain/internal/entity"
 )
 
 func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error {
 	dto := signatureGeneratedDTO{
 		RequestHash: msg.RequestHash,
 		KeyTag:      uint8(msg.KeyTag),
-		Epoch:       msg.Epoch,
+		Epoch:       uint64(msg.Epoch),
 		Signature: signatureDTO{
 			MessageHash: msg.Signature.MessageHash,
 			PublicKey:   msg.Signature.PublicKey,
@@ -28,19 +28,12 @@ func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg en
 	}
 
 	// send to ourselves first
-	err = s.signatureHashHandler(ctx, entity.P2PSignatureHashMessage{
-		Message: msg,
-		Info: entity.SenderInfo{
-			Type:      entity.P2PMessageTypeSignatureHash,
-			Sender:    "",
-			Timestamp: time.Now().Unix(),
-		},
+	s.signatureHashHandler.Emit(ctx, p2pEntity.P2PMessage[entity.SignatureMessage]{
+		SenderInfo: p2pEntity.SenderInfo{},
+		Message:    msg,
 	})
-	if err != nil {
-		return errors.Errorf("failed to handle signature generated message: %w", err)
-	}
 
-	return s.broadcast(ctx, entity.P2PMessageTypeSignatureHash, data)
+	return s.broadcast(ctx, messageTypeSignatureHash, data)
 }
 
 type signatureDTO struct {

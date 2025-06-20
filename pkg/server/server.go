@@ -11,6 +11,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 type Config struct {
@@ -19,6 +20,7 @@ type Config struct {
 	ShutdownTimeout   time.Duration `validate:"required,gt=0"`
 	Prefix            string        `validate:"required"`
 	APIHandler        http.Handler  `validate:"required"`
+	SwaggerHandler    http.HandlerFunc
 }
 
 func (c Config) Validate() error {
@@ -34,6 +36,7 @@ func New(cfg Config) (*Server, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, errors.Errorf("failed to validate config: %w", err)
 	}
+
 	return &Server{
 		cfg: cfg,
 		srv: &http.Server{
@@ -51,6 +54,16 @@ func initHandler(cfg Config) http.Handler {
 	)
 
 	r.Handle("/metrics", promhttp.Handler())
+
+	if cfg.SwaggerHandler != nil {
+		r.Get("/swagger.yaml", cfg.SwaggerHandler)
+		r.Get("/docs", func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, r.RequestURI+"/index.html", http.StatusMovedPermanently)
+		})
+		r.Get("/docs/*", httpSwagger.Handler(
+			httpSwagger.URL("/swagger.yaml"),
+		))
+	}
 
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.RequestID)

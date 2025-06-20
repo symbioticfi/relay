@@ -3,18 +3,18 @@ package p2p
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
+	p2pEntity "middleware-offchain/internal/entity"
 )
 
 func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
 	dto := signaturesAggregatedDTO{
 		RequestHash: msg.RequestHash,
 		KeyTag:      uint8(msg.KeyTag),
-		Epoch:       msg.Epoch,
+		Epoch:       uint64(msg.Epoch),
 		AggregationProof: aggregationProofDTO{
 			MessageHash:      msg.AggregationProof.MessageHash,
 			Proof:            msg.AggregationProof.Proof,
@@ -28,19 +28,12 @@ func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg e
 	}
 
 	// send to ourselves first
-	err = s.signaturesAggregatedHandler(ctx, entity.P2PSignaturesAggregatedMessage{
-		Message: msg,
-		Info: entity.SenderInfo{
-			Type:      entity.P2PMessageTypeSignatureHash,
-			Sender:    "",
-			Timestamp: time.Now().Unix(),
-		},
+	s.signaturesAggregatedHandler.Emit(ctx, p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]{
+		SenderInfo: p2pEntity.SenderInfo{},
+		Message:    msg,
 	})
-	if err != nil {
-		return errors.Errorf("failed to handle signatures aggregated message: %w", err)
-	}
 
-	return s.broadcast(ctx, entity.P2PMessageTypeSignaturesAggregated, data)
+	return s.broadcast(ctx, messageTypeSignaturesAggregated, data)
 }
 
 type aggregationProofDTO struct {

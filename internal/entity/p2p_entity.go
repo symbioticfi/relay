@@ -1,49 +1,12 @@
 package entity
 
-import (
-	"middleware-offchain/pkg/bls"
-)
-
-type P2PMessageType string
-
-const (
-	P2PMessageTypeSignatureHash        P2PMessageType = "signature_hash_generated"
-	P2PMessageTypeSignaturesAggregated P2PMessageType = "signatures_aggregated"
-)
-
-type HashType string
-
-const (
-	HashTypeValsetHeader HashType = "valset_header"
-	HashTypeMessage      HashType = "message"
-)
-
-type SignatureHashMessage struct {
-	Request   SignatureRequest
-	Signature []byte
-	PublicKey []byte
-	HashType  HashType
-}
-
-type SignaturesAggregatedMessage struct {
-	Request     SignatureRequest
-	Proof       AggregationProof
-	PublicKeyG1 *bls.G1
-	HashType    HashType
-}
-
 type SenderInfo struct {
-	Type      P2PMessageType
-	Sender    string
-	Timestamp int64
+	// Sender is a p2p peer id
+	Sender string
 }
 
-type P2PSignatureHashMessage struct {
-	Message SignatureMessage
-	Info    SenderInfo
-}
-
-type P2PSignaturesAggregatedMessage struct {
-	Message AggregatedSignatureMessage
-	Info    SenderInfo
+// P2PMessage is a generic message structure for P2P communication, containing SenderInfo and a message of type T.
+type P2PMessage[T any] struct {
+	SenderInfo SenderInfo
+	Message    T
 }

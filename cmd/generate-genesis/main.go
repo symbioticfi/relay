@@ -4,17 +4,20 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math/big"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/spf13/cobra"
 
-	"middleware-offchain/internal/client/symbiotic"
-	"middleware-offchain/internal/entity"
-	valsetDeriver "middleware-offchain/internal/usecase/valset-deriver"
+	"middleware-offchain/core/client/evm"
+	"middleware-offchain/core/entity"
+	"middleware-offchain/core/usecase/aggregator"
+	valsetDeriver "middleware-offchain/core/usecase/valset-deriver"
 	"middleware-offchain/pkg/log"
 )
 
@@ -31,7 +34,9 @@ func main() {
 
 func run() error {
 	rootCmd.PersistentFlags().StringVar(&cfg.rpcURL, "rpc-url", "", "RPC URL")
-	rootCmd.PersistentFlags().StringVar(&cfg.masterAddress, "master-address", "", "Master contract address")
+	rootCmd.PersistentFlags().StringVar(&cfg.driverAddress, "driver-address", "", "Driver contract address")
+	rootCmd.PersistentFlags().BoolVar(&cfg.commit, "commit", false, "Commit genesis flag (default: false)")
+	rootCmd.PersistentFlags().StringVar(&cfg.secretKey, "secret-key", "", "Secret key for genesis commit")
 	rootCmd.PersistentFlags().StringVarP(&cfg.outputFile, "output", "o", "", "Output file path (default: stdout)")
 	rootCmd.PersistentFlags().StringVar(&cfg.logLevel, "log-level", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVar(&cfg.logMode, "log-mode", "text", "Log mode (text, pretty)")
@@ -39,8 +44,8 @@ func run() error {
 	if err := rootCmd.MarkPersistentFlagRequired("rpc-url"); err != nil {
 		return errors.Errorf("failed to mark rpc-url as required: %w", err)
 	}
-	if err := rootCmd.MarkPersistentFlagRequired("master-address"); err != nil {
-		return errors.Errorf("failed to mark master-address as required: %w", err)
+	if err := rootCmd.MarkPersistentFlagRequired("driver-address"); err != nil {
+		return errors.Errorf("failed to mark driver-address as required: %w", err)
 	}
 
 	return rootCmd.Execute()
@@ -48,7 +53,9 @@ func run() error {
 
 type config struct {
 	rpcURL        string
-	masterAddress string
+	driverAddress string
+	commit        bool
+	secretKey     string
 	outputFile    string
 	logLevel      string
 	logMode       string
@@ -64,10 +71,30 @@ var rootCmd = &cobra.Command{
 
 		ctx := signalContext(context.Background())
 
-		client, err := symbiotic.NewEVMClient(symbiotic.Config{
-			MasterRPCURL:   cfg.rpcURL,
-			MasterAddress:  cfg.masterAddress,
+		if cfg.commit && cfg.secretKey == "" {
+			return errors.New("if commit true secret-key must be set")
+		}
+
+		var privateKey []byte
+
+		if cfg.secretKey != "" {
+			b, ok := new(big.Int).SetString(cfg.secretKey, 10)
+			if !ok {
+				return errors.Errorf("failed to parse secret key as big.Int")
+			}
+
+			privateKey = b.FillBytes(make([]byte, 32))
+		}
+
+		driverAddress := entity.CrossChainAddress{ChainId: 111, Address: common.HexToAddress(cfg.driverAddress)}
+		client, err := evm.NewEVMClient(ctx, evm.Config{
+			Chains: []entity.ChainURL{{
+				ChainID: 111,
+				RPCURL:  cfg.rpcURL,
+			}},
+			DriverAddress:  driverAddress,
 			RequestTimeout: time.Second * 5,
+			PrivateKey:     privateKey,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create symbiotic client: %w", err)
@@ -83,7 +110,7 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("failed to get current epoch: %w", err)
 		}
 
-		captureTimestamp, err := client.GetCaptureTimestamp(ctx)
+		captureTimestamp, err := client.GetEpochStart(ctx, currentOnchainEpoch)
 		if err != nil {
 			return errors.Errorf("failed to get capture timestamp: %w", err)
 		}
@@ -106,16 +133,15 @@ var rootCmd = &cobra.Command{
 
 		slog.Info("Valset header generated!")
 
+		aggregator := aggregator.NewAggregator(nil)
+
 		// extra data generation is also clear but still in deriver
-		extraData, err := deriver.GenerateExtraData(newValset, networkConfig)
+		extraData, err := aggregator.GenerateExtraData(newValset, networkConfig)
 		if err != nil {
 			return errors.Errorf("failed to generate extra data: %w", err)
 		}
 
-		jsonData, err := entity.ValidatorSetHeaderWithExtraData{
-			ValidatorSetHeader: header,
-			ExtraDataList:      extraData,
-		}.EncodeJSON()
+		jsonData, err := EncodeValidatorSetHeaderWithExtraDataToJSON(header, extraData)
 		if err != nil {
 			return errors.Errorf("failed to encode validator set header with extra data to JSON: %w", err)
 		}
@@ -127,6 +153,24 @@ var rootCmd = &cobra.Command{
 			}
 		} else {
 			fmt.Println(string(jsonData)) //nolint:forbidigo // ok to print result to stdout
+		}
+
+		if !cfg.commit {
+			return nil
+		}
+
+		errs := make([]error, len(networkConfig.Replicas))
+		for i, replica := range networkConfig.Replicas {
+			var txResult entity.TxResult
+			txResult, errs[i] = client.SetGenesis(ctx, driverAddress, header, extraData)
+			if errs[i] != nil {
+				slog.ErrorContext(ctx, "failed to set genesis on replica", "replica", replica, "error", errs[i])
+			} else {
+				slog.InfoContext(ctx, "genesis valset set on replica", "replica", replica, "txHash", txResult.TxHash.String())
+			}
+		}
+		if err := errors.Join(errs...); err != nil {
+			return errors.Errorf("failed to commit valset header: %w", err)
 		}
 
 		return nil

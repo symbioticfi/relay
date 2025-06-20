@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/internal/entity"
+	"middleware-offchain/core/entity"
 )
 
 func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
@@ -16,7 +16,7 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		return nil
 	}
 
-	valset, err := s.cfg.Repo.GetPendingValset(ctx, msg.RequestHash)
+	valset, err := s.cfg.Repo.GetPendingValidatorSet(ctx, msg.RequestHash)
 	if err != nil {
 		slog.DebugContext(ctx, "no pending valset, skipping proof commitment")
 		return nil //nolint:nilerr // if no pending valset, nothing to commit
@@ -29,7 +29,7 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		return errors.Errorf("failed to get config for epoch %d: %w", msg.Epoch, err)
 	}
 
-	extraData, err := s.cfg.Deriver.GenerateExtraData(valset, config)
+	extraData, err := s.cfg.Aggregator.GenerateExtraData(valset, config)
 	if err != nil {
 		return errors.Errorf("failed to generate extra data for validator set: %w", err)
 	}
@@ -41,12 +41,30 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		return errors.Errorf("failed to get validator set header: %w", err)
 	}
 
-	result, err := s.cfg.Eth.CommitValsetHeader(ctx, header, extraData, msg.AggregationProof.Proof)
+	err = s.commitValsetToAllSettlements(ctx, config, header, extraData, msg.AggregationProof.Proof)
 	if err != nil {
 		return errors.Errorf("failed to commit valset header: %w", err)
 	}
 
-	slog.InfoContext(ctx, "valset header committed", "txHash", result.TxHash.String(), "epoch", valset.Epoch)
-
 	return nil
+}
+
+func (s *Service) commitValsetToAllSettlements(ctx context.Context, config entity.NetworkConfig, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) error {
+	errs := make([]error, len(config.Replicas))
+	for i, replica := range config.Replicas {
+		slog.DebugContext(ctx, "trying to commit valset header to settlement", "replica", replica)
+
+		result, err := s.cfg.Eth.CommitValsetHeader(ctx, replica, header, extraData, proof)
+		if err != nil {
+			errs[i] = errors.Errorf("failed to commit valset header to settlement %s: %w", replica.Address.Hex(), err)
+		}
+
+		slog.DebugContext(ctx, "Validator set header committed",
+			"epoch", header.Epoch,
+			"replica", replica,
+			"txHash", result.TxHash,
+		)
+	}
+
+	return errors.Join(errs...)
 }
