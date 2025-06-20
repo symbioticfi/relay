@@ -69,6 +69,11 @@ func (v *Deriver) GetNetworkData(ctx context.Context, addr entity.CrossChainAddr
 	}, nil
 }
 
+type dtoOperatorVotingPower struct {
+	chainId      uint64
+	votingPowers []entity.OperatorVotingPower
+}
+
 func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error) {
 	timestamp, err := v.ethClient.GetEpochStart(ctx, epoch)
 	if err != nil {
@@ -77,8 +82,8 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 	slog.DebugContext(ctx, "Got current valset timestamp", "timestamp", strconv.Itoa(int(timestamp)), "epoch", epoch)
 
 	// Get voting powers from all voting power providers
-	var allVotingPowers []entity.OperatorVotingPower
-	for _, provider := range config.VotingPowerProviders {
+	allVotingPowers := make([]dtoOperatorVotingPower, len(config.VotingPowerProviders))
+	for i, provider := range config.VotingPowerProviders {
 		votingPowers, err := v.ethClient.GetVotingPowers(ctx, provider, timestamp)
 		if err != nil {
 			return entity.ValidatorSet{}, errors.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
@@ -86,7 +91,10 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 
 		slog.DebugContext(ctx, "Got voting powers from provider", "provider", provider.Address.Hex(), "votingPowers", votingPowers)
 
-		allVotingPowers = append(allVotingPowers, votingPowers...)
+		allVotingPowers[i] = dtoOperatorVotingPower{
+			chainId:      provider.ChainId,
+			votingPowers: votingPowers,
+		}
 	}
 
 	// Get keys from the keys provider
@@ -206,44 +214,47 @@ func (v *Deriver) getLastCommittedHeaderEpoch(ctx context.Context, config entity
 
 func (v *Deriver) formValidators(
 	config entity.NetworkConfig,
-	votingPowers []entity.OperatorVotingPower,
+	votingPowers []dtoOperatorVotingPower,
 	keys []entity.OperatorWithKeys,
 ) ([]entity.Validator, *big.Int) {
 	// Create validators map to consolidate voting powers and keys
 	validatorsMap := make(map[string]*entity.Validator)
 
 	// Process voting powers
-	for _, vp := range votingPowers {
-		operatorAddr := vp.Operator.Hex()
-		if _, exists := validatorsMap[operatorAddr]; !exists {
-			validatorsMap[operatorAddr] = &entity.Validator{
-				Operator:    vp.Operator,
-				VotingPower: entity.ToVotingPower(big.NewInt(0)),
-				IsActive:    false, // Default to active, will filter later
-				Keys:        []entity.ValidatorKey{},
-				Vaults:      []entity.ValidatorVault{},
+	for _, chainVp := range votingPowers {
+		for _, vp := range chainVp.votingPowers {
+			operatorAddr := vp.Operator.Hex()
+			if _, exists := validatorsMap[operatorAddr]; !exists {
+				validatorsMap[operatorAddr] = &entity.Validator{
+					Operator:    vp.Operator,
+					VotingPower: entity.ToVotingPower(big.NewInt(0)),
+					IsActive:    false, // Default to active, will filter later
+					Keys:        []entity.ValidatorKey{},
+					Vaults:      []entity.ValidatorVault{},
+				}
 			}
-		}
 
-		// Add vaults and their voting powers
-		for _, vault := range vp.Vaults {
-			validatorsMap[operatorAddr].VotingPower = entity.ToVotingPower(new(big.Int).Add(
-				validatorsMap[operatorAddr].VotingPower.Int,
-				vault.VotingPower.Int,
-			))
+			// Add vaults and their voting powers
+			for _, vault := range vp.Vaults {
+				validatorsMap[operatorAddr].VotingPower = entity.ToVotingPower(new(big.Int).Add(
+					validatorsMap[operatorAddr].VotingPower.Int,
+					vault.VotingPower.Int,
+				))
 
-			// Add vault to validator's vaults
-			validatorsMap[operatorAddr].Vaults = append(validatorsMap[operatorAddr].Vaults, entity.ValidatorVault{
-				Vault:       vault.Vault,
-				VotingPower: vault.VotingPower,
+				// Add vault to validator's vaults
+				validatorsMap[operatorAddr].Vaults = append(validatorsMap[operatorAddr].Vaults, entity.ValidatorVault{
+					Vault:       vault.Vault,
+					VotingPower: vault.VotingPower,
+					ChainID:     chainVp.chainId,
+				})
+			}
+
+			// Sort vaults by address in ascending order
+			sort.Slice(validatorsMap[operatorAddr].Vaults, func(i, j int) bool {
+				// Compare voting powers (lower first)
+				return validatorsMap[operatorAddr].Vaults[i].Vault.Cmp(validatorsMap[operatorAddr].Vaults[j].Vault) < 0
 			})
 		}
-
-		// Sort vaults by address in ascending order
-		sort.Slice(validatorsMap[operatorAddr].Vaults, func(i, j int) bool {
-			// Compare voting powers (lower first)
-			return validatorsMap[operatorAddr].Vaults[i].Vault.Cmp(validatorsMap[operatorAddr].Vaults[j].Vault) < 0
-		})
 	}
 
 	// Process required keys
