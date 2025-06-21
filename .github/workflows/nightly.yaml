@@ -4,6 +4,7 @@ on:
   schedule:
     # Run at 03:00 UTC every day (avoiding peak 00:00 congestion)
     - cron: '0 3 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: write

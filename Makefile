@@ -16,10 +16,6 @@ unit-test:
 	go tool cover -func coverage.tmp.txt > coverage.txt
 	rm cover.out.tmp coverage.tmp.txt
 
-build-for-linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-extldflags '-static'" -o middleware-offchain ./ && chmod a+x middleware-offchain
-
-
 gen-abi:
 	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
 		--abi core/client/evm/abi/IValSetDriver.abi.json \
