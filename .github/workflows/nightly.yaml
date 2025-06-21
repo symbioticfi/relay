@@ -1,0 +1,77 @@
+---
+name: Nightly Build
+on:
+  schedule:
+    # Run at 03:00 UTC every day (avoiding peak 00:00 congestion)
+    - cron: '0 3 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  tests:
+    name: Tests
+    uses: ./.github/workflows/tests.yaml
+  build:
+    needs: 
+      - tests
+    name: Build
+    uses: ./.github/workflows/build.yaml
+  nightly-release:
+    name: Nightly Release
+    needs: 
+      - tests
+      - build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pin@v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Generate nightly tag
+        id: nightly_tag
+        run: |
+          DATE=$(date +%Y%m%d)
+          echo "tag=nightly-$DATE" >> "$GITHUB_OUTPUT"
+          echo "Generated nightly tag: nightly-$DATE"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get the last nightly tag or use a fallback
+          LAST_TAG=$(git tag --list "nightly-*" --sort=-version:refname | head -1)
+          if [ -z "$LAST_TAG" ]; then
+            echo "No previous nightly tag found, using last 10 commits"
+            git log -10 --pretty=format:"- %s (%an)" > CHANGELOG.md
+          else
+            echo "Generating changelog between $LAST_TAG and current commit"
+            git log $LAST_TAG..HEAD --pretty=format:"- %s (%an)" > CHANGELOG.md
+          fi
+          cat CHANGELOG.md
+
+      - name: Download artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # pin@v4.3.0
+        with:
+          pattern: generate_genesis_*
+          merge-multiple: true
+      
+      - name: Download symbiotic-relay artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # pin@v4.3.0
+        with:
+          pattern: symbiotic_relay_*
+          merge-multiple: true
+      
+      - name: Create nightly release
+        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # pin@v2.2.2
+        with:
+          tag_name: ${{ steps.nightly_tag.outputs.tag }}
+          draft: false
+          prerelease: true
+          body_path: CHANGELOG.md
+          files: |
+            generate_genesis_linux_amd64
+            generate_genesis_darwin_arm64
+            symbiotic_relay_linux_amd64
+            symbiotic_relay_darwin_arm64 
