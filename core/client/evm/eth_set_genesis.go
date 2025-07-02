@@ -24,7 +24,7 @@ func (e *Client) SetGenesis(
 	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 
-	txOpts, err := bind.NewKeyedTransactorWithChainID(e.masterPK, new(big.Int).SetUint64(e.driverAddress.ChainId))
+	txOpts, err := bind.NewKeyedTransactorWithChainID(e.masterPK, new(big.Int).SetUint64(addr.ChainId))
 	if err != nil {
 		return entity.TxResult{}, errors.Errorf("failed to create new keyed transactor: %w", err)
 	}
