@@ -11,6 +11,7 @@ import (
 	valsetDeriver "middleware-offchain/core/usecase/valset-deriver"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -63,7 +64,7 @@ func NewNetworkCmd() (*cobra.Command, error) {
 var networkCmd = &cobra.Command{
 	Use:   "network",
 	Short: "Network tool",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		ctx := signalContext(context.Background())
 
 		var err error
@@ -107,7 +108,7 @@ var infoCmd = &cobra.Command{
 		var err error
 		ctx := signalContext(context.Background())
 
-		if cfg.epoch != 0 {
+		if cfg.epoch == 0 {
 			cfg.epoch, err = cfg.client.GetCurrentEpoch(ctx)
 			if err != nil {
 				return errors.Errorf("failed to get current epoch: %w", err)
@@ -124,23 +125,62 @@ var infoCmd = &cobra.Command{
 			return errors.Errorf("failed to get config: %w", err)
 		}
 
-		header, err := cfg.client.GetValSetHeader(ctx, cfg.driverCrossChainAddress)
+		epoch, err := cfg.client.GetLastCommittedHeaderEpoch(ctx, networkConfig.Replicas[0])
 		if err != nil {
 			return errors.Errorf("failed to get valset header: %w", err)
 		}
 
-		valset, err := cfg.deriver.GetValidatorSet(ctx, header.Epoch, networkConfig)
+		valset, err := cfg.deriver.GetValidatorSet(ctx, epoch, networkConfig)
 		if err != nil {
 			return errors.Errorf("failed to get validator set: %w", err)
 		}
 
-		slog.InfoContext(
-			ctx, "network info",
-			"epoch", cfg.epoch,
-			"config", networkConfig,
-			"active operators", valset.GetTotalActiveValidators(),
-			"total voting power", valset.GetTotalActiveVotingPower(),
-		)
+		slog.InfoContext(ctx, "Network Info")
+		slog.InfoContext(ctx, "-", "epoch", cfg.epoch)
+		slog.InfoContext(ctx, "-", "active_operators", valset.GetTotalActiveValidators())
+		slog.InfoContext(ctx, "-", "total_voting_power", valset.GetTotalActiveVotingPower())
+		slog.InfoContext(ctx, "- config")
+
+		slog.InfoContext(ctx, "    - voting power providers")
+		for _, addr := range networkConfig.VotingPowerProviders {
+			slog.InfoContext(ctx, "        -", "addr", addr.Address, "chain_id", addr.ChainId)
+		}
+
+		slog.InfoContext(ctx, "    -", "keys_provider", networkConfig.KeysProvider)
+		slog.InfoContext(ctx, "    - replicas")
+		for _, addr := range networkConfig.Replicas {
+			slog.InfoContext(ctx, "        -", "addr", addr.Address, "chain_id", addr.ChainId)
+		}
+
+		slog.InfoContext(ctx, "    -", "verification_type", networkConfig.VerificationType)
+		slog.InfoContext(ctx, "    -", "max_voting_power", networkConfig.MaxVotingPower)
+		slog.InfoContext(ctx, "    -", "min_inclusion_voting_power", networkConfig.MinInclusionVotingPower)
+		slog.InfoContext(ctx, "    -", "max_validators_count", networkConfig.MaxValidatorsCount)
+
+		slog.InfoContext(ctx, "    - key tags")
+		for i, tag := range networkConfig.RequiredKeyTags {
+			bytes, err := tag.MarshalText()
+			if err != nil {
+				return errors.Errorf("failed to format network config: %w", err)
+			}
+			slog.InfoContext(ctx, "        -", strconv.Itoa(i), string(bytes))
+		}
+
+		bytes, err := networkConfig.RequiredHeaderKeyTag.MarshalText()
+		if err != nil {
+			return errors.Errorf("failed to format network config: %w", err)
+		}
+		slog.InfoContext(ctx, "    -", "required_header_key_tag", string(bytes))
+
+		slog.InfoContext(ctx, "    - quorum thresholds")
+		for _, t := range networkConfig.QuorumThresholds {
+			bytes, err := t.KeyTag.MarshalText()
+			if err != nil {
+				return errors.Errorf("failed to format network config: %w", err)
+			}
+
+			slog.InfoContext(ctx, "        -", "key_tag", string(bytes), "value", t.QuorumThreshold)
+		}
 
 		return nil
 	},
@@ -153,7 +193,7 @@ var valsetCmd = &cobra.Command{
 		var err error
 		ctx := signalContext(context.Background())
 
-		if cfg.epoch != 0 {
+		if cfg.epoch == 0 {
 			cfg.epoch, err = cfg.client.GetCurrentEpoch(ctx)
 			if err != nil {
 				return errors.Errorf("failed to get current epoch: %w", err)
@@ -170,31 +210,27 @@ var valsetCmd = &cobra.Command{
 			return errors.Errorf("failed to get config: %w", err)
 		}
 
-		header, err := cfg.client.GetValSetHeader(ctx, cfg.driverCrossChainAddress)
+		epoch, err := cfg.client.GetLastCommittedHeaderEpoch(ctx, networkConfig.Replicas[0])
 		if err != nil {
 			return errors.Errorf("failed to get valset header: %w", err)
 		}
 
-		valset, err := cfg.deriver.GetValidatorSet(ctx, header.Epoch, networkConfig)
+		valset, err := cfg.deriver.GetValidatorSet(ctx, epoch, networkConfig)
 		if err != nil {
 			return errors.Errorf("failed to get validator set: %w", err)
 		}
 
-		slog.InfoContext(
-			ctx, "validators info",
-			"operators", len(valset.Validators),
-			"total voting power", valset.GetTotalActiveVotingPower(),
-		)
+		slog.InfoContext(ctx, "Validators Info")
+		slog.InfoContext(ctx, "-", "current_epoch", cfg.epoch)
+		if cfg.epoch != epoch {
+			slog.InfoContext(ctx, "-", "valset_committed_epoch", epoch)
+		}
+		slog.InfoContext(ctx, "-", "operators", len(valset.Validators))
+		slog.InfoContext(ctx, "-", "total_voting_power", valset.GetTotalActiveVotingPower())
 
 		for _, validator := range valset.Validators {
-			if cfg.compact {
-				status := "active"
-				if !validator.IsActive {
-					status = "inactive"
-				}
-				slog.InfoContext(ctx, validator.Operator.String(), "status", status, "voting power", validator.VotingPower)
-			} else {
-				slog.InfoContext(ctx, validator.Operator.String(), "status", validator.VotingPower, "vaults", validator.Vaults, "keys", validator.Keys)
+			if err := logValidator(ctx, validator); err != nil {
+				return errors.Errorf("failed to log validator: %w", err)
 			}
 		}
 
@@ -298,4 +334,42 @@ func signalContext(ctx context.Context) context.Context {
 	}()
 
 	return cnCtx
+}
+
+func logValidator(ctx context.Context, validator entity.Validator) error {
+	status := "active"
+	if !validator.IsActive {
+		status = "inactive"
+	}
+	slog.InfoContext(ctx, "- "+validator.Operator.String())
+	slog.InfoContext(ctx, "    - ", "status", status)
+	slog.InfoContext(ctx, "    - ", "voting_power", validator.VotingPower)
+
+	if cfg.compact {
+		return nil
+	}
+
+	slog.InfoContext(ctx, "    -  keys")
+	for _, key := range validator.Keys {
+		bytes, err := key.Tag.MarshalText()
+		if err != nil {
+			return err
+		}
+
+		kt := string(bytes)
+
+		bytes, err = key.Payload.MarshalText()
+		if err != nil {
+			return err
+		}
+
+		slog.InfoContext(ctx, "        -", "key", string(bytes), "tag", kt)
+	}
+
+	slog.InfoContext(ctx, "    -  vaults")
+	for _, vault := range validator.Vaults {
+		slog.InfoContext(ctx, "        -", "addr", vault.Vault, "chain_id", vault.ChainID, "voting_power", vault.VotingPower)
+	}
+
+	return nil
 }

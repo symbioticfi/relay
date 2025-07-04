@@ -156,6 +156,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 
 		valset.Status = entity.HeaderCommitted
 	} else {
+		valset.PreviousHeaderHash = common.HexToHash("0x868e09d528a16744c1f38ea3c10cc2251e01a456434f91172247695087d129b7")
 		lastCommittedAddr, latestCommittedEpoch, err := v.getLastCommittedHeaderEpoch(ctx, config)
 		if err != nil {
 			return entity.ValidatorSet{}, errors.Errorf("failed to get current valset epoch: %w", err)
