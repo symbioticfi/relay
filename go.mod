@@ -10,7 +10,7 @@ require (
 	github.com/ferranbt/fastssz v0.1.4
 	github.com/getsentry/sentry-go v0.33.0
 	github.com/getsentry/sentry-go/slog v0.33.0
-	github.com/go-chi/chi/v5 v5.2.1
+	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-errors/errors v1.5.1
 	github.com/go-faster/errors v0.7.1
 	github.com/go-faster/jx v1.1.0
