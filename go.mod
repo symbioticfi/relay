@@ -14,7 +14,7 @@ require (
 	github.com/go-errors/errors v1.5.1
 	github.com/go-faster/errors v0.7.1
 	github.com/go-faster/jx v1.1.0
-	github.com/go-playground/validator/v10 v10.26.0
+	github.com/go-playground/validator/v10 v10.27.0
 	github.com/libp2p/go-libp2p v0.41.1
 	github.com/maniartech/signals v1.2.0
 	github.com/multiformats/go-multiaddr v0.16.0
