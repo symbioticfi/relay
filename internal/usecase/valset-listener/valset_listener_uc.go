@@ -104,7 +104,11 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		nextEpoch = latest.Epoch + 1
 	}
 
-	for latestCommitedOnchainEpoch >= nextEpoch && nextEpoch > s.latestProcessedEpoch {
+	if s.latestProcessedEpoch != 0 && nextEpoch <= s.latestProcessedEpoch {
+		return nil
+	}
+
+	for latestCommitedOnchainEpoch >= nextEpoch {
 		epochStart, err := s.cfg.Eth.GetEpochStart(ctx, nextEpoch)
 		if err != nil {
 			return errors.Errorf("failed to get epoch start for epoch %d: %w", nextEpoch, err)

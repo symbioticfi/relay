@@ -50,9 +50,8 @@ func (c Config) Validate() error {
 type Client struct {
 	cfg Config
 
-	conns         map[uint64]*ethclient.Client
-	driverAddress entity.CrossChainAddress
-	driver        *gen.IValSetDriverCaller
+	conns  map[uint64]*ethclient.Client
+	driver *gen.IValSetDriverCaller
 
 	masterPK *ecdsa.PrivateKey // could be nil for read-only access
 }
@@ -89,12 +88,16 @@ func NewEVMClient(ctx context.Context, cfg Config) (*Client, error) {
 		}
 	}
 
+	driver, err := gen.NewIValSetDriverCaller(cfg.DriverAddress.Address, conns[cfg.DriverAddress.ChainId])
+	if err != nil {
+		return nil, errors.Errorf("failed to create driver contract: %w", err)
+	}
+
 	return &Client{
-		cfg:           cfg,
-		conns:         conns,
-		driverAddress: entity.CrossChainAddress{},
-		driver:        nil,
-		masterPK:      pk,
+		cfg:      cfg,
+		conns:    conns,
+		driver:   driver,
+		masterPK: pk,
 	}, nil
 }
 
