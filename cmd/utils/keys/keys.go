@@ -1,15 +1,13 @@
 package keys
 
 import (
+	"github.com/go-errors/errors"
+	"github.com/spf13/cobra"
 	"log/slog"
 	"middleware-offchain/core/entity"
 	"middleware-offchain/core/usecase/crypto"
 	keyprovider "middleware-offchain/core/usecase/key-provider"
-	"syscall"
-
-	"github.com/go-errors/errors"
-	"github.com/spf13/cobra"
-	"golang.org/x/term"
+	utils_app "middleware-offchain/internal/usecase/utils-app"
 )
 
 type config struct {
@@ -69,7 +67,7 @@ var printKeysCmd = &cobra.Command{
 		var err error
 
 		if cfg.password == "" {
-			cfg.password, err = getPassword()
+			cfg.password, err = utils_app.GetPassword()
 			if err != nil {
 				return err
 			}
@@ -114,7 +112,7 @@ var addKeyCmd = &cobra.Command{
 		var err error
 
 		if cfg.password == "" {
-			cfg.password, err = getPassword()
+			cfg.password, err = utils_app.GetPassword()
 			if err != nil {
 				return err
 			}
@@ -145,7 +143,7 @@ var removeKeyCmd = &cobra.Command{
 		var err error
 
 		if cfg.password == "" {
-			cfg.password, err = getPassword()
+			cfg.password, err = utils_app.GetPassword()
 			if err != nil {
 				return err
 			}
@@ -171,7 +169,7 @@ var updateKeyCmd = &cobra.Command{
 		var err error
 
 		if cfg.password == "" {
-			cfg.password, err = getPassword()
+			cfg.password, err = utils_app.GetPassword()
 			if err != nil {
 				return err
 			}
@@ -203,14 +201,4 @@ var updateKeyCmd = &cobra.Command{
 
 		return nil
 	},
-}
-
-func getPassword() (string, error) {
-	slog.Info("Enter password: ")
-	passwordBytes, err := term.ReadPassword(syscall.Stdin)
-	if err != nil {
-		return "", err
-	}
-
-	return string(passwordBytes), nil
 }
