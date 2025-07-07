@@ -582,13 +582,22 @@ func (e *Client) getVotingPowerProviderContract(addr entity.CrossChainAddress) (
 	return gen.NewIVotingPowerProviderCaller(addr.Address, client)
 }
 
-func (e *Client) getKeyRegistryContract(addr entity.CrossChainAddress) (*gen.IKeyRegistryCaller, error) {
+func (e *Client) getKeyRegistryContract(addr entity.CrossChainAddress) (*gen.IKeyRegistry, error) {
 	client, ok := e.conns[addr.ChainId]
 	if !ok {
 		return nil, errors.Errorf("no connection for chain ID %d: %w", addr.ChainId, entity.ErrChainNotFound)
 	}
 
-	return gen.NewIKeyRegistryCaller(addr.Address, client)
+	return gen.NewIKeyRegistry(addr.Address, client)
+}
+
+func (e *Client) getOperagorRegistryContract(addr entity.CrossChainAddress) (*gen.OperatorRegistry, error) {
+	client, ok := e.conns[addr.ChainId]
+	if !ok {
+		return nil, errors.Errorf("no connection for chain ID %d: %w", addr.ChainId, entity.ErrChainNotFound)
+	}
+
+	return gen.NewOperatorRegistry(addr.Address, client)
 }
 
 func findErrorBySelector(errSelector string) (abi.Error, bool) {

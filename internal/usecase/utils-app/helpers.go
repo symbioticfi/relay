@@ -2,10 +2,11 @@ package utils_app
 
 import (
 	"context"
-	"golang.org/x/term"
 	"log/slog"
 	"middleware-offchain/core/entity"
 	"syscall"
+
+	"golang.org/x/term"
 )
 
 func GetPassword() (string, error) {

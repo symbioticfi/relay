@@ -175,7 +175,7 @@ var infoCmd = &cobra.Command{
 
 		slog.InfoContext(ctx, "    - quorum thresholds")
 		for _, t := range networkConfig.QuorumThresholds {
-			bytes, err := t.KeyTag.MarshalText()
+			bytes, err = t.KeyTag.MarshalText()
 			if err != nil {
 				return errors.Errorf("failed to format network config: %w", err)
 			}

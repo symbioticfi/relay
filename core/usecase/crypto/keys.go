@@ -35,3 +35,15 @@ func NewPrivateKey(keyTag entity.KeyTag, keyBytes []byte) (PrivateKey, error) {
 	}
 	return nil, errors.New("unsupported key type")
 }
+
+func GeneratePrivateKey(keyTag entity.KeyTag) (PrivateKey, error) {
+	switch keyTag.Type() {
+	case entity.KeyTypeBlsBn254:
+		return blsBn254.GenerateKey()
+	case entity.KeyTypeEcdsaSecp256k1:
+		return ecdsaSecp256k1.GenerateKey()
+	case entity.KeyTypeInvalid:
+		return nil, errors.New("unsupported key type")
+	}
+	return nil, errors.New("unsupported key type")
+}

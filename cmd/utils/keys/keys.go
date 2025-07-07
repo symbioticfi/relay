@@ -1,13 +1,14 @@
 package keys
 
 import (
-	"github.com/go-errors/errors"
-	"github.com/spf13/cobra"
 	"log/slog"
 	"middleware-offchain/core/entity"
 	"middleware-offchain/core/usecase/crypto"
 	keyprovider "middleware-offchain/core/usecase/key-provider"
 	utils_app "middleware-offchain/internal/usecase/utils-app"
+
+	"github.com/go-errors/errors"
+	"github.com/spf13/cobra"
 )
 
 type config struct {
@@ -104,12 +105,17 @@ var addKeyCmd = &cobra.Command{
 		if cfg.privateKey == "" && !cfg.generate {
 			return errors.New("Add --generate if private key omitted")
 		}
-
-		if cfg.generate {
-			cfg.privateKey = "random" // TODO: for each key tag make pk generator
-		}
-
 		var err error
+
+		kt := entity.KeyTag(cfg.keyTag)
+		if cfg.generate {
+			pk, err := crypto.GeneratePrivateKey(kt)
+			if err != nil {
+				return err
+			}
+
+			cfg.privateKey = string(pk.Bytes())
+		}
 
 		if cfg.password == "" {
 			cfg.password, err = utils_app.GetPassword()
@@ -123,12 +129,12 @@ var addKeyCmd = &cobra.Command{
 			return err
 		}
 
-		key, err := crypto.NewPrivateKey(entity.KeyTag(cfg.keyTag), []byte(cfg.privateKey))
+		key, err := crypto.NewPrivateKey(kt, []byte(cfg.privateKey))
 		if err != nil {
 			return err
 		}
 
-		if err = keyStore.AddKey(entity.KeyTag(cfg.keyTag), key, cfg.password, cfg.force); err != nil {
+		if err = keyStore.AddKey(kt, key, cfg.password, cfg.force); err != nil {
 			return err
 		}
 
@@ -180,8 +186,8 @@ var updateKeyCmd = &cobra.Command{
 			return err
 		}
 
-		keyTag := entity.KeyTag(cfg.keyTag)
-		exists, err := keyStore.HasKey(keyTag)
+		kt := entity.KeyTag(cfg.keyTag)
+		exists, err := keyStore.HasKey(kt)
 		if err != nil {
 			return err
 		}
@@ -190,12 +196,12 @@ var updateKeyCmd = &cobra.Command{
 			return errors.New("Key doesn't exist")
 		}
 
-		key, err := crypto.NewPrivateKey(entity.KeyTag(cfg.keyTag), []byte(cfg.privateKey))
+		key, err := crypto.NewPrivateKey(kt, []byte(cfg.privateKey))
 		if err != nil {
 			return err
 		}
 
-		if err = keyStore.AddKey(entity.KeyTag(cfg.keyTag), key, cfg.password, true); err != nil {
+		if err = keyStore.AddKey(kt, key, cfg.password, true); err != nil {
 			return err
 		}
 

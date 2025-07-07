@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"middleware-offchain/cmd/utils/keys"
 	"middleware-offchain/cmd/utils/network"
+	"middleware-offchain/cmd/utils/operator"
 	"middleware-offchain/pkg/log"
 	"os"
 
@@ -30,11 +31,18 @@ func main() {
 		os.Exit(1)
 	}
 
+	operatorCmd, err := operator.NewOperatorCmd()
+	if err != nil {
+		slog.Error("error creating network command", "error", err)
+		os.Exit(1)
+	}
+
 	rootCmd.PersistentFlags().StringVar(&cfg.logLevel, "log-level", "info", "log level")
 	rootCmd.PersistentFlags().StringVar(&cfg.logMode, "log-mode", "debug", "log mode")
 
 	rootCmd.AddCommand(keysCmd)
 	rootCmd.AddCommand(networkCmd)
+	rootCmd.AddCommand(operatorCmd)
 
 	if err := run(); err != nil {
 		slog.Error("error executing command", "error", err)
