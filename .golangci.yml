@@ -265,6 +265,10 @@ linters:
         text: 'shadow: declaration of "err" shadows declaration at line'
       - path: (.+)\.go$
         text: G115
+      - path: cmd/utils/
+        text: "use of `fmt.Printf` forbidden"
+      - path: cmd/utils/
+        text: "use of `fmt.Print` forbidden"
     paths:
       - third_party$
       - builtin$

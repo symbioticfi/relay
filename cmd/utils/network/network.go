@@ -12,7 +12,6 @@ import (
 	utils_app "middleware-offchain/internal/usecase/utils-app"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -126,7 +125,7 @@ var infoCmd = &cobra.Command{
 			return errors.Errorf("failed to get config: %w", err)
 		}
 
-		epoch, err := cfg.client.GetLastCommittedHeaderEpoch(ctx, networkConfig.Replicas[0])
+		_, epoch, err := cfg.deriver.GetLastCommittedHeaderEpoch(ctx, networkConfig)
 		if err != nil {
 			return errors.Errorf("failed to get valset header: %w", err)
 		}
@@ -136,51 +135,63 @@ var infoCmd = &cobra.Command{
 			return errors.Errorf("failed to get validator set: %w", err)
 		}
 
-		slog.InfoContext(ctx, "Network Info")
-		slog.InfoContext(ctx, "-", "epoch", cfg.epoch)
-		slog.InfoContext(ctx, "-", "active_operators", valset.GetTotalActiveValidators())
-		slog.InfoContext(ctx, "-", "total_voting_power", valset.GetTotalActiveVotingPower())
-		slog.InfoContext(ctx, "- config")
+		fmt.Printf("\nNetwork Info:\n")
+		fmt.Printf("   Epoch: %v\n", cfg.epoch)
+		fmt.Printf("   Operators: %v\n", valset.GetTotalActiveValidators())
+		fmt.Printf("   Voting Power: %v\n", valset.GetTotalActiveVotingPower())
 
-		slog.InfoContext(ctx, "    - voting power providers")
-		for _, addr := range networkConfig.VotingPowerProviders {
-			slog.InfoContext(ctx, "        -", "addr", addr.Address, "chain_id", addr.ChainId)
+		fmt.Printf("\nVoting Power Providers (%d):\n", len(networkConfig.VotingPowerProviders))
+		fmt.Printf("   # | Address | Chain ID\n")
+		for i, addr := range networkConfig.VotingPowerProviders {
+			fmt.Printf("   %d | %s | %d\n", i+1, addr.Address, addr.ChainId)
 		}
 
-		slog.InfoContext(ctx, "    -", "keys_provider", networkConfig.KeysProvider)
-		slog.InfoContext(ctx, "    - replicas")
-		for _, addr := range networkConfig.Replicas {
-			slog.InfoContext(ctx, "        -", "addr", addr.Address, "chain_id", addr.ChainId)
+		fmt.Printf("\nKeys Provider: %v\n", networkConfig.KeysProvider)
+
+		fmt.Printf("\nReplicas (%d):\n", len(networkConfig.Replicas))
+		fmt.Printf("   # | Address | Chain ID\n")
+		for i, addr := range networkConfig.Replicas {
+			fmt.Printf("   %d | %s | %d\n", i+1, addr.Address, addr.ChainId)
 		}
 
-		slog.InfoContext(ctx, "    -", "verification_type", networkConfig.VerificationType)
-		slog.InfoContext(ctx, "    -", "max_voting_power", networkConfig.MaxVotingPower)
-		slog.InfoContext(ctx, "    -", "min_inclusion_voting_power", networkConfig.MinInclusionVotingPower)
-		slog.InfoContext(ctx, "    -", "max_validators_count", networkConfig.MaxValidatorsCount)
+		verificationType, err := networkConfig.VerificationType.MarshalText()
+		if err != nil {
+			return errors.Errorf("failed to marshal verification type: %w", err)
+		}
 
-		slog.InfoContext(ctx, "    - key tags")
+		fmt.Printf("\nConfig:\n")
+		fmt.Printf("   Verification Type: %s\n", verificationType)
+		fmt.Printf("   Max Voting Power: %v\n", networkConfig.MaxVotingPower)
+		fmt.Printf("   Min Inclusion Voting Power: %v\n", networkConfig.MinInclusionVotingPower)
+		fmt.Printf("   Max Validators Count: %v\n", networkConfig.MaxValidatorsCount)
+
+		fmt.Printf("\nKey Tags (%d):\n", len(networkConfig.RequiredKeyTags))
+		fmt.Printf("   # | Tag\n")
 		for i, tag := range networkConfig.RequiredKeyTags {
 			bytes, err := tag.MarshalText()
 			if err != nil {
 				return errors.Errorf("failed to format network config: %w", err)
 			}
-			slog.InfoContext(ctx, "        -", strconv.Itoa(i), string(bytes))
+
+			fmt.Printf("   %d | %s\n", i+1, string(bytes))
 		}
 
 		bytes, err := networkConfig.RequiredHeaderKeyTag.MarshalText()
 		if err != nil {
 			return errors.Errorf("failed to format network config: %w", err)
 		}
-		slog.InfoContext(ctx, "    -", "required_header_key_tag", string(bytes))
 
-		slog.InfoContext(ctx, "    - quorum thresholds")
-		for _, t := range networkConfig.QuorumThresholds {
+		fmt.Printf("\nHeader Key Tag: %s\n", string(bytes))
+
+		fmt.Printf("\nQuorum Thresholds (%d):\n", len(networkConfig.QuorumThresholds))
+		fmt.Printf("   # | Key Tag | Threshold\n")
+		for i, t := range networkConfig.QuorumThresholds {
 			bytes, err = t.KeyTag.MarshalText()
 			if err != nil {
 				return errors.Errorf("failed to format network config: %w", err)
 			}
 
-			slog.InfoContext(ctx, "        -", "key_tag", string(bytes), "value", t.QuorumThreshold)
+			fmt.Printf("   %d | %s | %v\n", i+1, string(bytes), t.QuorumThreshold)
 		}
 
 		return nil
@@ -211,7 +222,7 @@ var valsetCmd = &cobra.Command{
 			return errors.Errorf("failed to get config: %w", err)
 		}
 
-		epoch, err := cfg.client.GetLastCommittedHeaderEpoch(ctx, networkConfig.Replicas[0])
+		_, epoch, err := cfg.deriver.GetLastCommittedHeaderEpoch(ctx, networkConfig)
 		if err != nil {
 			return errors.Errorf("failed to get valset header: %w", err)
 		}
@@ -221,18 +232,20 @@ var valsetCmd = &cobra.Command{
 			return errors.Errorf("failed to get validator set: %w", err)
 		}
 
-		slog.InfoContext(ctx, "Validators Info")
-		slog.InfoContext(ctx, "-", "current_epoch", cfg.epoch)
+		fmt.Printf("\nValidators Info:\n")
+		fmt.Printf("   Current Epoch: %v\n", cfg.epoch)
 		if cfg.epoch != epoch {
-			slog.InfoContext(ctx, "-", "valset_committed_epoch", epoch)
+			fmt.Printf("   Valset Committed Epoch: %v\n", epoch)
 		}
-		slog.InfoContext(ctx, "-", "operators", len(valset.Validators))
-		slog.InfoContext(ctx, "-", "total_voting_power", valset.GetTotalActiveVotingPower())
+		fmt.Printf("   Operators: %d\n", len(valset.Validators))
+		fmt.Printf("   Total Voting Power: %v\n", valset.GetTotalActiveVotingPower())
 
 		for _, validator := range valset.Validators {
-			if err := utils_app.LogValidator(ctx, validator, cfg.compact); err != nil {
+			str, err := utils_app.MarshalTextValidator(validator, cfg.compact)
+			if err != nil {
 				return errors.Errorf("failed to log validator: %w", err)
 			}
+			fmt.Print(str)
 		}
 
 		return nil
@@ -240,7 +253,7 @@ var valsetCmd = &cobra.Command{
 }
 
 var genesisCmd = &cobra.Command{
-	Use:   "generate_genesis",
+	Use:   "generate-genesis",
 	Short: "Generate genesis validator set header",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if cfg.commit && cfg.secretKey == "" {

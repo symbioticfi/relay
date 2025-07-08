@@ -17,6 +17,8 @@ import (
 
 const valsetVersion = 1
 
+var emptyValsetHeaderHash = common.HexToHash("0x868e09d528a16744c1f38ea3c10cc2251e01a456434f91172247695087d129b7")
+
 //go:generate mockgen -source=valset_deriver.go -destination=mocks/deriver.go -package=mocks
 type ethClient interface {
 	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
@@ -156,8 +158,8 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 
 		valset.Status = entity.HeaderCommitted
 	} else {
-		valset.PreviousHeaderHash = common.HexToHash("0x868e09d528a16744c1f38ea3c10cc2251e01a456434f91172247695087d129b7")
-		lastCommittedAddr, latestCommittedEpoch, err := v.getLastCommittedHeaderEpoch(ctx, config)
+		valset.PreviousHeaderHash = emptyValsetHeaderHash
+		lastCommittedAddr, latestCommittedEpoch, err := v.GetLastCommittedHeaderEpoch(ctx, config)
 		if err != nil {
 			return entity.ValidatorSet{}, errors.Errorf("failed to get current valset epoch: %w", err)
 		}
@@ -194,7 +196,7 @@ func (v *Deriver) isValsetHeaderCommitted(ctx context.Context, config entity.Net
 	return entity.CrossChainAddress{}, false, nil
 }
 
-func (v *Deriver) getLastCommittedHeaderEpoch(ctx context.Context, config entity.NetworkConfig) (entity.CrossChainAddress, uint64, error) {
+func (v *Deriver) GetLastCommittedHeaderEpoch(ctx context.Context, config entity.NetworkConfig) (entity.CrossChainAddress, uint64, error) {
 	maxEpoch := uint64(0)
 	var maxEpochAddr entity.CrossChainAddress
 
@@ -204,7 +206,7 @@ func (v *Deriver) getLastCommittedHeaderEpoch(ctx context.Context, config entity
 			return entity.CrossChainAddress{}, 0, errors.Errorf("failed to get last committed header epoch for address %s: %w", addr.Address.Hex(), err)
 		}
 
-		if epoch > maxEpoch {
+		if epoch >= maxEpoch {
 			maxEpoch = epoch
 			maxEpochAddr = addr
 		}

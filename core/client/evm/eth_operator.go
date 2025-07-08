@@ -27,7 +27,7 @@ func (e *Client) RegisterOperator(
 	}
 	txOpts.Context = tmCtx
 
-	registry, err := e.getOperagorRegistryContract(addr)
+	registry, err := e.getOperatorRegistryContract(addr)
 	if err != nil {
 		return entity.TxResult{}, errors.Errorf("failed to get settlement contract: %w", err)
 	}

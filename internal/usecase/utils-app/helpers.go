@@ -1,9 +1,10 @@
 package utils_app
 
 import (
-	"context"
+	"fmt"
 	"log/slog"
 	"middleware-offchain/core/entity"
+	"strings"
 	"syscall"
 
 	"golang.org/x/term"
@@ -19,40 +20,43 @@ func GetPassword() (string, error) {
 	return string(passwordBytes), nil
 }
 
-func LogValidator(ctx context.Context, validator entity.Validator, compact bool) error {
+func MarshalTextValidator(validator entity.Validator, compact bool) (string, error) {
+	var result strings.Builder
+
 	status := "active"
 	if !validator.IsActive {
 		status = "inactive"
 	}
-	slog.InfoContext(ctx, "- "+validator.Operator.String())
-	slog.InfoContext(ctx, "    - ", "status", status)
-	slog.InfoContext(ctx, "    - ", "voting_power", validator.VotingPower)
+
+	result.WriteString(fmt.Sprintf("\nValidator: %s\n", validator.Operator.String()))
+	result.WriteString(fmt.Sprintf("   Status: %s\n", status))
+	result.WriteString(fmt.Sprintf("   Voting Power: %v\n", validator.VotingPower))
 
 	if compact {
-		return nil
+		return result.String(), nil
 	}
 
-	slog.InfoContext(ctx, "    -  keys")
-	for _, key := range validator.Keys {
-		bytes, err := key.Tag.MarshalText()
+	result.WriteString(fmt.Sprintf("\nKeys (%d):\n", len(validator.Keys)))
+	result.WriteString("   # | Key | Tag\n")
+	for i, key := range validator.Keys {
+		tagBytes, err := key.Tag.MarshalText()
 		if err != nil {
-			return err
+			return "", err
 		}
 
-		kt := string(bytes)
-
-		bytes, err = key.Payload.MarshalText()
+		payloadBytes, err := key.Payload.MarshalText()
 		if err != nil {
-			return err
+			return "", err
 		}
 
-		slog.InfoContext(ctx, "        -", "key", string(bytes), "tag", kt)
+		result.WriteString(fmt.Sprintf("   %d | %s | %s\n", i+1, string(payloadBytes), string(tagBytes)))
 	}
 
-	slog.InfoContext(ctx, "    -  vaults")
-	for _, vault := range validator.Vaults {
-		slog.InfoContext(ctx, "        -", "addr", vault.Vault, "chain_id", vault.ChainID, "voting_power", vault.VotingPower)
+	result.WriteString(fmt.Sprintf("\nVaults (%d):\n", len(validator.Vaults)))
+	result.WriteString("   # | Address | Chain ID | Voting Power\n")
+	for i, vault := range validator.Vaults {
+		result.WriteString(fmt.Sprintf("   %d | %s | %d | %v\n", i+1, vault.Vault, vault.ChainID, vault.VotingPower))
 	}
 
-	return nil
+	return result.String(), nil
 }

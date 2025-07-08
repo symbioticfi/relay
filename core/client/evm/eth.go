@@ -591,7 +591,7 @@ func (e *Client) getKeyRegistryContract(addr entity.CrossChainAddress) (*gen.IKe
 	return gen.NewIKeyRegistry(addr.Address, client)
 }
 
-func (e *Client) getOperagorRegistryContract(addr entity.CrossChainAddress) (*gen.OperatorRegistry, error) {
+func (e *Client) getOperatorRegistryContract(addr entity.CrossChainAddress) (*gen.OperatorRegistry, error) {
 	client, ok := e.conns[addr.ChainId]
 	if !ok {
 		return nil, errors.Errorf("no connection for chain ID %d: %w", addr.ChainId, entity.ErrChainNotFound)

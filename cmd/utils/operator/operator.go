@@ -2,6 +2,7 @@ package operator
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"middleware-offchain/core/client/evm"
 	"middleware-offchain/core/entity"
@@ -67,11 +68,11 @@ func NewOperatorCmd() (*cobra.Command, error) {
 	infoCmd.PersistentFlags().BoolVar(&cfg.compact, "compact", false, "Compact operator info print")
 
 	registerCmd.PersistentFlags().StringVar(&cfg.privateKey, "private-key", "", "Private key of operator")
-	if err := registerKeyCmd.MarkPersistentFlagRequired("private-key"); err != nil {
+	if err := registerCmd.MarkPersistentFlagRequired("private-key"); err != nil {
 		return nil, errors.Errorf("failed to mark private-key as required: %w", err)
 	}
 	registerCmd.PersistentFlags().Uint64Var(&cfg.chainId, "chain-id", 0, "Chain id where to register")
-	if err := registerKeyCmd.MarkPersistentFlagRequired("chain-id"); err != nil {
+	if err := registerCmd.MarkPersistentFlagRequired("chain-id"); err != nil {
 		return nil, errors.Errorf("failed to mark chain-id as required: %w", err)
 	}
 
@@ -97,8 +98,8 @@ func NewOperatorCmd() (*cobra.Command, error) {
 }
 
 var operatorCmd = &cobra.Command{
-	Use:   "network",
-	Short: "Network tool",
+	Use:   "operator",
+	Short: "Operator tool",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		ctx := signalContext(context.Background())
 
@@ -192,9 +193,12 @@ var infoCmd = &cobra.Command{
 
 		slog.InfoContext(ctx, "Operator Info")
 
-		if err := utils_app.LogValidator(ctx, validator, cfg.compact); err != nil {
+		str, err := utils_app.MarshalTextValidator(validator, cfg.compact)
+		if err != nil {
 			return errors.Errorf("failed to log validator: %w", err)
 		}
+
+		fmt.Print(str)
 
 		return nil
 	},
