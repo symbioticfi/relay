@@ -57,8 +57,8 @@ var (
 func addRootFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVar(&configFile, "config", "config.yaml", "Path to config file")
 
-	rootCmd.PersistentFlags().String("rpc-url", "", "RPC URL")
-	rootCmd.PersistentFlags().String("driver-address", "", "Driver contract address")
+	rootCmd.PersistentFlags().String("driver-address.chain-id", "", "Driver contract chain id")
+	rootCmd.PersistentFlags().String("driver-address.address", "", "Driver contract address")
 	rootCmd.PersistentFlags().String("log-level", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().String("log-mode", "text", "Log mode (text, pretty)")
 	rootCmd.PersistentFlags().String("p2p-listen", "", "P2P listen address")
@@ -68,6 +68,8 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("signer", true, "Is Signer Node")
 	rootCmd.PersistentFlags().Bool("committer", false, "Is Committer Node")
 	rootCmd.PersistentFlags().String("storage-dir", ".data", "Dir to store data")
+	rootCmd.PersistentFlags().String("chains.chain-id", "", "Chain id")
+	rootCmd.PersistentFlags().String("chains.rpc-url", "", "Chain RPC URL")
 }
 
 func initConfig(cmd *cobra.Command, _ []string) error {
@@ -82,10 +84,10 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 	v.AutomaticEnv()
 
-	if err := v.BindPFlag("rpc-url", cmd.PersistentFlags().Lookup("rpc-url")); err != nil {
+	if err := v.BindPFlag("driver-address.chain-id", cmd.PersistentFlags().Lookup("driver-address.chain-id")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("driver-address", cmd.PersistentFlags().Lookup("driver-address")); err != nil {
+	if err := v.BindPFlag("driver-address.address", cmd.PersistentFlags().Lookup("driver-address.address")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("log-level", cmd.PersistentFlags().Lookup("log-level")); err != nil {
@@ -113,6 +115,12 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("storage-dir", cmd.PersistentFlags().Lookup("storage-dir")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("chains.chain-id", cmd.PersistentFlags().Lookup("chains.chain-id")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("chains.rpc-url", cmd.PersistentFlags().Lookup("chains.rpc-url")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 
