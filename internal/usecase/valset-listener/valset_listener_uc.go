@@ -61,6 +61,8 @@ func New(cfg Config) (*Service, error) {
 }
 
 func (s *Service) Start(ctx context.Context) error {
+	slog.InfoContext(ctx, "Starting valset listener service", "pollingInterval", s.cfg.PollingInterval)
+
 	timer := time.NewTimer(0)
 	for {
 		select {
@@ -68,7 +70,7 @@ func (s *Service) Start(ctx context.Context) error {
 			return ctx.Err()
 		case <-timer.C:
 			if err := s.tryLoadMissingEpochs(ctx); err != nil {
-				slog.ErrorContext(ctx, "failed to process epochs", "error", err)
+				slog.ErrorContext(ctx, "Failed to process epochs", "error", err)
 			}
 			timer.Reset(s.cfg.PollingInterval)
 		}
@@ -76,6 +78,8 @@ func (s *Service) Start(ctx context.Context) error {
 }
 
 func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
+	slog.DebugContext(ctx, "Checking for missing epochs")
+
 	currentEpoch, err := s.cfg.Eth.GetCurrentEpoch(ctx)
 	if err != nil {
 		return errors.Errorf("failed to get current epoch: %w", err)
@@ -151,7 +155,7 @@ func (s *Service) getLastCommittedHeaderEpoch(ctx context.Context, config entity
 			return 0, errors.Errorf("failed to get last committed header epoch for address %s: %w", addr.Address.Hex(), err)
 		}
 
-		if epoch > maxEpoch {
+		if epoch >= maxEpoch {
 			maxEpoch = epoch
 		}
 	}

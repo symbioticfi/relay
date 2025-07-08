@@ -2,6 +2,7 @@ package keys
 
 import (
 	"log/slog"
+
 	"middleware-offchain/core/entity"
 	"middleware-offchain/core/usecase/crypto"
 	keyprovider "middleware-offchain/core/usecase/key-provider"
@@ -65,6 +66,7 @@ var printKeysCmd = &cobra.Command{
 	Use:   "list",
 	Short: "Print all keys",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
 		var err error
 
 		if cfg.password == "" {
@@ -91,7 +93,7 @@ var printKeysCmd = &cobra.Command{
 				return err
 			}
 
-			slog.Info("key:", "idx", i, "alias", alias, "public_key", pk.PublicKey())
+			slog.InfoContext(ctx, "Key", "idx", i, "alias", alias, "public_key", pk.PublicKey())
 		}
 
 		return nil

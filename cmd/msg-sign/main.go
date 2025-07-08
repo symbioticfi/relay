@@ -29,7 +29,7 @@ func main() {
 	slog.Info("Running msg sign command", "args", os.Args)
 
 	if err := run(); err != nil && !errors.Is(err, context.Canceled) {
-		slog.Error("error executing command", "error", err)
+		slog.Error("Error executing command", "error", err)
 		os.Exit(1)
 	}
 	slog.Info("Msg sign completed successfully")
@@ -87,7 +87,7 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return errors.Errorf("failed to create symbiotic client: %w", err)
 		}
-		slog.DebugContext(ctx, "created symbiotic client")
+		slog.DebugContext(ctx, "Created symbiotic client")
 
 		networkConfig, epoch, err := getLastCommittedHeaderEpoch(ctx, ethClient)
 		if err != nil {
@@ -96,7 +96,7 @@ var rootCmd = &cobra.Command{
 
 		message := strconv.FormatFloat(rand.Float64(), 'f', 10, 64) //nolint:gosec // This is just a random message for testing purposes.
 
-		slog.DebugContext(ctx, "trying to send sign requests", "message", message)
+		slog.DebugContext(ctx, "Trying to send sign requests", "message", message)
 		reqHash, err := sendSignRequests(ctx, cfg, message, entity.ValsetHeaderKeyTag, epoch)
 		if err != nil {
 			return errors.Errorf("failed to send sign request: %w", err)
@@ -109,7 +109,7 @@ var rootCmd = &cobra.Command{
 			case <-ticker.C:
 				resp, err := sendGetAggregationProofRequest(ctx, cfg, reqHash)
 				if err != nil {
-					slog.DebugContext(ctx, "failed to get aggregation proof", "error", err)
+					slog.DebugContext(ctx, "Failed to get aggregation proof", "error", err)
 					continue
 				}
 
@@ -117,7 +117,7 @@ var rootCmd = &cobra.Command{
 
 				return nil
 			case <-ctx.Done():
-				slog.InfoContext(ctx, "context canceled, stopping sign requests")
+				slog.InfoContext(ctx, "Context canceled, stopping sign requests")
 				return ctx.Err()
 			}
 		}
@@ -125,7 +125,7 @@ var rootCmd = &cobra.Command{
 }
 
 func verifyQuorumSig(ctx context.Context, networkConfig entity.NetworkConfig, proof entity.AggregationProof, message string, eth *evm.Client, epoch uint64) {
-	slog.InfoContext(ctx, "received message with proof",
+	slog.InfoContext(ctx, "Received message with proof",
 		"messageHash", hex.EncodeToString(proof.MessageHash),
 		"ourMessage", hex.EncodeToString([]byte(message)),
 		"ourMessageHash", hex.EncodeToString(crypto.Keccak256([]byte(message))),
@@ -139,11 +139,11 @@ func verifyQuorumSig(ctx context.Context, networkConfig entity.NetworkConfig, pr
 	for _, replica := range networkConfig.Replicas {
 		verifyResult, err := eth.VerifyQuorumSig(ctx, replica, epoch, ourHash, entity.ValsetHeaderKeyTag, quorumInt, proof.Proof)
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to verify quorum signature", "replica", replica.Address.Hex(), "error", err)
+			slog.ErrorContext(ctx, "Failed to verify quorum signature", "replica", replica.Address.Hex(), "error", err)
 			continue
 		}
 
-		slog.InfoContext(ctx, "quorum signature verification result", "result", verifyResult)
+		slog.InfoContext(ctx, "Quorum signature verification result", "result", verifyResult)
 	}
 }
 
@@ -194,7 +194,7 @@ func sendSignRequests(ctx context.Context, cfg config, message string, keyTag en
 			}
 			requestHash = respData.RequestHash
 
-			slog.InfoContext(ctx, "sent sign request", "message", message, "address", signAddress, "status", resp.Status)
+			slog.InfoContext(ctx, "Sent sign request", "message", message, "address", signAddress, "status", resp.Status)
 			return nil
 		}()
 		if err != nil {
@@ -273,7 +273,7 @@ func getLastCommittedHeaderEpoch(ctx context.Context, ethClient *evm.Client) (en
 			return entity.NetworkConfig{}, 0, errors.Errorf("failed to get last committed header epoch for address %s: %w", addr.Address.Hex(), err)
 		}
 
-		if epoch > maxEpoch {
+		if epoch >= maxEpoch {
 			maxEpoch = epoch
 		}
 	}
@@ -290,7 +290,7 @@ func signalContext(ctx context.Context) context.Context {
 
 	go func() {
 		sig := <-c
-		slog.Info("received signal", "signal", sig)
+		slog.Info("Received signal", "signal", sig)
 		cancel()
 	}()
 

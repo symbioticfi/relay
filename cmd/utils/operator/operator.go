@@ -215,7 +215,7 @@ var registerCmd = &cobra.Command{
 			return errors.Errorf("failed to register operator: %w", err)
 		}
 
-		slog.InfoContext(ctx, "operator registered!", "addr", operatorRegistries[cfg.chainId], "txHash", txResult.TxHash.String())
+		slog.InfoContext(ctx, "Operator registered!", "addr", operatorRegistries[cfg.chainId], "txHash", txResult.TxHash.String())
 
 		return nil
 	},
@@ -293,7 +293,7 @@ var registerKeyCmd = &cobra.Command{
 			return errors.Errorf("failed to register operator: %w", err)
 		}
 
-		slog.InfoContext(ctx, "operator registered!", "addr", operatorRegistries[cfg.chainId], "txHash", txResult.TxHash.String())
+		slog.InfoContext(ctx, "Operator registered!", "addr", operatorRegistries[cfg.chainId], "txHash", txResult.TxHash.String())
 
 		return nil
 	},
@@ -308,7 +308,7 @@ func signalContext(ctx context.Context) context.Context {
 
 	go func() {
 		sig := <-c
-		slog.Info("received signal", "signal", sig)
+		slog.Info("Received signal", "signal", sig)
 		cancel()
 	}()
 

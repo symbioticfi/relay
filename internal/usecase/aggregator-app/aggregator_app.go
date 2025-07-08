@@ -75,7 +75,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 
 	msg := p2pMsg.Message
 
-	slog.DebugContext(ctx, "received signature hash generated message", "message", msg)
+	slog.DebugContext(ctx, "Received signature hash generated message", "message", msg)
 
 	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
 	if err != nil {
@@ -101,18 +101,18 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 		return errors.Errorf("failed to save signature: %w", err)
 	}
 
-	slog.DebugContext(ctx, "found validator", "validator", validator)
+	slog.DebugContext(ctx, "Found validator", "validator", validator)
 
 	current, err := s.hashStore.PutHash(msg.Signature, validator)
 	if err != nil {
 		return errors.Errorf("failed to put signature: %w", err)
 	}
 
-	slog.DebugContext(ctx, "total voting power", "currentVotingPower", current.VotingPower.String())
+	slog.DebugContext(ctx, "Total voting power", "currentVotingPower", current.VotingPower.String())
 
 	thresholdReached := current.VotingPower.Cmp(validatorSet.QuorumThreshold.Int) >= 0
 	if !thresholdReached {
-		slog.InfoContext(ctx, "quorum not reached yet",
+		slog.InfoContext(ctx, "Quorum not reached yet",
 			"currentVotingPower", current.VotingPower,
 			"quorumThreshold", validatorSet.QuorumThreshold,
 			"totalActiveVotingPower", validatorSet.GetTotalActiveVotingPower(),
@@ -120,14 +120,14 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 		return nil
 	}
 
-	slog.InfoContext(ctx, "quorum reached, aggregating signatures and creating proof",
+	slog.InfoContext(ctx, "Quorum reached, aggregating signatures and creating proof",
 		"currentVotingPower", current.VotingPower,
 		"quorumThreshold", validatorSet.QuorumThreshold,
 		"totalActiveVotingPower", validatorSet.GetTotalActiveVotingPower(),
 	)
 
 	sigs, err := s.cfg.Repo.GetAllSignatures(ctx, msg.RequestHash)
-	slog.DebugContext(ctx, "total received signatures", "sigs", len(sigs))
+	slog.DebugContext(ctx, "Total received signatures", "sigs", len(sigs))
 	if err != nil {
 		return errors.Errorf("failed to get signature aggregated message: %w", err)
 	}
@@ -138,7 +138,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 		return errors.Errorf("failed to get network config: %w", err)
 	}
 
-	slog.DebugContext(ctx, "received network config", "networkConfig", networkConfig)
+	slog.DebugContext(ctx, "Received network config", "networkConfig", networkConfig)
 
 	proofData, err := s.cfg.Aggregator.Aggregate(
 		validatorSet,
@@ -151,7 +151,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 		return errors.Errorf("failed to prove: %w", err)
 	}
 
-	slog.InfoContext(ctx, "proof created, trying to send aggregated signature message",
+	slog.InfoContext(ctx, "Proof created, trying to send aggregated signature message",
 		"duration", time.Since(start).String(),
 	)
 	err = s.cfg.P2PClient.BroadcastSignatureAggregatedMessage(ctx, entity.AggregatedSignatureMessage{
@@ -164,7 +164,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 		return errors.Errorf("failed to broadcast signature aggregated message: %w", err)
 	}
 
-	slog.InfoContext(ctx, "proof sent via p2p")
+	slog.InfoContext(ctx, "Proof sent via p2p")
 
 	return nil
 }
