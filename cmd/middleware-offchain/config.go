@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"io/fs"
+	"middleware-offchain/internal/entity"
 	"strings"
 
 	"github.com/go-errors/errors"
@@ -18,27 +19,18 @@ import (
 // 2. Environment variables (prefixed with SYMB_ and dashes replaced by underscores)
 // 3. config.yaml file (specified by --config or default "config.yaml")
 type config struct {
-	DriverAddress    crossChainAddress `mapstructure:"driver-address" validate:"required"`
-	LogLevel         string            `mapstructure:"log-level" validate:"oneof=debug info warn error"`
-	LogMode          string            `mapstructure:"log-mode" validate:"oneof=text pretty"`
-	P2PListenAddress string            `mapstructure:"p2p-listen"`
-	HTTPListenAddr   string            `mapstructure:"http-listen" validate:"required"`
-	SecretKey        string            `mapstructure:"secret-key" validate:"required"`
-	IsAggregator     bool              `mapstructure:"aggregator"`
-	IsSigner         bool              `mapstructure:"signer"`
-	IsCommitter      bool              `mapstructure:"committer"`
-	StorageDir       string            `mapstructure:"storage-dir"`
-	Chains           []chainURL        `mapstructure:"chains" validate:"required"`
-}
-
-type crossChainAddress struct {
-	ChainID uint64 `mapstructure:"chain-id" validate:"required"`
-	Address string `mapstructure:"address" validate:"required"`
-}
-
-type chainURL struct {
-	ChainID uint64 `mapstructure:"chain-id" validate:"required"`
-	RPCURL  string `mapstructure:"rpc-url" validate:"required,url"`
+	Driver           entity.CMDCrossChainAddress `mapstructure:"driver" validate:"required"`
+	LogLevel         string                      `mapstructure:"log-level" validate:"oneof=debug info warn error"`
+	LogMode          string                      `mapstructure:"log-mode" validate:"oneof=text pretty"`
+	P2PListenAddress string                      `mapstructure:"p2p-listen"`
+	HTTPListenAddr   string                      `mapstructure:"http-listen" validate:"required"`
+	SecretKey        string                      `mapstructure:"secret-key" validate:"required"`
+	IsAggregator     bool                        `mapstructure:"aggregator"`
+	IsSigner         bool                        `mapstructure:"signer"`
+	IsCommitter      bool                        `mapstructure:"committer"`
+	StorageDir       string                      `mapstructure:"storage-dir"`
+	ChainsId         []uint64                    `mapstructure:"chains-id" validate:"required"`
+	ChainsUrl        []string                    `mapstructure:"chains-url" validate:"required"`
 }
 
 func (c config) Validate() error {
@@ -57,8 +49,8 @@ var (
 func addRootFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVar(&configFile, "config", "config.yaml", "Path to config file")
 
-	rootCmd.PersistentFlags().String("driver-address.chain-id", "", "Driver contract chain id")
-	rootCmd.PersistentFlags().String("driver-address.address", "", "Driver contract address")
+	rootCmd.PersistentFlags().Uint64("driver.chain-id", 0, "Driver contract chain id")
+	rootCmd.PersistentFlags().String("driver.address", "", "Driver contract address")
 	rootCmd.PersistentFlags().String("log-level", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().String("log-mode", "text", "Log mode (text, pretty)")
 	rootCmd.PersistentFlags().String("p2p-listen", "", "P2P listen address")
@@ -68,8 +60,8 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("signer", true, "Is Signer Node")
 	rootCmd.PersistentFlags().Bool("committer", false, "Is Committer Node")
 	rootCmd.PersistentFlags().String("storage-dir", ".data", "Dir to store data")
-	rootCmd.PersistentFlags().String("chains.chain-id", "", "Chain id")
-	rootCmd.PersistentFlags().String("chains.rpc-url", "", "Chain RPC URL")
+	rootCmd.PersistentFlags().UintSlice("chains-id", nil, "Chains ids")
+	rootCmd.PersistentFlags().StringSlice("chains-rpc-url", nil, "Chains RPC URLS")
 }
 
 func initConfig(cmd *cobra.Command, _ []string) error {
@@ -84,10 +76,10 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 	v.AutomaticEnv()
 
-	if err := v.BindPFlag("driver-address.chain-id", cmd.PersistentFlags().Lookup("driver-address.chain-id")); err != nil {
+	if err := v.BindPFlag("driver.chain-id", cmd.PersistentFlags().Lookup("driver.chain-id")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("driver-address.address", cmd.PersistentFlags().Lookup("driver-address.address")); err != nil {
+	if err := v.BindPFlag("driver.address", cmd.PersistentFlags().Lookup("driver.address")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("log-level", cmd.PersistentFlags().Lookup("log-level")); err != nil {
@@ -117,10 +109,10 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	if err := v.BindPFlag("storage-dir", cmd.PersistentFlags().Lookup("storage-dir")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("chains.chain-id", cmd.PersistentFlags().Lookup("chains.chain-id")); err != nil {
+	if err := v.BindPFlag("chains-id", cmd.PersistentFlags().Lookup("chains-id")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("chains.rpc-url", cmd.PersistentFlags().Lookup("chains.rpc-url")); err != nil {
+	if err := v.BindPFlag("chains-rpc-url", cmd.PersistentFlags().Lookup("chains-rpc-url")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 

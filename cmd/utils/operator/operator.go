@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"middleware-offchain/core/client/evm"
 	"middleware-offchain/core/entity"
 	keyprovider "middleware-offchain/core/usecase/key-provider"
 	valsetDeriver "middleware-offchain/core/usecase/valset-deriver"
@@ -12,7 +11,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
@@ -22,21 +20,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type config struct {
-	epoch         uint64
-	rpcURL        string
-	driverAddress string
-	path          string
-	password      string
-	keyTag        uint8
-	privateKey    string
-	compact       bool
-	chainId       uint64
-
-	driverCrossChainAddress entity.CrossChainAddress
-	client                  *evm.Client
-}
-
 var operatorRegistries = map[uint64]entity.CrossChainAddress{
 	111: {
 		ChainId: 111,
@@ -44,89 +27,20 @@ var operatorRegistries = map[uint64]entity.CrossChainAddress{
 	},
 }
 
-var cfg config
-
-func NewOperatorCmd() (*cobra.Command, error) {
-	operatorCmd.PersistentFlags().StringVar(&cfg.rpcURL, "rpc-url", "", "RPC URL")
-	operatorCmd.PersistentFlags().StringVar(&cfg.driverAddress, "driver-address", "", "Driver contract address")
-	if err := operatorCmd.MarkPersistentFlagRequired("rpc-url"); err != nil {
-		return nil, errors.Errorf("failed to mark rpc-url as required: %w", err)
-	}
-	if err := operatorCmd.MarkPersistentFlagRequired("driver-address"); err != nil {
-		return nil, errors.Errorf("failed to mark driver-address as required: %w", err)
-	}
-	infoCmd.PersistentFlags().Uint64Var(&cfg.epoch, "epoch", 0, "Network epoch")
-	infoCmd.PersistentFlags().StringVar(&cfg.path, "path", "", "Keystore path")
-	if err := infoCmd.MarkPersistentFlagRequired("path"); err != nil {
-		return nil, errors.Errorf("failed to mark path as required: %w", err)
-	}
-	infoCmd.PersistentFlags().StringVar(&cfg.password, "password", "", "Keystore password")
-	infoCmd.PersistentFlags().Uint8Var(&cfg.keyTag, "key-tag", 0, "Key tag of operator key")
-	if err := infoCmd.MarkPersistentFlagRequired("key-tag"); err != nil {
-		return nil, errors.Errorf("failed to mark key-tag as required: %w", err)
-	}
-	infoCmd.PersistentFlags().BoolVar(&cfg.compact, "compact", false, "Compact operator info print")
-
-	registerCmd.PersistentFlags().StringVar(&cfg.privateKey, "private-key", "", "Private key of operator")
-	if err := registerCmd.MarkPersistentFlagRequired("private-key"); err != nil {
-		return nil, errors.Errorf("failed to mark private-key as required: %w", err)
-	}
-	registerCmd.PersistentFlags().Uint64Var(&cfg.chainId, "chain-id", 0, "Chain id where to register")
-	if err := registerCmd.MarkPersistentFlagRequired("chain-id"); err != nil {
-		return nil, errors.Errorf("failed to mark chain-id as required: %w", err)
-	}
-
-	registerKeyCmd.PersistentFlags().StringVar(&cfg.privateKey, "private-key", "", "Private key of operator")
-	if err := registerKeyCmd.MarkPersistentFlagRequired("private-key"); err != nil {
-		return nil, errors.Errorf("failed to mark private-key as required: %w", err)
-	}
-	registerKeyCmd.PersistentFlags().StringVar(&cfg.path, "path", "", "Keystore path")
-	if err := registerKeyCmd.MarkPersistentFlagRequired("path"); err != nil {
-		return nil, errors.Errorf("failed to mark path as required: %w", err)
-	}
-	registerKeyCmd.PersistentFlags().StringVar(&cfg.password, "password", "", "Keystore password")
-	registerKeyCmd.PersistentFlags().Uint8Var(&cfg.keyTag, "key-tag", 0, "Key tag of operator key")
-	if err := registerKeyCmd.MarkPersistentFlagRequired("key-tag"); err != nil {
-		return nil, errors.Errorf("failed to mark key-tag as required: %w", err)
-	}
-
+func NewOperatorCmd() *cobra.Command {
 	operatorCmd.AddCommand(infoCmd)
 	operatorCmd.AddCommand(registerCmd)
 	operatorCmd.AddCommand(registerKeyCmd)
 
-	return operatorCmd, nil
+	addFlags()
+
+	return operatorCmd
 }
 
 var operatorCmd = &cobra.Command{
-	Use:   "operator",
-	Short: "Operator tool",
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		ctx := signalContext(context.Background())
-
-		var err error
-		var privateKey []byte
-
-		if cfg.privateKey != "" {
-			privateKey = common.Hex2Bytes(cfg.privateKey)
-		}
-
-		cfg.driverCrossChainAddress = entity.CrossChainAddress{ChainId: 111, Address: common.HexToAddress(cfg.driverAddress)}
-		cfg.client, err = evm.NewEVMClient(ctx, evm.Config{
-			Chains: []entity.ChainURL{{
-				ChainID: 111,
-				RPCURL:  cfg.rpcURL,
-			}},
-			DriverAddress:  cfg.driverCrossChainAddress,
-			RequestTimeout: time.Second * 5,
-			PrivateKey:     privateKey,
-		})
-
-		if err != nil {
-			return errors.Errorf("failed to create symbiotic client: %w", err)
-		}
-
-		return nil
-	},
+	Use:               "operator",
+	Short:             "Operator tool",
+	PersistentPreRunE: initConfig,
 }
 
 var infoCmd = &cobra.Command{
@@ -134,38 +48,52 @@ var infoCmd = &cobra.Command{
 	Short: "Print operator information",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var err error
-		ctx := signalContext(context.Background())
+		ctx := signalContext(cmd.Context())
+		cfg := cfgFromCtx(ctx)
 
-		if cfg.password == "" {
-			cfg.password, err = utils_app.GetPassword()
+		if cfg.Path == "" {
+			return errors.New("keystore path is required")
+		}
+
+		if cfg.KeyTag == uint8(entity.KeyTypeInvalid) {
+			return errors.New("key tag omitted")
+		}
+
+		client, err := utils_app.GetEvmClient(ctx, cfg.PrivateKey, cfg.Driver, cfg.ChainsId, cfg.ChainsUrl)
+		if err != nil {
+			return errors.Errorf("failed to init evm client: %w", err)
+		}
+
+		if cfg.Password == "" {
+			cfg.Password, err = utils_app.GetPassword()
 			if err != nil {
-				return err
+				return errors.Errorf("failed to get password: %w", err)
 			}
 		}
 
-		if cfg.epoch == 0 {
-			cfg.epoch, err = cfg.client.GetCurrentEpoch(ctx)
+		if cfg.Epoch == 0 {
+			cfg.Epoch, err = client.GetCurrentEpoch(ctx)
 			if err != nil {
 				return errors.Errorf("failed to get current epoch: %w", err)
 			}
 		}
 
-		captureTimestamp, err := cfg.client.GetEpochStart(ctx, cfg.epoch)
+		captureTimestamp, err := client.GetEpochStart(ctx, cfg.Epoch)
 		if err != nil {
 			return errors.Errorf("failed to get capture timestamp: %w", err)
 		}
 
-		networkConfig, err := cfg.client.GetConfig(ctx, captureTimestamp)
+		networkConfig, err := client.GetConfig(ctx, captureTimestamp)
 		if err != nil {
 			return errors.Errorf("failed to get config: %w", err)
 		}
 
-		epoch, err := cfg.client.GetLastCommittedHeaderEpoch(ctx, networkConfig.Replicas[0])
+		epoch, err := client.GetLastCommittedHeaderEpoch(ctx, networkConfig.Replicas[0])
 		if err != nil {
 			return errors.Errorf("failed to get valset header: %w", err)
 		}
 
-		deriver, err := valsetDeriver.NewDeriver(cfg.client)
+		deriver, err := valsetDeriver.NewDeriver(client)
 		if err != nil {
 			return errors.Errorf("failed to create valset deriver: %w", err)
 		}
@@ -175,12 +103,12 @@ var infoCmd = &cobra.Command{
 			return errors.Errorf("failed to get validator set: %w", err)
 		}
 
-		keyStore, err := keyprovider.NewKeystoreProvider(cfg.path, cfg.password)
+		keyStore, err := keyprovider.NewKeystoreProvider(cfg.Path, cfg.Password)
 		if err != nil {
 			return err
 		}
 
-		kt := entity.KeyTag(cfg.keyTag)
+		kt := entity.KeyTag(cfg.KeyTag)
 		pk, err := keyStore.GetPrivateKey(kt)
 		if err != nil {
 			return err
@@ -193,7 +121,7 @@ var infoCmd = &cobra.Command{
 
 		slog.InfoContext(ctx, "Operator Info")
 
-		str, err := utils_app.MarshalTextValidator(validator, cfg.compact)
+		str, err := utils_app.MarshalTextValidator(validator, cfg.Compact)
 		if err != nil {
 			return errors.Errorf("failed to log validator: %w", err)
 		}
@@ -208,14 +136,36 @@ var registerCmd = &cobra.Command{
 	Use:   "register",
 	Short: "Register operator in core registry",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := signalContext(context.Background())
+		ctx := signalContext(cmd.Context())
+		cfg := cfgFromCtx(ctx)
 
-		txResult, err := cfg.client.RegisterOperator(ctx, operatorRegistries[cfg.chainId])
+		if len(cfg.ChainsId) != 1 {
+			return errors.New("only single chain is supported")
+		}
+
+		if cfg.PrivateKey == "" {
+			return errors.New("private key is required")
+		}
+
+		if cfg.Path == "" {
+			return errors.New("keystore path is required")
+		}
+
+		if cfg.KeyTag == uint8(entity.KeyTypeInvalid) {
+			return errors.New("key tag omitted")
+		}
+
+		client, err := utils_app.GetEvmClient(ctx, cfg.PrivateKey, cfg.Driver, cfg.ChainsId, cfg.ChainsUrl)
+		if err != nil {
+			return errors.Errorf("failed to init evm client: %w", err)
+		}
+
+		txResult, err := client.RegisterOperator(ctx, operatorRegistries[cfg.ChainsId[0]])
 		if err != nil {
 			return errors.Errorf("failed to register operator: %w", err)
 		}
 
-		slog.InfoContext(ctx, "operator registered!", "addr", operatorRegistries[cfg.chainId], "txHash", txResult.TxHash.String())
+		slog.InfoContext(ctx, "operator registered!", "addr", operatorRegistries[cfg.ChainsId[0]], "txHash", txResult.TxHash.String())
 
 		return nil
 	},
@@ -226,47 +176,61 @@ var registerKeyCmd = &cobra.Command{
 	Short: "Register operator key in key registry",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var err error
-		ctx := signalContext(context.Background())
+		ctx := signalContext(cmd.Context())
+		cfg := cfgFromCtx(ctx)
 
-		if cfg.password == "" {
-			cfg.password, err = utils_app.GetPassword()
+		if len(cfg.ChainsId) != 1 {
+			return errors.New("only single chain is supported")
+		}
+
+		if cfg.PrivateKey == "" {
+			return errors.New("private key is required")
+		}
+
+		client, err := utils_app.GetEvmClient(ctx, cfg.PrivateKey, cfg.Driver, cfg.ChainsId, cfg.ChainsUrl)
+		if err != nil {
+			return errors.Errorf("failed to init evm client: %w", err)
+		}
+
+		if cfg.Password == "" {
+			cfg.Password, err = utils_app.GetPassword()
 			if err != nil {
 				return err
 			}
 		}
 
-		keyStore, err := keyprovider.NewKeystoreProvider(cfg.path, cfg.password)
+		keyStore, err := keyprovider.NewKeystoreProvider(cfg.Path, cfg.Password)
 		if err != nil {
 			return err
 		}
 
-		kt := entity.KeyTag(cfg.keyTag)
+		kt := entity.KeyTag(cfg.KeyTag)
 		pk, err := keyStore.GetPrivateKey(kt)
 		if err != nil {
 			return err
 		}
 
-		currentOnchainEpoch, err := cfg.client.GetCurrentEpoch(ctx)
+		currentOnchainEpoch, err := client.GetCurrentEpoch(ctx)
 		if err != nil {
 			return errors.Errorf("failed to get current epoch: %w", err)
 		}
 
-		captureTimestamp, err := cfg.client.GetEpochStart(ctx, currentOnchainEpoch)
+		captureTimestamp, err := client.GetEpochStart(ctx, currentOnchainEpoch)
 		if err != nil {
 			return errors.Errorf("failed to get capture timestamp: %w", err)
 		}
 
-		networkConfig, err := cfg.client.GetConfig(ctx, captureTimestamp)
+		networkConfig, err := client.GetConfig(ctx, captureTimestamp)
 		if err != nil {
 			return errors.Errorf("failed to get config: %w", err)
 		}
 
-		eip712Domain, err := cfg.client.GetEip712Domain(ctx, networkConfig.KeysProvider)
+		eip712Domain, err := client.GetEip712Domain(ctx, networkConfig.KeysProvider)
 		if err != nil {
 			return errors.Errorf("failed to get eip712 domain: %w", err)
 		}
 
-		ecdsaPk, err := crypto.HexToECDSA(cfg.privateKey)
+		ecdsaPk, err := crypto.HexToECDSA(cfg.PrivateKey)
 		if err != nil {
 			return errors.Errorf("failed to parse private key: %w", err)
 		}
@@ -288,12 +252,12 @@ var registerKeyCmd = &cobra.Command{
 			extraData = pk.PublicKey().Raw()[32:]
 		}
 
-		txResult, err := cfg.client.RegisterKey(ctx, networkConfig.KeysProvider, kt, key, signature, extraData)
+		txResult, err := client.RegisterKey(ctx, networkConfig.KeysProvider, kt, key, signature, extraData)
 		if err != nil {
 			return errors.Errorf("failed to register operator: %w", err)
 		}
 
-		slog.InfoContext(ctx, "operator registered!", "addr", operatorRegistries[cfg.chainId], "txHash", txResult.TxHash.String())
+		slog.InfoContext(ctx, "operator registered!", "addr", operatorRegistries[cfg.ChainsId[0]], "txHash", txResult.TxHash.String())
 
 		return nil
 	},

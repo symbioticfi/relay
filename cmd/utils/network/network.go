@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"math/big"
-	"middleware-offchain/core/client/evm"
 	"middleware-offchain/core/entity"
 	"middleware-offchain/core/usecase/aggregator"
 	valsetDeriver "middleware-offchain/core/usecase/valset-deriver"
@@ -13,92 +11,26 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/spf13/cobra"
 )
 
-type config struct {
-	epoch         uint64
-	rpcURL        string
-	driverAddress string
-	compact       bool
-	commit        bool
-	secretKey     string
-	outputFile    string
-
-	driverCrossChainAddress entity.CrossChainAddress
-	client                  *evm.Client
-	deriver                 *valsetDeriver.Deriver
-}
-
-var cfg config
-
-func NewNetworkCmd() (*cobra.Command, error) {
-	networkCmd.PersistentFlags().StringVar(&cfg.rpcURL, "rpc-url", "", "RPC URL")
-	networkCmd.PersistentFlags().StringVar(&cfg.driverAddress, "driver-address", "", "Driver contract address")
-	if err := networkCmd.MarkPersistentFlagRequired("rpc-url"); err != nil {
-		return nil, errors.Errorf("failed to mark rpc-url as required: %w", err)
-	}
-	if err := networkCmd.MarkPersistentFlagRequired("driver-address"); err != nil {
-		return nil, errors.Errorf("failed to mark driver-address as required: %w", err)
-	}
-
-	infoCmd.PersistentFlags().Uint64Var(&cfg.epoch, "epoch", 0, "Network epoch")
-
-	valsetCmd.PersistentFlags().BoolVar(&cfg.compact, "compact", false, "Compact valset print")
-
-	genesisCmd.PersistentFlags().BoolVar(&cfg.commit, "commit", false, "Commit genesis flag (default: false)")
-	genesisCmd.PersistentFlags().StringVar(&cfg.secretKey, "secret-key", "", "Secret key for genesis commit")
-	genesisCmd.PersistentFlags().StringVarP(&cfg.outputFile, "output", "o", "", "Output file path (default: stdout)")
-
+func NewNetworkCmd() *cobra.Command {
 	networkCmd.AddCommand(infoCmd)
 	networkCmd.AddCommand(valsetCmd)
 	networkCmd.AddCommand(genesisCmd)
 
-	return networkCmd, nil
+	addFlags()
+
+	return networkCmd
 }
 
 var networkCmd = &cobra.Command{
-	Use:   "network",
-	Short: "Network tool",
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		ctx := signalContext(context.Background())
-
-		var err error
-		var privateKey []byte
-
-		if cfg.secretKey != "" {
-			b, ok := new(big.Int).SetString(cfg.secretKey, 10)
-			if !ok {
-				return errors.Errorf("failed to parse secret key as big.Int")
-			}
-
-			privateKey = b.FillBytes(make([]byte, 32))
-		}
-
-		cfg.driverCrossChainAddress = entity.CrossChainAddress{ChainId: 111, Address: common.HexToAddress(cfg.driverAddress)}
-		cfg.client, err = evm.NewEVMClient(ctx, evm.Config{
-			Chains: []entity.ChainURL{{
-				ChainID: 111,
-				RPCURL:  cfg.rpcURL,
-			}},
-			DriverAddress:  cfg.driverCrossChainAddress,
-			RequestTimeout: time.Second * 5,
-			PrivateKey:     privateKey,
-		})
-		if err != nil {
-			return errors.Errorf("failed to create symbiotic client: %w", err)
-		}
-
-		cfg.deriver, err = valsetDeriver.NewDeriver(cfg.client)
-		if err != nil {
-			return errors.Errorf("failed to create valset deriver: %w", err)
-		}
-		return nil
-	},
+	Use:               "network",
+	Short:             "Network tool",
+	PersistentPreRunE: initConfig,
 }
 
 var infoCmd = &cobra.Command{
@@ -106,37 +38,46 @@ var infoCmd = &cobra.Command{
 	Short: "Print network information",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var err error
-		ctx := signalContext(context.Background())
+		ctx := signalContext(cmd.Context())
+		cfg := cfgFromCtx(ctx)
+		client, err := utils_app.GetEvmClient(ctx, cfg.SecretKey, cfg.Driver, cfg.ChainsId, cfg.ChainsUrl)
+		if err != nil {
+			return errors.Errorf("Failed to get evm client: %v", err)
+		}
+		deriver, err := valsetDeriver.NewDeriver(client)
+		if err != nil {
+			return errors.Errorf("Failed to create deriver: %v", err)
+		}
 
-		if cfg.epoch == 0 {
-			cfg.epoch, err = cfg.client.GetCurrentEpoch(ctx)
+		if cfg.Epoch == 0 {
+			cfg.Epoch, err = client.GetCurrentEpoch(ctx)
 			if err != nil {
 				return errors.Errorf("failed to get current epoch: %w", err)
 			}
 		}
 
-		captureTimestamp, err := cfg.client.GetEpochStart(ctx, cfg.epoch)
+		captureTimestamp, err := client.GetEpochStart(ctx, cfg.Epoch)
 		if err != nil {
 			return errors.Errorf("failed to get capture timestamp: %w", err)
 		}
 
-		networkConfig, err := cfg.client.GetConfig(ctx, captureTimestamp)
+		networkConfig, err := client.GetConfig(ctx, captureTimestamp)
 		if err != nil {
 			return errors.Errorf("failed to get config: %w", err)
 		}
 
-		_, epoch, err := cfg.deriver.GetLastCommittedHeaderEpoch(ctx, networkConfig)
+		_, epoch, err := deriver.GetLastCommittedHeaderEpoch(ctx, networkConfig)
 		if err != nil {
 			return errors.Errorf("failed to get valset header: %w", err)
 		}
 
-		valset, err := cfg.deriver.GetValidatorSet(ctx, epoch, networkConfig)
+		valset, err := deriver.GetValidatorSet(ctx, epoch, networkConfig)
 		if err != nil {
 			return errors.Errorf("failed to get validator set: %w", err)
 		}
 
 		fmt.Printf("\nNetwork Info:\n")
-		fmt.Printf("   Epoch: %v\n", cfg.epoch)
+		fmt.Printf("   Epoch: %v\n", cfg.Epoch)
 		fmt.Printf("   Operators: %v\n", valset.GetTotalActiveValidators())
 		fmt.Printf("   Voting Power: %v\n", valset.GetTotalActiveVotingPower())
 
@@ -203,45 +144,54 @@ var valsetCmd = &cobra.Command{
 	Short: "Print validator set information",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var err error
-		ctx := signalContext(context.Background())
+		ctx := signalContext(cmd.Context())
+		cfg := cfgFromCtx(ctx)
+		client, err := utils_app.GetEvmClient(ctx, cfg.SecretKey, cfg.Driver, cfg.ChainsId, cfg.ChainsUrl)
+		if err != nil {
+			return errors.Errorf("Failed to get evm client: %v", err)
+		}
+		deriver, err := valsetDeriver.NewDeriver(client)
+		if err != nil {
+			return errors.Errorf("Failed to create deriver: %v", err)
+		}
 
-		if cfg.epoch == 0 {
-			cfg.epoch, err = cfg.client.GetCurrentEpoch(ctx)
+		if cfg.Epoch == 0 {
+			cfg.Epoch, err = client.GetCurrentEpoch(ctx)
 			if err != nil {
 				return errors.Errorf("failed to get current epoch: %w", err)
 			}
 		}
 
-		captureTimestamp, err := cfg.client.GetEpochStart(ctx, cfg.epoch)
+		captureTimestamp, err := client.GetEpochStart(ctx, cfg.Epoch)
 		if err != nil {
 			return errors.Errorf("failed to get capture timestamp: %w", err)
 		}
 
-		networkConfig, err := cfg.client.GetConfig(ctx, captureTimestamp)
+		networkConfig, err := client.GetConfig(ctx, captureTimestamp)
 		if err != nil {
 			return errors.Errorf("failed to get config: %w", err)
 		}
 
-		_, epoch, err := cfg.deriver.GetLastCommittedHeaderEpoch(ctx, networkConfig)
+		_, epoch, err := deriver.GetLastCommittedHeaderEpoch(ctx, networkConfig)
 		if err != nil {
 			return errors.Errorf("failed to get valset header: %w", err)
 		}
 
-		valset, err := cfg.deriver.GetValidatorSet(ctx, epoch, networkConfig)
+		valset, err := deriver.GetValidatorSet(ctx, epoch, networkConfig)
 		if err != nil {
 			return errors.Errorf("failed to get validator set: %w", err)
 		}
 
 		fmt.Printf("\nValidators Info:\n")
-		fmt.Printf("   Current Epoch: %v\n", cfg.epoch)
-		if cfg.epoch != epoch {
+		fmt.Printf("   Current Epoch: %v\n", cfg.Epoch)
+		if cfg.Epoch != epoch {
 			fmt.Printf("   Valset Committed Epoch: %v\n", epoch)
 		}
 		fmt.Printf("   Operators: %d\n", len(valset.Validators))
 		fmt.Printf("   Total Voting Power: %v\n", valset.GetTotalActiveVotingPower())
 
 		for _, validator := range valset.Validators {
-			str, err := utils_app.MarshalTextValidator(validator, cfg.compact)
+			str, err := utils_app.MarshalTextValidator(validator, cfg.Compact)
 			if err != nil {
 				return errors.Errorf("failed to log validator: %w", err)
 			}
@@ -256,28 +206,38 @@ var genesisCmd = &cobra.Command{
 	Use:   "generate-genesis",
 	Short: "Generate genesis validator set header",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if cfg.commit && cfg.secretKey == "" {
+		cfg := cfgFromCtx(signalContext(cmd.Context()))
+
+		if cfg.Commit && cfg.SecretKey == "" {
 			return errors.New("if commit true secret-key must be set")
 		}
 
 		ctx := signalContext(context.Background())
+		client, err := utils_app.GetEvmClient(ctx, cfg.SecretKey, cfg.Driver, cfg.ChainsId, cfg.ChainsUrl)
+		if err != nil {
+			return errors.Errorf("Failed to get evm client: %v", err)
+		}
+		deriver, err := valsetDeriver.NewDeriver(client)
+		if err != nil {
+			return errors.Errorf("Failed to create deriver: %v", err)
+		}
 
-		currentOnchainEpoch, err := cfg.client.GetCurrentEpoch(ctx)
+		currentOnchainEpoch, err := client.GetCurrentEpoch(ctx)
 		if err != nil {
 			return errors.Errorf("failed to get current epoch: %w", err)
 		}
 
-		captureTimestamp, err := cfg.client.GetEpochStart(ctx, currentOnchainEpoch)
+		captureTimestamp, err := client.GetEpochStart(ctx, currentOnchainEpoch)
 		if err != nil {
 			return errors.Errorf("failed to get capture timestamp: %w", err)
 		}
 
-		networkConfig, err := cfg.client.GetConfig(ctx, captureTimestamp)
+		networkConfig, err := client.GetConfig(ctx, captureTimestamp)
 		if err != nil {
 			return errors.Errorf("failed to get config: %w", err)
 		}
 
-		newValset, err := cfg.deriver.GetValidatorSet(ctx, currentOnchainEpoch, networkConfig)
+		newValset, err := deriver.GetValidatorSet(ctx, currentOnchainEpoch, networkConfig)
 		if err != nil {
 			return errors.Errorf("failed to get validator set extra for epoch %d: %w", currentOnchainEpoch, err)
 		}
@@ -303,8 +263,8 @@ var genesisCmd = &cobra.Command{
 			return errors.Errorf("failed to encode validator set header with extra data to JSON: %w", err)
 		}
 
-		if cfg.outputFile != "" {
-			err = os.WriteFile(cfg.outputFile, jsonData, 0600)
+		if cfg.OutputFile != "" {
+			err = os.WriteFile(cfg.OutputFile, jsonData, 0600)
 			if err != nil {
 				return errors.Errorf("failed to write output file: %w", err)
 			}
@@ -312,14 +272,21 @@ var genesisCmd = &cobra.Command{
 			fmt.Println(string(jsonData)) //nolint:forbidigo // ok to print result to stdout
 		}
 
-		if !cfg.commit {
+		if !cfg.Commit {
 			return nil
 		}
 
 		errs := make([]error, len(networkConfig.Replicas))
 		for i, replica := range networkConfig.Replicas {
 			var txResult entity.TxResult
-			txResult, errs[i] = cfg.client.SetGenesis(ctx, cfg.driverCrossChainAddress, header, extraData)
+			txResult, errs[i] = client.SetGenesis(
+				ctx,
+				entity.CrossChainAddress{
+					ChainId: cfg.Driver.ChainID,
+					Address: common.HexToAddress(cfg.Driver.Address),
+				},
+				header,
+				extraData)
 			if errs[i] != nil {
 				slog.ErrorContext(ctx, "failed to set genesis on replica", "replica", replica, "error", errs[i])
 			} else {
