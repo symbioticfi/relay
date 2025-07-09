@@ -3,8 +3,9 @@ package aggregator_app
 import (
 	"context"
 	"log/slog"
-	"middleware-offchain/core/usecase/crypto"
 	"time"
+
+	"middleware-offchain/core/usecase/crypto"
 
 	"github.com/ethereum/go-ethereum/common"
 

@@ -12,6 +12,7 @@ import (
 	"middleware-offchain/core/entity"
 	p2pEntity "middleware-offchain/internal/entity"
 	"middleware-offchain/internal/gen/api"
+	"middleware-offchain/pkg/log"
 	"middleware-offchain/pkg/server"
 )
 
@@ -94,5 +95,7 @@ func NewAPIApp(cfg Config) (*APIApp, error) {
 }
 
 func (a APIApp) Start(ctx context.Context) error {
-	return a.srv.Serve(ctx)
+	logCtx := log.WithComponent(ctx, "api")
+
+	return a.srv.Serve(logCtx)
 }

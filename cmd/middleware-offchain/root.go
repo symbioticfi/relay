@@ -166,8 +166,7 @@ func runApp(ctx context.Context) error {
 
 	eg, egCtx := errgroup.WithContext(ctx)
 	eg.Go(func() error {
-		logCtx := log.WithComponent(egCtx, "listener")
-		if err := listener.Start(logCtx); err != nil {
+		if err := listener.Start(egCtx); err != nil {
 			return errors.Errorf("failed to start valset listener: %w", err)
 		}
 		return nil
@@ -175,9 +174,7 @@ func runApp(ctx context.Context) error {
 
 	if cfg.IsSigner {
 		eg.Go(func() error {
-			logCtx := log.WithComponent(egCtx, "generator")
-
-			if err := generator.Start(logCtx); err != nil {
+			if err := generator.Start(egCtx); err != nil {
 				return errors.Errorf("failed to start valset generator: %w", err)
 			}
 			return nil

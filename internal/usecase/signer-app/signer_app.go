@@ -3,7 +3,9 @@ package signer_app
 import (
 	"context"
 	"log/slog"
+
 	key_types "middleware-offchain/core/usecase/crypto/key-types"
+	"middleware-offchain/pkg/log"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -71,6 +73,8 @@ func NewSignerApp(cfg Config) (*SignerApp, error) {
 }
 
 func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error {
+	ctx = log.WithComponent(ctx, "signer")
+
 	_, err := s.cfg.Repo.GetSignatureRequest(ctx, req.Hash())
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return errors.Errorf("failed to get signature request: %w", err)

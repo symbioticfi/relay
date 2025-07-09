@@ -183,11 +183,13 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 			cmp := strings.ToUpper(cmpAttr.Value.String())
 			switch cmp {
 			case "SIGNER":
-				color = blue
+				color = lightGreen
 			case "AGGREGATOR":
 				color = green
-			case "COMMITTER":
-				color = red
+			case "GENERATOR":
+				color = yellow
+			case "LISTENER":
+				color = magenta
 			}
 			component = colorize(color, "["+cmp+"]")
 		}

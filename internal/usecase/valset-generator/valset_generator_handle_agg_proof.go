@@ -7,9 +7,12 @@ import (
 	"github.com/go-errors/errors"
 
 	"middleware-offchain/core/entity"
+	"middleware-offchain/pkg/log"
 )
 
 func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
+	ctx = log.WithComponent(ctx, "generator")
+
 	slog.DebugContext(ctx, "Handling proof aggregated message", "msg", msg)
 	if !s.cfg.IsCommitter {
 		slog.DebugContext(ctx, "Not a committer, skipping proof commitment")

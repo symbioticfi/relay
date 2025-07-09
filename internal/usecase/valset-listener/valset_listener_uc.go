@@ -9,6 +9,7 @@ import (
 	"github.com/go-playground/validator/v10"
 
 	"middleware-offchain/core/entity"
+	"middleware-offchain/pkg/log"
 )
 
 type eth interface {
@@ -61,6 +62,8 @@ func New(cfg Config) (*Service, error) {
 }
 
 func (s *Service) Start(ctx context.Context) error {
+	ctx = log.WithComponent(ctx, "listener")
+
 	slog.InfoContext(ctx, "Starting valset listener service", "pollingInterval", s.cfg.PollingInterval)
 
 	timer := time.NewTimer(0)
