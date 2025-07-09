@@ -69,49 +69,49 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	v.AutomaticEnv()
 
 	if err := v.BindPFlag("path", cmd.InheritedFlags().Lookup("path")); err != nil {
-		return errors.Errorf("failed to bind path: %w", err)
+		return errors.Errorf("Failed to bind path: %w", err)
 	}
 
 	if err := v.BindPFlag("password", cmd.InheritedFlags().Lookup("password")); err != nil {
-		return errors.Errorf("failed to bind password: %w", err)
+		return errors.Errorf("Failed to bind password: %w", err)
 	}
 
 	if flag := cmd.PersistentFlags().Lookup("key-tag"); flag != nil {
 		if err := v.BindPFlag("key-tag", flag); err != nil {
-			return errors.Errorf("failed to bind flag: %w", err)
+			return errors.Errorf("Failed to bind flag: %w", err)
 		}
 	}
 
 	if flag := cmd.PersistentFlags().Lookup("private-key"); flag != nil {
 		if err := v.BindPFlag("private-key", flag); err != nil {
-			return errors.Errorf("failed to bind flag: %w", err)
+			return errors.Errorf("Failed to bind flag: %w", err)
 		}
 	}
 
 	if flag := cmd.PersistentFlags().Lookup("generate"); flag != nil {
 		if err := v.BindPFlag("generate", cmd.PersistentFlags().Lookup("generate")); err != nil {
-			return errors.Errorf("failed to bind flag: %w", err)
+			return errors.Errorf("Failed to bind flag: %w", err)
 		}
 	}
 
 	if flag := cmd.PersistentFlags().Lookup("force"); flag != nil {
 		if err := v.BindPFlag("force", flag); err != nil {
-			return errors.Errorf("failed to bind flag: %w", err)
+			return errors.Errorf("Failed to bind flag: %w", err)
 		}
 	}
 
 	err := v.ReadInConfig()
 
 	if err != nil && !errors.Is(err, viper.ConfigFileNotFoundError{}) && !errors.As(err, lo.ToPtr(&fs.PathError{})) {
-		return errors.Errorf("failed to read config file: %w", err)
+		return errors.Errorf("Failed to read config file: %w", err)
 	}
 
 	if err := v.Unmarshal(&cfg); err != nil {
-		return errors.Errorf("failed to unmarshal config: %w", err)
+		return errors.Errorf("Failed to unmarshal config: %w", err)
 	}
 
 	if err := cfg.Validate(); err != nil {
-		return errors.Errorf("invalid config: %w", err)
+		return errors.Errorf("Invalid config: %w", err)
 	}
 
 	cmd.SetContext(ctxWithCfg(cmd.Context(), cfg))

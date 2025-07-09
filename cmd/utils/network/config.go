@@ -69,61 +69,61 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	v.AutomaticEnv()
 
 	if err := v.BindPFlag("chains-rpc-url", cmd.InheritedFlags().Lookup("chains-rpc-url")); err != nil {
-		return errors.Errorf("failed to bind rpc-url: %w", err)
+		return errors.Errorf("Failed to bind rpc-url: %w", err)
 	}
 	if err := v.BindPFlag("chains-id", cmd.InheritedFlags().Lookup("chains-id")); err != nil {
-		return errors.Errorf("failed to bind rpc-url: %w", err)
+		return errors.Errorf("Failed to bind rpc-url: %w", err)
 	}
 
 	if err := v.BindPFlag("driver.address", cmd.InheritedFlags().Lookup("driver.address")); err != nil {
-		return errors.Errorf("failed to bind driver-address: %w", err)
+		return errors.Errorf("Failed to bind driver-address: %w", err)
 	}
 	if err := v.BindPFlag("driver.chain-id", cmd.InheritedFlags().Lookup("driver.chain-id")); err != nil {
-		return errors.Errorf("failed to bind driver-address: %w", err)
+		return errors.Errorf("Failed to bind driver-address: %w", err)
 	}
 
 	if flag := cmd.PersistentFlags().Lookup("epoch"); flag != nil {
 		if err := v.BindPFlag("epoch", flag); err != nil {
-			return errors.Errorf("failed to bind flag: %w", err)
+			return errors.Errorf("Failed to bind flag: %w", err)
 		}
 	}
 
 	if flag := cmd.PersistentFlags().Lookup("compact"); flag != nil {
 		if err := v.BindPFlag("compact", flag); err != nil {
-			return errors.Errorf("failed to bind flag: %w", err)
+			return errors.Errorf("Failed to bind flag: %w", err)
 		}
 	}
 
 	if flag := cmd.PersistentFlags().Lookup("commit"); flag != nil {
 		if err := v.BindPFlag("commit", flag); err != nil {
-			return errors.Errorf("failed to bind flag: %w", err)
+			return errors.Errorf("Failed to bind flag: %w", err)
 		}
 	}
 
 	if flag := cmd.PersistentFlags().Lookup("secret-key"); flag != nil {
 		if err := v.BindPFlag("secret-key", flag); err != nil {
-			return errors.Errorf("failed to bind flag: %w", err)
+			return errors.Errorf("Failed to bind flag: %w", err)
 		}
 	}
 
 	if flag := cmd.PersistentFlags().Lookup("output"); flag != nil {
 		if err := v.BindPFlag("output-file", flag); err != nil {
-			return errors.Errorf("failed to bind flag: %w", err)
+			return errors.Errorf("Failed to bind flag: %w", err)
 		}
 	}
 
 	err := v.ReadInConfig()
 
 	if err != nil && !errors.Is(err, viper.ConfigFileNotFoundError{}) && !errors.As(err, lo.ToPtr(&fs.PathError{})) {
-		return errors.Errorf("failed to read config file: %w", err)
+		return errors.Errorf("Failed to read config file: %w", err)
 	}
 
 	if err := v.Unmarshal(&cfg); err != nil {
-		return errors.Errorf("failed to unmarshal config: %w", err)
+		return errors.Errorf("Failed to unmarshal config: %w", err)
 	}
 
 	if err := cfg.Validate(); err != nil {
-		return errors.Errorf("invalid config: %w", err)
+		return errors.Errorf("Invalid config: %w", err)
 	}
 
 	cmd.SetContext(ctxWithCfg(cmd.Context(), cfg))

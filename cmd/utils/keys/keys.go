@@ -1,7 +1,7 @@
 package keys
 
 import (
-	"log/slog"
+	"fmt"
 	"middleware-offchain/core/entity"
 	"middleware-offchain/core/usecase/crypto"
 	keyprovider "middleware-offchain/core/usecase/key-provider"
@@ -48,6 +48,10 @@ var printKeysCmd = &cobra.Command{
 		}
 
 		aliases := keyStore.GetAliases()
+
+		fmt.Printf("\nKeys (%d):\n", len(aliases)) // assuming 'keys' is your collection
+		fmt.Printf("   # | Alias                | Public Key\n")
+
 		for i, alias := range aliases {
 			keyTag, err := keyprovider.AliasToTag(alias)
 			if err != nil {
@@ -59,7 +63,12 @@ var printKeysCmd = &cobra.Command{
 				return err
 			}
 
-			slog.Info("key:", "idx", i, "alias", alias, "public_key", pk.PublicKey())
+			prettyPk, err := pk.PublicKey().OnChain().MarshalText()
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf("   %d | %-20s | %s\n", i+1, alias, prettyPk)
 		}
 
 		return nil
@@ -73,7 +82,7 @@ var addKeyCmd = &cobra.Command{
 		cfg := cfgFromCtx(cmd.Context())
 
 		if cfg.KeyTag == uint8(entity.KeyTypeInvalid) {
-			return errors.New("key tag omitted")
+			return errors.New("Key tag omitted")
 		}
 
 		if cfg.PrivateKey == "" && !cfg.Generate {
@@ -124,7 +133,7 @@ var removeKeyCmd = &cobra.Command{
 		var err error
 
 		if cfg.KeyTag == uint8(entity.KeyTypeInvalid) {
-			return errors.New("key tag omitted")
+			return errors.New("Key tag omitted")
 		}
 
 		if cfg.Password == "" {
@@ -155,11 +164,11 @@ var updateKeyCmd = &cobra.Command{
 		var err error
 
 		if cfg.KeyTag == uint8(entity.KeyTypeInvalid) {
-			return errors.New("key tag omitted")
+			return errors.New("Key tag omitted")
 		}
 
 		if cfg.PrivateKey == "" {
-			return errors.New("private key omitted")
+			return errors.New("Private key omitted")
 		}
 
 		if cfg.Password == "" {

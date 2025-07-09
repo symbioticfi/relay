@@ -52,28 +52,28 @@ var infoCmd = &cobra.Command{
 		if cfg.Epoch == 0 {
 			cfg.Epoch, err = client.GetCurrentEpoch(ctx)
 			if err != nil {
-				return errors.Errorf("failed to get current epoch: %w", err)
+				return errors.Errorf("Failed to get current epoch: %w", err)
 			}
 		}
 
 		captureTimestamp, err := client.GetEpochStart(ctx, cfg.Epoch)
 		if err != nil {
-			return errors.Errorf("failed to get capture timestamp: %w", err)
+			return errors.Errorf("Failed to get capture timestamp: %w", err)
 		}
 
 		networkConfig, err := client.GetConfig(ctx, captureTimestamp)
 		if err != nil {
-			return errors.Errorf("failed to get config: %w", err)
+			return errors.Errorf("Failed to get config: %w", err)
 		}
 
 		_, epoch, err := deriver.GetLastCommittedHeaderEpoch(ctx, networkConfig)
 		if err != nil {
-			return errors.Errorf("failed to get valset header: %w", err)
+			return errors.Errorf("Failed to get valset header: %w", err)
 		}
 
 		valset, err := deriver.GetValidatorSet(ctx, epoch, networkConfig)
 		if err != nil {
-			return errors.Errorf("failed to get validator set: %w", err)
+			return errors.Errorf("Failed to get validator set: %w", err)
 		}
 
 		fmt.Printf("\nNetwork Info:\n")
@@ -97,7 +97,7 @@ var infoCmd = &cobra.Command{
 
 		verificationType, err := networkConfig.VerificationType.MarshalText()
 		if err != nil {
-			return errors.Errorf("failed to marshal verification type: %w", err)
+			return errors.Errorf("Failed to marshal verification type: %w", err)
 		}
 
 		fmt.Printf("\nConfig:\n")
@@ -111,7 +111,7 @@ var infoCmd = &cobra.Command{
 		for i, tag := range networkConfig.RequiredKeyTags {
 			bytes, err := tag.MarshalText()
 			if err != nil {
-				return errors.Errorf("failed to format network config: %w", err)
+				return errors.Errorf("Failed to format network config: %w", err)
 			}
 
 			fmt.Printf("   %d | %s\n", i+1, string(bytes))
@@ -119,7 +119,7 @@ var infoCmd = &cobra.Command{
 
 		bytes, err := networkConfig.RequiredHeaderKeyTag.MarshalText()
 		if err != nil {
-			return errors.Errorf("failed to format network config: %w", err)
+			return errors.Errorf("Failed to format network config: %w", err)
 		}
 
 		fmt.Printf("\nHeader Key Tag: %s\n", string(bytes))
@@ -129,7 +129,7 @@ var infoCmd = &cobra.Command{
 		for i, t := range networkConfig.QuorumThresholds {
 			bytes, err = t.KeyTag.MarshalText()
 			if err != nil {
-				return errors.Errorf("failed to format network config: %w", err)
+				return errors.Errorf("Failed to format network config: %w", err)
 			}
 
 			fmt.Printf("   %d | %s | %v\n", i+1, string(bytes), t.QuorumThreshold)
@@ -158,28 +158,28 @@ var valsetCmd = &cobra.Command{
 		if cfg.Epoch == 0 {
 			cfg.Epoch, err = client.GetCurrentEpoch(ctx)
 			if err != nil {
-				return errors.Errorf("failed to get current epoch: %w", err)
+				return errors.Errorf("Failed to get current epoch: %w", err)
 			}
 		}
 
 		captureTimestamp, err := client.GetEpochStart(ctx, cfg.Epoch)
 		if err != nil {
-			return errors.Errorf("failed to get capture timestamp: %w", err)
+			return errors.Errorf("Failed to get capture timestamp: %w", err)
 		}
 
 		networkConfig, err := client.GetConfig(ctx, captureTimestamp)
 		if err != nil {
-			return errors.Errorf("failed to get config: %w", err)
+			return errors.Errorf("Failed to get config: %w", err)
 		}
 
 		_, epoch, err := deriver.GetLastCommittedHeaderEpoch(ctx, networkConfig)
 		if err != nil {
-			return errors.Errorf("failed to get valset header: %w", err)
+			return errors.Errorf("Failed to get valset header: %w", err)
 		}
 
 		valset, err := deriver.GetValidatorSet(ctx, epoch, networkConfig)
 		if err != nil {
-			return errors.Errorf("failed to get validator set: %w", err)
+			return errors.Errorf("Failed to get validator set: %w", err)
 		}
 
 		fmt.Printf("\nValidators Info:\n")
@@ -193,7 +193,7 @@ var valsetCmd = &cobra.Command{
 		for _, validator := range valset.Validators {
 			str, err := utils_app.MarshalTextValidator(validator, cfg.Compact)
 			if err != nil {
-				return errors.Errorf("failed to log validator: %w", err)
+				return errors.Errorf("Failed to log validator: %w", err)
 			}
 			fmt.Print(str)
 		}
@@ -209,7 +209,7 @@ var genesisCmd = &cobra.Command{
 		cfg := cfgFromCtx(signalContext(cmd.Context()))
 
 		if cfg.Commit && cfg.SecretKey == "" {
-			return errors.New("if commit true secret-key must be set")
+			return errors.New("If commit true secret-key must be set")
 		}
 
 		ctx := signalContext(context.Background())
@@ -224,28 +224,28 @@ var genesisCmd = &cobra.Command{
 
 		currentOnchainEpoch, err := client.GetCurrentEpoch(ctx)
 		if err != nil {
-			return errors.Errorf("failed to get current epoch: %w", err)
+			return errors.Errorf("Failed to get current epoch: %w", err)
 		}
 
 		captureTimestamp, err := client.GetEpochStart(ctx, currentOnchainEpoch)
 		if err != nil {
-			return errors.Errorf("failed to get capture timestamp: %w", err)
+			return errors.Errorf("Failed to get capture timestamp: %w", err)
 		}
 
 		networkConfig, err := client.GetConfig(ctx, captureTimestamp)
 		if err != nil {
-			return errors.Errorf("failed to get config: %w", err)
+			return errors.Errorf("Failed to get config: %w", err)
 		}
 
 		newValset, err := deriver.GetValidatorSet(ctx, currentOnchainEpoch, networkConfig)
 		if err != nil {
-			return errors.Errorf("failed to get validator set extra for epoch %d: %w", currentOnchainEpoch, err)
+			return errors.Errorf("Failed to get validator set extra for epoch %d: %w", currentOnchainEpoch, err)
 		}
 
 		// header generation is clear now
 		header, err := newValset.GetHeader()
 		if err != nil {
-			return errors.Errorf("failed to generate validator set header: %w", err)
+			return errors.Errorf("Failed to generate validator set header: %w", err)
 		}
 
 		slog.Info("Valset header generated!")
@@ -255,18 +255,18 @@ var genesisCmd = &cobra.Command{
 		// extra data generation is also clear but still in deriver
 		extraData, err := aggregator.GenerateExtraData(newValset, networkConfig)
 		if err != nil {
-			return errors.Errorf("failed to generate extra data: %w", err)
+			return errors.Errorf("Failed to generate extra data: %w", err)
 		}
 
 		jsonData, err := EncodeValidatorSetHeaderWithExtraDataToJSON(header, extraData)
 		if err != nil {
-			return errors.Errorf("failed to encode validator set header with extra data to JSON: %w", err)
+			return errors.Errorf("Failed to encode validator set header with extra data to JSON: %w", err)
 		}
 
 		if cfg.OutputFile != "" {
 			err = os.WriteFile(cfg.OutputFile, jsonData, 0600)
 			if err != nil {
-				return errors.Errorf("failed to write output file: %w", err)
+				return errors.Errorf("Failed to write output file: %w", err)
 			}
 		} else {
 			fmt.Println(string(jsonData)) //nolint:forbidigo // ok to print result to stdout
@@ -294,7 +294,7 @@ var genesisCmd = &cobra.Command{
 			}
 		}
 		if err := errors.Join(errs...); err != nil {
-			return errors.Errorf("failed to commit valset header: %w", err)
+			return errors.Errorf("Failed to commit valset header: %w", err)
 		}
 
 		return nil

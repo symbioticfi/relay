@@ -52,55 +52,55 @@ var infoCmd = &cobra.Command{
 		cfg := cfgFromCtx(ctx)
 
 		if cfg.Path == "" {
-			return errors.New("keystore path is required")
+			return errors.New("Keystore path is required")
 		}
 
 		if cfg.KeyTag == uint8(entity.KeyTypeInvalid) {
-			return errors.New("key tag omitted")
+			return errors.New("Key tag omitted")
 		}
 
 		client, err := utils_app.GetEvmClient(ctx, cfg.PrivateKey, cfg.Driver, cfg.ChainsId, cfg.ChainsUrl)
 		if err != nil {
-			return errors.Errorf("failed to init evm client: %w", err)
+			return errors.Errorf("Failed to init evm client: %w", err)
 		}
 
 		if cfg.Password == "" {
 			cfg.Password, err = utils_app.GetPassword()
 			if err != nil {
-				return errors.Errorf("failed to get password: %w", err)
+				return errors.Errorf("Failed to get password: %w", err)
 			}
 		}
 
 		if cfg.Epoch == 0 {
 			cfg.Epoch, err = client.GetCurrentEpoch(ctx)
 			if err != nil {
-				return errors.Errorf("failed to get current epoch: %w", err)
+				return errors.Errorf("Failed to get current epoch: %w", err)
 			}
 		}
 
 		captureTimestamp, err := client.GetEpochStart(ctx, cfg.Epoch)
 		if err != nil {
-			return errors.Errorf("failed to get capture timestamp: %w", err)
+			return errors.Errorf("Failed to get capture timestamp: %w", err)
 		}
 
 		networkConfig, err := client.GetConfig(ctx, captureTimestamp)
 		if err != nil {
-			return errors.Errorf("failed to get config: %w", err)
+			return errors.Errorf("Failed to get config: %w", err)
 		}
 
 		epoch, err := client.GetLastCommittedHeaderEpoch(ctx, networkConfig.Replicas[0])
 		if err != nil {
-			return errors.Errorf("failed to get valset header: %w", err)
+			return errors.Errorf("Failed to get valset header: %w", err)
 		}
 
 		deriver, err := valsetDeriver.NewDeriver(client)
 		if err != nil {
-			return errors.Errorf("failed to create valset deriver: %w", err)
+			return errors.Errorf("Failed to create valset deriver: %w", err)
 		}
 
 		valset, err := deriver.GetValidatorSet(ctx, epoch, networkConfig)
 		if err != nil {
-			return errors.Errorf("failed to get validator set: %w", err)
+			return errors.Errorf("Failed to get validator set: %w", err)
 		}
 
 		keyStore, err := keyprovider.NewKeystoreProvider(cfg.Path, cfg.Password)
@@ -116,14 +116,14 @@ var infoCmd = &cobra.Command{
 
 		validator, found := valset.FindValidatorByKey(kt, pk.PublicKey().Raw())
 		if !found {
-			return errors.Errorf("validator not found for key: %d %s", kt, common.Bytes2Hex(pk.PublicKey().Raw()))
+			return errors.Errorf("Validator not found for key: %d %s", kt, common.Bytes2Hex(pk.PublicKey().Raw()))
 		}
 
-		slog.InfoContext(ctx, "Operator Info")
+		fmt.Println("Operator Info")
 
 		str, err := utils_app.MarshalTextValidator(validator, cfg.Compact)
 		if err != nil {
-			return errors.Errorf("failed to log validator: %w", err)
+			return errors.Errorf("Failed to log validator: %w", err)
 		}
 
 		fmt.Print(str)
@@ -140,32 +140,32 @@ var registerCmd = &cobra.Command{
 		cfg := cfgFromCtx(ctx)
 
 		if len(cfg.ChainsId) != 1 {
-			return errors.New("only single chain is supported")
+			return errors.New("Only single chain is supported")
 		}
 
 		if cfg.PrivateKey == "" {
-			return errors.New("private key is required")
+			return errors.New("Private key is required")
 		}
 
 		if cfg.Path == "" {
-			return errors.New("keystore path is required")
+			return errors.New("Keystore path is required")
 		}
 
 		if cfg.KeyTag == uint8(entity.KeyTypeInvalid) {
-			return errors.New("key tag omitted")
+			return errors.New("Key tag omitted")
 		}
 
 		client, err := utils_app.GetEvmClient(ctx, cfg.PrivateKey, cfg.Driver, cfg.ChainsId, cfg.ChainsUrl)
 		if err != nil {
-			return errors.Errorf("failed to init evm client: %w", err)
+			return errors.Errorf("Failed to init evm client: %w", err)
 		}
 
 		txResult, err := client.RegisterOperator(ctx, operatorRegistries[cfg.ChainsId[0]])
 		if err != nil {
-			return errors.Errorf("failed to register operator: %w", err)
+			return errors.Errorf("Failed to register operator: %w", err)
 		}
 
-		slog.InfoContext(ctx, "operator registered!", "addr", operatorRegistries[cfg.ChainsId[0]], "txHash", txResult.TxHash.String())
+		slog.InfoContext(ctx, "Operator registered!", "addr", operatorRegistries[cfg.ChainsId[0]], "txHash", txResult.TxHash.String())
 
 		return nil
 	},
@@ -180,16 +180,16 @@ var registerKeyCmd = &cobra.Command{
 		cfg := cfgFromCtx(ctx)
 
 		if len(cfg.ChainsId) != 1 {
-			return errors.New("only single chain is supported")
+			return errors.New("Only single chain is supported")
 		}
 
 		if cfg.PrivateKey == "" {
-			return errors.New("private key is required")
+			return errors.New("Private key is required")
 		}
 
 		client, err := utils_app.GetEvmClient(ctx, cfg.PrivateKey, cfg.Driver, cfg.ChainsId, cfg.ChainsUrl)
 		if err != nil {
-			return errors.Errorf("failed to init evm client: %w", err)
+			return errors.Errorf("Failed to init evm client: %w", err)
 		}
 
 		if cfg.Password == "" {
@@ -212,39 +212,39 @@ var registerKeyCmd = &cobra.Command{
 
 		currentOnchainEpoch, err := client.GetCurrentEpoch(ctx)
 		if err != nil {
-			return errors.Errorf("failed to get current epoch: %w", err)
+			return errors.Errorf("Failed to get current epoch: %w", err)
 		}
 
 		captureTimestamp, err := client.GetEpochStart(ctx, currentOnchainEpoch)
 		if err != nil {
-			return errors.Errorf("failed to get capture timestamp: %w", err)
+			return errors.Errorf("Failed to get capture timestamp: %w", err)
 		}
 
 		networkConfig, err := client.GetConfig(ctx, captureTimestamp)
 		if err != nil {
-			return errors.Errorf("failed to get config: %w", err)
+			return errors.Errorf("Failed to get config: %w", err)
 		}
 
 		eip712Domain, err := client.GetEip712Domain(ctx, networkConfig.KeysProvider)
 		if err != nil {
-			return errors.Errorf("failed to get eip712 domain: %w", err)
+			return errors.Errorf("Failed to get eip712 domain: %w", err)
 		}
 
 		ecdsaPk, err := crypto.HexToECDSA(cfg.PrivateKey)
 		if err != nil {
-			return errors.Errorf("failed to parse private key: %w", err)
+			return errors.Errorf("Failed to parse private key: %w", err)
 		}
 
 		operator := crypto.PubkeyToAddress(ecdsaPk.PublicKey)
 		key := pk.PublicKey().OnChain()
 		commitmentData, err := keyCommitmentData(eip712Domain, operator, crypto.Keccak256(key))
 		if err != nil {
-			return errors.Errorf("failed to get commitment data: %w", err)
+			return errors.Errorf("Failed to get commitment data: %w", err)
 		}
 
 		signature, _, err := pk.Sign(commitmentData)
 		if err != nil {
-			return errors.Errorf("failed to sign commitment data: %w", err)
+			return errors.Errorf("Failed to sign commitment data: %w", err)
 		}
 
 		var extraData []byte
@@ -254,10 +254,10 @@ var registerKeyCmd = &cobra.Command{
 
 		txResult, err := client.RegisterKey(ctx, networkConfig.KeysProvider, kt, key, signature, extraData)
 		if err != nil {
-			return errors.Errorf("failed to register operator: %w", err)
+			return errors.Errorf("Failed to register operator: %w", err)
 		}
 
-		slog.InfoContext(ctx, "operator registered!", "addr", operatorRegistries[cfg.ChainsId[0]], "txHash", txResult.TxHash.String())
+		slog.InfoContext(ctx, "Operator registered!", "addr", operatorRegistries[cfg.ChainsId[0]], "txHash", txResult.TxHash.String())
 
 		return nil
 	},
@@ -272,7 +272,7 @@ func signalContext(ctx context.Context) context.Context {
 
 	go func() {
 		sig := <-c
-		slog.Info("received signal", "signal", sig)
+		slog.Info("Received signal", "signal", sig)
 		cancel()
 	}()
 
