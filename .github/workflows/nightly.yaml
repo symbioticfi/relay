@@ -1,9 +1,10 @@
 ---
-name: Release
+name: Nightly Build
 on:
-  push:
-    tags:
-      - "v*.*.*"
+  schedule:
+    # Run at 03:00 UTC every day (avoiding peak 00:00 congestion)
+    - cron: '0 3 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -17,8 +18,8 @@ jobs:
       - tests
     name: Build
     uses: ./.github/workflows/build.yaml
-  release:
-    name: Release
+  nightly-release:
+    name: Nightly Release
     needs: 
       - tests
       - build
@@ -30,16 +31,25 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get previous tag
-        id: get_previous_tag
+      - name: Generate nightly tag
+        id: nightly_tag
         run: |
-          echo "tag=$(git describe --tags --abbrev=0 HEAD^)" >> "$GITHUB_OUTPUT"
+          DATE=$(date +%Y%m%d)
+          echo "tag=nightly-$DATE" >> "$GITHUB_OUTPUT"
+          echo "Generated nightly tag: nightly-$DATE"
 
       - name: Generate changelog
         id: changelog
         run: |
-          echo "Generating changelog between ${{ steps.get_previous_tag.outputs.tag }} and ${{ github.ref_name }}"
-          git log ${{ steps.get_previous_tag.outputs.tag }}..${{ github.ref_name }} --pretty=format:"- %s (%an)" > CHANGELOG.md
+          # Get the last nightly tag or use a fallback
+          LAST_TAG=$(git tag --list "nightly-*" --sort=-version:refname | head -1)
+          if [ -z "$LAST_TAG" ]; then
+            echo "No previous nightly tag found, using last 10 commits"
+            git log -10 --pretty=format:"- %s (%an)" > CHANGELOG.md
+          else
+            echo "Generating changelog between $LAST_TAG and current commit"
+            git log $LAST_TAG..HEAD --pretty=format:"- %s (%an)" > CHANGELOG.md
+          fi
           cat CHANGELOG.md
 
       - name: Download artifacts
@@ -54,13 +64,15 @@ jobs:
           pattern: symbiotic_relay_*
           merge-multiple: true
       
-      - name: Release
+      - name: Create nightly release
         uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # pin@v2.2.2
         with:
-          draft: true
+          tag_name: ${{ steps.nightly_tag.outputs.tag }}
+          draft: false
+          prerelease: true
           body_path: CHANGELOG.md
           files: |
             generate_genesis_linux_amd64
             generate_genesis_darwin_arm64
             symbiotic_relay_linux_amd64
-            symbiotic_relay_darwin_arm64
+            symbiotic_relay_darwin_arm64 

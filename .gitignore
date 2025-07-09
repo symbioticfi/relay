@@ -3,3 +3,4 @@ go.sum
 .env
 .DS_Store
 .data
+coverage.txt
