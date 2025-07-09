@@ -21,19 +21,19 @@ var cfg config
 func main() {
 	keysCmd, err := keys.NewKeysCmd()
 	if err != nil {
-		slog.Error("error creating keys command", "error", err)
+		slog.Error("Error creating keys command", "error", err)
 		os.Exit(1)
 	}
 
 	networkCmd, err := network.NewNetworkCmd()
 	if err != nil {
-		slog.Error("error creating network command", "error", err)
+		slog.Error("Error creating network command", "error", err)
 		os.Exit(1)
 	}
 
 	operatorCmd, err := operator.NewOperatorCmd()
 	if err != nil {
-		slog.Error("error creating network command", "error", err)
+		slog.Error("Error creating network command", "error", err)
 		os.Exit(1)
 	}
 
@@ -45,7 +45,7 @@ func main() {
 	rootCmd.AddCommand(operatorCmd)
 
 	if err := run(); err != nil {
-		slog.Error("error executing command", "error", err)
+		slog.Error("Error executing command", "error", err)
 		os.Exit(1)
 	}
 }

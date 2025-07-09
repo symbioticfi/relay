@@ -4,8 +4,9 @@ import (
 	"context"
 	"log/slog"
 	"math/big"
-	keyprovider "middleware-offchain/core/usecase/key-provider"
 	"time"
+
+	keyprovider "middleware-offchain/core/usecase/key-provider"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
@@ -78,7 +79,7 @@ func runApp(ctx context.Context) error {
 	if err != nil {
 		return errors.Errorf("failed to create p2p service: %w", err)
 	}
-	slog.InfoContext(ctx, "created p2p service", "listenAddr", cfg.P2PListenAddress)
+	slog.InfoContext(ctx, "Created p2p service", "listenAddr", cfg.P2PListenAddress)
 	defer p2pService.Close()
 
 	discoveryService, err := p2p.NewDiscoveryService(ctx, p2pService, h)
@@ -86,11 +87,11 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create discovery service: %w", err)
 	}
 	defer discoveryService.Close()
-	slog.InfoContext(ctx, "created discovery service", "listenAddr", cfg.P2PListenAddress)
+	slog.InfoContext(ctx, "Created discovery service", "listenAddr", cfg.P2PListenAddress)
 	if err := discoveryService.Start(); err != nil {
 		return errors.Errorf("failed to start discovery service: %w", err)
 	}
-	slog.InfoContext(ctx, "started discovery service", "listenAddr", cfg.P2PListenAddress)
+	slog.InfoContext(ctx, "Started discovery service", "listenAddr", cfg.P2PListenAddress)
 
 	repo, err := badger.New(badger.Config{Dir: cfg.StorageDir})
 	if err != nil {
@@ -128,7 +129,7 @@ func runApp(ctx context.Context) error {
 	}
 	p2pService.AddSignaturesAggregatedMessageListener(signerApp.HandleSignaturesAggregatedMessage, "signerAppSignaturesAggregatedListener")
 
-	slog.InfoContext(ctx, "created signer app, starting")
+	slog.InfoContext(ctx, "Created signer app, starting")
 
 	listener, err := valsetListener.New(valsetListener.Config{
 		Eth:             evmClient,
@@ -158,7 +159,7 @@ func runApp(ctx context.Context) error {
 		if err != nil {
 			return errors.Errorf("failed to handle proof aggregated: %w", err)
 		}
-		slog.DebugContext(ctx, "handled proof aggregated", "request", msg)
+		slog.DebugContext(ctx, "Handled proof aggregated", "request", msg)
 
 		return nil
 	}, "aggregatedProofReadySignalListener")
@@ -195,7 +196,7 @@ func runApp(ctx context.Context) error {
 		}
 		p2pService.AddSignatureMessageListener(aggApp.HandleSignatureGeneratedMessage, "aggregatorAppSignatureGeneratedListener")
 
-		slog.DebugContext(ctx, "created aggregator app, starting")
+		slog.DebugContext(ctx, "Created aggregator app, starting")
 	}
 
 	api, err := apiApp.NewAPIApp(apiApp.Config{
