@@ -38,6 +38,12 @@ type Handler interface {
 	//
 	// GET /getSignatures
 	GetSignaturesGet(ctx context.Context, params GetSignaturesGetParams) ([]Signature, error)
+	// GetSuggestedEpochGet implements GET /getSuggestedEpoch operation.
+	//
+	// Get suggested epoch to request sign.
+	//
+	// GET /getSuggestedEpoch
+	GetSuggestedEpochGet(ctx context.Context) (*GetSuggestedEpochGetOK, error)
 	// GetValidatorSetGet implements GET /getValidatorSet operation.
 	//
 	// Get current validator set.
@@ -49,7 +55,7 @@ type Handler interface {
 	// Sign a message.
 	//
 	// POST /signMessage
-	SignMessagePost(ctx context.Context, req *SignatureRequest) (*SignMessagePostOK, error)
+	SignMessagePost(ctx context.Context, req *SignMessagePostReq) (*SignMessagePostOK, error)
 	// NewError creates *ErrorStatusCode from error returned by handler.
 	//
 	// Used for common default response.

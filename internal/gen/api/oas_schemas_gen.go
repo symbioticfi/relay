@@ -203,6 +203,31 @@ func (s *GetCurrentEpochGetOK) SetStartTime(val time.Time) {
 	s.StartTime = val
 }
 
+type GetSuggestedEpochGetOK struct {
+	Epoch     uint64    `json:"epoch"`
+	StartTime time.Time `json:"startTime"`
+}
+
+// GetEpoch returns the value of Epoch.
+func (s *GetSuggestedEpochGetOK) GetEpoch() uint64 {
+	return s.Epoch
+}
+
+// GetStartTime returns the value of StartTime.
+func (s *GetSuggestedEpochGetOK) GetStartTime() time.Time {
+	return s.StartTime
+}
+
+// SetEpoch sets the value of Epoch.
+func (s *GetSuggestedEpochGetOK) SetEpoch(val uint64) {
+	s.Epoch = val
+}
+
+// SetStartTime sets the value of StartTime.
+func (s *GetSuggestedEpochGetOK) SetStartTime(val time.Time) {
+	s.StartTime = val
+}
+
 // Ref: #/components/schemas/Key
 type Key struct {
 	Tag     uint8  `json:"tag"`
@@ -277,6 +302,7 @@ func (o OptUint64) Or(d uint64) uint64 {
 
 type SignMessagePostOK struct {
 	RequestHash string `json:"requestHash"`
+	Epoch       uint64 `json:"epoch"`
 }
 
 // GetRequestHash returns the value of RequestHash.
@@ -284,9 +310,56 @@ func (s *SignMessagePostOK) GetRequestHash() string {
 	return s.RequestHash
 }
 
+// GetEpoch returns the value of Epoch.
+func (s *SignMessagePostOK) GetEpoch() uint64 {
+	return s.Epoch
+}
+
 // SetRequestHash sets the value of RequestHash.
 func (s *SignMessagePostOK) SetRequestHash(val string) {
 	s.RequestHash = val
+}
+
+// SetEpoch sets the value of Epoch.
+func (s *SignMessagePostOK) SetEpoch(val uint64) {
+	s.Epoch = val
+}
+
+type SignMessagePostReq struct {
+	KeyTag  uint8  `json:"keyTag"`
+	Message []byte `json:"message"`
+	// If not provided latest committed epoch will be used.
+	RequiredEpoch OptUint64 `json:"requiredEpoch"`
+}
+
+// GetKeyTag returns the value of KeyTag.
+func (s *SignMessagePostReq) GetKeyTag() uint8 {
+	return s.KeyTag
+}
+
+// GetMessage returns the value of Message.
+func (s *SignMessagePostReq) GetMessage() []byte {
+	return s.Message
+}
+
+// GetRequiredEpoch returns the value of RequiredEpoch.
+func (s *SignMessagePostReq) GetRequiredEpoch() OptUint64 {
+	return s.RequiredEpoch
+}
+
+// SetKeyTag sets the value of KeyTag.
+func (s *SignMessagePostReq) SetKeyTag(val uint8) {
+	s.KeyTag = val
+}
+
+// SetMessage sets the value of Message.
+func (s *SignMessagePostReq) SetMessage(val []byte) {
+	s.Message = val
+}
+
+// SetRequiredEpoch sets the value of RequiredEpoch.
+func (s *SignMessagePostReq) SetRequiredEpoch(val OptUint64) {
+	s.RequiredEpoch = val
 }
 
 // Ref: #/components/schemas/Signature
@@ -328,8 +401,9 @@ func (s *Signature) SetPublicKey(val []byte) {
 
 // Ref: #/components/schemas/SignatureRequest
 type SignatureRequest struct {
-	KeyTag        uint8  `json:"keyTag"`
-	Message       []byte `json:"message"`
+	KeyTag  uint8  `json:"keyTag"`
+	Message []byte `json:"message"`
+	// If not provided latest committed epoch will be used.
 	RequiredEpoch uint64 `json:"requiredEpoch"`
 }
 
@@ -436,8 +510,10 @@ type ValidatorSet struct {
 	CaptureTimestamp time.Time `json:"captureTimestamp"`
 	QuorumThreshold  string    `json:"quorumThreshold"`
 	// Previous valset header hash hex.
-	PreviousHeaderHash string      `json:"previousHeaderHash"`
-	Validators         []Validator `json:"validators"`
+	PreviousHeaderHash string `json:"previousHeaderHash"`
+	// Status of validator set header (0 - pending, 1 - missed, 2 - committed).
+	Status     uint8       `json:"status"`
+	Validators []Validator `json:"validators"`
 }
 
 // GetVersion returns the value of Version.
@@ -468,6 +544,11 @@ func (s *ValidatorSet) GetQuorumThreshold() string {
 // GetPreviousHeaderHash returns the value of PreviousHeaderHash.
 func (s *ValidatorSet) GetPreviousHeaderHash() string {
 	return s.PreviousHeaderHash
+}
+
+// GetStatus returns the value of Status.
+func (s *ValidatorSet) GetStatus() uint8 {
+	return s.Status
 }
 
 // GetValidators returns the value of Validators.
@@ -503,6 +584,11 @@ func (s *ValidatorSet) SetQuorumThreshold(val string) {
 // SetPreviousHeaderHash sets the value of PreviousHeaderHash.
 func (s *ValidatorSet) SetPreviousHeaderHash(val string) {
 	s.PreviousHeaderHash = val
+}
+
+// SetStatus sets the value of Status.
+func (s *ValidatorSet) SetStatus(val uint8) {
+	s.Status = val
 }
 
 // SetValidators sets the value of Validators.

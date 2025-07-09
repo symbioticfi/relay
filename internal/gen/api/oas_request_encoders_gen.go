@@ -12,7 +12,7 @@ import (
 )
 
 func encodeSignMessagePostRequest(
-	req *SignatureRequest,
+	req *SignMessagePostReq,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
