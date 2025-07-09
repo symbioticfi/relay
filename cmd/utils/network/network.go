@@ -288,9 +288,9 @@ var genesisCmd = &cobra.Command{
 				header,
 				extraData)
 			if errs[i] != nil {
-				slog.ErrorContext(ctx, "failed to set genesis on replica", "replica", replica, "error", errs[i])
+				slog.ErrorContext(ctx, "Failed to set genesis on replica", "replica", replica, "error", errs[i])
 			} else {
-				slog.InfoContext(ctx, "genesis valset set on replica", "replica", replica, "txHash", txResult.TxHash.String())
+				slog.InfoContext(ctx, "Genesis valset set on replica", "replica", replica, "txHash", txResult.TxHash.String())
 			}
 		}
 		if err := errors.Join(errs...); err != nil {
@@ -310,7 +310,7 @@ func signalContext(ctx context.Context) context.Context {
 
 	go func() {
 		sig := <-c
-		slog.Info("received signal", "signal", sig)
+		slog.Info("Received signal", "signal", sig)
 		cancel()
 	}()
 

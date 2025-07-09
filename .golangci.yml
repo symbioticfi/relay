@@ -16,6 +16,7 @@ linters:
     - decorder
 #    - dogsled
     - durationcheck
+    - embeddedstructfieldcheck
     - errchkjson
     - errname
     - errorlint

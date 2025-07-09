@@ -8,13 +8,11 @@ require (
 	github.com/dgraph-io/badger/v4 v4.7.0
 	github.com/ethereum/go-ethereum v1.15.11
 	github.com/ferranbt/fastssz v0.1.4
-	github.com/getsentry/sentry-go v0.33.0
-	github.com/getsentry/sentry-go/slog v0.33.0
-	github.com/go-chi/chi/v5 v5.2.1
+	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-errors/errors v1.5.1
 	github.com/go-faster/errors v0.7.1
 	github.com/go-faster/jx v1.1.0
-	github.com/go-playground/validator/v10 v10.26.0
+	github.com/go-playground/validator/v10 v10.27.0
 	github.com/libp2p/go-libp2p v0.41.1
 	github.com/maniartech/signals v1.2.0
 	github.com/multiformats/go-multiaddr v0.16.0
@@ -27,9 +25,9 @@ require (
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
 	github.com/swaggo/http-swagger v1.3.4
-	go.opentelemetry.io/otel v1.36.0
-	go.opentelemetry.io/otel/metric v1.36.0
-	go.opentelemetry.io/otel/trace v1.36.0
+	go.opentelemetry.io/otel v1.37.0
+	go.opentelemetry.io/otel/metric v1.37.0
+	go.opentelemetry.io/otel/trace v1.37.0
 	go.uber.org/mock v0.5.2
 	golang.org/x/sync v0.15.0
 	golang.org/x/term v0.32.0

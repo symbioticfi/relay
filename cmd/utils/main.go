@@ -27,7 +27,7 @@ func main() {
 	rootCmd.AddCommand(operator.NewOperatorCmd())
 
 	if err := run(); err != nil {
-		slog.Error("error executing command", "error", err)
+		slog.Error("Error executing command", "error", err)
 		os.Exit(1)
 	}
 }

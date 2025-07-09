@@ -81,17 +81,17 @@ func (s *Server) Serve(ctx context.Context) error {
 		defer cancel()
 
 		if err := s.srv.Shutdown(ctxShutdown); err != nil { //nolint:contextcheck // we must use separate context for shutdown
-			slog.WarnContext(ctx, "failed to shutdown server", "error", err)
+			slog.WarnContext(ctx, "Failed to shutdown server", "error", err)
 		}
 	}()
 
-	slog.InfoContext(ctx, "server started", "address", s.cfg.Address)
+	slog.InfoContext(ctx, "Server started", "address", s.cfg.Address)
 
 	if err := s.srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		return errors.Errorf("failed to listen and serve: %w", err)
 	}
 
-	slog.InfoContext(ctx, "server stopped")
+	slog.InfoContext(ctx, "Server stopped")
 
 	return nil
 }

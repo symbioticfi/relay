@@ -16,7 +16,7 @@ func main() {
 	slog.Info("Running offchain_middleware command", "args", os.Args)
 
 	if err := runRootCMD(); err != nil && !errors.Is(err, context.Canceled) {
-		slog.Error("error executing command", "error", err)
+		slog.Error("Error executing command", "error", err)
 		os.Exit(1)
 	}
 	slog.Info("Offchain middleware completed successfully")
@@ -50,7 +50,7 @@ func signalContext(ctx context.Context) context.Context {
 
 	go func() {
 		sig := <-c
-		slog.Info("received signal", "signal", sig)
+		slog.Info("Received signal", "signal", sig)
 		cancel()
 	}()
 

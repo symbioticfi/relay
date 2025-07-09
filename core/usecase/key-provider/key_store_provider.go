@@ -132,13 +132,13 @@ func (k *KeystoreProvider) dump(password string) error {
 
 	f, err := os.Create(k.filePath)
 	if err != nil {
-		slog.Error(err.Error())
+		slog.Error("Failed to create file", "err", err.Error(), "path", k.filePath)
 		return err
 	}
 
 	defer func() {
 		if err := f.Close(); err != nil {
-			slog.Error(err.Error())
+			slog.Warn("Failed to close file", "err", err.Error())
 		}
 	}()
 
