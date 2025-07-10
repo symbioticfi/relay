@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -19,12 +20,15 @@ func (e *Client) CommitValsetHeader(
 	header entity.ValidatorSetHeader,
 	extraData []entity.ExtraData,
 	proof []byte,
-) (entity.TxResult, error) {
+) (_ entity.TxResult, err error) {
 	if e.masterPK == nil {
 		return entity.TxResult{}, errors.New("master private key is not set")
 	}
 	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("CommitValSetHeader", err, now)
+	}(time.Now())
 
 	txOpts, err := bind.NewKeyedTransactorWithChainID(e.masterPK, new(big.Int).SetUint64(addr.ChainId))
 	if err != nil {

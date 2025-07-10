@@ -7,6 +7,7 @@ import (
 	"time"
 
 	keyprovider "middleware-offchain/core/usecase/key-provider"
+	"middleware-offchain/internal/usecase/metrics"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
@@ -40,6 +41,8 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to parse secret key as big.Int")
 	}
 
+	mtr := metrics.New(metrics.Config{})
+
 	evmClient, err := evm.NewEVMClient(ctx, evm.Config{
 		Chains: lo.Map(cfg.Chains, func(chainCfg chainURL, _ int) entity.ChainURL {
 			return entity.ChainURL{
@@ -53,6 +56,7 @@ func runApp(ctx context.Context) error {
 		},
 		RequestTimeout: time.Second * 5,
 		PrivateKey:     b.FillBytes(make([]byte, 32)),
+		Metrics:        mtr,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create symbiotic client: %w", err)
@@ -75,6 +79,7 @@ func runApp(ctx context.Context) error {
 	p2pService, err := p2p.NewService(ctx, p2p.Config{
 		Host:        h,
 		SendTimeout: time.Second * 10,
+		Metrics:     mtr,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create p2p service: %w", err)
@@ -123,6 +128,7 @@ func runApp(ctx context.Context) error {
 		Repo:           repo,
 		AggProofSignal: aggProofReadySignal,
 		Aggregator:     aggregatorLib,
+		Metrics:        mtr,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create signer app: %w", err)
@@ -187,6 +193,7 @@ func runApp(ctx context.Context) error {
 			Repo:       repo,
 			P2PClient:  p2pService,
 			Aggregator: aggregatorLib,
+			Metrics:    mtr,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create aggregator app: %w", err)

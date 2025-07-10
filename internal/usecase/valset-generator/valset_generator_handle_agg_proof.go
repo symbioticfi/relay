@@ -57,6 +57,7 @@ func (s *Service) commitValsetToAllSettlements(ctx context.Context, config entit
 		result, err := s.cfg.Eth.CommitValsetHeader(ctx, replica, header, extraData, proof)
 		if err != nil {
 			errs[i] = errors.Errorf("failed to commit valset header to settlement %s: %w", replica.Address.Hex(), err)
+			continue
 		}
 
 		slog.DebugContext(ctx, "Validator set header committed",

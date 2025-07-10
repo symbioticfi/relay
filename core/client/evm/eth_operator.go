@@ -3,6 +3,7 @@ package evm
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -14,12 +15,15 @@ import (
 func (e *Client) RegisterOperator(
 	ctx context.Context,
 	addr entity.CrossChainAddress,
-) (entity.TxResult, error) {
+) (_ entity.TxResult, err error) {
 	if e.masterPK == nil {
 		return entity.TxResult{}, errors.New("master private key is not set")
 	}
 	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("RegisterOperator", err, now)
+	}(time.Now())
 
 	txOpts, err := bind.NewKeyedTransactorWithChainID(e.masterPK, new(big.Int).SetUint64(addr.ChainId))
 	if err != nil {
@@ -58,12 +62,15 @@ func (e *Client) RegisterKey(
 	key entity.CompactPublicKey,
 	signature entity.RawSignature,
 	extraData []byte,
-) (entity.TxResult, error) {
+) (_ entity.TxResult, err error) {
 	if e.masterPK == nil {
 		return entity.TxResult{}, errors.New("master private key is not set")
 	}
 	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("SetKey", err, now)
+	}(time.Now())
 
 	txOpts, err := bind.NewKeyedTransactorWithChainID(e.masterPK, new(big.Int).SetUint64(addr.ChainId))
 	if err != nil {

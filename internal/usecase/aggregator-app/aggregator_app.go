@@ -39,10 +39,16 @@ type aggregator interface {
 	) (entity.AggregationProof, error)
 }
 
+type metrics interface {
+	ObserveOnlyAggregateDuration(d time.Duration)
+	ObserveAppAggregateDuration(d time.Duration)
+}
+
 type Config struct {
 	Repo       repository `validate:"required"`
 	P2PClient  p2pClient  `validate:"required"`
 	Aggregator aggregator `validate:"required"`
+	Metrics    metrics    `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -73,6 +79,7 @@ func NewAggregatorApp(cfg Config) (*AggregatorApp, error) {
 
 func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2pMsg p2pEntity.P2PMessage[entity.SignatureMessage]) error {
 	ctx = log.WithComponent(ctx, "aggregator")
+	appAggregationStart := time.Now()
 
 	msg := p2pMsg.Message
 
@@ -141,6 +148,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 
 	slog.DebugContext(ctx, "Received network config", "networkConfig", networkConfig)
 
+	onlyAggregateStart := time.Now()
 	proofData, err := s.cfg.Aggregator.Aggregate(
 		validatorSet,
 		msg.KeyTag,
@@ -151,6 +159,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 	if err != nil {
 		return errors.Errorf("failed to prove: %w", err)
 	}
+	s.cfg.Metrics.ObserveOnlyAggregateDuration(time.Since(onlyAggregateStart))
 
 	slog.InfoContext(ctx, "Proof created, trying to send aggregated signature message",
 		"duration", time.Since(start).String(),
@@ -165,6 +174,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 		return errors.Errorf("failed to broadcast signature aggregated message: %w", err)
 	}
 
+	s.cfg.Metrics.ObserveAppAggregateDuration(time.Since(appAggregationStart))
 	slog.InfoContext(ctx, "Proof sent via p2p")
 
 	return nil
