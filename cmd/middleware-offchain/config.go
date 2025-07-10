@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"io/fs"
-	"middleware-offchain/internal/entity"
 	"strings"
 
 	"github.com/go-errors/errors"
@@ -11,6 +10,8 @@ import (
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"middleware-offchain/internal/entity"
 )
 
 // The config can be populated from command-line flags, environment variables, and a config.yaml file.
