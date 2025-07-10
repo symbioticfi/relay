@@ -119,7 +119,7 @@ var infoCmd = &cobra.Command{
 			return errors.Errorf("Validator not found for key: %d %s", kt, common.Bytes2Hex(pk.PublicKey().Raw()))
 		}
 
-		fmt.Println("Operator Info")
+		fmt.Print("Operator Info")
 
 		str, err := utils_app.MarshalTextValidator(validator, cfg.Compact)
 		if err != nil {
