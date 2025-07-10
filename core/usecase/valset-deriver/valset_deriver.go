@@ -115,11 +115,6 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 		return entity.ValidatorSet{}, errors.Errorf("failed to calc quorum threshold: %w", err)
 	}
 
-	committedAddr, isValsetCommitted, err := v.isValsetHeaderCommitted(ctx, config, epoch)
-	if err != nil {
-		return entity.ValidatorSet{}, errors.Errorf("failed to check if validator committed at epoch %d: %w", epoch, err)
-	}
-
 	valset := entity.ValidatorSet{
 		Version:          valsetVersion,
 		RequiredKeyTag:   config.RequiredHeaderKeyTag,
@@ -129,58 +124,68 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 		Validators:       validators,
 	}
 
+	valset.Status, valset.PreviousHeaderHash, err = v.getStatusAndPreviousHash(ctx, epoch, config, valset)
+	if err != nil {
+		return entity.ValidatorSet{}, err
+	}
+
+	return valset, nil
+}
+
+func (v *Deriver) getStatusAndPreviousHash(ctx context.Context, epoch uint64, config entity.NetworkConfig, valset entity.ValidatorSet) (entity.ValidatorSetStatus, common.Hash, error) {
+	committedAddr, isValsetCommitted, err := v.isValsetHeaderCommitted(ctx, config, epoch)
+	if err != nil {
+		return 0, common.Hash{}, errors.Errorf("failed to check if validator committed at epoch %d: %w", epoch, err)
+	}
+
 	if isValsetCommitted {
 		previousHeaderHash, err := v.ethClient.GetPreviousHeaderHashAt(ctx, committedAddr, epoch)
 		if err != nil {
-			return entity.ValidatorSet{}, errors.Errorf("failed to get previous header hash: %w", err)
+			return 0, common.Hash{}, errors.Errorf("failed to get previous header hash: %w", err)
 		}
-		valset.PreviousHeaderHash = previousHeaderHash
-
 		// valset integrity check
 		committedHash, err := v.ethClient.GetHeaderHashAt(ctx, committedAddr, epoch)
 		if err != nil {
-			return entity.ValidatorSet{}, errors.Errorf("failed to get header hash: %w", err)
+			return 0, common.Hash{}, errors.Errorf("failed to get header hash: %w", err)
 		}
 		valsetHeader, err := valset.GetHeader()
 		if err != nil {
-			return entity.ValidatorSet{}, errors.Errorf("failed to get header hash: %w", err)
+			return 0, common.Hash{}, errors.Errorf("failed to get header hash: %w", err)
 		}
 		calculatedHash, err := valsetHeader.Hash()
 		if err != nil {
-			return entity.ValidatorSet{}, errors.Errorf("failed to get header hash: %w", err)
+			return 0, common.Hash{}, errors.Errorf("failed to get header hash: %w", err)
 		}
 
 		if !bytes.Equal(committedHash[:], calculatedHash[:]) {
 			slog.DebugContext(ctx, "Validator set integrity check failed", "committed hash", committedHash, "calculated hash", calculatedHash)
-			return entity.ValidatorSet{}, errors.Errorf("validator set hash mistmach at epoch %d", epoch)
+			return 0, common.Hash{}, errors.Errorf("validator set hash mistmach at epoch %d", epoch)
 		}
 		slog.DebugContext(ctx, "Validator set integrity check passed", "hash", committedHash)
 
-		valset.Status = entity.HeaderCommitted
-	} else {
-		valset.PreviousHeaderHash = emptyValsetHeaderHash
-		lastCommittedAddr, latestCommittedEpoch, err := v.GetLastCommittedHeaderEpoch(ctx, config)
-		if err != nil {
-			return entity.ValidatorSet{}, errors.Errorf("failed to get current valset epoch: %w", err)
-		}
-
-		if epoch < latestCommittedEpoch {
-			slog.DebugContext(ctx, "Header is not committed [missed header]", "epoch", epoch)
-			valset.Status = entity.HeaderMissed
-			// zero PreviousHeaderHash cos header is orphaned
-		} else {
-			slog.DebugContext(ctx, "Header is not committed [new header]", "epoch", epoch)
-			previousHeaderHash, err := v.ethClient.GetHeaderHash(ctx, lastCommittedAddr)
-			if err != nil {
-				return entity.ValidatorSet{}, errors.Errorf("failed to get latest header hash: %w", err)
-			}
-			// trying to link to latest committed header
-			valset.PreviousHeaderHash = previousHeaderHash
-			valset.Status = entity.HeaderPending
-		}
+		return entity.HeaderCommitted, previousHeaderHash, nil
 	}
 
-	return valset, nil
+	// valset not committed
+
+	lastCommittedAddr, latestCommittedEpoch, err := v.GetLastCommittedHeaderEpoch(ctx, config)
+	if err != nil {
+		return 0, common.Hash{}, errors.Errorf("failed to get current valset epoch: %w", err)
+	}
+
+	if epoch < latestCommittedEpoch {
+		slog.DebugContext(ctx, "Header is not committed [missed header]", "epoch", epoch)
+		// zero PreviousHeaderHash cos header is orphaned
+		return entity.HeaderMissed, emptyValsetHeaderHash, nil
+	}
+
+	slog.DebugContext(ctx, "Header is not committed [new header]", "epoch", epoch)
+	previousHeaderHash, err := v.ethClient.GetHeaderHash(ctx, lastCommittedAddr)
+	if err != nil {
+		return 0, common.Hash{}, errors.Errorf("failed to get latest header hash: %w", err)
+	}
+	// trying to link to latest committed header
+	return entity.HeaderPending, previousHeaderHash, nil
 }
 
 func (v *Deriver) isValsetHeaderCommitted(ctx context.Context, config entity.NetworkConfig, epoch uint64) (entity.CrossChainAddress, bool, error) {
@@ -219,7 +224,7 @@ func (v *Deriver) formValidators(
 	config entity.NetworkConfig,
 	votingPowers []dtoOperatorVotingPower,
 	keys []entity.OperatorWithKeys,
-) ([]entity.Validator, *big.Int) {
+) ([]entity.Validator, entity.VotingPower) {
 	// Create validators map to consolidate voting powers and keys
 	validatorsMap := make(map[string]*entity.Validator)
 
@@ -254,7 +259,7 @@ func (v *Deriver) formValidators(
 
 			// Sort vaults by address in ascending order
 			sort.Slice(validatorsMap[operatorAddr].Vaults, func(i, j int) bool {
-				// Compare voting powers (lower first)
+				// Compare vault addresses (lower first)
 				return validatorsMap[operatorAddr].Vaults[i].Vault.Cmp(validatorsMap[operatorAddr].Vaults[j].Vault) < 0
 			})
 		}
@@ -317,13 +322,18 @@ func (v *Deriver) formValidators(
 
 	// Sort validators by address in ascending order
 	sort.Slice(validators, func(i, j int) bool {
-		// Compare voting powers (lower first)
+		// Compare addresses (lower first)
 		return validators[i].Operator.Cmp(validators[j].Operator) < 0
 	})
-	return validators, totalActiveVotingPower
+	return validators, entity.ToVotingPower(totalActiveVotingPower)
 }
 
-func (v *Deriver) calcQuorumThreshold(config entity.NetworkConfig, totalVP *big.Int) (entity.VotingPower, error) {
+func maxThreshold() *big.Int {
+	// 10^18 is the maximum threshold value
+	return new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
+}
+
+func (v *Deriver) calcQuorumThreshold(config entity.NetworkConfig, totalVP entity.VotingPower) (entity.VotingPower, error) {
 	quorumThresholdPercent := big.NewInt(0)
 	for _, quorumThreshold := range config.QuorumThresholds {
 		if quorumThreshold.KeyTag == config.RequiredHeaderKeyTag {
@@ -333,10 +343,9 @@ func (v *Deriver) calcQuorumThreshold(config entity.NetworkConfig, totalVP *big.
 	if quorumThresholdPercent.Cmp(big.NewInt(0)) == 0 {
 		return entity.VotingPower{}, errors.Errorf("quorum threshold is zero")
 	}
-	maxThreshold := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
 
-	mul := new(big.Int).Mul(totalVP, quorumThresholdPercent)
-	div := new(big.Int).Div(mul, maxThreshold)
+	mul := new(big.Int).Mul(totalVP.Int, quorumThresholdPercent)
+	div := new(big.Int).Div(mul, maxThreshold())
 	// add 1 to apply up rounding
 	return entity.ToVotingPower(new(big.Int).Add(div, big.NewInt(1))), nil
 }

@@ -13,6 +13,7 @@ import (
 	context "context"
 	entity "middleware-offchain/core/entity"
 	reflect "reflect"
+	time "time"
 
 	common "github.com/ethereum/go-ethereum/common"
 	gomock "go.uber.org/mock/gomock"
@@ -178,42 +179,50 @@ func (mr *MockaggregatorMockRecorder) Aggregate(valset, keyTag, verificationType
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Aggregate", reflect.TypeOf((*Mockaggregator)(nil).Aggregate), valset, keyTag, verificationType, messageHash, signatures)
 }
 
-// Mockverifier is a mock of verifier interface.
-type Mockverifier struct {
+// Mockmetrics is a mock of metrics interface.
+type Mockmetrics struct {
 	ctrl     *gomock.Controller
-	recorder *MockverifierMockRecorder
+	recorder *MockmetricsMockRecorder
 	isgomock struct{}
 }
 
-// MockverifierMockRecorder is the mock recorder for Mockverifier.
-type MockverifierMockRecorder struct {
-	mock *Mockverifier
+// MockmetricsMockRecorder is the mock recorder for Mockmetrics.
+type MockmetricsMockRecorder struct {
+	mock *Mockmetrics
 }
 
-// NewMockverifier creates a new mock instance.
-func NewMockverifier(ctrl *gomock.Controller) *Mockverifier {
-	mock := &Mockverifier{ctrl: ctrl}
-	mock.recorder = &MockverifierMockRecorder{mock}
+// NewMockmetrics creates a new mock instance.
+func NewMockmetrics(ctrl *gomock.Controller) *Mockmetrics {
+	mock := &Mockmetrics{ctrl: ctrl}
+	mock.recorder = &MockmetricsMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *Mockverifier) EXPECT() *MockverifierMockRecorder {
+func (m *Mockmetrics) EXPECT() *MockmetricsMockRecorder {
 	return m.recorder
 }
 
-// Verify mocks base method.
-func (m *Mockverifier) Verify(keyTag entity.KeyTag, signature entity.SignatureExtended) ([]byte, bool, error) {
+// ObserveAppAggregateDuration mocks base method.
+func (m *Mockmetrics) ObserveAppAggregateDuration(d time.Duration) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Verify", keyTag, signature)
-	ret0, _ := ret[0].([]byte)
-	ret1, _ := ret[1].(bool)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
+	m.ctrl.Call(m, "ObserveAppAggregateDuration", d)
 }
 
-// Verify indicates an expected call of Verify.
-func (mr *MockverifierMockRecorder) Verify(keyTag, signature any) *gomock.Call {
+// ObserveAppAggregateDuration indicates an expected call of ObserveAppAggregateDuration.
+func (mr *MockmetricsMockRecorder) ObserveAppAggregateDuration(d any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Verify", reflect.TypeOf((*Mockverifier)(nil).Verify), keyTag, signature)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ObserveAppAggregateDuration", reflect.TypeOf((*Mockmetrics)(nil).ObserveAppAggregateDuration), d)
+}
+
+// ObserveOnlyAggregateDuration mocks base method.
+func (m *Mockmetrics) ObserveOnlyAggregateDuration(d time.Duration) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "ObserveOnlyAggregateDuration", d)
+}
+
+// ObserveOnlyAggregateDuration indicates an expected call of ObserveOnlyAggregateDuration.
+func (mr *MockmetricsMockRecorder) ObserveOnlyAggregateDuration(d any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ObserveOnlyAggregateDuration", reflect.TypeOf((*Mockmetrics)(nil).ObserveOnlyAggregateDuration), d)
 }
