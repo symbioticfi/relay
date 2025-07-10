@@ -4,15 +4,14 @@ import (
 	"context"
 	"log/slog"
 	"math/big"
-	"time"
-
 	keyprovider "middleware-offchain/core/usecase/key-provider"
 	"middleware-offchain/internal/usecase/metrics"
+	entity2 "middleware-offchain/internal/entity"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p"
-	"github.com/samber/lo"
 	"golang.org/x/sync/errgroup"
 
 	"middleware-offchain/core/client/evm"
@@ -43,16 +42,16 @@ func runApp(ctx context.Context) error {
 
 	mtr := metrics.New(metrics.Config{})
 
+	chains, err := entity2.NewChainsRpcURl(cfg.ChainsId, cfg.ChainsUrl)
+	if err != nil {
+		return errors.Errorf("failed to init chains rpc url: %v", err)
+	}
+
 	evmClient, err := evm.NewEVMClient(ctx, evm.Config{
-		Chains: lo.Map(cfg.Chains, func(chainCfg chainURL, _ int) entity.ChainURL {
-			return entity.ChainURL{
-				ChainID: chainCfg.ChainID,
-				RPCURL:  chainCfg.RPCURL,
-			}
-		}),
+		Chains: chains,
 		DriverAddress: entity.CrossChainAddress{
-			ChainId: cfg.DriverAddress.ChainID,
-			Address: common.HexToAddress(cfg.DriverAddress.Address),
+			ChainId: cfg.Driver.ChainID,
+			Address: common.HexToAddress(cfg.Driver.Address),
 		},
 		RequestTimeout: time.Second * 5,
 		PrivateKey:     b.FillBytes(make([]byte, 32)),

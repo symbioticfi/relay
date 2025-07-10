@@ -1,8 +1,7 @@
 package keys
 
 import (
-	"log/slog"
-
+	"fmt"
 	"middleware-offchain/core/entity"
 	"middleware-offchain/core/usecase/crypto"
 	keyprovider "middleware-offchain/core/usecase/key-provider"
@@ -12,76 +11,47 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type config struct {
-	path       string
-	password   string
-	keyTag     uint8
-	privateKey string
-	generate   bool
-	force      bool
-}
-
-var cfg config
-
-func NewKeysCmd() (*cobra.Command, error) {
-	keysCmd.PersistentFlags().StringVarP(&cfg.path, "path", "p", "./keystore.jks", "path to keystore")
-	keysCmd.PersistentFlags().StringVar(&cfg.password, "password", "", "keystore password")
-
-	addKeyCmd.PersistentFlags().Uint8Var(&cfg.keyTag, "key-tag", 0, "key tag")
-	addKeyCmd.PersistentFlags().StringVar(&cfg.privateKey, "private-key", "", "private key")
-	addKeyCmd.PersistentFlags().BoolVar(&cfg.generate, "generate", false, "generate key")
-	addKeyCmd.PersistentFlags().BoolVar(&cfg.force, "force", false, "force overwrite key")
-	if err := addKeyCmd.MarkPersistentFlagRequired("key-tag"); err != nil {
-		return nil, errors.Errorf("failed to mark key-tag as required: %w", err)
-	}
-
-	removeKeyCmd.PersistentFlags().Uint8Var(&cfg.keyTag, "key-tag", 0, "key tag")
-	if err := removeKeyCmd.MarkPersistentFlagRequired("key-tag"); err != nil {
-		return nil, errors.Errorf("failed to mark key-tag as required: %w", err)
-	}
-
-	updateKeyCmd.PersistentFlags().Uint8Var(&cfg.keyTag, "key-tag", 0, "key tag")
-	updateKeyCmd.PersistentFlags().StringVar(&cfg.privateKey, "private-key", "", "private key")
-	if err := updateKeyCmd.MarkPersistentFlagRequired("key-tag"); err != nil {
-		return nil, errors.Errorf("failed to mark key-tag as required: %w", err)
-	}
-	if err := updateKeyCmd.MarkPersistentFlagRequired("private-key"); err != nil {
-		return nil, errors.Errorf("failed to mark private-key as required: %w", err)
-	}
-
+func NewKeysCmd() *cobra.Command {
 	keysCmd.AddCommand(printKeysCmd)
 	keysCmd.AddCommand(addKeyCmd)
 	keysCmd.AddCommand(removeKeyCmd)
 	keysCmd.AddCommand(updateKeyCmd)
 
-	return keysCmd, nil
+	addFlags()
+
+	return keysCmd
 }
 
 var keysCmd = &cobra.Command{
-	Use:   "keys",
-	Short: "Keys tool",
+	Use:               "keys",
+	Short:             "Keys tool",
+	PersistentPreRunE: initConfig,
 }
 
 var printKeysCmd = &cobra.Command{
 	Use:   "list",
 	Short: "Print all keys",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
+		cfg := cfgFromCtx(cmd.Context())
 		var err error
 
-		if cfg.password == "" {
-			cfg.password, err = utils_app.GetPassword()
+		if cfg.Password == "" {
+			cfg.Password, err = utils_app.GetPassword()
 			if err != nil {
 				return err
 			}
 		}
 
-		keyStore, err := keyprovider.NewKeystoreProvider(cfg.path, cfg.password)
+		keyStore, err := keyprovider.NewKeystoreProvider(cfg.Path, cfg.Password)
 		if err != nil {
 			return err
 		}
 
 		aliases := keyStore.GetAliases()
+
+		fmt.Printf("\nKeys (%d):\n", len(aliases)) // assuming 'keys' is your collection
+		fmt.Printf("   # | Alias                | Public Key\n")
+
 		for i, alias := range aliases {
 			keyTag, err := keyprovider.AliasToTag(alias)
 			if err != nil {
@@ -93,7 +63,12 @@ var printKeysCmd = &cobra.Command{
 				return err
 			}
 
-			slog.InfoContext(ctx, "Key", "idx", i, "alias", alias, "public_key", pk.PublicKey())
+			prettyPk, err := pk.PublicKey().OnChain().MarshalText()
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf("   %d | %-20s | %s\n", i+1, alias, prettyPk)
 		}
 
 		return nil
@@ -104,39 +79,45 @@ var addKeyCmd = &cobra.Command{
 	Use:   "add",
 	Short: "Add key",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if cfg.privateKey == "" && !cfg.generate {
+		cfg := cfgFromCtx(cmd.Context())
+
+		if cfg.KeyTag == uint8(entity.KeyTypeInvalid) {
+			return errors.New("Key tag omitted")
+		}
+
+		if cfg.PrivateKey == "" && !cfg.Generate {
 			return errors.New("Add --generate if private key omitted")
 		}
 		var err error
 
-		kt := entity.KeyTag(cfg.keyTag)
-		if cfg.generate {
+		kt := entity.KeyTag(cfg.KeyTag)
+		if cfg.Generate {
 			pk, err := crypto.GeneratePrivateKey(kt)
 			if err != nil {
 				return err
 			}
 
-			cfg.privateKey = string(pk.Bytes())
+			cfg.PrivateKey = string(pk.Bytes())
 		}
 
-		if cfg.password == "" {
-			cfg.password, err = utils_app.GetPassword()
+		if cfg.Password == "" {
+			cfg.Password, err = utils_app.GetPassword()
 			if err != nil {
 				return err
 			}
 		}
 
-		keyStore, err := keyprovider.NewKeystoreProvider(cfg.path, cfg.password)
+		keyStore, err := keyprovider.NewKeystoreProvider(cfg.Path, cfg.Password)
 		if err != nil {
 			return err
 		}
 
-		key, err := crypto.NewPrivateKey(kt, []byte(cfg.privateKey))
+		key, err := crypto.NewPrivateKey(kt, []byte(cfg.PrivateKey))
 		if err != nil {
 			return err
 		}
 
-		if err = keyStore.AddKey(kt, key, cfg.password, cfg.force); err != nil {
+		if err = keyStore.AddKey(kt, key, cfg.Password, cfg.Force); err != nil {
 			return err
 		}
 
@@ -148,21 +129,26 @@ var removeKeyCmd = &cobra.Command{
 	Use:   "remove",
 	Short: "Remove key",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg := cfgFromCtx(cmd.Context())
 		var err error
 
-		if cfg.password == "" {
-			cfg.password, err = utils_app.GetPassword()
+		if cfg.KeyTag == uint8(entity.KeyTypeInvalid) {
+			return errors.New("Key tag omitted")
+		}
+
+		if cfg.Password == "" {
+			cfg.Password, err = utils_app.GetPassword()
 			if err != nil {
 				return err
 			}
 		}
 
-		keyStore, err := keyprovider.NewKeystoreProvider(cfg.path, cfg.password)
+		keyStore, err := keyprovider.NewKeystoreProvider(cfg.Path, cfg.Password)
 		if err != nil {
 			return err
 		}
 
-		if err = keyStore.DeleteKey(entity.KeyTag(cfg.keyTag), cfg.password); err != nil {
+		if err = keyStore.DeleteKey(entity.KeyTag(cfg.KeyTag), cfg.Password); err != nil {
 			return err
 		}
 
@@ -174,21 +160,30 @@ var updateKeyCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update key",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg := cfgFromCtx(cmd.Context())
 		var err error
 
-		if cfg.password == "" {
-			cfg.password, err = utils_app.GetPassword()
+		if cfg.KeyTag == uint8(entity.KeyTypeInvalid) {
+			return errors.New("Key tag omitted")
+		}
+
+		if cfg.PrivateKey == "" {
+			return errors.New("Private key omitted")
+		}
+
+		if cfg.Password == "" {
+			cfg.Password, err = utils_app.GetPassword()
 			if err != nil {
 				return err
 			}
 		}
 
-		keyStore, err := keyprovider.NewKeystoreProvider(cfg.path, cfg.password)
+		keyStore, err := keyprovider.NewKeystoreProvider(cfg.Path, cfg.Password)
 		if err != nil {
 			return err
 		}
 
-		kt := entity.KeyTag(cfg.keyTag)
+		kt := entity.KeyTag(cfg.KeyTag)
 		exists, err := keyStore.HasKey(kt)
 		if err != nil {
 			return err
@@ -198,12 +193,12 @@ var updateKeyCmd = &cobra.Command{
 			return errors.New("Key doesn't exist")
 		}
 
-		key, err := crypto.NewPrivateKey(kt, []byte(cfg.privateKey))
+		key, err := crypto.NewPrivateKey(kt, []byte(cfg.PrivateKey))
 		if err != nil {
 			return err
 		}
 
-		if err = keyStore.AddKey(kt, key, cfg.password, true); err != nil {
+		if err = keyStore.AddKey(kt, key, cfg.Password, true); err != nil {
 			return err
 		}
 
