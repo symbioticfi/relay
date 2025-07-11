@@ -179,12 +179,13 @@ func (v *Deriver) getStatusAndPreviousHash(ctx context.Context, epoch uint64, co
 		return entity.HeaderMissed, emptyValsetHeaderHash, nil
 	}
 
+	// trying to link to latest committed header
 	slog.DebugContext(ctx, "Header is not committed [new header]", "epoch", epoch)
 	previousHeaderHash, err := v.ethClient.GetHeaderHash(ctx, lastCommittedAddr)
 	if err != nil {
 		return 0, common.Hash{}, errors.Errorf("failed to get latest header hash: %w", err)
 	}
-	// trying to link to latest committed header
+
 	return entity.HeaderPending, previousHeaderHash, nil
 }
 
@@ -225,6 +226,54 @@ func (v *Deriver) formValidators(
 	votingPowers []dtoOperatorVotingPower,
 	keys []entity.OperatorWithKeys,
 ) ([]entity.Validator, entity.VotingPower) {
+	validators := v.fillValidators(votingPowers, keys)
+
+	totalActiveVotingPower := v.fillValidatorsActive(config, validators)
+
+	validators.SortByOperatorAddressAsc()
+
+	return validators, entity.ToVotingPower(totalActiveVotingPower)
+}
+
+func (v *Deriver) fillValidatorsActive(config entity.NetworkConfig, validators entity.Validators) *big.Int {
+	validators.SortByVotingPowerDesc()
+
+	totalActive := 0
+	totalActiveVotingPower := big.NewInt(0)
+
+	for i := range validators {
+		// Check minimum voting power if configured
+		if validators[i].VotingPower.Cmp(config.MinInclusionVotingPower.Int) < 0 {
+			break
+		}
+
+		// Check if validator has at least one key
+		if len(validators[i].Keys) == 0 {
+			continue
+		}
+
+		totalActive++
+		validators[i].IsActive = true
+
+		if config.MaxVotingPower.Int64() != 0 {
+			if validators[i].VotingPower.Cmp(config.MaxVotingPower.Int) > 0 {
+				validators[i].VotingPower = entity.ToVotingPower(new(big.Int).Set(config.MaxVotingPower.Int))
+			}
+		}
+		// Add to total active voting power if validator is active
+		totalActiveVotingPower = new(big.Int).Add(totalActiveVotingPower, validators[i].VotingPower.Int)
+
+		if config.MaxValidatorsCount.Int64() != 0 {
+			if totalActive >= int(config.MaxValidatorsCount.Int64()) {
+				break
+			}
+		}
+	}
+
+	return totalActiveVotingPower
+}
+
+func (v *Deriver) fillValidators(votingPowers []dtoOperatorVotingPower, keys []entity.OperatorWithKeys) entity.Validators {
 	// Create validators map to consolidate voting powers and keys
 	validatorsMap := make(map[string]*entity.Validator)
 
@@ -279,53 +328,11 @@ func (v *Deriver) formValidators(
 		}
 	}
 
-	validators := lo.Map(lo.Values(validatorsMap), func(item *entity.Validator, _ int) entity.Validator {
+	validators := entity.Validators(lo.Map(lo.Values(validatorsMap), func(item *entity.Validator, _ int) entity.Validator {
 		return *item
-	})
-	// Sort validators by voting power in descending order
-	sort.Slice(validators, func(i, j int) bool {
-		// Compare voting powers (higher first)
-		return validators[i].VotingPower.Cmp(validators[j].VotingPower.Int) > 0
-	})
+	}))
 
-	totalActive := 0
-
-	totalActiveVotingPower := big.NewInt(0)
-	for i := range validators {
-		// Check minimum voting power if configured
-		if validators[i].VotingPower.Cmp(config.MinInclusionVotingPower.Int) < 0 {
-			break
-		}
-
-		// Check if validator has at least one key
-		if len(validators[i].Keys) == 0 {
-			continue
-		}
-
-		totalActive++
-		validators[i].IsActive = true
-
-		if config.MaxVotingPower.Int64() != 0 {
-			if validators[i].VotingPower.Cmp(config.MaxVotingPower.Int) > 0 {
-				validators[i].VotingPower = entity.ToVotingPower(new(big.Int).Set(config.MaxVotingPower.Int))
-			}
-		}
-		// Add to total active voting power if validator is active
-		totalActiveVotingPower = new(big.Int).Add(totalActiveVotingPower, validators[i].VotingPower.Int)
-
-		if config.MaxValidatorsCount.Int64() != 0 {
-			if totalActive >= int(config.MaxValidatorsCount.Int64()) {
-				break
-			}
-		}
-	}
-
-	// Sort validators by address in ascending order
-	sort.Slice(validators, func(i, j int) bool {
-		// Compare addresses (lower first)
-		return validators[i].Operator.Cmp(validators[j].Operator) < 0
-	})
-	return validators, entity.ToVotingPower(totalActiveVotingPower)
+	return validators
 }
 
 func maxThreshold() *big.Int {

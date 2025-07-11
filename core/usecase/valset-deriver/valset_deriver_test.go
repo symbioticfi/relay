@@ -89,6 +89,347 @@ func TestDeriver_calcQuorumThreshold(t *testing.T) {
 	}
 }
 
+func TestDeriver_fillValidators(t *testing.T) {
+	tests := []struct {
+		name         string
+		votingPowers []dtoOperatorVotingPower
+		keys         []entity.OperatorWithKeys
+		expected     entity.Validators
+	}{
+		{
+			name: "single operator with voting power and keys",
+			votingPowers: []dtoOperatorVotingPower{
+				{
+					chainId: 1,
+					votingPowers: []entity.OperatorVotingPower{
+						{
+							Operator: common.HexToAddress("0x123"),
+							Vaults: []entity.VaultVotingPower{
+								{
+									Vault:       common.HexToAddress("0x456"),
+									VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+								},
+							},
+						},
+					},
+				},
+			},
+			keys: []entity.OperatorWithKeys{
+				{
+					Operator: common.HexToAddress("0x123"),
+					Keys: []entity.ValidatorKey{
+						{
+							Tag:     entity.KeyTag(15),
+							Payload: entity.CompactPublicKey("key1"),
+						},
+					},
+				},
+			},
+			expected: entity.Validators{
+				{
+					Operator:    common.HexToAddress("0x123"),
+					VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+					IsActive:    false,
+					Keys: []entity.ValidatorKey{
+						{
+							Tag:     entity.KeyTag(15),
+							Payload: entity.CompactPublicKey("key1"),
+						},
+					},
+					Vaults: []entity.ValidatorVault{
+						{
+							Vault:       common.HexToAddress("0x456"),
+							VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+							ChainID:     1,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "operator with multiple vaults and voting powers aggregated",
+			votingPowers: []dtoOperatorVotingPower{
+				{
+					chainId: 1,
+					votingPowers: []entity.OperatorVotingPower{
+						{
+							Operator: common.HexToAddress("0x123"),
+							Vaults: []entity.VaultVotingPower{
+								{
+									Vault:       common.HexToAddress("0x456"),
+									VotingPower: entity.ToVotingPower(big.NewInt(500)),
+								},
+								{
+									Vault:       common.HexToAddress("0x789"),
+									VotingPower: entity.ToVotingPower(big.NewInt(300)),
+								},
+							},
+						},
+					},
+				},
+			},
+			keys: []entity.OperatorWithKeys{
+				{
+					Operator: common.HexToAddress("0x123"),
+					Keys: []entity.ValidatorKey{
+						{
+							Tag:     entity.KeyTag(15),
+							Payload: entity.CompactPublicKey("key1"),
+						},
+					},
+				},
+			},
+			expected: entity.Validators{
+				{
+					Operator:    common.HexToAddress("0x123"),
+					VotingPower: entity.ToVotingPower(big.NewInt(800)),
+					IsActive:    false,
+					Keys: []entity.ValidatorKey{
+						{
+							Tag:     entity.KeyTag(15),
+							Payload: entity.CompactPublicKey("key1"),
+						},
+					},
+					Vaults: []entity.ValidatorVault{
+						{
+							Vault:       common.HexToAddress("0x456"),
+							VotingPower: entity.ToVotingPower(big.NewInt(500)),
+							ChainID:     1,
+						},
+						{
+							Vault:       common.HexToAddress("0x789"),
+							VotingPower: entity.ToVotingPower(big.NewInt(300)),
+							ChainID:     1,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple operators",
+			votingPowers: []dtoOperatorVotingPower{
+				{
+					chainId: 1,
+					votingPowers: []entity.OperatorVotingPower{
+						{
+							Operator: common.HexToAddress("0x123"),
+							Vaults: []entity.VaultVotingPower{
+								{
+									Vault:       common.HexToAddress("0x456"),
+									VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+								},
+							},
+						},
+						{
+							Operator: common.HexToAddress("0xabc"),
+							Vaults: []entity.VaultVotingPower{
+								{
+									Vault:       common.HexToAddress("0xdef"),
+									VotingPower: entity.ToVotingPower(big.NewInt(2000)),
+								},
+							},
+						},
+					},
+				},
+			},
+			keys: []entity.OperatorWithKeys{
+				{
+					Operator: common.HexToAddress("0x123"),
+					Keys: []entity.ValidatorKey{
+						{
+							Tag:     entity.KeyTag(15),
+							Payload: entity.CompactPublicKey("key1"),
+						},
+					},
+				},
+				{
+					Operator: common.HexToAddress("0xabc"),
+					Keys: []entity.ValidatorKey{
+						{
+							Tag:     entity.KeyTag(16),
+							Payload: entity.CompactPublicKey("key2"),
+						},
+					},
+				},
+			},
+			expected: entity.Validators{
+				{
+					Operator:    common.HexToAddress("0x123"),
+					VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+					IsActive:    false,
+					Keys: []entity.ValidatorKey{
+						{
+							Tag:     entity.KeyTag(15),
+							Payload: entity.CompactPublicKey("key1"),
+						},
+					},
+					Vaults: []entity.ValidatorVault{
+						{
+							Vault:       common.HexToAddress("0x456"),
+							VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+							ChainID:     1,
+						},
+					},
+				},
+				{
+					Operator:    common.HexToAddress("0xabc"),
+					VotingPower: entity.ToVotingPower(big.NewInt(2000)),
+					IsActive:    false,
+					Keys: []entity.ValidatorKey{
+						{
+							Tag:     entity.KeyTag(16),
+							Payload: entity.CompactPublicKey("key2"),
+						},
+					},
+					Vaults: []entity.ValidatorVault{
+						{
+							Vault:       common.HexToAddress("0xdef"),
+							VotingPower: entity.ToVotingPower(big.NewInt(2000)),
+							ChainID:     1,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "operator with voting power but no keys",
+			votingPowers: []dtoOperatorVotingPower{
+				{
+					chainId: 1,
+					votingPowers: []entity.OperatorVotingPower{
+						{
+							Operator: common.HexToAddress("0x123"),
+							Vaults: []entity.VaultVotingPower{
+								{
+									Vault:       common.HexToAddress("0x456"),
+									VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+								},
+							},
+						},
+					},
+				},
+			},
+			keys: []entity.OperatorWithKeys{},
+			expected: entity.Validators{
+				{
+					Operator:    common.HexToAddress("0x123"),
+					VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+					IsActive:    false,
+					Keys:        []entity.ValidatorKey{},
+					Vaults: []entity.ValidatorVault{
+						{
+							Vault:       common.HexToAddress("0x456"),
+							VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+							ChainID:     1,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "operator with multiple chains voting powers",
+			votingPowers: []dtoOperatorVotingPower{
+				{
+					chainId: 1,
+					votingPowers: []entity.OperatorVotingPower{
+						{
+							Operator: common.HexToAddress("0x123"),
+							Vaults: []entity.VaultVotingPower{
+								{
+									Vault:       common.HexToAddress("0x456"),
+									VotingPower: entity.ToVotingPower(big.NewInt(500)),
+								},
+							},
+						},
+					},
+				},
+				{
+					chainId: 137,
+					votingPowers: []entity.OperatorVotingPower{
+						{
+							Operator: common.HexToAddress("0x123"),
+							Vaults: []entity.VaultVotingPower{
+								{
+									Vault:       common.HexToAddress("0x789"),
+									VotingPower: entity.ToVotingPower(big.NewInt(300)),
+								},
+							},
+						},
+					},
+				},
+			},
+			keys: []entity.OperatorWithKeys{
+				{
+					Operator: common.HexToAddress("0x123"),
+					Keys: []entity.ValidatorKey{
+						{
+							Tag:     entity.KeyTag(15),
+							Payload: entity.CompactPublicKey("key1"),
+						},
+					},
+				},
+			},
+			expected: entity.Validators{
+				{
+					Operator:    common.HexToAddress("0x123"),
+					VotingPower: entity.ToVotingPower(big.NewInt(800)),
+					IsActive:    false,
+					Keys: []entity.ValidatorKey{
+						{
+							Tag:     entity.KeyTag(15),
+							Payload: entity.CompactPublicKey("key1"),
+						},
+					},
+					Vaults: []entity.ValidatorVault{
+						{
+							Vault:       common.HexToAddress("0x456"),
+							VotingPower: entity.ToVotingPower(big.NewInt(500)),
+							ChainID:     1,
+						},
+						{
+							Vault:       common.HexToAddress("0x789"),
+							VotingPower: entity.ToVotingPower(big.NewInt(300)),
+							ChainID:     137,
+						},
+					},
+				},
+			},
+		},
+		{
+			name:         "empty inputs",
+			votingPowers: []dtoOperatorVotingPower{},
+			keys:         []entity.OperatorWithKeys{},
+			expected:     entity.Validators{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d, err := NewDeriver(nil)
+			require.NoError(t, err)
+
+			result := d.fillValidators(tt.votingPowers, tt.keys)
+
+			require.Len(t, result, len(tt.expected))
+
+			for i := range tt.expected {
+				found := false
+				for j := range result {
+					if result[j].Operator == tt.expected[i].Operator {
+						require.Equal(t, tt.expected[i].VotingPower.Int, result[j].VotingPower.Int)
+						require.Equal(t, tt.expected[i].IsActive, result[j].IsActive)
+						require.ElementsMatch(t, tt.expected[i].Keys, result[j].Keys)
+						require.ElementsMatch(t, tt.expected[i].Vaults, result[j].Vaults)
+						found = true
+						break
+					}
+				}
+				require.True(t, found, "expected validator with operator %s not found", tt.expected[i].Operator.Hex())
+			}
+		})
+	}
+}
+
 func TestDeriver_GetNetworkData(t *testing.T) {
 	tests := []struct {
 		name       string
