@@ -253,7 +253,7 @@ type Validators []Validator
 
 func (va Validators) SortByVotingPowerDesc() {
 	slices.SortFunc(va, func(a, b Validator) int {
-		return -a.VotingPower.Int.Cmp(b.VotingPower.Int)
+		return -a.VotingPower.Cmp(b.VotingPower.Int)
 	})
 }
 
