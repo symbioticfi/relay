@@ -35,6 +35,7 @@ func main() {
 func run() error {
 	rootCmd.PersistentFlags().StringVar(&cfg.rpcURL, "rpc-url", "", "RPC URL")
 	rootCmd.PersistentFlags().StringVar(&cfg.driverAddress, "driver-address", "", "Driver contract address")
+	rootCmd.PersistentFlags().Uint64Var(&cfg.driverChainID, "driver-chainid", 1, "Driver contract chain id")
 	rootCmd.PersistentFlags().BoolVar(&cfg.commit, "commit", false, "Commit genesis flag (default: false)")
 	rootCmd.PersistentFlags().StringVar(&cfg.secretKey, "secret-key", "", "Secret key for genesis commit")
 	rootCmd.PersistentFlags().StringVarP(&cfg.outputFile, "output", "o", "", "Output file path (default: stdout)")
@@ -47,6 +48,9 @@ func run() error {
 	if err := rootCmd.MarkPersistentFlagRequired("driver-address"); err != nil {
 		return errors.Errorf("failed to mark driver-address as required: %w", err)
 	}
+	if err := rootCmd.MarkPersistentFlagRequired("driver-chainid"); err != nil {
+		return errors.Errorf("failed to mark driver-chainid as required: %w", err)
+	}
 
 	return rootCmd.Execute()
 }
@@ -54,6 +58,7 @@ func run() error {
 type config struct {
 	rpcURL        string
 	driverAddress string
+	driverChainID uint64
 	commit        bool
 	secretKey     string
 	outputFile    string
@@ -86,10 +91,10 @@ var rootCmd = &cobra.Command{
 			privateKey = b.FillBytes(make([]byte, 32))
 		}
 
-		driverAddress := entity.CrossChainAddress{ChainId: 111, Address: common.HexToAddress(cfg.driverAddress)}
+		driverAddress := entity.CrossChainAddress{ChainId: cfg.driverChainID, Address: common.HexToAddress(cfg.driverAddress)}
 		client, err := evm.NewEVMClient(ctx, evm.Config{
 			Chains: []entity.ChainURL{{
-				ChainID: 111,
+				ChainID: cfg.driverChainID,
 				RPCURL:  cfg.rpcURL,
 			}},
 			DriverAddress:  driverAddress,
@@ -162,7 +167,7 @@ var rootCmd = &cobra.Command{
 		errs := make([]error, len(networkConfig.Replicas))
 		for i, replica := range networkConfig.Replicas {
 			var txResult entity.TxResult
-			txResult, errs[i] = client.SetGenesis(ctx, driverAddress, header, extraData)
+			txResult, errs[i] = client.SetGenesis(ctx, replica, header, extraData)
 			if errs[i] != nil {
 				slog.ErrorContext(ctx, "failed to set genesis on replica", "replica", replica, "error", errs[i])
 			} else {

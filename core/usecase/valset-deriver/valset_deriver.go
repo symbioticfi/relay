@@ -194,7 +194,7 @@ func (v *Deriver) isValsetHeaderCommitted(ctx context.Context, config entity.Net
 }
 
 func (v *Deriver) getLastCommittedHeaderEpoch(ctx context.Context, config entity.NetworkConfig) (entity.CrossChainAddress, uint64, error) {
-	maxEpoch := uint64(0)
+	maxEpoch := int64(-1)
 	var maxEpochAddr entity.CrossChainAddress
 
 	for _, addr := range config.Replicas {
@@ -203,13 +203,13 @@ func (v *Deriver) getLastCommittedHeaderEpoch(ctx context.Context, config entity
 			return entity.CrossChainAddress{}, 0, errors.Errorf("failed to get last committed header epoch for address %s: %w", addr.Address.Hex(), err)
 		}
 
-		if epoch > maxEpoch {
-			maxEpoch = epoch
+		if int64(epoch) > maxEpoch {
+			maxEpoch = int64(epoch)
 			maxEpochAddr = addr
 		}
 	}
 
-	return maxEpochAddr, maxEpoch, nil
+	return maxEpochAddr, uint64(maxEpoch), nil
 }
 
 func (v *Deriver) formValidators(
