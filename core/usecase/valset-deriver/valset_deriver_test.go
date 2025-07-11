@@ -430,6 +430,301 @@ func TestDeriver_fillValidators(t *testing.T) {
 	}
 }
 
+func TestDeriver_fillValidatorsActive(t *testing.T) {
+	tests := []struct {
+		name                       string
+		config                     entity.NetworkConfig
+		validators                 entity.Validators
+		expectedTotalVotingPower   *big.Int
+		expectedActiveValidators   []common.Address    // operator addresses that should be active
+		expectedInactiveValidators []common.Address    // operator addresses that should be inactive
+		expectedVotingPowers       map[string]*big.Int // operator -> expected voting power after capping
+	}{
+		{
+			name: "basic activation with minimum voting power",
+			config: entity.NetworkConfig{
+				MinInclusionVotingPower: entity.ToVotingPower(big.NewInt(100)),
+				MaxVotingPower:          entity.ToVotingPower(big.NewInt(0)), // no max limit
+				MaxValidatorsCount:      entity.ToVotingPower(big.NewInt(0)), // no max count
+			},
+			validators: entity.Validators{
+				{
+					Operator:    common.HexToAddress("0x123"),
+					VotingPower: entity.ToVotingPower(big.NewInt(500)),
+					IsActive:    false,
+					Keys: []entity.ValidatorKey{
+						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key1")},
+					},
+				},
+				{
+					Operator:    common.HexToAddress("0x456"),
+					VotingPower: entity.ToVotingPower(big.NewInt(200)),
+					IsActive:    false,
+					Keys: []entity.ValidatorKey{
+						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key2")},
+					},
+				},
+				{
+					Operator:    common.HexToAddress("0x789"),
+					VotingPower: entity.ToVotingPower(big.NewInt(50)),
+					IsActive:    false,
+					Keys: []entity.ValidatorKey{
+						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key3")},
+					},
+				},
+			},
+			expectedTotalVotingPower:   big.NewInt(700), // 500 + 200
+			expectedActiveValidators:   []common.Address{common.HexToAddress("0x123"), common.HexToAddress("0x456")},
+			expectedInactiveValidators: []common.Address{common.HexToAddress("0x789")}, // below minimum
+			expectedVotingPowers: map[string]*big.Int{
+				"0x123": big.NewInt(500),
+				"0x456": big.NewInt(200),
+				"0x789": big.NewInt(50), // unchanged but inactive
+			},
+		},
+		{
+			name: "validator without keys should be inactive",
+			config: entity.NetworkConfig{
+				MinInclusionVotingPower: entity.ToVotingPower(big.NewInt(100)),
+				MaxVotingPower:          entity.ToVotingPower(big.NewInt(0)),
+				MaxValidatorsCount:      entity.ToVotingPower(big.NewInt(0)),
+			},
+			validators: entity.Validators{
+				{
+					Operator:    common.HexToAddress("0x123"),
+					VotingPower: entity.ToVotingPower(big.NewInt(500)),
+					IsActive:    false,
+					Keys: []entity.ValidatorKey{
+						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key1")},
+					},
+				},
+				{
+					Operator:    common.HexToAddress("0x456"),
+					VotingPower: entity.ToVotingPower(big.NewInt(300)),
+					IsActive:    false,
+					Keys:        []entity.ValidatorKey{}, // no keys
+				},
+			},
+			expectedTotalVotingPower:   big.NewInt(500),
+			expectedActiveValidators:   []common.Address{common.HexToAddress("0x123")},
+			expectedInactiveValidators: []common.Address{common.HexToAddress("0x456")}, // no keys
+			expectedVotingPowers: map[string]*big.Int{
+				"0x123": big.NewInt(500),
+				"0x456": big.NewInt(300),
+			},
+		},
+		{
+			name: "max voting power capping",
+			config: entity.NetworkConfig{
+				MinInclusionVotingPower: entity.ToVotingPower(big.NewInt(100)),
+				MaxVotingPower:          entity.ToVotingPower(big.NewInt(400)),
+				MaxValidatorsCount:      entity.ToVotingPower(big.NewInt(0)),
+			},
+			validators: entity.Validators{
+				{
+					Operator:    common.HexToAddress("0x123"),
+					VotingPower: entity.ToVotingPower(big.NewInt(600)),
+					IsActive:    false,
+					Keys: []entity.ValidatorKey{
+						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key1")},
+					},
+				},
+				{
+					Operator:    common.HexToAddress("0x456"),
+					VotingPower: entity.ToVotingPower(big.NewInt(200)),
+					IsActive:    false,
+					Keys: []entity.ValidatorKey{
+						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key2")},
+					},
+				},
+			},
+			expectedTotalVotingPower: big.NewInt(600), // 400 (capped) + 200
+			expectedActiveValidators: []common.Address{common.HexToAddress("0x123"), common.HexToAddress("0x456")},
+			expectedVotingPowers: map[string]*big.Int{
+				"0x123": big.NewInt(400), // capped from 600
+				"0x456": big.NewInt(200),
+			},
+		},
+		{
+			name: "max validators count limit",
+			config: entity.NetworkConfig{
+				MinInclusionVotingPower: entity.ToVotingPower(big.NewInt(100)),
+				MaxVotingPower:          entity.ToVotingPower(big.NewInt(0)),
+				MaxValidatorsCount:      entity.ToVotingPower(big.NewInt(2)),
+			},
+			validators: entity.Validators{
+				{
+					Operator:    common.HexToAddress("0x123"),
+					VotingPower: entity.ToVotingPower(big.NewInt(500)),
+					IsActive:    false,
+					Keys: []entity.ValidatorKey{
+						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key1")},
+					},
+				},
+				{
+					Operator:    common.HexToAddress("0x456"),
+					VotingPower: entity.ToVotingPower(big.NewInt(400)),
+					IsActive:    false,
+					Keys: []entity.ValidatorKey{
+						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key2")},
+					},
+				},
+				{
+					Operator:    common.HexToAddress("0x789"),
+					VotingPower: entity.ToVotingPower(big.NewInt(300)),
+					IsActive:    false,
+					Keys: []entity.ValidatorKey{
+						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key3")},
+					},
+				},
+			},
+			expectedTotalVotingPower:   big.NewInt(900), // 500 + 400 (only first 2 validators)
+			expectedActiveValidators:   []common.Address{common.HexToAddress("0x123"), common.HexToAddress("0x456")},
+			expectedInactiveValidators: []common.Address{common.HexToAddress("0x789")}, // exceeds max count
+			expectedVotingPowers: map[string]*big.Int{
+				"0x123": big.NewInt(500),
+				"0x456": big.NewInt(400),
+				"0x789": big.NewInt(300),
+			},
+		},
+		{
+			name: "combined constraints - min power, max power, max count",
+			config: entity.NetworkConfig{
+				MinInclusionVotingPower: entity.ToVotingPower(big.NewInt(150)),
+				MaxVotingPower:          entity.ToVotingPower(big.NewInt(350)),
+				MaxValidatorsCount:      entity.ToVotingPower(big.NewInt(2)),
+			},
+			validators: entity.Validators{
+				{
+					Operator:    common.HexToAddress("0x123"),
+					VotingPower: entity.ToVotingPower(big.NewInt(500)),
+					IsActive:    false,
+					Keys: []entity.ValidatorKey{
+						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key1")},
+					},
+				},
+				{
+					Operator:    common.HexToAddress("0x456"),
+					VotingPower: entity.ToVotingPower(big.NewInt(200)),
+					IsActive:    false,
+					Keys: []entity.ValidatorKey{
+						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key2")},
+					},
+				},
+				{
+					Operator:    common.HexToAddress("0x789"),
+					VotingPower: entity.ToVotingPower(big.NewInt(180)),
+					IsActive:    false,
+					Keys: []entity.ValidatorKey{
+						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key3")},
+					},
+				},
+				{
+					Operator:    common.HexToAddress("0xabc"),
+					VotingPower: entity.ToVotingPower(big.NewInt(100)),
+					IsActive:    false,
+					Keys: []entity.ValidatorKey{
+						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key4")},
+					},
+				},
+			},
+			expectedTotalVotingPower:   big.NewInt(550), // 350 (capped from 500) + 200
+			expectedActiveValidators:   []common.Address{common.HexToAddress("0x123"), common.HexToAddress("0x456")},
+			expectedInactiveValidators: []common.Address{common.HexToAddress("0x789"), common.HexToAddress("0xabc")}, // 0x789 exceeds max count, 0xabc below min power
+			expectedVotingPowers: map[string]*big.Int{
+				"0x123": big.NewInt(350), // capped from 500
+				"0x456": big.NewInt(200),
+				"0x789": big.NewInt(180),
+				"0xabc": big.NewInt(100),
+			},
+		},
+		{
+			name: "no validators meet criteria",
+			config: entity.NetworkConfig{
+				MinInclusionVotingPower: entity.ToVotingPower(big.NewInt(1000)),
+				MaxVotingPower:          entity.ToVotingPower(big.NewInt(0)),
+				MaxValidatorsCount:      entity.ToVotingPower(big.NewInt(0)),
+			},
+			validators: entity.Validators{
+				{
+					Operator:    common.HexToAddress("0x123"),
+					VotingPower: entity.ToVotingPower(big.NewInt(500)),
+					IsActive:    false,
+					Keys: []entity.ValidatorKey{
+						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key1")},
+					},
+				},
+			},
+			expectedTotalVotingPower:   big.NewInt(0),
+			expectedActiveValidators:   []common.Address{},
+			expectedInactiveValidators: []common.Address{common.HexToAddress("0x123")},
+			expectedVotingPowers: map[string]*big.Int{
+				"0x123": big.NewInt(500),
+			},
+		},
+		{
+			name: "empty validators list",
+			config: entity.NetworkConfig{
+				MinInclusionVotingPower: entity.ToVotingPower(big.NewInt(100)),
+				MaxVotingPower:          entity.ToVotingPower(big.NewInt(0)),
+				MaxValidatorsCount:      entity.ToVotingPower(big.NewInt(0)),
+			},
+			validators:                 entity.Validators{},
+			expectedTotalVotingPower:   big.NewInt(0),
+			expectedActiveValidators:   []common.Address{},
+			expectedInactiveValidators: []common.Address{},
+			expectedVotingPowers:       map[string]*big.Int{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d, err := NewDeriver(nil)
+			require.NoError(t, err)
+
+			// Make a copy of validators to avoid modifying the test data
+			validatorsCopy := make(entity.Validators, len(tt.validators))
+			for i, v := range tt.validators {
+				validatorsCopy[i] = entity.Validator{
+					Operator:    v.Operator,
+					VotingPower: entity.ToVotingPower(new(big.Int).Set(v.VotingPower.Int)),
+					IsActive:    v.IsActive,
+					Keys:        append([]entity.ValidatorKey{}, v.Keys...),
+					Vaults:      append([]entity.ValidatorVault{}, v.Vaults...),
+				}
+			}
+
+			result := d.fillValidatorsActive(tt.config, validatorsCopy)
+
+			// Check total voting power
+			require.Equal(t, tt.expectedTotalVotingPower, result, "total voting power mismatch")
+
+			// Check active validators
+			var activeValidators []common.Address
+			var inactiveValidators []common.Address
+			for _, validator := range validatorsCopy {
+				addr := validator.Operator.Hex()
+				if validator.IsActive {
+					activeValidators = append(activeValidators, validator.Operator)
+				} else {
+					inactiveValidators = append(inactiveValidators, validator.Operator)
+				}
+
+				// Check voting power (capping)
+				if expectedVP, exists := tt.expectedVotingPowers[addr]; exists {
+					require.Equal(t, expectedVP, validator.VotingPower.Int,
+						"voting power mismatch for validator %s", addr)
+				}
+			}
+
+			require.ElementsMatch(t, tt.expectedActiveValidators, activeValidators,
+				"active validators mismatch")
+			require.ElementsMatch(t, tt.expectedInactiveValidators, inactiveValidators,
+				"inactive validators mismatch")
+		})
+	}
+}
+
 func TestDeriver_GetNetworkData(t *testing.T) {
 	tests := []struct {
 		name       string
