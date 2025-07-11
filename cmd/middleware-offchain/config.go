@@ -31,7 +31,7 @@ type config struct {
 	IsCommitter      bool                        `mapstructure:"committer"`
 	StorageDir       string                      `mapstructure:"storage-dir"`
 	ChainsId         []uint64                    `mapstructure:"chains-id" validate:"required"`
-	ChainsUrl        []string                    `mapstructure:"chains-url" validate:"required"`
+	ChainsUrl        []string                    `mapstructure:"chains-rpc-url" validate:"required"`
 }
 
 func (c config) Validate() error {
@@ -61,7 +61,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("signer", true, "Is Signer Node")
 	rootCmd.PersistentFlags().Bool("committer", false, "Is Committer Node")
 	rootCmd.PersistentFlags().String("storage-dir", ".data", "Dir to store data")
-	rootCmd.PersistentFlags().UintSlice("chains-id", nil, "Chains ids")
+	rootCmd.PersistentFlags().StringSlice("chains-id", nil, "Chains ids")
 	rootCmd.PersistentFlags().StringSlice("chains-rpc-url", nil, "Chains RPC URLS")
 }
 

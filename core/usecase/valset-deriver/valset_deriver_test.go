@@ -725,6 +725,85 @@ func TestDeriver_fillValidatorsActive(t *testing.T) {
 	}
 }
 
+func TestDeriver_GetValidatorSet_HeaderCommitted(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockClient := mocks.NewMockethClient(ctrl)
+
+	// Setup mocks for committed valset basic case
+	epoch := uint64(10)
+	timestamp := uint64(1640995200)
+
+	config := entity.NetworkConfig{
+		VotingPowerProviders: []entity.CrossChainAddress{
+			{ChainId: 1, Address: common.HexToAddress("0x123")},
+		},
+		KeysProvider: entity.CrossChainAddress{
+			ChainId: 1, Address: common.HexToAddress("0x456"),
+		},
+		Replicas: []entity.CrossChainAddress{
+			{ChainId: 1, Address: common.HexToAddress("0x789")},
+		},
+		RequiredHeaderKeyTag:    entity.KeyTag(15),
+		MinInclusionVotingPower: entity.ToVotingPower(big.NewInt(100)),
+		MaxVotingPower:          entity.ToVotingPower(big.NewInt(0)),
+		MaxValidatorsCount:      entity.ToVotingPower(big.NewInt(0)),
+		QuorumThresholds: []entity.QuorumThreshold{
+			{
+				KeyTag:          entity.KeyTag(15),
+				QuorumThreshold: entity.ToQuorumThresholdPct(big.NewInt(670000000000000000)), // 67%
+			},
+		},
+	}
+
+	// Mock all required calls for committed valset
+	mockClient.EXPECT().GetEpochStart(gomock.Any(), epoch).Return(timestamp, nil)
+	mockClient.EXPECT().GetVotingPowers(gomock.Any(), config.VotingPowerProviders[0], timestamp).Return(
+		[]entity.OperatorVotingPower{
+			{
+				Operator: common.HexToAddress("0xabc"),
+				Vaults: []entity.VaultVotingPower{
+					{
+						Vault:       common.HexToAddress("0xdef"),
+						VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+					},
+				},
+			},
+		}, nil)
+	mockClient.EXPECT().GetKeys(gomock.Any(), config.KeysProvider, timestamp).Return(
+		[]entity.OperatorWithKeys{
+			{
+				Operator: common.HexToAddress("0xabc"),
+				Keys: []entity.ValidatorKey{
+					{
+						Tag:     entity.KeyTag(15),
+						Payload: entity.CompactPublicKey("testkey"),
+					},
+				},
+			},
+		}, nil)
+
+	// Mock committed valset scenario
+	mockClient.EXPECT().IsValsetHeaderCommittedAt(gomock.Any(), config.Replicas[0], epoch).Return(true, nil)
+	mockClient.EXPECT().GetPreviousHeaderHashAt(gomock.Any(), config.Replicas[0], epoch).Return(common.HexToHash("0x111"), nil)
+	mockClient.EXPECT().GetHeaderHashAt(gomock.Any(), config.Replicas[0], epoch).Return(common.HexToHash("0xbf4eeff1b57d53e7d546e8339e7bac531abb6d22b147605fefeeb76886b43c9d"), nil)
+
+	d, err := NewDeriver(mockClient)
+	require.NoError(t, err)
+
+	result, err := d.GetValidatorSet(context.Background(), epoch, config)
+
+	require.NoError(t, err)
+	require.Equal(t, epoch, result.Epoch)
+	require.Equal(t, timestamp, result.CaptureTimestamp)
+	require.Equal(t, entity.HeaderCommitted, result.Status)
+	require.Equal(t, common.HexToHash("0x111"), result.PreviousHeaderHash)
+	require.Len(t, result.Validators, 1)
+	require.Equal(t, common.HexToAddress("0xabc"), result.Validators[0].Operator)
+	require.True(t, result.Validators[0].IsActive)
+}
+
 func TestDeriver_GetNetworkData(t *testing.T) {
 	tests := []struct {
 		name       string
