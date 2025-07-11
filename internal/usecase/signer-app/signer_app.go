@@ -76,7 +76,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.Errorf("failed to get signature request: %w", err)
 	}
 	if entityFound := !errors.Is(err, entity.ErrEntityNotFound); entityFound {
-		slog.DebugContext(ctx, "signature request already exists", "request", req)
+		slog.DebugContext(ctx, "Signature request already exists", "request", req)
 		return nil
 	}
 
