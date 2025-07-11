@@ -2,10 +2,10 @@ package evm
 
 import (
 	"context"
-	"crypto/ecdsa"
 	_ "embed"
 	"encoding/hex"
 	"math/big"
+	keyprovider "middleware-offchain/core/usecase/key-provider"
 	"regexp"
 	"time"
 
@@ -29,19 +29,12 @@ type Config struct {
 	Chains         []entity.ChainURL        `validate:"required"`
 	DriverAddress  entity.CrossChainAddress `validate:"required"`
 	RequestTimeout time.Duration            `validate:"required,gt=0"`
-	PrivateKey     []byte
+	KeyProvider    keyprovider.KeyProvider
 }
 
 func (c Config) Validate() error {
 	if err := validator.New().Struct(c); err != nil {
 		return errors.Errorf("failed to validate config: %w", err)
-	}
-
-	if c.PrivateKey != nil {
-		_, err := crypto.ToECDSA(c.PrivateKey)
-		if err != nil {
-			return errors.Errorf("failed to convert private key: %w", err)
-		}
 	}
 
 	return nil
@@ -52,8 +45,6 @@ type Client struct {
 
 	conns  map[uint64]*ethclient.Client
 	driver *gen.IValSetDriverCaller
-
-	masterPK *ecdsa.PrivateKey // could be nil for read-only access
 }
 
 func NewEVMClient(ctx context.Context, cfg Config) (*Client, error) {
@@ -79,25 +70,15 @@ func NewEVMClient(ctx context.Context, cfg Config) (*Client, error) {
 		conns[chainURL.ChainID] = client
 	}
 
-	var pk *ecdsa.PrivateKey
-	if cfg.PrivateKey != nil {
-		var err error
-		pk, err = crypto.ToECDSA(cfg.PrivateKey)
-		if err != nil {
-			return nil, errors.Errorf("failed to convert private key: %w", err)
-		}
-	}
-
 	driver, err := gen.NewIValSetDriverCaller(cfg.DriverAddress.Address, conns[cfg.DriverAddress.ChainId])
 	if err != nil {
 		return nil, errors.Errorf("failed to create driver contract: %w", err)
 	}
 
 	return &Client{
-		cfg:      cfg,
-		conns:    conns,
-		driver:   driver,
-		masterPK: pk,
+		cfg:    cfg,
+		conns:  conns,
+		driver: driver,
 	}, nil
 }
 
