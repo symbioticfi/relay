@@ -58,6 +58,15 @@ func (UnimplementedHandler) GetSignaturesGet(ctx context.Context, params GetSign
 	return r, ht.ErrNotImplemented
 }
 
+// GetSuggestedEpochGet implements GET /getSuggestedEpoch operation.
+//
+// Get suggested epoch to request sign.
+//
+// GET /getSuggestedEpoch
+func (UnimplementedHandler) GetSuggestedEpochGet(ctx context.Context) (r *GetSuggestedEpochGetOK, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetValidatorSetGet implements GET /getValidatorSet operation.
 //
 // Get current validator set.
@@ -72,7 +81,7 @@ func (UnimplementedHandler) GetValidatorSetGet(ctx context.Context, params GetVa
 // Sign a message.
 //
 // POST /signMessage
-func (UnimplementedHandler) SignMessagePost(ctx context.Context, req *SignatureRequest) (r *SignMessagePostOK, _ error) {
+func (UnimplementedHandler) SignMessagePost(ctx context.Context, req *SignMessagePostReq) (r *SignMessagePostOK, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

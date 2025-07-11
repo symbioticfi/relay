@@ -24,15 +24,21 @@ type repo interface {
 	GetValidatorSetByEpoch(_ context.Context, epoch uint64) (entity.ValidatorSet, error)
 	GetAllSignatures(_ context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error)
 	GetSignatureRequest(_ context.Context, reqHash common.Hash) (entity.SignatureRequest, error)
+	GetLatestValidatorSet(_ context.Context) (entity.ValidatorSet, error)
 }
 
 type evmClient interface {
 	GetCurrentEpoch(ctx context.Context) (uint64, error)
 	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
+	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
 }
 
 type aggregator interface {
 	GetAggregationStatus(ctx context.Context, requestHash common.Hash) (p2pEntity.AggregationStatus, error)
+}
+
+type deriver interface {
+	GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error)
 }
 
 type Config struct {
@@ -44,6 +50,7 @@ type Config struct {
 	Signer     signer    `validate:"required"`
 	Repo       repo      `validate:"required"`
 	EVMClient  evmClient `validate:"required"`
+	Deriver    deriver   `validate:"required"`
 	Aggregator aggregator
 }
 
