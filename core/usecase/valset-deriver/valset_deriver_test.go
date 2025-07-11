@@ -809,6 +809,7 @@ type testSetup struct {
 }
 
 func setupBasicTest(t *testing.T) *testSetup {
+	t.Helper()
 	ctrl := gomock.NewController(t)
 	t.Cleanup(ctrl.Finish)
 
@@ -847,6 +848,7 @@ func (ts *testSetup) setupPendingScenario() {
 }
 
 func assertBasicValidatorSetProperties(t *testing.T, result entity.ValidatorSet, err error, epoch uint64, timestamp uint64) {
+	t.Helper()
 	require.NoError(t, err)
 	require.Equal(t, epoch, result.Epoch)
 	require.Equal(t, timestamp, result.CaptureTimestamp)
