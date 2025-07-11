@@ -12,7 +12,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/spf13/cobra"
 )
@@ -281,10 +280,7 @@ var genesisCmd = &cobra.Command{
 			var txResult entity.TxResult
 			txResult, errs[i] = client.SetGenesis(
 				ctx,
-				entity.CrossChainAddress{
-					ChainId: cfg.Driver.ChainID,
-					Address: common.HexToAddress(cfg.Driver.Address),
-				},
+				replica,
 				header,
 				extraData)
 			if errs[i] != nil {
