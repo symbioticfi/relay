@@ -99,13 +99,15 @@ func GetEvmClient(
 		chains[i] = entity.ChainURL{
 			ChainID: chainsId[i], RPCURL: chainsUrl[i],
 		}
-		pk, err := symbioticCrypto.NewPrivateKey(entity.KeyTypeEcdsaSecp256k1, privateKey)
-		if err != nil {
-			return nil, err
-		}
-		err = kp.AddKeyByNamespaceTypeId(keyprovider.EVM_KEY_NAMESPACE, entity.KeyTypeEcdsaSecp256k1, int(chainsId[i]), pk)
-		if err != nil {
-			return nil, err
+		if len(privateKey) > 0 {
+			pk, err := symbioticCrypto.NewPrivateKey(entity.KeyTypeEcdsaSecp256k1, privateKey)
+			if err != nil {
+				return nil, err
+			}
+			err = kp.AddKeyByNamespaceTypeId(keyprovider.EVM_KEY_NAMESPACE, entity.KeyTypeEcdsaSecp256k1, int(chainsId[i]), pk)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 

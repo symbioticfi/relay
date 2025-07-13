@@ -142,6 +142,34 @@ func (e *Client) GetCurrentEpoch(ctx context.Context) (uint64, error) {
 	return epoch.Uint64(), nil
 }
 
+func (e *Client) GetCurrentEpochDuration(ctx context.Context) (uint64, error) {
+	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
+	defer cancel()
+
+	epochDuration, err := e.driver.GetCurrentEpochDuration(&bind.CallOpts{
+		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
+		Context:     toCtx,
+	})
+	if err != nil {
+		return 0, errors.Errorf("failed to call getCurrentEpochDuration: %w", e.formatEVMContractError(gen.IValSetDriverMetaData, err))
+	}
+	return epochDuration.Uint64(), nil
+}
+
+func (e *Client) GetEpochDuration(ctx context.Context, epoch uint64) (uint64, error) {
+	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
+	defer cancel()
+
+	epochDuration, err := e.driver.GetEpochDuration(&bind.CallOpts{
+		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
+		Context:     toCtx,
+	}, new(big.Int).SetUint64(epoch), []byte{})
+	if err != nil {
+		return 0, errors.Errorf("failed to call getEpochDuration: %w", e.formatEVMContractError(gen.IValSetDriverMetaData, err))
+	}
+	return epochDuration.Uint64(), nil
+}
+
 func (e *Client) GetEpochStart(ctx context.Context, epoch uint64) (uint64, error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
