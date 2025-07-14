@@ -11,9 +11,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// offchain_middleware --driver-address 0x1f5fE7682E49c20289C20a4cFc8b45d5EB410690 --rpc-url http://127.0.0.1:8545
+var Version = "local"
+
+// offchain_middleware --driver.address 0x2Ea1ABBfD18DddA102EF83Fa7ADfFdB47Db9e786 --driver.chain-id 111 --log-level debug --log-mode pretty --secret-keys symb/0/15/1000000000000000000 --signer true --aggregator true --committer true --http-listen :8081 --storage-dir .data/1 --chains 111@http://127.0.0.1:8545
 func main() {
-	slog.Info("Running offchain_middleware command", "args", os.Args)
+	slog.Info("Running offchain_middleware command", "version", Version, "args", os.Args)
 
 	if err := runRootCMD(); err != nil && !errors.Is(err, context.Canceled) {
 		slog.Error("Error executing command", "error", err)
