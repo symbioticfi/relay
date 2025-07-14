@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	cmdhelpers "middleware-offchain/internal/usecase/cmd-helpers"
 	"os"
 	"os/signal"
 	"syscall"
@@ -14,7 +15,7 @@ func NewNetworkCmd() *cobra.Command {
 	networkCmd.AddCommand(infoCmd)
 	networkCmd.AddCommand(genesisCmd)
 
-	addFlags()
+	initFlags()
 
 	return networkCmd
 }
@@ -39,16 +40,17 @@ type InfoFlags struct {
 }
 
 type GenesisFlags struct {
-	Json   bool
-	Commit bool
-	Output string
+	Json    bool
+	Commit  bool
+	Output  string
+	Secrets cmdhelpers.SecretKeyMapFlag
 }
 
 var globalFlags GlobalFlags
 var infoFlags InfoFlags
 var genesisFlags GenesisFlags
 
-func addFlags() {
+func initFlags() {
 	networkCmd.PersistentFlags().StringSliceVarP(&globalFlags.Chains, "chains", "c", nil, "Chains rpc url, comma separated")
 	networkCmd.PersistentFlags().StringVar(&globalFlags.DriverAddress, "driver-address", "", "Driver contract address")
 	networkCmd.PersistentFlags().Uint64Var(&globalFlags.DriverChainId, "driver-chainid", 0, "Driver contract chain id")
@@ -69,7 +71,7 @@ func addFlags() {
 	infoCmd.PersistentFlags().BoolVarP(&infoFlags.Settlement, "settlement", "s", false, "Print settlement info")
 
 	genesisCmd.PersistentFlags().BoolVar(&genesisFlags.Commit, "commit", false, "Commit genesis flag")
-	//genesisCmd.PersistentFlags().StringVar(&genesisFlags, "secret-keys", "", "Secret key for genesis commit")
+	genesisCmd.PersistentFlags().Var(&genesisFlags.Secrets, "secret-keys", "Secret key for genesis commit  in format 'chainId:key,chainId:key' (e.g. '1:0xabc,137:0xdef')")
 	genesisCmd.PersistentFlags().BoolVarP(&genesisFlags.Json, "json", "j", false, "Print as json")
 	genesisCmd.PersistentFlags().StringVarP(&genesisFlags.Output, "output", "o", "", "Output file path")
 }

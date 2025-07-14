@@ -35,7 +35,7 @@ type Config struct {
 	DriverAddress  entity.CrossChainAddress `validate:"required"`
 	RequestTimeout time.Duration            `validate:"required,gt=0"`
 	KeyProvider    keyprovider.KeyProvider
-	Metrics        metrics
+	Metrics        metrics `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -73,6 +73,10 @@ func NewEVMClient(ctx context.Context, cfg Config) (*Client, error) {
 		}
 
 		conns[chainID.Uint64()] = client
+	}
+
+	if _, found := conns[cfg.DriverAddress.ChainId]; !found {
+		return nil, errors.Errorf("driver's chain rpc url omitted")
 	}
 
 	driver, err := gen.NewIValSetDriverCaller(cfg.DriverAddress.Address, conns[cfg.DriverAddress.ChainId])

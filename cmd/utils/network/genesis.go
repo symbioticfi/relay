@@ -7,6 +7,7 @@ import (
 	symbioticCrypto "middleware-offchain/core/usecase/crypto"
 	keyprovider "middleware-offchain/core/usecase/key-provider"
 	valsetDeriver "middleware-offchain/core/usecase/valset-deriver"
+	"middleware-offchain/internal/usecase/metrics"
 	"os"
 	"strconv"
 	"time"
@@ -36,6 +37,7 @@ var genesisCmd = &cobra.Command{
 			},
 			RequestTimeout: 5 * time.Second,
 			KeyProvider:    kp,
+			Metrics:        metrics.New(metrics.Config{}),
 		})
 		if err != nil {
 			return err
@@ -44,8 +46,11 @@ var genesisCmd = &cobra.Command{
 		if genesisFlags.Commit {
 			privateKeyInput := pterm.DefaultInteractiveTextInput.WithMask("*")
 			for _, chainId := range client.GetChains() {
-				result, _ := privateKeyInput.Show("Enter private key for chain with ID: " + strconv.Itoa(int(chainId)))
-				pk, err := symbioticCrypto.NewPrivateKey(entity.KeyTypeEcdsaSecp256k1, common.Hex2Bytes(result))
+				secret, ok := genesisFlags.Secrets.Secrets[chainId]
+				if !ok {
+					secret, _ = privateKeyInput.Show("Enter private key for chain with ID: " + strconv.Itoa(int(chainId)))
+				}
+				pk, err := symbioticCrypto.NewPrivateKey(entity.KeyTypeEcdsaSecp256k1, common.Hex2Bytes(secret))
 				if err != nil {
 					return err
 				}

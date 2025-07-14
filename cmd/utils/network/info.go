@@ -5,6 +5,7 @@ import (
 	"middleware-offchain/core/entity"
 	keyprovider "middleware-offchain/core/usecase/key-provider"
 	valsetDeriver "middleware-offchain/core/usecase/valset-deriver"
+	"middleware-offchain/internal/usecase/metrics"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -33,6 +34,7 @@ var infoCmd = &cobra.Command{
 			},
 			RequestTimeout: 5 * time.Second,
 			KeyProvider:    kp,
+			Metrics:        metrics.New(metrics.Config{}),
 		})
 		if err != nil {
 			return err
