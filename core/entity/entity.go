@@ -259,6 +259,20 @@ type ValidatorVault struct {
 	VotingPower VotingPower    `json:"votingPower"`
 }
 
+type Validators []Validator
+
+func (va Validators) SortByVotingPowerDesc() {
+	slices.SortFunc(va, func(a, b Validator) int {
+		return -a.VotingPower.Cmp(b.VotingPower.Int)
+	})
+}
+
+func (va Validators) SortByOperatorAddressAsc() {
+	slices.SortFunc(va, func(a, b Validator) int {
+		return a.Operator.Cmp(b.Operator)
+	})
+}
+
 type Validator struct {
 	Operator    common.Address   `json:"operator"`
 	VotingPower VotingPower      `json:"votingPower"`
