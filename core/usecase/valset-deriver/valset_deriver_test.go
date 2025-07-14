@@ -733,7 +733,7 @@ func TestDeriver_GetValidatorSet_HeaderCommitted(t *testing.T) {
 
 	assertBasicValidatorSetProperties(t, result, err, setup.epoch, setup.timestamp)
 	require.Equal(t, entity.HeaderCommitted, result.Status)
-	require.Equal(t, common.HexToHash("0x111"), result.PreviousHeaderHash)
+	require.Equal(t, common.HexToHash("0x0"), result.PreviousHeaderHash)
 }
 
 func TestDeriver_GetValidatorSet_HeaderPending(t *testing.T) {
@@ -837,7 +837,7 @@ func setupBasicTest(t *testing.T) *testSetup {
 
 func (ts *testSetup) setupCommittedScenario() {
 	ts.mockClient.EXPECT().IsValsetHeaderCommittedAt(gomock.Any(), ts.config.Replicas[0], ts.epoch).Return(true, nil)
-	ts.mockClient.EXPECT().GetPreviousHeaderHashAt(gomock.Any(), ts.config.Replicas[0], ts.epoch).Return(common.HexToHash("0x111"), nil)
+	ts.mockClient.EXPECT().GetPreviousHeaderHashAt(gomock.Any(), ts.config.Replicas[0], ts.epoch).Return(common.HexToHash("0x0"), nil)
 	ts.mockClient.EXPECT().GetHeaderHashAt(gomock.Any(), ts.config.Replicas[0], ts.epoch).Return(common.HexToHash("0xbf4eeff1b57d53e7d546e8339e7bac531abb6d22b147605fefeeb76886b43c9d"), nil)
 }
 
