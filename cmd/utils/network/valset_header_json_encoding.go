@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/go-errors/errors"
-
 	"middleware-offchain/core/entity"
 )
 
-func EncodeValidatorSetHeaderWithExtraDataToJSON(validatorSetHeader entity.ValidatorSetHeader, extraDataList entity.ExtraDataList) ([]byte, error) {
+func printHeaderWithExtraDataToJSON(validatorSetHeader entity.ValidatorSetHeader, extraDataList entity.ExtraDataList) string {
 	type jsonHeader struct {
 		Version            uint8    `json:"version"`
 		ValidatorsSszMRoot string   `json:"validatorsSszMRoot"` // hex string
@@ -54,8 +52,8 @@ func EncodeValidatorSetHeaderWithExtraDataToJSON(validatorSetHeader entity.Valid
 
 	jsonData, err := json.MarshalIndent(jsonValidatorSetHeaderWithExtraDataData, "", "  ")
 	if err != nil {
-		return nil, errors.Errorf("failed to marshal extra data to JSON: %w", err)
+		panic(err)
 	}
 
-	return jsonData, nil
+	return string(jsonData)
 }

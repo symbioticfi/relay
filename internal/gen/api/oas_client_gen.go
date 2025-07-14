@@ -57,6 +57,12 @@ type Invoker interface {
 	//
 	// GET /getSignatures
 	GetSignaturesGet(ctx context.Context, params GetSignaturesGetParams) ([]Signature, error)
+	// GetSuggestedEpochGet invokes GET /getSuggestedEpoch operation.
+	//
+	// Get suggested epoch to request sign.
+	//
+	// GET /getSuggestedEpoch
+	GetSuggestedEpochGet(ctx context.Context) (*GetSuggestedEpochGetOK, error)
 	// GetValidatorSetGet invokes GET /getValidatorSet operation.
 	//
 	// Get current validator set.
@@ -68,7 +74,7 @@ type Invoker interface {
 	// Sign a message.
 	//
 	// POST /signMessage
-	SignMessagePost(ctx context.Context, request *SignatureRequest) (*SignMessagePostOK, error)
+	SignMessagePost(ctx context.Context, request *SignMessagePostReq) (*SignMessagePostOK, error)
 }
 
 // Client implements OAS client.
@@ -545,6 +551,77 @@ func (c *Client) sendGetSignaturesGet(ctx context.Context, params GetSignaturesG
 	return result, nil
 }
 
+// GetSuggestedEpochGet invokes GET /getSuggestedEpoch operation.
+//
+// Get suggested epoch to request sign.
+//
+// GET /getSuggestedEpoch
+func (c *Client) GetSuggestedEpochGet(ctx context.Context) (*GetSuggestedEpochGetOK, error) {
+	res, err := c.sendGetSuggestedEpochGet(ctx)
+	return res, err
+}
+
+func (c *Client) sendGetSuggestedEpochGet(ctx context.Context) (res *GetSuggestedEpochGetOK, err error) {
+	otelAttrs := []attribute.KeyValue{
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/getSuggestedEpoch"),
+	}
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetSuggestedEpochGetOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/getSuggestedEpoch"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	defer resp.Body.Close()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetSuggestedEpochGetResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetValidatorSetGet invokes GET /getValidatorSet operation.
 //
 // Get current validator set.
@@ -642,12 +719,12 @@ func (c *Client) sendGetValidatorSetGet(ctx context.Context, params GetValidator
 // Sign a message.
 //
 // POST /signMessage
-func (c *Client) SignMessagePost(ctx context.Context, request *SignatureRequest) (*SignMessagePostOK, error) {
+func (c *Client) SignMessagePost(ctx context.Context, request *SignMessagePostReq) (*SignMessagePostOK, error) {
 	res, err := c.sendSignMessagePost(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendSignMessagePost(ctx context.Context, request *SignatureRequest) (res *SignMessagePostOK, err error) {
+func (c *Client) sendSignMessagePost(ctx context.Context, request *SignMessagePostReq) (res *SignMessagePostOK, err error) {
 	otelAttrs := []attribute.KeyValue{
 		semconv.HTTPRequestMethodKey.String("POST"),
 		semconv.HTTPRouteKey.String("/signMessage"),

@@ -146,9 +146,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 
-				case 'S': // Prefix: "Signature"
+				case 'S': // Prefix: "S"
 
-					if l := len("Signature"); len(elem) >= l && elem[0:l] == "Signature" {
+					if l := len("S"); len(elem) >= l && elem[0:l] == "S" {
 						elem = elem[l:]
 					} else {
 						break
@@ -158,29 +158,63 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						break
 					}
 					switch elem[0] {
-					case 'R': // Prefix: "Request"
+					case 'i': // Prefix: "ignature"
 
-						if l := len("Request"); len(elem) >= l && elem[0:l] == "Request" {
+						if l := len("ignature"); len(elem) >= l && elem[0:l] == "ignature" {
 							elem = elem[l:]
 						} else {
 							break
 						}
 
 						if len(elem) == 0 {
-							// Leaf node.
-							switch r.Method {
-							case "GET":
-								s.handleGetSignatureRequestGetRequest([0]string{}, elemIsEscaped, w, r)
-							default:
-								s.notAllowed(w, r, "GET")
+							break
+						}
+						switch elem[0] {
+						case 'R': // Prefix: "Request"
+
+							if l := len("Request"); len(elem) >= l && elem[0:l] == "Request" {
+								elem = elem[l:]
+							} else {
+								break
 							}
 
-							return
+							if len(elem) == 0 {
+								// Leaf node.
+								switch r.Method {
+								case "GET":
+									s.handleGetSignatureRequestGetRequest([0]string{}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, "GET")
+								}
+
+								return
+							}
+
+						case 's': // Prefix: "s"
+
+							if l := len("s"); len(elem) >= l && elem[0:l] == "s" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch r.Method {
+								case "GET":
+									s.handleGetSignaturesGetRequest([0]string{}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, "GET")
+								}
+
+								return
+							}
+
 						}
 
-					case 's': // Prefix: "s"
+					case 'u': // Prefix: "uggestedEpoch"
 
-						if l := len("s"); len(elem) >= l && elem[0:l] == "s" {
+						if l := len("uggestedEpoch"); len(elem) >= l && elem[0:l] == "uggestedEpoch" {
 							elem = elem[l:]
 						} else {
 							break
@@ -190,7 +224,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							// Leaf node.
 							switch r.Method {
 							case "GET":
-								s.handleGetSignaturesGetRequest([0]string{}, elemIsEscaped, w, r)
+								s.handleGetSuggestedEpochGetRequest([0]string{}, elemIsEscaped, w, r)
 							default:
 								s.notAllowed(w, r, "GET")
 							}
@@ -434,9 +468,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						}
 					}
 
-				case 'S': // Prefix: "Signature"
+				case 'S': // Prefix: "S"
 
-					if l := len("Signature"); len(elem) >= l && elem[0:l] == "Signature" {
+					if l := len("S"); len(elem) >= l && elem[0:l] == "S" {
 						elem = elem[l:]
 					} else {
 						break
@@ -446,33 +480,71 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						break
 					}
 					switch elem[0] {
-					case 'R': // Prefix: "Request"
+					case 'i': // Prefix: "ignature"
 
-						if l := len("Request"); len(elem) >= l && elem[0:l] == "Request" {
+						if l := len("ignature"); len(elem) >= l && elem[0:l] == "ignature" {
 							elem = elem[l:]
 						} else {
 							break
 						}
 
 						if len(elem) == 0 {
-							// Leaf node.
-							switch method {
-							case "GET":
-								r.name = GetSignatureRequestGetOperation
-								r.summary = "Get signature request by request hash"
-								r.operationID = ""
-								r.pathPattern = "/getSignatureRequest"
-								r.args = args
-								r.count = 0
-								return r, true
-							default:
-								return
+							break
+						}
+						switch elem[0] {
+						case 'R': // Prefix: "Request"
+
+							if l := len("Request"); len(elem) >= l && elem[0:l] == "Request" {
+								elem = elem[l:]
+							} else {
+								break
 							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch method {
+								case "GET":
+									r.name = GetSignatureRequestGetOperation
+									r.summary = "Get signature request by request hash"
+									r.operationID = ""
+									r.pathPattern = "/getSignatureRequest"
+									r.args = args
+									r.count = 0
+									return r, true
+								default:
+									return
+								}
+							}
+
+						case 's': // Prefix: "s"
+
+							if l := len("s"); len(elem) >= l && elem[0:l] == "s" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch method {
+								case "GET":
+									r.name = GetSignaturesGetOperation
+									r.summary = "Get signature by request hash"
+									r.operationID = ""
+									r.pathPattern = "/getSignatures"
+									r.args = args
+									r.count = 0
+									return r, true
+								default:
+									return
+								}
+							}
+
 						}
 
-					case 's': // Prefix: "s"
+					case 'u': // Prefix: "uggestedEpoch"
 
-						if l := len("s"); len(elem) >= l && elem[0:l] == "s" {
+						if l := len("uggestedEpoch"); len(elem) >= l && elem[0:l] == "uggestedEpoch" {
 							elem = elem[l:]
 						} else {
 							break
@@ -482,10 +554,10 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							// Leaf node.
 							switch method {
 							case "GET":
-								r.name = GetSignaturesGetOperation
-								r.summary = "Get signature by request hash"
+								r.name = GetSuggestedEpochGetOperation
+								r.summary = "Get suggested epoch to request sign"
 								r.operationID = ""
-								r.pathPattern = "/getSignatures"
+								r.pathPattern = "/getSuggestedEpoch"
 								r.args = args
 								r.count = 0
 								return r, true

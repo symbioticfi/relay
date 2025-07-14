@@ -2,10 +2,10 @@ package evm
 
 import (
 	"context"
-	"crypto/ecdsa"
 	_ "embed"
 	"encoding/hex"
 	"math/big"
+	keyprovider "middleware-offchain/core/usecase/key-provider"
 	"regexp"
 	"time"
 
@@ -33,20 +33,13 @@ type Config struct {
 	Chains         []entity.ChainURL        `validate:"required"`
 	DriverAddress  entity.CrossChainAddress `validate:"required"`
 	RequestTimeout time.Duration            `validate:"required,gt=0"`
-	PrivateKey     []byte
+	KeyProvider    keyprovider.KeyProvider
 	Metrics        metrics
 }
 
 func (c Config) Validate() error {
 	if err := validator.New().Struct(c); err != nil {
 		return errors.Errorf("failed to validate config: %w", err)
-	}
-
-	if c.PrivateKey != nil {
-		_, err := crypto.ToECDSA(c.PrivateKey)
-		if err != nil {
-			return errors.Errorf("failed to convert private key: %w", err)
-		}
 	}
 
 	return nil
@@ -57,8 +50,6 @@ type Client struct {
 
 	conns  map[uint64]*ethclient.Client
 	driver *gen.IValSetDriverCaller
-
-	masterPK *ecdsa.PrivateKey // could be nil for read-only access
 
 	metrics metrics
 }
@@ -86,25 +77,15 @@ func NewEVMClient(ctx context.Context, cfg Config) (*Client, error) {
 		conns[chainURL.ChainID] = client
 	}
 
-	var pk *ecdsa.PrivateKey
-	if cfg.PrivateKey != nil {
-		var err error
-		pk, err = crypto.ToECDSA(cfg.PrivateKey)
-		if err != nil {
-			return nil, errors.Errorf("failed to convert private key: %w", err)
-		}
-	}
-
 	driver, err := gen.NewIValSetDriverCaller(cfg.DriverAddress.Address, conns[cfg.DriverAddress.ChainId])
 	if err != nil {
 		return nil, errors.Errorf("failed to create driver contract: %w", err)
 	}
 
 	return &Client{
-		cfg:      cfg,
-		conns:    conns,
-		driver:   driver,
-		masterPK: pk,
+		cfg:    cfg,
+		conns:  conns,
+		driver: driver,
 		metrics:  cfg.Metrics,
 	}, nil
 }
@@ -173,6 +154,40 @@ func (e *Client) GetCurrentEpoch(ctx context.Context) (_ uint64, err error) {
 		return 0, errors.Errorf("failed to call getCurrentEpoch: %w", e.formatEVMContractError(gen.IValSetDriverMetaData, err))
 	}
 	return epoch.Uint64(), nil
+}
+
+func (e *Client) GetCurrentEpochDuration(ctx context.Context) (_ uint64, err error) {
+	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
+	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("GetCurrentEpochDuration", err, now)
+	}(time.Now())
+
+	epochDuration, err := e.driver.GetCurrentEpochDuration(&bind.CallOpts{
+		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
+		Context:     toCtx,
+	})
+	if err != nil {
+		return 0, errors.Errorf("failed to call getCurrentEpochDuration: %w", e.formatEVMContractError(gen.IValSetDriverMetaData, err))
+	}
+	return epochDuration.Uint64(), nil
+}
+
+func (e *Client) GetEpochDuration(ctx context.Context, epoch uint64) (_ uint64, err error) {
+	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
+	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("GetEpochDuration", err, now)
+	}(time.Now())
+
+	epochDuration, err := e.driver.GetEpochDuration(&bind.CallOpts{
+		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
+		Context:     toCtx,
+	}, new(big.Int).SetUint64(epoch), []byte{})
+	if err != nil {
+		return 0, errors.Errorf("failed to call getEpochDuration: %w", e.formatEVMContractError(gen.IValSetDriverMetaData, err))
+	}
+	return epochDuration.Uint64(), nil
 }
 
 func (e *Client) GetEpochStart(ctx context.Context, epoch uint64) (_ uint64, err error) {

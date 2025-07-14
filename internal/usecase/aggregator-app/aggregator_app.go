@@ -90,7 +90,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 		return errors.Errorf("failed to get validator set: %w", err)
 	}
 
-	publicKey, err := crypto.NewPublicKey(msg.KeyTag, msg.Signature.PublicKey)
+	publicKey, err := crypto.NewPublicKey(msg.KeyTag.Type(), msg.Signature.PublicKey)
 	if err != nil {
 		return errors.Errorf("failed to get public key: %w", err)
 	}

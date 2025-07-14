@@ -535,6 +535,119 @@ func (s *GetCurrentEpochGetOK) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *GetSuggestedEpochGetOK) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *GetSuggestedEpochGetOK) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("epoch")
+		e.UInt64(s.Epoch)
+	}
+	{
+		e.FieldStart("startTime")
+		json.EncodeDateTime(e, s.StartTime)
+	}
+}
+
+var jsonFieldsNameOfGetSuggestedEpochGetOK = [2]string{
+	0: "epoch",
+	1: "startTime",
+}
+
+// Decode decodes GetSuggestedEpochGetOK from json.
+func (s *GetSuggestedEpochGetOK) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode GetSuggestedEpochGetOK to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "epoch":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.UInt64()
+				s.Epoch = uint64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"epoch\"")
+			}
+		case "startTime":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.StartTime = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"startTime\"")
+			}
+		default:
+			return d.Skip()
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode GetSuggestedEpochGetOK")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfGetSuggestedEpochGetOK) {
+					name = jsonFieldsNameOfGetSuggestedEpochGetOK[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *GetSuggestedEpochGetOK) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *GetSuggestedEpochGetOK) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *Key) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -647,6 +760,41 @@ func (s *Key) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes uint64 as json.
+func (o OptUint64) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.UInt64(uint64(o.Value))
+}
+
+// Decode decodes uint64 from json.
+func (o *OptUint64) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptUint64 to nil")
+	}
+	o.Set = true
+	v, err := d.UInt64()
+	if err != nil {
+		return err
+	}
+	o.Value = uint64(v)
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptUint64) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptUint64) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode implements json.Marshaler.
 func (s *SignMessagePostOK) Encode(e *jx.Encoder) {
 	e.ObjStart()
@@ -660,10 +808,15 @@ func (s *SignMessagePostOK) encodeFields(e *jx.Encoder) {
 		e.FieldStart("requestHash")
 		e.Str(s.RequestHash)
 	}
+	{
+		e.FieldStart("epoch")
+		e.UInt64(s.Epoch)
+	}
 }
 
-var jsonFieldsNameOfSignMessagePostOK = [1]string{
+var jsonFieldsNameOfSignMessagePostOK = [2]string{
 	0: "requestHash",
+	1: "epoch",
 }
 
 // Decode decodes SignMessagePostOK from json.
@@ -687,6 +840,18 @@ func (s *SignMessagePostOK) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"requestHash\"")
 			}
+		case "epoch":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.UInt64()
+				s.Epoch = uint64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"epoch\"")
+			}
 		default:
 			return d.Skip()
 		}
@@ -697,7 +862,7 @@ func (s *SignMessagePostOK) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000001,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -739,6 +904,136 @@ func (s *SignMessagePostOK) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *SignMessagePostOK) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *SignMessagePostReq) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *SignMessagePostReq) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("keyTag")
+		e.UInt8(s.KeyTag)
+	}
+	{
+		e.FieldStart("message")
+		e.Base64(s.Message)
+	}
+	{
+		if s.RequiredEpoch.Set {
+			e.FieldStart("requiredEpoch")
+			s.RequiredEpoch.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfSignMessagePostReq = [3]string{
+	0: "keyTag",
+	1: "message",
+	2: "requiredEpoch",
+}
+
+// Decode decodes SignMessagePostReq from json.
+func (s *SignMessagePostReq) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode SignMessagePostReq to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "keyTag":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.UInt8()
+				s.KeyTag = uint8(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"keyTag\"")
+			}
+		case "message":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Base64()
+				s.Message = []byte(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"message\"")
+			}
+		case "requiredEpoch":
+			if err := func() error {
+				s.RequiredEpoch.Reset()
+				if err := s.RequiredEpoch.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"requiredEpoch\"")
+			}
+		default:
+			return d.Skip()
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode SignMessagePostReq")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfSignMessagePostReq) {
+					name = jsonFieldsNameOfSignMessagePostReq[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *SignMessagePostReq) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *SignMessagePostReq) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -1221,6 +1516,10 @@ func (s *ValidatorSet) encodeFields(e *jx.Encoder) {
 		e.Str(s.PreviousHeaderHash)
 	}
 	{
+		e.FieldStart("status")
+		e.UInt8(s.Status)
+	}
+	{
 		e.FieldStart("validators")
 		e.ArrStart()
 		for _, elem := range s.Validators {
@@ -1230,14 +1529,15 @@ func (s *ValidatorSet) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfValidatorSet = [7]string{
+var jsonFieldsNameOfValidatorSet = [8]string{
 	0: "version",
 	1: "requiredKeyTag",
 	2: "epoch",
 	3: "captureTimestamp",
 	4: "quorumThreshold",
 	5: "previousHeaderHash",
-	6: "validators",
+	6: "status",
+	7: "validators",
 }
 
 // Decode decodes ValidatorSet from json.
@@ -1321,8 +1621,20 @@ func (s *ValidatorSet) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"previousHeaderHash\"")
 			}
-		case "validators":
+		case "status":
 			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				v, err := d.UInt8()
+				s.Status = uint8(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"status\"")
+			}
+		case "validators":
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				s.Validators = make([]Validator, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -1349,7 +1661,7 @@ func (s *ValidatorSet) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b01111111,
+		0b11111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
