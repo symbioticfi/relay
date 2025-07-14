@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"middleware-offchain/core/entity"
 	"middleware-offchain/core/usecase/aggregator"
 	valsetDeriver "middleware-offchain/core/usecase/valset-deriver"
 	utils_app "middleware-offchain/internal/usecase/utils-app"
@@ -175,7 +176,10 @@ var genesisCmd = &cobra.Command{
 			return errors.Errorf("Failed to generate validator set header: %w", err)
 		}
 
-		aggregator := aggregator.NewAggregator(nil)
+		aggregator, err := aggregator.NewAggregator(entity.VerificationTypeSimple, nil)
+		if err != nil {
+			return errors.Errorf("Failed to create aggregator: %w", err)
+		}
 
 		// extra data generation is also clear but still in deriver
 		extraData, err := aggregator.GenerateExtraData(newValset, networkConfig)

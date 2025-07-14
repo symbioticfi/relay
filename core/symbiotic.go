@@ -3,8 +3,8 @@ package core
 import (
 	"context"
 	"math/big"
-	keyprovider "middleware-offchain/core/usecase/key-provider"
 	types "middleware-offchain/core/usecase/aggregator/aggregator-types"
+	keyprovider "middleware-offchain/core/usecase/key-provider"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -24,12 +24,12 @@ type prover interface {
 }
 
 type Config struct {
-	Chains         []entity.ChainURL        `validate:"required"`
-	DriverAddress  entity.CrossChainAddress `validate:"required"`
-	KeyProvider    keyprovider.KeyProvider  `validate:"required"`
-	RequestTimeout time.Duration            `validate:"required,gt=0"`
-	Prover         prover                   `validate:"required"`
-	VerificationType entity.VerificationType `validate:"required"`
+	Chains           []entity.ChainURL        `validate:"required"`
+	DriverAddress    entity.CrossChainAddress `validate:"required"`
+	KeyProvider      keyprovider.KeyProvider  `validate:"required"`
+	RequestTimeout   time.Duration            `validate:"required,gt=0"`
+	Prover           prover                   `validate:"required"`
+	VerificationType entity.VerificationType  `validate:"required"`
 }
 
 func (c Config) Validate() error {

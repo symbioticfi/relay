@@ -162,7 +162,7 @@ func GetAggregatedPubKeys(
 	return aggregatedPubKeys
 }
 
-//nolint:unused // will be used later
+// will be used later
 func GetExtraDataKeyIndexed(
 	verificationType entity.VerificationType,
 	keyTag entity.KeyTag,
