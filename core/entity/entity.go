@@ -184,6 +184,16 @@ func (vt VerificationType) MarshalText() (text []byte, err error) {
 	return []byte(fmt.Sprintf("%d (UNKNOWN)", uint32(vt))), nil
 }
 
+func (vt VerificationType) String() string {
+	switch vt {
+	case VerificationTypeZK:
+		return fmt.Sprintf("%d (BLS-BN254-ZK)", uint32(vt))
+	case VerificationTypeSimple:
+		return fmt.Sprintf("%d (BLS-BN254-SIMPLE)", uint32(vt))
+	}
+	return fmt.Sprintf("%d (UNKNOWN)", uint32(vt))
+}
+
 type CrossChainAddress struct {
 	ChainId uint64
 	Address common.Address

@@ -15,7 +15,7 @@ import (
 )
 
 func (s *Server) decodeSignMessagePostRequest(r *http.Request) (
-	req *SignatureRequest,
+	req *SignMessagePostReq,
 	close func() error,
 	rerr error,
 ) {
@@ -54,7 +54,7 @@ func (s *Server) decodeSignMessagePostRequest(r *http.Request) (
 
 		d := jx.DecodeBytes(buf)
 
-		var request SignatureRequest
+		var request SignMessagePostReq
 		if err := func() error {
 			if err := request.Decode(d); err != nil {
 				return err

@@ -11,6 +11,7 @@ const (
 	GetCurrentEpochGetOperation      OperationName = "GetCurrentEpochGet"
 	GetSignatureRequestGetOperation  OperationName = "GetSignatureRequestGet"
 	GetSignaturesGetOperation        OperationName = "GetSignaturesGet"
+	GetSuggestedEpochGetOperation    OperationName = "GetSuggestedEpochGet"
 	GetValidatorSetGetOperation      OperationName = "GetValidatorSetGet"
 	SignMessagePostOperation         OperationName = "SignMessagePost"
 )

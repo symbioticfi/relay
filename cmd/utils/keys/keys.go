@@ -53,7 +53,7 @@ var printKeysCmd = &cobra.Command{
 		fmt.Printf("   # | Alias                | Public Key\n")
 
 		for i, alias := range aliases {
-			keyTag, err := keyprovider.AliasToTag(alias)
+			keyTag, err := keyprovider.AliasToKeyTag(alias)
 			if err != nil {
 				return err
 			}
@@ -92,7 +92,7 @@ var addKeyCmd = &cobra.Command{
 
 		kt := entity.KeyTag(cfg.KeyTag)
 		if cfg.Generate {
-			pk, err := crypto.GeneratePrivateKey(kt)
+			pk, err := crypto.GeneratePrivateKey(kt.Type())
 			if err != nil {
 				return err
 			}
@@ -112,7 +112,7 @@ var addKeyCmd = &cobra.Command{
 			return err
 		}
 
-		key, err := crypto.NewPrivateKey(kt, []byte(cfg.PrivateKey))
+		key, err := crypto.NewPrivateKey(kt.Type(), []byte(cfg.PrivateKey))
 		if err != nil {
 			return err
 		}
@@ -193,7 +193,7 @@ var updateKeyCmd = &cobra.Command{
 			return errors.New("Key doesn't exist")
 		}
 
-		key, err := crypto.NewPrivateKey(kt, []byte(cfg.PrivateKey))
+		key, err := crypto.NewPrivateKey(kt.Type(), []byte(cfg.PrivateKey))
 		if err != nil {
 			return err
 		}

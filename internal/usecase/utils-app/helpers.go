@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"middleware-offchain/core/client/evm"
 	"middleware-offchain/core/entity"
+	symbioticCrypto "middleware-offchain/core/usecase/crypto"
+	keyprovider "middleware-offchain/core/usecase/key-provider"
 	entity2 "middleware-offchain/internal/entity"
 	"strings"
 	"syscall"
@@ -87,10 +89,25 @@ func GetEvmClient(
 		Address: common.HexToAddress(driver.Address),
 	}
 
+	kp, err := keyprovider.NewSimpleKeystoreProvider()
+	if err != nil {
+		return nil, err
+	}
+
 	chains := make([]entity.ChainURL, len(chainsUrl))
 	for i := range chains {
 		chains[i] = entity.ChainURL{
 			ChainID: chainsId[i], RPCURL: chainsUrl[i],
+		}
+		if len(privateKey) > 0 {
+			pk, err := symbioticCrypto.NewPrivateKey(entity.KeyTypeEcdsaSecp256k1, privateKey)
+			if err != nil {
+				return nil, err
+			}
+			err = kp.AddKeyByNamespaceTypeId(keyprovider.EVM_KEY_NAMESPACE, entity.KeyTypeEcdsaSecp256k1, int(chainsId[i]), pk)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -98,7 +115,7 @@ func GetEvmClient(
 		Chains:         chains,
 		DriverAddress:  driverCrossChainAddress,
 		RequestTimeout: time.Second * 5,
-		PrivateKey:     privateKey,
+		KeyProvider:    kp,
 	})
 	if err != nil {
 		return nil, errors.Errorf("failed to create symbiotic client: %w", err)

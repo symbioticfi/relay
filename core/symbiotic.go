@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"math/big"
+	keyprovider "middleware-offchain/core/usecase/key-provider"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -24,9 +25,9 @@ type prover interface {
 type Config struct {
 	Chains         []entity.ChainURL        `validate:"required"`
 	DriverAddress  entity.CrossChainAddress `validate:"required"`
-	PrivateKey     []byte
-	RequestTimeout time.Duration `validate:"required,gt=0"`
-	Prover         prover        `validate:"required"`
+	KeyProvider    keyprovider.KeyProvider  `validate:"required"`
+	RequestTimeout time.Duration            `validate:"required,gt=0"`
+	Prover         prover                   `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -52,7 +53,7 @@ func NewSymbiotic(ctx context.Context, cfg Config) (*Symbiotic, error) {
 	evmClient, err := evm.NewEVMClient(ctx, evm.Config{
 		Chains:         cfg.Chains,
 		DriverAddress:  cfg.DriverAddress,
-		PrivateKey:     cfg.PrivateKey,
+		KeyProvider:    cfg.KeyProvider,
 		RequestTimeout: cfg.RequestTimeout,
 	})
 	if err != nil {
