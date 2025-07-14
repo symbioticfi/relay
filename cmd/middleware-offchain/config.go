@@ -29,6 +29,7 @@ type config struct {
 	IsCommitter      bool              `mapstructure:"committer"`
 	StorageDir       string            `mapstructure:"storage-dir"`
 	Chains           []chainURL        `mapstructure:"chains" validate:"required"`
+	VerificationType uint32            `mapstructure:"verification-type" validate:"required"`
 }
 
 type crossChainAddress struct {
@@ -68,6 +69,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("signer", true, "Is Signer Node")
 	rootCmd.PersistentFlags().Bool("committer", false, "Is Committer Node")
 	rootCmd.PersistentFlags().String("storage-dir", ".data", "Dir to store data")
+	rootCmd.PersistentFlags().Uint32("verification-type", 0, "Verification Type: 0 - ZK, 1 - Simple")
 }
 
 func initConfig(cmd *cobra.Command, _ []string) error {
@@ -113,6 +115,9 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("storage-dir", cmd.PersistentFlags().Lookup("storage-dir")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("verification-type", cmd.PersistentFlags().Lookup("verification-type")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 

@@ -12,3 +12,4 @@ storage-dir: ".data"
 chains:
   - chain-id: 111
     rpc-url: "http://127.0.0.1:8545"
+verification-type: 0

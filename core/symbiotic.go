@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"math/big"
+	types "middleware-offchain/core/usecase/aggregator/aggregator-types"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -22,11 +23,12 @@ type prover interface {
 }
 
 type Config struct {
-	Chains         []entity.ChainURL        `validate:"required"`
-	DriverAddress  entity.CrossChainAddress `validate:"required"`
-	PrivateKey     []byte
-	RequestTimeout time.Duration `validate:"required,gt=0"`
-	Prover         prover        `validate:"required"`
+	Chains           []entity.ChainURL        `validate:"required"`
+	DriverAddress    entity.CrossChainAddress `validate:"required"`
+	PrivateKey       []byte
+	RequestTimeout   time.Duration           `validate:"required,gt=0"`
+	Prover           prover                  `validate:"required"`
+	VerificationType entity.VerificationType `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -40,7 +42,7 @@ func (c Config) Validate() error {
 // Symbiotic is a facade that provides a unified interface for interacting with the Symbiotic middleware.
 type Symbiotic struct {
 	evmClient  *evm.Client
-	aggregator *aggregator.Aggregator
+	aggregator types.Aggregator
 	deriver    *valsetDeriver.Deriver
 }
 
@@ -59,7 +61,10 @@ func NewSymbiotic(ctx context.Context, cfg Config) (*Symbiotic, error) {
 		return nil, errors.Errorf("failed to create EVM client: %w", err)
 	}
 
-	agg := aggregator.NewAggregator(cfg.Prover)
+	agg, err := aggregator.NewAggregator(cfg.VerificationType, cfg.Prover)
+	if err != nil {
+		return nil, errors.Errorf("failed to create aggregator: %w", err)
+	}
 	deriver, err := valsetDeriver.NewDeriver(evmClient)
 	if err != nil {
 		return nil, errors.Errorf("failed to create validator set deriver: %w", err)
@@ -73,8 +78,8 @@ func NewSymbiotic(ctx context.Context, cfg Config) (*Symbiotic, error) {
 
 // ========== Aggregator methods ==========
 
-func (s *Symbiotic) Aggregate(valset entity.ValidatorSet, keyTag entity.KeyTag, verificationType entity.VerificationType, messageHash []byte, signatures []entity.SignatureExtended) (entity.AggregationProof, error) {
-	return s.aggregator.Aggregate(valset, keyTag, verificationType, messageHash, signatures)
+func (s *Symbiotic) Aggregate(valset entity.ValidatorSet, keyTag entity.KeyTag, messageHash []byte, signatures []entity.SignatureExtended) (entity.AggregationProof, error) {
+	return s.aggregator.Aggregate(valset, keyTag, messageHash, signatures)
 }
 
 func (s *Symbiotic) VerifyAggregated(

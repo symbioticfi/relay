@@ -112,7 +112,15 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to add key to keystore provider: %w", err)
 	}
 
-	aggregatorLib := aggregator.NewAggregator(proof.NewZkProver())
+	var prover *proof.ZkProver
+	vt := entity.VerificationType(cfg.VerificationType)
+	if vt == entity.VerificationTypeZK {
+		prover = proof.NewZkProver()
+	}
+	agg, err := aggregator.NewAggregator(vt, prover)
+	if err != nil {
+		return errors.Errorf("failed to create aggregator: %w", err)
+	}
 
 	aggProofReadySignal := signals.New[entity.AggregatedSignatureMessage]()
 
@@ -121,7 +129,7 @@ func runApp(ctx context.Context) error {
 		KeyProvider:    keystoreProvider,
 		Repo:           repo,
 		AggProofSignal: aggProofReadySignal,
-		Aggregator:     aggregatorLib,
+		Aggregator:     agg,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create signer app: %w", err)
@@ -145,7 +153,7 @@ func runApp(ctx context.Context) error {
 		Eth:             evmClient,
 		Repo:            repo,
 		Deriver:         deriver,
-		Aggregator:      aggregatorLib,
+		Aggregator:      agg,
 		PollingInterval: time.Second * 5,
 		IsCommitter:     cfg.IsCommitter,
 	})
@@ -188,7 +196,7 @@ func runApp(ctx context.Context) error {
 		aggApp, err = aggregatorApp.NewAggregatorApp(aggregatorApp.Config{
 			Repo:       repo,
 			P2PClient:  p2pService,
-			Aggregator: aggregatorLib,
+			Aggregator: agg,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create aggregator app: %w", err)
