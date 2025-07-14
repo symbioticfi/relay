@@ -23,6 +23,7 @@ type Config struct {
 	ShutdownTimeout   time.Duration `validate:"required,gt=0"`
 	Prefix            string        `validate:"required"`
 	APIHandler        http.Handler  `validate:"required"`
+	ServeMetrics      bool
 	MetricsRegistry   prometheus.Registerer
 	SwaggerHandler    http.HandlerFunc
 }
@@ -62,8 +63,9 @@ func initHandler(cfg Config) http.Handler {
 			}),
 		})),
 	)
-
-	r.Handle("/metrics", promhttp.Handler())
+	if cfg.ServeMetrics {
+		r.Handle("/metrics", promhttp.Handler())
+	}
 
 	if cfg.SwaggerHandler != nil {
 		r.Get("/swagger.yaml", cfg.SwaggerHandler)

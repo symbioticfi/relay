@@ -151,17 +151,18 @@ func (s *CMDChainSlice) Type() string {
 // 2. Environment variables (prefixed with SYMB_ and dashes replaced by underscores)
 // 3. config.yaml file (specified by --config or default "config.yaml")
 type config struct {
-	Driver           entity.CMDCrossChainAddress `mapstructure:"driver" validate:"required"`
-	LogLevel         string                      `mapstructure:"log-level" validate:"oneof=debug info warn error"`
-	LogMode          string                      `mapstructure:"log-mode" validate:"oneof=text pretty"`
-	P2PListenAddress string                      `mapstructure:"p2p-listen"`
-	HTTPListenAddr   string                      `mapstructure:"http-listen" validate:"required"`
-	SecretKeys       CMDSecretKeySlice           `mapstructure:"secret-keys"`
-	IsAggregator     bool                        `mapstructure:"aggregator"`
-	IsSigner         bool                        `mapstructure:"signer"`
-	IsCommitter      bool                        `mapstructure:"committer"`
-	StorageDir       string                      `mapstructure:"storage-dir"`
-	Chains           CMDChainSlice               `mapstructure:"chains" validate:"required"`
+	Driver            entity.CMDCrossChainAddress `mapstructure:"driver" validate:"required"`
+	LogLevel          string                      `mapstructure:"log-level" validate:"oneof=debug info warn error"`
+	LogMode           string                      `mapstructure:"log-mode" validate:"oneof=text pretty"`
+	P2PListenAddress  string                      `mapstructure:"p2p-listen"`
+	HTTPListenAddr    string                      `mapstructure:"http-listen" validate:"required"`
+	MetricsListenAddr string                      `mapstructure:"metrics-listen"`
+	SecretKeys        CMDSecretKeySlice           `mapstructure:"secret-keys"`
+	IsAggregator      bool                        `mapstructure:"aggregator"`
+	IsSigner          bool                        `mapstructure:"signer"`
+	IsCommitter       bool                        `mapstructure:"committer"`
+	StorageDir        string                      `mapstructure:"storage-dir"`
+	Chains            CMDChainSlice               `mapstructure:"chains" validate:"required"`
 }
 
 func (c config) Validate() error {
@@ -186,6 +187,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().String("log-mode", "text", "Log mode (text, pretty)")
 	rootCmd.PersistentFlags().String("p2p-listen", "", "P2P listen address")
 	rootCmd.PersistentFlags().String("http-listen", "", "Http listener address")
+	rootCmd.PersistentFlags().String("metrics-listen", "", "Http listener address for metrics endpoint")
 	rootCmd.PersistentFlags().Bool("aggregator", false, "Is Aggregator Node")
 	rootCmd.PersistentFlags().Bool("signer", true, "Is Signer Node")
 	rootCmd.PersistentFlags().Bool("committer", false, "Is Committer Node")
@@ -239,6 +241,9 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("http-listen", cmd.PersistentFlags().Lookup("http-listen")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("metrics-listen", cmd.PersistentFlags().Lookup("metrics-listen")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("aggregator", cmd.PersistentFlags().Lookup("aggregator")); err != nil {
