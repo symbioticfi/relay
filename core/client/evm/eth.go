@@ -35,7 +35,7 @@ type Config struct {
 	DriverAddress  entity.CrossChainAddress `validate:"required"`
 	RequestTimeout time.Duration            `validate:"required,gt=0"`
 	KeyProvider    keyprovider.KeyProvider
-	Metrics        metrics `validate:"required"`
+	Metrics        metrics
 }
 
 func (c Config) Validate() error {
@@ -699,6 +699,8 @@ func findErrorBySelector(errSelector string) (abi.Error, bool) {
 }
 
 func (e *Client) observeMetrics(method string, err error, start time.Time) {
-	status := lo.Ternary(err != nil, "error", "success")
-	e.metrics.ObserveEVMMethodCall(method, status, time.Since(start))
+	if e.metrics != nil {
+		status := lo.Ternary(err != nil, "error", "success")
+		e.metrics.ObserveEVMMethodCall(method, status, time.Since(start))
+	}
 }
