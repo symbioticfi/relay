@@ -18,5 +18,4 @@ signer: true
 committer: true
 storage-dir: ".data"
 chains:
-  - chain-id: 31337
-    rpc-url: "http://127.0.0.1:8545"
+  - "http://127.0.0.1:8545"
