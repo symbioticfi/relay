@@ -1,12 +1,13 @@
 package main
 
 import (
-	"log/slog"
 	"middleware-offchain/cmd/utils/keys"
 	"middleware-offchain/cmd/utils/network"
 	"middleware-offchain/cmd/utils/operator"
 	"middleware-offchain/pkg/log"
 	"os"
+
+	"github.com/pterm/pterm"
 
 	"github.com/spf13/cobra"
 )
@@ -27,7 +28,7 @@ func main() {
 	rootCmd.AddCommand(operator.NewOperatorCmd())
 
 	if err := run(); err != nil {
-		slog.Error("Error executing command", "error", err)
+		pterm.Error.Println("Error executing command", err)
 		os.Exit(1)
 	}
 }
