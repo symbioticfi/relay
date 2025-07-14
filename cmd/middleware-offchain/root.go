@@ -4,25 +4,25 @@ import (
 	"context"
 	"log/slog"
 	"math/big"
-	keyprovider "middleware-offchain/core/usecase/key-provider"
 	"time"
-
-	"github.com/samber/lo"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p"
+	"github.com/samber/lo"
 	"golang.org/x/sync/errgroup"
 
 	"middleware-offchain/core/client/evm"
 	"middleware-offchain/core/entity"
 	"middleware-offchain/core/usecase/aggregator"
 	symbioticCrypto "middleware-offchain/core/usecase/crypto"
+	keyprovider "middleware-offchain/core/usecase/key-provider"
 	valsetDeriver "middleware-offchain/core/usecase/valset-deriver"
 	"middleware-offchain/internal/client/p2p"
 	"middleware-offchain/internal/client/repository/badger"
 	aggregatorApp "middleware-offchain/internal/usecase/aggregator-app"
 	apiApp "middleware-offchain/internal/usecase/api-app"
+	"middleware-offchain/internal/usecase/metrics"
 	signerApp "middleware-offchain/internal/usecase/signer-app"
 	valsetGenerator "middleware-offchain/internal/usecase/valset-generator"
 	valsetListener "middleware-offchain/internal/usecase/valset-listener"
@@ -34,6 +34,7 @@ import (
 func runApp(ctx context.Context) error {
 	cfg := cfgFromCtx(ctx)
 	log.Init(cfg.LogLevel, cfg.LogMode)
+	mtr := metrics.New(metrics.Config{})
 
 	chains := lo.Map(cfg.Chains, func(chain CMDChain, _ int) entity.ChainURL {
 		return entity.ChainURL{
@@ -71,6 +72,7 @@ func runApp(ctx context.Context) error {
 		},
 		RequestTimeout: time.Second * 5,
 		KeyProvider:    keyProvider,
+		Metrics:        mtr,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create symbiotic client: %w", err)
@@ -93,6 +95,7 @@ func runApp(ctx context.Context) error {
 	p2pService, err := p2p.NewService(ctx, p2p.Config{
 		Host:        h,
 		SendTimeout: time.Second * 10,
+		Metrics:     mtr,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create p2p service: %w", err)
@@ -126,6 +129,7 @@ func runApp(ctx context.Context) error {
 		Repo:           repo,
 		AggProofSignal: aggProofReadySignal,
 		Aggregator:     aggregatorLib,
+		Metrics:        mtr,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create signer app: %w", err)
@@ -169,8 +173,7 @@ func runApp(ctx context.Context) error {
 
 	eg, egCtx := errgroup.WithContext(ctx)
 	eg.Go(func() error {
-		logCtx := log.WithComponent(egCtx, "listener")
-		if err := listener.Start(logCtx); err != nil {
+		if err := listener.Start(egCtx); err != nil {
 			return errors.Errorf("failed to start valset listener: %w", err)
 		}
 		return nil
@@ -178,9 +181,7 @@ func runApp(ctx context.Context) error {
 
 	if cfg.IsSigner {
 		eg.Go(func() error {
-			logCtx := log.WithComponent(egCtx, "generator")
-
-			if err := generator.Start(logCtx); err != nil {
+			if err := generator.Start(egCtx); err != nil {
 				return errors.Errorf("failed to start valset generator: %w", err)
 			}
 			return nil
@@ -193,6 +194,7 @@ func runApp(ctx context.Context) error {
 			Repo:       repo,
 			P2PClient:  p2pService,
 			Aggregator: aggregatorLib,
+			Metrics:    mtr,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create aggregator app: %w", err)

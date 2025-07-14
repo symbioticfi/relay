@@ -150,7 +150,7 @@ func (s *Symbiotic) GetSubnetwork(ctx context.Context) (common.Hash, error) {
 	return s.evmClient.GetSubnetwork(ctx)
 }
 
-func (s *Symbiotic) GetNetworkAddress(ctx context.Context) (*common.Address, error) {
+func (s *Symbiotic) GetNetworkAddress(ctx context.Context) (common.Address, error) {
 	return s.evmClient.GetNetworkAddress(ctx)
 }
 

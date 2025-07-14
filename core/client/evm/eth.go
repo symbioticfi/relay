@@ -5,9 +5,10 @@ import (
 	_ "embed"
 	"encoding/hex"
 	"math/big"
-	keyprovider "middleware-offchain/core/usecase/key-provider"
 	"regexp"
 	"time"
+
+	keyprovider "middleware-offchain/core/usecase/key-provider"
 
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/samber/lo"
@@ -25,11 +26,16 @@ import (
 	"middleware-offchain/core/entity"
 )
 
+type metrics interface {
+	ObserveEVMMethodCall(method, status string, d time.Duration)
+}
+
 type Config struct {
 	Chains         []entity.ChainURL        `validate:"required"`
 	DriverAddress  entity.CrossChainAddress `validate:"required"`
 	RequestTimeout time.Duration            `validate:"required,gt=0"`
 	KeyProvider    keyprovider.KeyProvider
+	Metrics        metrics
 }
 
 func (c Config) Validate() error {
@@ -45,6 +51,8 @@ type Client struct {
 
 	conns  map[uint64]*ethclient.Client
 	driver *gen.IValSetDriverCaller
+
+	metrics metrics
 }
 
 func NewEVMClient(ctx context.Context, cfg Config) (*Client, error) {
@@ -76,15 +84,19 @@ func NewEVMClient(ctx context.Context, cfg Config) (*Client, error) {
 	}
 
 	return &Client{
-		cfg:    cfg,
-		conns:  conns,
-		driver: driver,
+		cfg:     cfg,
+		conns:   conns,
+		driver:  driver,
+		metrics: cfg.Metrics,
 	}, nil
 }
 
-func (e *Client) GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error) {
+func (e *Client) GetConfig(ctx context.Context, timestamp uint64) (_ entity.NetworkConfig, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("GetConfigAt", err, now)
+	}(time.Now())
 
 	dtoConfig, err := e.driver.GetConfigAt(&bind.CallOpts{
 		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
@@ -128,9 +140,12 @@ func (e *Client) GetConfig(ctx context.Context, timestamp uint64) (entity.Networ
 	}, nil
 }
 
-func (e *Client) GetCurrentEpoch(ctx context.Context) (uint64, error) {
+func (e *Client) GetCurrentEpoch(ctx context.Context) (_ uint64, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("GetCurrentEpoch", err, now)
+	}(time.Now())
 
 	epoch, err := e.driver.GetCurrentEpoch(&bind.CallOpts{
 		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
@@ -142,9 +157,12 @@ func (e *Client) GetCurrentEpoch(ctx context.Context) (uint64, error) {
 	return epoch.Uint64(), nil
 }
 
-func (e *Client) GetCurrentEpochDuration(ctx context.Context) (uint64, error) {
+func (e *Client) GetCurrentEpochDuration(ctx context.Context) (_ uint64, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("GetCurrentEpochDuration", err, now)
+	}(time.Now())
 
 	epochDuration, err := e.driver.GetCurrentEpochDuration(&bind.CallOpts{
 		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
@@ -156,9 +174,12 @@ func (e *Client) GetCurrentEpochDuration(ctx context.Context) (uint64, error) {
 	return epochDuration.Uint64(), nil
 }
 
-func (e *Client) GetEpochDuration(ctx context.Context, epoch uint64) (uint64, error) {
+func (e *Client) GetEpochDuration(ctx context.Context, epoch uint64) (_ uint64, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("GetEpochDuration", err, now)
+	}(time.Now())
 
 	epochDuration, err := e.driver.GetEpochDuration(&bind.CallOpts{
 		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
@@ -170,9 +191,12 @@ func (e *Client) GetEpochDuration(ctx context.Context, epoch uint64) (uint64, er
 	return epochDuration.Uint64(), nil
 }
 
-func (e *Client) GetEpochStart(ctx context.Context, epoch uint64) (uint64, error) {
+func (e *Client) GetEpochStart(ctx context.Context, epoch uint64) (_ uint64, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("GetEpochStart", err, now)
+	}(time.Now())
 
 	epochStart, err := e.driver.GetEpochStart(&bind.CallOpts{
 		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
@@ -184,9 +208,12 @@ func (e *Client) GetEpochStart(ctx context.Context, epoch uint64) (uint64, error
 	return epochStart.Uint64(), nil
 }
 
-func (e *Client) GetSubnetwork(ctx context.Context) (common.Hash, error) {
+func (e *Client) GetSubnetwork(ctx context.Context) (_ common.Hash, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("SUBNETWORK", err, now)
+	}(time.Now())
 
 	subnetwork, err := e.driver.SUBNETWORK(&bind.CallOpts{
 		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
@@ -199,24 +226,30 @@ func (e *Client) GetSubnetwork(ctx context.Context) (common.Hash, error) {
 	return subnetwork, nil
 }
 
-func (e *Client) GetNetworkAddress(ctx context.Context) (*common.Address, error) {
+func (e *Client) GetNetworkAddress(ctx context.Context) (_ common.Address, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("NETWORK", err, now)
+	}(time.Now())
 
 	networkAddress, err := e.driver.NETWORK(&bind.CallOpts{
 		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
 		Context:     toCtx,
 	})
 	if err != nil {
-		return nil, errors.Errorf("failed to call getSubnetwork: %w", err)
+		return common.Address{}, errors.Errorf("failed to call getSubnetwork: %w", err)
 	}
 
-	return &networkAddress, nil
+	return networkAddress, nil
 }
 
-func (e *Client) IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (bool, error) {
+func (e *Client) IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (_ bool, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("IsValSetHeaderCommittedAt", err, now)
+	}(time.Now())
 
 	settlement, err := e.getSettlementContract(addr)
 	if err != nil {
@@ -233,9 +266,12 @@ func (e *Client) IsValsetHeaderCommittedAt(ctx context.Context, addr entity.Cros
 	return ok, nil
 }
 
-func (e *Client) GetPreviousHeaderHash(ctx context.Context, addr entity.CrossChainAddress) (common.Hash, error) {
+func (e *Client) GetPreviousHeaderHash(ctx context.Context, addr entity.CrossChainAddress) (_ common.Hash, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("GetPreviousHeaderHashFromValSetHeader", err, now)
+	}(time.Now())
 
 	settlement, err := e.getSettlementContract(addr)
 	if err != nil {
@@ -253,9 +289,12 @@ func (e *Client) GetPreviousHeaderHash(ctx context.Context, addr entity.CrossCha
 	return hash, nil
 }
 
-func (e *Client) GetPreviousHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error) {
+func (e *Client) GetPreviousHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (_ common.Hash, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("GetPreviousHeaderHashFromValSetHeaderAt", err, now)
+	}(time.Now())
 
 	settlement, err := e.getSettlementContract(addr)
 	if err != nil {
@@ -273,9 +312,12 @@ func (e *Client) GetPreviousHeaderHashAt(ctx context.Context, addr entity.CrossC
 	return hash, nil
 }
 
-func (e *Client) GetHeaderHash(ctx context.Context, addr entity.CrossChainAddress) (common.Hash, error) {
+func (e *Client) GetHeaderHash(ctx context.Context, addr entity.CrossChainAddress) (_ common.Hash, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("GetValSetHeaderHash", err, now)
+	}(time.Now())
 
 	settlement, err := e.getSettlementContract(addr)
 	if err != nil {
@@ -293,9 +335,12 @@ func (e *Client) GetHeaderHash(ctx context.Context, addr entity.CrossChainAddres
 	return hash, nil
 }
 
-func (e *Client) GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error) {
+func (e *Client) GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (_ common.Hash, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("GetValSetHeaderHashAt", err, now)
+	}(time.Now())
 
 	settlement, err := e.getSettlementContract(addr)
 	if err != nil {
@@ -313,9 +358,12 @@ func (e *Client) GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddr
 	return hash, nil
 }
 
-func (e *Client) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (uint64, error) {
+func (e *Client) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (_ uint64, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("GetLastCommittedHeaderEpoch", err, now)
+	}(time.Now())
 
 	settlement, err := e.getSettlementContract(addr)
 	if err != nil {
@@ -335,9 +383,12 @@ func (e *Client) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.Cr
 	return epoch.Uint64(), nil
 }
 
-func (e *Client) GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (uint64, error) {
+func (e *Client) GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (_ uint64, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("GetCaptureTimestampFromValSetHeaderAt", err, now)
+	}(time.Now())
 
 	settlement, err := e.getSettlementContract(addr)
 	if err != nil {
@@ -355,9 +406,12 @@ func (e *Client) GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, addr
 	return timestamp.Uint64(), nil
 }
 
-func (e *Client) GetValSetHeaderAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (entity.ValidatorSetHeader, error) {
+func (e *Client) GetValSetHeaderAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (_ entity.ValidatorSetHeader, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("GetValSetHeaderAt", err, now)
+	}(time.Now())
 
 	settlement, err := e.getSettlementContract(addr)
 	if err != nil {
@@ -383,9 +437,12 @@ func (e *Client) GetValSetHeaderAt(ctx context.Context, addr entity.CrossChainAd
 	}, nil
 }
 
-func (e *Client) GetValSetHeader(ctx context.Context, addr entity.CrossChainAddress) (entity.ValidatorSetHeader, error) {
+func (e *Client) GetValSetHeader(ctx context.Context, addr entity.CrossChainAddress) (_ entity.ValidatorSetHeader, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("GetValSetHeader", err, now)
+	}(time.Now())
 
 	settlement, err := e.getSettlementContract(addr)
 	if err != nil {
@@ -411,9 +468,12 @@ func (e *Client) GetValSetHeader(ctx context.Context, addr entity.CrossChainAddr
 	}, nil
 }
 
-func (e *Client) GetEip712Domain(ctx context.Context, addr entity.CrossChainAddress) (entity.Eip712Domain, error) {
+func (e *Client) GetEip712Domain(ctx context.Context, addr entity.CrossChainAddress) (_ entity.Eip712Domain, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("Eip712Domain", err, now)
+	}(time.Now())
 
 	settlement, err := e.getSettlementContract(addr)
 	if err != nil {
@@ -439,9 +499,12 @@ func (e *Client) GetEip712Domain(ctx context.Context, addr entity.CrossChainAddr
 	}, nil
 }
 
-func (e *Client) GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorVotingPower, error) {
+func (e *Client) GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) (_ []entity.OperatorVotingPower, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("GetVotingPowersAt", err, now)
+	}(time.Now())
 
 	votingPowerProvider, err := e.getVotingPowerProviderContract(address)
 	if err != nil {
@@ -469,9 +532,12 @@ func (e *Client) GetVotingPowers(ctx context.Context, address entity.CrossChainA
 	}), nil
 }
 
-func (e *Client) GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorWithKeys, error) {
+func (e *Client) GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) (_ []entity.OperatorWithKeys, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("GetKeysAt", err, now)
+	}(time.Now())
 
 	keyRegistry, err := e.getKeyRegistryContract(address)
 	if err != nil {
@@ -621,4 +687,9 @@ func findErrorBySelector(errSelector string) (abi.Error, bool) {
 	}
 
 	return abi.Error{}, false
+}
+
+func (e *Client) observeMetrics(method string, err error, start time.Time) {
+	status := lo.Ternary(err != nil, "error", "success")
+	e.metrics.ObserveEVMMethodCall(method, status, time.Since(start))
 }

@@ -28,7 +28,7 @@ type ethClient interface {
 	GetEip712Domain(ctx context.Context, addr entity.CrossChainAddress) (entity.Eip712Domain, error)
 	GetCurrentEpoch(ctx context.Context) (uint64, error)
 	GetSubnetwork(ctx context.Context) (common.Hash, error)
-	GetNetworkAddress(ctx context.Context) (*common.Address, error)
+	GetNetworkAddress(ctx context.Context) (common.Address, error)
 	GetHeaderHash(ctx context.Context, addr entity.CrossChainAddress) (common.Hash, error)
 	IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (bool, error)
 	GetPreviousHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error)
@@ -65,7 +65,7 @@ func (v *Deriver) GetNetworkData(ctx context.Context, addr entity.CrossChainAddr
 	}
 
 	return entity.NetworkData{
-		Address:    *address,
+		Address:    address,
 		Subnetwork: subnetwork,
 		Eip712Data: eip712Data,
 	}, nil

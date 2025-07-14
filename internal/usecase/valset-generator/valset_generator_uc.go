@@ -15,6 +15,7 @@ import (
 	"github.com/go-playground/validator/v10"
 
 	"middleware-offchain/core/entity"
+	"middleware-offchain/pkg/log"
 )
 
 type signer interface {
@@ -86,6 +87,8 @@ func New(cfg Config) (*Service, error) {
 }
 
 func (s *Service) Start(ctx context.Context) error {
+	ctx = log.WithComponent(ctx, "generator")
+
 	slog.InfoContext(ctx, "Starting valset generator service", "pollingInterval", s.cfg.PollingInterval)
 
 	timer := time.NewTimer(0)

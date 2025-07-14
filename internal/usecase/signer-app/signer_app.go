@@ -3,7 +3,10 @@ package signer_app
 import (
 	"context"
 	"log/slog"
+	"time"
+
 	key_types "middleware-offchain/core/usecase/crypto/key-types"
+	"middleware-offchain/pkg/log"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -38,12 +41,18 @@ type aggregator interface {
 	Verify(valset entity.ValidatorSet, keyTag entity.KeyTag, aggregationProof entity.AggregationProof) (bool, error)
 }
 
+type metrics interface {
+	ObservePKSignDuration(d time.Duration)
+	ObserveAppSignDuration(d time.Duration)
+}
+
 type Config struct {
 	P2PService     p2pService     `validate:"required"`
 	KeyProvider    keyProvider    `validate:"required"`
 	Repo           repo           `validate:"required"`
 	AggProofSignal aggProofSignal `validate:"required"`
 	Aggregator     aggregator     `validate:"required"`
+	Metrics        metrics        `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -71,6 +80,9 @@ func NewSignerApp(cfg Config) (*SignerApp, error) {
 }
 
 func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error {
+	ctx = log.WithComponent(ctx, "signer")
+	timeAppSignStart := time.Now()
+
 	_, err := s.cfg.Repo.GetSignatureRequest(ctx, req.Hash())
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return errors.Errorf("failed to get signature request: %w", err)
@@ -104,10 +116,12 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.Errorf("validator not found in epoch valset for public key")
 	}
 
+	pkSignStart := time.Now()
 	signature, hash, err := private.Sign(req.Message)
 	if err != nil {
 		return errors.Errorf("failed to sign valset header hash: %w", err)
 	}
+	s.cfg.Metrics.ObservePKSignDuration(time.Since(pkSignStart))
 
 	extendedSignature := entity.SignatureExtended{
 		MessageHash: hash,
@@ -134,6 +148,8 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 	if err := s.cfg.Repo.SaveSignatureRequest(ctx, req); err != nil {
 		return errors.Errorf("failed to save signature request: %w", err)
 	}
+
+	s.cfg.Metrics.ObserveAppSignDuration(time.Since(timeAppSignStart))
 
 	return nil
 }

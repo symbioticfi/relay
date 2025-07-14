@@ -3,21 +3,21 @@ package evm
 import (
 	"context"
 	"math/big"
-	keyprovider "middleware-offchain/core/usecase/key-provider"
-
-	"github.com/ethereum/go-ethereum/crypto"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 
 	"middleware-offchain/core/entity"
+	keyprovider "middleware-offchain/core/usecase/key-provider"
 )
 
 func (e *Client) RegisterOperator(
 	ctx context.Context,
 	addr entity.CrossChainAddress,
-) (entity.TxResult, error) {
+) (_ entity.TxResult, err error) {
 	pk, err := e.cfg.KeyProvider.GetPrivateKeyByNamespaceTypeId(
 		keyprovider.EVM_KEY_NAMESPACE,
 		entity.KeyTypeEcdsaSecp256k1,
@@ -37,6 +37,9 @@ func (e *Client) RegisterOperator(
 
 	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("RegisterOperator", err, now)
+	}(time.Now())
 	txOpts.Context = tmCtx
 
 	registry, err := e.getOperatorRegistryContract(addr)
@@ -70,7 +73,7 @@ func (e *Client) RegisterKey(
 	key entity.CompactPublicKey,
 	signature entity.RawSignature,
 	extraData []byte,
-) (entity.TxResult, error) {
+) (_ entity.TxResult, err error) {
 	pk, err := e.cfg.KeyProvider.GetPrivateKeyByNamespaceTypeId(
 		keyprovider.EVM_KEY_NAMESPACE,
 		entity.KeyTypeEcdsaSecp256k1,
@@ -91,6 +94,9 @@ func (e *Client) RegisterKey(
 
 	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("SetKey", err, now)
+	}(time.Now())
 	txOpts.Context = tmCtx
 
 	registry, err := e.getKeyRegistryContract(addr)

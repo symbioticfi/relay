@@ -7,9 +7,12 @@ import (
 	"github.com/go-errors/errors"
 
 	"middleware-offchain/core/entity"
+	"middleware-offchain/pkg/log"
 )
 
 func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
+	ctx = log.WithComponent(ctx, "generator")
+
 	slog.DebugContext(ctx, "Handling proof aggregated message", "msg", msg)
 	if !s.cfg.IsCommitter {
 		slog.DebugContext(ctx, "Not a committer, skipping proof commitment")
@@ -54,6 +57,7 @@ func (s *Service) commitValsetToAllSettlements(ctx context.Context, config entit
 		result, err := s.cfg.Eth.CommitValsetHeader(ctx, replica, header, extraData, proof)
 		if err != nil {
 			errs[i] = errors.Errorf("failed to commit valset header to settlement %s: %w", replica.Address.Hex(), err)
+			continue
 		}
 
 		slog.DebugContext(ctx, "Validator set header committed",

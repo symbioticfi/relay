@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
-	"middleware-offchain/internal/entity"
 	"reflect"
 	"strconv"
 	"strings"
@@ -16,6 +15,8 @@ import (
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"middleware-offchain/internal/entity"
 )
 
 type CMDSecretKey struct {

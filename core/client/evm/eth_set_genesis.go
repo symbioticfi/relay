@@ -3,16 +3,16 @@ package evm
 import (
 	"context"
 	"math/big"
-	keyprovider "middleware-offchain/core/usecase/key-provider"
-
-	"github.com/ethereum/go-ethereum/crypto"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 
 	"middleware-offchain/core/client/evm/gen"
 	"middleware-offchain/core/entity"
+	keyprovider "middleware-offchain/core/usecase/key-provider"
 )
 
 func (e *Client) SetGenesis(
@@ -20,7 +20,7 @@ func (e *Client) SetGenesis(
 	addr entity.CrossChainAddress,
 	header entity.ValidatorSetHeader,
 	extraData []entity.ExtraData,
-) (entity.TxResult, error) {
+) (_ entity.TxResult, err error) {
 	pk, err := e.cfg.KeyProvider.GetPrivateKeyByNamespaceTypeId(
 		keyprovider.EVM_KEY_NAMESPACE,
 		entity.KeyTypeEcdsaSecp256k1,
@@ -41,6 +41,9 @@ func (e *Client) SetGenesis(
 
 	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("SetGenesis", err, now)
+	}(time.Now())
 	txOpts.Context = tmCtx
 
 	headerDTO := gen.ISettlementValSetHeader{
