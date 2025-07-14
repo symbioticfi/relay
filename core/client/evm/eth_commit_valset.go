@@ -4,6 +4,9 @@ import (
 	"context"
 	"log/slog"
 	"math/big"
+	keyprovider "middleware-offchain/core/usecase/key-provider"
+
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -20,16 +23,24 @@ func (e *Client) CommitValsetHeader(
 	extraData []entity.ExtraData,
 	proof []byte,
 ) (entity.TxResult, error) {
-	if e.masterPK == nil {
-		return entity.TxResult{}, errors.New("master private key is not set")
+	pk, err := e.cfg.KeyProvider.GetPrivateKeyByNamespaceTypeId(
+		keyprovider.EVM_KEY_NAMESPACE,
+		entity.KeyTypeEcdsaSecp256k1,
+		int(addr.ChainId),
+	)
+	if err != nil {
+		return entity.TxResult{}, err
 	}
-	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
-	defer cancel()
-
-	txOpts, err := bind.NewKeyedTransactorWithChainID(e.masterPK, new(big.Int).SetUint64(addr.ChainId))
+	ecdsaKey, err := crypto.ToECDSA(pk.Bytes())
+	if err != nil {
+		return entity.TxResult{}, err
+	}
+	txOpts, err := bind.NewKeyedTransactorWithChainID(ecdsaKey, new(big.Int).SetUint64(addr.ChainId))
 	if err != nil {
 		return entity.TxResult{}, errors.Errorf("failed to create new keyed transactor: %w", err)
 	}
+	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
+	defer cancel()
 	txOpts.Context = tmCtx
 
 	headerDTO := gen.ISettlementValSetHeader{

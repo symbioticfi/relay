@@ -43,20 +43,48 @@ func (k *KeystoreProvider) GetAliases() []string {
 }
 
 func (k *KeystoreProvider) GetPrivateKey(keyTag entity.KeyTag) (crypto.PrivateKey, error) {
-	alias, err := getAlias(keyTag)
+	alias, err := KeyTagToAlias(keyTag)
 	if err != nil {
 		return nil, err
 	}
 
+	return k.GetPrivateKeyByAlias(alias)
+}
+
+func (k *KeystoreProvider) GetPrivateKeyByAlias(alias string) (crypto.PrivateKey, error) {
 	entry, err := k.ks.GetPrivateKeyEntry(alias, []byte{})
 	if err != nil {
 		return nil, err
 	}
-	return crypto.NewPrivateKey(keyTag, entry.PrivateKey)
+	keyType, _, err := AliasToKeyTypeId(alias)
+	if err != nil {
+		return nil, err
+	}
+	return crypto.NewPrivateKey(keyType, entry.PrivateKey)
+}
+
+func (k *KeystoreProvider) GetPrivateKeyByNamespaceTypeId(namespace string, keyType entity.KeyType, id int) (crypto.PrivateKey, error) {
+	alias, err := ToAlias(namespace, keyType, id)
+	if err != nil {
+		return nil, err
+	}
+	return k.GetPrivateKeyByAlias(alias)
 }
 
 func (k *KeystoreProvider) HasKey(keyTag entity.KeyTag) (bool, error) {
-	alias, err := getAlias(keyTag)
+	alias, err := KeyTagToAlias(keyTag)
+	if err != nil {
+		return false, err
+	}
+	return k.ks.IsPrivateKeyEntry(alias), nil
+}
+
+func (k *KeystoreProvider) HasKeyByAlias(alias string) (bool, error) {
+	return k.ks.IsPrivateKeyEntry(alias), nil
+}
+
+func (k *KeystoreProvider) HasKeyByNamespaceTypeId(namespace string, keyType entity.KeyType, id int) (bool, error) {
+	alias, err := ToAlias(namespace, keyType, id)
 	if err != nil {
 		return false, err
 	}
@@ -73,7 +101,7 @@ func (k *KeystoreProvider) AddKey(keyTag entity.KeyTag, privateKey crypto.Privat
 		return errors.New("key already exists")
 	}
 
-	alias, err := getAlias(keyTag)
+	alias, err := KeyTagToAlias(keyTag)
 	if err != nil {
 		return err
 	}
@@ -109,7 +137,7 @@ func (k *KeystoreProvider) DeleteKey(keyTag entity.KeyTag, password string) erro
 		return errors.New("key does not exist")
 	}
 
-	alias, err := getAlias(keyTag)
+	alias, err := KeyTagToAlias(keyTag)
 	if err != nil {
 		return err
 	}
