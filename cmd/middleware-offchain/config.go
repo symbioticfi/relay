@@ -91,60 +91,6 @@ func (s *CMDSecretKeySlice) Type() string {
 	return "secret-key-slice"
 }
 
-type CMDChain struct {
-	ChainID uint64 `mapstructure:"chain-id" validate:"required"`
-	URL     string `mapstructure:"rpc-url" validate:"required"`
-}
-
-func (c *CMDChain) String() string {
-	return fmt.Sprintf("%d@%s", c.ChainID, c.URL)
-}
-
-func (c *CMDChain) Set(str string) error {
-	strs := strings.Split(str, "@")
-	if len(strs) != 2 {
-		return errors.Errorf("invalid rpc url format: %s, expected {chainid}@{rpc-url}", str)
-	}
-	c.URL = strs[1]
-	v, err := strconv.Atoi(strs[0])
-	if err != nil {
-		return err
-	}
-	c.ChainID = uint64(v)
-	return nil
-}
-
-func (c *CMDChain) Type() string {
-	return "chain"
-}
-
-type CMDChainSlice []CMDChain
-
-func (s *CMDChainSlice) String() string {
-	strs := make([]string, len(*s))
-	for i, ss := range *s {
-		strs[i] = ss.String()
-	}
-	return strings.Join(strs, ",")
-}
-
-func (s *CMDChainSlice) Set(str string) error {
-	strs := strings.Split(str, ",")
-	for _, elem := range strs {
-		key := CMDChain{}
-		err := key.Set(elem)
-		if err != nil {
-			return err
-		}
-		*s = append(*s, key)
-	}
-	return nil
-}
-
-func (s *CMDChainSlice) Type() string {
-	return "chain-slice"
-}
-
 // The config can be populated from command-line flags, environment variables, and a config.yaml file.
 // Priority order (highest to lowest):
 // 1. Command-line flags
@@ -161,7 +107,7 @@ type config struct {
 	IsSigner         bool                        `mapstructure:"signer"`
 	IsCommitter      bool                        `mapstructure:"committer"`
 	StorageDir       string                      `mapstructure:"storage-dir"`
-	Chains           CMDChainSlice               `mapstructure:"chains" validate:"required"`
+	Chains           []string                    `mapstructure:"chains" validate:"required"`
 }
 
 func (c config) Validate() error {
@@ -190,7 +136,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("signer", true, "Is Signer Node")
 	rootCmd.PersistentFlags().Bool("committer", false, "Is Committer Node")
 	rootCmd.PersistentFlags().String("storage-dir", ".data", "Dir to store data")
-	rootCmd.PersistentFlags().Var(&CMDChainSlice{}, "chains", "Chains, comma separated {chain-id}@{rpc-url},..")
+	rootCmd.PersistentFlags().StringSlice("chains", nil, "Chains, comma separated rpc-url,..")
 	rootCmd.PersistentFlags().Var(&CMDSecretKeySlice{}, "secret-keys", "Secret keys, comma separated {namespace}/{type}/{id}/{key},..")
 }
 

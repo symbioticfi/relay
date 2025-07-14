@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"middleware-offchain/core/client/evm"
 	"middleware-offchain/core/entity"
 	keyprovider "middleware-offchain/core/usecase/key-provider"
 	valsetDeriver "middleware-offchain/core/usecase/valset-deriver"
@@ -11,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
@@ -59,7 +61,20 @@ var infoCmd = &cobra.Command{
 			return errors.New("Key tag omitted")
 		}
 
-		client, err := utils_app.GetEvmClient(ctx, cfg.PrivateKey, cfg.Driver, cfg.ChainsId, cfg.ChainsUrl)
+		kp, err := keyprovider.NewSimpleKeystoreProvider()
+		if err != nil {
+			return err
+		}
+
+		client, err := evm.NewEVMClient(ctx, evm.Config{
+			ChainURLs: cfg.ChainsUrl,
+			DriverAddress: entity.CrossChainAddress{
+				Address: common.HexToAddress(cfg.Driver.Address),
+				ChainId: cfg.Driver.ChainID,
+			},
+			RequestTimeout: 5 * time.Second,
+			KeyProvider:    kp,
+		})
 		if err != nil {
 			return errors.Errorf("Failed to init evm client: %w", err)
 		}
@@ -154,8 +169,20 @@ var registerCmd = &cobra.Command{
 		if cfg.KeyTag == uint8(entity.KeyTypeInvalid) {
 			return errors.New("Key tag omitted")
 		}
+		kp, err := keyprovider.NewSimpleKeystoreProvider()
+		if err != nil {
+			return err
+		}
 
-		client, err := utils_app.GetEvmClient(ctx, cfg.PrivateKey, cfg.Driver, cfg.ChainsId, cfg.ChainsUrl)
+		client, err := evm.NewEVMClient(ctx, evm.Config{
+			ChainURLs: cfg.ChainsUrl,
+			DriverAddress: entity.CrossChainAddress{
+				Address: common.HexToAddress(cfg.Driver.Address),
+				ChainId: cfg.Driver.ChainID,
+			},
+			RequestTimeout: 5 * time.Second,
+			KeyProvider:    kp,
+		})
 		if err != nil {
 			return errors.Errorf("Failed to init evm client: %w", err)
 		}
@@ -186,8 +213,20 @@ var registerKeyCmd = &cobra.Command{
 		if cfg.PrivateKey == "" {
 			return errors.New("Private key is required")
 		}
+		kp, err := keyprovider.NewSimpleKeystoreProvider()
+		if err != nil {
+			return err
+		}
 
-		client, err := utils_app.GetEvmClient(ctx, cfg.PrivateKey, cfg.Driver, cfg.ChainsId, cfg.ChainsUrl)
+		client, err := evm.NewEVMClient(ctx, evm.Config{
+			ChainURLs: cfg.ChainsUrl,
+			DriverAddress: entity.CrossChainAddress{
+				Address: common.HexToAddress(cfg.Driver.Address),
+				ChainId: cfg.Driver.ChainID,
+			},
+			RequestTimeout: 5 * time.Second,
+			KeyProvider:    kp,
+		})
 		if err != nil {
 			return errors.Errorf("Failed to init evm client: %w", err)
 		}
