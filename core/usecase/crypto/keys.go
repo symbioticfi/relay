@@ -12,8 +12,8 @@ import (
 type PublicKey = key_types.PublicKey
 type PrivateKey = key_types.PrivateKey
 
-func NewPublicKey(keyTag entity.KeyTag, keyBytes entity.RawPublicKey) (PublicKey, error) {
-	switch keyTag.Type() {
+func NewPublicKey(keyType entity.KeyType, keyBytes entity.RawPublicKey) (PublicKey, error) {
+	switch keyType {
 	case entity.KeyTypeBlsBn254:
 		return blsBn254.FromRaw(keyBytes)
 	case entity.KeyTypeEcdsaSecp256k1:
@@ -24,12 +24,24 @@ func NewPublicKey(keyTag entity.KeyTag, keyBytes entity.RawPublicKey) (PublicKey
 	return nil, errors.New("unsupported key type")
 }
 
-func NewPrivateKey(keyTag entity.KeyTag, keyBytes []byte) (PrivateKey, error) {
-	switch keyTag.Type() {
+func NewPrivateKey(keyType entity.KeyType, keyBytes []byte) (PrivateKey, error) {
+	switch keyType {
 	case entity.KeyTypeBlsBn254:
 		return blsBn254.NewPrivateKey(keyBytes)
 	case entity.KeyTypeEcdsaSecp256k1:
 		return ecdsaSecp256k1.NewPrivateKey(keyBytes)
+	case entity.KeyTypeInvalid:
+		return nil, errors.New("unsupported key type")
+	}
+	return nil, errors.New("unsupported key type")
+}
+
+func GeneratePrivateKey(keyType entity.KeyType) (PrivateKey, error) {
+	switch keyType {
+	case entity.KeyTypeBlsBn254:
+		return blsBn254.GenerateKey()
+	case entity.KeyTypeEcdsaSecp256k1:
+		return ecdsaSecp256k1.GenerateKey()
 	case entity.KeyTypeInvalid:
 		return nil, errors.New("unsupported key type")
 	}

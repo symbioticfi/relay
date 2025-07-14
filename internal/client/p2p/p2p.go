@@ -35,9 +35,15 @@ const (
 	messageTypeSignaturesAggregated messageType = "signatures_aggregated"
 )
 
+type metrics interface {
+	ObserveP2PMessageSent(messageType string)
+	ObserveP2PPeerMessageSent(messageType, status string)
+}
+
 type Config struct {
 	Host        host.Host     `validate:"required"`
 	SendTimeout time.Duration `validate:"required,gt=0"`
+	Metrics     metrics       `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -57,6 +63,7 @@ type Service struct {
 	signatureHashHandler        *signals.Signal[p2pEntity.P2PMessage[entity.SignatureMessage]]
 	signaturesAggregatedHandler *signals.Signal[p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]]
 	sendTimeout                 time.Duration
+	metrics                     metrics
 }
 
 // NewService creates a new P2P service with the given configuration
@@ -73,6 +80,7 @@ func NewService(ctx context.Context, cfg Config) (*Service, error) {
 		signatureHashHandler:        signals.New[p2pEntity.P2PMessage[entity.SignatureMessage]](),
 		signaturesAggregatedHandler: signals.New[p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]](),
 		sendTimeout:                 cfg.SendTimeout,
+		metrics:                     cfg.Metrics,
 	}
 
 	h.SetStreamHandler(signedHashProtocolID, handleStreamWrapper(ctx, service.handleStreamSignedHash))
@@ -150,11 +158,17 @@ func (s *Service) broadcast(ctx context.Context, typ messageType, data []byte) e
 
 			if err := s.sendToPeer(tmCtx, typ, peerID, msg); err != nil {
 				errs[i] = err
+				s.metrics.ObserveP2PPeerMessageSent(string(typ), "error")
+				return
 			}
+
+			s.metrics.ObserveP2PPeerMessageSent(string(typ), "ok")
 		}(i)
 	}
 
 	wg.Wait()
+
+	s.metrics.ObserveP2PMessageSent(string(typ))
 
 	return errors.Join(errs...)
 }

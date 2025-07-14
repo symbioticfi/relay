@@ -1,6 +1,7 @@
 package keyprovider
 
 import (
+	"middleware-offchain/core/entity"
 	"middleware-offchain/core/usecase/crypto"
 	"testing"
 
@@ -23,7 +24,7 @@ func TestAddKey(t *testing.T) {
 	require.NoError(t, err)
 
 	pk := []byte{'a', 'b', 'c', 'd', 'e', 'f', 'g'}
-	key, err := crypto.NewPrivateKey(15, pk)
+	key, err := crypto.NewPrivateKey(entity.KeyTypeBlsBn254, pk)
 	require.NoError(t, err)
 
 	err = kp.AddKey(15, key, password, false)
@@ -38,7 +39,7 @@ func TestForceAddKey(t *testing.T) {
 	require.NoError(t, err)
 
 	pk := []byte{'a', 'b', 'c', 'd', 'e', 'f', 'g'}
-	key, err := crypto.NewPrivateKey(15, pk)
+	key, err := crypto.NewPrivateKey(entity.KeyTypeBlsBn254, pk)
 	require.NoError(t, err)
 
 	err = kp.AddKey(15, key, password, false)
@@ -59,7 +60,7 @@ func TestCreateAndReopen(t *testing.T) {
 	require.NoError(t, err)
 
 	pk := []byte{'a', 'b', 'c', 'd', 'e', 'f', 'g'}
-	key, err := crypto.NewPrivateKey(15, pk)
+	key, err := crypto.NewPrivateKey(entity.KeyTypeBlsBn254, pk)
 	require.NoError(t, err)
 
 	err = kp.AddKey(15, key, password, false)

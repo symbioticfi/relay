@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"math/big"
+	keyprovider "middleware-offchain/core/usecase/key-provider"
 	types "middleware-offchain/core/usecase/aggregator/aggregator-types"
 	"time"
 
@@ -23,11 +24,11 @@ type prover interface {
 }
 
 type Config struct {
-	Chains           []entity.ChainURL        `validate:"required"`
-	DriverAddress    entity.CrossChainAddress `validate:"required"`
-	PrivateKey       []byte
-	RequestTimeout   time.Duration           `validate:"required,gt=0"`
-	Prover           prover                  `validate:"required"`
+	Chains         []entity.ChainURL        `validate:"required"`
+	DriverAddress  entity.CrossChainAddress `validate:"required"`
+	KeyProvider    keyprovider.KeyProvider  `validate:"required"`
+	RequestTimeout time.Duration            `validate:"required,gt=0"`
+	Prover         prover                   `validate:"required"`
 	VerificationType entity.VerificationType `validate:"required"`
 }
 
@@ -54,7 +55,7 @@ func NewSymbiotic(ctx context.Context, cfg Config) (*Symbiotic, error) {
 	evmClient, err := evm.NewEVMClient(ctx, evm.Config{
 		Chains:         cfg.Chains,
 		DriverAddress:  cfg.DriverAddress,
-		PrivateKey:     cfg.PrivateKey,
+		KeyProvider:    cfg.KeyProvider,
 		RequestTimeout: cfg.RequestTimeout,
 	})
 	if err != nil {
@@ -154,7 +155,7 @@ func (s *Symbiotic) GetSubnetwork(ctx context.Context) (common.Hash, error) {
 	return s.evmClient.GetSubnetwork(ctx)
 }
 
-func (s *Symbiotic) GetNetworkAddress(ctx context.Context) (*common.Address, error) {
+func (s *Symbiotic) GetNetworkAddress(ctx context.Context) (common.Address, error) {
 	return s.evmClient.GetNetworkAddress(ctx)
 }
 

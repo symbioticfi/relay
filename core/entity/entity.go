@@ -5,10 +5,9 @@ import (
 	"math/big"
 	"slices"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
@@ -185,6 +184,16 @@ func (vt VerificationType) MarshalText() (text []byte, err error) {
 	return []byte(fmt.Sprintf("%d (UNKNOWN)", uint32(vt))), nil
 }
 
+func (vt VerificationType) String() string {
+	switch vt {
+	case VerificationTypeZK:
+		return fmt.Sprintf("%d (BLS-BN254-ZK)", uint32(vt))
+	case VerificationTypeSimple:
+		return fmt.Sprintf("%d (BLS-BN254-SIMPLE)", uint32(vt))
+	}
+	return fmt.Sprintf("%d (UNKNOWN)", uint32(vt))
+}
+
 type CrossChainAddress struct {
 	ChainId uint64
 	Address common.Address
@@ -248,6 +257,20 @@ type ValidatorVault struct {
 	ChainID     uint64         `json:"chainId"`
 	Vault       common.Address `json:"vault"`
 	VotingPower VotingPower    `json:"votingPower"`
+}
+
+type Validators []Validator
+
+func (va Validators) SortByVotingPowerDesc() {
+	slices.SortFunc(va, func(a, b Validator) int {
+		return -a.VotingPower.Cmp(b.VotingPower.Int)
+	})
+}
+
+func (va Validators) SortByOperatorAddressAsc() {
+	slices.SortFunc(va, func(a, b Validator) int {
+		return a.Operator.Cmp(b.Operator)
+	})
 }
 
 type Validator struct {

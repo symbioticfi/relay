@@ -1,5 +1,5 @@
 lint:
-	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6 -v run ./...
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.2.1 -v run ./...
 
 install-mocks:
 	go install go.uber.org/mock/mockgen@latest

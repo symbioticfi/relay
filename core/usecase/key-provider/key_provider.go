@@ -6,37 +6,74 @@ import (
 	"strings"
 
 	"middleware-offchain/core/entity"
+	"middleware-offchain/core/usecase/crypto"
 )
 
-func getAlias(keyTag entity.KeyTag) (string, error) {
+const (
+	SYMBIOTIC_KEY_NAMESPACE = "symb"
+	EVM_KEY_NAMESPACE       = "evm"
+)
+
+type KeyProvider interface {
+	GetPrivateKey(keyTag entity.KeyTag) (crypto.PrivateKey, error)
+	GetPrivateKeyByAlias(alias string) (crypto.PrivateKey, error)
+	GetPrivateKeyByNamespaceTypeId(namespace string, keyType entity.KeyType, id int) (crypto.PrivateKey, error)
+	HasKey(keyTag entity.KeyTag) (bool, error)
+	HasKeyByAlias(alias string) (bool, error)
+	HasKeyByNamespaceTypeId(namespace string, keyType entity.KeyType, id int) (bool, error)
+}
+
+func KeyTagToAlias(keyTag entity.KeyTag) (string, error) {
 	// https://github.com/symbioticfi/middleware-sdk-mirror/blob/change-header/src/contracts/libraries/utils/KeyTags.sol#L24-L40
 	keyId := keyTag & 0x0F
 
-	keyTypeStr, err := keyTag.Type().String()
+	return ToAlias(SYMBIOTIC_KEY_NAMESPACE, keyTag.Type(), int(keyId))
+}
+
+func ToAlias(namespace string, keyType entity.KeyType, keyId int) (string, error) {
+	keyTypeStr, err := keyType.String()
 	if err != nil {
 		return "", err
 	}
 
-	keyIdStr := strconv.Itoa(int(keyId))
+	if strings.Contains(namespace, "-") {
+		return "", errors.New("namespace must not contain dash")
+	}
 
-	return "key-symb-" + keyTypeStr + "-" + keyIdStr, nil
+	keyIdStr := strconv.Itoa(keyId)
+
+	return namespace + "-" + keyTypeStr + "-" + keyIdStr, nil
 }
 
-func AliasToTag(alias string) (entity.KeyTag, error) {
+func AliasToKeyTag(alias string) (entity.KeyTag, error) {
+	keyType, keyId, err := AliasToKeyTypeId(alias)
+	if err != nil {
+		return 0, err
+	}
+
+	// KeyTag support only
+	if keyId > 255 {
+		return 0, errors.New("unsupported key id for KeyTag")
+	}
+
+	return entity.KeyTag(uint8(keyType)<<4 | (uint8(keyId) & 0x0F)), nil
+}
+
+func AliasToKeyTypeId(alias string) (entity.KeyType, int, error) {
 	keyTagParts := strings.Split(alias, "-")
-	if len(keyTagParts) != 4 {
-		return 0, errors.New("invalid alias")
+	if len(keyTagParts) != 3 {
+		return 0, 0, errors.New("invalid alias")
 	}
 
-	keyType, err := entity.KeyTypeFromString(keyTagParts[2])
+	keyType, err := entity.KeyTypeFromString(keyTagParts[1])
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
-	keyId, err := strconv.Atoi(keyTagParts[3])
+	keyId, err := strconv.Atoi(keyTagParts[2])
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
-	return entity.KeyTag(uint8(keyType)<<4 + uint8(keyId)), nil
+	return keyType, keyId, nil
 }
