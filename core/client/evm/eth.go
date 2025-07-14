@@ -5,9 +5,10 @@ import (
 	_ "embed"
 	"encoding/hex"
 	"math/big"
-	keyprovider "middleware-offchain/core/usecase/key-provider"
 	"regexp"
 	"time"
+
+	keyprovider "middleware-offchain/core/usecase/key-provider"
 
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/samber/lo"
@@ -83,10 +84,10 @@ func NewEVMClient(ctx context.Context, cfg Config) (*Client, error) {
 	}
 
 	return &Client{
-		cfg:    cfg,
-		conns:  conns,
-		driver: driver,
-		metrics:  cfg.Metrics,
+		cfg:     cfg,
+		conns:   conns,
+		driver:  driver,
+		metrics: cfg.Metrics,
 	}, nil
 }
 
