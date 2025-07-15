@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 	"runtime"
-	"time"
 
 	"middleware-offchain/cmd/utils/keys"
 	"middleware-offchain/cmd/utils/network"
@@ -20,6 +19,7 @@ type config struct {
 }
 
 var Version = "local"
+var BuildTime = "unknown"
 
 var cfg config
 
@@ -57,6 +57,6 @@ var versionCommand = &cobra.Command{
 		pterm.Info.Println("Utils tool version:", Version)
 		pterm.Info.Println("Go version:", runtime.Version())
 		pterm.Info.Println("OS/Arch:", runtime.GOOS+"/"+runtime.GOARCH)
-		pterm.Info.Println("Build time:", time.Now().Format(time.RFC3339))
+		pterm.Info.Println("Build time:", BuildTime)
 	},
 }
