@@ -48,11 +48,12 @@ type Config struct {
 	ReadHeaderTimeout time.Duration `validate:"required,gt=0"`
 	ShutdownTimeout   time.Duration `validate:"required,gt=0"`
 
-	Signer     signer    `validate:"required"`
-	Repo       repo      `validate:"required"`
-	EVMClient  evmClient `validate:"required"`
-	Deriver    deriver   `validate:"required"`
-	Aggregator aggregator
+	Signer       signer    `validate:"required"`
+	Repo         repo      `validate:"required"`
+	EVMClient    evmClient `validate:"required"`
+	Deriver      deriver   `validate:"required"`
+	Aggregator   aggregator
+	ServeMetrics bool
 }
 
 func (c Config) Validate() error {
@@ -91,6 +92,7 @@ func NewAPIApp(cfg Config) (*APIApp, error) {
 		SwaggerHandler:    swag.OapiSchemaHandler,
 		ReadHeaderTimeout: cfg.ReadHeaderTimeout,
 		ShutdownTimeout:   cfg.ShutdownTimeout,
+		ServeMetrics:      cfg.ServeMetrics,
 	})
 	if err != nil {
 		return nil, errors.Errorf("failed to create server: %w", err)
@@ -101,7 +103,7 @@ func NewAPIApp(cfg Config) (*APIApp, error) {
 	}, nil
 }
 
-func (a APIApp) Start(ctx context.Context) error {
+func (a *APIApp) Start(ctx context.Context) error {
 	logCtx := log.WithComponent(ctx, "api")
 
 	return a.srv.Serve(logCtx)

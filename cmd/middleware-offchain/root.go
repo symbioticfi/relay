@@ -204,6 +204,7 @@ func runApp(ctx context.Context) error {
 		slog.DebugContext(ctx, "Created aggregator app, starting")
 	}
 
+	serveMetricsOnAPIAddress := cfg.HTTPListenAddr == cfg.MetricsListenAddr || cfg.MetricsListenAddr == ""
 	api, err := apiApp.NewAPIApp(apiApp.Config{
 		Address:           cfg.HTTPListenAddr,
 		ReadHeaderTimeout: time.Second,
@@ -214,6 +215,7 @@ func runApp(ctx context.Context) error {
 		EVMClient:         evmClient,
 		Aggregator:        aggApp,
 		Deriver:           deriver,
+		ServeMetrics:      serveMetricsOnAPIAddress,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create api app: %w", err)
@@ -225,6 +227,24 @@ func runApp(ctx context.Context) error {
 		}
 		return nil
 	})
+
+	if !serveMetricsOnAPIAddress {
+		mtrApp, err := metrics.NewApp(metrics.AppConfig{
+			Address:           cfg.MetricsListenAddr,
+			ReadHeaderTimeout: time.Second * 5,
+		})
+		if err != nil {
+			return errors.Errorf("failed to create metrics app: %w", err)
+		}
+
+		slog.DebugContext(ctx, "Created metrics app, starting")
+		eg.Go(func() error {
+			if err := mtrApp.Start(egCtx); err != nil {
+				return errors.Errorf("failed to start metrics server: %w", err)
+			}
+			return nil
+		})
+	}
 
 	return eg.Wait()
 }
