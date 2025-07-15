@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p"
-	"github.com/samber/lo"
 	"golang.org/x/sync/errgroup"
 
 	"middleware-offchain/core/client/evm"
@@ -36,13 +35,6 @@ func runApp(ctx context.Context) error {
 	log.Init(cfg.LogLevel, cfg.LogMode)
 	mtr := metrics.New(metrics.Config{})
 
-	chains := lo.Map(cfg.Chains, func(chain CMDChain, _ int) entity.ChainURL {
-		return entity.ChainURL{
-			ChainID: chain.ChainID,
-			RPCURL:  chain.URL,
-		}
-	})
-
 	// TODO if keystore is used use another keystore and ignore keys from flags
 	keyProvider, err := keyprovider.NewSimpleKeystoreProvider()
 	if err != nil {
@@ -65,7 +57,7 @@ func runApp(ctx context.Context) error {
 	}
 
 	evmClient, err := evm.NewEVMClient(ctx, evm.Config{
-		Chains: chains,
+		ChainURLs: cfg.Chains,
 		DriverAddress: entity.CrossChainAddress{
 			ChainId: cfg.Driver.ChainID,
 			Address: common.HexToAddress(cfg.Driver.Address),

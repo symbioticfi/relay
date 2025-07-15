@@ -1,0 +1,195 @@
+package cmdhelpers
+
+import (
+	"fmt"
+	"log/slog"
+	"math/big"
+	"middleware-offchain/core/entity"
+	"sort"
+	"strconv"
+	"strings"
+	"syscall"
+
+	"github.com/pterm/pterm"
+
+	"golang.org/x/term"
+)
+
+type SecretKeyMapFlag struct {
+	Secrets map[uint64]string
+}
+
+func (s *SecretKeyMapFlag) String() string {
+	parts := make([]string, 0)
+	for chainID, key := range s.Secrets {
+		parts = append(parts, fmt.Sprintf("%d:%s", chainID, key))
+	}
+	sort.Strings(parts) // Optional: consistent output order
+	return strings.Join(parts, ",")
+}
+
+func (s *SecretKeyMapFlag) Set(val string) error {
+	if val == "" {
+		s.Secrets = make(map[uint64]string)
+		return nil
+	}
+
+	result := make(map[uint64]string)
+	pairs := strings.Split(val, ",")
+
+	for _, pair := range pairs {
+		kv := strings.SplitN(pair, ":", 2)
+		if len(kv) != 2 {
+			return fmt.Errorf("invalid format (expected chainId:key): %s", pair)
+		}
+
+		chainID, err := strconv.ParseUint(kv[0], 10, 32)
+		if err != nil {
+			return fmt.Errorf("invalid chain ID: %s", kv[0])
+		}
+
+		key := kv[1]
+		if key == "" {
+			return fmt.Errorf("empty key for chain ID: %d", chainID)
+		}
+
+		result[chainID] = key
+	}
+
+	s.Secrets = result
+	return nil
+}
+
+func (s *SecretKeyMapFlag) Type() string {
+	return "secretKeyMap"
+}
+
+func GetPassword() (string, error) {
+	slog.Info("Enter password: ")
+	passwordBytes, err := term.ReadPassword(syscall.Stdin)
+	if err != nil {
+		return "", err
+	}
+
+	return string(passwordBytes), nil
+}
+
+func PrintTreeValidator(leveledList pterm.LeveledList, validator entity.Validator, totalVotingPower *big.Int) pterm.LeveledList {
+	leveledList = append(leveledList, pterm.LeveledListItem{
+		Level: 0,
+		Text:  fmt.Sprintf("Validator: %s", validator.Operator.String()),
+	})
+
+	status := pterm.FgRed.Sprint("inactive")
+	if validator.IsActive {
+		status = pterm.FgGreen.Sprint("active")
+	}
+	leveledList = append(leveledList, pterm.LeveledListItem{
+		Level: 1,
+		Text:  fmt.Sprintf("Status: %s", status),
+	})
+
+	leveledList = append(leveledList, pterm.LeveledListItem{
+		Level: 1,
+		Text: fmt.Sprintf("Voting Power: %d (%0.3f%%)",
+			validator.VotingPower.Int,
+			GetPct(validator.VotingPower.Int, totalVotingPower),
+		),
+	})
+
+	leveledList = append(leveledList, pterm.LeveledListItem{
+		Level: 1,
+		Text:  fmt.Sprintf("Vaults (%d):", len(validator.Vaults)),
+	})
+
+	for _, vault := range validator.Vaults {
+		leveledList = append(leveledList, pterm.LeveledListItem{
+			Level: 2,
+			Text:  fmt.Sprintf("Vault: %s", vault.Vault.String()),
+		})
+		leveledList = append(leveledList, pterm.LeveledListItem{
+			Level: 3,
+			Text:  fmt.Sprintf("ChainID: %d", vault.ChainID),
+		})
+		leveledList = append(leveledList, pterm.LeveledListItem{
+			Level: 3,
+			Text: fmt.Sprintf("Voting Power: %d (%0.3f%%)",
+				vault.VotingPower,
+				GetPct(vault.VotingPower.Int, validator.VotingPower.Int),
+			),
+		})
+	}
+
+	leveledList = append(leveledList, pterm.LeveledListItem{
+		Level: 1,
+		Text:  fmt.Sprintf("Keys (%d):", len(validator.Keys)),
+	})
+
+	for _, key := range validator.Keys {
+		typeText, _ := key.Tag.Type().String()
+		pubkeyText, _ := key.Payload.MarshalText()
+		leveledList = append(leveledList, pterm.LeveledListItem{
+			Level: 2,
+			Text:  fmt.Sprintf("Key: %d", uint8(key.Tag)),
+		})
+		leveledList = append(leveledList, pterm.LeveledListItem{
+			Level: 3,
+			Text:  fmt.Sprintf("Type: %s", typeText),
+		})
+		leveledList = append(leveledList, pterm.LeveledListItem{
+			Level: 3,
+			Text:  fmt.Sprintf("PubKey: %s", pubkeyText),
+		})
+	}
+
+	return leveledList
+}
+
+func MarshalTextValidator(validator entity.Validator, compact bool) (string, error) {
+	var result strings.Builder
+
+	status := "active"
+	if !validator.IsActive {
+		status = "inactive"
+	}
+
+	result.WriteString(fmt.Sprintf("\nValidator: %s\n", validator.Operator.String()))
+	result.WriteString(fmt.Sprintf("   Status: %s\n", status))
+	result.WriteString(fmt.Sprintf("   Voting Power: %v\n", validator.VotingPower))
+
+	if compact {
+		return result.String(), nil
+	}
+
+	result.WriteString(fmt.Sprintf("\nKeys (%d):\n", len(validator.Keys)))
+	result.WriteString("   # | Key | Tag\n")
+	for i, key := range validator.Keys {
+		tagBytes, err := key.Tag.MarshalText()
+		if err != nil {
+			return "", err
+		}
+
+		payloadBytes, err := key.Payload.MarshalText()
+		if err != nil {
+			return "", err
+		}
+
+		result.WriteString(fmt.Sprintf("   %d | %s | %s\n", i+1, string(payloadBytes), string(tagBytes)))
+	}
+
+	result.WriteString(fmt.Sprintf("\nVaults (%d):\n", len(validator.Vaults)))
+	result.WriteString("   # | Address | Chain ID | Voting Power\n")
+	for i, vault := range validator.Vaults {
+		result.WriteString(fmt.Sprintf("   %d | %s | %d | %v\n", i+1, vault.Vault, vault.ChainID, vault.VotingPower))
+	}
+
+	return result.String(), nil
+}
+
+func GetPct(value *big.Int, total *big.Int) float64 {
+	pct := new(big.Float).SetInt(value)
+	pct = pct.Mul(pct, big.NewFloat(100))
+	pct = pct.Quo(pct, new(big.Float).SetInt(total))
+	fl, _ := pct.Float64()
+	return fl
+}

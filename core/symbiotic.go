@@ -23,7 +23,7 @@ type prover interface {
 }
 
 type Config struct {
-	Chains         []entity.ChainURL        `validate:"required"`
+	ChainUrls      []string                 `validate:"required"`
 	DriverAddress  entity.CrossChainAddress `validate:"required"`
 	KeyProvider    keyprovider.KeyProvider  `validate:"required"`
 	RequestTimeout time.Duration            `validate:"required,gt=0"`
@@ -51,7 +51,7 @@ func NewSymbiotic(ctx context.Context, cfg Config) (*Symbiotic, error) {
 	}
 
 	evmClient, err := evm.NewEVMClient(ctx, evm.Config{
-		Chains:         cfg.Chains,
+		ChainURLs:      cfg.ChainUrls,
 		DriverAddress:  cfg.DriverAddress,
 		KeyProvider:    cfg.KeyProvider,
 		RequestTimeout: cfg.RequestTimeout,
