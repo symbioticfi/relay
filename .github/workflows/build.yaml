@@ -19,6 +19,14 @@ jobs:
         with:
           go-version: 1.24.3
 
+      - name: Get detailed version info
+        id: get_version
+        run: |
+          # Use git describe to get a version string like v1.0.0-1-gabcdef
+          VERSION_INFO=$(git describe --tags --always --long --dirty)
+          echo "Version Info: $VERSION_INFO"
+          echo "APP_VERSION=$VERSION_INFO" >> $GITHUB_ENV
+
       - name: Build generate-genesis-linux
         run: make build-generate-genesis-linux
       - name: Upload artifact linux_amd64
