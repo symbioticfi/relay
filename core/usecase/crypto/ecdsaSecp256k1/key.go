@@ -2,10 +2,9 @@ package ecdsaSecp256k1
 
 import (
 	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"fmt"
 	"math/big"
+
 	"middleware-offchain/core/entity"
 	symbKeys "middleware-offchain/core/usecase/crypto/key-types"
 
@@ -40,15 +39,15 @@ func Hash(msg []byte) MessageHash {
 func NewPrivateKey(b []byte) (*PrivateKey, error) {
 	k, err := crypto.ToECDSA(b)
 	if err != nil {
-		return nil, errors.Errorf("ecdsaSecp256l1: failed to parse private key: %v", err)
+		return nil, errors.Errorf("ecdsaSecp256k1: failed to parse private key: %v", err)
 	}
 	return &PrivateKey{privateKey: *k}, nil
 }
 
 func GenerateKey() (*PrivateKey, error) {
-	pk, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	pk, err := crypto.GenerateKey()
 	if err != nil {
-		return nil, errors.Errorf("ecdsaSecp256l1: failed to generate key %w", err)
+		return nil, errors.Errorf("ecdsaSecp256k1: failed to generate key %w", err)
 	}
 	return &PrivateKey{privateKey: *pk}, nil
 }
@@ -58,12 +57,12 @@ func (k *PrivateKey) Bytes() []byte {
 }
 
 func (k *PrivateKey) Sign(msg []byte) (Signature, MessageHash, error) {
-	// symbiotic using keccak256 for hashing in bls-bn254
+	// symbiotic using keccak256 for hashing in ecdsaSecp256k1
 	hash := Hash(msg)
 
 	sig, err := crypto.Sign(hash, &k.privateKey)
 	if err != nil {
-		return nil, nil, errors.Errorf("ecdsaSecp256l1: failed to sign %w", err)
+		return nil, nil, errors.Errorf("ecdsaSecp256k1: failed to sign %w", err)
 	}
 
 	return sig, hash, nil
@@ -90,12 +89,18 @@ func (k *PublicKey) Verify(msg Message, sig Signature) error {
 
 func (k *PublicKey) VerifyWithHash(msgHash MessageHash, sig Signature) error {
 	if len(msgHash) != MessageHashLength {
-		return errors.Errorf("blsBn254: invalid message hash length")
+		return errors.Errorf("ecdsaSecp256k1: invalid message hash length")
+	}
+	if len(sig) != 65 {
+		return errors.Errorf("ecdsaSecp256k1: invalid signature length, expected 65 bytes, got %d", len(sig))
 	}
 
-	ok := crypto.VerifySignature(crypto.FromECDSAPub(&k.pubKey), msgHash, sig)
+	// Remove recovery ID from signature for verification
+	sigWithoutRecoveryId := sig[:64]
+	ok := crypto.VerifySignature(crypto.FromECDSAPub(&k.pubKey), msgHash, sigWithoutRecoveryId)
 	if !ok {
-		return errors.Errorf("ecdsaSecp256l1: failed to verify signature %s", sig)
+		sigStr, _ := sig.MarshalText()
+		return errors.Errorf("ecdsaSecp256k1: failed to verify signature %s", sigStr)
 	}
 	return nil
 }
@@ -117,15 +122,17 @@ func (k *PublicKey) MarshalText() (text []byte, err error) {
 
 func FromRaw(rawKey RawPublicKey) (*PublicKey, error) {
 	if rawKey == nil {
-		return nil, errors.New("blsBn254: nil raw key")
+		return nil, errors.New("ecdsaSecp256k1: nil raw key")
 	}
 	if len(rawKey) != RawKeyLength {
-		return nil, fmt.Errorf("blsBn254: invalid raw key length, expected %d, got %d", RawKeyLength, len(rawKey))
+		return nil, fmt.Errorf("ecdsaSecp256k1: invalid raw key length, expected %d, got %d", RawKeyLength, len(rawKey))
 	}
+
 	pk, err := crypto.DecompressPubkey(rawKey)
 	if err != nil {
-		return nil, fmt.Errorf("blsBn254: failed to decompress public key %w", err)
+		return nil, fmt.Errorf("ecdsaSecp256k1: failed to decompress public key %w", err)
 	}
+
 	return &PublicKey{pubKey: *pk}, nil
 }
 
