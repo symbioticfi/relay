@@ -97,17 +97,18 @@ func (s *CMDSecretKeySlice) Type() string {
 // 2. Environment variables (prefixed with SYMB_ and dashes replaced by underscores)
 // 3. config.yaml file (specified by --config or default "config.yaml")
 type config struct {
-	Driver           entity.CMDCrossChainAddress `mapstructure:"driver" validate:"required"`
-	LogLevel         string                      `mapstructure:"log-level" validate:"oneof=debug info warn error"`
-	LogMode          string                      `mapstructure:"log-mode" validate:"oneof=text pretty"`
-	P2PListenAddress string                      `mapstructure:"p2p-listen"`
-	HTTPListenAddr   string                      `mapstructure:"http-listen" validate:"required"`
-	SecretKeys       CMDSecretKeySlice           `mapstructure:"secret-keys"`
-	IsAggregator     bool                        `mapstructure:"aggregator"`
-	IsSigner         bool                        `mapstructure:"signer"`
-	IsCommitter      bool                        `mapstructure:"committer"`
-	StorageDir       string                      `mapstructure:"storage-dir"`
-	Chains           []string                    `mapstructure:"chains" validate:"required"`
+	Driver            entity.CMDCrossChainAddress `mapstructure:"driver" validate:"required"`
+	LogLevel          string                      `mapstructure:"log-level" validate:"oneof=debug info warn error"`
+	LogMode           string                      `mapstructure:"log-mode" validate:"oneof=text pretty"`
+	P2PListenAddress  string                      `mapstructure:"p2p-listen"`
+	HTTPListenAddr    string                      `mapstructure:"http-listen" validate:"required"`
+	MetricsListenAddr string                      `mapstructure:"metrics-listen"`
+	SecretKeys        CMDSecretKeySlice           `mapstructure:"secret-keys"`
+	IsAggregator      bool                        `mapstructure:"aggregator"`
+	IsSigner          bool                        `mapstructure:"signer"`
+	IsCommitter       bool                        `mapstructure:"committer"`
+	StorageDir        string                      `mapstructure:"storage-dir"`
+	Chains            []string                    `mapstructure:"chains" validate:"required"`
 }
 
 func (c config) Validate() error {
