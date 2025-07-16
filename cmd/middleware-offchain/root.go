@@ -111,7 +111,7 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create memory repository: %w", err)
 	}
 
-	aggregatorLib := aggregator.NewAggregator(proof.NewZkProver())
+	aggregatorLib := aggregator.NewAggregator(proof.NewZkProver(cfg.CircuitsDir))
 
 	aggProofReadySignal := signals.New[entity.AggregatedSignatureMessage]()
 
