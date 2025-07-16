@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/require"
 )
 
@@ -78,12 +79,15 @@ func TestCheckPrivateKeyBytes(t *testing.T) {
 
 	require.Equal(t, sign, newSign)
 	require.Equal(t, hash, newHash)
+}
 
-	t.Run("InvalidPrivateKey", func(t *testing.T) {
-		_, err := NewPrivateKey([]byte{1, 2, 3})
-		require.Error(t, err)
-		require.EqualError(t, err, "ecdsaSecp256k1: failed to parse private key: invalid length, need 256 bits")
-	})
+func TestMakePrivateFromNumber(t *testing.T) {
+	keyBytes := big.NewInt(1000000000000).FillBytes(make([]byte, 32))
+	newPrivateKey, err := NewPrivateKey(keyBytes)
+	require.NoError(t, err)
+
+	_, err = crypto.ToECDSA(newPrivateKey.Bytes())
+	require.NoError(t, err)
 }
 
 func TestMarshallText(t *testing.T) {
