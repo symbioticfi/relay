@@ -45,7 +45,6 @@ func runApp(ctx context.Context) error {
 			return errors.Errorf("failed to create keystore provider from keystore file: %w", err)
 		}
 	} else {
-		// TODO if keystore is used use another keystore and ignore keys from flags
 		simpleKeyProvider, err := keyprovider.NewSimpleKeystoreProvider()
 		if err != nil {
 			return errors.Errorf("failed to create keystore provider: %w", err)

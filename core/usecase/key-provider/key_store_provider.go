@@ -188,7 +188,7 @@ func (k *KeystoreProvider) AddKeyByNamespaceTypeId(ns string, tp entity.KeyType,
 	return nil
 }
 
-func (k *KeystoreProvider) DeleteKeyByNamespaceTypeId(ns string, tp entity.KeyType, id int, privateKey crypto.PrivateKey, password string) error {
+func (k *KeystoreProvider) DeleteKeyByNamespaceTypeId(ns string, tp entity.KeyType, id int, password string) error {
 	exists, err := k.HasKeyByNamespaceTypeId(ns, tp, id)
 	if err != nil {
 		return err
