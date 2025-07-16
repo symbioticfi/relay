@@ -3,13 +3,13 @@ package blsBn254
 import (
 	"fmt"
 	"math/big"
+
 	"middleware-offchain/core/entity"
 	symbKeys "middleware-offchain/core/usecase/crypto/key-types"
 
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
-
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fp"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
