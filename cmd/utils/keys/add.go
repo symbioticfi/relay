@@ -2,11 +2,13 @@ package keys
 
 import (
 	"errors"
+
 	"middleware-offchain/core/entity"
 	"middleware-offchain/core/usecase/crypto"
 	keyprovider "middleware-offchain/core/usecase/key-provider"
 	cmdhelpers "middleware-offchain/internal/usecase/cmd-helpers"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/cobra"
 )
 
@@ -32,6 +34,12 @@ func addKey(keyTag entity.KeyTag, generate bool, force bool, privateKey string) 
 		}
 
 		privateKey = string(pk.Bytes())
+	} else {
+		pkBytes := common.FromHex(privateKey)
+		if len(pkBytes) == 0 {
+			return errors.New("private key cannot be empty")
+		}
+		privateKey = string(pkBytes)
 	}
 
 	if globalFlags.Password == "" {

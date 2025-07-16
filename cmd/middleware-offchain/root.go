@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log/slog"
-	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -35,25 +34,38 @@ func runApp(ctx context.Context) error {
 	log.Init(cfg.LogLevel, cfg.LogMode)
 	mtr := metrics.New(metrics.Config{})
 
-	// TODO if keystore is used use another keystore and ignore keys from flags
-	keyProvider, err := keyprovider.NewSimpleKeystoreProvider()
-	if err != nil {
-		return errors.Errorf("failed to create keystore provider: %w", err)
-	}
+	var (
+		keyProvider keyprovider.KeyProvider
+		err         error
+	)
 
-	for _, key := range cfg.SecretKeys {
-		keyBytes, ok := new(big.Int).SetString(key.Secret, 10)
-		if !ok {
-			return errors.Errorf("failed to parse secret key as big.Int")
-		}
-		pk, err := symbioticCrypto.NewPrivateKey(entity.KeyType(key.KeyType), keyBytes.Bytes())
+	if cfg.KeyStore.Path != "" {
+		keyProvider, err = keyprovider.NewKeystoreProvider(cfg.KeyStore.Path, cfg.KeyStore.Password)
 		if err != nil {
-			return errors.Errorf("failed to create private key: %w", err)
+			return errors.Errorf("failed to create keystore provider from keystore file: %w", err)
 		}
-		err = keyProvider.AddKeyByNamespaceTypeId(key.Namespace, entity.KeyType(key.KeyType), key.KeyId, pk)
+	} else {
+		// TODO if keystore is used use another keystore and ignore keys from flags
+		simpleKeyProvider, err := keyprovider.NewSimpleKeystoreProvider()
 		if err != nil {
-			return errors.Errorf("failed to add key to keystore: %w", err)
+			return errors.Errorf("failed to create keystore provider: %w", err)
 		}
+
+		for _, key := range cfg.SecretKeys {
+			keyBytes := common.FromHex(key.Secret)
+			if len(keyBytes) == 0 {
+				return errors.Errorf("invalid key bytes for key %s/%d/%d/%s", key.Namespace, key.KeyType, key.KeyId, keyBytes)
+			}
+			pk, err := symbioticCrypto.NewPrivateKey(entity.KeyType(key.KeyType), keyBytes)
+			if err != nil {
+				return errors.Errorf("failed to create private key: %w", err)
+			}
+			err = simpleKeyProvider.AddKeyByNamespaceTypeId(key.Namespace, entity.KeyType(key.KeyType), key.KeyId, pk)
+			if err != nil {
+				return errors.Errorf("failed to add key to keystore: %w", err)
+			}
+		}
+		keyProvider = simpleKeyProvider
 	}
 
 	evmClient, err := evm.NewEVMClient(ctx, evm.Config{
