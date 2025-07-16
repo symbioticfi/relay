@@ -109,6 +109,7 @@ type config struct {
 	IsCommitter       bool                        `mapstructure:"committer"`
 	StorageDir        string                      `mapstructure:"storage-dir"`
 	Chains            []string                    `mapstructure:"chains" validate:"required"`
+	CircuitsDir       string                      `mapstructure:"circuits-dir"`
 }
 
 func (c config) Validate() error {
@@ -140,6 +141,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().String("storage-dir", ".data", "Dir to store data")
 	rootCmd.PersistentFlags().StringSlice("chains", nil, "Chains, comma separated rpc-url,..")
 	rootCmd.PersistentFlags().Var(&CMDSecretKeySlice{}, "secret-keys", "Secret keys, comma separated {namespace}/{type}/{id}/{key},..")
+	rootCmd.PersistentFlags().String("circuits-dir", "", "Directory path to load zk circuits from, if empty then zp prover is disabled")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
@@ -208,6 +210,9 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("chains", cmd.PersistentFlags().Lookup("chains")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("circuits-dir", cmd.PersistentFlags().Lookup("circuits-dir")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 
