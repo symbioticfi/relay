@@ -5,14 +5,14 @@ import (
 	"math/big"
 	"slices"
 
+	"middleware-offchain/core/usecase/ssz"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
-
-	"middleware-offchain/pkg/ssz"
 )
 
 type VerificationType uint32
