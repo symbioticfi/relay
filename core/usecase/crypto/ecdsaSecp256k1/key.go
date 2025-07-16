@@ -37,7 +37,9 @@ func Hash(msg []byte) MessageHash {
 }
 
 func NewPrivateKey(b []byte) (*PrivateKey, error) {
-	k, err := crypto.ToECDSA(b)
+	fixedLengthBytes := big.NewInt(0).SetBytes(b).FillBytes(make([]byte, 32))
+
+	k, err := crypto.ToECDSA(fixedLengthBytes)
 	if err != nil {
 		return nil, errors.Errorf("ecdsaSecp256k1: failed to parse private key: %v", err)
 	}
@@ -53,7 +55,7 @@ func GenerateKey() (*PrivateKey, error) {
 }
 
 func (k *PrivateKey) Bytes() []byte {
-	return k.privateKey.D.Bytes()
+	return k.privateKey.D.FillBytes(make([]byte, 32))
 }
 
 func (k *PrivateKey) Sign(msg []byte) (Signature, MessageHash, error) {
