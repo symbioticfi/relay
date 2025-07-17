@@ -269,6 +269,22 @@ func Compress(g1 *G1) (common.Hash, error) {
 	return common.Hash(compressedKeyG1Bytes), nil
 }
 
+func Decompress(compressed [32]byte) (*G1, error) {
+	x, flag := new(big.Int).DivMod(new(big.Int).SetBytes(compressed[:32]), big.NewInt(2), big.NewInt(2))
+	_, y, err := FindYFromX(x)
+	if err != nil {
+		return nil, err
+	}
+	g1 := ZeroG1()
+	g1.X.SetBigInt(x)
+	g1.Y.SetBigInt(y)
+	if flag.Cmp(big.NewInt(1)) == 0 {
+		g1.Neg(g1.G1Affine)
+	}
+
+	return g1, nil
+}
+
 func ZeroG1() *G1 {
 	return &G1{G1Affine: new(bn254.G1Affine)}
 }

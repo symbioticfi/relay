@@ -290,6 +290,16 @@ func (v Validator) FindKeyByKeyTag(keyTag KeyTag) ([]byte, bool) {
 	return nil, false
 }
 
+func GetActiveValidators(allValidators []Validator) []Validator {
+	activeValidators := make([]Validator, 0)
+	for _, validator := range allValidators {
+		if validator.IsActive {
+			activeValidators = append(activeValidators, validator)
+		}
+	}
+	return activeValidators
+}
+
 type ValidatorSet struct {
 	Version            uint8
 	RequiredKeyTag     KeyTag      // key tag required to commit next valset

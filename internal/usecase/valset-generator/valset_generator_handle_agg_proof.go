@@ -30,7 +30,7 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		return errors.Errorf("failed to get config for epoch %d: %w", msg.Epoch, err)
 	}
 
-	extraData, err := s.cfg.Aggregator.GenerateExtraData(valset, config)
+	extraData, err := s.cfg.Aggregator.GenerateExtraData(valset, config.RequiredKeyTags)
 	if err != nil {
 		return errors.Errorf("failed to generate extra data for validator set: %w", err)
 	}

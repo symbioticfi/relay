@@ -3,6 +3,7 @@ package aggregator_app
 import (
 	"context"
 	"log/slog"
+	types "middleware-offchain/core/usecase/aggregator/aggregator-types"
 	"time"
 
 	"middleware-offchain/core/usecase/crypto"
@@ -29,15 +30,7 @@ type p2pClient interface {
 	BroadcastSignatureAggregatedMessage(ctx context.Context, msg entity.AggregatedSignatureMessage) error
 }
 
-type aggregator interface {
-	Aggregate(
-		valset entity.ValidatorSet,
-		keyTag entity.KeyTag,
-		verificationType entity.VerificationType,
-		messageHash []byte,
-		signatures []entity.SignatureExtended,
-	) (entity.AggregationProof, error)
-}
+type aggregator = types.Aggregator
 
 type metrics interface {
 	ObserveOnlyAggregateDuration(d time.Duration)
@@ -152,7 +145,6 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 	proofData, err := s.cfg.Aggregator.Aggregate(
 		validatorSet,
 		msg.KeyTag,
-		networkConfig.VerificationType,
 		msg.Signature.MessageHash,
 		sigs,
 	)
