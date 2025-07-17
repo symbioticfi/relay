@@ -37,7 +37,11 @@ func Hash(msg []byte) MessageHash {
 }
 
 func NewPrivateKey(b []byte) (*PrivateKey, error) {
-	fixedLengthBytes := big.NewInt(0).SetBytes(b).FillBytes(make([]byte, 32))
+	kInt := big.NewInt(0).SetBytes(b)
+	if kInt.BitLen() > 32*8 { // 32 bytes = 256 bits
+		return nil, errors.Errorf("ecdsaSecp256k1: private key too long, expected 32 bytes, got %d bytes", len(b))
+	}
+	fixedLengthBytes := kInt.FillBytes(make([]byte, 32))
 
 	k, err := crypto.ToECDSA(fixedLengthBytes)
 	if err != nil {

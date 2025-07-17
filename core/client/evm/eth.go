@@ -580,23 +580,23 @@ type metadata interface {
 	GetAbi() (*abi.ABI, error)
 }
 
-func (e *Client) formatEVMContractError(meta metadata, err error) error {
+func (e *Client) formatEVMContractError(meta metadata, originalErr error) error {
 	type jsonError interface {
 		Error() string
 		ErrorData() interface{}
 		ErrorCode() int
 	}
 	var errData jsonError
-	if !errors.As(err, &errData) {
-		return err
+	if !errors.As(originalErr, &errData) {
+		return originalErr
 	}
 	if errData.ErrorCode() != 3 && errData.ErrorData() == nil {
-		return err
+		return originalErr
 	}
 
 	matches := customErrRegExp.FindStringSubmatch(errData.Error())
 	if len(matches) < 1 {
-		return err
+		return originalErr
 	}
 
 	parsedAbi, err := meta.GetAbi()
@@ -618,7 +618,7 @@ func (e *Client) formatEVMContractError(meta metadata, err error) error {
 		return err
 	}
 
-	return errors.Errorf("%w: %s", err, contractError.String())
+	return errors.Errorf("%w: %s", originalErr, contractError.String())
 }
 
 func (e *Client) formatEVMError(err error) error {
