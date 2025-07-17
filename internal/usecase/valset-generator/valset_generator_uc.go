@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"log/slog"
 	"math/big"
+	types "middleware-offchain/core/usecase/aggregator/aggregator-types"
 	"time"
 
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
@@ -49,9 +50,7 @@ type deriver interface {
 	GetNetworkData(ctx context.Context, addr entity.CrossChainAddress) (entity.NetworkData, error)
 }
 
-type aggregator interface {
-	GenerateExtraData(valset entity.ValidatorSet, config entity.NetworkConfig) ([]entity.ExtraData, error)
-}
+type aggregator = types.Aggregator
 
 type Config struct {
 	Signer          signer        `validate:"required"`
@@ -125,7 +124,7 @@ func (s *Service) process(ctx context.Context) error {
 		return errors.Errorf("failed to get network data: %w", err)
 	}
 
-	extraData, err := s.cfg.Aggregator.GenerateExtraData(valSet, config)
+	extraData, err := s.cfg.Aggregator.GenerateExtraData(valSet, config.RequiredKeyTags)
 	if err != nil {
 		return errors.Errorf("failed to generate extra data: %w", err)
 	}

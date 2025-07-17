@@ -4,61 +4,13 @@ import (
 	"bytes"
 	"math/big"
 	"middleware-offchain/core/entity"
-	"middleware-offchain/pkg/bls"
-	"middleware-offchain/pkg/proof"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/go-errors/errors"
 )
-
-func getActiveValidators(allValidators []entity.Validator) []entity.Validator {
-	activeValidators := make([]entity.Validator, 0)
-	for _, validator := range allValidators {
-		if validator.IsActive {
-			activeValidators = append(activeValidators, validator)
-		}
-	}
-	return activeValidators
-}
-
-func toValidatorsData(signerValidators []entity.Validator, allValidators []entity.Validator, requiredKeyTag entity.KeyTag) ([]proof.ValidatorData, error) {
-	activeValidators := getActiveValidators(allValidators)
-	valset := make([]proof.ValidatorData, 0)
-	for i := range activeValidators {
-		for _, key := range activeValidators[i].Keys {
-			if key.Tag == requiredKeyTag {
-				g1, err := bls.DeserializeG1(key.Payload)
-				if err != nil {
-					return nil, errors.Errorf("failed to deserialize G1: %w", err)
-				}
-				validatorData := proof.ValidatorData{Key: *g1.G1Affine, VotingPower: activeValidators[i].VotingPower.Int, IsNonSigner: true}
-
-				for _, signer := range signerValidators {
-					if signer.Operator.Cmp(activeValidators[i].Operator) == 0 {
-						validatorData.IsNonSigner = false
-						break
-					}
-				}
-
-				valset = append(valset, validatorData)
-				break
-			}
-		}
-	}
-	return proof.NormalizeValset(valset), nil
-}
-
-func ValidatorSetMimcAccumulator(valset []entity.Validator, requiredKeyTag entity.KeyTag) (common.Hash, error) {
-	validatorsData, err := toValidatorsData([]entity.Validator{}, valset, requiredKeyTag)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	return common.Hash(proof.HashValset(validatorsData)), nil
-}
 
 func CompareMessageHasher(signatures []entity.SignatureExtended, msgHash []byte) bool {
 	for i := range signatures {
@@ -118,10 +70,10 @@ func GetExtraDataKeyTagged(verificationType entity.VerificationType, keyTag enti
 
 func GetAggregatedPubKeys(
 	valset entity.ValidatorSet,
-	config entity.NetworkConfig,
+	keyTags []entity.KeyTag,
 ) []entity.ValidatorKey {
 	needToAggregateTags := map[entity.KeyTag]interface{}{}
-	for _, tag := range config.RequiredKeyTags {
+	for _, tag := range keyTags {
 		// only bn254 bls for now
 		if tag.Type() == entity.KeyTypeBlsBn254 {
 			needToAggregateTags[tag] = new(bn254.G1Affine)

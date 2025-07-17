@@ -2,8 +2,6 @@ package ecdsaSecp256k1
 
 import (
 	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"fmt"
 	"math/big"
 	"middleware-offchain/core/entity"
@@ -46,7 +44,7 @@ func NewPrivateKey(b []byte) (*PrivateKey, error) {
 }
 
 func GenerateKey() (*PrivateKey, error) {
-	pk, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	pk, err := crypto.GenerateKey()
 	if err != nil {
 		return nil, errors.Errorf("ecdsaSecp256l1: failed to generate key %w", err)
 	}

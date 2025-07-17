@@ -119,12 +119,26 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create memory repository: %w", err)
 	}
 
+	currentOnchainEpoch, err := evmClient.GetCurrentEpoch(ctx)
+	if err != nil {
+		return errors.Errorf("failed to get current epoch: %w", err)
+	}
+
+	captureTimestamp, err := evmClient.GetEpochStart(ctx, currentOnchainEpoch)
+	if err != nil {
+		return errors.Errorf("failed to get capture timestamp: %w", err)
+	}
+
+	config, err := evmClient.GetConfig(ctx, captureTimestamp)
+	if err != nil {
+		return errors.Errorf("failed to get config: %w", err)
+	}
+
 	var prover *proof.ZkProver
-	vt := entity.VerificationType(cfg.VerificationType)
-	if vt == entity.VerificationTypeZK {
+	if config.VerificationType == entity.VerificationTypeZK {
 		prover = proof.NewZkProver()
 	}
-	agg, err := aggregator.NewAggregator(vt, prover)
+	agg, err := aggregator.NewAggregator(config.VerificationType, prover)
 	if err != nil {
 		return errors.Errorf("failed to create aggregator: %w", err)
 	}

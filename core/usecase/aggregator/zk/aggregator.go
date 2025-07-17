@@ -114,7 +114,7 @@ func (a Aggregator) Verify(
 		}
 	}
 
-	mimcAccum, err := helpers.ValidatorSetMimcAccumulator(valset.Validators, keyTag)
+	mimcAccum, err := validatorSetMimcAccumulator(valset.Validators, keyTag)
 	if err != nil {
 		return false, err
 	}
@@ -145,10 +145,10 @@ func (a Aggregator) Verify(
 	return ok, nil
 }
 
-func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, config entity.NetworkConfig) ([]entity.ExtraData, error) {
+func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []entity.KeyTag) ([]entity.ExtraData, error) {
 	extraData := make([]entity.ExtraData, 0)
 
-	totalActiveValidatorsKey, err := helpers.GetExtraDataKey(config.VerificationType, entity.ZkVerificationTotalActiveValidatorsHash)
+	totalActiveValidatorsKey, err := helpers.GetExtraDataKey(entity.VerificationTypeZK, entity.ZkVerificationTotalActiveValidatorsHash)
 	if err != nil {
 		return nil, errors.Errorf("failed to get extra data key: %w", err)
 	}
@@ -161,15 +161,15 @@ func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, config entity.
 		Value: totalActiveValidatorsBytes32,
 	})
 
-	aggregatedPubKeys := helpers.GetAggregatedPubKeys(valset, config)
+	aggregatedPubKeys := helpers.GetAggregatedPubKeys(valset, keyTags)
 
 	for _, key := range aggregatedPubKeys {
-		mimcAccumulator, err := helpers.ValidatorSetMimcAccumulator(valset.Validators, key.Tag)
+		mimcAccumulator, err := validatorSetMimcAccumulator(valset.Validators, key.Tag)
 		if err != nil {
 			return nil, errors.Errorf("failed to generate validator set mimc accumulator: %w", err)
 		}
 
-		validatorSetHashKey, err := helpers.GetExtraDataKeyTagged(config.VerificationType, key.Tag, entity.ZkVerificationValidatorSetHashMimcHash)
+		validatorSetHashKey, err := helpers.GetExtraDataKeyTagged(entity.VerificationTypeZK, key.Tag, entity.ZkVerificationValidatorSetHashMimcHash)
 		if err != nil {
 			return nil, errors.Errorf("failed to get extra data key: %w", err)
 		}
@@ -181,4 +181,39 @@ func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, config entity.
 	}
 
 	return extraData, nil
+}
+
+func validatorSetMimcAccumulator(valset []entity.Validator, requiredKeyTag entity.KeyTag) (common.Hash, error) {
+	validatorsData, err := toValidatorsData([]entity.Validator{}, valset, requiredKeyTag)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	return common.Hash(proof.HashValset(validatorsData)), nil
+}
+
+func toValidatorsData(signerValidators []entity.Validator, allValidators []entity.Validator, requiredKeyTag entity.KeyTag) ([]proof.ValidatorData, error) {
+	activeValidators := entity.GetActiveValidators(allValidators)
+	valset := make([]proof.ValidatorData, 0)
+	for i := range activeValidators {
+		for _, key := range activeValidators[i].Keys {
+			if key.Tag == requiredKeyTag {
+				g1, err := bls.DeserializeG1(key.Payload)
+				if err != nil {
+					return nil, errors.Errorf("failed to deserialize G1: %w", err)
+				}
+				validatorData := proof.ValidatorData{Key: *g1.G1Affine, VotingPower: activeValidators[i].VotingPower.Int, IsNonSigner: true}
+
+				for _, signer := range signerValidators {
+					if signer.Operator.Cmp(activeValidators[i].Operator) == 0 {
+						validatorData.IsNonSigner = false
+						break
+					}
+				}
+
+				valset = append(valset, validatorData)
+				break
+			}
+		}
+	}
+	return proof.NormalizeValset(valset), nil
 }

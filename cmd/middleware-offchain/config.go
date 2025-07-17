@@ -162,7 +162,6 @@ type config struct {
 	IsCommitter      bool                        `mapstructure:"committer"`
 	StorageDir       string                      `mapstructure:"storage-dir"`
 	Chains           CMDChainSlice               `mapstructure:"chains" validate:"required"`
-	VerificationType uint32                      `mapstructure:"verification-type" validate:"required"`
 }
 
 func (c config) Validate() error {
