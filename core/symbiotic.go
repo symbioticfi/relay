@@ -61,7 +61,22 @@ func NewSymbiotic(ctx context.Context, cfg Config) (*Symbiotic, error) {
 		return nil, errors.Errorf("failed to create EVM client: %w", err)
 	}
 
-	agg, err := aggregator.NewAggregator(cfg.VerificationType, cfg.Prover)
+	currentOnchainEpoch, err := evmClient.GetCurrentEpoch(ctx)
+	if err != nil {
+		return nil, errors.Errorf("failed to get current epoch: %w", err)
+	}
+
+	captureTimestamp, err := evmClient.GetEpochStart(ctx, currentOnchainEpoch)
+	if err != nil {
+		return nil, errors.Errorf("failed to get capture timestamp: %w", err)
+	}
+
+	config, err := evmClient.GetConfig(ctx, captureTimestamp)
+	if err != nil {
+		return nil, errors.Errorf("failed to get config: %w", err)
+	}
+
+	agg, err := aggregator.NewAggregator(config.VerificationType, cfg.Prover)
 	if err != nil {
 		return nil, errors.Errorf("failed to create aggregator: %w", err)
 	}

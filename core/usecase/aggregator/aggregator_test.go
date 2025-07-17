@@ -59,7 +59,7 @@ func TestInvalidSimpleAggregator(t *testing.T) {
 
 func TestZkAggregator(t *testing.T) {
 	t.Skipf("it works too long, so set skip here. For local debugging can remove this skip")
-	prover := proof2.NewZkProver()
+	prover := proof2.NewZkProver("")
 	agg := zk.NewAggregator(prover)
 	valset, signatures, keyTag := genCorrectTest(10, []int{1, 2, 3})
 	proof, err := agg.Aggregate(valset, keyTag, signatures[0].MessageHash, signatures)

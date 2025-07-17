@@ -68,22 +68,22 @@ var genesisCmd = &cobra.Command{
 
 		deriver, err := valsetDeriver.NewDeriver(client)
 		if err != nil {
-			return errors.Errorf("Failed to create deriver: %v", err)
+			return errors.Errorf("failed to create deriver: %v", err)
 		}
 
 		currentOnchainEpoch, err := client.GetCurrentEpoch(ctx)
 		if err != nil {
-			return errors.Errorf("Failed to get current epoch: %w", err)
+			return errors.Errorf("failed to get current epoch: %w", err)
 		}
 
 		captureTimestamp, err := client.GetEpochStart(ctx, currentOnchainEpoch)
 		if err != nil {
-			return errors.Errorf("Failed to get capture timestamp: %w", err)
+			return errors.Errorf("failed to get capture timestamp: %w", err)
 		}
 
 		networkConfig, err := client.GetConfig(ctx, captureTimestamp)
 		if err != nil {
-			return errors.Errorf("Failed to get config: %w", err)
+			return errors.Errorf("failed to get config: %w", err)
 		}
 		spinner.Success()
 
@@ -91,7 +91,7 @@ var genesisCmd = &cobra.Command{
 
 		newValset, err := deriver.GetValidatorSet(ctx, currentOnchainEpoch, networkConfig)
 		if err != nil {
-			return errors.Errorf("Failed to get validator set extra for epoch %d: %w", currentOnchainEpoch, err)
+			return errors.Errorf("failed to get validator set extra for epoch %d: %w", currentOnchainEpoch, err)
 		}
 
 		spinner.Success()
@@ -101,15 +101,18 @@ var genesisCmd = &cobra.Command{
 		// header generation is clear now
 		header, err := newValset.GetHeader()
 		if err != nil {
-			return errors.Errorf("Failed to generate validator set header: %w", err)
+			return errors.Errorf("failed to generate validator set header: %w", err)
 		}
 
-		aggregator := aggregator.NewAggregator(nil)
+		aggregator, err := aggregator.NewAggregator(networkConfig.VerificationType, nil)
+		if err != nil {
+			return errors.Errorf("failed to create aggregator: %w", err)
+		}
 
 		// extra data generation is also clear but still in deriver
-		extraData, err := aggregator.GenerateExtraData(newValset, networkConfig)
+		extraData, err := aggregator.GenerateExtraData(newValset, networkConfig.RequiredKeyTags)
 		if err != nil {
-			return errors.Errorf("Failed to generate extra data: %w", err)
+			return errors.Errorf("failed to generate extra data: %w", err)
 		}
 
 		spinner.Success()
@@ -138,7 +141,7 @@ var genesisCmd = &cobra.Command{
 		if genesisFlags.Output != "" {
 			err = os.WriteFile(genesisFlags.Output, []byte(jsonData), 0600)
 			if err != nil {
-				return errors.Errorf("Failed to write output file: %w", err)
+				return errors.Errorf("failed to write output file: %w", err)
 			}
 			pterm.Success.Println("Genesis data written to " + genesisFlags.Output)
 		}
