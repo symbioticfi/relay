@@ -1,9 +1,0 @@
-driver:
-  chain-id: 111
-  address: "0x9aD05Fe762E5eca4c216B88564B42F31E10128b6"
-log-level: "debug"
-log-mode: "pretty"
-chains-id:
-  - 111
-chains-rpc-url:
-  - "http://127.0.0.1:8545"

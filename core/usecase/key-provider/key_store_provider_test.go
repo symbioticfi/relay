@@ -1,10 +1,12 @@
 package keyprovider
 
 import (
-	"middleware-offchain/core/entity"
-	"middleware-offchain/core/usecase/crypto"
 	"testing"
 
+	"middleware-offchain/core/entity"
+	"middleware-offchain/core/usecase/crypto"
+
+	"github.com/pavlo-v-chernykh/keystore-go/v4"
 	"github.com/stretchr/testify/require"
 )
 
@@ -78,4 +80,30 @@ func TestCreateAndReopen(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, storedPk.Bytes(), pk)
+}
+
+func TestDefaultEVMKey(t *testing.T) {
+	path := t.TempDir() + "/TMP-keystore"
+	password := "password"
+
+	kp, err := NewKeystoreProvider(path, password)
+	require.NoError(t, err)
+
+	pk := []byte{'a', 'b', 'c', 'd', 'e', 'f', 'g'}
+	key, err := crypto.NewPrivateKey(entity.KeyTypeBlsBn254, pk)
+	require.NoError(t, err)
+
+	_, err = kp.GetPrivateKeyByNamespaceTypeId(EVM_KEY_NAMESPACE, entity.KeyTypeBlsBn254, 111)
+	require.ErrorIs(t, err, keystore.ErrEntryNotFound, "expected entry not found error for non-existing key")
+
+	err = kp.AddKeyByNamespaceTypeId(EVM_KEY_NAMESPACE, entity.KeyTypeBlsBn254, DEFAULT_EVM_CHAIN_ID, key, password, false)
+	require.NoError(t, err)
+
+	storedPk, err := kp.GetPrivateKeyByNamespaceTypeId(EVM_KEY_NAMESPACE, entity.KeyTypeBlsBn254, 111)
+	require.NoError(t, err)
+	require.Equal(t, storedPk.Bytes(), pk)
+
+	// shouldn't work for other chains
+	_, err = kp.GetPrivateKeyByNamespaceTypeId(SYMBIOTIC_KEY_NAMESPACE, entity.KeyTypeBlsBn254, 111)
+	require.ErrorIs(t, err, keystore.ErrEntryNotFound, "expected entry not found error for non-existing key")
 }

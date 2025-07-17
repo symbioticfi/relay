@@ -91,77 +91,26 @@ func (s *CMDSecretKeySlice) Type() string {
 	return "secret-key-slice"
 }
 
-type CMDChain struct {
-	ChainID uint64 `mapstructure:"chain-id" validate:"required"`
-	URL     string `mapstructure:"rpc-url" validate:"required"`
-}
-
-func (c *CMDChain) String() string {
-	return fmt.Sprintf("%d@%s", c.ChainID, c.URL)
-}
-
-func (c *CMDChain) Set(str string) error {
-	strs := strings.Split(str, "@")
-	if len(strs) != 2 {
-		return errors.Errorf("invalid rpc url format: %s, expected {chainid}@{rpc-url}", str)
-	}
-	c.URL = strs[1]
-	v, err := strconv.Atoi(strs[0])
-	if err != nil {
-		return err
-	}
-	c.ChainID = uint64(v)
-	return nil
-}
-
-func (c *CMDChain) Type() string {
-	return "chain"
-}
-
-type CMDChainSlice []CMDChain
-
-func (s *CMDChainSlice) String() string {
-	strs := make([]string, len(*s))
-	for i, ss := range *s {
-		strs[i] = ss.String()
-	}
-	return strings.Join(strs, ",")
-}
-
-func (s *CMDChainSlice) Set(str string) error {
-	strs := strings.Split(str, ",")
-	for _, elem := range strs {
-		key := CMDChain{}
-		err := key.Set(elem)
-		if err != nil {
-			return err
-		}
-		*s = append(*s, key)
-	}
-	return nil
-}
-
-func (s *CMDChainSlice) Type() string {
-	return "chain-slice"
-}
-
 // The config can be populated from command-line flags, environment variables, and a config.yaml file.
 // Priority order (highest to lowest):
 // 1. Command-line flags
 // 2. Environment variables (prefixed with SYMB_ and dashes replaced by underscores)
 // 3. config.yaml file (specified by --config or default "config.yaml")
 type config struct {
-	Driver           entity.CMDCrossChainAddress `mapstructure:"driver" validate:"required"`
-	LogLevel         string                      `mapstructure:"log-level" validate:"oneof=debug info warn error"`
-	LogMode          string                      `mapstructure:"log-mode" validate:"oneof=text pretty"`
-	P2PListenAddress string                      `mapstructure:"p2p-listen"`
-	HTTPListenAddr   string                      `mapstructure:"http-listen" validate:"required"`
-	SecretKeys       CMDSecretKeySlice           `mapstructure:"secret-keys"`
-	IsAggregator     bool                        `mapstructure:"aggregator"`
-	IsSigner         bool                        `mapstructure:"signer"`
-	IsCommitter      bool                        `mapstructure:"committer"`
-	StorageDir       string                      `mapstructure:"storage-dir"`
-	Chains           CMDChainSlice               `mapstructure:"chains" validate:"required"`
+	Driver            entity.CMDCrossChainAddress `mapstructure:"driver" validate:"required"`
+	LogLevel          string                      `mapstructure:"log-level" validate:"oneof=debug info warn error"`
+	LogMode           string                      `mapstructure:"log-mode" validate:"oneof=text pretty"`
+	P2PListenAddress  string                      `mapstructure:"p2p-listen"`
+	HTTPListenAddr    string                      `mapstructure:"http-listen" validate:"required"`
+	MetricsListenAddr string                      `mapstructure:"metrics-listen"`
+	SecretKeys        CMDSecretKeySlice           `mapstructure:"secret-keys"`
+	IsAggregator      bool                        `mapstructure:"aggregator"`
+	IsSigner          bool                        `mapstructure:"signer"`
+	IsCommitter       bool                        `mapstructure:"committer"`
+	StorageDir        string                      `mapstructure:"storage-dir"`
+	Chains            []string                    `mapstructure:"chains" validate:"required"`
+	CircuitsDir       string                      `mapstructure:"circuits-dir"`
+	KeyStore          entity.KeyStore             `mapstructure:"keystore"`
 }
 
 func (c config) Validate() error {
@@ -186,13 +135,16 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().String("log-mode", "text", "Log mode (text, pretty)")
 	rootCmd.PersistentFlags().String("p2p-listen", "", "P2P listen address")
 	rootCmd.PersistentFlags().String("http-listen", "", "Http listener address")
+	rootCmd.PersistentFlags().String("metrics-listen", "", "Http listener address for metrics endpoint")
 	rootCmd.PersistentFlags().Bool("aggregator", false, "Is Aggregator Node")
 	rootCmd.PersistentFlags().Bool("signer", true, "Is Signer Node")
 	rootCmd.PersistentFlags().Bool("committer", false, "Is Committer Node")
 	rootCmd.PersistentFlags().String("storage-dir", ".data", "Dir to store data")
-	rootCmd.PersistentFlags().Var(&CMDChainSlice{}, "chains", "Chains, comma separated {chain-id}@{rpc-url},..")
+	rootCmd.PersistentFlags().StringSlice("chains", nil, "Chains, comma separated rpc-url,..")
 	rootCmd.PersistentFlags().Var(&CMDSecretKeySlice{}, "secret-keys", "Secret keys, comma separated {namespace}/{type}/{id}/{key},..")
-	rootCmd.PersistentFlags().Uint32("verification-type", 0, "Verification Type: 0 - ZK, 1 - Simple")
+	rootCmd.PersistentFlags().String("circuits-dir", "", "Directory path to load zk circuits from, if empty then zp prover is disabled")
+	rootCmd.PersistentFlags().String("keystore.path", "", "Path to optional keystore file, if provided will be used instead of secret-keys flag")
+	rootCmd.PersistentFlags().String("keystore.password", "", "Password for the keystore file, if provided will be used to decrypt the keystore file")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
@@ -242,6 +194,9 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	if err := v.BindPFlag("http-listen", cmd.PersistentFlags().Lookup("http-listen")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
+	if err := v.BindPFlag("metrics-listen", cmd.PersistentFlags().Lookup("metrics-listen")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
 	if err := v.BindPFlag("aggregator", cmd.PersistentFlags().Lookup("aggregator")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
@@ -260,7 +215,13 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	if err := v.BindPFlag("chains", cmd.PersistentFlags().Lookup("chains")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("verification-type", cmd.PersistentFlags().Lookup("verification-type")); err != nil {
+	if err := v.BindPFlag("circuits-dir", cmd.PersistentFlags().Lookup("circuits-dir")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("keystore.path", cmd.PersistentFlags().Lookup("keystore.path")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("keystore.password", cmd.PersistentFlags().Lookup("keystore.password")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 

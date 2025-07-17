@@ -3,13 +3,11 @@ package main
 import (
 	"context"
 	"log/slog"
-	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p"
-	"github.com/samber/lo"
 	"golang.org/x/sync/errgroup"
 
 	"middleware-offchain/core/client/evm"
@@ -36,36 +34,41 @@ func runApp(ctx context.Context) error {
 	log.Init(cfg.LogLevel, cfg.LogMode)
 	mtr := metrics.New(metrics.Config{})
 
-	chains := lo.Map(cfg.Chains, func(chain CMDChain, _ int) entity.ChainURL {
-		return entity.ChainURL{
-			ChainID: chain.ChainID,
-			RPCURL:  chain.URL,
-		}
-	})
+	var (
+		keyProvider keyprovider.KeyProvider
+		err         error
+	)
 
-	// TODO if keystore is used use another keystore and ignore keys from flags
-	keyProvider, err := keyprovider.NewSimpleKeystoreProvider()
-	if err != nil {
-		return errors.Errorf("failed to create keystore provider: %w", err)
-	}
+	if cfg.KeyStore.Path != "" {
+		keyProvider, err = keyprovider.NewKeystoreProvider(cfg.KeyStore.Path, cfg.KeyStore.Password)
+		if err != nil {
+			return errors.Errorf("failed to create keystore provider from keystore file: %w", err)
+		}
+	} else {
+		simpleKeyProvider, err := keyprovider.NewSimpleKeystoreProvider()
+		if err != nil {
+			return errors.Errorf("failed to create keystore provider: %w", err)
+		}
 
-	for _, key := range cfg.SecretKeys {
-		keyBytes, ok := new(big.Int).SetString(key.Secret, 10)
-		if !ok {
-			return errors.Errorf("failed to parse secret key as big.Int")
+		for _, key := range cfg.SecretKeys {
+			keyBytes := common.FromHex(key.Secret)
+			if len(keyBytes) == 0 {
+				return errors.Errorf("invalid key bytes for key %s/%d/%d/%s", key.Namespace, key.KeyType, key.KeyId, keyBytes)
+			}
+			pk, err := symbioticCrypto.NewPrivateKey(entity.KeyType(key.KeyType), keyBytes)
+			if err != nil {
+				return errors.Errorf("failed to create private key: %w", err)
+			}
+			err = simpleKeyProvider.AddKeyByNamespaceTypeId(key.Namespace, entity.KeyType(key.KeyType), key.KeyId, pk)
+			if err != nil {
+				return errors.Errorf("failed to add key to keystore: %w", err)
+			}
 		}
-		pk, err := symbioticCrypto.NewPrivateKey(entity.KeyType(key.KeyType), keyBytes.Bytes())
-		if err != nil {
-			return errors.Errorf("failed to create private key: %w", err)
-		}
-		err = keyProvider.AddKeyByNamespaceTypeId(key.Namespace, entity.KeyType(key.KeyType), key.KeyId, pk)
-		if err != nil {
-			return errors.Errorf("failed to add key to keystore: %w", err)
-		}
+		keyProvider = simpleKeyProvider
 	}
 
 	evmClient, err := evm.NewEVMClient(ctx, evm.Config{
-		Chains: chains,
+		ChainURLs: cfg.Chains,
 		DriverAddress: entity.CrossChainAddress{
 			ChainId: cfg.Driver.ChainID,
 			Address: common.HexToAddress(cfg.Driver.Address),
@@ -226,6 +229,7 @@ func runApp(ctx context.Context) error {
 		slog.DebugContext(ctx, "Created aggregator app, starting")
 	}
 
+	serveMetricsOnAPIAddress := cfg.HTTPListenAddr == cfg.MetricsListenAddr || cfg.MetricsListenAddr == ""
 	api, err := apiApp.NewAPIApp(apiApp.Config{
 		Address:           cfg.HTTPListenAddr,
 		ReadHeaderTimeout: time.Second,
@@ -236,6 +240,7 @@ func runApp(ctx context.Context) error {
 		EVMClient:         evmClient,
 		Aggregator:        aggApp,
 		Deriver:           deriver,
+		ServeMetrics:      serveMetricsOnAPIAddress,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create api app: %w", err)
@@ -247,6 +252,24 @@ func runApp(ctx context.Context) error {
 		}
 		return nil
 	})
+
+	if !serveMetricsOnAPIAddress {
+		mtrApp, err := metrics.NewApp(metrics.AppConfig{
+			Address:           cfg.MetricsListenAddr,
+			ReadHeaderTimeout: time.Second * 5,
+		})
+		if err != nil {
+			return errors.Errorf("failed to create metrics app: %w", err)
+		}
+
+		slog.DebugContext(ctx, "Created metrics app, starting")
+		eg.Go(func() error {
+			if err := mtrApp.Start(egCtx); err != nil {
+				return errors.Errorf("failed to start metrics server: %w", err)
+			}
+			return nil
+		})
+	}
 
 	return eg.Wait()
 }

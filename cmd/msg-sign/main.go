@@ -77,10 +77,7 @@ var rootCmd = &cobra.Command{
 
 		driverAddress := entity.CrossChainAddress{ChainId: 111, Address: common.HexToAddress(cfg.driverAddress)}
 		ethClient, err := evm.NewEVMClient(ctx, evm.Config{
-			Chains: []entity.ChainURL{{
-				ChainID: cfg.driverChainID,
-				RPCURL:  cfg.rpcURL,
-			}},
+			ChainURLs:      []string{cfg.rpcURL},
 			DriverAddress:  driverAddress,
 			RequestTimeout: time.Second * 10,
 		})

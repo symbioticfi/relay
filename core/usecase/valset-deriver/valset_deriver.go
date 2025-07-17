@@ -144,6 +144,7 @@ func (v *Deriver) getStatusAndPreviousHash(ctx context.Context, epoch uint64, co
 			return 0, common.Hash{}, errors.Errorf("failed to get previous header hash: %w", err)
 		}
 		// valset integrity check
+		valset.PreviousHeaderHash = previousHeaderHash
 		committedHash, err := v.ethClient.GetHeaderHashAt(ctx, committedAddr, epoch)
 		if err != nil {
 			return 0, common.Hash{}, errors.Errorf("failed to get header hash: %w", err)

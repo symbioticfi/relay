@@ -3,10 +3,11 @@ package keyprovider
 import (
 	"errors"
 	"log/slog"
-	"middleware-offchain/core/usecase/crypto"
 	"os"
 	"path/filepath"
 	"time"
+
+	"middleware-offchain/core/usecase/crypto"
 
 	"github.com/pavlo-v-chernykh/keystore-go/v4"
 
@@ -34,7 +35,6 @@ func NewKeystoreProvider(filePath, password string) (*KeystoreProvider, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return &KeystoreProvider{ks: ks, filePath: filePath}, nil
 }
 
@@ -68,7 +68,20 @@ func (k *KeystoreProvider) GetPrivateKeyByNamespaceTypeId(namespace string, keyT
 	if err != nil {
 		return nil, err
 	}
-	return k.GetPrivateKeyByAlias(alias)
+	key, err := k.GetPrivateKeyByAlias(alias)
+	if err != nil {
+		if errors.Is(err, keystore.ErrEntryNotFound) && namespace == EVM_KEY_NAMESPACE {
+			// For EVM keys, we check for default key with chain ID 0 if the requested chain id is absent
+			slog.Warn("Key not found, checking for default EVM key", "alias", alias)
+			defaultAlias, err := ToAlias(EVM_KEY_NAMESPACE, keyType, DEFAULT_EVM_CHAIN_ID)
+			if err != nil {
+				return nil, err
+			}
+			return k.GetPrivateKeyByAlias(defaultAlias)
+		}
+		return nil, err
+	}
+	return key, nil
 }
 
 func (k *KeystoreProvider) HasKey(keyTag entity.KeyTag) (bool, error) {
@@ -138,6 +151,67 @@ func (k *KeystoreProvider) DeleteKey(keyTag entity.KeyTag, password string) erro
 	}
 
 	alias, err := KeyTagToAlias(keyTag)
+	if err != nil {
+		return err
+	}
+
+	k.ks.DeleteEntry(alias)
+
+	err = k.dump(password)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (k *KeystoreProvider) AddKeyByNamespaceTypeId(ns string, tp entity.KeyType, id int, privateKey crypto.PrivateKey, password string, force bool) error {
+	exists, err := k.HasKeyByNamespaceTypeId(ns, tp, id)
+	if err != nil {
+		return err
+	}
+
+	if exists && !force {
+		return errors.New("key already exists")
+	}
+
+	alias, err := ToAlias(ns, tp, id)
+	if err != nil {
+		return err
+	}
+
+	err = k.ks.SetPrivateKeyEntry(alias, keystore.PrivateKeyEntry{
+		CreationTime:     time.Now(),
+		PrivateKey:       privateKey.Bytes(),
+		CertificateChain: nil,
+	}, []byte{})
+	if err != nil {
+		return err
+	}
+
+	err = k.dump(password)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		slog.Info("Key was updated!")
+	}
+
+	return nil
+}
+
+func (k *KeystoreProvider) DeleteKeyByNamespaceTypeId(ns string, tp entity.KeyType, id int, password string) error {
+	exists, err := k.HasKeyByNamespaceTypeId(ns, tp, id)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return errors.New("key does not exist")
+	}
+
+	alias, err := ToAlias(ns, tp, id)
 	if err != nil {
 		return err
 	}

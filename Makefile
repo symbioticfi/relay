@@ -38,21 +38,23 @@ gen-abi:
 		--pkg gen \
 		--out core/client/evm/gen/votingPowerProvider.go
 
+APP_VERSION ?= dev
+BUILD_TIME ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 
 build-generate-genesis-linux:
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static'" -o generate_genesis_linux_amd64 ./cmd/generate-genesis && \
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'main.Version=$(APP_VERSION)' -X 'main.BuildTime=$(BUILD_TIME)'" -o generate_genesis_linux_amd64 ./cmd/generate-genesis && \
 		chmod a+x generate_genesis_linux_amd64
 
 build-generate-genesis-mac:
-	GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static'" -o generate_genesis_darwin_arm64 ./cmd/generate-genesis && \
+	GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'main.Version=$(APP_VERSION)' -X 'main.BuildTime=$(BUILD_TIME)'" -o generate_genesis_darwin_arm64 ./cmd/generate-genesis && \
 		chmod a+x generate_genesis_darwin_arm64
 
 build-symbiotic-relay-linux:
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static'" -o symbiotic_relay_linux_amd64 ./cmd/middleware-offchain && \
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'main.Version=$(APP_VERSION)' -X 'main.BuildTime=$(BUILD_TIME)'" -o symbiotic_relay_linux_amd64 ./cmd/middleware-offchain && \
 		chmod a+x symbiotic_relay_linux_amd64
 
 build-symbiotic-relay-mac:
-	GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static'" -o symbiotic_relay_darwin_arm64 ./cmd/middleware-offchain && \
+	GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'main.Version=$(APP_VERSION)' -X 'main.BuildTime=$(BUILD_TIME)'" -o symbiotic_relay_darwin_arm64 ./cmd/middleware-offchain && \
 		chmod a+x symbiotic_relay_darwin_arm64
 
 build-docker:

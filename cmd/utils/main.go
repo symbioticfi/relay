@@ -1,14 +1,15 @@
 package main
 
 import (
+	"os"
+	"runtime"
+
 	"middleware-offchain/cmd/utils/keys"
 	"middleware-offchain/cmd/utils/network"
 	"middleware-offchain/cmd/utils/operator"
 	"middleware-offchain/pkg/log"
-	"os"
 
 	"github.com/pterm/pterm"
-
 	"github.com/spf13/cobra"
 )
 
@@ -16,6 +17,9 @@ type config struct {
 	logLevel string
 	logMode  string
 }
+
+var Version = "local"
+var BuildTime = "unknown"
 
 var cfg config
 
@@ -26,6 +30,7 @@ func main() {
 	rootCmd.AddCommand(keys.NewKeysCmd())
 	rootCmd.AddCommand(network.NewNetworkCmd())
 	rootCmd.AddCommand(operator.NewOperatorCmd())
+	rootCmd.AddCommand(versionCommand)
 
 	if err := run(); err != nil {
 		pterm.Error.Println("Error executing command", err)
@@ -42,5 +47,16 @@ var rootCmd = &cobra.Command{
 	Short: "Utils tool",
 	PreRun: func(cmd *cobra.Command, args []string) {
 		log.Init(cfg.logLevel, cfg.logMode)
+	},
+}
+
+var versionCommand = &cobra.Command{
+	Use:   "version",
+	Short: "Print the version of the utils tool",
+	Run: func(cmd *cobra.Command, args []string) {
+		pterm.Info.Println("Utils tool version:", Version)
+		pterm.Info.Println("Go version:", runtime.Version())
+		pterm.Info.Println("OS/Arch:", runtime.GOOS+"/"+runtime.GOARCH)
+		pterm.Info.Println("Build time:", BuildTime)
 	},
 }

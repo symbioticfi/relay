@@ -1,31 +1,27 @@
 package network
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"middleware-offchain/core/entity"
-	entity2 "middleware-offchain/internal/entity"
+	cmdhelpers "middleware-offchain/internal/usecase/cmd-helpers"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/pterm/pterm"
 	"github.com/pterm/pterm/putils"
+
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/pterm/pterm"
 	"github.com/samber/lo"
 )
 
-func getPct(value *big.Int, total *big.Int) float64 {
-	pct := new(big.Float).SetInt(value)
-	pct = pct.Mul(pct, big.NewFloat(100))
-	pct = pct.Quo(pct, new(big.Float).SetInt(total))
-	fl, _ := pct.Float64()
-	return fl
-}
-
-func printAddresses(driver entity2.CMDCrossChainAddress, networkConfig *entity.NetworkConfig) string {
+func printAddresses(driver entity.CrossChainAddress, networkConfig *entity.NetworkConfig) string {
 	addressesTableData := pterm.TableData{
 		{"Type", "Chain ID", "Address"},
-		{"Driver", strconv.FormatUint(driver.ChainID, 10), driver.Address},
+		{"Driver", strconv.FormatUint(driver.ChainId, 10), driver.Address.String()},
 		{"KeyRegistry", strconv.FormatUint(networkConfig.KeysProvider.ChainId, 10), networkConfig.KeysProvider.Address.String()},
 	}
 	for _, provider := range networkConfig.VotingPowerProviders {
@@ -56,7 +52,7 @@ func printNetworkConfig(epochDuration uint64, networkConfig *entity.NetworkConfi
 		return strconv.FormatUint(uint64(item), 10)
 	}), ", "))
 	configText += fmt.Sprintf("Quorum thresholds (keyTag/%%): %s\n", strings.Join(lo.Map(networkConfig.QuorumThresholds, func(item entity.QuorumThreshold, _ int) string {
-		return fmt.Sprintf("%d/%0.3f%%", uint8(item.KeyTag), getPct(item.QuorumThreshold.Int, new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)))
+		return fmt.Sprintf("%d/%0.3f%%", uint8(item.KeyTag), cmdhelpers.GetPct(item.QuorumThreshold.Int, new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)))
 	}), ", "))
 	configText += fmt.Sprintf("Header key tag: %s\n", networkConfig.RequiredHeaderKeyTag.String())
 
@@ -74,7 +70,7 @@ func printNetworkInfo(epoch uint64, committedEpoch uint64, epochStart uint64, ne
 	infoText += fmt.Sprintf("Voting power providers: %d\n", len(networkConfig.VotingPowerProviders))
 	infoText += fmt.Sprintf("Settlements: %d\n", len(networkConfig.Replicas))
 	infoText += fmt.Sprintf("Header quorum threshold: %d (%0.3f%%)\n",
-		valset.QuorumThreshold, getPct(valset.QuorumThreshold.Int, valset.GetTotalActiveVotingPower().Int))
+		valset.QuorumThreshold, cmdhelpers.GetPct(valset.QuorumThreshold.Int, valset.GetTotalActiveVotingPower().Int))
 	return infoText
 }
 
@@ -84,72 +80,7 @@ func printValidatorsTree(valset *entity.ValidatorSet) string {
 	validators := valset.Validators
 
 	for _, validator := range validators {
-		leveledList = append(leveledList, pterm.LeveledListItem{
-			Level: 0,
-			Text:  fmt.Sprintf("Validator: %s", validator.Operator.String()),
-		})
-
-		status := pterm.FgRed.Sprint("inactive")
-		if validator.IsActive {
-			status = pterm.FgGreen.Sprint("active")
-		}
-		leveledList = append(leveledList, pterm.LeveledListItem{
-			Level: 1,
-			Text:  fmt.Sprintf("Status: %s", status),
-		})
-
-		leveledList = append(leveledList, pterm.LeveledListItem{
-			Level: 1,
-			Text: fmt.Sprintf("Voting Power: %d (%0.3f%%)",
-				validator.VotingPower.Int,
-				getPct(validator.VotingPower.Int, valset.GetTotalActiveVotingPower().Int),
-			),
-		})
-
-		leveledList = append(leveledList, pterm.LeveledListItem{
-			Level: 1,
-			Text:  fmt.Sprintf("Vaults (%d):", len(validator.Vaults)),
-		})
-
-		for _, vault := range validator.Vaults {
-			leveledList = append(leveledList, pterm.LeveledListItem{
-				Level: 2,
-				Text:  fmt.Sprintf("Vault: %s", vault.Vault.String()),
-			})
-			leveledList = append(leveledList, pterm.LeveledListItem{
-				Level: 3,
-				Text:  fmt.Sprintf("ChainID: %d", vault.ChainID),
-			})
-			leveledList = append(leveledList, pterm.LeveledListItem{
-				Level: 3,
-				Text: fmt.Sprintf("Voting Power: %d (%0.3f%%)",
-					vault.VotingPower,
-					getPct(vault.VotingPower.Int, validator.VotingPower.Int),
-				),
-			})
-		}
-
-		leveledList = append(leveledList, pterm.LeveledListItem{
-			Level: 1,
-			Text:  fmt.Sprintf("Keys (%d):", len(validator.Keys)),
-		})
-
-		for _, key := range validator.Keys {
-			typeText, _ := key.Tag.Type().String()
-			pubkeyText, _ := key.Payload.MarshalText()
-			leveledList = append(leveledList, pterm.LeveledListItem{
-				Level: 2,
-				Text:  fmt.Sprintf("Key: %d", uint8(key.Tag)),
-			})
-			leveledList = append(leveledList, pterm.LeveledListItem{
-				Level: 3,
-				Text:  fmt.Sprintf("Type: %s", typeText),
-			})
-			leveledList = append(leveledList, pterm.LeveledListItem{
-				Level: 3,
-				Text:  fmt.Sprintf("PubKey: %s", pubkeyText),
-			})
-		}
+		leveledList = cmdhelpers.PrintTreeValidator(leveledList, validator, valset.GetTotalActiveVotingPower().Int)
 	}
 
 	// Render the tree structure using the default tree printer.
@@ -215,5 +146,98 @@ func printExtraDataTable(extraData entity.ExtraDataList) string {
 	}
 
 	text, _ := pterm.DefaultTable.WithHasHeader().WithData(extraDataTable).Srender()
+	return text
+}
+
+func printHeaderWithExtraDataToJSON(validatorSetHeader entity.ValidatorSetHeader, extraDataList entity.ExtraDataList) string {
+	type jsonHeader struct {
+		Version            uint8    `json:"version"`
+		ValidatorsSszMRoot string   `json:"validatorsSszMRoot"` // hex string
+		Epoch              uint64   `json:"epoch"`
+		RequiredKeyTag     uint8    `json:"requiredKeyTag"`
+		CaptureTimestamp   uint64   `json:"captureTimestamp"`
+		QuorumThreshold    *big.Int `json:"quorumThreshold"`
+		PreviousHeaderHash string   `json:"previousHeaderHash"` // hex string
+	}
+
+	type jsonExtraData struct {
+		Key   string `json:"key"`   // hex string
+		Value string `json:"value"` // hex string
+	}
+
+	type jsonValidatorSetHeaderWithExtraData struct {
+		Header        jsonHeader      `json:"header"`
+		ExtraDataList []jsonExtraData `json:"extraData"`
+	}
+
+	jsonHeaderData := jsonHeader{
+		Version:            validatorSetHeader.Version,
+		ValidatorsSszMRoot: fmt.Sprintf("0x%064x", validatorSetHeader.ValidatorsSszMRoot),
+		Epoch:              validatorSetHeader.Epoch,
+		RequiredKeyTag:     uint8(validatorSetHeader.RequiredKeyTag),
+		CaptureTimestamp:   validatorSetHeader.CaptureTimestamp,
+		QuorumThreshold:    validatorSetHeader.QuorumThreshold.Int,
+		PreviousHeaderHash: fmt.Sprintf("0x%064x", validatorSetHeader.PreviousHeaderHash),
+	}
+
+	jsonExtraDataList := make([]jsonExtraData, len(extraDataList))
+	for i, extraData := range extraDataList {
+		jsonExtraDataList[i].Key = fmt.Sprintf("0x%064x", extraData.Key)
+		jsonExtraDataList[i].Value = fmt.Sprintf("0x%064x", extraData.Value)
+	}
+
+	jsonValidatorSetHeaderWithExtraDataData := jsonValidatorSetHeaderWithExtraData{
+		Header:        jsonHeaderData,
+		ExtraDataList: jsonExtraDataList,
+	}
+
+	jsonData, err := json.MarshalIndent(jsonValidatorSetHeaderWithExtraDataData, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+
+	return string(jsonData)
+}
+
+func printSettlementData(
+	valsetHeader *entity.ValidatorSetHeader,
+	networkConfig *entity.NetworkConfig,
+	isCommited []bool,
+	headerHashes []common.Hash,
+) string {
+	tableData := pterm.TableData{
+		{"Address", "ChainID", "Status", "Integrity", "Header hash"},
+	}
+
+	for i, replica := range networkConfig.Replicas {
+		hash := "N/A"
+		status := "Missing"
+		if isCommited[i] {
+			status = "Committed"
+			hash = headerHashes[i].String()
+		}
+
+		expectedHash, err := valsetHeader.Hash()
+		if err != nil {
+			panic(err)
+		}
+
+		integrity := "N/A"
+		if isCommited[i] && headerHashes[i] != expectedHash {
+			integrity = "Failed"
+		} else if isCommited[i] && headerHashes[i] == expectedHash {
+			integrity = "Ok"
+		}
+
+		tableData = append(tableData, []string{
+			replica.Address.String(),
+			strconv.FormatUint(replica.ChainId, 10),
+			status,
+			integrity,
+			hash,
+		})
+	}
+
+	text, _ := pterm.DefaultTable.WithHasHeader().WithData(tableData).Srender()
 	return text
 }

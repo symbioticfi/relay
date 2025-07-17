@@ -31,7 +31,7 @@ type metrics interface {
 }
 
 type Config struct {
-	Chains         []entity.ChainURL        `validate:"required"`
+	ChainURLs      []string                 `validate:"required"`
 	DriverAddress  entity.CrossChainAddress `validate:"required"`
 	RequestTimeout time.Duration            `validate:"required,gt=0"`
 	KeyProvider    keyprovider.KeyProvider
@@ -62,8 +62,8 @@ func NewEVMClient(ctx context.Context, cfg Config) (*Client, error) {
 
 	conns := make(map[uint64]*ethclient.Client)
 
-	for _, chainURL := range cfg.Chains {
-		client, err := ethclient.DialContext(ctx, chainURL.RPCURL)
+	for _, chainURL := range cfg.ChainURLs {
+		client, err := ethclient.DialContext(ctx, chainURL)
 		if err != nil {
 			return nil, errors.Errorf("failed to connect to Ethereum client: %w", err)
 		}
@@ -71,11 +71,12 @@ func NewEVMClient(ctx context.Context, cfg Config) (*Client, error) {
 		if err != nil {
 			return nil, errors.Errorf("failed to get chain ID: %w", err)
 		}
-		if chainID.Uint64() != chainURL.ChainID {
-			return nil, errors.Errorf("chain ID mismatch: expected %d, got %d", chainURL.ChainID, chainID.Uint64())
-		}
 
-		conns[chainURL.ChainID] = client
+		conns[chainID.Uint64()] = client
+	}
+
+	if _, found := conns[cfg.DriverAddress.ChainId]; !found {
+		return nil, errors.Errorf("driver's chain rpc url omitted")
 	}
 
 	driver, err := gen.NewIValSetDriverCaller(cfg.DriverAddress.Address, conns[cfg.DriverAddress.ChainId])
@@ -89,6 +90,14 @@ func NewEVMClient(ctx context.Context, cfg Config) (*Client, error) {
 		driver:  driver,
 		metrics: cfg.Metrics,
 	}, nil
+}
+
+func (e *Client) GetChains() []uint64 {
+	chainIds := make([]uint64, 0, len(e.conns))
+	for chainId := range e.conns {
+		chainIds = append(chainIds, chainId)
+	}
+	return chainIds
 }
 
 func (e *Client) GetConfig(ctx context.Context, timestamp uint64) (_ entity.NetworkConfig, err error) {
@@ -571,23 +580,23 @@ type metadata interface {
 	GetAbi() (*abi.ABI, error)
 }
 
-func (e *Client) formatEVMContractError(meta metadata, err error) error {
+func (e *Client) formatEVMContractError(meta metadata, originalErr error) error {
 	type jsonError interface {
 		Error() string
 		ErrorData() interface{}
 		ErrorCode() int
 	}
 	var errData jsonError
-	if !errors.As(err, &errData) {
-		return err
+	if !errors.As(originalErr, &errData) {
+		return originalErr
 	}
 	if errData.ErrorCode() != 3 && errData.ErrorData() == nil {
-		return err
+		return originalErr
 	}
 
 	matches := customErrRegExp.FindStringSubmatch(errData.Error())
 	if len(matches) < 1 {
-		return err
+		return originalErr
 	}
 
 	parsedAbi, err := meta.GetAbi()
@@ -609,7 +618,7 @@ func (e *Client) formatEVMContractError(meta metadata, err error) error {
 		return err
 	}
 
-	return errors.Errorf("%w: %s", err, contractError.String())
+	return errors.Errorf("%w: %s", originalErr, contractError.String())
 }
 
 func (e *Client) formatEVMError(err error) error {
@@ -690,6 +699,8 @@ func findErrorBySelector(errSelector string) (abi.Error, bool) {
 }
 
 func (e *Client) observeMetrics(method string, err error, start time.Time) {
-	status := lo.Ternary(err != nil, "error", "success")
-	e.metrics.ObserveEVMMethodCall(method, status, time.Since(start))
+	if e.metrics != nil {
+		status := lo.Ternary(err != nil, "error", "success")
+		e.metrics.ObserveEVMMethodCall(method, status, time.Since(start))
+	}
 }

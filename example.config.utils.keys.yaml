@@ -1,8 +1,0 @@
-log-level: "debug"
-log-mode: "pretty"
-path: "./keystore.jks"
-password: "pass"
-force: true
-generate: true
-key-tag: 1
-

@@ -10,6 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/stretchr/testify/require"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 )
@@ -77,7 +78,7 @@ func TestProof(t *testing.T) {
 	t.Skipf("it works too long, so set skip here. For local debugging can remove this skip")
 
 	startTime := time.Now()
-	prover := NewZkProver()
+	prover := NewZkProver("circuits")
 	fmt.Printf("prover initialation took %v\n", time.Since(startTime))
 
 	// generate valset
@@ -124,4 +125,16 @@ func TestProof(t *testing.T) {
 	if !res {
 		t.Fatal("failed to verify")
 	}
+}
+
+func TestProofFailOnEmptyCircuitDir(t *testing.T) {
+	startTime := time.Now()
+	prover := NewZkProver("")
+	fmt.Printf("prover initialation took %v\n", time.Since(startTime))
+
+	_, err := prover.Prove(ProveInput{})
+	require.ErrorContains(t, err, "ZK prover circuits directory is not set", "expected error on empty circuit dir")
+
+	_, err = prover.Verify(0, common.Hash{}, nil)
+	require.ErrorContains(t, err, "ZK prover circuits directory is not set", "expected error on empty circuit dir")
 }
