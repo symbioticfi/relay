@@ -122,7 +122,29 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create memory repository: %w", err)
 	}
 
-	aggregatorLib := aggregator.NewAggregator(proof.NewZkProver(cfg.CircuitsDir))
+	currentOnchainEpoch, err := evmClient.GetCurrentEpoch(ctx)
+	if err != nil {
+		return errors.Errorf("failed to get current epoch: %w", err)
+	}
+
+	captureTimestamp, err := evmClient.GetEpochStart(ctx, currentOnchainEpoch)
+	if err != nil {
+		return errors.Errorf("failed to get capture timestamp: %w", err)
+	}
+
+	config, err := evmClient.GetConfig(ctx, captureTimestamp)
+	if err != nil {
+		return errors.Errorf("failed to get config: %w", err)
+	}
+
+	var prover *proof.ZkProver
+	if config.VerificationType == entity.VerificationTypeZK {
+		prover = proof.NewZkProver(cfg.CircuitsDir)
+	}
+	agg, err := aggregator.NewAggregator(config.VerificationType, prover)
+	if err != nil {
+		return errors.Errorf("failed to create aggregator: %w", err)
+	}
 
 	aggProofReadySignal := signals.New[entity.AggregatedSignatureMessage]()
 
@@ -131,7 +153,7 @@ func runApp(ctx context.Context) error {
 		KeyProvider:    keyProvider,
 		Repo:           repo,
 		AggProofSignal: aggProofReadySignal,
-		Aggregator:     aggregatorLib,
+		Aggregator:     agg,
 		Metrics:        mtr,
 	})
 	if err != nil {
@@ -156,7 +178,7 @@ func runApp(ctx context.Context) error {
 		Eth:             evmClient,
 		Repo:            repo,
 		Deriver:         deriver,
-		Aggregator:      aggregatorLib,
+		Aggregator:      agg,
 		PollingInterval: time.Second * 5,
 		IsCommitter:     cfg.IsCommitter,
 	})
@@ -196,7 +218,7 @@ func runApp(ctx context.Context) error {
 		aggApp, err = aggregatorApp.NewAggregatorApp(aggregatorApp.Config{
 			Repo:       repo,
 			P2PClient:  p2pService,
-			Aggregator: aggregatorLib,
+			Aggregator: agg,
 			Metrics:    mtr,
 		})
 		if err != nil {

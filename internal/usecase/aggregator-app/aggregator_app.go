@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/symbiotic/relay/core/usecase/aggregator"
 	"github.com/symbiotic/relay/core/usecase/crypto"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -29,26 +30,16 @@ type p2pClient interface {
 	BroadcastSignatureAggregatedMessage(ctx context.Context, msg entity.AggregatedSignatureMessage) error
 }
 
-type aggregator interface {
-	Aggregate(
-		valset entity.ValidatorSet,
-		keyTag entity.KeyTag,
-		verificationType entity.VerificationType,
-		messageHash []byte,
-		signatures []entity.SignatureExtended,
-	) (entity.AggregationProof, error)
-}
-
 type metrics interface {
 	ObserveOnlyAggregateDuration(d time.Duration)
 	ObserveAppAggregateDuration(d time.Duration)
 }
 
 type Config struct {
-	Repo       repository `validate:"required"`
-	P2PClient  p2pClient  `validate:"required"`
-	Aggregator aggregator `validate:"required"`
-	Metrics    metrics    `validate:"required"`
+	Repo       repository            `validate:"required"`
+	P2PClient  p2pClient             `validate:"required"`
+	Aggregator aggregator.Aggregator `validate:"required"`
+	Metrics    metrics               `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -152,7 +143,6 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 	proofData, err := s.cfg.Aggregator.Aggregate(
 		validatorSet,
 		msg.KeyTag,
-		networkConfig.VerificationType,
 		msg.Signature.MessageHash,
 		sigs,
 	)

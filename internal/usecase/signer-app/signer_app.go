@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"time"
 
-	key_types "github.com/symbiotic/relay/core/usecase/crypto/key-types"
+	"github.com/symbiotic/relay/core/usecase/crypto"
 	"github.com/symbiotic/relay/pkg/log"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -30,7 +30,7 @@ type p2pService interface {
 }
 
 type keyProvider interface {
-	GetPrivateKey(keyTag entity.KeyTag) (key_types.PrivateKey, error)
+	GetPrivateKey(keyTag entity.KeyTag) (crypto.PrivateKey, error)
 }
 
 type aggProofSignal interface {

@@ -11,8 +11,9 @@ package mocks
 
 import (
 	context "context"
-	entity "github.com/symbiotic/relay/core/entity"
 	reflect "reflect"
+
+	entity "github.com/symbiotic/relay/core/entity"
 
 	common "github.com/ethereum/go-ethereum/common"
 	gomock "go.uber.org/mock/gomock"

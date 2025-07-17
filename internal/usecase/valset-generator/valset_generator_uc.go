@@ -7,14 +7,14 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
 	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbiotic/relay/core/usecase/aggregator"
 	"github.com/symbiotic/relay/pkg/log"
 )
 
@@ -49,10 +49,6 @@ type deriver interface {
 	GetNetworkData(ctx context.Context, addr entity.CrossChainAddress) (entity.NetworkData, error)
 }
 
-type aggregator interface {
-	GenerateExtraData(valset entity.ValidatorSet, config entity.NetworkConfig) ([]entity.ExtraData, error)
-}
-
 type Config struct {
 	Signer          signer        `validate:"required"`
 	Eth             eth           `validate:"required"`
@@ -60,7 +56,7 @@ type Config struct {
 	Deriver         deriver       `validate:"required"`
 	PollingInterval time.Duration `validate:"required,gt=0"`
 	IsCommitter     bool
-	Aggregator      aggregator
+	Aggregator      aggregator.Aggregator
 }
 
 func (c Config) Validate() error {
@@ -125,7 +121,7 @@ func (s *Service) process(ctx context.Context) error {
 		return errors.Errorf("failed to get network data: %w", err)
 	}
 
-	extraData, err := s.cfg.Aggregator.GenerateExtraData(valSet, config)
+	extraData, err := s.cfg.Aggregator.GenerateExtraData(valSet, config.RequiredKeyTags)
 	if err != nil {
 		return errors.Errorf("failed to generate extra data: %w", err)
 	}
