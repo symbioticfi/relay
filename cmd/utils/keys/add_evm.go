@@ -19,6 +19,15 @@ var addEvmKeyCmd = &cobra.Command{
 		if addEvmFlags.PrivateKey == "" && !addEvmFlags.Generate {
 			return errors.New("add --generate if private key omitted")
 		}
+
+		if addEvmFlags.ChainId == 0 && !addEvmFlags.DefaultKey {
+			return errors.New("evm chain id omitted, either pass chain-id or use --default-key flag")
+		}
+
+		if addEvmFlags.DefaultKey {
+			addEvmFlags.ChainId = keyprovider.DEFAULT_EVM_CHAIN_ID
+		}
+
 		return addKeyWithNamespace(keyprovider.EVM_KEY_NAMESPACE, entity.KeyTypeEcdsaSecp256k1, int(addEvmFlags.ChainId), addEvmFlags.Generate, addEvmFlags.Force, addEvmFlags.PrivateKey)
 	},
 }
