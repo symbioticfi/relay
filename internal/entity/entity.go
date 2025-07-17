@@ -33,3 +33,8 @@ func NewChainsRpcURl(chainsId []uint64, chainsUrl []string) ([]entity.ChainURL, 
 
 	return chains, nil
 }
+
+type KeyStore struct {
+	Path     string `json:"path"`
+	Password string `json:"password"`
+}
