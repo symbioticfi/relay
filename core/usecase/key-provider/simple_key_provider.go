@@ -37,7 +37,7 @@ func (k *SimpleKeystoreProvider) GetPrivateKeyByAlias(alias string) (crypto.Priv
 	defer k.mu.RUnlock()
 	entry, ok := k.keys[alias]
 	if !ok {
-		return nil, errors.New("key not found")
+		return nil, keystore.ErrEntryNotFound
 	}
 	return entry, nil
 }
@@ -76,7 +76,7 @@ func (k *SimpleKeystoreProvider) HasKeyByAlias(alias string) (bool, error) {
 	defer k.mu.RUnlock()
 	_, ok := k.keys[alias]
 	if !ok {
-		return false, errors.New("key not found")
+		return false, nil
 	}
 	return ok, nil
 }
