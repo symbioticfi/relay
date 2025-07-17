@@ -8,7 +8,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/require"
 
-	"middleware-offchain/core/entity"
+	"github.com/symbiotic/relay/core/entity"
 )
 
 func TestRepository_PendingValidatorSet(t *testing.T) {

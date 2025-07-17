@@ -4,10 +4,10 @@ import (
 	"os"
 	"runtime"
 
-	"middleware-offchain/cmd/utils/keys"
-	"middleware-offchain/cmd/utils/network"
-	"middleware-offchain/cmd/utils/operator"
-	"middleware-offchain/pkg/log"
+	"github.com/symbiotic/relay/cmd/utils/keys"
+	"github.com/symbiotic/relay/cmd/utils/network"
+	"github.com/symbiotic/relay/cmd/utils/operator"
+	"github.com/symbiotic/relay/pkg/log"
 
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"

@@ -10,8 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/core/entity"
-	keyprovider "middleware-offchain/core/usecase/key-provider"
+	"github.com/symbiotic/relay/core/entity"
+	keyprovider "github.com/symbiotic/relay/core/usecase/key-provider"
 )
 
 func (e *Client) RegisterOperator(

@@ -11,7 +11,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
 
-	"middleware-offchain/core/entity"
+	"github.com/symbiotic/relay/core/entity"
 )
 
 type Repository struct {

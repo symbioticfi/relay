@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"middleware-offchain/core/entity"
-	symbKeys "middleware-offchain/core/usecase/crypto/key-types"
+	"github.com/symbiotic/relay/core/entity"
+	symbKeys "github.com/symbiotic/relay/core/usecase/crypto/key-types"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"

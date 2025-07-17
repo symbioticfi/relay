@@ -5,15 +5,15 @@ import (
 	"log/slog"
 	"time"
 
-	key_types "middleware-offchain/core/usecase/crypto/key-types"
-	"middleware-offchain/pkg/log"
+	key_types "github.com/symbiotic/relay/core/usecase/crypto/key-types"
+	"github.com/symbiotic/relay/pkg/log"
 
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	"middleware-offchain/core/entity"
+	"github.com/symbiotic/relay/core/entity"
 )
 
 type repo interface {

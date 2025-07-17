@@ -1,6 +1,6 @@
 package key_types
 
-import "middleware-offchain/core/entity"
+import "github.com/symbiotic/relay/core/entity"
 
 type Signature = entity.RawSignature
 type Message = []byte

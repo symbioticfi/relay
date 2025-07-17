@@ -1,10 +1,10 @@
 package crypto
 
 import (
-	"middleware-offchain/core/entity"
-	"middleware-offchain/core/usecase/crypto/blsBn254"
-	"middleware-offchain/core/usecase/crypto/ecdsaSecp256k1"
-	key_types "middleware-offchain/core/usecase/crypto/key-types"
+	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbiotic/relay/core/usecase/crypto/blsBn254"
+	"github.com/symbiotic/relay/core/usecase/crypto/ecdsaSecp256k1"
+	key_types "github.com/symbiotic/relay/core/usecase/crypto/key-types"
 
 	"github.com/go-errors/errors"
 )

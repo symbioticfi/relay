@@ -1,9 +1,9 @@
 package aggregator
 
 import (
-	"middleware-offchain/core/entity"
-	"middleware-offchain/pkg/bls"
-	"middleware-offchain/pkg/proof"
+	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbiotic/relay/pkg/bls"
+	"github.com/symbiotic/relay/pkg/proof"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"

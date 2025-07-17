@@ -1,7 +1,7 @@
 package keys
 
 import (
-	"middleware-offchain/core/entity"
+	"github.com/symbiotic/relay/core/entity"
 
 	"github.com/spf13/cobra"
 )

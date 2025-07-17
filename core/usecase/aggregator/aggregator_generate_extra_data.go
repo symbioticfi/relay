@@ -11,8 +11,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/core/entity"
-	"middleware-offchain/pkg/bls"
+	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbiotic/relay/pkg/bls"
 )
 
 func (a *Aggregator) GenerateExtraData(valset entity.ValidatorSet, config entity.NetworkConfig) ([]entity.ExtraData, error) {

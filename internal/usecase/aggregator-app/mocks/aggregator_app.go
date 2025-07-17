@@ -11,7 +11,7 @@ package mocks
 
 import (
 	context "context"
-	entity "middleware-offchain/core/entity"
+	entity "github.com/symbiotic/relay/core/entity"
 	reflect "reflect"
 	time "time"
 

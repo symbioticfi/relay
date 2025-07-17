@@ -3,18 +3,19 @@ package core
 import (
 	"context"
 	"math/big"
-	keyprovider "middleware-offchain/core/usecase/key-provider"
 	"time"
+
+	keyprovider "github.com/symbiotic/relay/core/usecase/key-provider"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	"middleware-offchain/core/client/evm"
-	"middleware-offchain/core/entity"
-	"middleware-offchain/core/usecase/aggregator"
-	valsetDeriver "middleware-offchain/core/usecase/valset-deriver"
-	"middleware-offchain/pkg/proof"
+	"github.com/symbiotic/relay/core/client/evm"
+	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbiotic/relay/core/usecase/aggregator"
+	valsetDeriver "github.com/symbiotic/relay/core/usecase/valset-deriver"
+	"github.com/symbiotic/relay/pkg/proof"
 )
 
 type prover interface {

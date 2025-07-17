@@ -3,8 +3,8 @@ package keyprovider
 import (
 	"testing"
 
-	"middleware-offchain/core/entity"
-	"middleware-offchain/core/usecase/crypto"
+	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbiotic/relay/core/usecase/crypto"
 
 	"github.com/pavlo-v-chernykh/keystore-go/v4"
 	"github.com/stretchr/testify/require"

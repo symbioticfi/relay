@@ -14,8 +14,8 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	"middleware-offchain/core/entity"
-	"middleware-offchain/pkg/log"
+	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbiotic/relay/pkg/log"
 )
 
 type signer interface {

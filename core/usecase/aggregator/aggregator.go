@@ -15,9 +15,9 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/core/entity"
-	"middleware-offchain/pkg/bls"
-	"middleware-offchain/pkg/proof"
+	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbiotic/relay/pkg/bls"
+	"github.com/symbiotic/relay/pkg/proof"
 )
 
 type prover interface {

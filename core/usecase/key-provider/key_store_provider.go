@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"middleware-offchain/core/usecase/crypto"
+	"github.com/symbiotic/relay/core/usecase/crypto"
 
 	"github.com/pavlo-v-chernykh/keystore-go/v4"
 
-	"middleware-offchain/core/entity"
+	"github.com/symbiotic/relay/core/entity"
 )
 
 type KeystoreProvider struct {

@@ -1,15 +1,16 @@
 package network
 
 import (
-	"middleware-offchain/core/client/evm"
-	"middleware-offchain/core/entity"
-	"middleware-offchain/core/usecase/aggregator"
-	symbioticCrypto "middleware-offchain/core/usecase/crypto"
-	keyprovider "middleware-offchain/core/usecase/key-provider"
-	valsetDeriver "middleware-offchain/core/usecase/valset-deriver"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/symbiotic/relay/core/client/evm"
+	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbiotic/relay/core/usecase/aggregator"
+	symbioticCrypto "github.com/symbiotic/relay/core/usecase/crypto"
+	keyprovider "github.com/symbiotic/relay/core/usecase/key-provider"
+	valsetDeriver "github.com/symbiotic/relay/core/usecase/valset-deriver"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"

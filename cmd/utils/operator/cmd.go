@@ -2,14 +2,14 @@ package operator
 
 import (
 	"context"
-	"middleware-offchain/core/entity"
-	cmdhelpers "middleware-offchain/internal/usecase/cmd-helpers"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/symbiotic/relay/core/entity"
+	cmdhelpers "github.com/symbiotic/relay/internal/usecase/cmd-helpers"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )

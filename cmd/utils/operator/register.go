@@ -3,13 +3,14 @@ package operator
 import (
 	"fmt"
 	"log/slog"
-	"middleware-offchain/core/client/evm"
-	"middleware-offchain/core/entity"
-	symbioticCrypto "middleware-offchain/core/usecase/crypto"
-	keyprovider "middleware-offchain/core/usecase/key-provider"
-	"middleware-offchain/internal/usecase/metrics"
 	"strconv"
 	"time"
+
+	"github.com/symbiotic/relay/core/client/evm"
+	"github.com/symbiotic/relay/core/entity"
+	symbioticCrypto "github.com/symbiotic/relay/core/usecase/crypto"
+	keyprovider "github.com/symbiotic/relay/core/usecase/key-provider"
+	"github.com/symbiotic/relay/internal/usecase/metrics"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"

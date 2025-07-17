@@ -8,8 +8,8 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
 
-	"middleware-offchain/core/entity"
-	aggEntity "middleware-offchain/internal/entity"
+	"github.com/symbiotic/relay/core/entity"
+	aggEntity "github.com/symbiotic/relay/internal/entity"
 )
 
 type hashStore struct {

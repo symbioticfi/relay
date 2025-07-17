@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"middleware-offchain/core/entity"
-	symbKeys "middleware-offchain/core/usecase/crypto/key-types"
+	"github.com/symbiotic/relay/core/entity"
+	symbKeys "github.com/symbiotic/relay/core/usecase/crypto/key-types"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fp"

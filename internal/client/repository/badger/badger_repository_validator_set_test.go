@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"middleware-offchain/core/entity"
+	"github.com/symbiotic/relay/core/entity"
 )
 
 func TestRepository_ValidatorSet(t *testing.T) {

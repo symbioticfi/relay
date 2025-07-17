@@ -41,24 +41,24 @@ gen-abi:
 APP_VERSION ?= dev
 BUILD_TIME ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 
-build-generate-genesis-linux:
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'main.Version=$(APP_VERSION)' -X 'main.BuildTime=$(BUILD_TIME)'" -o generate_genesis_linux_amd64 ./cmd/generate-genesis && \
-		chmod a+x generate_genesis_linux_amd64
+build-relay-utils-linux:
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'main.Version=$(APP_VERSION)' -X 'main.BuildTime=$(BUILD_TIME)'" -o relay_utils_linux_amd64 ./cmd/utils && \
+		chmod a+x relay_utils_linux_amd64
 
-build-generate-genesis-mac:
-	GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'main.Version=$(APP_VERSION)' -X 'main.BuildTime=$(BUILD_TIME)'" -o generate_genesis_darwin_arm64 ./cmd/generate-genesis && \
-		chmod a+x generate_genesis_darwin_arm64
+build-relay-utils-darwin:
+	GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'main.Version=$(APP_VERSION)' -X 'main.BuildTime=$(BUILD_TIME)'" -o relay_utils_darwin_arm64 ./cmd/utils && \
+		chmod a+x relay_utils_darwin_arm64
 
-build-symbiotic-relay-linux:
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'main.Version=$(APP_VERSION)' -X 'main.BuildTime=$(BUILD_TIME)'" -o symbiotic_relay_linux_amd64 ./cmd/middleware-offchain && \
-		chmod a+x symbiotic_relay_linux_amd64
+build-relay-sidecar-linux:
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'main.Version=$(APP_VERSION)' -X 'main.BuildTime=$(BUILD_TIME)'" -o relay_sidecar_linux_amd64 ./cmd/relay_sidecar && \
+		chmod a+x relay_sidecar_linux_amd64
 
-build-symbiotic-relay-mac:
-	GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'main.Version=$(APP_VERSION)' -X 'main.BuildTime=$(BUILD_TIME)'" -o symbiotic_relay_darwin_arm64 ./cmd/middleware-offchain && \
-		chmod a+x symbiotic_relay_darwin_arm64
+build-relay-sidecar-darwin:
+	GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'main.Version=$(APP_VERSION)' -X 'main.BuildTime=$(BUILD_TIME)'" -o relay_sidecar_darwin_arm64 ./cmd/relay_sidecar && \
+		chmod a+x relay_sidecar_darwin_arm64
 
 build-docker:
-	docker build -t middleware-offchain .
+	docker build -t relay_sidecar .
 
 fix-goimports:
 	go run golang.org/x/tools/cmd/goimports@latest -w .
