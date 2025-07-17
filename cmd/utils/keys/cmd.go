@@ -40,6 +40,7 @@ type AddEvmFlags struct {
 	PrivateKey string
 	Generate   bool
 	Force      bool
+	DefaultKey bool
 }
 
 type RemoveFlags struct {
@@ -47,7 +48,8 @@ type RemoveFlags struct {
 }
 
 type RemoveEvmFlags struct {
-	ChainId uint8
+	ChainId    uint8
+	DefaultKey bool
 }
 
 type UpdateFlags struct {
@@ -79,9 +81,7 @@ func initFlags() {
 	addEvmKeyCmd.PersistentFlags().StringVar(&addEvmFlags.PrivateKey, "private-key", "", "private key to add in hex")
 	addEvmKeyCmd.PersistentFlags().BoolVar(&addEvmFlags.Generate, "generate", false, "generate random key")
 	addEvmKeyCmd.PersistentFlags().BoolVar(&addEvmFlags.Force, "force", false, "force overwrite key")
-	if err := addEvmKeyCmd.MarkPersistentFlagRequired("chain-id"); err != nil {
-		panic(err)
-	}
+	addEvmKeyCmd.PersistentFlags().BoolVar(&addEvmFlags.DefaultKey, "default-key", false, "set as default key for the all chains")
 
 	removeKeyCmd.PersistentFlags().Uint8Var(&removeFlags.KeyTag, "key-tag", uint8(entity.KeyTypeInvalid), "key tag")
 	if err := removeKeyCmd.MarkPersistentFlagRequired("key-tag"); err != nil {
@@ -89,9 +89,7 @@ func initFlags() {
 	}
 
 	removeEVMKeyCmd.PersistentFlags().Uint8Var(&removeEvmFlags.ChainId, "chain-id", 0, "evm chain id")
-	if err := removeEVMKeyCmd.MarkPersistentFlagRequired("chain-id"); err != nil {
-		panic(err)
-	}
+	removeEVMKeyCmd.PersistentFlags().BoolVar(&removeEvmFlags.DefaultKey, "default-key", false, "remove default key from keystore")
 
 	updateKeyCmd.PersistentFlags().Uint8Var(&updateFlags.KeyTag, "key-tag", uint8(entity.KeyTypeInvalid), "key tag")
 	updateKeyCmd.PersistentFlags().StringVar(&updateFlags.PrivateKey, "private-key", "", "private key")

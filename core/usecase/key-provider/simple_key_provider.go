@@ -2,10 +2,14 @@ package keyprovider
 
 import (
 	"errors"
-	"middleware-offchain/core/usecase/crypto"
+	"log/slog"
 	"sync"
 
+	"middleware-offchain/core/usecase/crypto"
+
 	"middleware-offchain/core/entity"
+
+	"github.com/pavlo-v-chernykh/keystore-go/v4"
 )
 
 type SimpleKeystoreProvider struct {
@@ -43,7 +47,20 @@ func (k *SimpleKeystoreProvider) GetPrivateKeyByNamespaceTypeId(namespace string
 	if err != nil {
 		return nil, err
 	}
-	return k.GetPrivateKeyByAlias(alias)
+	key, err := k.GetPrivateKeyByAlias(alias)
+	if err != nil {
+		if errors.Is(err, keystore.ErrEntryNotFound) && namespace == EVM_KEY_NAMESPACE {
+			// For EVM keys, we check for default key with chain ID 0 if the requested chain id is absent
+			slog.Warn("Key not found, checking for default EVM key", "alias", alias)
+			defaultAlias, err := ToAlias(EVM_KEY_NAMESPACE, keyType, DEFAULT_EVM_CHAIN_ID)
+			if err != nil {
+				return nil, err
+			}
+			return k.GetPrivateKeyByAlias(defaultAlias)
+		}
+		return nil, err
+	}
+	return key, nil
 }
 
 func (k *SimpleKeystoreProvider) HasKey(keyTag entity.KeyTag) (bool, error) {

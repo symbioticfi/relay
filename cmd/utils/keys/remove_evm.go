@@ -15,8 +15,8 @@ var removeEVMKeyCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var err error
 
-		if removeEvmFlags.ChainId == 0 {
-			return errors.New("evm chain id omitted")
+		if removeEvmFlags.ChainId == 0 && !removeEvmFlags.DefaultKey {
+			return errors.New("evm chain id omitted, either pass chain-id or use --default-key flag")
 		}
 
 		if globalFlags.Password == "" {
@@ -24,6 +24,10 @@ var removeEVMKeyCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
+		}
+
+		if removeEvmFlags.DefaultKey {
+			removeEvmFlags.ChainId = keyprovider.DEFAULT_EVM_CHAIN_ID
 		}
 
 		keyStore, err := keyprovider.NewKeystoreProvider(globalFlags.Path, globalFlags.Password)

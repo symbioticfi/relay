@@ -12,6 +12,9 @@ import (
 const (
 	SYMBIOTIC_KEY_NAMESPACE = "symb"
 	EVM_KEY_NAMESPACE       = "evm"
+
+	// DEFAULT_EVM_CHAIN_ID chain id used to identify the default key for all chains
+	DEFAULT_EVM_CHAIN_ID = 0
 )
 
 type KeyProvider interface {
