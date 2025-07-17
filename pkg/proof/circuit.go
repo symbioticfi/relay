@@ -121,24 +121,21 @@ func (circuit *Circuit) Define(api frontend.API) error {
 
 	// --------------------------------------- Prove Input consistency ---------------------------------------
 
-	// valset consistency checked against InputHash which is Hash{valset-hash|non-signers-vp|message}
+	// valset consistency checked against InputHash which is Hash{valset-hash|signers-vp|message}
 	hashBytes := variableToBytes(api, u64Api, valsetHash)
 
-	api.Println("HashBytes:", hashBytes)
 	keccak256Api.Write(hashBytes)
 	aggVotingPowerBytes := variableToBytes(api, u64Api, circuit.SignersAggVotingPower)
 
-	api.Println("aggVotingPowerBytes:", aggVotingPowerBytes)
 	keccak256Api.Write(aggVotingPowerBytes)
 	messageBytes := keyToBytes(u64Api, &circuit.Message)
 
-	api.Println("MessageBytes:", messageBytes)
 	keccak256Api.Write(messageBytes)
 	inputDataHash := keccak256Api.Sum()
-	api.Println("InputDataHash:", inputDataHash)
+
 	inputHashBytes := variableToBytes(api, u64Api, circuit.InputHash)
 
-	inputDataHash[0] = u64Api.ByteValueOf(u64Api.ToValue(u64Api.And(u64Api.ValueOf(inputDataHash[0].Val), uints.NewU64(0x1f)))) // zero two first bits
+	inputDataHash[0] = u64Api.ByteValueOf(u64Api.ToValue(u64Api.And(u64Api.ValueOf(inputDataHash[0].Val), uints.NewU64(0x1f)))) // zero three first bits
 	for i := range inputHashBytes {
 		u64Api.ByteAssertEq(inputDataHash[i], inputHashBytes[i])
 	}
