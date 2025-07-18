@@ -242,7 +242,7 @@ linters:
       context: scope
     wrapcheck:
       ignore-package-globs:
-        - github.com/symbiotic/relay/internal/*
+        - github.com/symbioticfi/relay/internal/*
         - golang.org/x/sync/errgroup
     funcorder:
       constructor: true

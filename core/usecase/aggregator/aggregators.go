@@ -1,10 +1,10 @@
 package aggregator
 
 import (
-	"github.com/symbiotic/relay/core/entity"
-	types "github.com/symbiotic/relay/core/usecase/aggregator/aggregator-types"
-	"github.com/symbiotic/relay/core/usecase/aggregator/simple"
-	"github.com/symbiotic/relay/core/usecase/aggregator/zk"
+	"github.com/symbioticfi/relay/core/entity"
+	types "github.com/symbioticfi/relay/core/usecase/aggregator/aggregator-types"
+	"github.com/symbioticfi/relay/core/usecase/aggregator/simple"
+	"github.com/symbioticfi/relay/core/usecase/aggregator/zk"
 
 	"github.com/go-errors/errors"
 )

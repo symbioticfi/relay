@@ -13,9 +13,9 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	"github.com/symbiotic/relay/core/entity"
-	"github.com/symbiotic/relay/core/usecase/aggregator"
-	"github.com/symbiotic/relay/pkg/log"
+	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/core/usecase/aggregator"
+	"github.com/symbioticfi/relay/pkg/log"
 )
 
 type signer interface {

@@ -1,8 +1,8 @@
 package aggregator_types
 
 import (
-	"github.com/symbiotic/relay/core/entity"
-	"github.com/symbiotic/relay/pkg/proof"
+	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/pkg/proof"
 
 	"github.com/ethereum/go-ethereum/common"
 )

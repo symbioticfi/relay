@@ -1,10 +1,10 @@
 package crypto
 
 import (
-	"github.com/symbiotic/relay/core/entity"
-	"github.com/symbiotic/relay/core/usecase/crypto/blsBn254"
-	"github.com/symbiotic/relay/core/usecase/crypto/ecdsaSecp256k1"
-	key_types "github.com/symbiotic/relay/core/usecase/crypto/key-types"
+	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/core/usecase/crypto/blsBn254"
+	"github.com/symbioticfi/relay/core/usecase/crypto/ecdsaSecp256k1"
+	key_types "github.com/symbioticfi/relay/core/usecase/crypto/key-types"
 
 	"github.com/go-errors/errors"
 )

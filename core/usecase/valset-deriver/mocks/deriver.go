@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	entity "github.com/symbiotic/relay/core/entity"
+	entity "github.com/symbioticfi/relay/core/entity"
 
 	common "github.com/ethereum/go-ethereum/common"
 	gomock "go.uber.org/mock/gomock"

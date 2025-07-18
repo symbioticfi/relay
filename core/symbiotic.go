@@ -5,17 +5,17 @@ import (
 	"math/big"
 	"time"
 
-	keyprovider "github.com/symbiotic/relay/core/usecase/key-provider"
+	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	"github.com/symbiotic/relay/core/client/evm"
-	"github.com/symbiotic/relay/core/entity"
-	"github.com/symbiotic/relay/core/usecase/aggregator"
-	valsetDeriver "github.com/symbiotic/relay/core/usecase/valset-deriver"
-	"github.com/symbiotic/relay/pkg/proof"
+	"github.com/symbioticfi/relay/core/client/evm"
+	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/core/usecase/aggregator"
+	valsetDeriver "github.com/symbioticfi/relay/core/usecase/valset-deriver"
+	"github.com/symbioticfi/relay/pkg/proof"
 )
 
 type prover interface {

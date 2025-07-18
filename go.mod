@@ -1,4 +1,4 @@
-module github.com/symbiotic/relay
+module github.com/symbioticfi/relay
 
 go 1.24.3
 

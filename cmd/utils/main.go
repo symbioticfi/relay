@@ -4,10 +4,10 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/symbiotic/relay/cmd/utils/keys"
-	"github.com/symbiotic/relay/cmd/utils/network"
-	"github.com/symbiotic/relay/cmd/utils/operator"
-	"github.com/symbiotic/relay/pkg/log"
+	"github.com/symbioticfi/relay/cmd/utils/keys"
+	"github.com/symbioticfi/relay/cmd/utils/network"
+	"github.com/symbioticfi/relay/cmd/utils/operator"
+	"github.com/symbioticfi/relay/pkg/log"
 
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/symbiotic/relay/core/entity"
-	cmdhelpers "github.com/symbiotic/relay/internal/usecase/cmd-helpers"
+	"github.com/symbioticfi/relay/core/entity"
+	cmdhelpers "github.com/symbioticfi/relay/internal/usecase/cmd-helpers"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pterm/pterm"

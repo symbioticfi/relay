@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	cmdhelpers "github.com/symbiotic/relay/internal/usecase/cmd-helpers"
+	cmdhelpers "github.com/symbioticfi/relay/internal/usecase/cmd-helpers"
 
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"

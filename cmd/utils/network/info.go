@@ -3,11 +3,11 @@ package network
 import (
 	"time"
 
-	"github.com/symbiotic/relay/core/client/evm"
-	"github.com/symbiotic/relay/core/entity"
-	keyprovider "github.com/symbiotic/relay/core/usecase/key-provider"
-	valsetDeriver "github.com/symbiotic/relay/core/usecase/valset-deriver"
-	"github.com/symbiotic/relay/internal/usecase/metrics"
+	"github.com/symbioticfi/relay/core/client/evm"
+	"github.com/symbioticfi/relay/core/entity"
+	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
+	valsetDeriver "github.com/symbioticfi/relay/core/usecase/valset-deriver"
+	"github.com/symbioticfi/relay/internal/usecase/metrics"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"

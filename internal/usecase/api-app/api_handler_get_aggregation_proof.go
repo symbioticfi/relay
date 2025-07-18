@@ -6,7 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
-	"github.com/symbiotic/relay/internal/gen/api"
+	"github.com/symbioticfi/relay/internal/gen/api"
 )
 
 func (h *handler) GetAggregationProofGet(ctx context.Context, params api.GetAggregationProofGetParams) (*api.AggregationProof, error) {

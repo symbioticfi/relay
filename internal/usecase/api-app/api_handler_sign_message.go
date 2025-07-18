@@ -3,8 +3,8 @@ package apiApp
 import (
 	"context"
 
-	"github.com/symbiotic/relay/core/entity"
-	"github.com/symbiotic/relay/internal/gen/api"
+	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/gen/api"
 )
 
 func (h *handler) SignMessagePost(ctx context.Context, reqRaw *api.SignMessagePostReq) (*api.SignMessagePostOK, error) {
