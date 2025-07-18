@@ -111,6 +111,7 @@ jobs:
       - name: Build & Push Images
         run: make image
         id: push-image
+        timeout-minutes: 30
         env:
           PUSH_IMAGE: true
           IMAGE_REPO: symbioticfi/relay
