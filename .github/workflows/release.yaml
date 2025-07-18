@@ -19,6 +19,7 @@ jobs:
     uses: ./.github/workflows/build.yaml
     with:
       version: ${{ github.ref_name }}
+    secrets: inherit
   release:
     name: Release
     needs: 

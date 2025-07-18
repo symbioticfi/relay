@@ -18,6 +18,7 @@ jobs:
       - tests
     name: Build
     uses: ./.github/workflows/build.yaml
+    secrets: inherit
   nightly-release:
     name: Nightly Release
     needs:
