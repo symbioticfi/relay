@@ -51,7 +51,7 @@ var registerCmd = &cobra.Command{
 			if !ok {
 				secret, _ = privateKeyInput.Show("Enter private key for chain with ID: " + strconv.Itoa(int(chainId)))
 			}
-			pk, err := symbioticCrypto.NewPrivateKey(entity.KeyTypeEcdsaSecp256k1, common.Hex2Bytes(secret))
+			pk, err := symbioticCrypto.NewPrivateKey(entity.KeyTypeEcdsaSecp256k1, common.FromHex(secret))
 			if err != nil {
 				return err
 			}
