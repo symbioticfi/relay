@@ -3,7 +3,7 @@ name: Nightly Build
 on:
   schedule:
     # Run at 03:00 UTC every day (avoiding peak 00:00 congestion)
-    - cron: '0 3 * * *'
+    - cron: "0 3 * * *"
   workflow_dispatch:
 
 permissions:
@@ -14,13 +14,13 @@ jobs:
     name: Tests
     uses: ./.github/workflows/tests.yaml
   build:
-    needs: 
+    needs:
       - tests
     name: Build
     uses: ./.github/workflows/build.yaml
   nightly-release:
     name: Nightly Release
-    needs: 
+    needs:
       - tests
       - build
     runs-on: ubuntu-24.04
@@ -57,13 +57,13 @@ jobs:
         with:
           pattern: relay_utils_*
           merge-multiple: true
-      
+
       - name: Download relay sidecar artifacts
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # pin@v4.3.0
         with:
           pattern: relay_sidecar_*
           merge-multiple: true
-      
+
       - name: Create nightly release
         uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # pin@v2.2.2
         with:
@@ -73,6 +73,8 @@ jobs:
           body_path: CHANGELOG.md
           files: |
             relay_utils_linux_amd64
+            relay_utils_linux_arm64
             relay_utils_darwin_arm64
             relay_sidecar_linux_amd64
+            relay_sidecar_linux_arm64
             relay_sidecar_darwin_arm64

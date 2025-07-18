@@ -2,6 +2,12 @@
 name: Build
 on:
   workflow_call:
+    inputs:
+      version:
+        type: string
+        description: The version to build, if not provided go version srting is used
+        required: false
+        default: ""
 
 jobs:
   build:
@@ -19,42 +25,90 @@ jobs:
         with:
           go-version: 1.24.3
 
-      - name: Get detailed version info
+      - name: Get version
         id: get_version
         run: |
-          # Use git describe to get a version string like v1.0.0-1-gabcdef
-          VERSION_INFO=$(git describe --tags --always --long --dirty)
-          echo "Version Info: $VERSION_INFO"
-          echo "APP_VERSION=$VERSION_INFO" >> $GITHUB_ENV
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION_INFO=${{ inputs.version }}
+            echo "Version Info: $VERSION_INFO"
+            echo "TAG=$VERSION_INFO" >> $GITHUB_ENV
+          else
+            echo "No version input provided, will auto calculate"
+          fi
 
-      - name: Build relay utils linux
-        run: make build-relay-utils-linux
-      - name: Upload artifact linux_amd64
+      - name: Build relay utils linux amd64
+        run: make build-relay-utils OS=linux ARCH=amd64
+      - name: Upload artifact relay_utils_linux_amd64
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pin@v4.6.2
         with:
           name: relay_utils_linux_amd64
           path: relay_utils_linux_amd64
 
-      - name: Build relay utils darwin
-        run: make build-relay-utils-darwin
-      - name: Upload artifact darwin_arm64
+      - name: Build relay utils linux arm64
+        run: make build-relay-utils OS=linux ARCH=arm64
+      - name: Upload artifact relay_utils_linux_arm64
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pin@v4.6.2
+        with:
+          name: relay_utils_linux_arm64
+          path: relay_utils_linux_arm64
+
+      - name: Build relay utils darwin arm64
+        run: make build-relay-utils OS=darwin ARCH=arm64
+      - name: Upload artifact relay_utils_darwin_arm64
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pin@v4.6.2
         with:
           name: relay_utils_darwin_arm64
           path: relay_utils_darwin_arm64
 
-      - name: Build relay sidecar linux
-        run: make build-relay-sidecar-linux
+      - name: Build relay sidecar linux amd64
+        run: make build-relay-sidecar OS=linux ARCH=amd64
       - name: Upload artifact relay_sidecar_linux_amd64
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pin@v4.6.2
         with:
           name: relay_sidecar_linux_amd64
           path: relay_sidecar_linux_amd64
+      
+      - name: Build relay sidecar linux arm64
+        run: make build-relay-sidecar OS=linux ARCH=arm64
+      - name: Upload artifact relay_sidecar_linux_arm64
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pin@v4.6.2
+        with:
+          name: relay_sidecar_linux_arm64
+          path: relay_sidecar_linux_arm64
 
-      - name: Build relay sidecar darwin
-        run: make build-relay-sidecar-darwin
+      - name: Build relay sidecar darwin arm64
+        run: make build-relay-sidecar OS=darwin ARCH=arm64
       - name: Upload artifact relay_sidecar_darwin_arm64
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pin@v4.6.2
         with:
           name: relay_sidecar_darwin_arm64
           path: relay_sidecar_darwin_arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+        with:
+          driver-opts: network=host
+
+      - name Login to Docker Hub
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Cache Docker layers
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Build & Push Images
+        run: make image
+        id: push-image
+        env:
+          PUSH_IMAGE: true
+          IMAGE_REPO: symbioticfi/relay
+
+      - name: Echo image built
+        run: echo "Image built - [${{ steps.push-image.outputs.image }}]"

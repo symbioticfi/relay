@@ -17,6 +17,8 @@ jobs:
       - tests
     name: Build
     uses: ./.github/workflows/build.yaml
+    with:
+      version: ${{ github.ref_name }}
   release:
     name: Release
     needs: 
@@ -61,6 +63,8 @@ jobs:
           body_path: CHANGELOG.md
           files: |
             relay_utils_linux_amd64
+            relay_utils_linux_arm64
             relay_utils_darwin_arm64
             relay_sidecar_linux_amd64
+            relay_sidecar_linux_arm64
             relay_sidecar_darwin_arm64
