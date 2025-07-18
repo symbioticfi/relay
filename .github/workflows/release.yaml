@@ -19,9 +19,7 @@ jobs:
     uses: ./.github/workflows/build.yaml
     with:
       version: ${{ github.ref_name }}
-    secrets:
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+    secrets: inherit
   release:
     name: Release
     needs: 

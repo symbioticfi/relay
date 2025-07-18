@@ -8,11 +8,6 @@ on:
         description: The version to build, if not provided go version srting is used
         required: false
         default: ""
-    secrets:
-      DOCKERHUB_USERNAME:
-        required: true
-      DOCKERHUB_PASSWORD:
-        required: true
 
 jobs:
   build:
