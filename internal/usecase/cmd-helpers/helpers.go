@@ -9,7 +9,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbioticfi/relay/core/entity"
 
 	"github.com/pterm/pterm"
 	"golang.org/x/term"

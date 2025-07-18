@@ -1,9 +1,9 @@
 package keys
 
 import (
-	"github.com/symbiotic/relay/core/entity"
-	keyprovider "github.com/symbiotic/relay/core/usecase/key-provider"
-	cmdhelpers "github.com/symbiotic/relay/internal/usecase/cmd-helpers"
+	"github.com/symbioticfi/relay/core/entity"
+	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
+	cmdhelpers "github.com/symbioticfi/relay/internal/usecase/cmd-helpers"
 
 	"github.com/spf13/cobra"
 

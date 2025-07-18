@@ -3,10 +3,10 @@ package keys
 import (
 	"errors"
 
-	"github.com/symbiotic/relay/core/entity"
-	"github.com/symbiotic/relay/core/usecase/crypto"
-	keyprovider "github.com/symbiotic/relay/core/usecase/key-provider"
-	cmdhelpers "github.com/symbiotic/relay/internal/usecase/cmd-helpers"
+	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/core/usecase/crypto"
+	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
+	cmdhelpers "github.com/symbioticfi/relay/internal/usecase/cmd-helpers"
 
 	"github.com/spf13/cobra"
 )

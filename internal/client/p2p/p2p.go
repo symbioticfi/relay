@@ -16,10 +16,10 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/samber/lo"
 
-	"github.com/symbiotic/relay/core/entity"
-	p2pEntity "github.com/symbiotic/relay/internal/entity"
-	"github.com/symbiotic/relay/pkg/log"
-	"github.com/symbiotic/relay/pkg/signals"
+	"github.com/symbioticfi/relay/core/entity"
+	p2pEntity "github.com/symbioticfi/relay/internal/entity"
+	"github.com/symbioticfi/relay/pkg/log"
+	"github.com/symbioticfi/relay/pkg/signals"
 )
 
 // Configuration

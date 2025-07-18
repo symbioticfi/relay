@@ -8,12 +8,12 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	swag "github.com/symbiotic/relay/api"
-	"github.com/symbiotic/relay/core/entity"
-	p2pEntity "github.com/symbiotic/relay/internal/entity"
-	"github.com/symbiotic/relay/internal/gen/api"
-	"github.com/symbiotic/relay/pkg/log"
-	"github.com/symbiotic/relay/pkg/server"
+	swag "github.com/symbioticfi/relay/api"
+	"github.com/symbioticfi/relay/core/entity"
+	p2pEntity "github.com/symbioticfi/relay/internal/entity"
+	"github.com/symbioticfi/relay/internal/gen/api"
+	"github.com/symbioticfi/relay/pkg/log"
+	"github.com/symbioticfi/relay/pkg/server"
 )
 
 type signer interface {

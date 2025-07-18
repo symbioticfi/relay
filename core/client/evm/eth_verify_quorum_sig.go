@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/go-errors/errors"
 
-	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbioticfi/relay/core/entity"
 )
 
 func (e *Client) VerifyQuorumSig(

@@ -9,8 +9,8 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p/core/network"
 
-	"github.com/symbiotic/relay/core/entity"
-	p2pEntity "github.com/symbiotic/relay/internal/entity"
+	"github.com/symbioticfi/relay/core/entity"
+	p2pEntity "github.com/symbioticfi/relay/internal/entity"
 )
 
 func handleStreamWrapper(ctx context.Context, f func(ctx context.Context, stream network.Stream) error) func(stream network.Stream) {

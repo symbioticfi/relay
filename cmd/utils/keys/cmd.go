@@ -1,7 +1,7 @@
 package keys
 
 import (
-	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbioticfi/relay/core/entity"
 
 	"github.com/spf13/cobra"
 )

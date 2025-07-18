@@ -5,17 +5,17 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/symbiotic/relay/core/usecase/aggregator"
-	"github.com/symbiotic/relay/core/usecase/crypto"
+	"github.com/symbioticfi/relay/core/usecase/aggregator"
+	"github.com/symbioticfi/relay/core/usecase/crypto"
 
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/go-errors/errors"
 	validate "github.com/go-playground/validator/v10"
 
-	"github.com/symbiotic/relay/core/entity"
-	p2pEntity "github.com/symbiotic/relay/internal/entity"
-	"github.com/symbiotic/relay/pkg/log"
+	"github.com/symbioticfi/relay/core/entity"
+	p2pEntity "github.com/symbioticfi/relay/internal/entity"
+	"github.com/symbioticfi/relay/pkg/log"
 )
 
 //go:generate mockgen -source=aggregator_app.go -destination=mocks/aggregator_app.go -package=mocks

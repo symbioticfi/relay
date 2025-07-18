@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/symbiotic/relay/core/entity"
-	"github.com/symbiotic/relay/core/usecase/crypto"
+	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/core/usecase/crypto"
 
 	"github.com/go-errors/errors"
 )

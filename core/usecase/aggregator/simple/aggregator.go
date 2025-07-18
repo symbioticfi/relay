@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/symbiotic/relay/core/usecase/aggregator/helpers"
+	"github.com/symbioticfi/relay/core/usecase/aggregator/helpers"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -18,8 +18,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
-	"github.com/symbiotic/relay/core/entity"
-	"github.com/symbiotic/relay/pkg/bls"
+	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/pkg/bls"
 )
 
 type Aggregator struct{}

@@ -4,11 +4,11 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/symbiotic/relay/core/entity"
-	"github.com/symbiotic/relay/core/usecase/aggregator/simple"
-	"github.com/symbiotic/relay/core/usecase/aggregator/zk"
-	"github.com/symbiotic/relay/core/usecase/crypto"
-	proof2 "github.com/symbiotic/relay/pkg/proof"
+	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/core/usecase/aggregator/simple"
+	"github.com/symbioticfi/relay/core/usecase/aggregator/zk"
+	"github.com/symbioticfi/relay/core/usecase/crypto"
+	proof2 "github.com/symbioticfi/relay/pkg/proof"
 
 	crypto2 "github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"

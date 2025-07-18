@@ -10,9 +10,9 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 
-	"github.com/symbiotic/relay/core/client/evm/gen"
-	"github.com/symbiotic/relay/core/entity"
-	keyprovider "github.com/symbiotic/relay/core/usecase/key-provider"
+	"github.com/symbioticfi/relay/core/client/evm/gen"
+	"github.com/symbioticfi/relay/core/entity"
+	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 )
 
 func (e *Client) SetGenesis(

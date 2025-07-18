@@ -12,8 +12,8 @@ import (
 	"github.com/ogen-go/ogen/validate"
 	"github.com/samber/lo"
 
-	"github.com/symbiotic/relay/core/entity"
-	"github.com/symbiotic/relay/internal/gen/api"
+	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/gen/api"
 )
 
 type handler struct {

@@ -5,12 +5,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/symbiotic/relay/core/client/evm"
-	"github.com/symbiotic/relay/core/entity"
-	symbioticCrypto "github.com/symbiotic/relay/core/usecase/crypto"
-	keyprovider "github.com/symbiotic/relay/core/usecase/key-provider"
-	cmdhelpers "github.com/symbiotic/relay/internal/usecase/cmd-helpers"
-	"github.com/symbiotic/relay/internal/usecase/metrics"
+	"github.com/symbioticfi/relay/core/client/evm"
+	"github.com/symbioticfi/relay/core/entity"
+	symbioticCrypto "github.com/symbioticfi/relay/core/usecase/crypto"
+	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
+	cmdhelpers "github.com/symbioticfi/relay/internal/usecase/cmd-helpers"
+	"github.com/symbioticfi/relay/internal/usecase/metrics"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"

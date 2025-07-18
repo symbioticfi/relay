@@ -1,6 +1,6 @@
 package key_types
 
-import "github.com/symbiotic/relay/core/entity"
+import "github.com/symbioticfi/relay/core/entity"
 
 type Signature = entity.RawSignature
 type Message = []byte

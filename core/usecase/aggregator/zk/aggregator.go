@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/symbiotic/relay/core/entity"
-	types "github.com/symbiotic/relay/core/usecase/aggregator/aggregator-types"
-	"github.com/symbiotic/relay/core/usecase/aggregator/helpers"
-	"github.com/symbiotic/relay/pkg/bls"
-	"github.com/symbiotic/relay/pkg/proof"
+	"github.com/symbioticfi/relay/core/entity"
+	types "github.com/symbioticfi/relay/core/usecase/aggregator/aggregator-types"
+	"github.com/symbioticfi/relay/core/usecase/aggregator/helpers"
+	"github.com/symbioticfi/relay/pkg/bls"
+	"github.com/symbioticfi/relay/pkg/proof"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/ethereum/go-ethereum/common"

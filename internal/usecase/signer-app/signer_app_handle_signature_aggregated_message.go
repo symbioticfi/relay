@@ -5,9 +5,9 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"github.com/symbiotic/relay/core/entity"
-	p2pEntity "github.com/symbiotic/relay/internal/entity"
-	"github.com/symbiotic/relay/pkg/log"
+	"github.com/symbioticfi/relay/core/entity"
+	p2pEntity "github.com/symbioticfi/relay/internal/entity"
+	"github.com/symbioticfi/relay/pkg/log"
 )
 
 func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, p2pMsg p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]) error {

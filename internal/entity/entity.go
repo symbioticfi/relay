@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbioticfi/relay/core/entity"
 )
 
 type AggregationStatus struct {
