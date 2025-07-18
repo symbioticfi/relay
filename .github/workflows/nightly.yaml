@@ -18,6 +18,9 @@ jobs:
       - tests
     name: Build
     uses: ./.github/workflows/build.yaml
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
   nightly-release:
     name: Nightly Release
     needs:
