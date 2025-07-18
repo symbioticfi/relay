@@ -2,12 +2,13 @@ package aggregator
 
 import (
 	"math/big"
-	"middleware-offchain/core/entity"
-	"middleware-offchain/core/usecase/aggregator/simple"
-	"middleware-offchain/core/usecase/aggregator/zk"
-	"middleware-offchain/core/usecase/crypto"
-	proof2 "middleware-offchain/pkg/proof"
 	"testing"
+
+	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbiotic/relay/core/usecase/aggregator/simple"
+	"github.com/symbiotic/relay/core/usecase/aggregator/zk"
+	"github.com/symbiotic/relay/core/usecase/crypto"
+	proof2 "github.com/symbiotic/relay/pkg/proof"
 
 	crypto2 "github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"

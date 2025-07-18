@@ -6,8 +6,8 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/core/entity"
-	"middleware-offchain/pkg/log"
+	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbiotic/relay/pkg/log"
 )
 
 func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.AggregatedSignatureMessage) error {

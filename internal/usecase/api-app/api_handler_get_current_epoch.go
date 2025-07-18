@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/internal/gen/api"
+	"github.com/symbiotic/relay/internal/gen/api"
 )
 
 func (h *handler) GetCurrentEpochGet(ctx context.Context) (*api.GetCurrentEpochGetOK, error) {

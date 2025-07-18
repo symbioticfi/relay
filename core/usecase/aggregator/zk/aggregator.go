@@ -3,11 +3,12 @@ package zk
 import (
 	"fmt"
 	"math/big"
-	"middleware-offchain/core/entity"
-	types "middleware-offchain/core/usecase/aggregator/aggregator-types"
-	"middleware-offchain/core/usecase/aggregator/helpers"
-	"middleware-offchain/pkg/bls"
-	"middleware-offchain/pkg/proof"
+
+	"github.com/symbiotic/relay/core/entity"
+	types "github.com/symbiotic/relay/core/usecase/aggregator/aggregator-types"
+	"github.com/symbiotic/relay/core/usecase/aggregator/helpers"
+	"github.com/symbiotic/relay/pkg/bls"
+	"github.com/symbiotic/relay/pkg/proof"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/ethereum/go-ethereum/common"

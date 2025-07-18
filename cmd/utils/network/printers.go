@@ -4,17 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"middleware-offchain/core/entity"
-	cmdhelpers "middleware-offchain/internal/usecase/cmd-helpers"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/pterm/pterm/putils"
+	"github.com/symbiotic/relay/core/entity"
+	cmdhelpers "github.com/symbiotic/relay/internal/usecase/cmd-helpers"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/pterm/pterm"
+	"github.com/pterm/pterm/putils"
 	"github.com/samber/lo"
 )
 

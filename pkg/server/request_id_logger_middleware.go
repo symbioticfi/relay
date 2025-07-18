@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5/middleware"
 
-	"middleware-offchain/pkg/log"
+	"github.com/symbiotic/relay/pkg/log"
 )
 
 func RequestToSlog(next http.Handler) http.Handler {

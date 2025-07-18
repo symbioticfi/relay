@@ -1,15 +1,18 @@
 package aggregator
 
 import (
-	"middleware-offchain/core/entity"
-	types "middleware-offchain/core/usecase/aggregator/aggregator-types"
-	"middleware-offchain/core/usecase/aggregator/simple"
-	"middleware-offchain/core/usecase/aggregator/zk"
+	"github.com/symbiotic/relay/core/entity"
+	types "github.com/symbiotic/relay/core/usecase/aggregator/aggregator-types"
+	"github.com/symbiotic/relay/core/usecase/aggregator/simple"
+	"github.com/symbiotic/relay/core/usecase/aggregator/zk"
 
 	"github.com/go-errors/errors"
 )
 
-func NewAggregator(verificationType entity.VerificationType, prover types.Prover) (types.Aggregator, error) {
+type Aggregator = types.Aggregator
+type Prover = types.Prover
+
+func NewAggregator(verificationType entity.VerificationType, prover Prover) (Aggregator, error) {
 	switch verificationType {
 	case entity.VerificationTypeZK:
 		return zk.NewAggregator(prover), nil

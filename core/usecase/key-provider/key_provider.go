@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"middleware-offchain/core/entity"
-	"middleware-offchain/core/usecase/crypto"
+	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbiotic/relay/core/usecase/crypto"
 )
 
 const (

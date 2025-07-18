@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/core/entity"
+	"github.com/symbiotic/relay/core/entity"
 )
 
 type AggregationStatus struct {

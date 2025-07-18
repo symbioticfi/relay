@@ -27,34 +27,34 @@ jobs:
           echo "Version Info: $VERSION_INFO"
           echo "APP_VERSION=$VERSION_INFO" >> $GITHUB_ENV
 
-      - name: Build generate-genesis-linux
-        run: make build-generate-genesis-linux
+      - name: Build relay utils linux
+        run: make build-relay-utils-linux
       - name: Upload artifact linux_amd64
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pin@v4.6.2
         with:
-          name: generate_genesis_linux_amd64
-          path: generate_genesis_linux_amd64
+          name: relay_utils_linux_amd64
+          path: relay_utils_linux_amd64
 
-      - name: Build generate-genesis-mac
-        run: make build-generate-genesis-mac
+      - name: Build relay utils darwin
+        run: make build-relay-utils-darwin
       - name: Upload artifact darwin_arm64
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pin@v4.6.2
         with:
-          name: generate_genesis_darwin_arm64
-          path: generate_genesis_darwin_arm64
+          name: relay_utils_darwin_arm64
+          path: relay_utils_darwin_arm64
 
-      - name: Build symbiotic-relay-linux
-        run: make build-symbiotic-relay-linux
-      - name: Upload artifact symbiotic_relay_linux_amd64
+      - name: Build relay sidecar linux
+        run: make build-relay-sidecar-linux
+      - name: Upload artifact relay_sidecar_linux_amd64
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pin@v4.6.2
         with:
-          name: symbiotic_relay_linux_amd64
-          path: symbiotic_relay_linux_amd64
+          name: relay_sidecar_linux_amd64
+          path: relay_sidecar_linux_amd64
 
-      - name: Build symbiotic-relay-mac
-        run: make build-symbiotic-relay-mac
-      - name: Upload artifact symbiotic_relay_darwin_arm64
+      - name: Build relay sidecar darwin
+        run: make build-relay-sidecar-darwin
+      - name: Upload artifact relay_sidecar_darwin_arm64
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pin@v4.6.2
         with:
-          name: symbiotic_relay_darwin_arm64
-          path: symbiotic_relay_darwin_arm64
+          name: relay_sidecar_darwin_arm64
+          path: relay_sidecar_darwin_arm64

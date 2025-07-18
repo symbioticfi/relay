@@ -7,8 +7,8 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
 
-	"middleware-offchain/core/entity"
-	"middleware-offchain/internal/gen/api"
+	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbiotic/relay/internal/gen/api"
 )
 
 func (h *handler) GetSignaturesGet(ctx context.Context, params api.GetSignaturesGetParams) ([]api.Signature, error) {

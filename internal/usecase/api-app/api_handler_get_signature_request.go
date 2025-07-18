@@ -5,7 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"middleware-offchain/internal/gen/api"
+	"github.com/symbiotic/relay/internal/gen/api"
 )
 
 func (h *handler) GetSignatureRequestGet(ctx context.Context, params api.GetSignatureRequestGetParams) (*api.SignatureRequest, error) {

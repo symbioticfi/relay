@@ -16,10 +16,10 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/samber/lo"
 
-	"middleware-offchain/core/entity"
-	p2pEntity "middleware-offchain/internal/entity"
-	"middleware-offchain/pkg/log"
-	"middleware-offchain/pkg/signals"
+	"github.com/symbiotic/relay/core/entity"
+	p2pEntity "github.com/symbiotic/relay/internal/entity"
+	"github.com/symbiotic/relay/pkg/log"
+	"github.com/symbiotic/relay/pkg/signals"
 )
 
 // Configuration

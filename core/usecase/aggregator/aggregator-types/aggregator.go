@@ -1,8 +1,8 @@
 package aggregator_types
 
 import (
-	"middleware-offchain/core/entity"
-	"middleware-offchain/pkg/proof"
+	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbiotic/relay/pkg/proof"
 
 	"github.com/ethereum/go-ethereum/common"
 )

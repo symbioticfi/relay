@@ -8,8 +8,8 @@ import (
 
 	"github.com/samber/lo"
 
-	"middleware-offchain/core/entity"
-	"middleware-offchain/internal/gen/api"
+	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbiotic/relay/internal/gen/api"
 )
 
 func (h *handler) GetValidatorSetGet(ctx context.Context, params api.GetValidatorSetGetParams) (*api.ValidatorSet, error) {

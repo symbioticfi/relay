@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"middleware-offchain/internal/entity"
+	"github.com/symbiotic/relay/internal/entity"
 )
 
 type CMDSecretKey struct {

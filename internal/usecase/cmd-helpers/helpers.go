@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
-	"middleware-offchain/core/entity"
 	"sort"
 	"strconv"
 	"strings"
 	"syscall"
 
-	"github.com/pterm/pterm"
+	"github.com/symbiotic/relay/core/entity"
 
+	"github.com/pterm/pterm"
 	"golang.org/x/term"
 )
 

@@ -3,7 +3,8 @@ package helpers
 import (
 	"bytes"
 	"math/big"
-	"middleware-offchain/core/entity"
+
+	"github.com/symbiotic/relay/core/entity"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/ethereum/go-ethereum/accounts/abi"

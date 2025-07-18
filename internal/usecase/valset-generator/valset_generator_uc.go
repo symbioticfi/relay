@@ -5,18 +5,17 @@ import (
 	"encoding/hex"
 	"log/slog"
 	"math/big"
-	types "middleware-offchain/core/usecase/aggregator/aggregator-types"
 	"time"
 
-	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	"middleware-offchain/core/entity"
-	"middleware-offchain/pkg/log"
+	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbiotic/relay/core/usecase/aggregator"
+	"github.com/symbiotic/relay/pkg/log"
 )
 
 type signer interface {
@@ -50,8 +49,6 @@ type deriver interface {
 	GetNetworkData(ctx context.Context, addr entity.CrossChainAddress) (entity.NetworkData, error)
 }
 
-type aggregator = types.Aggregator
-
 type Config struct {
 	Signer          signer        `validate:"required"`
 	Eth             eth           `validate:"required"`
@@ -59,7 +56,7 @@ type Config struct {
 	Deriver         deriver       `validate:"required"`
 	PollingInterval time.Duration `validate:"required,gt=0"`
 	IsCommitter     bool
-	Aggregator      aggregator
+	Aggregator      aggregator.Aggregator
 }
 
 func (c Config) Validate() error {

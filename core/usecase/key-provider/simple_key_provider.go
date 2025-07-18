@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"sync"
 
-	"middleware-offchain/core/usecase/crypto"
+	"github.com/symbiotic/relay/core/usecase/crypto"
 
-	"middleware-offchain/core/entity"
+	"github.com/symbiotic/relay/core/entity"
 
 	"github.com/pavlo-v-chernykh/keystore-go/v4"
 )

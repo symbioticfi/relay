@@ -5,9 +5,10 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math/big"
-	"middleware-offchain/core/usecase/aggregator/helpers"
 	"reflect"
 	"sort"
+
+	"github.com/symbiotic/relay/core/usecase/aggregator/helpers"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -17,8 +18,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/core/entity"
-	"middleware-offchain/pkg/bls"
+	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbiotic/relay/pkg/bls"
 )
 
 type Aggregator struct{}

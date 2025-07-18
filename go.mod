@@ -1,4 +1,4 @@
-module middleware-offchain
+module github.com/symbiotic/relay
 
 go 1.24.3
 

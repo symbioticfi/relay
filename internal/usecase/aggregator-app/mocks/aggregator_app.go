@@ -11,9 +11,10 @@ package mocks
 
 import (
 	context "context"
-	entity "middleware-offchain/core/entity"
 	reflect "reflect"
 	time "time"
+
+	entity "github.com/symbiotic/relay/core/entity"
 
 	common "github.com/ethereum/go-ethereum/common"
 	gomock "go.uber.org/mock/gomock"

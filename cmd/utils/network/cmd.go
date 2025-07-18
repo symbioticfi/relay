@@ -2,10 +2,11 @@ package network
 
 import (
 	"context"
-	cmdhelpers "middleware-offchain/internal/usecase/cmd-helpers"
 	"os"
 	"os/signal"
 	"syscall"
+
+	cmdhelpers "github.com/symbiotic/relay/internal/usecase/cmd-helpers"
 
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"

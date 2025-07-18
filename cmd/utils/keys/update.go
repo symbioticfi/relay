@@ -2,10 +2,11 @@ package keys
 
 import (
 	"errors"
-	"middleware-offchain/core/entity"
-	"middleware-offchain/core/usecase/crypto"
-	keyprovider "middleware-offchain/core/usecase/key-provider"
-	cmdhelpers "middleware-offchain/internal/usecase/cmd-helpers"
+
+	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbiotic/relay/core/usecase/crypto"
+	keyprovider "github.com/symbiotic/relay/core/usecase/key-provider"
+	cmdhelpers "github.com/symbiotic/relay/internal/usecase/cmd-helpers"
 
 	"github.com/spf13/cobra"
 )

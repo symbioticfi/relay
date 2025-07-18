@@ -7,18 +7,15 @@ RUN go mod download
 
 COPY . ./
 
-RUN CGO_ENABLED=0 go build -ldflags "-extldflags '-static'" -o utils ./cmd/utils && \
-    		chmod a+x utils
-RUN CGO_ENABLED=0 go build -ldflags "-extldflags '-static'" -o middleware_offchain ./cmd/middleware-offchain && \
-    		chmod a+x middleware_offchain
-RUN CGO_ENABLED=0 go build -ldflags "-extldflags '-static'" -o msg_sign ./cmd/msg-sign && \
-    		chmod a+x msg_sign
+RUN CGO_ENABLED=0 go build -ldflags "-extldflags '-static'" -o utils ./cmd/relay_utils && \
+    		chmod a+x relay_utils
+RUN CGO_ENABLED=0 go build -ldflags "-extldflags '-static'" -o relay ./cmd/relay_sidecar && \
+    		chmod a+x relay_sidecar
 
 FROM alpine:latest
 
 WORKDIR /app
 
-COPY --from=builder /app/utils .
-COPY --from=builder /app/middleware_offchain .
-COPY --from=builder /app/msg_sign .
+COPY --from=builder /app/relay_utils .
+COPY --from=builder /app/relay_sidecar .
 COPY --from=builder /app/circuits /app/circuits

@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"slices"
 
-	"middleware-offchain/core/usecase/ssz"
+	"github.com/symbiotic/relay/core/usecase/ssz"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"

@@ -7,8 +7,8 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	"middleware-offchain/pkg/log"
-	"middleware-offchain/pkg/server"
+	"github.com/symbiotic/relay/pkg/log"
+	"github.com/symbiotic/relay/pkg/server"
 )
 
 type AppConfig struct {

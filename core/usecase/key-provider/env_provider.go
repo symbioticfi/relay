@@ -2,14 +2,14 @@ package keyprovider
 
 import (
 	"encoding/base64"
-	"middleware-offchain/core/usecase/crypto"
 	"os"
 	"strings"
 	"sync"
 
-	"github.com/go-errors/errors"
+	"github.com/symbiotic/relay/core/entity"
+	"github.com/symbiotic/relay/core/usecase/crypto"
 
-	"middleware-offchain/core/entity"
+	"github.com/go-errors/errors"
 )
 
 type EnvKeyProvider struct {

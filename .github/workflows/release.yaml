@@ -42,16 +42,16 @@ jobs:
           git log ${{ steps.get_previous_tag.outputs.tag }}..${{ github.ref_name }} --pretty=format:"- %s (%an)" > CHANGELOG.md
           cat CHANGELOG.md
 
-      - name: Download artifacts
+      - name: Download relay utils artifacts
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # pin@v4.3.0
         with:
-          pattern: generate_genesis_*
+          pattern: relay_utils_*
           merge-multiple: true
       
-      - name: Download symbiotic-relay artifacts
+      - name: Download relay sidecar artifacts
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # pin@v4.3.0
         with:
-          pattern: symbiotic_relay_*
+          pattern: relay_sidecar_*
           merge-multiple: true
       
       - name: Release
@@ -60,7 +60,7 @@ jobs:
           draft: true
           body_path: CHANGELOG.md
           files: |
-            generate_genesis_linux_amd64
-            generate_genesis_darwin_arm64
-            symbiotic_relay_linux_amd64
-            symbiotic_relay_darwin_arm64
+            relay_utils_linux_amd64
+            relay_utils_darwin_arm64
+            relay_sidecar_linux_amd64
+            relay_sidecar_darwin_arm64

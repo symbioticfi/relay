@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"time"
 
-	keyprovider "middleware-offchain/core/usecase/key-provider"
+	keyprovider "github.com/symbiotic/relay/core/usecase/key-provider"
 
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/samber/lo"
@@ -22,8 +22,8 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	"middleware-offchain/core/client/evm/gen"
-	"middleware-offchain/core/entity"
+	"github.com/symbiotic/relay/core/client/evm/gen"
+	"github.com/symbiotic/relay/core/entity"
 )
 
 type metrics interface {
