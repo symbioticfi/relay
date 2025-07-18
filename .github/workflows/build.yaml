@@ -67,7 +67,7 @@ jobs:
         with:
           name: relay_sidecar_linux_amd64
           path: relay_sidecar_linux_amd64
-      
+
       - name: Build relay sidecar linux arm64
         run: make build-relay-sidecar OS=linux ARCH=arm64
       - name: Upload artifact relay_sidecar_linux_arm64
@@ -89,7 +89,7 @@ jobs:
         with:
           driver-opts: network=host
 
-      - name Login to Docker Hub
+      - name: Login to Docker Hub
         uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
