@@ -17,6 +17,8 @@ jobs:
       - tests
     name: Build
     uses: ./.github/workflows/build.yaml
+    with:
+      version: ${{ github.ref_name }}
   release:
     name: Release
     needs: 
