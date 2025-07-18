@@ -110,7 +110,7 @@ build-relay-sidecar-darwin:
 .PHONY: image
 image:
 ifeq ($(PUSH_IMAGE), true)
-	@docker buildx build --platform=linux/amd64,linux/arm64 . ${IMAGE_TAGS} --build-arg APP_VERSION=$(APP_VERSION) --build-arg BUILD_TIME=$(BUILD_TIME)
+	@docker buildx build --push --platform=linux/amd64,linux/arm64 . ${IMAGE_TAGS} --build-arg APP_VERSION=$(APP_VERSION) --build-arg BUILD_TIME=$(BUILD_TIME)
 	# https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-output-parameter
 	echo "image=${IMAGE_REPO}:${FINAL_TAG}" >> $$GITHUB_OUTPUT
 else
