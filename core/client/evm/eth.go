@@ -28,6 +28,7 @@ import (
 
 type metrics interface {
 	ObserveEVMMethodCall(method, status string, d time.Duration)
+	ObserveCommitValsetHeaderParams(chainID uint64, gasUsed uint64, effectiveGasPrice *big.Int)
 }
 
 type Config struct {

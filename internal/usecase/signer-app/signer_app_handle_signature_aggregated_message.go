@@ -2,6 +2,7 @@ package signer_app
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-errors/errors"
 
@@ -32,6 +33,12 @@ func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, p2pMs
 	}
 
 	s.cfg.AggProofSignal.Emit(ctx, msg)
+
+	stat, err := s.cfg.Repo.UpdateSignatureStat(ctx, msg.RequestHash, entity.SignatureStatStageAggProofReceived, time.Now())
+	if err != nil {
+		return errors.Errorf("failed to update signature stat: %w", err)
+	}
+	s.cfg.Metrics.ObserveAggReceived(stat)
 
 	return nil
 }

@@ -83,6 +83,8 @@ func (e *Client) CommitValsetHeader(
 
 	slog.DebugContext(ctx, "Valset header committed", "receipt", receipt)
 
+	e.metrics.ObserveCommitValsetHeaderParams(addr.ChainId, receipt.GasUsed, receipt.EffectiveGasPrice)
+
 	return entity.TxResult{
 		TxHash: receipt.TxHash,
 	}, nil
