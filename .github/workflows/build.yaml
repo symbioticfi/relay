@@ -12,7 +12,8 @@ on:
 jobs:
   build:
     name: Build
-    runs-on: relay-16
+    runs-on:
+      group: relay
     timeout-minutes: 15
     steps:
       - name: Checkout source code
