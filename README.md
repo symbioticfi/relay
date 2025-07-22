@@ -111,7 +111,7 @@ go build -o relay_sidecar ./cmd/relay_sidecar
 ### Running node 3 (signer + aggregator)
 
 ```bash
-./relay_sidecar --driver.chain-id 111 --driver.address 0xA65C4ca1b06BD89aC03A395b3cA0919bF5F58869 --chains-id 111 --chains-rpc-url http://127.0.0.1:8545 --log-level info --log-mode pretty --secret-key 1000000000000000002 --signer true --aggregator true --http-listen :8083 --circuits-dir relay-bn254-example-circuit-keys
+./relay_sidecar --driver.chain-id 111 --driver.address 0xA65C4ca1b06BD89aC03A395b3cA0919bF5F58869 --chains-id 111 --chains-rpc-url http://127.0.0.1:8545 --log-level info --log-mode pretty --secret-key 1000000000000000002 --signer true --aggregator true --http-listen :8083
 ```
 
 Notes:
