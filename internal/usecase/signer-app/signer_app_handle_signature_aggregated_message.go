@@ -2,6 +2,7 @@ package signer_app
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/go-errors/errors"
 
@@ -28,6 +29,11 @@ func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, p2pMs
 
 	err = s.cfg.Repo.SaveAggregationProof(ctx, msg.RequestHash, msg.AggregationProof)
 	if err != nil {
+		// if the aggregation proof already exists, we have already seen the message and broadcasted it so short-circuit
+		if errors.Is(err, entity.ErrEntityAlreadyExist) {
+			slog.DebugContext(ctx, "Aggregation proof already exists, skipping", "requestHash", msg.RequestHash)
+			return nil
+		}
 		return err
 	}
 
