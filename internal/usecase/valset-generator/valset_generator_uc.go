@@ -151,6 +151,10 @@ func (s *Service) process(ctx context.Context) error {
 	slog.DebugContext(ctx, "Signed validator set", "header", header, "extra data", extraData, "hash", hex.EncodeToString(data))
 	err = s.cfg.Repo.SavePendingValidatorSet(ctx, r.Hash(), valSet)
 	if err != nil {
+		if errors.Is(err, entity.ErrEntityAlreadyExist) {
+			slog.DebugContext(ctx, "Pending valset already exists, skipping save", "requestHash", r.Hash())
+			return nil // already exists, nothing to do
+		}
 		return errors.Errorf("failed to save pending valset: %w", err)
 	}
 
