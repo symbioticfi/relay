@@ -116,6 +116,7 @@ jobs:
         env:
           PUSH_IMAGE: true
           IMAGE_REPO: symbioticfi/relay
+          PUSH_LATEST: ${{ inputs.version == '' }} # updates latest tag only when version is not specified (nightly builds)
 
       - name: Echo image built
         run: echo "Image built - [${{ steps.push-image.outputs.image }}]"
