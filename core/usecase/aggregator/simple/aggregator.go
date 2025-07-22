@@ -176,9 +176,9 @@ func (a Aggregator) Aggregate(
 
 	nonSignersBytes := make([]byte, 0, len(nonSigners)*2)
 	for _, nonSigner := range nonSigners {
-		littleEndianBytes := make([]byte, 2)
-		binary.BigEndian.PutUint16(littleEndianBytes, uint16(nonSigner))
-		nonSignersBytes = append(nonSignersBytes, littleEndianBytes...)
+		bidEndianBytes := make([]byte, 2)
+		binary.BigEndian.PutUint16(bidEndianBytes, uint16(nonSigner))
+		nonSignersBytes = append(nonSignersBytes, bidEndianBytes...)
 	}
 
 	validatorsDataBytes, err := validatorsDataAbiArgs.Pack(validatorsData)
