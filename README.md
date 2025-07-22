@@ -24,7 +24,7 @@ git clone --recurse-submodules git@github.com:symbioticfi/relay.git
 Download lfs files
 
 ```bash
-cd relay-bn254-example-circuit-keys
+cd circuits # choose one option from bottom
 git lfs pull # for all files download, long download
 git lfs pull --include="circuit_10.pk,circuit_10.r1cs,circuit_10.vk" # enough for testing
 ```
