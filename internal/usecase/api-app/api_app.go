@@ -2,6 +2,7 @@ package apiApp
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -65,6 +66,7 @@ func (c Config) Validate() error {
 
 type APIApp struct {
 	srv *server.Server
+	cfg Config
 }
 
 func NewAPIApp(cfg Config) (*APIApp, error) {
@@ -100,11 +102,14 @@ func NewAPIApp(cfg Config) (*APIApp, error) {
 
 	return &APIApp{
 		srv: srv,
+		cfg: cfg,
 	}, nil
 }
 
 func (a *APIApp) Start(ctx context.Context) error {
 	logCtx := log.WithComponent(ctx, "api")
+
+	slog.InfoContext(ctx, "Starting API server", "address", a.cfg.Address, "prefix", a.cfg.Prefix)
 
 	return a.srv.Serve(logCtx)
 }

@@ -109,14 +109,14 @@ func newMetrics(registerer prometheus.Registerer) *Metrics {
 	m.appAggProofCompleted = prometheus.NewHistogram(prometheus.HistogramOpts{
 		Name:    "symbiotic_relay_agg_proof_completed_seconds",
 		Help:    "Time taken to complete aggregation proof",
-		Buckets: []float64{1, 2, 3, 5, 7, 8, 9, 10, 12, 15, 17, 20, 25, 30, 35, 40, 45, 50, 55, 60, 90, 120, 150, 180, 240, 300, 600},
+		Buckets: []float64{.01, .025, .05, .1, .25, .5, 1, 2, 3, 5, 7, 8, 9, 10, 12, 15, 17, 20, 25, 30, 35, 40, 45, 50, 55, 60, 90, 120, 150, 180, 240, 300, 600},
 	})
 	all = append(all, m.appAggProofCompleted)
 
 	m.appAggProofReceived = prometheus.NewHistogram(prometheus.HistogramOpts{
 		Name:    "symbiotic_relay_agg_proof_received_seconds",
 		Help:    "Time taken to receive aggregation proof",
-		Buckets: []float64{1, 2, 3, 5, 7, 8, 9, 10, 12, 15, 17, 20, 25, 30, 35, 40, 45, 50, 55, 60, 90, 120, 150, 180, 240, 300, 600},
+		Buckets: []float64{.01, .025, .05, .1, .25, .5, 1, 2, 3, 5, 7, 8, 9, 10, 12, 15, 17, 20, 25, 30, 35, 40, 45, 50, 55, 60, 90, 120, 150, 180, 240, 300, 600},
 	})
 	all = append(all, m.appAggProofReceived)
 

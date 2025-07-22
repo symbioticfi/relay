@@ -128,7 +128,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 	)
 
 	if _, err := s.cfg.Repo.UpdateSignatureStat(ctx, msg.RequestHash, entity.SignatureStatStageAggQuorumReached, time.Now()); err != nil {
-		return errors.Errorf("failed to update signature stat: %w", err)
+		slog.WarnContext(ctx, "Failed to update signature stat: %s", "error", err)
 	}
 
 	sigs, err := s.cfg.Repo.GetAllSignatures(ctx, msg.RequestHash)
@@ -172,13 +172,14 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 
 	stat, err := s.cfg.Repo.UpdateSignatureStat(ctx, msg.RequestHash, entity.SignatureStatStageAggCompleted, time.Now())
 	if err != nil {
-		return errors.Errorf("failed to update signature stat: %w", err)
+		slog.WarnContext(ctx, "Failed to update signature stat: %s", "error", err)
 	}
 
 	s.cfg.Metrics.ObserveAppAggregateDuration(time.Since(appAggregationStart))
 	s.cfg.Metrics.ObserveAggCompleted(stat)
 
-	slog.InfoContext(ctx, "Proof sent via p2p")
+	slog.InfoContext(ctx, "Proof sent via p2p",
+		"totalAggDuration", time.Since(appAggregationStart).String())
 
 	return nil
 }

@@ -103,7 +103,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 	}
 
 	if _, err := s.cfg.Repo.UpdateSignatureStat(ctx, req.Hash(), entity.SignatureStatStageSignRequestReceived, timeAppSignStart); err != nil {
-		return errors.Errorf("failed to update signature stat: %w", err)
+		slog.WarnContext(ctx, "Failed to update signature stat", "error", err)
 	}
 
 	valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(req.RequiredEpoch))
@@ -139,8 +139,6 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.Errorf("failed to save signature: %w", err)
 	}
 
-	slog.InfoContext(ctx, "Message signed, sending via p2p", "hash", hash, "signature", signature)
-
 	err = s.cfg.P2PService.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureMessage{
 		RequestHash: req.Hash(),
 		KeyTag:      req.KeyTag,
@@ -155,9 +153,10 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.Errorf("failed to save signature request: %w", err)
 	}
 
+	slog.InfoContext(ctx, "Message signed", "hash", hash, "signature", signature, "duration", time.Since(timeAppSignStart))
 	s.cfg.Metrics.ObserveAppSignDuration(time.Since(timeAppSignStart))
 	if _, err := s.cfg.Repo.UpdateSignatureStat(ctx, req.Hash(), entity.SignatureStatStageSignCompleted, time.Now()); err != nil {
-		return errors.Errorf("failed to update signature stat: %w", err)
+		slog.WarnContext(ctx, "Failed to update signature stat", "error", err)
 	}
 
 	return nil
