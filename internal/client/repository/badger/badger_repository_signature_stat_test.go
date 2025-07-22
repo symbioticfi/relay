@@ -29,7 +29,7 @@ func TestBadgerRepository_UpdateSignatureStat(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, reqHash, stat.ReqHash)
 	require.Len(t, stat.StatMap, 2)
-	require.Equal(t, now.Truncate(time.Microsecond), stat.StatMap[entity.SignatureStatStageSignRequestReceived].Truncate(time.Microsecond))
+	require.Equal(t, now.Truncate(time.Microsecond), stat.StatMap[entity.SignatureStatStageAggCompleted].Truncate(time.Microsecond))
 	require.Equal(t, later.Truncate(time.Microsecond), stat.StatMap[entity.SignatureStatStageSignCompleted].Truncate(time.Microsecond))
 
 	// Test updating existing stage with new timestamp
@@ -38,6 +38,6 @@ func TestBadgerRepository_UpdateSignatureStat(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, reqHash, stat.ReqHash)
 	require.Len(t, stat.StatMap, 2)
-	require.Equal(t, now.Truncate(time.Microsecond), stat.StatMap[entity.SignatureStatStageSignRequestReceived].Truncate(time.Microsecond))
+	require.Equal(t, now.Truncate(time.Microsecond), stat.StatMap[entity.SignatureStatStageAggCompleted].Truncate(time.Microsecond))
 	require.Equal(t, evenLater.Truncate(time.Microsecond), stat.StatMap[entity.SignatureStatStageSignCompleted].Truncate(time.Microsecond))
 }
