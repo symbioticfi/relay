@@ -1,0 +1,3 @@
+[submodule "relay-bn254-example-circuit-keys"]
+	path = relay-bn254-example-circuit-keys
+	url = git@github.com:symbioticfi/relay-bn254-example-circuit-keys.git

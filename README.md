@@ -8,18 +8,31 @@ This service facilitates efficient signature collection and aggregation in a dec
 
 ## Repo init
 
-This repo uses git-lsf, so make sure to install it first:
+This repo uses submodule with git-lfs for circuits testing keys, so make sure to install it first:
 
 ```bash
 brew install git-lfs
 git lfs install
-git lfs pull
+```
+
+Clone
+
+```bash
+git clone --recurse-submodules git@github.com:symbioticfi/relay.git
+```
+
+Download lfs files
+
+```bash
+cd relay-bn254-example-circuit-keys
+git lfs pull # for all files download, long download
+git lfs pull --include="circuit_10.pk,circuit_10.r1cs,circuit_10.vk" # enough for testing
 ```
 
 Then check that file content are downloaded
 
 ```bash
-head -c 100 circuits/circuit_10.r1cs
+head -c 100 relay-bn254-example-circuit-keys/circuit_10.r1cs
 ```
 
 ## Create env configuration
@@ -98,7 +111,7 @@ go build -o relay_sidecar ./cmd/relay_sidecar
 ### Running node 3 (signer + aggregator)
 
 ```bash
-./relay_sidecar --driver.chain-id 111 --driver.address 0xA65C4ca1b06BD89aC03A395b3cA0919bF5F58869 --chains-id 111 --chains-rpc-url http://127.0.0.1:8545 --log-level info --log-mode pretty --secret-key 1000000000000000002 --signer true --aggregator true --http-listen :8083
+./relay_sidecar --driver.chain-id 111 --driver.address 0xA65C4ca1b06BD89aC03A395b3cA0919bF5F58869 --chains-id 111 --chains-rpc-url http://127.0.0.1:8545 --log-level info --log-mode pretty --secret-key 1000000000000000002 --signer true --aggregator true --http-listen :8083 --circuits-dir relay-bn254-example-circuit-keys
 ```
 
 Notes:

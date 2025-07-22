@@ -19,3 +19,4 @@ committer: true
 storage-dir: ".data"
 chains:
   - "http://127.0.0.1:8545"
+circuits-dir: "relay-bn254-example-circuit-keys"
