@@ -138,7 +138,7 @@ func runApp(ctx context.Context) error {
 	}
 
 	var prover *proof.ZkProver
-	if config.VerificationType == entity.VerificationTypeZK {
+	if config.VerificationType == entity.VerificationTypeBlsBn254ZK {
 		prover = proof.NewZkProver(cfg.CircuitsDir)
 	}
 	agg, err := aggregator.NewAggregator(config.VerificationType, prover)
