@@ -20,6 +20,9 @@ APP_VERSION := v$(FINAL_TAG)
 
 # create image tags without v prefix
 IMAGE_TAGS := -t ${IMAGE_REPO}:${FINAL_TAG}
+ifeq ($(PUSH_LATEST), true)
+	IMAGE_TAGS := ${IMAGE_TAGS} -t ${IMAGE_REPO}:latest
+endif
 
 .PHONY: lint
 lint:
