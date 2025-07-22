@@ -44,7 +44,7 @@ jobs:
           fi
 
       - name: Comment PR with coverage
-        if: ${{ github.event_name == 'pull_request' and github.actor != 'dependabot[bot]' }}
+        if: ${{ github.event_name == 'pull_request' && github.actor != 'dependabot[bot]' }}
         uses: mshick/add-pr-comment@b8f338c590a895d50bcbfa6c5859251edc8952fc # pin@v2.8.2
         with:
           message: |
