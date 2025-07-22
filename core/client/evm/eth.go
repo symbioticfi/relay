@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/hex"
+	"log/slog"
 	"math/big"
 	"regexp"
 	"time"
@@ -686,8 +687,11 @@ func (e *Client) getOperatorRegistryContract(addr entity.CrossChainAddress) (*ge
 }
 
 func findErrorBySelector(errSelector string) (abi.Error, bool) {
-	// todo handle error
-	settlementAbi, _ := gen.ISettlementMetaData.GetAbi()
+	settlementAbi, err := gen.ISettlementMetaData.GetAbi()
+	if err != nil {
+		slog.Warn("Failed to get settlement ABI", "error", err)
+		return abi.Error{}, false
+	}
 
 	for _, errDef := range settlementAbi.Errors {
 		selector := hex.EncodeToString(crypto.Keccak256([]byte(errDef.Sig))[:4])
