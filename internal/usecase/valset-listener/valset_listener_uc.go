@@ -146,6 +146,8 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		nextEpoch = nextValset.Epoch + 1
 	}
 
+	slog.DebugContext(ctx, "All missing epochs loaded", "latestProcessedEpoch", s.latestProcessedEpoch)
+
 	return nil
 }
 
