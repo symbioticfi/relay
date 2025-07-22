@@ -1,4 +1,4 @@
-package zk
+package blsBn254ZK
 
 import (
 	"fmt"
@@ -97,7 +97,7 @@ func (a Aggregator) Aggregate(
 	}
 
 	return entity.AggregationProof{
-		VerificationType: entity.VerificationTypeZK,
+		VerificationType: entity.VerificationTypeBlsBn254ZK,
 		MessageHash:      messageHash,
 		Proof:            proofData.Marshal(),
 	}, nil
@@ -149,7 +149,7 @@ func (a Aggregator) Verify(
 func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []entity.KeyTag) ([]entity.ExtraData, error) {
 	extraData := make([]entity.ExtraData, 0)
 
-	totalActiveValidatorsKey, err := helpers.GetExtraDataKey(entity.VerificationTypeZK, entity.ZkVerificationTotalActiveValidatorsHash)
+	totalActiveValidatorsKey, err := helpers.GetExtraDataKey(entity.VerificationTypeBlsBn254ZK, entity.ZkVerificationTotalActiveValidatorsHash)
 	if err != nil {
 		return nil, errors.Errorf("failed to get extra data key: %w", err)
 	}
@@ -170,7 +170,7 @@ func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []enti
 			return nil, errors.Errorf("failed to generate validator set mimc accumulator: %w", err)
 		}
 
-		validatorSetHashKey, err := helpers.GetExtraDataKeyTagged(entity.VerificationTypeZK, key.Tag, entity.ZkVerificationValidatorSetHashMimcHash)
+		validatorSetHashKey, err := helpers.GetExtraDataKeyTagged(entity.VerificationTypeBlsBn254ZK, key.Tag, entity.ZkVerificationValidatorSetHashMimcHash)
 		if err != nil {
 			return nil, errors.Errorf("failed to get extra data key: %w", err)
 		}

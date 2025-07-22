@@ -31,7 +31,7 @@ func randomAggregationProof(t *testing.T) entity.AggregationProof {
 	t.Helper()
 
 	return entity.AggregationProof{
-		VerificationType: entity.VerificationTypeSimple,
+		VerificationType: entity.VerificationTypeBlsBn254Simple,
 		MessageHash:      randomBytes(t, 32),
 		Proof:            randomBytes(t, 32),
 	}

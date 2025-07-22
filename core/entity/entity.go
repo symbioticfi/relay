@@ -19,8 +19,8 @@ import (
 type VerificationType uint32
 
 const (
-	VerificationTypeZK     VerificationType = 0
-	VerificationTypeSimple VerificationType = 1
+	VerificationTypeBlsBn254ZK     VerificationType = 0
+	VerificationTypeBlsBn254Simple VerificationType = 1
 )
 
 var (
@@ -177,9 +177,9 @@ type AggregationState struct {
 
 func (vt VerificationType) MarshalText() (text []byte, err error) {
 	switch vt {
-	case VerificationTypeZK:
+	case VerificationTypeBlsBn254ZK:
 		return []byte(fmt.Sprintf("%d (BLS-BN254-ZK)", uint32(vt))), nil
-	case VerificationTypeSimple:
+	case VerificationTypeBlsBn254Simple:
 		return []byte(fmt.Sprintf("%d (BLS-BN254-SIMPLE)", uint32(vt))), nil
 	}
 	return []byte(fmt.Sprintf("%d (UNKNOWN)", uint32(vt))), nil
@@ -187,9 +187,9 @@ func (vt VerificationType) MarshalText() (text []byte, err error) {
 
 func (vt VerificationType) String() string {
 	switch vt {
-	case VerificationTypeZK:
+	case VerificationTypeBlsBn254ZK:
 		return fmt.Sprintf("%d (BLS-BN254-ZK)", uint32(vt))
-	case VerificationTypeSimple:
+	case VerificationTypeBlsBn254Simple:
 		return fmt.Sprintf("%d (BLS-BN254-SIMPLE)", uint32(vt))
 	}
 	return fmt.Sprintf("%d (UNKNOWN)", uint32(vt))
