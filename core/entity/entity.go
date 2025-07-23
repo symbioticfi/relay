@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"slices"
+	"time"
 
 	"github.com/symbioticfi/relay/core/usecase/ssz"
 
@@ -503,4 +504,20 @@ type TxResult struct {
 type ChainURL struct {
 	ChainID uint64
 	RPCURL  string
+}
+
+type SignatureStatStage string
+
+const (
+	SignatureStatStageUnknown             = "Unknown"
+	SignatureStatStageSignRequestReceived = "SignRequestReceived"
+	SignatureStatStageSignCompleted       = "SignCompleted"
+	SignatureStatStageAggQuorumReached    = "AggQuorumReached"
+	SignatureStatStageAggCompleted        = "AggCompleted"
+	SignatureStatStageAggProofReceived    = "AggProofReceived"
+)
+
+type SignatureStat struct {
+	ReqHash common.Hash
+	StatMap map[SignatureStatStage]time.Time
 }
