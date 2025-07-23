@@ -6,19 +6,21 @@ Symbiotic Relay is a peer-to-peer side-network designed to collect and aggregate
 
 This service facilitates efficient signature collection and aggregation in a decentralized manner.
 
-## Repo init
+## ZK Verification Init
 
-This repository uses a Git submodule with Git LFS to manage circuit testing keys. If you plan to use zk verification, make sure to install Git LFS first:
+> **Note:** If you’re not planning to use zero-knowledge (ZK) verification, you can skip this section.
+
+This repository uses a Git submodule along with Git LFS (Large File Storage) to manage circuit testing keys. If you're using ZK verification, make sure Git LFS is installed and initialized:
 
 ```bash
 brew install git-lfs
 git lfs install
 ```
 
-Clone
+Submodule install
 
 ```bash
-git clone --recurse-submodules git@github.com:symbioticfi/relay.git
+git submodule update --init --recursive
 ```
 
 Download lfs files
