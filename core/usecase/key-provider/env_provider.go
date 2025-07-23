@@ -53,7 +53,7 @@ func (e *EnvKeyProvider) GetPrivateKeyByAlias(alias string) (crypto.PrivateKey, 
 	}
 	e.mu.RUnlock()
 
-	val := os.Getenv(strings.ToUpper(alias)) // todo ilya: research if it's safe to read private keys from environment variables
+	val := os.Getenv(strings.ToUpper(alias))
 	if val == "" {
 		return nil, errors.New("key not found in environment")
 	}

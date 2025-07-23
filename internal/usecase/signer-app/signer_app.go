@@ -23,6 +23,7 @@ type repo interface {
 	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 	SaveSignature(ctx context.Context, reqHash common.Hash, key []byte, sig entity.SignatureExtended) error
 	SaveSignatureRequest(_ context.Context, req entity.SignatureRequest) error
+	UpdateSignatureStat(_ context.Context, reqHash common.Hash, s entity.SignatureStatStage, t time.Time) (entity.SignatureStat, error)
 }
 
 type p2pService interface {
@@ -44,6 +45,7 @@ type aggregator interface {
 type metrics interface {
 	ObservePKSignDuration(d time.Duration)
 	ObserveAppSignDuration(d time.Duration)
+	ObserveAggReceived(stat entity.SignatureStat)
 }
 
 type Config struct {
@@ -100,6 +102,10 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.New("aggregation proof already exists for this request")
 	}
 
+	if _, err := s.cfg.Repo.UpdateSignatureStat(ctx, req.Hash(), entity.SignatureStatStageSignRequestReceived, timeAppSignStart); err != nil {
+		slog.WarnContext(ctx, "Failed to update signature stat", "error", err)
+	}
+
 	valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(req.RequiredEpoch))
 	if err != nil {
 		return errors.Errorf("failed to get valset by epoch %d: %w", req.RequiredEpoch, err)
@@ -133,8 +139,6 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.Errorf("failed to save signature: %w", err)
 	}
 
-	slog.InfoContext(ctx, "Message signed, sending via p2p", "hash", hash, "signature", signature)
-
 	err = s.cfg.P2PService.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureMessage{
 		RequestHash: req.Hash(),
 		KeyTag:      req.KeyTag,
@@ -149,7 +153,11 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.Errorf("failed to save signature request: %w", err)
 	}
 
+	slog.InfoContext(ctx, "Message signed", "hash", hash, "signature", signature, "duration", time.Since(timeAppSignStart))
 	s.cfg.Metrics.ObserveAppSignDuration(time.Since(timeAppSignStart))
+	if _, err := s.cfg.Repo.UpdateSignatureStat(ctx, req.Hash(), entity.SignatureStatStageSignCompleted, time.Now()); err != nil {
+		slog.WarnContext(ctx, "Failed to update signature stat", "error", err)
+	}
 
 	return nil
 }
