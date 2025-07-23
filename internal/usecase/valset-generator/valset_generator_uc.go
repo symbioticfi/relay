@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"log/slog"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -70,6 +71,7 @@ func (c Config) Validate() error {
 type Service struct {
 	cfg            Config
 	generatedEpoch uint64
+	mutex          sync.Mutex
 }
 
 func New(cfg Config) (*Service, error) {
@@ -102,6 +104,10 @@ func (s *Service) Start(ctx context.Context) error {
 }
 
 func (s *Service) process(ctx context.Context) error {
+	// locking up mutex to prevent concurrent processing
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
 	valSet, config, err := s.tryDetectNewEpochToCommit(ctx)
 	if err != nil && !errors.Is(err, entity.ErrValsetAlreadyCommittedForEpoch) {
 		return errors.Errorf("failed to detect new epoch to commit: %w", err)
