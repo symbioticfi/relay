@@ -116,6 +116,7 @@ jobs:
         env:
           PUSH_IMAGE: true
           IMAGE_REPO: symbioticfi/relay
+          PUSH_LATEST: true # push latest for all builds nuightly or stable release
 
       - name: Echo image built
         run: echo "Image built - [${{ steps.push-image.outputs.image }}]"

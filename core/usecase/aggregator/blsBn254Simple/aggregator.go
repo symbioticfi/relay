@@ -1,4 +1,4 @@
-package simple
+package blsBn254Simple
 
 import (
 	"bytes"
@@ -194,7 +194,7 @@ func (a Aggregator) Aggregate(
 	return entity.AggregationProof{
 		Proof:            proofBytes,
 		MessageHash:      messageHash,
-		VerificationType: entity.VerificationTypeSimple,
+		VerificationType: entity.VerificationTypeBlsBn254Simple,
 	}, nil
 }
 
@@ -436,7 +436,7 @@ func (a Aggregator) Verify(
 func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []entity.KeyTag) ([]entity.ExtraData, error) {
 	extraData := make([]entity.ExtraData, 0)
 
-	totalActiveVotingPowerKey, err := helpers.GetExtraDataKey(entity.VerificationTypeSimple, entity.SimpleVerificationTotalVotingPowerHash)
+	totalActiveVotingPowerKey, err := helpers.GetExtraDataKey(entity.VerificationTypeBlsBn254Simple, entity.SimpleVerificationTotalVotingPowerHash)
 	if err != nil {
 		return nil, errors.Errorf("failed to get extra data key: %w", err)
 	}
@@ -453,7 +453,7 @@ func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []enti
 
 	// pack keccak accumulators per keyTag
 	for _, key := range aggregatedPubKeys {
-		validatorSetHashKey, err := helpers.GetExtraDataKeyTagged(entity.VerificationTypeSimple, key.Tag, entity.SimpleVerificationValidatorSetHashKeccak256Hash)
+		validatorSetHashKey, err := helpers.GetExtraDataKeyTagged(entity.VerificationTypeBlsBn254Simple, key.Tag, entity.SimpleVerificationValidatorSetHashKeccak256Hash)
 		if err != nil {
 			return nil, errors.Errorf("failed to get extra data key: %w", err)
 		}
@@ -471,7 +471,7 @@ func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []enti
 
 	// pack aggregated keys per keyTag
 	for _, activeAggregatedKey := range aggregatedPubKeys {
-		activeAggregatedKeyKey, err := helpers.GetExtraDataKeyTagged(entity.VerificationTypeSimple, activeAggregatedKey.Tag, entity.SimpleVerificationAggPublicKeyG1Hash)
+		activeAggregatedKeyKey, err := helpers.GetExtraDataKeyTagged(entity.VerificationTypeBlsBn254Simple, activeAggregatedKey.Tag, entity.SimpleVerificationAggPublicKeyG1Hash)
 		if err != nil {
 			return nil, errors.Errorf("failed to get extra data key: %w", err)
 		}

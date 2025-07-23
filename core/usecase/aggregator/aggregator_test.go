@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/symbioticfi/relay/core/entity"
-	"github.com/symbioticfi/relay/core/usecase/aggregator/simple"
-	"github.com/symbioticfi/relay/core/usecase/aggregator/zk"
+	"github.com/symbioticfi/relay/core/usecase/aggregator/blsBn254Simple"
+	"github.com/symbioticfi/relay/core/usecase/aggregator/blsBn254ZK"
 	"github.com/symbioticfi/relay/core/usecase/crypto"
 	proof2 "github.com/symbioticfi/relay/pkg/proof"
 
@@ -15,7 +15,7 @@ import (
 )
 
 func TestSimpleAggregator(t *testing.T) {
-	agg := simple.NewAggregator()
+	agg := blsBn254Simple.NewAggregator()
 	valset, signatures, keyTag := genCorrectTest(10, []int{1, 2, 3})
 
 	proof, err := agg.Aggregate(valset, keyTag, signatures[0].MessageHash, signatures)
@@ -33,7 +33,7 @@ func TestSimpleAggregator(t *testing.T) {
 }
 
 func TestInvalidSimpleAggregator(t *testing.T) {
-	agg := simple.NewAggregator()
+	agg := blsBn254Simple.NewAggregator()
 	valset, signatures, keyTag := genCorrectTest(10, []int{1, 2, 3})
 	someKey, err := crypto.GeneratePrivateKey(keyTag.Type())
 	if err != nil {
@@ -61,7 +61,7 @@ func TestInvalidSimpleAggregator(t *testing.T) {
 func TestZkAggregator(t *testing.T) {
 	t.Skipf("it works too long, so set skip here. For local debugging can remove this skip")
 	prover := proof2.NewZkProver("")
-	agg := zk.NewAggregator(prover)
+	agg := blsBn254ZK.NewAggregator(prover)
 	valset, signatures, keyTag := genCorrectTest(10, []int{1, 2, 3})
 	proof, err := agg.Aggregate(valset, keyTag, signatures[0].MessageHash, signatures)
 	if err != nil {
