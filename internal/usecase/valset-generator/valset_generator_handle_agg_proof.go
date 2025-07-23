@@ -16,10 +16,26 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		return nil
 	}
 
-	valset, err := s.cfg.Repo.GetPendingValidatorSet(ctx, msg.RequestHash)
-	if err != nil {
-		slog.DebugContext(ctx, "no pending valset, skipping proof commitment")
-		return nil //nolint:nilerr // if no pending valset, nothing to commit
+	var (
+		valset entity.ValidatorSet
+		err    error
+	)
+	retryAttempted := false
+	for {
+		valset, err = s.cfg.Repo.GetPendingValidatorSet(ctx, msg.RequestHash)
+		if err != nil {
+			if errors.Is(err, entity.ErrEntityNotFound) && !retryAttempted {
+				if err = s.process(ctx); err != nil {
+					slog.ErrorContext(ctx, "failed to process epochs, on demand from commiter", "error", err)
+					return nil
+				}
+				retryAttempted = true
+				continue // retry after processing
+			}
+			slog.DebugContext(ctx, "no pending valset, skipping proof commitment")
+			return nil
+		}
+		break
 	}
 
 	slog.DebugContext(ctx, "proof data", "proof", hex.EncodeToString(msg.AggregationProof.Proof))
