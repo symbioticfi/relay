@@ -6,20 +6,35 @@ Symbiotic Relay is a peer-to-peer side-network designed to collect and aggregate
 
 This service facilitates efficient signature collection and aggregation in a decentralized manner.
 
-## Repo init
+## ZK Verification Init
 
-This repo uses git-lsf, so make sure to install it first:
+> **Note:** If you’re not planning to use zero-knowledge (ZK) verification, you can skip this section.
+
+This repository uses a Git submodule along with Git LFS (Large File Storage) to manage circuit testing keys. If you're using ZK verification, make sure Git LFS is installed and initialized:
 
 ```bash
 brew install git-lfs
 git lfs install
-git lfs pull
+```
+
+Submodule install
+
+```bash
+git submodule update --init --recursive
+```
+
+Download lfs files
+
+```bash
+cd circuits # choose one option from bottom
+git lfs pull # for all files download, long download
+git lfs pull --include="circuit_10.pk,circuit_10.r1cs,circuit_10.vk" # enough for testing
 ```
 
 Then check that file content are downloaded
 
 ```bash
-head -c 100 circuits/circuit_10.r1cs
+head -c 100 relay-bn254-example-circuit-keys/circuit_10.r1cs
 ```
 
 ## Create env configuration
