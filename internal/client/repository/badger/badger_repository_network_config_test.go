@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"middleware-offchain/core/entity"
+	"github.com/symbioticfi/relay/core/entity"
 )
 
 func TestBadgerRepository_NetworkConfig(t *testing.T) {
@@ -31,7 +31,7 @@ func randomNetworkConfig(t *testing.T) entity.NetworkConfig {
 		VotingPowerProviders:    []entity.CrossChainAddress{randomAddr(t)},
 		KeysProvider:            randomAddr(t),
 		Replicas:                []entity.CrossChainAddress{randomAddr(t)},
-		VerificationType:        entity.VerificationTypeSimple,
+		VerificationType:        entity.VerificationTypeBlsBn254Simple,
 		MaxVotingPower:          entity.ToVotingPower(randomBigInt(t)),
 		MinInclusionVotingPower: entity.ToVotingPower(randomBigInt(t)),
 		MaxValidatorsCount:      entity.ToVotingPower(randomBigInt(t)),

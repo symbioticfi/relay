@@ -7,7 +7,7 @@ import (
 	"github.com/dgraph-io/badger/v4"
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/core/entity"
+	"github.com/symbioticfi/relay/core/entity"
 )
 
 const (

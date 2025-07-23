@@ -1,14 +1,21 @@
-driver-address:
-  chain-id: 111
-  address: "0x1f5fE7682E49c20289C20a4cFc8b45d5EB410690"
+driver:
+  chain-id: 31337
+  address: "0x4826533B4897376654Bb4d4AD88B7faFD0C98528"
 log-level: "debug"
 log-mode: "pretty"
 http-listen: ":8081"
-secret-key: "1000000000000000000"
+secret-keys:
+  - namespace: "symb"
+    key-type: 0
+    key-id: 15
+    secret: "0xde0b6b3a7640000"
+  - namespace: "evm"
+    key-type: 1
+    key-id: 31337
+    secret: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 aggregator: true
 signer: true
 committer: true
 storage-dir: ".data"
 chains:
-  - chain-id: 111
-    rpc-url: "http://127.0.0.1:8545"
+  - "http://127.0.0.1:8545"

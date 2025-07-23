@@ -6,8 +6,8 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/core/entity"
-	p2pEntity "middleware-offchain/internal/entity"
+	"github.com/symbioticfi/relay/core/entity"
+	p2pEntity "github.com/symbioticfi/relay/internal/entity"
 )
 
 func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error {

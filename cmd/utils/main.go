@@ -1,11 +1,15 @@
 package main
 
 import (
-	"log/slog"
-	"middleware-offchain/cmd/utils/keys"
-	"middleware-offchain/pkg/log"
 	"os"
+	"runtime"
 
+	"github.com/symbioticfi/relay/cmd/utils/keys"
+	"github.com/symbioticfi/relay/cmd/utils/network"
+	"github.com/symbioticfi/relay/cmd/utils/operator"
+	"github.com/symbioticfi/relay/pkg/log"
+
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
 
@@ -14,21 +18,22 @@ type config struct {
 	logMode  string
 }
 
+var Version = "local"
+var BuildTime = "unknown"
+
 var cfg config
 
 func main() {
-	keysCmd, err := keys.NewKeysCmd()
-	if err != nil {
-		slog.Error("error creating keys command", "error", err)
-		os.Exit(1)
-	}
-
 	rootCmd.PersistentFlags().StringVar(&cfg.logLevel, "log-level", "info", "log level")
 	rootCmd.PersistentFlags().StringVar(&cfg.logMode, "log-mode", "debug", "log mode")
 
-	rootCmd.AddCommand(keysCmd)
+	rootCmd.AddCommand(keys.NewKeysCmd())
+	rootCmd.AddCommand(network.NewNetworkCmd())
+	rootCmd.AddCommand(operator.NewOperatorCmd())
+	rootCmd.AddCommand(versionCommand)
+
 	if err := run(); err != nil {
-		slog.Error("error executing command", "error", err)
+		pterm.Error.Println("Error executing command", err)
 		os.Exit(1)
 	}
 }
@@ -42,5 +47,16 @@ var rootCmd = &cobra.Command{
 	Short: "Utils tool",
 	PreRun: func(cmd *cobra.Command, args []string) {
 		log.Init(cfg.logLevel, cfg.logMode)
+	},
+}
+
+var versionCommand = &cobra.Command{
+	Use:   "version",
+	Short: "Print the version of the utils tool",
+	Run: func(cmd *cobra.Command, args []string) {
+		pterm.Info.Println("Utils tool version:", Version)
+		pterm.Info.Println("Go version:", runtime.Version())
+		pterm.Info.Println("OS/Arch:", runtime.GOOS+"/"+runtime.GOARCH)
+		pterm.Info.Println("Build time:", BuildTime)
 	},
 }

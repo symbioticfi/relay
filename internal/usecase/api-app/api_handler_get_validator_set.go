@@ -4,25 +4,46 @@ import (
 	"context"
 	"time"
 
+	"github.com/go-errors/errors"
+
 	"github.com/samber/lo"
 
-	"middleware-offchain/core/entity"
-	"middleware-offchain/internal/gen/api"
+	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/gen/api"
 )
 
 func (h *handler) GetValidatorSetGet(ctx context.Context, params api.GetValidatorSetGetParams) (*api.ValidatorSet, error) {
-	epoch := params.Epoch.Value
+	latestEpoch, err := h.cfg.EVMClient.GetCurrentEpoch(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	epochRequested := params.Epoch.Value
 	if !params.Epoch.IsSet() {
-		var err error
-		epoch, err = h.cfg.EVMClient.GetCurrentEpoch(ctx)
+		epochRequested = latestEpoch
+	}
+	// epoch from future
+	if epochRequested > latestEpoch {
+		return nil, errors.New("epoch requested is greater than latest epoch")
+	}
+
+	validatorSet, err := h.cfg.Repo.GetValidatorSetByEpoch(ctx, epochRequested)
+
+	// if error it means that epoch is not derived / committed yet
+	// so we need to derive it
+	if err != nil {
+		epochStart, err := h.cfg.EVMClient.GetEpochStart(ctx, epochRequested)
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	validatorSet, err := h.cfg.Repo.GetValidatorSetByEpoch(ctx, epoch)
-	if err != nil {
-		return nil, err
+		config, err := h.cfg.EVMClient.GetConfig(ctx, epochRequested)
+		if err != nil {
+			return nil, err
+		}
+		validatorSet, err = h.cfg.Deriver.GetValidatorSet(ctx, epochStart, config)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return convertValidatorSetToAPI(validatorSet), nil
@@ -36,6 +57,7 @@ func convertValidatorSetToAPI(valSet entity.ValidatorSet) *api.ValidatorSet {
 		CaptureTimestamp:   time.Unix(int64(valSet.CaptureTimestamp), 0).UTC(),
 		QuorumThreshold:    valSet.QuorumThreshold.String(),
 		PreviousHeaderHash: valSet.PreviousHeaderHash.Hex(),
+		Status:             uint8(valSet.Status),
 		Validators: lo.Map(valSet.Validators, func(v entity.Validator, _ int) api.Validator {
 			return api.Validator{
 				Operator:    v.Operator.Hex(),

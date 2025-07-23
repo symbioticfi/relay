@@ -2,20 +2,23 @@ package valset_generator
 
 import (
 	"context"
-	"encoding/hex"
 	"log/slog"
 
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/core/entity"
+	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/pkg/log"
 )
 
 func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
+	ctx = log.WithComponent(ctx, "generator")
+
+	slog.DebugContext(ctx, "Handling proof aggregated message", "msg", msg)
 	if !s.cfg.IsCommitter {
-		slog.DebugContext(ctx, "not a committer, skipping proof commitment")
+		slog.DebugContext(ctx, "Not a committer, skipping proof commitment")
 		return nil
 	}
-
+  
 	var (
 		valset entity.ValidatorSet
 		err    error
@@ -32,30 +35,27 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 				retryAttempted = true
 				continue // retry after processing
 			}
-			slog.DebugContext(ctx, "no pending valset, skipping proof commitment")
+			slog.DebugContext(ctx, "No pending valset, skipping proof commitment")
 			return nil
 		}
 		break
 	}
-
-	slog.DebugContext(ctx, "proof data", "proof", hex.EncodeToString(msg.AggregationProof.Proof))
 
 	config, err := s.cfg.Eth.GetConfig(ctx, valset.CaptureTimestamp)
 	if err != nil {
 		return errors.Errorf("failed to get config for epoch %d: %w", msg.Epoch, err)
 	}
 
-	extraData, err := s.cfg.Aggregator.GenerateExtraData(valset, config)
+	extraData, err := s.cfg.Aggregator.GenerateExtraData(valset, config.RequiredKeyTags)
 	if err != nil {
 		return errors.Errorf("failed to generate extra data for validator set: %w", err)
 	}
 
 	header, err := valset.GetHeader()
-	slog.DebugContext(ctx, "On commit header", "header", header)
-	slog.DebugContext(ctx, "On commit extra data", "extraData", extraData)
 	if err != nil {
 		return errors.Errorf("failed to get validator set header: %w", err)
 	}
+	slog.DebugContext(ctx, "On commit proof", "header", header, "extraData", extraData)
 
 	err = s.commitValsetToAllSettlements(ctx, config, header, extraData, msg.AggregationProof.Proof)
 	if err != nil {
@@ -68,11 +68,12 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 func (s *Service) commitValsetToAllSettlements(ctx context.Context, config entity.NetworkConfig, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) error {
 	errs := make([]error, len(config.Replicas))
 	for i, replica := range config.Replicas {
-		slog.DebugContext(ctx, "trying to commit valset header to settlement", "replica", replica)
+		slog.DebugContext(ctx, "Trying to commit valset header to settlement", "replica", replica)
 
 		result, err := s.cfg.Eth.CommitValsetHeader(ctx, replica, header, extraData, proof)
 		if err != nil {
 			errs[i] = errors.Errorf("failed to commit valset header to settlement %s: %w", replica.Address.Hex(), err)
+			continue
 		}
 
 		slog.DebugContext(ctx, "Validator set header committed",

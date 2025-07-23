@@ -37,7 +37,7 @@ func (dn *DiscoveryNorifee) Start() error {
 	if err := dn.discovery.Start(); err != nil {
 		return errors.Errorf("failed to start discovery: %w", err)
 	}
-	slog.InfoContext(dn.ctx, "discovery started", "localPeerID", dn.host.ID(), "localAddrs", dn.host.Addrs())
+	slog.InfoContext(dn.ctx, "Discovery started", "localPeerID", dn.host.ID(), "localAddrs", dn.host.Addrs())
 	return nil
 }
 
@@ -49,13 +49,13 @@ func (dn *DiscoveryNorifee) Close() error {
 }
 
 func (dn *DiscoveryNorifee) HandlePeerFound(pi peer.AddrInfo) {
-	slog.DebugContext(dn.ctx, "peer found", "peer", pi.ID)
+	slog.DebugContext(dn.ctx, "Peer found", "peer", pi.ID)
 	err := dn.peerAddable.AddPeer(pi)
 
 	if err != nil {
-		slog.ErrorContext(dn.ctx, "failed to add peer", "peer", pi.ID, "err", err)
+		slog.ErrorContext(dn.ctx, "Failed to add peer", "peer", pi.ID, "err", err)
 		return
 	}
 
-	slog.InfoContext(dn.ctx, "peer added", "peer", pi.ID)
+	slog.InfoContext(dn.ctx, "Peer added", "peer", pi.ID)
 }

@@ -5,22 +5,21 @@ import (
 	"math/big"
 	"slices"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/symbioticfi/relay/core/usecase/ssz"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
-
-	"middleware-offchain/pkg/ssz"
 )
 
 type VerificationType uint32
 
 const (
-	VerificationTypeZK     VerificationType = 0
-	VerificationTypeSimple VerificationType = 1
+	VerificationTypeBlsBn254ZK     VerificationType = 0
+	VerificationTypeBlsBn254Simple VerificationType = 1
 )
 
 var (
@@ -177,12 +176,22 @@ type AggregationState struct {
 
 func (vt VerificationType) MarshalText() (text []byte, err error) {
 	switch vt {
-	case VerificationTypeZK:
+	case VerificationTypeBlsBn254ZK:
 		return []byte(fmt.Sprintf("%d (BLS-BN254-ZK)", uint32(vt))), nil
-	case VerificationTypeSimple:
+	case VerificationTypeBlsBn254Simple:
 		return []byte(fmt.Sprintf("%d (BLS-BN254-SIMPLE)", uint32(vt))), nil
 	}
 	return []byte(fmt.Sprintf("%d (UNKNOWN)", uint32(vt))), nil
+}
+
+func (vt VerificationType) String() string {
+	switch vt {
+	case VerificationTypeBlsBn254ZK:
+		return fmt.Sprintf("%d (BLS-BN254-ZK)", uint32(vt))
+	case VerificationTypeBlsBn254Simple:
+		return fmt.Sprintf("%d (BLS-BN254-SIMPLE)", uint32(vt))
+	}
+	return fmt.Sprintf("%d (UNKNOWN)", uint32(vt))
 }
 
 type CrossChainAddress struct {
@@ -250,6 +259,20 @@ type ValidatorVault struct {
 	VotingPower VotingPower    `json:"votingPower"`
 }
 
+type Validators []Validator
+
+func (va Validators) SortByVotingPowerDesc() {
+	slices.SortFunc(va, func(a, b Validator) int {
+		return -a.VotingPower.Cmp(b.VotingPower.Int)
+	})
+}
+
+func (va Validators) SortByOperatorAddressAsc() {
+	slices.SortFunc(va, func(a, b Validator) int {
+		return a.Operator.Cmp(b.Operator)
+	})
+}
+
 type Validator struct {
 	Operator    common.Address   `json:"operator"`
 	VotingPower VotingPower      `json:"votingPower"`
@@ -265,6 +288,16 @@ func (v Validator) FindKeyByKeyTag(keyTag KeyTag) ([]byte, bool) {
 		}
 	}
 	return nil, false
+}
+
+func GetActiveValidators(allValidators []Validator) []Validator {
+	activeValidators := make([]Validator, 0)
+	for _, validator := range allValidators {
+		if validator.IsActive {
+			activeValidators = append(activeValidators, validator)
+		}
+	}
+	return activeValidators
 }
 
 type ValidatorSet struct {

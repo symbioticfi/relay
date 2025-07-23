@@ -5,15 +5,17 @@ import (
 	"math/big"
 	"time"
 
+	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	"middleware-offchain/core/client/evm"
-	"middleware-offchain/core/entity"
-	"middleware-offchain/core/usecase/aggregator"
-	valsetDeriver "middleware-offchain/core/usecase/valset-deriver"
-	"middleware-offchain/pkg/proof"
+	"github.com/symbioticfi/relay/core/client/evm"
+	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/core/usecase/aggregator"
+	valsetDeriver "github.com/symbioticfi/relay/core/usecase/valset-deriver"
+	"github.com/symbioticfi/relay/pkg/proof"
 )
 
 type prover interface {
@@ -22,11 +24,11 @@ type prover interface {
 }
 
 type Config struct {
-	Chains         []entity.ChainURL        `validate:"required"`
+	ChainUrls      []string                 `validate:"required"`
 	DriverAddress  entity.CrossChainAddress `validate:"required"`
-	PrivateKey     []byte
-	RequestTimeout time.Duration `validate:"required,gt=0"`
-	Prover         prover        `validate:"required"`
+	KeyProvider    keyprovider.KeyProvider  `validate:"required"`
+	RequestTimeout time.Duration            `validate:"required,gt=0"`
+	Prover         prover                   `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -40,7 +42,7 @@ func (c Config) Validate() error {
 // Symbiotic is a facade that provides a unified interface for interacting with the Symbiotic middleware.
 type Symbiotic struct {
 	evmClient  *evm.Client
-	aggregator *aggregator.Aggregator
+	aggregator aggregator.Aggregator
 	deriver    *valsetDeriver.Deriver
 }
 
@@ -50,16 +52,34 @@ func NewSymbiotic(ctx context.Context, cfg Config) (*Symbiotic, error) {
 	}
 
 	evmClient, err := evm.NewEVMClient(ctx, evm.Config{
-		Chains:         cfg.Chains,
+		ChainURLs:      cfg.ChainUrls,
 		DriverAddress:  cfg.DriverAddress,
-		PrivateKey:     cfg.PrivateKey,
+		KeyProvider:    cfg.KeyProvider,
 		RequestTimeout: cfg.RequestTimeout,
 	})
 	if err != nil {
 		return nil, errors.Errorf("failed to create EVM client: %w", err)
 	}
 
-	agg := aggregator.NewAggregator(cfg.Prover)
+	currentOnchainEpoch, err := evmClient.GetCurrentEpoch(ctx)
+	if err != nil {
+		return nil, errors.Errorf("failed to get current epoch: %w", err)
+	}
+
+	captureTimestamp, err := evmClient.GetEpochStart(ctx, currentOnchainEpoch)
+	if err != nil {
+		return nil, errors.Errorf("failed to get capture timestamp: %w", err)
+	}
+
+	config, err := evmClient.GetConfig(ctx, captureTimestamp)
+	if err != nil {
+		return nil, errors.Errorf("failed to get config: %w", err)
+	}
+
+	agg, err := aggregator.NewAggregator(config.VerificationType, cfg.Prover)
+	if err != nil {
+		return nil, errors.Errorf("failed to create aggregator: %w", err)
+	}
 	deriver, err := valsetDeriver.NewDeriver(evmClient)
 	if err != nil {
 		return nil, errors.Errorf("failed to create validator set deriver: %w", err)
@@ -73,8 +93,8 @@ func NewSymbiotic(ctx context.Context, cfg Config) (*Symbiotic, error) {
 
 // ========== Aggregator methods ==========
 
-func (s *Symbiotic) Aggregate(valset entity.ValidatorSet, keyTag entity.KeyTag, verificationType entity.VerificationType, messageHash []byte, signatures []entity.SignatureExtended) (entity.AggregationProof, error) {
-	return s.aggregator.Aggregate(valset, keyTag, verificationType, messageHash, signatures)
+func (s *Symbiotic) Aggregate(valset entity.ValidatorSet, keyTag entity.KeyTag, messageHash []byte, signatures []entity.SignatureExtended) (entity.AggregationProof, error) {
+	return s.aggregator.Aggregate(valset, keyTag, messageHash, signatures)
 }
 
 func (s *Symbiotic) VerifyAggregated(
@@ -149,7 +169,7 @@ func (s *Symbiotic) GetSubnetwork(ctx context.Context) (common.Hash, error) {
 	return s.evmClient.GetSubnetwork(ctx)
 }
 
-func (s *Symbiotic) GetNetworkAddress(ctx context.Context) (*common.Address, error) {
+func (s *Symbiotic) GetNetworkAddress(ctx context.Context) (common.Address, error) {
 	return s.evmClient.GetNetworkAddress(ctx)
 }
 

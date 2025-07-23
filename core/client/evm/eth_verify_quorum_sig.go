@@ -3,17 +3,29 @@ package evm
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/core/entity"
+	"github.com/symbioticfi/relay/core/entity"
 )
 
-func (e *Client) VerifyQuorumSig(ctx context.Context, addr entity.CrossChainAddress, epoch uint64, message []byte, keyTag entity.KeyTag, threshold *big.Int, proof []byte) (bool, error) {
+func (e *Client) VerifyQuorumSig(
+	ctx context.Context,
+	addr entity.CrossChainAddress,
+	epoch uint64,
+	message []byte,
+	keyTag entity.KeyTag,
+	threshold *big.Int,
+	proof []byte,
+) (_ bool, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("VerifyQuorumSigAt", err, now)
+	}(time.Now())
 
 	settlement, err := e.getSettlementContract(addr)
 	if err != nil {

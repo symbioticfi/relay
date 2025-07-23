@@ -6,7 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 
-	"middleware-offchain/core/entity"
+	"github.com/symbioticfi/relay/core/entity"
 )
 
 func TestBadgerRepository_AggregationProof(t *testing.T) {
@@ -31,7 +31,7 @@ func randomAggregationProof(t *testing.T) entity.AggregationProof {
 	t.Helper()
 
 	return entity.AggregationProof{
-		VerificationType: entity.VerificationTypeSimple,
+		VerificationType: entity.VerificationTypeBlsBn254Simple,
 		MessageHash:      randomBytes(t, 32),
 		Proof:            randomBytes(t, 32),
 	}

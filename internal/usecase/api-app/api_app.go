@@ -8,11 +8,12 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	swag "middleware-offchain/api"
-	"middleware-offchain/core/entity"
-	p2pEntity "middleware-offchain/internal/entity"
-	"middleware-offchain/internal/gen/api"
-	"middleware-offchain/pkg/server"
+	swag "github.com/symbioticfi/relay/api"
+	"github.com/symbioticfi/relay/core/entity"
+	p2pEntity "github.com/symbioticfi/relay/internal/entity"
+	"github.com/symbioticfi/relay/internal/gen/api"
+	"github.com/symbioticfi/relay/pkg/log"
+	"github.com/symbioticfi/relay/pkg/server"
 )
 
 type signer interface {
@@ -24,15 +25,21 @@ type repo interface {
 	GetValidatorSetByEpoch(_ context.Context, epoch uint64) (entity.ValidatorSet, error)
 	GetAllSignatures(_ context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error)
 	GetSignatureRequest(_ context.Context, reqHash common.Hash) (entity.SignatureRequest, error)
+	GetLatestValidatorSet(_ context.Context) (entity.ValidatorSet, error)
 }
 
 type evmClient interface {
 	GetCurrentEpoch(ctx context.Context) (uint64, error)
 	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
+	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
 }
 
 type aggregator interface {
 	GetAggregationStatus(ctx context.Context, requestHash common.Hash) (p2pEntity.AggregationStatus, error)
+}
+
+type deriver interface {
+	GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error)
 }
 
 type Config struct {
@@ -41,10 +48,12 @@ type Config struct {
 	ReadHeaderTimeout time.Duration `validate:"required,gt=0"`
 	ShutdownTimeout   time.Duration `validate:"required,gt=0"`
 
-	Signer     signer    `validate:"required"`
-	Repo       repo      `validate:"required"`
-	EVMClient  evmClient `validate:"required"`
-	Aggregator aggregator
+	Signer       signer    `validate:"required"`
+	Repo         repo      `validate:"required"`
+	EVMClient    evmClient `validate:"required"`
+	Deriver      deriver   `validate:"required"`
+	Aggregator   aggregator
+	ServeMetrics bool
 }
 
 func (c Config) Validate() error {
@@ -83,6 +92,7 @@ func NewAPIApp(cfg Config) (*APIApp, error) {
 		SwaggerHandler:    swag.OapiSchemaHandler,
 		ReadHeaderTimeout: cfg.ReadHeaderTimeout,
 		ShutdownTimeout:   cfg.ShutdownTimeout,
+		ServeMetrics:      cfg.ServeMetrics,
 	})
 	if err != nil {
 		return nil, errors.Errorf("failed to create server: %w", err)
@@ -93,6 +103,8 @@ func NewAPIApp(cfg Config) (*APIApp, error) {
 	}, nil
 }
 
-func (a APIApp) Start(ctx context.Context) error {
-	return a.srv.Serve(ctx)
+func (a *APIApp) Start(ctx context.Context) error {
+	logCtx := log.WithComponent(ctx, "api")
+
+	return a.srv.Serve(logCtx)
 }

@@ -3,14 +3,17 @@ package signer_app
 import (
 	"context"
 	"log/slog"
-	key_types "middleware-offchain/core/usecase/crypto/key-types"
+	"time"
+
+	"github.com/symbioticfi/relay/core/usecase/crypto"
+	"github.com/symbioticfi/relay/pkg/log"
 
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	"middleware-offchain/core/entity"
+	"github.com/symbioticfi/relay/core/entity"
 )
 
 type repo interface {
@@ -27,7 +30,7 @@ type p2pService interface {
 }
 
 type keyProvider interface {
-	GetPrivateKey(keyTag entity.KeyTag) (key_types.PrivateKey, error)
+	GetPrivateKey(keyTag entity.KeyTag) (crypto.PrivateKey, error)
 }
 
 type aggProofSignal interface {
@@ -38,12 +41,18 @@ type aggregator interface {
 	Verify(valset entity.ValidatorSet, keyTag entity.KeyTag, aggregationProof entity.AggregationProof) (bool, error)
 }
 
+type metrics interface {
+	ObservePKSignDuration(d time.Duration)
+	ObserveAppSignDuration(d time.Duration)
+}
+
 type Config struct {
 	P2PService     p2pService     `validate:"required"`
 	KeyProvider    keyProvider    `validate:"required"`
 	Repo           repo           `validate:"required"`
 	AggProofSignal aggProofSignal `validate:"required"`
 	Aggregator     aggregator     `validate:"required"`
+	Metrics        metrics        `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -71,12 +80,15 @@ func NewSignerApp(cfg Config) (*SignerApp, error) {
 }
 
 func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error {
+	ctx = log.WithComponent(ctx, "signer")
+	timeAppSignStart := time.Now()
+
 	_, err := s.cfg.Repo.GetSignatureRequest(ctx, req.Hash())
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return errors.Errorf("failed to get signature request: %w", err)
 	}
 	if entityFound := !errors.Is(err, entity.ErrEntityNotFound); entityFound {
-		slog.DebugContext(ctx, "signature request already exists", "request", req)
+		slog.DebugContext(ctx, "Signature request already exists", "request", req)
 		return nil
 	}
 
@@ -104,10 +116,12 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.Errorf("validator not found in epoch valset for public key")
 	}
 
+	pkSignStart := time.Now()
 	signature, hash, err := private.Sign(req.Message)
 	if err != nil {
 		return errors.Errorf("failed to sign valset header hash: %w", err)
 	}
+	s.cfg.Metrics.ObservePKSignDuration(time.Since(pkSignStart))
 
 	extendedSignature := entity.SignatureExtended{
 		MessageHash: hash,
@@ -134,6 +148,8 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 	if err := s.cfg.Repo.SaveSignatureRequest(ctx, req); err != nil {
 		return errors.Errorf("failed to save signature request: %w", err)
 	}
+
+	s.cfg.Metrics.ObserveAppSignDuration(time.Since(timeAppSignStart))
 
 	return nil
 }

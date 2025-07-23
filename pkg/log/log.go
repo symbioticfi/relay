@@ -11,8 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/getsentry/sentry-go"
-	sentryslog "github.com/getsentry/sentry-go/slog"
 	"github.com/go-errors/errors"
 	slogmulti "github.com/samber/slog-multi"
 )
@@ -81,28 +79,6 @@ func initText(level slog.Level) {
 	handlerRoutes := slogmulti.Router().
 		Add(ContextHandler{Handler: infoAndBelowHandler}, notErrorLevel).
 		Add(ContextHandler{Handler: errorHandler}, errorLevel)
-
-	if sentryDSN := os.Getenv("SENTRY_DSN"); sentryDSN != "" {
-		err := sentry.Init(sentry.ClientOptions{ //nolint:exhaustruct
-			Dsn:         sentryDSN,
-			Environment: os.Getenv("SENTRY_ENVIRONMENT"),
-			Release:     os.Getenv("SENTRY_RELEASE"),
-		})
-		if err != nil {
-			panic("failed to init sentry: " + err.Error())
-		}
-
-		sentryHandler := sentryslog.Option{
-			Level:           slog.LevelError,
-			ReplaceAttr:     replaceAttr,
-			AttrFromContext: []func(ctx context.Context) []slog.Attr{getAttrs},
-			AddSource:       false,
-			Converter:       nil,
-			Hub:             nil,
-		}.NewSentryHandler()
-
-		handlerRoutes = handlerRoutes.Add(sentryHandler, errorLevel)
-	}
 
 	handler := handlerRoutes.Handler()
 

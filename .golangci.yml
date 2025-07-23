@@ -16,6 +16,7 @@ linters:
     - decorder
 #    - dogsled
     - durationcheck
+    - embeddedstructfieldcheck
     - errchkjson
     - errname
     - errorlint
@@ -241,7 +242,7 @@ linters:
       context: scope
     wrapcheck:
       ignore-package-globs:
-        - middleware-offchain/internal/*
+        - github.com/symbioticfi/relay/internal/*
         - golang.org/x/sync/errgroup
     funcorder:
       constructor: true
@@ -265,6 +266,10 @@ linters:
         text: 'shadow: declaration of "err" shadows declaration at line'
       - path: (.+)\.go$
         text: G115
+      - path: cmd/utils/
+        text: "use of `fmt.Printf` forbidden"
+      - path: cmd/utils/
+        text: "use of `fmt.Print` forbidden"
     paths:
       - third_party$
       - builtin$

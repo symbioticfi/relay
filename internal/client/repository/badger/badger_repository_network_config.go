@@ -11,7 +11,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
 
-	"middleware-offchain/core/entity"
+	"github.com/symbioticfi/relay/core/entity"
 )
 
 func keyNetworkConfig(epoch uint64) []byte {

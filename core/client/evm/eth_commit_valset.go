@@ -4,13 +4,16 @@ import (
 	"context"
 	"log/slog"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/core/client/evm/gen"
-	"middleware-offchain/core/entity"
+	"github.com/symbioticfi/relay/core/client/evm/gen"
+	"github.com/symbioticfi/relay/core/entity"
+	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 )
 
 func (e *Client) CommitValsetHeader(
@@ -19,17 +22,28 @@ func (e *Client) CommitValsetHeader(
 	header entity.ValidatorSetHeader,
 	extraData []entity.ExtraData,
 	proof []byte,
-) (entity.TxResult, error) {
-	if e.masterPK == nil {
-		return entity.TxResult{}, errors.New("master private key is not set")
+) (_ entity.TxResult, err error) {
+	pk, err := e.cfg.KeyProvider.GetPrivateKeyByNamespaceTypeId(
+		keyprovider.EVM_KEY_NAMESPACE,
+		entity.KeyTypeEcdsaSecp256k1,
+		int(addr.ChainId),
+	)
+	if err != nil {
+		return entity.TxResult{}, err
 	}
-	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
-	defer cancel()
-
-	txOpts, err := bind.NewKeyedTransactorWithChainID(e.masterPK, new(big.Int).SetUint64(addr.ChainId))
+	ecdsaKey, err := crypto.ToECDSA(pk.Bytes())
+	if err != nil {
+		return entity.TxResult{}, err
+	}
+	txOpts, err := bind.NewKeyedTransactorWithChainID(ecdsaKey, new(big.Int).SetUint64(addr.ChainId))
 	if err != nil {
 		return entity.TxResult{}, errors.Errorf("failed to create new keyed transactor: %w", err)
 	}
+	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
+	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("CommitValSetHeader", err, now)
+	}(time.Now())
 	txOpts.Context = tmCtx
 
 	headerDTO := gen.ISettlementValSetHeader{

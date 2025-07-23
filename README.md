@@ -80,25 +80,25 @@ The application supports 3 modes:
 
 ```bash
 go mod tidy
-go build -o middleware-offchain ./cmd/middleware-offchain
+go build -o relay_sidecar ./cmd/relay_sidecar
 ```
 
 ### Running node 1 (signer only)
 
 ```bash
-./middleware-offchain --driver-address 0xA65C4ca1b06BD89aC03A395b3cA0919bF5F58869 --rpc-url http://127.0.0.1:8545 --log-level info --log-mode pretty --secret-key 1000000000000000000 --signer true --http-listen :8081
+./relay_sidecar --driver.chain-id 111 --driver.address 0xA65C4ca1b06BD89aC03A395b3cA0919bF5F58869 --chains-id 111 --chains-rpc-url http://127.0.0.1:8545 --log-level info --log-mode pretty --secret-key 1000000000000000000 --signer true --http-listen :8081
 ```
 
 ### Running node 2 (signer + committer)
 
 ```bash
-./middleware-offchain --driver-address 0xA65C4ca1b06BD89aC03A395b3cA0919bF5F58869 --rpc-url http://127.0.0.1:8545 --log-level info --log-mode pretty --secret-key 1000000000000000001 --signer true --committer true --http-listen :8082
+./relay_sidecar --driver.chain-id 111 --driver.address 0xA65C4ca1b06BD89aC03A395b3cA0919bF5F58869 --chains-id 111 --chains-rpc-url http://127.0.0.1:8545 --log-level info --log-mode pretty --secret-key 1000000000000000001 --signer true --committer true --http-listen :8082
 ```
 
 ### Running node 3 (signer + aggregator)
 
 ```bash
-./middleware-offchain --driver-address 0xA65C4ca1b06BD89aC03A395b3cA0919bF5F58869 --rpc-url http://127.0.0.1:8545 --log-level info --log-mode pretty --secret-key 1000000000000000002 --signer true --aggregator true --http-listen :8083
+./relay_sidecar --driver.chain-id 111 --driver.address 0xA65C4ca1b06BD89aC03A395b3cA0919bF5F58869 --chains-id 111 --chains-rpc-url http://127.0.0.1:8545 --log-level info --log-mode pretty --secret-key 1000000000000000002 --signer true --aggregator true --http-listen :8083
 ```
 
 Notes:
@@ -122,14 +122,6 @@ For testing purposes we've prepared simple application that:
 ```bash
 go build -o msg-sign ./cmd/msg-sign
 ```
-
-### Run application
-
-```bash
-./msg-sign --driver-address 0xA65C4ca1b06BD89aC03A395b3cA0919bF5F58869 --rpc-url http://127.0.0.1:8545 --sign-address http://localhost:8081/api/v1 --sign-address http://localhost:8082/api/v1 --sign-address http://localhost:8083/api/v1
-```
-
-If you see `Quorum signature verification succeeded` in logs that means that sgining & verification passed successfully.
 
 ### Stop anvil node
 

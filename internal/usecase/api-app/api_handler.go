@@ -12,8 +12,8 @@ import (
 	"github.com/ogen-go/ogen/validate"
 	"github.com/samber/lo"
 
-	"middleware-offchain/core/entity"
-	"middleware-offchain/internal/gen/api"
+	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/gen/api"
 )
 
 type handler struct {
@@ -89,9 +89,9 @@ func errorWithHTTPCode(ctx context.Context, err error) *api.ErrorStatusCode {
 	}
 
 	if resp.StatusCode > 499 {
-		slog.ErrorContext(ctx, "failed to serve http request with error", "err", err)
+		slog.ErrorContext(ctx, "Failed to serve http request with error", "err", err)
 	} else {
-		slog.DebugContext(ctx, "failed to serve http request", "err", err)
+		slog.DebugContext(ctx, "Failed to serve http request", "err", err)
 	}
 
 	return resp
