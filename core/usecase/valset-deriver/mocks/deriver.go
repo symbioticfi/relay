@@ -19,32 +19,32 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockethClient is a mock of ethClient interface.
-type MockethClient struct {
+// MockEvmClient is a mock of EvmClient interface.
+type MockEvmClient struct {
 	ctrl     *gomock.Controller
-	recorder *MockethClientMockRecorder
+	recorder *MockEvmClientMockRecorder
 	isgomock struct{}
 }
 
-// MockethClientMockRecorder is the mock recorder for MockethClient.
-type MockethClientMockRecorder struct {
-	mock *MockethClient
+// MockEvmClientMockRecorder is the mock recorder for MockEvmClient.
+type MockEvmClientMockRecorder struct {
+	mock *MockEvmClient
 }
 
-// NewMockethClient creates a new mock instance.
-func NewMockethClient(ctrl *gomock.Controller) *MockethClient {
-	mock := &MockethClient{ctrl: ctrl}
-	mock.recorder = &MockethClientMockRecorder{mock}
+// NewMockEvmClient creates a new mock instance.
+func NewMockEvmClient(ctrl *gomock.Controller) *MockEvmClient {
+	mock := &MockEvmClient{ctrl: ctrl}
+	mock.recorder = &MockEvmClientMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockethClient) EXPECT() *MockethClientMockRecorder {
+func (m *MockEvmClient) EXPECT() *MockEvmClientMockRecorder {
 	return m.recorder
 }
 
 // GetConfig mocks base method.
-func (m *MockethClient) GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error) {
+func (m *MockEvmClient) GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConfig", ctx, timestamp)
 	ret0, _ := ret[0].(entity.NetworkConfig)
@@ -53,13 +53,13 @@ func (m *MockethClient) GetConfig(ctx context.Context, timestamp uint64) (entity
 }
 
 // GetConfig indicates an expected call of GetConfig.
-func (mr *MockethClientMockRecorder) GetConfig(ctx, timestamp any) *gomock.Call {
+func (mr *MockEvmClientMockRecorder) GetConfig(ctx, timestamp any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfig", reflect.TypeOf((*MockethClient)(nil).GetConfig), ctx, timestamp)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfig", reflect.TypeOf((*MockEvmClient)(nil).GetConfig), ctx, timestamp)
 }
 
 // GetCurrentEpoch mocks base method.
-func (m *MockethClient) GetCurrentEpoch(ctx context.Context) (uint64, error) {
+func (m *MockEvmClient) GetCurrentEpoch(ctx context.Context) (uint64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetCurrentEpoch", ctx)
 	ret0, _ := ret[0].(uint64)
@@ -68,13 +68,13 @@ func (m *MockethClient) GetCurrentEpoch(ctx context.Context) (uint64, error) {
 }
 
 // GetCurrentEpoch indicates an expected call of GetCurrentEpoch.
-func (mr *MockethClientMockRecorder) GetCurrentEpoch(ctx any) *gomock.Call {
+func (mr *MockEvmClientMockRecorder) GetCurrentEpoch(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentEpoch", reflect.TypeOf((*MockethClient)(nil).GetCurrentEpoch), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentEpoch", reflect.TypeOf((*MockEvmClient)(nil).GetCurrentEpoch), ctx)
 }
 
 // GetEip712Domain mocks base method.
-func (m *MockethClient) GetEip712Domain(ctx context.Context, addr entity.CrossChainAddress) (entity.Eip712Domain, error) {
+func (m *MockEvmClient) GetEip712Domain(ctx context.Context, addr entity.CrossChainAddress) (entity.Eip712Domain, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetEip712Domain", ctx, addr)
 	ret0, _ := ret[0].(entity.Eip712Domain)
@@ -83,13 +83,13 @@ func (m *MockethClient) GetEip712Domain(ctx context.Context, addr entity.CrossCh
 }
 
 // GetEip712Domain indicates an expected call of GetEip712Domain.
-func (mr *MockethClientMockRecorder) GetEip712Domain(ctx, addr any) *gomock.Call {
+func (mr *MockEvmClientMockRecorder) GetEip712Domain(ctx, addr any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEip712Domain", reflect.TypeOf((*MockethClient)(nil).GetEip712Domain), ctx, addr)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEip712Domain", reflect.TypeOf((*MockEvmClient)(nil).GetEip712Domain), ctx, addr)
 }
 
 // GetEpochStart mocks base method.
-func (m *MockethClient) GetEpochStart(ctx context.Context, epoch uint64) (uint64, error) {
+func (m *MockEvmClient) GetEpochStart(ctx context.Context, epoch uint64) (uint64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetEpochStart", ctx, epoch)
 	ret0, _ := ret[0].(uint64)
@@ -98,13 +98,13 @@ func (m *MockethClient) GetEpochStart(ctx context.Context, epoch uint64) (uint64
 }
 
 // GetEpochStart indicates an expected call of GetEpochStart.
-func (mr *MockethClientMockRecorder) GetEpochStart(ctx, epoch any) *gomock.Call {
+func (mr *MockEvmClientMockRecorder) GetEpochStart(ctx, epoch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEpochStart", reflect.TypeOf((*MockethClient)(nil).GetEpochStart), ctx, epoch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEpochStart", reflect.TypeOf((*MockEvmClient)(nil).GetEpochStart), ctx, epoch)
 }
 
 // GetHeaderHash mocks base method.
-func (m *MockethClient) GetHeaderHash(ctx context.Context, addr entity.CrossChainAddress) (common.Hash, error) {
+func (m *MockEvmClient) GetHeaderHash(ctx context.Context, addr entity.CrossChainAddress) (common.Hash, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetHeaderHash", ctx, addr)
 	ret0, _ := ret[0].(common.Hash)
@@ -113,13 +113,13 @@ func (m *MockethClient) GetHeaderHash(ctx context.Context, addr entity.CrossChai
 }
 
 // GetHeaderHash indicates an expected call of GetHeaderHash.
-func (mr *MockethClientMockRecorder) GetHeaderHash(ctx, addr any) *gomock.Call {
+func (mr *MockEvmClientMockRecorder) GetHeaderHash(ctx, addr any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHeaderHash", reflect.TypeOf((*MockethClient)(nil).GetHeaderHash), ctx, addr)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHeaderHash", reflect.TypeOf((*MockEvmClient)(nil).GetHeaderHash), ctx, addr)
 }
 
 // GetHeaderHashAt mocks base method.
-func (m *MockethClient) GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error) {
+func (m *MockEvmClient) GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetHeaderHashAt", ctx, addr, epoch)
 	ret0, _ := ret[0].(common.Hash)
@@ -128,13 +128,13 @@ func (m *MockethClient) GetHeaderHashAt(ctx context.Context, addr entity.CrossCh
 }
 
 // GetHeaderHashAt indicates an expected call of GetHeaderHashAt.
-func (mr *MockethClientMockRecorder) GetHeaderHashAt(ctx, addr, epoch any) *gomock.Call {
+func (mr *MockEvmClientMockRecorder) GetHeaderHashAt(ctx, addr, epoch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHeaderHashAt", reflect.TypeOf((*MockethClient)(nil).GetHeaderHashAt), ctx, addr, epoch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHeaderHashAt", reflect.TypeOf((*MockEvmClient)(nil).GetHeaderHashAt), ctx, addr, epoch)
 }
 
 // GetKeys mocks base method.
-func (m *MockethClient) GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorWithKeys, error) {
+func (m *MockEvmClient) GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorWithKeys, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetKeys", ctx, address, timestamp)
 	ret0, _ := ret[0].([]entity.OperatorWithKeys)
@@ -143,13 +143,13 @@ func (m *MockethClient) GetKeys(ctx context.Context, address entity.CrossChainAd
 }
 
 // GetKeys indicates an expected call of GetKeys.
-func (mr *MockethClientMockRecorder) GetKeys(ctx, address, timestamp any) *gomock.Call {
+func (mr *MockEvmClientMockRecorder) GetKeys(ctx, address, timestamp any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKeys", reflect.TypeOf((*MockethClient)(nil).GetKeys), ctx, address, timestamp)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKeys", reflect.TypeOf((*MockEvmClient)(nil).GetKeys), ctx, address, timestamp)
 }
 
 // GetLastCommittedHeaderEpoch mocks base method.
-func (m *MockethClient) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (uint64, error) {
+func (m *MockEvmClient) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (uint64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLastCommittedHeaderEpoch", ctx, addr)
 	ret0, _ := ret[0].(uint64)
@@ -158,13 +158,13 @@ func (m *MockethClient) GetLastCommittedHeaderEpoch(ctx context.Context, addr en
 }
 
 // GetLastCommittedHeaderEpoch indicates an expected call of GetLastCommittedHeaderEpoch.
-func (mr *MockethClientMockRecorder) GetLastCommittedHeaderEpoch(ctx, addr any) *gomock.Call {
+func (mr *MockEvmClientMockRecorder) GetLastCommittedHeaderEpoch(ctx, addr any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastCommittedHeaderEpoch", reflect.TypeOf((*MockethClient)(nil).GetLastCommittedHeaderEpoch), ctx, addr)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastCommittedHeaderEpoch", reflect.TypeOf((*MockEvmClient)(nil).GetLastCommittedHeaderEpoch), ctx, addr)
 }
 
 // GetNetworkAddress mocks base method.
-func (m *MockethClient) GetNetworkAddress(ctx context.Context) (common.Address, error) {
+func (m *MockEvmClient) GetNetworkAddress(ctx context.Context) (common.Address, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetNetworkAddress", ctx)
 	ret0, _ := ret[0].(common.Address)
@@ -173,13 +173,13 @@ func (m *MockethClient) GetNetworkAddress(ctx context.Context) (common.Address, 
 }
 
 // GetNetworkAddress indicates an expected call of GetNetworkAddress.
-func (mr *MockethClientMockRecorder) GetNetworkAddress(ctx any) *gomock.Call {
+func (mr *MockEvmClientMockRecorder) GetNetworkAddress(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNetworkAddress", reflect.TypeOf((*MockethClient)(nil).GetNetworkAddress), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNetworkAddress", reflect.TypeOf((*MockEvmClient)(nil).GetNetworkAddress), ctx)
 }
 
 // GetPreviousHeaderHashAt mocks base method.
-func (m *MockethClient) GetPreviousHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error) {
+func (m *MockEvmClient) GetPreviousHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPreviousHeaderHashAt", ctx, addr, epoch)
 	ret0, _ := ret[0].(common.Hash)
@@ -188,13 +188,13 @@ func (m *MockethClient) GetPreviousHeaderHashAt(ctx context.Context, addr entity
 }
 
 // GetPreviousHeaderHashAt indicates an expected call of GetPreviousHeaderHashAt.
-func (mr *MockethClientMockRecorder) GetPreviousHeaderHashAt(ctx, addr, epoch any) *gomock.Call {
+func (mr *MockEvmClientMockRecorder) GetPreviousHeaderHashAt(ctx, addr, epoch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPreviousHeaderHashAt", reflect.TypeOf((*MockethClient)(nil).GetPreviousHeaderHashAt), ctx, addr, epoch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPreviousHeaderHashAt", reflect.TypeOf((*MockEvmClient)(nil).GetPreviousHeaderHashAt), ctx, addr, epoch)
 }
 
 // GetSubnetwork mocks base method.
-func (m *MockethClient) GetSubnetwork(ctx context.Context) (common.Hash, error) {
+func (m *MockEvmClient) GetSubnetwork(ctx context.Context) (common.Hash, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSubnetwork", ctx)
 	ret0, _ := ret[0].(common.Hash)
@@ -203,13 +203,13 @@ func (m *MockethClient) GetSubnetwork(ctx context.Context) (common.Hash, error) 
 }
 
 // GetSubnetwork indicates an expected call of GetSubnetwork.
-func (mr *MockethClientMockRecorder) GetSubnetwork(ctx any) *gomock.Call {
+func (mr *MockEvmClientMockRecorder) GetSubnetwork(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubnetwork", reflect.TypeOf((*MockethClient)(nil).GetSubnetwork), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubnetwork", reflect.TypeOf((*MockEvmClient)(nil).GetSubnetwork), ctx)
 }
 
 // GetVotingPowers mocks base method.
-func (m *MockethClient) GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorVotingPower, error) {
+func (m *MockEvmClient) GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorVotingPower, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVotingPowers", ctx, address, timestamp)
 	ret0, _ := ret[0].([]entity.OperatorVotingPower)
@@ -218,13 +218,13 @@ func (m *MockethClient) GetVotingPowers(ctx context.Context, address entity.Cros
 }
 
 // GetVotingPowers indicates an expected call of GetVotingPowers.
-func (mr *MockethClientMockRecorder) GetVotingPowers(ctx, address, timestamp any) *gomock.Call {
+func (mr *MockEvmClientMockRecorder) GetVotingPowers(ctx, address, timestamp any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVotingPowers", reflect.TypeOf((*MockethClient)(nil).GetVotingPowers), ctx, address, timestamp)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVotingPowers", reflect.TypeOf((*MockEvmClient)(nil).GetVotingPowers), ctx, address, timestamp)
 }
 
 // IsValsetHeaderCommittedAt mocks base method.
-func (m *MockethClient) IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (bool, error) {
+func (m *MockEvmClient) IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsValsetHeaderCommittedAt", ctx, addr, epoch)
 	ret0, _ := ret[0].(bool)
@@ -233,7 +233,7 @@ func (m *MockethClient) IsValsetHeaderCommittedAt(ctx context.Context, addr enti
 }
 
 // IsValsetHeaderCommittedAt indicates an expected call of IsValsetHeaderCommittedAt.
-func (mr *MockethClientMockRecorder) IsValsetHeaderCommittedAt(ctx, addr, epoch any) *gomock.Call {
+func (mr *MockEvmClientMockRecorder) IsValsetHeaderCommittedAt(ctx, addr, epoch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsValsetHeaderCommittedAt", reflect.TypeOf((*MockethClient)(nil).IsValsetHeaderCommittedAt), ctx, addr, epoch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsValsetHeaderCommittedAt", reflect.TypeOf((*MockEvmClient)(nil).IsValsetHeaderCommittedAt), ctx, addr, epoch)
 }

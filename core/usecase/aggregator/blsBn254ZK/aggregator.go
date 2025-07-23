@@ -167,7 +167,7 @@ func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []enti
 	for _, key := range aggregatedPubKeys {
 		mimcAccumulator, err := validatorSetMimcAccumulator(valset.Validators, key.Tag)
 		if err != nil {
-			return nil, errors.Errorf("failed to generate validator set mimc accumulator: %w", err)
+			return nil, errors.Errorf("failed to generate validator set MiMC accumulator: %w", err)
 		}
 
 		validatorSetHashKey, err := helpers.GetExtraDataKeyTagged(entity.VerificationTypeBlsBn254ZK, key.Tag, entity.ZkVerificationValidatorSetHashMimcHash)

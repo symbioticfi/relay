@@ -51,7 +51,7 @@ type Config struct {
 
 	Signer       signer    `validate:"required"`
 	Repo         repo      `validate:"required"`
-	EVMClient    evmClient `validate:"required"`
+	EvmClient    evmClient `validate:"required"`
 	Deriver      deriver   `validate:"required"`
 	Aggregator   aggregator
 	ServeMetrics bool

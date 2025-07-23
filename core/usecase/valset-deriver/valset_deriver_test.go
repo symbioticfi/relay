@@ -801,11 +801,11 @@ func createTestOperatorWithKeys() []entity.OperatorWithKeys {
 }
 
 type testSetup struct {
-	mockClient *mocks.MockethClient
-	deriver    *Deriver
-	config     entity.NetworkConfig
-	epoch      uint64
-	timestamp  uint64
+	mockEvmClient *mocks.MockEvmClient
+	deriver       *Deriver
+	config        entity.NetworkConfig
+	epoch         uint64
+	timestamp     uint64
 }
 
 func setupBasicTest(t *testing.T) *testSetup {
@@ -813,38 +813,38 @@ func setupBasicTest(t *testing.T) *testSetup {
 	ctrl := gomock.NewController(t)
 	t.Cleanup(ctrl.Finish)
 
-	mockClient := mocks.NewMockethClient(ctrl)
+	mockEvmClient := mocks.NewMockEvmClient(ctrl)
 	config := createTestNetworkConfig()
 	epoch := uint64(10)
 	timestamp := uint64(1640995200)
 
 	// Setup common mocks
-	mockClient.EXPECT().GetEpochStart(gomock.Any(), epoch).Return(timestamp, nil)
-	mockClient.EXPECT().GetVotingPowers(gomock.Any(), config.VotingPowerProviders[0], timestamp).Return(createTestOperatorVotingPowers(), nil)
-	mockClient.EXPECT().GetKeys(gomock.Any(), config.KeysProvider, timestamp).Return(createTestOperatorWithKeys(), nil)
+	mockEvmClient.EXPECT().GetEpochStart(gomock.Any(), epoch).Return(timestamp, nil)
+	mockEvmClient.EXPECT().GetVotingPowers(gomock.Any(), config.VotingPowerProviders[0], timestamp).Return(createTestOperatorVotingPowers(), nil)
+	mockEvmClient.EXPECT().GetKeys(gomock.Any(), config.KeysProvider, timestamp).Return(createTestOperatorWithKeys(), nil)
 
-	deriver, err := NewDeriver(mockClient)
+	deriver, err := NewDeriver(mockEvmClient)
 	require.NoError(t, err)
 
 	return &testSetup{
-		mockClient: mockClient,
-		deriver:    deriver,
-		config:     config,
-		epoch:      epoch,
-		timestamp:  timestamp,
+		mockEvmClient: mockEvmClient,
+		deriver:       deriver,
+		config:        config,
+		epoch:         epoch,
+		timestamp:     timestamp,
 	}
 }
 
 func (ts *testSetup) setupCommittedScenario() {
-	ts.mockClient.EXPECT().IsValsetHeaderCommittedAt(gomock.Any(), ts.config.Replicas[0], ts.epoch).Return(true, nil)
-	ts.mockClient.EXPECT().GetPreviousHeaderHashAt(gomock.Any(), ts.config.Replicas[0], ts.epoch).Return(common.HexToHash("0x0"), nil)
-	ts.mockClient.EXPECT().GetHeaderHashAt(gomock.Any(), ts.config.Replicas[0], ts.epoch).Return(common.HexToHash("0xbf4eeff1b57d53e7d546e8339e7bac531abb6d22b147605fefeeb76886b43c9d"), nil)
+	ts.mockEvmClient.EXPECT().IsValsetHeaderCommittedAt(gomock.Any(), ts.config.Replicas[0], ts.epoch).Return(true, nil)
+	ts.mockEvmClient.EXPECT().GetPreviousHeaderHashAt(gomock.Any(), ts.config.Replicas[0], ts.epoch).Return(common.HexToHash("0x0"), nil)
+	ts.mockEvmClient.EXPECT().GetHeaderHashAt(gomock.Any(), ts.config.Replicas[0], ts.epoch).Return(common.HexToHash("0xbf4eeff1b57d53e7d546e8339e7bac531abb6d22b147605fefeeb76886b43c9d"), nil)
 }
 
 func (ts *testSetup) setupPendingScenario() {
-	ts.mockClient.EXPECT().IsValsetHeaderCommittedAt(gomock.Any(), ts.config.Replicas[0], ts.epoch).Return(false, nil)
-	ts.mockClient.EXPECT().GetLastCommittedHeaderEpoch(gomock.Any(), ts.config.Replicas[0]).Return(uint64(8), nil)
-	ts.mockClient.EXPECT().GetHeaderHash(gomock.Any(), ts.config.Replicas[0]).Return(common.HexToHash("0x888"), nil)
+	ts.mockEvmClient.EXPECT().IsValsetHeaderCommittedAt(gomock.Any(), ts.config.Replicas[0], ts.epoch).Return(false, nil)
+	ts.mockEvmClient.EXPECT().GetLastCommittedHeaderEpoch(gomock.Any(), ts.config.Replicas[0]).Return(uint64(8), nil)
+	ts.mockEvmClient.EXPECT().GetHeaderHash(gomock.Any(), ts.config.Replicas[0]).Return(common.HexToHash("0x888"), nil)
 }
 
 func assertBasicValidatorSetProperties(t *testing.T, result entity.ValidatorSet, err error, epoch uint64, timestamp uint64) {
@@ -860,14 +860,14 @@ func assertBasicValidatorSetProperties(t *testing.T, result entity.ValidatorSet,
 func TestDeriver_GetNetworkData(t *testing.T) {
 	tests := []struct {
 		name       string
-		setupMocks func(client *mocks.MockethClient)
+		setupMocks func(evmClient *mocks.MockEvmClient)
 		addr       entity.CrossChainAddress
 		expected   entity.NetworkData
 		errorMsg   string
 	}{
 		{
 			name: "successful get network data",
-			setupMocks: func(m *mocks.MockethClient) {
+			setupMocks: func(m *mocks.MockEvmClient) {
 				m.EXPECT().GetNetworkAddress(gomock.Any()).Return(common.HexToAddress("0x123"), nil)
 				m.EXPECT().GetSubnetwork(gomock.Any()).Return(common.HexToHash("0x456"), nil)
 				m.EXPECT().GetEip712Domain(gomock.Any(), gomock.Any()).Return(entity.Eip712Domain{
@@ -887,7 +887,7 @@ func TestDeriver_GetNetworkData(t *testing.T) {
 		},
 		{
 			name: "network address error",
-			setupMocks: func(m *mocks.MockethClient) {
+			setupMocks: func(m *mocks.MockEvmClient) {
 				m.EXPECT().GetNetworkAddress(gomock.Any()).Return(common.Address{}, errors.New("network address error"))
 			},
 			addr:     entity.CrossChainAddress{},
@@ -895,7 +895,7 @@ func TestDeriver_GetNetworkData(t *testing.T) {
 		},
 		{
 			name: "subnetwork error",
-			setupMocks: func(m *mocks.MockethClient) {
+			setupMocks: func(m *mocks.MockEvmClient) {
 				m.EXPECT().GetNetworkAddress(gomock.Any()).Return(common.HexToAddress("0x123"), nil)
 				m.EXPECT().GetSubnetwork(gomock.Any()).Return(common.Hash{}, errors.New("subnetwork error"))
 			},
@@ -904,7 +904,7 @@ func TestDeriver_GetNetworkData(t *testing.T) {
 		},
 		{
 			name: "eip712 domain error",
-			setupMocks: func(m *mocks.MockethClient) {
+			setupMocks: func(m *mocks.MockEvmClient) {
 				m.EXPECT().GetNetworkAddress(gomock.Any()).Return(common.HexToAddress("0x123"), nil)
 				m.EXPECT().GetSubnetwork(gomock.Any()).Return(common.HexToHash("0x456"), nil)
 				m.EXPECT().GetEip712Domain(gomock.Any(), gomock.Any()).Return(entity.Eip712Domain{}, errors.New("eip712 error"))
@@ -919,10 +919,10 @@ func TestDeriver_GetNetworkData(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockClient := mocks.NewMockethClient(ctrl)
-			tt.setupMocks(mockClient)
+			mockEvmClient := mocks.NewMockEvmClient(ctrl)
+			tt.setupMocks(mockEvmClient)
 
-			d, err := NewDeriver(mockClient)
+			d, err := NewDeriver(mockEvmClient)
 			require.NoError(t, err)
 
 			result, err := d.GetNetworkData(context.Background(), tt.addr)

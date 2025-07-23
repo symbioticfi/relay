@@ -201,7 +201,7 @@ func printHeaderWithExtraDataToJSON(validatorSetHeader entity.ValidatorSetHeader
 func printSettlementData(
 	valsetHeader *entity.ValidatorSetHeader,
 	networkConfig *entity.NetworkConfig,
-	isCommited []bool,
+	isCommitted []bool,
 	headerHashes []common.Hash,
 ) string {
 	tableData := pterm.TableData{
@@ -211,7 +211,7 @@ func printSettlementData(
 	for i, replica := range networkConfig.Replicas {
 		hash := "N/A"
 		status := "Missing"
-		if isCommited[i] {
+		if isCommitted[i] {
 			status = "Committed"
 			hash = headerHashes[i].String()
 		}
@@ -222,9 +222,9 @@ func printSettlementData(
 		}
 
 		integrity := "N/A"
-		if isCommited[i] && headerHashes[i] != expectedHash {
+		if isCommitted[i] && headerHashes[i] != expectedHash {
 			integrity = "Failed"
-		} else if isCommited[i] && headerHashes[i] == expectedHash {
+		} else if isCommitted[i] && headerHashes[i] == expectedHash {
 			integrity = "Ok"
 		}
 

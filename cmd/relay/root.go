@@ -67,7 +67,7 @@ func runApp(ctx context.Context) error {
 		keyProvider = simpleKeyProvider
 	}
 
-	evmClient, err := evm.NewEVMClient(ctx, evm.Config{
+	evmClient, err := evm.NewEvmClient(ctx, evm.Config{
 		ChainURLs: cfg.Chains,
 		DriverAddress: entity.CrossChainAddress{
 			ChainId: cfg.Driver.ChainID,
@@ -164,7 +164,7 @@ func runApp(ctx context.Context) error {
 	slog.InfoContext(ctx, "Created signer app, starting")
 
 	listener, err := valsetListener.New(valsetListener.Config{
-		Eth:             evmClient,
+		EvmClient:       evmClient,
 		Repo:            repo,
 		Deriver:         deriver,
 		PollingInterval: time.Second * 5,
@@ -175,7 +175,7 @@ func runApp(ctx context.Context) error {
 
 	generator, err := valsetGenerator.New(valsetGenerator.Config{
 		Signer:          signerApp,
-		Eth:             evmClient,
+		EvmClient:       evmClient,
 		Repo:            repo,
 		Deriver:         deriver,
 		Aggregator:      agg,
@@ -237,7 +237,7 @@ func runApp(ctx context.Context) error {
 		Prefix:            "/api/v1",
 		Signer:            signerApp,
 		Repo:              repo,
-		EVMClient:         evmClient,
+		EvmClient:         evmClient,
 		Aggregator:        aggApp,
 		Deriver:           deriver,
 		ServeMetrics:      serveMetricsOnAPIAddress,

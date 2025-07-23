@@ -51,7 +51,7 @@ func NewSymbiotic(ctx context.Context, cfg Config) (*Symbiotic, error) {
 		return nil, errors.Errorf("failed to validate config: %w", err)
 	}
 
-	evmClient, err := evm.NewEVMClient(ctx, evm.Config{
+	evmClient, err := evm.NewEvmClient(ctx, evm.Config{
 		ChainURLs:      cfg.ChainUrls,
 		DriverAddress:  cfg.DriverAddress,
 		KeyProvider:    cfg.KeyProvider,

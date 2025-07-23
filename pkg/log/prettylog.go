@@ -109,7 +109,7 @@ func (h *Handler) computeAttrs(
 	var attrs map[string]any
 	err := json.Unmarshal(h.b.Bytes(), &attrs)
 	if err != nil {
-		return nil, fmt.Errorf("error when unmarshaling inner handler's Handle result: %w", err)
+		return nil, fmt.Errorf("error when unmarshalling inner handler's Handle result: %w", err)
 	}
 	return attrs, nil
 }

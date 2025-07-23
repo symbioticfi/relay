@@ -20,7 +20,7 @@ const valsetVersion = 1
 var emptyValsetHeaderHash = common.HexToHash("0x868e09d528a16744c1f38ea3c10cc2251e01a456434f91172247695087d129b7")
 
 //go:generate mockgen -source=valset_deriver.go -destination=mocks/deriver.go -package=mocks
-type ethClient interface {
+type evmClient interface {
 	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
 	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
 	GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorVotingPower, error)
@@ -38,28 +38,28 @@ type ethClient interface {
 
 // Deriver coordinates the ETH services
 type Deriver struct {
-	ethClient ethClient
+	evmClient evmClient
 }
 
 // NewDeriver creates a new valset deriver
-func NewDeriver(ethClient ethClient) (*Deriver, error) {
+func NewDeriver(evmClient evmClient) (*Deriver, error) {
 	return &Deriver{
-		ethClient: ethClient,
+		evmClient: evmClient,
 	}, nil
 }
 
 func (v *Deriver) GetNetworkData(ctx context.Context, addr entity.CrossChainAddress) (entity.NetworkData, error) {
-	address, err := v.ethClient.GetNetworkAddress(ctx)
+	address, err := v.evmClient.GetNetworkAddress(ctx)
 	if err != nil {
 		return entity.NetworkData{}, errors.Errorf("failed to get network address: %w", err)
 	}
 
-	subnetwork, err := v.ethClient.GetSubnetwork(ctx)
+	subnetwork, err := v.evmClient.GetSubnetwork(ctx)
 	if err != nil {
 		return entity.NetworkData{}, errors.Errorf("failed to get subnetwork: %w", err)
 	}
 
-	eip712Data, err := v.ethClient.GetEip712Domain(ctx, addr)
+	eip712Data, err := v.evmClient.GetEip712Domain(ctx, addr)
 	if err != nil {
 		return entity.NetworkData{}, errors.Errorf("failed to get eip712 domain: %w", err)
 	}
@@ -77,7 +77,7 @@ type dtoOperatorVotingPower struct {
 }
 
 func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error) {
-	timestamp, err := v.ethClient.GetEpochStart(ctx, epoch)
+	timestamp, err := v.evmClient.GetEpochStart(ctx, epoch)
 	if err != nil {
 		return entity.ValidatorSet{}, errors.Errorf("failed to get epoch start timestamp: %w", err)
 	}
@@ -86,7 +86,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 	// Get voting powers from all voting power providers
 	allVotingPowers := make([]dtoOperatorVotingPower, len(config.VotingPowerProviders))
 	for i, provider := range config.VotingPowerProviders {
-		votingPowers, err := v.ethClient.GetVotingPowers(ctx, provider, timestamp)
+		votingPowers, err := v.evmClient.GetVotingPowers(ctx, provider, timestamp)
 		if err != nil {
 			return entity.ValidatorSet{}, errors.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
 		}
@@ -100,7 +100,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 	}
 
 	// Get keys from the keys provider
-	keys, err := v.ethClient.GetKeys(ctx, config.KeysProvider, timestamp)
+	keys, err := v.evmClient.GetKeys(ctx, config.KeysProvider, timestamp)
 	if err != nil {
 		return entity.ValidatorSet{}, errors.Errorf("failed to get keys: %w", err)
 	}
@@ -139,13 +139,13 @@ func (v *Deriver) getStatusAndPreviousHash(ctx context.Context, epoch uint64, co
 	}
 
 	if isValsetCommitted {
-		previousHeaderHash, err := v.ethClient.GetPreviousHeaderHashAt(ctx, committedAddr, epoch)
+		previousHeaderHash, err := v.evmClient.GetPreviousHeaderHashAt(ctx, committedAddr, epoch)
 		if err != nil {
 			return 0, common.Hash{}, errors.Errorf("failed to get previous header hash: %w", err)
 		}
 		// valset integrity check
 		valset.PreviousHeaderHash = previousHeaderHash
-		committedHash, err := v.ethClient.GetHeaderHashAt(ctx, committedAddr, epoch)
+		committedHash, err := v.evmClient.GetHeaderHashAt(ctx, committedAddr, epoch)
 		if err != nil {
 			return 0, common.Hash{}, errors.Errorf("failed to get header hash: %w", err)
 		}
@@ -182,7 +182,7 @@ func (v *Deriver) getStatusAndPreviousHash(ctx context.Context, epoch uint64, co
 
 	// trying to link to latest committed header
 	slog.DebugContext(ctx, "Header is not committed [new header]", "epoch", epoch)
-	previousHeaderHash, err := v.ethClient.GetHeaderHash(ctx, lastCommittedAddr)
+	previousHeaderHash, err := v.evmClient.GetHeaderHash(ctx, lastCommittedAddr)
 	if err != nil {
 		return 0, common.Hash{}, errors.Errorf("failed to get latest header hash: %w", err)
 	}
@@ -192,7 +192,7 @@ func (v *Deriver) getStatusAndPreviousHash(ctx context.Context, epoch uint64, co
 
 func (v *Deriver) isValsetHeaderCommitted(ctx context.Context, config entity.NetworkConfig, epoch uint64) (entity.CrossChainAddress, bool, error) {
 	for _, addr := range config.Replicas {
-		isCommitted, err := v.ethClient.IsValsetHeaderCommittedAt(ctx, addr, epoch)
+		isCommitted, err := v.evmClient.IsValsetHeaderCommittedAt(ctx, addr, epoch)
 		if err != nil {
 			return entity.CrossChainAddress{}, false, errors.Errorf("failed to check if valset header is committed at epoch %d: %w", epoch, err)
 		}
@@ -208,7 +208,7 @@ func (v *Deriver) GetLastCommittedHeaderEpoch(ctx context.Context, config entity
 	var maxEpochAddr entity.CrossChainAddress
 
 	for _, addr := range config.Replicas {
-		epoch, err := v.ethClient.GetLastCommittedHeaderEpoch(ctx, addr)
+		epoch, err := v.evmClient.GetLastCommittedHeaderEpoch(ctx, addr)
 		if err != nil {
 			return entity.CrossChainAddress{}, 0, errors.Errorf("failed to get last committed header epoch for address %s: %w", addr.Address.Hex(), err)
 		}

@@ -29,7 +29,7 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		if err != nil {
 			if errors.Is(err, entity.ErrEntityNotFound) && !retryAttempted {
 				if err = s.process(ctx); err != nil {
-					slog.ErrorContext(ctx, "failed to process epochs, on demand from commiter", "error", err)
+					slog.ErrorContext(ctx, "failed to process epochs, on demand from committer", "error", err)
 					return nil
 				}
 				retryAttempted = true
@@ -41,7 +41,7 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		break
 	}
 
-	config, err := s.cfg.Eth.GetConfig(ctx, valset.CaptureTimestamp)
+	config, err := s.cfg.EvmClient.GetConfig(ctx, valset.CaptureTimestamp)
 	if err != nil {
 		return errors.Errorf("failed to get config for epoch %d: %w", msg.Epoch, err)
 	}
@@ -70,7 +70,7 @@ func (s *Service) commitValsetToAllSettlements(ctx context.Context, config entit
 	for i, replica := range config.Replicas {
 		slog.DebugContext(ctx, "Trying to commit valset header to settlement", "replica", replica)
 
-		result, err := s.cfg.Eth.CommitValsetHeader(ctx, replica, header, extraData, proof)
+		result, err := s.cfg.EvmClient.CommitValsetHeader(ctx, replica, header, extraData, proof)
 		if err != nil {
 			errs[i] = errors.Errorf("failed to commit valset header to settlement %s: %w", replica.Address.Hex(), err)
 			continue

@@ -32,7 +32,7 @@ var registerKeyCmd = &cobra.Command{
 			return err
 		}
 
-		client, err := evm.NewEVMClient(ctx, evm.Config{
+		evmClient, err := evm.NewEvmClient(ctx, evm.Config{
 			ChainURLs: globalFlags.Chains,
 			DriverAddress: entity.CrossChainAddress{
 				ChainId: globalFlags.DriverChainId,
@@ -47,10 +47,10 @@ var registerKeyCmd = &cobra.Command{
 		}
 
 		// TODO multiple chains key registration support
-		if len(client.GetChains()) != 1 {
+		if len(evmClient.GetChains()) != 1 {
 			return errors.New("only single chain is supported")
 		}
-		chainId := client.GetChains()[0]
+		chainId := evmClient.GetChains()[0]
 
 		// duplicate from genesis
 		privateKeyInput := pterm.DefaultInteractiveTextInput.WithMask("*")
@@ -90,22 +90,22 @@ var registerKeyCmd = &cobra.Command{
 			return err
 		}
 
-		currentOnchainEpoch, err := client.GetCurrentEpoch(ctx)
+		currentOnchainEpoch, err := evmClient.GetCurrentEpoch(ctx)
 		if err != nil {
 			return errors.Errorf("failed to get current epoch: %w", err)
 		}
 
-		captureTimestamp, err := client.GetEpochStart(ctx, currentOnchainEpoch)
+		captureTimestamp, err := evmClient.GetEpochStart(ctx, currentOnchainEpoch)
 		if err != nil {
 			return errors.Errorf("failed to get capture timestamp: %w", err)
 		}
 
-		networkConfig, err := client.GetConfig(ctx, captureTimestamp)
+		networkConfig, err := evmClient.GetConfig(ctx, captureTimestamp)
 		if err != nil {
 			return errors.Errorf("failed to get config: %w", err)
 		}
 
-		eip712Domain, err := client.GetEip712Domain(ctx, networkConfig.KeysProvider)
+		eip712Domain, err := evmClient.GetEip712Domain(ctx, networkConfig.KeysProvider)
 		if err != nil {
 			return errors.Errorf("failed to get eip712 domain: %w", err)
 		}
@@ -131,7 +131,7 @@ var registerKeyCmd = &cobra.Command{
 			extraData = pk.PublicKey().Raw()[32:]
 		}
 
-		txResult, err := client.RegisterKey(ctx, networkConfig.KeysProvider, kt, key, signature, extraData)
+		txResult, err := evmClient.RegisterKey(ctx, networkConfig.KeysProvider, kt, key, signature, extraData)
 		if err != nil {
 			return errors.Errorf("failed to register operator: %w", err)
 		}
