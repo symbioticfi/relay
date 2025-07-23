@@ -96,7 +96,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		return errors.Errorf("failed to get network config for current epoch: %w", err)
 	}
 
-	latestCommitedOnchainEpoch, err := s.getLastCommittedHeaderEpoch(ctx, config)
+	latestCommittedOnchainEpoch, err := s.getLastCommittedHeaderEpoch(ctx, config)
 	if err != nil {
 		return errors.Errorf("failed to get current epoch: %w", err)
 	}
@@ -115,7 +115,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		return nil
 	}
 
-	for latestCommitedOnchainEpoch >= nextEpoch {
+	for latestCommittedOnchainEpoch >= nextEpoch {
 		epochStart, err := s.cfg.EvmClient.GetEpochStart(ctx, nextEpoch)
 		if err != nil {
 			return errors.Errorf("failed to get epoch start for epoch %d: %w", nextEpoch, err)

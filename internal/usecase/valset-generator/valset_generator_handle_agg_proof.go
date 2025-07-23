@@ -29,7 +29,7 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		if err != nil {
 			if errors.Is(err, entity.ErrEntityNotFound) && !retryAttempted {
 				if err = s.process(ctx); err != nil {
-					slog.ErrorContext(ctx, "failed to process epochs, on demand from commiter", "error", err)
+					slog.ErrorContext(ctx, "failed to process epochs, on demand from committer", "error", err)
 					return nil
 				}
 				retryAttempted = true

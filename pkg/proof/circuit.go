@@ -212,6 +212,6 @@ func setCircuitData(circuit *Circuit, proveInput ProveInput) {
 		"signed message", proveInput.MessageG1.String(),
 		"signed message.X", proveInput.MessageG1.X.String(),
 		"signed message.Y", proveInput.MessageG1.Y.String(),
-		"mimc hash", hex.EncodeToString(valsetHash),
+		"MiMC hash", hex.EncodeToString(valsetHash),
 	)
 }

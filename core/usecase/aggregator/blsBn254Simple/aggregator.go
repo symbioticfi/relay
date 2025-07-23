@@ -460,7 +460,7 @@ func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []enti
 
 		keccakHashAccumulator, err := calcKeccakAccumulator(valset.Validators, key.Tag)
 		if err != nil {
-			return nil, errors.Errorf("failed to generate validator set mimc accumulator: %w", err)
+			return nil, errors.Errorf("failed to generate validator set MiMC accumulator: %w", err)
 		}
 
 		extraData = append(extraData, entity.ExtraData{
