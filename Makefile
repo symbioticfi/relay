@@ -28,6 +28,10 @@ endif
 lint:
 	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.2.1 -v run ./...
 
+.PHONY: lint-fix
+lint-fix:
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.2.1 -v run ./... --fix
+
 .PHONY: install-mocks
 install-mocks:
 	go install go.uber.org/mock/mockgen@latest

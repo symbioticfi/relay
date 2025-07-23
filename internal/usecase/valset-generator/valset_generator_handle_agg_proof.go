@@ -18,7 +18,7 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		slog.DebugContext(ctx, "Not a committer, skipping proof commitment")
 		return nil
 	}
-  
+
 	var (
 		valset entity.ValidatorSet
 		err    error
