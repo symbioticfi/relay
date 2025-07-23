@@ -29,7 +29,7 @@ var genesisCmd = &cobra.Command{
 			return err
 		}
 
-		client, err := evm.NewEVMClient(ctx, evm.Config{
+		evmClient, err := evm.NewEvmClient(ctx, evm.Config{
 			ChainURLs: globalFlags.Chains,
 			DriverAddress: entity.CrossChainAddress{
 				ChainId: globalFlags.DriverChainId,
@@ -44,7 +44,7 @@ var genesisCmd = &cobra.Command{
 
 		if genesisFlags.Commit {
 			privateKeyInput := pterm.DefaultInteractiveTextInput.WithMask("*")
-			for _, chainId := range client.GetChains() {
+			for _, chainId := range evmClient.GetChains() {
 				secret, ok := genesisFlags.Secrets.Secrets[chainId]
 				if !ok {
 					secret, _ = privateKeyInput.Show("Enter private key for chain with ID: " + strconv.Itoa(int(chainId)))
@@ -67,22 +67,22 @@ var genesisCmd = &cobra.Command{
 
 		spinner := getSpinner("Fetching on-chain network config...")
 
-		deriver, err := valsetDeriver.NewDeriver(client)
+		deriver, err := valsetDeriver.NewDeriver(evmClient)
 		if err != nil {
 			return errors.Errorf("failed to create deriver: %v", err)
 		}
 
-		currentOnchainEpoch, err := client.GetCurrentEpoch(ctx)
+		currentOnchainEpoch, err := evmClient.GetCurrentEpoch(ctx)
 		if err != nil {
 			return errors.Errorf("failed to get current epoch: %w", err)
 		}
 
-		captureTimestamp, err := client.GetEpochStart(ctx, currentOnchainEpoch)
+		captureTimestamp, err := evmClient.GetEpochStart(ctx, currentOnchainEpoch)
 		if err != nil {
 			return errors.Errorf("failed to get capture timestamp: %w", err)
 		}
 
-		networkConfig, err := client.GetConfig(ctx, captureTimestamp)
+		networkConfig, err := evmClient.GetConfig(ctx, captureTimestamp)
 		if err != nil {
 			return errors.Errorf("failed to get config: %w", err)
 		}
@@ -150,7 +150,7 @@ var genesisCmd = &cobra.Command{
 		if genesisFlags.Commit {
 			for _, replica := range networkConfig.Replicas {
 				spinner = getSpinner("Setting genesis on " + replica.Address.String())
-				txResult, err := client.SetGenesis(
+				txResult, err := evmClient.SetGenesis(
 					ctx,
 					replica,
 					header,

@@ -23,7 +23,7 @@ type signer interface {
 	Sign(ctx context.Context, req entity.SignatureRequest) error
 }
 
-type eth interface {
+type evmClient interface {
 	GetCurrentEpoch(ctx context.Context) (uint64, error)
 	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
 	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
@@ -51,7 +51,7 @@ type deriver interface {
 
 type Config struct {
 	Signer          signer        `validate:"required"`
-	Eth             eth           `validate:"required"`
+	EvmClient       evmClient     `validate:"required"`
 	Repo            repo          `validate:"required"`
 	Deriver         deriver       `validate:"required"`
 	PollingInterval time.Duration `validate:"required,gt=0"`
@@ -190,17 +190,17 @@ func (s *Service) getNetworkData(ctx context.Context, config entity.NetworkConfi
 func (s *Service) tryDetectNewEpochToCommit(ctx context.Context) (entity.ValidatorSet, entity.NetworkConfig, error) {
 	slog.DebugContext(ctx, "Trying to detect new epoch to commit")
 
-	currentOnchainEpoch, err := s.cfg.Eth.GetCurrentEpoch(ctx)
+	currentOnchainEpoch, err := s.cfg.EvmClient.GetCurrentEpoch(ctx)
 	if err != nil {
 		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get current epoch: %w", err)
 	}
 
-	epochStart, err := s.cfg.Eth.GetEpochStart(ctx, currentOnchainEpoch)
+	epochStart, err := s.cfg.EvmClient.GetEpochStart(ctx, currentOnchainEpoch)
 	if err != nil {
 		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get current epoch start: %w", err)
 	}
 
-	config, err := s.cfg.Eth.GetConfig(ctx, epochStart)
+	config, err := s.cfg.EvmClient.GetConfig(ctx, epochStart)
 	if err != nil {
 		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get network config for current epoch %d: %w", currentOnchainEpoch, err)
 	}
@@ -225,7 +225,7 @@ func (s *Service) tryDetectNewEpochToCommit(ctx context.Context) (entity.Validat
 
 func (s *Service) isValsetHeaderCommitted(ctx context.Context, config entity.NetworkConfig, epoch uint64) (entity.CrossChainAddress, bool, error) {
 	for _, addr := range config.Replicas {
-		isCommitted, err := s.cfg.Eth.IsValsetHeaderCommittedAt(ctx, addr, epoch)
+		isCommitted, err := s.cfg.EvmClient.IsValsetHeaderCommittedAt(ctx, addr, epoch)
 		if err != nil {
 			return entity.CrossChainAddress{}, false, errors.Errorf("failed to check if valset header is committed at epoch %d: %w", epoch, err)
 		}

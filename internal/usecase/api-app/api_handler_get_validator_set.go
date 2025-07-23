@@ -13,7 +13,7 @@ import (
 )
 
 func (h *handler) GetValidatorSetGet(ctx context.Context, params api.GetValidatorSetGetParams) (*api.ValidatorSet, error) {
-	latestEpoch, err := h.cfg.EVMClient.GetCurrentEpoch(ctx)
+	latestEpoch, err := h.cfg.EvmClient.GetCurrentEpoch(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -32,11 +32,11 @@ func (h *handler) GetValidatorSetGet(ctx context.Context, params api.GetValidato
 	// if error it means that epoch is not derived / committed yet
 	// so we need to derive it
 	if err != nil {
-		epochStart, err := h.cfg.EVMClient.GetEpochStart(ctx, epochRequested)
+		epochStart, err := h.cfg.EvmClient.GetEpochStart(ctx, epochRequested)
 		if err != nil {
 			return nil, err
 		}
-		config, err := h.cfg.EVMClient.GetConfig(ctx, epochRequested)
+		config, err := h.cfg.EvmClient.GetConfig(ctx, epochRequested)
 		if err != nil {
 			return nil, err
 		}

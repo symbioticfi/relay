@@ -57,7 +57,7 @@ type Client struct {
 	metrics metrics
 }
 
-func NewEVMClient(ctx context.Context, cfg Config) (*Client, error) {
+func NewEvmClient(ctx context.Context, cfg Config) (*Client, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, errors.Errorf("failed to validate config: %w", err)
 	}

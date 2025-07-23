@@ -28,7 +28,7 @@ var infoCmd = &cobra.Command{
 			return err
 		}
 
-		client, err := evm.NewEVMClient(ctx, evm.Config{
+		evmClient, err := evm.NewEvmClient(ctx, evm.Config{
 			ChainURLs: globalFlags.Chains,
 			DriverAddress: entity.CrossChainAddress{
 				ChainId: globalFlags.DriverChainId,
@@ -50,28 +50,28 @@ var infoCmd = &cobra.Command{
 		}
 
 		if infoFlags.Epoch == 0 {
-			infoFlags.Epoch, err = client.GetCurrentEpoch(ctx)
+			infoFlags.Epoch, err = evmClient.GetCurrentEpoch(ctx)
 			if err != nil {
 				return errors.Errorf("failed to get current epoch: %w", err)
 			}
 		}
 
-		captureTimestamp, err := client.GetEpochStart(ctx, infoFlags.Epoch)
+		captureTimestamp, err := evmClient.GetEpochStart(ctx, infoFlags.Epoch)
 		if err != nil {
 			return errors.Errorf("failed to get capture timestamp: %w", err)
 		}
 
-		networkConfig, err := client.GetConfig(ctx, captureTimestamp)
+		networkConfig, err := evmClient.GetConfig(ctx, captureTimestamp)
 		if err != nil {
 			return errors.Errorf("failed to get config: %w", err)
 		}
 
-		epoch, err := client.GetLastCommittedHeaderEpoch(ctx, networkConfig.Replicas[0])
+		epoch, err := evmClient.GetLastCommittedHeaderEpoch(ctx, networkConfig.Replicas[0])
 		if err != nil {
 			return errors.Errorf("failed to get valset header: %w", err)
 		}
 
-		deriver, err := valsetDeriver.NewDeriver(client)
+		deriver, err := valsetDeriver.NewDeriver(evmClient)
 		if err != nil {
 			return errors.Errorf("failed to create valset deriver: %w", err)
 		}

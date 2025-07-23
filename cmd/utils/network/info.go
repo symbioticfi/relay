@@ -27,7 +27,7 @@ var infoCmd = &cobra.Command{
 			return err
 		}
 
-		client, err := evm.NewEVMClient(ctx, evm.Config{
+		evmClient, err := evm.NewEvmClient(ctx, evm.Config{
 			ChainURLs: globalFlags.Chains,
 			DriverAddress: entity.CrossChainAddress{
 				ChainId: globalFlags.DriverChainId,
@@ -44,25 +44,25 @@ var infoCmd = &cobra.Command{
 		if err != nil {
 			return errors.Errorf("Failed to get evm client: %v", err)
 		}
-		deriver, err := valsetDeriver.NewDeriver(client)
+		deriver, err := valsetDeriver.NewDeriver(evmClient)
 		if err != nil {
 			return errors.Errorf("Failed to create deriver: %v", err)
 		}
 
 		epoch := globalFlags.Epoch
 		if globalFlags.Epoch == 0 {
-			epoch, err = client.GetCurrentEpoch(ctx)
+			epoch, err = evmClient.GetCurrentEpoch(ctx)
 			if err != nil {
 				return errors.Errorf("Failed to get current epoch: %w", err)
 			}
 		}
 
-		captureTimestamp, err := client.GetEpochStart(ctx, epoch)
+		captureTimestamp, err := evmClient.GetEpochStart(ctx, epoch)
 		if err != nil {
 			return errors.Errorf("Failed to get capture timestamp: %w", err)
 		}
 
-		networkConfig, err := client.GetConfig(ctx, captureTimestamp)
+		networkConfig, err := evmClient.GetConfig(ctx, captureTimestamp)
 		if err != nil {
 			return errors.Errorf("Failed to get config: %w", err)
 		}
@@ -72,7 +72,7 @@ var infoCmd = &cobra.Command{
 			return errors.Errorf("Failed to get valset header: %w", err)
 		}
 
-		epochDuration, err := client.GetEpochDuration(ctx, epoch)
+		epochDuration, err := evmClient.GetEpochDuration(ctx, epoch)
 		if err != nil {
 			return errors.Errorf("Failed to get epoch duration: %w", err)
 		}
@@ -111,12 +111,12 @@ var infoCmd = &cobra.Command{
 			isCommitted := make([]bool, len(networkConfig.Replicas))
 			headerHashes := make([]common.Hash, len(networkConfig.Replicas))
 			for i, replica := range networkConfig.Replicas {
-				isCommitted[i], err = client.IsValsetHeaderCommittedAt(ctx, replica, epoch)
+				isCommitted[i], err = evmClient.IsValsetHeaderCommittedAt(ctx, replica, epoch)
 				if err != nil {
 					return errors.Errorf("Failed to get latest epoch: %w", err)
 				}
 				if isCommitted[i] {
-					headerHashes[i], err = client.GetHeaderHashAt(ctx, replica, epoch)
+					headerHashes[i], err = evmClient.GetHeaderHashAt(ctx, replica, epoch)
 					if err != nil {
 						return errors.Errorf("Failed to get header hash: %w", err)
 					}

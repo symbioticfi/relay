@@ -12,7 +12,7 @@ import (
 	"github.com/symbioticfi/relay/pkg/log"
 )
 
-type eth interface {
+type evmClient interface {
 	GetCurrentEpoch(ctx context.Context) (uint64, error)
 	GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (uint64, error)
 	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
@@ -30,7 +30,7 @@ type deriver interface {
 }
 
 type Config struct {
-	Eth             eth           `validate:"required"`
+	EvmClient       evmClient     `validate:"required"`
 	Repo            repo          `validate:"required"`
 	Deriver         deriver       `validate:"required"`
 	PollingInterval time.Duration `validate:"required,gt=0"`
@@ -83,15 +83,15 @@ func (s *Service) Start(ctx context.Context) error {
 func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 	slog.DebugContext(ctx, "Checking for missing epochs")
 
-	currentEpoch, err := s.cfg.Eth.GetCurrentEpoch(ctx)
+	currentEpoch, err := s.cfg.EvmClient.GetCurrentEpoch(ctx)
 	if err != nil {
 		return errors.Errorf("failed to get current epoch: %w", err)
 	}
-	currentEpochStart, err := s.cfg.Eth.GetEpochStart(ctx, currentEpoch)
+	currentEpochStart, err := s.cfg.EvmClient.GetEpochStart(ctx, currentEpoch)
 	if err != nil {
 		return errors.Errorf("failed to get current epoch start: %w", err)
 	}
-	config, err := s.cfg.Eth.GetConfig(ctx, currentEpochStart)
+	config, err := s.cfg.EvmClient.GetConfig(ctx, currentEpochStart)
 	if err != nil {
 		return errors.Errorf("failed to get network config for current epoch: %w", err)
 	}
@@ -116,12 +116,12 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 	}
 
 	for latestCommitedOnchainEpoch >= nextEpoch {
-		epochStart, err := s.cfg.Eth.GetEpochStart(ctx, nextEpoch)
+		epochStart, err := s.cfg.EvmClient.GetEpochStart(ctx, nextEpoch)
 		if err != nil {
 			return errors.Errorf("failed to get epoch start for epoch %d: %w", nextEpoch, err)
 		}
 
-		nextEpochConfig, err := s.cfg.Eth.GetConfig(ctx, epochStart)
+		nextEpochConfig, err := s.cfg.EvmClient.GetConfig(ctx, epochStart)
 		if err != nil {
 			return errors.Errorf("failed to get network config for epoch %d: %w", nextEpoch, err)
 		}
@@ -154,7 +154,7 @@ func (s *Service) getLastCommittedHeaderEpoch(ctx context.Context, config entity
 	maxEpoch := uint64(0)
 
 	for _, addr := range config.Replicas {
-		epoch, err := s.cfg.Eth.GetLastCommittedHeaderEpoch(ctx, addr)
+		epoch, err := s.cfg.EvmClient.GetLastCommittedHeaderEpoch(ctx, addr)
 		if err != nil {
 			return 0, errors.Errorf("failed to get last committed header epoch for address %s: %w", addr.Address.Hex(), err)
 		}

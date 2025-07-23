@@ -30,7 +30,7 @@ var registerCmd = &cobra.Command{
 			return err
 		}
 
-		client, err := evm.NewEVMClient(ctx, evm.Config{
+		evmClient, err := evm.NewEvmClient(ctx, evm.Config{
 			ChainURLs: globalFlags.Chains,
 			DriverAddress: entity.CrossChainAddress{
 				ChainId: globalFlags.DriverChainId,
@@ -46,7 +46,7 @@ var registerCmd = &cobra.Command{
 
 		// duplicate from genesis
 		privateKeyInput := pterm.DefaultInteractiveTextInput.WithMask("*")
-		for _, chainId := range client.GetChains() {
+		for _, chainId := range evmClient.GetChains() {
 			secret, ok := registerFlags.Secrets.Secrets[chainId]
 			if !ok {
 				secret, _ = privateKeyInput.Show("Enter private key for chain with ID: " + strconv.Itoa(int(chainId)))
@@ -66,12 +66,12 @@ var registerCmd = &cobra.Command{
 			}
 		}
 
-		for _, chainId := range client.GetChains() {
+		for _, chainId := range evmClient.GetChains() {
 			if _, ok := registerFlags.Secrets.Secrets[chainId]; !ok {
 				return fmt.Errorf("operator registry in chain %d does not exist", chainId)
 			}
 
-			txResult, err := client.RegisterOperator(ctx, operatorRegistries[chainId])
+			txResult, err := evmClient.RegisterOperator(ctx, operatorRegistries[chainId])
 			if err != nil {
 				return errors.Errorf("failed to register operator: %w", err)
 			}
