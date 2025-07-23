@@ -8,7 +8,7 @@ This service facilitates efficient signature collection and aggregation in a dec
 
 ## Repo init
 
-This repo uses submodule with git-lfs for circuits testing keys, so make sure to install it first:
+This repository uses a Git submodule with Git LFS to manage circuit testing keys. If you plan to use zk verification, make sure to install Git LFS first:
 
 ```bash
 brew install git-lfs
