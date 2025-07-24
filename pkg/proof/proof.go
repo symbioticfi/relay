@@ -30,27 +30,19 @@ var (
 	MaxValidators = []int{10}
 )
 
-func InitCircuitsDir(newCircuitsDir string) {
-	circuitsDir = newCircuitsDir
-}
-
-var (
-	circuitsDir = "circuits"
-)
-
-func r1csPathTmp(suffix string) string {
+func r1csPathTmp(circuitsDir, suffix string) string {
 	return fmt.Sprintf(circuitsDir+"/circuit_%s.r1cs", suffix)
 }
 
-func pkPathTmp(suffix string) string {
+func pkPathTmp(circuitsDir, suffix string) string {
 	return fmt.Sprintf(circuitsDir+"/circuit_%s.pk", suffix)
 }
 
-func vkPathTmp(suffix string) string {
+func vkPathTmp(circuitsDir, suffix string) string {
 	return fmt.Sprintf(circuitsDir+"/circuit_%s.vk", suffix)
 }
 
-func solPathTmp(suffix string) string {
+func solPathTmp(circuitsDir, suffix string) string {
 	return fmt.Sprintf(circuitsDir+"/Verifier_%s.sol", suffix)
 }
 
@@ -70,25 +62,31 @@ type ValidatorData struct {
 }
 
 type ZkProver struct {
-	cs map[int]constraint.ConstraintSystem
-	pk map[int]groth16.ProvingKey
-	vk map[int]groth16.VerifyingKey
+	cs          map[int]constraint.ConstraintSystem
+	pk          map[int]groth16.ProvingKey
+	vk          map[int]groth16.VerifyingKey
+	circuitsDir string
 }
 
-func NewZkProver() *ZkProver {
+func NewZkProver(circuitsDir string) *ZkProver {
 	p := ZkProver{
-		cs: make(map[int]constraint.ConstraintSystem),
-		pk: make(map[int]groth16.ProvingKey),
-		vk: make(map[int]groth16.VerifyingKey),
+		cs:          make(map[int]constraint.ConstraintSystem),
+		pk:          make(map[int]groth16.ProvingKey),
+		vk:          make(map[int]groth16.VerifyingKey),
+		circuitsDir: circuitsDir,
 	}
-	p.init()
+	if circuitsDir != "" {
+		p.init()
+	} else {
+		slog.Warn("ZK prover circuits directory is not set, cannot run zk verify/proofs")
+	}
 	return &p
 }
 
 func (p *ZkProver) init() {
 	slog.Warn("ZK prover initialization started (might take a few seconds)")
 	for _, size := range MaxValidators {
-		cs, pk, vk, err := loadOrInit(size)
+		cs, pk, vk, err := loadOrInit(p.circuitsDir, size)
 		if err != nil {
 			panic(err)
 		}
@@ -100,6 +98,9 @@ func (p *ZkProver) init() {
 }
 
 func (p *ZkProver) Verify(valsetLen int, publicInputHash common.Hash, proofBytes []byte) (bool, error) {
+	if p.circuitsDir == "" {
+		return false, errors.New("ZK prover circuits directory is not set, cannot run zk verify")
+	}
 	valsetLen = getOptimalN(valsetLen)
 	assignment := Circuit{}
 	publicInputHashInt := new(big.Int).SetBytes(publicInputHash[:])
@@ -135,6 +136,9 @@ func (p *ZkProver) Verify(valsetLen int, publicInputHash common.Hash, proofBytes
 }
 
 func (p *ZkProver) Prove(proveInput ProveInput) (ProofData, error) {
+	if p.circuitsDir == "" {
+		return ProofData{}, errors.New("ZK prover circuits directory is not set, cannot run zk proofs")
+	}
 	pk := p.pk[len(proveInput.ValidatorData)]
 	vk := p.vk[len(proveInput.ValidatorData)]
 	r1cs, ok := p.cs[len(proveInput.ValidatorData)]
@@ -218,12 +222,12 @@ func (p *ZkProver) Prove(proveInput ProveInput) (ProofData, error) {
 	}, nil
 }
 
-func loadOrInit(valsetLen int) (constraint.ConstraintSystem, groth16.ProvingKey, groth16.VerifyingKey, error) {
+func loadOrInit(circuitsDir string, valsetLen int) (constraint.ConstraintSystem, groth16.ProvingKey, groth16.VerifyingKey, error) {
 	suffix := strconv.Itoa(valsetLen)
-	r1csP := r1csPathTmp(suffix)
-	pkP := pkPathTmp(suffix)
-	vkP := vkPathTmp(suffix)
-	solP := solPathTmp(suffix)
+	r1csP := r1csPathTmp(circuitsDir, suffix)
+	pkP := pkPathTmp(circuitsDir, suffix)
+	vkP := vkPathTmp(circuitsDir, suffix)
+	solP := solPathTmp(circuitsDir, suffix)
 
 	if exists(r1csP) && exists(pkP) && exists(vkP) && exists(solP) {
 		r1csCS := groth16.NewCS(bn254.ID)
@@ -265,10 +269,10 @@ func loadOrInit(valsetLen int) (constraint.ConstraintSystem, groth16.ProvingKey,
 
 	for _, m := range MaxValidators {
 		suf := strconv.Itoa(m)
-		r1csFile := r1csPathTmp(suf)
-		pkFile := pkPathTmp(suf)
-		vkFile := vkPathTmp(suf)
-		solFile := solPathTmp(suf)
+		r1csFile := r1csPathTmp(circuitsDir, suf)
+		pkFile := pkPathTmp(circuitsDir, suf)
+		vkFile := vkPathTmp(circuitsDir, suf)
+		solFile := solPathTmp(circuitsDir, suf)
 
 		if exists(r1csFile) && exists(pkFile) && exists(vkFile) && exists(solFile) {
 			continue
@@ -307,7 +311,7 @@ func loadOrInit(valsetLen int) (constraint.ConstraintSystem, groth16.ProvingKey,
 		}
 	}
 
-	return loadOrInit(valsetLen)
+	return loadOrInit(circuitsDir, valsetLen)
 }
 
 func exists(path string) bool {

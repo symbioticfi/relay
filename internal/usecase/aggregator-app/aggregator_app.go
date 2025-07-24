@@ -3,17 +3,19 @@ package aggregator_app
 import (
 	"context"
 	"log/slog"
-	"middleware-offchain/core/usecase/crypto"
 	"time"
+
+	"github.com/symbioticfi/relay/core/usecase/aggregator"
+	"github.com/symbioticfi/relay/core/usecase/crypto"
 
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/go-errors/errors"
 	validate "github.com/go-playground/validator/v10"
 
-	"middleware-offchain/core/entity"
-	p2pEntity "middleware-offchain/internal/entity"
-	"middleware-offchain/pkg/log"
+	"github.com/symbioticfi/relay/core/entity"
+	p2pEntity "github.com/symbioticfi/relay/internal/entity"
+	"github.com/symbioticfi/relay/pkg/log"
 )
 
 //go:generate mockgen -source=aggregator_app.go -destination=mocks/aggregator_app.go -package=mocks
@@ -22,26 +24,24 @@ type repository interface {
 	SaveSignature(ctx context.Context, reqHash common.Hash, key []byte, sig entity.SignatureExtended) error
 	GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error)
 	GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error)
+	UpdateSignatureStat(_ context.Context, reqHash common.Hash, s entity.SignatureStatStage, t time.Time) (entity.SignatureStat, error)
 }
 
 type p2pClient interface {
 	BroadcastSignatureAggregatedMessage(ctx context.Context, msg entity.AggregatedSignatureMessage) error
 }
 
-type aggregator interface {
-	Aggregate(
-		valset entity.ValidatorSet,
-		keyTag entity.KeyTag,
-		verificationType entity.VerificationType,
-		messageHash []byte,
-		signatures []entity.SignatureExtended,
-	) (entity.AggregationProof, error)
+type metrics interface {
+	ObserveOnlyAggregateDuration(d time.Duration)
+	ObserveAppAggregateDuration(d time.Duration)
+	ObserveAggCompleted(stat entity.SignatureStat)
 }
 
 type Config struct {
-	Repo       repository `validate:"required"`
-	P2PClient  p2pClient  `validate:"required"`
-	Aggregator aggregator `validate:"required"`
+	Repo       repository            `validate:"required"`
+	P2PClient  p2pClient             `validate:"required"`
+	Aggregator aggregator.Aggregator `validate:"required"`
+	Metrics    metrics               `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -72,17 +72,18 @@ func NewAggregatorApp(cfg Config) (*AggregatorApp, error) {
 
 func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2pMsg p2pEntity.P2PMessage[entity.SignatureMessage]) error {
 	ctx = log.WithComponent(ctx, "aggregator")
+	appAggregationStart := time.Now()
 
 	msg := p2pMsg.Message
 
-	slog.DebugContext(ctx, "received signature hash generated message", "message", msg)
+	slog.DebugContext(ctx, "Received signature hash generated message", "message", msg)
 
 	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
 	if err != nil {
 		return errors.Errorf("failed to get validator set: %w", err)
 	}
 
-	publicKey, err := crypto.NewPublicKey(msg.KeyTag, msg.Signature.PublicKey)
+	publicKey, err := crypto.NewPublicKey(msg.KeyTag.Type(), msg.Signature.PublicKey)
 	if err != nil {
 		return errors.Errorf("failed to get public key: %w", err)
 	}
@@ -101,18 +102,18 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 		return errors.Errorf("failed to save signature: %w", err)
 	}
 
-	slog.DebugContext(ctx, "found validator", "validator", validator)
+	slog.DebugContext(ctx, "Found validator", "validator", validator)
 
 	current, err := s.hashStore.PutHash(msg.Signature, validator)
 	if err != nil {
 		return errors.Errorf("failed to put signature: %w", err)
 	}
 
-	slog.DebugContext(ctx, "total voting power", "currentVotingPower", current.VotingPower.String())
+	slog.DebugContext(ctx, "Total voting power", "currentVotingPower", current.VotingPower.String())
 
 	thresholdReached := current.VotingPower.Cmp(validatorSet.QuorumThreshold.Int) >= 0
 	if !thresholdReached {
-		slog.InfoContext(ctx, "quorum not reached yet",
+		slog.InfoContext(ctx, "Quorum not reached yet",
 			"currentVotingPower", current.VotingPower,
 			"quorumThreshold", validatorSet.QuorumThreshold,
 			"totalActiveVotingPower", validatorSet.GetTotalActiveVotingPower(),
@@ -120,14 +121,18 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 		return nil
 	}
 
-	slog.InfoContext(ctx, "quorum reached, aggregating signatures and creating proof",
+	slog.InfoContext(ctx, "Quorum reached, aggregating signatures and creating proof",
 		"currentVotingPower", current.VotingPower,
 		"quorumThreshold", validatorSet.QuorumThreshold,
 		"totalActiveVotingPower", validatorSet.GetTotalActiveVotingPower(),
 	)
 
+	if _, err := s.cfg.Repo.UpdateSignatureStat(ctx, msg.RequestHash, entity.SignatureStatStageAggQuorumReached, time.Now()); err != nil {
+		slog.WarnContext(ctx, "Failed to update signature stat: %s", "error", err)
+	}
+
 	sigs, err := s.cfg.Repo.GetAllSignatures(ctx, msg.RequestHash)
-	slog.DebugContext(ctx, "total received signatures", "sigs", len(sigs))
+	slog.DebugContext(ctx, "Total received signatures", "sigs", len(sigs))
 	if err != nil {
 		return errors.Errorf("failed to get signature aggregated message: %w", err)
 	}
@@ -138,20 +143,21 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 		return errors.Errorf("failed to get network config: %w", err)
 	}
 
-	slog.DebugContext(ctx, "received network config", "networkConfig", networkConfig)
+	slog.DebugContext(ctx, "Received network config", "networkConfig", networkConfig)
 
+	onlyAggregateStart := time.Now()
 	proofData, err := s.cfg.Aggregator.Aggregate(
 		validatorSet,
 		msg.KeyTag,
-		networkConfig.VerificationType,
 		msg.Signature.MessageHash,
 		sigs,
 	)
 	if err != nil {
 		return errors.Errorf("failed to prove: %w", err)
 	}
+	s.cfg.Metrics.ObserveOnlyAggregateDuration(time.Since(onlyAggregateStart))
 
-	slog.InfoContext(ctx, "proof created, trying to send aggregated signature message",
+	slog.InfoContext(ctx, "Proof created, trying to send aggregated signature message",
 		"duration", time.Since(start).String(),
 	)
 	err = s.cfg.P2PClient.BroadcastSignatureAggregatedMessage(ctx, entity.AggregatedSignatureMessage{
@@ -164,7 +170,16 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 		return errors.Errorf("failed to broadcast signature aggregated message: %w", err)
 	}
 
-	slog.InfoContext(ctx, "proof sent via p2p")
+	stat, err := s.cfg.Repo.UpdateSignatureStat(ctx, msg.RequestHash, entity.SignatureStatStageAggCompleted, time.Now())
+	if err != nil {
+		slog.WarnContext(ctx, "Failed to update signature stat: %s", "error", err)
+	}
+
+	s.cfg.Metrics.ObserveAppAggregateDuration(time.Since(appAggregationStart))
+	s.cfg.Metrics.ObserveAggCompleted(stat)
+
+	slog.InfoContext(ctx, "Proof sent via p2p",
+		"totalAggDuration", time.Since(appAggregationStart).String())
 
 	return nil
 }

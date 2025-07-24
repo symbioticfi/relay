@@ -6,16 +6,16 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"middleware-offchain/internal/gen/api"
+	"github.com/symbioticfi/relay/internal/gen/api"
 )
 
 func (h *handler) GetCurrentEpochGet(ctx context.Context) (*api.GetCurrentEpochGetOK, error) {
-	currentEpoch, err := h.cfg.EVMClient.GetCurrentEpoch(ctx)
+	currentEpoch, err := h.cfg.EvmClient.GetCurrentEpoch(ctx)
 	if err != nil {
 		return nil, errors.Errorf("failed to get current epoch: %w", err)
 	}
 
-	epochStart, err := h.cfg.EVMClient.GetEpochStart(ctx, currentEpoch)
+	epochStart, err := h.cfg.EvmClient.GetEpochStart(ctx, currentEpoch)
 	if err != nil {
 		return nil, errors.Errorf("failed to get epoch start: %w", err)
 	}

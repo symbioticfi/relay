@@ -16,6 +16,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Private Git Repo Access
+        run: |
+          git config --global url.https://x-oauth-basic:${{ secrets.GITHUB_TOKEN }}@github.com/.insteadOf https://github.com/
+          echo "GOPRIVATE=github.com/symbioticfi/relay"  >> $GITHUB_ENV
+          
       - name: Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # pin@5.5.0
         with:
@@ -39,7 +44,7 @@ jobs:
           fi
 
       - name: Comment PR with coverage
-        if: github.event_name == 'pull_request'
+        if: ${{ github.event_name == 'pull_request' && github.actor != 'dependabot[bot]' }}
         uses: mshick/add-pr-comment@b8f338c590a895d50bcbfa6c5859251edc8952fc # pin@v2.8.2
         with:
           message: |

@@ -89,24 +89,31 @@ func (circuit *Circuit) Define(api frontend.API) error {
 	for i := range circuit.ValidatorData {
 		hashAffineG1(&mimcApi, &circuit.ValidatorData[i].Key)
 		mimcApi.Write(circuit.ValidatorData[i].VotingPower)
-		valsetHashTemp := mimcApi.Sum()
 
+		isFillerValidatorData := api.And(fieldFpApi.IsZero(&circuit.ValidatorData[i].Key.X), fieldFpApi.IsZero(&circuit.ValidatorData[i].Key.Y))
+
+		// hash data if VALIDATOR is not a filler
 		valsetHash = api.Select(
-			api.And(fieldFpApi.IsZero(&circuit.ValidatorData[i].Key.X), fieldFpApi.IsZero(&circuit.ValidatorData[i].Key.Y)),
+			isFillerValidatorData,
 			valsetHash,
-			valsetHashTemp,
+			mimcApi.Sum(),
 		)
 
-		// get power if NON-SIGNER otherwise 0
-		pow := api.Select(circuit.ValidatorData[i].IsNonSigner, frontend.Variable(0), circuit.ValidatorData[i].VotingPower)
-		signersAggVotingPower = api.Add(signersAggVotingPower, pow)
+		isFillerOrNonSigner := api.Or(isFillerValidatorData, circuit.ValidatorData[i].IsNonSigner)
 
-		// get key if SIGNER otherwise zero point
-		point := curveApi.Select(api.IsZero(circuit.ValidatorData[i].IsNonSigner), &circuit.ValidatorData[i].Key, &sw_bn254.G1Affine{
-			X: emulated.ValueOf[emulated.BN254Fp](0),
-			Y: emulated.ValueOf[emulated.BN254Fp](0),
-		})
-		signersAggKey = curveApi.AddUnified(signersAggKey, point)
+		// add power if VALIDATOR is not a filler and SIGNER
+		signersAggVotingPower = api.Select(
+			isFillerOrNonSigner,
+			signersAggVotingPower,
+			api.Add(signersAggVotingPower, circuit.ValidatorData[i].VotingPower),
+		)
+
+		// aggregate key if VALIDATOR is not a filler and SIGNER
+		signersAggKey = curveApi.Select(
+			isFillerOrNonSigner,
+			signersAggKey,
+			curveApi.AddUnified(signersAggKey, &circuit.ValidatorData[i].Key),
+		)
 	}
 
 	// compare with public inputs
@@ -114,24 +121,21 @@ func (circuit *Circuit) Define(api frontend.API) error {
 
 	// --------------------------------------- Prove Input consistency ---------------------------------------
 
-	// valset consistency checked against InputHash which is Hash{valset-hash|non-signers-vp|message}
+	// valset consistency checked against InputHash which is Hash{valset-hash|signers-vp|message}
 	hashBytes := variableToBytes(api, u64Api, valsetHash)
 
-	api.Println("HashBytes:", hashBytes)
 	keccak256Api.Write(hashBytes)
 	aggVotingPowerBytes := variableToBytes(api, u64Api, circuit.SignersAggVotingPower)
 
-	api.Println("aggVotingPowerBytes:", aggVotingPowerBytes)
 	keccak256Api.Write(aggVotingPowerBytes)
 	messageBytes := keyToBytes(u64Api, &circuit.Message)
 
-	api.Println("MessageBytes:", messageBytes)
 	keccak256Api.Write(messageBytes)
 	inputDataHash := keccak256Api.Sum()
-	api.Println("InputDataHash:", inputDataHash)
+
 	inputHashBytes := variableToBytes(api, u64Api, circuit.InputHash)
 
-	inputDataHash[0] = u64Api.ByteValueOf(u64Api.ToValue(u64Api.And(u64Api.ValueOf(inputDataHash[0].Val), uints.NewU64(0x1f)))) // zero two first bits
+	inputDataHash[0] = u64Api.ByteValueOf(u64Api.ToValue(u64Api.And(u64Api.ValueOf(inputDataHash[0].Val), uints.NewU64(0x1f)))) // zero three first bits
 	for i := range inputHashBytes {
 		u64Api.ByteAssertEq(inputDataHash[i], inputHashBytes[i])
 	}
@@ -196,17 +200,18 @@ func setCircuitData(circuit *Circuit, proveInput ProveInput) {
 	inputHashBytes = append(inputHashBytes, messageBytes[:]...)
 	inputHash := crypto.Keccak256(inputHashBytes)
 
-	slog.Debug("signersAggVotingPower", "vp", signersAggVotingPower.String())
-	slog.Debug("signed message", "message", proveInput.MessageG1.String())
-	slog.Debug("signed message", "message.X", proveInput.MessageG1.X.String())
-	slog.Debug("signed message", "message.Y", proveInput.MessageG1.Y.String())
-	slog.Debug("mimc hash", "hash", hex.EncodeToString(valsetHash))
-
 	inputHashInt := new(big.Int).SetBytes(inputHash)
 	mask, _ := big.NewInt(0).SetString("1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)
 	inputHashInt.And(inputHashInt, mask)
 
 	circuit.InputHash = inputHashInt
 
-	slog.Debug("[Prove] input hash", "hash", hex.EncodeToString(inputHashInt.Bytes()))
+	slog.Debug("[Prove] input hash",
+		"hash", hex.EncodeToString(inputHashInt.Bytes()),
+		"signersAggVotingPower", signersAggVotingPower.String(),
+		"signed message", proveInput.MessageG1.String(),
+		"signed message.X", proveInput.MessageG1.X.String(),
+		"signed message.Y", proveInput.MessageG1.Y.String(),
+		"MiMC hash", hex.EncodeToString(valsetHash),
+	)
 }

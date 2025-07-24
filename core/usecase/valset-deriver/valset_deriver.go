@@ -12,13 +12,15 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
 
-	"middleware-offchain/core/entity"
+	"github.com/symbioticfi/relay/core/entity"
 )
 
 const valsetVersion = 1
 
+var emptyValsetHeaderHash = common.HexToHash("0x868e09d528a16744c1f38ea3c10cc2251e01a456434f91172247695087d129b7")
+
 //go:generate mockgen -source=valset_deriver.go -destination=mocks/deriver.go -package=mocks
-type ethClient interface {
+type evmClient interface {
 	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
 	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
 	GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorVotingPower, error)
@@ -26,7 +28,7 @@ type ethClient interface {
 	GetEip712Domain(ctx context.Context, addr entity.CrossChainAddress) (entity.Eip712Domain, error)
 	GetCurrentEpoch(ctx context.Context) (uint64, error)
 	GetSubnetwork(ctx context.Context) (common.Hash, error)
-	GetNetworkAddress(ctx context.Context) (*common.Address, error)
+	GetNetworkAddress(ctx context.Context) (common.Address, error)
 	GetHeaderHash(ctx context.Context, addr entity.CrossChainAddress) (common.Hash, error)
 	IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (bool, error)
 	GetPreviousHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error)
@@ -36,34 +38,34 @@ type ethClient interface {
 
 // Deriver coordinates the ETH services
 type Deriver struct {
-	ethClient ethClient
+	evmClient evmClient
 }
 
 // NewDeriver creates a new valset deriver
-func NewDeriver(ethClient ethClient) (*Deriver, error) {
+func NewDeriver(evmClient evmClient) (*Deriver, error) {
 	return &Deriver{
-		ethClient: ethClient,
+		evmClient: evmClient,
 	}, nil
 }
 
 func (v *Deriver) GetNetworkData(ctx context.Context, addr entity.CrossChainAddress) (entity.NetworkData, error) {
-	address, err := v.ethClient.GetNetworkAddress(ctx)
+	address, err := v.evmClient.GetNetworkAddress(ctx)
 	if err != nil {
 		return entity.NetworkData{}, errors.Errorf("failed to get network address: %w", err)
 	}
 
-	subnetwork, err := v.ethClient.GetSubnetwork(ctx)
+	subnetwork, err := v.evmClient.GetSubnetwork(ctx)
 	if err != nil {
 		return entity.NetworkData{}, errors.Errorf("failed to get subnetwork: %w", err)
 	}
 
-	eip712Data, err := v.ethClient.GetEip712Domain(ctx, addr)
+	eip712Data, err := v.evmClient.GetEip712Domain(ctx, addr)
 	if err != nil {
 		return entity.NetworkData{}, errors.Errorf("failed to get eip712 domain: %w", err)
 	}
 
 	return entity.NetworkData{
-		Address:    *address,
+		Address:    address,
 		Subnetwork: subnetwork,
 		Eip712Data: eip712Data,
 	}, nil
@@ -75,7 +77,7 @@ type dtoOperatorVotingPower struct {
 }
 
 func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error) {
-	timestamp, err := v.ethClient.GetEpochStart(ctx, epoch)
+	timestamp, err := v.evmClient.GetEpochStart(ctx, epoch)
 	if err != nil {
 		return entity.ValidatorSet{}, errors.Errorf("failed to get epoch start timestamp: %w", err)
 	}
@@ -84,7 +86,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 	// Get voting powers from all voting power providers
 	allVotingPowers := make([]dtoOperatorVotingPower, len(config.VotingPowerProviders))
 	for i, provider := range config.VotingPowerProviders {
-		votingPowers, err := v.ethClient.GetVotingPowers(ctx, provider, timestamp)
+		votingPowers, err := v.evmClient.GetVotingPowers(ctx, provider, timestamp)
 		if err != nil {
 			return entity.ValidatorSet{}, errors.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
 		}
@@ -98,7 +100,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 	}
 
 	// Get keys from the keys provider
-	keys, err := v.ethClient.GetKeys(ctx, config.KeysProvider, timestamp)
+	keys, err := v.evmClient.GetKeys(ctx, config.KeysProvider, timestamp)
 	if err != nil {
 		return entity.ValidatorSet{}, errors.Errorf("failed to get keys: %w", err)
 	}
@@ -113,11 +115,6 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 		return entity.ValidatorSet{}, errors.Errorf("failed to calc quorum threshold: %w", err)
 	}
 
-	committedAddr, isValsetCommitted, err := v.isValsetHeaderCommitted(ctx, config, epoch)
-	if err != nil {
-		return entity.ValidatorSet{}, errors.Errorf("failed to check if validator committed at epoch %d: %w", epoch, err)
-	}
-
 	valset := entity.ValidatorSet{
 		Version:          valsetVersion,
 		RequiredKeyTag:   config.RequiredHeaderKeyTag,
@@ -127,62 +124,75 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 		Validators:       validators,
 	}
 
-	if isValsetCommitted {
-		previousHeaderHash, err := v.ethClient.GetPreviousHeaderHashAt(ctx, committedAddr, epoch)
-		if err != nil {
-			return entity.ValidatorSet{}, errors.Errorf("failed to get previous header hash: %w", err)
-		}
-		valset.PreviousHeaderHash = previousHeaderHash
-
-		// valset integrity check
-		committedHash, err := v.ethClient.GetHeaderHashAt(ctx, committedAddr, epoch)
-		if err != nil {
-			return entity.ValidatorSet{}, errors.Errorf("failed to get header hash: %w", err)
-		}
-		valsetHeader, err := valset.GetHeader()
-		if err != nil {
-			return entity.ValidatorSet{}, errors.Errorf("failed to get header hash: %w", err)
-		}
-		calculatedHash, err := valsetHeader.Hash()
-		if err != nil {
-			return entity.ValidatorSet{}, errors.Errorf("failed to get header hash: %w", err)
-		}
-
-		if !bytes.Equal(committedHash[:], calculatedHash[:]) {
-			slog.DebugContext(ctx, "Validator set integrity check failed", "committed hash", committedHash, "calculated hash", calculatedHash)
-			return entity.ValidatorSet{}, errors.Errorf("validator set hash mistmach at epoch %d", epoch)
-		}
-		slog.DebugContext(ctx, "Validator set integrity check passed", "hash", committedHash)
-
-		valset.Status = entity.HeaderCommitted
-	} else {
-		lastCommittedAddr, latestCommittedEpoch, err := v.getLastCommittedHeaderEpoch(ctx, config)
-		if err != nil {
-			return entity.ValidatorSet{}, errors.Errorf("failed to get current valset epoch: %w", err)
-		}
-
-		if epoch < latestCommittedEpoch {
-			slog.DebugContext(ctx, "Header is not committed [missed header]", "epoch", epoch)
-			valset.Status = entity.HeaderMissed
-			// zero PreviousHeaderHash cos header is orphaned
-		} else {
-			slog.DebugContext(ctx, "Header is not committed [new header]", "epoch", epoch)
-			previousHeaderHash, err := v.ethClient.GetHeaderHash(ctx, lastCommittedAddr)
-			if err != nil {
-				return entity.ValidatorSet{}, errors.Errorf("failed to get latest header hash: %w", err)
-			}
-			// trying to link to latest committed header
-			valset.PreviousHeaderHash = previousHeaderHash
-			valset.Status = entity.HeaderPending
-		}
+	valset.Status, valset.PreviousHeaderHash, err = v.getStatusAndPreviousHash(ctx, epoch, config, valset)
+	if err != nil {
+		return entity.ValidatorSet{}, err
 	}
 
 	return valset, nil
 }
 
+func (v *Deriver) getStatusAndPreviousHash(ctx context.Context, epoch uint64, config entity.NetworkConfig, valset entity.ValidatorSet) (entity.ValidatorSetStatus, common.Hash, error) {
+	committedAddr, isValsetCommitted, err := v.isValsetHeaderCommitted(ctx, config, epoch)
+	if err != nil {
+		return 0, common.Hash{}, errors.Errorf("failed to check if validator committed at epoch %d: %w", epoch, err)
+	}
+
+	if isValsetCommitted {
+		previousHeaderHash, err := v.evmClient.GetPreviousHeaderHashAt(ctx, committedAddr, epoch)
+		if err != nil {
+			return 0, common.Hash{}, errors.Errorf("failed to get previous header hash: %w", err)
+		}
+		// valset integrity check
+		valset.PreviousHeaderHash = previousHeaderHash
+		committedHash, err := v.evmClient.GetHeaderHashAt(ctx, committedAddr, epoch)
+		if err != nil {
+			return 0, common.Hash{}, errors.Errorf("failed to get header hash: %w", err)
+		}
+		valsetHeader, err := valset.GetHeader()
+		if err != nil {
+			return 0, common.Hash{}, errors.Errorf("failed to get header hash: %w", err)
+		}
+		calculatedHash, err := valsetHeader.Hash()
+		if err != nil {
+			return 0, common.Hash{}, errors.Errorf("failed to get header hash: %w", err)
+		}
+
+		if !bytes.Equal(committedHash[:], calculatedHash[:]) {
+			slog.DebugContext(ctx, "Validator set integrity check failed", "committed hash", committedHash, "calculated hash", calculatedHash)
+			return 0, common.Hash{}, errors.Errorf("validator set hash mistmach at epoch %d", epoch)
+		}
+		slog.DebugContext(ctx, "Validator set integrity check passed", "hash", committedHash)
+
+		return entity.HeaderCommitted, previousHeaderHash, nil
+	}
+
+	// valset not committed
+
+	lastCommittedAddr, latestCommittedEpoch, err := v.GetLastCommittedHeaderEpoch(ctx, config)
+	if err != nil {
+		return 0, common.Hash{}, errors.Errorf("failed to get current valset epoch: %w", err)
+	}
+
+	if epoch < latestCommittedEpoch {
+		slog.DebugContext(ctx, "Header is not committed [missed header]", "epoch", epoch)
+		// zero PreviousHeaderHash cos header is orphaned
+		return entity.HeaderMissed, emptyValsetHeaderHash, nil
+	}
+
+	// trying to link to latest committed header
+	slog.DebugContext(ctx, "Header is not committed [new header]", "epoch", epoch)
+	previousHeaderHash, err := v.evmClient.GetHeaderHash(ctx, lastCommittedAddr)
+	if err != nil {
+		return 0, common.Hash{}, errors.Errorf("failed to get latest header hash: %w", err)
+	}
+
+	return entity.HeaderPending, previousHeaderHash, nil
+}
+
 func (v *Deriver) isValsetHeaderCommitted(ctx context.Context, config entity.NetworkConfig, epoch uint64) (entity.CrossChainAddress, bool, error) {
 	for _, addr := range config.Replicas {
-		isCommitted, err := v.ethClient.IsValsetHeaderCommittedAt(ctx, addr, epoch)
+		isCommitted, err := v.evmClient.IsValsetHeaderCommittedAt(ctx, addr, epoch)
 		if err != nil {
 			return entity.CrossChainAddress{}, false, errors.Errorf("failed to check if valset header is committed at epoch %d: %w", epoch, err)
 		}
@@ -193,17 +203,17 @@ func (v *Deriver) isValsetHeaderCommitted(ctx context.Context, config entity.Net
 	return entity.CrossChainAddress{}, false, nil
 }
 
-func (v *Deriver) getLastCommittedHeaderEpoch(ctx context.Context, config entity.NetworkConfig) (entity.CrossChainAddress, uint64, error) {
+func (v *Deriver) GetLastCommittedHeaderEpoch(ctx context.Context, config entity.NetworkConfig) (entity.CrossChainAddress, uint64, error) {
 	maxEpoch := uint64(0)
 	var maxEpochAddr entity.CrossChainAddress
 
 	for _, addr := range config.Replicas {
-		epoch, err := v.ethClient.GetLastCommittedHeaderEpoch(ctx, addr)
+		epoch, err := v.evmClient.GetLastCommittedHeaderEpoch(ctx, addr)
 		if err != nil {
 			return entity.CrossChainAddress{}, 0, errors.Errorf("failed to get last committed header epoch for address %s: %w", addr.Address.Hex(), err)
 		}
 
-		if epoch > maxEpoch {
+		if epoch >= maxEpoch {
 			maxEpoch = epoch
 			maxEpochAddr = addr
 		}
@@ -216,7 +226,55 @@ func (v *Deriver) formValidators(
 	config entity.NetworkConfig,
 	votingPowers []dtoOperatorVotingPower,
 	keys []entity.OperatorWithKeys,
-) ([]entity.Validator, *big.Int) {
+) ([]entity.Validator, entity.VotingPower) {
+	validators := v.fillValidators(votingPowers, keys)
+
+	totalActiveVotingPower := v.fillValidatorsActive(config, validators)
+
+	validators.SortByOperatorAddressAsc()
+
+	return validators, entity.ToVotingPower(totalActiveVotingPower)
+}
+
+func (v *Deriver) fillValidatorsActive(config entity.NetworkConfig, validators entity.Validators) *big.Int {
+	validators.SortByVotingPowerDesc()
+
+	totalActive := 0
+	totalActiveVotingPower := big.NewInt(0)
+
+	for i := range validators {
+		// Check minimum voting power if configured
+		if validators[i].VotingPower.Cmp(config.MinInclusionVotingPower.Int) < 0 {
+			break
+		}
+
+		// Check if validator has at least one key
+		if len(validators[i].Keys) == 0 {
+			continue
+		}
+
+		totalActive++
+		validators[i].IsActive = true
+
+		if config.MaxVotingPower.Int64() != 0 {
+			if validators[i].VotingPower.Cmp(config.MaxVotingPower.Int) > 0 {
+				validators[i].VotingPower = entity.ToVotingPower(new(big.Int).Set(config.MaxVotingPower.Int))
+			}
+		}
+		// Add to total active voting power if validator is active
+		totalActiveVotingPower = new(big.Int).Add(totalActiveVotingPower, validators[i].VotingPower.Int)
+
+		if config.MaxValidatorsCount.Int64() != 0 {
+			if totalActive >= int(config.MaxValidatorsCount.Int64()) {
+				break
+			}
+		}
+	}
+
+	return totalActiveVotingPower
+}
+
+func (v *Deriver) fillValidators(votingPowers []dtoOperatorVotingPower, keys []entity.OperatorWithKeys) entity.Validators {
 	// Create validators map to consolidate voting powers and keys
 	validatorsMap := make(map[string]*entity.Validator)
 
@@ -251,7 +309,7 @@ func (v *Deriver) formValidators(
 
 			// Sort vaults by address in ascending order
 			sort.Slice(validatorsMap[operatorAddr].Vaults, func(i, j int) bool {
-				// Compare voting powers (lower first)
+				// Compare vault addresses (lower first)
 				return validatorsMap[operatorAddr].Vaults[i].Vault.Cmp(validatorsMap[operatorAddr].Vaults[j].Vault) < 0
 			})
 		}
@@ -271,56 +329,19 @@ func (v *Deriver) formValidators(
 		}
 	}
 
-	validators := lo.Map(lo.Values(validatorsMap), func(item *entity.Validator, _ int) entity.Validator {
+	validators := entity.Validators(lo.Map(lo.Values(validatorsMap), func(item *entity.Validator, _ int) entity.Validator {
 		return *item
-	})
-	// Sort validators by voting power in descending order
-	sort.Slice(validators, func(i, j int) bool {
-		// Compare voting powers (higher first)
-		return validators[i].VotingPower.Cmp(validators[j].VotingPower.Int) > 0
-	})
+	}))
 
-	totalActive := 0
-
-	totalActiveVotingPower := big.NewInt(0)
-	for i := range validators {
-		// Check minimum voting power if configured
-		if validators[i].VotingPower.Cmp(config.MinInclusionVotingPower.Int) < 0 {
-			break
-		}
-
-		// Check if validator has at least one key
-		if len(validators[i].Keys) == 0 {
-			continue
-		}
-
-		totalActive++
-		validators[i].IsActive = true
-
-		if config.MaxVotingPower.Int64() != 0 {
-			if validators[i].VotingPower.Cmp(config.MaxVotingPower.Int) > 0 {
-				validators[i].VotingPower = entity.ToVotingPower(new(big.Int).Set(config.MaxVotingPower.Int))
-			}
-		}
-		// Add to total active voting power if validator is active
-		totalActiveVotingPower = new(big.Int).Add(totalActiveVotingPower, validators[i].VotingPower.Int)
-
-		if config.MaxValidatorsCount.Int64() != 0 {
-			if totalActive >= int(config.MaxValidatorsCount.Int64()) {
-				break
-			}
-		}
-	}
-
-	// Sort validators by address in ascending order
-	sort.Slice(validators, func(i, j int) bool {
-		// Compare voting powers (lower first)
-		return validators[i].Operator.Cmp(validators[j].Operator) < 0
-	})
-	return validators, totalActiveVotingPower
+	return validators
 }
 
-func (v *Deriver) calcQuorumThreshold(config entity.NetworkConfig, totalVP *big.Int) (entity.VotingPower, error) {
+func maxThreshold() *big.Int {
+	// 10^18 is the maximum threshold value
+	return new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
+}
+
+func (v *Deriver) calcQuorumThreshold(config entity.NetworkConfig, totalVP entity.VotingPower) (entity.VotingPower, error) {
 	quorumThresholdPercent := big.NewInt(0)
 	for _, quorumThreshold := range config.QuorumThresholds {
 		if quorumThreshold.KeyTag == config.RequiredHeaderKeyTag {
@@ -330,10 +351,9 @@ func (v *Deriver) calcQuorumThreshold(config entity.NetworkConfig, totalVP *big.
 	if quorumThresholdPercent.Cmp(big.NewInt(0)) == 0 {
 		return entity.VotingPower{}, errors.Errorf("quorum threshold is zero")
 	}
-	maxThreshold := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
 
-	mul := new(big.Int).Mul(totalVP, quorumThresholdPercent)
-	div := new(big.Int).Div(mul, maxThreshold)
+	mul := new(big.Int).Mul(totalVP.Int, quorumThresholdPercent)
+	div := new(big.Int).Div(mul, maxThreshold())
 	// add 1 to apply up rounding
 	return entity.ToVotingPower(new(big.Int).Add(div, big.NewInt(1))), nil
 }

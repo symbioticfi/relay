@@ -12,11 +12,15 @@ jobs:
   tests:
     name: Tests
     uses: ./.github/workflows/tests.yaml
+    secrets: inherit
   build:
     needs: 
       - tests
     name: Build
     uses: ./.github/workflows/build.yaml
+    with:
+      version: ${{ github.ref_name }}
+    secrets: inherit
   release:
     name: Release
     needs: 
@@ -42,17 +46,27 @@ jobs:
           git log ${{ steps.get_previous_tag.outputs.tag }}..${{ github.ref_name }} --pretty=format:"- %s (%an)" > CHANGELOG.md
           cat CHANGELOG.md
 
-      - name: Download artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # pin@4.3.0
+      - name: Download relay utils artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # pin@v4.3.0
         with:
-          pattern: generate_genesis_*
+          pattern: relay_utils_*
+          merge-multiple: true
+      
+      - name: Download relay sidecar artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # pin@v4.3.0
+        with:
+          pattern: relay_sidecar_*
           merge-multiple: true
       
       - name: Release
-        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # pin@2.2.2
+        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # pin@v2.2.2
         with:
           draft: true
           body_path: CHANGELOG.md
           files: |
-            generate_genesis_linux_amd64
-            generate_genesis_darwin_arm64
+            relay_utils_linux_amd64
+            relay_utils_linux_arm64
+            relay_utils_darwin_arm64
+            relay_sidecar_linux_amd64
+            relay_sidecar_linux_arm64
+            relay_sidecar_darwin_arm64

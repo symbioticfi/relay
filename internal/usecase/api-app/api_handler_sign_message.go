@@ -3,15 +3,24 @@ package apiApp
 import (
 	"context"
 
-	"middleware-offchain/core/entity"
-	"middleware-offchain/internal/gen/api"
+	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/gen/api"
 )
 
-func (h *handler) SignMessagePost(ctx context.Context, reqRaw *api.SignatureRequest) (*api.SignMessagePostOK, error) {
+func (h *handler) SignMessagePost(ctx context.Context, reqRaw *api.SignMessagePostReq) (*api.SignMessagePostOK, error) {
+	requiredEpoch := reqRaw.RequiredEpoch.Value
+	if !reqRaw.RequiredEpoch.IsSet() {
+		// later to optimize: fetch only epoch instead of entire set
+		latestValSet, err := h.cfg.Repo.GetLatestValidatorSet(ctx)
+		if err != nil {
+			return nil, err
+		}
+		requiredEpoch = latestValSet.Epoch
+	}
 	req := entity.SignatureRequest{
 		KeyTag:        entity.KeyTag(reqRaw.KeyTag),
 		Message:       reqRaw.Message,
-		RequiredEpoch: entity.Epoch(reqRaw.RequiredEpoch),
+		RequiredEpoch: entity.Epoch(requiredEpoch),
 	}
 
 	err := h.cfg.Signer.Sign(ctx, req)
@@ -21,5 +30,6 @@ func (h *handler) SignMessagePost(ctx context.Context, reqRaw *api.SignatureRequ
 
 	return &api.SignMessagePostOK{
 		RequestHash: req.Hash().Hex(),
+		Epoch:       requiredEpoch,
 	}, nil
 }
