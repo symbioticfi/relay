@@ -1,6 +1,6 @@
 # Symbiotic Relay
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/symbioticfi/middleware-sdk)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/symbioticfi/relay)
 
 ## Overview
 
