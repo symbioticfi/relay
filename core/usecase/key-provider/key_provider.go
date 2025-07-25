@@ -12,6 +12,7 @@ import (
 const (
 	SYMBIOTIC_KEY_NAMESPACE = "symb"
 	EVM_KEY_NAMESPACE       = "evm"
+	P2P_KEY_NAMESPACE       = "p2p"
 
 	// DEFAULT_EVM_CHAIN_ID chain id used to identify the default key for all chains
 	DEFAULT_EVM_CHAIN_ID = 0

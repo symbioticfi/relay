@@ -3,27 +3,17 @@ package p2p
 import (
 	"context"
 	"encoding/json"
-	"io"
-	"log/slog"
 
 	"github.com/go-errors/errors"
-	"github.com/libp2p/go-libp2p/core/network"
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
 	"github.com/symbioticfi/relay/core/entity"
 	p2pEntity "github.com/symbioticfi/relay/internal/entity"
 )
 
-func handleStreamWrapper(ctx context.Context, f func(ctx context.Context, stream network.Stream) error) func(stream network.Stream) {
-	return func(stream network.Stream) {
-		if err := f(ctx, stream); err != nil {
-			slog.ErrorContext(ctx, "Failed to handle stream", "error", err)
-		}
-	}
-}
-
-func (s *Service) handleStreamSignedHash(ctx context.Context, stream network.Stream) error {
+func (s *Service) handleSignatureReadyMessage(ctx context.Context, pubSubMsg *pubsub.Message) error {
 	var signatureGenerated signatureGeneratedDTO
-	err := unmarshalMessage(stream, &signatureGenerated)
+	err := unmarshalMessage(pubSubMsg, &signatureGenerated)
 	if err != nil {
 		return errors.Errorf("failed to unmarshal signatureGenerated message: %w", err)
 	}
@@ -40,7 +30,7 @@ func (s *Service) handleStreamSignedHash(ctx context.Context, stream network.Str
 	}
 
 	si := p2pEntity.SenderInfo{
-		Sender: stream.Conn().RemotePeer().String(),
+		Sender: pubSubMsg.ReceivedFrom.String(),
 	}
 
 	s.signatureHashHandler.Emit(ctx, p2pEntity.P2PMessage[entity.SignatureMessage]{
@@ -51,9 +41,9 @@ func (s *Service) handleStreamSignedHash(ctx context.Context, stream network.Str
 	return nil
 }
 
-func (s *Service) handleStreamAggregatedProof(ctx context.Context, stream network.Stream) error {
+func (s *Service) handleAggregatedProofReadyMessage(ctx context.Context, pubSubMsg *pubsub.Message) error {
 	var signaturesAggregated signaturesAggregatedDTO
-	err := unmarshalMessage(stream, &signaturesAggregated)
+	err := unmarshalMessage(pubSubMsg, &signaturesAggregated)
 	if err != nil {
 		return errors.Errorf("failed to unmarshal signatureGenerated message: %w", err)
 	}
@@ -69,7 +59,7 @@ func (s *Service) handleStreamAggregatedProof(ctx context.Context, stream networ
 		},
 	}
 	si := p2pEntity.SenderInfo{
-		Sender: stream.Conn().RemotePeer().String(),
+		Sender: pubSubMsg.ReceivedFrom.String(),
 	}
 
 	s.signaturesAggregatedHandler.Emit(ctx, p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]{
@@ -80,17 +70,9 @@ func (s *Service) handleStreamAggregatedProof(ctx context.Context, stream networ
 	return nil
 }
 
-func unmarshalMessage(stream network.Stream, v interface{}) error {
-	defer stream.Close()
-
-	data := make([]byte, 1024*1024) // 1MB buffer
-	n, err := stream.Read(data)
-	if err != nil && !errors.Is(err, io.EOF) {
-		return errors.Errorf("failed to read from stream: %w", err)
-	}
-
+func unmarshalMessage(msg *pubsub.Message, v interface{}) error {
 	var message p2pMessage
-	if err := json.Unmarshal(data[:n], &message); err != nil {
+	if err := json.Unmarshal(msg.GetData(), &message); err != nil {
 		return errors.Errorf("failed to unmarshal message: %w", err)
 	}
 

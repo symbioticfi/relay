@@ -268,8 +268,6 @@ linters:
         text: G115
       - path: cmd/utils/
         text: "use of `fmt.Printf` forbidden"
-      - path: cmd/utils/
-        text: "use of `fmt.Print` forbidden"
     paths:
       - third_party$
       - builtin$

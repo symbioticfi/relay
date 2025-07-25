@@ -14,6 +14,7 @@ require (
 	github.com/go-faster/jx v1.1.0
 	github.com/go-playground/validator/v10 v10.27.0
 	github.com/libp2p/go-libp2p v0.41.1
+	github.com/libp2p/go-libp2p-pubsub v0.14.2
 	github.com/maniartech/signals v1.2.0
 	github.com/multiformats/go-multiaddr v0.16.0
 	github.com/ogen-go/ogen v1.14.0
@@ -93,6 +94,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gookit/color v1.5.4 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/holiman/uint256 v1.3.2 // indirect
 	github.com/huin/goupnp v1.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect

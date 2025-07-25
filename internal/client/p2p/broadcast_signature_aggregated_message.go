@@ -33,7 +33,7 @@ func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg e
 		Message:    msg,
 	})
 
-	return s.broadcast(ctx, messageTypeSignaturesAggregated, data)
+	return s.broadcast(ctx, topicAggProofReady, data)
 }
 
 type aggregationProofDTO struct {

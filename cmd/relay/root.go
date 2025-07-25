@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p/core/crypto"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/symbioticfi/relay/core/client/evm"
@@ -86,7 +87,24 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create valset deriver: %w", err)
 	}
 
-	var opts []libp2p.Option
+	swarmPK, err := keyProvider.GetPrivateKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, entity.KeyTypeEcdsaSecp256k1, 0)
+	if err != nil {
+		return errors.Errorf("failed to get P2P swarm private key: %w", err)
+	}
+
+	p2pIdentityPKRaw, err := keyProvider.GetPrivateKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, entity.KeyTypeEcdsaSecp256k1, 1)
+	if err != nil {
+		return errors.Errorf("failed to get P2P identity private key: %w", err)
+	}
+	p2pIdentityPK, err := crypto.UnmarshalSecp256k1PrivateKey(p2pIdentityPKRaw.Bytes())
+	if err != nil {
+		return errors.Errorf("failed to unmarshal P2P identity private key: %w", err)
+	}
+
+	opts := []libp2p.Option{
+		libp2p.PrivateNetwork(swarmPK.Bytes()), // Use a private network with the provided swarm key
+		libp2p.Identity(p2pIdentityPK),         // Use the provided identity private key to sign messages that will be sent over the P2P gossip sub
+	}
 	if cfg.P2PListenAddress != "" {
 		opts = append(opts, libp2p.ListenAddrStrings(cfg.P2PListenAddress))
 	}

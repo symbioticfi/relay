@@ -10,6 +10,7 @@ import (
 	p2pEntity "github.com/symbioticfi/relay/internal/entity"
 )
 
+// todo ilya, how to name signature generated or signature ready?
 func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error {
 	dto := signatureGeneratedDTO{
 		RequestHash: msg.RequestHash,
@@ -33,7 +34,7 @@ func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg en
 		Message:    msg,
 	})
 
-	return s.broadcast(ctx, messageTypeSignatureHash, data)
+	return s.broadcast(ctx, topicSignatureReady, data)
 }
 
 type signatureDTO struct {
