@@ -3,6 +3,7 @@ package p2p
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 
 	"github.com/go-errors/errors"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -31,6 +32,20 @@ func (s *Service) handleSignatureReadyMessage(ctx context.Context, pubSubMsg *pu
 
 	si := p2pEntity.SenderInfo{
 		Sender: pubSubMsg.ReceivedFrom.String(),
+	}
+
+	// try to extract public key from sender peer.ID
+	pubKey, err := pubSubMsg.ReceivedFrom.ExtractPublicKey()
+	if err != nil {
+		slog.WarnContext(ctx, "Failed to extract public key from received message", "error", err, "peer", pubSubMsg.ReceivedFrom)
+	} else {
+		raw, err := pubKey.Raw()
+		if err != nil {
+			slog.WarnContext(ctx, "Failed to extract raw public key from received message", "error", err, "peer", pubSubMsg.ReceivedFrom)
+		} else {
+			// If we have a valid public key, we can use it in the sender info
+			si.PublicKey = raw
+		}
 	}
 
 	s.signatureHashHandler.Emit(ctx, p2pEntity.P2PMessage[entity.SignatureMessage]{
