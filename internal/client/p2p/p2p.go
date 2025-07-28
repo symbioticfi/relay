@@ -14,8 +14,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/multiformats/go-multiaddr"
-	"github.com/samber/lo"
-
 	"github.com/symbioticfi/relay/core/entity"
 	p2pEntity "github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
@@ -40,10 +38,54 @@ type metrics interface {
 	ObserveP2PPeerMessageSent(messageType, status string)
 }
 
+// DiscoveryConfig contains discovery protocol configuration
+type DiscoveryConfig struct {
+	// EnableMDNS specifies whether mDNS discovery is enabled.
+	EnableMDNS bool
+	// MDNSServiceName is the mDNS service name.
+	MDNSServiceName string
+
+	// DHTMode specifies the DHT mode.
+	DHTMode string
+	// BootstrapPeers is the list of bootstrap peers in multiaddr format.
+	BootstrapPeers []string
+	// AdvertiseTTL is the advertise time-to-live duration.
+	AdvertiseTTL time.Duration
+	// AdvertiseServiceName is the advertise service name.
+	AdvertiseServiceName string
+	// AdvertiseInterval is the interval between advertisements.
+	AdvertiseInterval time.Duration
+	// ConnectionTimeout is the timeout for peer connections.
+	ConnectionTimeout time.Duration
+	// MaxDHTReconnectPeerCount is the maximum number of DHT reconnect peers.
+	MaxDHTReconnectPeerCount int
+	// DHTPeerDiscoveryInterval is the interval for DHT peer discovery. Should be smaller than AdvertiseInterval.
+	DHTPeerDiscoveryInterval time.Duration
+	// DHTRoutingTableRefreshInterval is the interval for DHT routing table refresh. Should be greater than DHTPeerDiscoveryInterval.
+	DHTRoutingTableRefreshInterval time.Duration
+}
+
+func DefaultDiscoveryConfig() DiscoveryConfig {
+	return DiscoveryConfig{
+		EnableMDNS:      false,
+		MDNSServiceName: "symbiotic-mdns",
+
+		DHTMode:                        "server",
+		AdvertiseTTL:                   3 * time.Hour, // max allowed value in kdht package
+		AdvertiseServiceName:           "symbiotic-advertise",
+		AdvertiseInterval:              time.Hour,
+		ConnectionTimeout:              5 * time.Second,
+		MaxDHTReconnectPeerCount:       20,
+		DHTPeerDiscoveryInterval:       5 * time.Minute,
+		DHTRoutingTableRefreshInterval: 10 * time.Minute, // same as kdht package default
+	}
+}
+
 type Config struct {
-	Host        host.Host     `validate:"required"`
-	SendTimeout time.Duration `validate:"required,gt=0"`
-	Metrics     metrics       `validate:"required"`
+	Host        host.Host       `validate:"required"`
+	SendTimeout time.Duration   `validate:"required,gt=0"`
+	Metrics     metrics         `validate:"required"`
+	Discovery   DiscoveryConfig `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -137,7 +179,7 @@ type p2pMessage struct {
 // broadcast sends a message to all connected peers
 func (s *Service) broadcast(ctx context.Context, typ messageType, data []byte) error {
 	s.peersMutex.RLock()
-	peers := lo.Keys(s.peers)
+	peers := s.host.Peerstore().Peers()
 	s.peersMutex.RUnlock()
 
 	msg := p2pMessage{
@@ -152,6 +194,9 @@ func (s *Service) broadcast(ctx context.Context, typ messageType, data []byte) e
 	defer cancel()
 
 	for i, peerID := range peers {
+		if peerID == s.host.ID() {
+			continue // Skip self
+		}
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
