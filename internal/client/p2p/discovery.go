@@ -125,6 +125,7 @@ func (s *DiscoveryService) parseBootstrapPeers(ctx context.Context) ([]peer.Addr
 func (s *DiscoveryService) initMDNS(ctx context.Context) error {
 	if !s.cfg.Discovery.EnableMDNS {
 		slog.InfoContext(ctx, "mDNS disabled by configuration")
+		return nil
 	}
 	mdnsService := mdns.NewMdnsService(s.host, s.cfg.Discovery.MDNSServiceName, s)
 	s.mdns = mdnsService
@@ -155,7 +156,7 @@ func (s *DiscoveryService) Start(ctx context.Context) error {
 
 	if err := s.initMDNS(wrappedCtx); err != nil {
 		cancel()
-		return fmt.Errorf("failed to initialize DHT: %w", err)
+		return fmt.Errorf("failed to initialize mDNS: %w", err)
 	}
 
 	s.started = true
