@@ -16,6 +16,9 @@ const (
 
 	// DEFAULT_EVM_CHAIN_ID chain id used to identify the default key for all chains
 	DEFAULT_EVM_CHAIN_ID = 0
+
+	P2P_SWARM_NETWORK_KEY_ID = 0
+	P2P_HOST_IDENTITY_KEY_ID = 1
 )
 
 type KeyProvider interface {

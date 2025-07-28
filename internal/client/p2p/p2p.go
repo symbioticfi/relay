@@ -51,7 +51,7 @@ func (c Config) Validate() error {
 type Service struct {
 	ctx                         context.Context
 	host                        host.Host
-	signatureHashHandler        *signals.Signal[p2pEntity.P2PMessage[entity.SignatureMessage]]
+	signatureReceivedHandler    *signals.Signal[p2pEntity.P2PMessage[entity.SignatureMessage]]
 	signaturesAggregatedHandler *signals.Signal[p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]]
 	sendTimeout                 time.Duration
 	metrics                     metrics
@@ -94,7 +94,7 @@ func NewService(ctx context.Context, cfg Config) (*Service, error) {
 	service := &Service{
 		ctx:                         log.WithAttrs(ctx, slog.String("component", "p2p")),
 		host:                        h,
-		signatureHashHandler:        signals.New[p2pEntity.P2PMessage[entity.SignatureMessage]](),
+		signatureReceivedHandler:    signals.New[p2pEntity.P2PMessage[entity.SignatureMessage]](),
 		signaturesAggregatedHandler: signals.New[p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]](),
 		sendTimeout:                 cfg.SendTimeout,
 		metrics:                     cfg.Metrics,
@@ -120,6 +120,7 @@ func (s *Service) listenForMessages(ctx context.Context, sub *pubsub.Subscriptio
 			slog.ErrorContext(ctx, "Failed to read from subscription", "error", err)
 			return
 		}
+		slog.DebugContext(ctx, "Received message from p2p", "topic", msg.Topic, "from", msg.ReceivedFrom, "data", string(msg.Data))
 		if err := handler(ctx, msg); err != nil {
 			slog.ErrorContext(ctx, "Failed to handle message", "error", err, "message", msg)
 			continue
@@ -128,7 +129,7 @@ func (s *Service) listenForMessages(ctx context.Context, sub *pubsub.Subscriptio
 }
 
 func (s *Service) AddSignatureMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PMessage[entity.SignatureMessage]) error, key string) {
-	s.signatureHashHandler.AddListener(mh, key)
+	s.signatureReceivedHandler.AddListener(mh, key)
 }
 
 func (s *Service) AddSignaturesAggregatedMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]) error, key string) {
@@ -190,6 +191,7 @@ func (s *Service) broadcast(ctx context.Context, topicName string, data []byte) 
 		return errors.Errorf("failed to publish data to topic %s: %w", topic.String(), err)
 	}
 
+	slog.DebugContext(ctx, "Message published to topic", "topic", topicName, "data", string(data))
 	s.metrics.ObserveP2PPeerMessageSent(topicName, "ok")
 
 	return nil

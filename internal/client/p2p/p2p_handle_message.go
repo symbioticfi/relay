@@ -48,7 +48,7 @@ func (s *Service) handleSignatureReadyMessage(ctx context.Context, pubSubMsg *pu
 		}
 	}
 
-	s.signatureHashHandler.Emit(ctx, p2pEntity.P2PMessage[entity.SignatureMessage]{
+	s.signatureReceivedHandler.Emit(ctx, p2pEntity.P2PMessage[entity.SignatureMessage]{
 		SenderInfo: si,
 		Message:    msg,
 	})

@@ -9,6 +9,8 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/libp2p/go-libp2p/p2p/security/noise"
+	"github.com/pavlo-v-chernykh/keystore-go/v4"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/symbioticfi/relay/core/client/evm"
@@ -35,12 +37,9 @@ func runApp(ctx context.Context) error {
 	log.Init(cfg.LogLevel, cfg.LogMode)
 	mtr := metrics.New(metrics.Config{})
 
-	var (
-		keyProvider keyprovider.KeyProvider
-		err         error
-	)
-
+	var keyProvider keyprovider.KeyProvider
 	if cfg.KeyStore.Path != "" {
+		var err error
 		keyProvider, err = keyprovider.NewKeystoreProvider(cfg.KeyStore.Path, cfg.KeyStore.Password)
 		if err != nil {
 			return errors.Errorf("failed to create keystore provider from keystore file: %w", err)
@@ -87,15 +86,23 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create valset deriver: %w", err)
 	}
 
-	swarmPK, err := keyProvider.GetPrivateKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, entity.KeyTypeEcdsaSecp256k1, 0)
+	swarmPK, err := keyProvider.GetPrivateKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, entity.KeyTypeEcdsaSecp256k1, keyprovider.P2P_SWARM_NETWORK_KEY_ID)
 	if err != nil {
 		return errors.Errorf("failed to get P2P swarm private key: %w", err)
 	}
 
-	p2pIdentityPKRaw, err := keyProvider.GetPrivateKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, entity.KeyTypeEcdsaSecp256k1, 1)
-	if err != nil {
+	p2pIdentityPKRaw, err := keyProvider.GetPrivateKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, entity.KeyTypeEcdsaSecp256k1, keyprovider.P2P_HOST_IDENTITY_KEY_ID)
+	if err != nil && !errors.Is(err, keystore.ErrEntryNotFound) {
 		return errors.Errorf("failed to get P2P identity private key: %w", err)
 	}
+	if errors.Is(err, keystore.ErrEntryNotFound) {
+		slog.WarnContext(ctx, "P2P identity private key not found, generating a new one")
+		p2pIdentityPKRaw, err = symbioticCrypto.GeneratePrivateKey(entity.KeyTypeEcdsaSecp256k1)
+		if err != nil {
+			return errors.Errorf("failed to create P2P identity private key: %w", err)
+		}
+	}
+
 	p2pIdentityPK, err := crypto.UnmarshalSecp256k1PrivateKey(p2pIdentityPKRaw.Bytes())
 	if err != nil {
 		return errors.Errorf("failed to unmarshal P2P identity private key: %w", err)
@@ -104,6 +111,7 @@ func runApp(ctx context.Context) error {
 	opts := []libp2p.Option{
 		libp2p.PrivateNetwork(swarmPK.Bytes()), // Use a private network with the provided swarm key
 		libp2p.Identity(p2pIdentityPK),         // Use the provided identity private key to sign messages that will be sent over the P2P gossip sub
+		libp2p.Security(noise.ID, noise.New),
 	}
 	if cfg.P2PListenAddress != "" {
 		opts = append(opts, libp2p.ListenAddrStrings(cfg.P2PListenAddress))

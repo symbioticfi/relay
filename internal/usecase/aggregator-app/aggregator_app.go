@@ -76,7 +76,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 
 	msg := p2pMsg.Message
 
-	slog.DebugContext(ctx, "Received signature hash generated message", "message", msg)
+	slog.DebugContext(ctx, "Received signature hash generated message", "message", msg, "sender", p2pMsg.SenderInfo.Sender)
 
 	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
 	if err != nil {
