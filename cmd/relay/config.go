@@ -100,7 +100,7 @@ type config struct {
 	Driver            entity.CMDCrossChainAddress `mapstructure:"driver" validate:"required"`
 	LogLevel          string                      `mapstructure:"log-level" validate:"oneof=debug info warn error"`
 	LogMode           string                      `mapstructure:"log-mode" validate:"oneof=text pretty"`
-	P2PListenAddress  string                      `mapstructure:"p2p-listen"`
+	P2PListenAddress  string                      `mapstructure:"p2p-listen" validate:"required"`
 	HTTPListenAddr    string                      `mapstructure:"http-listen" validate:"required"`
 	MetricsListenAddr string                      `mapstructure:"metrics-listen"`
 	SecretKeys        CMDSecretKeySlice           `mapstructure:"secret-keys"`
