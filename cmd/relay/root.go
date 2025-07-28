@@ -11,6 +11,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	"github.com/pavlo-v-chernykh/keystore-go/v4"
+	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/symbioticfi/relay/core/client/evm"
@@ -109,9 +110,11 @@ func runApp(ctx context.Context) error {
 	}
 
 	opts := []libp2p.Option{
+		libp2p.Transport(tcp.NewTCPTransport),
 		libp2p.PrivateNetwork(swarmPK.Bytes()), // Use a private network with the provided swarm key
 		libp2p.Identity(p2pIdentityPK),         // Use the provided identity private key to sign messages that will be sent over the P2P gossip sub
 		libp2p.Security(noise.ID, noise.New),
+		libp2p.DefaultMuxers,
 	}
 	if cfg.P2PListenAddress != "" {
 		opts = append(opts, libp2p.ListenAddrStrings(cfg.P2PListenAddress))
@@ -121,26 +124,35 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create libp2p host: %w", err)
 	}
 
-	p2pService, err := p2p.NewService(ctx, p2p.Config{
+	p2pCfg := p2p.Config{
 		Host:        h,
 		SendTimeout: time.Second * 10,
 		Metrics:     mtr,
-	})
+		Discovery:   p2p.DefaultDiscoveryConfig(),
+	}
+	if len(cfg.Bootnodes) > 0 {
+		p2pCfg.Discovery.BootstrapPeers = cfg.Bootnodes
+	}
+	p2pCfg.Discovery.DHTMode = cfg.DHTMode
+	p2pCfg.Discovery.EnableMDNS = cfg.MDnsEnabled
+
+	p2pService, err := p2p.NewService(ctx, p2pCfg)
 	if err != nil {
 		return errors.Errorf("failed to create p2p service: %w", err)
 	}
-	slog.InfoContext(ctx, "Created p2p service", "listenAddr", cfg.P2PListenAddress)
+	slog.InfoContext(ctx, "Created p2p service", "listenAddr", h.Addrs(), "id", h.ID().String())
 	defer p2pService.Close()
 
-	discoveryService, err := p2p.NewDiscoveryService(ctx, p2pService, h)
+	discoveryService, err := p2p.NewDiscoveryService(p2pCfg)
 	if err != nil {
 		return errors.Errorf("failed to create discovery service: %w", err)
 	}
-	defer discoveryService.Close()
 	slog.InfoContext(ctx, "Created discovery service", "listenAddr", cfg.P2PListenAddress)
-	if err := discoveryService.Start(); err != nil {
+	if err := discoveryService.Start(ctx); err != nil {
 		return errors.Errorf("failed to start discovery service: %w", err)
 	}
+	defer discoveryService.Close(ctx)
+
 	slog.InfoContext(ctx, "Started discovery service", "listenAddr", cfg.P2PListenAddress)
 
 	repo, err := badger.New(badger.Config{Dir: cfg.StorageDir})

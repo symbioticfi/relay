@@ -111,6 +111,9 @@ type config struct {
 	Chains            []string                    `mapstructure:"chains" validate:"required"`
 	CircuitsDir       string                      `mapstructure:"circuits-dir"`
 	KeyStore          entity.KeyStore             `mapstructure:"keystore"`
+	Bootnodes         []string                    `mapstructure:"bootnodes"`
+	DHTMode           string                      `mapstructure:"dht-mode" validate:"oneof=auto server client disabled"`
+	MDnsEnabled       bool                        `mapstructure:"enable-mdns"`
 }
 
 func (c config) Validate() error {
@@ -145,6 +148,9 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().String("circuits-dir", "", "Directory path to load zk circuits from, if empty then zp prover is disabled")
 	rootCmd.PersistentFlags().String("keystore.path", "", "Path to optional keystore file, if provided will be used instead of secret-keys flag")
 	rootCmd.PersistentFlags().String("keystore.password", "", "Password for the keystore file, if provided will be used to decrypt the keystore file")
+	rootCmd.PersistentFlags().StringSlice("bootnodes", nil, "List of bootnodes in multiaddr format")
+	rootCmd.PersistentFlags().String("dht-mode", "server", "DHT mode: auto, server, client, disabled")
+	rootCmd.PersistentFlags().Bool("mdns", false, "Enable mDNS discovery for P2P")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
@@ -222,6 +228,15 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("keystore.password", cmd.PersistentFlags().Lookup("keystore.password")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("bootnodes", cmd.PersistentFlags().Lookup("bootnodes")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("dht-mode", cmd.PersistentFlags().Lookup("dht-mode")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("mdns", cmd.PersistentFlags().Lookup("mdns")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 
