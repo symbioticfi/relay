@@ -1,6 +1,14 @@
 # Symbiotic Relay
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/symbioticfi/relay)
+
+> [!WARNING]  
+> The code is a work in progress and not production ready yet.
+> Breaking changes may occur in the code updates as well as backward compatibility is not guaranteed.
+> Use with caution.
+
 ## Overview
+
 The Symbiotic Relay operates as a distributed middleware layer that facilitates:
 
 - **Validator Set Management**: Derives and maintains validator sets across different epochs based on on-chain state
@@ -8,12 +16,15 @@ The Symbiotic Relay operates as a distributed middleware layer that facilitates:
 - **Cross-Chain Coordination**: Manages validator sets across multiple EVM-compatible blockchains
 
 ## Documentation
+
 - [Relay Docs](https://docs.symbiotic.fi/category/relay-sdk)
 
 ## Dependencies
+
 - Go 1.24.3
 
 ## Build
+
 The generic build targets require `OS` and `ARCH` parameters:
 
 ```bash
@@ -22,13 +33,16 @@ make build-relay-sidecar OS=darwin ARCH=arm64
 ```
 
 ## Lint & Test
+
 ```bash
 make lint
 make unit-test
 ```
 
 ## Run example
+
 To run example please use this repo: https://github.com/symbioticfi/symbiotic-super-sum
 
 ## Contribution
+
 You can find contribution guide here: [CONTRIBUTING.md](./CONTRIBUTING.md)
