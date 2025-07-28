@@ -30,11 +30,15 @@ type KeyProvider interface {
 	HasKeyByNamespaceTypeId(namespace string, keyType entity.KeyType, id int) (bool, error)
 }
 
-func KeyTagToAlias(keyTag entity.KeyTag) (string, error) {
+func KeyTagToAliasWithNS(namespace string, keyTag entity.KeyTag) (string, error) {
 	// https://github.com/symbioticfi/middleware-sdk-mirror/blob/change-header/src/contracts/libraries/utils/KeyTags.sol#L24-L40
 	keyId := keyTag & 0x0F
 
-	return ToAlias(SYMBIOTIC_KEY_NAMESPACE, keyTag.Type(), int(keyId))
+	return ToAlias(namespace, keyTag.Type(), int(keyId))
+}
+
+func KeyTagToAlias(keyTag entity.KeyTag) (string, error) {
+	return KeyTagToAliasWithNS(SYMBIOTIC_KEY_NAMESPACE, keyTag)
 }
 
 func ToAlias(namespace string, keyType entity.KeyType, keyId int) (string, error) {

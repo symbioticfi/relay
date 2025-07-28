@@ -104,7 +104,7 @@ func (k *KeystoreProvider) HasKeyByNamespaceTypeId(namespace string, keyType ent
 	return k.ks.IsPrivateKeyEntry(alias), nil
 }
 
-func (k *KeystoreProvider) AddKey(keyTag entity.KeyTag, privateKey crypto.PrivateKey, password string, force bool) error {
+func (k *KeystoreProvider) AddKey(namespace string, keyTag entity.KeyTag, privateKey crypto.PrivateKey, password string, force bool) error {
 	exists, err := k.HasKey(keyTag)
 	if err != nil {
 		return err
@@ -114,7 +114,7 @@ func (k *KeystoreProvider) AddKey(keyTag entity.KeyTag, privateKey crypto.Privat
 		return errors.New("key already exists")
 	}
 
-	alias, err := KeyTagToAlias(keyTag)
+	alias, err := KeyTagToAliasWithNS(namespace, keyTag)
 	if err != nil {
 		return err
 	}

@@ -2,6 +2,7 @@ package keys
 
 import (
 	"github.com/symbioticfi/relay/core/entity"
+	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 
 	"github.com/spf13/cobra"
 )
@@ -29,6 +30,7 @@ type GlobalFlags struct {
 }
 
 type AddFlags struct {
+	Namespace  string
 	KeyTag     uint8
 	PrivateKey string
 	Generate   bool
@@ -53,6 +55,7 @@ type RemoveEvmFlags struct {
 }
 
 type UpdateFlags struct {
+	Namespace  string
 	KeyTag     uint8
 	PrivateKey string
 }
@@ -69,6 +72,7 @@ func initFlags() {
 	keysCmd.PersistentFlags().StringVarP(&globalFlags.Path, "path", "p", "./keystore.jks", "Path to keystore")
 	keysCmd.PersistentFlags().StringVar(&globalFlags.Password, "password", "", "Keystore password")
 
+	addKeyCmd.PersistentFlags().StringVar(&addFlags.Namespace, "namespace", keyprovider.SYMBIOTIC_KEY_NAMESPACE, "namespace")
 	addKeyCmd.PersistentFlags().Uint8Var(&addFlags.KeyTag, "key-tag", uint8(entity.KeyTypeInvalid), "key tag")
 	addKeyCmd.PersistentFlags().StringVar(&addFlags.PrivateKey, "private-key", "", "private key to add in hex")
 	addKeyCmd.PersistentFlags().BoolVar(&addFlags.Generate, "generate", false, "generate key")
@@ -91,6 +95,7 @@ func initFlags() {
 	removeEVMKeyCmd.PersistentFlags().Uint8Var(&removeEvmFlags.ChainId, "chain-id", 0, "evm chain id")
 	removeEVMKeyCmd.PersistentFlags().BoolVar(&removeEvmFlags.DefaultKey, "default-key", false, "remove default key from keystore")
 
+	updateKeyCmd.PersistentFlags().StringVar(&updateFlags.Namespace, "namespace", keyprovider.SYMBIOTIC_KEY_NAMESPACE, "namespace")
 	updateKeyCmd.PersistentFlags().Uint8Var(&updateFlags.KeyTag, "key-tag", uint8(entity.KeyTypeInvalid), "key tag")
 	updateKeyCmd.PersistentFlags().StringVar(&updateFlags.PrivateKey, "private-key", "", "private key")
 	if err := updateKeyCmd.MarkPersistentFlagRequired("key-tag"); err != nil {

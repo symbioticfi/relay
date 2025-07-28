@@ -21,11 +21,11 @@ var addKeyCmd = &cobra.Command{
 		}
 
 		kt := entity.KeyTag(addFlags.KeyTag)
-		return addKey(kt, addFlags.Generate, addFlags.Force, addFlags.PrivateKey)
+		return addKey(addFlags.Namespace, kt, addFlags.Generate, addFlags.Force, addFlags.PrivateKey)
 	},
 }
 
-func addKey(keyTag entity.KeyTag, generate bool, force bool, privateKey string) error {
+func addKey(namespace string, keyTag entity.KeyTag, generate bool, force bool, privateKey string) error {
 	var err error
 	if generate {
 		pk, err := crypto.GeneratePrivateKey(keyTag.Type())
@@ -59,7 +59,7 @@ func addKey(keyTag entity.KeyTag, generate bool, force bool, privateKey string) 
 		return err
 	}
 
-	if err = keyStore.AddKey(keyTag, key, globalFlags.Password, force); err != nil {
+	if err = keyStore.AddKey(namespace, keyTag, key, globalFlags.Password, force); err != nil {
 		return err
 	}
 

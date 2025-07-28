@@ -44,7 +44,7 @@ var updateKeyCmd = &cobra.Command{
 			return err
 		}
 
-		if err = keyStore.AddKey(kt, key, globalFlags.Password, true); err != nil {
+		if err = keyStore.AddKey(updateFlags.Namespace, kt, key, globalFlags.Password, true); err != nil {
 			return err
 		}
 

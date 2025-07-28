@@ -9,7 +9,6 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 )
 
-// todo ilya, how to name signature generated or signature ready?
 func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error {
 	dto := signatureGeneratedDTO{
 		RequestHash: msg.RequestHash,
