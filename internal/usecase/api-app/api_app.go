@@ -6,7 +6,7 @@ import (
 	"time"
 
 	swag "github.com/symbioticfi/relay/core/api"
-	api2 "github.com/symbioticfi/relay/core/api/gen/api"
+	"github.com/symbioticfi/relay/core/api/gen/api"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
@@ -79,11 +79,11 @@ func NewAPIApp(cfg Config) (*APIApp, error) {
 		cfg: cfg,
 	}
 
-	opts := []api2.ServerOption{
-		api2.WithPathPrefix(cfg.Prefix),
-		api2.WithErrorHandler(errorHandler),
+	opts := []api.ServerOption{
+		api.WithPathPrefix(cfg.Prefix),
+		api.WithErrorHandler(errorHandler),
 	}
-	apiServer, err := api2.NewServer(h, opts...)
+	apiServer, err := api.NewServer(h, opts...)
 	if err != nil {
 		return nil, errors.Errorf("failed to init db: %w", err)
 	}

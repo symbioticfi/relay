@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	api2 "github.com/symbioticfi/relay/core/api/gen/api"
+	"github.com/symbioticfi/relay/core/api/gen/api"
 
 	"github.com/go-errors/errors"
 
@@ -13,7 +13,7 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 )
 
-func (h *handler) GetValidatorSetGet(ctx context.Context, params api2.GetValidatorSetGetParams) (*api2.ValidatorSet, error) {
+func (h *handler) GetValidatorSetGet(ctx context.Context, params api.GetValidatorSetGetParams) (*api.ValidatorSet, error) {
 	latestEpoch, err := h.cfg.EvmClient.GetCurrentEpoch(ctx)
 	if err != nil {
 		return nil, err
@@ -50,8 +50,8 @@ func (h *handler) GetValidatorSetGet(ctx context.Context, params api2.GetValidat
 	return convertValidatorSetToAPI(validatorSet), nil
 }
 
-func convertValidatorSetToAPI(valSet entity.ValidatorSet) *api2.ValidatorSet {
-	return &api2.ValidatorSet{
+func convertValidatorSetToAPI(valSet entity.ValidatorSet) *api.ValidatorSet {
+	return &api.ValidatorSet{
 		Version:            valSet.Version,
 		RequiredKeyTag:     uint8(valSet.RequiredKeyTag),
 		Epoch:              valSet.Epoch,
@@ -59,19 +59,19 @@ func convertValidatorSetToAPI(valSet entity.ValidatorSet) *api2.ValidatorSet {
 		QuorumThreshold:    valSet.QuorumThreshold.String(),
 		PreviousHeaderHash: valSet.PreviousHeaderHash.Hex(),
 		Status:             uint8(valSet.Status),
-		Validators: lo.Map(valSet.Validators, func(v entity.Validator, _ int) api2.Validator {
-			return api2.Validator{
+		Validators: lo.Map(valSet.Validators, func(v entity.Validator, _ int) api.Validator {
+			return api.Validator{
 				Operator:    v.Operator.Hex(),
 				VotingPower: v.VotingPower.String(),
 				IsActive:    v.IsActive,
-				Keys: lo.Map(v.Keys, func(k entity.ValidatorKey, _ int) api2.Key {
-					return api2.Key{
+				Keys: lo.Map(v.Keys, func(k entity.ValidatorKey, _ int) api.Key {
+					return api.Key{
 						Tag:     uint8(k.Tag),
 						Payload: k.Payload,
 					}
 				}),
-				Vaults: lo.Map(v.Vaults, func(v entity.ValidatorVault, _ int) api2.ValidatorVault {
-					return api2.ValidatorVault{
+				Vaults: lo.Map(v.Vaults, func(v entity.ValidatorVault, _ int) api.ValidatorVault {
+					return api.ValidatorVault{
 						ChainId:     v.ChainID,
 						Vault:       v.Vault.Hex(),
 						VotingPower: v.VotingPower.String(),
