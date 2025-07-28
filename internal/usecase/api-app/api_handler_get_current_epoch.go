@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-errors/errors"
+	"github.com/symbioticfi/relay/core/api/gen/api"
 
-	"github.com/symbioticfi/relay/internal/gen/api"
+	"github.com/go-errors/errors"
 )
 
 func (h *handler) GetCurrentEpochGet(ctx context.Context) (*api.GetCurrentEpochGetOK, error) {

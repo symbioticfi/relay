@@ -5,14 +5,15 @@ import (
 	"log/slog"
 	"time"
 
+	swag "github.com/symbioticfi/relay/core/api"
+	api2 "github.com/symbioticfi/relay/core/api/gen/api"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	swag "github.com/symbioticfi/relay/api"
 	"github.com/symbioticfi/relay/core/entity"
 	p2pEntity "github.com/symbioticfi/relay/internal/entity"
-	"github.com/symbioticfi/relay/internal/gen/api"
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/server"
 )
@@ -78,11 +79,11 @@ func NewAPIApp(cfg Config) (*APIApp, error) {
 		cfg: cfg,
 	}
 
-	opts := []api.ServerOption{
-		api.WithPathPrefix(cfg.Prefix),
-		api.WithErrorHandler(errorHandler),
+	opts := []api2.ServerOption{
+		api2.WithPathPrefix(cfg.Prefix),
+		api2.WithErrorHandler(errorHandler),
 	}
-	apiServer, err := api.NewServer(h, opts...)
+	apiServer, err := api2.NewServer(h, opts...)
 	if err != nil {
 		return nil, errors.Errorf("failed to init db: %w", err)
 	}

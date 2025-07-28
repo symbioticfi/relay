@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/symbioticfi/relay/core/api/gen/api"
+
 	"github.com/go-errors/errors"
 	"github.com/go-faster/jx"
 	ht "github.com/ogen-go/ogen/http"
@@ -13,7 +15,6 @@ import (
 	"github.com/samber/lo"
 
 	"github.com/symbioticfi/relay/core/entity"
-	"github.com/symbioticfi/relay/internal/gen/api"
 )
 
 type handler struct {

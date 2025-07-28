@@ -4,15 +4,16 @@ import (
 	"context"
 	"sort"
 
+	api2 "github.com/symbioticfi/relay/core/api/gen/api"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
 
 	"github.com/symbioticfi/relay/core/entity"
-	"github.com/symbioticfi/relay/internal/gen/api"
 )
 
-func (h *handler) GetAggregationStatusGet(ctx context.Context, params api.GetAggregationStatusGetParams) (*api.AggregationStatus, error) {
+func (h *handler) GetAggregationStatusGet(ctx context.Context, params api2.GetAggregationStatusGetParams) (*api2.AggregationStatus, error) {
 	if h.cfg.Aggregator == nil {
 		return nil, errors.New(entity.ErrNotAnAggregator)
 	}
@@ -27,7 +28,7 @@ func (h *handler) GetAggregationStatusGet(ctx context.Context, params api.GetAgg
 	})
 	sort.Strings(operators)
 
-	return &api.AggregationStatus{
+	return &api2.AggregationStatus{
 		CurrentVotingPower: aggregationStatus.VotingPower.String(),
 		SignerOperators:    operators,
 	}, nil
