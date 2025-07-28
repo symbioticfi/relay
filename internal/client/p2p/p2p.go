@@ -149,21 +149,34 @@ func NewService(ctx context.Context, cfg Config) (*Service, error) {
 		},
 	}
 
-	go service.listenForMessages(ctx, signatureReadySub, service.handleSignatureReadyMessage)
-	go service.listenForMessages(ctx, proofReadySub, service.handleAggregatedProofReadyMessage)
+	go service.listenForMessages(ctx, signatureReadySub, signatureReadyTopic, service.handleSignatureReadyMessage)
+	go service.listenForMessages(ctx, proofReadySub, proofReadyTopic, service.handleAggregatedProofReadyMessage)
 
 	h.Network().Notify(service)
 
 	return service, nil
 }
 
-func (s *Service) listenForMessages(ctx context.Context, sub *pubsub.Subscription, handler func(ctx context.Context, msg *pubsub.Message) error) {
+func (s *Service) listenForMessages(ctx context.Context, sub *pubsub.Subscription, topic *pubsub.Topic, handler func(ctx context.Context, msg *pubsub.Message) error) {
+	defer func() {
+		if err := topic.Close(); err != nil && !errors.Is(err, context.Canceled) {
+			slog.WarnContext(ctx, "Failed to close topic", "topic", topic.String(), "error", err)
+		}
+		sub.Cancel()
+		slog.InfoContext(ctx, "Subscription and topic closed", "topic", topic.String())
+	}()
+
 	for {
 		msg, err := sub.Next(ctx)
 		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				slog.InfoContext(ctx, "Subscription context canceled, stopping listener", "topic", topic.String())
+				return
+			}
 			slog.ErrorContext(ctx, "Failed to read from subscription", "error", err)
 			return
 		}
+
 		slog.DebugContext(ctx, "Received message from p2p", "topic", msg.Topic, "from", msg.ReceivedFrom, "data", string(msg.Data))
 		if err := handler(ctx, msg); err != nil {
 			slog.ErrorContext(ctx, "Failed to handle message", "error", err, "message", msg)

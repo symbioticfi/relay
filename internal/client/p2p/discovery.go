@@ -2,12 +2,11 @@ package p2p
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"log/slog"
 	"sync"
 	"time"
 
+	"github.com/go-errors/errors"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/discovery"
 	"github.com/libp2p/go-libp2p/core/host"
@@ -67,7 +66,7 @@ func (s *DiscoveryService) initDHT(ctx context.Context) error {
 	mode := s.determineDHTMode(ctx)
 	bootnodes, err := s.parseBootstrapPeers(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to parse bootstrap peers: %w", err)
+		return errors.Errorf("failed to parse bootstrap peers: %w", err)
 	}
 	s.bootstrapPeers = bootnodes
 	kdht, err := dht.New(ctx, s.host,
@@ -77,13 +76,13 @@ func (s *DiscoveryService) initDHT(ctx context.Context) error {
 		dht.BootstrapPeers(s.bootstrapPeers...),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to create DHT: %w", err)
+		return errors.Errorf("failed to create DHT: %w", err)
 	}
 	s.dht = kdht
 	s.rdiscov = drouting.NewRoutingDiscovery(kdht)
 
 	if err := s.dht.Bootstrap(ctx); err != nil {
-		return fmt.Errorf("failed to bootstrap DHT: %w", err)
+		return errors.Errorf("failed to bootstrap DHT: %w", err)
 	}
 
 	go s.maintainConnections(ctx)
@@ -111,7 +110,7 @@ func (s *DiscoveryService) parseBootstrapPeers(ctx context.Context) ([]peer.Addr
 	for _, peerAddr := range s.cfg.Discovery.BootstrapPeers {
 		addrInfo, err := peer.AddrInfoFromString(peerAddr)
 		if err != nil {
-			return nil, fmt.Errorf("invalid bootstrap peer address %s: %w", peerAddr, err)
+			return nil, errors.Errorf("invalid bootstrap peer address %s: %w", peerAddr, err)
 		}
 		if addrInfo.ID == s.host.ID() {
 			slog.WarnContext(ctx, "Skipping self as bootstrap peer", "peer", addrInfo.ID)
@@ -130,7 +129,7 @@ func (s *DiscoveryService) initMDNS(ctx context.Context) error {
 	mdnsService := mdns.NewMdnsService(s.host, s.cfg.Discovery.MDNSServiceName, s)
 	s.mdns = mdnsService
 	if err := s.mdns.Start(); err != nil {
-		return fmt.Errorf("failed to start mDNS: %w", err)
+		return errors.Errorf("failed to start mDNS: %w", err)
 	}
 
 	slog.InfoContext(ctx, "mDNS initialized", "service-name", s.cfg.Discovery.MDNSServiceName)
@@ -151,12 +150,12 @@ func (s *DiscoveryService) Start(ctx context.Context) error {
 
 	if err := s.initDHT(wrappedCtx); err != nil {
 		cancel()
-		return fmt.Errorf("failed to initialize DHT: %w", err)
+		return errors.Errorf("failed to initialize DHT: %w", err)
 	}
 
 	if err := s.initMDNS(wrappedCtx); err != nil {
 		cancel()
-		return fmt.Errorf("failed to initialize mDNS: %w", err)
+		return errors.Errorf("failed to initialize mDNS: %w", err)
 	}
 
 	s.started = true
@@ -265,7 +264,7 @@ func (s *DiscoveryService) Advertise(ctx context.Context, topic string) error {
 	}
 	_, err := s.rdiscov.Advertise(ctx, topic, discovery.TTL(ttl))
 	if err != nil {
-		return fmt.Errorf("failed to advertise for topic %s: %w", topic, err)
+		return errors.Errorf("failed to advertise for topic %s: %w", topic, err)
 	}
 	slog.DebugContext(ctx, "Successfully advertised for topic", "topic", topic, "ttl", ttl)
 	return nil
