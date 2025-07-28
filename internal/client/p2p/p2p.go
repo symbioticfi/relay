@@ -41,32 +41,32 @@ type metrics interface {
 // DiscoveryConfig contains discovery protocol configuration
 type DiscoveryConfig struct {
 	// EnableMDNS specifies whether mDNS discovery is enabled.
-	EnableMDNS bool `yaml:"enable_mdns"`
+	EnableMDNS bool
 	// MDNSServiceName is the mDNS service name.
-	MDNSServiceName string `yaml:"mdns_service_name"`
+	MDNSServiceName string
 
 	// DHTMode specifies the DHT mode.
-	DHTMode string `yaml:"dht_mode"`
+	DHTMode string
 	// BootstrapPeers is the list of bootstrap peers in multiaddr format.
-	BootstrapPeers []string `yaml:"bootstrap_peers"`
+	BootstrapPeers []string
 	// AdvertiseTTL is the advertise time-to-live duration.
-	AdvertiseTTL time.Duration `yaml:"advertise_ttl"`
+	AdvertiseTTL time.Duration
 	// AdvertiseServiceName is the advertise service name.
-	AdvertiseServiceName string `yaml:"advertise_service_name"`
+	AdvertiseServiceName string
 	// AdvertiseInterval is the interval between advertisements.
-	AdvertiseInterval time.Duration `yaml:"advertise_period"`
+	AdvertiseInterval time.Duration
 	// ConnectionTimeout is the timeout for peer connections.
-	ConnectionTimeout time.Duration `yaml:"connection_timeout"`
+	ConnectionTimeout time.Duration
 	// MaxDHTReconnectPeerCount is the maximum number of DHT reconnect peers.
-	MaxDHTReconnectPeerCount int `yaml:"max_dht_reconnect_peer_count"`
+	MaxDHTReconnectPeerCount int
 	// DHTPeerDiscoveryInterval is the interval for DHT peer discovery. Should be smaller than AdvertiseInterval.
-	DHTPeerDiscoveryInterval time.Duration `yaml:"dht_peer_discovery_interval"`
+	DHTPeerDiscoveryInterval time.Duration
 	// DHTRoutingTableRefreshInterval is the interval for DHT routing table refresh. Should be greater than DHTPeerDiscoveryInterval.
-	DHTRoutingTableRefreshInterval time.Duration `yaml:"dht_routing_table_refresh_interval"`
+	DHTRoutingTableRefreshInterval time.Duration
 }
 
-func DefaultDiscoveryConfig() *DiscoveryConfig {
-	return &DiscoveryConfig{
+func DefaultDiscoveryConfig() DiscoveryConfig {
+	return DiscoveryConfig{
 		EnableMDNS:      false,
 		MDNSServiceName: "symbiotic-mdns",
 
@@ -82,10 +82,10 @@ func DefaultDiscoveryConfig() *DiscoveryConfig {
 }
 
 type Config struct {
-	Host        host.Host        `validate:"required"`
-	SendTimeout time.Duration    `validate:"required,gt=0"`
-	Metrics     metrics          `validate:"required"`
-	Discovery   *DiscoveryConfig `validate:"required"`
+	Host        host.Host       `validate:"required"`
+	SendTimeout time.Duration   `validate:"required,gt=0"`
+	Metrics     metrics         `validate:"required"`
+	Discovery   DiscoveryConfig `validate:"required"`
 }
 
 func (c Config) Validate() error {

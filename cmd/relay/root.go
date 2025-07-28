@@ -120,15 +120,16 @@ func runApp(ctx context.Context) error {
 	slog.InfoContext(ctx, "Created p2p service", "listenAddr", h.Addrs(), "id", h.ID().String())
 	defer p2pService.Close()
 
-	discoveryService, err := p2p.NewDiscoveryService(ctx, &p2pCfg)
+	discoveryService, err := p2p.NewDiscoveryService(p2pCfg)
 	if err != nil {
 		return errors.Errorf("failed to create discovery service: %w", err)
 	}
-	defer discoveryService.Close()
 	slog.InfoContext(ctx, "Created discovery service", "listenAddr", cfg.P2PListenAddress)
-	if err := discoveryService.Start(); err != nil {
+	if err := discoveryService.Start(ctx); err != nil {
 		return errors.Errorf("failed to start discovery service: %w", err)
 	}
+	defer discoveryService.Close(ctx)
+
 	slog.InfoContext(ctx, "Started discovery service", "listenAddr", cfg.P2PListenAddress)
 
 	repo, err := badger.New(badger.Config{Dir: cfg.StorageDir})
