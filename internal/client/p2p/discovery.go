@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"sync"
@@ -37,8 +38,8 @@ type discService struct {
 // DiscoveryService represents the peer discovery service interface.
 type DiscoveryService interface {
 	Start() error
-	Stop() error
-	GetDiscoveryClient() *drouting.RoutingDiscovery
+	Close() error
+	GetDiscoveryClient(ctx context.Context) *drouting.RoutingDiscovery
 }
 
 const ProtocolPrefix = "/symbiotic"
@@ -46,13 +47,13 @@ const ProtocolPrefix = "/symbiotic"
 // NewDiscoveryService creates a new discovery service.
 func NewDiscoveryService(ctx context.Context, cfg *Config) (DiscoveryService, error) {
 	if cfg == nil {
-		return nil, fmt.Errorf("config cannot be nil")
+		return nil, errors.New("config cannot be nil")
 	}
 	if cfg.Discovery == nil {
 		cfg.Discovery = DefaultDiscoveryConfig()
 	}
 	if cfg.Host == nil {
-		return nil, fmt.Errorf("host cannot be nil")
+		return nil, errors.New("host cannot be nil")
 	}
 
 	discCtx, cancel := context.WithCancel(ctx)
@@ -64,34 +65,32 @@ func NewDiscoveryService(ctx context.Context, cfg *Config) (DiscoveryService, er
 		bootstrapPeers: make([]peer.AddrInfo, 0),
 	}
 
-	if err := service.initDHT(); err != nil {
+	if err := service.initDHT(discCtx); err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to initialize DHT: %w", err)
 	}
-	if err := service.initMDNS(); err != nil {
-		cancel()
-		return nil, fmt.Errorf("failed to initialize mDNS: %w", err)
-	}
+	service.initMDNS(discCtx)
+
 	if service.dht != nil {
 		service.rdiscov = drouting.NewRoutingDiscovery(service.dht)
 	}
 
-	slog.Info("Discovery service created successfully")
+	slog.InfoContext(discCtx, "Discovery service created successfully")
 	return service, nil
 }
 
-func (s *discService) initDHT() error {
+func (s *discService) initDHT(ctx context.Context) error {
 	if s.cfg.Discovery.DHTMode == "disabled" {
-		slog.Info("DHT disabled by configuration")
+		slog.InfoContext(ctx, "DHT disabled by configuration")
 		return nil
 	}
-	mode := s.determineDHTMode()
-	bootnodes, err := s.parseBootstrapPeers()
+	mode := s.determineDHTMode(ctx)
+	bootnodes, err := s.parseBootstrapPeers(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to parse bootstrap peers: %w", err)
 	}
 	s.bootstrapPeers = bootnodes
-	kdht, err := dht.New(s.ctx, s.host,
+	kdht, err := dht.New(ctx, s.host,
 		dht.Mode(mode),
 		dht.ProtocolPrefix(ProtocolPrefix),
 		dht.RoutingTableRefreshPeriod(s.cfg.Discovery.DHTRoutingTableRefreshInterval),
@@ -101,11 +100,11 @@ func (s *discService) initDHT() error {
 		return fmt.Errorf("failed to create DHT: %w", err)
 	}
 	s.dht = kdht
-	slog.Info("DHT initialized", "mode", mode, "bucket_size", 25, "concurrency", 20)
+	slog.InfoContext(ctx, "DHT initialized", "mode", mode, "bucket_size", 25, "concurrency", 20)
 	return nil
 }
 
-func (s *discService) determineDHTMode() dht.ModeOpt {
+func (s *discService) determineDHTMode(ctx context.Context) dht.ModeOpt {
 	switch s.cfg.Discovery.DHTMode {
 	case "client":
 		return dht.ModeClient
@@ -114,20 +113,20 @@ func (s *discService) determineDHTMode() dht.ModeOpt {
 	case "auto", "":
 		return dht.ModeAuto
 	default:
-		slog.Warn("Invalid DHT mode, defaulting to auto", "mode", s.cfg.Discovery.DHTMode)
+		slog.WarnContext(ctx, "Invalid DHT mode, defaulting to auto", "mode", s.cfg.Discovery.DHTMode)
 		return dht.ModeAuto
 	}
 }
 
-func (s *discService) parseBootstrapPeers() ([]peer.AddrInfo, error) {
-	var bootPeers []peer.AddrInfo
+func (s *discService) parseBootstrapPeers(ctx context.Context) ([]peer.AddrInfo, error) {
+	bootPeers := make([]peer.AddrInfo, 0, len(s.cfg.Discovery.BootstrapPeers))
 	for _, peerAddr := range s.cfg.Discovery.BootstrapPeers {
 		addrInfo, err := peer.AddrInfoFromString(peerAddr)
 		if err != nil {
 			return nil, fmt.Errorf("invalid bootstrap peer address %s: %w", peerAddr, err)
 		}
 		if addrInfo.ID == s.host.ID() {
-			slog.Warn("Skipping self as bootstrap peer", "peer", addrInfo.ID)
+			slog.WarnContext(ctx, "Skipping self as bootstrap peer", "peer", addrInfo.ID)
 			continue
 		}
 		bootPeers = append(bootPeers, *addrInfo)
@@ -135,40 +134,41 @@ func (s *discService) parseBootstrapPeers() ([]peer.AddrInfo, error) {
 	return bootPeers, nil
 }
 
-func (s *discService) initMDNS() error {
+func (s *discService) initMDNS(ctx context.Context) {
 	if !s.cfg.Discovery.EnableMDNS {
-		slog.Info("mDNS disabled by configuration")
-		return nil
+		slog.InfoContext(ctx, "mDNS disabled by configuration")
 	}
 	mdnsService := mdns.NewMdnsService(s.host, s.cfg.Discovery.MDNSServiceName, s)
 	s.mdns = mdnsService
-	slog.Info("mDNS initialized", "service-name", s.cfg.Discovery.MDNSServiceName)
-	return nil
+	slog.InfoContext(ctx, "mDNS initialized", "service-name", s.cfg.Discovery.MDNSServiceName)
 }
 
 func (s *discService) Start() error {
+	// linter suggests to use separate context
+	wrapperCtx := context.WithoutCancel(s.ctx)
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.started {
-		return fmt.Errorf("discovery service already started")
+		return errors.New("discovery service already started")
 	}
-	slog.Info("Starting discovery service...")
+	slog.InfoContext(wrapperCtx, "Starting discovery service...")
 
 	if s.dht != nil {
-		if err := s.dht.Bootstrap(s.ctx); err != nil {
+		if err := s.dht.Bootstrap(wrapperCtx); err != nil {
 			return fmt.Errorf("failed to bootstrap DHT: %w", err)
 		}
-		slog.Info("DHT bootstrap initiated")
-		go s.maintainConnections(s.ctx)
+		slog.InfoContext(wrapperCtx, "DHT bootstrap initiated")
+		go s.maintainConnections(wrapperCtx)
 	}
 	if s.mdns != nil {
 		if err := s.mdns.Start(); err != nil {
 			return fmt.Errorf("failed to start mDNS: %w", err)
 		}
-		slog.Info("mDNS discovery started")
+		slog.InfoContext(wrapperCtx, "mDNS discovery started")
 	}
 	s.started = true
-	slog.Info("Discovery service started successfully")
+	slog.InfoContext(wrapperCtx, "Discovery service started successfully")
 	return nil
 }
 
@@ -182,10 +182,10 @@ func (s *discService) maintainConnections(ctx context.Context) {
 		case <-ticker.C:
 			s.mu.RLock()
 			for _, peerInfo := range s.bootstrapPeers {
-				if err := s.connectToPeer(peerInfo); err != nil {
-					slog.Debug("Failed to connect to bootstrap peer", "peer", peerInfo.ID, "error", err)
+				if err := s.connectToPeer(ctx, peerInfo); err != nil {
+					slog.DebugContext(ctx, "Failed to connect to bootstrap peer", "peer", peerInfo.ID, "error", err)
 				} else {
-					slog.Debug("Connected to bootstrap peer", "peer", peerInfo.ID)
+					slog.DebugContext(ctx, "Connected to bootstrap peer", "peer", peerInfo.ID)
 				}
 			}
 			s.mu.RUnlock()
@@ -193,10 +193,10 @@ func (s *discService) maintainConnections(ctx context.Context) {
 			if s.dht != nil && s.cfg.Discovery.AdvertiseServiceName != "" {
 				if s.lastAdvertisement.IsZero() || time.Since(s.lastAdvertisement) >= s.cfg.Discovery.AdvertiseInterval {
 					if err := s.Advertise(ctx, s.cfg.Discovery.AdvertiseServiceName); err != nil {
-						slog.Error("Failed to advertise in DHT", "error", err)
+						slog.ErrorContext(ctx, "Failed to advertise in DHT", "error", err)
 					} else {
 						s.lastAdvertisement = time.Now()
-						slog.Debug("Successfully advertised in DHT", "peer", s.host.ID())
+						slog.DebugContext(ctx, "Successfully advertised in DHT", "peer", s.host.ID())
 					}
 				}
 
@@ -204,7 +204,7 @@ func (s *discService) maintainConnections(ctx context.Context) {
 				peers, err := s.rdiscov.FindPeers(findCtx, s.cfg.Discovery.AdvertiseServiceName)
 				if err != nil {
 					findCancel()
-					slog.Error("Failed to find closest peers", "error", err)
+					slog.ErrorContext(ctx, "Failed to find closest peers", "error", err)
 					continue
 				}
 				count := s.cfg.Discovery.MaxDHTReconnectPeerCount
@@ -212,14 +212,14 @@ func (s *discService) maintainConnections(ctx context.Context) {
 					if s.host.ID() == peerInfo.ID {
 						continue
 					}
-					if err := s.connectToPeer(peerInfo); err != nil {
-						slog.Warn("Failed to connect to DHT peer", "peer", peerInfo.ID, "error", err)
+					if err := s.connectToPeer(ctx, peerInfo); err != nil {
+						slog.WarnContext(ctx, "Failed to connect to DHT peer", "peer", peerInfo.ID, "error", err)
 					} else {
-						slog.Debug("Connected to DHT peer", "peer", peerInfo.ID)
+						slog.DebugContext(ctx, "Connected to DHT peer", "peer", peerInfo.ID)
 						count--
 					}
 					if count <= 0 {
-						slog.Debug("Reached connection limit for DHT peers", "limit", count)
+						slog.DebugContext(ctx, "Reached connection limit for DHT peers", "limit", count)
 						break
 					}
 				}
@@ -229,43 +229,47 @@ func (s *discService) maintainConnections(ctx context.Context) {
 	}
 }
 
-func (s *discService) Stop() error {
+func (s *discService) Close() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if !s.started {
 		return nil
 	}
-	slog.Info("Stopping discovery service...")
+
+	// linter suggests to use separate context
+	wrapperCtx := context.WithoutCancel(s.ctx)
+
+	slog.InfoContext(wrapperCtx, "Stopping discovery service...")
 	s.cancel()
 	if s.dht != nil {
 		if err := s.dht.Close(); err != nil {
-			slog.Error("Error closing DHT", "error", err)
+			slog.ErrorContext(wrapperCtx, "Error closing DHT", "error", err)
 		}
 	}
 	if s.mdns != nil {
 		if err := s.mdns.Close(); err != nil {
-			slog.Error("Error closing mDNS", "error", err)
+			slog.ErrorContext(wrapperCtx, "Error closing mDNS", "error", err)
 		}
 	}
 	s.started = false
-	slog.Info("Discovery service stopped successfully")
+	slog.InfoContext(wrapperCtx, "Discovery service stopped successfully")
 	return nil
 }
 
-func (s *discService) GetDiscoveryClient() *drouting.RoutingDiscovery {
+func (s *discService) GetDiscoveryClient(ctx context.Context) *drouting.RoutingDiscovery {
 	if s.rdiscov == nil {
-		slog.Warn("Routing discovery client is not initialized")
+		slog.WarnContext(ctx, "Routing discovery client is not initialized")
 		return nil
 	}
-	slog.Debug("Returning routing discovery client")
+	slog.DebugContext(ctx, "Returning routing discovery client")
 	return s.rdiscov
 }
 
 func (s *discService) Advertise(ctx context.Context, topic string) error {
 	if s.rdiscov == nil {
-		return fmt.Errorf("routing discovery not available")
+		return errors.New("routing discovery not available")
 	}
-	slog.Debug("Advertising for topic", "topic", topic)
+	slog.DebugContext(ctx, "Advertising for topic", "topic", topic)
 	ttl := s.cfg.Discovery.AdvertiseTTL
 	if ttl == 0 {
 		ttl = 12 * time.Hour
@@ -274,26 +278,29 @@ func (s *discService) Advertise(ctx context.Context, topic string) error {
 	if err != nil {
 		return fmt.Errorf("failed to advertise for topic %s: %w", topic, err)
 	}
-	slog.Debug("Successfully advertised for topic", "topic", topic, "ttl", ttl)
+	slog.DebugContext(ctx, "Successfully advertised for topic", "topic", topic, "ttl", ttl)
 	return nil
 }
 
 // HandlePeerFound processes a newly discovered mDNS peer and attempts to connect.
 func (s *discService) HandlePeerFound(peerInfo peer.AddrInfo) {
-	slog.Debug("Discovered new mDNS peer", "peer", peerInfo.ID, "addresses", peerInfo.Addrs)
+	// linter suggests to use separate context
+	wrapperCtx := context.WithoutCancel(s.ctx)
+
+	slog.DebugContext(wrapperCtx, "Discovered new mDNS peer", "peer", peerInfo.ID, "addresses", peerInfo.Addrs)
 
 	// Attempt to connect to the discovered peer
-	if err := s.connectToPeer(peerInfo); err != nil {
-		slog.Warn("Failed to connect to mDNS peer", "peer", peerInfo.ID, "error", err)
+	if err := s.connectToPeer(wrapperCtx, peerInfo); err != nil {
+		slog.WarnContext(wrapperCtx, "Failed to connect to mDNS peer", "peer", peerInfo.ID, "error", err)
 	}
 }
 
-func (s *discService) connectToPeer(peerInfo peer.AddrInfo) error {
+func (s *discService) connectToPeer(ctx context.Context, peerInfo peer.AddrInfo) error {
 	if s.host.Network().Connectedness(peerInfo.ID) == network.Connected {
-		slog.Debug("Already connected to peer", "peer", peerInfo.ID)
+		slog.DebugContext(ctx, "Already connected to peer", "peer", peerInfo.ID)
 		return nil
 	}
-	ctx, cancel := context.WithTimeout(s.ctx, s.cfg.Discovery.ConnectionTimeout)
+	ctx, cancel := context.WithTimeout(ctx, s.cfg.Discovery.ConnectionTimeout)
 	defer cancel()
 	return s.host.Connect(ctx, peerInfo)
 }

@@ -112,7 +112,7 @@ type config struct {
 	CircuitsDir       string                      `mapstructure:"circuits-dir"`
 	KeyStore          entity.KeyStore             `mapstructure:"keystore"`
 	Bootnodes         []string                    `mapstructure:"bootnodes"`
-	DHTMode           string                      `mapstructure:"dht-mode" validate:"oneof=auto server client"`
+	DHTMode           string                      `mapstructure:"dht-mode" validate:"oneof=auto server client disabled"`
 	MDnsEnabled       bool                        `mapstructure:"enable-mdns"`
 }
 

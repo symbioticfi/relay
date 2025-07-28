@@ -117,14 +117,14 @@ func runApp(ctx context.Context) error {
 	if err != nil {
 		return errors.Errorf("failed to create p2p service: %w", err)
 	}
-	slog.InfoContext(ctx, "Created p2p service", "listenAddr", cfg.P2PListenAddress, "id", h.ID())
+	slog.InfoContext(ctx, "Created p2p service", "listenAddr", h.Addrs(), "id", h.ID().String())
 	defer p2pService.Close()
 
 	discoveryService, err := p2p.NewDiscoveryService(ctx, &p2pCfg)
 	if err != nil {
 		return errors.Errorf("failed to create discovery service: %w", err)
 	}
-	defer discoveryService.Stop()
+	defer discoveryService.Close()
 	slog.InfoContext(ctx, "Created discovery service", "listenAddr", cfg.P2PListenAddress)
 	if err := discoveryService.Start(); err != nil {
 		return errors.Errorf("failed to start discovery service: %w", err)
