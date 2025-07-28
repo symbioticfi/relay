@@ -2,6 +2,11 @@
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/symbioticfi/relay)
 
+> [!WARNING]  
+> The code is a work in progress and not production ready yet.
+> Breaking changes may occur in the code updates as well as backward compatibility is not guaranteed.
+> Use with caution.
+
 ## Overview
 
 The Symbiotic Relay operates as a distributed middleware layer that facilitates:
