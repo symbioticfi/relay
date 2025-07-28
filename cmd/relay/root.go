@@ -10,8 +10,8 @@ import (
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
-	"github.com/pavlo-v-chernykh/keystore-go/v4"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
+	"github.com/pavlo-v-chernykh/keystore-go/v4"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/symbioticfi/relay/core/client/evm"
