@@ -19,3 +19,6 @@ committer: true
 storage-dir: ".data"
 chains:
   - "http://127.0.0.1:8545"
+enable-mdns: true
+dht-mode: disabled
+p2p-listen: "/ip4/0.0.0.0/tcp/8881"

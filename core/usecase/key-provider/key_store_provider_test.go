@@ -29,7 +29,7 @@ func TestAddKey(t *testing.T) {
 	key, err := crypto.NewPrivateKey(entity.KeyTypeBlsBn254, pk)
 	require.NoError(t, err)
 
-	err = kp.AddKey(15, key, password, false)
+	err = kp.AddKey(SYMBIOTIC_KEY_NAMESPACE, 15, key, password, false)
 	require.NoError(t, err)
 }
 
@@ -44,13 +44,13 @@ func TestForceAddKey(t *testing.T) {
 	key, err := crypto.NewPrivateKey(entity.KeyTypeBlsBn254, pk)
 	require.NoError(t, err)
 
-	err = kp.AddKey(15, key, password, false)
+	err = kp.AddKey(SYMBIOTIC_KEY_NAMESPACE, 15, key, password, false)
 	require.NoError(t, err)
 
-	err = kp.AddKey(15, key, password, false)
+	err = kp.AddKey(SYMBIOTIC_KEY_NAMESPACE, 15, key, password, false)
 	require.Error(t, err)
 
-	err = kp.AddKey(15, key, password, true)
+	err = kp.AddKey(SYMBIOTIC_KEY_NAMESPACE, 15, key, password, true)
 	require.NoError(t, err)
 }
 
@@ -65,7 +65,7 @@ func TestCreateAndReopen(t *testing.T) {
 	key, err := crypto.NewPrivateKey(entity.KeyTypeBlsBn254, pk)
 	require.NoError(t, err)
 
-	err = kp.AddKey(15, key, password, false)
+	err = kp.AddKey(SYMBIOTIC_KEY_NAMESPACE, 15, key, password, false)
 	require.NoError(t, err)
 
 	kp, err = NewKeystoreProvider(path, password)
