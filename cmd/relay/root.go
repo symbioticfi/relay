@@ -8,6 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p/p2p/security/noise"
+	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/symbioticfi/relay/core/client/evm"
@@ -86,7 +88,11 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create valset deriver: %w", err)
 	}
 
-	var opts []libp2p.Option
+	opts := []libp2p.Option{
+		libp2p.Transport(tcp.NewTCPTransport),
+		libp2p.Security(noise.ID, noise.New),
+		libp2p.DefaultMuxers,
+	}
 	if cfg.P2PListenAddress != "" {
 		opts = append(opts, libp2p.ListenAddrStrings(cfg.P2PListenAddress))
 	}
@@ -95,22 +101,30 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create libp2p host: %w", err)
 	}
 
-	p2pService, err := p2p.NewService(ctx, p2p.Config{
+	p2pCfg := p2p.Config{
 		Host:        h,
 		SendTimeout: time.Second * 10,
 		Metrics:     mtr,
-	})
+		Discovery:   p2p.DefaultDiscoveryConfig(),
+	}
+	if len(cfg.Bootnodes) > 0 {
+		p2pCfg.Discovery.BootstrapPeers = cfg.Bootnodes
+	}
+	p2pCfg.Discovery.DHTMode = cfg.DHTMode
+	p2pCfg.Discovery.EnableMDNS = cfg.MDnsEnabled
+
+	p2pService, err := p2p.NewService(ctx, p2pCfg)
 	if err != nil {
 		return errors.Errorf("failed to create p2p service: %w", err)
 	}
-	slog.InfoContext(ctx, "Created p2p service", "listenAddr", cfg.P2PListenAddress)
+	slog.InfoContext(ctx, "Created p2p service", "listenAddr", cfg.P2PListenAddress, "id", h.ID())
 	defer p2pService.Close()
 
-	discoveryService, err := p2p.NewDiscoveryService(ctx, p2pService, h)
+	discoveryService, err := p2p.NewDiscoveryService(ctx, &p2pCfg)
 	if err != nil {
 		return errors.Errorf("failed to create discovery service: %w", err)
 	}
-	defer discoveryService.Close()
+	defer discoveryService.Stop()
 	slog.InfoContext(ctx, "Created discovery service", "listenAddr", cfg.P2PListenAddress)
 	if err := discoveryService.Start(); err != nil {
 		return errors.Errorf("failed to start discovery service: %w", err)
