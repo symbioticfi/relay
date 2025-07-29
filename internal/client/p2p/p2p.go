@@ -272,9 +272,9 @@ func (s *Service) ListenClose(n network.Network, multiaddr multiaddr.Multiaddr) 
 }
 
 func (s *Service) Connected(n network.Network, conn network.Conn) {
-	slog.InfoContext(s.ctx, "Connected to peer", "peer", conn.RemotePeer().String(), "totalPeers", len(s.host.Peerstore().Peers()))
+	slog.DebugContext(s.ctx, "Connected to peer", "peer", conn.RemotePeer().String(), "totalPeers", len(s.host.Peerstore().Peers()))
 }
 
 func (s *Service) Disconnected(n network.Network, conn network.Conn) {
-	slog.InfoContext(s.ctx, "Disconnected from peer", "remotePeer", conn.RemotePeer(), "localPeer", conn.LocalPeer(), "totalPeers", len(s.host.Peerstore().Peers()))
+	slog.DebugContext(s.ctx, "Disconnected from peer", "remotePeer", conn.RemotePeer(), "localPeer", conn.LocalPeer(), "totalPeers", len(s.host.Peerstore().Peers()))
 }
