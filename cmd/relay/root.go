@@ -125,10 +125,9 @@ func runApp(ctx context.Context) error {
 	}
 
 	p2pCfg := p2p.Config{
-		Host:        h,
-		SendTimeout: time.Second * 10,
-		Metrics:     mtr,
-		Discovery:   p2p.DefaultDiscoveryConfig(),
+		Host:      h,
+		Metrics:   mtr,
+		Discovery: p2p.DefaultDiscoveryConfig(),
 	}
 	if len(cfg.Bootnodes) > 0 {
 		p2pCfg.Discovery.BootstrapPeers = cfg.Bootnodes

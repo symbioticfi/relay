@@ -3,7 +3,6 @@ package p2p
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 
 	"github.com/go-errors/errors"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -30,22 +29,9 @@ func (s *Service) handleSignatureReadyMessage(ctx context.Context, pubSubMsg *pu
 		},
 	}
 
-	si := p2pEntity.SenderInfo{
-		Sender: pubSubMsg.ReceivedFrom.String(),
-	}
-
-	// try to extract public key from sender peer.ID
-	pubKey, err := pubSubMsg.ReceivedFrom.ExtractPublicKey()
+	si, err := extractSenderInfo(pubSubMsg)
 	if err != nil {
-		slog.WarnContext(ctx, "Failed to extract public key from received message", "error", err, "peer", pubSubMsg.ReceivedFrom)
-	} else {
-		raw, err := pubKey.Raw()
-		if err != nil {
-			slog.WarnContext(ctx, "Failed to extract raw public key from received message", "error", err, "peer", pubSubMsg.ReceivedFrom)
-		} else {
-			// If we have a valid public key, we can use it in the sender info
-			si.PublicKey = raw
-		}
+		return errors.Errorf("failed to extract sender info from received message: %w", err)
 	}
 
 	s.signatureReceivedHandler.Emit(ctx, p2pEntity.P2PMessage[entity.SignatureMessage]{
@@ -73,8 +59,10 @@ func (s *Service) handleAggregatedProofReadyMessage(ctx context.Context, pubSubM
 			Proof:            signaturesAggregated.AggregationProof.Proof,
 		},
 	}
-	si := p2pEntity.SenderInfo{
-		Sender: pubSubMsg.ReceivedFrom.String(),
+
+	si, err := extractSenderInfo(pubSubMsg)
+	if err != nil {
+		return errors.Errorf("failed to extract sender info from received message: %w", err)
 	}
 
 	s.signaturesAggregatedHandler.Emit(ctx, p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]{
@@ -85,6 +73,24 @@ func (s *Service) handleAggregatedProofReadyMessage(ctx context.Context, pubSubM
 	return nil
 }
 
+func extractSenderInfo(pubSubMsg *pubsub.Message) (p2pEntity.SenderInfo, error) {
+	// try to extract public key from sender peer.ID
+	pubKey, err := pubSubMsg.ReceivedFrom.ExtractPublicKey()
+	if err != nil {
+		return p2pEntity.SenderInfo{}, errors.Errorf("failed to extract public key from received message from peer %s: %w", pubSubMsg.ReceivedFrom.String(), err)
+	}
+
+	raw, err := pubKey.Raw()
+	if err != nil {
+		return p2pEntity.SenderInfo{}, errors.Errorf("failed to get raw public key from peer %s: %w", pubSubMsg.ReceivedFrom.String(), err)
+	}
+
+	return p2pEntity.SenderInfo{
+		Sender:    pubSubMsg.ReceivedFrom.String(),
+		PublicKey: raw,
+	}, nil
+}
+
 func unmarshalMessage(msg *pubsub.Message, v interface{}) error {
 	var message p2pMessage
 	if err := json.Unmarshal(msg.GetData(), &message); err != nil {
@@ -92,7 +98,7 @@ func unmarshalMessage(msg *pubsub.Message, v interface{}) error {
 	}
 
 	if err := json.Unmarshal(message.Data, v); err != nil {
-		return errors.Errorf("failed to unmarshal signatureGenerated message: %w", err)
+		return errors.Errorf("failed to unmarshal message: %w", err)
 	}
 
 	return nil
