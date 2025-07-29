@@ -99,7 +99,8 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.Errorf("failed to get aggregation proof: %w", err)
 	}
 	if err == nil {
-		return errors.New("aggregation proof already exists for this request")
+		slog.DebugContext(ctx, "Aggregation proof already exists", "request", req)
+		return nil
 	}
 
 	if _, err := s.cfg.Repo.UpdateSignatureStat(ctx, req.Hash(), entity.SignatureStatStageSignRequestReceived, timeAppSignStart); err != nil {
