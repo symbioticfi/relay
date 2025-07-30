@@ -205,14 +205,14 @@ linters:
         - name: errorf
         - name: file-header
 #        - name: flag-parameter
-#        - name: function-result-limit
+        - name: function-result-limit
         - name: identical-branches
         - name: imports-blocklist
         - name: increment-decrement
         - name: indent-error-flow
         - name: modifies-parameter
         - name: modifies-value-receiver
-#        - name: nested-structs
+        - name: nested-structs
         - name: optimize-operands-order
         - name: range-val-address
         - name: range-val-in-closure

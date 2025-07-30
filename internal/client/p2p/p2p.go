@@ -12,7 +12,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/libp2p/go-libp2p/core/peerstore"
 	"github.com/multiformats/go-multiaddr"
 
 	"github.com/symbioticfi/relay/core/entity"
@@ -77,10 +76,11 @@ func DefaultDiscoveryConfig() DiscoveryConfig {
 }
 
 type Config struct {
-	Host        host.Host       `validate:"required"`
-	SendTimeout time.Duration   `validate:"required,gt=0"`
-	Metrics     metrics         `validate:"required"`
-	Discovery   DiscoveryConfig `validate:"required"`
+	Host            host.Host `validate:"required"`
+	SkipMessageSign bool
+	Metrics         metrics         `validate:"required"`
+	Discovery       DiscoveryConfig `validate:"required"`
+	EventTracer     pubsub.EventTracer
 }
 
 func (c Config) Validate() error {
@@ -97,7 +97,6 @@ type Service struct {
 	host                        host.Host
 	signatureReceivedHandler    *signals.Signal[p2pEntity.P2PMessage[entity.SignatureMessage]]
 	signaturesAggregatedHandler *signals.Signal[p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]]
-	sendTimeout                 time.Duration
 	metrics                     metrics
 	topicsMap                   map[string]*pubsub.Topic
 }
@@ -110,9 +109,18 @@ func NewService(ctx context.Context, cfg Config) (*Service, error) {
 
 	h := cfg.Host
 
-	ps, err := pubsub.NewGossipSub(ctx, h,
-		pubsub.WithMessageSignaturePolicy(pubsub.StrictSign),
-	)
+	signPolicy := pubsub.StrictSign
+	if cfg.SkipMessageSign {
+		slog.WarnContext(ctx, "Message signing is disabled, this may lead to security issues")
+		signPolicy = pubsub.StrictNoSign
+	}
+	opts := []pubsub.Option{
+		pubsub.WithMessageSignaturePolicy(signPolicy),
+	}
+	if cfg.EventTracer != nil {
+		opts = append(opts, pubsub.WithEventTracer(cfg.EventTracer))
+	}
+	ps, err := pubsub.NewGossipSub(ctx, h, opts...)
 	if err != nil {
 		return nil, errors.Errorf("failed to create GossipSub: %w", err)
 	}
@@ -140,7 +148,6 @@ func NewService(ctx context.Context, cfg Config) (*Service, error) {
 		host:                        h,
 		signatureReceivedHandler:    signals.New[p2pEntity.P2PMessage[entity.SignatureMessage]](),
 		signaturesAggregatedHandler: signals.New[p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]](),
-		sendTimeout:                 cfg.SendTimeout,
 		metrics:                     cfg.Metrics,
 
 		topicsMap: map[string]*pubsub.Topic{
@@ -193,7 +200,7 @@ func (s *Service) AddSignaturesAggregatedMessageListener(mh func(ctx context.Con
 	s.signaturesAggregatedHandler.AddListener(mh, key)
 }
 
-func (s *Service) AddPeer(pi peer.AddrInfo) error {
+func (s *Service) addPeer(pi peer.AddrInfo) error {
 	if pi.ID == s.host.ID() {
 		slog.InfoContext(s.ctx, "Skipping self-connection", "peer", pi.ID)
 		return nil
@@ -208,11 +215,6 @@ func (s *Service) AddPeer(pi peer.AddrInfo) error {
 		slog.ErrorContext(s.ctx, "Failed to connect to peer", "peer", pi.ID, "error", err)
 		return errors.Errorf("failed to connect to peer %s: %w", pi.ID.ShortString(), err)
 	}
-
-	s.host.Peerstore().AddAddrs(pi.ID, pi.Addrs, peerstore.PermanentAddrTTL)
-
-	slog.InfoContext(ctx, "Connected to peer", "peer", pi.ID, "totalPeers", len(s.host.Peerstore().Peers()))
-
 	return nil
 }
 
@@ -270,10 +272,9 @@ func (s *Service) ListenClose(n network.Network, multiaddr multiaddr.Multiaddr) 
 }
 
 func (s *Service) Connected(n network.Network, conn network.Conn) {
+	slog.DebugContext(s.ctx, "Connected to peer", "peer", conn.RemotePeer().String(), "totalPeers", len(s.host.Peerstore().Peers()))
 }
 
 func (s *Service) Disconnected(n network.Network, conn network.Conn) {
-	s.host.Peerstore().RemovePeer(conn.RemotePeer())
-
-	slog.InfoContext(s.ctx, "Disconnected from peer", "remotePeer", conn.RemotePeer(), "localPeer", conn.LocalPeer(), "totalPeers", len(s.host.Peerstore().Peers()))
+	slog.DebugContext(s.ctx, "Disconnected from peer", "remotePeer", conn.RemotePeer(), "localPeer", conn.LocalPeer(), "totalPeers", len(s.host.Peerstore().Peers()))
 }

@@ -501,6 +501,7 @@ func (v *SszValidatorSet) GetTree() (*ssz.Node, error) {
 	return ssz.ProofTree(v)
 }
 
+//nolint:revive // function-result-limit: This function needs to return multiple complex types for cryptographic operations
 func (v *SszValidatorSet) ProveValidatorRoot(operator common.Address) (*SszValidator, int, *ssz.Proof, error) {
 	validatorIndex := sort.Search(len(v.Validators), func(i int) bool {
 		return v.Validators[i].Operator.Cmp(operator) >= 0
@@ -584,6 +585,7 @@ func (v *SszValidator) ProveValidatorIsActive() (*ssz.Proof, error) {
 	return isActiveProof, nil
 }
 
+//nolint:revive // function-result-limit: This function needs to return multiple complex types for cryptographic operations
 func (v *SszValidator) ProveKeyRoot(keyTag uint8) (*SszKey, int, *ssz.Proof, error) {
 	keyIndex := sort.Search(len(v.Keys), func(i int) bool {
 		return v.Keys[i].Tag >= keyTag
@@ -650,6 +652,7 @@ func (k *SszKey) ProveKeyPayloadHash() (*ssz.Proof, error) {
 	return payloadHashProof, nil
 }
 
+//nolint:revive // function-result-limit: This function needs to return multiple complex types for cryptographic operations
 func (v *SszValidator) ProveVaultRoot(vault common.Address) (*SszVault, int, *ssz.Proof, error) {
 	vaultIndex := sort.Search(len(v.Vaults), func(i int) bool {
 		return v.Vaults[i].Vault.Cmp(vault) >= 0
