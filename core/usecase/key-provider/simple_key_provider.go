@@ -1,15 +1,14 @@
 package keyprovider
 
 import (
-	"errors"
 	"log/slog"
 	"sync"
 
-	"github.com/symbioticfi/relay/core/usecase/crypto"
+	"github.com/go-errors/errors"
+	"github.com/pavlo-v-chernykh/keystore-go/v4"
 
 	"github.com/symbioticfi/relay/core/entity"
-
-	"github.com/pavlo-v-chernykh/keystore-go/v4"
+	"github.com/symbioticfi/relay/core/usecase/crypto"
 )
 
 type SimpleKeystoreProvider struct {

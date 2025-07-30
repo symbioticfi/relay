@@ -3,7 +3,6 @@ package badger
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
@@ -91,7 +90,7 @@ func signatureToBytes(sig entity.SignatureExtended) ([]byte, error) {
 func bytesToSignature(value []byte) (entity.SignatureExtended, error) {
 	var dto signatureDTO
 	if err := json.Unmarshal(value, &dto); err != nil {
-		return entity.SignatureExtended{}, fmt.Errorf("failed to unmarshal signature: %w", err)
+		return entity.SignatureExtended{}, errors.Errorf("failed to unmarshal signature: %w", err)
 	}
 
 	return entity.SignatureExtended{

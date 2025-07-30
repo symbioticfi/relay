@@ -1,7 +1,6 @@
 package operator
 
 import (
-	"fmt"
 	"log/slog"
 	"strconv"
 	"time"
@@ -68,7 +67,7 @@ var registerCmd = &cobra.Command{
 
 		for _, chainId := range evmClient.GetChains() {
 			if _, ok := registerFlags.Secrets.Secrets[chainId]; !ok {
-				return fmt.Errorf("operator registry in chain %d does not exist", chainId)
+				return errors.Errorf("operator registry in chain %d does not exist", chainId)
 			}
 
 			txResult, err := evmClient.RegisterOperator(ctx, operatorRegistries[chainId])

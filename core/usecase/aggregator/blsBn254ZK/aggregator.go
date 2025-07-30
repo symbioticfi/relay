@@ -1,7 +1,6 @@
 package blsBn254ZK
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/symbioticfi/relay/core/entity"
@@ -140,7 +139,7 @@ func (a Aggregator) Verify(
 
 	aggVotingPower := new(big.Int).SetBytes(aggVotingPowerBytes)
 	if aggVotingPower.Cmp(valset.QuorumThreshold.Int) < 0 {
-		return false, fmt.Errorf("agg voting power %s is less than quorum threshold %s", aggVotingPower.String(), valset.QuorumThreshold.String())
+		return false, errors.Errorf("agg voting power %s is less than quorum threshold %s", aggVotingPower.String(), valset.QuorumThreshold.String())
 	}
 
 	return ok, nil

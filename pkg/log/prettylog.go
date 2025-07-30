@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/go-errors/errors"
 	"gopkg.in/yaml.v2"
 )
 
@@ -103,13 +104,13 @@ func (h *Handler) computeAttrs(
 		h.m.Unlock()
 	}()
 	if err := h.h.Handle(ctx, r); err != nil {
-		return nil, fmt.Errorf("error when calling inner handler's Handle: %w", err)
+		return nil, errors.Errorf("error when calling inner handler's Handle: %w", err)
 	}
 
 	var attrs map[string]any
 	err := json.Unmarshal(h.b.Bytes(), &attrs)
 	if err != nil {
-		return nil, fmt.Errorf("error when unmarshalling inner handler's Handle result: %w", err)
+		return nil, errors.Errorf("error when unmarshalling inner handler's Handle result: %w", err)
 	}
 	return attrs, nil
 }
@@ -213,7 +214,7 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 
 		//attrsAsBytes, err = json.MarshalIndent(attrs, "", "  ")
 		if err != nil {
-			return fmt.Errorf("error when marshaling attrs: %w", err)
+			return errors.Errorf("error when marshaling attrs: %w", err)
 		}
 	}
 	attrsAsBytes = append([]byte{'\n'}, attrsAsBytes...)

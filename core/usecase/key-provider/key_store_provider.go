@@ -1,17 +1,16 @@
 package keyprovider
 
 import (
-	"errors"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/crypto"
 
+	"github.com/go-errors/errors"
 	"github.com/pavlo-v-chernykh/keystore-go/v4"
-
-	"github.com/symbioticfi/relay/core/entity"
 )
 
 type KeystoreProvider struct {

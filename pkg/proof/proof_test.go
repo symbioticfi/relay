@@ -2,7 +2,6 @@ package proof
 
 import (
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"math/big"
 	"testing"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"

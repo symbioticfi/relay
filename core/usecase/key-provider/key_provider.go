@@ -1,9 +1,10 @@
 package keyprovider
 
 import (
-	"errors"
 	"strconv"
 	"strings"
+
+	"github.com/go-errors/errors"
 
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/crypto"
