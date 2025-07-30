@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/go-errors/errors"
-	"github.com/pavlo-v-chernykh/keystore-go/v4"
 
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/crypto"
@@ -36,7 +35,7 @@ func (k *SimpleKeystoreProvider) GetPrivateKeyByAlias(alias string) (crypto.Priv
 	defer k.mu.RUnlock()
 	entry, ok := k.keys[alias]
 	if !ok {
-		return nil, keystore.ErrEntryNotFound
+		return nil, ErrKeyNotFound
 	}
 	return entry, nil
 }
@@ -48,7 +47,7 @@ func (k *SimpleKeystoreProvider) GetPrivateKeyByNamespaceTypeId(namespace string
 	}
 	key, err := k.GetPrivateKeyByAlias(alias)
 	if err != nil {
-		if errors.Is(err, keystore.ErrEntryNotFound) && namespace == EVM_KEY_NAMESPACE {
+		if errors.Is(err, ErrKeyNotFound) && namespace == EVM_KEY_NAMESPACE {
 			// For EVM keys, we check for default key with chain ID 0 if the requested chain id is absent
 			slog.Warn("Key not found, checking for default EVM key", "alias", alias)
 			defaultAlias, err := ToAlias(EVM_KEY_NAMESPACE, keyType, DEFAULT_EVM_CHAIN_ID)

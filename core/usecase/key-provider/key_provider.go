@@ -22,6 +22,10 @@ const (
 	P2P_HOST_IDENTITY_KEY_ID = 1
 )
 
+const (
+	ErrKeyNotFound = entity.StringError("key not found")
+)
+
 type KeyProvider interface {
 	GetPrivateKey(keyTag entity.KeyTag) (crypto.PrivateKey, error)
 	GetPrivateKeyByAlias(alias string) (crypto.PrivateKey, error)

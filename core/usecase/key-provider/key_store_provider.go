@@ -53,6 +53,9 @@ func (k *KeystoreProvider) GetPrivateKey(keyTag entity.KeyTag) (crypto.PrivateKe
 func (k *KeystoreProvider) GetPrivateKeyByAlias(alias string) (crypto.PrivateKey, error) {
 	entry, err := k.ks.GetPrivateKeyEntry(alias, []byte{})
 	if err != nil {
+		if errors.Is(err, keystore.ErrEntryNotFound) {
+			return nil, errors.New(ErrKeyNotFound)
+		}
 		return nil, err
 	}
 	keyType, _, err := AliasToKeyTypeId(alias)
@@ -69,7 +72,7 @@ func (k *KeystoreProvider) GetPrivateKeyByNamespaceTypeId(namespace string, keyT
 	}
 	key, err := k.GetPrivateKeyByAlias(alias)
 	if err != nil {
-		if errors.Is(err, keystore.ErrEntryNotFound) && namespace == EVM_KEY_NAMESPACE {
+		if errors.Is(err, ErrKeyNotFound) && namespace == EVM_KEY_NAMESPACE {
 			// For EVM keys, we check for default key with chain ID 0 if the requested chain id is absent
 			slog.Warn("Key not found, checking for default EVM key", "alias", alias)
 			defaultAlias, err := ToAlias(EVM_KEY_NAMESPACE, keyType, DEFAULT_EVM_CHAIN_ID)
