@@ -106,6 +106,7 @@ func NewService(ctx context.Context, cfg Config) (*Service, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
+	ctx = log.WithComponent(ctx, "p2p")
 
 	h := cfg.Host
 
@@ -165,6 +166,7 @@ func NewService(ctx context.Context, cfg Config) (*Service, error) {
 }
 
 func (s *Service) listenForMessages(ctx context.Context, sub *pubsub.Subscription, topic *pubsub.Topic, handler func(ctx context.Context, msg *pubsub.Message) error) {
+	slog.DebugContext(ctx, "Starting message listener", "topic", topic.String())
 	defer func() {
 		if err := topic.Close(); err != nil && !errors.Is(err, context.Canceled) {
 			slog.WarnContext(ctx, "Failed to close topic", "topic", topic.String(), "error", err)
