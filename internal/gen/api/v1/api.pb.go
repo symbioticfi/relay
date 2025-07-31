@@ -1727,8 +1727,8 @@ const file_v1_api_proto_rawDesc = "" +
 	"\x13GetSignatureRequest\x12(.api.proto.v1.GetSignatureRequestRequest\x1a).api.proto.v1.GetSignatureRequestResponse\x12m\n" +
 	"\x14GetAggregationStatus\x12).api.proto.v1.GetAggregationStatusRequest\x1a*.api.proto.v1.GetAggregationStatusResponse\x12^\n" +
 	"\x0fGetValidatorSet\x12$.api.proto.v1.GetValidatorSetRequest\x1a%.api.proto.v1.GetValidatorSetResponse\x12`\n" +
-	"\x0fSignMessageWait\x12$.api.proto.v1.SignMessageWaitRequest\x1a%.api.proto.v1.SignMessageWaitResponse0\x01B\xa9\x01\n" +
-	"\x10com.api.proto.v1B\bApiProtoP\x01Z9github.com/symbiosiscode/middleware-offchain/api/proto/v1\xa2\x02\x03APX\xaa\x02\fApi.Proto.V1\xca\x02\fApi\\Proto\\V1\xe2\x02\x18Api\\Proto\\V1\\GPBMetadata\xea\x02\x0eApi::Proto::V1b\x06proto3"
+	"\x0fSignMessageWait\x12$.api.proto.v1.SignMessageWaitRequest\x1a%.api.proto.v1.SignMessageWaitResponse0\x01B\x99\x01\n" +
+	"\x10com.api.proto.v1B\bApiProtoP\x01Z)github.com/symbioticfi/relay/api/proto/v1\xa2\x02\x03APX\xaa\x02\fApi.Proto.V1\xca\x02\fApi\\Proto\\V1\xe2\x02\x18Api\\Proto\\V1\\GPBMetadata\xea\x02\x0eApi::Proto::V1b\x06proto3"
 
 var (
 	file_v1_api_proto_rawDescOnce sync.Once

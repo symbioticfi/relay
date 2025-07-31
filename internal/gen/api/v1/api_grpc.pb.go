@@ -34,7 +34,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// SymbioticAPI provides access to the Symbiosis protocol data
+// SymbioticAPI provides access to the Symbiotic relay functions
 type SymbioticAPIServiceClient interface {
 	// Sign a message
 	SignMessage(ctx context.Context, in *SignMessageRequest, opts ...grpc.CallOption) (*SignMessageResponse, error)
@@ -167,7 +167,7 @@ type SymbioticAPIService_SignMessageWaitClient = grpc.ServerStreamingClient[Sign
 // All implementations must embed UnimplementedSymbioticAPIServiceServer
 // for forward compatibility.
 //
-// SymbioticAPI provides access to the Symbiosis protocol data
+// SymbioticAPI provides access to the Symbiotic relay functions
 type SymbioticAPIServiceServer interface {
 	// Sign a message
 	SignMessage(context.Context, *SignMessageRequest) (*SignMessageResponse, error)

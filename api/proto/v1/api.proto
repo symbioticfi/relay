@@ -4,9 +4,9 @@ package api.proto.v1;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/symbiosiscode/middleware-offchain/api/proto/v1";
+option go_package = "github.com/symbioticfi/relay/api/proto/v1";
 
-// SymbioticAPI provides access to the Symbiosis protocol data
+// SymbioticAPI provides access to the Symbiotic relay functions
 service SymbioticAPIService {
   // Sign a message
   rpc SignMessage(SignMessageRequest) returns (SignMessageResponse);

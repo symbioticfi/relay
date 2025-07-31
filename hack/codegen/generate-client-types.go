@@ -1,5 +1,8 @@
 package main
 
+// generate-client-types is a tool to parse the generated protobuf file and create a client types file
+// that exports types for client usage, including enums, requests, responses, and data types.
+
 import (
 	"fmt"
 	"go/ast"
