@@ -23,7 +23,7 @@ import (
 	"github.com/symbioticfi/relay/internal/client/p2p"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
 	aggregatorApp "github.com/symbioticfi/relay/internal/usecase/aggregator-app"
-	apiApp "github.com/symbioticfi/relay/internal/usecase/api-app"
+	api_server "github.com/symbioticfi/relay/internal/usecase/api-server"
 	"github.com/symbioticfi/relay/internal/usecase/metrics"
 	signerApp "github.com/symbioticfi/relay/internal/usecase/signer-app"
 	valsetGenerator "github.com/symbioticfi/relay/internal/usecase/valset-generator"
@@ -267,17 +267,16 @@ func runApp(ctx context.Context) error {
 	}
 
 	serveMetricsOnAPIAddress := cfg.HTTPListenAddr == cfg.MetricsListenAddr || cfg.MetricsListenAddr == ""
-	api, err := apiApp.NewAPIApp(apiApp.Config{
-		Address:           cfg.HTTPListenAddr,
-		ReadHeaderTimeout: time.Second,
-		ShutdownTimeout:   time.Second * 5,
-		Prefix:            "/api/v1",
-		Signer:            signerApp,
-		Repo:              repo,
-		EvmClient:         evmClient,
-		Aggregator:        aggApp,
-		Deriver:           deriver,
-		ServeMetrics:      serveMetricsOnAPIAddress,
+	api, err := api_server.NewSymbioticServer(api_server.Config{
+		Address:         cfg.HTTPListenAddr,
+		ShutdownTimeout: time.Second * 5,
+		Prefix:          "/api/v1",
+		Signer:          signerApp,
+		Repo:            repo,
+		EvmClient:       evmClient,
+		Aggregator:      aggApp,
+		Deriver:         deriver,
+		ServeMetrics:    serveMetricsOnAPIAddress,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create api app: %w", err)

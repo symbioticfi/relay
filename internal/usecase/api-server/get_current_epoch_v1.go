@@ -1,15 +1,17 @@
-package apiApp
+package api_server
 
 import (
 	"context"
 	"time"
 
 	"github.com/go-errors/errors"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/symbioticfi/relay/internal/gen/api"
+	"github.com/symbioticfi/relay/internal/gen/api/v1"
 )
 
-func (h *handler) GetCurrentEpochGet(ctx context.Context) (*api.GetCurrentEpochGetOK, error) {
+// GetCurrentEpoch handles the gRPC GetCurrentEpoch request
+func (h *grpcHandler) GetCurrentEpoch(ctx context.Context, req *v1.GetCurrentEpochRequest) (*v1.EpochInfo, error) {
 	currentEpoch, err := h.cfg.EvmClient.GetCurrentEpoch(ctx)
 	if err != nil {
 		return nil, errors.Errorf("failed to get current epoch: %w", err)
@@ -20,8 +22,8 @@ func (h *handler) GetCurrentEpochGet(ctx context.Context) (*api.GetCurrentEpochG
 		return nil, errors.Errorf("failed to get epoch start: %w", err)
 	}
 
-	return &api.GetCurrentEpochGetOK{
+	return &v1.EpochInfo{
 		Epoch:     currentEpoch,
-		StartTime: time.Unix(int64(epochStart), 0).UTC(),
+		StartTime: timestamppb.New(time.Unix(int64(epochStart), 0).UTC()),
 	}, nil
 }

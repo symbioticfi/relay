@@ -1,23 +1,23 @@
-package apiApp
+package api_server
 
 import (
 	"context"
 	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/go-errors/errors"
 	"github.com/samber/lo"
 
 	"github.com/symbioticfi/relay/core/entity"
-	"github.com/symbioticfi/relay/internal/gen/api"
+	"github.com/symbioticfi/relay/internal/gen/api/v1"
 )
 
-func (h *handler) GetAggregationStatusGet(ctx context.Context, params api.GetAggregationStatusGetParams) (*api.AggregationStatus, error) {
+// GetAggregationStatus handles the gRPC GetAggregationStatus request
+func (h *grpcHandler) GetAggregationStatus(ctx context.Context, req *v1.GetAggregationStatusRequest) (*v1.AggregationStatus, error) {
 	if h.cfg.Aggregator == nil {
-		return nil, errors.New(entity.ErrNotAnAggregator)
+		return nil, entity.ErrNotAnAggregator
 	}
 
-	aggregationStatus, err := h.cfg.Aggregator.GetAggregationStatus(ctx, common.HexToHash(params.RequestHash))
+	aggregationStatus, err := h.cfg.Aggregator.GetAggregationStatus(ctx, common.HexToHash(req.RequestHash))
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +27,7 @@ func (h *handler) GetAggregationStatusGet(ctx context.Context, params api.GetAgg
 	})
 	sort.Strings(operators)
 
-	return &api.AggregationStatus{
+	return &v1.AggregationStatus{
 		CurrentVotingPower: aggregationStatus.VotingPower.String(),
 		SignerOperators:    operators,
 	}, nil

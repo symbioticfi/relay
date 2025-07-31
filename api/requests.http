@@ -1,9 +1,0 @@
-### Get current epoch
-GET {{addr}}/api/v1/getCurrentEpoch
-
-
-### Get validator set
-GET {{addr}}/api/v1/getValidatorSet?epoch=20
-
-### Get aggregation proof by request hash
-GET {{addr}}/api/v1/getAggregationProof?requestHash=0xa24364e7e94f3fd3340f815466143e8b7d7c678cab0f60c9b009f4207e0a2b6c
