@@ -267,7 +267,8 @@ func runApp(ctx context.Context) error {
 	}
 
 	serveMetricsOnAPIAddress := cfg.HTTPListenAddr == cfg.MetricsListenAddr || cfg.MetricsListenAddr == ""
-	api, err := api_server.NewSymbioticServer(api_server.Config{
+
+	api, err := api_server.NewSymbioticServer(ctx, api_server.Config{
 		Address:         cfg.HTTPListenAddr,
 		ShutdownTimeout: time.Second * 5,
 		Prefix:          "/api/v1",

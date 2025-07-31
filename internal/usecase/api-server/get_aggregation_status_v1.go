@@ -12,12 +12,12 @@ import (
 )
 
 // GetAggregationStatus handles the gRPC GetAggregationStatus request
-func (h *grpcHandler) GetAggregationStatus(ctx context.Context, req *v1.GetAggregationStatusRequest) (*v1.AggregationStatus, error) {
+func (h *grpcHandler) GetAggregationStatus(ctx context.Context, req *v1.GetAggregationStatusRequest) (*v1.GetAggregationStatusResponse, error) {
 	if h.cfg.Aggregator == nil {
 		return nil, entity.ErrNotAnAggregator
 	}
 
-	aggregationStatus, err := h.cfg.Aggregator.GetAggregationStatus(ctx, common.HexToHash(req.RequestHash))
+	aggregationStatus, err := h.cfg.Aggregator.GetAggregationStatus(ctx, common.HexToHash(req.GetRequestHash()))
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +27,7 @@ func (h *grpcHandler) GetAggregationStatus(ctx context.Context, req *v1.GetAggre
 	})
 	sort.Strings(operators)
 
-	return &v1.AggregationStatus{
+	return &v1.GetAggregationStatusResponse{
 		CurrentVotingPower: aggregationStatus.VotingPower.String(),
 		SignerOperators:    operators,
 	}, nil

@@ -14,9 +14,8 @@ import (
 	reflect "reflect"
 	time "time"
 
-	entity "github.com/symbioticfi/relay/core/entity"
-
 	common "github.com/ethereum/go-ethereum/common"
+	entity "github.com/symbioticfi/relay/core/entity"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -103,6 +102,21 @@ func (mr *MockrepositoryMockRecorder) SaveSignature(ctx, reqHash, key, sig any) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveSignature", reflect.TypeOf((*Mockrepository)(nil).SaveSignature), ctx, reqHash, key, sig)
 }
 
+// UpdateSignatureStat mocks base method.
+func (m *Mockrepository) UpdateSignatureStat(arg0 context.Context, reqHash common.Hash, s entity.SignatureStatStage, t time.Time) (entity.SignatureStat, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateSignatureStat", arg0, reqHash, s, t)
+	ret0, _ := ret[0].(entity.SignatureStat)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateSignatureStat indicates an expected call of UpdateSignatureStat.
+func (mr *MockrepositoryMockRecorder) UpdateSignatureStat(arg0, reqHash, s, t any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSignatureStat", reflect.TypeOf((*Mockrepository)(nil).UpdateSignatureStat), arg0, reqHash, s, t)
+}
+
 // Mockp2pClient is a mock of p2pClient interface.
 type Mockp2pClient struct {
 	ctrl     *gomock.Controller
@@ -141,45 +155,6 @@ func (mr *Mockp2pClientMockRecorder) BroadcastSignatureAggregatedMessage(ctx, ms
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BroadcastSignatureAggregatedMessage", reflect.TypeOf((*Mockp2pClient)(nil).BroadcastSignatureAggregatedMessage), ctx, msg)
 }
 
-// Mockaggregator is a mock of aggregator interface.
-type Mockaggregator struct {
-	ctrl     *gomock.Controller
-	recorder *MockaggregatorMockRecorder
-	isgomock struct{}
-}
-
-// MockaggregatorMockRecorder is the mock recorder for Mockaggregator.
-type MockaggregatorMockRecorder struct {
-	mock *Mockaggregator
-}
-
-// NewMockaggregator creates a new mock instance.
-func NewMockaggregator(ctrl *gomock.Controller) *Mockaggregator {
-	mock := &Mockaggregator{ctrl: ctrl}
-	mock.recorder = &MockaggregatorMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *Mockaggregator) EXPECT() *MockaggregatorMockRecorder {
-	return m.recorder
-}
-
-// Aggregate mocks base method.
-func (m *Mockaggregator) Aggregate(valset entity.ValidatorSet, keyTag entity.KeyTag, verificationType entity.VerificationType, messageHash []byte, signatures []entity.SignatureExtended) (entity.AggregationProof, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Aggregate", valset, keyTag, verificationType, messageHash, signatures)
-	ret0, _ := ret[0].(entity.AggregationProof)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Aggregate indicates an expected call of Aggregate.
-func (mr *MockaggregatorMockRecorder) Aggregate(valset, keyTag, verificationType, messageHash, signatures any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Aggregate", reflect.TypeOf((*Mockaggregator)(nil).Aggregate), valset, keyTag, verificationType, messageHash, signatures)
-}
-
 // Mockmetrics is a mock of metrics interface.
 type Mockmetrics struct {
 	ctrl     *gomock.Controller
@@ -202,6 +177,18 @@ func NewMockmetrics(ctrl *gomock.Controller) *Mockmetrics {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *Mockmetrics) EXPECT() *MockmetricsMockRecorder {
 	return m.recorder
+}
+
+// ObserveAggCompleted mocks base method.
+func (m *Mockmetrics) ObserveAggCompleted(stat entity.SignatureStat) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "ObserveAggCompleted", stat)
+}
+
+// ObserveAggCompleted indicates an expected call of ObserveAggCompleted.
+func (mr *MockmetricsMockRecorder) ObserveAggCompleted(stat any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ObserveAggCompleted", reflect.TypeOf((*Mockmetrics)(nil).ObserveAggCompleted), stat)
 }
 
 // ObserveAppAggregateDuration mocks base method.

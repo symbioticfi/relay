@@ -38,7 +38,6 @@ linters:
     - gosec
     - govet
     - grouper
-    - importas
     - inamedparam
     - ineffassign
     - loggercheck
@@ -278,7 +277,8 @@ issues:
 formatters:
   enable:
     - gofmt
-    - goimports
+    # Disabled goimports as it may be adding redundant v1 aliases
+    # - goimports
   exclusions:
     generated: lax
     paths:

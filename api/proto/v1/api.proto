@@ -1,39 +1,39 @@
 syntax = "proto3";
 
-package symbiotic.api.v1;
+package api.proto.v1;
 
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/symbiosiscode/middleware-offchain/api/proto/v1";
 
 // SymbioticAPI provides access to the Symbiosis protocol data
-service SymbioticAPI {
+service SymbioticAPIService {
   // Sign a message
   rpc SignMessage(SignMessageRequest) returns (SignMessageResponse);
   
   // Get aggregation proof
-  rpc GetAggregationProof(GetAggregationProofRequest) returns (AggregationProof);
+  rpc GetAggregationProof(GetAggregationProofRequest) returns (GetAggregationProofResponse);
   
   // Get current epoch
-  rpc GetCurrentEpoch(GetCurrentEpochRequest) returns (EpochInfo);
+  rpc GetCurrentEpoch(GetCurrentEpochRequest) returns (GetCurrentEpochResponse);
   
   // Get suggested epoch to request sign
-  rpc GetSuggestedEpoch(GetSuggestedEpochRequest) returns (EpochInfo);
+  rpc GetSuggestedEpoch(GetSuggestedEpochRequest) returns (GetSuggestedEpochResponse);
   
   // Get signature by request hash
   rpc GetSignatures(GetSignaturesRequest) returns (GetSignaturesResponse);
   
   // Get signature request by request hash
-  rpc GetSignatureRequest(GetSignatureRequestRequest) returns (SignatureRequest);
+  rpc GetSignatureRequest(GetSignatureRequestRequest) returns (GetSignatureRequestResponse);
   
   // Get aggregation status, can be sent only to aggregator nodes
-  rpc GetAggregationStatus(GetAggregationStatusRequest) returns (AggregationStatus);
+  rpc GetAggregationStatus(GetAggregationStatusRequest) returns (GetAggregationStatusResponse);
   
   // Get current validator set
-  rpc GetValidatorSet(GetValidatorSetRequest) returns (ValidatorSet);
+  rpc GetValidatorSet(GetValidatorSetRequest) returns (GetValidatorSetResponse);
   
   // Sign a message and wait for aggregation proof via stream
-  rpc SignMessageWait(SignMessageRequest) returns (stream SignMessageWaitResponse);
+  rpc SignMessageWait(SignMessageWaitRequest) returns (stream SignMessageWaitResponse);
 }
 
 // Request message for signing a message
@@ -44,6 +44,18 @@ message SignMessageRequest {
   // Message to be signed (base64 encoded)
   bytes message = 2;
   
+  // Required epoch (optional, if not provided latest committed epoch will be used)
+  optional uint64 required_epoch = 3;
+}
+
+// Request message for signing a message
+message SignMessageWaitRequest {
+  // Key tag identifier (0-255)
+  uint32 key_tag = 1;
+
+  // Message to be signed (base64 encoded)
+  bytes message = 2;
+
   // Required epoch (optional, if not provided latest committed epoch will be used)
   optional uint64 required_epoch = 3;
 }
@@ -123,8 +135,8 @@ message GetValidatorSetRequest {
   optional uint64 epoch = 1;
 }
 
-// Epoch information
-message EpochInfo {
+// Response message for getting current epoch
+message GetCurrentEpochResponse {
   // Epoch number
   uint64 epoch = 1;
   
@@ -132,8 +144,17 @@ message EpochInfo {
   google.protobuf.Timestamp start_time = 2;
 }
 
-// Signature request details
-message SignatureRequest {
+// Response message for getting suggested epoch
+message GetSuggestedEpochResponse {
+  // Epoch number
+  uint64 epoch = 1;
+  
+  // Epoch start time
+  google.protobuf.Timestamp start_time = 2;
+}
+
+// Response message for getting signature request
+message GetSignatureRequestResponse {
   // Key tag identifier (0-255)
   uint32 key_tag = 1;
   
@@ -144,20 +165,25 @@ message SignatureRequest {
   uint64 required_epoch = 3;
 }
 
-// Aggregation proof
+// Response message for getting aggregation proof
+message GetAggregationProofResponse {
+  AggregationProof aggregation_proof = 1;
+}
+
+// Response message for getting aggregation proof
 message AggregationProof {
   // Verification type
   uint32 verification_type = 1;
-  
+
   // Message hash (base64 encoded)
   bytes message_hash = 2;
-  
+
   // Proof data (base64 encoded)
   bytes proof = 3;
 }
 
-// Aggregation status
-message AggregationStatus {
+// Response message for getting aggregation status
+message GetAggregationStatusResponse {
   // Current voting power of the aggregator (big integer as string)
   string current_voting_power = 1;
   
@@ -177,8 +203,8 @@ message Signature {
   bytes public_key = 3;
 }
 
-// Validator set information
-message ValidatorSet {
+// Response message for getting validator set
+message GetValidatorSetResponse {
   // Version of the validator set
   uint32 version = 1;
   

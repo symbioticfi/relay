@@ -7,12 +7,12 @@ import (
 
 // Client wraps the generated gRPC client
 type Client struct {
-	v1.SymbioticAPIClient
+	v1.SymbioticAPIServiceClient
 }
 
 // NewClient creates a new client instance for symbiotic relay
 func NewClient(conn grpc.ClientConnInterface) *Client {
 	return &Client{
-		v1.NewSymbioticAPIClient(conn),
+		v1.NewSymbioticAPIServiceClient(conn),
 	}
 }

@@ -51,9 +51,10 @@ type deriver interface {
 }
 
 type Config struct {
-	Address         string        `validate:"required"`
-	Prefix          string        `validate:"required"`
-	ShutdownTimeout time.Duration `validate:"required,gt=0"`
+	Address           string        `validate:"required"`
+	Prefix            string        `validate:"required"`
+	ReadHeaderTimeout time.Duration `validate:"required,gt=0"`
+	ShutdownTimeout   time.Duration `validate:"required,gt=0"`
 
 	Signer       signer    `validate:"required"`
 	Repo         repo      `validate:"required"`
@@ -72,7 +73,8 @@ func (c Config) Validate() error {
 
 // grpcHandler implements the gRPC service interface
 type grpcHandler struct {
-	v1.SymbioticAPIServer
+	v1.SymbioticAPIServiceServer
+
 	cfg Config
 }
 
@@ -83,7 +85,7 @@ type SymbioticServer struct {
 	cfg        Config
 }
 
-func NewSymbioticServer(cfg Config) (*SymbioticServer, error) {
+func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, error) {
 	if err := validator.New().Struct(cfg); err != nil {
 		return nil, errors.Errorf("failed to validate config: %w", err)
 	}
@@ -118,7 +120,7 @@ func NewSymbioticServer(cfg Config) (*SymbioticServer, error) {
 		cfg: cfg,
 	}
 
-	v1.RegisterSymbioticAPIServer(grpcServer, handler)
+	v1.RegisterSymbioticAPIServiceServer(grpcServer, handler)
 
 	// Register health service
 	healthServer := health.NewServer()
@@ -133,9 +135,9 @@ func NewSymbioticServer(cfg Config) (*SymbioticServer, error) {
 
 	// Wrap the entire mux with panic recovery
 	recoveredMux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
+		defer func(ctx context.Context) {
 			if err := recover(); err != nil {
-				slog.ErrorContext(r.Context(), "HTTP handler panic recovered",
+				slog.ErrorContext(ctx, "HTTP handler panic recovered",
 					"error", err,
 					"path", r.URL.Path,
 					"method", r.Method)
@@ -144,7 +146,7 @@ func NewSymbioticServer(cfg Config) (*SymbioticServer, error) {
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Write([]byte(`{"error":"Internal server error","status":500}`))
 			}
-		}()
+		}(r.Context())
 		httpMux.ServeHTTP(w, r)
 	})
 
@@ -164,12 +166,13 @@ func NewSymbioticServer(cfg Config) (*SymbioticServer, error) {
 	// Serve metrics endpoint if enabled
 	if cfg.ServeMetrics {
 		httpMux.Handle("/metrics", promhttp.Handler())
-		slog.InfoContext(context.Background(), "Metrics endpoint enabled", "path", "/metrics")
+		slog.InfoContext(ctx, "Metrics endpoint enabled", "path", "/metrics")
 	}
 
 	// Create HTTP/2 server that can handle both HTTP and gRPC
 	httpServer := &http.Server{
-		Handler: createMuxHandler(grpcServer, recoveredMux, cfg.Prefix),
+		Handler:           createMuxHandler(grpcServer, recoveredMux, cfg.Prefix),
+		ReadHeaderTimeout: cfg.ReadHeaderTimeout,
 	}
 
 	return &SymbioticServer{
@@ -230,6 +233,7 @@ func (a *SymbioticServer) Start(ctx context.Context) error {
 		defer cancel()
 
 		// Shutdown HTTP server
+		//nolint:contextcheck // we need to use background context here as the original context is already cancelled
 		if err := a.httpServer.Shutdown(shutdownCtx); err != nil {
 			slog.WarnContext(logCtx, "Failed to shutdown HTTP server gracefully", "error", err)
 

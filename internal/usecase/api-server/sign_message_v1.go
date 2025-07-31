@@ -20,8 +20,8 @@ func (h *grpcHandler) SignMessage(ctx context.Context, req *v1.SignMessageReques
 	}
 
 	signReq := entity.SignatureRequest{
-		KeyTag:        entity.KeyTag(req.KeyTag),
-		Message:       req.Message,
+		KeyTag:        entity.KeyTag(req.GetKeyTag()),
+		Message:       req.GetMessage(),
 		RequiredEpoch: entity.Epoch(*requiredEpoch),
 	}
 

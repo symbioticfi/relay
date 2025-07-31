@@ -24,25 +24,39 @@ ifeq ($(PUSH_LATEST), true)
 	IMAGE_TAGS := ${IMAGE_TAGS} -t ${IMAGE_REPO}:latest
 endif
 
-.PHONY: lint
-lint:
+.PHONT: install-tools lint
+lint: buf-lint go-lint
+
+.PHONY: buf-lint
+buf-lint:
+	buf lint
+
+.PHONY: go-lint
+go-lint:
 	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.2.1 -v run ./...
 
-.PHONY: lint-fix
-lint-fix:
+.PHONY: go-lint-fix
+go-lint-fix:
 	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.2.1 -v run ./... --fix
 
-.PHONY: install-mocks
-install-mocks:
-	go install go.uber.org/mock/mockgen@latest
+.PHONY: generate
+generate: install-tools generate-mocks generate-api gen-abi
 
-.PHONY: gen-mocks
-gen-mocks:
+.PHONY: install-tools
+install-tools:
+	go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.5.1
+	go install go.uber.org/mock/mockgen@v0.5.2
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.6
+	go install github.com/bufbuild/buf/cmd/buf@v1.55.1
+
+.PHONY: generate-mocks
+generate-mocks:
 	go generate ./...
 
-.PHONY: gen-api
-gen-api:
-	go run github.com/ogen-go/ogen/cmd/ogen@v1.14.0 -v -clean  -package api -target internal/gen/api api/swagger.yaml
+.PHONY: generate-api
+generate-api:
+	buf generate
 
 .PHONY: unit-test
 unit-test:

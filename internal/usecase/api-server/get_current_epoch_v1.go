@@ -11,7 +11,7 @@ import (
 )
 
 // GetCurrentEpoch handles the gRPC GetCurrentEpoch request
-func (h *grpcHandler) GetCurrentEpoch(ctx context.Context, req *v1.GetCurrentEpochRequest) (*v1.EpochInfo, error) {
+func (h *grpcHandler) GetCurrentEpoch(ctx context.Context, req *v1.GetCurrentEpochRequest) (*v1.GetCurrentEpochResponse, error) {
 	currentEpoch, err := h.cfg.EvmClient.GetCurrentEpoch(ctx)
 	if err != nil {
 		return nil, errors.Errorf("failed to get current epoch: %w", err)
@@ -22,7 +22,7 @@ func (h *grpcHandler) GetCurrentEpoch(ctx context.Context, req *v1.GetCurrentEpo
 		return nil, errors.Errorf("failed to get epoch start: %w", err)
 	}
 
-	return &v1.EpochInfo{
+	return &v1.GetCurrentEpochResponse{
 		Epoch:     currentEpoch,
 		StartTime: timestamppb.New(time.Unix(int64(epochStart), 0).UTC()),
 	}, nil

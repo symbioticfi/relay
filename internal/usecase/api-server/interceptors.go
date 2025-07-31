@@ -104,6 +104,7 @@ func StreamErrorHandlingInterceptor() grpc.StreamServerInterceptor {
 // wrappedStream wraps grpc.ServerStream to inject context
 type wrappedStream struct {
 	grpc.ServerStream
+
 	ctx context.Context
 }
 

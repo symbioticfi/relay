@@ -13,7 +13,7 @@ import (
 )
 
 // GetValidatorSet handles the gRPC GetValidatorSet request
-func (h *grpcHandler) GetValidatorSet(ctx context.Context, req *v1.GetValidatorSetRequest) (*v1.ValidatorSet, error) {
+func (h *grpcHandler) GetValidatorSet(ctx context.Context, req *v1.GetValidatorSetRequest) (*v1.GetValidatorSetResponse, error) {
 	latestEpoch, err := h.cfg.EvmClient.GetCurrentEpoch(ctx)
 	if err != nil {
 		return nil, err
@@ -21,7 +21,7 @@ func (h *grpcHandler) GetValidatorSet(ctx context.Context, req *v1.GetValidatorS
 
 	epochRequested := latestEpoch
 	if req.Epoch != nil {
-		epochRequested = *req.Epoch
+		epochRequested = req.GetEpoch()
 	}
 
 	// epoch from future
@@ -51,8 +51,8 @@ func (h *grpcHandler) GetValidatorSet(ctx context.Context, req *v1.GetValidatorS
 	return convertValidatorSetToPB(validatorSet), nil
 }
 
-func convertValidatorSetToPB(valSet entity.ValidatorSet) *v1.ValidatorSet {
-	return &v1.ValidatorSet{
+func convertValidatorSetToPB(valSet entity.ValidatorSet) *v1.GetValidatorSetResponse {
+	return &v1.GetValidatorSetResponse{
 		Version:            uint32(valSet.Version),
 		RequiredKeyTag:     uint32(valSet.RequiredKeyTag),
 		Epoch:              valSet.Epoch,
