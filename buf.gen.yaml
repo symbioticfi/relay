@@ -10,7 +10,7 @@ plugins:
   - local: protoc-gen-doc
     out: api/docs/v1
     opt:
-      - "html, index.html"
+      - "html,index.html"
   - local: protoc-gen-go
     out: internal/gen/api
     opt:
