@@ -40,7 +40,7 @@ go-lint-fix:
 	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.2.1 -v run ./... --fix
 
 .PHONY: generate
-generate: install-tools generate-mocks generate-api gen-abi
+generate: install-tools generate-mocks generate-api generate-client-types gen-abi
 
 .PHONY: install-tools
 install-tools:
@@ -57,6 +57,10 @@ generate-mocks:
 .PHONY: generate-api
 generate-api:
 	buf generate
+
+.PHONY: generate-client-types
+generate-client-types:
+	go run hack/codegen/generate-client-types.go
 
 .PHONY: unit-test
 unit-test:
