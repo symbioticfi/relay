@@ -29,3 +29,4 @@ internal/client/valset/circuits
 # Ignore IDE-specific files
 .idea/
 .vscode/
+.claude/

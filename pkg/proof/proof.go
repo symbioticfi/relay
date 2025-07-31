@@ -222,6 +222,7 @@ func (p *ZkProver) Prove(proveInput ProveInput) (ProofData, error) {
 	}, nil
 }
 
+//nolint:revive // function-result-limit: This function needs to return multiple complex types for cryptographic operations
 func loadOrInit(circuitsDir string, valsetLen int) (constraint.ConstraintSystem, groth16.ProvingKey, groth16.VerifyingKey, error) {
 	suffix := strconv.Itoa(valsetLen)
 	r1csP := r1csPathTmp(circuitsDir, suffix)
