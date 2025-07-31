@@ -4,6 +4,7 @@ package api
 
 import (
 	"context"
+	api2 "github.com/symbioticfi/relay/internal/gen/api"
 	"net/url"
 	"strings"
 	"time"
@@ -32,49 +33,49 @@ type Invoker interface {
 	// Get aggregation proof.
 	//
 	// GET /getAggregationProof
-	GetAggregationProofGet(ctx context.Context, params GetAggregationProofGetParams) (*AggregationProof, error)
+	GetAggregationProofGet(ctx context.Context, params api2.GetAggregationProofGetParams) (*api2.AggregationProof, error)
 	// GetAggregationStatusGet invokes GET /getAggregationStatus operation.
 	//
 	// Get aggregation status, can be sent only to aggregator nodes.
 	//
 	// GET /getAggregationStatus
-	GetAggregationStatusGet(ctx context.Context, params GetAggregationStatusGetParams) (*AggregationStatus, error)
+	GetAggregationStatusGet(ctx context.Context, params api2.GetAggregationStatusGetParams) (*api2.AggregationStatus, error)
 	// GetCurrentEpochGet invokes GET /getCurrentEpoch operation.
 	//
 	// Get current epoch.
 	//
 	// GET /getCurrentEpoch
-	GetCurrentEpochGet(ctx context.Context) (*GetCurrentEpochGetOK, error)
+	GetCurrentEpochGet(ctx context.Context) (*api2.GetCurrentEpochGetOK, error)
 	// GetSignatureRequestGet invokes GET /getSignatureRequest operation.
 	//
 	// Get signature request by request hash.
 	//
 	// GET /getSignatureRequest
-	GetSignatureRequestGet(ctx context.Context, params GetSignatureRequestGetParams) (*SignatureRequest, error)
+	GetSignatureRequestGet(ctx context.Context, params api2.GetSignatureRequestGetParams) (*api2.SignatureRequest, error)
 	// GetSignaturesGet invokes GET /getSignatures operation.
 	//
 	// Get signature by request hash.
 	//
 	// GET /getSignatures
-	GetSignaturesGet(ctx context.Context, params GetSignaturesGetParams) ([]Signature, error)
+	GetSignaturesGet(ctx context.Context, params api2.GetSignaturesGetParams) ([]api2.Signature, error)
 	// GetSuggestedEpochGet invokes GET /getSuggestedEpoch operation.
 	//
 	// Get suggested epoch to request sign.
 	//
 	// GET /getSuggestedEpoch
-	GetSuggestedEpochGet(ctx context.Context) (*GetSuggestedEpochGetOK, error)
+	GetSuggestedEpochGet(ctx context.Context) (*api2.GetSuggestedEpochGetOK, error)
 	// GetValidatorSetGet invokes GET /getValidatorSet operation.
 	//
 	// Get current validator set.
 	//
 	// GET /getValidatorSet
-	GetValidatorSetGet(ctx context.Context, params GetValidatorSetGetParams) (*ValidatorSet, error)
+	GetValidatorSetGet(ctx context.Context, params api2.GetValidatorSetGetParams) (*api2.ValidatorSet, error)
 	// SignMessagePost invokes POST /signMessage operation.
 	//
 	// Sign a message.
 	//
 	// POST /signMessage
-	SignMessagePost(ctx context.Context, request *SignMessagePostReq) (*SignMessagePostOK, error)
+	SignMessagePost(ctx context.Context, request *api2.SignMessagePostReq) (*api2.SignMessagePostOK, error)
 }
 
 // Client implements OAS client.
@@ -83,10 +84,10 @@ type Client struct {
 	baseClient
 }
 type errorHandler interface {
-	NewError(ctx context.Context, err error) *ErrorStatusCode
+	NewError(ctx context.Context, err error) *api2.ErrorStatusCode
 }
 
-var _ Handler = struct {
+var _ api2.Handler = struct {
 	errorHandler
 	*Client
 }{}
@@ -129,12 +130,12 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 // Get aggregation proof.
 //
 // GET /getAggregationProof
-func (c *Client) GetAggregationProofGet(ctx context.Context, params GetAggregationProofGetParams) (*AggregationProof, error) {
+func (c *Client) GetAggregationProofGet(ctx context.Context, params api2.GetAggregationProofGetParams) (*api2.AggregationProof, error) {
 	res, err := c.sendGetAggregationProofGet(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetAggregationProofGet(ctx context.Context, params GetAggregationProofGetParams) (res *AggregationProof, err error) {
+func (c *Client) sendGetAggregationProofGet(ctx context.Context, params api2.GetAggregationProofGetParams) (res *api2.AggregationProof, err error) {
 	otelAttrs := []attribute.KeyValue{
 		semconv.HTTPRequestMethodKey.String("GET"),
 		semconv.HTTPRouteKey.String("/getAggregationProof"),
@@ -152,7 +153,7 @@ func (c *Client) sendGetAggregationProofGet(ctx context.Context, params GetAggre
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetAggregationProofGetOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, api2.GetAggregationProofGetOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -218,12 +219,12 @@ func (c *Client) sendGetAggregationProofGet(ctx context.Context, params GetAggre
 // Get aggregation status, can be sent only to aggregator nodes.
 //
 // GET /getAggregationStatus
-func (c *Client) GetAggregationStatusGet(ctx context.Context, params GetAggregationStatusGetParams) (*AggregationStatus, error) {
+func (c *Client) GetAggregationStatusGet(ctx context.Context, params api2.GetAggregationStatusGetParams) (*api2.AggregationStatus, error) {
 	res, err := c.sendGetAggregationStatusGet(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetAggregationStatusGet(ctx context.Context, params GetAggregationStatusGetParams) (res *AggregationStatus, err error) {
+func (c *Client) sendGetAggregationStatusGet(ctx context.Context, params api2.GetAggregationStatusGetParams) (res *api2.AggregationStatus, err error) {
 	otelAttrs := []attribute.KeyValue{
 		semconv.HTTPRequestMethodKey.String("GET"),
 		semconv.HTTPRouteKey.String("/getAggregationStatus"),
@@ -241,7 +242,7 @@ func (c *Client) sendGetAggregationStatusGet(ctx context.Context, params GetAggr
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetAggregationStatusGetOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, api2.GetAggregationStatusGetOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -307,12 +308,12 @@ func (c *Client) sendGetAggregationStatusGet(ctx context.Context, params GetAggr
 // Get current epoch.
 //
 // GET /getCurrentEpoch
-func (c *Client) GetCurrentEpochGet(ctx context.Context) (*GetCurrentEpochGetOK, error) {
+func (c *Client) GetCurrentEpochGet(ctx context.Context) (*api2.GetCurrentEpochGetOK, error) {
 	res, err := c.sendGetCurrentEpochGet(ctx)
 	return res, err
 }
 
-func (c *Client) sendGetCurrentEpochGet(ctx context.Context) (res *GetCurrentEpochGetOK, err error) {
+func (c *Client) sendGetCurrentEpochGet(ctx context.Context) (res *api2.GetCurrentEpochGetOK, err error) {
 	otelAttrs := []attribute.KeyValue{
 		semconv.HTTPRequestMethodKey.String("GET"),
 		semconv.HTTPRouteKey.String("/getCurrentEpoch"),
@@ -330,7 +331,7 @@ func (c *Client) sendGetCurrentEpochGet(ctx context.Context) (res *GetCurrentEpo
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetCurrentEpochGetOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, api2.GetCurrentEpochGetOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -378,12 +379,12 @@ func (c *Client) sendGetCurrentEpochGet(ctx context.Context) (res *GetCurrentEpo
 // Get signature request by request hash.
 //
 // GET /getSignatureRequest
-func (c *Client) GetSignatureRequestGet(ctx context.Context, params GetSignatureRequestGetParams) (*SignatureRequest, error) {
+func (c *Client) GetSignatureRequestGet(ctx context.Context, params api2.GetSignatureRequestGetParams) (*api2.SignatureRequest, error) {
 	res, err := c.sendGetSignatureRequestGet(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetSignatureRequestGet(ctx context.Context, params GetSignatureRequestGetParams) (res *SignatureRequest, err error) {
+func (c *Client) sendGetSignatureRequestGet(ctx context.Context, params api2.GetSignatureRequestGetParams) (res *api2.SignatureRequest, err error) {
 	otelAttrs := []attribute.KeyValue{
 		semconv.HTTPRequestMethodKey.String("GET"),
 		semconv.HTTPRouteKey.String("/getSignatureRequest"),
@@ -401,7 +402,7 @@ func (c *Client) sendGetSignatureRequestGet(ctx context.Context, params GetSigna
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetSignatureRequestGetOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, api2.GetSignatureRequestGetOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -467,12 +468,12 @@ func (c *Client) sendGetSignatureRequestGet(ctx context.Context, params GetSigna
 // Get signature by request hash.
 //
 // GET /getSignatures
-func (c *Client) GetSignaturesGet(ctx context.Context, params GetSignaturesGetParams) ([]Signature, error) {
+func (c *Client) GetSignaturesGet(ctx context.Context, params api2.GetSignaturesGetParams) ([]api2.Signature, error) {
 	res, err := c.sendGetSignaturesGet(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetSignaturesGet(ctx context.Context, params GetSignaturesGetParams) (res []Signature, err error) {
+func (c *Client) sendGetSignaturesGet(ctx context.Context, params api2.GetSignaturesGetParams) (res []api2.Signature, err error) {
 	otelAttrs := []attribute.KeyValue{
 		semconv.HTTPRequestMethodKey.String("GET"),
 		semconv.HTTPRouteKey.String("/getSignatures"),
@@ -490,7 +491,7 @@ func (c *Client) sendGetSignaturesGet(ctx context.Context, params GetSignaturesG
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetSignaturesGetOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, api2.GetSignaturesGetOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -556,12 +557,12 @@ func (c *Client) sendGetSignaturesGet(ctx context.Context, params GetSignaturesG
 // Get suggested epoch to request sign.
 //
 // GET /getSuggestedEpoch
-func (c *Client) GetSuggestedEpochGet(ctx context.Context) (*GetSuggestedEpochGetOK, error) {
+func (c *Client) GetSuggestedEpochGet(ctx context.Context) (*api2.GetSuggestedEpochGetOK, error) {
 	res, err := c.sendGetSuggestedEpochGet(ctx)
 	return res, err
 }
 
-func (c *Client) sendGetSuggestedEpochGet(ctx context.Context) (res *GetSuggestedEpochGetOK, err error) {
+func (c *Client) sendGetSuggestedEpochGet(ctx context.Context) (res *api2.GetSuggestedEpochGetOK, err error) {
 	otelAttrs := []attribute.KeyValue{
 		semconv.HTTPRequestMethodKey.String("GET"),
 		semconv.HTTPRouteKey.String("/getSuggestedEpoch"),
@@ -579,7 +580,7 @@ func (c *Client) sendGetSuggestedEpochGet(ctx context.Context) (res *GetSuggeste
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetSuggestedEpochGetOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, api2.GetSuggestedEpochGetOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -627,12 +628,12 @@ func (c *Client) sendGetSuggestedEpochGet(ctx context.Context) (res *GetSuggeste
 // Get current validator set.
 //
 // GET /getValidatorSet
-func (c *Client) GetValidatorSetGet(ctx context.Context, params GetValidatorSetGetParams) (*ValidatorSet, error) {
+func (c *Client) GetValidatorSetGet(ctx context.Context, params api2.GetValidatorSetGetParams) (*api2.ValidatorSet, error) {
 	res, err := c.sendGetValidatorSetGet(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetValidatorSetGet(ctx context.Context, params GetValidatorSetGetParams) (res *ValidatorSet, err error) {
+func (c *Client) sendGetValidatorSetGet(ctx context.Context, params api2.GetValidatorSetGetParams) (res *api2.ValidatorSet, err error) {
 	otelAttrs := []attribute.KeyValue{
 		semconv.HTTPRequestMethodKey.String("GET"),
 		semconv.HTTPRouteKey.String("/getValidatorSet"),
@@ -650,7 +651,7 @@ func (c *Client) sendGetValidatorSetGet(ctx context.Context, params GetValidator
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetValidatorSetGetOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, api2.GetValidatorSetGetOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -719,12 +720,12 @@ func (c *Client) sendGetValidatorSetGet(ctx context.Context, params GetValidator
 // Sign a message.
 //
 // POST /signMessage
-func (c *Client) SignMessagePost(ctx context.Context, request *SignMessagePostReq) (*SignMessagePostOK, error) {
+func (c *Client) SignMessagePost(ctx context.Context, request *api2.SignMessagePostReq) (*api2.SignMessagePostOK, error) {
 	res, err := c.sendSignMessagePost(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendSignMessagePost(ctx context.Context, request *SignMessagePostReq) (res *SignMessagePostOK, err error) {
+func (c *Client) sendSignMessagePost(ctx context.Context, request *api2.SignMessagePostReq) (res *api2.SignMessagePostOK, err error) {
 	otelAttrs := []attribute.KeyValue{
 		semconv.HTTPRequestMethodKey.String("POST"),
 		semconv.HTTPRouteKey.String("/signMessage"),
@@ -742,7 +743,7 @@ func (c *Client) sendSignMessagePost(ctx context.Context, request *SignMessagePo
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, SignMessagePostOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, api2.SignMessagePostOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)

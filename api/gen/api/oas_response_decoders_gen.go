@@ -3,6 +3,7 @@
 package api
 
 import (
+	api2 "github.com/symbioticfi/relay/internal/gen/api"
 	"io"
 	"mime"
 	"net/http"
@@ -14,7 +15,7 @@ import (
 	"github.com/ogen-go/ogen/validate"
 )
 
-func decodeGetAggregationProofGetResponse(resp *http.Response) (res *AggregationProof, _ error) {
+func decodeGetAggregationProofGetResponse(resp *http.Response) (res *api2.AggregationProof, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -30,7 +31,7 @@ func decodeGetAggregationProofGetResponse(resp *http.Response) (res *Aggregation
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response AggregationProof
+			var response api2.AggregationProof
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -53,7 +54,7 @@ func decodeGetAggregationProofGetResponse(resp *http.Response) (res *Aggregation
 		}
 	}
 	// Convenient error response.
-	defRes, err := func() (res *ErrorStatusCode, err error) {
+	defRes, err := func() (res *api2.ErrorStatusCode, err error) {
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
 			return res, errors.Wrap(err, "parse media type")
@@ -66,7 +67,7 @@ func decodeGetAggregationProofGetResponse(resp *http.Response) (res *Aggregation
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response Error
+			var response api2.Error
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -92,7 +93,7 @@ func decodeGetAggregationProofGetResponse(resp *http.Response) (res *Aggregation
 			}(); err != nil {
 				return res, errors.Wrap(err, "validate")
 			}
-			return &ErrorStatusCode{
+			return &api2.ErrorStatusCode{
 				StatusCode: resp.StatusCode,
 				Response:   response,
 			}, nil
@@ -106,7 +107,7 @@ func decodeGetAggregationProofGetResponse(resp *http.Response) (res *Aggregation
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeGetAggregationStatusGetResponse(resp *http.Response) (res *AggregationStatus, _ error) {
+func decodeGetAggregationStatusGetResponse(resp *http.Response) (res *api2.AggregationStatus, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -122,7 +123,7 @@ func decodeGetAggregationStatusGetResponse(resp *http.Response) (res *Aggregatio
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response AggregationStatus
+			var response api2.AggregationStatus
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -154,7 +155,7 @@ func decodeGetAggregationStatusGetResponse(resp *http.Response) (res *Aggregatio
 		}
 	}
 	// Convenient error response.
-	defRes, err := func() (res *ErrorStatusCode, err error) {
+	defRes, err := func() (res *api2.ErrorStatusCode, err error) {
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
 			return res, errors.Wrap(err, "parse media type")
@@ -167,7 +168,7 @@ func decodeGetAggregationStatusGetResponse(resp *http.Response) (res *Aggregatio
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response Error
+			var response api2.Error
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -193,7 +194,7 @@ func decodeGetAggregationStatusGetResponse(resp *http.Response) (res *Aggregatio
 			}(); err != nil {
 				return res, errors.Wrap(err, "validate")
 			}
-			return &ErrorStatusCode{
+			return &api2.ErrorStatusCode{
 				StatusCode: resp.StatusCode,
 				Response:   response,
 			}, nil
@@ -207,7 +208,7 @@ func decodeGetAggregationStatusGetResponse(resp *http.Response) (res *Aggregatio
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeGetCurrentEpochGetResponse(resp *http.Response) (res *GetCurrentEpochGetOK, _ error) {
+func decodeGetCurrentEpochGetResponse(resp *http.Response) (res *api2.GetCurrentEpochGetOK, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -223,7 +224,7 @@ func decodeGetCurrentEpochGetResponse(resp *http.Response) (res *GetCurrentEpoch
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response GetCurrentEpochGetOK
+			var response api2.GetCurrentEpochGetOK
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -246,7 +247,7 @@ func decodeGetCurrentEpochGetResponse(resp *http.Response) (res *GetCurrentEpoch
 		}
 	}
 	// Convenient error response.
-	defRes, err := func() (res *ErrorStatusCode, err error) {
+	defRes, err := func() (res *api2.ErrorStatusCode, err error) {
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
 			return res, errors.Wrap(err, "parse media type")
@@ -259,7 +260,7 @@ func decodeGetCurrentEpochGetResponse(resp *http.Response) (res *GetCurrentEpoch
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response Error
+			var response api2.Error
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -285,7 +286,7 @@ func decodeGetCurrentEpochGetResponse(resp *http.Response) (res *GetCurrentEpoch
 			}(); err != nil {
 				return res, errors.Wrap(err, "validate")
 			}
-			return &ErrorStatusCode{
+			return &api2.ErrorStatusCode{
 				StatusCode: resp.StatusCode,
 				Response:   response,
 			}, nil
@@ -299,7 +300,7 @@ func decodeGetCurrentEpochGetResponse(resp *http.Response) (res *GetCurrentEpoch
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeGetSignatureRequestGetResponse(resp *http.Response) (res *SignatureRequest, _ error) {
+func decodeGetSignatureRequestGetResponse(resp *http.Response) (res *api2.SignatureRequest, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -315,7 +316,7 @@ func decodeGetSignatureRequestGetResponse(resp *http.Response) (res *SignatureRe
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response SignatureRequest
+			var response api2.SignatureRequest
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -338,7 +339,7 @@ func decodeGetSignatureRequestGetResponse(resp *http.Response) (res *SignatureRe
 		}
 	}
 	// Convenient error response.
-	defRes, err := func() (res *ErrorStatusCode, err error) {
+	defRes, err := func() (res *api2.ErrorStatusCode, err error) {
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
 			return res, errors.Wrap(err, "parse media type")
@@ -351,7 +352,7 @@ func decodeGetSignatureRequestGetResponse(resp *http.Response) (res *SignatureRe
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response Error
+			var response api2.Error
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -377,7 +378,7 @@ func decodeGetSignatureRequestGetResponse(resp *http.Response) (res *SignatureRe
 			}(); err != nil {
 				return res, errors.Wrap(err, "validate")
 			}
-			return &ErrorStatusCode{
+			return &api2.ErrorStatusCode{
 				StatusCode: resp.StatusCode,
 				Response:   response,
 			}, nil
@@ -391,7 +392,7 @@ func decodeGetSignatureRequestGetResponse(resp *http.Response) (res *SignatureRe
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeGetSignaturesGetResponse(resp *http.Response) (res []Signature, _ error) {
+func decodeGetSignaturesGetResponse(resp *http.Response) (res []api2.Signature, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -407,11 +408,11 @@ func decodeGetSignaturesGetResponse(resp *http.Response) (res []Signature, _ err
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response []Signature
+			var response []api2.Signature
 			if err := func() error {
-				response = make([]Signature, 0)
+				response = make([]api2.Signature, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
-					var elem Signature
+					var elem api2.Signature
 					if err := elem.Decode(d); err != nil {
 						return err
 					}
@@ -447,7 +448,7 @@ func decodeGetSignaturesGetResponse(resp *http.Response) (res []Signature, _ err
 		}
 	}
 	// Convenient error response.
-	defRes, err := func() (res *ErrorStatusCode, err error) {
+	defRes, err := func() (res *api2.ErrorStatusCode, err error) {
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
 			return res, errors.Wrap(err, "parse media type")
@@ -460,7 +461,7 @@ func decodeGetSignaturesGetResponse(resp *http.Response) (res []Signature, _ err
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response Error
+			var response api2.Error
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -486,7 +487,7 @@ func decodeGetSignaturesGetResponse(resp *http.Response) (res []Signature, _ err
 			}(); err != nil {
 				return res, errors.Wrap(err, "validate")
 			}
-			return &ErrorStatusCode{
+			return &api2.ErrorStatusCode{
 				StatusCode: resp.StatusCode,
 				Response:   response,
 			}, nil
@@ -500,7 +501,7 @@ func decodeGetSignaturesGetResponse(resp *http.Response) (res []Signature, _ err
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeGetSuggestedEpochGetResponse(resp *http.Response) (res *GetSuggestedEpochGetOK, _ error) {
+func decodeGetSuggestedEpochGetResponse(resp *http.Response) (res *api2.GetSuggestedEpochGetOK, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -516,7 +517,7 @@ func decodeGetSuggestedEpochGetResponse(resp *http.Response) (res *GetSuggestedE
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response GetSuggestedEpochGetOK
+			var response api2.GetSuggestedEpochGetOK
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -539,7 +540,7 @@ func decodeGetSuggestedEpochGetResponse(resp *http.Response) (res *GetSuggestedE
 		}
 	}
 	// Convenient error response.
-	defRes, err := func() (res *ErrorStatusCode, err error) {
+	defRes, err := func() (res *api2.ErrorStatusCode, err error) {
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
 			return res, errors.Wrap(err, "parse media type")
@@ -552,7 +553,7 @@ func decodeGetSuggestedEpochGetResponse(resp *http.Response) (res *GetSuggestedE
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response Error
+			var response api2.Error
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -578,7 +579,7 @@ func decodeGetSuggestedEpochGetResponse(resp *http.Response) (res *GetSuggestedE
 			}(); err != nil {
 				return res, errors.Wrap(err, "validate")
 			}
-			return &ErrorStatusCode{
+			return &api2.ErrorStatusCode{
 				StatusCode: resp.StatusCode,
 				Response:   response,
 			}, nil
@@ -592,7 +593,7 @@ func decodeGetSuggestedEpochGetResponse(resp *http.Response) (res *GetSuggestedE
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeGetValidatorSetGetResponse(resp *http.Response) (res *ValidatorSet, _ error) {
+func decodeGetValidatorSetGetResponse(resp *http.Response) (res *api2.ValidatorSet, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -608,7 +609,7 @@ func decodeGetValidatorSetGetResponse(resp *http.Response) (res *ValidatorSet, _
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response ValidatorSet
+			var response api2.ValidatorSet
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -640,7 +641,7 @@ func decodeGetValidatorSetGetResponse(resp *http.Response) (res *ValidatorSet, _
 		}
 	}
 	// Convenient error response.
-	defRes, err := func() (res *ErrorStatusCode, err error) {
+	defRes, err := func() (res *api2.ErrorStatusCode, err error) {
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
 			return res, errors.Wrap(err, "parse media type")
@@ -653,7 +654,7 @@ func decodeGetValidatorSetGetResponse(resp *http.Response) (res *ValidatorSet, _
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response Error
+			var response api2.Error
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -679,7 +680,7 @@ func decodeGetValidatorSetGetResponse(resp *http.Response) (res *ValidatorSet, _
 			}(); err != nil {
 				return res, errors.Wrap(err, "validate")
 			}
-			return &ErrorStatusCode{
+			return &api2.ErrorStatusCode{
 				StatusCode: resp.StatusCode,
 				Response:   response,
 			}, nil
@@ -693,7 +694,7 @@ func decodeGetValidatorSetGetResponse(resp *http.Response) (res *ValidatorSet, _
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeSignMessagePostResponse(resp *http.Response) (res *SignMessagePostOK, _ error) {
+func decodeSignMessagePostResponse(resp *http.Response) (res *api2.SignMessagePostOK, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -709,7 +710,7 @@ func decodeSignMessagePostResponse(resp *http.Response) (res *SignMessagePostOK,
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response SignMessagePostOK
+			var response api2.SignMessagePostOK
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -732,7 +733,7 @@ func decodeSignMessagePostResponse(resp *http.Response) (res *SignMessagePostOK,
 		}
 	}
 	// Convenient error response.
-	defRes, err := func() (res *ErrorStatusCode, err error) {
+	defRes, err := func() (res *api2.ErrorStatusCode, err error) {
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
 			return res, errors.Wrap(err, "parse media type")
@@ -745,7 +746,7 @@ func decodeSignMessagePostResponse(resp *http.Response) (res *SignMessagePostOK,
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response Error
+			var response api2.Error
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -771,7 +772,7 @@ func decodeSignMessagePostResponse(resp *http.Response) (res *SignMessagePostOK,
 			}(); err != nil {
 				return res, errors.Wrap(err, "validate")
 			}
-			return &ErrorStatusCode{
+			return &api2.ErrorStatusCode{
 				StatusCode: resp.StatusCode,
 				Response:   response,
 			}, nil

@@ -4,6 +4,7 @@ package api
 
 import (
 	"bytes"
+	api2 "github.com/symbioticfi/relay/internal/gen/api"
 	"net/http"
 
 	"github.com/go-faster/jx"
@@ -12,7 +13,7 @@ import (
 )
 
 func encodeSignMessagePostRequest(
-	req *SignMessagePostReq,
+	req *api2.SignMessagePostReq,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
