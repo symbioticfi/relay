@@ -276,6 +276,7 @@ linters:
       - third_party$
       - builtin$
       - examples$
+      - hack/
 issues:
   max-issues-per-linter: 500
   max-same-issues: 500

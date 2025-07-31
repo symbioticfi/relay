@@ -269,15 +269,16 @@ func runApp(ctx context.Context) error {
 	serveMetricsOnAPIAddress := cfg.HTTPListenAddr == cfg.MetricsListenAddr || cfg.MetricsListenAddr == ""
 
 	api, err := api_server.NewSymbioticServer(ctx, api_server.Config{
-		Address:         cfg.HTTPListenAddr,
-		ShutdownTimeout: time.Second * 5,
-		Prefix:          "/api/v1",
-		Signer:          signerApp,
-		Repo:            repo,
-		EvmClient:       evmClient,
-		Aggregator:      aggApp,
-		Deriver:         deriver,
-		ServeMetrics:    serveMetricsOnAPIAddress,
+		Address:           cfg.HTTPListenAddr,
+		ShutdownTimeout:   time.Second * 5,
+		ReadHeaderTimeout: time.Second,
+		Prefix:            "/api/v1",
+		Signer:            signerApp,
+		Repo:              repo,
+		EvmClient:         evmClient,
+		Aggregator:        aggApp,
+		Deriver:           deriver,
+		ServeMetrics:      serveMetricsOnAPIAddress,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create api app: %w", err)

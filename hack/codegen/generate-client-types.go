@@ -1,4 +1,3 @@
-//nolint: all // codegen script should not be linted
 package main
 
 import (
