@@ -148,6 +148,7 @@ func (e *Client) GetConfig(ctx context.Context, timestamp uint64) (_ entity.Netw
 				QuorumThreshold: entity.ToQuorumThresholdPct(v.QuorumThreshold),
 			}
 		}),
+		MaxMissingEpochs: 0, // TODO set it after core update
 	}, nil
 }
 

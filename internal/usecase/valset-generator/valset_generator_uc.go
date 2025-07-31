@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	strategyTypes "github.com/symbioticfi/relay/core/usecase/growth-strategy/strategy-types"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 
@@ -57,6 +59,7 @@ type Config struct {
 	PollingInterval time.Duration `validate:"required,gt=0"`
 	IsCommitter     bool
 	Aggregator      aggregator.Aggregator
+	GrowthStrategy  strategyTypes.GrowthStrategy
 }
 
 func (c Config) Validate() error {
@@ -126,6 +129,38 @@ func (s *Service) process(ctx context.Context) error {
 		return errors.Errorf("failed to get network data: %w", err)
 	}
 
+	latestValset, err := s.cfg.Repo.GetLatestValidatorSet(ctx)
+	if err != nil {
+		return errors.Errorf("failed to get latest validator set extra: %w", err)
+	}
+
+	latestValsetHeader, err := latestValset.GetHeader()
+	if err != nil {
+		return errors.Errorf("failed to get latest validator set header: %w", err)
+	}
+
+	latestValsetHeaderHash, err := latestValsetHeader.Hash()
+	if err != nil {
+		return errors.Errorf("failed to get latest validator set header hash: %w", err)
+	}
+
+	lastCommittedHeaderHash, lastCommittedHeaderEpoch, err := s.cfg.GrowthStrategy.GetLastCommittedHeaderHash(ctx, config)
+	if err != nil {
+		return errors.Errorf("failed to get last committed header hash: %w", err)
+	}
+
+	// waiting for valset listener sync and attaching new valset to growth strategy hash
+	if latestValset.Epoch != lastCommittedHeaderEpoch || latestValsetHeaderHash != lastCommittedHeaderHash ||
+		valSet.PreviousHeaderHash != lastCommittedHeaderHash {
+		slog.WarnContext(ctx, "valset candidate doesn't refer to growth strategy last committed hash", "epoch", valSet.Epoch, "prevEpoch", lastCommittedHeaderEpoch)
+		return nil
+	}
+
+	if config.MaxMissingEpochs != 0 && latestValset.Epoch-valSet.Epoch > config.MaxMissingEpochs {
+		slog.ErrorContext(ctx, "Exceed missing epochs", "latest committed", latestValset.Epoch, "current", valSet.Epoch)
+		return errors.New("max missing epochs")
+	}
+
 	extraData, err := s.cfg.Aggregator.GenerateExtraData(valSet, config.RequiredKeyTags)
 	if err != nil {
 		return errors.Errorf("failed to generate extra data: %w", err)
@@ -140,14 +175,6 @@ func (s *Service) process(ctx context.Context) error {
 		return errors.Errorf("failed to get header commitment hash: %w", err)
 	}
 
-	latestValset, err := s.cfg.Repo.GetLatestValidatorSet(ctx)
-	if err != nil {
-		return errors.Errorf("failed to get latest validator set extra: %w", err)
-	}
-
-	if latestValset.Epoch-valSet.Epoch > 10 {
-		slog.WarnContext(ctx, "More than 10 missed epochs", "latest committed", latestValset.Epoch, "current", valSet.Epoch)
-	}
 	r := entity.SignatureRequest{
 		KeyTag:        entity.ValsetHeaderKeyTag,
 		RequiredEpoch: entity.Epoch(latestValset.Epoch),
