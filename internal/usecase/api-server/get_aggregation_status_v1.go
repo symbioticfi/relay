@@ -8,11 +8,11 @@ import (
 	"github.com/samber/lo"
 
 	"github.com/symbioticfi/relay/core/entity"
-	"github.com/symbioticfi/relay/internal/gen/api/v1"
+	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
 )
 
 // GetAggregationStatus handles the gRPC GetAggregationStatus request
-func (h *grpcHandler) GetAggregationStatus(ctx context.Context, req *v1.GetAggregationStatusRequest) (*v1.GetAggregationStatusResponse, error) {
+func (h *grpcHandler) GetAggregationStatus(ctx context.Context, req *apiv1.GetAggregationStatusRequest) (*apiv1.GetAggregationStatusResponse, error) {
 	if h.cfg.Aggregator == nil {
 		return nil, entity.ErrNotAnAggregator
 	}
@@ -27,7 +27,7 @@ func (h *grpcHandler) GetAggregationStatus(ctx context.Context, req *v1.GetAggre
 	})
 	sort.Strings(operators)
 
-	return &v1.GetAggregationStatusResponse{
+	return &apiv1.GetAggregationStatusResponse{
 		CurrentVotingPower: aggregationStatus.VotingPower.String(),
 		SignerOperators:    operators,
 	}, nil

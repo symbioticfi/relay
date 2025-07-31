@@ -38,6 +38,7 @@ linters:
     - gosec
     - govet
     - grouper
+    - importas
     - inamedparam
     - ineffassign
     - loggercheck
@@ -75,6 +76,10 @@ linters:
     - whitespace
 #    - wrapcheck
   settings:
+    importas:
+      alias:
+        - pkg: github.com/symbioticfi/relay/internal/gen/api/v1
+          alias: apiv1
     cyclop:
       max-complexity: 30
       package-average: 10
@@ -277,8 +282,7 @@ issues:
 formatters:
   enable:
     - gofmt
-    # Disabled goimports as it may be adding redundant v1 aliases
-    # - goimports
+    - goimports
   exclusions:
     generated: lax
     paths:

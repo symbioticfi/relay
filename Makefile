@@ -24,8 +24,8 @@ ifeq ($(PUSH_LATEST), true)
 	IMAGE_TAGS := ${IMAGE_TAGS} -t ${IMAGE_REPO}:latest
 endif
 
-.PHONT: install-tools lint
-lint: buf-lint go-lint
+.PHONY: lint
+lint: install-tools buf-lint go-lint
 
 .PHONY: buf-lint
 buf-lint:

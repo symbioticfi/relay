@@ -12,16 +12,17 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/symbioticfi/relay/core/entity"
-	p2pEntity "github.com/symbioticfi/relay/internal/entity"
-	"github.com/symbioticfi/relay/internal/gen/api/v1"
-	"github.com/symbioticfi/relay/pkg/log"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
+
+	"github.com/symbioticfi/relay/core/entity"
+	p2pEntity "github.com/symbioticfi/relay/internal/entity"
+	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
+	"github.com/symbioticfi/relay/pkg/log"
 )
 
 type signer interface {
@@ -73,7 +74,7 @@ func (c Config) Validate() error {
 
 // grpcHandler implements the gRPC service interface
 type grpcHandler struct {
-	v1.SymbioticAPIServiceServer
+	apiv1.SymbioticAPIServiceServer
 
 	cfg Config
 }
@@ -120,7 +121,7 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 		cfg: cfg,
 	}
 
-	v1.RegisterSymbioticAPIServiceServer(grpcServer, handler)
+	apiv1.RegisterSymbioticAPIServiceServer(grpcServer, handler)
 
 	// Register health service
 	healthServer := health.NewServer()

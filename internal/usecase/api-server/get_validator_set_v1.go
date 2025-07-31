@@ -9,11 +9,11 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/symbioticfi/relay/core/entity"
-	"github.com/symbioticfi/relay/internal/gen/api/v1"
+	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
 )
 
 // GetValidatorSet handles the gRPC GetValidatorSet request
-func (h *grpcHandler) GetValidatorSet(ctx context.Context, req *v1.GetValidatorSetRequest) (*v1.GetValidatorSetResponse, error) {
+func (h *grpcHandler) GetValidatorSet(ctx context.Context, req *apiv1.GetValidatorSetRequest) (*apiv1.GetValidatorSetResponse, error) {
 	latestEpoch, err := h.cfg.EvmClient.GetCurrentEpoch(ctx)
 	if err != nil {
 		return nil, err
@@ -51,8 +51,8 @@ func (h *grpcHandler) GetValidatorSet(ctx context.Context, req *v1.GetValidatorS
 	return convertValidatorSetToPB(validatorSet), nil
 }
 
-func convertValidatorSetToPB(valSet entity.ValidatorSet) *v1.GetValidatorSetResponse {
-	return &v1.GetValidatorSetResponse{
+func convertValidatorSetToPB(valSet entity.ValidatorSet) *apiv1.GetValidatorSetResponse {
+	return &apiv1.GetValidatorSetResponse{
 		Version:            uint32(valSet.Version),
 		RequiredKeyTag:     uint32(valSet.RequiredKeyTag),
 		Epoch:              valSet.Epoch,
@@ -60,19 +60,19 @@ func convertValidatorSetToPB(valSet entity.ValidatorSet) *v1.GetValidatorSetResp
 		QuorumThreshold:    valSet.QuorumThreshold.String(),
 		PreviousHeaderHash: valSet.PreviousHeaderHash.Hex(),
 		Status:             convertValidatorSetStatusToPB(valSet.Status),
-		Validators: lo.Map(valSet.Validators, func(v entity.Validator, _ int) *v1.Validator {
-			return &v1.Validator{
+		Validators: lo.Map(valSet.Validators, func(v entity.Validator, _ int) *apiv1.Validator {
+			return &apiv1.Validator{
 				Operator:    v.Operator.Hex(),
 				VotingPower: v.VotingPower.String(),
 				IsActive:    v.IsActive,
-				Keys: lo.Map(v.Keys, func(k entity.ValidatorKey, _ int) *v1.Key {
-					return &v1.Key{
+				Keys: lo.Map(v.Keys, func(k entity.ValidatorKey, _ int) *apiv1.Key {
+					return &apiv1.Key{
 						Tag:     uint32(k.Tag),
 						Payload: k.Payload,
 					}
 				}),
-				Vaults: lo.Map(v.Vaults, func(v entity.ValidatorVault, _ int) *v1.ValidatorVault {
-					return &v1.ValidatorVault{
+				Vaults: lo.Map(v.Vaults, func(v entity.ValidatorVault, _ int) *apiv1.ValidatorVault {
+					return &apiv1.ValidatorVault{
 						ChainId:     v.ChainID,
 						Vault:       v.Vault.Hex(),
 						VotingPower: v.VotingPower.String(),
@@ -83,15 +83,15 @@ func convertValidatorSetToPB(valSet entity.ValidatorSet) *v1.GetValidatorSetResp
 	}
 }
 
-func convertValidatorSetStatusToPB(status entity.ValidatorSetStatus) v1.ValidatorSetStatus {
+func convertValidatorSetStatusToPB(status entity.ValidatorSetStatus) apiv1.ValidatorSetStatus {
 	switch status {
 	case entity.HeaderPending:
-		return v1.ValidatorSetStatus_VALIDATOR_SET_STATUS_PENDING
+		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_PENDING
 	case entity.HeaderMissed:
-		return v1.ValidatorSetStatus_VALIDATOR_SET_STATUS_MISSED
+		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_MISSED
 	case entity.HeaderCommitted:
-		return v1.ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED
+		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED
 	default:
-		return v1.ValidatorSetStatus_VALIDATOR_SET_STATUS_UNSPECIFIED
+		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_UNSPECIFIED
 	}
 }

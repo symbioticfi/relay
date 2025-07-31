@@ -4,16 +4,17 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/symbioticfi/relay/internal/gen/api/v1"
 	"google.golang.org/grpc"
+
+	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
 )
 
 // SignMessageWait handles the streaming gRPC SignMessageWait request
-func (h *grpcHandler) SignMessageWait(req *v1.SignMessageWaitRequest, stream grpc.ServerStreamingServer[v1.SignMessageWaitResponse]) error {
+func (h *grpcHandler) SignMessageWait(req *apiv1.SignMessageWaitRequest, stream grpc.ServerStreamingServer[apiv1.SignMessageWaitResponse]) error {
 	ctx := stream.Context()
 
 	// First, sign the message
-	sigReq := &v1.SignMessageRequest{
+	sigReq := &apiv1.SignMessageRequest{
 		KeyTag:        req.GetKeyTag(),
 		Message:       req.GetMessage(),
 		RequiredEpoch: req.RequiredEpoch,
@@ -24,8 +25,8 @@ func (h *grpcHandler) SignMessageWait(req *v1.SignMessageWaitRequest, stream grp
 	}
 
 	// Send initial pending status
-	err = stream.Send(&v1.SignMessageWaitResponse{
-		Status:      v1.SigningStatus_SIGNING_STATUS_PENDING,
+	err = stream.Send(&apiv1.SignMessageWaitResponse{
+		Status:      apiv1.SigningStatus_SIGNING_STATUS_PENDING,
 		RequestHash: signResp.GetRequestHash(),
 		Epoch:       signResp.GetEpoch(),
 	})
@@ -46,8 +47,8 @@ func (h *grpcHandler) SignMessageWait(req *v1.SignMessageWaitRequest, stream grp
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-timeout.C:
-			return stream.Send(&v1.SignMessageWaitResponse{
-				Status:      v1.SigningStatus_SIGNING_STATUS_TIMEOUT,
+			return stream.Send(&apiv1.SignMessageWaitResponse{
+				Status:      apiv1.SigningStatus_SIGNING_STATUS_TIMEOUT,
 				RequestHash: signResp.GetRequestHash(),
 				Epoch:       signResp.GetEpoch(),
 			})
@@ -57,11 +58,11 @@ func (h *grpcHandler) SignMessageWait(req *v1.SignMessageWaitRequest, stream grp
 			proof, err := h.cfg.Repo.GetAggregationProof(ctx, common.HexToHash(reqHash))
 			if err == nil {
 				// Success - send final proof
-				return stream.Send(&v1.SignMessageWaitResponse{
-					Status:      v1.SigningStatus_SIGNING_STATUS_COMPLETED,
+				return stream.Send(&apiv1.SignMessageWaitResponse{
+					Status:      apiv1.SigningStatus_SIGNING_STATUS_COMPLETED,
 					RequestHash: signResp.GetRequestHash(),
 					Epoch:       signResp.GetEpoch(),
-					AggregationProof: &v1.AggregationProof{
+					AggregationProof: &apiv1.AggregationProof{
 						VerificationType: uint32(proof.VerificationType),
 						MessageHash:      proof.MessageHash,
 						Proof:            proof.Proof,
