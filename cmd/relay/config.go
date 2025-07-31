@@ -99,7 +99,7 @@ func (s *CMDSecretKeySlice) Type() string {
 type config struct {
 	Driver            entity.CMDCrossChainAddress `mapstructure:"driver" validate:"required"`
 	LogLevel          string                      `mapstructure:"log-level" validate:"oneof=debug info warn error"`
-	LogMode           string                      `mapstructure:"log-mode" validate:"oneof=text pretty"`
+	LogMode           string                      `mapstructure:"log-mode" validate:"oneof=json text pretty"`
 	P2PListenAddress  string                      `mapstructure:"p2p-listen" validate:"required"`
 	HTTPListenAddr    string                      `mapstructure:"http-listen" validate:"required"`
 	MetricsListenAddr string                      `mapstructure:"metrics-listen"`
@@ -135,7 +135,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Uint64("driver.chain-id", 0, "Driver contract chain id")
 	rootCmd.PersistentFlags().String("driver.address", "", "Driver contract address")
 	rootCmd.PersistentFlags().String("log-level", "info", "Log level (debug, info, warn, error)")
-	rootCmd.PersistentFlags().String("log-mode", "text", "Log mode (text, pretty)")
+	rootCmd.PersistentFlags().String("log-mode", "json", "Log mode (text, pretty, json)")
 	rootCmd.PersistentFlags().String("p2p-listen", "", "P2P listen address")
 	rootCmd.PersistentFlags().String("http-listen", "", "Http listener address")
 	rootCmd.PersistentFlags().String("metrics-listen", "", "Http listener address for metrics endpoint")
