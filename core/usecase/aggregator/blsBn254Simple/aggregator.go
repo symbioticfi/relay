@@ -490,9 +490,14 @@ func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []enti
 			return nil, errors.Errorf("failed to deserialize G1: %w", err)
 		}
 
+		compressedG1, err := compress(keyG1Raw)
+		if err != nil {
+			return nil, errors.Errorf("failed to compress G1: %w", err)
+		}
+
 		extraData = append(extraData, entity.ExtraData{
 			Key:   activeAggregatedKeyKey,
-			Value: keyG1Raw.Bytes(),
+			Value: compressedG1,
 		})
 	}
 
