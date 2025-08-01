@@ -242,6 +242,10 @@ func (k *PublicKey) Raw() RawPublicKey {
 	return append(g1Bytes[:], g2Bytes[:]...)
 }
 
+func (k *PublicKey) G2() *bn254.G2Affine {
+	return &k.g2PubKey
+}
+
 func (k *PublicKey) MarshalText() (text []byte, err error) {
 	g1Bytes := k.g1PubKey.Bytes()
 	g2Bytes := k.g2PubKey.Bytes()

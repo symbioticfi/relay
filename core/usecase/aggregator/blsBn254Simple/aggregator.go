@@ -8,6 +8,7 @@ import (
 	"sort"
 
 	"github.com/symbioticfi/relay/core/usecase/aggregator/helpers"
+	"github.com/symbioticfi/relay/core/usecase/crypto/blsBn254"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -52,24 +53,25 @@ func (a Aggregator) Aggregate(
 	}
 	var validatorsData []dtoValidatorData
 
-	aggG1Sig := bls.ZeroG1()
-	aggG2Key := bls.ZeroG2()
+	aggG1Sig := new(bn254.G1Affine)
+	aggG2Key := new(bn254.G2Affine)
 	signers := make(map[common.Address]bool)
 	for _, sig := range signatures {
-		g1, g2Key, err := bls.UnpackPublicG1G2(sig.PublicKey)
+		pubKey, err := blsBn254.FromRaw(sig.PublicKey)
 		if err != nil {
 			return entity.AggregationProof{}, err
 		}
-		val, ok := valset.FindValidatorByKey(keyTag, g1.Marshal())
+		val, ok := valset.FindValidatorByKey(keyTag, pubKey.OnChain())
 		if !ok {
 			return entity.AggregationProof{}, errors.New("failed to find validator by key")
 		}
-		g1Sig, err := bls.DeserializeG1(sig.Signature)
+		g1Sig := new(bn254.G1Affine)
+		_, err = g1Sig.SetBytes(sig.Signature)
 		if err != nil {
 			return entity.AggregationProof{}, err
 		}
-		aggG1Sig = aggG1Sig.Add(g1Sig)
-		aggG2Key = aggG2Key.Add(&g2Key)
+		aggG1Sig = aggG1Sig.Add(aggG1Sig, g1Sig)
+		aggG2Key = aggG2Key.Add(aggG2Key, pubKey.G2())
 		signers[val.Operator] = true
 	}
 
@@ -80,12 +82,13 @@ func (a Aggregator) Aggregate(
 				return entity.AggregationProof{}, errors.New("failed to find key by keyTag")
 			}
 			_, isSinger := signers[val.Operator]
-			g1Key, err := bls.DeserializeG1(keyBytes)
+			g1Key := new(bn254.G1Affine)
+			_, err := g1Key.SetBytes(keyBytes)
 			if err != nil {
 				return entity.AggregationProof{}, errors.Errorf("failed to deserialize G1 key: %w", err)
 			}
 
-			compressedKeyG1, err := bls.Compress(g1Key)
+			compressedKeyG1, err := bls.Compress(&bls.G1{G1Affine: g1Key})
 			if err != nil {
 				return entity.AggregationProof{}, errors.Errorf("failed to compress G1 key: %w", err)
 			}
@@ -317,11 +320,12 @@ func (a Aggregator) Verify(
 		if !ok {
 			return false
 		}
-		g1Key1, err := bls.DeserializeG1(keyBytes1)
+		g1Key1 := new(bn254.G1Affine)
+		_, err := g1Key1.SetBytes(keyBytes1)
 		if err != nil {
 			return false
 		}
-		g1Compressed1, err := bls.Compress(g1Key1)
+		g1Compressed1, err := bls.Compress(&bls.G1{G1Affine: g1Key1})
 		if err != nil {
 			return false
 		}
@@ -329,25 +333,27 @@ func (a Aggregator) Verify(
 		if !ok {
 			return false
 		}
-		g1Key2, err := bls.DeserializeG1(keyBytes2)
+		g1Key2 := new(bn254.G1Affine)
+		_, err = g1Key2.SetBytes(keyBytes2)
 		if err != nil {
 			return false
 		}
-		g1Compressed2, err := bls.Compress(g1Key2)
+		g1Compressed2, err := bls.Compress(&bls.G1{G1Affine: g1Key2})
 		if err != nil {
 			return false
 		}
 		return g1Compressed1.Cmp(g1Compressed2) < 0
 	})
 
-	aggPubKeyG1 := bls.ZeroG1()
+	aggPubKeyG1 := new(bn254.G1Affine)
 	var signersVotingPower big.Int
 	for i, val := range valsetSorted {
 		keyBytes, ok := val.FindKeyByKeyTag(keyTag)
 		if !ok {
 			return false, errors.Errorf("keyTag not found for validator %s", val.Operator.Hex())
 		}
-		g1Key, err := bls.DeserializeG1(keyBytes)
+		g1Key := new(bn254.G1Affine)
+		_, err = g1Key.SetBytes(keyBytes)
 		if err != nil {
 			return false, errors.Errorf("failed to deserialize G1 key from valset: %w", err)
 		}
@@ -363,7 +369,7 @@ func (a Aggregator) Verify(
 			return false, errors.Errorf("voting power mismatch for val %s", val.Operator.Hex())
 		}
 		if !nonSignersMap[uint16(i)] {
-			aggPubKeyG1 = aggPubKeyG1.Add(g1Key)
+			aggPubKeyG1 = aggPubKeyG1.Add(aggPubKeyG1, g1Key)
 			signersVotingPower.Add(&signersVotingPower, val.VotingPower.Int)
 		}
 	}
@@ -416,7 +422,7 @@ func (a Aggregator) Verify(
 	negG2 := new(bn254.G2Affine).Neg(&g2)
 
 	p := [2]bn254.G1Affine{
-		*new(bn254.G1Affine).Add(aggSig, new(bn254.G1Affine).ScalarMultiplication(aggPubKeyG1.G1Affine, alpha)),
+		*new(bn254.G1Affine).Add(aggSig, new(bn254.G1Affine).ScalarMultiplication(aggPubKeyG1, alpha)),
 		*new(bn254.G1Affine).Add(messageHashG1.G1Affine, new(bn254.G1Affine).ScalarMultiplication(&g1, alpha)),
 	}
 	q := [2]bn254.G2Affine{*negG2, *aggPubKeyG2}
@@ -474,19 +480,16 @@ func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []enti
 		if err != nil {
 			return nil, errors.Errorf("failed to get extra data key: %w", err)
 		}
-		keyG1Raw, err := bls.DeserializeG1(activeAggregatedKey.Payload)
+
+		keyG1Raw := new(bn254.G1Affine)
+		_, err = keyG1Raw.SetBytes(activeAggregatedKey.Payload)
 		if err != nil {
 			return nil, errors.Errorf("failed to deserialize G1: %w", err)
 		}
 
-		compressedKeyG1, err := bls.Compress(keyG1Raw)
-		if err != nil {
-			return nil, errors.Errorf("failed to compress G1: %w", err)
-		}
-
 		extraData = append(extraData, entity.ExtraData{
 			Key:   activeAggregatedKeyKey,
-			Value: compressedKeyG1,
+			Value: keyG1Raw.Bytes(),
 		})
 	}
 
@@ -519,12 +522,13 @@ func calcKeccakAccumulator(validators []entity.Validator, requiredKeyTag entity.
 		validatorVotingPower := validator.VotingPower
 		for _, validatorKey := range validator.Keys {
 			if validatorKey.Tag == requiredKeyTag {
-				validatorKeyG1, err := bls.DeserializeG1(validatorKey.Payload)
+				validatorKeyG1 := new(bn254.G1Affine)
+				_, err := validatorKeyG1.SetBytes(validatorKey.Payload)
 				if err != nil {
 					return common.Hash{}, errors.Errorf("failed to deserialize G1: %w", err)
 				}
 
-				compressedKeyG1, err := bls.Compress(validatorKeyG1)
+				compressedKeyG1, err := bls.Compress(&bls.G1{G1Affine: validatorKeyG1})
 				if err != nil {
 					return [32]byte{}, errors.Errorf("failed to compress G1: %w", err)
 				}
