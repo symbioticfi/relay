@@ -7,7 +7,6 @@ import (
 	types "github.com/symbioticfi/relay/core/usecase/aggregator/aggregator-types"
 	"github.com/symbioticfi/relay/core/usecase/aggregator/helpers"
 	"github.com/symbioticfi/relay/core/usecase/crypto/blsBn254"
-	"github.com/symbioticfi/relay/pkg/bls"
 	"github.com/symbioticfi/relay/pkg/proof"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
@@ -80,7 +79,7 @@ func (a Aggregator) Aggregate(
 		}
 	}
 
-	messageG1, err := bls.HashToG1(messageHash)
+	messageG1, err := blsBn254.HashToG1(messageHash)
 	if err != nil {
 		return entity.AggregationProof{}, err
 	}
@@ -124,7 +123,7 @@ func (a Aggregator) Verify(
 	// last 32 bytes is aggVotingPowerBytes
 	aggVotingPowerBytes := aggregationProof.Proof[len(aggregationProof.Proof)-32:]
 
-	messageG1, err := bls.HashToG1(aggregationProof.MessageHash)
+	messageG1, err := blsBn254.HashToG1(aggregationProof.MessageHash)
 	if err != nil {
 		return false, errors.Errorf("failed to hash message to G1: %w", err)
 	}
