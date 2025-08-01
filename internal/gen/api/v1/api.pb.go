@@ -206,7 +206,7 @@ type SignMessageRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Key tag identifier (0-255)
 	KeyTag uint32 `protobuf:"varint,1,opt,name=key_tag,json=keyTag,proto3" json:"key_tag,omitempty"`
-	// Message to be signed (base64 encoded)
+	// Message to be signed
 	Message []byte `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
 	// Required epoch (optional, if not provided latest committed epoch will be used)
 	RequiredEpoch *uint64 `protobuf:"varint,3,opt,name=required_epoch,json=requiredEpoch,proto3,oneof" json:"required_epoch,omitempty"`
@@ -270,7 +270,7 @@ type SignMessageWaitRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Key tag identifier (0-255)
 	KeyTag uint32 `protobuf:"varint,1,opt,name=key_tag,json=keyTag,proto3" json:"key_tag,omitempty"`
-	// Message to be signed (base64 encoded)
+	// Message to be signed
 	Message []byte `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
 	// Required epoch (optional, if not provided latest committed epoch will be used)
 	RequiredEpoch *uint64 `protobuf:"varint,3,opt,name=required_epoch,json=requiredEpoch,proto3,oneof" json:"required_epoch,omitempty"`
@@ -949,7 +949,7 @@ type GetSignatureRequestResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Key tag identifier (0-255)
 	KeyTag uint32 `protobuf:"varint,1,opt,name=key_tag,json=keyTag,proto3" json:"key_tag,omitempty"`
-	// Message to be signed (base64 encoded)
+	// Message to be signed
 	Message []byte `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
 	// Required epoch
 	RequiredEpoch uint64 `protobuf:"varint,3,opt,name=required_epoch,json=requiredEpoch,proto3" json:"required_epoch,omitempty"`
@@ -1058,9 +1058,9 @@ type AggregationProof struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Verification type
 	VerificationType uint32 `protobuf:"varint,1,opt,name=verification_type,json=verificationType,proto3" json:"verification_type,omitempty"`
-	// Message hash (base64 encoded)
+	// Message hash
 	MessageHash []byte `protobuf:"bytes,2,opt,name=message_hash,json=messageHash,proto3" json:"message_hash,omitempty"`
-	// Proof data (base64 encoded)
+	// Proof data
 	Proof         []byte `protobuf:"bytes,3,opt,name=proof,proto3" json:"proof,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1175,11 +1175,11 @@ func (x *GetAggregationStatusResponse) GetSignerOperators() []string {
 // Digital signature
 type Signature struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Signature data (base64 encoded)
+	// Signature data
 	Signature []byte `protobuf:"bytes,1,opt,name=signature,proto3" json:"signature,omitempty"`
-	// Message hash (base64 encoded)
+	// Message hash
 	MessageHash []byte `protobuf:"bytes,2,opt,name=message_hash,json=messageHash,proto3" json:"message_hash,omitempty"`
-	// Public key (base64 encoded)
+	// Public key
 	PublicKey     []byte `protobuf:"bytes,3,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1432,7 +1432,7 @@ type Key struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Key tag identifier (0-255)
 	Tag uint32 `protobuf:"varint,1,opt,name=tag,proto3" json:"tag,omitempty"`
-	// Key payload (base64 encoded)
+	// Key payload
 	Payload       []byte `protobuf:"bytes,2,opt,name=payload,proto3" json:"payload,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
