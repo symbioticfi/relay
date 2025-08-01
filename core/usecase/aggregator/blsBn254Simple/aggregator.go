@@ -562,7 +562,7 @@ func calcKeccakAccumulator(validators []entity.Validator, requiredKeyTag entity.
 func compress(g1 *bn254.G1Affine) (common.Hash, error) {
 	x := g1.X.BigInt(new(big.Int))
 	y := g1.Y.BigInt(new(big.Int))
-	_, derivedY, err := findYFromX(x)
+	derivedY, err := findYFromX(x)
 	if err != nil {
 		return common.Hash{}, errors.New("failed to find Y from X")
 	}
@@ -581,7 +581,7 @@ func compress(g1 *bn254.G1Affine) (common.Hash, error) {
 
 func decompress(compressed [32]byte) (*bn254.G1Affine, error) {
 	x, flag := new(big.Int).DivMod(new(big.Int).SetBytes(compressed[:32]), big.NewInt(2), big.NewInt(2))
-	_, y, err := findYFromX(x)
+	y, err := findYFromX(x)
 	if err != nil {
 		return nil, err
 	}
@@ -597,22 +597,22 @@ func decompress(compressed [32]byte) (*bn254.G1Affine, error) {
 
 // FindYFromX calculates the y coordinate for a given x on the BN254 curve
 // Returns (beta, y) where beta = x^3 + 3 (mod p) and y = sqrt(beta) if it exists
-func findYFromX(x *big.Int) (beta *big.Int, y *big.Int, err error) {
+func findYFromX(x *big.Int) (y *big.Int, err error) {
 	fpModulus := fp.Modulus()
 
 	// Calculate beta = x^3 + 3 mod p
-	beta = new(big.Int).Exp(x, big.NewInt(3), fpModulus) // x^3
-	beta.Add(beta, big.NewInt(3))                        // x^3 + 3
-	beta.Mod(beta, fpModulus)                            // (x^3 + 3) mod p
+	beta := new(big.Int).Exp(x, big.NewInt(3), fpModulus) // x^3
+	beta.Add(beta, big.NewInt(3))                         // x^3 + 3
+	beta.Mod(beta, fpModulus)                             // (x^3 + 3) mod p
 
 	// Calculate y = beta^((p+1)/4) mod p
 	// The exponent (p+1)/4 for BN254 is 0xc19139cb84c680a6e14116da060561765e05aa45a1c72a34f082305b61f3f52
 	exponent, success := new(big.Int).SetString("c19139cb84c680a6e14116da060561765e05aa45a1c72a34f082305b61f3f52", 16)
 	if !success {
-		return nil, nil, errors.New("blsBn254: failed to set exponent")
+		return nil, errors.New("blsBn254: failed to set exponent")
 	}
 
 	y = new(big.Int).Exp(beta, exponent, fpModulus)
 
-	return beta, y, nil
+	return y, nil
 }
