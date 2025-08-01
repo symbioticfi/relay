@@ -128,7 +128,7 @@ var infoCmd = &cobra.Command{
 			}
 			panels = append(panels, []pterm.Panel{
 				{Data: pterm.DefaultBox.WithTitle("Settlement").Sprint(
-					printSettlementData(&header, &networkConfig, isCommitted, headerHashes),
+					printSettlementData(header, networkConfig, isCommitted, headerHashes, committedEpoch),
 				)},
 			})
 		}

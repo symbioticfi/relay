@@ -145,7 +145,7 @@ func (s *Service) process(ctx context.Context) error {
 		return errors.Errorf("failed to get latest validator set extra: %w", err)
 	}
 
-	if latestValset.Epoch-valSet.Epoch > 10 {
+	if int64(latestValset.Epoch)-int64(valSet.Epoch) > 10 { // converted to int64 to avoid uint64 overflow for negative numbers
 		slog.WarnContext(ctx, "More than 10 missed epochs", "latest committed", latestValset.Epoch, "current", valSet.Epoch)
 	}
 	r := entity.SignatureRequest{

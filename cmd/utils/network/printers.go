@@ -114,7 +114,7 @@ func printValidatorsTable(valset *entity.ValidatorSet) string {
 	return text
 }
 
-func printHeaderTable(header *entity.ValidatorSetHeader) string {
+func printHeaderTable(header entity.ValidatorSetHeader) string {
 	headerTableData := pterm.TableData{
 		{"Field", "Value"},
 		{"Version", strconv.FormatUint(uint64(header.Version), 10)},
@@ -199,13 +199,14 @@ func printHeaderWithExtraDataToJSON(validatorSetHeader entity.ValidatorSetHeader
 }
 
 func printSettlementData(
-	valsetHeader *entity.ValidatorSetHeader,
-	networkConfig *entity.NetworkConfig,
+	valsetHeader entity.ValidatorSetHeader,
+	networkConfig entity.NetworkConfig,
 	isCommitted []bool,
 	headerHashes []common.Hash,
+	committedEpoch uint64,
 ) string {
 	tableData := pterm.TableData{
-		{"Address", "ChainID", "Status", "Integrity", "Header hash"},
+		{"Address", "ChainID", "Status", "Integrity", "Latest Committed Epoch", "Header hash"},
 	}
 
 	for i, replica := range networkConfig.Replicas {
@@ -233,6 +234,7 @@ func printSettlementData(
 			strconv.FormatUint(replica.ChainId, 10),
 			status,
 			integrity,
+			strconv.FormatUint(committedEpoch, 10),
 			hash,
 		})
 	}
