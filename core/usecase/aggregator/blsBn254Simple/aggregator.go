@@ -3,7 +3,6 @@ package blsBn254Simple
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"math/big"
 	"reflect"
 	"sort"
@@ -83,12 +82,12 @@ func (a Aggregator) Aggregate(
 			_, isSinger := signers[val.Operator]
 			g1Key, err := bls.DeserializeG1(keyBytes)
 			if err != nil {
-				return entity.AggregationProof{}, fmt.Errorf("failed to deserialize G1 key: %w", err)
+				return entity.AggregationProof{}, errors.Errorf("failed to deserialize G1 key: %w", err)
 			}
 
 			compressedKeyG1, err := bls.Compress(g1Key)
 			if err != nil {
-				return entity.AggregationProof{}, fmt.Errorf("failed to compress G1 key: %w", err)
+				return entity.AggregationProof{}, errors.Errorf("failed to compress G1 key: %w", err)
 			}
 
 			validatorsData = append(validatorsData, dtoValidatorData{
@@ -346,22 +345,22 @@ func (a Aggregator) Verify(
 	for i, val := range valsetSorted {
 		keyBytes, ok := val.FindKeyByKeyTag(keyTag)
 		if !ok {
-			return false, fmt.Errorf("keyTag not found for validator %s", val.Operator.Hex())
+			return false, errors.Errorf("keyTag not found for validator %s", val.Operator.Hex())
 		}
 		g1Key, err := bls.DeserializeG1(keyBytes)
 		if err != nil {
-			return false, fmt.Errorf("failed to deserialize G1 key from valset: %w", err)
+			return false, errors.Errorf("failed to deserialize G1 key from valset: %w", err)
 		}
 		g1, err := bls.Decompress(validatorsData[i].KeySerialized)
 		if err != nil {
-			return false, fmt.Errorf("failed to decompress G1 key from valset: %w", err)
+			return false, errors.Errorf("failed to decompress G1 key from valset: %w", err)
 		}
 		if g1Key.X.BigInt(new(big.Int)).Cmp(g1.X.BigInt(new(big.Int))) != 0 ||
 			g1Key.Y.BigInt(new(big.Int)).Cmp(g1.Y.BigInt(new(big.Int))) != 0 {
-			return false, fmt.Errorf("mismatch in validator G1 pubkey for val %s idx %d", val.Operator.Hex(), i)
+			return false, errors.Errorf("mismatch in validator G1 pubkey for val %s idx %d", val.Operator.Hex(), i)
 		}
 		if val.VotingPower.Cmp(validatorsData[i].VotingPower) != 0 {
-			return false, fmt.Errorf("voting power mismatch for val %s", val.Operator.Hex())
+			return false, errors.Errorf("voting power mismatch for val %s", val.Operator.Hex())
 		}
 		if !nonSignersMap[uint16(i)] {
 			aggPubKeyG1 = aggPubKeyG1.Add(g1Key)

@@ -1,9 +1,10 @@
 package keyprovider
 
 import (
-	"errors"
 	"strconv"
 	"strings"
+
+	"github.com/go-errors/errors"
 
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/crypto"
@@ -19,6 +20,10 @@ const (
 
 	P2P_SWARM_NETWORK_KEY_ID = 0
 	P2P_HOST_IDENTITY_KEY_ID = 1
+)
+
+const (
+	ErrKeyNotFound = entity.StringError("key not found")
 )
 
 type KeyProvider interface {

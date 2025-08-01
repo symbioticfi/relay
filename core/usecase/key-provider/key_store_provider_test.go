@@ -6,7 +6,6 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/crypto"
 
-	"github.com/pavlo-v-chernykh/keystore-go/v4"
 	"github.com/stretchr/testify/require"
 )
 
@@ -94,7 +93,7 @@ func TestDefaultEVMKey(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = kp.GetPrivateKeyByNamespaceTypeId(EVM_KEY_NAMESPACE, entity.KeyTypeBlsBn254, 111)
-	require.ErrorIs(t, err, keystore.ErrEntryNotFound, "expected entry not found error for non-existing key")
+	require.ErrorIs(t, err, ErrKeyNotFound, "expected entry not found error for non-existing key")
 
 	err = kp.AddKeyByNamespaceTypeId(EVM_KEY_NAMESPACE, entity.KeyTypeBlsBn254, DEFAULT_EVM_CHAIN_ID, key, password, false)
 	require.NoError(t, err)
@@ -105,5 +104,5 @@ func TestDefaultEVMKey(t *testing.T) {
 
 	// shouldn't work for other chains
 	_, err = kp.GetPrivateKeyByNamespaceTypeId(SYMBIOTIC_KEY_NAMESPACE, entity.KeyTypeBlsBn254, 111)
-	require.ErrorIs(t, err, keystore.ErrEntryNotFound, "expected entry not found error for non-existing key")
+	require.ErrorIs(t, err, ErrKeyNotFound, "expected entry not found error for non-existing key")
 }

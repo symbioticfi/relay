@@ -2,11 +2,11 @@ package valsetDeriver
 
 import (
 	"context"
-	"errors"
 	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 

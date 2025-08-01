@@ -253,18 +253,18 @@ func FromRaw(rawKey RawPublicKey) (*PublicKey, error) {
 		return nil, errors.New("blsBn254: nil raw key")
 	}
 	if len(rawKey) != RawKeyLength {
-		return nil, fmt.Errorf("blsBn254: invalid raw key length, expected %d, got %d", RawKeyLength, len(rawKey))
+		return nil, errors.Errorf("blsBn254: invalid raw key length, expected %d, got %d", RawKeyLength, len(rawKey))
 	}
 	g1 := bn254.G1Affine{}
 	g2 := bn254.G2Affine{}
 
 	err := g1.Unmarshal(rawKey[:32])
 	if err != nil {
-		return nil, fmt.Errorf("blsBn254: failed to unmarshal G1 pubkey: %w", err)
+		return nil, errors.Errorf("blsBn254: failed to unmarshal G1 pubkey: %w", err)
 	}
 	err = g2.Unmarshal(rawKey[32:])
 	if err != nil {
-		return nil, fmt.Errorf("blsBn254: failed to unmarshal G2 pubkey: %w", err)
+		return nil, errors.Errorf("blsBn254: failed to unmarshal G2 pubkey: %w", err)
 	}
 	return &PublicKey{g1, g2}, nil
 }

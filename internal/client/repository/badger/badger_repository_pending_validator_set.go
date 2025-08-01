@@ -134,12 +134,12 @@ func validatorSetToBytes(vs entity.ValidatorSet) ([]byte, error) {
 func bytesToValidatorSet(data []byte) (entity.ValidatorSet, error) {
 	var dto validatorSetDTO
 	if err := json.Unmarshal(data, &dto); err != nil {
-		return entity.ValidatorSet{}, fmt.Errorf("failed to unmarshal validator set: %w", err)
+		return entity.ValidatorSet{}, errors.Errorf("failed to unmarshal validator set: %w", err)
 	}
 
 	quorumThreshold, ok := new(big.Int).SetString(dto.QuorumThreshold, 10)
 	if !ok {
-		return entity.ValidatorSet{}, fmt.Errorf("failed to parse quorum threshold: %s", dto.QuorumThreshold)
+		return entity.ValidatorSet{}, errors.Errorf("failed to parse quorum threshold: %s", dto.QuorumThreshold)
 	}
 
 	return entity.ValidatorSet{

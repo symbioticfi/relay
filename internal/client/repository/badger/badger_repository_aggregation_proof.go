@@ -88,7 +88,7 @@ func aggregationProofToBytes(ap entity.AggregationProof) ([]byte, error) {
 func bytesToAggregationProof(value []byte) (entity.AggregationProof, error) {
 	var dto aggregationProofDTO
 	if err := json.Unmarshal(value, &dto); err != nil {
-		return entity.AggregationProof{}, fmt.Errorf("failed to unmarshal aggregation proof: %w", err)
+		return entity.AggregationProof{}, errors.Errorf("failed to unmarshal aggregation proof: %w", err)
 	}
 
 	return entity.AggregationProof{

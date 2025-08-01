@@ -2,7 +2,6 @@ package ecdsaSecp256k1
 
 import (
 	"crypto/ecdsa"
-	"fmt"
 	"math/big"
 
 	"github.com/symbioticfi/relay/core/entity"
@@ -131,12 +130,12 @@ func FromRaw(rawKey RawPublicKey) (*PublicKey, error) {
 		return nil, errors.New("ecdsaSecp256k1: nil raw key")
 	}
 	if len(rawKey) != RawKeyLength {
-		return nil, fmt.Errorf("ecdsaSecp256k1: invalid raw key length, expected %d, got %d", RawKeyLength, len(rawKey))
+		return nil, errors.Errorf("ecdsaSecp256k1: invalid raw key length, expected %d, got %d", RawKeyLength, len(rawKey))
 	}
 
 	pk, err := crypto.DecompressPubkey(rawKey)
 	if err != nil {
-		return nil, fmt.Errorf("ecdsaSecp256k1: failed to decompress public key %w", err)
+		return nil, errors.Errorf("ecdsaSecp256k1: failed to decompress public key %w", err)
 	}
 
 	return &PublicKey{pubKey: *pk}, nil

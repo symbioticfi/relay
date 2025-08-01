@@ -1,8 +1,9 @@
 package entity
 
 import (
-	"errors"
 	"fmt"
+
+	"github.com/go-errors/errors"
 )
 
 type KeyType uint8
@@ -41,7 +42,7 @@ func (kt KeyTag) MarshalText() (text []byte, err error) {
 	case KeyTypeInvalid:
 		return []byte(fmt.Sprintf("%d (UNKNOWN/%d)", uint8(kt), keyTag)), nil
 	}
-	return nil, fmt.Errorf("unsupported key type: %d", keyType)
+	return nil, errors.Errorf("unsupported key type: %d", keyType)
 }
 
 func (kt KeyTag) String() string {
