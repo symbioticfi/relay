@@ -209,6 +209,11 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create epoch listener: %w", err)
 	}
 
+	// Load all missing epochs before starting services
+	if err := listener.LoadAllMissingEpochs(ctx); err != nil {
+		return errors.Errorf("failed to load missing epochs: %w", err)
+	}
+
 	generator, err := valsetGenerator.New(valsetGenerator.Config{
 		Signer:          signerApp,
 		EvmClient:       evmClient,

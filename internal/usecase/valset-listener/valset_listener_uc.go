@@ -61,6 +61,37 @@ func New(cfg Config) (*Service, error) {
 	}, nil
 }
 
+// LoadAllMissingEpochs runs tryLoadMissingEpochs until all missing epochs are loaded successfully
+func (s *Service) LoadAllMissingEpochs(ctx context.Context) error {
+	ctx = log.WithComponent(ctx, "listener")
+
+	slog.InfoContext(ctx, "Loading all missing epochs before starting services")
+
+	const maxRetries = 10
+	retryCount := 0
+	retryTimer := time.NewTimer(0)
+	defer retryTimer.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-retryTimer.C:
+			if err := s.tryLoadMissingEpochs(ctx); err != nil {
+				retryCount++
+				if retryCount >= maxRetries {
+					return errors.Errorf("failed to load missing epochs after %d retries: %w", maxRetries, err)
+				}
+				slog.ErrorContext(ctx, "Failed to load missing epochs, retrying", "error", err, "attempt", retryCount, "maxRetries", maxRetries)
+				retryTimer.Reset(time.Second * 2)
+				continue
+			}
+			slog.InfoContext(ctx, "Successfully loaded all missing epochs")
+			return nil
+		}
+	}
+}
+
 func (s *Service) Start(ctx context.Context) error {
 	ctx = log.WithComponent(ctx, "listener")
 
