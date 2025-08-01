@@ -67,11 +67,6 @@ func initHandler(cfg Config) http.Handler {
 		r.Handle("/metrics", promhttp.Handler())
 	}
 
-	r.Handle("/health", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("OK"))
-	}))
-
 	if cfg.SwaggerHandler != nil {
 		r.Get("/swagger.yaml", cfg.SwaggerHandler)
 		r.Get("/docs", func(w http.ResponseWriter, r *http.Request) {
