@@ -53,7 +53,6 @@ type deriver interface {
 
 type Config struct {
 	Address           string        `validate:"required"`
-	Prefix            string        `validate:"required"`
 	ReadHeaderTimeout time.Duration `validate:"required,gt=0"`
 	ShutdownTimeout   time.Duration `validate:"required,gt=0"`
 
@@ -172,7 +171,7 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 
 	// Create HTTP/2 server that can handle both HTTP and gRPC
 	httpServer := &http.Server{
-		Handler:           createMuxHandler(grpcServer, recoveredMux, cfg.Prefix),
+		Handler:           createMuxHandler(grpcServer, recoveredMux),
 		ReadHeaderTimeout: cfg.ReadHeaderTimeout,
 	}
 
@@ -185,19 +184,11 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 }
 
 // createMuxHandler creates a handler that multiplexes between gRPC and HTTP
-func createMuxHandler(grpcServer *grpc.Server, httpHandler http.Handler, grpcPrefix string) http.Handler {
+func createMuxHandler(grpcServer *grpc.Server, httpHandler http.Handler) http.Handler {
 	return h2c.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check if this is a gRPC request
 		if r.ProtoMajor == 2 && strings.HasPrefix(r.Header.Get("Content-Type"), "application/grpc") {
 			// Handle gRPC request
-			grpcServer.ServeHTTP(w, r)
-			return
-		}
-
-		// Check if this is a gRPC request on the prefix path
-		if strings.HasPrefix(r.URL.Path, grpcPrefix) {
-			// Strip the prefix and handle as gRPC
-			r.URL.Path = strings.TrimPrefix(r.URL.Path, grpcPrefix)
 			grpcServer.ServeHTTP(w, r)
 			return
 		}
@@ -211,9 +202,9 @@ func (a *SymbioticServer) Start(ctx context.Context) error {
 	logCtx := log.WithComponent(ctx, "api")
 
 	slog.InfoContext(logCtx, "Starting gRPC/HTTP multiplexed server",
-		"address", a.cfg.Address,
-		"grpc_prefix", a.cfg.Prefix,
+		"grpc_address", a.cfg.Address,
 		"docs_path", "/docs/",
+		"metrics_path", "/metrics",
 		"metrics_enabled", a.cfg.ServeMetrics)
 
 	// Start serving in a goroutine

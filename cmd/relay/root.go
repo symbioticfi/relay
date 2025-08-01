@@ -271,7 +271,6 @@ func runApp(ctx context.Context) error {
 		Address:           cfg.HTTPListenAddr,
 		ShutdownTimeout:   time.Second * 5,
 		ReadHeaderTimeout: time.Second,
-		Prefix:            "/api/v1",
 		Signer:            signerApp,
 		Repo:              repo,
 		EvmClient:         evmClient,
