@@ -1,14 +1,13 @@
 package keys
 
 import (
-	"errors"
-
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/crypto"
 	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 	cmdhelpers "github.com/symbioticfi/relay/internal/usecase/cmd-helpers"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/go-errors/errors"
 	"github.com/spf13/cobra"
 )
 

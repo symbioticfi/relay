@@ -11,6 +11,7 @@ import (
 
 	"github.com/symbioticfi/relay/core/entity"
 
+	"github.com/go-errors/errors"
 	"github.com/pterm/pterm"
 	"golang.org/x/term"
 )
@@ -40,17 +41,17 @@ func (s *SecretKeyMapFlag) Set(val string) error {
 	for _, pair := range pairs {
 		kv := strings.SplitN(pair, ":", 2)
 		if len(kv) != 2 {
-			return fmt.Errorf("invalid format (expected chainId:key): %s", pair)
+			return errors.Errorf("invalid format (expected chainId:key): %s", pair)
 		}
 
 		chainID, err := strconv.ParseUint(kv[0], 10, 32)
 		if err != nil {
-			return fmt.Errorf("invalid chain ID: %s", kv[0])
+			return errors.Errorf("invalid chain ID: %s", kv[0])
 		}
 
 		key := kv[1]
 		if key == "" {
-			return fmt.Errorf("empty key for chain ID: %d", chainID)
+			return errors.Errorf("empty key for chain ID: %d", chainID)
 		}
 
 		result[chainID] = key

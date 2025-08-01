@@ -247,6 +247,10 @@ linters:
     funcorder:
       constructor: true
       struct-method: false
+    forbidigo:
+      forbid:
+        - pattern: ^fmt\.Errorf$
+          msg: "use errors.Errorf instead of fmt.Errorf"
   exclusions:
     generated: lax
     presets:
@@ -257,7 +261,6 @@ linters:
     rules:
       - linters:
           - exhaustruct
-          - forbidigo
           - goconst
         path: _test\.go
       - path: (.+)\.go$

@@ -45,7 +45,7 @@ func signatureStatToBytes(stat entity.SignatureStat) ([]byte, error) {
 func bytesToSignatureStat(b []byte) (entity.SignatureStat, error) {
 	var dto signatureStatDTO
 	if err := json.Unmarshal(b, &dto); err != nil {
-		return entity.SignatureStat{}, fmt.Errorf("failed to unmarshal signature stat: %w", err)
+		return entity.SignatureStat{}, errors.Errorf("failed to unmarshal signature stat: %w", err)
 	}
 
 	return entity.SignatureStat{
