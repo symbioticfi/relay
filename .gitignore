@@ -3,6 +3,6 @@
 go.sum
 .env
 .DS_Store
-.data
+.data*
 coverage.txt
 pkg/proof/circuits
