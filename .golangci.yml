@@ -76,6 +76,10 @@ linters:
     - whitespace
 #    - wrapcheck
   settings:
+    importas:
+      alias:
+        - pkg: github.com/symbioticfi/relay/internal/gen/api/v1
+          alias: apiv1
     cyclop:
       max-complexity: 30
       package-average: 10
@@ -275,6 +279,7 @@ linters:
       - third_party$
       - builtin$
       - examples$
+      - hack/
 issues:
   max-issues-per-linter: 500
   max-same-issues: 500
