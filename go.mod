@@ -17,7 +17,7 @@ require (
 	github.com/maniartech/signals v1.2.0
 	github.com/multiformats/go-multiaddr v0.16.0
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
-	github.com/prometheus/client_golang v1.22.0
+	github.com/prometheus/client_golang v1.23.0
 	github.com/pterm/pterm v0.12.81
 	github.com/samber/lo v1.51.0
 	github.com/samber/slog-multi v1.4.0
@@ -158,7 +158,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/polydawn/refmt v0.89.0 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.63.0 // indirect
+	github.com/prometheus/common v0.65.0 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/quic-go/quic-go v0.50.1 // indirect
