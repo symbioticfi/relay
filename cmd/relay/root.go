@@ -165,7 +165,7 @@ func runApp(ctx context.Context) error {
 
 	slog.InfoContext(ctx, "Created signer app, starting")
 
-	growthStrategy, err := growthStrategy.NewGrowthStrategy(entity.GrowthStrategyType(cfg.GrowthStrategy), evmClient)
+	growthStrategy, err := growthStrategy.NewGrowthStrategy(config.GrowthStrategy, evmClient)
 	if err != nil {
 		return errors.Errorf("failed to create growth strategy: %w", err)
 	}

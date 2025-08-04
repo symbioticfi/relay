@@ -144,21 +144,14 @@ func (s *Service) process(ctx context.Context) error {
 		return errors.Errorf("failed to get latest validator set header hash: %w", err)
 	}
 
-	lastCommittedHeaderHash, lastCommittedHeaderEpoch, err := s.cfg.GrowthStrategy.GetLastCommittedHeaderHash(ctx, config)
-	if err != nil {
-		return errors.Errorf("failed to get last committed header hash: %w", err)
-	}
-
 	// waiting for valset listener sync and attaching new valset to growth strategy hash
-	if latestValset.Epoch != lastCommittedHeaderEpoch || latestValsetHeaderHash != lastCommittedHeaderHash ||
-		valSet.PreviousHeaderHash != lastCommittedHeaderHash {
-		slog.WarnContext(ctx, "valset candidate doesn't refer to growth strategy last committed hash", "epoch", valSet.Epoch, "prevEpoch", lastCommittedHeaderEpoch)
+	if latestValsetHeaderHash != valSet.PreviousHeaderHash {
+		slog.WarnContext(ctx, "valset candidate doesn't refer to latest saved valset in repo", "epoch", valSet.Epoch, "latest", latestValsetHeaderHash, "referred", valSet.PreviousHeaderHash)
 		return nil
 	}
 
 	if config.MaxMissingEpochs != 0 && latestValset.Epoch-valSet.Epoch > config.MaxMissingEpochs {
-		slog.ErrorContext(ctx, "Exceed missing epochs", "latest committed", latestValset.Epoch, "current", valSet.Epoch)
-		return errors.New("max missing epochs")
+		return errors.Errorf("exceed missing epochs, latest committed: %d, current: %d", latestValset.Epoch, valSet.Epoch)
 	}
 
 	extraData, err := s.cfg.Aggregator.GenerateExtraData(valSet, config.RequiredKeyTags)

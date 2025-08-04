@@ -12,10 +12,10 @@ import (
 )
 
 type GrowthStrategySync struct {
-	client *evm.Client
+	client evm.IEvmClient
 }
 
-func NewGrowthStrategySync(client *evm.Client) *GrowthStrategySync {
+func NewGrowthStrategySync(client evm.IEvmClient) *GrowthStrategySync {
 	return &GrowthStrategySync{client: client}
 }
 
@@ -35,21 +35,31 @@ func (gs GrowthStrategySync) GetLastCommittedHeaderHash(ctx context.Context, con
 		}
 	}
 
-	if config.MaxMissingEpochs != 0 {
-		currentEpoch, err := gs.client.GetCurrentEpoch(ctx)
-		if err != nil {
-			return common.Hash{}, 0, errors.Errorf("failed to get current epoch: %w", err)
-		}
-
-		if currentEpoch-minEpoch < config.MaxMissingEpochs {
-			return common.Hash{}, 0, errors.New("max missing epochs exceeded")
-		}
-	}
-
-	hash, err := gs.client.GetHeaderHash(ctx, minEpochAddr)
+	prevHash, err := gs.client.GetHeaderHash(ctx, minEpochAddr)
 	if err != nil {
 		return common.Hash{}, 0, errors.Errorf("failed to get last committed header hash for address %s: %w", minEpochAddr.Address.Hex(), err)
 	}
 
-	return hash, minEpoch, nil
+	if len(config.Replicas) <= 1 {
+		return prevHash, minEpoch, nil
+	}
+
+	for _, replica := range config.Replicas {
+		if replica == minEpochAddr {
+			continue
+		}
+
+		hash, err := gs.client.GetHeaderHashAt(ctx, replica, minEpoch)
+		if err != nil {
+			return common.Hash{}, 0, errors.Errorf("failed to get header hash for replica %d: %w", replica, err)
+		}
+
+		if hash != prevHash {
+			return common.Hash{}, 0, errors.Errorf("committed headers doesn't match at epoch: %d", minEpoch)
+		}
+
+		prevHash = hash
+	}
+
+	return prevHash, minEpoch, nil
 }

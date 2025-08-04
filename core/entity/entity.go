@@ -23,8 +23,8 @@ const (
 	VerificationTypeBlsBn254ZK     VerificationType = 0
 	VerificationTypeBlsBn254Simple VerificationType = 1
 
-	GrowthStrategyNewest GrowthStrategyType = 0
-	GrowthStrategySync   GrowthStrategyType = 1
+	GrowthStrategyAsync GrowthStrategyType = 0
+	GrowthStrategySync  GrowthStrategyType = 1
 )
 
 var (
@@ -199,7 +199,7 @@ func (gst GrowthStrategyType) MarshalText() (text []byte, err error) {
 
 func (gst GrowthStrategyType) String() string {
 	switch gst {
-	case GrowthStrategyNewest:
+	case GrowthStrategyAsync:
 		return fmt.Sprintf("%d GROWTH-STRATEGY-NEWEST", uint32(gst))
 	case GrowthStrategySync:
 		return fmt.Sprintf("%d GROWTH-STRATEGY-SYNC", uint32(gst))
@@ -229,6 +229,7 @@ type NetworkConfig struct {
 	RequiredHeaderKeyTag    KeyTag
 	QuorumThresholds        []QuorumThreshold
 	MaxMissingEpochs        uint64
+	GrowthStrategy          GrowthStrategyType
 }
 
 type NetworkData struct {

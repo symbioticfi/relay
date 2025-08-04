@@ -102,7 +102,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		return errors.Errorf("failed to get network config for current epoch: %w", err)
 	}
 
-	_, latestCommittedOnchainEpoch, err := s.cfg.GrowthStrategy.GetLastCommittedHeaderHash(ctx, config)
+	latestCommittedHash, latestCommittedEpoch, err := s.cfg.GrowthStrategy.GetLastCommittedHeaderHash(ctx, config)
 	if err != nil {
 		return errors.Errorf("failed to get latest committed header hash: %w", err)
 	}
@@ -121,7 +121,11 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		return nil
 	}
 
-	for latestCommittedOnchainEpoch >= nextEpoch {
+	if err := s.validateHeaderHashAtLastCommittedEpoch(ctx, latestCommittedEpoch, latestCommittedHash); err != nil {
+		return errors.Errorf("failed to validate header hash at last committed epoch: %w", err)
+	}
+
+	for latestCommittedEpoch >= nextEpoch {
 		epochStart, err := s.cfg.EvmClient.GetEpochStart(ctx, nextEpoch)
 		if err != nil {
 			return errors.Errorf("failed to get epoch start for epoch %d: %w", nextEpoch, err)
@@ -130,10 +134,6 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		nextEpochConfig, err := s.cfg.EvmClient.GetConfig(ctx, epochStart)
 		if err != nil {
 			return errors.Errorf("failed to get network config for epoch %d: %w", nextEpoch, err)
-		}
-
-		if err := s.validateCommittedHeaderHashes(ctx, nextEpoch, nextEpochConfig); err != nil {
-			return errors.Errorf("failed to validate committed header hashes: %w", err)
 		}
 
 		nextValset, err := s.cfg.Deriver.GetValidatorSet(ctx, nextEpoch, nextEpochConfig)
@@ -160,22 +160,34 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) validateCommittedHeaderHashes(ctx context.Context, epoch uint64, config entity.NetworkConfig) error {
-	if len(config.Replicas) <= 1 {
-		return nil
+func (s *Service) validateHeaderHashAtLastCommittedEpoch(ctx context.Context, epoch uint64, lastCommittedHash common.Hash) error {
+	epochStart, err := s.cfg.EvmClient.GetEpochStart(ctx, epoch)
+	if err != nil {
+		return errors.Errorf("failed to get epoch start for epoch %d: %w", epochStart, err)
 	}
 
-	var prevHash common.Hash
-	for _, replica := range config.Replicas {
-		hash, err := s.cfg.EvmClient.GetHeaderHashAt(ctx, replica, epoch)
-		if err != nil {
-			return errors.Errorf("failed to get header hash for replica %d: %w", replica, err)
-		}
+	config, err := s.cfg.EvmClient.GetConfig(ctx, epochStart)
+	if err != nil {
+		return errors.Errorf("failed to get network config for epoch %d: %w", epoch, err)
+	}
 
-		if prevHash != (common.Hash{}) && hash != prevHash {
-			return errors.Errorf("committed headers doesn't match at epoch: %d", epoch)
-		}
-		prevHash = hash
+	valset, err := s.cfg.Deriver.GetValidatorSet(ctx, epoch, config)
+	if err != nil {
+		return errors.Errorf("failed to derive validator set extra for epoch %d: %w", epoch, err)
+	}
+
+	header, err := valset.GetHeader()
+	if err != nil {
+		return errors.Errorf("failed to get header for epoch %d: %w", epoch, err)
+	}
+
+	hash, err := header.Hash()
+	if err != nil {
+		return errors.Errorf("failed to get header hash for epoch %d: %w", epoch, err)
+	}
+
+	if lastCommittedHash != hash {
+		return errors.Errorf("last committed header hash mismatch with derived hash for epoch %d, derived: %s, committed: %s", epoch, hash, lastCommittedHash)
 	}
 
 	return nil

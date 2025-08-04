@@ -10,15 +10,15 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 )
 
-type GrowthStrategyNewest struct {
-	client *evm.Client
+type GrowthStrategyAsync struct {
+	client evm.IEvmClient
 }
 
-func NewGrowthStrategyNewest(client *evm.Client) *GrowthStrategyNewest {
-	return &GrowthStrategyNewest{client: client}
+func NewGrowthStrategyAsync(client evm.IEvmClient) *GrowthStrategyAsync {
+	return &GrowthStrategyAsync{client: client}
 }
 
-func (gs GrowthStrategyNewest) GetLastCommittedHeaderHash(ctx context.Context, config entity.NetworkConfig) (common.Hash, uint64, error) {
+func (gs GrowthStrategyAsync) GetLastCommittedHeaderHash(ctx context.Context, config entity.NetworkConfig) (common.Hash, uint64, error) {
 	maxEpoch := uint64(0)
 	var maxEpochAddr entity.CrossChainAddress
 
@@ -31,17 +31,6 @@ func (gs GrowthStrategyNewest) GetLastCommittedHeaderHash(ctx context.Context, c
 		if epoch >= maxEpoch {
 			maxEpoch = epoch
 			maxEpochAddr = addr
-		}
-	}
-
-	if config.MaxMissingEpochs != 0 {
-		currentEpoch, err := gs.client.GetCurrentEpoch(ctx)
-		if err != nil {
-			return common.Hash{}, 0, errors.Errorf("failed to get current epoch: %w", err)
-		}
-
-		if currentEpoch-maxEpoch < config.MaxMissingEpochs {
-			return common.Hash{}, 0, errors.New("max missing epochs exceeded")
 		}
 	}
 
