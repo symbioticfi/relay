@@ -32,6 +32,35 @@ type metrics interface {
 	ObserveCommitValsetHeaderParams(chainID uint64, gasUsed uint64, effectiveGasPrice *big.Int)
 }
 
+// IEvmClient defines the interface for EVM client operations
+type IEvmClient interface {
+	GetChains() []uint64
+	GetSubnetwork(ctx context.Context) (common.Hash, error)
+	GetNetworkAddress(ctx context.Context) (common.Address, error)
+	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
+	GetEip712Domain(ctx context.Context, addr entity.CrossChainAddress) (entity.Eip712Domain, error)
+	GetCurrentEpoch(ctx context.Context) (uint64, error)
+	GetCurrentEpochDuration(ctx context.Context) (uint64, error)
+	GetEpochDuration(ctx context.Context, epoch uint64) (uint64, error)
+	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
+	IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (bool, error)
+	GetPreviousHeaderHash(ctx context.Context, addr entity.CrossChainAddress) (common.Hash, error)
+	GetPreviousHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error)
+	GetHeaderHash(ctx context.Context, addr entity.CrossChainAddress) (common.Hash, error)
+	GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error)
+	GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (uint64, error)
+	GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (uint64, error)
+	GetValSetHeaderAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (entity.ValidatorSetHeader, error)
+	GetValSetHeader(ctx context.Context, addr entity.CrossChainAddress) (entity.ValidatorSetHeader, error)
+	GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorVotingPower, error)
+	GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorWithKeys, error)
+	CommitValsetHeader(ctx context.Context, addr entity.CrossChainAddress, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) (entity.TxResult, error)
+	RegisterOperator(ctx context.Context, addr entity.CrossChainAddress) (entity.TxResult, error)
+	RegisterKey(ctx context.Context, addr entity.CrossChainAddress, keyTag entity.KeyTag, key entity.CompactPublicKey, signature entity.RawSignature, extraData []byte) (entity.TxResult, error)
+	SetGenesis(ctx context.Context, addr entity.CrossChainAddress, header entity.ValidatorSetHeader, extraData []entity.ExtraData) (entity.TxResult, error)
+	VerifyQuorumSig(ctx context.Context, addr entity.CrossChainAddress, epoch uint64, message []byte, keyTag entity.KeyTag, threshold *big.Int, proof []byte) (bool, error)
+}
+
 type Config struct {
 	ChainURLs      []string                 `validate:"required"`
 	DriverAddress  entity.CrossChainAddress `validate:"required"`
@@ -148,6 +177,8 @@ func (e *Client) GetConfig(ctx context.Context, timestamp uint64) (_ entity.Netw
 				QuorumThreshold: entity.ToQuorumThresholdPct(v.QuorumThreshold),
 			}
 		}),
+		MaxMissingEpochs: 0,                          // TODO set it after core update
+		GrowthStrategy:   entity.GrowthStrategyAsync, // TODO same
 	}, nil
 }
 
