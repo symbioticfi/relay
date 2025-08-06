@@ -159,6 +159,13 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 		http.NotFound(w, r)
 	})
 
+	// Health check endpoint
+	httpMux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"ok"}`))
+	})
+
 	// Serve API documentation
 	docFS := http.FileServer(http.Dir("api/docs/v1"))
 	httpMux.Handle("/docs/", http.StripPrefix("/docs/", docFS))
