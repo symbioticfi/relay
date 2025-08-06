@@ -1,9 +1,10 @@
 package keyprovider
 
 import (
-	"errors"
 	"strconv"
 	"strings"
+
+	"github.com/go-errors/errors"
 
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/crypto"
@@ -12,9 +13,17 @@ import (
 const (
 	SYMBIOTIC_KEY_NAMESPACE = "symb"
 	EVM_KEY_NAMESPACE       = "evm"
+	P2P_KEY_NAMESPACE       = "p2p"
 
 	// DEFAULT_EVM_CHAIN_ID chain id used to identify the default key for all chains
 	DEFAULT_EVM_CHAIN_ID = 0
+
+	P2P_SWARM_NETWORK_KEY_ID = 0
+	P2P_HOST_IDENTITY_KEY_ID = 1
+)
+
+const (
+	ErrKeyNotFound = entity.StringError("key not found")
 )
 
 type KeyProvider interface {
@@ -26,11 +35,15 @@ type KeyProvider interface {
 	HasKeyByNamespaceTypeId(namespace string, keyType entity.KeyType, id int) (bool, error)
 }
 
-func KeyTagToAlias(keyTag entity.KeyTag) (string, error) {
+func KeyTagToAliasWithNS(namespace string, keyTag entity.KeyTag) (string, error) {
 	// https://github.com/symbioticfi/middleware-sdk-mirror/blob/change-header/src/contracts/libraries/utils/KeyTags.sol#L24-L40
 	keyId := keyTag & 0x0F
 
-	return ToAlias(SYMBIOTIC_KEY_NAMESPACE, keyTag.Type(), int(keyId))
+	return ToAlias(namespace, keyTag.Type(), int(keyId))
+}
+
+func KeyTagToAlias(keyTag entity.KeyTag) (string, error) {
+	return KeyTagToAliasWithNS(SYMBIOTIC_KEY_NAMESPACE, keyTag)
 }
 
 func ToAlias(namespace string, keyType entity.KeyType, keyId int) (string, error) {

@@ -76,6 +76,10 @@ linters:
     - whitespace
 #    - wrapcheck
   settings:
+    importas:
+      alias:
+        - pkg: github.com/symbioticfi/relay/internal/gen/api/v1
+          alias: apiv1
     cyclop:
       max-complexity: 30
       package-average: 10
@@ -205,14 +209,14 @@ linters:
         - name: errorf
         - name: file-header
 #        - name: flag-parameter
-#        - name: function-result-limit
+        - name: function-result-limit
         - name: identical-branches
         - name: imports-blocklist
         - name: increment-decrement
         - name: indent-error-flow
         - name: modifies-parameter
         - name: modifies-value-receiver
-#        - name: nested-structs
+        - name: nested-structs
         - name: optimize-operands-order
         - name: range-val-address
         - name: range-val-in-closure
@@ -247,6 +251,10 @@ linters:
     funcorder:
       constructor: true
       struct-method: false
+    forbidigo:
+      forbid:
+        - pattern: ^fmt\.Errorf$
+          msg: "use errors.Errorf instead of fmt.Errorf"
   exclusions:
     generated: lax
     presets:
@@ -257,7 +265,6 @@ linters:
     rules:
       - linters:
           - exhaustruct
-          - forbidigo
           - goconst
         path: _test\.go
       - path: (.+)\.go$
@@ -268,12 +275,11 @@ linters:
         text: G115
       - path: cmd/utils/
         text: "use of `fmt.Printf` forbidden"
-      - path: cmd/utils/
-        text: "use of `fmt.Print` forbidden"
     paths:
       - third_party$
       - builtin$
       - examples$
+      - hack/
 issues:
   max-issues-per-linter: 500
   max-same-issues: 500

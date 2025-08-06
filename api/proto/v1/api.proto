@@ -1,0 +1,330 @@
+syntax = "proto3";
+
+package api.proto.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/symbioticfi/relay/api/proto/v1";
+
+// SymbioticAPI provides access to the Symbiotic relay functions
+service SymbioticAPIService {
+  // Sign a message
+  rpc SignMessage(SignMessageRequest) returns (SignMessageResponse);
+  
+  // Get aggregation proof
+  rpc GetAggregationProof(GetAggregationProofRequest) returns (GetAggregationProofResponse);
+  
+  // Get current epoch
+  rpc GetCurrentEpoch(GetCurrentEpochRequest) returns (GetCurrentEpochResponse);
+  
+  // Get suggested epoch to request sign
+  rpc GetSuggestedEpoch(GetSuggestedEpochRequest) returns (GetSuggestedEpochResponse);
+  
+  // Get signature by request hash
+  rpc GetSignatures(GetSignaturesRequest) returns (GetSignaturesResponse);
+  
+  // Get signature request by request hash
+  rpc GetSignatureRequest(GetSignatureRequestRequest) returns (GetSignatureRequestResponse);
+  
+  // Get aggregation status, can be sent only to aggregator nodes
+  rpc GetAggregationStatus(GetAggregationStatusRequest) returns (GetAggregationStatusResponse);
+  
+  // Get current validator set
+  rpc GetValidatorSet(GetValidatorSetRequest) returns (GetValidatorSetResponse);
+  
+  // Sign a message and wait for aggregation proof via stream
+  rpc SignMessageWait(SignMessageWaitRequest) returns (stream SignMessageWaitResponse);
+}
+
+// Request message for signing a message
+message SignMessageRequest {
+  // Key tag identifier (0-255)
+  uint32 key_tag = 1;
+  
+  // Message to be signed
+  bytes message = 2;
+  
+  // Required epoch (optional, if not provided latest committed epoch will be used)
+  optional uint64 required_epoch = 3;
+}
+
+// Request message for signing a message
+message SignMessageWaitRequest {
+  // Key tag identifier (0-255)
+  uint32 key_tag = 1;
+
+  // Message to be signed
+  bytes message = 2;
+
+  // Required epoch (optional, if not provided latest committed epoch will be used)
+  optional uint64 required_epoch = 3;
+}
+
+// Response message for sign message request
+message SignMessageResponse {
+  // Hash of the signature request
+  string request_hash = 1;
+  
+  // Epoch number
+  uint64 epoch = 2;
+}
+
+// Streaming response message for sign message wait
+message SignMessageWaitResponse {
+  // Current status of the signing process
+  SigningStatus status = 1;
+  
+  // Hash of the signature request
+  string request_hash = 2;
+  
+  // Epoch number
+  uint64 epoch = 3;
+  
+  // Current voting power accumulated (only set when status is SIGNING_STATUS_ACCUMULATING)
+  optional string current_voting_power = 4;
+  
+  // List of operators that have signed (only set when status is SIGNING_STATUS_ACCUMULATING)
+  repeated string signer_operators = 5;
+  
+  // Final aggregation proof (only set when status is SIGNING_STATUS_COMPLETED)
+  optional AggregationProof aggregation_proof = 6;
+  
+  // Error details (only set when status is SIGNING_STATUS_FAILED)
+  optional ErrorResponse error = 7;
+}
+
+// Request message for getting aggregation proof
+message GetAggregationProofRequest {
+  // Request hash
+  string request_hash = 1;
+}
+
+// Request message for getting current epoch
+message GetCurrentEpochRequest {}
+
+// Request message for getting suggested epoch
+message GetSuggestedEpochRequest {}
+
+// Request message for getting signatures
+message GetSignaturesRequest {
+  // Request hash
+  string request_hash = 1;
+}
+
+// Response message for getting signatures
+message GetSignaturesResponse {
+  // List of signatures
+  repeated Signature signatures = 1;
+}
+
+// Request message for getting signature request
+message GetSignatureRequestRequest {
+  // Request hash
+  string request_hash = 1;
+}
+
+// Request message for getting aggregation status
+message GetAggregationStatusRequest {
+  // Request hash
+  string request_hash = 1;
+}
+
+// Request message for getting validator set
+message GetValidatorSetRequest {
+  // Epoch number (optional, if not provided current epoch will be used)
+  optional uint64 epoch = 1;
+}
+
+// Response message for getting current epoch
+message GetCurrentEpochResponse {
+  // Epoch number
+  uint64 epoch = 1;
+  
+  // Epoch start time
+  google.protobuf.Timestamp start_time = 2;
+}
+
+// Response message for getting suggested epoch
+message GetSuggestedEpochResponse {
+  // Epoch number
+  uint64 epoch = 1;
+  
+  // Epoch start time
+  google.protobuf.Timestamp start_time = 2;
+}
+
+// Response message for getting signature request
+message GetSignatureRequestResponse {
+  // Key tag identifier (0-255)
+  uint32 key_tag = 1;
+  
+  // Message to be signed
+  bytes message = 2;
+  
+  // Required epoch
+  uint64 required_epoch = 3;
+}
+
+// Response message for getting aggregation proof
+message GetAggregationProofResponse {
+  AggregationProof aggregation_proof = 1;
+}
+
+// Response message for getting aggregation proof
+message AggregationProof {
+  // Verification type
+  uint32 verification_type = 1;
+
+  // Message hash
+  bytes message_hash = 2;
+
+  // Proof data
+  bytes proof = 3;
+}
+
+// Response message for getting aggregation status
+message GetAggregationStatusResponse {
+  // Current voting power of the aggregator (big integer as string)
+  string current_voting_power = 1;
+  
+  // List of operator addresses that signed the request
+  repeated string signer_operators = 2;
+}
+
+// Digital signature
+message Signature {
+  // Signature data
+  bytes signature = 1;
+  
+  // Message hash
+  bytes message_hash = 2;
+  
+  // Public key
+  bytes public_key = 3;
+}
+
+// Response message for getting validator set
+message GetValidatorSetResponse {
+  // Version of the validator set
+  uint32 version = 1;
+  
+  // Key tag required to commit next validator set
+  uint32 required_key_tag = 2;
+  
+  // Validator set epoch
+  uint64 epoch = 3;
+  
+  // Epoch capture timestamp
+  google.protobuf.Timestamp capture_timestamp = 4;
+  
+  // Quorum threshold (big integer as string)
+  string quorum_threshold = 5;
+  
+  // Previous validator set header hash (hex string)
+  string previous_header_hash = 6;
+  
+  // Status of validator set header
+  ValidatorSetStatus status = 7;
+  
+  // List of validators
+  repeated Validator validators = 8;
+}
+
+// Validator set status enumeration
+enum ValidatorSetStatus {
+  // Default/unknown status
+  VALIDATOR_SET_STATUS_UNSPECIFIED = 0;
+  
+  // Pending status
+  VALIDATOR_SET_STATUS_PENDING = 1;
+  
+  // Missed status
+  VALIDATOR_SET_STATUS_MISSED = 2;
+  
+  // Committed status
+  VALIDATOR_SET_STATUS_COMMITTED = 3;
+}
+
+// Validator information
+message Validator {
+  // Operator address (hex string)
+  string operator = 1;
+  
+  // Voting power of the validator (big integer as string)
+  string voting_power = 2;
+  
+  // Indicates if the validator is active
+  bool is_active = 3;
+  
+  // List of cryptographic keys
+  repeated Key keys = 4;
+  
+  // List of validator vaults
+  repeated ValidatorVault vaults = 5;
+}
+
+// Cryptographic key
+message Key {
+  // Key tag identifier (0-255)
+  uint32 tag = 1;
+  
+  // Key payload
+  bytes payload = 2;
+}
+
+// Validator vault information
+message ValidatorVault {
+  // Chain identifier
+  uint64 chain_id = 1;
+  
+  // Vault address
+  string vault = 2;
+  
+  // Voting power for this vault (big integer as string)
+  string voting_power = 3;
+}
+
+// Error response
+message ErrorResponse {
+  // User-friendly error message
+  string error_message = 1;
+  
+  // Error code
+  ErrorCode error_code = 2;
+}
+
+// Signing process status enumeration
+enum SigningStatus {
+  // Default/unknown status
+  SIGNING_STATUS_UNSPECIFIED = 0;
+  
+  // Request has been created and is waiting for signatures
+  SIGNING_STATUS_PENDING = 1;
+  
+  // Signatures are being accumulated
+  SIGNING_STATUS_ACCUMULATING = 2;
+  
+  // Signing process completed successfully with proof
+  SIGNING_STATUS_COMPLETED = 3;
+  
+  // Signing process failed
+  SIGNING_STATUS_FAILED = 4;
+  
+  // Signing request timed out
+  SIGNING_STATUS_TIMEOUT = 5;
+}
+
+// Error code enumeration
+enum ErrorCode {
+  // Default/unknown error
+  ERROR_CODE_UNSPECIFIED = 0;
+  
+  // No data found
+  ERROR_CODE_NO_DATA = 1;
+  
+  // Internal server error
+  ERROR_CODE_INTERNAL = 2;
+  
+  // Not an aggregator node
+  ERROR_CODE_NOT_AGGREGATOR = 3;
+}

@@ -10,6 +10,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/libp2p/go-libp2p/p2p/security/noise"
+	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/symbioticfi/relay/core/client/evm"
@@ -21,7 +24,7 @@ import (
 	"github.com/symbioticfi/relay/internal/client/p2p"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
 	aggregatorApp "github.com/symbioticfi/relay/internal/usecase/aggregator-app"
-	apiApp "github.com/symbioticfi/relay/internal/usecase/api-app"
+	api_server "github.com/symbioticfi/relay/internal/usecase/api-server"
 	"github.com/symbioticfi/relay/internal/usecase/metrics"
 	signerApp "github.com/symbioticfi/relay/internal/usecase/signer-app"
 	valsetGenerator "github.com/symbioticfi/relay/internal/usecase/valset-generator"
@@ -36,12 +39,9 @@ func runApp(ctx context.Context) error {
 	log.Init(cfg.LogLevel, cfg.LogMode)
 	mtr := metrics.New(metrics.Config{})
 
-	var (
-		keyProvider keyprovider.KeyProvider
-		err         error
-	)
-
+	var keyProvider keyprovider.KeyProvider
 	if cfg.KeyStore.Path != "" {
+		var err error
 		keyProvider, err = keyprovider.NewKeystoreProvider(cfg.KeyStore.Path, cfg.KeyStore.Password)
 		if err != nil {
 			return errors.Errorf("failed to create keystore provider from keystore file: %w", err)
@@ -88,7 +88,35 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create valset deriver: %w", err)
 	}
 
-	var opts []libp2p.Option
+	swarmPK, err := keyProvider.GetPrivateKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, entity.KeyTypeEcdsaSecp256k1, keyprovider.P2P_SWARM_NETWORK_KEY_ID)
+	if err != nil {
+		return errors.Errorf("failed to get P2P swarm private key: %w", err)
+	}
+
+	p2pIdentityPKRaw, err := keyProvider.GetPrivateKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, entity.KeyTypeEcdsaSecp256k1, keyprovider.P2P_HOST_IDENTITY_KEY_ID)
+	if err != nil && !errors.Is(err, keyprovider.ErrKeyNotFound) {
+		return errors.Errorf("failed to get P2P identity private key: %w", err)
+	}
+	if errors.Is(err, keyprovider.ErrKeyNotFound) {
+		slog.WarnContext(ctx, "P2P identity private key not found, generating a new one")
+		p2pIdentityPKRaw, err = symbioticCrypto.GeneratePrivateKey(entity.KeyTypeEcdsaSecp256k1)
+		if err != nil {
+			return errors.Errorf("failed to create P2P identity private key: %w", err)
+		}
+	}
+
+	p2pIdentityPK, err := crypto.UnmarshalSecp256k1PrivateKey(p2pIdentityPKRaw.Bytes())
+	if err != nil {
+		return errors.Errorf("failed to unmarshal P2P identity private key: %w", err)
+	}
+
+	opts := []libp2p.Option{
+		libp2p.Transport(tcp.NewTCPTransport),
+		libp2p.PrivateNetwork(swarmPK.Bytes()), // Use a private network with the provided swarm key
+		libp2p.Identity(p2pIdentityPK),         // Use the provided identity private key to sign messages that will be sent over the P2P gossip sub
+		libp2p.Security(noise.ID, noise.New),
+		libp2p.DefaultMuxers,
+	}
 	if cfg.P2PListenAddress != "" {
 		opts = append(opts, libp2p.ListenAddrStrings(cfg.P2PListenAddress))
 	}
@@ -97,26 +125,34 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create libp2p host: %w", err)
 	}
 
-	p2pService, err := p2p.NewService(ctx, p2p.Config{
-		Host:        h,
-		SendTimeout: time.Second * 10,
-		Metrics:     mtr,
-	})
+	p2pCfg := p2p.Config{
+		Host:      h,
+		Metrics:   mtr,
+		Discovery: p2p.DefaultDiscoveryConfig(),
+	}
+	if len(cfg.Bootnodes) > 0 {
+		p2pCfg.Discovery.BootstrapPeers = cfg.Bootnodes
+	}
+	p2pCfg.Discovery.DHTMode = cfg.DHTMode
+	p2pCfg.Discovery.EnableMDNS = cfg.MDnsEnabled
+
+	p2pService, err := p2p.NewService(ctx, p2pCfg)
 	if err != nil {
 		return errors.Errorf("failed to create p2p service: %w", err)
 	}
-	slog.InfoContext(ctx, "Created p2p service", "listenAddr", cfg.P2PListenAddress)
+	slog.InfoContext(ctx, "Created p2p service", "listenAddr", h.Addrs(), "id", h.ID().String())
 	defer p2pService.Close()
 
-	discoveryService, err := p2p.NewDiscoveryService(ctx, p2pService, h)
+	discoveryService, err := p2p.NewDiscoveryService(p2pCfg)
 	if err != nil {
 		return errors.Errorf("failed to create discovery service: %w", err)
 	}
-	defer discoveryService.Close()
 	slog.InfoContext(ctx, "Created discovery service", "listenAddr", cfg.P2PListenAddress)
-	if err := discoveryService.Start(); err != nil {
+	if err := discoveryService.Start(ctx); err != nil {
 		return errors.Errorf("failed to start discovery service: %w", err)
 	}
+	defer discoveryService.Close(ctx)
+
 	slog.InfoContext(ctx, "Started discovery service", "listenAddr", cfg.P2PListenAddress)
 
 	repo, err := badger.New(badger.Config{Dir: cfg.StorageDir})
@@ -239,11 +275,11 @@ func runApp(ctx context.Context) error {
 	}
 
 	serveMetricsOnAPIAddress := cfg.HTTPListenAddr == cfg.MetricsListenAddr || cfg.MetricsListenAddr == ""
-	api, err := apiApp.NewAPIApp(apiApp.Config{
+
+	api, err := api_server.NewSymbioticServer(ctx, api_server.Config{
 		Address:           cfg.HTTPListenAddr,
-		ReadHeaderTimeout: time.Second,
 		ShutdownTimeout:   time.Second * 5,
-		Prefix:            "/api/v1",
+		ReadHeaderTimeout: time.Second,
 		Signer:            signerApp,
 		Repo:              repo,
 		EvmClient:         evmClient,

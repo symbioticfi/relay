@@ -67,7 +67,7 @@ func (k *PrivateKey) Sign(msg []byte) (Signature, MessageHash, error) {
 	// symbiotic using keccak256 for hashing in bls-bn254
 	hash := Hash(msg)
 
-	g1Hash, err := hashToG1(hash)
+	g1Hash, err := HashToG1(hash)
 	if err != nil {
 		return nil, nil, errors.Errorf("blsBn254: failed to map hash to G1: %w", err)
 	}
@@ -79,7 +79,7 @@ func (k *PrivateKey) Sign(msg []byte) (Signature, MessageHash, error) {
 	return g1Sig.Marshal(), hash, nil
 }
 
-func hashToG1(data []byte) (*bn254.G1Affine, error) {
+func HashToG1(data []byte) (*bn254.G1Affine, error) {
 	// Convert data to a big integer
 	x := new(big.Int).SetBytes(data)
 
@@ -163,7 +163,7 @@ func (k *PublicKey) Verify(msg Message, sig Signature) error {
 	msgHash := Hash(msg)
 
 	// Hash the message to a point on G1
-	g1Hash, err := hashToG1(msgHash)
+	g1Hash, err := HashToG1(msgHash)
 	if err != nil {
 		return errors.Errorf("blsBn254: failed to hash message to G1: %w", err)
 	}
@@ -199,7 +199,7 @@ func (k *PublicKey) VerifyWithHash(msgHash MessageHash, sig Signature) error {
 	}
 
 	// Hash the message to a point on G1
-	g1Hash, err := hashToG1(msgHash)
+	g1Hash, err := HashToG1(msgHash)
 	if err != nil {
 		return errors.Errorf("blsBn254: failed to hash message to G1: %w", err)
 	}
@@ -242,6 +242,10 @@ func (k *PublicKey) Raw() RawPublicKey {
 	return append(g1Bytes[:], g2Bytes[:]...)
 }
 
+func (k *PublicKey) G2() *bn254.G2Affine {
+	return &k.g2PubKey
+}
+
 func (k *PublicKey) MarshalText() (text []byte, err error) {
 	g1Bytes := k.g1PubKey.Bytes()
 	g2Bytes := k.g2PubKey.Bytes()
@@ -253,18 +257,18 @@ func FromRaw(rawKey RawPublicKey) (*PublicKey, error) {
 		return nil, errors.New("blsBn254: nil raw key")
 	}
 	if len(rawKey) != RawKeyLength {
-		return nil, fmt.Errorf("blsBn254: invalid raw key length, expected %d, got %d", RawKeyLength, len(rawKey))
+		return nil, errors.Errorf("blsBn254: invalid raw key length, expected %d, got %d", RawKeyLength, len(rawKey))
 	}
 	g1 := bn254.G1Affine{}
 	g2 := bn254.G2Affine{}
 
 	err := g1.Unmarshal(rawKey[:32])
 	if err != nil {
-		return nil, fmt.Errorf("blsBn254: failed to unmarshal G1 pubkey: %w", err)
+		return nil, errors.Errorf("blsBn254: failed to unmarshal G1 pubkey: %w", err)
 	}
 	err = g2.Unmarshal(rawKey[32:])
 	if err != nil {
-		return nil, fmt.Errorf("blsBn254: failed to unmarshal G2 pubkey: %w", err)
+		return nil, errors.Errorf("blsBn254: failed to unmarshal G2 pubkey: %w", err)
 	}
 	return &PublicKey{g1, g2}, nil
 }

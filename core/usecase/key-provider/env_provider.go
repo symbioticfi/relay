@@ -55,7 +55,7 @@ func (e *EnvKeyProvider) GetPrivateKeyByAlias(alias string) (crypto.PrivateKey, 
 
 	val := os.Getenv(strings.ToUpper(alias))
 	if val == "" {
-		return nil, errors.New("key not found in environment")
+		return nil, errors.Errorf("key not found in environment: %w", ErrKeyNotFound)
 	}
 
 	keyType, _, err := AliasToKeyTypeId(alias)

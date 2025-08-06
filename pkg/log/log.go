@@ -20,21 +20,22 @@ var once sync.Once
 func Init(levelStr, mode string) {
 	level := parseLogLevel(levelStr)
 
-	if mode != "text" && mode != "pretty" {
-		mode = "text"
-	}
-
 	once.Do(func() {
 		internalInit(level, mode)
 	})
 }
 
 func internalInit(level slog.Level, mode string) {
-	if mode == "pretty" {
+	switch mode {
+	case "pretty":
 		initPretty(level)
-		return
+	case "text":
+		initText(level)
+	case "json":
+		initJson(level)
+	default:
+		initJson(level)
 	}
-	initText(level)
 }
 
 func parseLogLevel(levelStr string) slog.Level {
@@ -71,6 +72,27 @@ func initText(level slog.Level) {
 		ReplaceAttr: replaceAttr,
 	})
 	errorHandler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		AddSource:   false,
+		Level:       slog.LevelError,
+		ReplaceAttr: replaceAttr,
+	})
+
+	handlerRoutes := slogmulti.Router().
+		Add(ContextHandler{Handler: infoAndBelowHandler}, notErrorLevel).
+		Add(ContextHandler{Handler: errorHandler}, errorLevel)
+
+	handler := handlerRoutes.Handler()
+
+	slog.SetDefault(slog.New(handler))
+}
+
+func initJson(level slog.Level) {
+	infoAndBelowHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource:   false,
+		Level:       level,
+		ReplaceAttr: replaceAttr,
+	})
+	errorHandler := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
 		AddSource:   false,
 		Level:       slog.LevelError,
 		ReplaceAttr: replaceAttr,

@@ -51,7 +51,7 @@ func signatureRequestToBytes(req entity.SignatureRequest) ([]byte, error) {
 func bytesToSignatureRequest(data []byte) (entity.SignatureRequest, error) {
 	var dto signatureRequestDTO
 	if err := json.Unmarshal(data, &dto); err != nil {
-		return entity.SignatureRequest{}, fmt.Errorf("failed to unmarshal signature request: %w", err)
+		return entity.SignatureRequest{}, errors.Errorf("failed to unmarshal signature request: %w", err)
 	}
 
 	return entity.SignatureRequest{

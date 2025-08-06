@@ -7,7 +7,6 @@ import (
 	"github.com/go-errors/errors"
 
 	"github.com/symbioticfi/relay/core/entity"
-	p2pEntity "github.com/symbioticfi/relay/internal/entity"
 )
 
 func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
@@ -27,13 +26,7 @@ func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg e
 		return errors.Errorf("failed to marshal signatures aggregated message: %w", err)
 	}
 
-	// send to ourselves first
-	s.signaturesAggregatedHandler.Emit(ctx, p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]{
-		SenderInfo: p2pEntity.SenderInfo{},
-		Message:    msg,
-	})
-
-	return s.broadcast(ctx, messageTypeSignaturesAggregated, data)
+	return s.broadcast(ctx, topicAggProofReady, data)
 }
 
 type aggregationProofDTO struct {

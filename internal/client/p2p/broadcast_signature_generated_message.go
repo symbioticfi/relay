@@ -7,7 +7,6 @@ import (
 	"github.com/go-errors/errors"
 
 	"github.com/symbioticfi/relay/core/entity"
-	p2pEntity "github.com/symbioticfi/relay/internal/entity"
 )
 
 func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error {
@@ -27,13 +26,7 @@ func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg en
 		return errors.Errorf("failed to marshal signature generated message: %w", err)
 	}
 
-	// send to ourselves first
-	s.signatureHashHandler.Emit(ctx, p2pEntity.P2PMessage[entity.SignatureMessage]{
-		SenderInfo: p2pEntity.SenderInfo{},
-		Message:    msg,
-	})
-
-	return s.broadcast(ctx, messageTypeSignatureHash, data)
+	return s.broadcast(ctx, topicSignatureReady, data)
 }
 
 type signatureDTO struct {

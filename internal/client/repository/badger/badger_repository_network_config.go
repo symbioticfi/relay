@@ -114,7 +114,7 @@ func networkConfigToBytes(config entity.NetworkConfig) ([]byte, error) {
 func bytesToNetworkConfig(data []byte) (entity.NetworkConfig, error) {
 	var dto networkConfigDTO
 	if err := json.Unmarshal(data, &dto); err != nil {
-		return entity.NetworkConfig{}, fmt.Errorf("failed to unmarshal network config: %w", err)
+		return entity.NetworkConfig{}, errors.Errorf("failed to unmarshal network config: %w", err)
 	}
 
 	return entity.NetworkConfig{

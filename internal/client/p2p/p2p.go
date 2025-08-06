@@ -4,17 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
-	"sync"
 	"time"
 
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/multiformats/go-multiaddr"
-	"github.com/samber/lo"
 
 	"github.com/symbioticfi/relay/core/entity"
 	p2pEntity "github.com/symbioticfi/relay/internal/entity"
@@ -22,17 +20,11 @@ import (
 	"github.com/symbioticfi/relay/pkg/signals"
 )
 
-// Configuration
 const (
-	signedHashProtocolID      protocol.ID = "/p2p/messaging/1.0.0/signedHash"
-	aggregatedProofProtocolID protocol.ID = "/p2p/messaging/1.0.0/aggregatedProof"
-)
+	topicPrefix = "/relay/v1"
 
-type messageType string
-
-const (
-	messageTypeSignatureHash        messageType = "signature_hash_generated"
-	messageTypeSignaturesAggregated messageType = "signatures_aggregated"
+	topicSignatureReady = topicPrefix + "/signature/ready"
+	topicAggProofReady  = topicPrefix + "/proof/ready"
 )
 
 type metrics interface {
@@ -40,10 +32,55 @@ type metrics interface {
 	ObserveP2PPeerMessageSent(messageType, status string)
 }
 
+// DiscoveryConfig contains discovery protocol configuration
+type DiscoveryConfig struct {
+	// EnableMDNS specifies whether mDNS discovery is enabled.
+	EnableMDNS bool
+	// MDNSServiceName is the mDNS service name.
+	MDNSServiceName string
+
+	// DHTMode specifies the DHT mode.
+	DHTMode string
+	// BootstrapPeers is the list of bootstrap peers in multiaddr format.
+	BootstrapPeers []string
+	// AdvertiseTTL is the advertise time-to-live duration.
+	AdvertiseTTL time.Duration
+	// AdvertiseServiceName is the advertise service name.
+	AdvertiseServiceName string
+	// AdvertiseInterval is the interval between advertisements.
+	AdvertiseInterval time.Duration
+	// ConnectionTimeout is the timeout for peer connections.
+	ConnectionTimeout time.Duration
+	// MaxDHTReconnectPeerCount is the maximum number of DHT reconnect peers.
+	MaxDHTReconnectPeerCount int
+	// DHTPeerDiscoveryInterval is the interval for DHT peer discovery. Should be smaller than AdvertiseInterval.
+	DHTPeerDiscoveryInterval time.Duration
+	// DHTRoutingTableRefreshInterval is the interval for DHT routing table refresh. Should be greater than DHTPeerDiscoveryInterval.
+	DHTRoutingTableRefreshInterval time.Duration
+}
+
+func DefaultDiscoveryConfig() DiscoveryConfig {
+	return DiscoveryConfig{
+		EnableMDNS:      false,
+		MDNSServiceName: "symbiotic-mdns",
+
+		DHTMode:                        "server",
+		AdvertiseTTL:                   3 * time.Hour, // max allowed value in kdht package
+		AdvertiseServiceName:           "symbiotic-advertise",
+		AdvertiseInterval:              time.Hour,
+		ConnectionTimeout:              5 * time.Second,
+		MaxDHTReconnectPeerCount:       20,
+		DHTPeerDiscoveryInterval:       5 * time.Minute,
+		DHTRoutingTableRefreshInterval: 10 * time.Minute, // same as kdht package default
+	}
+}
+
 type Config struct {
-	Host        host.Host     `validate:"required"`
-	SendTimeout time.Duration `validate:"required,gt=0"`
-	Metrics     metrics       `validate:"required"`
+	Host            host.Host `validate:"required"`
+	SkipMessageSign bool
+	Metrics         metrics         `validate:"required"`
+	Discovery       DiscoveryConfig `validate:"required"`
+	EventTracer     pubsub.EventTracer
 }
 
 func (c Config) Validate() error {
@@ -58,12 +95,10 @@ func (c Config) Validate() error {
 type Service struct {
 	ctx                         context.Context
 	host                        host.Host
-	peersMutex                  sync.RWMutex
-	peers                       map[peer.ID]struct{}
-	signatureHashHandler        *signals.Signal[p2pEntity.P2PMessage[entity.SignatureMessage]]
+	signatureReceivedHandler    *signals.Signal[p2pEntity.P2PMessage[entity.SignatureMessage]]
 	signaturesAggregatedHandler *signals.Signal[p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]]
-	sendTimeout                 time.Duration
 	metrics                     metrics
+	topicsMap                   map[string]*pubsub.Topic
 }
 
 // NewService creates a new P2P service with the given configuration
@@ -71,35 +106,103 @@ func NewService(ctx context.Context, cfg Config) (*Service, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
+	ctx = log.WithComponent(ctx, "p2p")
 
 	h := cfg.Host
+
+	signPolicy := pubsub.StrictSign
+	if cfg.SkipMessageSign {
+		slog.WarnContext(ctx, "Message signing is disabled, this may lead to security issues")
+		signPolicy = pubsub.StrictNoSign
+	}
+	opts := []pubsub.Option{
+		pubsub.WithMessageSignaturePolicy(signPolicy),
+	}
+	if cfg.EventTracer != nil {
+		opts = append(opts, pubsub.WithEventTracer(cfg.EventTracer))
+	}
+	ps, err := pubsub.NewGossipSub(ctx, h, opts...)
+	if err != nil {
+		return nil, errors.Errorf("failed to create GossipSub: %w", err)
+	}
+
+	signatureReadyTopic, err := ps.Join(topicSignatureReady)
+	if err != nil {
+		return nil, errors.Errorf("failed to join signature ready topic: %w", err)
+	}
+	signatureReadySub, err := signatureReadyTopic.Subscribe()
+	if err != nil {
+		return nil, errors.Errorf("failed to subscribe to signature ready topic: %w", err)
+	}
+
+	proofReadyTopic, err := ps.Join(topicAggProofReady)
+	if err != nil {
+		return nil, errors.Errorf("failed to join agg proof ready topic: %w", err)
+	}
+	proofReadySub, err := proofReadyTopic.Subscribe()
+	if err != nil {
+		return nil, errors.Errorf("failed to subscribe to agg proof ready topic: %w", err)
+	}
+
 	service := &Service{
 		ctx:                         log.WithAttrs(ctx, slog.String("component", "p2p")),
 		host:                        h,
-		peers:                       make(map[peer.ID]struct{}),
-		signatureHashHandler:        signals.New[p2pEntity.P2PMessage[entity.SignatureMessage]](),
+		signatureReceivedHandler:    signals.New[p2pEntity.P2PMessage[entity.SignatureMessage]](),
 		signaturesAggregatedHandler: signals.New[p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]](),
-		sendTimeout:                 cfg.SendTimeout,
 		metrics:                     cfg.Metrics,
+
+		topicsMap: map[string]*pubsub.Topic{
+			topicSignatureReady: signatureReadyTopic,
+			topicAggProofReady:  proofReadyTopic,
+		},
 	}
 
-	h.SetStreamHandler(signedHashProtocolID, handleStreamWrapper(ctx, service.handleStreamSignedHash))
-	h.SetStreamHandler(aggregatedProofProtocolID, handleStreamWrapper(ctx, service.handleStreamAggregatedProof))
+	go service.listenForMessages(ctx, signatureReadySub, signatureReadyTopic, service.handleSignatureReadyMessage)
+	go service.listenForMessages(ctx, proofReadySub, proofReadyTopic, service.handleAggregatedProofReadyMessage)
 
 	h.Network().Notify(service)
 
 	return service, nil
 }
 
+func (s *Service) listenForMessages(ctx context.Context, sub *pubsub.Subscription, topic *pubsub.Topic, handler func(ctx context.Context, msg *pubsub.Message) error) {
+	slog.DebugContext(ctx, "Starting message listener", "topic", topic.String())
+	defer func() {
+		if err := topic.Close(); err != nil && !errors.Is(err, context.Canceled) {
+			slog.WarnContext(ctx, "Failed to close topic", "topic", topic.String(), "error", err)
+		}
+		sub.Cancel()
+		slog.InfoContext(ctx, "Subscription and topic closed", "topic", topic.String())
+	}()
+
+	for {
+		msg, err := sub.Next(ctx)
+		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				slog.InfoContext(ctx, "Subscription context canceled, stopping listener", "topic", topic.String())
+				return
+			}
+			slog.ErrorContext(ctx, "Failed to read from subscription", "error", err)
+			return
+		}
+
+		slog.DebugContext(ctx, "Received message from p2p", "topic", msg.Topic, "from", msg.ReceivedFrom, "data", string(msg.Data))
+		if err := handler(ctx, msg); err != nil {
+			slog.ErrorContext(ctx, "Failed to handle message", "error", err, "message", msg)
+			continue
+		}
+	}
+}
+
 func (s *Service) AddSignatureMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PMessage[entity.SignatureMessage]) error, key string) {
-	s.signatureHashHandler.AddListener(mh, key)
+	s.signatureReceivedHandler.AddListener(mh, key)
 }
 
 func (s *Service) AddSignaturesAggregatedMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]) error, key string) {
 	s.signaturesAggregatedHandler.AddListener(mh, key)
 }
 
-func (s *Service) AddPeer(pi peer.AddrInfo) error {
+func (s *Service) addPeer(pi peer.AddrInfo) error {
 	if pi.ID == s.host.ID() {
 		slog.InfoContext(s.ctx, "Skipping self-connection", "peer", pi.ID)
 		return nil
@@ -114,16 +217,6 @@ func (s *Service) AddPeer(pi peer.AddrInfo) error {
 		slog.ErrorContext(s.ctx, "Failed to connect to peer", "peer", pi.ID, "error", err)
 		return errors.Errorf("failed to connect to peer %s: %w", pi.ID.ShortString(), err)
 	}
-
-	s.peersMutex.Lock()
-	if _, found := s.peers[pi.ID]; !found {
-		s.peers[pi.ID] = struct{}{}
-	}
-
-	slog.InfoContext(ctx, "Connected to peer", "peer", pi.ID, "totalPeers", len(s.peers))
-
-	s.peersMutex.Unlock()
-
 	return nil
 }
 
@@ -135,10 +228,11 @@ type p2pMessage struct {
 }
 
 // broadcast sends a message to all connected peers
-func (s *Service) broadcast(ctx context.Context, typ messageType, data []byte) error {
-	s.peersMutex.RLock()
-	peers := lo.Keys(s.peers)
-	s.peersMutex.RUnlock()
+func (s *Service) broadcast(ctx context.Context, topicName string, data []byte) error {
+	topic, ok := s.topicsMap[topicName]
+	if !ok {
+		return errors.Errorf("topic %s not found", topicName)
+	}
 
 	msg := p2pMessage{
 		Sender:    s.host.ID().String(),
@@ -146,74 +240,22 @@ func (s *Service) broadcast(ctx context.Context, typ messageType, data []byte) e
 		Data:      data,
 	}
 
-	wg := sync.WaitGroup{}
-	errs := make([]error, len(peers))
-	tmCtx, cancel := context.WithTimeout(ctx, s.sendTimeout)
-	defer cancel()
-
-	for i, peerID := range peers {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-
-			if err := s.sendToPeer(tmCtx, typ, peerID, msg); err != nil {
-				errs[i] = err
-				s.metrics.ObserveP2PPeerMessageSent(string(typ), "error")
-				return
-			}
-
-			s.metrics.ObserveP2PPeerMessageSent(string(typ), "ok")
-		}(i)
-	}
-
-	wg.Wait()
-
-	s.metrics.ObserveP2PMessageSent(string(typ))
-
-	return errors.Join(errs...)
-}
-
-// sendToPeer sends a message to a specific peer
-func (s *Service) sendToPeer(ctx context.Context, typ messageType, peerID peer.ID, msg p2pMessage) error {
-	protocolID, err := getProtocolIDByMessageType(typ)
-	if err != nil {
-		return errors.Errorf("failed to get protocol ID: %w", err)
-	}
-
-	stream, err := s.host.NewStream(ctx, peerID, protocolID)
-	if err != nil {
-		return errors.Errorf("failed to open stream: %w", err)
-	}
-	defer stream.Close()
-
 	// Marshal and send the message
 	data, err := json.Marshal(msg)
 	if err != nil {
 		return errors.Errorf("failed to marshal message: %w", err)
 	}
 
-	if deadline, ok := ctx.Deadline(); ok {
-		if err := stream.SetWriteDeadline(deadline); err != nil {
-			return errors.Errorf("failed to set stream deadline: %w", err)
-		}
-	}
-	_, err = stream.Write(data)
+	err = topic.Publish(ctx, data)
 	if err != nil {
-		return errors.Errorf("failed to write to stream: %w", err)
+		s.metrics.ObserveP2PPeerMessageSent(topicName, "error")
+		return errors.Errorf("failed to publish data to topic %s: %w", topic.String(), err)
 	}
+
+	slog.DebugContext(ctx, "Message published to topic", "topic", topicName, "data", string(data))
+	s.metrics.ObserveP2PPeerMessageSent(topicName, "ok")
 
 	return nil
-}
-
-func getProtocolIDByMessageType(messageType messageType) (protocol.ID, error) {
-	switch messageType {
-	case messageTypeSignatureHash:
-		return signedHashProtocolID, nil
-	case messageTypeSignaturesAggregated:
-		return aggregatedProofProtocolID, nil
-	default:
-		return "", errors.Errorf("unknown message type: %s", messageType)
-	}
 }
 
 // Close gracefully stops the service
@@ -232,14 +274,9 @@ func (s *Service) ListenClose(n network.Network, multiaddr multiaddr.Multiaddr) 
 }
 
 func (s *Service) Connected(n network.Network, conn network.Conn) {
+	slog.DebugContext(s.ctx, "Connected to peer", "peer", conn.RemotePeer().String(), "totalPeers", len(s.host.Peerstore().Peers()))
 }
 
 func (s *Service) Disconnected(n network.Network, conn network.Conn) {
-	s.peersMutex.Lock()
-
-	delete(s.peers, conn.RemotePeer())
-
-	slog.InfoContext(s.ctx, "Disconnected from peer", "remotePeer", conn.RemotePeer(), "localPeer", conn.LocalPeer(), "totalPeers", len(s.peers))
-
-	s.peersMutex.Unlock()
+	slog.DebugContext(s.ctx, "Disconnected from peer", "remotePeer", conn.RemotePeer(), "localPeer", conn.LocalPeer(), "totalPeers", len(s.host.Peerstore().Peers()))
 }

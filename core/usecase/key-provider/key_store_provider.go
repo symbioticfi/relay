@@ -1,17 +1,16 @@
 package keyprovider
 
 import (
-	"errors"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/crypto"
 
+	"github.com/go-errors/errors"
 	"github.com/pavlo-v-chernykh/keystore-go/v4"
-
-	"github.com/symbioticfi/relay/core/entity"
 )
 
 type KeystoreProvider struct {
@@ -54,6 +53,9 @@ func (k *KeystoreProvider) GetPrivateKey(keyTag entity.KeyTag) (crypto.PrivateKe
 func (k *KeystoreProvider) GetPrivateKeyByAlias(alias string) (crypto.PrivateKey, error) {
 	entry, err := k.ks.GetPrivateKeyEntry(alias, []byte{})
 	if err != nil {
+		if errors.Is(err, keystore.ErrEntryNotFound) {
+			return nil, errors.New(ErrKeyNotFound)
+		}
 		return nil, err
 	}
 	keyType, _, err := AliasToKeyTypeId(alias)
@@ -70,7 +72,7 @@ func (k *KeystoreProvider) GetPrivateKeyByNamespaceTypeId(namespace string, keyT
 	}
 	key, err := k.GetPrivateKeyByAlias(alias)
 	if err != nil {
-		if errors.Is(err, keystore.ErrEntryNotFound) && namespace == EVM_KEY_NAMESPACE {
+		if errors.Is(err, ErrKeyNotFound) && namespace == EVM_KEY_NAMESPACE {
 			// For EVM keys, we check for default key with chain ID 0 if the requested chain id is absent
 			slog.Warn("Key not found, checking for default EVM key", "alias", alias)
 			defaultAlias, err := ToAlias(EVM_KEY_NAMESPACE, keyType, DEFAULT_EVM_CHAIN_ID)
@@ -104,7 +106,7 @@ func (k *KeystoreProvider) HasKeyByNamespaceTypeId(namespace string, keyType ent
 	return k.ks.IsPrivateKeyEntry(alias), nil
 }
 
-func (k *KeystoreProvider) AddKey(keyTag entity.KeyTag, privateKey crypto.PrivateKey, password string, force bool) error {
+func (k *KeystoreProvider) AddKey(namespace string, keyTag entity.KeyTag, privateKey crypto.PrivateKey, password string, force bool) error {
 	exists, err := k.HasKey(keyTag)
 	if err != nil {
 		return err
@@ -114,7 +116,7 @@ func (k *KeystoreProvider) AddKey(keyTag entity.KeyTag, privateKey crypto.Privat
 		return errors.New("key already exists")
 	}
 
-	alias, err := KeyTagToAlias(keyTag)
+	alias, err := KeyTagToAliasWithNS(namespace, keyTag)
 	if err != nil {
 		return err
 	}

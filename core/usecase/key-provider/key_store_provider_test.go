@@ -6,7 +6,6 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/crypto"
 
-	"github.com/pavlo-v-chernykh/keystore-go/v4"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,7 +28,7 @@ func TestAddKey(t *testing.T) {
 	key, err := crypto.NewPrivateKey(entity.KeyTypeBlsBn254, pk)
 	require.NoError(t, err)
 
-	err = kp.AddKey(15, key, password, false)
+	err = kp.AddKey(SYMBIOTIC_KEY_NAMESPACE, 15, key, password, false)
 	require.NoError(t, err)
 }
 
@@ -44,13 +43,13 @@ func TestForceAddKey(t *testing.T) {
 	key, err := crypto.NewPrivateKey(entity.KeyTypeBlsBn254, pk)
 	require.NoError(t, err)
 
-	err = kp.AddKey(15, key, password, false)
+	err = kp.AddKey(SYMBIOTIC_KEY_NAMESPACE, 15, key, password, false)
 	require.NoError(t, err)
 
-	err = kp.AddKey(15, key, password, false)
+	err = kp.AddKey(SYMBIOTIC_KEY_NAMESPACE, 15, key, password, false)
 	require.Error(t, err)
 
-	err = kp.AddKey(15, key, password, true)
+	err = kp.AddKey(SYMBIOTIC_KEY_NAMESPACE, 15, key, password, true)
 	require.NoError(t, err)
 }
 
@@ -65,7 +64,7 @@ func TestCreateAndReopen(t *testing.T) {
 	key, err := crypto.NewPrivateKey(entity.KeyTypeBlsBn254, pk)
 	require.NoError(t, err)
 
-	err = kp.AddKey(15, key, password, false)
+	err = kp.AddKey(SYMBIOTIC_KEY_NAMESPACE, 15, key, password, false)
 	require.NoError(t, err)
 
 	kp, err = NewKeystoreProvider(path, password)
@@ -94,7 +93,7 @@ func TestDefaultEVMKey(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = kp.GetPrivateKeyByNamespaceTypeId(EVM_KEY_NAMESPACE, entity.KeyTypeBlsBn254, 111)
-	require.ErrorIs(t, err, keystore.ErrEntryNotFound, "expected entry not found error for non-existing key")
+	require.ErrorIs(t, err, ErrKeyNotFound, "expected entry not found error for non-existing key")
 
 	err = kp.AddKeyByNamespaceTypeId(EVM_KEY_NAMESPACE, entity.KeyTypeBlsBn254, DEFAULT_EVM_CHAIN_ID, key, password, false)
 	require.NoError(t, err)
@@ -105,5 +104,5 @@ func TestDefaultEVMKey(t *testing.T) {
 
 	// shouldn't work for other chains
 	_, err = kp.GetPrivateKeyByNamespaceTypeId(SYMBIOTIC_KEY_NAMESPACE, entity.KeyTypeBlsBn254, 111)
-	require.ErrorIs(t, err, keystore.ErrEntryNotFound, "expected entry not found error for non-existing key")
+	require.ErrorIs(t, err, ErrKeyNotFound, "expected entry not found error for non-existing key")
 }

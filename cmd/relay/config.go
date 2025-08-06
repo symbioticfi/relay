@@ -99,8 +99,8 @@ func (s *CMDSecretKeySlice) Type() string {
 type config struct {
 	Driver            entity.CMDCrossChainAddress `mapstructure:"driver" validate:"required"`
 	LogLevel          string                      `mapstructure:"log-level" validate:"oneof=debug info warn error"`
-	LogMode           string                      `mapstructure:"log-mode" validate:"oneof=text pretty"`
-	P2PListenAddress  string                      `mapstructure:"p2p-listen"`
+	LogMode           string                      `mapstructure:"log-mode" validate:"oneof=json text pretty"`
+	P2PListenAddress  string                      `mapstructure:"p2p-listen" validate:"required"`
 	HTTPListenAddr    string                      `mapstructure:"http-listen" validate:"required"`
 	MetricsListenAddr string                      `mapstructure:"metrics-listen"`
 	SecretKeys        CMDSecretKeySlice           `mapstructure:"secret-keys"`
@@ -111,6 +111,9 @@ type config struct {
 	Chains            []string                    `mapstructure:"chains" validate:"required"`
 	CircuitsDir       string                      `mapstructure:"circuits-dir"`
 	KeyStore          entity.KeyStore             `mapstructure:"keystore"`
+	Bootnodes         []string                    `mapstructure:"bootnodes"`
+	DHTMode           string                      `mapstructure:"dht-mode" validate:"oneof=auto server client disabled"`
+	MDnsEnabled       bool                        `mapstructure:"enable-mdns"`
 }
 
 func (c config) Validate() error {
@@ -132,7 +135,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Uint64("driver.chain-id", 0, "Driver contract chain id")
 	rootCmd.PersistentFlags().String("driver.address", "", "Driver contract address")
 	rootCmd.PersistentFlags().String("log-level", "info", "Log level (debug, info, warn, error)")
-	rootCmd.PersistentFlags().String("log-mode", "text", "Log mode (text, pretty)")
+	rootCmd.PersistentFlags().String("log-mode", "json", "Log mode (text, pretty, json)")
 	rootCmd.PersistentFlags().String("p2p-listen", "", "P2P listen address")
 	rootCmd.PersistentFlags().String("http-listen", "", "Http listener address")
 	rootCmd.PersistentFlags().String("metrics-listen", "", "Http listener address for metrics endpoint")
@@ -145,6 +148,9 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().String("circuits-dir", "", "Directory path to load zk circuits from, if empty then zp prover is disabled")
 	rootCmd.PersistentFlags().String("keystore.path", "", "Path to optional keystore file, if provided will be used instead of secret-keys flag")
 	rootCmd.PersistentFlags().String("keystore.password", "", "Password for the keystore file, if provided will be used to decrypt the keystore file")
+	rootCmd.PersistentFlags().StringSlice("bootnodes", nil, "List of bootnodes in multiaddr format")
+	rootCmd.PersistentFlags().String("dht-mode", "server", "DHT mode: auto, server, client, disabled")
+	rootCmd.PersistentFlags().Bool("enable-mdns", false, "Enable mDNS discovery for P2P")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
@@ -222,6 +228,15 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("keystore.password", cmd.PersistentFlags().Lookup("keystore.password")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("bootnodes", cmd.PersistentFlags().Lookup("bootnodes")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("dht-mode", cmd.PersistentFlags().Lookup("dht-mode")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("enable-mdns", cmd.PersistentFlags().Lookup("enable-mdns")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 

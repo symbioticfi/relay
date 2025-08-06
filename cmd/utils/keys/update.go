@@ -1,13 +1,12 @@
 package keys
 
 import (
-	"errors"
-
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/crypto"
 	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 	cmdhelpers "github.com/symbioticfi/relay/internal/usecase/cmd-helpers"
 
+	"github.com/go-errors/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -44,7 +43,7 @@ var updateKeyCmd = &cobra.Command{
 			return err
 		}
 
-		if err = keyStore.AddKey(kt, key, globalFlags.Password, true); err != nil {
+		if err = keyStore.AddKey(updateFlags.Namespace, kt, key, globalFlags.Password, true); err != nil {
 			return err
 		}
 
