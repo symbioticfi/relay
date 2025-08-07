@@ -26,6 +26,13 @@ const (
 
 	topicSignatureReady = topicPrefix + "/signature/ready"
 	topicAggProofReady  = topicPrefix + "/proof/ready"
+
+	maxP2PMessageSize  = 1<<20 + 1024 // 1 MiB + 1 KiB for overhead
+	maxRequestHashSize = 32
+	maxPubKeySize      = 96
+	maxSignatureSize   = 96
+	maxMsgHashSize     = 64
+	maxProofSize       = 1 << 20
 )
 
 type metrics interface {
@@ -118,6 +125,7 @@ func NewService(ctx context.Context, cfg Config) (*Service, error) {
 	}
 	opts := []pubsub.Option{
 		pubsub.WithMessageSignaturePolicy(signPolicy),
+		pubsub.WithMaxMessageSize(maxP2PMessageSize),
 	}
 	if cfg.EventTracer != nil {
 		opts = append(opts, pubsub.WithEventTracer(cfg.EventTracer))

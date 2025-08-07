@@ -20,6 +20,20 @@ func (s *Service) handleSignatureReadyMessage(ctx context.Context, pubSubMsg *pu
 		return errors.Errorf("failed to unmarshal signatureGenerated message: %w", err)
 	}
 
+	// Validate the signatureGenerated message
+	if len(signatureGenerated.GetRequestHash()) > maxRequestHashSize {
+		return errors.Errorf("request hash size exceeds maximum allowed size: %d bytes", maxRequestHashSize)
+	}
+	if len(signatureGenerated.GetSignature().GetPublicKey()) > maxPubKeySize {
+		return errors.Errorf("public key size exceeds maximum allowed size: %d bytes", maxPubKeySize)
+	}
+	if len(signatureGenerated.GetSignature().GetSignature()) > maxSignatureSize {
+		return errors.Errorf("signature size exceeds maximum allowed size: %d bytes", maxSignatureSize)
+	}
+	if len(signatureGenerated.GetSignature().GetMessageHash()) > maxMsgHashSize {
+		return errors.Errorf("message hash size exceeds maximum allowed size: %d bytes", maxMsgHashSize)
+	}
+
 	msg := entity.SignatureMessage{
 		RequestHash: common.BytesToHash(signatureGenerated.GetRequestHash()),
 		KeyTag:      entity.KeyTag(signatureGenerated.GetKeyTag()),
@@ -49,6 +63,17 @@ func (s *Service) handleAggregatedProofReadyMessage(ctx context.Context, pubSubM
 	err := unmarshalMessage(pubSubMsg, &signaturesAggregated)
 	if err != nil {
 		return errors.Errorf("failed to unmarshal signatureGenerated message: %w", err)
+	}
+
+	// Validate the signaturesAggregated message
+	if len(signaturesAggregated.GetRequestHash()) > maxRequestHashSize {
+		return errors.Errorf("request hash size exceeds maximum allowed size: %d bytes", maxRequestHashSize)
+	}
+	if len(signaturesAggregated.GetAggregationProof().GetMessageHash()) > maxMsgHashSize {
+		return errors.Errorf("aggregation proof message hash size exceeds maximum allowed size: %d bytes", maxMsgHashSize)
+	}
+	if len(signaturesAggregated.GetAggregationProof().GetProof()) > maxProofSize {
+		return errors.Errorf("aggregation proof size exceeds maximum allowed size: %d bytes", maxProofSize)
 	}
 
 	msg := entity.AggregatedSignatureMessage{
