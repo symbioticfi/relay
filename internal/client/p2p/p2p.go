@@ -2,7 +2,6 @@ package p2p
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 	"time"
 
@@ -13,6 +12,8 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
+	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/symbioticfi/relay/core/entity"
 	p2pEntity "github.com/symbioticfi/relay/internal/entity"
@@ -25,6 +26,13 @@ const (
 
 	topicSignatureReady = topicPrefix + "/signature/ready"
 	topicAggProofReady  = topicPrefix + "/proof/ready"
+
+	maxP2PMessageSize  = 1<<20 + 1024 // 1 MiB + 1 KiB for overhead
+	maxRequestHashSize = 32
+	maxPubKeySize      = 96
+	maxSignatureSize   = 96
+	maxMsgHashSize     = 64
+	maxProofSize       = 1 << 20
 )
 
 type metrics interface {
@@ -117,6 +125,7 @@ func NewService(ctx context.Context, cfg Config) (*Service, error) {
 	}
 	opts := []pubsub.Option{
 		pubsub.WithMessageSignaturePolicy(signPolicy),
+		pubsub.WithMaxMessageSize(maxP2PMessageSize),
 	}
 	if cfg.EventTracer != nil {
 		opts = append(opts, pubsub.WithEventTracer(cfg.EventTracer))
@@ -186,7 +195,7 @@ func (s *Service) listenForMessages(ctx context.Context, sub *pubsub.Subscriptio
 			return
 		}
 
-		slog.DebugContext(ctx, "Received message from p2p", "topic", msg.Topic, "from", msg.ReceivedFrom, "data", string(msg.Data))
+		slog.DebugContext(ctx, "Received message from p2p", "topic", msg.Topic, "from", msg.ReceivedFrom)
 		if err := handler(ctx, msg); err != nil {
 			slog.ErrorContext(ctx, "Failed to handle message", "error", err, "message", msg)
 			continue
@@ -220,13 +229,6 @@ func (s *Service) addPeer(pi peer.AddrInfo) error {
 	return nil
 }
 
-// p2pMessage is the basic unit of communication between peers
-type p2pMessage struct {
-	Sender    string `json:"sender"`
-	Timestamp int64  `json:"timestamp"`
-	Data      []byte `json:"data"`
-}
-
 // broadcast sends a message to all connected peers
 func (s *Service) broadcast(ctx context.Context, topicName string, data []byte) error {
 	topic, ok := s.topicsMap[topicName]
@@ -234,14 +236,14 @@ func (s *Service) broadcast(ctx context.Context, topicName string, data []byte) 
 		return errors.Errorf("topic %s not found", topicName)
 	}
 
-	msg := p2pMessage{
+	msg := prototypes.P2PMessage{
 		Sender:    s.host.ID().String(),
 		Timestamp: time.Now().Unix(),
 		Data:      data,
 	}
 
 	// Marshal and send the message
-	data, err := json.Marshal(msg)
+	data, err := proto.Marshal(&msg)
 	if err != nil {
 		return errors.Errorf("failed to marshal message: %w", err)
 	}
@@ -252,7 +254,7 @@ func (s *Service) broadcast(ctx context.Context, topicName string, data []byte) 
 		return errors.Errorf("failed to publish data to topic %s: %w", topic.String(), err)
 	}
 
-	slog.DebugContext(ctx, "Message published to topic", "topic", topicName, "data", string(data))
+	slog.DebugContext(ctx, "Message published to topic", "topic", topicName)
 	s.metrics.ObserveP2PPeerMessageSent(topicName, "ok")
 
 	return nil
