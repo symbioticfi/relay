@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"time"
 
+	growthStrategy "github.com/symbioticfi/relay/core/usecase/growth-strategy"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p"
@@ -199,11 +201,17 @@ func runApp(ctx context.Context) error {
 
 	slog.InfoContext(ctx, "Created signer app, starting")
 
+	growthStrategy, err := growthStrategy.NewGrowthStrategy(config.GrowthStrategy, evmClient)
+	if err != nil {
+		return errors.Errorf("failed to create growth strategy: %w", err)
+	}
+
 	listener, err := valsetListener.New(valsetListener.Config{
 		EvmClient:       evmClient,
 		Repo:            repo,
 		Deriver:         deriver,
 		PollingInterval: time.Second * 5,
+		GrowthStrategy:  growthStrategy,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create epoch listener: %w", err)
@@ -217,6 +225,7 @@ func runApp(ctx context.Context) error {
 		Aggregator:      agg,
 		PollingInterval: time.Second * 5,
 		IsCommitter:     cfg.IsCommitter,
+		GrowthStrategy:  growthStrategy,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create epoch listener: %w", err)
