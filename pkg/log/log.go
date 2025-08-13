@@ -131,7 +131,11 @@ func replaceAttr(groups []string, a slog.Attr) slog.Attr {
 			// Normalize big numbers to strings to avoid scientific notation in pretty logger
 			switch v := val.(type) {
 			case *big.Int:
-				a.Value = slog.StringValue(v.String())
+				if v == nil {
+					a.Value = slog.StringValue("nil")
+				} else {
+					a.Value = slog.StringValue(v.String())
+				}
 			case big.Int:
 				a.Value = slog.StringValue(v.String())
 			}
