@@ -38,7 +38,7 @@ service SymbioticAPIService {
 
 // Request message for signing a message
 message SignMessageRequest {
-  // Key tag identifier (0-255)
+  // Key tag identifier (0-127)
   uint32 key_tag = 1;
   
   // Message to be signed
@@ -50,7 +50,7 @@ message SignMessageRequest {
 
 // Request message for signing a message
 message SignMessageWaitRequest {
-  // Key tag identifier (0-255)
+  // Key tag identifier (0-127)
   uint32 key_tag = 1;
 
   // Message to be signed
@@ -80,17 +80,8 @@ message SignMessageWaitResponse {
   // Epoch number
   uint64 epoch = 3;
   
-  // Current voting power accumulated (only set when status is SIGNING_STATUS_ACCUMULATING)
-  optional string current_voting_power = 4;
-  
-  // List of operators that have signed (only set when status is SIGNING_STATUS_ACCUMULATING)
-  repeated string signer_operators = 5;
-  
   // Final aggregation proof (only set when status is SIGNING_STATUS_COMPLETED)
   optional AggregationProof aggregation_proof = 6;
-  
-  // Error details (only set when status is SIGNING_STATUS_FAILED)
-  optional ErrorResponse error = 7;
 }
 
 // Request message for getting aggregation proof
@@ -155,7 +146,7 @@ message GetSuggestedEpochResponse {
 
 // Response message for getting signature request
 message GetSignatureRequestResponse {
-  // Key tag identifier (0-255)
+  // Key tag identifier (0-127)
   uint32 key_tag = 1;
   
   // Message to be signed
@@ -265,7 +256,7 @@ message Validator {
 
 // Cryptographic key
 message Key {
-  // Key tag identifier (0-255)
+  // Key tag identifier (0-127)
   uint32 tag = 1;
   
   // Key payload
@@ -284,14 +275,6 @@ message ValidatorVault {
   string voting_power = 3;
 }
 
-// Error response
-message ErrorResponse {
-  // User-friendly error message
-  string error_message = 1;
-  
-  // Error code
-  ErrorCode error_code = 2;
-}
 
 // Signing process status enumeration
 enum SigningStatus {
@@ -300,18 +283,15 @@ enum SigningStatus {
   
   // Request has been created and is waiting for signatures
   SIGNING_STATUS_PENDING = 1;
-  
-  // Signatures are being accumulated
-  SIGNING_STATUS_ACCUMULATING = 2;
-  
+
   // Signing process completed successfully with proof
-  SIGNING_STATUS_COMPLETED = 3;
+  SIGNING_STATUS_COMPLETED = 2;
   
   // Signing process failed
-  SIGNING_STATUS_FAILED = 4;
+  SIGNING_STATUS_FAILED = 3;
   
   // Signing request timed out
-  SIGNING_STATUS_TIMEOUT = 5;
+  SIGNING_STATUS_TIMEOUT = 4;
 }
 
 // Error code enumeration

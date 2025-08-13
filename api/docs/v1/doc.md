@@ -5,7 +5,6 @@
 
 - [v1/api.proto](#v1_api-proto)
     - [AggregationProof](#api-proto-v1-AggregationProof)
-    - [ErrorResponse](#api-proto-v1-ErrorResponse)
     - [GetAggregationProofRequest](#api-proto-v1-GetAggregationProofRequest)
     - [GetAggregationProofResponse](#api-proto-v1-GetAggregationProofResponse)
     - [GetAggregationStatusRequest](#api-proto-v1-GetAggregationStatusRequest)
@@ -57,22 +56,6 @@ Response message for getting aggregation proof
 | verification_type | [uint32](#uint32) |  | Verification type |
 | message_hash | [bytes](#bytes) |  | Message hash |
 | proof | [bytes](#bytes) |  | Proof data |
-
-
-
-
-
-
-<a name="api-proto-v1-ErrorResponse"></a>
-
-### ErrorResponse
-Error response
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| error_message | [string](#string) |  | User-friendly error message |
-| error_code | [ErrorCode](#api-proto-v1-ErrorCode) |  | Error code |
 
 
 
@@ -189,7 +172,7 @@ Response message for getting signature request
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| key_tag | [uint32](#uint32) |  | Key tag identifier (0-255) |
+| key_tag | [uint32](#uint32) |  | Key tag identifier (0-127) |
 | message | [bytes](#bytes) |  | Message to be signed |
 | required_epoch | [uint64](#uint64) |  | Required epoch |
 
@@ -299,7 +282,7 @@ Cryptographic key
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| tag | [uint32](#uint32) |  | Key tag identifier (0-255) |
+| tag | [uint32](#uint32) |  | Key tag identifier (0-127) |
 | payload | [bytes](#bytes) |  | Key payload |
 
 
@@ -315,7 +298,7 @@ Request message for signing a message
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| key_tag | [uint32](#uint32) |  | Key tag identifier (0-255) |
+| key_tag | [uint32](#uint32) |  | Key tag identifier (0-127) |
 | message | [bytes](#bytes) |  | Message to be signed |
 | required_epoch | [uint64](#uint64) | optional | Required epoch (optional, if not provided latest committed epoch will be used) |
 
@@ -348,7 +331,7 @@ Request message for signing a message
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| key_tag | [uint32](#uint32) |  | Key tag identifier (0-255) |
+| key_tag | [uint32](#uint32) |  | Key tag identifier (0-127) |
 | message | [bytes](#bytes) |  | Message to be signed |
 | required_epoch | [uint64](#uint64) | optional | Required epoch (optional, if not provided latest committed epoch will be used) |
 
@@ -368,10 +351,7 @@ Streaming response message for sign message wait
 | status | [SigningStatus](#api-proto-v1-SigningStatus) |  | Current status of the signing process |
 | request_hash | [string](#string) |  | Hash of the signature request |
 | epoch | [uint64](#uint64) |  | Epoch number |
-| current_voting_power | [string](#string) | optional | Current voting power accumulated (only set when status is SIGNING_STATUS_ACCUMULATING) |
-| signer_operators | [string](#string) | repeated | List of operators that have signed (only set when status is SIGNING_STATUS_ACCUMULATING) |
 | aggregation_proof | [AggregationProof](#api-proto-v1-AggregationProof) | optional | Final aggregation proof (only set when status is SIGNING_STATUS_COMPLETED) |
-| error | [ErrorResponse](#api-proto-v1-ErrorResponse) | optional | Error details (only set when status is SIGNING_STATUS_FAILED) |
 
 
 
@@ -456,10 +436,9 @@ Signing process status enumeration
 | ---- | ------ | ----------- |
 | SIGNING_STATUS_UNSPECIFIED | 0 | Default/unknown status |
 | SIGNING_STATUS_PENDING | 1 | Request has been created and is waiting for signatures |
-| SIGNING_STATUS_ACCUMULATING | 2 | Signatures are being accumulated |
-| SIGNING_STATUS_COMPLETED | 3 | Signing process completed successfully with proof |
-| SIGNING_STATUS_FAILED | 4 | Signing process failed |
-| SIGNING_STATUS_TIMEOUT | 5 | Signing request timed out |
+| SIGNING_STATUS_COMPLETED | 2 | Signing process completed successfully with proof |
+| SIGNING_STATUS_FAILED | 3 | Signing process failed |
+| SIGNING_STATUS_TIMEOUT | 4 | Signing request timed out |
 
 
 
