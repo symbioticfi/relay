@@ -8,6 +8,10 @@ plugins:
     out: api/docs/v1
     opt:
       - "html,index.html"
+  - local: protoc-gen-doc
+    out: api/docs/v1
+    opt:
+      - "markdown,doc.md"
   - local: protoc-gen-go
     out: internal/gen/api
     opt:
