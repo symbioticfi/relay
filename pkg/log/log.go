@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math/big"
 	"os"
 	"runtime"
 	"strconv"
@@ -126,6 +127,18 @@ func replaceAttr(groups []string, a slog.Attr) slog.Attr {
 		val := a.Value.Any()
 		if errVal, ok := val.(error); ok {
 			a.Value = fmtErr(errVal)
+		} else {
+			// Normalize big numbers to strings to avoid scientific notation in pretty logger
+			switch v := val.(type) {
+			case *big.Int:
+				if v == nil {
+					a.Value = slog.StringValue("nil")
+				} else {
+					a.Value = slog.StringValue(v.String())
+				}
+			case big.Int:
+				a.Value = slog.StringValue(v.String())
+			}
 		}
 	}
 	if a.Value.Kind() == slog.KindDuration {

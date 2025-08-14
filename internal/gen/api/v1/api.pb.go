@@ -87,14 +87,12 @@ const (
 	SigningStatus_SIGNING_STATUS_UNSPECIFIED SigningStatus = 0
 	// Request has been created and is waiting for signatures
 	SigningStatus_SIGNING_STATUS_PENDING SigningStatus = 1
-	// Signatures are being accumulated
-	SigningStatus_SIGNING_STATUS_ACCUMULATING SigningStatus = 2
 	// Signing process completed successfully with proof
-	SigningStatus_SIGNING_STATUS_COMPLETED SigningStatus = 3
+	SigningStatus_SIGNING_STATUS_COMPLETED SigningStatus = 2
 	// Signing process failed
-	SigningStatus_SIGNING_STATUS_FAILED SigningStatus = 4
+	SigningStatus_SIGNING_STATUS_FAILED SigningStatus = 3
 	// Signing request timed out
-	SigningStatus_SIGNING_STATUS_TIMEOUT SigningStatus = 5
+	SigningStatus_SIGNING_STATUS_TIMEOUT SigningStatus = 4
 )
 
 // Enum value maps for SigningStatus.
@@ -102,18 +100,16 @@ var (
 	SigningStatus_name = map[int32]string{
 		0: "SIGNING_STATUS_UNSPECIFIED",
 		1: "SIGNING_STATUS_PENDING",
-		2: "SIGNING_STATUS_ACCUMULATING",
-		3: "SIGNING_STATUS_COMPLETED",
-		4: "SIGNING_STATUS_FAILED",
-		5: "SIGNING_STATUS_TIMEOUT",
+		2: "SIGNING_STATUS_COMPLETED",
+		3: "SIGNING_STATUS_FAILED",
+		4: "SIGNING_STATUS_TIMEOUT",
 	}
 	SigningStatus_value = map[string]int32{
-		"SIGNING_STATUS_UNSPECIFIED":  0,
-		"SIGNING_STATUS_PENDING":      1,
-		"SIGNING_STATUS_ACCUMULATING": 2,
-		"SIGNING_STATUS_COMPLETED":    3,
-		"SIGNING_STATUS_FAILED":       4,
-		"SIGNING_STATUS_TIMEOUT":      5,
+		"SIGNING_STATUS_UNSPECIFIED": 0,
+		"SIGNING_STATUS_PENDING":     1,
+		"SIGNING_STATUS_COMPLETED":   2,
+		"SIGNING_STATUS_FAILED":      3,
+		"SIGNING_STATUS_TIMEOUT":     4,
 	}
 )
 
@@ -204,7 +200,7 @@ func (ErrorCode) EnumDescriptor() ([]byte, []int) {
 // Request message for signing a message
 type SignMessageRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Key tag identifier (0-255)
+	// Key tag identifier (0-127)
 	KeyTag uint32 `protobuf:"varint,1,opt,name=key_tag,json=keyTag,proto3" json:"key_tag,omitempty"`
 	// Message to be signed
 	Message []byte `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
@@ -268,7 +264,7 @@ func (x *SignMessageRequest) GetRequiredEpoch() uint64 {
 // Request message for signing a message
 type SignMessageWaitRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Key tag identifier (0-255)
+	// Key tag identifier (0-127)
 	KeyTag uint32 `protobuf:"varint,1,opt,name=key_tag,json=keyTag,proto3" json:"key_tag,omitempty"`
 	// Message to be signed
 	Message []byte `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
@@ -393,16 +389,10 @@ type SignMessageWaitResponse struct {
 	RequestHash string `protobuf:"bytes,2,opt,name=request_hash,json=requestHash,proto3" json:"request_hash,omitempty"`
 	// Epoch number
 	Epoch uint64 `protobuf:"varint,3,opt,name=epoch,proto3" json:"epoch,omitempty"`
-	// Current voting power accumulated (only set when status is SIGNING_STATUS_ACCUMULATING)
-	CurrentVotingPower *string `protobuf:"bytes,4,opt,name=current_voting_power,json=currentVotingPower,proto3,oneof" json:"current_voting_power,omitempty"`
-	// List of operators that have signed (only set when status is SIGNING_STATUS_ACCUMULATING)
-	SignerOperators []string `protobuf:"bytes,5,rep,name=signer_operators,json=signerOperators,proto3" json:"signer_operators,omitempty"`
 	// Final aggregation proof (only set when status is SIGNING_STATUS_COMPLETED)
 	AggregationProof *AggregationProof `protobuf:"bytes,6,opt,name=aggregation_proof,json=aggregationProof,proto3,oneof" json:"aggregation_proof,omitempty"`
-	// Error details (only set when status is SIGNING_STATUS_FAILED)
-	Error         *ErrorResponse `protobuf:"bytes,7,opt,name=error,proto3,oneof" json:"error,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *SignMessageWaitResponse) Reset() {
@@ -456,30 +446,9 @@ func (x *SignMessageWaitResponse) GetEpoch() uint64 {
 	return 0
 }
 
-func (x *SignMessageWaitResponse) GetCurrentVotingPower() string {
-	if x != nil && x.CurrentVotingPower != nil {
-		return *x.CurrentVotingPower
-	}
-	return ""
-}
-
-func (x *SignMessageWaitResponse) GetSignerOperators() []string {
-	if x != nil {
-		return x.SignerOperators
-	}
-	return nil
-}
-
 func (x *SignMessageWaitResponse) GetAggregationProof() *AggregationProof {
 	if x != nil {
 		return x.AggregationProof
-	}
-	return nil
-}
-
-func (x *SignMessageWaitResponse) GetError() *ErrorResponse {
-	if x != nil {
-		return x.Error
 	}
 	return nil
 }
@@ -947,7 +916,7 @@ func (x *GetSuggestedEpochResponse) GetStartTime() *timestamppb.Timestamp {
 // Response message for getting signature request
 type GetSignatureRequestResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Key tag identifier (0-255)
+	// Key tag identifier (0-127)
 	KeyTag uint32 `protobuf:"varint,1,opt,name=key_tag,json=keyTag,proto3" json:"key_tag,omitempty"`
 	// Message to be signed
 	Message []byte `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
@@ -1430,7 +1399,7 @@ func (x *Validator) GetVaults() []*ValidatorVault {
 // Cryptographic key
 type Key struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Key tag identifier (0-255)
+	// Key tag identifier (0-127)
 	Tag uint32 `protobuf:"varint,1,opt,name=tag,proto3" json:"tag,omitempty"`
 	// Key payload
 	Payload       []byte `protobuf:"bytes,2,opt,name=payload,proto3" json:"payload,omitempty"`
@@ -1546,61 +1515,6 @@ func (x *ValidatorVault) GetVotingPower() string {
 	return ""
 }
 
-// Error response
-type ErrorResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// User-friendly error message
-	ErrorMessage string `protobuf:"bytes,1,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
-	// Error code
-	ErrorCode     ErrorCode `protobuf:"varint,2,opt,name=error_code,json=errorCode,proto3,enum=api.proto.v1.ErrorCode" json:"error_code,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ErrorResponse) Reset() {
-	*x = ErrorResponse{}
-	mi := &file_v1_api_proto_msgTypes[23]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ErrorResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ErrorResponse) ProtoMessage() {}
-
-func (x *ErrorResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[23]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ErrorResponse.ProtoReflect.Descriptor instead.
-func (*ErrorResponse) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{23}
-}
-
-func (x *ErrorResponse) GetErrorMessage() string {
-	if x != nil {
-		return x.ErrorMessage
-	}
-	return ""
-}
-
-func (x *ErrorResponse) GetErrorCode() ErrorCode {
-	if x != nil {
-		return x.ErrorCode
-	}
-	return ErrorCode_ERROR_CODE_UNSPECIFIED
-}
-
 var File_v1_api_proto protoreflect.FileDescriptor
 
 const file_v1_api_proto_rawDesc = "" +
@@ -1618,18 +1532,13 @@ const file_v1_api_proto_rawDesc = "" +
 	"\x0f_required_epoch\"N\n" +
 	"\x13SignMessageResponse\x12!\n" +
 	"\frequest_hash\x18\x01 \x01(\tR\vrequestHash\x12\x14\n" +
-	"\x05epoch\x18\x02 \x01(\x04R\x05epoch\"\xac\x03\n" +
+	"\x05epoch\x18\x02 \x01(\x04R\x05epoch\"\xef\x01\n" +
 	"\x17SignMessageWaitResponse\x123\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x1b.api.proto.v1.SigningStatusR\x06status\x12!\n" +
 	"\frequest_hash\x18\x02 \x01(\tR\vrequestHash\x12\x14\n" +
-	"\x05epoch\x18\x03 \x01(\x04R\x05epoch\x125\n" +
-	"\x14current_voting_power\x18\x04 \x01(\tH\x00R\x12currentVotingPower\x88\x01\x01\x12)\n" +
-	"\x10signer_operators\x18\x05 \x03(\tR\x0fsignerOperators\x12P\n" +
-	"\x11aggregation_proof\x18\x06 \x01(\v2\x1e.api.proto.v1.AggregationProofH\x01R\x10aggregationProof\x88\x01\x01\x126\n" +
-	"\x05error\x18\a \x01(\v2\x1b.api.proto.v1.ErrorResponseH\x02R\x05error\x88\x01\x01B\x17\n" +
-	"\x15_current_voting_powerB\x14\n" +
-	"\x12_aggregation_proofB\b\n" +
-	"\x06_error\"?\n" +
+	"\x05epoch\x18\x03 \x01(\x04R\x05epoch\x12P\n" +
+	"\x11aggregation_proof\x18\x06 \x01(\v2\x1e.api.proto.v1.AggregationProofH\x00R\x10aggregationProof\x88\x01\x01B\x14\n" +
+	"\x12_aggregation_proof\"?\n" +
 	"\x1aGetAggregationProofRequest\x12!\n" +
 	"\frequest_hash\x18\x01 \x01(\tR\vrequestHash\"\x18\n" +
 	"\x16GetCurrentEpochRequest\"\x1a\n" +
@@ -1696,23 +1605,18 @@ const file_v1_api_proto_rawDesc = "" +
 	"\x0eValidatorVault\x12\x19\n" +
 	"\bchain_id\x18\x01 \x01(\x04R\achainId\x12\x14\n" +
 	"\x05vault\x18\x02 \x01(\tR\x05vault\x12!\n" +
-	"\fvoting_power\x18\x03 \x01(\tR\vvotingPower\"l\n" +
-	"\rErrorResponse\x12#\n" +
-	"\rerror_message\x18\x01 \x01(\tR\ferrorMessage\x126\n" +
-	"\n" +
-	"error_code\x18\x02 \x01(\x0e2\x17.api.proto.v1.ErrorCodeR\terrorCode*\xa1\x01\n" +
+	"\fvoting_power\x18\x03 \x01(\tR\vvotingPower*\xa1\x01\n" +
 	"\x12ValidatorSetStatus\x12$\n" +
 	" VALIDATOR_SET_STATUS_UNSPECIFIED\x10\x00\x12 \n" +
 	"\x1cVALIDATOR_SET_STATUS_PENDING\x10\x01\x12\x1f\n" +
 	"\x1bVALIDATOR_SET_STATUS_MISSED\x10\x02\x12\"\n" +
-	"\x1eVALIDATOR_SET_STATUS_COMMITTED\x10\x03*\xc1\x01\n" +
+	"\x1eVALIDATOR_SET_STATUS_COMMITTED\x10\x03*\xa0\x01\n" +
 	"\rSigningStatus\x12\x1e\n" +
 	"\x1aSIGNING_STATUS_UNSPECIFIED\x10\x00\x12\x1a\n" +
-	"\x16SIGNING_STATUS_PENDING\x10\x01\x12\x1f\n" +
-	"\x1bSIGNING_STATUS_ACCUMULATING\x10\x02\x12\x1c\n" +
-	"\x18SIGNING_STATUS_COMPLETED\x10\x03\x12\x19\n" +
-	"\x15SIGNING_STATUS_FAILED\x10\x04\x12\x1a\n" +
-	"\x16SIGNING_STATUS_TIMEOUT\x10\x05*w\n" +
+	"\x16SIGNING_STATUS_PENDING\x10\x01\x12\x1c\n" +
+	"\x18SIGNING_STATUS_COMPLETED\x10\x02\x12\x19\n" +
+	"\x15SIGNING_STATUS_FAILED\x10\x03\x12\x1a\n" +
+	"\x16SIGNING_STATUS_TIMEOUT\x10\x04*w\n" +
 	"\tErrorCode\x12\x1a\n" +
 	"\x16ERROR_CODE_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12ERROR_CODE_NO_DATA\x10\x01\x12\x17\n" +
@@ -1743,7 +1647,7 @@ func file_v1_api_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_api_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
+var file_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_v1_api_proto_goTypes = []any{
 	(ValidatorSetStatus)(0),              // 0: api.proto.v1.ValidatorSetStatus
 	(SigningStatus)(0),                   // 1: api.proto.v1.SigningStatus
@@ -1771,46 +1675,43 @@ var file_v1_api_proto_goTypes = []any{
 	(*Validator)(nil),                    // 23: api.proto.v1.Validator
 	(*Key)(nil),                          // 24: api.proto.v1.Key
 	(*ValidatorVault)(nil),               // 25: api.proto.v1.ValidatorVault
-	(*ErrorResponse)(nil),                // 26: api.proto.v1.ErrorResponse
-	(*timestamppb.Timestamp)(nil),        // 27: google.protobuf.Timestamp
+	(*timestamppb.Timestamp)(nil),        // 26: google.protobuf.Timestamp
 }
 var file_v1_api_proto_depIdxs = []int32{
 	1,  // 0: api.proto.v1.SignMessageWaitResponse.status:type_name -> api.proto.v1.SigningStatus
 	19, // 1: api.proto.v1.SignMessageWaitResponse.aggregation_proof:type_name -> api.proto.v1.AggregationProof
-	26, // 2: api.proto.v1.SignMessageWaitResponse.error:type_name -> api.proto.v1.ErrorResponse
-	21, // 3: api.proto.v1.GetSignaturesResponse.signatures:type_name -> api.proto.v1.Signature
-	27, // 4: api.proto.v1.GetCurrentEpochResponse.start_time:type_name -> google.protobuf.Timestamp
-	27, // 5: api.proto.v1.GetSuggestedEpochResponse.start_time:type_name -> google.protobuf.Timestamp
-	19, // 6: api.proto.v1.GetAggregationProofResponse.aggregation_proof:type_name -> api.proto.v1.AggregationProof
-	27, // 7: api.proto.v1.GetValidatorSetResponse.capture_timestamp:type_name -> google.protobuf.Timestamp
-	0,  // 8: api.proto.v1.GetValidatorSetResponse.status:type_name -> api.proto.v1.ValidatorSetStatus
-	23, // 9: api.proto.v1.GetValidatorSetResponse.validators:type_name -> api.proto.v1.Validator
-	24, // 10: api.proto.v1.Validator.keys:type_name -> api.proto.v1.Key
-	25, // 11: api.proto.v1.Validator.vaults:type_name -> api.proto.v1.ValidatorVault
-	2,  // 12: api.proto.v1.ErrorResponse.error_code:type_name -> api.proto.v1.ErrorCode
-	3,  // 13: api.proto.v1.SymbioticAPIService.SignMessage:input_type -> api.proto.v1.SignMessageRequest
-	7,  // 14: api.proto.v1.SymbioticAPIService.GetAggregationProof:input_type -> api.proto.v1.GetAggregationProofRequest
-	8,  // 15: api.proto.v1.SymbioticAPIService.GetCurrentEpoch:input_type -> api.proto.v1.GetCurrentEpochRequest
-	9,  // 16: api.proto.v1.SymbioticAPIService.GetSuggestedEpoch:input_type -> api.proto.v1.GetSuggestedEpochRequest
-	10, // 17: api.proto.v1.SymbioticAPIService.GetSignatures:input_type -> api.proto.v1.GetSignaturesRequest
-	12, // 18: api.proto.v1.SymbioticAPIService.GetSignatureRequest:input_type -> api.proto.v1.GetSignatureRequestRequest
-	13, // 19: api.proto.v1.SymbioticAPIService.GetAggregationStatus:input_type -> api.proto.v1.GetAggregationStatusRequest
-	14, // 20: api.proto.v1.SymbioticAPIService.GetValidatorSet:input_type -> api.proto.v1.GetValidatorSetRequest
-	4,  // 21: api.proto.v1.SymbioticAPIService.SignMessageWait:input_type -> api.proto.v1.SignMessageWaitRequest
-	5,  // 22: api.proto.v1.SymbioticAPIService.SignMessage:output_type -> api.proto.v1.SignMessageResponse
-	18, // 23: api.proto.v1.SymbioticAPIService.GetAggregationProof:output_type -> api.proto.v1.GetAggregationProofResponse
-	15, // 24: api.proto.v1.SymbioticAPIService.GetCurrentEpoch:output_type -> api.proto.v1.GetCurrentEpochResponse
-	16, // 25: api.proto.v1.SymbioticAPIService.GetSuggestedEpoch:output_type -> api.proto.v1.GetSuggestedEpochResponse
-	11, // 26: api.proto.v1.SymbioticAPIService.GetSignatures:output_type -> api.proto.v1.GetSignaturesResponse
-	17, // 27: api.proto.v1.SymbioticAPIService.GetSignatureRequest:output_type -> api.proto.v1.GetSignatureRequestResponse
-	20, // 28: api.proto.v1.SymbioticAPIService.GetAggregationStatus:output_type -> api.proto.v1.GetAggregationStatusResponse
-	22, // 29: api.proto.v1.SymbioticAPIService.GetValidatorSet:output_type -> api.proto.v1.GetValidatorSetResponse
-	6,  // 30: api.proto.v1.SymbioticAPIService.SignMessageWait:output_type -> api.proto.v1.SignMessageWaitResponse
-	22, // [22:31] is the sub-list for method output_type
-	13, // [13:22] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	21, // 2: api.proto.v1.GetSignaturesResponse.signatures:type_name -> api.proto.v1.Signature
+	26, // 3: api.proto.v1.GetCurrentEpochResponse.start_time:type_name -> google.protobuf.Timestamp
+	26, // 4: api.proto.v1.GetSuggestedEpochResponse.start_time:type_name -> google.protobuf.Timestamp
+	19, // 5: api.proto.v1.GetAggregationProofResponse.aggregation_proof:type_name -> api.proto.v1.AggregationProof
+	26, // 6: api.proto.v1.GetValidatorSetResponse.capture_timestamp:type_name -> google.protobuf.Timestamp
+	0,  // 7: api.proto.v1.GetValidatorSetResponse.status:type_name -> api.proto.v1.ValidatorSetStatus
+	23, // 8: api.proto.v1.GetValidatorSetResponse.validators:type_name -> api.proto.v1.Validator
+	24, // 9: api.proto.v1.Validator.keys:type_name -> api.proto.v1.Key
+	25, // 10: api.proto.v1.Validator.vaults:type_name -> api.proto.v1.ValidatorVault
+	3,  // 11: api.proto.v1.SymbioticAPIService.SignMessage:input_type -> api.proto.v1.SignMessageRequest
+	7,  // 12: api.proto.v1.SymbioticAPIService.GetAggregationProof:input_type -> api.proto.v1.GetAggregationProofRequest
+	8,  // 13: api.proto.v1.SymbioticAPIService.GetCurrentEpoch:input_type -> api.proto.v1.GetCurrentEpochRequest
+	9,  // 14: api.proto.v1.SymbioticAPIService.GetSuggestedEpoch:input_type -> api.proto.v1.GetSuggestedEpochRequest
+	10, // 15: api.proto.v1.SymbioticAPIService.GetSignatures:input_type -> api.proto.v1.GetSignaturesRequest
+	12, // 16: api.proto.v1.SymbioticAPIService.GetSignatureRequest:input_type -> api.proto.v1.GetSignatureRequestRequest
+	13, // 17: api.proto.v1.SymbioticAPIService.GetAggregationStatus:input_type -> api.proto.v1.GetAggregationStatusRequest
+	14, // 18: api.proto.v1.SymbioticAPIService.GetValidatorSet:input_type -> api.proto.v1.GetValidatorSetRequest
+	4,  // 19: api.proto.v1.SymbioticAPIService.SignMessageWait:input_type -> api.proto.v1.SignMessageWaitRequest
+	5,  // 20: api.proto.v1.SymbioticAPIService.SignMessage:output_type -> api.proto.v1.SignMessageResponse
+	18, // 21: api.proto.v1.SymbioticAPIService.GetAggregationProof:output_type -> api.proto.v1.GetAggregationProofResponse
+	15, // 22: api.proto.v1.SymbioticAPIService.GetCurrentEpoch:output_type -> api.proto.v1.GetCurrentEpochResponse
+	16, // 23: api.proto.v1.SymbioticAPIService.GetSuggestedEpoch:output_type -> api.proto.v1.GetSuggestedEpochResponse
+	11, // 24: api.proto.v1.SymbioticAPIService.GetSignatures:output_type -> api.proto.v1.GetSignaturesResponse
+	17, // 25: api.proto.v1.SymbioticAPIService.GetSignatureRequest:output_type -> api.proto.v1.GetSignatureRequestResponse
+	20, // 26: api.proto.v1.SymbioticAPIService.GetAggregationStatus:output_type -> api.proto.v1.GetAggregationStatusResponse
+	22, // 27: api.proto.v1.SymbioticAPIService.GetValidatorSet:output_type -> api.proto.v1.GetValidatorSetResponse
+	6,  // 28: api.proto.v1.SymbioticAPIService.SignMessageWait:output_type -> api.proto.v1.SignMessageWaitResponse
+	20, // [20:29] is the sub-list for method output_type
+	11, // [11:20] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_v1_api_proto_init() }
@@ -1828,7 +1729,7 @@ func file_v1_api_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_api_proto_rawDesc), len(file_v1_api_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   24,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
