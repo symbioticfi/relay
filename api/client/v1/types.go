@@ -23,7 +23,6 @@ const (
 	// SigningStatus values
 	SigningStatus_SIGNING_STATUS_UNSPECIFIED = apiv1.SigningStatus_SIGNING_STATUS_UNSPECIFIED
 	SigningStatus_SIGNING_STATUS_PENDING = apiv1.SigningStatus_SIGNING_STATUS_PENDING
-	SigningStatus_SIGNING_STATUS_ACCUMULATING = apiv1.SigningStatus_SIGNING_STATUS_ACCUMULATING
 	SigningStatus_SIGNING_STATUS_COMPLETED = apiv1.SigningStatus_SIGNING_STATUS_COMPLETED
 	SigningStatus_SIGNING_STATUS_FAILED = apiv1.SigningStatus_SIGNING_STATUS_FAILED
 	SigningStatus_SIGNING_STATUS_TIMEOUT = apiv1.SigningStatus_SIGNING_STATUS_TIMEOUT
@@ -47,7 +46,6 @@ type SignMessageRequest = apiv1.SignMessageRequest
 type SignMessageWaitRequest = apiv1.SignMessageWaitRequest
 
 // Response types
-type ErrorResponse = apiv1.ErrorResponse
 type GetAggregationProofResponse = apiv1.GetAggregationProofResponse
 type GetAggregationStatusResponse = apiv1.GetAggregationStatusResponse
 type GetCurrentEpochResponse = apiv1.GetCurrentEpochResponse
