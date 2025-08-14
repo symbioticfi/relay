@@ -183,10 +183,6 @@
                 </li>
               
                 <li>
-                  <a href="#api.proto.v1.ErrorResponse"><span class="badge">M</span>ErrorResponse</a>
-                </li>
-              
-                <li>
                   <a href="#api.proto.v1.GetAggregationProofRequest"><span class="badge">M</span>GetAggregationProofRequest</a>
                 </li>
               
@@ -337,37 +333,6 @@
                   <td><a href="#bytes">bytes</a></td>
                   <td></td>
                   <td><p>Proof data </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="api.proto.v1.ErrorResponse">ErrorResponse</h3>
-        <p>Error response</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>error_message</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>User-friendly error message </p></td>
-                </tr>
-              
-                <tr>
-                  <td>error_code</td>
-                  <td><a href="#api.proto.v1.ErrorCode">ErrorCode</a></td>
-                  <td></td>
-                  <td><p>Error code </p></td>
                 </tr>
               
             </tbody>
@@ -556,7 +521,7 @@
                   <td>key_tag</td>
                   <td><a href="#uint32">uint32</a></td>
                   <td></td>
-                  <td><p>Key tag identifier (0-255) </p></td>
+                  <td><p>Key tag identifier (0-127) </p></td>
                 </tr>
               
                 <tr>
@@ -777,7 +742,7 @@
                   <td>tag</td>
                   <td><a href="#uint32">uint32</a></td>
                   <td></td>
-                  <td><p>Key tag identifier (0-255) </p></td>
+                  <td><p>Key tag identifier (0-127) </p></td>
                 </tr>
               
                 <tr>
@@ -808,7 +773,7 @@
                   <td>key_tag</td>
                   <td><a href="#uint32">uint32</a></td>
                   <td></td>
-                  <td><p>Key tag identifier (0-255) </p></td>
+                  <td><p>Key tag identifier (0-127) </p></td>
                 </tr>
               
                 <tr>
@@ -877,7 +842,7 @@
                   <td>key_tag</td>
                   <td><a href="#uint32">uint32</a></td>
                   <td></td>
-                  <td><p>Key tag identifier (0-255) </p></td>
+                  <td><p>Key tag identifier (0-127) </p></td>
                 </tr>
               
                 <tr>
@@ -933,31 +898,10 @@
                 </tr>
               
                 <tr>
-                  <td>current_voting_power</td>
-                  <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>Current voting power accumulated (only set when status is SIGNING_STATUS_ACCUMULATING) </p></td>
-                </tr>
-              
-                <tr>
-                  <td>signer_operators</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>List of operators that have signed (only set when status is SIGNING_STATUS_ACCUMULATING) </p></td>
-                </tr>
-              
-                <tr>
                   <td>aggregation_proof</td>
                   <td><a href="#api.proto.v1.AggregationProof">AggregationProof</a></td>
                   <td>optional</td>
                   <td><p>Final aggregation proof (only set when status is SIGNING_STATUS_COMPLETED) </p></td>
-                </tr>
-              
-                <tr>
-                  <td>error</td>
-                  <td><a href="#api.proto.v1.ErrorResponse">ErrorResponse</a></td>
-                  <td>optional</td>
-                  <td><p>Error details (only set when status is SIGNING_STATUS_FAILED) </p></td>
                 </tr>
               
             </tbody>
@@ -1153,26 +1097,20 @@
               </tr>
             
               <tr>
-                <td>SIGNING_STATUS_ACCUMULATING</td>
-                <td>2</td>
-                <td><p>Signatures are being accumulated</p></td>
-              </tr>
-            
-              <tr>
                 <td>SIGNING_STATUS_COMPLETED</td>
-                <td>3</td>
+                <td>2</td>
                 <td><p>Signing process completed successfully with proof</p></td>
               </tr>
             
               <tr>
                 <td>SIGNING_STATUS_FAILED</td>
-                <td>4</td>
+                <td>3</td>
                 <td><p>Signing process failed</p></td>
               </tr>
             
               <tr>
                 <td>SIGNING_STATUS_TIMEOUT</td>
-                <td>5</td>
+                <td>4</td>
                 <td><p>Signing request timed out</p></td>
               </tr>
             

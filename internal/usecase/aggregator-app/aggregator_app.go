@@ -114,17 +114,17 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 	thresholdReached := current.VotingPower.Cmp(validatorSet.QuorumThreshold.Int) >= 0
 	if !thresholdReached {
 		slog.InfoContext(ctx, "Quorum not reached yet",
-			"currentVotingPower", current.VotingPower,
-			"quorumThreshold", validatorSet.QuorumThreshold,
-			"totalActiveVotingPower", validatorSet.GetTotalActiveVotingPower(),
+			"currentVotingPower", current.VotingPower.String(),
+			"quorumThreshold", validatorSet.QuorumThreshold.String(),
+			"totalActiveVotingPower", validatorSet.GetTotalActiveVotingPower().String(),
 		)
 		return nil
 	}
 
 	slog.InfoContext(ctx, "Quorum reached, aggregating signatures and creating proof",
-		"currentVotingPower", current.VotingPower,
-		"quorumThreshold", validatorSet.QuorumThreshold,
-		"totalActiveVotingPower", validatorSet.GetTotalActiveVotingPower(),
+		"currentVotingPower", current.VotingPower.String(),
+		"quorumThreshold", validatorSet.QuorumThreshold.String(),
+		"totalActiveVotingPower", validatorSet.GetTotalActiveVotingPower().String(),
 	)
 
 	if _, err := s.cfg.Repo.UpdateSignatureStat(ctx, msg.RequestHash, entity.SignatureStatStageAggQuorumReached, time.Now()); err != nil {
