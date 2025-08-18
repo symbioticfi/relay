@@ -88,73 +88,6 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create valset deriver: %w", err)
 	}
 
-	swarmPK, err := keyProvider.GetPrivateKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, entity.KeyTypeEcdsaSecp256k1, keyprovider.P2P_SWARM_NETWORK_KEY_ID)
-	if err != nil {
-		return errors.Errorf("failed to get P2P swarm private key: %w", err)
-	}
-
-	p2pIdentityPKRaw, err := keyProvider.GetPrivateKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, entity.KeyTypeEcdsaSecp256k1, keyprovider.P2P_HOST_IDENTITY_KEY_ID)
-	if err != nil && !errors.Is(err, keyprovider.ErrKeyNotFound) {
-		return errors.Errorf("failed to get P2P identity private key: %w", err)
-	}
-	if errors.Is(err, keyprovider.ErrKeyNotFound) {
-		slog.WarnContext(ctx, "P2P identity private key not found, generating a new one")
-		p2pIdentityPKRaw, err = symbioticCrypto.GeneratePrivateKey(entity.KeyTypeEcdsaSecp256k1)
-		if err != nil {
-			return errors.Errorf("failed to create P2P identity private key: %w", err)
-		}
-	}
-
-	p2pIdentityPK, err := crypto.UnmarshalSecp256k1PrivateKey(p2pIdentityPKRaw.Bytes())
-	if err != nil {
-		return errors.Errorf("failed to unmarshal P2P identity private key: %w", err)
-	}
-
-	opts := []libp2p.Option{
-		libp2p.Transport(tcp.NewTCPTransport),
-		libp2p.PrivateNetwork(swarmPK.Bytes()), // Use a private network with the provided swarm key
-		libp2p.Identity(p2pIdentityPK),         // Use the provided identity private key to sign messages that will be sent over the P2P gossip sub
-		libp2p.Security(noise.ID, noise.New),
-		libp2p.DefaultMuxers,
-	}
-	if cfg.P2PListenAddress != "" {
-		opts = append(opts, libp2p.ListenAddrStrings(cfg.P2PListenAddress))
-	}
-	h, err := libp2p.New(opts...)
-	if err != nil {
-		return errors.Errorf("failed to create libp2p host: %w", err)
-	}
-
-	p2pCfg := p2p.Config{
-		Host:      h,
-		Metrics:   mtr,
-		Discovery: p2p.DefaultDiscoveryConfig(),
-	}
-	if len(cfg.Bootnodes) > 0 {
-		p2pCfg.Discovery.BootstrapPeers = cfg.Bootnodes
-	}
-	p2pCfg.Discovery.DHTMode = cfg.DHTMode
-	p2pCfg.Discovery.EnableMDNS = cfg.MDnsEnabled
-
-	p2pService, err := p2p.NewService(ctx, p2pCfg)
-	if err != nil {
-		return errors.Errorf("failed to create p2p service: %w", err)
-	}
-	slog.InfoContext(ctx, "Created p2p service", "listenAddr", h.Addrs(), "id", h.ID().String())
-	defer p2pService.Close()
-
-	discoveryService, err := p2p.NewDiscoveryService(p2pCfg)
-	if err != nil {
-		return errors.Errorf("failed to create discovery service: %w", err)
-	}
-	slog.InfoContext(ctx, "Created discovery service", "listenAddr", cfg.P2PListenAddress)
-	if err := discoveryService.Start(ctx); err != nil {
-		return errors.Errorf("failed to start discovery service: %w", err)
-	}
-	defer discoveryService.Close(ctx)
-
-	slog.InfoContext(ctx, "Started discovery service", "listenAddr", cfg.P2PListenAddress)
-
 	repo, err := badger.New(badger.Config{Dir: cfg.StorageDir})
 	if err != nil {
 		return errors.Errorf("failed to create memory repository: %w", err)
@@ -174,32 +107,6 @@ func runApp(ctx context.Context) error {
 	if err != nil {
 		return errors.Errorf("failed to get config: %w", err)
 	}
-
-	var prover *proof.ZkProver
-	if config.VerificationType == entity.VerificationTypeBlsBn254ZK {
-		prover = proof.NewZkProver(cfg.CircuitsDir)
-	}
-	agg, err := aggregator.NewAggregator(config.VerificationType, prover)
-	if err != nil {
-		return errors.Errorf("failed to create aggregator: %w", err)
-	}
-
-	aggProofReadySignal := signals.New[entity.AggregatedSignatureMessage]()
-
-	signerApp, err := signerApp.NewSignerApp(signerApp.Config{
-		P2PService:     p2pService,
-		KeyProvider:    keyProvider,
-		Repo:           repo,
-		AggProofSignal: aggProofReadySignal,
-		Aggregator:     agg,
-		Metrics:        mtr,
-	})
-	if err != nil {
-		return errors.Errorf("failed to create signer app: %w", err)
-	}
-	p2pService.AddSignaturesAggregatedMessageListener(signerApp.HandleSignaturesAggregatedMessage, "signerAppSignaturesAggregatedListener")
-
-	slog.InfoContext(ctx, "Created signer app, starting")
 
 	growthStrategy, err := growthStrategy.NewGrowthStrategy(config.GrowthStrategy, evmClient)
 	if err != nil {
@@ -221,6 +128,46 @@ func runApp(ctx context.Context) error {
 	if err := listener.LoadAllMissingEpochs(ctx); err != nil {
 		return errors.Errorf("failed to load missing epochs: %w", err)
 	}
+
+	var prover *proof.ZkProver
+	if config.VerificationType == entity.VerificationTypeBlsBn254ZK {
+		prover = proof.NewZkProver(cfg.CircuitsDir)
+	}
+	agg, err := aggregator.NewAggregator(config.VerificationType, prover)
+	if err != nil {
+		return errors.Errorf("failed to create aggregator: %w", err)
+	}
+
+	p2pService, discoveryService, err := initP2PService(ctx, cfg, keyProvider, mtr)
+	if err != nil {
+		return errors.Errorf("failed to create p2p service: %w", err)
+	}
+	defer p2pService.Close()
+
+	slog.InfoContext(ctx, "Created discovery service", "listenAddr", cfg.P2PListenAddress)
+	if err := discoveryService.Start(ctx); err != nil {
+		return errors.Errorf("failed to start discovery service: %w", err)
+	}
+	defer discoveryService.Close(ctx)
+
+	slog.InfoContext(ctx, "Started discovery service", "listenAddr", cfg.P2PListenAddress)
+
+	aggProofReadySignal := signals.New[entity.AggregatedSignatureMessage]()
+
+	signerApp, err := signerApp.NewSignerApp(signerApp.Config{
+		P2PService:     p2pService,
+		KeyProvider:    keyProvider,
+		Repo:           repo,
+		AggProofSignal: aggProofReadySignal,
+		Aggregator:     agg,
+		Metrics:        mtr,
+	})
+	if err != nil {
+		return errors.Errorf("failed to create signer app: %w", err)
+	}
+	p2pService.AddSignaturesAggregatedMessageListener(signerApp.HandleSignaturesAggregatedMessage, "signerAppSignaturesAggregatedListener")
+
+	slog.InfoContext(ctx, "Created signer app, starting")
 
 	generator, err := valsetGenerator.New(valsetGenerator.Config{
 		Signer:          signerApp,
@@ -322,4 +269,67 @@ func runApp(ctx context.Context) error {
 	}
 
 	return eg.Wait()
+}
+
+func initP2PService(ctx context.Context, cfg config, keyProvider keyprovider.KeyProvider, mtr *metrics.Metrics) (*p2p.Service, *p2p.DiscoveryService, error) {
+	swarmPK, err := keyProvider.GetPrivateKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, entity.KeyTypeEcdsaSecp256k1, keyprovider.P2P_SWARM_NETWORK_KEY_ID)
+	if err != nil {
+		return nil, nil, errors.Errorf("failed to get P2P swarm private key: %w", err)
+	}
+
+	p2pIdentityPKRaw, err := keyProvider.GetPrivateKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, entity.KeyTypeEcdsaSecp256k1, keyprovider.P2P_HOST_IDENTITY_KEY_ID)
+	if err != nil && !errors.Is(err, keyprovider.ErrKeyNotFound) {
+		return nil, nil, errors.Errorf("failed to get P2P identity private key: %w", err)
+	}
+	if errors.Is(err, keyprovider.ErrKeyNotFound) {
+		slog.WarnContext(ctx, "P2P identity private key not found, generating a new one")
+		p2pIdentityPKRaw, err = symbioticCrypto.GeneratePrivateKey(entity.KeyTypeEcdsaSecp256k1)
+		if err != nil {
+			return nil, nil, errors.Errorf("failed to create P2P identity private key: %w", err)
+		}
+	}
+
+	p2pIdentityPK, err := crypto.UnmarshalSecp256k1PrivateKey(p2pIdentityPKRaw.Bytes())
+	if err != nil {
+		return nil, nil, errors.Errorf("failed to unmarshal P2P identity private key: %w", err)
+	}
+
+	opts := []libp2p.Option{
+		libp2p.Transport(tcp.NewTCPTransport),
+		libp2p.PrivateNetwork(swarmPK.Bytes()), // Use a private network with the provided swarm key
+		libp2p.Identity(p2pIdentityPK),         // Use the provided identity private key to sign messages that will be sent over the P2P gossip sub
+		libp2p.Security(noise.ID, noise.New),
+		libp2p.DefaultMuxers,
+	}
+	if cfg.P2PListenAddress != "" {
+		opts = append(opts, libp2p.ListenAddrStrings(cfg.P2PListenAddress))
+	}
+	h, err := libp2p.New(opts...)
+	if err != nil {
+		return nil, nil, errors.Errorf("failed to create libp2p host: %w", err)
+	}
+
+	p2pCfg := p2p.Config{
+		Host:      h,
+		Metrics:   mtr,
+		Discovery: p2p.DefaultDiscoveryConfig(),
+	}
+	if len(cfg.Bootnodes) > 0 {
+		p2pCfg.Discovery.BootstrapPeers = cfg.Bootnodes
+	}
+	p2pCfg.Discovery.DHTMode = cfg.DHTMode
+	p2pCfg.Discovery.EnableMDNS = cfg.MDnsEnabled
+
+	p2pService, err := p2p.NewService(ctx, p2pCfg)
+	if err != nil {
+		return nil, nil, errors.Errorf("failed to create p2p service: %w", err)
+	}
+	slog.InfoContext(ctx, "Created p2p service", "listenAddr", h.Addrs(), "id", h.ID().String())
+
+	discoveryService, err := p2p.NewDiscoveryService(p2pCfg)
+	if err != nil {
+		return nil, nil, errors.Errorf("failed to create discovery service: %w", err)
+	}
+
+	return p2pService, discoveryService, nil
 }
