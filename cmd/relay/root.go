@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"time"
 
+	growthStrategy "github.com/symbioticfi/relay/core/usecase/growth-strategy"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p"
@@ -22,7 +24,7 @@ import (
 	"github.com/symbioticfi/relay/internal/client/p2p"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
 	aggregatorApp "github.com/symbioticfi/relay/internal/usecase/aggregator-app"
-	apiApp "github.com/symbioticfi/relay/internal/usecase/api-app"
+	api_server "github.com/symbioticfi/relay/internal/usecase/api-server"
 	"github.com/symbioticfi/relay/internal/usecase/metrics"
 	signerApp "github.com/symbioticfi/relay/internal/usecase/signer-app"
 	valsetGenerator "github.com/symbioticfi/relay/internal/usecase/valset-generator"
@@ -199,11 +201,17 @@ func runApp(ctx context.Context) error {
 
 	slog.InfoContext(ctx, "Created signer app, starting")
 
+	growthStrategy, err := growthStrategy.NewGrowthStrategy(config.GrowthStrategy, evmClient)
+	if err != nil {
+		return errors.Errorf("failed to create growth strategy: %w", err)
+	}
+
 	listener, err := valsetListener.New(valsetListener.Config{
 		EvmClient:       evmClient,
 		Repo:            repo,
 		Deriver:         deriver,
 		PollingInterval: time.Second * 5,
+		GrowthStrategy:  growthStrategy,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create epoch listener: %w", err)
@@ -222,6 +230,7 @@ func runApp(ctx context.Context) error {
 		Aggregator:      agg,
 		PollingInterval: time.Second * 5,
 		IsCommitter:     cfg.IsCommitter,
+		GrowthStrategy:  growthStrategy,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create epoch listener: %w", err)
@@ -271,11 +280,11 @@ func runApp(ctx context.Context) error {
 	}
 
 	serveMetricsOnAPIAddress := cfg.HTTPListenAddr == cfg.MetricsListenAddr || cfg.MetricsListenAddr == ""
-	api, err := apiApp.NewAPIApp(apiApp.Config{
+
+	api, err := api_server.NewSymbioticServer(ctx, api_server.Config{
 		Address:           cfg.HTTPListenAddr,
-		ReadHeaderTimeout: time.Second,
 		ShutdownTimeout:   time.Second * 5,
-		Prefix:            "/api/v1",
+		ReadHeaderTimeout: time.Second,
 		Signer:            signerApp,
 		Repo:              repo,
 		EvmClient:         evmClient,

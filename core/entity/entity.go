@@ -17,10 +17,14 @@ import (
 )
 
 type VerificationType uint32
+type GrowthStrategyType uint32
 
 const (
 	VerificationTypeBlsBn254ZK     VerificationType = 0
 	VerificationTypeBlsBn254Simple VerificationType = 1
+
+	GrowthStrategyAsync GrowthStrategyType = 0
+	GrowthStrategySync  GrowthStrategyType = 1
 )
 
 var (
@@ -176,13 +180,7 @@ type AggregationState struct {
 }
 
 func (vt VerificationType) MarshalText() (text []byte, err error) {
-	switch vt {
-	case VerificationTypeBlsBn254ZK:
-		return []byte(fmt.Sprintf("%d (BLS-BN254-ZK)", uint32(vt))), nil
-	case VerificationTypeBlsBn254Simple:
-		return []byte(fmt.Sprintf("%d (BLS-BN254-SIMPLE)", uint32(vt))), nil
-	}
-	return []byte(fmt.Sprintf("%d (UNKNOWN)", uint32(vt))), nil
+	return []byte(vt.String()), nil
 }
 
 func (vt VerificationType) String() string {
@@ -193,6 +191,20 @@ func (vt VerificationType) String() string {
 		return fmt.Sprintf("%d (BLS-BN254-SIMPLE)", uint32(vt))
 	}
 	return fmt.Sprintf("%d (UNKNOWN)", uint32(vt))
+}
+
+func (gst GrowthStrategyType) MarshalText() (text []byte, err error) {
+	return []byte(gst.String()), nil
+}
+
+func (gst GrowthStrategyType) String() string {
+	switch gst {
+	case GrowthStrategyAsync:
+		return fmt.Sprintf("%d GROWTH-STRATEGY-NEWEST", uint32(gst))
+	case GrowthStrategySync:
+		return fmt.Sprintf("%d GROWTH-STRATEGY-SYNC", uint32(gst))
+	}
+	return fmt.Sprintf("%d (UNKNOWN)", uint32(gst))
 }
 
 type CrossChainAddress struct {
@@ -216,6 +228,8 @@ type NetworkConfig struct {
 	RequiredKeyTags         []KeyTag
 	RequiredHeaderKeyTag    KeyTag
 	QuorumThresholds        []QuorumThreshold
+	MaxMissingEpochs        uint64
+	GrowthStrategy          GrowthStrategyType
 }
 
 type NetworkData struct {

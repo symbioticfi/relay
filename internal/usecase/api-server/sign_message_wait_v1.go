@@ -1,0 +1,74 @@
+package api_server
+
+import (
+	"time"
+
+	"github.com/ethereum/go-ethereum/common"
+	"google.golang.org/grpc"
+
+	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
+)
+
+// SignMessageWait handles the streaming gRPC SignMessageWait request
+func (h *grpcHandler) SignMessageWait(req *apiv1.SignMessageWaitRequest, stream grpc.ServerStreamingServer[apiv1.SignMessageWaitResponse]) error {
+	ctx := stream.Context()
+
+	// First, sign the message
+	sigReq := &apiv1.SignMessageRequest{
+		KeyTag:        req.GetKeyTag(),
+		Message:       req.GetMessage(),
+		RequiredEpoch: req.RequiredEpoch,
+	}
+	signResp, err := h.SignMessage(ctx, sigReq)
+	if err != nil {
+		return err
+	}
+
+	// Send initial pending status
+	err = stream.Send(&apiv1.SignMessageWaitResponse{
+		Status:      apiv1.SigningStatus_SIGNING_STATUS_PENDING,
+		RequestHash: signResp.GetRequestHash(),
+		Epoch:       signResp.GetEpoch(),
+	})
+	if err != nil {
+		return err
+	}
+
+	// Poll for aggregation status and proof
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	// TODO: decide timeout
+	timeout := time.NewTimer(5 * time.Minute)
+	defer timeout.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-timeout.C:
+			return stream.Send(&apiv1.SignMessageWaitResponse{
+				Status:      apiv1.SigningStatus_SIGNING_STATUS_TIMEOUT,
+				RequestHash: signResp.GetRequestHash(),
+				Epoch:       signResp.GetEpoch(),
+			})
+		case <-ticker.C:
+			// Check for aggregation proof
+			reqHash := signResp.GetRequestHash()
+			proof, err := h.cfg.Repo.GetAggregationProof(ctx, common.HexToHash(reqHash))
+			if err == nil {
+				// Success - send final proof
+				return stream.Send(&apiv1.SignMessageWaitResponse{
+					Status:      apiv1.SigningStatus_SIGNING_STATUS_COMPLETED,
+					RequestHash: signResp.GetRequestHash(),
+					Epoch:       signResp.GetEpoch(),
+					AggregationProof: &apiv1.AggregationProof{
+						VerificationType: uint32(proof.VerificationType),
+						MessageHash:      proof.MessageHash,
+						Proof:            proof.Proof,
+					},
+				})
+			}
+		}
+	}
+}

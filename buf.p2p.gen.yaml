@@ -1,0 +1,10 @@
+version: v2
+inputs:
+  - directory: internal/client/p2p/proto
+managed:
+  enabled: true
+plugins:
+  - local: protoc-gen-go
+    out: internal/client/p2p/proto
+    opt:
+      - paths=source_relative

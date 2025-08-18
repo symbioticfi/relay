@@ -2,30 +2,46 @@ package p2p
 
 import (
 	"context"
-	"encoding/json"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
+	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/symbioticfi/relay/core/entity"
 	p2pEntity "github.com/symbioticfi/relay/internal/entity"
 )
 
 func (s *Service) handleSignatureReadyMessage(ctx context.Context, pubSubMsg *pubsub.Message) error {
-	var signatureGenerated signatureGeneratedDTO
+	var signatureGenerated prototypes.SignatureGenerated
 	err := unmarshalMessage(pubSubMsg, &signatureGenerated)
 	if err != nil {
 		return errors.Errorf("failed to unmarshal signatureGenerated message: %w", err)
 	}
 
+	// Validate the signatureGenerated message
+	if len(signatureGenerated.GetRequestHash()) > maxRequestHashSize {
+		return errors.Errorf("request hash size exceeds maximum allowed size: %d bytes", maxRequestHashSize)
+	}
+	if len(signatureGenerated.GetSignature().GetPublicKey()) > maxPubKeySize {
+		return errors.Errorf("public key size exceeds maximum allowed size: %d bytes", maxPubKeySize)
+	}
+	if len(signatureGenerated.GetSignature().GetSignature()) > maxSignatureSize {
+		return errors.Errorf("signature size exceeds maximum allowed size: %d bytes", maxSignatureSize)
+	}
+	if len(signatureGenerated.GetSignature().GetMessageHash()) > maxMsgHashSize {
+		return errors.Errorf("message hash size exceeds maximum allowed size: %d bytes", maxMsgHashSize)
+	}
+
 	msg := entity.SignatureMessage{
-		RequestHash: signatureGenerated.RequestHash,
-		KeyTag:      entity.KeyTag(signatureGenerated.KeyTag),
-		Epoch:       entity.Epoch(signatureGenerated.Epoch),
+		RequestHash: common.BytesToHash(signatureGenerated.GetRequestHash()),
+		KeyTag:      entity.KeyTag(signatureGenerated.GetKeyTag()),
+		Epoch:       entity.Epoch(signatureGenerated.GetEpoch()),
 		Signature: entity.SignatureExtended{
-			PublicKey:   signatureGenerated.Signature.PublicKey,
-			Signature:   signatureGenerated.Signature.Signature,
-			MessageHash: signatureGenerated.Signature.MessageHash,
+			PublicKey:   signatureGenerated.GetSignature().GetPublicKey(),
+			Signature:   signatureGenerated.GetSignature().GetSignature(),
+			MessageHash: signatureGenerated.GetSignature().GetMessageHash(),
 		},
 	}
 
@@ -43,20 +59,31 @@ func (s *Service) handleSignatureReadyMessage(ctx context.Context, pubSubMsg *pu
 }
 
 func (s *Service) handleAggregatedProofReadyMessage(ctx context.Context, pubSubMsg *pubsub.Message) error {
-	var signaturesAggregated signaturesAggregatedDTO
+	var signaturesAggregated prototypes.SignaturesAggregated
 	err := unmarshalMessage(pubSubMsg, &signaturesAggregated)
 	if err != nil {
 		return errors.Errorf("failed to unmarshal signatureGenerated message: %w", err)
 	}
 
+	// Validate the signaturesAggregated message
+	if len(signaturesAggregated.GetRequestHash()) > maxRequestHashSize {
+		return errors.Errorf("request hash size exceeds maximum allowed size: %d bytes", maxRequestHashSize)
+	}
+	if len(signaturesAggregated.GetAggregationProof().GetMessageHash()) > maxMsgHashSize {
+		return errors.Errorf("aggregation proof message hash size exceeds maximum allowed size: %d bytes", maxMsgHashSize)
+	}
+	if len(signaturesAggregated.GetAggregationProof().GetProof()) > maxProofSize {
+		return errors.Errorf("aggregation proof size exceeds maximum allowed size: %d bytes", maxProofSize)
+	}
+
 	msg := entity.AggregatedSignatureMessage{
-		RequestHash: signaturesAggregated.RequestHash,
-		KeyTag:      entity.KeyTag(signaturesAggregated.KeyTag),
-		Epoch:       entity.Epoch(signaturesAggregated.Epoch),
+		RequestHash: common.BytesToHash(signaturesAggregated.GetRequestHash()),
+		KeyTag:      entity.KeyTag(signaturesAggregated.GetKeyTag()),
+		Epoch:       entity.Epoch(signaturesAggregated.GetEpoch()),
 		AggregationProof: entity.AggregationProof{
-			VerificationType: entity.VerificationType(signaturesAggregated.AggregationProof.VerificationType),
-			MessageHash:      signaturesAggregated.AggregationProof.MessageHash,
-			Proof:            signaturesAggregated.AggregationProof.Proof,
+			VerificationType: entity.VerificationType(signaturesAggregated.GetAggregationProof().GetVerificationType()),
+			MessageHash:      signaturesAggregated.GetAggregationProof().GetMessageHash(),
+			Proof:            signaturesAggregated.GetAggregationProof().GetProof(),
 		},
 	}
 
@@ -91,13 +118,13 @@ func extractSenderInfo(pubSubMsg *pubsub.Message) (p2pEntity.SenderInfo, error) 
 	}, nil
 }
 
-func unmarshalMessage(msg *pubsub.Message, v interface{}) error {
-	var message p2pMessage
-	if err := json.Unmarshal(msg.GetData(), &message); err != nil {
+func unmarshalMessage(msg *pubsub.Message, v proto.Message) error {
+	var message prototypes.P2PMessage
+	if err := proto.Unmarshal(msg.GetData(), &message); err != nil {
 		return errors.Errorf("failed to unmarshal message: %w", err)
 	}
 
-	if err := json.Unmarshal(message.Data, v); err != nil {
+	if err := proto.Unmarshal(message.GetData(), v); err != nil {
 		return errors.Errorf("failed to unmarshal message: %w", err)
 	}
 
