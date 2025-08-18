@@ -15,7 +15,7 @@ require (
 	github.com/libp2p/go-libp2p-kad-dht v0.33.1
 	github.com/libp2p/go-libp2p-pubsub v0.14.2
 	github.com/maniartech/signals v1.2.0
-	github.com/multiformats/go-multiaddr v0.16.0
+	github.com/multiformats/go-multiaddr v0.16.1
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
 	github.com/prometheus/client_golang v1.22.0
 	github.com/pterm/pterm v0.12.81
