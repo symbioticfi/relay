@@ -6,7 +6,7 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 	types "github.com/symbioticfi/relay/core/usecase/aggregator/aggregator-types"
 	"github.com/symbioticfi/relay/core/usecase/aggregator/helpers"
-	"github.com/symbioticfi/relay/pkg/bls"
+	"github.com/symbioticfi/relay/core/usecase/crypto/blsBn254"
 	"github.com/symbioticfi/relay/pkg/proof"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
@@ -35,24 +35,25 @@ func (a Aggregator) Aggregate(
 		return entity.AggregationProof{}, errors.New("message hashes mismatch")
 	}
 
-	aggG1Sig := bls.ZeroG1()
-	aggG2Key := bls.ZeroG2()
+	aggG1Sig := new(bn254.G1Affine)
+	aggG2Key := new(bn254.G2Affine)
 	signers := make(map[common.Address]bool)
 	for _, sig := range signatures {
-		g1, g2Key, err := bls.UnpackPublicG1G2(sig.PublicKey)
+		pubKey, err := blsBn254.FromRaw(sig.PublicKey)
 		if err != nil {
 			return entity.AggregationProof{}, err
 		}
-		val, ok := valset.FindValidatorByKey(keyTag, g1.Marshal())
+		val, ok := valset.FindValidatorByKey(keyTag, pubKey.OnChain())
 		if !ok {
 			return entity.AggregationProof{}, errors.New("failed to find validator by key")
 		}
-		g1Sig, err := bls.DeserializeG1(sig.Signature)
+		g1Sig := new(bn254.G1Affine)
+		_, err = g1Sig.SetBytes(sig.Signature)
 		if err != nil {
 			return entity.AggregationProof{}, err
 		}
-		aggG1Sig = aggG1Sig.Add(g1Sig)
-		aggG2Key = aggG2Key.Add(&g2Key)
+		aggG1Sig = aggG1Sig.Add(aggG1Sig, g1Sig)
+		aggG2Key = aggG2Key.Add(aggG2Key, pubKey.G2())
 		signers[val.Operator] = true
 	}
 
@@ -64,20 +65,21 @@ func (a Aggregator) Aggregate(
 				return entity.AggregationProof{}, errors.New("failed to find key by keyTag")
 			}
 			_, isSinger := signers[val.Operator]
-			g1Key, err := bls.DeserializeG1(keyBytes)
+			g1Key := new(bn254.G1Affine)
+			_, err := g1Key.SetBytes(keyBytes)
 			if err != nil {
 				return entity.AggregationProof{}, errors.Errorf("failed to deserialize G1 key: %w", err)
 			}
 
 			validatorsData = append(validatorsData, proof.ValidatorData{
-				Key:         *g1Key.G1Affine,
+				Key:         *g1Key,
 				IsNonSigner: !isSinger,
 				VotingPower: val.VotingPower.Int,
 			})
 		}
 	}
 
-	messageG1, err := bls.HashToG1(messageHash)
+	messageG1, err := blsBn254.HashToG1(messageHash)
 	if err != nil {
 		return entity.AggregationProof{}, err
 	}
@@ -86,8 +88,8 @@ func (a Aggregator) Aggregate(
 	proverInput := proof.ProveInput{
 		ValidatorData:   proof.NormalizeValset(validatorsData),
 		MessageG1:       messageG1Bn254,
-		Signature:       *aggG1Sig.G1Affine,
-		SignersAggKeyG2: *aggG2Key.G2Affine,
+		Signature:       *aggG1Sig,
+		SignersAggKeyG2: *aggG2Key,
 	}
 
 	proofData, err := a.prover.Prove(proverInput)
@@ -121,7 +123,7 @@ func (a Aggregator) Verify(
 	// last 32 bytes is aggVotingPowerBytes
 	aggVotingPowerBytes := aggregationProof.Proof[len(aggregationProof.Proof)-32:]
 
-	messageG1, err := bls.HashToG1(aggregationProof.MessageHash)
+	messageG1, err := blsBn254.HashToG1(aggregationProof.MessageHash)
 	if err != nil {
 		return false, errors.Errorf("failed to hash message to G1: %w", err)
 	}
@@ -197,11 +199,12 @@ func toValidatorsData(signerValidators []entity.Validator, allValidators []entit
 	for i := range activeValidators {
 		for _, key := range activeValidators[i].Keys {
 			if key.Tag == requiredKeyTag {
-				g1, err := bls.DeserializeG1(key.Payload)
+				g1 := new(bn254.G1Affine)
+				_, err := g1.SetBytes(key.Payload)
 				if err != nil {
 					return nil, errors.Errorf("failed to deserialize G1: %w", err)
 				}
-				validatorData := proof.ValidatorData{Key: *g1.G1Affine, VotingPower: activeValidators[i].VotingPower.Int, IsNonSigner: true}
+				validatorData := proof.ValidatorData{Key: *g1, VotingPower: activeValidators[i].VotingPower.Int, IsNonSigner: true}
 
 				for _, signer := range signerValidators {
 					if signer.Operator.Cmp(activeValidators[i].Operator) == 0 {

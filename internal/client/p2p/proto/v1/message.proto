@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package internal.client.p2p.proto.v1;
+
+option go_package = "github.com/symbioticfi/relay/internal/client/p2p/proto/v1";
+
+// AggregationProof represents the aggregation proof data
+message AggregationProof {
+  uint32 verification_type = 1;
+  bytes message_hash = 2;
+  bytes proof = 3;
+}
+
+// SignaturesAggregated represents the aggregated signatures message
+message SignaturesAggregated {
+  bytes request_hash = 1;  // 32 bytes fixed length
+  uint32 key_tag = 2;
+  uint64 epoch = 3;
+  AggregationProof aggregation_proof = 4;
+}
+
+// Signature represents individual signature data
+message Signature {
+  bytes message_hash = 1;
+  bytes signature = 2;
+  bytes public_key = 3;
+}
+
+// SignatureGenerated represents the signature generated message
+message SignatureGenerated {
+  bytes request_hash = 1;  // 32 bytes fixed length
+  uint32 key_tag = 2;
+  uint64 epoch = 3;
+  Signature signature = 4;
+}
+
+// P2PMessage represents a peer-to-peer message wrapper
+message P2PMessage {
+  string sender = 1;
+  int64 timestamp = 2;
+  bytes data = 3;
+}

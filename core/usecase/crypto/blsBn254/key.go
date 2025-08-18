@@ -67,7 +67,7 @@ func (k *PrivateKey) Sign(msg []byte) (Signature, MessageHash, error) {
 	// symbiotic using keccak256 for hashing in bls-bn254
 	hash := Hash(msg)
 
-	g1Hash, err := hashToG1(hash)
+	g1Hash, err := HashToG1(hash)
 	if err != nil {
 		return nil, nil, errors.Errorf("blsBn254: failed to map hash to G1: %w", err)
 	}
@@ -79,7 +79,7 @@ func (k *PrivateKey) Sign(msg []byte) (Signature, MessageHash, error) {
 	return g1Sig.Marshal(), hash, nil
 }
 
-func hashToG1(data []byte) (*bn254.G1Affine, error) {
+func HashToG1(data []byte) (*bn254.G1Affine, error) {
 	// Convert data to a big integer
 	x := new(big.Int).SetBytes(data)
 
@@ -163,7 +163,7 @@ func (k *PublicKey) Verify(msg Message, sig Signature) error {
 	msgHash := Hash(msg)
 
 	// Hash the message to a point on G1
-	g1Hash, err := hashToG1(msgHash)
+	g1Hash, err := HashToG1(msgHash)
 	if err != nil {
 		return errors.Errorf("blsBn254: failed to hash message to G1: %w", err)
 	}
@@ -199,7 +199,7 @@ func (k *PublicKey) VerifyWithHash(msgHash MessageHash, sig Signature) error {
 	}
 
 	// Hash the message to a point on G1
-	g1Hash, err := hashToG1(msgHash)
+	g1Hash, err := HashToG1(msgHash)
 	if err != nil {
 		return errors.Errorf("blsBn254: failed to hash message to G1: %w", err)
 	}
@@ -240,6 +240,10 @@ func (k *PublicKey) Raw() RawPublicKey {
 
 	// combined g1 and g2 [compressed]
 	return append(g1Bytes[:], g2Bytes[:]...)
+}
+
+func (k *PublicKey) G2() *bn254.G2Affine {
+	return &k.g2PubKey
 }
 
 func (k *PublicKey) MarshalText() (text []byte, err error) {
