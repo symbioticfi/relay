@@ -150,7 +150,7 @@ func (s *Service) process(ctx context.Context) error {
 		return nil
 	}
 
-	if config.MaxMissingEpochs != 0 && latestValset.Epoch-valSet.Epoch > config.MaxMissingEpochs {
+	if config.MaxMissingEpochs != 0 && latestValset.Epoch > valSet.Epoch+config.MaxMissingEpochs {
 		return errors.Errorf("exceed missing epochs, latest committed: %d, current: %d", latestValset.Epoch, valSet.Epoch)
 	}
 

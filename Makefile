@@ -6,7 +6,7 @@ TAG ?=
 
 ifeq ($(strip $(TAG)),)
 	CURRENT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
-	PSEUDO_VERSION := $(shell go list -f {{.Version}} -m ${PACKAGE}@${CURRENT_BRANCH})
+	PSEUDO_VERSION := $(shell go list -f {{.Version}} -m ${PACKAGE}@${CURRENT_BRANCH} 2>/dev/null || echo "unspecified-$(CURRENT_BRANCH)")
 	# Trim the `v` prefix from golang pseudo version as the TAG if not set
 	FINAL_TAG := $(shell echo $(PSEUDO_VERSION) | sed 's/^v//' | sed 's/-0\./-/')
 else
