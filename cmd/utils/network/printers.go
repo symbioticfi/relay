@@ -18,8 +18,9 @@ import (
 )
 
 type settlementReplicaData struct {
-	IsCommitted bool
-	HeaderHash  common.Hash
+	IsCommitted  bool
+	HeaderHash   common.Hash
+	MissedEpochs uint64
 }
 
 func printAddresses(driver entity.CrossChainAddress, networkConfig *entity.NetworkConfig) string {
@@ -210,7 +211,7 @@ func printSettlementData(
 	committedEpoch uint64,
 ) string {
 	tableData := pterm.TableData{
-		{"Address", "ChainID", "Status", "Integrity", "Latest Committed Epoch", "Header hash"},
+		{"Address", "ChainID", "Status", "Integrity", "Latest Committed Epoch", "Missed Epochs", "Header hash"},
 	}
 
 	for i, replica := range networkConfig.Replicas {
@@ -239,6 +240,7 @@ func printSettlementData(
 			status,
 			integrity,
 			strconv.FormatUint(committedEpoch, 10),
+			strconv.FormatUint(settlementData[i].MissedEpochs, 10),
 			hash,
 		})
 	}

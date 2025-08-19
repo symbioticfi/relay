@@ -114,7 +114,6 @@ var infoCmd = &cobra.Command{
 			eg, egCtx := errgroup.WithContext(ctx)
 			eg.SetLimit(5)
 			for i, replica := range networkConfig.Replicas {
-				i, replica := i, replica // capture loop variables
 				eg.Go(func() error {
 					isCommitted, err := evmClient.IsValsetHeaderCommittedAt(egCtx, replica, epoch)
 					if err != nil {
@@ -129,6 +128,19 @@ var infoCmd = &cobra.Command{
 						}
 						settlementData[i].HeaderHash = headerHash
 					}
+
+					// Calculate missed epochs by checking all epochs from 0 to current epoch
+					var missedCount uint64
+					for epochNum := uint64(0); epochNum <= epoch; epochNum++ {
+						committed, err := evmClient.IsValsetHeaderCommittedAt(egCtx, replica, epochNum)
+						if err != nil {
+							return errors.Errorf("Failed to check epoch %d commitment: %w", epochNum, err)
+						}
+						if !committed {
+							missedCount++
+						}
+					}
+					settlementData[i].MissedEpochs = missedCount
 					return nil
 				})
 			}
