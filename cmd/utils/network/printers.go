@@ -17,6 +17,11 @@ import (
 	"github.com/samber/lo"
 )
 
+type SettlementReplicaData struct {
+	IsCommitted bool
+	HeaderHash  common.Hash
+}
+
 func printAddresses(driver entity.CrossChainAddress, networkConfig *entity.NetworkConfig) string {
 	addressesTableData := pterm.TableData{
 		{"Type", "Chain ID", "Address"},
@@ -201,8 +206,7 @@ func printHeaderWithExtraDataToJSON(validatorSetHeader entity.ValidatorSetHeader
 func printSettlementData(
 	valsetHeader entity.ValidatorSetHeader,
 	networkConfig entity.NetworkConfig,
-	isCommitted []bool,
-	headerHashes []common.Hash,
+	settlementData []SettlementReplicaData,
 	committedEpoch uint64,
 ) string {
 	tableData := pterm.TableData{
@@ -212,9 +216,9 @@ func printSettlementData(
 	for i, replica := range networkConfig.Replicas {
 		hash := "N/A"
 		status := "Missing"
-		if isCommitted[i] {
+		if settlementData[i].IsCommitted {
 			status = "Committed"
-			hash = headerHashes[i].String()
+			hash = settlementData[i].HeaderHash.String()
 		}
 
 		expectedHash, err := valsetHeader.Hash()
@@ -223,9 +227,9 @@ func printSettlementData(
 		}
 
 		integrity := "N/A"
-		if isCommitted[i] && headerHashes[i] != expectedHash {
+		if settlementData[i].IsCommitted && settlementData[i].HeaderHash != expectedHash {
 			integrity = "Failed"
-		} else if isCommitted[i] && headerHashes[i] == expectedHash {
+		} else if settlementData[i].IsCommitted && settlementData[i].HeaderHash == expectedHash {
 			integrity = "Ok"
 		}
 

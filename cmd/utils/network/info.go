@@ -108,15 +108,14 @@ var infoCmd = &cobra.Command{
 
 		// row with settlements info
 		if infoFlags.Settlement {
-			isCommitted := make([]bool, len(networkConfig.Replicas))
-			headerHashes := make([]common.Hash, len(networkConfig.Replicas))
+			settlementData := make([]SettlementReplicaData, len(networkConfig.Replicas))
 			for i, replica := range networkConfig.Replicas {
-				isCommitted[i], err = evmClient.IsValsetHeaderCommittedAt(ctx, replica, epoch)
+				settlementData[i].IsCommitted, err = evmClient.IsValsetHeaderCommittedAt(ctx, replica, epoch)
 				if err != nil {
 					return errors.Errorf("Failed to get latest epoch: %w", err)
 				}
-				if isCommitted[i] {
-					headerHashes[i], err = evmClient.GetHeaderHashAt(ctx, replica, epoch)
+				if settlementData[i].IsCommitted {
+					settlementData[i].HeaderHash, err = evmClient.GetHeaderHashAt(ctx, replica, epoch)
 					if err != nil {
 						return errors.Errorf("Failed to get header hash: %w", err)
 					}
@@ -128,7 +127,7 @@ var infoCmd = &cobra.Command{
 			}
 			panels = append(panels, []pterm.Panel{
 				{Data: pterm.DefaultBox.WithTitle("Settlement").Sprint(
-					printSettlementData(header, networkConfig, isCommitted, headerHashes, committedEpoch),
+					printSettlementData(header, networkConfig, settlementData, committedEpoch),
 				)},
 			})
 		}
