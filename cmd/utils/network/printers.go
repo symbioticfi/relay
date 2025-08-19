@@ -17,7 +17,7 @@ import (
 	"github.com/samber/lo"
 )
 
-type SettlementReplicaData struct {
+type settlementReplicaData struct {
 	IsCommitted bool
 	HeaderHash  common.Hash
 }
@@ -206,7 +206,7 @@ func printHeaderWithExtraDataToJSON(validatorSetHeader entity.ValidatorSetHeader
 func printSettlementData(
 	valsetHeader entity.ValidatorSetHeader,
 	networkConfig entity.NetworkConfig,
-	settlementData []SettlementReplicaData,
+	settlementData []settlementReplicaData,
 	committedEpoch uint64,
 ) string {
 	tableData := pterm.TableData{

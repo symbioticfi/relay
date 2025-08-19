@@ -13,6 +13,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 )
 
 var infoCmd = &cobra.Command{
@@ -108,18 +109,32 @@ var infoCmd = &cobra.Command{
 
 		// row with settlements info
 		if infoFlags.Settlement {
-			settlementData := make([]SettlementReplicaData, len(networkConfig.Replicas))
+			settlementData := make([]settlementReplicaData, len(networkConfig.Replicas))
+
+			eg, egCtx := errgroup.WithContext(ctx)
+			eg.SetLimit(5)
 			for i, replica := range networkConfig.Replicas {
-				settlementData[i].IsCommitted, err = evmClient.IsValsetHeaderCommittedAt(ctx, replica, epoch)
-				if err != nil {
-					return errors.Errorf("Failed to get latest epoch: %w", err)
-				}
-				if settlementData[i].IsCommitted {
-					settlementData[i].HeaderHash, err = evmClient.GetHeaderHashAt(ctx, replica, epoch)
+				i, replica := i, replica // capture loop variables
+				eg.Go(func() error {
+					isCommitted, err := evmClient.IsValsetHeaderCommittedAt(egCtx, replica, epoch)
 					if err != nil {
-						return errors.Errorf("Failed to get header hash: %w", err)
+						return errors.Errorf("Failed to get latest epoch: %w", err)
 					}
-				}
+					settlementData[i].IsCommitted = isCommitted
+
+					if isCommitted {
+						headerHash, err := evmClient.GetHeaderHashAt(egCtx, replica, epoch)
+						if err != nil {
+							return errors.Errorf("Failed to get header hash: %w", err)
+						}
+						settlementData[i].HeaderHash = headerHash
+					}
+					return nil
+				})
+			}
+
+			if err := eg.Wait(); err != nil {
+				return err
 			}
 			header, err := valset.GetHeader()
 			if err != nil {
