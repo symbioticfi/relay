@@ -15,23 +15,23 @@ type ValidatorSetStatus = apiv1.ValidatorSetStatus
 // Enum constants
 const (
 	// ErrorCode values
-	ErrorCode_ERROR_CODE_UNSPECIFIED = apiv1.ErrorCode_ERROR_CODE_UNSPECIFIED
-	ErrorCode_ERROR_CODE_NO_DATA = apiv1.ErrorCode_ERROR_CODE_NO_DATA
-	ErrorCode_ERROR_CODE_INTERNAL = apiv1.ErrorCode_ERROR_CODE_INTERNAL
+	ErrorCode_ERROR_CODE_UNSPECIFIED    = apiv1.ErrorCode_ERROR_CODE_UNSPECIFIED
+	ErrorCode_ERROR_CODE_NO_DATA        = apiv1.ErrorCode_ERROR_CODE_NO_DATA
+	ErrorCode_ERROR_CODE_INTERNAL       = apiv1.ErrorCode_ERROR_CODE_INTERNAL
 	ErrorCode_ERROR_CODE_NOT_AGGREGATOR = apiv1.ErrorCode_ERROR_CODE_NOT_AGGREGATOR
 
 	// SigningStatus values
 	SigningStatus_SIGNING_STATUS_UNSPECIFIED = apiv1.SigningStatus_SIGNING_STATUS_UNSPECIFIED
-	SigningStatus_SIGNING_STATUS_PENDING = apiv1.SigningStatus_SIGNING_STATUS_PENDING
-	SigningStatus_SIGNING_STATUS_COMPLETED = apiv1.SigningStatus_SIGNING_STATUS_COMPLETED
-	SigningStatus_SIGNING_STATUS_FAILED = apiv1.SigningStatus_SIGNING_STATUS_FAILED
-	SigningStatus_SIGNING_STATUS_TIMEOUT = apiv1.SigningStatus_SIGNING_STATUS_TIMEOUT
+	SigningStatus_SIGNING_STATUS_PENDING     = apiv1.SigningStatus_SIGNING_STATUS_PENDING
+	SigningStatus_SIGNING_STATUS_COMPLETED   = apiv1.SigningStatus_SIGNING_STATUS_COMPLETED
+	SigningStatus_SIGNING_STATUS_FAILED      = apiv1.SigningStatus_SIGNING_STATUS_FAILED
+	SigningStatus_SIGNING_STATUS_TIMEOUT     = apiv1.SigningStatus_SIGNING_STATUS_TIMEOUT
 
 	// ValidatorSetStatus values
 	ValidatorSetStatus_VALIDATOR_SET_STATUS_UNSPECIFIED = apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_UNSPECIFIED
-	ValidatorSetStatus_VALIDATOR_SET_STATUS_PENDING = apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_PENDING
-	ValidatorSetStatus_VALIDATOR_SET_STATUS_MISSED = apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_MISSED
-	ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED = apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED
+	ValidatorSetStatus_VALIDATOR_SET_STATUS_PENDING     = apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_PENDING
+	ValidatorSetStatus_VALIDATOR_SET_STATUS_MISSED      = apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_MISSED
+	ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED   = apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED
 )
 
 // Request types
@@ -41,6 +41,8 @@ type GetCurrentEpochRequest = apiv1.GetCurrentEpochRequest
 type GetSignatureRequestRequest = apiv1.GetSignatureRequestRequest
 type GetSignaturesRequest = apiv1.GetSignaturesRequest
 type GetSuggestedEpochRequest = apiv1.GetSuggestedEpochRequest
+type GetValidatorByAddressRequest = apiv1.GetValidatorByAddressRequest
+type GetValidatorSetHeaderRequest = apiv1.GetValidatorSetHeaderRequest
 type GetValidatorSetRequest = apiv1.GetValidatorSetRequest
 type SignMessageRequest = apiv1.SignMessageRequest
 type SignMessageWaitRequest = apiv1.SignMessageWaitRequest
@@ -52,6 +54,8 @@ type GetCurrentEpochResponse = apiv1.GetCurrentEpochResponse
 type GetSignatureRequestResponse = apiv1.GetSignatureRequestResponse
 type GetSignaturesResponse = apiv1.GetSignaturesResponse
 type GetSuggestedEpochResponse = apiv1.GetSuggestedEpochResponse
+type GetValidatorByAddressResponse = apiv1.GetValidatorByAddressResponse
+type GetValidatorSetHeaderResponse = apiv1.GetValidatorSetHeaderResponse
 type GetValidatorSetResponse = apiv1.GetValidatorSetResponse
 type SignMessageResponse = apiv1.SignMessageResponse
 type SignMessageWaitResponse = apiv1.SignMessageWaitResponse
