@@ -172,8 +172,6 @@ func TestRelayAPIConnectivity(t *testing.T) {
 			client := apiv1.NewSymbioticClient(conn)
 			epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
 			require.NoError(t, err, "Failed to get current epoch from %s", address)
-
-			require.True(t, epochResp.GetEpoch() >= 0, "Current epoch should be greater than 0")
 			require.NotNil(t, epochResp.GetStartTime(), "Epoch start time should be set")
 
 			t.Logf("Successfully connected to %s - Current epoch: %d", address, epochResp.GetEpoch())
@@ -227,7 +225,6 @@ func TestValidatorSetAPI(t *testing.T) {
 		t.Logf("✓ Contract validation passed")
 
 		require.Positive(t, valsetResp.GetVersion(), "Validator set version should be greater than 0")
-		require.True(t, valsetResp.GetEpoch() >= 0, "Validator set epoch should be greater than 0")
 		require.NotNil(t, valsetResp.GetCaptureTimestamp(), "Capture timestamp should be set")
 		require.NotEmpty(t, valsetResp.GetQuorumThreshold(), "Quorum threshold should not be empty")
 		require.NotEmpty(t, valsetResp.GetValidators(), "Validator set should contain validators")
