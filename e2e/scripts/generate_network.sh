@@ -143,6 +143,8 @@ generate_docker_compose() {
     fi
     
     mkdir -p "$network_dir/deploy-data"
+    # Ensure deploy-data directory is writable for Docker containers
+    chmod 777 "$network_dir/deploy-data"
     
     for i in $(seq 1 $operators); do
         local storage_dir="$network_dir/data-$(printf "%02d" $i)"
@@ -217,6 +219,7 @@ services:
       - VERIFICATION_TYPE=$verification_type
       - BLOCK_TIME=$block_time
       - EPOCH_TIME=$epoch_size
+      - FOUNDRY_CACHE_PATH=/tmp/.foundry-cache
 
   # Genesis generation service
   genesis-generator:
@@ -284,10 +287,9 @@ EOF
     image: relay_sidecar:dev
     container_name: symbiotic-relay-$i
     command:
-      - /workspace/scripts/sidecar-start.sh
-      - symb/0/15/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31337/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31338/0x$SYMB_PRIVATE_KEY_HEX,p2p/1/0/$SWARM_KEY,p2p/1/1/$SYMB_PRIVATE_KEY_HEX
-      - /app/$storage_dir
-      - $role_flags
+      - sh
+      - -c
+      - "chmod 777 /app/$storage_dir /deploy-data 2>/dev/null || true && /workspace/scripts/sidecar-start.sh symb/0/15/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31337/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31338/0x$SYMB_PRIVATE_KEY_HEX,p2p/1/0/$SWARM_KEY,p2p/1/1/$SYMB_PRIVATE_KEY_HEX /app/$storage_dir $role_flags"
     ports:
       - "$port:8080"
     volumes:

@@ -160,7 +160,6 @@ jobs:
         run: go mod download
 
       - name: "Initialize E2E Test Environment"
-        working-directory: e2e
         run: |
           echo "Configuring E2E test environment..."
           echo "  - Operators: ${{ env.OPERATORS }}"
@@ -171,12 +170,15 @@ jobs:
           echo "  - Block Time: ${{ env.BLOCK_TIME }}s"
           echo "  - Finality Blocks: ${{ env.FINALITY_BLOCKS }}"
           
+          cd e2e
           chmod +x setup.sh
           ./setup.sh
+          cd ../
+          chmod -R 777 e2e/
 
       - name: "Start Test Network"
-        working-directory: e2e/temp-network
         run: |
+          cd e2e/temp-network
           echo "Starting Docker Compose network..."
           docker compose up -d
           
@@ -186,16 +188,16 @@ jobs:
           echo "✅ Network startup completed"
 
       - name: "Execute E2E Tests"
-        working-directory: e2e/tests
         run: |
+          cd e2e/tests
           echo "Running End-to-End tests..."
           go test -v -timeout=10m ./...
 
 
       - name: "Collect Diagnostic Information"
         if: failure()
-        working-directory: e2e
         run: |
+          cd e2e
           echo "❌ Test failure detected - collecting diagnostic information..."
           
           # Create organized logs directory structure
