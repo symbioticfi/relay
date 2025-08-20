@@ -29,26 +29,39 @@ func (h *grpcHandler) GetValidatorSet(ctx context.Context, req *apiv1.GetValidat
 		return nil, errors.New("epoch requested is greater than latest epoch")
 	}
 
-	validatorSet, err := h.cfg.Repo.GetValidatorSetByEpoch(ctx, epochRequested)
-
-	// if error it means that epoch is not derived / committed yet
-	// so we need to derive it
+	validatorSet, err := h.getValidatorSetForEpoch(ctx, epochRequested)
 	if err != nil {
-		epochStart, err := h.cfg.EvmClient.GetEpochStart(ctx, epochRequested)
-		if err != nil {
-			return nil, err
-		}
-		config, err := h.cfg.EvmClient.GetConfig(ctx, epochRequested)
-		if err != nil {
-			return nil, err
-		}
-		validatorSet, err = h.cfg.Deriver.GetValidatorSet(ctx, epochStart, config)
-		if err != nil {
-			return nil, err
-		}
+		return nil, err
 	}
 
 	return convertValidatorSetToPB(validatorSet), nil
+}
+
+// getValidatorSetForEpoch retrieves validator set for a given epoch, either from repo or by deriving it
+func (h *grpcHandler) getValidatorSetForEpoch(ctx context.Context, epochRequested uint64) (entity.ValidatorSet, error) {
+	validatorSet, err := h.cfg.Repo.GetValidatorSetByEpoch(ctx, epochRequested)
+	if err == nil {
+		return validatorSet, nil
+	}
+	if !errors.Is(err, entity.ErrEntityNotFound) {
+		return entity.ValidatorSet{}, errors.Errorf("failed to get validator set for epoch %d: %v", epochRequested, err)
+	}
+
+	// if error it means that epoch is not derived / committed yet
+	// so we need to derive it
+	epochStart, err := h.cfg.EvmClient.GetEpochStart(ctx, epochRequested)
+	if err != nil {
+		return entity.ValidatorSet{}, err
+	}
+	config, err := h.cfg.EvmClient.GetConfig(ctx, epochStart)
+	if err != nil {
+		return entity.ValidatorSet{}, err
+	}
+	validatorSet, err = h.cfg.Deriver.GetValidatorSet(ctx, epochRequested, config)
+	if err != nil {
+		return entity.ValidatorSet{}, err
+	}
+	return validatorSet, nil
 }
 
 func convertValidatorSetToPB(valSet entity.ValidatorSet) *apiv1.GetValidatorSetResponse {
@@ -61,23 +74,27 @@ func convertValidatorSetToPB(valSet entity.ValidatorSet) *apiv1.GetValidatorSetR
 		PreviousHeaderHash: valSet.PreviousHeaderHash.Hex(),
 		Status:             convertValidatorSetStatusToPB(valSet.Status),
 		Validators: lo.Map(valSet.Validators, func(v entity.Validator, _ int) *apiv1.Validator {
-			return &apiv1.Validator{
-				Operator:    v.Operator.Hex(),
+			return convertValidatorToPB(v)
+		}),
+	}
+}
+
+func convertValidatorToPB(v entity.Validator) *apiv1.Validator {
+	return &apiv1.Validator{
+		Operator:    v.Operator.Hex(),
+		VotingPower: v.VotingPower.String(),
+		IsActive:    v.IsActive,
+		Keys: lo.Map(v.Keys, func(k entity.ValidatorKey, _ int) *apiv1.Key {
+			return &apiv1.Key{
+				Tag:     uint32(k.Tag),
+				Payload: k.Payload,
+			}
+		}),
+		Vaults: lo.Map(v.Vaults, func(v entity.ValidatorVault, _ int) *apiv1.ValidatorVault {
+			return &apiv1.ValidatorVault{
+				ChainId:     v.ChainID,
+				Vault:       v.Vault.Hex(),
 				VotingPower: v.VotingPower.String(),
-				IsActive:    v.IsActive,
-				Keys: lo.Map(v.Keys, func(k entity.ValidatorKey, _ int) *apiv1.Key {
-					return &apiv1.Key{
-						Tag:     uint32(k.Tag),
-						Payload: k.Payload,
-					}
-				}),
-				Vaults: lo.Map(v.Vaults, func(v entity.ValidatorVault, _ int) *apiv1.ValidatorVault {
-					return &apiv1.ValidatorVault{
-						ChainId:     v.ChainID,
-						Vault:       v.Vault.Hex(),
-						VotingPower: v.VotingPower.String(),
-					}
-				}),
 			}
 		}),
 	}

@@ -32,6 +32,12 @@ service SymbioticAPIService {
   // Get current validator set
   rpc GetValidatorSet(GetValidatorSetRequest) returns (GetValidatorSetResponse);
   
+  // Get validator by address
+  rpc GetValidatorByAddress(GetValidatorByAddressRequest) returns (GetValidatorByAddressResponse);
+  
+  // Get validator set header
+  rpc GetValidatorSetHeader(GetValidatorSetHeaderRequest) returns (GetValidatorSetHeaderResponse);
+  
   // Sign a message and wait for aggregation proof via stream
   rpc SignMessageWait(SignMessageWaitRequest) returns (stream SignMessageWaitResponse);
 }
@@ -122,6 +128,21 @@ message GetAggregationStatusRequest {
 
 // Request message for getting validator set
 message GetValidatorSetRequest {
+  // Epoch number (optional, if not provided current epoch will be used)
+  optional uint64 epoch = 1;
+}
+
+// Request message for getting validator by address
+message GetValidatorByAddressRequest {
+  // Epoch number (optional, if not provided current epoch will be used)
+  optional uint64 epoch = 1;
+  
+  // Validator address (required)
+  string address = 2;
+}
+
+// Request message for getting validator set header
+message GetValidatorSetHeaderRequest {
   // Epoch number (optional, if not provided current epoch will be used)
   optional uint64 epoch = 1;
 }
@@ -219,6 +240,36 @@ message GetValidatorSetResponse {
   
   // List of validators
   repeated Validator validators = 8;
+}
+
+// Response message for getting validator by address
+message GetValidatorByAddressResponse {
+  // The validator
+  Validator validator = 1;
+}
+
+// Response message for getting validator set header
+message GetValidatorSetHeaderResponse {
+  // Version of the validator set
+  uint32 version = 1;
+  
+  // Key tag required to commit next validator set
+  uint32 required_key_tag = 2;
+  
+  // Validator set epoch
+  uint64 epoch = 3;
+  
+  // Epoch capture timestamp
+  google.protobuf.Timestamp capture_timestamp = 4;
+  
+  // Quorum threshold (big integer as string)
+  string quorum_threshold = 5;
+  
+  // Validators SSZ Merkle root (hex string)
+  string validators_ssz_mroot = 6;
+  
+  // Previous validator set header hash (hex string)
+  string previous_header_hash = 7;
 }
 
 // Validator set status enumeration
