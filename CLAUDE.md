@@ -109,6 +109,52 @@ Uses libp2p for distributed signature collection:
 - **Message Broadcasting**: Signature request/response propagation
 - **Aggregation**: Distributed signature aggregation with Byzantine fault tolerance
 
+## Implementation Process Guidelines
+
+When implementing new features, optimizations, or significant changes:
+
+### 1. Ask Clarifying Questions First
+**Always ask questions before starting implementation, even if the task seems straightforward:**
+
+**Technical Requirements:**
+- What are the performance requirements and constraints?
+- What's the expected scale (data size, request volume, etc.)?
+- Are there backward compatibility requirements?
+- What are the error handling expectations?
+
+**Architecture & Design:**
+- Are there existing patterns or conventions I should follow?
+- How does this change fit with the overall architecture?
+- Are there alternative approaches to consider?
+- What are the testing requirements?
+
+### 2. Raise Technical Concerns
+**If you identify potential issues, always raise them:**
+
+**Risk Assessment:**
+- Point out potential edge cases or failure scenarios
+- Identify assumptions being made in the implementation
+- Highlight any security or performance implications
+- Consider data consistency and transaction boundaries
+
+**Alternative Approaches:**
+- Present different implementation options with trade-offs
+- Discuss simpler vs more complex solutions
+- Consider maintenance and debugging implications
+
+### 3. Wait for Confirmation Before Implementation
+- Present your plan and get explicit approval
+- Address any concerns or questions raised
+- Confirm the approach aligns with expectations
+- Only then proceed with coding
+
+### 4. Implementation Best Practices
+- Start with tests that define the expected behavior
+- Implement incrementally and test frequently
+- Follow existing code patterns and conventions
+- Document any complex logic or design decisions
+
+
 ## Important Development Notes
 
 ### Error Handling
