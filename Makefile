@@ -6,7 +6,7 @@ TAG ?=
 
 ifeq ($(strip $(TAG)),)
 	CURRENT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
-	PSEUDO_VERSION := $(shell go list -f {{.Version}} -m ${PACKAGE}@${CURRENT_BRANCH})
+	PSEUDO_VERSION := $(shell go list -f {{.Version}} -m ${PACKAGE}@${CURRENT_BRANCH} 2>/dev/null || echo "unspecified-$(CURRENT_BRANCH)")
 	# Trim the `v` prefix from golang pseudo version as the TAG if not set
 	FINAL_TAG := $(shell echo $(PSEUDO_VERSION) | sed 's/^v//' | sed 's/-0\./-/')
 else
@@ -40,7 +40,7 @@ go-lint-fix:
 	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.2.1 -v run ./... --fix
 
 .PHONY: generate
-generate: install-tools generate-mocks generate-api generate-client-types gen-abi
+generate: install-tools generate-mocks generate-api-types generate-client-types generate-p2p-types gen-abi
 
 .PHONY: install-tools
 install-tools:
@@ -54,10 +54,13 @@ install-tools:
 generate-mocks:
 	go generate ./...
 
-.PHONY: generate-api
-generate-api:
+.PHONY: generate-api-types
+generate-api-types:
 	buf generate
 
+.PHONY: generate-p2p-types
+generate-p2p-types:
+	buf generate --template=buf.p2p.gen.yaml
 .PHONY: generate-client-types
 generate-client-types:
 	go run hack/codegen/generate-client-types.go

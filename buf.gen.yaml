@@ -3,14 +3,15 @@ inputs:
   - directory: api/proto
 managed:
   enabled: true
-  disable:
-    - file_option: go_package_prefix
-      module: buf.build/grpc-ecosystem/grpc-gateway
 plugins:
   - local: protoc-gen-doc
     out: api/docs/v1
     opt:
       - "html,index.html"
+  - local: protoc-gen-doc
+    out: api/docs/v1
+    opt:
+      - "markdown,doc.md"
   - local: protoc-gen-go
     out: internal/gen/api
     opt:

@@ -5,6 +5,10 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+
+	strategyTypes "github.com/symbioticfi/relay/core/usecase/growth-strategy/strategy-types"
+
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
@@ -17,6 +21,7 @@ type evmClient interface {
 	GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (uint64, error)
 	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
 	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
+	GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error)
 }
 
 type repo interface {
@@ -30,10 +35,11 @@ type deriver interface {
 }
 
 type Config struct {
-	EvmClient       evmClient     `validate:"required"`
-	Repo            repo          `validate:"required"`
-	Deriver         deriver       `validate:"required"`
-	PollingInterval time.Duration `validate:"required,gt=0"`
+	EvmClient       evmClient                    `validate:"required"`
+	Repo            repo                         `validate:"required"`
+	Deriver         deriver                      `validate:"required"`
+	GrowthStrategy  strategyTypes.GrowthStrategy `validate:"required"`
+	PollingInterval time.Duration                `validate:"required,gt=0"`
 }
 
 func (c Config) Validate() error {
@@ -59,6 +65,37 @@ func New(cfg Config) (*Service, error) {
 		cfg:                  cfg,
 		latestProcessedEpoch: 0,
 	}, nil
+}
+
+// LoadAllMissingEpochs runs tryLoadMissingEpochs until all missing epochs are loaded successfully
+func (s *Service) LoadAllMissingEpochs(ctx context.Context) error {
+	ctx = log.WithComponent(ctx, "listener")
+
+	slog.InfoContext(ctx, "Loading all missing epochs before starting services")
+
+	const maxRetries = 10
+	retryCount := 0
+	retryTimer := time.NewTimer(0)
+	defer retryTimer.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-retryTimer.C:
+			if err := s.tryLoadMissingEpochs(ctx); err != nil {
+				retryCount++
+				if retryCount >= maxRetries {
+					return errors.Errorf("failed to load missing epochs after %d retries: %w", maxRetries, err)
+				}
+				slog.ErrorContext(ctx, "Failed to load missing epochs, retrying", "error", err, "attempt", retryCount, "maxRetries", maxRetries)
+				retryTimer.Reset(time.Second * 2)
+				continue
+			}
+			slog.InfoContext(ctx, "Successfully loaded all missing epochs")
+			return nil
+		}
+	}
 }
 
 func (s *Service) Start(ctx context.Context) error {
@@ -96,9 +133,9 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		return errors.Errorf("failed to get network config for current epoch: %w", err)
 	}
 
-	latestCommittedOnchainEpoch, err := s.getLastCommittedHeaderEpoch(ctx, config)
+	latestCommittedHash, latestCommittedEpoch, err := s.cfg.GrowthStrategy.GetLastCommittedHeaderHash(ctx, config)
 	if err != nil {
-		return errors.Errorf("failed to get current epoch: %w", err)
+		return errors.Errorf("failed to get latest committed header hash: %w", err)
 	}
 
 	latest, err := s.cfg.Repo.GetLatestValidatorSet(ctx)
@@ -115,7 +152,11 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		return nil
 	}
 
-	for latestCommittedOnchainEpoch >= nextEpoch {
+	if err := s.validateHeaderHashAtLastCommittedEpoch(ctx, latestCommittedEpoch, latestCommittedHash); err != nil {
+		return errors.Errorf("failed to validate header hash at last committed epoch: %w", err)
+	}
+
+	for latestCommittedEpoch >= nextEpoch {
 		epochStart, err := s.cfg.EvmClient.GetEpochStart(ctx, nextEpoch)
 		if err != nil {
 			return errors.Errorf("failed to get epoch start for epoch %d: %w", nextEpoch, err)
@@ -150,19 +191,35 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) getLastCommittedHeaderEpoch(ctx context.Context, config entity.NetworkConfig) (uint64, error) {
-	maxEpoch := uint64(0)
-
-	for _, addr := range config.Replicas {
-		epoch, err := s.cfg.EvmClient.GetLastCommittedHeaderEpoch(ctx, addr)
-		if err != nil {
-			return 0, errors.Errorf("failed to get last committed header epoch for address %s: %w", addr.Address.Hex(), err)
-		}
-
-		if epoch >= maxEpoch {
-			maxEpoch = epoch
-		}
+func (s *Service) validateHeaderHashAtLastCommittedEpoch(ctx context.Context, epoch uint64, lastCommittedHash common.Hash) error {
+	epochStart, err := s.cfg.EvmClient.GetEpochStart(ctx, epoch)
+	if err != nil {
+		return errors.Errorf("failed to get epoch start for epoch %d: %w", epochStart, err)
 	}
 
-	return maxEpoch, nil
+	config, err := s.cfg.EvmClient.GetConfig(ctx, epochStart)
+	if err != nil {
+		return errors.Errorf("failed to get network config for epoch %d: %w", epoch, err)
+	}
+
+	valset, err := s.cfg.Deriver.GetValidatorSet(ctx, epoch, config)
+	if err != nil {
+		return errors.Errorf("failed to derive validator set extra for epoch %d: %w", epoch, err)
+	}
+
+	header, err := valset.GetHeader()
+	if err != nil {
+		return errors.Errorf("failed to get header for epoch %d: %w", epoch, err)
+	}
+
+	hash, err := header.Hash()
+	if err != nil {
+		return errors.Errorf("failed to get header hash for epoch %d: %w", epoch, err)
+	}
+
+	if lastCommittedHash != hash {
+		return errors.Errorf("last committed header hash mismatch with derived hash for epoch %d, derived: %s, committed: %s", epoch, hash, lastCommittedHash)
+	}
+
+	return nil
 }
