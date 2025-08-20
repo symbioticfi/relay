@@ -144,19 +144,17 @@ jobs:
           cache-dependency-path: "go.sum"
 
       - name: "Setup Node.js Environment"
-        uses: actions/setup-node@65dda82f06c1c82b73e68a39e49a0a37c49bb9c3 # v4.1.1
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
 
       - name: "Setup Foundry Toolchain"
-        uses: foundry-rs/foundry-toolchain@27b1b5a4ad8b12f3b50c85cff6c85ad86a25a1c2 # v1.2.4
+        uses: foundry-rs/foundry-toolchain@82dee4ba654bd2146511f85f0d013af94670c4de # v1.4.0
         with:
           version: ${{ env.FOUNDRY_VERSION }}
 
       - name: "Setup Docker Buildx"
-        uses: docker/setup-buildx-action@b3bb4a8bc0afbaac3f84f7d9d9a1b49e1e6a2fd9 # v3.4.0
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
 
       - name: "Install Go Dependencies"
         run: go mod download
@@ -205,7 +203,7 @@ jobs:
           
           echo "Gathering container information..."
           # Get active containers (excluding anvil containers which are noisy)
-          CONTAINER_IDS=$(docker ps --format "table {{.ID}}\t{{.Names}}" | grep -v -E "(anvil|CONTAINER)" | awk '{print $1}' | tr '\n' ' ')
+          CONTAINER_IDS=$(docker ps -a --format "table {{.ID}}\t{{.Names}}" | grep -v -E "(anvil|buildx_buildkit|CONTAINER)" | awk '{print $1}' | tr '\n' ' ')
           
           if [ -n "$CONTAINER_IDS" ]; then
             echo "Found active containers: $(echo $CONTAINER_IDS | wc -w)"
@@ -217,7 +215,7 @@ jobs:
               echo "Workflow: ${{ github.workflow }}"
               echo "Run ID: ${{ github.run_id }}"
               echo ""
-              docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -v -E "anvil"
+              docker ps -a --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -v -E "(anvil|buildx_buildkit)"
             } > logs/containers/status-overview.log
             
             # Individual container logs
@@ -295,7 +293,7 @@ jobs:
 
       - name: "Upload Diagnostic Artifacts"
         if: failure()
-        uses: actions/upload-artifact@7baf96fe8bb6ac7e6e7c78faa9c40fb5a2b9b674 # v4.4.3
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: "e2e-diagnostics-${{ github.run_number }}-${{ github.run_attempt }}"
           path: e2e/logs/
