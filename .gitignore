@@ -1,5 +1,9 @@
 .idea/
-.claude/
+# Claude Code - ignore local settings but allow commands
+.claude/settings.local.json
+.claude/**/*.local.*
+.claude/memory/
+
 go.sum
 .env
 .DS_Store
