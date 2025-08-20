@@ -14,7 +14,7 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 )
 
-const Multicall3 = "0xCD8a1C3ba11CF5ECfa6267617243239504a98d90"
+const Multicall3 = "0xcA11bde05977b3631167028862bE2a173976CA11"
 
 type Call = gen.Multicall3Call3
 type Result = gen.Multicall3Result
