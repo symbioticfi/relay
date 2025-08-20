@@ -56,6 +56,43 @@ func TestRepository_ValidatorSet(t *testing.T) {
 		// Latest should be vs1 (epoch 2) even though we saved it first
 		assert.Equal(t, vs1, latest)
 	})
+
+	// Test getting individual validators by key
+	t.Run("get validator by key", func(t *testing.T) {
+		// Test with vs1 (epoch 2)
+		if len(vs1.Validators) > 0 && len(vs1.Validators[0].Keys) > 0 {
+			validator := vs1.Validators[0]
+			key := validator.Keys[0]
+
+			// Get validator by key should return the correct validator
+			gotValidator, err := repo.GetValidatorByKey(t.Context(), vs1.Epoch, key.Tag, key.Payload)
+			require.NoError(t, err)
+			assert.Equal(t, validator, gotValidator)
+		}
+
+		// Test with vs2 (epoch 1)
+		if len(vs2.Validators) > 0 && len(vs2.Validators[0].Keys) > 0 {
+			validator := vs2.Validators[0]
+			key := validator.Keys[0]
+
+			// Get validator by key should return the correct validator
+			gotValidator, err := repo.GetValidatorByKey(t.Context(), vs2.Epoch, key.Tag, key.Payload)
+			require.NoError(t, err)
+			assert.Equal(t, validator, gotValidator)
+		}
+
+		// Test non-existent validator
+		fakeKey := []byte("fake-key-that-does-not-exist")
+		_, err := repo.GetValidatorByKey(t.Context(), vs1.Epoch, entity.KeyTag(1), fakeKey)
+		assert.True(t, errors.Is(err, entity.ErrEntityNotFound))
+
+		// Test non-existent epoch
+		if len(vs1.Validators) > 0 && len(vs1.Validators[0].Keys) > 0 {
+			key := vs1.Validators[0].Keys[0]
+			_, err := repo.GetValidatorByKey(t.Context(), 999, key.Tag, key.Payload)
+			assert.True(t, errors.Is(err, entity.ErrEntityNotFound))
+		}
+	})
 }
 
 func setupTestRepository(t *testing.T) *Repository {

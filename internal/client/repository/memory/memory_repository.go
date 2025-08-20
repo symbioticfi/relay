@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"fmt"
 	"maps"
 	"slices"
 	"sync"
@@ -17,23 +18,25 @@ import (
 type Repository struct {
 	mu sync.Mutex
 
-	networkConfigs map[uint64]entity.NetworkConfig
-	validatorSets  map[uint64]entity.ValidatorSet
-	signatures     map[common.Hash]map[common.Hash]entity.SignatureExtended
-	signRequests   map[common.Hash]entity.SignatureRequest
-	aggProofs      map[common.Hash]entity.AggregationProof
-	pendingValsets map[common.Hash]entity.ValidatorSet
+	networkConfigs   map[uint64]entity.NetworkConfig
+	validatorSets    map[uint64]entity.ValidatorSet
+	validatorIndexes map[string]entity.Validator // key: "epoch:keyTag:publicKeyHash"
+	signatures       map[common.Hash]map[common.Hash]entity.SignatureExtended
+	signRequests     map[common.Hash]entity.SignatureRequest
+	aggProofs        map[common.Hash]entity.AggregationProof
+	pendingValsets   map[common.Hash]entity.ValidatorSet
 }
 
 func New() (*Repository, error) {
 	return &Repository{
-		mu:             sync.Mutex{},
-		networkConfigs: make(map[uint64]entity.NetworkConfig),
-		validatorSets:  make(map[uint64]entity.ValidatorSet),
-		signatures:     make(map[common.Hash]map[common.Hash]entity.SignatureExtended),
-		signRequests:   make(map[common.Hash]entity.SignatureRequest),
-		aggProofs:      make(map[common.Hash]entity.AggregationProof),
-		pendingValsets: make(map[common.Hash]entity.ValidatorSet),
+		mu:               sync.Mutex{},
+		networkConfigs:   make(map[uint64]entity.NetworkConfig),
+		validatorSets:    make(map[uint64]entity.ValidatorSet),
+		validatorIndexes: make(map[string]entity.Validator),
+		signatures:       make(map[common.Hash]map[common.Hash]entity.SignatureExtended),
+		signRequests:     make(map[common.Hash]entity.SignatureRequest),
+		aggProofs:        make(map[common.Hash]entity.AggregationProof),
+		pendingValsets:   make(map[common.Hash]entity.ValidatorSet),
 	}, nil
 }
 
@@ -85,6 +88,16 @@ func (r *Repository) SaveValidatorSet(_ context.Context, valset entity.Validator
 	}
 
 	r.validatorSets[valset.Epoch] = valset
+
+	// Save individual validator indexes
+	for _, validator := range valset.Validators {
+		for _, key := range validator.Keys {
+			publicKeyHash := crypto.Keccak256Hash(key.Payload)
+			indexKey := fmt.Sprintf("%d:%d:%s", valset.Epoch, key.Tag, publicKeyHash.Hex())
+			r.validatorIndexes[indexKey] = validator
+		}
+	}
+
 	return nil
 }
 
@@ -98,6 +111,21 @@ func (r *Repository) GetValidatorSetByEpoch(_ context.Context, epoch uint64) (en
 	}
 
 	return valset, nil
+}
+
+func (r *Repository) GetValidatorByKey(_ context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	publicKeyHash := crypto.Keccak256Hash(publicKey)
+	indexKey := fmt.Sprintf("%d:%d:%s", epoch, keyTag, publicKeyHash.Hex())
+
+	validator, ok := r.validatorIndexes[indexKey]
+	if !ok {
+		return entity.Validator{}, errors.New(entity.ErrEntityNotFound)
+	}
+
+	return validator, nil
 }
 
 func (r *Repository) GetSignatureRequest(_ context.Context, reqHash common.Hash) (entity.SignatureRequest, error) {

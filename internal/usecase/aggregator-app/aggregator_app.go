@@ -21,6 +21,7 @@ import (
 //go:generate mockgen -source=aggregator_app.go -destination=mocks/aggregator_app.go -package=mocks
 type repository interface {
 	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
+	GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, error)
 	SaveSignature(ctx context.Context, reqHash common.Hash, key []byte, sig entity.SignatureExtended) error
 	GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error)
 	GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error)
@@ -78,11 +79,6 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 
 	slog.DebugContext(ctx, "Received signature hash generated message", "message", msg, "sender", p2pMsg.SenderInfo.Sender)
 
-	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
-	if err != nil {
-		return errors.Errorf("failed to get validator set: %w", err)
-	}
-
 	publicKey, err := crypto.NewPublicKey(msg.KeyTag.Type(), msg.Signature.PublicKey)
 	if err != nil {
 		return errors.Errorf("failed to get public key: %w", err)
@@ -92,9 +88,9 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 		return errors.Errorf("failed to verify signature: %w", err)
 	}
 
-	validator, found := validatorSet.FindValidatorByKey(msg.KeyTag, publicKey.OnChain())
-	if !found {
-		return errors.Errorf("validator not found for public key: %x", msg.Signature.PublicKey)
+	validator, err := s.cfg.Repo.GetValidatorByKey(ctx, uint64(msg.Epoch), msg.KeyTag, publicKey.OnChain())
+	if err != nil {
+		return errors.Errorf("validator not found for public key %x: %w", msg.Signature.PublicKey, err)
 	}
 
 	err = s.cfg.Repo.SaveSignature(ctx, msg.RequestHash, publicKey.Raw(), msg.Signature)
@@ -110,6 +106,12 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 	}
 
 	slog.DebugContext(ctx, "Total voting power", "currentVotingPower", current.VotingPower.String())
+
+	// Get validator set for quorum threshold checks and aggregation
+	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
+	if err != nil {
+		return errors.Errorf("failed to get validator set: %w", err)
+	}
 
 	thresholdReached := current.VotingPower.Cmp(validatorSet.QuorumThreshold.Int) >= 0
 	if !thresholdReached {
