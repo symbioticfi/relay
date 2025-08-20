@@ -1,5 +1,5 @@
 ---
-name: "CI/CD Pipeline"
+name: "CI Pipeline"
 
 on:
   pull_request:
@@ -110,7 +110,7 @@ jobs:
 
 
   e2e-tests:
-    name: "End-to-End Tests"
+    name: "E2E Tests"
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     needs: [unit-tests]
