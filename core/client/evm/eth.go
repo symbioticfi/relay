@@ -38,6 +38,7 @@ type Config struct {
 	RequestTimeout time.Duration            `validate:"required,gt=0"`
 	KeyProvider    keyprovider.KeyProvider
 	Metrics        metrics
+	MaxCalls       int
 }
 
 func (c Config) Validate() error {
@@ -541,6 +542,29 @@ func (e *Client) GetVotingPowers(ctx context.Context, address entity.CrossChainA
 			}),
 		}
 	}), nil
+}
+
+func (e *Client) GetOperators(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) (_ []common.Address, err error) {
+	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
+	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("GetOperators", err, now)
+	}(time.Now())
+
+	votingPowerProvider, err := e.getVotingPowerProviderContract(address)
+	if err != nil {
+		return nil, errors.Errorf("failed to create voting power provider contract: %w", err)
+	}
+
+	operators, err := votingPowerProvider.GetOperatorsAt(&bind.CallOpts{
+		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
+		Context:     toCtx,
+	}, new(big.Int).SetUint64(timestamp))
+	if err != nil {
+		return nil, errors.Errorf("failed to call getOperatorsAt: %w", e.formatEVMContractError(gen.IVotingPowerProviderMetaData, err))
+	}
+
+	return operators, nil
 }
 
 func (e *Client) GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) (_ []entity.OperatorWithKeys, err error) {

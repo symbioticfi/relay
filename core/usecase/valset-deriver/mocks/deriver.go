@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	common "github.com/ethereum/go-ethereum/common"
+	evm "github.com/symbioticfi/relay/core/client/evm"
 	entity "github.com/symbioticfi/relay/core/entity"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -177,6 +178,36 @@ func (mr *MockEvmClientMockRecorder) GetNetworkAddress(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNetworkAddress", reflect.TypeOf((*MockEvmClient)(nil).GetNetworkAddress), ctx)
 }
 
+// GetOperatorVotingPowersCall mocks base method.
+func (m *MockEvmClient) GetOperatorVotingPowersCall(target entity.CrossChainAddress, operator common.Address, timestamp uint64) (evm.Call, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOperatorVotingPowersCall", target, operator, timestamp)
+	ret0, _ := ret[0].(evm.Call)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOperatorVotingPowersCall indicates an expected call of GetOperatorVotingPowersCall.
+func (mr *MockEvmClientMockRecorder) GetOperatorVotingPowersCall(target, operator, timestamp any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOperatorVotingPowersCall", reflect.TypeOf((*MockEvmClient)(nil).GetOperatorVotingPowersCall), target, operator, timestamp)
+}
+
+// GetOperators mocks base method.
+func (m *MockEvmClient) GetOperators(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]common.Address, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOperators", ctx, address, timestamp)
+	ret0, _ := ret[0].([]common.Address)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOperators indicates an expected call of GetOperators.
+func (mr *MockEvmClientMockRecorder) GetOperators(ctx, address, timestamp any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOperators", reflect.TypeOf((*MockEvmClient)(nil).GetOperators), ctx, address, timestamp)
+}
+
 // GetPreviousHeaderHashAt mocks base method.
 func (m *MockEvmClient) GetPreviousHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error) {
 	m.ctrl.T.Helper()
@@ -235,4 +266,49 @@ func (m *MockEvmClient) IsValsetHeaderCommittedAt(ctx context.Context, addr enti
 func (mr *MockEvmClientMockRecorder) IsValsetHeaderCommittedAt(ctx, addr, epoch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsValsetHeaderCommittedAt", reflect.TypeOf((*MockEvmClient)(nil).IsValsetHeaderCommittedAt), ctx, addr, epoch)
+}
+
+// Multicall mocks base method.
+func (m *MockEvmClient) Multicall(ctx context.Context, chainId uint64, calls []evm.Call) ([]evm.Result, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Multicall", ctx, chainId, calls)
+	ret0, _ := ret[0].([]evm.Result)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Multicall indicates an expected call of Multicall.
+func (mr *MockEvmClientMockRecorder) Multicall(ctx, chainId, calls any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Multicall", reflect.TypeOf((*MockEvmClient)(nil).Multicall), ctx, chainId, calls)
+}
+
+// MulticallExists mocks base method.
+func (m *MockEvmClient) MulticallExists(ctx context.Context, chainId uint64) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MulticallExists", ctx, chainId)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MulticallExists indicates an expected call of MulticallExists.
+func (mr *MockEvmClientMockRecorder) MulticallExists(ctx, chainId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MulticallExists", reflect.TypeOf((*MockEvmClient)(nil).MulticallExists), ctx, chainId)
+}
+
+// UnpackGetOperatorVotingPowersCall mocks base method.
+func (m *MockEvmClient) UnpackGetOperatorVotingPowersCall(out []byte) ([]entity.VaultVotingPower, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UnpackGetOperatorVotingPowersCall", out)
+	ret0, _ := ret[0].([]entity.VaultVotingPower)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UnpackGetOperatorVotingPowersCall indicates an expected call of UnpackGetOperatorVotingPowersCall.
+func (mr *MockEvmClientMockRecorder) UnpackGetOperatorVotingPowersCall(out any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnpackGetOperatorVotingPowersCall", reflect.TypeOf((*MockEvmClient)(nil).UnpackGetOperatorVotingPowersCall), out)
 }
