@@ -1,0 +1,48 @@
+package tests
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/require"
+	"github.com/symbioticfi/relay/core/client/evm"
+	"github.com/symbioticfi/relay/core/entity"
+)
+
+// TestGenesisDone tests that the genesis validator set header has been committed
+func TestGenesisDone(t *testing.T) {
+	t.Log("Starting genesis generation test...")
+
+	deployData, err := loadDeploymentData()
+	require.NoError(t, err, "Failed to load deployment data")
+
+	config := evm.Config{
+		ChainURLs: settlementChains,
+		DriverAddress: entity.CrossChainAddress{
+			ChainId: deployData.Driver.ChainId,
+			Address: common.HexToAddress(deployData.Driver.Addr),
+		},
+		RequestTimeout: 10 * time.Second,
+		KeyProvider:    &testMockKeyProvider{},
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	evmClient, err := evm.NewEvmClient(ctx, config)
+	require.NoError(t, err, "Failed to create EVM client")
+
+	for _, settlement := range deployData.Settlements {
+		t.Logf("Checking settlement %s on chain %d", settlement.Addr, settlement.ChainId)
+		header, err := evmClient.GetValSetHeader(ctx, entity.CrossChainAddress{
+			ChainId: settlement.ChainId,
+			Address: common.HexToAddress(settlement.Addr),
+		})
+		require.NoError(t, err, "Failed to get validator set header for settlement %s", settlement.Addr)
+		require.NotEqual(t, common.Hash{}, header.PreviousHeaderHash, "Previous header hash should not be empty")
+	}
+
+	t.Log("Genesis generation test completed successfully")
+}
