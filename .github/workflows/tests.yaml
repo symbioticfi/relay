@@ -1,68 +1,314 @@
 ---
-name: Tests
+name: "CI Pipeline"
+
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    branches: [dev, main]
   workflow_call:
 
+env:
+  GO_VERSION: "1.24.5"
+  NODE_VERSION: "22"
+  FOUNDRY_VERSION: "nightly"
+
 jobs:
-  tests:
-    name: Tests
+
+  code-quality:
+    name: "Code Quality & Linting"
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 10
+    
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # pin@v4.3.0
+      - name: "Checkout Repository"
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           fetch-depth: 0
 
-      - name: Setup Private Git Repo Access
+      - name: "Configure Private Repository Access"
         run: |
           git config --global url.https://x-oauth-basic:${{ secrets.GITHUB_TOKEN }}@github.com/.insteadOf https://github.com/
-          echo "GOPRIVATE=github.com/symbioticfi/relay"  >> $GITHUB_ENV
+          echo "GOPRIVATE=github.com/symbioticfi/relay" >> $GITHUB_ENV
           
-      - name: Setup Go
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # pin@5.5.0
+      - name: "Setup Go Environment"
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
-          go-version: 1.24.5
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: "go.sum"
 
-      - name: Run linter
-        run: make lint
-
-      - name: Run Codegen
+      - name: "Generate Code"
         run: make generate
 
-      - name: Check for changes
-        id: check_changes
-        run: |
-            if ! git diff --exit-code; then
-                echo "Changes found after codegen, please run 'make generate' and commit the changes."
-                git diff
-                exit 1
-            else
-                echo "No changes found after codegen."
-            fi
+      - name: "Run Code Linting"
+        run: make lint
 
-      - name: Run unit tests
+      - name: "Verify Code Generation"
+        id: verify-codegen
+        run: |
+          if ! git diff --exit-code; then
+            echo "❌ Code generation produced changes. Please run 'make generate' and commit the changes."
+            echo "changes=true" >> $GITHUB_OUTPUT
+            git diff
+            exit 1
+          else
+            echo "✅ Code generation verification passed."
+            echo "changes=false" >> $GITHUB_OUTPUT
+          fi
+
+  unit-tests:
+    name: "Unit Tests"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    needs: [code-quality]
+    
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          fetch-depth: 0
+
+      - name: "Configure Private Repository Access"
+        run: |
+          git config --global url.https://x-oauth-basic:${{ secrets.GITHUB_TOKEN }}@github.com/.insteadOf https://github.com/
+          echo "GOPRIVATE=github.com/symbioticfi/relay" >> $GITHUB_ENV
+          
+      - name: "Setup Go Environment"
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: "go.sum"
+
+      - name: "Execute Unit Tests"
         run: make unit-test
 
-      - name: Read coverage from file
+      - name: "Extract Test Coverage"
         id: coverage
         run: |
           if [[ -f coverage.txt ]]; then
             TOTAL_LINE=$(grep '^total:' coverage.txt | tail -1)
             COVERAGE=$(echo "$TOTAL_LINE" | grep -Eo '[0-9]+\.[0-9]+%')
-            echo "COVERAGE=${COVERAGE:-Not found}" >> "$GITHUB_ENV"
+            COVERAGE_VALUE="${COVERAGE:-Not available}"
+            echo "coverage=${COVERAGE_VALUE}" >> $GITHUB_OUTPUT
+            echo "COVERAGE=${COVERAGE_VALUE}" >> $GITHUB_ENV
+            echo "Test Coverage: ${COVERAGE_VALUE}"
           else
-            echo "COVERAGE=Not found" >> "$GITHUB_ENV"
+            echo "coverage=Not available" >> $GITHUB_OUTPUT
+            echo "COVERAGE=Not available" >> $GITHUB_ENV
+            echo "⚠️ Coverage file not found"
           fi
 
-      - name: Comment PR with coverage
-        if: ${{ github.event_name == 'pull_request' && github.actor != 'dependabot[bot]' }}
-        uses: mshick/add-pr-comment@b8f338c590a895d50bcbfa6c5859251edc8952fc # pin@v2.8.2
+      - name: "Post Coverage Report to PR"
+        if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
+        uses: mshick/add-pr-comment@b8f338c590a895d50bcbfa6c5859251edc8952fc # v2.8.2
         with:
           message: |
-            🧪 **Test Coverage Report**
-            ```
-            ${{ env.COVERAGE }}
-            ```
+            ## 🧪 Test Coverage Report
+            
+            **Coverage:** `${{ steps.coverage.outputs.coverage }}`
+
+
+  e2e-tests:
+    name: "E2E Tests - ${{ matrix.config.name }}"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    needs: [unit-tests]
+    
+    strategy:
+      matrix:
+        config:
+          - name: "Simple Setup"
+            operators: 4
+            commiters: 1
+            aggregators: 1
+          - name: "Multi Committer/Aggregator"
+            operators: 10
+            commiters: 2
+            aggregators: 3
+    
+    env:
+      # E2E Test Configuration
+      OPERATORS: ${{ matrix.config.operators }}
+      COMMITERS: ${{ matrix.config.commiters }}
+      AGGREGATORS: ${{ matrix.config.aggregators }}
+      VERIFICATION_TYPE: 1
+      EPOCH_TIME: 30
+      BLOCK_TIME: 1
+      FINALITY_BLOCKS: 2
+    
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          fetch-depth: 0
+
+      - name: "Configure Private Repository Access"
+        run: |
+          git config --global url.https://x-oauth-basic:${{ secrets.GITHUB_TOKEN }}@github.com/.insteadOf https://github.com/
+          echo "GOPRIVATE=github.com/symbioticfi/relay" >> $GITHUB_ENV
+
+      - name: "Setup Go Environment"
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: "go.sum"
+
+      - name: "Setup Node.js Environment"
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: "Setup Foundry Toolchain"
+        uses: foundry-rs/foundry-toolchain@82dee4ba654bd2146511f85f0d013af94670c4de # v1.4.0
+        with:
+          version: ${{ env.FOUNDRY_VERSION }}
+
+      - name: "Setup Docker Buildx"
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+      - name: "Install Go Dependencies"
+        run: go mod download
+
+      - name: "Initialize E2E Test Environment"
+        run: |
+          echo "Configuring E2E test environment..."
+          echo "  - Operators: ${{ env.OPERATORS }}"
+          echo "  - Commiters: ${{ env.COMMITERS }}"
+          echo "  - Aggregators: ${{ env.AGGREGATORS }}"
+          echo "  - Verification Type: ${{ env.VERIFICATION_TYPE }}"
+          echo "  - Epoch Time: ${{ env.EPOCH_TIME }}s"
+          echo "  - Block Time: ${{ env.BLOCK_TIME }}s"
+          echo "  - Finality Blocks: ${{ env.FINALITY_BLOCKS }}"
+          
+          cd e2e
+          chmod +x setup.sh
+          ./setup.sh
+          cd ../
+          chmod -R 777 e2e/
+
+      - name: "Start Test Network"
+        run: |
+          cd e2e/temp-network
+          echo "Starting Docker Compose network..."
+          docker compose up -d
+          
+          echo "Waiting for services to initialize..."
+          sleep 30
+          
+          echo "✅ Network startup completed"
+
+      - name: "Execute E2E Tests"
+        run: |
+          echo "Running End-to-End tests..."
+          make e2e-test
+
+
+      - name: "Collect Diagnostic Information"
+        if: failure()
+        run: |
+          cd e2e
+          echo "❌ Test failure detected - collecting diagnostic information..."
+          
+          # Create organized logs directory structure
+          mkdir -p logs/{containers,system,summary}
+          
+          echo "Gathering container information..."
+          # Get active containers (excluding anvil containers which are noisy)
+          CONTAINER_IDS=$(docker ps -a --format "table {{.ID}}\t{{.Names}}" | grep -v -E "(anvil|buildx_buildkit|CONTAINER)" | awk '{print $1}' | tr '\n' ' ')
+          
+          if [ -n "$CONTAINER_IDS" ]; then
+            echo "Found active containers: $(echo $CONTAINER_IDS | wc -w)"
+            
+            # Container status overview
+            {
+              echo "=== Container Status Overview ==="
+              echo "Generated at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+              echo "Workflow: ${{ github.workflow }}"
+              echo "Run ID: ${{ github.run_id }}"
+              echo ""
+              docker ps -a --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -v -E "(anvil|buildx_buildkit)"
+            } > logs/containers/status-overview.log
+            
+            # Individual container logs
+            for container_id in $CONTAINER_IDS; do
+              if [ -n "$container_id" ]; then
+                CONTAINER_NAME=$(docker inspect --format='{{.Name}}' $container_id 2>/dev/null | sed 's/^\/*//' || echo "container-$container_id")
+                
+                echo "Collecting logs for: $CONTAINER_NAME"
+                {
+                  echo "=== Container: $CONTAINER_NAME ($container_id) ==="
+                  echo "Generated at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+                  echo "Last 500 lines of logs:"
+                  echo ""
+                  docker logs --tail=500 $container_id 2>&1
+                } > logs/containers/$CONTAINER_NAME.log
+              fi
+            done
+          else
+            echo "⚠️ No active containers found (excluding anvil)" > logs/containers/status-overview.log
+          fi
+          
+          echo "Gathering system information..."
+          {
+            echo "=== System Diagnostics ==="
+            echo "Generated at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo ""
+            echo "=== Disk Usage ==="
+            df -h
+            echo ""
+            echo "=== Memory Usage ==="
+            free -h
+            echo ""
+            echo "=== All Docker Containers ==="
+            docker ps -a --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+            echo ""
+            echo "=== Docker Images ==="
+            docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
+          } > logs/system/diagnostics.log
+          
+          echo "Creating test summary..."
+          {
+            echo "=== E2E Test Failure Summary ==="
+            echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo "Workflow: ${{ github.workflow }}"
+            echo "Run ID: ${{ github.run_id }}"
+            echo "Run Number: ${{ github.run_number }}"
+            echo "Repository: ${{ github.repository }}"
+            echo "Branch: ${{ github.ref_name }}"
+            echo ""
+            echo "=== Test Configuration ==="
+            echo "  - Operators: ${{ env.OPERATORS }}"
+            echo "  - Commiters: ${{ env.COMMITERS }}"
+            echo "  - Aggregators: ${{ env.AGGREGATORS }}"
+            echo "  - Verification Type: ${{ env.VERIFICATION_TYPE }}"
+            echo "  - Epoch Time: ${{ env.EPOCH_TIME }}s"
+            echo "  - Block Time: ${{ env.BLOCK_TIME }}s"
+            echo "  - Finality Blocks: ${{ env.FINALITY_BLOCKS }}"
+            echo ""
+            echo "=== Available Log Files ==="
+            echo "containers/status-overview.log - Container status summary"
+            echo "containers/[name].log - Individual container logs (last 500 lines)"
+            echo "system/diagnostics.log - System resource usage and Docker info"
+            echo "summary/failure-report.log - This summary file"
+            echo ""
+            echo "=== Next Steps ==="
+            echo "1. Review container logs for error messages"
+            echo "2. Check system diagnostics for resource constraints"
+            echo "3. Verify test configuration parameters"
+            echo "4. Consider adjusting timeout values if needed"
+          } > logs/summary/failure-report.log
+          
+          echo "✅ Diagnostic collection completed"
+          echo "Log file summary:"
+          find logs -type f -name "*.log" -exec echo "  - {}" \; | sort
+
+      - name: "Upload Diagnostic Artifacts"
+        if: failure()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: "e2e-diagnostics-${{ matrix.config.name }}-${{ github.run_number }}-${{ github.run_attempt }}"
+          path: e2e/logs/
+          retention-days: 7
+          if-no-files-found: warn

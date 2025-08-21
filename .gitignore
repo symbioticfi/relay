@@ -6,3 +6,6 @@ go.sum
 .data*
 coverage.txt
 pkg/proof/circuits
+
+e2e/contracts
+e2e/temp-network

@@ -11,6 +11,7 @@ require (
 	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-errors/errors v1.5.1
 	github.com/go-playground/validator/v10 v10.27.0
+	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/libp2p/go-libp2p v0.41.1
 	github.com/libp2p/go-libp2p-kad-dht v0.33.1
 	github.com/libp2p/go-libp2p-pubsub v0.14.2
