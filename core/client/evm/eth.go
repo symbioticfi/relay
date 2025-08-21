@@ -59,7 +59,7 @@ type IEvmClient interface {
 	RegisterKey(ctx context.Context, addr entity.CrossChainAddress, keyTag entity.KeyTag, key entity.CompactPublicKey, signature entity.RawSignature, extraData []byte) (entity.TxResult, error)
 	SetGenesis(ctx context.Context, addr entity.CrossChainAddress, header entity.ValidatorSetHeader, extraData []entity.ExtraData) (entity.TxResult, error)
 	VerifyQuorumSig(ctx context.Context, addr entity.CrossChainAddress, epoch uint64, message []byte, keyTag entity.KeyTag, threshold *big.Int, proof []byte) (bool, error)
-	IsValsetHeaderCommittedAtMulticall(ctx context.Context, addr entity.CrossChainAddress, epochs []uint64) ([]bool, error)
+	IsValsetHeaderCommittedAtEpochs(ctx context.Context, addr entity.CrossChainAddress, epochs []uint64) ([]bool, error)
 }
 
 type Config struct {
@@ -671,6 +671,56 @@ func (e *Client) GetKeys(ctx context.Context, address entity.CrossChainAddress, 
 			}),
 		}
 	}), nil
+}
+
+func (e *Client) IsValsetHeaderCommittedAtEpochs(ctx context.Context, addr entity.CrossChainAddress, epochs []uint64) (_ []bool, err error) {
+	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
+	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("IsValSetHeaderCommittedAt", err, now)
+	}(time.Now())
+
+	abi, err := gen.ISettlementMetaData.GetAbi()
+	if err != nil {
+		return nil, errors.Errorf("failed to get ABI: %v", err)
+	}
+
+	isCommitted := make([]bool, 0, len(epochs))
+	calls := make([]Call, 0, len(epochs))
+
+	for _, epoch := range epochs {
+		bytes, err := abi.Pack("IsValSetHeaderCommittedAt", big.NewInt(int64(epoch)))
+		if err != nil {
+			return nil, errors.Errorf("failed to get bytes: %v", err)
+		}
+
+		calls = append(calls, Call{
+			Target:       addr.Address,
+			CallData:     bytes,
+			AllowFailure: false,
+		})
+	}
+
+	outs, err := e.multicall(toCtx, addr.ChainId, calls)
+	if err != nil {
+		return nil, errors.Errorf("multicall failed: %v", err)
+	}
+
+	if len(outs) != len(calls) {
+		return nil, errors.Errorf("multicall failed: expected %d calls, got %d", len(calls), len(outs))
+	}
+
+	for _, out := range outs {
+		var res bool
+
+		if err := abi.UnpackIntoInterface(&res, "IsValSetHeaderCommittedAt", out.ReturnData); err != nil {
+			return nil, errors.Errorf("failed to unpack IsValSetHeaderCommittedAt: %v", err)
+		}
+
+		isCommitted = append(isCommitted, res)
+	}g
+
+	return isCommitted, nil
 }
 
 var customErrRegExp = regexp.MustCompile(`0x[0-9a-fA-F]{8}`)
