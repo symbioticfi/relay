@@ -718,7 +718,7 @@ func (e *Client) IsValsetHeaderCommittedAtEpochs(ctx context.Context, addr entit
 		}
 
 		isCommitted = append(isCommitted, res)
-	}g
+	}
 
 	return isCommitted, nil
 }

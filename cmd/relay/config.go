@@ -114,7 +114,7 @@ type config struct {
 	Bootnodes         []string                    `mapstructure:"bootnodes"`
 	DHTMode           string                      `mapstructure:"dht-mode" validate:"oneof=auto server client disabled"`
 	MDnsEnabled       bool                        `mapstructure:"enable-mdns"`
-	MaxCalls          int                         `mapstructure:"max-calls"`
+	MaxCalls          int                         `mapstructure:"evm-max-calls"`
 }
 
 func (c config) Validate() error {
@@ -152,7 +152,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringSlice("bootnodes", nil, "List of bootnodes in multiaddr format")
 	rootCmd.PersistentFlags().String("dht-mode", "server", "DHT mode: auto, server, client, disabled")
 	rootCmd.PersistentFlags().Bool("enable-mdns", false, "Enable mDNS discovery for P2P")
-	rootCmd.PersistentFlags().Int("max-calls", 0, "Max calls in multicall")
+	rootCmd.PersistentFlags().Int("evm-max-calls", 0, "Max calls in multicall")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
@@ -241,7 +241,7 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	if err := v.BindPFlag("enable-mdns", cmd.PersistentFlags().Lookup("enable-mdns")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("max-calls", cmd.PersistentFlags().Lookup("max-calls")); err != nil {
+	if err := v.BindPFlag("evm-max-calls", cmd.PersistentFlags().Lookup("evm-max-calls")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 
