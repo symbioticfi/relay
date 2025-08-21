@@ -111,19 +111,19 @@ func (mr *MockrepoMockRecorder) GetAllSignatures(arg0, reqHash any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllSignatures", reflect.TypeOf((*Mockrepo)(nil).GetAllSignatures), arg0, reqHash)
 }
 
-// GetLatestValidatorSet mocks base method.
-func (m *Mockrepo) GetLatestValidatorSet(arg0 context.Context) (entity.ValidatorSet, error) {
+// GetLatestValidatorSetMeta mocks base method.
+func (m *Mockrepo) GetLatestValidatorSetMeta(arg0 context.Context) (entity.ValidatorSetMeta, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLatestValidatorSet", arg0)
-	ret0, _ := ret[0].(entity.ValidatorSet)
+	ret := m.ctrl.Call(m, "GetLatestValidatorSetMeta", arg0)
+	ret0, _ := ret[0].(entity.ValidatorSetMeta)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetLatestValidatorSet indicates an expected call of GetLatestValidatorSet.
-func (mr *MockrepoMockRecorder) GetLatestValidatorSet(arg0 any) *gomock.Call {
+// GetLatestValidatorSetMeta indicates an expected call of GetLatestValidatorSetMeta.
+func (mr *MockrepoMockRecorder) GetLatestValidatorSetMeta(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestValidatorSet", reflect.TypeOf((*Mockrepo)(nil).GetLatestValidatorSet), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestValidatorSetMeta", reflect.TypeOf((*Mockrepo)(nil).GetLatestValidatorSetMeta), arg0)
 }
 
 // GetSignatureRequest mocks base method.

@@ -340,7 +340,7 @@ type ValidatorSetMeta struct {
 	ValidatorsSszMRoot     common.Hash
 }
 
-func (m ValidatorSetMeta) GetHeader() (ValidatorSetHeader, error) {
+func (m ValidatorSetMeta) GetHeader() ValidatorSetHeader {
 	return ValidatorSetHeader{
 		Version:            m.Version,
 		RequiredKeyTag:     m.RequiredKeyTag,
@@ -349,7 +349,7 @@ func (m ValidatorSetMeta) GetHeader() (ValidatorSetHeader, error) {
 		QuorumThreshold:    m.QuorumThreshold,
 		ValidatorsSszMRoot: m.ValidatorsSszMRoot,
 		PreviousHeaderHash: m.PreviousHeaderHash,
-	}, nil
+	}
 }
 
 func (v ValidatorSet) FindValidatorByKey(keyTag KeyTag, publicKey []byte) (Validator, bool) {

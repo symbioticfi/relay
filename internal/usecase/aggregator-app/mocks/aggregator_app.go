@@ -73,6 +73,21 @@ func (mr *MockrepositoryMockRecorder) GetConfigByEpoch(ctx, epoch any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigByEpoch", reflect.TypeOf((*Mockrepository)(nil).GetConfigByEpoch), ctx, epoch)
 }
 
+// GetValidatorByKey mocks base method.
+func (m *Mockrepository) GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetValidatorByKey", ctx, epoch, keyTag, publicKey)
+	ret0, _ := ret[0].(entity.Validator)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetValidatorByKey indicates an expected call of GetValidatorByKey.
+func (mr *MockrepositoryMockRecorder) GetValidatorByKey(ctx, epoch, keyTag, publicKey any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorByKey", reflect.TypeOf((*Mockrepository)(nil).GetValidatorByKey), ctx, epoch, keyTag, publicKey)
+}
+
 // GetValidatorSetByEpoch mocks base method.
 func (m *Mockrepository) GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error) {
 	m.ctrl.T.Helper()
@@ -86,6 +101,21 @@ func (m *Mockrepository) GetValidatorSetByEpoch(ctx context.Context, epoch uint6
 func (mr *MockrepositoryMockRecorder) GetValidatorSetByEpoch(ctx, epoch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSetByEpoch", reflect.TypeOf((*Mockrepository)(nil).GetValidatorSetByEpoch), ctx, epoch)
+}
+
+// GetValidatorSetMetaByEpoch mocks base method.
+func (m *Mockrepository) GetValidatorSetMetaByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSetMeta, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetValidatorSetMetaByEpoch", ctx, epoch)
+	ret0, _ := ret[0].(entity.ValidatorSetMeta)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetValidatorSetMetaByEpoch indicates an expected call of GetValidatorSetMetaByEpoch.
+func (mr *MockrepositoryMockRecorder) GetValidatorSetMetaByEpoch(ctx, epoch any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSetMetaByEpoch", reflect.TypeOf((*Mockrepository)(nil).GetValidatorSetMetaByEpoch), ctx, epoch)
 }
 
 // SaveSignature mocks base method.

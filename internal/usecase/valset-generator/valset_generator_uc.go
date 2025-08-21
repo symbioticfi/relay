@@ -134,10 +134,7 @@ func (s *Service) process(ctx context.Context) error {
 		return errors.Errorf("failed to get latest validator set extra: %w", err)
 	}
 
-	latestValsetHeader, err := latestValsetMeta.GetHeader()
-	if err != nil {
-		return errors.Errorf("failed to get latest validator set header: %w", err)
-	}
+	latestValsetHeader := latestValsetMeta.GetHeader()
 
 	latestValsetHeaderHash, err := latestValsetHeader.Hash()
 	if err != nil {
