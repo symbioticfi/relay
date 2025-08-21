@@ -59,6 +59,7 @@ type IEvmClient interface {
 	RegisterKey(ctx context.Context, addr entity.CrossChainAddress, keyTag entity.KeyTag, key entity.CompactPublicKey, signature entity.RawSignature, extraData []byte) (entity.TxResult, error)
 	SetGenesis(ctx context.Context, addr entity.CrossChainAddress, header entity.ValidatorSetHeader, extraData []entity.ExtraData) (entity.TxResult, error)
 	VerifyQuorumSig(ctx context.Context, addr entity.CrossChainAddress, epoch uint64, message []byte, keyTag entity.KeyTag, threshold *big.Int, proof []byte) (bool, error)
+	IsValsetHeaderCommittedAtMulticall(ctx context.Context, addr entity.CrossChainAddress, epochs []uint64) ([]bool, error)
 }
 
 type Config struct {
