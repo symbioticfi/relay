@@ -37,11 +37,11 @@ jobs:
           cache: true
           cache-dependency-path: "go.sum"
 
-      - name: "Run Code Linting"
-        run: make lint
-
       - name: "Generate Code"
         run: make generate
+
+      - name: "Run Code Linting"
+        run: make lint
 
       - name: "Verify Code Generation"
         id: verify-codegen
