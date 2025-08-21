@@ -17,6 +17,10 @@
     - [GetSignaturesResponse](#api-proto-v1-GetSignaturesResponse)
     - [GetSuggestedEpochRequest](#api-proto-v1-GetSuggestedEpochRequest)
     - [GetSuggestedEpochResponse](#api-proto-v1-GetSuggestedEpochResponse)
+    - [GetValidatorByAddressRequest](#api-proto-v1-GetValidatorByAddressRequest)
+    - [GetValidatorByAddressResponse](#api-proto-v1-GetValidatorByAddressResponse)
+    - [GetValidatorSetHeaderRequest](#api-proto-v1-GetValidatorSetHeaderRequest)
+    - [GetValidatorSetHeaderResponse](#api-proto-v1-GetValidatorSetHeaderResponse)
     - [GetValidatorSetRequest](#api-proto-v1-GetValidatorSetRequest)
     - [GetValidatorSetResponse](#api-proto-v1-GetValidatorSetResponse)
     - [Key](#api-proto-v1-Key)
@@ -231,6 +235,73 @@ Response message for getting suggested epoch
 | ----- | ---- | ----- | ----------- |
 | epoch | [uint64](#uint64) |  | Epoch number |
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Epoch start time |
+
+
+
+
+
+
+<a name="api-proto-v1-GetValidatorByAddressRequest"></a>
+
+### GetValidatorByAddressRequest
+Request message for getting validator by address
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| epoch | [uint64](#uint64) | optional | Epoch number (optional, if not provided current epoch will be used) |
+| address | [string](#string) |  | Validator address (required) |
+
+
+
+
+
+
+<a name="api-proto-v1-GetValidatorByAddressResponse"></a>
+
+### GetValidatorByAddressResponse
+Response message for getting validator by address
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| validator | [Validator](#api-proto-v1-Validator) |  | The validator |
+
+
+
+
+
+
+<a name="api-proto-v1-GetValidatorSetHeaderRequest"></a>
+
+### GetValidatorSetHeaderRequest
+Request message for getting validator set header
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| epoch | [uint64](#uint64) | optional | Epoch number (optional, if not provided current epoch will be used) |
+
+
+
+
+
+
+<a name="api-proto-v1-GetValidatorSetHeaderResponse"></a>
+
+### GetValidatorSetHeaderResponse
+Response message for getting validator set header
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| version | [uint32](#uint32) |  | Version of the validator set |
+| required_key_tag | [uint32](#uint32) |  | Key tag required to commit next validator set |
+| epoch | [uint64](#uint64) |  | Validator set epoch |
+| capture_timestamp | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Epoch capture timestamp |
+| quorum_threshold | [string](#string) |  | Quorum threshold (big integer as string) |
+| validators_ssz_mroot | [string](#string) |  | Validators SSZ Merkle root (hex string) |
+| previous_header_hash | [string](#string) |  | Previous validator set header hash (hex string) |
 
 
 
@@ -475,6 +546,8 @@ SymbioticAPI provides access to the Symbiotic relay functions
 | GetSignatureRequest | [GetSignatureRequestRequest](#api-proto-v1-GetSignatureRequestRequest) | [GetSignatureRequestResponse](#api-proto-v1-GetSignatureRequestResponse) | Get signature request by request hash |
 | GetAggregationStatus | [GetAggregationStatusRequest](#api-proto-v1-GetAggregationStatusRequest) | [GetAggregationStatusResponse](#api-proto-v1-GetAggregationStatusResponse) | Get aggregation status, can be sent only to aggregator nodes |
 | GetValidatorSet | [GetValidatorSetRequest](#api-proto-v1-GetValidatorSetRequest) | [GetValidatorSetResponse](#api-proto-v1-GetValidatorSetResponse) | Get current validator set |
+| GetValidatorByAddress | [GetValidatorByAddressRequest](#api-proto-v1-GetValidatorByAddressRequest) | [GetValidatorByAddressResponse](#api-proto-v1-GetValidatorByAddressResponse) | Get validator by address |
+| GetValidatorSetHeader | [GetValidatorSetHeaderRequest](#api-proto-v1-GetValidatorSetHeaderRequest) | [GetValidatorSetHeaderResponse](#api-proto-v1-GetValidatorSetHeaderResponse) | Get validator set header |
 | SignMessageWait | [SignMessageWaitRequest](#api-proto-v1-SignMessageWaitRequest) | [SignMessageWaitResponse](#api-proto-v1-SignMessageWaitResponse) stream | Sign a message and wait for aggregation proof via stream |
 
  

@@ -25,6 +25,7 @@ import (
 	"github.com/symbioticfi/relay/pkg/log"
 )
 
+//go:generate mockgen -source=app.go -destination=mocks/app_mock.go -package=mocks
 type signer interface {
 	Sign(ctx context.Context, req entity.SignatureRequest) error
 }
