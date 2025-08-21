@@ -19,7 +19,7 @@ const Multicall3 = "0xcA11bde05977b3631167028862bE2a173976CA11"
 type Call = gen.Multicall3Call3
 type Result = gen.Multicall3Result
 
-func (e *Client) MulticallExists(ctx context.Context, chainId uint64) (bool, error) {
+func (e *Client) multicallExists(ctx context.Context, chainId uint64) (bool, error) {
 	client, ok := e.conns[chainId]
 	if !ok {
 		return false, errors.Errorf("no connection for chain ID %d: %w", chainId, entity.ErrChainNotFound)
@@ -33,41 +33,7 @@ func (e *Client) MulticallExists(ctx context.Context, chainId uint64) (bool, err
 	return len(code) > 0, nil
 }
 
-func (e *Client) GetOperatorVotingPowersCall(target entity.CrossChainAddress, operator common.Address, timestamp uint64) (Call, error) {
-	abi, err := gen.IVotingPowerProviderMetaData.GetAbi()
-	if err != nil {
-		return Call{}, errors.Errorf("failed to get ABI: %v", err)
-	}
-
-	bytes, err := abi.Pack("getOperatorVotingPowersAt", operator, []byte{}, big.NewInt(int64(timestamp)))
-	return Call{
-		Target:       target.Address,
-		CallData:     bytes,
-		AllowFailure: false,
-	}, err
-}
-
-func (e *Client) UnpackGetOperatorVotingPowersCall(out []byte) ([]entity.VaultVotingPower, error) {
-	var res []gen.IVotingPowerProviderVaultVotingPower
-
-	abi, err := gen.IVotingPowerProviderMetaData.GetAbi()
-	if err != nil {
-		return nil, errors.Errorf("failed to get ABI: %v", err)
-	}
-
-	if err := abi.UnpackIntoInterface(&res, "getOperatorVotingPowersAt", out); err != nil {
-		return nil, errors.Errorf("failed to unpack getOperatorVotingPowers: %v", err)
-	}
-
-	return lo.Map(res, func(v gen.IVotingPowerProviderVaultVotingPower, _ int) entity.VaultVotingPower {
-		return entity.VaultVotingPower{
-			Vault:       v.Vault,
-			VotingPower: entity.ToVotingPower(v.VotingPower),
-		}
-	}), nil
-}
-
-func (e *Client) Multicall(ctx context.Context, chainId uint64, calls []Call) (_ []Result, err error) {
+func (e *Client) multicall(ctx context.Context, chainId uint64, calls []Call) (_ []Result, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -85,8 +51,11 @@ func (e *Client) Multicall(ctx context.Context, chainId uint64, calls []Call) (_
 	}
 
 	batches := 1
-	if e.cfg.MaxCalls != 0 {
-		batches = (len(calls) + e.cfg.MaxCalls - 1) / e.cfg.MaxCalls
+	maxCalls := e.cfg.MaxCalls
+	if maxCalls != 0 {
+		batches = (len(calls) + maxCalls - 1) / maxCalls
+	} else {
+		maxCalls = len(calls)
 	}
 
 	callOpts := &bind.CallOpts{
@@ -94,19 +63,10 @@ func (e *Client) Multicall(ctx context.Context, chainId uint64, calls []Call) (_
 		Context:     toCtx,
 	}
 
-	if batches == 1 {
-		out, err := multicall.Aggregate3(callOpts, calls)
-		if err != nil {
-			return nil, errors.Errorf("failed to aggregate calls: %w", err)
-		}
-
-		return out, nil
-	}
-
 	results := make([]Result, 0, len(calls))
 	for i := 0; i < batches; i++ {
-		start := i * e.cfg.MaxCalls
-		end := min((i+1)*e.cfg.MaxCalls, len(calls))
+		start := i * maxCalls
+		end := min((i+1)*maxCalls, len(calls))
 		out, err := multicall.Aggregate3(callOpts, calls[start:end])
 		if err != nil {
 			return nil, errors.Errorf("failed to aggregate calls: %w", err)
@@ -115,4 +75,118 @@ func (e *Client) Multicall(ctx context.Context, chainId uint64, calls []Call) (_
 	}
 
 	return results, nil
+}
+
+func (e *Client) getVotingPowersMulticall(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorVotingPower, error) {
+	abi, err := gen.IVotingPowerProviderMetaData.GetAbi()
+	if err != nil {
+		return nil, errors.Errorf("failed to get ABI: %v", err)
+	}
+
+	operators, err := e.GetOperators(ctx, address, timestamp)
+	if err != nil {
+		return nil, errors.Errorf("get operators failed: %v", err)
+	}
+
+	votingPowers := make([]entity.OperatorVotingPower, 0, len(operators))
+
+	calls := make([]Call, 0, len(operators))
+
+	for _, operator := range operators {
+		bytes, err := abi.Pack("getOperatorVotingPowersAt", operator, []byte{}, big.NewInt(int64(timestamp)))
+		if err != nil {
+			return nil, errors.Errorf("failed to get bytes: %v", err)
+		}
+		calls = append(calls, Call{
+			Target:       address.Address,
+			CallData:     bytes,
+			AllowFailure: false,
+		})
+	}
+
+	outs, err := e.multicall(ctx, address.ChainId, calls)
+	if err != nil {
+		return nil, errors.Errorf("multicall failed: %v", err)
+	}
+
+	if len(outs) != len(calls) {
+		return nil, errors.Errorf("multicall failed: expected %d calls, got %d", len(calls), len(outs))
+	}
+
+	for i, out := range outs {
+		var res []gen.IVotingPowerProviderVaultVotingPower
+
+		if err := abi.UnpackIntoInterface(&res, "getOperatorVotingPowersAt", out.ReturnData); err != nil {
+			return nil, errors.Errorf("failed to unpack getOperatorVotingPowers: %v", err)
+		}
+
+		votingPowers = append(votingPowers, entity.OperatorVotingPower{
+			Operator: operators[i],
+			Vaults: lo.Map(res, func(v gen.IVotingPowerProviderVaultVotingPower, _ int) entity.VaultVotingPower {
+				return entity.VaultVotingPower{
+					Vault:       v.Vault,
+					VotingPower: entity.ToVotingPower(v.VotingPower),
+				}
+			}),
+		})
+	}
+
+	return votingPowers, nil
+}
+
+func (e *Client) getKeysMulticall(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) (_ []entity.OperatorWithKeys, err error) {
+	abi, err := gen.IKeyRegistryMetaData.GetAbi()
+	if err != nil {
+		return nil, errors.Errorf("failed to get ABI: %v", err)
+	}
+
+	operators, err := e.GetKeysOperators(ctx, address, timestamp)
+	if err != nil {
+		return nil, errors.Errorf("get keys operators failed: %v", err)
+	}
+
+	keys := make([]entity.OperatorWithKeys, 0, len(operators))
+	calls := make([]Call, 0, len(operators))
+
+	for _, operator := range operators {
+		bytes, err := abi.Pack("getKeysAt0", operator, big.NewInt(int64(timestamp)), []byte{})
+		if err != nil {
+			return nil, errors.Errorf("failed to get bytes: %v", err)
+		}
+
+		calls = append(calls, Call{
+			Target:       address.Address,
+			CallData:     bytes,
+			AllowFailure: false,
+		})
+	}
+
+	outs, err := e.multicall(ctx, address.ChainId, calls)
+	if err != nil {
+		return nil, errors.Errorf("multicall failed: %v", err)
+	}
+
+	if len(outs) != len(calls) {
+		return nil, errors.Errorf("multicall failed: expected %d calls, got %d", len(calls), len(outs))
+	}
+
+	for i, out := range outs {
+		var res []gen.IKeyRegistryKey
+
+		if err := abi.UnpackIntoInterface(&res, "getKeysAt0", out.ReturnData); err != nil {
+			return nil, errors.Errorf("failed to unpack getKeysAt0: %v", err)
+		}
+
+		keys = append(keys, entity.OperatorWithKeys{
+			Operator: operators[i],
+			Keys: lo.Map(res, func(v gen.IKeyRegistryKey, _ int) entity.ValidatorKey {
+				return entity.ValidatorKey{
+					Tag:     entity.KeyTag(v.Tag),
+					Payload: v.Payload,
+				}
+			}),
+		})
+	}
+
+	return keys, nil
 }

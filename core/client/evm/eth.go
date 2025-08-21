@@ -549,6 +549,15 @@ func (e *Client) GetVotingPowers(ctx context.Context, address entity.CrossChainA
 		e.observeMetrics("GetVotingPowersAt", err, now)
 	}(time.Now())
 
+	multicallExists, err := e.multicallExists(ctx, address.ChainId)
+	if err != nil {
+		return nil, errors.Errorf("multicall check failed: %v", err)
+	}
+
+	if multicallExists {
+		return e.getVotingPowersMulticall(ctx, address, timestamp)
+	}
+
 	votingPowerProvider, err := e.getVotingPowerProviderContract(address)
 	if err != nil {
 		return nil, errors.Errorf("failed to create voting power provider contract: %w", err)
@@ -598,12 +607,44 @@ func (e *Client) GetOperators(ctx context.Context, address entity.CrossChainAddr
 	return operators, nil
 }
 
+func (e *Client) GetKeysOperators(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) (_ []common.Address, err error) {
+	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
+	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("GetKeysOperators", err, now)
+	}(time.Now())
+
+	keyRegistry, err := e.getKeyRegistryContract(address)
+	if err != nil {
+		return nil, errors.Errorf("failed to create voting power provider contract: %w", err)
+	}
+
+	operators, err := keyRegistry.GetKeysOperatorsAt(&bind.CallOpts{
+		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
+		Context:     toCtx,
+	}, new(big.Int).SetUint64(timestamp))
+	if err != nil {
+		return nil, errors.Errorf("failed to call getKeysOperatorsAt: %w", e.formatEVMContractError(gen.IKeyRegistryMetaData, err))
+	}
+
+	return operators, nil
+}
+
 func (e *Client) GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) (_ []entity.OperatorWithKeys, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
 		e.observeMetrics("GetKeysAt", err, now)
 	}(time.Now())
+
+	multicallExists, err := e.multicallExists(ctx, address.ChainId)
+	if err != nil {
+		return nil, errors.Errorf("multicall check failed: %v", err)
+	}
+
+	if multicallExists {
+		return e.getKeysMulticall(ctx, address, timestamp)
+	}
 
 	keyRegistry, err := e.getKeyRegistryContract(address)
 	if err != nil {

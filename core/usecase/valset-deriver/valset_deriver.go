@@ -8,8 +8,6 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/symbioticfi/relay/core/client/evm"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
@@ -37,10 +35,6 @@ type evmClient interface {
 	GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error)
 	GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (uint64, error)
 	GetOperators(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]common.Address, error)
-	MulticallExists(ctx context.Context, chainId uint64) (bool, error)
-	Multicall(ctx context.Context, chainId uint64, calls []evm.Call) (_ []evm.Result, err error)
-	GetOperatorVotingPowersCall(target entity.CrossChainAddress, operator common.Address, timestamp uint64) (evm.Call, error)
-	UnpackGetOperatorVotingPowersCall(out []byte) ([]entity.VaultVotingPower, error)
 }
 
 // Deriver coordinates the ETH services
@@ -93,7 +87,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 	// Get voting powers from all voting power providers
 	allVotingPowers := make([]dtoOperatorVotingPower, len(config.VotingPowerProviders))
 	for i, provider := range config.VotingPowerProviders {
-		votingPowers, err := v.getVotingPowers(ctx, provider, timestamp)
+		votingPowers, err := v.evmClient.GetVotingPowers(ctx, provider, timestamp)
 		if err != nil {
 			return entity.ValidatorSet{}, errors.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
 		}
@@ -363,54 +357,4 @@ func (v *Deriver) calcQuorumThreshold(config entity.NetworkConfig, totalVP entit
 	div := new(big.Int).Div(mul, maxThreshold())
 	// add 1 to apply up rounding
 	return entity.ToVotingPower(new(big.Int).Add(div, big.NewInt(1))), nil
-}
-
-func (v *Deriver) getVotingPowers(ctx context.Context, provider entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorVotingPower, error) {
-	multicallExists, err := v.evmClient.MulticallExists(ctx, provider.ChainId)
-	if err != nil {
-		return nil, errors.Errorf("multicall check failed: %v", err)
-	}
-
-	if !multicallExists {
-		return v.evmClient.GetVotingPowers(ctx, provider, timestamp)
-	}
-
-	operators, err := v.evmClient.GetOperators(ctx, provider, timestamp)
-	if err != nil {
-		return nil, errors.Errorf("get operators failed: %v", err)
-	}
-
-	votingPowers := make([]entity.OperatorVotingPower, 0, len(operators))
-
-	calls := make([]evm.Call, 0, len(operators))
-
-	for _, operator := range operators {
-		call, err := v.evmClient.GetOperatorVotingPowersCall(provider, operator, timestamp)
-		if err != nil {
-			return nil, errors.Errorf("get operator voting power call failed: %v", err)
-		}
-		calls = append(calls, call)
-	}
-
-	outs, err := v.evmClient.Multicall(ctx, provider.ChainId, calls)
-	if err != nil {
-		return nil, errors.Errorf("multicall failed: %v", err)
-	}
-
-	if len(outs) != len(calls) {
-		return nil, errors.Errorf("multicall failed: expected %d calls, got %d", len(calls), len(outs))
-	}
-
-	for i, out := range outs {
-		vps, err := v.evmClient.UnpackGetOperatorVotingPowersCall(out.ReturnData)
-		if err != nil {
-			return nil, errors.Errorf("unpack voting power call failed: %v", err)
-		}
-		votingPowers = append(votingPowers, entity.OperatorVotingPower{
-			Operator: operators[i],
-			Vaults:   vps,
-		})
-	}
-
-	return votingPowers, nil
 }
