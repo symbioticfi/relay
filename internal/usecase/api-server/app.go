@@ -34,7 +34,7 @@ type repo interface {
 	GetValidatorSetByEpoch(_ context.Context, epoch uint64) (entity.ValidatorSet, error)
 	GetAllSignatures(_ context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error)
 	GetSignatureRequest(_ context.Context, reqHash common.Hash) (entity.SignatureRequest, error)
-	GetLatestValidatorSet(_ context.Context) (entity.ValidatorSet, error)
+	GetLatestValidatorSetMeta(_ context.Context) (entity.ValidatorSetMeta, error)
 }
 
 type evmClient interface {

@@ -2,6 +2,7 @@ package badger
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -16,11 +17,15 @@ import (
 )
 
 const (
-	latestValidatorSetKey = "latest_validator_set"
+	latestValidatorSetEpochKey = "latest_validator_set_epoch"
 )
 
 func keyValidatorSet(epoch uint64) []byte {
 	return []byte(fmt.Sprintf("validator_set:%d", epoch))
+}
+
+func keyValidatorSetMeta(epoch uint64) []byte {
+	return []byte(fmt.Sprintf("validator_set_meta:%d", epoch))
 }
 
 func keyValidator(epoch uint64, keyTag entity.KeyTag, publicKeyHash common.Hash) []byte {
@@ -28,9 +33,18 @@ func keyValidator(epoch uint64, keyTag entity.KeyTag, publicKeyHash common.Hash)
 }
 
 func (r *Repository) SaveValidatorSet(_ context.Context, valset entity.ValidatorSet) error {
+	valsetMeta, err := valset.MakeMeta()
+	if err != nil {
+		return errors.Errorf("failed to create validator set meta: %w", err)
+	}
 	bytes, err := validatorSetToBytes(valset)
 	if err != nil {
 		return errors.Errorf("failed to marshal validator set: %w", err)
+	}
+
+	metaBytes, err := validatorSetMetaToBytes(valsetMeta)
+	if err != nil {
+		return errors.Errorf("failed to marshal validator set meta: %w", err)
 	}
 
 	return r.db.Update(func(txn *badger.Txn) error {
@@ -50,30 +64,36 @@ func (r *Repository) SaveValidatorSet(_ context.Context, valset entity.Validator
 			return errors.Errorf("failed to store validator set: %w", err)
 		}
 
+		// Save the validator set meta for its epoch
+		metaKey := keyValidatorSetMeta(valset.Epoch)
+		err = txn.Set(metaKey, metaBytes)
+		if err != nil {
+			return errors.Errorf("failed to store validator set meta: %w", err)
+		}
+
 		// Check if this is a newer epoch than the latest one
-		latestItem, err := txn.Get([]byte(latestValidatorSetKey))
+		latestItem, err := txn.Get([]byte(latestValidatorSetEpochKey))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
-			return errors.Errorf("failed to get latest validator set: %w", err)
+			return errors.Errorf("failed to get latest validator set epoch: %w", err)
 		}
 
 		shouldUpdateLatest := true
 		if err == nil {
 			latestValue, err := latestItem.ValueCopy(nil)
 			if err != nil {
-				return errors.Errorf("failed to copy latest validator set value: %w", err)
+				return errors.Errorf("failed to copy latest validator set epoch value: %w", err)
 			}
-			latestVs, err := bytesToValidatorSet(latestValue)
-			if err != nil {
-				return errors.Errorf("failed to unmarshal latest validator set: %w", err)
-			}
-			shouldUpdateLatest = latestVs.Epoch < valset.Epoch
+			latestEpoch := binary.BigEndian.Uint64(latestValue)
+			shouldUpdateLatest = latestEpoch < valset.Epoch
 		}
 
-		// Update latest validator set only if this is a newer epoch
+		// Update latest validator set epoch only if this is a newer epoch
 		if shouldUpdateLatest {
-			err = txn.Set([]byte(latestValidatorSetKey), bytes)
+			epochBytes := make([]byte, 8)
+			binary.BigEndian.PutUint64(epochBytes, valset.Epoch)
+			err = txn.Set([]byte(latestValidatorSetEpochKey), epochBytes)
 			if err != nil {
-				return errors.Errorf("failed to store latest validator set: %w", err)
+				return errors.Errorf("failed to store latest validator set epoch: %w", err)
 			}
 		}
 
@@ -100,26 +120,101 @@ func (r *Repository) SaveValidatorSet(_ context.Context, valset entity.Validator
 	})
 }
 
-func (r *Repository) GetValidatorSetByEpoch(_ context.Context, epoch uint64) (entity.ValidatorSet, error) {
-	var vs entity.ValidatorSet
+func (r *Repository) GetValidatorSetMetaByEpoch(_ context.Context, epoch uint64) (entity.ValidatorSetMeta, error) {
+	var meta entity.ValidatorSetMeta
 
-	return vs, r.db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get(keyValidatorSet(epoch))
+	return meta, r.db.View(func(txn *badger.Txn) error {
+		item, err := txn.Get(keyValidatorSetMeta(epoch))
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
-				return errors.Errorf("no validator set found for epoch %d: %w", epoch, entity.ErrEntityNotFound)
+				return errors.Errorf("no validator set meta found for epoch %d: %w", epoch, entity.ErrEntityNotFound)
 			}
-			return errors.Errorf("failed to get validator set: %w", err)
+			return errors.Errorf("failed to get validator set meta: %w", err)
 		}
 
 		value, err := item.ValueCopy(nil)
 		if err != nil {
-			return errors.Errorf("failed to copy validator set value: %w", err)
+			return errors.Errorf("failed to copy validator set meta value: %w", err)
 		}
 
-		vs, err = bytesToValidatorSet(value)
+		meta, err = bytesToValidatorSetMeta(value)
 		if err != nil {
-			return errors.Errorf("failed to unmarshal validator set: %w", err)
+			return errors.Errorf("failed to unmarshal validator set meta: %w", err)
+		}
+
+		return nil
+	})
+}
+
+func (r *Repository) GetValidatorSetByEpoch(_ context.Context, epoch uint64) (entity.ValidatorSet, error) {
+	var vs entity.ValidatorSet
+
+	return vs, r.db.View(func(txn *badger.Txn) error {
+		var err error
+		vs, err = r.getValidatorSetByEpochTx(txn, epoch)
+		return err
+	})
+}
+
+func (r *Repository) getValidatorSetByEpochTx(txn *badger.Txn, epoch uint64) (entity.ValidatorSet, error) {
+	item, err := txn.Get(keyValidatorSet(epoch))
+	if err != nil {
+		if errors.Is(err, badger.ErrKeyNotFound) {
+			return entity.ValidatorSet{}, errors.Errorf("no validator set found for epoch %d: %w", epoch, entity.ErrEntityNotFound)
+		}
+		return entity.ValidatorSet{}, errors.Errorf("failed to get validator set: %w", err)
+	}
+
+	value, err := item.ValueCopy(nil)
+	if err != nil {
+		return entity.ValidatorSet{}, errors.Errorf("failed to copy validator set value: %w", err)
+	}
+
+	vs, err := bytesToValidatorSet(value)
+	if err != nil {
+		return entity.ValidatorSet{}, errors.Errorf("failed to unmarshal validator set: %w", err)
+	}
+
+	return vs, nil
+}
+
+func (r *Repository) GetLatestValidatorSetMeta(_ context.Context) (entity.ValidatorSetMeta, error) {
+	var meta entity.ValidatorSetMeta
+
+	return meta, r.db.View(func(txn *badger.Txn) error {
+		// Get the latest epoch
+		item, err := txn.Get([]byte(latestValidatorSetEpochKey))
+		if err != nil {
+			if errors.Is(err, badger.ErrKeyNotFound) {
+				return errors.Errorf("no latest validator set found: %w", entity.ErrEntityNotFound)
+			}
+			return errors.Errorf("failed to get latest validator set epoch: %w", err)
+		}
+
+		value, err := item.ValueCopy(nil)
+		if err != nil {
+			return errors.Errorf("failed to copy latest validator set epoch value: %w", err)
+		}
+
+		latestEpoch := binary.BigEndian.Uint64(value)
+
+		// Get the validator set meta for that epoch in the same transaction
+		metaItem, err := txn.Get(keyValidatorSetMeta(latestEpoch))
+		if err != nil {
+			if errors.Is(err, badger.ErrKeyNotFound) {
+				return errors.Errorf("no validator set meta found for epoch %d: %w", latestEpoch, entity.ErrEntityNotFound)
+			}
+			return errors.Errorf("failed to get validator set meta: %w", err)
+		}
+
+		metaValue, err := metaItem.ValueCopy(nil)
+		if err != nil {
+			return errors.Errorf("failed to copy validator set meta value: %w", err)
+		}
+
+		meta, err = bytesToValidatorSetMeta(metaValue)
+		if err != nil {
+			return errors.Errorf("failed to unmarshal validator set meta: %w", err)
 		}
 
 		return nil
@@ -130,25 +225,25 @@ func (r *Repository) GetLatestValidatorSet(_ context.Context) (entity.ValidatorS
 	var vs entity.ValidatorSet
 
 	return vs, r.db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get([]byte(latestValidatorSetKey))
+		// Get the latest epoch
+		item, err := txn.Get([]byte(latestValidatorSetEpochKey))
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
 				return errors.Errorf("no latest validator set found: %w", entity.ErrEntityNotFound)
 			}
-			return errors.Errorf("failed to get latest validator set: %w", err)
+			return errors.Errorf("failed to get latest validator set epoch: %w", err)
 		}
 
 		value, err := item.ValueCopy(nil)
 		if err != nil {
-			return errors.Errorf("failed to copy latest validator set value: %w", err)
+			return errors.Errorf("failed to copy latest validator set epoch value: %w", err)
 		}
 
-		vs, err = bytesToValidatorSet(value)
-		if err != nil {
-			return errors.Errorf("failed to unmarshal latest validator set: %w", err)
-		}
+		latestEpoch := binary.BigEndian.Uint64(value)
 
-		return nil
+		// Get the validator set for that epoch in the same transaction
+		vs, err = r.getValidatorSetByEpochTx(txn, latestEpoch)
+		return err
 	})
 }
 
@@ -242,5 +337,48 @@ func bytesToValidator(data []byte) (entity.Validator, error) {
 		IsActive:    dto.IsActive,
 		Keys:        keys,
 		Vaults:      vaults,
+	}, nil
+}
+
+func validatorSetMetaToBytes(meta entity.ValidatorSetMeta) ([]byte, error) {
+	dto := validatorSetMetaDTO{
+		Version:            meta.Version,
+		RequiredKeyTag:     uint8(meta.RequiredKeyTag),
+		Epoch:              meta.Epoch,
+		CaptureTimestamp:   meta.CaptureTimestamp,
+		QuorumThreshold:    meta.QuorumThreshold.String(),
+		PreviousHeaderHash: meta.PreviousHeaderHash.Hex(),
+		TotalVotingPower:   meta.TotalActiveVotingPower.String(),
+		ValidatorsSszMRoot: meta.ValidatorsSszMRoot.Hex(),
+	}
+
+	return json.Marshal(dto)
+}
+
+func bytesToValidatorSetMeta(data []byte) (entity.ValidatorSetMeta, error) {
+	var dto validatorSetMetaDTO
+	if err := json.Unmarshal(data, &dto); err != nil {
+		return entity.ValidatorSetMeta{}, errors.Errorf("failed to unmarshal validator set meta: %w", err)
+	}
+
+	quorumThreshold, ok := new(big.Int).SetString(dto.QuorumThreshold, 10)
+	if !ok {
+		return entity.ValidatorSetMeta{}, errors.Errorf("failed to parse quorum threshold: %s", dto.QuorumThreshold)
+	}
+
+	totalVotingPower, ok := new(big.Int).SetString(dto.TotalVotingPower, 10)
+	if !ok {
+		return entity.ValidatorSetMeta{}, errors.Errorf("failed to parse total voting power: %s", dto.TotalVotingPower)
+	}
+
+	return entity.ValidatorSetMeta{
+		Version:                dto.Version,
+		RequiredKeyTag:         entity.KeyTag(dto.RequiredKeyTag),
+		Epoch:                  dto.Epoch,
+		CaptureTimestamp:       dto.CaptureTimestamp,
+		QuorumThreshold:        entity.ToVotingPower(quorumThreshold),
+		PreviousHeaderHash:     common.HexToHash(dto.PreviousHeaderHash),
+		TotalActiveVotingPower: entity.ToVotingPower(totalVotingPower),
+		ValidatorsSszMRoot:     common.HexToHash(dto.ValidatorsSszMRoot),
 	}, nil
 }

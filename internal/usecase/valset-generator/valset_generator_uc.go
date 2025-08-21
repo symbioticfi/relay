@@ -36,7 +36,7 @@ type evmClient interface {
 }
 
 type repo interface {
-	GetLatestValidatorSet(ctx context.Context) (entity.ValidatorSet, error)
+	GetLatestValidatorSetMeta(_ context.Context) (entity.ValidatorSetMeta, error)
 
 	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 	GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error)
@@ -129,12 +129,12 @@ func (s *Service) process(ctx context.Context) error {
 		return errors.Errorf("failed to get network data: %w", err)
 	}
 
-	latestValset, err := s.cfg.Repo.GetLatestValidatorSet(ctx)
+	latestValsetMeta, err := s.cfg.Repo.GetLatestValidatorSetMeta(ctx)
 	if err != nil {
 		return errors.Errorf("failed to get latest validator set extra: %w", err)
 	}
 
-	latestValsetHeader, err := latestValset.GetHeader()
+	latestValsetHeader, err := latestValsetMeta.GetHeader()
 	if err != nil {
 		return errors.Errorf("failed to get latest validator set header: %w", err)
 	}
@@ -151,8 +151,8 @@ func (s *Service) process(ctx context.Context) error {
 	}
 
 	// Avoid uint64 overflow: have to avoid subtraction of two uint64s that can result in a negative value
-	if config.MaxMissingEpochs != 0 && latestValset.Epoch > valSet.Epoch+config.MaxMissingEpochs {
-		return errors.Errorf("exceed missing epochs, latest committed: %d, current: %d", latestValset.Epoch, valSet.Epoch)
+	if config.MaxMissingEpochs != 0 && latestValsetMeta.Epoch > valSet.Epoch+config.MaxMissingEpochs {
+		return errors.Errorf("exceed missing epochs, latest committed: %d, current: %d", latestValsetMeta.Epoch, valSet.Epoch)
 	}
 
 	extraData, err := s.cfg.Aggregator.GenerateExtraData(valSet, config.RequiredKeyTags)
@@ -171,7 +171,7 @@ func (s *Service) process(ctx context.Context) error {
 
 	r := entity.SignatureRequest{
 		KeyTag:        entity.ValsetHeaderKeyTag,
-		RequiredEpoch: entity.Epoch(latestValset.Epoch),
+		RequiredEpoch: entity.Epoch(latestValsetMeta.Epoch),
 		Message:       data,
 	}
 

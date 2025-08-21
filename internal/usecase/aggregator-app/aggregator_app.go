@@ -21,6 +21,7 @@ import (
 //go:generate mockgen -source=aggregator_app.go -destination=mocks/aggregator_app.go -package=mocks
 type repository interface {
 	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
+	GetValidatorSetMetaByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSetMeta, error)
 	GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, error)
 	SaveSignature(ctx context.Context, reqHash common.Hash, key []byte, sig entity.SignatureExtended) error
 	GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error)
@@ -108,26 +109,31 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 	slog.DebugContext(ctx, "Total voting power", "currentVotingPower", current.VotingPower.String())
 
 	// Get validator set for quorum threshold checks and aggregation
-	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
+	validatorSetMeta, err := s.cfg.Repo.GetValidatorSetMetaByEpoch(ctx, uint64(msg.Epoch))
 	if err != nil {
-		return errors.Errorf("failed to get validator set: %w", err)
+		return errors.Errorf("failed to get validator set meta: %w", err)
 	}
 
-	thresholdReached := current.VotingPower.Cmp(validatorSet.QuorumThreshold.Int) >= 0
+	thresholdReached := current.VotingPower.Cmp(validatorSetMeta.QuorumThreshold.Int) >= 0
 	if !thresholdReached {
 		slog.InfoContext(ctx, "Quorum not reached yet",
 			"currentVotingPower", current.VotingPower.String(),
-			"quorumThreshold", validatorSet.QuorumThreshold.String(),
-			"totalActiveVotingPower", validatorSet.GetTotalActiveVotingPower().String(),
+			"quorumThreshold", validatorSetMeta.QuorumThreshold.String(),
+			"totalActiveVotingPower", validatorSetMeta.TotalActiveVotingPower.String(),
 		)
 		return nil
 	}
 
 	slog.InfoContext(ctx, "Quorum reached, aggregating signatures and creating proof",
 		"currentVotingPower", current.VotingPower.String(),
-		"quorumThreshold", validatorSet.QuorumThreshold.String(),
-		"totalActiveVotingPower", validatorSet.GetTotalActiveVotingPower().String(),
+		"quorumThreshold", validatorSetMeta.QuorumThreshold.String(),
+		"totalActiveVotingPower", validatorSetMeta.TotalActiveVotingPower.String(),
 	)
+
+	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
+	if err != nil {
+		return errors.Errorf("failed to get validator set: %w", err)
+	}
 
 	if _, err := s.cfg.Repo.UpdateSignatureStat(ctx, msg.RequestHash, entity.SignatureStatStageAggQuorumReached, time.Now()); err != nil {
 		slog.WarnContext(ctx, "Failed to update signature stat: %s", "error", err)
