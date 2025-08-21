@@ -231,6 +231,22 @@
                 </li>
               
                 <li>
+                  <a href="#api.proto.v1.GetValidatorByAddressRequest"><span class="badge">M</span>GetValidatorByAddressRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.GetValidatorByAddressResponse"><span class="badge">M</span>GetValidatorByAddressResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.GetValidatorSetHeaderRequest"><span class="badge">M</span>GetValidatorSetHeaderRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.GetValidatorSetHeaderResponse"><span class="badge">M</span>GetValidatorSetHeaderResponse</a>
+                </li>
+              
+                <li>
                   <a href="#api.proto.v1.GetValidatorSetRequest"><span class="badge">M</span>GetValidatorSetRequest</a>
                 </li>
               
@@ -622,6 +638,151 @@
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
                   <td><p>Epoch start time </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.GetValidatorByAddressRequest">GetValidatorByAddressRequest</h3>
+        <p>Request message for getting validator by address</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>epoch</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td>optional</td>
+                  <td><p>Epoch number (optional, if not provided current epoch will be used) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>address</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Validator address (required) </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.GetValidatorByAddressResponse">GetValidatorByAddressResponse</h3>
+        <p>Response message for getting validator by address</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>validator</td>
+                  <td><a href="#api.proto.v1.Validator">Validator</a></td>
+                  <td></td>
+                  <td><p>The validator </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.GetValidatorSetHeaderRequest">GetValidatorSetHeaderRequest</h3>
+        <p>Request message for getting validator set header</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>epoch</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td>optional</td>
+                  <td><p>Epoch number (optional, if not provided current epoch will be used) </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.GetValidatorSetHeaderResponse">GetValidatorSetHeaderResponse</h3>
+        <p>Response message for getting validator set header</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>Version of the validator set </p></td>
+                </tr>
+              
+                <tr>
+                  <td>required_key_tag</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>Key tag required to commit next validator set </p></td>
+                </tr>
+              
+                <tr>
+                  <td>epoch</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>Validator set epoch </p></td>
+                </tr>
+              
+                <tr>
+                  <td>capture_timestamp</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>Epoch capture timestamp </p></td>
+                </tr>
+              
+                <tr>
+                  <td>quorum_threshold</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Quorum threshold (big integer as string) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>validators_ssz_mroot</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Validators SSZ Merkle root (hex string) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>previous_header_hash</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Previous validator set header hash (hex string) </p></td>
                 </tr>
               
             </tbody>
@@ -1218,6 +1379,20 @@
                 <td><a href="#api.proto.v1.GetValidatorSetRequest">GetValidatorSetRequest</a></td>
                 <td><a href="#api.proto.v1.GetValidatorSetResponse">GetValidatorSetResponse</a></td>
                 <td><p>Get current validator set</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetValidatorByAddress</td>
+                <td><a href="#api.proto.v1.GetValidatorByAddressRequest">GetValidatorByAddressRequest</a></td>
+                <td><a href="#api.proto.v1.GetValidatorByAddressResponse">GetValidatorByAddressResponse</a></td>
+                <td><p>Get validator by address</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetValidatorSetHeader</td>
+                <td><a href="#api.proto.v1.GetValidatorSetHeaderRequest">GetValidatorSetHeaderRequest</a></td>
+                <td><a href="#api.proto.v1.GetValidatorSetHeaderResponse">GetValidatorSetHeaderResponse</a></td>
+                <td><p>Get validator set header</p></td>
               </tr>
             
               <tr>
