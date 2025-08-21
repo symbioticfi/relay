@@ -110,16 +110,28 @@ jobs:
 
 
   e2e-tests:
-    name: "E2E Tests"
+    name: "E2E Tests - ${{ matrix.config.name }}"
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     needs: [unit-tests]
     
+    strategy:
+      matrix:
+        config:
+          - name: "Simple Setup"
+            operators: 4
+            commiters: 1
+            aggregators: 1
+          - name: "Multi Committer/Aggregator"
+            operators: 10
+            commiters: 2
+            aggregators: 3
+    
     env:
       # E2E Test Configuration
-      OPERATORS: 10
-      COMMITERS: 1
-      AGGREGATORS: 1
+      OPERATORS: ${{ matrix.config.operators }}
+      COMMITERS: ${{ matrix.config.commiters }}
+      AGGREGATORS: ${{ matrix.config.aggregators }}
       VERIFICATION_TYPE: 1
       EPOCH_TIME: 30
       BLOCK_TIME: 1
@@ -296,7 +308,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
-          name: "e2e-diagnostics-${{ github.run_number }}-${{ github.run_attempt }}"
+          name: "e2e-diagnostics-${{ matrix.config.name }}-${{ github.run_number }}-${{ github.run_attempt }}"
           path: e2e/logs/
           retention-days: 7
           if-no-files-found: warn
