@@ -46,3 +46,15 @@ func TestGenesisDone(t *testing.T) {
 
 	t.Log("Genesis generation test completed successfully")
 }
+
+// TestContractData tests that the data in the contract matches expected values
+func TestContractData(t *testing.T) {
+	deployData, err := loadDeploymentData()
+	require.NoError(t, err, "Failed to load deployment data")
+
+	expectedContractData := getExpectedDataFromContracts(t, deployData)
+
+	require.Equal(t, len(expectedContractData.ValidatorSet.Validators), int(deployData.Env.Operators), "Validator set length does not match expected number of operators")
+	require.Equal(t, uint32(expectedContractData.NetworkConfig.VerificationType), deployData.Env.VerificationType, "Verification type does not match expected value")
+	require.Equal(t, expectedContractData.CurrentEpochDuration, deployData.Env.EpochTime, "Epoch time does not match expected value")
+}

@@ -20,19 +20,17 @@ import (
 
 // ContractExpectedData holds expected values derived from smart contracts
 type ContractExpectedData struct {
-	CurrentEpoch     uint64
-	EpochStartTime   uint64
-	ValidatorSet     entity.ValidatorSet
-	NetworkConfig    entity.NetworkConfig
-	IsEpochCommitted bool
+	CurrentEpoch         uint64
+	EpochStartTime       uint64
+	CurrentEpochDuration uint64
+	ValidatorSet         entity.ValidatorSet
+	NetworkConfig        entity.NetworkConfig
+	IsEpochCommitted     bool
 }
 
 // getExpectedDataFromContracts retrieves expected values directly from smart contracts
-func getExpectedDataFromContracts(t *testing.T) *ContractExpectedData {
+func getExpectedDataFromContracts(t *testing.T, relayContracts *RelayContractsData) *ContractExpectedData {
 	t.Helper()
-
-	relayContracts, err := loadDeploymentData()
-	require.NoError(t, err, "Failed to load deployment data")
 
 	config := evm.Config{
 		ChainURLs: settlementChains,
@@ -52,6 +50,9 @@ func getExpectedDataFromContracts(t *testing.T) *ContractExpectedData {
 
 	currentEpoch, err := evmClient.GetCurrentEpoch(ctx)
 	require.NoError(t, err, "Failed to get current epoch from contract")
+
+	currentEpochDuration, err := evmClient.GetCurrentEpochDuration(ctx)
+	require.NoError(t, err, "Failed to get current epoch duration from contract")
 
 	epochStart, err := evmClient.GetEpochStart(ctx, currentEpoch)
 	require.NoError(t, err, "Failed to get epoch start time from contract")
@@ -76,11 +77,12 @@ func getExpectedDataFromContracts(t *testing.T) *ContractExpectedData {
 	}
 
 	return &ContractExpectedData{
-		CurrentEpoch:     currentEpoch,
-		EpochStartTime:   epochStart,
-		ValidatorSet:     expectedValset,
-		NetworkConfig:    networkConfig,
-		IsEpochCommitted: isCurrentEpochCommitted,
+		CurrentEpoch:         currentEpoch,
+		EpochStartTime:       epochStart,
+		ValidatorSet:         expectedValset,
+		NetworkConfig:        networkConfig,
+		IsEpochCommitted:     isCurrentEpochCommitted,
+		CurrentEpochDuration: currentEpochDuration,
 	}
 }
 
@@ -221,7 +223,7 @@ func TestValidatorSetAPI(t *testing.T) {
 		}
 
 		t.Logf("Performing contract validation...")
-		expected := getExpectedDataFromContracts(t)
+		expected := getExpectedDataFromContracts(t, deploymentData)
 
 		if expected.ValidatorSet.Epoch != valsetResp.GetEpoch() {
 			continue

@@ -43,11 +43,11 @@ type RelayContractsData struct {
 }
 
 type EnvInfo struct {
-	Operators        int64 `default:"4" split_words:"true"`
-	Commiters        int64 `default:"1" split_words:"true"`
-	Aggregators      int64 `default:"1" split_words:"true"`
-	EpochTime        int64 `default:"30" split_words:"true"`
-	VerificationType uint8 `default:"1" split_words:"true"`
+	Operators        int64  `default:"4" split_words:"true"`
+	Commiters        int64  `default:"1" split_words:"true"`
+	Aggregators      int64  `default:"1" split_words:"true"`
+	EpochTime        uint64 `default:"30" split_words:"true"`
+	VerificationType uint32 `default:"1" split_words:"true"`
 }
 
 // GetDriverAddress returns the driver address as a string for backward compatibility
