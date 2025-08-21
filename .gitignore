@@ -1,8 +1,5 @@
 .idea/
-# Claude Code - ignore local settings but allow commands
-.claude/settings.local.json
-.claude/**/*.local.*
-.claude/memory/
+.claude/
 
 go.sum
 .env
