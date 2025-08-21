@@ -3,7 +3,6 @@ package tests
 import (
 	"encoding/json"
 	"os"
-	"strconv"
 
 	"github.com/go-errors/errors"
 	"github.com/kelseyhightower/envconfig"
@@ -74,36 +73,11 @@ func (d *RelayContractsData) GetSettlementAddresses() []ContractAddress {
 	return d.Settlements
 }
 
-func getRelayEndpoints() []RelayServerEndpoint {
-	strCount := os.Getenv("OPERATORS")
-	strCommit := os.Getenv("COMMITERS")
-	strAgg := os.Getenv("AGGREGATORS")
-	var (
-		count           = 4
-		commiterCount   = 1
-		aggregatorCount = 1
-		err             error
-	)
-	if strCount != "" {
-		count, err = strconv.Atoi(strCount)
-		if err != nil {
-			panic(errors.Errorf("invalid OPERATORS value: %s, must be an integer", strCount))
-		}
-	}
-	if strCommit != "" {
-		commiterCount, err = strconv.Atoi(strCommit)
-		if err != nil {
-			panic(errors.Errorf("invalid COMMITERS value: %s, must be an integer", strCommit))
-		}
-	}
-	if strAgg != "" {
-		aggregatorCount, err = strconv.Atoi(strAgg)
-		if err != nil {
-			panic(errors.Errorf("invalid AGGREGATORS value: %s, must be an integer", strAgg))
-		}
-	}
-	endpoints := make([]RelayServerEndpoint, count)
-	for i := 0; i < count; i++ {
+func getRelayEndpoints(env EnvInfo) []RelayServerEndpoint {
+	commiterCount := env.Commiters
+	aggregatorCount := env.Aggregators
+	endpoints := make([]RelayServerEndpoint, env.Operators)
+	for i := 0; i < int(env.Operators); i++ {
 		role := "signer"
 		if commiterCount > 0 {
 			role = "committer"

@@ -152,7 +152,10 @@ func validateValidatorSetAgainstExpected(t *testing.T, apiResponse *apiv1.GetVal
 func TestRelayAPIConnectivity(t *testing.T) {
 	t.Log("Starting relay API connectivity test...")
 
-	endpoints := getRelayEndpoints()
+	deploymentData, err := loadDeploymentData()
+	require.NoError(t, err, "Failed to load deployment data")
+
+	endpoints := getRelayEndpoints(deploymentData.Env)
 
 	for _, endpoint := range endpoints {
 		t.Run(fmt.Sprintf("Connect_%s_%d", endpoint.Role, endpoint.Port), func(t *testing.T) {
@@ -185,7 +188,10 @@ func TestRelayAPIConnectivity(t *testing.T) {
 func TestValidatorSetAPI(t *testing.T) {
 	t.Log("Starting validator set API test...")
 
-	endpoint := getRelayEndpoints()[0]
+	deploymentData, err := loadDeploymentData()
+	require.NoError(t, err, "Failed to load deployment data")
+
+	endpoint := getRelayEndpoints(deploymentData.Env)[0]
 
 	address := fmt.Sprintf("%s:%d", endpoint.Address, endpoint.Port)
 	t.Logf("Testing validator set API on %s (%s)", address, endpoint.Role)
