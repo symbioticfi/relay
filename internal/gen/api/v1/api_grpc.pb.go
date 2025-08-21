@@ -19,15 +19,17 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SymbioticAPIService_SignMessage_FullMethodName          = "/api.proto.v1.SymbioticAPIService/SignMessage"
-	SymbioticAPIService_GetAggregationProof_FullMethodName  = "/api.proto.v1.SymbioticAPIService/GetAggregationProof"
-	SymbioticAPIService_GetCurrentEpoch_FullMethodName      = "/api.proto.v1.SymbioticAPIService/GetCurrentEpoch"
-	SymbioticAPIService_GetSuggestedEpoch_FullMethodName    = "/api.proto.v1.SymbioticAPIService/GetSuggestedEpoch"
-	SymbioticAPIService_GetSignatures_FullMethodName        = "/api.proto.v1.SymbioticAPIService/GetSignatures"
-	SymbioticAPIService_GetSignatureRequest_FullMethodName  = "/api.proto.v1.SymbioticAPIService/GetSignatureRequest"
-	SymbioticAPIService_GetAggregationStatus_FullMethodName = "/api.proto.v1.SymbioticAPIService/GetAggregationStatus"
-	SymbioticAPIService_GetValidatorSet_FullMethodName      = "/api.proto.v1.SymbioticAPIService/GetValidatorSet"
-	SymbioticAPIService_SignMessageWait_FullMethodName      = "/api.proto.v1.SymbioticAPIService/SignMessageWait"
+	SymbioticAPIService_SignMessage_FullMethodName           = "/api.proto.v1.SymbioticAPIService/SignMessage"
+	SymbioticAPIService_GetAggregationProof_FullMethodName   = "/api.proto.v1.SymbioticAPIService/GetAggregationProof"
+	SymbioticAPIService_GetCurrentEpoch_FullMethodName       = "/api.proto.v1.SymbioticAPIService/GetCurrentEpoch"
+	SymbioticAPIService_GetSuggestedEpoch_FullMethodName     = "/api.proto.v1.SymbioticAPIService/GetSuggestedEpoch"
+	SymbioticAPIService_GetSignatures_FullMethodName         = "/api.proto.v1.SymbioticAPIService/GetSignatures"
+	SymbioticAPIService_GetSignatureRequest_FullMethodName   = "/api.proto.v1.SymbioticAPIService/GetSignatureRequest"
+	SymbioticAPIService_GetAggregationStatus_FullMethodName  = "/api.proto.v1.SymbioticAPIService/GetAggregationStatus"
+	SymbioticAPIService_GetValidatorSet_FullMethodName       = "/api.proto.v1.SymbioticAPIService/GetValidatorSet"
+	SymbioticAPIService_GetValidatorByAddress_FullMethodName = "/api.proto.v1.SymbioticAPIService/GetValidatorByAddress"
+	SymbioticAPIService_GetValidatorSetHeader_FullMethodName = "/api.proto.v1.SymbioticAPIService/GetValidatorSetHeader"
+	SymbioticAPIService_SignMessageWait_FullMethodName       = "/api.proto.v1.SymbioticAPIService/SignMessageWait"
 )
 
 // SymbioticAPIServiceClient is the client API for SymbioticAPIService service.
@@ -52,6 +54,10 @@ type SymbioticAPIServiceClient interface {
 	GetAggregationStatus(ctx context.Context, in *GetAggregationStatusRequest, opts ...grpc.CallOption) (*GetAggregationStatusResponse, error)
 	// Get current validator set
 	GetValidatorSet(ctx context.Context, in *GetValidatorSetRequest, opts ...grpc.CallOption) (*GetValidatorSetResponse, error)
+	// Get validator by address
+	GetValidatorByAddress(ctx context.Context, in *GetValidatorByAddressRequest, opts ...grpc.CallOption) (*GetValidatorByAddressResponse, error)
+	// Get validator set header
+	GetValidatorSetHeader(ctx context.Context, in *GetValidatorSetHeaderRequest, opts ...grpc.CallOption) (*GetValidatorSetHeaderResponse, error)
 	// Sign a message and wait for aggregation proof via stream
 	SignMessageWait(ctx context.Context, in *SignMessageWaitRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SignMessageWaitResponse], error)
 }
@@ -144,6 +150,26 @@ func (c *symbioticAPIServiceClient) GetValidatorSet(ctx context.Context, in *Get
 	return out, nil
 }
 
+func (c *symbioticAPIServiceClient) GetValidatorByAddress(ctx context.Context, in *GetValidatorByAddressRequest, opts ...grpc.CallOption) (*GetValidatorByAddressResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetValidatorByAddressResponse)
+	err := c.cc.Invoke(ctx, SymbioticAPIService_GetValidatorByAddress_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *symbioticAPIServiceClient) GetValidatorSetHeader(ctx context.Context, in *GetValidatorSetHeaderRequest, opts ...grpc.CallOption) (*GetValidatorSetHeaderResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetValidatorSetHeaderResponse)
+	err := c.cc.Invoke(ctx, SymbioticAPIService_GetValidatorSetHeader_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *symbioticAPIServiceClient) SignMessageWait(ctx context.Context, in *SignMessageWaitRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SignMessageWaitResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &SymbioticAPIService_ServiceDesc.Streams[0], SymbioticAPIService_SignMessageWait_FullMethodName, cOpts...)
@@ -185,6 +211,10 @@ type SymbioticAPIServiceServer interface {
 	GetAggregationStatus(context.Context, *GetAggregationStatusRequest) (*GetAggregationStatusResponse, error)
 	// Get current validator set
 	GetValidatorSet(context.Context, *GetValidatorSetRequest) (*GetValidatorSetResponse, error)
+	// Get validator by address
+	GetValidatorByAddress(context.Context, *GetValidatorByAddressRequest) (*GetValidatorByAddressResponse, error)
+	// Get validator set header
+	GetValidatorSetHeader(context.Context, *GetValidatorSetHeaderRequest) (*GetValidatorSetHeaderResponse, error)
 	// Sign a message and wait for aggregation proof via stream
 	SignMessageWait(*SignMessageWaitRequest, grpc.ServerStreamingServer[SignMessageWaitResponse]) error
 	mustEmbedUnimplementedSymbioticAPIServiceServer()
@@ -220,6 +250,12 @@ func (UnimplementedSymbioticAPIServiceServer) GetAggregationStatus(context.Conte
 }
 func (UnimplementedSymbioticAPIServiceServer) GetValidatorSet(context.Context, *GetValidatorSetRequest) (*GetValidatorSetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetValidatorSet not implemented")
+}
+func (UnimplementedSymbioticAPIServiceServer) GetValidatorByAddress(context.Context, *GetValidatorByAddressRequest) (*GetValidatorByAddressResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetValidatorByAddress not implemented")
+}
+func (UnimplementedSymbioticAPIServiceServer) GetValidatorSetHeader(context.Context, *GetValidatorSetHeaderRequest) (*GetValidatorSetHeaderResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetValidatorSetHeader not implemented")
 }
 func (UnimplementedSymbioticAPIServiceServer) SignMessageWait(*SignMessageWaitRequest, grpc.ServerStreamingServer[SignMessageWaitResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method SignMessageWait not implemented")
@@ -389,6 +425,42 @@ func _SymbioticAPIService_GetValidatorSet_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SymbioticAPIService_GetValidatorByAddress_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetValidatorByAddressRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SymbioticAPIServiceServer).GetValidatorByAddress(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SymbioticAPIService_GetValidatorByAddress_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SymbioticAPIServiceServer).GetValidatorByAddress(ctx, req.(*GetValidatorByAddressRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SymbioticAPIService_GetValidatorSetHeader_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetValidatorSetHeaderRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SymbioticAPIServiceServer).GetValidatorSetHeader(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SymbioticAPIService_GetValidatorSetHeader_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SymbioticAPIServiceServer).GetValidatorSetHeader(ctx, req.(*GetValidatorSetHeaderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SymbioticAPIService_SignMessageWait_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(SignMessageWaitRequest)
 	if err := stream.RecvMsg(m); err != nil {
@@ -438,6 +510,14 @@ var SymbioticAPIService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetValidatorSet",
 			Handler:    _SymbioticAPIService_GetValidatorSet_Handler,
+		},
+		{
+			MethodName: "GetValidatorByAddress",
+			Handler:    _SymbioticAPIService_GetValidatorByAddress_Handler,
+		},
+		{
+			MethodName: "GetValidatorSetHeader",
+			Handler:    _SymbioticAPIService_GetValidatorSetHeader_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
