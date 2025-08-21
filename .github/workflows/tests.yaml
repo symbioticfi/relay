@@ -189,9 +189,8 @@ jobs:
 
       - name: "Execute E2E Tests"
         run: |
-          cd e2e/tests
           echo "Running End-to-End tests..."
-          go test -v -timeout=10m ./...
+          make e2e-test
 
 
       - name: "Collect Diagnostic Information"

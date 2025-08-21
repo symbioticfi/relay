@@ -72,6 +72,10 @@ unit-test:
 	go tool cover -func coverage.tmp.txt > coverage.txt
 	rm cover.out.tmp coverage.tmp.txt
 
+.PHONY: e2e-test
+e2e-test:
+	cd e2e/tests && go test -v -timeout 30m
+
 .PHONY: gen-abi
 gen-abi:
 	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
