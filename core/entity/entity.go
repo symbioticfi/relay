@@ -23,8 +23,9 @@ const (
 	VerificationTypeBlsBn254ZK     VerificationType = 0
 	VerificationTypeBlsBn254Simple VerificationType = 1
 
-	GrowthStrategyAsync GrowthStrategyType = 0
-	GrowthStrategySync  GrowthStrategyType = 1
+	GrowthStrategyAsync        GrowthStrategyType = 0
+	GrowthStrategySync         GrowthStrategyType = 1
+	GrowthStrategyNoSettlement GrowthStrategyType = 2
 )
 
 var (
@@ -203,6 +204,8 @@ func (gst GrowthStrategyType) String() string {
 		return fmt.Sprintf("%d GROWTH-STRATEGY-NEWEST", uint32(gst))
 	case GrowthStrategySync:
 		return fmt.Sprintf("%d GROWTH-STRATEGY-SYNC", uint32(gst))
+	case GrowthStrategyNoSettlement:
+		return fmt.Sprintf("%d GROWTH-STRATEGY-NONE", uint32(gst))
 	}
 	return fmt.Sprintf("%d (UNKNOWN)", uint32(gst))
 }

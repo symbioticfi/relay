@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"time"
 
+	noSettlementStrategy "github.com/symbioticfi/relay/core/usecase/growth-strategy/no-settlement-strategy"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/symbioticfi/relay/core/client/evm"
 
@@ -166,9 +168,11 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 			return errors.Errorf("failed to derive validator set extra for epoch %d: %w", nextEpoch, err)
 		}
 
-		nextValset.Status, nextValset.PreviousHeaderHash, err = s.cfg.Deriver.GetStatusAndPreviousHash(ctx, nextEpoch, nextEpochConfig, nextValset)
-		if err != nil {
-			return errors.Errorf("failed to get status and previous hash for epoch %d: %w", nextEpoch, err)
+		if latestCommittedHash != noSettlementStrategy.NoSettlementHash {
+			nextValset.Status, nextValset.PreviousHeaderHash, err = s.cfg.Deriver.GetStatusAndPreviousHash(ctx, nextEpoch, nextEpochConfig, nextValset)
+			if err != nil {
+				return errors.Errorf("failed to get status and previous hash for epoch %d: %w", nextEpoch, err)
+			}
 		}
 
 		if err := s.cfg.Repo.SaveConfig(ctx, nextEpochConfig, nextEpoch); err != nil {
@@ -191,6 +195,10 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 }
 
 func (s *Service) validateHeaderHashAtLastCommittedEpoch(ctx context.Context, epoch uint64, lastCommittedHash common.Hash) error {
+	if lastCommittedHash == noSettlementStrategy.NoSettlementHash {
+		return nil
+	}
+
 	epochStart, err := s.cfg.EvmClient.GetEpochStart(ctx, epoch)
 	if err != nil {
 		return errors.Errorf("failed to get epoch start for epoch %d: %w", epochStart, err)
