@@ -49,6 +49,7 @@ type repo interface {
 type deriver interface {
 	GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error)
 	GetNetworkData(ctx context.Context, addr entity.CrossChainAddress) (entity.NetworkData, error)
+	GetStatusAndPreviousHash(ctx context.Context, epoch uint64, config entity.NetworkConfig, valset entity.ValidatorSet) (entity.ValidatorSetStatus, common.Hash, error)
 }
 
 type Config struct {
@@ -239,6 +240,11 @@ func (s *Service) tryDetectNewEpochToCommit(ctx context.Context) (entity.Validat
 	newValset, err := s.cfg.Deriver.GetValidatorSet(ctx, currentOnchainEpoch, config)
 	if err != nil {
 		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get validator set extra for epoch %d: %w", currentOnchainEpoch, err)
+	}
+
+	newValset.Status, newValset.PreviousHeaderHash, err = s.cfg.Deriver.GetStatusAndPreviousHash(ctx, currentOnchainEpoch, config, newValset)
+	if err != nil {
+		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get status and previous hash for epoch %d: %w", currentOnchainEpoch, err)
 	}
 
 	return newValset, config, nil

@@ -1,6 +1,7 @@
 package valsetDeriver
 
 import (
+	"bytes"
 	"context"
 	"log/slog"
 	"math/big"
@@ -15,6 +16,8 @@ import (
 )
 
 const valsetVersion = 1
+
+var emptyValsetHeaderHash = common.HexToHash("0x868e09d528a16744c1f38ea3c10cc2251e01a456434f91172247695087d129b7")
 
 //go:generate mockgen -source=valset_deriver.go -destination=mocks/deriver.go -package=mocks -mock_names=evmClient=MockEvmClient
 type evmClient interface {
@@ -141,6 +144,77 @@ func (v *Deriver) GetLastCommittedHeaderEpoch(ctx context.Context, config entity
 	}
 
 	return maxEpochAddr, maxEpoch, nil
+}
+
+func (v *Deriver) GetStatusAndPreviousHash(ctx context.Context, epoch uint64, config entity.NetworkConfig, valset entity.ValidatorSet) (entity.ValidatorSetStatus, common.Hash, error) {
+	committedAddr, isValsetCommitted, err := v.isValsetHeaderCommitted(ctx, config, epoch)
+	if err != nil {
+		return 0, common.Hash{}, errors.Errorf("failed to check if validator committed at epoch %d: %w", epoch, err)
+	}
+
+	if isValsetCommitted {
+		previousHeaderHash, err := v.evmClient.GetPreviousHeaderHashAt(ctx, committedAddr, epoch)
+		if err != nil {
+			return 0, common.Hash{}, errors.Errorf("failed to get previous header hash: %w", err)
+		}
+		// valset integrity check
+		valset.PreviousHeaderHash = previousHeaderHash
+		committedHash, err := v.evmClient.GetHeaderHashAt(ctx, committedAddr, epoch)
+		if err != nil {
+			return 0, common.Hash{}, errors.Errorf("failed to get header hash: %w", err)
+		}
+		valsetHeader, err := valset.GetHeader()
+		if err != nil {
+			return 0, common.Hash{}, errors.Errorf("failed to get header hash: %w", err)
+		}
+		calculatedHash, err := valsetHeader.Hash()
+		if err != nil {
+			return 0, common.Hash{}, errors.Errorf("failed to get header hash: %w", err)
+		}
+
+		if !bytes.Equal(committedHash[:], calculatedHash[:]) {
+			slog.DebugContext(ctx, "Validator set integrity check failed", "committed hash", committedHash, "calculated hash", calculatedHash)
+			return 0, common.Hash{}, errors.Errorf("validator set hash mistmach at epoch %d", epoch)
+		}
+		slog.DebugContext(ctx, "Validator set integrity check passed", "hash", committedHash)
+
+		return entity.HeaderCommitted, previousHeaderHash, nil
+	}
+
+	// valset not committed
+
+	lastCommittedAddr, latestCommittedEpoch, err := v.GetLastCommittedHeaderEpoch(ctx, config)
+	if err != nil {
+		return 0, common.Hash{}, errors.Errorf("failed to get current valset epoch: %w", err)
+	}
+
+	if epoch < latestCommittedEpoch {
+		slog.DebugContext(ctx, "Header is not committed [missed header]", "epoch", epoch)
+		// zero PreviousHeaderHash cos header is orphaned
+		return entity.HeaderMissed, emptyValsetHeaderHash, nil
+	}
+
+	// trying to link to latest committed header
+	slog.DebugContext(ctx, "Header is not committed [new header]", "epoch", epoch)
+	previousHeaderHash, err := v.evmClient.GetHeaderHash(ctx, lastCommittedAddr)
+	if err != nil {
+		return 0, common.Hash{}, errors.Errorf("failed to get latest header hash: %w", err)
+	}
+
+	return entity.HeaderPending, previousHeaderHash, nil
+}
+
+func (v *Deriver) isValsetHeaderCommitted(ctx context.Context, config entity.NetworkConfig, epoch uint64) (entity.CrossChainAddress, bool, error) {
+	for _, addr := range config.Replicas {
+		isCommitted, err := v.evmClient.IsValsetHeaderCommittedAt(ctx, addr, epoch)
+		if err != nil {
+			return entity.CrossChainAddress{}, false, errors.Errorf("failed to check if valset header is committed at epoch %d: %w", epoch, err)
+		}
+		if isCommitted {
+			return addr, true, nil
+		}
+	}
+	return entity.CrossChainAddress{}, false, nil
 }
 
 func (v *Deriver) formValidators(

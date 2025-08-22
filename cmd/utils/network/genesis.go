@@ -94,6 +94,10 @@ var genesisCmd = &cobra.Command{
 		if err != nil {
 			return errors.Errorf("failed to get validator set extra for epoch %d: %w", currentOnchainEpoch, err)
 		}
+		newValset.Status, newValset.PreviousHeaderHash, err = deriver.GetStatusAndPreviousHash(ctx, currentOnchainEpoch, networkConfig, newValset)
+		if err != nil {
+			return errors.Errorf("failed to get status and previous hash for epoch %d: %w", currentOnchainEpoch, err)
+		}
 
 		spinner.Success()
 

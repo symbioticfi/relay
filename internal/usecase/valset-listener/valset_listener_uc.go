@@ -1,7 +1,6 @@
 package valset_listener
 
 import (
-	"bytes"
 	"context"
 	"log/slog"
 	"time"
@@ -26,7 +25,7 @@ type repo interface {
 
 type deriver interface {
 	GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error)
-	GetLastCommittedHeaderEpoch(ctx context.Context, config entity.NetworkConfig) (entity.CrossChainAddress, uint64, error)
+	GetStatusAndPreviousHash(ctx context.Context, epoch uint64, config entity.NetworkConfig, valset entity.ValidatorSet) (entity.ValidatorSetStatus, common.Hash, error)
 }
 
 type Config struct {
@@ -36,8 +35,6 @@ type Config struct {
 	GrowthStrategy  strategyTypes.GrowthStrategy `validate:"required"`
 	PollingInterval time.Duration                `validate:"required,gt=0"`
 }
-
-var emptyValsetHeaderHash = common.HexToHash("0x868e09d528a16744c1f38ea3c10cc2251e01a456434f91172247695087d129b7")
 
 func (c Config) Validate() error {
 	if err := validator.New().Struct(c); err != nil {
@@ -169,7 +166,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 			return errors.Errorf("failed to derive validator set extra for epoch %d: %w", nextEpoch, err)
 		}
 
-		nextValset.Status, nextValset.PreviousHeaderHash, err = s.getStatusAndPreviousHash(ctx, nextEpoch, nextEpochConfig, nextValset)
+		nextValset.Status, nextValset.PreviousHeaderHash, err = s.cfg.Deriver.GetStatusAndPreviousHash(ctx, nextEpoch, nextEpochConfig, nextValset)
 		if err != nil {
 			return errors.Errorf("failed to get status and previous hash for epoch %d: %w", nextEpoch, err)
 		}
@@ -209,7 +206,7 @@ func (s *Service) validateHeaderHashAtLastCommittedEpoch(ctx context.Context, ep
 		return errors.Errorf("failed to derive validator set extra for epoch %d: %w", epoch, err)
 	}
 
-	valset.Status, valset.PreviousHeaderHash, err = s.getStatusAndPreviousHash(ctx, epoch, config, valset)
+	valset.Status, valset.PreviousHeaderHash, err = s.cfg.Deriver.GetStatusAndPreviousHash(ctx, epoch, config, valset)
 	if err != nil {
 		return errors.Errorf("failed to get status and previous hash for epoch %d: %w", epoch, err)
 	}
@@ -229,75 +226,4 @@ func (s *Service) validateHeaderHashAtLastCommittedEpoch(ctx context.Context, ep
 	}
 
 	return nil
-}
-
-func (s *Service) getStatusAndPreviousHash(ctx context.Context, epoch uint64, config entity.NetworkConfig, valset entity.ValidatorSet) (entity.ValidatorSetStatus, common.Hash, error) {
-	committedAddr, isValsetCommitted, err := s.isValsetHeaderCommitted(ctx, config, epoch)
-	if err != nil {
-		return 0, common.Hash{}, errors.Errorf("failed to check if validator committed at epoch %d: %w", epoch, err)
-	}
-
-	if isValsetCommitted {
-		previousHeaderHash, err := s.cfg.EvmClient.GetPreviousHeaderHashAt(ctx, committedAddr, epoch)
-		if err != nil {
-			return 0, common.Hash{}, errors.Errorf("failed to get previous header hash: %w", err)
-		}
-		// valset integrity check
-		valset.PreviousHeaderHash = previousHeaderHash
-		committedHash, err := s.cfg.EvmClient.GetHeaderHashAt(ctx, committedAddr, epoch)
-		if err != nil {
-			return 0, common.Hash{}, errors.Errorf("failed to get header hash: %w", err)
-		}
-		valsetHeader, err := valset.GetHeader()
-		if err != nil {
-			return 0, common.Hash{}, errors.Errorf("failed to get header hash: %w", err)
-		}
-		calculatedHash, err := valsetHeader.Hash()
-		if err != nil {
-			return 0, common.Hash{}, errors.Errorf("failed to get header hash: %w", err)
-		}
-
-		if !bytes.Equal(committedHash[:], calculatedHash[:]) {
-			slog.DebugContext(ctx, "Validator set integrity check failed", "committed hash", committedHash, "calculated hash", calculatedHash)
-			return 0, common.Hash{}, errors.Errorf("validator set hash mistmach at epoch %d", epoch)
-		}
-		slog.DebugContext(ctx, "Validator set integrity check passed", "hash", committedHash)
-
-		return entity.HeaderCommitted, previousHeaderHash, nil
-	}
-
-	// valset not committed
-
-	lastCommittedAddr, latestCommittedEpoch, err := s.cfg.Deriver.GetLastCommittedHeaderEpoch(ctx, config)
-	if err != nil {
-		return 0, common.Hash{}, errors.Errorf("failed to get current valset epoch: %w", err)
-	}
-
-	if epoch < latestCommittedEpoch {
-		slog.DebugContext(ctx, "Header is not committed [missed header]", "epoch", epoch)
-		// zero PreviousHeaderHash cos header is orphaned
-		return entity.HeaderMissed, emptyValsetHeaderHash, nil
-	}
-
-	// trying to link to latest committed header
-	slog.DebugContext(ctx, "Header is not committed [new header]", "epoch", epoch)
-	previousHeaderHash, err := s.cfg.EvmClient.GetHeaderHash(ctx, lastCommittedAddr)
-	if err != nil {
-		return 0, common.Hash{}, errors.Errorf("failed to get latest header hash: %w", err)
-	}
-
-	return entity.HeaderPending, previousHeaderHash, nil
-}
-
-func (s *Service) isValsetHeaderCommitted(ctx context.Context, config entity.NetworkConfig, epoch uint64) (entity.CrossChainAddress, bool, error) {
-	for _, addr := range config.Replicas {
-		isCommitted, err := s.cfg.EvmClient.IsValsetHeaderCommittedAt(ctx, addr, epoch)
-		if err != nil {
-			return entity.CrossChainAddress{}, false, errors.Errorf("failed to check if valset header is committed at epoch %d: %w", epoch, err)
-		}
-		if isCommitted {
-			return addr, true, nil
-		}
-	}
-	return entity.CrossChainAddress{}, false, nil
 }
