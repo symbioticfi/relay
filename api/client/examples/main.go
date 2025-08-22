@@ -18,6 +18,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-errors/errors"
 	client "github.com/symbioticfi/relay/api/client/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -32,9 +33,9 @@ type RelayClient struct {
 // NewRelayClient creates a new client connected to the specified server URL
 func NewRelayClient(serverURL string) (*RelayClient, error) {
 	// Create gRPC connection
-	conn, err := grpc.Dial(serverURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(serverURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to server: %w", err)
+		return nil, errors.Errorf("failed to connect to server: %w", err)
 	}
 
 	// Create the symbiotic client
@@ -165,10 +166,10 @@ func main() {
 		// Display some validator details
 		if len(validatorSet.Validators) > 0 {
 			firstValidator := validatorSet.Validators[0]
-			fmt.Printf("First validator operator: %s\n", firstValidator.Operator)
-			fmt.Printf("First validator voting power: %s\n", firstValidator.VotingPower)
-			fmt.Printf("First validator is active: %t\n", firstValidator.IsActive)
-			fmt.Printf("First validator keys count: %d\n", len(firstValidator.Keys))
+			fmt.Printf("First validator operator: %s\n", firstValidator.GetOperator())
+			fmt.Printf("First validator voting power: %s\n", firstValidator.GetVotingPower())
+			fmt.Printf("First validator is active: %t\n", firstValidator.GetIsActive())
+			fmt.Printf("First validator keys count: %d\n", len(firstValidator.GetKeys()))
 		}
 	}
 
@@ -191,13 +192,11 @@ func main() {
 	proofResponse, err := relayClient.GetAggregationProof(ctx, signResponse.RequestHash)
 	if err != nil {
 		fmt.Printf("Could not get aggregation proof yet: %v\n", err)
-	} else {
-		if proofResponse.AggregationProof != nil {
-			proof := proofResponse.AggregationProof
-			fmt.Printf("Verification type: %d\n", proof.VerificationType)
-			fmt.Printf("Proof length: %d bytes\n", len(proof.Proof))
-			fmt.Printf("Message hash length: %d bytes\n", len(proof.MessageHash))
-		}
+	} else if proofResponse.AggregationProof != nil {
+		proof := proofResponse.AggregationProof
+		fmt.Printf("Verification type: %d\n", proof.GetVerificationType())
+		fmt.Printf("Proof length: %d bytes\n", len(proof.GetProof()))
+		fmt.Printf("Message hash length: %d bytes\n", len(proof.GetMessageHash()))
 	}
 
 	// Example 6: Get individual signatures
@@ -210,9 +209,9 @@ func main() {
 
 		for i, signature := range signaturesResponse.Signatures {
 			fmt.Printf("Signature %d:\n", i+1)
-			fmt.Printf("  - Signature length: %d bytes\n", len(signature.Signature))
-			fmt.Printf("  - Public key length: %d bytes\n", len(signature.PublicKey))
-			fmt.Printf("  - Message hash length: %d bytes\n", len(signature.MessageHash))
+			fmt.Printf("  - Signature length: %d bytes\n", len(signature.GetSignature()))
+			fmt.Printf("  - Public key length: %d bytes\n", len(signature.GetPublicKey()))
+			fmt.Printf("  - Message hash length: %d bytes\n", len(signature.GetMessageHash()))
 		}
 	}
 
@@ -231,7 +230,7 @@ func main() {
 	for {
 		response, err := stream.Recv()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				fmt.Println("Stream completed")
 				break
 			}
@@ -250,8 +249,8 @@ func main() {
 			fmt.Println("Signing completed!")
 			if response.AggregationProof != nil {
 				proof := response.AggregationProof
-				fmt.Printf("Proof length: %d bytes\n", len(proof.Proof))
-				fmt.Printf("Verification type: %d\n", proof.VerificationType)
+				fmt.Printf("Proof length: %d bytes\n", len(proof.GetProof()))
+				fmt.Printf("Verification type: %d\n", proof.GetVerificationType())
 			}
 			// Exit the streaming loop
 			goto streamComplete
@@ -261,6 +260,8 @@ func main() {
 		case client.SigningStatus_SIGNING_STATUS_TIMEOUT:
 			fmt.Println("Signing timed out")
 			goto streamComplete
+		case client.SigningStatus_SIGNING_STATUS_UNSPECIFIED:
+			fmt.Println("Unknown Signing status : unspecified")
 		default:
 			fmt.Printf("Unknown status: %v\n", response.Status)
 		}
