@@ -66,6 +66,9 @@ func getExpectedDataFromContracts(t *testing.T, relayContracts *RelayContractsDa
 	expectedValset, err := deriver.GetValidatorSet(ctx, currentEpoch, networkConfig)
 	require.NoError(t, err, "Failed to derive expected validator set")
 
+	expectedValset.Status, expectedValset.PreviousHeaderHash, err = deriver.GetStatusAndPreviousHash(ctx, currentEpoch, networkConfig, expectedValset)
+	require.NoError(t, err, "Failed to get validator set status")
+
 	// Check if current epoch is committed
 	isCurrentEpochCommitted := true
 	for _, replica := range networkConfig.Replicas {
