@@ -177,6 +177,21 @@ func (mr *MockEvmClientMockRecorder) GetNetworkAddress(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNetworkAddress", reflect.TypeOf((*MockEvmClient)(nil).GetNetworkAddress), ctx)
 }
 
+// GetOperators mocks base method.
+func (m *MockEvmClient) GetOperators(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]common.Address, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOperators", ctx, address, timestamp)
+	ret0, _ := ret[0].([]common.Address)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOperators indicates an expected call of GetOperators.
+func (mr *MockEvmClientMockRecorder) GetOperators(ctx, address, timestamp any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOperators", reflect.TypeOf((*MockEvmClient)(nil).GetOperators), ctx, address, timestamp)
+}
+
 // GetPreviousHeaderHashAt mocks base method.
 func (m *MockEvmClient) GetPreviousHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error) {
 	m.ctrl.T.Helper()

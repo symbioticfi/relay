@@ -78,6 +78,7 @@ func runApp(ctx context.Context) error {
 		RequestTimeout: time.Second * 5,
 		KeyProvider:    keyProvider,
 		Metrics:        mtr,
+		MaxCalls:       cfg.MaxCalls,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create symbiotic client: %w", err)

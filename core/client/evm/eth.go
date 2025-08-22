@@ -59,6 +59,7 @@ type IEvmClient interface {
 	RegisterKey(ctx context.Context, addr entity.CrossChainAddress, keyTag entity.KeyTag, key entity.CompactPublicKey, signature entity.RawSignature, extraData []byte) (entity.TxResult, error)
 	SetGenesis(ctx context.Context, addr entity.CrossChainAddress, header entity.ValidatorSetHeader, extraData []entity.ExtraData) (entity.TxResult, error)
 	VerifyQuorumSig(ctx context.Context, addr entity.CrossChainAddress, epoch uint64, message []byte, keyTag entity.KeyTag, threshold *big.Int, proof []byte) (bool, error)
+	IsValsetHeaderCommittedAtEpochs(ctx context.Context, addr entity.CrossChainAddress, epochs []uint64) ([]bool, error)
 }
 
 type Config struct {
@@ -67,6 +68,7 @@ type Config struct {
 	RequestTimeout time.Duration            `validate:"required,gt=0"`
 	KeyProvider    keyprovider.KeyProvider
 	Metrics        metrics
+	MaxCalls       int
 }
 
 func (c Config) Validate() error {
@@ -548,6 +550,15 @@ func (e *Client) GetVotingPowers(ctx context.Context, address entity.CrossChainA
 		e.observeMetrics("GetVotingPowersAt", err, now)
 	}(time.Now())
 
+	multicallExists, err := e.multicallExists(ctx, address.ChainId)
+	if err != nil {
+		return nil, errors.Errorf("multicall check failed: %v", err)
+	}
+
+	if multicallExists {
+		return e.getVotingPowersMulticall(ctx, address, timestamp)
+	}
+
 	votingPowerProvider, err := e.getVotingPowerProviderContract(address)
 	if err != nil {
 		return nil, errors.Errorf("failed to create voting power provider contract: %w", err)
@@ -574,12 +585,67 @@ func (e *Client) GetVotingPowers(ctx context.Context, address entity.CrossChainA
 	}), nil
 }
 
+func (e *Client) GetOperators(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) (_ []common.Address, err error) {
+	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
+	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("GetOperators", err, now)
+	}(time.Now())
+
+	votingPowerProvider, err := e.getVotingPowerProviderContract(address)
+	if err != nil {
+		return nil, errors.Errorf("failed to create voting power provider contract: %w", err)
+	}
+
+	operators, err := votingPowerProvider.GetOperatorsAt(&bind.CallOpts{
+		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
+		Context:     toCtx,
+	}, new(big.Int).SetUint64(timestamp))
+	if err != nil {
+		return nil, errors.Errorf("failed to call getOperatorsAt: %w", e.formatEVMContractError(gen.IVotingPowerProviderMetaData, err))
+	}
+
+	return operators, nil
+}
+
+func (e *Client) GetKeysOperators(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) (_ []common.Address, err error) {
+	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
+	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("GetKeysOperators", err, now)
+	}(time.Now())
+
+	keyRegistry, err := e.getKeyRegistryContract(address)
+	if err != nil {
+		return nil, errors.Errorf("failed to create voting power provider contract: %w", err)
+	}
+
+	operators, err := keyRegistry.GetKeysOperatorsAt(&bind.CallOpts{
+		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
+		Context:     toCtx,
+	}, new(big.Int).SetUint64(timestamp))
+	if err != nil {
+		return nil, errors.Errorf("failed to call getKeysOperatorsAt: %w", e.formatEVMContractError(gen.IKeyRegistryMetaData, err))
+	}
+
+	return operators, nil
+}
+
 func (e *Client) GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) (_ []entity.OperatorWithKeys, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
 		e.observeMetrics("GetKeysAt", err, now)
 	}(time.Now())
+
+	multicallExists, err := e.multicallExists(ctx, address.ChainId)
+	if err != nil {
+		return nil, errors.Errorf("multicall check failed: %v", err)
+	}
+
+	if multicallExists {
+		return e.getKeysMulticall(ctx, address, timestamp)
+	}
 
 	keyRegistry, err := e.getKeyRegistryContract(address)
 	if err != nil {
@@ -605,6 +671,56 @@ func (e *Client) GetKeys(ctx context.Context, address entity.CrossChainAddress, 
 			}),
 		}
 	}), nil
+}
+
+func (e *Client) IsValsetHeaderCommittedAtEpochs(ctx context.Context, addr entity.CrossChainAddress, epochs []uint64) (_ []bool, err error) {
+	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
+	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("IsValSetHeaderCommittedAt", err, now)
+	}(time.Now())
+
+	abi, err := gen.ISettlementMetaData.GetAbi()
+	if err != nil {
+		return nil, errors.Errorf("failed to get ABI: %v", err)
+	}
+
+	isCommitted := make([]bool, 0, len(epochs))
+	calls := make([]Call, 0, len(epochs))
+
+	for _, epoch := range epochs {
+		bytes, err := abi.Pack("IsValSetHeaderCommittedAt", big.NewInt(int64(epoch)))
+		if err != nil {
+			return nil, errors.Errorf("failed to get bytes: %v", err)
+		}
+
+		calls = append(calls, Call{
+			Target:       addr.Address,
+			CallData:     bytes,
+			AllowFailure: false,
+		})
+	}
+
+	outs, err := e.multicall(toCtx, addr.ChainId, calls)
+	if err != nil {
+		return nil, errors.Errorf("multicall failed: %v", err)
+	}
+
+	if len(outs) != len(calls) {
+		return nil, errors.Errorf("multicall failed: expected %d calls, got %d", len(calls), len(outs))
+	}
+
+	for _, out := range outs {
+		var res bool
+
+		if err := abi.UnpackIntoInterface(&res, "IsValSetHeaderCommittedAt", out.ReturnData); err != nil {
+			return nil, errors.Errorf("failed to unpack IsValSetHeaderCommittedAt: %v", err)
+		}
+
+		isCommitted = append(isCommitted, res)
+	}
+
+	return isCommitted, nil
 }
 
 var customErrRegExp = regexp.MustCompile(`0x[0-9a-fA-F]{8}`)
