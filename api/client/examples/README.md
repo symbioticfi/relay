@@ -2,6 +2,16 @@
 
 This directory contains example code demonstrating how to use the [Symbiotic Relay Go client library](../v1/) to interact with a Symbiotic Relay server.
 
+## Basic Usage Example
+
+The example shows how to:
+
+1. Connect to a Symbiotic Relay server
+2. Get current epoch information
+3. Sign messages 
+4. Retrieve aggregation proofs and signatures
+5. Get validator set information
+6. Use streaming responses for real-time updates
 
 ## Prerequisites
 
@@ -12,37 +22,20 @@ Before running the examples, ensure you have:
 - **Network connectivity** to the relay server
 - **Valid key configurations** on the relay server (for signing operations)
 
-## Installation
-
-1. Clone or navigate to the relay repository
-2. Navigate to the examples directory:
-   ```bash
-   cd api/client/examples
-   ```
-
-## Configuration
-
-The example uses the following environment variables:
-
-- `RELAY_SERVER_URL`: The gRPC endpoint of your Symbiotic Relay server
-  - Default: `localhost:8080`
-  - Format: `host:port` (without protocol prefix for gRPC)
-  - Examples: 
-    - `localhost:8080`
-    - `relay.example.com:443`
-    - `10.0.0.1:9090`
-
-### Basic Usage
+## Running the Example
 
 ```bash
+cd api/client/examples
 go run main.go
 ```
 
-### With Custom Server URL
+By default, the example will try to connect to `localhost:8080`. You can specify a different server URL by setting the `RELAY_SERVER_URL` environment variable:
 
 ```bash
-RELAY_SERVER_URL="localhost:8081" go run main.go
+RELAY_SERVER_URL=my-relay-server:8081 go run main.go
 ```
+
+NOTE: for the signature/proof generation to work you need to run the script for all active relay servers to get the majority consensus to generate proof.
 
 
 ## Integration with Your Application
