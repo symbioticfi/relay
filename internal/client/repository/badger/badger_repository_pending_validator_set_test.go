@@ -18,7 +18,7 @@ func TestRepository_PendingValidatorSet(t *testing.T) {
 	reqHash1 := common.BytesToHash(randomBytes(t, 32))
 
 	// Create a validator set with some test data
-	vs1 := randomValidatorSet(t, 100, entity.HeaderPending)
+	vs1 := randomValidatorSet(t, 100, entity.HeaderInactive)
 
 	// Save the first validator set
 	err := repo.SavePendingValidatorSet(t.Context(), reqHash1, vs1)

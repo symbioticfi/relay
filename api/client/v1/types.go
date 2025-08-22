@@ -29,9 +29,8 @@ const (
 
 	// ValidatorSetStatus values
 	ValidatorSetStatus_VALIDATOR_SET_STATUS_UNSPECIFIED = apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_UNSPECIFIED
-	ValidatorSetStatus_VALIDATOR_SET_STATUS_PENDING = apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_PENDING
-	ValidatorSetStatus_VALIDATOR_SET_STATUS_MISSED = apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_MISSED
-	ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED = apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED
+	ValidatorSetStatus_VALIDATOR_SET_STATUS_INACTIVE = apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_INACTIVE
+	ValidatorSetStatus_VALIDATOR_SET_STATUS_ACTIVE = apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_ACTIVE
 )
 
 // Request types

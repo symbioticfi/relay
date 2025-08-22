@@ -14,8 +14,8 @@ func TestRepository_ValidatorSet(t *testing.T) {
 	repo := setupTestRepository(t)
 
 	// Create two validator sets with different epochs
-	vs1 := randomValidatorSet(t, 2, entity.HeaderCommitted)
-	vs2 := randomValidatorSet(t, 1, entity.HeaderCommitted)
+	vs1 := randomValidatorSet(t, 2, entity.HeaderActive)
+	vs2 := randomValidatorSet(t, 1, entity.HeaderActive)
 
 	// Test saving validator sets
 	t.Run("save validator sets", func(t *testing.T) {

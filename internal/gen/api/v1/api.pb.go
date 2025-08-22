@@ -28,27 +28,23 @@ type ValidatorSetStatus int32
 const (
 	// Default/unknown status
 	ValidatorSetStatus_VALIDATOR_SET_STATUS_UNSPECIFIED ValidatorSetStatus = 0
-	// Pending status
-	ValidatorSetStatus_VALIDATOR_SET_STATUS_PENDING ValidatorSetStatus = 1
-	// Missed status
-	ValidatorSetStatus_VALIDATOR_SET_STATUS_MISSED ValidatorSetStatus = 2
-	// Committed status
-	ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED ValidatorSetStatus = 3
+	// Inactive status
+	ValidatorSetStatus_VALIDATOR_SET_STATUS_INACTIVE ValidatorSetStatus = 1
+	// Active status
+	ValidatorSetStatus_VALIDATOR_SET_STATUS_ACTIVE ValidatorSetStatus = 2
 )
 
 // Enum value maps for ValidatorSetStatus.
 var (
 	ValidatorSetStatus_name = map[int32]string{
 		0: "VALIDATOR_SET_STATUS_UNSPECIFIED",
-		1: "VALIDATOR_SET_STATUS_PENDING",
-		2: "VALIDATOR_SET_STATUS_MISSED",
-		3: "VALIDATOR_SET_STATUS_COMMITTED",
+		1: "VALIDATOR_SET_STATUS_INACTIVE",
+		2: "VALIDATOR_SET_STATUS_ACTIVE",
 	}
 	ValidatorSetStatus_value = map[string]int32{
 		"VALIDATOR_SET_STATUS_UNSPECIFIED": 0,
-		"VALIDATOR_SET_STATUS_PENDING":     1,
-		"VALIDATOR_SET_STATUS_MISSED":      2,
-		"VALIDATOR_SET_STATUS_COMMITTED":   3,
+		"VALIDATOR_SET_STATUS_INACTIVE":    1,
+		"VALIDATOR_SET_STATUS_ACTIVE":      2,
 	}
 )
 
@@ -1869,12 +1865,11 @@ const file_v1_api_proto_rawDesc = "" +
 	"\x0eValidatorVault\x12\x19\n" +
 	"\bchain_id\x18\x01 \x01(\x04R\achainId\x12\x14\n" +
 	"\x05vault\x18\x02 \x01(\tR\x05vault\x12!\n" +
-	"\fvoting_power\x18\x03 \x01(\tR\vvotingPower*\xa1\x01\n" +
+	"\fvoting_power\x18\x03 \x01(\tR\vvotingPower*~\n" +
 	"\x12ValidatorSetStatus\x12$\n" +
-	" VALIDATOR_SET_STATUS_UNSPECIFIED\x10\x00\x12 \n" +
-	"\x1cVALIDATOR_SET_STATUS_PENDING\x10\x01\x12\x1f\n" +
-	"\x1bVALIDATOR_SET_STATUS_MISSED\x10\x02\x12\"\n" +
-	"\x1eVALIDATOR_SET_STATUS_COMMITTED\x10\x03*\xa0\x01\n" +
+	" VALIDATOR_SET_STATUS_UNSPECIFIED\x10\x00\x12!\n" +
+	"\x1dVALIDATOR_SET_STATUS_INACTIVE\x10\x01\x12\x1f\n" +
+	"\x1bVALIDATOR_SET_STATUS_ACTIVE\x10\x02*\xa0\x01\n" +
 	"\rSigningStatus\x12\x1e\n" +
 	"\x1aSIGNING_STATUS_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16SIGNING_STATUS_PENDING\x10\x01\x12\x1c\n" +

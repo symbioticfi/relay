@@ -46,9 +46,8 @@ var (
 type ValidatorSetStatus int
 
 const (
-	HeaderPending ValidatorSetStatus = iota
-	HeaderMissed
-	HeaderCommitted
+	HeaderInactive ValidatorSetStatus = iota
+	HeaderActive
 )
 
 const ValsetHeaderKeyTag = KeyTag(15)
@@ -121,12 +120,10 @@ func (q QuorumThresholdPct) MarshalJSON() ([]byte, error) {
 
 func (s ValidatorSetStatus) MarshalJSON() ([]byte, error) {
 	switch s {
-	case HeaderPending:
-		return []byte("\"Pending\""), nil
-	case HeaderMissed:
-		return []byte("\"Missed\""), nil
-	case HeaderCommitted:
-		return []byte("\"Committed\""), nil
+	case HeaderInactive:
+		return []byte("\"Inactive\""), nil
+	case HeaderActive:
+		return []byte("\"Active\""), nil
 	default:
 		return []byte("\"Unknown\""), nil
 	}

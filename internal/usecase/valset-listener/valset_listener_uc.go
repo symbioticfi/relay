@@ -25,7 +25,6 @@ type repo interface {
 
 type deriver interface {
 	GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error)
-	GetStatusAndPreviousHash(ctx context.Context, epoch uint64, config entity.NetworkConfig, valset entity.ValidatorSet) (entity.ValidatorSetStatus, common.Hash, error)
 }
 
 type Config struct {
@@ -127,7 +126,12 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		return errors.Errorf("failed to get network config for current epoch: %w", err)
 	}
 
-	latestCommittedHash, latestCommittedEpoch, err := s.cfg.GrowthStrategy.GetLastCommittedHeaderHash(ctx, config)
+	latestCommittedEpoch, err := s.cfg.GrowthStrategy.GetLastCommittedHeaderEpoch(ctx, config)
+	if err != nil {
+		return errors.Errorf("failed to get latest committed header epoch: %w", err)
+	}
+
+	latestCommittedHash, err := s.cfg.GrowthStrategy.GetLastCommittedHeaderHash(ctx, config)
 	if err != nil {
 		return errors.Errorf("failed to get latest committed header hash: %w", err)
 	}
@@ -166,7 +170,12 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 			return errors.Errorf("failed to derive validator set extra for epoch %d: %w", nextEpoch, err)
 		}
 
-		nextValset.Status, nextValset.PreviousHeaderHash, err = s.cfg.Deriver.GetStatusAndPreviousHash(ctx, nextEpoch, nextEpochConfig, nextValset)
+		nextValset.PreviousHeaderHash, err = s.cfg.GrowthStrategy.GetPreviousHash(ctx, nextEpoch, config, nextValset)
+		if err != nil {
+			return errors.Errorf("failed to get previous hash for epoch %d: %w", nextEpoch, err)
+		}
+
+		nextValset.Status, err = s.cfg.GrowthStrategy.GetValsetStatus(ctx, config, nextValset)
 		if err != nil {
 			return errors.Errorf("failed to get status and previous hash for epoch %d: %w", nextEpoch, err)
 		}
@@ -206,7 +215,12 @@ func (s *Service) validateHeaderHashAtLastCommittedEpoch(ctx context.Context, ep
 		return errors.Errorf("failed to derive validator set extra for epoch %d: %w", epoch, err)
 	}
 
-	valset.Status, valset.PreviousHeaderHash, err = s.cfg.Deriver.GetStatusAndPreviousHash(ctx, epoch, config, valset)
+	valset.PreviousHeaderHash, err = s.cfg.GrowthStrategy.GetPreviousHash(ctx, epoch, config, valset)
+	if err != nil {
+		return errors.Errorf("failed to get previous hash for epoch %d: %w", epoch, err)
+	}
+
+	valset.Status, err = s.cfg.GrowthStrategy.GetValsetStatus(ctx, config, valset)
 	if err != nil {
 		return errors.Errorf("failed to get status and previous hash for epoch %d: %w", epoch, err)
 	}
