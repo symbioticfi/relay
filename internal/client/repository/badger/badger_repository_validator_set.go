@@ -24,8 +24,12 @@ func keyValidatorSetHeader(epoch uint64) []byte {
 	return []byte(fmt.Sprintf("validator_set_header:%d", epoch))
 }
 
-func keyValidator(epoch uint64, keyTag entity.KeyTag, publicKeyHash common.Hash) []byte {
-	return []byte(fmt.Sprintf("validator:%d:%d:%s", epoch, keyTag, publicKeyHash.Hex()))
+func keyValidatorByOperator(epoch uint64, operator common.Address) []byte {
+	return []byte(fmt.Sprintf("validator:%d:%s", epoch, operator.Hex()))
+}
+
+func keyValidatorKeyLookup(epoch uint64, keyTag entity.KeyTag, publicKeyHash common.Hash) []byte {
+	return []byte(fmt.Sprintf("validator_key_lookup:%d:%d:%s", epoch, keyTag, publicKeyHash.Hex()))
 }
 
 func (r *Repository) SaveValidatorSet(_ context.Context, valset entity.ValidatorSet) error {
@@ -82,21 +86,27 @@ func (r *Repository) SaveValidatorSet(_ context.Context, valset entity.Validator
 			}
 		}
 
-		// Save individual validator indexes
+		// Save individual validators and their key indexes
 		for _, validator := range valset.Validators {
 			validatorBytes, err := validatorToBytes(validator)
 			if err != nil {
 				return errors.Errorf("failed to marshal validator: %w", err)
 			}
 
-			// Save validator for each key tag it has (for GetValidatorByKey functionality)
+			// Save the validator data once
+			validatorKey := keyValidatorByOperator(valset.Epoch, validator.Operator)
+			err = txn.Set(validatorKey, validatorBytes)
+			if err != nil {
+				return errors.Errorf("failed to store validator: %w", err)
+			}
+
+			// Create an index for each key that points to the validator's operator address
 			for _, key := range validator.Keys {
 				publicKeyHash := crypto.Keccak256Hash(key.Payload)
-				validatorKey := keyValidator(valset.Epoch, key.Tag, publicKeyHash)
-
-				err = txn.Set(validatorKey, validatorBytes)
+				keyLookup := keyValidatorKeyLookup(valset.Epoch, key.Tag, publicKeyHash)
+				err = txn.Set(keyLookup, validator.Operator.Bytes())
 				if err != nil {
-					return errors.Errorf("failed to store validator index: %w", err)
+					return errors.Errorf("failed to store validator key lookup: %w", err)
 				}
 			}
 		}
@@ -272,15 +282,33 @@ func (r *Repository) GetValidatorByKey(_ context.Context, epoch uint64, keyTag e
 	var validator entity.Validator
 
 	publicKeyHash := crypto.Keccak256Hash(publicKey)
-	key := keyValidator(epoch, keyTag, publicKeyHash)
+	keyLookup := keyValidatorKeyLookup(epoch, keyTag, publicKeyHash)
 
 	return validator, r.db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get(key)
+		// First, find the operator address from the key lookup table
+		item, err := txn.Get(keyLookup)
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
 				return errors.Errorf("no validator found for epoch %d, keyTag %d, publicKey %x: %w", epoch, keyTag, publicKey, entity.ErrEntityNotFound)
 			}
-			return errors.Errorf("failed to get validator: %w", err)
+			return errors.Errorf("failed to get validator key lookup: %w", err)
+		}
+
+		operatorBytes, err := item.ValueCopy(nil)
+		if err != nil {
+			return errors.Errorf("failed to copy operator address value: %w", err)
+		}
+		operator := common.BytesToAddress(operatorBytes)
+
+		// Now, retrieve the full validator data
+		validatorKey := keyValidatorByOperator(epoch, operator)
+		item, err = txn.Get(validatorKey)
+		if err != nil {
+			if errors.Is(err, badger.ErrKeyNotFound) {
+				// This would indicate data inconsistency
+				return errors.Errorf("found validator key lookup but no validator data for operator %s: %w", operator.Hex(), entity.ErrEntityNotFound)
+			}
+			return errors.Errorf("failed to get validator data: %w", err)
 		}
 
 		value, err := item.ValueCopy(nil)
@@ -340,17 +368,18 @@ func bytesToValidator(data []byte) (entity.Validator, error) {
 		}
 	})
 
-	vaults := lo.Map(dto.Vaults, func(v validatorVaultDTO, _ int) entity.ValidatorVault {
+	vaults := make([]entity.ValidatorVault, 0, len(dto.Vaults))
+	for _, v := range dto.Vaults {
 		votingPowerVault, parseOk := new(big.Int).SetString(v.VotingPower, 10)
 		if !parseOk {
-			return entity.ValidatorVault{}
+			return entity.Validator{}, errors.Errorf("failed to parse vault voting power for operator %s: %s", dto.Operator, v.VotingPower)
 		}
-		return entity.ValidatorVault{
+		vaults = append(vaults, entity.ValidatorVault{
 			ChainID:     v.ChainID,
 			Vault:       common.HexToAddress(v.Vault),
 			VotingPower: entity.ToVotingPower(votingPowerVault),
-		}
-	})
+		})
+	}
 
 	return entity.Validator{
 		Operator:    operator,

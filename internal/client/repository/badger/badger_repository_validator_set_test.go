@@ -256,6 +256,45 @@ func TestRepository_ValidatorSet_ValidatorIndexing(t *testing.T) {
 	})
 }
 
+func TestRepository_ValidatorSet_MultiKeyStorageProblem(t *testing.T) {
+	repo := setupTestRepository(t)
+
+	t.Run("validator storage duplication with multiple keys", func(t *testing.T) {
+		// Create a validator with multiple keys to test storage duplication
+		vs := randomValidatorSet(t, 1, entity.HeaderCommitted)
+
+		// Modify the first validator to have 3 different keys
+		vs.Validators[0].Keys = []entity.ValidatorKey{
+			{Tag: entity.KeyTag(1), Payload: randomBytes(t, 32)},
+			{Tag: entity.KeyTag(2), Payload: randomBytes(t, 32)},
+			{Tag: entity.KeyTag(3), Payload: randomBytes(t, 32)},
+		}
+
+		require.NoError(t, repo.SaveValidatorSet(t.Context(), vs))
+
+		// Retrieve the validator set and check if deduplication works correctly
+		retrievedVS, err := repo.GetValidatorSetByEpoch(t.Context(), vs.Epoch)
+		require.NoError(t, err)
+
+		// The validator should appear only once despite having multiple keys
+		assert.Len(t, retrievedVS.Validators, len(vs.Validators), "Validators should not be duplicated")
+
+		// Find our multi-key validator in the retrieved set
+		var foundValidator *entity.Validator
+		for _, v := range retrievedVS.Validators {
+			if v.Operator == vs.Validators[0].Operator {
+				foundValidator = &v
+				break
+			}
+		}
+		require.NotNil(t, foundValidator, "Multi-key validator should be found")
+
+		// Verify the validator has all its keys
+		assert.Equal(t, vs.Validators[0], *foundValidator, "Retrieved validator should match original")
+		assert.Len(t, foundValidator.Keys, 3, "Validator should have all 3 keys")
+	})
+}
+
 func setupTestRepository(t *testing.T) *Repository {
 	t.Helper()
 	repo, err := New(Config{Dir: t.TempDir()})
