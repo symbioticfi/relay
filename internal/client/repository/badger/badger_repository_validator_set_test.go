@@ -49,47 +49,58 @@ func TestRepository_ValidatorSet(t *testing.T) {
 		assert.True(t, errors.Is(err, entity.ErrEntityNotFound))
 	})
 
-	// Test getting latest validator set
-	t.Run("get latest validator set", func(t *testing.T) {
-		latest, err := repo.GetLatestValidatorSet(t.Context())
+	// Test getting latest validator set via epoch lookup
+	t.Run("get latest validator set via epoch lookup", func(t *testing.T) {
+		latestEpoch, err := repo.GetLatestValidatorSetEpoch(t.Context())
+		require.NoError(t, err)
+
+		latest, err := repo.GetValidatorSetByEpoch(t.Context(), latestEpoch)
 		require.NoError(t, err)
 		// Latest should be vs1 (epoch 2) even though we saved it first
 		assert.Equal(t, vs1, latest)
 	})
 
-	// Test getting validator set meta by epoch
-	t.Run("get validator set meta by epoch", func(t *testing.T) {
-		// Get meta for newer epoch
-		gotMeta1, err := repo.GetValidatorSetMetaByEpoch(t.Context(), vs1.Epoch)
+	// Test getting latest validator set epoch
+	t.Run("get latest validator set epoch", func(t *testing.T) {
+		latestEpoch, err := repo.GetLatestValidatorSetEpoch(t.Context())
+		require.NoError(t, err)
+		// Latest epoch should be vs1's epoch (2) even though we saved it first
+		assert.Equal(t, vs1.Epoch, latestEpoch)
+	})
+
+	// Test getting validator set header by epoch
+	t.Run("get validator set header by epoch", func(t *testing.T) {
+		// Get header for newer epoch
+		gotHeader1, err := repo.GetValidatorSetHeaderByEpoch(t.Context(), vs1.Epoch)
 		require.NoError(t, err)
 
-		// Verify meta matches expected values from validator set
-		expectedMeta1, err := vs1.MakeMeta()
+		// Verify header matches expected values from validator set
+		expectedHeader1, err := vs1.GetHeader()
 		require.NoError(t, err)
-		assert.Equal(t, expectedMeta1, gotMeta1)
+		assert.Equal(t, expectedHeader1, gotHeader1)
 
-		// Get meta for older epoch
-		gotMeta2, err := repo.GetValidatorSetMetaByEpoch(t.Context(), vs2.Epoch)
+		// Get header for older epoch
+		gotHeader2, err := repo.GetValidatorSetHeaderByEpoch(t.Context(), vs2.Epoch)
 		require.NoError(t, err)
 
-		expectedMeta2, err := vs2.MakeMeta()
+		expectedHeader2, err := vs2.GetHeader()
 		require.NoError(t, err)
-		assert.Equal(t, expectedMeta2, gotMeta2)
+		assert.Equal(t, expectedHeader2, gotHeader2)
 
-		// Get non-existent epoch meta
-		_, err = repo.GetValidatorSetMetaByEpoch(t.Context(), 999)
+		// Get non-existent epoch header
+		_, err = repo.GetValidatorSetHeaderByEpoch(t.Context(), 999)
 		assert.True(t, errors.Is(err, entity.ErrEntityNotFound))
 	})
 
-	// Test getting latest validator set meta
-	t.Run("get latest validator set meta", func(t *testing.T) {
-		latestMeta, err := repo.GetLatestValidatorSetMeta(t.Context())
+	// Test getting latest validator set header
+	t.Run("get latest validator set header", func(t *testing.T) {
+		latestHeader, err := repo.GetLatestValidatorSetHeader(t.Context())
 		require.NoError(t, err)
 
-		// Latest meta should be from vs1 (epoch 2)
-		expectedMeta, err := vs1.MakeMeta()
+		// Latest header should be from vs1 (epoch 2)
+		expectedHeader, err := vs1.GetHeader()
 		require.NoError(t, err)
-		assert.Equal(t, expectedMeta, latestMeta)
+		assert.Equal(t, expectedHeader, latestHeader)
 	})
 
 	// Test getting individual validators by key
@@ -134,12 +145,17 @@ func TestRepository_ValidatorSet_EmptyRepository(t *testing.T) {
 	repo := setupTestRepository(t)
 
 	t.Run("get latest validator set from empty repo", func(t *testing.T) {
-		_, err := repo.GetLatestValidatorSet(t.Context())
+		_, err := repo.GetLatestValidatorSetEpoch(t.Context())
 		assert.True(t, errors.Is(err, entity.ErrEntityNotFound))
 	})
 
-	t.Run("get latest validator set meta from empty repo", func(t *testing.T) {
-		_, err := repo.GetLatestValidatorSetMeta(t.Context())
+	t.Run("get latest validator set header from empty repo", func(t *testing.T) {
+		_, err := repo.GetLatestValidatorSetHeader(t.Context())
+		assert.True(t, errors.Is(err, entity.ErrEntityNotFound))
+	})
+
+	t.Run("get latest validator set epoch from empty repo", func(t *testing.T) {
+		_, err := repo.GetLatestValidatorSetEpoch(t.Context())
 		assert.True(t, errors.Is(err, entity.ErrEntityNotFound))
 	})
 
@@ -148,8 +164,8 @@ func TestRepository_ValidatorSet_EmptyRepository(t *testing.T) {
 		assert.True(t, errors.Is(err, entity.ErrEntityNotFound))
 	})
 
-	t.Run("get validator set meta by epoch from empty repo", func(t *testing.T) {
-		_, err := repo.GetValidatorSetMetaByEpoch(t.Context(), 1)
+	t.Run("get validator set header by epoch from empty repo", func(t *testing.T) {
+		_, err := repo.GetValidatorSetHeaderByEpoch(t.Context(), 1)
 		assert.True(t, errors.Is(err, entity.ErrEntityNotFound))
 	})
 
@@ -176,18 +192,27 @@ func TestRepository_ValidatorSet_EpochOrdering(t *testing.T) {
 	require.NoError(t, repo.SaveValidatorSet(t.Context(), vs1)) // epoch 5
 
 	t.Run("latest validator set should be highest epoch", func(t *testing.T) {
-		latest, err := repo.GetLatestValidatorSet(t.Context())
+		latestEpoch, err := repo.GetLatestValidatorSetEpoch(t.Context())
+		require.NoError(t, err)
+
+		latest, err := repo.GetValidatorSetByEpoch(t.Context(), latestEpoch)
 		require.NoError(t, err)
 		assert.Equal(t, vs3, latest) // epoch 10 should be latest
 	})
 
-	t.Run("latest validator set meta should be highest epoch", func(t *testing.T) {
-		latestMeta, err := repo.GetLatestValidatorSetMeta(t.Context())
+	t.Run("latest validator set header should be highest epoch", func(t *testing.T) {
+		latestHeader, err := repo.GetLatestValidatorSetHeader(t.Context())
 		require.NoError(t, err)
 
-		expectedMeta, err := vs3.MakeMeta()
+		expectedHeader, err := vs3.GetHeader()
 		require.NoError(t, err)
-		assert.Equal(t, expectedMeta, latestMeta)
+		assert.Equal(t, expectedHeader, latestHeader)
+	})
+
+	t.Run("latest validator set epoch should be highest epoch", func(t *testing.T) {
+		latestEpoch, err := repo.GetLatestValidatorSetEpoch(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, vs3.Epoch, latestEpoch) // epoch 10 should be latest
 	})
 
 	t.Run("can retrieve any validator set by epoch", func(t *testing.T) {

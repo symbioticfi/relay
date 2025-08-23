@@ -103,21 +103,6 @@ func (mr *MockrepositoryMockRecorder) GetValidatorSetByEpoch(ctx, epoch any) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSetByEpoch", reflect.TypeOf((*Mockrepository)(nil).GetValidatorSetByEpoch), ctx, epoch)
 }
 
-// GetValidatorSetMetaByEpoch mocks base method.
-func (m *Mockrepository) GetValidatorSetMetaByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSetMeta, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetValidatorSetMetaByEpoch", ctx, epoch)
-	ret0, _ := ret[0].(entity.ValidatorSetMeta)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetValidatorSetMetaByEpoch indicates an expected call of GetValidatorSetMetaByEpoch.
-func (mr *MockrepositoryMockRecorder) GetValidatorSetMetaByEpoch(ctx, epoch any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSetMetaByEpoch", reflect.TypeOf((*Mockrepository)(nil).GetValidatorSetMetaByEpoch), ctx, epoch)
-}
-
 // SaveSignature mocks base method.
 func (m *Mockrepository) SaveSignature(ctx context.Context, reqHash common.Hash, key []byte, sig entity.SignatureExtended) error {
 	m.ctrl.T.Helper()

@@ -11,12 +11,11 @@ import (
 func (h *grpcHandler) SignMessage(ctx context.Context, req *apiv1.SignMessageRequest) (*apiv1.SignMessageResponse, error) {
 	requiredEpoch := req.RequiredEpoch
 	if req.RequiredEpoch == nil {
-		// later to optimize: fetch only epoch instead of entire set
-		latestValsetMeta, err := h.cfg.Repo.GetLatestValidatorSetMeta(ctx)
+		latestEpoch, err := h.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 		if err != nil {
 			return nil, err
 		}
-		requiredEpoch = &latestValsetMeta.Epoch
+		requiredEpoch = &latestEpoch
 	}
 
 	signReq := entity.SignatureRequest{

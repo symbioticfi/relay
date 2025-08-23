@@ -97,14 +97,13 @@ type validatorSetDTO struct {
 	Status             int            `json:"status"`
 }
 
-type validatorSetMetaDTO struct {
+type validatorSetHeaderDTO struct {
 	Version            uint8  `json:"version"`
 	RequiredKeyTag     uint8  `json:"required_key_tag"`
 	Epoch              uint64 `json:"epoch"`
 	CaptureTimestamp   uint64 `json:"capture_timestamp"`
 	QuorumThreshold    string `json:"quorum_threshold"`
 	PreviousHeaderHash string `json:"previous_header_hash"`
-	TotalVotingPower   string `json:"total_voting_power"`
 	ValidatorsSszMRoot string `json:"validators_ssz_mroot"`
 }
 

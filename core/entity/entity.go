@@ -328,30 +328,6 @@ type ValidatorSet struct {
 	Status ValidatorSetStatus
 }
 
-type ValidatorSetMeta struct {
-	Version            uint8
-	RequiredKeyTag     KeyTag
-	Epoch              uint64
-	CaptureTimestamp   uint64
-	QuorumThreshold    VotingPower
-	PreviousHeaderHash common.Hash
-
-	TotalActiveVotingPower VotingPower
-	ValidatorsSszMRoot     common.Hash
-}
-
-func (m ValidatorSetMeta) GetHeader() ValidatorSetHeader {
-	return ValidatorSetHeader{
-		Version:            m.Version,
-		RequiredKeyTag:     m.RequiredKeyTag,
-		Epoch:              m.Epoch,
-		CaptureTimestamp:   m.CaptureTimestamp,
-		QuorumThreshold:    m.QuorumThreshold,
-		ValidatorsSszMRoot: m.ValidatorsSszMRoot,
-		PreviousHeaderHash: m.PreviousHeaderHash,
-	}
-}
-
 func (v ValidatorSet) FindValidatorByKey(keyTag KeyTag, publicKey []byte) (Validator, bool) {
 	for _, validator := range v.Validators {
 		for _, key := range validator.Keys {
@@ -448,23 +424,6 @@ func (v ValidatorSet) GetHeader() (ValidatorSetHeader, error) {
 		QuorumThreshold:    v.QuorumThreshold,
 		PreviousHeaderHash: v.PreviousHeaderHash,
 		ValidatorsSszMRoot: sszMroot,
-	}, nil
-}
-
-func (v ValidatorSet) MakeMeta() (ValidatorSetMeta, error) {
-	header, err := v.GetHeader()
-	if err != nil {
-		return ValidatorSetMeta{}, errors.Errorf("failed to get validator set header: %w", err)
-	}
-	return ValidatorSetMeta{
-		Version:                v.Version,
-		RequiredKeyTag:         v.RequiredKeyTag,
-		Epoch:                  v.Epoch,
-		CaptureTimestamp:       v.CaptureTimestamp,
-		QuorumThreshold:        v.QuorumThreshold,
-		PreviousHeaderHash:     v.PreviousHeaderHash,
-		TotalActiveVotingPower: v.GetTotalActiveVotingPower(),
-		ValidatorsSszMRoot:     header.ValidatorsSszMRoot,
 	}, nil
 }
 
