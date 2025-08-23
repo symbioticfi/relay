@@ -131,12 +131,12 @@ func (r *Repository) GetValidatorSetHeaderByEpoch(_ context.Context, epoch uint6
 	})
 }
 
-func (r *Repository) getAllValidatorsByEpoch(txn *badger.Txn, epoch uint64) ([]entity.Validator, error) {
+func (r *Repository) getAllValidatorsByEpoch(txn *badger.Txn, epoch uint64) (entity.Validators, error) {
 	prefix := []byte(fmt.Sprintf("validator:%d:", epoch))
 	it := txn.NewIterator(badger.DefaultIteratorOptions)
 	defer it.Close()
 
-	var validators []entity.Validator
+	var validators entity.Validators
 	for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
 		item := it.Item()
 		value, err := item.ValueCopy(nil)
@@ -151,6 +151,8 @@ func (r *Repository) getAllValidatorsByEpoch(txn *badger.Txn, epoch uint64) ([]e
 
 		validators = append(validators, validator)
 	}
+
+	validators.SortByOperatorAddressAsc()
 
 	return validators, nil
 }
