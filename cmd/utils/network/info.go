@@ -3,6 +3,8 @@ package network
 import (
 	"time"
 
+	"github.com/samber/lo"
+
 	"github.com/symbioticfi/relay/core/client/evm"
 	"github.com/symbioticfi/relay/core/entity"
 	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
@@ -129,18 +131,17 @@ var infoCmd = &cobra.Command{
 						settlementData[i].HeaderHash = headerHash
 					}
 
-					// Calculate missed epochs by checking all epochs from 0 to current epoch
-					var missedCount uint64
-					for epochNum := uint64(0); epochNum <= epoch; epochNum++ {
-						committed, err := evmClient.IsValsetHeaderCommittedAt(egCtx, replica, epochNum)
-						if err != nil {
-							return errors.Errorf("Failed to check epoch %d commitment: %w", epochNum, err)
-						}
-						if !committed {
-							missedCount++
-						}
+					allEpochsFromZero := lo.RepeatBy(int(epoch+1), func(i int) uint64 {
+						return uint64(i)
+					})
+
+					commitmentResults, err := evmClient.IsValsetHeaderCommittedAtEpochs(egCtx, replica, allEpochsFromZero)
+					if err != nil {
+						return errors.Errorf("Failed to check epoch commitments: %w", err)
 					}
-					settlementData[i].MissedEpochs = missedCount
+
+					settlementData[i].MissedEpochs = uint64(lo.CountBy(commitmentResults, func(committed bool) bool { return !committed }))
+
 					return nil
 				})
 			}

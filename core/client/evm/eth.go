@@ -680,6 +680,14 @@ func (e *Client) IsValsetHeaderCommittedAtEpochs(ctx context.Context, addr entit
 		e.observeMetrics("IsValSetHeaderCommittedAt", err, now)
 	}(time.Now())
 
+	multicallExists, err := e.multicallExists(ctx, addr.ChainId)
+	if err != nil {
+		return nil, errors.Errorf("multicall check failed: %v", err)
+	}
+	if !multicallExists {
+		return nil, errors.New("multicall not available on this chain")
+	}
+
 	abi, err := gen.ISettlementMetaData.GetAbi()
 	if err != nil {
 		return nil, errors.Errorf("failed to get ABI: %v", err)
@@ -689,7 +697,7 @@ func (e *Client) IsValsetHeaderCommittedAtEpochs(ctx context.Context, addr entit
 	calls := make([]Call, 0, len(epochs))
 
 	for _, epoch := range epochs {
-		bytes, err := abi.Pack("IsValSetHeaderCommittedAt", big.NewInt(int64(epoch)))
+		bytes, err := abi.Pack("isValSetHeaderCommittedAt", big.NewInt(int64(epoch)))
 		if err != nil {
 			return nil, errors.Errorf("failed to get bytes: %v", err)
 		}
@@ -713,8 +721,8 @@ func (e *Client) IsValsetHeaderCommittedAtEpochs(ctx context.Context, addr entit
 	for _, out := range outs {
 		var res bool
 
-		if err := abi.UnpackIntoInterface(&res, "IsValSetHeaderCommittedAt", out.ReturnData); err != nil {
-			return nil, errors.Errorf("failed to unpack IsValSetHeaderCommittedAt: %v", err)
+		if err := abi.UnpackIntoInterface(&res, "isValSetHeaderCommittedAt", out.ReturnData); err != nil {
+			return nil, errors.Errorf("failed to unpack isValSetHeaderCommittedAt: %v", err)
 		}
 
 		isCommitted = append(isCommitted, res)
