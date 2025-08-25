@@ -50,12 +50,10 @@ func (s *Service) handleSignatureReadyMessage(ctx context.Context, pubSubMsg *pu
 		return errors.Errorf("failed to extract sender info from received message: %w", err)
 	}
 
-	s.signatureReceivedHandler.Emit(ctx, p2pEntity.P2PMessage[entity.SignatureMessage]{
+	return s.signatureReceivedHandler.Emit(ctx, p2pEntity.P2PMessage[entity.SignatureMessage]{
 		SenderInfo: si,
 		Message:    msg,
 	})
-
-	return nil
 }
 
 func (s *Service) handleAggregatedProofReadyMessage(ctx context.Context, pubSubMsg *pubsub.Message) error {
@@ -92,12 +90,10 @@ func (s *Service) handleAggregatedProofReadyMessage(ctx context.Context, pubSubM
 		return errors.Errorf("failed to extract sender info from received message: %w", err)
 	}
 
-	s.signaturesAggregatedHandler.Emit(ctx, p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]{
+	return s.signaturesAggregatedHandler.Emit(ctx, p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]{
 		SenderInfo: si,
 		Message:    msg,
 	})
-
-	return nil
 }
 
 func extractSenderInfo(pubSubMsg *pubsub.Message) (p2pEntity.SenderInfo, error) {

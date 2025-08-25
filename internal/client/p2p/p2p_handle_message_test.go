@@ -17,6 +17,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/symbioticfi/relay/pkg/signals"
 
 	"github.com/symbioticfi/relay/core/entity"
 	symbioticCrypto "github.com/symbioticfi/relay/core/usecase/crypto"
@@ -47,11 +48,11 @@ func TestService_IntegrationSuccessful(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	service2.AddSignatureMessageListener(func(ctx context.Context, msg p2pEntity.P2PMessage[entity.SignatureMessage]) error {
+	require.NoError(t, service2.StartSignatureMessageListener(func(ctx context.Context, msg p2pEntity.P2PMessage[entity.SignatureMessage]) error {
 		receivedMsg = msg
 		wg.Done()
 		return nil
-	}, "test-listener")
+	}))
 
 	// Prepare test message
 	testSignatureMsg := entity.SignatureMessage{
@@ -156,6 +157,9 @@ func createTestService(t *testing.T, skipMessageSigning bool, tracer pubsub.Even
 		Metrics:         &mockMetrics{},
 		Discovery:       DefaultDiscoveryConfig(),
 		EventTracer:     tracer,
+	}, signals.SignalCfg{
+		BufferSize:  5,
+		WorkerCount: 1,
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() {
