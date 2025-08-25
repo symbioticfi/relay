@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
-	"log"
 	"reflect"
 	"strconv"
 	"strings"
@@ -116,6 +115,7 @@ type config struct {
 	Bootnodes         []string                    `mapstructure:"bootnodes"`
 	DHTMode           string                      `mapstructure:"dht-mode" validate:"oneof=auto server client disabled"`
 	MDnsEnabled       bool                        `mapstructure:"enable-mdns"`
+	MaxCalls          int                         `mapstructure:"evm-max-calls"`
 	SignalCfg         signals.SignalCfg           `mapstructure:"signal"`
 }
 
@@ -156,6 +156,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("enable-mdns", false, "Enable mDNS discovery for P2P")
 	rootCmd.PersistentFlags().Int64("signal.worker-count", 10, "Signal worker count")
 	rootCmd.PersistentFlags().Int64("signal.buffer-size", 20, "Signal buffer size")
+	rootCmd.PersistentFlags().Int("evm-max-calls", 0, "Max calls in multicall")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
@@ -250,6 +251,9 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	if err := v.BindPFlag("signal.worker-count", cmd.PersistentFlags().Lookup("signal.worker-count")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
+	if err := v.BindPFlag("evm-max-calls", cmd.PersistentFlags().Lookup("evm-max-calls")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
 
 	err := v.ReadInConfig()
 	if err != nil && !errors.Is(err, viper.ConfigFileNotFoundError{}) && !errors.As(err, lo.ToPtr(&fs.PathError{})) {
@@ -262,8 +266,6 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	if err := v.Unmarshal(&cfg, viper.DecodeHook(DecodeFlagToStruct)); err != nil {
 		return errors.Errorf("failed to unmarshal config: %w", err)
 	}
-
-	log.Printf("%v %v\n", cfg.SignalCfg.BufferSize, cfg.SignalCfg.WorkerCount)
 
 	if err := cfg.Validate(); err != nil {
 		return errors.Errorf("invalid config: %w", err)

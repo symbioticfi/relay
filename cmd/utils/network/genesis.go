@@ -124,7 +124,7 @@ var genesisCmd = &cobra.Command{
 			panels := pterm.Panels{
 				{
 					{Data: pterm.DefaultBox.WithTitle("Validator Set Header").Sprint(
-						printHeaderTable(&header),
+						printHeaderTable(header),
 					)},
 				},
 				{
