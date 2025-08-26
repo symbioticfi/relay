@@ -29,12 +29,12 @@ type Signal[T any] struct {
 	mutex   sync.Mutex
 }
 
-// SignalCfg defines the configuration for a Signal instance.
-type SignalCfg struct {
+// Config defines the configuration for a Signal instance.
+type Config struct {
 	// BufferSize sets the size of the internal event queue buffer (minimum 5)
-	BufferSize int64 `mapstructure:"buffer-size" validate:"gte=5"`
+	BufferSize int `mapstructure:"buffer-size" validate:"gte=5"`
 	// WorkerCount sets the number of worker goroutines to process events (5-100)
-	WorkerCount int64 `mapstructure:"worker-count" validate:"gte=5,lte=100"`
+	WorkerCount int `mapstructure:"worker-count" validate:"gte=5,lte=100"`
 }
 
 // Event represents a signal event containing both payload data and execution context.
@@ -52,11 +52,11 @@ type SignalListener[T any] func(context.Context, T) error
 // New creates a new Signal instance with the specified configuration.
 // The handler can be nil and set later using SetHandler.
 // The id is used for logging and error identification.
-func New[T any](cfg SignalCfg, id string, handler SignalListener[T]) *Signal[T] {
+func New[T any](cfg Config, id string, handler SignalListener[T]) *Signal[T] {
 	return &Signal[T]{
 		queue:      make(chan Event[T], cfg.BufferSize),
 		handler:    handler,
-		maxWorkers: int(cfg.WorkerCount),
+		maxWorkers: cfg.WorkerCount,
 		id:         id,
 	}
 }
@@ -169,7 +169,6 @@ func (s *Signal[T]) StartWorkers(ctx context.Context) error {
 		// wait for all workers to finish
 		shutdownWG.Wait()
 		s.stopped.Store(true)
-		close(s.queue)
 		slog.Warn("all signal workers stopped", slog.String("signal", s.id))
 	}()
 

@@ -110,7 +110,7 @@ type Service struct {
 }
 
 // NewService creates a new P2P service with the given configuration
-func NewService(ctx context.Context, cfg Config, signalCfg signals.SignalCfg) (*Service, error) {
+func NewService(ctx context.Context, cfg Config, signalCfg signals.Config) (*Service, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}

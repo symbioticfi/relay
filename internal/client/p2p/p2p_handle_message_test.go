@@ -157,7 +157,7 @@ func createTestService(t *testing.T, skipMessageSigning bool, tracer pubsub.Even
 		Metrics:         &mockMetrics{},
 		Discovery:       DefaultDiscoveryConfig(),
 		EventTracer:     tracer,
-	}, signals.SignalCfg{
+	}, signals.Config{
 		BufferSize:  5,
 		WorkerCount: 1,
 	})

@@ -116,7 +116,7 @@ type config struct {
 	DHTMode           string                      `mapstructure:"dht-mode" validate:"oneof=auto server client disabled"`
 	MDnsEnabled       bool                        `mapstructure:"enable-mdns"`
 	MaxCalls          int                         `mapstructure:"evm-max-calls"`
-	SignalCfg         signals.SignalCfg           `mapstructure:"signal"`
+	SignalCfg         signals.Config              `mapstructure:"signal"`
 }
 
 func (c config) Validate() error {
