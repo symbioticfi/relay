@@ -201,7 +201,7 @@ func runApp(ctx context.Context) error {
 		return nil
 	})
 
-	if cfg.IsSigner {
+	if cfg.IsSigner && config.GrowthStrategy != entity.GrowthStrategyNoSettlement {
 		eg.Go(func() error {
 			if err := generator.Start(egCtx); err != nil {
 				return errors.Errorf("failed to start valset generator: %w", err)

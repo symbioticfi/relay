@@ -20,11 +20,35 @@ func NewGrowthStrategyNoSettlement(client evm.IEvmClient) *GrowthStrategyNoSettl
 	return &GrowthStrategyNoSettlement{client: client}
 }
 
-func (gs GrowthStrategyNoSettlement) GetLastCommittedHeaderHash(ctx context.Context, _ entity.NetworkConfig) (common.Hash, uint64, error) {
+func (gs GrowthStrategyNoSettlement) GetLastCommittedHeaderHash(_ context.Context, _ entity.NetworkConfig) (common.Hash, error) {
+	return NoSettlementHash, nil
+}
+
+func (gs GrowthStrategyNoSettlement) GetLastCommittedHeaderEpoch(ctx context.Context, _ entity.NetworkConfig) (uint64, error) {
 	epoch, err := gs.client.GetCurrentEpoch(ctx)
 	if err != nil {
-		return common.Hash{}, 0, errors.Errorf("failed to get current epoch: %s", err)
+		return 0, errors.Errorf("failed to get current epoch: %s", err)
+	}
+	return epoch, nil
+}
+
+func (gs GrowthStrategyNoSettlement) GetPreviousHash(_ context.Context, _ uint64, _ entity.NetworkConfig, _ entity.ValidatorSet) (common.Hash, error) {
+	return NoSettlementHash, nil
+}
+
+func (gs GrowthStrategyNoSettlement) GetValsetStatus(ctx context.Context, _ entity.NetworkConfig, valset entity.ValidatorSet) (entity.ValidatorSetStatus, error) {
+	currentEpoch, err := gs.client.GetCurrentEpoch(ctx)
+	if err != nil {
+		return 0, errors.Errorf("failed to get current epoch: %w", err)
 	}
 
-	return NoSettlementHash, epoch, nil
+	if valset.Epoch != currentEpoch { // TODO: policy when no settlement
+		return entity.HeaderInactive, nil
+	}
+
+	return entity.HeaderActive, nil
+}
+
+func (gs GrowthStrategyNoSettlement) IsValsetHeaderCommitted(_ context.Context, _ entity.NetworkConfig, epoch uint64) (entity.CrossChainAddress, bool, error) {
+	return entity.CrossChainAddress{}, false, nil
 }
