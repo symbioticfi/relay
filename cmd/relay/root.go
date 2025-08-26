@@ -237,6 +237,7 @@ func runApp(ctx context.Context) error {
 		EvmClient:         evmClient,
 		Aggregator:        aggApp,
 		Deriver:           deriver,
+		GrowthStrategy:    growthStrategy,
 		ServeMetrics:      serveMetricsOnAPIAddress,
 	})
 	if err != nil {

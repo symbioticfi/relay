@@ -94,7 +94,6 @@ type validatorSetDTO struct {
 	QuorumThreshold    string         `json:"quorum_threshold"`
 	PreviousHeaderHash string         `json:"previous_header_hash"`
 	Validators         []validatorDTO `json:"validators"`
-	Status             int            `json:"status"`
 }
 
 func validatorSetToBytes(vs entity.ValidatorSet) ([]byte, error) {
@@ -125,7 +124,6 @@ func validatorSetToBytes(vs entity.ValidatorSet) ([]byte, error) {
 				}),
 			}
 		}),
-		Status: int(vs.Status),
 	}
 
 	return json.Marshal(dto)
@@ -171,6 +169,5 @@ func bytesToValidatorSet(data []byte) (entity.ValidatorSet, error) {
 				}),
 			}
 		}),
-		Status: entity.ValidatorSetStatus(dto.Status),
 	}, nil
 }

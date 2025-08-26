@@ -175,11 +175,6 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 			return errors.Errorf("failed to get previous hash for epoch %d: %w", nextEpoch, err)
 		}
 
-		nextValset.Status, err = s.cfg.GrowthStrategy.GetValsetStatus(ctx, config, nextValset)
-		if err != nil {
-			return errors.Errorf("failed to get status and previous hash for epoch %d: %w", nextEpoch, err)
-		}
-
 		if err := s.cfg.Repo.SaveConfig(ctx, nextEpochConfig, nextEpoch); err != nil {
 			return errors.Errorf("failed to save validator set extra for epoch %d: %w", nextEpoch, err)
 		}
@@ -218,11 +213,6 @@ func (s *Service) validateHeaderHashAtLastCommittedEpoch(ctx context.Context, ep
 	valset.PreviousHeaderHash, err = s.cfg.GrowthStrategy.GetPreviousHash(ctx, epoch, config, valset)
 	if err != nil {
 		return errors.Errorf("failed to get previous hash for epoch %d: %w", epoch, err)
-	}
-
-	valset.Status, err = s.cfg.GrowthStrategy.GetValsetStatus(ctx, config, valset)
-	if err != nil {
-		return errors.Errorf("failed to get status and previous hash for epoch %d: %w", epoch, err)
 	}
 
 	header, err := valset.GetHeader()

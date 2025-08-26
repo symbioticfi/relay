@@ -246,11 +246,6 @@ func (s *Service) tryDetectNewEpochToCommit(ctx context.Context) (entity.Validat
 		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get previous hash for epoch %d: %w", currentOnchainEpoch, err)
 	}
 
-	newValset.Status, err = s.cfg.GrowthStrategy.GetValsetStatus(ctx, config, newValset)
-	if err != nil {
-		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get status and previous hash for epoch %d: %w", currentOnchainEpoch, err)
-	}
-
 	return newValset, config, nil
 }
 

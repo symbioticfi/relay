@@ -320,9 +320,6 @@ type ValidatorSet struct {
 	QuorumThreshold    VotingPower // absolute number now, not a percent
 	PreviousHeaderHash common.Hash // previous valset header hash
 	Validators         []Validator
-
-	// internal usage only
-	Status ValidatorSetStatus
 }
 
 func (v ValidatorSet) FindValidatorByKey(keyTag KeyTag, publicKey []byte) (Validator, bool) {

@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	mocks2 "github.com/symbioticfi/relay/core/usecase/growth-strategy/strategy-types/mocks"
+
 	"github.com/ethereum/go-ethereum/common"
 	"go.uber.org/mock/gomock"
 
@@ -16,11 +18,12 @@ import (
 // testSetup contains all the mocks and test helper functions
 // This unified setup can be used for all API server endpoint tests
 type testSetup struct {
-	ctrl          *gomock.Controller
-	mockEvmClient *deriverMocks.MockEvmClient
-	mockRepo      *mocks.Mockrepo
-	mockDeriver   *mocks.Mockderiver
-	handler       *grpcHandler
+	ctrl               *gomock.Controller
+	mockEvmClient      *deriverMocks.MockEvmClient
+	mockRepo           *mocks.Mockrepo
+	mockDeriver        *mocks.Mockderiver
+	mockGrowthStrategy *mocks2.MockGrowthStrategy
+	handler            *grpcHandler
 }
 
 // newTestSetup creates a new test setup with mocked dependencies
@@ -33,6 +36,7 @@ func newTestSetup(t *testing.T) *testSetup {
 	mockEvmClient := deriverMocks.NewMockEvmClient(ctrl)
 	mockRepo := mocks.NewMockrepo(ctrl)
 	mockDeriver := mocks.NewMockderiver(ctrl)
+	mockGrowthStrategy := mocks2.NewMockGrowthStrategy(ctrl)
 
 	// Create Config using the same structure as production
 	cfg := Config{
@@ -41,10 +45,11 @@ func newTestSetup(t *testing.T) *testSetup {
 		ShutdownTimeout:   time.Second,
 
 		// Inject mocked dependencies
-		EvmClient:    mockEvmClient,
-		Repo:         mockRepo,
-		Deriver:      mockDeriver,
-		ServeMetrics: false,
+		EvmClient:      mockEvmClient,
+		Repo:           mockRepo,
+		Deriver:        mockDeriver,
+		GrowthStrategy: mockGrowthStrategy,
+		ServeMetrics:   false,
 	}
 
 	// Create grpcHandler using the same pattern as production
@@ -53,11 +58,12 @@ func newTestSetup(t *testing.T) *testSetup {
 	}
 
 	return &testSetup{
-		ctrl:          ctrl,
-		mockEvmClient: mockEvmClient,
-		mockRepo:      mockRepo,
-		mockDeriver:   mockDeriver,
-		handler:       handler,
+		ctrl:               ctrl,
+		mockEvmClient:      mockEvmClient,
+		mockRepo:           mockRepo,
+		mockDeriver:        mockDeriver,
+		mockGrowthStrategy: mockGrowthStrategy,
+		handler:            handler,
 	}
 }
 

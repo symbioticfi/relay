@@ -107,11 +107,6 @@ var genesisCmd = &cobra.Command{
 			return errors.Errorf("failed to get previous hash for epoch %d: %w", currentOnchainEpoch, err)
 		}
 
-		newValset.Status, err = gs.GetValsetStatus(ctx, networkConfig, newValset)
-		if err != nil {
-			return errors.Errorf("failed to get status and previous hash for epoch %d: %w", currentOnchainEpoch, err)
-		}
-
 		spinner.Success()
 
 		spinner = getSpinner("Building header and extra data...")

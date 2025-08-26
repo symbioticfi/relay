@@ -10,6 +10,7 @@ import (
 
 var EmptyValsetHeaderHash = common.HexToHash("0x868e09d528a16744c1f38ea3c10cc2251e01a456434f91172247695087d129b7")
 
+//go:generate mockgen -source=growth_strategy.go -destination=mocks/growth_strategy_mock.go -package=mocks
 type GrowthStrategy interface {
 	GetLastCommittedHeaderHash(ctx context.Context, config entity.NetworkConfig) (common.Hash, error)
 	GetLastCommittedHeaderEpoch(ctx context.Context, config entity.NetworkConfig) (uint64, error)
