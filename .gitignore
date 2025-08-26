@@ -1,5 +1,7 @@
 .idea/
 .claude/
+
+CLAUDE.md
 go.sum
 .env
 .DS_Store

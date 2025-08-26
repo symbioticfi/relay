@@ -25,7 +25,7 @@ type evmClient interface {
 }
 
 type repo interface {
-	GetLatestValidatorSet(ctx context.Context) (entity.ValidatorSet, error)
+	GetLatestValidatorSetHeader(_ context.Context) (entity.ValidatorSetHeader, error)
 	SaveConfig(ctx context.Context, config entity.NetworkConfig, epoch uint64) error
 	SaveValidatorSet(ctx context.Context, valset entity.ValidatorSet) error
 }
@@ -138,9 +138,9 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		return errors.Errorf("failed to get latest committed header hash: %w", err)
 	}
 
-	latest, err := s.cfg.Repo.GetLatestValidatorSet(ctx)
+	latest, err := s.cfg.Repo.GetLatestValidatorSetHeader(ctx)
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
-		return errors.Errorf("failed to get latest validator set extra: %w", err)
+		return errors.Errorf("failed to get latest validator set header: %w", err)
 	}
 
 	nextEpoch := uint64(0)

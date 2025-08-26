@@ -2,7 +2,6 @@ package p2p
 
 import (
 	"context"
-	"sync"
 	"testing"
 	"time"
 
@@ -17,11 +16,11 @@ import (
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/symbioticfi/relay/pkg/signals"
 
 	"github.com/symbioticfi/relay/core/entity"
 	symbioticCrypto "github.com/symbioticfi/relay/core/usecase/crypto"
 	p2pEntity "github.com/symbioticfi/relay/internal/entity"
+	"github.com/symbioticfi/relay/pkg/signals"
 )
 
 // TestService_IntegrationSuccessful tests full P2P communication between two services
@@ -38,6 +37,8 @@ func TestService_IntegrationSuccessful(t *testing.T) {
 	err := service2.addPeer(*host1Addr)
 	require.NoError(t, err)
 
+	time.Sleep(100 * time.Millisecond) // Small delay to ensure the gossip protocol is set up
+
 	// Wait for connection to establish
 	require.Eventually(t, func() bool {
 		return len(service1.host.Peerstore().Peers()) > 0 && len(service2.host.Peerstore().Peers()) > 0
@@ -45,12 +46,11 @@ func TestService_IntegrationSuccessful(t *testing.T) {
 
 	// Set up message listener on service2
 	var receivedMsg p2pEntity.P2PMessage[entity.SignatureMessage]
-	var wg sync.WaitGroup
-	wg.Add(1)
 
+	done := make(chan struct{})
 	require.NoError(t, service2.StartSignatureMessageListener(func(ctx context.Context, msg p2pEntity.P2PMessage[entity.SignatureMessage]) error {
 		receivedMsg = msg
-		wg.Done()
+		close(done)
 		return nil
 	}))
 
@@ -69,13 +69,6 @@ func TestService_IntegrationSuccessful(t *testing.T) {
 	// Send the message from service1
 	err = service1.BroadcastSignatureGeneratedMessage(ctx, testSignatureMsg)
 	require.NoError(t, err)
-
-	// Wait for message to be received
-	done := make(chan struct{})
-	go func() {
-		wg.Wait()
-		close(done)
-	}()
 
 	select {
 	case <-done:
@@ -110,6 +103,8 @@ func TestService_IntegrationFailedSignature(t *testing.T) {
 	host1Addr := host.InfoFromHost(service1.host)
 	err := service2.addPeer(*host1Addr)
 	require.NoError(t, err)
+
+	time.Sleep(100 * time.Millisecond) // Small delay to ensure the gossip protocol is set up
 
 	// Wait for connection to establish
 	require.Eventually(t, func() bool {

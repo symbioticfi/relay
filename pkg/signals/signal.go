@@ -169,7 +169,7 @@ func (s *Signal[T]) StartWorkers(ctx context.Context) error {
 		// wait for all workers to finish
 		shutdownWG.Wait()
 		s.stopped.Store(true)
-		slog.Warn("all signal workers stopped", slog.String("signal", s.id))
+		slog.Info("all signal workers stopped", slog.String("signal", s.id))
 	}()
 
 	return nil

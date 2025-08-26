@@ -12,7 +12,7 @@ import (
 
 // GetSuggestedEpoch handles the gRPC GetSuggestedEpoch request
 func (h *grpcHandler) GetSuggestedEpoch(ctx context.Context, req *apiv1.GetSuggestedEpochRequest) (*apiv1.GetSuggestedEpochResponse, error) {
-	valset, err := h.cfg.Repo.GetLatestValidatorSet(ctx)
+	valset, err := h.cfg.Repo.GetLatestValidatorSetHeader(ctx)
 	if err != nil {
 		return nil, errors.Errorf("failed to get latest validator set: %w", err)
 	}

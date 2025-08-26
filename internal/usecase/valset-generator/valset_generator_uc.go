@@ -36,8 +36,7 @@ type evmClient interface {
 }
 
 type repo interface {
-	GetLatestValidatorSet(ctx context.Context) (entity.ValidatorSet, error)
-
+	GetLatestValidatorSetHeader(_ context.Context) (entity.ValidatorSetHeader, error)
 	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 	GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error)
 	GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error)
@@ -129,12 +128,7 @@ func (s *Service) process(ctx context.Context) error {
 		return errors.Errorf("failed to get network data: %w", err)
 	}
 
-	latestValset, err := s.cfg.Repo.GetLatestValidatorSet(ctx)
-	if err != nil {
-		return errors.Errorf("failed to get latest validator set extra: %w", err)
-	}
-
-	latestValsetHeader, err := latestValset.GetHeader()
+	latestValsetHeader, err := s.cfg.Repo.GetLatestValidatorSetHeader(ctx)
 	if err != nil {
 		return errors.Errorf("failed to get latest validator set header: %w", err)
 	}
@@ -151,8 +145,8 @@ func (s *Service) process(ctx context.Context) error {
 	}
 
 	// Avoid uint64 overflow: have to avoid subtraction of two uint64s that can result in a negative value
-	if config.MaxMissingEpochs != 0 && latestValset.Epoch > valSet.Epoch+config.MaxMissingEpochs {
-		return errors.Errorf("exceed missing epochs, latest committed: %d, current: %d", latestValset.Epoch, valSet.Epoch)
+	if config.MaxMissingEpochs != 0 && latestValsetHeader.Epoch > valSet.Epoch+config.MaxMissingEpochs {
+		return errors.Errorf("exceed missing epochs, latest committed: %d, current: %d", latestValsetHeader.Epoch, valSet.Epoch)
 	}
 
 	extraData, err := s.cfg.Aggregator.GenerateExtraData(valSet, config.RequiredKeyTags)
@@ -171,7 +165,7 @@ func (s *Service) process(ctx context.Context) error {
 
 	r := entity.SignatureRequest{
 		KeyTag:        entity.ValsetHeaderKeyTag,
-		RequiredEpoch: entity.Epoch(latestValset.Epoch),
+		RequiredEpoch: entity.Epoch(latestValsetHeader.Epoch),
 		Message:       data,
 	}
 
