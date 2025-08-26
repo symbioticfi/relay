@@ -53,7 +53,7 @@ func (a Aggregator) Aggregate(
 		VotingPower   *big.Int
 		isNonSigner   bool
 	}
-	var validatorsData []dtoValidatorData
+	validatorsData := make([]dtoValidatorData, 0, len(valset.Validators))
 
 	aggG1Sig := new(bn254.G1Affine)
 	aggG2Key := new(bn254.G2Affine)

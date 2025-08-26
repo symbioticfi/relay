@@ -129,11 +129,8 @@ func (r *Repository) GetSignatureRequestsByEpoch(_ context.Context, epoch entity
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
-		var seekKey []byte
-		if lastHash == (common.Hash{}) {
-			// First page: seek to epoch prefix
-			seekKey = prefix
-		} else {
+		seekKey := prefix // First page: seek to epoch prefix
+		if lastHash != (common.Hash{}) {
 			// Subsequent pages: seek to the record after lastHash
 			seekKey = keySignatureRequest(epoch, lastHash)
 		}
