@@ -35,7 +35,7 @@ func (h *grpcHandler) GetValidatorByAddress(ctx context.Context, req *apiv1.GetV
 	validatorAddress := common.HexToAddress(req.GetAddress())
 
 	// get validator set for the epoch
-	validatorSet, err := h.getValidatorSetForEpoch(ctx, epochRequested)
+	validatorSet, _, err := h.getValidatorSetForEpoch(ctx, epochRequested)
 	if err != nil {
 		return nil, err
 	}

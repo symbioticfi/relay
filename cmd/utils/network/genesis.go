@@ -9,6 +9,7 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/aggregator"
 	symbioticCrypto "github.com/symbioticfi/relay/core/usecase/crypto"
+	growthStrategy "github.com/symbioticfi/relay/core/usecase/growth-strategy"
 	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 	valsetDeriver "github.com/symbioticfi/relay/core/usecase/valset-deriver"
 
@@ -72,6 +73,12 @@ var genesisCmd = &cobra.Command{
 			return errors.Errorf("failed to create deriver: %v", err)
 		}
 
+		// by default for genesis generation async strategy is ok
+		gs, err := growthStrategy.NewGrowthStrategy(entity.GrowthStrategyAsync, evmClient)
+		if err != nil {
+			return errors.Errorf("failed to create growth strategy: %v", err)
+		}
+
 		currentOnchainEpoch, err := evmClient.GetCurrentEpoch(ctx)
 		if err != nil {
 			return errors.Errorf("failed to get current epoch: %w", err)
@@ -94,9 +101,10 @@ var genesisCmd = &cobra.Command{
 		if err != nil {
 			return errors.Errorf("failed to get validator set extra for epoch %d: %w", currentOnchainEpoch, err)
 		}
-		newValset.Status, newValset.PreviousHeaderHash, err = deriver.GetStatusAndPreviousHash(ctx, currentOnchainEpoch, networkConfig, newValset)
+
+		newValset.PreviousHeaderHash, err = gs.GetPreviousHash(ctx, currentOnchainEpoch, networkConfig, newValset)
 		if err != nil {
-			return errors.Errorf("failed to get status and previous hash for epoch %d: %w", currentOnchainEpoch, err)
+			return errors.Errorf("failed to get previous hash for epoch %d: %w", currentOnchainEpoch, err)
 		}
 
 		spinner.Success()

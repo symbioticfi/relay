@@ -29,42 +29,49 @@ func (h *grpcHandler) GetValidatorSet(ctx context.Context, req *apiv1.GetValidat
 		return nil, errors.New("epoch requested is greater than latest epoch")
 	}
 
-	validatorSet, err := h.getValidatorSetForEpoch(ctx, epochRequested)
+	validatorSet, status, err := h.getValidatorSetForEpoch(ctx, epochRequested)
 	if err != nil {
 		return nil, err
 	}
 
-	return convertValidatorSetToPB(validatorSet), nil
+	return convertValidatorSetToPB(validatorSet, status), nil
 }
 
 // getValidatorSetForEpoch retrieves validator set for a given epoch, either from repo or by deriving it
-func (h *grpcHandler) getValidatorSetForEpoch(ctx context.Context, epochRequested uint64) (entity.ValidatorSet, error) {
-	validatorSet, err := h.cfg.Repo.GetValidatorSetByEpoch(ctx, epochRequested)
-	if err == nil {
-		return validatorSet, nil
-	}
-	if !errors.Is(err, entity.ErrEntityNotFound) {
-		return entity.ValidatorSet{}, errors.Errorf("failed to get validator set for epoch %d: %v", epochRequested, err)
-	}
-
-	// if error it means that epoch is not derived / committed yet
-	// so we need to derive it
+func (h *grpcHandler) getValidatorSetForEpoch(ctx context.Context, epochRequested uint64) (entity.ValidatorSet, entity.ValidatorSetStatus, error) {
+	var validatorSet entity.ValidatorSet
 	epochStart, err := h.cfg.EvmClient.GetEpochStart(ctx, epochRequested)
 	if err != nil {
-		return entity.ValidatorSet{}, err
+		return entity.ValidatorSet{}, 0, err
 	}
 	config, err := h.cfg.EvmClient.GetConfig(ctx, epochStart)
 	if err != nil {
-		return entity.ValidatorSet{}, err
+		return entity.ValidatorSet{}, 0, err
 	}
-	validatorSet, err = h.cfg.Deriver.GetValidatorSet(ctx, epochRequested, config)
+
+	validatorSet, err = h.cfg.Repo.GetValidatorSetByEpoch(ctx, epochRequested)
 	if err != nil {
-		return entity.ValidatorSet{}, err
+		if !errors.Is(err, entity.ErrEntityNotFound) {
+			return entity.ValidatorSet{}, 0, errors.Errorf("failed to get validator set for epoch %d: %v", epochRequested, err)
+		}
+
+		// if error it means that epoch is not derived / committed yet
+		// so we need to derive it
+		validatorSet, err = h.cfg.Deriver.GetValidatorSet(ctx, epochRequested, config)
+		if err != nil {
+			return entity.ValidatorSet{}, 0, err
+		}
 	}
-	return validatorSet, nil
+
+	status, err := h.cfg.GrowthStrategy.GetValsetStatus(ctx, config, validatorSet)
+	if err != nil {
+		return entity.ValidatorSet{}, 0, err
+	}
+
+	return validatorSet, status, nil
 }
 
-func convertValidatorSetToPB(valSet entity.ValidatorSet) *apiv1.GetValidatorSetResponse {
+func convertValidatorSetToPB(valSet entity.ValidatorSet, status entity.ValidatorSetStatus) *apiv1.GetValidatorSetResponse {
 	return &apiv1.GetValidatorSetResponse{
 		Version:            uint32(valSet.Version),
 		RequiredKeyTag:     uint32(valSet.RequiredKeyTag),
@@ -72,7 +79,7 @@ func convertValidatorSetToPB(valSet entity.ValidatorSet) *apiv1.GetValidatorSetR
 		CaptureTimestamp:   timestamppb.New(time.Unix(int64(valSet.CaptureTimestamp), 0).UTC()),
 		QuorumThreshold:    valSet.QuorumThreshold.String(),
 		PreviousHeaderHash: valSet.PreviousHeaderHash.Hex(),
-		Status:             convertValidatorSetStatusToPB(valSet.Status),
+		Status:             convertValidatorSetStatusToPB(status),
 		Validators: lo.Map(valSet.Validators, func(v entity.Validator, _ int) *apiv1.Validator {
 			return convertValidatorToPB(v)
 		}),
@@ -102,12 +109,10 @@ func convertValidatorToPB(v entity.Validator) *apiv1.Validator {
 
 func convertValidatorSetStatusToPB(status entity.ValidatorSetStatus) apiv1.ValidatorSetStatus {
 	switch status {
-	case entity.HeaderPending:
-		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_PENDING
-	case entity.HeaderMissed:
-		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_MISSED
-	case entity.HeaderCommitted:
-		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED
+	case entity.HeaderInactive:
+		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_INACTIVE
+	case entity.HeaderActive:
+		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_ACTIVE
 	default:
 		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_UNSPECIFIED
 	}

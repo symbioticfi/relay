@@ -5,6 +5,7 @@ import (
 
 	"github.com/symbioticfi/relay/core/client/evm"
 	"github.com/symbioticfi/relay/core/entity"
+	growthStrategy "github.com/symbioticfi/relay/core/usecase/growth-strategy"
 	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 	valsetDeriver "github.com/symbioticfi/relay/core/usecase/valset-deriver"
 	"github.com/symbioticfi/relay/internal/usecase/metrics"
@@ -67,9 +68,14 @@ var infoCmd = &cobra.Command{
 			return errors.Errorf("Failed to get config: %w", err)
 		}
 
-		_, committedEpoch, err := deriver.GetLastCommittedHeaderEpoch(ctx, networkConfig)
+		gs, err := growthStrategy.NewGrowthStrategy(entity.GrowthStrategyAsync, evmClient)
 		if err != nil {
-			return errors.Errorf("Failed to get valset header: %w", err)
+			return errors.Errorf("failed to create growth strategy: %w", err)
+		}
+
+		committedEpoch, err := gs.GetLastCommittedHeaderEpoch(ctx, networkConfig)
+		if err != nil {
+			return errors.Errorf("Failed to get valset header epoch: %w", err)
 		}
 
 		epochDuration, err := evmClient.GetEpochDuration(ctx, epoch)

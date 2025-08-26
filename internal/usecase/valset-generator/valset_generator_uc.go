@@ -49,7 +49,6 @@ type repo interface {
 type deriver interface {
 	GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error)
 	GetNetworkData(ctx context.Context, addr entity.CrossChainAddress) (entity.NetworkData, error)
-	GetStatusAndPreviousHash(ctx context.Context, epoch uint64, config entity.NetworkConfig, valset entity.ValidatorSet) (entity.ValidatorSetStatus, common.Hash, error)
 }
 
 type Config struct {
@@ -227,7 +226,7 @@ func (s *Service) tryDetectNewEpochToCommit(ctx context.Context) (entity.Validat
 		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get network config for current epoch %d: %w", currentOnchainEpoch, err)
 	}
 
-	_, isCommitted, err := s.isValsetHeaderCommitted(ctx, config, currentOnchainEpoch)
+	_, isCommitted, err := s.cfg.GrowthStrategy.IsValsetHeaderCommitted(ctx, config, currentOnchainEpoch)
 	if err != nil {
 		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to check if committed validator set header is committed: %w", err)
 	}
@@ -242,25 +241,12 @@ func (s *Service) tryDetectNewEpochToCommit(ctx context.Context) (entity.Validat
 		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get validator set extra for epoch %d: %w", currentOnchainEpoch, err)
 	}
 
-	newValset.Status, newValset.PreviousHeaderHash, err = s.cfg.Deriver.GetStatusAndPreviousHash(ctx, currentOnchainEpoch, config, newValset)
+	newValset.PreviousHeaderHash, err = s.cfg.GrowthStrategy.GetPreviousHash(ctx, currentOnchainEpoch, config, newValset)
 	if err != nil {
-		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get status and previous hash for epoch %d: %w", currentOnchainEpoch, err)
+		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get previous hash for epoch %d: %w", currentOnchainEpoch, err)
 	}
 
 	return newValset, config, nil
-}
-
-func (s *Service) isValsetHeaderCommitted(ctx context.Context, config entity.NetworkConfig, epoch uint64) (entity.CrossChainAddress, bool, error) {
-	for _, addr := range config.Replicas {
-		isCommitted, err := s.cfg.EvmClient.IsValsetHeaderCommittedAt(ctx, addr, epoch)
-		if err != nil {
-			return entity.CrossChainAddress{}, false, errors.Errorf("failed to check if valset header is committed at epoch %d: %w", epoch, err)
-		}
-		if isCommitted {
-			return addr, true, nil
-		}
-	}
-	return entity.CrossChainAddress{}, false, nil
 }
 
 func (s *Service) headerCommitmentData(

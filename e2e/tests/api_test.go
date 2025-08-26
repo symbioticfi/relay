@@ -9,6 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
+	growthStrategy "github.com/symbioticfi/relay/core/usecase/growth-strategy"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -63,11 +64,14 @@ func getExpectedDataFromContracts(t *testing.T, relayContracts *RelayContractsDa
 	deriver, err := valsetDeriver.NewDeriver(evmClient)
 	require.NoError(t, err, "Failed to create validator set deriver")
 
+	gs, err := growthStrategy.NewGrowthStrategy(entity.GrowthStrategyAsync, evmClient)
+	require.NoError(t, err, "Failed to create growth strategy")
+
 	expectedValset, err := deriver.GetValidatorSet(ctx, currentEpoch, networkConfig)
 	require.NoError(t, err, "Failed to derive expected validator set")
 
-	expectedValset.Status, expectedValset.PreviousHeaderHash, err = deriver.GetStatusAndPreviousHash(ctx, currentEpoch, networkConfig, expectedValset)
-	require.NoError(t, err, "Failed to get validator set status")
+	expectedValset.PreviousHeaderHash, err = gs.GetPreviousHash(ctx, currentEpoch, networkConfig, expectedValset)
+	require.NoError(t, err, "Failed to derive expected validator set previous hash")
 
 	// Check if current epoch is committed
 	isCurrentEpochCommitted := true

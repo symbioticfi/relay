@@ -27,7 +27,7 @@ func (h *grpcHandler) GetValidatorSetHeader(ctx context.Context, req *apiv1.GetV
 		return nil, errors.New("epoch requested is greater than latest epoch")
 	}
 
-	validatorSet, err := h.getValidatorSetForEpoch(ctx, epochRequested)
+	validatorSet, _, err := h.getValidatorSetForEpoch(ctx, epochRequested)
 	if err != nil {
 		return nil, err
 	}
