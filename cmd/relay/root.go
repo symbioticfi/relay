@@ -89,9 +89,17 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create valset deriver: %w", err)
 	}
 
-	repo, err := badger.New(badger.Config{Dir: cfg.StorageDir})
+	baseRepo, err := badger.New(badger.Config{Dir: cfg.StorageDir})
 	if err != nil {
-		return errors.Errorf("failed to create memory repository: %w", err)
+		return errors.Errorf("failed to create badger repository: %w", err)
+	}
+
+	repo, err := badger.NewCached(baseRepo, badger.CachedConfig{
+		NetworkConfigCacheSize: cfg.Cache.NetworkConfigCacheSize,
+		ValidatorSetCacheSize:  cfg.Cache.ValidatorSetCacheSize,
+	})
+	if err != nil {
+		return errors.Errorf("failed to create cached repository: %w", err)
 	}
 
 	currentOnchainEpoch, err := evmClient.GetCurrentEpoch(ctx)
