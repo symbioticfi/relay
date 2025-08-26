@@ -38,7 +38,9 @@ func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, p2pMs
 		return err
 	}
 
-	s.cfg.AggProofSignal.Emit(ctx, msg)
+	if err = s.cfg.AggProofSignal.Emit(ctx, msg); err != nil {
+		return err
+	}
 
 	stat, err := s.cfg.Repo.UpdateSignatureStat(ctx, msg.RequestHash, entity.SignatureStatStageAggProofReceived, time.Now())
 	if err != nil {

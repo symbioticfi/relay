@@ -110,7 +110,7 @@ type Service struct {
 }
 
 // NewService creates a new P2P service with the given configuration
-func NewService(ctx context.Context, cfg Config) (*Service, error) {
+func NewService(ctx context.Context, cfg Config, signalCfg signals.Config) (*Service, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
@@ -156,8 +156,8 @@ func NewService(ctx context.Context, cfg Config) (*Service, error) {
 	service := &Service{
 		ctx:                         log.WithAttrs(ctx, slog.String("component", "p2p")),
 		host:                        h,
-		signatureReceivedHandler:    signals.New[p2pEntity.P2PMessage[entity.SignatureMessage]](),
-		signaturesAggregatedHandler: signals.New[p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]](),
+		signatureReceivedHandler:    signals.New[p2pEntity.P2PMessage[entity.SignatureMessage]](signalCfg, "signatureReceive", nil),
+		signaturesAggregatedHandler: signals.New[p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]](signalCfg, "signaturesAggregated", nil),
 		metrics:                     cfg.Metrics,
 
 		topicsMap: map[string]*pubsub.Topic{
@@ -203,12 +203,18 @@ func (s *Service) listenForMessages(ctx context.Context, sub *pubsub.Subscriptio
 	}
 }
 
-func (s *Service) AddSignatureMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PMessage[entity.SignatureMessage]) error, key string) {
-	s.signatureReceivedHandler.AddListener(mh, key)
+func (s *Service) StartSignatureMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PMessage[entity.SignatureMessage]) error) error {
+	if err := s.signatureReceivedHandler.SetHandler(mh); err != nil {
+		return errors.Errorf("failed to set signature received message handler: %w", err)
+	}
+	return s.signatureReceivedHandler.StartWorkers(s.ctx)
 }
 
-func (s *Service) AddSignaturesAggregatedMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]) error, key string) {
-	s.signaturesAggregatedHandler.AddListener(mh, key)
+func (s *Service) StartSignaturesAggregatedMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]) error) error {
+	if err := s.signaturesAggregatedHandler.SetHandler(mh); err != nil {
+		return errors.Errorf("failed to set signatures aggregated message handler: %w", err)
+	}
+	return s.signaturesAggregatedHandler.StartWorkers(s.ctx)
 }
 
 func (s *Service) addPeer(pi peer.AddrInfo) error {
