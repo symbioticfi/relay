@@ -37,6 +37,8 @@ func TestService_IntegrationSuccessful(t *testing.T) {
 	err := service2.addPeer(*host1Addr)
 	require.NoError(t, err)
 
+	time.Sleep(100 * time.Millisecond) // Small delay to ensure the gossip protocol is set up
+
 	// Wait for connection to establish
 	require.Eventually(t, func() bool {
 		return len(service1.host.Peerstore().Peers()) > 0 && len(service2.host.Peerstore().Peers()) > 0
@@ -101,6 +103,8 @@ func TestService_IntegrationFailedSignature(t *testing.T) {
 	host1Addr := host.InfoFromHost(service1.host)
 	err := service2.addPeer(*host1Addr)
 	require.NoError(t, err)
+
+	time.Sleep(100 * time.Millisecond) // Small delay to ensure the gossip protocol is set up
 
 	// Wait for connection to establish
 	require.Eventually(t, func() bool {
