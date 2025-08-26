@@ -36,7 +36,7 @@ type keyProvider interface {
 }
 
 type aggProofSignal interface {
-	Emit(ctx context.Context, payload entity.AggregatedSignatureMessage)
+	Emit(ctx context.Context, payload entity.AggregatedSignatureMessage) error
 }
 
 type aggregator interface {
