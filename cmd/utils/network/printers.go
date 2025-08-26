@@ -17,6 +17,12 @@ import (
 	"github.com/samber/lo"
 )
 
+type settlementReplicaData struct {
+	IsCommitted  bool
+	HeaderHash   common.Hash
+	MissedEpochs uint64
+}
+
 func printAddresses(driver entity.CrossChainAddress, networkConfig *entity.NetworkConfig) string {
 	addressesTableData := pterm.TableData{
 		{"Type", "Chain ID", "Address"},
@@ -114,7 +120,7 @@ func printValidatorsTable(valset *entity.ValidatorSet) string {
 	return text
 }
 
-func printHeaderTable(header *entity.ValidatorSetHeader) string {
+func printHeaderTable(header entity.ValidatorSetHeader) string {
 	headerTableData := pterm.TableData{
 		{"Field", "Value"},
 		{"Version", strconv.FormatUint(uint64(header.Version), 10)},
@@ -199,21 +205,21 @@ func printHeaderWithExtraDataToJSON(validatorSetHeader entity.ValidatorSetHeader
 }
 
 func printSettlementData(
-	valsetHeader *entity.ValidatorSetHeader,
-	networkConfig *entity.NetworkConfig,
-	isCommitted []bool,
-	headerHashes []common.Hash,
+	valsetHeader entity.ValidatorSetHeader,
+	networkConfig entity.NetworkConfig,
+	settlementData []settlementReplicaData,
+	committedEpoch uint64,
 ) string {
 	tableData := pterm.TableData{
-		{"Address", "ChainID", "Status", "Integrity", "Header hash"},
+		{"Address", "ChainID", "Status", "Integrity", "Latest Committed Epoch", "Missed Epochs", "Header hash"},
 	}
 
 	for i, replica := range networkConfig.Replicas {
 		hash := "N/A"
 		status := "Missing"
-		if isCommitted[i] {
+		if settlementData[i].IsCommitted {
 			status = "Committed"
-			hash = headerHashes[i].String()
+			hash = settlementData[i].HeaderHash.String()
 		}
 
 		expectedHash, err := valsetHeader.Hash()
@@ -222,9 +228,9 @@ func printSettlementData(
 		}
 
 		integrity := "N/A"
-		if isCommitted[i] && headerHashes[i] != expectedHash {
+		if settlementData[i].IsCommitted && settlementData[i].HeaderHash != expectedHash {
 			integrity = "Failed"
-		} else if isCommitted[i] && headerHashes[i] == expectedHash {
+		} else if settlementData[i].IsCommitted && settlementData[i].HeaderHash == expectedHash {
 			integrity = "Ok"
 		}
 
@@ -233,6 +239,8 @@ func printSettlementData(
 			strconv.FormatUint(replica.ChainId, 10),
 			status,
 			integrity,
+			strconv.FormatUint(committedEpoch, 10),
+			strconv.FormatUint(settlementData[i].MissedEpochs, 10),
 			hash,
 		})
 	}
