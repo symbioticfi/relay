@@ -30,7 +30,7 @@ require (
 	golang.org/x/sync v0.15.0
 	golang.org/x/term v0.32.0
 	google.golang.org/grpc v1.67.3
-	google.golang.org/protobuf v1.36.6
+	google.golang.org/protobuf v1.36.8
 	gopkg.in/yaml.v2 v2.4.0
 )
 
