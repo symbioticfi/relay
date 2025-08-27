@@ -93,6 +93,10 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 		return errors.Errorf("validator not found for public key %x: %w", msg.Signature.PublicKey, err)
 	}
 
+	if !validator.IsActive {
+		return errors.Errorf("validator %s is not active", validator.Operator.Hex())
+	}
+
 	err = s.cfg.Repo.SaveSignature(ctx, msg.RequestHash, publicKey.Raw(), msg.Signature)
 	if err != nil {
 		return errors.Errorf("failed to save signature: %w", err)

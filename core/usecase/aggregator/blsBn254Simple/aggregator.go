@@ -67,6 +67,10 @@ func (a Aggregator) Aggregate(
 		if !ok {
 			return entity.AggregationProof{}, errors.New("failed to find validator by key")
 		}
+		if !val.IsActive {
+			// skip inactive validators
+			continue
+		}
 		g1Sig := new(bn254.G1Affine)
 		_, err = g1Sig.SetBytes(sig.Signature)
 		if err != nil {
