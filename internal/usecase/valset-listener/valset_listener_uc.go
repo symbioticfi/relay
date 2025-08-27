@@ -145,7 +145,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 
 	nextEpoch := uint64(0)
 	if err == nil {
-		nextEpoch = latest.Epoch + 1
+		nextEpoch = uint64(latest.Epoch + 1)
 	}
 
 	if s.latestProcessedEpoch != 0 && nextEpoch <= s.latestProcessedEpoch {
@@ -183,7 +183,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		slog.DebugContext(ctx, "Synced validator set", "epoch", nextEpoch, "config", config, "valset", nextValset)
 
 		s.latestProcessedEpoch = nextEpoch
-		nextEpoch = nextValset.Epoch + 1
+		nextEpoch = uint64(nextValset.Epoch + 1)
 	}
 
 	slog.DebugContext(ctx, "All missing epochs loaded", "latestProcessedEpoch", s.latestProcessedEpoch)

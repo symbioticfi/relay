@@ -41,7 +41,7 @@ func TestRepository_PendingValidatorSet(t *testing.T) {
 	require.True(t, errors.Is(err, entity.ErrEntityNotFound))
 }
 
-func randomValidatorSet(t *testing.T, epoch uint64, status entity.ValidatorSetStatus) entity.ValidatorSet {
+func randomValidatorSet(t *testing.T, epoch entity.Epoch, status entity.ValidatorSetStatus) entity.ValidatorSet {
 	t.Helper()
 	return entity.ValidatorSet{
 		Version:            1,

@@ -197,8 +197,8 @@ func validatorSetMimcAccumulator(valset []entity.Validator, requiredKeyTag entit
 	return common.Hash(proof.HashValset(validatorsData)), nil
 }
 
-func toValidatorsData(signerValidators []entity.Validator, allValidators []entity.Validator, requiredKeyTag entity.KeyTag) ([]proof.ValidatorData, error) {
-	activeValidators := entity.GetActiveValidators(allValidators)
+func toValidatorsData(signerValidators []entity.Validator, allValidators entity.Validators, requiredKeyTag entity.KeyTag) ([]proof.ValidatorData, error) {
+	activeValidators := allValidators.GetActiveValidators()
 	valset := make([]proof.ValidatorData, 0)
 	for i := range activeValidators {
 		for _, key := range activeValidators[i].Keys {

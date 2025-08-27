@@ -288,6 +288,26 @@ func (va Validators) SortByOperatorAddressAsc() {
 	})
 }
 
+func (va Validators) GetTotalActiveVotingPower() VotingPower {
+	totalVotingPower := big.NewInt(0)
+	for _, validator := range va {
+		if validator.IsActive {
+			totalVotingPower = totalVotingPower.Add(totalVotingPower, validator.VotingPower.Int)
+		}
+	}
+	return VotingPower{totalVotingPower}
+}
+
+func (va Validators) GetActiveValidators() Validators {
+	var activeValidators []Validator
+	for _, validator := range va {
+		if validator.IsActive {
+			activeValidators = append(activeValidators, validator)
+		}
+	}
+	return activeValidators
+}
+
 type Validator struct {
 	Operator    common.Address   `json:"operator"`
 	VotingPower VotingPower      `json:"votingPower"`
@@ -305,24 +325,14 @@ func (v Validator) FindKeyByKeyTag(keyTag KeyTag) ([]byte, bool) {
 	return nil, false
 }
 
-func GetActiveValidators(allValidators []Validator) []Validator {
-	activeValidators := make([]Validator, 0)
-	for _, validator := range allValidators {
-		if validator.IsActive {
-			activeValidators = append(activeValidators, validator)
-		}
-	}
-	return activeValidators
-}
-
 type ValidatorSet struct {
 	Version            uint8
 	RequiredKeyTag     KeyTag      // key tag required to commit next valset
-	Epoch              uint64      // valset epoch
+	Epoch              Epoch       // valset epoch
 	CaptureTimestamp   uint64      // epoch capture timestamp
 	QuorumThreshold    VotingPower // absolute number now, not a percent
 	PreviousHeaderHash common.Hash // previous valset header hash
-	Validators         []Validator
+	Validators         Validators
 
 	// internal usage only
 	Status ValidatorSetStatus
@@ -348,7 +358,7 @@ type ValidatorSetHash struct {
 type ValidatorSetHeader struct {
 	Version            uint8
 	RequiredKeyTag     KeyTag
-	Epoch              uint64
+	Epoch              Epoch
 	CaptureTimestamp   uint64
 	QuorumThreshold    VotingPower
 	ValidatorsSszMRoot common.Hash
@@ -391,13 +401,7 @@ func (e ExtraDataList) AbiEncode() ([]byte, error) {
 }
 
 func (v ValidatorSet) GetTotalActiveVotingPower() VotingPower {
-	totalVotingPower := big.NewInt(0)
-	for _, validator := range v.Validators {
-		if validator.IsActive {
-			totalVotingPower = totalVotingPower.Add(totalVotingPower, validator.VotingPower.Int)
-		}
-	}
-	return VotingPower{totalVotingPower}
+	return v.Validators.GetTotalActiveVotingPower()
 }
 
 func (v ValidatorSet) GetTotalActiveValidators() int64 {
@@ -425,6 +429,32 @@ func (v ValidatorSet) GetHeader() (ValidatorSetHeader, error) {
 		PreviousHeaderHash: v.PreviousHeaderHash,
 		ValidatorsSszMRoot: sszMroot,
 	}, nil
+}
+
+func (v ValidatorSet) FindValidatorsBySignatures(keyTag KeyTag, publicKeys []CompactPublicKey) Validators {
+	// Build lookup map: publicKey -> validator
+	publicKeyToValidator := make(map[string]Validator)
+	for _, validator := range v.Validators {
+		if publicKey, found := validator.FindKeyByKeyTag(keyTag); found {
+			publicKeyToValidator[string(publicKey)] = validator
+		}
+	}
+
+	// Process signatures and deduplicate validators
+	resultMap := make(map[common.Address]Validator)
+	for _, publicKey := range publicKeys {
+		if validator, found := publicKeyToValidator[string(publicKey)]; found {
+			resultMap[validator.Operator] = validator
+		}
+	}
+
+	// Convert map to slice
+	result := make(Validators, 0, len(resultMap))
+	for _, validator := range resultMap {
+		result = append(result, validator)
+	}
+
+	return result
 }
 
 func sszTreeRoot(v *ValidatorSet) (common.Hash, error) {
@@ -494,7 +524,7 @@ func (v ValidatorSetHeader) AbiEncode() ([]byte, error) {
 		},
 	}
 
-	pack, err := arguments.Pack(v.Version, v.RequiredKeyTag, new(big.Int).SetUint64(v.Epoch), new(big.Int).SetUint64(v.CaptureTimestamp), v.QuorumThreshold.Int, v.ValidatorsSszMRoot, v.PreviousHeaderHash)
+	pack, err := arguments.Pack(v.Version, v.RequiredKeyTag, new(big.Int).SetUint64(uint64(v.Epoch)), new(big.Int).SetUint64(v.CaptureTimestamp), v.QuorumThreshold.Int, v.ValidatorsSszMRoot, v.PreviousHeaderHash)
 	if err != nil {
 		return nil, errors.Errorf("failed to pack arguments: %w", err)
 	}

@@ -39,7 +39,7 @@ func (h *grpcHandler) GetValidatorSet(ctx context.Context, req *apiv1.GetValidat
 
 // getValidatorSetForEpoch retrieves validator set for a given epoch, either from repo or by deriving it
 func (h *grpcHandler) getValidatorSetForEpoch(ctx context.Context, epochRequested uint64) (entity.ValidatorSet, error) {
-	validatorSet, err := h.cfg.Repo.GetValidatorSetByEpoch(ctx, epochRequested)
+	validatorSet, err := h.cfg.Repo.GetValidatorSetByEpoch(ctx, entity.Epoch(epochRequested))
 	if err == nil {
 		return validatorSet, nil
 	}
@@ -68,7 +68,7 @@ func convertValidatorSetToPB(valSet entity.ValidatorSet) *apiv1.GetValidatorSetR
 	return &apiv1.GetValidatorSetResponse{
 		Version:            uint32(valSet.Version),
 		RequiredKeyTag:     uint32(valSet.RequiredKeyTag),
-		Epoch:              valSet.Epoch,
+		Epoch:              uint64(valSet.Epoch),
 		CaptureTimestamp:   timestamppb.New(time.Unix(int64(valSet.CaptureTimestamp), 0).UTC()),
 		QuorumThreshold:    valSet.QuorumThreshold.String(),
 		PreviousHeaderHash: valSet.PreviousHeaderHash.Hex(),

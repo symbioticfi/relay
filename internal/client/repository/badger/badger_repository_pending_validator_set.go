@@ -111,7 +111,7 @@ func validatorSetToBytes(vs entity.ValidatorSet) ([]byte, error) {
 	dto := validatorSetDTO{
 		Version:            vs.Version,
 		RequiredKeyTag:     uint8(vs.RequiredKeyTag),
-		Epoch:              vs.Epoch,
+		Epoch:              uint64(vs.Epoch),
 		CaptureTimestamp:   vs.CaptureTimestamp,
 		QuorumThreshold:    vs.QuorumThreshold.String(),
 		PreviousHeaderHash: vs.PreviousHeaderHash.Hex(),
@@ -155,7 +155,7 @@ func bytesToValidatorSet(data []byte) (entity.ValidatorSet, error) {
 	return entity.ValidatorSet{
 		Version:            dto.Version,
 		RequiredKeyTag:     entity.KeyTag(dto.RequiredKeyTag),
-		Epoch:              dto.Epoch,
+		Epoch:              entity.Epoch(dto.Epoch),
 		CaptureTimestamp:   dto.CaptureTimestamp,
 		QuorumThreshold:    entity.ToVotingPower(quorumThreshold),
 		PreviousHeaderHash: common.HexToHash(dto.PreviousHeaderHash),

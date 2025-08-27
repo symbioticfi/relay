@@ -37,7 +37,7 @@ type evmClient interface {
 
 type repo interface {
 	GetLatestValidatorSetHeader(_ context.Context) (entity.ValidatorSetHeader, error)
-	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
+	GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error)
 	GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error)
 	GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error)
 	GetSignatureRequest(ctx context.Context, reqHash common.Hash) (entity.SignatureRequest, error)
@@ -71,7 +71,7 @@ func (c Config) Validate() error {
 
 type Service struct {
 	cfg            Config
-	generatedEpoch uint64
+	generatedEpoch entity.Epoch
 	mutex          sync.Mutex
 }
 
@@ -145,7 +145,7 @@ func (s *Service) process(ctx context.Context) error {
 	}
 
 	// Avoid uint64 overflow: have to avoid subtraction of two uint64s that can result in a negative value
-	if config.MaxMissingEpochs != 0 && latestValsetHeader.Epoch > valSet.Epoch+config.MaxMissingEpochs {
+	if config.MaxMissingEpochs != 0 && uint64(latestValsetHeader.Epoch) > uint64(valSet.Epoch)+config.MaxMissingEpochs {
 		return errors.Errorf("exceed missing epochs, latest committed: %d, current: %d", latestValsetHeader.Epoch, valSet.Epoch)
 	}
 
@@ -165,7 +165,7 @@ func (s *Service) process(ctx context.Context) error {
 
 	r := entity.SignatureRequest{
 		KeyTag:        entity.ValsetHeaderKeyTag,
-		RequiredEpoch: entity.Epoch(latestValsetHeader.Epoch),
+		RequiredEpoch: latestValsetHeader.Epoch,
 		Message:       data,
 	}
 
@@ -286,7 +286,7 @@ func (s *Service) headerCommitmentData(
 		PrimaryType: "ValSetHeaderCommit",
 		Message: map[string]interface{}{
 			"subnetwork":    networkData.Subnetwork,
-			"epoch":         new(big.Int).SetUint64(header.Epoch),
+			"epoch":         new(big.Int).SetUint64(uint64(header.Epoch)),
 			"headerHash":    headerHash,
 			"extraDataHash": extraDataHash,
 		},

@@ -225,7 +225,7 @@ func TestValidatorSetAPI(t *testing.T) {
 		t.Logf("Performing contract validation...")
 		expected := getExpectedDataFromContracts(t, deploymentData)
 
-		if expected.ValidatorSet.Epoch != valsetResp.GetEpoch() {
+		if uint64(expected.ValidatorSet.Epoch) != valsetResp.GetEpoch() {
 			continue
 		}
 

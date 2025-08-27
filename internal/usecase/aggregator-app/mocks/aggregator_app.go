@@ -73,8 +73,23 @@ func (mr *MockrepositoryMockRecorder) GetConfigByEpoch(ctx, epoch any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigByEpoch", reflect.TypeOf((*Mockrepository)(nil).GetConfigByEpoch), ctx, epoch)
 }
 
+// GetSignatureRequest mocks base method.
+func (m *Mockrepository) GetSignatureRequest(arg0 context.Context, reqHash common.Hash) (entity.SignatureRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSignatureRequest", arg0, reqHash)
+	ret0, _ := ret[0].(entity.SignatureRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSignatureRequest indicates an expected call of GetSignatureRequest.
+func (mr *MockrepositoryMockRecorder) GetSignatureRequest(arg0, reqHash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureRequest", reflect.TypeOf((*Mockrepository)(nil).GetSignatureRequest), arg0, reqHash)
+}
+
 // GetValidatorByKey mocks base method.
-func (m *Mockrepository) GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, error) {
+func (m *Mockrepository) GetValidatorByKey(ctx context.Context, epoch entity.Epoch, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorByKey", ctx, epoch, keyTag, publicKey)
 	ret0, _ := ret[0].(entity.Validator)
@@ -89,7 +104,7 @@ func (mr *MockrepositoryMockRecorder) GetValidatorByKey(ctx, epoch, keyTag, publ
 }
 
 // GetValidatorSetByEpoch mocks base method.
-func (m *Mockrepository) GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error) {
+func (m *Mockrepository) GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorSetByEpoch", ctx, epoch)
 	ret0, _ := ret[0].(entity.ValidatorSet)

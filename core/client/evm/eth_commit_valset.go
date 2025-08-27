@@ -49,7 +49,7 @@ func (e *Client) CommitValsetHeader(
 	headerDTO := gen.ISettlementValSetHeader{
 		Version:            header.Version,
 		RequiredKeyTag:     uint8(header.RequiredKeyTag),
-		Epoch:              new(big.Int).SetUint64(header.Epoch),
+		Epoch:              new(big.Int).SetUint64(uint64(header.Epoch)),
 		CaptureTimestamp:   new(big.Int).SetUint64(header.CaptureTimestamp),
 		QuorumThreshold:    header.QuorumThreshold.Int,
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot,

@@ -20,7 +20,7 @@ func (h *grpcHandler) GetSuggestedEpoch(ctx context.Context, req *apiv1.GetSugge
 	// just return latest derived epoch
 	// there is no way to make it more deterministic across each node
 	return &apiv1.GetSuggestedEpochResponse{
-		Epoch:     valset.Epoch,
+		Epoch:     uint64(valset.Epoch),
 		StartTime: timestamppb.New(time.Unix(int64(valset.CaptureTimestamp), 0).UTC()),
 	}, nil
 }

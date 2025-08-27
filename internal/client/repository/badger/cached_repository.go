@@ -18,7 +18,7 @@ type CachedRepository struct {
 	*Repository
 
 	networkConfigCache cache.Cache[uint64, entity.NetworkConfig]
-	validatorSetCache  cache.Cache[uint64, entity.ValidatorSet]
+	validatorSetCache  cache.Cache[entity.Epoch, entity.ValidatorSet]
 }
 
 func NewCached(repo *Repository, cfg CachedConfig) (*CachedRepository, error) {
@@ -32,9 +32,9 @@ func NewCached(repo *Repository, cfg CachedConfig) (*CachedRepository, error) {
 		return nil, errors.Errorf("failed to create network config cache: %w", err)
 	}
 
-	validatorSetCache, err := cache.NewCache[uint64, entity.ValidatorSet](
+	validatorSetCache, err := cache.NewCache[entity.Epoch, entity.ValidatorSet](
 		cache.Config{Size: cfg.ValidatorSetCacheSize},
-		func(epoch uint64) uint32 {
+		func(epoch entity.Epoch) uint32 {
 			return uint32(epoch)
 		},
 	)
@@ -76,7 +76,7 @@ func (r *CachedRepository) SaveConfig(ctx context.Context, config entity.Network
 	return nil
 }
 
-func (r *CachedRepository) GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error) {
+func (r *CachedRepository) GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error) {
 	// Try cache first
 	if validatorSet, ok := r.validatorSetCache.Get(epoch); ok {
 		return validatorSet, nil

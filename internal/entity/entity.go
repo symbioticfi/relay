@@ -1,15 +1,13 @@
 package entity
 
 import (
-	"math/big"
-
 	"github.com/go-errors/errors"
 
 	"github.com/symbioticfi/relay/core/entity"
 )
 
 type AggregationStatus struct {
-	VotingPower *big.Int
+	VotingPower entity.VotingPower
 	Validators  []entity.Validator
 }
 
