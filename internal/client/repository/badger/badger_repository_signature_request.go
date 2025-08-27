@@ -1,6 +1,7 @@
 package badger
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -137,9 +138,8 @@ func (r *Repository) GetSignatureRequestsByEpoch(_ context.Context, epoch entity
 
 		count := 0
 		it.Seek(seekKey)
-
-		// If we're seeking from a specific hash, skip that record (already returned in previous page)
-		if lastHash != (common.Hash{}) && it.ValidForPrefix(prefix) {
+		// If we're seeking from a specific hash and positioned exactly on that key, skip it (already returned in previous page)
+		if lastHash != (common.Hash{}) && it.ValidForPrefix(prefix) && bytes.Equal(it.Item().Key(), seekKey) {
 			it.Next()
 		}
 

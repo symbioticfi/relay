@@ -111,6 +111,45 @@ func TestBadgerRepository_GetSignatureRequestsByEpoch(t *testing.T) {
 		// Should return results after the cursor position in lexicographic order
 		require.LessOrEqual(t, len(results), 5)
 	})
+
+	t.Run("cursor hash between stored keys - no off-by-one", func(t *testing.T) {
+		// This test validates that when a cursor hash falls between stored keys,
+		// we don't skip the first valid item after the seek (off-by-one bug)
+		// Get the first two requests to determine a cursor that falls between them
+		firstTwo, err := repo.GetSignatureRequestsByEpoch(t.Context(), epoch, 2, common.Hash{})
+		require.NoError(t, err)
+		require.Len(t, firstTwo, 2)
+
+		// Create a cursor hash that falls lexicographically between the first two stored hashes
+		firstHash := firstTwo[0].Hash()
+		secondHash := firstTwo[1].Hash()
+
+		// Create a hash that's lexicographically between first and second
+		var betweenHash common.Hash
+		copy(betweenHash[:], firstHash[:])
+		// Increment the last byte to create a hash between first and second
+		if betweenHash[31] < 255 {
+			betweenHash[31]++
+		}
+
+		// Verify the hash is actually between the two stored hashes
+		require.Negative(t, firstHash.Cmp(betweenHash), "betweenHash should be greater than firstHash")
+		require.Negative(t, betweenHash.Cmp(secondHash), "betweenHash should be less than secondHash")
+
+		// Query with this between-hash cursor - should start from secondHash (not skip it)
+		results, err := repo.GetSignatureRequestsByEpoch(t.Context(), epoch, 0, betweenHash)
+		require.NoError(t, err)
+
+		// Should return all items starting from the second item (no off-by-one skip)
+		require.Len(t, results, 4) // Should have 4 remaining items (total 5 - first 1)
+		require.Equal(t, secondHash, results[0].Hash(), "should start from second item, not skip it")
+
+		// Verify the sequence is correct
+		for i := 0; i < len(results); i++ {
+			expectedIndex := i + 1 // Skip first item, start from second
+			require.Equal(t, requests[expectedIndex], results[i])
+		}
+	})
 }
 
 func TestBadgerRepository_GetSignatureRequestsByEpoch_MultipleEpochs(t *testing.T) {

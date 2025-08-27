@@ -90,7 +90,7 @@ func (a Aggregator) Aggregate(
 		if !ok {
 			return entity.AggregationProof{}, errors.New("failed to find key by keyTag")
 		}
-		_, isSinger := signers[val.Operator]
+		_, isSigner := signers[val.Operator]
 		g1Key := new(bn254.G1Affine)
 		_, err := g1Key.SetBytes(keyBytes)
 		if err != nil {
@@ -105,7 +105,7 @@ func (a Aggregator) Aggregate(
 		validatorsData = append(validatorsData, dtoValidatorData{
 			KeySerialized: compressedKeyG1,
 			VotingPower:   val.VotingPower.Int,
-			isNonSigner:   !isSinger,
+			isNonSigner:   !isSigner,
 		})
 	}
 
