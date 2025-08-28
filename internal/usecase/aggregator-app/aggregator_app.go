@@ -129,7 +129,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 	totalActiveVotingPower := validatorSet.GetTotalActiveVotingPower()
 	thresholdReached := currentVotingPower.Cmp(validatorSet.QuorumThreshold.Int) >= 0
 	if !thresholdReached {
-		slog.InfoContext(ctx, "Quorum not reached yet",
+		slog.DebugContext(ctx, "Quorum not reached yet",
 			"currentVotingPower", currentVotingPower.String(),
 			"quorumThreshold", validatorSet.QuorumThreshold.String(),
 			"totalActiveVotingPower", totalActiveVotingPower.String(),
