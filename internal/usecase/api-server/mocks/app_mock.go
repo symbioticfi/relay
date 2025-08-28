@@ -111,19 +111,34 @@ func (mr *MockrepoMockRecorder) GetAllSignatures(arg0, reqHash any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllSignatures", reflect.TypeOf((*Mockrepo)(nil).GetAllSignatures), arg0, reqHash)
 }
 
-// GetLatestValidatorSet mocks base method.
-func (m *Mockrepo) GetLatestValidatorSet(arg0 context.Context) (entity.ValidatorSet, error) {
+// GetLatestValidatorSetEpoch mocks base method.
+func (m *Mockrepo) GetLatestValidatorSetEpoch(arg0 context.Context) (uint64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLatestValidatorSet", arg0)
-	ret0, _ := ret[0].(entity.ValidatorSet)
+	ret := m.ctrl.Call(m, "GetLatestValidatorSetEpoch", arg0)
+	ret0, _ := ret[0].(uint64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetLatestValidatorSet indicates an expected call of GetLatestValidatorSet.
-func (mr *MockrepoMockRecorder) GetLatestValidatorSet(arg0 any) *gomock.Call {
+// GetLatestValidatorSetEpoch indicates an expected call of GetLatestValidatorSetEpoch.
+func (mr *MockrepoMockRecorder) GetLatestValidatorSetEpoch(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestValidatorSet", reflect.TypeOf((*Mockrepo)(nil).GetLatestValidatorSet), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestValidatorSetEpoch", reflect.TypeOf((*Mockrepo)(nil).GetLatestValidatorSetEpoch), arg0)
+}
+
+// GetLatestValidatorSetHeader mocks base method.
+func (m *Mockrepo) GetLatestValidatorSetHeader(arg0 context.Context) (entity.ValidatorSetHeader, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLatestValidatorSetHeader", arg0)
+	ret0, _ := ret[0].(entity.ValidatorSetHeader)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLatestValidatorSetHeader indicates an expected call of GetLatestValidatorSetHeader.
+func (mr *MockrepoMockRecorder) GetLatestValidatorSetHeader(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestValidatorSetHeader", reflect.TypeOf((*Mockrepo)(nil).GetLatestValidatorSetHeader), arg0)
 }
 
 // GetSignatureRequest mocks base method.

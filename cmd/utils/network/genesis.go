@@ -102,7 +102,7 @@ var genesisCmd = &cobra.Command{
 			return errors.Errorf("failed to get validator set extra for epoch %d: %w", currentOnchainEpoch, err)
 		}
 
-		newValset.PreviousHeaderHash, err = gs.GetPreviousHash(ctx, currentOnchainEpoch, networkConfig, newValset)
+		newValset.PreviousHeaderHash, err = gs.GetLastCommittedHeaderHash(ctx, networkConfig)
 		if err != nil {
 			return errors.Errorf("failed to get previous hash for epoch %d: %w", currentOnchainEpoch, err)
 		}
@@ -136,7 +136,7 @@ var genesisCmd = &cobra.Command{
 			panels := pterm.Panels{
 				{
 					{Data: pterm.DefaultBox.WithTitle("Validator Set Header").Sprint(
-						printHeaderTable(&header),
+						printHeaderTable(header),
 					)},
 				},
 				{

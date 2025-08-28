@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/go-errors/errors"
-	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/symbioticfi/relay/core/entity"
+	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
 )
 
 func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error {

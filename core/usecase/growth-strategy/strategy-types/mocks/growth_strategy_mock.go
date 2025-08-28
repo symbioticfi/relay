@@ -72,21 +72,6 @@ func (mr *MockGrowthStrategyMockRecorder) GetLastCommittedHeaderHash(ctx, config
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastCommittedHeaderHash", reflect.TypeOf((*MockGrowthStrategy)(nil).GetLastCommittedHeaderHash), ctx, config)
 }
 
-// GetPreviousHash mocks base method.
-func (m *MockGrowthStrategy) GetPreviousHash(ctx context.Context, epoch uint64, config entity.NetworkConfig, valset entity.ValidatorSet) (common.Hash, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPreviousHash", ctx, epoch, config, valset)
-	ret0, _ := ret[0].(common.Hash)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetPreviousHash indicates an expected call of GetPreviousHash.
-func (mr *MockGrowthStrategyMockRecorder) GetPreviousHash(ctx, epoch, config, valset any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPreviousHash", reflect.TypeOf((*MockGrowthStrategy)(nil).GetPreviousHash), ctx, epoch, config, valset)
-}
-
 // GetValsetStatus mocks base method.
 func (m *MockGrowthStrategy) GetValsetStatus(ctx context.Context, config entity.NetworkConfig, valset entity.ValidatorSet) (entity.ValidatorSetStatus, error) {
 	m.ctrl.T.Helper()

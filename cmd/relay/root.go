@@ -78,6 +78,7 @@ func runApp(ctx context.Context) error {
 		RequestTimeout: time.Second * 5,
 		KeyProvider:    keyProvider,
 		Metrics:        mtr,
+		MaxCalls:       cfg.MaxCalls,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create symbiotic client: %w", err)
@@ -88,9 +89,17 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create valset deriver: %w", err)
 	}
 
-	repo, err := badger.New(badger.Config{Dir: cfg.StorageDir})
+	baseRepo, err := badger.New(badger.Config{Dir: cfg.StorageDir})
 	if err != nil {
-		return errors.Errorf("failed to create memory repository: %w", err)
+		return errors.Errorf("failed to create badger repository: %w", err)
+	}
+
+	repo, err := badger.NewCached(baseRepo, badger.CachedConfig{
+		NetworkConfigCacheSize: cfg.Cache.NetworkConfigCacheSize,
+		ValidatorSetCacheSize:  cfg.Cache.ValidatorSetCacheSize,
+	})
+	if err != nil {
+		return errors.Errorf("failed to create cached repository: %w", err)
 	}
 
 	currentOnchainEpoch, err := evmClient.GetCurrentEpoch(ctx)
@@ -152,7 +161,7 @@ func runApp(ctx context.Context) error {
 
 	slog.InfoContext(ctx, "Started discovery service", "listenAddr", cfg.P2PListenAddress)
 
-	aggProofReadySignal := signals.New[entity.AggregatedSignatureMessage]()
+	aggProofReadySignal := signals.New[entity.AggregatedSignatureMessage](cfg.SignalCfg, "aggProofReady", nil)
 
 	signerApp, err := signerApp.NewSignerApp(signerApp.Config{
 		P2PService:     p2pService,
@@ -165,7 +174,9 @@ func runApp(ctx context.Context) error {
 	if err != nil {
 		return errors.Errorf("failed to create signer app: %w", err)
 	}
-	p2pService.AddSignaturesAggregatedMessageListener(signerApp.HandleSignaturesAggregatedMessage, "signerAppSignaturesAggregatedListener")
+	if err := p2pService.StartSignaturesAggregatedMessageListener(signerApp.HandleSignaturesAggregatedMessage); err != nil {
+		return errors.Errorf("failed to start signatures aggregated message listener: %w", err)
+	}
 
 	slog.InfoContext(ctx, "Created signer app, starting")
 
@@ -183,7 +194,7 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create epoch listener: %w", err)
 	}
 
-	aggProofReadySignal.AddListener(func(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
+	if err := aggProofReadySignal.SetHandler(func(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
 		err := generator.HandleProofAggregated(ctx, msg)
 		if err != nil {
 			return errors.Errorf("failed to handle proof aggregated: %w", err)
@@ -191,7 +202,12 @@ func runApp(ctx context.Context) error {
 		slog.DebugContext(ctx, "Handled proof aggregated", "request", msg)
 
 		return nil
-	}, "aggregatedProofReadySignalListener")
+	}); err != nil {
+		return errors.Errorf("failed to set agg proof ready signal handler: %w", err)
+	}
+	if err := aggProofReadySignal.StartWorkers(ctx); err != nil {
+		return errors.Errorf("failed to start agg proof ready signal workers: %w", err)
+	}
 
 	eg, egCtx := errgroup.WithContext(ctx)
 	eg.Go(func() error {
@@ -221,7 +237,9 @@ func runApp(ctx context.Context) error {
 		if err != nil {
 			return errors.Errorf("failed to create aggregator app: %w", err)
 		}
-		p2pService.AddSignatureMessageListener(aggApp.HandleSignatureGeneratedMessage, "aggregatorAppSignatureGeneratedListener")
+		if err := p2pService.StartSignatureMessageListener(aggApp.HandleSignatureGeneratedMessage); err != nil {
+			return errors.Errorf("failed to start signature message listener: %w", err)
+		}
 
 		slog.DebugContext(ctx, "Created aggregator app, starting")
 	}
@@ -321,7 +339,7 @@ func initP2PService(ctx context.Context, cfg config, keyProvider keyprovider.Key
 	p2pCfg.Discovery.DHTMode = cfg.DHTMode
 	p2pCfg.Discovery.EnableMDNS = cfg.MDnsEnabled
 
-	p2pService, err := p2p.NewService(ctx, p2pCfg)
+	p2pService, err := p2p.NewService(ctx, p2pCfg, cfg.SignalCfg)
 	if err != nil {
 		return nil, nil, errors.Errorf("failed to create p2p service: %w", err)
 	}

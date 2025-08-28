@@ -3,6 +3,8 @@ package network
 import (
 	"time"
 
+	"github.com/samber/lo"
+
 	"github.com/symbioticfi/relay/core/client/evm"
 	"github.com/symbioticfi/relay/core/entity"
 	growthStrategy "github.com/symbioticfi/relay/core/usecase/growth-strategy"
@@ -14,6 +16,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 )
 
 var infoCmd = &cobra.Command{
@@ -114,19 +117,43 @@ var infoCmd = &cobra.Command{
 
 		// row with settlements info
 		if infoFlags.Settlement {
-			isCommitted := make([]bool, len(networkConfig.Replicas))
-			headerHashes := make([]common.Hash, len(networkConfig.Replicas))
+			settlementData := make([]settlementReplicaData, len(networkConfig.Replicas))
+
+			eg, egCtx := errgroup.WithContext(ctx)
+			eg.SetLimit(5)
 			for i, replica := range networkConfig.Replicas {
-				isCommitted[i], err = evmClient.IsValsetHeaderCommittedAt(ctx, replica, epoch)
-				if err != nil {
-					return errors.Errorf("Failed to get latest epoch: %w", err)
-				}
-				if isCommitted[i] {
-					headerHashes[i], err = evmClient.GetHeaderHashAt(ctx, replica, epoch)
+				eg.Go(func() error {
+					isCommitted, err := evmClient.IsValsetHeaderCommittedAt(egCtx, replica, epoch)
 					if err != nil {
-						return errors.Errorf("Failed to get header hash: %w", err)
+						return errors.Errorf("Failed to get latest epoch: %w", err)
 					}
-				}
+					settlementData[i].IsCommitted = isCommitted
+
+					if isCommitted {
+						headerHash, err := evmClient.GetHeaderHashAt(egCtx, replica, epoch)
+						if err != nil {
+							return errors.Errorf("Failed to get header hash: %w", err)
+						}
+						settlementData[i].HeaderHash = headerHash
+					}
+
+					allEpochsFromZero := lo.RepeatBy(int(epoch+1), func(i int) uint64 {
+						return uint64(i)
+					})
+
+					commitmentResults, err := evmClient.IsValsetHeaderCommittedAtEpochs(egCtx, replica, allEpochsFromZero)
+					if err != nil {
+						return errors.Errorf("Failed to check epoch commitments: %w", err)
+					}
+
+					settlementData[i].MissedEpochs = uint64(lo.CountBy(commitmentResults, func(committed bool) bool { return !committed }))
+
+					return nil
+				})
+			}
+
+			if err := eg.Wait(); err != nil {
+				return err
 			}
 			header, err := valset.GetHeader()
 			if err != nil {
@@ -134,7 +161,7 @@ var infoCmd = &cobra.Command{
 			}
 			panels = append(panels, []pterm.Panel{
 				{Data: pterm.DefaultBox.WithTitle("Settlement").Sprint(
-					printSettlementData(&header, &networkConfig, isCommitted, headerHashes),
+					printSettlementData(header, networkConfig, settlementData, committedEpoch),
 				)},
 			})
 		}
