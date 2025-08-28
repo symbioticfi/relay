@@ -10,6 +10,8 @@ import (
 
 	"github.com/spf13/pflag"
 
+	"github.com/symbioticfi/relay/pkg/signals"
+
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 	"github.com/samber/lo"
@@ -115,6 +117,13 @@ type config struct {
 	DHTMode           string                      `mapstructure:"dht-mode" validate:"oneof=auto server client disabled"`
 	MDnsEnabled       bool                        `mapstructure:"enable-mdns"`
 	MaxCalls          int                         `mapstructure:"evm-max-calls"`
+	SignalCfg         signals.Config              `mapstructure:"signal"`
+	Cache             CacheConfig                 `mapstructure:"cache"`
+}
+
+type CacheConfig struct {
+	NetworkConfigCacheSize int `mapstructure:"network-config-size"`
+	ValidatorSetCacheSize  int `mapstructure:"validator-set-size"`
 }
 
 func (c config) Validate() error {
@@ -152,7 +161,11 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringSlice("bootnodes", nil, "List of bootnodes in multiaddr format")
 	rootCmd.PersistentFlags().String("dht-mode", "server", "DHT mode: auto, server, client, disabled")
 	rootCmd.PersistentFlags().Bool("enable-mdns", false, "Enable mDNS discovery for P2P")
+	rootCmd.PersistentFlags().Int64("signal.worker-count", 10, "Signal worker count")
+	rootCmd.PersistentFlags().Int64("signal.buffer-size", 20, "Signal buffer size")
 	rootCmd.PersistentFlags().Int("evm-max-calls", 0, "Max calls in multicall")
+	rootCmd.PersistentFlags().Int("cache.network-config-size", 10, "Network config cache size")
+	rootCmd.PersistentFlags().Int("cache.validator-set-size", 10, "Validator set cache size")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
@@ -241,7 +254,19 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	if err := v.BindPFlag("enable-mdns", cmd.PersistentFlags().Lookup("enable-mdns")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
+	if err := v.BindPFlag("signal.buffer-size", cmd.PersistentFlags().Lookup("signal.buffer-size")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("signal.worker-count", cmd.PersistentFlags().Lookup("signal.worker-count")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
 	if err := v.BindPFlag("evm-max-calls", cmd.PersistentFlags().Lookup("evm-max-calls")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("cache.network-config-size", cmd.PersistentFlags().Lookup("cache.network-config-size")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("cache.validator-set-size", cmd.PersistentFlags().Lookup("cache.validator-set-size")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 
