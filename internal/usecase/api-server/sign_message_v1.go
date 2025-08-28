@@ -15,7 +15,7 @@ func (h *grpcHandler) SignMessage(ctx context.Context, req *apiv1.SignMessageReq
 		if err != nil {
 			return nil, err
 		}
-		requiredEpoch = (*uint64)(&latestEpoch)
+		requiredEpoch = &latestEpoch
 	}
 
 	signReq := entity.SignatureRequest{

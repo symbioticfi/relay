@@ -328,7 +328,7 @@ func (v Validator) FindKeyByKeyTag(keyTag KeyTag) ([]byte, bool) {
 type ValidatorSet struct {
 	Version            uint8
 	RequiredKeyTag     KeyTag      // key tag required to commit next valset
-	Epoch              Epoch       // valset epoch
+	Epoch              uint64      // valset epoch
 	CaptureTimestamp   uint64      // epoch capture timestamp
 	QuorumThreshold    VotingPower // absolute number now, not a percent
 	PreviousHeaderHash common.Hash // previous valset header hash
@@ -358,7 +358,7 @@ type ValidatorSetHash struct {
 type ValidatorSetHeader struct {
 	Version            uint8
 	RequiredKeyTag     KeyTag
-	Epoch              Epoch
+	Epoch              uint64
 	CaptureTimestamp   uint64
 	QuorumThreshold    VotingPower
 	ValidatorsSszMRoot common.Hash
@@ -524,7 +524,7 @@ func (v ValidatorSetHeader) AbiEncode() ([]byte, error) {
 		},
 	}
 
-	pack, err := arguments.Pack(v.Version, v.RequiredKeyTag, new(big.Int).SetUint64(uint64(v.Epoch)), new(big.Int).SetUint64(v.CaptureTimestamp), v.QuorumThreshold.Int, v.ValidatorsSszMRoot, v.PreviousHeaderHash)
+	pack, err := arguments.Pack(v.Version, v.RequiredKeyTag, new(big.Int).SetUint64(v.Epoch), new(big.Int).SetUint64(v.CaptureTimestamp), v.QuorumThreshold.Int, v.ValidatorsSszMRoot, v.PreviousHeaderHash)
 	if err != nil {
 		return nil, errors.Errorf("failed to pack arguments: %w", err)
 	}

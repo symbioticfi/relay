@@ -112,10 +112,10 @@ func (mr *MockrepoMockRecorder) GetAllSignatures(arg0, reqHash any) *gomock.Call
 }
 
 // GetLatestValidatorSetEpoch mocks base method.
-func (m *Mockrepo) GetLatestValidatorSetEpoch(arg0 context.Context) (entity.Epoch, error) {
+func (m *Mockrepo) GetLatestValidatorSetEpoch(arg0 context.Context) (uint64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLatestValidatorSetEpoch", arg0)
-	ret0, _ := ret[0].(entity.Epoch)
+	ret0, _ := ret[0].(uint64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -157,7 +157,7 @@ func (mr *MockrepoMockRecorder) GetSignatureRequest(arg0, reqHash any) *gomock.C
 }
 
 // GetValidatorSetByEpoch mocks base method.
-func (m *Mockrepo) GetValidatorSetByEpoch(arg0 context.Context, epoch entity.Epoch) (entity.ValidatorSet, error) {
+func (m *Mockrepo) GetValidatorSetByEpoch(arg0 context.Context, epoch uint64) (entity.ValidatorSet, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorSetByEpoch", arg0, epoch)
 	ret0, _ := ret[0].(entity.ValidatorSet)

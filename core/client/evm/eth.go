@@ -473,7 +473,7 @@ func (e *Client) GetValSetHeaderAt(ctx context.Context, addr entity.CrossChainAd
 	return entity.ValidatorSetHeader{
 		Version:            header.Version,
 		RequiredKeyTag:     entity.KeyTag(header.RequiredKeyTag),
-		Epoch:              entity.Epoch(header.Epoch.Uint64()),
+		Epoch:              header.Epoch.Uint64(),
 		CaptureTimestamp:   header.CaptureTimestamp.Uint64(),
 		QuorumThreshold:    entity.ToVotingPower(header.QuorumThreshold),
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot,
@@ -504,7 +504,7 @@ func (e *Client) GetValSetHeader(ctx context.Context, addr entity.CrossChainAddr
 	return entity.ValidatorSetHeader{
 		Version:            header.Version,
 		RequiredKeyTag:     entity.KeyTag(header.RequiredKeyTag),
-		Epoch:              entity.Epoch(header.Epoch.Uint64()),
+		Epoch:              header.Epoch.Uint64(),
 		CaptureTimestamp:   header.CaptureTimestamp.Uint64(),
 		QuorumThreshold:    entity.ToVotingPower(header.QuorumThreshold),
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot,

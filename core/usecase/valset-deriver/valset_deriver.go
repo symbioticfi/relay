@@ -119,7 +119,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 	valset := entity.ValidatorSet{
 		Version:          valsetVersion,
 		RequiredKeyTag:   config.RequiredHeaderKeyTag,
-		Epoch:            entity.Epoch(epoch),
+		Epoch:            epoch,
 		CaptureTimestamp: timestamp,
 		QuorumThreshold:  quorumThreshold,
 		Validators:       validators,

@@ -16,7 +16,7 @@ func TestGetValidatorSetHeader_ValidatorSetFoundInRepo(t *testing.T) {
 	ctx := context.Background()
 
 	currentEpoch := uint64(10)
-	requestedEpoch := entity.Epoch(uint64(8))
+	requestedEpoch := uint64(8)
 
 	// Create test data
 	validatorSet := createTestValidatorSet(requestedEpoch)
@@ -29,7 +29,7 @@ func TestGetValidatorSetHeader_ValidatorSetFoundInRepo(t *testing.T) {
 
 	// Execute the method under test
 	req := &apiv1.GetValidatorSetHeaderRequest{
-		Epoch: (*uint64)(&requestedEpoch),
+		Epoch: &requestedEpoch,
 	}
 
 	response, err := setup.handler.GetValidatorSetHeader(ctx, req)
@@ -54,7 +54,7 @@ func TestGetValidatorSetHeader_ValidatorSetNotInRepo_DerivedSuccessfully(t *test
 	epochStart := uint64(1640995000)
 
 	// Create test data
-	validatorSet := createTestValidatorSet(entity.Epoch(requestedEpoch))
+	validatorSet := createTestValidatorSet(requestedEpoch)
 	expectedHeader, err := validatorSet.GetHeader() // Use the real GetHeader method
 	require.NoError(t, err)
 
@@ -94,7 +94,7 @@ func TestGetValidatorSetHeader_UseCurrentEpoch_WhenNoEpochSpecified(t *testing.T
 	currentEpoch := uint64(10)
 
 	// Create test data
-	validatorSet := createTestValidatorSet(entity.Epoch(currentEpoch))
+	validatorSet := createTestValidatorSet(currentEpoch)
 
 	// Setup mocks - no epoch specified, should use current epoch
 	setup.mockEvmClient.EXPECT().GetCurrentEpoch(ctx).Return(currentEpoch, nil)

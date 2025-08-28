@@ -41,7 +41,7 @@ func (h *grpcHandler) GetValidatorSetHeader(ctx context.Context, req *apiv1.GetV
 	return &apiv1.GetValidatorSetHeaderResponse{
 		Version:            uint32(header.Version),
 		RequiredKeyTag:     uint32(header.RequiredKeyTag),
-		Epoch:              uint64(header.Epoch),
+		Epoch:              header.Epoch,
 		CaptureTimestamp:   timestamppb.New(time.Unix(int64(header.CaptureTimestamp), 0).UTC()),
 		QuorumThreshold:    header.QuorumThreshold.String(),
 		ValidatorsSszMroot: header.ValidatorsSszMRoot.Hex(),

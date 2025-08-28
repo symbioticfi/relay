@@ -32,11 +32,11 @@ type signer interface {
 
 type repo interface {
 	GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error)
-	GetValidatorSetByEpoch(_ context.Context, epoch entity.Epoch) (entity.ValidatorSet, error)
+	GetValidatorSetByEpoch(_ context.Context, epoch uint64) (entity.ValidatorSet, error)
 	GetAllSignatures(_ context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error)
 	GetSignatureRequest(_ context.Context, reqHash common.Hash) (entity.SignatureRequest, error)
 	GetLatestValidatorSetHeader(_ context.Context) (entity.ValidatorSetHeader, error)
-	GetLatestValidatorSetEpoch(_ context.Context) (entity.Epoch, error)
+	GetLatestValidatorSetEpoch(_ context.Context) (uint64, error)
 }
 
 type evmClient interface {

@@ -20,7 +20,7 @@ func TestGetValidatorByAddress_ValidatorFoundInRepo(t *testing.T) {
 	validatorAddress := "0x0000000000000000000000000000000000000123"
 
 	// Create test data
-	validatorSet := createTestValidatorSetWithMultipleValidators(entity.Epoch(requestedEpoch))
+	validatorSet := createTestValidatorSetWithMultipleValidators(requestedEpoch)
 	expectedValidator := validatorSet.Validators[0] // First validator has address 0x123
 
 	// Setup mocks - validator set found in repository
@@ -58,7 +58,7 @@ func TestGetValidatorByAddress_ValidatorSetNotInRepo_DerivedSuccessfully(t *test
 	validatorAddress := "0x0000000000000000000000000000000000000abc"
 
 	// Create test data
-	validatorSet := createTestValidatorSetWithMultipleValidators(entity.Epoch(requestedEpoch))
+	validatorSet := createTestValidatorSetWithMultipleValidators(requestedEpoch)
 	expectedValidator := validatorSet.Validators[1] // Second validator has address 0xabc
 
 	networkConfig := entity.NetworkConfig{
@@ -97,7 +97,7 @@ func TestGetValidatorByAddress_UseCurrentEpoch_WhenNoEpochSpecified(t *testing.T
 	validatorAddress := "0x0000000000000000000000000000000000000123"
 
 	// Create test data
-	validatorSet := createTestValidatorSetWithMultipleValidators(entity.Epoch(currentEpoch))
+	validatorSet := createTestValidatorSetWithMultipleValidators(currentEpoch)
 
 	// Setup mocks - no epoch specified, should use current epoch
 	setup.mockEvmClient.EXPECT().GetCurrentEpoch(ctx).Return(currentEpoch, nil)
@@ -176,7 +176,7 @@ func TestGetValidatorByAddress_ErrorWhenValidatorNotFound(t *testing.T) {
 	nonExistentAddress := "0x0000000000000000000000000000000000000999"
 
 	// Create test data without the requested validator
-	validatorSet := createTestValidatorSetWithMultipleValidators(entity.Epoch(requestedEpoch))
+	validatorSet := createTestValidatorSetWithMultipleValidators(requestedEpoch)
 
 	// Setup mocks - validator set found in repository
 	setup.mockEvmClient.EXPECT().GetCurrentEpoch(ctx).Return(currentEpoch, nil)
@@ -288,7 +288,7 @@ func TestGetValidatorByAddress_InactiveValidator(t *testing.T) {
 	validatorAddress := "0x0000000000000000000000000000000000000789" // This validator is inactive in our test data
 
 	// Create test data
-	validatorSet := createTestValidatorSetWithMultipleValidators(entity.Epoch(requestedEpoch))
+	validatorSet := createTestValidatorSetWithMultipleValidators(requestedEpoch)
 	expectedValidator := validatorSet.Validators[2] // Third validator has address 0x789 and IsActive: false
 
 	// Setup mocks - validator set found in repository

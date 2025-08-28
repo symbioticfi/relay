@@ -100,7 +100,7 @@ func TestCachedRepository_ValidatorSet(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	epoch := entity.Epoch(uint64(456))
+	epoch := uint64(456)
 
 	// Create test validator set
 	testValidatorSet := entity.ValidatorSet{

@@ -89,7 +89,7 @@ func (mr *MockrepositoryMockRecorder) GetSignatureRequest(arg0, reqHash any) *go
 }
 
 // GetValidatorByKey mocks base method.
-func (m *Mockrepository) GetValidatorByKey(ctx context.Context, epoch entity.Epoch, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, error) {
+func (m *Mockrepository) GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorByKey", ctx, epoch, keyTag, publicKey)
 	ret0, _ := ret[0].(entity.Validator)
@@ -104,7 +104,7 @@ func (mr *MockrepositoryMockRecorder) GetValidatorByKey(ctx, epoch, keyTag, publ
 }
 
 // GetValidatorSetByEpoch mocks base method.
-func (m *Mockrepository) GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error) {
+func (m *Mockrepository) GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorSetByEpoch", ctx, epoch)
 	ret0, _ := ret[0].(entity.ValidatorSet)
