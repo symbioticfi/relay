@@ -2,12 +2,8 @@ package newestStrategy
 
 import (
 	"context"
-	"log/slog"
 
 	"github.com/ethereum/go-ethereum/common"
-	strategyHelpers "github.com/symbioticfi/relay/core/usecase/growth-strategy/helpers"
-	strategyTypes "github.com/symbioticfi/relay/core/usecase/growth-strategy/strategy-types"
-
 	"github.com/go-errors/errors"
 	"github.com/symbioticfi/relay/core/client/evm"
 	"github.com/symbioticfi/relay/core/entity"
@@ -40,46 +36,13 @@ func (gs GrowthStrategyAsync) GetLastCommittedHeaderEpoch(ctx context.Context, c
 	return epoch, err
 }
 
-func (gs GrowthStrategyAsync) GetPreviousHash(ctx context.Context, epoch uint64, config entity.NetworkConfig, valset entity.ValidatorSet) (common.Hash, error) {
-	committedAddr, isValsetCommitted, err := gs.IsValsetHeaderCommitted(ctx, config, epoch)
-	if err != nil {
-		return common.Hash{}, errors.Errorf("failed to check if validator committed at epoch %d: %w", epoch, err)
-	}
-
-	if isValsetCommitted {
-		return strategyHelpers.GetPreviousHashForCommittedValset(ctx, gs.client, committedAddr, epoch, valset)
-	}
-
-	latestCommittedEpoch, err := gs.GetLastCommittedHeaderEpoch(ctx, config)
-	if err != nil {
-		return common.Hash{}, errors.Errorf("failed to get last commmitted valset epoch: %w", err)
-	}
-	// valset not committed
-
-	if epoch < latestCommittedEpoch {
-		slog.DebugContext(ctx, "Header is not committed [missed header]", "epoch", epoch)
-		// zero PreviousHeaderHash cos header is orphaned
-		return strategyTypes.EmptyValsetHeaderHash, nil
-	}
-
-	lastCommittedHash, err := gs.GetLastCommittedHeaderHash(ctx, config)
-	if err != nil {
-		return common.Hash{}, errors.Errorf("failed to get last committed valset hash: %w", err)
-	}
-
-	// trying to link to latest committed header
-	slog.DebugContext(ctx, "Header is not committed [new header]", "epoch", epoch)
-
-	return lastCommittedHash, nil
-}
-
 func (gs GrowthStrategyAsync) GetValsetStatus(ctx context.Context, config entity.NetworkConfig, valset entity.ValidatorSet) (entity.ValidatorSetStatus, error) {
 	currentEpoch, err := gs.client.GetCurrentEpoch(ctx)
 	if err != nil {
 		return 0, errors.Errorf("failed to get current epoch: %w", err)
 	}
 
-	committedEpoch, err := gs.GetLastCommittedHeaderEpoch(ctx, config)
+	_, committedEpoch, err := gs.getLastCommittedHeaderEpoch(ctx, config)
 	if err != nil {
 		return 0, errors.Errorf("failed to get last committed header epoch: %w", err)
 	}

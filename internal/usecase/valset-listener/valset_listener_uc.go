@@ -1,11 +1,11 @@
 package valset_listener
 
 import (
+	"bytes"
 	"context"
 	"log/slog"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/symbioticfi/relay/core/client/evm"
 
 	strategyTypes "github.com/symbioticfi/relay/core/usecase/growth-strategy/strategy-types"
@@ -123,7 +123,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 	}
 	config, err := s.cfg.EvmClient.GetConfig(ctx, currentEpochStart)
 	if err != nil {
-		return errors.Errorf("failed to get network config for current epoch: %w", err)
+		return errors.Errorf("failed to get config: %w", err)
 	}
 
 	latestCommittedEpoch, err := s.cfg.GrowthStrategy.GetLastCommittedHeaderEpoch(ctx, config)
@@ -131,27 +131,18 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		return errors.Errorf("failed to get latest committed header epoch: %w", err)
 	}
 
-	latestCommittedHash, err := s.cfg.GrowthStrategy.GetLastCommittedHeaderHash(ctx, config)
-	if err != nil {
-		return errors.Errorf("failed to get latest committed header hash: %w", err)
-	}
-
-	latest, err := s.cfg.Repo.GetLatestValidatorSet(ctx)
+	latestValset, err := s.cfg.Repo.GetLatestValidatorSet(ctx)
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return errors.Errorf("failed to get latest validator set extra: %w", err)
 	}
 
 	nextEpoch := uint64(0)
 	if err == nil {
-		nextEpoch = latest.Epoch + 1
+		nextEpoch = latestValset.Epoch + 1
 	}
 
 	if s.latestProcessedEpoch != 0 && nextEpoch <= s.latestProcessedEpoch {
 		return nil
-	}
-
-	if err := s.validateHeaderHashAtLastCommittedEpoch(ctx, latestCommittedEpoch, latestCommittedHash); err != nil {
-		return errors.Errorf("failed to validate header hash at last committed epoch: %w", err)
 	}
 
 	for latestCommittedEpoch >= nextEpoch {
@@ -165,14 +156,32 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 			return errors.Errorf("failed to get network config for epoch %d: %w", nextEpoch, err)
 		}
 
+		committedAddr, committed, err := s.cfg.GrowthStrategy.IsValsetHeaderCommitted(ctx, nextEpochConfig, nextEpoch)
+		if err != nil {
+			return errors.Errorf("failed to check if header is committed: %w", err)
+		}
+
+		if !committed {
+			continue
+		}
+
 		nextValset, err := s.cfg.Deriver.GetValidatorSet(ctx, nextEpoch, nextEpochConfig)
 		if err != nil {
 			return errors.Errorf("failed to derive validator set extra for epoch %d: %w", nextEpoch, err)
 		}
 
-		nextValset.PreviousHeaderHash, err = s.cfg.GrowthStrategy.GetPreviousHash(ctx, nextEpoch, config, nextValset)
+		prevHeader, err := latestValset.GetHeader()
 		if err != nil {
-			return errors.Errorf("failed to get previous hash for epoch %d: %w", nextEpoch, err)
+			return errors.Errorf("failed to get previous header for epoch %d: %w", nextEpoch, err)
+		}
+
+		nextValset.PreviousHeaderHash, err = prevHeader.Hash()
+		if err != nil {
+			return errors.Errorf("failed to hash previous header for epoch %d: %w", nextEpoch, err)
+		}
+
+		if err := s.validateHeaderHashAtEpoch(ctx, committedAddr, nextEpoch, nextValset); err != nil {
+			return errors.Errorf("failed to validate header for epoch %d: %w", nextEpoch, err)
 		}
 
 		if err := s.cfg.Repo.SaveConfig(ctx, nextEpochConfig, nextEpoch); err != nil {
@@ -183,10 +192,11 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 			return errors.Errorf("failed to save validator set extra for epoch %d: %w", nextEpoch, err)
 		}
 
-		slog.DebugContext(ctx, "Synced validator set", "epoch", nextEpoch, "config", config, "valset", nextValset)
+		slog.DebugContext(ctx, "Synced validator set", "epoch", nextEpoch, "config", nextEpochConfig, "valset", nextValset)
 
 		s.latestProcessedEpoch = nextEpoch
 		nextEpoch = nextValset.Epoch + 1
+		latestValset = nextValset
 	}
 
 	slog.DebugContext(ctx, "All missing epochs loaded", "latestProcessedEpoch", s.latestProcessedEpoch)
@@ -194,40 +204,25 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) validateHeaderHashAtLastCommittedEpoch(ctx context.Context, epoch uint64, lastCommittedHash common.Hash) error {
-	epochStart, err := s.cfg.EvmClient.GetEpochStart(ctx, epoch)
+func (s *Service) validateHeaderHashAtEpoch(ctx context.Context, committedAddr entity.CrossChainAddress, epoch uint64, valset entity.ValidatorSet) error {
+	committedHash, err := s.cfg.EvmClient.GetHeaderHashAt(ctx, committedAddr, epoch)
 	if err != nil {
-		return errors.Errorf("failed to get epoch start for epoch %d: %w", epochStart, err)
+		return errors.Errorf("failed to get header hash: %w", err)
+	}
+	valsetHeader, err := valset.GetHeader()
+	if err != nil {
+		return errors.Errorf("failed to get header hash: %w", err)
+	}
+	calculatedHash, err := valsetHeader.Hash()
+	if err != nil {
+		return errors.Errorf("failed to get header hash: %w", err)
 	}
 
-	config, err := s.cfg.EvmClient.GetConfig(ctx, epochStart)
-	if err != nil {
-		return errors.Errorf("failed to get network config for epoch %d: %w", epoch, err)
+	if !bytes.Equal(committedHash[:], calculatedHash[:]) {
+		slog.DebugContext(ctx, "Validator set integrity check failed", "committed hash", committedHash, "calculated hash", calculatedHash)
+		return errors.Errorf("validator set hash mistmach at epoch %d", epoch)
 	}
-
-	valset, err := s.cfg.Deriver.GetValidatorSet(ctx, epoch, config)
-	if err != nil {
-		return errors.Errorf("failed to derive validator set extra for epoch %d: %w", epoch, err)
-	}
-
-	valset.PreviousHeaderHash, err = s.cfg.GrowthStrategy.GetPreviousHash(ctx, epoch, config, valset)
-	if err != nil {
-		return errors.Errorf("failed to get previous hash for epoch %d: %w", epoch, err)
-	}
-
-	header, err := valset.GetHeader()
-	if err != nil {
-		return errors.Errorf("failed to get header for epoch %d: %w", epoch, err)
-	}
-
-	hash, err := header.Hash()
-	if err != nil {
-		return errors.Errorf("failed to get header hash for epoch %d: %w", epoch, err)
-	}
-
-	if lastCommittedHash != hash {
-		return errors.Errorf("last committed header hash mismatch with derived hash for epoch %d, derived: %s, committed: %s", epoch, hash, lastCommittedHash)
-	}
+	slog.DebugContext(ctx, "Validator set integrity check passed", "hash", committedHash)
 
 	return nil
 }
