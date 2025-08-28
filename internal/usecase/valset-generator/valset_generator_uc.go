@@ -43,6 +43,7 @@ type repo interface {
 	GetSignatureRequest(ctx context.Context, reqHash common.Hash) (entity.SignatureRequest, error)
 	SavePendingValidatorSet(ctx context.Context, reqHash common.Hash, valset entity.ValidatorSet) error
 	GetPendingValidatorSet(ctx context.Context, reqHash common.Hash) (entity.ValidatorSet, error)
+	SaveAggregationProof(ctx context.Context, reqHash common.Hash, ap entity.AggregationProof) error
 }
 
 type deriver interface {
