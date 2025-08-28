@@ -431,7 +431,7 @@ func (v ValidatorSet) GetHeader() (ValidatorSetHeader, error) {
 	}, nil
 }
 
-func (v ValidatorSet) FindValidatorsByKeys(keyTag KeyTag, publicKeys []CompactPublicKey) Validators {
+func (v ValidatorSet) FindValidatorsByKeys(keyTag KeyTag, publicKeys []CompactPublicKey) (Validators, error) {
 	// Build lookup map: publicKey -> validator
 	publicKeyToValidator := make(map[string]Validator)
 	for _, validator := range v.Validators {
@@ -440,21 +440,17 @@ func (v ValidatorSet) FindValidatorsByKeys(keyTag KeyTag, publicKeys []CompactPu
 		}
 	}
 
-	// Process signatures and deduplicate validators
-	resultMap := make(map[common.Address]Validator)
+	// Find validators for each public key
+	result := make(Validators, 0, len(publicKeys))
 	for _, publicKey := range publicKeys {
-		if validator, found := publicKeyToValidator[string(publicKey)]; found {
-			resultMap[validator.Operator] = validator
+		validator, found := publicKeyToValidator[string(publicKey)]
+		if !found {
+			return nil, errors.Errorf("validator not found for public key %x with key tag %d", publicKey, keyTag)
 		}
-	}
-
-	// Convert map to slice
-	result := make(Validators, 0, len(resultMap))
-	for _, validator := range resultMap {
 		result = append(result, validator)
 	}
 
-	return result
+	return result, nil
 }
 
 func sszTreeRoot(v *ValidatorSet) (common.Hash, error) {

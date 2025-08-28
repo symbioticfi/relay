@@ -52,7 +52,8 @@ func TestValidatorSet_FindValidatorsBySignatures(t *testing.T) {
 	}
 
 	t.Run("finds validators matching signatures", func(t *testing.T) {
-		result := validatorSet.FindValidatorsByKeys(keyTag, []CompactPublicKey{publicKey1, publicKey2})
+		result, err := validatorSet.FindValidatorsByKeys(keyTag, []CompactPublicKey{publicKey1, publicKey2})
+		require.NoError(t, err)
 
 		require.Len(t, result, 2)
 
@@ -67,28 +68,26 @@ func TestValidatorSet_FindValidatorsBySignatures(t *testing.T) {
 		require.False(t, operatorAddrs[operator3])
 	})
 
-	t.Run("handles duplicate public keys from same validator", func(t *testing.T) {
-		result := validatorSet.FindValidatorsByKeys(keyTag, []CompactPublicKey{publicKey1, publicKey1})
+	t.Run("returns error when no validators match", func(t *testing.T) {
+		result, err := validatorSet.FindValidatorsByKeys(keyTag, []CompactPublicKey{[]byte("unknown_public_key")})
 
-		require.Len(t, result, 1)
-		require.Equal(t, operator1, result[0].Operator)
+		require.Error(t, err)
+		require.Nil(t, result)
+		require.Contains(t, err.Error(), "validator not found for public key")
 	})
 
-	t.Run("returns empty slice when no validators match", func(t *testing.T) {
-		result := validatorSet.FindValidatorsByKeys(keyTag, []CompactPublicKey{[]byte("unknown_public_key")})
-
-		require.Empty(t, result)
-	})
-
-	t.Run("ignores validators with wrong key tag", func(t *testing.T) {
+	t.Run("returns error for validators with wrong key tag", func(t *testing.T) {
 		// Validator3 has publicKey3 but for different tag
-		result := validatorSet.FindValidatorsByKeys(keyTag, []CompactPublicKey{publicKey3})
+		result, err := validatorSet.FindValidatorsByKeys(keyTag, []CompactPublicKey{publicKey3})
 
-		require.Empty(t, result)
+		require.Error(t, err)
+		require.Nil(t, result)
+		require.Contains(t, err.Error(), "validator not found for public key")
 	})
 
 	t.Run("handles empty public keys", func(t *testing.T) {
-		result := validatorSet.FindValidatorsByKeys(keyTag, []CompactPublicKey{})
+		result, err := validatorSet.FindValidatorsByKeys(keyTag, []CompactPublicKey{})
+		require.NoError(t, err)
 
 		require.Empty(t, result)
 	})

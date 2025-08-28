@@ -119,7 +119,10 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 		return errors.Errorf("failed to extract public keys: %w", err)
 	}
 
-	validators := validatorSet.FindValidatorsByKeys(msg.KeyTag, publicKeys)
+	validators, err := validatorSet.FindValidatorsByKeys(msg.KeyTag, publicKeys)
+	if err != nil {
+		return errors.Errorf("failed to find validators by keys: %w", err)
+	}
 	currentVotingPower := validators.GetTotalActiveVotingPower()
 	slog.InfoContext(ctx, "Current voting power",
 		"signatures", len(signatures),
@@ -222,7 +225,10 @@ func (s *AggregatorApp) GetAggregationStatus(ctx context.Context, requestHash co
 		return intEntity.AggregationStatus{}, errors.Errorf("failed to get validator set: %w", err)
 	}
 
-	validators := validatorSet.FindValidatorsByKeys(signatureRequest.KeyTag, publicKeys)
+	validators, err := validatorSet.FindValidatorsByKeys(signatureRequest.KeyTag, publicKeys)
+	if err != nil {
+		return intEntity.AggregationStatus{}, errors.Errorf("failed to find validators by keys: %w", err)
+	}
 
 	return intEntity.AggregationStatus{
 		VotingPower: validators.GetTotalActiveVotingPower(),
