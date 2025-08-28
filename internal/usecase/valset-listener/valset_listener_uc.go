@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"time"
 
+	noSettlementStrategy "github.com/symbioticfi/relay/core/usecase/growth-strategy/no-settlement-strategy"
+
 	"github.com/symbioticfi/relay/core/client/evm"
 
 	strategyTypes "github.com/symbioticfi/relay/core/usecase/growth-strategy/strategy-types"
@@ -175,8 +177,10 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 			return errors.Errorf("failed to hash previous header for epoch %d: %w", nextEpoch, err)
 		}
 
-		if err := s.validateHeaderHashAtEpoch(ctx, committedAddr, nextEpoch, nextValset); err != nil {
-			return errors.Errorf("failed to validate header for epoch %d: %w", nextEpoch, err)
+		if committedAddr != noSettlementStrategy.NoSettlementAddr {
+			if err := s.validateHeaderHashAtEpoch(ctx, committedAddr, nextEpoch, nextValset); err != nil {
+				return errors.Errorf("failed to validate header for epoch %d: %w", nextEpoch, err)
+			}
 		}
 
 		if err := s.cfg.Repo.SaveConfig(ctx, nextEpochConfig, nextEpoch); err != nil {

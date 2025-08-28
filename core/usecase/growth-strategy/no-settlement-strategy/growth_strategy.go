@@ -10,7 +10,7 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 )
 
-var NoSettlementHash = common.HexToHash("NoSettlementHash")
+var NoSettlementAddr = entity.CrossChainAddress{ChainId: 111111111111}
 
 type GrowthStrategyNoSettlement struct {
 	client evm.IEvmClient
@@ -21,7 +21,7 @@ func NewGrowthStrategyNoSettlement(client evm.IEvmClient) *GrowthStrategyNoSettl
 }
 
 func (gs GrowthStrategyNoSettlement) GetLastCommittedHeaderHash(_ context.Context, _ entity.NetworkConfig) (common.Hash, error) {
-	return NoSettlementHash, nil
+	return common.Hash{}, nil
 }
 
 func (gs GrowthStrategyNoSettlement) GetLastCommittedHeaderEpoch(ctx context.Context, _ entity.NetworkConfig) (uint64, error) {
@@ -30,10 +30,6 @@ func (gs GrowthStrategyNoSettlement) GetLastCommittedHeaderEpoch(ctx context.Con
 		return 0, errors.Errorf("failed to get current epoch: %s", err)
 	}
 	return epoch, nil
-}
-
-func (gs GrowthStrategyNoSettlement) GetPreviousHash(_ context.Context, _ uint64, _ entity.NetworkConfig, _ entity.ValidatorSet) (common.Hash, error) {
-	return NoSettlementHash, nil
 }
 
 func (gs GrowthStrategyNoSettlement) GetValsetStatus(ctx context.Context, _ entity.NetworkConfig, valset entity.ValidatorSet) (entity.ValidatorSetStatus, error) {
@@ -50,5 +46,5 @@ func (gs GrowthStrategyNoSettlement) GetValsetStatus(ctx context.Context, _ enti
 }
 
 func (gs GrowthStrategyNoSettlement) IsValsetHeaderCommitted(_ context.Context, _ entity.NetworkConfig, epoch uint64) (entity.CrossChainAddress, bool, error) {
-	return entity.CrossChainAddress{}, false, nil
+	return NoSettlementAddr, true, nil
 }
