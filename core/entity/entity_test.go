@@ -52,7 +52,7 @@ func TestValidatorSet_FindValidatorsBySignatures(t *testing.T) {
 	}
 
 	t.Run("finds validators matching signatures", func(t *testing.T) {
-		result := validatorSet.FindValidatorsBySignatures(keyTag, []CompactPublicKey{publicKey1, publicKey2})
+		result := validatorSet.FindValidatorsByKeys(keyTag, []CompactPublicKey{publicKey1, publicKey2})
 
 		require.Len(t, result, 2)
 
@@ -68,27 +68,27 @@ func TestValidatorSet_FindValidatorsBySignatures(t *testing.T) {
 	})
 
 	t.Run("handles duplicate public keys from same validator", func(t *testing.T) {
-		result := validatorSet.FindValidatorsBySignatures(keyTag, []CompactPublicKey{publicKey1, publicKey1})
+		result := validatorSet.FindValidatorsByKeys(keyTag, []CompactPublicKey{publicKey1, publicKey1})
 
 		require.Len(t, result, 1)
 		require.Equal(t, operator1, result[0].Operator)
 	})
 
 	t.Run("returns empty slice when no validators match", func(t *testing.T) {
-		result := validatorSet.FindValidatorsBySignatures(keyTag, []CompactPublicKey{[]byte("unknown_public_key")})
+		result := validatorSet.FindValidatorsByKeys(keyTag, []CompactPublicKey{[]byte("unknown_public_key")})
 
 		require.Empty(t, result)
 	})
 
 	t.Run("ignores validators with wrong key tag", func(t *testing.T) {
 		// Validator3 has publicKey3 but for different tag
-		result := validatorSet.FindValidatorsBySignatures(keyTag, []CompactPublicKey{publicKey3})
+		result := validatorSet.FindValidatorsByKeys(keyTag, []CompactPublicKey{publicKey3})
 
 		require.Empty(t, result)
 	})
 
 	t.Run("handles empty public keys", func(t *testing.T) {
-		result := validatorSet.FindValidatorsBySignatures(keyTag, []CompactPublicKey{})
+		result := validatorSet.FindValidatorsByKeys(keyTag, []CompactPublicKey{})
 
 		require.Empty(t, result)
 	})

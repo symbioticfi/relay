@@ -431,7 +431,7 @@ func (v ValidatorSet) GetHeader() (ValidatorSetHeader, error) {
 	}, nil
 }
 
-func (v ValidatorSet) FindValidatorsBySignatures(keyTag KeyTag, publicKeys []CompactPublicKey) Validators {
+func (v ValidatorSet) FindValidatorsByKeys(keyTag KeyTag, publicKeys []CompactPublicKey) Validators {
 	// Build lookup map: publicKey -> validator
 	publicKeyToValidator := make(map[string]Validator)
 	for _, validator := range v.Validators {
