@@ -41,6 +41,11 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		break
 	}
 
+	err = s.cfg.Repo.SaveAggregationProof(ctx, msg.RequestHash, msg.AggregationProof)
+	if err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
+		return err
+	}
+
 	config, err := s.cfg.EvmClient.GetConfig(ctx, valset.CaptureTimestamp)
 	if err != nil {
 		return errors.Errorf("failed to get config for epoch %d: %w", msg.Epoch, err)
@@ -70,13 +75,26 @@ func (s *Service) commitValsetToAllSettlements(ctx context.Context, config entit
 	for i, replica := range config.Replicas {
 		slog.DebugContext(ctx, "Trying to commit valset header to settlement", "replica", replica)
 
+		// todo replace it with tx check instead of call to contract
+		// if commit tx was sent but still not finalized this check will
+		// return false positive and trigger one more commitment tx
+		committed, err := s.cfg.EvmClient.IsValsetHeaderCommittedAt(ctx, replica, header.Epoch)
+		if err != nil {
+			errs[i] = errors.Errorf("failed to check if header is committed at epoch %d: %w", header.Epoch, err)
+			continue
+		}
+
+		if committed {
+			continue
+		}
+
 		result, err := s.cfg.EvmClient.CommitValsetHeader(ctx, replica, header, extraData, proof)
 		if err != nil {
 			errs[i] = errors.Errorf("failed to commit valset header to settlement %s: %w", replica.Address.Hex(), err)
 			continue
 		}
 
-		slog.DebugContext(ctx, "Validator set header committed",
+		slog.InfoContext(ctx, "Validator set header committed",
 			"epoch", header.Epoch,
 			"replica", replica,
 			"txHash", result.TxHash,
