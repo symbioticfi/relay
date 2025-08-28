@@ -211,12 +211,12 @@ func (s *Service) tryDetectNewEpochToCommit(ctx context.Context) (entity.Validat
 		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get current epoch: %w", err)
 	}
 
-	latestValset, err := s.cfg.Repo.GetLatestValidatorSet(ctx)
+	latestHeader, err := s.cfg.Repo.GetLatestValidatorSetHeader(ctx)
 	if err != nil {
 		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get latest local validator set: %w", err)
 	}
 
-	if latestValset.Epoch == currentOnchainEpoch {
+	if latestHeader.Epoch == currentOnchainEpoch {
 		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.New(entity.ErrValsetAlreadyCommittedForEpoch)
 	}
 
@@ -239,8 +239,8 @@ func (s *Service) tryDetectNewEpochToCommit(ctx context.Context) (entity.Validat
 		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.New(entity.ErrValsetAlreadyCommittedForEpoch)
 	}
 
-	if lastCommittedEpoch != latestValset.Epoch {
-		slog.DebugContext(ctx, "Valset listener is not synced", "on chain epoch", currentOnchainEpoch, "latest saved epoch", latestValset.Epoch)
+	if lastCommittedEpoch != latestHeader.Epoch {
+		slog.DebugContext(ctx, "Valset listener is not synced", "on chain epoch", currentOnchainEpoch, "latest saved epoch", latestHeader.Epoch)
 		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.New(entity.ErrValsetAlreadyCommittedForEpoch)
 	}
 
@@ -249,12 +249,7 @@ func (s *Service) tryDetectNewEpochToCommit(ctx context.Context) (entity.Validat
 		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get validator set extra for epoch %d: %w", currentOnchainEpoch, err)
 	}
 
-	prevHeader, err := latestValset.GetHeader()
-	if err != nil {
-		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get previous header for epoch %d: %w", currentOnchainEpoch, err)
-	}
-
-	newValset.PreviousHeaderHash, err = prevHeader.Hash()
+	newValset.PreviousHeaderHash, err = latestHeader.Hash()
 	if err != nil {
 		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to hash previous header for epoch %d: %w", currentOnchainEpoch, err)
 	}

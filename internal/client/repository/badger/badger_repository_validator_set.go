@@ -205,7 +205,6 @@ func (r *Repository) GetValidatorSetByEpoch(_ context.Context, epoch uint64) (en
 			QuorumThreshold:    header.QuorumThreshold,
 			PreviousHeaderHash: header.PreviousHeaderHash,
 			Validators:         validators,
-			Status:             entity.HeaderCommitted, // Default status for stored validator sets
 		}
 
 		return nil

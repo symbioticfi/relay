@@ -131,14 +131,14 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		return errors.Errorf("failed to get latest committed header epoch: %w", err)
 	}
 
-	latestValset, err := s.cfg.Repo.GetLatestValidatorSet(ctx)
+	latestHeader, err := s.cfg.Repo.GetLatestValidatorSetHeader(ctx)
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return errors.Errorf("failed to get latest validator set header: %w", err)
 	}
 
 	nextEpoch := uint64(0)
 	if err == nil {
-		nextEpoch = latestValset.Epoch + 1
+		nextEpoch = latestHeader.Epoch + 1
 	}
 
 	if s.latestProcessedEpoch != 0 && nextEpoch <= s.latestProcessedEpoch {
@@ -170,12 +170,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 			return errors.Errorf("failed to derive validator set extra for epoch %d: %w", nextEpoch, err)
 		}
 
-		prevHeader, err := latestValset.GetHeader()
-		if err != nil {
-			return errors.Errorf("failed to get previous header for epoch %d: %w", nextEpoch, err)
-		}
-
-		nextValset.PreviousHeaderHash, err = prevHeader.Hash()
+		nextValset.PreviousHeaderHash, err = latestHeader.Hash()
 		if err != nil {
 			return errors.Errorf("failed to hash previous header for epoch %d: %w", nextEpoch, err)
 		}
@@ -196,7 +191,10 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 
 		s.latestProcessedEpoch = nextEpoch
 		nextEpoch = nextValset.Epoch + 1
-		latestValset = nextValset
+		latestHeader, err = nextValset.GetHeader()
+		if err != nil {
+			return errors.Errorf("failed to get header for epoch %d: %w", nextEpoch, err)
+		}
 	}
 
 	slog.DebugContext(ctx, "All missing epochs loaded", "latestProcessedEpoch", s.latestProcessedEpoch)

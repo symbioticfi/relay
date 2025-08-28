@@ -180,10 +180,10 @@ func TestRepository_ValidatorSet_EpochOrdering(t *testing.T) {
 	repo := setupTestRepository(t)
 
 	// Create validator sets with different epochs in non-chronological order
-	vs1 := randomValidatorSet(t, 5, entity.HeaderCommitted)
-	vs2 := randomValidatorSet(t, 1, entity.HeaderCommitted)
-	vs3 := randomValidatorSet(t, 10, entity.HeaderCommitted)
-	vs4 := randomValidatorSet(t, 3, entity.HeaderCommitted)
+	vs1 := randomValidatorSet(t, 5)
+	vs2 := randomValidatorSet(t, 1)
+	vs3 := randomValidatorSet(t, 10)
+	vs4 := randomValidatorSet(t, 3)
 
 	// Save them in random order
 	require.NoError(t, repo.SaveValidatorSet(t.Context(), vs2)) // epoch 1
@@ -229,7 +229,7 @@ func TestRepository_ValidatorSet_ValidatorIndexing(t *testing.T) {
 	repo := setupTestRepository(t)
 
 	// Create a validator set with multiple validators having multiple keys
-	vs := randomValidatorSet(t, 1, entity.HeaderCommitted)
+	vs := randomValidatorSet(t, 1)
 	require.NoError(t, repo.SaveValidatorSet(t.Context(), vs))
 
 	t.Run("find validator by different key tags", func(t *testing.T) {
@@ -261,7 +261,7 @@ func TestRepository_ValidatorSet_MultiKeyStorageProblem(t *testing.T) {
 
 	t.Run("validator storage duplication with multiple keys", func(t *testing.T) {
 		// Create a validator with multiple keys to test storage duplication
-		vs := randomValidatorSet(t, 1, entity.HeaderCommitted)
+		vs := randomValidatorSet(t, 1)
 
 		// Modify the first validator to have 3 different keys
 		vs.Validators[0].Keys = []entity.ValidatorKey{
