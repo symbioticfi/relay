@@ -16,13 +16,14 @@ func keyAggregationProof(reqHash common.Hash) []byte {
 	return []byte(fmt.Sprintf("aggregation_proof:%s", reqHash.Hex()))
 }
 
-func (r *Repository) SaveAggregationProof(_ context.Context, reqHash common.Hash, ap entity.AggregationProof) error {
+func (r *Repository) SaveAggregationProof(ctx context.Context, reqHash common.Hash, ap entity.AggregationProof) error {
 	bytes, err := aggregationProofToBytes(ap)
 	if err != nil {
 		return errors.Errorf("failed to marshal aggregation proof: %w", err)
 	}
 
-	return r.db.Update(func(txn *badger.Txn) error {
+	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		_, err := txn.Get(keyAggregationProof(reqHash))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
 			return errors.Errorf("failed to get aggregation proof: %w", err)
@@ -39,10 +40,11 @@ func (r *Repository) SaveAggregationProof(_ context.Context, reqHash common.Hash
 	})
 }
 
-func (r *Repository) GetAggregationProof(_ context.Context, reqHash common.Hash) (entity.AggregationProof, error) {
+func (r *Repository) GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error) {
 	var ap entity.AggregationProof
 
-	return ap, r.db.View(func(txn *badger.Txn) error {
+	return ap, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		item, err := txn.Get(keyAggregationProof(reqHash))
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {

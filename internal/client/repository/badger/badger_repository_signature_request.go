@@ -25,13 +25,14 @@ func keySignatureRequestHashIndex(reqHash common.Hash) []byte {
 	return []byte(fmt.Sprintf("signature_request_hash:%s", reqHash.Hex()))
 }
 
-func (r *Repository) SaveSignatureRequest(_ context.Context, req entity.SignatureRequest) error {
+func (r *Repository) SaveSignatureRequest(ctx context.Context, req entity.SignatureRequest) error {
 	bytes, err := signatureRequestToBytes(req)
 	if err != nil {
 		return errors.Errorf("failed to marshal signature request: %w", err)
 	}
 
-	return r.db.Update(func(txn *badger.Txn) error {
+	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		primaryKey := keySignatureRequest(req.RequiredEpoch, req.Hash())
 		hashIndexKey := keySignatureRequestHashIndex(req.Hash())
 
@@ -82,10 +83,11 @@ func bytesToSignatureRequest(data []byte) (entity.SignatureRequest, error) {
 	}, nil
 }
 
-func (r *Repository) GetSignatureRequest(_ context.Context, reqHash common.Hash) (entity.SignatureRequest, error) {
+func (r *Repository) GetSignatureRequest(ctx context.Context, reqHash common.Hash) (entity.SignatureRequest, error) {
 	var req entity.SignatureRequest
 
-	return req, r.db.View(func(txn *badger.Txn) error {
+	return req, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		// Get primary key from hash index
 		hashIndexItem, err := txn.Get(keySignatureRequestHashIndex(reqHash))
 		if err != nil {
@@ -120,10 +122,11 @@ func (r *Repository) GetSignatureRequest(_ context.Context, reqHash common.Hash)
 	})
 }
 
-func (r *Repository) GetSignatureRequestsByEpoch(_ context.Context, epoch entity.Epoch, limit int, lastHash common.Hash) ([]entity.SignatureRequest, error) {
+func (r *Repository) GetSignatureRequestsByEpoch(ctx context.Context, epoch entity.Epoch, limit int, lastHash common.Hash) ([]entity.SignatureRequest, error) {
 	var requests []entity.SignatureRequest
 
-	return requests, r.db.View(func(txn *badger.Txn) error {
+	return requests, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		prefix := keySignatureRequestEpochPrefix(epoch)
 		opts := badger.DefaultIteratorOptions
 		opts.PrefetchValues = true

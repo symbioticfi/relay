@@ -5,16 +5,12 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/symbioticfi/relay/core/usecase/aggregator"
-	"github.com/symbioticfi/relay/core/usecase/crypto"
-
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/go-errors/errors"
 	validate "github.com/go-playground/validator/v10"
 
 	"github.com/symbioticfi/relay/core/entity"
-	intEntity "github.com/symbioticfi/relay/internal/entity"
+	"github.com/symbioticfi/relay/core/usecase/crypto"
 	"github.com/symbioticfi/relay/pkg/log"
 )
 
@@ -22,11 +18,10 @@ import (
 type repository interface {
 	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 	GetSignatureRequest(_ context.Context, reqHash common.Hash) (entity.SignatureRequest, error)
-	GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, error)
-	SaveSignature(ctx context.Context, reqHash common.Hash, key []byte, sig entity.SignatureExtended) error
 	GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error)
 	GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error)
 	UpdateSignatureStat(_ context.Context, reqHash common.Hash, s entity.SignatureStatStage, t time.Time) (entity.SignatureStat, error)
+	GetValidatorMap(_ context.Context, reqHash common.Hash) (entity.ValidatorMap, error)
 }
 
 type p2pClient interface {
@@ -39,11 +34,15 @@ type metrics interface {
 	ObserveAggCompleted(stat entity.SignatureStat)
 }
 
+type aggregator interface {
+	Aggregate(valset entity.ValidatorSet, keyTag entity.KeyTag, messageHash []byte, signatures []entity.SignatureExtended) (entity.AggregationProof, error)
+}
+
 type Config struct {
-	Repo       repository            `validate:"required"`
-	P2PClient  p2pClient             `validate:"required"`
-	Aggregator aggregator.Aggregator `validate:"required"`
-	Metrics    metrics               `validate:"required"`
+	Repo       repository `validate:"required"`
+	P2PClient  p2pClient  `validate:"required"`
+	Aggregator aggregator `validate:"required"`
+	Metrics    metrics    `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -70,84 +69,39 @@ func NewAggregatorApp(cfg Config) (*AggregatorApp, error) {
 	return app, nil
 }
 
-func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2pMsg intEntity.P2PMessage[entity.SignatureMessage]) error {
+func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error {
 	ctx = log.WithComponent(ctx, "aggregator")
-	appAggregationStart := time.Now()
 
-	msg := p2pMsg.Message
-
-	slog.DebugContext(ctx, "Received signature hash generated message", "message", msg, "sender", p2pMsg.SenderInfo.Sender)
-
-	publicKey, err := crypto.NewPublicKey(msg.KeyTag.Type(), msg.Signature.PublicKey)
+	validatorMap, err := s.cfg.Repo.GetValidatorMap(ctx, msg.RequestHash)
 	if err != nil {
-		return errors.Errorf("failed to get public key: %w", err)
-	}
-	err = publicKey.VerifyWithHash(msg.Signature.MessageHash, msg.Signature.Signature)
-	if err != nil {
-		return errors.Errorf("failed to verify signature: %w", err)
+		return errors.Errorf("failed to get valset validator map: %w", err)
 	}
 
-	validator, err := s.cfg.Repo.GetValidatorByKey(ctx, uint64(msg.Epoch), msg.KeyTag, publicKey.OnChain())
-	if err != nil {
-		return errors.Errorf("validator not found for public key %x: %w", msg.Signature.PublicKey, err)
-	}
-
-	if !validator.IsActive {
-		return errors.Errorf("validator %s is not active", validator.Operator.Hex())
-	}
-
-	slog.DebugContext(ctx, "Found validator", "validator", validator)
-
-	err = s.cfg.Repo.SaveSignature(ctx, msg.RequestHash, publicKey.Raw(), msg.Signature)
-	if err != nil {
-		return errors.Errorf("failed to save signature: %w", err)
-	}
-
-	// Get validator set for quorum threshold checks and aggregation
-	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
-	if err != nil {
-		return errors.Errorf("failed to get validator set: %w", err)
-	}
-
-	signatures, err := s.cfg.Repo.GetAllSignatures(ctx, msg.RequestHash)
-	if err != nil {
-		return errors.Errorf("failed to get all signatures: %w", err)
-	}
-
-	publicKeys, err := extractPublicKeys(msg.KeyTag, signatures)
-	if err != nil {
-		return errors.Errorf("failed to extract public keys: %w", err)
-	}
-
-	validators, err := validatorSet.FindValidatorsByKeys(msg.KeyTag, publicKeys)
-	if err != nil {
-		return errors.Errorf("failed to find validators by keys: %w", err)
-	}
-	currentVotingPower := validators.GetTotalActiveVotingPower()
-	slog.InfoContext(ctx, "Current voting power",
-		"signatures", len(signatures),
-		"validators", len(validators),
-		"currentVotingPower", currentVotingPower.String())
-
-	totalActiveVotingPower := validatorSet.GetTotalActiveVotingPower()
-	thresholdReached := currentVotingPower.Cmp(validatorSet.QuorumThreshold.Int) >= 0
-	if !thresholdReached {
+	if !validatorMap.ThresholdReached() {
 		slog.DebugContext(ctx, "Quorum not reached yet",
-			"currentVotingPower", currentVotingPower.String(),
-			"quorumThreshold", validatorSet.QuorumThreshold.String(),
-			"totalActiveVotingPower", totalActiveVotingPower.String(),
+			"currentVotingPower", validatorMap.CurrentVotingPower.String(),
+			"quorumThreshold", validatorMap.QuorumThreshold.String(),
+			"totalActiveVotingPower", validatorMap.TotalVotingPower.String(),
 		)
 		return nil
 	}
 
 	slog.InfoContext(ctx, "Quorum reached, aggregating signatures and creating proof",
-		"currentVotingPower", currentVotingPower.String(),
-		"quorumThreshold", validatorSet.QuorumThreshold.String(),
-		"totalActiveVotingPower", totalActiveVotingPower.String(),
+		"currentVotingPower", validatorMap.CurrentVotingPower.String(),
+		"quorumThreshold", validatorMap.QuorumThreshold.String(),
+		"totalActiveVotingPower", validatorMap.TotalVotingPower.String(),
 	)
 
 	if _, err := s.cfg.Repo.UpdateSignatureStat(ctx, msg.RequestHash, entity.SignatureStatStageAggQuorumReached, time.Now()); err != nil {
 		slog.WarnContext(ctx, "Failed to update signature stat: %s", "error", err)
+	}
+
+	appAggregationStart := time.Now()
+
+	// Get validator set for quorum threshold checks and aggregation
+	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
+	if err != nil {
+		return errors.Errorf("failed to get validator set: %w", err)
 	}
 
 	sigs, err := s.cfg.Repo.GetAllSignatures(ctx, msg.RequestHash)
@@ -156,7 +110,6 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 		return errors.Errorf("failed to get signature aggregated message: %w", err)
 	}
 
-	start := time.Now()
 	networkConfig, err := s.cfg.Repo.GetConfigByEpoch(ctx, uint64(msg.Epoch))
 	if err != nil {
 		return errors.Errorf("failed to get network config: %w", err)
@@ -177,7 +130,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 	s.cfg.Metrics.ObserveOnlyAggregateDuration(time.Since(onlyAggregateStart))
 
 	slog.InfoContext(ctx, "Proof created, trying to send aggregated signature message",
-		"duration", time.Since(start).String(),
+		"duration", time.Since(appAggregationStart).String(),
 	)
 	err = s.cfg.P2PClient.BroadcastSignatureAggregatedMessage(ctx, entity.AggregatedSignatureMessage{
 		RequestHash:      msg.RequestHash,
@@ -203,34 +156,34 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, p2p
 	return nil
 }
 
-func (s *AggregatorApp) GetAggregationStatus(ctx context.Context, requestHash common.Hash) (intEntity.AggregationStatus, error) {
+func (s *AggregatorApp) GetAggregationStatus(ctx context.Context, requestHash common.Hash) (entity.AggregationStatus, error) {
 	signatureRequest, err := s.cfg.Repo.GetSignatureRequest(ctx, requestHash)
 	if err != nil {
-		return intEntity.AggregationStatus{}, errors.Errorf("failed to get signature request: %w", err)
+		return entity.AggregationStatus{}, errors.Errorf("failed to get signature request: %w", err)
 	}
 
 	signatures, err := s.cfg.Repo.GetAllSignatures(ctx, requestHash)
 	if err != nil {
-		return intEntity.AggregationStatus{}, errors.Errorf("failed to get all signatures: %w", err)
+		return entity.AggregationStatus{}, errors.Errorf("failed to get all signatures: %w", err)
 	}
 
 	publicKeys, err := extractPublicKeys(signatureRequest.KeyTag, signatures)
 	if err != nil {
-		return intEntity.AggregationStatus{}, errors.Errorf("failed to extract public keys: %w", err)
+		return entity.AggregationStatus{}, errors.Errorf("failed to extract public keys: %w", err)
 	}
 
 	// Get validator set for quorum threshold checks and aggregation
 	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(signatureRequest.RequiredEpoch))
 	if err != nil {
-		return intEntity.AggregationStatus{}, errors.Errorf("failed to get validator set: %w", err)
+		return entity.AggregationStatus{}, errors.Errorf("failed to get validator set: %w", err)
 	}
 
 	validators, err := validatorSet.FindValidatorsByKeys(signatureRequest.KeyTag, publicKeys)
 	if err != nil {
-		return intEntity.AggregationStatus{}, errors.Errorf("failed to find validators by keys: %w", err)
+		return entity.AggregationStatus{}, errors.Errorf("failed to find validators by keys: %w", err)
 	}
 
-	return intEntity.AggregationStatus{
+	return entity.AggregationStatus{
 		VotingPower: validators.GetTotalActiveVotingPower(),
 		Validators:  validators,
 	}, nil

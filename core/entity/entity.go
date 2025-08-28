@@ -299,12 +299,13 @@ func (va Validators) GetTotalActiveVotingPower() VotingPower {
 }
 
 func (va Validators) GetActiveValidators() Validators {
-	var activeValidators []Validator
+	var activeValidators Validators
 	for _, validator := range va {
 		if validator.IsActive {
 			activeValidators = append(activeValidators, validator)
 		}
 	}
+	activeValidators.SortByOperatorAddressAsc()
 	return activeValidators
 }
 
@@ -560,4 +561,9 @@ const (
 type SignatureStat struct {
 	ReqHash common.Hash
 	StatMap map[SignatureStatStage]time.Time
+}
+
+type AggregationStatus struct {
+	VotingPower VotingPower
+	Validators  []Validator
 }

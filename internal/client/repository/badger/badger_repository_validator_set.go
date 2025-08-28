@@ -32,7 +32,7 @@ func keyValidatorKeyLookup(epoch uint64, keyTag entity.KeyTag, publicKeyHash com
 	return []byte(fmt.Sprintf("validator_key_lookup:%d:%d:%s", epoch, keyTag, publicKeyHash.Hex()))
 }
 
-func (r *Repository) SaveValidatorSet(_ context.Context, valset entity.ValidatorSet) error {
+func (r *Repository) SaveValidatorSet(ctx context.Context, valset entity.ValidatorSet) error {
 	header, err := valset.GetHeader()
 	if err != nil {
 		return errors.Errorf("failed to create validator set header: %w", err)
@@ -43,7 +43,8 @@ func (r *Repository) SaveValidatorSet(_ context.Context, valset entity.Validator
 		return errors.Errorf("failed to marshal validator set header: %w", err)
 	}
 
-	return r.db.Update(func(txn *badger.Txn) error {
+	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		// Check if this epoch already exists by checking the header
 		headerKey := keyValidatorSetHeader(valset.Epoch)
 		_, err := txn.Get(headerKey)
@@ -115,10 +116,11 @@ func (r *Repository) SaveValidatorSet(_ context.Context, valset entity.Validator
 	})
 }
 
-func (r *Repository) GetValidatorSetHeaderByEpoch(_ context.Context, epoch uint64) (entity.ValidatorSetHeader, error) {
+func (r *Repository) GetValidatorSetHeaderByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSetHeader, error) {
 	var header entity.ValidatorSetHeader
 
-	return header, r.db.View(func(txn *badger.Txn) error {
+	return header, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		item, err := txn.Get(keyValidatorSetHeader(epoch))
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
@@ -167,10 +169,11 @@ func (r *Repository) getAllValidatorsByEpoch(txn *badger.Txn, epoch uint64) (ent
 	return validators, nil
 }
 
-func (r *Repository) GetValidatorSetByEpoch(_ context.Context, epoch uint64) (entity.ValidatorSet, error) {
+func (r *Repository) GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error) {
 	var vs entity.ValidatorSet
 
-	return vs, r.db.View(func(txn *badger.Txn) error {
+	return vs, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		// Get the validator set header
 		headerItem, err := txn.Get(keyValidatorSetHeader(epoch))
 		if err != nil {
@@ -212,10 +215,11 @@ func (r *Repository) GetValidatorSetByEpoch(_ context.Context, epoch uint64) (en
 	})
 }
 
-func (r *Repository) GetLatestValidatorSetHeader(_ context.Context) (entity.ValidatorSetHeader, error) {
+func (r *Repository) GetLatestValidatorSetHeader(ctx context.Context) (entity.ValidatorSetHeader, error) {
 	var header entity.ValidatorSetHeader
 
-	return header, r.db.View(func(txn *badger.Txn) error {
+	return header, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		// Get the latest epoch
 		item, err := txn.Get([]byte(latestValidatorSetEpochKey))
 		if err != nil {
@@ -255,10 +259,11 @@ func (r *Repository) GetLatestValidatorSetHeader(_ context.Context) (entity.Vali
 	})
 }
 
-func (r *Repository) GetLatestValidatorSetEpoch(_ context.Context) (uint64, error) {
+func (r *Repository) GetLatestValidatorSetEpoch(ctx context.Context) (uint64, error) {
 	var epoch uint64
 
-	return epoch, r.db.View(func(txn *badger.Txn) error {
+	return epoch, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		// Get the latest epoch
 		item, err := txn.Get([]byte(latestValidatorSetEpochKey))
 		if err != nil {
@@ -278,13 +283,14 @@ func (r *Repository) GetLatestValidatorSetEpoch(_ context.Context) (uint64, erro
 	})
 }
 
-func (r *Repository) GetValidatorByKey(_ context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, error) {
+func (r *Repository) GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, error) {
 	var validator entity.Validator
 
 	publicKeyHash := crypto.Keccak256Hash(publicKey)
 	keyLookup := keyValidatorKeyLookup(epoch, keyTag, publicKeyHash)
 
-	return validator, r.db.View(func(txn *badger.Txn) error {
+	return validator, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		// First, find the operator address from the key lookup table
 		item, err := txn.Get(keyLookup)
 		if err != nil {
