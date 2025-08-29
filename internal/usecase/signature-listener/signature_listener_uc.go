@@ -74,13 +74,13 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 
 	slog.DebugContext(ctx, "Found validator", "validator", validator)
 
-	err = s.cfg.Repo.DoUpdateInTx(ctx, func(txCtx context.Context) error {
-		validatorMap, err := s.cfg.Repo.GetValidatorMap(txCtx, msg.RequestHash)
+	err = s.cfg.Repo.DoUpdateInTx(ctx, func(ctx context.Context) error {
+		validatorMap, err := s.cfg.Repo.GetValidatorMap(ctx, msg.RequestHash)
 		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 			return errors.Errorf("failed to get valset validator map: %w", err)
 		}
 		if errors.Is(err, entity.ErrEntityNotFound) {
-			validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(txCtx, uint64(msg.Epoch))
+			validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
 			if err != nil {
 				return errors.Errorf("failed to get validator set: %w", err)
 			}

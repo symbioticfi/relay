@@ -65,13 +65,15 @@ func createTestSignatureMessage() entity.SignatureMessage {
 	}
 }
 
-func createTestValidatorMap(thresholdReached bool) entity.ValidatorMap {
+func createTestValidatorMap(thresholdReached bool, requestHash common.Hash, epoch uint64) entity.ValidatorMap {
 	currentVotingPower := big.NewInt(500)
 	if thresholdReached {
 		currentVotingPower = big.NewInt(700)
 	}
 
 	return entity.ValidatorMap{
+		RequestHash:        requestHash,
+		Epoch:              epoch,
 		CurrentVotingPower: entity.ToVotingPower(currentVotingPower),
 		QuorumThreshold:    entity.ToVotingPower(big.NewInt(670)),
 		TotalVotingPower:   entity.ToVotingPower(big.NewInt(1000)),
@@ -106,7 +108,7 @@ func TestHandleSignatureGeneratedMessage_QuorumNotReached(t *testing.T) {
 	msg := createTestSignatureMessage()
 
 	// Setup mocks for quorum not reached case
-	validatorMap := createTestValidatorMap(false) // threshold NOT reached
+	validatorMap := createTestValidatorMap(false, msg.RequestHash, uint64(msg.Epoch)) // threshold NOT reached
 
 	setup.mockRepo.EXPECT().GetValidatorMap(gomock.Any(), msg.RequestHash).Return(validatorMap, nil)
 
@@ -123,7 +125,7 @@ func TestHandleSignatureGeneratedMessage_QuorumReached(t *testing.T) {
 	msg := createTestSignatureMessage()
 
 	// Setup mocks for quorum reached case
-	validatorMap := createTestValidatorMap(true) // threshold reached
+	validatorMap := createTestValidatorMap(true, msg.RequestHash, uint64(msg.Epoch)) // threshold reached
 	validatorSet := createTestValidatorSet()
 	var signatures []entity.SignatureExtended
 	networkConfig := entity.NetworkConfig{

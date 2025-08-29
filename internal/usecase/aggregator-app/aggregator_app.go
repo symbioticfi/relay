@@ -77,6 +77,13 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		return errors.Errorf("failed to get valset validator map: %w", err)
 	}
 
+	if validatorMap.RequestHash != msg.RequestHash || validatorMap.Epoch != uint64(msg.Epoch) {
+		return errors.Errorf("validator map context mismatch: map %s/%d vs msg %s/%d",
+			validatorMap.RequestHash.Hex(), validatorMap.Epoch,
+			msg.RequestHash.Hex(), msg.Epoch,
+		)
+	}
+
 	if !validatorMap.ThresholdReached() {
 		slog.DebugContext(ctx, "Quorum not reached yet",
 			"currentVotingPower", validatorMap.CurrentVotingPower.String(),
