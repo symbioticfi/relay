@@ -16,6 +16,8 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 )
 
+//go:generate mockgen -source=signer_app.go -destination=mocks/signer_app.go -package=mocks
+
 type repo interface {
 	GetSignatureRequest(ctx context.Context, reqHash common.Hash) (entity.SignatureRequest, error)
 	GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error)

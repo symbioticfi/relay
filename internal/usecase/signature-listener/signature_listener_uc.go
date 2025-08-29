@@ -15,6 +15,8 @@ import (
 	"github.com/symbioticfi/relay/pkg/signals"
 )
 
+//go:generate mockgen -source=signature_listener_uc.go -destination=mocks/signature_listener_uc.go -package=mocks
+
 type repo interface {
 	GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, error)
 	DoUpdateInTx(ctx context.Context, f func(ctx context.Context) error) error
