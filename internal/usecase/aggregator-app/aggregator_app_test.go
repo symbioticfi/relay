@@ -127,20 +127,10 @@ func createTestDataWithQuorum(requestHash common.Hash, epoch uint64, thresholdRe
 	if thresholdReached {
 		// 8 signers * 100 voting power = 800 > 670 threshold
 		return createTestData(requestHash, epoch, 10, 8)
-	} else {
-		// 6 signers * 100 voting power = 600 < 670 threshold
-		return createTestData(requestHash, epoch, 10, 6)
 	}
-}
 
-// Legacy function for backward compatibility
-func createTestSignatureMap(thresholdReached bool, requestHash common.Hash, epoch uint64) entity.SignatureMap {
-	return createTestDataWithQuorum(requestHash, epoch, thresholdReached).SignatureMap
-}
-
-// Legacy function for backward compatibility
-func createTestValidatorSet() entity.ValidatorSet {
-	return createTestData(common.HexToHash("0x123"), 1, 10, 7).ValidatorSet
+	// 6 signers * 100 voting power = 600 < 670 threshold
+	return createTestData(requestHash, epoch, 10, 6)
 }
 
 // Setup mocks for successful aggregation using unified test data
@@ -186,10 +176,10 @@ func TestHandleSignatureGeneratedMessage_LowLatencyPolicy_QuorumNotReached(t *te
 	msg := createTestSignatureMessage()
 
 	// Setup mocks for quorum NOT reached case
-	testData := createTestDataWithQuorum(msg.RequestHash, uint64(msg.Epoch), false)
+	testingData := createTestDataWithQuorum(msg.RequestHash, uint64(msg.Epoch), false)
 
-	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestHash).Return(testData.SignatureMap, nil)
-	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), uint64(msg.Epoch)).Return(testData.ValidatorSet, nil)
+	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestHash).Return(testingData.SignatureMap, nil)
+	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), uint64(msg.Epoch)).Return(testingData.ValidatorSet, nil)
 
 	// Execute
 	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
@@ -204,9 +194,9 @@ func TestHandleSignatureGeneratedMessage_LowLatencyPolicy_QuorumReached(t *testi
 	msg := createTestSignatureMessage()
 
 	// Setup mocks for quorum reached case - LowLatency should aggregate immediately
-	testData := createTestDataWithQuorum(msg.RequestHash, uint64(msg.Epoch), true)
+	testingData := createTestDataWithQuorum(msg.RequestHash, uint64(msg.Epoch), true)
 
-	setupSuccessfulAggregationMocks(setup, msg, testData)
+	setupSuccessfulAggregationMocks(setup, msg, testingData)
 
 	// Execute
 	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
@@ -223,10 +213,10 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumNotReached(t *testi
 	msg := createTestSignatureMessage()
 
 	// Setup mocks for quorum NOT reached case
-	testData := createTestDataWithQuorum(msg.RequestHash, uint64(msg.Epoch), false)
+	testingData := createTestDataWithQuorum(msg.RequestHash, uint64(msg.Epoch), false)
 
-	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestHash).Return(testData.SignatureMap, nil)
-	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), uint64(msg.Epoch)).Return(testData.ValidatorSet, nil)
+	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestHash).Return(testingData.SignatureMap, nil)
+	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), uint64(msg.Epoch)).Return(testingData.ValidatorSet, nil)
 
 	// Execute
 	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
@@ -241,10 +231,10 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_TooManyUnsi
 	msg := createTestSignatureMessage()
 
 	// Setup: 10 total validators, 7 signers = 3 unsigners (exceeds maxUnsigners=2)
-	testData := createTestData(msg.RequestHash, uint64(msg.Epoch), 10, 7)
+	testingData := createTestData(msg.RequestHash, uint64(msg.Epoch), 10, 7)
 
-	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestHash).Return(testData.SignatureMap, nil)
-	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), uint64(msg.Epoch)).Return(testData.ValidatorSet, nil)
+	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestHash).Return(testingData.SignatureMap, nil)
+	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), uint64(msg.Epoch)).Return(testingData.ValidatorSet, nil)
 
 	// Execute
 	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
@@ -259,9 +249,9 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_AcceptableU
 	msg := createTestSignatureMessage()
 
 	// Setup: 10 total validators, 8 signers = 2 unsigners (within maxUnsigners=3)
-	testData := createTestData(msg.RequestHash, uint64(msg.Epoch), 10, 8)
+	testingData := createTestData(msg.RequestHash, uint64(msg.Epoch), 10, 8)
 
-	setupSuccessfulAggregationMocks(setup, msg, testData)
+	setupSuccessfulAggregationMocks(setup, msg, testingData)
 
 	// Execute
 	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
@@ -276,9 +266,9 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_ExactUnsign
 	msg := createTestSignatureMessage()
 
 	// Setup: 10 total validators, 7 signers = 3 unsigners (exactly maxUnsigners=3)
-	testData := createTestData(msg.RequestHash, uint64(msg.Epoch), 10, 7)
+	testingData := createTestData(msg.RequestHash, uint64(msg.Epoch), 10, 7)
 
-	setupSuccessfulAggregationMocks(setup, msg, testData)
+	setupSuccessfulAggregationMocks(setup, msg, testingData)
 
 	// Execute
 	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
@@ -293,9 +283,9 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_AllValidatorsSigned(t *te
 	msg := createTestSignatureMessage()
 
 	// Setup: 10 total validators, 10 signers = 0 unsigners (well within limit)
-	testData := createTestData(msg.RequestHash, uint64(msg.Epoch), 10, 10)
+	testingData := createTestData(msg.RequestHash, uint64(msg.Epoch), 10, 10)
 
-	setupSuccessfulAggregationMocks(setup, msg, testData)
+	setupSuccessfulAggregationMocks(setup, msg, testingData)
 
 	// Execute
 	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
@@ -312,10 +302,10 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_ZeroMaxUnsigners(t *testi
 	msg := createTestSignatureMessage()
 
 	// Setup: 5 total validators, 4 signers = 1 unsigner (exceeds maxUnsigners=0)
-	testData := createTestData(msg.RequestHash, uint64(msg.Epoch), 5, 4)
+	testingData := createTestData(msg.RequestHash, uint64(msg.Epoch), 5, 4)
 
-	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestHash).Return(testData.SignatureMap, nil)
-	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), uint64(msg.Epoch)).Return(testData.ValidatorSet, nil)
+	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestHash).Return(testingData.SignatureMap, nil)
+	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), uint64(msg.Epoch)).Return(testingData.ValidatorSet, nil)
 
 	// Execute
 	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
@@ -331,9 +321,9 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_HighMaxUnsigners(t *testi
 
 	// Setup: 10 total validators, 7 signers = 3 unsigners (well within limit)
 	// 7 signers = 7*100 = 700 > 670 for quorum
-	testData := createTestData(msg.RequestHash, uint64(msg.Epoch), 10, 7)
+	testingData := createTestData(msg.RequestHash, uint64(msg.Epoch), 10, 7)
 
-	setupSuccessfulAggregationMocks(setup, msg, testData)
+	setupSuccessfulAggregationMocks(setup, msg, testingData)
 
 	// Execute
 	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
@@ -347,9 +337,9 @@ func TestSignatureMapFunctionality(t *testing.T) {
 	requestHash := common.HexToHash("0x123")
 
 	// Test with unified creation
-	testData := createTestData(requestHash, 1, 5, 0) // 5 validators, 0 signers initially
-	signatureMap := testData.SignatureMap
-	validatorSet := testData.ValidatorSet
+	testingData := createTestData(requestHash, 1, 5, 0) // 5 validators, 0 signers initially
+	signatureMap := testingData.SignatureMap
+	validatorSet := testingData.ValidatorSet
 
 	// Initially no validators signed
 	require.Equal(t, uint64(0), signatureMap.SignedValidatorsBitmap.GetCardinality())
@@ -377,6 +367,6 @@ func TestSignatureMapFunctionality(t *testing.T) {
 	require.True(t, signatureMap.ThresholdReached(entity.ToVotingPower(big.NewInt(400)))) // 500 >= 400
 
 	// Verify that the SignatureMap and ValidatorSet are consistent
-	require.Equal(t, len(validatorSet.Validators), 5)
+	require.Equal(t, int64(5), validatorSet.GetTotalActiveValidators())
 	require.Equal(t, validatorSet.QuorumThreshold, entity.ToVotingPower(big.NewInt(670)))
 }
