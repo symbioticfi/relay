@@ -10,13 +10,13 @@ func NewLowCostPolicy(maxUnsigners uint64) *LowCostPolicy {
 	return &LowCostPolicy{maxUnsigners: maxUnsigners}
 }
 
-func (lcp *LowCostPolicy) ShouldAggregate(validatorMap entity.ValidatorMap) bool {
-	if !validatorMap.ThresholdReached() {
+func (lcp *LowCostPolicy) ShouldAggregate(signatureMap entity.SignatureMap) bool {
+	if !signatureMap.ThresholdReached() {
 		return false
 	}
 
-	total := len(validatorMap.ActiveValidatorsMap)
-	signers := len(validatorMap.IsPresent)
+	total := len(signatureMap.ActiveValidatorsMap)
+	signers := len(signatureMap.IsPresent)
 
 	return uint64(total-signers) <= lcp.maxUnsigners
 }

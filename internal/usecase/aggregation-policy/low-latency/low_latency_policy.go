@@ -9,6 +9,6 @@ func NewLowLatencyPolicy() *LowLatencyPolicy {
 	return &LowLatencyPolicy{}
 }
 
-func (llp *LowLatencyPolicy) ShouldAggregate(validatorMap entity.ValidatorMap) bool {
-	return validatorMap.ThresholdReached()
+func (llp *LowLatencyPolicy) ShouldAggregate(signatureMap entity.SignatureMap) bool {
+	return signatureMap.ThresholdReached()
 }

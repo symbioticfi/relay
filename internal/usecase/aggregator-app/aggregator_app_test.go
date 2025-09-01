@@ -71,8 +71,8 @@ func createTestSignatureMessage() entity.SignatureMessage {
 	}
 }
 
-// Enhanced validator map creation with proper threshold and signing control
-func createTestValidatorMapWithSigners(thresholdReached bool, requestHash common.Hash, epoch uint64, totalValidators, signers int) entity.ValidatorMap {
+// Enhanced signature map creation with proper threshold and signing control
+func createTestSignatureMapWithSigners(thresholdReached bool, requestHash common.Hash, epoch uint64, totalValidators, signers int) entity.SignatureMap {
 	activeValidatorsMap := make(map[common.Address]struct{})
 	isPresent := make(map[common.Address]struct{})
 
@@ -104,7 +104,7 @@ func createTestValidatorMapWithSigners(thresholdReached bool, requestHash common
 		}
 	}
 
-	return entity.ValidatorMap{
+	return entity.SignatureMap{
 		RequestHash:         requestHash,
 		Epoch:               epoch,
 		CurrentVotingPower:  entity.ToVotingPower(currentVotingPower),
@@ -115,8 +115,8 @@ func createTestValidatorMapWithSigners(thresholdReached bool, requestHash common
 	}
 }
 
-func createTestValidatorMap(thresholdReached bool, requestHash common.Hash, epoch uint64) entity.ValidatorMap {
-	return createTestValidatorMapWithSigners(thresholdReached, requestHash, epoch, 10, 7)
+func createTestSignatureMap(thresholdReached bool, requestHash common.Hash, epoch uint64) entity.SignatureMap {
+	return createTestSignatureMapWithSigners(thresholdReached, requestHash, epoch, 10, 7)
 }
 
 func createTestValidatorSet() entity.ValidatorSet {
@@ -142,7 +142,7 @@ func createTestValidatorSet() entity.ValidatorSet {
 }
 
 // Setup mocks for successful aggregation
-func setupSuccessfulAggregationMocks(setup *testSetup, msg entity.SignatureMessage, validatorMap entity.ValidatorMap) {
+func setupSuccessfulAggregationMocks(setup *testSetup, msg entity.SignatureMessage, signatureMap entity.SignatureMap) {
 	validatorSet := createTestValidatorSet()
 	var signatures []entity.SignatureExtended
 	networkConfig := entity.NetworkConfig{
@@ -155,7 +155,7 @@ func setupSuccessfulAggregationMocks(setup *testSetup, msg entity.SignatureMessa
 		ReqHash: msg.RequestHash,
 	}
 
-	setup.mockRepo.EXPECT().GetValidatorMap(gomock.Any(), msg.RequestHash).Return(validatorMap, nil)
+	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestHash).Return(signatureMap, nil)
 	setup.mockRepo.EXPECT().UpdateSignatureStat(gomock.Any(), msg.RequestHash, gomock.Any(), gomock.Any()).Return(stat, nil).Times(2)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), uint64(msg.Epoch)).Return(validatorSet, nil)
 	setup.mockRepo.EXPECT().GetAllSignatures(gomock.Any(), msg.RequestHash).Return(signatures, nil)
@@ -184,9 +184,9 @@ func TestHandleSignatureGeneratedMessage_LowLatencyPolicy_QuorumNotReached(t *te
 	msg := createTestSignatureMessage()
 
 	// Setup mocks for quorum NOT reached case
-	validatorMap := createTestValidatorMap(false, msg.RequestHash, uint64(msg.Epoch))
+	signatureMap := createTestSignatureMap(false, msg.RequestHash, uint64(msg.Epoch))
 
-	setup.mockRepo.EXPECT().GetValidatorMap(gomock.Any(), msg.RequestHash).Return(validatorMap, nil)
+	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestHash).Return(signatureMap, nil)
 
 	// Execute
 	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
@@ -201,7 +201,7 @@ func TestHandleSignatureGeneratedMessage_LowLatencyPolicy_QuorumReached(t *testi
 	msg := createTestSignatureMessage()
 
 	// Setup mocks for quorum reached case - LowLatency should aggregate immediately
-	validatorMap := createTestValidatorMap(true, msg.RequestHash, uint64(msg.Epoch))
+	validatorMap := createTestSignatureMap(true, msg.RequestHash, uint64(msg.Epoch))
 
 	setupSuccessfulAggregationMocks(setup, msg, validatorMap)
 
@@ -220,9 +220,9 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumNotReached(t *testi
 	msg := createTestSignatureMessage()
 
 	// Setup mocks for quorum NOT reached case
-	validatorMap := createTestValidatorMap(false, msg.RequestHash, uint64(msg.Epoch))
+	signatureMap := createTestSignatureMap(false, msg.RequestHash, uint64(msg.Epoch))
 
-	setup.mockRepo.EXPECT().GetValidatorMap(gomock.Any(), msg.RequestHash).Return(validatorMap, nil)
+	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestHash).Return(signatureMap, nil)
 
 	// Execute
 	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
@@ -237,9 +237,9 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_TooManyUnsi
 	msg := createTestSignatureMessage()
 
 	// Setup: 10 total validators, 7 signers = 3 unsigners (exceeds maxUnsigners=2)
-	validatorMap := createTestValidatorMapWithSigners(true, msg.RequestHash, uint64(msg.Epoch), 10, 7)
+	signatureMap := createTestSignatureMapWithSigners(true, msg.RequestHash, uint64(msg.Epoch), 10, 7)
 
-	setup.mockRepo.EXPECT().GetValidatorMap(gomock.Any(), msg.RequestHash).Return(validatorMap, nil)
+	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestHash).Return(signatureMap, nil)
 
 	// Execute
 	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
@@ -254,7 +254,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_AcceptableU
 	msg := createTestSignatureMessage()
 
 	// Setup: 10 total validators, 8 signers = 2 unsigners (within maxUnsigners=3)
-	validatorMap := createTestValidatorMapWithSigners(true, msg.RequestHash, uint64(msg.Epoch), 10, 8)
+	validatorMap := createTestSignatureMapWithSigners(true, msg.RequestHash, uint64(msg.Epoch), 10, 8)
 
 	setupSuccessfulAggregationMocks(setup, msg, validatorMap)
 
@@ -271,7 +271,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_ExactUnsign
 	msg := createTestSignatureMessage()
 
 	// Setup: 10 total validators, 7 signers = 3 unsigners (exactly maxUnsigners=3)
-	validatorMap := createTestValidatorMapWithSigners(true, msg.RequestHash, uint64(msg.Epoch), 10, 7)
+	validatorMap := createTestSignatureMapWithSigners(true, msg.RequestHash, uint64(msg.Epoch), 10, 7)
 
 	setupSuccessfulAggregationMocks(setup, msg, validatorMap)
 
@@ -288,7 +288,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_AllValidatorsSigned(t *te
 	msg := createTestSignatureMessage()
 
 	// Setup: 10 total validators, 10 signers = 0 unsigners (well within limit)
-	validatorMap := createTestValidatorMapWithSigners(true, msg.RequestHash, uint64(msg.Epoch), 10, 10)
+	validatorMap := createTestSignatureMapWithSigners(true, msg.RequestHash, uint64(msg.Epoch), 10, 10)
 
 	setupSuccessfulAggregationMocks(setup, msg, validatorMap)
 
@@ -307,9 +307,9 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_ZeroMaxUnsigners(t *testi
 	msg := createTestSignatureMessage()
 
 	// Setup: 5 total validators, 4 signers = 1 unsigner (exceeds maxUnsigners=0)
-	validatorMap := createTestValidatorMapWithSigners(true, msg.RequestHash, uint64(msg.Epoch), 5, 4)
+	signatureMap := createTestSignatureMapWithSigners(true, msg.RequestHash, uint64(msg.Epoch), 5, 4)
 
-	setup.mockRepo.EXPECT().GetValidatorMap(gomock.Any(), msg.RequestHash).Return(validatorMap, nil)
+	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestHash).Return(signatureMap, nil)
 
 	// Execute
 	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
@@ -324,7 +324,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_HighMaxUnsigners(t *testi
 	msg := createTestSignatureMessage()
 
 	// Setup: 10 total validators, 5 signers = 5 unsigners (well within limit)
-	validatorMap := createTestValidatorMapWithSigners(true, msg.RequestHash, uint64(msg.Epoch), 10, 5)
+	validatorMap := createTestSignatureMapWithSigners(true, msg.RequestHash, uint64(msg.Epoch), 10, 5)
 
 	setupSuccessfulAggregationMocks(setup, msg, validatorMap)
 
