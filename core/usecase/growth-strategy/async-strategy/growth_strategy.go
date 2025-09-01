@@ -1,4 +1,4 @@
-package newestStrategy
+package newestGrowthStrategy
 
 import (
 	"context"

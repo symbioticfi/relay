@@ -1,4 +1,4 @@
-package strategyTypes
+package growthStrategyTypes
 
 import (
 	"context"

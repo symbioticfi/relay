@@ -1,4 +1,4 @@
-package syncStrategy
+package syncGrowthStrategy
 
 import (
 	"context"

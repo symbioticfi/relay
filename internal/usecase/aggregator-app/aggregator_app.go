@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"time"
 
+	aggregationPolicyTypes "github.com/symbioticfi/relay/internal/usecase/aggregation-policy/types"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	validate "github.com/go-playground/validator/v10"
@@ -38,11 +40,14 @@ type aggregator interface {
 	Aggregate(valset entity.ValidatorSet, keyTag entity.KeyTag, messageHash []byte, signatures []entity.SignatureExtended) (entity.AggregationProof, error)
 }
 
+type aggregatorPolicy = aggregationPolicyTypes.AggregationPolicy
+
 type Config struct {
-	Repo       repository `validate:"required"`
-	P2PClient  p2pClient  `validate:"required"`
-	Aggregator aggregator `validate:"required"`
-	Metrics    metrics    `validate:"required"`
+	Repo              repository       `validate:"required"`
+	P2PClient         p2pClient        `validate:"required"`
+	Aggregator        aggregator       `validate:"required"`
+	Metrics           metrics          `validate:"required"`
+	AggregationPolicy aggregatorPolicy `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -84,11 +89,13 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		)
 	}
 
-	if !validatorMap.ThresholdReached() {
-		slog.DebugContext(ctx, "Quorum not reached yet",
+	if !s.cfg.AggregationPolicy.ShouldAggregate(validatorMap) {
+		slog.DebugContext(ctx, "Aggregation policy isn't met",
 			"currentVotingPower", validatorMap.CurrentVotingPower.String(),
 			"quorumThreshold", validatorMap.QuorumThreshold.String(),
 			"totalActiveVotingPower", validatorMap.TotalVotingPower.String(),
+			"totalValidators", len(validatorMap.ActiveValidatorsMap),
+			"signers", len(validatorMap.IsPresent),
 		)
 		return nil
 	}

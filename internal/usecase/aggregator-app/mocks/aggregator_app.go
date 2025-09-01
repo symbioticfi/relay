@@ -269,33 +269,3 @@ func (mr *MockaggregatorMockRecorder) Aggregate(valset, keyTag, messageHash, sig
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Aggregate", reflect.TypeOf((*Mockaggregator)(nil).Aggregate), valset, keyTag, messageHash, signatures)
 }
-
-// GenerateExtraData mocks base method.
-func (m *Mockaggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []entity.KeyTag) ([]entity.ExtraData, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GenerateExtraData", valset, keyTags)
-	ret0, _ := ret[0].([]entity.ExtraData)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GenerateExtraData indicates an expected call of GenerateExtraData.
-func (mr *MockaggregatorMockRecorder) GenerateExtraData(valset, keyTags any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateExtraData", reflect.TypeOf((*Mockaggregator)(nil).GenerateExtraData), valset, keyTags)
-}
-
-// Verify mocks base method.
-func (m *Mockaggregator) Verify(valset entity.ValidatorSet, keyTag entity.KeyTag, aggregationProof entity.AggregationProof) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Verify", valset, keyTag, aggregationProof)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Verify indicates an expected call of Verify.
-func (mr *MockaggregatorMockRecorder) Verify(valset, keyTag, aggregationProof any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Verify", reflect.TypeOf((*Mockaggregator)(nil).Verify), valset, keyTag, aggregationProof)
-}

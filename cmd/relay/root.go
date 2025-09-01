@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"time"
 
+	aggregationPolicy "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
+
 	growthStrategy "github.com/symbioticfi/relay/core/usecase/growth-strategy"
 	signatureListener "github.com/symbioticfi/relay/internal/usecase/signature-listener"
 
@@ -235,13 +237,23 @@ func runApp(ctx context.Context) error {
 		})
 	}
 
+	aggPolicyType := entity.AggregationPolicyLowLatency
+	if config.VerificationType == entity.VerificationTypeBlsBn254Simple {
+		aggPolicyType = entity.AggregationPolicyLowCost
+	}
+	aggPolicy, err := aggregationPolicy.NewAggregationPolicy(aggPolicyType, cfg.MaxUnsigners)
+	if err != nil {
+		return errors.Errorf("failed to create aggregator policy: %w", err)
+	}
+
 	var aggApp *aggregatorApp.AggregatorApp
 	if cfg.IsAggregator {
 		aggApp, err = aggregatorApp.NewAggregatorApp(aggregatorApp.Config{
-			Repo:       repo,
-			P2PClient:  p2pService,
-			Aggregator: agg,
-			Metrics:    mtr,
+			Repo:              repo,
+			P2PClient:         p2pService,
+			Aggregator:        agg,
+			Metrics:           mtr,
+			AggregationPolicy: aggPolicy,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create aggregator app: %w", err)

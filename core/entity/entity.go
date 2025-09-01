@@ -18,6 +18,7 @@ import (
 
 type VerificationType uint32
 type GrowthStrategyType uint32
+type AggregationPolicyType uint32
 
 const (
 	VerificationTypeBlsBn254ZK     VerificationType = 0
@@ -25,6 +26,9 @@ const (
 
 	GrowthStrategyAsync GrowthStrategyType = 0
 	GrowthStrategySync  GrowthStrategyType = 1
+
+	AggregationPolicyLowLatency AggregationPolicyType = 0
+	AggregationPolicyLowCost    AggregationPolicyType = 1
 )
 
 var (
@@ -205,6 +209,20 @@ func (gst GrowthStrategyType) String() string {
 		return fmt.Sprintf("%d GROWTH-STRATEGY-SYNC", uint32(gst))
 	}
 	return fmt.Sprintf("%d (UNKNOWN)", uint32(gst))
+}
+
+func (ap AggregationPolicyType) MarshalText() (text []byte, err error) {
+	return []byte(ap.String()), nil
+}
+
+func (ap AggregationPolicyType) String() string {
+	switch ap {
+	case AggregationPolicyLowLatency:
+		return fmt.Sprintf("%d AGGREGATION-POLICY-LOW-LATENCY", uint32(ap))
+	case AggregationPolicyLowCost:
+		return fmt.Sprintf("%d AGGREGATION-POLICY-LOW-COST", uint32(ap))
+	}
+	return fmt.Sprintf("%d (UNKNOWN)", uint32(ap))
 }
 
 type CrossChainAddress struct {
