@@ -98,13 +98,11 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 
 	totalActiveVotingPower := validatorSet.GetTotalActiveVotingPower()
 
-	if !s.cfg.AggregationPolicy.ShouldAggregate(signatureMap, validatorSet.QuorumThreshold) {
+	if !s.cfg.AggregationPolicy.ShouldAggregate(signatureMap, validatorSet) {
 		slog.DebugContext(ctx, "Quorum not reached yet",
 			"currentVotingPower", signatureMap.CurrentVotingPower.String(),
 			"quorumThreshold", validatorSet.QuorumThreshold.String(),
 			"totalActiveVotingPower", totalActiveVotingPower.String(),
-			"totalValidators", len(signatureMap.ActiveValidatorsMap),
-			"signers", len(signatureMap.IsPresent),
 		)
 		return nil
 	}
