@@ -63,7 +63,7 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 		return errors.Errorf("failed to verify signature: %w", err)
 	}
 
-	validator, _, err := s.cfg.Repo.GetValidatorByKey(ctx, uint64(msg.Epoch), msg.KeyTag, publicKey.OnChain())
+	validator, activeIndex, err := s.cfg.Repo.GetValidatorByKey(ctx, uint64(msg.Epoch), msg.KeyTag, publicKey.OnChain())
 	if err != nil {
 		return errors.Errorf("validator not found for public key %x: %w", msg.Signature.PublicKey, err)
 	}
@@ -87,7 +87,7 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 			signatureMap = entity.NewSignatureMap(msg.RequestHash, validatorSet)
 		}
 
-		if err := signatureMap.SetValidatorPresent(validator); err != nil {
+		if err := signatureMap.SetValidatorPresent(validator, activeIndex); err != nil {
 			return errors.Errorf("failed to set validator %s present for request %s: %w", validator.Operator.Hex(), msg.RequestHash.Hex(), err)
 		}
 

@@ -83,8 +83,8 @@ func signatureMapToBytes(vm entity.SignatureMap) ([]byte, error) {
 		activeValidators = append(activeValidators, addr.Hex())
 	}
 
-	presentValidators := make([]string, 0, len(vm.IsPresent))
-	for addr := range vm.IsPresent {
+	presentValidators := make([]string, 0, len(vm.SignedValidatorIndexes))
+	for addr := range vm.SignedValidatorIndexes {
 		presentValidators = append(presentValidators, addr.Hex())
 	}
 
@@ -124,12 +124,12 @@ func bytesToSignatureMap(data []byte) (entity.SignatureMap, error) {
 	}
 
 	return entity.SignatureMap{
-		RequestHash:         requestHash,
-		Epoch:               dto.Epoch,
-		ActiveValidatorsMap: activeValidators,
-		IsPresent:           presentValidators,
-		QuorumThreshold:     entity.ToVotingPower(dto.QuorumThreshold),
-		TotalVotingPower:    entity.ToVotingPower(dto.TotalVotingPower),
-		CurrentVotingPower:  entity.ToVotingPower(dto.CurrentVotingPower),
+		RequestHash:            requestHash,
+		Epoch:                  dto.Epoch,
+		ActiveValidatorsMap:    activeValidators,
+		SignedValidatorIndexes: presentValidators,
+		QuorumThreshold:        entity.ToVotingPower(dto.QuorumThreshold),
+		TotalVotingPower:       entity.ToVotingPower(dto.TotalVotingPower),
+		CurrentVotingPower:     entity.ToVotingPower(dto.CurrentVotingPower),
 	}, nil
 }

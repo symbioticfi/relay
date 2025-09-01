@@ -41,13 +41,13 @@ func randomSignatureMap(t *testing.T, requestHash common.Hash) entity.SignatureM
 	}
 
 	return entity.SignatureMap{
-		RequestHash:         requestHash,
-		Epoch:               randomBigInt(t).Uint64(),
-		ActiveValidatorsMap: activeValidators,
-		IsPresent:           isPresent,
-		QuorumThreshold:     entity.ToVotingPower(randomBigInt(t)),
-		TotalVotingPower:    entity.ToVotingPower(randomBigInt(t)),
-		CurrentVotingPower:  entity.ToVotingPower(randomBigInt(t)),
+		RequestHash:            requestHash,
+		Epoch:                  randomBigInt(t).Uint64(),
+		ActiveValidatorsMap:    activeValidators,
+		SignedValidatorIndexes: isPresent,
+		QuorumThreshold:        entity.ToVotingPower(randomBigInt(t)),
+		TotalVotingPower:       entity.ToVotingPower(randomBigInt(t)),
+		CurrentVotingPower:     entity.ToVotingPower(randomBigInt(t)),
 	}
 }
 
@@ -58,7 +58,7 @@ func assertSignatureMapsEqual(t *testing.T, expected, actual entity.SignatureMap
 	assert.Equal(t, expected.RequestHash, actual.RequestHash, "RequestHash mismatch")
 	assert.Equal(t, expected.Epoch, actual.Epoch, "Epoch mismatch")
 	assert.Equal(t, expected.ActiveValidatorsMap, actual.ActiveValidatorsMap, "ActiveValidatorsMap mismatch")
-	assert.Equal(t, expected.IsPresent, actual.IsPresent, "IsPresent mismatch")
+	assert.Equal(t, expected.SignedValidatorIndexes, actual.SignedValidatorIndexes, "SignedValidatorIndexes mismatch")
 	assert.Equal(t, expected.QuorumThreshold.String(), actual.QuorumThreshold.String(), "QuorumThreshold mismatch")
 	assert.Equal(t, expected.TotalVotingPower.String(), actual.TotalVotingPower.String(), "TotalVotingPower mismatch")
 	assert.Equal(t, expected.CurrentVotingPower.String(), actual.CurrentVotingPower.String(), "CurrentVotingPower mismatch")
@@ -171,13 +171,13 @@ func TestSignatureMapSerialization(t *testing.T) {
 
 	t.Run("Serialization - Empty Maps", func(t *testing.T) {
 		vm := entity.SignatureMap{
-			RequestHash:         randomRequestHash(t),
-			Epoch:               123,
-			ActiveValidatorsMap: make(map[common.Address]struct{}),
-			IsPresent:           make(map[common.Address]struct{}),
-			QuorumThreshold:     entity.ToVotingPower(big.NewInt(1000)),
-			TotalVotingPower:    entity.ToVotingPower(big.NewInt(5000)),
-			CurrentVotingPower:  entity.ToVotingPower(big.NewInt(0)),
+			RequestHash:            randomRequestHash(t),
+			Epoch:                  123,
+			ActiveValidatorsMap:    make(map[common.Address]struct{}),
+			SignedValidatorIndexes: make(map[common.Address]struct{}),
+			QuorumThreshold:        entity.ToVotingPower(big.NewInt(1000)),
+			TotalVotingPower:       entity.ToVotingPower(big.NewInt(5000)),
+			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(0)),
 		}
 
 		// Serialize
@@ -197,13 +197,13 @@ func TestSignatureMapSerialization(t *testing.T) {
 		largeBigInt.SetString("123456789012345678901234567890", 10)
 
 		vm := entity.SignatureMap{
-			RequestHash:         randomRequestHash(t),
-			Epoch:               18446744073709551615, // Max uint64
-			ActiveValidatorsMap: make(map[common.Address]struct{}),
-			IsPresent:           make(map[common.Address]struct{}),
-			QuorumThreshold:     entity.ToVotingPower(largeBigInt),
-			TotalVotingPower:    entity.ToVotingPower(new(big.Int).Mul(largeBigInt, big.NewInt(2))),
-			CurrentVotingPower:  entity.ToVotingPower(new(big.Int).Mul(largeBigInt, big.NewInt(3))),
+			RequestHash:            randomRequestHash(t),
+			Epoch:                  18446744073709551615, // Max uint64
+			ActiveValidatorsMap:    make(map[common.Address]struct{}),
+			SignedValidatorIndexes: make(map[common.Address]struct{}),
+			QuorumThreshold:        entity.ToVotingPower(largeBigInt),
+			TotalVotingPower:       entity.ToVotingPower(new(big.Int).Mul(largeBigInt, big.NewInt(2))),
+			CurrentVotingPower:     entity.ToVotingPower(new(big.Int).Mul(largeBigInt, big.NewInt(3))),
 		}
 
 		// Serialize and deserialize
@@ -228,7 +228,7 @@ func TestSignatureMapSerialization(t *testing.T) {
 				addr1: {},
 				addr2: {},
 			},
-			IsPresent: map[common.Address]struct{}{
+			SignedValidatorIndexes: map[common.Address]struct{}{
 				addr1: {},
 			},
 			QuorumThreshold:    entity.ToVotingPower(big.NewInt(100)),
@@ -251,10 +251,10 @@ func TestSignatureMapSerialization(t *testing.T) {
 		assert.True(t, hasAddr1, "Address 1 should be present in ActiveValidatorsMap")
 		assert.True(t, hasAddr2, "Address 2 should be present in ActiveValidatorsMap")
 
-		_, isPresentAddr1 := deserialized.IsPresent[addr1]
-		_, isPresentAddr2 := deserialized.IsPresent[addr2]
-		assert.True(t, isPresentAddr1, "Address 1 should be present in IsPresent")
-		assert.False(t, isPresentAddr2, "Address 2 should NOT be present in IsPresent")
+		_, isPresentAddr1 := deserialized.SignedValidatorIndexes[addr1]
+		_, isPresentAddr2 := deserialized.SignedValidatorIndexes[addr2]
+		assert.True(t, isPresentAddr1, "Address 1 should be present in SignedValidatorIndexes")
+		assert.False(t, isPresentAddr2, "Address 2 should NOT be present in SignedValidatorIndexes")
 	})
 
 	t.Run("Deserialization - Invalid JSON", func(t *testing.T) {
@@ -394,13 +394,13 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 
 	t.Run("Zero Values", func(t *testing.T) {
 		vm := entity.SignatureMap{
-			RequestHash:         common.Hash{}, // Zero hash
-			Epoch:               0,
-			ActiveValidatorsMap: make(map[common.Address]struct{}),
-			IsPresent:           make(map[common.Address]struct{}),
-			QuorumThreshold:     entity.ToVotingPower(big.NewInt(0)),
-			TotalVotingPower:    entity.ToVotingPower(big.NewInt(0)),
-			CurrentVotingPower:  entity.ToVotingPower(big.NewInt(0)),
+			RequestHash:            common.Hash{}, // Zero hash
+			Epoch:                  0,
+			ActiveValidatorsMap:    make(map[common.Address]struct{}),
+			SignedValidatorIndexes: make(map[common.Address]struct{}),
+			QuorumThreshold:        entity.ToVotingPower(big.NewInt(0)),
+			TotalVotingPower:       entity.ToVotingPower(big.NewInt(0)),
+			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(0)),
 		}
 
 		err := repo.UpdateSignatureMap(context.Background(), vm)
@@ -419,7 +419,7 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 			ActiveValidatorsMap: map[common.Address]struct{}{
 				singleAddr: {},
 			},
-			IsPresent: map[common.Address]struct{}{
+			SignedValidatorIndexes: map[common.Address]struct{}{
 				singleAddr: {},
 			},
 			QuorumThreshold:    entity.ToVotingPower(big.NewInt(1)),
@@ -451,13 +451,13 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 		}
 
 		vm := entity.SignatureMap{
-			RequestHash:         randomRequestHash(t),
-			Epoch:               100,
-			ActiveValidatorsMap: activeValidators,
-			IsPresent:           isPresent,
-			QuorumThreshold:     entity.ToVotingPower(big.NewInt(5000)),
-			TotalVotingPower:    entity.ToVotingPower(big.NewInt(10000)),
-			CurrentVotingPower:  entity.ToVotingPower(big.NewInt(5000)),
+			RequestHash:            randomRequestHash(t),
+			Epoch:                  100,
+			ActiveValidatorsMap:    activeValidators,
+			SignedValidatorIndexes: isPresent,
+			QuorumThreshold:        entity.ToVotingPower(big.NewInt(5000)),
+			TotalVotingPower:       entity.ToVotingPower(big.NewInt(10000)),
+			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(5000)),
 		}
 
 		err := repo.UpdateSignatureMap(context.Background(), vm)

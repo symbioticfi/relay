@@ -8,13 +8,13 @@ import (
 )
 
 type SignatureMap struct {
-	RequestHash         common.Hash
-	Epoch               uint64
-	ActiveValidatorsMap map[common.Address]struct{}
-	IsPresent           map[common.Address]struct{}
-	QuorumThreshold     VotingPower
-	TotalVotingPower    VotingPower
-	CurrentVotingPower  VotingPower
+	RequestHash            common.Hash
+	Epoch                  uint64
+	ActiveValidatorsMap    map[common.Address]struct{}
+	SignedValidatorIndexes map[common.Address]struct{}
+	QuorumThreshold        VotingPower
+	TotalVotingPower       VotingPower
+	CurrentVotingPower     VotingPower
 }
 
 func NewSignatureMap(requestHash common.Hash, vs ValidatorSet) SignatureMap {
@@ -27,24 +27,21 @@ func NewSignatureMap(requestHash common.Hash, vs ValidatorSet) SignatureMap {
 	}
 
 	return SignatureMap{
-		RequestHash:         requestHash,
-		Epoch:               vs.Epoch,
-		ActiveValidatorsMap: m,
-		IsPresent:           make(map[common.Address]struct{}),
-		QuorumThreshold:     vs.QuorumThreshold,
-		TotalVotingPower:    ToVotingPower(totalVotingPower),
-		CurrentVotingPower:  ToVotingPower(big.NewInt(0)),
+		RequestHash:            requestHash,
+		Epoch:                  vs.Epoch,
+		ActiveValidatorsMap:    m,
+		SignedValidatorIndexes: make(map[common.Address]struct{}),
+		QuorumThreshold:        vs.QuorumThreshold,
+		TotalVotingPower:       ToVotingPower(totalVotingPower),
+		CurrentVotingPower:     ToVotingPower(big.NewInt(0)),
 	}
 }
 
-func (vm *SignatureMap) SetValidatorPresent(v Validator) error {
-	if _, ok := vm.ActiveValidatorsMap[v.Operator]; !ok {
-		return errors.New(ErrValidatorNotFound)
-	}
-	if _, ok := vm.IsPresent[v.Operator]; ok {
+func (vm *SignatureMap) SetValidatorPresent(v Validator, activeIndex int) error {
+	if _, ok := vm.SignedValidatorIndexes[v.Operator]; ok {
 		return errors.New(ErrEntityAlreadyExist)
 	}
-	vm.IsPresent[v.Operator] = struct{}{}
+	vm.SignedValidatorIndexes[v.Operator] = struct{}{}
 	vm.CurrentVotingPower = ToVotingPower(new(big.Int).Add(vm.CurrentVotingPower.Int, v.VotingPower.Int))
 	return nil
 }
