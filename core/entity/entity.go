@@ -250,6 +250,28 @@ type NetworkConfig struct {
 	GrowthStrategy          GrowthStrategyType
 }
 
+func maxThreshold() *big.Int {
+	// 10^18 is the maximum threshold value
+	return new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
+}
+
+func (nc NetworkConfig) CalcQuorumThreshold(totalVP VotingPower) (VotingPower, error) {
+	quorumThresholdPercent := big.NewInt(0)
+	for _, quorumThreshold := range nc.QuorumThresholds {
+		if quorumThreshold.KeyTag == nc.RequiredHeaderKeyTag {
+			quorumThresholdPercent = quorumThreshold.QuorumThreshold.Int
+		}
+	}
+	if quorumThresholdPercent.Cmp(big.NewInt(0)) == 0 {
+		return VotingPower{}, errors.Errorf("quorum threshold is zero")
+	}
+
+	mul := new(big.Int).Mul(totalVP.Int, quorumThresholdPercent)
+	div := new(big.Int).Div(mul, maxThreshold())
+	// add 1 to apply up rounding
+	return ToVotingPower(new(big.Int).Add(div, big.NewInt(1))), nil
+}
+
 type NetworkData struct {
 	Address    common.Address
 	Subnetwork common.Hash
@@ -304,6 +326,15 @@ func (va Validators) SortByOperatorAddressAsc() {
 	slices.SortFunc(va, func(a, b Validator) int {
 		return a.Operator.Cmp(b.Operator)
 	})
+}
+
+func (va Validators) CheckIsSortedByOperatorAddressAsc() error {
+	if !slices.IsSortedFunc(va, func(a, b Validator) int {
+		return a.Operator.Cmp(b.Operator)
+	}) {
+		return errors.New("validators are not sorted by operator address ascending")
+	}
+	return nil
 }
 
 func (va Validators) GetTotalActiveVotingPower() VotingPower {

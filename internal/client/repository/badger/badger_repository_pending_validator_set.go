@@ -84,6 +84,7 @@ type validatorDTO struct {
 	Operator    string              `json:"operator"`
 	VotingPower string              `json:"voting_power"`
 	IsActive    bool                `json:"is_active"`
+	ActiveIndex int                 `json:"active_index"`
 	Keys        []keyDTO            `json:"keys"`
 	Vaults      []validatorVaultDTO `json:"vaults"`
 }

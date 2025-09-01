@@ -212,7 +212,7 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to start agg proof ready signal workers: %w", err)
 	}
 
-	signListener, err := signatureListener.New(signatureListener.Config{Repo: repo})
+	signListener, err := signatureListener.New(signatureListener.Config{Repo: repo, SignalCfg: cfg.SignalCfg})
 	if err != nil {
 		return errors.Errorf("failed to create signature listener: %w", err)
 	}

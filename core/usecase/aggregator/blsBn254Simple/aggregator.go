@@ -39,6 +39,9 @@ func (a Aggregator) Aggregate(
 	if !helpers.CompareMessageHasher(signatures, messageHash) {
 		return entity.AggregationProof{}, errors.New("message hashes mismatch")
 	}
+	if err := valset.Validators.CheckIsSortedByOperatorAddressAsc(); err != nil {
+		return entity.AggregationProof{}, errors.Errorf("valset is not sorted by operator address asc: %w", err)
+	}
 
 	type dtoG1Point struct {
 		X *big.Int

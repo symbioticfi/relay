@@ -8,6 +8,7 @@ import (
 
 	aggregationPolicy2 "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
 
+	"github.com/RoaringBitmap/roaring/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -105,13 +106,10 @@ func createTestSignatureMapWithSigners(thresholdReached bool, requestHash common
 	}
 
 	return entity.SignatureMap{
-		RequestHash:         requestHash,
-		Epoch:               epoch,
-		CurrentVotingPower:  entity.ToVotingPower(currentVotingPower),
-		QuorumThreshold:     entity.ToVotingPower(quorumThreshold),
-		TotalVotingPower:    entity.ToVotingPower(totalVotingPower),
-		ActiveValidatorsMap: activeValidatorsMap,
-		IsPresent:           isPresent,
+		RequestHash:            requestHash,
+		Epoch:                  epoch,
+		SignedValidatorsBitmap: roaring.New(),
+		CurrentVotingPower:     entity.ToVotingPower(currentVotingPower),
 	}
 }
 
@@ -163,6 +161,7 @@ func setupSuccessfulAggregationMocks(setup *testSetup, msg entity.SignatureMessa
 
 	setup.mockAggregator.EXPECT().Aggregate(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(proofData, nil)
 
+	// Verify the aggregated message structure
 	expectedMsg := entity.AggregatedSignatureMessage{
 		RequestHash:      msg.RequestHash,
 		KeyTag:           msg.KeyTag,

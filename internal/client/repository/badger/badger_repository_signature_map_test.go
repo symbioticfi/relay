@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/RoaringBitmap/roaring/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
@@ -23,31 +24,14 @@ func randomRequestHash(t *testing.T) common.Hash {
 func randomSignatureMap(t *testing.T, requestHash common.Hash) entity.SignatureMap {
 	t.Helper()
 
-	// Create addresses for validators
-	addr1 := common.BytesToAddress(randomBytes(t, 20))
-	addr2 := common.BytesToAddress(randomBytes(t, 20))
-	addr3 := common.BytesToAddress(randomBytes(t, 20))
-
-	activeValidators := map[common.Address]struct{}{
-		addr1: {},
-		addr2: {},
-		addr3: {},
-	}
-
-	// Some validators are present (have provided signatures)
-	isPresent := map[common.Address]struct{}{
-		addr1: {},
-		addr2: {},
-	}
+	// Create bitmap with some validators present (indexes 0, 1, 2 are present)
+	bitmap := roaring.BitmapOf(0, 1, 2)
 
 	return entity.SignatureMap{
-		RequestHash:         requestHash,
-		Epoch:               randomBigInt(t).Uint64(),
-		ActiveValidatorsMap: activeValidators,
-		IsPresent:           isPresent,
-		QuorumThreshold:     entity.ToVotingPower(randomBigInt(t)),
-		TotalVotingPower:    entity.ToVotingPower(randomBigInt(t)),
-		CurrentVotingPower:  entity.ToVotingPower(randomBigInt(t)),
+		RequestHash:            requestHash,
+		Epoch:                  randomBigInt(t).Uint64(),
+		SignedValidatorsBitmap: bitmap,
+		CurrentVotingPower:     entity.ToVotingPower(randomBigInt(t)),
 	}
 }
 
@@ -57,10 +41,7 @@ func assertSignatureMapsEqual(t *testing.T, expected, actual entity.SignatureMap
 
 	assert.Equal(t, expected.RequestHash, actual.RequestHash, "RequestHash mismatch")
 	assert.Equal(t, expected.Epoch, actual.Epoch, "Epoch mismatch")
-	assert.Equal(t, expected.ActiveValidatorsMap, actual.ActiveValidatorsMap, "ActiveValidatorsMap mismatch")
-	assert.Equal(t, expected.IsPresent, actual.IsPresent, "IsPresent mismatch")
-	assert.Equal(t, expected.QuorumThreshold.String(), actual.QuorumThreshold.String(), "QuorumThreshold mismatch")
-	assert.Equal(t, expected.TotalVotingPower.String(), actual.TotalVotingPower.String(), "TotalVotingPower mismatch")
+	assert.True(t, expected.SignedValidatorsBitmap.Equals(actual.SignedValidatorsBitmap), "SignedValidatorsBitmap mismatch")
 	assert.Equal(t, expected.CurrentVotingPower.String(), actual.CurrentVotingPower.String(), "CurrentVotingPower mismatch")
 }
 
@@ -171,13 +152,10 @@ func TestSignatureMapSerialization(t *testing.T) {
 
 	t.Run("Serialization - Empty Maps", func(t *testing.T) {
 		vm := entity.SignatureMap{
-			RequestHash:         randomRequestHash(t),
-			Epoch:               123,
-			ActiveValidatorsMap: make(map[common.Address]struct{}),
-			IsPresent:           make(map[common.Address]struct{}),
-			QuorumThreshold:     entity.ToVotingPower(big.NewInt(1000)),
-			TotalVotingPower:    entity.ToVotingPower(big.NewInt(5000)),
-			CurrentVotingPower:  entity.ToVotingPower(big.NewInt(0)),
+			RequestHash:            randomRequestHash(t),
+			Epoch:                  123,
+			SignedValidatorsBitmap: roaring.New(),
+			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(0)),
 		}
 
 		// Serialize
@@ -197,13 +175,10 @@ func TestSignatureMapSerialization(t *testing.T) {
 		largeBigInt.SetString("123456789012345678901234567890", 10)
 
 		vm := entity.SignatureMap{
-			RequestHash:         randomRequestHash(t),
-			Epoch:               18446744073709551615, // Max uint64
-			ActiveValidatorsMap: make(map[common.Address]struct{}),
-			IsPresent:           make(map[common.Address]struct{}),
-			QuorumThreshold:     entity.ToVotingPower(largeBigInt),
-			TotalVotingPower:    entity.ToVotingPower(new(big.Int).Mul(largeBigInt, big.NewInt(2))),
-			CurrentVotingPower:  entity.ToVotingPower(new(big.Int).Mul(largeBigInt, big.NewInt(3))),
+			RequestHash:            randomRequestHash(t),
+			Epoch:                  18446744073709551615, // Max uint64
+			SignedValidatorsBitmap: roaring.New(),
+			CurrentVotingPower:     entity.ToVotingPower(new(big.Int).Mul(largeBigInt, big.NewInt(3))),
 		}
 
 		// Serialize and deserialize
@@ -217,23 +192,13 @@ func TestSignatureMapSerialization(t *testing.T) {
 	})
 
 	t.Run("Serialization - Address Conversion", func(t *testing.T) {
-		// Test specific addresses to ensure proper hex conversion
-		addr1 := common.HexToAddress("0x1234567890123456789012345678901234567890")
-		addr2 := common.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd")
-
+		// Test roaring bitmap with specific indexes
+		bitmap := roaring.BitmapOf(0) // Only validator at index 0 is present
 		vm := entity.SignatureMap{
-			RequestHash: randomRequestHash(t),
-			Epoch:       42,
-			ActiveValidatorsMap: map[common.Address]struct{}{
-				addr1: {},
-				addr2: {},
-			},
-			IsPresent: map[common.Address]struct{}{
-				addr1: {},
-			},
-			QuorumThreshold:    entity.ToVotingPower(big.NewInt(100)),
-			TotalVotingPower:   entity.ToVotingPower(big.NewInt(200)),
-			CurrentVotingPower: entity.ToVotingPower(big.NewInt(150)),
+			RequestHash:            randomRequestHash(t),
+			Epoch:                  42,
+			SignedValidatorsBitmap: bitmap,
+			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(150)),
 		}
 
 		// Serialize and deserialize
@@ -245,16 +210,8 @@ func TestSignatureMapSerialization(t *testing.T) {
 
 		assertSignatureMapsEqual(t, vm, deserialized)
 
-		// Verify specific addresses are preserved
-		_, hasAddr1 := deserialized.ActiveValidatorsMap[addr1]
-		_, hasAddr2 := deserialized.ActiveValidatorsMap[addr2]
-		assert.True(t, hasAddr1, "Address 1 should be present in ActiveValidatorsMap")
-		assert.True(t, hasAddr2, "Address 2 should be present in ActiveValidatorsMap")
-
-		_, isPresentAddr1 := deserialized.IsPresent[addr1]
-		_, isPresentAddr2 := deserialized.IsPresent[addr2]
-		assert.True(t, isPresentAddr1, "Address 1 should be present in IsPresent")
-		assert.False(t, isPresentAddr2, "Address 2 should NOT be present in IsPresent")
+		// Verify bitmap contains expected validator index
+		assert.True(t, deserialized.SignedValidatorsBitmap.Contains(0), "Validator index 0 should be present in bitmap")
 	})
 
 	t.Run("Deserialization - Invalid JSON", func(t *testing.T) {
@@ -394,13 +351,10 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 
 	t.Run("Zero Values", func(t *testing.T) {
 		vm := entity.SignatureMap{
-			RequestHash:         common.Hash{}, // Zero hash
-			Epoch:               0,
-			ActiveValidatorsMap: make(map[common.Address]struct{}),
-			IsPresent:           make(map[common.Address]struct{}),
-			QuorumThreshold:     entity.ToVotingPower(big.NewInt(0)),
-			TotalVotingPower:    entity.ToVotingPower(big.NewInt(0)),
-			CurrentVotingPower:  entity.ToVotingPower(big.NewInt(0)),
+			RequestHash:            common.Hash{}, // Zero hash
+			Epoch:                  0,
+			SignedValidatorsBitmap: roaring.New(),
+			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(0)),
 		}
 
 		err := repo.UpdateSignatureMap(context.Background(), vm)
@@ -412,19 +366,12 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 	})
 
 	t.Run("Single Validator", func(t *testing.T) {
-		singleAddr := common.BytesToAddress(randomBytes(t, 20))
+		// Test single validator scenario
 		vm := entity.SignatureMap{
-			RequestHash: randomRequestHash(t),
-			Epoch:       1,
-			ActiveValidatorsMap: map[common.Address]struct{}{
-				singleAddr: {},
-			},
-			IsPresent: map[common.Address]struct{}{
-				singleAddr: {},
-			},
-			QuorumThreshold:    entity.ToVotingPower(big.NewInt(1)),
-			TotalVotingPower:   entity.ToVotingPower(big.NewInt(1)),
-			CurrentVotingPower: entity.ToVotingPower(big.NewInt(1)),
+			RequestHash:            randomRequestHash(t),
+			Epoch:                  1,
+			SignedValidatorsBitmap: roaring.BitmapOf(0), // Single validator at index 0
+			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(1)),
 		}
 
 		err := repo.UpdateSignatureMap(context.Background(), vm)
@@ -437,27 +384,17 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 
 	t.Run("Many Validators", func(t *testing.T) {
 		// Create signature map with many validators
-		activeValidators := make(map[common.Address]struct{})
-		isPresent := make(map[common.Address]struct{})
-
-		for i := 0; i < 100; i++ {
-			addr := common.BytesToAddress(randomBytes(t, 20))
-			activeValidators[addr] = struct{}{}
-
-			// Half of them are present
-			if i%2 == 0 {
-				isPresent[addr] = struct{}{}
-			}
+		bitmap := roaring.New()
+		// Add even indexes (50 validators present out of 100)
+		for i := uint32(0); i < 100; i += 2 {
+			bitmap.Add(i)
 		}
 
 		vm := entity.SignatureMap{
-			RequestHash:         randomRequestHash(t),
-			Epoch:               100,
-			ActiveValidatorsMap: activeValidators,
-			IsPresent:           isPresent,
-			QuorumThreshold:     entity.ToVotingPower(big.NewInt(5000)),
-			TotalVotingPower:    entity.ToVotingPower(big.NewInt(10000)),
-			CurrentVotingPower:  entity.ToVotingPower(big.NewInt(5000)),
+			RequestHash:            randomRequestHash(t),
+			Epoch:                  100,
+			SignedValidatorsBitmap: bitmap,
+			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(5000)),
 		}
 
 		err := repo.UpdateSignatureMap(context.Background(), vm)
