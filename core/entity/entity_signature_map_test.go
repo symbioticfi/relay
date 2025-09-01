@@ -53,8 +53,6 @@ func TestNewSignatureMap(t *testing.T) {
 		// Verify basic properties
 		assert.Equal(t, requestHash, vm.RequestHash)
 		assert.Equal(t, epoch, vm.Epoch)
-		assert.Equal(t, quorumThreshold, vm.QuorumThreshold)
-		assert.Equal(t, ToVotingPower(big.NewInt(300)), vm.TotalVotingPower) // Only active validators: 100 + 200
 		assert.Equal(t, ToVotingPower(big.NewInt(0)), vm.CurrentVotingPower)
 
 		// Verify SignedValidatorsBitmap is empty initially
@@ -89,8 +87,6 @@ func TestNewSignatureMap(t *testing.T) {
 
 		assert.Equal(t, requestHash, vm.RequestHash)
 		assert.Equal(t, epoch, vm.Epoch)
-		assert.Equal(t, quorumThreshold, vm.QuorumThreshold)
-		assert.Equal(t, ToVotingPower(big.NewInt(0)), vm.TotalVotingPower) // No active validators
 		assert.Equal(t, ToVotingPower(big.NewInt(0)), vm.CurrentVotingPower)
 		assert.True(t, vm.SignedValidatorsBitmap.IsEmpty())
 	})
@@ -110,8 +106,6 @@ func TestNewSignatureMap(t *testing.T) {
 
 		assert.Equal(t, requestHash, vm.RequestHash)
 		assert.Equal(t, epoch, vm.Epoch)
-		assert.Equal(t, quorumThreshold, vm.QuorumThreshold)
-		assert.Equal(t, ToVotingPower(big.NewInt(0)), vm.TotalVotingPower)
 		assert.Equal(t, ToVotingPower(big.NewInt(0)), vm.CurrentVotingPower)
 		assert.True(t, vm.SignedValidatorsBitmap.IsEmpty())
 	})
@@ -217,47 +211,47 @@ func TestSignatureMap_ThresholdReached(t *testing.T) {
 
 	t.Run("returns false when current voting power is below threshold", func(t *testing.T) {
 		vm := &SignatureMap{
-			QuorumThreshold:    ToVotingPower(big.NewInt(1000)),
 			CurrentVotingPower: ToVotingPower(big.NewInt(500)),
 		}
+		quorumThreshold := ToVotingPower(big.NewInt(1000))
 
-		assert.False(t, vm.ThresholdReached())
+		assert.False(t, vm.ThresholdReached(quorumThreshold))
 	})
 
 	t.Run("returns true when current voting power equals threshold", func(t *testing.T) {
 		vm := &SignatureMap{
-			QuorumThreshold:    ToVotingPower(big.NewInt(1000)),
 			CurrentVotingPower: ToVotingPower(big.NewInt(1000)),
 		}
+		quorumThreshold := ToVotingPower(big.NewInt(1000))
 
-		assert.True(t, vm.ThresholdReached())
+		assert.True(t, vm.ThresholdReached(quorumThreshold))
 	})
 
 	t.Run("returns true when current voting power exceeds threshold", func(t *testing.T) {
 		vm := &SignatureMap{
-			QuorumThreshold:    ToVotingPower(big.NewInt(1000)),
 			CurrentVotingPower: ToVotingPower(big.NewInt(1500)),
 		}
+		quorumThreshold := ToVotingPower(big.NewInt(1000))
 
-		assert.True(t, vm.ThresholdReached())
+		assert.True(t, vm.ThresholdReached(quorumThreshold))
 	})
 
 	t.Run("handles zero threshold", func(t *testing.T) {
 		vm := &SignatureMap{
-			QuorumThreshold:    ToVotingPower(big.NewInt(0)),
 			CurrentVotingPower: ToVotingPower(big.NewInt(0)),
 		}
+		quorumThreshold := ToVotingPower(big.NewInt(0))
 
-		assert.True(t, vm.ThresholdReached())
+		assert.True(t, vm.ThresholdReached(quorumThreshold))
 	})
 
 	t.Run("handles zero current voting power", func(t *testing.T) {
 		vm := &SignatureMap{
-			QuorumThreshold:    ToVotingPower(big.NewInt(100)),
 			CurrentVotingPower: ToVotingPower(big.NewInt(0)),
 		}
+		quorumThreshold := ToVotingPower(big.NewInt(100))
 
-		assert.False(t, vm.ThresholdReached())
+		assert.False(t, vm.ThresholdReached(quorumThreshold))
 	})
 
 	t.Run("handles large numbers", func(t *testing.T) {
@@ -265,11 +259,11 @@ func TestSignatureMap_ThresholdReached(t *testing.T) {
 		largeVotingPower := new(big.Int).Add(largeThreshold, big.NewInt(1))
 
 		vm := &SignatureMap{
-			QuorumThreshold:    ToVotingPower(largeThreshold),
 			CurrentVotingPower: ToVotingPower(largeVotingPower),
 		}
+		quorumThreshold := ToVotingPower(largeThreshold)
 
-		assert.True(t, vm.ThresholdReached())
+		assert.True(t, vm.ThresholdReached(quorumThreshold))
 	})
 }
 
@@ -317,31 +311,31 @@ func TestSignatureMap_IntegrationScenarios(t *testing.T) {
 		vm := NewSignatureMap(requestHash, vs)
 
 		// Verify initial state
-		assert.False(t, vm.ThresholdReached())
+		assert.False(t, vm.ThresholdReached(vs.QuorumThreshold))
 		assert.Equal(t, ToVotingPower(big.NewInt(0)), vm.CurrentVotingPower)
 
 		// Add first validator (100) - threshold not reached
 		err := vm.SetValidatorPresent(0, validators[0].VotingPower)
 		require.NoError(t, err)
-		assert.False(t, vm.ThresholdReached())
+		assert.False(t, vm.ThresholdReached(vs.QuorumThreshold))
 		assert.Equal(t, ToVotingPower(big.NewInt(100)), vm.CurrentVotingPower)
 
 		// Add second validator (100 + 200 = 300) - threshold not reached
 		err = vm.SetValidatorPresent(1, validators[1].VotingPower)
 		require.NoError(t, err)
-		assert.False(t, vm.ThresholdReached())
+		assert.False(t, vm.ThresholdReached(vs.QuorumThreshold))
 		assert.Equal(t, ToVotingPower(big.NewInt(300)), vm.CurrentVotingPower)
 
 		// Add third validator (300 + 300 = 600) - threshold reached!
 		err = vm.SetValidatorPresent(2, validators[2].VotingPower)
 		require.NoError(t, err)
-		assert.True(t, vm.ThresholdReached())
+		assert.True(t, vm.ThresholdReached(vs.QuorumThreshold))
 		assert.Equal(t, ToVotingPower(big.NewInt(600)), vm.CurrentVotingPower)
 
 		// Add fourth validator (600 + 150 = 750) - threshold still reached
 		err = vm.SetValidatorPresent(3, validators[3].VotingPower)
 		require.NoError(t, err)
-		assert.True(t, vm.ThresholdReached())
+		assert.True(t, vm.ThresholdReached(vs.QuorumThreshold))
 		assert.Equal(t, ToVotingPower(big.NewInt(750)), vm.CurrentVotingPower)
 	})
 
@@ -387,7 +381,7 @@ func TestSignatureMap_IntegrationScenarios(t *testing.T) {
 		require.NoError(t, err)
 
 		// Even with all active validators, threshold should not be reached
-		assert.False(t, vm.ThresholdReached())
+		assert.False(t, vm.ThresholdReached(vs.QuorumThreshold))
 		assert.Equal(t, ToVotingPower(big.NewInt(300)), vm.CurrentVotingPower)
 	})
 
@@ -423,13 +417,12 @@ func TestSignatureMap_IntegrationScenarios(t *testing.T) {
 		// Add first validator - threshold not reached
 		err := vm.SetValidatorPresent(0, validators[0].VotingPower)
 		require.NoError(t, err)
-		assert.False(t, vm.ThresholdReached())
+		assert.False(t, vm.ThresholdReached(vs.QuorumThreshold))
 
 		// Add second validator - threshold exactly reached
 		err = vm.SetValidatorPresent(1, validators[1].VotingPower)
 		require.NoError(t, err)
-		assert.True(t, vm.ThresholdReached())
+		assert.True(t, vm.ThresholdReached(vs.QuorumThreshold))
 		assert.Equal(t, ToVotingPower(big.NewInt(500)), vm.CurrentVotingPower)
-		assert.Equal(t, vm.CurrentVotingPower, vm.TotalVotingPower)
 	})
 }

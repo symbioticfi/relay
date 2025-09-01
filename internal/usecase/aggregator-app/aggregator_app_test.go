@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/RoaringBitmap/roaring/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -72,11 +73,10 @@ func createTestSignatureMap(thresholdReached bool, requestHash common.Hash, epoc
 	}
 
 	return entity.SignatureMap{
-		RequestHash:        requestHash,
-		Epoch:              epoch,
-		CurrentVotingPower: entity.ToVotingPower(currentVotingPower),
-		QuorumThreshold:    entity.ToVotingPower(big.NewInt(670)),
-		TotalVotingPower:   entity.ToVotingPower(big.NewInt(1000)),
+		RequestHash:            requestHash,
+		Epoch:                  epoch,
+		SignedValidatorsBitmap: roaring.New(),
+		CurrentVotingPower:     entity.ToVotingPower(currentVotingPower),
 	}
 }
 
@@ -109,8 +109,10 @@ func TestHandleSignatureGeneratedMessage_QuorumNotReached(t *testing.T) {
 
 	// Setup mocks for quorum not reached case
 	signatureMap := createTestSignatureMap(false, msg.RequestHash, uint64(msg.Epoch)) // threshold NOT reached
+	validatorSet := createTestValidatorSet()
 
 	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestHash).Return(signatureMap, nil)
+	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), uint64(msg.Epoch)).Return(validatorSet, nil)
 
 	// Execute
 	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
@@ -139,8 +141,8 @@ func TestHandleSignatureGeneratedMessage_QuorumReached(t *testing.T) {
 	}
 
 	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestHash).Return(signatureMap, nil)
-	setup.mockRepo.EXPECT().UpdateSignatureStat(gomock.Any(), msg.RequestHash, gomock.Any(), gomock.Any()).Return(stat, nil).Times(2)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), uint64(msg.Epoch)).Return(validatorSet, nil)
+	setup.mockRepo.EXPECT().UpdateSignatureStat(gomock.Any(), msg.RequestHash, gomock.Any(), gomock.Any()).Return(stat, nil).Times(2)
 	setup.mockRepo.EXPECT().GetAllSignatures(gomock.Any(), msg.RequestHash).Return(signatures, nil)
 	setup.mockRepo.EXPECT().GetConfigByEpoch(gomock.Any(), uint64(msg.Epoch)).Return(networkConfig, nil)
 

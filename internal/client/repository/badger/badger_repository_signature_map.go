@@ -72,8 +72,6 @@ type signatureMapDTO struct {
 	RequestHash                string   `json:"request_hash"`
 	Epoch                      uint64   `json:"epoch"`
 	SignedValidatorsBitmapData []byte   `json:"signed_validators_bitmap"`
-	QuorumThreshold            *big.Int `json:"quorum_threshold"`
-	TotalVotingPower           *big.Int `json:"total_voting_power"`
 	CurrentVotingPower         *big.Int `json:"current_voting_power"`
 }
 
@@ -87,8 +85,6 @@ func signatureMapToBytes(vm entity.SignatureMap) ([]byte, error) {
 		RequestHash:                vm.RequestHash.Hex(),
 		Epoch:                      vm.Epoch,
 		SignedValidatorsBitmapData: bitmapBytes,
-		QuorumThreshold:            vm.QuorumThreshold.Int,
-		TotalVotingPower:           vm.TotalVotingPower.Int,
 		CurrentVotingPower:         vm.CurrentVotingPower.Int,
 	}
 
@@ -119,8 +115,6 @@ func bytesToSignatureMap(data []byte) (entity.SignatureMap, error) {
 		RequestHash:            requestHash,
 		Epoch:                  dto.Epoch,
 		SignedValidatorsBitmap: bitmap,
-		QuorumThreshold:        entity.ToVotingPower(dto.QuorumThreshold),
-		TotalVotingPower:       entity.ToVotingPower(dto.TotalVotingPower),
 		CurrentVotingPower:     entity.ToVotingPower(dto.CurrentVotingPower),
 	}, nil
 }

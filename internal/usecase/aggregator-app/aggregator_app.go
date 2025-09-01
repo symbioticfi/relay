@@ -84,19 +84,28 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		)
 	}
 
-	if !signatureMap.ThresholdReached() {
+	// Get validator set for quorum threshold checks
+	// todo load only valset header when totalVotingPower is added to it
+	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
+	if err != nil {
+		return errors.Errorf("failed to get validator set: %w", err)
+	}
+
+	totalActiveVotingPower := validatorSet.GetTotalActiveVotingPower()
+
+	if !signatureMap.ThresholdReached(validatorSet.QuorumThreshold) {
 		slog.DebugContext(ctx, "Quorum not reached yet",
 			"currentVotingPower", signatureMap.CurrentVotingPower.String(),
-			"quorumThreshold", signatureMap.QuorumThreshold.String(),
-			"totalActiveVotingPower", signatureMap.TotalVotingPower.String(),
+			"quorumThreshold", validatorSet.QuorumThreshold.String(),
+			"totalActiveVotingPower", totalActiveVotingPower.String(),
 		)
 		return nil
 	}
 
 	slog.InfoContext(ctx, "Quorum reached, aggregating signatures and creating proof",
 		"currentVotingPower", signatureMap.CurrentVotingPower.String(),
-		"quorumThreshold", signatureMap.QuorumThreshold.String(),
-		"totalActiveVotingPower", signatureMap.TotalVotingPower.String(),
+		"quorumThreshold", validatorSet.QuorumThreshold.String(),
+		"totalActiveVotingPower", totalActiveVotingPower.String(),
 	)
 
 	if _, err := s.cfg.Repo.UpdateSignatureStat(ctx, msg.RequestHash, entity.SignatureStatStageAggQuorumReached, time.Now()); err != nil {
@@ -104,12 +113,6 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 	}
 
 	appAggregationStart := time.Now()
-
-	// Get validator set for quorum threshold checks and aggregation
-	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
-	if err != nil {
-		return errors.Errorf("failed to get validator set: %w", err)
-	}
 
 	sigs, err := s.cfg.Repo.GetAllSignatures(ctx, msg.RequestHash)
 	slog.DebugContext(ctx, "Total received signatures", "sigs", len(sigs))

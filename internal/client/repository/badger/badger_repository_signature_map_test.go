@@ -31,8 +31,6 @@ func randomSignatureMap(t *testing.T, requestHash common.Hash) entity.SignatureM
 		RequestHash:            requestHash,
 		Epoch:                  randomBigInt(t).Uint64(),
 		SignedValidatorsBitmap: bitmap,
-		QuorumThreshold:        entity.ToVotingPower(randomBigInt(t)),
-		TotalVotingPower:       entity.ToVotingPower(randomBigInt(t)),
 		CurrentVotingPower:     entity.ToVotingPower(randomBigInt(t)),
 	}
 }
@@ -44,8 +42,6 @@ func assertSignatureMapsEqual(t *testing.T, expected, actual entity.SignatureMap
 	assert.Equal(t, expected.RequestHash, actual.RequestHash, "RequestHash mismatch")
 	assert.Equal(t, expected.Epoch, actual.Epoch, "Epoch mismatch")
 	assert.True(t, expected.SignedValidatorsBitmap.Equals(actual.SignedValidatorsBitmap), "SignedValidatorsBitmap mismatch")
-	assert.Equal(t, expected.QuorumThreshold.String(), actual.QuorumThreshold.String(), "QuorumThreshold mismatch")
-	assert.Equal(t, expected.TotalVotingPower.String(), actual.TotalVotingPower.String(), "TotalVotingPower mismatch")
 	assert.Equal(t, expected.CurrentVotingPower.String(), actual.CurrentVotingPower.String(), "CurrentVotingPower mismatch")
 }
 
@@ -159,8 +155,6 @@ func TestSignatureMapSerialization(t *testing.T) {
 			RequestHash:            randomRequestHash(t),
 			Epoch:                  123,
 			SignedValidatorsBitmap: roaring.New(),
-			QuorumThreshold:        entity.ToVotingPower(big.NewInt(1000)),
-			TotalVotingPower:       entity.ToVotingPower(big.NewInt(5000)),
 			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(0)),
 		}
 
@@ -184,8 +178,6 @@ func TestSignatureMapSerialization(t *testing.T) {
 			RequestHash:            randomRequestHash(t),
 			Epoch:                  18446744073709551615, // Max uint64
 			SignedValidatorsBitmap: roaring.New(),
-			QuorumThreshold:        entity.ToVotingPower(largeBigInt),
-			TotalVotingPower:       entity.ToVotingPower(new(big.Int).Mul(largeBigInt, big.NewInt(2))),
 			CurrentVotingPower:     entity.ToVotingPower(new(big.Int).Mul(largeBigInt, big.NewInt(3))),
 		}
 
@@ -206,8 +198,6 @@ func TestSignatureMapSerialization(t *testing.T) {
 			RequestHash:            randomRequestHash(t),
 			Epoch:                  42,
 			SignedValidatorsBitmap: bitmap,
-			QuorumThreshold:        entity.ToVotingPower(big.NewInt(100)),
-			TotalVotingPower:       entity.ToVotingPower(big.NewInt(200)),
 			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(150)),
 		}
 
@@ -364,8 +354,6 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 			RequestHash:            common.Hash{}, // Zero hash
 			Epoch:                  0,
 			SignedValidatorsBitmap: roaring.New(),
-			QuorumThreshold:        entity.ToVotingPower(big.NewInt(0)),
-			TotalVotingPower:       entity.ToVotingPower(big.NewInt(0)),
 			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(0)),
 		}
 
@@ -383,8 +371,6 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 			RequestHash:            randomRequestHash(t),
 			Epoch:                  1,
 			SignedValidatorsBitmap: roaring.BitmapOf(0), // Single validator at index 0
-			QuorumThreshold:        entity.ToVotingPower(big.NewInt(1)),
-			TotalVotingPower:       entity.ToVotingPower(big.NewInt(1)),
 			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(1)),
 		}
 
@@ -408,8 +394,6 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 			RequestHash:            randomRequestHash(t),
 			Epoch:                  100,
 			SignedValidatorsBitmap: bitmap,
-			QuorumThreshold:        entity.ToVotingPower(big.NewInt(5000)),
-			TotalVotingPower:       entity.ToVotingPower(big.NewInt(10000)),
 			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(5000)),
 		}
 
