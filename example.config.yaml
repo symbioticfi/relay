@@ -23,4 +23,4 @@ enable-mdns: true
 dht-mode: disabled
 p2p-listen: "/ip4/0.0.0.0/tcp/8881"
 evm-max-calls: 30
-aggregator-policy-max-unsigners: 50
+aggregation-policy-max-unsigners: 50
