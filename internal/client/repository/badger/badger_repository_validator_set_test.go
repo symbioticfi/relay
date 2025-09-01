@@ -1,8 +1,10 @@
 package badger
 
 import (
+	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -111,7 +113,7 @@ func TestRepository_ValidatorSet(t *testing.T) {
 			key := validator.Keys[0]
 
 			// Get validator by key should return the correct validator
-			gotValidator, err := repo.GetValidatorByKey(t.Context(), vs1.Epoch, key.Tag, key.Payload)
+			gotValidator, _, err := repo.GetValidatorByKey(t.Context(), vs1.Epoch, key.Tag, key.Payload)
 			require.NoError(t, err)
 			assert.Equal(t, validator, gotValidator)
 		}
@@ -122,20 +124,20 @@ func TestRepository_ValidatorSet(t *testing.T) {
 			key := validator.Keys[0]
 
 			// Get validator by key should return the correct validator
-			gotValidator, err := repo.GetValidatorByKey(t.Context(), vs2.Epoch, key.Tag, key.Payload)
+			gotValidator, _, err := repo.GetValidatorByKey(t.Context(), vs2.Epoch, key.Tag, key.Payload)
 			require.NoError(t, err)
 			assert.Equal(t, validator, gotValidator)
 		}
 
 		// Test non-existent validator
 		fakeKey := []byte("fake-key-that-does-not-exist")
-		_, err := repo.GetValidatorByKey(t.Context(), vs1.Epoch, entity.KeyTag(1), fakeKey)
+		_, _, err := repo.GetValidatorByKey(t.Context(), vs1.Epoch, entity.KeyTag(1), fakeKey)
 		assert.True(t, errors.Is(err, entity.ErrEntityNotFound))
 
 		// Test non-existent epoch
 		if len(vs1.Validators) > 0 && len(vs1.Validators[0].Keys) > 0 {
 			key := vs1.Validators[0].Keys[0]
-			_, err := repo.GetValidatorByKey(t.Context(), 999, key.Tag, key.Payload)
+			_, _, err := repo.GetValidatorByKey(t.Context(), 999, key.Tag, key.Payload)
 			assert.True(t, errors.Is(err, entity.ErrEntityNotFound))
 		}
 	})
@@ -171,7 +173,7 @@ func TestRepository_ValidatorSet_EmptyRepository(t *testing.T) {
 
 	t.Run("get validator by key from empty repo", func(t *testing.T) {
 		fakeKey := []byte("fake-key")
-		_, err := repo.GetValidatorByKey(t.Context(), 1, entity.KeyTag(1), fakeKey)
+		_, _, err := repo.GetValidatorByKey(t.Context(), 1, entity.KeyTag(1), fakeKey)
 		assert.True(t, errors.Is(err, entity.ErrEntityNotFound))
 	})
 }
@@ -236,7 +238,7 @@ func TestRepository_ValidatorSet_ValidatorIndexing(t *testing.T) {
 		for _, validator := range vs.Validators {
 			for _, key := range validator.Keys {
 				// Should be able to find validator by any of their keys
-				foundValidator, err := repo.GetValidatorByKey(t.Context(), vs.Epoch, key.Tag, key.Payload)
+				foundValidator, _, err := repo.GetValidatorByKey(t.Context(), vs.Epoch, key.Tag, key.Payload)
 				require.NoError(t, err)
 				assert.Equal(t, validator, foundValidator)
 			}
@@ -250,7 +252,7 @@ func TestRepository_ValidatorSet_ValidatorIndexing(t *testing.T) {
 			wrongKeyTag := key.Tag + 100 // Use a different key tag
 
 			// Should not find validator with wrong key tag but same payload
-			_, err := repo.GetValidatorByKey(t.Context(), vs.Epoch, wrongKeyTag, key.Payload)
+			_, _, err := repo.GetValidatorByKey(t.Context(), vs.Epoch, wrongKeyTag, key.Payload)
 			assert.True(t, errors.Is(err, entity.ErrEntityNotFound))
 		}
 	})
@@ -292,6 +294,76 @@ func TestRepository_ValidatorSet_MultiKeyStorageProblem(t *testing.T) {
 		// Verify the validator has all its keys
 		assert.Equal(t, vs.Validators[0], *foundValidator, "Retrieved validator should match original")
 		assert.Len(t, foundValidator.Keys, 3, "Validator should have all 3 keys")
+	})
+}
+
+func TestRepository_ValidatorSet_ActiveIndex(t *testing.T) {
+	repo := setupTestRepository(t)
+
+	// Create validator set with mixed active/inactive validators
+	vs := randomValidatorSet(t, 1, entity.HeaderCommitted)
+
+	// Modify validators to have specific active/inactive states and addresses
+	// Note: validators must be sorted by operator address ascending
+	vs.Validators = []entity.Validator{
+		{
+			Operator:    common.HexToAddress("0x0000000000000000000000000000000000000000"),
+			VotingPower: entity.ToVotingPower(big.NewInt(300)),
+			IsActive:    true, // Should get active index 0 (first when sorted by address)
+			Keys: []entity.ValidatorKey{
+				{Tag: entity.KeyTag(1), Payload: []byte("active_key_0")},
+			},
+		},
+		{
+			Operator:    common.HexToAddress("0x2222222222222222222222222222222222222222"),
+			VotingPower: entity.ToVotingPower(big.NewInt(200)),
+			IsActive:    false, // Should get active index -1 (inactive) - positioned between two active validators
+			Keys: []entity.ValidatorKey{
+				{Tag: entity.KeyTag(1), Payload: []byte("inactive_key")},
+			},
+		},
+		{
+			Operator:    common.HexToAddress("0x3333333333333333333333333333333333333333"),
+			VotingPower: entity.ToVotingPower(big.NewInt(100)),
+			IsActive:    true, // Should get active index 1 (second active validator, despite inactive validator in between)
+			Keys: []entity.ValidatorKey{
+				{Tag: entity.KeyTag(1), Payload: []byte("active_key_2")},
+			},
+		},
+	}
+
+	// Save validator set
+	err := repo.SaveValidatorSet(t.Context(), vs)
+	require.NoError(t, err)
+
+	t.Run("active validator gets correct index", func(t *testing.T) {
+		// Test first active validator (0x0000... should be index 0)
+		validator, activeIndex, err := repo.GetValidatorByKey(t.Context(), vs.Epoch, entity.KeyTag(1), []byte("active_key_0"))
+		require.NoError(t, err)
+
+		assert.Equal(t, common.HexToAddress("0x0000000000000000000000000000000000000000"), validator.Operator)
+		assert.True(t, validator.IsActive)
+		assert.Equal(t, 0, activeIndex, "First active validator (by address sort) should have index 0")
+	})
+
+	t.Run("second active validator gets correct index despite inactive validator in between", func(t *testing.T) {
+		// Test second active validator (0x3333... should be index 1, even though inactive 0x2222... is between them)
+		validator, activeIndex, err := repo.GetValidatorByKey(t.Context(), vs.Epoch, entity.KeyTag(1), []byte("active_key_2"))
+		require.NoError(t, err)
+
+		assert.Equal(t, common.HexToAddress("0x3333333333333333333333333333333333333333"), validator.Operator)
+		assert.True(t, validator.IsActive)
+		assert.Equal(t, 1, activeIndex, "Second active validator should have index 1, inactive validators should not affect active indexing")
+	})
+
+	t.Run("inactive validator gets index -1", func(t *testing.T) {
+		// Test inactive validator
+		validator, activeIndex, err := repo.GetValidatorByKey(t.Context(), vs.Epoch, entity.KeyTag(1), []byte("inactive_key"))
+		require.NoError(t, err)
+
+		assert.Equal(t, common.HexToAddress("0x2222222222222222222222222222222222222222"), validator.Operator)
+		assert.False(t, validator.IsActive)
+		assert.Equal(t, -1, activeIndex, "Inactive validator should have index -1")
 	})
 }
 

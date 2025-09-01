@@ -18,7 +18,7 @@ import (
 //go:generate mockgen -source=signature_listener_uc.go -destination=mocks/signature_listener_uc.go -package=mocks
 
 type repo interface {
-	GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, error)
+	GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, int, error)
 	DoUpdateInTx(ctx context.Context, f func(ctx context.Context) error) error
 	GetSignatureMap(_ context.Context, reqHash common.Hash) (entity.SignatureMap, error)
 	UpdateSignatureMap(_ context.Context, vm entity.SignatureMap) error
@@ -63,7 +63,7 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 		return errors.Errorf("failed to verify signature: %w", err)
 	}
 
-	validator, err := s.cfg.Repo.GetValidatorByKey(ctx, uint64(msg.Epoch), msg.KeyTag, publicKey.OnChain())
+	validator, _, err := s.cfg.Repo.GetValidatorByKey(ctx, uint64(msg.Epoch), msg.KeyTag, publicKey.OnChain())
 	if err != nil {
 		return errors.Errorf("validator not found for public key %x: %w", msg.Signature.PublicKey, err)
 	}

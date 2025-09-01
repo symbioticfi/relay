@@ -288,6 +288,15 @@ func (va Validators) SortByOperatorAddressAsc() {
 	})
 }
 
+func (va Validators) CheckIsSortedByOperatorAddressAsc() error {
+	if !slices.IsSortedFunc(va, func(a, b Validator) int {
+		return a.Operator.Cmp(b.Operator)
+	}) {
+		return errors.New("validators are not sorted by operator address ascending")
+	}
+	return nil
+}
+
 func (va Validators) GetTotalActiveVotingPower() VotingPower {
 	totalVotingPower := big.NewInt(0)
 	for _, validator := range va {
