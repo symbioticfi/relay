@@ -7,7 +7,7 @@ import (
 	"github.com/go-errors/errors"
 )
 
-type ValidatorMap struct {
+type SignatureMap struct {
 	RequestHash         common.Hash
 	Epoch               uint64
 	ActiveValidatorsMap map[common.Address]struct{}
@@ -17,7 +17,7 @@ type ValidatorMap struct {
 	CurrentVotingPower  VotingPower
 }
 
-func NewValidatorMap(requestHash common.Hash, vs ValidatorSet) ValidatorMap {
+func NewSignatureMap(requestHash common.Hash, vs ValidatorSet) SignatureMap {
 	activeValidators := vs.Validators.GetActiveValidators()
 	m := make(map[common.Address]struct{}, len(activeValidators))
 	totalVotingPower := big.NewInt(0)
@@ -26,7 +26,7 @@ func NewValidatorMap(requestHash common.Hash, vs ValidatorSet) ValidatorMap {
 		totalVotingPower = new(big.Int).Add(totalVotingPower, validator.VotingPower.Int)
 	}
 
-	return ValidatorMap{
+	return SignatureMap{
 		RequestHash:         requestHash,
 		Epoch:               vs.Epoch,
 		ActiveValidatorsMap: m,
@@ -37,7 +37,7 @@ func NewValidatorMap(requestHash common.Hash, vs ValidatorSet) ValidatorMap {
 	}
 }
 
-func (vm *ValidatorMap) SetValidatorPresent(v Validator) error {
+func (vm *SignatureMap) SetValidatorPresent(v Validator) error {
 	if _, ok := vm.ActiveValidatorsMap[v.Operator]; !ok {
 		return errors.New(ErrValidatorNotFound)
 	}
@@ -49,6 +49,6 @@ func (vm *ValidatorMap) SetValidatorPresent(v Validator) error {
 	return nil
 }
 
-func (vm *ValidatorMap) ThresholdReached() bool {
+func (vm *SignatureMap) ThresholdReached() bool {
 	return vm.CurrentVotingPower.Cmp(vm.QuorumThreshold.Int) >= 0
 }

@@ -45,10 +45,10 @@ func TestHandleSignatureReceivedMessage_HappyPath(t *testing.T) {
 	require.Equal(t, signature, signatures[0].Signature)
 	require.Equal(t, privateKey.PublicKey().Raw(), signatures[0].PublicKey)
 
-	// Verify that validator map was updated
-	validatorMap, err := setup.repo.GetValidatorMap(t.Context(), p2pMsg.Message.RequestHash)
+	// Verify that signature map was updated
+	signatureMap, err := setup.repo.GetSignatureMap(t.Context(), p2pMsg.Message.RequestHash)
 	require.NoError(t, err)
-	require.Equal(t, 0, validatorMap.CurrentVotingPower.Cmp(validatorSet.Validators[0].VotingPower.Int))
+	require.Equal(t, 0, signatureMap.CurrentVotingPower.Cmp(validatorSet.Validators[0].VotingPower.Int))
 }
 
 type testSetup struct {

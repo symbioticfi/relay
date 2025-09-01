@@ -19,8 +19,8 @@ func randomRequestHash(t *testing.T) common.Hash {
 	return common.BytesToHash(randomBytes(t, 32))
 }
 
-// randomValidatorMap creates a ValidatorMap with test data
-func randomValidatorMap(t *testing.T, requestHash common.Hash) entity.ValidatorMap {
+// randomSignatureMap creates a SignatureMap with test data
+func randomSignatureMap(t *testing.T, requestHash common.Hash) entity.SignatureMap {
 	t.Helper()
 
 	// Create addresses for validators
@@ -40,7 +40,7 @@ func randomValidatorMap(t *testing.T, requestHash common.Hash) entity.ValidatorM
 		addr2: {},
 	}
 
-	return entity.ValidatorMap{
+	return entity.SignatureMap{
 		RequestHash:         requestHash,
 		Epoch:               randomBigInt(t).Uint64(),
 		ActiveValidatorsMap: activeValidators,
@@ -51,8 +51,8 @@ func randomValidatorMap(t *testing.T, requestHash common.Hash) entity.ValidatorM
 	}
 }
 
-// assertValidatorMapsEqual performs deep equality check on ValidatorMaps
-func assertValidatorMapsEqual(t *testing.T, expected, actual entity.ValidatorMap) {
+// assertSignatureMapsEqual performs deep equality check on SignatureMaps
+func assertSignatureMapsEqual(t *testing.T, expected, actual entity.SignatureMap) {
 	t.Helper()
 
 	assert.Equal(t, expected.RequestHash, actual.RequestHash, "RequestHash mismatch")
@@ -64,28 +64,28 @@ func assertValidatorMapsEqual(t *testing.T, expected, actual entity.ValidatorMap
 	assert.Equal(t, expected.CurrentVotingPower.String(), actual.CurrentVotingPower.String(), "CurrentVotingPower mismatch")
 }
 
-func TestBadgerRepository_ValidatorMap(t *testing.T) {
+func TestBadgerRepository_SignatureMap(t *testing.T) {
 	t.Parallel()
 	repo := setupTestRepository(t)
 
 	requestHash1 := randomRequestHash(t)
 	requestHash2 := randomRequestHash(t)
-	vm1 := randomValidatorMap(t, requestHash1)
-	vm2 := randomValidatorMap(t, requestHash2)
+	vm1 := randomSignatureMap(t, requestHash1)
+	vm2 := randomSignatureMap(t, requestHash2)
 
-	t.Run("UpdateValidatorMap - Success", func(t *testing.T) {
-		err := repo.UpdateValidatorMap(context.Background(), vm1)
+	t.Run("UpdateSignatureMap - Success", func(t *testing.T) {
+		err := repo.UpdateSignatureMap(context.Background(), vm1)
 		require.NoError(t, err)
 
 		// Verify data was saved correctly
-		retrieved, err := repo.GetValidatorMap(context.Background(), requestHash1)
+		retrieved, err := repo.GetSignatureMap(context.Background(), requestHash1)
 		require.NoError(t, err)
-		assertValidatorMapsEqual(t, vm1, retrieved)
+		assertSignatureMapsEqual(t, vm1, retrieved)
 	})
 
-	t.Run("UpdateValidatorMap - Update Existing", func(t *testing.T) {
-		// Save initial validator map
-		err := repo.UpdateValidatorMap(context.Background(), vm1)
+	t.Run("UpdateSignatureMap - Update Existing", func(t *testing.T) {
+		// Save initial signature map
+		err := repo.UpdateSignatureMap(context.Background(), vm1)
 		require.NoError(t, err)
 
 		// Update with modified data
@@ -93,84 +93,84 @@ func TestBadgerRepository_ValidatorMap(t *testing.T) {
 		updatedVM.Epoch = vm1.Epoch + 1
 		updatedVM.CurrentVotingPower = entity.ToVotingPower(big.NewInt(999))
 
-		err = repo.UpdateValidatorMap(context.Background(), updatedVM)
+		err = repo.UpdateSignatureMap(context.Background(), updatedVM)
 		require.NoError(t, err)
 
 		// Verify updated data
-		retrieved, err := repo.GetValidatorMap(context.Background(), requestHash1)
+		retrieved, err := repo.GetSignatureMap(context.Background(), requestHash1)
 		require.NoError(t, err)
-		assertValidatorMapsEqual(t, updatedVM, retrieved)
+		assertSignatureMapsEqual(t, updatedVM, retrieved)
 	})
 
-	t.Run("GetValidatorMap - Success", func(t *testing.T) {
-		// Save two different validator maps
-		err := repo.UpdateValidatorMap(context.Background(), vm1)
+	t.Run("GetSignatureMap - Success", func(t *testing.T) {
+		// Save two different signature maps
+		err := repo.UpdateSignatureMap(context.Background(), vm1)
 		require.NoError(t, err)
-		err = repo.UpdateValidatorMap(context.Background(), vm2)
+		err = repo.UpdateSignatureMap(context.Background(), vm2)
 		require.NoError(t, err)
 
-		// Retrieve first validator map
-		retrieved1, err := repo.GetValidatorMap(context.Background(), requestHash1)
+		// Retrieve first signature map
+		retrieved1, err := repo.GetSignatureMap(context.Background(), requestHash1)
 		require.NoError(t, err)
-		assertValidatorMapsEqual(t, vm1, retrieved1)
+		assertSignatureMapsEqual(t, vm1, retrieved1)
 
-		// Retrieve second validator map
-		retrieved2, err := repo.GetValidatorMap(context.Background(), requestHash2)
+		// Retrieve second signature map
+		retrieved2, err := repo.GetSignatureMap(context.Background(), requestHash2)
 		require.NoError(t, err)
-		assertValidatorMapsEqual(t, vm2, retrieved2)
+		assertSignatureMapsEqual(t, vm2, retrieved2)
 	})
 
-	t.Run("GetValidatorMap - Not Found", func(t *testing.T) {
+	t.Run("GetSignatureMap - Not Found", func(t *testing.T) {
 		nonExistentHash := randomRequestHash(t)
 
-		_, err := repo.GetValidatorMap(context.Background(), nonExistentHash)
+		_, err := repo.GetSignatureMap(context.Background(), nonExistentHash)
 		require.Error(t, err)
 		assert.True(t, errors.Is(err, entity.ErrEntityNotFound), "Expected ErrEntityNotFound, got: %v", err)
 	})
 
-	t.Run("Multiple ValidatorMaps - Independence", func(t *testing.T) {
-		// Create multiple validator maps
+	t.Run("Multiple SignatureMaps - Independence", func(t *testing.T) {
+		// Create multiple signature maps
 		hashes := make([]common.Hash, 5)
-		vms := make([]entity.ValidatorMap, 5)
+		vms := make([]entity.SignatureMap, 5)
 
 		for i := 0; i < 5; i++ {
 			hashes[i] = randomRequestHash(t)
-			vms[i] = randomValidatorMap(t, hashes[i])
+			vms[i] = randomSignatureMap(t, hashes[i])
 
-			err := repo.UpdateValidatorMap(context.Background(), vms[i])
+			err := repo.UpdateSignatureMap(context.Background(), vms[i])
 			require.NoError(t, err)
 		}
 
 		// Verify all can be retrieved correctly
 		for i := 0; i < 5; i++ {
-			retrieved, err := repo.GetValidatorMap(context.Background(), hashes[i])
+			retrieved, err := repo.GetSignatureMap(context.Background(), hashes[i])
 			require.NoError(t, err)
-			assertValidatorMapsEqual(t, vms[i], retrieved)
+			assertSignatureMapsEqual(t, vms[i], retrieved)
 		}
 	})
 }
 
-func TestValidatorMapSerialization(t *testing.T) {
+func TestSignatureMapSerialization(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Serialization Round-Trip - Complete Data", func(t *testing.T) {
-		original := randomValidatorMap(t, randomRequestHash(t))
+		original := randomSignatureMap(t, randomRequestHash(t))
 
 		// Serialize
-		data, err := validatorMapToBytes(original)
+		data, err := signatureMapToBytes(original)
 		require.NoError(t, err)
 		assert.NotEmpty(t, data)
 
 		// Deserialize
-		deserialized, err := bytesToValidatorMap(data)
+		deserialized, err := bytesToSignatureMap(data)
 		require.NoError(t, err)
 
 		// Verify round-trip preservation
-		assertValidatorMapsEqual(t, original, deserialized)
+		assertSignatureMapsEqual(t, original, deserialized)
 	})
 
 	t.Run("Serialization - Empty Maps", func(t *testing.T) {
-		vm := entity.ValidatorMap{
+		vm := entity.SignatureMap{
 			RequestHash:         randomRequestHash(t),
 			Epoch:               123,
 			ActiveValidatorsMap: make(map[common.Address]struct{}),
@@ -181,22 +181,22 @@ func TestValidatorMapSerialization(t *testing.T) {
 		}
 
 		// Serialize
-		data, err := validatorMapToBytes(vm)
+		data, err := signatureMapToBytes(vm)
 		require.NoError(t, err)
 
 		// Deserialize
-		deserialized, err := bytesToValidatorMap(data)
+		deserialized, err := bytesToSignatureMap(data)
 		require.NoError(t, err)
 
-		assertValidatorMapsEqual(t, vm, deserialized)
+		assertSignatureMapsEqual(t, vm, deserialized)
 	})
 
 	t.Run("Serialization - Large Numbers", func(t *testing.T) {
-		// Create ValidatorMap with large big.Int values
+		// Create SignatureMap with large big.Int values
 		largeBigInt := new(big.Int)
 		largeBigInt.SetString("123456789012345678901234567890", 10)
 
-		vm := entity.ValidatorMap{
+		vm := entity.SignatureMap{
 			RequestHash:         randomRequestHash(t),
 			Epoch:               18446744073709551615, // Max uint64
 			ActiveValidatorsMap: make(map[common.Address]struct{}),
@@ -207,13 +207,13 @@ func TestValidatorMapSerialization(t *testing.T) {
 		}
 
 		// Serialize and deserialize
-		data, err := validatorMapToBytes(vm)
+		data, err := signatureMapToBytes(vm)
 		require.NoError(t, err)
 
-		deserialized, err := bytesToValidatorMap(data)
+		deserialized, err := bytesToSignatureMap(data)
 		require.NoError(t, err)
 
-		assertValidatorMapsEqual(t, vm, deserialized)
+		assertSignatureMapsEqual(t, vm, deserialized)
 	})
 
 	t.Run("Serialization - Address Conversion", func(t *testing.T) {
@@ -221,7 +221,7 @@ func TestValidatorMapSerialization(t *testing.T) {
 		addr1 := common.HexToAddress("0x1234567890123456789012345678901234567890")
 		addr2 := common.HexToAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd")
 
-		vm := entity.ValidatorMap{
+		vm := entity.SignatureMap{
 			RequestHash: randomRequestHash(t),
 			Epoch:       42,
 			ActiveValidatorsMap: map[common.Address]struct{}{
@@ -237,13 +237,13 @@ func TestValidatorMapSerialization(t *testing.T) {
 		}
 
 		// Serialize and deserialize
-		data, err := validatorMapToBytes(vm)
+		data, err := signatureMapToBytes(vm)
 		require.NoError(t, err)
 
-		deserialized, err := bytesToValidatorMap(data)
+		deserialized, err := bytesToSignatureMap(data)
 		require.NoError(t, err)
 
-		assertValidatorMapsEqual(t, vm, deserialized)
+		assertSignatureMapsEqual(t, vm, deserialized)
 
 		// Verify specific addresses are preserved
 		_, hasAddr1 := deserialized.ActiveValidatorsMap[addr1]
@@ -260,50 +260,50 @@ func TestValidatorMapSerialization(t *testing.T) {
 	t.Run("Deserialization - Invalid JSON", func(t *testing.T) {
 		invalidJSON := []byte(`{"invalid": "json", "missing_fields"}`)
 
-		_, err := bytesToValidatorMap(invalidJSON)
+		_, err := bytesToSignatureMap(invalidJSON)
 		assert.Error(t, err, "Should fail with invalid JSON")
 	})
 }
 
-func TestValidatorMapTransactions(t *testing.T) {
+func TestSignatureMapTransactions(t *testing.T) {
 	t.Parallel()
 	repo := setupTestRepository(t)
 
 	t.Run("Operations Within Transaction", func(t *testing.T) {
 		requestHash := randomRequestHash(t)
-		vm := randomValidatorMap(t, requestHash)
+		vm := randomSignatureMap(t, requestHash)
 
 		err := repo.DoUpdateInTx(context.Background(), func(ctx context.Context) error {
 			// Update within transaction
-			err := repo.UpdateValidatorMap(ctx, vm)
+			err := repo.UpdateSignatureMap(ctx, vm)
 			require.NoError(t, err)
 
 			// Get within same transaction - should work
-			retrieved, err := repo.GetValidatorMap(ctx, requestHash)
+			retrieved, err := repo.GetSignatureMap(ctx, requestHash)
 			require.NoError(t, err)
-			assertValidatorMapsEqual(t, vm, retrieved)
+			assertSignatureMapsEqual(t, vm, retrieved)
 
 			return nil
 		})
 		require.NoError(t, err)
 
 		// Verify data persisted after transaction
-		retrieved, err := repo.GetValidatorMap(context.Background(), requestHash)
+		retrieved, err := repo.GetSignatureMap(context.Background(), requestHash)
 		require.NoError(t, err)
-		assertValidatorMapsEqual(t, vm, retrieved)
+		assertSignatureMapsEqual(t, vm, retrieved)
 	})
 
 	t.Run("Transaction Rollback", func(t *testing.T) {
 		requestHash := randomRequestHash(t)
-		vm := randomValidatorMap(t, requestHash)
+		vm := randomSignatureMap(t, requestHash)
 
 		// Transaction that will rollback due to error
 		err := repo.DoUpdateInTx(context.Background(), func(ctx context.Context) error {
-			err := repo.UpdateValidatorMap(ctx, vm)
+			err := repo.UpdateSignatureMap(ctx, vm)
 			require.NoError(t, err)
 
 			// Verify data exists within transaction
-			_, err = repo.GetValidatorMap(ctx, requestHash)
+			_, err = repo.GetSignatureMap(ctx, requestHash)
 			require.NoError(t, err)
 
 			// Return error to trigger rollback
@@ -312,7 +312,7 @@ func TestValidatorMapTransactions(t *testing.T) {
 		require.Error(t, err)
 
 		// Verify data was not persisted due to rollback
-		_, err = repo.GetValidatorMap(context.Background(), requestHash)
+		_, err = repo.GetSignatureMap(context.Background(), requestHash)
 		require.Error(t, err)
 		assert.True(t, errors.Is(err, entity.ErrEntityNotFound))
 	})
@@ -320,59 +320,59 @@ func TestValidatorMapTransactions(t *testing.T) {
 	t.Run("Mixed Read and Write in Transaction", func(t *testing.T) {
 		// Setup existing data
 		existingHash := randomRequestHash(t)
-		existingVM := randomValidatorMap(t, existingHash)
-		err := repo.UpdateValidatorMap(context.Background(), existingVM)
+		existingVM := randomSignatureMap(t, existingHash)
+		err := repo.UpdateSignatureMap(context.Background(), existingVM)
 		require.NoError(t, err)
 
 		newHash := randomRequestHash(t)
-		newVM := randomValidatorMap(t, newHash)
+		newVM := randomSignatureMap(t, newHash)
 
 		err = repo.DoUpdateInTx(context.Background(), func(ctx context.Context) error {
 			// Read existing data
-			retrieved, err := repo.GetValidatorMap(ctx, existingHash)
+			retrieved, err := repo.GetSignatureMap(ctx, existingHash)
 			require.NoError(t, err)
-			assertValidatorMapsEqual(t, existingVM, retrieved)
+			assertSignatureMapsEqual(t, existingVM, retrieved)
 
 			// Write new data
-			err = repo.UpdateValidatorMap(ctx, newVM)
+			err = repo.UpdateSignatureMap(ctx, newVM)
 			require.NoError(t, err)
 
 			// Read newly written data within same transaction
-			newRetrieved, err := repo.GetValidatorMap(ctx, newHash)
+			newRetrieved, err := repo.GetSignatureMap(ctx, newHash)
 			require.NoError(t, err)
-			assertValidatorMapsEqual(t, newVM, newRetrieved)
+			assertSignatureMapsEqual(t, newVM, newRetrieved)
 
 			return nil
 		})
 		require.NoError(t, err)
 
 		// Verify both datasets exist after transaction
-		retrieved1, err := repo.GetValidatorMap(context.Background(), existingHash)
+		retrieved1, err := repo.GetSignatureMap(context.Background(), existingHash)
 		require.NoError(t, err)
-		assertValidatorMapsEqual(t, existingVM, retrieved1)
+		assertSignatureMapsEqual(t, existingVM, retrieved1)
 
-		retrieved2, err := repo.GetValidatorMap(context.Background(), newHash)
+		retrieved2, err := repo.GetSignatureMap(context.Background(), newHash)
 		require.NoError(t, err)
-		assertValidatorMapsEqual(t, newVM, retrieved2)
+		assertSignatureMapsEqual(t, newVM, retrieved2)
 	})
 }
 
-func TestValidatorMapKeyGeneration(t *testing.T) {
+func TestSignatureMapKeyGeneration(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Key Format", func(t *testing.T) {
 		hash := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
-		key := keyValidatorMap(hash)
+		key := keySignatureMap(hash)
 
-		expectedKey := "validator_map:0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+		expectedKey := "signature_map:0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 		assert.Equal(t, expectedKey, string(key))
 	})
 
 	t.Run("Key Consistency", func(t *testing.T) {
 		hash := randomRequestHash(t)
 
-		key1 := keyValidatorMap(hash)
-		key2 := keyValidatorMap(hash)
+		key1 := keySignatureMap(hash)
+		key2 := keySignatureMap(hash)
 
 		assert.Equal(t, key1, key2, "Same hash should produce same key")
 	})
@@ -381,19 +381,19 @@ func TestValidatorMapKeyGeneration(t *testing.T) {
 		hash1 := randomRequestHash(t)
 		hash2 := randomRequestHash(t)
 
-		key1 := keyValidatorMap(hash1)
-		key2 := keyValidatorMap(hash2)
+		key1 := keySignatureMap(hash1)
+		key2 := keySignatureMap(hash2)
 
 		assert.NotEqual(t, key1, key2, "Different hashes should produce different keys")
 	})
 }
 
-func TestValidatorMapEdgeCases(t *testing.T) {
+func TestSignatureMapEdgeCases(t *testing.T) {
 	t.Parallel()
 	repo := setupTestRepository(t)
 
 	t.Run("Zero Values", func(t *testing.T) {
-		vm := entity.ValidatorMap{
+		vm := entity.SignatureMap{
 			RequestHash:         common.Hash{}, // Zero hash
 			Epoch:               0,
 			ActiveValidatorsMap: make(map[common.Address]struct{}),
@@ -403,17 +403,17 @@ func TestValidatorMapEdgeCases(t *testing.T) {
 			CurrentVotingPower:  entity.ToVotingPower(big.NewInt(0)),
 		}
 
-		err := repo.UpdateValidatorMap(context.Background(), vm)
+		err := repo.UpdateSignatureMap(context.Background(), vm)
 		require.NoError(t, err)
 
-		retrieved, err := repo.GetValidatorMap(context.Background(), common.Hash{})
+		retrieved, err := repo.GetSignatureMap(context.Background(), common.Hash{})
 		require.NoError(t, err)
-		assertValidatorMapsEqual(t, vm, retrieved)
+		assertSignatureMapsEqual(t, vm, retrieved)
 	})
 
 	t.Run("Single Validator", func(t *testing.T) {
 		singleAddr := common.BytesToAddress(randomBytes(t, 20))
-		vm := entity.ValidatorMap{
+		vm := entity.SignatureMap{
 			RequestHash: randomRequestHash(t),
 			Epoch:       1,
 			ActiveValidatorsMap: map[common.Address]struct{}{
@@ -427,16 +427,16 @@ func TestValidatorMapEdgeCases(t *testing.T) {
 			CurrentVotingPower: entity.ToVotingPower(big.NewInt(1)),
 		}
 
-		err := repo.UpdateValidatorMap(context.Background(), vm)
+		err := repo.UpdateSignatureMap(context.Background(), vm)
 		require.NoError(t, err)
 
-		retrieved, err := repo.GetValidatorMap(context.Background(), vm.RequestHash)
+		retrieved, err := repo.GetSignatureMap(context.Background(), vm.RequestHash)
 		require.NoError(t, err)
-		assertValidatorMapsEqual(t, vm, retrieved)
+		assertSignatureMapsEqual(t, vm, retrieved)
 	})
 
 	t.Run("Many Validators", func(t *testing.T) {
-		// Create validator map with many validators
+		// Create signature map with many validators
 		activeValidators := make(map[common.Address]struct{})
 		isPresent := make(map[common.Address]struct{})
 
@@ -450,7 +450,7 @@ func TestValidatorMapEdgeCases(t *testing.T) {
 			}
 		}
 
-		vm := entity.ValidatorMap{
+		vm := entity.SignatureMap{
 			RequestHash:         randomRequestHash(t),
 			Epoch:               100,
 			ActiveValidatorsMap: activeValidators,
@@ -460,11 +460,11 @@ func TestValidatorMapEdgeCases(t *testing.T) {
 			CurrentVotingPower:  entity.ToVotingPower(big.NewInt(5000)),
 		}
 
-		err := repo.UpdateValidatorMap(context.Background(), vm)
+		err := repo.UpdateSignatureMap(context.Background(), vm)
 		require.NoError(t, err)
 
-		retrieved, err := repo.GetValidatorMap(context.Background(), vm.RequestHash)
+		retrieved, err := repo.GetSignatureMap(context.Background(), vm.RequestHash)
 		require.NoError(t, err)
-		assertValidatorMapsEqual(t, vm, retrieved)
+		assertSignatureMapsEqual(t, vm, retrieved)
 	})
 }

@@ -23,7 +23,7 @@ type repository interface {
 	GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error)
 	GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error)
 	UpdateSignatureStat(_ context.Context, reqHash common.Hash, s entity.SignatureStatStage, t time.Time) (entity.SignatureStat, error)
-	GetValidatorMap(_ context.Context, reqHash common.Hash) (entity.ValidatorMap, error)
+	GetSignatureMap(_ context.Context, reqHash common.Hash) (entity.SignatureMap, error)
 }
 
 type p2pClient interface {
@@ -77,33 +77,34 @@ func NewAggregatorApp(cfg Config) (*AggregatorApp, error) {
 func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error {
 	ctx = log.WithComponent(ctx, "aggregator")
 
-	validatorMap, err := s.cfg.Repo.GetValidatorMap(ctx, msg.RequestHash)
+	signatureMap, err := s.cfg.Repo.GetSignatureMap(ctx, msg.RequestHash)
 	if err != nil {
-		return errors.Errorf("failed to get valset validator map: %w", err)
+		return errors.Errorf("failed to get valset signature map: %w", err)
 	}
 
-	if validatorMap.RequestHash != msg.RequestHash || validatorMap.Epoch != uint64(msg.Epoch) {
-		return errors.Errorf("validator map context mismatch: map %s/%d vs msg %s/%d",
-			validatorMap.RequestHash.Hex(), validatorMap.Epoch,
+	if signatureMap.RequestHash != msg.RequestHash || signatureMap.Epoch != uint64(msg.Epoch) {
+		return errors.Errorf("signature map context mismatch: map %s/%d vs msg %s/%d",
+			signatureMap.RequestHash.Hex(), signatureMap.Epoch,
 			msg.RequestHash.Hex(), msg.Epoch,
 		)
 	}
 
-	if !s.cfg.AggregationPolicy.ShouldAggregate(validatorMap) {
-		slog.DebugContext(ctx, "Aggregation policy isn't met",
-			"currentVotingPower", validatorMap.CurrentVotingPower.String(),
-			"quorumThreshold", validatorMap.QuorumThreshold.String(),
-			"totalActiveVotingPower", validatorMap.TotalVotingPower.String(),
-			"totalValidators", len(validatorMap.ActiveValidatorsMap),
-			"signers", len(validatorMap.IsPresent),
+	if !s.cfg.AggregationPolicy.ShouldAggregate(signatureMap) {
+		slog.DebugContext(ctx, "Quorum not reached yet",
+			"currentVotingPower", signatureMap.CurrentVotingPower.String(),
+			"quorumThreshold", signatureMap.QuorumThreshold.String(),
+			"totalActiveVotingPower", signatureMap.TotalVotingPower.String(),
+			"totalActiveVotingPower", signatureMap.TotalVotingPower.String(),
+			"totalValidators", len(signatureMap.ActiveValidatorsMap),
+			"signers", len(signatureMap.IsPresent),
 		)
 		return nil
 	}
 
 	slog.InfoContext(ctx, "Quorum reached, aggregating signatures and creating proof",
-		"currentVotingPower", validatorMap.CurrentVotingPower.String(),
-		"quorumThreshold", validatorMap.QuorumThreshold.String(),
-		"totalActiveVotingPower", validatorMap.TotalVotingPower.String(),
+		"currentVotingPower", signatureMap.CurrentVotingPower.String(),
+		"quorumThreshold", signatureMap.QuorumThreshold.String(),
+		"totalActiveVotingPower", signatureMap.TotalVotingPower.String(),
 	)
 
 	if _, err := s.cfg.Repo.UpdateSignatureStat(ctx, msg.RequestHash, entity.SignatureStatStageAggQuorumReached, time.Now()); err != nil {

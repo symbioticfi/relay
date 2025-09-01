@@ -73,6 +73,21 @@ func (mr *MockrepositoryMockRecorder) GetConfigByEpoch(ctx, epoch any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigByEpoch", reflect.TypeOf((*Mockrepository)(nil).GetConfigByEpoch), ctx, epoch)
 }
 
+// GetSignatureMap mocks base method.
+func (m *Mockrepository) GetSignatureMap(arg0 context.Context, reqHash common.Hash) (entity.SignatureMap, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSignatureMap", arg0, reqHash)
+	ret0, _ := ret[0].(entity.SignatureMap)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSignatureMap indicates an expected call of GetSignatureMap.
+func (mr *MockrepositoryMockRecorder) GetSignatureMap(arg0, reqHash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureMap", reflect.TypeOf((*Mockrepository)(nil).GetSignatureMap), arg0, reqHash)
+}
+
 // GetSignatureRequest mocks base method.
 func (m *Mockrepository) GetSignatureRequest(arg0 context.Context, reqHash common.Hash) (entity.SignatureRequest, error) {
 	m.ctrl.T.Helper()
@@ -86,21 +101,6 @@ func (m *Mockrepository) GetSignatureRequest(arg0 context.Context, reqHash commo
 func (mr *MockrepositoryMockRecorder) GetSignatureRequest(arg0, reqHash any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureRequest", reflect.TypeOf((*Mockrepository)(nil).GetSignatureRequest), arg0, reqHash)
-}
-
-// GetValidatorMap mocks base method.
-func (m *Mockrepository) GetValidatorMap(arg0 context.Context, reqHash common.Hash) (entity.ValidatorMap, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetValidatorMap", arg0, reqHash)
-	ret0, _ := ret[0].(entity.ValidatorMap)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetValidatorMap indicates an expected call of GetValidatorMap.
-func (mr *MockrepositoryMockRecorder) GetValidatorMap(arg0, reqHash any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorMap", reflect.TypeOf((*Mockrepository)(nil).GetValidatorMap), arg0, reqHash)
 }
 
 // GetValidatorSetByEpoch mocks base method.
