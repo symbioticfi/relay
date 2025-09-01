@@ -73,6 +73,21 @@ func (mr *MockrepositoryMockRecorder) GetConfigByEpoch(ctx, epoch any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigByEpoch", reflect.TypeOf((*Mockrepository)(nil).GetConfigByEpoch), ctx, epoch)
 }
 
+// GetSignatureMap mocks base method.
+func (m *Mockrepository) GetSignatureMap(arg0 context.Context, reqHash common.Hash) (entity.SignatureMap, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSignatureMap", arg0, reqHash)
+	ret0, _ := ret[0].(entity.SignatureMap)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSignatureMap indicates an expected call of GetSignatureMap.
+func (mr *MockrepositoryMockRecorder) GetSignatureMap(arg0, reqHash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureMap", reflect.TypeOf((*Mockrepository)(nil).GetSignatureMap), arg0, reqHash)
+}
+
 // GetSignatureRequest mocks base method.
 func (m *Mockrepository) GetSignatureRequest(arg0 context.Context, reqHash common.Hash) (entity.SignatureRequest, error) {
 	m.ctrl.T.Helper()
@@ -86,21 +101,6 @@ func (m *Mockrepository) GetSignatureRequest(arg0 context.Context, reqHash commo
 func (mr *MockrepositoryMockRecorder) GetSignatureRequest(arg0, reqHash any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureRequest", reflect.TypeOf((*Mockrepository)(nil).GetSignatureRequest), arg0, reqHash)
-}
-
-// GetValidatorMap mocks base method.
-func (m *Mockrepository) GetValidatorMap(arg0 context.Context, reqHash common.Hash) (entity.ValidatorMap, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetValidatorMap", arg0, reqHash)
-	ret0, _ := ret[0].(entity.ValidatorMap)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetValidatorMap indicates an expected call of GetValidatorMap.
-func (mr *MockrepositoryMockRecorder) GetValidatorMap(arg0, reqHash any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorMap", reflect.TypeOf((*Mockrepository)(nil).GetValidatorMap), arg0, reqHash)
 }
 
 // GetValidatorSetByEpoch mocks base method.
@@ -268,34 +268,4 @@ func (m *Mockaggregator) Aggregate(valset entity.ValidatorSet, keyTag entity.Key
 func (mr *MockaggregatorMockRecorder) Aggregate(valset, keyTag, messageHash, signatures any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Aggregate", reflect.TypeOf((*Mockaggregator)(nil).Aggregate), valset, keyTag, messageHash, signatures)
-}
-
-// GenerateExtraData mocks base method.
-func (m *Mockaggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []entity.KeyTag) ([]entity.ExtraData, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GenerateExtraData", valset, keyTags)
-	ret0, _ := ret[0].([]entity.ExtraData)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GenerateExtraData indicates an expected call of GenerateExtraData.
-func (mr *MockaggregatorMockRecorder) GenerateExtraData(valset, keyTags any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateExtraData", reflect.TypeOf((*Mockaggregator)(nil).GenerateExtraData), valset, keyTags)
-}
-
-// Verify mocks base method.
-func (m *Mockaggregator) Verify(valset entity.ValidatorSet, keyTag entity.KeyTag, aggregationProof entity.AggregationProof) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Verify", valset, keyTag, aggregationProof)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Verify indicates an expected call of Verify.
-func (mr *MockaggregatorMockRecorder) Verify(valset, keyTag, aggregationProof any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Verify", reflect.TypeOf((*Mockaggregator)(nil).Verify), valset, keyTag, aggregationProof)
 }

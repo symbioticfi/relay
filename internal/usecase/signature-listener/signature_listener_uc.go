@@ -20,8 +20,8 @@ import (
 type repo interface {
 	GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, error)
 	DoUpdateInTx(ctx context.Context, f func(ctx context.Context) error) error
-	GetValidatorMap(_ context.Context, reqHash common.Hash) (entity.ValidatorMap, error)
-	UpdateValidatorMap(_ context.Context, vm entity.ValidatorMap) error
+	GetSignatureMap(_ context.Context, reqHash common.Hash) (entity.SignatureMap, error)
+	UpdateSignatureMap(_ context.Context, vm entity.SignatureMap) error
 	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 	SaveSignature(ctx context.Context, reqHash common.Hash, key entity.RawPublicKey, sig entity.SignatureExtended) error
 }
@@ -75,24 +75,24 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 	slog.DebugContext(ctx, "Found validator", "validator", validator)
 
 	err = s.cfg.Repo.DoUpdateInTx(ctx, func(ctx context.Context) error {
-		validatorMap, err := s.cfg.Repo.GetValidatorMap(ctx, msg.RequestHash)
+		signatureMap, err := s.cfg.Repo.GetSignatureMap(ctx, msg.RequestHash)
 		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
-			return errors.Errorf("failed to get valset validator map: %w", err)
+			return errors.Errorf("failed to get valset signature map: %w", err)
 		}
 		if errors.Is(err, entity.ErrEntityNotFound) {
 			validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
 			if err != nil {
 				return errors.Errorf("failed to get validator set: %w", err)
 			}
-			validatorMap = entity.NewValidatorMap(msg.RequestHash, validatorSet)
+			signatureMap = entity.NewSignatureMap(msg.RequestHash, validatorSet)
 		}
 
-		if err := validatorMap.SetValidatorPresent(validator); err != nil {
+		if err := signatureMap.SetValidatorPresent(validator); err != nil {
 			return errors.Errorf("failed to set validator %s present for request %s: %w", validator.Operator.Hex(), msg.RequestHash.Hex(), err)
 		}
 
-		if err := s.cfg.Repo.UpdateValidatorMap(ctx, validatorMap); err != nil {
-			return errors.Errorf("failed to update valset validator map: %w", err)
+		if err := s.cfg.Repo.UpdateSignatureMap(ctx, signatureMap); err != nil {
+			return errors.Errorf("failed to update valset signature map: %w", err)
 		}
 
 		err = s.cfg.Repo.SaveSignature(ctx, msg.RequestHash, publicKey.Raw(), msg.Signature)

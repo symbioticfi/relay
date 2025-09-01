@@ -65,13 +65,13 @@ func createTestSignatureMessage() entity.SignatureMessage {
 	}
 }
 
-func createTestValidatorMap(thresholdReached bool, requestHash common.Hash, epoch uint64) entity.ValidatorMap {
+func createTestSignatureMap(thresholdReached bool, requestHash common.Hash, epoch uint64) entity.SignatureMap {
 	currentVotingPower := big.NewInt(500)
 	if thresholdReached {
 		currentVotingPower = big.NewInt(700)
 	}
 
-	return entity.ValidatorMap{
+	return entity.SignatureMap{
 		RequestHash:        requestHash,
 		Epoch:              epoch,
 		CurrentVotingPower: entity.ToVotingPower(currentVotingPower),
@@ -108,9 +108,9 @@ func TestHandleSignatureGeneratedMessage_QuorumNotReached(t *testing.T) {
 	msg := createTestSignatureMessage()
 
 	// Setup mocks for quorum not reached case
-	validatorMap := createTestValidatorMap(false, msg.RequestHash, uint64(msg.Epoch)) // threshold NOT reached
+	signatureMap := createTestSignatureMap(false, msg.RequestHash, uint64(msg.Epoch)) // threshold NOT reached
 
-	setup.mockRepo.EXPECT().GetValidatorMap(gomock.Any(), msg.RequestHash).Return(validatorMap, nil)
+	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestHash).Return(signatureMap, nil)
 
 	// Execute
 	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
@@ -125,7 +125,7 @@ func TestHandleSignatureGeneratedMessage_QuorumReached(t *testing.T) {
 	msg := createTestSignatureMessage()
 
 	// Setup mocks for quorum reached case
-	validatorMap := createTestValidatorMap(true, msg.RequestHash, uint64(msg.Epoch)) // threshold reached
+	signatureMap := createTestSignatureMap(true, msg.RequestHash, uint64(msg.Epoch)) // threshold reached
 	validatorSet := createTestValidatorSet()
 	var signatures []entity.SignatureExtended
 	networkConfig := entity.NetworkConfig{
@@ -138,7 +138,7 @@ func TestHandleSignatureGeneratedMessage_QuorumReached(t *testing.T) {
 		ReqHash: msg.RequestHash,
 	}
 
-	setup.mockRepo.EXPECT().GetValidatorMap(gomock.Any(), msg.RequestHash).Return(validatorMap, nil)
+	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestHash).Return(signatureMap, nil)
 	setup.mockRepo.EXPECT().UpdateSignatureStat(gomock.Any(), msg.RequestHash, gomock.Any(), gomock.Any()).Return(stat, nil).Times(2)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), uint64(msg.Epoch)).Return(validatorSet, nil)
 	setup.mockRepo.EXPECT().GetAllSignatures(gomock.Any(), msg.RequestHash).Return(signatures, nil)

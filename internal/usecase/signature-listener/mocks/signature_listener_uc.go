@@ -56,6 +56,21 @@ func (mr *MockrepoMockRecorder) DoUpdateInTx(ctx, f any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DoUpdateInTx", reflect.TypeOf((*Mockrepo)(nil).DoUpdateInTx), ctx, f)
 }
 
+// GetSignatureMap mocks base method.
+func (m *Mockrepo) GetSignatureMap(arg0 context.Context, reqHash common.Hash) (entity.SignatureMap, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSignatureMap", arg0, reqHash)
+	ret0, _ := ret[0].(entity.SignatureMap)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSignatureMap indicates an expected call of GetSignatureMap.
+func (mr *MockrepoMockRecorder) GetSignatureMap(arg0, reqHash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureMap", reflect.TypeOf((*Mockrepo)(nil).GetSignatureMap), arg0, reqHash)
+}
+
 // GetValidatorByKey mocks base method.
 func (m *Mockrepo) GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, error) {
 	m.ctrl.T.Helper()
@@ -69,21 +84,6 @@ func (m *Mockrepo) GetValidatorByKey(ctx context.Context, epoch uint64, keyTag e
 func (mr *MockrepoMockRecorder) GetValidatorByKey(ctx, epoch, keyTag, publicKey any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorByKey", reflect.TypeOf((*Mockrepo)(nil).GetValidatorByKey), ctx, epoch, keyTag, publicKey)
-}
-
-// GetValidatorMap mocks base method.
-func (m *Mockrepo) GetValidatorMap(arg0 context.Context, reqHash common.Hash) (entity.ValidatorMap, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetValidatorMap", arg0, reqHash)
-	ret0, _ := ret[0].(entity.ValidatorMap)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetValidatorMap indicates an expected call of GetValidatorMap.
-func (mr *MockrepoMockRecorder) GetValidatorMap(arg0, reqHash any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorMap", reflect.TypeOf((*Mockrepo)(nil).GetValidatorMap), arg0, reqHash)
 }
 
 // GetValidatorSetByEpoch mocks base method.
@@ -115,16 +115,16 @@ func (mr *MockrepoMockRecorder) SaveSignature(ctx, reqHash, key, sig any) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveSignature", reflect.TypeOf((*Mockrepo)(nil).SaveSignature), ctx, reqHash, key, sig)
 }
 
-// UpdateValidatorMap mocks base method.
-func (m *Mockrepo) UpdateValidatorMap(arg0 context.Context, vm entity.ValidatorMap) error {
+// UpdateSignatureMap mocks base method.
+func (m *Mockrepo) UpdateSignatureMap(arg0 context.Context, vm entity.SignatureMap) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateValidatorMap", arg0, vm)
+	ret := m.ctrl.Call(m, "UpdateSignatureMap", arg0, vm)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UpdateValidatorMap indicates an expected call of UpdateValidatorMap.
-func (mr *MockrepoMockRecorder) UpdateValidatorMap(arg0, vm any) *gomock.Call {
+// UpdateSignatureMap indicates an expected call of UpdateSignatureMap.
+func (mr *MockrepoMockRecorder) UpdateSignatureMap(arg0, vm any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateValidatorMap", reflect.TypeOf((*Mockrepo)(nil).UpdateValidatorMap), arg0, vm)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSignatureMap", reflect.TypeOf((*Mockrepo)(nil).UpdateSignatureMap), arg0, vm)
 }

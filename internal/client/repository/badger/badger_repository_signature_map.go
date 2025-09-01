@@ -12,62 +12,62 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 )
 
-func keyValidatorMap(reqHash common.Hash) []byte {
-	return []byte("validator_map:" + reqHash.Hex())
+func keySignatureMap(reqHash common.Hash) []byte {
+	return []byte("signature_map:" + reqHash.Hex())
 }
 
-func (r *Repository) UpdateValidatorMap(ctx context.Context, vm entity.ValidatorMap) error {
-	bytes, err := validatorMapToBytes(vm)
+func (r *Repository) UpdateSignatureMap(ctx context.Context, vm entity.SignatureMap) error {
+	bytes, err := signatureMapToBytes(vm)
 	if err != nil {
-		return errors.Errorf("failed to marshal valset validator map: %w", err)
+		return errors.Errorf("failed to marshal valset signature map: %w", err)
 	}
 
 	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
-		key := keyValidatorMap(vm.RequestHash)
+		key := keySignatureMap(vm.RequestHash)
 
 		err = getTxn(ctx).Set(key, bytes)
 		if err != nil {
-			return errors.Errorf("failed to store valset validator map: %w", err)
+			return errors.Errorf("failed to store valset signature map: %w", err)
 		}
 		return nil
 	})
 }
 
-func (r *Repository) GetValidatorMap(ctx context.Context, reqHash common.Hash) (entity.ValidatorMap, error) {
-	var vm entity.ValidatorMap
+func (r *Repository) GetSignatureMap(ctx context.Context, reqHash common.Hash) (entity.SignatureMap, error) {
+	var vm entity.SignatureMap
 
 	// Create a new read-only transaction
 	return vm, r.DoViewInTx(ctx, func(ctx context.Context) error {
-		return r.getValidatorMapWithTxn(getTxn(ctx), reqHash, &vm)
+		return r.getSignatureMapWithTxn(getTxn(ctx), reqHash, &vm)
 	})
 }
 
-func (r *Repository) getValidatorMapWithTxn(txn *badger.Txn, reqHash common.Hash, vm *entity.ValidatorMap) error {
-	key := keyValidatorMap(reqHash)
+func (r *Repository) getSignatureMapWithTxn(txn *badger.Txn, reqHash common.Hash, vm *entity.SignatureMap) error {
+	key := keySignatureMap(reqHash)
 
 	item, err := txn.Get(key)
 	if err != nil {
 		if errors.Is(err, badger.ErrKeyNotFound) {
-			return errors.Errorf("no validator map found for request %s: %w", reqHash.Hex(), entity.ErrEntityNotFound)
+			return errors.Errorf("no signature map found for request %s: %w", reqHash.Hex(), entity.ErrEntityNotFound)
 		}
-		return errors.Errorf("failed to get validator map: %w", err)
+		return errors.Errorf("failed to get signature map: %w", err)
 	}
 
 	value, err := item.ValueCopy(nil)
 	if err != nil {
-		return errors.Errorf("failed to copy validator map value: %w", err)
+		return errors.Errorf("failed to copy signature map value: %w", err)
 	}
 
-	result, err := bytesToValidatorMap(value)
+	result, err := bytesToSignatureMap(value)
 	if err != nil {
-		return errors.Errorf("failed to unmarshal validator map: %w", err)
+		return errors.Errorf("failed to unmarshal signature map: %w", err)
 	}
 
 	*vm = result
 	return nil
 }
 
-type validatorMapDTO struct {
+type signatureMapDTO struct {
 	RequestHash        string   `json:"request_hash"`
 	Epoch              uint64   `json:"epoch"`
 	ActiveValidators   []string `json:"active_validators"`
@@ -77,7 +77,7 @@ type validatorMapDTO struct {
 	CurrentVotingPower *big.Int `json:"current_voting_power"`
 }
 
-func validatorMapToBytes(vm entity.ValidatorMap) ([]byte, error) {
+func signatureMapToBytes(vm entity.SignatureMap) ([]byte, error) {
 	activeValidators := make([]string, 0, len(vm.ActiveValidatorsMap))
 	for addr := range vm.ActiveValidatorsMap {
 		activeValidators = append(activeValidators, addr.Hex())
@@ -88,7 +88,7 @@ func validatorMapToBytes(vm entity.ValidatorMap) ([]byte, error) {
 		presentValidators = append(presentValidators, addr.Hex())
 	}
 
-	dto := validatorMapDTO{
+	dto := signatureMapDTO{
 		RequestHash:        vm.RequestHash.Hex(),
 		Epoch:              vm.Epoch,
 		ActiveValidators:   activeValidators,
@@ -100,15 +100,15 @@ func validatorMapToBytes(vm entity.ValidatorMap) ([]byte, error) {
 
 	data, err := json.Marshal(dto)
 	if err != nil {
-		return nil, errors.Errorf("failed to marshal valset validator map: %w", err)
+		return nil, errors.Errorf("failed to marshal valset signature map: %w", err)
 	}
 	return data, nil
 }
 
-func bytesToValidatorMap(data []byte) (entity.ValidatorMap, error) {
-	var dto validatorMapDTO
+func bytesToSignatureMap(data []byte) (entity.SignatureMap, error) {
+	var dto signatureMapDTO
 	if err := json.Unmarshal(data, &dto); err != nil {
-		return entity.ValidatorMap{}, errors.Errorf("failed to unmarshal validator map: %w", err)
+		return entity.SignatureMap{}, errors.Errorf("failed to unmarshal signature map: %w", err)
 	}
 
 	requestHash := common.HexToHash(dto.RequestHash)
@@ -123,7 +123,7 @@ func bytesToValidatorMap(data []byte) (entity.ValidatorMap, error) {
 		presentValidators[common.HexToAddress(addrHex)] = struct{}{}
 	}
 
-	return entity.ValidatorMap{
+	return entity.SignatureMap{
 		RequestHash:         requestHash,
 		Epoch:               dto.Epoch,
 		ActiveValidatorsMap: activeValidators,
