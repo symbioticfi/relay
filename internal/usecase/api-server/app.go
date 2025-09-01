@@ -20,7 +20,6 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"github.com/symbioticfi/relay/core/entity"
-	p2pEntity "github.com/symbioticfi/relay/internal/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
 	"github.com/symbioticfi/relay/pkg/log"
 )
@@ -46,7 +45,7 @@ type evmClient interface {
 }
 
 type aggregator interface {
-	GetAggregationStatus(ctx context.Context, requestHash common.Hash) (p2pEntity.AggregationStatus, error)
+	GetAggregationStatus(ctx context.Context, requestHash common.Hash) (entity.AggregationStatus, error)
 }
 
 type deriver interface {

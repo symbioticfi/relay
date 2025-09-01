@@ -16,13 +16,15 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 )
 
+//go:generate mockgen -source=signer_app.go -destination=mocks/signer_app.go -package=mocks
+
 type repo interface {
 	GetSignatureRequest(ctx context.Context, reqHash common.Hash) (entity.SignatureRequest, error)
 	GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error)
 	SaveAggregationProof(ctx context.Context, reqHash common.Hash, ap entity.AggregationProof) error
 	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
-	GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, error)
-	SaveSignature(ctx context.Context, reqHash common.Hash, key []byte, sig entity.SignatureExtended) error
+	GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, int, error)
+	SaveSignature(ctx context.Context, reqHash common.Hash, key entity.RawPublicKey, sig entity.SignatureExtended) error
 	SaveSignatureRequest(_ context.Context, req entity.SignatureRequest) error
 	UpdateSignatureStat(_ context.Context, reqHash common.Hash, s entity.SignatureStatStage, t time.Time) (entity.SignatureStat, error)
 }
@@ -114,7 +116,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 	}
 
 	public := private.PublicKey()
-	_, err = s.cfg.Repo.GetValidatorByKey(ctx, uint64(req.RequiredEpoch), req.KeyTag, public.OnChain())
+	_, _, err = s.cfg.Repo.GetValidatorByKey(ctx, uint64(req.RequiredEpoch), req.KeyTag, public.OnChain())
 	if err != nil {
 		return errors.Errorf("validator not found in epoch valset for public key: %w", err)
 	}

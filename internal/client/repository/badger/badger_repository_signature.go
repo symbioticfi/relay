@@ -12,7 +12,7 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 )
 
-func keySignature(reqHash common.Hash, key []byte) []byte {
+func keySignature(reqHash common.Hash, key entity.RawPublicKey) []byte {
 	keyHash := crypto.Keccak256Hash(key)
 	return []byte("signature:" + reqHash.Hex() + ":" + keyHash.Hex())
 }
@@ -22,13 +22,14 @@ func keySignaturePrefix(reqHash common.Hash) []byte {
 	return []byte("signature:" + reqHash.Hex() + ":")
 }
 
-func (r *Repository) SaveSignature(_ context.Context, reqHash common.Hash, inKey []byte, sig entity.SignatureExtended) error {
+func (r *Repository) SaveSignature(ctx context.Context, reqHash common.Hash, inKey entity.RawPublicKey, sig entity.SignatureExtended) error {
 	bytes, err := signatureToBytes(sig)
 	if err != nil {
 		return errors.Errorf("failed to marshal signature: %w", err)
 	}
 
-	return r.db.Update(func(txn *badger.Txn) error {
+	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		key := keySignature(reqHash, inKey)
 		err = txn.Set(key, bytes)
 		if err != nil {
@@ -38,10 +39,11 @@ func (r *Repository) SaveSignature(_ context.Context, reqHash common.Hash, inKey
 	})
 }
 
-func (r *Repository) GetAllSignatures(_ context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error) {
+func (r *Repository) GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error) {
 	var signatures []entity.SignatureExtended
 
-	return signatures, r.db.View(func(txn *badger.Txn) error {
+	return signatures, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		prefix := keySignaturePrefix(reqHash)
 		opts := badger.DefaultIteratorOptions
 		opts.Prefix = prefix
