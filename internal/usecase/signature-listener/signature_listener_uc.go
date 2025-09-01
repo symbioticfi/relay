@@ -87,7 +87,7 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 			signatureMap = entity.NewSignatureMap(msg.RequestHash, validatorSet)
 		}
 
-		if err := signatureMap.SetValidatorPresent(validator, activeIndex); err != nil {
+		if err := signatureMap.SetValidatorPresent(activeIndex, validator.VotingPower); err != nil {
 			return errors.Errorf("failed to set validator %s present for request %s: %w", validator.Operator.Hex(), msg.RequestHash.Hex(), err)
 		}
 

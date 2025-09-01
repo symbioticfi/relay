@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"math/big"
 
+	"github.com/RoaringBitmap/roaring/v2"
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
@@ -68,34 +69,27 @@ func (r *Repository) getSignatureMapWithTxn(txn *badger.Txn, reqHash common.Hash
 }
 
 type signatureMapDTO struct {
-	RequestHash        string   `json:"request_hash"`
-	Epoch              uint64   `json:"epoch"`
-	ActiveValidators   []string `json:"active_validators"`
-	PresentValidators  []string `json:"present_validators"`
-	QuorumThreshold    *big.Int `json:"quorum_threshold"`
-	TotalVotingPower   *big.Int `json:"total_voting_power"`
-	CurrentVotingPower *big.Int `json:"current_voting_power"`
+	RequestHash                string   `json:"request_hash"`
+	Epoch                      uint64   `json:"epoch"`
+	SignedValidatorsBitmapData []byte   `json:"signed_validators_bitmap"`
+	QuorumThreshold            *big.Int `json:"quorum_threshold"`
+	TotalVotingPower           *big.Int `json:"total_voting_power"`
+	CurrentVotingPower         *big.Int `json:"current_voting_power"`
 }
 
 func signatureMapToBytes(vm entity.SignatureMap) ([]byte, error) {
-	activeValidators := make([]string, 0, len(vm.ActiveValidatorsMap))
-	for addr := range vm.ActiveValidatorsMap {
-		activeValidators = append(activeValidators, addr.Hex())
-	}
-
-	presentValidators := make([]string, 0, len(vm.SignedValidatorIndexes))
-	for addr := range vm.SignedValidatorIndexes {
-		presentValidators = append(presentValidators, addr.Hex())
+	bitmapBytes, err := vm.SignedValidatorsBitmap.ToBytes()
+	if err != nil {
+		return nil, errors.Errorf("failed to serialize roaring bitmap: %w", err)
 	}
 
 	dto := signatureMapDTO{
-		RequestHash:        vm.RequestHash.Hex(),
-		Epoch:              vm.Epoch,
-		ActiveValidators:   activeValidators,
-		PresentValidators:  presentValidators,
-		QuorumThreshold:    vm.QuorumThreshold.Int,
-		TotalVotingPower:   vm.TotalVotingPower.Int,
-		CurrentVotingPower: vm.CurrentVotingPower.Int,
+		RequestHash:                vm.RequestHash.Hex(),
+		Epoch:                      vm.Epoch,
+		SignedValidatorsBitmapData: bitmapBytes,
+		QuorumThreshold:            vm.QuorumThreshold.Int,
+		TotalVotingPower:           vm.TotalVotingPower.Int,
+		CurrentVotingPower:         vm.CurrentVotingPower.Int,
 	}
 
 	data, err := json.Marshal(dto)
@@ -113,21 +107,18 @@ func bytesToSignatureMap(data []byte) (entity.SignatureMap, error) {
 
 	requestHash := common.HexToHash(dto.RequestHash)
 
-	activeValidators := make(map[common.Address]struct{})
-	for _, addrHex := range dto.ActiveValidators {
-		activeValidators[common.HexToAddress(addrHex)] = struct{}{}
-	}
-
-	presentValidators := make(map[common.Address]struct{})
-	for _, addrHex := range dto.PresentValidators {
-		presentValidators[common.HexToAddress(addrHex)] = struct{}{}
+	bitmap := roaring.New()
+	if len(dto.SignedValidatorsBitmapData) > 0 {
+		_, err := bitmap.FromBuffer(dto.SignedValidatorsBitmapData)
+		if err != nil {
+			return entity.SignatureMap{}, errors.Errorf("failed to deserialize roaring bitmap: %w", err)
+		}
 	}
 
 	return entity.SignatureMap{
 		RequestHash:            requestHash,
 		Epoch:                  dto.Epoch,
-		ActiveValidatorsMap:    activeValidators,
-		SignedValidatorIndexes: presentValidators,
+		SignedValidatorsBitmap: bitmap,
 		QuorumThreshold:        entity.ToVotingPower(dto.QuorumThreshold),
 		TotalVotingPower:       entity.ToVotingPower(dto.TotalVotingPower),
 		CurrentVotingPower:     entity.ToVotingPower(dto.CurrentVotingPower),

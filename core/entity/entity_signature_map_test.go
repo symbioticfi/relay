@@ -57,14 +57,8 @@ func TestNewSignatureMap(t *testing.T) {
 		assert.Equal(t, ToVotingPower(big.NewInt(300)), vm.TotalVotingPower) // Only active validators: 100 + 200
 		assert.Equal(t, ToVotingPower(big.NewInt(0)), vm.CurrentVotingPower)
 
-		// Verify active validators map contains only active validators
-		assert.Len(t, vm.ActiveValidatorsMap, 2)
-		assert.Contains(t, vm.ActiveValidatorsMap, operator1)
-		assert.Contains(t, vm.ActiveValidatorsMap, operator2)
-		assert.NotContains(t, vm.ActiveValidatorsMap, operator3) // Inactive should not be included
-
-		// Verify SignedValidatorIndexes map is empty initially
-		assert.Empty(t, vm.SignedValidatorIndexes)
+		// Verify SignedValidatorsBitmap is empty initially
+		assert.True(t, vm.SignedValidatorsBitmap.IsEmpty())
 	})
 
 	t.Run("creates signature map with no active validators", func(t *testing.T) {
@@ -98,8 +92,7 @@ func TestNewSignatureMap(t *testing.T) {
 		assert.Equal(t, quorumThreshold, vm.QuorumThreshold)
 		assert.Equal(t, ToVotingPower(big.NewInt(0)), vm.TotalVotingPower) // No active validators
 		assert.Equal(t, ToVotingPower(big.NewInt(0)), vm.CurrentVotingPower)
-		assert.Empty(t, vm.ActiveValidatorsMap)
-		assert.Empty(t, vm.SignedValidatorIndexes)
+		assert.True(t, vm.SignedValidatorsBitmap.IsEmpty())
 	})
 
 	t.Run("creates signature map with empty validator set", func(t *testing.T) {
@@ -120,8 +113,7 @@ func TestNewSignatureMap(t *testing.T) {
 		assert.Equal(t, quorumThreshold, vm.QuorumThreshold)
 		assert.Equal(t, ToVotingPower(big.NewInt(0)), vm.TotalVotingPower)
 		assert.Equal(t, ToVotingPower(big.NewInt(0)), vm.CurrentVotingPower)
-		assert.Empty(t, vm.ActiveValidatorsMap)
-		assert.Empty(t, vm.SignedValidatorIndexes)
+		assert.True(t, vm.SignedValidatorsBitmap.IsEmpty())
 	})
 }
 
@@ -129,7 +121,7 @@ func TestSignatureMap_SetValidatorPresent(t *testing.T) {
 	t.Parallel()
 
 	// Setup common test data
-	setupSignatureMap := func() (*SignatureMap, Validator, Validator, Validator) {
+	setupSignatureMap := func() (*SignatureMap, Validator, Validator) {
 		requestHash := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
 		epoch := uint64(5)
 		quorumThreshold := ToVotingPower(big.NewInt(250))
@@ -166,17 +158,17 @@ func TestSignatureMap_SetValidatorPresent(t *testing.T) {
 
 		vm := NewSignatureMap(requestHash, vs)
 
-		return &vm, activeValidator1, activeValidator2, inactiveValidator
+		return &vm, activeValidator1, activeValidator2
 	}
 
 	t.Run("successfully sets active validator as present", func(t *testing.T) {
-		vm, activeValidator1, _, _ := setupSignatureMap()
+		vm, activeValidator1, _ := setupSignatureMap()
 
-		err := vm.SetValidatorPresent(activeValidator1, 0)
+		err := vm.SetValidatorPresent(0, activeValidator1.VotingPower)
 		require.NoError(t, err)
 
-		// Verify validator is marked as present
-		assert.Contains(t, vm.SignedValidatorIndexes, activeValidator1.Operator)
+		// Verify validator index is marked as present
+		assert.True(t, vm.SignedValidatorsBitmap.Contains(0))
 
 		// Verify voting power is updated
 		expectedVotingPower := ToVotingPower(big.NewInt(100)) // activeValidator1's voting power
@@ -184,74 +176,39 @@ func TestSignatureMap_SetValidatorPresent(t *testing.T) {
 	})
 
 	t.Run("successfully sets multiple validators as present", func(t *testing.T) {
-		vm, activeValidator1, activeValidator2, _ := setupSignatureMap()
+		vm, activeValidator1, activeValidator2 := setupSignatureMap()
 
-		// Set first validator present
-		err := vm.SetValidatorPresent(activeValidator1, 0)
+		// Set first validator present (index 0)
+		err := vm.SetValidatorPresent(0, activeValidator1.VotingPower)
 		require.NoError(t, err)
 
-		// Set second validator present
-		err = vm.SetValidatorPresent(activeValidator2, 0)
+		// Set second validator present (index 1)
+		err = vm.SetValidatorPresent(1, activeValidator2.VotingPower)
 		require.NoError(t, err)
 
-		// Verify both validators are marked as present
-		assert.Contains(t, vm.SignedValidatorIndexes, activeValidator1.Operator)
-		assert.Contains(t, vm.SignedValidatorIndexes, activeValidator2.Operator)
+		// Verify both validator indexes are marked as present
+		assert.True(t, vm.SignedValidatorsBitmap.Contains(0))
+		assert.True(t, vm.SignedValidatorsBitmap.Contains(1))
 
 		// Verify total voting power is cumulative
 		expectedVotingPower := ToVotingPower(big.NewInt(300)) // 100 + 200
 		assert.Equal(t, expectedVotingPower, vm.CurrentVotingPower)
 	})
+	t.Run("returns error when validator index is already present", func(t *testing.T) {
+		vm, activeValidator1, _ := setupSignatureMap()
 
-	t.Run("returns error when validator is not in active validators map", func(t *testing.T) {
-		vm, _, _, inactiveValidator := setupSignatureMap()
-
-		err := vm.SetValidatorPresent(inactiveValidator, 0)
-		require.Error(t, err)
-		assert.True(t, errors.Is(err, errors.New(ErrValidatorNotFound)))
-
-		// Verify validator is not marked as present
-		assert.NotContains(t, vm.SignedValidatorIndexes, inactiveValidator.Operator)
-
-		// Verify voting power remains unchanged
-		assert.Equal(t, ToVotingPower(big.NewInt(0)), vm.CurrentVotingPower)
-	})
-
-	t.Run("returns error when validator is already present", func(t *testing.T) {
-		vm, activeValidator1, _, _ := setupSignatureMap()
-
-		// Set validator present first time
-		err := vm.SetValidatorPresent(activeValidator1, 0)
+		// Set validator index present first time
+		err := vm.SetValidatorPresent(0, activeValidator1.VotingPower)
 		require.NoError(t, err)
 
-		// Try to set the same validator present again
-		err = vm.SetValidatorPresent(activeValidator1, 0)
+		// Try to set the same validator index present again
+		err = vm.SetValidatorPresent(0, activeValidator1.VotingPower)
 		require.Error(t, err)
 		assert.True(t, errors.Is(err, errors.New(ErrEntityAlreadyExist)))
 
 		// Verify voting power is not double-counted
 		expectedVotingPower := ToVotingPower(big.NewInt(100)) // Should still be 100, not 200
 		assert.Equal(t, expectedVotingPower, vm.CurrentVotingPower)
-	})
-
-	t.Run("returns error for unknown validator", func(t *testing.T) {
-		vm, _, _, _ := setupSignatureMap()
-
-		unknownValidator := Validator{
-			Operator:    common.HexToAddress("0x9999999999999999999999999999999999999999"),
-			VotingPower: ToVotingPower(big.NewInt(50)),
-			IsActive:    true,
-		}
-
-		err := vm.SetValidatorPresent(unknownValidator, 0)
-		require.Error(t, err)
-		assert.True(t, errors.Is(err, errors.New(ErrValidatorNotFound)))
-
-		// Verify validator is not marked as present
-		assert.NotContains(t, vm.SignedValidatorIndexes, unknownValidator.Operator)
-
-		// Verify voting power remains unchanged
-		assert.Equal(t, ToVotingPower(big.NewInt(0)), vm.CurrentVotingPower)
 	})
 }
 
@@ -364,25 +321,25 @@ func TestSignatureMap_IntegrationScenarios(t *testing.T) {
 		assert.Equal(t, ToVotingPower(big.NewInt(0)), vm.CurrentVotingPower)
 
 		// Add first validator (100) - threshold not reached
-		err := vm.SetValidatorPresent(validators[0], 0)
+		err := vm.SetValidatorPresent(0, validators[0].VotingPower)
 		require.NoError(t, err)
 		assert.False(t, vm.ThresholdReached())
 		assert.Equal(t, ToVotingPower(big.NewInt(100)), vm.CurrentVotingPower)
 
 		// Add second validator (100 + 200 = 300) - threshold not reached
-		err = vm.SetValidatorPresent(validators[1], 0)
+		err = vm.SetValidatorPresent(1, validators[1].VotingPower)
 		require.NoError(t, err)
 		assert.False(t, vm.ThresholdReached())
 		assert.Equal(t, ToVotingPower(big.NewInt(300)), vm.CurrentVotingPower)
 
 		// Add third validator (300 + 300 = 600) - threshold reached!
-		err = vm.SetValidatorPresent(validators[2], 0)
+		err = vm.SetValidatorPresent(2, validators[2].VotingPower)
 		require.NoError(t, err)
 		assert.True(t, vm.ThresholdReached())
 		assert.Equal(t, ToVotingPower(big.NewInt(600)), vm.CurrentVotingPower)
 
 		// Add fourth validator (600 + 150 = 750) - threshold still reached
-		err = vm.SetValidatorPresent(validators[3], 0)
+		err = vm.SetValidatorPresent(3, validators[3].VotingPower)
 		require.NoError(t, err)
 		assert.True(t, vm.ThresholdReached())
 		assert.Equal(t, ToVotingPower(big.NewInt(750)), vm.CurrentVotingPower)
@@ -422,21 +379,16 @@ func TestSignatureMap_IntegrationScenarios(t *testing.T) {
 
 		vm := NewSignatureMap(requestHash, vs)
 
-		// Add all available active validators
-		err := vm.SetValidatorPresent(validators[0], 0)
+		// Add all available active validators (first two are active)
+		err := vm.SetValidatorPresent(0, validators[0].VotingPower)
 		require.NoError(t, err)
 
-		err = vm.SetValidatorPresent(validators[1], 0)
+		err = vm.SetValidatorPresent(1, validators[1].VotingPower)
 		require.NoError(t, err)
 
 		// Even with all active validators, threshold should not be reached
 		assert.False(t, vm.ThresholdReached())
 		assert.Equal(t, ToVotingPower(big.NewInt(300)), vm.CurrentVotingPower)
-
-		// Verify we can't add inactive validator
-		err = vm.SetValidatorPresent(validators[2], 0)
-		require.Error(t, err)
-		assert.True(t, errors.Is(err, errors.New(ErrValidatorNotFound)))
 	})
 
 	t.Run("edge case - exactly 100% participation", func(t *testing.T) {
@@ -469,12 +421,12 @@ func TestSignatureMap_IntegrationScenarios(t *testing.T) {
 		vm := NewSignatureMap(requestHash, vs)
 
 		// Add first validator - threshold not reached
-		err := vm.SetValidatorPresent(validators[0], 0)
+		err := vm.SetValidatorPresent(0, validators[0].VotingPower)
 		require.NoError(t, err)
 		assert.False(t, vm.ThresholdReached())
 
 		// Add second validator - threshold exactly reached
-		err = vm.SetValidatorPresent(validators[1], 0)
+		err = vm.SetValidatorPresent(1, validators[1].VotingPower)
 		require.NoError(t, err)
 		assert.True(t, vm.ThresholdReached())
 		assert.Equal(t, ToVotingPower(big.NewInt(500)), vm.CurrentVotingPower)

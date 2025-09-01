@@ -3,6 +3,7 @@ package entity
 import (
 	"math/big"
 
+	"github.com/RoaringBitmap/roaring/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 )
@@ -10,8 +11,7 @@ import (
 type SignatureMap struct {
 	RequestHash            common.Hash
 	Epoch                  uint64
-	ActiveValidatorsMap    map[common.Address]struct{}
-	SignedValidatorIndexes map[common.Address]struct{}
+	SignedValidatorsBitmap *roaring.Bitmap
 	QuorumThreshold        VotingPower
 	TotalVotingPower       VotingPower
 	CurrentVotingPower     VotingPower
@@ -19,30 +19,27 @@ type SignatureMap struct {
 
 func NewSignatureMap(requestHash common.Hash, vs ValidatorSet) SignatureMap {
 	activeValidators := vs.Validators.GetActiveValidators()
-	m := make(map[common.Address]struct{}, len(activeValidators))
 	totalVotingPower := big.NewInt(0)
 	for _, validator := range activeValidators {
-		m[validator.Operator] = struct{}{}
 		totalVotingPower = new(big.Int).Add(totalVotingPower, validator.VotingPower.Int)
 	}
 
 	return SignatureMap{
 		RequestHash:            requestHash,
 		Epoch:                  vs.Epoch,
-		ActiveValidatorsMap:    m,
-		SignedValidatorIndexes: make(map[common.Address]struct{}),
+		SignedValidatorsBitmap: roaring.New(),
 		QuorumThreshold:        vs.QuorumThreshold,
 		TotalVotingPower:       ToVotingPower(totalVotingPower),
 		CurrentVotingPower:     ToVotingPower(big.NewInt(0)),
 	}
 }
 
-func (vm *SignatureMap) SetValidatorPresent(v Validator, activeIndex int) error {
-	if _, ok := vm.SignedValidatorIndexes[v.Operator]; ok {
+func (vm *SignatureMap) SetValidatorPresent(activeIndex int, votingPower VotingPower) error {
+	if vm.SignedValidatorsBitmap.Contains(uint32(activeIndex)) {
 		return errors.New(ErrEntityAlreadyExist)
 	}
-	vm.SignedValidatorIndexes[v.Operator] = struct{}{}
-	vm.CurrentVotingPower = ToVotingPower(new(big.Int).Add(vm.CurrentVotingPower.Int, v.VotingPower.Int))
+	vm.SignedValidatorsBitmap.Add(uint32(activeIndex))
+	vm.CurrentVotingPower = ToVotingPower(new(big.Int).Add(vm.CurrentVotingPower.Int, votingPower.Int))
 	return nil
 }
 
