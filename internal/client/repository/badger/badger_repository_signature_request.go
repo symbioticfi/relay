@@ -33,8 +33,8 @@ func keySignatureRequestPendingEpochPrefix(epoch entity.Epoch) []byte {
 	return []byte(fmt.Sprintf("signature_request_pending:%d:", epoch))
 }
 
-// saveSignatureRequestToKey saves a signature request to a specific key with optional existence check
-func (r *Repository) saveSignatureRequestToKey(ctx context.Context, req entity.SignatureRequest, key []byte, checkKey []byte) error {
+// saveSignatureRequestToKey saves a signature request to a specific key
+func (r *Repository) saveSignatureRequestToKey(ctx context.Context, req entity.SignatureRequest, key []byte) error {
 	requestBytes, err := signatureRequestToBytes(req)
 	if err != nil {
 		return errors.Errorf("failed to marshal signature request: %w", err)
@@ -42,15 +42,12 @@ func (r *Repository) saveSignatureRequestToKey(ctx context.Context, req entity.S
 
 	txn := getTxn(ctx)
 
-	// Check if already exists (if checkKey provided)
-	if checkKey != nil {
-		_, err := txn.Get(checkKey)
-		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
-			return errors.Errorf("failed to check signature request: %w", err)
-		}
-		if err == nil {
-			return errors.Errorf("signature request already exists: %w", entity.ErrEntityAlreadyExist)
-		}
+	_, err = txn.Get(key)
+	if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
+		return errors.Errorf("failed to check signature request: %w", err)
+	}
+	if err == nil {
+		return errors.Errorf("signature request already exists: %w", entity.ErrEntityAlreadyExist)
 	}
 
 	// Store the record
@@ -67,7 +64,7 @@ func (r *Repository) SaveSignatureRequest(ctx context.Context, req entity.Signat
 	hashIndexKey := keySignatureRequestHashIndex(req.Hash())
 
 	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
-		if err := r.saveSignatureRequestToKey(ctx, req, primaryKey, hashIndexKey); err != nil {
+		if err := r.saveSignatureRequestToKey(ctx, req, primaryKey); err != nil {
 			return err
 		}
 
@@ -81,7 +78,7 @@ func (r *Repository) SaveSignatureRequest(ctx context.Context, req entity.Signat
 func (r *Repository) SaveSignatureRequestPending(ctx context.Context, req entity.SignatureRequest) error {
 	pendingKey := keySignatureRequestPending(req.RequiredEpoch, req.Hash())
 	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
-		return r.saveSignatureRequestToKey(ctx, req, pendingKey, pendingKey)
+		return r.saveSignatureRequestToKey(ctx, req, pendingKey)
 	})
 }
 

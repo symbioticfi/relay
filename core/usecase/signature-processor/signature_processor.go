@@ -10,8 +10,6 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 )
 
-//go:generate mockgen -source=signature_processor.go -destination=mocks/signature_processor.go -package=mocks
-
 // Repository defines the interface needed by the signature processor
 type Repository interface {
 	DoUpdateInTx(ctx context.Context, f func(ctx context.Context) error) error
@@ -91,6 +89,7 @@ func (s *SignatureProcessor) ProcessSignature(ctx context.Context, param entity.
 			return errors.Errorf("failed to get validator set header: %v", err)
 		}
 
+		// todo check quorum threshold from signature request
 		if signatureMap.ThresholdReached(validatorSetHeader.QuorumThreshold) {
 			// Remove from pending collection since quorum is reached
 			err := s.cfg.Repo.RemoveSignatureRequestPending(ctx, param.Epoch, param.RequestHash)
