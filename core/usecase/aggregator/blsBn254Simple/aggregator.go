@@ -74,6 +74,10 @@ func (a Aggregator) Aggregate(
 			// skip inactive validators
 			continue
 		}
+		if _, exists := signers[val.Operator]; exists {
+			return entity.AggregationProof{}, errors.Errorf("duplicate signature from operator %s", val.Operator.Hex())
+		}
+
 		g1Sig := new(bn254.G1Affine)
 		_, err = g1Sig.SetBytes(sig.Signature)
 		if err != nil {

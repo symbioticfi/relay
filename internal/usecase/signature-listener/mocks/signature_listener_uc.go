@@ -72,11 +72,11 @@ func (mr *MockrepoMockRecorder) GetSignatureMap(arg0, reqHash any) *gomock.Call 
 }
 
 // GetValidatorByKey mocks base method.
-func (m *Mockrepo) GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, int, error) {
+func (m *Mockrepo) GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorByKey", ctx, epoch, keyTag, publicKey)
 	ret0, _ := ret[0].(entity.Validator)
-	ret1, _ := ret[1].(int)
+	ret1, _ := ret[1].(uint32)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }

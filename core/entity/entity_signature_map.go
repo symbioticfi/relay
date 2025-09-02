@@ -24,12 +24,12 @@ func NewSignatureMap(requestHash common.Hash, vs ValidatorSet) SignatureMap {
 	}
 }
 
-func (vm *SignatureMap) SetValidatorPresent(activeIndex int, votingPower VotingPower) error {
-	if vm.SignedValidatorsBitmap.Contains(uint32(activeIndex)) {
+func (vm *SignatureMap) SetValidatorPresent(activeIndex uint32, votingPower VotingPower) error {
+	if vm.SignedValidatorsBitmap.Contains(activeIndex) {
 		return errors.New(ErrEntityAlreadyExist)
 	}
 
-	vm.SignedValidatorsBitmap.Add(uint32(activeIndex))
+	vm.SignedValidatorsBitmap.Add(activeIndex)
 	vm.CurrentVotingPower = ToVotingPower(new(big.Int).Add(vm.CurrentVotingPower.Int, votingPower.Int))
 
 	return nil

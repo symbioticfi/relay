@@ -92,9 +92,9 @@ func (r *Repository) SaveValidatorSet(ctx context.Context, valset entity.Validat
 		}
 
 		// Save individual validators and their key indexes
-		activeIndex := 0
+		activeIndex := uint32(0)
 		for _, validator := range valset.Validators {
-			currentActiveIndex := -1
+			currentActiveIndex := uint32(0)
 			if validator.IsActive {
 				currentActiveIndex = activeIndex
 				activeIndex++
@@ -294,12 +294,12 @@ func (r *Repository) GetLatestValidatorSetEpoch(ctx context.Context) (uint64, er
 	})
 }
 
-func (r *Repository) GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, int, error) {
+func (r *Repository) GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error) {
 	publicKeyHash := crypto.Keccak256Hash(publicKey)
 	keyLookup := keyValidatorKeyLookup(epoch, keyTag, publicKeyHash)
 
 	var validator entity.Validator
-	var activeIndex int
+	var activeIndex uint32
 	return validator, activeIndex, r.DoViewInTx(ctx, func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		// First, find the operator address from the key lookup table
@@ -342,7 +342,7 @@ func (r *Repository) GetValidatorByKey(ctx context.Context, epoch uint64, keyTag
 	})
 }
 
-func validatorToBytes(validator entity.Validator, activeIndex int) ([]byte, error) {
+func validatorToBytes(validator entity.Validator, activeIndex uint32) ([]byte, error) {
 	dto := validatorDTO{
 		Operator:    validator.Operator.Hex(),
 		VotingPower: validator.VotingPower.String(),
@@ -366,17 +366,17 @@ func validatorToBytes(validator entity.Validator, activeIndex int) ([]byte, erro
 	return json.Marshal(dto)
 }
 
-func bytesToValidator(data []byte) (entity.Validator, int, error) {
+func bytesToValidator(data []byte) (entity.Validator, uint32, error) {
 	var dto validatorDTO
 	if err := json.Unmarshal(data, &dto); err != nil {
-		return entity.Validator{}, -1, errors.Errorf("failed to unmarshal validator: %w", err)
+		return entity.Validator{}, 0, errors.Errorf("failed to unmarshal validator: %w", err)
 	}
 
 	operator := common.HexToAddress(dto.Operator)
 
 	votingPower, ok := new(big.Int).SetString(dto.VotingPower, 10)
 	if !ok {
-		return entity.Validator{}, -1, errors.Errorf("failed to parse voting power: %s", dto.VotingPower)
+		return entity.Validator{}, 0, errors.Errorf("failed to parse voting power: %s", dto.VotingPower)
 	}
 
 	keys := lo.Map(dto.Keys, func(k keyDTO, _ int) entity.ValidatorKey {
@@ -390,7 +390,7 @@ func bytesToValidator(data []byte) (entity.Validator, int, error) {
 	for _, v := range dto.Vaults {
 		votingPowerVault, parseOk := new(big.Int).SetString(v.VotingPower, 10)
 		if !parseOk {
-			return entity.Validator{}, -1, errors.Errorf("failed to parse vault voting power for operator %s: %s", dto.Operator, v.VotingPower)
+			return entity.Validator{}, 0, errors.Errorf("failed to parse vault voting power for operator %s: %s", dto.Operator, v.VotingPower)
 		}
 		vaults = append(vaults, entity.ValidatorVault{
 			ChainID:     v.ChainID,

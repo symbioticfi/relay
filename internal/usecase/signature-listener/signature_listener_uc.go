@@ -18,7 +18,7 @@ import (
 //go:generate mockgen -source=signature_listener_uc.go -destination=mocks/signature_listener_uc.go -package=mocks
 
 type repo interface {
-	GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, int, error)
+	GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error)
 	DoUpdateInTx(ctx context.Context, f func(ctx context.Context) error) error
 	GetSignatureMap(_ context.Context, reqHash common.Hash) (entity.SignatureMap, error)
 	UpdateSignatureMap(_ context.Context, vm entity.SignatureMap) error
