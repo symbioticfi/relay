@@ -185,7 +185,7 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 			switch cmp {
 			case "SIGNER":
 				color = lightGreen
-			case "AGGREGATOR":
+			case "AGGREGATOR", "SIGN_LISTENER":
 				color = green
 			case "GENERATOR":
 				color = yellow

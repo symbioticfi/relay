@@ -15,7 +15,6 @@ import (
 
 	common "github.com/ethereum/go-ethereum/common"
 	entity "github.com/symbioticfi/relay/core/entity"
-	entity0 "github.com/symbioticfi/relay/internal/entity"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -265,10 +264,10 @@ func (m *Mockaggregator) EXPECT() *MockaggregatorMockRecorder {
 }
 
 // GetAggregationStatus mocks base method.
-func (m *Mockaggregator) GetAggregationStatus(ctx context.Context, requestHash common.Hash) (entity0.AggregationStatus, error) {
+func (m *Mockaggregator) GetAggregationStatus(ctx context.Context, requestHash common.Hash) (entity.AggregationStatus, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAggregationStatus", ctx, requestHash)
-	ret0, _ := ret[0].(entity0.AggregationStatus)
+	ret0, _ := ret[0].(entity.AggregationStatus)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

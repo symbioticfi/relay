@@ -232,6 +232,28 @@ type NetworkConfig struct {
 	GrowthStrategy          GrowthStrategyType
 }
 
+func maxThreshold() *big.Int {
+	// 10^18 is the maximum threshold value
+	return new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
+}
+
+func (nc NetworkConfig) CalcQuorumThreshold(totalVP VotingPower) (VotingPower, error) {
+	quorumThresholdPercent := big.NewInt(0)
+	for _, quorumThreshold := range nc.QuorumThresholds {
+		if quorumThreshold.KeyTag == nc.RequiredHeaderKeyTag {
+			quorumThresholdPercent = quorumThreshold.QuorumThreshold.Int
+		}
+	}
+	if quorumThresholdPercent.Cmp(big.NewInt(0)) == 0 {
+		return VotingPower{}, errors.Errorf("quorum threshold is zero")
+	}
+
+	mul := new(big.Int).Mul(totalVP.Int, quorumThresholdPercent)
+	div := new(big.Int).Div(mul, maxThreshold())
+	// add 1 to apply up rounding
+	return ToVotingPower(new(big.Int).Add(div, big.NewInt(1))), nil
+}
+
 type NetworkData struct {
 	Address    common.Address
 	Subnetwork common.Hash
@@ -288,6 +310,36 @@ func (va Validators) SortByOperatorAddressAsc() {
 	})
 }
 
+func (va Validators) CheckIsSortedByOperatorAddressAsc() error {
+	if !slices.IsSortedFunc(va, func(a, b Validator) int {
+		return a.Operator.Cmp(b.Operator)
+	}) {
+		return errors.New("validators are not sorted by operator address ascending")
+	}
+	return nil
+}
+
+func (va Validators) GetTotalActiveVotingPower() VotingPower {
+	totalVotingPower := big.NewInt(0)
+	for _, validator := range va {
+		if validator.IsActive {
+			totalVotingPower = totalVotingPower.Add(totalVotingPower, validator.VotingPower.Int)
+		}
+	}
+	return VotingPower{totalVotingPower}
+}
+
+func (va Validators) GetActiveValidators() Validators {
+	var activeValidators Validators
+	for _, validator := range va {
+		if validator.IsActive {
+			activeValidators = append(activeValidators, validator)
+		}
+	}
+	activeValidators.SortByOperatorAddressAsc()
+	return activeValidators
+}
+
 type Validator struct {
 	Operator    common.Address   `json:"operator"`
 	VotingPower VotingPower      `json:"votingPower"`
@@ -305,16 +357,6 @@ func (v Validator) FindKeyByKeyTag(keyTag KeyTag) ([]byte, bool) {
 	return nil, false
 }
 
-func GetActiveValidators(allValidators []Validator) []Validator {
-	activeValidators := make([]Validator, 0)
-	for _, validator := range allValidators {
-		if validator.IsActive {
-			activeValidators = append(activeValidators, validator)
-		}
-	}
-	return activeValidators
-}
-
 type ValidatorSet struct {
 	Version            uint8
 	RequiredKeyTag     KeyTag      // key tag required to commit next valset
@@ -322,7 +364,7 @@ type ValidatorSet struct {
 	CaptureTimestamp   uint64      // epoch capture timestamp
 	QuorumThreshold    VotingPower // absolute number now, not a percent
 	PreviousHeaderHash common.Hash // previous valset header hash
-	Validators         []Validator
+	Validators         Validators
 
 	// internal usage only
 	Status ValidatorSetStatus
@@ -391,13 +433,7 @@ func (e ExtraDataList) AbiEncode() ([]byte, error) {
 }
 
 func (v ValidatorSet) GetTotalActiveVotingPower() VotingPower {
-	totalVotingPower := big.NewInt(0)
-	for _, validator := range v.Validators {
-		if validator.IsActive {
-			totalVotingPower = totalVotingPower.Add(totalVotingPower, validator.VotingPower.Int)
-		}
-	}
-	return VotingPower{totalVotingPower}
+	return v.Validators.GetTotalActiveVotingPower()
 }
 
 func (v ValidatorSet) GetTotalActiveValidators() int64 {
@@ -425,6 +461,28 @@ func (v ValidatorSet) GetHeader() (ValidatorSetHeader, error) {
 		PreviousHeaderHash: v.PreviousHeaderHash,
 		ValidatorsSszMRoot: sszMroot,
 	}, nil
+}
+
+func (v ValidatorSet) FindValidatorsByKeys(keyTag KeyTag, publicKeys []CompactPublicKey) (Validators, error) {
+	// Build lookup map: publicKey -> validator
+	publicKeyToValidator := make(map[string]Validator)
+	for _, validator := range v.Validators {
+		if publicKey, found := validator.FindKeyByKeyTag(keyTag); found {
+			publicKeyToValidator[string(publicKey)] = validator
+		}
+	}
+
+	// Find validators for each public key
+	result := make(Validators, 0, len(publicKeys))
+	for _, publicKey := range publicKeys {
+		validator, found := publicKeyToValidator[string(publicKey)]
+		if !found {
+			return nil, errors.Errorf("validator not found for public key %x with key tag %d", publicKey, keyTag)
+		}
+		result = append(result, validator)
+	}
+
+	return result, nil
 }
 
 func sszTreeRoot(v *ValidatorSet) (common.Hash, error) {
@@ -534,4 +592,9 @@ const (
 type SignatureStat struct {
 	ReqHash common.Hash
 	StatMap map[SignatureStatStage]time.Time
+}
+
+type AggregationStatus struct {
+	VotingPower VotingPower
+	Validators  []Validator
 }

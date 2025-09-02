@@ -74,9 +74,7 @@ func TestDeriver_calcQuorumThreshold(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d, err := NewDeriver(nil)
-			require.NoError(t, err)
-			result, err := d.calcQuorumThreshold(tt.config, tt.totalVP)
+			result, err := tt.config.CalcQuorumThreshold(tt.totalVP)
 
 			if tt.expectError != nil {
 				require.Error(t, err)
@@ -694,10 +692,11 @@ func TestDeriver_fillValidatorsActive(t *testing.T) {
 				}
 			}
 
-			result := d.fillValidatorsActive(tt.config, validatorsCopy)
+			d.fillValidatorsActive(tt.config, validatorsCopy)
 
 			// Check total voting power
-			require.Equal(t, tt.expectedTotalVotingPower, result, "total voting power mismatch")
+			totalVotingPower := validatorsCopy.GetTotalActiveVotingPower()
+			require.Equal(t, tt.expectedTotalVotingPower, totalVotingPower.Int, "total voting power mismatch")
 
 			// Check active validators
 			var activeValidators []common.Address

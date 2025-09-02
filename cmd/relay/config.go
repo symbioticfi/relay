@@ -17,8 +17,6 @@ import (
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	"github.com/symbioticfi/relay/internal/entity"
 )
 
 type CMDSecretKey struct {
@@ -93,32 +91,42 @@ func (s *CMDSecretKeySlice) Type() string {
 	return "secret-key-slice"
 }
 
+type CMDCrossChainAddress struct {
+	ChainID uint64 `mapstructure:"chain-id" validate:"required"`
+	Address string `mapstructure:"address" validate:"required"`
+}
+
+type KeyStore struct {
+	Path     string `json:"path"`
+	Password string `json:"password"`
+}
+
 // The config can be populated from command-line flags, environment variables, and a config.yaml file.
 // Priority order (highest to lowest):
 // 1. Command-line flags
 // 2. Environment variables (prefixed with SYMB_ and dashes replaced by underscores)
 // 3. config.yaml file (specified by --config or default "config.yaml")
 type config struct {
-	Driver            entity.CMDCrossChainAddress `mapstructure:"driver" validate:"required"`
-	LogLevel          string                      `mapstructure:"log-level" validate:"oneof=debug info warn error"`
-	LogMode           string                      `mapstructure:"log-mode" validate:"oneof=json text pretty"`
-	P2PListenAddress  string                      `mapstructure:"p2p-listen" validate:"required"`
-	HTTPListenAddr    string                      `mapstructure:"http-listen" validate:"required"`
-	MetricsListenAddr string                      `mapstructure:"metrics-listen"`
-	SecretKeys        CMDSecretKeySlice           `mapstructure:"secret-keys"`
-	IsAggregator      bool                        `mapstructure:"aggregator"`
-	IsSigner          bool                        `mapstructure:"signer"`
-	IsCommitter       bool                        `mapstructure:"committer"`
-	StorageDir        string                      `mapstructure:"storage-dir"`
-	Chains            []string                    `mapstructure:"chains" validate:"required"`
-	CircuitsDir       string                      `mapstructure:"circuits-dir"`
-	KeyStore          entity.KeyStore             `mapstructure:"keystore"`
-	Bootnodes         []string                    `mapstructure:"bootnodes"`
-	DHTMode           string                      `mapstructure:"dht-mode" validate:"oneof=auto server client disabled"`
-	MDnsEnabled       bool                        `mapstructure:"enable-mdns"`
-	MaxCalls          int                         `mapstructure:"evm-max-calls"`
-	SignalCfg         signals.Config              `mapstructure:"signal"`
-	Cache             CacheConfig                 `mapstructure:"cache"`
+	Driver            CMDCrossChainAddress `mapstructure:"driver" validate:"required"`
+	LogLevel          string               `mapstructure:"log-level" validate:"oneof=debug info warn error"`
+	LogMode           string               `mapstructure:"log-mode" validate:"oneof=json text pretty"`
+	P2PListenAddress  string               `mapstructure:"p2p-listen" validate:"required"`
+	HTTPListenAddr    string               `mapstructure:"http-listen" validate:"required"`
+	MetricsListenAddr string               `mapstructure:"metrics-listen"`
+	SecretKeys        CMDSecretKeySlice    `mapstructure:"secret-keys"`
+	IsAggregator      bool                 `mapstructure:"aggregator"`
+	IsSigner          bool                 `mapstructure:"signer"`
+	IsCommitter       bool                 `mapstructure:"committer"`
+	StorageDir        string               `mapstructure:"storage-dir"`
+	Chains            []string             `mapstructure:"chains" validate:"required"`
+	CircuitsDir       string               `mapstructure:"circuits-dir"`
+	KeyStore          KeyStore             `mapstructure:"keystore"`
+	Bootnodes         []string             `mapstructure:"bootnodes"`
+	DHTMode           string               `mapstructure:"dht-mode" validate:"oneof=auto server client disabled"`
+	MDnsEnabled       bool                 `mapstructure:"enable-mdns"`
+	MaxCalls          int                  `mapstructure:"evm-max-calls"`
+	SignalCfg         signals.Config       `mapstructure:"signal"`
+	Cache             CacheConfig          `mapstructure:"cache"`
 }
 
 type CacheConfig struct {

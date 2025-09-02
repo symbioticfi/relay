@@ -18,13 +18,14 @@ func keyPendingValidatorSet(reqHash common.Hash) []byte {
 	return []byte(fmt.Sprintf("pending_validator_set:%s", reqHash.Hex()))
 }
 
-func (r *Repository) SavePendingValidatorSet(_ context.Context, reqHash common.Hash, vs entity.ValidatorSet) error {
+func (r *Repository) SavePendingValidatorSet(ctx context.Context, reqHash common.Hash, vs entity.ValidatorSet) error {
 	bytes, err := validatorSetToBytes(vs)
 	if err != nil {
 		return errors.Errorf("failed to marshal validator set: %w", err)
 	}
 
-	return r.db.Update(func(txn *badger.Txn) error {
+	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		_, err := txn.Get(keyPendingValidatorSet(reqHash))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
 			return errors.Errorf("failed to get pending validator set: %w", err)
@@ -41,10 +42,11 @@ func (r *Repository) SavePendingValidatorSet(_ context.Context, reqHash common.H
 	})
 }
 
-func (r *Repository) GetPendingValidatorSet(_ context.Context, reqHash common.Hash) (entity.ValidatorSet, error) {
+func (r *Repository) GetPendingValidatorSet(ctx context.Context, reqHash common.Hash) (entity.ValidatorSet, error) {
 	var vs entity.ValidatorSet
 
-	return vs, r.db.View(func(txn *badger.Txn) error {
+	return vs, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		item, err := txn.Get(keyPendingValidatorSet(reqHash))
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
@@ -82,6 +84,7 @@ type validatorDTO struct {
 	Operator    string              `json:"operator"`
 	VotingPower string              `json:"voting_power"`
 	IsActive    bool                `json:"is_active"`
+	ActiveIndex uint32              `json:"active_index"`
 	Keys        []keyDTO            `json:"keys"`
 	Vaults      []validatorVaultDTO `json:"vaults"`
 }

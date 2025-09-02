@@ -47,6 +47,10 @@ func (a Aggregator) Aggregate(
 		if !ok {
 			return entity.AggregationProof{}, errors.New("failed to find validator by key")
 		}
+		if !val.IsActive {
+			// skip inactive validators
+			continue
+		}
 		g1Sig := new(bn254.G1Affine)
 		_, err = g1Sig.SetBytes(sig.Signature)
 		if err != nil {
@@ -64,7 +68,7 @@ func (a Aggregator) Aggregate(
 			if !ok {
 				return entity.AggregationProof{}, errors.New("failed to find key by keyTag")
 			}
-			_, isSinger := signers[val.Operator]
+			_, isSigner := signers[val.Operator]
 			g1Key := new(bn254.G1Affine)
 			_, err := g1Key.SetBytes(keyBytes)
 			if err != nil {
@@ -73,7 +77,7 @@ func (a Aggregator) Aggregate(
 
 			validatorsData = append(validatorsData, proof.ValidatorData{
 				Key:         *g1Key,
-				IsNonSigner: !isSinger,
+				IsNonSigner: !isSigner,
 				VotingPower: val.VotingPower.Int,
 			})
 		}
@@ -193,8 +197,8 @@ func validatorSetMimcAccumulator(valset []entity.Validator, requiredKeyTag entit
 	return common.Hash(proof.HashValset(validatorsData)), nil
 }
 
-func toValidatorsData(signerValidators []entity.Validator, allValidators []entity.Validator, requiredKeyTag entity.KeyTag) ([]proof.ValidatorData, error) {
-	activeValidators := entity.GetActiveValidators(allValidators)
+func toValidatorsData(signerValidators []entity.Validator, allValidators entity.Validators, requiredKeyTag entity.KeyTag) ([]proof.ValidatorData, error) {
+	activeValidators := allValidators.GetActiveValidators()
 	valset := make([]proof.ValidatorData, 0)
 	for i := range activeValidators {
 		for _, key := range activeValidators[i].Keys {
