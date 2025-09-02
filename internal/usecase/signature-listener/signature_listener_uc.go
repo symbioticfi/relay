@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	validate "github.com/go-playground/validator/v10"
 
@@ -19,16 +18,18 @@ import (
 
 type repo interface {
 	GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error)
-	DoUpdateInTx(ctx context.Context, f func(ctx context.Context) error) error
-	GetSignatureMap(_ context.Context, reqHash common.Hash) (entity.SignatureMap, error)
-	UpdateSignatureMap(_ context.Context, vm entity.SignatureMap) error
 	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
-	SaveSignature(ctx context.Context, reqHash common.Hash, key entity.RawPublicKey, sig entity.SignatureExtended) error
+}
+
+type signatureProcessor interface {
+	ProcessSignature(ctx context.Context, param entity.SaveSignatureParam) error
 }
 
 type Config struct {
-	Repo      repo           `validate:"required"`
-	SignalCfg signals.Config `validate:"required"`
+	Repo               repo               `validate:"required"`
+	SignatureProcessor signatureProcessor `validate:"required"`
+	SignalCfg          signals.Config     `validate:"required"`
+	SelfP2PID          string             `validate:"required"`
 }
 
 type SignatureListenerUseCase struct {
@@ -54,6 +55,11 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 
 	slog.DebugContext(ctx, "Received signature hash generated message", "message", msg, "sender", p2pMsg.SenderInfo.Sender)
 
+	if p2pMsg.SenderInfo.Sender == s.cfg.SelfP2PID {
+		slog.DebugContext(ctx, "Ignoring signature message from self, because it's already stored in signer")
+		return nil
+	}
+
 	publicKey, err := crypto.NewPublicKey(msg.KeyTag.Type(), msg.Signature.PublicKey)
 	if err != nil {
 		return errors.Errorf("failed to get public key: %w", err)
@@ -74,32 +80,19 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 
 	slog.DebugContext(ctx, "Found validator", "validator", validator)
 
-	err = s.cfg.Repo.DoUpdateInTx(ctx, func(ctx context.Context) error {
-		signatureMap, err := s.cfg.Repo.GetSignatureMap(ctx, msg.RequestHash)
-		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
-			return errors.Errorf("failed to get valset signature map: %w", err)
-		}
-		if errors.Is(err, entity.ErrEntityNotFound) {
-			signatureMap = entity.NewSignatureMap(msg.RequestHash, msg.Epoch)
-		}
+	param := entity.SaveSignatureParam{
+		RequestHash:      msg.RequestHash,
+		Key:              publicKey.Raw(),
+		Signature:        msg.Signature,
+		ActiveIndex:      activeIndex,
+		VotingPower:      validator.VotingPower,
+		Epoch:            msg.Epoch,
+		SignatureRequest: nil,
+	}
 
-		if err := signatureMap.SetValidatorPresent(activeIndex, validator.VotingPower); err != nil {
-			return errors.Errorf("failed to set validator %s present for request %s: %w", validator.Operator.Hex(), msg.RequestHash.Hex(), err)
-		}
-
-		if err := s.cfg.Repo.UpdateSignatureMap(ctx, signatureMap); err != nil {
-			return errors.Errorf("failed to update valset signature map: %w", err)
-		}
-
-		err = s.cfg.Repo.SaveSignature(ctx, msg.RequestHash, publicKey.Raw(), msg.Signature)
-		if err != nil {
-			return errors.Errorf("failed to save signature: %w", err)
-		}
-
-		return nil
-	})
+	err = s.cfg.SignatureProcessor.ProcessSignature(ctx, param)
 	if err != nil {
-		return errors.Errorf("failed to process signature in transaction: %w", err)
+		return errors.Errorf("failed to process signature: %w", err)
 	}
 
 	return s.signatureSavedSignal.Emit(ctx, msg)

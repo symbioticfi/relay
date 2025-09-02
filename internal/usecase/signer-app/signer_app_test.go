@@ -12,6 +12,7 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/crypto"
 	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
+	signature_processor "github.com/symbioticfi/relay/core/usecase/signature-processor"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
 	"github.com/symbioticfi/relay/internal/usecase/signer-app/mocks"
 )
@@ -82,13 +83,19 @@ func newTestSetup(t *testing.T) *testSetup {
 	mockAggregator := mocks.NewMockaggregator(ctrl)
 	mockMetrics := mocks.NewMockmetrics(ctrl)
 
+	processor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
+		Repo: repo,
+	})
+	require.NoError(t, err)
+
 	cfg := Config{
-		P2PService:     mockP2P,
-		KeyProvider:    keyProvider,
-		Repo:           repo,
-		AggProofSignal: mockAggProof,
-		Aggregator:     mockAggregator,
-		Metrics:        mockMetrics,
+		P2PService:         mockP2P,
+		KeyProvider:        keyProvider,
+		Repo:               repo,
+		SignatureProcessor: processor,
+		AggProofSignal:     mockAggProof,
+		Aggregator:         mockAggregator,
+		Metrics:            mockMetrics,
 	}
 
 	app, err := NewSignerApp(cfg)

@@ -13,7 +13,6 @@ import (
 	context "context"
 	reflect "reflect"
 
-	common "github.com/ethereum/go-ethereum/common"
 	entity "github.com/symbioticfi/relay/core/entity"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -40,35 +39,6 @@ func NewMockrepo(ctrl *gomock.Controller) *Mockrepo {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *Mockrepo) EXPECT() *MockrepoMockRecorder {
 	return m.recorder
-}
-
-// DoUpdateInTx mocks base method.
-func (m *Mockrepo) DoUpdateInTx(ctx context.Context, f func(context.Context) error) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DoUpdateInTx", ctx, f)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DoUpdateInTx indicates an expected call of DoUpdateInTx.
-func (mr *MockrepoMockRecorder) DoUpdateInTx(ctx, f any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DoUpdateInTx", reflect.TypeOf((*Mockrepo)(nil).DoUpdateInTx), ctx, f)
-}
-
-// GetSignatureMap mocks base method.
-func (m *Mockrepo) GetSignatureMap(arg0 context.Context, reqHash common.Hash) (entity.SignatureMap, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSignatureMap", arg0, reqHash)
-	ret0, _ := ret[0].(entity.SignatureMap)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSignatureMap indicates an expected call of GetSignatureMap.
-func (mr *MockrepoMockRecorder) GetSignatureMap(arg0, reqHash any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureMap", reflect.TypeOf((*Mockrepo)(nil).GetSignatureMap), arg0, reqHash)
 }
 
 // GetValidatorByKey mocks base method.
@@ -102,30 +72,40 @@ func (mr *MockrepoMockRecorder) GetValidatorSetByEpoch(ctx, epoch any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSetByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetValidatorSetByEpoch), ctx, epoch)
 }
 
-// SaveSignature mocks base method.
-func (m *Mockrepo) SaveSignature(ctx context.Context, reqHash common.Hash, key entity.RawPublicKey, sig entity.SignatureExtended) error {
+// MocksignatureProcessor is a mock of signatureProcessor interface.
+type MocksignatureProcessor struct {
+	ctrl     *gomock.Controller
+	recorder *MocksignatureProcessorMockRecorder
+	isgomock struct{}
+}
+
+// MocksignatureProcessorMockRecorder is the mock recorder for MocksignatureProcessor.
+type MocksignatureProcessorMockRecorder struct {
+	mock *MocksignatureProcessor
+}
+
+// NewMocksignatureProcessor creates a new mock instance.
+func NewMocksignatureProcessor(ctrl *gomock.Controller) *MocksignatureProcessor {
+	mock := &MocksignatureProcessor{ctrl: ctrl}
+	mock.recorder = &MocksignatureProcessorMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MocksignatureProcessor) EXPECT() *MocksignatureProcessorMockRecorder {
+	return m.recorder
+}
+
+// ProcessSignature mocks base method.
+func (m *MocksignatureProcessor) ProcessSignature(ctx context.Context, param entity.SaveSignatureParam) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveSignature", ctx, reqHash, key, sig)
+	ret := m.ctrl.Call(m, "ProcessSignature", ctx, param)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// SaveSignature indicates an expected call of SaveSignature.
-func (mr *MockrepoMockRecorder) SaveSignature(ctx, reqHash, key, sig any) *gomock.Call {
+// ProcessSignature indicates an expected call of ProcessSignature.
+func (mr *MocksignatureProcessorMockRecorder) ProcessSignature(ctx, param any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveSignature", reflect.TypeOf((*Mockrepo)(nil).SaveSignature), ctx, reqHash, key, sig)
-}
-
-// UpdateSignatureMap mocks base method.
-func (m *Mockrepo) UpdateSignatureMap(arg0 context.Context, vm entity.SignatureMap) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateSignatureMap", arg0, vm)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateSignatureMap indicates an expected call of UpdateSignatureMap.
-func (mr *MockrepoMockRecorder) UpdateSignatureMap(arg0, vm any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSignatureMap", reflect.TypeOf((*Mockrepo)(nil).UpdateSignatureMap), arg0, vm)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessSignature", reflect.TypeOf((*MocksignatureProcessor)(nil).ProcessSignature), ctx, param)
 }

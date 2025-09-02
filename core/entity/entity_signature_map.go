@@ -38,3 +38,14 @@ func (vm *SignatureMap) SetValidatorPresent(activeIndex uint32, votingPower Voti
 func (vm *SignatureMap) ThresholdReached(quorumThreshold VotingPower) bool {
 	return vm.CurrentVotingPower.Cmp(quorumThreshold.Int) >= 0
 }
+
+// SaveSignatureParam bundles parameters needed for signature processing with SignatureMap operations
+type SaveSignatureParam struct {
+	RequestHash      common.Hash
+	Key              RawPublicKey
+	Signature        SignatureExtended
+	ActiveIndex      uint32
+	VotingPower      VotingPower
+	Epoch            Epoch
+	SignatureRequest *SignatureRequest // Optional - used by signer-app, nil for signature-listener
+}

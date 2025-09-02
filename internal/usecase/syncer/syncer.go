@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"context"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-playground/validator/v10"
@@ -11,12 +12,12 @@ import (
 
 type repo interface {
 	GetSignatureRequestsByEpoch(_ context.Context, epoch entity.Epoch, limit int, lastHash common.Hash) ([]entity.SignatureRequest, error)
-	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
-	GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error)
 }
 
 type Config struct {
-	Repo repo `validate:"required"`
+	Repo         repo          `validate:"required"`
+	EpochsToSync int           `validate:"gte=0"`
+	SyncPeriod   time.Duration `validate:"gt=0"`
 }
 
 type Syncer struct {
