@@ -174,7 +174,7 @@ func TestSignatureProcessor_ProcessSignature(t *testing.T) {
 			expectPendingExists:    false,
 			expectPendingRemoved:   false,
 			expectError:            true,
-			expectedErrorSubstring: "failed to get validator set header",
+			expectedErrorSubstring: "failed to get active validator count",
 		},
 	}
 
@@ -459,6 +459,37 @@ func randomSignatureExtended(t *testing.T) entity.SignatureExtended {
 
 func createValidatorSet(t *testing.T, epoch uint64, quorumThreshold *big.Int) entity.ValidatorSet {
 	t.Helper()
+	return createValidatorSetWithCount(t, epoch, quorumThreshold, 4) // Default to 4 validators for backward compatibility
+}
+
+func createValidatorSetWithCount(t *testing.T, epoch uint64, quorumThreshold *big.Int, validatorCount int) entity.ValidatorSet {
+	t.Helper()
+
+	validators := make([]entity.Validator, validatorCount)
+	for i := 0; i < validatorCount; i++ {
+		validators[i] = entity.Validator{
+			Operator:    common.BytesToAddress(randomBytes(t, 20)),
+			VotingPower: entity.ToVotingPower(big.NewInt(500)),
+			IsActive:    true,
+			Keys: []entity.ValidatorKey{
+				{
+					Tag:     entity.KeyTag(15),
+					Payload: randomBytes(t, 32),
+				},
+			},
+			Vaults: []entity.ValidatorVault{
+				{
+					ChainID:     1,
+					Vault:       common.BytesToAddress(randomBytes(t, 20)),
+					VotingPower: entity.ToVotingPower(big.NewInt(500)),
+				},
+			},
+		}
+	}
+
+	validatorsList := entity.Validators(validators)
+	validatorsList.SortByOperatorAddressAsc() // Sort validators by operator address
+
 	return entity.ValidatorSet{
 		Version:            1,
 		RequiredKeyTag:     entity.KeyTag(15),
@@ -466,27 +497,8 @@ func createValidatorSet(t *testing.T, epoch uint64, quorumThreshold *big.Int) en
 		CaptureTimestamp:   1234567890,
 		QuorumThreshold:    entity.ToVotingPower(quorumThreshold),
 		PreviousHeaderHash: randomHash(t),
-		Validators: []entity.Validator{
-			{
-				Operator:    common.BytesToAddress(randomBytes(t, 20)),
-				VotingPower: entity.ToVotingPower(big.NewInt(500)),
-				IsActive:    true,
-				Keys: []entity.ValidatorKey{
-					{
-						Tag:     entity.KeyTag(15),
-						Payload: randomBytes(t, 32),
-					},
-				},
-				Vaults: []entity.ValidatorVault{
-					{
-						ChainID:     1,
-						Vault:       common.BytesToAddress(randomBytes(t, 20)),
-						VotingPower: entity.ToVotingPower(big.NewInt(500)),
-					},
-				},
-			},
-		},
-		Status: entity.HeaderCommitted,
+		Validators:         validatorsList,
+		Status:             entity.HeaderCommitted,
 	}
 }
 

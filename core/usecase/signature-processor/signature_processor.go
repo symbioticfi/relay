@@ -20,6 +20,7 @@ type Repository interface {
 	SaveSignatureRequestPending(ctx context.Context, req entity.SignatureRequest) error
 	RemoveSignatureRequestPending(ctx context.Context, epoch entity.Epoch, reqHash common.Hash) error
 	GetValidatorSetHeaderByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSetHeader, error)
+	GetActiveValidatorCountByEpoch(ctx context.Context, epoch uint64) (uint32, error)
 }
 
 type Config struct {
@@ -58,7 +59,13 @@ func (s *SignatureProcessor) ProcessSignature(ctx context.Context, param entity.
 			return errors.Errorf("failed to get valset signature map: %w", err)
 		}
 		if errors.Is(err, entity.ErrEntityNotFound) {
-			signatureMap = entity.NewSignatureMap(param.RequestHash, param.Epoch)
+			// Get the total number of active validators for this epoch
+			totalActiveValidators, err := s.cfg.Repo.GetActiveValidatorCountByEpoch(ctx, uint64(param.Epoch))
+			if err != nil {
+				return errors.Errorf("failed to get active validator count for epoch %d: %w", param.Epoch, err)
+			}
+
+			signatureMap = entity.NewSignatureMap(param.RequestHash, param.Epoch, totalActiveValidators)
 		}
 
 		if err := signatureMap.SetValidatorPresent(param.ActiveIndex, param.VotingPower); err != nil {

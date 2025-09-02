@@ -123,6 +123,14 @@ func (r *Repository) SaveValidatorSet(ctx context.Context, valset entity.Validat
 			}
 		}
 
+		// Store the total active validator count for this epoch
+		activeCountBytes := make([]byte, 4)
+		binary.BigEndian.PutUint32(activeCountBytes, activeIndex)
+		err = txn.Set(keyActiveValidatorCount(valset.Epoch), activeCountBytes)
+		if err != nil {
+			return errors.Errorf("failed to store active validator count: %w", err)
+		}
+
 		return nil
 	})
 }
@@ -290,6 +298,34 @@ func (r *Repository) GetLatestValidatorSetEpoch(ctx context.Context) (uint64, er
 		}
 
 		epoch = binary.BigEndian.Uint64(value)
+		return nil
+	})
+}
+
+func keyActiveValidatorCount(epoch uint64) []byte {
+	return []byte(fmt.Sprintf("active_validator_count:%d", epoch))
+}
+
+func (r *Repository) GetActiveValidatorCountByEpoch(ctx context.Context, epoch uint64) (uint32, error) {
+	var count uint32
+
+	return count, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
+
+		item, err := txn.Get(keyActiveValidatorCount(epoch))
+		if err != nil {
+			if errors.Is(err, badger.ErrKeyNotFound) {
+				return errors.Errorf("no active validator count found for epoch %d: %w", epoch, entity.ErrEntityNotFound)
+			}
+			return errors.Errorf("failed to get active validator count: %w", err)
+		}
+
+		value, err := item.ValueCopy(nil)
+		if err != nil {
+			return errors.Errorf("failed to copy active validator count value: %w", err)
+		}
+
+		count = binary.BigEndian.Uint32(value)
 		return nil
 	})
 }

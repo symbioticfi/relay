@@ -75,6 +75,7 @@ type signatureMapDTO struct {
 	Epoch                      uint64   `json:"epoch"`
 	SignedValidatorsBitmapData []byte   `json:"signed_validators_bitmap"`
 	CurrentVotingPower         *big.Int `json:"current_voting_power"`
+	TotalValidators            uint32   `json:"total_validators"`
 }
 
 func signatureMapToBytes(vm entity.SignatureMap) ([]byte, error) {
@@ -88,6 +89,7 @@ func signatureMapToBytes(vm entity.SignatureMap) ([]byte, error) {
 		Epoch:                      uint64(vm.Epoch),
 		SignedValidatorsBitmapData: bitmapBytes,
 		CurrentVotingPower:         vm.CurrentVotingPower.Int,
+		TotalValidators:            vm.TotalValidators,
 	}
 
 	data, err := json.Marshal(dto)
@@ -118,5 +120,6 @@ func bytesToSignatureMap(data []byte) (entity.SignatureMap, error) {
 		Epoch:                  entity.Epoch(dto.Epoch),
 		SignedValidatorsBitmap: bitmap,
 		CurrentVotingPower:     entity.ToVotingPower(dto.CurrentVotingPower),
+		TotalValidators:        dto.TotalValidators,
 	}, nil
 }

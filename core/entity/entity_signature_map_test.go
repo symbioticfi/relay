@@ -33,7 +33,7 @@ func TestSignatureMap_SetValidatorPresent(t *testing.T) {
 			IsActive:    true,
 		}
 
-		vm := NewSignatureMap(requestHash, Epoch(epoch))
+		vm := NewSignatureMap(requestHash, Epoch(epoch), 2) // 2 total validators for setup
 
 		return &vm, activeValidator1, activeValidator2
 	}
@@ -185,7 +185,7 @@ func TestSignatureMap_IntegrationScenarios(t *testing.T) {
 		// Set quorum threshold to 67% (approximately 500)
 		quorumThreshold := ToVotingPower(big.NewInt(500))
 
-		vm := NewSignatureMap(requestHash, Epoch(epoch))
+		vm := NewSignatureMap(requestHash, Epoch(epoch), 4) // 4 total validators
 
 		// Verify initial state
 		assert.False(t, vm.ThresholdReached(quorumThreshold))
@@ -242,7 +242,7 @@ func TestSignatureMap_IntegrationScenarios(t *testing.T) {
 		// Set high quorum threshold that can't be reached
 		quorumThreshold := ToVotingPower(big.NewInt(500))
 
-		vm := NewSignatureMap(requestHash, Epoch(epoch))
+		vm := NewSignatureMap(requestHash, Epoch(epoch), 4) // 4 total validators
 
 		// Add all available active validators (first two are active)
 		err := vm.SetValidatorPresent(uint32(0), validators[0].VotingPower)
@@ -277,7 +277,7 @@ func TestSignatureMap_IntegrationScenarios(t *testing.T) {
 		// Set quorum threshold to 100%
 		quorumThreshold := ToVotingPower(big.NewInt(500))
 
-		vm := NewSignatureMap(requestHash, Epoch(epoch))
+		vm := NewSignatureMap(requestHash, Epoch(epoch), 4) // 4 total validators
 
 		// Add first validator - threshold not reached
 		err := vm.SetValidatorPresent(uint32(0), validators[0].VotingPower)
