@@ -158,11 +158,11 @@ func TestSignatureMap_SetValidatorPresent(t *testing.T) {
 	t.Run("successfully sets active validator as present", func(t *testing.T) {
 		vm, activeValidator1, _ := setupSignatureMap()
 
-		err := vm.SetValidatorPresent(0, activeValidator1.VotingPower)
+		err := vm.SetValidatorPresent(uint32(0), activeValidator1.VotingPower)
 		require.NoError(t, err)
 
 		// Verify validator index is marked as present
-		assert.True(t, vm.SignedValidatorsBitmap.Contains(0))
+		assert.True(t, vm.SignedValidatorsBitmap.Contains(uint32(0)))
 
 		// Verify voting power is updated
 		expectedVotingPower := ToVotingPower(big.NewInt(100)) // activeValidator1's voting power
@@ -173,16 +173,16 @@ func TestSignatureMap_SetValidatorPresent(t *testing.T) {
 		vm, activeValidator1, activeValidator2 := setupSignatureMap()
 
 		// Set first validator present (index 0)
-		err := vm.SetValidatorPresent(0, activeValidator1.VotingPower)
+		err := vm.SetValidatorPresent(uint32(0), activeValidator1.VotingPower)
 		require.NoError(t, err)
 
 		// Set second validator present (index 1)
-		err = vm.SetValidatorPresent(1, activeValidator2.VotingPower)
+		err = vm.SetValidatorPresent(uint32(1), activeValidator2.VotingPower)
 		require.NoError(t, err)
 
 		// Verify both validator indexes are marked as present
-		assert.True(t, vm.SignedValidatorsBitmap.Contains(0))
-		assert.True(t, vm.SignedValidatorsBitmap.Contains(1))
+		assert.True(t, vm.SignedValidatorsBitmap.Contains(uint32(0)))
+		assert.True(t, vm.SignedValidatorsBitmap.Contains(uint32(1)))
 
 		// Verify total voting power is cumulative
 		expectedVotingPower := ToVotingPower(big.NewInt(300)) // 100 + 200
@@ -192,11 +192,11 @@ func TestSignatureMap_SetValidatorPresent(t *testing.T) {
 		vm, activeValidator1, _ := setupSignatureMap()
 
 		// Set validator index present first time
-		err := vm.SetValidatorPresent(0, activeValidator1.VotingPower)
+		err := vm.SetValidatorPresent(uint32(0), activeValidator1.VotingPower)
 		require.NoError(t, err)
 
 		// Try to set the same validator index present again
-		err = vm.SetValidatorPresent(0, activeValidator1.VotingPower)
+		err = vm.SetValidatorPresent(uint32(0), activeValidator1.VotingPower)
 		require.Error(t, err)
 		assert.True(t, errors.Is(err, errors.New(ErrEntityAlreadyExist)))
 
@@ -315,25 +315,25 @@ func TestSignatureMap_IntegrationScenarios(t *testing.T) {
 		assert.Equal(t, ToVotingPower(big.NewInt(0)), vm.CurrentVotingPower)
 
 		// Add first validator (100) - threshold not reached
-		err := vm.SetValidatorPresent(0, validators[0].VotingPower)
+		err := vm.SetValidatorPresent(uint32(0), validators[0].VotingPower)
 		require.NoError(t, err)
 		assert.False(t, vm.ThresholdReached(vs.QuorumThreshold))
 		assert.Equal(t, ToVotingPower(big.NewInt(100)), vm.CurrentVotingPower)
 
 		// Add second validator (100 + 200 = 300) - threshold not reached
-		err = vm.SetValidatorPresent(1, validators[1].VotingPower)
+		err = vm.SetValidatorPresent(uint32(1), validators[1].VotingPower)
 		require.NoError(t, err)
 		assert.False(t, vm.ThresholdReached(vs.QuorumThreshold))
 		assert.Equal(t, ToVotingPower(big.NewInt(300)), vm.CurrentVotingPower)
 
 		// Add third validator (300 + 300 = 600) - threshold reached!
-		err = vm.SetValidatorPresent(2, validators[2].VotingPower)
+		err = vm.SetValidatorPresent(uint32(2), validators[2].VotingPower)
 		require.NoError(t, err)
 		assert.True(t, vm.ThresholdReached(vs.QuorumThreshold))
 		assert.Equal(t, ToVotingPower(big.NewInt(600)), vm.CurrentVotingPower)
 
 		// Add fourth validator (600 + 150 = 750) - threshold still reached
-		err = vm.SetValidatorPresent(3, validators[3].VotingPower)
+		err = vm.SetValidatorPresent(uint32(3), validators[3].VotingPower)
 		require.NoError(t, err)
 		assert.True(t, vm.ThresholdReached(vs.QuorumThreshold))
 		assert.Equal(t, ToVotingPower(big.NewInt(750)), vm.CurrentVotingPower)
@@ -374,10 +374,10 @@ func TestSignatureMap_IntegrationScenarios(t *testing.T) {
 		vm := NewSignatureMap(requestHash, vs)
 
 		// Add all available active validators (first two are active)
-		err := vm.SetValidatorPresent(0, validators[0].VotingPower)
+		err := vm.SetValidatorPresent(uint32(0), validators[0].VotingPower)
 		require.NoError(t, err)
 
-		err = vm.SetValidatorPresent(1, validators[1].VotingPower)
+		err = vm.SetValidatorPresent(uint32(1), validators[1].VotingPower)
 		require.NoError(t, err)
 
 		// Even with all active validators, threshold should not be reached
@@ -415,12 +415,12 @@ func TestSignatureMap_IntegrationScenarios(t *testing.T) {
 		vm := NewSignatureMap(requestHash, vs)
 
 		// Add first validator - threshold not reached
-		err := vm.SetValidatorPresent(0, validators[0].VotingPower)
+		err := vm.SetValidatorPresent(uint32(0), validators[0].VotingPower)
 		require.NoError(t, err)
 		assert.False(t, vm.ThresholdReached(vs.QuorumThreshold))
 
 		// Add second validator - threshold exactly reached
-		err = vm.SetValidatorPresent(1, validators[1].VotingPower)
+		err = vm.SetValidatorPresent(uint32(1), validators[1].VotingPower)
 		require.NoError(t, err)
 		assert.True(t, vm.ThresholdReached(vs.QuorumThreshold))
 		assert.Equal(t, ToVotingPower(big.NewInt(500)), vm.CurrentVotingPower)

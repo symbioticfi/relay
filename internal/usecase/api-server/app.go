@@ -92,7 +92,7 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 	}
 
 	// Create listener
-	listener, err := net.Listen("tcp", cfg.Address)
+	listener, err := (&net.ListenConfig{}).Listen(ctx, "tcp", cfg.Address)
 	if err != nil {
 		return nil, errors.Errorf("failed to listen on %s: %w", cfg.Address, err)
 	}

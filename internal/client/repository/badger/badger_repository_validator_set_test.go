@@ -317,7 +317,7 @@ func TestRepository_ValidatorSet_ActiveIndex(t *testing.T) {
 		{
 			Operator:    common.HexToAddress("0x2222222222222222222222222222222222222222"),
 			VotingPower: entity.ToVotingPower(big.NewInt(200)),
-			IsActive:    false, // Should get active index -1 (inactive) - positioned between two active validators
+			IsActive:    false, // Should get active index 0 (inactive) - positioned between two active validators
 			Keys: []entity.ValidatorKey{
 				{Tag: entity.KeyTag(1), Payload: []byte("inactive_key")},
 			},
@@ -343,7 +343,7 @@ func TestRepository_ValidatorSet_ActiveIndex(t *testing.T) {
 
 		assert.Equal(t, common.HexToAddress("0x0000000000000000000000000000000000000000"), validator.Operator)
 		assert.True(t, validator.IsActive)
-		assert.Equal(t, 0, activeIndex, "First active validator (by address sort) should have index 0")
+		assert.Equal(t, uint32(0), activeIndex, "First active validator (by address sort) should have index 0")
 	})
 
 	t.Run("second active validator gets correct index despite inactive validator in between", func(t *testing.T) {
@@ -353,17 +353,17 @@ func TestRepository_ValidatorSet_ActiveIndex(t *testing.T) {
 
 		assert.Equal(t, common.HexToAddress("0x3333333333333333333333333333333333333333"), validator.Operator)
 		assert.True(t, validator.IsActive)
-		assert.Equal(t, 1, activeIndex, "Second active validator should have index 1, inactive validators should not affect active indexing")
+		assert.Equal(t, uint32(1), activeIndex, "Second active validator should have index 1, inactive validators should not affect active indexing")
 	})
 
-	t.Run("inactive validator gets index -1", func(t *testing.T) {
+	t.Run("inactive validator gets index 0", func(t *testing.T) {
 		// Test inactive validator
 		validator, activeIndex, err := repo.GetValidatorByKey(t.Context(), vs.Epoch, entity.KeyTag(1), []byte("inactive_key"))
 		require.NoError(t, err)
 
 		assert.Equal(t, common.HexToAddress("0x2222222222222222222222222222222222222222"), validator.Operator)
 		assert.False(t, validator.IsActive)
-		assert.Equal(t, -1, activeIndex, "Inactive validator should have index -1")
+		assert.Equal(t, uint32(0), activeIndex, "Inactive validator should have index 0")
 	})
 }
 

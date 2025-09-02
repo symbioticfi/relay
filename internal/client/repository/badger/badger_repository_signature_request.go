@@ -129,11 +129,12 @@ func (r *Repository) GetSignatureRequestsByEpoch(ctx context.Context, epoch enti
 		txn := getTxn(ctx)
 		prefix := keySignatureRequestEpochPrefix(epoch)
 		opts := badger.DefaultIteratorOptions
+		opts.Prefix = prefix
 		opts.PrefetchValues = true
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
-		seekKey := prefix // First page: seek to epoch prefix
+		seekKey := prefix
 		if lastHash != (common.Hash{}) {
 			// Subsequent pages: seek to the record after lastHash
 			seekKey = keySignatureRequest(epoch, lastHash)
