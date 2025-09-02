@@ -10,14 +10,12 @@ import (
 // WantSignaturesRequest represents a request to resync signatures for a specific epoch.
 // Contains missing validator indices for each incomplete signature request.
 type WantSignaturesRequest struct {
-	Epoch          entity.Epoch                    // Target epoch for resync
 	WantSignatures map[common.Hash]*roaring.Bitmap // reqHash -> missing validator indices bitmap
 }
 
 // WantSignatureResponse contains signatures grouped by request hash.
 // Each signature includes the validator index for consistent mapping.
 type WantSignatureResponse struct {
-	Epoch      entity.Epoch                         // Response epoch
 	Signatures map[common.Hash][]ValidatorSignature // grouped by request hash
 }
 
