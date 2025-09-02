@@ -77,7 +77,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		return errors.Errorf("failed to get valset signature map: %w", err)
 	}
 
-	if signatureMap.RequestHash != msg.RequestHash || signatureMap.Epoch != uint64(msg.Epoch) {
+	if signatureMap.RequestHash != msg.RequestHash || signatureMap.Epoch != msg.Epoch {
 		return errors.Errorf("signature map context mismatch: map %s/%d vs msg %s/%d",
 			signatureMap.RequestHash.Hex(), signatureMap.Epoch,
 			msg.RequestHash.Hex(), msg.Epoch,

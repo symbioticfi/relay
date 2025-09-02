@@ -10,15 +10,15 @@ import (
 
 type SignatureMap struct {
 	RequestHash            common.Hash
-	Epoch                  uint64
+	Epoch                  Epoch
 	SignedValidatorsBitmap *roaring.Bitmap
 	CurrentVotingPower     VotingPower
 }
 
-func NewSignatureMap(requestHash common.Hash, vs ValidatorSet) SignatureMap {
+func NewSignatureMap(requestHash common.Hash, epoch Epoch) SignatureMap {
 	return SignatureMap{
 		RequestHash:            requestHash,
-		Epoch:                  vs.Epoch,
+		Epoch:                  epoch,
 		SignedValidatorsBitmap: roaring.New(),
 		CurrentVotingPower:     ToVotingPower(big.NewInt(0)),
 	}

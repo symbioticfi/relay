@@ -1,7 +1,7 @@
 package syncer
 
 import (
-	"github.com/RoaringBitmap/roaring"
+	"github.com/RoaringBitmap/roaring/v2"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/symbioticfi/relay/core/entity"

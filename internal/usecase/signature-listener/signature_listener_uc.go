@@ -80,11 +80,7 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 			return errors.Errorf("failed to get valset signature map: %w", err)
 		}
 		if errors.Is(err, entity.ErrEntityNotFound) {
-			validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
-			if err != nil {
-				return errors.Errorf("failed to get validator set: %w", err)
-			}
-			signatureMap = entity.NewSignatureMap(msg.RequestHash, validatorSet)
+			signatureMap = entity.NewSignatureMap(msg.RequestHash, msg.Epoch)
 		}
 
 		if err := signatureMap.SetValidatorPresent(activeIndex, validator.VotingPower); err != nil {

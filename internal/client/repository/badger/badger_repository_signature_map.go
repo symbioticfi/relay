@@ -83,7 +83,7 @@ func signatureMapToBytes(vm entity.SignatureMap) ([]byte, error) {
 
 	dto := signatureMapDTO{
 		RequestHash:                vm.RequestHash.Hex(),
-		Epoch:                      vm.Epoch,
+		Epoch:                      uint64(vm.Epoch),
 		SignedValidatorsBitmapData: bitmapBytes,
 		CurrentVotingPower:         vm.CurrentVotingPower.Int,
 	}
@@ -113,7 +113,7 @@ func bytesToSignatureMap(data []byte) (entity.SignatureMap, error) {
 
 	return entity.SignatureMap{
 		RequestHash:            requestHash,
-		Epoch:                  dto.Epoch,
+		Epoch:                  entity.Epoch(dto.Epoch),
 		SignedValidatorsBitmap: bitmap,
 		CurrentVotingPower:     entity.ToVotingPower(dto.CurrentVotingPower),
 	}, nil

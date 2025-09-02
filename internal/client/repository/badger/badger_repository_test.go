@@ -33,7 +33,7 @@ func randomAddr(t *testing.T) entity.CrossChainAddress {
 
 func randomBigInt(t *testing.T) *big.Int {
 	t.Helper()
-	n, err := rand.Int(rand.Reader, big.NewInt(1000000))
+	n, err := rand.Int(rand.Reader, big.NewInt(1_000_000_000))
 	require.NoError(t, err)
 	return n
 }

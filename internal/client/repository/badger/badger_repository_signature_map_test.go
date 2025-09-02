@@ -29,7 +29,7 @@ func randomSignatureMap(t *testing.T, requestHash common.Hash) entity.SignatureM
 
 	return entity.SignatureMap{
 		RequestHash:            requestHash,
-		Epoch:                  randomBigInt(t).Uint64(),
+		Epoch:                  entity.Epoch(randomBigInt(t).Uint64()),
 		SignedValidatorsBitmap: bitmap,
 		CurrentVotingPower:     entity.ToVotingPower(randomBigInt(t)),
 	}
