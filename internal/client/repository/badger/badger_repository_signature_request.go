@@ -70,8 +70,8 @@ func (r *Repository) SaveSignatureRequest(ctx context.Context, req entity.Signat
 		if err := r.saveSignatureRequestToKey(ctx, req, primaryKey, hashIndexKey); err != nil {
 			return err
 		}
-		err := getTxn(ctx).Set(hashIndexKey, hashIndexKey)
-		if err != nil {
+
+		if err := getTxn(ctx).Set(hashIndexKey, primaryKey); err != nil {
 			return errors.Errorf("failed to store signature request hash index: %w", err)
 		}
 		return nil

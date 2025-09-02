@@ -19,6 +19,9 @@ type Repository interface {
 	UpdateSignatureMap(ctx context.Context, vm entity.SignatureMap) error
 	SaveSignature(ctx context.Context, reqHash common.Hash, key entity.RawPublicKey, sig entity.SignatureExtended) error
 	SaveSignatureRequest(ctx context.Context, req entity.SignatureRequest) error
+	SaveSignatureRequestPending(ctx context.Context, req entity.SignatureRequest) error
+	RemoveSignatureRequestPending(ctx context.Context, epoch entity.Epoch, reqHash common.Hash) error
+	GetValidatorSetHeaderByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSetHeader, error)
 }
 
 type Config struct {
@@ -34,27 +37,23 @@ func (c Config) Validate() error {
 }
 
 // SignatureProcessor handles signature processing with SignatureMap operations
-type SignatureProcessor interface {
-	ProcessSignature(ctx context.Context, param entity.SaveSignatureParam) error
-}
-
-type signatureProcessor struct {
+type SignatureProcessor struct {
 	cfg Config
 }
 
 // NewSignatureProcessor creates a new signature processor
-func NewSignatureProcessor(cfg Config) (SignatureProcessor, error) {
+func NewSignatureProcessor(cfg Config) (*SignatureProcessor, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, errors.Errorf("failed to validate config: %w", err)
 	}
 
-	return &signatureProcessor{
+	return &SignatureProcessor{
 		cfg: cfg,
 	}, nil
 }
 
 // ProcessSignature processes a signature with SignatureMap operations and optionally saves SignatureRequest
-func (s *signatureProcessor) ProcessSignature(ctx context.Context, param entity.SaveSignatureParam) error {
+func (s *SignatureProcessor) ProcessSignature(ctx context.Context, param entity.SaveSignatureParam) error {
 	return s.cfg.Repo.DoUpdateInTx(ctx, func(ctx context.Context) error {
 		signatureMap, err := s.cfg.Repo.GetSignatureMap(ctx, param.RequestHash)
 		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
@@ -80,6 +79,25 @@ func (s *signatureProcessor) ProcessSignature(ctx context.Context, param entity.
 			if err := s.cfg.Repo.SaveSignatureRequest(ctx, *param.SignatureRequest); err != nil {
 				return errors.Errorf("failed to save signature request: %w", err)
 			}
+			// Save to pending collection as well
+			if err := s.cfg.Repo.SaveSignatureRequestPending(ctx, *param.SignatureRequest); err != nil {
+				return errors.Errorf("failed to save signature request to pending collection: %v", err)
+			}
+		}
+
+		// Check if quorum is reached and remove from pending collection if so
+		validatorSetHeader, err := s.cfg.Repo.GetValidatorSetHeaderByEpoch(ctx, uint64(param.Epoch))
+		if err != nil {
+			return errors.Errorf("failed to get validator set header: %v", err)
+		}
+
+		if signatureMap.ThresholdReached(validatorSetHeader.QuorumThreshold) {
+			// Remove from pending collection since quorum is reached
+			err := s.cfg.Repo.RemoveSignatureRequestPending(ctx, param.Epoch, param.RequestHash)
+			if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
+				return errors.Errorf("failed to remove signature request from pending collection: %v", err)
+			}
+			// If ErrEntityNotFound, it means it was already removed or never added - that's ok
 		}
 
 		return nil
