@@ -277,11 +277,14 @@ enum ValidatorSetStatus {
   // Default/unknown status
   VALIDATOR_SET_STATUS_UNSPECIFIED = 0;
   
-  // Inactive status
-  VALIDATOR_SET_STATUS_INACTIVE= 1;
+  // Derived status
+  VALIDATOR_SET_STATUS_DERIVED= 1;
   
-  // Active status
-  VALIDATOR_SET_STATUS_ACTIVE = 2;
+  // Aggregated status
+  VALIDATOR_SET_STATUS_AGGREGATED = 2;
+
+  // Committed status
+  VALIDATOR_SET_STATUS_COMMITTED = 3;
 }
 
 // Validator information

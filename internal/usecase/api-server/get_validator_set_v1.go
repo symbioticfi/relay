@@ -104,11 +104,11 @@ func convertValidatorToPB(v entity.Validator) *apiv1.Validator {
 func convertValidatorSetStatusToPB(status entity.ValidatorSetStatus) apiv1.ValidatorSetStatus {
 	switch status {
 	case entity.HeaderDerived:
-		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_INACTIVE
+		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_DERIVED
 	case entity.HeaderAggregated:
-		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_ACTIVE
+		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_AGGREGATED
 	case entity.HeaderCommitted:
-		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_ACTIVE
+		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED
 	default:
 		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_UNSPECIFIED
 	}

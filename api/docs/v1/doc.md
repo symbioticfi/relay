@@ -521,8 +521,9 @@ Validator set status enumeration
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | VALIDATOR_SET_STATUS_UNSPECIFIED | 0 | Default/unknown status |
-| VALIDATOR_SET_STATUS_INACTIVE | 1 | Inactive status |
-| VALIDATOR_SET_STATUS_ACTIVE | 2 | Active status |
+| VALIDATOR_SET_STATUS_DERIVED | 1 | Derived status |
+| VALIDATOR_SET_STATUS_AGGREGATED | 2 | Aggregated status |
+| VALIDATOR_SET_STATUS_COMMITTED | 3 | Committed status |
 
 
  
