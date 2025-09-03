@@ -127,6 +127,7 @@ type validatorSetDTO struct {
 	CaptureTimestamp uint64         `json:"capture_timestamp"`
 	QuorumThreshold  string         `json:"quorum_threshold"`
 	Validators       []validatorDTO `json:"validators"`
+	Status           int            `json:"status"`
 }
 
 type validatorSetHeaderDTO struct {
@@ -165,6 +166,7 @@ func validatorSetToBytes(vs entity.ValidatorSet) ([]byte, error) {
 				}),
 			}
 		}),
+		Status: int(vs.Status),
 	}
 
 	return json.Marshal(dto)
@@ -209,5 +211,6 @@ func bytesToValidatorSet(data []byte) (entity.ValidatorSet, error) {
 				}),
 			}
 		}),
+		Status: entity.ValidatorSetStatus(dto.Status),
 	}, nil
 }

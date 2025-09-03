@@ -118,5 +118,6 @@ func randomValidatorSet(t *testing.T, epoch uint64) entity.ValidatorSet {
 				},
 			},
 		},
+		Status: entity.HeaderDerived,
 	}
 }
