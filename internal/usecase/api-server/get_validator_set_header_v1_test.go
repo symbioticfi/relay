@@ -29,7 +29,6 @@ func TestGetValidatorSetHeader_ValidatorSetFoundInRepo(t *testing.T) {
 	setup.mockEvmClient.EXPECT().GetEpochStart(ctx, requestedEpoch).Return(epochStart, nil)
 	setup.mockEvmClient.EXPECT().GetCurrentEpoch(ctx).Return(currentEpoch, nil)
 	setup.mockEvmClient.EXPECT().GetConfig(ctx, epochStart).Return(networkConfig, nil)
-	setup.mockGrowthStrategy.EXPECT().GetValsetStatus(ctx, networkConfig, validatorSet).Return(entity.HeaderActive, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, requestedEpoch).Return(validatorSet, nil)
 
 	// Execute the method under test
@@ -47,7 +46,6 @@ func TestGetValidatorSetHeader_ValidatorSetFoundInRepo(t *testing.T) {
 	require.Equal(t, expectedHeader.Epoch, response.GetEpoch())
 	require.Equal(t, expectedHeader.QuorumThreshold.String(), response.GetQuorumThreshold())
 	require.Equal(t, expectedHeader.ValidatorsSszMRoot.Hex(), response.GetValidatorsSszMroot())
-	require.Equal(t, expectedHeader.PreviousHeaderHash.Hex(), response.GetPreviousHeaderHash())
 }
 
 func TestGetValidatorSetHeader_ValidatorSetNotInRepo_DerivedSuccessfully(t *testing.T) {
@@ -72,7 +70,6 @@ func TestGetValidatorSetHeader_ValidatorSetNotInRepo_DerivedSuccessfully(t *test
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, requestedEpoch).Return(entity.ValidatorSet{}, entity.ErrEntityNotFound)
 	setup.mockEvmClient.EXPECT().GetEpochStart(ctx, requestedEpoch).Return(epochStart, nil)
 	setup.mockEvmClient.EXPECT().GetConfig(ctx, epochStart).Return(networkConfig, nil)
-	setup.mockGrowthStrategy.EXPECT().GetValsetStatus(ctx, networkConfig, validatorSet).Return(entity.HeaderActive, nil)
 	setup.mockDeriver.EXPECT().GetValidatorSet(ctx, requestedEpoch, networkConfig).Return(validatorSet, nil)
 
 	// Execute the method under test
@@ -90,7 +87,6 @@ func TestGetValidatorSetHeader_ValidatorSetNotInRepo_DerivedSuccessfully(t *test
 	require.Equal(t, expectedHeader.Epoch, response.GetEpoch())
 	require.Equal(t, expectedHeader.QuorumThreshold.String(), response.GetQuorumThreshold())
 	require.Equal(t, expectedHeader.ValidatorsSszMRoot.Hex(), response.GetValidatorsSszMroot())
-	require.Equal(t, expectedHeader.PreviousHeaderHash.Hex(), response.GetPreviousHeaderHash())
 }
 
 func TestGetValidatorSetHeader_UseCurrentEpoch_WhenNoEpochSpecified(t *testing.T) {
@@ -108,7 +104,6 @@ func TestGetValidatorSetHeader_UseCurrentEpoch_WhenNoEpochSpecified(t *testing.T
 	setup.mockEvmClient.EXPECT().GetCurrentEpoch(ctx).Return(currentEpoch, nil)
 	setup.mockEvmClient.EXPECT().GetEpochStart(ctx, currentEpoch).Return(epochStart, nil)
 	setup.mockEvmClient.EXPECT().GetConfig(ctx, epochStart).Return(networkConfig, nil)
-	setup.mockGrowthStrategy.EXPECT().GetValsetStatus(ctx, networkConfig, validatorSet).Return(entity.HeaderActive, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, currentEpoch).Return(validatorSet, nil)
 
 	// Execute the method under test - no epoch specified

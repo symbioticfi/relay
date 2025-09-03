@@ -17,15 +17,10 @@ import (
 )
 
 type VerificationType uint32
-type GrowthStrategyType uint32
 
 const (
 	VerificationTypeBlsBn254ZK     VerificationType = 0
 	VerificationTypeBlsBn254Simple VerificationType = 1
-
-	GrowthStrategyAsync        GrowthStrategyType = 0
-	GrowthStrategySync         GrowthStrategyType = 1
-	GrowthStrategyNoSettlement GrowthStrategyType = 2
 )
 
 var (
@@ -47,8 +42,9 @@ var (
 type ValidatorSetStatus int
 
 const (
-	HeaderInactive ValidatorSetStatus = iota
-	HeaderActive
+	HeaderDerived ValidatorSetStatus = iota
+	HeaderAggregated
+	HeaderCommitted
 )
 
 const ValsetHeaderKeyTag = KeyTag(15)
@@ -121,10 +117,12 @@ func (q QuorumThresholdPct) MarshalJSON() ([]byte, error) {
 
 func (s ValidatorSetStatus) MarshalJSON() ([]byte, error) {
 	switch s {
-	case HeaderInactive:
-		return []byte("\"Inactive\""), nil
-	case HeaderActive:
-		return []byte("\"Active\""), nil
+	case HeaderDerived:
+		return []byte("\"Derived\""), nil
+	case HeaderAggregated:
+		return []byte("\"Aggregated\""), nil
+	case HeaderCommitted:
+		return []byte("\"Committed\""), nil
 	default:
 		return []byte("\"Unknown\""), nil
 	}
@@ -191,22 +189,6 @@ func (vt VerificationType) String() string {
 	return fmt.Sprintf("%d (UNKNOWN)", uint32(vt))
 }
 
-func (gst GrowthStrategyType) MarshalText() (text []byte, err error) {
-	return []byte(gst.String()), nil
-}
-
-func (gst GrowthStrategyType) String() string {
-	switch gst {
-	case GrowthStrategyAsync:
-		return fmt.Sprintf("%d GROWTH-STRATEGY-NEWEST", uint32(gst))
-	case GrowthStrategySync:
-		return fmt.Sprintf("%d GROWTH-STRATEGY-SYNC", uint32(gst))
-	case GrowthStrategyNoSettlement:
-		return fmt.Sprintf("%d GROWTH-STRATEGY-NONE", uint32(gst))
-	}
-	return fmt.Sprintf("%d (UNKNOWN)", uint32(gst))
-}
-
 type CrossChainAddress struct {
 	ChainId uint64
 	Address common.Address
@@ -228,8 +210,6 @@ type NetworkConfig struct {
 	RequiredKeyTags         []KeyTag
 	RequiredHeaderKeyTag    KeyTag
 	QuorumThresholds        []QuorumThreshold
-	MaxMissingEpochs        uint64
-	GrowthStrategy          GrowthStrategyType
 }
 
 type NetworkData struct {
@@ -316,13 +296,13 @@ func GetActiveValidators(allValidators []Validator) []Validator {
 }
 
 type ValidatorSet struct {
-	Version            uint8
-	RequiredKeyTag     KeyTag      // key tag required to commit next valset
-	Epoch              uint64      // valset epoch
-	CaptureTimestamp   uint64      // epoch capture timestamp
-	QuorumThreshold    VotingPower // absolute number now, not a percent
-	PreviousHeaderHash common.Hash // previous valset header hash
-	Validators         []Validator
+	Version          uint8
+	RequiredKeyTag   KeyTag      // key tag required to commit next valset
+	Epoch            uint64      // valset epoch
+	CaptureTimestamp uint64      // epoch capture timestamp
+	QuorumThreshold  VotingPower // absolute number now, not a percent
+	Validators       []Validator
+	Status           ValidatorSetStatus
 }
 
 func (v ValidatorSet) FindValidatorByKey(keyTag KeyTag, publicKey []byte) (Validator, bool) {
@@ -349,7 +329,6 @@ type ValidatorSetHeader struct {
 	CaptureTimestamp   uint64
 	QuorumThreshold    VotingPower
 	ValidatorsSszMRoot common.Hash
-	PreviousHeaderHash common.Hash
 }
 
 type ExtraData struct {
@@ -419,7 +398,6 @@ func (v ValidatorSet) GetHeader() (ValidatorSetHeader, error) {
 		Epoch:              v.Epoch,
 		CaptureTimestamp:   v.CaptureTimestamp,
 		QuorumThreshold:    v.QuorumThreshold,
-		PreviousHeaderHash: v.PreviousHeaderHash,
 		ValidatorsSszMRoot: sszMroot,
 	}, nil
 }
@@ -485,13 +463,13 @@ func (v ValidatorSetHeader) AbiEncode() ([]byte, error) {
 			Name: "validatorsSszMRoot",
 			Type: abi.Type{T: abi.FixedBytesTy, Size: 32},
 		},
-		{
-			Name: "previousHeaderHash",
-			Type: abi.Type{T: abi.FixedBytesTy, Size: 32},
-		},
 	}
 
-	pack, err := arguments.Pack(v.Version, v.RequiredKeyTag, new(big.Int).SetUint64(v.Epoch), new(big.Int).SetUint64(v.CaptureTimestamp), v.QuorumThreshold.Int, v.ValidatorsSszMRoot, v.PreviousHeaderHash)
+	if v.QuorumThreshold.Int == nil {
+		v.QuorumThreshold.Int = big.NewInt(0)
+	}
+
+	pack, err := arguments.Pack(v.Version, v.RequiredKeyTag, new(big.Int).SetUint64(v.Epoch), new(big.Int).SetUint64(v.CaptureTimestamp), v.QuorumThreshold.Int, v.ValidatorsSszMRoot)
 	if err != nil {
 		return nil, errors.Errorf("failed to pack arguments: %w", err)
 	}

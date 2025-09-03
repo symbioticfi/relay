@@ -5,8 +5,6 @@ import (
 	"testing"
 	"time"
 
-	mocks2 "github.com/symbioticfi/relay/core/usecase/growth-strategy/strategy-types/mocks"
-
 	"github.com/ethereum/go-ethereum/common"
 	"go.uber.org/mock/gomock"
 
@@ -18,12 +16,11 @@ import (
 // testSetup contains all the mocks and test helper functions
 // This unified setup can be used for all API server endpoint tests
 type testSetup struct {
-	ctrl               *gomock.Controller
-	mockEvmClient      *deriverMocks.MockEvmClient
-	mockRepo           *mocks.Mockrepo
-	mockDeriver        *mocks.Mockderiver
-	mockGrowthStrategy *mocks2.MockGrowthStrategy
-	handler            *grpcHandler
+	ctrl          *gomock.Controller
+	mockEvmClient *deriverMocks.MockEvmClient
+	mockRepo      *mocks.Mockrepo
+	mockDeriver   *mocks.Mockderiver
+	handler       *grpcHandler
 }
 
 // newTestSetup creates a new test setup with mocked dependencies
@@ -36,7 +33,6 @@ func newTestSetup(t *testing.T) *testSetup {
 	mockEvmClient := deriverMocks.NewMockEvmClient(ctrl)
 	mockRepo := mocks.NewMockrepo(ctrl)
 	mockDeriver := mocks.NewMockderiver(ctrl)
-	mockGrowthStrategy := mocks2.NewMockGrowthStrategy(ctrl)
 
 	// Create Config using the same structure as production
 	cfg := Config{
@@ -45,11 +41,10 @@ func newTestSetup(t *testing.T) *testSetup {
 		ShutdownTimeout:   time.Second,
 
 		// Inject mocked dependencies
-		EvmClient:      mockEvmClient,
-		Repo:           mockRepo,
-		Deriver:        mockDeriver,
-		GrowthStrategy: mockGrowthStrategy,
-		ServeMetrics:   false,
+		EvmClient:    mockEvmClient,
+		Repo:         mockRepo,
+		Deriver:      mockDeriver,
+		ServeMetrics: false,
 	}
 
 	// Create grpcHandler using the same pattern as production
@@ -58,12 +53,11 @@ func newTestSetup(t *testing.T) *testSetup {
 	}
 
 	return &testSetup{
-		ctrl:               ctrl,
-		mockEvmClient:      mockEvmClient,
-		mockRepo:           mockRepo,
-		mockDeriver:        mockDeriver,
-		mockGrowthStrategy: mockGrowthStrategy,
-		handler:            handler,
+		ctrl:          ctrl,
+		mockEvmClient: mockEvmClient,
+		mockRepo:      mockRepo,
+		mockDeriver:   mockDeriver,
+		handler:       handler,
 	}
 }
 
@@ -71,12 +65,11 @@ func newTestSetup(t *testing.T) *testSetup {
 // This is the simpler version used for GetValidatorSetHeader tests
 func createTestValidatorSet(epoch uint64) entity.ValidatorSet {
 	return entity.ValidatorSet{
-		Version:            1,
-		RequiredKeyTag:     entity.KeyTag(15),
-		Epoch:              epoch,
-		CaptureTimestamp:   1640995200, // 2022-01-01 00:00:00 UTC
-		QuorumThreshold:    entity.ToVotingPower(big.NewInt(670)),
-		PreviousHeaderHash: common.HexToHash("0xdef456"),
+		Version:          1,
+		RequiredKeyTag:   entity.KeyTag(15),
+		Epoch:            epoch,
+		CaptureTimestamp: 1640995200, // 2022-01-01 00:00:00 UTC
+		QuorumThreshold:  entity.ToVotingPower(big.NewInt(670)),
 		Validators: []entity.Validator{
 			{
 				Operator:    common.HexToAddress("0x123"),
@@ -90,6 +83,7 @@ func createTestValidatorSet(epoch uint64) entity.ValidatorSet {
 				},
 			},
 		},
+		Status: entity.HeaderDerived,
 	}
 }
 
@@ -97,12 +91,11 @@ func createTestValidatorSet(epoch uint64) entity.ValidatorSet {
 // This is the richer version used for GetValidatorByAddress tests
 func createTestValidatorSetWithMultipleValidators(epoch uint64) entity.ValidatorSet {
 	return entity.ValidatorSet{
-		Version:            1,
-		RequiredKeyTag:     entity.KeyTag(15),
-		Epoch:              epoch,
-		CaptureTimestamp:   1640995200, // 2022-01-01 00:00:00 UTC
-		QuorumThreshold:    entity.ToVotingPower(big.NewInt(670)),
-		PreviousHeaderHash: common.HexToHash("0xdef456"),
+		Version:          1,
+		RequiredKeyTag:   entity.KeyTag(15),
+		Epoch:            epoch,
+		CaptureTimestamp: 1640995200, // 2022-01-01 00:00:00 UTC
+		QuorumThreshold:  entity.ToVotingPower(big.NewInt(670)),
 		Validators: []entity.Validator{
 			{
 				Operator:    common.HexToAddress("0x0000000000000000000000000000000000000123"),
@@ -152,5 +145,6 @@ func createTestValidatorSetWithMultipleValidators(epoch uint64) entity.Validator
 				},
 			},
 		},
+		Status: entity.HeaderDerived,
 	}
 }

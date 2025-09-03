@@ -120,6 +120,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 		CaptureTimestamp: timestamp,
 		QuorumThreshold:  quorumThreshold,
 		Validators:       validators,
+		Status:           entity.HeaderDerived,
 	}
 
 	return valset, nil

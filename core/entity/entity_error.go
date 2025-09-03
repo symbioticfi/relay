@@ -7,10 +7,8 @@ func (e StringError) Error() string {
 }
 
 const (
-	ErrEntityNotFound                 = StringError("entity not found")
-	ErrEntityAlreadyExist             = StringError("entity already exists")
-	ErrNotAnAggregator                = StringError("not an aggregator")
-	ErrChainNotFound                  = StringError("chain not found")
-	ErrValsetAlreadyCommittedForEpoch = StringError("valset already committed for epoch")
-	ErrValsetListenerNotSynced        = StringError("valset listener not synced")
+	ErrEntityNotFound     = StringError("entity not found")
+	ErrEntityAlreadyExist = StringError("entity already exists")
+	ErrNotAnAggregator    = StringError("not an aggregator")
+	ErrChainNotFound      = StringError("chain not found")
 )

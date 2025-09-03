@@ -41,15 +41,63 @@ func TestRepository_PendingValidatorSet(t *testing.T) {
 	require.True(t, errors.Is(err, entity.ErrEntityNotFound))
 }
 
+func TestRepository_GetLatestPendingValidatorSet(t *testing.T) {
+	repo := setupTestRepository(t)
+
+	// Test getting latest when no validator sets exist
+	_, err := repo.GetLatestPendingValidatorSet(t.Context())
+	require.Error(t, err)
+	require.True(t, errors.Is(err, entity.ErrEntityNotFound))
+
+	// Create validator sets with different epochs
+	reqHash1 := common.BytesToHash(randomBytes(t, 32))
+	reqHash2 := common.BytesToHash(randomBytes(t, 32))
+	reqHash3 := common.BytesToHash(randomBytes(t, 32))
+
+	vs1 := randomValidatorSet(t, 100) // Lower epoch
+	vs2 := randomValidatorSet(t, 200) // Higher epoch
+	vs3 := randomValidatorSet(t, 150) // Middle epoch
+
+	// Save validator sets in non-chronological order
+	err = repo.SavePendingValidatorSet(t.Context(), reqHash1, vs1)
+	require.NoError(t, err)
+
+	// After saving first validator set, it should be the latest
+	latestVS, err := repo.GetLatestPendingValidatorSet(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, vs1, latestVS)
+
+	// Save a validator set with higher epoch
+	err = repo.SavePendingValidatorSet(t.Context(), reqHash2, vs2)
+	require.NoError(t, err)
+
+	// Now vs2 should be the latest (higher epoch)
+	latestVS, err = repo.GetLatestPendingValidatorSet(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, vs2, latestVS)
+
+	// Save a validator set with middle epoch
+	err = repo.SavePendingValidatorSet(t.Context(), reqHash3, vs3)
+	require.NoError(t, err)
+
+	// Verify we can still get individual validator sets by hash
+	retrievedVS1, err := repo.GetPendingValidatorSet(t.Context(), reqHash1)
+	require.NoError(t, err)
+	require.Equal(t, vs1, retrievedVS1)
+
+	retrievedVS3, err := repo.GetPendingValidatorSet(t.Context(), reqHash3)
+	require.NoError(t, err)
+	require.Equal(t, vs3, retrievedVS3)
+}
+
 func randomValidatorSet(t *testing.T, epoch uint64) entity.ValidatorSet {
 	t.Helper()
 	return entity.ValidatorSet{
-		Version:            1,
-		RequiredKeyTag:     entity.KeyTag(15),
-		Epoch:              epoch,
-		CaptureTimestamp:   1234567890,
-		QuorumThreshold:    entity.ToVotingPower(big.NewInt(1000)),
-		PreviousHeaderHash: common.BytesToHash(randomBytes(t, 32)),
+		Version:          1,
+		RequiredKeyTag:   entity.KeyTag(15),
+		Epoch:            epoch,
+		CaptureTimestamp: 1234567890,
+		QuorumThreshold:  entity.ToVotingPower(big.NewInt(1000)),
 		Validators: []entity.Validator{
 			{
 				Operator:    common.BytesToAddress(randomBytes(t, 20)),

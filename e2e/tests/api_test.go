@@ -9,7 +9,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
-	growthStrategy "github.com/symbioticfi/relay/core/usecase/growth-strategy"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -64,14 +63,8 @@ func getExpectedDataFromContracts(t *testing.T, relayContracts *RelayContractsDa
 	deriver, err := valsetDeriver.NewDeriver(evmClient)
 	require.NoError(t, err, "Failed to create validator set deriver")
 
-	gs, err := growthStrategy.NewGrowthStrategy(entity.GrowthStrategyAsync, evmClient)
-	require.NoError(t, err, "Failed to create growth strategy")
-
 	expectedValset, err := deriver.GetValidatorSet(ctx, currentEpoch, networkConfig)
 	require.NoError(t, err, "Failed to derive expected validator set")
-
-	expectedValset.PreviousHeaderHash, err = gs.GetLastCommittedHeaderHash(ctx, networkConfig)
-	require.NoError(t, err, "Failed to derive expected validator set previous hash")
 
 	// Check if current epoch is committed
 	isCurrentEpochCommitted := true
@@ -106,8 +99,6 @@ func validateValidatorSetAgainstExpected(t *testing.T, apiResponse *apiv1.GetVal
 	expectedQuorum := expected.ValidatorSet.QuorumThreshold.String()
 	require.Equal(t, expectedQuorum, apiResponse.QuorumThreshold,
 		"API quorum threshold should match contract quorum threshold")
-	require.Equal(t, expected.ValidatorSet.PreviousHeaderHash.Hex(), apiResponse.PreviousHeaderHash,
-		"API previous header hash should match contract hash")
 	require.Len(t, apiResponse.Validators, len(expected.ValidatorSet.Validators),
 		"API should return same number of validators as contract")
 

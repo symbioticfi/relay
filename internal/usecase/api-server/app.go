@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	strategyTypes "github.com/symbioticfi/relay/core/usecase/growth-strategy/strategy-types"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
@@ -60,13 +58,12 @@ type Config struct {
 	ReadHeaderTimeout time.Duration `validate:"required,gt=0"`
 	ShutdownTimeout   time.Duration `validate:"required,gt=0"`
 
-	Signer         signer                       `validate:"required"`
-	Repo           repo                         `validate:"required"`
-	EvmClient      evmClient                    `validate:"required"`
-	Deriver        deriver                      `validate:"required"`
-	GrowthStrategy strategyTypes.GrowthStrategy `validate:"required"`
-	Aggregator     aggregator
-	ServeMetrics   bool
+	Signer       signer    `validate:"required"`
+	Repo         repo      `validate:"required"`
+	EvmClient    evmClient `validate:"required"`
+	Deriver      deriver   `validate:"required"`
+	Aggregator   aggregator
+	ServeMetrics bool
 }
 
 func (c Config) Validate() error {

@@ -27,7 +27,7 @@ func (h *grpcHandler) GetValidatorSetHeader(ctx context.Context, req *apiv1.GetV
 		return nil, errors.New("epoch requested is greater than latest epoch")
 	}
 
-	validatorSet, _, err := h.getValidatorSetForEpoch(ctx, epochRequested)
+	validatorSet, err := h.getValidatorSetForEpoch(ctx, epochRequested)
 	if err != nil {
 		return nil, err
 	}
@@ -45,6 +45,5 @@ func (h *grpcHandler) GetValidatorSetHeader(ctx context.Context, req *apiv1.GetV
 		CaptureTimestamp:   timestamppb.New(time.Unix(int64(header.CaptureTimestamp), 0).UTC()),
 		QuorumThreshold:    header.QuorumThreshold.String(),
 		ValidatorsSszMroot: header.ValidatorsSszMRoot.Hex(),
-		PreviousHeaderHash: header.PreviousHeaderHash.Hex(),
 	}, nil
 }

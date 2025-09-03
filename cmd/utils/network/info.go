@@ -7,7 +7,6 @@ import (
 
 	"github.com/symbioticfi/relay/core/client/evm"
 	"github.com/symbioticfi/relay/core/entity"
-	growthStrategy "github.com/symbioticfi/relay/core/usecase/growth-strategy"
 	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 	valsetDeriver "github.com/symbioticfi/relay/core/usecase/valset-deriver"
 	"github.com/symbioticfi/relay/internal/usecase/metrics"
@@ -71,16 +70,6 @@ var infoCmd = &cobra.Command{
 			return errors.Errorf("Failed to get config: %w", err)
 		}
 
-		gs, err := growthStrategy.NewGrowthStrategy(entity.GrowthStrategyAsync, evmClient)
-		if err != nil {
-			return errors.Errorf("failed to create growth strategy: %w", err)
-		}
-
-		committedEpoch, err := gs.GetLastCommittedHeaderEpoch(ctx, networkConfig)
-		if err != nil {
-			return errors.Errorf("Failed to get valset header epoch: %w", err)
-		}
-
 		epochDuration, err := evmClient.GetEpochDuration(ctx, epoch)
 		if err != nil {
 			return errors.Errorf("Failed to get epoch duration: %w", err)
@@ -95,7 +84,7 @@ var infoCmd = &cobra.Command{
 		panels := pterm.Panels{
 			{
 				{Data: pterm.DefaultBox.WithTitle("Network info").Sprint(
-					printNetworkInfo(epoch, committedEpoch, captureTimestamp, &networkConfig, &valset),
+					printNetworkInfo(epoch, captureTimestamp, &networkConfig, &valset),
 				)},
 				{Data: pterm.DefaultBox.WithTitle("Network config").Sprint(
 					printNetworkConfig(epochDuration, &networkConfig),
@@ -161,7 +150,7 @@ var infoCmd = &cobra.Command{
 			}
 			panels = append(panels, []pterm.Panel{
 				{Data: pterm.DefaultBox.WithTitle("Settlement").Sprint(
-					printSettlementData(header, networkConfig, settlementData, committedEpoch),
+					printSettlementData(header, networkConfig, settlementData),
 				)},
 			})
 		}

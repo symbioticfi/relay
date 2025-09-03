@@ -53,7 +53,6 @@ func (e *Client) CommitValsetHeader(
 		CaptureTimestamp:   new(big.Int).SetUint64(header.CaptureTimestamp),
 		QuorumThreshold:    header.QuorumThreshold.Int,
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot,
-		PreviousHeaderHash: header.PreviousHeaderHash,
 	}
 
 	extraDataDTO := make([]gen.ISettlementExtraData, len(extraData))

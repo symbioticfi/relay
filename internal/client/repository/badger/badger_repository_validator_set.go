@@ -198,13 +198,12 @@ func (r *Repository) GetValidatorSetByEpoch(_ context.Context, epoch uint64) (en
 
 		// Build the validator set from header + validators
 		vs = entity.ValidatorSet{
-			Version:            header.Version,
-			RequiredKeyTag:     header.RequiredKeyTag,
-			Epoch:              header.Epoch,
-			CaptureTimestamp:   header.CaptureTimestamp,
-			QuorumThreshold:    header.QuorumThreshold,
-			PreviousHeaderHash: header.PreviousHeaderHash,
-			Validators:         validators,
+			Version:          header.Version,
+			RequiredKeyTag:   header.RequiredKeyTag,
+			Epoch:            header.Epoch,
+			CaptureTimestamp: header.CaptureTimestamp,
+			QuorumThreshold:  header.QuorumThreshold,
+			Validators:       validators,
 		}
 
 		return nil
@@ -396,7 +395,6 @@ func validatorSetHeaderToBytes(header entity.ValidatorSetHeader) ([]byte, error)
 		Epoch:              header.Epoch,
 		CaptureTimestamp:   header.CaptureTimestamp,
 		QuorumThreshold:    header.QuorumThreshold.String(),
-		PreviousHeaderHash: header.PreviousHeaderHash.Hex(),
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot.Hex(),
 	}
 
@@ -420,7 +418,6 @@ func bytesToValidatorSetHeader(data []byte) (entity.ValidatorSetHeader, error) {
 		Epoch:              dto.Epoch,
 		CaptureTimestamp:   dto.CaptureTimestamp,
 		QuorumThreshold:    entity.ToVotingPower(quorumThreshold),
-		PreviousHeaderHash: common.HexToHash(dto.PreviousHeaderHash),
 		ValidatorsSszMRoot: common.HexToHash(dto.ValidatorsSszMRoot),
 	}, nil
 }

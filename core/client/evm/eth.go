@@ -179,8 +179,6 @@ func (e *Client) GetConfig(ctx context.Context, timestamp uint64) (_ entity.Netw
 				QuorumThreshold: entity.ToQuorumThresholdPct(v.QuorumThreshold),
 			}
 		}),
-		MaxMissingEpochs: 0,                          // TODO set it after core update
-		GrowthStrategy:   entity.GrowthStrategyAsync, // TODO same
 	}, nil
 }
 
@@ -477,7 +475,6 @@ func (e *Client) GetValSetHeaderAt(ctx context.Context, addr entity.CrossChainAd
 		CaptureTimestamp:   header.CaptureTimestamp.Uint64(),
 		QuorumThreshold:    entity.ToVotingPower(header.QuorumThreshold),
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot,
-		PreviousHeaderHash: header.PreviousHeaderHash,
 	}, nil
 }
 
@@ -508,7 +505,6 @@ func (e *Client) GetValSetHeader(ctx context.Context, addr entity.CrossChainAddr
 		CaptureTimestamp:   header.CaptureTimestamp.Uint64(),
 		QuorumThreshold:    entity.ToVotingPower(header.QuorumThreshold),
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot,
-		PreviousHeaderHash: header.PreviousHeaderHash,
 	}, nil
 }
 

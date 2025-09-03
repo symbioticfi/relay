@@ -27,7 +27,7 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 	for {
 		valset, err = s.cfg.Repo.GetPendingValidatorSet(ctx, msg.RequestHash)
 		if err != nil {
-			if errors.Is(err, entity.ErrEntityNotFound) && !retryAttempted {
+			if errors.Is(err, entity.ErrEntityNotFound) && !retryAttempted { // TODO: trying process, but it's not a good idea', mb fail if it happens?
 				if err = s.process(ctx); err != nil {
 					slog.ErrorContext(ctx, "failed to process epochs, on demand from committer", "error", err)
 					return nil
