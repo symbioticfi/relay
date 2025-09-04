@@ -39,6 +39,9 @@ func (a Aggregator) Aggregate(
 	if !helpers.CompareMessageHasher(signatures, messageHash) {
 		return entity.AggregationProof{}, errors.New("message hashes mismatch")
 	}
+	if err := valset.Validators.CheckIsSortedByOperatorAddressAsc(); err != nil {
+		return entity.AggregationProof{}, errors.Errorf("valset is not sorted by operator address asc: %w", err)
+	}
 
 	type dtoG1Point struct {
 		X *big.Int
@@ -53,11 +56,11 @@ func (a Aggregator) Aggregate(
 		VotingPower   *big.Int
 		isNonSigner   bool
 	}
-	var validatorsData []dtoValidatorData
+	validatorsData := make([]dtoValidatorData, 0, len(valset.Validators))
 
 	aggG1Sig := new(bn254.G1Affine)
 	aggG2Key := new(bn254.G2Affine)
-	signers := make(map[common.Address]bool)
+	signers := make(map[common.Address]struct{})
 	for _, sig := range signatures {
 		pubKey, err := blsBn254.FromRaw(sig.PublicKey)
 		if err != nil {
@@ -67,6 +70,14 @@ func (a Aggregator) Aggregate(
 		if !ok {
 			return entity.AggregationProof{}, errors.New("failed to find validator by key")
 		}
+		if !val.IsActive {
+			// skip inactive validators
+			continue
+		}
+		if _, exists := signers[val.Operator]; exists {
+			return entity.AggregationProof{}, errors.Errorf("duplicate signature from operator %s", val.Operator.Hex())
+		}
+
 		g1Sig := new(bn254.G1Affine)
 		_, err = g1Sig.SetBytes(sig.Signature)
 		if err != nil {
@@ -74,33 +85,35 @@ func (a Aggregator) Aggregate(
 		}
 		aggG1Sig = aggG1Sig.Add(aggG1Sig, g1Sig)
 		aggG2Key = aggG2Key.Add(aggG2Key, pubKey.G2())
-		signers[val.Operator] = true
+		signers[val.Operator] = struct{}{}
 	}
 
 	for _, val := range valset.Validators {
-		if val.IsActive {
-			keyBytes, ok := val.FindKeyByKeyTag(keyTag)
-			if !ok {
-				return entity.AggregationProof{}, errors.New("failed to find key by keyTag")
-			}
-			_, isSinger := signers[val.Operator]
-			g1Key := new(bn254.G1Affine)
-			_, err := g1Key.SetBytes(keyBytes)
-			if err != nil {
-				return entity.AggregationProof{}, errors.Errorf("failed to deserialize G1 key: %w", err)
-			}
-
-			compressedKeyG1, err := compress(g1Key)
-			if err != nil {
-				return entity.AggregationProof{}, errors.Errorf("failed to compress G1 key: %w", err)
-			}
-
-			validatorsData = append(validatorsData, dtoValidatorData{
-				KeySerialized: compressedKeyG1,
-				VotingPower:   val.VotingPower.Int,
-				isNonSigner:   !isSinger,
-			})
+		if !val.IsActive {
+			continue
 		}
+
+		keyBytes, ok := val.FindKeyByKeyTag(keyTag)
+		if !ok {
+			return entity.AggregationProof{}, errors.New("failed to find key by keyTag")
+		}
+		_, isSigner := signers[val.Operator]
+		g1Key := new(bn254.G1Affine)
+		_, err := g1Key.SetBytes(keyBytes)
+		if err != nil {
+			return entity.AggregationProof{}, errors.Errorf("failed to deserialize G1 key: %w", err)
+		}
+
+		compressedKeyG1, err := compress(g1Key)
+		if err != nil {
+			return entity.AggregationProof{}, errors.Errorf("failed to compress G1 key: %w", err)
+		}
+
+		validatorsData = append(validatorsData, dtoValidatorData{
+			KeySerialized: compressedKeyG1,
+			VotingPower:   val.VotingPower.Int,
+			isNonSigner:   !isSigner,
+		})
 	}
 
 	sort.Slice(validatorsData, func(i, j int) bool {

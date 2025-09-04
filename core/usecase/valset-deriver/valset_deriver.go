@@ -105,10 +105,10 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 	slog.DebugContext(ctx, "Got keys from provider", "provider", config.KeysProvider.Address.Hex(), "keys", keys)
 
 	// form validators list from voting powers and keys using config
-	validators, totalVP := v.formValidators(config, allVotingPowers, keys)
+	validators := v.formValidators(config, allVotingPowers, keys)
 
 	// calc new quorum threshold
-	quorumThreshold, err := v.calcQuorumThreshold(config, totalVP)
+	quorumThreshold, err := config.CalcQuorumThreshold(validators.GetTotalActiveVotingPower())
 	if err != nil {
 		return entity.ValidatorSet{}, errors.Errorf("failed to calc quorum threshold: %w", err)
 	}
@@ -130,21 +130,20 @@ func (v *Deriver) formValidators(
 	config entity.NetworkConfig,
 	votingPowers []dtoOperatorVotingPower,
 	keys []entity.OperatorWithKeys,
-) ([]entity.Validator, entity.VotingPower) {
+) entity.Validators {
 	validators := v.fillValidators(votingPowers, keys)
 
-	totalActiveVotingPower := v.fillValidatorsActive(config, validators)
+	v.fillValidatorsActive(config, validators)
 
 	validators.SortByOperatorAddressAsc()
 
-	return validators, entity.ToVotingPower(totalActiveVotingPower)
+	return validators
 }
 
-func (v *Deriver) fillValidatorsActive(config entity.NetworkConfig, validators entity.Validators) *big.Int {
+func (v *Deriver) fillValidatorsActive(config entity.NetworkConfig, validators entity.Validators) {
 	validators.SortByVotingPowerDesc()
 
 	totalActive := 0
-	totalActiveVotingPower := big.NewInt(0)
 
 	for i := range validators {
 		// Check minimum voting power if configured
@@ -165,8 +164,6 @@ func (v *Deriver) fillValidatorsActive(config entity.NetworkConfig, validators e
 				validators[i].VotingPower = entity.ToVotingPower(new(big.Int).Set(config.MaxVotingPower.Int))
 			}
 		}
-		// Add to total active voting power if validator is active
-		totalActiveVotingPower = new(big.Int).Add(totalActiveVotingPower, validators[i].VotingPower.Int)
 
 		if config.MaxValidatorsCount.Int64() != 0 {
 			if totalActive >= int(config.MaxValidatorsCount.Int64()) {
@@ -174,8 +171,6 @@ func (v *Deriver) fillValidatorsActive(config entity.NetworkConfig, validators e
 			}
 		}
 	}
-
-	return totalActiveVotingPower
 }
 
 func (v *Deriver) fillValidators(votingPowers []dtoOperatorVotingPower, keys []entity.OperatorWithKeys) entity.Validators {
@@ -238,26 +233,4 @@ func (v *Deriver) fillValidators(votingPowers []dtoOperatorVotingPower, keys []e
 	}))
 
 	return validators
-}
-
-func maxThreshold() *big.Int {
-	// 10^18 is the maximum threshold value
-	return new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
-}
-
-func (v *Deriver) calcQuorumThreshold(config entity.NetworkConfig, totalVP entity.VotingPower) (entity.VotingPower, error) {
-	quorumThresholdPercent := big.NewInt(0)
-	for _, quorumThreshold := range config.QuorumThresholds {
-		if quorumThreshold.KeyTag == config.RequiredHeaderKeyTag {
-			quorumThresholdPercent = quorumThreshold.QuorumThreshold.Int
-		}
-	}
-	if quorumThresholdPercent.Cmp(big.NewInt(0)) == 0 {
-		return entity.VotingPower{}, errors.Errorf("quorum threshold is zero")
-	}
-
-	mul := new(big.Int).Mul(totalVP.Int, quorumThresholdPercent)
-	div := new(big.Int).Div(mul, maxThreshold())
-	// add 1 to apply up rounding
-	return entity.ToVotingPower(new(big.Int).Add(div, big.NewInt(1))), nil
 }

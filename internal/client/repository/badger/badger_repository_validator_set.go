@@ -37,7 +37,11 @@ func keyValidatorSetStatus(epoch uint64) []byte {
 	return []byte(fmt.Sprintf("validator_set_status:%d", epoch))
 }
 
-func (r *Repository) SaveValidatorSet(_ context.Context, valset entity.ValidatorSet) error {
+func (r *Repository) SaveValidatorSet(ctx context.Context, valset entity.ValidatorSet) error {
+	if err := valset.Validators.CheckIsSortedByOperatorAddressAsc(); err != nil {
+		return errors.Errorf("validators must be sorted by operator address ascending: %w", err)
+	}
+
 	header, err := valset.GetHeader()
 	if err != nil {
 		return errors.Errorf("failed to create validator set header: %w", err)
@@ -48,7 +52,8 @@ func (r *Repository) SaveValidatorSet(_ context.Context, valset entity.Validator
 		return errors.Errorf("failed to marshal validator set header: %w", err)
 	}
 
-	return r.db.Update(func(txn *badger.Txn) error {
+	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		// Check if this epoch already exists by checking the header
 		headerKey := keyValidatorSetHeader(valset.Epoch)
 		_, err := txn.Get(headerKey)
@@ -102,8 +107,15 @@ func (r *Repository) SaveValidatorSet(_ context.Context, valset entity.Validator
 		}
 
 		// Save individual validators and their key indexes
+		activeIndex := uint32(0)
 		for _, validator := range valset.Validators {
-			validatorBytes, err := validatorToBytes(validator)
+			currentActiveIndex := uint32(0)
+			if validator.IsActive {
+				currentActiveIndex = activeIndex
+				activeIndex++
+			}
+
+			validatorBytes, err := validatorToBytes(validator, currentActiveIndex)
 			if err != nil {
 				return errors.Errorf("failed to marshal validator: %w", err)
 			}
@@ -142,10 +154,11 @@ func (r *Repository) SaveLatestSignedValidatorSetEpoch(_ context.Context, valset
 	})
 }
 
-func (r *Repository) GetValidatorSetHeaderByEpoch(_ context.Context, epoch uint64) (entity.ValidatorSetHeader, error) {
+func (r *Repository) GetValidatorSetHeaderByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSetHeader, error) {
 	var header entity.ValidatorSetHeader
 
-	return header, r.db.View(func(txn *badger.Txn) error {
+	return header, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		item, err := txn.Get(keyValidatorSetHeader(epoch))
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
@@ -181,7 +194,7 @@ func (r *Repository) getAllValidatorsByEpoch(txn *badger.Txn, epoch uint64) (ent
 			return nil, errors.Errorf("failed to copy validator value: %w", err)
 		}
 
-		validator, err := bytesToValidator(value)
+		validator, _, err := bytesToValidator(value)
 		if err != nil {
 			return nil, errors.Errorf("failed to unmarshal validator: %w", err)
 		}
@@ -194,10 +207,11 @@ func (r *Repository) getAllValidatorsByEpoch(txn *badger.Txn, epoch uint64) (ent
 	return validators, nil
 }
 
-func (r *Repository) GetValidatorSetByEpoch(_ context.Context, epoch uint64) (entity.ValidatorSet, error) {
+func (r *Repository) GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error) {
 	var vs entity.ValidatorSet
 
-	return vs, r.db.View(func(txn *badger.Txn) error {
+	return vs, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		// Get the validator set header
 		headerItem, err := txn.Get(keyValidatorSetHeader(epoch))
 		if err != nil {
@@ -257,10 +271,11 @@ func (r *Repository) GetValidatorSetByEpoch(_ context.Context, epoch uint64) (en
 	})
 }
 
-func (r *Repository) GetLatestValidatorSetHeader(_ context.Context) (entity.ValidatorSetHeader, error) {
+func (r *Repository) GetLatestValidatorSetHeader(ctx context.Context) (entity.ValidatorSetHeader, error) {
 	var header entity.ValidatorSetHeader
 
-	return header, r.db.View(func(txn *badger.Txn) error {
+	return header, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		// Get the latest epoch
 		item, err := txn.Get([]byte(latestValidatorSetEpochKey))
 		if err != nil {
@@ -300,10 +315,11 @@ func (r *Repository) GetLatestValidatorSetHeader(_ context.Context) (entity.Vali
 	})
 }
 
-func (r *Repository) GetLatestValidatorSetEpoch(_ context.Context) (uint64, error) {
+func (r *Repository) GetLatestValidatorSetEpoch(ctx context.Context) (uint64, error) {
 	var epoch uint64
 
-	return epoch, r.db.View(func(txn *badger.Txn) error {
+	return epoch, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		// Get the latest epoch
 		item, err := txn.Get([]byte(latestValidatorSetEpochKey))
 		if err != nil {
@@ -323,11 +339,11 @@ func (r *Repository) GetLatestValidatorSetEpoch(_ context.Context) (uint64, erro
 	})
 }
 
-func (r *Repository) GetLatestSignedValidatorSetEpoch(_ context.Context) (uint64, error) {
+func (r *Repository) GetLatestSignedValidatorSetEpoch(ctx context.Context) (uint64, error) {
 	var epoch uint64
 
-	return epoch, r.db.View(func(txn *badger.Txn) error {
-		// Get the latest epoch
+	return epoch, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		item, err := txn.Get([]byte(latestSignedValidatorSetEpochKey))
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
@@ -349,10 +365,14 @@ func (r *Repository) GetLatestSignedValidatorSetEpoch(_ context.Context) (uint64
 func (r *Repository) GetValidatorByKey(_ context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, error) {
 	var validator entity.Validator
 
+func (r *Repository) GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error) {
 	publicKeyHash := crypto.Keccak256Hash(publicKey)
 	keyLookup := keyValidatorKeyLookup(epoch, keyTag, publicKeyHash)
 
-	return validator, r.db.View(func(txn *badger.Txn) error {
+	var validator entity.Validator
+	var activeIndex uint32
+	return validator, activeIndex, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		// First, find the operator address from the key lookup table
 		item, err := txn.Get(keyLookup)
 		if err != nil {
@@ -384,7 +404,7 @@ func (r *Repository) GetValidatorByKey(_ context.Context, epoch uint64, keyTag e
 			return errors.Errorf("failed to copy validator value: %w", err)
 		}
 
-		validator, err = bytesToValidator(value)
+		validator, activeIndex, err = bytesToValidator(value)
 		if err != nil {
 			return errors.Errorf("failed to unmarshal validator: %w", err)
 		}
@@ -421,11 +441,12 @@ type validatorSetHeaderDTO struct {
 	ValidatorsSszMRoot string `json:"validators_ssz_mroot"`
 }
 
-func validatorToBytes(validator entity.Validator) ([]byte, error) {
+func validatorToBytes(validator entity.Validator, activeIndex uint32) ([]byte, error) {
 	dto := validatorDTO{
 		Operator:    validator.Operator.Hex(),
 		VotingPower: validator.VotingPower.String(),
 		IsActive:    validator.IsActive,
+		ActiveIndex: activeIndex,
 		Keys: lo.Map(validator.Keys, func(k entity.ValidatorKey, _ int) keyDTO {
 			return keyDTO{
 				Tag:     uint8(k.Tag),
@@ -444,17 +465,17 @@ func validatorToBytes(validator entity.Validator) ([]byte, error) {
 	return json.Marshal(dto)
 }
 
-func bytesToValidator(data []byte) (entity.Validator, error) {
+func bytesToValidator(data []byte) (entity.Validator, uint32, error) {
 	var dto validatorDTO
 	if err := json.Unmarshal(data, &dto); err != nil {
-		return entity.Validator{}, errors.Errorf("failed to unmarshal validator: %w", err)
+		return entity.Validator{}, 0, errors.Errorf("failed to unmarshal validator: %w", err)
 	}
 
 	operator := common.HexToAddress(dto.Operator)
 
 	votingPower, ok := new(big.Int).SetString(dto.VotingPower, 10)
 	if !ok {
-		return entity.Validator{}, errors.Errorf("failed to parse voting power: %s", dto.VotingPower)
+		return entity.Validator{}, 0, errors.Errorf("failed to parse voting power: %s", dto.VotingPower)
 	}
 
 	keys := lo.Map(dto.Keys, func(k keyDTO, _ int) entity.ValidatorKey {
@@ -468,7 +489,7 @@ func bytesToValidator(data []byte) (entity.Validator, error) {
 	for _, v := range dto.Vaults {
 		votingPowerVault, parseOk := new(big.Int).SetString(v.VotingPower, 10)
 		if !parseOk {
-			return entity.Validator{}, errors.Errorf("failed to parse vault voting power for operator %s: %s", dto.Operator, v.VotingPower)
+			return entity.Validator{}, 0, errors.Errorf("failed to parse vault voting power for operator %s: %s", dto.Operator, v.VotingPower)
 		}
 		vaults = append(vaults, entity.ValidatorVault{
 			ChainID:     v.ChainID,
@@ -483,7 +504,7 @@ func bytesToValidator(data []byte) (entity.Validator, error) {
 		IsActive:    dto.IsActive,
 		Keys:        keys,
 		Vaults:      vaults,
-	}, nil
+	}, dto.ActiveIndex, nil
 }
 
 func validatorSetHeaderToBytes(header entity.ValidatorSetHeader) ([]byte, error) {

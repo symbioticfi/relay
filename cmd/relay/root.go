@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"time"
 
+	signatureListener "github.com/symbioticfi/relay/internal/usecase/signature-listener"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p"
@@ -213,6 +215,14 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to start agg proof ready signal workers: %w", err)
 	}
 
+	signListener, err := signatureListener.New(signatureListener.Config{Repo: repo, SignalCfg: cfg.SignalCfg})
+	if err != nil {
+		return errors.Errorf("failed to create signature listener: %w", err)
+	}
+	if err := p2pService.StartSignatureMessageListener(signListener.HandleSignatureReceivedMessage); err != nil {
+		return errors.Errorf("failed to start signature message listener: %w", err)
+	}
+
 	eg, egCtx := errgroup.WithContext(ctx)
 	eg.Go(func() error {
 		if err := listener.Start(egCtx); err != nil {
@@ -246,8 +256,9 @@ func runApp(ctx context.Context) error {
 		if err != nil {
 			return errors.Errorf("failed to create aggregator app: %w", err)
 		}
-		if err := p2pService.StartSignatureMessageListener(aggApp.HandleSignatureGeneratedMessage); err != nil {
-			return errors.Errorf("failed to start signature message listener: %w", err)
+
+		if err := signListener.StartSignatureSavedMessageListener(ctx, aggApp.HandleSignatureGeneratedMessage); err != nil {
+			return errors.Errorf("failed to start signature saved message listener: %w", err)
 		}
 
 		slog.DebugContext(ctx, "Created aggregator app, starting")

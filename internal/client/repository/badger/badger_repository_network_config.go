@@ -18,13 +18,14 @@ func keyNetworkConfig(epoch uint64) []byte {
 	return []byte(fmt.Sprintf("network_config:%d", epoch))
 }
 
-func (r *Repository) SaveConfig(_ context.Context, config entity.NetworkConfig, epoch uint64) error {
+func (r *Repository) SaveConfig(ctx context.Context, config entity.NetworkConfig, epoch uint64) error {
 	configBytes, err := networkConfigToBytes(config)
 	if err != nil {
 		return errors.Errorf("failed to marshal network config: %w", err)
 	}
 
-	return r.db.Update(func(txn *badger.Txn) error {
+	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		_, err := txn.Get(keyNetworkConfig(epoch))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
 			return errors.Errorf("failed to get network config: %w", err)
@@ -41,10 +42,11 @@ func (r *Repository) SaveConfig(_ context.Context, config entity.NetworkConfig, 
 	})
 }
 
-func (r *Repository) GetConfigByEpoch(_ context.Context, epoch uint64) (entity.NetworkConfig, error) {
+func (r *Repository) GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error) {
 	var config entity.NetworkConfig
 
-	return config, r.db.View(func(txn *badger.Txn) error {
+	return config, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		item, err := txn.Get(keyNetworkConfig(epoch))
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
