@@ -17,8 +17,6 @@ func TestGetValidatorSetHeader_ValidatorSetFoundInRepo(t *testing.T) {
 
 	currentEpoch := uint64(10)
 	requestedEpoch := uint64(8)
-	epochStart := uint64(1640995000)
-	networkConfig := entity.NetworkConfig{}
 
 	// Create test data
 	validatorSet := createTestValidatorSet(requestedEpoch)
@@ -26,9 +24,7 @@ func TestGetValidatorSetHeader_ValidatorSetFoundInRepo(t *testing.T) {
 	require.NoError(t, err)
 
 	// Setup mocks - validator set found in repository
-	setup.mockEvmClient.EXPECT().GetEpochStart(ctx, requestedEpoch).Return(epochStart, nil)
 	setup.mockEvmClient.EXPECT().GetCurrentEpoch(ctx).Return(currentEpoch, nil)
-	setup.mockEvmClient.EXPECT().GetConfig(ctx, epochStart).Return(networkConfig, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, requestedEpoch).Return(validatorSet, nil)
 
 	// Execute the method under test
@@ -94,16 +90,11 @@ func TestGetValidatorSetHeader_UseCurrentEpoch_WhenNoEpochSpecified(t *testing.T
 	ctx := context.Background()
 
 	currentEpoch := uint64(10)
-	epochStart := uint64(1640995000)
-	networkConfig := entity.NetworkConfig{}
-
 	// Create test data
 	validatorSet := createTestValidatorSet(currentEpoch)
 
 	// Setup mocks - no epoch specified, should use current epoch
 	setup.mockEvmClient.EXPECT().GetCurrentEpoch(ctx).Return(currentEpoch, nil)
-	setup.mockEvmClient.EXPECT().GetEpochStart(ctx, currentEpoch).Return(epochStart, nil)
-	setup.mockEvmClient.EXPECT().GetConfig(ctx, epochStart).Return(networkConfig, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, currentEpoch).Return(validatorSet, nil)
 
 	// Execute the method under test - no epoch specified
@@ -166,14 +157,10 @@ func TestGetValidatorSetHeader_ErrorWhenRepositoryFails(t *testing.T) {
 
 	currentEpoch := uint64(10)
 	requestedEpoch := uint64(8)
-	epochStart := uint64(1640995000)
-	networkConfig := entity.NetworkConfig{}
 	expectedError := errors.New("repository connection failed")
 
 	// Setup mocks
 	setup.mockEvmClient.EXPECT().GetCurrentEpoch(ctx).Return(currentEpoch, nil)
-	setup.mockEvmClient.EXPECT().GetEpochStart(ctx, requestedEpoch).Return(epochStart, nil)
-	setup.mockEvmClient.EXPECT().GetConfig(ctx, epochStart).Return(networkConfig, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, requestedEpoch).Return(entity.ValidatorSet{}, expectedError)
 
 	// Execute the method under test

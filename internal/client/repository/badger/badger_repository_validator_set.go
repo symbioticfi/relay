@@ -362,9 +362,6 @@ func (r *Repository) GetLatestSignedValidatorSetEpoch(ctx context.Context) (uint
 	})
 }
 
-func (r *Repository) GetValidatorByKey(_ context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, error) {
-	var validator entity.Validator
-
 func (r *Repository) GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error) {
 	publicKeyHash := crypto.Keccak256Hash(publicKey)
 	keyLookup := keyValidatorKeyLookup(epoch, keyTag, publicKeyHash)
@@ -428,6 +425,7 @@ type validatorDTO struct {
 	Operator    string              `json:"operator"`
 	VotingPower string              `json:"voting_power"`
 	IsActive    bool                `json:"is_active"`
+	ActiveIndex uint32              `json:"active_index"`
 	Keys        []keyDTO            `json:"keys"`
 	Vaults      []validatorVaultDTO `json:"vaults"`
 }

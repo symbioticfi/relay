@@ -435,7 +435,7 @@ func TestRepository_ValidatorSet_ActiveIndex(t *testing.T) {
 	repo := setupTestRepository(t)
 
 	// Create validator set with mixed active/inactive validators
-	vs := randomValidatorSet(t, 1, entity.HeaderCommitted)
+	vs := randomValidatorSet(t, 1)
 
 	// Modify validators to have specific active/inactive states and addresses
 	// Note: validators must be sorted by operator address ascending
