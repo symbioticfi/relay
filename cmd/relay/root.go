@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"time"
 
-	aggregationPolicy "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
 	signature_processor "github.com/symbioticfi/relay/core/usecase/signature-processor"
+	aggregationPolicy "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
 	signatureListener "github.com/symbioticfi/relay/internal/usecase/signature-listener"
 
 	"github.com/ethereum/go-ethereum/common"
