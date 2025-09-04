@@ -301,7 +301,6 @@ Response message for getting validator set header
 | capture_timestamp | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Epoch capture timestamp |
 | quorum_threshold | [string](#string) |  | Quorum threshold (big integer as string) |
 | validators_ssz_mroot | [string](#string) |  | Validators SSZ Merkle root (hex string) |
-| previous_header_hash | [string](#string) |  | Previous validator set header hash (hex string) |
 
 
 
@@ -336,7 +335,6 @@ Response message for getting validator set
 | epoch | [uint64](#uint64) |  | Validator set epoch |
 | capture_timestamp | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Epoch capture timestamp |
 | quorum_threshold | [string](#string) |  | Quorum threshold (big integer as string) |
-| previous_header_hash | [string](#string) |  | Previous validator set header hash (hex string) |
 | status | [ValidatorSetStatus](#api-proto-v1-ValidatorSetStatus) |  | Status of validator set header |
 | validators | [Validator](#api-proto-v1-Validator) | repeated | List of validators |
 

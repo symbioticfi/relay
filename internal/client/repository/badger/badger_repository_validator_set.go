@@ -72,7 +72,7 @@ func (r *Repository) SaveValidatorSet(ctx context.Context, valset entity.Validat
 		statusKey := keyValidatorSetStatus(valset.Epoch)
 		_, err = txn.Get(statusKey)
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
-			return errors.Errorf("failed to get validator set header: %w", err)
+			return errors.Errorf("failed to get validator set status key: %w", err)
 		}
 
 		statusBytes := []byte{uint8(valset.Status)}
@@ -148,6 +148,24 @@ func (r *Repository) SaveLatestSignedValidatorSetEpoch(_ context.Context, valset
 		binary.BigEndian.PutUint64(epochBytes, valset.Epoch)
 		if err := txn.Set([]byte(latestSignedValidatorSetEpochKey), epochBytes); err != nil {
 			return errors.Errorf("failed to store latest validator set epoch: %w", err)
+		}
+
+		return nil
+	})
+}
+
+func (r *Repository) UpdateValidatorSetStatus(ctx context.Context, valset entity.ValidatorSet) error {
+	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
+		statusKey := keyValidatorSetStatus(valset.Epoch)
+		_, err := txn.Get(statusKey)
+		if err != nil {
+			return errors.Errorf("failed to get validator set status key: %w", err)
+		}
+
+		statusBytes := []byte{uint8(valset.Status)}
+		if err = txn.Set(statusKey, statusBytes); err != nil {
+			return errors.Errorf("failed to store validator set status: %w", err)
 		}
 
 		return nil

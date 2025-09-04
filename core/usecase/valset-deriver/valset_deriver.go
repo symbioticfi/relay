@@ -28,7 +28,6 @@ type evmClient interface {
 	GetNetworkAddress(ctx context.Context) (common.Address, error)
 	GetHeaderHash(ctx context.Context, addr entity.CrossChainAddress) (common.Hash, error)
 	IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (bool, error)
-	GetPreviousHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error)
 	GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error)
 	GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (uint64, error)
 	GetOperators(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]common.Address, error)

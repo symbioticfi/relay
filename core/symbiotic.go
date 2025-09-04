@@ -129,14 +129,6 @@ func (s *Symbiotic) GetCurrentEpoch(ctx context.Context) (uint64, error) {
 	return s.evmClient.GetCurrentEpoch(ctx)
 }
 
-func (s *Symbiotic) GetPreviousHeaderHash(ctx context.Context, addr entity.CrossChainAddress) (common.Hash, error) {
-	return s.evmClient.GetPreviousHeaderHash(ctx, addr)
-}
-
-func (s *Symbiotic) GetPreviousHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error) {
-	return s.evmClient.GetPreviousHeaderHashAt(ctx, addr, epoch)
-}
-
 func (s *Symbiotic) GetHeaderHash(ctx context.Context, addr entity.CrossChainAddress) (common.Hash, error) {
 	return s.evmClient.GetHeaderHash(ctx, addr)
 }

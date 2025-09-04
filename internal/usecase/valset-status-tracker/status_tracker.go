@@ -13,12 +13,12 @@ import (
 	"github.com/symbioticfi/relay/pkg/log"
 )
 
-var zeroHeaderHash = common.HexToHash("0x00000")
+var zeroHeaderHash = common.HexToHash("0x1e990e27f0d7976bf2adbd60e20384da0125b76e2885a96aa707bcb054108b0d")
 
 type repo interface {
 	GetConfigByEpoch(_ context.Context, epoch uint64) (entity.NetworkConfig, error)
 	GetValidatorSetByEpoch(_ context.Context, epoch uint64) (entity.ValidatorSet, error)
-	SaveValidatorSet(ctx context.Context, valset entity.ValidatorSet) error
+	UpdateValidatorSetStatus(ctx context.Context, valset entity.ValidatorSet) error
 }
 
 type deriver interface {
@@ -87,12 +87,8 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 	}
 
 	valset.Status = entity.HeaderAggregated
-	if err := s.cfg.Repo.SaveValidatorSet(ctx, valset); err != nil {
+	if err := s.cfg.Repo.UpdateValidatorSetStatus(ctx, valset); err != nil {
 		return errors.Errorf("failed to save validator set: %w", err)
-	}
-
-	if valset.Epoch == s.firstUncommittedEpoch+1 {
-		s.firstUncommittedEpoch++
 	}
 
 	return nil
@@ -114,7 +110,7 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 		epoch++
 
 		if valset.Status == entity.HeaderCommitted {
-			if valset.Epoch == s.firstUncommittedEpoch+1 {
+			if valset.Epoch == s.firstUncommittedEpoch {
 				s.firstUncommittedEpoch++
 			}
 			continue
@@ -126,7 +122,7 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 		}
 
 		if len(config.Replicas) == 0 {
-			if valset.Epoch == s.firstUncommittedEpoch+1 {
+			if valset.Epoch == s.firstUncommittedEpoch {
 				s.firstUncommittedEpoch++
 			}
 			continue
@@ -158,13 +154,13 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 		}
 
 		valset.Status = entity.HeaderCommitted
-		if err := s.cfg.Repo.SaveValidatorSet(ctx, valset); err != nil {
+		if err := s.cfg.Repo.UpdateValidatorSetStatus(ctx, valset); err != nil {
 			return errors.Errorf("failed to save validator set: %w", err)
 		}
 
 		slog.InfoContext(ctx, "Validator set is committed", "epoch", epoch)
 
-		if valset.Epoch == s.firstUncommittedEpoch+1 {
+		if valset.Epoch == s.firstUncommittedEpoch {
 			s.firstUncommittedEpoch++
 			continue
 		}
