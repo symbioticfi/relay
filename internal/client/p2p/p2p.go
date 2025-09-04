@@ -288,3 +288,7 @@ func (s *Service) Connected(n network.Network, conn network.Conn) {
 func (s *Service) Disconnected(n network.Network, conn network.Conn) {
 	slog.DebugContext(s.ctx, "Disconnected from peer", "remotePeer", conn.RemotePeer(), "localPeer", conn.LocalPeer(), "totalPeers", len(s.host.Peerstore().Peers()))
 }
+
+func (s *Service) ID() string {
+	return s.host.ID().String()
+}

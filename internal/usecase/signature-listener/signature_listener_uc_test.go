@@ -10,6 +10,7 @@ import (
 
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/crypto"
+	signature_processor "github.com/symbioticfi/relay/core/usecase/signature-processor"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
 	intEntity "github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/signals"
@@ -68,12 +69,19 @@ func newTestSetup(t *testing.T) *testSetup {
 		repo.Close()
 	})
 
-	cfg := Config{
+	processor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
 		Repo: repo,
+	})
+	require.NoError(t, err)
+
+	cfg := Config{
+		Repo:               repo,
+		SignatureProcessor: processor,
 		SignalCfg: signals.Config{
 			BufferSize:  10,
 			WorkerCount: 5,
 		},
+		SelfP2PID: "test-self-p2p-id",
 	}
 
 	useCase, err := New(cfg)

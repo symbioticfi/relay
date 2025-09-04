@@ -66,7 +66,7 @@ func createTestSignatureMessage() entity.SignatureMessage {
 	}
 }
 
-func createTestSignatureMap(thresholdReached bool, requestHash common.Hash, epoch uint64) entity.SignatureMap {
+func createTestSignatureMap(thresholdReached bool, requestHash common.Hash, epoch entity.Epoch) entity.SignatureMap {
 	currentVotingPower := big.NewInt(500)
 	if thresholdReached {
 		currentVotingPower = big.NewInt(700)
@@ -108,7 +108,7 @@ func TestHandleSignatureGeneratedMessage_QuorumNotReached(t *testing.T) {
 	msg := createTestSignatureMessage()
 
 	// Setup mocks for quorum not reached case
-	signatureMap := createTestSignatureMap(false, msg.RequestHash, uint64(msg.Epoch)) // threshold NOT reached
+	signatureMap := createTestSignatureMap(false, msg.RequestHash, msg.Epoch) // threshold NOT reached
 	validatorSet := createTestValidatorSet()
 
 	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestHash).Return(signatureMap, nil)
@@ -127,7 +127,7 @@ func TestHandleSignatureGeneratedMessage_QuorumReached(t *testing.T) {
 	msg := createTestSignatureMessage()
 
 	// Setup mocks for quorum reached case
-	signatureMap := createTestSignatureMap(true, msg.RequestHash, uint64(msg.Epoch)) // threshold reached
+	signatureMap := createTestSignatureMap(true, msg.RequestHash, msg.Epoch) // threshold reached
 	validatorSet := createTestValidatorSet()
 	var signatures []entity.SignatureExtended
 	networkConfig := entity.NetworkConfig{

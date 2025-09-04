@@ -6,6 +6,7 @@ import (
 	"time"
 
 	growthStrategy "github.com/symbioticfi/relay/core/usecase/growth-strategy"
+	signature_processor "github.com/symbioticfi/relay/core/usecase/signature-processor"
 	signatureListener "github.com/symbioticfi/relay/internal/usecase/signature-listener"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -164,13 +165,21 @@ func runApp(ctx context.Context) error {
 
 	aggProofReadySignal := signals.New[entity.AggregatedSignatureMessage](cfg.SignalCfg, "aggProofReady", nil)
 
+	signatureProcessor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
+		Repo: repo,
+	})
+	if err != nil {
+		return errors.Errorf("failed to create signature processor: %w", err)
+	}
+
 	signerApp, err := signerApp.NewSignerApp(signerApp.Config{
-		P2PService:     p2pService,
-		KeyProvider:    keyProvider,
-		Repo:           repo,
-		AggProofSignal: aggProofReadySignal,
-		Aggregator:     agg,
-		Metrics:        mtr,
+		P2PService:         p2pService,
+		KeyProvider:        keyProvider,
+		Repo:               repo,
+		SignatureProcessor: signatureProcessor,
+		AggProofSignal:     aggProofReadySignal,
+		Aggregator:         agg,
+		Metrics:            mtr,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create signer app: %w", err)
@@ -210,7 +219,12 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to start agg proof ready signal workers: %w", err)
 	}
 
-	signListener, err := signatureListener.New(signatureListener.Config{Repo: repo, SignalCfg: cfg.SignalCfg})
+	signListener, err := signatureListener.New(signatureListener.Config{
+		Repo:               repo,
+		SignatureProcessor: signatureProcessor,
+		SignalCfg:          cfg.SignalCfg,
+		SelfP2PID:          p2pService.ID(),
+	})
 	if err != nil {
 		return errors.Errorf("failed to create signature listener: %w", err)
 	}
