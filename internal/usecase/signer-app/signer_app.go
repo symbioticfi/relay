@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/go-errors/errors"
-	"github.com/go-playground/validator/v10"
+	validate "github.com/go-playground/validator/v10"
 
 	"github.com/symbioticfi/relay/core/entity"
 )
@@ -24,8 +24,6 @@ type repo interface {
 	SaveAggregationProof(ctx context.Context, reqHash common.Hash, ap entity.AggregationProof) error
 	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 	GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error)
-	SaveSignature(ctx context.Context, reqHash common.Hash, key entity.RawPublicKey, sig entity.SignatureExtended) error
-	SaveSignatureRequest(_ context.Context, req entity.SignatureRequest) error
 	UpdateSignatureStat(_ context.Context, reqHash common.Hash, s entity.SignatureStatStage, t time.Time) (entity.SignatureStat, error)
 }
 
@@ -51,17 +49,22 @@ type metrics interface {
 	ObserveAggReceived(stat entity.SignatureStat)
 }
 
+type signatureProcessor interface {
+	ProcessSignature(ctx context.Context, param entity.SaveSignatureParam) error
+}
+
 type Config struct {
-	P2PService     p2pService     `validate:"required"`
-	KeyProvider    keyProvider    `validate:"required"`
-	Repo           repo           `validate:"required"`
-	AggProofSignal aggProofSignal `validate:"required"`
-	Aggregator     aggregator     `validate:"required"`
-	Metrics        metrics        `validate:"required"`
+	P2PService         p2pService         `validate:"required"`
+	KeyProvider        keyProvider        `validate:"required"`
+	Repo               repo               `validate:"required"`
+	SignatureProcessor signatureProcessor `validate:"required"`
+	AggProofSignal     aggProofSignal     `validate:"required"`
+	Aggregator         aggregator         `validate:"required"`
+	Metrics            metrics            `validate:"required"`
 }
 
 func (c Config) Validate() error {
-	if err := validator.New().Struct(c); err != nil {
+	if err := validate.New().Struct(c); err != nil {
 		return errors.Errorf("failed to validate config: %w", err)
 	}
 
@@ -116,7 +119,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 	}
 
 	public := private.PublicKey()
-	_, _, err = s.cfg.Repo.GetValidatorByKey(ctx, uint64(req.RequiredEpoch), req.KeyTag, public.OnChain())
+	validator, activeIndex, err := s.cfg.Repo.GetValidatorByKey(ctx, uint64(req.RequiredEpoch), req.KeyTag, public.OnChain())
 	if err != nil {
 		return errors.Errorf("validator not found in epoch valset for public key: %w", err)
 	}
@@ -134,8 +137,18 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		PublicKey:   public.Raw(),
 	}
 
-	if err := s.cfg.Repo.SaveSignature(ctx, req.Hash(), public.Raw(), extendedSignature); err != nil {
-		return errors.Errorf("failed to save signature: %w", err)
+	param := entity.SaveSignatureParam{
+		RequestHash:      req.Hash(),
+		Key:              public.Raw(),
+		Signature:        extendedSignature,
+		ActiveIndex:      activeIndex,
+		VotingPower:      validator.VotingPower,
+		Epoch:            req.RequiredEpoch,
+		SignatureRequest: &req,
+	}
+
+	if err := s.cfg.SignatureProcessor.ProcessSignature(ctx, param); err != nil {
+		return errors.Errorf("failed to process signature: %w", err)
 	}
 
 	err = s.cfg.P2PService.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureMessage{
@@ -146,10 +159,6 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 	})
 	if err != nil {
 		return errors.Errorf("failed to broadcast signature: %w", err)
-	}
-
-	if err := s.cfg.Repo.SaveSignatureRequest(ctx, req); err != nil {
-		return errors.Errorf("failed to save signature request: %w", err)
 	}
 
 	slog.InfoContext(ctx, "Message signed", "hash", hash, "signature", signature, "duration", time.Since(timeAppSignStart))

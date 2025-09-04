@@ -23,20 +23,22 @@ func keySignaturePrefix(reqHash common.Hash) []byte {
 }
 
 func (r *Repository) SaveSignature(ctx context.Context, reqHash common.Hash, inKey entity.RawPublicKey, sig entity.SignatureExtended) error {
+	txn := getTxn(ctx)
+	if txn == nil {
+		return errors.New("no transaction found in context, use signature processor in order to store signatures")
+	}
+
 	bytes, err := signatureToBytes(sig)
 	if err != nil {
 		return errors.Errorf("failed to marshal signature: %w", err)
 	}
 
-	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
-		txn := getTxn(ctx)
-		key := keySignature(reqHash, inKey)
-		err = txn.Set(key, bytes)
-		if err != nil {
-			return errors.Errorf("failed to store signature: %w", err)
-		}
-		return nil
-	})
+	key := keySignature(reqHash, inKey)
+	err = txn.Set(key, bytes)
+	if err != nil {
+		return errors.Errorf("failed to store signature: %w", err)
+	}
+	return nil
 }
 
 func (r *Repository) GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error) {
