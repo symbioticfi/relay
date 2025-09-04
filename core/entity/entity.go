@@ -39,7 +39,7 @@ var (
 	SimpleVerificationAggPublicKeyG1Hash            = crypto.Keccak256Hash([]byte("aggPublicKeyG1"))
 )
 
-type ValidatorSetStatus int
+type ValidatorSetStatus uint8
 
 const (
 	HeaderDerived ValidatorSetStatus = iota

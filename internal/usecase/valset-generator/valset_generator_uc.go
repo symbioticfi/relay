@@ -35,13 +35,12 @@ type evmClient interface {
 
 type repo interface {
 	GetLatestValidatorSetHeader(_ context.Context) (entity.ValidatorSetHeader, error)
+	GetLatestSignedValidatorSetEpoch(_ context.Context) (uint64, error)
 	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 	GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error)
 	GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error)
 	GetSignatureRequest(ctx context.Context, reqHash common.Hash) (entity.SignatureRequest, error)
-	SavePendingValidatorSet(ctx context.Context, reqHash common.Hash, valset entity.ValidatorSet) error
-	GetPendingValidatorSet(ctx context.Context, reqHash common.Hash) (entity.ValidatorSet, error)
-	GetLatestPendingValidatorSet(_ context.Context) (entity.ValidatorSet, error)
+	SaveLatestSignedValidatorSetEpoch(_ context.Context, valset entity.ValidatorSet) error
 	SaveAggregationProof(ctx context.Context, reqHash common.Hash, ap entity.AggregationProof) error
 }
 
@@ -142,17 +141,11 @@ func (s *Service) process(ctx context.Context) error {
 	}
 
 	slog.DebugContext(ctx, "Signed validator set", "header", header, "extra data", extraData, "hash", hex.EncodeToString(data))
-	err = s.cfg.Repo.SavePendingValidatorSet(ctx, r.Hash(), valSet)
-	if err != nil {
-		if errors.Is(err, entity.ErrEntityAlreadyExist) {
-			slog.DebugContext(ctx, "Pending valset already exists, skipping save", "requestHash", r.Hash())
-			return nil // already exists, nothing to do
-		}
-		return errors.Errorf("failed to save pending valset: %w", err)
+	if err = s.cfg.Repo.SaveLatestSignedValidatorSetEpoch(ctx, valSet); err != nil {
+		return errors.Errorf("failed to save latest signed valset epoch: %w", err)
 	}
 
-	err = s.cfg.Signer.Sign(ctx, r)
-	if err != nil {
+	if err = s.cfg.Signer.Sign(ctx, r); err != nil {
 		return errors.Errorf("failed to sign new validator set extra: %w", err)
 	}
 
@@ -175,13 +168,18 @@ func (s *Service) getNetworkData(ctx context.Context, config entity.NetworkConfi
 func (s *Service) tryDetectUnsignedValset(ctx context.Context) (entity.ValidatorSet, entity.NetworkConfig, error) {
 	slog.DebugContext(ctx, "Trying to detect new epoch to commit")
 
-	valset, err := s.cfg.Repo.GetLatestPendingValidatorSet(ctx)
-	if err != nil {
+	epoch, err := s.cfg.Repo.GetLatestSignedValidatorSetEpoch(ctx)
+	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get latest pending validator set: %w", err)
 	}
 
+	if err == nil {
+		epoch++
+	}
+
+	var valset entity.ValidatorSet
+
 	for { // TODO: mb we need to try sign only next valset to latest pending???
-		epoch := valset.Epoch + 1
 		valset, err = s.cfg.Repo.GetValidatorSetByEpoch(ctx, epoch)
 		if err != nil {
 			return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get validator set for epoch %d: %w", epoch, err)
