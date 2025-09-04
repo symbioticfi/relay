@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"math/big"
 
-	"github.com/RoaringBitmap/roaring/v2"
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
@@ -107,12 +106,9 @@ func bytesToSignatureMap(data []byte) (entity.SignatureMap, error) {
 
 	requestHash := common.HexToHash(dto.RequestHash)
 
-	bitmap := roaring.New()
-	if len(dto.SignedValidatorsBitmapData) > 0 {
-		_, err := bitmap.FromBuffer(dto.SignedValidatorsBitmapData)
-		if err != nil {
-			return entity.SignatureMap{}, errors.Errorf("failed to deserialize roaring bitmap: %w", err)
-		}
+	bitmap, err := entity.SignatureBitmapFromBytes(dto.SignedValidatorsBitmapData)
+	if err != nil {
+		return entity.SignatureMap{}, errors.Errorf("failed to deserialize bitmap: %w", err)
 	}
 
 	return entity.SignatureMap{

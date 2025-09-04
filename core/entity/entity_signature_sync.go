@@ -1,16 +1,13 @@
-package syncer
+package entity
 
 import (
-	"github.com/RoaringBitmap/roaring/v2"
 	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/symbioticfi/relay/core/entity"
 )
 
 // WantSignaturesRequest represents a request to resync signatures for a specific epoch.
 // Contains missing validator indices for each incomplete signature request.
 type WantSignaturesRequest struct {
-	WantSignatures map[common.Hash]*roaring.Bitmap // reqHash -> missing validator indices bitmap
+	WantSignatures map[common.Hash]SignatureBitmap // reqHash -> missing validator indices bitmap
 }
 
 // WantSignaturesResponse contains signatures grouped by request hash.
@@ -22,6 +19,6 @@ type WantSignaturesResponse struct {
 // ValidatorSignature pairs a signature with its validator index in the active validator set.
 // The validator index corresponds to the position in ValidatorSet.Validators.GetActiveValidators().
 type ValidatorSignature struct {
-	ValidatorIndex uint32                   // Index in active validator set
-	Signature      entity.SignatureExtended // The actual signature data
+	ValidatorIndex uint32            // Index in active validator set
+	Signature      SignatureExtended // The actual signature data
 }

@@ -5,12 +5,12 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/RoaringBitmap/roaring/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
 	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/core/usecase/crypto"
 )
 
 // SignatureProcessingStats contains detailed statistics for processing received signatures
@@ -19,6 +19,7 @@ type SignatureProcessingStats struct {
 	UnrequestedSignatureCount  int // Signatures for validators we didn't request
 	UnrequestedHashCount       int // Signatures for hashes we didn't request
 	SignatureRequestErrorCount int // Failed to get signature request
+	PublicKeyErrorCount        int // Failed to create public key from signature
 	ValidatorInfoErrorCount    int // Failed to get validator info
 	ProcessingErrorCount       int // Failed to process signature
 	AlreadyExistCount          int // Signature already exists (ErrEntityAlreadyExist)
@@ -27,7 +28,7 @@ type SignatureProcessingStats struct {
 // TotalErrors returns the total number of errors encountered
 func (s SignatureProcessingStats) TotalErrors() int {
 	return s.UnrequestedSignatureCount + s.UnrequestedHashCount + s.SignatureRequestErrorCount +
-		s.ValidatorInfoErrorCount + s.ProcessingErrorCount + s.AlreadyExistCount
+		s.PublicKeyErrorCount + s.ValidatorInfoErrorCount + s.ProcessingErrorCount + s.AlreadyExistCount
 }
 
 type repo interface {
@@ -41,7 +42,7 @@ type repo interface {
 }
 
 type p2pService interface {
-	SendWantSignaturesRequest(ctx context.Context, request WantSignaturesRequest) (WantSignaturesResponse, error)
+	SendWantSignaturesRequest(ctx context.Context, request entity.WantSignaturesRequest) (entity.WantSignaturesResponse, error)
 }
 
 type signatureProcessor interface {
@@ -111,7 +112,7 @@ func (s *Syncer) askSignatures(ctx context.Context) error {
 	slog.InfoContext(syncCtx, "Found pending signature requests", "count", len(wantSignatures))
 
 	// Send request to peer
-	request := WantSignaturesRequest{
+	request := entity.WantSignaturesRequest{
 		WantSignatures: wantSignatures,
 	}
 
@@ -130,6 +131,7 @@ func (s *Syncer) askSignatures(ctx context.Context) error {
 		"unrequested_signatures", stats.UnrequestedSignatureCount,
 		"unrequested_hashes", stats.UnrequestedHashCount,
 		"signature_request_errors", stats.SignatureRequestErrorCount,
+		"public_key_errors", stats.PublicKeyErrorCount,
 		"validator_info_errors", stats.ValidatorInfoErrorCount,
 		"processing_errors", stats.ProcessingErrorCount,
 		"already_exist", stats.AlreadyExistCount,
@@ -138,7 +140,7 @@ func (s *Syncer) askSignatures(ctx context.Context) error {
 	return nil
 }
 
-func (s *Syncer) buildWantSignaturesMap(ctx context.Context) (map[common.Hash]*roaring.Bitmap, error) {
+func (s *Syncer) buildWantSignaturesMap(ctx context.Context) (map[common.Hash]entity.SignatureBitmap, error) {
 	// Get the latest epoch
 	latestEpoch, err := s.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 	if err != nil {
@@ -153,7 +155,7 @@ func (s *Syncer) buildWantSignaturesMap(ctx context.Context) (map[common.Hash]*r
 		startEpoch = 0
 	}
 
-	wantSignatures := make(map[common.Hash]*roaring.Bitmap)
+	wantSignatures := make(map[common.Hash]entity.SignatureBitmap)
 	totalRequests := 0
 
 	for epoch := latestEpoch; epoch >= startEpoch && totalRequests < s.cfg.MaxSignatureRequestsPerSync; epoch-- {
@@ -206,23 +208,24 @@ func (s *Syncer) buildWantSignaturesMap(ctx context.Context) (map[common.Hash]*r
 	return wantSignatures, nil
 }
 
-func (s *Syncer) processReceivedSignatures(ctx context.Context, response WantSignaturesResponse, wantSignatures map[common.Hash]*roaring.Bitmap) SignatureProcessingStats {
+func (s *Syncer) processReceivedSignatures(ctx context.Context, response entity.WantSignaturesResponse, wantSignatures map[common.Hash]entity.SignatureBitmap) SignatureProcessingStats {
 	var stats SignatureProcessingStats
 
 	for reqHash, signatures := range response.Signatures {
 		for _, validatorSig := range signatures {
 			// Validate that we actually requested this validator's signature
-			if requestedBitmap, exists := wantSignatures[reqHash]; exists {
-				if !requestedBitmap.Contains(validatorSig.ValidatorIndex) {
-					slog.WarnContext(ctx, "Received unrequested signature",
-						"request_hash", reqHash.Hex(),
-						"validator_index", validatorSig.ValidatorIndex)
-					stats.UnrequestedSignatureCount++
-					continue
-				}
-			} else {
+			requestedBitmap, exists := wantSignatures[reqHash]
+			if !exists {
 				slog.WarnContext(ctx, "Received signature for unrequested hash", "request_hash", reqHash.Hex())
 				stats.UnrequestedHashCount++
+				continue
+			}
+
+			if !requestedBitmap.Contains(validatorSig.ValidatorIndex) {
+				slog.WarnContext(ctx, "Received unrequested signature",
+					"request_hash", reqHash.Hex(),
+					"validator_index", validatorSig.ValidatorIndex)
+				stats.UnrequestedSignatureCount++
 				continue
 			}
 
@@ -235,11 +238,22 @@ func (s *Syncer) processReceivedSignatures(ctx context.Context, response WantSig
 				continue
 			}
 
+			publicKey, err := crypto.NewPublicKey(sigReq.KeyTag.Type(), validatorSig.Signature.PublicKey)
+			if err != nil {
+				slog.WarnContext(ctx, "Failed to create public key from signature",
+					"request_hash", reqHash.Hex(),
+					"validator_index", validatorSig.ValidatorIndex,
+					"error", err)
+				stats.PublicKeyErrorCount++
+				continue
+			}
+
 			// Get validator info to extract voting power
 			validatorInfo, _, err := s.cfg.Repo.GetValidatorByKey(
 				ctx,
 				uint64(sigReq.RequiredEpoch),
-				sigReq.KeyTag, validatorSig.Signature.PublicKey,
+				sigReq.KeyTag,
+				publicKey.OnChain(),
 			)
 			if err != nil {
 				slog.WarnContext(ctx, "Failed to get validator info",
@@ -284,11 +298,11 @@ func (s *Syncer) processReceivedSignatures(ctx context.Context, response WantSig
 	return stats
 }
 
-func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request WantSignaturesRequest) (WantSignaturesResponse, error) {
+func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity.WantSignaturesRequest) (entity.WantSignaturesResponse, error) {
 	slog.InfoContext(ctx, "Handling want signatures request", "request_count", len(request.WantSignatures))
 
-	response := WantSignaturesResponse{
-		Signatures: make(map[common.Hash][]ValidatorSignature),
+	response := entity.WantSignaturesResponse{
+		Signatures: make(map[common.Hash][]entity.ValidatorSignature),
 	}
 
 	totalSignatureCount := 0
@@ -296,27 +310,32 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request WantSi
 	for reqHash, requestedIndices := range request.WantSignatures {
 		// Check signature count limit before processing each request
 		if totalSignatureCount >= s.cfg.MaxResponseSignatureCount {
-			return WantSignaturesResponse{}, errors.Errorf("response signature limit exceeded")
+			return entity.WantSignaturesResponse{}, errors.Errorf("response signature limit exceeded")
 		}
 
 		// Get stored signatures for this request
 		signatures, err := s.cfg.Repo.GetAllSignatures(ctx, reqHash)
 		if err != nil {
-			return WantSignaturesResponse{}, errors.Errorf("failed to get signatures for request %s: %w", reqHash.Hex(), err)
+			return entity.WantSignaturesResponse{}, errors.Errorf("failed to get signatures for request %s: %w", reqHash.Hex(), err)
 		}
 
 		// Get signature request for epoch info
 		sigReq, err := s.cfg.Repo.GetSignatureRequest(ctx, reqHash)
 		if err != nil {
-			return WantSignaturesResponse{}, errors.Errorf("failed to get signature request %s: %w", reqHash.Hex(), err)
+			return entity.WantSignaturesResponse{}, errors.Errorf("failed to get signature request %s: %w", reqHash.Hex(), err)
 		}
 
-		var validatorSigs []ValidatorSignature
+		var validatorSigs []entity.ValidatorSignature
 
 		for _, sig := range signatures {
 			// Check limit before processing each signature
 			if totalSignatureCount >= s.cfg.MaxResponseSignatureCount {
-				return WantSignaturesResponse{}, errors.Errorf("response signature limit exceeded")
+				return entity.WantSignaturesResponse{}, errors.Errorf("response signature limit exceeded")
+			}
+
+			publicKey, err := crypto.NewPublicKey(sigReq.KeyTag.Type(), sig.PublicKey)
+			if err != nil {
+				return entity.WantSignaturesResponse{}, errors.Errorf("failed to get public key: %w", err)
 			}
 
 			// Map public key to validator index
@@ -324,15 +343,15 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request WantSi
 				ctx,
 				uint64(sigReq.RequiredEpoch),
 				sigReq.KeyTag,
-				sig.PublicKey,
+				publicKey.OnChain(),
 			)
 			if err != nil {
-				return WantSignaturesResponse{}, errors.Errorf("failed to get validator for key: %w", err)
+				return entity.WantSignaturesResponse{}, errors.Errorf("failed to get validator for key: %w", err)
 			}
 
 			// Only include if requested
 			if requestedIndices.Contains(activeIndex) {
-				validatorSigs = append(validatorSigs, ValidatorSignature{
+				validatorSigs = append(validatorSigs, entity.ValidatorSignature{
 					ValidatorIndex: activeIndex,
 					Signature:      sig,
 				})

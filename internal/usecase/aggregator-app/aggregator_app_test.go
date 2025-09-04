@@ -5,7 +5,6 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/RoaringBitmap/roaring/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -75,7 +74,7 @@ func createTestSignatureMap(thresholdReached bool, requestHash common.Hash, epoc
 	return entity.SignatureMap{
 		RequestHash:            requestHash,
 		Epoch:                  epoch,
-		SignedValidatorsBitmap: roaring.New(),
+		SignedValidatorsBitmap: entity.NewSignatureBitmap(),
 		CurrentVotingPower:     entity.ToVotingPower(currentVotingPower),
 	}
 }

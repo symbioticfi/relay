@@ -17,7 +17,6 @@ type Repository interface {
 	UpdateSignatureMap(ctx context.Context, vm entity.SignatureMap) error
 	SaveSignature(ctx context.Context, reqHash common.Hash, key entity.RawPublicKey, sig entity.SignatureExtended) error
 	SaveSignatureRequest(ctx context.Context, req entity.SignatureRequest) error
-	SaveSignatureRequestPending(ctx context.Context, req entity.SignatureRequest) error
 	RemoveSignatureRequestPending(ctx context.Context, epoch entity.Epoch, reqHash common.Hash) error
 	GetValidatorSetHeaderByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSetHeader, error)
 	GetActiveValidatorCountByEpoch(ctx context.Context, epoch uint64) (uint32, error)
@@ -83,10 +82,6 @@ func (s *SignatureProcessor) ProcessSignature(ctx context.Context, param entity.
 		if param.SignatureRequest != nil {
 			if err := s.cfg.Repo.SaveSignatureRequest(ctx, *param.SignatureRequest); err != nil {
 				return errors.Errorf("failed to save signature request: %w", err)
-			}
-			// Save to pending collection as well
-			if err := s.cfg.Repo.SaveSignatureRequestPending(ctx, *param.SignatureRequest); err != nil {
-				return errors.Errorf("failed to save signature request to pending collection: %v", err)
 			}
 		}
 
