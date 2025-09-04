@@ -99,8 +99,6 @@ func validateValidatorSetAgainstExpected(t *testing.T, apiResponse *apiv1.GetVal
 	expectedQuorum := expected.ValidatorSet.QuorumThreshold.String()
 	require.Equal(t, expectedQuorum, apiResponse.QuorumThreshold,
 		"API quorum threshold should match contract quorum threshold")
-	require.Equal(t, expected.ValidatorSet.PreviousHeaderHash.Hex(), apiResponse.PreviousHeaderHash,
-		"API previous header hash should match contract hash")
 	require.Len(t, apiResponse.Validators, len(expected.ValidatorSet.Validators),
 		"API should return same number of validators as contract")
 

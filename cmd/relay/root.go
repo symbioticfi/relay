@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"time"
 
-	growthStrategy "github.com/symbioticfi/relay/core/usecase/growth-strategy"
 	signature_processor "github.com/symbioticfi/relay/core/usecase/signature-processor"
 	signatureListener "github.com/symbioticfi/relay/internal/usecase/signature-listener"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
+	valsetStatusTracker "github.com/symbioticfi/relay/internal/usecase/valset-status-tracker"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/symbioticfi/relay/core/client/evm"
@@ -104,6 +104,21 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create cached repository: %w", err)
 	}
 
+	listener, err := valsetListener.New(valsetListener.Config{
+		EvmClient:       evmClient,
+		Repo:            repo,
+		Deriver:         deriver,
+		PollingInterval: time.Second * 5,
+	})
+	if err != nil {
+		return errors.Errorf("failed to create epoch listener: %w", err)
+	}
+
+	// Load all missing epochs before starting services
+	if err := listener.LoadAllMissingEpochs(ctx); err != nil {
+		return errors.Errorf("failed to load missing epochs: %w", err)
+	}
+
 	currentOnchainEpoch, err := evmClient.GetCurrentEpoch(ctx)
 	if err != nil {
 		return errors.Errorf("failed to get current epoch: %w", err)
@@ -117,27 +132,6 @@ func runApp(ctx context.Context) error {
 	config, err := evmClient.GetConfig(ctx, captureTimestamp)
 	if err != nil {
 		return errors.Errorf("failed to get config: %w", err)
-	}
-
-	growthStrategy, err := growthStrategy.NewGrowthStrategy(config.GrowthStrategy, evmClient)
-	if err != nil {
-		return errors.Errorf("failed to create growth strategy: %w", err)
-	}
-
-	listener, err := valsetListener.New(valsetListener.Config{
-		EvmClient:       evmClient,
-		Repo:            repo,
-		Deriver:         deriver,
-		PollingInterval: time.Second * 5,
-		GrowthStrategy:  growthStrategy,
-	})
-	if err != nil {
-		return errors.Errorf("failed to create epoch listener: %w", err)
-	}
-
-	// Load all missing epochs before starting services
-	if err := listener.LoadAllMissingEpochs(ctx); err != nil {
-		return errors.Errorf("failed to load missing epochs: %w", err)
 	}
 
 	var prover *proof.ZkProver
@@ -198,15 +192,26 @@ func runApp(ctx context.Context) error {
 		Aggregator:      agg,
 		PollingInterval: time.Second * 5,
 		IsCommitter:     cfg.IsCommitter,
-		GrowthStrategy:  growthStrategy,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create epoch listener: %w", err)
 	}
 
+	statusTracker, err := valsetStatusTracker.New(valsetStatusTracker.Config{
+		EvmClient:       evmClient,
+		Repo:            repo,
+		Deriver:         deriver,
+		PollingInterval: time.Second * 5,
+	})
+	if err != nil {
+		return errors.Errorf("failed to create valset status tracker: %w", err)
+	}
+
 	if err := aggProofReadySignal.SetHandler(func(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
-		err := generator.HandleProofAggregated(ctx, msg)
-		if err != nil {
+		if err := generator.HandleProofAggregated(ctx, msg); err != nil {
+			return errors.Errorf("failed to handle proof aggregated: %w", err)
+		}
+		if err := statusTracker.HandleProofAggregated(ctx, msg); err != nil {
 			return errors.Errorf("failed to handle proof aggregated: %w", err)
 		}
 		slog.DebugContext(ctx, "Handled proof aggregated", "request", msg)
@@ -240,14 +245,19 @@ func runApp(ctx context.Context) error {
 		return nil
 	})
 
-	if cfg.IsSigner {
-		eg.Go(func() error {
-			if err := generator.Start(egCtx); err != nil {
-				return errors.Errorf("failed to start valset generator: %w", err)
-			}
-			return nil
-		})
-	}
+	eg.Go(func() error {
+		if err := generator.Start(egCtx); err != nil {
+			return errors.Errorf("failed to start valset generator: %w", err)
+		}
+		return nil
+	})
+
+	eg.Go(func() error {
+		if err := statusTracker.Start(egCtx); err != nil {
+			return errors.Errorf("failed to start valset status tracker: %w", err)
+		}
+		return nil
+	})
 
 	var aggApp *aggregatorApp.AggregatorApp
 	if cfg.IsAggregator {

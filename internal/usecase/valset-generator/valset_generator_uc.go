@@ -8,8 +8,6 @@ import (
 	"sync"
 	"time"
 
-	strategyTypes "github.com/symbioticfi/relay/core/usecase/growth-strategy/strategy-types"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 
@@ -37,12 +35,12 @@ type evmClient interface {
 
 type repo interface {
 	GetLatestValidatorSetHeader(_ context.Context) (entity.ValidatorSetHeader, error)
+	GetLatestSignedValidatorSetEpoch(_ context.Context) (uint64, error)
 	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 	GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error)
 	GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error)
 	GetSignatureRequest(ctx context.Context, reqHash common.Hash) (entity.SignatureRequest, error)
-	SavePendingValidatorSet(ctx context.Context, reqHash common.Hash, valset entity.ValidatorSet) error
-	GetPendingValidatorSet(ctx context.Context, reqHash common.Hash) (entity.ValidatorSet, error)
+	SaveLatestSignedValidatorSetEpoch(_ context.Context, valset entity.ValidatorSet) error
 	SaveAggregationProof(ctx context.Context, reqHash common.Hash, ap entity.AggregationProof) error
 }
 
@@ -59,7 +57,6 @@ type Config struct {
 	PollingInterval time.Duration `validate:"required,gt=0"`
 	IsCommitter     bool
 	Aggregator      aggregator.Aggregator
-	GrowthStrategy  strategyTypes.GrowthStrategy
 }
 
 func (c Config) Validate() error {
@@ -71,9 +68,8 @@ func (c Config) Validate() error {
 }
 
 type Service struct {
-	cfg            Config
-	generatedEpoch uint64
-	mutex          sync.Mutex
+	cfg   Config
+	mutex sync.Mutex
 }
 
 func New(cfg Config) (*Service, error) {
@@ -110,44 +106,18 @@ func (s *Service) process(ctx context.Context) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	valSet, config, err := s.tryDetectNewEpochToCommit(ctx)
-	if err != nil && !errors.Is(err, entity.ErrValsetAlreadyCommittedForEpoch) {
+	valSet, config, err := s.tryDetectUnsignedValset(ctx)
+	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return errors.Errorf("failed to detect new epoch to commit: %w", err)
 	}
-	if errors.Is(err, entity.ErrValsetAlreadyCommittedForEpoch) {
+	if errors.Is(err, entity.ErrEntityNotFound) {
 		// no new validator set extra found, nothing to do
-		return nil
-	}
-
-	if s.generatedEpoch >= valSet.Epoch {
-		slog.DebugContext(ctx, "Already signed for this epoch, skipping", "epoch", valSet.Epoch)
 		return nil
 	}
 
 	networkData, err := s.getNetworkData(ctx, config)
 	if err != nil {
 		return errors.Errorf("failed to get network data: %w", err)
-	}
-
-	latestValsetHeader, err := s.cfg.Repo.GetLatestValidatorSetHeader(ctx)
-	if err != nil {
-		return errors.Errorf("failed to get latest validator set header: %w", err)
-	}
-
-	latestValsetHeaderHash, err := latestValsetHeader.Hash()
-	if err != nil {
-		return errors.Errorf("failed to get latest validator set header hash: %w", err)
-	}
-
-	// waiting for valset listener sync and attaching new valset to growth strategy hash
-	if latestValsetHeaderHash != valSet.PreviousHeaderHash {
-		slog.WarnContext(ctx, "valset candidate doesn't refer to latest saved valset in repo", "epoch", valSet.Epoch, "latest", latestValsetHeaderHash, "referred", valSet.PreviousHeaderHash)
-		return nil
-	}
-
-	// Avoid uint64 overflow: have to avoid subtraction of two uint64s that can result in a negative value
-	if config.MaxMissingEpochs != 0 && latestValsetHeader.Epoch > valSet.Epoch+config.MaxMissingEpochs {
-		return errors.Errorf("exceed missing epochs, latest committed: %d, current: %d", latestValsetHeader.Epoch, valSet.Epoch)
 	}
 
 	extraData, err := s.cfg.Aggregator.GenerateExtraData(valSet, config.RequiredKeyTags)
@@ -166,26 +136,18 @@ func (s *Service) process(ctx context.Context) error {
 
 	r := entity.SignatureRequest{
 		KeyTag:        entity.ValsetHeaderKeyTag,
-		RequiredEpoch: entity.Epoch(latestValsetHeader.Epoch),
+		RequiredEpoch: entity.Epoch(valSet.Epoch),
 		Message:       data,
 	}
 
 	slog.DebugContext(ctx, "Signed validator set", "header", header, "extra data", extraData, "hash", hex.EncodeToString(data))
-	err = s.cfg.Repo.SavePendingValidatorSet(ctx, r.Hash(), valSet)
-	if err != nil {
-		if errors.Is(err, entity.ErrEntityAlreadyExist) {
-			slog.DebugContext(ctx, "Pending valset already exists, skipping save", "requestHash", r.Hash())
-			return nil // already exists, nothing to do
-		}
-		return errors.Errorf("failed to save pending valset: %w", err)
+	if err = s.cfg.Repo.SaveLatestSignedValidatorSetEpoch(ctx, valSet); err != nil {
+		return errors.Errorf("failed to save latest signed valset epoch: %w", err)
 	}
 
-	err = s.cfg.Signer.Sign(ctx, r)
-	if err != nil {
+	if err = s.cfg.Signer.Sign(ctx, r); err != nil {
 		return errors.Errorf("failed to sign new validator set extra: %w", err)
 	}
-
-	s.generatedEpoch = header.Epoch
 
 	return nil
 }
@@ -203,53 +165,46 @@ func (s *Service) getNetworkData(ctx context.Context, config entity.NetworkConfi
 	return entity.NetworkData{}, errors.New("failed to get network data for any replica")
 }
 
-func (s *Service) tryDetectNewEpochToCommit(ctx context.Context) (entity.ValidatorSet, entity.NetworkConfig, error) {
+func (s *Service) tryDetectUnsignedValset(ctx context.Context) (entity.ValidatorSet, entity.NetworkConfig, error) {
 	slog.DebugContext(ctx, "Trying to detect new epoch to commit")
 
-	currentOnchainEpoch, err := s.cfg.EvmClient.GetCurrentEpoch(ctx)
-	if err != nil {
-		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get current epoch: %w", err)
+	epoch, err := s.cfg.Repo.GetLatestSignedValidatorSetEpoch(ctx)
+	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
+		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get latest pending validator set: %w", err)
 	}
 
-	epochStart, err := s.cfg.EvmClient.GetEpochStart(ctx, currentOnchainEpoch)
+	if err == nil {
+		epoch++
+	}
+
+	var valset entity.ValidatorSet
+
+	for { // TODO: mb we need to try sign only next valset to latest pending???
+		valset, err = s.cfg.Repo.GetValidatorSetByEpoch(ctx, epoch)
+		if err != nil {
+			return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get validator set for epoch %d: %w", epoch, err)
+		}
+
+		if valset.Status == entity.HeaderDerived {
+			break
+		}
+	}
+
+	if valset.Status != entity.HeaderDerived {
+		return entity.ValidatorSet{}, entity.NetworkConfig{}, entity.ErrEntityNotFound
+	}
+
+	epochStart, err := s.cfg.EvmClient.GetEpochStart(ctx, valset.Epoch)
 	if err != nil {
-		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get current epoch start: %w", err)
+		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get epoch start for epoch %d: %w", valset.Epoch, err)
 	}
 
 	config, err := s.cfg.EvmClient.GetConfig(ctx, epochStart)
 	if err != nil {
-		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get network config for current epoch %d: %w", currentOnchainEpoch, err)
+		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get config for epoch %d: %w", valset.Epoch, err)
 	}
 
-	_, isCommitted, err := s.isValsetHeaderCommitted(ctx, config, currentOnchainEpoch)
-	if err != nil {
-		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to check if committed validator set header is committed: %w", err)
-	}
-
-	if isCommitted {
-		slog.DebugContext(ctx, "Epoch is committed already, skipping", "epoch", currentOnchainEpoch)
-		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.New(entity.ErrValsetAlreadyCommittedForEpoch)
-	}
-
-	newValset, err := s.cfg.Deriver.GetValidatorSet(ctx, currentOnchainEpoch, config)
-	if err != nil {
-		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get validator set extra for epoch %d: %w", currentOnchainEpoch, err)
-	}
-
-	return newValset, config, nil
-}
-
-func (s *Service) isValsetHeaderCommitted(ctx context.Context, config entity.NetworkConfig, epoch uint64) (entity.CrossChainAddress, bool, error) {
-	for _, addr := range config.Replicas {
-		isCommitted, err := s.cfg.EvmClient.IsValsetHeaderCommittedAt(ctx, addr, epoch)
-		if err != nil {
-			return entity.CrossChainAddress{}, false, errors.Errorf("failed to check if valset header is committed at epoch %d: %w", epoch, err)
-		}
-		if isCommitted {
-			return addr, true, nil
-		}
-	}
-	return entity.CrossChainAddress{}, false, nil
+	return valset, config, nil
 }
 
 func (s *Service) headerCommitmentData(
