@@ -138,6 +138,7 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 			return errors.Errorf("failed to hash validator set header: %w", err)
 		}
 
+		isCommitted := true
 		for _, replica := range config.Replicas {
 			committedHash, err := s.cfg.EvmClient.GetHeaderHashAt(ctx, replica, valset.Epoch)
 			if err != nil {
@@ -145,12 +146,17 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 			}
 
 			if committedHash == zeroHeaderHash {
+				isCommitted = false
 				continue
 			}
 
 			if hash != committedHash {
 				return errors.Errorf("header hash for epoch %d is not equal to committed hash, derived: %s, committed: %s", epoch, hash.Hex(), committedHash.Hex())
 			}
+		}
+
+		if !isCommitted {
+			continue
 		}
 
 		valset.Status = entity.HeaderCommitted
@@ -162,7 +168,6 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 
 		if valset.Epoch == s.firstUncommittedEpoch {
 			s.firstUncommittedEpoch++
-			continue
 		}
 	}
 
