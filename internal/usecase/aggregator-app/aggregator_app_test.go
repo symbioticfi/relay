@@ -105,12 +105,12 @@ func createTestData(requestHash common.Hash, epoch uint64, totalValidators, sign
 	}
 
 	// Create SignatureMap using the same ValidatorSet
-	signatureMap := entity.NewSignatureMap(requestHash, validatorSet)
+	signatureMap := entity.NewSignatureMap(requestHash, entity.Epoch(epoch), uint32(totalValidators))
 
 	// Add signers (first 'signers' number of validators)
 	for i := 0; i < signers; i++ {
 		votingPower := validatorSet.Validators[i].VotingPower // Use actual voting power from validator
-		err := signatureMap.SetValidatorPresent(i, votingPower)
+		err := signatureMap.SetValidatorPresent(uint32(i), votingPower)
 		if err != nil {
 			panic(fmt.Sprintf("Failed to set validator present: %v", err))
 		}
@@ -348,7 +348,7 @@ func TestSignatureMapFunctionality(t *testing.T) {
 	// Add 3 validators using their actual voting power from the validator set
 	for i := 0; i < 3; i++ {
 		votingPower := validatorSet.Validators[i].VotingPower
-		err := signatureMap.SetValidatorPresent(i, votingPower)
+		err := signatureMap.SetValidatorPresent(uint32(i), votingPower)
 		require.NoError(t, err)
 	}
 
@@ -358,7 +358,7 @@ func TestSignatureMapFunctionality(t *testing.T) {
 	// Add 4 more validators (5 total = 5 * 100 = 500 voting power)
 	for i := 3; i < 5; i++ {
 		votingPower := validatorSet.Validators[i].VotingPower
-		err := signatureMap.SetValidatorPresent(i, votingPower)
+		err := signatureMap.SetValidatorPresent(uint32(i), votingPower)
 		require.NoError(t, err)
 	}
 
