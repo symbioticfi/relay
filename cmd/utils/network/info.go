@@ -70,11 +70,6 @@ var infoCmd = &cobra.Command{
 			return errors.Errorf("Failed to get config: %w", err)
 		}
 
-		_, committedEpoch, err := deriver.GetLastCommittedHeaderEpoch(ctx, networkConfig)
-		if err != nil {
-			return errors.Errorf("Failed to get valset header: %w", err)
-		}
-
 		epochDuration, err := evmClient.GetEpochDuration(ctx, epoch)
 		if err != nil {
 			return errors.Errorf("Failed to get epoch duration: %w", err)
@@ -89,7 +84,7 @@ var infoCmd = &cobra.Command{
 		panels := pterm.Panels{
 			{
 				{Data: pterm.DefaultBox.WithTitle("Network info").Sprint(
-					printNetworkInfo(epoch, committedEpoch, captureTimestamp, &networkConfig, &valset),
+					printNetworkInfo(epoch, captureTimestamp, &networkConfig, &valset),
 				)},
 				{Data: pterm.DefaultBox.WithTitle("Network config").Sprint(
 					printNetworkConfig(epochDuration, &networkConfig),
@@ -155,7 +150,7 @@ var infoCmd = &cobra.Command{
 			}
 			panels = append(panels, []pterm.Panel{
 				{Data: pterm.DefaultBox.WithTitle("Settlement").Sprint(
-					printSettlementData(header, networkConfig, settlementData, committedEpoch),
+					printSettlementData(header, networkConfig, settlementData),
 				)},
 			})
 		}

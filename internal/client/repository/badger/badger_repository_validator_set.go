@@ -17,7 +17,9 @@ import (
 )
 
 const (
-	latestValidatorSetEpochKey = "latest_validator_set_epoch"
+	latestValidatorSetEpochKey        = "latest_validator_set_epoch"
+	latestSignedValidatorSetEpochKey  = "latest_signed_validator_set_epoch"
+	firstUncommittedValidatorSetEpoch = "first_uncommitted_validator_set_epoch"
 )
 
 func keyValidatorSetHeader(epoch uint64) []byte {
@@ -30,6 +32,10 @@ func keyValidatorByOperator(epoch uint64, operator common.Address) []byte {
 
 func keyValidatorKeyLookup(epoch uint64, keyTag entity.KeyTag, publicKeyHash common.Hash) []byte {
 	return []byte(fmt.Sprintf("validator_key_lookup:%d:%d:%s", epoch, keyTag, publicKeyHash.Hex()))
+}
+
+func keyValidatorSetStatus(epoch uint64) []byte {
+	return []byte(fmt.Sprintf("validator_set_status:%d", epoch))
 }
 
 func (r *Repository) SaveValidatorSet(ctx context.Context, valset entity.ValidatorSet) error {
@@ -60,9 +66,19 @@ func (r *Repository) SaveValidatorSet(ctx context.Context, valset entity.Validat
 		}
 
 		// Save the validator set header for its epoch
-		err = txn.Set(headerKey, headerBytes)
-		if err != nil {
+		if err = txn.Set(headerKey, headerBytes); err != nil {
 			return errors.Errorf("failed to store validator set header: %w", err)
+		}
+
+		statusKey := keyValidatorSetStatus(valset.Epoch)
+		_, err = txn.Get(statusKey)
+		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
+			return errors.Errorf("failed to get validator set status key: %w", err)
+		}
+
+		statusBytes := []byte{uint8(valset.Status)}
+		if err = txn.Set(statusKey, statusBytes); err != nil {
+			return errors.Errorf("failed to store validator set status: %w", err)
 		}
 
 		// Check if this is a newer epoch than the latest one
@@ -129,6 +145,50 @@ func (r *Repository) SaveValidatorSet(ctx context.Context, valset entity.Validat
 		err = txn.Set(keyActiveValidatorCount(valset.Epoch), activeCountBytes)
 		if err != nil {
 			return errors.Errorf("failed to store active validator count: %w", err)
+		}
+
+		return nil
+	})
+}
+
+func (r *Repository) SaveLatestSignedValidatorSetEpoch(ctx context.Context, valset entity.ValidatorSet) error {
+	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
+		epochBytes := make([]byte, 8)
+		binary.BigEndian.PutUint64(epochBytes, valset.Epoch)
+		if err := txn.Set([]byte(latestSignedValidatorSetEpochKey), epochBytes); err != nil {
+			return errors.Errorf("failed to store latest validator set epoch: %w", err)
+		}
+
+		return nil
+	})
+}
+
+func (r *Repository) SaveFirstUncommittedValidatorSetEpoch(ctx context.Context, epoch uint64) error {
+	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
+		epochBytes := make([]byte, 8)
+		binary.BigEndian.PutUint64(epochBytes, epoch)
+		if err := txn.Set([]byte(firstUncommittedValidatorSetEpoch), epochBytes); err != nil {
+			return errors.Errorf("failed to store first uncommitted validator set epoch: %w", err)
+		}
+
+		return nil
+	})
+}
+
+func (r *Repository) UpdateValidatorSetStatus(ctx context.Context, valset entity.ValidatorSet) error {
+	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
+		statusKey := keyValidatorSetStatus(valset.Epoch)
+		_, err := txn.Get(statusKey)
+		if err != nil {
+			return errors.Errorf("failed to get validator set status key: %w", err)
+		}
+
+		statusBytes := []byte{uint8(valset.Status)}
+		if err = txn.Set(statusKey, statusBytes); err != nil {
+			return errors.Errorf("failed to store validator set status: %w", err)
 		}
 
 		return nil
@@ -212,6 +272,25 @@ func (r *Repository) GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (
 			return errors.Errorf("failed to unmarshal validator set header: %w", err)
 		}
 
+		statusItem, err := txn.Get(keyValidatorSetStatus(epoch))
+		if err != nil {
+			if errors.Is(err, badger.ErrKeyNotFound) {
+				return errors.Errorf("no validator set status found for epoch %d: %w", epoch, entity.ErrEntityNotFound)
+			}
+			return errors.Errorf("failed to get validator set status: %w", err)
+		}
+
+		statusValue, err := statusItem.ValueCopy(nil)
+		if err != nil {
+			return errors.Errorf("failed to copy validator set status value: %w", err)
+		}
+
+		if len(statusValue) != 1 {
+			return errors.New("failed to get validator set status value: invalid length")
+		}
+
+		status := entity.ValidatorSetStatus(statusValue[0])
+
 		// Get all validators for this epoch
 		validators, err := r.getAllValidatorsByEpoch(txn, epoch)
 		if err != nil {
@@ -220,14 +299,13 @@ func (r *Repository) GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (
 
 		// Build the validator set from header + validators
 		vs = entity.ValidatorSet{
-			Version:            header.Version,
-			RequiredKeyTag:     header.RequiredKeyTag,
-			Epoch:              header.Epoch,
-			CaptureTimestamp:   header.CaptureTimestamp,
-			QuorumThreshold:    header.QuorumThreshold,
-			PreviousHeaderHash: header.PreviousHeaderHash,
-			Validators:         validators,
-			Status:             entity.HeaderCommitted, // Default status for stored validator sets
+			Version:          header.Version,
+			RequiredKeyTag:   header.RequiredKeyTag,
+			Epoch:            header.Epoch,
+			CaptureTimestamp: header.CaptureTimestamp,
+			QuorumThreshold:  header.QuorumThreshold,
+			Validators:       validators,
+			Status:           status,
 		}
 
 		return nil
@@ -330,6 +408,53 @@ func (r *Repository) GetActiveValidatorCountByEpoch(ctx context.Context, epoch u
 	})
 }
 
+func (r *Repository) GetLatestSignedValidatorSetEpoch(ctx context.Context) (uint64, error) {
+	var epoch uint64
+
+	return epoch, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
+		item, err := txn.Get([]byte(latestSignedValidatorSetEpochKey))
+		if err != nil {
+			if errors.Is(err, badger.ErrKeyNotFound) {
+				return errors.Errorf("no latest validator set found: %w", entity.ErrEntityNotFound)
+			}
+			return errors.Errorf("failed to get latest validator set epoch: %w", err)
+		}
+
+		value, err := item.ValueCopy(nil)
+		if err != nil {
+			return errors.Errorf("failed to copy latest validator set epoch value: %w", err)
+		}
+
+		epoch = binary.BigEndian.Uint64(value)
+		return nil
+	})
+}
+
+func (r *Repository) GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (uint64, error) {
+	var epoch uint64
+
+	return epoch, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
+		// Get the latest epoch
+		item, err := txn.Get([]byte(firstUncommittedValidatorSetEpoch))
+		if err != nil {
+			if errors.Is(err, badger.ErrKeyNotFound) {
+				return nil
+			}
+			return errors.Errorf("failed to get first uncommitted validator set epoch: %w", err)
+		}
+
+		value, err := item.ValueCopy(nil)
+		if err != nil {
+			return errors.Errorf("failed to copy first uncommitted validator set epoch value: %w", err)
+		}
+
+		epoch = binary.BigEndian.Uint64(value)
+		return nil
+	})
+}
+
 func (r *Repository) GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error) {
 	publicKeyHash := crypto.Keccak256Hash(publicKey)
 	keyLookup := keyValidatorKeyLookup(epoch, keyTag, publicKeyHash)
@@ -376,6 +501,35 @@ func (r *Repository) GetValidatorByKey(ctx context.Context, epoch uint64, keyTag
 
 		return nil
 	})
+}
+
+type validatorVaultDTO struct {
+	ChainID     uint64 `json:"chain_id"`
+	Vault       string `json:"vault"`
+	VotingPower string `json:"voting_power"`
+}
+
+type keyDTO struct {
+	Tag     uint8  `json:"tag"`
+	Payload []byte `json:"payload"`
+}
+
+type validatorDTO struct {
+	Operator    string              `json:"operator"`
+	VotingPower string              `json:"voting_power"`
+	IsActive    bool                `json:"is_active"`
+	ActiveIndex uint32              `json:"active_index"`
+	Keys        []keyDTO            `json:"keys"`
+	Vaults      []validatorVaultDTO `json:"vaults"`
+}
+
+type validatorSetHeaderDTO struct {
+	Version            uint8  `json:"version"`
+	RequiredKeyTag     uint8  `json:"required_key_tag"`
+	Epoch              uint64 `json:"epoch"`
+	CaptureTimestamp   uint64 `json:"capture_timestamp"`
+	QuorumThreshold    string `json:"quorum_threshold"`
+	ValidatorsSszMRoot string `json:"validators_ssz_mroot"`
 }
 
 func validatorToBytes(validator entity.Validator, activeIndex uint32) ([]byte, error) {
@@ -451,7 +605,6 @@ func validatorSetHeaderToBytes(header entity.ValidatorSetHeader) ([]byte, error)
 		Epoch:              header.Epoch,
 		CaptureTimestamp:   header.CaptureTimestamp,
 		QuorumThreshold:    header.QuorumThreshold.String(),
-		PreviousHeaderHash: header.PreviousHeaderHash.Hex(),
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot.Hex(),
 	}
 
@@ -475,7 +628,6 @@ func bytesToValidatorSetHeader(data []byte) (entity.ValidatorSetHeader, error) {
 		Epoch:              dto.Epoch,
 		CaptureTimestamp:   dto.CaptureTimestamp,
 		QuorumThreshold:    entity.ToVotingPower(quorumThreshold),
-		PreviousHeaderHash: common.HexToHash(dto.PreviousHeaderHash),
 		ValidatorsSszMRoot: common.HexToHash(dto.ValidatorsSszMRoot),
 	}, nil
 }

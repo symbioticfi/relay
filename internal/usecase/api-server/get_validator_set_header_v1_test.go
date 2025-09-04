@@ -42,7 +42,6 @@ func TestGetValidatorSetHeader_ValidatorSetFoundInRepo(t *testing.T) {
 	require.Equal(t, expectedHeader.Epoch, response.GetEpoch())
 	require.Equal(t, expectedHeader.QuorumThreshold.String(), response.GetQuorumThreshold())
 	require.Equal(t, expectedHeader.ValidatorsSszMRoot.Hex(), response.GetValidatorsSszMroot())
-	require.Equal(t, expectedHeader.PreviousHeaderHash.Hex(), response.GetPreviousHeaderHash())
 }
 
 func TestGetValidatorSetHeader_ValidatorSetNotInRepo_DerivedSuccessfully(t *testing.T) {
@@ -84,7 +83,6 @@ func TestGetValidatorSetHeader_ValidatorSetNotInRepo_DerivedSuccessfully(t *test
 	require.Equal(t, expectedHeader.Epoch, response.GetEpoch())
 	require.Equal(t, expectedHeader.QuorumThreshold.String(), response.GetQuorumThreshold())
 	require.Equal(t, expectedHeader.ValidatorsSszMRoot.Hex(), response.GetValidatorsSszMroot())
-	require.Equal(t, expectedHeader.PreviousHeaderHash.Hex(), response.GetPreviousHeaderHash())
 }
 
 func TestGetValidatorSetHeader_UseCurrentEpoch_WhenNoEpochSpecified(t *testing.T) {
@@ -92,7 +90,6 @@ func TestGetValidatorSetHeader_UseCurrentEpoch_WhenNoEpochSpecified(t *testing.T
 	ctx := context.Background()
 
 	currentEpoch := uint64(10)
-
 	// Create test data
 	validatorSet := createTestValidatorSet(currentEpoch)
 

@@ -64,12 +64,11 @@ func printNetworkConfig(epochDuration uint64, networkConfig *entity.NetworkConfi
 	return configText
 }
 
-func printNetworkInfo(epoch uint64, committedEpoch uint64, epochStart uint64, networkConfig *entity.NetworkConfig, valset *entity.ValidatorSet) string {
+func printNetworkInfo(epoch uint64, epochStart uint64, networkConfig *entity.NetworkConfig, valset *entity.ValidatorSet) string {
 	infoText := fmt.Sprintf("Network epoch: %v\n", epoch)
 	t := time.Unix(int64(epochStart), 0)
 	tFormatted := t.Format("2006-01-02 15:04:05")
 	infoText += fmt.Sprintf("Epoch start: %d (%s)\n", epochStart, tFormatted)
-	infoText += fmt.Sprintf("Latest committed epoch: %v\n", committedEpoch)
 	infoText += fmt.Sprintf("Validators: %d\n", len(valset.Validators))
 	infoText += fmt.Sprintf("Total voting power: %v\n", valset.GetTotalActiveVotingPower())
 	infoText += fmt.Sprintf("Voting power providers: %d\n", len(networkConfig.VotingPowerProviders))
@@ -131,7 +130,6 @@ func printHeaderTable(header entity.ValidatorSetHeader) string {
 		)},
 		{"RequiredKeyTag", header.RequiredKeyTag.String()},
 		{"QuorumThreshold", fmt.Sprintf("%d", header.QuorumThreshold.Int)},
-		{"PreviousHeaderHash", fmt.Sprintf("0x%064x", header.PreviousHeaderHash)},
 		{"ValidatorsSszMRoot", fmt.Sprintf("0x%064x", header.ValidatorsSszMRoot)},
 	}
 
@@ -182,7 +180,6 @@ func printHeaderWithExtraDataToJSON(validatorSetHeader entity.ValidatorSetHeader
 		RequiredKeyTag:     uint8(validatorSetHeader.RequiredKeyTag),
 		CaptureTimestamp:   validatorSetHeader.CaptureTimestamp,
 		QuorumThreshold:    validatorSetHeader.QuorumThreshold.Int,
-		PreviousHeaderHash: fmt.Sprintf("0x%064x", validatorSetHeader.PreviousHeaderHash),
 	}
 
 	jsonExtraDataList := make([]jsonExtraData, len(extraDataList))
@@ -208,7 +205,6 @@ func printSettlementData(
 	valsetHeader entity.ValidatorSetHeader,
 	networkConfig entity.NetworkConfig,
 	settlementData []settlementReplicaData,
-	committedEpoch uint64,
 ) string {
 	tableData := pterm.TableData{
 		{"Address", "ChainID", "Status", "Integrity", "Latest Committed Epoch", "Missed Epochs", "Header hash"},
@@ -239,7 +235,6 @@ func printSettlementData(
 			strconv.FormatUint(replica.ChainId, 10),
 			status,
 			integrity,
-			strconv.FormatUint(committedEpoch, 10),
 			strconv.FormatUint(settlementData[i].MissedEpochs, 10),
 			hash,
 		})

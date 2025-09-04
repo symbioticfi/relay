@@ -28,10 +28,10 @@ type ValidatorSetStatus int32
 const (
 	// Default/unknown status
 	ValidatorSetStatus_VALIDATOR_SET_STATUS_UNSPECIFIED ValidatorSetStatus = 0
-	// Pending status
-	ValidatorSetStatus_VALIDATOR_SET_STATUS_PENDING ValidatorSetStatus = 1
-	// Missed status
-	ValidatorSetStatus_VALIDATOR_SET_STATUS_MISSED ValidatorSetStatus = 2
+	// Derived status
+	ValidatorSetStatus_VALIDATOR_SET_STATUS_DERIVED ValidatorSetStatus = 1
+	// Aggregated status
+	ValidatorSetStatus_VALIDATOR_SET_STATUS_AGGREGATED ValidatorSetStatus = 2
 	// Committed status
 	ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED ValidatorSetStatus = 3
 )
@@ -40,14 +40,14 @@ const (
 var (
 	ValidatorSetStatus_name = map[int32]string{
 		0: "VALIDATOR_SET_STATUS_UNSPECIFIED",
-		1: "VALIDATOR_SET_STATUS_PENDING",
-		2: "VALIDATOR_SET_STATUS_MISSED",
+		1: "VALIDATOR_SET_STATUS_DERIVED",
+		2: "VALIDATOR_SET_STATUS_AGGREGATED",
 		3: "VALIDATOR_SET_STATUS_COMMITTED",
 	}
 	ValidatorSetStatus_value = map[string]int32{
 		"VALIDATOR_SET_STATUS_UNSPECIFIED": 0,
-		"VALIDATOR_SET_STATUS_PENDING":     1,
-		"VALIDATOR_SET_STATUS_MISSED":      2,
+		"VALIDATOR_SET_STATUS_DERIVED":     1,
+		"VALIDATOR_SET_STATUS_AGGREGATED":  2,
 		"VALIDATOR_SET_STATUS_COMMITTED":   3,
 	}
 )
@@ -1319,12 +1319,10 @@ type GetValidatorSetResponse struct {
 	CaptureTimestamp *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=capture_timestamp,json=captureTimestamp,proto3" json:"capture_timestamp,omitempty"`
 	// Quorum threshold (big integer as string)
 	QuorumThreshold string `protobuf:"bytes,5,opt,name=quorum_threshold,json=quorumThreshold,proto3" json:"quorum_threshold,omitempty"`
-	// Previous validator set header hash (hex string)
-	PreviousHeaderHash string `protobuf:"bytes,6,opt,name=previous_header_hash,json=previousHeaderHash,proto3" json:"previous_header_hash,omitempty"`
 	// Status of validator set header
-	Status ValidatorSetStatus `protobuf:"varint,7,opt,name=status,proto3,enum=api.proto.v1.ValidatorSetStatus" json:"status,omitempty"`
+	Status ValidatorSetStatus `protobuf:"varint,6,opt,name=status,proto3,enum=api.proto.v1.ValidatorSetStatus" json:"status,omitempty"`
 	// List of validators
-	Validators    []*Validator `protobuf:"bytes,8,rep,name=validators,proto3" json:"validators,omitempty"`
+	Validators    []*Validator `protobuf:"bytes,7,rep,name=validators,proto3" json:"validators,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1390,13 +1388,6 @@ func (x *GetValidatorSetResponse) GetCaptureTimestamp() *timestamppb.Timestamp {
 func (x *GetValidatorSetResponse) GetQuorumThreshold() string {
 	if x != nil {
 		return x.QuorumThreshold
-	}
-	return ""
-}
-
-func (x *GetValidatorSetResponse) GetPreviousHeaderHash() string {
-	if x != nil {
-		return x.PreviousHeaderHash
 	}
 	return ""
 }
@@ -1476,8 +1467,6 @@ type GetValidatorSetHeaderResponse struct {
 	QuorumThreshold string `protobuf:"bytes,5,opt,name=quorum_threshold,json=quorumThreshold,proto3" json:"quorum_threshold,omitempty"`
 	// Validators SSZ Merkle root (hex string)
 	ValidatorsSszMroot string `protobuf:"bytes,6,opt,name=validators_ssz_mroot,json=validatorsSszMroot,proto3" json:"validators_ssz_mroot,omitempty"`
-	// Previous validator set header hash (hex string)
-	PreviousHeaderHash string `protobuf:"bytes,7,opt,name=previous_header_hash,json=previousHeaderHash,proto3" json:"previous_header_hash,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1550,13 +1539,6 @@ func (x *GetValidatorSetHeaderResponse) GetQuorumThreshold() string {
 func (x *GetValidatorSetHeaderResponse) GetValidatorsSszMroot() string {
 	if x != nil {
 		return x.ValidatorsSszMroot
-	}
-	return ""
-}
-
-func (x *GetValidatorSetHeaderResponse) GetPreviousHeaderHash() string {
-	if x != nil {
-		return x.PreviousHeaderHash
 	}
 	return ""
 }
@@ -1835,28 +1817,26 @@ const file_v1_api_proto_rawDesc = "" +
 	"\tsignature\x18\x01 \x01(\fR\tsignature\x12!\n" +
 	"\fmessage_hash\x18\x02 \x01(\fR\vmessageHash\x12\x1d\n" +
 	"\n" +
-	"public_key\x18\x03 \x01(\fR\tpublicKey\"\x8c\x03\n" +
+	"public_key\x18\x03 \x01(\fR\tpublicKey\"\xda\x02\n" +
 	"\x17GetValidatorSetResponse\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\rR\aversion\x12(\n" +
 	"\x10required_key_tag\x18\x02 \x01(\rR\x0erequiredKeyTag\x12\x14\n" +
 	"\x05epoch\x18\x03 \x01(\x04R\x05epoch\x12G\n" +
 	"\x11capture_timestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x10captureTimestamp\x12)\n" +
-	"\x10quorum_threshold\x18\x05 \x01(\tR\x0fquorumThreshold\x120\n" +
-	"\x14previous_header_hash\x18\x06 \x01(\tR\x12previousHeaderHash\x128\n" +
-	"\x06status\x18\a \x01(\x0e2 .api.proto.v1.ValidatorSetStatusR\x06status\x127\n" +
+	"\x10quorum_threshold\x18\x05 \x01(\tR\x0fquorumThreshold\x128\n" +
+	"\x06status\x18\x06 \x01(\x0e2 .api.proto.v1.ValidatorSetStatusR\x06status\x127\n" +
 	"\n" +
-	"validators\x18\b \x03(\v2\x17.api.proto.v1.ValidatorR\n" +
+	"validators\x18\a \x03(\v2\x17.api.proto.v1.ValidatorR\n" +
 	"validators\"V\n" +
 	"\x1dGetValidatorByAddressResponse\x125\n" +
-	"\tvalidator\x18\x01 \x01(\v2\x17.api.proto.v1.ValidatorR\tvalidator\"\xd1\x02\n" +
+	"\tvalidator\x18\x01 \x01(\v2\x17.api.proto.v1.ValidatorR\tvalidator\"\x9f\x02\n" +
 	"\x1dGetValidatorSetHeaderResponse\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\rR\aversion\x12(\n" +
 	"\x10required_key_tag\x18\x02 \x01(\rR\x0erequiredKeyTag\x12\x14\n" +
 	"\x05epoch\x18\x03 \x01(\x04R\x05epoch\x12G\n" +
 	"\x11capture_timestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x10captureTimestamp\x12)\n" +
 	"\x10quorum_threshold\x18\x05 \x01(\tR\x0fquorumThreshold\x120\n" +
-	"\x14validators_ssz_mroot\x18\x06 \x01(\tR\x12validatorsSszMroot\x120\n" +
-	"\x14previous_header_hash\x18\a \x01(\tR\x12previousHeaderHash\"\xc4\x01\n" +
+	"\x14validators_ssz_mroot\x18\x06 \x01(\tR\x12validatorsSszMroot\"\xc4\x01\n" +
 	"\tValidator\x12\x1a\n" +
 	"\boperator\x18\x01 \x01(\tR\boperator\x12!\n" +
 	"\fvoting_power\x18\x02 \x01(\tR\vvotingPower\x12\x1b\n" +
@@ -1869,11 +1849,11 @@ const file_v1_api_proto_rawDesc = "" +
 	"\x0eValidatorVault\x12\x19\n" +
 	"\bchain_id\x18\x01 \x01(\x04R\achainId\x12\x14\n" +
 	"\x05vault\x18\x02 \x01(\tR\x05vault\x12!\n" +
-	"\fvoting_power\x18\x03 \x01(\tR\vvotingPower*\xa1\x01\n" +
+	"\fvoting_power\x18\x03 \x01(\tR\vvotingPower*\xa5\x01\n" +
 	"\x12ValidatorSetStatus\x12$\n" +
 	" VALIDATOR_SET_STATUS_UNSPECIFIED\x10\x00\x12 \n" +
-	"\x1cVALIDATOR_SET_STATUS_PENDING\x10\x01\x12\x1f\n" +
-	"\x1bVALIDATOR_SET_STATUS_MISSED\x10\x02\x12\"\n" +
+	"\x1cVALIDATOR_SET_STATUS_DERIVED\x10\x01\x12#\n" +
+	"\x1fVALIDATOR_SET_STATUS_AGGREGATED\x10\x02\x12\"\n" +
 	"\x1eVALIDATOR_SET_STATUS_COMMITTED\x10\x03*\xa0\x01\n" +
 	"\rSigningStatus\x12\x1e\n" +
 	"\x1aSIGNING_STATUS_UNSPECIFIED\x10\x00\x12\x1a\n" +

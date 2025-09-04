@@ -25,9 +25,9 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 	)
 	retryAttempted := false
 	for {
-		valset, err = s.cfg.Repo.GetPendingValidatorSet(ctx, msg.RequestHash)
+		valset, err = s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
 		if err != nil {
-			if errors.Is(err, entity.ErrEntityNotFound) && !retryAttempted {
+			if errors.Is(err, entity.ErrEntityNotFound) && !retryAttempted { // TODO: do i need to check if there is a local signature for request? it's still possible to commit
 				if err = s.process(ctx); err != nil {
 					slog.ErrorContext(ctx, "failed to process epochs, on demand from committer", "error", err)
 					return nil

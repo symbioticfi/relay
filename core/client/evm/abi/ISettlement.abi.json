@@ -1,6 +1,19 @@
 [
   {
     "type": "function",
+    "name": "DEFAULT_ADMIN_ROLE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "NETWORK",
     "inputs": [],
     "outputs": [
@@ -87,11 +100,6 @@
           },
           {
             "name": "validatorsSszMRoot",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "previousHeaderHash",
             "type": "bytes32",
             "internalType": "bytes32"
           }
@@ -256,38 +264,6 @@
   },
   {
     "type": "function",
-    "name": "getPreviousHeaderHashFromValSetHeader",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getPreviousHeaderHashFromValSetHeaderAt",
-    "inputs": [
-      {
-        "name": "epoch",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "getQuorumThresholdFromValSetHeader",
     "inputs": [],
     "outputs": [
@@ -346,19 +322,6 @@
         "name": "",
         "type": "uint8",
         "internalType": "uint8"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getSigVerifier",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
       }
     ],
     "stateMutability": "view"
@@ -426,11 +389,6 @@
             "name": "validatorsSszMRoot",
             "type": "bytes32",
             "internalType": "bytes32"
-          },
-          {
-            "name": "previousHeaderHash",
-            "type": "bytes32",
-            "internalType": "bytes32"
           }
         ]
       }
@@ -480,11 +438,6 @@
           },
           {
             "name": "validatorsSszMRoot",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "previousHeaderHash",
             "type": "bytes32",
             "internalType": "bytes32"
           }
@@ -684,11 +637,6 @@
             "name": "validatorsSszMRoot",
             "type": "bytes32",
             "internalType": "bytes32"
-          },
-          {
-            "name": "previousHeaderHash",
-            "type": "bytes32",
-            "internalType": "bytes32"
           }
         ]
       },
@@ -861,11 +809,6 @@
             "name": "validatorsSszMRoot",
             "type": "bytes32",
             "internalType": "bytes32"
-          },
-          {
-            "name": "previousHeaderHash",
-            "type": "bytes32",
-            "internalType": "bytes32"
           }
         ]
       },
@@ -911,19 +854,6 @@
         "type": "string",
         "indexed": false,
         "internalType": "string"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "InitRequiredKeyTag",
-    "inputs": [
-      {
-        "name": "requiredKeyTag",
-        "type": "uint8",
-        "indexed": false,
-        "internalType": "uint8"
       }
     ],
     "anonymous": false
@@ -1012,11 +942,6 @@
             "name": "validatorsSszMRoot",
             "type": "bytes32",
             "internalType": "bytes32"
-          },
-          {
-            "name": "previousHeaderHash",
-            "type": "bytes32",
-            "internalType": "bytes32"
           }
         ]
       },
@@ -1043,13 +968,19 @@
   },
   {
     "type": "event",
-    "name": "SetRequiredKeyTag",
+    "name": "SetSelectorRole",
     "inputs": [
       {
-        "name": "requiredKeyTag",
-        "type": "uint8",
-        "indexed": false,
-        "internalType": "uint8"
+        "name": "selector",
+        "type": "bytes4",
+        "indexed": true,
+        "internalType": "bytes4"
+      },
+      {
+        "name": "role",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
       }
     ],
     "anonymous": false
@@ -1105,27 +1036,12 @@
   },
   {
     "type": "error",
-    "name": "Settlement_Duplicate",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "Settlement_InvalidCaptureTimestamp",
     "inputs": []
   },
   {
     "type": "error",
     "name": "Settlement_InvalidEpoch",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "Settlement_InvalidKey",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "Settlement_InvalidPreviousHeaderHash",
     "inputs": []
   },
   {
@@ -1145,7 +1061,7 @@
   },
   {
     "type": "error",
-    "name": "Settlement_ValSetHeaderAlreadySubmitted",
+    "name": "Settlement_ValSetHeaderAlreadyCommitted",
     "inputs": []
   },
   {

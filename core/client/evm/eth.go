@@ -44,8 +44,6 @@ type IEvmClient interface {
 	GetEpochDuration(ctx context.Context, epoch uint64) (uint64, error)
 	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
 	IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (bool, error)
-	GetPreviousHeaderHash(ctx context.Context, addr entity.CrossChainAddress) (common.Hash, error)
-	GetPreviousHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error)
 	GetHeaderHash(ctx context.Context, addr entity.CrossChainAddress) (common.Hash, error)
 	GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error)
 	GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (uint64, error)
@@ -179,8 +177,6 @@ func (e *Client) GetConfig(ctx context.Context, timestamp uint64) (_ entity.Netw
 				QuorumThreshold: entity.ToQuorumThresholdPct(v.QuorumThreshold),
 			}
 		}),
-		MaxMissingEpochs: 0,                          // TODO set it after core update
-		GrowthStrategy:   entity.GrowthStrategyAsync, // TODO same
 	}, nil
 }
 
@@ -310,52 +306,6 @@ func (e *Client) IsValsetHeaderCommittedAt(ctx context.Context, addr entity.Cros
 	return ok, nil
 }
 
-func (e *Client) GetPreviousHeaderHash(ctx context.Context, addr entity.CrossChainAddress) (_ common.Hash, err error) {
-	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
-	defer cancel()
-	defer func(now time.Time) {
-		e.observeMetrics("GetPreviousHeaderHashFromValSetHeader", err, now)
-	}(time.Now())
-
-	settlement, err := e.getSettlementContract(addr)
-	if err != nil {
-		return common.Hash{}, errors.Errorf("failed to get settlement contract: %w", err)
-	}
-
-	hash, err := settlement.GetPreviousHeaderHashFromValSetHeader(&bind.CallOpts{
-		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
-		Context:     toCtx,
-	})
-	if err != nil {
-		return common.Hash{}, errors.Errorf("failed to call getPreviousHeaderHash: %w", err)
-	}
-
-	return hash, nil
-}
-
-func (e *Client) GetPreviousHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (_ common.Hash, err error) {
-	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
-	defer cancel()
-	defer func(now time.Time) {
-		e.observeMetrics("GetPreviousHeaderHashFromValSetHeaderAt", err, now)
-	}(time.Now())
-
-	settlement, err := e.getSettlementContract(addr)
-	if err != nil {
-		return common.Hash{}, errors.Errorf("failed to get settlement contract: %w", err)
-	}
-
-	hash, err := settlement.GetPreviousHeaderHashFromValSetHeaderAt(&bind.CallOpts{
-		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
-		Context:     toCtx,
-	}, new(big.Int).SetUint64(epoch))
-	if err != nil {
-		return common.Hash{}, errors.Errorf("failed to call getPreviousHeaderHashAt: %w", err)
-	}
-
-	return hash, nil
-}
-
 func (e *Client) GetHeaderHash(ctx context.Context, addr entity.CrossChainAddress) (_ common.Hash, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
@@ -477,7 +427,6 @@ func (e *Client) GetValSetHeaderAt(ctx context.Context, addr entity.CrossChainAd
 		CaptureTimestamp:   header.CaptureTimestamp.Uint64(),
 		QuorumThreshold:    entity.ToVotingPower(header.QuorumThreshold),
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot,
-		PreviousHeaderHash: header.PreviousHeaderHash,
 	}, nil
 }
 
@@ -508,7 +457,6 @@ func (e *Client) GetValSetHeader(ctx context.Context, addr entity.CrossChainAddr
 		CaptureTimestamp:   header.CaptureTimestamp.Uint64(),
 		QuorumThreshold:    entity.ToVotingPower(header.QuorumThreshold),
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot,
-		PreviousHeaderHash: header.PreviousHeaderHash,
 	}, nil
 }
 
