@@ -13,9 +13,9 @@ type WantSignaturesRequest struct {
 	WantSignatures map[common.Hash]*roaring.Bitmap // reqHash -> missing validator indices bitmap
 }
 
-// WantSignatureResponse contains signatures grouped by request hash.
+// WantSignaturesResponse contains signatures grouped by request hash.
 // Each signature includes the validator index for consistent mapping.
-type WantSignatureResponse struct {
+type WantSignaturesResponse struct {
 	Signatures map[common.Hash][]ValidatorSignature // grouped by request hash
 }
 

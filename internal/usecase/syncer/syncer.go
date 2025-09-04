@@ -37,11 +37,11 @@ type repo interface {
 	GetActiveValidatorCountByEpoch(ctx context.Context, epoch uint64) (uint32, error)
 	GetSignatureRequest(ctx context.Context, reqHash common.Hash) (entity.SignatureRequest, error)
 	GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error)
+	GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error)
 }
 
 type p2pService interface {
-	GetRandomPeerID() (string, error)
-	SendWantSignaturesRequest(ctx context.Context, id string, request WantSignaturesRequest) (WantSignatureResponse, error)
+	SendWantSignaturesRequest(ctx context.Context, request WantSignaturesRequest) (WantSignaturesResponse, error)
 }
 
 type signatureProcessor interface {
@@ -56,6 +56,7 @@ type Config struct {
 	SyncPeriod                  time.Duration      `validate:"gt=0"`
 	SyncTimeout                 time.Duration      `validate:"gt=0"`
 	MaxSignatureRequestsPerSync int                `validate:"gt=0"`
+	MaxResponseSignatureCount   int                `validate:"gt=0"`
 }
 
 type Syncer struct {
@@ -114,13 +115,7 @@ func (s *Syncer) askSignatures(ctx context.Context) error {
 		WantSignatures: wantSignatures,
 	}
 
-	// Get a random peer ID
-	peerID, err := s.cfg.P2PService.GetRandomPeerID()
-	if err != nil {
-		return errors.Errorf("failed to get random peer ID: %w", err)
-	}
-
-	response, err := s.cfg.P2PService.SendWantSignaturesRequest(syncCtx, peerID, request)
+	response, err := s.cfg.P2PService.SendWantSignaturesRequest(syncCtx, request)
 	if err != nil {
 		return errors.Errorf("failed to send want signatures request: %w", err)
 	}
@@ -138,7 +133,7 @@ func (s *Syncer) askSignatures(ctx context.Context) error {
 		"validator_info_errors", stats.ValidatorInfoErrorCount,
 		"processing_errors", stats.ProcessingErrorCount,
 		"already_exist", stats.AlreadyExistCount,
-		"peer", peerID)
+	)
 
 	return nil
 }
@@ -211,7 +206,7 @@ func (s *Syncer) buildWantSignaturesMap(ctx context.Context) (map[common.Hash]*r
 	return wantSignatures, nil
 }
 
-func (s *Syncer) processReceivedSignatures(ctx context.Context, response WantSignatureResponse, wantSignatures map[common.Hash]*roaring.Bitmap) SignatureProcessingStats {
+func (s *Syncer) processReceivedSignatures(ctx context.Context, response WantSignaturesResponse, wantSignatures map[common.Hash]*roaring.Bitmap) SignatureProcessingStats {
 	var stats SignatureProcessingStats
 
 	for reqHash, signatures := range response.Signatures {
@@ -263,7 +258,7 @@ func (s *Syncer) processReceivedSignatures(ctx context.Context, response WantSig
 				ActiveIndex:      validatorSig.ValidatorIndex,
 				VotingPower:      validatorInfo.VotingPower,
 				Epoch:            sigReq.RequiredEpoch,
-				SignatureRequest: nil, // Don't save signature request again
+				SignatureRequest: nil,
 			}
 
 			if err := s.cfg.SignatureProcessor.ProcessSignature(ctx, param); err != nil {
@@ -287,4 +282,70 @@ func (s *Syncer) processReceivedSignatures(ctx context.Context, response WantSig
 	}
 
 	return stats
+}
+
+func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request WantSignaturesRequest) (WantSignaturesResponse, error) {
+	slog.InfoContext(ctx, "Handling want signatures request", "request_count", len(request.WantSignatures))
+
+	response := WantSignaturesResponse{
+		Signatures: make(map[common.Hash][]ValidatorSignature),
+	}
+
+	totalSignatureCount := 0
+
+	for reqHash, requestedIndices := range request.WantSignatures {
+		// Check signature count limit before processing each request
+		if totalSignatureCount >= s.cfg.MaxResponseSignatureCount {
+			return WantSignaturesResponse{}, errors.Errorf("response signature limit exceeded")
+		}
+
+		// Get stored signatures for this request
+		signatures, err := s.cfg.Repo.GetAllSignatures(ctx, reqHash)
+		if err != nil {
+			return WantSignaturesResponse{}, errors.Errorf("failed to get signatures for request %s: %w", reqHash.Hex(), err)
+		}
+
+		// Get signature request for epoch info
+		sigReq, err := s.cfg.Repo.GetSignatureRequest(ctx, reqHash)
+		if err != nil {
+			return WantSignaturesResponse{}, errors.Errorf("failed to get signature request %s: %w", reqHash.Hex(), err)
+		}
+
+		var validatorSigs []ValidatorSignature
+
+		for _, sig := range signatures {
+			// Check limit before processing each signature
+			if totalSignatureCount >= s.cfg.MaxResponseSignatureCount {
+				return WantSignaturesResponse{}, errors.Errorf("response signature limit exceeded")
+			}
+
+			// Map public key to validator index
+			_, activeIndex, err := s.cfg.Repo.GetValidatorByKey(
+				ctx,
+				uint64(sigReq.RequiredEpoch),
+				sigReq.KeyTag,
+				sig.PublicKey,
+			)
+			if err != nil {
+				return WantSignaturesResponse{}, errors.Errorf("failed to get validator for key: %w", err)
+			}
+
+			// Only include if requested
+			if requestedIndices.Contains(activeIndex) {
+				validatorSigs = append(validatorSigs, ValidatorSignature{
+					ValidatorIndex: activeIndex,
+					Signature:      sig,
+				})
+				totalSignatureCount++
+			}
+		}
+
+		if len(validatorSigs) > 0 {
+			response.Signatures[reqHash] = validatorSigs
+		}
+	}
+
+	slog.InfoContext(ctx, "Want signatures request handled", "response_signatures", totalSignatureCount, "response_requests", len(response.Signatures))
+
+	return response, nil
 }
