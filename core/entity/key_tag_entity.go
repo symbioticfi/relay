@@ -33,7 +33,7 @@ func (kt KeyTag) Type() KeyType {
 
 func (kt KeyTag) MarshalText() (text []byte, err error) {
 	keyType := kt.Type()
-	keyTag := uint8(keyType) & 0x0F
+	keyTag := uint8(kt) & 0x0F
 	switch keyType {
 	case KeyTypeBlsBn254:
 		return []byte(fmt.Sprintf("%d (BLS-BN254/%d)", uint8(kt), keyTag)), nil
@@ -47,7 +47,7 @@ func (kt KeyTag) MarshalText() (text []byte, err error) {
 
 func (kt KeyTag) String() string {
 	keyType := kt.Type()
-	keyTag := uint8(keyType) & 0x0F
+	keyTag := uint8(kt) & 0x0F
 	switch keyType {
 	case KeyTypeBlsBn254:
 		return fmt.Sprintf("%d (BLS-BN254/%d)", uint8(kt), keyTag)
