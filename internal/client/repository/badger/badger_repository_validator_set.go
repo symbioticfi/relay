@@ -17,8 +17,9 @@ import (
 )
 
 const (
-	latestValidatorSetEpochKey       = "latest_validator_set_epoch"
-	latestSignedValidatorSetEpochKey = "latest_signed_validator_set_epoch"
+	latestValidatorSetEpochKey        = "latest_validator_set_epoch"
+	latestSignedValidatorSetEpochKey  = "latest_signed_validator_set_epoch"
+	firstUncommittedValidatorSetEpoch = "first_uncommitted_validator_set_epoch"
 )
 
 func keyValidatorSetHeader(epoch uint64) []byte {
@@ -150,12 +151,26 @@ func (r *Repository) SaveValidatorSet(ctx context.Context, valset entity.Validat
 	})
 }
 
-func (r *Repository) SaveLatestSignedValidatorSetEpoch(_ context.Context, valset entity.ValidatorSet) error {
-	return r.db.Update(func(txn *badger.Txn) error {
+func (r *Repository) SaveLatestSignedValidatorSetEpoch(ctx context.Context, valset entity.ValidatorSet) error {
+	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		epochBytes := make([]byte, 8)
 		binary.BigEndian.PutUint64(epochBytes, valset.Epoch)
 		if err := txn.Set([]byte(latestSignedValidatorSetEpochKey), epochBytes); err != nil {
 			return errors.Errorf("failed to store latest validator set epoch: %w", err)
+		}
+
+		return nil
+	})
+}
+
+func (r *Repository) SaveFirstUncommittedValidatorSetEpoch(ctx context.Context, epoch uint64) error {
+	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
+		epochBytes := make([]byte, 8)
+		binary.BigEndian.PutUint64(epochBytes, epoch)
+		if err := txn.Set([]byte(firstUncommittedValidatorSetEpoch), epochBytes); err != nil {
+			return errors.Errorf("failed to store first uncommitted validator set epoch: %w", err)
 		}
 
 		return nil
@@ -409,6 +424,30 @@ func (r *Repository) GetLatestSignedValidatorSetEpoch(ctx context.Context) (uint
 		value, err := item.ValueCopy(nil)
 		if err != nil {
 			return errors.Errorf("failed to copy latest validator set epoch value: %w", err)
+		}
+
+		epoch = binary.BigEndian.Uint64(value)
+		return nil
+	})
+}
+
+func (r *Repository) GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (uint64, error) {
+	var epoch uint64
+
+	return epoch, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
+		// Get the latest epoch
+		item, err := txn.Get([]byte(firstUncommittedValidatorSetEpoch))
+		if err != nil {
+			if errors.Is(err, badger.ErrKeyNotFound) {
+				return nil
+			}
+			return errors.Errorf("failed to get first uncommitted validator set epoch: %w", err)
+		}
+
+		value, err := item.ValueCopy(nil)
+		if err != nil {
+			return errors.Errorf("failed to copy first uncommitted validator set epoch value: %w", err)
 		}
 
 		epoch = binary.BigEndian.Uint64(value)

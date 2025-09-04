@@ -501,6 +501,41 @@ func TestRepository_ValidatorSet_ActiveIndex(t *testing.T) {
 	})
 }
 
+func TestRepository_FirstUncommittedValidatorSetEpoch(t *testing.T) {
+	repo := setupTestRepository(t)
+
+	t.Run("save and get first uncommitted epoch", func(t *testing.T) {
+		// Save first uncommitted epoch
+		err := repo.SaveFirstUncommittedValidatorSetEpoch(t.Context(), 42)
+		require.NoError(t, err)
+
+		// Get first uncommitted epoch
+		epoch, err := repo.GetFirstUncommittedValidatorSetEpoch(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, uint64(42), epoch)
+
+		// Update to a different epoch
+		err = repo.SaveFirstUncommittedValidatorSetEpoch(t.Context(), 100)
+		require.NoError(t, err)
+
+		// Verify it was updated
+		epoch, err = repo.GetFirstUncommittedValidatorSetEpoch(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, uint64(100), epoch)
+	})
+}
+
+func TestRepository_FirstUncommittedValidatorSetEpoch_EmptyRepository(t *testing.T) {
+	repo := setupTestRepository(t)
+
+	t.Run("get first uncommitted epoch from empty repo", func(t *testing.T) {
+		// Should return 0 and no error when not set (based on implementation)
+		epoch, err := repo.GetFirstUncommittedValidatorSetEpoch(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, uint64(0), epoch)
+	})
+}
+
 func setupTestRepository(t *testing.T) *Repository {
 	t.Helper()
 	repo, err := New(Config{Dir: t.TempDir()})

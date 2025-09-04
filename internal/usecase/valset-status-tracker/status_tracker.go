@@ -19,6 +19,8 @@ type repo interface {
 	GetConfigByEpoch(_ context.Context, epoch uint64) (entity.NetworkConfig, error)
 	GetValidatorSetByEpoch(_ context.Context, epoch uint64) (entity.ValidatorSet, error)
 	UpdateValidatorSetStatus(ctx context.Context, valset entity.ValidatorSet) error
+	GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (uint64, error)
+	SaveFirstUncommittedValidatorSetEpoch(_ context.Context, epoch uint64) error
 }
 
 type deriver interface {
@@ -33,8 +35,7 @@ type Config struct {
 }
 
 type Service struct {
-	cfg                   Config
-	firstUncommittedEpoch uint64
+	cfg Config
 }
 
 func (c Config) Validate() error {
@@ -51,13 +52,12 @@ func New(cfg Config) (*Service, error) {
 	}
 
 	return &Service{
-		cfg:                   cfg,
-		firstUncommittedEpoch: 0,
+		cfg: cfg,
 	}, nil
 }
 
 func (s *Service) Start(ctx context.Context) error {
-	ctx = log.WithComponent(ctx, "listener")
+	ctx = log.WithComponent(ctx, "status_tracker")
 
 	slog.InfoContext(ctx, "Starting valset listener service", "pollingInterval", s.cfg.PollingInterval)
 
@@ -82,7 +82,7 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 	}
 
 	if valset.Status != entity.HeaderDerived {
-		slog.InfoContext(ctx, "Validator set is already aggregated or committed", "epoch", valset.Epoch)
+		slog.DebugContext(ctx, "Validator set is already aggregated or committed", "epoch", valset.Epoch)
 		return nil
 	}
 
@@ -91,17 +91,25 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		return errors.Errorf("failed to save validator set: %w", err)
 	}
 
+	slog.InfoContext(ctx, "Validator set is aggregated", "epoch", valset.Epoch)
+
 	return nil
 }
 
 // ignore TODO: need to create an algorithm for effective uncommitted valsets tracking, either bitmaps either store reference to next uncommitted epoch
 func (s *Service) trackCommittedEpochs(ctx context.Context) error {
-	epoch := s.firstUncommittedEpoch
+	epoch, err := s.cfg.Repo.GetFirstUncommittedValidatorSetEpoch(ctx)
+	if err != nil {
+		return errors.Errorf("failed to get first uncommitted validator set epoch: %w", err)
+	}
+
+	firstUncommittedEpoch := epoch
+
 	for {
 		valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, epoch)
 		if err != nil {
 			if errors.Is(err, entity.ErrEntityNotFound) {
-				slog.InfoContext(ctx, "Valset not found, waiting...", "epoch", epoch)
+				slog.InfoContext(ctx, "No uncommitted valset found, waiting...", "epoch", epoch)
 				break
 			}
 			return errors.Errorf("failed to get validator set for epoch %d: %w", epoch, err)
@@ -110,8 +118,11 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 		epoch++
 
 		if valset.Status == entity.HeaderCommitted {
-			if valset.Epoch == s.firstUncommittedEpoch {
-				s.firstUncommittedEpoch++
+			if valset.Epoch == firstUncommittedEpoch {
+				firstUncommittedEpoch++
+				if err = s.cfg.Repo.SaveFirstUncommittedValidatorSetEpoch(ctx, firstUncommittedEpoch); err != nil {
+					return errors.Errorf("failed to save first uncommitted validator set epoch: %w", err)
+				}
 			}
 			continue
 		}
@@ -122,8 +133,11 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 		}
 
 		if len(config.Replicas) == 0 {
-			if valset.Epoch == s.firstUncommittedEpoch {
-				s.firstUncommittedEpoch++
+			if valset.Epoch == firstUncommittedEpoch {
+				firstUncommittedEpoch++
+				if err = s.cfg.Repo.SaveFirstUncommittedValidatorSetEpoch(ctx, firstUncommittedEpoch); err != nil {
+					return errors.Errorf("failed to save first uncommitted validator set epoch: %w", err)
+				}
 			}
 			continue
 		}
@@ -166,8 +180,11 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 
 		slog.InfoContext(ctx, "Validator set is committed", "epoch", epoch)
 
-		if valset.Epoch == s.firstUncommittedEpoch {
-			s.firstUncommittedEpoch++
+		if valset.Epoch == firstUncommittedEpoch {
+			firstUncommittedEpoch++
+			if err = s.cfg.Repo.SaveFirstUncommittedValidatorSetEpoch(ctx, firstUncommittedEpoch); err != nil {
+				return errors.Errorf("failed to save first uncommitted validator set epoch: %w", err)
+			}
 		}
 	}
 
