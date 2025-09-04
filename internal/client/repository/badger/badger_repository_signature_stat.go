@@ -69,9 +69,10 @@ func bytesToSignatureStat(b []byte) (entity.SignatureStat, error) {
 	}, nil
 }
 
-func (r *Repository) UpdateSignatureStat(_ context.Context, reqHash common.Hash, s entity.SignatureStatStage, t time.Time) (entity.SignatureStat, error) {
+func (r *Repository) UpdateSignatureStat(ctx context.Context, reqHash common.Hash, s entity.SignatureStatStage, t time.Time) (entity.SignatureStat, error) {
 	var oldStat entity.SignatureStat
-	return oldStat, r.db.Update(func(txn *badger.Txn) error {
+	return oldStat, r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
 		item, err := txn.Get(keySignatureStat(reqHash))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
 			return errors.Errorf("failed to get signature stat: %w", err)

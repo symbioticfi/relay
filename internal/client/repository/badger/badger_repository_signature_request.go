@@ -1,6 +1,7 @@
 package badger
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -12,29 +13,50 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 )
 
-func keySignatureRequest(reqHash common.Hash) []byte {
-	return []byte(fmt.Sprintf("signature_request:%s", reqHash.Hex()))
+func keySignatureRequest(epoch entity.Epoch, reqHash common.Hash) []byte {
+	return []byte(fmt.Sprintf("signature_request:%d:%s", epoch, reqHash.Hex()))
 }
 
-func (r *Repository) SaveSignatureRequest(_ context.Context, req entity.SignatureRequest) error {
+func keySignatureRequestEpochPrefix(epoch entity.Epoch) []byte {
+	return []byte(fmt.Sprintf("signature_request:%d:", epoch))
+}
+
+func keySignatureRequestHashIndex(reqHash common.Hash) []byte {
+	return []byte(fmt.Sprintf("signature_request_hash:%s", reqHash.Hex()))
+}
+
+func (r *Repository) SaveSignatureRequest(ctx context.Context, req entity.SignatureRequest) error {
 	bytes, err := signatureRequestToBytes(req)
 	if err != nil {
 		return errors.Errorf("failed to marshal signature request: %w", err)
 	}
 
-	return r.db.Update(func(txn *badger.Txn) error {
-		_, err := txn.Get(keySignatureRequest(req.Hash()))
+	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
+		primaryKey := keySignatureRequest(req.RequiredEpoch, req.Hash())
+		hashIndexKey := keySignatureRequestHashIndex(req.Hash())
+
+		// Check if already exists via hash index
+		_, err := txn.Get(hashIndexKey)
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
-			return errors.Errorf("failed to get signature request: %w", err)
+			return errors.Errorf("failed to get signature request hash index: %w", err)
 		}
 		if err == nil {
 			return errors.Errorf("signature request already exists: %w", entity.ErrEntityAlreadyExist)
 		}
 
-		err = txn.Set(keySignatureRequest(req.Hash()), bytes)
+		// Store primary record
+		err = txn.Set(primaryKey, bytes)
 		if err != nil {
 			return errors.Errorf("failed to store signature request: %w", err)
 		}
+
+		// Store hash index pointing to primary key
+		err = txn.Set(hashIndexKey, primaryKey)
+		if err != nil {
+			return errors.Errorf("failed to store signature request hash index: %w", err)
+		}
+
 		return nil
 	})
 }
@@ -61,15 +83,28 @@ func bytesToSignatureRequest(data []byte) (entity.SignatureRequest, error) {
 	}, nil
 }
 
-func (r *Repository) GetSignatureRequest(_ context.Context, reqHash common.Hash) (entity.SignatureRequest, error) {
+func (r *Repository) GetSignatureRequest(ctx context.Context, reqHash common.Hash) (entity.SignatureRequest, error) {
 	var req entity.SignatureRequest
 
-	return req, r.db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get(keySignatureRequest(reqHash))
+	return req, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
+		// Get primary key from hash index
+		hashIndexItem, err := txn.Get(keySignatureRequestHashIndex(reqHash))
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
 				return errors.Errorf("no signature request found for hash %s: %w", reqHash.String(), entity.ErrEntityNotFound)
 			}
+			return errors.Errorf("failed to get signature request hash index: %w", err)
+		}
+
+		primaryKey, err := hashIndexItem.ValueCopy(nil)
+		if err != nil {
+			return errors.Errorf("failed to copy hash index value: %w", err)
+		}
+
+		// Get actual data using primary key
+		item, err := txn.Get(primaryKey)
+		if err != nil {
 			return errors.Errorf("failed to get signature request: %w", err)
 		}
 
@@ -81,6 +116,56 @@ func (r *Repository) GetSignatureRequest(_ context.Context, reqHash common.Hash)
 		req, err = bytesToSignatureRequest(value)
 		if err != nil {
 			return errors.Errorf("failed to unmarshal signature request: %w", err)
+		}
+
+		return nil
+	})
+}
+
+func (r *Repository) GetSignatureRequestsByEpoch(ctx context.Context, epoch entity.Epoch, limit int, lastHash common.Hash) ([]entity.SignatureRequest, error) {
+	var requests []entity.SignatureRequest
+
+	return requests, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
+		prefix := keySignatureRequestEpochPrefix(epoch)
+		opts := badger.DefaultIteratorOptions
+		opts.Prefix = prefix
+		opts.PrefetchValues = true
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		seekKey := prefix
+		if lastHash != (common.Hash{}) {
+			// Subsequent pages: seek to the record after lastHash
+			seekKey = keySignatureRequest(epoch, lastHash)
+		}
+
+		count := 0
+		it.Seek(seekKey)
+		// If we're seeking from a specific hash and positioned exactly on that key, skip it (already returned in previous page)
+		if lastHash != (common.Hash{}) && it.ValidForPrefix(prefix) && bytes.Equal(it.Item().Key(), seekKey) {
+			it.Next()
+		}
+
+		for ; it.ValidForPrefix(prefix); it.Next() {
+			// Stop if we've reached the limit
+			if limit > 0 && count >= limit {
+				break
+			}
+
+			item := it.Item()
+			value, err := item.ValueCopy(nil)
+			if err != nil {
+				return errors.Errorf("failed to copy signature request value: %w", err)
+			}
+
+			req, err := bytesToSignatureRequest(value)
+			if err != nil {
+				return errors.Errorf("failed to unmarshal signature request: %w", err)
+			}
+
+			requests = append(requests, req)
+			count++
 		}
 
 		return nil

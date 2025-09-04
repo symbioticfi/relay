@@ -170,6 +170,8 @@ func genExtraDataTest(t *testing.T) (entity.ValidatorSet, entity.KeyTag) {
 	valset.QuorumThreshold = entity.ToVotingPower(big.NewInt(int64(100 * (len(pksHex)))))
 	valset.RequiredKeyTag = keyTag
 
+	valset.Validators.SortByOperatorAddressAsc()
+
 	return valset, keyTag
 }
 
@@ -210,6 +212,9 @@ func genCorrectTest(numValidators int, nonSigners []int) (entity.ValidatorSet, [
 
 	valset.QuorumThreshold = entity.ToVotingPower(big.NewInt(int64(100 * (numValidators - len(nonSigners)))))
 	valset.RequiredKeyTag = keyTag
+
+	valset.Validators.SortByOperatorAddressAsc()
+
 	nonSignersMap := make(map[int]bool)
 	for i := 0; i < len(nonSigners); i++ {
 		nonSignersMap[nonSigners[i]] = true

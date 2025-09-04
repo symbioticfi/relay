@@ -6,10 +6,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
-	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/symbioticfi/relay/core/entity"
+	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
 	p2pEntity "github.com/symbioticfi/relay/internal/entity"
 )
 

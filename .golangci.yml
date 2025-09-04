@@ -267,6 +267,8 @@ linters:
           - exhaustruct
           - goconst
         path: _test\.go
+      - path: _test\.go
+        text: 'subtests should call t.Parallel'
       - path: (.+)\.go$
         text: ST1003
       - path: (.+)\.go$
