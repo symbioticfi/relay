@@ -13,6 +13,7 @@ require (
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-errors/errors v1.5.1
 	github.com/go-playground/validator/v10 v10.27.0
+	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/libp2p/go-libp2p v0.43.0
 	github.com/libp2p/go-libp2p-gostream v0.6.0

@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-gostream"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -35,6 +37,7 @@ func TestP2P_GRPC(t *testing.T) {
 	var tag protocol.ID = "/testp2pgrpc"
 
 	done := make(chan struct{})
+	ready := make(chan struct{})
 	go func() {
 		defer close(done)
 		listener, err := gostream.Listen(srvHost, tag)
@@ -42,11 +45,24 @@ func TestP2P_GRPC(t *testing.T) {
 		defer listener.Close()
 
 		v2.RegisterSymbioticP2PServiceServer(grpcServer, &p2pHandler{})
+		close(ready)
 
 		require.NoError(t, grpcServer.Serve(listener))
 	}()
 
-	dialOpts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	<-ready
+
+	retryOpts := []grpc_retry.CallOption{
+		grpc_retry.WithMax(3),
+		grpc_retry.WithBackoff(grpc_retry.BackoffLinear(time.Second)),
+	}
+	unaryInterceptors := []grpc.UnaryClientInterceptor{grpc_retry.UnaryClientInterceptor(retryOpts...)}
+	dialOpts := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStreamInterceptor(grpc_retry.StreamClientInterceptor(retryOpts...)),
+		grpc.WithUnaryInterceptor(grpcmiddleware.ChainUnaryClient(unaryInterceptors...)),
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(100*1024*1024), grpc.MaxCallSendMsgSize(100*1024*1024)),
+	}
 
 	dialOpts = append(dialOpts, grpc.WithContextDialer(func(ctx context.Context, peerIdStr string) (net.Conn, error) {
 		peerID, err := peer.Decode(peerIdStr)
@@ -54,7 +70,7 @@ func TestP2P_GRPC(t *testing.T) {
 			return nil, err
 		}
 
-		conn, err := gostream.Dial(ctx, srvHost, peerID, tag)
+		conn, err := gostream.Dial(ctx, clientHost, peerID, tag)
 		if err != nil {
 			return nil, err
 		}
@@ -62,7 +78,7 @@ func TestP2P_GRPC(t *testing.T) {
 		return conn, nil
 	}))
 
-	conn, err := grpc.NewClient(srvHost.ID().String(), dialOpts...)
+	conn, err := grpc.NewClient("passthrough:///"+srvHost.ID().String(), dialOpts...)
 	require.NoError(t, err)
 	defer conn.Close()
 

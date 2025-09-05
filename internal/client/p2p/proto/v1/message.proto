@@ -12,11 +12,31 @@ service SymbioticP2PService {
 }
 
 message WantSignaturesRequest {
-
+  // Map of request hash to bitmap of wanted validator indices
+  map<string, bytes> want_signatures = 1;  // key: hex string of common.Hash, value: roaring bitmap bytes
 }
 
 message WantSignaturesResponse {
+  // Map of request hash to list of validator signatures
+  map<string, ValidatorSignatureList> signatures = 2;  // key: hex string of common.Hash
+}
 
+// ValidatorSignatureList contains a list of validator signatures for a specific request
+message ValidatorSignatureList {
+  repeated ValidatorSignature signatures = 1;
+}
+
+// ValidatorSignature pairs a signature with its validator index
+message ValidatorSignature {
+  uint32 validator_index = 1;
+  SignatureExtended signature = 2;
+}
+
+// SignatureExtended represents extended signature data
+message SignatureExtended {
+  bytes message_hash = 1;
+  bytes signature = 2;
+  bytes public_key = 3;
 }
 
 // AggregationProof represents the aggregation proof data
