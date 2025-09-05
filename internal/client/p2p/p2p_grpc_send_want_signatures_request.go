@@ -173,3 +173,61 @@ func (s *Service) selectPeerForSync() (peer.ID, error) {
 	selectedPeer := peers[len(peers)/2]
 	return selectedPeer, nil
 }
+
+// protoToEntityRequest converts protobuf WantSignaturesRequest to entity
+func protoToEntityRequest(req *prototypes.WantSignaturesRequest) (entity.WantSignaturesRequest, error) {
+	wantSignatures := make(map[common.Hash]entity.SignatureBitmap)
+
+	for hashStr, bitmapBytes := range req.GetWantSignatures() {
+		// Parse hash from hex string
+		hashBytes, err := hex.DecodeString(hashStr)
+		if err != nil {
+			return entity.WantSignaturesRequest{}, errors.Errorf("failed to decode hash %s: %w", hashStr, err)
+		}
+
+		hash := common.BytesToHash(hashBytes)
+
+		// Deserialize roaring bitmap from bytes
+		bitmap := entity.NewSignatureBitmap()
+		if _, err := bitmap.FromBuffer(bitmapBytes); err != nil {
+			return entity.WantSignaturesRequest{}, errors.Errorf("failed to deserialize bitmap for hash %s: %w", hashStr, err)
+		}
+
+		wantSignatures[hash] = bitmap
+	}
+
+	return entity.WantSignaturesRequest{
+		WantSignatures: wantSignatures,
+	}, nil
+}
+
+// entityToProtoResponse converts entity WantSignaturesResponse to protobuf
+func entityToProtoResponse(resp entity.WantSignaturesResponse) *prototypes.WantSignaturesResponse {
+	signatures := make(map[string]*prototypes.ValidatorSignatureList)
+
+	for hash, sigList := range resp.Signatures {
+		hashKey := hex.EncodeToString(hash.Bytes())
+
+		// Convert validator signatures
+		var protoSigs []*prototypes.ValidatorSignature
+		for _, validatorSig := range sigList {
+			protoSig := &prototypes.ValidatorSignature{
+				ValidatorIndex: validatorSig.ValidatorIndex,
+				Signature: &prototypes.SignatureExtended{
+					MessageHash: validatorSig.Signature.MessageHash,
+					Signature:   validatorSig.Signature.Signature,
+					PublicKey:   validatorSig.Signature.PublicKey,
+				},
+			}
+			protoSigs = append(protoSigs, protoSig)
+		}
+
+		signatures[hashKey] = &prototypes.ValidatorSignatureList{
+			Signatures: protoSigs,
+		}
+	}
+
+	return &prototypes.WantSignaturesResponse{
+		Signatures: signatures,
+	}
+}

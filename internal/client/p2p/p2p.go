@@ -7,11 +7,13 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
+	gostream "github.com/libp2p/go-libp2p-gostream"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/symbioticfi/relay/core/entity"
@@ -89,6 +91,7 @@ type Config struct {
 	Metrics         metrics         `validate:"required"`
 	Discovery       DiscoveryConfig `validate:"required"`
 	EventTracer     pubsub.EventTracer
+	Handler         prototypes.SymbioticP2PServiceServer `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -107,6 +110,7 @@ type Service struct {
 	signaturesAggregatedHandler *signals.Signal[p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]]
 	metrics                     metrics
 	topicsMap                   map[string]*pubsub.Topic
+	p2pGRPCHandler              prototypes.SymbioticP2PServiceServer
 }
 
 // NewService creates a new P2P service with the given configuration
@@ -164,6 +168,7 @@ func NewService(ctx context.Context, cfg Config, signalCfg signals.Config) (*Ser
 			topicSignatureReady: signatureReadyTopic,
 			topicAggProofReady:  proofReadyTopic,
 		},
+		p2pGRPCHandler: cfg.Handler,
 	}
 
 	go service.listenForMessages(ctx, signatureReadySub, signatureReadyTopic, service.handleSignatureReadyMessage)
@@ -285,7 +290,6 @@ func (s *Service) ListenClose(n network.Network, multiaddr multiaddr.Multiaddr) 
 
 func (s *Service) Connected(n network.Network, conn network.Conn) {
 	slog.DebugContext(s.ctx, "Connected to peer", "peer", conn.RemotePeer().String(), "totalPeers", len(s.host.Peerstore().Peers()))
-
 }
 
 func (s *Service) Disconnected(n network.Network, conn network.Conn) {
@@ -294,4 +298,37 @@ func (s *Service) Disconnected(n network.Network, conn network.Conn) {
 
 func (s *Service) ID() string {
 	return s.host.ID().String()
+}
+
+func (s *Service) StartGRPCServer(ctx context.Context) error {
+	grpcServer := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(),
+		grpc.ChainStreamInterceptor(),
+	)
+	prototypes.RegisterSymbioticP2PServiceServer(grpcServer, s.p2pGRPCHandler)
+
+	listener, err := gostream.Listen(s.host, grpcProtocolTag)
+	if err != nil {
+		return errors.Errorf("failed to create gostream listener: %w", err)
+	}
+	defer listener.Close()
+
+	serverErr := make(chan error, 1)
+	defer close(serverErr)
+	go func() {
+		slog.InfoContext(ctx, "Starting gRPC server for P2P sync", "protocol", grpcProtocolTag)
+		if err := grpcServer.Serve(listener); err != nil {
+			serverErr <- err
+		}
+	}()
+
+	// Wait for context cancellation or server error
+	select {
+	case <-ctx.Done():
+		slog.InfoContext(ctx, "Shutting down gRPC server gracefully")
+		grpcServer.GracefulStop()
+		return ctx.Err()
+	case err := <-serverErr:
+		return errors.Errorf("gRPC server error: %w", err)
+	}
 }
