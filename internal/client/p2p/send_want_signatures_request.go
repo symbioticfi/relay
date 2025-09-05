@@ -1,0 +1,175 @@
+package p2p
+
+import (
+	"context"
+	"encoding/hex"
+	"net"
+	"time"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/go-errors/errors"
+	gostream "github.com/libp2p/go-libp2p-gostream"
+	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/core/protocol"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/symbioticfi/relay/core/entity"
+	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
+	"github.com/symbioticfi/relay/pkg/log"
+)
+
+const grpcProtocolTag protocol.ID = "/relay/v1/grpc"
+
+// SendWantSignaturesRequest sends a synchronous signature request to a peer
+func (s *Service) SendWantSignaturesRequest(ctx context.Context, request entity.WantSignaturesRequest) (entity.WantSignaturesResponse, error) {
+	ctx = log.WithComponent(ctx, "p2p")
+
+	// Convert entity request to protobuf
+	protoReq, err := entityToProtoRequest(request)
+	if err != nil {
+		return entity.WantSignaturesResponse{}, errors.Errorf("failed to convert request: %w", err)
+	}
+
+	// Select a peer for the request
+	peerID, err := s.selectPeerForSync()
+	if err != nil {
+		return entity.WantSignaturesResponse{}, errors.Errorf("failed to select peer: %w", err)
+	}
+
+	// Send request to the selected peer
+	response, err := s.sendRequestToPeer(ctx, peerID, protoReq)
+	if err != nil {
+		return entity.WantSignaturesResponse{}, errors.Errorf("failed to get signatures from peer %s: %w", peerID, err)
+	}
+
+	// Convert protobuf response to entity
+	entityResp, err := protoToEntityResponse(response)
+	if err != nil {
+		return entity.WantSignaturesResponse{}, errors.Errorf("failed to convert response: %w", err)
+	}
+
+	return entityResp, nil
+}
+
+// sendRequestToPeer sends a gRPC request to a specific peer
+func (s *Service) sendRequestToPeer(ctx context.Context, peerID peer.ID, req *prototypes.WantSignaturesRequest) (*prototypes.WantSignaturesResponse, error) {
+	// Create gRPC connection over libp2p stream
+	conn, err := s.createGRPCConnection(ctx, peerID)
+	if err != nil {
+		return nil, errors.Errorf("failed to create gRPC connection to peer %s: %w", peerID, err)
+	}
+	defer conn.Close()
+
+	// Create gRPC client and send request
+	client := prototypes.NewSymbioticP2PServiceClient(conn)
+
+	requestCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	response, err := client.WantSignatures(requestCtx, req)
+	if err != nil {
+		return nil, errors.Errorf("gRPC request failed: %w", err)
+	}
+
+	return response, nil
+}
+
+// createGRPCConnection creates a gRPC connection to a peer over libp2p
+func (s *Service) createGRPCConnection(_ context.Context, peerID peer.ID) (*grpc.ClientConn, error) {
+	dialOpts := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithContextDialer(func(ctx context.Context, peerIdStr string) (net.Conn, error) {
+			targetPeer, err := peer.Decode(peerIdStr)
+			if err != nil {
+				return nil, err
+			}
+
+			conn, err := gostream.Dial(ctx, s.host, targetPeer, grpcProtocolTag)
+			if err != nil {
+				return nil, err
+			}
+
+			return conn, nil
+		}),
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(maxP2PMessageSize),
+			grpc.MaxCallSendMsgSize(maxP2PMessageSize),
+		),
+	}
+
+	conn, err := grpc.NewClient("passthrough:///"+peerID.String(), dialOpts...)
+	if err != nil {
+		return nil, errors.Errorf("failed to create gRPC client: %w", err)
+	}
+
+	return conn, nil
+}
+
+// entityToProtoRequest converts entity.WantSignaturesRequest to protobuf
+func entityToProtoRequest(req entity.WantSignaturesRequest) (*prototypes.WantSignaturesRequest, error) {
+	wantSignatures := make(map[string][]byte)
+
+	for hash, bitmap := range req.WantSignatures {
+		hashKey := hex.EncodeToString(hash.Bytes())
+
+		// Serialize roaring bitmap to bytes
+		bitmapBytes, err := bitmap.ToBytes()
+		if err != nil {
+			return nil, errors.Errorf("failed to serialize bitmap for hash %s: %w", hash.Hex(), err)
+		}
+
+		wantSignatures[hashKey] = bitmapBytes
+	}
+
+	return &prototypes.WantSignaturesRequest{
+		WantSignatures: wantSignatures,
+	}, nil
+}
+
+// protoToEntityResponse converts protobuf WantSignaturesResponse to entity
+func protoToEntityResponse(resp *prototypes.WantSignaturesResponse) (entity.WantSignaturesResponse, error) {
+	signatures := make(map[common.Hash][]entity.ValidatorSignature)
+
+	for hashStr, sigList := range resp.GetSignatures() {
+		// Parse hash from hex string
+		hashBytes, err := hex.DecodeString(hashStr)
+		if err != nil {
+			return entity.WantSignaturesResponse{}, errors.Errorf("failed to decode hash %s: %w", hashStr, err)
+		}
+
+		hash := common.BytesToHash(hashBytes)
+
+		// Convert validator signatures
+		var validatorSigs []entity.ValidatorSignature
+		for _, protoSig := range sigList.GetSignatures() {
+			sig := entity.ValidatorSignature{
+				ValidatorIndex: protoSig.GetValidatorIndex(),
+				Signature: entity.SignatureExtended{
+					MessageHash: protoSig.GetSignature().GetMessageHash(),
+					Signature:   protoSig.GetSignature().GetSignature(),
+					PublicKey:   protoSig.GetSignature().GetPublicKey(),
+				},
+			}
+			validatorSigs = append(validatorSigs, sig)
+		}
+
+		signatures[hash] = validatorSigs
+	}
+
+	return entity.WantSignaturesResponse{
+		Signatures: signatures,
+	}, nil
+}
+
+// selectPeerForSync selects a single peer for synchronous signature requests
+func (s *Service) selectPeerForSync() (peer.ID, error) {
+	peers := s.host.Network().Peers()
+	if len(peers) == 0 {
+		return "", errors.New("no peers available for sync request")
+	}
+
+	// Select a peer (simple middle selection - could be enhanced with randomization)
+	selectedPeer := peers[len(peers)/2]
+	return selectedPeer, nil
+}
