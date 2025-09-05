@@ -15,6 +15,7 @@ require (
 	github.com/go-playground/validator/v10 v10.27.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/libp2p/go-libp2p v0.43.0
+	github.com/libp2p/go-libp2p-gostream v0.6.0
 	github.com/libp2p/go-libp2p-kad-dht v0.34.0
 	github.com/libp2p/go-libp2p-pubsub v0.14.2
 	github.com/multiformats/go-multiaddr v0.16.1

@@ -4,6 +4,21 @@ package internal.client.p2p.proto.v1;
 
 option go_package = "github.com/symbioticfi/relay/internal/client/p2p/proto/v1";
 
+
+service SymbioticP2PService {
+  // Request signatures from peers
+  rpc WantSignatures(WantSignaturesRequest) returns (WantSignaturesResponse);
+
+}
+
+message WantSignaturesRequest {
+
+}
+
+message WantSignaturesResponse {
+
+}
+
 // AggregationProof represents the aggregation proof data
 message AggregationProof {
   uint32 verification_type = 1;

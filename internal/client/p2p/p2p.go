@@ -276,13 +276,16 @@ func (s *Service) Close() error {
 }
 
 func (s *Service) Listen(n network.Network, multiaddr multiaddr.Multiaddr) {
+	slog.DebugContext(s.ctx, "Listening on multiaddr", "multiaddr", multiaddr.String())
 }
 
 func (s *Service) ListenClose(n network.Network, multiaddr multiaddr.Multiaddr) {
+	slog.DebugContext(s.ctx, "Stopped listening on multiaddr", "multiaddr", multiaddr.String())
 }
 
 func (s *Service) Connected(n network.Network, conn network.Conn) {
 	slog.DebugContext(s.ctx, "Connected to peer", "peer", conn.RemotePeer().String(), "totalPeers", len(s.host.Peerstore().Peers()))
+
 }
 
 func (s *Service) Disconnected(n network.Network, conn network.Conn) {
