@@ -1,8 +1,7 @@
-package syncer
+package sync_provider
 
 import (
 	"context"
-	"log/slog"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
@@ -10,54 +9,16 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 )
 
-func (s *Syncer) askSignatures(ctx context.Context) error {
-	// Create context with timeout for the entire sync operation
-	syncCtx, cancel := context.WithTimeout(ctx, s.cfg.SyncTimeout)
-	defer cancel()
-
-	slog.InfoContext(syncCtx, "Starting signature sync")
-
+func (s *Syncer) BuildWantSignaturesRequest(ctx context.Context) (entity.WantSignaturesRequest, error) {
 	// Collect all pending signature requests across epochs
-	wantSignatures, err := s.buildWantSignaturesMap(syncCtx)
+	wantSignatures, err := s.buildWantSignaturesMap(ctx)
 	if err != nil {
-		return errors.Errorf("failed to build want signatures map: %w", err)
+		return entity.WantSignaturesRequest{}, errors.Errorf("failed to build want signatures map: %w", err)
 	}
 
-	// If no signatures needed, log and return
-	if len(wantSignatures) == 0 {
-		slog.InfoContext(syncCtx, "No pending signature requests found")
-		return nil
-	}
-
-	slog.InfoContext(syncCtx, "Found pending signature requests", "count", len(wantSignatures))
-
-	// Send request to peer
-	request := entity.WantSignaturesRequest{
+	return entity.WantSignaturesRequest{
 		WantSignatures: wantSignatures,
-	}
-
-	response, err := s.cfg.P2PService.SendWantSignaturesRequest(syncCtx, request)
-	if err != nil {
-		return errors.Errorf("failed to send want signatures request: %w", err)
-	}
-
-	slog.InfoContext(syncCtx, "Received signature response", "signatures_count", len(response.Signatures))
-
-	stats := s.processReceivedSignatures(syncCtx, response, wantSignatures)
-
-	slog.InfoContext(syncCtx, "Signature sync completed",
-		"processed", stats.ProcessedCount,
-		"total_errors", stats.TotalErrors(),
-		"unrequested_signatures", stats.UnrequestedSignatureCount,
-		"unrequested_hashes", stats.UnrequestedHashCount,
-		"signature_request_errors", stats.SignatureRequestErrorCount,
-		"public_key_errors", stats.PublicKeyErrorCount,
-		"validator_info_errors", stats.ValidatorInfoErrorCount,
-		"processing_errors", stats.ProcessingErrorCount,
-		"already_exist", stats.AlreadyExistCount,
-	)
-
-	return nil
+	}, nil
 }
 
 func (s *Syncer) buildWantSignaturesMap(ctx context.Context) (map[common.Hash]entity.SignatureBitmap, error) {

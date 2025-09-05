@@ -3,6 +3,7 @@ package p2p
 import (
 	"context"
 	"encoding/hex"
+	"math/rand/v2"
 	"net"
 	"time"
 
@@ -166,11 +167,11 @@ func protoToEntityResponse(resp *prototypes.WantSignaturesResponse) (entity.Want
 func (s *Service) selectPeerForSync() (peer.ID, error) {
 	peers := s.host.Network().Peers()
 	if len(peers) == 0 {
-		return "", errors.New("no peers available for sync request")
+		return "", errors.Errorf("no peers available for sync: %w", entity.ErrNoPeers)
 	}
 
-	// Select a peer (simple middle selection - could be enhanced with randomization)
-	selectedPeer := peers[len(peers)/2]
+	//nolint:gosec // G404: non-cryptographic random selection
+	selectedPeer := peers[rand.IntN(len(peers))]
 	return selectedPeer, nil
 }
 

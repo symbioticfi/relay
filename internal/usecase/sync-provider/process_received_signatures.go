@@ -1,4 +1,4 @@
-package syncer
+package sync_provider
 
 import (
 	"context"
@@ -11,8 +11,8 @@ import (
 	"github.com/symbioticfi/relay/core/usecase/crypto"
 )
 
-func (s *Syncer) processReceivedSignatures(ctx context.Context, response entity.WantSignaturesResponse, wantSignatures map[common.Hash]entity.SignatureBitmap) SignatureProcessingStats {
-	var stats SignatureProcessingStats
+func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.WantSignaturesResponse, wantSignatures map[common.Hash]entity.SignatureBitmap) entity.SignatureProcessingStats {
+	var stats entity.SignatureProcessingStats
 
 	for reqHash, signatures := range response.Signatures {
 		for _, validatorSig := range signatures {

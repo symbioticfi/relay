@@ -1,11 +1,9 @@
-package syncer
+package sync_provider
 
 import (
-	"context"
 	"crypto/rand"
 	"math/big"
 	"testing"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
@@ -69,26 +67,18 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	// Create peer syncer first (with a temporary mock)
 	peerSyncer, err := New(Config{
 		Repo:                        peerRepo,
-		P2PService:                  myP2PMock{},
 		SignatureProcessor:          peerSignatureProcessor,
 		EpochsToSync:                1,
-		SyncPeriod:                  time.Minute,
-		SyncTimeout:                 time.Minute,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
 	})
 	require.NoError(t, err)
 
-	p2pMock := myP2PMock{peerSyncer: peerSyncer}
-
 	// Create requester syncer
 	requesterSyncer, err := New(Config{
 		Repo:                        requesterRepo,
-		P2PService:                  p2pMock,
 		SignatureProcessor:          requesterProcessor,
 		EpochsToSync:                1,
-		SyncPeriod:                  time.Minute,
-		SyncTimeout:                 time.Minute,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
 	})
@@ -102,9 +92,15 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	_, err = requesterRepo.GetSignatureRequest(t.Context(), signatureRequest.Hash())
 	require.NoError(t, err)
 
-	// Call askSignatures on requester
-	err = requesterSyncer.askSignatures(t.Context())
+	// Call BuildWantSignaturesRequest on requester
+	request, err := requesterSyncer.BuildWantSignaturesRequest(t.Context())
 	require.NoError(t, err)
+
+	response, err := peerSyncer.HandleWantSignaturesRequest(t.Context(), request)
+	require.NoError(t, err)
+
+	stat := requesterSyncer.ProcessReceivedSignatures(t.Context(), response, request.WantSignatures)
+	require.Equal(t, 0, stat.TotalErrors())
 
 	// Verify requester now has the signature
 	finalSignatures, err := requesterRepo.GetAllSignatures(t.Context(), signatureRequest.Hash())
@@ -172,12 +168,4 @@ func randomBytes(t *testing.T, n int) []byte {
 	_, err := rand.Read(b)
 	require.NoError(t, err)
 	return b
-}
-
-type myP2PMock struct {
-	peerSyncer *Syncer
-}
-
-func (t myP2PMock) SendWantSignaturesRequest(ctx context.Context, request entity.WantSignaturesRequest) (entity.WantSignaturesResponse, error) {
-	return t.peerSyncer.HandleWantSignaturesRequest(ctx, request)
 }

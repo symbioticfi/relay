@@ -1,4 +1,4 @@
-package syncer
+package sync_provider
 
 import (
 	"context"

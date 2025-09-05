@@ -22,3 +22,21 @@ type ValidatorSignature struct {
 	ValidatorIndex uint32            // Index in active validator set
 	Signature      SignatureExtended // The actual signature data
 }
+
+// SignatureProcessingStats contains detailed statistics for processing received signatures
+type SignatureProcessingStats struct {
+	ProcessedCount             int // Successfully processed signatures
+	UnrequestedSignatureCount  int // Signatures for validators we didn't request
+	UnrequestedHashCount       int // Signatures for hashes we didn't request
+	SignatureRequestErrorCount int // Failed to get signature request
+	PublicKeyErrorCount        int // Failed to create public key from signature
+	ValidatorInfoErrorCount    int // Failed to get validator info
+	ProcessingErrorCount       int // Failed to process signature
+	AlreadyExistCount          int // Signature already exists (ErrEntityAlreadyExist)
+}
+
+// TotalErrors returns the total number of errors encountered
+func (s SignatureProcessingStats) TotalErrors() int {
+	return s.UnrequestedSignatureCount + s.UnrequestedHashCount + s.SignatureRequestErrorCount +
+		s.PublicKeyErrorCount + s.ValidatorInfoErrorCount + s.ProcessingErrorCount + s.AlreadyExistCount
+}
