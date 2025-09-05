@@ -65,12 +65,11 @@ func newTestSetup(t *testing.T) *testSetup {
 // This is the simpler version used for GetValidatorSetHeader tests
 func createTestValidatorSet(epoch uint64) entity.ValidatorSet {
 	return entity.ValidatorSet{
-		Version:            1,
-		RequiredKeyTag:     entity.KeyTag(15),
-		Epoch:              epoch,
-		CaptureTimestamp:   1640995200, // 2022-01-01 00:00:00 UTC
-		QuorumThreshold:    entity.ToVotingPower(big.NewInt(670)),
-		PreviousHeaderHash: common.HexToHash("0xdef456"),
+		Version:          1,
+		RequiredKeyTag:   entity.KeyTag(15),
+		Epoch:            epoch,
+		CaptureTimestamp: 1640995200, // 2022-01-01 00:00:00 UTC
+		QuorumThreshold:  entity.ToVotingPower(big.NewInt(670)),
 		Validators: []entity.Validator{
 			{
 				Operator:    common.HexToAddress("0x123"),
@@ -84,6 +83,7 @@ func createTestValidatorSet(epoch uint64) entity.ValidatorSet {
 				},
 			},
 		},
+		Status: entity.HeaderDerived,
 	}
 }
 
@@ -91,12 +91,11 @@ func createTestValidatorSet(epoch uint64) entity.ValidatorSet {
 // This is the richer version used for GetValidatorByAddress tests
 func createTestValidatorSetWithMultipleValidators(epoch uint64) entity.ValidatorSet {
 	return entity.ValidatorSet{
-		Version:            1,
-		RequiredKeyTag:     entity.KeyTag(15),
-		Epoch:              epoch,
-		CaptureTimestamp:   1640995200, // 2022-01-01 00:00:00 UTC
-		QuorumThreshold:    entity.ToVotingPower(big.NewInt(670)),
-		PreviousHeaderHash: common.HexToHash("0xdef456"),
+		Version:          1,
+		RequiredKeyTag:   entity.KeyTag(15),
+		Epoch:            epoch,
+		CaptureTimestamp: 1640995200, // 2022-01-01 00:00:00 UTC
+		QuorumThreshold:  entity.ToVotingPower(big.NewInt(670)),
 		Validators: []entity.Validator{
 			{
 				Operator:    common.HexToAddress("0x0000000000000000000000000000000000000123"),
@@ -146,5 +145,6 @@ func createTestValidatorSetWithMultipleValidators(epoch uint64) entity.Validator
 				},
 			},
 		},
+		Status: entity.HeaderDerived,
 	}
 }

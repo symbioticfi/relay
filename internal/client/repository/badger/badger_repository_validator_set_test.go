@@ -16,8 +16,8 @@ func TestRepository_ValidatorSet(t *testing.T) {
 	repo := setupTestRepository(t)
 
 	// Create two validator sets with different epochs
-	vs1 := randomValidatorSet(t, 2, entity.HeaderCommitted)
-	vs2 := randomValidatorSet(t, 1, entity.HeaderCommitted)
+	vs1 := randomValidatorSet(t, 2)
+	vs2 := randomValidatorSet(t, 1)
 
 	// Test saving validator sets
 	t.Run("save validator sets", func(t *testing.T) {
@@ -182,10 +182,10 @@ func TestRepository_ValidatorSet_EpochOrdering(t *testing.T) {
 	repo := setupTestRepository(t)
 
 	// Create validator sets with different epochs in non-chronological order
-	vs1 := randomValidatorSet(t, 5, entity.HeaderCommitted)
-	vs2 := randomValidatorSet(t, 1, entity.HeaderCommitted)
-	vs3 := randomValidatorSet(t, 10, entity.HeaderCommitted)
-	vs4 := randomValidatorSet(t, 3, entity.HeaderCommitted)
+	vs1 := randomValidatorSet(t, 5)
+	vs2 := randomValidatorSet(t, 1)
+	vs3 := randomValidatorSet(t, 10)
+	vs4 := randomValidatorSet(t, 3)
 
 	// Save them in random order
 	require.NoError(t, repo.SaveValidatorSet(t.Context(), vs2)) // epoch 1
@@ -231,7 +231,7 @@ func TestRepository_ValidatorSet_ValidatorIndexing(t *testing.T) {
 	repo := setupTestRepository(t)
 
 	// Create a validator set with multiple validators having multiple keys
-	vs := randomValidatorSet(t, 1, entity.HeaderCommitted)
+	vs := randomValidatorSet(t, 1)
 	require.NoError(t, repo.SaveValidatorSet(t.Context(), vs))
 
 	t.Run("find validator by different key tags", func(t *testing.T) {
@@ -263,7 +263,7 @@ func TestRepository_ValidatorSet_MultiKeyStorageProblem(t *testing.T) {
 
 	t.Run("validator storage duplication with multiple keys", func(t *testing.T) {
 		// Create a validator with multiple keys to test storage duplication
-		vs := randomValidatorSet(t, 1, entity.HeaderCommitted)
+		vs := randomValidatorSet(t, 1)
 
 		// Modify the first validator to have 3 different keys
 		vs.Validators[0].Keys = []entity.ValidatorKey{
@@ -297,11 +297,145 @@ func TestRepository_ValidatorSet_MultiKeyStorageProblem(t *testing.T) {
 	})
 }
 
+func TestRepository_LatestSignedValidatorSetEpoch(t *testing.T) {
+	repo := setupTestRepository(t)
+
+	// Create validator sets with different epochs
+	vs1 := randomValidatorSet(t, 1)
+	vs2 := randomValidatorSet(t, 5)
+	vs3 := randomValidatorSet(t, 3)
+
+	// Save the validator sets first (required for referential integrity)
+	require.NoError(t, repo.SaveValidatorSet(t.Context(), vs1))
+	require.NoError(t, repo.SaveValidatorSet(t.Context(), vs2))
+	require.NoError(t, repo.SaveValidatorSet(t.Context(), vs3))
+
+	t.Run("save and get latest signed validator set epoch", func(t *testing.T) {
+		// Save latest signed epoch for vs1 (epoch 1)
+		err := repo.SaveLatestSignedValidatorSetEpoch(t.Context(), vs1)
+		require.NoError(t, err)
+
+		// Get latest signed epoch - should be vs1.Epoch (1)
+		latestSignedEpoch, err := repo.GetLatestSignedValidatorSetEpoch(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, vs1.Epoch, latestSignedEpoch)
+
+		// Save latest signed epoch for vs3 (epoch 3) - should overwrite
+		err = repo.SaveLatestSignedValidatorSetEpoch(t.Context(), vs3)
+		require.NoError(t, err)
+
+		// Get latest signed epoch - should now be vs3.Epoch (3)
+		latestSignedEpoch, err = repo.GetLatestSignedValidatorSetEpoch(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, vs3.Epoch, latestSignedEpoch)
+
+		// Save latest signed epoch for vs2 (epoch 5) - should overwrite again
+		err = repo.SaveLatestSignedValidatorSetEpoch(t.Context(), vs2)
+		require.NoError(t, err)
+
+		// Get latest signed epoch - should now be vs2.Epoch (5)
+		latestSignedEpoch, err = repo.GetLatestSignedValidatorSetEpoch(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, vs2.Epoch, latestSignedEpoch)
+	})
+
+	t.Run("latest signed epoch vs latest validator set epoch", func(t *testing.T) {
+		// At this point:
+		// - Latest validator set epoch should be 5 (highest saved epoch)
+		// - Latest signed validator set epoch should be 5 (from previous test)
+
+		latestEpoch, err := repo.GetLatestValidatorSetEpoch(t.Context())
+		require.NoError(t, err)
+
+		latestSignedEpoch, err := repo.GetLatestSignedValidatorSetEpoch(t.Context())
+		require.NoError(t, err)
+
+		assert.Equal(t, uint64(5), latestEpoch)
+		assert.Equal(t, uint64(5), latestSignedEpoch)
+
+		// Now save a signed epoch that's lower than the latest validator set
+		err = repo.SaveLatestSignedValidatorSetEpoch(t.Context(), vs1) // epoch 1
+		require.NoError(t, err)
+
+		// Latest validator set epoch should remain 5
+		latestEpoch, err = repo.GetLatestValidatorSetEpoch(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, uint64(5), latestEpoch)
+
+		// But latest signed epoch should now be 1
+		latestSignedEpoch, err = repo.GetLatestSignedValidatorSetEpoch(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, uint64(1), latestSignedEpoch)
+	})
+}
+
+func TestRepository_LatestSignedValidatorSetEpoch_EmptyRepository(t *testing.T) {
+	repo := setupTestRepository(t)
+
+	t.Run("get latest signed validator set epoch from empty repo", func(t *testing.T) {
+		_, err := repo.GetLatestSignedValidatorSetEpoch(t.Context())
+		assert.True(t, errors.Is(err, entity.ErrEntityNotFound))
+	})
+
+	t.Run("save latest signed epoch without validator set", func(t *testing.T) {
+		// This should work - the implementation doesn't enforce referential integrity
+		vs := randomValidatorSet(t, 42)
+		err := repo.SaveLatestSignedValidatorSetEpoch(t.Context(), vs)
+		require.NoError(t, err)
+
+		// Should be able to retrieve it
+		latestSignedEpoch, err := repo.GetLatestSignedValidatorSetEpoch(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, vs.Epoch, latestSignedEpoch)
+	})
+}
+
+func TestRepository_LatestSignedValidatorSetEpoch_Ordering(t *testing.T) {
+	repo := setupTestRepository(t)
+
+	// Create validator sets with different epochs
+	epochs := []uint64{10, 1, 15, 5, 8, 3}
+	validatorSets := make([]entity.ValidatorSet, len(epochs))
+
+	for i, epoch := range epochs {
+		validatorSets[i] = randomValidatorSet(t, epoch)
+		require.NoError(t, repo.SaveValidatorSet(t.Context(), validatorSets[i]))
+	}
+
+	t.Run("save latest signed epochs in random order", func(t *testing.T) {
+		// Save signed epochs in a specific order and verify each one
+		testOrder := []int{2, 0, 4, 1, 5, 3} // Indices into validatorSets array
+
+		for _, idx := range testOrder {
+			vs := validatorSets[idx]
+			err := repo.SaveLatestSignedValidatorSetEpoch(t.Context(), vs)
+			require.NoError(t, err)
+
+			// Verify it was saved correctly
+			latestSignedEpoch, err := repo.GetLatestSignedValidatorSetEpoch(t.Context())
+			require.NoError(t, err)
+			assert.Equal(t, vs.Epoch, latestSignedEpoch,
+				"Latest signed epoch should be %d after saving validator set with epoch %d",
+				vs.Epoch, vs.Epoch)
+		}
+
+		// Final latest signed epoch should be from the last saved (index 3 = epoch 5)
+		latestSignedEpoch, err := repo.GetLatestSignedValidatorSetEpoch(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, uint64(5), latestSignedEpoch)
+
+		// But latest validator set epoch should be the highest saved epoch (15)
+		latestEpoch, err := repo.GetLatestValidatorSetEpoch(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, uint64(15), latestEpoch)
+	})
+}
+
 func TestRepository_ValidatorSet_ActiveIndex(t *testing.T) {
 	repo := setupTestRepository(t)
 
 	// Create validator set with mixed active/inactive validators
-	vs := randomValidatorSet(t, 1, entity.HeaderCommitted)
+	vs := randomValidatorSet(t, 1)
 
 	// Modify validators to have specific active/inactive states and addresses
 	// Note: validators must be sorted by operator address ascending
@@ -367,6 +501,41 @@ func TestRepository_ValidatorSet_ActiveIndex(t *testing.T) {
 	})
 }
 
+func TestRepository_FirstUncommittedValidatorSetEpoch(t *testing.T) {
+	repo := setupTestRepository(t)
+
+	t.Run("save and get first uncommitted epoch", func(t *testing.T) {
+		// Save first uncommitted epoch
+		err := repo.SaveFirstUncommittedValidatorSetEpoch(t.Context(), 42)
+		require.NoError(t, err)
+
+		// Get first uncommitted epoch
+		epoch, err := repo.GetFirstUncommittedValidatorSetEpoch(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, uint64(42), epoch)
+
+		// Update to a different epoch
+		err = repo.SaveFirstUncommittedValidatorSetEpoch(t.Context(), 100)
+		require.NoError(t, err)
+
+		// Verify it was updated
+		epoch, err = repo.GetFirstUncommittedValidatorSetEpoch(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, uint64(100), epoch)
+	})
+}
+
+func TestRepository_FirstUncommittedValidatorSetEpoch_EmptyRepository(t *testing.T) {
+	repo := setupTestRepository(t)
+
+	t.Run("get first uncommitted epoch from empty repo", func(t *testing.T) {
+		// Should return 0 and no error when not set (based on implementation)
+		epoch, err := repo.GetFirstUncommittedValidatorSetEpoch(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, uint64(0), epoch)
+	})
+}
+
 func setupTestRepository(t *testing.T) *Repository {
 	t.Helper()
 	repo, err := New(Config{Dir: t.TempDir()})
@@ -376,4 +545,36 @@ func setupTestRepository(t *testing.T) *Repository {
 		require.NoError(t, err)
 	})
 	return repo
+}
+
+func randomValidatorSet(t *testing.T, epoch uint64) entity.ValidatorSet {
+	t.Helper()
+	return entity.ValidatorSet{
+		Version:          1,
+		RequiredKeyTag:   entity.KeyTag(15),
+		Epoch:            epoch,
+		CaptureTimestamp: 1234567890,
+		QuorumThreshold:  entity.ToVotingPower(big.NewInt(1000)),
+		Validators: []entity.Validator{
+			{
+				Operator:    common.BytesToAddress(randomBytes(t, 20)),
+				VotingPower: entity.ToVotingPower(big.NewInt(500)),
+				IsActive:    true,
+				Keys: []entity.ValidatorKey{
+					{
+						Tag:     entity.KeyTag(15),
+						Payload: randomBytes(t, 32),
+					},
+				},
+				Vaults: []entity.ValidatorVault{
+					{
+						ChainID:     1,
+						Vault:       common.BytesToAddress(randomBytes(t, 20)),
+						VotingPower: entity.ToVotingPower(big.NewInt(500)),
+					},
+				},
+			},
+		},
+		Status: entity.HeaderDerived,
+	}
 }

@@ -491,14 +491,13 @@ func createValidatorSetWithCount(t *testing.T, epoch uint64, quorumThreshold *bi
 	validatorsList.SortByOperatorAddressAsc() // Sort validators by operator address
 
 	return entity.ValidatorSet{
-		Version:            1,
-		RequiredKeyTag:     entity.KeyTag(15),
-		Epoch:              epoch,
-		CaptureTimestamp:   1234567890,
-		QuorumThreshold:    entity.ToVotingPower(quorumThreshold),
-		PreviousHeaderHash: randomHash(t),
-		Validators:         validatorsList,
-		Status:             entity.HeaderCommitted,
+		Version:          1,
+		RequiredKeyTag:   entity.KeyTag(15),
+		Epoch:            epoch,
+		CaptureTimestamp: 1234567890,
+		QuorumThreshold:  entity.ToVotingPower(quorumThreshold),
+		Validators:       validatorsList,
+		Status:           entity.HeaderCommitted,
 	}
 }
 

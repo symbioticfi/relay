@@ -232,14 +232,11 @@ message GetValidatorSetResponse {
   // Quorum threshold (big integer as string)
   string quorum_threshold = 5;
   
-  // Previous validator set header hash (hex string)
-  string previous_header_hash = 6;
-  
   // Status of validator set header
-  ValidatorSetStatus status = 7;
+  ValidatorSetStatus status = 6;
   
   // List of validators
-  repeated Validator validators = 8;
+  repeated Validator validators = 7;
 }
 
 // Response message for getting validator by address
@@ -267,9 +264,6 @@ message GetValidatorSetHeaderResponse {
   
   // Validators SSZ Merkle root (hex string)
   string validators_ssz_mroot = 6;
-  
-  // Previous validator set header hash (hex string)
-  string previous_header_hash = 7;
 }
 
 // Validator set status enumeration
@@ -277,12 +271,12 @@ enum ValidatorSetStatus {
   // Default/unknown status
   VALIDATOR_SET_STATUS_UNSPECIFIED = 0;
   
-  // Pending status
-  VALIDATOR_SET_STATUS_PENDING = 1;
+  // Derived status
+  VALIDATOR_SET_STATUS_DERIVED= 1;
   
-  // Missed status
-  VALIDATOR_SET_STATUS_MISSED = 2;
-  
+  // Aggregated status
+  VALIDATOR_SET_STATUS_AGGREGATED = 2;
+
   // Committed status
   VALIDATOR_SET_STATUS_COMMITTED = 3;
 }

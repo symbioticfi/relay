@@ -5,9 +5,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-
-	strategyTypes "github.com/symbioticfi/relay/core/usecase/growth-strategy/strategy-types"
+	"github.com/symbioticfi/relay/core/client/evm"
 
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
@@ -15,14 +13,6 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/pkg/log"
 )
-
-type evmClient interface {
-	GetCurrentEpoch(ctx context.Context) (uint64, error)
-	GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (uint64, error)
-	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
-	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
-	GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error)
-}
 
 type repo interface {
 	GetLatestValidatorSetHeader(_ context.Context) (entity.ValidatorSetHeader, error)
@@ -35,11 +25,10 @@ type deriver interface {
 }
 
 type Config struct {
-	EvmClient       evmClient                    `validate:"required"`
-	Repo            repo                         `validate:"required"`
-	Deriver         deriver                      `validate:"required"`
-	GrowthStrategy  strategyTypes.GrowthStrategy `validate:"required"`
-	PollingInterval time.Duration                `validate:"required,gt=0"`
+	EvmClient       evm.IEvmClient `validate:"required"`
+	Repo            repo           `validate:"required"`
+	Deriver         deriver        `validate:"required"`
+	PollingInterval time.Duration  `validate:"required,gt=0"`
 }
 
 func (c Config) Validate() error {
@@ -52,8 +41,6 @@ func (c Config) Validate() error {
 
 type Service struct {
 	cfg Config
-
-	latestProcessedEpoch uint64
 }
 
 func New(cfg Config) (*Service, error) {
@@ -62,8 +49,7 @@ func New(cfg Config) (*Service, error) {
 	}
 
 	return &Service{
-		cfg:                  cfg,
-		latestProcessedEpoch: 0,
+		cfg: cfg,
 	}, nil
 }
 
@@ -124,39 +110,18 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 	if err != nil {
 		return errors.Errorf("failed to get current epoch: %w", err)
 	}
-	currentEpochStart, err := s.cfg.EvmClient.GetEpochStart(ctx, currentEpoch)
-	if err != nil {
-		return errors.Errorf("failed to get current epoch start: %w", err)
-	}
-	config, err := s.cfg.EvmClient.GetConfig(ctx, currentEpochStart)
-	if err != nil {
-		return errors.Errorf("failed to get network config for current epoch: %w", err)
-	}
 
-	latestCommittedHash, latestCommittedEpoch, err := s.cfg.GrowthStrategy.GetLastCommittedHeaderHash(ctx, config)
-	if err != nil {
-		return errors.Errorf("failed to get latest committed header hash: %w", err)
-	}
-
-	latest, err := s.cfg.Repo.GetLatestValidatorSetHeader(ctx)
+	latestHeader, err := s.cfg.Repo.GetLatestValidatorSetHeader(ctx)
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return errors.Errorf("failed to get latest validator set header: %w", err)
 	}
 
 	nextEpoch := uint64(0)
 	if err == nil {
-		nextEpoch = latest.Epoch + 1
+		nextEpoch = latestHeader.Epoch + 1
 	}
 
-	if s.latestProcessedEpoch != 0 && nextEpoch <= s.latestProcessedEpoch {
-		return nil
-	}
-
-	if err := s.validateHeaderHashAtLastCommittedEpoch(ctx, latestCommittedEpoch, latestCommittedHash); err != nil {
-		return errors.Errorf("failed to validate header hash at last committed epoch: %w", err)
-	}
-
-	for latestCommittedEpoch >= nextEpoch {
+	for nextEpoch <= currentEpoch {
 		epochStart, err := s.cfg.EvmClient.GetEpochStart(ctx, nextEpoch)
 		if err != nil {
 			return errors.Errorf("failed to get epoch start for epoch %d: %w", nextEpoch, err)
@@ -180,46 +145,12 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 			return errors.Errorf("failed to save validator set extra for epoch %d: %w", nextEpoch, err)
 		}
 
-		slog.DebugContext(ctx, "Synced validator set", "epoch", nextEpoch, "config", config, "valset", nextValset)
+		slog.DebugContext(ctx, "Synced validator set", "epoch", nextEpoch, "config", nextEpochConfig, "valset", nextValset)
 
-		s.latestProcessedEpoch = nextEpoch
 		nextEpoch = nextValset.Epoch + 1
 	}
 
-	slog.DebugContext(ctx, "All missing epochs loaded", "latestProcessedEpoch", s.latestProcessedEpoch)
-
-	return nil
-}
-
-func (s *Service) validateHeaderHashAtLastCommittedEpoch(ctx context.Context, epoch uint64, lastCommittedHash common.Hash) error {
-	epochStart, err := s.cfg.EvmClient.GetEpochStart(ctx, epoch)
-	if err != nil {
-		return errors.Errorf("failed to get epoch start for epoch %d: %w", epochStart, err)
-	}
-
-	config, err := s.cfg.EvmClient.GetConfig(ctx, epochStart)
-	if err != nil {
-		return errors.Errorf("failed to get network config for epoch %d: %w", epoch, err)
-	}
-
-	valset, err := s.cfg.Deriver.GetValidatorSet(ctx, epoch, config)
-	if err != nil {
-		return errors.Errorf("failed to derive validator set extra for epoch %d: %w", epoch, err)
-	}
-
-	header, err := valset.GetHeader()
-	if err != nil {
-		return errors.Errorf("failed to get header for epoch %d: %w", epoch, err)
-	}
-
-	hash, err := header.Hash()
-	if err != nil {
-		return errors.Errorf("failed to get header hash for epoch %d: %w", epoch, err)
-	}
-
-	if lastCommittedHash != hash {
-		return errors.Errorf("last committed header hash mismatch with derived hash for epoch %d, derived: %s, committed: %s", epoch, hash, lastCommittedHash)
-	}
+	slog.DebugContext(ctx, "All missing epochs loaded", "latestProcessedEpoch", currentEpoch)
 
 	return nil
 }

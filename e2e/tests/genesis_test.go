@@ -36,12 +36,11 @@ func TestGenesisDone(t *testing.T) {
 
 	for _, settlement := range deployData.Settlements {
 		t.Logf("Checking settlement %s on chain %d", settlement.Addr, settlement.ChainId)
-		header, err := evmClient.GetValSetHeader(ctx, entity.CrossChainAddress{
+		_, err := evmClient.GetValSetHeader(ctx, entity.CrossChainAddress{
 			ChainId: settlement.ChainId,
 			Address: common.HexToAddress(settlement.Addr),
 		})
 		require.NoError(t, err, "Failed to get validator set header for settlement %s", settlement.Addr)
-		require.NotEqual(t, common.Hash{}, header.PreviousHeaderHash, "Previous header hash should not be empty")
 	}
 
 	t.Log("Genesis generation test completed successfully")
