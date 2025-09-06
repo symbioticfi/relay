@@ -96,6 +96,7 @@ func runApp(ctx context.Context) error {
 	if err != nil {
 		return errors.Errorf("failed to create badger repository: %w", err)
 	}
+	defer baseRepo.Close()
 
 	repo, err := badger.NewCached(baseRepo, badger.CachedConfig{
 		NetworkConfigCacheSize: cfg.Cache.NetworkConfigCacheSize,
@@ -179,6 +180,7 @@ func runApp(ctx context.Context) error {
 	aggProofReadySignal := signals.New[entity.AggregatedSignatureMessage](cfg.SignalCfg, "aggProofReady", nil)
 
 	syncRunner, err := sync_runner.New(sync_runner.Config{
+		Enabled:     cfg.Sync.Enabled,
 		P2PService:  p2pService,
 		Provider:    syncProvider,
 		SyncPeriod:  time.Second,
@@ -327,6 +329,13 @@ func runApp(ctx context.Context) error {
 	eg.Go(func() error {
 		if err := syncRunner.Start(ctx); err != nil {
 			return errors.Errorf("failed to start sync runner: %w", err)
+		}
+		return nil
+	})
+
+	eg.Go(func() error {
+		if err := p2pService.StartGRPCServer(ctx); err != nil {
+			return errors.Errorf("failed to start p2p grpc server: %w", err)
 		}
 		return nil
 	})

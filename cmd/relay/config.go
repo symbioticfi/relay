@@ -127,11 +127,16 @@ type config struct {
 	MaxCalls          int                  `mapstructure:"evm-max-calls"`
 	SignalCfg         signals.Config       `mapstructure:"signal"`
 	Cache             CacheConfig          `mapstructure:"cache"`
+	Sync              SyncConfig           `mapstructure:"sync"`
 }
 
 type CacheConfig struct {
 	NetworkConfigCacheSize int `mapstructure:"network-config-size"`
 	ValidatorSetCacheSize  int `mapstructure:"validator-set-size"`
+}
+
+type SyncConfig struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 func (c config) Validate() error {
@@ -174,6 +179,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Int("evm-max-calls", 0, "Max calls in multicall")
 	rootCmd.PersistentFlags().Int("cache.network-config-size", 10, "Network config cache size")
 	rootCmd.PersistentFlags().Int("cache.validator-set-size", 10, "Validator set cache size")
+	rootCmd.PersistentFlags().Bool("sync.enabled", true, "Enable signature syncer")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
@@ -275,6 +281,9 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("cache.validator-set-size", cmd.PersistentFlags().Lookup("cache.validator-set-size")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("sync.enabled", cmd.PersistentFlags().Lookup("sync.enabled")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 

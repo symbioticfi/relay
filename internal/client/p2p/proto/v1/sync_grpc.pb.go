@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             (unknown)
-// source: v1/message.proto
+// source: v1/sync.proto
 
 package v1
 
@@ -26,7 +26,6 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SymbioticP2PServiceClient interface {
-	// Request signatures from peers
 	WantSignatures(ctx context.Context, in *WantSignaturesRequest, opts ...grpc.CallOption) (*WantSignaturesResponse, error)
 }
 
@@ -52,7 +51,6 @@ func (c *symbioticP2PServiceClient) WantSignatures(ctx context.Context, in *Want
 // All implementations must embed UnimplementedSymbioticP2PServiceServer
 // for forward compatibility.
 type SymbioticP2PServiceServer interface {
-	// Request signatures from peers
 	WantSignatures(context.Context, *WantSignaturesRequest) (*WantSignaturesResponse, error)
 	mustEmbedUnimplementedSymbioticP2PServiceServer()
 }
@@ -119,5 +117,5 @@ var SymbioticP2PService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "v1/message.proto",
+	Metadata: "v1/sync.proto",
 }

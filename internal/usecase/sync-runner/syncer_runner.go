@@ -10,6 +10,7 @@ import (
 	"github.com/go-playground/validator/v10"
 
 	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/pkg/log"
 )
 
 type p2pService interface {
@@ -22,6 +23,7 @@ type provider interface {
 }
 
 type Config struct {
+	Enabled     bool
 	P2PService  p2pService    `validate:"required"`
 	Provider    provider      `validate:"required"`
 	SyncPeriod  time.Duration `validate:"gt=0"`
@@ -42,15 +44,24 @@ func New(cfg Config) (*Runner, error) {
 }
 
 func (s *Runner) Start(ctx context.Context) error {
+	if !s.cfg.Enabled {
+		slog.InfoContext(ctx, "Signature sync runner is disabled")
+		return nil
+	}
+
+	ctx = log.WithComponent(ctx, "sync_runner")
+
 	timer := time.NewTimer(s.cfg.SyncPeriod)
 	defer timer.Stop()
 
 	for {
 		select {
 		case <-timer.C:
+			slog.DebugContext(ctx, "Signature sync started")
 			if err := s.runSync(ctx); err != nil {
-				slog.ErrorContext(ctx, "Failed to ask signatures", "error", err)
+				slog.ErrorContext(ctx, "Failed to sync signatures", "error", err)
 			}
+			slog.DebugContext(ctx, "Signature sync completed")
 			timer.Reset(s.cfg.SyncPeriod)
 		case <-ctx.Done():
 			return ctx.Err()
@@ -60,10 +71,8 @@ func (s *Runner) Start(ctx context.Context) error {
 
 func (s *Runner) runSync(ctx context.Context) error {
 	// Create context with timeout for the entire sync operation
-	syncCtx, cancel := context.WithTimeout(ctx, s.cfg.SyncTimeout)
+	ctx, cancel := context.WithTimeout(ctx, s.cfg.SyncTimeout)
 	defer cancel()
-
-	slog.InfoContext(syncCtx, "Starting signature sync")
 
 	request, err := s.cfg.Provider.BuildWantSignaturesRequest(ctx)
 	if err != nil {
@@ -73,6 +82,7 @@ func (s *Runner) runSync(ctx context.Context) error {
 	response, err := s.cfg.P2PService.SendWantSignaturesRequest(ctx, request)
 	if err != nil {
 		if errors.Is(err, entity.ErrNoPeers) {
+			slog.DebugContext(ctx, "No peers available to request signatures from")
 			return nil
 		}
 		return errors.Errorf("failed to send want signatures request: %w", err)
@@ -90,6 +100,7 @@ func (s *Runner) runSync(ctx context.Context) error {
 		"signature_request_errors", stats.SignatureRequestErrorCount,
 		"public_key_errors", stats.PublicKeyErrorCount,
 		"validator_info_errors", stats.ValidatorInfoErrorCount,
+		"validator_index_missmatch_count", stats.ValidatorIndexMismatchCount,
 		"processing_errors", stats.ProcessingErrorCount,
 		"already_exist", stats.AlreadyExistCount,
 	)

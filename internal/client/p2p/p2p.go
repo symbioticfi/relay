@@ -322,6 +322,8 @@ func (s *Service) StartGRPCServer(ctx context.Context) error {
 		}
 	}()
 
+	slog.InfoContext(ctx, "gRPC server for P2P sync started", "protocol", grpcProtocolTag)
+
 	// Wait for context cancellation or server error
 	select {
 	case <-ctx.Done():

@@ -52,7 +52,7 @@ func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.
 			}
 
 			// Get validator info to extract voting power
-			validatorInfo, _, err := s.cfg.Repo.GetValidatorByKey(
+			validatorInfo, index, err := s.cfg.Repo.GetValidatorByKey(
 				ctx,
 				uint64(sigReq.RequiredEpoch),
 				sigReq.KeyTag,
@@ -64,6 +64,15 @@ func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.
 					"validator_index", validatorSig.ValidatorIndex,
 					"error", err)
 				stats.ValidatorInfoErrorCount++
+				continue
+			}
+
+			if index != validatorSig.ValidatorIndex {
+				slog.WarnContext(ctx, "Validator index mismatch",
+					"request_hash", reqHash.Hex(),
+					"expected_index", validatorSig.ValidatorIndex,
+					"actual_index", index)
+				stats.ValidatorIndexMismatchCount++
 				continue
 			}
 
