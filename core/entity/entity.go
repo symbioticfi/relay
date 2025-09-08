@@ -580,6 +580,8 @@ const (
 	SignatureStatStageAggQuorumReached    = "AggQuorumReached"
 	SignatureStatStageAggCompleted        = "AggCompleted"
 	SignatureStatStageAggProofReceived    = "AggProofReceived"
+
+	SignatureStatStageAggregationSkipped = "AggSkipped"
 )
 
 type SignatureStat struct {

@@ -89,6 +89,14 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		)
 	}
 
+	if !msg.KeyTag.Type().AggregationKey() {
+		// ignore signature aggregation steps as this key cannot be aggregated
+		if _, err := s.cfg.Repo.UpdateSignatureStat(ctx, msg.RequestHash, entity.SignatureStatStageAggregationSkipped, time.Now()); err != nil {
+			slog.WarnContext(ctx, "Failed to update signature stat: %s", "error", err)
+		}
+		return nil
+	}
+
 	// Get validator set for quorum threshold checks
 	// todo load only valset header when totalVotingPower is added to it
 	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
