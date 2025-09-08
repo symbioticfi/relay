@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/libp2p/go-libp2p"
@@ -18,6 +19,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/symbioticfi/relay/core/entity"
 	v2 "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
 )
 
@@ -43,7 +45,9 @@ func TestP2P_GRPC(t *testing.T) {
 		assert.NoError(t, err)
 		defer listener.Close()
 
-		v2.RegisterSymbioticP2PServiceServer(grpcServer, &GRPCHandler{})
+		v2.RegisterSymbioticP2PServiceServer(grpcServer, &GRPCHandler{
+			handler: myHandler{},
+		})
 		close(ready)
 
 		assert.NoError(t, grpcServer.Serve(listener))
@@ -87,4 +91,20 @@ func TestP2P_GRPC(t *testing.T) {
 
 	grpcServer.GracefulStop()
 	<-done
+}
+
+type myHandler struct {
+	v2.UnimplementedSymbioticP2PServiceServer
+}
+
+func (m myHandler) WantSignatures(ctx context.Context, request *v2.WantSignaturesRequest) (*v2.WantSignaturesResponse, error) {
+	return &v2.WantSignaturesResponse{
+		Signatures: make(map[string]*v2.ValidatorSignatureList),
+	}, nil
+}
+
+func (m myHandler) HandleWantSignaturesRequest(ctx context.Context, request entity.WantSignaturesRequest) (entity.WantSignaturesResponse, error) {
+	return entity.WantSignaturesResponse{
+		Signatures: make(map[common.Hash][]entity.ValidatorSignature),
+	}, nil
 }

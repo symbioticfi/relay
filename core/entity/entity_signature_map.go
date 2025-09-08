@@ -45,7 +45,9 @@ func (vm *SignatureMap) ThresholdReached(quorumThreshold VotingPower) bool {
 }
 
 func (vm *SignatureMap) GetMissingValidators() SignatureBitmap {
-	return vm.SignedValidatorsBitmap.GetInverted(vm.TotalValidators)
+	missing := vm.SignedValidatorsBitmap.Clone()
+	missing.FlipInt(0, int(vm.TotalValidators))
+	return SignatureBitmap{Bitmap: missing}
 }
 
 // SaveSignatureParam bundles parameters needed for signature processing with SignatureMap operations
@@ -78,10 +80,4 @@ func SignatureBitmapFromBytes(b []byte) (SignatureBitmap, error) {
 	}
 
 	return SignatureBitmap{Bitmap: bitmap}, nil
-}
-
-func (b SignatureBitmap) GetInverted(total uint32) SignatureBitmap {
-	missing := b.Clone()
-	missing.FlipInt(0, int(total))
-	return SignatureBitmap{Bitmap: missing}
 }
