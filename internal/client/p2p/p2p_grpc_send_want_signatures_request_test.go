@@ -90,14 +90,11 @@ func TestSendWantSignaturesRequest_HappyPath(t *testing.T) {
 		responseToReturn: expectedResponse,
 	}
 
-	// Create mock metrics
-	mockMetrics := &mockMetrics{}
-
 	// Create server P2P service using NewService constructor
 	serverService, err := NewService(context.Background(), Config{
 		Host:            serverHost,
 		SkipMessageSign: true, // Skip message signing for tests
-		Metrics:         mockMetrics,
+		Metrics:         &mockMetrics{},
 		Discovery: DiscoveryConfig{
 			DHTMode:              "client",
 			BootstrapPeers:       []string{},
@@ -125,14 +122,21 @@ func TestSendWantSignaturesRequest_HappyPath(t *testing.T) {
 		}
 	}()
 
-	// Give server time to start
-	time.Sleep(100 * time.Millisecond)
+	defer func() {
+		// Stop server
+		serverCancel()
+		select {
+		case <-serverDone:
+		case <-time.After(2 * time.Second):
+			require.Fail(t, "Server did not shut down within timeout")
+		}
+	}()
 
 	// Create client P2P service using NewService constructor
 	clientService, err := NewService(context.Background(), Config{
 		Host:            clientHost,
 		SkipMessageSign: true, // Skip message signing for tests
-		Metrics:         mockMetrics,
+		Metrics:         &mockMetrics{},
 		Discovery: DiscoveryConfig{
 			EnableMDNS:           false,
 			MDNSServiceName:      "",
@@ -191,14 +195,6 @@ func TestSendWantSignaturesRequest_HappyPath(t *testing.T) {
 	require.True(t, mockHandler.wasCalled)
 	require.Equal(t, request.WantSignatures[testHash1].GetCardinality(), mockHandler.receivedRequest.WantSignatures[testHash1].GetCardinality())
 	require.Equal(t, request.WantSignatures[testHash2].GetCardinality(), mockHandler.receivedRequest.WantSignatures[testHash2].GetCardinality())
-
-	// Stop server
-	serverCancel()
-	select {
-	case <-serverDone:
-	case <-time.After(2 * time.Second):
-		t.Log("Server did not shut down within timeout")
-	}
 }
 
 // mockSignatureRequestHandler implements signatureRequestHandler for testing
