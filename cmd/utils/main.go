@@ -4,7 +4,6 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/symbioticfi/relay/cmd/utils/badger"
 	"github.com/symbioticfi/relay/cmd/utils/keys"
 	"github.com/symbioticfi/relay/cmd/utils/network"
 	"github.com/symbioticfi/relay/cmd/utils/operator"
@@ -28,7 +27,6 @@ func main() {
 	rootCmd.PersistentFlags().StringVar(&cfg.logLevel, "log-level", "info", "log level")
 	rootCmd.PersistentFlags().StringVar(&cfg.logMode, "log-mode", "debug", "log mode")
 
-	rootCmd.AddCommand(badger.NewBadgerCmd())
 	rootCmd.AddCommand(keys.NewKeysCmd())
 	rootCmd.AddCommand(network.NewNetworkCmd())
 	rootCmd.AddCommand(operator.NewOperatorCmd())

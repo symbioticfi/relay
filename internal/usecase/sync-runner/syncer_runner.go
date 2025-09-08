@@ -23,11 +23,11 @@ type provider interface {
 }
 
 type Config struct {
-	Enabled     bool
-	P2PService  p2pService    `validate:"required"`
-	Provider    provider      `validate:"required"`
-	SyncPeriod  time.Duration `validate:"gt=0"`
-	SyncTimeout time.Duration `validate:"gt=0"`
+	SyncSignatures bool
+	P2PService     p2pService    `validate:"required"`
+	Provider       provider      `validate:"required"`
+	SyncPeriod     time.Duration `validate:"gt=0"`
+	SyncTimeout    time.Duration `validate:"gt=0"`
 }
 
 type Runner struct {
@@ -44,7 +44,7 @@ func New(cfg Config) (*Runner, error) {
 }
 
 func (s *Runner) Start(ctx context.Context) error {
-	if !s.cfg.Enabled {
+	if !s.cfg.SyncSignatures {
 		slog.InfoContext(ctx, "Signature sync runner is disabled")
 		return nil
 	}

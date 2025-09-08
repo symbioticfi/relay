@@ -180,11 +180,11 @@ func runApp(ctx context.Context) error {
 	aggProofReadySignal := signals.New[entity.AggregatedSignatureMessage](cfg.SignalCfg, "aggProofReady", nil)
 
 	syncRunner, err := sync_runner.New(sync_runner.Config{
-		Enabled:     cfg.Sync.Enabled,
-		P2PService:  p2pService,
-		Provider:    syncProvider,
-		SyncPeriod:  time.Second,
-		SyncTimeout: time.Minute,
+		SyncSignatures: cfg.Sync.SyncSignatures,
+		P2PService:     p2pService,
+		Provider:       syncProvider,
+		SyncPeriod:     time.Second,
+		SyncTimeout:    time.Minute,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create sync runner: %w", err)
