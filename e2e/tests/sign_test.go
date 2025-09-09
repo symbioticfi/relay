@@ -125,7 +125,6 @@ func TestNonHeaderKeySignature(t *testing.T) {
 
 					require.NoErrorf(t, err, "Failed to get signatures from relay at %s", address)
 
-					// check if no. of signatures matches no. of nodes, in testing setup all nodes are signers
 					if len(resp.Signatures) != len(endpoints) {
 						t.Logf("Received %d/%d signatures for request hash: %s. Waiting for all signatures...", len(resp.Signatures), len(endpoints), reqHash)
 						continue
