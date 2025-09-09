@@ -86,6 +86,11 @@ func (s *Runner) runSync(ctx context.Context) error {
 	}
 	s.cfg.Metrics.ObserveP2PSyncRequestedHashes(len(request.WantSignatures))
 
+	if len(request.WantSignatures) == 0 {
+		slog.InfoContext(ctx, "No pending signature requests found")
+		return nil
+	}
+
 	response, err := s.cfg.P2PService.SendWantSignaturesRequest(ctx, request)
 	if err != nil {
 		if errors.Is(err, entity.ErrNoPeers) {

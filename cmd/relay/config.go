@@ -195,12 +195,23 @@ func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interfa
 		return from, nil
 	}
 
+	// Handle time.Duration specifically
+	if toType == reflect.TypeOf(time.Duration(0)) {
+		duration, err := time.ParseDuration(from.(string))
+		if err != nil {
+			return nil, errors.Errorf("failed to parse duration: %w", err)
+		}
+		return duration, nil
+	}
+
 	flagType := reflect.TypeOf((*pflag.Value)(nil))
 
 	// if fromType implements pflag.Value then we can parse it from string
 	if reflect.PointerTo(toType).Implements(flagType.Elem()) {
 		res := reflect.New(toType).Interface().(pflag.Value)
-		res.Set(from.(string))
+		if err := res.Set(from.(string)); err != nil {
+			return nil, errors.Errorf("failed to set flag value: %w", err)
+		}
 		return res, nil
 	}
 	return from, nil

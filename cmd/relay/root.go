@@ -5,10 +5,6 @@ import (
 	"log/slog"
 	"time"
 
-	signature_processor "github.com/symbioticfi/relay/core/usecase/signature-processor"
-	aggregationPolicy "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
-	signatureListener "github.com/symbioticfi/relay/internal/usecase/signature-listener"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p"
@@ -26,6 +22,7 @@ import (
 	valsetDeriver "github.com/symbioticfi/relay/core/usecase/valset-deriver"
 	"github.com/symbioticfi/relay/internal/client/p2p"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
+	aggregationPolicy "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
 	aggregatorApp "github.com/symbioticfi/relay/internal/usecase/aggregator-app"
 	api_server "github.com/symbioticfi/relay/internal/usecase/api-server"
 	"github.com/symbioticfi/relay/internal/usecase/metrics"
