@@ -17,7 +17,7 @@ func NewAggregator(verificationType entity.VerificationType, prover Prover) (Agg
 	case entity.VerificationTypeBlsBn254ZK:
 		return blsBn254ZK.NewAggregator(prover), nil
 	case entity.VerificationTypeBlsBn254Simple:
-		return blsBn254Simple.NewAggregator(), nil
+		return blsBn254Simple.NewAggregator()
 	}
 
 	return nil, errors.New("unsupported verification type")

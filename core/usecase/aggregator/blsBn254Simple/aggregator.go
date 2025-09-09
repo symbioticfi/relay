@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"math/big"
-	"reflect"
 	"sort"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fp"
@@ -24,10 +23,70 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 )
 
-type Aggregator struct{}
+const maxValidators = 65_536
 
-func NewAggregator() *Aggregator {
-	return &Aggregator{}
+type abiTypes struct {
+	g1Type             abi.Type
+	g2Type             abi.Type
+	validatorsDataType abi.Type
+	g1Args             abi.Arguments
+	g2Args             abi.Arguments
+	validatorsArgs     abi.Arguments
+}
+
+type Aggregator struct {
+	abiTypes abiTypes
+}
+
+type ValidatorData struct {
+	KeySerialized common.Hash
+	VotingPower   *big.Int
+}
+
+func NewAggregator() (*Aggregator, error) {
+	abis, err := createABITypes()
+	if err != nil {
+		return nil, err
+	}
+	return &Aggregator{
+		abiTypes: abis,
+	}, nil
+}
+
+// createABITypes creates and returns all ABI types
+func createABITypes() (abiTypes, error) {
+	g1Type, err := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
+		{Name: "X", Type: "uint256"},
+		{Name: "Y", Type: "uint256"},
+	})
+	if err != nil {
+		return abiTypes{}, err
+	}
+
+	g2Type, err := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
+		{Name: "X", Type: "uint256[2]"},
+		{Name: "Y", Type: "uint256[2]"},
+	})
+	if err != nil {
+		return abiTypes{}, err
+	}
+
+	validatorsDataType, err := abi.NewType("tuple[]", "", []abi.ArgumentMarshaling{
+		{Name: "keySerialized", Type: "bytes32"},
+		{Name: "VotingPower", Type: "uint256"},
+	})
+	if err != nil {
+		return abiTypes{}, err
+	}
+
+	return abiTypes{
+		g1Type:             g1Type,
+		g2Type:             g2Type,
+		validatorsDataType: validatorsDataType,
+		g1Args:             abi.Arguments{{Type: g1Type}},
+		g2Args:             abi.Arguments{{Type: g2Type}},
+		validatorsArgs:     abi.Arguments{{Type: validatorsDataType}},
+	}, nil
 }
 
 func (a Aggregator) Aggregate(
@@ -43,39 +102,66 @@ func (a Aggregator) Aggregate(
 		return entity.AggregationProof{}, errors.Errorf("valset is not sorted by operator address asc: %w", err)
 	}
 
-	type dtoG1Point struct {
-		X *big.Int
-		Y *big.Int
+	// Encode and sort validators
+	validatorsData, err := encodeAndSortValidators(valset.Validators, keyTag)
+	if err != nil {
+		return entity.AggregationProof{}, err
 	}
-	type dtoG2Point struct {
-		X [2]*big.Int
-		Y [2]*big.Int
-	}
-	type dtoValidatorData struct {
-		KeySerialized common.Hash
-		VotingPower   *big.Int
-		isNonSigner   bool
-	}
-	validatorsData := make([]dtoValidatorData, 0, len(valset.Validators))
 
-	aggG1Sig := new(bn254.G1Affine)
-	aggG2Key := new(bn254.G2Affine)
-	signers := make(map[common.Address]struct{})
-	for _, sig := range signatures {
-		pubKey, err := blsBn254.FromRaw(sig.PublicKey)
+	signaturesMap := make(map[common.Hash]*entity.SignatureExtended)
+	nonSigners := make([]int, 0)
+
+	// First, build a map of compressed keys from signatures
+	compressedKeyToSig := make(map[common.Hash]*entity.SignatureExtended)
+	for i := range signatures {
+		pubKey, err := blsBn254.FromRaw(signatures[i].PublicKey)
 		if err != nil {
 			return entity.AggregationProof{}, err
 		}
+
 		val, ok := valset.FindValidatorByKey(keyTag, pubKey.OnChain())
 		if !ok {
 			return entity.AggregationProof{}, errors.New("failed to find validator by key")
 		}
 		if !val.IsActive {
-			// skip inactive validators
 			continue
 		}
-		if _, exists := signers[val.Operator]; exists {
-			return entity.AggregationProof{}, errors.Errorf("duplicate signature from operator %s", val.Operator.Hex())
+
+		// Get compressed key for this signature
+		g1Key := new(bn254.G1Affine)
+		_, err = g1Key.SetBytes(pubKey.OnChain())
+		if err != nil {
+			return entity.AggregationProof{}, err
+		}
+
+		compressedKey, err := compress(g1Key)
+		if err != nil {
+			return entity.AggregationProof{}, err
+		}
+
+		if _, exists := compressedKeyToSig[compressedKey]; exists {
+			return entity.AggregationProof{}, errors.Errorf("duplicate signature from validator")
+		}
+		compressedKeyToSig[compressedKey] = &signatures[i]
+	}
+
+	// Now check sorted validators to identify non-signers
+	for i, val := range validatorsData {
+		if sig, isSigner := compressedKeyToSig[val.KeySerialized]; isSigner {
+			signaturesMap[val.KeySerialized] = sig
+		} else {
+			nonSigners = append(nonSigners, i)
+		}
+	}
+
+	// Aggregate signatures and keys for signers only
+	aggG1Sig := new(bn254.G1Affine)
+	aggG2Key := new(bn254.G2Affine)
+
+	for _, sig := range signaturesMap {
+		pubKey, err := blsBn254.FromRaw(sig.PublicKey)
+		if err != nil {
+			return entity.AggregationProof{}, err
 		}
 
 		g1Sig := new(bn254.G1Affine)
@@ -83,114 +169,46 @@ func (a Aggregator) Aggregate(
 		if err != nil {
 			return entity.AggregationProof{}, err
 		}
+
 		aggG1Sig = aggG1Sig.Add(aggG1Sig, g1Sig)
 		aggG2Key = aggG2Key.Add(aggG2Key, pubKey.G2())
-		signers[val.Operator] = struct{}{}
 	}
 
-	for _, val := range valset.Validators {
-		if !val.IsActive {
-			continue
-		}
-
-		keyBytes, ok := val.FindKeyByKeyTag(keyTag)
-		if !ok {
-			return entity.AggregationProof{}, errors.New("failed to find key by keyTag")
-		}
-		_, isSigner := signers[val.Operator]
-		g1Key := new(bn254.G1Affine)
-		_, err := g1Key.SetBytes(keyBytes)
-		if err != nil {
-			return entity.AggregationProof{}, errors.Errorf("failed to deserialize G1 key: %w", err)
-		}
-
-		compressedKeyG1, err := compress(g1Key)
-		if err != nil {
-			return entity.AggregationProof{}, errors.Errorf("failed to compress G1 key: %w", err)
-		}
-
-		validatorsData = append(validatorsData, dtoValidatorData{
-			KeySerialized: compressedKeyG1,
-			VotingPower:   val.VotingPower.Int,
-			isNonSigner:   !isSigner,
-		})
-	}
-
-	sort.Slice(validatorsData, func(i, j int) bool {
-		// Compare keys (lower first)
-		return validatorsData[i].KeySerialized.Cmp(validatorsData[j].KeySerialized) < 0
-	})
-
-	nonSigners := make([]int, 0, len(validatorsData))
-	for i, val := range validatorsData {
-		if val.isNonSigner {
-			nonSigners = append(nonSigners, i)
-		}
-	}
-
-	dtoG1AggSig := dtoG1Point{
+	aggG1SigBytes, err := a.abiTypes.g1Args.Pack(struct {
+		X *big.Int
+		Y *big.Int
+	}{
 		X: aggG1Sig.X.BigInt(new(big.Int)),
 		Y: aggG1Sig.Y.BigInt(new(big.Int)),
-	}
-
-	dtoG2AggKey := dtoG2Point{}
-	dtoG2AggKey.X[1] = aggG2Key.X.A0.BigInt(new(big.Int))
-	dtoG2AggKey.X[0] = aggG2Key.X.A1.BigInt(new(big.Int))
-	dtoG2AggKey.Y[1] = aggG2Key.Y.A0.BigInt(new(big.Int))
-	dtoG2AggKey.Y[0] = aggG2Key.Y.A1.BigInt(new(big.Int))
-
-	g2Type, err := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
-		{Name: "X", Type: "uint256[2]"},
-		{Name: "Y", Type: "uint256[2]"},
 	})
 	if err != nil {
 		return entity.AggregationProof{}, err
 	}
 
-	g1Type, err := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
-		{Name: "X", Type: "uint256"},
-		{Name: "Y", Type: "uint256"},
+	aggG2KeyBytes, err := a.abiTypes.g2Args.Pack(struct {
+		X [2]*big.Int
+		Y [2]*big.Int
+	}{
+		X: [2]*big.Int{
+			aggG2Key.X.A1.BigInt(new(big.Int)), // index 0
+			aggG2Key.X.A0.BigInt(new(big.Int)), // index 1
+		},
+		Y: [2]*big.Int{
+			aggG2Key.Y.A1.BigInt(new(big.Int)), // index 0
+			aggG2Key.Y.A0.BigInt(new(big.Int)), // index 1
+		},
 	})
 	if err != nil {
 		return entity.AggregationProof{}, err
 	}
 
-	validatorsDataType, err := abi.NewType("tuple[]", "", []abi.ArgumentMarshaling{
-		{Name: "keySerialized", Type: "bytes32"},
-		{Name: "VotingPower", Type: "uint256"},
-	})
+	// Pack validators data with anonymous structs
+	validatorsDataBytes, err := a.packValidatorsData(validatorsData)
 	if err != nil {
 		return entity.AggregationProof{}, err
 	}
 
-	g1PointAbiArgs := abi.Arguments{
-		{
-			Type: g1Type,
-		},
-	}
-
-	g2PointAbiArgs := abi.Arguments{
-		{
-			Type: g2Type,
-		},
-	}
-
-	validatorsDataAbiArgs := abi.Arguments{
-		{
-			Type: validatorsDataType,
-		},
-	}
-
-	aggG1SigBytes, err := g1PointAbiArgs.Pack(dtoG1AggSig)
-	if err != nil {
-		return entity.AggregationProof{}, err
-	}
-
-	aggG2KeyBytes, err := g2PointAbiArgs.Pack(dtoG2AggKey)
-	if err != nil {
-		return entity.AggregationProof{}, err
-	}
-
+	// Encode non-signers indices
 	nonSignersBytes := make([]byte, 0, len(nonSigners)*2)
 	for _, nonSigner := range nonSigners {
 		bidEndianBytes := make([]byte, 2)
@@ -198,11 +216,7 @@ func (a Aggregator) Aggregate(
 		nonSignersBytes = append(nonSignersBytes, bidEndianBytes...)
 	}
 
-	validatorsDataBytes, err := validatorsDataAbiArgs.Pack(validatorsData)
-	if err != nil {
-		return entity.AggregationProof{}, err
-	}
-
+	// Assemble proof
 	proofBytes := bytes.Clone(aggG1SigBytes)
 	proofBytes = append(proofBytes, aggG2KeyBytes...)
 	proofBytes = append(proofBytes, validatorsDataBytes[32:]...)
@@ -220,179 +234,195 @@ func (a Aggregator) Verify(
 	keyTag entity.KeyTag,
 	aggregationProof entity.AggregationProof,
 ) (bool, error) {
-	g2Type, err := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
-		{Name: "X", Type: "uint256[2]"},
-		{Name: "Y", Type: "uint256[2]"},
-	})
-	if err != nil {
-		return false, err
+	// Check key tag type
+	if keyTag.Type() != entity.KeyTypeBlsBn254 {
+		return false, errors.New("unsupported key tag")
 	}
 
-	g1Type, err := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
-		{Name: "X", Type: "uint256"},
-		{Name: "Y", Type: "uint256"},
-	})
-	if err != nil {
-		return false, err
+	if len(aggregationProof.Proof) < 224 {
+		return false, errors.New("aggregation proof is too short")
 	}
 
-	validatorsDataType, err := abi.NewType("tuple[]", "", []abi.ArgumentMarshaling{
-		{Name: "keySerialized", Type: "bytes32"},
-		{Name: "VotingPower", Type: "uint256"},
-	})
-	if err != nil {
-		return false, err
-	}
-
-	g1PointAbiArgs := abi.Arguments{
-		{
-			Type: g1Type,
-		},
-	}
-
-	g2PointAbiArgs := abi.Arguments{
-		{
-			Type: g2Type,
-		},
-	}
-
-	validatorsDataAbiArgs := abi.Arguments{
-		{
-			Type: validatorsDataType,
-		},
-	}
-
+	// Parse proof components
 	offset := 0
 	length := 64
-	aggG1SigTuple, err := g1PointAbiArgs.Unpack(aggregationProof.Proof[offset : offset+length])
+
+	rawAggSig, err := a.abiTypes.g1Args.Unpack(aggregationProof.Proof[offset : offset+length])
 	if err != nil {
 		return false, err
 	}
-	offset += length
 
-	length = 128
-	aggG2KeyTuple, err := g2PointAbiArgs.Unpack(aggregationProof.Proof[offset : offset+length])
-	if err != nil {
-		return false, err
-	}
-	offset += length
-	lengthBig := new(big.Int).SetBytes(aggregationProof.Proof[offset : offset+32])
-	length = 32 + 64*int(lengthBig.Int64())
-	validatorsDataBytes := make([]byte, 32, 32+length)
-	validatorsDataBytes[31] = 32
-	validatorsDataBytes = append(validatorsDataBytes, aggregationProof.Proof[offset:offset+length]...)
-	validatorsDataRaw, err := validatorsDataAbiArgs.Unpack(validatorsDataBytes)
-	if err != nil {
-		return false, err
-	}
-	offset += length
-
-	isNonSignersRaw := aggregationProof.Proof[offset:]
-
-	validatorsData := validatorsDataRaw[0].([]struct {
-		KeySerialized [32]byte `json:"keySerialized"`
-		VotingPower   *big.Int `json:"VotingPower"`
-	})
-
-	nonSignersMap := make(map[uint16]bool)
-	for i := 0; i < len(isNonSignersRaw); i += 2 {
-		val := binary.BigEndian.Uint16(isNonSignersRaw[i : i+2])
-		nonSignersMap[val] = true
-	}
-
-	aggG1SigData := aggG1SigTuple[0].(struct {
+	aggG1Data := rawAggSig[0].(struct {
 		X *big.Int `json:"X"`
 		Y *big.Int `json:"Y"`
 	})
 
 	aggSig := new(bn254.G1Affine)
-	aggSig.X.SetBigInt(aggG1SigData.X)
-	aggSig.Y.SetBigInt(aggG1SigData.Y)
+	aggSig.X.SetBigInt(aggG1Data.X)
+	aggSig.Y.SetBigInt(aggG1Data.Y)
 
-	aggG2KeyData := aggG2KeyTuple[0].(struct {
+	offset += length
+	length = 128
+
+	rawAggPubKeyG2, err := a.abiTypes.g2Args.Unpack(aggregationProof.Proof[offset : offset+length])
+	if err != nil {
+		return false, err
+	}
+
+	aggG2Data := rawAggPubKeyG2[0].(struct {
 		X [2]*big.Int `json:"X"`
 		Y [2]*big.Int `json:"Y"`
 	})
+
 	aggPubKeyG2 := new(bn254.G2Affine)
-	aggPubKeyG2.X.A0.SetBigInt(aggG2KeyData.X[1])
-	aggPubKeyG2.X.A1.SetBigInt(aggG2KeyData.X[0])
-	aggPubKeyG2.Y.A0.SetBigInt(aggG2KeyData.Y[1])
-	aggPubKeyG2.Y.A1.SetBigInt(aggG2KeyData.Y[0])
+	aggPubKeyG2.X.A0.SetBigInt(aggG2Data.X[1])
+	aggPubKeyG2.X.A1.SetBigInt(aggG2Data.X[0])
+	aggPubKeyG2.Y.A0.SetBigInt(aggG2Data.Y[1])
+	aggPubKeyG2.Y.A1.SetBigInt(aggG2Data.Y[0])
 
-	valsetSorted := make([]entity.Validator, 0, len(valset.Validators))
-	for _, val := range valset.Validators {
-		if val.IsActive {
-			valsetSorted = append(valsetSorted, val)
-		}
-	}
-	if len(valsetSorted) != len(validatorsData) {
-		return false, errors.Errorf("active validators length mismatch: got %d, expected %d", len(valsetSorted), len(validatorsData))
+	offset += length
+
+	// Parse validators data length
+	lengthBig := new(big.Int).SetBytes(aggregationProof.Proof[offset : offset+32])
+	if lengthBig.Uint64() == 0 {
+		return false, nil
 	}
 
-	sort.Slice(valsetSorted, func(i, j int) bool {
-		// Compare keys (lower first)
-		keyBytes1, ok := valsetSorted[i].FindKeyByKeyTag(keyTag)
-		if !ok {
-			return false
-		}
-		g1Key1 := new(bn254.G1Affine)
-		_, err := g1Key1.SetBytes(keyBytes1)
-		if err != nil {
-			return false
-		}
-		g1Compressed1, err := compress(g1Key1)
-		if err != nil {
-			return false
-		}
-		keyBytes2, ok := valsetSorted[j].FindKeyByKeyTag(keyTag)
-		if !ok {
-			return false
-		}
-		g1Key2 := new(bn254.G1Affine)
-		_, err = g1Key2.SetBytes(keyBytes2)
-		if err != nil {
-			return false
-		}
-		g1Compressed2, err := compress(g1Key2)
-		if err != nil {
-			return false
-		}
-		return g1Compressed1.Cmp(g1Compressed2) < 0
+	validatorsDataLength := int(lengthBig.Int64())
+	if validatorsDataLength > maxValidators {
+		return false, errors.New("too many validators")
+	}
+
+	// Calculate non-signers offset
+	nonSignersOffset := 224 + validatorsDataLength*64
+	if len(aggregationProof.Proof) < nonSignersOffset {
+		return false, errors.New("proof too short for validators data")
+	}
+
+	// Verify validators data hash matches
+	length = 32 + 64*int(lengthBig.Int64())
+	validatorsDataBytes := make([]byte, 32, 32+length)
+	validatorsDataBytes[31] = 32
+	validatorsDataBytes = append(validatorsDataBytes, aggregationProof.Proof[offset:offset+length]...)
+
+	expectedValidatorsData, err := encodeAndSortValidators(valset.Validators, keyTag)
+	if err != nil {
+		return false, err
+	}
+
+	expectedKeccak, err := a.calculateValidatorsKeccak(expectedValidatorsData)
+	if err != nil {
+		return false, err
+	}
+
+	localKeccak := crypto.Keccak256Hash(validatorsDataBytes[32:])
+	if expectedKeccak.Cmp(localKeccak) != 0 {
+		return false, nil
+	}
+
+	// Parse non-signers with proper validation
+	nonSignersRaw := aggregationProof.Proof[nonSignersOffset:]
+	nonSignersLength := len(nonSignersRaw) / 2
+
+	// Validate proof length matches expected non-signers data
+	if len(aggregationProof.Proof) != nonSignersOffset+nonSignersLength*2 {
+		return false, errors.New("invalid proof length")
+	}
+
+	rawValidatorsData, err := a.abiTypes.validatorsArgs.Unpack(validatorsDataBytes)
+	if err != nil {
+		return false, err
+	}
+
+	validatorsRaw := rawValidatorsData[0].([]struct {
+		KeySerialized [32]byte `json:"keySerialized"`
+		VotingPower   *big.Int `json:"VotingPower"`
 	})
 
-	aggPubKeyG1 := new(bn254.G1Affine)
-	var signersVotingPower big.Int
-	for i, val := range valsetSorted {
-		keyBytes, ok := val.FindKeyByKeyTag(keyTag)
-		if !ok {
-			return false, errors.Errorf("keyTag not found for validator %s", val.Operator.Hex())
-		}
-		g1Key := new(bn254.G1Affine)
-		_, err = g1Key.SetBytes(keyBytes)
-		if err != nil {
-			return false, errors.Errorf("failed to deserialize G1 key from valset: %w", err)
-		}
-		g1, err := decompress(validatorsData[i].KeySerialized)
-		if err != nil {
-			return false, errors.Errorf("failed to decompress G1 key from valset: %w", err)
-		}
-		if g1Key.X.BigInt(new(big.Int)).Cmp(g1.X.BigInt(new(big.Int))) != 0 ||
-			g1Key.Y.BigInt(new(big.Int)).Cmp(g1.Y.BigInt(new(big.Int))) != 0 {
-			return false, errors.Errorf("mismatch in validator G1 pubkey for val %s idx %d", val.Operator.Hex(), i)
-		}
-		if val.VotingPower.Cmp(validatorsData[i].VotingPower) != 0 {
-			return false, errors.Errorf("voting power mismatch for val %s", val.Operator.Hex())
-		}
-		if !nonSignersMap[uint16(i)] {
-			aggPubKeyG1 = aggPubKeyG1.Add(aggPubKeyG1, g1Key)
-			signersVotingPower.Add(&signersVotingPower, val.VotingPower.Int)
+	validatorsData := make([]ValidatorData, len(validatorsRaw))
+	for i, v := range validatorsRaw {
+		validatorsData[i] = ValidatorData{
+			KeySerialized: v.KeySerialized,
+			VotingPower:   v.VotingPower,
 		}
 	}
 
-	if signersVotingPower.Cmp(valset.QuorumThreshold.Int) < 0 {
+	// Parse and validate non-signers with ordering check
+	nonSignersMap := make(map[uint16]bool)
+	var nonSignersVotingPower big.Int
+	var nonSignersPublicKeyG1 *bn254.G1Affine
+	nonSignersPublicKeyG1 = new(bn254.G1Affine) // Initialize to zero point
+
+	var prevNonSignerIndex uint16
+	for i := 0; i < nonSignersLength; i++ {
+		currentNonSignerIndex := binary.BigEndian.Uint16(nonSignersRaw[i*2 : (i+1)*2])
+
+		// Validate non-signer index
+		if currentNonSignerIndex >= uint16(validatorsDataLength) {
+			return false, errors.New("invalid non-signer index")
+		}
+
+		// Check ordering (must be ascending)
+		if i > 0 && prevNonSignerIndex >= currentNonSignerIndex {
+			return false, errors.New("invalid non-signers order")
+		}
+
+		nonSignersMap[currentNonSignerIndex] = true
+
+		// Add non-signer's voting power
+		nonSignersVotingPower.Add(&nonSignersVotingPower, validatorsData[currentNonSignerIndex].VotingPower)
+
+		// Add non-signer's public key
+		g1Key, err := decompress(validatorsData[currentNonSignerIndex].KeySerialized)
+		if err != nil {
+			return false, errors.Errorf("failed to decompress non-signer G1 key: %w", err)
+		}
+		nonSignersPublicKeyG1 = nonSignersPublicKeyG1.Add(nonSignersPublicKeyG1, g1Key)
+
+		prevNonSignerIndex = currentNonSignerIndex
+	}
+
+	// Verify validators match expected
+	if len(expectedValidatorsData) != len(validatorsData) {
+		return false, errors.Errorf("active validators length mismatch: got %d, expected %d", len(expectedValidatorsData), len(validatorsData))
+	}
+
+	for i, expectedVal := range expectedValidatorsData {
+		// Verify validator data matches
+		if expectedVal.KeySerialized != validatorsData[i].KeySerialized {
+			return false, errors.Errorf("mismatch in validator key at index %d", i)
+		}
+		if expectedVal.VotingPower.Cmp(validatorsData[i].VotingPower) != 0 {
+			return false, errors.Errorf("voting power mismatch at index %d", i)
+		}
+	}
+
+	// Check quorum using the same logic as Solidity
+	totalActiveVotingPower := valset.GetTotalActiveVotingPower()
+	signersVotingPower := new(big.Int).Sub(totalActiveVotingPower.Int, &nonSignersVotingPower)
+
+	if valset.QuorumThreshold.Cmp(signersVotingPower) > 0 {
 		return false, errors.Errorf("signers do not meet threshold voting power (%s < %s)", signersVotingPower.String(), valset.QuorumThreshold.String())
 	}
 
+	// Get aggregated public key from valset (equivalent to extra data in Solidity)
+	aggregatedPubKeys := helpers.GetAggregatedPubKeys(valset, []entity.KeyTag{keyTag})
+	if len(aggregatedPubKeys) == 0 {
+		return false, errors.New("no aggregated public key found")
+	}
+
+	aggPubKeyG1Raw := new(bn254.G1Affine)
+	_, err = aggPubKeyG1Raw.SetBytes(aggregatedPubKeys[0].Payload)
+	if err != nil {
+		return false, errors.Errorf("failed to deserialize aggregated G1 key: %w", err)
+	}
+
+	// Calculate effective public key: aggPubKeyG1 - nonSignersPublicKeyG1
+	// This matches the Solidity logic: aggPubKeyG1.plus(nonSignersPublicKeyG1.negate())
+	negNonSignersKey := new(bn254.G1Affine).Neg(nonSignersPublicKeyG1)
+	effectivePubKeyG1 := new(bn254.G1Affine).Add(aggPubKeyG1Raw, negNonSignersKey)
+
+	// Verify signature using BLS verification
 	if len(aggregationProof.MessageHash) != 32 {
 		return false, errors.New("message hash must be 32 bytes")
 	}
@@ -402,43 +432,14 @@ func (a Aggregator) Verify(
 		return false, errors.Errorf("failed to hash message to G1: %w", err)
 	}
 
-	aggPubKeyG1XBytes := make([]byte, 32)
-	aggPubKeyG1YBytes := make([]byte, 32)
-	aggPubKeyG1.X.BigInt(new(big.Int)).FillBytes(aggPubKeyG1XBytes)
-	aggPubKeyG1.Y.BigInt(new(big.Int)).FillBytes(aggPubKeyG1YBytes)
-	aggPubKeyG2X0Bytes := make([]byte, 32)
-	aggPubKeyG2X1Bytes := make([]byte, 32)
-	aggPubKeyG2Y0Bytes := make([]byte, 32)
-	aggPubKeyG2Y1Bytes := make([]byte, 32)
-	aggPubKeyG2.X.A0.BigInt(new(big.Int)).FillBytes(aggPubKeyG2X0Bytes)
-	aggPubKeyG2.X.A1.BigInt(new(big.Int)).FillBytes(aggPubKeyG2X1Bytes)
-	aggPubKeyG2.Y.A0.BigInt(new(big.Int)).FillBytes(aggPubKeyG2Y0Bytes)
-	aggPubKeyG2.Y.A1.BigInt(new(big.Int)).FillBytes(aggPubKeyG2Y1Bytes)
-	aggSigXBytes := make([]byte, 32)
-	aggSigYBytes := make([]byte, 32)
-	aggSig.X.BigInt(new(big.Int)).FillBytes(aggSigXBytes)
-	aggSig.Y.BigInt(new(big.Int)).FillBytes(aggSigYBytes)
+	// Prepare bytes for alpha calculation
+	alpha := calcAlpha(effectivePubKeyG1, aggPubKeyG2, aggSig, aggregationProof.MessageHash)
 
-	alpha := new(big.Int).SetBytes(
-		crypto.Keccak256(
-			aggregationProof.MessageHash,
-			aggPubKeyG1XBytes,
-			aggPubKeyG1YBytes,
-			aggPubKeyG2X0Bytes,
-			aggPubKeyG2X1Bytes,
-			aggPubKeyG2Y0Bytes,
-			aggPubKeyG2Y1Bytes,
-			aggSigXBytes,
-			aggSigYBytes,
-		),
-	)
-
-	alpha = new(big.Int).Mod(alpha, fr.Modulus())
 	_, _, g1, g2 := bn254.Generators()
 	negG2 := new(bn254.G2Affine).Neg(&g2)
 
 	p := [2]bn254.G1Affine{
-		*new(bn254.G1Affine).Add(aggSig, new(bn254.G1Affine).ScalarMultiplication(aggPubKeyG1, alpha)),
+		*new(bn254.G1Affine).Add(aggSig, new(bn254.G1Affine).ScalarMultiplication(effectivePubKeyG1, alpha)),
 		*new(bn254.G1Affine).Add(messageHashG1, new(bn254.G1Affine).ScalarMultiplication(&g1, alpha)),
 	}
 	q := [2]bn254.G2Affine{*negG2, *aggPubKeyG2}
@@ -454,9 +455,46 @@ func (a Aggregator) Verify(
 	return true, nil
 }
 
+func calcAlpha(aggPubKeyG1 *bn254.G1Affine, aggPubKeyG2 *bn254.G2Affine, aggSig *bn254.G1Affine, messageHash []byte) *big.Int {
+	alphaBytes := make([][]byte, 0, 9)
+
+	alphaBytes = append(alphaBytes, messageHash)
+
+	// G1 public key bytes
+	aggPubKeyG1XBytes := make([]byte, 32)
+	aggPubKeyG1YBytes := make([]byte, 32)
+	aggPubKeyG1.X.BigInt(new(big.Int)).FillBytes(aggPubKeyG1XBytes)
+	aggPubKeyG1.Y.BigInt(new(big.Int)).FillBytes(aggPubKeyG1YBytes)
+	alphaBytes = append(alphaBytes, aggPubKeyG1XBytes, aggPubKeyG1YBytes)
+
+	// G2 public key bytes
+	aggPubKeyG2X0Bytes := make([]byte, 32)
+	aggPubKeyG2X1Bytes := make([]byte, 32)
+	aggPubKeyG2Y0Bytes := make([]byte, 32)
+	aggPubKeyG2Y1Bytes := make([]byte, 32)
+	aggPubKeyG2.X.A0.BigInt(new(big.Int)).FillBytes(aggPubKeyG2X0Bytes)
+	aggPubKeyG2.X.A1.BigInt(new(big.Int)).FillBytes(aggPubKeyG2X1Bytes)
+	aggPubKeyG2.Y.A0.BigInt(new(big.Int)).FillBytes(aggPubKeyG2Y0Bytes)
+	aggPubKeyG2.Y.A1.BigInt(new(big.Int)).FillBytes(aggPubKeyG2Y1Bytes)
+	alphaBytes = append(alphaBytes, aggPubKeyG2X0Bytes, aggPubKeyG2X1Bytes, aggPubKeyG2Y0Bytes, aggPubKeyG2Y1Bytes)
+
+	// Signature bytes
+	aggSigXBytes := make([]byte, 32)
+	aggSigYBytes := make([]byte, 32)
+	aggSig.X.BigInt(new(big.Int)).FillBytes(aggSigXBytes)
+	aggSig.Y.BigInt(new(big.Int)).FillBytes(aggSigYBytes)
+	alphaBytes = append(alphaBytes, aggSigXBytes, aggSigYBytes)
+
+	alpha := new(big.Int).SetBytes(crypto.Keccak256(alphaBytes...))
+	alpha = new(big.Int).Mod(alpha, fr.Modulus())
+
+	return alpha
+}
+
 func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []entity.KeyTag) ([]entity.ExtraData, error) {
 	extraData := make([]entity.ExtraData, 0)
 
+	// Total active voting power
 	totalActiveVotingPowerKey, err := helpers.GetExtraDataKey(entity.VerificationTypeBlsBn254Simple, entity.SimpleVerificationTotalVotingPowerHash)
 	if err != nil {
 		return nil, errors.Errorf("failed to get extra data key: %w", err)
@@ -472,33 +510,37 @@ func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []enti
 
 	aggregatedPubKeys := helpers.GetAggregatedPubKeys(valset, keyTags)
 
-	// pack keccak accumulators per keyTag
+	// Process each key tag
 	for _, key := range aggregatedPubKeys {
+		// Calculate keccak accumulator using common encoding
+		validatorsData, err := encodeAndSortValidators(valset.Validators, key.Tag)
+		if err != nil {
+			return nil, errors.Errorf("failed to encode validators: %w", err)
+		}
+
 		validatorSetHashKey, err := helpers.GetExtraDataKeyTagged(entity.VerificationTypeBlsBn254Simple, key.Tag, entity.SimpleVerificationValidatorSetHashKeccak256Hash)
 		if err != nil {
 			return nil, errors.Errorf("failed to get extra data key: %w", err)
 		}
 
-		keccakHashAccumulator, err := calcKeccakAccumulator(valset.Validators, key.Tag)
+		keccakHashAccumulator, err := a.calculateValidatorsKeccak(validatorsData)
 		if err != nil {
-			return nil, errors.Errorf("failed to generate validator set MiMC accumulator: %w", err)
+			return nil, errors.Errorf("failed to generate validator set keccak accumulator: %w", err)
 		}
 
 		extraData = append(extraData, entity.ExtraData{
 			Key:   validatorSetHashKey,
 			Value: keccakHashAccumulator,
 		})
-	}
 
-	// pack aggregated keys per keyTag
-	for _, activeAggregatedKey := range aggregatedPubKeys {
-		activeAggregatedKeyKey, err := helpers.GetExtraDataKeyTagged(entity.VerificationTypeBlsBn254Simple, activeAggregatedKey.Tag, entity.SimpleVerificationAggPublicKeyG1Hash)
+		// Pack aggregated keys
+		activeAggregatedKeyKey, err := helpers.GetExtraDataKeyTagged(entity.VerificationTypeBlsBn254Simple, key.Tag, entity.SimpleVerificationAggPublicKeyG1Hash)
 		if err != nil {
 			return nil, errors.Errorf("failed to get extra data key: %w", err)
 		}
 
 		keyG1Raw := new(bn254.G1Affine)
-		_, err = keyG1Raw.SetBytes(activeAggregatedKey.Payload)
+		_, err = keyG1Raw.SetBytes(key.Payload)
 		if err != nil {
 			return nil, errors.Errorf("failed to deserialize G1: %w", err)
 		}
@@ -517,64 +559,67 @@ func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []enti
 	return extraData, nil
 }
 
-func calcKeccakAccumulator(validators []entity.Validator, requiredKeyTag entity.KeyTag) (common.Hash, error) {
-	type validatorDataTuple struct {
-		KeySerialized common.Hash
+// packValidatorsData packs validators data using anonymous structs
+func (a Aggregator) packValidatorsData(validatorsData []ValidatorData) ([]byte, error) {
+	// Convert to anonymous struct slice for ABI packing
+	abiData := make([]struct {
+		KeySerialized [32]byte
 		VotingPower   *big.Int
-	}
-	u256, _ := abi.NewType("uint256", "", nil)
-	b32, _ := abi.NewType("bytes32", "", nil)
+	}, len(validatorsData))
 
-	tupleType := abi.Type{
-		T:             abi.TupleTy,
-		TupleElems:    []*abi.Type{&b32, &u256},
-		TupleRawNames: []string{"keySerialized", "votingPower"},
-		TupleType:     reflect.TypeOf(validatorDataTuple{}),
+	for i, v := range validatorsData {
+		abiData[i].KeySerialized = v.KeySerialized
+		abiData[i].VotingPower = v.VotingPower
 	}
 
-	arrayType := abi.Type{
-		T:    abi.SliceTy,
-		Elem: &tupleType,
-	}
+	return a.abiTypes.validatorsArgs.Pack(abiData)
+}
 
-	args := abi.Arguments{{Type: arrayType}}
-	validatorsData := make([]validatorDataTuple, 0, len(validators))
-	for _, validator := range validators {
-		validatorVotingPower := validator.VotingPower
-		for _, validatorKey := range validator.Keys {
-			if validatorKey.Tag == requiredKeyTag {
-				validatorKeyG1 := new(bn254.G1Affine)
-				_, err := validatorKeyG1.SetBytes(validatorKey.Payload)
-				if err != nil {
-					return common.Hash{}, errors.Errorf("failed to deserialize G1: %w", err)
-				}
+// encodeAndSortValidators encodes validators and returns sorted ValidatorData
+func encodeAndSortValidators(validators []entity.Validator, keyTag entity.KeyTag) ([]ValidatorData, error) {
+	validatorsData := make([]ValidatorData, 0, len(validators))
 
-				compressedKeyG1, err := compress(validatorKeyG1)
-				if err != nil {
-					return [32]byte{}, errors.Errorf("failed to compress G1: %w", err)
-				}
-
-				votingPower := validatorVotingPower
-
-				validatorsData = append(validatorsData, validatorDataTuple{
-					KeySerialized: compressedKeyG1,
-					VotingPower:   votingPower.Int,
-				})
-			}
+	for _, val := range validators {
+		if !val.IsActive {
+			continue
 		}
+
+		keyBytes, ok := val.FindKeyByKeyTag(keyTag)
+		if !ok {
+			return nil, errors.Errorf("failed to find key by keyTag for validator %s", val.Operator.Hex())
+		}
+
+		g1Key := new(bn254.G1Affine)
+		_, err := g1Key.SetBytes(keyBytes)
+		if err != nil {
+			return nil, errors.Errorf("failed to deserialize G1 key: %w", err)
+		}
+
+		compressedKeyG1, err := compress(g1Key)
+		if err != nil {
+			return nil, errors.Errorf("failed to compress G1 key: %w", err)
+		}
+
+		validatorsData = append(validatorsData, ValidatorData{
+			KeySerialized: compressedKeyG1,
+			VotingPower:   val.VotingPower.Int,
+		})
 	}
 
 	sort.Slice(validatorsData, func(i, j int) bool {
-		// Compare keys (lower first)
 		return validatorsData[i].KeySerialized.Cmp(validatorsData[j].KeySerialized) < 0
 	})
 
-	packed, err := args.Pack(validatorsData)
+	return validatorsData, nil
+}
+
+// calculateValidatorsKeccak calculates keccak hash of validators data
+func (a Aggregator) calculateValidatorsKeccak(validatorsData []ValidatorData) (common.Hash, error) {
+	packed, err := a.packValidatorsData(validatorsData)
 	if err != nil {
-		return common.Hash{}, errors.Errorf("failed to pack arguments: %w", err)
+		return common.Hash{}, err
 	}
-	hash := crypto.Keccak256Hash(packed[32:])
-	return hash, nil
+	return crypto.Keccak256Hash(packed[32:]), nil
 }
 
 func compress(g1 *bn254.G1Affine) (common.Hash, error) {
@@ -613,8 +658,6 @@ func decompress(compressed [32]byte) (*bn254.G1Affine, error) {
 	return g1, nil
 }
 
-// FindYFromX calculates the y coordinate for a given x on the BN254 curve
-// Returns (beta, y) where beta = x^3 + 3 (mod p) and y = sqrt(beta) if it exists
 func findYFromX(x *big.Int) (y *big.Int, err error) {
 	fpModulus := fp.Modulus()
 
@@ -624,7 +667,6 @@ func findYFromX(x *big.Int) (y *big.Int, err error) {
 	beta.Mod(beta, fpModulus)                             // (x^3 + 3) mod p
 
 	// Calculate y = beta^((p+1)/4) mod p
-	// The exponent (p+1)/4 for BN254 is 0xc19139cb84c680a6e14116da060561765e05aa45a1c72a34f082305b61f3f52
 	exponent, success := new(big.Int).SetString("c19139cb84c680a6e14116da060561765e05aa45a1c72a34f082305b61f3f52", 16)
 	if !success {
 		return nil, errors.New("blsBn254: failed to set exponent")

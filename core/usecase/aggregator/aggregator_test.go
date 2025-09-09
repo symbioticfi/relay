@@ -18,7 +18,8 @@ import (
 )
 
 func TestSimpleAggregator(t *testing.T) {
-	agg := blsBn254Simple.NewAggregator()
+	agg, err := blsBn254Simple.NewAggregator()
+	require.NoError(t, err)
 	valset, signatures, keyTag := genCorrectTest(10, []int{1, 2, 3})
 
 	proof, err := agg.Aggregate(valset, keyTag, signatures[0].MessageHash, signatures)
@@ -32,7 +33,8 @@ func TestSimpleAggregator(t *testing.T) {
 }
 
 func TestInvalidSimpleAggregator(t *testing.T) {
-	agg := blsBn254Simple.NewAggregator()
+	agg, err := blsBn254Simple.NewAggregator()
+	require.NoError(t, err)
 	valset, signatures, keyTag := genCorrectTest(10, []int{1, 2, 3})
 	someKey, err := crypto.GeneratePrivateKey(keyTag.Type())
 	if err != nil {
@@ -59,7 +61,8 @@ func TestInvalidSimpleAggregator(t *testing.T) {
 
 func TestSimpleAggregatorExtraData(t *testing.T) {
 	valset, keyTag := genExtraDataTest(t)
-	agg := blsBn254Simple.NewAggregator()
+	agg, err := blsBn254Simple.NewAggregator()
+	require.NoError(t, err)
 	data, err := agg.GenerateExtraData(valset, []entity.KeyTag{keyTag})
 	require.NoError(t, err)
 	expected := [][]string{
