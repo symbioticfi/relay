@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/kelseyhightower/envconfig"
+
 	"github.com/symbioticfi/relay/core/entity"
 	symbioticCrypto "github.com/symbioticfi/relay/core/usecase/crypto"
 )

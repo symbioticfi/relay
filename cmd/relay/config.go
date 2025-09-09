@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/pflag"
 
@@ -136,7 +137,9 @@ type CacheConfig struct {
 }
 
 type SyncConfig struct {
-	SyncSignatures bool `mapstructure:"sync-signatures"`
+	SyncSignatures bool          `mapstructure:"sync-signatures"`
+	SyncPeriod     time.Duration `mapstructure:"sync-period"`
+	SyncTimeout    time.Duration `mapstructure:"sync-timeout"`
 }
 
 func (c config) Validate() error {
@@ -180,6 +183,8 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Int("cache.network-config-size", 10, "Network config cache size")
 	rootCmd.PersistentFlags().Int("cache.validator-set-size", 10, "Validator set cache size")
 	rootCmd.PersistentFlags().Bool("sync.sync-signatures", true, "Enable signature syncer")
+	rootCmd.PersistentFlags().Duration("sync.sync-period", time.Second*5, "Signature sync period")
+	rootCmd.PersistentFlags().Duration("sync.sync-timeout", time.Minute, "Signature sync timeout")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
@@ -284,6 +289,12 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("sync.sync-signatures", cmd.PersistentFlags().Lookup("sync.sync-signatures")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("sync.sync-timeout", cmd.PersistentFlags().Lookup("sync.sync-timeout")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("sync.sync-period", cmd.PersistentFlags().Lookup("sync.sync-period")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 

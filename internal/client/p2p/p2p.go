@@ -20,6 +20,7 @@ import (
 	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
 	p2pEntity "github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
+	"github.com/symbioticfi/relay/pkg/server"
 	"github.com/symbioticfi/relay/pkg/signals"
 )
 
@@ -40,6 +41,8 @@ const (
 type metrics interface {
 	ObserveP2PMessageSent(messageType string)
 	ObserveP2PPeerMessageSent(messageType, status string)
+	UnaryServerInterceptor() grpc.UnaryServerInterceptor
+	StreamServerInterceptor() grpc.StreamServerInterceptor
 }
 
 // DiscoveryConfig contains discovery protocol configuration
@@ -302,8 +305,16 @@ func (s *Service) ID() string {
 
 func (s *Service) StartGRPCServer(ctx context.Context) error {
 	grpcServer := grpc.NewServer(
-		grpc.ChainUnaryInterceptor(),
-		grpc.ChainStreamInterceptor(),
+		grpc.ChainUnaryInterceptor(
+			server.PanicRecoveryInterceptor(),
+			s.metrics.UnaryServerInterceptor(),
+			server.LoggingInterceptor(),
+		),
+		grpc.ChainStreamInterceptor(
+			server.StreamPanicRecoveryInterceptor(),
+			s.metrics.StreamServerInterceptor(),
+			server.StreamLoggingInterceptor(),
+		),
 	)
 	prototypes.RegisterSymbioticP2PServiceServer(grpcServer, s.p2pGRPCHandler)
 

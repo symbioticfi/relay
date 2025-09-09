@@ -22,12 +22,18 @@ type provider interface {
 	ProcessReceivedSignatures(ctx context.Context, response entity.WantSignaturesResponse, wantSignatures map[common.Hash]entity.SignatureBitmap) entity.SignatureProcessingStats
 }
 
+type metrics interface {
+	ObserveP2PSyncSignaturesProcessed(resultType string, count int)
+	ObserveP2PSyncRequestedHashes(count int)
+}
+
 type Config struct {
 	SyncSignatures bool
 	P2PService     p2pService    `validate:"required"`
 	Provider       provider      `validate:"required"`
 	SyncPeriod     time.Duration `validate:"gt=0"`
 	SyncTimeout    time.Duration `validate:"gt=0"`
+	Metrics        metrics       `validate:"required"`
 }
 
 type Runner struct {
@@ -78,6 +84,7 @@ func (s *Runner) runSync(ctx context.Context) error {
 	if err != nil {
 		return errors.Errorf("failed to build want signatures request: %w", err)
 	}
+	s.cfg.Metrics.ObserveP2PSyncRequestedHashes(len(request.WantSignatures))
 
 	response, err := s.cfg.P2PService.SendWantSignaturesRequest(ctx, request)
 	if err != nil {
@@ -104,6 +111,16 @@ func (s *Runner) runSync(ctx context.Context) error {
 		"processing_errors", stats.ProcessingErrorCount,
 		"already_exist", stats.AlreadyExistCount,
 	)
+
+	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("processed", stats.ProcessedCount)
+	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("unrequested_signatures", stats.UnrequestedSignatureCount)
+	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("unrequested_hashes", stats.UnrequestedHashCount)
+	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("signature_request_errors", stats.SignatureRequestErrorCount)
+	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("public_key_errors", stats.PublicKeyErrorCount)
+	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("validator_info_errors", stats.ValidatorInfoErrorCount)
+	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("validator_index_missmatch_count", stats.ValidatorIndexMismatchCount)
+	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("processing_errors", stats.ProcessingErrorCount)
+	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("already_exist", stats.AlreadyExistCount)
 
 	return nil
 }

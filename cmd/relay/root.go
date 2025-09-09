@@ -183,8 +183,9 @@ func runApp(ctx context.Context) error {
 		SyncSignatures: cfg.Sync.SyncSignatures,
 		P2PService:     p2pService,
 		Provider:       syncProvider,
-		SyncPeriod:     time.Second,
-		SyncTimeout:    time.Minute,
+		SyncPeriod:     cfg.Sync.SyncPeriod,
+		SyncTimeout:    cfg.Sync.SyncTimeout,
+		Metrics:        mtr,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create sync runner: %w", err)
@@ -313,6 +314,7 @@ func runApp(ctx context.Context) error {
 		EvmClient:         evmClient,
 		Aggregator:        aggApp,
 		Deriver:           deriver,
+		Metrics:           mtr,
 		ServeMetrics:      serveMetricsOnAPIAddress,
 	})
 	if err != nil {
