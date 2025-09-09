@@ -103,6 +103,20 @@ func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.
 				continue
 			}
 
+			err = s.cfg.SignatureReceivedSignal.Emit(ctx, entity.SignatureMessage{
+				RequestHash: reqHash,
+				KeyTag:      sigReq.KeyTag,
+				Epoch:       sigReq.RequiredEpoch,
+				Signature:   validatorSig.Signature,
+			})
+			if err != nil {
+				slog.WarnContext(ctx, "Failed to emit signature received signal", "error", err)
+			}
+
+			slog.DebugContext(ctx, "Processed received signature",
+				"request_hash", reqHash.Hex(),
+				"epoch", uint64(sigReq.RequiredEpoch),
+			)
 			stats.ProcessedCount++
 		}
 	}

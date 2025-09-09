@@ -153,12 +153,14 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create signature processor: %w", err)
 	}
 
+	signatureReceivedSignal := signals.New[entity.SignatureMessage](cfg.SignalCfg, "signatureReceive", nil)
 	syncProvider, err := sync_provider.New(sync_provider.Config{
 		Repo:                        repo,
 		SignatureProcessor:          signatureProcessor,
 		EpochsToSync:                5,
 		MaxSignatureRequestsPerSync: 1000,
 		MaxResponseSignatureCount:   1000,
+		SignatureReceivedSignal:     signatureReceivedSignal,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create syncer: %w", err)
@@ -251,10 +253,11 @@ func runApp(ctx context.Context) error {
 	}
 
 	signListener, err := signatureListener.New(signatureListener.Config{
-		Repo:               repo,
-		SignatureProcessor: signatureProcessor,
-		SignalCfg:          cfg.SignalCfg,
-		SelfP2PID:          p2pService.ID(),
+		Repo:                 repo,
+		SignatureProcessor:   signatureProcessor,
+		SignalCfg:            cfg.SignalCfg,
+		SelfP2PID:            p2pService.ID(),
+		SignatureSavedSignal: signatureReceivedSignal,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create signature listener: %w", err)
@@ -307,8 +310,11 @@ func runApp(ctx context.Context) error {
 			return errors.Errorf("failed to create aggregator app: %w", err)
 		}
 
-		if err := signListener.StartSignatureSavedMessageListener(ctx, aggApp.HandleSignatureGeneratedMessage); err != nil {
-			return errors.Errorf("failed to start signature saved message listener: %w", err)
+		if err := signatureReceivedSignal.SetHandler(aggApp.HandleSignatureGeneratedMessage); err != nil {
+			return errors.Errorf("failed to set signature received message handler: %w", err)
+		}
+		if err := signatureReceivedSignal.StartWorkers(ctx); err != nil {
+			return errors.Errorf("failed to start signature received signal workers: %w", err)
 		}
 
 		slog.DebugContext(ctx, "Created aggregator app, starting")

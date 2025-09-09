@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Symbiotic Network Generator
-# This script generates a Docker Compose setup for a local blockchain network
-# with configurable number of operators, commiters, and aggregators
+# Symbiotic Network Infrastructure Generator
+# This script generates a Docker Compose setup for blockchain infrastructure
+# (anvil chains, deployer, genesis-generator) with configurable parameters
 #
 # Environment Variables:
 #   OPERATORS        - Number of operators (default: 4, max: 999)
@@ -155,8 +155,6 @@ generate_docker_compose() {
 
     local anvil_port=8545
     local anvil_settlement_port=8546
-    local relay_start_port=8081
-    local sum_start_port=9091
     
     cat > "$network_dir/docker-compose.yml" << EOF
 services:
@@ -238,80 +236,6 @@ services:
 
 EOF
 
-    local committer_count=0
-    local aggregator_count=0
-    local signer_count=0
-    
-    # Calculate symb private key properly
-    # ECDSA secp256k1 private keys must be 32 bytes (64 hex chars) and within range [1, n-1]
-    # where n = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
-    BASE_PRIVATE_KEY=1000000000000000000
-    SWARM_KEY=0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140
-
-    for i in $(seq 1 $operators); do
-        local port=$((relay_start_port + i - 1))
-        local storage_dir="data-$(printf "%02d" $i)"
-        local key_index=$((i - 1))
-        
-        # Determine role for this operator
-        local role_flags=""
-        local role_name="signer"
-        
-        if [ $committer_count -lt $commiters ]; then
-            role_flags="--committer true"
-            role_name="committer"
-            committer_count=$((committer_count + 1))
-        elif [ $aggregator_count -lt $aggregators ]; then
-            role_flags="--aggregator true"
-            role_name="aggregator"
-            aggregator_count=$((aggregator_count + 1))
-        else
-            role_flags="--signer true"
-            signer_count=$((signer_count + 1))
-        fi
-        
-        SYMB_PRIVATE_KEY_DECIMAL=$(($BASE_PRIVATE_KEY + $key_index))
-        SYMB_PRIVATE_KEY_HEX=$(printf "%064x" $SYMB_PRIVATE_KEY_DECIMAL)
-        
-        # Validate ECDSA secp256k1 private key range (must be between 1 and n-1)
-        # Maximum valid key: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140
-        if [ $SYMB_PRIVATE_KEY_DECIMAL -eq 0 ]; then
-            echo "ERROR: Generated private key is zero (invalid for ECDSA)"
-            exit 1
-        fi
-        
-        cat >> "$network_dir/docker-compose.yml" << EOF
-
-  # Relay sidecar $i ($role_name)
-  relay-sidecar-$i:
-    image: relay_sidecar:dev
-    container_name: symbiotic-relay-$i
-    command:
-      - sh
-      - -c
-      - "chmod 777 /app/$storage_dir /deploy-data 2>/dev/null || true && /workspace/scripts/sidecar-start.sh symb/0/15/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31337/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31338/0x$SYMB_PRIVATE_KEY_HEX,p2p/1/0/$SWARM_KEY,p2p/1/1/$SYMB_PRIVATE_KEY_HEX /app/$storage_dir $role_flags"
-    ports:
-      - "$port:8080"
-    volumes:
-      - ../:/workspace
-      - ./$storage_dir:/app/$storage_dir
-      - ./deploy-data:/deploy-data
-    depends_on:
-      genesis-generator:
-        condition: service_completed_successfully
-    networks:
-      - symbiotic-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/healthz"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-EOF
-    done
-    
     cat >> "$network_dir/docker-compose.yml" << EOF
 
 networks:
@@ -341,7 +265,7 @@ main() {
     
 
     print_status "Generating Docker Compose configuration..."
-    print_status "Creating $operators new operator accounts..."
+    print_status "Creating infrastructure for $operators operators (anvil, deployer, genesis-generator)..."
     generate_docker_compose "$operators" "$commiters" "$aggregators" "$verification_type" "$epoch_size" "$block_time" "$finality_blocks"
 }
 

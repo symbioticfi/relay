@@ -26,15 +26,15 @@ type signatureProcessor interface {
 }
 
 type Config struct {
-	Repo               repo               `validate:"required"`
-	SignatureProcessor signatureProcessor `validate:"required"`
-	SignalCfg          signals.Config     `validate:"required"`
-	SelfP2PID          string             `validate:"required"`
+	Repo                 repo               `validate:"required"`
+	SignatureProcessor   signatureProcessor `validate:"required"`
+	SignalCfg            signals.Config     `validate:"required"`
+	SelfP2PID            string             `validate:"required"`
+	SignatureSavedSignal *signals.Signal[entity.SignatureMessage]
 }
 
 type SignatureListenerUseCase struct {
-	cfg                  Config
-	signatureSavedSignal *signals.Signal[entity.SignatureMessage]
+	cfg Config
 }
 
 func New(cfg Config) (*SignatureListenerUseCase, error) {
@@ -43,8 +43,7 @@ func New(cfg Config) (*SignatureListenerUseCase, error) {
 	}
 
 	return &SignatureListenerUseCase{
-		cfg:                  cfg,
-		signatureSavedSignal: signals.New[entity.SignatureMessage](cfg.SignalCfg, "signatureReceive", nil),
+		cfg: cfg,
 	}, nil
 }
 
@@ -57,6 +56,12 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 
 	if p2pMsg.SenderInfo.Sender == s.cfg.SelfP2PID {
 		slog.DebugContext(ctx, "Ignoring signature message from self, because it's already stored in signer")
+		err := s.cfg.SignatureSavedSignal.Emit(ctx, msg)
+		if err != nil {
+			return errors.Errorf("failed to emit signature saved signal: %w", err)
+		}
+		slog.InfoContext(ctx, "Listener processed received signature from self")
+
 		return nil
 	}
 
@@ -95,12 +100,16 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 		return errors.Errorf("failed to process signature: %w", err)
 	}
 
-	return s.signatureSavedSignal.Emit(ctx, msg)
-}
-
-func (s *SignatureListenerUseCase) StartSignatureSavedMessageListener(ctx context.Context, mh func(ctx context.Context, msg entity.SignatureMessage) error) error {
-	if err := s.signatureSavedSignal.SetHandler(mh); err != nil {
-		return errors.Errorf("failed to set signature received message handler: %w", err)
+	err = s.cfg.SignatureSavedSignal.Emit(ctx, msg)
+	if err != nil {
+		return errors.Errorf("failed to emit signature saved signal: %w", err)
 	}
-	return s.signatureSavedSignal.StartWorkers(ctx)
+
+	slog.InfoContext(ctx, "Listener processed received signature",
+		"request_hash", msg.RequestHash.Hex(),
+		"validator_index", activeIndex,
+		"validator", validator,
+		"epoch", msg.Epoch,
+	)
+	return nil
 }

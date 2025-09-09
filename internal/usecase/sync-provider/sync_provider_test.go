@@ -12,6 +12,7 @@ import (
 	"github.com/symbioticfi/relay/core/usecase/crypto"
 	signature_processor "github.com/symbioticfi/relay/core/usecase/signature-processor"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
+	"github.com/symbioticfi/relay/pkg/signals"
 )
 
 func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
@@ -71,6 +72,7 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 		EpochsToSync:                1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
+		SignatureReceivedSignal:     signals.New[entity.SignatureMessage](signals.DefaultConfig(), "signatureReceive", nil),
 	})
 	require.NoError(t, err)
 
@@ -81,6 +83,7 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 		EpochsToSync:                1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
+		SignatureReceivedSignal:     signals.New[entity.SignatureMessage](signals.DefaultConfig(), "signatureReceive", nil),
 	})
 	require.NoError(t, err)
 

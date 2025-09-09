@@ -1,8 +1,10 @@
 package tests
 
 import (
+	"context"
 	"encoding/json"
 	"os"
+	"time"
 
 	"github.com/go-errors/errors"
 	"github.com/kelseyhightower/envconfig"
@@ -21,7 +23,7 @@ var (
 // RelayServerEndpoint represents a relay server endpoint for testing
 type RelayServerEndpoint struct {
 	Address string
-	Port    int
+	Port    string
 	Role    string // "committer", "aggregator", "signer"
 }
 
@@ -34,7 +36,7 @@ type ContractAddress struct {
 // RelayContractsData represents the structure from relay_contracts.json
 type RelayContractsData struct {
 	Driver               ContractAddress   `json:"driver"`
-	KeyRegistry          ContractAddress   `json:"keyRegisztry"` // Note: typo in original JSON
+	KeyRegistry          ContractAddress   `json:"keyRegistry"`
 	Network              string            `json:"network"`
 	Settlements          []ContractAddress `json:"settlements"`
 	StakingTokens        []ContractAddress `json:"stakingTokens"`
@@ -52,17 +54,17 @@ type EnvInfo struct {
 }
 
 // GetDriverAddress returns the driver address as a string for backward compatibility
-func (d *RelayContractsData) GetDriverAddress() string {
+func (d RelayContractsData) GetDriverAddress() string {
 	return d.Driver.Addr
 }
 
 // GetKeyRegistryAddress returns the key registry address as a string
-func (d *RelayContractsData) GetKeyRegistryAddress() string {
+func (d RelayContractsData) GetKeyRegistryAddress() string {
 	return d.KeyRegistry.Addr
 }
 
 // GetVotingPowerProviderAddress returns the first voting power provider address
-func (d *RelayContractsData) GetVotingPowerProviderAddress() string {
+func (d RelayContractsData) GetVotingPowerProviderAddress() string {
 	if len(d.VotingPowerProviders) > 0 {
 		return d.VotingPowerProviders[0].Addr
 	}
@@ -70,48 +72,56 @@ func (d *RelayContractsData) GetVotingPowerProviderAddress() string {
 }
 
 // GetSettlementAddresses returns all settlement addresses
-func (d *RelayContractsData) GetSettlementAddresses() []ContractAddress {
+func (d RelayContractsData) GetSettlementAddresses() []ContractAddress {
 	return d.Settlements
 }
 
-func getRelayEndpoints(env EnvInfo) []RelayServerEndpoint {
-	commiterCount := env.Commiters
-	aggregatorCount := env.Aggregators
-	endpoints := make([]RelayServerEndpoint, env.Operators)
-	for i := 0; i < int(env.Operators); i++ {
-		role := "signer"
-		if commiterCount > 0 {
-			role = "committer"
-			commiterCount--
-		} else if aggregatorCount > 0 {
-			role = "aggregator"
-			aggregatorCount--
+func loadDeploymentData(ctx context.Context) (RelayContractsData, error) {
+	path := "../temp-network/deploy-data/relay_contracts.json"
+
+	// Wait for relay_contracts.json to be created by shell script
+	const maxWaitTime = 60 * time.Second
+	const checkInterval = 500 * time.Millisecond
+	startTime := time.Now()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return RelayContractsData{}, errors.Errorf("context cancelled while waiting for %s: %w", path, ctx.Err())
+		default:
 		}
-		endpoints[i] = RelayServerEndpoint{
-			Address: "localhost",
-			Port:    8081 + i,
-			Role:    role,
+
+		if _, err := os.Stat(path); err == nil {
+			break // File exists, break the loop
+		}
+
+		if time.Since(startTime) > maxWaitTime {
+			return RelayContractsData{}, errors.Errorf("timeout waiting for %s to be created after %v", path, maxWaitTime)
+		}
+
+		select {
+		case <-ctx.Done():
+			return RelayContractsData{}, errors.Errorf("context cancelled while waiting for %s: %w", path, ctx.Err())
+		case <-time.After(checkInterval):
 		}
 	}
 
-	return endpoints
-}
-
-func loadDeploymentData() (*RelayContractsData, error) {
-	path := "../temp-network/deploy-data/relay_contracts.json"
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, errors.Errorf("failed to read %s: %w", path, err)
+		return RelayContractsData{}, errors.Errorf("failed to read %s: %w", path, err)
 	}
+
 	var relayContracts RelayContractsData
 	if err := json.Unmarshal(data, &relayContracts); err != nil {
-		return nil, errors.Errorf("failed to unmarshal %s: %w", path, err)
+		return RelayContractsData{}, errors.Errorf("failed to unmarshal %s: %w", path, err)
 	}
+
 	relayContracts.Env = EnvInfo{}
 	if err := envconfig.Process("", &relayContracts.Env); err != nil {
-		return nil, errors.Errorf("failed to process environment variables: %w", err)
+		return RelayContractsData{}, errors.Errorf("failed to process environment variables: %w", err)
 	}
-	return &relayContracts, nil
+
+	return relayContracts, nil
 }
 
 // testMockKeyProvider is a mock key provider for testing

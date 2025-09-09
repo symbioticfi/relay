@@ -8,6 +8,7 @@ import (
 	"github.com/go-playground/validator/v10"
 
 	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/pkg/signals"
 )
 
 type repo interface {
@@ -24,11 +25,12 @@ type signatureProcessor interface {
 }
 
 type Config struct {
-	Repo                        repo               `validate:"required"`
-	SignatureProcessor          signatureProcessor `validate:"required"`
-	EpochsToSync                int                `validate:"gte=0"`
-	MaxSignatureRequestsPerSync int                `validate:"gt=0"` // todo move to runner
-	MaxResponseSignatureCount   int                `validate:"gt=0"`
+	Repo                        repo                                     `validate:"required"`
+	SignatureProcessor          signatureProcessor                       `validate:"required"`
+	EpochsToSync                int                                      `validate:"gte=0"`
+	MaxSignatureRequestsPerSync int                                      `validate:"gt=0"`
+	MaxResponseSignatureCount   int                                      `validate:"gt=0"`
+	SignatureReceivedSignal     *signals.Signal[entity.SignatureMessage] `validate:"required"`
 }
 
 type Syncer struct {

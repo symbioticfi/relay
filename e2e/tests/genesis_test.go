@@ -16,7 +16,7 @@ import (
 func TestGenesisDone(t *testing.T) {
 	t.Log("Starting genesis generation test...")
 
-	deployData, err := loadDeploymentData()
+	deployData, err := loadDeploymentData(t.Context())
 	require.NoError(t, err, "Failed to load deployment data")
 
 	config := evm.Config{
@@ -29,7 +29,7 @@ func TestGenesisDone(t *testing.T) {
 		KeyProvider:    &testMockKeyProvider{},
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	evmClient, err := evm.NewEvmClient(ctx, config)
@@ -49,7 +49,7 @@ func TestGenesisDone(t *testing.T) {
 
 // TestContractData tests that the data in the contract matches expected values
 func TestContractData(t *testing.T) {
-	deployData, err := loadDeploymentData()
+	deployData, err := loadDeploymentData(t.Context())
 	require.NoError(t, err, "Failed to load deployment data")
 
 	expectedContractData := getExpectedDataFromContracts(t, deployData)
