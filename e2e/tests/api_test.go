@@ -169,12 +169,12 @@ func TestRelayAPIConnectivity(t *testing.T) {
 				address,
 				grpc.WithTransportCredentials(insecure.NewCredentials()),
 			)
-			require.NoError(t, err, "Failed to connect to relay server at %s", address)
+			require.NoErrorf(t, err, "Failed to connect to relay server at %s", address)
 			defer conn.Close()
 
 			client := apiv1.NewSymbioticClient(conn)
 			epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
-			require.NoError(t, err, "Failed to get current epoch from %s", address)
+			require.NoErrorf(t, err, "Failed to get current epoch from %s", address)
 			require.NotNil(t, epochResp.GetStartTime(), "Epoch start time should be set")
 
 			t.Logf("Successfully connected to %s - Current epoch: %d", address, epochResp.GetEpoch())
@@ -200,7 +200,7 @@ func TestValidatorSetAPI(t *testing.T) {
 		address,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
-	require.NoError(t, err, "Failed to connect to relay server at %s", address)
+	require.NoErrorf(t, err, "Failed to connect to relay server at %s", address)
 	defer conn.Close()
 
 	client := apiv1.NewSymbioticClient(conn)

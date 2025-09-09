@@ -40,7 +40,7 @@ func TestGenesisDone(t *testing.T) {
 			ChainId: settlement.ChainId,
 			Address: common.HexToAddress(settlement.Addr),
 		})
-		require.NoError(t, err, "Failed to get validator set header for settlement %s", settlement.Addr)
+		require.NoErrorf(t, err, "Failed to get validator set header for settlement %s", settlement.Addr)
 	}
 
 	t.Log("Genesis generation test completed successfully")
