@@ -147,7 +147,7 @@ func TestSendWantSignaturesRequest_HappyPath(t *testing.T) {
 			AdvertiseInterval:    time.Second,
 		},
 		EventTracer: nil,
-		Handler:     &GRPCHandler{handler: mockHandler}, // Not used for client but required
+		Handler:     NewP2PHandler(mockHandler), // Not used for client but required
 	}, signals.Config{
 		BufferSize:  5,
 		WorkerCount: 5,

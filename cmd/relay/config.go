@@ -283,7 +283,7 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	if err := v.BindPFlag("cache.validator-set-size", cmd.PersistentFlags().Lookup("cache.validator-set-size")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("sync.sync-signatures", cmd.PersistentFlags().Lookup("sync.enabled")); err != nil {
+	if err := v.BindPFlag("sync.sync-signatures", cmd.PersistentFlags().Lookup("sync.sync-signatures")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 
