@@ -81,6 +81,7 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 	slog.DebugContext(ctx, "Found validator", "validator", validator)
 
 	param := entity.SaveSignatureParam{
+		KeyTag:           msg.KeyTag,
 		RequestHash:      msg.RequestHash,
 		Key:              publicKey.Raw(),
 		Signature:        msg.Signature,
@@ -95,7 +96,7 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 		return errors.Errorf("failed to process signature: %w", err)
 	}
 
-	return s.signatureSavedSignal.Emit(ctx, msg)
+	return s.signatureSavedSignal.Emit(msg)
 }
 
 func (s *SignatureListenerUseCase) StartSignatureSavedMessageListener(ctx context.Context, mh func(ctx context.Context, msg entity.SignatureMessage) error) error {

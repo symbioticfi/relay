@@ -174,7 +174,7 @@ func NewService(ctx context.Context, cfg Config, signalCfg signals.Config) (*Ser
 	return service, nil
 }
 
-func (s *Service) listenForMessages(ctx context.Context, sub *pubsub.Subscription, topic *pubsub.Topic, handler func(ctx context.Context, msg *pubsub.Message) error) {
+func (s *Service) listenForMessages(ctx context.Context, sub *pubsub.Subscription, topic *pubsub.Topic, handler func(msg *pubsub.Message) error) {
 	slog.DebugContext(ctx, "Starting message listener", "topic", topic.String())
 	defer func() {
 		if err := topic.Close(); err != nil && !errors.Is(err, context.Canceled) {
@@ -196,7 +196,7 @@ func (s *Service) listenForMessages(ctx context.Context, sub *pubsub.Subscriptio
 		}
 
 		slog.DebugContext(ctx, "Received message from p2p", "topic", msg.Topic, "from", msg.ReceivedFrom)
-		if err := handler(ctx, msg); err != nil {
+		if err := handler(msg); err != nil {
 			slog.ErrorContext(ctx, "Failed to handle message", "error", err, "message", msg)
 			continue
 		}

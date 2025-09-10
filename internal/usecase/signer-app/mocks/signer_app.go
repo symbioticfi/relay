@@ -236,17 +236,17 @@ func (m *MockaggProofSignal) EXPECT() *MockaggProofSignalMockRecorder {
 }
 
 // Emit mocks base method.
-func (m *MockaggProofSignal) Emit(ctx context.Context, payload entity.AggregatedSignatureMessage) error {
+func (m *MockaggProofSignal) Emit(payload entity.AggregatedSignatureMessage) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Emit", ctx, payload)
+	ret := m.ctrl.Call(m, "Emit", payload)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Emit indicates an expected call of Emit.
-func (mr *MockaggProofSignalMockRecorder) Emit(ctx, payload any) *gomock.Call {
+func (mr *MockaggProofSignalMockRecorder) Emit(payload any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Emit", reflect.TypeOf((*MockaggProofSignal)(nil).Emit), ctx, payload)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Emit", reflect.TypeOf((*MockaggProofSignal)(nil).Emit), payload)
 }
 
 // Mockaggregator is a mock of aggregator interface.

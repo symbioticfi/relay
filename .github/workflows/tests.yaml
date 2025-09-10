@@ -122,7 +122,7 @@ jobs:
             operators: 4
             commiters: 1
             aggregators: 1
-          - name: "Multi Committer/Aggregator"
+          - name: "Multi Committer and Aggregator"
             operators: 10
             commiters: 2
             aggregators: 3

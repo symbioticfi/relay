@@ -36,7 +36,7 @@ type keyProvider interface {
 }
 
 type aggProofSignal interface {
-	Emit(ctx context.Context, payload entity.AggregatedSignatureMessage) error
+	Emit(payload entity.AggregatedSignatureMessage) error
 }
 
 type aggregator interface {
@@ -112,7 +112,6 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		slog.DebugContext(ctx, "Aggregation proof already exists", "request", req)
 		return nil
 	}
-
 	if _, err := s.cfg.Repo.UpdateSignatureStat(ctx, req.Hash(), entity.SignatureStatStageSignRequestReceived, timeAppSignStart); err != nil {
 		slog.WarnContext(ctx, "Failed to update signature stat", "error", err)
 	}
@@ -127,7 +126,6 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 	if err != nil {
 		return errors.Errorf("validator not found in epoch valset for public key: %w", err)
 	}
-
 	pkSignStart := time.Now()
 	signature, hash, err := private.Sign(req.Message)
 	if err != nil {
@@ -142,6 +140,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 	}
 
 	param := entity.SaveSignatureParam{
+		KeyTag:           req.KeyTag,
 		RequestHash:      req.Hash(),
 		Key:              public.Raw(),
 		Signature:        extendedSignature,
