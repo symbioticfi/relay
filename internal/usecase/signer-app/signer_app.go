@@ -140,6 +140,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 	}
 
 	param := entity.SaveSignatureParam{
+		KeyTag:           req.KeyTag,
 		RequestHash:      req.Hash(),
 		Key:              public.Raw(),
 		Signature:        extendedSignature,

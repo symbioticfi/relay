@@ -125,7 +125,12 @@ func TestNonHeaderKeySignature(t *testing.T) {
 
 					require.NoErrorf(t, err, "Failed to get signatures from relay at %s", address)
 
-					if len(resp.GetSignatures()) != len(endpoints) {
+					if tc.keyTag.Type() == entity.KeyTypeEcdsaSecp256k1 && len(resp.GetSignatures()) != len(endpoints) {
+						// expect all n signatures for ECDSA
+						t.Logf("Received %d/%d signatures for request hash: %s. Waiting for all signatures...", len(resp.GetSignatures()), len(endpoints), reqHash)
+						continue
+					} else if tc.keyTag.Type() == entity.KeyTypeBlsBn254 && (len(endpoints)*2/3+1) > len(resp.GetSignatures()) {
+						// need at least 2/3 signatures for BLS, signers skip signing is proof is already generated so we may not get all n sigs
 						t.Logf("Received %d/%d signatures for request hash: %s. Waiting for all signatures...", len(resp.GetSignatures()), len(endpoints), reqHash)
 						continue
 					}
@@ -199,7 +204,7 @@ func TestNonHeaderKeySignature(t *testing.T) {
 						require.NotNilf(t, proof, "Expected aggregation proof for BLS key type for request hash: %s", reqHash)
 						require.NotEmptyf(t, proof.GetAggregationProof().GetProof(), "Empty aggregation proof for BLS key type for request hash: %s", reqHash)
 					}
-					require.Lenf(t, countMap, len(expected.ValidatorSet.Validators), "Number of unique valid signatures does not match number of validators for request hash: %s", reqHash)
+					require.Lenf(t, countMap, len(resp.GetSignatures()), "Number of unique valid signatures does not match number of validators for request hash: %s", reqHash)
 					t.Logf("%s test completed successfully", tc.name)
 					return
 				}

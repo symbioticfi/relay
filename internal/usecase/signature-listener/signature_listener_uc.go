@@ -81,6 +81,7 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 	slog.DebugContext(ctx, "Found validator", "validator", validator)
 
 	param := entity.SaveSignatureParam{
+		KeyTag:           msg.KeyTag,
 		RequestHash:      msg.RequestHash,
 		Key:              publicKey.Raw(),
 		Signature:        msg.Signature,
