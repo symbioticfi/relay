@@ -873,7 +873,7 @@ func TestDeriver_fillValidators_VaultLimitExceeded(t *testing.T) {
 	for i := 1; i < len(validator.Vaults); i++ {
 		// Since all vaults have different voting powers in our test,
 		// they should be sorted by voting power descending
-		require.True(t, validator.Vaults[i-1].VotingPower.Int.Cmp(validator.Vaults[i].VotingPower.Int) > 0,
+		require.Positive(t, validator.Vaults[i-1].VotingPower.Cmp(validator.Vaults[i].VotingPower.Int),
 			"Vaults should be sorted by voting power descending")
 	}
 
