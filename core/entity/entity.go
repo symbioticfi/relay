@@ -322,7 +322,7 @@ func (va Validators) CheckIsSortedByOperatorAddressAsc() error {
 
 type Vaults []ValidatorVault
 
-func (v Vaults) SortVaultsByVotingPowerDescAndOperatorAddressAsc() {
+func (v Vaults) SortVaultsByVotingPowerDescAndAddressAsc() {
 	slices.SortFunc(v, func(a, b ValidatorVault) int {
 		if cmp := -a.VotingPower.Cmp(b.VotingPower.Int); cmp != 0 {
 			return cmp

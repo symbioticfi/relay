@@ -855,8 +855,8 @@ func TestDeriver_fillValidators_VaultLimitExceeded(t *testing.T) {
 	// Verify that the total voting power is calculated correctly
 	// It should be the sum of all original vaults (before truncation)
 	expectedTotalVotingPower := big.NewInt(0)
-	for i := 1; i <= numVaults; i++ {
-		expectedTotalVotingPower.Add(expectedTotalVotingPower, big.NewInt(int64(i)))
+	for i := 0; i < ssz.VaultsListMaxElements; i++ {
+		expectedTotalVotingPower.Add(expectedTotalVotingPower, big.NewInt(int64(1034-i)))
 	}
 	require.Equal(t, expectedTotalVotingPower, validator.VotingPower.Int)
 

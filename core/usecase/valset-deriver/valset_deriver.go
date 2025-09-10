@@ -207,10 +207,16 @@ func fillValidators(votingPowers []dtoOperatorVotingPower, keys []entity.Operato
 
 	// filter by ssz max-vaults limit
 	for val := range validatorsMap {
-		validatorsMap[val].Vaults.SortVaultsByVotingPowerDescAndOperatorAddressAsc()
+		validatorsMap[val].Vaults.SortVaultsByVotingPowerDescAndAddressAsc()
 		if len(validatorsMap[val].Vaults) > ssz.VaultsListMaxElements {
 			validatorsMap[val].Vaults = validatorsMap[val].Vaults[:ssz.VaultsListMaxElements]
 		}
+
+		totalVP := big.NewInt(0)
+		for _, vault := range validatorsMap[val].Vaults {
+			totalVP.Add(totalVP, vault.VotingPower.Int)
+		}
+		validatorsMap[val].VotingPower = entity.ToVotingPower(totalVP)
 	}
 
 	// Process required keys
