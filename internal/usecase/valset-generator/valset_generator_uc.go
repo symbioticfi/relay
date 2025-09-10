@@ -19,6 +19,8 @@ import (
 	"github.com/symbioticfi/relay/pkg/log"
 )
 
+const slashableEpochs = 5 // TODO: temp until contracts support
+
 type signer interface {
 	Sign(ctx context.Context, req entity.SignatureRequest) error
 }
@@ -168,18 +170,29 @@ func (s *Service) getNetworkData(ctx context.Context, config entity.NetworkConfi
 func (s *Service) tryDetectUnsignedValset(ctx context.Context) (entity.ValidatorSet, entity.NetworkConfig, error) {
 	slog.DebugContext(ctx, "Trying to detect new epoch to commit")
 
-	epoch, err := s.cfg.Repo.GetLatestSignedValidatorSetEpoch(ctx)
+	epoch, err := s.cfg.EvmClient.GetCurrentEpoch(ctx)
+	if err != nil {
+		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get current epoch: %w", err)
+	}
+
+	if epoch >= slashableEpochs {
+		epoch = epoch - slashableEpochs + 1
+	} else {
+		epoch = 1
+	}
+
+	latestSignedEpoch, err := s.cfg.Repo.GetLatestSignedValidatorSetEpoch(ctx)
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get latest pending validator set: %w", err)
 	}
 
-	if err == nil {
-		epoch++
+	if err == nil && latestSignedEpoch >= epoch {
+		epoch = latestSignedEpoch + 1
 	}
 
 	var valset entity.ValidatorSet
 
-	for { // TODO: mb we need to try sign only next valset to latest pending???
+	for {
 		valset, err = s.cfg.Repo.GetValidatorSetByEpoch(ctx, epoch)
 		if err != nil {
 			return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get validator set for epoch %d: %w", epoch, err)
@@ -188,18 +201,15 @@ func (s *Service) tryDetectUnsignedValset(ctx context.Context) (entity.Validator
 		if valset.Status == entity.HeaderDerived {
 			break
 		}
+
+		epoch++
 	}
 
 	if valset.Status != entity.HeaderDerived {
 		return entity.ValidatorSet{}, entity.NetworkConfig{}, entity.ErrEntityNotFound
 	}
 
-	epochStart, err := s.cfg.EvmClient.GetEpochStart(ctx, valset.Epoch)
-	if err != nil {
-		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get epoch start for epoch %d: %w", valset.Epoch, err)
-	}
-
-	config, err := s.cfg.EvmClient.GetConfig(ctx, epochStart)
+	config, err := s.cfg.Repo.GetConfigByEpoch(ctx, valset.Epoch)
 	if err != nil {
 		return entity.ValidatorSet{}, entity.NetworkConfig{}, errors.Errorf("failed to get config for epoch %d: %w", valset.Epoch, err)
 	}

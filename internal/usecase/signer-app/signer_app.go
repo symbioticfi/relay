@@ -91,6 +91,10 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 	ctx = log.WithComponent(ctx, "signer")
 	timeAppSignStart := time.Now()
 
+	if !req.KeyTag.Type().SignerKey() {
+		return errors.Errorf("key tag %s is not a signing key", req.KeyTag)
+	}
+
 	_, err := s.cfg.Repo.GetSignatureRequest(ctx, req.Hash())
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return errors.Errorf("failed to get signature request: %w", err)

@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"time"
 
+	aggregationPolicyTypes "github.com/symbioticfi/relay/internal/usecase/aggregation-policy/types"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	validate "github.com/go-playground/validator/v10"
@@ -38,11 +40,14 @@ type aggregator interface {
 	Aggregate(valset entity.ValidatorSet, keyTag entity.KeyTag, messageHash []byte, signatures []entity.SignatureExtended) (entity.AggregationProof, error)
 }
 
+type aggregatorPolicy = aggregationPolicyTypes.AggregationPolicy
+
 type Config struct {
-	Repo       repository `validate:"required"`
-	P2PClient  p2pClient  `validate:"required"`
-	Aggregator aggregator `validate:"required"`
-	Metrics    metrics    `validate:"required"`
+	Repo              repository       `validate:"required"`
+	P2PClient         p2pClient        `validate:"required"`
+	Aggregator        aggregator       `validate:"required"`
+	Metrics           metrics          `validate:"required"`
+	AggregationPolicy aggregatorPolicy `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -84,6 +89,14 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		)
 	}
 
+	if !msg.KeyTag.Type().AggregationKey() {
+		// ignore signature aggregation steps as this key cannot be aggregated
+		if _, err := s.cfg.Repo.UpdateSignatureStat(ctx, msg.RequestHash, entity.SignatureStatStageAggregationSkipped, time.Now()); err != nil {
+			slog.WarnContext(ctx, "Failed to update signature stat: %s", "error", err)
+		}
+		return nil
+	}
+
 	// Get validator set for quorum threshold checks
 	// todo load only valset header when totalVotingPower is added to it
 	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
@@ -93,7 +106,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 
 	totalActiveVotingPower := validatorSet.GetTotalActiveVotingPower()
 
-	if !signatureMap.ThresholdReached(validatorSet.QuorumThreshold) {
+	if !s.cfg.AggregationPolicy.ShouldAggregate(signatureMap, validatorSet) {
 		slog.DebugContext(ctx, "Quorum not reached yet",
 			"currentVotingPower", signatureMap.CurrentVotingPower.String(),
 			"quorumThreshold", validatorSet.QuorumThreshold.String(),

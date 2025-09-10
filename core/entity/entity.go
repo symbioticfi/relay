@@ -17,10 +17,14 @@ import (
 )
 
 type VerificationType uint32
+type AggregationPolicyType uint32
 
 const (
 	VerificationTypeBlsBn254ZK     VerificationType = 0
 	VerificationTypeBlsBn254Simple VerificationType = 1
+
+	AggregationPolicyLowLatency AggregationPolicyType = 0
+	AggregationPolicyLowCost    AggregationPolicyType = 1
 )
 
 var (
@@ -187,6 +191,20 @@ func (vt VerificationType) String() string {
 		return fmt.Sprintf("%d (BLS-BN254-SIMPLE)", uint32(vt))
 	}
 	return fmt.Sprintf("%d (UNKNOWN)", uint32(vt))
+}
+
+func (ap AggregationPolicyType) MarshalText() (text []byte, err error) {
+	return []byte(ap.String()), nil
+}
+
+func (ap AggregationPolicyType) String() string {
+	switch ap {
+	case AggregationPolicyLowLatency:
+		return fmt.Sprintf("%d AGGREGATION-POLICY-LOW-LATENCY", uint32(ap))
+	case AggregationPolicyLowCost:
+		return fmt.Sprintf("%d AGGREGATION-POLICY-LOW-COST", uint32(ap))
+	}
+	return fmt.Sprintf("%d (UNKNOWN)", uint32(ap))
 }
 
 type CrossChainAddress struct {
@@ -562,6 +580,8 @@ const (
 	SignatureStatStageAggQuorumReached    = "AggQuorumReached"
 	SignatureStatStageAggCompleted        = "AggCompleted"
 	SignatureStatStageAggProofReceived    = "AggProofReceived"
+
+	SignatureStatStageAggregationSkipped = "AggSkipped"
 )
 
 type SignatureStat struct {

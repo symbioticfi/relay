@@ -71,6 +71,28 @@ func (kt KeyType) String() (string, error) {
 	return "", errors.New("invalid key type")
 }
 
+// SignerKey returns true if the key type can be used for signing
+func (kt KeyType) SignerKey() bool {
+	switch kt {
+	case KeyTypeBlsBn254, KeyTypeEcdsaSecp256k1:
+		return true
+	case KeyTypeInvalid:
+		return false
+	}
+	return false
+}
+
+// AggregationKey returns true if the key type can be used for aggregation
+func (kt KeyType) AggregationKey() bool {
+	switch kt {
+	case KeyTypeBlsBn254:
+		return true
+	case KeyTypeEcdsaSecp256k1, KeyTypeInvalid:
+		return false
+	}
+	return false
+}
+
 func KeyTypeFromString(typeStr string) (KeyType, error) {
 	switch typeStr {
 	case BLS_BN254_TYPE:
