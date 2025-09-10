@@ -102,67 +102,50 @@ func (a Aggregator) Aggregate(
 		return entity.AggregationProof{}, errors.Errorf("valset is not sorted by operator address asc: %w", err)
 	}
 
-	// Encode and sort validators
-	validatorsData, err := encodeAndSortValidators(valset.Validators, keyTag)
+	validatorsData, err := processValidators(valset.Validators, keyTag)
 	if err != nil {
 		return entity.AggregationProof{}, err
 	}
 
-	signaturesMap := make(map[common.Hash]*entity.SignatureExtended)
 	nonSigners := make([]int, 0)
+	signersMap := make(map[common.Hash]struct{})
 
-	// First, build a map of compressed keys from signatures
-	compressedKeyToSig := make(map[common.Hash]*entity.SignatureExtended)
-	for i := range signatures {
-		pubKey, err := blsBn254.FromRaw(signatures[i].PublicKey)
+	aggG1Sig := new(bn254.G1Affine)
+	aggG2Key := new(bn254.G2Affine)
+
+	valKeysToIdx := helpers.GetValidatorsIndexesMapByKey(valset, keyTag)
+
+	for _, sig := range signatures {
+		pubKey, err := blsBn254.FromRaw(sig.PublicKey)
 		if err != nil {
 			return entity.AggregationProof{}, err
 		}
 
-		val, ok := valset.FindValidatorByKey(keyTag, pubKey.OnChain())
+		idx, ok := valKeysToIdx[string(pubKey.OnChain())]
 		if !ok {
 			return entity.AggregationProof{}, errors.New("failed to find validator by key")
 		}
+
+		val := valset.Validators[idx]
 		if !val.IsActive {
 			continue
 		}
 
-		// Get compressed key for this signature
 		g1Key := new(bn254.G1Affine)
 		_, err = g1Key.SetBytes(pubKey.OnChain())
 		if err != nil {
 			return entity.AggregationProof{}, err
 		}
 
-		compressedKey, err := compress(g1Key)
+		compressedKeyG1, err := compress(g1Key)
 		if err != nil {
-			return entity.AggregationProof{}, err
+			return entity.AggregationProof{}, errors.Errorf("failed to compress G1 key: %w", err)
 		}
 
-		if _, exists := compressedKeyToSig[compressedKey]; exists {
+		if _, exists := signersMap[compressedKeyG1]; exists {
 			return entity.AggregationProof{}, errors.Errorf("duplicate signature from validator")
 		}
-		compressedKeyToSig[compressedKey] = &signatures[i]
-	}
-
-	// Now check sorted validators to identify non-signers
-	for i, val := range validatorsData {
-		if sig, isSigner := compressedKeyToSig[val.KeySerialized]; isSigner {
-			signaturesMap[val.KeySerialized] = sig
-		} else {
-			nonSigners = append(nonSigners, i)
-		}
-	}
-
-	// Aggregate signatures and keys for signers only
-	aggG1Sig := new(bn254.G1Affine)
-	aggG2Key := new(bn254.G2Affine)
-
-	for _, sig := range signaturesMap {
-		pubKey, err := blsBn254.FromRaw(sig.PublicKey)
-		if err != nil {
-			return entity.AggregationProof{}, err
-		}
+		signersMap[compressedKeyG1] = struct{}{}
 
 		g1Sig := new(bn254.G1Affine)
 		_, err = g1Sig.SetBytes(sig.Signature)
@@ -172,6 +155,12 @@ func (a Aggregator) Aggregate(
 
 		aggG1Sig = aggG1Sig.Add(aggG1Sig, g1Sig)
 		aggG2Key = aggG2Key.Add(aggG2Key, pubKey.G2())
+	}
+
+	for i, val := range validatorsData {
+		if _, isSigner := signersMap[val.KeySerialized]; !isSigner {
+			nonSigners = append(nonSigners, i)
+		}
 	}
 
 	aggG1SigBytes, err := a.abiTypes.g1Args.Pack(struct {
@@ -305,7 +294,7 @@ func (a Aggregator) Verify(
 	validatorsDataBytes[31] = 32
 	validatorsDataBytes = append(validatorsDataBytes, aggregationProof.Proof[offset:offset+length]...)
 
-	expectedValidatorsData, err := encodeAndSortValidators(valset.Validators, keyTag)
+	expectedValidatorsData, err := processValidators(valset.Validators, keyTag)
 	if err != nil {
 		return false, err
 	}
@@ -494,7 +483,6 @@ func calcAlpha(aggPubKeyG1 *bn254.G1Affine, aggPubKeyG2 *bn254.G2Affine, aggSig 
 func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []entity.KeyTag) ([]entity.ExtraData, error) {
 	extraData := make([]entity.ExtraData, 0)
 
-	// Total active voting power
 	totalActiveVotingPowerKey, err := helpers.GetExtraDataKey(entity.VerificationTypeBlsBn254Simple, entity.SimpleVerificationTotalVotingPowerHash)
 	if err != nil {
 		return nil, errors.Errorf("failed to get extra data key: %w", err)
@@ -510,10 +498,8 @@ func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []enti
 
 	aggregatedPubKeys := helpers.GetAggregatedPubKeys(valset, keyTags)
 
-	// Process each key tag
 	for _, key := range aggregatedPubKeys {
-		// Calculate keccak accumulator using common encoding
-		validatorsData, err := encodeAndSortValidators(valset.Validators, key.Tag)
+		validatorsData, err := processValidators(valset.Validators, key.Tag)
 		if err != nil {
 			return nil, errors.Errorf("failed to encode validators: %w", err)
 		}
@@ -559,9 +545,7 @@ func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []enti
 	return extraData, nil
 }
 
-// packValidatorsData packs validators data using anonymous structs
 func (a Aggregator) packValidatorsData(validatorsData []ValidatorData) ([]byte, error) {
-	// Convert to anonymous struct slice for ABI packing
 	abiData := make([]struct {
 		KeySerialized [32]byte
 		VotingPower   *big.Int
@@ -575,8 +559,7 @@ func (a Aggregator) packValidatorsData(validatorsData []ValidatorData) ([]byte, 
 	return a.abiTypes.validatorsArgs.Pack(abiData)
 }
 
-// encodeAndSortValidators encodes validators and returns sorted ValidatorData
-func encodeAndSortValidators(validators []entity.Validator, keyTag entity.KeyTag) ([]ValidatorData, error) {
+func processValidators(validators []entity.Validator, keyTag entity.KeyTag) ([]ValidatorData, error) {
 	validatorsData := make([]ValidatorData, 0, len(validators))
 
 	for _, val := range validators {
@@ -613,7 +596,6 @@ func encodeAndSortValidators(validators []entity.Validator, keyTag entity.KeyTag
 	return validatorsData, nil
 }
 
-// calculateValidatorsKeccak calculates keccak hash of validators data
 func (a Aggregator) calculateValidatorsKeccak(validatorsData []ValidatorData) (common.Hash, error) {
 	packed, err := a.packValidatorsData(validatorsData)
 	if err != nil {

@@ -89,8 +89,9 @@ func TestSimpleAggregatorExtraData(t *testing.T) {
 func TestAggregatorZKExtraData(t *testing.T) {
 	t.Skipf("it works too long, so set skip here. For local debugging can remove this skip")
 	valset, keyTag := genExtraDataTest(t)
-	prover := proof2.NewZkProver("")
-	agg := blsBn254ZK.NewAggregator(prover)
+	prover := proof2.NewZkProver("circuits")
+	agg, err := blsBn254ZK.NewAggregator(prover)
+	require.NoError(t, err)
 	data, err := agg.GenerateExtraData(valset, []entity.KeyTag{keyTag})
 	require.NoError(t, err)
 	expected := [][]string{
@@ -112,8 +113,9 @@ func TestAggregatorZKExtraData(t *testing.T) {
 
 func TestZkAggregator(t *testing.T) {
 	t.Skipf("it works too long, so set skip here. For local debugging can remove this skip")
-	prover := proof2.NewZkProver("")
-	agg := blsBn254ZK.NewAggregator(prover)
+	prover := proof2.NewZkProver("circuits")
+	agg, err := blsBn254ZK.NewAggregator(prover)
+	require.NoError(t, err)
 	valset, signatures, keyTag := genCorrectTest(10, []int{1, 2, 3})
 	proof, err := agg.Aggregate(valset, keyTag, signatures[0].MessageHash, signatures)
 	if err != nil {
