@@ -802,84 +802,111 @@ func TestDeriver_GetNetworkData(t *testing.T) {
 }
 
 func TestDeriver_fillValidators_VaultLimitExceeded(t *testing.T) {
-	// This test covers the scenario where a validator has more vaults than ssz.VaultsListMaxElements
-	// The function should only keep the top vaults (sorted by voting power desc, then operator address asc)
+	// This test verifies vault truncation when exceeding ssz.VaultsListMaxElements (1024)
+	// Expected behavior:
+	// 1. Sort vaults by voting power DESC, then vault address ASC
+	// 2. Truncate to keep only top 1024 vaults
+	// 3. Re-sort remaining vaults by vault address ASC only
 
-	// Create voting powers with more vaults than the SSZ limit
-	// Assuming ssz.VaultsListMaxElements is a reasonable number like 256 or 512
-	// We'll create more vaults than this limit to test the truncation logic
+	const (
+		highPowerVaults   = 5
+		mediumPowerVaults = 5
+		extraVaults       = 10 // Create more than the 1024 limit
+		highPower         = 2000
+		mediumPower       = 1500
+		lowPower          = 1000
+	)
 
-	numVaults := ssz.VaultsListMaxElements + 10 // Create more than the limit
-	vaultVotingPowers := make([]entity.VaultVotingPower, numVaults)
+	totalVaults := ssz.VaultsListMaxElements + extraVaults
+	vaults := make([]entity.VaultVotingPower, totalVaults)
 
-	// Create vaults with decreasing voting power to test sorting
-	for i := 0; i < numVaults; i++ {
-		vaultVotingPowers[i] = entity.VaultVotingPower{
-			Vault:       common.HexToAddress(fmt.Sprintf("0x%040d", i+1)),       // 0x000...001, 0x000...002, etc.
-			VotingPower: entity.ToVotingPower(big.NewInt(int64(numVaults - i))), // Decreasing power: numVaults, numVaults-1, ..., 1
+	// Create test vaults with different voting powers
+	for i := 0; i < totalVaults; i++ {
+		var power int64
+		switch {
+		case i < highPowerVaults:
+			power = highPower
+		case i < highPowerVaults+mediumPowerVaults:
+			power = mediumPower
+		default:
+			power = lowPower
+		}
+
+		vaults[i] = entity.VaultVotingPower{
+			Vault:       common.HexToAddress(fmt.Sprintf("0x%040d", i+1)),
+			VotingPower: entity.ToVotingPower(big.NewInt(power)),
 		}
 	}
 
-	votingPowers := []dtoOperatorVotingPower{
-		{
-			chainId: 1,
-			votingPowers: []entity.OperatorVotingPower{
-				{
-					Operator: common.HexToAddress("0x123"),
-					Vaults:   vaultVotingPowers,
-				},
-			},
-		},
-	}
-
-	keys := []entity.OperatorWithKeys{
-		{
+	// Setup test data
+	votingPowers := []dtoOperatorVotingPower{{
+		chainId: 1,
+		votingPowers: []entity.OperatorVotingPower{{
 			Operator: common.HexToAddress("0x123"),
-			Keys: []entity.ValidatorKey{
-				{
-					Tag:     entity.KeyTag(15),
-					Payload: entity.CompactPublicKey("key1"),
-				},
-			},
-		},
-	}
+			Vaults:   vaults,
+		}},
+	}}
 
+	keys := []entity.OperatorWithKeys{{
+		Operator: common.HexToAddress("0x123"),
+		Keys: []entity.ValidatorKey{{
+			Tag:     entity.KeyTag(15),
+			Payload: entity.CompactPublicKey("key1"),
+		}},
+	}}
+
+	// Execute
 	result := fillValidators(votingPowers, keys)
 
+	// Verify results
 	require.Len(t, result, 1)
 	validator := result[0]
 
-	// Verify that the number of vaults is limited to ssz.VaultsListMaxElements
-	require.Len(t, validator.Vaults, ssz.VaultsListMaxElements)
+	t.Run("vault count is limited", func(t *testing.T) {
+		require.Len(t, validator.Vaults, ssz.VaultsListMaxElements)
+	})
 
-	// Verify that the total voting power is calculated correctly
-	// It should be the sum of all original vaults (before truncation)
-	expectedTotalVotingPower := big.NewInt(0)
-	for i := 0; i < ssz.VaultsListMaxElements; i++ {
-		expectedTotalVotingPower.Add(expectedTotalVotingPower, big.NewInt(int64(1034-i)))
-	}
-	require.Equal(t, expectedTotalVotingPower, validator.VotingPower.Int)
+	t.Run("total voting power matches kept vaults", func(t *testing.T) {
+		expectedTotal := big.NewInt(0)
+		for _, vault := range validator.Vaults {
+			expectedTotal.Add(expectedTotal, vault.VotingPower.Int)
+		}
+		require.Equal(t, expectedTotal, validator.VotingPower.Int)
+	})
 
-	// Verify that the kept vaults are the ones with highest voting power
-	// Since we created vaults with decreasing power, the first ssz.VaultsListMaxElements should be kept
-	for i, vault := range validator.Vaults {
-		expectedVotingPower := big.NewInt(int64(numVaults - i))
-		require.Equal(t, expectedVotingPower, vault.VotingPower.Int,
-			"Vault at index %d should have voting power %d", i, numVaults-i)
-		require.Equal(t, uint64(1), vault.ChainID)
-	}
+	t.Run("vaults are sorted by address ascending", func(t *testing.T) {
+		for i := 1; i < len(validator.Vaults); i++ {
+			prev := validator.Vaults[i-1].Vault.Hex()
+			curr := validator.Vaults[i].Vault.Hex()
+			require.Less(t, prev, curr,
+				"Vault %s at index %d should come before vault %s at index %d",
+				prev, i-1, curr, i)
+		}
+	})
 
-	// Verify that vaults are sorted correctly (by voting power desc, then operator address asc)
-	for i := 1; i < len(validator.Vaults); i++ {
-		// Since all vaults have different voting powers in our test,
-		// they should be sorted by voting power descending
-		require.Positive(t, validator.Vaults[i-1].VotingPower.Cmp(validator.Vaults[i].VotingPower.Int),
-			"Vaults should be sorted by voting power descending")
-	}
+	t.Run("highest power vaults are retained", func(t *testing.T) {
+		powerCounts := map[int64]int{}
+		for _, vault := range validator.Vaults {
+			power := vault.VotingPower.Int64()
+			powerCounts[power]++
+		}
 
-	// Verify other validator properties
-	require.Equal(t, common.HexToAddress("0x123"), validator.Operator)
-	require.False(t, validator.IsActive) // Should be false by default
-	require.Len(t, validator.Keys, 1)
-	require.Equal(t, entity.KeyTag(15), validator.Keys[0].Tag)
+		// All high and medium power vaults should be kept
+		require.Equal(t, highPowerVaults, powerCounts[highPower],
+			"Should keep all %d high power vaults", highPowerVaults)
+		require.Equal(t, mediumPowerVaults, powerCounts[mediumPower],
+			"Should keep all %d medium power vaults", mediumPowerVaults)
+
+		// Remaining slots filled with low power vaults
+		expectedLowPowerCount := ssz.VaultsListMaxElements - highPowerVaults - mediumPowerVaults
+		require.Equal(t, expectedLowPowerCount, powerCounts[lowPower],
+			"Should keep %d low power vaults", expectedLowPowerCount)
+	})
+
+	t.Run("validator properties are correct", func(t *testing.T) {
+		require.Equal(t, common.HexToAddress("0x123"), validator.Operator)
+		require.False(t, validator.IsActive)
+		require.Len(t, validator.Keys, 1)
+		require.Equal(t, entity.KeyTag(15), validator.Keys[0].Tag)
+	})
 }

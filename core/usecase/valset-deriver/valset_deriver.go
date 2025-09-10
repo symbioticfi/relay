@@ -212,6 +212,8 @@ func fillValidators(votingPowers []dtoOperatorVotingPower, keys []entity.Operato
 			validatorsMap[val].Vaults = validatorsMap[val].Vaults[:ssz.VaultsListMaxElements]
 		}
 
+		validatorsMap[val].Vaults.SortByAddressAsc()
+
 		totalVP := big.NewInt(0)
 		for _, vault := range validatorsMap[val].Vaults {
 			totalVP.Add(totalVP, vault.VotingPower.Int)
