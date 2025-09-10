@@ -12,7 +12,7 @@ import (
 
 const (
 	// EmitTimeout is the default timeout for emitting events to the signal queue.
-	EmitTimeout = 10 * time.Second
+	EmitTimeout = 20 * time.Second
 )
 
 // Signal provides a type-safe, concurrent event processing system with configurable worker pools.
@@ -26,7 +26,7 @@ type Signal[T any] struct {
 	// Internal state
 	started bool
 	stopped atomic.Bool
-	mutex   sync.Mutex
+	mutex   sync.RWMutex
 }
 
 // Config defines the configuration for a Signal instance.
@@ -92,6 +92,16 @@ func (s *Signal[T]) EmitWithTimeout(ctx context.Context, payload T, timeout time
 	if s.stopped.Load() {
 		return errors.Errorf("cannot emit to stopped signal %v", s.id)
 	}
+
+	s.mutex.RLock()
+	// We might not have handlers set for specific signals like the signals dealing
+	// with aggregation on non aggregator nodes in such case we ignore the event completely
+	// if we don't ignore the queue will get full and requests will timeout
+	if s.handler == nil {
+		s.mutex.RUnlock()
+		return nil
+	}
+	s.mutex.RUnlock()
 
 	event := Event[T]{Payload: payload, Ctx: ctx}
 

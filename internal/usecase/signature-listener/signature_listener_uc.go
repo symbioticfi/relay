@@ -95,7 +95,9 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 		return errors.Errorf("failed to process signature: %w", err)
 	}
 
-	return s.signatureSavedSignal.Emit(ctx, msg)
+	//nolint:contextcheck // use new context instead of passing down the signal
+	// emit context which already has a short timeout attached
+	return s.signatureSavedSignal.Emit(context.Background(), msg)
 }
 
 func (s *SignatureListenerUseCase) StartSignatureSavedMessageListener(ctx context.Context, mh func(ctx context.Context, msg entity.SignatureMessage) error) error {
