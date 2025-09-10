@@ -12,7 +12,7 @@ import (
 
 const (
 	// EmitTimeout is the default timeout for emitting events to the signal queue.
-	EmitTimeout = 20 * time.Second
+	EmitTimeout = 10 * time.Second
 )
 
 // Signal provides a type-safe, concurrent event processing system with configurable worker pools.
@@ -81,14 +81,13 @@ func (s *Signal[T]) SetHandler(handler SignalListener[T]) error {
 // It will block if the queue is full until the timeout is reached.
 // Returns an error if workers have stopped.
 // Use EmitNonBlocking if you want non-blocking behavior or EmitWithTimeout for custom timeouts.
-func (s *Signal[T]) Emit(ctx context.Context, payload T) error {
-	return s.EmitWithTimeout(ctx, payload, EmitTimeout)
+func (s *Signal[T]) Emit(payload T) error {
+	return s.EmitWithTimeout(payload, EmitTimeout)
 }
 
 // EmitWithTimeout sends an event to the signal queue with a custom timeout.
 // Returns an error if the event cannot be queued within the timeout period or if workers have stopped.
-// The provided context is preserved and passed to the event handler when processed.
-func (s *Signal[T]) EmitWithTimeout(ctx context.Context, payload T, timeout time.Duration) error {
+func (s *Signal[T]) EmitWithTimeout(payload T, timeout time.Duration) error {
 	if s.stopped.Load() {
 		return errors.Errorf("cannot emit to stopped signal %v", s.id)
 	}
@@ -103,9 +102,9 @@ func (s *Signal[T]) EmitWithTimeout(ctx context.Context, payload T, timeout time
 	}
 	s.mutex.RUnlock()
 
-	event := Event[T]{Payload: payload, Ctx: ctx}
+	event := Event[T]{Payload: payload}
 
-	emitCtx, cancel := context.WithTimeout(ctx, timeout)
+	emitCtx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	select {
@@ -166,8 +165,7 @@ func (s *Signal[T]) StartWorkers(ctx context.Context) error {
 						slog.Info("signal queue closed, shutting down worker", slog.Int("worker", j), slog.String("signal", s.id))
 						return
 					}
-					//nolint:contextcheck // we need to use the context passed as part of the emit event
-					if err := handler(event.Ctx, event.Payload); err != nil {
+					if err := handler(ctx, event.Payload); err != nil {
 						slog.Error("failed to handle signal", slog.Any("error", err), slog.Int("worker", j), slog.Any("event", event.Payload), slog.String("signal", s.id))
 					}
 				}
