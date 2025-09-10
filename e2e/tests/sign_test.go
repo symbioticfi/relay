@@ -132,7 +132,7 @@ func TestNonHeaderKeySignature(t *testing.T) {
 					t.Logf("All %d signatures received for request hash: %s", len(resp.GetSignatures()), reqHash)
 
 					// verify signatures based on key type
-					countMap := map[string]struct{}{}
+					countMap := map[string]int{}
 					for _, sig := range resp.GetSignatures() {
 						found := false
 
@@ -153,32 +153,31 @@ func TestNonHeaderKeySignature(t *testing.T) {
 									// the contract stores 32 bytes padded address for ecdsa addrs,
 									// so stripping first 12 bytes to get to the address
 									if bytes.Equal(key.Payload[12:], addressBytes) {
-										countMap[operator.Operator.String()] = struct{}{}
+										countMap[operator.Operator.String()]++
 										found = true
 										break outer_ecdsa
 									}
 								}
 							}
 						} else if tc.keyTag.Type() == entity.KeyTypeBlsBn254 {
-							// BLS signature verification using crypto module
+							// Create public key from stored payload
+							publicKey, err := cryptoModule.NewPublicKey(tc.keyTag.Type(), sig.GetPublicKey())
+							require.NoErrorf(t, err, "Failed to create public key for request hash: %s", reqHash)
+
 						outer_bls:
 							for _, operator := range expected.ValidatorSet.Validators {
 								for _, key := range operator.Keys {
 									if key.Tag != tc.keyTag {
 										continue
 									}
-									// Create public key from stored payload
-									publicKey, err := cryptoModule.NewPublicKey(tc.keyTag.Type(), sig.GetPublicKey())
-									require.NoErrorf(t, err, "Failed to create public key for request hash: %s", reqHash)
-
-									if bytes.Equal(publicKey.OnChain(), key.Payload) {
+									if !bytes.Equal(publicKey.OnChain(), key.Payload) {
 										continue
 									}
 
 									// Verify signature using BLS verification
 									err = publicKey.VerifyWithHash(sig.GetMessageHash(), sig.GetSignature())
 									if err == nil {
-										countMap[operator.Operator.String()] = struct{}{}
+										countMap[operator.Operator.String()]++
 										found = true
 										break outer_bls
 									}
