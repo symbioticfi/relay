@@ -2,12 +2,14 @@ package valsetDeriver
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/require"
+	"github.com/symbioticfi/relay/core/usecase/ssz"
 	"go.uber.org/mock/gomock"
 
 	"github.com/symbioticfi/relay/core/entity"
@@ -403,10 +405,7 @@ func TestDeriver_fillValidators(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d, err := NewDeriver(nil)
-			require.NoError(t, err)
-
-			result := d.fillValidators(tt.votingPowers, tt.keys)
+			result := fillValidators(tt.votingPowers, tt.keys)
 
 			require.Len(t, result, len(tt.expected))
 
@@ -677,9 +676,6 @@ func TestDeriver_fillValidatorsActive(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d, err := NewDeriver(nil)
-			require.NoError(t, err)
-
 			// Make a copy of validators to avoid modifying the test data
 			validatorsCopy := make(entity.Validators, len(tt.validators))
 			for i, v := range tt.validators {
@@ -692,7 +688,7 @@ func TestDeriver_fillValidatorsActive(t *testing.T) {
 				}
 			}
 
-			d.fillValidatorsActive(tt.config, validatorsCopy)
+			markValidatorsActive(tt.config, validatorsCopy)
 
 			// Check total voting power
 			totalVotingPower := validatorsCopy.GetTotalActiveVotingPower()
@@ -803,4 +799,87 @@ func TestDeriver_GetNetworkData(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDeriver_fillValidators_VaultLimitExceeded(t *testing.T) {
+	// This test covers the scenario where a validator has more vaults than ssz.VaultsListMaxElements
+	// The function should only keep the top vaults (sorted by voting power desc, then operator address asc)
+
+	// Create voting powers with more vaults than the SSZ limit
+	// Assuming ssz.VaultsListMaxElements is a reasonable number like 256 or 512
+	// We'll create more vaults than this limit to test the truncation logic
+
+	numVaults := ssz.VaultsListMaxElements + 10 // Create more than the limit
+	vaultVotingPowers := make([]entity.VaultVotingPower, numVaults)
+
+	// Create vaults with decreasing voting power to test sorting
+	for i := 0; i < numVaults; i++ {
+		vaultVotingPowers[i] = entity.VaultVotingPower{
+			Vault:       common.HexToAddress(fmt.Sprintf("0x%040d", i+1)),       // 0x000...001, 0x000...002, etc.
+			VotingPower: entity.ToVotingPower(big.NewInt(int64(numVaults - i))), // Decreasing power: numVaults, numVaults-1, ..., 1
+		}
+	}
+
+	votingPowers := []dtoOperatorVotingPower{
+		{
+			chainId: 1,
+			votingPowers: []entity.OperatorVotingPower{
+				{
+					Operator: common.HexToAddress("0x123"),
+					Vaults:   vaultVotingPowers,
+				},
+			},
+		},
+	}
+
+	keys := []entity.OperatorWithKeys{
+		{
+			Operator: common.HexToAddress("0x123"),
+			Keys: []entity.ValidatorKey{
+				{
+					Tag:     entity.KeyTag(15),
+					Payload: entity.CompactPublicKey("key1"),
+				},
+			},
+		},
+	}
+
+	result := fillValidators(votingPowers, keys)
+
+	require.Len(t, result, 1)
+	validator := result[0]
+
+	// Verify that the number of vaults is limited to ssz.VaultsListMaxElements
+	require.Len(t, validator.Vaults, ssz.VaultsListMaxElements)
+
+	// Verify that the total voting power is calculated correctly
+	// It should be the sum of all original vaults (before truncation)
+	expectedTotalVotingPower := big.NewInt(0)
+	for i := 1; i <= numVaults; i++ {
+		expectedTotalVotingPower.Add(expectedTotalVotingPower, big.NewInt(int64(i)))
+	}
+	require.Equal(t, expectedTotalVotingPower, validator.VotingPower.Int)
+
+	// Verify that the kept vaults are the ones with highest voting power
+	// Since we created vaults with decreasing power, the first ssz.VaultsListMaxElements should be kept
+	for i, vault := range validator.Vaults {
+		expectedVotingPower := big.NewInt(int64(numVaults - i))
+		require.Equal(t, expectedVotingPower, vault.VotingPower.Int,
+			"Vault at index %d should have voting power %d", i, numVaults-i)
+		require.Equal(t, uint64(1), vault.ChainID)
+	}
+
+	// Verify that vaults are sorted correctly (by voting power desc, then operator address asc)
+	for i := 1; i < len(validator.Vaults); i++ {
+		// Since all vaults have different voting powers in our test,
+		// they should be sorted by voting power descending
+		require.True(t, validator.Vaults[i-1].VotingPower.Int.Cmp(validator.Vaults[i].VotingPower.Int) > 0,
+			"Vaults should be sorted by voting power descending")
+	}
+
+	// Verify other validator properties
+	require.Equal(t, common.HexToAddress("0x123"), validator.Operator)
+	require.False(t, validator.IsActive) // Should be false by default
+	require.Len(t, validator.Keys, 1)
+	require.Equal(t, entity.KeyTag(15), validator.Keys[0].Tag)
 }
