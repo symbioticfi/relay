@@ -185,6 +185,9 @@ func (s *AggregatorApp) GetAggregationStatus(ctx context.Context, requestHash co
 		return entity.AggregationStatus{}, errors.Errorf("failed to get signature request: %w", err)
 	}
 
+	if !signatureRequest.KeyTag.Type().AggregationKey() {
+		return entity.AggregationStatus{}, errors.Errorf("key tag %s is not an aggregation key", signatureRequest.KeyTag)
+	}
 	signatures, err := s.cfg.Repo.GetAllSignatures(ctx, requestHash)
 	if err != nil {
 		return entity.AggregationStatus{}, errors.Errorf("failed to get all signatures: %w", err)

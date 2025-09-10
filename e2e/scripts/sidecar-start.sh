@@ -13,7 +13,7 @@ driver:
   chain-id: 31337
   address: "$DRIVER_ADDRESS"
 log-level: "debug"
-log-mode: "pretty"
+log-mode: "json"
 signer: true
 chains:
   - "http://anvil:8545"

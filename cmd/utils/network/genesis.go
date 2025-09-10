@@ -157,9 +157,9 @@ var genesisCmd = &cobra.Command{
 					extraData)
 				if err != nil {
 					spinner.Fail("Transaction failed: ", err)
-				} else {
-					spinner.Success("Transaction hash: ", txResult.TxHash.String())
+					return errors.Errorf("failed to set genesis: %w", err)
 				}
+				spinner.Success("Transaction hash: ", txResult.TxHash.String())
 			}
 		}
 
