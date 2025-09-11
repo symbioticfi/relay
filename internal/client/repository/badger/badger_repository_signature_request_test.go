@@ -221,6 +221,8 @@ func TestBadgerRepository_GetSignatureRequestsByEpochPending(t *testing.T) {
 		requests[i] = req
 		err := repo.SaveSignatureRequest(t.Context(), req)
 		require.NoError(t, err)
+		err = repo.SaveSignatureRequestPending(t.Context(), req)
+		require.NoError(t, err)
 	}
 
 	// Sort requests by hash (lexicographic order) to match expected retrieval order
@@ -299,6 +301,8 @@ func TestBadgerRepository_RemoveSignatureRequestPending(t *testing.T) {
 		// Save signature request (creates both main and pending entries)
 		err := repo.SaveSignatureRequest(t.Context(), req)
 		require.NoError(t, err)
+		err = repo.SaveSignatureRequestPending(t.Context(), req)
+		require.NoError(t, err)
 
 		// Verify pending request exists
 		pendingReqs, err := repo.GetSignatureRequestsByEpochPending(t.Context(), epoch, 0, common.Hash{})
@@ -335,6 +339,8 @@ func TestBadgerRepository_RemoveSignatureRequestPending(t *testing.T) {
 		req2 := randomSignatureRequestForEpoch(t, epoch)
 		err := repo.SaveSignatureRequest(t.Context(), req2)
 		require.NoError(t, err)
+		err = repo.SaveSignatureRequestPending(t.Context(), req2)
+		require.NoError(t, err)
 
 		err = repo.RemoveSignatureRequestPending(t.Context(), epoch, req2.Hash())
 		require.NoError(t, err)
@@ -362,9 +368,15 @@ func TestBadgerRepository_PendingSignatureRequests_Integration(t *testing.T) {
 		// Save all requests
 		err := repo.SaveSignatureRequest(t.Context(), req1)
 		require.NoError(t, err)
+		err = repo.SaveSignatureRequestPending(t.Context(), req1)
+		require.NoError(t, err)
 		err = repo.SaveSignatureRequest(t.Context(), req2)
 		require.NoError(t, err)
+		err = repo.SaveSignatureRequestPending(t.Context(), req2)
+		require.NoError(t, err)
 		err = repo.SaveSignatureRequest(t.Context(), req3)
+		require.NoError(t, err)
+		err = repo.SaveSignatureRequestPending(t.Context(), req3)
 		require.NoError(t, err)
 
 		// Verify all are pending
@@ -412,7 +424,11 @@ func TestBadgerRepository_PendingSignatureRequests_Integration(t *testing.T) {
 		// Save requests for different epochs
 		err := repo.SaveSignatureRequest(t.Context(), req1)
 		require.NoError(t, err)
+		err = repo.SaveSignatureRequestPending(t.Context(), req1)
+		require.NoError(t, err)
 		err = repo.SaveSignatureRequest(t.Context(), req2)
+		require.NoError(t, err)
+		err = repo.SaveSignatureRequestPending(t.Context(), req2)
 		require.NoError(t, err)
 
 		// Verify each epoch has its pending request

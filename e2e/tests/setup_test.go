@@ -64,10 +64,20 @@ func generateSidecarConfigs(env EnvInfo) []RelaySidecarConfig {
 		keyIndex := i
 		symbPrivateKeyDecimal := basePrivateKey + keyIndex
 		symbPrivateKeyHex := fmt.Sprintf("%064x", symbPrivateKeyDecimal)
+		symbSecondaryPrivateKeyDecimal := basePrivateKey + keyIndex + 10_000
+		symbSecondaryPrivateKeyHex := fmt.Sprintf("%064x", symbSecondaryPrivateKeyDecimal)
 
 		// Generate key string in the same format as generate_network.sh
-		keys := fmt.Sprintf("symb/0/15/0x%s,evm/1/31337/0x%s,evm/1/31338/0x%s,p2p/1/0/%s,p2p/1/1/%s",
-			symbPrivateKeyHex, symbPrivateKeyHex, symbPrivateKeyHex, swarmKey, symbPrivateKeyHex)
+		keys := []string{
+			fmt.Sprintf("symb/0/15/0x%s", symbPrivateKeyHex),
+			fmt.Sprintf("symb/0/11/0x%s", symbSecondaryPrivateKeyHex),
+			fmt.Sprintf("symb/1/0/0x%s", symbPrivateKeyHex),
+			fmt.Sprintf("evm/1/31337/0x%s", symbPrivateKeyHex),
+			fmt.Sprintf("evm/1/31338/0x%s", symbPrivateKeyHex),
+			fmt.Sprintf("p2p/1/0/%s", swarmKey),
+			fmt.Sprintf("p2p/1/1/%s", symbPrivateKeyHex),
+		}
+		keysString := strings.Join(keys, ",")
 
 		// Determine role for this operator (same logic as generate_network.sh)
 		var role string
@@ -82,7 +92,7 @@ func generateSidecarConfigs(env EnvInfo) []RelaySidecarConfig {
 		}
 
 		configs[i] = RelaySidecarConfig{
-			Keys:          keys,
+			Keys:          keysString,
 			Role:          role,
 			DataDir:       fmt.Sprintf("/app/data-%02d", i+1),
 			ContainerName: fmt.Sprintf("relay-sidecar-%d", i+1),

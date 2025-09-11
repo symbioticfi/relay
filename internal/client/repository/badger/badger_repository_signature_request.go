@@ -62,7 +62,6 @@ func (r *Repository) saveSignatureRequestToKey(ctx context.Context, req entity.S
 func (r *Repository) SaveSignatureRequest(ctx context.Context, req entity.SignatureRequest) error {
 	primaryKey := keySignatureRequest(req.RequiredEpoch, req.Hash())
 	hashIndexKey := keySignatureRequestHashIndex(req.Hash())
-	pendingKey := keySignatureRequestPending(req.RequiredEpoch, req.Hash())
 
 	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
 		if err := r.saveSignatureRequestToKey(ctx, req, primaryKey); err != nil {
@@ -73,7 +72,18 @@ func (r *Repository) SaveSignatureRequest(ctx context.Context, req entity.Signat
 			return errors.Errorf("failed to store signature request hash index: %w", err)
 		}
 
-		return r.saveSignatureRequestToKey(ctx, req, pendingKey)
+		return nil
+	})
+}
+
+func (r *Repository) SaveSignatureRequestPending(ctx context.Context, req entity.SignatureRequest) error {
+	pendingKey := keySignatureRequestPending(req.RequiredEpoch, req.Hash())
+
+	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+		if err := r.saveSignatureRequestToKey(ctx, req, pendingKey); err != nil {
+			return err
+		}
+		return nil
 	})
 }
 

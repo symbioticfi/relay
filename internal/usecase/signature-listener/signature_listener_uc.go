@@ -56,8 +56,7 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 
 	if p2pMsg.SenderInfo.Sender == s.cfg.SelfP2PID {
 		slog.DebugContext(ctx, "Ignoring signature message from self, because it's already stored in signer")
-		err := s.cfg.SignatureSavedSignal.Emit(ctx, msg)
-		if err != nil {
+		if err := s.cfg.SignatureSavedSignal.Emit(msg); err != nil {
 			return errors.Errorf("failed to emit signature saved signal: %w", err)
 		}
 		slog.InfoContext(ctx, "Listener processed received signature from self")

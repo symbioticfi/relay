@@ -18,6 +18,8 @@ func convertToGRPCError(ctx context.Context, err error) error {
 		return nil
 	}
 
+	slog.DebugContext(ctx, "Converting error to gRPC status", "error", err)
+
 	switch {
 	case errors.Is(err, entity.ErrNotAnAggregator):
 		return status.Error(codes.PermissionDenied, "Not an aggregator node")

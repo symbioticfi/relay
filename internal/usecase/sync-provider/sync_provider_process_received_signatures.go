@@ -103,7 +103,7 @@ func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.
 				continue
 			}
 
-			err = s.cfg.SignatureReceivedSignal.Emit(ctx, entity.SignatureMessage{
+			err = s.cfg.SignatureReceivedSignal.Emit(entity.SignatureMessage{
 				RequestHash: reqHash,
 				KeyTag:      sigReq.KeyTag,
 				Epoch:       sigReq.RequiredEpoch,

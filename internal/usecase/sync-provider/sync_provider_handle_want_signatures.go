@@ -34,12 +34,16 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity
 
 		// Get signature request for epoch info
 		sigReq, err := s.cfg.Repo.GetSignatureRequest(ctx, reqHash)
-		if err != nil {
+		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 			return entity.WantSignaturesResponse{}, errors.Errorf("failed to get signature request %s: %w", reqHash.Hex(), err)
+		}
+		if errors.Is(err, entity.ErrEntityNotFound) {
+			// If we don't have the signature request, skip processing this request
+			slog.DebugContext(ctx, "Signature request not found, skipping", "request_hash", reqHash.Hex())
+			continue
 		}
 
 		var validatorSigs []entity.ValidatorSignature
-
 		for _, sig := range signatures {
 			// Check limit before processing each signature
 			if totalSignatureCount >= s.cfg.MaxResponseSignatureCount {

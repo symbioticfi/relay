@@ -31,6 +31,7 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	require.NoError(t, peerRepo.SaveValidatorSet(t.Context(), validatorSet))
 	require.NoError(t, requesterRepo.SaveValidatorSet(t.Context(), validatorSet))
 	require.NoError(t, requesterRepo.SaveSignatureRequest(t.Context(), signatureRequest))
+	require.NoError(t, requesterRepo.SaveSignatureRequestPending(t.Context(), signatureRequest))
 	signatureMap := entity.NewSignatureMap(signatureRequest.Hash(), signatureRequest.RequiredEpoch, uint32(len(validatorSet.Validators)))
 	require.NoError(t, requesterRepo.UpdateSignatureMap(t.Context(), signatureMap))
 
@@ -127,7 +128,7 @@ func createTestRepo(t *testing.T) *badger.Repository {
 func createTestSignatureRequest(t *testing.T) entity.SignatureRequest {
 	t.Helper()
 	return entity.SignatureRequest{
-		KeyTag:        entity.KeyTag(15),
+		KeyTag:        entity.ValsetHeaderKeyTag,
 		RequiredEpoch: entity.Epoch(1),
 		Message:       randomBytes(t, 100),
 	}
