@@ -136,6 +136,7 @@ jobs:
       EPOCH_TIME: 30
       BLOCK_TIME: 1
       FINALITY_BLOCKS: 2
+      GENERATE_SIDECARS: false
     
     steps:
       - name: "Checkout Repository"
