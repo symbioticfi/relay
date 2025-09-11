@@ -77,42 +77,6 @@ type testData struct {
 	SignatureMap entity.SignatureMap
 }
 
-//func createTestSignatureMap(thresholdReached bool, requestHash common.Hash, epoch entity.Epoch) entity.SignatureMap {
-//	currentVotingPower := big.NewInt(500)
-//	if thresholdReached {
-//		currentVotingPower = big.NewInt(700)
-//	}
-//
-//	return entity.SignatureMap{
-//		RequestHash:            requestHash,
-//		Epoch:                  epoch,
-//		SignedValidatorsBitmap: entity.NewSignatureBitmap(),
-//		CurrentVotingPower:     entity.ToVotingPower(currentVotingPower),
-//	}
-//}
-//
-//func createTestValidatorSet() entity.ValidatorSet {
-//	return entity.ValidatorSet{
-//		Version:         1,
-//		RequiredKeyTag:  entity.KeyTag(15),
-//		Epoch:           1,
-//		QuorumThreshold: entity.ToVotingPower(big.NewInt(670)),
-//		Validators: []entity.Validator{
-//			{
-//				Operator:    common.HexToAddress("0x123"),
-//				VotingPower: entity.ToVotingPower(big.NewInt(1000)),
-//				IsActive:    true,
-//				Keys: []entity.ValidatorKey{
-//					{
-//						Tag:     entity.KeyTag(15),
-//						Payload: entity.CompactPublicKey("test-key"),
-//					},
-//				},
-//			},
-//		},
-//	}
-//}
-
 // Create unified test data with a single ValidatorSet used consistently
 func createTestData(requestHash common.Hash, epoch uint64, totalValidators, signers int) testData {
 	// Create validators

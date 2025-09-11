@@ -21,6 +21,24 @@ func (s *Syncer) BuildWantSignaturesRequest(ctx context.Context) (entity.WantSig
 	}, nil
 }
 
+// buildWantSignaturesMap constructs a map of signature request hashes to missing validator bitmaps
+// for pending signature requests across multiple epochs.
+//
+// The method performs the following operations:
+// 1. Determines the epoch range to scan (from latest epoch back to EpochsToSync epochs)
+// 2. Iterates through epochs from newest to oldest to prioritize recent requests
+// 3. For each epoch, fetches pending signature requests in batches
+// 4. For each request, identifies validators that haven't provided signatures yet
+// 5. Builds a map where keys are request hashes and values are bitmaps of missing validators
+//
+// The scanning is limited by MaxSignatureRequestsPerSync to prevent excessive memory usage
+// and network overhead during synchronization.
+//
+// Behavior:
+//   - Scans epochs in reverse order (newest first) to prioritize recent requests
+//   - Stops scanning when MaxSignatureRequestsPerSync limit is reached
+//   - Only includes requests that have missing signatures (non-empty bitmaps)
+//   - Uses pagination to handle large numbers of requests per epoch
 func (s *Syncer) buildWantSignaturesMap(ctx context.Context) (map[common.Hash]entity.SignatureBitmap, error) {
 	// Get the latest epoch
 	latestEpoch, err := s.cfg.Repo.GetLatestValidatorSetEpoch(ctx)

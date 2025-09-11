@@ -11,6 +11,28 @@ import (
 	"github.com/symbioticfi/relay/core/usecase/crypto"
 )
 
+// ProcessReceivedSignatures validates and processes signatures received from peer nodes during
+// synchronization, updating local storage and tracking statistics for monitoring.
+//
+// The method performs the following validation and processing steps:
+// 1. Validates that received signatures were actually requested (hash and validator index matching)
+// 2. Retrieves original signature request metadata (epoch, key type, etc.)
+// 3. Reconstructs and validates public keys from signature data
+// 4. Cross-references validator information to ensure consistency
+// 5. Processes valid signatures through the signature processor
+// 6. Emits signature received signals for downstream components
+// 7. Tracks comprehensive statistics for all outcomes
+//
+// The method is designed to be resilient against malformed or malicious peer responses,
+// validating all received data before processing and continuing on errors.
+//
+// Behavior:
+//   - Validates all received signatures against original requests
+//   - Skips invalid signatures and continues processing others
+//   - Handles duplicate signatures gracefully (tracks but doesn't error)
+//   - Emits signals for successfully processed signatures
+//   - Returns comprehensive statistics for monitoring and debugging
+//   - Logs warnings for validation failures and errors
 func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.WantSignaturesResponse, wantSignatures map[common.Hash]entity.SignatureBitmap) entity.SignatureProcessingStats {
 	var stats entity.SignatureProcessingStats
 
