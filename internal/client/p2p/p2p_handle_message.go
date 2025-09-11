@@ -1,8 +1,6 @@
 package p2p
 
 import (
-	"context"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -13,7 +11,7 @@ import (
 	p2pEntity "github.com/symbioticfi/relay/internal/entity"
 )
 
-func (s *Service) handleSignatureReadyMessage(ctx context.Context, pubSubMsg *pubsub.Message) error {
+func (s *Service) handleSignatureReadyMessage(pubSubMsg *pubsub.Message) error {
 	var signatureGenerated prototypes.SignatureGenerated
 	err := unmarshalMessage(pubSubMsg, &signatureGenerated)
 	if err != nil {
@@ -50,13 +48,13 @@ func (s *Service) handleSignatureReadyMessage(ctx context.Context, pubSubMsg *pu
 		return errors.Errorf("failed to extract sender info from received message: %w", err)
 	}
 
-	return s.signatureReceivedHandler.Emit(ctx, p2pEntity.P2PMessage[entity.SignatureMessage]{
+	return s.signatureReceivedHandler.Emit(p2pEntity.P2PMessage[entity.SignatureMessage]{
 		SenderInfo: si,
 		Message:    msg,
 	})
 }
 
-func (s *Service) handleAggregatedProofReadyMessage(ctx context.Context, pubSubMsg *pubsub.Message) error {
+func (s *Service) handleAggregatedProofReadyMessage(pubSubMsg *pubsub.Message) error {
 	var signaturesAggregated prototypes.SignaturesAggregated
 	err := unmarshalMessage(pubSubMsg, &signaturesAggregated)
 	if err != nil {
@@ -90,7 +88,7 @@ func (s *Service) handleAggregatedProofReadyMessage(ctx context.Context, pubSubM
 		return errors.Errorf("failed to extract sender info from received message: %w", err)
 	}
 
-	return s.signaturesAggregatedHandler.Emit(ctx, p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]{
+	return s.signaturesAggregatedHandler.Emit(p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]{
 		SenderInfo: si,
 		Message:    msg,
 	})

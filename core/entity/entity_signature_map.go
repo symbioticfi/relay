@@ -52,6 +52,7 @@ func (vm *SignatureMap) GetMissingValidators() SignatureBitmap {
 
 // SaveSignatureParam bundles parameters needed for signature processing with SignatureMap operations
 type SaveSignatureParam struct {
+	KeyTag           KeyTag
 	RequestHash      common.Hash
 	Key              RawPublicKey
 	Signature        SignatureExtended

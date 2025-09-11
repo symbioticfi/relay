@@ -83,22 +83,30 @@ func (s *SignatureProcessor) ProcessSignature(ctx context.Context, param entity.
 			if err := s.cfg.Repo.SaveSignatureRequest(ctx, *param.SignatureRequest); err != nil {
 				return errors.Errorf("failed to save signature request: %w", err)
 			}
-		}
-
-		// Check if quorum is reached and remove from pending collection if so
-		validatorSetHeader, err := s.cfg.Repo.GetValidatorSetHeaderByEpoch(ctx, uint64(param.Epoch))
-		if err != nil {
-			return errors.Errorf("failed to get validator set header: %v", err)
-		}
-
-		// todo check quorum threshold from signature request
-		if signatureMap.ThresholdReached(validatorSetHeader.QuorumThreshold) {
-			// Remove from pending collection since quorum is reached
-			err := s.cfg.Repo.RemoveSignatureRequestPending(ctx, param.Epoch, param.RequestHash)
-			if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
-				return errors.Errorf("failed to remove signature request from pending collection: %v", err)
+			// Save to pending collection as well
+			if param.KeyTag.Type().AggregationKey() {
+				if err := s.cfg.Repo.SaveSignatureRequestPending(ctx, *param.SignatureRequest); err != nil {
+					return errors.Errorf("failed to save signature request to pending collection: %v", err)
+				}
 			}
-			// If ErrEntityNotFound, it means it was already removed or never added - that's ok
+		}
+
+		if param.KeyTag.Type().AggregationKey() {
+			// Check if quorum is reached and remove from pending collection if so
+			validatorSetHeader, err := s.cfg.Repo.GetValidatorSetHeaderByEpoch(ctx, uint64(param.Epoch))
+			if err != nil {
+				return errors.Errorf("failed to get validator set header: %v", err)
+			}
+
+			// todo check quorum threshold from signature request
+			if signatureMap.ThresholdReached(validatorSetHeader.QuorumThreshold) {
+				// Remove from pending collection since quorum is reached
+				err := s.cfg.Repo.RemoveSignatureRequestPending(ctx, param.Epoch, param.RequestHash)
+				if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
+					return errors.Errorf("failed to remove signature request from pending collection: %v", err)
+				}
+				// If ErrEntityNotFound, it means it was already removed or never added - that's ok
+			}
 		}
 
 		return nil

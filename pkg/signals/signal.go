@@ -26,7 +26,7 @@ type Signal[T any] struct {
 	// Internal state
 	started bool
 	stopped atomic.Bool
-	mutex   sync.Mutex
+	mutex   sync.RWMutex
 }
 
 // Config defines the configuration for a Signal instance.
@@ -88,21 +88,30 @@ func (s *Signal[T]) SetHandler(handler SignalListener[T]) error {
 // It will block if the queue is full until the timeout is reached.
 // Returns an error if workers have stopped.
 // Use EmitNonBlocking if you want non-blocking behavior or EmitWithTimeout for custom timeouts.
-func (s *Signal[T]) Emit(ctx context.Context, payload T) error {
-	return s.EmitWithTimeout(ctx, payload, EmitTimeout)
+func (s *Signal[T]) Emit(payload T) error {
+	return s.EmitWithTimeout(payload, EmitTimeout)
 }
 
 // EmitWithTimeout sends an event to the signal queue with a custom timeout.
 // Returns an error if the event cannot be queued within the timeout period or if workers have stopped.
-// The provided context is preserved and passed to the event handler when processed.
-func (s *Signal[T]) EmitWithTimeout(ctx context.Context, payload T, timeout time.Duration) error {
+func (s *Signal[T]) EmitWithTimeout(payload T, timeout time.Duration) error {
 	if s.stopped.Load() {
 		return errors.Errorf("cannot emit to stopped signal %v", s.id)
 	}
 
-	event := Event[T]{Payload: payload, Ctx: ctx}
+	s.mutex.RLock()
+	// We might not have handlers set for specific signals like the signals dealing
+	// with aggregation on non aggregator nodes in such case we ignore the event completely
+	// if we don't ignore the queue will get full and requests will timeout
+	if s.handler == nil {
+		s.mutex.RUnlock()
+		return nil
+	}
+	s.mutex.RUnlock()
 
-	emitCtx, cancel := context.WithTimeout(ctx, timeout)
+	event := Event[T]{Payload: payload}
+
+	emitCtx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	select {
@@ -163,8 +172,7 @@ func (s *Signal[T]) StartWorkers(ctx context.Context) error {
 						slog.Info("signal queue closed, shutting down worker", slog.Int("worker", j), slog.String("signal", s.id))
 						return
 					}
-					//nolint:contextcheck // we need to use the context passed as part of the emit event
-					if err := handler(event.Ctx, event.Payload); err != nil {
+					if err := handler(ctx, event.Payload); err != nil {
 						slog.Error("failed to handle signal", slog.Any("error", err), slog.Int("worker", j), slog.Any("event", event.Payload), slog.String("signal", s.id))
 					}
 				}

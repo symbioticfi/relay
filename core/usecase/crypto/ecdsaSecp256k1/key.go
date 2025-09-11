@@ -112,8 +112,12 @@ func (k *PublicKey) VerifyWithHash(msgHash MessageHash, sig Signature) error {
 
 // OnChain might be one way operation, meaning that it's impossible to reconstruct PublicKey from compact
 func (k *PublicKey) OnChain() CompactPublicKey {
-	// returns eth address in this case
-	return crypto.PubkeyToAddress(k.pubKey).Bytes()
+	// returns eth address in this case, left-padded to 32 bytes to match logic in contracts
+	// see https://github.com/symbioticfi/relay-contracts/blob/abcf4d7bb151780094d3a67cce7431300ecd5e31/src/contracts/libraries/keys/KeyEcdsaSecp256k1.sol#L41
+	addr := crypto.PubkeyToAddress(k.pubKey).Bytes()
+	result := make([]byte, 32)
+	copy(result[32-len(addr):], addr)
+	return result
 }
 
 func (k *PublicKey) Raw() RawPublicKey {
