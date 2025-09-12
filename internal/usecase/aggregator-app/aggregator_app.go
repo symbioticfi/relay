@@ -76,6 +76,8 @@ func NewAggregatorApp(cfg Config) (*AggregatorApp, error) {
 
 func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error {
 	ctx = log.WithComponent(ctx, "aggregator")
+	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(msg.Epoch)))
+	slog.DebugContext(ctx, "Received HandleSignatureGeneratedMessage", "message", msg)
 
 	signatureMap, err := s.cfg.Repo.GetSignatureMap(ctx, msg.RequestHash)
 	if err != nil {
@@ -154,6 +156,7 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 
 	slog.InfoContext(ctx, "Proof created, trying to send aggregated signature message",
 		"duration", time.Since(appAggregationStart).String(),
+		"requestHash", msg.RequestHash.Hex(),
 	)
 	err = s.cfg.P2PClient.BroadcastSignatureAggregatedMessage(ctx, entity.AggregatedSignatureMessage{
 		RequestHash:      msg.RequestHash,

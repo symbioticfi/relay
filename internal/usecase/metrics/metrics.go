@@ -15,17 +15,21 @@ type Config struct {
 }
 
 type Metrics struct {
-	pkSignDuration         prometheus.Summary
-	appSignDuration        prometheus.Summary
-	onlyAggregateDuration  prometheus.Summary
-	appAggregationDuration prometheus.Summary
-	p2PMessagesSent        *prometheus.CounterVec
-	p2pPeerMessagesSent    *prometheus.CounterVec
-	evmMethodCall          *prometheus.HistogramVec
-	evmCommitGasUsed       *prometheus.HistogramVec
-	evmCommitGasPrice      *prometheus.HistogramVec
-	appAggProofCompleted   prometheus.Histogram
-	appAggProofReceived    prometheus.Histogram
+	GRPCMetrics
+
+	pkSignDuration             prometheus.Summary
+	appSignDuration            prometheus.Summary
+	onlyAggregateDuration      prometheus.Summary
+	appAggregationDuration     prometheus.Summary
+	p2pMessagesSent            *prometheus.CounterVec
+	p2pPeerMessagesSent        *prometheus.CounterVec
+	evmMethodCall              *prometheus.HistogramVec
+	evmCommitGasUsed           *prometheus.HistogramVec
+	evmCommitGasPrice          *prometheus.HistogramVec
+	appAggProofCompleted       prometheus.Histogram
+	appAggProofReceived        prometheus.Histogram
+	p2pSyncProcessedSignatures *prometheus.CounterVec
+	p2pSyncRequestedHashes     prometheus.Counter
 }
 
 func New(cfg Config) *Metrics {
@@ -73,11 +77,11 @@ func newMetrics(registerer prometheus.Registerer) *Metrics {
 	})
 	all = append(all, m.appAggregationDuration)
 
-	m.p2PMessagesSent = prometheus.NewCounterVec(prometheus.CounterOpts{
+	m.p2pMessagesSent = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "symbiotic_relay_p2p_sent_messages_total",
 		Help: "Total number of P2P messages sent",
 	}, []string{"message_type"})
-	all = append(all, m.p2PMessagesSent)
+	all = append(all, m.p2pMessagesSent)
 
 	m.p2pPeerMessagesSent = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "symbiotic_relay_p2p_peer_sent_messages_total",
@@ -120,6 +124,47 @@ func newMetrics(registerer prometheus.Registerer) *Metrics {
 	})
 	all = append(all, m.appAggProofReceived)
 
+	m.p2pSyncProcessedSignatures = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "symbiotic_relay_p2p_sync_processed_signatures_total",
+		Help: "Total number of signatures processed during P2P sync",
+	}, []string{"process_result"})
+	all = append(all, m.p2pSyncProcessedSignatures)
+
+	m.p2pSyncRequestedHashes = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "symbiotic_relay_p2p_sync_requested_hashes_total",
+		Help: "Total number of requested hashes during P2P sync",
+	})
+	all = append(all, m.p2pSyncRequestedHashes)
+
+	grpcDurationBuckets := []float64{.005, .01, .025, .05, .1, .25, .5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 10, 15, 20, 40, 45, 60}
+	m.requestDuration = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "grpc_server_request_duration_seconds",
+			Help:    "Duration of gRPC requests in seconds.",
+			Buckets: grpcDurationBuckets,
+		},
+		[]string{"method", "status_code"},
+	)
+	all = append(all, m.requestDuration)
+
+	m.requestsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "grpc_server_requests_total",
+			Help: "Total number of gRPC requests.",
+		},
+		[]string{"method", "status_code"},
+	)
+	all = append(all, m.requestsTotal)
+
+	m.requestsInFlight = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "grpc_server_requests_in_flight",
+			Help: "Current number of gRPC requests being processed.",
+		},
+		[]string{"method"},
+	)
+	all = append(all, m.requestsInFlight)
+
 	registerer.MustRegister(all...)
 	return m
 }
@@ -141,7 +186,7 @@ func (m *Metrics) ObserveAppAggregateDuration(d time.Duration) {
 }
 
 func (m *Metrics) ObserveP2PMessageSent(messageType string) {
-	m.p2PMessagesSent.WithLabelValues(messageType).Add(1)
+	m.p2pMessagesSent.WithLabelValues(messageType).Add(1)
 }
 
 func (m *Metrics) ObserveP2PPeerMessageSent(messageType, status string) {
@@ -180,4 +225,12 @@ func (m *Metrics) ObserveAggReceived(stat entity.SignatureStat) {
 		return
 	}
 	m.appAggProofReceived.Observe(aggProofReceivedTime.Sub(reqReceivedTime).Seconds())
+}
+
+func (m *Metrics) ObserveP2PSyncSignaturesProcessed(resultType string, count int) {
+	m.p2pSyncProcessedSignatures.WithLabelValues(resultType).Add(float64(count))
+}
+
+func (m *Metrics) ObserveP2PSyncRequestedHashes(count int) {
+	m.p2pSyncRequestedHashes.Add(float64(count))
 }

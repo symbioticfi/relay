@@ -291,3 +291,177 @@ func TestSignatureMap_IntegrationScenarios(t *testing.T) {
 		assert.Equal(t, ToVotingPower(big.NewInt(500)), vm.CurrentVotingPower)
 	})
 }
+
+func TestSignatureMap_GetMissingValidators(t *testing.T) {
+	t.Parallel()
+
+	t.Run("returns all validators when none are present", func(t *testing.T) {
+		requestHash := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
+		vm := NewSignatureMap(requestHash, Epoch(1), 4)
+
+		missing := vm.GetMissingValidators()
+
+		// All validators should be missing
+		assert.True(t, missing.Contains(0))
+		assert.True(t, missing.Contains(1))
+		assert.True(t, missing.Contains(2))
+		assert.True(t, missing.Contains(3))
+		assert.Equal(t, uint64(4), missing.GetCardinality())
+	})
+
+	t.Run("returns subset when some validators are present", func(t *testing.T) {
+		requestHash := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
+		vm := NewSignatureMap(requestHash, Epoch(1), 4)
+
+		// Set validators 0 and 2 as present
+		err := vm.SetValidatorPresent(0, ToVotingPower(big.NewInt(100)))
+		require.NoError(t, err)
+		err = vm.SetValidatorPresent(2, ToVotingPower(big.NewInt(200)))
+		require.NoError(t, err)
+
+		missing := vm.GetMissingValidators()
+
+		// Only validators 1 and 3 should be missing
+		assert.False(t, missing.Contains(0))
+		assert.True(t, missing.Contains(1))
+		assert.False(t, missing.Contains(2))
+		assert.True(t, missing.Contains(3))
+		assert.Equal(t, uint64(2), missing.GetCardinality())
+	})
+
+	t.Run("returns empty when all validators are present", func(t *testing.T) {
+		requestHash := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
+		vm := NewSignatureMap(requestHash, Epoch(1), 3)
+
+		// Set all validators as present
+		for i := uint32(0); i < 3; i++ {
+			err := vm.SetValidatorPresent(i, ToVotingPower(big.NewInt(100)))
+			require.NoError(t, err)
+		}
+
+		missing := vm.GetMissingValidators()
+
+		// No validators should be missing
+		assert.False(t, missing.Contains(0))
+		assert.False(t, missing.Contains(1))
+		assert.False(t, missing.Contains(2))
+		assert.Equal(t, uint64(0), missing.GetCardinality())
+	})
+
+	t.Run("handles single validator", func(t *testing.T) {
+		requestHash := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
+		vm := NewSignatureMap(requestHash, Epoch(1), 1)
+
+		missing := vm.GetMissingValidators()
+
+		// Single validator should be missing
+		assert.True(t, missing.Contains(0))
+		assert.Equal(t, uint64(1), missing.GetCardinality())
+
+		// After setting present
+		err := vm.SetValidatorPresent(0, ToVotingPower(big.NewInt(100)))
+		require.NoError(t, err)
+
+		missing = vm.GetMissingValidators()
+		assert.False(t, missing.Contains(0))
+		assert.Equal(t, uint64(0), missing.GetCardinality())
+	})
+}
+
+func TestSignatureBitmapFromBytes(t *testing.T) {
+	t.Parallel()
+
+	t.Run("creates bitmap from valid bytes", func(t *testing.T) {
+		// Create a bitmap with some values
+		original := NewSignatureBitmapOf(0, 2, 5, 10)
+
+		// Serialize to bytes
+		buf, err := original.ToBytes()
+		require.NoError(t, err)
+		require.NotEmpty(t, buf)
+
+		// Deserialize from bytes
+		restored, err := SignatureBitmapFromBytes(buf)
+		require.NoError(t, err)
+
+		// Verify the restored bitmap has the same values
+		assert.True(t, restored.Contains(0))
+		assert.False(t, restored.Contains(1))
+		assert.True(t, restored.Contains(2))
+		assert.False(t, restored.Contains(3))
+		assert.False(t, restored.Contains(4))
+		assert.True(t, restored.Contains(5))
+		assert.True(t, restored.Contains(10))
+		assert.Equal(t, original.GetCardinality(), restored.GetCardinality())
+	})
+
+	t.Run("creates empty bitmap from empty bytes", func(t *testing.T) {
+		// Create empty bitmap
+		original := NewSignatureBitmap()
+
+		// Serialize to bytes
+		buf, err := original.ToBytes()
+		require.NoError(t, err)
+
+		// Deserialize from bytes
+		restored, err := SignatureBitmapFromBytes(buf)
+		require.NoError(t, err)
+
+		// Verify the restored bitmap is empty
+		assert.Equal(t, uint64(0), restored.GetCardinality())
+	})
+
+	t.Run("returns error for invalid bytes", func(t *testing.T) {
+		// Test with invalid byte sequence
+		invalidBytes := []byte{0xFF, 0xFF, 0xFF, 0xFF}
+
+		_, err := SignatureBitmapFromBytes(invalidBytes)
+		assert.Error(t, err)
+	})
+
+	t.Run("handles large bitmap", func(t *testing.T) {
+		// Create bitmap with large indices
+		original := NewSignatureBitmapOf(0, 100, 1000, 10000, 65536)
+
+		// Serialize to bytes
+		buf, err := original.ToBytes()
+		require.NoError(t, err)
+
+		// Deserialize from bytes
+		restored, err := SignatureBitmapFromBytes(buf)
+		require.NoError(t, err)
+
+		// Verify all large indices are preserved
+		assert.True(t, restored.Contains(0))
+		assert.True(t, restored.Contains(100))
+		assert.True(t, restored.Contains(1000))
+		assert.True(t, restored.Contains(10000))
+		assert.True(t, restored.Contains(65536))
+		assert.Equal(t, original.GetCardinality(), restored.GetCardinality())
+	})
+
+	t.Run("roundtrip consistency", func(t *testing.T) {
+		// Test multiple roundtrips to ensure consistency
+		testValues := []uint32{1, 3, 7, 15, 31, 63, 127, 255, 511, 1023}
+		original := NewSignatureBitmapOf(testValues...)
+
+		for i := 0; i < 3; i++ {
+			// Serialize
+			buf, err := original.ToBytes()
+			require.NoError(t, err)
+
+			// Deserialize
+			restored, err := SignatureBitmapFromBytes(buf)
+			require.NoError(t, err)
+
+			// Verify equality
+			assert.Equal(t, original.GetCardinality(), restored.GetCardinality())
+			for _, val := range testValues {
+				assert.True(t, restored.Contains(val), "value %d should be present after roundtrip %d", val, i+1)
+			}
+
+			// Use restored for next iteration
+			original = restored
+		}
+	})
+}

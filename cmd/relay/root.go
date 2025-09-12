@@ -5,17 +5,12 @@ import (
 	"log/slog"
 	"time"
 
-	signature_processor "github.com/symbioticfi/relay/core/usecase/signature-processor"
-	aggregationPolicy "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
-	signatureListener "github.com/symbioticfi/relay/internal/usecase/signature-listener"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
-	valsetStatusTracker "github.com/symbioticfi/relay/internal/usecase/valset-status-tracker"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/symbioticfi/relay/core/client/evm"
@@ -23,15 +18,21 @@ import (
 	"github.com/symbioticfi/relay/core/usecase/aggregator"
 	symbioticCrypto "github.com/symbioticfi/relay/core/usecase/crypto"
 	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
+	signature_processor "github.com/symbioticfi/relay/core/usecase/signature-processor"
 	valsetDeriver "github.com/symbioticfi/relay/core/usecase/valset-deriver"
 	"github.com/symbioticfi/relay/internal/client/p2p"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
+	aggregationPolicy "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
 	aggregatorApp "github.com/symbioticfi/relay/internal/usecase/aggregator-app"
 	api_server "github.com/symbioticfi/relay/internal/usecase/api-server"
 	"github.com/symbioticfi/relay/internal/usecase/metrics"
+	signatureListener "github.com/symbioticfi/relay/internal/usecase/signature-listener"
 	signerApp "github.com/symbioticfi/relay/internal/usecase/signer-app"
+	sync_provider "github.com/symbioticfi/relay/internal/usecase/sync-provider"
+	sync_runner "github.com/symbioticfi/relay/internal/usecase/sync-runner"
 	valsetGenerator "github.com/symbioticfi/relay/internal/usecase/valset-generator"
 	valsetListener "github.com/symbioticfi/relay/internal/usecase/valset-listener"
+	valsetStatusTracker "github.com/symbioticfi/relay/internal/usecase/valset-status-tracker"
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/proof"
 	"github.com/symbioticfi/relay/pkg/signals"
@@ -96,6 +97,7 @@ func runApp(ctx context.Context) error {
 	if err != nil {
 		return errors.Errorf("failed to create badger repository: %w", err)
 	}
+	defer baseRepo.Close()
 
 	repo, err := badger.NewCached(baseRepo, badger.CachedConfig{
 		NetworkConfigCacheSize: cfg.Cache.NetworkConfigCacheSize,
@@ -144,7 +146,27 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create aggregator: %w", err)
 	}
 
-	p2pService, discoveryService, err := initP2PService(ctx, cfg, keyProvider, mtr)
+	signatureProcessor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
+		Repo: repo,
+	})
+	if err != nil {
+		return errors.Errorf("failed to create signature processor: %w", err)
+	}
+
+	signatureReceivedSignal := signals.New[entity.SignatureMessage](cfg.SignalCfg, "signatureReceive", nil)
+	syncProvider, err := sync_provider.New(sync_provider.Config{
+		Repo:                        repo,
+		SignatureProcessor:          signatureProcessor,
+		EpochsToSync:                cfg.Sync.EpochsToSync,
+		MaxSignatureRequestsPerSync: 1000,
+		MaxResponseSignatureCount:   1000,
+		SignatureReceivedSignal:     signatureReceivedSignal,
+	})
+	if err != nil {
+		return errors.Errorf("failed to create syncer: %w", err)
+	}
+
+	p2pService, discoveryService, err := initP2PService(ctx, cfg, keyProvider, syncProvider, mtr)
 	if err != nil {
 		return errors.Errorf("failed to create p2p service: %w", err)
 	}
@@ -160,11 +182,16 @@ func runApp(ctx context.Context) error {
 
 	aggProofReadySignal := signals.New[entity.AggregatedSignatureMessage](cfg.SignalCfg, "aggProofReady", nil)
 
-	signatureProcessor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
-		Repo: repo,
+	syncRunner, err := sync_runner.New(sync_runner.Config{
+		Enabled:     cfg.Sync.Enabled,
+		P2PService:  p2pService,
+		Provider:    syncProvider,
+		SyncPeriod:  cfg.Sync.Period,
+		SyncTimeout: cfg.Sync.Timeout,
+		Metrics:     mtr,
 	})
 	if err != nil {
-		return errors.Errorf("failed to create signature processor: %w", err)
+		return errors.Errorf("failed to create sync runner: %w", err)
 	}
 
 	signerApp, err := signerApp.NewSignerApp(signerApp.Config{
@@ -226,10 +253,11 @@ func runApp(ctx context.Context) error {
 	}
 
 	signListener, err := signatureListener.New(signatureListener.Config{
-		Repo:               repo,
-		SignatureProcessor: signatureProcessor,
-		SignalCfg:          cfg.SignalCfg,
-		SelfP2PID:          p2pService.ID(),
+		Repo:                 repo,
+		SignatureProcessor:   signatureProcessor,
+		SignalCfg:            cfg.SignalCfg,
+		SelfP2PID:            p2pService.ID(),
+		SignatureSavedSignal: signatureReceivedSignal,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create signature listener: %w", err)
@@ -282,8 +310,11 @@ func runApp(ctx context.Context) error {
 			return errors.Errorf("failed to create aggregator app: %w", err)
 		}
 
-		if err := signListener.StartSignatureSavedMessageListener(ctx, aggApp.HandleSignatureGeneratedMessage); err != nil {
-			return errors.Errorf("failed to start signature saved message listener: %w", err)
+		if err := signatureReceivedSignal.SetHandler(aggApp.HandleSignatureGeneratedMessage); err != nil {
+			return errors.Errorf("failed to set signature received message handler: %w", err)
+		}
+		if err := signatureReceivedSignal.StartWorkers(ctx); err != nil {
+			return errors.Errorf("failed to start signature received signal workers: %w", err)
 		}
 
 		slog.DebugContext(ctx, "Created aggregator app, starting")
@@ -300,6 +331,7 @@ func runApp(ctx context.Context) error {
 		EvmClient:         evmClient,
 		Aggregator:        aggApp,
 		Deriver:           deriver,
+		Metrics:           mtr,
 		ServeMetrics:      serveMetricsOnAPIAddress,
 	})
 	if err != nil {
@@ -309,6 +341,20 @@ func runApp(ctx context.Context) error {
 	eg.Go(func() error {
 		if err := api.Start(egCtx); err != nil {
 			return errors.Errorf("failed to start api server: %w", err)
+		}
+		return nil
+	})
+
+	eg.Go(func() error {
+		if err := syncRunner.Start(ctx); err != nil {
+			return errors.Errorf("failed to start sync runner: %w", err)
+		}
+		return nil
+	})
+
+	eg.Go(func() error {
+		if err := p2pService.StartGRPCServer(ctx); err != nil {
+			return errors.Errorf("failed to start p2p grpc server: %w", err)
 		}
 		return nil
 	})
@@ -334,7 +380,7 @@ func runApp(ctx context.Context) error {
 	return eg.Wait()
 }
 
-func initP2PService(ctx context.Context, cfg config, keyProvider keyprovider.KeyProvider, mtr *metrics.Metrics) (*p2p.Service, *p2p.DiscoveryService, error) {
+func initP2PService(ctx context.Context, cfg config, keyProvider keyprovider.KeyProvider, provider *sync_provider.Syncer, mtr *metrics.Metrics) (*p2p.Service, *p2p.DiscoveryService, error) {
 	swarmPK, err := keyProvider.GetPrivateKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, entity.KeyTypeEcdsaSecp256k1, keyprovider.P2P_SWARM_NETWORK_KEY_ID)
 	if err != nil {
 		return nil, nil, errors.Errorf("failed to get P2P swarm private key: %w", err)
@@ -376,6 +422,7 @@ func initP2PService(ctx context.Context, cfg config, keyProvider keyprovider.Key
 		Host:      h,
 		Metrics:   mtr,
 		Discovery: p2p.DefaultDiscoveryConfig(),
+		Handler:   p2p.NewP2PHandler(provider),
 	}
 	if len(cfg.Bootnodes) > 0 {
 		p2pCfg.Discovery.BootstrapPeers = cfg.Bootnodes

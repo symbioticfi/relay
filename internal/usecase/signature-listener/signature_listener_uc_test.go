@@ -81,7 +81,8 @@ func newTestSetup(t *testing.T) *testSetup {
 			BufferSize:  10,
 			WorkerCount: 5,
 		},
-		SelfP2PID: "test-self-p2p-id",
+		SelfP2PID:            "test-self-p2p-id",
+		SignatureSavedSignal: signals.New[entity.SignatureMessage](signals.DefaultConfig(), "signatureReceive", nil),
 	}
 
 	useCase, err := New(cfg)

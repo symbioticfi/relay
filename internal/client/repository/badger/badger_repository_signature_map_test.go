@@ -5,7 +5,6 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/RoaringBitmap/roaring/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
@@ -24,13 +23,10 @@ func randomRequestHash(t *testing.T) common.Hash {
 func randomSignatureMap(t *testing.T, requestHash common.Hash) entity.SignatureMap {
 	t.Helper()
 
-	// Create bitmap with some validators present (indexes 0, 1, 2 are present)
-	bitmap := roaring.BitmapOf(0, 1, 2)
-
 	return entity.SignatureMap{
 		RequestHash:            requestHash,
 		Epoch:                  entity.Epoch(randomBigInt(t).Uint64()),
-		SignedValidatorsBitmap: bitmap,
+		SignedValidatorsBitmap: entity.NewSignatureBitmapOf(0, 1, 2),
 		CurrentVotingPower:     entity.ToVotingPower(randomBigInt(t)),
 	}
 }
@@ -41,7 +37,7 @@ func assertSignatureMapsEqual(t *testing.T, expected, actual entity.SignatureMap
 
 	assert.Equal(t, expected.RequestHash, actual.RequestHash, "RequestHash mismatch")
 	assert.Equal(t, expected.Epoch, actual.Epoch, "Epoch mismatch")
-	assert.True(t, expected.SignedValidatorsBitmap.Equals(actual.SignedValidatorsBitmap), "SignedValidatorsBitmap mismatch")
+	assert.True(t, expected.SignedValidatorsBitmap.Equals(actual.SignedValidatorsBitmap.Bitmap), "SignedValidatorsBitmap mismatch")
 	assert.Equal(t, expected.CurrentVotingPower.String(), actual.CurrentVotingPower.String(), "CurrentVotingPower mismatch")
 }
 
@@ -154,7 +150,7 @@ func TestSignatureMapSerialization(t *testing.T) {
 		vm := entity.SignatureMap{
 			RequestHash:            randomRequestHash(t),
 			Epoch:                  123,
-			SignedValidatorsBitmap: roaring.New(),
+			SignedValidatorsBitmap: entity.NewSignatureBitmap(),
 			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(0)),
 		}
 
@@ -177,7 +173,7 @@ func TestSignatureMapSerialization(t *testing.T) {
 		vm := entity.SignatureMap{
 			RequestHash:            randomRequestHash(t),
 			Epoch:                  18446744073709551615, // Max uint64
-			SignedValidatorsBitmap: roaring.New(),
+			SignedValidatorsBitmap: entity.NewSignatureBitmap(),
 			CurrentVotingPower:     entity.ToVotingPower(new(big.Int).Mul(largeBigInt, big.NewInt(3))),
 		}
 
@@ -193,7 +189,7 @@ func TestSignatureMapSerialization(t *testing.T) {
 
 	t.Run("Serialization - Address Conversion", func(t *testing.T) {
 		// Test roaring bitmap with specific indexes
-		bitmap := roaring.BitmapOf(0) // Only validator at index 0 is present
+		bitmap := entity.NewSignatureBitmapOf(0) // Only validator at index 0 is present
 		vm := entity.SignatureMap{
 			RequestHash:            randomRequestHash(t),
 			Epoch:                  42,
@@ -353,7 +349,7 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 		vm := entity.SignatureMap{
 			RequestHash:            common.Hash{}, // Zero hash
 			Epoch:                  0,
-			SignedValidatorsBitmap: roaring.New(),
+			SignedValidatorsBitmap: entity.NewSignatureBitmap(),
 			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(0)),
 		}
 
@@ -370,7 +366,7 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 		vm := entity.SignatureMap{
 			RequestHash:            randomRequestHash(t),
 			Epoch:                  1,
-			SignedValidatorsBitmap: roaring.BitmapOf(0), // Single validator at index 0
+			SignedValidatorsBitmap: entity.NewSignatureBitmapOf(0), // Single validator at index 0
 			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(1)),
 		}
 
@@ -384,7 +380,7 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 
 	t.Run("Many Validators", func(t *testing.T) {
 		// Create signature map with many validators
-		bitmap := roaring.New()
+		bitmap := entity.NewSignatureBitmap()
 		// Add even indexes (50 validators present out of 100)
 		for i := uint32(0); i < 100; i += 2 {
 			bitmap.Add(i)

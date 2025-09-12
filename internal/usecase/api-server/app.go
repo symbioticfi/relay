@@ -21,7 +21,9 @@ import (
 
 	"github.com/symbioticfi/relay/core/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
+	"github.com/symbioticfi/relay/internal/usecase/metrics"
 	"github.com/symbioticfi/relay/pkg/log"
+	"github.com/symbioticfi/relay/pkg/server"
 )
 
 //go:generate mockgen -source=app.go -destination=mocks/app_mock.go -package=mocks
@@ -63,6 +65,7 @@ type Config struct {
 	Deriver      deriver   `validate:"required"`
 	Aggregator   aggregator
 	ServeMetrics bool
+	Metrics      *metrics.Metrics `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -97,21 +100,18 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 		return nil, errors.Errorf("failed to listen on %s: %w", cfg.Address, err)
 	}
 
-	// Create gRPC metrics
-	grpcMetricsInterceptor := newGRPCMetrics()
-
 	// Create gRPC server with interceptors
 	grpcServer := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
-			PanicRecoveryInterceptor(),
-			grpcMetricsInterceptor.UnaryServerInterceptor(),
-			LoggingInterceptor(),
+			server.PanicRecoveryInterceptor(),
+			cfg.Metrics.UnaryServerInterceptor(),
+			server.LoggingInterceptor(),
 			ErrorHandlingInterceptor(),
 		),
 		grpc.ChainStreamInterceptor(
-			StreamPanicRecoveryInterceptor(),
-			grpcMetricsInterceptor.StreamServerInterceptor(),
-			StreamLoggingInterceptor(),
+			server.StreamPanicRecoveryInterceptor(),
+			cfg.Metrics.StreamServerInterceptor(),
+			server.StreamLoggingInterceptor(),
 			StreamErrorHandlingInterceptor(),
 		),
 	)
