@@ -504,6 +504,6 @@ func createValidatorSetWithCount(t *testing.T, epoch uint64, quorumThreshold *bi
 func setupValidatorSetHeader(t *testing.T, repo *badger.Repository, epoch uint64, quorumThreshold *big.Int) {
 	t.Helper()
 	vs := createValidatorSet(t, epoch, quorumThreshold)
-	err := repo.SaveValidatorSet(context.Background(), vs)
+	err := repo.SaveValidatorSet(t.Context(), vs)
 	require.NoError(t, err)
 }

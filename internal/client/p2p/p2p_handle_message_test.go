@@ -16,6 +16,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 
 	"github.com/symbioticfi/relay/core/entity"
 	symbioticCrypto "github.com/symbioticfi/relay/core/usecase/crypto"
@@ -152,6 +153,7 @@ func createTestService(t *testing.T, skipMessageSigning bool, tracer pubsub.Even
 		Metrics:         &mockMetrics{},
 		Discovery:       DefaultDiscoveryConfig(),
 		EventTracer:     tracer,
+		Handler:         myHandler{},
 	}, signals.Config{
 		BufferSize:  5,
 		WorkerCount: 1,
@@ -177,6 +179,18 @@ func (rt *rejectTracer) Trace(evt *pubsub_pb.TraceEvent) {
 
 // mockMetrics implements the metrics interface for testing
 type mockMetrics struct{}
+
+func (m *mockMetrics) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		return handler(ctx, req)
+	}
+}
+
+func (m *mockMetrics) StreamServerInterceptor() grpc.StreamServerInterceptor {
+	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		return handler(srv, stream)
+	}
+}
 
 func (m *mockMetrics) ObserveP2PMessageSent(messageType string) {}
 

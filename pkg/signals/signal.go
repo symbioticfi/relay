@@ -37,6 +37,13 @@ type Config struct {
 	WorkerCount int `mapstructure:"worker-count" validate:"gte=5,lte=100"`
 }
 
+func DefaultConfig() Config {
+	return Config{
+		BufferSize:  10,
+		WorkerCount: 10,
+	}
+}
+
 // Event represents a signal event containing both payload data and execution context.
 type Event[T any] struct {
 	// Payload contains the actual event data

@@ -2,8 +2,10 @@ FROM golang:1.24 AS builder
 
 WORKDIR /app
 
+# Cache go mod dependencies
 COPY go.mod go.sum ./
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
 
 COPY . ./
 
@@ -14,10 +16,16 @@ ENV GOOS=$TARGETOS
 ARG TARGETARCH
 ENV GOARCH=$TARGETARCH
 
-RUN CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'main.Version=${APP_VERSION}' -X 'main.BuildTime=${BUILD_TIME}'" -o relay_utils ./cmd/utils && \
-    		chmod a+x relay_utils
-RUN CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'main.Version=${APP_VERSION}' -X 'main.BuildTime=${BUILD_TIME}'" -o relay_sidecar ./cmd/relay && \
-    		chmod a+x relay_sidecar
+# Cache build artifacts
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'main.Version=${APP_VERSION}' -X 'main.BuildTime=${BUILD_TIME}'" -o relay_utils ./cmd/utils && \
+    chmod a+x relay_utils
+
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'main.Version=${APP_VERSION}' -X 'main.BuildTime=${BUILD_TIME}'" -o relay_sidecar ./cmd/relay && \
+    chmod a+x relay_sidecar
 
 FROM alpine:latest
 
