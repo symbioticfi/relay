@@ -10,7 +10,7 @@ on:
 env:
   GO_VERSION: "1.24.5"
   NODE_VERSION: "22"
-  FOUNDRY_VERSION: "nightly"
+  FOUNDRY_VERSION: "v1.3.1"
 
 jobs:
 
