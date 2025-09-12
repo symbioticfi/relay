@@ -28,12 +28,12 @@ type metrics interface {
 }
 
 type Config struct {
-	SyncSignatures bool
-	P2PService     p2pService    `validate:"required"`
-	Provider       provider      `validate:"required"`
-	SyncPeriod     time.Duration `validate:"gt=0"`
-	SyncTimeout    time.Duration `validate:"gt=0"`
-	Metrics        metrics       `validate:"required"`
+	Enabled     bool
+	P2PService  p2pService    `validate:"required"`
+	Provider    provider      `validate:"required"`
+	SyncPeriod  time.Duration `validate:"gt=0"`
+	SyncTimeout time.Duration `validate:"gt=0"`
+	Metrics     metrics       `validate:"required"`
 }
 
 type Runner struct {
@@ -50,7 +50,7 @@ func New(cfg Config) (*Runner, error) {
 }
 
 func (s *Runner) Start(ctx context.Context) error {
-	if !s.cfg.SyncSignatures {
+	if !s.cfg.Enabled {
 		slog.InfoContext(ctx, "Signature sync runner is disabled")
 		return nil
 	}

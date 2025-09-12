@@ -137,9 +137,10 @@ type CacheConfig struct {
 }
 
 type SyncConfig struct {
-	SyncSignatures bool          `mapstructure:"sync-signatures"`
-	SyncPeriod     time.Duration `mapstructure:"sync-period"`
-	SyncTimeout    time.Duration `mapstructure:"sync-timeout"`
+	Enabled      bool          `mapstructure:"enabled"`
+	Period       time.Duration `mapstructure:"period"`
+	Timeout      time.Duration `mapstructure:"timeout"`
+	EpochsToSync uint64        `mapstructure:"epochs"`
 }
 
 func (c config) Validate() error {
@@ -183,9 +184,10 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Int("cache.network-config-size", 10, "Network config cache size")
 	rootCmd.PersistentFlags().Int("cache.validator-set-size", 10, "Validator set cache size")
 	rootCmd.PersistentFlags().Uint64("aggregation-policy-max-unsigners", 50, "Max unsigners for low cost agg policy")
-	rootCmd.PersistentFlags().Bool("sync.sync-signatures", true, "Enable signature syncer")
-	rootCmd.PersistentFlags().Duration("sync.sync-period", time.Second*5, "Signature sync period")
-	rootCmd.PersistentFlags().Duration("sync.sync-timeout", time.Minute, "Signature sync timeout")
+	rootCmd.PersistentFlags().Bool("sync.enabled", true, "Enable signature syncer")
+	rootCmd.PersistentFlags().Duration("sync.period", time.Second*5, "Signature sync period")
+	rootCmd.PersistentFlags().Duration("sync.timeout", time.Minute, "Signature sync timeout")
+	rootCmd.PersistentFlags().Uint64("sync.epochs", 5, "Signature epochs to sync")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
@@ -303,13 +305,16 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	if err := v.BindPFlag("aggregation-policy-max-unsigners", cmd.PersistentFlags().Lookup("aggregation-policy-max-unsigners")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("sync.sync-signatures", cmd.PersistentFlags().Lookup("sync.sync-signatures")); err != nil {
+	if err := v.BindPFlag("sync.enabled", cmd.PersistentFlags().Lookup("sync.enabled")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("sync.sync-timeout", cmd.PersistentFlags().Lookup("sync.sync-timeout")); err != nil {
+	if err := v.BindPFlag("sync.timeout", cmd.PersistentFlags().Lookup("sync.timeout")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("sync.sync-period", cmd.PersistentFlags().Lookup("sync.sync-period")); err != nil {
+	if err := v.BindPFlag("sync.period", cmd.PersistentFlags().Lookup("sync.period")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("sync.epochs", cmd.PersistentFlags().Lookup("sync.epochs")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 

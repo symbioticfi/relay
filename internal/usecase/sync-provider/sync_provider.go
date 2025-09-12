@@ -27,7 +27,7 @@ type signatureProcessor interface {
 type Config struct {
 	Repo                        repo                                     `validate:"required"`
 	SignatureProcessor          signatureProcessor                       `validate:"required"`
-	EpochsToSync                int                                      `validate:"gte=0"`
+	EpochsToSync                uint64                                   `validate:"gte=0"`
 	MaxSignatureRequestsPerSync int                                      `validate:"gt=0"`
 	MaxResponseSignatureCount   int                                      `validate:"gt=0"`
 	SignatureReceivedSignal     *signals.Signal[entity.SignatureMessage] `validate:"required"`

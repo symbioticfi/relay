@@ -157,7 +157,7 @@ func runApp(ctx context.Context) error {
 	syncProvider, err := sync_provider.New(sync_provider.Config{
 		Repo:                        repo,
 		SignatureProcessor:          signatureProcessor,
-		EpochsToSync:                5,
+		EpochsToSync:                cfg.Sync.EpochsToSync,
 		MaxSignatureRequestsPerSync: 1000,
 		MaxResponseSignatureCount:   1000,
 		SignatureReceivedSignal:     signatureReceivedSignal,
@@ -183,12 +183,12 @@ func runApp(ctx context.Context) error {
 	aggProofReadySignal := signals.New[entity.AggregatedSignatureMessage](cfg.SignalCfg, "aggProofReady", nil)
 
 	syncRunner, err := sync_runner.New(sync_runner.Config{
-		SyncSignatures: cfg.Sync.SyncSignatures,
-		P2PService:     p2pService,
-		Provider:       syncProvider,
-		SyncPeriod:     cfg.Sync.SyncPeriod,
-		SyncTimeout:    cfg.Sync.SyncTimeout,
-		Metrics:        mtr,
+		Enabled:     cfg.Sync.Enabled,
+		P2PService:  p2pService,
+		Provider:    syncProvider,
+		SyncPeriod:  cfg.Sync.Period,
+		SyncTimeout: cfg.Sync.Timeout,
+		Metrics:     mtr,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create sync runner: %w", err)
