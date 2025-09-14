@@ -21,6 +21,10 @@ type Repository interface {
 	RemoveSignatureRequestPending(ctx context.Context, epoch entity.Epoch, reqHash common.Hash) error
 	GetValidatorSetHeaderByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSetHeader, error)
 	GetActiveValidatorCountByEpoch(ctx context.Context, epoch uint64) (uint32, error)
+
+	SaveAggregationProof(ctx context.Context, reqHash common.Hash, ap entity.AggregationProof) error
+	SaveAggregationProofPending(ctx context.Context, reqHash common.Hash, epoch entity.Epoch) error
+	RemoveAggregationProofPending(ctx context.Context, epoch entity.Epoch, reqHash common.Hash) error
 }
 
 type Config struct {
@@ -89,6 +93,10 @@ func (s *SignatureProcessor) ProcessSignature(ctx context.Context, param entity.
 				if err := s.cfg.Repo.SaveSignatureRequestPending(ctx, *param.SignatureRequest); err != nil {
 					return errors.Errorf("failed to save signature request to pending collection: %v", err)
 				}
+				// Also save to pending aggregation proof collection
+				if err := s.cfg.Repo.SaveAggregationProofPending(ctx, param.SignatureRequest.Hash(), param.SignatureRequest.RequiredEpoch); err != nil {
+					return errors.Errorf("failed to save aggregation proof to pending collection: %v", err)
+				}
 			}
 		}
 
@@ -109,6 +117,26 @@ func (s *SignatureProcessor) ProcessSignature(ctx context.Context, param entity.
 				// If ErrEntityNotFound, it means it was already removed or never added - that's ok
 			}
 		}
+
+		return nil
+	})
+}
+
+// ProcessAggregationProof processes an aggregation proof message by saving it and removing from pending collection
+func (s *SignatureProcessor) ProcessAggregationProof(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
+	return s.cfg.Repo.DoUpdateInTx(ctx, func(ctx context.Context) error {
+		// Save the aggregation proof
+		err := s.cfg.Repo.SaveAggregationProof(ctx, msg.RequestHash, msg.AggregationProof)
+		if err != nil {
+			return errors.Errorf("failed to save aggregation proof: %w", err)
+		}
+
+		// Remove from pending collection
+		err = s.cfg.Repo.RemoveAggregationProofPending(ctx, msg.Epoch, msg.RequestHash)
+		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
+			return errors.Errorf("failed to remove aggregation proof from pending collection: %w", err)
+		}
+		// If ErrEntityNotFound, it means it was already removed or never added - that's ok
 
 		return nil
 	})

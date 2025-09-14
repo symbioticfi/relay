@@ -19,6 +19,8 @@ type repo interface {
 	GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error)
 	GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error)
 	GetSignatureByIndex(ctx context.Context, reqHash common.Hash, validatorIndex uint32) (entity.SignatureExtended, error)
+	GetSignatureRequestsWithoutAggregationProof(ctx context.Context, epoch entity.Epoch, limit int, lastHash common.Hash) ([]entity.SignatureRequest, error)
+	GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error)
 }
 
 type signatureProcessor interface {
