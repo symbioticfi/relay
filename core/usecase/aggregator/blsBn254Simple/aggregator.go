@@ -487,19 +487,6 @@ func calcAlpha(aggPubKeyG1 *bn254.G1Affine, aggPubKeyG2 *bn254.G2Affine, aggSig 
 func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []entity.KeyTag) ([]entity.ExtraData, error) {
 	extraData := make([]entity.ExtraData, 0)
 
-	totalActiveVotingPowerKey, err := helpers.GetExtraDataKey(entity.VerificationTypeBlsBn254Simple, entity.SimpleVerificationTotalVotingPowerHash)
-	if err != nil {
-		return nil, errors.Errorf("failed to get extra data key: %w", err)
-	}
-
-	totalActiveVotingPower := valset.GetTotalActiveVotingPower()
-	totalActiveVotingPowerBytes32 := common.Hash{}
-	totalActiveVotingPower.FillBytes(totalActiveVotingPowerBytes32[:])
-	extraData = append(extraData, entity.ExtraData{
-		Key:   totalActiveVotingPowerKey,
-		Value: totalActiveVotingPowerBytes32,
-	})
-
 	aggregatedPubKeys := helpers.GetAggregatedPubKeys(valset, keyTags)
 
 	for _, key := range aggregatedPubKeys {

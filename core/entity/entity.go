@@ -28,8 +28,7 @@ const (
 )
 
 var (
-	ExtraDataGlobalKeyPrefixHash = crypto.Keccak256Hash([]byte("symbiotic.Settlement.extraData."))
-	ExtraDataKeyTagPrefixHash    = crypto.Keccak256Hash([]byte("keyTag."))
+	ExtraDataKeyTagPrefixHash = crypto.Keccak256Hash([]byte("keyTag."))
 )
 
 var (

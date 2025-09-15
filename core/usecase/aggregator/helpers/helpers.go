@@ -27,13 +27,11 @@ func GetExtraDataKey(verificationType entity.VerificationType, nameHash common.H
 	u32Ty, _ := abi.NewType("uint32", "", nil)
 
 	args := abi.Arguments{
-		{Type: bytes32Ty},
 		{Type: u32Ty},
 		{Type: bytes32Ty},
 	}
 
 	packed, err := args.Pack(
-		entity.ExtraDataGlobalKeyPrefixHash,
 		uint32(verificationType),
 		nameHash,
 	)
@@ -49,7 +47,6 @@ func GetExtraDataKeyTagged(verificationType entity.VerificationType, keyTag enti
 	u8Ty, _ := abi.NewType("uint8", "", nil)
 
 	args := abi.Arguments{
-		{Type: bytes32Ty},
 		{Type: u32Ty},
 		{Type: bytes32Ty},
 		{Type: u8Ty},
@@ -57,7 +54,6 @@ func GetExtraDataKeyTagged(verificationType entity.VerificationType, keyTag enti
 	}
 
 	packed, err := args.Pack(
-		entity.ExtraDataGlobalKeyPrefixHash,
 		uint32(verificationType),
 		entity.ExtraDataKeyTagPrefixHash,
 		keyTag,
