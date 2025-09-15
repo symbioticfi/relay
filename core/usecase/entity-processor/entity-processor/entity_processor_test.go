@@ -1,4 +1,4 @@
-package signature_processor
+package entity_processor
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
 )
 
-func TestSignatureProcessor_ProcessSignature(t *testing.T) {
+func TestEntityProcessor_ProcessSignature(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -124,7 +124,7 @@ func TestSignatureProcessor_ProcessSignature(t *testing.T) {
 					SignatureRequest: &req,
 				}
 
-				processor, err := NewSignatureProcessor(Config{Repo: repo})
+				processor, err := NewEntityProcessor(Config{Repo: repo})
 				require.NoError(t, err)
 
 				err = processor.ProcessSignature(context.Background(), firstParam)
@@ -185,7 +185,7 @@ func TestSignatureProcessor_ProcessSignature(t *testing.T) {
 			repo := setupTestRepository(t)
 			param := tt.setupFunc(t, repo)
 
-			processor, err := NewSignatureProcessor(Config{Repo: repo})
+			processor, err := NewEntityProcessor(Config{Repo: repo})
 			require.NoError(t, err)
 
 			err = processor.ProcessSignature(context.Background(), param)
@@ -237,7 +237,7 @@ func TestSignatureProcessor_ProcessSignature(t *testing.T) {
 	}
 }
 
-func TestSignatureProcessor_ProcessSignature_ConcurrentSignatures(t *testing.T) {
+func TestEntityProcessor_ProcessSignature_ConcurrentSignatures(t *testing.T) {
 	t.Parallel()
 
 	repo := setupTestRepository(t)
@@ -248,7 +248,7 @@ func TestSignatureProcessor_ProcessSignature_ConcurrentSignatures(t *testing.T) 
 	// Setup validator set header with quorum threshold of 300
 	setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(300))
 
-	processor, err := NewSignatureProcessor(Config{Repo: repo})
+	processor, err := NewEntityProcessor(Config{Repo: repo})
 	require.NoError(t, err)
 
 	// Simulate 4 concurrent signatures
@@ -314,7 +314,7 @@ func TestSignatureProcessor_ProcessSignature_ConcurrentSignatures(t *testing.T) 
 	require.Empty(t, pendingReqs)
 }
 
-func TestSignatureProcessor_ProcessSignature_EdgeCases(t *testing.T) {
+func TestEntityProcessor_ProcessSignature_EdgeCases(t *testing.T) {
 	t.Parallel()
 
 	t.Run("duplicate signature for same validator", func(t *testing.T) {
@@ -337,7 +337,7 @@ func TestSignatureProcessor_ProcessSignature_EdgeCases(t *testing.T) {
 			SignatureRequest: &req,
 		}
 
-		processor, err := NewSignatureProcessor(Config{Repo: repo})
+		processor, err := NewEntityProcessor(Config{Repo: repo})
 		require.NoError(t, err)
 
 		// First signature should succeed
@@ -367,7 +367,7 @@ func TestSignatureProcessor_ProcessSignature_EdgeCases(t *testing.T) {
 			Epoch:       epoch,
 		}
 
-		processor, err := NewSignatureProcessor(Config{Repo: repo})
+		processor, err := NewEntityProcessor(Config{Repo: repo})
 		require.NoError(t, err)
 
 		err = processor.ProcessSignature(context.Background(), param)
@@ -400,7 +400,7 @@ func TestSignatureProcessor_ProcessSignature_EdgeCases(t *testing.T) {
 			SignatureRequest: &req,
 		}
 
-		processor, err := NewSignatureProcessor(Config{Repo: repo})
+		processor, err := NewEntityProcessor(Config{Repo: repo})
 		require.NoError(t, err)
 
 		err = processor.ProcessSignature(context.Background(), param)
@@ -508,7 +508,7 @@ func setupValidatorSetHeader(t *testing.T, repo *badger.Repository, epoch uint64
 	require.NoError(t, err)
 }
 
-func TestSignatureProcessor_ProcessAggregationProof(t *testing.T) {
+func TestEntityProcessor_ProcessAggregationProof(t *testing.T) {
 	t.Parallel()
 
 	t.Run("successfully processes aggregation proof", func(t *testing.T) {
@@ -535,7 +535,7 @@ func TestSignatureProcessor_ProcessAggregationProof(t *testing.T) {
 		err := repo.SaveAggregationProofPending(t.Context(), reqHash, epoch)
 		require.NoError(t, err)
 
-		processor, err := NewSignatureProcessor(Config{Repo: repo})
+		processor, err := NewEntityProcessor(Config{Repo: repo})
 		require.NoError(t, err)
 
 		// Process aggregation proof
@@ -572,7 +572,7 @@ func TestSignatureProcessor_ProcessAggregationProof(t *testing.T) {
 			},
 		}
 
-		processor, err := NewSignatureProcessor(Config{Repo: repo})
+		processor, err := NewEntityProcessor(Config{Repo: repo})
 		require.NoError(t, err)
 
 		// Process aggregation proof without pending entry (should succeed)
@@ -608,7 +608,7 @@ func TestSignatureProcessor_ProcessAggregationProof(t *testing.T) {
 		err := repo.SaveAggregationProof(t.Context(), reqHash, msg.AggregationProof)
 		require.NoError(t, err)
 
-		processor, err := NewSignatureProcessor(Config{Repo: repo})
+		processor, err := NewEntityProcessor(Config{Repo: repo})
 		require.NoError(t, err)
 
 		// Attempt to process same aggregation proof should fail
@@ -619,7 +619,7 @@ func TestSignatureProcessor_ProcessAggregationProof(t *testing.T) {
 	})
 }
 
-func TestSignatureProcessor_ProcessSignature_AggregationProofPending(t *testing.T) {
+func TestEntityProcessor_ProcessSignature_AggregationProofPending(t *testing.T) {
 	t.Parallel()
 
 	t.Run("saves aggregation proof pending for aggregation keys", func(t *testing.T) {
@@ -644,7 +644,7 @@ func TestSignatureProcessor_ProcessSignature_AggregationProofPending(t *testing.
 			KeyTag:           req.KeyTag,
 		}
 
-		processor, err := NewSignatureProcessor(Config{Repo: repo})
+		processor, err := NewEntityProcessor(Config{Repo: repo})
 		require.NoError(t, err)
 
 		// Process signature
@@ -686,7 +686,7 @@ func TestSignatureProcessor_ProcessSignature_AggregationProofPending(t *testing.
 			KeyTag:           req.KeyTag,
 		}
 
-		processor, err := NewSignatureProcessor(Config{Repo: repo})
+		processor, err := NewEntityProcessor(Config{Repo: repo})
 		require.NoError(t, err)
 
 		// Process signature
@@ -732,7 +732,7 @@ func TestSignatureProcessor_ProcessSignature_AggregationProofPending(t *testing.
 			KeyTag:           req.KeyTag,
 		}
 
-		processor, err := NewSignatureProcessor(Config{Repo: repo})
+		processor, err := NewEntityProcessor(Config{Repo: repo})
 		require.NoError(t, err)
 
 		err = processor.ProcessSignature(t.Context(), param)

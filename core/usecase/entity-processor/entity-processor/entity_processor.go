@@ -1,4 +1,4 @@
-package signature_processor
+package entity_processor
 
 import (
 	"context"
@@ -39,24 +39,24 @@ func (c Config) Validate() error {
 	return nil
 }
 
-// SignatureProcessor handles signature processing with SignatureMap operations
-type SignatureProcessor struct {
+// EntityProcessor handles signature processing with SignatureMap operations
+type EntityProcessor struct {
 	cfg Config
 }
 
-// NewSignatureProcessor creates a new signature processor
-func NewSignatureProcessor(cfg Config) (*SignatureProcessor, error) {
+// NewEntityProcessor creates a new entity processor
+func NewEntityProcessor(cfg Config) (*EntityProcessor, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, errors.Errorf("failed to validate config: %w", err)
 	}
 
-	return &SignatureProcessor{
+	return &EntityProcessor{
 		cfg: cfg,
 	}, nil
 }
 
 // ProcessSignature processes a signature with SignatureMap operations and optionally saves SignatureRequest
-func (s *SignatureProcessor) ProcessSignature(ctx context.Context, param entity.SaveSignatureParam) error {
+func (s *EntityProcessor) ProcessSignature(ctx context.Context, param entity.SaveSignatureParam) error {
 	return s.cfg.Repo.DoUpdateInTx(ctx, func(ctx context.Context) error {
 		signatureMap, err := s.cfg.Repo.GetSignatureMap(ctx, param.RequestHash)
 		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
@@ -123,7 +123,7 @@ func (s *SignatureProcessor) ProcessSignature(ctx context.Context, param entity.
 }
 
 // ProcessAggregationProof processes an aggregation proof message by saving it and removing from pending collection
-func (s *SignatureProcessor) ProcessAggregationProof(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
+func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
 	return s.cfg.Repo.DoUpdateInTx(ctx, func(ctx context.Context) error {
 		// Save the aggregation proof
 		err := s.cfg.Repo.SaveAggregationProof(ctx, msg.RequestHash, msg.AggregationProof)

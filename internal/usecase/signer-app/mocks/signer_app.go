@@ -348,32 +348,46 @@ func (mr *MockmetricsMockRecorder) ObservePKSignDuration(d any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ObservePKSignDuration", reflect.TypeOf((*Mockmetrics)(nil).ObservePKSignDuration), d)
 }
 
-// MocksignatureProcessor is a mock of signatureProcessor interface.
-type MocksignatureProcessor struct {
+// MockentityProcessor is a mock of entityProcessor interface.
+type MockentityProcessor struct {
 	ctrl     *gomock.Controller
-	recorder *MocksignatureProcessorMockRecorder
+	recorder *MockentityProcessorMockRecorder
 	isgomock struct{}
 }
 
-// MocksignatureProcessorMockRecorder is the mock recorder for MocksignatureProcessor.
-type MocksignatureProcessorMockRecorder struct {
-	mock *MocksignatureProcessor
+// MockentityProcessorMockRecorder is the mock recorder for MockentityProcessor.
+type MockentityProcessorMockRecorder struct {
+	mock *MockentityProcessor
 }
 
-// NewMocksignatureProcessor creates a new mock instance.
-func NewMocksignatureProcessor(ctrl *gomock.Controller) *MocksignatureProcessor {
-	mock := &MocksignatureProcessor{ctrl: ctrl}
-	mock.recorder = &MocksignatureProcessorMockRecorder{mock}
+// NewMockentityProcessor creates a new mock instance.
+func NewMockentityProcessor(ctrl *gomock.Controller) *MockentityProcessor {
+	mock := &MockentityProcessor{ctrl: ctrl}
+	mock.recorder = &MockentityProcessorMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MocksignatureProcessor) EXPECT() *MocksignatureProcessorMockRecorder {
+func (m *MockentityProcessor) EXPECT() *MockentityProcessorMockRecorder {
 	return m.recorder
 }
 
+// ProcessAggregationProof mocks base method.
+func (m *MockentityProcessor) ProcessAggregationProof(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProcessAggregationProof", ctx, msg)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ProcessAggregationProof indicates an expected call of ProcessAggregationProof.
+func (mr *MockentityProcessorMockRecorder) ProcessAggregationProof(ctx, msg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessAggregationProof", reflect.TypeOf((*MockentityProcessor)(nil).ProcessAggregationProof), ctx, msg)
+}
+
 // ProcessSignature mocks base method.
-func (m *MocksignatureProcessor) ProcessSignature(ctx context.Context, param entity.SaveSignatureParam) error {
+func (m *MockentityProcessor) ProcessSignature(ctx context.Context, param entity.SaveSignatureParam) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ProcessSignature", ctx, param)
 	ret0, _ := ret[0].(error)
@@ -381,7 +395,7 @@ func (m *MocksignatureProcessor) ProcessSignature(ctx context.Context, param ent
 }
 
 // ProcessSignature indicates an expected call of ProcessSignature.
-func (mr *MocksignatureProcessorMockRecorder) ProcessSignature(ctx, param any) *gomock.Call {
+func (mr *MockentityProcessorMockRecorder) ProcessSignature(ctx, param any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessSignature", reflect.TypeOf((*MocksignatureProcessor)(nil).ProcessSignature), ctx, param)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessSignature", reflect.TypeOf((*MockentityProcessor)(nil).ProcessSignature), ctx, param)
 }

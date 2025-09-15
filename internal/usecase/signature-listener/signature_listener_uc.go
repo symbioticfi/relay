@@ -21,15 +21,15 @@ type repo interface {
 	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 }
 
-type signatureProcessor interface {
+type entityProcessor interface {
 	ProcessSignature(ctx context.Context, param entity.SaveSignatureParam) error
 }
 
 type Config struct {
-	Repo                 repo               `validate:"required"`
-	SignatureProcessor   signatureProcessor `validate:"required"`
-	SignalCfg            signals.Config     `validate:"required"`
-	SelfP2PID            string             `validate:"required"`
+	Repo                 repo            `validate:"required"`
+	EntityProcessor      entityProcessor `validate:"required"`
+	SignalCfg            signals.Config  `validate:"required"`
+	SelfP2PID            string          `validate:"required"`
 	SignatureSavedSignal *signals.Signal[entity.SignatureMessage]
 }
 
@@ -95,7 +95,7 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 		SignatureRequest: nil,
 	}
 
-	err = s.cfg.SignatureProcessor.ProcessSignature(ctx, param)
+	err = s.cfg.EntityProcessor.ProcessSignature(ctx, param)
 	if err != nil {
 		return errors.Errorf("failed to process signature: %w", err)
 	}

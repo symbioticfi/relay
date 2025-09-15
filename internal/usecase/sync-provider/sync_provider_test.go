@@ -11,7 +11,7 @@ import (
 
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/crypto"
-	signature_processor "github.com/symbioticfi/relay/core/usecase/signature-processor"
+	entity_processor "github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
 	"github.com/symbioticfi/relay/pkg/signals"
 )
@@ -38,7 +38,7 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	signatureMap := entity.NewSignatureMap(signatureRequest.Hash(), signatureRequest.RequiredEpoch, uint32(len(validatorSet.Validators)))
 	require.NoError(t, requesterRepo.UpdateSignatureMap(t.Context(), signatureMap))
 
-	peerSignatureProcessor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
+	peerEntityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo: peerRepo,
 	})
 	require.NoError(t, err)
@@ -60,11 +60,11 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 		Epoch:            signatureRequest.RequiredEpoch,
 		SignatureRequest: &signatureRequest,
 	}
-	require.NoError(t, peerSignatureProcessor.ProcessSignature(t.Context(), param))
+	require.NoError(t, peerEntityProcessor.ProcessSignature(t.Context(), param))
 
 	// Setup requester processor
 
-	requesterProcessor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
+	requesterEntityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo: requesterRepo,
 	})
 	require.NoError(t, err)
@@ -72,7 +72,7 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	// Create peer syncer first (with a temporary mock)
 	peerSyncer, err := New(Config{
 		Repo:                        peerRepo,
-		SignatureProcessor:          peerSignatureProcessor,
+		EntityProcessor:             peerEntityProcessor,
 		SignatureEpochsToSync:       1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
@@ -86,7 +86,7 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	// Create requester syncer
 	requesterSyncer, err := New(Config{
 		Repo:                        requesterRepo,
-		SignatureProcessor:          requesterProcessor,
+		EntityProcessor:             requesterEntityProcessor,
 		SignatureEpochsToSync:       1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
@@ -215,14 +215,14 @@ func TestHandleWantSignaturesRequest_EmptyRequest(t *testing.T) {
 	repo := createTestRepo(t)
 	defer repo.Close()
 
-	signatureProcessor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
+	entityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo: repo,
 	})
 	require.NoError(t, err)
 
 	syncer, err := New(Config{
 		Repo:                        repo,
-		SignatureProcessor:          signatureProcessor,
+		EntityProcessor:             entityProcessor,
 		SignatureEpochsToSync:       1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
@@ -263,14 +263,14 @@ func TestHandleWantSignaturesRequest_NonExistentSignatures(t *testing.T) {
 	repo := createTestRepo(t)
 	defer repo.Close()
 
-	signatureProcessor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
+	entityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo: repo,
 	})
 	require.NoError(t, err)
 
 	syncer, err := New(Config{
 		Repo:                        repo,
-		SignatureProcessor:          signatureProcessor,
+		EntityProcessor:             entityProcessor,
 		SignatureEpochsToSync:       1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
@@ -309,7 +309,7 @@ func TestHandleWantSignaturesRequest_MaxResponseSignatureCountLimit(t *testing.T
 	require.NoError(t, repo.SaveSignatureRequest(t.Context(), signatureRequest))
 
 	// Store multiple signatures by validator index
-	signatureProcessor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
+	entityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo: repo,
 	})
 	require.NoError(t, err)
@@ -332,13 +332,13 @@ func TestHandleWantSignaturesRequest_MaxResponseSignatureCountLimit(t *testing.T
 			Epoch:            signatureRequest.RequiredEpoch,
 			SignatureRequest: nil, // Don't save signature request again, it's already saved
 		}
-		require.NoError(t, signatureProcessor.ProcessSignature(t.Context(), param))
+		require.NoError(t, entityProcessor.ProcessSignature(t.Context(), param))
 	}
 
 	t.Run("limit exceeded with single request", func(t *testing.T) {
 		syncer, err := New(Config{
 			Repo:                        repo,
-			SignatureProcessor:          signatureProcessor,
+			EntityProcessor:             entityProcessor,
 			SignatureEpochsToSync:       1,
 			MaxSignatureRequestsPerSync: 100,
 			MaxResponseSignatureCount:   2, // Low limit
@@ -363,7 +363,7 @@ func TestHandleWantSignaturesRequest_MaxResponseSignatureCountLimit(t *testing.T
 	t.Run("limit respected", func(t *testing.T) {
 		syncer, err := New(Config{
 			Repo:                        repo,
-			SignatureProcessor:          signatureProcessor,
+			EntityProcessor:             entityProcessor,
 			SignatureEpochsToSync:       1,
 			MaxSignatureRequestsPerSync: 100,
 			MaxResponseSignatureCount:   3, // Allow 3 signatures
@@ -393,14 +393,14 @@ func TestHandleWantSignaturesRequest_MultipleRequestHashes(t *testing.T) {
 	repo := createTestRepo(t)
 	defer repo.Close()
 
-	tempSignatureProcessor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
+	tempEntityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo: repo,
 	})
 	require.NoError(t, err)
 
 	syncer, err := New(Config{
 		Repo:                        repo,
-		SignatureProcessor:          tempSignatureProcessor,
+		EntityProcessor:             tempEntityProcessor,
 		SignatureEpochsToSync:       1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
@@ -423,7 +423,7 @@ func TestHandleWantSignaturesRequest_MultipleRequestHashes(t *testing.T) {
 	require.NoError(t, repo.SaveSignatureRequest(t.Context(), signatureRequest2))
 
 	// Store signatures for both requests
-	signatureProcessor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
+	entityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo: repo,
 	})
 	require.NoError(t, err)
@@ -445,7 +445,7 @@ func TestHandleWantSignaturesRequest_MultipleRequestHashes(t *testing.T) {
 		Epoch:            signatureRequest1.RequiredEpoch,
 		SignatureRequest: nil, // Don't save signature request again, it's already saved
 	}
-	require.NoError(t, signatureProcessor.ProcessSignature(t.Context(), param1))
+	require.NoError(t, entityProcessor.ProcessSignature(t.Context(), param1))
 
 	// Save signature for second request
 	signature2, hash2, err := privateKey.Sign(signatureRequest2.Message)
@@ -464,10 +464,10 @@ func TestHandleWantSignaturesRequest_MultipleRequestHashes(t *testing.T) {
 		Epoch:            signatureRequest2.RequiredEpoch,
 		SignatureRequest: nil, // Don't save signature request again, it's already saved
 	}
-	require.NoError(t, signatureProcessor.ProcessSignature(t.Context(), param2))
+	require.NoError(t, entityProcessor.ProcessSignature(t.Context(), param2))
 
 	// Update syncer to use real signature processor
-	syncer.cfg.SignatureProcessor = signatureProcessor
+	syncer.cfg.EntityProcessor = entityProcessor
 
 	request := entity.WantSignaturesRequest{
 		WantSignatures: map[common.Hash]entity.SignatureBitmap{
@@ -500,7 +500,7 @@ func TestHandleWantSignaturesRequest_PartialSignatureAvailability(t *testing.T) 
 	require.NoError(t, repo.SaveValidatorSet(t.Context(), validatorSet))
 	require.NoError(t, repo.SaveSignatureRequest(t.Context(), signatureRequest))
 
-	signatureProcessor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
+	entityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo: repo,
 	})
 	require.NoError(t, err)
@@ -523,12 +523,12 @@ func TestHandleWantSignaturesRequest_PartialSignatureAvailability(t *testing.T) 
 			Epoch:            signatureRequest.RequiredEpoch,
 			SignatureRequest: nil, // Don't save signature request again, it's already saved
 		}
-		require.NoError(t, signatureProcessor.ProcessSignature(t.Context(), param))
+		require.NoError(t, entityProcessor.ProcessSignature(t.Context(), param))
 	}
 
 	syncer, err := New(Config{
 		Repo:                        repo,
-		SignatureProcessor:          signatureProcessor,
+		EntityProcessor:             entityProcessor,
 		SignatureEpochsToSync:       1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,

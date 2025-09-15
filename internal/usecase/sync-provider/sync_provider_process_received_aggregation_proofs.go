@@ -44,7 +44,7 @@ func (s *Syncer) processSingleAggregationProof(ctx context.Context, reqHash comm
 	}
 
 	// Process the aggregation proof using the signature processor
-	if err := s.cfg.SignatureProcessor.ProcessAggregationProof(ctx, msg); err != nil {
+	if err := s.cfg.EntityProcessor.ProcessAggregationProof(ctx, msg); err != nil {
 		if errors.Is(err, entity.ErrEntityAlreadyExist) {
 			stats.AlreadyExistCount++
 			return

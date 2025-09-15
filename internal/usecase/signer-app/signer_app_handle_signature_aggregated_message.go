@@ -28,7 +28,7 @@ func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, p2pMs
 		return errors.Errorf("aggregation proof invalid")
 	}
 
-	err = s.cfg.SignatureProcessor.ProcessAggregationProof(ctx, msg)
+	err = s.cfg.EntityProcessor.ProcessAggregationProof(ctx, msg)
 	if err != nil {
 		// if the aggregation proof already exists, we have already seen the message and broadcasted it so short-circuit
 		if errors.Is(err, entity.ErrEntityAlreadyExist) {

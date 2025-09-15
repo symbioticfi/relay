@@ -23,14 +23,14 @@ type repo interface {
 	GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error)
 }
 
-type signatureProcessor interface {
+type entityProcessor interface {
 	ProcessSignature(ctx context.Context, param entity.SaveSignatureParam) error
 	ProcessAggregationProof(ctx context.Context, msg entity.AggregatedSignatureMessage) error
 }
 
 type Config struct {
 	Repo                        repo                                     `validate:"required"`
-	SignatureProcessor          signatureProcessor                       `validate:"required"`
+	EntityProcessor             entityProcessor                          `validate:"required"`
 	SignatureEpochsToSync       uint64                                   `validate:"gte=0"`
 	MaxSignatureRequestsPerSync int                                      `validate:"gt=0"`
 	MaxResponseSignatureCount   int                                      `validate:"gt=0"`

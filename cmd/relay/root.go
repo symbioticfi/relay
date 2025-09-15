@@ -17,8 +17,8 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/aggregator"
 	symbioticCrypto "github.com/symbioticfi/relay/core/usecase/crypto"
+	entity_processor "github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor"
 	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
-	signature_processor "github.com/symbioticfi/relay/core/usecase/signature-processor"
 	valsetDeriver "github.com/symbioticfi/relay/core/usecase/valset-deriver"
 	"github.com/symbioticfi/relay/internal/client/p2p"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
@@ -146,17 +146,17 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create aggregator: %w", err)
 	}
 
-	signatureProcessor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
+	entityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo: repo,
 	})
 	if err != nil {
-		return errors.Errorf("failed to create signature processor: %w", err)
+		return errors.Errorf("failed to create entity processor: %w", err)
 	}
 
 	signatureReceivedSignal := signals.New[entity.SignatureMessage](cfg.SignalCfg, "signatureReceive", nil)
 	syncProvider, err := sync_provider.New(sync_provider.Config{
 		Repo:                        repo,
-		SignatureProcessor:          signatureProcessor,
+		EntityProcessor:             entityProcessor,
 		SignatureEpochsToSync:       cfg.Sync.SignatureEpochsToSync,
 		MaxSignatureRequestsPerSync: 1000,
 		MaxResponseSignatureCount:   1000,
@@ -198,13 +198,13 @@ func runApp(ctx context.Context) error {
 	}
 
 	signerApp, err := signerApp.NewSignerApp(signerApp.Config{
-		P2PService:         p2pService,
-		KeyProvider:        keyProvider,
-		Repo:               repo,
-		SignatureProcessor: signatureProcessor,
-		AggProofSignal:     aggProofReadySignal,
-		Aggregator:         agg,
-		Metrics:            mtr,
+		P2PService:      p2pService,
+		KeyProvider:     keyProvider,
+		Repo:            repo,
+		EntityProcessor: entityProcessor,
+		AggProofSignal:  aggProofReadySignal,
+		Aggregator:      agg,
+		Metrics:         mtr,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create signer app: %w", err)
@@ -257,7 +257,7 @@ func runApp(ctx context.Context) error {
 
 	signListener, err := signatureListener.New(signatureListener.Config{
 		Repo:                 repo,
-		SignatureProcessor:   signatureProcessor,
+		EntityProcessor:      entityProcessor,
 		SignalCfg:            cfg.SignalCfg,
 		SelfP2PID:            p2pService.ID(),
 		SignatureSavedSignal: signatureReceivedSignal,

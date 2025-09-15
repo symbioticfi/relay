@@ -49,19 +49,19 @@ type metrics interface {
 	ObserveAggReceived(stat entity.SignatureStat)
 }
 
-type signatureProcessor interface {
+type entityProcessor interface {
 	ProcessSignature(ctx context.Context, param entity.SaveSignatureParam) error
 	ProcessAggregationProof(ctx context.Context, msg entity.AggregatedSignatureMessage) error
 }
 
 type Config struct {
-	P2PService         p2pService         `validate:"required"`
-	KeyProvider        keyProvider        `validate:"required"`
-	Repo               repo               `validate:"required"`
-	SignatureProcessor signatureProcessor `validate:"required"`
-	AggProofSignal     aggProofSignal     `validate:"required"`
-	Aggregator         aggregator         `validate:"required"`
-	Metrics            metrics            `validate:"required"`
+	P2PService      p2pService      `validate:"required"`
+	KeyProvider     keyProvider     `validate:"required"`
+	Repo            repo            `validate:"required"`
+	EntityProcessor entityProcessor `validate:"required"`
+	AggProofSignal  aggProofSignal  `validate:"required"`
+	Aggregator      aggregator      `validate:"required"`
+	Metrics         metrics         `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -152,7 +152,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		SignatureRequest: &req,
 	}
 
-	if err := s.cfg.SignatureProcessor.ProcessSignature(ctx, param); err != nil {
+	if err := s.cfg.EntityProcessor.ProcessSignature(ctx, param); err != nil {
 		return errors.Errorf("failed to process signature: %w", err)
 	}
 
