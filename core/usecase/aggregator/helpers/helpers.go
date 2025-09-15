@@ -132,3 +132,21 @@ func GetExtraDataKeyIndexed(
 	sum.FillBytes(out[:])
 	return out, nil
 }
+
+func GetValidatorsIndexesMapByKey(valset entity.ValidatorSet, keyTag entity.KeyTag) map[string]int {
+	keysMap := make(map[string]int)
+
+	for i, validator := range valset.Validators {
+		if !validator.IsActive {
+			continue
+		}
+
+		for _, key := range validator.Keys {
+			if key.Tag == keyTag {
+				keysMap[string(key.Payload)] = i
+			}
+		}
+	}
+
+	return keysMap
+}

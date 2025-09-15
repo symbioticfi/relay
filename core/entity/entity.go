@@ -365,7 +365,7 @@ type ValidatorSet struct {
 	Status           ValidatorSetStatus
 }
 
-func (v ValidatorSet) FindValidatorByKey(keyTag KeyTag, publicKey []byte) (Validator, bool) {
+func (v ValidatorSet) FindValidatorByKey(keyTag KeyTag, publicKey []byte) (Validator, bool) { // DON'T USE INSIDE LOOPS
 	for _, validator := range v.Validators {
 		for _, key := range validator.Keys {
 			if key.Tag == keyTag && slices.Equal(key.Payload, publicKey) {
