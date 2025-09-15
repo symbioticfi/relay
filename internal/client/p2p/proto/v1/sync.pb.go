@@ -270,11 +270,101 @@ func (x *SignatureExtended) GetPublicKey() []byte {
 	return nil
 }
 
+type WantAggregationProofsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// List of request hashes for which aggregation proofs are needed
+	RequestHashes []string `protobuf:"bytes,1,rep,name=request_hashes,json=requestHashes,proto3" json:"request_hashes,omitempty"` // hex strings of common.Hash
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WantAggregationProofsRequest) Reset() {
+	*x = WantAggregationProofsRequest{}
+	mi := &file_v1_sync_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WantAggregationProofsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WantAggregationProofsRequest) ProtoMessage() {}
+
+func (x *WantAggregationProofsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_sync_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WantAggregationProofsRequest.ProtoReflect.Descriptor instead.
+func (*WantAggregationProofsRequest) Descriptor() ([]byte, []int) {
+	return file_v1_sync_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *WantAggregationProofsRequest) GetRequestHashes() []string {
+	if x != nil {
+		return x.RequestHashes
+	}
+	return nil
+}
+
+type WantAggregationProofsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Map of request hash to aggregation proof
+	Proofs        map[string]*AggregationProof `protobuf:"bytes,1,rep,name=proofs,proto3" json:"proofs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // key: hex string of common.Hash
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WantAggregationProofsResponse) Reset() {
+	*x = WantAggregationProofsResponse{}
+	mi := &file_v1_sync_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WantAggregationProofsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WantAggregationProofsResponse) ProtoMessage() {}
+
+func (x *WantAggregationProofsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_sync_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WantAggregationProofsResponse.ProtoReflect.Descriptor instead.
+func (*WantAggregationProofsResponse) Descriptor() ([]byte, []int) {
+	return file_v1_sync_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *WantAggregationProofsResponse) GetProofs() map[string]*AggregationProof {
+	if x != nil {
+		return x.Proofs
+	}
+	return nil
+}
+
 var File_v1_sync_proto protoreflect.FileDescriptor
 
 const file_v1_sync_proto_rawDesc = "" +
 	"\n" +
-	"\rv1/sync.proto\x12\x1cinternal.client.p2p.proto.v1\"\xcc\x01\n" +
+	"\rv1/sync.proto\x12\x1cinternal.client.p2p.proto.v1\x1a\x10v1/message.proto\"\xcc\x01\n" +
 	"\x15WantSignaturesRequest\x12p\n" +
 	"\x0fwant_signatures\x18\x01 \x03(\v2G.internal.client.p2p.proto.v1.WantSignaturesRequest.WantSignaturesEntryR\x0ewantSignatures\x1aA\n" +
 	"\x13WantSignaturesEntry\x12\x10\n" +
@@ -298,9 +388,17 @@ const file_v1_sync_proto_rawDesc = "" +
 	"\fmessage_hash\x18\x01 \x01(\fR\vmessageHash\x12\x1c\n" +
 	"\tsignature\x18\x02 \x01(\fR\tsignature\x12\x1d\n" +
 	"\n" +
-	"public_key\x18\x03 \x01(\fR\tpublicKey2\x92\x01\n" +
+	"public_key\x18\x03 \x01(\fR\tpublicKey\"E\n" +
+	"\x1cWantAggregationProofsRequest\x12%\n" +
+	"\x0erequest_hashes\x18\x01 \x03(\tR\rrequestHashes\"\xeb\x01\n" +
+	"\x1dWantAggregationProofsResponse\x12_\n" +
+	"\x06proofs\x18\x01 \x03(\v2G.internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntryR\x06proofs\x1ai\n" +
+	"\vProofsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12D\n" +
+	"\x05value\x18\x02 \x01(\v2..internal.client.p2p.proto.v1.AggregationProofR\x05value:\x028\x012\xa5\x02\n" +
 	"\x13SymbioticP2PService\x12{\n" +
-	"\x0eWantSignatures\x123.internal.client.p2p.proto.v1.WantSignaturesRequest\x1a4.internal.client.p2p.proto.v1.WantSignaturesResponseB\xfd\x01\n" +
+	"\x0eWantSignatures\x123.internal.client.p2p.proto.v1.WantSignaturesRequest\x1a4.internal.client.p2p.proto.v1.WantSignaturesResponse\x12\x90\x01\n" +
+	"\x15WantAggregationProofs\x12:.internal.client.p2p.proto.v1.WantAggregationProofsRequest\x1a;.internal.client.p2p.proto.v1.WantAggregationProofsResponseB\xfd\x01\n" +
 	" com.internal.client.p2p.proto.v1B\tSyncProtoP\x01Z9github.com/symbioticfi/relay/internal/client/p2p/proto/v1\xa2\x02\x04ICPP\xaa\x02\x1cInternal.Client.P2p.Proto.V1\xca\x02\x1cInternal\\Client\\P2p\\Proto\\V1\xe2\x02(Internal\\Client\\P2p\\Proto\\V1\\GPBMetadata\xea\x02 Internal::Client::P2p::Proto::V1b\x06proto3"
 
 var (
@@ -315,29 +413,37 @@ func file_v1_sync_proto_rawDescGZIP() []byte {
 	return file_v1_sync_proto_rawDescData
 }
 
-var file_v1_sync_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_v1_sync_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_v1_sync_proto_goTypes = []any{
-	(*WantSignaturesRequest)(nil),  // 0: internal.client.p2p.proto.v1.WantSignaturesRequest
-	(*WantSignaturesResponse)(nil), // 1: internal.client.p2p.proto.v1.WantSignaturesResponse
-	(*ValidatorSignatureList)(nil), // 2: internal.client.p2p.proto.v1.ValidatorSignatureList
-	(*ValidatorSignature)(nil),     // 3: internal.client.p2p.proto.v1.ValidatorSignature
-	(*SignatureExtended)(nil),      // 4: internal.client.p2p.proto.v1.SignatureExtended
-	nil,                            // 5: internal.client.p2p.proto.v1.WantSignaturesRequest.WantSignaturesEntry
-	nil,                            // 6: internal.client.p2p.proto.v1.WantSignaturesResponse.SignaturesEntry
+	(*WantSignaturesRequest)(nil),         // 0: internal.client.p2p.proto.v1.WantSignaturesRequest
+	(*WantSignaturesResponse)(nil),        // 1: internal.client.p2p.proto.v1.WantSignaturesResponse
+	(*ValidatorSignatureList)(nil),        // 2: internal.client.p2p.proto.v1.ValidatorSignatureList
+	(*ValidatorSignature)(nil),            // 3: internal.client.p2p.proto.v1.ValidatorSignature
+	(*SignatureExtended)(nil),             // 4: internal.client.p2p.proto.v1.SignatureExtended
+	(*WantAggregationProofsRequest)(nil),  // 5: internal.client.p2p.proto.v1.WantAggregationProofsRequest
+	(*WantAggregationProofsResponse)(nil), // 6: internal.client.p2p.proto.v1.WantAggregationProofsResponse
+	nil,                                   // 7: internal.client.p2p.proto.v1.WantSignaturesRequest.WantSignaturesEntry
+	nil,                                   // 8: internal.client.p2p.proto.v1.WantSignaturesResponse.SignaturesEntry
+	nil,                                   // 9: internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntry
+	(*AggregationProof)(nil),              // 10: internal.client.p2p.proto.v1.AggregationProof
 }
 var file_v1_sync_proto_depIdxs = []int32{
-	5, // 0: internal.client.p2p.proto.v1.WantSignaturesRequest.want_signatures:type_name -> internal.client.p2p.proto.v1.WantSignaturesRequest.WantSignaturesEntry
-	6, // 1: internal.client.p2p.proto.v1.WantSignaturesResponse.signatures:type_name -> internal.client.p2p.proto.v1.WantSignaturesResponse.SignaturesEntry
-	3, // 2: internal.client.p2p.proto.v1.ValidatorSignatureList.signatures:type_name -> internal.client.p2p.proto.v1.ValidatorSignature
-	4, // 3: internal.client.p2p.proto.v1.ValidatorSignature.signature:type_name -> internal.client.p2p.proto.v1.SignatureExtended
-	2, // 4: internal.client.p2p.proto.v1.WantSignaturesResponse.SignaturesEntry.value:type_name -> internal.client.p2p.proto.v1.ValidatorSignatureList
-	0, // 5: internal.client.p2p.proto.v1.SymbioticP2PService.WantSignatures:input_type -> internal.client.p2p.proto.v1.WantSignaturesRequest
-	1, // 6: internal.client.p2p.proto.v1.SymbioticP2PService.WantSignatures:output_type -> internal.client.p2p.proto.v1.WantSignaturesResponse
-	6, // [6:7] is the sub-list for method output_type
-	5, // [5:6] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	7,  // 0: internal.client.p2p.proto.v1.WantSignaturesRequest.want_signatures:type_name -> internal.client.p2p.proto.v1.WantSignaturesRequest.WantSignaturesEntry
+	8,  // 1: internal.client.p2p.proto.v1.WantSignaturesResponse.signatures:type_name -> internal.client.p2p.proto.v1.WantSignaturesResponse.SignaturesEntry
+	3,  // 2: internal.client.p2p.proto.v1.ValidatorSignatureList.signatures:type_name -> internal.client.p2p.proto.v1.ValidatorSignature
+	4,  // 3: internal.client.p2p.proto.v1.ValidatorSignature.signature:type_name -> internal.client.p2p.proto.v1.SignatureExtended
+	9,  // 4: internal.client.p2p.proto.v1.WantAggregationProofsResponse.proofs:type_name -> internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntry
+	2,  // 5: internal.client.p2p.proto.v1.WantSignaturesResponse.SignaturesEntry.value:type_name -> internal.client.p2p.proto.v1.ValidatorSignatureList
+	10, // 6: internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntry.value:type_name -> internal.client.p2p.proto.v1.AggregationProof
+	0,  // 7: internal.client.p2p.proto.v1.SymbioticP2PService.WantSignatures:input_type -> internal.client.p2p.proto.v1.WantSignaturesRequest
+	5,  // 8: internal.client.p2p.proto.v1.SymbioticP2PService.WantAggregationProofs:input_type -> internal.client.p2p.proto.v1.WantAggregationProofsRequest
+	1,  // 9: internal.client.p2p.proto.v1.SymbioticP2PService.WantSignatures:output_type -> internal.client.p2p.proto.v1.WantSignaturesResponse
+	6,  // 10: internal.client.p2p.proto.v1.SymbioticP2PService.WantAggregationProofs:output_type -> internal.client.p2p.proto.v1.WantAggregationProofsResponse
+	9,  // [9:11] is the sub-list for method output_type
+	7,  // [7:9] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_v1_sync_proto_init() }
@@ -345,13 +451,14 @@ func file_v1_sync_proto_init() {
 	if File_v1_sync_proto != nil {
 		return
 	}
+	file_v1_message_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_sync_proto_rawDesc), len(file_v1_sync_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

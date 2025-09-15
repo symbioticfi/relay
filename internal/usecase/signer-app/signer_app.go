@@ -51,6 +51,7 @@ type metrics interface {
 
 type signatureProcessor interface {
 	ProcessSignature(ctx context.Context, param entity.SaveSignatureParam) error
+	ProcessAggregationProof(ctx context.Context, msg entity.AggregatedSignatureMessage) error
 }
 
 type Config struct {

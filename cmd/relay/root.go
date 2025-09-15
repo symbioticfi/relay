@@ -157,10 +157,13 @@ func runApp(ctx context.Context) error {
 	syncProvider, err := sync_provider.New(sync_provider.Config{
 		Repo:                        repo,
 		SignatureProcessor:          signatureProcessor,
-		EpochsToSync:                cfg.Sync.EpochsToSync,
+		SignatureEpochsToSync:       cfg.Sync.SignatureEpochsToSync,
 		MaxSignatureRequestsPerSync: 1000,
 		MaxResponseSignatureCount:   1000,
 		SignatureReceivedSignal:     signatureReceivedSignal,
+		AggProofEpochsToSync:        cfg.Sync.AggProofEpochsToSync,
+		MaxAggProofRequestsPerSync:  500,
+		MaxResponseAggProofCount:    500,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create syncer: %w", err)
@@ -422,7 +425,7 @@ func initP2PService(ctx context.Context, cfg config, keyProvider keyprovider.Key
 		Host:      h,
 		Metrics:   mtr,
 		Discovery: p2p.DefaultDiscoveryConfig(),
-		Handler:   p2p.NewP2PHandler(provider),
+		Handler:   p2p.NewP2PHandler(provider, provider),
 	}
 	if len(cfg.Bootnodes) > 0 {
 		p2pCfg.Discovery.BootstrapPeers = cfg.Bootnodes

@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "v1/message.proto";
+
 package internal.client.p2p.proto.v1;
 
 option go_package = "github.com/symbioticfi/relay/internal/client/p2p/proto/v1";
@@ -8,6 +10,7 @@ option go_package = "github.com/symbioticfi/relay/internal/client/p2p/proto/v1";
 
 service SymbioticP2PService {
   rpc WantSignatures(WantSignaturesRequest) returns (WantSignaturesResponse);
+  rpc WantAggregationProofs(WantAggregationProofsRequest) returns (WantAggregationProofsResponse);
 
 }
 
@@ -38,4 +41,14 @@ message SignatureExtended {
   bytes message_hash = 1;
   bytes signature = 2;
   bytes public_key = 3;
+}
+
+message WantAggregationProofsRequest {
+  // List of request hashes for which aggregation proofs are needed
+  repeated string request_hashes = 1;  // hex strings of common.Hash
+}
+
+message WantAggregationProofsResponse {
+  // Map of request hash to aggregation proof
+  map<string, AggregationProof> proofs = 1;  // key: hex string of common.Hash
 }

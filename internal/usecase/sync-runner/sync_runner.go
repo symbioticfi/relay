@@ -15,16 +15,21 @@ import (
 
 type p2pService interface {
 	SendWantSignaturesRequest(ctx context.Context, request entity.WantSignaturesRequest) (entity.WantSignaturesResponse, error)
+	SendWantAggregationProofsRequest(ctx context.Context, request entity.WantAggregationProofsRequest) (entity.WantAggregationProofsResponse, error)
 }
 
 type provider interface {
 	BuildWantSignaturesRequest(ctx context.Context) (entity.WantSignaturesRequest, error)
 	ProcessReceivedSignatures(ctx context.Context, response entity.WantSignaturesResponse, wantSignatures map[common.Hash]entity.SignatureBitmap) entity.SignatureProcessingStats
+	BuildWantAggregationProofsRequest(ctx context.Context) (entity.WantAggregationProofsRequest, error)
+	ProcessReceivedAggregationProofs(ctx context.Context, response entity.WantAggregationProofsResponse) (entity.AggregationProofProcessingStats, error)
 }
 
 type metrics interface {
 	ObserveP2PSyncSignaturesProcessed(resultType string, count int)
 	ObserveP2PSyncRequestedHashes(count int)
+	ObserveP2PSyncAggregationProofsProcessed(resultType string, count int)
+	ObserveP2PSyncRequestedAggregationProofs(count int)
 }
 
 type Config struct {
@@ -63,11 +68,19 @@ func (s *Runner) Start(ctx context.Context) error {
 	for {
 		select {
 		case <-timer.C:
-			slog.DebugContext(ctx, "Signature sync started")
-			if err := s.runSync(ctx); err != nil {
+			slog.DebugContext(ctx, "Sync cycle started")
+
+			// Run signature sync
+			if err := s.runSignatureSync(ctx); err != nil {
 				slog.ErrorContext(ctx, "Failed to sync signatures", "error", err)
 			}
-			slog.DebugContext(ctx, "Signature sync completed")
+
+			// Run aggregation proof sync independently
+			if err := s.runAggregationProofSync(ctx); err != nil {
+				slog.ErrorContext(ctx, "Failed to sync aggregation proofs", "error", err)
+			}
+
+			slog.DebugContext(ctx, "Sync cycle completed")
 			timer.Reset(s.cfg.SyncPeriod)
 		case <-ctx.Done():
 			return ctx.Err()
@@ -75,11 +88,10 @@ func (s *Runner) Start(ctx context.Context) error {
 	}
 }
 
-func (s *Runner) runSync(ctx context.Context) error {
-	// Create context with timeout for the entire sync operation
+func (s *Runner) runSignatureSync(ctx context.Context) error {
+	// Create context with timeout for signature sync
 	ctx, cancel := context.WithTimeout(ctx, s.cfg.SyncTimeout)
 	defer cancel()
-
 	request, err := s.cfg.Provider.BuildWantSignaturesRequest(ctx)
 	if err != nil {
 		return errors.Errorf("failed to build want signatures request: %w", err)
@@ -126,6 +138,57 @@ func (s *Runner) runSync(ctx context.Context) error {
 	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("validator_index_missmatch_count", stats.ValidatorIndexMismatchCount)
 	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("processing_errors", stats.ProcessingErrorCount)
 	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("already_exist", stats.AlreadyExistCount)
+
+	return nil
+}
+
+func (s *Runner) runAggregationProofSync(ctx context.Context) error {
+	// Create context with timeout for aggregation proof sync
+	ctx, cancel := context.WithTimeout(ctx, s.cfg.SyncTimeout)
+	defer cancel()
+	request, err := s.cfg.Provider.BuildWantAggregationProofsRequest(ctx)
+	if err != nil {
+		return errors.Errorf("failed to build want aggregation proofs request: %w", err)
+	}
+	s.cfg.Metrics.ObserveP2PSyncRequestedAggregationProofs(len(request.RequestHashes))
+
+	if len(request.RequestHashes) == 0 {
+		slog.InfoContext(ctx, "No pending aggregation proof requests found")
+		return nil
+	}
+
+	response, err := s.cfg.P2PService.SendWantAggregationProofsRequest(ctx, request)
+	if err != nil {
+		if errors.Is(err, entity.ErrNoPeers) {
+			slog.DebugContext(ctx, "No peers available to request aggregation proofs from")
+			return nil
+		}
+		return errors.Errorf("failed to send want aggregation proofs request: %w", err)
+	}
+
+	slog.InfoContext(ctx, "Received aggregation proof response", "proofs_count", len(response.Proofs))
+
+	stats, err := s.cfg.Provider.ProcessReceivedAggregationProofs(ctx, response)
+	if err != nil {
+		return errors.Errorf("failed to process received aggregation proofs: %w", err)
+	}
+
+	slog.InfoContext(ctx, "Aggregation proof sync completed",
+		"processed", stats.ProcessedCount,
+		"total_errors", stats.TotalErrors(),
+		"unrequested_proofs", stats.UnrequestedProofCount,
+		"signature_request_errors", stats.SignatureRequestErrorCount,
+		"verification_errors", stats.VerificationErrorCount,
+		"processing_errors", stats.ProcessingErrorCount,
+		"already_exist", stats.AlreadyExistCount,
+	)
+
+	s.cfg.Metrics.ObserveP2PSyncAggregationProofsProcessed("processed", stats.ProcessedCount)
+	s.cfg.Metrics.ObserveP2PSyncAggregationProofsProcessed("unrequested_proofs", stats.UnrequestedProofCount)
+	s.cfg.Metrics.ObserveP2PSyncAggregationProofsProcessed("signature_request_errors", stats.SignatureRequestErrorCount)
+	s.cfg.Metrics.ObserveP2PSyncAggregationProofsProcessed("verification_errors", stats.VerificationErrorCount)
+	s.cfg.Metrics.ObserveP2PSyncAggregationProofsProcessed("processing_errors", stats.ProcessingErrorCount)
+	s.cfg.Metrics.ObserveP2PSyncAggregationProofsProcessed("already_exist", stats.AlreadyExistCount)
 
 	return nil
 }

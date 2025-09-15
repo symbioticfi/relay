@@ -46,7 +46,7 @@ func TestP2P_GRPC(t *testing.T) {
 		defer listener.Close()
 
 		v2.RegisterSymbioticP2PServiceServer(grpcServer, &GRPCHandler{
-			handler: myHandler{},
+			signatureHandler: myHandler{},
 		})
 		close(ready)
 

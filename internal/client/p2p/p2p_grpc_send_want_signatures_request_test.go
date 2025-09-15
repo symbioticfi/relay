@@ -102,7 +102,10 @@ func TestSendWantSignaturesRequest_HappyPath(t *testing.T) {
 			AdvertiseServiceName: "test",
 			AdvertiseInterval:    time.Second,
 		},
-		Handler: &GRPCHandler{handler: mockHandler},
+		Handler: &GRPCHandler{
+			signatureHandler:        mockHandler,
+			aggregationProofHandler: &mockAggregationProofRequestHandler{},
+		},
 	}, signals.Config{
 		BufferSize:  5,
 		WorkerCount: 5,
@@ -147,7 +150,7 @@ func TestSendWantSignaturesRequest_HappyPath(t *testing.T) {
 			AdvertiseInterval:    time.Second,
 		},
 		EventTracer: nil,
-		Handler:     NewP2PHandler(mockHandler), // Not used for client but required
+		Handler:     NewP2PHandler(mockHandler, &mockAggregationProofRequestHandler{}), // Not used for client but required
 	}, signals.Config{
 		BufferSize:  5,
 		WorkerCount: 5,
@@ -209,4 +212,14 @@ func (m *mockSignatureRequestHandler) HandleWantSignaturesRequest(_ context.Cont
 	m.wasCalled = true
 	m.receivedRequest = request
 	return m.responseToReturn, nil
+}
+
+// mockAggregationProofRequestHandler implements aggregationProofRequestHandler for testing
+type mockAggregationProofRequestHandler struct{}
+
+func (m *mockAggregationProofRequestHandler) HandleWantAggregationProofsRequest(_ context.Context, request entity.WantAggregationProofsRequest) (entity.WantAggregationProofsResponse, error) {
+	// Return empty response for tests that don't need aggregation proof functionality
+	return entity.WantAggregationProofsResponse{
+		Proofs: make(map[common.Hash]entity.AggregationProof),
+	}, nil
 }

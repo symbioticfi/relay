@@ -25,15 +25,19 @@ type repo interface {
 
 type signatureProcessor interface {
 	ProcessSignature(ctx context.Context, param entity.SaveSignatureParam) error
+	ProcessAggregationProof(ctx context.Context, msg entity.AggregatedSignatureMessage) error
 }
 
 type Config struct {
 	Repo                        repo                                     `validate:"required"`
 	SignatureProcessor          signatureProcessor                       `validate:"required"`
-	EpochsToSync                uint64                                   `validate:"gte=0"`
+	SignatureEpochsToSync       uint64                                   `validate:"gte=0"`
 	MaxSignatureRequestsPerSync int                                      `validate:"gt=0"`
 	MaxResponseSignatureCount   int                                      `validate:"gt=0"`
 	SignatureReceivedSignal     *signals.Signal[entity.SignatureMessage] `validate:"required"`
+	AggProofEpochsToSync        uint64                                   `validate:"gte=0"`
+	MaxAggProofRequestsPerSync  int                                      `validate:"gt=0"`
+	MaxResponseAggProofCount    int                                      `validate:"gt=0"`
 }
 
 type Syncer struct {

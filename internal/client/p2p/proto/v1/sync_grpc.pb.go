@@ -19,7 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SymbioticP2PService_WantSignatures_FullMethodName = "/internal.client.p2p.proto.v1.SymbioticP2PService/WantSignatures"
+	SymbioticP2PService_WantSignatures_FullMethodName        = "/internal.client.p2p.proto.v1.SymbioticP2PService/WantSignatures"
+	SymbioticP2PService_WantAggregationProofs_FullMethodName = "/internal.client.p2p.proto.v1.SymbioticP2PService/WantAggregationProofs"
 )
 
 // SymbioticP2PServiceClient is the client API for SymbioticP2PService service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SymbioticP2PServiceClient interface {
 	WantSignatures(ctx context.Context, in *WantSignaturesRequest, opts ...grpc.CallOption) (*WantSignaturesResponse, error)
+	WantAggregationProofs(ctx context.Context, in *WantAggregationProofsRequest, opts ...grpc.CallOption) (*WantAggregationProofsResponse, error)
 }
 
 type symbioticP2PServiceClient struct {
@@ -47,11 +49,22 @@ func (c *symbioticP2PServiceClient) WantSignatures(ctx context.Context, in *Want
 	return out, nil
 }
 
+func (c *symbioticP2PServiceClient) WantAggregationProofs(ctx context.Context, in *WantAggregationProofsRequest, opts ...grpc.CallOption) (*WantAggregationProofsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WantAggregationProofsResponse)
+	err := c.cc.Invoke(ctx, SymbioticP2PService_WantAggregationProofs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SymbioticP2PServiceServer is the server API for SymbioticP2PService service.
 // All implementations must embed UnimplementedSymbioticP2PServiceServer
 // for forward compatibility.
 type SymbioticP2PServiceServer interface {
 	WantSignatures(context.Context, *WantSignaturesRequest) (*WantSignaturesResponse, error)
+	WantAggregationProofs(context.Context, *WantAggregationProofsRequest) (*WantAggregationProofsResponse, error)
 	mustEmbedUnimplementedSymbioticP2PServiceServer()
 }
 
@@ -64,6 +77,9 @@ type UnimplementedSymbioticP2PServiceServer struct{}
 
 func (UnimplementedSymbioticP2PServiceServer) WantSignatures(context.Context, *WantSignaturesRequest) (*WantSignaturesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method WantSignatures not implemented")
+}
+func (UnimplementedSymbioticP2PServiceServer) WantAggregationProofs(context.Context, *WantAggregationProofsRequest) (*WantAggregationProofsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method WantAggregationProofs not implemented")
 }
 func (UnimplementedSymbioticP2PServiceServer) mustEmbedUnimplementedSymbioticP2PServiceServer() {}
 func (UnimplementedSymbioticP2PServiceServer) testEmbeddedByValue()                             {}
@@ -104,6 +120,24 @@ func _SymbioticP2PService_WantSignatures_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SymbioticP2PService_WantAggregationProofs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WantAggregationProofsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SymbioticP2PServiceServer).WantAggregationProofs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SymbioticP2PService_WantAggregationProofs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SymbioticP2PServiceServer).WantAggregationProofs(ctx, req.(*WantAggregationProofsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SymbioticP2PService_ServiceDesc is the grpc.ServiceDesc for SymbioticP2PService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +148,10 @@ var SymbioticP2PService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "WantSignatures",
 			Handler:    _SymbioticP2PService_WantSignatures_Handler,
+		},
+		{
+			MethodName: "WantAggregationProofs",
+			Handler:    _SymbioticP2PService_WantAggregationProofs_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

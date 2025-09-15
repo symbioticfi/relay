@@ -234,3 +234,15 @@ func (m *Metrics) ObserveP2PSyncSignaturesProcessed(resultType string, count int
 func (m *Metrics) ObserveP2PSyncRequestedHashes(count int) {
 	m.p2pSyncRequestedHashes.Add(float64(count))
 }
+
+func (m *Metrics) ObserveP2PSyncAggregationProofsProcessed(resultType string, count int) {
+	// Reuse the same metric as signatures for now, but with different labels if needed
+	// In future, we might want separate metrics for aggregation proofs
+	m.p2pSyncProcessedSignatures.WithLabelValues(resultType).Add(float64(count))
+}
+
+func (m *Metrics) ObserveP2PSyncRequestedAggregationProofs(count int) {
+	// Reuse the same metric as signature hashes for now
+	// In future, we might want separate metrics for aggregation proof requests
+	m.p2pSyncRequestedHashes.Add(float64(count))
+}

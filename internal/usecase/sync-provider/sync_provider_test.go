@@ -73,10 +73,13 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	peerSyncer, err := New(Config{
 		Repo:                        peerRepo,
 		SignatureProcessor:          peerSignatureProcessor,
-		EpochsToSync:                1,
+		SignatureEpochsToSync:       1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
 		SignatureReceivedSignal:     signals.New[entity.SignatureMessage](signals.DefaultConfig(), "signatureReceive", nil),
+		AggProofEpochsToSync:        1,
+		MaxAggProofRequestsPerSync:  100,
+		MaxResponseAggProofCount:    100,
 	})
 	require.NoError(t, err)
 
@@ -84,10 +87,13 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	requesterSyncer, err := New(Config{
 		Repo:                        requesterRepo,
 		SignatureProcessor:          requesterProcessor,
-		EpochsToSync:                1,
+		SignatureEpochsToSync:       1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
 		SignatureReceivedSignal:     signals.New[entity.SignatureMessage](signals.DefaultConfig(), "signatureReceive", nil),
+		AggProofEpochsToSync:        1,
+		MaxAggProofRequestsPerSync:  100,
+		MaxResponseAggProofCount:    100,
 	})
 	require.NoError(t, err)
 
@@ -217,10 +223,13 @@ func TestHandleWantSignaturesRequest_EmptyRequest(t *testing.T) {
 	syncer, err := New(Config{
 		Repo:                        repo,
 		SignatureProcessor:          signatureProcessor,
-		EpochsToSync:                1,
+		SignatureEpochsToSync:       1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
 		SignatureReceivedSignal:     signals.New[entity.SignatureMessage](signals.DefaultConfig(), "test", nil),
+		AggProofEpochsToSync:        1,
+		MaxAggProofRequestsPerSync:  100,
+		MaxResponseAggProofCount:    100,
 	})
 	require.NoError(t, err)
 
@@ -262,10 +271,13 @@ func TestHandleWantSignaturesRequest_NonExistentSignatures(t *testing.T) {
 	syncer, err := New(Config{
 		Repo:                        repo,
 		SignatureProcessor:          signatureProcessor,
-		EpochsToSync:                1,
+		SignatureEpochsToSync:       1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
 		SignatureReceivedSignal:     signals.New[entity.SignatureMessage](signals.DefaultConfig(), "test", nil),
+		AggProofEpochsToSync:        1,
+		MaxAggProofRequestsPerSync:  100,
+		MaxResponseAggProofCount:    100,
 	})
 	require.NoError(t, err)
 
@@ -327,10 +339,13 @@ func TestHandleWantSignaturesRequest_MaxResponseSignatureCountLimit(t *testing.T
 		syncer, err := New(Config{
 			Repo:                        repo,
 			SignatureProcessor:          signatureProcessor,
-			EpochsToSync:                1,
+			SignatureEpochsToSync:       1,
 			MaxSignatureRequestsPerSync: 100,
 			MaxResponseSignatureCount:   2, // Low limit
 			SignatureReceivedSignal:     signals.New[entity.SignatureMessage](signals.DefaultConfig(), "test", nil),
+			AggProofEpochsToSync:        1,
+			MaxAggProofRequestsPerSync:  100,
+			MaxResponseAggProofCount:    100,
 		})
 		require.NoError(t, err)
 
@@ -349,10 +364,13 @@ func TestHandleWantSignaturesRequest_MaxResponseSignatureCountLimit(t *testing.T
 		syncer, err := New(Config{
 			Repo:                        repo,
 			SignatureProcessor:          signatureProcessor,
-			EpochsToSync:                1,
+			SignatureEpochsToSync:       1,
 			MaxSignatureRequestsPerSync: 100,
 			MaxResponseSignatureCount:   3, // Allow 3 signatures
 			SignatureReceivedSignal:     signals.New[entity.SignatureMessage](signals.DefaultConfig(), "test", nil),
+			AggProofEpochsToSync:        1,
+			MaxAggProofRequestsPerSync:  100,
+			MaxResponseAggProofCount:    100,
 		})
 		require.NoError(t, err)
 
@@ -383,10 +401,13 @@ func TestHandleWantSignaturesRequest_MultipleRequestHashes(t *testing.T) {
 	syncer, err := New(Config{
 		Repo:                        repo,
 		SignatureProcessor:          tempSignatureProcessor,
-		EpochsToSync:                1,
+		SignatureEpochsToSync:       1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
 		SignatureReceivedSignal:     signals.New[entity.SignatureMessage](signals.DefaultConfig(), "test", nil),
+		AggProofEpochsToSync:        1,
+		MaxAggProofRequestsPerSync:  100,
+		MaxResponseAggProofCount:    100,
 	})
 	require.NoError(t, err)
 
@@ -508,10 +529,13 @@ func TestHandleWantSignaturesRequest_PartialSignatureAvailability(t *testing.T) 
 	syncer, err := New(Config{
 		Repo:                        repo,
 		SignatureProcessor:          signatureProcessor,
-		EpochsToSync:                1,
+		SignatureEpochsToSync:       1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
 		SignatureReceivedSignal:     signals.New[entity.SignatureMessage](signals.DefaultConfig(), "test", nil),
+		AggProofEpochsToSync:        1,
+		MaxAggProofRequestsPerSync:  100,
+		MaxResponseAggProofCount:    100,
 	})
 	require.NoError(t, err)
 
