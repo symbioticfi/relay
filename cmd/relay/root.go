@@ -236,10 +236,10 @@ func runApp(ctx context.Context) error {
 	}
 
 	if err := aggProofReadySignal.SetHandler(func(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
-		if err := generator.HandleProofAggregated(ctx, msg); err != nil {
+		if err := statusTracker.HandleProofAggregated(ctx, msg); err != nil {
 			return errors.Errorf("failed to handle proof aggregated: %w", err)
 		}
-		if err := statusTracker.HandleProofAggregated(ctx, msg); err != nil {
+		if err := generator.HandleProofAggregated(ctx, msg); err != nil {
 			return errors.Errorf("failed to handle proof aggregated: %w", err)
 		}
 		slog.DebugContext(ctx, "Handled proof aggregated", "request", msg)

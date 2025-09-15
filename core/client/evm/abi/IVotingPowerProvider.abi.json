@@ -109,13 +109,8 @@
   },
   {
     "type": "function",
-    "name": "getOperatorStake",
+    "name": "getOperatorStakes",
     "inputs": [
-      {
-        "name": "vault",
-        "type": "address",
-        "internalType": "address"
-      },
       {
         "name": "operator",
         "type": "address",
@@ -125,21 +120,28 @@
     "outputs": [
       {
         "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
+        "type": "tuple[]",
+        "internalType": "struct IVotingPowerProvider.VaultValue[]",
+        "components": [
+          {
+            "name": "vault",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "value",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
       }
     ],
     "stateMutability": "view"
   },
   {
     "type": "function",
-    "name": "getOperatorStakeAt",
+    "name": "getOperatorStakesAt",
     "inputs": [
-      {
-        "name": "vault",
-        "type": "address",
-        "internalType": "address"
-      },
       {
         "name": "operator",
         "type": "address",
@@ -149,18 +151,25 @@
         "name": "timestamp",
         "type": "uint48",
         "internalType": "uint48"
-      },
-      {
-        "name": "hints",
-        "type": "bytes",
-        "internalType": "bytes"
       }
     ],
     "outputs": [
       {
         "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
+        "type": "tuple[]",
+        "internalType": "struct IVotingPowerProvider.VaultValue[]",
+        "components": [
+          {
+            "name": "vault",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "value",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
       }
     ],
     "stateMutability": "view"
@@ -210,93 +219,6 @@
   },
   {
     "type": "function",
-    "name": "getOperatorVaultsLength",
-    "inputs": [
-      {
-        "name": "operator",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getOperatorVotingPower",
-    "inputs": [
-      {
-        "name": "operator",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "vault",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "extraData",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getOperatorVotingPowerAt",
-    "inputs": [
-      {
-        "name": "operator",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "vault",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "extraData",
-        "type": "bytes",
-        "internalType": "bytes"
-      },
-      {
-        "name": "timestamp",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "hints",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "getOperatorVotingPowers",
     "inputs": [
       {
@@ -314,7 +236,7 @@
       {
         "name": "",
         "type": "tuple[]",
-        "internalType": "struct IVotingPowerProvider.VaultVotingPower[]",
+        "internalType": "struct IVotingPowerProvider.VaultValue[]",
         "components": [
           {
             "name": "vault",
@@ -322,7 +244,7 @@
             "internalType": "address"
           },
           {
-            "name": "votingPower",
+            "name": "value",
             "type": "uint256",
             "internalType": "uint256"
           }
@@ -355,7 +277,7 @@
       {
         "name": "",
         "type": "tuple[]",
-        "internalType": "struct IVotingPowerProvider.VaultVotingPower[]",
+        "internalType": "struct IVotingPowerProvider.VaultValue[]",
         "components": [
           {
             "name": "vault",
@@ -363,7 +285,7 @@
             "internalType": "address"
           },
           {
-            "name": "votingPower",
+            "name": "value",
             "type": "uint256",
             "internalType": "uint256"
           }
@@ -406,19 +328,6 @@
   },
   {
     "type": "function",
-    "name": "getOperatorsLength",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "getSharedVaults",
     "inputs": [],
     "outputs": [
@@ -451,22 +360,43 @@
   },
   {
     "type": "function",
-    "name": "getSharedVaultsLength",
+    "name": "getSlashingData",
     "inputs": [],
     "outputs": [
       {
         "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "",
+        "type": "uint48",
+        "internalType": "uint48"
       }
     ],
     "stateMutability": "view"
   },
   {
     "type": "function",
-    "name": "getSlashingWindow",
-    "inputs": [],
+    "name": "getSlashingDataAt",
+    "inputs": [
+      {
+        "name": "timestamp",
+        "type": "uint48",
+        "internalType": "uint48"
+      },
+      {
+        "name": "hint",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
     "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      },
       {
         "name": "",
         "type": "uint48",
@@ -509,19 +439,6 @@
   },
   {
     "type": "function",
-    "name": "getTokensLength",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "getVotingPowers",
     "inputs": [
       {
@@ -544,7 +461,7 @@
           {
             "name": "vaults",
             "type": "tuple[]",
-            "internalType": "struct IVotingPowerProvider.VaultVotingPower[]",
+            "internalType": "struct IVotingPowerProvider.VaultValue[]",
             "components": [
               {
                 "name": "vault",
@@ -552,7 +469,7 @@
                 "internalType": "address"
               },
               {
-                "name": "votingPower",
+                "name": "value",
                 "type": "uint256",
                 "internalType": "uint256"
               }
@@ -592,7 +509,7 @@
           {
             "name": "vaults",
             "type": "tuple[]",
-            "internalType": "struct IVotingPowerProvider.VaultVotingPower[]",
+            "internalType": "struct IVotingPowerProvider.VaultValue[]",
             "components": [
               {
                 "name": "vault",
@@ -600,7 +517,7 @@
                 "internalType": "address"
               },
               {
-                "name": "votingPower",
+                "name": "value",
                 "type": "uint256",
                 "internalType": "uint256"
               }
@@ -688,11 +605,6 @@
         "name": "timestamp",
         "type": "uint48",
         "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
       }
     ],
     "outputs": [
@@ -752,6 +664,11 @@
     "name": "isOperatorVaultRegisteredAt",
     "inputs": [
       {
+        "name": "operator",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
         "name": "vault",
         "type": "address",
         "internalType": "address"
@@ -760,11 +677,6 @@
         "name": "timestamp",
         "type": "uint48",
         "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
       }
     ],
     "outputs": [
@@ -781,11 +693,6 @@
     "name": "isOperatorVaultRegisteredAt",
     "inputs": [
       {
-        "name": "operator",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
         "name": "vault",
         "type": "address",
         "internalType": "address"
@@ -794,11 +701,6 @@
         "name": "timestamp",
         "type": "uint48",
         "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
       }
     ],
     "outputs": [
@@ -842,11 +744,6 @@
         "name": "timestamp",
         "type": "uint48",
         "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
       }
     ],
     "outputs": [
@@ -890,11 +787,6 @@
         "name": "timestamp",
         "type": "uint48",
         "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
       }
     ],
     "outputs": [
@@ -905,6 +797,25 @@
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "multicall",
+    "inputs": [
+      {
+        "name": "data",
+        "type": "bytes[]",
+        "internalType": "bytes[]"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "results",
+        "type": "bytes[]",
+        "internalType": "bytes[]"
+      }
+    ],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -1092,7 +1003,7 @@
         "internalType": "address"
       },
       {
-        "name": "subnetworkID",
+        "name": "subnetworkId",
         "type": "uint96",
         "indexed": false,
         "internalType": "uint96"
@@ -1173,10 +1084,16 @@
   },
   {
     "type": "event",
-    "name": "SetSlashingWindow",
+    "name": "SetSlashingData",
     "inputs": [
       {
-        "name": "slashingWindow",
+        "name": "requireSlasher",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      },
+      {
+        "name": "minVaultEpochDuration",
         "type": "uint48",
         "indexed": false,
         "internalType": "uint48"
@@ -1244,6 +1161,22 @@
   },
   {
     "type": "error",
+    "name": "AddressEmptyCode",
+    "inputs": [
+      {
+        "name": "target",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "FailedCall",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "InvalidAccountNonce",
     "inputs": [
       {
@@ -1305,22 +1238,7 @@
   },
   {
     "type": "error",
-    "name": "VotingPowerProvider_NoSlasher",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "VotingPowerProvider_NonVetoSlasher",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "VotingPowerProvider_OperatorAlreadyRegistered",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "VotingPowerProvider_OperatorNotOptedIn",
     "inputs": []
   },
   {
@@ -1350,32 +1268,12 @@
   },
   {
     "type": "error",
-    "name": "VotingPowerProvider_SlashingWindowTooLarge",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "VotingPowerProvider_TokenAlreadyIsRegistered",
     "inputs": []
   },
   {
     "type": "error",
     "name": "VotingPowerProvider_TokenNotRegistered",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "VotingPowerProvider_UnknownSlasherType",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "VotingPowerProvider_UnregisteredOperatorSlash",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "VotingPowerProvider_UnregisteredVaultSlash",
     "inputs": []
   }
 ]

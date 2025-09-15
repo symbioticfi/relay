@@ -228,6 +228,10 @@ func (a Aggregator) Verify(
 		return false, errors.New("unsupported key tag")
 	}
 
+	if len(aggregationProof.MessageHash) != 32 {
+		return false, errors.New("aggregation proof message hash has invalid length")
+	}
+
 	if len(aggregationProof.Proof) < 224 {
 		return false, errors.New("aggregation proof is too short")
 	}

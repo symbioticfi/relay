@@ -1,19 +1,6 @@
 [
   {
     "type": "function",
-    "name": "DEFAULT_ADMIN_ROLE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "NETWORK",
     "inputs": [],
     "outputs": [
@@ -95,6 +82,11 @@
           },
           {
             "name": "quorumThreshold",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "totalVotingPower",
             "type": "uint256",
             "internalType": "uint256"
           },
@@ -328,6 +320,19 @@
   },
   {
     "type": "function",
+    "name": "getSigVerifier",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "getSigVerifierAt",
     "inputs": [
       {
@@ -346,6 +351,38 @@
         "name": "",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getTotalVotingPowerFromValSetHeader",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getTotalVotingPowerFromValSetHeaderAt",
+    "inputs": [
+      {
+        "name": "epoch",
+        "type": "uint48",
+        "internalType": "uint48"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -382,6 +419,11 @@
           },
           {
             "name": "quorumThreshold",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "totalVotingPower",
             "type": "uint256",
             "internalType": "uint256"
           },
@@ -433,6 +475,11 @@
           },
           {
             "name": "quorumThreshold",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "totalVotingPower",
             "type": "uint256",
             "internalType": "uint256"
           },
@@ -634,6 +681,11 @@
             "internalType": "uint256"
           },
           {
+            "name": "totalVotingPower",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
             "name": "validatorsSszMRoot",
             "type": "bytes32",
             "internalType": "bytes32"
@@ -806,6 +858,11 @@
             "internalType": "uint256"
           },
           {
+            "name": "totalVotingPower",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
             "name": "validatorsSszMRoot",
             "type": "bytes32",
             "internalType": "bytes32"
@@ -882,7 +939,7 @@
         "internalType": "address"
       },
       {
-        "name": "subnetworkID",
+        "name": "subnetworkId",
         "type": "uint96",
         "indexed": false,
         "internalType": "uint96"
@@ -939,6 +996,11 @@
             "internalType": "uint256"
           },
           {
+            "name": "totalVotingPower",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
             "name": "validatorsSszMRoot",
             "type": "bytes32",
             "internalType": "bytes32"
@@ -968,25 +1030,6 @@
   },
   {
     "type": "event",
-    "name": "SetSelectorRole",
-    "inputs": [
-      {
-        "name": "selector",
-        "type": "bytes4",
-        "indexed": true,
-        "internalType": "bytes4"
-      },
-      {
-        "name": "role",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
     "name": "SetSigVerifier",
     "inputs": [
       {
@@ -1010,6 +1053,11 @@
   },
   {
     "type": "error",
+    "name": "InvalidKeyTag",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "NetworkManager_InvalidNetwork",
     "inputs": []
   },
@@ -1020,19 +1068,8 @@
   },
   {
     "type": "error",
-    "name": "SafeCastOverflowedUintDowncast",
-    "inputs": [
-      {
-        "name": "bits",
-        "type": "uint8",
-        "internalType": "uint8"
-      },
-      {
-        "name": "value",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
+    "name": "Settlement_DuplicateExtraDataKey",
+    "inputs": []
   },
   {
     "type": "error",
@@ -1051,12 +1088,17 @@
   },
   {
     "type": "error",
+    "name": "Settlement_InvalidValidatorsSszMRoot",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "Settlement_InvalidVersion",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "Settlement_NoCheckpoint",
+    "name": "Settlement_QuorumThresholdGtTotalVotingPower",
     "inputs": []
   },
   {

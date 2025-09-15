@@ -220,7 +220,7 @@ type QuorumThreshold struct {
 type NetworkConfig struct {
 	VotingPowerProviders    []CrossChainAddress
 	KeysProvider            CrossChainAddress
-	Replicas                []CrossChainAddress
+	Settlements             []CrossChainAddress
 	VerificationType        VerificationType
 	MaxVotingPower          VotingPower
 	MinInclusionVotingPower VotingPower
@@ -228,6 +228,8 @@ type NetworkConfig struct {
 	RequiredKeyTags         []KeyTag
 	RequiredHeaderKeyTag    KeyTag
 	QuorumThresholds        []QuorumThreshold
+	NumAggregators          uint64
+	NumCommitters           uint64
 }
 
 func maxThreshold() *big.Int {
@@ -388,6 +390,7 @@ type ValidatorSetHeader struct {
 	Epoch              uint64
 	CaptureTimestamp   uint64
 	QuorumThreshold    VotingPower
+	TotalVotingPower   VotingPower
 	ValidatorsSszMRoot common.Hash
 }
 
@@ -452,6 +455,7 @@ func (v ValidatorSet) GetHeader() (ValidatorSetHeader, error) {
 		Epoch:              v.Epoch,
 		CaptureTimestamp:   v.CaptureTimestamp,
 		QuorumThreshold:    v.QuorumThreshold,
+		TotalVotingPower:   v.GetTotalActiveVotingPower(),
 		ValidatorsSszMRoot: sszMroot,
 	}, nil
 }
@@ -536,6 +540,10 @@ func (v ValidatorSetHeader) AbiEncode() ([]byte, error) {
 			Type: abi.Type{T: abi.UintTy, Size: 256},
 		},
 		{
+			Name: "totalVotingPower",
+			Type: abi.Type{T: abi.UintTy, Size: 256},
+		},
+		{
 			Name: "validatorsSszMRoot",
 			Type: abi.Type{T: abi.FixedBytesTy, Size: 32},
 		},
@@ -544,8 +552,11 @@ func (v ValidatorSetHeader) AbiEncode() ([]byte, error) {
 	if v.QuorumThreshold.Int == nil {
 		v.QuorumThreshold.Int = big.NewInt(0)
 	}
+	if v.TotalVotingPower.Int == nil {
+		v.TotalVotingPower.Int = big.NewInt(0)
+	}
 
-	pack, err := arguments.Pack(v.Version, v.RequiredKeyTag, new(big.Int).SetUint64(v.Epoch), new(big.Int).SetUint64(v.CaptureTimestamp), v.QuorumThreshold.Int, v.ValidatorsSszMRoot)
+	pack, err := arguments.Pack(v.Version, v.RequiredKeyTag, new(big.Int).SetUint64(v.Epoch), new(big.Int).SetUint64(v.CaptureTimestamp), v.QuorumThreshold.Int, v.TotalVotingPower.Int, v.ValidatorsSszMRoot)
 	if err != nil {
 		return nil, errors.Errorf("failed to pack arguments: %w", err)
 	}

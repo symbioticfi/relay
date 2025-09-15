@@ -157,7 +157,7 @@ func (e *Client) GetConfig(ctx context.Context, timestamp uint64) (_ entity.Netw
 			Address: dtoConfig.KeysProvider.Addr,
 			ChainId: dtoConfig.KeysProvider.ChainId,
 		},
-		Replicas: lo.Map(dtoConfig.Replicas, func(v gen.IValSetDriverCrossChainAddress, _ int) entity.CrossChainAddress {
+		Settlements: lo.Map(dtoConfig.Settlements, func(v gen.IValSetDriverCrossChainAddress, _ int) entity.CrossChainAddress {
 			return entity.CrossChainAddress{
 				ChainId: v.ChainId,
 				Address: v.Addr,
@@ -177,6 +177,8 @@ func (e *Client) GetConfig(ctx context.Context, timestamp uint64) (_ entity.Netw
 				QuorumThreshold: entity.ToQuorumThresholdPct(v.QuorumThreshold),
 			}
 		}),
+		NumCommitters:  dtoConfig.NumCommitters.Uint64(),
+		NumAggregators: dtoConfig.NumAggregators.Uint64(),
 	}, nil
 }
 
@@ -224,7 +226,7 @@ func (e *Client) GetEpochDuration(ctx context.Context, epoch uint64) (_ uint64, 
 	epochDuration, err := e.driver.GetEpochDuration(&bind.CallOpts{
 		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
 		Context:     toCtx,
-	}, new(big.Int).SetUint64(epoch), []byte{})
+	}, new(big.Int).SetUint64(epoch))
 	if err != nil {
 		return 0, errors.Errorf("failed to call getEpochDuration: %w", e.formatEVMContractError(gen.IValSetDriverMetaData, err))
 	}
@@ -241,7 +243,7 @@ func (e *Client) GetEpochStart(ctx context.Context, epoch uint64) (_ uint64, err
 	epochStart, err := e.driver.GetEpochStart(&bind.CallOpts{
 		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
 		Context:     toCtx,
-	}, new(big.Int).SetUint64(epoch), []byte{})
+	}, new(big.Int).SetUint64(epoch))
 	if err != nil {
 		return 0, errors.Errorf("failed to call getEpochStart: %w", e.formatEVMContractError(gen.IValSetDriverMetaData, err))
 	}
@@ -426,6 +428,7 @@ func (e *Client) GetValSetHeaderAt(ctx context.Context, addr entity.CrossChainAd
 		Epoch:              header.Epoch.Uint64(),
 		CaptureTimestamp:   header.CaptureTimestamp.Uint64(),
 		QuorumThreshold:    entity.ToVotingPower(header.QuorumThreshold),
+		TotalVotingPower:   entity.ToVotingPower(header.TotalVotingPower),
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot,
 	}, nil
 }
@@ -456,6 +459,7 @@ func (e *Client) GetValSetHeader(ctx context.Context, addr entity.CrossChainAddr
 		Epoch:              header.Epoch.Uint64(),
 		CaptureTimestamp:   header.CaptureTimestamp.Uint64(),
 		QuorumThreshold:    entity.ToVotingPower(header.QuorumThreshold),
+		TotalVotingPower:   entity.ToVotingPower(header.TotalVotingPower),
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot,
 	}, nil
 }
@@ -523,10 +527,10 @@ func (e *Client) GetVotingPowers(ctx context.Context, address entity.CrossChainA
 	return lo.Map(votingPowersAt, func(v gen.IVotingPowerProviderOperatorVotingPower, _ int) entity.OperatorVotingPower {
 		return entity.OperatorVotingPower{
 			Operator: v.Operator,
-			Vaults: lo.Map(v.Vaults, func(v gen.IVotingPowerProviderVaultVotingPower, _ int) entity.VaultVotingPower {
+			Vaults: lo.Map(v.Vaults, func(v gen.IVotingPowerProviderVaultValue, _ int) entity.VaultVotingPower {
 				return entity.VaultVotingPower{
 					Vault:       v.Vault,
-					VotingPower: entity.ToVotingPower(v.VotingPower),
+					VotingPower: entity.ToVotingPower(v.Value),
 				}
 			}),
 		}

@@ -68,8 +68,8 @@ func getExpectedDataFromContracts(t *testing.T, relayContracts RelayContractsDat
 
 	// Check if current epoch is committed
 	isCurrentEpochCommitted := true
-	for _, replica := range networkConfig.Replicas {
-		committed, err := evmClient.IsValsetHeaderCommittedAt(ctx, replica, currentEpoch)
+	for _, settlement := range networkConfig.Settlements {
+		committed, err := evmClient.IsValsetHeaderCommittedAt(ctx, settlement, currentEpoch)
 		if err != nil || !committed {
 			isCurrentEpochCommitted = false
 			break

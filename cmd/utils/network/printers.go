@@ -36,11 +36,11 @@ func printAddresses(driver entity.CrossChainAddress, networkConfig *entity.Netwo
 			provider.Address.String(),
 		})
 	}
-	for _, replica := range networkConfig.Replicas {
+	for _, settlement := range networkConfig.Settlements {
 		addressesTableData = append(addressesTableData, []string{
 			"Settlement",
-			strconv.FormatUint(replica.ChainId, 10),
-			replica.Address.String(),
+			strconv.FormatUint(settlement.ChainId, 10),
+			settlement.Address.String(),
 		})
 	}
 	addressesText, _ := pterm.DefaultTable.WithHasHeader().WithData(addressesTableData).Srender()
@@ -72,7 +72,7 @@ func printNetworkInfo(epoch uint64, epochStart uint64, networkConfig *entity.Net
 	infoText += fmt.Sprintf("Validators: %d\n", len(valset.Validators))
 	infoText += fmt.Sprintf("Total voting power: %v\n", valset.GetTotalActiveVotingPower())
 	infoText += fmt.Sprintf("Voting power providers: %d\n", len(networkConfig.VotingPowerProviders))
-	infoText += fmt.Sprintf("Settlements: %d\n", len(networkConfig.Replicas))
+	infoText += fmt.Sprintf("Settlements: %d\n", len(networkConfig.Settlements))
 	infoText += fmt.Sprintf("Header quorum threshold: %d (%0.3f%%)\n",
 		valset.QuorumThreshold, cmdhelpers.GetPct(valset.QuorumThreshold.Int, valset.GetTotalActiveVotingPower().Int))
 	return infoText
@@ -130,6 +130,7 @@ func printHeaderTable(header entity.ValidatorSetHeader) string {
 		)},
 		{"RequiredKeyTag", header.RequiredKeyTag.String()},
 		{"QuorumThreshold", fmt.Sprintf("%d", header.QuorumThreshold.Int)},
+		{"TotalVotingPower", fmt.Sprintf("%d", header.TotalVotingPower.Int)},
 		{"ValidatorsSszMRoot", fmt.Sprintf("0x%064x", header.ValidatorsSszMRoot)},
 	}
 
@@ -160,7 +161,7 @@ func printHeaderWithExtraDataToJSON(validatorSetHeader entity.ValidatorSetHeader
 		RequiredKeyTag     uint8    `json:"requiredKeyTag"`
 		CaptureTimestamp   uint64   `json:"captureTimestamp"`
 		QuorumThreshold    *big.Int `json:"quorumThreshold"`
-		PreviousHeaderHash string   `json:"previousHeaderHash"` // hex string
+		TotalVotingPower   *big.Int `json:"totalVotingPower"`
 	}
 
 	type jsonExtraData struct {
@@ -180,6 +181,7 @@ func printHeaderWithExtraDataToJSON(validatorSetHeader entity.ValidatorSetHeader
 		RequiredKeyTag:     uint8(validatorSetHeader.RequiredKeyTag),
 		CaptureTimestamp:   validatorSetHeader.CaptureTimestamp,
 		QuorumThreshold:    validatorSetHeader.QuorumThreshold.Int,
+		TotalVotingPower:   validatorSetHeader.TotalVotingPower.Int,
 	}
 
 	jsonExtraDataList := make([]jsonExtraData, len(extraDataList))
@@ -210,7 +212,7 @@ func printSettlementData(
 		{"Address", "ChainID", "Status", "Integrity", "Latest Committed Epoch", "Missed Epochs", "Header hash"},
 	}
 
-	for i, replica := range networkConfig.Replicas {
+	for i, settlement := range networkConfig.Settlements {
 		hash := "N/A"
 		status := "Missing"
 		if settlementData[i].IsCommitted {
@@ -231,8 +233,8 @@ func printSettlementData(
 		}
 
 		tableData = append(tableData, []string{
-			replica.Address.String(),
-			strconv.FormatUint(replica.ChainId, 10),
+			settlement.Address.String(),
+			strconv.FormatUint(settlement.ChainId, 10),
 			status,
 			integrity,
 			strconv.FormatUint(settlementData[i].MissedEpochs, 10),

@@ -42,12 +42,13 @@ type ISettlementValSetHeader struct {
 	Epoch              *big.Int
 	CaptureTimestamp   *big.Int
 	QuorumThreshold    *big.Int
+	TotalVotingPower   *big.Int
 	ValidatorsSszMRoot [32]byte
 }
 
 // ISettlementMetaData contains all meta data concerning the ISettlement contract.
 var ISettlementMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"DEFAULT_ADMIN_ROLE\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"NETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK_IDENTIFIER\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"VALIDATOR_SET_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"commitValSetHeader\",\"inputs\":[{\"name\":\"header\",\"type\":\"tuple\",\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"captureTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"extraData\",\"type\":\"tuple[]\",\"internalType\":\"structISettlement.ExtraData[]\",\"components\":[{\"name\":\"key\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"value\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"eip712Domain\",\"inputs\":[],\"outputs\":[{\"name\":\"fields\",\"type\":\"bytes1\",\"internalType\":\"bytes1\"},{\"name\":\"name\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"version\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"chainId\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"verifyingContract\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"extensions\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCaptureTimestampFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCaptureTimestampFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getExtraData\",\"inputs\":[{\"name\":\"key\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getExtraDataAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"key\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getLastCommittedHeaderEpoch\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQuorumThresholdFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQuorumThresholdFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTagFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTagFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSigVerifierAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"header\",\"type\":\"tuple\",\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"captureTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"captureTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValSetHeaderHash\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValSetHeaderHashAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValidatorsSszMRootFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValidatorsSszMRootFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVersionFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVersionFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hashTypedDataV4\",\"inputs\":[{\"name\":\"structHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hashTypedDataV4CrossChain\",\"inputs\":[{\"name\":\"structHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isValSetHeaderCommittedAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setGenesis\",\"inputs\":[{\"name\":\"valSetHeader\",\"type\":\"tuple\",\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"captureTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"extraData\",\"type\":\"tuple[]\",\"internalType\":\"structISettlement.ExtraData[]\",\"components\":[{\"name\":\"key\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"value\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setSigVerifier\",\"inputs\":[{\"name\":\"sigVerifier\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"staticDelegateCall\",\"inputs\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"verifyQuorumSig\",\"inputs\":[{\"name\":\"message\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"verifyQuorumSigAt\",\"inputs\":[{\"name\":\"message\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"CommitValSetHeader\",\"inputs\":[{\"name\":\"valSetHeader\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"captureTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"extraData\",\"type\":\"tuple[]\",\"indexed\":false,\"internalType\":\"structISettlement.ExtraData[]\",\"components\":[{\"name\":\"key\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"value\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"EIP712DomainChanged\",\"inputs\":[],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitEIP712\",\"inputs\":[{\"name\":\"name\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"},{\"name\":\"version\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitSigVerifier\",\"inputs\":[{\"name\":\"sigVerifier\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitSubnetwork\",\"inputs\":[{\"name\":\"network\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"subnetworkID\",\"type\":\"uint96\",\"indexed\":false,\"internalType\":\"uint96\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetGenesis\",\"inputs\":[{\"name\":\"valSetHeader\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"captureTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"extraData\",\"type\":\"tuple[]\",\"indexed\":false,\"internalType\":\"structISettlement.ExtraData[]\",\"components\":[{\"name\":\"key\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"value\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetSelectorRole\",\"inputs\":[{\"name\":\"selector\",\"type\":\"bytes4\",\"indexed\":true,\"internalType\":\"bytes4\"},{\"name\":\"role\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetSigVerifier\",\"inputs\":[{\"name\":\"sigVerifier\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"CheckpointUnorderedInsertion\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidInitialization\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NetworkManager_InvalidNetwork\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotInitializing\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SafeCastOverflowedUintDowncast\",\"inputs\":[{\"name\":\"bits\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"type\":\"error\",\"name\":\"Settlement_InvalidCaptureTimestamp\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_InvalidEpoch\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_InvalidSigVerifier\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_InvalidVersion\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_NoCheckpoint\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_ValSetHeaderAlreadyCommitted\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_VerificationFailed\",\"inputs\":[]}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"NETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK_IDENTIFIER\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"VALIDATOR_SET_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"commitValSetHeader\",\"inputs\":[{\"name\":\"header\",\"type\":\"tuple\",\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"captureTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"totalVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"extraData\",\"type\":\"tuple[]\",\"internalType\":\"structISettlement.ExtraData[]\",\"components\":[{\"name\":\"key\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"value\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"eip712Domain\",\"inputs\":[],\"outputs\":[{\"name\":\"fields\",\"type\":\"bytes1\",\"internalType\":\"bytes1\"},{\"name\":\"name\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"version\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"chainId\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"verifyingContract\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"extensions\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCaptureTimestampFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCaptureTimestampFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getExtraData\",\"inputs\":[{\"name\":\"key\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getExtraDataAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"key\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getLastCommittedHeaderEpoch\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQuorumThresholdFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQuorumThresholdFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTagFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTagFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSigVerifier\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSigVerifierAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTotalVotingPowerFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTotalVotingPowerFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"header\",\"type\":\"tuple\",\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"captureTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"totalVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"captureTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"totalVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValSetHeaderHash\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValSetHeaderHashAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValidatorsSszMRootFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getValidatorsSszMRootFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVersionFromValSetHeader\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVersionFromValSetHeaderAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hashTypedDataV4\",\"inputs\":[{\"name\":\"structHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hashTypedDataV4CrossChain\",\"inputs\":[{\"name\":\"structHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isValSetHeaderCommittedAt\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setGenesis\",\"inputs\":[{\"name\":\"valSetHeader\",\"type\":\"tuple\",\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"captureTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"totalVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"extraData\",\"type\":\"tuple[]\",\"internalType\":\"structISettlement.ExtraData[]\",\"components\":[{\"name\":\"key\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"value\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setSigVerifier\",\"inputs\":[{\"name\":\"sigVerifier\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"staticDelegateCall\",\"inputs\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"verifyQuorumSig\",\"inputs\":[{\"name\":\"message\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"verifyQuorumSigAt\",\"inputs\":[{\"name\":\"message\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"CommitValSetHeader\",\"inputs\":[{\"name\":\"valSetHeader\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"captureTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"totalVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"extraData\",\"type\":\"tuple[]\",\"indexed\":false,\"internalType\":\"structISettlement.ExtraData[]\",\"components\":[{\"name\":\"key\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"value\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"EIP712DomainChanged\",\"inputs\":[],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitEIP712\",\"inputs\":[{\"name\":\"name\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"},{\"name\":\"version\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitSigVerifier\",\"inputs\":[{\"name\":\"sigVerifier\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitSubnetwork\",\"inputs\":[{\"name\":\"network\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"subnetworkId\",\"type\":\"uint96\",\"indexed\":false,\"internalType\":\"uint96\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetGenesis\",\"inputs\":[{\"name\":\"valSetHeader\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structISettlement.ValSetHeader\",\"components\":[{\"name\":\"version\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"requiredKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"captureTimestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"quorumThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"totalVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"validatorsSszMRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"extraData\",\"type\":\"tuple[]\",\"indexed\":false,\"internalType\":\"structISettlement.ExtraData[]\",\"components\":[{\"name\":\"key\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"value\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetSigVerifier\",\"inputs\":[{\"name\":\"sigVerifier\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"CheckpointUnorderedInsertion\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidInitialization\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidKeyTag\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NetworkManager_InvalidNetwork\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotInitializing\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_DuplicateExtraDataKey\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_InvalidCaptureTimestamp\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_InvalidEpoch\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_InvalidSigVerifier\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_InvalidValidatorsSszMRoot\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_InvalidVersion\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_QuorumThresholdGtTotalVotingPower\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_ValSetHeaderAlreadyCommitted\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Settlement_VerificationFailed\",\"inputs\":[]}]",
 }
 
 // ISettlementABI is the input ABI used to generate the binding from.
@@ -194,37 +195,6 @@ func (_ISettlement *ISettlementTransactorRaw) Transfer(opts *bind.TransactOpts) 
 // Transact invokes the (paid) contract method with params as input values.
 func (_ISettlement *ISettlementTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
 	return _ISettlement.Contract.contract.Transact(opts, method, params...)
-}
-
-// DEFAULTADMINROLE is a free data retrieval call binding the contract method 0xa217fddf.
-//
-// Solidity: function DEFAULT_ADMIN_ROLE() view returns(bytes32)
-func (_ISettlement *ISettlementCaller) DEFAULTADMINROLE(opts *bind.CallOpts) ([32]byte, error) {
-	var out []interface{}
-	err := _ISettlement.contract.Call(opts, &out, "DEFAULT_ADMIN_ROLE")
-
-	if err != nil {
-		return *new([32]byte), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
-
-	return out0, err
-
-}
-
-// DEFAULTADMINROLE is a free data retrieval call binding the contract method 0xa217fddf.
-//
-// Solidity: function DEFAULT_ADMIN_ROLE() view returns(bytes32)
-func (_ISettlement *ISettlementSession) DEFAULTADMINROLE() ([32]byte, error) {
-	return _ISettlement.Contract.DEFAULTADMINROLE(&_ISettlement.CallOpts)
-}
-
-// DEFAULTADMINROLE is a free data retrieval call binding the contract method 0xa217fddf.
-//
-// Solidity: function DEFAULT_ADMIN_ROLE() view returns(bytes32)
-func (_ISettlement *ISettlementCallerSession) DEFAULTADMINROLE() ([32]byte, error) {
-	return _ISettlement.Contract.DEFAULTADMINROLE(&_ISettlement.CallOpts)
 }
 
 // NETWORK is a free data retrieval call binding the contract method 0x8759e6d1.
@@ -700,6 +670,37 @@ func (_ISettlement *ISettlementCallerSession) GetRequiredKeyTagFromValSetHeaderA
 	return _ISettlement.Contract.GetRequiredKeyTagFromValSetHeaderAt(&_ISettlement.CallOpts, epoch)
 }
 
+// GetSigVerifier is a free data retrieval call binding the contract method 0x5b28556d.
+//
+// Solidity: function getSigVerifier() view returns(address)
+func (_ISettlement *ISettlementCaller) GetSigVerifier(opts *bind.CallOpts) (common.Address, error) {
+	var out []interface{}
+	err := _ISettlement.contract.Call(opts, &out, "getSigVerifier")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// GetSigVerifier is a free data retrieval call binding the contract method 0x5b28556d.
+//
+// Solidity: function getSigVerifier() view returns(address)
+func (_ISettlement *ISettlementSession) GetSigVerifier() (common.Address, error) {
+	return _ISettlement.Contract.GetSigVerifier(&_ISettlement.CallOpts)
+}
+
+// GetSigVerifier is a free data retrieval call binding the contract method 0x5b28556d.
+//
+// Solidity: function getSigVerifier() view returns(address)
+func (_ISettlement *ISettlementCallerSession) GetSigVerifier() (common.Address, error) {
+	return _ISettlement.Contract.GetSigVerifier(&_ISettlement.CallOpts)
+}
+
 // GetSigVerifierAt is a free data retrieval call binding the contract method 0xa54ce263.
 //
 // Solidity: function getSigVerifierAt(uint48 epoch, bytes hint) view returns(address)
@@ -731,9 +732,71 @@ func (_ISettlement *ISettlementCallerSession) GetSigVerifierAt(epoch *big.Int, h
 	return _ISettlement.Contract.GetSigVerifierAt(&_ISettlement.CallOpts, epoch, hint)
 }
 
+// GetTotalVotingPowerFromValSetHeader is a free data retrieval call binding the contract method 0xc38de37f.
+//
+// Solidity: function getTotalVotingPowerFromValSetHeader() view returns(uint256)
+func (_ISettlement *ISettlementCaller) GetTotalVotingPowerFromValSetHeader(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _ISettlement.contract.Call(opts, &out, "getTotalVotingPowerFromValSetHeader")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetTotalVotingPowerFromValSetHeader is a free data retrieval call binding the contract method 0xc38de37f.
+//
+// Solidity: function getTotalVotingPowerFromValSetHeader() view returns(uint256)
+func (_ISettlement *ISettlementSession) GetTotalVotingPowerFromValSetHeader() (*big.Int, error) {
+	return _ISettlement.Contract.GetTotalVotingPowerFromValSetHeader(&_ISettlement.CallOpts)
+}
+
+// GetTotalVotingPowerFromValSetHeader is a free data retrieval call binding the contract method 0xc38de37f.
+//
+// Solidity: function getTotalVotingPowerFromValSetHeader() view returns(uint256)
+func (_ISettlement *ISettlementCallerSession) GetTotalVotingPowerFromValSetHeader() (*big.Int, error) {
+	return _ISettlement.Contract.GetTotalVotingPowerFromValSetHeader(&_ISettlement.CallOpts)
+}
+
+// GetTotalVotingPowerFromValSetHeaderAt is a free data retrieval call binding the contract method 0xf7e5b491.
+//
+// Solidity: function getTotalVotingPowerFromValSetHeaderAt(uint48 epoch) view returns(uint256)
+func (_ISettlement *ISettlementCaller) GetTotalVotingPowerFromValSetHeaderAt(opts *bind.CallOpts, epoch *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _ISettlement.contract.Call(opts, &out, "getTotalVotingPowerFromValSetHeaderAt", epoch)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetTotalVotingPowerFromValSetHeaderAt is a free data retrieval call binding the contract method 0xf7e5b491.
+//
+// Solidity: function getTotalVotingPowerFromValSetHeaderAt(uint48 epoch) view returns(uint256)
+func (_ISettlement *ISettlementSession) GetTotalVotingPowerFromValSetHeaderAt(epoch *big.Int) (*big.Int, error) {
+	return _ISettlement.Contract.GetTotalVotingPowerFromValSetHeaderAt(&_ISettlement.CallOpts, epoch)
+}
+
+// GetTotalVotingPowerFromValSetHeaderAt is a free data retrieval call binding the contract method 0xf7e5b491.
+//
+// Solidity: function getTotalVotingPowerFromValSetHeaderAt(uint48 epoch) view returns(uint256)
+func (_ISettlement *ISettlementCallerSession) GetTotalVotingPowerFromValSetHeaderAt(epoch *big.Int) (*big.Int, error) {
+	return _ISettlement.Contract.GetTotalVotingPowerFromValSetHeaderAt(&_ISettlement.CallOpts, epoch)
+}
+
 // GetValSetHeader is a free data retrieval call binding the contract method 0xadc91fc8.
 //
-// Solidity: function getValSetHeader() view returns((uint8,uint8,uint48,uint48,uint256,bytes32) header)
+// Solidity: function getValSetHeader() view returns((uint8,uint8,uint48,uint48,uint256,uint256,bytes32) header)
 func (_ISettlement *ISettlementCaller) GetValSetHeader(opts *bind.CallOpts) (ISettlementValSetHeader, error) {
 	var out []interface{}
 	err := _ISettlement.contract.Call(opts, &out, "getValSetHeader")
@@ -750,21 +813,21 @@ func (_ISettlement *ISettlementCaller) GetValSetHeader(opts *bind.CallOpts) (ISe
 
 // GetValSetHeader is a free data retrieval call binding the contract method 0xadc91fc8.
 //
-// Solidity: function getValSetHeader() view returns((uint8,uint8,uint48,uint48,uint256,bytes32) header)
+// Solidity: function getValSetHeader() view returns((uint8,uint8,uint48,uint48,uint256,uint256,bytes32) header)
 func (_ISettlement *ISettlementSession) GetValSetHeader() (ISettlementValSetHeader, error) {
 	return _ISettlement.Contract.GetValSetHeader(&_ISettlement.CallOpts)
 }
 
 // GetValSetHeader is a free data retrieval call binding the contract method 0xadc91fc8.
 //
-// Solidity: function getValSetHeader() view returns((uint8,uint8,uint48,uint48,uint256,bytes32) header)
+// Solidity: function getValSetHeader() view returns((uint8,uint8,uint48,uint48,uint256,uint256,bytes32) header)
 func (_ISettlement *ISettlementCallerSession) GetValSetHeader() (ISettlementValSetHeader, error) {
 	return _ISettlement.Contract.GetValSetHeader(&_ISettlement.CallOpts)
 }
 
 // GetValSetHeaderAt is a free data retrieval call binding the contract method 0x4addaee7.
 //
-// Solidity: function getValSetHeaderAt(uint48 epoch) view returns((uint8,uint8,uint48,uint48,uint256,bytes32))
+// Solidity: function getValSetHeaderAt(uint48 epoch) view returns((uint8,uint8,uint48,uint48,uint256,uint256,bytes32))
 func (_ISettlement *ISettlementCaller) GetValSetHeaderAt(opts *bind.CallOpts, epoch *big.Int) (ISettlementValSetHeader, error) {
 	var out []interface{}
 	err := _ISettlement.contract.Call(opts, &out, "getValSetHeaderAt", epoch)
@@ -781,14 +844,14 @@ func (_ISettlement *ISettlementCaller) GetValSetHeaderAt(opts *bind.CallOpts, ep
 
 // GetValSetHeaderAt is a free data retrieval call binding the contract method 0x4addaee7.
 //
-// Solidity: function getValSetHeaderAt(uint48 epoch) view returns((uint8,uint8,uint48,uint48,uint256,bytes32))
+// Solidity: function getValSetHeaderAt(uint48 epoch) view returns((uint8,uint8,uint48,uint48,uint256,uint256,bytes32))
 func (_ISettlement *ISettlementSession) GetValSetHeaderAt(epoch *big.Int) (ISettlementValSetHeader, error) {
 	return _ISettlement.Contract.GetValSetHeaderAt(&_ISettlement.CallOpts, epoch)
 }
 
 // GetValSetHeaderAt is a free data retrieval call binding the contract method 0x4addaee7.
 //
-// Solidity: function getValSetHeaderAt(uint48 epoch) view returns((uint8,uint8,uint48,uint48,uint256,bytes32))
+// Solidity: function getValSetHeaderAt(uint48 epoch) view returns((uint8,uint8,uint48,uint48,uint256,uint256,bytes32))
 func (_ISettlement *ISettlementCallerSession) GetValSetHeaderAt(epoch *big.Int) (ISettlementValSetHeader, error) {
 	return _ISettlement.Contract.GetValSetHeaderAt(&_ISettlement.CallOpts, epoch)
 }
@@ -1134,44 +1197,44 @@ func (_ISettlement *ISettlementCallerSession) VerifyQuorumSigAt(message []byte, 
 	return _ISettlement.Contract.VerifyQuorumSigAt(&_ISettlement.CallOpts, message, keyTag, quorumThreshold, proof, epoch, hint)
 }
 
-// CommitValSetHeader is a paid mutator transaction binding the contract method 0x2416e957.
+// CommitValSetHeader is a paid mutator transaction binding the contract method 0x6f5f058e.
 //
-// Solidity: function commitValSetHeader((uint8,uint8,uint48,uint48,uint256,bytes32) header, (bytes32,bytes32)[] extraData, bytes proof) returns()
+// Solidity: function commitValSetHeader((uint8,uint8,uint48,uint48,uint256,uint256,bytes32) header, (bytes32,bytes32)[] extraData, bytes proof) returns()
 func (_ISettlement *ISettlementTransactor) CommitValSetHeader(opts *bind.TransactOpts, header ISettlementValSetHeader, extraData []ISettlementExtraData, proof []byte) (*types.Transaction, error) {
 	return _ISettlement.contract.Transact(opts, "commitValSetHeader", header, extraData, proof)
 }
 
-// CommitValSetHeader is a paid mutator transaction binding the contract method 0x2416e957.
+// CommitValSetHeader is a paid mutator transaction binding the contract method 0x6f5f058e.
 //
-// Solidity: function commitValSetHeader((uint8,uint8,uint48,uint48,uint256,bytes32) header, (bytes32,bytes32)[] extraData, bytes proof) returns()
+// Solidity: function commitValSetHeader((uint8,uint8,uint48,uint48,uint256,uint256,bytes32) header, (bytes32,bytes32)[] extraData, bytes proof) returns()
 func (_ISettlement *ISettlementSession) CommitValSetHeader(header ISettlementValSetHeader, extraData []ISettlementExtraData, proof []byte) (*types.Transaction, error) {
 	return _ISettlement.Contract.CommitValSetHeader(&_ISettlement.TransactOpts, header, extraData, proof)
 }
 
-// CommitValSetHeader is a paid mutator transaction binding the contract method 0x2416e957.
+// CommitValSetHeader is a paid mutator transaction binding the contract method 0x6f5f058e.
 //
-// Solidity: function commitValSetHeader((uint8,uint8,uint48,uint48,uint256,bytes32) header, (bytes32,bytes32)[] extraData, bytes proof) returns()
+// Solidity: function commitValSetHeader((uint8,uint8,uint48,uint48,uint256,uint256,bytes32) header, (bytes32,bytes32)[] extraData, bytes proof) returns()
 func (_ISettlement *ISettlementTransactorSession) CommitValSetHeader(header ISettlementValSetHeader, extraData []ISettlementExtraData, proof []byte) (*types.Transaction, error) {
 	return _ISettlement.Contract.CommitValSetHeader(&_ISettlement.TransactOpts, header, extraData, proof)
 }
 
-// SetGenesis is a paid mutator transaction binding the contract method 0x878cb518.
+// SetGenesis is a paid mutator transaction binding the contract method 0xec3be7e4.
 //
-// Solidity: function setGenesis((uint8,uint8,uint48,uint48,uint256,bytes32) valSetHeader, (bytes32,bytes32)[] extraData) returns()
+// Solidity: function setGenesis((uint8,uint8,uint48,uint48,uint256,uint256,bytes32) valSetHeader, (bytes32,bytes32)[] extraData) returns()
 func (_ISettlement *ISettlementTransactor) SetGenesis(opts *bind.TransactOpts, valSetHeader ISettlementValSetHeader, extraData []ISettlementExtraData) (*types.Transaction, error) {
 	return _ISettlement.contract.Transact(opts, "setGenesis", valSetHeader, extraData)
 }
 
-// SetGenesis is a paid mutator transaction binding the contract method 0x878cb518.
+// SetGenesis is a paid mutator transaction binding the contract method 0xec3be7e4.
 //
-// Solidity: function setGenesis((uint8,uint8,uint48,uint48,uint256,bytes32) valSetHeader, (bytes32,bytes32)[] extraData) returns()
+// Solidity: function setGenesis((uint8,uint8,uint48,uint48,uint256,uint256,bytes32) valSetHeader, (bytes32,bytes32)[] extraData) returns()
 func (_ISettlement *ISettlementSession) SetGenesis(valSetHeader ISettlementValSetHeader, extraData []ISettlementExtraData) (*types.Transaction, error) {
 	return _ISettlement.Contract.SetGenesis(&_ISettlement.TransactOpts, valSetHeader, extraData)
 }
 
-// SetGenesis is a paid mutator transaction binding the contract method 0x878cb518.
+// SetGenesis is a paid mutator transaction binding the contract method 0xec3be7e4.
 //
-// Solidity: function setGenesis((uint8,uint8,uint48,uint48,uint256,bytes32) valSetHeader, (bytes32,bytes32)[] extraData) returns()
+// Solidity: function setGenesis((uint8,uint8,uint48,uint48,uint256,uint256,bytes32) valSetHeader, (bytes32,bytes32)[] extraData) returns()
 func (_ISettlement *ISettlementTransactorSession) SetGenesis(valSetHeader ISettlementValSetHeader, extraData []ISettlementExtraData) (*types.Transaction, error) {
 	return _ISettlement.Contract.SetGenesis(&_ISettlement.TransactOpts, valSetHeader, extraData)
 }
@@ -1292,9 +1355,9 @@ type ISettlementCommitValSetHeader struct {
 	Raw          types.Log // Blockchain specific contextual infos
 }
 
-// FilterCommitValSetHeader is a free log retrieval operation binding the contract event 0xeacc59d95e759e2dca6fa5640e9a98c7ed010715ff0a4c0299b3b31c5d9ea61d.
+// FilterCommitValSetHeader is a free log retrieval operation binding the contract event 0x9ed1f51eddfff95a70fd993c30da7d26fc67bda21c9145aafc7d0a510a405558.
 //
-// Solidity: event CommitValSetHeader((uint8,uint8,uint48,uint48,uint256,bytes32) valSetHeader, (bytes32,bytes32)[] extraData)
+// Solidity: event CommitValSetHeader((uint8,uint8,uint48,uint48,uint256,uint256,bytes32) valSetHeader, (bytes32,bytes32)[] extraData)
 func (_ISettlement *ISettlementFilterer) FilterCommitValSetHeader(opts *bind.FilterOpts) (*ISettlementCommitValSetHeaderIterator, error) {
 
 	logs, sub, err := _ISettlement.contract.FilterLogs(opts, "CommitValSetHeader")
@@ -1304,9 +1367,9 @@ func (_ISettlement *ISettlementFilterer) FilterCommitValSetHeader(opts *bind.Fil
 	return &ISettlementCommitValSetHeaderIterator{contract: _ISettlement.contract, event: "CommitValSetHeader", logs: logs, sub: sub}, nil
 }
 
-// WatchCommitValSetHeader is a free log subscription operation binding the contract event 0xeacc59d95e759e2dca6fa5640e9a98c7ed010715ff0a4c0299b3b31c5d9ea61d.
+// WatchCommitValSetHeader is a free log subscription operation binding the contract event 0x9ed1f51eddfff95a70fd993c30da7d26fc67bda21c9145aafc7d0a510a405558.
 //
-// Solidity: event CommitValSetHeader((uint8,uint8,uint48,uint48,uint256,bytes32) valSetHeader, (bytes32,bytes32)[] extraData)
+// Solidity: event CommitValSetHeader((uint8,uint8,uint48,uint48,uint256,uint256,bytes32) valSetHeader, (bytes32,bytes32)[] extraData)
 func (_ISettlement *ISettlementFilterer) WatchCommitValSetHeader(opts *bind.WatchOpts, sink chan<- *ISettlementCommitValSetHeader) (event.Subscription, error) {
 
 	logs, sub, err := _ISettlement.contract.WatchLogs(opts, "CommitValSetHeader")
@@ -1341,9 +1404,9 @@ func (_ISettlement *ISettlementFilterer) WatchCommitValSetHeader(opts *bind.Watc
 	}), nil
 }
 
-// ParseCommitValSetHeader is a log parse operation binding the contract event 0xeacc59d95e759e2dca6fa5640e9a98c7ed010715ff0a4c0299b3b31c5d9ea61d.
+// ParseCommitValSetHeader is a log parse operation binding the contract event 0x9ed1f51eddfff95a70fd993c30da7d26fc67bda21c9145aafc7d0a510a405558.
 //
-// Solidity: event CommitValSetHeader((uint8,uint8,uint48,uint48,uint256,bytes32) valSetHeader, (bytes32,bytes32)[] extraData)
+// Solidity: event CommitValSetHeader((uint8,uint8,uint48,uint48,uint256,uint256,bytes32) valSetHeader, (bytes32,bytes32)[] extraData)
 func (_ISettlement *ISettlementFilterer) ParseCommitValSetHeader(log types.Log) (*ISettlementCommitValSetHeader, error) {
 	event := new(ISettlementCommitValSetHeader)
 	if err := _ISettlement.contract.UnpackLog(event, "CommitValSetHeader", log); err != nil {
@@ -1825,13 +1888,13 @@ func (it *ISettlementInitSubnetworkIterator) Close() error {
 // ISettlementInitSubnetwork represents a InitSubnetwork event raised by the ISettlement contract.
 type ISettlementInitSubnetwork struct {
 	Network      common.Address
-	SubnetworkID *big.Int
+	SubnetworkId *big.Int
 	Raw          types.Log // Blockchain specific contextual infos
 }
 
 // FilterInitSubnetwork is a free log retrieval operation binding the contract event 0x469c2e982e7d76d34cf5d1e72abee29749bb9971942c180e9023cea09f5f8e83.
 //
-// Solidity: event InitSubnetwork(address network, uint96 subnetworkID)
+// Solidity: event InitSubnetwork(address network, uint96 subnetworkId)
 func (_ISettlement *ISettlementFilterer) FilterInitSubnetwork(opts *bind.FilterOpts) (*ISettlementInitSubnetworkIterator, error) {
 
 	logs, sub, err := _ISettlement.contract.FilterLogs(opts, "InitSubnetwork")
@@ -1843,7 +1906,7 @@ func (_ISettlement *ISettlementFilterer) FilterInitSubnetwork(opts *bind.FilterO
 
 // WatchInitSubnetwork is a free log subscription operation binding the contract event 0x469c2e982e7d76d34cf5d1e72abee29749bb9971942c180e9023cea09f5f8e83.
 //
-// Solidity: event InitSubnetwork(address network, uint96 subnetworkID)
+// Solidity: event InitSubnetwork(address network, uint96 subnetworkId)
 func (_ISettlement *ISettlementFilterer) WatchInitSubnetwork(opts *bind.WatchOpts, sink chan<- *ISettlementInitSubnetwork) (event.Subscription, error) {
 
 	logs, sub, err := _ISettlement.contract.WatchLogs(opts, "InitSubnetwork")
@@ -1880,7 +1943,7 @@ func (_ISettlement *ISettlementFilterer) WatchInitSubnetwork(opts *bind.WatchOpt
 
 // ParseInitSubnetwork is a log parse operation binding the contract event 0x469c2e982e7d76d34cf5d1e72abee29749bb9971942c180e9023cea09f5f8e83.
 //
-// Solidity: event InitSubnetwork(address network, uint96 subnetworkID)
+// Solidity: event InitSubnetwork(address network, uint96 subnetworkId)
 func (_ISettlement *ISettlementFilterer) ParseInitSubnetwork(log types.Log) (*ISettlementInitSubnetwork, error) {
 	event := new(ISettlementInitSubnetwork)
 	if err := _ISettlement.contract.UnpackLog(event, "InitSubnetwork", log); err != nil {
@@ -2098,9 +2161,9 @@ type ISettlementSetGenesis struct {
 	Raw          types.Log // Blockchain specific contextual infos
 }
 
-// FilterSetGenesis is a free log retrieval operation binding the contract event 0x755dd3c19732ca6d3bebc529a893261afa4c361a0b77ff5d805838ddf997ffd7.
+// FilterSetGenesis is a free log retrieval operation binding the contract event 0xd4b7365d7a7dd369f40b249f48684bd7e51524b3ab56a9eb188ac339d574bbc0.
 //
-// Solidity: event SetGenesis((uint8,uint8,uint48,uint48,uint256,bytes32) valSetHeader, (bytes32,bytes32)[] extraData)
+// Solidity: event SetGenesis((uint8,uint8,uint48,uint48,uint256,uint256,bytes32) valSetHeader, (bytes32,bytes32)[] extraData)
 func (_ISettlement *ISettlementFilterer) FilterSetGenesis(opts *bind.FilterOpts) (*ISettlementSetGenesisIterator, error) {
 
 	logs, sub, err := _ISettlement.contract.FilterLogs(opts, "SetGenesis")
@@ -2110,9 +2173,9 @@ func (_ISettlement *ISettlementFilterer) FilterSetGenesis(opts *bind.FilterOpts)
 	return &ISettlementSetGenesisIterator{contract: _ISettlement.contract, event: "SetGenesis", logs: logs, sub: sub}, nil
 }
 
-// WatchSetGenesis is a free log subscription operation binding the contract event 0x755dd3c19732ca6d3bebc529a893261afa4c361a0b77ff5d805838ddf997ffd7.
+// WatchSetGenesis is a free log subscription operation binding the contract event 0xd4b7365d7a7dd369f40b249f48684bd7e51524b3ab56a9eb188ac339d574bbc0.
 //
-// Solidity: event SetGenesis((uint8,uint8,uint48,uint48,uint256,bytes32) valSetHeader, (bytes32,bytes32)[] extraData)
+// Solidity: event SetGenesis((uint8,uint8,uint48,uint48,uint256,uint256,bytes32) valSetHeader, (bytes32,bytes32)[] extraData)
 func (_ISettlement *ISettlementFilterer) WatchSetGenesis(opts *bind.WatchOpts, sink chan<- *ISettlementSetGenesis) (event.Subscription, error) {
 
 	logs, sub, err := _ISettlement.contract.WatchLogs(opts, "SetGenesis")
@@ -2147,165 +2210,12 @@ func (_ISettlement *ISettlementFilterer) WatchSetGenesis(opts *bind.WatchOpts, s
 	}), nil
 }
 
-// ParseSetGenesis is a log parse operation binding the contract event 0x755dd3c19732ca6d3bebc529a893261afa4c361a0b77ff5d805838ddf997ffd7.
+// ParseSetGenesis is a log parse operation binding the contract event 0xd4b7365d7a7dd369f40b249f48684bd7e51524b3ab56a9eb188ac339d574bbc0.
 //
-// Solidity: event SetGenesis((uint8,uint8,uint48,uint48,uint256,bytes32) valSetHeader, (bytes32,bytes32)[] extraData)
+// Solidity: event SetGenesis((uint8,uint8,uint48,uint48,uint256,uint256,bytes32) valSetHeader, (bytes32,bytes32)[] extraData)
 func (_ISettlement *ISettlementFilterer) ParseSetGenesis(log types.Log) (*ISettlementSetGenesis, error) {
 	event := new(ISettlementSetGenesis)
 	if err := _ISettlement.contract.UnpackLog(event, "SetGenesis", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// ISettlementSetSelectorRoleIterator is returned from FilterSetSelectorRole and is used to iterate over the raw logs and unpacked data for SetSelectorRole events raised by the ISettlement contract.
-type ISettlementSetSelectorRoleIterator struct {
-	Event *ISettlementSetSelectorRole // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *ISettlementSetSelectorRoleIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(ISettlementSetSelectorRole)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(ISettlementSetSelectorRole)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *ISettlementSetSelectorRoleIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *ISettlementSetSelectorRoleIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// ISettlementSetSelectorRole represents a SetSelectorRole event raised by the ISettlement contract.
-type ISettlementSetSelectorRole struct {
-	Selector [4]byte
-	Role     [32]byte
-	Raw      types.Log // Blockchain specific contextual infos
-}
-
-// FilterSetSelectorRole is a free log retrieval operation binding the contract event 0x205ddee47edfee0f39b93f29e45a801cd7c9cffe0ca9a2da19e547227b2a0504.
-//
-// Solidity: event SetSelectorRole(bytes4 indexed selector, bytes32 indexed role)
-func (_ISettlement *ISettlementFilterer) FilterSetSelectorRole(opts *bind.FilterOpts, selector [][4]byte, role [][32]byte) (*ISettlementSetSelectorRoleIterator, error) {
-
-	var selectorRule []interface{}
-	for _, selectorItem := range selector {
-		selectorRule = append(selectorRule, selectorItem)
-	}
-	var roleRule []interface{}
-	for _, roleItem := range role {
-		roleRule = append(roleRule, roleItem)
-	}
-
-	logs, sub, err := _ISettlement.contract.FilterLogs(opts, "SetSelectorRole", selectorRule, roleRule)
-	if err != nil {
-		return nil, err
-	}
-	return &ISettlementSetSelectorRoleIterator{contract: _ISettlement.contract, event: "SetSelectorRole", logs: logs, sub: sub}, nil
-}
-
-// WatchSetSelectorRole is a free log subscription operation binding the contract event 0x205ddee47edfee0f39b93f29e45a801cd7c9cffe0ca9a2da19e547227b2a0504.
-//
-// Solidity: event SetSelectorRole(bytes4 indexed selector, bytes32 indexed role)
-func (_ISettlement *ISettlementFilterer) WatchSetSelectorRole(opts *bind.WatchOpts, sink chan<- *ISettlementSetSelectorRole, selector [][4]byte, role [][32]byte) (event.Subscription, error) {
-
-	var selectorRule []interface{}
-	for _, selectorItem := range selector {
-		selectorRule = append(selectorRule, selectorItem)
-	}
-	var roleRule []interface{}
-	for _, roleItem := range role {
-		roleRule = append(roleRule, roleItem)
-	}
-
-	logs, sub, err := _ISettlement.contract.WatchLogs(opts, "SetSelectorRole", selectorRule, roleRule)
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(ISettlementSetSelectorRole)
-				if err := _ISettlement.contract.UnpackLog(event, "SetSelectorRole", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseSetSelectorRole is a log parse operation binding the contract event 0x205ddee47edfee0f39b93f29e45a801cd7c9cffe0ca9a2da19e547227b2a0504.
-//
-// Solidity: event SetSelectorRole(bytes4 indexed selector, bytes32 indexed role)
-func (_ISettlement *ISettlementFilterer) ParseSetSelectorRole(log types.Log) (*ISettlementSetSelectorRole, error) {
-	event := new(ISettlementSetSelectorRole)
-	if err := _ISettlement.contract.UnpackLog(event, "SetSelectorRole", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

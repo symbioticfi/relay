@@ -2,6 +2,7 @@ package valset_generator
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/go-errors/errors"
@@ -46,6 +47,12 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		return err
 	}
 
+	fmt.Println(valset.Status)
+	if valset.Status == entity.HeaderCommitted {
+		slog.DebugContext(ctx, "Valset is already committed", "epoch", msg.Epoch)
+		return nil
+	}
+
 	config, err := s.cfg.EvmClient.GetConfig(ctx, valset.CaptureTimestamp)
 	if err != nil {
 		return errors.Errorf("failed to get config for epoch %d: %w", msg.Epoch, err)
@@ -71,32 +78,43 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 }
 
 func (s *Service) commitValsetToAllSettlements(ctx context.Context, config entity.NetworkConfig, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) error {
-	errs := make([]error, len(config.Replicas))
-	for i, replica := range config.Replicas {
-		slog.DebugContext(ctx, "Trying to commit valset header to settlement", "replica", replica)
+	errs := make([]error, len(config.Settlements))
+	for i, settlement := range config.Settlements {
+		slog.DebugContext(ctx, "Trying to commit valset header to settlement", "settlement", settlement)
 
 		// todo replace it with tx check instead of call to contract
 		// if commit tx was sent but still not finalized this check will
 		// return false positive and trigger one more commitment tx
-		committed, err := s.cfg.EvmClient.IsValsetHeaderCommittedAt(ctx, replica, header.Epoch)
+		committed, err := s.cfg.EvmClient.IsValsetHeaderCommittedAt(ctx, settlement, header.Epoch)
 		if err != nil {
 			errs[i] = errors.Errorf("failed to check if header is committed at epoch %d: %w", header.Epoch, err)
-			continue
+			break
 		}
 
 		if committed {
 			continue
 		}
 
-		result, err := s.cfg.EvmClient.CommitValsetHeader(ctx, replica, header, extraData, proof)
+		lastCommittedEpoch, err := s.cfg.EvmClient.GetLastCommittedHeaderEpoch(ctx, settlement)
 		if err != nil {
-			errs[i] = errors.Errorf("failed to commit valset header to settlement %s: %w", replica.Address.Hex(), err)
-			continue
+			errs[i] = errors.Errorf("failed to get last committed header epoch: %w", err)
+			break
+		}
+
+		if header.Epoch != lastCommittedEpoch+1 {
+			errs[i] = errors.Errorf("commits should be consequent: %w", err)
+			break
+		}
+
+		result, err := s.cfg.EvmClient.CommitValsetHeader(ctx, settlement, header, extraData, proof)
+		if err != nil {
+			errs[i] = errors.Errorf("failed to commit valset header to settlement %s: %w", settlement.Address.Hex(), err)
+			break
 		}
 
 		slog.InfoContext(ctx, "Validator set header committed",
 			"epoch", header.Epoch,
-			"replica", replica,
+			"settlement", settlement,
 			"txHash", result.TxHash,
 		)
 	}
