@@ -3,18 +3,17 @@ package badger
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 
 	"github.com/symbioticfi/relay/core/entity"
 )
 
-func keySignature(reqHash common.Hash, key entity.RawPublicKey) []byte {
-	keyHash := crypto.Keccak256Hash(key)
-	return []byte("signature:" + reqHash.Hex() + ":" + keyHash.Hex())
+func keySignature(reqHash common.Hash, validatorIndex uint32) []byte {
+	return []byte(fmt.Sprintf("signature:%s:%010d", reqHash.Hex(), validatorIndex))
 }
 
 // keySignaturePrefix returns prefix for all signatures of a request
@@ -22,7 +21,7 @@ func keySignaturePrefix(reqHash common.Hash) []byte {
 	return []byte("signature:" + reqHash.Hex() + ":")
 }
 
-func (r *Repository) SaveSignature(ctx context.Context, reqHash common.Hash, inKey entity.RawPublicKey, sig entity.SignatureExtended) error {
+func (r *Repository) SaveSignature(ctx context.Context, reqHash common.Hash, validatorIndex uint32, sig entity.SignatureExtended) error {
 	txn := getTxn(ctx)
 	if txn == nil {
 		return errors.New("no transaction found in context, use signature processor in order to store signatures")
@@ -33,7 +32,7 @@ func (r *Repository) SaveSignature(ctx context.Context, reqHash common.Hash, inK
 		return errors.Errorf("failed to marshal signature: %w", err)
 	}
 
-	key := keySignature(reqHash, inKey)
+	key := keySignature(reqHash, validatorIndex)
 	err = txn.Set(key, bytes)
 	if err != nil {
 		return errors.Errorf("failed to store signature: %w", err)
@@ -70,6 +69,38 @@ func (r *Repository) GetAllSignatures(ctx context.Context, reqHash common.Hash) 
 
 		return nil
 	})
+}
+
+func (r *Repository) GetSignatureByIndex(ctx context.Context, reqHash common.Hash, validatorIndex uint32) (entity.SignatureExtended, error) {
+	var signature entity.SignatureExtended
+
+	err := r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
+		key := keySignature(reqHash, validatorIndex)
+
+		item, err := txn.Get(key)
+		if err != nil {
+			if errors.Is(err, badger.ErrKeyNotFound) {
+				return entity.ErrEntityNotFound
+			}
+			return errors.Errorf("failed to get signature: %w", err)
+		}
+
+		value, err := item.ValueCopy(nil)
+		if err != nil {
+			return errors.Errorf("failed to copy signature value: %w", err)
+		}
+
+		sig, err := bytesToSignature(value)
+		if err != nil {
+			return errors.Errorf("failed to unmarshal signature: %w", err)
+		}
+
+		signature = sig
+		return nil
+	})
+
+	return signature, err
 }
 
 type signatureDTO struct {
