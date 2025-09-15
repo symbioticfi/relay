@@ -15,9 +15,9 @@ type Prover = types.Prover
 func NewAggregator(verificationType entity.VerificationType, prover Prover) (Aggregator, error) {
 	switch verificationType {
 	case entity.VerificationTypeBlsBn254ZK:
-		return blsBn254ZK.NewAggregator(prover), nil
+		return blsBn254ZK.NewAggregator(prover)
 	case entity.VerificationTypeBlsBn254Simple:
-		return blsBn254Simple.NewAggregator(), nil
+		return blsBn254Simple.NewAggregator()
 	}
 
 	return nil, errors.New("unsupported verification type")
