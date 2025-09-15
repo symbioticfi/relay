@@ -29,7 +29,7 @@ type ContractExpectedData struct {
 }
 
 // getExpectedDataFromContracts retrieves expected values directly from smart contracts
-func getExpectedDataFromContracts(t *testing.T, relayContracts *RelayContractsData) *ContractExpectedData {
+func getExpectedDataFromContracts(t *testing.T, relayContracts RelayContractsData) *ContractExpectedData {
 	t.Helper()
 
 	config := evm.Config{
@@ -42,7 +42,7 @@ func getExpectedDataFromContracts(t *testing.T, relayContracts *RelayContractsDa
 		KeyProvider:    &testMockKeyProvider{},
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	evmClient, err := evm.NewEvmClient(ctx, config)
@@ -152,17 +152,12 @@ func validateValidatorSetAgainstExpected(t *testing.T, apiResponse *apiv1.GetVal
 func TestRelayAPIConnectivity(t *testing.T) {
 	t.Log("Starting relay API connectivity test...")
 
-	deploymentData, err := loadDeploymentData()
-	require.NoError(t, err, "Failed to load deployment data")
+	for i, config := range globalTestEnv.SidecarConfigs {
+		t.Run(fmt.Sprintf("Connect_%s_%s", config.Role, globalTestEnv.GetContainerPort(i)), func(t *testing.T) {
+			address := globalTestEnv.GetGRPCAddress(i)
+			t.Logf("Testing connection to %s (%s)", address, config.Role)
 
-	endpoints := getRelayEndpoints(deploymentData.Env)
-
-	for _, endpoint := range endpoints {
-		t.Run(fmt.Sprintf("Connect_%s_%d", endpoint.Role, endpoint.Port), func(t *testing.T) {
-			address := fmt.Sprintf("%s:%d", endpoint.Address, endpoint.Port)
-			t.Logf("Testing connection to %s (%s)", address, endpoint.Role)
-
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 			defer cancel()
 
 			conn, err := grpc.NewClient(
@@ -188,13 +183,11 @@ func TestRelayAPIConnectivity(t *testing.T) {
 func TestValidatorSetAPI(t *testing.T) {
 	t.Log("Starting validator set API test...")
 
-	deploymentData, err := loadDeploymentData()
+	deploymentData, err := loadDeploymentData(t.Context())
 	require.NoError(t, err, "Failed to load deployment data")
 
-	endpoint := getRelayEndpoints(deploymentData.Env)[0]
-
-	address := fmt.Sprintf("%s:%d", endpoint.Address, endpoint.Port)
-	t.Logf("Testing validator set API on %s (%s)", address, endpoint.Role)
+	address := globalTestEnv.GetGRPCAddress(0)
+	t.Logf("Testing validator set API on %s", address)
 
 	conn, err := grpc.NewClient(
 		address,
@@ -207,7 +200,7 @@ func TestValidatorSetAPI(t *testing.T) {
 
 	const retryAttempts = 4
 	for i := 0; i < retryAttempts; i++ {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 		valsetResp, err := client.GetValidatorSet(ctx, &apiv1.GetValidatorSetRequest{})
 		cancel()
 
@@ -263,7 +256,7 @@ func TestValidatorSetAPI(t *testing.T) {
 		}
 
 		if valsetResp.GetEpoch() > 0 {
-			ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+			ctx, cancel = context.WithTimeout(t.Context(), 5*time.Second)
 			specificEpochResp, err := client.GetValidatorSet(ctx, &apiv1.GetValidatorSetRequest{
 				Epoch: &valsetResp.Epoch,
 			})

@@ -16,7 +16,7 @@ import (
 func TestEpochProgression(t *testing.T) {
 	t.Log("Starting epoch progression test...")
 
-	deployData, err := loadDeploymentData()
+	deployData, err := loadDeploymentData(t.Context())
 	require.NoError(t, err, "Failed to load deployment data")
 
 	config := evm.Config{
@@ -29,7 +29,7 @@ func TestEpochProgression(t *testing.T) {
 		KeyProvider:    &testMockKeyProvider{},
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 45*time.Second)
 
 	evmClient, err := evm.NewEvmClient(ctx, config)
 	require.NoError(t, err, "Failed to create EVM client")
@@ -44,7 +44,7 @@ func TestEpochProgression(t *testing.T) {
 	cancel()
 
 	// ensure the current epoch gets committed, timeout after 2x epoch time and error if still not committed
-	ctx, cancel = context.WithTimeout(context.Background(), time.Duration(deployData.Env.EpochTime*2)*time.Second)
+	ctx, cancel = context.WithTimeout(t.Context(), time.Duration(deployData.Env.EpochTime*2)*time.Second)
 initialEpochCheck:
 	for {
 		select {
@@ -69,7 +69,7 @@ initialEpochCheck:
 
 	// start watching for any new epochs being committed, will keep timeout to 5x the epoch duration
 	t.Log("Waiting for epoch progression...")
-	ctx, cancel = context.WithTimeout(context.Background(), time.Duration(deployData.Env.EpochTime*5)*time.Second)
+	ctx, cancel = context.WithTimeout(t.Context(), time.Duration(deployData.Env.EpochTime*5)*time.Second)
 	defer cancel()
 
 	for {

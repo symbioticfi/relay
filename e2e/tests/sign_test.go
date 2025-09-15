@@ -4,17 +4,17 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
 	apiv1 "github.com/symbioticfi/relay/api/client/v1"
 	"github.com/symbioticfi/relay/core/entity"
 	cryptoModule "github.com/symbioticfi/relay/core/usecase/crypto"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 const (
@@ -26,10 +26,9 @@ const (
 func TestNonHeaderKeySignature(t *testing.T) {
 	t.Log("Starting non-header key signature test...")
 
-	deploymentData, err := loadDeploymentData()
+	deploymentData, err := loadDeploymentData(t.Context())
 	require.NoError(t, err, "Failed to load deployment data")
 
-	endpoints := getRelayEndpoints(deploymentData.Env)
 	expected := getExpectedDataFromContracts(t, deploymentData)
 
 	msg := "random-stuff-test-" + rand.Text()
@@ -55,9 +54,9 @@ func TestNonHeaderKeySignature(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			reqHash := ""
-			for _, endpoint := range endpoints {
+			for i := range globalTestEnv.Containers {
 				func() {
-					address := fmt.Sprintf("%s:%d", endpoint.Address, endpoint.Port)
+					address := globalTestEnv.GetGRPCAddress(i)
 					conn, err := grpc.NewClient(
 						address,
 						grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -66,13 +65,11 @@ func TestNonHeaderKeySignature(t *testing.T) {
 					defer conn.Close()
 
 					client := apiv1.NewSymbioticClient(conn)
-					var (
-						resp *apiv1.SignMessageResponse
-					)
 
+					var resp *apiv1.SignMessageResponse
 					// retry sign call 3 times as it can get transaction conflict
 					for attempts := 1; attempts <= 3; attempts++ {
-						resp, err = client.SignMessage(context.Background(),
+						resp, err = client.SignMessage(t.Context(),
 							&apiv1.SignMessageRequest{
 								KeyTag:        uint32(tc.keyTag),
 								Message:       []byte(msg),
@@ -97,13 +94,13 @@ func TestNonHeaderKeySignature(t *testing.T) {
 
 			t.Logf("Verifying signatures for request hash: %s", reqHash)
 
-			timeoutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			timeoutCtx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 			defer cancel()
 
 			ticker := time.NewTicker(3 * time.Second)
 			defer ticker.Stop()
 
-			address := fmt.Sprintf("%s:%d", endpoints[0].Address, endpoints[0].Port)
+			address := globalTestEnv.GetGRPCAddress(0)
 			conn, err := grpc.NewClient(
 				address,
 				grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -118,20 +115,20 @@ func TestNonHeaderKeySignature(t *testing.T) {
 				case <-timeoutCtx.Done():
 					t.Fatalf("Timed out waiting for all signatures for request hash: %s", reqHash)
 				case <-ticker.C:
-					resp, err := client.GetSignatures(context.Background(),
+					resp, err := client.GetSignatures(t.Context(),
 						&apiv1.GetSignaturesRequest{
 							RequestHash: reqHash,
 						})
 
 					require.NoErrorf(t, err, "Failed to get signatures from relay at %s", address)
 
-					if tc.keyTag.Type() == entity.KeyTypeEcdsaSecp256k1 && len(resp.GetSignatures()) != len(endpoints) {
+					if tc.keyTag.Type() == entity.KeyTypeEcdsaSecp256k1 && len(resp.GetSignatures()) != len(globalTestEnv.Containers) {
 						// expect all n signatures for ECDSA
-						t.Logf("Received %d/%d signatures for request hash: %s. Waiting for all signatures...", len(resp.GetSignatures()), len(endpoints), reqHash)
+						t.Logf("Received %d/%d signatures for request hash: %s. Waiting for all signatures...", len(resp.GetSignatures()), len(globalTestEnv.Containers), reqHash)
 						continue
-					} else if tc.keyTag.Type() == entity.KeyTypeBlsBn254 && (len(endpoints)*2/3+1) > len(resp.GetSignatures()) {
+					} else if tc.keyTag.Type() == entity.KeyTypeBlsBn254 && (len(globalTestEnv.Containers)*2/3+1) > len(resp.GetSignatures()) {
 						// need at least 2/3 signatures for BLS, signers skip signing is proof is already generated so we may not get all n sigs
-						t.Logf("Received %d/%d signatures for request hash: %s. Waiting for all signatures...", len(resp.GetSignatures()), len(endpoints), reqHash)
+						t.Logf("Received %d/%d signatures for request hash: %s. Waiting for all signatures...", len(resp.GetSignatures()), len(globalTestEnv.Containers), reqHash)
 						continue
 					}
 					t.Logf("All %d signatures received for request hash: %s", len(resp.GetSignatures()), reqHash)
@@ -149,7 +146,7 @@ func TestNonHeaderKeySignature(t *testing.T) {
 							require.NoErrorf(t, err, "Failed to unmarshal public key for request hash: %s", reqHash)
 							addressBytes := crypto.PubkeyToAddress(*pubkey).Bytes()
 
-						outer_ecdsa:
+						outerECDSA:
 							for _, operator := range expected.ValidatorSet.Validators {
 								for _, key := range operator.Keys {
 									if key.Tag != tc.keyTag {
@@ -160,7 +157,7 @@ func TestNonHeaderKeySignature(t *testing.T) {
 									if bytes.Equal(key.Payload[12:], addressBytes) {
 										countMap[operator.Operator.String()]++
 										found = true
-										break outer_ecdsa
+										break outerECDSA
 									}
 								}
 							}
@@ -169,7 +166,7 @@ func TestNonHeaderKeySignature(t *testing.T) {
 							publicKey, err := cryptoModule.NewPublicKey(tc.keyTag.Type(), sig.GetPublicKey())
 							require.NoErrorf(t, err, "Failed to create public key for request hash: %s", reqHash)
 
-						outer_bls:
+						outerBLS:
 							for _, operator := range expected.ValidatorSet.Validators {
 								for _, key := range operator.Keys {
 									if key.Tag != tc.keyTag {
@@ -184,7 +181,7 @@ func TestNonHeaderKeySignature(t *testing.T) {
 									if err == nil {
 										countMap[operator.Operator.String()]++
 										found = true
-										break outer_bls
+										break outerBLS
 									}
 								}
 							}
@@ -194,7 +191,7 @@ func TestNonHeaderKeySignature(t *testing.T) {
 					}
 
 					// check for proof
-					proof, err := client.GetAggregationProof(context.Background(), &apiv1.GetAggregationProofRequest{
+					proof, err := client.GetAggregationProof(t.Context(), &apiv1.GetAggregationProofRequest{
 						RequestHash: reqHash,
 					})
 					if tc.keyTag.Type() == entity.KeyTypeEcdsaSecp256k1 {

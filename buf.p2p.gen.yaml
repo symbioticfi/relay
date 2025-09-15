@@ -8,3 +8,7 @@ plugins:
     out: internal/client/p2p/proto
     opt:
       - paths=source_relative
+  - local: protoc-gen-go-grpc
+    out: internal/client/p2p/proto
+    opt:
+      - paths=source_relative

@@ -11,4 +11,5 @@ const (
 	ErrEntityAlreadyExist = StringError("entity already exists")
 	ErrNotAnAggregator    = StringError("not an aggregator")
 	ErrChainNotFound      = StringError("chain not found")
+	ErrNoPeers            = StringError("no peers available")
 )

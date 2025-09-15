@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/pflag"
 
@@ -115,7 +116,6 @@ type config struct {
 	MetricsListenAddr string               `mapstructure:"metrics-listen"`
 	SecretKeys        CMDSecretKeySlice    `mapstructure:"secret-keys"`
 	IsAggregator      bool                 `mapstructure:"aggregator"`
-	IsSigner          bool                 `mapstructure:"signer"`
 	IsCommitter       bool                 `mapstructure:"committer"`
 	StorageDir        string               `mapstructure:"storage-dir"`
 	Chains            []string             `mapstructure:"chains" validate:"required"`
@@ -128,11 +128,19 @@ type config struct {
 	SignalCfg         signals.Config       `mapstructure:"signal"`
 	Cache             CacheConfig          `mapstructure:"cache"`
 	MaxUnsigners      uint64               `mapstructure:"aggregation-policy-max-unsigners"`
+	Sync              SyncConfig           `mapstructure:"sync"`
 }
 
 type CacheConfig struct {
 	NetworkConfigCacheSize int `mapstructure:"network-config-size"`
 	ValidatorSetCacheSize  int `mapstructure:"validator-set-size"`
+}
+
+type SyncConfig struct {
+	Enabled      bool          `mapstructure:"enabled"`
+	Period       time.Duration `mapstructure:"period"`
+	Timeout      time.Duration `mapstructure:"timeout"`
+	EpochsToSync uint64        `mapstructure:"epochs"`
 }
 
 func (c config) Validate() error {
@@ -176,6 +184,10 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Int("cache.network-config-size", 10, "Network config cache size")
 	rootCmd.PersistentFlags().Int("cache.validator-set-size", 10, "Validator set cache size")
 	rootCmd.PersistentFlags().Uint64("aggregation-policy-max-unsigners", 50, "Max unsigners for low cost agg policy")
+	rootCmd.PersistentFlags().Bool("sync.enabled", true, "Enable signature syncer")
+	rootCmd.PersistentFlags().Duration("sync.period", time.Second*5, "Signature sync period")
+	rootCmd.PersistentFlags().Duration("sync.timeout", time.Minute, "Signature sync timeout")
+	rootCmd.PersistentFlags().Uint64("sync.epochs", 5, "Signature epochs to sync")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
@@ -184,12 +196,23 @@ func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interfa
 		return from, nil
 	}
 
+	// Handle time.Duration specifically
+	if toType == reflect.TypeOf(time.Duration(0)) {
+		duration, err := time.ParseDuration(from.(string))
+		if err != nil {
+			return nil, errors.Errorf("failed to parse duration: %w", err)
+		}
+		return duration, nil
+	}
+
 	flagType := reflect.TypeOf((*pflag.Value)(nil))
 
 	// if fromType implements pflag.Value then we can parse it from string
 	if reflect.PointerTo(toType).Implements(flagType.Elem()) {
 		res := reflect.New(toType).Interface().(pflag.Value)
-		res.Set(from.(string))
+		if err := res.Set(from.(string)); err != nil {
+			return nil, errors.Errorf("failed to set flag value: %w", err)
+		}
 		return res, nil
 	}
 	return from, nil
@@ -280,6 +303,18 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("aggregation-policy-max-unsigners", cmd.PersistentFlags().Lookup("aggregation-policy-max-unsigners")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("sync.enabled", cmd.PersistentFlags().Lookup("sync.enabled")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("sync.timeout", cmd.PersistentFlags().Lookup("sync.timeout")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("sync.period", cmd.PersistentFlags().Lookup("sync.period")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("sync.epochs", cmd.PersistentFlags().Lookup("sync.epochs")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 

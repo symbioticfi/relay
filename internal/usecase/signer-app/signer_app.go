@@ -89,6 +89,7 @@ func NewSignerApp(cfg Config) (*SignerApp, error) {
 
 func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error {
 	ctx = log.WithComponent(ctx, "signer")
+	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(req.RequiredEpoch)))
 	timeAppSignStart := time.Now()
 
 	if !req.KeyTag.Type().SignerKey() {
@@ -164,7 +165,12 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.Errorf("failed to broadcast signature: %w", err)
 	}
 
-	slog.InfoContext(ctx, "Message signed", "hash", hash, "signature", signature, "duration", time.Since(timeAppSignStart))
+	slog.InfoContext(ctx, "Message signed",
+		"hash", hash,
+		"signature", signature,
+		"key_tag", req.KeyTag,
+		"duration", time.Since(timeAppSignStart),
+	)
 	s.cfg.Metrics.ObserveAppSignDuration(time.Since(timeAppSignStart))
 	if _, err := s.cfg.Repo.UpdateSignatureStat(ctx, req.Hash(), entity.SignatureStatStageSignCompleted, time.Now()); err != nil {
 		slog.WarnContext(ctx, "Failed to update signature stat", "error", err)
