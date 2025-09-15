@@ -15,7 +15,7 @@ type Repository interface {
 	DoUpdateInTx(ctx context.Context, f func(ctx context.Context) error) error
 	GetSignatureMap(ctx context.Context, reqHash common.Hash) (entity.SignatureMap, error)
 	UpdateSignatureMap(ctx context.Context, vm entity.SignatureMap) error
-	SaveSignature(ctx context.Context, reqHash common.Hash, key entity.RawPublicKey, sig entity.SignatureExtended) error
+	SaveSignature(ctx context.Context, reqHash common.Hash, validatorIndex uint32, sig entity.SignatureExtended) error
 	SaveSignatureRequest(ctx context.Context, req entity.SignatureRequest) error
 	SaveSignatureRequestPending(ctx context.Context, req entity.SignatureRequest) error
 	RemoveSignatureRequestPending(ctx context.Context, epoch entity.Epoch, reqHash common.Hash) error
@@ -76,7 +76,7 @@ func (s *SignatureProcessor) ProcessSignature(ctx context.Context, param entity.
 			return errors.Errorf("failed to update valset signature map: %w", err)
 		}
 
-		if err := s.cfg.Repo.SaveSignature(ctx, param.RequestHash, param.Key, param.Signature); err != nil {
+		if err := s.cfg.Repo.SaveSignature(ctx, param.RequestHash, param.ActiveIndex, param.Signature); err != nil {
 			return errors.Errorf("failed to save signature: %w", err)
 		}
 
