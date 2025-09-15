@@ -19,10 +19,10 @@ type Aggregator struct {
 	prover types.Prover
 }
 
-func NewAggregator(prover types.Prover) *Aggregator {
+func NewAggregator(prover types.Prover) (*Aggregator, error) {
 	return &Aggregator{
 		prover: prover,
-	}
+	}, nil
 }
 
 func (a Aggregator) Aggregate(
@@ -38,17 +38,19 @@ func (a Aggregator) Aggregate(
 	aggG1Sig := new(bn254.G1Affine)
 	aggG2Key := new(bn254.G2Affine)
 	signers := make(map[common.Address]bool)
+	valKeysToIdx := helpers.GetValidatorsIndexesMapByKey(valset, keyTag)
+
 	for _, sig := range signatures {
 		pubKey, err := blsBn254.FromRaw(sig.PublicKey)
 		if err != nil {
 			return entity.AggregationProof{}, err
 		}
-		val, ok := valset.FindValidatorByKey(keyTag, pubKey.OnChain())
+		idx, ok := valKeysToIdx[string(pubKey.OnChain())]
 		if !ok {
 			return entity.AggregationProof{}, errors.New("failed to find validator by key")
 		}
+		val := valset.Validators[idx]
 		if !val.IsActive {
-			// skip inactive validators
 			continue
 		}
 		g1Sig := new(bn254.G1Affine)
