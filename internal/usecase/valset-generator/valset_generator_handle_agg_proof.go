@@ -86,7 +86,7 @@ func (s *Service) commitValsetToAllSettlements(ctx context.Context, config entit
 		committed, err := s.cfg.EvmClient.IsValsetHeaderCommittedAt(ctx, settlement, header.Epoch)
 		if err != nil {
 			errs[i] = errors.Errorf("failed to check if header is committed at epoch %d: %w", header.Epoch, err)
-			break
+			continue
 		}
 
 		if committed {
@@ -96,18 +96,18 @@ func (s *Service) commitValsetToAllSettlements(ctx context.Context, config entit
 		lastCommittedEpoch, err := s.cfg.EvmClient.GetLastCommittedHeaderEpoch(ctx, settlement)
 		if err != nil {
 			errs[i] = errors.Errorf("failed to get last committed header epoch: %w", err)
-			break
+			continue
 		}
 
 		if header.Epoch != lastCommittedEpoch+1 {
 			errs[i] = errors.Errorf("commits should be consequent: %w", err)
-			break
+			continue
 		}
 
 		result, err := s.cfg.EvmClient.CommitValsetHeader(ctx, settlement, header, extraData, proof)
 		if err != nil {
 			errs[i] = errors.Errorf("failed to commit valset header to settlement %s: %w", settlement.Address.Hex(), err)
-			break
+			continue
 		}
 
 		slog.InfoContext(ctx, "Validator set header committed",
