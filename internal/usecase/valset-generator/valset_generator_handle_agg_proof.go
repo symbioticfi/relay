@@ -47,7 +47,6 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		return err
 	}
 
-	fmt.Println(valset.Status)
 	if valset.Status == entity.HeaderCommitted {
 		slog.DebugContext(ctx, "Valset is already committed", "epoch", msg.Epoch)
 		return nil
