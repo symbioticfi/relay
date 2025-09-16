@@ -66,7 +66,7 @@ var infoCmd = &cobra.Command{
 			return errors.Errorf("failed to get config: %w", err)
 		}
 
-		epoch, err := evmClient.GetLastCommittedHeaderEpoch(ctx, networkConfig.Replicas[0])
+		epoch, err := evmClient.GetLastCommittedHeaderEpoch(ctx, networkConfig.Settlements[0])
 		if err != nil {
 			return errors.Errorf("failed to get valset header: %w", err)
 		}

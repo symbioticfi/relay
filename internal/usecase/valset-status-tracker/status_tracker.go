@@ -13,7 +13,7 @@ import (
 	"github.com/symbioticfi/relay/pkg/log"
 )
 
-var zeroHeaderHash = common.HexToHash("0x1e990e27f0d7976bf2adbd60e20384da0125b76e2885a96aa707bcb054108b0d")
+var zeroHeaderHash = common.HexToHash("0x868e09d528a16744c1f38ea3c10cc2251e01a456434f91172247695087d129b7")
 
 type repo interface {
 	GetConfigByEpoch(_ context.Context, epoch uint64) (entity.NetworkConfig, error)
@@ -132,7 +132,7 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 			return errors.Errorf("failed to get config for epoch %d: %w", epoch, err)
 		}
 
-		if len(config.Replicas) == 0 {
+		if len(config.Settlements) == 0 {
 			if valset.Epoch == firstUncommittedEpoch {
 				firstUncommittedEpoch++
 				if err = s.cfg.Repo.SaveFirstUncommittedValidatorSetEpoch(ctx, firstUncommittedEpoch); err != nil {
@@ -153,8 +153,8 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 		}
 
 		isCommitted := true
-		for _, replica := range config.Replicas {
-			committedHash, err := s.cfg.EvmClient.GetHeaderHashAt(ctx, replica, valset.Epoch)
+		for _, settlement := range config.Settlements {
+			committedHash, err := s.cfg.EvmClient.GetHeaderHashAt(ctx, settlement, valset.Epoch)
 			if err != nil {
 				return errors.Errorf("failed to get header hash for epoch %d: %w", epoch, err)
 			}

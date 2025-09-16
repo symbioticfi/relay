@@ -114,7 +114,7 @@ func (e *Client) getVotingPowersMulticall(ctx context.Context, address entity.Cr
 	}
 
 	for i, out := range outs {
-		var res []gen.IVotingPowerProviderVaultVotingPower
+		var res []gen.IVotingPowerProviderVaultValue
 
 		if err := abi.UnpackIntoInterface(&res, "getOperatorVotingPowersAt", out.ReturnData); err != nil {
 			return nil, errors.Errorf("failed to unpack getOperatorVotingPowers: %v", err)
@@ -122,10 +122,10 @@ func (e *Client) getVotingPowersMulticall(ctx context.Context, address entity.Cr
 
 		votingPowers = append(votingPowers, entity.OperatorVotingPower{
 			Operator: operators[i],
-			Vaults: lo.Map(res, func(v gen.IVotingPowerProviderVaultVotingPower, _ int) entity.VaultVotingPower {
+			Vaults: lo.Map(res, func(v gen.IVotingPowerProviderVaultValue, _ int) entity.VaultVotingPower {
 				return entity.VaultVotingPower{
 					Vault:       v.Vault,
-					VotingPower: entity.ToVotingPower(v.VotingPower),
+					VotingPower: entity.ToVotingPower(v.Value),
 				}
 			}),
 		})
@@ -149,7 +149,7 @@ func (e *Client) getKeysMulticall(ctx context.Context, address entity.CrossChain
 	calls := make([]Call, 0, len(operators))
 
 	for _, operator := range operators {
-		bytes, err := abi.Pack("getKeysAt0", operator, big.NewInt(int64(timestamp)), []byte{})
+		bytes, err := abi.Pack("getKeysAt0", operator, big.NewInt(int64(timestamp)))
 		if err != nil {
 			return nil, errors.Errorf("failed to get bytes: %v", err)
 		}

@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 	aggregationPolicyTypes "github.com/symbioticfi/relay/internal/usecase/aggregation-policy/types"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -48,6 +49,7 @@ type Config struct {
 	Aggregator        aggregator       `validate:"required"`
 	Metrics           metrics          `validate:"required"`
 	AggregationPolicy aggregatorPolicy `validate:"required"`
+	KeyProvider       keyprovider.KeyProvider
 }
 
 func (c Config) Validate() error {
@@ -104,6 +106,23 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
 	if err != nil {
 		return errors.Errorf("failed to get validator set: %w", err)
+	}
+
+	// nil only for tests
+	if s.cfg.KeyProvider != nil {
+		privKey, err := s.cfg.KeyProvider.GetPrivateKey(validatorSet.RequiredKeyTag)
+		if err != nil {
+			if errors.Is(err, keyprovider.ErrKeyNotFound) {
+				slog.DebugContext(ctx, "No key for required key tag, skipping proof aggregation", "keyTag", validatorSet.RequiredKeyTag)
+				return nil
+			}
+			return errors.Errorf("failed to get private key for required key tag %s: %w", validatorSet.RequiredKeyTag, err)
+		}
+
+		if !validatorSet.IsAggregator(privKey.PublicKey().OnChain()) {
+			slog.DebugContext(ctx, "Not an Aggregator for this valset, skipping proof aggregation", "key", privKey.PublicKey().OnChain(), "epoch", msg.Epoch)
+			return nil
+		}
 	}
 
 	totalActiveVotingPower := validatorSet.GetTotalActiveVotingPower()

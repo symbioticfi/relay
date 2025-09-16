@@ -1465,8 +1465,10 @@ type GetValidatorSetHeaderResponse struct {
 	CaptureTimestamp *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=capture_timestamp,json=captureTimestamp,proto3" json:"capture_timestamp,omitempty"`
 	// Quorum threshold (big integer as string)
 	QuorumThreshold string `protobuf:"bytes,5,opt,name=quorum_threshold,json=quorumThreshold,proto3" json:"quorum_threshold,omitempty"`
+	// Total voting power (big integer as string)
+	TotalVotingPower string `protobuf:"bytes,6,opt,name=total_voting_power,json=totalVotingPower,proto3" json:"total_voting_power,omitempty"`
 	// Validators SSZ Merkle root (hex string)
-	ValidatorsSszMroot string `protobuf:"bytes,6,opt,name=validators_ssz_mroot,json=validatorsSszMroot,proto3" json:"validators_ssz_mroot,omitempty"`
+	ValidatorsSszMroot string `protobuf:"bytes,7,opt,name=validators_ssz_mroot,json=validatorsSszMroot,proto3" json:"validators_ssz_mroot,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1532,6 +1534,13 @@ func (x *GetValidatorSetHeaderResponse) GetCaptureTimestamp() *timestamppb.Times
 func (x *GetValidatorSetHeaderResponse) GetQuorumThreshold() string {
 	if x != nil {
 		return x.QuorumThreshold
+	}
+	return ""
+}
+
+func (x *GetValidatorSetHeaderResponse) GetTotalVotingPower() string {
+	if x != nil {
+		return x.TotalVotingPower
 	}
 	return ""
 }
@@ -1829,14 +1838,15 @@ const file_v1_api_proto_rawDesc = "" +
 	"validators\x18\a \x03(\v2\x17.api.proto.v1.ValidatorR\n" +
 	"validators\"V\n" +
 	"\x1dGetValidatorByAddressResponse\x125\n" +
-	"\tvalidator\x18\x01 \x01(\v2\x17.api.proto.v1.ValidatorR\tvalidator\"\x9f\x02\n" +
+	"\tvalidator\x18\x01 \x01(\v2\x17.api.proto.v1.ValidatorR\tvalidator\"\xcd\x02\n" +
 	"\x1dGetValidatorSetHeaderResponse\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\rR\aversion\x12(\n" +
 	"\x10required_key_tag\x18\x02 \x01(\rR\x0erequiredKeyTag\x12\x14\n" +
 	"\x05epoch\x18\x03 \x01(\x04R\x05epoch\x12G\n" +
 	"\x11capture_timestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x10captureTimestamp\x12)\n" +
-	"\x10quorum_threshold\x18\x05 \x01(\tR\x0fquorumThreshold\x120\n" +
-	"\x14validators_ssz_mroot\x18\x06 \x01(\tR\x12validatorsSszMroot\"\xc4\x01\n" +
+	"\x10quorum_threshold\x18\x05 \x01(\tR\x0fquorumThreshold\x12,\n" +
+	"\x12total_voting_power\x18\x06 \x01(\tR\x10totalVotingPower\x120\n" +
+	"\x14validators_ssz_mroot\x18\a \x01(\tR\x12validatorsSszMroot\"\xc4\x01\n" +
 	"\tValidator\x12\x1a\n" +
 	"\boperator\x18\x01 \x01(\tR\boperator\x12!\n" +
 	"\fvoting_power\x18\x02 \x01(\tR\vvotingPower\x12\x1b\n" +

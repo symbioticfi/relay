@@ -52,6 +52,7 @@ func (e *Client) SetGenesis(
 		Epoch:              new(big.Int).SetUint64(header.Epoch),
 		CaptureTimestamp:   new(big.Int).SetUint64(header.CaptureTimestamp),
 		QuorumThreshold:    header.QuorumThreshold.Int,
+		TotalVotingPower:   header.TotalVotingPower.Int,
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot,
 	}
 

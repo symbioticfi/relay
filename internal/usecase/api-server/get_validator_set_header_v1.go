@@ -44,6 +44,7 @@ func (h *grpcHandler) GetValidatorSetHeader(ctx context.Context, req *apiv1.GetV
 		Epoch:              header.Epoch,
 		CaptureTimestamp:   timestamppb.New(time.Unix(int64(header.CaptureTimestamp), 0).UTC()),
 		QuorumThreshold:    header.QuorumThreshold.String(),
+		TotalVotingPower:   header.TotalVotingPower.String(),
 		ValidatorsSszMroot: header.ValidatorsSszMRoot.Hex(),
 	}, nil
 }

@@ -261,9 +261,12 @@ message GetValidatorSetHeaderResponse {
   
   // Quorum threshold (big integer as string)
   string quorum_threshold = 5;
+
+  // Total voting power (big integer as string)
+  string total_voting_power = 6;
   
   // Validators SSZ Merkle root (hex string)
-  string validators_ssz_mroot = 6;
+  string validators_ssz_mroot = 7;
 }
 
 // Validator set status enumeration

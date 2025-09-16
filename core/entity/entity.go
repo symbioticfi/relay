@@ -28,8 +28,7 @@ const (
 )
 
 var (
-	ExtraDataGlobalKeyPrefixHash = crypto.Keccak256Hash([]byte("symbiotic.Settlement.extraData."))
-	ExtraDataKeyTagPrefixHash    = crypto.Keccak256Hash([]byte("keyTag."))
+	ExtraDataKeyTagPrefixHash = crypto.Keccak256Hash([]byte("keyTag."))
 )
 
 var (
@@ -220,7 +219,7 @@ type QuorumThreshold struct {
 type NetworkConfig struct {
 	VotingPowerProviders    []CrossChainAddress
 	KeysProvider            CrossChainAddress
-	Replicas                []CrossChainAddress
+	Settlements             []CrossChainAddress
 	VerificationType        VerificationType
 	MaxVotingPower          VotingPower
 	MinInclusionVotingPower VotingPower
@@ -228,6 +227,10 @@ type NetworkConfig struct {
 	RequiredKeyTags         []KeyTag
 	RequiredHeaderKeyTag    KeyTag
 	QuorumThresholds        []QuorumThreshold
+
+	// scheduler config
+	NumAggregators uint64
+	NumCommitters  uint64
 }
 
 func maxThreshold() *big.Int {
@@ -383,6 +386,40 @@ type ValidatorSet struct {
 	QuorumThreshold  VotingPower // absolute number now, not a percent
 	Validators       Validators
 	Status           ValidatorSetStatus
+
+	// Scheduler info for current validator set, completely offchain not included in header
+	AggregatorIndices []uint32
+	CommitterIndices  []uint32
+}
+
+func (v ValidatorSet) IsAggregator(requiredKey []byte) bool {
+	return v.findMembership(v.AggregatorIndices, requiredKey)
+}
+
+func (v ValidatorSet) IsCommitter(requiredKey []byte) bool {
+	return v.findMembership(v.CommitterIndices, requiredKey)
+}
+
+func (v ValidatorSet) IsSigner(requiredKey []byte) bool {
+	for _, validator := range v.Validators {
+		for _, key := range validator.Keys {
+			if key.Tag == v.RequiredKeyTag && slices.Equal(key.Payload, requiredKey) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (v ValidatorSet) findMembership(indexArray []uint32, requiredKey []byte) bool {
+	for _, validator := range indexArray {
+		for _, key := range v.Validators[validator].Keys {
+			if key.Tag == v.RequiredKeyTag && slices.Equal(key.Payload, requiredKey) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (v ValidatorSet) FindValidatorByKey(keyTag KeyTag, publicKey []byte) (Validator, bool) { // DON'T USE INSIDE LOOPS
@@ -408,6 +445,7 @@ type ValidatorSetHeader struct {
 	Epoch              uint64
 	CaptureTimestamp   uint64
 	QuorumThreshold    VotingPower
+	TotalVotingPower   VotingPower
 	ValidatorsSszMRoot common.Hash
 }
 
@@ -472,6 +510,7 @@ func (v ValidatorSet) GetHeader() (ValidatorSetHeader, error) {
 		Epoch:              v.Epoch,
 		CaptureTimestamp:   v.CaptureTimestamp,
 		QuorumThreshold:    v.QuorumThreshold,
+		TotalVotingPower:   v.GetTotalActiveVotingPower(),
 		ValidatorsSszMRoot: sszMroot,
 	}, nil
 }
@@ -556,6 +595,10 @@ func (v ValidatorSetHeader) AbiEncode() ([]byte, error) {
 			Type: abi.Type{T: abi.UintTy, Size: 256},
 		},
 		{
+			Name: "totalVotingPower",
+			Type: abi.Type{T: abi.UintTy, Size: 256},
+		},
+		{
 			Name: "validatorsSszMRoot",
 			Type: abi.Type{T: abi.FixedBytesTy, Size: 32},
 		},
@@ -564,8 +607,11 @@ func (v ValidatorSetHeader) AbiEncode() ([]byte, error) {
 	if v.QuorumThreshold.Int == nil {
 		v.QuorumThreshold.Int = big.NewInt(0)
 	}
+	if v.TotalVotingPower.Int == nil {
+		v.TotalVotingPower.Int = big.NewInt(0)
+	}
 
-	pack, err := arguments.Pack(v.Version, v.RequiredKeyTag, new(big.Int).SetUint64(v.Epoch), new(big.Int).SetUint64(v.CaptureTimestamp), v.QuorumThreshold.Int, v.ValidatorsSszMRoot)
+	pack, err := arguments.Pack(v.Version, v.RequiredKeyTag, new(big.Int).SetUint64(v.Epoch), new(big.Int).SetUint64(v.CaptureTimestamp), v.QuorumThreshold.Int, v.TotalVotingPower.Int, v.ValidatorsSszMRoot)
 	if err != nil {
 		return nil, errors.Errorf("failed to pack arguments: %w", err)
 	}

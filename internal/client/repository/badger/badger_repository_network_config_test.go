@@ -30,11 +30,13 @@ func randomNetworkConfig(t *testing.T) entity.NetworkConfig {
 	return entity.NetworkConfig{
 		VotingPowerProviders:    []entity.CrossChainAddress{randomAddr(t)},
 		KeysProvider:            randomAddr(t),
-		Replicas:                []entity.CrossChainAddress{randomAddr(t)},
+		Settlements:             []entity.CrossChainAddress{randomAddr(t)},
 		VerificationType:        entity.VerificationTypeBlsBn254Simple,
 		MaxVotingPower:          entity.ToVotingPower(randomBigInt(t)),
 		MinInclusionVotingPower: entity.ToVotingPower(randomBigInt(t)),
 		MaxValidatorsCount:      entity.ToVotingPower(randomBigInt(t)),
 		RequiredKeyTags:         []entity.KeyTag{15},
+		NumCommitters:           3,
+		NumAggregators:          5,
 	}
 }

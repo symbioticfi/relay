@@ -32,18 +32,18 @@ var (
 // IVotingPowerProviderOperatorVotingPower is an auto generated low-level Go binding around an user-defined struct.
 type IVotingPowerProviderOperatorVotingPower struct {
 	Operator common.Address
-	Vaults   []IVotingPowerProviderVaultVotingPower
+	Vaults   []IVotingPowerProviderVaultValue
 }
 
-// IVotingPowerProviderVaultVotingPower is an auto generated low-level Go binding around an user-defined struct.
-type IVotingPowerProviderVaultVotingPower struct {
-	Vault       common.Address
-	VotingPower *big.Int
+// IVotingPowerProviderVaultValue is an auto generated low-level Go binding around an user-defined struct.
+type IVotingPowerProviderVaultValue struct {
+	Vault common.Address
+	Value *big.Int
 }
 
 // IVotingPowerProviderMetaData contains all meta data concerning the IVotingPowerProvider contract.
 var IVotingPowerProviderMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"NETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"OPERATOR_REGISTRY\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK_IDENTIFIER\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"VAULT_FACTORY\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"eip712Domain\",\"inputs\":[],\"outputs\":[{\"name\":\"fields\",\"type\":\"bytes1\",\"internalType\":\"bytes1\"},{\"name\":\"name\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"version\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"chainId\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"verifyingContract\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"extensions\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorStake\",\"inputs\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorStakeAt\",\"inputs\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hints\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorVaults\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorVaultsAt\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorVaultsLength\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorVotingPower\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"extraData\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorVotingPowerAt\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"extraData\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hints\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorVotingPowers\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"extraData\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIVotingPowerProvider.VaultVotingPower[]\",\"components\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"votingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorVotingPowersAt\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"extraData\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIVotingPowerProvider.VaultVotingPower[]\",\"components\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"votingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperators\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorsAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorsLength\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSharedVaults\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSharedVaultsAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSharedVaultsLength\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSlashingWindow\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTokens\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTokensAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTokensLength\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVotingPowers\",\"inputs\":[{\"name\":\"extraData\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIVotingPowerProvider.OperatorVotingPower[]\",\"components\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"vaults\",\"type\":\"tuple[]\",\"internalType\":\"structIVotingPowerProvider.VaultVotingPower[]\",\"components\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"votingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVotingPowersAt\",\"inputs\":[{\"name\":\"extraData\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIVotingPowerProvider.OperatorVotingPower[]\",\"components\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"vaults\",\"type\":\"tuple[]\",\"internalType\":\"structIVotingPowerProvider.VaultVotingPower[]\",\"components\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"votingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hashTypedDataV4\",\"inputs\":[{\"name\":\"structHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hashTypedDataV4CrossChain\",\"inputs\":[{\"name\":\"structHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"invalidateOldSignatures\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"isOperatorRegistered\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperatorRegisteredAt\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperatorVaultRegistered\",\"inputs\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperatorVaultRegistered\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperatorVaultRegisteredAt\",\"inputs\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperatorVaultRegisteredAt\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isSharedVaultRegistered\",\"inputs\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isSharedVaultRegisteredAt\",\"inputs\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isTokenRegistered\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isTokenRegisteredAt\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"nonces\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"registerOperator\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"registerOperatorWithSignature\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"stakeToVotingPower\",\"inputs\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"stake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"extraData\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"power\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"stakeToVotingPowerAt\",\"inputs\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"stake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"extraData\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"power\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"staticDelegateCall\",\"inputs\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"unregisterOperator\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"unregisterOperatorWithSignature\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"EIP712DomainChanged\",\"inputs\":[],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitEIP712\",\"inputs\":[{\"name\":\"name\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"},{\"name\":\"version\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitSubnetwork\",\"inputs\":[{\"name\":\"network\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"subnetworkID\",\"type\":\"uint96\",\"indexed\":false,\"internalType\":\"uint96\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RegisterOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RegisterOperatorVault\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"vault\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RegisterSharedVault\",\"inputs\":[{\"name\":\"vault\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RegisterToken\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetSlashingWindow\",\"inputs\":[{\"name\":\"slashingWindow\",\"type\":\"uint48\",\"indexed\":false,\"internalType\":\"uint48\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"UnregisterOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"UnregisterOperatorVault\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"vault\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"UnregisterSharedVault\",\"inputs\":[{\"name\":\"vault\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"UnregisterToken\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"InvalidAccountNonce\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"currentNonce\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"type\":\"error\",\"name\":\"InvalidInitialization\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NetworkManager_InvalidNetwork\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotInitializing\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_InvalidOperator\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_InvalidOperatorVault\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_InvalidSharedVault\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_InvalidSignature\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_InvalidToken\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_InvalidVault\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_NoSlasher\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_NonVetoSlasher\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_OperatorAlreadyRegistered\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_OperatorNotOptedIn\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_OperatorNotRegistered\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_OperatorVaultAlreadyIsRegistered\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_OperatorVaultNotRegistered\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_SharedVaultAlreadyIsRegistered\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_SharedVaultNotRegistered\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_SlashingWindowTooLarge\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_TokenAlreadyIsRegistered\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_TokenNotRegistered\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_UnknownSlasherType\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_UnregisteredOperatorSlash\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_UnregisteredVaultSlash\",\"inputs\":[]}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"NETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"OPERATOR_REGISTRY\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK_IDENTIFIER\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"VAULT_FACTORY\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"eip712Domain\",\"inputs\":[],\"outputs\":[{\"name\":\"fields\",\"type\":\"bytes1\",\"internalType\":\"bytes1\"},{\"name\":\"name\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"version\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"chainId\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"verifyingContract\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"extensions\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorStakes\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIVotingPowerProvider.VaultValue[]\",\"components\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorStakesAt\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIVotingPowerProvider.VaultValue[]\",\"components\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorVaults\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorVaultsAt\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorVotingPowers\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"extraData\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIVotingPowerProvider.VaultValue[]\",\"components\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorVotingPowersAt\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"extraData\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIVotingPowerProvider.VaultValue[]\",\"components\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperators\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorsAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSharedVaults\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSharedVaultsAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSlashingData\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"},{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSlashingDataAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"},{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTokens\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTokensAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVotingPowers\",\"inputs\":[{\"name\":\"extraData\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIVotingPowerProvider.OperatorVotingPower[]\",\"components\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"vaults\",\"type\":\"tuple[]\",\"internalType\":\"structIVotingPowerProvider.VaultValue[]\",\"components\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVotingPowersAt\",\"inputs\":[{\"name\":\"extraData\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structIVotingPowerProvider.OperatorVotingPower[]\",\"components\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"vaults\",\"type\":\"tuple[]\",\"internalType\":\"structIVotingPowerProvider.VaultValue[]\",\"components\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hashTypedDataV4\",\"inputs\":[{\"name\":\"structHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hashTypedDataV4CrossChain\",\"inputs\":[{\"name\":\"structHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"invalidateOldSignatures\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"isOperatorRegistered\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperatorRegisteredAt\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperatorVaultRegistered\",\"inputs\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperatorVaultRegistered\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperatorVaultRegisteredAt\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperatorVaultRegisteredAt\",\"inputs\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isSharedVaultRegistered\",\"inputs\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isSharedVaultRegisteredAt\",\"inputs\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isTokenRegistered\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isTokenRegisteredAt\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"multicall\",\"inputs\":[{\"name\":\"data\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"outputs\":[{\"name\":\"results\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"nonces\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"registerOperator\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"registerOperatorWithSignature\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"stakeToVotingPower\",\"inputs\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"stake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"extraData\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"power\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"stakeToVotingPowerAt\",\"inputs\":[{\"name\":\"vault\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"stake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"extraData\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"power\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"staticDelegateCall\",\"inputs\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"unregisterOperator\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"unregisterOperatorWithSignature\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"EIP712DomainChanged\",\"inputs\":[],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitEIP712\",\"inputs\":[{\"name\":\"name\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"},{\"name\":\"version\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitSubnetwork\",\"inputs\":[{\"name\":\"network\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"subnetworkId\",\"type\":\"uint96\",\"indexed\":false,\"internalType\":\"uint96\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RegisterOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RegisterOperatorVault\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"vault\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RegisterSharedVault\",\"inputs\":[{\"name\":\"vault\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RegisterToken\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetSlashingData\",\"inputs\":[{\"name\":\"requireSlasher\",\"type\":\"bool\",\"indexed\":false,\"internalType\":\"bool\"},{\"name\":\"minVaultEpochDuration\",\"type\":\"uint48\",\"indexed\":false,\"internalType\":\"uint48\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"UnregisterOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"UnregisterOperatorVault\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"vault\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"UnregisterSharedVault\",\"inputs\":[{\"name\":\"vault\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"UnregisterToken\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AddressEmptyCode\",\"inputs\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"FailedCall\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidAccountNonce\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"currentNonce\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"type\":\"error\",\"name\":\"InvalidInitialization\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NetworkManager_InvalidNetwork\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotInitializing\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_InvalidOperator\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_InvalidOperatorVault\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_InvalidSharedVault\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_InvalidSignature\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_InvalidToken\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_InvalidVault\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_OperatorAlreadyRegistered\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_OperatorNotRegistered\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_OperatorVaultAlreadyIsRegistered\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_OperatorVaultNotRegistered\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_SharedVaultAlreadyIsRegistered\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_SharedVaultNotRegistered\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_TokenAlreadyIsRegistered\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VotingPowerProvider_TokenNotRegistered\",\"inputs\":[]}]",
 }
 
 // IVotingPowerProviderABI is the input ABI used to generate the binding from.
@@ -417,66 +417,66 @@ func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) Eip712Domain() (
 	return _IVotingPowerProvider.Contract.Eip712Domain(&_IVotingPowerProvider.CallOpts)
 }
 
-// GetOperatorStake is a free data retrieval call binding the contract method 0xff8726e7.
+// GetOperatorStakes is a free data retrieval call binding the contract method 0x93816a13.
 //
-// Solidity: function getOperatorStake(address vault, address operator) view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderCaller) GetOperatorStake(opts *bind.CallOpts, vault common.Address, operator common.Address) (*big.Int, error) {
+// Solidity: function getOperatorStakes(address operator) view returns((address,uint256)[])
+func (_IVotingPowerProvider *IVotingPowerProviderCaller) GetOperatorStakes(opts *bind.CallOpts, operator common.Address) ([]IVotingPowerProviderVaultValue, error) {
 	var out []interface{}
-	err := _IVotingPowerProvider.contract.Call(opts, &out, "getOperatorStake", vault, operator)
+	err := _IVotingPowerProvider.contract.Call(opts, &out, "getOperatorStakes", operator)
 
 	if err != nil {
-		return *new(*big.Int), err
+		return *new([]IVotingPowerProviderVaultValue), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	out0 := *abi.ConvertType(out[0], new([]IVotingPowerProviderVaultValue)).(*[]IVotingPowerProviderVaultValue)
 
 	return out0, err
 
 }
 
-// GetOperatorStake is a free data retrieval call binding the contract method 0xff8726e7.
+// GetOperatorStakes is a free data retrieval call binding the contract method 0x93816a13.
 //
-// Solidity: function getOperatorStake(address vault, address operator) view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderSession) GetOperatorStake(vault common.Address, operator common.Address) (*big.Int, error) {
-	return _IVotingPowerProvider.Contract.GetOperatorStake(&_IVotingPowerProvider.CallOpts, vault, operator)
+// Solidity: function getOperatorStakes(address operator) view returns((address,uint256)[])
+func (_IVotingPowerProvider *IVotingPowerProviderSession) GetOperatorStakes(operator common.Address) ([]IVotingPowerProviderVaultValue, error) {
+	return _IVotingPowerProvider.Contract.GetOperatorStakes(&_IVotingPowerProvider.CallOpts, operator)
 }
 
-// GetOperatorStake is a free data retrieval call binding the contract method 0xff8726e7.
+// GetOperatorStakes is a free data retrieval call binding the contract method 0x93816a13.
 //
-// Solidity: function getOperatorStake(address vault, address operator) view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) GetOperatorStake(vault common.Address, operator common.Address) (*big.Int, error) {
-	return _IVotingPowerProvider.Contract.GetOperatorStake(&_IVotingPowerProvider.CallOpts, vault, operator)
+// Solidity: function getOperatorStakes(address operator) view returns((address,uint256)[])
+func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) GetOperatorStakes(operator common.Address) ([]IVotingPowerProviderVaultValue, error) {
+	return _IVotingPowerProvider.Contract.GetOperatorStakes(&_IVotingPowerProvider.CallOpts, operator)
 }
 
-// GetOperatorStakeAt is a free data retrieval call binding the contract method 0xaadd3367.
+// GetOperatorStakesAt is a free data retrieval call binding the contract method 0xa54e116e.
 //
-// Solidity: function getOperatorStakeAt(address vault, address operator, uint48 timestamp, bytes hints) view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderCaller) GetOperatorStakeAt(opts *bind.CallOpts, vault common.Address, operator common.Address, timestamp *big.Int, hints []byte) (*big.Int, error) {
+// Solidity: function getOperatorStakesAt(address operator, uint48 timestamp) view returns((address,uint256)[])
+func (_IVotingPowerProvider *IVotingPowerProviderCaller) GetOperatorStakesAt(opts *bind.CallOpts, operator common.Address, timestamp *big.Int) ([]IVotingPowerProviderVaultValue, error) {
 	var out []interface{}
-	err := _IVotingPowerProvider.contract.Call(opts, &out, "getOperatorStakeAt", vault, operator, timestamp, hints)
+	err := _IVotingPowerProvider.contract.Call(opts, &out, "getOperatorStakesAt", operator, timestamp)
 
 	if err != nil {
-		return *new(*big.Int), err
+		return *new([]IVotingPowerProviderVaultValue), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	out0 := *abi.ConvertType(out[0], new([]IVotingPowerProviderVaultValue)).(*[]IVotingPowerProviderVaultValue)
 
 	return out0, err
 
 }
 
-// GetOperatorStakeAt is a free data retrieval call binding the contract method 0xaadd3367.
+// GetOperatorStakesAt is a free data retrieval call binding the contract method 0xa54e116e.
 //
-// Solidity: function getOperatorStakeAt(address vault, address operator, uint48 timestamp, bytes hints) view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderSession) GetOperatorStakeAt(vault common.Address, operator common.Address, timestamp *big.Int, hints []byte) (*big.Int, error) {
-	return _IVotingPowerProvider.Contract.GetOperatorStakeAt(&_IVotingPowerProvider.CallOpts, vault, operator, timestamp, hints)
+// Solidity: function getOperatorStakesAt(address operator, uint48 timestamp) view returns((address,uint256)[])
+func (_IVotingPowerProvider *IVotingPowerProviderSession) GetOperatorStakesAt(operator common.Address, timestamp *big.Int) ([]IVotingPowerProviderVaultValue, error) {
+	return _IVotingPowerProvider.Contract.GetOperatorStakesAt(&_IVotingPowerProvider.CallOpts, operator, timestamp)
 }
 
-// GetOperatorStakeAt is a free data retrieval call binding the contract method 0xaadd3367.
+// GetOperatorStakesAt is a free data retrieval call binding the contract method 0xa54e116e.
 //
-// Solidity: function getOperatorStakeAt(address vault, address operator, uint48 timestamp, bytes hints) view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) GetOperatorStakeAt(vault common.Address, operator common.Address, timestamp *big.Int, hints []byte) (*big.Int, error) {
-	return _IVotingPowerProvider.Contract.GetOperatorStakeAt(&_IVotingPowerProvider.CallOpts, vault, operator, timestamp, hints)
+// Solidity: function getOperatorStakesAt(address operator, uint48 timestamp) view returns((address,uint256)[])
+func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) GetOperatorStakesAt(operator common.Address, timestamp *big.Int) ([]IVotingPowerProviderVaultValue, error) {
+	return _IVotingPowerProvider.Contract.GetOperatorStakesAt(&_IVotingPowerProvider.CallOpts, operator, timestamp)
 }
 
 // GetOperatorVaults is a free data retrieval call binding the contract method 0x14d7e25b.
@@ -541,111 +541,18 @@ func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) GetOperatorVault
 	return _IVotingPowerProvider.Contract.GetOperatorVaultsAt(&_IVotingPowerProvider.CallOpts, operator, timestamp)
 }
 
-// GetOperatorVaultsLength is a free data retrieval call binding the contract method 0x743a461b.
-//
-// Solidity: function getOperatorVaultsLength(address operator) view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderCaller) GetOperatorVaultsLength(opts *bind.CallOpts, operator common.Address) (*big.Int, error) {
-	var out []interface{}
-	err := _IVotingPowerProvider.contract.Call(opts, &out, "getOperatorVaultsLength", operator)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// GetOperatorVaultsLength is a free data retrieval call binding the contract method 0x743a461b.
-//
-// Solidity: function getOperatorVaultsLength(address operator) view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderSession) GetOperatorVaultsLength(operator common.Address) (*big.Int, error) {
-	return _IVotingPowerProvider.Contract.GetOperatorVaultsLength(&_IVotingPowerProvider.CallOpts, operator)
-}
-
-// GetOperatorVaultsLength is a free data retrieval call binding the contract method 0x743a461b.
-//
-// Solidity: function getOperatorVaultsLength(address operator) view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) GetOperatorVaultsLength(operator common.Address) (*big.Int, error) {
-	return _IVotingPowerProvider.Contract.GetOperatorVaultsLength(&_IVotingPowerProvider.CallOpts, operator)
-}
-
-// GetOperatorVotingPower is a free data retrieval call binding the contract method 0x4130e52e.
-//
-// Solidity: function getOperatorVotingPower(address operator, address vault, bytes extraData) view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderCaller) GetOperatorVotingPower(opts *bind.CallOpts, operator common.Address, vault common.Address, extraData []byte) (*big.Int, error) {
-	var out []interface{}
-	err := _IVotingPowerProvider.contract.Call(opts, &out, "getOperatorVotingPower", operator, vault, extraData)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// GetOperatorVotingPower is a free data retrieval call binding the contract method 0x4130e52e.
-//
-// Solidity: function getOperatorVotingPower(address operator, address vault, bytes extraData) view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderSession) GetOperatorVotingPower(operator common.Address, vault common.Address, extraData []byte) (*big.Int, error) {
-	return _IVotingPowerProvider.Contract.GetOperatorVotingPower(&_IVotingPowerProvider.CallOpts, operator, vault, extraData)
-}
-
-// GetOperatorVotingPower is a free data retrieval call binding the contract method 0x4130e52e.
-//
-// Solidity: function getOperatorVotingPower(address operator, address vault, bytes extraData) view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) GetOperatorVotingPower(operator common.Address, vault common.Address, extraData []byte) (*big.Int, error) {
-	return _IVotingPowerProvider.Contract.GetOperatorVotingPower(&_IVotingPowerProvider.CallOpts, operator, vault, extraData)
-}
-
-// GetOperatorVotingPowerAt is a free data retrieval call binding the contract method 0xd38ef044.
-//
-// Solidity: function getOperatorVotingPowerAt(address operator, address vault, bytes extraData, uint48 timestamp, bytes hints) view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderCaller) GetOperatorVotingPowerAt(opts *bind.CallOpts, operator common.Address, vault common.Address, extraData []byte, timestamp *big.Int, hints []byte) (*big.Int, error) {
-	var out []interface{}
-	err := _IVotingPowerProvider.contract.Call(opts, &out, "getOperatorVotingPowerAt", operator, vault, extraData, timestamp, hints)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// GetOperatorVotingPowerAt is a free data retrieval call binding the contract method 0xd38ef044.
-//
-// Solidity: function getOperatorVotingPowerAt(address operator, address vault, bytes extraData, uint48 timestamp, bytes hints) view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderSession) GetOperatorVotingPowerAt(operator common.Address, vault common.Address, extraData []byte, timestamp *big.Int, hints []byte) (*big.Int, error) {
-	return _IVotingPowerProvider.Contract.GetOperatorVotingPowerAt(&_IVotingPowerProvider.CallOpts, operator, vault, extraData, timestamp, hints)
-}
-
-// GetOperatorVotingPowerAt is a free data retrieval call binding the contract method 0xd38ef044.
-//
-// Solidity: function getOperatorVotingPowerAt(address operator, address vault, bytes extraData, uint48 timestamp, bytes hints) view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) GetOperatorVotingPowerAt(operator common.Address, vault common.Address, extraData []byte, timestamp *big.Int, hints []byte) (*big.Int, error) {
-	return _IVotingPowerProvider.Contract.GetOperatorVotingPowerAt(&_IVotingPowerProvider.CallOpts, operator, vault, extraData, timestamp, hints)
-}
-
 // GetOperatorVotingPowers is a free data retrieval call binding the contract method 0x63ff1140.
 //
 // Solidity: function getOperatorVotingPowers(address operator, bytes extraData) view returns((address,uint256)[])
-func (_IVotingPowerProvider *IVotingPowerProviderCaller) GetOperatorVotingPowers(opts *bind.CallOpts, operator common.Address, extraData []byte) ([]IVotingPowerProviderVaultVotingPower, error) {
+func (_IVotingPowerProvider *IVotingPowerProviderCaller) GetOperatorVotingPowers(opts *bind.CallOpts, operator common.Address, extraData []byte) ([]IVotingPowerProviderVaultValue, error) {
 	var out []interface{}
 	err := _IVotingPowerProvider.contract.Call(opts, &out, "getOperatorVotingPowers", operator, extraData)
 
 	if err != nil {
-		return *new([]IVotingPowerProviderVaultVotingPower), err
+		return *new([]IVotingPowerProviderVaultValue), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([]IVotingPowerProviderVaultVotingPower)).(*[]IVotingPowerProviderVaultVotingPower)
+	out0 := *abi.ConvertType(out[0], new([]IVotingPowerProviderVaultValue)).(*[]IVotingPowerProviderVaultValue)
 
 	return out0, err
 
@@ -654,29 +561,29 @@ func (_IVotingPowerProvider *IVotingPowerProviderCaller) GetOperatorVotingPowers
 // GetOperatorVotingPowers is a free data retrieval call binding the contract method 0x63ff1140.
 //
 // Solidity: function getOperatorVotingPowers(address operator, bytes extraData) view returns((address,uint256)[])
-func (_IVotingPowerProvider *IVotingPowerProviderSession) GetOperatorVotingPowers(operator common.Address, extraData []byte) ([]IVotingPowerProviderVaultVotingPower, error) {
+func (_IVotingPowerProvider *IVotingPowerProviderSession) GetOperatorVotingPowers(operator common.Address, extraData []byte) ([]IVotingPowerProviderVaultValue, error) {
 	return _IVotingPowerProvider.Contract.GetOperatorVotingPowers(&_IVotingPowerProvider.CallOpts, operator, extraData)
 }
 
 // GetOperatorVotingPowers is a free data retrieval call binding the contract method 0x63ff1140.
 //
 // Solidity: function getOperatorVotingPowers(address operator, bytes extraData) view returns((address,uint256)[])
-func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) GetOperatorVotingPowers(operator common.Address, extraData []byte) ([]IVotingPowerProviderVaultVotingPower, error) {
+func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) GetOperatorVotingPowers(operator common.Address, extraData []byte) ([]IVotingPowerProviderVaultValue, error) {
 	return _IVotingPowerProvider.Contract.GetOperatorVotingPowers(&_IVotingPowerProvider.CallOpts, operator, extraData)
 }
 
 // GetOperatorVotingPowersAt is a free data retrieval call binding the contract method 0x380f9945.
 //
 // Solidity: function getOperatorVotingPowersAt(address operator, bytes extraData, uint48 timestamp) view returns((address,uint256)[])
-func (_IVotingPowerProvider *IVotingPowerProviderCaller) GetOperatorVotingPowersAt(opts *bind.CallOpts, operator common.Address, extraData []byte, timestamp *big.Int) ([]IVotingPowerProviderVaultVotingPower, error) {
+func (_IVotingPowerProvider *IVotingPowerProviderCaller) GetOperatorVotingPowersAt(opts *bind.CallOpts, operator common.Address, extraData []byte, timestamp *big.Int) ([]IVotingPowerProviderVaultValue, error) {
 	var out []interface{}
 	err := _IVotingPowerProvider.contract.Call(opts, &out, "getOperatorVotingPowersAt", operator, extraData, timestamp)
 
 	if err != nil {
-		return *new([]IVotingPowerProviderVaultVotingPower), err
+		return *new([]IVotingPowerProviderVaultValue), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([]IVotingPowerProviderVaultVotingPower)).(*[]IVotingPowerProviderVaultVotingPower)
+	out0 := *abi.ConvertType(out[0], new([]IVotingPowerProviderVaultValue)).(*[]IVotingPowerProviderVaultValue)
 
 	return out0, err
 
@@ -685,14 +592,14 @@ func (_IVotingPowerProvider *IVotingPowerProviderCaller) GetOperatorVotingPowers
 // GetOperatorVotingPowersAt is a free data retrieval call binding the contract method 0x380f9945.
 //
 // Solidity: function getOperatorVotingPowersAt(address operator, bytes extraData, uint48 timestamp) view returns((address,uint256)[])
-func (_IVotingPowerProvider *IVotingPowerProviderSession) GetOperatorVotingPowersAt(operator common.Address, extraData []byte, timestamp *big.Int) ([]IVotingPowerProviderVaultVotingPower, error) {
+func (_IVotingPowerProvider *IVotingPowerProviderSession) GetOperatorVotingPowersAt(operator common.Address, extraData []byte, timestamp *big.Int) ([]IVotingPowerProviderVaultValue, error) {
 	return _IVotingPowerProvider.Contract.GetOperatorVotingPowersAt(&_IVotingPowerProvider.CallOpts, operator, extraData, timestamp)
 }
 
 // GetOperatorVotingPowersAt is a free data retrieval call binding the contract method 0x380f9945.
 //
 // Solidity: function getOperatorVotingPowersAt(address operator, bytes extraData, uint48 timestamp) view returns((address,uint256)[])
-func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) GetOperatorVotingPowersAt(operator common.Address, extraData []byte, timestamp *big.Int) ([]IVotingPowerProviderVaultVotingPower, error) {
+func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) GetOperatorVotingPowersAt(operator common.Address, extraData []byte, timestamp *big.Int) ([]IVotingPowerProviderVaultValue, error) {
 	return _IVotingPowerProvider.Contract.GetOperatorVotingPowersAt(&_IVotingPowerProvider.CallOpts, operator, extraData, timestamp)
 }
 
@@ -758,37 +665,6 @@ func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) GetOperatorsAt(t
 	return _IVotingPowerProvider.Contract.GetOperatorsAt(&_IVotingPowerProvider.CallOpts, timestamp)
 }
 
-// GetOperatorsLength is a free data retrieval call binding the contract method 0xba24ecab.
-//
-// Solidity: function getOperatorsLength() view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderCaller) GetOperatorsLength(opts *bind.CallOpts) (*big.Int, error) {
-	var out []interface{}
-	err := _IVotingPowerProvider.contract.Call(opts, &out, "getOperatorsLength")
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// GetOperatorsLength is a free data retrieval call binding the contract method 0xba24ecab.
-//
-// Solidity: function getOperatorsLength() view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderSession) GetOperatorsLength() (*big.Int, error) {
-	return _IVotingPowerProvider.Contract.GetOperatorsLength(&_IVotingPowerProvider.CallOpts)
-}
-
-// GetOperatorsLength is a free data retrieval call binding the contract method 0xba24ecab.
-//
-// Solidity: function getOperatorsLength() view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) GetOperatorsLength() (*big.Int, error) {
-	return _IVotingPowerProvider.Contract.GetOperatorsLength(&_IVotingPowerProvider.CallOpts)
-}
-
 // GetSharedVaults is a free data retrieval call binding the contract method 0xc28474cd.
 //
 // Solidity: function getSharedVaults() view returns(address[])
@@ -851,66 +727,68 @@ func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) GetSharedVaultsA
 	return _IVotingPowerProvider.Contract.GetSharedVaultsAt(&_IVotingPowerProvider.CallOpts, timestamp)
 }
 
-// GetSharedVaultsLength is a free data retrieval call binding the contract method 0x0bfb3713.
+// GetSlashingData is a free data retrieval call binding the contract method 0xf7dfb974.
 //
-// Solidity: function getSharedVaultsLength() view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderCaller) GetSharedVaultsLength(opts *bind.CallOpts) (*big.Int, error) {
+// Solidity: function getSlashingData() view returns(bool, uint48)
+func (_IVotingPowerProvider *IVotingPowerProviderCaller) GetSlashingData(opts *bind.CallOpts) (bool, *big.Int, error) {
 	var out []interface{}
-	err := _IVotingPowerProvider.contract.Call(opts, &out, "getSharedVaultsLength")
+	err := _IVotingPowerProvider.contract.Call(opts, &out, "getSlashingData")
 
 	if err != nil {
-		return *new(*big.Int), err
+		return *new(bool), *new(*big.Int), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+	out1 := *abi.ConvertType(out[1], new(*big.Int)).(**big.Int)
 
-	return out0, err
+	return out0, out1, err
 
 }
 
-// GetSharedVaultsLength is a free data retrieval call binding the contract method 0x0bfb3713.
+// GetSlashingData is a free data retrieval call binding the contract method 0xf7dfb974.
 //
-// Solidity: function getSharedVaultsLength() view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderSession) GetSharedVaultsLength() (*big.Int, error) {
-	return _IVotingPowerProvider.Contract.GetSharedVaultsLength(&_IVotingPowerProvider.CallOpts)
+// Solidity: function getSlashingData() view returns(bool, uint48)
+func (_IVotingPowerProvider *IVotingPowerProviderSession) GetSlashingData() (bool, *big.Int, error) {
+	return _IVotingPowerProvider.Contract.GetSlashingData(&_IVotingPowerProvider.CallOpts)
 }
 
-// GetSharedVaultsLength is a free data retrieval call binding the contract method 0x0bfb3713.
+// GetSlashingData is a free data retrieval call binding the contract method 0xf7dfb974.
 //
-// Solidity: function getSharedVaultsLength() view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) GetSharedVaultsLength() (*big.Int, error) {
-	return _IVotingPowerProvider.Contract.GetSharedVaultsLength(&_IVotingPowerProvider.CallOpts)
+// Solidity: function getSlashingData() view returns(bool, uint48)
+func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) GetSlashingData() (bool, *big.Int, error) {
+	return _IVotingPowerProvider.Contract.GetSlashingData(&_IVotingPowerProvider.CallOpts)
 }
 
-// GetSlashingWindow is a free data retrieval call binding the contract method 0x4a4807b7.
+// GetSlashingDataAt is a free data retrieval call binding the contract method 0x7a74c7fd.
 //
-// Solidity: function getSlashingWindow() view returns(uint48)
-func (_IVotingPowerProvider *IVotingPowerProviderCaller) GetSlashingWindow(opts *bind.CallOpts) (*big.Int, error) {
+// Solidity: function getSlashingDataAt(uint48 timestamp, bytes hint) view returns(bool, uint48)
+func (_IVotingPowerProvider *IVotingPowerProviderCaller) GetSlashingDataAt(opts *bind.CallOpts, timestamp *big.Int, hint []byte) (bool, *big.Int, error) {
 	var out []interface{}
-	err := _IVotingPowerProvider.contract.Call(opts, &out, "getSlashingWindow")
+	err := _IVotingPowerProvider.contract.Call(opts, &out, "getSlashingDataAt", timestamp, hint)
 
 	if err != nil {
-		return *new(*big.Int), err
+		return *new(bool), *new(*big.Int), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+	out1 := *abi.ConvertType(out[1], new(*big.Int)).(**big.Int)
 
-	return out0, err
+	return out0, out1, err
 
 }
 
-// GetSlashingWindow is a free data retrieval call binding the contract method 0x4a4807b7.
+// GetSlashingDataAt is a free data retrieval call binding the contract method 0x7a74c7fd.
 //
-// Solidity: function getSlashingWindow() view returns(uint48)
-func (_IVotingPowerProvider *IVotingPowerProviderSession) GetSlashingWindow() (*big.Int, error) {
-	return _IVotingPowerProvider.Contract.GetSlashingWindow(&_IVotingPowerProvider.CallOpts)
+// Solidity: function getSlashingDataAt(uint48 timestamp, bytes hint) view returns(bool, uint48)
+func (_IVotingPowerProvider *IVotingPowerProviderSession) GetSlashingDataAt(timestamp *big.Int, hint []byte) (bool, *big.Int, error) {
+	return _IVotingPowerProvider.Contract.GetSlashingDataAt(&_IVotingPowerProvider.CallOpts, timestamp, hint)
 }
 
-// GetSlashingWindow is a free data retrieval call binding the contract method 0x4a4807b7.
+// GetSlashingDataAt is a free data retrieval call binding the contract method 0x7a74c7fd.
 //
-// Solidity: function getSlashingWindow() view returns(uint48)
-func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) GetSlashingWindow() (*big.Int, error) {
-	return _IVotingPowerProvider.Contract.GetSlashingWindow(&_IVotingPowerProvider.CallOpts)
+// Solidity: function getSlashingDataAt(uint48 timestamp, bytes hint) view returns(bool, uint48)
+func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) GetSlashingDataAt(timestamp *big.Int, hint []byte) (bool, *big.Int, error) {
+	return _IVotingPowerProvider.Contract.GetSlashingDataAt(&_IVotingPowerProvider.CallOpts, timestamp, hint)
 }
 
 // GetTokens is a free data retrieval call binding the contract method 0xaa6ca808.
@@ -973,37 +851,6 @@ func (_IVotingPowerProvider *IVotingPowerProviderSession) GetTokensAt(timestamp 
 // Solidity: function getTokensAt(uint48 timestamp) view returns(address[])
 func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) GetTokensAt(timestamp *big.Int) ([]common.Address, error) {
 	return _IVotingPowerProvider.Contract.GetTokensAt(&_IVotingPowerProvider.CallOpts, timestamp)
-}
-
-// GetTokensLength is a free data retrieval call binding the contract method 0xb0c26ecf.
-//
-// Solidity: function getTokensLength() view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderCaller) GetTokensLength(opts *bind.CallOpts) (*big.Int, error) {
-	var out []interface{}
-	err := _IVotingPowerProvider.contract.Call(opts, &out, "getTokensLength")
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// GetTokensLength is a free data retrieval call binding the contract method 0xb0c26ecf.
-//
-// Solidity: function getTokensLength() view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderSession) GetTokensLength() (*big.Int, error) {
-	return _IVotingPowerProvider.Contract.GetTokensLength(&_IVotingPowerProvider.CallOpts)
-}
-
-// GetTokensLength is a free data retrieval call binding the contract method 0xb0c26ecf.
-//
-// Solidity: function getTokensLength() view returns(uint256)
-func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) GetTokensLength() (*big.Int, error) {
-	return _IVotingPowerProvider.Contract.GetTokensLength(&_IVotingPowerProvider.CallOpts)
 }
 
 // GetVotingPowers is a free data retrieval call binding the contract method 0xff7cd71c.
@@ -1161,12 +1008,12 @@ func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) IsOperatorRegist
 	return _IVotingPowerProvider.Contract.IsOperatorRegistered(&_IVotingPowerProvider.CallOpts, operator)
 }
 
-// IsOperatorRegisteredAt is a free data retrieval call binding the contract method 0xf85ccf07.
+// IsOperatorRegisteredAt is a free data retrieval call binding the contract method 0x8a5aef51.
 //
-// Solidity: function isOperatorRegisteredAt(address operator, uint48 timestamp, bytes hint) view returns(bool)
-func (_IVotingPowerProvider *IVotingPowerProviderCaller) IsOperatorRegisteredAt(opts *bind.CallOpts, operator common.Address, timestamp *big.Int, hint []byte) (bool, error) {
+// Solidity: function isOperatorRegisteredAt(address operator, uint48 timestamp) view returns(bool)
+func (_IVotingPowerProvider *IVotingPowerProviderCaller) IsOperatorRegisteredAt(opts *bind.CallOpts, operator common.Address, timestamp *big.Int) (bool, error) {
 	var out []interface{}
-	err := _IVotingPowerProvider.contract.Call(opts, &out, "isOperatorRegisteredAt", operator, timestamp, hint)
+	err := _IVotingPowerProvider.contract.Call(opts, &out, "isOperatorRegisteredAt", operator, timestamp)
 
 	if err != nil {
 		return *new(bool), err
@@ -1178,18 +1025,18 @@ func (_IVotingPowerProvider *IVotingPowerProviderCaller) IsOperatorRegisteredAt(
 
 }
 
-// IsOperatorRegisteredAt is a free data retrieval call binding the contract method 0xf85ccf07.
+// IsOperatorRegisteredAt is a free data retrieval call binding the contract method 0x8a5aef51.
 //
-// Solidity: function isOperatorRegisteredAt(address operator, uint48 timestamp, bytes hint) view returns(bool)
-func (_IVotingPowerProvider *IVotingPowerProviderSession) IsOperatorRegisteredAt(operator common.Address, timestamp *big.Int, hint []byte) (bool, error) {
-	return _IVotingPowerProvider.Contract.IsOperatorRegisteredAt(&_IVotingPowerProvider.CallOpts, operator, timestamp, hint)
+// Solidity: function isOperatorRegisteredAt(address operator, uint48 timestamp) view returns(bool)
+func (_IVotingPowerProvider *IVotingPowerProviderSession) IsOperatorRegisteredAt(operator common.Address, timestamp *big.Int) (bool, error) {
+	return _IVotingPowerProvider.Contract.IsOperatorRegisteredAt(&_IVotingPowerProvider.CallOpts, operator, timestamp)
 }
 
-// IsOperatorRegisteredAt is a free data retrieval call binding the contract method 0xf85ccf07.
+// IsOperatorRegisteredAt is a free data retrieval call binding the contract method 0x8a5aef51.
 //
-// Solidity: function isOperatorRegisteredAt(address operator, uint48 timestamp, bytes hint) view returns(bool)
-func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) IsOperatorRegisteredAt(operator common.Address, timestamp *big.Int, hint []byte) (bool, error) {
-	return _IVotingPowerProvider.Contract.IsOperatorRegisteredAt(&_IVotingPowerProvider.CallOpts, operator, timestamp, hint)
+// Solidity: function isOperatorRegisteredAt(address operator, uint48 timestamp) view returns(bool)
+func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) IsOperatorRegisteredAt(operator common.Address, timestamp *big.Int) (bool, error) {
+	return _IVotingPowerProvider.Contract.IsOperatorRegisteredAt(&_IVotingPowerProvider.CallOpts, operator, timestamp)
 }
 
 // IsOperatorVaultRegistered is a free data retrieval call binding the contract method 0x0f6e0743.
@@ -1254,12 +1101,12 @@ func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) IsOperatorVaultR
 	return _IVotingPowerProvider.Contract.IsOperatorVaultRegistered0(&_IVotingPowerProvider.CallOpts, operator, vault)
 }
 
-// IsOperatorVaultRegisteredAt is a free data retrieval call binding the contract method 0x713b524c.
+// IsOperatorVaultRegisteredAt is a free data retrieval call binding the contract method 0xdae8f803.
 //
-// Solidity: function isOperatorVaultRegisteredAt(address vault, uint48 timestamp, bytes hint) view returns(bool)
-func (_IVotingPowerProvider *IVotingPowerProviderCaller) IsOperatorVaultRegisteredAt(opts *bind.CallOpts, vault common.Address, timestamp *big.Int, hint []byte) (bool, error) {
+// Solidity: function isOperatorVaultRegisteredAt(address operator, address vault, uint48 timestamp) view returns(bool)
+func (_IVotingPowerProvider *IVotingPowerProviderCaller) IsOperatorVaultRegisteredAt(opts *bind.CallOpts, operator common.Address, vault common.Address, timestamp *big.Int) (bool, error) {
 	var out []interface{}
-	err := _IVotingPowerProvider.contract.Call(opts, &out, "isOperatorVaultRegisteredAt", vault, timestamp, hint)
+	err := _IVotingPowerProvider.contract.Call(opts, &out, "isOperatorVaultRegisteredAt", operator, vault, timestamp)
 
 	if err != nil {
 		return *new(bool), err
@@ -1271,26 +1118,26 @@ func (_IVotingPowerProvider *IVotingPowerProviderCaller) IsOperatorVaultRegister
 
 }
 
-// IsOperatorVaultRegisteredAt is a free data retrieval call binding the contract method 0x713b524c.
+// IsOperatorVaultRegisteredAt is a free data retrieval call binding the contract method 0xdae8f803.
 //
-// Solidity: function isOperatorVaultRegisteredAt(address vault, uint48 timestamp, bytes hint) view returns(bool)
-func (_IVotingPowerProvider *IVotingPowerProviderSession) IsOperatorVaultRegisteredAt(vault common.Address, timestamp *big.Int, hint []byte) (bool, error) {
-	return _IVotingPowerProvider.Contract.IsOperatorVaultRegisteredAt(&_IVotingPowerProvider.CallOpts, vault, timestamp, hint)
+// Solidity: function isOperatorVaultRegisteredAt(address operator, address vault, uint48 timestamp) view returns(bool)
+func (_IVotingPowerProvider *IVotingPowerProviderSession) IsOperatorVaultRegisteredAt(operator common.Address, vault common.Address, timestamp *big.Int) (bool, error) {
+	return _IVotingPowerProvider.Contract.IsOperatorVaultRegisteredAt(&_IVotingPowerProvider.CallOpts, operator, vault, timestamp)
 }
 
-// IsOperatorVaultRegisteredAt is a free data retrieval call binding the contract method 0x713b524c.
+// IsOperatorVaultRegisteredAt is a free data retrieval call binding the contract method 0xdae8f803.
 //
-// Solidity: function isOperatorVaultRegisteredAt(address vault, uint48 timestamp, bytes hint) view returns(bool)
-func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) IsOperatorVaultRegisteredAt(vault common.Address, timestamp *big.Int, hint []byte) (bool, error) {
-	return _IVotingPowerProvider.Contract.IsOperatorVaultRegisteredAt(&_IVotingPowerProvider.CallOpts, vault, timestamp, hint)
+// Solidity: function isOperatorVaultRegisteredAt(address operator, address vault, uint48 timestamp) view returns(bool)
+func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) IsOperatorVaultRegisteredAt(operator common.Address, vault common.Address, timestamp *big.Int) (bool, error) {
+	return _IVotingPowerProvider.Contract.IsOperatorVaultRegisteredAt(&_IVotingPowerProvider.CallOpts, operator, vault, timestamp)
 }
 
-// IsOperatorVaultRegisteredAt0 is a free data retrieval call binding the contract method 0x846f139e.
+// IsOperatorVaultRegisteredAt0 is a free data retrieval call binding the contract method 0xf6c011de.
 //
-// Solidity: function isOperatorVaultRegisteredAt(address operator, address vault, uint48 timestamp, bytes hint) view returns(bool)
-func (_IVotingPowerProvider *IVotingPowerProviderCaller) IsOperatorVaultRegisteredAt0(opts *bind.CallOpts, operator common.Address, vault common.Address, timestamp *big.Int, hint []byte) (bool, error) {
+// Solidity: function isOperatorVaultRegisteredAt(address vault, uint48 timestamp) view returns(bool)
+func (_IVotingPowerProvider *IVotingPowerProviderCaller) IsOperatorVaultRegisteredAt0(opts *bind.CallOpts, vault common.Address, timestamp *big.Int) (bool, error) {
 	var out []interface{}
-	err := _IVotingPowerProvider.contract.Call(opts, &out, "isOperatorVaultRegisteredAt0", operator, vault, timestamp, hint)
+	err := _IVotingPowerProvider.contract.Call(opts, &out, "isOperatorVaultRegisteredAt0", vault, timestamp)
 
 	if err != nil {
 		return *new(bool), err
@@ -1302,18 +1149,18 @@ func (_IVotingPowerProvider *IVotingPowerProviderCaller) IsOperatorVaultRegister
 
 }
 
-// IsOperatorVaultRegisteredAt0 is a free data retrieval call binding the contract method 0x846f139e.
+// IsOperatorVaultRegisteredAt0 is a free data retrieval call binding the contract method 0xf6c011de.
 //
-// Solidity: function isOperatorVaultRegisteredAt(address operator, address vault, uint48 timestamp, bytes hint) view returns(bool)
-func (_IVotingPowerProvider *IVotingPowerProviderSession) IsOperatorVaultRegisteredAt0(operator common.Address, vault common.Address, timestamp *big.Int, hint []byte) (bool, error) {
-	return _IVotingPowerProvider.Contract.IsOperatorVaultRegisteredAt0(&_IVotingPowerProvider.CallOpts, operator, vault, timestamp, hint)
+// Solidity: function isOperatorVaultRegisteredAt(address vault, uint48 timestamp) view returns(bool)
+func (_IVotingPowerProvider *IVotingPowerProviderSession) IsOperatorVaultRegisteredAt0(vault common.Address, timestamp *big.Int) (bool, error) {
+	return _IVotingPowerProvider.Contract.IsOperatorVaultRegisteredAt0(&_IVotingPowerProvider.CallOpts, vault, timestamp)
 }
 
-// IsOperatorVaultRegisteredAt0 is a free data retrieval call binding the contract method 0x846f139e.
+// IsOperatorVaultRegisteredAt0 is a free data retrieval call binding the contract method 0xf6c011de.
 //
-// Solidity: function isOperatorVaultRegisteredAt(address operator, address vault, uint48 timestamp, bytes hint) view returns(bool)
-func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) IsOperatorVaultRegisteredAt0(operator common.Address, vault common.Address, timestamp *big.Int, hint []byte) (bool, error) {
-	return _IVotingPowerProvider.Contract.IsOperatorVaultRegisteredAt0(&_IVotingPowerProvider.CallOpts, operator, vault, timestamp, hint)
+// Solidity: function isOperatorVaultRegisteredAt(address vault, uint48 timestamp) view returns(bool)
+func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) IsOperatorVaultRegisteredAt0(vault common.Address, timestamp *big.Int) (bool, error) {
+	return _IVotingPowerProvider.Contract.IsOperatorVaultRegisteredAt0(&_IVotingPowerProvider.CallOpts, vault, timestamp)
 }
 
 // IsSharedVaultRegistered is a free data retrieval call binding the contract method 0x9a1ebee9.
@@ -1347,12 +1194,12 @@ func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) IsSharedVaultReg
 	return _IVotingPowerProvider.Contract.IsSharedVaultRegistered(&_IVotingPowerProvider.CallOpts, vault)
 }
 
-// IsSharedVaultRegisteredAt is a free data retrieval call binding the contract method 0xb827209d.
+// IsSharedVaultRegisteredAt is a free data retrieval call binding the contract method 0xe66e1ed2.
 //
-// Solidity: function isSharedVaultRegisteredAt(address vault, uint48 timestamp, bytes hint) view returns(bool)
-func (_IVotingPowerProvider *IVotingPowerProviderCaller) IsSharedVaultRegisteredAt(opts *bind.CallOpts, vault common.Address, timestamp *big.Int, hint []byte) (bool, error) {
+// Solidity: function isSharedVaultRegisteredAt(address vault, uint48 timestamp) view returns(bool)
+func (_IVotingPowerProvider *IVotingPowerProviderCaller) IsSharedVaultRegisteredAt(opts *bind.CallOpts, vault common.Address, timestamp *big.Int) (bool, error) {
 	var out []interface{}
-	err := _IVotingPowerProvider.contract.Call(opts, &out, "isSharedVaultRegisteredAt", vault, timestamp, hint)
+	err := _IVotingPowerProvider.contract.Call(opts, &out, "isSharedVaultRegisteredAt", vault, timestamp)
 
 	if err != nil {
 		return *new(bool), err
@@ -1364,18 +1211,18 @@ func (_IVotingPowerProvider *IVotingPowerProviderCaller) IsSharedVaultRegistered
 
 }
 
-// IsSharedVaultRegisteredAt is a free data retrieval call binding the contract method 0xb827209d.
+// IsSharedVaultRegisteredAt is a free data retrieval call binding the contract method 0xe66e1ed2.
 //
-// Solidity: function isSharedVaultRegisteredAt(address vault, uint48 timestamp, bytes hint) view returns(bool)
-func (_IVotingPowerProvider *IVotingPowerProviderSession) IsSharedVaultRegisteredAt(vault common.Address, timestamp *big.Int, hint []byte) (bool, error) {
-	return _IVotingPowerProvider.Contract.IsSharedVaultRegisteredAt(&_IVotingPowerProvider.CallOpts, vault, timestamp, hint)
+// Solidity: function isSharedVaultRegisteredAt(address vault, uint48 timestamp) view returns(bool)
+func (_IVotingPowerProvider *IVotingPowerProviderSession) IsSharedVaultRegisteredAt(vault common.Address, timestamp *big.Int) (bool, error) {
+	return _IVotingPowerProvider.Contract.IsSharedVaultRegisteredAt(&_IVotingPowerProvider.CallOpts, vault, timestamp)
 }
 
-// IsSharedVaultRegisteredAt is a free data retrieval call binding the contract method 0xb827209d.
+// IsSharedVaultRegisteredAt is a free data retrieval call binding the contract method 0xe66e1ed2.
 //
-// Solidity: function isSharedVaultRegisteredAt(address vault, uint48 timestamp, bytes hint) view returns(bool)
-func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) IsSharedVaultRegisteredAt(vault common.Address, timestamp *big.Int, hint []byte) (bool, error) {
-	return _IVotingPowerProvider.Contract.IsSharedVaultRegisteredAt(&_IVotingPowerProvider.CallOpts, vault, timestamp, hint)
+// Solidity: function isSharedVaultRegisteredAt(address vault, uint48 timestamp) view returns(bool)
+func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) IsSharedVaultRegisteredAt(vault common.Address, timestamp *big.Int) (bool, error) {
+	return _IVotingPowerProvider.Contract.IsSharedVaultRegisteredAt(&_IVotingPowerProvider.CallOpts, vault, timestamp)
 }
 
 // IsTokenRegistered is a free data retrieval call binding the contract method 0x26aa101f.
@@ -1409,12 +1256,12 @@ func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) IsTokenRegistere
 	return _IVotingPowerProvider.Contract.IsTokenRegistered(&_IVotingPowerProvider.CallOpts, token)
 }
 
-// IsTokenRegisteredAt is a free data retrieval call binding the contract method 0x1a416e7e.
+// IsTokenRegisteredAt is a free data retrieval call binding the contract method 0x6a496108.
 //
-// Solidity: function isTokenRegisteredAt(address token, uint48 timestamp, bytes hint) view returns(bool)
-func (_IVotingPowerProvider *IVotingPowerProviderCaller) IsTokenRegisteredAt(opts *bind.CallOpts, token common.Address, timestamp *big.Int, hint []byte) (bool, error) {
+// Solidity: function isTokenRegisteredAt(address token, uint48 timestamp) view returns(bool)
+func (_IVotingPowerProvider *IVotingPowerProviderCaller) IsTokenRegisteredAt(opts *bind.CallOpts, token common.Address, timestamp *big.Int) (bool, error) {
 	var out []interface{}
-	err := _IVotingPowerProvider.contract.Call(opts, &out, "isTokenRegisteredAt", token, timestamp, hint)
+	err := _IVotingPowerProvider.contract.Call(opts, &out, "isTokenRegisteredAt", token, timestamp)
 
 	if err != nil {
 		return *new(bool), err
@@ -1426,18 +1273,18 @@ func (_IVotingPowerProvider *IVotingPowerProviderCaller) IsTokenRegisteredAt(opt
 
 }
 
-// IsTokenRegisteredAt is a free data retrieval call binding the contract method 0x1a416e7e.
+// IsTokenRegisteredAt is a free data retrieval call binding the contract method 0x6a496108.
 //
-// Solidity: function isTokenRegisteredAt(address token, uint48 timestamp, bytes hint) view returns(bool)
-func (_IVotingPowerProvider *IVotingPowerProviderSession) IsTokenRegisteredAt(token common.Address, timestamp *big.Int, hint []byte) (bool, error) {
-	return _IVotingPowerProvider.Contract.IsTokenRegisteredAt(&_IVotingPowerProvider.CallOpts, token, timestamp, hint)
+// Solidity: function isTokenRegisteredAt(address token, uint48 timestamp) view returns(bool)
+func (_IVotingPowerProvider *IVotingPowerProviderSession) IsTokenRegisteredAt(token common.Address, timestamp *big.Int) (bool, error) {
+	return _IVotingPowerProvider.Contract.IsTokenRegisteredAt(&_IVotingPowerProvider.CallOpts, token, timestamp)
 }
 
-// IsTokenRegisteredAt is a free data retrieval call binding the contract method 0x1a416e7e.
+// IsTokenRegisteredAt is a free data retrieval call binding the contract method 0x6a496108.
 //
-// Solidity: function isTokenRegisteredAt(address token, uint48 timestamp, bytes hint) view returns(bool)
-func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) IsTokenRegisteredAt(token common.Address, timestamp *big.Int, hint []byte) (bool, error) {
-	return _IVotingPowerProvider.Contract.IsTokenRegisteredAt(&_IVotingPowerProvider.CallOpts, token, timestamp, hint)
+// Solidity: function isTokenRegisteredAt(address token, uint48 timestamp) view returns(bool)
+func (_IVotingPowerProvider *IVotingPowerProviderCallerSession) IsTokenRegisteredAt(token common.Address, timestamp *big.Int) (bool, error) {
+	return _IVotingPowerProvider.Contract.IsTokenRegisteredAt(&_IVotingPowerProvider.CallOpts, token, timestamp)
 }
 
 // Nonces is a free data retrieval call binding the contract method 0x7ecebe00.
@@ -1552,6 +1399,27 @@ func (_IVotingPowerProvider *IVotingPowerProviderSession) InvalidateOldSignature
 // Solidity: function invalidateOldSignatures() returns()
 func (_IVotingPowerProvider *IVotingPowerProviderTransactorSession) InvalidateOldSignatures() (*types.Transaction, error) {
 	return _IVotingPowerProvider.Contract.InvalidateOldSignatures(&_IVotingPowerProvider.TransactOpts)
+}
+
+// Multicall is a paid mutator transaction binding the contract method 0xac9650d8.
+//
+// Solidity: function multicall(bytes[] data) returns(bytes[] results)
+func (_IVotingPowerProvider *IVotingPowerProviderTransactor) Multicall(opts *bind.TransactOpts, data [][]byte) (*types.Transaction, error) {
+	return _IVotingPowerProvider.contract.Transact(opts, "multicall", data)
+}
+
+// Multicall is a paid mutator transaction binding the contract method 0xac9650d8.
+//
+// Solidity: function multicall(bytes[] data) returns(bytes[] results)
+func (_IVotingPowerProvider *IVotingPowerProviderSession) Multicall(data [][]byte) (*types.Transaction, error) {
+	return _IVotingPowerProvider.Contract.Multicall(&_IVotingPowerProvider.TransactOpts, data)
+}
+
+// Multicall is a paid mutator transaction binding the contract method 0xac9650d8.
+//
+// Solidity: function multicall(bytes[] data) returns(bytes[] results)
+func (_IVotingPowerProvider *IVotingPowerProviderTransactorSession) Multicall(data [][]byte) (*types.Transaction, error) {
+	return _IVotingPowerProvider.Contract.Multicall(&_IVotingPowerProvider.TransactOpts, data)
 }
 
 // RegisterOperator is a paid mutator transaction binding the contract method 0x2acde098.
@@ -1997,13 +1865,13 @@ func (it *IVotingPowerProviderInitSubnetworkIterator) Close() error {
 // IVotingPowerProviderInitSubnetwork represents a InitSubnetwork event raised by the IVotingPowerProvider contract.
 type IVotingPowerProviderInitSubnetwork struct {
 	Network      common.Address
-	SubnetworkID *big.Int
+	SubnetworkId *big.Int
 	Raw          types.Log // Blockchain specific contextual infos
 }
 
 // FilterInitSubnetwork is a free log retrieval operation binding the contract event 0x469c2e982e7d76d34cf5d1e72abee29749bb9971942c180e9023cea09f5f8e83.
 //
-// Solidity: event InitSubnetwork(address network, uint96 subnetworkID)
+// Solidity: event InitSubnetwork(address network, uint96 subnetworkId)
 func (_IVotingPowerProvider *IVotingPowerProviderFilterer) FilterInitSubnetwork(opts *bind.FilterOpts) (*IVotingPowerProviderInitSubnetworkIterator, error) {
 
 	logs, sub, err := _IVotingPowerProvider.contract.FilterLogs(opts, "InitSubnetwork")
@@ -2015,7 +1883,7 @@ func (_IVotingPowerProvider *IVotingPowerProviderFilterer) FilterInitSubnetwork(
 
 // WatchInitSubnetwork is a free log subscription operation binding the contract event 0x469c2e982e7d76d34cf5d1e72abee29749bb9971942c180e9023cea09f5f8e83.
 //
-// Solidity: event InitSubnetwork(address network, uint96 subnetworkID)
+// Solidity: event InitSubnetwork(address network, uint96 subnetworkId)
 func (_IVotingPowerProvider *IVotingPowerProviderFilterer) WatchInitSubnetwork(opts *bind.WatchOpts, sink chan<- *IVotingPowerProviderInitSubnetwork) (event.Subscription, error) {
 
 	logs, sub, err := _IVotingPowerProvider.contract.WatchLogs(opts, "InitSubnetwork")
@@ -2052,7 +1920,7 @@ func (_IVotingPowerProvider *IVotingPowerProviderFilterer) WatchInitSubnetwork(o
 
 // ParseInitSubnetwork is a log parse operation binding the contract event 0x469c2e982e7d76d34cf5d1e72abee29749bb9971942c180e9023cea09f5f8e83.
 //
-// Solidity: event InitSubnetwork(address network, uint96 subnetworkID)
+// Solidity: event InitSubnetwork(address network, uint96 subnetworkId)
 func (_IVotingPowerProvider *IVotingPowerProviderFilterer) ParseInitSubnetwork(log types.Log) (*IVotingPowerProviderInitSubnetwork, error) {
 	event := new(IVotingPowerProviderInitSubnetwork)
 	if err := _IVotingPowerProvider.contract.UnpackLog(event, "InitSubnetwork", log); err != nil {
@@ -2781,9 +2649,9 @@ func (_IVotingPowerProvider *IVotingPowerProviderFilterer) ParseRegisterToken(lo
 	return event, nil
 }
 
-// IVotingPowerProviderSetSlashingWindowIterator is returned from FilterSetSlashingWindow and is used to iterate over the raw logs and unpacked data for SetSlashingWindow events raised by the IVotingPowerProvider contract.
-type IVotingPowerProviderSetSlashingWindowIterator struct {
-	Event *IVotingPowerProviderSetSlashingWindow // Event containing the contract specifics and raw log
+// IVotingPowerProviderSetSlashingDataIterator is returned from FilterSetSlashingData and is used to iterate over the raw logs and unpacked data for SetSlashingData events raised by the IVotingPowerProvider contract.
+type IVotingPowerProviderSetSlashingDataIterator struct {
+	Event *IVotingPowerProviderSetSlashingData // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -2797,7 +2665,7 @@ type IVotingPowerProviderSetSlashingWindowIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IVotingPowerProviderSetSlashingWindowIterator) Next() bool {
+func (it *IVotingPowerProviderSetSlashingDataIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -2806,7 +2674,7 @@ func (it *IVotingPowerProviderSetSlashingWindowIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IVotingPowerProviderSetSlashingWindow)
+			it.Event = new(IVotingPowerProviderSetSlashingData)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -2821,7 +2689,7 @@ func (it *IVotingPowerProviderSetSlashingWindowIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IVotingPowerProviderSetSlashingWindow)
+		it.Event = new(IVotingPowerProviderSetSlashingData)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -2837,41 +2705,42 @@ func (it *IVotingPowerProviderSetSlashingWindowIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IVotingPowerProviderSetSlashingWindowIterator) Error() error {
+func (it *IVotingPowerProviderSetSlashingDataIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IVotingPowerProviderSetSlashingWindowIterator) Close() error {
+func (it *IVotingPowerProviderSetSlashingDataIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IVotingPowerProviderSetSlashingWindow represents a SetSlashingWindow event raised by the IVotingPowerProvider contract.
-type IVotingPowerProviderSetSlashingWindow struct {
-	SlashingWindow *big.Int
-	Raw            types.Log // Blockchain specific contextual infos
+// IVotingPowerProviderSetSlashingData represents a SetSlashingData event raised by the IVotingPowerProvider contract.
+type IVotingPowerProviderSetSlashingData struct {
+	RequireSlasher        bool
+	MinVaultEpochDuration *big.Int
+	Raw                   types.Log // Blockchain specific contextual infos
 }
 
-// FilterSetSlashingWindow is a free log retrieval operation binding the contract event 0x43a1beccb3450080dfa04b4af037ea2115e75a5749538480b77e933bdbff91f1.
+// FilterSetSlashingData is a free log retrieval operation binding the contract event 0xfa31c1b97ed96532301949e5fd34d2e059500b0de599195245ddf8fbfbb36db0.
 //
-// Solidity: event SetSlashingWindow(uint48 slashingWindow)
-func (_IVotingPowerProvider *IVotingPowerProviderFilterer) FilterSetSlashingWindow(opts *bind.FilterOpts) (*IVotingPowerProviderSetSlashingWindowIterator, error) {
+// Solidity: event SetSlashingData(bool requireSlasher, uint48 minVaultEpochDuration)
+func (_IVotingPowerProvider *IVotingPowerProviderFilterer) FilterSetSlashingData(opts *bind.FilterOpts) (*IVotingPowerProviderSetSlashingDataIterator, error) {
 
-	logs, sub, err := _IVotingPowerProvider.contract.FilterLogs(opts, "SetSlashingWindow")
+	logs, sub, err := _IVotingPowerProvider.contract.FilterLogs(opts, "SetSlashingData")
 	if err != nil {
 		return nil, err
 	}
-	return &IVotingPowerProviderSetSlashingWindowIterator{contract: _IVotingPowerProvider.contract, event: "SetSlashingWindow", logs: logs, sub: sub}, nil
+	return &IVotingPowerProviderSetSlashingDataIterator{contract: _IVotingPowerProvider.contract, event: "SetSlashingData", logs: logs, sub: sub}, nil
 }
 
-// WatchSetSlashingWindow is a free log subscription operation binding the contract event 0x43a1beccb3450080dfa04b4af037ea2115e75a5749538480b77e933bdbff91f1.
+// WatchSetSlashingData is a free log subscription operation binding the contract event 0xfa31c1b97ed96532301949e5fd34d2e059500b0de599195245ddf8fbfbb36db0.
 //
-// Solidity: event SetSlashingWindow(uint48 slashingWindow)
-func (_IVotingPowerProvider *IVotingPowerProviderFilterer) WatchSetSlashingWindow(opts *bind.WatchOpts, sink chan<- *IVotingPowerProviderSetSlashingWindow) (event.Subscription, error) {
+// Solidity: event SetSlashingData(bool requireSlasher, uint48 minVaultEpochDuration)
+func (_IVotingPowerProvider *IVotingPowerProviderFilterer) WatchSetSlashingData(opts *bind.WatchOpts, sink chan<- *IVotingPowerProviderSetSlashingData) (event.Subscription, error) {
 
-	logs, sub, err := _IVotingPowerProvider.contract.WatchLogs(opts, "SetSlashingWindow")
+	logs, sub, err := _IVotingPowerProvider.contract.WatchLogs(opts, "SetSlashingData")
 	if err != nil {
 		return nil, err
 	}
@@ -2881,8 +2750,8 @@ func (_IVotingPowerProvider *IVotingPowerProviderFilterer) WatchSetSlashingWindo
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IVotingPowerProviderSetSlashingWindow)
-				if err := _IVotingPowerProvider.contract.UnpackLog(event, "SetSlashingWindow", log); err != nil {
+				event := new(IVotingPowerProviderSetSlashingData)
+				if err := _IVotingPowerProvider.contract.UnpackLog(event, "SetSlashingData", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -2903,12 +2772,12 @@ func (_IVotingPowerProvider *IVotingPowerProviderFilterer) WatchSetSlashingWindo
 	}), nil
 }
 
-// ParseSetSlashingWindow is a log parse operation binding the contract event 0x43a1beccb3450080dfa04b4af037ea2115e75a5749538480b77e933bdbff91f1.
+// ParseSetSlashingData is a log parse operation binding the contract event 0xfa31c1b97ed96532301949e5fd34d2e059500b0de599195245ddf8fbfbb36db0.
 //
-// Solidity: event SetSlashingWindow(uint48 slashingWindow)
-func (_IVotingPowerProvider *IVotingPowerProviderFilterer) ParseSetSlashingWindow(log types.Log) (*IVotingPowerProviderSetSlashingWindow, error) {
-	event := new(IVotingPowerProviderSetSlashingWindow)
-	if err := _IVotingPowerProvider.contract.UnpackLog(event, "SetSlashingWindow", log); err != nil {
+// Solidity: event SetSlashingData(bool requireSlasher, uint48 minVaultEpochDuration)
+func (_IVotingPowerProvider *IVotingPowerProviderFilterer) ParseSetSlashingData(log types.Log) (*IVotingPowerProviderSetSlashingData, error) {
+	event := new(IVotingPowerProviderSetSlashingData)
+	if err := _IVotingPowerProvider.contract.UnpackLog(event, "SetSlashingData", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

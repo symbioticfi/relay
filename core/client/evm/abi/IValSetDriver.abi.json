@@ -78,10 +78,10 @@
   },
   {
     "type": "function",
-    "name": "addReplica",
+    "name": "addSettlement",
     "inputs": [
       {
-        "name": "replica",
+        "name": "settlement",
         "type": "tuple",
         "internalType": "struct IValSetDriver.CrossChainAddress",
         "components": [
@@ -137,6 +137,16 @@
         "internalType": "struct IValSetDriver.Config",
         "components": [
           {
+            "name": "numAggregators",
+            "type": "uint208",
+            "internalType": "uint208"
+          },
+          {
+            "name": "numCommitters",
+            "type": "uint208",
+            "internalType": "uint208"
+          },
+          {
             "name": "votingPowerProviders",
             "type": "tuple[]",
             "internalType": "struct IValSetDriver.CrossChainAddress[]",
@@ -171,7 +181,7 @@
             ]
           },
           {
-            "name": "replicas",
+            "name": "settlements",
             "type": "tuple[]",
             "internalType": "struct IValSetDriver.CrossChainAddress[]",
             "components": [
@@ -186,11 +196,6 @@
                 "internalType": "address"
               }
             ]
-          },
-          {
-            "name": "verificationType",
-            "type": "uint32",
-            "internalType": "uint32"
           },
           {
             "name": "maxVotingPower",
@@ -213,11 +218,6 @@
             "internalType": "uint8[]"
           },
           {
-            "name": "requiredHeaderKeyTag",
-            "type": "uint8",
-            "internalType": "uint8"
-          },
-          {
             "name": "quorumThresholds",
             "type": "tuple[]",
             "internalType": "struct IValSetDriver.QuorumThreshold[]",
@@ -233,6 +233,16 @@
                 "internalType": "uint248"
               }
             ]
+          },
+          {
+            "name": "requiredHeaderKeyTag",
+            "type": "uint8",
+            "internalType": "uint8"
+          },
+          {
+            "name": "verificationType",
+            "type": "uint32",
+            "internalType": "uint32"
           }
         ]
       }
@@ -256,6 +266,16 @@
         "internalType": "struct IValSetDriver.Config",
         "components": [
           {
+            "name": "numAggregators",
+            "type": "uint208",
+            "internalType": "uint208"
+          },
+          {
+            "name": "numCommitters",
+            "type": "uint208",
+            "internalType": "uint208"
+          },
+          {
             "name": "votingPowerProviders",
             "type": "tuple[]",
             "internalType": "struct IValSetDriver.CrossChainAddress[]",
@@ -290,7 +310,7 @@
             ]
           },
           {
-            "name": "replicas",
+            "name": "settlements",
             "type": "tuple[]",
             "internalType": "struct IValSetDriver.CrossChainAddress[]",
             "components": [
@@ -305,11 +325,6 @@
                 "internalType": "address"
               }
             ]
-          },
-          {
-            "name": "verificationType",
-            "type": "uint32",
-            "internalType": "uint32"
           },
           {
             "name": "maxVotingPower",
@@ -332,11 +347,6 @@
             "internalType": "uint8[]"
           },
           {
-            "name": "requiredHeaderKeyTag",
-            "type": "uint8",
-            "internalType": "uint8"
-          },
-          {
             "name": "quorumThresholds",
             "type": "tuple[]",
             "internalType": "struct IValSetDriver.QuorumThreshold[]",
@@ -352,6 +362,16 @@
                 "internalType": "uint248"
               }
             ]
+          },
+          {
+            "name": "requiredHeaderKeyTag",
+            "type": "uint8",
+            "internalType": "uint8"
+          },
+          {
+            "name": "verificationType",
+            "type": "uint32",
+            "internalType": "uint32"
           }
         ]
       }
@@ -405,11 +425,6 @@
         "name": "epoch",
         "type": "uint48",
         "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
       }
     ],
     "outputs": [
@@ -429,11 +444,6 @@
         "name": "timestamp",
         "type": "uint48",
         "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
       }
     ],
     "outputs": [
@@ -453,11 +463,6 @@
         "name": "epoch",
         "type": "uint48",
         "internalType": "uint48"
-      },
-      {
-        "name": "hint",
-        "type": "bytes",
-        "internalType": "bytes"
       }
     ],
     "outputs": [
@@ -662,6 +667,70 @@
   },
   {
     "type": "function",
+    "name": "getNumAggregators",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint208",
+        "internalType": "uint208"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getNumAggregatorsAt",
+    "inputs": [
+      {
+        "name": "timestamp",
+        "type": "uint48",
+        "internalType": "uint48"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint208",
+        "internalType": "uint208"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getNumCommitters",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint208",
+        "internalType": "uint208"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getNumCommittersAt",
+    "inputs": [
+      {
+        "name": "timestamp",
+        "type": "uint48",
+        "internalType": "uint48"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint208",
+        "internalType": "uint208"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "getQuorumThresholds",
     "inputs": [],
     "outputs": [
@@ -710,62 +779,6 @@
             "name": "quorumThreshold",
             "type": "uint248",
             "internalType": "uint248"
-          }
-        ]
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getReplicas",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "replicas",
-        "type": "tuple[]",
-        "internalType": "struct IValSetDriver.CrossChainAddress[]",
-        "components": [
-          {
-            "name": "chainId",
-            "type": "uint64",
-            "internalType": "uint64"
-          },
-          {
-            "name": "addr",
-            "type": "address",
-            "internalType": "address"
-          }
-        ]
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getReplicasAt",
-    "inputs": [
-      {
-        "name": "timestamp",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "replicas",
-        "type": "tuple[]",
-        "internalType": "struct IValSetDriver.CrossChainAddress[]",
-        "components": [
-          {
-            "name": "chainId",
-            "type": "uint64",
-            "internalType": "uint64"
-          },
-          {
-            "name": "addr",
-            "type": "address",
-            "internalType": "address"
           }
         ]
       }
@@ -832,6 +845,62 @@
         "name": "requiredKeyTags",
         "type": "uint8[]",
         "internalType": "uint8[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getSettlements",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "settlements",
+        "type": "tuple[]",
+        "internalType": "struct IValSetDriver.CrossChainAddress[]",
+        "components": [
+          {
+            "name": "chainId",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "addr",
+            "type": "address",
+            "internalType": "address"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getSettlementsAt",
+    "inputs": [
+      {
+        "name": "timestamp",
+        "type": "uint48",
+        "internalType": "uint48"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "settlements",
+        "type": "tuple[]",
+        "internalType": "struct IValSetDriver.CrossChainAddress[]",
+        "components": [
+          {
+            "name": "chainId",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "addr",
+            "type": "address",
+            "internalType": "address"
+          }
+        ]
       }
     ],
     "stateMutability": "view"
@@ -993,10 +1062,10 @@
   },
   {
     "type": "function",
-    "name": "isReplicaRegistered",
+    "name": "isSettlementRegistered",
     "inputs": [
       {
-        "name": "replica",
+        "name": "settlement",
         "type": "tuple",
         "internalType": "struct IValSetDriver.CrossChainAddress",
         "components": [
@@ -1024,10 +1093,10 @@
   },
   {
     "type": "function",
-    "name": "isReplicaRegisteredAt",
+    "name": "isSettlementRegisteredAt",
     "inputs": [
       {
-        "name": "replica",
+        "name": "settlement",
         "type": "tuple",
         "internalType": "struct IValSetDriver.CrossChainAddress",
         "components": [
@@ -1171,10 +1240,10 @@
   },
   {
     "type": "function",
-    "name": "removeReplica",
+    "name": "removeSettlement",
     "inputs": [
       {
-        "name": "replica",
+        "name": "settlement",
         "type": "tuple",
         "internalType": "struct IValSetDriver.CrossChainAddress",
         "components": [
@@ -1298,6 +1367,32 @@
   },
   {
     "type": "function",
+    "name": "setNumAggregators",
+    "inputs": [
+      {
+        "name": "numAggregators",
+        "type": "uint208",
+        "internalType": "uint208"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setNumCommitters",
+    "inputs": [
+      {
+        "name": "numCommitters",
+        "type": "uint208",
+        "internalType": "uint208"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "setRequiredHeaderKeyTag",
     "inputs": [
       {
@@ -1380,10 +1475,10 @@
   },
   {
     "type": "event",
-    "name": "AddReplica",
+    "name": "AddSettlement",
     "inputs": [
       {
-        "name": "replica",
+        "name": "settlement",
         "type": "tuple",
         "indexed": false,
         "internalType": "struct IValSetDriver.CrossChainAddress",
@@ -1458,7 +1553,7 @@
         "internalType": "address"
       },
       {
-        "name": "subnetworkID",
+        "name": "subnetworkId",
         "type": "uint96",
         "indexed": false,
         "internalType": "uint96"
@@ -1506,10 +1601,10 @@
   },
   {
     "type": "event",
-    "name": "RemoveReplica",
+    "name": "RemoveSettlement",
     "inputs": [
       {
-        "name": "replica",
+        "name": "settlement",
         "type": "tuple",
         "indexed": false,
         "internalType": "struct IValSetDriver.CrossChainAddress",
@@ -1633,6 +1728,32 @@
   },
   {
     "type": "event",
+    "name": "SetNumAggregators",
+    "inputs": [
+      {
+        "name": "numAggregators",
+        "type": "uint208",
+        "indexed": false,
+        "internalType": "uint208"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "SetNumCommitters",
+    "inputs": [
+      {
+        "name": "numCommitters",
+        "type": "uint208",
+        "indexed": false,
+        "internalType": "uint208"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "SetRequiredHeaderKeyTag",
     "inputs": [
       {
@@ -1688,12 +1809,12 @@
   },
   {
     "type": "error",
-    "name": "EpochManager_InvalidEpochDuration",
+    "name": "DuplicateKeyTag",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "EpochManager_InvalidEpochDurationIndex",
+    "name": "EpochManager_InvalidEpochDuration",
     "inputs": []
   },
   {
@@ -1703,7 +1824,7 @@
   },
   {
     "type": "error",
-    "name": "EpochManager_NoCheckpoint",
+    "name": "EpochManager_TooOldTimestamp",
     "inputs": []
   },
   {
@@ -1718,12 +1839,12 @@
   },
   {
     "type": "error",
-    "name": "KeyTags_Duplicate",
+    "name": "InvalidKey",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "KeyTags_InvalidKeyTag",
+    "name": "InvalidKeyTag",
     "inputs": []
   },
   {
@@ -1735,27 +1856,6 @@
     "type": "error",
     "name": "NotInitializing",
     "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "PersistentSet_InvalidKey",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "SafeCastOverflowedUintDowncast",
-    "inputs": [
-      {
-        "name": "bits",
-        "type": "uint8",
-        "internalType": "uint8"
-      },
-      {
-        "name": "value",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
   },
   {
     "type": "error",
@@ -1785,6 +1885,16 @@
   {
     "type": "error",
     "name": "ValSetDriver_NotAdded",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ValSetDriver_ZeroNumAggregators",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ValSetDriver_ZeroNumCommitters",
     "inputs": []
   }
 ]
