@@ -23,7 +23,7 @@ type SszValidator struct {
 	VotingPower *big.Int       `ssz-size:"32"`
 	IsActive    bool           `ssz-size:"1"`
 	Keys        []*SszKey      `ssz-max:"128"`
-	Vaults      []*SszVault    `ssz-max:"32"`
+	Vaults      []*SszVault    `ssz-max:"1024"`
 }
 
 type SszValidatorSet struct {
