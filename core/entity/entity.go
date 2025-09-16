@@ -297,9 +297,12 @@ type ValidatorVault struct {
 
 type Validators []Validator
 
-func (va Validators) SortByVotingPowerDesc() {
+func (va Validators) SortByVotingPowerDescAndOperatorAddressAsc() {
 	slices.SortFunc(va, func(a, b Validator) int {
-		return -a.VotingPower.Cmp(b.VotingPower.Int)
+		if cmp := -a.VotingPower.Cmp(b.VotingPower.Int); cmp != 0 {
+			return cmp
+		}
+		return a.Operator.Cmp(b.Operator)
 	})
 }
 
@@ -316,6 +319,23 @@ func (va Validators) CheckIsSortedByOperatorAddressAsc() error {
 		return errors.New("validators are not sorted by operator address ascending")
 	}
 	return nil
+}
+
+type Vaults []ValidatorVault
+
+func (v Vaults) SortByAddressAsc() {
+	slices.SortFunc(v, func(a, b ValidatorVault) int {
+		return a.Vault.Cmp(b.Vault)
+	})
+}
+
+func (v Vaults) SortVaultsByVotingPowerDescAndAddressAsc() {
+	slices.SortFunc(v, func(a, b ValidatorVault) int {
+		if cmp := -a.VotingPower.Cmp(b.VotingPower.Int); cmp != 0 {
+			return cmp
+		}
+		return a.Vault.Cmp(b.Vault)
+	})
 }
 
 func (va Validators) GetTotalActiveVotingPower() VotingPower {
@@ -340,11 +360,11 @@ func (va Validators) GetActiveValidators() Validators {
 }
 
 type Validator struct {
-	Operator    common.Address   `json:"operator"`
-	VotingPower VotingPower      `json:"votingPower"`
-	IsActive    bool             `json:"isActive"`
-	Keys        []ValidatorKey   `json:"keys"`
-	Vaults      []ValidatorVault `json:"vaults"`
+	Operator    common.Address `json:"operator"`
+	VotingPower VotingPower    `json:"votingPower"`
+	IsActive    bool           `json:"isActive"`
+	Keys        []ValidatorKey `json:"keys"`
+	Vaults      Vaults         `json:"vaults"`
 }
 
 func (v Validator) FindKeyByKeyTag(keyTag KeyTag) ([]byte, bool) {
