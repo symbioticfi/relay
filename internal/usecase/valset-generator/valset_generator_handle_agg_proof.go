@@ -2,7 +2,6 @@ package valset_generator
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"github.com/go-errors/errors"
