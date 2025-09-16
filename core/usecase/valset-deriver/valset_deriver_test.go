@@ -1044,7 +1044,6 @@ func TestDeriver_GetSchedulerInfo(t *testing.T) {
 
 			require.ElementsMatch(t, tt.expectedAggIndices, aggIndices)
 			require.ElementsMatch(t, tt.expectedCommIndices, commIndices)
-
 		})
 	}
 }
