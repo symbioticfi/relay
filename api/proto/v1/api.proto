@@ -40,6 +40,19 @@ service SymbioticAPIService {
   
   // Sign a message and wait for aggregation proof via stream
   rpc SignMessageWait(SignMessageWaitRequest) returns (stream SignMessageWaitResponse);
+
+  rpc GetNodeRole(GetNodeRoleRequest) returns (GetNodeRoleResponse);
+}
+
+// Request message for getting node role
+message GetNodeRoleRequest {
+  optional uint64 epoch = 1;
+}
+
+message GetNodeRoleResponse {
+  bool is_aggregator = 1;
+  bool is_commiter = 2;
+  bool is_signer = 3;
 }
 
 // Request message for signing a message

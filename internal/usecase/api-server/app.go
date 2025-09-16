@@ -12,6 +12,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
@@ -66,6 +67,7 @@ type Config struct {
 	Aggregator   aggregator
 	ServeMetrics bool
 	Metrics      *metrics.Metrics `validate:"required"`
+	KeyProvider  keyprovider.KeyProvider
 }
 
 func (c Config) Validate() error {

@@ -197,6 +197,111 @@ func (ErrorCode) EnumDescriptor() ([]byte, []int) {
 	return file_v1_api_proto_rawDescGZIP(), []int{2}
 }
 
+// Request message for getting node role
+type GetNodeRoleRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Epoch         *uint64                `protobuf:"varint,1,opt,name=epoch,proto3,oneof" json:"epoch,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetNodeRoleRequest) Reset() {
+	*x = GetNodeRoleRequest{}
+	mi := &file_v1_api_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetNodeRoleRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetNodeRoleRequest) ProtoMessage() {}
+
+func (x *GetNodeRoleRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_api_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetNodeRoleRequest.ProtoReflect.Descriptor instead.
+func (*GetNodeRoleRequest) Descriptor() ([]byte, []int) {
+	return file_v1_api_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *GetNodeRoleRequest) GetEpoch() uint64 {
+	if x != nil && x.Epoch != nil {
+		return *x.Epoch
+	}
+	return 0
+}
+
+type GetNodeRoleResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	IsAggregator  bool                   `protobuf:"varint,1,opt,name=is_aggregator,json=isAggregator,proto3" json:"is_aggregator,omitempty"`
+	IsCommiter    bool                   `protobuf:"varint,2,opt,name=is_commiter,json=isCommiter,proto3" json:"is_commiter,omitempty"`
+	IsSigner      bool                   `protobuf:"varint,3,opt,name=is_signer,json=isSigner,proto3" json:"is_signer,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetNodeRoleResponse) Reset() {
+	*x = GetNodeRoleResponse{}
+	mi := &file_v1_api_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetNodeRoleResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetNodeRoleResponse) ProtoMessage() {}
+
+func (x *GetNodeRoleResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_api_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetNodeRoleResponse.ProtoReflect.Descriptor instead.
+func (*GetNodeRoleResponse) Descriptor() ([]byte, []int) {
+	return file_v1_api_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *GetNodeRoleResponse) GetIsAggregator() bool {
+	if x != nil {
+		return x.IsAggregator
+	}
+	return false
+}
+
+func (x *GetNodeRoleResponse) GetIsCommiter() bool {
+	if x != nil {
+		return x.IsCommiter
+	}
+	return false
+}
+
+func (x *GetNodeRoleResponse) GetIsSigner() bool {
+	if x != nil {
+		return x.IsSigner
+	}
+	return false
+}
+
 // Request message for signing a message
 type SignMessageRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -212,7 +317,7 @@ type SignMessageRequest struct {
 
 func (x *SignMessageRequest) Reset() {
 	*x = SignMessageRequest{}
-	mi := &file_v1_api_proto_msgTypes[0]
+	mi := &file_v1_api_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -224,7 +329,7 @@ func (x *SignMessageRequest) String() string {
 func (*SignMessageRequest) ProtoMessage() {}
 
 func (x *SignMessageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[0]
+	mi := &file_v1_api_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -237,7 +342,7 @@ func (x *SignMessageRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignMessageRequest.ProtoReflect.Descriptor instead.
 func (*SignMessageRequest) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{0}
+	return file_v1_api_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *SignMessageRequest) GetKeyTag() uint32 {
@@ -276,7 +381,7 @@ type SignMessageWaitRequest struct {
 
 func (x *SignMessageWaitRequest) Reset() {
 	*x = SignMessageWaitRequest{}
-	mi := &file_v1_api_proto_msgTypes[1]
+	mi := &file_v1_api_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -288,7 +393,7 @@ func (x *SignMessageWaitRequest) String() string {
 func (*SignMessageWaitRequest) ProtoMessage() {}
 
 func (x *SignMessageWaitRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[1]
+	mi := &file_v1_api_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -301,7 +406,7 @@ func (x *SignMessageWaitRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignMessageWaitRequest.ProtoReflect.Descriptor instead.
 func (*SignMessageWaitRequest) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{1}
+	return file_v1_api_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *SignMessageWaitRequest) GetKeyTag() uint32 {
@@ -338,7 +443,7 @@ type SignMessageResponse struct {
 
 func (x *SignMessageResponse) Reset() {
 	*x = SignMessageResponse{}
-	mi := &file_v1_api_proto_msgTypes[2]
+	mi := &file_v1_api_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -350,7 +455,7 @@ func (x *SignMessageResponse) String() string {
 func (*SignMessageResponse) ProtoMessage() {}
 
 func (x *SignMessageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[2]
+	mi := &file_v1_api_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -363,7 +468,7 @@ func (x *SignMessageResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignMessageResponse.ProtoReflect.Descriptor instead.
 func (*SignMessageResponse) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{2}
+	return file_v1_api_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *SignMessageResponse) GetRequestHash() string {
@@ -397,7 +502,7 @@ type SignMessageWaitResponse struct {
 
 func (x *SignMessageWaitResponse) Reset() {
 	*x = SignMessageWaitResponse{}
-	mi := &file_v1_api_proto_msgTypes[3]
+	mi := &file_v1_api_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -409,7 +514,7 @@ func (x *SignMessageWaitResponse) String() string {
 func (*SignMessageWaitResponse) ProtoMessage() {}
 
 func (x *SignMessageWaitResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[3]
+	mi := &file_v1_api_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -422,7 +527,7 @@ func (x *SignMessageWaitResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignMessageWaitResponse.ProtoReflect.Descriptor instead.
 func (*SignMessageWaitResponse) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{3}
+	return file_v1_api_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *SignMessageWaitResponse) GetStatus() SigningStatus {
@@ -464,7 +569,7 @@ type GetAggregationProofRequest struct {
 
 func (x *GetAggregationProofRequest) Reset() {
 	*x = GetAggregationProofRequest{}
-	mi := &file_v1_api_proto_msgTypes[4]
+	mi := &file_v1_api_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -476,7 +581,7 @@ func (x *GetAggregationProofRequest) String() string {
 func (*GetAggregationProofRequest) ProtoMessage() {}
 
 func (x *GetAggregationProofRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[4]
+	mi := &file_v1_api_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -489,7 +594,7 @@ func (x *GetAggregationProofRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAggregationProofRequest.ProtoReflect.Descriptor instead.
 func (*GetAggregationProofRequest) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{4}
+	return file_v1_api_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetAggregationProofRequest) GetRequestHash() string {
@@ -508,7 +613,7 @@ type GetCurrentEpochRequest struct {
 
 func (x *GetCurrentEpochRequest) Reset() {
 	*x = GetCurrentEpochRequest{}
-	mi := &file_v1_api_proto_msgTypes[5]
+	mi := &file_v1_api_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -520,7 +625,7 @@ func (x *GetCurrentEpochRequest) String() string {
 func (*GetCurrentEpochRequest) ProtoMessage() {}
 
 func (x *GetCurrentEpochRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[5]
+	mi := &file_v1_api_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -533,7 +638,7 @@ func (x *GetCurrentEpochRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCurrentEpochRequest.ProtoReflect.Descriptor instead.
 func (*GetCurrentEpochRequest) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{5}
+	return file_v1_api_proto_rawDescGZIP(), []int{7}
 }
 
 // Request message for getting suggested epoch
@@ -545,7 +650,7 @@ type GetSuggestedEpochRequest struct {
 
 func (x *GetSuggestedEpochRequest) Reset() {
 	*x = GetSuggestedEpochRequest{}
-	mi := &file_v1_api_proto_msgTypes[6]
+	mi := &file_v1_api_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -557,7 +662,7 @@ func (x *GetSuggestedEpochRequest) String() string {
 func (*GetSuggestedEpochRequest) ProtoMessage() {}
 
 func (x *GetSuggestedEpochRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[6]
+	mi := &file_v1_api_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -570,7 +675,7 @@ func (x *GetSuggestedEpochRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSuggestedEpochRequest.ProtoReflect.Descriptor instead.
 func (*GetSuggestedEpochRequest) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{6}
+	return file_v1_api_proto_rawDescGZIP(), []int{8}
 }
 
 // Request message for getting signatures
@@ -584,7 +689,7 @@ type GetSignaturesRequest struct {
 
 func (x *GetSignaturesRequest) Reset() {
 	*x = GetSignaturesRequest{}
-	mi := &file_v1_api_proto_msgTypes[7]
+	mi := &file_v1_api_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -596,7 +701,7 @@ func (x *GetSignaturesRequest) String() string {
 func (*GetSignaturesRequest) ProtoMessage() {}
 
 func (x *GetSignaturesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[7]
+	mi := &file_v1_api_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -609,7 +714,7 @@ func (x *GetSignaturesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSignaturesRequest.ProtoReflect.Descriptor instead.
 func (*GetSignaturesRequest) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{7}
+	return file_v1_api_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GetSignaturesRequest) GetRequestHash() string {
@@ -630,7 +735,7 @@ type GetSignaturesResponse struct {
 
 func (x *GetSignaturesResponse) Reset() {
 	*x = GetSignaturesResponse{}
-	mi := &file_v1_api_proto_msgTypes[8]
+	mi := &file_v1_api_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -642,7 +747,7 @@ func (x *GetSignaturesResponse) String() string {
 func (*GetSignaturesResponse) ProtoMessage() {}
 
 func (x *GetSignaturesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[8]
+	mi := &file_v1_api_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -655,7 +760,7 @@ func (x *GetSignaturesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSignaturesResponse.ProtoReflect.Descriptor instead.
 func (*GetSignaturesResponse) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{8}
+	return file_v1_api_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GetSignaturesResponse) GetSignatures() []*Signature {
@@ -676,7 +781,7 @@ type GetSignatureRequestRequest struct {
 
 func (x *GetSignatureRequestRequest) Reset() {
 	*x = GetSignatureRequestRequest{}
-	mi := &file_v1_api_proto_msgTypes[9]
+	mi := &file_v1_api_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -688,7 +793,7 @@ func (x *GetSignatureRequestRequest) String() string {
 func (*GetSignatureRequestRequest) ProtoMessage() {}
 
 func (x *GetSignatureRequestRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[9]
+	mi := &file_v1_api_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -701,7 +806,7 @@ func (x *GetSignatureRequestRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSignatureRequestRequest.ProtoReflect.Descriptor instead.
 func (*GetSignatureRequestRequest) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{9}
+	return file_v1_api_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GetSignatureRequestRequest) GetRequestHash() string {
@@ -722,7 +827,7 @@ type GetAggregationStatusRequest struct {
 
 func (x *GetAggregationStatusRequest) Reset() {
 	*x = GetAggregationStatusRequest{}
-	mi := &file_v1_api_proto_msgTypes[10]
+	mi := &file_v1_api_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -734,7 +839,7 @@ func (x *GetAggregationStatusRequest) String() string {
 func (*GetAggregationStatusRequest) ProtoMessage() {}
 
 func (x *GetAggregationStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[10]
+	mi := &file_v1_api_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -747,7 +852,7 @@ func (x *GetAggregationStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAggregationStatusRequest.ProtoReflect.Descriptor instead.
 func (*GetAggregationStatusRequest) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{10}
+	return file_v1_api_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GetAggregationStatusRequest) GetRequestHash() string {
@@ -768,7 +873,7 @@ type GetValidatorSetRequest struct {
 
 func (x *GetValidatorSetRequest) Reset() {
 	*x = GetValidatorSetRequest{}
-	mi := &file_v1_api_proto_msgTypes[11]
+	mi := &file_v1_api_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -780,7 +885,7 @@ func (x *GetValidatorSetRequest) String() string {
 func (*GetValidatorSetRequest) ProtoMessage() {}
 
 func (x *GetValidatorSetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[11]
+	mi := &file_v1_api_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -793,7 +898,7 @@ func (x *GetValidatorSetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetValidatorSetRequest.ProtoReflect.Descriptor instead.
 func (*GetValidatorSetRequest) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{11}
+	return file_v1_api_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *GetValidatorSetRequest) GetEpoch() uint64 {
@@ -816,7 +921,7 @@ type GetValidatorByAddressRequest struct {
 
 func (x *GetValidatorByAddressRequest) Reset() {
 	*x = GetValidatorByAddressRequest{}
-	mi := &file_v1_api_proto_msgTypes[12]
+	mi := &file_v1_api_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -828,7 +933,7 @@ func (x *GetValidatorByAddressRequest) String() string {
 func (*GetValidatorByAddressRequest) ProtoMessage() {}
 
 func (x *GetValidatorByAddressRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[12]
+	mi := &file_v1_api_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -841,7 +946,7 @@ func (x *GetValidatorByAddressRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetValidatorByAddressRequest.ProtoReflect.Descriptor instead.
 func (*GetValidatorByAddressRequest) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{12}
+	return file_v1_api_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *GetValidatorByAddressRequest) GetEpoch() uint64 {
@@ -869,7 +974,7 @@ type GetValidatorSetHeaderRequest struct {
 
 func (x *GetValidatorSetHeaderRequest) Reset() {
 	*x = GetValidatorSetHeaderRequest{}
-	mi := &file_v1_api_proto_msgTypes[13]
+	mi := &file_v1_api_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -881,7 +986,7 @@ func (x *GetValidatorSetHeaderRequest) String() string {
 func (*GetValidatorSetHeaderRequest) ProtoMessage() {}
 
 func (x *GetValidatorSetHeaderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[13]
+	mi := &file_v1_api_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -894,7 +999,7 @@ func (x *GetValidatorSetHeaderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetValidatorSetHeaderRequest.ProtoReflect.Descriptor instead.
 func (*GetValidatorSetHeaderRequest) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{13}
+	return file_v1_api_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *GetValidatorSetHeaderRequest) GetEpoch() uint64 {
@@ -917,7 +1022,7 @@ type GetCurrentEpochResponse struct {
 
 func (x *GetCurrentEpochResponse) Reset() {
 	*x = GetCurrentEpochResponse{}
-	mi := &file_v1_api_proto_msgTypes[14]
+	mi := &file_v1_api_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -929,7 +1034,7 @@ func (x *GetCurrentEpochResponse) String() string {
 func (*GetCurrentEpochResponse) ProtoMessage() {}
 
 func (x *GetCurrentEpochResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[14]
+	mi := &file_v1_api_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -942,7 +1047,7 @@ func (x *GetCurrentEpochResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCurrentEpochResponse.ProtoReflect.Descriptor instead.
 func (*GetCurrentEpochResponse) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{14}
+	return file_v1_api_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *GetCurrentEpochResponse) GetEpoch() uint64 {
@@ -972,7 +1077,7 @@ type GetSuggestedEpochResponse struct {
 
 func (x *GetSuggestedEpochResponse) Reset() {
 	*x = GetSuggestedEpochResponse{}
-	mi := &file_v1_api_proto_msgTypes[15]
+	mi := &file_v1_api_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -984,7 +1089,7 @@ func (x *GetSuggestedEpochResponse) String() string {
 func (*GetSuggestedEpochResponse) ProtoMessage() {}
 
 func (x *GetSuggestedEpochResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[15]
+	mi := &file_v1_api_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -997,7 +1102,7 @@ func (x *GetSuggestedEpochResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSuggestedEpochResponse.ProtoReflect.Descriptor instead.
 func (*GetSuggestedEpochResponse) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{15}
+	return file_v1_api_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *GetSuggestedEpochResponse) GetEpoch() uint64 {
@@ -1029,7 +1134,7 @@ type GetSignatureRequestResponse struct {
 
 func (x *GetSignatureRequestResponse) Reset() {
 	*x = GetSignatureRequestResponse{}
-	mi := &file_v1_api_proto_msgTypes[16]
+	mi := &file_v1_api_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1041,7 +1146,7 @@ func (x *GetSignatureRequestResponse) String() string {
 func (*GetSignatureRequestResponse) ProtoMessage() {}
 
 func (x *GetSignatureRequestResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[16]
+	mi := &file_v1_api_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1054,7 +1159,7 @@ func (x *GetSignatureRequestResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSignatureRequestResponse.ProtoReflect.Descriptor instead.
 func (*GetSignatureRequestResponse) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{16}
+	return file_v1_api_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *GetSignatureRequestResponse) GetKeyTag() uint32 {
@@ -1088,7 +1193,7 @@ type GetAggregationProofResponse struct {
 
 func (x *GetAggregationProofResponse) Reset() {
 	*x = GetAggregationProofResponse{}
-	mi := &file_v1_api_proto_msgTypes[17]
+	mi := &file_v1_api_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1100,7 +1205,7 @@ func (x *GetAggregationProofResponse) String() string {
 func (*GetAggregationProofResponse) ProtoMessage() {}
 
 func (x *GetAggregationProofResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[17]
+	mi := &file_v1_api_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1113,7 +1218,7 @@ func (x *GetAggregationProofResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAggregationProofResponse.ProtoReflect.Descriptor instead.
 func (*GetAggregationProofResponse) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{17}
+	return file_v1_api_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *GetAggregationProofResponse) GetAggregationProof() *AggregationProof {
@@ -1138,7 +1243,7 @@ type AggregationProof struct {
 
 func (x *AggregationProof) Reset() {
 	*x = AggregationProof{}
-	mi := &file_v1_api_proto_msgTypes[18]
+	mi := &file_v1_api_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1150,7 +1255,7 @@ func (x *AggregationProof) String() string {
 func (*AggregationProof) ProtoMessage() {}
 
 func (x *AggregationProof) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[18]
+	mi := &file_v1_api_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1163,7 +1268,7 @@ func (x *AggregationProof) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AggregationProof.ProtoReflect.Descriptor instead.
 func (*AggregationProof) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{18}
+	return file_v1_api_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *AggregationProof) GetVerificationType() uint32 {
@@ -1200,7 +1305,7 @@ type GetAggregationStatusResponse struct {
 
 func (x *GetAggregationStatusResponse) Reset() {
 	*x = GetAggregationStatusResponse{}
-	mi := &file_v1_api_proto_msgTypes[19]
+	mi := &file_v1_api_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1212,7 +1317,7 @@ func (x *GetAggregationStatusResponse) String() string {
 func (*GetAggregationStatusResponse) ProtoMessage() {}
 
 func (x *GetAggregationStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[19]
+	mi := &file_v1_api_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1225,7 +1330,7 @@ func (x *GetAggregationStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAggregationStatusResponse.ProtoReflect.Descriptor instead.
 func (*GetAggregationStatusResponse) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{19}
+	return file_v1_api_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *GetAggregationStatusResponse) GetCurrentVotingPower() string {
@@ -1257,7 +1362,7 @@ type Signature struct {
 
 func (x *Signature) Reset() {
 	*x = Signature{}
-	mi := &file_v1_api_proto_msgTypes[20]
+	mi := &file_v1_api_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1269,7 +1374,7 @@ func (x *Signature) String() string {
 func (*Signature) ProtoMessage() {}
 
 func (x *Signature) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[20]
+	mi := &file_v1_api_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1282,7 +1387,7 @@ func (x *Signature) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Signature.ProtoReflect.Descriptor instead.
 func (*Signature) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{20}
+	return file_v1_api_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *Signature) GetSignature() []byte {
@@ -1329,7 +1434,7 @@ type GetValidatorSetResponse struct {
 
 func (x *GetValidatorSetResponse) Reset() {
 	*x = GetValidatorSetResponse{}
-	mi := &file_v1_api_proto_msgTypes[21]
+	mi := &file_v1_api_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1341,7 +1446,7 @@ func (x *GetValidatorSetResponse) String() string {
 func (*GetValidatorSetResponse) ProtoMessage() {}
 
 func (x *GetValidatorSetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[21]
+	mi := &file_v1_api_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1354,7 +1459,7 @@ func (x *GetValidatorSetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetValidatorSetResponse.ProtoReflect.Descriptor instead.
 func (*GetValidatorSetResponse) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{21}
+	return file_v1_api_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *GetValidatorSetResponse) GetVersion() uint32 {
@@ -1417,7 +1522,7 @@ type GetValidatorByAddressResponse struct {
 
 func (x *GetValidatorByAddressResponse) Reset() {
 	*x = GetValidatorByAddressResponse{}
-	mi := &file_v1_api_proto_msgTypes[22]
+	mi := &file_v1_api_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1429,7 +1534,7 @@ func (x *GetValidatorByAddressResponse) String() string {
 func (*GetValidatorByAddressResponse) ProtoMessage() {}
 
 func (x *GetValidatorByAddressResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[22]
+	mi := &file_v1_api_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1442,7 +1547,7 @@ func (x *GetValidatorByAddressResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetValidatorByAddressResponse.ProtoReflect.Descriptor instead.
 func (*GetValidatorByAddressResponse) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{22}
+	return file_v1_api_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *GetValidatorByAddressResponse) GetValidator() *Validator {
@@ -1475,7 +1580,7 @@ type GetValidatorSetHeaderResponse struct {
 
 func (x *GetValidatorSetHeaderResponse) Reset() {
 	*x = GetValidatorSetHeaderResponse{}
-	mi := &file_v1_api_proto_msgTypes[23]
+	mi := &file_v1_api_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1487,7 +1592,7 @@ func (x *GetValidatorSetHeaderResponse) String() string {
 func (*GetValidatorSetHeaderResponse) ProtoMessage() {}
 
 func (x *GetValidatorSetHeaderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[23]
+	mi := &file_v1_api_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1500,7 +1605,7 @@ func (x *GetValidatorSetHeaderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetValidatorSetHeaderResponse.ProtoReflect.Descriptor instead.
 func (*GetValidatorSetHeaderResponse) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{23}
+	return file_v1_api_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *GetValidatorSetHeaderResponse) GetVersion() uint32 {
@@ -1571,7 +1676,7 @@ type Validator struct {
 
 func (x *Validator) Reset() {
 	*x = Validator{}
-	mi := &file_v1_api_proto_msgTypes[24]
+	mi := &file_v1_api_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1583,7 +1688,7 @@ func (x *Validator) String() string {
 func (*Validator) ProtoMessage() {}
 
 func (x *Validator) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[24]
+	mi := &file_v1_api_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1596,7 +1701,7 @@ func (x *Validator) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Validator.ProtoReflect.Descriptor instead.
 func (*Validator) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{24}
+	return file_v1_api_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *Validator) GetOperator() string {
@@ -1647,7 +1752,7 @@ type Key struct {
 
 func (x *Key) Reset() {
 	*x = Key{}
-	mi := &file_v1_api_proto_msgTypes[25]
+	mi := &file_v1_api_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1659,7 +1764,7 @@ func (x *Key) String() string {
 func (*Key) ProtoMessage() {}
 
 func (x *Key) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[25]
+	mi := &file_v1_api_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1672,7 +1777,7 @@ func (x *Key) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Key.ProtoReflect.Descriptor instead.
 func (*Key) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{25}
+	return file_v1_api_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *Key) GetTag() uint32 {
@@ -1704,7 +1809,7 @@ type ValidatorVault struct {
 
 func (x *ValidatorVault) Reset() {
 	*x = ValidatorVault{}
-	mi := &file_v1_api_proto_msgTypes[26]
+	mi := &file_v1_api_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1716,7 +1821,7 @@ func (x *ValidatorVault) String() string {
 func (*ValidatorVault) ProtoMessage() {}
 
 func (x *ValidatorVault) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_api_proto_msgTypes[26]
+	mi := &file_v1_api_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1729,7 +1834,7 @@ func (x *ValidatorVault) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidatorVault.ProtoReflect.Descriptor instead.
 func (*ValidatorVault) Descriptor() ([]byte, []int) {
-	return file_v1_api_proto_rawDescGZIP(), []int{26}
+	return file_v1_api_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *ValidatorVault) GetChainId() uint64 {
@@ -1757,7 +1862,15 @@ var File_v1_api_proto protoreflect.FileDescriptor
 
 const file_v1_api_proto_rawDesc = "" +
 	"\n" +
-	"\fv1/api.proto\x12\fapi.proto.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x86\x01\n" +
+	"\fv1/api.proto\x12\fapi.proto.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"9\n" +
+	"\x12GetNodeRoleRequest\x12\x19\n" +
+	"\x05epoch\x18\x01 \x01(\x04H\x00R\x05epoch\x88\x01\x01B\b\n" +
+	"\x06_epoch\"x\n" +
+	"\x13GetNodeRoleResponse\x12#\n" +
+	"\ris_aggregator\x18\x01 \x01(\bR\fisAggregator\x12\x1f\n" +
+	"\vis_commiter\x18\x02 \x01(\bR\n" +
+	"isCommiter\x12\x1b\n" +
+	"\tis_signer\x18\x03 \x01(\bR\bisSigner\"\x86\x01\n" +
 	"\x12SignMessageRequest\x12\x17\n" +
 	"\akey_tag\x18\x01 \x01(\rR\x06keyTag\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\fR\amessage\x12*\n" +
@@ -1875,7 +1988,7 @@ const file_v1_api_proto_rawDesc = "" +
 	"\x16ERROR_CODE_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12ERROR_CODE_NO_DATA\x10\x01\x12\x17\n" +
 	"\x13ERROR_CODE_INTERNAL\x10\x02\x12\x1d\n" +
-	"\x19ERROR_CODE_NOT_AGGREGATOR\x10\x032\xf6\b\n" +
+	"\x19ERROR_CODE_NOT_AGGREGATOR\x10\x032\xca\t\n" +
 	"\x13SymbioticAPIService\x12R\n" +
 	"\vSignMessage\x12 .api.proto.v1.SignMessageRequest\x1a!.api.proto.v1.SignMessageResponse\x12j\n" +
 	"\x13GetAggregationProof\x12(.api.proto.v1.GetAggregationProofRequest\x1a).api.proto.v1.GetAggregationProofResponse\x12^\n" +
@@ -1887,7 +2000,8 @@ const file_v1_api_proto_rawDesc = "" +
 	"\x0fGetValidatorSet\x12$.api.proto.v1.GetValidatorSetRequest\x1a%.api.proto.v1.GetValidatorSetResponse\x12p\n" +
 	"\x15GetValidatorByAddress\x12*.api.proto.v1.GetValidatorByAddressRequest\x1a+.api.proto.v1.GetValidatorByAddressResponse\x12p\n" +
 	"\x15GetValidatorSetHeader\x12*.api.proto.v1.GetValidatorSetHeaderRequest\x1a+.api.proto.v1.GetValidatorSetHeaderResponse\x12`\n" +
-	"\x0fSignMessageWait\x12$.api.proto.v1.SignMessageWaitRequest\x1a%.api.proto.v1.SignMessageWaitResponse0\x01B\x99\x01\n" +
+	"\x0fSignMessageWait\x12$.api.proto.v1.SignMessageWaitRequest\x1a%.api.proto.v1.SignMessageWaitResponse0\x01\x12R\n" +
+	"\vGetNodeRole\x12 .api.proto.v1.GetNodeRoleRequest\x1a!.api.proto.v1.GetNodeRoleResponseB\x99\x01\n" +
 	"\x10com.api.proto.v1B\bApiProtoP\x01Z)github.com/symbioticfi/relay/api/proto/v1\xa2\x02\x03APX\xaa\x02\fApi.Proto.V1\xca\x02\fApi\\Proto\\V1\xe2\x02\x18Api\\Proto\\V1\\GPBMetadata\xea\x02\x0eApi::Proto::V1b\x06proto3"
 
 var (
@@ -1903,78 +2017,82 @@ func file_v1_api_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_api_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
+var file_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_v1_api_proto_goTypes = []any{
 	(ValidatorSetStatus)(0),               // 0: api.proto.v1.ValidatorSetStatus
 	(SigningStatus)(0),                    // 1: api.proto.v1.SigningStatus
 	(ErrorCode)(0),                        // 2: api.proto.v1.ErrorCode
-	(*SignMessageRequest)(nil),            // 3: api.proto.v1.SignMessageRequest
-	(*SignMessageWaitRequest)(nil),        // 4: api.proto.v1.SignMessageWaitRequest
-	(*SignMessageResponse)(nil),           // 5: api.proto.v1.SignMessageResponse
-	(*SignMessageWaitResponse)(nil),       // 6: api.proto.v1.SignMessageWaitResponse
-	(*GetAggregationProofRequest)(nil),    // 7: api.proto.v1.GetAggregationProofRequest
-	(*GetCurrentEpochRequest)(nil),        // 8: api.proto.v1.GetCurrentEpochRequest
-	(*GetSuggestedEpochRequest)(nil),      // 9: api.proto.v1.GetSuggestedEpochRequest
-	(*GetSignaturesRequest)(nil),          // 10: api.proto.v1.GetSignaturesRequest
-	(*GetSignaturesResponse)(nil),         // 11: api.proto.v1.GetSignaturesResponse
-	(*GetSignatureRequestRequest)(nil),    // 12: api.proto.v1.GetSignatureRequestRequest
-	(*GetAggregationStatusRequest)(nil),   // 13: api.proto.v1.GetAggregationStatusRequest
-	(*GetValidatorSetRequest)(nil),        // 14: api.proto.v1.GetValidatorSetRequest
-	(*GetValidatorByAddressRequest)(nil),  // 15: api.proto.v1.GetValidatorByAddressRequest
-	(*GetValidatorSetHeaderRequest)(nil),  // 16: api.proto.v1.GetValidatorSetHeaderRequest
-	(*GetCurrentEpochResponse)(nil),       // 17: api.proto.v1.GetCurrentEpochResponse
-	(*GetSuggestedEpochResponse)(nil),     // 18: api.proto.v1.GetSuggestedEpochResponse
-	(*GetSignatureRequestResponse)(nil),   // 19: api.proto.v1.GetSignatureRequestResponse
-	(*GetAggregationProofResponse)(nil),   // 20: api.proto.v1.GetAggregationProofResponse
-	(*AggregationProof)(nil),              // 21: api.proto.v1.AggregationProof
-	(*GetAggregationStatusResponse)(nil),  // 22: api.proto.v1.GetAggregationStatusResponse
-	(*Signature)(nil),                     // 23: api.proto.v1.Signature
-	(*GetValidatorSetResponse)(nil),       // 24: api.proto.v1.GetValidatorSetResponse
-	(*GetValidatorByAddressResponse)(nil), // 25: api.proto.v1.GetValidatorByAddressResponse
-	(*GetValidatorSetHeaderResponse)(nil), // 26: api.proto.v1.GetValidatorSetHeaderResponse
-	(*Validator)(nil),                     // 27: api.proto.v1.Validator
-	(*Key)(nil),                           // 28: api.proto.v1.Key
-	(*ValidatorVault)(nil),                // 29: api.proto.v1.ValidatorVault
-	(*timestamppb.Timestamp)(nil),         // 30: google.protobuf.Timestamp
+	(*GetNodeRoleRequest)(nil),            // 3: api.proto.v1.GetNodeRoleRequest
+	(*GetNodeRoleResponse)(nil),           // 4: api.proto.v1.GetNodeRoleResponse
+	(*SignMessageRequest)(nil),            // 5: api.proto.v1.SignMessageRequest
+	(*SignMessageWaitRequest)(nil),        // 6: api.proto.v1.SignMessageWaitRequest
+	(*SignMessageResponse)(nil),           // 7: api.proto.v1.SignMessageResponse
+	(*SignMessageWaitResponse)(nil),       // 8: api.proto.v1.SignMessageWaitResponse
+	(*GetAggregationProofRequest)(nil),    // 9: api.proto.v1.GetAggregationProofRequest
+	(*GetCurrentEpochRequest)(nil),        // 10: api.proto.v1.GetCurrentEpochRequest
+	(*GetSuggestedEpochRequest)(nil),      // 11: api.proto.v1.GetSuggestedEpochRequest
+	(*GetSignaturesRequest)(nil),          // 12: api.proto.v1.GetSignaturesRequest
+	(*GetSignaturesResponse)(nil),         // 13: api.proto.v1.GetSignaturesResponse
+	(*GetSignatureRequestRequest)(nil),    // 14: api.proto.v1.GetSignatureRequestRequest
+	(*GetAggregationStatusRequest)(nil),   // 15: api.proto.v1.GetAggregationStatusRequest
+	(*GetValidatorSetRequest)(nil),        // 16: api.proto.v1.GetValidatorSetRequest
+	(*GetValidatorByAddressRequest)(nil),  // 17: api.proto.v1.GetValidatorByAddressRequest
+	(*GetValidatorSetHeaderRequest)(nil),  // 18: api.proto.v1.GetValidatorSetHeaderRequest
+	(*GetCurrentEpochResponse)(nil),       // 19: api.proto.v1.GetCurrentEpochResponse
+	(*GetSuggestedEpochResponse)(nil),     // 20: api.proto.v1.GetSuggestedEpochResponse
+	(*GetSignatureRequestResponse)(nil),   // 21: api.proto.v1.GetSignatureRequestResponse
+	(*GetAggregationProofResponse)(nil),   // 22: api.proto.v1.GetAggregationProofResponse
+	(*AggregationProof)(nil),              // 23: api.proto.v1.AggregationProof
+	(*GetAggregationStatusResponse)(nil),  // 24: api.proto.v1.GetAggregationStatusResponse
+	(*Signature)(nil),                     // 25: api.proto.v1.Signature
+	(*GetValidatorSetResponse)(nil),       // 26: api.proto.v1.GetValidatorSetResponse
+	(*GetValidatorByAddressResponse)(nil), // 27: api.proto.v1.GetValidatorByAddressResponse
+	(*GetValidatorSetHeaderResponse)(nil), // 28: api.proto.v1.GetValidatorSetHeaderResponse
+	(*Validator)(nil),                     // 29: api.proto.v1.Validator
+	(*Key)(nil),                           // 30: api.proto.v1.Key
+	(*ValidatorVault)(nil),                // 31: api.proto.v1.ValidatorVault
+	(*timestamppb.Timestamp)(nil),         // 32: google.protobuf.Timestamp
 }
 var file_v1_api_proto_depIdxs = []int32{
 	1,  // 0: api.proto.v1.SignMessageWaitResponse.status:type_name -> api.proto.v1.SigningStatus
-	21, // 1: api.proto.v1.SignMessageWaitResponse.aggregation_proof:type_name -> api.proto.v1.AggregationProof
-	23, // 2: api.proto.v1.GetSignaturesResponse.signatures:type_name -> api.proto.v1.Signature
-	30, // 3: api.proto.v1.GetCurrentEpochResponse.start_time:type_name -> google.protobuf.Timestamp
-	30, // 4: api.proto.v1.GetSuggestedEpochResponse.start_time:type_name -> google.protobuf.Timestamp
-	21, // 5: api.proto.v1.GetAggregationProofResponse.aggregation_proof:type_name -> api.proto.v1.AggregationProof
-	30, // 6: api.proto.v1.GetValidatorSetResponse.capture_timestamp:type_name -> google.protobuf.Timestamp
+	23, // 1: api.proto.v1.SignMessageWaitResponse.aggregation_proof:type_name -> api.proto.v1.AggregationProof
+	25, // 2: api.proto.v1.GetSignaturesResponse.signatures:type_name -> api.proto.v1.Signature
+	32, // 3: api.proto.v1.GetCurrentEpochResponse.start_time:type_name -> google.protobuf.Timestamp
+	32, // 4: api.proto.v1.GetSuggestedEpochResponse.start_time:type_name -> google.protobuf.Timestamp
+	23, // 5: api.proto.v1.GetAggregationProofResponse.aggregation_proof:type_name -> api.proto.v1.AggregationProof
+	32, // 6: api.proto.v1.GetValidatorSetResponse.capture_timestamp:type_name -> google.protobuf.Timestamp
 	0,  // 7: api.proto.v1.GetValidatorSetResponse.status:type_name -> api.proto.v1.ValidatorSetStatus
-	27, // 8: api.proto.v1.GetValidatorSetResponse.validators:type_name -> api.proto.v1.Validator
-	27, // 9: api.proto.v1.GetValidatorByAddressResponse.validator:type_name -> api.proto.v1.Validator
-	30, // 10: api.proto.v1.GetValidatorSetHeaderResponse.capture_timestamp:type_name -> google.protobuf.Timestamp
-	28, // 11: api.proto.v1.Validator.keys:type_name -> api.proto.v1.Key
-	29, // 12: api.proto.v1.Validator.vaults:type_name -> api.proto.v1.ValidatorVault
-	3,  // 13: api.proto.v1.SymbioticAPIService.SignMessage:input_type -> api.proto.v1.SignMessageRequest
-	7,  // 14: api.proto.v1.SymbioticAPIService.GetAggregationProof:input_type -> api.proto.v1.GetAggregationProofRequest
-	8,  // 15: api.proto.v1.SymbioticAPIService.GetCurrentEpoch:input_type -> api.proto.v1.GetCurrentEpochRequest
-	9,  // 16: api.proto.v1.SymbioticAPIService.GetSuggestedEpoch:input_type -> api.proto.v1.GetSuggestedEpochRequest
-	10, // 17: api.proto.v1.SymbioticAPIService.GetSignatures:input_type -> api.proto.v1.GetSignaturesRequest
-	12, // 18: api.proto.v1.SymbioticAPIService.GetSignatureRequest:input_type -> api.proto.v1.GetSignatureRequestRequest
-	13, // 19: api.proto.v1.SymbioticAPIService.GetAggregationStatus:input_type -> api.proto.v1.GetAggregationStatusRequest
-	14, // 20: api.proto.v1.SymbioticAPIService.GetValidatorSet:input_type -> api.proto.v1.GetValidatorSetRequest
-	15, // 21: api.proto.v1.SymbioticAPIService.GetValidatorByAddress:input_type -> api.proto.v1.GetValidatorByAddressRequest
-	16, // 22: api.proto.v1.SymbioticAPIService.GetValidatorSetHeader:input_type -> api.proto.v1.GetValidatorSetHeaderRequest
-	4,  // 23: api.proto.v1.SymbioticAPIService.SignMessageWait:input_type -> api.proto.v1.SignMessageWaitRequest
-	5,  // 24: api.proto.v1.SymbioticAPIService.SignMessage:output_type -> api.proto.v1.SignMessageResponse
-	20, // 25: api.proto.v1.SymbioticAPIService.GetAggregationProof:output_type -> api.proto.v1.GetAggregationProofResponse
-	17, // 26: api.proto.v1.SymbioticAPIService.GetCurrentEpoch:output_type -> api.proto.v1.GetCurrentEpochResponse
-	18, // 27: api.proto.v1.SymbioticAPIService.GetSuggestedEpoch:output_type -> api.proto.v1.GetSuggestedEpochResponse
-	11, // 28: api.proto.v1.SymbioticAPIService.GetSignatures:output_type -> api.proto.v1.GetSignaturesResponse
-	19, // 29: api.proto.v1.SymbioticAPIService.GetSignatureRequest:output_type -> api.proto.v1.GetSignatureRequestResponse
-	22, // 30: api.proto.v1.SymbioticAPIService.GetAggregationStatus:output_type -> api.proto.v1.GetAggregationStatusResponse
-	24, // 31: api.proto.v1.SymbioticAPIService.GetValidatorSet:output_type -> api.proto.v1.GetValidatorSetResponse
-	25, // 32: api.proto.v1.SymbioticAPIService.GetValidatorByAddress:output_type -> api.proto.v1.GetValidatorByAddressResponse
-	26, // 33: api.proto.v1.SymbioticAPIService.GetValidatorSetHeader:output_type -> api.proto.v1.GetValidatorSetHeaderResponse
-	6,  // 34: api.proto.v1.SymbioticAPIService.SignMessageWait:output_type -> api.proto.v1.SignMessageWaitResponse
-	24, // [24:35] is the sub-list for method output_type
-	13, // [13:24] is the sub-list for method input_type
+	29, // 8: api.proto.v1.GetValidatorSetResponse.validators:type_name -> api.proto.v1.Validator
+	29, // 9: api.proto.v1.GetValidatorByAddressResponse.validator:type_name -> api.proto.v1.Validator
+	32, // 10: api.proto.v1.GetValidatorSetHeaderResponse.capture_timestamp:type_name -> google.protobuf.Timestamp
+	30, // 11: api.proto.v1.Validator.keys:type_name -> api.proto.v1.Key
+	31, // 12: api.proto.v1.Validator.vaults:type_name -> api.proto.v1.ValidatorVault
+	5,  // 13: api.proto.v1.SymbioticAPIService.SignMessage:input_type -> api.proto.v1.SignMessageRequest
+	9,  // 14: api.proto.v1.SymbioticAPIService.GetAggregationProof:input_type -> api.proto.v1.GetAggregationProofRequest
+	10, // 15: api.proto.v1.SymbioticAPIService.GetCurrentEpoch:input_type -> api.proto.v1.GetCurrentEpochRequest
+	11, // 16: api.proto.v1.SymbioticAPIService.GetSuggestedEpoch:input_type -> api.proto.v1.GetSuggestedEpochRequest
+	12, // 17: api.proto.v1.SymbioticAPIService.GetSignatures:input_type -> api.proto.v1.GetSignaturesRequest
+	14, // 18: api.proto.v1.SymbioticAPIService.GetSignatureRequest:input_type -> api.proto.v1.GetSignatureRequestRequest
+	15, // 19: api.proto.v1.SymbioticAPIService.GetAggregationStatus:input_type -> api.proto.v1.GetAggregationStatusRequest
+	16, // 20: api.proto.v1.SymbioticAPIService.GetValidatorSet:input_type -> api.proto.v1.GetValidatorSetRequest
+	17, // 21: api.proto.v1.SymbioticAPIService.GetValidatorByAddress:input_type -> api.proto.v1.GetValidatorByAddressRequest
+	18, // 22: api.proto.v1.SymbioticAPIService.GetValidatorSetHeader:input_type -> api.proto.v1.GetValidatorSetHeaderRequest
+	6,  // 23: api.proto.v1.SymbioticAPIService.SignMessageWait:input_type -> api.proto.v1.SignMessageWaitRequest
+	3,  // 24: api.proto.v1.SymbioticAPIService.GetNodeRole:input_type -> api.proto.v1.GetNodeRoleRequest
+	7,  // 25: api.proto.v1.SymbioticAPIService.SignMessage:output_type -> api.proto.v1.SignMessageResponse
+	22, // 26: api.proto.v1.SymbioticAPIService.GetAggregationProof:output_type -> api.proto.v1.GetAggregationProofResponse
+	19, // 27: api.proto.v1.SymbioticAPIService.GetCurrentEpoch:output_type -> api.proto.v1.GetCurrentEpochResponse
+	20, // 28: api.proto.v1.SymbioticAPIService.GetSuggestedEpoch:output_type -> api.proto.v1.GetSuggestedEpochResponse
+	13, // 29: api.proto.v1.SymbioticAPIService.GetSignatures:output_type -> api.proto.v1.GetSignaturesResponse
+	21, // 30: api.proto.v1.SymbioticAPIService.GetSignatureRequest:output_type -> api.proto.v1.GetSignatureRequestResponse
+	24, // 31: api.proto.v1.SymbioticAPIService.GetAggregationStatus:output_type -> api.proto.v1.GetAggregationStatusResponse
+	26, // 32: api.proto.v1.SymbioticAPIService.GetValidatorSet:output_type -> api.proto.v1.GetValidatorSetResponse
+	27, // 33: api.proto.v1.SymbioticAPIService.GetValidatorByAddress:output_type -> api.proto.v1.GetValidatorByAddressResponse
+	28, // 34: api.proto.v1.SymbioticAPIService.GetValidatorSetHeader:output_type -> api.proto.v1.GetValidatorSetHeaderResponse
+	8,  // 35: api.proto.v1.SymbioticAPIService.SignMessageWait:output_type -> api.proto.v1.SignMessageWaitResponse
+	4,  // 36: api.proto.v1.SymbioticAPIService.GetNodeRole:output_type -> api.proto.v1.GetNodeRoleResponse
+	25, // [25:37] is the sub-list for method output_type
+	13, // [13:25] is the sub-list for method input_type
 	13, // [13:13] is the sub-list for extension type_name
 	13, // [13:13] is the sub-list for extension extendee
 	0,  // [0:13] is the sub-list for field type_name
@@ -1986,18 +2104,19 @@ func file_v1_api_proto_init() {
 		return
 	}
 	file_v1_api_proto_msgTypes[0].OneofWrappers = []any{}
-	file_v1_api_proto_msgTypes[1].OneofWrappers = []any{}
+	file_v1_api_proto_msgTypes[2].OneofWrappers = []any{}
 	file_v1_api_proto_msgTypes[3].OneofWrappers = []any{}
-	file_v1_api_proto_msgTypes[11].OneofWrappers = []any{}
-	file_v1_api_proto_msgTypes[12].OneofWrappers = []any{}
+	file_v1_api_proto_msgTypes[5].OneofWrappers = []any{}
 	file_v1_api_proto_msgTypes[13].OneofWrappers = []any{}
+	file_v1_api_proto_msgTypes[14].OneofWrappers = []any{}
+	file_v1_api_proto_msgTypes[15].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_api_proto_rawDesc), len(file_v1_api_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   27,
+			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

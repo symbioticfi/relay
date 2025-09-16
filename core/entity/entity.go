@@ -400,6 +400,17 @@ func (v ValidatorSet) IsCommitter(requiredKey []byte) bool {
 	return v.findMembership(v.CommitterIndices, requiredKey)
 }
 
+func (v ValidatorSet) IsSigner(requiredKey []byte) bool {
+	for _, validator := range v.Validators {
+		for _, key := range validator.Keys {
+			if key.Tag == v.RequiredKeyTag && slices.Equal(key.Payload, requiredKey) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (v ValidatorSet) findMembership(indexArray []uint32, requiredKey []byte) bool {
 	for _, validator := range indexArray {
 		for _, key := range v.Validators[validator].Keys {

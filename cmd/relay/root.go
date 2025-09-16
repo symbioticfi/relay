@@ -304,6 +304,7 @@ func runApp(ctx context.Context) error {
 		Aggregator:        agg,
 		Metrics:           mtr,
 		AggregationPolicy: aggPolicy,
+		KeyProvider:       keyProvider,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create aggregator app: %w", err)
@@ -331,6 +332,7 @@ func runApp(ctx context.Context) error {
 		Deriver:           deriver,
 		Metrics:           mtr,
 		ServeMetrics:      serveMetricsOnAPIAddress,
+		KeyProvider:       keyProvider,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create api app: %w", err)

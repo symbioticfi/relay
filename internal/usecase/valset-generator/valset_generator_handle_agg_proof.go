@@ -48,18 +48,21 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		return nil
 	}
 
-	privKey, err := s.cfg.KeyProvider.GetPrivateKey(valset.RequiredKeyTag)
-	if err != nil {
-		if errors.Is(err, keyprovider.ErrKeyNotFound) {
-			slog.DebugContext(ctx, "No key for required key tag, skipping proof commitment", "keyTag", valset.RequiredKeyTag)
+	// nil only for tests
+	if s.cfg.KeyProvider != nil {
+		privKey, err := s.cfg.KeyProvider.GetPrivateKey(valset.RequiredKeyTag)
+		if err != nil {
+			if errors.Is(err, keyprovider.ErrKeyNotFound) {
+				slog.DebugContext(ctx, "No key for required key tag, skipping proof commitment", "keyTag", valset.RequiredKeyTag)
+				return nil
+			}
+			return errors.Errorf("failed to get private key for required key tag %s: %w", valset.RequiredKeyTag, err)
+		}
+
+		if !valset.IsCommitter(privKey.PublicKey().OnChain()) {
+			slog.DebugContext(ctx, "Not a committer for this valset, skipping proof commitment", "key", privKey.PublicKey().OnChain(), "epoch", msg.Epoch)
 			return nil
 		}
-		return errors.Errorf("failed to get private key for required key tag %s: %w", valset.RequiredKeyTag, err)
-	}
-
-	if !valset.IsCommitter(privKey.PublicKey().OnChain()) {
-		slog.DebugContext(ctx, "Not a committer for this valset, skipping proof commitment", "key", privKey.PublicKey().OnChain(), "epoch", msg.Epoch)
-		return nil
 	}
 
 	config, err := s.cfg.EvmClient.GetConfig(ctx, valset.CaptureTimestamp)

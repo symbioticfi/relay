@@ -30,6 +30,7 @@ const (
 	SymbioticAPIService_GetValidatorByAddress_FullMethodName = "/api.proto.v1.SymbioticAPIService/GetValidatorByAddress"
 	SymbioticAPIService_GetValidatorSetHeader_FullMethodName = "/api.proto.v1.SymbioticAPIService/GetValidatorSetHeader"
 	SymbioticAPIService_SignMessageWait_FullMethodName       = "/api.proto.v1.SymbioticAPIService/SignMessageWait"
+	SymbioticAPIService_GetNodeRole_FullMethodName           = "/api.proto.v1.SymbioticAPIService/GetNodeRole"
 )
 
 // SymbioticAPIServiceClient is the client API for SymbioticAPIService service.
@@ -60,6 +61,7 @@ type SymbioticAPIServiceClient interface {
 	GetValidatorSetHeader(ctx context.Context, in *GetValidatorSetHeaderRequest, opts ...grpc.CallOption) (*GetValidatorSetHeaderResponse, error)
 	// Sign a message and wait for aggregation proof via stream
 	SignMessageWait(ctx context.Context, in *SignMessageWaitRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SignMessageWaitResponse], error)
+	GetNodeRole(ctx context.Context, in *GetNodeRoleRequest, opts ...grpc.CallOption) (*GetNodeRoleResponse, error)
 }
 
 type symbioticAPIServiceClient struct {
@@ -189,6 +191,16 @@ func (c *symbioticAPIServiceClient) SignMessageWait(ctx context.Context, in *Sig
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SymbioticAPIService_SignMessageWaitClient = grpc.ServerStreamingClient[SignMessageWaitResponse]
 
+func (c *symbioticAPIServiceClient) GetNodeRole(ctx context.Context, in *GetNodeRoleRequest, opts ...grpc.CallOption) (*GetNodeRoleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetNodeRoleResponse)
+	err := c.cc.Invoke(ctx, SymbioticAPIService_GetNodeRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SymbioticAPIServiceServer is the server API for SymbioticAPIService service.
 // All implementations must embed UnimplementedSymbioticAPIServiceServer
 // for forward compatibility.
@@ -217,6 +229,7 @@ type SymbioticAPIServiceServer interface {
 	GetValidatorSetHeader(context.Context, *GetValidatorSetHeaderRequest) (*GetValidatorSetHeaderResponse, error)
 	// Sign a message and wait for aggregation proof via stream
 	SignMessageWait(*SignMessageWaitRequest, grpc.ServerStreamingServer[SignMessageWaitResponse]) error
+	GetNodeRole(context.Context, *GetNodeRoleRequest) (*GetNodeRoleResponse, error)
 	mustEmbedUnimplementedSymbioticAPIServiceServer()
 }
 
@@ -259,6 +272,9 @@ func (UnimplementedSymbioticAPIServiceServer) GetValidatorSetHeader(context.Cont
 }
 func (UnimplementedSymbioticAPIServiceServer) SignMessageWait(*SignMessageWaitRequest, grpc.ServerStreamingServer[SignMessageWaitResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method SignMessageWait not implemented")
+}
+func (UnimplementedSymbioticAPIServiceServer) GetNodeRole(context.Context, *GetNodeRoleRequest) (*GetNodeRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetNodeRole not implemented")
 }
 func (UnimplementedSymbioticAPIServiceServer) mustEmbedUnimplementedSymbioticAPIServiceServer() {}
 func (UnimplementedSymbioticAPIServiceServer) testEmbeddedByValue()                             {}
@@ -472,6 +488,24 @@ func _SymbioticAPIService_SignMessageWait_Handler(srv interface{}, stream grpc.S
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SymbioticAPIService_SignMessageWaitServer = grpc.ServerStreamingServer[SignMessageWaitResponse]
 
+func _SymbioticAPIService_GetNodeRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetNodeRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SymbioticAPIServiceServer).GetNodeRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SymbioticAPIService_GetNodeRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SymbioticAPIServiceServer).GetNodeRole(ctx, req.(*GetNodeRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SymbioticAPIService_ServiceDesc is the grpc.ServiceDesc for SymbioticAPIService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -518,6 +552,10 @@ var SymbioticAPIService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetValidatorSetHeader",
 			Handler:    _SymbioticAPIService_GetValidatorSetHeader_Handler,
+		},
+		{
+			MethodName: "GetNodeRole",
+			Handler:    _SymbioticAPIService_GetNodeRole_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

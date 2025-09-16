@@ -39,7 +39,6 @@ func TestMain(m *testing.M) {
 
 type RelaySidecarConfig struct {
 	Keys          string
-	Role          string
 	DataDir       string
 	ContainerName string
 }
@@ -56,8 +55,6 @@ func generateSidecarConfigs(env EnvInfo) []RelaySidecarConfig {
 		swarmKey       = "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140"
 	)
 
-	commiterCount := env.Commiters
-	aggregatorCount := env.Aggregators
 	configs := make([]RelaySidecarConfig, env.Operators)
 
 	for i := int64(0); i < env.Operators; i++ {
@@ -79,21 +76,8 @@ func generateSidecarConfigs(env EnvInfo) []RelaySidecarConfig {
 		}
 		keysString := strings.Join(keys, ",")
 
-		// Determine role for this operator (same logic as generate_network.sh)
-		var role string
-		if commiterCount > 0 {
-			role = "committer"
-			commiterCount--
-		} else if aggregatorCount > 0 {
-			role = "aggregator"
-			aggregatorCount--
-		} else {
-			role = "signer"
-		}
-
 		configs[i] = RelaySidecarConfig{
 			Keys:          keysString,
-			Role:          role,
 			DataDir:       fmt.Sprintf("/app/data-%02d", i+1),
 			ContainerName: fmt.Sprintf("relay-sidecar-%d", i+1),
 		}
@@ -166,7 +150,6 @@ func setupGlobalTestEnvironment() (*TestEnvironment, error) {
 				fmt.Sprintf("--driver.address %s", deploymentData.Driver.Addr),
 				fmt.Sprintf("--storage-dir %s", config.DataDir),
 				fmt.Sprintf("--secret-keys %s", config.Keys),
-				fmt.Sprintf("--%s true", config.Role),
 			}
 			// Build the command to start the sidecar
 			startCommand := fmt.Sprintf("./relay_sidecar %s", strings.Join(opts, " "))
@@ -276,15 +259,6 @@ func (env *TestEnvironment) GetContainerPort(i int) string {
 // Helper function to get container port
 func (env *TestEnvironment) GetHealthEndpoint(i int) string {
 	return fmt.Sprintf("http://localhost:%s/healthz", globalTestEnv.GetContainerPort(i))
-}
-
-func (env *TestEnvironment) GetSimpleContainer() testcontainers.Container {
-	for i, config := range env.SidecarConfigs {
-		if config.Role == "signer" {
-			return env.Containers[i]
-		}
-	}
-	return nil
 }
 
 func (env *TestEnvironment) GetGRPCAddress(index int) string {

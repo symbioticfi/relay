@@ -54,12 +54,12 @@ type deriver interface {
 }
 
 type Config struct {
-	Signer          signer                  `validate:"required"`
-	EvmClient       evmClient               `validate:"required"`
-	Repo            repo                    `validate:"required"`
-	Deriver         deriver                 `validate:"required"`
-	PollingInterval time.Duration           `validate:"required,gt=0"`
-	KeyProvider     keyprovider.KeyProvider `validate:"required"`
+	Signer          signer        `validate:"required"`
+	EvmClient       evmClient     `validate:"required"`
+	Repo            repo          `validate:"required"`
+	Deriver         deriver       `validate:"required"`
+	PollingInterval time.Duration `validate:"required,gt=0"`
+	KeyProvider     keyprovider.KeyProvider
 	Aggregator      aggregator.Aggregator
 }
 

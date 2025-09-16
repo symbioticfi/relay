@@ -38,6 +38,7 @@ const (
 type GetAggregationProofRequest = apiv1.GetAggregationProofRequest
 type GetAggregationStatusRequest = apiv1.GetAggregationStatusRequest
 type GetCurrentEpochRequest = apiv1.GetCurrentEpochRequest
+type GetNodeRoleRequest = apiv1.GetNodeRoleRequest
 type GetSignatureRequestRequest = apiv1.GetSignatureRequestRequest
 type GetSignaturesRequest = apiv1.GetSignaturesRequest
 type GetSuggestedEpochRequest = apiv1.GetSuggestedEpochRequest
@@ -51,6 +52,7 @@ type SignMessageWaitRequest = apiv1.SignMessageWaitRequest
 type GetAggregationProofResponse = apiv1.GetAggregationProofResponse
 type GetAggregationStatusResponse = apiv1.GetAggregationStatusResponse
 type GetCurrentEpochResponse = apiv1.GetCurrentEpochResponse
+type GetNodeRoleResponse = apiv1.GetNodeRoleResponse
 type GetSignatureRequestResponse = apiv1.GetSignatureRequestResponse
 type GetSignaturesResponse = apiv1.GetSignaturesResponse
 type GetSuggestedEpochResponse = apiv1.GetSuggestedEpochResponse

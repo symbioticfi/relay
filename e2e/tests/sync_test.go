@@ -13,7 +13,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/require"
+	apiv1 "github.com/symbioticfi/relay/api/client/v1"
 	"github.com/testcontainers/testcontainers-go"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/symbioticfi/relay/core/client/evm"
 	"github.com/symbioticfi/relay/core/entity"
@@ -37,13 +40,34 @@ func TestAggregatorSignatureSync(t *testing.T) {
 	require.NoError(t, err, "Failed to load deployment data")
 
 	// Identify aggregators
+	onlySignerIndex := -1
 	var aggregatorIndexes []int
-	for i, endpoint := range globalTestEnv.SidecarConfigs {
-		if endpoint.Role == "aggregator" {
-			aggregatorIndexes = append(aggregatorIndexes, i)
-		}
+	for i, _ := range globalTestEnv.SidecarConfigs {
+		func() {
+			address := globalTestEnv.GetGRPCAddress(i)
+			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+			defer cancel()
+			conn, err := grpc.NewClient(
+				address,
+				grpc.WithTransportCredentials(insecure.NewCredentials()),
+			)
+			defer conn.Close()
+			require.NoErrorf(t, err, "Failed to connect to relay server at %s", address)
+
+			client := apiv1.NewSymbioticClient(conn)
+			resp, err := client.GetNodeRole(ctx, &apiv1.GetNodeRoleRequest{})
+			require.NoErrorf(t, err, "Failed to get node role from %s", address)
+
+			if resp.IsAggregator {
+				aggregatorIndexes = append(aggregatorIndexes, i)
+			}
+			if !resp.IsAggregator && !resp.IsCommiter && resp.IsSigner {
+				onlySignerIndex = i
+			}
+		}()
 	}
 
+	require.Greater(t, onlySignerIndex, -1, "No signer-only node found in test environment")
 	require.NotEmpty(t, aggregatorIndexes, "No aggregators found in test environment")
 
 	t.Logf("Found %d aggregators", len(aggregatorIndexes))
@@ -80,7 +104,7 @@ func TestAggregatorSignatureSync(t *testing.T) {
 		"msg":   "Message signed",
 		"epoch": float64(nextEpoch),
 	}
-	err = waitForLogLine(ctx, globalTestEnv.GetSimpleContainer(), expected, 1*time.Minute)
+	err = waitForLogLine(ctx, globalTestEnv.Containers[onlySignerIndex], expected, 1*time.Minute)
 	require.NoError(t, err)
 
 	// Step 5: Start aggregators back up

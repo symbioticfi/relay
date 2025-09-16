@@ -207,6 +207,14 @@
                 </li>
               
                 <li>
+                  <a href="#api.proto.v1.GetNodeRoleRequest"><span class="badge">M</span>GetNodeRoleRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.GetNodeRoleResponse"><span class="badge">M</span>GetNodeRoleResponse</a>
+                </li>
+              
+                <li>
                   <a href="#api.proto.v1.GetSignatureRequestRequest"><span class="badge">M</span>GetSignatureRequestRequest</a>
                 </li>
               
@@ -490,6 +498,68 @@
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
                   <td><p>Epoch start time </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.GetNodeRoleRequest">GetNodeRoleRequest</h3>
+        <p>Request message for getting node role</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>epoch</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.GetNodeRoleResponse">GetNodeRoleResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>is_aggregator</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>is_commiter</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>is_signer</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -1393,6 +1463,13 @@
                 <td><a href="#api.proto.v1.SignMessageWaitRequest">SignMessageWaitRequest</a></td>
                 <td><a href="#api.proto.v1.SignMessageWaitResponse">SignMessageWaitResponse</a> stream</td>
                 <td><p>Sign a message and wait for aggregation proof via stream</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetNodeRole</td>
+                <td><a href="#api.proto.v1.GetNodeRoleRequest">GetNodeRoleRequest</a></td>
+                <td><a href="#api.proto.v1.GetNodeRoleResponse">GetNodeRoleResponse</a></td>
+                <td><p></p></td>
               </tr>
             
           </tbody>
