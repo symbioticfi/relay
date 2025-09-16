@@ -232,6 +232,8 @@ services:
       - BLOCK_TIME=$block_time
       - EPOCH_TIME=$epoch_size
       - FOUNDRY_CACHE_PATH=/tmp/.foundry-cache
+      - NUM_AGGREGATORS=$aggregators
+      - NUM_COMMITTERS=$commiters
 
   # Genesis generation service
   genesis-generator:
