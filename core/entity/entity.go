@@ -227,8 +227,10 @@ type NetworkConfig struct {
 	RequiredKeyTags         []KeyTag
 	RequiredHeaderKeyTag    KeyTag
 	QuorumThresholds        []QuorumThreshold
-	NumAggregators          uint64
-	NumCommitters           uint64
+
+	// scheduler config
+	NumAggregators uint64
+	NumCommitters  uint64
 }
 
 func maxThreshold() *big.Int {
@@ -384,6 +386,29 @@ type ValidatorSet struct {
 	QuorumThreshold  VotingPower // absolute number now, not a percent
 	Validators       Validators
 	Status           ValidatorSetStatus
+
+	// Scheduler info for current validator set, completely offchain not included in header
+	AggregatorIndices []uint32
+	CommitterIndices  []uint32
+}
+
+func (v ValidatorSet) IsAggregator(requiredKey []byte) bool {
+	return v.findMembership(v.AggregatorIndices, requiredKey)
+}
+
+func (v ValidatorSet) IsCommitter(requiredKey []byte) bool {
+	return v.findMembership(v.CommitterIndices, requiredKey)
+}
+
+func (v ValidatorSet) findMembership(indexArray []uint32, requiredKey []byte) bool {
+	for _, validator := range indexArray {
+		for _, key := range v.Validators[validator].Keys {
+			if key.Tag == v.RequiredKeyTag && slices.Equal(key.Payload, requiredKey) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (v ValidatorSet) FindValidatorByKey(keyTag KeyTag, publicKey []byte) (Validator, bool) { // DON'T USE INSIDE LOOPS

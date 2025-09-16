@@ -278,23 +278,6 @@ EOF
         local storage_dir="data-$(printf "%02d" $i)"
         local key_index=$((i - 1))
         
-        # Determine role for this operator
-        local role_flags=""
-        local role_name="signer"
-        
-        if [ $committer_count -lt $commiters ]; then
-            role_flags="--committer true"
-            role_name="committer"
-            committer_count=$((committer_count + 1))
-        elif [ $aggregator_count -lt $aggregators ]; then
-            role_flags="--aggregator true"
-            role_name="aggregator"
-            aggregator_count=$((aggregator_count + 1))
-        else
-            role_flags="--signer true"
-            signer_count=$((signer_count + 1))
-        fi
-        
         SYMB_PRIVATE_KEY_DECIMAL=$(($BASE_PRIVATE_KEY + $key_index))
         SYMB_SECONDARY_PRIVATE_KEY_DECIMAL=$(($BASE_PRIVATE_KEY + $key_index + 10000))
         SYMB_PRIVATE_KEY_HEX=$(printf "%064x" $SYMB_PRIVATE_KEY_DECIMAL)
@@ -316,7 +299,7 @@ EOF
     command:
       - sh
       - -c
-      - "chmod 777 /app/$storage_dir /deploy-data 2>/dev/null || true && /workspace/scripts/sidecar-start.sh symb/0/15/0x$SYMB_PRIVATE_KEY_HEX,symb/0/11/0x$SYMB_SECONDARY_PRIVATE_KEY_HEX,symb/1/0/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31337/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31338/0x$SYMB_PRIVATE_KEY_HEX,p2p/1/0/$SWARM_KEY,p2p/1/1/$SYMB_PRIVATE_KEY_HEX /app/$storage_dir $role_flags"
+      - "chmod 777 /app/$storage_dir /deploy-data 2>/dev/null || true && /workspace/scripts/sidecar-start.sh symb/0/15/0x$SYMB_PRIVATE_KEY_HEX,symb/0/11/0x$SYMB_SECONDARY_PRIVATE_KEY_HEX,symb/1/0/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31337/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31338/0x$SYMB_PRIVATE_KEY_HEX,p2p/1/0/$SWARM_KEY,p2p/1/1/$SYMB_PRIVATE_KEY_HEX /app/$storage_dir"
     ports:
       - "$port:8080"
     volumes:

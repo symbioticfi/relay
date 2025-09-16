@@ -10,6 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
+	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
@@ -53,12 +54,12 @@ type deriver interface {
 }
 
 type Config struct {
-	Signer          signer        `validate:"required"`
-	EvmClient       evmClient     `validate:"required"`
-	Repo            repo          `validate:"required"`
-	Deriver         deriver       `validate:"required"`
-	PollingInterval time.Duration `validate:"required,gt=0"`
-	IsCommitter     bool
+	Signer          signer                  `validate:"required"`
+	EvmClient       evmClient               `validate:"required"`
+	Repo            repo                    `validate:"required"`
+	Deriver         deriver                 `validate:"required"`
+	PollingInterval time.Duration           `validate:"required,gt=0"`
+	KeyProvider     keyprovider.KeyProvider `validate:"required"`
 	Aggregator      aggregator.Aggregator
 }
 

@@ -115,8 +115,7 @@ type config struct {
 	HTTPListenAddr    string               `mapstructure:"http-listen" validate:"required"`
 	MetricsListenAddr string               `mapstructure:"metrics-listen"`
 	SecretKeys        CMDSecretKeySlice    `mapstructure:"secret-keys"`
-	IsAggregator      bool                 `mapstructure:"aggregator"`
-	IsCommitter       bool                 `mapstructure:"committer"`
+	IsSigner          bool                 `mapstructure:"signer"`
 	StorageDir        string               `mapstructure:"storage-dir"`
 	Chains            []string             `mapstructure:"chains" validate:"required"`
 	CircuitsDir       string               `mapstructure:"circuits-dir"`
