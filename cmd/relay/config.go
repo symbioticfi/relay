@@ -115,8 +115,6 @@ type config struct {
 	HTTPListenAddr    string               `mapstructure:"http-listen" validate:"required"`
 	MetricsListenAddr string               `mapstructure:"metrics-listen"`
 	SecretKeys        CMDSecretKeySlice    `mapstructure:"secret-keys"`
-	IsAggregator      bool                 `mapstructure:"aggregator"`
-	IsCommitter       bool                 `mapstructure:"committer"`
 	StorageDir        string               `mapstructure:"storage-dir"`
 	Chains            []string             `mapstructure:"chains" validate:"required"`
 	CircuitsDir       string               `mapstructure:"circuits-dir"`
@@ -166,9 +164,6 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().String("p2p-listen", "", "P2P listen address")
 	rootCmd.PersistentFlags().String("http-listen", "", "Http listener address")
 	rootCmd.PersistentFlags().String("metrics-listen", "", "Http listener address for metrics endpoint")
-	rootCmd.PersistentFlags().Bool("aggregator", false, "Is Aggregator Node")
-	rootCmd.PersistentFlags().Bool("signer", true, "Is Signer Node")
-	rootCmd.PersistentFlags().Bool("committer", false, "Is Committer Node")
 	rootCmd.PersistentFlags().String("storage-dir", ".data", "Dir to store data")
 	rootCmd.PersistentFlags().StringSlice("chains", nil, "Chains, comma separated rpc-url,..")
 	rootCmd.PersistentFlags().Var(&CMDSecretKeySlice{}, "secret-keys", "Secret keys, comma separated {namespace}/{type}/{id}/{key},..")
@@ -249,15 +244,6 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("metrics-listen", cmd.PersistentFlags().Lookup("metrics-listen")); err != nil {
-		return errors.Errorf("failed to bind flag: %w", err)
-	}
-	if err := v.BindPFlag("aggregator", cmd.PersistentFlags().Lookup("aggregator")); err != nil {
-		return errors.Errorf("failed to bind flag: %w", err)
-	}
-	if err := v.BindPFlag("signer", cmd.PersistentFlags().Lookup("signer")); err != nil {
-		return errors.Errorf("failed to bind flag: %w", err)
-	}
-	if err := v.BindPFlag("committer", cmd.PersistentFlags().Lookup("committer")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("storage-dir", cmd.PersistentFlags().Lookup("storage-dir")); err != nil {

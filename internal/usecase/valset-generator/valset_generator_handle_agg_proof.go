@@ -5,8 +5,8 @@ import (
 	"log/slog"
 
 	"github.com/go-errors/errors"
-
 	"github.com/symbioticfi/relay/core/entity"
+	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 	"github.com/symbioticfi/relay/pkg/log"
 )
 
@@ -14,10 +14,6 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 	ctx = log.WithComponent(ctx, "generator")
 
 	slog.DebugContext(ctx, "Handling proof aggregated message", "msg", msg)
-	if !s.cfg.IsCommitter {
-		slog.DebugContext(ctx, "Not a committer, skipping proof commitment")
-		return nil
-	}
 
 	var (
 		valset entity.ValidatorSet
@@ -41,6 +37,7 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		break
 	}
 
+	// we always try to save the proof, even if we aren't a committer
 	err = s.cfg.Repo.SaveAggregationProof(ctx, msg.RequestHash, msg.AggregationProof)
 	if err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
 		return err
@@ -49,6 +46,23 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 	if valset.Status == entity.HeaderCommitted {
 		slog.DebugContext(ctx, "Valset is already committed", "epoch", msg.Epoch)
 		return nil
+	}
+
+	// nil only for tests
+	if s.cfg.KeyProvider != nil {
+		privKey, err := s.cfg.KeyProvider.GetPrivateKey(valset.RequiredKeyTag)
+		if err != nil {
+			if errors.Is(err, keyprovider.ErrKeyNotFound) {
+				slog.DebugContext(ctx, "No key for required key tag, skipping proof commitment", "keyTag", valset.RequiredKeyTag)
+				return nil
+			}
+			return errors.Errorf("failed to get private key for required key tag %s: %w", valset.RequiredKeyTag, err)
+		}
+
+		if !valset.IsCommitter(privKey.PublicKey().OnChain()) {
+			slog.DebugContext(ctx, "Not a committer for this valset, skipping proof commitment", "key", privKey.PublicKey().OnChain(), "epoch", msg.Epoch)
+			return nil
+		}
 	}
 
 	config, err := s.cfg.EvmClient.GetConfig(ctx, valset.CaptureTimestamp)

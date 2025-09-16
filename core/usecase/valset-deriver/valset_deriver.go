@@ -3,10 +3,13 @@ package valsetDeriver
 import (
 	"context"
 	"log/slog"
+	"maps"
 	"math/big"
+	"slices"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
 	"github.com/symbioticfi/relay/core/usecase/ssz"
@@ -14,12 +17,16 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 )
 
-const valsetVersion = 1
+const (
+	valsetVersion      = 1
+	aggregatorRoleType = "AGGREGATOR"
+	committerRoleType  = "COMMITTER"
+)
 
 //go:generate mockgen -source=valset_deriver.go -destination=mocks/deriver.go -package=mocks -mock_names=evmClient=MockEvmClient
 type evmClient interface {
-	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
 	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
+	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
 	GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorVotingPower, error)
 	GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorWithKeys, error)
 	GetEip712Domain(ctx context.Context, addr entity.CrossChainAddress) (entity.Eip712Domain, error)
@@ -122,7 +129,79 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 		Status:           entity.HeaderDerived,
 	}
 
+	aggIndices, commIndices, err := v.GetSchedulerInfo(ctx, valset, config)
+	if err != nil {
+		return entity.ValidatorSet{}, errors.Errorf("failed to get scheduler info: %w", err)
+	}
+	valset.AggregatorIndices = aggIndices
+	valset.CommitterIndices = commIndices
+
 	return valset, nil
+}
+
+func (v *Deriver) GetSchedulerInfo(ctx context.Context, valset entity.ValidatorSet, config entity.NetworkConfig) (aggIndices []uint32, commIndices []uint32, err error) {
+	// ensure validators sorted already, function expects sorted list
+	if err := valset.Validators.CheckIsSortedByOperatorAddressAsc(); err != nil {
+		return nil, nil, err
+	}
+
+	aggregatorIndices := map[uint32]struct{}{}
+	committerIndices := map[uint32]struct{}{}
+
+	header, err := valset.GetHeader()
+	if err != nil {
+		return nil, nil, errors.Errorf("failed to get valset header: %w", err)
+	}
+
+	headerHash, err := header.Hash()
+	if err != nil {
+		return nil, nil, errors.Errorf("failed to hash valset header: %w", err)
+	}
+
+	validatorCount := len(valset.Validators)
+	if validatorCount == 0 {
+		return []uint32{}, []uint32{}, nil
+	}
+
+	for i := 1; i <= int(config.NumAggregators); i++ {
+		hash := new(big.Int).SetBytes(
+			crypto.Keccak256Hash(
+				[]byte(aggregatorRoleType),
+				headerHash.Bytes(),
+				new(big.Int).SetInt64(int64(i)).Bytes(),
+			).Bytes())
+
+		startIndex := new(big.Int).Mod(hash, big.NewInt(int64(validatorCount))).Uint64()
+		foundIndex := v.findNextAvailableIndex(uint32(startIndex), validatorCount, aggregatorIndices)
+		aggregatorIndices[foundIndex] = struct{}{}
+	}
+
+	for i := 1; i <= int(config.NumCommitters); i++ {
+		hash := new(big.Int).SetBytes(
+			crypto.Keccak256Hash(
+				[]byte(committerRoleType),
+				headerHash.Bytes(),
+				new(big.Int).SetInt64(int64(i)).Bytes(),
+			).Bytes())
+
+		startIndex := new(big.Int).Mod(hash, big.NewInt(int64(validatorCount))).Uint64()
+		foundIndex := v.findNextAvailableIndex(uint32(startIndex), validatorCount, committerIndices)
+		committerIndices[foundIndex] = struct{}{}
+	}
+
+	return slices.Collect(maps.Keys(aggregatorIndices)), slices.Collect(maps.Keys(committerIndices)), nil
+}
+
+// Helper function for wrap-around search
+func (v *Deriver) findNextAvailableIndex(startIndex uint32, validatorCount int, usedIndices map[uint32]struct{}) uint32 {
+	for offset := 0; offset < validatorCount; offset++ {
+		candidateIndex := (startIndex + uint32(offset)) % uint32(validatorCount)
+		if _, exists := usedIndices[candidateIndex]; !exists {
+			return candidateIndex
+		}
+	}
+	// This should never happen if we don't request more roles than available validators
+	panic("no available validator index found - this indicates a bug")
 }
 
 func (v *Deriver) formValidators(
