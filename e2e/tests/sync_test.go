@@ -13,13 +13,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/require"
-	apiv1 "github.com/symbioticfi/relay/api/client/v1"
-	"github.com/testcontainers/testcontainers-go"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-
 	"github.com/symbioticfi/relay/core/client/evm"
 	"github.com/symbioticfi/relay/core/entity"
+	valsetDeriver "github.com/symbioticfi/relay/core/usecase/valset-deriver"
+	"github.com/testcontainers/testcontainers-go"
 )
 
 // TestAggregatorSignatureSync tests that aggregators can sync missed signatures
@@ -42,41 +39,50 @@ func TestAggregatorSignatureSync(t *testing.T) {
 	// Identify aggregators
 	onlySignerIndex := -1
 	var aggregatorIndexes []int
-	for i, _ := range globalTestEnv.SidecarConfigs {
-		func() {
-			address := globalTestEnv.GetGRPCAddress(i)
-			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
-			defer cancel()
-			conn, err := grpc.NewClient(
-				address,
-				grpc.WithTransportCredentials(insecure.NewCredentials()),
-			)
-			defer conn.Close()
-			require.NoErrorf(t, err, "Failed to connect to relay server at %s", address)
-
-			client := apiv1.NewSymbioticClient(conn)
-			resp, err := client.GetNodeRole(ctx, &apiv1.GetNodeRoleRequest{})
-			require.NoErrorf(t, err, "Failed to get node role from %s", address)
-
-			if resp.IsAggregator {
-				aggregatorIndexes = append(aggregatorIndexes, i)
-			}
-			if !resp.IsAggregator && !resp.IsCommiter && resp.IsSigner {
-				onlySignerIndex = i
-			}
-		}()
-	}
-
-	require.Greater(t, onlySignerIndex, -1, "No signer-only node found in test environment")
-	require.NotEmpty(t, aggregatorIndexes, "No aggregators found in test environment")
-
-	t.Logf("Found %d aggregators", len(aggregatorIndexes))
 
 	// Step 1: Get current epoch from EVM client
 	evmClient := createEVMClient(t, deploymentData)
 	currentEpoch, err := evmClient.GetCurrentEpoch(ctx)
 	require.NoError(t, err, "Failed to get current epoch")
 	t.Logf("Step 1: Current epoch: %d", currentEpoch)
+
+	t.Logf("Identifying aggregators and signer-only nodes for next epoch %d...", currentEpoch+1)
+	deriver, err := valsetDeriver.NewDeriver(evmClient)
+	require.NoError(t, err, "Failed to create valset deriver")
+
+	captureTimestamp, err := evmClient.GetEpochStart(ctx, currentEpoch)
+	require.NoError(t, err, "Failed to get epoch start timestamp")
+
+	nwConfig, err := evmClient.GetConfig(t.Context(), captureTimestamp)
+	require.NoError(t, err, "Failed to get network config")
+
+	valset, err := deriver.GetValidatorSet(t.Context(), currentEpoch, nwConfig)
+	require.NoError(t, err, "Failed to get validator set")
+
+	// next valset, we expect nothing to change apart from epoch details
+	valset.Epoch++
+	valset.CaptureTimestamp += deploymentData.Env.EpochTime
+
+	aggIndices, commIndices, err := deriver.GetSchedulerInfo(t.Context(), valset, nwConfig)
+	require.NoError(t, err, "Failed to get scheduler info")
+	require.NotEmpty(t, aggIndices, "No aggregators found in scheduler info")
+	require.NotEmpty(t, commIndices, "No committers found in scheduler info")
+	valset.AggregatorIndices = aggIndices
+	valset.CommitterIndices = commIndices
+
+	for i := range globalTestEnv.SidecarConfigs {
+		if valset.IsAggregator(globalTestEnv.SidecarConfigs[i].RequiredSymKey.PublicKey().OnChain()) {
+			aggregatorIndexes = append(aggregatorIndexes, i)
+		} else if !valset.IsCommitter(globalTestEnv.SidecarConfigs[i].RequiredSymKey.PublicKey().OnChain()) && valset.IsSigner(globalTestEnv.SidecarConfigs[i].RequiredSymKey.PublicKey().OnChain()) {
+			onlySignerIndex = i
+		}
+	}
+
+	require.Greater(t, onlySignerIndex, -1, "No signer-only node found in test environment")
+	require.NotEmpty(t, aggregatorIndexes, "No aggregators found in test environment")
+
+	t.Logf("Found %d aggregators", len(aggregatorIndexes))
+	t.Logf("Signer-only node index: %d", onlySignerIndex)
 
 	// Step 2: Stop all aggregator containers
 	t.Log("Step 2: Stopping all aggregator containers...")
@@ -242,7 +248,7 @@ func containsAllKeyValues(logMap, expectedLog map[string]interface{}) bool {
 }
 
 // createEVMClient creates an EVM client for interacting with the blockchain
-func createEVMClient(t *testing.T, deploymentData RelayContractsData) evm.IEvmClient {
+func createEVMClient(t *testing.T, deploymentData RelayContractsData) *evm.Client {
 	t.Helper()
 	config := evm.Config{
 		ChainURLs: settlementChains,

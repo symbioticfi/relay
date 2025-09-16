@@ -152,7 +152,7 @@ func validateValidatorSetAgainstExpected(t *testing.T, apiResponse *apiv1.GetVal
 func TestRelayAPIConnectivity(t *testing.T) {
 	t.Log("Starting relay API connectivity test...")
 
-	for i, _ := range globalTestEnv.SidecarConfigs {
+	for i := range globalTestEnv.SidecarConfigs {
 		t.Run(fmt.Sprintf("Connect_%s", globalTestEnv.GetContainerPort(i)), func(t *testing.T) {
 			address := globalTestEnv.GetGRPCAddress(i)
 			t.Logf("Testing connection to %s", address)

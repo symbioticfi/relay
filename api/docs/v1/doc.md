@@ -11,8 +11,6 @@
     - [GetAggregationStatusResponse](#api-proto-v1-GetAggregationStatusResponse)
     - [GetCurrentEpochRequest](#api-proto-v1-GetCurrentEpochRequest)
     - [GetCurrentEpochResponse](#api-proto-v1-GetCurrentEpochResponse)
-    - [GetNodeRoleRequest](#api-proto-v1-GetNodeRoleRequest)
-    - [GetNodeRoleResponse](#api-proto-v1-GetNodeRoleResponse)
     - [GetSignatureRequestRequest](#api-proto-v1-GetSignatureRequestRequest)
     - [GetSignatureRequestResponse](#api-proto-v1-GetSignatureRequestResponse)
     - [GetSignaturesRequest](#api-proto-v1-GetSignaturesRequest)
@@ -149,38 +147,6 @@ Response message for getting current epoch
 | ----- | ---- | ----- | ----------- |
 | epoch | [uint64](#uint64) |  | Epoch number |
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Epoch start time |
-
-
-
-
-
-
-<a name="api-proto-v1-GetNodeRoleRequest"></a>
-
-### GetNodeRoleRequest
-Request message for getting node role
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| epoch | [uint64](#uint64) | optional |  |
-
-
-
-
-
-
-<a name="api-proto-v1-GetNodeRoleResponse"></a>
-
-### GetNodeRoleResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| is_aggregator | [bool](#bool) |  |  |
-| is_commiter | [bool](#bool) |  |  |
-| is_signer | [bool](#bool) |  |  |
 
 
 
@@ -582,7 +548,6 @@ SymbioticAPI provides access to the Symbiotic relay functions
 | GetValidatorByAddress | [GetValidatorByAddressRequest](#api-proto-v1-GetValidatorByAddressRequest) | [GetValidatorByAddressResponse](#api-proto-v1-GetValidatorByAddressResponse) | Get validator by address |
 | GetValidatorSetHeader | [GetValidatorSetHeaderRequest](#api-proto-v1-GetValidatorSetHeaderRequest) | [GetValidatorSetHeaderResponse](#api-proto-v1-GetValidatorSetHeaderResponse) | Get validator set header |
 | SignMessageWait | [SignMessageWaitRequest](#api-proto-v1-SignMessageWaitRequest) | [SignMessageWaitResponse](#api-proto-v1-SignMessageWaitResponse) stream | Sign a message and wait for aggregation proof via stream |
-| GetNodeRole | [GetNodeRoleRequest](#api-proto-v1-GetNodeRoleRequest) | [GetNodeRoleResponse](#api-proto-v1-GetNodeRoleResponse) |  |
 
  
 

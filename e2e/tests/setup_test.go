@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,6 +14,8 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/go-errors/errors"
+	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/core/usecase/crypto"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -38,9 +41,10 @@ func TestMain(m *testing.M) {
 }
 
 type RelaySidecarConfig struct {
-	Keys          string
-	DataDir       string
-	ContainerName string
+	Keys           string
+	DataDir        string
+	ContainerName  string
+	RequiredSymKey crypto.PrivateKey
 }
 
 type TestEnvironment struct {
@@ -76,10 +80,19 @@ func generateSidecarConfigs(env EnvInfo) []RelaySidecarConfig {
 		}
 		keysString := strings.Join(keys, ",")
 
+		privBytes, err := hex.DecodeString(symbPrivateKeyHex)
+		if err != nil {
+			panic(fmt.Sprintf("failed to decode symb private key hex: %v", err))
+		}
+		symbKey, err := crypto.NewPrivateKey(entity.KeyTypeBlsBn254, privBytes)
+		if err != nil {
+			panic(fmt.Sprintf("failed to create symb private key: %v", err))
+		}
 		configs[i] = RelaySidecarConfig{
-			Keys:          keysString,
-			DataDir:       fmt.Sprintf("/app/data-%02d", i+1),
-			ContainerName: fmt.Sprintf("relay-sidecar-%d", i+1),
+			Keys:           keysString,
+			RequiredSymKey: symbKey,
+			DataDir:        fmt.Sprintf("/app/data-%02d", i+1),
+			ContainerName:  fmt.Sprintf("relay-sidecar-%d", i+1),
 		}
 	}
 

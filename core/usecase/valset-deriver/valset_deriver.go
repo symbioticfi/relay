@@ -25,8 +25,8 @@ const (
 
 //go:generate mockgen -source=valset_deriver.go -destination=mocks/deriver.go -package=mocks -mock_names=evmClient=MockEvmClient
 type evmClient interface {
-	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
 	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
+	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
 	GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorVotingPower, error)
 	GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorWithKeys, error)
 	GetEip712Domain(ctx context.Context, addr entity.CrossChainAddress) (entity.Eip712Domain, error)
