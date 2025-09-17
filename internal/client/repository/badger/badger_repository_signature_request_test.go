@@ -457,3 +457,31 @@ func TestBadgerRepository_PendingSignatureRequests_Integration(t *testing.T) {
 		require.Equal(t, req2, pendingReqs2[0])
 	})
 }
+
+func TestBadgerRepository_SaveSignatureRequestPending_DuplicateHandling(t *testing.T) {
+	t.Parallel()
+	repo := setupTestRepository(t)
+
+	epoch := entity.Epoch(100)
+	req := randomSignatureRequestForEpoch(t, epoch)
+
+	// Save signature request to main collection first
+	err := repo.SaveSignatureRequest(t.Context(), req)
+	require.NoError(t, err)
+
+	// Save to pending collection - should succeed
+	err = repo.SaveSignatureRequestPending(t.Context(), req)
+	require.NoError(t, err)
+
+	// Try to save the same request to pending again - should fail
+	err = repo.SaveSignatureRequestPending(t.Context(), req)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "pending signature request already exists")
+	require.ErrorIs(t, err, entity.ErrEntityAlreadyExist)
+
+	// Verify the pending request still exists and is functional
+	pendingReqs, err := repo.GetSignatureRequestsByEpochPending(t.Context(), epoch, 0, common.Hash{})
+	require.NoError(t, err)
+	require.Len(t, pendingReqs, 1)
+	require.Equal(t, req, pendingReqs[0])
+}
