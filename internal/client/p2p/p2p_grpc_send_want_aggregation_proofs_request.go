@@ -70,7 +70,7 @@ func entityToProtoAggregationProofRequest(req entity.WantAggregationProofsReques
 	requestHashes := make([]string, len(req.RequestHashes))
 
 	for i, hash := range req.RequestHashes {
-		requestHashes[i] = hex.EncodeToString(hash.Bytes())
+		requestHashes[i] = hash.Hex()
 	}
 
 	return &prototypes.WantAggregationProofsRequest{

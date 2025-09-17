@@ -299,27 +299,12 @@ func (r *Repository) GetSignatureRequestsByEpochPending(ctx context.Context, epo
 			reqHashStr := parts[2]
 			reqHash := common.HexToHash(reqHashStr)
 
-			// Get the actual signature request using hash index
-			hashIndexItem, err := txn.Get(keySignatureRequestHashIndex(reqHash))
+			// Get the actual signature request
+			sigReqKey := keySignatureRequest(epoch, reqHash)
+			sigReqItem, err := txn.Get(sigReqKey)
 			if err != nil {
 				if errors.Is(err, badger.ErrKeyNotFound) {
 					// This shouldn't happen - pending marker exists but signature request doesn't
-					// Skip this entry and continue
-					continue
-				}
-				return errors.Errorf("failed to get signature request hash index for hash %s: %w", reqHashStr, err)
-			}
-
-			primaryKey, err := hashIndexItem.ValueCopy(nil)
-			if err != nil {
-				return errors.Errorf("failed to copy hash index value: %w", err)
-			}
-
-			// Get actual data using primary key
-			sigReqItem, err := txn.Get(primaryKey)
-			if err != nil {
-				if errors.Is(err, badger.ErrKeyNotFound) {
-					// This shouldn't happen - hash index exists but signature request doesn't
 					// Skip this entry and continue
 					continue
 				}
