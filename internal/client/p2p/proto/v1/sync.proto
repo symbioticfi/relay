@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-import "v1/message.proto";
+import "internal/client/p2p/proto/v1/message.proto";
 
 package internal.client.p2p.proto.v1;
 
