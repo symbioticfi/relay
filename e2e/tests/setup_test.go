@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,6 +14,8 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/go-errors/errors"
+	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/core/usecase/crypto"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -38,10 +41,10 @@ func TestMain(m *testing.M) {
 }
 
 type RelaySidecarConfig struct {
-	Keys          string
-	Role          string
-	DataDir       string
-	ContainerName string
+	Keys           string
+	DataDir        string
+	ContainerName  string
+	RequiredSymKey crypto.PrivateKey
 }
 
 type TestEnvironment struct {
@@ -56,8 +59,6 @@ func generateSidecarConfigs(env EnvInfo) []RelaySidecarConfig {
 		swarmKey       = "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140"
 	)
 
-	commiterCount := env.Commiters
-	aggregatorCount := env.Aggregators
 	configs := make([]RelaySidecarConfig, env.Operators)
 
 	for i := int64(0); i < env.Operators; i++ {
@@ -79,23 +80,19 @@ func generateSidecarConfigs(env EnvInfo) []RelaySidecarConfig {
 		}
 		keysString := strings.Join(keys, ",")
 
-		// Determine role for this operator (same logic as generate_network.sh)
-		var role string
-		if commiterCount > 0 {
-			role = "committer"
-			commiterCount--
-		} else if aggregatorCount > 0 {
-			role = "aggregator"
-			aggregatorCount--
-		} else {
-			role = "signer"
+		privBytes, err := hex.DecodeString(symbPrivateKeyHex)
+		if err != nil {
+			panic(fmt.Sprintf("failed to decode symb private key hex: %v", err))
 		}
-
+		symbKey, err := crypto.NewPrivateKey(entity.KeyTypeBlsBn254, privBytes)
+		if err != nil {
+			panic(fmt.Sprintf("failed to create symb private key: %v", err))
+		}
 		configs[i] = RelaySidecarConfig{
-			Keys:          keysString,
-			Role:          role,
-			DataDir:       fmt.Sprintf("/app/data-%02d", i+1),
-			ContainerName: fmt.Sprintf("relay-sidecar-%d", i+1),
+			Keys:           keysString,
+			RequiredSymKey: symbKey,
+			DataDir:        fmt.Sprintf("/app/data-%02d", i+1),
+			ContainerName:  fmt.Sprintf("relay-sidecar-%d", i+1),
 		}
 	}
 
@@ -166,7 +163,6 @@ func setupGlobalTestEnvironment() (*TestEnvironment, error) {
 				fmt.Sprintf("--driver.address %s", deploymentData.Driver.Addr),
 				fmt.Sprintf("--storage-dir %s", config.DataDir),
 				fmt.Sprintf("--secret-keys %s", config.Keys),
-				fmt.Sprintf("--%s true", config.Role),
 			}
 			// Build the command to start the sidecar
 			startCommand := fmt.Sprintf("./relay_sidecar %s", strings.Join(opts, " "))
@@ -276,15 +272,6 @@ func (env *TestEnvironment) GetContainerPort(i int) string {
 // Helper function to get container port
 func (env *TestEnvironment) GetHealthEndpoint(i int) string {
 	return fmt.Sprintf("http://localhost:%s/healthz", globalTestEnv.GetContainerPort(i))
-}
-
-func (env *TestEnvironment) GetSimpleContainer() testcontainers.Container {
-	for i, config := range env.SidecarConfigs {
-		if config.Role == "signer" {
-			return env.Containers[i]
-		}
-	}
-	return nil
 }
 
 func (env *TestEnvironment) GetGRPCAddress(index int) string {

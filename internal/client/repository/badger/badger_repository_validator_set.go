@@ -529,6 +529,7 @@ type validatorSetHeaderDTO struct {
 	Epoch              uint64 `json:"epoch"`
 	CaptureTimestamp   uint64 `json:"capture_timestamp"`
 	QuorumThreshold    string `json:"quorum_threshold"`
+	TotalVotingPower   string `json:"total_voting_power"`
 	ValidatorsSszMRoot string `json:"validators_ssz_mroot"`
 }
 
@@ -605,6 +606,7 @@ func validatorSetHeaderToBytes(header entity.ValidatorSetHeader) ([]byte, error)
 		Epoch:              header.Epoch,
 		CaptureTimestamp:   header.CaptureTimestamp,
 		QuorumThreshold:    header.QuorumThreshold.String(),
+		TotalVotingPower:   header.TotalVotingPower.String(),
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot.Hex(),
 	}
 
@@ -622,12 +624,18 @@ func bytesToValidatorSetHeader(data []byte) (entity.ValidatorSetHeader, error) {
 		return entity.ValidatorSetHeader{}, errors.Errorf("failed to parse quorum threshold: %s", dto.QuorumThreshold)
 	}
 
+	totalVotingPower, ok := new(big.Int).SetString(dto.TotalVotingPower, 10)
+	if !ok {
+		return entity.ValidatorSetHeader{}, errors.Errorf("failed to parse total voting power: %s", dto.TotalVotingPower)
+	}
+
 	return entity.ValidatorSetHeader{
 		Version:            dto.Version,
 		RequiredKeyTag:     entity.KeyTag(dto.RequiredKeyTag),
 		Epoch:              dto.Epoch,
 		CaptureTimestamp:   dto.CaptureTimestamp,
 		QuorumThreshold:    entity.ToVotingPower(quorumThreshold),
+		TotalVotingPower:   entity.ToVotingPower(totalVotingPower),
 		ValidatorsSszMRoot: common.HexToHash(dto.ValidatorsSszMRoot),
 	}, nil
 }

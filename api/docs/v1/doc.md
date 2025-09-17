@@ -300,6 +300,7 @@ Response message for getting validator set header
 | epoch | [uint64](#uint64) |  | Validator set epoch |
 | capture_timestamp | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Epoch capture timestamp |
 | quorum_threshold | [string](#string) |  | Quorum threshold (big integer as string) |
+| total_voting_power | [string](#string) |  | Total voting power (big integer as string) |
 | validators_ssz_mroot | [string](#string) |  | Validators SSZ Merkle root (hex string) |
 
 

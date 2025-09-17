@@ -10,6 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
+	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
@@ -33,6 +34,7 @@ type evmClient interface {
 	IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (bool, error)
 	CommitValsetHeader(ctx context.Context, addr entity.CrossChainAddress, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) (entity.TxResult, error)
 	SetGenesis(ctx context.Context, addr entity.CrossChainAddress, header entity.ValidatorSetHeader, extraData []entity.ExtraData) (entity.TxResult, error)
+	GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (uint64, error)
 }
 
 type repo interface {
@@ -57,7 +59,7 @@ type Config struct {
 	Repo            repo          `validate:"required"`
 	Deriver         deriver       `validate:"required"`
 	PollingInterval time.Duration `validate:"required,gt=0"`
-	IsCommitter     bool
+	KeyProvider     keyprovider.KeyProvider
 	Aggregator      aggregator.Aggregator
 }
 
@@ -155,16 +157,16 @@ func (s *Service) process(ctx context.Context) error {
 }
 
 func (s *Service) getNetworkData(ctx context.Context, config entity.NetworkConfig) (entity.NetworkData, error) {
-	for _, replica := range config.Replicas {
-		networkData, err := s.cfg.Deriver.GetNetworkData(ctx, replica)
+	for _, settlement := range config.Settlements {
+		networkData, err := s.cfg.Deriver.GetNetworkData(ctx, settlement)
 		if err != nil {
-			slog.WarnContext(ctx, "Failed to get network data for replica", "replica", replica, "error", err)
+			slog.WarnContext(ctx, "Failed to get network data for settlement", "settlement", settlement, "error", err)
 			continue
 		}
 		return networkData, nil
 	}
 
-	return entity.NetworkData{}, errors.New("failed to get network data for any replica")
+	return entity.NetworkData{}, errors.New("failed to get network data for any settlement")
 }
 
 func (s *Service) tryDetectUnsignedValset(ctx context.Context) (entity.ValidatorSet, entity.NetworkConfig, error) {

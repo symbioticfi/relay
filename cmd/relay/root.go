@@ -222,7 +222,7 @@ func runApp(ctx context.Context) error {
 		Deriver:         deriver,
 		Aggregator:      agg,
 		PollingInterval: time.Second * 5,
-		IsCommitter:     cfg.IsCommitter,
+		KeyProvider:     keyProvider,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create epoch listener: %w", err)
@@ -239,10 +239,10 @@ func runApp(ctx context.Context) error {
 	}
 
 	if err := aggProofReadySignal.SetHandler(func(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
-		if err := generator.HandleProofAggregated(ctx, msg); err != nil {
+		if err := statusTracker.HandleProofAggregated(ctx, msg); err != nil {
 			return errors.Errorf("failed to handle proof aggregated: %w", err)
 		}
-		if err := statusTracker.HandleProofAggregated(ctx, msg); err != nil {
+		if err := generator.HandleProofAggregated(ctx, msg); err != nil {
 			return errors.Errorf("failed to handle proof aggregated: %w", err)
 		}
 		slog.DebugContext(ctx, "Handled proof aggregated", "request", msg)
@@ -301,27 +301,26 @@ func runApp(ctx context.Context) error {
 	}
 
 	var aggApp *aggregatorApp.AggregatorApp
-	if cfg.IsAggregator {
-		aggApp, err = aggregatorApp.NewAggregatorApp(aggregatorApp.Config{
-			Repo:              repo,
-			P2PClient:         p2pService,
-			Aggregator:        agg,
-			Metrics:           mtr,
-			AggregationPolicy: aggPolicy,
-		})
-		if err != nil {
-			return errors.Errorf("failed to create aggregator app: %w", err)
-		}
-
-		if err := signatureReceivedSignal.SetHandler(aggApp.HandleSignatureGeneratedMessage); err != nil {
-			return errors.Errorf("failed to set signature received message handler: %w", err)
-		}
-		if err := signatureReceivedSignal.StartWorkers(ctx); err != nil {
-			return errors.Errorf("failed to start signature received signal workers: %w", err)
-		}
-
-		slog.DebugContext(ctx, "Created aggregator app, starting")
+	aggApp, err = aggregatorApp.NewAggregatorApp(aggregatorApp.Config{
+		Repo:              repo,
+		P2PClient:         p2pService,
+		Aggregator:        agg,
+		Metrics:           mtr,
+		AggregationPolicy: aggPolicy,
+		KeyProvider:       keyProvider,
+	})
+	if err != nil {
+		return errors.Errorf("failed to create aggregator app: %w", err)
 	}
+
+	if err := signatureReceivedSignal.SetHandler(aggApp.HandleSignatureGeneratedMessage); err != nil {
+		return errors.Errorf("failed to set signature received message handler: %w", err)
+	}
+	if err := signatureReceivedSignal.StartWorkers(ctx); err != nil {
+		return errors.Errorf("failed to start signature received signal workers: %w", err)
+	}
+
+	slog.DebugContext(ctx, "Created aggregator app, starting")
 
 	serveMetricsOnAPIAddress := cfg.HTTPListenAddr == cfg.MetricsListenAddr || cfg.MetricsListenAddr == ""
 
@@ -336,6 +335,7 @@ func runApp(ctx context.Context) error {
 		Deriver:           deriver,
 		Metrics:           mtr,
 		ServeMetrics:      serveMetricsOnAPIAddress,
+		KeyProvider:       keyProvider,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create api app: %w", err)

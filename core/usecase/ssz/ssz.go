@@ -38,8 +38,8 @@ const (
 	ValidatorsListTreeHeight  = 20 // ceil(log2(ValidatorsListMaxElements))
 	KeysListMaxElements       = 128
 	KeysListTreeHeight        = 7 // ceil(log2(KeysListMaxElements))
-	VaultsListMaxElements     = 32
-	VaultsListTreeHeight      = 5 // ceil(log2(VaultsListMaxElements))
+	VaultsListMaxElements     = 1024
+	VaultsListTreeHeight      = 10 // ceil(log2(VaultsListMaxElements))
 )
 
 // MarshalSSZ ssz marshals the Key object

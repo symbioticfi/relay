@@ -31,16 +31,18 @@ var (
 
 // IValSetDriverConfig is an auto generated low-level Go binding around an user-defined struct.
 type IValSetDriverConfig struct {
+	NumAggregators          *big.Int
+	NumCommitters           *big.Int
 	VotingPowerProviders    []IValSetDriverCrossChainAddress
 	KeysProvider            IValSetDriverCrossChainAddress
-	Replicas                []IValSetDriverCrossChainAddress
-	VerificationType        uint32
+	Settlements             []IValSetDriverCrossChainAddress
 	MaxVotingPower          *big.Int
 	MinInclusionVotingPower *big.Int
 	MaxValidatorsCount      *big.Int
 	RequiredKeyTags         []uint8
-	RequiredHeaderKeyTag    uint8
 	QuorumThresholds        []IValSetDriverQuorumThreshold
+	RequiredHeaderKeyTag    uint8
+	VerificationType        uint32
 }
 
 // IValSetDriverCrossChainAddress is an auto generated low-level Go binding around an user-defined struct.
@@ -57,7 +59,7 @@ type IValSetDriverQuorumThreshold struct {
 
 // IValSetDriverMetaData contains all meta data concerning the IValSetDriver contract.
 var IValSetDriverMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"MAX_QUORUM_THRESHOLD\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint248\",\"internalType\":\"uint248\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"NETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK_IDENTIFIER\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"addQuorumThreshold\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addReplica\",\"inputs\":[{\"name\":\"replica\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getConfig\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.Config\",\"components\":[{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"replicas\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"verificationType\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxValidatorsCount\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"},{\"name\":\"requiredHeaderKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThresholds\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.QuorumThreshold[]\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getConfigAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.Config\",\"components\":[{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"replicas\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"verificationType\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxValidatorsCount\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"},{\"name\":\"requiredHeaderKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThresholds\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.QuorumThreshold[]\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpoch\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpochDuration\",\"inputs\":[],\"outputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpochStart\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochDuration\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochIndex\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochStart\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"hint\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getKeysProvider\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getKeysProviderAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxValidatorsCount\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxValidatorsCountAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxVotingPower\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxVotingPowerAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMinInclusionVotingPower\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMinInclusionVotingPowerAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextEpoch\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextEpochDuration\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextEpochStart\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQuorumThresholds\",\"inputs\":[],\"outputs\":[{\"name\":\"quorumThresholds\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.QuorumThreshold[]\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQuorumThresholdsAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"quorumThresholds\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.QuorumThreshold[]\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getReplicas\",\"inputs\":[],\"outputs\":[{\"name\":\"replicas\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getReplicasAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"replicas\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredHeaderKeyTag\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredHeaderKeyTagAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTags\",\"inputs\":[],\"outputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTagsAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVerificationType\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVerificationTypeAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVotingPowerProviders\",\"inputs\":[],\"outputs\":[{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVotingPowerProvidersAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isQuorumThresholdRegistered\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isQuorumThresholdRegisteredAt\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isReplicaRegistered\",\"inputs\":[{\"name\":\"replica\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isReplicaRegisteredAt\",\"inputs\":[{\"name\":\"replica\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isVotingPowerProviderRegistered\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isVotingPowerProviderRegisteredAt\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"multicall\",\"inputs\":[{\"name\":\"data\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"outputs\":[{\"name\":\"results\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeQuorumThreshold\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeReplica\",\"inputs\":[{\"name\":\"replica\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setEpochDuration\",\"inputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setKeysProvider\",\"inputs\":[{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMaxValidatorsCount\",\"inputs\":[{\"name\":\"maxValidatorsCount\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMaxVotingPower\",\"inputs\":[{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMinInclusionVotingPower\",\"inputs\":[{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setRequiredHeaderKeyTag\",\"inputs\":[{\"name\":\"requiredHeaderKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setRequiredKeyTags\",\"inputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setVerificationType\",\"inputs\":[{\"name\":\"verificationType\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"staticDelegateCall\",\"inputs\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"AddQuorumThreshold\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"AddReplica\",\"inputs\":[{\"name\":\"replica\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"AddVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitEpochDuration\",\"inputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"indexed\":false,\"internalType\":\"uint48\"},{\"name\":\"epochDurationTimestamp\",\"type\":\"uint48\",\"indexed\":false,\"internalType\":\"uint48\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitSubnetwork\",\"inputs\":[{\"name\":\"network\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"subnetworkID\",\"type\":\"uint96\",\"indexed\":false,\"internalType\":\"uint96\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RemoveQuorumThreshold\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RemoveReplica\",\"inputs\":[{\"name\":\"replica\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RemoveVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetEpochDuration\",\"inputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"indexed\":false,\"internalType\":\"uint48\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetKeysProvider\",\"inputs\":[{\"name\":\"keysProvider\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetMaxValidatorsCount\",\"inputs\":[{\"name\":\"maxValidatorsCount\",\"type\":\"uint208\",\"indexed\":false,\"internalType\":\"uint208\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetMaxVotingPower\",\"inputs\":[{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetMinInclusionVotingPower\",\"inputs\":[{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetRequiredHeaderKeyTag\",\"inputs\":[{\"name\":\"requiredHeaderKeyTag\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetRequiredKeyTags\",\"inputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"indexed\":false,\"internalType\":\"uint8[]\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetVerificationType\",\"inputs\":[{\"name\":\"verificationType\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AddressEmptyCode\",\"inputs\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"CheckpointUnorderedInsertion\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_InvalidEpochDuration\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_InvalidEpochDurationIndex\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_InvalidEpochDurationTimestamp\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_NoCheckpoint\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"FailedCall\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidInitialization\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"KeyTags_Duplicate\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"KeyTags_InvalidKeyTag\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NetworkManager_InvalidNetwork\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotInitializing\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"PersistentSet_InvalidKey\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SafeCastOverflowedUintDowncast\",\"inputs\":[{\"name\":\"bits\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"type\":\"error\",\"name\":\"ValSetDriver_ChainAlreadyAdded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_InvalidCrossChainAddress\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_InvalidMaxValidatorsCount\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_InvalidQuorumThreshold\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_KeyTagAlreadyAdded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_NotAdded\",\"inputs\":[]}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"MAX_QUORUM_THRESHOLD\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint248\",\"internalType\":\"uint248\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"NETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK_IDENTIFIER\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"addQuorumThreshold\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addSettlement\",\"inputs\":[{\"name\":\"settlement\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getConfig\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.Config\",\"components\":[{\"name\":\"numAggregators\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"numCommitters\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"settlements\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxValidatorsCount\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"},{\"name\":\"quorumThresholds\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.QuorumThreshold[]\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]},{\"name\":\"requiredHeaderKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"verificationType\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getConfigAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.Config\",\"components\":[{\"name\":\"numAggregators\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"numCommitters\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"settlements\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxValidatorsCount\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"},{\"name\":\"quorumThresholds\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.QuorumThreshold[]\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]},{\"name\":\"requiredHeaderKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"verificationType\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpoch\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpochDuration\",\"inputs\":[],\"outputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpochStart\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochDuration\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochIndex\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochStart\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getKeysProvider\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getKeysProviderAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxValidatorsCount\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxValidatorsCountAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxVotingPower\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxVotingPowerAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMinInclusionVotingPower\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMinInclusionVotingPowerAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextEpoch\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextEpochDuration\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextEpochStart\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNumAggregators\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNumAggregatorsAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNumCommitters\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNumCommittersAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQuorumThresholds\",\"inputs\":[],\"outputs\":[{\"name\":\"quorumThresholds\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.QuorumThreshold[]\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQuorumThresholdsAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"quorumThresholds\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.QuorumThreshold[]\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredHeaderKeyTag\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredHeaderKeyTagAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTags\",\"inputs\":[],\"outputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTagsAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSettlements\",\"inputs\":[],\"outputs\":[{\"name\":\"settlements\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSettlementsAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"settlements\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVerificationType\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVerificationTypeAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVotingPowerProviders\",\"inputs\":[],\"outputs\":[{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVotingPowerProvidersAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isQuorumThresholdRegistered\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isQuorumThresholdRegisteredAt\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isSettlementRegistered\",\"inputs\":[{\"name\":\"settlement\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isSettlementRegisteredAt\",\"inputs\":[{\"name\":\"settlement\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isVotingPowerProviderRegistered\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isVotingPowerProviderRegisteredAt\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"multicall\",\"inputs\":[{\"name\":\"data\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"outputs\":[{\"name\":\"results\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeQuorumThreshold\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeSettlement\",\"inputs\":[{\"name\":\"settlement\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setEpochDuration\",\"inputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setKeysProvider\",\"inputs\":[{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMaxValidatorsCount\",\"inputs\":[{\"name\":\"maxValidatorsCount\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMaxVotingPower\",\"inputs\":[{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMinInclusionVotingPower\",\"inputs\":[{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setNumAggregators\",\"inputs\":[{\"name\":\"numAggregators\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setNumCommitters\",\"inputs\":[{\"name\":\"numCommitters\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setRequiredHeaderKeyTag\",\"inputs\":[{\"name\":\"requiredHeaderKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setRequiredKeyTags\",\"inputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setVerificationType\",\"inputs\":[{\"name\":\"verificationType\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"staticDelegateCall\",\"inputs\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"AddQuorumThreshold\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"AddSettlement\",\"inputs\":[{\"name\":\"settlement\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"AddVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitEpochDuration\",\"inputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"indexed\":false,\"internalType\":\"uint48\"},{\"name\":\"epochDurationTimestamp\",\"type\":\"uint48\",\"indexed\":false,\"internalType\":\"uint48\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitSubnetwork\",\"inputs\":[{\"name\":\"network\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"subnetworkId\",\"type\":\"uint96\",\"indexed\":false,\"internalType\":\"uint96\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RemoveQuorumThreshold\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RemoveSettlement\",\"inputs\":[{\"name\":\"settlement\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RemoveVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetEpochDuration\",\"inputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"indexed\":false,\"internalType\":\"uint48\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetKeysProvider\",\"inputs\":[{\"name\":\"keysProvider\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetMaxValidatorsCount\",\"inputs\":[{\"name\":\"maxValidatorsCount\",\"type\":\"uint208\",\"indexed\":false,\"internalType\":\"uint208\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetMaxVotingPower\",\"inputs\":[{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetMinInclusionVotingPower\",\"inputs\":[{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetNumAggregators\",\"inputs\":[{\"name\":\"numAggregators\",\"type\":\"uint208\",\"indexed\":false,\"internalType\":\"uint208\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetNumCommitters\",\"inputs\":[{\"name\":\"numCommitters\",\"type\":\"uint208\",\"indexed\":false,\"internalType\":\"uint208\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetRequiredHeaderKeyTag\",\"inputs\":[{\"name\":\"requiredHeaderKeyTag\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetRequiredKeyTags\",\"inputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"indexed\":false,\"internalType\":\"uint8[]\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetVerificationType\",\"inputs\":[{\"name\":\"verificationType\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AddressEmptyCode\",\"inputs\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"CheckpointUnorderedInsertion\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"DuplicateKeyTag\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_InvalidEpochDuration\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_InvalidEpochDurationTimestamp\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_TooOldTimestamp\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"FailedCall\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidInitialization\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidKey\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidKeyTag\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NetworkManager_InvalidNetwork\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotInitializing\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_ChainAlreadyAdded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_InvalidCrossChainAddress\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_InvalidMaxValidatorsCount\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_InvalidQuorumThreshold\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_KeyTagAlreadyAdded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_NotAdded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_ZeroNumAggregators\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_ZeroNumCommitters\",\"inputs\":[]}]",
 }
 
 // IValSetDriverABI is the input ABI used to generate the binding from.
@@ -332,7 +334,7 @@ func (_IValSetDriver *IValSetDriverCallerSession) SUBNETWORKIDENTIFIER() (*big.I
 
 // GetConfig is a free data retrieval call binding the contract method 0xc3f909d4.
 //
-// Solidity: function getConfig() view returns(((uint64,address)[],(uint64,address),(uint64,address)[],uint32,uint256,uint256,uint208,uint8[],uint8,(uint8,uint248)[]))
+// Solidity: function getConfig() view returns((uint208,uint208,(uint64,address)[],(uint64,address),(uint64,address)[],uint256,uint256,uint208,uint8[],(uint8,uint248)[],uint8,uint32))
 func (_IValSetDriver *IValSetDriverCaller) GetConfig(opts *bind.CallOpts) (IValSetDriverConfig, error) {
 	var out []interface{}
 	err := _IValSetDriver.contract.Call(opts, &out, "getConfig")
@@ -349,21 +351,21 @@ func (_IValSetDriver *IValSetDriverCaller) GetConfig(opts *bind.CallOpts) (IValS
 
 // GetConfig is a free data retrieval call binding the contract method 0xc3f909d4.
 //
-// Solidity: function getConfig() view returns(((uint64,address)[],(uint64,address),(uint64,address)[],uint32,uint256,uint256,uint208,uint8[],uint8,(uint8,uint248)[]))
+// Solidity: function getConfig() view returns((uint208,uint208,(uint64,address)[],(uint64,address),(uint64,address)[],uint256,uint256,uint208,uint8[],(uint8,uint248)[],uint8,uint32))
 func (_IValSetDriver *IValSetDriverSession) GetConfig() (IValSetDriverConfig, error) {
 	return _IValSetDriver.Contract.GetConfig(&_IValSetDriver.CallOpts)
 }
 
 // GetConfig is a free data retrieval call binding the contract method 0xc3f909d4.
 //
-// Solidity: function getConfig() view returns(((uint64,address)[],(uint64,address),(uint64,address)[],uint32,uint256,uint256,uint208,uint8[],uint8,(uint8,uint248)[]))
+// Solidity: function getConfig() view returns((uint208,uint208,(uint64,address)[],(uint64,address),(uint64,address)[],uint256,uint256,uint208,uint8[],(uint8,uint248)[],uint8,uint32))
 func (_IValSetDriver *IValSetDriverCallerSession) GetConfig() (IValSetDriverConfig, error) {
 	return _IValSetDriver.Contract.GetConfig(&_IValSetDriver.CallOpts)
 }
 
 // GetConfigAt is a free data retrieval call binding the contract method 0x13fb0877.
 //
-// Solidity: function getConfigAt(uint48 timestamp) view returns(((uint64,address)[],(uint64,address),(uint64,address)[],uint32,uint256,uint256,uint208,uint8[],uint8,(uint8,uint248)[]))
+// Solidity: function getConfigAt(uint48 timestamp) view returns((uint208,uint208,(uint64,address)[],(uint64,address),(uint64,address)[],uint256,uint256,uint208,uint8[],(uint8,uint248)[],uint8,uint32))
 func (_IValSetDriver *IValSetDriverCaller) GetConfigAt(opts *bind.CallOpts, timestamp *big.Int) (IValSetDriverConfig, error) {
 	var out []interface{}
 	err := _IValSetDriver.contract.Call(opts, &out, "getConfigAt", timestamp)
@@ -380,14 +382,14 @@ func (_IValSetDriver *IValSetDriverCaller) GetConfigAt(opts *bind.CallOpts, time
 
 // GetConfigAt is a free data retrieval call binding the contract method 0x13fb0877.
 //
-// Solidity: function getConfigAt(uint48 timestamp) view returns(((uint64,address)[],(uint64,address),(uint64,address)[],uint32,uint256,uint256,uint208,uint8[],uint8,(uint8,uint248)[]))
+// Solidity: function getConfigAt(uint48 timestamp) view returns((uint208,uint208,(uint64,address)[],(uint64,address),(uint64,address)[],uint256,uint256,uint208,uint8[],(uint8,uint248)[],uint8,uint32))
 func (_IValSetDriver *IValSetDriverSession) GetConfigAt(timestamp *big.Int) (IValSetDriverConfig, error) {
 	return _IValSetDriver.Contract.GetConfigAt(&_IValSetDriver.CallOpts, timestamp)
 }
 
 // GetConfigAt is a free data retrieval call binding the contract method 0x13fb0877.
 //
-// Solidity: function getConfigAt(uint48 timestamp) view returns(((uint64,address)[],(uint64,address),(uint64,address)[],uint32,uint256,uint256,uint208,uint8[],uint8,(uint8,uint248)[]))
+// Solidity: function getConfigAt(uint48 timestamp) view returns((uint208,uint208,(uint64,address)[],(uint64,address),(uint64,address)[],uint256,uint256,uint208,uint8[],(uint8,uint248)[],uint8,uint32))
 func (_IValSetDriver *IValSetDriverCallerSession) GetConfigAt(timestamp *big.Int) (IValSetDriverConfig, error) {
 	return _IValSetDriver.Contract.GetConfigAt(&_IValSetDriver.CallOpts, timestamp)
 }
@@ -485,12 +487,12 @@ func (_IValSetDriver *IValSetDriverCallerSession) GetCurrentEpochStart() (*big.I
 	return _IValSetDriver.Contract.GetCurrentEpochStart(&_IValSetDriver.CallOpts)
 }
 
-// GetEpochDuration is a free data retrieval call binding the contract method 0x3a5f8abd.
+// GetEpochDuration is a free data retrieval call binding the contract method 0xf6fd6f14.
 //
-// Solidity: function getEpochDuration(uint48 epoch, bytes hint) view returns(uint48 epochDuration)
-func (_IValSetDriver *IValSetDriverCaller) GetEpochDuration(opts *bind.CallOpts, epoch *big.Int, hint []byte) (*big.Int, error) {
+// Solidity: function getEpochDuration(uint48 epoch) view returns(uint48 epochDuration)
+func (_IValSetDriver *IValSetDriverCaller) GetEpochDuration(opts *bind.CallOpts, epoch *big.Int) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getEpochDuration", epoch, hint)
+	err := _IValSetDriver.contract.Call(opts, &out, "getEpochDuration", epoch)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -502,26 +504,26 @@ func (_IValSetDriver *IValSetDriverCaller) GetEpochDuration(opts *bind.CallOpts,
 
 }
 
-// GetEpochDuration is a free data retrieval call binding the contract method 0x3a5f8abd.
+// GetEpochDuration is a free data retrieval call binding the contract method 0xf6fd6f14.
 //
-// Solidity: function getEpochDuration(uint48 epoch, bytes hint) view returns(uint48 epochDuration)
-func (_IValSetDriver *IValSetDriverSession) GetEpochDuration(epoch *big.Int, hint []byte) (*big.Int, error) {
-	return _IValSetDriver.Contract.GetEpochDuration(&_IValSetDriver.CallOpts, epoch, hint)
+// Solidity: function getEpochDuration(uint48 epoch) view returns(uint48 epochDuration)
+func (_IValSetDriver *IValSetDriverSession) GetEpochDuration(epoch *big.Int) (*big.Int, error) {
+	return _IValSetDriver.Contract.GetEpochDuration(&_IValSetDriver.CallOpts, epoch)
 }
 
-// GetEpochDuration is a free data retrieval call binding the contract method 0x3a5f8abd.
+// GetEpochDuration is a free data retrieval call binding the contract method 0xf6fd6f14.
 //
-// Solidity: function getEpochDuration(uint48 epoch, bytes hint) view returns(uint48 epochDuration)
-func (_IValSetDriver *IValSetDriverCallerSession) GetEpochDuration(epoch *big.Int, hint []byte) (*big.Int, error) {
-	return _IValSetDriver.Contract.GetEpochDuration(&_IValSetDriver.CallOpts, epoch, hint)
+// Solidity: function getEpochDuration(uint48 epoch) view returns(uint48 epochDuration)
+func (_IValSetDriver *IValSetDriverCallerSession) GetEpochDuration(epoch *big.Int) (*big.Int, error) {
+	return _IValSetDriver.Contract.GetEpochDuration(&_IValSetDriver.CallOpts, epoch)
 }
 
-// GetEpochIndex is a free data retrieval call binding the contract method 0x36913ca9.
+// GetEpochIndex is a free data retrieval call binding the contract method 0xccafd209.
 //
-// Solidity: function getEpochIndex(uint48 timestamp, bytes hint) view returns(uint48)
-func (_IValSetDriver *IValSetDriverCaller) GetEpochIndex(opts *bind.CallOpts, timestamp *big.Int, hint []byte) (*big.Int, error) {
+// Solidity: function getEpochIndex(uint48 timestamp) view returns(uint48)
+func (_IValSetDriver *IValSetDriverCaller) GetEpochIndex(opts *bind.CallOpts, timestamp *big.Int) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getEpochIndex", timestamp, hint)
+	err := _IValSetDriver.contract.Call(opts, &out, "getEpochIndex", timestamp)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -533,26 +535,26 @@ func (_IValSetDriver *IValSetDriverCaller) GetEpochIndex(opts *bind.CallOpts, ti
 
 }
 
-// GetEpochIndex is a free data retrieval call binding the contract method 0x36913ca9.
+// GetEpochIndex is a free data retrieval call binding the contract method 0xccafd209.
 //
-// Solidity: function getEpochIndex(uint48 timestamp, bytes hint) view returns(uint48)
-func (_IValSetDriver *IValSetDriverSession) GetEpochIndex(timestamp *big.Int, hint []byte) (*big.Int, error) {
-	return _IValSetDriver.Contract.GetEpochIndex(&_IValSetDriver.CallOpts, timestamp, hint)
+// Solidity: function getEpochIndex(uint48 timestamp) view returns(uint48)
+func (_IValSetDriver *IValSetDriverSession) GetEpochIndex(timestamp *big.Int) (*big.Int, error) {
+	return _IValSetDriver.Contract.GetEpochIndex(&_IValSetDriver.CallOpts, timestamp)
 }
 
-// GetEpochIndex is a free data retrieval call binding the contract method 0x36913ca9.
+// GetEpochIndex is a free data retrieval call binding the contract method 0xccafd209.
 //
-// Solidity: function getEpochIndex(uint48 timestamp, bytes hint) view returns(uint48)
-func (_IValSetDriver *IValSetDriverCallerSession) GetEpochIndex(timestamp *big.Int, hint []byte) (*big.Int, error) {
-	return _IValSetDriver.Contract.GetEpochIndex(&_IValSetDriver.CallOpts, timestamp, hint)
+// Solidity: function getEpochIndex(uint48 timestamp) view returns(uint48)
+func (_IValSetDriver *IValSetDriverCallerSession) GetEpochIndex(timestamp *big.Int) (*big.Int, error) {
+	return _IValSetDriver.Contract.GetEpochIndex(&_IValSetDriver.CallOpts, timestamp)
 }
 
-// GetEpochStart is a free data retrieval call binding the contract method 0x40a29a88.
+// GetEpochStart is a free data retrieval call binding the contract method 0x246e158f.
 //
-// Solidity: function getEpochStart(uint48 epoch, bytes hint) view returns(uint48)
-func (_IValSetDriver *IValSetDriverCaller) GetEpochStart(opts *bind.CallOpts, epoch *big.Int, hint []byte) (*big.Int, error) {
+// Solidity: function getEpochStart(uint48 epoch) view returns(uint48)
+func (_IValSetDriver *IValSetDriverCaller) GetEpochStart(opts *bind.CallOpts, epoch *big.Int) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getEpochStart", epoch, hint)
+	err := _IValSetDriver.contract.Call(opts, &out, "getEpochStart", epoch)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -564,18 +566,18 @@ func (_IValSetDriver *IValSetDriverCaller) GetEpochStart(opts *bind.CallOpts, ep
 
 }
 
-// GetEpochStart is a free data retrieval call binding the contract method 0x40a29a88.
+// GetEpochStart is a free data retrieval call binding the contract method 0x246e158f.
 //
-// Solidity: function getEpochStart(uint48 epoch, bytes hint) view returns(uint48)
-func (_IValSetDriver *IValSetDriverSession) GetEpochStart(epoch *big.Int, hint []byte) (*big.Int, error) {
-	return _IValSetDriver.Contract.GetEpochStart(&_IValSetDriver.CallOpts, epoch, hint)
+// Solidity: function getEpochStart(uint48 epoch) view returns(uint48)
+func (_IValSetDriver *IValSetDriverSession) GetEpochStart(epoch *big.Int) (*big.Int, error) {
+	return _IValSetDriver.Contract.GetEpochStart(&_IValSetDriver.CallOpts, epoch)
 }
 
-// GetEpochStart is a free data retrieval call binding the contract method 0x40a29a88.
+// GetEpochStart is a free data retrieval call binding the contract method 0x246e158f.
 //
-// Solidity: function getEpochStart(uint48 epoch, bytes hint) view returns(uint48)
-func (_IValSetDriver *IValSetDriverCallerSession) GetEpochStart(epoch *big.Int, hint []byte) (*big.Int, error) {
-	return _IValSetDriver.Contract.GetEpochStart(&_IValSetDriver.CallOpts, epoch, hint)
+// Solidity: function getEpochStart(uint48 epoch) view returns(uint48)
+func (_IValSetDriver *IValSetDriverCallerSession) GetEpochStart(epoch *big.Int) (*big.Int, error) {
+	return _IValSetDriver.Contract.GetEpochStart(&_IValSetDriver.CallOpts, epoch)
 }
 
 // GetKeysProvider is a free data retrieval call binding the contract method 0x297d29b8.
@@ -919,6 +921,130 @@ func (_IValSetDriver *IValSetDriverCallerSession) GetNextEpochStart() (*big.Int,
 	return _IValSetDriver.Contract.GetNextEpochStart(&_IValSetDriver.CallOpts)
 }
 
+// GetNumAggregators is a free data retrieval call binding the contract method 0x21fbfe0d.
+//
+// Solidity: function getNumAggregators() view returns(uint208)
+func (_IValSetDriver *IValSetDriverCaller) GetNumAggregators(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _IValSetDriver.contract.Call(opts, &out, "getNumAggregators")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetNumAggregators is a free data retrieval call binding the contract method 0x21fbfe0d.
+//
+// Solidity: function getNumAggregators() view returns(uint208)
+func (_IValSetDriver *IValSetDriverSession) GetNumAggregators() (*big.Int, error) {
+	return _IValSetDriver.Contract.GetNumAggregators(&_IValSetDriver.CallOpts)
+}
+
+// GetNumAggregators is a free data retrieval call binding the contract method 0x21fbfe0d.
+//
+// Solidity: function getNumAggregators() view returns(uint208)
+func (_IValSetDriver *IValSetDriverCallerSession) GetNumAggregators() (*big.Int, error) {
+	return _IValSetDriver.Contract.GetNumAggregators(&_IValSetDriver.CallOpts)
+}
+
+// GetNumAggregatorsAt is a free data retrieval call binding the contract method 0x6bb7e08a.
+//
+// Solidity: function getNumAggregatorsAt(uint48 timestamp) view returns(uint208)
+func (_IValSetDriver *IValSetDriverCaller) GetNumAggregatorsAt(opts *bind.CallOpts, timestamp *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _IValSetDriver.contract.Call(opts, &out, "getNumAggregatorsAt", timestamp)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetNumAggregatorsAt is a free data retrieval call binding the contract method 0x6bb7e08a.
+//
+// Solidity: function getNumAggregatorsAt(uint48 timestamp) view returns(uint208)
+func (_IValSetDriver *IValSetDriverSession) GetNumAggregatorsAt(timestamp *big.Int) (*big.Int, error) {
+	return _IValSetDriver.Contract.GetNumAggregatorsAt(&_IValSetDriver.CallOpts, timestamp)
+}
+
+// GetNumAggregatorsAt is a free data retrieval call binding the contract method 0x6bb7e08a.
+//
+// Solidity: function getNumAggregatorsAt(uint48 timestamp) view returns(uint208)
+func (_IValSetDriver *IValSetDriverCallerSession) GetNumAggregatorsAt(timestamp *big.Int) (*big.Int, error) {
+	return _IValSetDriver.Contract.GetNumAggregatorsAt(&_IValSetDriver.CallOpts, timestamp)
+}
+
+// GetNumCommitters is a free data retrieval call binding the contract method 0x7861db16.
+//
+// Solidity: function getNumCommitters() view returns(uint208)
+func (_IValSetDriver *IValSetDriverCaller) GetNumCommitters(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _IValSetDriver.contract.Call(opts, &out, "getNumCommitters")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetNumCommitters is a free data retrieval call binding the contract method 0x7861db16.
+//
+// Solidity: function getNumCommitters() view returns(uint208)
+func (_IValSetDriver *IValSetDriverSession) GetNumCommitters() (*big.Int, error) {
+	return _IValSetDriver.Contract.GetNumCommitters(&_IValSetDriver.CallOpts)
+}
+
+// GetNumCommitters is a free data retrieval call binding the contract method 0x7861db16.
+//
+// Solidity: function getNumCommitters() view returns(uint208)
+func (_IValSetDriver *IValSetDriverCallerSession) GetNumCommitters() (*big.Int, error) {
+	return _IValSetDriver.Contract.GetNumCommitters(&_IValSetDriver.CallOpts)
+}
+
+// GetNumCommittersAt is a free data retrieval call binding the contract method 0xe0078c64.
+//
+// Solidity: function getNumCommittersAt(uint48 timestamp) view returns(uint208)
+func (_IValSetDriver *IValSetDriverCaller) GetNumCommittersAt(opts *bind.CallOpts, timestamp *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _IValSetDriver.contract.Call(opts, &out, "getNumCommittersAt", timestamp)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetNumCommittersAt is a free data retrieval call binding the contract method 0xe0078c64.
+//
+// Solidity: function getNumCommittersAt(uint48 timestamp) view returns(uint208)
+func (_IValSetDriver *IValSetDriverSession) GetNumCommittersAt(timestamp *big.Int) (*big.Int, error) {
+	return _IValSetDriver.Contract.GetNumCommittersAt(&_IValSetDriver.CallOpts, timestamp)
+}
+
+// GetNumCommittersAt is a free data retrieval call binding the contract method 0xe0078c64.
+//
+// Solidity: function getNumCommittersAt(uint48 timestamp) view returns(uint208)
+func (_IValSetDriver *IValSetDriverCallerSession) GetNumCommittersAt(timestamp *big.Int) (*big.Int, error) {
+	return _IValSetDriver.Contract.GetNumCommittersAt(&_IValSetDriver.CallOpts, timestamp)
+}
+
 // GetQuorumThresholds is a free data retrieval call binding the contract method 0x5796148c.
 //
 // Solidity: function getQuorumThresholds() view returns((uint8,uint248)[] quorumThresholds)
@@ -979,68 +1105,6 @@ func (_IValSetDriver *IValSetDriverSession) GetQuorumThresholdsAt(timestamp *big
 // Solidity: function getQuorumThresholdsAt(uint48 timestamp) view returns((uint8,uint248)[] quorumThresholds)
 func (_IValSetDriver *IValSetDriverCallerSession) GetQuorumThresholdsAt(timestamp *big.Int) ([]IValSetDriverQuorumThreshold, error) {
 	return _IValSetDriver.Contract.GetQuorumThresholdsAt(&_IValSetDriver.CallOpts, timestamp)
-}
-
-// GetReplicas is a free data retrieval call binding the contract method 0x4df9ffb4.
-//
-// Solidity: function getReplicas() view returns((uint64,address)[] replicas)
-func (_IValSetDriver *IValSetDriverCaller) GetReplicas(opts *bind.CallOpts) ([]IValSetDriverCrossChainAddress, error) {
-	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getReplicas")
-
-	if err != nil {
-		return *new([]IValSetDriverCrossChainAddress), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new([]IValSetDriverCrossChainAddress)).(*[]IValSetDriverCrossChainAddress)
-
-	return out0, err
-
-}
-
-// GetReplicas is a free data retrieval call binding the contract method 0x4df9ffb4.
-//
-// Solidity: function getReplicas() view returns((uint64,address)[] replicas)
-func (_IValSetDriver *IValSetDriverSession) GetReplicas() ([]IValSetDriverCrossChainAddress, error) {
-	return _IValSetDriver.Contract.GetReplicas(&_IValSetDriver.CallOpts)
-}
-
-// GetReplicas is a free data retrieval call binding the contract method 0x4df9ffb4.
-//
-// Solidity: function getReplicas() view returns((uint64,address)[] replicas)
-func (_IValSetDriver *IValSetDriverCallerSession) GetReplicas() ([]IValSetDriverCrossChainAddress, error) {
-	return _IValSetDriver.Contract.GetReplicas(&_IValSetDriver.CallOpts)
-}
-
-// GetReplicasAt is a free data retrieval call binding the contract method 0xd71f07c8.
-//
-// Solidity: function getReplicasAt(uint48 timestamp) view returns((uint64,address)[] replicas)
-func (_IValSetDriver *IValSetDriverCaller) GetReplicasAt(opts *bind.CallOpts, timestamp *big.Int) ([]IValSetDriverCrossChainAddress, error) {
-	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getReplicasAt", timestamp)
-
-	if err != nil {
-		return *new([]IValSetDriverCrossChainAddress), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new([]IValSetDriverCrossChainAddress)).(*[]IValSetDriverCrossChainAddress)
-
-	return out0, err
-
-}
-
-// GetReplicasAt is a free data retrieval call binding the contract method 0xd71f07c8.
-//
-// Solidity: function getReplicasAt(uint48 timestamp) view returns((uint64,address)[] replicas)
-func (_IValSetDriver *IValSetDriverSession) GetReplicasAt(timestamp *big.Int) ([]IValSetDriverCrossChainAddress, error) {
-	return _IValSetDriver.Contract.GetReplicasAt(&_IValSetDriver.CallOpts, timestamp)
-}
-
-// GetReplicasAt is a free data retrieval call binding the contract method 0xd71f07c8.
-//
-// Solidity: function getReplicasAt(uint48 timestamp) view returns((uint64,address)[] replicas)
-func (_IValSetDriver *IValSetDriverCallerSession) GetReplicasAt(timestamp *big.Int) ([]IValSetDriverCrossChainAddress, error) {
-	return _IValSetDriver.Contract.GetReplicasAt(&_IValSetDriver.CallOpts, timestamp)
 }
 
 // GetRequiredHeaderKeyTag is a free data retrieval call binding the contract method 0x6582e9f7.
@@ -1165,6 +1229,68 @@ func (_IValSetDriver *IValSetDriverSession) GetRequiredKeyTagsAt(timestamp *big.
 // Solidity: function getRequiredKeyTagsAt(uint48 timestamp) view returns(uint8[] requiredKeyTags)
 func (_IValSetDriver *IValSetDriverCallerSession) GetRequiredKeyTagsAt(timestamp *big.Int) ([]uint8, error) {
 	return _IValSetDriver.Contract.GetRequiredKeyTagsAt(&_IValSetDriver.CallOpts, timestamp)
+}
+
+// GetSettlements is a free data retrieval call binding the contract method 0xa0c2bc25.
+//
+// Solidity: function getSettlements() view returns((uint64,address)[] settlements)
+func (_IValSetDriver *IValSetDriverCaller) GetSettlements(opts *bind.CallOpts) ([]IValSetDriverCrossChainAddress, error) {
+	var out []interface{}
+	err := _IValSetDriver.contract.Call(opts, &out, "getSettlements")
+
+	if err != nil {
+		return *new([]IValSetDriverCrossChainAddress), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]IValSetDriverCrossChainAddress)).(*[]IValSetDriverCrossChainAddress)
+
+	return out0, err
+
+}
+
+// GetSettlements is a free data retrieval call binding the contract method 0xa0c2bc25.
+//
+// Solidity: function getSettlements() view returns((uint64,address)[] settlements)
+func (_IValSetDriver *IValSetDriverSession) GetSettlements() ([]IValSetDriverCrossChainAddress, error) {
+	return _IValSetDriver.Contract.GetSettlements(&_IValSetDriver.CallOpts)
+}
+
+// GetSettlements is a free data retrieval call binding the contract method 0xa0c2bc25.
+//
+// Solidity: function getSettlements() view returns((uint64,address)[] settlements)
+func (_IValSetDriver *IValSetDriverCallerSession) GetSettlements() ([]IValSetDriverCrossChainAddress, error) {
+	return _IValSetDriver.Contract.GetSettlements(&_IValSetDriver.CallOpts)
+}
+
+// GetSettlementsAt is a free data retrieval call binding the contract method 0x763d255a.
+//
+// Solidity: function getSettlementsAt(uint48 timestamp) view returns((uint64,address)[] settlements)
+func (_IValSetDriver *IValSetDriverCaller) GetSettlementsAt(opts *bind.CallOpts, timestamp *big.Int) ([]IValSetDriverCrossChainAddress, error) {
+	var out []interface{}
+	err := _IValSetDriver.contract.Call(opts, &out, "getSettlementsAt", timestamp)
+
+	if err != nil {
+		return *new([]IValSetDriverCrossChainAddress), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]IValSetDriverCrossChainAddress)).(*[]IValSetDriverCrossChainAddress)
+
+	return out0, err
+
+}
+
+// GetSettlementsAt is a free data retrieval call binding the contract method 0x763d255a.
+//
+// Solidity: function getSettlementsAt(uint48 timestamp) view returns((uint64,address)[] settlements)
+func (_IValSetDriver *IValSetDriverSession) GetSettlementsAt(timestamp *big.Int) ([]IValSetDriverCrossChainAddress, error) {
+	return _IValSetDriver.Contract.GetSettlementsAt(&_IValSetDriver.CallOpts, timestamp)
+}
+
+// GetSettlementsAt is a free data retrieval call binding the contract method 0x763d255a.
+//
+// Solidity: function getSettlementsAt(uint48 timestamp) view returns((uint64,address)[] settlements)
+func (_IValSetDriver *IValSetDriverCallerSession) GetSettlementsAt(timestamp *big.Int) ([]IValSetDriverCrossChainAddress, error) {
+	return _IValSetDriver.Contract.GetSettlementsAt(&_IValSetDriver.CallOpts, timestamp)
 }
 
 // GetVerificationType is a free data retrieval call binding the contract method 0x24acc119.
@@ -1353,12 +1479,12 @@ func (_IValSetDriver *IValSetDriverCallerSession) IsQuorumThresholdRegisteredAt(
 	return _IValSetDriver.Contract.IsQuorumThresholdRegisteredAt(&_IValSetDriver.CallOpts, quorumThreshold, timestamp)
 }
 
-// IsReplicaRegistered is a free data retrieval call binding the contract method 0xb97dd119.
+// IsSettlementRegistered is a free data retrieval call binding the contract method 0x965c0768.
 //
-// Solidity: function isReplicaRegistered((uint64,address) replica) view returns(bool)
-func (_IValSetDriver *IValSetDriverCaller) IsReplicaRegistered(opts *bind.CallOpts, replica IValSetDriverCrossChainAddress) (bool, error) {
+// Solidity: function isSettlementRegistered((uint64,address) settlement) view returns(bool)
+func (_IValSetDriver *IValSetDriverCaller) IsSettlementRegistered(opts *bind.CallOpts, settlement IValSetDriverCrossChainAddress) (bool, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "isReplicaRegistered", replica)
+	err := _IValSetDriver.contract.Call(opts, &out, "isSettlementRegistered", settlement)
 
 	if err != nil {
 		return *new(bool), err
@@ -1370,26 +1496,26 @@ func (_IValSetDriver *IValSetDriverCaller) IsReplicaRegistered(opts *bind.CallOp
 
 }
 
-// IsReplicaRegistered is a free data retrieval call binding the contract method 0xb97dd119.
+// IsSettlementRegistered is a free data retrieval call binding the contract method 0x965c0768.
 //
-// Solidity: function isReplicaRegistered((uint64,address) replica) view returns(bool)
-func (_IValSetDriver *IValSetDriverSession) IsReplicaRegistered(replica IValSetDriverCrossChainAddress) (bool, error) {
-	return _IValSetDriver.Contract.IsReplicaRegistered(&_IValSetDriver.CallOpts, replica)
+// Solidity: function isSettlementRegistered((uint64,address) settlement) view returns(bool)
+func (_IValSetDriver *IValSetDriverSession) IsSettlementRegistered(settlement IValSetDriverCrossChainAddress) (bool, error) {
+	return _IValSetDriver.Contract.IsSettlementRegistered(&_IValSetDriver.CallOpts, settlement)
 }
 
-// IsReplicaRegistered is a free data retrieval call binding the contract method 0xb97dd119.
+// IsSettlementRegistered is a free data retrieval call binding the contract method 0x965c0768.
 //
-// Solidity: function isReplicaRegistered((uint64,address) replica) view returns(bool)
-func (_IValSetDriver *IValSetDriverCallerSession) IsReplicaRegistered(replica IValSetDriverCrossChainAddress) (bool, error) {
-	return _IValSetDriver.Contract.IsReplicaRegistered(&_IValSetDriver.CallOpts, replica)
+// Solidity: function isSettlementRegistered((uint64,address) settlement) view returns(bool)
+func (_IValSetDriver *IValSetDriverCallerSession) IsSettlementRegistered(settlement IValSetDriverCrossChainAddress) (bool, error) {
+	return _IValSetDriver.Contract.IsSettlementRegistered(&_IValSetDriver.CallOpts, settlement)
 }
 
-// IsReplicaRegisteredAt is a free data retrieval call binding the contract method 0x8f68b925.
+// IsSettlementRegisteredAt is a free data retrieval call binding the contract method 0x01749b26.
 //
-// Solidity: function isReplicaRegisteredAt((uint64,address) replica, uint48 timestamp) view returns(bool)
-func (_IValSetDriver *IValSetDriverCaller) IsReplicaRegisteredAt(opts *bind.CallOpts, replica IValSetDriverCrossChainAddress, timestamp *big.Int) (bool, error) {
+// Solidity: function isSettlementRegisteredAt((uint64,address) settlement, uint48 timestamp) view returns(bool)
+func (_IValSetDriver *IValSetDriverCaller) IsSettlementRegisteredAt(opts *bind.CallOpts, settlement IValSetDriverCrossChainAddress, timestamp *big.Int) (bool, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "isReplicaRegisteredAt", replica, timestamp)
+	err := _IValSetDriver.contract.Call(opts, &out, "isSettlementRegisteredAt", settlement, timestamp)
 
 	if err != nil {
 		return *new(bool), err
@@ -1401,18 +1527,18 @@ func (_IValSetDriver *IValSetDriverCaller) IsReplicaRegisteredAt(opts *bind.Call
 
 }
 
-// IsReplicaRegisteredAt is a free data retrieval call binding the contract method 0x8f68b925.
+// IsSettlementRegisteredAt is a free data retrieval call binding the contract method 0x01749b26.
 //
-// Solidity: function isReplicaRegisteredAt((uint64,address) replica, uint48 timestamp) view returns(bool)
-func (_IValSetDriver *IValSetDriverSession) IsReplicaRegisteredAt(replica IValSetDriverCrossChainAddress, timestamp *big.Int) (bool, error) {
-	return _IValSetDriver.Contract.IsReplicaRegisteredAt(&_IValSetDriver.CallOpts, replica, timestamp)
+// Solidity: function isSettlementRegisteredAt((uint64,address) settlement, uint48 timestamp) view returns(bool)
+func (_IValSetDriver *IValSetDriverSession) IsSettlementRegisteredAt(settlement IValSetDriverCrossChainAddress, timestamp *big.Int) (bool, error) {
+	return _IValSetDriver.Contract.IsSettlementRegisteredAt(&_IValSetDriver.CallOpts, settlement, timestamp)
 }
 
-// IsReplicaRegisteredAt is a free data retrieval call binding the contract method 0x8f68b925.
+// IsSettlementRegisteredAt is a free data retrieval call binding the contract method 0x01749b26.
 //
-// Solidity: function isReplicaRegisteredAt((uint64,address) replica, uint48 timestamp) view returns(bool)
-func (_IValSetDriver *IValSetDriverCallerSession) IsReplicaRegisteredAt(replica IValSetDriverCrossChainAddress, timestamp *big.Int) (bool, error) {
-	return _IValSetDriver.Contract.IsReplicaRegisteredAt(&_IValSetDriver.CallOpts, replica, timestamp)
+// Solidity: function isSettlementRegisteredAt((uint64,address) settlement, uint48 timestamp) view returns(bool)
+func (_IValSetDriver *IValSetDriverCallerSession) IsSettlementRegisteredAt(settlement IValSetDriverCrossChainAddress, timestamp *big.Int) (bool, error) {
+	return _IValSetDriver.Contract.IsSettlementRegisteredAt(&_IValSetDriver.CallOpts, settlement, timestamp)
 }
 
 // IsVotingPowerProviderRegistered is a free data retrieval call binding the contract method 0x1265b3be.
@@ -1498,25 +1624,25 @@ func (_IValSetDriver *IValSetDriverTransactorSession) AddQuorumThreshold(quorumT
 	return _IValSetDriver.Contract.AddQuorumThreshold(&_IValSetDriver.TransactOpts, quorumThreshold)
 }
 
-// AddReplica is a paid mutator transaction binding the contract method 0x8c94af29.
+// AddSettlement is a paid mutator transaction binding the contract method 0x52ab8872.
 //
-// Solidity: function addReplica((uint64,address) replica) returns()
-func (_IValSetDriver *IValSetDriverTransactor) AddReplica(opts *bind.TransactOpts, replica IValSetDriverCrossChainAddress) (*types.Transaction, error) {
-	return _IValSetDriver.contract.Transact(opts, "addReplica", replica)
+// Solidity: function addSettlement((uint64,address) settlement) returns()
+func (_IValSetDriver *IValSetDriverTransactor) AddSettlement(opts *bind.TransactOpts, settlement IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	return _IValSetDriver.contract.Transact(opts, "addSettlement", settlement)
 }
 
-// AddReplica is a paid mutator transaction binding the contract method 0x8c94af29.
+// AddSettlement is a paid mutator transaction binding the contract method 0x52ab8872.
 //
-// Solidity: function addReplica((uint64,address) replica) returns()
-func (_IValSetDriver *IValSetDriverSession) AddReplica(replica IValSetDriverCrossChainAddress) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.AddReplica(&_IValSetDriver.TransactOpts, replica)
+// Solidity: function addSettlement((uint64,address) settlement) returns()
+func (_IValSetDriver *IValSetDriverSession) AddSettlement(settlement IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	return _IValSetDriver.Contract.AddSettlement(&_IValSetDriver.TransactOpts, settlement)
 }
 
-// AddReplica is a paid mutator transaction binding the contract method 0x8c94af29.
+// AddSettlement is a paid mutator transaction binding the contract method 0x52ab8872.
 //
-// Solidity: function addReplica((uint64,address) replica) returns()
-func (_IValSetDriver *IValSetDriverTransactorSession) AddReplica(replica IValSetDriverCrossChainAddress) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.AddReplica(&_IValSetDriver.TransactOpts, replica)
+// Solidity: function addSettlement((uint64,address) settlement) returns()
+func (_IValSetDriver *IValSetDriverTransactorSession) AddSettlement(settlement IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	return _IValSetDriver.Contract.AddSettlement(&_IValSetDriver.TransactOpts, settlement)
 }
 
 // AddVotingPowerProvider is a paid mutator transaction binding the contract method 0x6940ed80.
@@ -1582,25 +1708,25 @@ func (_IValSetDriver *IValSetDriverTransactorSession) RemoveQuorumThreshold(quor
 	return _IValSetDriver.Contract.RemoveQuorumThreshold(&_IValSetDriver.TransactOpts, quorumThreshold)
 }
 
-// RemoveReplica is a paid mutator transaction binding the contract method 0x9498d8a1.
+// RemoveSettlement is a paid mutator transaction binding the contract method 0x502bb1ad.
 //
-// Solidity: function removeReplica((uint64,address) replica) returns()
-func (_IValSetDriver *IValSetDriverTransactor) RemoveReplica(opts *bind.TransactOpts, replica IValSetDriverCrossChainAddress) (*types.Transaction, error) {
-	return _IValSetDriver.contract.Transact(opts, "removeReplica", replica)
+// Solidity: function removeSettlement((uint64,address) settlement) returns()
+func (_IValSetDriver *IValSetDriverTransactor) RemoveSettlement(opts *bind.TransactOpts, settlement IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	return _IValSetDriver.contract.Transact(opts, "removeSettlement", settlement)
 }
 
-// RemoveReplica is a paid mutator transaction binding the contract method 0x9498d8a1.
+// RemoveSettlement is a paid mutator transaction binding the contract method 0x502bb1ad.
 //
-// Solidity: function removeReplica((uint64,address) replica) returns()
-func (_IValSetDriver *IValSetDriverSession) RemoveReplica(replica IValSetDriverCrossChainAddress) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.RemoveReplica(&_IValSetDriver.TransactOpts, replica)
+// Solidity: function removeSettlement((uint64,address) settlement) returns()
+func (_IValSetDriver *IValSetDriverSession) RemoveSettlement(settlement IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	return _IValSetDriver.Contract.RemoveSettlement(&_IValSetDriver.TransactOpts, settlement)
 }
 
-// RemoveReplica is a paid mutator transaction binding the contract method 0x9498d8a1.
+// RemoveSettlement is a paid mutator transaction binding the contract method 0x502bb1ad.
 //
-// Solidity: function removeReplica((uint64,address) replica) returns()
-func (_IValSetDriver *IValSetDriverTransactorSession) RemoveReplica(replica IValSetDriverCrossChainAddress) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.RemoveReplica(&_IValSetDriver.TransactOpts, replica)
+// Solidity: function removeSettlement((uint64,address) settlement) returns()
+func (_IValSetDriver *IValSetDriverTransactorSession) RemoveSettlement(settlement IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	return _IValSetDriver.Contract.RemoveSettlement(&_IValSetDriver.TransactOpts, settlement)
 }
 
 // RemoveVotingPowerProvider is a paid mutator transaction binding the contract method 0x325234d5.
@@ -1727,6 +1853,48 @@ func (_IValSetDriver *IValSetDriverSession) SetMinInclusionVotingPower(minInclus
 // Solidity: function setMinInclusionVotingPower(uint256 minInclusionVotingPower) returns()
 func (_IValSetDriver *IValSetDriverTransactorSession) SetMinInclusionVotingPower(minInclusionVotingPower *big.Int) (*types.Transaction, error) {
 	return _IValSetDriver.Contract.SetMinInclusionVotingPower(&_IValSetDriver.TransactOpts, minInclusionVotingPower)
+}
+
+// SetNumAggregators is a paid mutator transaction binding the contract method 0x0dec288b.
+//
+// Solidity: function setNumAggregators(uint208 numAggregators) returns()
+func (_IValSetDriver *IValSetDriverTransactor) SetNumAggregators(opts *bind.TransactOpts, numAggregators *big.Int) (*types.Transaction, error) {
+	return _IValSetDriver.contract.Transact(opts, "setNumAggregators", numAggregators)
+}
+
+// SetNumAggregators is a paid mutator transaction binding the contract method 0x0dec288b.
+//
+// Solidity: function setNumAggregators(uint208 numAggregators) returns()
+func (_IValSetDriver *IValSetDriverSession) SetNumAggregators(numAggregators *big.Int) (*types.Transaction, error) {
+	return _IValSetDriver.Contract.SetNumAggregators(&_IValSetDriver.TransactOpts, numAggregators)
+}
+
+// SetNumAggregators is a paid mutator transaction binding the contract method 0x0dec288b.
+//
+// Solidity: function setNumAggregators(uint208 numAggregators) returns()
+func (_IValSetDriver *IValSetDriverTransactorSession) SetNumAggregators(numAggregators *big.Int) (*types.Transaction, error) {
+	return _IValSetDriver.Contract.SetNumAggregators(&_IValSetDriver.TransactOpts, numAggregators)
+}
+
+// SetNumCommitters is a paid mutator transaction binding the contract method 0x15ddbbe8.
+//
+// Solidity: function setNumCommitters(uint208 numCommitters) returns()
+func (_IValSetDriver *IValSetDriverTransactor) SetNumCommitters(opts *bind.TransactOpts, numCommitters *big.Int) (*types.Transaction, error) {
+	return _IValSetDriver.contract.Transact(opts, "setNumCommitters", numCommitters)
+}
+
+// SetNumCommitters is a paid mutator transaction binding the contract method 0x15ddbbe8.
+//
+// Solidity: function setNumCommitters(uint208 numCommitters) returns()
+func (_IValSetDriver *IValSetDriverSession) SetNumCommitters(numCommitters *big.Int) (*types.Transaction, error) {
+	return _IValSetDriver.Contract.SetNumCommitters(&_IValSetDriver.TransactOpts, numCommitters)
+}
+
+// SetNumCommitters is a paid mutator transaction binding the contract method 0x15ddbbe8.
+//
+// Solidity: function setNumCommitters(uint208 numCommitters) returns()
+func (_IValSetDriver *IValSetDriverTransactorSession) SetNumCommitters(numCommitters *big.Int) (*types.Transaction, error) {
+	return _IValSetDriver.Contract.SetNumCommitters(&_IValSetDriver.TransactOpts, numCommitters)
 }
 
 // SetRequiredHeaderKeyTag is a paid mutator transaction binding the contract method 0xd9736e12.
@@ -1947,9 +2115,9 @@ func (_IValSetDriver *IValSetDriverFilterer) ParseAddQuorumThreshold(log types.L
 	return event, nil
 }
 
-// IValSetDriverAddReplicaIterator is returned from FilterAddReplica and is used to iterate over the raw logs and unpacked data for AddReplica events raised by the IValSetDriver contract.
-type IValSetDriverAddReplicaIterator struct {
-	Event *IValSetDriverAddReplica // Event containing the contract specifics and raw log
+// IValSetDriverAddSettlementIterator is returned from FilterAddSettlement and is used to iterate over the raw logs and unpacked data for AddSettlement events raised by the IValSetDriver contract.
+type IValSetDriverAddSettlementIterator struct {
+	Event *IValSetDriverAddSettlement // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1963,7 +2131,7 @@ type IValSetDriverAddReplicaIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IValSetDriverAddReplicaIterator) Next() bool {
+func (it *IValSetDriverAddSettlementIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1972,7 +2140,7 @@ func (it *IValSetDriverAddReplicaIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IValSetDriverAddReplica)
+			it.Event = new(IValSetDriverAddSettlement)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1987,7 +2155,7 @@ func (it *IValSetDriverAddReplicaIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IValSetDriverAddReplica)
+		it.Event = new(IValSetDriverAddSettlement)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -2003,41 +2171,41 @@ func (it *IValSetDriverAddReplicaIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IValSetDriverAddReplicaIterator) Error() error {
+func (it *IValSetDriverAddSettlementIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IValSetDriverAddReplicaIterator) Close() error {
+func (it *IValSetDriverAddSettlementIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IValSetDriverAddReplica represents a AddReplica event raised by the IValSetDriver contract.
-type IValSetDriverAddReplica struct {
-	Replica IValSetDriverCrossChainAddress
-	Raw     types.Log // Blockchain specific contextual infos
+// IValSetDriverAddSettlement represents a AddSettlement event raised by the IValSetDriver contract.
+type IValSetDriverAddSettlement struct {
+	Settlement IValSetDriverCrossChainAddress
+	Raw        types.Log // Blockchain specific contextual infos
 }
 
-// FilterAddReplica is a free log retrieval operation binding the contract event 0x8e1b293e5be0fd2e924b2fdbd25d0fe3e650065e32a12da3322e4d942fe85ade.
+// FilterAddSettlement is a free log retrieval operation binding the contract event 0xd66c27144960b789ff7b5514538e3d85a3623c1669b8d6db4eb85658df2aad57.
 //
-// Solidity: event AddReplica((uint64,address) replica)
-func (_IValSetDriver *IValSetDriverFilterer) FilterAddReplica(opts *bind.FilterOpts) (*IValSetDriverAddReplicaIterator, error) {
+// Solidity: event AddSettlement((uint64,address) settlement)
+func (_IValSetDriver *IValSetDriverFilterer) FilterAddSettlement(opts *bind.FilterOpts) (*IValSetDriverAddSettlementIterator, error) {
 
-	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "AddReplica")
+	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "AddSettlement")
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverAddReplicaIterator{contract: _IValSetDriver.contract, event: "AddReplica", logs: logs, sub: sub}, nil
+	return &IValSetDriverAddSettlementIterator{contract: _IValSetDriver.contract, event: "AddSettlement", logs: logs, sub: sub}, nil
 }
 
-// WatchAddReplica is a free log subscription operation binding the contract event 0x8e1b293e5be0fd2e924b2fdbd25d0fe3e650065e32a12da3322e4d942fe85ade.
+// WatchAddSettlement is a free log subscription operation binding the contract event 0xd66c27144960b789ff7b5514538e3d85a3623c1669b8d6db4eb85658df2aad57.
 //
-// Solidity: event AddReplica((uint64,address) replica)
-func (_IValSetDriver *IValSetDriverFilterer) WatchAddReplica(opts *bind.WatchOpts, sink chan<- *IValSetDriverAddReplica) (event.Subscription, error) {
+// Solidity: event AddSettlement((uint64,address) settlement)
+func (_IValSetDriver *IValSetDriverFilterer) WatchAddSettlement(opts *bind.WatchOpts, sink chan<- *IValSetDriverAddSettlement) (event.Subscription, error) {
 
-	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "AddReplica")
+	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "AddSettlement")
 	if err != nil {
 		return nil, err
 	}
@@ -2047,8 +2215,8 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchAddReplica(opts *bind.WatchOpt
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IValSetDriverAddReplica)
-				if err := _IValSetDriver.contract.UnpackLog(event, "AddReplica", log); err != nil {
+				event := new(IValSetDriverAddSettlement)
+				if err := _IValSetDriver.contract.UnpackLog(event, "AddSettlement", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -2069,12 +2237,12 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchAddReplica(opts *bind.WatchOpt
 	}), nil
 }
 
-// ParseAddReplica is a log parse operation binding the contract event 0x8e1b293e5be0fd2e924b2fdbd25d0fe3e650065e32a12da3322e4d942fe85ade.
+// ParseAddSettlement is a log parse operation binding the contract event 0xd66c27144960b789ff7b5514538e3d85a3623c1669b8d6db4eb85658df2aad57.
 //
-// Solidity: event AddReplica((uint64,address) replica)
-func (_IValSetDriver *IValSetDriverFilterer) ParseAddReplica(log types.Log) (*IValSetDriverAddReplica, error) {
-	event := new(IValSetDriverAddReplica)
-	if err := _IValSetDriver.contract.UnpackLog(event, "AddReplica", log); err != nil {
+// Solidity: event AddSettlement((uint64,address) settlement)
+func (_IValSetDriver *IValSetDriverFilterer) ParseAddSettlement(log types.Log) (*IValSetDriverAddSettlement, error) {
+	event := new(IValSetDriverAddSettlement)
+	if err := _IValSetDriver.contract.UnpackLog(event, "AddSettlement", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -2420,13 +2588,13 @@ func (it *IValSetDriverInitSubnetworkIterator) Close() error {
 // IValSetDriverInitSubnetwork represents a InitSubnetwork event raised by the IValSetDriver contract.
 type IValSetDriverInitSubnetwork struct {
 	Network      common.Address
-	SubnetworkID *big.Int
+	SubnetworkId *big.Int
 	Raw          types.Log // Blockchain specific contextual infos
 }
 
 // FilterInitSubnetwork is a free log retrieval operation binding the contract event 0x469c2e982e7d76d34cf5d1e72abee29749bb9971942c180e9023cea09f5f8e83.
 //
-// Solidity: event InitSubnetwork(address network, uint96 subnetworkID)
+// Solidity: event InitSubnetwork(address network, uint96 subnetworkId)
 func (_IValSetDriver *IValSetDriverFilterer) FilterInitSubnetwork(opts *bind.FilterOpts) (*IValSetDriverInitSubnetworkIterator, error) {
 
 	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "InitSubnetwork")
@@ -2438,7 +2606,7 @@ func (_IValSetDriver *IValSetDriverFilterer) FilterInitSubnetwork(opts *bind.Fil
 
 // WatchInitSubnetwork is a free log subscription operation binding the contract event 0x469c2e982e7d76d34cf5d1e72abee29749bb9971942c180e9023cea09f5f8e83.
 //
-// Solidity: event InitSubnetwork(address network, uint96 subnetworkID)
+// Solidity: event InitSubnetwork(address network, uint96 subnetworkId)
 func (_IValSetDriver *IValSetDriverFilterer) WatchInitSubnetwork(opts *bind.WatchOpts, sink chan<- *IValSetDriverInitSubnetwork) (event.Subscription, error) {
 
 	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "InitSubnetwork")
@@ -2475,7 +2643,7 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchInitSubnetwork(opts *bind.Watc
 
 // ParseInitSubnetwork is a log parse operation binding the contract event 0x469c2e982e7d76d34cf5d1e72abee29749bb9971942c180e9023cea09f5f8e83.
 //
-// Solidity: event InitSubnetwork(address network, uint96 subnetworkID)
+// Solidity: event InitSubnetwork(address network, uint96 subnetworkId)
 func (_IValSetDriver *IValSetDriverFilterer) ParseInitSubnetwork(log types.Log) (*IValSetDriverInitSubnetwork, error) {
 	event := new(IValSetDriverInitSubnetwork)
 	if err := _IValSetDriver.contract.UnpackLog(event, "InitSubnetwork", log); err != nil {
@@ -2753,9 +2921,9 @@ func (_IValSetDriver *IValSetDriverFilterer) ParseRemoveQuorumThreshold(log type
 	return event, nil
 }
 
-// IValSetDriverRemoveReplicaIterator is returned from FilterRemoveReplica and is used to iterate over the raw logs and unpacked data for RemoveReplica events raised by the IValSetDriver contract.
-type IValSetDriverRemoveReplicaIterator struct {
-	Event *IValSetDriverRemoveReplica // Event containing the contract specifics and raw log
+// IValSetDriverRemoveSettlementIterator is returned from FilterRemoveSettlement and is used to iterate over the raw logs and unpacked data for RemoveSettlement events raised by the IValSetDriver contract.
+type IValSetDriverRemoveSettlementIterator struct {
+	Event *IValSetDriverRemoveSettlement // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -2769,7 +2937,7 @@ type IValSetDriverRemoveReplicaIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IValSetDriverRemoveReplicaIterator) Next() bool {
+func (it *IValSetDriverRemoveSettlementIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -2778,7 +2946,7 @@ func (it *IValSetDriverRemoveReplicaIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IValSetDriverRemoveReplica)
+			it.Event = new(IValSetDriverRemoveSettlement)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -2793,7 +2961,7 @@ func (it *IValSetDriverRemoveReplicaIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IValSetDriverRemoveReplica)
+		it.Event = new(IValSetDriverRemoveSettlement)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -2809,41 +2977,41 @@ func (it *IValSetDriverRemoveReplicaIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IValSetDriverRemoveReplicaIterator) Error() error {
+func (it *IValSetDriverRemoveSettlementIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IValSetDriverRemoveReplicaIterator) Close() error {
+func (it *IValSetDriverRemoveSettlementIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IValSetDriverRemoveReplica represents a RemoveReplica event raised by the IValSetDriver contract.
-type IValSetDriverRemoveReplica struct {
-	Replica IValSetDriverCrossChainAddress
-	Raw     types.Log // Blockchain specific contextual infos
+// IValSetDriverRemoveSettlement represents a RemoveSettlement event raised by the IValSetDriver contract.
+type IValSetDriverRemoveSettlement struct {
+	Settlement IValSetDriverCrossChainAddress
+	Raw        types.Log // Blockchain specific contextual infos
 }
 
-// FilterRemoveReplica is a free log retrieval operation binding the contract event 0x9c606e55e470654ae10bb62ab0588810689193b663c4e146c95bd84a2bf20c37.
+// FilterRemoveSettlement is a free log retrieval operation binding the contract event 0x6307047e2a245d2a5867f7667a4a48687593b73e3b2f95d2204256cbff350cf3.
 //
-// Solidity: event RemoveReplica((uint64,address) replica)
-func (_IValSetDriver *IValSetDriverFilterer) FilterRemoveReplica(opts *bind.FilterOpts) (*IValSetDriverRemoveReplicaIterator, error) {
+// Solidity: event RemoveSettlement((uint64,address) settlement)
+func (_IValSetDriver *IValSetDriverFilterer) FilterRemoveSettlement(opts *bind.FilterOpts) (*IValSetDriverRemoveSettlementIterator, error) {
 
-	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "RemoveReplica")
+	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "RemoveSettlement")
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverRemoveReplicaIterator{contract: _IValSetDriver.contract, event: "RemoveReplica", logs: logs, sub: sub}, nil
+	return &IValSetDriverRemoveSettlementIterator{contract: _IValSetDriver.contract, event: "RemoveSettlement", logs: logs, sub: sub}, nil
 }
 
-// WatchRemoveReplica is a free log subscription operation binding the contract event 0x9c606e55e470654ae10bb62ab0588810689193b663c4e146c95bd84a2bf20c37.
+// WatchRemoveSettlement is a free log subscription operation binding the contract event 0x6307047e2a245d2a5867f7667a4a48687593b73e3b2f95d2204256cbff350cf3.
 //
-// Solidity: event RemoveReplica((uint64,address) replica)
-func (_IValSetDriver *IValSetDriverFilterer) WatchRemoveReplica(opts *bind.WatchOpts, sink chan<- *IValSetDriverRemoveReplica) (event.Subscription, error) {
+// Solidity: event RemoveSettlement((uint64,address) settlement)
+func (_IValSetDriver *IValSetDriverFilterer) WatchRemoveSettlement(opts *bind.WatchOpts, sink chan<- *IValSetDriverRemoveSettlement) (event.Subscription, error) {
 
-	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "RemoveReplica")
+	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "RemoveSettlement")
 	if err != nil {
 		return nil, err
 	}
@@ -2853,8 +3021,8 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchRemoveReplica(opts *bind.Watch
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IValSetDriverRemoveReplica)
-				if err := _IValSetDriver.contract.UnpackLog(event, "RemoveReplica", log); err != nil {
+				event := new(IValSetDriverRemoveSettlement)
+				if err := _IValSetDriver.contract.UnpackLog(event, "RemoveSettlement", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -2875,12 +3043,12 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchRemoveReplica(opts *bind.Watch
 	}), nil
 }
 
-// ParseRemoveReplica is a log parse operation binding the contract event 0x9c606e55e470654ae10bb62ab0588810689193b663c4e146c95bd84a2bf20c37.
+// ParseRemoveSettlement is a log parse operation binding the contract event 0x6307047e2a245d2a5867f7667a4a48687593b73e3b2f95d2204256cbff350cf3.
 //
-// Solidity: event RemoveReplica((uint64,address) replica)
-func (_IValSetDriver *IValSetDriverFilterer) ParseRemoveReplica(log types.Log) (*IValSetDriverRemoveReplica, error) {
-	event := new(IValSetDriverRemoveReplica)
-	if err := _IValSetDriver.contract.UnpackLog(event, "RemoveReplica", log); err != nil {
+// Solidity: event RemoveSettlement((uint64,address) settlement)
+func (_IValSetDriver *IValSetDriverFilterer) ParseRemoveSettlement(log types.Log) (*IValSetDriverRemoveSettlement, error) {
+	event := new(IValSetDriverRemoveSettlement)
+	if err := _IValSetDriver.contract.UnpackLog(event, "RemoveSettlement", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -3685,6 +3853,274 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchSetMinInclusionVotingPower(opt
 func (_IValSetDriver *IValSetDriverFilterer) ParseSetMinInclusionVotingPower(log types.Log) (*IValSetDriverSetMinInclusionVotingPower, error) {
 	event := new(IValSetDriverSetMinInclusionVotingPower)
 	if err := _IValSetDriver.contract.UnpackLog(event, "SetMinInclusionVotingPower", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// IValSetDriverSetNumAggregatorsIterator is returned from FilterSetNumAggregators and is used to iterate over the raw logs and unpacked data for SetNumAggregators events raised by the IValSetDriver contract.
+type IValSetDriverSetNumAggregatorsIterator struct {
+	Event *IValSetDriverSetNumAggregators // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *IValSetDriverSetNumAggregatorsIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(IValSetDriverSetNumAggregators)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(IValSetDriverSetNumAggregators)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *IValSetDriverSetNumAggregatorsIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *IValSetDriverSetNumAggregatorsIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// IValSetDriverSetNumAggregators represents a SetNumAggregators event raised by the IValSetDriver contract.
+type IValSetDriverSetNumAggregators struct {
+	NumAggregators *big.Int
+	Raw            types.Log // Blockchain specific contextual infos
+}
+
+// FilterSetNumAggregators is a free log retrieval operation binding the contract event 0xa47e6808a463c6134cf3bb23d54ee0ccb5c8056ab8c8b5fd5277fc83cc2f25f3.
+//
+// Solidity: event SetNumAggregators(uint208 numAggregators)
+func (_IValSetDriver *IValSetDriverFilterer) FilterSetNumAggregators(opts *bind.FilterOpts) (*IValSetDriverSetNumAggregatorsIterator, error) {
+
+	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "SetNumAggregators")
+	if err != nil {
+		return nil, err
+	}
+	return &IValSetDriverSetNumAggregatorsIterator{contract: _IValSetDriver.contract, event: "SetNumAggregators", logs: logs, sub: sub}, nil
+}
+
+// WatchSetNumAggregators is a free log subscription operation binding the contract event 0xa47e6808a463c6134cf3bb23d54ee0ccb5c8056ab8c8b5fd5277fc83cc2f25f3.
+//
+// Solidity: event SetNumAggregators(uint208 numAggregators)
+func (_IValSetDriver *IValSetDriverFilterer) WatchSetNumAggregators(opts *bind.WatchOpts, sink chan<- *IValSetDriverSetNumAggregators) (event.Subscription, error) {
+
+	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "SetNumAggregators")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(IValSetDriverSetNumAggregators)
+				if err := _IValSetDriver.contract.UnpackLog(event, "SetNumAggregators", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseSetNumAggregators is a log parse operation binding the contract event 0xa47e6808a463c6134cf3bb23d54ee0ccb5c8056ab8c8b5fd5277fc83cc2f25f3.
+//
+// Solidity: event SetNumAggregators(uint208 numAggregators)
+func (_IValSetDriver *IValSetDriverFilterer) ParseSetNumAggregators(log types.Log) (*IValSetDriverSetNumAggregators, error) {
+	event := new(IValSetDriverSetNumAggregators)
+	if err := _IValSetDriver.contract.UnpackLog(event, "SetNumAggregators", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// IValSetDriverSetNumCommittersIterator is returned from FilterSetNumCommitters and is used to iterate over the raw logs and unpacked data for SetNumCommitters events raised by the IValSetDriver contract.
+type IValSetDriverSetNumCommittersIterator struct {
+	Event *IValSetDriverSetNumCommitters // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *IValSetDriverSetNumCommittersIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(IValSetDriverSetNumCommitters)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(IValSetDriverSetNumCommitters)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *IValSetDriverSetNumCommittersIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *IValSetDriverSetNumCommittersIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// IValSetDriverSetNumCommitters represents a SetNumCommitters event raised by the IValSetDriver contract.
+type IValSetDriverSetNumCommitters struct {
+	NumCommitters *big.Int
+	Raw           types.Log // Blockchain specific contextual infos
+}
+
+// FilterSetNumCommitters is a free log retrieval operation binding the contract event 0x931a819f63102a134c17aeb8b67a254fc3e215c35487041ff43fd3225b272b5f.
+//
+// Solidity: event SetNumCommitters(uint208 numCommitters)
+func (_IValSetDriver *IValSetDriverFilterer) FilterSetNumCommitters(opts *bind.FilterOpts) (*IValSetDriverSetNumCommittersIterator, error) {
+
+	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "SetNumCommitters")
+	if err != nil {
+		return nil, err
+	}
+	return &IValSetDriverSetNumCommittersIterator{contract: _IValSetDriver.contract, event: "SetNumCommitters", logs: logs, sub: sub}, nil
+}
+
+// WatchSetNumCommitters is a free log subscription operation binding the contract event 0x931a819f63102a134c17aeb8b67a254fc3e215c35487041ff43fd3225b272b5f.
+//
+// Solidity: event SetNumCommitters(uint208 numCommitters)
+func (_IValSetDriver *IValSetDriverFilterer) WatchSetNumCommitters(opts *bind.WatchOpts, sink chan<- *IValSetDriverSetNumCommitters) (event.Subscription, error) {
+
+	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "SetNumCommitters")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(IValSetDriverSetNumCommitters)
+				if err := _IValSetDriver.contract.UnpackLog(event, "SetNumCommitters", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseSetNumCommitters is a log parse operation binding the contract event 0x931a819f63102a134c17aeb8b67a254fc3e215c35487041ff43fd3225b272b5f.
+//
+// Solidity: event SetNumCommitters(uint208 numCommitters)
+func (_IValSetDriver *IValSetDriverFilterer) ParseSetNumCommitters(log types.Log) (*IValSetDriverSetNumCommitters, error) {
+	event := new(IValSetDriverSetNumCommitters)
+	if err := _IValSetDriver.contract.UnpackLog(event, "SetNumCommitters", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

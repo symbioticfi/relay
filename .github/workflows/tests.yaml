@@ -133,7 +133,7 @@ jobs:
       COMMITERS: ${{ matrix.config.commiters }}
       AGGREGATORS: ${{ matrix.config.aggregators }}
       VERIFICATION_TYPE: 1
-      EPOCH_TIME: 30
+      EPOCH_TIME: 60
       BLOCK_TIME: 1
       FINALITY_BLOCKS: 2
       GENERATE_SIDECARS: false

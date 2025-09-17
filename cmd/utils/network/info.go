@@ -106,20 +106,20 @@ var infoCmd = &cobra.Command{
 
 		// row with settlements info
 		if infoFlags.Settlement {
-			settlementData := make([]settlementReplicaData, len(networkConfig.Replicas))
+			settlementData := make([]settlementReplicaData, len(networkConfig.Settlements))
 
 			eg, egCtx := errgroup.WithContext(ctx)
 			eg.SetLimit(5)
-			for i, replica := range networkConfig.Replicas {
+			for i, settlement := range networkConfig.Settlements {
 				eg.Go(func() error {
-					isCommitted, err := evmClient.IsValsetHeaderCommittedAt(egCtx, replica, epoch)
+					isCommitted, err := evmClient.IsValsetHeaderCommittedAt(egCtx, settlement, epoch)
 					if err != nil {
 						return errors.Errorf("Failed to get latest epoch: %w", err)
 					}
 					settlementData[i].IsCommitted = isCommitted
 
 					if isCommitted {
-						headerHash, err := evmClient.GetHeaderHashAt(egCtx, replica, epoch)
+						headerHash, err := evmClient.GetHeaderHashAt(egCtx, settlement, epoch)
 						if err != nil {
 							return errors.Errorf("Failed to get header hash: %w", err)
 						}
@@ -130,7 +130,7 @@ var infoCmd = &cobra.Command{
 						return uint64(i)
 					})
 
-					commitmentResults, err := evmClient.IsValsetHeaderCommittedAtEpochs(egCtx, replica, allEpochsFromZero)
+					commitmentResults, err := evmClient.IsValsetHeaderCommittedAtEpochs(egCtx, settlement, allEpochsFromZero)
 					if err != nil {
 						return errors.Errorf("Failed to check epoch commitments: %w", err)
 					}

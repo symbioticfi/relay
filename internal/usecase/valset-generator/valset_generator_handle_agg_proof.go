@@ -5,8 +5,8 @@ import (
 	"log/slog"
 
 	"github.com/go-errors/errors"
-
 	"github.com/symbioticfi/relay/core/entity"
+	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 	"github.com/symbioticfi/relay/pkg/log"
 )
 
@@ -14,10 +14,6 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 	ctx = log.WithComponent(ctx, "generator")
 
 	slog.DebugContext(ctx, "Handling proof aggregated message", "msg", msg)
-	if !s.cfg.IsCommitter {
-		slog.DebugContext(ctx, "Not a committer, skipping proof commitment")
-		return nil
-	}
 
 	var (
 		valset entity.ValidatorSet
@@ -41,9 +37,32 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		break
 	}
 
+	// we always try to save the proof, even if we aren't a committer
 	err = s.cfg.Repo.SaveAggregationProof(ctx, msg.RequestHash, msg.AggregationProof)
 	if err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
 		return err
+	}
+
+	if valset.Status == entity.HeaderCommitted {
+		slog.DebugContext(ctx, "Valset is already committed", "epoch", msg.Epoch)
+		return nil
+	}
+
+	// nil only for tests
+	if s.cfg.KeyProvider != nil {
+		privKey, err := s.cfg.KeyProvider.GetPrivateKey(valset.RequiredKeyTag)
+		if err != nil {
+			if errors.Is(err, keyprovider.ErrKeyNotFound) {
+				slog.DebugContext(ctx, "No key for required key tag, skipping proof commitment", "keyTag", valset.RequiredKeyTag)
+				return nil
+			}
+			return errors.Errorf("failed to get private key for required key tag %s: %w", valset.RequiredKeyTag, err)
+		}
+
+		if !valset.IsCommitter(privKey.PublicKey().OnChain()) {
+			slog.DebugContext(ctx, "Not a committer for this valset, skipping proof commitment", "key", privKey.PublicKey().OnChain(), "epoch", msg.Epoch)
+			return nil
+		}
 	}
 
 	config, err := s.cfg.EvmClient.GetConfig(ctx, valset.CaptureTimestamp)
@@ -71,14 +90,14 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 }
 
 func (s *Service) commitValsetToAllSettlements(ctx context.Context, config entity.NetworkConfig, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) error {
-	errs := make([]error, len(config.Replicas))
-	for i, replica := range config.Replicas {
-		slog.DebugContext(ctx, "Trying to commit valset header to settlement", "replica", replica)
+	errs := make([]error, len(config.Settlements))
+	for i, settlement := range config.Settlements {
+		slog.DebugContext(ctx, "Trying to commit valset header to settlement", "settlement", settlement)
 
 		// todo replace it with tx check instead of call to contract
 		// if commit tx was sent but still not finalized this check will
 		// return false positive and trigger one more commitment tx
-		committed, err := s.cfg.EvmClient.IsValsetHeaderCommittedAt(ctx, replica, header.Epoch)
+		committed, err := s.cfg.EvmClient.IsValsetHeaderCommittedAt(ctx, settlement, header.Epoch)
 		if err != nil {
 			errs[i] = errors.Errorf("failed to check if header is committed at epoch %d: %w", header.Epoch, err)
 			continue
@@ -88,15 +107,26 @@ func (s *Service) commitValsetToAllSettlements(ctx context.Context, config entit
 			continue
 		}
 
-		result, err := s.cfg.EvmClient.CommitValsetHeader(ctx, replica, header, extraData, proof)
+		lastCommittedEpoch, err := s.cfg.EvmClient.GetLastCommittedHeaderEpoch(ctx, settlement)
 		if err != nil {
-			errs[i] = errors.Errorf("failed to commit valset header to settlement %s: %w", replica.Address.Hex(), err)
+			errs[i] = errors.Errorf("failed to get last committed header epoch: %w", err)
+			continue
+		}
+
+		if header.Epoch != lastCommittedEpoch+1 {
+			errs[i] = errors.Errorf("commits should be consequent: %w", err)
+			continue
+		}
+
+		result, err := s.cfg.EvmClient.CommitValsetHeader(ctx, settlement, header, extraData, proof)
+		if err != nil {
+			errs[i] = errors.Errorf("failed to commit valset header to settlement %s: %w", settlement.Address.Hex(), err)
 			continue
 		}
 
 		slog.InfoContext(ctx, "Validator set header committed",
 			"epoch", header.Epoch,
-			"replica", replica,
+			"settlement", settlement,
 			"txHash", result.TxHash,
 		)
 	}

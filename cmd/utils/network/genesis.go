@@ -148,11 +148,11 @@ var genesisCmd = &cobra.Command{
 		}
 
 		if genesisFlags.Commit {
-			for _, replica := range networkConfig.Replicas {
-				spinner = getSpinner("Setting genesis on " + replica.Address.String())
+			for _, settlement := range networkConfig.Settlements {
+				spinner = getSpinner("Setting genesis on " + settlement.Address.String())
 				txResult, err := evmClient.SetGenesis(
 					ctx,
-					replica,
+					settlement,
 					header,
 					extraData)
 				if err != nil {

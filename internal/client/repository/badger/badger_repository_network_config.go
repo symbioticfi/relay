@@ -77,12 +77,14 @@ type crossChainAddressDTO struct {
 type networkConfigDTO struct {
 	VotingPowerProviders    []crossChainAddressDTO `json:"voting_power_providers"`
 	KeysProvider            crossChainAddressDTO   `json:"keys_provider"`
-	Replicas                []crossChainAddressDTO `json:"replicas"`
+	Settlements             []crossChainAddressDTO `json:"settlements"`
 	VerificationType        uint32                 `json:"verification_type"`
 	MaxVotingPower          *big.Int               `json:"max_voting_power"`
 	MinInclusionVotingPower *big.Int               `json:"min_inclusion_voting_power"`
 	MaxValidatorsCount      *big.Int               `json:"max_validators_count"`
 	RequiredKeyTags         []uint8                `json:"required_key_tags"`
+	NumCommitters           uint64                 `json:"num_committers"`
+	NumAggregators          uint64                 `json:"num_aggregators"`
 }
 
 func networkConfigToBytes(config entity.NetworkConfig) ([]byte, error) {
@@ -97,7 +99,7 @@ func networkConfigToBytes(config entity.NetworkConfig) ([]byte, error) {
 			Address: config.KeysProvider.Address.Hex(),
 			ChainId: config.KeysProvider.ChainId,
 		},
-		Replicas: lo.Map(config.Replicas, func(addr entity.CrossChainAddress, _ int) crossChainAddressDTO {
+		Settlements: lo.Map(config.Settlements, func(addr entity.CrossChainAddress, _ int) crossChainAddressDTO {
 			return crossChainAddressDTO{
 				ChainId: addr.ChainId,
 				Address: addr.Address.Hex(),
@@ -108,6 +110,8 @@ func networkConfigToBytes(config entity.NetworkConfig) ([]byte, error) {
 		MinInclusionVotingPower: config.MinInclusionVotingPower.Int,
 		MaxValidatorsCount:      config.MaxValidatorsCount.Int,
 		RequiredKeyTags:         lo.Map(config.RequiredKeyTags, func(tag entity.KeyTag, _ int) uint8 { return uint8(tag) }),
+		NumCommitters:           config.NumCommitters,
+		NumAggregators:          config.NumAggregators,
 	}
 
 	return json.Marshal(networkConfigDTOFromEntity)
@@ -130,7 +134,7 @@ func bytesToNetworkConfig(data []byte) (entity.NetworkConfig, error) {
 			ChainId: dto.KeysProvider.ChainId,
 			Address: common.HexToAddress(dto.KeysProvider.Address),
 		},
-		Replicas: lo.Map(dto.Replicas, func(addr crossChainAddressDTO, _ int) entity.CrossChainAddress {
+		Settlements: lo.Map(dto.Settlements, func(addr crossChainAddressDTO, _ int) entity.CrossChainAddress {
 			return entity.CrossChainAddress{
 				ChainId: addr.ChainId,
 				Address: common.HexToAddress(addr.Address),
@@ -141,5 +145,7 @@ func bytesToNetworkConfig(data []byte) (entity.NetworkConfig, error) {
 		MinInclusionVotingPower: entity.ToVotingPower(dto.MinInclusionVotingPower),
 		MaxValidatorsCount:      entity.ToVotingPower(dto.MaxValidatorsCount),
 		RequiredKeyTags:         lo.Map(dto.RequiredKeyTags, func(tag uint8, _ int) entity.KeyTag { return entity.KeyTag(tag) }),
+		NumCommitters:           dto.NumCommitters,
+		NumAggregators:          dto.NumAggregators,
 	}, nil
 }
