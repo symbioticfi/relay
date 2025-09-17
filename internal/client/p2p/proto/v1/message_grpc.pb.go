@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             (unknown)
-// source: v1/sync.proto
+// source: v1/message.proto
 
 package v1
 
@@ -155,5 +155,5 @@ var SymbioticP2PService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "v1/sync.proto",
+	Metadata: "v1/message.proto",
 }
