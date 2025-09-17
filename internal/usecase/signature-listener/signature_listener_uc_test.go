@@ -7,10 +7,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/crypto"
 	entity_processor "github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor"
+	"github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor/mocks"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
 	intEntity "github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/signals"
@@ -69,8 +71,23 @@ func newTestSetup(t *testing.T) *testSetup {
 		repo.Close()
 	})
 
+	// Create mock aggregator for entity processor
+	ctrl := gomock.NewController(t)
+	mockAggregator := mocks.NewMockAggregator(ctrl)
+	mockAggregator.EXPECT().Verify(gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes()
+
+	// Create mock aggregation proof signal for entity processor
+	mockAggProofSignal := mocks.NewMockAggProofSignal(ctrl)
+	mockAggProofSignal.EXPECT().Emit(gomock.Any()).Return(nil).AnyTimes()
+
+	// Create mock signature processed signal for entity processor
+	signatureProcessedSignal := signals.New[entity.SignatureMessage](signals.DefaultConfig(), "test", nil)
+
 	processor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
-		Repo: repo,
+		Repo:                     repo,
+		Aggregator:               mockAggregator,
+		AggProofSignal:           mockAggProofSignal,
+		SignatureProcessedSignal: signatureProcessedSignal,
 	})
 	require.NoError(t, err)
 
@@ -81,8 +98,7 @@ func newTestSetup(t *testing.T) *testSetup {
 			BufferSize:  10,
 			WorkerCount: 5,
 		},
-		SelfP2PID:            "test-self-p2p-id",
-		SignatureSavedSignal: signals.New[entity.SignatureMessage](signals.DefaultConfig(), "signatureReceive", nil),
+		SelfP2PID: "test-self-p2p-id",
 	}
 
 	useCase, err := New(cfg)

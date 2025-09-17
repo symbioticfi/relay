@@ -17,14 +17,9 @@ func (s *Syncer) BuildWantAggregationProofsRequest(ctx context.Context) (entity.
 		return entity.WantAggregationProofsRequest{}, errors.Errorf("failed to get latest epoch: %w", err)
 	}
 
-	epochsToSync := s.cfg.AggProofEpochsToSync
-
-	// Calculate the starting epoch (oldest epoch to scan)
-	var startEpoch uint64
-	if latestEpoch >= epochsToSync {
-		startEpoch = latestEpoch - epochsToSync
-	} else {
-		startEpoch = 0
+	startEpoch := uint64(0)
+	if latestEpoch >= s.cfg.AggProofEpochsToSync {
+		startEpoch = latestEpoch - s.cfg.AggProofEpochsToSync
 	}
 
 	var allRequestHashes []common.Hash

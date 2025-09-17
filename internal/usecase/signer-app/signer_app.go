@@ -123,11 +123,6 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		return errors.Errorf("failed to get private key: %w", err)
 	}
 
-	public := private.PublicKey()
-	validator, activeIndex, err := s.cfg.Repo.GetValidatorByKey(ctx, uint64(req.RequiredEpoch), req.KeyTag, public.OnChain())
-	if err != nil {
-		return errors.Errorf("validator not found in epoch valset for public key: %w", err)
-	}
 	pkSignStart := time.Now()
 	signature, hash, err := private.Sign(req.Message)
 	if err != nil {
@@ -138,16 +133,13 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 	extendedSignature := entity.SignatureExtended{
 		MessageHash: hash,
 		Signature:   signature,
-		PublicKey:   public.Raw(),
+		PublicKey:   private.PublicKey().Raw(),
 	}
 
 	param := entity.SaveSignatureParam{
 		KeyTag:           req.KeyTag,
 		RequestHash:      req.Hash(),
-		Key:              public.Raw(),
 		Signature:        extendedSignature,
-		ActiveIndex:      activeIndex,
-		VotingPower:      validator.VotingPower,
 		Epoch:            req.RequiredEpoch,
 		SignatureRequest: &req,
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/samber/lo"
 
 	"github.com/symbioticfi/relay/core/entity"
 	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
@@ -67,14 +68,10 @@ func (s *Service) sendAggregationProofRequestToPeer(ctx context.Context, peerID 
 
 // entityToProtoAggregationProofRequest converts entity.WantAggregationProofsRequest to protobuf
 func entityToProtoAggregationProofRequest(req entity.WantAggregationProofsRequest) *prototypes.WantAggregationProofsRequest {
-	requestHashes := make([]string, len(req.RequestHashes))
-
-	for i, hash := range req.RequestHashes {
-		requestHashes[i] = hash.Hex()
-	}
-
 	return &prototypes.WantAggregationProofsRequest{
-		RequestHashes: requestHashes,
+		RequestHashes: lo.Map(req.RequestHashes, func(hash common.Hash, _ int) string {
+			return hash.Hex()
+		}),
 	}
 }
 

@@ -12,9 +12,11 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/crypto"
 	entity_processor "github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor"
+	entity_mocks "github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor/mocks"
 	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
 	"github.com/symbioticfi/relay/internal/usecase/signer-app/mocks"
+	"github.com/symbioticfi/relay/pkg/signals"
 )
 
 func TestSign_HappyPath(t *testing.T) {
@@ -83,8 +85,22 @@ func newTestSetup(t *testing.T) *testSetup {
 	mockAggregator := mocks.NewMockaggregator(ctrl)
 	mockMetrics := mocks.NewMockmetrics(ctrl)
 
+	// Create mock aggregator for entity processor
+	mockEntityAggregator := entity_mocks.NewMockAggregator(ctrl)
+	mockEntityAggregator.EXPECT().Verify(gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes()
+
+	// Create mock aggregation proof signal for entity processor
+	mockEntityAggProofSignal := entity_mocks.NewMockAggProofSignal(ctrl)
+	mockEntityAggProofSignal.EXPECT().Emit(gomock.Any()).Return(nil).AnyTimes()
+
+	// Create mock signature processed signal for entity processor
+	signatureProcessedSignal := signals.New[entity.SignatureMessage](signals.DefaultConfig(), "test", nil)
+
 	processor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
-		Repo: repo,
+		Repo:                     repo,
+		Aggregator:               mockEntityAggregator,
+		AggProofSignal:           mockEntityAggProofSignal,
+		SignatureProcessedSignal: signatureProcessedSignal,
 	})
 	require.NoError(t, err)
 

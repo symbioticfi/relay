@@ -2,15 +2,20 @@ package entity_processor
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	validate "github.com/go-playground/validator/v10"
 
 	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/core/usecase/crypto"
+	"github.com/symbioticfi/relay/pkg/signals"
 )
 
-// Repository defines the interface needed by the signature processor
+//go:generate mockgen -source=entity_processor.go -destination=mocks/entity_processor.go -package=mocks
+
+// Repository defines the interface needed by the entity processor
 type Repository interface {
 	DoUpdateInTx(ctx context.Context, f func(ctx context.Context) error) error
 	GetSignatureMap(ctx context.Context, reqHash common.Hash) (entity.SignatureMap, error)
@@ -21,14 +26,27 @@ type Repository interface {
 	RemoveSignatureRequestPending(ctx context.Context, epoch entity.Epoch, reqHash common.Hash) error
 	GetValidatorSetHeaderByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSetHeader, error)
 	GetActiveValidatorCountByEpoch(ctx context.Context, epoch uint64) (uint32, error)
+	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
+	GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error)
 
 	SaveAggregationProof(ctx context.Context, reqHash common.Hash, ap entity.AggregationProof) error
 	SaveAggregationProofPending(ctx context.Context, reqHash common.Hash, epoch entity.Epoch) error
 	RemoveAggregationProofPending(ctx context.Context, epoch entity.Epoch, reqHash common.Hash) error
 }
 
+type Aggregator interface {
+	Verify(valset entity.ValidatorSet, keyTag entity.KeyTag, aggregationProof entity.AggregationProof) (bool, error)
+}
+
+type AggProofSignal interface {
+	Emit(payload entity.AggregatedSignatureMessage) error
+}
+
 type Config struct {
-	Repo Repository `validate:"required"`
+	Repo                     Repository                               `validate:"required"`
+	Aggregator               Aggregator                               `validate:"required"`
+	AggProofSignal           AggProofSignal                           `validate:"required"`
+	SignatureProcessedSignal *signals.Signal[entity.SignatureMessage] `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -39,7 +57,7 @@ func (c Config) Validate() error {
 	return nil
 }
 
-// EntityProcessor handles signature processing with SignatureMap operations
+// EntityProcessor handles both signature and aggregation proof processing with SignatureMap operations
 type EntityProcessor struct {
 	cfg Config
 }
@@ -57,7 +75,27 @@ func NewEntityProcessor(cfg Config) (*EntityProcessor, error) {
 
 // ProcessSignature processes a signature with SignatureMap operations and optionally saves SignatureRequest
 func (s *EntityProcessor) ProcessSignature(ctx context.Context, param entity.SaveSignatureParam) error {
-	return s.cfg.Repo.DoUpdateInTx(ctx, func(ctx context.Context) error {
+	publicKey, err := crypto.NewPublicKey(param.KeyTag.Type(), param.Signature.PublicKey)
+	if err != nil {
+		return errors.Errorf("failed to get public key: %w", err)
+	}
+	err = publicKey.VerifyWithHash(param.Signature.MessageHash, param.Signature.Signature)
+	if err != nil {
+		return errors.Errorf("failed to verify signature: %w", err)
+	}
+
+	validator, activeIndex, err := s.cfg.Repo.GetValidatorByKey(ctx, uint64(param.Epoch), param.KeyTag, publicKey.OnChain())
+	if err != nil {
+		return errors.Errorf("validator not found for public key %x: %w", param.Signature.PublicKey, err)
+	}
+
+	if !validator.IsActive {
+		return errors.Errorf("validator %s is not active", validator.Operator.Hex())
+	}
+
+	slog.DebugContext(ctx, "Found active validator", "validator", validator)
+
+	err = s.cfg.Repo.DoUpdateInTx(ctx, func(ctx context.Context) error {
 		signatureMap, err := s.cfg.Repo.GetSignatureMap(ctx, param.RequestHash)
 		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 			return errors.Errorf("failed to get valset signature map: %w", err)
@@ -72,7 +110,7 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, param entity.Sav
 			signatureMap = entity.NewSignatureMap(param.RequestHash, param.Epoch, totalActiveValidators)
 		}
 
-		if err := signatureMap.SetValidatorPresent(param.ActiveIndex, param.VotingPower); err != nil {
+		if err := signatureMap.SetValidatorPresent(activeIndex, validator.VotingPower); err != nil {
 			return errors.Errorf("failed to set validator present for request %s: %w", param.RequestHash.Hex(), err)
 		}
 
@@ -80,7 +118,7 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, param entity.Sav
 			return errors.Errorf("failed to update valset signature map: %w", err)
 		}
 
-		if err := s.cfg.Repo.SaveSignature(ctx, param.RequestHash, param.ActiveIndex, param.Signature); err != nil {
+		if err := s.cfg.Repo.SaveSignature(ctx, param.RequestHash, activeIndex, param.Signature); err != nil {
 			return errors.Errorf("failed to save signature: %w", err)
 		}
 
@@ -120,11 +158,39 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, param entity.Sav
 
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+
+	// Emit signal after successful processing
+	if err := s.cfg.SignatureProcessedSignal.Emit(entity.SignatureMessage{
+		RequestHash: param.RequestHash,
+		KeyTag:      param.KeyTag,
+		Epoch:       param.Epoch,
+		Signature:   param.Signature,
+	}); err != nil {
+		return errors.Errorf("failed to emit signature processed signal: %w", err)
+	}
+
+	return nil
 }
 
 // ProcessAggregationProof processes an aggregation proof message by saving it and removing from pending collection
 func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
-	return s.cfg.Repo.DoUpdateInTx(ctx, func(ctx context.Context) error {
+	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
+	if err != nil {
+		return errors.Errorf("failed to get validator set: %w", err)
+	}
+
+	ok, err := s.cfg.Aggregator.Verify(validatorSet, msg.KeyTag, msg.AggregationProof)
+	if err != nil {
+		return errors.Errorf("failed to verify aggregation proof: %w", err)
+	}
+	if !ok {
+		return errors.Errorf("aggregation proof invalid")
+	}
+
+	err = s.cfg.Repo.DoUpdateInTx(ctx, func(ctx context.Context) error {
 		// Save the aggregation proof
 		err := s.cfg.Repo.SaveAggregationProof(ctx, msg.RequestHash, msg.AggregationProof)
 		if err != nil {
@@ -140,4 +206,14 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, msg entit
 
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+
+	// Emit signal after successful save
+	if err := s.cfg.AggProofSignal.Emit(msg); err != nil {
+		return errors.Errorf("failed to emit aggregation proof signal: %w", err)
+	}
+
+	return nil
 }

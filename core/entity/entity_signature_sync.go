@@ -25,21 +25,17 @@ type ValidatorSignature struct {
 
 // SignatureProcessingStats contains detailed statistics for processing received signatures
 type SignatureProcessingStats struct {
-	ProcessedCount              int // Successfully processed signatures
-	UnrequestedSignatureCount   int // Signatures for validators we didn't request
-	UnrequestedHashCount        int // Signatures for hashes we didn't request
-	SignatureRequestErrorCount  int // Failed to get signature request
-	PublicKeyErrorCount         int // Failed to create public key from signature
-	ValidatorInfoErrorCount     int // Failed to get validator info
-	ValidatorIndexMismatchCount int // Validator index mismatch between expected and actual
-	ProcessingErrorCount        int // Failed to process signature
-	AlreadyExistCount           int // Signature already exists (ErrEntityAlreadyExist)
+	ProcessedCount             int // Successfully processed signatures
+	UnrequestedSignatureCount  int // Signatures for validators we didn't request
+	UnrequestedHashCount       int // Signatures for hashes we didn't request
+	SignatureRequestErrorCount int // Failed to get signature request
+	ProcessingErrorCount       int // Failed to process signature
+	AlreadyExistCount          int // Signature already exists (ErrEntityAlreadyExist)
 }
 
 // TotalErrors returns the total number of errors encountered
 func (s SignatureProcessingStats) TotalErrors() int {
 	return s.UnrequestedSignatureCount + s.UnrequestedHashCount + s.SignatureRequestErrorCount +
-		s.PublicKeyErrorCount + s.ValidatorInfoErrorCount + s.ValidatorIndexMismatchCount +
 		s.ProcessingErrorCount + s.AlreadyExistCount
 }
 

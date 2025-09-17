@@ -46,7 +46,7 @@ func TestP2P_GRPC(t *testing.T) {
 		defer listener.Close()
 
 		v2.RegisterSymbioticP2PServiceServer(grpcServer, &GRPCHandler{
-			signatureHandler: myHandler{},
+			syncHandler: myHandler{},
 		})
 		close(ready)
 
@@ -106,5 +106,11 @@ func (m myHandler) WantSignatures(ctx context.Context, request *v2.WantSignature
 func (m myHandler) HandleWantSignaturesRequest(ctx context.Context, request entity.WantSignaturesRequest) (entity.WantSignaturesResponse, error) {
 	return entity.WantSignaturesResponse{
 		Signatures: make(map[common.Hash][]entity.ValidatorSignature),
+	}, nil
+}
+
+func (m myHandler) HandleWantAggregationProofsRequest(ctx context.Context, request entity.WantAggregationProofsRequest) (entity.WantAggregationProofsResponse, error) {
+	return entity.WantAggregationProofsResponse{
+		Proofs: make(map[common.Hash]entity.AggregationProof),
 	}, nil
 }

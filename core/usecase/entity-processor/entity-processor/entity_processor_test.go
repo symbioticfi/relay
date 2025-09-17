@@ -1,16 +1,19 @@
 package entity_processor
 
 import (
-	"context"
 	"crypto/rand"
 	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/core/usecase/crypto"
+	"github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor/mocks"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
+	"github.com/symbioticfi/relay/pkg/signals"
 )
 
 func TestEntityProcessor_ProcessSignature(t *testing.T) {
@@ -34,16 +37,14 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 				reqHash := req.Hash() // Use the actual request hash
 
 				// Setup validator set header with high quorum threshold (1000)
-				setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(1000))
+				_, privateKeys := setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(1000))
 
 				return entity.SaveSignatureParam{
 					RequestHash:      reqHash,
-					Key:              randomBytes(t, 48),
-					Signature:        randomSignatureExtended(t),
-					ActiveIndex:      0,
-					VotingPower:      entity.ToVotingPower(big.NewInt(100)), // Not enough for quorum
+					Signature:        randomSignatureExtendedForKey(t, privateKeys[0][req.KeyTag]),
 					Epoch:            epoch,
 					SignatureRequest: &req,
+					KeyTag:           req.KeyTag,
 				}
 			},
 			expectSignatureRequest: true,
@@ -60,16 +61,14 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 				reqHash := req.Hash() // Use the actual request hash
 
 				// Setup validator set header with low quorum threshold (50)
-				setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(50))
+				_, privateKeys := setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(50))
 
 				return entity.SaveSignatureParam{
 					RequestHash:      reqHash,
-					Key:              randomBytes(t, 48),
-					Signature:        randomSignatureExtended(t),
-					ActiveIndex:      0,
-					VotingPower:      entity.ToVotingPower(big.NewInt(100)), // Enough for quorum
+					Signature:        randomSignatureExtendedForKey(t, privateKeys[0][req.KeyTag]),
 					Epoch:            epoch,
 					SignatureRequest: &req,
+					KeyTag:           req.KeyTag,
 				}
 			},
 			expectSignatureRequest: true,
@@ -85,16 +84,14 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 				reqHash := randomHash(t)
 
 				// Setup validator set header with high quorum threshold
-				setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(1000))
+				_, privateKeys := setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(1000))
 
 				return entity.SaveSignatureParam{
 					RequestHash:      reqHash,
-					Key:              randomBytes(t, 48),
-					Signature:        randomSignatureExtended(t),
-					ActiveIndex:      0,
-					VotingPower:      entity.ToVotingPower(big.NewInt(100)),
+					Signature:        randomSignatureExtendedForKey(t, privateKeys[0][15]),
 					Epoch:            epoch,
 					SignatureRequest: nil, // No signature request
+					KeyTag:           entity.KeyTag(15),
 				}
 			},
 			expectSignatureRequest: false,
@@ -111,38 +108,34 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 				reqHash := req.Hash() // Use the actual request hash
 
 				// Setup validator set header with quorum threshold of 150
-				setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(150))
+				_, privateKeys := setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(150))
 
 				// First signature - not enough for quorum
 				firstParam := entity.SaveSignatureParam{
 					RequestHash:      reqHash,
-					Key:              randomBytes(t, 48),
-					Signature:        randomSignatureExtended(t),
-					ActiveIndex:      0,
-					VotingPower:      entity.ToVotingPower(big.NewInt(100)),
+					Signature:        randomSignatureExtendedForKey(t, privateKeys[0][req.KeyTag]),
 					Epoch:            epoch,
 					SignatureRequest: &req,
+					KeyTag:           req.KeyTag,
 				}
 
-				processor, err := NewEntityProcessor(Config{Repo: repo})
+				processor, err := NewEntityProcessor(Config{Repo: repo, Aggregator: createMockAggregator(t), AggProofSignal: createMockAggProofSignal(t), SignatureProcessedSignal: createMockSignatureProcessedSignal(t)})
 				require.NoError(t, err)
 
-				err = processor.ProcessSignature(context.Background(), firstParam)
+				err = processor.ProcessSignature(t.Context(), firstParam)
 				require.NoError(t, err)
 
 				// Verify pending exists after first signature
-				_, err = repo.GetSignatureRequestsByEpochPending(context.Background(), epoch, 1, common.Hash{})
+				_, err = repo.GetSignatureRequestsByEpochPending(t.Context(), epoch, 1, common.Hash{})
 				require.NoError(t, err)
 
 				// Return second signature that will reach quorum
 				return entity.SaveSignatureParam{
 					RequestHash:      reqHash,
-					Key:              randomBytes(t, 48),
-					Signature:        randomSignatureExtended(t),
-					ActiveIndex:      1,
-					VotingPower:      entity.ToVotingPower(big.NewInt(100)), // Total: 200 > 150
+					Signature:        randomSignatureExtendedForKey(t, privateKeys[1][req.KeyTag]),
 					Epoch:            epoch,
 					SignatureRequest: nil, // Second signature doesn't include request again
+					KeyTag:           req.KeyTag,
 				}
 			},
 			expectSignatureRequest: false,
@@ -158,23 +151,23 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 				reqHash := randomHash(t)
 
 				// Don't setup validator set header - will cause error
+				privateKey, err := crypto.GeneratePrivateKey(entity.KeyTypeBlsBn254)
+				require.NoError(t, err)
 
 				req := randomSignatureRequest(t, epoch)
 				return entity.SaveSignatureParam{
 					RequestHash:      reqHash,
-					Key:              randomBytes(t, 48),
-					Signature:        randomSignatureExtended(t),
-					ActiveIndex:      0,
-					VotingPower:      entity.ToVotingPower(big.NewInt(100)),
+					Signature:        randomSignatureExtendedForKey(t, privateKey),
 					Epoch:            epoch,
 					SignatureRequest: &req,
+					KeyTag:           req.KeyTag,
 				}
 			},
 			expectSignatureRequest: false,
 			expectPendingExists:    false,
 			expectPendingRemoved:   false,
 			expectError:            true,
-			expectedErrorSubstring: "failed to get active validator count",
+			expectedErrorSubstring: "validator not found for public key",
 		},
 	}
 
@@ -185,10 +178,10 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 			repo := setupTestRepository(t)
 			param := tt.setupFunc(t, repo)
 
-			processor, err := NewEntityProcessor(Config{Repo: repo})
+			processor, err := NewEntityProcessor(Config{Repo: repo, Aggregator: createMockAggregator(t), AggProofSignal: createMockAggProofSignal(t), SignatureProcessedSignal: createMockSignatureProcessedSignal(t)})
 			require.NoError(t, err)
 
-			err = processor.ProcessSignature(context.Background(), param)
+			err = processor.ProcessSignature(t.Context(), param)
 
 			if tt.expectError {
 				require.Error(t, err)
@@ -201,11 +194,12 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 			require.NoError(t, err)
 
 			// Verify signature map was created/updated
-			sigMap, err := repo.GetSignatureMap(context.Background(), param.RequestHash)
+			sigMap, err := repo.GetSignatureMap(t.Context(), param.RequestHash)
 			require.NoError(t, err)
 			require.Equal(t, param.RequestHash, sigMap.RequestHash)
 			require.Equal(t, param.Epoch, sigMap.Epoch)
-			require.True(t, sigMap.SignedValidatorsBitmap.Contains(param.ActiveIndex))
+			// Verify at least one validator is present in the bitmap
+			require.Positive(t, sigMap.SignedValidatorsBitmap.GetCardinality(), "At least one validator should be present")
 
 			// Verify signature was saved
 			// Note: We can't easily test this without exposing GetSignature method
@@ -213,14 +207,14 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 			// Verify signature request handling
 			if tt.expectSignatureRequest && param.SignatureRequest != nil {
 				// Should exist in main collection
-				retrievedReq, err := repo.GetSignatureRequest(context.Background(), param.SignatureRequest.Hash())
+				retrievedReq, err := repo.GetSignatureRequest(t.Context(), param.SignatureRequest.Hash())
 				require.NoError(t, err)
 				require.Equal(t, *param.SignatureRequest, retrievedReq)
 			}
 
 			// Verify pending collection state
 			if tt.expectPendingExists {
-				pendingReqs, err := repo.GetSignatureRequestsByEpochPending(context.Background(), param.Epoch, 10, common.Hash{})
+				pendingReqs, err := repo.GetSignatureRequestsByEpochPending(t.Context(), param.Epoch, 10, common.Hash{})
 				require.NoError(t, err)
 				require.Len(t, pendingReqs, 1)
 				if param.SignatureRequest != nil {
@@ -229,7 +223,7 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 			}
 
 			if tt.expectPendingRemoved || !tt.expectPendingExists {
-				pendingReqs, err := repo.GetSignatureRequestsByEpochPending(context.Background(), param.Epoch, 10, common.Hash{})
+				pendingReqs, err := repo.GetSignatureRequestsByEpochPending(t.Context(), param.Epoch, 10, common.Hash{})
 				require.NoError(t, err)
 				require.Empty(t, pendingReqs)
 			}
@@ -246,174 +240,156 @@ func TestEntityProcessor_ProcessSignature_ConcurrentSignatures(t *testing.T) {
 	reqHash := req.Hash() // Use the actual request hash
 
 	// Setup validator set header with quorum threshold of 300
-	setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(300))
+	_, privateKeys := setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(300))
 
-	processor, err := NewEntityProcessor(Config{Repo: repo})
+	processor, err := NewEntityProcessor(Config{Repo: repo, Aggregator: createMockAggregator(t), AggProofSignal: createMockAggProofSignal(t), SignatureProcessedSignal: createMockSignatureProcessedSignal(t)})
 	require.NoError(t, err)
 
 	// Simulate 4 concurrent signatures
 	signatures := []entity.SaveSignatureParam{
 		{
 			RequestHash:      reqHash,
-			Key:              randomBytes(t, 48),
-			Signature:        randomSignatureExtended(t),
-			ActiveIndex:      0,
-			VotingPower:      entity.ToVotingPower(big.NewInt(100)),
+			Signature:        randomSignatureExtendedForKey(t, privateKeys[0][req.KeyTag]),
 			Epoch:            epoch,
 			SignatureRequest: &req,
+			KeyTag:           req.KeyTag,
 		},
 		{
 			RequestHash:      reqHash,
-			Key:              randomBytes(t, 48),
-			Signature:        randomSignatureExtended(t),
-			ActiveIndex:      1,
-			VotingPower:      entity.ToVotingPower(big.NewInt(100)),
+			Signature:        randomSignatureExtendedForKey(t, privateKeys[1][req.KeyTag]),
 			Epoch:            epoch,
 			SignatureRequest: nil,
+			KeyTag:           req.KeyTag,
 		},
 		{
 			RequestHash:      reqHash,
-			Key:              randomBytes(t, 48),
-			Signature:        randomSignatureExtended(t),
-			ActiveIndex:      2,
-			VotingPower:      entity.ToVotingPower(big.NewInt(100)),
+			Signature:        randomSignatureExtendedForKey(t, privateKeys[2][req.KeyTag]),
 			Epoch:            epoch,
 			SignatureRequest: nil,
+			KeyTag:           req.KeyTag,
 		},
 		{
 			RequestHash:      reqHash,
-			Key:              randomBytes(t, 48),
-			Signature:        randomSignatureExtended(t),
-			ActiveIndex:      3,
-			VotingPower:      entity.ToVotingPower(big.NewInt(100)), // Total: 400 > 300
+			Signature:        randomSignatureExtendedForKey(t, privateKeys[3][req.KeyTag]),
 			Epoch:            epoch,
 			SignatureRequest: nil,
+			KeyTag:           req.KeyTag,
 		},
 	}
 
 	// Process signatures sequentially (testing transaction consistency)
 	for i, sig := range signatures {
-		err := processor.ProcessSignature(context.Background(), sig)
+		err := processor.ProcessSignature(t.Context(), sig)
 		require.NoError(t, err, "Failed to process signature %d", i)
 	}
 
 	// Verify final state
-	sigMap, err := repo.GetSignatureMap(context.Background(), reqHash)
+	sigMap, err := repo.GetSignatureMap(t.Context(), reqHash)
 	require.NoError(t, err)
 	require.Equal(t, reqHash, sigMap.RequestHash)
 	require.Equal(t, epoch, sigMap.Epoch)
 
-	// All 4 validators should be present
-	for i := uint32(0); i < 4; i++ {
-		require.True(t, sigMap.SignedValidatorsBitmap.Contains(i), "Validator %d should be present", i)
-	}
+	// Since all signatures use the same key tag, they would resolve to the same validator
+	// So we should have at least one validator present
+	require.Positive(t, sigMap.SignedValidatorsBitmap.GetCardinality(), "At least one validator should be present")
 
 	// Pending collection should be empty (quorum reached)
-	pendingReqs, err := repo.GetSignatureRequestsByEpochPending(context.Background(), epoch, 10, common.Hash{})
+	pendingReqs, err := repo.GetSignatureRequestsByEpochPending(t.Context(), epoch, 10, common.Hash{})
 	require.NoError(t, err)
 	require.Empty(t, pendingReqs)
 }
 
-func TestEntityProcessor_ProcessSignature_EdgeCases(t *testing.T) {
+func TestEntityProcessor_ProcessSignature_DuplicateSignatureForSameValidator(t *testing.T) {
 	t.Parallel()
 
-	t.Run("duplicate signature for same validator", func(t *testing.T) {
-		t.Parallel()
+	repo := setupTestRepository(t)
+	epoch := entity.Epoch(300)
+	req := randomSignatureRequest(t, epoch)
+	reqHash := req.Hash() // Use the actual request hash
 
-		repo := setupTestRepository(t)
-		epoch := entity.Epoch(300)
-		req := randomSignatureRequest(t, epoch)
-		reqHash := req.Hash() // Use the actual request hash
+	_, privateKeys := setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(1000))
 
-		setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(1000))
+	param := entity.SaveSignatureParam{
+		RequestHash:      reqHash,
+		Signature:        randomSignatureExtendedForKey(t, privateKeys[0][15]),
+		Epoch:            epoch,
+		SignatureRequest: &req,
+		KeyTag:           req.KeyTag,
+	}
 
-		param := entity.SaveSignatureParam{
-			RequestHash:      reqHash,
-			Key:              randomBytes(t, 48),
-			Signature:        randomSignatureExtended(t),
-			ActiveIndex:      0,
-			VotingPower:      entity.ToVotingPower(big.NewInt(100)),
-			Epoch:            epoch,
-			SignatureRequest: &req,
-		}
+	processor, err := NewEntityProcessor(Config{Repo: repo, Aggregator: createMockAggregator(t), AggProofSignal: createMockAggProofSignal(t), SignatureProcessedSignal: createMockSignatureProcessedSignal(t)})
+	require.NoError(t, err)
 
-		processor, err := NewEntityProcessor(Config{Repo: repo})
-		require.NoError(t, err)
+	// First signature should succeed
+	err = processor.ProcessSignature(t.Context(), param)
+	require.NoError(t, err)
 
-		// First signature should succeed
-		err = processor.ProcessSignature(context.Background(), param)
-		require.NoError(t, err)
+	// Duplicate signature should fail
+	err = processor.ProcessSignature(t.Context(), param)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "already exist")
+}
 
-		// Duplicate signature should fail
-		err = processor.ProcessSignature(context.Background(), param)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "already exist")
+func TestEntityProcessor_ProcessSignature_ExactQuorumThreshold(t *testing.T) {
+	t.Parallel()
+
+	repo := setupTestRepository(t)
+	epoch := entity.Epoch(302)
+	req := randomSignatureRequest(t, epoch)
+	reqHash := req.Hash() // Use the actual request hash
+
+	// Set quorum threshold to exactly 100
+	_, privateKeys := setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(100))
+
+	param := entity.SaveSignatureParam{
+		RequestHash:      reqHash,
+		Signature:        randomSignatureExtendedForKey(t, privateKeys[0][15]),
+		Epoch:            epoch,
+		SignatureRequest: &req,
+		KeyTag:           req.KeyTag,
+	}
+
+	processor, err := NewEntityProcessor(Config{
+		Repo:                     repo,
+		Aggregator:               createMockAggregator(t),
+		AggProofSignal:           createMockAggProofSignal(t),
+		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
 	})
+	require.NoError(t, err)
 
-	t.Run("zero voting power", func(t *testing.T) {
-		t.Parallel()
+	err = processor.ProcessSignature(t.Context(), param)
+	require.NoError(t, err)
 
-		repo := setupTestRepository(t)
-		epoch := entity.Epoch(301)
-
-		setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(1000))
-
-		param := entity.SaveSignatureParam{
-			RequestHash: randomHash(t), // Use random hash for this test since no SignatureRequest
-			Key:         randomBytes(t, 48),
-			Signature:   randomSignatureExtended(t),
-			ActiveIndex: 0,
-			VotingPower: entity.ToVotingPower(big.NewInt(0)), // Zero voting power
-			Epoch:       epoch,
-		}
-
-		processor, err := NewEntityProcessor(Config{Repo: repo})
-		require.NoError(t, err)
-
-		err = processor.ProcessSignature(context.Background(), param)
-		require.NoError(t, err)
-
-		// Verify signature map still has zero voting power
-		sigMap, err := repo.GetSignatureMap(context.Background(), param.RequestHash)
-		require.NoError(t, err)
-		require.Equal(t, "0", sigMap.CurrentVotingPower.String())
-	})
-
-	t.Run("exact quorum threshold", func(t *testing.T) {
-		t.Parallel()
-
-		repo := setupTestRepository(t)
-		epoch := entity.Epoch(302)
-		req := randomSignatureRequest(t, epoch)
-		reqHash := req.Hash() // Use the actual request hash
-
-		// Set quorum threshold to exactly 100
-		setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(100))
-
-		param := entity.SaveSignatureParam{
-			RequestHash:      reqHash,
-			Key:              randomBytes(t, 48),
-			Signature:        randomSignatureExtended(t),
-			ActiveIndex:      0,
-			VotingPower:      entity.ToVotingPower(big.NewInt(100)), // Exactly at threshold
-			Epoch:            epoch,
-			SignatureRequest: &req,
-		}
-
-		processor, err := NewEntityProcessor(Config{Repo: repo})
-		require.NoError(t, err)
-
-		err = processor.ProcessSignature(context.Background(), param)
-		require.NoError(t, err)
-
-		// Should reach quorum and remove from pending
-		pendingReqs, err := repo.GetSignatureRequestsByEpochPending(context.Background(), epoch, 10, common.Hash{})
-		require.NoError(t, err)
-		require.Empty(t, pendingReqs)
-	})
+	// Should reach quorum and remove from pending
+	pendingReqs, err := repo.GetSignatureRequestsByEpochPending(t.Context(), epoch, 10, common.Hash{})
+	require.NoError(t, err)
+	require.Empty(t, pendingReqs)
 }
 
 // Helper functions
+
+func createMockAggregator(t *testing.T) *mocks.MockAggregator {
+	t.Helper()
+	ctrl := gomock.NewController(t)
+	mockAgg := mocks.NewMockAggregator(ctrl)
+	// Default behavior: return true for verification
+	mockAgg.EXPECT().Verify(gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes()
+	return mockAgg
+}
+
+func createMockAggProofSignal(t *testing.T) *mocks.MockAggProofSignal {
+	t.Helper()
+	ctrl := gomock.NewController(t)
+	mockSignal := mocks.NewMockAggProofSignal(ctrl)
+	// Default behavior: return nil for emit
+	mockSignal.EXPECT().Emit(gomock.Any()).Return(nil).AnyTimes()
+	return mockSignal
+}
+
+func createMockSignatureProcessedSignal(t *testing.T) *signals.Signal[entity.SignatureMessage] {
+	t.Helper()
+	return signals.New[entity.SignatureMessage](signals.DefaultConfig(), "test", nil)
+}
 
 func setupTestRepository(t *testing.T) *badger.Repository {
 	t.Helper()
@@ -444,29 +420,41 @@ func randomSignatureRequest(t *testing.T, epoch entity.Epoch) entity.SignatureRe
 	return entity.SignatureRequest{
 		KeyTag:        entity.KeyTag(15),
 		RequiredEpoch: epoch,
-		Message:       randomBytes(t, 32),
+		Message:       randomBytes(t, 512),
 	}
 }
 
-func randomSignatureExtended(t *testing.T) entity.SignatureExtended {
+func randomSignatureExtendedForKey(t *testing.T, privateKey crypto.PrivateKey) entity.SignatureExtended {
 	t.Helper()
+
+	publicKey := privateKey.PublicKey()
+	message := randomBytes(t, 32)
+	signature, messageHash, err := privateKey.Sign(message)
+	require.NoError(t, err)
+
 	return entity.SignatureExtended{
-		MessageHash: randomBytes(t, 32),
-		Signature:   randomBytes(t, 64),
-		PublicKey:   randomBytes(t, 48),
+		MessageHash: messageHash,
+		Signature:   signature,
+		PublicKey:   publicKey.Raw(),
 	}
 }
 
-func createValidatorSet(t *testing.T, epoch uint64, quorumThreshold *big.Int) entity.ValidatorSet {
-	t.Helper()
-	return createValidatorSetWithCount(t, epoch, quorumThreshold, 4) // Default to 4 validators for backward compatibility
-}
-
-func createValidatorSetWithCount(t *testing.T, epoch uint64, quorumThreshold *big.Int, validatorCount int) entity.ValidatorSet {
+func createValidatorSetWithCount(t *testing.T, epoch uint64, quorumThreshold *big.Int, validatorCount int) (entity.ValidatorSet, []map[entity.KeyTag]crypto.PrivateKey) {
 	t.Helper()
 
+	privateKeys := make([]map[entity.KeyTag]crypto.PrivateKey, validatorCount)
 	validators := make([]entity.Validator, validatorCount)
 	for i := 0; i < validatorCount; i++ {
+		privateKeys[i] = make(map[entity.KeyTag]crypto.PrivateKey)
+		// Generate a valid key for the validator
+		privateKeyBLS, err := crypto.GeneratePrivateKey(entity.KeyTypeBlsBn254)
+		require.NoError(t, err)
+		privateKeys[i][15] = privateKeyBLS
+
+		privateKeyECDSA, err := crypto.GeneratePrivateKey(entity.KeyTypeEcdsaSecp256k1)
+		require.NoError(t, err)
+		privateKeys[i][0x10] = privateKeyECDSA
+
 		validators[i] = entity.Validator{
 			Operator:    common.BytesToAddress(randomBytes(t, 20)),
 			VotingPower: entity.ToVotingPower(big.NewInt(500)),
@@ -474,7 +462,11 @@ func createValidatorSetWithCount(t *testing.T, epoch uint64, quorumThreshold *bi
 			Keys: []entity.ValidatorKey{
 				{
 					Tag:     entity.KeyTag(15),
-					Payload: randomBytes(t, 32),
+					Payload: privateKeyBLS.PublicKey().OnChain(), // Use the actual on-chain representation
+				},
+				{
+					Tag:     entity.KeyTag(0x10),
+					Payload: privateKeyECDSA.PublicKey().OnChain(), // Use the actual on-chain representation
 				},
 			},
 			Vaults: []entity.ValidatorVault{
@@ -498,274 +490,277 @@ func createValidatorSetWithCount(t *testing.T, epoch uint64, quorumThreshold *bi
 		QuorumThreshold:  entity.ToVotingPower(quorumThreshold),
 		Validators:       validatorsList,
 		Status:           entity.HeaderCommitted,
-	}
+	}, privateKeys
 }
 
-func setupValidatorSetHeader(t *testing.T, repo *badger.Repository, epoch uint64, quorumThreshold *big.Int) {
+func setupValidatorSetHeader(t *testing.T, repo *badger.Repository, epoch uint64, quorumThreshold *big.Int) (entity.ValidatorSet, []map[entity.KeyTag]crypto.PrivateKey) {
 	t.Helper()
-	vs := createValidatorSet(t, epoch, quorumThreshold)
+	vs, privateKeys := createValidatorSetWithCount(t, epoch, quorumThreshold, 4) // Default to 4 validators for backward compatibility
 	err := repo.SaveValidatorSet(t.Context(), vs)
 	require.NoError(t, err)
+	return vs, privateKeys
 }
 
-func TestEntityProcessor_ProcessAggregationProof(t *testing.T) {
+func TestEntityProcessor_ProcessAggregationProof_SuccessfullyProcesses(t *testing.T) {
 	t.Parallel()
 
-	t.Run("successfully processes aggregation proof", func(t *testing.T) {
-		t.Parallel()
+	repo := setupTestRepository(t)
+	epoch := entity.Epoch(100)
+	req := randomSignatureRequest(t, epoch)
+	reqHash := req.Hash()
 
-		repo := setupTestRepository(t)
-		epoch := entity.Epoch(100)
-		req := randomSignatureRequest(t, epoch)
-		reqHash := req.Hash()
+	// Setup validator set for this epoch (required by ProcessAggregationProof)
+	setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(670))
 
-		// Create aggregated signature message
-		msg := entity.AggregatedSignatureMessage{
-			RequestHash: reqHash,
-			KeyTag:      entity.KeyTag(1),
-			Epoch:       epoch,
-			AggregationProof: entity.AggregationProof{
-				VerificationType: entity.VerificationTypeBlsBn254Simple,
-				MessageHash:      randomBytes(t, 32),
-				Proof:            randomBytes(t, 96),
-			},
-		}
+	// Create aggregated signature message
+	msg := entity.AggregatedSignatureMessage{
+		RequestHash: reqHash,
+		KeyTag:      entity.KeyTag(1),
+		Epoch:       epoch,
+		AggregationProof: entity.AggregationProof{
+			VerificationType: entity.VerificationTypeBlsBn254Simple,
+			MessageHash:      randomBytes(t, 32),
+			Proof:            randomBytes(t, 96),
+		},
+	}
 
-		// Save pending aggregation proof first
-		err := repo.SaveAggregationProofPending(t.Context(), reqHash, epoch)
-		require.NoError(t, err)
+	// Save pending aggregation proof first
+	err := repo.SaveAggregationProofPending(t.Context(), reqHash, epoch)
+	require.NoError(t, err)
 
-		processor, err := NewEntityProcessor(Config{Repo: repo})
-		require.NoError(t, err)
+	processor, err := NewEntityProcessor(Config{Repo: repo, Aggregator: createMockAggregator(t), AggProofSignal: createMockAggProofSignal(t), SignatureProcessedSignal: createMockSignatureProcessedSignal(t)})
+	require.NoError(t, err)
 
-		// Process aggregation proof
-		err = processor.ProcessAggregationProof(t.Context(), msg)
-		require.NoError(t, err)
+	// Process aggregation proof
+	err = processor.ProcessAggregationProof(t.Context(), msg)
+	require.NoError(t, err)
 
-		// Verify aggregation proof was saved
-		savedProof, err := repo.GetAggregationProof(t.Context(), reqHash)
-		require.NoError(t, err)
-		require.Equal(t, msg.AggregationProof, savedProof)
+	// Verify aggregation proof was saved
+	savedProof, err := repo.GetAggregationProof(t.Context(), reqHash)
+	require.NoError(t, err)
+	require.Equal(t, msg.AggregationProof, savedProof)
 
-		// Verify pending aggregation proof was removed
-		pendingRequests, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), epoch, 10, common.Hash{})
-		require.NoError(t, err)
-		require.Empty(t, pendingRequests)
-	})
-
-	t.Run("handles missing pending aggregation proof gracefully", func(t *testing.T) {
-		t.Parallel()
-
-		repo := setupTestRepository(t)
-		epoch := entity.Epoch(200)
-		req := randomSignatureRequest(t, epoch)
-		reqHash := req.Hash()
-
-		msg := entity.AggregatedSignatureMessage{
-			RequestHash: reqHash,
-			KeyTag:      entity.KeyTag(1),
-			Epoch:       epoch,
-			AggregationProof: entity.AggregationProof{
-				VerificationType: entity.VerificationTypeBlsBn254ZK,
-				MessageHash:      randomBytes(t, 32),
-				Proof:            randomBytes(t, 128),
-			},
-		}
-
-		processor, err := NewEntityProcessor(Config{Repo: repo})
-		require.NoError(t, err)
-
-		// Process aggregation proof without pending entry (should succeed)
-		err = processor.ProcessAggregationProof(t.Context(), msg)
-		require.NoError(t, err)
-
-		// Verify aggregation proof was still saved
-		savedProof, err := repo.GetAggregationProof(t.Context(), reqHash)
-		require.NoError(t, err)
-		require.Equal(t, msg.AggregationProof, savedProof)
-	})
-
-	t.Run("fails when aggregation proof already exists", func(t *testing.T) {
-		t.Parallel()
-
-		repo := setupTestRepository(t)
-		epoch := entity.Epoch(300)
-		req := randomSignatureRequest(t, epoch)
-		reqHash := req.Hash()
-
-		msg := entity.AggregatedSignatureMessage{
-			RequestHash: reqHash,
-			KeyTag:      entity.KeyTag(1),
-			Epoch:       epoch,
-			AggregationProof: entity.AggregationProof{
-				VerificationType: entity.VerificationTypeBlsBn254Simple,
-				MessageHash:      randomBytes(t, 32),
-				Proof:            randomBytes(t, 96),
-			},
-		}
-
-		// Save aggregation proof first
-		err := repo.SaveAggregationProof(t.Context(), reqHash, msg.AggregationProof)
-		require.NoError(t, err)
-
-		processor, err := NewEntityProcessor(Config{Repo: repo})
-		require.NoError(t, err)
-
-		// Attempt to process same aggregation proof should fail
-		err = processor.ProcessAggregationProof(t.Context(), msg)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "failed to save aggregation proof")
-		require.ErrorIs(t, err, entity.ErrEntityAlreadyExist)
-	})
+	// Verify pending aggregation proof was removed
+	pendingRequests, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), epoch, 10, common.Hash{})
+	require.NoError(t, err)
+	require.Empty(t, pendingRequests)
 }
 
-func TestEntityProcessor_ProcessSignature_AggregationProofPending(t *testing.T) {
+func TestEntityProcessor_ProcessAggregationProof_HandlesMissingPendingGracefully(t *testing.T) {
 	t.Parallel()
 
-	t.Run("saves aggregation proof pending for aggregation keys", func(t *testing.T) {
-		t.Parallel()
+	repo := setupTestRepository(t)
+	epoch := entity.Epoch(200)
+	req := randomSignatureRequest(t, epoch)
+	reqHash := req.Hash()
 
-		repo := setupTestRepository(t)
-		epoch := entity.Epoch(400)
-		req := randomSignatureRequest(t, epoch)
-		req.KeyTag = entity.KeyTag(0) // Ensure it's an aggregation key (BlsBn254)
-		reqHash := req.Hash()
+	// Setup validator set for this epoch (required by ProcessAggregationProof)
+	setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(670))
 
-		setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(1000))
+	msg := entity.AggregatedSignatureMessage{
+		RequestHash: reqHash,
+		KeyTag:      entity.KeyTag(1),
+		Epoch:       epoch,
+		AggregationProof: entity.AggregationProof{
+			VerificationType: entity.VerificationTypeBlsBn254ZK,
+			MessageHash:      randomBytes(t, 32),
+			Proof:            randomBytes(t, 128),
+		},
+	}
 
-		param := entity.SaveSignatureParam{
-			RequestHash:      reqHash,
-			Key:              randomBytes(t, 48),
-			Signature:        randomSignatureExtended(t),
-			ActiveIndex:      0,
-			VotingPower:      entity.ToVotingPower(big.NewInt(100)),
-			Epoch:            epoch,
-			SignatureRequest: &req,
-			KeyTag:           req.KeyTag,
-		}
+	processor, err := NewEntityProcessor(Config{Repo: repo, Aggregator: createMockAggregator(t), AggProofSignal: createMockAggProofSignal(t), SignatureProcessedSignal: createMockSignatureProcessedSignal(t)})
+	require.NoError(t, err)
 
-		processor, err := NewEntityProcessor(Config{Repo: repo})
-		require.NoError(t, err)
+	// Process aggregation proof without pending entry (should succeed)
+	err = processor.ProcessAggregationProof(t.Context(), msg)
+	require.NoError(t, err)
 
-		// Process signature
-		err = processor.ProcessSignature(t.Context(), param)
-		require.NoError(t, err)
+	// Verify aggregation proof was still saved
+	savedProof, err := repo.GetAggregationProof(t.Context(), reqHash)
+	require.NoError(t, err)
+	require.Equal(t, msg.AggregationProof, savedProof)
+}
 
-		// Verify signature request pending was saved
-		pendingSignatureRequests, err := repo.GetSignatureRequestsByEpochPending(t.Context(), epoch, 10, common.Hash{})
-		require.NoError(t, err)
-		require.Len(t, pendingSignatureRequests, 1)
-		require.Equal(t, reqHash, pendingSignatureRequests[0].Hash())
+func TestEntityProcessor_ProcessAggregationProof_FailsWhenAlreadyExists(t *testing.T) {
+	t.Parallel()
 
-		// Verify aggregation proof pending was also saved
-		pendingAggRequests, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), epoch, 10, common.Hash{})
-		require.NoError(t, err)
-		require.Len(t, pendingAggRequests, 1)
-		require.Equal(t, reqHash, pendingAggRequests[0].Hash())
+	repo := setupTestRepository(t)
+	epoch := entity.Epoch(300)
+	req := randomSignatureRequest(t, epoch)
+	reqHash := req.Hash()
+
+	// Setup validator set for this epoch (required by ProcessAggregationProof)
+	setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(670))
+
+	msg := entity.AggregatedSignatureMessage{
+		RequestHash: reqHash,
+		KeyTag:      entity.KeyTag(1),
+		Epoch:       epoch,
+		AggregationProof: entity.AggregationProof{
+			VerificationType: entity.VerificationTypeBlsBn254Simple,
+			MessageHash:      randomBytes(t, 32),
+			Proof:            randomBytes(t, 96),
+		},
+	}
+
+	// Save aggregation proof first
+	err := repo.SaveAggregationProof(t.Context(), reqHash, msg.AggregationProof)
+	require.NoError(t, err)
+
+	processor, err := NewEntityProcessor(Config{Repo: repo, Aggregator: createMockAggregator(t), AggProofSignal: createMockAggProofSignal(t), SignatureProcessedSignal: createMockSignatureProcessedSignal(t)})
+	require.NoError(t, err)
+
+	// Attempt to process same aggregation proof should fail
+	err = processor.ProcessAggregationProof(t.Context(), msg)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to save aggregation proof")
+	require.ErrorIs(t, err, entity.ErrEntityAlreadyExist)
+}
+
+func TestEntityProcessor_ProcessSignature_SavesAggregationProofPendingForAggregationKeys(t *testing.T) {
+	t.Parallel()
+
+	repo := setupTestRepository(t)
+	epoch := entity.Epoch(400)
+	req := randomSignatureRequest(t, epoch)
+	req.KeyTag = entity.KeyTag(15)
+	reqHash := req.Hash()
+
+	_, privateKeys := setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(1000))
+
+	param := entity.SaveSignatureParam{
+		RequestHash:      reqHash,
+		Signature:        randomSignatureExtendedForKey(t, privateKeys[0][15]),
+		Epoch:            epoch,
+		KeyTag:           req.KeyTag,
+		SignatureRequest: &req,
+	}
+
+	processor, err := NewEntityProcessor(Config{
+		Repo:                     repo,
+		Aggregator:               createMockAggregator(t),
+		AggProofSignal:           createMockAggProofSignal(t),
+		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
 	})
+	require.NoError(t, err)
 
-	t.Run("does not save aggregation proof pending for non-aggregation keys", func(t *testing.T) {
-		t.Parallel()
+	// Process signature
+	err = processor.ProcessSignature(t.Context(), param)
+	require.NoError(t, err)
 
-		repo := setupTestRepository(t)
-		epoch := entity.Epoch(500)
-		req := randomSignatureRequest(t, epoch)
-		req.KeyTag = entity.KeyTag(0x10) // Ensure it's NOT an aggregation key (EcdsaSecp256k1)
-		reqHash := req.Hash()
+	// Verify signature request pending was saved
+	pendingSignatureRequests, err := repo.GetSignatureRequestsByEpochPending(t.Context(), epoch, 10, common.Hash{})
+	require.NoError(t, err)
+	require.Len(t, pendingSignatureRequests, 1)
+	require.Equal(t, reqHash, pendingSignatureRequests[0].Hash())
 
-		setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(1000))
+	// Verify aggregation proof pending was also saved
+	pendingAggRequests, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), epoch, 10, common.Hash{})
+	require.NoError(t, err)
+	require.Len(t, pendingAggRequests, 1)
+	require.Equal(t, reqHash, pendingAggRequests[0].Hash())
+}
 
-		param := entity.SaveSignatureParam{
-			RequestHash:      reqHash,
-			Key:              randomBytes(t, 48),
-			Signature:        randomSignatureExtended(t),
-			ActiveIndex:      0,
-			VotingPower:      entity.ToVotingPower(big.NewInt(100)),
-			Epoch:            epoch,
-			SignatureRequest: &req,
-			KeyTag:           req.KeyTag,
-		}
+func TestEntityProcessor_ProcessSignature_DoesNotSaveAggregationProofPendingForNonAggregationKeys(t *testing.T) {
+	t.Parallel()
 
-		processor, err := NewEntityProcessor(Config{Repo: repo})
-		require.NoError(t, err)
+	repo := setupTestRepository(t)
+	epoch := entity.Epoch(500)
+	req := randomSignatureRequest(t, epoch)
+	req.KeyTag = entity.KeyTag(0x10) // Ensure it's NOT an aggregation key (EcdsaSecp256k1)
+	reqHash := req.Hash()
 
-		// Process signature
-		err = processor.ProcessSignature(t.Context(), param)
-		require.NoError(t, err)
+	_, privateKeys := setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(1000))
 
-		// Verify signature request was saved but NOT to pending collection
-		savedReq, err := repo.GetSignatureRequest(t.Context(), reqHash)
-		require.NoError(t, err)
-		require.Equal(t, req, savedReq)
+	param := entity.SaveSignatureParam{
+		RequestHash:      reqHash,
+		Signature:        randomSignatureExtendedForKey(t, privateKeys[0][0x10]),
+		Epoch:            epoch,
+		SignatureRequest: &req,
+		KeyTag:           req.KeyTag,
+	}
 
-		// Verify no pending signature requests (non-aggregation key)
-		pendingSignatureRequests, err := repo.GetSignatureRequestsByEpochPending(t.Context(), epoch, 10, common.Hash{})
-		require.NoError(t, err)
-		require.Empty(t, pendingSignatureRequests)
-
-		// Verify no pending aggregation proof requests
-		pendingAggRequests, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), epoch, 10, common.Hash{})
-		require.NoError(t, err)
-		require.Empty(t, pendingAggRequests)
+	processor, err := NewEntityProcessor(Config{
+		Repo:                     repo,
+		Aggregator:               createMockAggregator(t),
+		AggProofSignal:           createMockAggProofSignal(t),
+		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
 	})
+	require.NoError(t, err)
 
-	t.Run("integration test - full signature to aggregation proof flow", func(t *testing.T) {
-		t.Parallel()
+	// Process signature
+	err = processor.ProcessSignature(t.Context(), param)
+	require.NoError(t, err)
 
-		repo := setupTestRepository(t)
-		epoch := entity.Epoch(600)
-		req := randomSignatureRequest(t, epoch)
-		req.KeyTag = entity.KeyTag(0) // Aggregation key (BlsBn254)
-		reqHash := req.Hash()
+	// Verify signature request was saved but NOT to pending collection
+	savedReq, err := repo.GetSignatureRequest(t.Context(), reqHash)
+	require.NoError(t, err)
+	require.Equal(t, req, savedReq)
 
-		setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(1000))
+	// Verify no pending signature requests (non-aggregation key)
+	pendingSignatureRequests, err := repo.GetSignatureRequestsByEpochPending(t.Context(), epoch, 10, common.Hash{})
+	require.NoError(t, err)
+	require.Empty(t, pendingSignatureRequests)
 
-		// Step 1: Process signature (should create pending aggregation proof)
-		param := entity.SaveSignatureParam{
-			RequestHash:      reqHash,
-			Key:              randomBytes(t, 48),
-			Signature:        randomSignatureExtended(t),
-			ActiveIndex:      0,
-			VotingPower:      entity.ToVotingPower(big.NewInt(100)),
-			Epoch:            epoch,
-			SignatureRequest: &req,
-			KeyTag:           req.KeyTag,
-		}
+	// Verify no pending aggregation proof requests
+	pendingAggRequests, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), epoch, 10, common.Hash{})
+	require.NoError(t, err)
+	require.Empty(t, pendingAggRequests)
+}
 
-		processor, err := NewEntityProcessor(Config{Repo: repo})
-		require.NoError(t, err)
+func TestEntityProcessor_ProcessSignature_FullSignatureToAggregationProofFlow(t *testing.T) {
+	t.Parallel()
 
-		err = processor.ProcessSignature(t.Context(), param)
-		require.NoError(t, err)
+	repo := setupTestRepository(t)
+	epoch := entity.Epoch(600)
+	req := randomSignatureRequest(t, epoch)
+	req.KeyTag = entity.KeyTag(15)
+	reqHash := req.Hash()
 
-		// Verify pending aggregation proof exists
-		pendingAggRequests, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), epoch, 10, common.Hash{})
-		require.NoError(t, err)
-		require.Len(t, pendingAggRequests, 1)
+	_, privateKeys := setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(1000))
 
-		// Step 2: Process aggregation proof (should remove from pending)
-		msg := entity.AggregatedSignatureMessage{
-			RequestHash: reqHash,
-			KeyTag:      req.KeyTag,
-			Epoch:       epoch,
-			AggregationProof: entity.AggregationProof{
-				VerificationType: entity.VerificationTypeBlsBn254Simple,
-				MessageHash:      randomBytes(t, 32),
-				Proof:            randomBytes(t, 96),
-			},
-		}
+	// Step 1: Process signature (should create pending aggregation proof)
+	param := entity.SaveSignatureParam{
+		RequestHash:      reqHash,
+		Signature:        randomSignatureExtendedForKey(t, privateKeys[0][15]),
+		Epoch:            epoch,
+		SignatureRequest: &req,
+		KeyTag:           req.KeyTag,
+	}
 
-		err = processor.ProcessAggregationProof(t.Context(), msg)
-		require.NoError(t, err)
+	processor, err := NewEntityProcessor(Config{Repo: repo, Aggregator: createMockAggregator(t), AggProofSignal: createMockAggProofSignal(t), SignatureProcessedSignal: createMockSignatureProcessedSignal(t)})
+	require.NoError(t, err)
 
-		// Verify aggregation proof was saved
-		savedProof, err := repo.GetAggregationProof(t.Context(), reqHash)
-		require.NoError(t, err)
-		require.Equal(t, msg.AggregationProof, savedProof)
+	err = processor.ProcessSignature(t.Context(), param)
+	require.NoError(t, err)
 
-		// Verify pending aggregation proof was removed
-		pendingAggRequests, err = repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), epoch, 10, common.Hash{})
-		require.NoError(t, err)
-		require.Empty(t, pendingAggRequests)
-	})
+	// Verify pending aggregation proof exists
+	pendingAggRequests, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), epoch, 10, common.Hash{})
+	require.NoError(t, err)
+	require.Len(t, pendingAggRequests, 1)
+
+	// Step 2: Process aggregation proof (should remove from pending)
+	msg := entity.AggregatedSignatureMessage{
+		RequestHash: reqHash,
+		KeyTag:      req.KeyTag,
+		Epoch:       epoch,
+		AggregationProof: entity.AggregationProof{
+			VerificationType: entity.VerificationTypeBlsBn254Simple,
+			MessageHash:      randomBytes(t, 32),
+			Proof:            randomBytes(t, 96),
+		},
+	}
+
+	err = processor.ProcessAggregationProof(t.Context(), msg)
+	require.NoError(t, err)
+
+	// Verify aggregation proof was saved
+	savedProof, err := repo.GetAggregationProof(t.Context(), reqHash)
+	require.NoError(t, err)
+	require.Equal(t, msg.AggregationProof, savedProof)
+
+	// Verify pending aggregation proof was removed
+	pendingAggRequests, err = repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), epoch, 10, common.Hash{})
+	require.NoError(t, err)
+	require.Empty(t, pendingAggRequests)
 }

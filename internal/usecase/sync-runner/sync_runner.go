@@ -122,9 +122,6 @@ func (s *Runner) runSignatureSync(ctx context.Context) error {
 		"unrequested_signatures", stats.UnrequestedSignatureCount,
 		"unrequested_hashes", stats.UnrequestedHashCount,
 		"signature_request_errors", stats.SignatureRequestErrorCount,
-		"public_key_errors", stats.PublicKeyErrorCount,
-		"validator_info_errors", stats.ValidatorInfoErrorCount,
-		"validator_index_missmatch_count", stats.ValidatorIndexMismatchCount,
 		"processing_errors", stats.ProcessingErrorCount,
 		"already_exist", stats.AlreadyExistCount,
 	)
@@ -133,9 +130,6 @@ func (s *Runner) runSignatureSync(ctx context.Context) error {
 	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("unrequested_signatures", stats.UnrequestedSignatureCount)
 	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("unrequested_hashes", stats.UnrequestedHashCount)
 	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("signature_request_errors", stats.SignatureRequestErrorCount)
-	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("public_key_errors", stats.PublicKeyErrorCount)
-	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("validator_info_errors", stats.ValidatorInfoErrorCount)
-	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("validator_index_missmatch_count", stats.ValidatorIndexMismatchCount)
 	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("processing_errors", stats.ProcessingErrorCount)
 	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("already_exist", stats.AlreadyExistCount)
 
