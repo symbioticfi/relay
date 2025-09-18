@@ -97,7 +97,8 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 			expectSignatureRequest: false,
 			expectPendingExists:    false,
 			expectPendingRemoved:   false,
-			expectError:            false,
+			expectError:            true,
+			expectedErrorSubstring: "failed to get signature request: no signature request found for hash",
 		},
 		{
 			name: "multiple signatures - quorum reached on second",
@@ -417,11 +418,12 @@ func randomHash(t *testing.T) common.Hash {
 
 func randomSignatureRequest(t *testing.T, epoch entity.Epoch) entity.SignatureRequest {
 	t.Helper()
-	return entity.SignatureRequest{
+	req := entity.SignatureRequest{
 		KeyTag:        entity.KeyTag(15),
 		RequiredEpoch: epoch,
 		Message:       randomBytes(t, 512),
 	}
+	return req
 }
 
 func randomSignatureExtendedForKey(t *testing.T, privateKey crypto.PrivateKey) entity.SignatureExtended {
@@ -507,6 +509,8 @@ func TestEntityProcessor_ProcessAggregationProof_SuccessfullyProcesses(t *testin
 	repo := setupTestRepository(t)
 	epoch := entity.Epoch(100)
 	req := randomSignatureRequest(t, epoch)
+	require.NoError(t, repo.SaveSignatureRequest(t.Context(), req))
+	require.NoError(t, repo.SaveSignatureRequestPending(t.Context(), req))
 	reqHash := req.Hash()
 
 	// Setup validator set for this epoch (required by ProcessAggregationProof)
@@ -552,6 +556,8 @@ func TestEntityProcessor_ProcessAggregationProof_HandlesMissingPendingGracefully
 	repo := setupTestRepository(t)
 	epoch := entity.Epoch(200)
 	req := randomSignatureRequest(t, epoch)
+	require.NoError(t, repo.SaveSignatureRequest(t.Context(), req))
+	require.NoError(t, repo.SaveSignatureRequestPending(t.Context(), req))
 	reqHash := req.Hash()
 
 	// Setup validator set for this epoch (required by ProcessAggregationProof)
@@ -587,6 +593,8 @@ func TestEntityProcessor_ProcessAggregationProof_FailsWhenAlreadyExists(t *testi
 	repo := setupTestRepository(t)
 	epoch := entity.Epoch(300)
 	req := randomSignatureRequest(t, epoch)
+	require.NoError(t, repo.SaveSignatureRequest(t.Context(), req))
+	require.NoError(t, repo.SaveSignatureRequestPending(t.Context(), req))
 	reqHash := req.Hash()
 
 	// Setup validator set for this epoch (required by ProcessAggregationProof)

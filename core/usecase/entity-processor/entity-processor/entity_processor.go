@@ -18,6 +18,7 @@ import (
 // Repository defines the interface needed by the entity processor
 type Repository interface {
 	DoUpdateInTx(ctx context.Context, f func(ctx context.Context) error) error
+	GetSignatureRequest(_ context.Context, reqHash common.Hash) (entity.SignatureRequest, error)
 	GetSignatureMap(ctx context.Context, reqHash common.Hash) (entity.SignatureMap, error)
 	UpdateSignatureMap(ctx context.Context, vm entity.SignatureMap) error
 	SaveSignature(ctx context.Context, reqHash common.Hash, validatorIndex uint32, sig entity.SignatureExtended) error
@@ -80,6 +81,18 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, param entity.Sav
 		"requestHash", param.RequestHash.Hex(),
 		"epoch", param.Epoch,
 	)
+
+	if param.SignatureRequest == nil {
+		signatureRequest, err := s.cfg.Repo.GetSignatureRequest(ctx, param.RequestHash)
+		if err != nil {
+			return errors.Errorf("failed to get signature request: %w", err)
+		}
+
+		if signatureRequest.Hash() != param.RequestHash {
+			return errors.Errorf("signature request hash mismatch: expected %s, got %s", param.RequestHash.Hex(), param.SignatureRequest.Hash().Hex())
+		}
+	}
+
 	publicKey, err := crypto.NewPublicKey(param.KeyTag.Type(), param.Signature.PublicKey)
 	if err != nil {
 		return errors.Errorf("failed to get public key: %w", err)
@@ -185,6 +198,15 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, msg entit
 	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
 	if err != nil {
 		return errors.Errorf("failed to get validator set: %w", err)
+	}
+
+	signatureRequest, err := s.cfg.Repo.GetSignatureRequest(ctx, msg.RequestHash)
+	if err != nil {
+		return errors.Errorf("failed to get signature request: %w", err)
+	}
+
+	if signatureRequest.Hash() != msg.RequestHash {
+		return errors.Errorf("signature request hash mismatch: expected %s, got %s", msg.RequestHash.Hex(), signatureRequest.Hash().Hex())
 	}
 
 	ok, err := s.cfg.Aggregator.Verify(validatorSet, msg.KeyTag, msg.AggregationProof)

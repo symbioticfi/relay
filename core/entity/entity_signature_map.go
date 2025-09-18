@@ -56,7 +56,7 @@ type SaveSignatureParam struct {
 	RequestHash      common.Hash
 	Signature        SignatureExtended
 	Epoch            Epoch
-	SignatureRequest *SignatureRequest // Optional - used by signer-app, nil for signature-listener
+	SignatureRequest *SignatureRequest // Optional
 }
 
 type SignatureBitmap struct {
