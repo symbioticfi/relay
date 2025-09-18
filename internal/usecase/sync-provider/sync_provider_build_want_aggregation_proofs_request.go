@@ -18,8 +18,8 @@ func (s *Syncer) BuildWantAggregationProofsRequest(ctx context.Context) (entity.
 	}
 
 	startEpoch := uint64(0)
-	if latestEpoch >= s.cfg.AggProofEpochsToSync {
-		startEpoch = latestEpoch - s.cfg.AggProofEpochsToSync
+	if latestEpoch >= s.cfg.EpochsToSync {
+		startEpoch = latestEpoch - s.cfg.EpochsToSync
 	}
 
 	var allRequestHashes []common.Hash

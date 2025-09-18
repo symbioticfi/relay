@@ -49,10 +49,7 @@ func (h *GRPCHandler) WantSignatures(ctx context.Context, req *p2pv1.WantSignatu
 func (h *GRPCHandler) WantAggregationProofs(ctx context.Context, req *p2pv1.WantAggregationProofsRequest) (*p2pv1.WantAggregationProofsResponse, error) {
 	ctx = log.WithComponent(ctx, "p2p-grpc-handler")
 
-	entityReq, err := protoToEntityAggregationProofRequest(req)
-	if err != nil {
-		return &p2pv1.WantAggregationProofsResponse{}, errors.Errorf("failed to convert aggregation proof request: %w", err)
-	}
+	entityReq := protoToEntityAggregationProofRequest(req)
 
 	response, err := h.syncHandler.HandleWantAggregationProofsRequest(ctx, entityReq)
 	if err != nil {

@@ -30,10 +30,9 @@ type entityProcessor interface {
 type Config struct {
 	Repo                        repo            `validate:"required"`
 	EntityProcessor             entityProcessor `validate:"required"`
-	SignatureEpochsToSync       uint64          `validate:"gte=0"`
+	EpochsToSync                uint64          `validate:"gte=0"`
 	MaxSignatureRequestsPerSync int             `validate:"gt=0"`
 	MaxResponseSignatureCount   int             `validate:"gt=0"`
-	AggProofEpochsToSync        uint64          `validate:"gte=0"`
 	MaxAggProofRequestsPerSync  int             `validate:"gt=0"`
 	MaxResponseAggProofCount    int             `validate:"gt=0"`
 }

@@ -50,7 +50,7 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 
 	msg := p2pMsg.Message
 
-	slog.DebugContext(ctx, "Received signature hash generated message", "message", msg, "sender", p2pMsg.SenderInfo.Sender)
+	slog.DebugContext(ctx, "Received signature hash received message", "message", msg, "sender", p2pMsg.SenderInfo.Sender)
 
 	if p2pMsg.SenderInfo.Sender == s.cfg.SelfP2PID {
 		slog.DebugContext(ctx, "Ignoring signature message from self, because it's already stored in signer")

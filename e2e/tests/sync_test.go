@@ -31,11 +31,10 @@ import (
 // 5. Start aggregators back up
 // 6. Verify aggregators sync missed signatures and generate proofs
 func TestAggregatorSignatureSync(t *testing.T) {
-	t.Skipf("Skipping flaky test, see issue #1234")
 	ctx := t.Context()
 
 	// Load deployment data to get contract addresses and environment info
-	deploymentData, err := loadDeploymentData(t.Context())
+	deploymentData, err := loadDeploymentData(ctx)
 	require.NoError(t, err, "Failed to load deployment data")
 
 	// Identify aggregators
@@ -55,17 +54,17 @@ func TestAggregatorSignatureSync(t *testing.T) {
 	captureTimestamp, err := evmClient.GetEpochStart(ctx, currentEpoch)
 	require.NoError(t, err, "Failed to get epoch start timestamp")
 
-	nwConfig, err := evmClient.GetConfig(t.Context(), captureTimestamp)
+	nwConfig, err := evmClient.GetConfig(ctx, captureTimestamp)
 	require.NoError(t, err, "Failed to get network config")
 
-	valset, err := deriver.GetValidatorSet(t.Context(), currentEpoch, nwConfig)
+	valset, err := deriver.GetValidatorSet(ctx, currentEpoch, nwConfig)
 	require.NoError(t, err, "Failed to get validator set")
 
 	// next valset, we expect nothing to change apart from epoch details
 	valset.Epoch++
 	valset.CaptureTimestamp += deploymentData.Env.EpochTime
 
-	aggIndices, commIndices, err := deriver.GetSchedulerInfo(t.Context(), valset, nwConfig)
+	aggIndices, commIndices, err := deriver.GetSchedulerInfo(ctx, valset, nwConfig)
 	require.NoError(t, err, "Failed to get scheduler info")
 	require.NotEmpty(t, aggIndices, "No aggregators found in scheduler info")
 	require.NotEmpty(t, commIndices, "No committers found in scheduler info")

@@ -6,6 +6,10 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/samber/lo"
+
+	"github.com/symbioticfi/relay/core/usecase/crypto"
+	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 	aggregationPolicy2 "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -23,6 +27,7 @@ type testSetup struct {
 	mockAggregator *mocks.Mockaggregator
 	mockMetrics    *mocks.Mockmetrics
 	app            *AggregatorApp
+	privateKey     crypto.PrivateKey
 }
 
 func newTestSetup(t *testing.T, policyType entity.AggregationPolicyType, maxUnsigners uint64) *testSetup {
@@ -37,12 +42,21 @@ func newTestSetup(t *testing.T, policyType entity.AggregationPolicyType, maxUnsi
 	aggregationPolicy, err := aggregationPolicy2.NewAggregationPolicy(policyType, maxUnsigners)
 	require.NoError(t, err)
 
+	privateKey, err := crypto.GeneratePrivateKey(entity.KeyTypeBlsBn254)
+	require.NoError(t, err)
+
+	kp, err := keyprovider.NewSimpleKeystoreProvider()
+	require.NoError(t, err)
+
+	require.NoError(t, kp.AddKey(15, privateKey))
+
 	cfg := Config{
 		Repo:              mockRepo,
 		P2PClient:         mockP2PClient,
 		Aggregator:        mockAggregator,
 		Metrics:           mockMetrics,
 		AggregationPolicy: aggregationPolicy,
+		KeyProvider:       kp,
 	}
 
 	app, err := NewAggregatorApp(cfg)
@@ -55,18 +69,24 @@ func newTestSetup(t *testing.T, policyType entity.AggregationPolicyType, maxUnsi
 		mockAggregator: mockAggregator,
 		mockMetrics:    mockMetrics,
 		app:            app,
+		privateKey:     privateKey,
 	}
 }
 
-func createTestSignatureMessage() entity.SignatureMessage {
+func createTestSignatureMessage(t *testing.T, pk crypto.PrivateKey) entity.SignatureMessage {
+	t.Helper()
+	msg := "test-message"
+	sign, hash, err := pk.Sign([]byte(msg))
+	require.NoError(t, err)
+
 	return entity.SignatureMessage{
 		RequestHash: common.HexToHash("0x123"),
 		KeyTag:      entity.KeyTag(15),
 		Epoch:       1,
 		Signature: entity.SignatureExtended{
-			MessageHash: []byte("test-message-hash"),
-			PublicKey:   []byte("test-pubkey"),
-			Signature:   []byte("test-signature"),
+			MessageHash: hash,
+			PublicKey:   pk.PublicKey().Raw(),
+			Signature:   sign,
 		},
 	}
 }
@@ -78,7 +98,7 @@ type testData struct {
 }
 
 // Create unified test data with a single ValidatorSet used consistently
-func createTestData(requestHash common.Hash, epoch uint64, totalValidators, signers int) testData {
+func createTestData(requestHash common.Hash, epoch uint64, totalValidators, signers int, key crypto.PrivateKey) testData {
 	// Create validators
 	validators := make([]entity.Validator, totalValidators)
 	for i := 0; i < totalValidators; i++ {
@@ -89,7 +109,7 @@ func createTestData(requestHash common.Hash, epoch uint64, totalValidators, sign
 			Keys: []entity.ValidatorKey{
 				{
 					Tag:     entity.KeyTag(15),
-					Payload: entity.CompactPublicKey(fmt.Sprintf("test-key-%d", i+1)),
+					Payload: key.PublicKey().OnChain(),
 				},
 			},
 		}
@@ -102,6 +122,9 @@ func createTestData(requestHash common.Hash, epoch uint64, totalValidators, sign
 		Epoch:           epoch,
 		QuorumThreshold: entity.ToVotingPower(big.NewInt(670)), // Need 670 voting power for quorum
 		Validators:      validators,
+		AggregatorIndices: lo.Map(validators, func(_ entity.Validator, idx int) uint32 {
+			return uint32(idx)
+		}),
 	}
 
 	// Create SignatureMap using the same ValidatorSet
@@ -123,14 +146,14 @@ func createTestData(requestHash common.Hash, epoch uint64, totalValidators, sign
 }
 
 // Convenience function for common test scenarios
-func createTestDataWithQuorum(requestHash common.Hash, epoch uint64, thresholdReached bool) testData {
+func createTestDataWithQuorum(requestHash common.Hash, epoch uint64, thresholdReached bool, key crypto.PrivateKey) testData {
 	if thresholdReached {
 		// 8 signers * 100 voting power = 800 > 670 threshold
-		return createTestData(requestHash, epoch, 10, 8)
+		return createTestData(requestHash, epoch, 10, 8, key)
 	}
 
 	// 6 signers * 100 voting power = 600 < 670 threshold
-	return createTestData(requestHash, epoch, 10, 6)
+	return createTestData(requestHash, epoch, 10, 6, key)
 }
 
 // Setup mocks for successful aggregation using unified test data
@@ -172,17 +195,16 @@ func setupSuccessfulAggregationMocks(setup *testSetup, msg entity.SignatureMessa
 
 func TestHandleSignatureGeneratedMessage_LowLatencyPolicy_QuorumNotReached(t *testing.T) {
 	setup := newTestSetup(t, entity.AggregationPolicyLowLatency, 0)
-	ctx := context.Background()
-	msg := createTestSignatureMessage()
+	msg := createTestSignatureMessage(t, setup.privateKey)
 
 	// Setup mocks for quorum NOT reached case
-	testingData := createTestDataWithQuorum(msg.RequestHash, uint64(msg.Epoch), false)
+	testingData := createTestDataWithQuorum(msg.RequestHash, uint64(msg.Epoch), false, setup.privateKey)
 
 	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestHash).Return(testingData.SignatureMap, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), uint64(msg.Epoch)).Return(testingData.ValidatorSet, nil)
 
 	// Execute
-	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
+	err := setup.app.HandleSignatureProcessedMessage(t.Context(), msg)
 
 	// Verify - should return nil (no error) when quorum not reached, no aggregation
 	require.NoError(t, err)
@@ -191,15 +213,15 @@ func TestHandleSignatureGeneratedMessage_LowLatencyPolicy_QuorumNotReached(t *te
 func TestHandleSignatureGeneratedMessage_LowLatencyPolicy_QuorumReached(t *testing.T) {
 	setup := newTestSetup(t, entity.AggregationPolicyLowLatency, 0)
 	ctx := context.Background()
-	msg := createTestSignatureMessage()
+	msg := createTestSignatureMessage(t, setup.privateKey)
 
 	// Setup mocks for quorum reached case - LowLatency should aggregate immediately
-	testingData := createTestDataWithQuorum(msg.RequestHash, uint64(msg.Epoch), true)
+	testingData := createTestDataWithQuorum(msg.RequestHash, uint64(msg.Epoch), true, setup.privateKey)
 
 	setupSuccessfulAggregationMocks(setup, msg, testingData)
 
 	// Execute
-	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
+	err := setup.app.HandleSignatureProcessedMessage(ctx, msg)
 
 	// Verify - should successfully aggregate when quorum reached
 	require.NoError(t, err)
@@ -210,16 +232,16 @@ func TestHandleSignatureGeneratedMessage_LowLatencyPolicy_QuorumReached(t *testi
 func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumNotReached(t *testing.T) {
 	setup := newTestSetup(t, entity.AggregationPolicyLowCost, 5)
 	ctx := context.Background()
-	msg := createTestSignatureMessage()
+	msg := createTestSignatureMessage(t, setup.privateKey)
 
 	// Setup mocks for quorum NOT reached case
-	testingData := createTestDataWithQuorum(msg.RequestHash, uint64(msg.Epoch), false)
+	testingData := createTestDataWithQuorum(msg.RequestHash, uint64(msg.Epoch), false, setup.privateKey)
 
 	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestHash).Return(testingData.SignatureMap, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), uint64(msg.Epoch)).Return(testingData.ValidatorSet, nil)
 
 	// Execute
-	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
+	err := setup.app.HandleSignatureProcessedMessage(ctx, msg)
 
 	// Verify - should return nil (no error) when quorum not reached, no aggregation
 	require.NoError(t, err)
@@ -228,16 +250,16 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumNotReached(t *testi
 func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_TooManyUnsigners(t *testing.T) {
 	setup := newTestSetup(t, entity.AggregationPolicyLowCost, 2) // Allow max 2 unsigners
 	ctx := context.Background()
-	msg := createTestSignatureMessage()
+	msg := createTestSignatureMessage(t, setup.privateKey)
 
 	// Setup: 10 total validators, 7 signers = 3 unsigners (exceeds maxUnsigners=2)
-	testingData := createTestData(msg.RequestHash, uint64(msg.Epoch), 10, 7)
+	testingData := createTestData(msg.RequestHash, uint64(msg.Epoch), 10, 7, setup.privateKey)
 
 	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestHash).Return(testingData.SignatureMap, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), uint64(msg.Epoch)).Return(testingData.ValidatorSet, nil)
 
 	// Execute
-	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
+	err := setup.app.HandleSignatureProcessedMessage(ctx, msg)
 
 	// Verify - should not aggregate due to too many unsigners
 	require.NoError(t, err)
@@ -246,15 +268,15 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_TooManyUnsi
 func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_AcceptableUnsigners(t *testing.T) {
 	setup := newTestSetup(t, entity.AggregationPolicyLowCost, 3) // Allow max 3 unsigners
 	ctx := context.Background()
-	msg := createTestSignatureMessage()
+	msg := createTestSignatureMessage(t, setup.privateKey)
 
 	// Setup: 10 total validators, 8 signers = 2 unsigners (within maxUnsigners=3)
-	testingData := createTestData(msg.RequestHash, uint64(msg.Epoch), 10, 8)
+	testingData := createTestData(msg.RequestHash, uint64(msg.Epoch), 10, 8, setup.privateKey)
 
 	setupSuccessfulAggregationMocks(setup, msg, testingData)
 
 	// Execute
-	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
+	err := setup.app.HandleSignatureProcessedMessage(ctx, msg)
 
 	// Verify - should successfully aggregate when unsigners within limit
 	require.NoError(t, err)
@@ -263,15 +285,15 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_AcceptableU
 func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_ExactUnsignersLimit(t *testing.T) {
 	setup := newTestSetup(t, entity.AggregationPolicyLowCost, 3) // Allow max 3 unsigners
 	ctx := context.Background()
-	msg := createTestSignatureMessage()
+	msg := createTestSignatureMessage(t, setup.privateKey)
 
 	// Setup: 10 total validators, 7 signers = 3 unsigners (exactly maxUnsigners=3)
-	testingData := createTestData(msg.RequestHash, uint64(msg.Epoch), 10, 7)
+	testingData := createTestData(msg.RequestHash, uint64(msg.Epoch), 10, 7, setup.privateKey)
 
 	setupSuccessfulAggregationMocks(setup, msg, testingData)
 
 	// Execute
-	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
+	err := setup.app.HandleSignatureProcessedMessage(ctx, msg)
 
 	// Verify - should successfully aggregate when exactly at unsigners limit
 	require.NoError(t, err)
@@ -280,15 +302,15 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_ExactUnsign
 func TestHandleSignatureGeneratedMessage_LowCostPolicy_AllValidatorsSigned(t *testing.T) {
 	setup := newTestSetup(t, entity.AggregationPolicyLowCost, 1) // Allow max 1 unsigner
 	ctx := context.Background()
-	msg := createTestSignatureMessage()
+	msg := createTestSignatureMessage(t, setup.privateKey)
 
 	// Setup: 10 total validators, 10 signers = 0 unsigners (well within limit)
-	testingData := createTestData(msg.RequestHash, uint64(msg.Epoch), 10, 10)
+	testingData := createTestData(msg.RequestHash, uint64(msg.Epoch), 10, 10, setup.privateKey)
 
 	setupSuccessfulAggregationMocks(setup, msg, testingData)
 
 	// Execute
-	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
+	err := setup.app.HandleSignatureProcessedMessage(ctx, msg)
 
 	// Verify - should successfully aggregate when all validators signed
 	require.NoError(t, err)
@@ -299,16 +321,16 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_AllValidatorsSigned(t *te
 func TestHandleSignatureGeneratedMessage_LowCostPolicy_ZeroMaxUnsigners(t *testing.T) {
 	setup := newTestSetup(t, entity.AggregationPolicyLowCost, 0) // Allow 0 unsigners
 	ctx := context.Background()
-	msg := createTestSignatureMessage()
+	msg := createTestSignatureMessage(t, setup.privateKey)
 
 	// Setup: 5 total validators, 4 signers = 1 unsigner (exceeds maxUnsigners=0)
-	testingData := createTestData(msg.RequestHash, uint64(msg.Epoch), 5, 4)
+	testingData := createTestData(msg.RequestHash, uint64(msg.Epoch), 5, 4, setup.privateKey)
 
 	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestHash).Return(testingData.SignatureMap, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), uint64(msg.Epoch)).Return(testingData.ValidatorSet, nil)
 
 	// Execute
-	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
+	err := setup.app.HandleSignatureProcessedMessage(ctx, msg)
 
 	// Verify - should not aggregate due to any unsigners when maxUnsigners=0
 	require.NoError(t, err)
@@ -317,16 +339,16 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_ZeroMaxUnsigners(t *testi
 func TestHandleSignatureGeneratedMessage_LowCostPolicy_HighMaxUnsigners(t *testing.T) {
 	setup := newTestSetup(t, entity.AggregationPolicyLowCost, 100) // Allow 100 unsigners
 	ctx := context.Background()
-	msg := createTestSignatureMessage()
+	msg := createTestSignatureMessage(t, setup.privateKey)
 
 	// Setup: 10 total validators, 7 signers = 3 unsigners (well within limit)
 	// 7 signers = 7*100 = 700 > 670 for quorum
-	testingData := createTestData(msg.RequestHash, uint64(msg.Epoch), 10, 7)
+	testingData := createTestData(msg.RequestHash, uint64(msg.Epoch), 10, 7, setup.privateKey)
 
 	setupSuccessfulAggregationMocks(setup, msg, testingData)
 
 	// Execute
-	err := setup.app.HandleSignatureGeneratedMessage(ctx, msg)
+	err := setup.app.HandleSignatureProcessedMessage(ctx, msg)
 
 	// Verify - should successfully aggregate with high unsigners limit
 	require.NoError(t, err)
@@ -337,7 +359,9 @@ func TestSignatureMapFunctionality(t *testing.T) {
 	requestHash := common.HexToHash("0x123")
 
 	// Test with unified creation
-	testingData := createTestData(requestHash, 1, 5, 0) // 5 validators, 0 signers initially
+	pk, err := crypto.GeneratePrivateKey(entity.KeyTypeBlsBn254)
+	require.NoError(t, err)
+	testingData := createTestData(requestHash, 1, 5, 0, pk) // 5 validators, 0 signers initially
 	signatureMap := testingData.SignatureMap
 	validatorSet := testingData.ValidatorSet
 

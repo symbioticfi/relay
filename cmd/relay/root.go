@@ -161,10 +161,9 @@ func runApp(ctx context.Context) error {
 	syncProvider, err := sync_provider.New(sync_provider.Config{
 		Repo:                        repo,
 		EntityProcessor:             entityProcessor,
-		SignatureEpochsToSync:       cfg.Sync.SignatureEpochsToSync,
+		EpochsToSync:                cfg.Sync.EpochsToSync,
 		MaxSignatureRequestsPerSync: 1000,
 		MaxResponseSignatureCount:   1000,
-		AggProofEpochsToSync:        cfg.Sync.AggProofEpochsToSync,
 		MaxAggProofRequestsPerSync:  500,
 		MaxResponseAggProofCount:    500,
 	})
@@ -314,7 +313,7 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create aggregator app: %w", err)
 	}
 
-	if err := signatureProcessedSignal.SetHandler(aggApp.HandleSignatureGeneratedMessage); err != nil {
+	if err := signatureProcessedSignal.SetHandler(aggApp.HandleSignatureProcessedMessage); err != nil {
 		return errors.Errorf("failed to set signature received message handler: %w", err)
 	}
 	if err := signatureProcessedSignal.StartWorkers(ctx); err != nil {

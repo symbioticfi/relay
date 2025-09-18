@@ -78,10 +78,9 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	peerSyncer, err := New(Config{
 		Repo:                        peerRepo,
 		EntityProcessor:             peerEntityProcessor,
-		SignatureEpochsToSync:       1,
+		EpochsToSync:                1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
-		AggProofEpochsToSync:        1,
 		MaxAggProofRequestsPerSync:  100,
 		MaxResponseAggProofCount:    100,
 	})
@@ -91,10 +90,9 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	requesterSyncer, err := New(Config{
 		Repo:                        requesterRepo,
 		EntityProcessor:             requesterEntityProcessor,
-		SignatureEpochsToSync:       1,
+		EpochsToSync:                1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
-		AggProofEpochsToSync:        1,
 		MaxAggProofRequestsPerSync:  100,
 		MaxResponseAggProofCount:    100,
 	})
@@ -257,10 +255,9 @@ func TestHandleWantSignaturesRequest_EmptyRequest(t *testing.T) {
 	syncer, err := New(Config{
 		Repo:                        repo,
 		EntityProcessor:             entityProcessor,
-		SignatureEpochsToSync:       1,
+		EpochsToSync:                1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
-		AggProofEpochsToSync:        1,
 		MaxAggProofRequestsPerSync:  100,
 		MaxResponseAggProofCount:    100,
 	})
@@ -307,10 +304,9 @@ func TestHandleWantSignaturesRequest_NonExistentSignatures(t *testing.T) {
 	syncer, err := New(Config{
 		Repo:                        repo,
 		EntityProcessor:             entityProcessor,
-		SignatureEpochsToSync:       1,
+		EpochsToSync:                1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
-		AggProofEpochsToSync:        1,
 		MaxAggProofRequestsPerSync:  100,
 		MaxResponseAggProofCount:    100,
 	})
@@ -374,10 +370,9 @@ func TestHandleWantSignaturesRequest_MaxResponseSignatureCountLimit(t *testing.T
 		syncer, err := New(Config{
 			Repo:                        repo,
 			EntityProcessor:             entityProcessor,
-			SignatureEpochsToSync:       1,
+			EpochsToSync:                1,
 			MaxSignatureRequestsPerSync: 100,
 			MaxResponseSignatureCount:   2, // Low limit
-			AggProofEpochsToSync:        1,
 			MaxAggProofRequestsPerSync:  100,
 			MaxResponseAggProofCount:    100,
 		})
@@ -398,10 +393,9 @@ func TestHandleWantSignaturesRequest_MaxResponseSignatureCountLimit(t *testing.T
 		syncer, err := New(Config{
 			Repo:                        repo,
 			EntityProcessor:             entityProcessor,
-			SignatureEpochsToSync:       1,
+			EpochsToSync:                1,
 			MaxSignatureRequestsPerSync: 100,
 			MaxResponseSignatureCount:   3, // Allow 3 signatures
-			AggProofEpochsToSync:        1,
 			MaxAggProofRequestsPerSync:  100,
 			MaxResponseAggProofCount:    100,
 		})
@@ -438,10 +432,9 @@ func TestHandleWantSignaturesRequest_MultipleRequestHashes(t *testing.T) {
 	syncer, err := New(Config{
 		Repo:                        repo,
 		EntityProcessor:             entityProcessor,
-		SignatureEpochsToSync:       1,
+		EpochsToSync:                1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
-		AggProofEpochsToSync:        1,
 		MaxAggProofRequestsPerSync:  100,
 		MaxResponseAggProofCount:    100,
 	})
@@ -550,10 +543,9 @@ func TestHandleWantSignaturesRequest_PartialSignatureAvailability(t *testing.T) 
 	syncer, err := New(Config{
 		Repo:                        repo,
 		EntityProcessor:             entityProcessor,
-		SignatureEpochsToSync:       1,
+		EpochsToSync:                1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
-		AggProofEpochsToSync:        1,
 		MaxAggProofRequestsPerSync:  100,
 		MaxResponseAggProofCount:    100,
 	})

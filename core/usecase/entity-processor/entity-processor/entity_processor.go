@@ -75,6 +75,11 @@ func NewEntityProcessor(cfg Config) (*EntityProcessor, error) {
 
 // ProcessSignature processes a signature with SignatureMap operations and optionally saves SignatureRequest
 func (s *EntityProcessor) ProcessSignature(ctx context.Context, param entity.SaveSignatureParam) error {
+	slog.DebugContext(ctx, "Processing signature",
+		"keyTag", param.KeyTag,
+		"requestHash", param.RequestHash.Hex(),
+		"epoch", param.Epoch,
+	)
 	publicKey, err := crypto.NewPublicKey(param.KeyTag.Type(), param.Signature.PublicKey)
 	if err != nil {
 		return errors.Errorf("failed to get public key: %w", err)

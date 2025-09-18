@@ -48,8 +48,8 @@ func (s *Syncer) buildWantSignaturesMap(ctx context.Context) (map[common.Hash]en
 
 	// Calculate the starting epoch (go back EpochsToSync epochs)
 	var startEpoch uint64
-	if latestEpoch >= s.cfg.SignatureEpochsToSync {
-		startEpoch = latestEpoch - s.cfg.SignatureEpochsToSync
+	if latestEpoch >= s.cfg.EpochsToSync {
+		startEpoch = latestEpoch - s.cfg.EpochsToSync
 	} else {
 		startEpoch = 0
 	}

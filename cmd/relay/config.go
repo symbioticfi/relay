@@ -135,11 +135,10 @@ type CacheConfig struct {
 }
 
 type SyncConfig struct {
-	Enabled               bool          `mapstructure:"enabled"`
-	Period                time.Duration `mapstructure:"period"`
-	Timeout               time.Duration `mapstructure:"timeout"`
-	SignatureEpochsToSync uint64        `mapstructure:"signature-epochs"`
-	AggProofEpochsToSync  uint64        `mapstructure:"agg-proof-epochs"`
+	Enabled      bool          `mapstructure:"enabled"`
+	Period       time.Duration `mapstructure:"period"`
+	Timeout      time.Duration `mapstructure:"timeout"`
+	EpochsToSync uint64        `mapstructure:"epochs"`
 }
 
 func (c config) Validate() error {
@@ -183,8 +182,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("sync.enabled", true, "Enable signature syncer")
 	rootCmd.PersistentFlags().Duration("sync.period", time.Second*5, "Signature sync period")
 	rootCmd.PersistentFlags().Duration("sync.timeout", time.Minute, "Signature sync timeout")
-	rootCmd.PersistentFlags().Uint64("sync.signature-epochs", 5, "Signature epochs to sync")
-	rootCmd.PersistentFlags().Uint64("sync.agg-proof-epochs", 3, "Aggregation proof epochs to sync")
+	rootCmd.PersistentFlags().Uint64("sync.epochs", 5, "Epochs to sync")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
@@ -302,10 +300,7 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	if err := v.BindPFlag("sync.period", cmd.PersistentFlags().Lookup("sync.period")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("sync.signature-epochs", cmd.PersistentFlags().Lookup("sync.signature-epochs")); err != nil {
-		return errors.Errorf("failed to bind flag: %w", err)
-	}
-	if err := v.BindPFlag("sync.agg-proof-epochs", cmd.PersistentFlags().Lookup("sync.agg-proof-epochs")); err != nil {
+	if err := v.BindPFlag("sync.epochs", cmd.PersistentFlags().Lookup("sync.epochs")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 

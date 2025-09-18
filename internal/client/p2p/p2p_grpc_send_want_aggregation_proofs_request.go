@@ -2,7 +2,6 @@ package p2p
 
 import (
 	"context"
-	"encoding/hex"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -34,13 +33,7 @@ func (s *Service) SendWantAggregationProofsRequest(ctx context.Context, request 
 		return entity.WantAggregationProofsResponse{}, errors.Errorf("failed to get aggregation proofs from peer %s: %w", peerID, err)
 	}
 
-	// Convert protobuf response to entity
-	entityResp, err := protoToEntityAggregationProofResponse(response)
-	if err != nil {
-		return entity.WantAggregationProofsResponse{}, errors.Errorf("failed to convert aggregation proof response: %w", err)
-	}
-
-	return entityResp, nil
+	return protoToEntityAggregationProofResponse(response), nil
 }
 
 // sendAggregationProofRequestToPeer sends a gRPC aggregation proof request to a specific peer
@@ -76,18 +69,10 @@ func entityToProtoAggregationProofRequest(req entity.WantAggregationProofsReques
 }
 
 // protoToEntityAggregationProofResponse converts protobuf WantAggregationProofsResponse to entity
-func protoToEntityAggregationProofResponse(resp *prototypes.WantAggregationProofsResponse) (entity.WantAggregationProofsResponse, error) {
+func protoToEntityAggregationProofResponse(resp *prototypes.WantAggregationProofsResponse) entity.WantAggregationProofsResponse {
 	proofs := make(map[common.Hash]entity.AggregationProof)
 
 	for hashStr, protoProof := range resp.GetProofs() {
-		// Parse hash from hex string
-		hashBytes, err := hex.DecodeString(hashStr)
-		if err != nil {
-			return entity.WantAggregationProofsResponse{}, errors.Errorf("failed to decode hash %s: %w", hashStr, err)
-		}
-
-		hash := common.BytesToHash(hashBytes)
-
 		// Convert aggregation proof
 		proof := entity.AggregationProof{
 			VerificationType: entity.VerificationType(protoProof.GetVerificationType()),
@@ -95,31 +80,25 @@ func protoToEntityAggregationProofResponse(resp *prototypes.WantAggregationProof
 			Proof:            protoProof.GetProof(),
 		}
 
-		proofs[hash] = proof
+		proofs[common.HexToHash(hashStr)] = proof
 	}
 
 	return entity.WantAggregationProofsResponse{
 		Proofs: proofs,
-	}, nil
+	}
 }
 
 // protoToEntityAggregationProofRequest converts protobuf WantAggregationProofsRequest to entity
-func protoToEntityAggregationProofRequest(req *prototypes.WantAggregationProofsRequest) (entity.WantAggregationProofsRequest, error) {
+func protoToEntityAggregationProofRequest(req *prototypes.WantAggregationProofsRequest) entity.WantAggregationProofsRequest {
 	requestHashes := make([]common.Hash, len(req.GetRequestHashes()))
 
 	for i, hashStr := range req.GetRequestHashes() {
-		// Parse hash from hex string
-		hashBytes, err := hex.DecodeString(hashStr)
-		if err != nil {
-			return entity.WantAggregationProofsRequest{}, errors.Errorf("failed to decode hash %s: %w", hashStr, err)
-		}
-
-		requestHashes[i] = common.BytesToHash(hashBytes)
+		requestHashes[i] = common.HexToHash(hashStr)
 	}
 
 	return entity.WantAggregationProofsRequest{
 		RequestHashes: requestHashes,
-	}, nil
+	}
 }
 
 // entityToProtoAggregationProofResponse converts entity WantAggregationProofsResponse to protobuf
@@ -127,8 +106,6 @@ func entityToProtoAggregationProofResponse(resp entity.WantAggregationProofsResp
 	proofs := make(map[string]*prototypes.AggregationProof)
 
 	for hash, proof := range resp.Proofs {
-		hashKey := hex.EncodeToString(hash.Bytes())
-
 		// Convert aggregation proof
 		protoProof := &prototypes.AggregationProof{
 			VerificationType: uint32(proof.VerificationType),
@@ -136,7 +113,7 @@ func entityToProtoAggregationProofResponse(resp entity.WantAggregationProofsResp
 			Proof:            proof.Proof,
 		}
 
-		proofs[hashKey] = protoProof
+		proofs[hash.Hex()] = protoProof
 	}
 
 	return &prototypes.WantAggregationProofsResponse{
