@@ -533,6 +533,11 @@ func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []enti
 		})
 	}
 
+	// sort extra data by key to ensure deterministic order
+	sort.Slice(extraData, func(i, j int) bool {
+		return bytes.Compare(extraData[i].Key[:], extraData[j].Key[:]) < 0
+	})
+
 	return extraData, nil
 }
 

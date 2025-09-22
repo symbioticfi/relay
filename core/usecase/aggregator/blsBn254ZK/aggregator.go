@@ -1,7 +1,9 @@
 package blsBn254ZK
 
 import (
+	"bytes"
 	"math/big"
+	"sort"
 
 	"github.com/symbioticfi/relay/core/entity"
 	types "github.com/symbioticfi/relay/core/usecase/aggregator/aggregator-types"
@@ -187,6 +189,11 @@ func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []enti
 			Value: mimcAccumulator,
 		})
 	}
+
+	// sort extra data by key to ensure deterministic order
+	sort.Slice(extraData, func(i, j int) bool {
+		return bytes.Compare(extraData[i].Key[:], extraData[j].Key[:]) < 0
+	})
 
 	return extraData, nil
 }
