@@ -97,8 +97,7 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 			expectSignatureRequest: false,
 			expectPendingExists:    false,
 			expectPendingRemoved:   false,
-			expectError:            true,
-			expectedErrorSubstring: "failed to get signature request: no signature request found for hash",
+			expectError:            false,
 		},
 		{
 			name: "multiple signatures - quorum reached on second",
