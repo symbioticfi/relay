@@ -67,12 +67,12 @@ func TestSimpleAggregatorExtraData(t *testing.T) {
 	require.NoError(t, err)
 	expected := [][]string{
 		{
-			"0xb3114d5f3c21fca82212f69acee504fb470c13855114c29b5a634315ba69d58d",
-			"0xb2d5fd4a3411e1ca6bccebfbf68b2d3aa244532a09517a3abc0dc3a27bd593e7",
-		},
-		{
 			"0x653d30d3f5b20173b1482c2ed1d4435101e6c2eb4e07bbdb381c1297862af81d",
 			"0x45061b0eef183d1991badf4d85070ad0faa423c1d29eafe7a0c84840fa3e9221",
+		},
+		{
+			"0xb3114d5f3c21fca82212f69acee504fb470c13855114c29b5a634315ba69d58d",
+			"0xb2d5fd4a3411e1ca6bccebfbf68b2d3aa244532a09517a3abc0dc3a27bd593e7",
 		},
 	}
 
