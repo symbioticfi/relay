@@ -231,7 +231,6 @@ func runApp(ctx context.Context) error {
 	statusTracker, err := valsetStatusTracker.New(valsetStatusTracker.Config{
 		EvmClient:       evmClient,
 		Repo:            repo,
-		Deriver:         deriver,
 		PollingInterval: time.Second * 5,
 	})
 	if err != nil {

@@ -82,17 +82,6 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, param entity.Sav
 		"epoch", param.Epoch,
 	)
 
-	if param.SignatureRequest == nil {
-		signatureRequest, err := s.cfg.Repo.GetSignatureRequest(ctx, param.RequestHash)
-		if err != nil {
-			return errors.Errorf("failed to get signature request: %w", err)
-		}
-
-		if signatureRequest.Hash() != param.RequestHash {
-			return errors.Errorf("signature request hash mismatch: expected %s, got %s", param.RequestHash.Hex(), param.SignatureRequest.Hash().Hex())
-		}
-	}
-
 	publicKey, err := crypto.NewPublicKey(param.KeyTag.Type(), param.Signature.PublicKey)
 	if err != nil {
 		return errors.Errorf("failed to get public key: %w", err)

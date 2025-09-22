@@ -118,9 +118,15 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 	}
 
 	if !validatorSet.IsAggregator(privKey.PublicKey().OnChain()) {
-		slog.DebugContext(ctx, "Not an Aggregator for this valset, skipping proof aggregation", "key", privKey.PublicKey().OnChain(), "epoch", msg.Epoch)
+		slog.DebugContext(ctx, "Not an Aggregator for this valset, skipping proof aggregation",
+			"key", privKey.PublicKey().OnChain(),
+			"epoch", msg.Epoch,
+			"aggIndices", validatorSet.AggregatorIndices,
+		)
 		return nil
 	}
+
+	slog.DebugContext(ctx, "Is an Aggregator for this valset, checking quorum", "key", privKey.PublicKey().OnChain(), "epoch", msg.Epoch)
 
 	totalActiveVotingPower := validatorSet.GetTotalActiveVotingPower()
 
