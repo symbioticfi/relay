@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
+	valsetDeriver "github.com/symbioticfi/relay/core/usecase/valset-deriver"
 
 	"github.com/symbioticfi/relay/core/entity"
 )
@@ -307,6 +308,19 @@ func (r *Repository) GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (
 			Validators:       validators,
 			Status:           status,
 		}
+
+		cfg, err := r.GetConfigByEpoch(ctx, epoch)
+		if err != nil {
+			return errors.Errorf("failed to get config for epoch %d: %w", epoch, err)
+		}
+
+		aggIndices, commIndices, err := valsetDeriver.GetSchedulerInfo(ctx, vs, cfg)
+		if err != nil {
+			return errors.Errorf("failed to get scheduler info for epoch %d: %w", epoch, err)
+		}
+
+		vs.AggregatorIndices = aggIndices
+		vs.CommitterIndices = commIndices
 
 		return nil
 	})
