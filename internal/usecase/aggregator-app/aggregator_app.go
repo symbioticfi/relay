@@ -44,12 +44,12 @@ type aggregator interface {
 type aggregatorPolicy = aggregationPolicyTypes.AggregationPolicy
 
 type Config struct {
-	Repo              repository       `validate:"required"`
-	P2PClient         p2pClient        `validate:"required"`
-	Aggregator        aggregator       `validate:"required"`
-	Metrics           metrics          `validate:"required"`
-	AggregationPolicy aggregatorPolicy `validate:"required"`
-	KeyProvider       keyprovider.KeyProvider
+	Repo              repository              `validate:"required"`
+	P2PClient         p2pClient               `validate:"required"`
+	Aggregator        aggregator              `validate:"required"`
+	Metrics           metrics                 `validate:"required"`
+	AggregationPolicy aggregatorPolicy        `validate:"required"`
+	KeyProvider       keyprovider.KeyProvider `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -76,10 +76,10 @@ func NewAggregatorApp(cfg Config) (*AggregatorApp, error) {
 	return app, nil
 }
 
-func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error {
+func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg entity.SignatureMessage) error {
 	ctx = log.WithComponent(ctx, "aggregator")
 	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(msg.Epoch)))
-	slog.DebugContext(ctx, "Received HandleSignatureGeneratedMessage", "message", msg)
+	slog.DebugContext(ctx, "Received HandleSignatureProcessedMessage", "message", msg)
 
 	signatureMap, err := s.cfg.Repo.GetSignatureMap(ctx, msg.RequestHash)
 	if err != nil {
@@ -108,22 +108,25 @@ func (s *AggregatorApp) HandleSignatureGeneratedMessage(ctx context.Context, msg
 		return errors.Errorf("failed to get validator set: %w", err)
 	}
 
-	// nil only for tests
-	if s.cfg.KeyProvider != nil {
-		privKey, err := s.cfg.KeyProvider.GetPrivateKey(validatorSet.RequiredKeyTag)
-		if err != nil {
-			if errors.Is(err, keyprovider.ErrKeyNotFound) {
-				slog.DebugContext(ctx, "No key for required key tag, skipping proof aggregation", "keyTag", validatorSet.RequiredKeyTag)
-				return nil
-			}
-			return errors.Errorf("failed to get private key for required key tag %s: %w", validatorSet.RequiredKeyTag, err)
-		}
-
-		if !validatorSet.IsAggregator(privKey.PublicKey().OnChain()) {
-			slog.DebugContext(ctx, "Not an Aggregator for this valset, skipping proof aggregation", "key", privKey.PublicKey().OnChain(), "epoch", msg.Epoch)
+	privKey, err := s.cfg.KeyProvider.GetPrivateKey(validatorSet.RequiredKeyTag)
+	if err != nil {
+		if errors.Is(err, keyprovider.ErrKeyNotFound) {
+			slog.DebugContext(ctx, "No key for required key tag, skipping proof aggregation", "keyTag", validatorSet.RequiredKeyTag)
 			return nil
 		}
+		return errors.Errorf("failed to get private key for required key tag %s: %w", validatorSet.RequiredKeyTag, err)
 	}
+
+	if !validatorSet.IsAggregator(privKey.PublicKey().OnChain()) {
+		slog.DebugContext(ctx, "Not an Aggregator for this valset, skipping proof aggregation",
+			"key", privKey.PublicKey().OnChain(),
+			"epoch", msg.Epoch,
+			"aggIndices", validatorSet.AggregatorIndices,
+		)
+		return nil
+	}
+
+	slog.DebugContext(ctx, "Is an Aggregator for this valset, checking quorum", "key", privKey.PublicKey().OnChain(), "epoch", msg.Epoch)
 
 	totalActiveVotingPower := validatorSet.GetTotalActiveVotingPower()
 

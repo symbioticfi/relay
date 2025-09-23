@@ -7,10 +7,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/crypto"
-	signature_processor "github.com/symbioticfi/relay/core/usecase/signature-processor"
+	entity_processor "github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor"
+	"github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor/mocks"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
 	intEntity "github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/signals"
@@ -23,6 +25,13 @@ func TestHandleSignatureReceivedMessage_HappyPath(t *testing.T) {
 	privateKey := newPrivateKey(t)
 	msg := "test-message-to-sign"
 
+	req := entity.SignatureRequest{
+		RequiredEpoch: 777,
+		KeyTag:        entity.KeyTag(15),
+		Message:       []byte(msg),
+	}
+	require.NoError(t, setup.repo.SaveSignatureRequest(t.Context(), req))
+	require.NoError(t, setup.repo.SaveSignatureRequestPending(t.Context(), req))
 	// Create signature with the private key
 	signature, hash, err := privateKey.Sign([]byte(msg))
 	require.NoError(t, err)
@@ -31,7 +40,7 @@ func TestHandleSignatureReceivedMessage_HappyPath(t *testing.T) {
 	validatorSet := setup.createTestValidatorSetWithKey(t, privateKey)
 
 	// Create P2P message with real signature
-	p2pMsg := createTestP2PMessageWithSignature(privateKey, hash, signature)
+	p2pMsg := createTestP2PMessageWithSignature(privateKey, req, hash, signature)
 
 	// Execute
 	require.NoError(t, setup.useCase.HandleSignatureReceivedMessage(t.Context(), p2pMsg))
@@ -69,20 +78,34 @@ func newTestSetup(t *testing.T) *testSetup {
 		repo.Close()
 	})
 
-	processor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
-		Repo: repo,
+	// Create mock aggregator for entity processor
+	ctrl := gomock.NewController(t)
+	mockAggregator := mocks.NewMockAggregator(ctrl)
+	mockAggregator.EXPECT().Verify(gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes()
+
+	// Create mock aggregation proof signal for entity processor
+	mockAggProofSignal := mocks.NewMockAggProofSignal(ctrl)
+	mockAggProofSignal.EXPECT().Emit(gomock.Any()).Return(nil).AnyTimes()
+
+	// Create mock signature processed signal for entity processor
+	signatureProcessedSignal := signals.New[entity.SignatureMessage](signals.DefaultConfig(), "test", nil)
+
+	processor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
+		Repo:                     repo,
+		Aggregator:               mockAggregator,
+		AggProofSignal:           mockAggProofSignal,
+		SignatureProcessedSignal: signatureProcessedSignal,
 	})
 	require.NoError(t, err)
 
 	cfg := Config{
-		Repo:               repo,
-		SignatureProcessor: processor,
+		Repo:            repo,
+		EntityProcessor: processor,
 		SignalCfg: signals.Config{
 			BufferSize:  10,
 			WorkerCount: 5,
 		},
-		SelfP2PID:            "test-self-p2p-id",
-		SignatureSavedSignal: signals.New[entity.SignatureMessage](signals.DefaultConfig(), "signatureReceive", nil),
+		SelfP2PID: "test-self-p2p-id",
 	}
 
 	useCase, err := New(cfg)
@@ -132,14 +155,14 @@ func (setup *testSetup) createTestValidatorSetWithKey(t *testing.T, privateKey c
 	return vs
 }
 
-func createTestP2PMessageWithSignature(privateKey crypto.PrivateKey, hash []byte, signature []byte) intEntity.P2PMessage[entity.SignatureMessage] {
+func createTestP2PMessageWithSignature(privateKey crypto.PrivateKey, req entity.SignatureRequest, hash []byte, signature []byte) intEntity.P2PMessage[entity.SignatureMessage] {
 	return intEntity.P2PMessage[entity.SignatureMessage]{
 		SenderInfo: intEntity.SenderInfo{
 			Sender:    "test-peer-id",
 			PublicKey: []byte("test-sender-pubkey"),
 		},
 		Message: entity.SignatureMessage{
-			RequestHash: common.HexToHash("0x123"),
+			RequestHash: req.Hash(),
 			KeyTag:      entity.KeyTag(15),
 			Epoch:       1,
 			Signature: entity.SignatureExtended{

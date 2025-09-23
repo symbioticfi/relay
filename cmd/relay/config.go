@@ -182,7 +182,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("sync.enabled", true, "Enable signature syncer")
 	rootCmd.PersistentFlags().Duration("sync.period", time.Second*5, "Signature sync period")
 	rootCmd.PersistentFlags().Duration("sync.timeout", time.Minute, "Signature sync timeout")
-	rootCmd.PersistentFlags().Uint64("sync.epochs", 5, "Signature epochs to sync")
+	rootCmd.PersistentFlags().Uint64("sync.epochs", 5, "Epochs to sync")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {

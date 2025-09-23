@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
+
 	"github.com/symbioticfi/relay/core/client/evm"
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/pkg/log"
@@ -23,14 +24,9 @@ type repo interface {
 	SaveFirstUncommittedValidatorSetEpoch(_ context.Context, epoch uint64) error
 }
 
-type deriver interface {
-	GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error)
-}
-
 type Config struct {
 	EvmClient       evm.IEvmClient `validate:"required"`
 	Repo            repo           `validate:"required"`
-	Deriver         deriver        `validate:"required"`
 	PollingInterval time.Duration  `validate:"required,gt=0"`
 }
 
@@ -59,7 +55,7 @@ func New(cfg Config) (*Service, error) {
 func (s *Service) Start(ctx context.Context) error {
 	ctx = log.WithComponent(ctx, "status_tracker")
 
-	slog.InfoContext(ctx, "Starting valset listener service", "pollingInterval", s.cfg.PollingInterval)
+	slog.InfoContext(ctx, "Starting status tracker service", "pollingInterval", s.cfg.PollingInterval)
 
 	timer := time.NewTimer(0)
 	for {
@@ -109,7 +105,7 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 		valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, epoch)
 		if err != nil {
 			if errors.Is(err, entity.ErrEntityNotFound) {
-				slog.InfoContext(ctx, "No uncommitted valset found, waiting...", "epoch", epoch)
+				slog.DebugContext(ctx, "No uncommitted valset found, waiting...", "epoch", epoch)
 				break
 			}
 			return errors.Errorf("failed to get validator set for epoch %d: %w", epoch, err)

@@ -13,10 +13,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+
 	"github.com/symbioticfi/relay/core/client/evm"
 	"github.com/symbioticfi/relay/core/entity"
 	valsetDeriver "github.com/symbioticfi/relay/core/usecase/valset-deriver"
-	"github.com/testcontainers/testcontainers-go"
 )
 
 // TestAggregatorSignatureSync tests that aggregators can sync missed signatures
@@ -33,7 +34,7 @@ func TestAggregatorSignatureSync(t *testing.T) {
 	ctx := t.Context()
 
 	// Load deployment data to get contract addresses and environment info
-	deploymentData, err := loadDeploymentData(t.Context())
+	deploymentData, err := loadDeploymentData(ctx)
 	require.NoError(t, err, "Failed to load deployment data")
 
 	// Identify aggregators
@@ -53,17 +54,17 @@ func TestAggregatorSignatureSync(t *testing.T) {
 	captureTimestamp, err := evmClient.GetEpochStart(ctx, currentEpoch)
 	require.NoError(t, err, "Failed to get epoch start timestamp")
 
-	nwConfig, err := evmClient.GetConfig(t.Context(), captureTimestamp)
+	nwConfig, err := evmClient.GetConfig(ctx, captureTimestamp)
 	require.NoError(t, err, "Failed to get network config")
 
-	valset, err := deriver.GetValidatorSet(t.Context(), currentEpoch, nwConfig)
+	valset, err := deriver.GetValidatorSet(ctx, currentEpoch, nwConfig)
 	require.NoError(t, err, "Failed to get validator set")
 
 	// next valset, we expect nothing to change apart from epoch details
 	valset.Epoch++
 	valset.CaptureTimestamp += deploymentData.Env.EpochTime
 
-	aggIndices, commIndices, err := deriver.GetSchedulerInfo(t.Context(), valset, nwConfig)
+	aggIndices, commIndices, err := deriver.GetSchedulerInfo(ctx, valset, nwConfig)
 	require.NoError(t, err, "Failed to get scheduler info")
 	require.NotEmpty(t, aggIndices, "No aggregators found in scheduler info")
 	require.NotEmpty(t, commIndices, "No committers found in scheduler info")

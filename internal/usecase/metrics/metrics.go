@@ -17,19 +17,21 @@ type Config struct {
 type Metrics struct {
 	GRPCMetrics
 
-	pkSignDuration             prometheus.Summary
-	appSignDuration            prometheus.Summary
-	onlyAggregateDuration      prometheus.Summary
-	appAggregationDuration     prometheus.Summary
-	p2pMessagesSent            *prometheus.CounterVec
-	p2pPeerMessagesSent        *prometheus.CounterVec
-	evmMethodCall              *prometheus.HistogramVec
-	evmCommitGasUsed           *prometheus.HistogramVec
-	evmCommitGasPrice          *prometheus.HistogramVec
-	appAggProofCompleted       prometheus.Histogram
-	appAggProofReceived        prometheus.Histogram
-	p2pSyncProcessedSignatures *prometheus.CounterVec
-	p2pSyncRequestedHashes     prometheus.Counter
+	pkSignDuration                 prometheus.Summary
+	appSignDuration                prometheus.Summary
+	onlyAggregateDuration          prometheus.Summary
+	appAggregationDuration         prometheus.Summary
+	p2pMessagesSent                *prometheus.CounterVec
+	p2pPeerMessagesSent            *prometheus.CounterVec
+	evmMethodCall                  *prometheus.HistogramVec
+	evmCommitGasUsed               *prometheus.HistogramVec
+	evmCommitGasPrice              *prometheus.HistogramVec
+	appAggProofCompleted           prometheus.Histogram
+	appAggProofReceived            prometheus.Histogram
+	p2pSyncProcessedSignatures     *prometheus.CounterVec
+	p2pSyncRequestedHashes         prometheus.Counter
+	p2pSyncProcessedAggProofs      *prometheus.CounterVec
+	p2pSyncRequestedAggProofHashes prometheus.Counter
 }
 
 func New(cfg Config) *Metrics {
@@ -136,6 +138,18 @@ func newMetrics(registerer prometheus.Registerer) *Metrics {
 	})
 	all = append(all, m.p2pSyncRequestedHashes)
 
+	m.p2pSyncProcessedAggProofs = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "symbiotic_relay_p2p_sync_processed_aggregation_proofs_total",
+		Help: "Total number of aggregation proofs processed during P2P sync",
+	}, []string{"process_result"})
+	all = append(all, m.p2pSyncProcessedAggProofs)
+
+	m.p2pSyncRequestedAggProofHashes = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "symbiotic_relay_p2p_sync_requested_aggregation_proof_hashes_total",
+		Help: "Total number of requested aggregation proof hashes during P2P sync",
+	})
+	all = append(all, m.p2pSyncRequestedAggProofHashes)
+
 	grpcDurationBuckets := []float64{.005, .01, .025, .05, .1, .25, .5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 10, 15, 20, 40, 45, 60}
 	m.requestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
@@ -233,4 +247,12 @@ func (m *Metrics) ObserveP2PSyncSignaturesProcessed(resultType string, count int
 
 func (m *Metrics) ObserveP2PSyncRequestedHashes(count int) {
 	m.p2pSyncRequestedHashes.Add(float64(count))
+}
+
+func (m *Metrics) ObserveP2PSyncAggregationProofsProcessed(resultType string, count int) {
+	m.p2pSyncProcessedAggProofs.WithLabelValues(resultType).Add(float64(count))
+}
+
+func (m *Metrics) ObserveP2PSyncRequestedAggregationProofs(count int) {
+	m.p2pSyncRequestedAggProofHashes.Add(float64(count))
 }

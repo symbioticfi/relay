@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
@@ -77,11 +78,22 @@ func (r *Repository) SaveSignatureRequest(ctx context.Context, req entity.Signat
 }
 
 func (r *Repository) SaveSignatureRequestPending(ctx context.Context, req entity.SignatureRequest) error {
-	pendingKey := keySignatureRequestPending(req.RequiredEpoch, req.Hash())
-
 	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
-		if err := r.saveSignatureRequestToKey(ctx, req, pendingKey); err != nil {
-			return err
+		txn := getTxn(ctx)
+		pendingKey := keySignatureRequestPending(req.RequiredEpoch, req.Hash())
+
+		_, err := txn.Get(pendingKey)
+		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
+			return errors.Errorf("failed to check pending signature request: %w", err)
+		}
+		if err == nil {
+			return errors.Errorf("pending signature request already exists: %w", entity.ErrEntityAlreadyExist)
+		}
+
+		// Store just a marker (empty value) - we don't need the full request data here
+		err = txn.Set(pendingKey, []byte{})
+		if err != nil {
+			return errors.Errorf("failed to store pending signature request: %w", err)
 		}
 		return nil
 	})
@@ -242,14 +254,79 @@ func (r *Repository) GetSignatureRequestsByEpoch(ctx context.Context, epoch enti
 }
 
 func (r *Repository) GetSignatureRequestsByEpochPending(ctx context.Context, epoch entity.Epoch, limit int, lastHash common.Hash) ([]entity.SignatureRequest, error) {
-	return r.getSignatureRequestsByEpochWithKeys(
-		ctx,
-		epoch,
-		limit,
-		lastHash,
-		keySignatureRequestPendingEpochPrefix(epoch),
-		keySignatureRequestPending,
-	)
+	var requests []entity.SignatureRequest
+
+	return requests, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
+
+		// Iterate through pending signature request markers
+		prefix := keySignatureRequestPendingEpochPrefix(epoch)
+		opts := badger.DefaultIteratorOptions
+		opts.Prefix = prefix
+		opts.PrefetchValues = false // We don't need the values, just the keys
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		seekKey := prefix
+		if lastHash != (common.Hash{}) {
+			// Subsequent pages: seek to the record after lastHash
+			seekKey = keySignatureRequestPending(epoch, lastHash)
+		}
+
+		count := 0
+		it.Seek(seekKey)
+		// If we're seeking from a specific hash and positioned exactly on that key, skip it (already returned in previous page)
+		if lastHash != (common.Hash{}) && it.ValidForPrefix(prefix) && bytes.Equal(it.Item().Key(), seekKey) {
+			it.Next()
+		}
+
+		for ; it.ValidForPrefix(prefix); it.Next() {
+			// Stop if we've reached the limit
+			if limit > 0 && count >= limit {
+				break
+			}
+
+			// Extract request hash from the pending key: "signature_request_pending:epoch:hash"
+			item := it.Item()
+			key := string(item.Key())
+
+			// Find the hash part after the second colon
+			parts := strings.Split(key, ":")
+			if len(parts) != 3 {
+				return errors.Errorf("invalid pending signature request key format: %s", key)
+			}
+
+			reqHashStr := parts[2]
+			reqHash := common.HexToHash(reqHashStr)
+
+			// Get the actual signature request
+			sigReqKey := keySignatureRequest(epoch, reqHash)
+			sigReqItem, err := txn.Get(sigReqKey)
+			if err != nil {
+				if errors.Is(err, badger.ErrKeyNotFound) {
+					// This shouldn't happen - pending marker exists but signature request doesn't
+					// Skip this entry and continue
+					continue
+				}
+				return errors.Errorf("failed to get signature request for hash %s: %w", reqHashStr, err)
+			}
+
+			value, err := sigReqItem.ValueCopy(nil)
+			if err != nil {
+				return errors.Errorf("failed to copy signature request value: %w", err)
+			}
+
+			req, err := bytesToSignatureRequest(value)
+			if err != nil {
+				return errors.Errorf("failed to unmarshal signature request: %w", err)
+			}
+
+			requests = append(requests, req)
+			count++
+		}
+
+		return nil
+	})
 }
 
 type signatureRequestDTO struct {

@@ -8,10 +8,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/crypto"
-	signature_processor "github.com/symbioticfi/relay/core/usecase/signature-processor"
+	entity_processor "github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor"
+	"github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor/mocks"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
 	"github.com/symbioticfi/relay/pkg/signals"
 )
@@ -19,7 +21,6 @@ import (
 func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	requesterRepo := createTestRepo(t)
 	defer requesterRepo.Close()
-
 	peerRepo := createTestRepo(t)
 	defer peerRepo.Close()
 
@@ -38,8 +39,11 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	signatureMap := entity.NewSignatureMap(signatureRequest.Hash(), signatureRequest.RequiredEpoch, uint32(len(validatorSet.Validators)))
 	require.NoError(t, requesterRepo.UpdateSignatureMap(t.Context(), signatureMap))
 
-	peerSignatureProcessor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
-		Repo: peerRepo,
+	peerEntityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
+		Repo:                     peerRepo,
+		Aggregator:               createMockAggregator(t),
+		AggProofSignal:           createMockAggProofSignal(t),
+		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
 	})
 	require.NoError(t, err)
 
@@ -49,45 +53,48 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	// Save signature request and signature on peer
 	param := entity.SaveSignatureParam{
 		RequestHash: signatureRequest.Hash(),
-		Key:         privateKey.PublicKey().Raw(), // Keep using Raw format for storage
 		Signature: entity.SignatureExtended{
 			MessageHash: hash,
 			Signature:   signature,
 			PublicKey:   privateKey.PublicKey().Raw(),
 		},
-		ActiveIndex:      0, // First and single validator
-		VotingPower:      validatorSet.Validators[0].VotingPower,
 		Epoch:            signatureRequest.RequiredEpoch,
 		SignatureRequest: &signatureRequest,
+		KeyTag:           signatureRequest.KeyTag,
 	}
-	require.NoError(t, peerSignatureProcessor.ProcessSignature(t.Context(), param))
+	require.NoError(t, peerEntityProcessor.ProcessSignature(t.Context(), param))
 
 	// Setup requester processor
 
-	requesterProcessor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
-		Repo: requesterRepo,
+	requesterEntityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
+		Repo:                     requesterRepo,
+		Aggregator:               createMockAggregator(t),
+		AggProofSignal:           createMockAggProofSignal(t),
+		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
 	})
 	require.NoError(t, err)
 
 	// Create peer syncer first (with a temporary mock)
 	peerSyncer, err := New(Config{
 		Repo:                        peerRepo,
-		SignatureProcessor:          peerSignatureProcessor,
+		EntityProcessor:             peerEntityProcessor,
 		EpochsToSync:                1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
-		SignatureReceivedSignal:     signals.New[entity.SignatureMessage](signals.DefaultConfig(), "signatureReceive", nil),
+		MaxAggProofRequestsPerSync:  100,
+		MaxResponseAggProofCount:    100,
 	})
 	require.NoError(t, err)
 
 	// Create requester syncer
 	requesterSyncer, err := New(Config{
 		Repo:                        requesterRepo,
-		SignatureProcessor:          requesterProcessor,
+		EntityProcessor:             requesterEntityProcessor,
 		EpochsToSync:                1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
-		SignatureReceivedSignal:     signals.New[entity.SignatureMessage](signals.DefaultConfig(), "signatureReceive", nil),
+		MaxAggProofRequestsPerSync:  100,
+		MaxResponseAggProofCount:    100,
 	})
 	require.NoError(t, err)
 
@@ -117,6 +124,29 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	// Verify the signature is correct
 	require.Equal(t, privateKey.PublicKey().Raw(), finalSignatures[0].PublicKey)
 	require.NoError(t, privateKey.PublicKey().Verify(signatureRequest.Message, finalSignatures[0].Signature))
+}
+
+func createMockAggregator(t *testing.T) *mocks.MockAggregator {
+	t.Helper()
+	ctrl := gomock.NewController(t)
+	mockAgg := mocks.NewMockAggregator(ctrl)
+	// Default behavior: return true for verification
+	mockAgg.EXPECT().Verify(gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes()
+	return mockAgg
+}
+
+func createMockAggProofSignal(t *testing.T) *mocks.MockAggProofSignal {
+	t.Helper()
+	ctrl := gomock.NewController(t)
+	mockSignal := mocks.NewMockAggProofSignal(ctrl)
+	// Default behavior: return nil for emit
+	mockSignal.EXPECT().Emit(gomock.Any()).Return(nil).AnyTimes()
+	return mockSignal
+}
+
+func createMockSignatureProcessedSignal(t *testing.T) *signals.Signal[entity.SignatureMessage] {
+	t.Helper()
+	return signals.New[entity.SignatureMessage](signals.DefaultConfig(), "test", nil)
 }
 
 func createTestRepo(t *testing.T) *badger.Repository {
@@ -152,7 +182,7 @@ func createTestValidatorSet(t *testing.T, privateKey crypto.PrivateKey) entity.V
 	t.Helper()
 	return entity.ValidatorSet{
 		Version:         1,
-		RequiredKeyTag:  entity.KeyTag(15),
+		RequiredKeyTag:  entity.ValsetHeaderKeyTag,
 		Epoch:           1,
 		QuorumThreshold: entity.ToVotingPower(big.NewInt(670)),
 		Validators: []entity.Validator{{
@@ -161,7 +191,7 @@ func createTestValidatorSet(t *testing.T, privateKey crypto.PrivateKey) entity.V
 			IsActive:    true,
 			Keys: []entity.ValidatorKey{
 				{
-					Tag:     entity.KeyTag(15),
+					Tag:     entity.ValsetHeaderKeyTag,
 					Payload: privateKey.PublicKey().OnChain(),
 				},
 			},
@@ -169,17 +199,22 @@ func createTestValidatorSet(t *testing.T, privateKey crypto.PrivateKey) entity.V
 	}
 }
 
-func createTestValidatorSetWithMultipleValidators(t *testing.T, privateKey crypto.PrivateKey, count int) entity.ValidatorSet {
+func createTestValidatorSetWithMultipleValidators(t *testing.T, count int) (entity.ValidatorSet, []crypto.PrivateKey) {
 	t.Helper()
+	privateKeys := make([]crypto.PrivateKey, count)
+
 	validators := make([]entity.Validator, count)
 	for i := 0; i < count; i++ {
+		privateKey := newPrivateKey(t)
+		privateKeys[i] = privateKey
+
 		validators[i] = entity.Validator{
 			Operator:    common.HexToAddress(fmt.Sprintf("0x%d", i+1)),
 			VotingPower: entity.ToVotingPower(big.NewInt(1000)),
 			IsActive:    true,
 			Keys: []entity.ValidatorKey{
 				{
-					Tag:     entity.KeyTag(15),
+					Tag:     entity.ValsetHeaderKeyTag,
 					Payload: privateKey.PublicKey().OnChain(), // Same key for all validators for simplicity
 				},
 			},
@@ -188,11 +223,11 @@ func createTestValidatorSetWithMultipleValidators(t *testing.T, privateKey crypt
 
 	return entity.ValidatorSet{
 		Version:         1,
-		RequiredKeyTag:  entity.KeyTag(15),
+		RequiredKeyTag:  entity.ValsetHeaderKeyTag,
 		Epoch:           1,
 		QuorumThreshold: entity.ToVotingPower(big.NewInt(670)),
 		Validators:      validators,
-	}
+	}, privateKeys
 }
 
 func randomBytes(t *testing.T, n int) []byte {
@@ -209,18 +244,22 @@ func TestHandleWantSignaturesRequest_EmptyRequest(t *testing.T) {
 	repo := createTestRepo(t)
 	defer repo.Close()
 
-	signatureProcessor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
-		Repo: repo,
+	entityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
+		Repo:                     repo,
+		Aggregator:               createMockAggregator(t),
+		AggProofSignal:           createMockAggProofSignal(t),
+		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
 	})
 	require.NoError(t, err)
 
 	syncer, err := New(Config{
 		Repo:                        repo,
-		SignatureProcessor:          signatureProcessor,
+		EntityProcessor:             entityProcessor,
 		EpochsToSync:                1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
-		SignatureReceivedSignal:     signals.New[entity.SignatureMessage](signals.DefaultConfig(), "test", nil),
+		MaxAggProofRequestsPerSync:  100,
+		MaxResponseAggProofCount:    100,
 	})
 	require.NoError(t, err)
 
@@ -254,18 +293,22 @@ func TestHandleWantSignaturesRequest_NonExistentSignatures(t *testing.T) {
 	repo := createTestRepo(t)
 	defer repo.Close()
 
-	signatureProcessor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
-		Repo: repo,
+	entityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
+		Repo:                     repo,
+		Aggregator:               createMockAggregator(t),
+		AggProofSignal:           createMockAggProofSignal(t),
+		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
 	})
 	require.NoError(t, err)
 
 	syncer, err := New(Config{
 		Repo:                        repo,
-		SignatureProcessor:          signatureProcessor,
+		EntityProcessor:             entityProcessor,
 		EpochsToSync:                1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
-		SignatureReceivedSignal:     signals.New[entity.SignatureMessage](signals.DefaultConfig(), "test", nil),
+		MaxAggProofRequestsPerSync:  100,
+		MaxResponseAggProofCount:    100,
 	})
 	require.NoError(t, err)
 
@@ -288,8 +331,7 @@ func TestHandleWantSignaturesRequest_MaxResponseSignatureCountLimit(t *testing.T
 	defer repo.Close()
 
 	// Create test data with multiple signatures
-	privateKey := newPrivateKey(t)
-	validatorSet := createTestValidatorSetWithMultipleValidators(t, privateKey, 5) // Create 5 validators
+	validatorSet, privateKeys := createTestValidatorSetWithMultipleValidators(t, 5) // Create 5 validators
 	signatureRequest := createTestSignatureRequest(t)
 
 	// Setup repository with validator set and signature request
@@ -297,40 +339,42 @@ func TestHandleWantSignaturesRequest_MaxResponseSignatureCountLimit(t *testing.T
 	require.NoError(t, repo.SaveSignatureRequest(t.Context(), signatureRequest))
 
 	// Store multiple signatures by validator index
-	signatureProcessor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
-		Repo: repo,
+	entityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
+		Repo:                     repo,
+		Aggregator:               createMockAggregator(t),
+		AggProofSignal:           createMockAggProofSignal(t),
+		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
 	})
-	require.NoError(t, err)
-
-	signature, hash, err := privateKey.Sign(signatureRequest.Message)
 	require.NoError(t, err)
 
 	// Save signatures for multiple validator indices (simulate multiple validators)
 	for i := uint32(0); i < 5; i++ {
+		signature, hash, err := privateKeys[i].Sign(signatureRequest.Message)
+		require.NoError(t, err)
+
 		param := entity.SaveSignatureParam{
 			RequestHash: signatureRequest.Hash(),
-			Key:         privateKey.PublicKey().Raw(),
 			Signature: entity.SignatureExtended{
 				MessageHash: hash,
 				Signature:   signature,
-				PublicKey:   privateKey.PublicKey().Raw(),
+				PublicKey:   privateKeys[i].PublicKey().Raw(),
 			},
-			ActiveIndex:      i,
-			VotingPower:      validatorSet.Validators[i].VotingPower, // Use the correct validator's voting power
 			Epoch:            signatureRequest.RequiredEpoch,
 			SignatureRequest: nil, // Don't save signature request again, it's already saved
+			KeyTag:           signatureRequest.KeyTag,
 		}
-		require.NoError(t, signatureProcessor.ProcessSignature(t.Context(), param))
+		require.NoError(t, entityProcessor.ProcessSignature(t.Context(), param))
 	}
 
 	t.Run("limit exceeded with single request", func(t *testing.T) {
 		syncer, err := New(Config{
 			Repo:                        repo,
-			SignatureProcessor:          signatureProcessor,
+			EntityProcessor:             entityProcessor,
 			EpochsToSync:                1,
 			MaxSignatureRequestsPerSync: 100,
 			MaxResponseSignatureCount:   2, // Low limit
-			SignatureReceivedSignal:     signals.New[entity.SignatureMessage](signals.DefaultConfig(), "test", nil),
+			MaxAggProofRequestsPerSync:  100,
+			MaxResponseAggProofCount:    100,
 		})
 		require.NoError(t, err)
 
@@ -348,11 +392,12 @@ func TestHandleWantSignaturesRequest_MaxResponseSignatureCountLimit(t *testing.T
 	t.Run("limit respected", func(t *testing.T) {
 		syncer, err := New(Config{
 			Repo:                        repo,
-			SignatureProcessor:          signatureProcessor,
+			EntityProcessor:             entityProcessor,
 			EpochsToSync:                1,
 			MaxSignatureRequestsPerSync: 100,
 			MaxResponseSignatureCount:   3, // Allow 3 signatures
-			SignatureReceivedSignal:     signals.New[entity.SignatureMessage](signals.DefaultConfig(), "test", nil),
+			MaxAggProofRequestsPerSync:  100,
+			MaxResponseAggProofCount:    100,
 		})
 		require.NoError(t, err)
 
@@ -375,24 +420,28 @@ func TestHandleWantSignaturesRequest_MultipleRequestHashes(t *testing.T) {
 	repo := createTestRepo(t)
 	defer repo.Close()
 
-	tempSignatureProcessor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
-		Repo: repo,
+	// Store signatures for both requests
+	entityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
+		Repo:                     repo,
+		Aggregator:               createMockAggregator(t),
+		AggProofSignal:           createMockAggProofSignal(t),
+		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
 	})
 	require.NoError(t, err)
 
 	syncer, err := New(Config{
 		Repo:                        repo,
-		SignatureProcessor:          tempSignatureProcessor,
+		EntityProcessor:             entityProcessor,
 		EpochsToSync:                1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
-		SignatureReceivedSignal:     signals.New[entity.SignatureMessage](signals.DefaultConfig(), "test", nil),
+		MaxAggProofRequestsPerSync:  100,
+		MaxResponseAggProofCount:    100,
 	})
 	require.NoError(t, err)
 
 	// Create test data
-	privateKey := newPrivateKey(t)
-	validatorSet := createTestValidatorSetWithMultipleValidators(t, privateKey, 2) // Create 2 validators
+	validatorSet, privateKeys := createTestValidatorSetWithMultipleValidators(t, 2) // Create 2 validators
 	signatureRequest1 := createTestSignatureRequest(t)
 	signatureRequest2 := createTestSignatureRequest(t)
 
@@ -401,52 +450,39 @@ func TestHandleWantSignaturesRequest_MultipleRequestHashes(t *testing.T) {
 	require.NoError(t, repo.SaveSignatureRequest(t.Context(), signatureRequest1))
 	require.NoError(t, repo.SaveSignatureRequest(t.Context(), signatureRequest2))
 
-	// Store signatures for both requests
-	signatureProcessor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
-		Repo: repo,
-	})
-	require.NoError(t, err)
-
-	signature, hash, err := privateKey.Sign(signatureRequest1.Message)
+	signature, hash, err := privateKeys[0].Sign(signatureRequest1.Message)
 	require.NoError(t, err)
 
 	// Save signature for first request
 	param1 := entity.SaveSignatureParam{
 		RequestHash: signatureRequest1.Hash(),
-		Key:         privateKey.PublicKey().Raw(),
 		Signature: entity.SignatureExtended{
 			MessageHash: hash,
 			Signature:   signature,
-			PublicKey:   privateKey.PublicKey().Raw(),
+			PublicKey:   privateKeys[0].PublicKey().Raw(),
 		},
-		ActiveIndex:      0,
-		VotingPower:      validatorSet.Validators[0].VotingPower,
 		Epoch:            signatureRequest1.RequiredEpoch,
 		SignatureRequest: nil, // Don't save signature request again, it's already saved
+		KeyTag:           signatureRequest1.KeyTag,
 	}
-	require.NoError(t, signatureProcessor.ProcessSignature(t.Context(), param1))
+	require.NoError(t, entityProcessor.ProcessSignature(t.Context(), param1))
 
 	// Save signature for second request
-	signature2, hash2, err := privateKey.Sign(signatureRequest2.Message)
+	signature2, hash2, err := privateKeys[1].Sign(signatureRequest2.Message)
 	require.NoError(t, err)
 
 	param2 := entity.SaveSignatureParam{
 		RequestHash: signatureRequest2.Hash(),
-		Key:         privateKey.PublicKey().Raw(),
 		Signature: entity.SignatureExtended{
 			MessageHash: hash2,
 			Signature:   signature2,
-			PublicKey:   privateKey.PublicKey().Raw(),
+			PublicKey:   privateKeys[1].PublicKey().Raw(),
 		},
-		ActiveIndex:      1,
-		VotingPower:      validatorSet.Validators[0].VotingPower,
 		Epoch:            signatureRequest2.RequiredEpoch,
 		SignatureRequest: nil, // Don't save signature request again, it's already saved
+		KeyTag:           signatureRequest2.KeyTag,
 	}
-	require.NoError(t, signatureProcessor.ProcessSignature(t.Context(), param2))
-
-	// Update syncer to use real signature processor
-	syncer.cfg.SignatureProcessor = signatureProcessor
+	require.NoError(t, entityProcessor.ProcessSignature(t.Context(), param2))
 
 	request := entity.WantSignaturesRequest{
 		WantSignatures: map[common.Hash]entity.SignatureBitmap{
@@ -471,47 +507,47 @@ func TestHandleWantSignaturesRequest_PartialSignatureAvailability(t *testing.T) 
 	defer repo.Close()
 
 	// Create test data
-	privateKey := newPrivateKey(t)
-	validatorSet := createTestValidatorSetWithMultipleValidators(t, privateKey, 4) // Create 4 validators
+	validatorSet, privateKeys := createTestValidatorSetWithMultipleValidators(t, 4) // Create 4 validators
 	signatureRequest := createTestSignatureRequest(t)
 
 	// Setup repository
 	require.NoError(t, repo.SaveValidatorSet(t.Context(), validatorSet))
 	require.NoError(t, repo.SaveSignatureRequest(t.Context(), signatureRequest))
 
-	signatureProcessor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
-		Repo: repo,
+	entityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
+		Repo:                     repo,
+		Aggregator:               createMockAggregator(t),
+		AggProofSignal:           createMockAggProofSignal(t),
+		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
 	})
 	require.NoError(t, err)
 
-	signature, hash, err := privateKey.Sign(signatureRequest.Message)
-	require.NoError(t, err)
-
 	// Save signatures only for validator indices 0 and 2 (skip 1 and 3)
-	for _, validatorIndex := range []uint32{0, 2} {
+	for _, i := range []uint32{0, 2} {
+		signature, hash, err := privateKeys[i].Sign(signatureRequest.Message)
+		require.NoError(t, err)
 		param := entity.SaveSignatureParam{
 			RequestHash: signatureRequest.Hash(),
-			Key:         privateKey.PublicKey().Raw(),
 			Signature: entity.SignatureExtended{
 				MessageHash: hash,
 				Signature:   signature,
-				PublicKey:   privateKey.PublicKey().Raw(),
+				PublicKey:   privateKeys[i].PublicKey().Raw(),
 			},
-			ActiveIndex:      validatorIndex,
-			VotingPower:      validatorSet.Validators[validatorIndex].VotingPower, // Use the correct validator's voting power
 			Epoch:            signatureRequest.RequiredEpoch,
 			SignatureRequest: nil, // Don't save signature request again, it's already saved
+			KeyTag:           signatureRequest.KeyTag,
 		}
-		require.NoError(t, signatureProcessor.ProcessSignature(t.Context(), param))
+		require.NoError(t, entityProcessor.ProcessSignature(t.Context(), param))
 	}
 
 	syncer, err := New(Config{
 		Repo:                        repo,
-		SignatureProcessor:          signatureProcessor,
+		EntityProcessor:             entityProcessor,
 		EpochsToSync:                1,
 		MaxSignatureRequestsPerSync: 100,
 		MaxResponseSignatureCount:   100,
-		SignatureReceivedSignal:     signals.New[entity.SignatureMessage](signals.DefaultConfig(), "test", nil),
+		MaxAggProofRequestsPerSync:  100,
+		MaxResponseAggProofCount:    100,
 	})
 	require.NoError(t, err)
 

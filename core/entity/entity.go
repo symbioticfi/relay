@@ -392,15 +392,15 @@ type ValidatorSet struct {
 	CommitterIndices  []uint32
 }
 
-func (v ValidatorSet) IsAggregator(requiredKey []byte) bool {
+func (v ValidatorSet) IsAggregator(requiredKey CompactPublicKey) bool {
 	return v.findMembership(v.AggregatorIndices, requiredKey)
 }
 
-func (v ValidatorSet) IsCommitter(requiredKey []byte) bool {
+func (v ValidatorSet) IsCommitter(requiredKey CompactPublicKey) bool {
 	return v.findMembership(v.CommitterIndices, requiredKey)
 }
 
-func (v ValidatorSet) IsSigner(requiredKey []byte) bool {
+func (v ValidatorSet) IsSigner(requiredKey CompactPublicKey) bool {
 	for _, validator := range v.Validators {
 		for _, key := range validator.Keys {
 			if key.Tag == v.RequiredKeyTag && slices.Equal(key.Payload, requiredKey) {
@@ -411,7 +411,7 @@ func (v ValidatorSet) IsSigner(requiredKey []byte) bool {
 	return false
 }
 
-func (v ValidatorSet) findMembership(indexArray []uint32, requiredKey []byte) bool {
+func (v ValidatorSet) findMembership(indexArray []uint32, requiredKey CompactPublicKey) bool {
 	for _, validator := range indexArray {
 		for _, key := range v.Validators[validator].Keys {
 			if key.Tag == v.RequiredKeyTag && slices.Equal(key.Payload, requiredKey) {

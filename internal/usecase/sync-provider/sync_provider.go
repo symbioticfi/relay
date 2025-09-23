@@ -8,7 +8,6 @@ import (
 	"github.com/go-playground/validator/v10"
 
 	"github.com/symbioticfi/relay/core/entity"
-	"github.com/symbioticfi/relay/pkg/signals"
 )
 
 type repo interface {
@@ -19,19 +18,23 @@ type repo interface {
 	GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error)
 	GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error)
 	GetSignatureByIndex(ctx context.Context, reqHash common.Hash, validatorIndex uint32) (entity.SignatureExtended, error)
+	GetSignatureRequestsWithoutAggregationProof(ctx context.Context, epoch entity.Epoch, limit int, lastHash common.Hash) ([]entity.SignatureRequest, error)
+	GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error)
 }
 
-type signatureProcessor interface {
+type entityProcessor interface {
 	ProcessSignature(ctx context.Context, param entity.SaveSignatureParam) error
+	ProcessAggregationProof(ctx context.Context, msg entity.AggregatedSignatureMessage) error
 }
 
 type Config struct {
-	Repo                        repo                                     `validate:"required"`
-	SignatureProcessor          signatureProcessor                       `validate:"required"`
-	EpochsToSync                uint64                                   `validate:"gte=0"`
-	MaxSignatureRequestsPerSync int                                      `validate:"gt=0"`
-	MaxResponseSignatureCount   int                                      `validate:"gt=0"`
-	SignatureReceivedSignal     *signals.Signal[entity.SignatureMessage] `validate:"required"`
+	Repo                        repo            `validate:"required"`
+	EntityProcessor             entityProcessor `validate:"required"`
+	EpochsToSync                uint64          `validate:"gte=0"`
+	MaxSignatureRequestsPerSync int             `validate:"gt=0"`
+	MaxResponseSignatureCount   int             `validate:"gt=0"`
+	MaxAggProofRequestsPerSync  int             `validate:"gt=0"`
+	MaxResponseAggProofCount    int             `validate:"gt=0"`
 }
 
 type Syncer struct {

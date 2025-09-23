@@ -54,12 +54,9 @@ func (vm *SignatureMap) GetMissingValidators() SignatureBitmap {
 type SaveSignatureParam struct {
 	KeyTag           KeyTag
 	RequestHash      common.Hash
-	Key              RawPublicKey
 	Signature        SignatureExtended
-	ActiveIndex      uint32
-	VotingPower      VotingPower
 	Epoch            Epoch
-	SignatureRequest *SignatureRequest // Optional - used by signer-app, nil for signature-listener
+	SignatureRequest *SignatureRequest // Optional
 }
 
 type SignatureBitmap struct {

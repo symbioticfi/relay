@@ -11,10 +11,12 @@ import (
 
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/crypto"
+	entity_processor "github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor"
+	entity_mocks "github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor/mocks"
 	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
-	signature_processor "github.com/symbioticfi/relay/core/usecase/signature-processor"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
 	"github.com/symbioticfi/relay/internal/usecase/signer-app/mocks"
+	"github.com/symbioticfi/relay/pkg/signals"
 )
 
 func TestSign_HappyPath(t *testing.T) {
@@ -83,19 +85,33 @@ func newTestSetup(t *testing.T) *testSetup {
 	mockAggregator := mocks.NewMockaggregator(ctrl)
 	mockMetrics := mocks.NewMockmetrics(ctrl)
 
-	processor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
-		Repo: repo,
+	// Create mock aggregator for entity processor
+	mockEntityAggregator := entity_mocks.NewMockAggregator(ctrl)
+	mockEntityAggregator.EXPECT().Verify(gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes()
+
+	// Create mock aggregation proof signal for entity processor
+	mockEntityAggProofSignal := entity_mocks.NewMockAggProofSignal(ctrl)
+	mockEntityAggProofSignal.EXPECT().Emit(gomock.Any()).Return(nil).AnyTimes()
+
+	// Create mock signature processed signal for entity processor
+	signatureProcessedSignal := signals.New[entity.SignatureMessage](signals.DefaultConfig(), "test", nil)
+
+	processor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
+		Repo:                     repo,
+		Aggregator:               mockEntityAggregator,
+		AggProofSignal:           mockEntityAggProofSignal,
+		SignatureProcessedSignal: signatureProcessedSignal,
 	})
 	require.NoError(t, err)
 
 	cfg := Config{
-		P2PService:         mockP2P,
-		KeyProvider:        keyProvider,
-		Repo:               repo,
-		SignatureProcessor: processor,
-		AggProofSignal:     mockAggProof,
-		Aggregator:         mockAggregator,
-		Metrics:            mockMetrics,
+		P2PService:      mockP2P,
+		KeyProvider:     keyProvider,
+		Repo:            repo,
+		EntityProcessor: processor,
+		AggProofSignal:  mockAggProof,
+		Aggregator:      mockAggregator,
+		Metrics:         mockMetrics,
 	}
 
 	app, err := NewSignerApp(cfg)

@@ -17,8 +17,8 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/aggregator"
 	symbioticCrypto "github.com/symbioticfi/relay/core/usecase/crypto"
+	entity_processor "github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor"
 	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
-	signature_processor "github.com/symbioticfi/relay/core/usecase/signature-processor"
 	valsetDeriver "github.com/symbioticfi/relay/core/usecase/valset-deriver"
 	"github.com/symbioticfi/relay/internal/client/p2p"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
@@ -146,21 +146,26 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create aggregator: %w", err)
 	}
 
-	signatureProcessor, err := signature_processor.NewSignatureProcessor(signature_processor.Config{
-		Repo: repo,
+	signatureProcessedSignal := signals.New[entity.SignatureMessage](cfg.SignalCfg, "signatureProcessed", nil)
+	aggProofReadySignal := signals.New[entity.AggregatedSignatureMessage](cfg.SignalCfg, "aggProofReady", nil)
+
+	entityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
+		Repo:                     repo,
+		Aggregator:               agg,
+		AggProofSignal:           aggProofReadySignal,
+		SignatureProcessedSignal: signatureProcessedSignal,
 	})
 	if err != nil {
-		return errors.Errorf("failed to create signature processor: %w", err)
+		return errors.Errorf("failed to create entity processor: %w", err)
 	}
-
-	signatureReceivedSignal := signals.New[entity.SignatureMessage](cfg.SignalCfg, "signatureReceive", nil)
 	syncProvider, err := sync_provider.New(sync_provider.Config{
 		Repo:                        repo,
-		SignatureProcessor:          signatureProcessor,
+		EntityProcessor:             entityProcessor,
 		EpochsToSync:                cfg.Sync.EpochsToSync,
 		MaxSignatureRequestsPerSync: 1000,
 		MaxResponseSignatureCount:   1000,
-		SignatureReceivedSignal:     signatureReceivedSignal,
+		MaxAggProofRequestsPerSync:  500,
+		MaxResponseAggProofCount:    500,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create syncer: %w", err)
@@ -180,8 +185,6 @@ func runApp(ctx context.Context) error {
 
 	slog.InfoContext(ctx, "Started discovery service", "listenAddr", cfg.P2PListenAddress)
 
-	aggProofReadySignal := signals.New[entity.AggregatedSignatureMessage](cfg.SignalCfg, "aggProofReady", nil)
-
 	syncRunner, err := sync_runner.New(sync_runner.Config{
 		Enabled:     cfg.Sync.Enabled,
 		P2PService:  p2pService,
@@ -195,13 +198,13 @@ func runApp(ctx context.Context) error {
 	}
 
 	signerApp, err := signerApp.NewSignerApp(signerApp.Config{
-		P2PService:         p2pService,
-		KeyProvider:        keyProvider,
-		Repo:               repo,
-		SignatureProcessor: signatureProcessor,
-		AggProofSignal:     aggProofReadySignal,
-		Aggregator:         agg,
-		Metrics:            mtr,
+		P2PService:      p2pService,
+		KeyProvider:     keyProvider,
+		Repo:            repo,
+		EntityProcessor: entityProcessor,
+		AggProofSignal:  aggProofReadySignal,
+		Aggregator:      agg,
+		Metrics:         mtr,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create signer app: %w", err)
@@ -228,14 +231,13 @@ func runApp(ctx context.Context) error {
 	statusTracker, err := valsetStatusTracker.New(valsetStatusTracker.Config{
 		EvmClient:       evmClient,
 		Repo:            repo,
-		Deriver:         deriver,
 		PollingInterval: time.Second * 5,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create valset status tracker: %w", err)
 	}
 
-	if err := aggProofReadySignal.SetHandler(func(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
+	err = aggProofReadySignal.SetHandler(func(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
 		if err := statusTracker.HandleProofAggregated(ctx, msg); err != nil {
 			return errors.Errorf("failed to handle proof aggregated: %w", err)
 		}
@@ -245,7 +247,8 @@ func runApp(ctx context.Context) error {
 		slog.DebugContext(ctx, "Handled proof aggregated", "request", msg)
 
 		return nil
-	}); err != nil {
+	})
+	if err != nil {
 		return errors.Errorf("failed to set agg proof ready signal handler: %w", err)
 	}
 	if err := aggProofReadySignal.StartWorkers(ctx); err != nil {
@@ -253,11 +256,10 @@ func runApp(ctx context.Context) error {
 	}
 
 	signListener, err := signatureListener.New(signatureListener.Config{
-		Repo:                 repo,
-		SignatureProcessor:   signatureProcessor,
-		SignalCfg:            cfg.SignalCfg,
-		SelfP2PID:            p2pService.ID(),
-		SignatureSavedSignal: signatureReceivedSignal,
+		Repo:            repo,
+		EntityProcessor: entityProcessor,
+		SignalCfg:       cfg.SignalCfg,
+		SelfP2PID:       p2pService.ID(),
 	})
 	if err != nil {
 		return errors.Errorf("failed to create signature listener: %w", err)
@@ -310,10 +312,10 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create aggregator app: %w", err)
 	}
 
-	if err := signatureReceivedSignal.SetHandler(aggApp.HandleSignatureGeneratedMessage); err != nil {
+	if err := signatureProcessedSignal.SetHandler(aggApp.HandleSignatureProcessedMessage); err != nil {
 		return errors.Errorf("failed to set signature received message handler: %w", err)
 	}
-	if err := signatureReceivedSignal.StartWorkers(ctx); err != nil {
+	if err := signatureProcessedSignal.StartWorkers(ctx); err != nil {
 		return errors.Errorf("failed to start signature received signal workers: %w", err)
 	}
 

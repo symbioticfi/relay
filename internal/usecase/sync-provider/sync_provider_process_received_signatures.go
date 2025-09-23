@@ -8,7 +8,6 @@ import (
 	"github.com/go-errors/errors"
 
 	"github.com/symbioticfi/relay/core/entity"
-	"github.com/symbioticfi/relay/core/usecase/crypto"
 )
 
 // ProcessReceivedSignatures validates and processes signatures received from peer nodes during
@@ -63,53 +62,16 @@ func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.
 				continue
 			}
 
-			publicKey, err := crypto.NewPublicKey(sigReq.KeyTag.Type(), validatorSig.Signature.PublicKey)
-			if err != nil {
-				slog.WarnContext(ctx, "Failed to create public key from signature",
-					"request_hash", reqHash.Hex(),
-					"validator_index", validatorSig.ValidatorIndex,
-					"error", err)
-				stats.PublicKeyErrorCount++
-				continue
-			}
-
-			// Get validator info to extract voting power
-			validatorInfo, index, err := s.cfg.Repo.GetValidatorByKey(
-				ctx,
-				uint64(sigReq.RequiredEpoch),
-				sigReq.KeyTag,
-				publicKey.OnChain(),
-			)
-			if err != nil {
-				slog.WarnContext(ctx, "Failed to get validator info",
-					"request_hash", reqHash.Hex(),
-					"validator_index", validatorSig.ValidatorIndex,
-					"error", err)
-				stats.ValidatorInfoErrorCount++
-				continue
-			}
-
-			if index != validatorSig.ValidatorIndex {
-				slog.WarnContext(ctx, "Validator index mismatch",
-					"request_hash", reqHash.Hex(),
-					"expected_index", validatorSig.ValidatorIndex,
-					"actual_index", index)
-				stats.ValidatorIndexMismatchCount++
-				continue
-			}
-
 			// Process the signature
 			param := entity.SaveSignatureParam{
 				RequestHash:      reqHash,
-				Key:              validatorSig.Signature.PublicKey,
 				Signature:        validatorSig.Signature,
-				ActiveIndex:      validatorSig.ValidatorIndex,
-				VotingPower:      validatorInfo.VotingPower,
 				Epoch:            sigReq.RequiredEpoch,
 				SignatureRequest: nil,
+				KeyTag:           sigReq.KeyTag,
 			}
 
-			if err := s.cfg.SignatureProcessor.ProcessSignature(ctx, param); err != nil {
+			if err := s.cfg.EntityProcessor.ProcessSignature(ctx, param); err != nil {
 				if errors.Is(err, entity.ErrEntityAlreadyExist) {
 					slog.DebugContext(ctx, "Signature already exists",
 						"request_hash", reqHash.Hex(),
@@ -123,16 +85,6 @@ func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.
 					stats.ProcessingErrorCount++
 				}
 				continue
-			}
-
-			err = s.cfg.SignatureReceivedSignal.Emit(entity.SignatureMessage{
-				RequestHash: reqHash,
-				KeyTag:      sigReq.KeyTag,
-				Epoch:       sigReq.RequiredEpoch,
-				Signature:   validatorSig.Signature,
-			})
-			if err != nil {
-				slog.WarnContext(ctx, "Failed to emit signature received signal", "error", err)
 			}
 
 			slog.DebugContext(ctx, "Processed received signature",

@@ -2,7 +2,6 @@ package p2p
 
 import (
 	"context"
-	"encoding/hex"
 	"math/rand/v2"
 	"net"
 	"time"
@@ -45,10 +44,7 @@ func (s *Service) SendWantSignaturesRequest(ctx context.Context, request entity.
 	}
 
 	// Convert protobuf response to entity
-	entityResp, err := protoToEntityResponse(response)
-	if err != nil {
-		return entity.WantSignaturesResponse{}, errors.Errorf("failed to convert response: %w", err)
-	}
+	entityResp := protoToEntityResponse(response)
 
 	return entityResp, nil
 }
@@ -112,15 +108,13 @@ func entityToProtoRequest(req entity.WantSignaturesRequest) (*prototypes.WantSig
 	wantSignatures := make(map[string][]byte)
 
 	for hash, bitmap := range req.WantSignatures {
-		hashKey := hex.EncodeToString(hash.Bytes())
-
 		// Serialize roaring bitmap to bytes
 		bitmapBytes, err := bitmap.ToBytes()
 		if err != nil {
 			return nil, errors.Errorf("failed to serialize bitmap for hash %s: %w", hash.Hex(), err)
 		}
 
-		wantSignatures[hashKey] = bitmapBytes
+		wantSignatures[hash.Hex()] = bitmapBytes
 	}
 
 	return &prototypes.WantSignaturesRequest{
@@ -129,18 +123,10 @@ func entityToProtoRequest(req entity.WantSignaturesRequest) (*prototypes.WantSig
 }
 
 // protoToEntityResponse converts protobuf WantSignaturesResponse to entity
-func protoToEntityResponse(resp *prototypes.WantSignaturesResponse) (entity.WantSignaturesResponse, error) {
+func protoToEntityResponse(resp *prototypes.WantSignaturesResponse) entity.WantSignaturesResponse {
 	signatures := make(map[common.Hash][]entity.ValidatorSignature)
 
 	for hashStr, sigList := range resp.GetSignatures() {
-		// Parse hash from hex string
-		hashBytes, err := hex.DecodeString(hashStr)
-		if err != nil {
-			return entity.WantSignaturesResponse{}, errors.Errorf("failed to decode hash %s: %w", hashStr, err)
-		}
-
-		hash := common.BytesToHash(hashBytes)
-
 		// Convert validator signatures
 		var validatorSigs []entity.ValidatorSignature
 		for _, protoSig := range sigList.GetSignatures() {
@@ -155,12 +141,12 @@ func protoToEntityResponse(resp *prototypes.WantSignaturesResponse) (entity.Want
 			validatorSigs = append(validatorSigs, sig)
 		}
 
-		signatures[hash] = validatorSigs
+		signatures[common.HexToHash(hashStr)] = validatorSigs
 	}
 
 	return entity.WantSignaturesResponse{
 		Signatures: signatures,
-	}, nil
+	}
 }
 
 // selectPeerForSync selects a single peer for synchronous signature requests
@@ -180,21 +166,13 @@ func protoToEntityRequest(req *prototypes.WantSignaturesRequest) (entity.WantSig
 	wantSignatures := make(map[common.Hash]entity.SignatureBitmap)
 
 	for hashStr, bitmapBytes := range req.GetWantSignatures() {
-		// Parse hash from hex string
-		hashBytes, err := hex.DecodeString(hashStr)
-		if err != nil {
-			return entity.WantSignaturesRequest{}, errors.Errorf("failed to decode hash %s: %w", hashStr, err)
-		}
-
-		hash := common.BytesToHash(hashBytes)
-
 		// Deserialize roaring bitmap from bytes
 		bitmap := entity.NewSignatureBitmap()
 		if _, err := bitmap.FromBuffer(bitmapBytes); err != nil {
 			return entity.WantSignaturesRequest{}, errors.Errorf("failed to deserialize bitmap for hash %s: %w", hashStr, err)
 		}
 
-		wantSignatures[hash] = bitmap
+		wantSignatures[common.HexToHash(hashStr)] = bitmap
 	}
 
 	return entity.WantSignaturesRequest{
@@ -207,8 +185,6 @@ func entityToProtoResponse(resp entity.WantSignaturesResponse) *prototypes.WantS
 	signatures := make(map[string]*prototypes.ValidatorSignatureList)
 
 	for hash, sigList := range resp.Signatures {
-		hashKey := hex.EncodeToString(hash.Bytes())
-
 		// Convert validator signatures
 		var protoSigs []*prototypes.ValidatorSignature
 		for _, validatorSig := range sigList {
@@ -223,7 +199,7 @@ func entityToProtoResponse(resp entity.WantSignaturesResponse) *prototypes.WantS
 			protoSigs = append(protoSigs, protoSig)
 		}
 
-		signatures[hashKey] = &prototypes.ValidatorSignatureList{
+		signatures[hash.Hex()] = &prototypes.ValidatorSignatureList{
 			Signatures: protoSigs,
 		}
 	}

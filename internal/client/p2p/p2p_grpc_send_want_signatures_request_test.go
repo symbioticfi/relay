@@ -84,8 +84,8 @@ func TestSendWantSignaturesRequest_HappyPath(t *testing.T) {
 		},
 	}
 
-	// Setup mock signature request handler for the server
-	mockHandler := &mockSignatureRequestHandler{
+	// Setup mock sync request handler for the server
+	mockHandler := &mockSyncRequestHandler{
 		expectedRequest:  request,
 		responseToReturn: expectedResponse,
 	}
@@ -102,7 +102,9 @@ func TestSendWantSignaturesRequest_HappyPath(t *testing.T) {
 			AdvertiseServiceName: "test",
 			AdvertiseInterval:    time.Second,
 		},
-		Handler: &GRPCHandler{handler: mockHandler},
+		Handler: &GRPCHandler{
+			syncHandler: mockHandler,
+		},
 	}, signals.Config{
 		BufferSize:  5,
 		WorkerCount: 5,
@@ -197,16 +199,23 @@ func TestSendWantSignaturesRequest_HappyPath(t *testing.T) {
 	require.Equal(t, request.WantSignatures[testHash2].GetCardinality(), mockHandler.receivedRequest.WantSignatures[testHash2].GetCardinality())
 }
 
-// mockSignatureRequestHandler implements signatureRequestHandler for testing
-type mockSignatureRequestHandler struct {
+// mockSyncRequestHandler implements syncRequestHandler for testing
+type mockSyncRequestHandler struct {
 	expectedRequest  entity.WantSignaturesRequest
 	responseToReturn entity.WantSignaturesResponse
 	wasCalled        bool
 	receivedRequest  entity.WantSignaturesRequest
 }
 
-func (m *mockSignatureRequestHandler) HandleWantSignaturesRequest(_ context.Context, request entity.WantSignaturesRequest) (entity.WantSignaturesResponse, error) {
+func (m *mockSyncRequestHandler) HandleWantSignaturesRequest(_ context.Context, request entity.WantSignaturesRequest) (entity.WantSignaturesResponse, error) {
 	m.wasCalled = true
 	m.receivedRequest = request
 	return m.responseToReturn, nil
+}
+
+func (m *mockSyncRequestHandler) HandleWantAggregationProofsRequest(_ context.Context, request entity.WantAggregationProofsRequest) (entity.WantAggregationProofsResponse, error) {
+	// Return empty response for tests that don't need aggregation proof functionality
+	return entity.WantAggregationProofsResponse{
+		Proofs: make(map[common.Hash]entity.AggregationProof),
+	}, nil
 }
