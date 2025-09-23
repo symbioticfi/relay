@@ -2,6 +2,7 @@ package badger
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -43,12 +44,7 @@ func (r *Repository) SaveValidatorSet(ctx context.Context, valset entity.Validat
 		return errors.Errorf("validators must be sorted by operator address ascending: %w", err)
 	}
 
-	header, err := valset.GetHeader()
-	if err != nil {
-		return errors.Errorf("failed to create validator set header: %w", err)
-	}
-
-	headerBytes, err := validatorSetHeaderToBytes(header)
+	headerBytes, err := validatorSetHeaderToBytes(valset)
 	if err != nil {
 		return errors.Errorf("failed to marshal validator set header: %w", err)
 	}
@@ -297,15 +293,23 @@ func (r *Repository) GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (
 			return errors.Errorf("failed to get validators for epoch %d: %w", epoch, err)
 		}
 
+		// Extract bitmap indices from header data
+		aggIndices, commIndices, err := extractAdditionalInfoFromHeaderData(headerValue)
+		if err != nil {
+			return errors.Errorf("failed to extract bitmap indices: %w", err)
+		}
+
 		// Build the validator set from header + validators
 		vs = entity.ValidatorSet{
-			Version:          header.Version,
-			RequiredKeyTag:   header.RequiredKeyTag,
-			Epoch:            header.Epoch,
-			CaptureTimestamp: header.CaptureTimestamp,
-			QuorumThreshold:  header.QuorumThreshold,
-			Validators:       validators,
-			Status:           status,
+			Version:           header.Version,
+			RequiredKeyTag:    header.RequiredKeyTag,
+			Epoch:             header.Epoch,
+			CaptureTimestamp:  header.CaptureTimestamp,
+			QuorumThreshold:   header.QuorumThreshold,
+			Validators:        validators,
+			Status:            status,
+			AggregatorIndices: aggIndices,
+			CommitterIndices:  commIndices,
 		}
 
 		return nil
@@ -523,7 +527,7 @@ type validatorDTO struct {
 	Vaults      []validatorVaultDTO `json:"vaults"`
 }
 
-type validatorSetHeaderDTO struct {
+type validatorSetHeaderOnlyDTO struct {
 	Version            uint8  `json:"version"`
 	RequiredKeyTag     uint8  `json:"required_key_tag"`
 	Epoch              uint64 `json:"epoch"`
@@ -531,6 +535,16 @@ type validatorSetHeaderDTO struct {
 	QuorumThreshold    string `json:"quorum_threshold"`
 	TotalVotingPower   string `json:"total_voting_power"`
 	ValidatorsSszMRoot string `json:"validators_ssz_mroot"`
+}
+
+type validatorSetAdditionalInfoDTO struct {
+	AggregatorIndices string `json:"aggregator_indices,omitempty"`
+	CommitterIndices  string `json:"committer_indices,omitempty"`
+}
+
+type validatorSetFullDTO struct {
+	Header validatorSetHeaderOnlyDTO     `json:"header"`
+	Info   validatorSetAdditionalInfoDTO `json:"info"`
 }
 
 func validatorToBytes(validator entity.Validator, activeIndex uint32) ([]byte, error) {
@@ -599,8 +613,13 @@ func bytesToValidator(data []byte) (entity.Validator, uint32, error) {
 	}, dto.ActiveIndex, nil
 }
 
-func validatorSetHeaderToBytes(header entity.ValidatorSetHeader) ([]byte, error) {
-	dto := validatorSetHeaderDTO{
+func validatorSetHeaderToBytes(valset entity.ValidatorSet) ([]byte, error) {
+	header, err := valset.GetHeader()
+	if err != nil {
+		return nil, errors.Errorf("failed to get validator set header: %w", err)
+	}
+
+	headerDTO := validatorSetHeaderOnlyDTO{
 		Version:            header.Version,
 		RequiredKeyTag:     uint8(header.RequiredKeyTag),
 		Epoch:              header.Epoch,
@@ -610,32 +629,98 @@ func validatorSetHeaderToBytes(header entity.ValidatorSetHeader) ([]byte, error)
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot.Hex(),
 	}
 
-	return json.Marshal(dto)
+	infoDTO := validatorSetAdditionalInfoDTO{}
+
+	// Serialize AggregatorIndices bitmap
+	if valset.AggregatorIndices.Bitmap != nil && !valset.AggregatorIndices.IsEmpty() {
+		aggBytes, err := valset.AggregatorIndices.ToBytes()
+		if err != nil {
+			return nil, errors.Errorf("failed to serialize aggregator indices: %w", err)
+		}
+		infoDTO.AggregatorIndices = base64.StdEncoding.EncodeToString(aggBytes)
+	}
+
+	// Serialize CommitterIndices bitmap
+	if valset.CommitterIndices.Bitmap != nil && !valset.CommitterIndices.IsEmpty() {
+		commBytes, err := valset.CommitterIndices.ToBytes()
+		if err != nil {
+			return nil, errors.Errorf("failed to serialize committer indices: %w", err)
+		}
+		infoDTO.CommitterIndices = base64.StdEncoding.EncodeToString(commBytes)
+	}
+
+	fullDTO := validatorSetFullDTO{
+		Header: headerDTO,
+		Info:   infoDTO,
+	}
+
+	return json.Marshal(fullDTO)
 }
 
 func bytesToValidatorSetHeader(data []byte) (entity.ValidatorSetHeader, error) {
-	var dto validatorSetHeaderDTO
-	if err := json.Unmarshal(data, &dto); err != nil {
+	var fullDTO validatorSetFullDTO
+	if err := json.Unmarshal(data, &fullDTO); err != nil {
 		return entity.ValidatorSetHeader{}, errors.Errorf("failed to unmarshal validator set header: %w", err)
 	}
 
-	quorumThreshold, ok := new(big.Int).SetString(dto.QuorumThreshold, 10)
+	headerDTO := fullDTO.Header
+
+	quorumThreshold, ok := new(big.Int).SetString(headerDTO.QuorumThreshold, 10)
 	if !ok {
-		return entity.ValidatorSetHeader{}, errors.Errorf("failed to parse quorum threshold: %s", dto.QuorumThreshold)
+		return entity.ValidatorSetHeader{}, errors.Errorf("failed to parse quorum threshold: %s", headerDTO.QuorumThreshold)
 	}
 
-	totalVotingPower, ok := new(big.Int).SetString(dto.TotalVotingPower, 10)
+	totalVotingPower, ok := new(big.Int).SetString(headerDTO.TotalVotingPower, 10)
 	if !ok {
-		return entity.ValidatorSetHeader{}, errors.Errorf("failed to parse total voting power: %s", dto.TotalVotingPower)
+		return entity.ValidatorSetHeader{}, errors.Errorf("failed to parse total voting power: %s", headerDTO.TotalVotingPower)
 	}
 
 	return entity.ValidatorSetHeader{
-		Version:            dto.Version,
-		RequiredKeyTag:     entity.KeyTag(dto.RequiredKeyTag),
-		Epoch:              dto.Epoch,
-		CaptureTimestamp:   dto.CaptureTimestamp,
+		Version:            headerDTO.Version,
+		RequiredKeyTag:     entity.KeyTag(headerDTO.RequiredKeyTag),
+		Epoch:              headerDTO.Epoch,
+		CaptureTimestamp:   headerDTO.CaptureTimestamp,
 		QuorumThreshold:    entity.ToVotingPower(quorumThreshold),
 		TotalVotingPower:   entity.ToVotingPower(totalVotingPower),
-		ValidatorsSszMRoot: common.HexToHash(dto.ValidatorsSszMRoot),
+		ValidatorsSszMRoot: common.HexToHash(headerDTO.ValidatorsSszMRoot),
 	}, nil
+}
+
+func extractAdditionalInfoFromHeaderData(data []byte) (aggIndices entity.SignatureBitmap, commIndices entity.SignatureBitmap, err error) {
+	var fullDTO validatorSetFullDTO
+	if err := json.Unmarshal(data, &fullDTO); err != nil {
+		return entity.SignatureBitmap{}, entity.SignatureBitmap{}, errors.Errorf("failed to unmarshal validator set header: %w", err)
+	}
+
+	infoDTO := fullDTO.Info
+
+	// Deserialize AggregatorIndices
+	if infoDTO.AggregatorIndices != "" {
+		aggBytes, err := base64.StdEncoding.DecodeString(infoDTO.AggregatorIndices)
+		if err != nil {
+			return entity.SignatureBitmap{}, entity.SignatureBitmap{}, errors.Errorf("failed to decode aggregator indices: %w", err)
+		}
+		aggIndices, err = entity.SignatureBitmapFromBytes(aggBytes)
+		if err != nil {
+			return entity.SignatureBitmap{}, entity.SignatureBitmap{}, errors.Errorf("failed to deserialize aggregator indices: %w", err)
+		}
+	} else {
+		aggIndices = entity.NewSignatureBitmap()
+	}
+
+	// Deserialize CommitterIndices
+	if infoDTO.CommitterIndices != "" {
+		commBytes, err := base64.StdEncoding.DecodeString(infoDTO.CommitterIndices)
+		if err != nil {
+			return entity.SignatureBitmap{}, entity.SignatureBitmap{}, errors.Errorf("failed to decode committer indices: %w", err)
+		}
+		commIndices, err = entity.SignatureBitmapFromBytes(commBytes)
+		if err != nil {
+			return entity.SignatureBitmap{}, entity.SignatureBitmap{}, errors.Errorf("failed to deserialize committer indices: %w", err)
+		}
+	} else {
+		commIndices = entity.NewSignatureBitmap()
+	}
+
+	return aggIndices, commIndices, nil
 }

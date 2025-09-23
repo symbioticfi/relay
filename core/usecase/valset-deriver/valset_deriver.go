@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
+
 	"github.com/symbioticfi/relay/core/usecase/ssz"
 
 	"github.com/symbioticfi/relay/core/entity"
@@ -133,8 +134,8 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 	if err != nil {
 		return entity.ValidatorSet{}, errors.Errorf("failed to get scheduler info: %w", err)
 	}
-	valset.AggregatorIndices = aggIndices
-	valset.CommitterIndices = commIndices
+	valset.AggregatorIndices = entity.NewSignatureBitmapOf(aggIndices...)
+	valset.CommitterIndices = entity.NewSignatureBitmapOf(commIndices...)
 
 	return valset, nil
 }

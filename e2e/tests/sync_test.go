@@ -64,13 +64,6 @@ func TestAggregatorSignatureSync(t *testing.T) {
 	valset.Epoch++
 	valset.CaptureTimestamp += deploymentData.Env.EpochTime
 
-	aggIndices, commIndices, err := deriver.GetSchedulerInfo(ctx, valset, nwConfig)
-	require.NoError(t, err, "Failed to get scheduler info")
-	require.NotEmpty(t, aggIndices, "No aggregators found in scheduler info")
-	require.NotEmpty(t, commIndices, "No committers found in scheduler info")
-	valset.AggregatorIndices = aggIndices
-	valset.CommitterIndices = commIndices
-
 	for i := range globalTestEnv.SidecarConfigs {
 		if valset.IsAggregator(globalTestEnv.SidecarConfigs[i].RequiredSymKey.PublicKey().OnChain()) {
 			aggregatorIndexes = append(aggregatorIndexes, i)
