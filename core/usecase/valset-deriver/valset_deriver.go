@@ -13,9 +13,8 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
 
-	"github.com/symbioticfi/relay/core/usecase/ssz"
-
 	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/core/usecase/ssz"
 )
 
 const (
@@ -134,8 +133,8 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 	if err != nil {
 		return entity.ValidatorSet{}, errors.Errorf("failed to get scheduler info: %w", err)
 	}
-	valset.AggregatorIndices = entity.NewBitmapOf(aggIndices...)
-	valset.CommitterIndices = entity.NewBitmapOf(commIndices...)
+	valset.AggregatorIndices = aggIndices
+	valset.CommitterIndices = commIndices
 
 	return valset, nil
 }

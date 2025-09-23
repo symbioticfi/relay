@@ -632,8 +632,9 @@ func validatorSetHeaderToBytes(valset entity.ValidatorSet) ([]byte, error) {
 	infoDTO := validatorSetAdditionalInfoDTO{}
 
 	// Serialize AggregatorIndices bitmap
-	if valset.AggregatorIndices.Bitmap != nil && !valset.AggregatorIndices.IsEmpty() {
-		aggBytes, err := valset.AggregatorIndices.ToBytes()
+	if len(valset.AggregatorIndices) > 0 {
+		aggBitmap := entity.NewBitmapOf(valset.AggregatorIndices...)
+		aggBytes, err := aggBitmap.ToBytes()
 		if err != nil {
 			return nil, errors.Errorf("failed to serialize aggregator indices: %w", err)
 		}
@@ -641,8 +642,9 @@ func validatorSetHeaderToBytes(valset entity.ValidatorSet) ([]byte, error) {
 	}
 
 	// Serialize CommitterIndices bitmap
-	if valset.CommitterIndices.Bitmap != nil && !valset.CommitterIndices.IsEmpty() {
-		commBytes, err := valset.CommitterIndices.ToBytes()
+	if len(valset.CommitterIndices) > 0 {
+		commBitmap := entity.NewBitmapOf(valset.CommitterIndices...)
+		commBytes, err := commBitmap.ToBytes()
 		if err != nil {
 			return nil, errors.Errorf("failed to serialize committer indices: %w", err)
 		}
@@ -686,10 +688,10 @@ func bytesToValidatorSetHeader(data []byte) (entity.ValidatorSetHeader, error) {
 	}, nil
 }
 
-func extractAdditionalInfoFromHeaderData(data []byte) (aggIndices entity.Bitmap, commIndices entity.Bitmap, err error) {
+func extractAdditionalInfoFromHeaderData(data []byte) (aggIndices []uint32, commIndices []uint32, err error) {
 	var fullDTO validatorSetFullDTO
 	if err := json.Unmarshal(data, &fullDTO); err != nil {
-		return entity.Bitmap{}, entity.Bitmap{}, errors.Errorf("failed to unmarshal validator set header: %w", err)
+		return nil, nil, errors.Errorf("failed to unmarshal validator set header: %w", err)
 	}
 
 	infoDTO := fullDTO.Info
@@ -698,28 +700,30 @@ func extractAdditionalInfoFromHeaderData(data []byte) (aggIndices entity.Bitmap,
 	if infoDTO.AggregatorIndices != "" {
 		aggBytes, err := base64.StdEncoding.DecodeString(infoDTO.AggregatorIndices)
 		if err != nil {
-			return entity.Bitmap{}, entity.Bitmap{}, errors.Errorf("failed to decode aggregator indices: %w", err)
+			return nil, nil, errors.Errorf("failed to decode aggregator indices: %w", err)
 		}
-		aggIndices, err = entity.BitmapFromBytes(aggBytes)
+		aggBitmap, err := entity.BitmapFromBytes(aggBytes)
 		if err != nil {
-			return entity.Bitmap{}, entity.Bitmap{}, errors.Errorf("failed to deserialize aggregator indices: %w", err)
+			return nil, nil, errors.Errorf("failed to deserialize aggregator indices: %w", err)
 		}
+		aggIndices = aggBitmap.ToArray()
 	} else {
-		aggIndices = entity.NewBitmap()
+		aggIndices = []uint32{}
 	}
 
 	// Deserialize CommitterIndices
 	if infoDTO.CommitterIndices != "" {
 		commBytes, err := base64.StdEncoding.DecodeString(infoDTO.CommitterIndices)
 		if err != nil {
-			return entity.Bitmap{}, entity.Bitmap{}, errors.Errorf("failed to decode committer indices: %w", err)
+			return nil, nil, errors.Errorf("failed to decode committer indices: %w", err)
 		}
-		commIndices, err = entity.BitmapFromBytes(commBytes)
+		commBitmap, err := entity.BitmapFromBytes(commBytes)
 		if err != nil {
-			return entity.Bitmap{}, entity.Bitmap{}, errors.Errorf("failed to deserialize committer indices: %w", err)
+			return nil, nil, errors.Errorf("failed to deserialize committer indices: %w", err)
 		}
+		commIndices = commBitmap.ToArray()
 	} else {
-		commIndices = entity.NewBitmap()
+		commIndices = []uint32{}
 	}
 
 	return aggIndices, commIndices, nil

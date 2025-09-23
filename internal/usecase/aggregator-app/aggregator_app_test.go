@@ -122,9 +122,9 @@ func createTestData(requestHash common.Hash, epoch uint64, totalValidators, sign
 		Epoch:           epoch,
 		QuorumThreshold: entity.ToVotingPower(big.NewInt(670)), // Need 670 voting power for quorum
 		Validators:      validators,
-		AggregatorIndices: entity.NewBitmapOf(lo.Map(validators, func(_ entity.Validator, idx int) uint32 {
+		AggregatorIndices: lo.Map(validators, func(_ entity.Validator, idx int) uint32 {
 			return uint32(idx)
-		})...),
+		}),
 	}
 
 	// Create SignatureMap using the same ValidatorSet
