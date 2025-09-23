@@ -139,7 +139,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 	return valset, nil
 }
 
-func GetSchedulerInfo(ctx context.Context, valset entity.ValidatorSet, config entity.NetworkConfig) (aggIndices []uint32, commIndices []uint32, err error) {
+func GetSchedulerInfo(_ context.Context, valset entity.ValidatorSet, config entity.NetworkConfig) (aggIndices []uint32, commIndices []uint32, err error) {
 	// ensure validators sorted already, function expects sorted list
 	if err := valset.Validators.CheckIsSortedByOperatorAddressAsc(); err != nil {
 		return nil, nil, err
