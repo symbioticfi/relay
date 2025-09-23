@@ -112,21 +112,18 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 
 		ticker.Reset(time.Duration(tickInterval) * time.Second)
 
-		// nil only for tests
-		if s.cfg.KeyProvider != nil {
-			privKey, err := s.cfg.KeyProvider.GetPrivateKey(valset.RequiredKeyTag)
-			if err != nil {
-				if errors.Is(err, keyprovider.ErrKeyNotFound) {
-					slog.DebugContext(ctx, "No key for required key tag, skipping proof commitment", "keyTag", valset.RequiredKeyTag)
-					continue
-				}
-				return errors.Errorf("failed to get private key for required key tag %s: %w", valset.RequiredKeyTag, err)
-			}
-
-			if !valset.IsActiveCommitter(ctx, nwCfg.CommitterSlotDuration, uint64(time.Now().Unix()), minCommitterPollIntervalSeconds, privKey.PublicKey().OnChain()) {
-				slog.DebugContext(ctx, "Not a committer for this valset, skipping proof commitment", "key", privKey.PublicKey().OnChain(), "epoch", valset.Epoch)
+		privKey, err := s.cfg.KeyProvider.GetPrivateKey(valset.RequiredKeyTag)
+		if err != nil {
+			if errors.Is(err, keyprovider.ErrKeyNotFound) {
+				slog.DebugContext(ctx, "No key for required key tag, skipping proof commitment", "keyTag", valset.RequiredKeyTag)
 				continue
 			}
+			return errors.Errorf("failed to get private key for required key tag %s: %w", valset.RequiredKeyTag, err)
+		}
+
+		if !valset.IsActiveCommitter(ctx, nwCfg.CommitterSlotDuration, uint64(time.Now().Unix()), minCommitterPollIntervalSeconds, privKey.PublicKey().OnChain()) {
+			slog.DebugContext(ctx, "Not a committer for this valset, skipping proof commitment", "key", privKey.PublicKey().OnChain(), "epoch", valset.Epoch)
+			continue
 		}
 
 		// get lat committed epoch

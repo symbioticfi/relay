@@ -449,16 +449,16 @@ func (v ValidatorSet) IsActiveCommitter(ctx context.Context, committerSlotDurati
 		return true
 	}
 
-	// single committer no need to check time slots
-	if len(v.CommitterIndices) == 1 {
-		slog.DebugContext(ctx, "Only one committer, defaulting to always allow", "committer-indices", v.CommitterIndices)
-		return true
-	}
-
 	// If current time is before capture timestamp, we're not in any slot yet
 	if currentTime < v.CaptureTimestamp {
 		slog.DebugContext(ctx, "Current time is before capture timestamp, not in any slot yet", "current-time", currentTime, "capture-timestamp", v.CaptureTimestamp)
 		return false
+	}
+
+	// single committer no need to check time slots
+	if len(v.CommitterIndices) == 1 {
+		slog.DebugContext(ctx, "Only one committer, defaulting to always allow", "committer-indices", v.CommitterIndices)
+		return true
 	}
 
 	// Calculate elapsed time since capture

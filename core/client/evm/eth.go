@@ -181,7 +181,7 @@ func (e *Client) GetConfig(ctx context.Context, timestamp uint64) (_ entity.Netw
 		NumAggregators: dtoConfig.NumAggregators.Uint64(),
 
 		// TODO: get from contract
-		CommitterSlotDuration: 5,
+		CommitterSlotDuration: 10,
 	}, nil
 }
 
