@@ -237,6 +237,10 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create valset status tracker: %w", err)
 	}
 
+	if err := statusTracker.TrackMissingEpochsStatuses(ctx); err != nil {
+		return errors.Errorf("failed to track missing epochs statuses: %w", err)
+	}
+
 	err = aggProofReadySignal.SetHandler(func(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
 		if err := statusTracker.HandleProofAggregated(ctx, msg); err != nil {
 			return errors.Errorf("failed to handle proof aggregated: %w", err)
