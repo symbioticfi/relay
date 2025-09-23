@@ -85,6 +85,7 @@ type networkConfigDTO struct {
 	RequiredKeyTags         []uint8                `json:"required_key_tags"`
 	NumCommitters           uint64                 `json:"num_committers"`
 	NumAggregators          uint64                 `json:"num_aggregators"`
+	CommitterSlotDuration   uint64                 `json:"committer_slot_duration,omitempty"`
 }
 
 func networkConfigToBytes(config entity.NetworkConfig) ([]byte, error) {
@@ -112,6 +113,7 @@ func networkConfigToBytes(config entity.NetworkConfig) ([]byte, error) {
 		RequiredKeyTags:         lo.Map(config.RequiredKeyTags, func(tag entity.KeyTag, _ int) uint8 { return uint8(tag) }),
 		NumCommitters:           config.NumCommitters,
 		NumAggregators:          config.NumAggregators,
+		CommitterSlotDuration:   config.CommitterSlotDuration,
 	}
 
 	return json.Marshal(networkConfigDTOFromEntity)
@@ -147,5 +149,6 @@ func bytesToNetworkConfig(data []byte) (entity.NetworkConfig, error) {
 		RequiredKeyTags:         lo.Map(dto.RequiredKeyTags, func(tag uint8, _ int) entity.KeyTag { return entity.KeyTag(tag) }),
 		NumCommitters:           dto.NumCommitters,
 		NumAggregators:          dto.NumAggregators,
+		CommitterSlotDuration:   dto.CommitterSlotDuration,
 	}, nil
 }
