@@ -20,7 +20,7 @@ type p2pService interface {
 
 type provider interface {
 	BuildWantSignaturesRequest(ctx context.Context) (entity.WantSignaturesRequest, error)
-	ProcessReceivedSignatures(ctx context.Context, response entity.WantSignaturesResponse, wantSignatures map[common.Hash]entity.SignatureBitmap) entity.SignatureProcessingStats
+	ProcessReceivedSignatures(ctx context.Context, response entity.WantSignaturesResponse, wantSignatures map[common.Hash]entity.Bitmap) entity.SignatureProcessingStats
 	BuildWantAggregationProofsRequest(ctx context.Context) (entity.WantAggregationProofsRequest, error)
 	ProcessReceivedAggregationProofs(ctx context.Context, response entity.WantAggregationProofsResponse) (entity.AggregationProofProcessingStats, error)
 }

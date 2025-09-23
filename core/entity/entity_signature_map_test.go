@@ -368,12 +368,12 @@ func TestSignatureMap_GetMissingValidators(t *testing.T) {
 	})
 }
 
-func TestSignatureBitmapFromBytes(t *testing.T) {
+func TestBitmapFromBytes(t *testing.T) {
 	t.Parallel()
 
 	t.Run("creates bitmap from valid bytes", func(t *testing.T) {
 		// Create a bitmap with some values
-		original := NewSignatureBitmapOf(0, 2, 5, 10)
+		original := NewBitmapOf(0, 2, 5, 10)
 
 		// Serialize to bytes
 		buf, err := original.ToBytes()
@@ -381,7 +381,7 @@ func TestSignatureBitmapFromBytes(t *testing.T) {
 		require.NotEmpty(t, buf)
 
 		// Deserialize from bytes
-		restored, err := SignatureBitmapFromBytes(buf)
+		restored, err := BitmapFromBytes(buf)
 		require.NoError(t, err)
 
 		// Verify the restored bitmap has the same values
@@ -397,14 +397,14 @@ func TestSignatureBitmapFromBytes(t *testing.T) {
 
 	t.Run("creates empty bitmap from empty bytes", func(t *testing.T) {
 		// Create empty bitmap
-		original := NewSignatureBitmap()
+		original := NewBitmap()
 
 		// Serialize to bytes
 		buf, err := original.ToBytes()
 		require.NoError(t, err)
 
 		// Deserialize from bytes
-		restored, err := SignatureBitmapFromBytes(buf)
+		restored, err := BitmapFromBytes(buf)
 		require.NoError(t, err)
 
 		// Verify the restored bitmap is empty
@@ -415,20 +415,20 @@ func TestSignatureBitmapFromBytes(t *testing.T) {
 		// Test with invalid byte sequence
 		invalidBytes := []byte{0xFF, 0xFF, 0xFF, 0xFF}
 
-		_, err := SignatureBitmapFromBytes(invalidBytes)
+		_, err := BitmapFromBytes(invalidBytes)
 		assert.Error(t, err)
 	})
 
 	t.Run("handles large bitmap", func(t *testing.T) {
 		// Create bitmap with large indices
-		original := NewSignatureBitmapOf(0, 100, 1000, 10000, 65536)
+		original := NewBitmapOf(0, 100, 1000, 10000, 65536)
 
 		// Serialize to bytes
 		buf, err := original.ToBytes()
 		require.NoError(t, err)
 
 		// Deserialize from bytes
-		restored, err := SignatureBitmapFromBytes(buf)
+		restored, err := BitmapFromBytes(buf)
 		require.NoError(t, err)
 
 		// Verify all large indices are preserved
@@ -443,7 +443,7 @@ func TestSignatureBitmapFromBytes(t *testing.T) {
 	t.Run("roundtrip consistency", func(t *testing.T) {
 		// Test multiple roundtrips to ensure consistency
 		testValues := []uint32{1, 3, 7, 15, 31, 63, 127, 255, 511, 1023}
-		original := NewSignatureBitmapOf(testValues...)
+		original := NewBitmapOf(testValues...)
 
 		for i := 0; i < 3; i++ {
 			// Serialize
@@ -451,7 +451,7 @@ func TestSignatureBitmapFromBytes(t *testing.T) {
 			require.NoError(t, err)
 
 			// Deserialize
-			restored, err := SignatureBitmapFromBytes(buf)
+			restored, err := BitmapFromBytes(buf)
 			require.NoError(t, err)
 
 			// Verify equality

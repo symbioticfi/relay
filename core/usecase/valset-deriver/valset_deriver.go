@@ -12,9 +12,9 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
-	"github.com/symbioticfi/relay/core/usecase/ssz"
 
 	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/core/usecase/ssz"
 )
 
 const (

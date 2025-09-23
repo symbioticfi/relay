@@ -575,6 +575,8 @@ func randomValidatorSet(t *testing.T, epoch uint64) entity.ValidatorSet {
 				},
 			},
 		},
-		Status: entity.HeaderCommitted,
+		Status:            entity.HeaderCommitted,
+		AggregatorIndices: []uint32{},
+		CommitterIndices:  []uint32{},
 	}
 }

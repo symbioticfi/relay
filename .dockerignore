@@ -21,10 +21,6 @@ docker-compose.yml
 *.DS_Store
 Thumbs.db
 
-test/circuits
-pkg/proof/circuits
-internal/app/aggregator-app/circuits
-internal/client/valset/circuits
 e2e/
 
 # Ignore IDE-specific files

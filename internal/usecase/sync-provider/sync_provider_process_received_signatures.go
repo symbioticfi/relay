@@ -32,7 +32,7 @@ import (
 //   - Emits signals for successfully processed signatures
 //   - Returns comprehensive statistics for monitoring and debugging
 //   - Logs warnings for validation failures and errors
-func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.WantSignaturesResponse, wantSignatures map[common.Hash]entity.SignatureBitmap) entity.SignatureProcessingStats {
+func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.WantSignaturesResponse, wantSignatures map[common.Hash]entity.Bitmap) entity.SignatureProcessingStats {
 	var stats entity.SignatureProcessingStats
 
 	for reqHash, signatures := range response.Signatures {

@@ -106,7 +106,7 @@ func bytesToSignatureMap(data []byte) (entity.SignatureMap, error) {
 
 	requestHash := common.HexToHash(dto.RequestHash)
 
-	bitmap, err := entity.SignatureBitmapFromBytes(dto.SignedValidatorsBitmapData)
+	bitmap, err := entity.BitmapFromBytes(dto.SignedValidatorsBitmapData)
 	if err != nil {
 		return entity.SignatureMap{}, errors.Errorf("failed to deserialize bitmap: %w", err)
 	}
