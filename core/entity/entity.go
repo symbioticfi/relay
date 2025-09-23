@@ -1,7 +1,10 @@
 package entity
 
 import (
+	"bytes"
+	"context"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"slices"
 	"time"
@@ -165,6 +168,12 @@ type AggregationProof struct {
 	Proof            RawProof         // parse based on KeyTag & VerificationType
 }
 
+// ProofCommitKey represents a proof commit key with its parsed epoch and hash for sorting
+type ProofCommitKey struct {
+	Epoch Epoch
+	Hash  common.Hash
+}
+
 type AggregatedSignatureMessage struct {
 	RequestHash      common.Hash
 	KeyTag           KeyTag
@@ -229,8 +238,9 @@ type NetworkConfig struct {
 	QuorumThresholds        []QuorumThreshold
 
 	// scheduler config
-	NumAggregators uint64
-	NumCommitters  uint64
+	NumAggregators        uint64
+	NumCommitters         uint64
+	CommitterSlotDuration uint64 // in seconds
 }
 
 func maxThreshold() *big.Int {
@@ -392,33 +402,93 @@ type ValidatorSet struct {
 	CommitterIndices  []uint32
 }
 
-func (v ValidatorSet) IsAggregator(requiredKey CompactPublicKey) bool {
-	return v.findMembership(v.AggregatorIndices, requiredKey)
+func (v ValidatorSet) IsAggregator(requiredKey []byte) bool {
+	_, ok := v.findMembership(v.AggregatorIndices, requiredKey)
+	return ok
 }
 
-func (v ValidatorSet) IsCommitter(requiredKey CompactPublicKey) bool {
-	return v.findMembership(v.CommitterIndices, requiredKey)
+func (v ValidatorSet) IsCommitter(requiredKey []byte) bool {
+	_, ok := v.findMembership(v.CommitterIndices, requiredKey)
+	return ok
 }
 
 func (v ValidatorSet) IsSigner(requiredKey CompactPublicKey) bool {
 	for _, validator := range v.Validators {
-		for _, key := range validator.Keys {
-			if key.Tag == v.RequiredKeyTag && slices.Equal(key.Payload, requiredKey) {
-				return true
-			}
+		key, found := validator.FindKeyByKeyTag(v.RequiredKeyTag)
+		if found && bytes.Equal(key, requiredKey) {
+			return true
 		}
 	}
 	return false
 }
 
-func (v ValidatorSet) findMembership(indexArray []uint32, requiredKey CompactPublicKey) bool {
+func (v ValidatorSet) findMembership(indexArray []uint32, requiredKey []byte) (uint32, bool) {
 	for _, validator := range indexArray {
-		for _, key := range v.Validators[validator].Keys {
-			if key.Tag == v.RequiredKeyTag && slices.Equal(key.Payload, requiredKey) {
-				return true
-			}
+		key, found := v.Validators[validator].FindKeyByKeyTag(v.RequiredKeyTag)
+		if found && bytes.Equal(key, requiredKey) {
+			return validator, true
 		}
 	}
+	return 0, false
+}
+
+// IsActiveCommitter determines if the current time falls within the time slot
+// of the current node based on the network configuration and validator set.
+// Each committer has a dedicated time slot of CommitterSlotDuration seconds,
+// starting from the CaptureTimestamp. If the node's slot is about to start
+// i.e. if currentTime + graceSeconds moves us to the next slot, it will also return true.
+func (v ValidatorSet) IsActiveCommitter(ctx context.Context, committerSlotDuration, currentTime, graceSeconds uint64, requiredKey []byte) bool {
+	index, ok := v.findMembership(v.CommitterIndices, requiredKey)
+	if !ok {
+		slog.DebugContext(ctx, "Node is not a committer", "committer-indices", v.CommitterIndices)
+		return false
+	}
+
+	if committerSlotDuration == 0 {
+		slog.WarnContext(ctx, "CommitterSlotDuration is zero, defaulting to always allow")
+		return true
+	}
+
+	// If current time is before capture timestamp, we're not in any slot yet
+	if currentTime < v.CaptureTimestamp {
+		slog.DebugContext(ctx, "Current time is before capture timestamp, not in any slot yet", "current-time", currentTime, "capture-timestamp", v.CaptureTimestamp)
+		return false
+	}
+
+	// single committer no need to check time slots
+	if len(v.CommitterIndices) == 1 {
+		slog.DebugContext(ctx, "Only one committer, defaulting to always allow", "committer-indices", v.CommitterIndices)
+		return true
+	}
+
+	// Calculate elapsed time since capture
+	elapsedTime := currentTime - v.CaptureTimestamp
+
+	// Calculate which slot we're currently in
+	currentSlot := elapsedTime / committerSlotDuration
+
+	// Calculate which committer should be active for current slot (round-robin)
+	activeCommitterIndex := currentSlot % uint64(len(v.CommitterIndices))
+
+	// Check if the required key matches the current slot's committer
+	if index == v.CommitterIndices[activeCommitterIndex] {
+		slog.DebugContext(ctx, "Node is active committer", "current-slot", currentSlot, "active-committer-index", activeCommitterIndex, "committer-indices", v.CommitterIndices)
+		return true
+	}
+
+	// Check if adding grace period moves us to the next slot
+	slotWithGrace := (elapsedTime + graceSeconds) / committerSlotDuration
+
+	// If grace period moves us to a different slot, check that slot's committer too
+	if slotWithGrace != currentSlot {
+		nextActiveCommitterIndex := slotWithGrace % uint64(len(v.CommitterIndices))
+		if index == v.CommitterIndices[nextActiveCommitterIndex] {
+			slog.DebugContext(ctx, "Node is active committer in upcoming slot", "current-slot", currentSlot, "active-committer-index", activeCommitterIndex, "committer-index", index)
+			return true
+		}
+	}
+
+	slog.DebugContext(ctx, "Node is not active committer", "current-slot", currentSlot, "active-committer-index", activeCommitterIndex, "committer-index", index, "committer-indices", v.CommitterIndices)
 	return false
 }
 

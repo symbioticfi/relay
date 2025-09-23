@@ -5,7 +5,7 @@ set -eo pipefail
 # Configuration
 
 # Contracts commit hash to use
-CONTRACTS_COMMIT="e05868427f775d5dc1ea878793568d12f8aedb18"
+CONTRACTS_COMMIT="24bcb351c8b6125b0412d5bf7916da405c548000"
 
 # -----------------------------------------
 

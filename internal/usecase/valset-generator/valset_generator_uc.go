@@ -10,10 +10,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
-
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
+	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/aggregator"
@@ -46,6 +45,10 @@ type repo interface {
 	GetSignatureRequest(ctx context.Context, reqHash common.Hash) (entity.SignatureRequest, error)
 	SaveLatestSignedValidatorSetEpoch(_ context.Context, valset entity.ValidatorSet) error
 	SaveAggregationProof(ctx context.Context, reqHash common.Hash, ap entity.AggregationProof) error
+	SaveProofCommitPending(ctx context.Context, epoch entity.Epoch, reqHash common.Hash) error
+	GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch entity.Epoch, limit int) ([]entity.ProofCommitKey, error)
+	RemoveProofCommitPending(ctx context.Context, epoch entity.Epoch, reqHash common.Hash) error
+	GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (uint64, error)
 }
 
 type deriver interface {
