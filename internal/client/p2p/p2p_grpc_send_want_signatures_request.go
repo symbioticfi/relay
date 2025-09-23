@@ -163,11 +163,11 @@ func (s *Service) selectPeerForSync() (peer.ID, error) {
 
 // protoToEntityRequest converts protobuf WantSignaturesRequest to entity
 func protoToEntityRequest(req *prototypes.WantSignaturesRequest) (entity.WantSignaturesRequest, error) {
-	wantSignatures := make(map[common.Hash]entity.SignatureBitmap)
+	wantSignatures := make(map[common.Hash]entity.Bitmap)
 
 	for hashStr, bitmapBytes := range req.GetWantSignatures() {
 		// Deserialize roaring bitmap from bytes
-		bitmap := entity.NewSignatureBitmap()
+		bitmap := entity.NewBitmap()
 		if _, err := bitmap.FromBuffer(bitmapBytes); err != nil {
 			return entity.WantSignaturesRequest{}, errors.Errorf("failed to deserialize bitmap for hash %s: %w", hashStr, err)
 		}

@@ -7,7 +7,7 @@ import (
 // WantSignaturesRequest represents a request to resync signatures for a specific epoch.
 // Contains missing validator indices for each incomplete signature request.
 type WantSignaturesRequest struct {
-	WantSignatures map[common.Hash]SignatureBitmap // reqHash -> missing validator indices bitmap
+	WantSignatures map[common.Hash]Bitmap // reqHash -> missing validator indices bitmap
 }
 
 // WantSignaturesResponse contains signatures grouped by request hash.
