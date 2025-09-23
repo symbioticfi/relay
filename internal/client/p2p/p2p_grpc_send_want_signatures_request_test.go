@@ -41,11 +41,11 @@ func TestSendWantSignaturesRequest_HappyPath(t *testing.T) {
 	testHash2 := common.HexToHash("0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321")
 
 	// Create signature bitmaps (requesting signatures from validators 0, 2, 5)
-	wantBitmap1 := entity.NewSignatureBitmapOf(0, 2, 5)
-	wantBitmap2 := entity.NewSignatureBitmapOf(1, 3)
+	wantBitmap1 := entity.NewBitmapOf(0, 2, 5)
+	wantBitmap2 := entity.NewBitmapOf(1, 3)
 
 	request := entity.WantSignaturesRequest{
-		WantSignatures: map[common.Hash]entity.SignatureBitmap{
+		WantSignatures: map[common.Hash]entity.Bitmap{
 			testHash1: wantBitmap1,
 			testHash2: wantBitmap2,
 		},

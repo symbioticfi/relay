@@ -388,8 +388,8 @@ type ValidatorSet struct {
 	Status           ValidatorSetStatus
 
 	// Scheduler info for current validator set, completely offchain not included in header
-	AggregatorIndices SignatureBitmap
-	CommitterIndices  SignatureBitmap
+	AggregatorIndices Bitmap
+	CommitterIndices  Bitmap
 }
 
 func (v ValidatorSet) IsAggregator(requiredKey CompactPublicKey) bool {
@@ -411,7 +411,7 @@ func (v ValidatorSet) IsSigner(requiredKey CompactPublicKey) bool {
 	return false
 }
 
-func (v ValidatorSet) findMembership(bitmap SignatureBitmap, requiredKey CompactPublicKey) bool {
+func (v ValidatorSet) findMembership(bitmap Bitmap, requiredKey CompactPublicKey) bool {
 	iterator := bitmap.Iterator()
 	for iterator.HasNext() {
 		index := iterator.Next()

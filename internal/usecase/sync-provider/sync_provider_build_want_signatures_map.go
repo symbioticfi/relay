@@ -39,7 +39,7 @@ func (s *Syncer) BuildWantSignaturesRequest(ctx context.Context) (entity.WantSig
 //   - Stops scanning when MaxSignatureRequestsPerSync limit is reached
 //   - Only includes requests that have missing signatures (non-empty bitmaps)
 //   - Uses pagination to handle large numbers of requests per epoch
-func (s *Syncer) buildWantSignaturesMap(ctx context.Context) (map[common.Hash]entity.SignatureBitmap, error) {
+func (s *Syncer) buildWantSignaturesMap(ctx context.Context) (map[common.Hash]entity.Bitmap, error) {
 	// Get the latest epoch
 	latestEpoch, err := s.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 	if err != nil {
@@ -54,7 +54,7 @@ func (s *Syncer) buildWantSignaturesMap(ctx context.Context) (map[common.Hash]en
 		startEpoch = 0
 	}
 
-	wantSignatures := make(map[common.Hash]entity.SignatureBitmap)
+	wantSignatures := make(map[common.Hash]entity.Bitmap)
 	totalRequests := 0
 
 	for epoch := latestEpoch; epoch >= startEpoch && totalRequests < s.cfg.MaxSignatureRequestsPerSync; epoch-- {

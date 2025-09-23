@@ -686,10 +686,10 @@ func bytesToValidatorSetHeader(data []byte) (entity.ValidatorSetHeader, error) {
 	}, nil
 }
 
-func extractAdditionalInfoFromHeaderData(data []byte) (aggIndices entity.SignatureBitmap, commIndices entity.SignatureBitmap, err error) {
+func extractAdditionalInfoFromHeaderData(data []byte) (aggIndices entity.Bitmap, commIndices entity.Bitmap, err error) {
 	var fullDTO validatorSetFullDTO
 	if err := json.Unmarshal(data, &fullDTO); err != nil {
-		return entity.SignatureBitmap{}, entity.SignatureBitmap{}, errors.Errorf("failed to unmarshal validator set header: %w", err)
+		return entity.Bitmap{}, entity.Bitmap{}, errors.Errorf("failed to unmarshal validator set header: %w", err)
 	}
 
 	infoDTO := fullDTO.Info
@@ -698,28 +698,28 @@ func extractAdditionalInfoFromHeaderData(data []byte) (aggIndices entity.Signatu
 	if infoDTO.AggregatorIndices != "" {
 		aggBytes, err := base64.StdEncoding.DecodeString(infoDTO.AggregatorIndices)
 		if err != nil {
-			return entity.SignatureBitmap{}, entity.SignatureBitmap{}, errors.Errorf("failed to decode aggregator indices: %w", err)
+			return entity.Bitmap{}, entity.Bitmap{}, errors.Errorf("failed to decode aggregator indices: %w", err)
 		}
-		aggIndices, err = entity.SignatureBitmapFromBytes(aggBytes)
+		aggIndices, err = entity.BitmapFromBytes(aggBytes)
 		if err != nil {
-			return entity.SignatureBitmap{}, entity.SignatureBitmap{}, errors.Errorf("failed to deserialize aggregator indices: %w", err)
+			return entity.Bitmap{}, entity.Bitmap{}, errors.Errorf("failed to deserialize aggregator indices: %w", err)
 		}
 	} else {
-		aggIndices = entity.NewSignatureBitmap()
+		aggIndices = entity.NewBitmap()
 	}
 
 	// Deserialize CommitterIndices
 	if infoDTO.CommitterIndices != "" {
 		commBytes, err := base64.StdEncoding.DecodeString(infoDTO.CommitterIndices)
 		if err != nil {
-			return entity.SignatureBitmap{}, entity.SignatureBitmap{}, errors.Errorf("failed to decode committer indices: %w", err)
+			return entity.Bitmap{}, entity.Bitmap{}, errors.Errorf("failed to decode committer indices: %w", err)
 		}
-		commIndices, err = entity.SignatureBitmapFromBytes(commBytes)
+		commIndices, err = entity.BitmapFromBytes(commBytes)
 		if err != nil {
-			return entity.SignatureBitmap{}, entity.SignatureBitmap{}, errors.Errorf("failed to deserialize committer indices: %w", err)
+			return entity.Bitmap{}, entity.Bitmap{}, errors.Errorf("failed to deserialize committer indices: %w", err)
 		}
 	} else {
-		commIndices = entity.NewSignatureBitmap()
+		commIndices = entity.NewBitmap()
 	}
 
 	return aggIndices, commIndices, nil

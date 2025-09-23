@@ -265,7 +265,7 @@ func TestHandleWantSignaturesRequest_EmptyRequest(t *testing.T) {
 
 	t.Run("completely empty request", func(t *testing.T) {
 		request := entity.WantSignaturesRequest{
-			WantSignatures: map[common.Hash]entity.SignatureBitmap{},
+			WantSignatures: map[common.Hash]entity.Bitmap{},
 		}
 
 		response, err := syncer.HandleWantSignaturesRequest(t.Context(), request)
@@ -276,8 +276,8 @@ func TestHandleWantSignaturesRequest_EmptyRequest(t *testing.T) {
 	t.Run("request with empty validator indices", func(t *testing.T) {
 		reqHash := common.HexToHash("0x1234567890abcdef")
 		request := entity.WantSignaturesRequest{
-			WantSignatures: map[common.Hash]entity.SignatureBitmap{
-				reqHash: entity.NewSignatureBitmap(), // Empty bitmap
+			WantSignatures: map[common.Hash]entity.Bitmap{
+				reqHash: entity.NewBitmap(), // Empty bitmap
 			},
 		}
 
@@ -314,8 +314,8 @@ func TestHandleWantSignaturesRequest_NonExistentSignatures(t *testing.T) {
 
 	reqHash := common.HexToHash("0xabcdef1234567890")
 	request := entity.WantSignaturesRequest{
-		WantSignatures: map[common.Hash]entity.SignatureBitmap{
-			reqHash: entity.NewSignatureBitmapOf(1, 2, 3), // Request non-existent signatures
+		WantSignatures: map[common.Hash]entity.Bitmap{
+			reqHash: entity.NewBitmapOf(1, 2, 3), // Request non-existent signatures
 		},
 	}
 
@@ -379,8 +379,8 @@ func TestHandleWantSignaturesRequest_MaxResponseSignatureCountLimit(t *testing.T
 		require.NoError(t, err)
 
 		request := entity.WantSignaturesRequest{
-			WantSignatures: map[common.Hash]entity.SignatureBitmap{
-				signatureRequest.Hash(): entity.NewSignatureBitmapOf(0, 1, 2, 3, 4), // Request all 5 signatures
+			WantSignatures: map[common.Hash]entity.Bitmap{
+				signatureRequest.Hash(): entity.NewBitmapOf(0, 1, 2, 3, 4), // Request all 5 signatures
 			},
 		}
 
@@ -402,8 +402,8 @@ func TestHandleWantSignaturesRequest_MaxResponseSignatureCountLimit(t *testing.T
 		require.NoError(t, err)
 
 		request := entity.WantSignaturesRequest{
-			WantSignatures: map[common.Hash]entity.SignatureBitmap{
-				signatureRequest.Hash(): entity.NewSignatureBitmapOf(0, 1, 2), // Request exactly 3 signatures
+			WantSignatures: map[common.Hash]entity.Bitmap{
+				signatureRequest.Hash(): entity.NewBitmapOf(0, 1, 2), // Request exactly 3 signatures
 			},
 		}
 
@@ -485,9 +485,9 @@ func TestHandleWantSignaturesRequest_MultipleRequestHashes(t *testing.T) {
 	require.NoError(t, entityProcessor.ProcessSignature(t.Context(), param2))
 
 	request := entity.WantSignaturesRequest{
-		WantSignatures: map[common.Hash]entity.SignatureBitmap{
-			signatureRequest1.Hash(): entity.NewSignatureBitmapOf(0), // Request validator 0 from first request
-			signatureRequest2.Hash(): entity.NewSignatureBitmapOf(1), // Request validator 1 from second request
+		WantSignatures: map[common.Hash]entity.Bitmap{
+			signatureRequest1.Hash(): entity.NewBitmapOf(0), // Request validator 0 from first request
+			signatureRequest2.Hash(): entity.NewBitmapOf(1), // Request validator 1 from second request
 		},
 	}
 
@@ -552,8 +552,8 @@ func TestHandleWantSignaturesRequest_PartialSignatureAvailability(t *testing.T) 
 	require.NoError(t, err)
 
 	request := entity.WantSignaturesRequest{
-		WantSignatures: map[common.Hash]entity.SignatureBitmap{
-			signatureRequest.Hash(): entity.NewSignatureBitmapOf(0, 1, 2, 3), // Request all 4, but only 0 and 2 exist
+		WantSignatures: map[common.Hash]entity.Bitmap{
+			signatureRequest.Hash(): entity.NewBitmapOf(0, 1, 2, 3), // Request all 4, but only 0 and 2 exist
 		},
 	}
 
