@@ -96,7 +96,7 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 	if !msg.KeyTag.Type().AggregationKey() {
 		// ignore signature aggregation steps as this key cannot be aggregated
 		if _, err := s.cfg.Repo.UpdateSignatureStat(ctx, msg.RequestHash, entity.SignatureStatStageAggregationSkipped, time.Now()); err != nil {
-			slog.WarnContext(ctx, "Failed to update signature stat: %s", "error", err)
+			slog.WarnContext(ctx, "Failed to update signature stat", "error", err)
 		}
 		return nil
 	}
@@ -146,7 +146,7 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 	)
 
 	if _, err := s.cfg.Repo.UpdateSignatureStat(ctx, msg.RequestHash, entity.SignatureStatStageAggQuorumReached, time.Now()); err != nil {
-		slog.WarnContext(ctx, "Failed to update signature stat: %s", "error", err)
+		slog.WarnContext(ctx, "Failed to update signature stat", "error", err)
 	}
 
 	appAggregationStart := time.Now()
@@ -192,7 +192,7 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 
 	stat, err := s.cfg.Repo.UpdateSignatureStat(ctx, msg.RequestHash, entity.SignatureStatStageAggCompleted, time.Now())
 	if err != nil {
-		slog.WarnContext(ctx, "Failed to update signature stat: %s", "error", err)
+		slog.WarnContext(ctx, "Failed to update signature stat", "error", err)
 	}
 
 	s.cfg.Metrics.ObserveAppAggregateDuration(time.Since(appAggregationStart))

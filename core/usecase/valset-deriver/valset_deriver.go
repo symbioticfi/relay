@@ -129,7 +129,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 		Status:           entity.HeaderDerived,
 	}
 
-	aggIndices, commIndices, err := v.GetSchedulerInfo(ctx, valset, config)
+	aggIndices, commIndices, err := GetSchedulerInfo(ctx, valset, config)
 	if err != nil {
 		return entity.ValidatorSet{}, errors.Errorf("failed to get scheduler info: %w", err)
 	}
@@ -139,7 +139,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config enti
 	return valset, nil
 }
 
-func (v *Deriver) GetSchedulerInfo(ctx context.Context, valset entity.ValidatorSet, config entity.NetworkConfig) (aggIndices []uint32, commIndices []uint32, err error) {
+func GetSchedulerInfo(_ context.Context, valset entity.ValidatorSet, config entity.NetworkConfig) (aggIndices []uint32, commIndices []uint32, err error) {
 	// ensure validators sorted already, function expects sorted list
 	if err := valset.Validators.CheckIsSortedByOperatorAddressAsc(); err != nil {
 		return nil, nil, err
@@ -172,7 +172,7 @@ func (v *Deriver) GetSchedulerInfo(ctx context.Context, valset entity.ValidatorS
 			).Bytes())
 
 		startIndex := new(big.Int).Mod(hash, big.NewInt(int64(validatorCount))).Uint64()
-		foundIndex := v.findNextAvailableIndex(uint32(startIndex), validatorCount, aggregatorIndices)
+		foundIndex := findNextAvailableIndex(uint32(startIndex), validatorCount, aggregatorIndices)
 		aggregatorIndices[foundIndex] = struct{}{}
 	}
 
@@ -185,7 +185,7 @@ func (v *Deriver) GetSchedulerInfo(ctx context.Context, valset entity.ValidatorS
 			).Bytes())
 
 		startIndex := new(big.Int).Mod(hash, big.NewInt(int64(validatorCount))).Uint64()
-		foundIndex := v.findNextAvailableIndex(uint32(startIndex), validatorCount, committerIndices)
+		foundIndex := findNextAvailableIndex(uint32(startIndex), validatorCount, committerIndices)
 		committerIndices[foundIndex] = struct{}{}
 	}
 
@@ -193,7 +193,7 @@ func (v *Deriver) GetSchedulerInfo(ctx context.Context, valset entity.ValidatorS
 }
 
 // Helper function for wrap-around search
-func (v *Deriver) findNextAvailableIndex(startIndex uint32, validatorCount int, usedIndices map[uint32]struct{}) uint32 {
+func findNextAvailableIndex(startIndex uint32, validatorCount int, usedIndices map[uint32]struct{}) uint32 {
 	for offset := 0; offset < validatorCount; offset++ {
 		candidateIndex := (startIndex + uint32(offset)) % uint32(validatorCount)
 		if _, exists := usedIndices[candidateIndex]; !exists {

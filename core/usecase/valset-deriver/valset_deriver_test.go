@@ -1027,10 +1027,7 @@ func TestDeriver_GetSchedulerInfo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d, err := NewDeriver(nil)
-			require.NoError(t, err)
-
-			aggIndices, commIndices, err := d.GetSchedulerInfo(context.Background(), tt.valset, tt.config)
+			aggIndices, commIndices, err := GetSchedulerInfo(context.Background(), tt.valset, tt.config)
 
 			if tt.expectError {
 				require.Error(t, err)
@@ -1079,15 +1076,12 @@ func TestDeriver_GetSchedulerInfo_Deterministic(t *testing.T) {
 		NumCommitters:  1,
 	}
 
-	d, err := NewDeriver(nil)
-	require.NoError(t, err)
-
 	// Run the same calculation multiple times
 	const iterations = 10
 	var firstAggIndices, firstCommIndices []uint32
 
 	for i := 0; i < iterations; i++ {
-		aggIndices, commIndices, err := d.GetSchedulerInfo(context.Background(), valset, config)
+		aggIndices, commIndices, err := GetSchedulerInfo(context.Background(), valset, config)
 		require.NoError(t, err)
 
 		if i == 0 {
@@ -1133,17 +1127,14 @@ func TestDeriver_GetSchedulerInfo_VerifyRandomness(t *testing.T) {
 		NumCommitters:  1,
 	}
 
-	d, err := NewDeriver(nil)
-	require.NoError(t, err)
-
 	// Get results for original valset
-	aggIndices1, commIndices1, err := d.GetSchedulerInfo(context.Background(), baseValset, config)
+	aggIndices1, commIndices1, err := GetSchedulerInfo(context.Background(), baseValset, config)
 	require.NoError(t, err)
 
 	// Test with different epoch
 	valsetDifferentEpoch := baseValset
 	valsetDifferentEpoch.Epoch = 101
-	aggIndices2, commIndices2, err := d.GetSchedulerInfo(context.Background(), valsetDifferentEpoch, config)
+	aggIndices2, commIndices2, err := GetSchedulerInfo(context.Background(), valsetDifferentEpoch, config)
 	require.NoError(t, err)
 
 	// Note: Different epochs might produce the same results due to hash collisions,
@@ -1154,7 +1145,7 @@ func TestDeriver_GetSchedulerInfo_VerifyRandomness(t *testing.T) {
 	// Test with different timestamp
 	valsetDifferentTimestamp := baseValset
 	valsetDifferentTimestamp.CaptureTimestamp = 9876543210
-	aggIndices3, commIndices3, err := d.GetSchedulerInfo(context.Background(), valsetDifferentTimestamp, config)
+	aggIndices3, commIndices3, err := GetSchedulerInfo(context.Background(), valsetDifferentTimestamp, config)
 	require.NoError(t, err)
 
 	// Results should be different for different timestamps (high probability)
@@ -1225,10 +1216,7 @@ func TestDeriver_findNextAvailableIndex(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d, err := NewDeriver(nil)
-			require.NoError(t, err)
-
-			result := d.findNextAvailableIndex(tt.startIndex, tt.validatorCount, tt.usedIndices)
+			result := findNextAvailableIndex(tt.startIndex, tt.validatorCount, tt.usedIndices)
 			require.Equal(t, tt.expected, result)
 
 			// Verify the result is not in usedIndices
@@ -1243,8 +1231,6 @@ func TestDeriver_findNextAvailableIndex(t *testing.T) {
 
 func TestDeriver_findNextAvailableIndex_Panic(t *testing.T) {
 	// Test that the function panics when no indices are available
-	d, err := NewDeriver(nil)
-	require.NoError(t, err)
 
 	// Create a scenario where all indices are taken
 	usedIndices := map[uint32]struct{}{
@@ -1252,6 +1238,6 @@ func TestDeriver_findNextAvailableIndex_Panic(t *testing.T) {
 	}
 
 	require.Panics(t, func() {
-		d.findNextAvailableIndex(0, 3, usedIndices)
+		findNextAvailableIndex(0, 3, usedIndices)
 	}, "should panic when no indices are available")
 }

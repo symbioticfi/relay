@@ -294,6 +294,13 @@ func runApp(ctx context.Context) error {
 		return nil
 	})
 
+	eg.Go(func() error {
+		if err := generator.StartCommitterLoop(egCtx); err != nil {
+			return errors.Errorf("failed to start committer loop: %w", err)
+		}
+		return nil
+	})
+
 	aggPolicyType := entity.AggregationPolicyLowLatency
 	if config.VerificationType == entity.VerificationTypeBlsBn254Simple {
 		aggPolicyType = entity.AggregationPolicyLowCost

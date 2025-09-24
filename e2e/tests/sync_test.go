@@ -57,24 +57,15 @@ func TestAggregatorSignatureSync(t *testing.T) {
 	nwConfig, err := evmClient.GetConfig(ctx, captureTimestamp)
 	require.NoError(t, err, "Failed to get network config")
 
-	valset, err := deriver.GetValidatorSet(ctx, currentEpoch, nwConfig)
+	nextEpoch := currentEpoch + 1
+	nextValset, err := deriver.GetValidatorSet(ctx, nextEpoch, nwConfig)
 	require.NoError(t, err, "Failed to get validator set")
 
-	// next valset, we expect nothing to change apart from epoch details
-	valset.Epoch++
-	valset.CaptureTimestamp += deploymentData.Env.EpochTime
-
-	aggIndices, commIndices, err := deriver.GetSchedulerInfo(ctx, valset, nwConfig)
-	require.NoError(t, err, "Failed to get scheduler info")
-	require.NotEmpty(t, aggIndices, "No aggregators found in scheduler info")
-	require.NotEmpty(t, commIndices, "No committers found in scheduler info")
-	valset.AggregatorIndices = aggIndices
-	valset.CommitterIndices = commIndices
-
 	for i := range globalTestEnv.SidecarConfigs {
-		if valset.IsAggregator(globalTestEnv.SidecarConfigs[i].RequiredSymKey.PublicKey().OnChain()) {
+		onChainKey := globalTestEnv.SidecarConfigs[i].RequiredSymKey.PublicKey().OnChain()
+		if nextValset.IsAggregator(onChainKey) {
 			aggregatorIndexes = append(aggregatorIndexes, i)
-		} else if !valset.IsCommitter(globalTestEnv.SidecarConfigs[i].RequiredSymKey.PublicKey().OnChain()) && valset.IsSigner(globalTestEnv.SidecarConfigs[i].RequiredSymKey.PublicKey().OnChain()) {
+		} else if !nextValset.IsCommitter(onChainKey) && nextValset.IsSigner(onChainKey) {
 			onlySignerIndex = i
 		}
 	}
@@ -100,7 +91,6 @@ func TestAggregatorSignatureSync(t *testing.T) {
 	// During this time, signers will generate signatures but aggregators are offline
 	t.Log("Step 3: Waiting for next epoch to trigger signature generation...")
 
-	nextEpoch := currentEpoch + 1
 	err = waitForEpoch(ctx, evmClient, nextEpoch, 2*time.Minute)
 	require.NoError(t, err, "Failed to wait for next epoch")
 	t.Logf("Reached epoch %d", nextEpoch)
