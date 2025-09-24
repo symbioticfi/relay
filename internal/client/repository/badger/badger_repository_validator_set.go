@@ -67,7 +67,6 @@ func (r *Repository) SaveValidatorSetMetadata(ctx context.Context, epoch uint64,
 }
 
 func (r *Repository) GetValidatorSetMetadata(ctx context.Context, epoch uint64) ([]entity.ExtraData, []byte, error) {
-
 	var (
 		extraData      []entity.ExtraData
 		commitmentData []byte

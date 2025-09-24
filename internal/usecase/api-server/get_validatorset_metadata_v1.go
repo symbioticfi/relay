@@ -10,7 +10,7 @@ import (
 
 // GetValidatorSetMetadata handles the gRPC GetValidatorSetMetadata request
 func (h *grpcHandler) GetValidatorSetMetadata(ctx context.Context, req *apiv1.GetValidatorSetMetadataRequest) (*apiv1.GetValidatorSetMetadataResponse, error) {
-	epochRequested := uint64(0)
+	var epochRequested uint64
 	if req.Epoch == nil {
 		latestEpoch, err := h.cfg.EvmClient.GetCurrentEpoch(ctx)
 		if err != nil {
@@ -50,5 +50,4 @@ func (h *grpcHandler) GetValidatorSetMetadata(ctx context.Context, req *apiv1.Ge
 		CommitmentData: commitData,
 		RequestHash:    sigRequest.Hash().Hex(),
 	}, nil
-
 }

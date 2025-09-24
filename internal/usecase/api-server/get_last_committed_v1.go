@@ -13,7 +13,7 @@ import (
 
 // GetLastCommitted handles the gRPC GetLastCommitted request
 func (h *grpcHandler) GetLastCommitted(ctx context.Context, req *apiv1.GetLastCommittedRequest) (*apiv1.GetLastCommittedResponse, error) {
-	if req.SettlementChainId == 0 {
+	if req.GetSettlementChainId() == 0 {
 		return nil, errors.New("settlement chain ID cannot be 0")
 	}
 
@@ -25,7 +25,7 @@ func (h *grpcHandler) GetLastCommitted(ctx context.Context, req *apiv1.GetLastCo
 	var settlementChain *entity.CrossChainAddress
 
 	for _, settlement := range cfg.Settlements {
-		if settlement.ChainId == req.SettlementChainId {
+		if settlement.ChainId == req.GetSettlementChainId() {
 			settlementChain = &settlement
 			break
 		}
@@ -47,7 +47,7 @@ func (h *grpcHandler) GetLastCommitted(ctx context.Context, req *apiv1.GetLastCo
 	}
 
 	return &apiv1.GetLastCommittedResponse{
-		SettlementChainId: req.SettlementChainId,
+		SettlementChainId: req.GetSettlementChainId(),
 		EpochInfo: &apiv1.ChainEpochInfo{
 			LastCommittedEpoch: lastCommittedEpoch,
 			StartTime:          timestamppb.New(time.Unix(int64(epochStart), 0).UTC()),

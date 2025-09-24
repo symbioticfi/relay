@@ -147,8 +147,8 @@ func main() {
 		log.Printf("Failed to get last committed epoch: %v", err)
 	} else {
 		for _, info := range epochInfos.EpochInfos {
-			if suggestedEpoch == 0 || int(info.LastCommittedEpoch) < suggestedEpoch {
-				suggestedEpoch = int(info.LastCommittedEpoch)
+			if suggestedEpoch == 0 || int(info.GetLastCommittedEpoch()) < suggestedEpoch {
+				suggestedEpoch = int(info.GetLastCommittedEpoch())
 			}
 		}
 	}
