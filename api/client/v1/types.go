@@ -38,11 +38,13 @@ const (
 type GetAggregationProofRequest = apiv1.GetAggregationProofRequest
 type GetAggregationStatusRequest = apiv1.GetAggregationStatusRequest
 type GetCurrentEpochRequest = apiv1.GetCurrentEpochRequest
+type GetLastAllCommittedRequest = apiv1.GetLastAllCommittedRequest
+type GetLastCommittedRequest = apiv1.GetLastCommittedRequest
 type GetSignatureRequestRequest = apiv1.GetSignatureRequestRequest
 type GetSignaturesRequest = apiv1.GetSignaturesRequest
-type GetSuggestedEpochRequest = apiv1.GetSuggestedEpochRequest
 type GetValidatorByAddressRequest = apiv1.GetValidatorByAddressRequest
 type GetValidatorSetHeaderRequest = apiv1.GetValidatorSetHeaderRequest
+type GetValidatorSetMetadataRequest = apiv1.GetValidatorSetMetadataRequest
 type GetValidatorSetRequest = apiv1.GetValidatorSetRequest
 type SignMessageRequest = apiv1.SignMessageRequest
 type SignMessageWaitRequest = apiv1.SignMessageWaitRequest
@@ -51,17 +53,21 @@ type SignMessageWaitRequest = apiv1.SignMessageWaitRequest
 type GetAggregationProofResponse = apiv1.GetAggregationProofResponse
 type GetAggregationStatusResponse = apiv1.GetAggregationStatusResponse
 type GetCurrentEpochResponse = apiv1.GetCurrentEpochResponse
+type GetLastAllCommittedResponse = apiv1.GetLastAllCommittedResponse
+type GetLastCommittedResponse = apiv1.GetLastCommittedResponse
 type GetSignatureRequestResponse = apiv1.GetSignatureRequestResponse
 type GetSignaturesResponse = apiv1.GetSignaturesResponse
-type GetSuggestedEpochResponse = apiv1.GetSuggestedEpochResponse
 type GetValidatorByAddressResponse = apiv1.GetValidatorByAddressResponse
 type GetValidatorSetHeaderResponse = apiv1.GetValidatorSetHeaderResponse
+type GetValidatorSetMetadataResponse = apiv1.GetValidatorSetMetadataResponse
 type GetValidatorSetResponse = apiv1.GetValidatorSetResponse
 type SignMessageResponse = apiv1.SignMessageResponse
 type SignMessageWaitResponse = apiv1.SignMessageWaitResponse
 
 // Data types
 type AggregationProof = apiv1.AggregationProof
+type ChainEpochInfo = apiv1.ChainEpochInfo
+type ExtraData = apiv1.ExtraData
 type Key = apiv1.Key
 type Signature = apiv1.Signature
 type Validator = apiv1.Validator

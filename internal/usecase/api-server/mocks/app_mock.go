@@ -170,6 +170,22 @@ func (mr *MockrepoMockRecorder) GetValidatorSetByEpoch(arg0, epoch any) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSetByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetValidatorSetByEpoch), arg0, epoch)
 }
 
+// GetValidatorSetMetadata mocks base method.
+func (m *Mockrepo) GetValidatorSetMetadata(ctx context.Context, epoch uint64) ([]entity.ExtraData, []byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetValidatorSetMetadata", ctx, epoch)
+	ret0, _ := ret[0].([]entity.ExtraData)
+	ret1, _ := ret[1].([]byte)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetValidatorSetMetadata indicates an expected call of GetValidatorSetMetadata.
+func (mr *MockrepoMockRecorder) GetValidatorSetMetadata(ctx, epoch any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSetMetadata", reflect.TypeOf((*Mockrepo)(nil).GetValidatorSetMetadata), ctx, epoch)
+}
+
 // MockevmClient is a mock of evmClient interface.
 type MockevmClient struct {
 	ctrl     *gomock.Controller
@@ -237,6 +253,21 @@ func (m *MockevmClient) GetEpochStart(ctx context.Context, epoch uint64) (uint64
 func (mr *MockevmClientMockRecorder) GetEpochStart(ctx, epoch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEpochStart", reflect.TypeOf((*MockevmClient)(nil).GetEpochStart), ctx, epoch)
+}
+
+// GetLastCommittedHeaderEpoch mocks base method.
+func (m *MockevmClient) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLastCommittedHeaderEpoch", ctx, addr)
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLastCommittedHeaderEpoch indicates an expected call of GetLastCommittedHeaderEpoch.
+func (mr *MockevmClientMockRecorder) GetLastCommittedHeaderEpoch(ctx, addr any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastCommittedHeaderEpoch", reflect.TypeOf((*MockevmClient)(nil).GetLastCommittedHeaderEpoch), ctx, addr)
 }
 
 // Mockaggregator is a mock of aggregator interface.
