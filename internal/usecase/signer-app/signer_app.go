@@ -19,16 +19,15 @@ import (
 //go:generate mockgen -source=signer_app.go -destination=mocks/signer_app.go -package=mocks
 
 type repo interface {
-	GetSignatureRequest(ctx context.Context, reqHash common.Hash) (entity.SignatureRequest, error)
-	GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error)
-	SaveAggregationProof(ctx context.Context, reqHash common.Hash, ap entity.AggregationProof) error
+	GetSignatureRequest(ctx context.Context, signatureTargetID common.Hash) (entity.SignatureRequest, error)
+	GetAggregationProof(ctx context.Context, signatureTargetID common.Hash) (entity.AggregationProof, error)
+	SaveAggregationProof(ctx context.Context, signatureTargetID common.Hash, ap entity.AggregationProof) error
 	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 	GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error)
-	UpdateSignatureStat(_ context.Context, reqHash common.Hash, s entity.SignatureStatStage, t time.Time) (entity.SignatureStat, error)
 }
 
 type p2pService interface {
-	BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureMessage) error
+	BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureExtended) error
 }
 
 type keyProvider interface {
@@ -36,7 +35,7 @@ type keyProvider interface {
 }
 
 type aggProofSignal interface {
-	Emit(payload entity.AggregatedSignatureMessage) error
+	Emit(payload entity.AggregationProof) error
 }
 
 type aggregator interface {
@@ -46,12 +45,11 @@ type aggregator interface {
 type metrics interface {
 	ObservePKSignDuration(d time.Duration)
 	ObserveAppSignDuration(d time.Duration)
-	ObserveAggReceived(stat entity.SignatureStat)
 }
 
 type entityProcessor interface {
 	ProcessSignature(ctx context.Context, param entity.SaveSignatureParam) error
-	ProcessAggregationProof(ctx context.Context, msg entity.AggregatedSignatureMessage) error
+	ProcessAggregationProof(ctx context.Context, proof entity.AggregationProof) error
 }
 
 type Config struct {
@@ -88,74 +86,59 @@ func NewSignerApp(cfg Config) (*SignerApp, error) {
 	return app, nil
 }
 
-func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error {
+func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) (entity.SignatureExtended, error) {
 	ctx = log.WithComponent(ctx, "signer")
 	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(req.RequiredEpoch)))
 	timeAppSignStart := time.Now()
 
 	if !req.KeyTag.Type().SignerKey() {
-		return errors.Errorf("key tag %s is not a signing key", req.KeyTag)
-	}
-
-	_, err := s.cfg.Repo.GetSignatureRequest(ctx, req.Hash())
-	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
-		return errors.Errorf("failed to get signature request: %w", err)
-	}
-	if entityFound := !errors.Is(err, entity.ErrEntityNotFound); entityFound {
-		slog.DebugContext(ctx, "Signature request already exists", "request", req)
-		return nil
-	}
-
-	_, err = s.cfg.Repo.GetAggregationProof(ctx, req.Hash())
-	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
-		return errors.Errorf("failed to get aggregation proof: %w", err)
-	}
-	if err == nil {
-		slog.DebugContext(ctx, "Aggregation proof already exists", "request", req)
-		return nil
-	}
-	if _, err := s.cfg.Repo.UpdateSignatureStat(ctx, req.Hash(), entity.SignatureStatStageSignRequestReceived, timeAppSignStart); err != nil {
-		slog.WarnContext(ctx, "Failed to update signature stat", "error", err)
+		return entity.SignatureExtended{}, errors.Errorf("key tag %s is not a signing key", req.KeyTag)
 	}
 
 	private, err := s.cfg.KeyProvider.GetPrivateKey(req.KeyTag)
 	if err != nil {
-		return errors.Errorf("failed to get private key: %w", err)
+		return entity.SignatureExtended{}, errors.Errorf("failed to get private key: %w", err)
 	}
 
 	pkSignStart := time.Now()
 	signature, hash, err := private.Sign(req.Message)
 	if err != nil {
-		return errors.Errorf("failed to sign valset header hash: %w", err)
+		return entity.SignatureExtended{}, errors.Errorf("failed to sign valset header hash: %w", err)
 	}
 	s.cfg.Metrics.ObservePKSignDuration(time.Since(pkSignStart))
 
 	extendedSignature := entity.SignatureExtended{
 		MessageHash: hash,
-		Signature:   signature,
+		KeyTag:      req.KeyTag,
+		Epoch:       req.RequiredEpoch,
 		PublicKey:   private.PublicKey().Raw(),
+		Signature:   signature,
+	}
+
+	signatureTargetId := extendedSignature.SignatureTargetID()
+	_, err = s.cfg.Repo.GetSignatureRequest(ctx, signatureTargetId)
+	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
+		return entity.SignatureExtended{}, errors.Errorf("failed to get signature request: %w", err)
+	}
+	if entityFound := !errors.Is(err, entity.ErrEntityNotFound); entityFound {
+		slog.DebugContext(ctx, "Signature request already exists", "request", req)
+		return entity.SignatureExtended{}, errors.Errorf("signature request already exists: %w", entity.ErrEntityAlreadyExist)
 	}
 
 	param := entity.SaveSignatureParam{
 		KeyTag:           req.KeyTag,
-		RequestHash:      req.Hash(),
 		Signature:        extendedSignature,
 		Epoch:            req.RequiredEpoch,
 		SignatureRequest: &req,
 	}
 
 	if err := s.cfg.EntityProcessor.ProcessSignature(ctx, param); err != nil {
-		return errors.Errorf("failed to process signature: %w", err)
+		return entity.SignatureExtended{}, errors.Errorf("failed to process signature: %w", err)
 	}
 
-	err = s.cfg.P2PService.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureMessage{
-		RequestHash: req.Hash(),
-		KeyTag:      req.KeyTag,
-		Epoch:       req.RequiredEpoch,
-		Signature:   extendedSignature,
-	})
+	err = s.cfg.P2PService.BroadcastSignatureGeneratedMessage(ctx, extendedSignature)
 	if err != nil {
-		return errors.Errorf("failed to broadcast signature: %w", err)
+		return entity.SignatureExtended{}, errors.Errorf("failed to broadcast signature: %w", err)
 	}
 
 	slog.InfoContext(ctx, "Message signed",
@@ -165,9 +148,6 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) error
 		"duration", time.Since(timeAppSignStart),
 	)
 	s.cfg.Metrics.ObserveAppSignDuration(time.Since(timeAppSignStart))
-	if _, err := s.cfg.Repo.UpdateSignatureStat(ctx, req.Hash(), entity.SignatureStatStageSignCompleted, time.Now()); err != nil {
-		slog.WarnContext(ctx, "Failed to update signature stat", "error", err)
-	}
 
-	return nil
+	return extendedSignature, nil
 }

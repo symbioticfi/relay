@@ -12,13 +12,14 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
+
+	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 
 	"github.com/symbioticfi/relay/core/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
@@ -29,17 +30,17 @@ import (
 
 //go:generate mockgen -source=app.go -destination=mocks/app_mock.go -package=mocks
 type signer interface {
-	Sign(ctx context.Context, req entity.SignatureRequest) error
+	Sign(ctx context.Context, req entity.SignatureRequest) (entity.SignatureExtended, error)
 }
 
 type repo interface {
-	GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error)
+	GetAggregationProof(ctx context.Context, signatureTargetID common.Hash) (entity.AggregationProof, error)
 	GetValidatorSetByEpoch(_ context.Context, epoch uint64) (entity.ValidatorSet, error)
-	GetAllSignatures(_ context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error)
-	GetSignatureRequest(_ context.Context, reqHash common.Hash) (entity.SignatureRequest, error)
+	GetAllSignatures(ctx context.Context, signatureTargetID common.Hash) ([]entity.SignatureExtended, error)
+	GetSignatureRequest(ctx context.Context, signatureTargetID common.Hash) (entity.SignatureRequest, error)
 	GetLatestValidatorSetHeader(_ context.Context) (entity.ValidatorSetHeader, error)
 	GetLatestValidatorSetEpoch(_ context.Context) (uint64, error)
-	GetValidatorSetMetadata(ctx context.Context, epoch uint64) ([]entity.ExtraData, []byte, error)
+	GetValidatorSetMetadata(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSetMetadata, error)
 }
 
 type evmClient interface {
@@ -50,7 +51,7 @@ type evmClient interface {
 }
 
 type aggregator interface {
-	GetAggregationStatus(ctx context.Context, requestHash common.Hash) (entity.AggregationStatus, error)
+	GetAggregationStatus(ctx context.Context, signatureTargetID common.Hash) (entity.AggregationStatus, error)
 }
 
 type deriver interface {

@@ -134,8 +134,10 @@ func protoToEntityResponse(resp *prototypes.WantSignaturesResponse) entity.WantS
 				ValidatorIndex: protoSig.GetValidatorIndex(),
 				Signature: entity.SignatureExtended{
 					MessageHash: protoSig.GetSignature().GetMessageHash(),
-					Signature:   protoSig.GetSignature().GetSignature(),
+					KeyTag:      entity.KeyTag(protoSig.GetSignature().GetKeyTag()),
+					Epoch:       entity.Epoch(protoSig.GetSignature().GetEpoch()),
 					PublicKey:   protoSig.GetSignature().GetPublicKey(),
+					Signature:   protoSig.GetSignature().GetSignature(),
 				},
 			}
 			validatorSigs = append(validatorSigs, sig)
@@ -192,6 +194,8 @@ func entityToProtoResponse(resp entity.WantSignaturesResponse) *prototypes.WantS
 				ValidatorIndex: validatorSig.ValidatorIndex,
 				Signature: &prototypes.SignatureExtended{
 					MessageHash: validatorSig.Signature.MessageHash,
+					KeyTag:      uint32(validatorSig.Signature.KeyTag),
+					Epoch:       uint64(validatorSig.Signature.Epoch),
 					Signature:   validatorSig.Signature.Signature,
 					PublicKey:   validatorSig.Signature.PublicKey,
 				},

@@ -14,21 +14,21 @@ func TestBadgerRepository_SaveProofCommitPending(t *testing.T) {
 	repo := setupTestRepository(t)
 
 	epoch := entity.Epoch(100)
-	reqHash := common.HexToHash("0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01")
+	signatureTargetID := common.HexToHash("0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01")
 
 	t.Run("save new pending proof commit", func(t *testing.T) {
-		err := repo.SaveProofCommitPending(t.Context(), epoch, reqHash)
+		err := repo.SaveProofCommitPending(t.Context(), epoch, signatureTargetID)
 		require.NoError(t, err)
 	})
 
 	t.Run("save duplicate pending proof commit should fail", func(t *testing.T) {
-		err := repo.SaveProofCommitPending(t.Context(), epoch, reqHash)
+		err := repo.SaveProofCommitPending(t.Context(), epoch, signatureTargetID)
 		require.ErrorIs(t, err, entity.ErrEntityAlreadyExist)
 	})
 
 	t.Run("save different epoch should succeed", func(t *testing.T) {
 		differentEpoch := entity.Epoch(101)
-		err := repo.SaveProofCommitPending(t.Context(), differentEpoch, reqHash)
+		err := repo.SaveProofCommitPending(t.Context(), differentEpoch, signatureTargetID)
 		require.NoError(t, err)
 	})
 
@@ -51,24 +51,24 @@ func TestBadgerRepository_RemoveProofCommitPending(t *testing.T) {
 	repo := setupTestRepository(t)
 
 	epoch := entity.Epoch(200)
-	reqHash := common.HexToHash("0x987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba09")
+	signatureTargetID := common.HexToHash("0x987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba09")
 
 	t.Run("remove non-existent pending proof commit should fail", func(t *testing.T) {
-		err := repo.RemoveProofCommitPending(t.Context(), epoch, reqHash)
+		err := repo.RemoveProofCommitPending(t.Context(), epoch, signatureTargetID)
 		require.ErrorIs(t, err, entity.ErrEntityNotFound)
 	})
 
 	t.Run("save and remove pending proof commit", func(t *testing.T) {
 		// First save
-		err := repo.SaveProofCommitPending(t.Context(), epoch, reqHash)
+		err := repo.SaveProofCommitPending(t.Context(), epoch, signatureTargetID)
 		require.NoError(t, err)
 
 		// Then remove
-		err = repo.RemoveProofCommitPending(t.Context(), epoch, reqHash)
+		err = repo.RemoveProofCommitPending(t.Context(), epoch, signatureTargetID)
 		require.NoError(t, err)
 
 		// Try to remove again should fail
-		err = repo.RemoveProofCommitPending(t.Context(), epoch, reqHash)
+		err = repo.RemoveProofCommitPending(t.Context(), epoch, signatureTargetID)
 		require.ErrorIs(t, err, entity.ErrEntityNotFound)
 	})
 
@@ -139,7 +139,7 @@ func TestBadgerRepository_GetPendingProofCommitsSinceEpoch(t *testing.T) {
 		hashesFound := make(map[common.Hash]bool)
 		for _, commit := range commits {
 			epochsFound[commit.Epoch] = true
-			hashesFound[commit.Hash] = true
+			hashesFound[commit.SignatureTargetID] = true
 		}
 
 		require.True(t, epochsFound[epoch100])
@@ -189,7 +189,7 @@ func TestBadgerRepository_GetPendingProofCommitsSinceEpoch(t *testing.T) {
 			if len(epochCommits) > 1 {
 				for i := 1; i < len(epochCommits); i++ {
 					require.LessOrEqual(t,
-						epochCommits[i-1].Hash.Big().Cmp(epochCommits[i].Hash.Big()), 0,
+						epochCommits[i-1].SignatureTargetID.Big().Cmp(epochCommits[i].SignatureTargetID.Big()), 0,
 						"Hashes not in ascending order within epoch %d", epoch)
 				}
 			}
@@ -245,9 +245,9 @@ func TestBadgerRepository_GetPendingProofCommitsSinceEpoch(t *testing.T) {
 		require.Len(t, commits, 2)
 
 		require.Equal(t, epoch701, commits[0].Epoch)
-		require.Equal(t, hash2, commits[0].Hash)
+		require.Equal(t, hash2, commits[0].SignatureTargetID)
 		require.Equal(t, epoch702, commits[1].Epoch)
-		require.Equal(t, hash3, commits[1].Hash)
+		require.Equal(t, hash3, commits[1].SignatureTargetID)
 	})
 
 	t.Run("handles invalid keys gracefully", func(t *testing.T) {
@@ -265,6 +265,6 @@ func TestBadgerRepository_GetPendingProofCommitsSinceEpoch(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, commits, 1)
 		require.Equal(t, testEpoch, commits[0].Epoch)
-		require.Equal(t, hash, commits[0].Hash)
+		require.Equal(t, hash, commits[0].SignatureTargetID)
 	})
 }

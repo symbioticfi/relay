@@ -125,18 +125,6 @@ func setupGlobalTestEnvironment() (*TestEnvironment, error) {
 
 	tempNetworkDir := filepath.Join(projectRoot, "e2e", "temp-network")
 
-	// Clean up existing data directories before starting containers
-	for i := range sidecarConfigs {
-		dataHostDir := filepath.Join(tempNetworkDir, fmt.Sprintf("data-%02d", i+1))
-		if err := os.RemoveAll(dataHostDir); err != nil {
-			fmt.Printf("Warning: failed to clean data directory %s: %v\n", dataHostDir, err)
-		}
-		// Create fresh directory for bind mount
-		if err := os.MkdirAll(dataHostDir, 0755); err != nil {
-			return nil, errors.Errorf("failed to create data directory %s: %v", dataHostDir, err)
-		}
-	}
-
 	// Start each relay sidecar container concurrently
 	type containerResult struct {
 		index     int
@@ -156,7 +144,6 @@ func setupGlobalTestEnvironment() (*TestEnvironment, error) {
 			fmt.Printf("Starting container: %s\n", config.ContainerName)
 
 			// Create data directory path
-			dataHostDir := filepath.Join(tempNetworkDir, fmt.Sprintf("data-%02d", i+1))
 			deployDataDir := filepath.Join(tempNetworkDir, "deploy-data")
 
 			opts := []string{
@@ -180,11 +167,6 @@ func setupGlobalTestEnvironment() (*TestEnvironment, error) {
 				}},
 				HostConfigModifier: func(hostConfig *container.HostConfig) {
 					hostConfig.Mounts = []mount.Mount{
-						{
-							Type:   mount.TypeBind,
-							Source: dataHostDir,
-							Target: config.DataDir,
-						},
 						{
 							Type:   mount.TypeBind,
 							Source: deployDataDir,

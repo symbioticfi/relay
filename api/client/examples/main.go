@@ -19,9 +19,10 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
-	client "github.com/symbioticfi/relay/api/client/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	client "github.com/symbioticfi/relay/api/client/v1"
 )
 
 // RelayClient wraps the Symbiotic client with helpful methods
@@ -77,17 +78,17 @@ func (rc *RelayClient) SignMessage(ctx context.Context, keyTag uint32, message [
 }
 
 // GetAggregationProof gets aggregation proof for a specific request
-func (rc *RelayClient) GetAggregationProof(ctx context.Context, requestHash string) (*client.GetAggregationProofResponse, error) {
+func (rc *RelayClient) GetAggregationProof(ctx context.Context, signatureTargetID string) (*client.GetAggregationProofResponse, error) {
 	req := &client.GetAggregationProofRequest{
-		RequestHash: requestHash,
+		SignatureTargetId: signatureTargetID,
 	}
 	return rc.client.GetAggregationProof(ctx, req)
 }
 
 // GetSignatures gets individual signatures for a request
-func (rc *RelayClient) GetSignatures(ctx context.Context, requestHash string) (*client.GetSignaturesResponse, error) {
+func (rc *RelayClient) GetSignatures(ctx context.Context, signatureTargetID string) (*client.GetSignaturesResponse, error) {
 	req := &client.GetSignaturesRequest{
-		RequestHash: requestHash,
+		SignatureTargetId: signatureTargetID,
 	}
 	return rc.client.GetSignatures(ctx, req)
 }
@@ -187,24 +188,23 @@ func main() {
 		return
 	}
 
-	fmt.Printf("Request hash: %s\n", signResponse.RequestHash)
+	fmt.Printf("Request hash: %s\n", signResponse.GetSignatureTargetId())
 	fmt.Printf("Epoch: %d\n", signResponse.Epoch)
 
 	// Example 5: Get aggregation proof (this might fail if signing is not complete)
 	fmt.Println("\n=== Getting Aggregation Proof ===")
-	proofResponse, err := relayClient.GetAggregationProof(ctx, signResponse.RequestHash)
+	proofResponse, err := relayClient.GetAggregationProof(ctx, signResponse.GetSignatureTargetId())
 	if err != nil {
 		fmt.Printf("Could not get aggregation proof yet: %v\n", err)
 	} else if proofResponse.AggregationProof != nil {
 		proof := proofResponse.AggregationProof
-		fmt.Printf("Verification type: %d\n", proof.GetVerificationType())
 		fmt.Printf("Proof length: %d bytes\n", len(proof.GetProof()))
 		fmt.Printf("Message hash length: %d bytes\n", len(proof.GetMessageHash()))
 	}
 
 	// Example 6: Get individual signatures
 	fmt.Println("\n=== Getting Individual Signatures ===")
-	signaturesResponse, err := relayClient.GetSignatures(ctx, signResponse.RequestHash)
+	signaturesResponse, err := relayClient.GetSignatures(ctx, signResponse.GetSignatureTargetId())
 	if err != nil {
 		fmt.Printf("Could not get signatures yet: %v\n", err)
 	} else {
@@ -242,7 +242,7 @@ func main() {
 		}
 
 		fmt.Printf("Status: %v\n", response.Status)
-		fmt.Printf("Request hash: %s\n", response.RequestHash)
+		fmt.Printf("Request hash: %s\n", response.GetSignatureTargetId())
 		fmt.Printf("Epoch: %d\n", response.Epoch)
 
 		switch response.Status {
@@ -253,7 +253,6 @@ func main() {
 			if response.AggregationProof != nil {
 				proof := response.AggregationProof
 				fmt.Printf("Proof length: %d bytes\n", len(proof.GetProof()))
-				fmt.Printf("Verification type: %d\n", proof.GetVerificationType())
 			}
 			// Exit the streaming loop
 			goto streamComplete

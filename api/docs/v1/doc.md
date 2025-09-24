@@ -64,7 +64,6 @@ Response message for getting aggregation proof
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| verification_type | [uint32](#uint32) |  | Verification type |
 | message_hash | [bytes](#bytes) |  | Message hash |
 | proof | [bytes](#bytes) |  | Proof data |
 
@@ -113,7 +112,7 @@ Request message for getting aggregation proof
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| request_hash | [string](#string) |  | Request hash |
+| signature_target_id | [string](#string) |  |  |
 
 
 
@@ -143,7 +142,7 @@ Request message for getting aggregation status
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| request_hash | [string](#string) |  | Request hash |
+| signature_target_id | [string](#string) |  |  |
 
 
 
@@ -274,7 +273,7 @@ Request message for getting signature request
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| request_hash | [string](#string) |  | Request hash |
+| signature_target_id | [string](#string) |  |  |
 
 
 
@@ -306,7 +305,7 @@ Request message for getting signatures
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| request_hash | [string](#string) |  | Request hash |
+| signature_target_id | [string](#string) |  |  |
 
 
 
@@ -420,7 +419,7 @@ Response message for getting validator set header
 | ----- | ---- | ----- | ----------- |
 | extra_data | [ExtraData](#api-proto-v1-ExtraData) | repeated |  |
 | commitment_data | [bytes](#bytes) |  |  |
-| request_hash | [string](#string) |  |  |
+| signature_target_id | [string](#string) |  |  |
 
 
 
@@ -504,7 +503,7 @@ Response message for sign message request
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| request_hash | [string](#string) |  | Hash of the signature request |
+| signature_target_id | [string](#string) |  | Hash of the signature request |
 | epoch | [uint64](#uint64) |  | Epoch number |
 
 
@@ -538,7 +537,7 @@ Streaming response message for sign message wait
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [SigningStatus](#api-proto-v1-SigningStatus) |  | Current status of the signing process |
-| request_hash | [string](#string) |  | Hash of the signature request |
+| signature_target_id | [string](#string) |  | Id of the request |
 | epoch | [uint64](#uint64) |  | Epoch number |
 | aggregation_proof | [AggregationProof](#api-proto-v1-AggregationProof) | optional | Final aggregation proof (only set when status is SIGNING_STATUS_COMPLETED) |
 
@@ -659,8 +658,8 @@ SymbioticAPI provides access to the Symbiotic relay functions
 | SignMessage | [SignMessageRequest](#api-proto-v1-SignMessageRequest) | [SignMessageResponse](#api-proto-v1-SignMessageResponse) | Sign a message |
 | GetAggregationProof | [GetAggregationProofRequest](#api-proto-v1-GetAggregationProofRequest) | [GetAggregationProofResponse](#api-proto-v1-GetAggregationProofResponse) | Get aggregation proof |
 | GetCurrentEpoch | [GetCurrentEpochRequest](#api-proto-v1-GetCurrentEpochRequest) | [GetCurrentEpochResponse](#api-proto-v1-GetCurrentEpochResponse) | Get current epoch |
-| GetSignatures | [GetSignaturesRequest](#api-proto-v1-GetSignaturesRequest) | [GetSignaturesResponse](#api-proto-v1-GetSignaturesResponse) | Get signature by request hash |
-| GetSignatureRequest | [GetSignatureRequestRequest](#api-proto-v1-GetSignatureRequestRequest) | [GetSignatureRequestResponse](#api-proto-v1-GetSignatureRequestResponse) | Get signature request by request hash |
+| GetSignatures | [GetSignaturesRequest](#api-proto-v1-GetSignaturesRequest) | [GetSignaturesResponse](#api-proto-v1-GetSignaturesResponse) | Get signature by request signature id |
+| GetSignatureRequest | [GetSignatureRequestRequest](#api-proto-v1-GetSignatureRequestRequest) | [GetSignatureRequestResponse](#api-proto-v1-GetSignatureRequestResponse) | Get signature request by signature id |
 | GetAggregationStatus | [GetAggregationStatusRequest](#api-proto-v1-GetAggregationStatusRequest) | [GetAggregationStatusResponse](#api-proto-v1-GetAggregationStatusResponse) | Get aggregation status, can be sent only to aggregator nodes |
 | GetValidatorSet | [GetValidatorSetRequest](#api-proto-v1-GetValidatorSetRequest) | [GetValidatorSetResponse](#api-proto-v1-GetValidatorSetResponse) | Get current validator set |
 | GetValidatorByAddress | [GetValidatorByAddressRequest](#api-proto-v1-GetValidatorByAddressRequest) | [GetValidatorByAddressResponse](#api-proto-v1-GetValidatorByAddressResponse) | Get validator by address |
@@ -668,7 +667,7 @@ SymbioticAPI provides access to the Symbiotic relay functions
 | SignMessageWait | [SignMessageWaitRequest](#api-proto-v1-SignMessageWaitRequest) | [SignMessageWaitResponse](#api-proto-v1-SignMessageWaitResponse) stream | Sign a message and wait for aggregation proof via stream |
 | GetLastCommitted | [GetLastCommittedRequest](#api-proto-v1-GetLastCommittedRequest) | [GetLastCommittedResponse](#api-proto-v1-GetLastCommittedResponse) | Get last committed epoch for a specific settlement chain |
 | GetLastAllCommitted | [GetLastAllCommittedRequest](#api-proto-v1-GetLastAllCommittedRequest) | [GetLastAllCommittedResponse](#api-proto-v1-GetLastAllCommittedResponse) | Get last committed epochs for all settlement chains |
-| GetValidatorSetMetadata | [GetValidatorSetMetadataRequest](#api-proto-v1-GetValidatorSetMetadataRequest) | [GetValidatorSetMetadataResponse](#api-proto-v1-GetValidatorSetMetadataResponse) | Get validator set metadata like extra data and request hash to fetch aggregation and signature requests |
+| GetValidatorSetMetadata | [GetValidatorSetMetadataRequest](#api-proto-v1-GetValidatorSetMetadataRequest) | [GetValidatorSetMetadataResponse](#api-proto-v1-GetValidatorSetMetadataResponse) | Get validator set metadata like extra data and signature id to fetch aggregation and signature requests |
 
  
 

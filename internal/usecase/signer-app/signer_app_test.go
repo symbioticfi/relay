@@ -2,6 +2,7 @@ package signer_app
 
 import (
 	"crypto/rand"
+	"log/slog"
 	"math/big"
 	"testing"
 
@@ -35,17 +36,18 @@ func TestSign_HappyPath(t *testing.T) {
 	setup.mockMetrics.EXPECT().ObserveAppSignDuration(gomock.Any())
 
 	// Sign
-	require.NoError(t, setup.app.Sign(t.Context(), req))
+	signature, err := setup.app.Sign(t.Context(), req)
+	require.NoError(t, err)
 
 	// Verify that signature request was saved
-	savedReq, err := setup.repo.GetSignatureRequest(t.Context(), req.Hash())
+	savedReq, err := setup.repo.GetSignatureRequest(t.Context(), signature.SignatureTargetID())
 	require.NoError(t, err)
 	require.Equal(t, req.KeyTag, savedReq.KeyTag)
 	require.Equal(t, req.RequiredEpoch, savedReq.RequiredEpoch)
 	require.Equal(t, req.Message, savedReq.Message)
 
 	// Verify that signature is correct
-	signatures, err := setup.repo.GetAllSignatures(t.Context(), req.Hash())
+	signatures, err := setup.repo.GetAllSignatures(t.Context(), signature.SignatureTargetID())
 	require.NoError(t, err)
 	require.Len(t, signatures, 1)
 
@@ -65,6 +67,7 @@ type testSetup struct {
 
 func newTestSetup(t *testing.T) *testSetup {
 	t.Helper()
+	slog.SetLogLoggerLevel(slog.LevelDebug)
 	ctrl := gomock.NewController(t)
 
 	repo, err := badger.New(badger.Config{
@@ -94,7 +97,7 @@ func newTestSetup(t *testing.T) *testSetup {
 	mockEntityAggProofSignal.EXPECT().Emit(gomock.Any()).Return(nil).AnyTimes()
 
 	// Create mock signature processed signal for entity processor
-	signatureProcessedSignal := signals.New[entity.SignatureMessage](signals.DefaultConfig(), "test", nil)
+	signatureProcessedSignal := signals.New[entity.SignatureExtended](signals.DefaultConfig(), "test", nil)
 
 	processor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo:                     repo,

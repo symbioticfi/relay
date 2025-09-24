@@ -62,7 +62,7 @@ func (s *Service) sendAggregationProofRequestToPeer(ctx context.Context, peerID 
 // entityToProtoAggregationProofRequest converts entity.WantAggregationProofsRequest to protobuf
 func entityToProtoAggregationProofRequest(req entity.WantAggregationProofsRequest) *prototypes.WantAggregationProofsRequest {
 	return &prototypes.WantAggregationProofsRequest{
-		RequestHashes: lo.Map(req.RequestHashes, func(hash common.Hash, _ int) string {
+		SignatureTargetIds: lo.Map(req.SignatureTargetIDs, func(hash common.Hash, _ int) string {
 			return hash.Hex()
 		}),
 	}
@@ -75,9 +75,8 @@ func protoToEntityAggregationProofResponse(resp *prototypes.WantAggregationProof
 	for hashStr, protoProof := range resp.GetProofs() {
 		// Convert aggregation proof
 		proof := entity.AggregationProof{
-			VerificationType: entity.VerificationType(protoProof.GetVerificationType()),
-			MessageHash:      protoProof.GetMessageHash(),
-			Proof:            protoProof.GetProof(),
+			MessageHash: protoProof.GetMessageHash(),
+			Proof:       protoProof.GetProof(),
 		}
 
 		proofs[common.HexToHash(hashStr)] = proof
@@ -90,14 +89,14 @@ func protoToEntityAggregationProofResponse(resp *prototypes.WantAggregationProof
 
 // protoToEntityAggregationProofRequest converts protobuf WantAggregationProofsRequest to entity
 func protoToEntityAggregationProofRequest(req *prototypes.WantAggregationProofsRequest) entity.WantAggregationProofsRequest {
-	requestHashes := make([]common.Hash, len(req.GetRequestHashes()))
+	signatureTargetIDs := make([]common.Hash, len(req.GetSignatureTargetIds()))
 
-	for i, hashStr := range req.GetRequestHashes() {
-		requestHashes[i] = common.HexToHash(hashStr)
+	for i, hashStr := range req.GetSignatureTargetIds() {
+		signatureTargetIDs[i] = common.HexToHash(hashStr)
 	}
 
 	return entity.WantAggregationProofsRequest{
-		RequestHashes: requestHashes,
+		SignatureTargetIDs: signatureTargetIDs,
 	}
 }
 
@@ -108,9 +107,8 @@ func entityToProtoAggregationProofResponse(resp entity.WantAggregationProofsResp
 	for hash, proof := range resp.Proofs {
 		// Convert aggregation proof
 		protoProof := &prototypes.AggregationProof{
-			VerificationType: uint32(proof.VerificationType),
-			MessageHash:      proof.MessageHash,
-			Proof:            proof.Proof,
+			MessageHash: proof.MessageHash,
+			Proof:       proof.Proof,
 		}
 
 		proofs[hash.Hex()] = protoProof

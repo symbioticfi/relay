@@ -20,14 +20,14 @@ const (
 	aggregationProofCommitPrefix = "aggregation_proof_commit:"
 )
 
-func keyAggregationProofCommited(epoch entity.Epoch, reqHash common.Hash) []byte {
-	return []byte(fmt.Sprintf("%v%d:%s", aggregationProofCommitPrefix, epoch, reqHash.Hex()))
+func keyAggregationProofCommited(epoch entity.Epoch, signatureTargetID common.Hash) []byte {
+	return []byte(fmt.Sprintf("%v%d:%s", aggregationProofCommitPrefix, epoch, signatureTargetID.Hex()))
 }
 
-func (r *Repository) SaveProofCommitPending(ctx context.Context, epoch entity.Epoch, reqHash common.Hash) error {
+func (r *Repository) SaveProofCommitPending(ctx context.Context, epoch entity.Epoch, signatureTargetID common.Hash) error {
 	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		_, err := txn.Get(keyAggregationProofCommited(epoch, reqHash))
+		_, err := txn.Get(keyAggregationProofCommited(epoch, signatureTargetID))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
 			return errors.Errorf("failed to get proof commit pending: %w", err)
 		}
@@ -37,7 +37,7 @@ func (r *Repository) SaveProofCommitPending(ctx context.Context, epoch entity.Ep
 
 		// Adding TTL ensure that we don't access the old proofs when querying for pending proofs
 		// DEV: setting to 24hours, if the proof doesn't get committed in that time frame manual intervention is expected
-		err = txn.SetEntry(badger.NewEntry(keyAggregationProofCommited(epoch, reqHash), []byte{0x01}).WithTTL(time.Hour * 24))
+		err = txn.SetEntry(badger.NewEntry(keyAggregationProofCommited(epoch, signatureTargetID), []byte{0x01}).WithTTL(time.Hour * 24))
 		if err != nil {
 			return errors.Errorf("failed to store proof commit pending: %w", err)
 		}
@@ -45,16 +45,16 @@ func (r *Repository) SaveProofCommitPending(ctx context.Context, epoch entity.Ep
 	})
 }
 
-func (r *Repository) RemoveProofCommitPending(ctx context.Context, epoch entity.Epoch, reqHash common.Hash) error {
+func (r *Repository) RemoveProofCommitPending(ctx context.Context, epoch entity.Epoch, signatureTargetID common.Hash) error {
 	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		pendingKey := keyAggregationProofCommited(epoch, reqHash)
+		pendingKey := keyAggregationProofCommited(epoch, signatureTargetID)
 
 		// Check if exists before removing
 		_, err := txn.Get(pendingKey)
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
-				return errors.Errorf("proof commit pending not found for epoch %d and hash %s: %w", epoch, reqHash.Hex(), entity.ErrEntityNotFound)
+				return errors.Errorf("proof commit pending not found for epoch %d and hash %s: %w", epoch, signatureTargetID.Hex(), entity.ErrEntityNotFound)
 			}
 			return errors.Errorf("failed to check proof commit pending: %w", err)
 		}
@@ -112,12 +112,12 @@ func (r *Repository) GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch
 				continue
 			}
 
-			reqHashStr := parts[2]
-			reqHash := common.HexToHash(reqHashStr)
+			signatureTargetIDStr := parts[2]
+			signatureTargetID := common.HexToHash(signatureTargetIDStr)
 
 			keys = append(keys, entity.ProofCommitKey{
-				Epoch: keyEpoch,
-				Hash:  reqHash,
+				Epoch:             keyEpoch,
+				SignatureTargetID: signatureTargetID,
 			})
 
 			it.Next()
@@ -132,7 +132,7 @@ func (r *Repository) GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch
 			if keys[i].Epoch != keys[j].Epoch {
 				return keys[i].Epoch < keys[j].Epoch
 			}
-			return bytes.Compare(keys[i].Hash[:], keys[j].Hash[:]) < 0
+			return bytes.Compare(keys[i].SignatureTargetID[:], keys[j].SignatureTargetID[:]) < 0
 		})
 
 		// Step 3: limit response

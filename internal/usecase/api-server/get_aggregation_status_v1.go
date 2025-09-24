@@ -17,7 +17,7 @@ func (h *grpcHandler) GetAggregationStatus(ctx context.Context, req *apiv1.GetAg
 		return nil, entity.ErrNotAnAggregator
 	}
 
-	aggregationStatus, err := h.cfg.Aggregator.GetAggregationStatus(ctx, common.HexToHash(req.GetRequestHash()))
+	aggregationStatus, err := h.cfg.Aggregator.GetAggregationStatus(ctx, common.HexToHash(req.GetSignatureTargetId()))
 	if err != nil {
 		return nil, err
 	}

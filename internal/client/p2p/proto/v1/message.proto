@@ -13,7 +13,7 @@ message AggregationProof {
 
 // SignaturesAggregated represents the aggregated signatures message
 message SignaturesAggregated {
-  bytes request_hash = 1;  // 32 bytes fixed length
+  bytes signature_target_id = 1;  // 32 bytes fixed length
   uint32 key_tag = 2;
   uint64 epoch = 3;
   AggregationProof aggregation_proof = 4;
@@ -28,7 +28,7 @@ message Signature {
 
 // SignatureGenerated represents the signature generated message
 message SignatureGenerated {
-  bytes request_hash = 1;  // 32 bytes fixed length
+  bytes signature_target_id = 1;  // 32 bytes fixed length
   uint32 key_tag = 2;
   uint64 epoch = 3;
   Signature signature = 4;
@@ -72,13 +72,15 @@ message ValidatorSignature {
 // SignatureExtended represents extended signature data
 message SignatureExtended {
   bytes message_hash = 1;
-  bytes signature = 2;
-  bytes public_key = 3;
+  uint32 key_tag = 2;
+  uint64 epoch = 3;
+  bytes signature = 4;
+  bytes public_key = 5;
 }
 
 message WantAggregationProofsRequest {
   // List of request hashes for which aggregation proofs are needed
-  repeated string request_hashes = 1;  // hex strings of common.Hash
+  repeated string signature_target_ids = 1;  // hex strings of common.Hash
 }
 
 message WantAggregationProofsResponse {

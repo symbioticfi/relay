@@ -1,7 +1,6 @@
 package p2p
 
 import (
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"google.golang.org/protobuf/proto"
@@ -19,8 +18,8 @@ func (s *Service) handleSignatureReadyMessage(pubSubMsg *pubsub.Message) error {
 	}
 
 	// Validate the signatureGenerated message
-	if len(signatureGenerated.GetRequestHash()) > maxRequestHashSize {
-		return errors.Errorf("request hash size exceeds maximum allowed size: %d bytes", maxRequestHashSize)
+	if len(signatureGenerated.GetSignatureTargetId()) > maxSignatureTargetIDhSize {
+		return errors.Errorf("request hash size exceeds maximum allowed size: %d bytes", maxSignatureTargetIDhSize)
 	}
 	if len(signatureGenerated.GetSignature().GetPublicKey()) > maxPubKeySize {
 		return errors.Errorf("public key size exceeds maximum allowed size: %d bytes", maxPubKeySize)
@@ -32,15 +31,12 @@ func (s *Service) handleSignatureReadyMessage(pubSubMsg *pubsub.Message) error {
 		return errors.Errorf("message hash size exceeds maximum allowed size: %d bytes", maxMsgHashSize)
 	}
 
-	msg := entity.SignatureMessage{
-		RequestHash: common.BytesToHash(signatureGenerated.GetRequestHash()),
+	msg := entity.SignatureExtended{
 		KeyTag:      entity.KeyTag(signatureGenerated.GetKeyTag()),
 		Epoch:       entity.Epoch(signatureGenerated.GetEpoch()),
-		Signature: entity.SignatureExtended{
-			PublicKey:   signatureGenerated.GetSignature().GetPublicKey(),
-			Signature:   signatureGenerated.GetSignature().GetSignature(),
-			MessageHash: signatureGenerated.GetSignature().GetMessageHash(),
-		},
+		PublicKey:   signatureGenerated.GetSignature().GetPublicKey(),
+		Signature:   signatureGenerated.GetSignature().GetSignature(),
+		MessageHash: signatureGenerated.GetSignature().GetMessageHash(),
 	}
 
 	si, err := extractSenderInfo(pubSubMsg)
@@ -48,7 +44,7 @@ func (s *Service) handleSignatureReadyMessage(pubSubMsg *pubsub.Message) error {
 		return errors.Errorf("failed to extract sender info from received message: %w", err)
 	}
 
-	return s.signatureReceivedHandler.Emit(p2pEntity.P2PMessage[entity.SignatureMessage]{
+	return s.signatureReceivedHandler.Emit(p2pEntity.P2PMessage[entity.SignatureExtended]{
 		SenderInfo: si,
 		Message:    msg,
 	})
@@ -62,8 +58,8 @@ func (s *Service) handleAggregatedProofReadyMessage(pubSubMsg *pubsub.Message) e
 	}
 
 	// Validate the signaturesAggregated message
-	if len(signaturesAggregated.GetRequestHash()) > maxRequestHashSize {
-		return errors.Errorf("request hash size exceeds maximum allowed size: %d bytes", maxRequestHashSize)
+	if len(signaturesAggregated.GetSignatureTargetId()) > maxSignatureTargetIDhSize {
+		return errors.Errorf("request hash size exceeds maximum allowed size: %d bytes", maxSignatureTargetIDhSize)
 	}
 	if len(signaturesAggregated.GetAggregationProof().GetMessageHash()) > maxMsgHashSize {
 		return errors.Errorf("aggregation proof message hash size exceeds maximum allowed size: %d bytes", maxMsgHashSize)
@@ -72,15 +68,11 @@ func (s *Service) handleAggregatedProofReadyMessage(pubSubMsg *pubsub.Message) e
 		return errors.Errorf("aggregation proof size exceeds maximum allowed size: %d bytes", maxProofSize)
 	}
 
-	msg := entity.AggregatedSignatureMessage{
-		RequestHash: common.BytesToHash(signaturesAggregated.GetRequestHash()),
+	msg := entity.AggregationProof{
 		KeyTag:      entity.KeyTag(signaturesAggregated.GetKeyTag()),
 		Epoch:       entity.Epoch(signaturesAggregated.GetEpoch()),
-		AggregationProof: entity.AggregationProof{
-			VerificationType: entity.VerificationType(signaturesAggregated.GetAggregationProof().GetVerificationType()),
-			MessageHash:      signaturesAggregated.GetAggregationProof().GetMessageHash(),
-			Proof:            signaturesAggregated.GetAggregationProof().GetProof(),
-		},
+		MessageHash: signaturesAggregated.GetAggregationProof().GetMessageHash(),
+		Proof:       signaturesAggregated.GetAggregationProof().GetProof(),
 	}
 
 	si, err := extractSenderInfo(pubSubMsg)
@@ -88,7 +80,7 @@ func (s *Service) handleAggregatedProofReadyMessage(pubSubMsg *pubsub.Message) e
 		return errors.Errorf("failed to extract sender info from received message: %w", err)
 	}
 
-	return s.signaturesAggregatedHandler.Emit(p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]{
+	return s.signaturesAggregatedHandler.Emit(p2pEntity.P2PMessage[entity.AggregationProof]{
 		SenderInfo: si,
 		Message:    msg,
 	})

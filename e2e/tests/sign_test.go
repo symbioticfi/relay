@@ -53,7 +53,7 @@ func TestNonHeaderKeySignature(t *testing.T) {
 	t.Logf("Running signature test for string: %s", msg)
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			reqHash := ""
+			signatureTargetID := ""
 			for i := range globalTestEnv.Containers {
 				func() {
 					address := globalTestEnv.GetGRPCAddress(i)
@@ -80,11 +80,11 @@ func TestNonHeaderKeySignature(t *testing.T) {
 						}
 					}
 					require.NoErrorf(t, err, "Failed to sign message with relay at %s", address)
-					require.NotEmptyf(t, resp.RequestHash, "Empty request hash from relay at %s", address)
-					if reqHash == "" {
-						reqHash = resp.RequestHash
+					require.NotEmptyf(t, resp.SignatureTargetId, "Empty signature target id from relay at %s", address)
+					if signatureTargetID == "" {
+						signatureTargetID = resp.GetSignatureTargetId()
 					} else {
-						require.Equalf(t, reqHash, resp.RequestHash, "Mismatched request hash from relay at %s", address)
+						require.Equalf(t, signatureTargetID, resp.SignatureTargetId, "Mismatched signature target id from relay at %s", address)
 					}
 				}()
 			}
@@ -92,7 +92,7 @@ func TestNonHeaderKeySignature(t *testing.T) {
 			// wait for signatures
 			time.Sleep(5 * time.Second)
 
-			t.Logf("Verifying signatures for request hash: %s", reqHash)
+			t.Logf("Verifying signatures for signature target id: %s", signatureTargetID)
 
 			timeoutCtx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 			defer cancel()
@@ -113,25 +113,25 @@ func TestNonHeaderKeySignature(t *testing.T) {
 			for {
 				select {
 				case <-timeoutCtx.Done():
-					t.Fatalf("Timed out waiting for all signatures for request hash: %s", reqHash)
+					t.Fatalf("Timed out waiting for all signatures for signature target id: %s", signatureTargetID)
 				case <-ticker.C:
 					resp, err := client.GetSignatures(t.Context(),
 						&apiv1.GetSignaturesRequest{
-							RequestHash: reqHash,
+							SignatureTargetId: signatureTargetID,
 						})
 
 					require.NoErrorf(t, err, "Failed to get signatures from relay at %s", address)
 
 					if tc.keyTag.Type() == entity.KeyTypeEcdsaSecp256k1 && len(resp.GetSignatures()) != len(globalTestEnv.Containers) {
 						// expect all n signatures for ECDSA
-						t.Logf("Received %d/%d signatures for request hash: %s. Waiting for all signatures...", len(resp.GetSignatures()), len(globalTestEnv.Containers), reqHash)
+						t.Logf("Received %d/%d signatures for signature target id: %s. Waiting for all signatures...", len(resp.GetSignatures()), len(globalTestEnv.Containers), signatureTargetID)
 						continue
 					} else if tc.keyTag.Type() == entity.KeyTypeBlsBn254 && (len(globalTestEnv.Containers)*2/3+1) > len(resp.GetSignatures()) {
 						// need at least 2/3 signatures for BLS, signers skip signing is proof is already generated so we may not get all n sigs
-						t.Logf("Received %d/%d signatures for request hash: %s. Waiting for all signatures...", len(resp.GetSignatures()), len(globalTestEnv.Containers), reqHash)
+						t.Logf("Received %d/%d signatures for signature target id: %s. Waiting for all signatures...", len(resp.GetSignatures()), len(globalTestEnv.Containers), signatureTargetID)
 						continue
 					}
-					t.Logf("All %d signatures received for request hash: %s", len(resp.GetSignatures()), reqHash)
+					t.Logf("All %d signatures received for signature target id: %s", len(resp.GetSignatures()), signatureTargetID)
 
 					// verify signatures based on key type
 					countMap := map[string]int{}
@@ -141,9 +141,9 @@ func TestNonHeaderKeySignature(t *testing.T) {
 						if tc.keyTag.Type() == entity.KeyTypeEcdsaSecp256k1 {
 							// ECDSA signature verification using ethereum crypto
 							publicKeyBytes, err := crypto.Ecrecover(sig.GetMessageHash(), sig.GetSignature())
-							require.NoErrorf(t, err, "Failed to recover public key from signature for request hash: %s", reqHash)
+							require.NoErrorf(t, err, "Failed to recover public key from signature for signature target id: %s", signatureTargetID)
 							pubkey, err := crypto.UnmarshalPubkey(publicKeyBytes)
-							require.NoErrorf(t, err, "Failed to unmarshal public key for request hash: %s", reqHash)
+							require.NoErrorf(t, err, "Failed to unmarshal public key for signature target id: %s", signatureTargetID)
 							addressBytes := crypto.PubkeyToAddress(*pubkey).Bytes()
 
 						outerECDSA:
@@ -164,7 +164,7 @@ func TestNonHeaderKeySignature(t *testing.T) {
 						} else if tc.keyTag.Type() == entity.KeyTypeBlsBn254 {
 							// Create public key from stored payload
 							publicKey, err := cryptoModule.NewPublicKey(tc.keyTag.Type(), sig.GetPublicKey())
-							require.NoErrorf(t, err, "Failed to create public key for request hash: %s", reqHash)
+							require.NoErrorf(t, err, "Failed to create public key for signature target id: %s", signatureTargetID)
 
 						outerBLS:
 							for _, operator := range expected.ValidatorSet.Validators {
@@ -187,21 +187,21 @@ func TestNonHeaderKeySignature(t *testing.T) {
 							}
 						}
 
-						require.Truef(t, found, "Signature verification failed for key type %v for request hash: %s", tc.keyTag.Type(), reqHash)
+						require.Truef(t, found, "Signature verification failed for key type %v for signature target id: %s", tc.keyTag.Type(), signatureTargetID)
 					}
 
 					// check for proof
 					proof, err := client.GetAggregationProof(t.Context(), &apiv1.GetAggregationProofRequest{
-						RequestHash: reqHash,
+						SignatureTargetId: signatureTargetID,
 					})
 					if tc.keyTag.Type() == entity.KeyTypeEcdsaSecp256k1 {
-						require.Errorf(t, err, "Expected no aggregation proof for ECDSA key type for request hash: %s", reqHash)
+						require.Errorf(t, err, "Expected no aggregation proof for ECDSA key type for signature target id: %s", signatureTargetID)
 					} else if tc.keyTag.Type() == entity.KeyTypeBlsBn254 {
-						require.NoErrorf(t, err, "Failed to get aggregation proof for BLS key type for request hash: %s", reqHash)
-						require.NotNilf(t, proof, "Expected aggregation proof for BLS key type for request hash: %s", reqHash)
-						require.NotEmptyf(t, proof.GetAggregationProof().GetProof(), "Empty aggregation proof for BLS key type for request hash: %s", reqHash)
+						require.NoErrorf(t, err, "Failed to get aggregation proof for BLS key type for signature target id: %s", signatureTargetID)
+						require.NotNilf(t, proof, "Expected aggregation proof for BLS key type for signature target id: %s", signatureTargetID)
+						require.NotEmptyf(t, proof.GetAggregationProof().GetProof(), "Empty aggregation proof for BLS key type for signature target id: %s", signatureTargetID)
 					}
-					require.Lenf(t, countMap, len(resp.GetSignatures()), "Number of unique valid signatures does not match number of validators for request hash: %s", reqHash)
+					require.Lenf(t, countMap, len(resp.GetSignatures()), "Number of unique valid signatures does not match number of validators for signature target id: %s", signatureTargetID)
 					t.Logf("%s test completed successfully", tc.name)
 					return
 				}

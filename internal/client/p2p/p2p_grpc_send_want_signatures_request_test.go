@@ -44,6 +44,9 @@ func TestSendWantSignaturesRequest_HappyPath(t *testing.T) {
 	wantBitmap1 := entity.NewBitmapOf(0, 2, 5)
 	wantBitmap2 := entity.NewBitmapOf(1, 3)
 
+	epoch := entity.Epoch(777)
+	keyTag := entity.KeyTag(15)
+
 	request := entity.WantSignaturesRequest{
 		WantSignatures: map[common.Hash]entity.Bitmap{
 			testHash1: wantBitmap1,
@@ -56,14 +59,18 @@ func TestSendWantSignaturesRequest_HappyPath(t *testing.T) {
 		ValidatorIndex: 0,
 		Signature: entity.SignatureExtended{
 			MessageHash: testHash1.Bytes(),
-			Signature:   []byte("signature_for_validator_0"),
+			KeyTag:      keyTag,
+			Epoch:       epoch,
 			PublicKey:   []byte("public_key_validator_0"),
+			Signature:   []byte("signature_for_validator_0"),
 		},
 	}
 	expectedSig2 := entity.ValidatorSignature{
 		ValidatorIndex: 2,
 		Signature: entity.SignatureExtended{
 			MessageHash: testHash1.Bytes(),
+			KeyTag:      keyTag,
+			Epoch:       epoch,
 			Signature:   []byte("signature_for_validator_2"),
 			PublicKey:   []byte("public_key_validator_2"),
 		},
@@ -72,6 +79,8 @@ func TestSendWantSignaturesRequest_HappyPath(t *testing.T) {
 		ValidatorIndex: 1,
 		Signature: entity.SignatureExtended{
 			MessageHash: testHash2.Bytes(),
+			KeyTag:      keyTag,
+			Epoch:       epoch,
 			Signature:   []byte("signature_for_validator_1"),
 			PublicKey:   []byte("public_key_validator_1"),
 		},

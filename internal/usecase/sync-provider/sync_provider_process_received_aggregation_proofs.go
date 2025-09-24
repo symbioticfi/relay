@@ -3,7 +3,6 @@ package sync_provider
 import (
 	"context"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
 	"github.com/symbioticfi/relay/core/entity"
@@ -14,37 +13,17 @@ func (s *Syncer) ProcessReceivedAggregationProofs(ctx context.Context, response 
 	stats := entity.AggregationProofProcessingStats{}
 
 	// Process each received aggregation proof
-	for reqHash, proof := range response.Proofs {
-		s.processSingleAggregationProof(ctx, reqHash, proof, &stats)
+	for _, proof := range response.Proofs {
+		s.processSingleAggregationProof(ctx, proof, &stats)
 	}
 
 	return stats, nil
 }
 
 // processSingleAggregationProof processes a single aggregation proof
-func (s *Syncer) processSingleAggregationProof(ctx context.Context, reqHash common.Hash, proof entity.AggregationProof, stats *entity.AggregationProofProcessingStats) {
-	// Get the signature request to verify the aggregation proof belongs to a valid request
-	signatureRequest, err := s.cfg.Repo.GetSignatureRequest(ctx, reqHash)
-	if err != nil {
-		if errors.Is(err, entity.ErrEntityNotFound) {
-			// Signature request not found - this might be an unrequested proof
-			stats.UnrequestedProofCount++
-			return
-		}
-		stats.SignatureRequestErrorCount++
-		return // Continue processing other proofs
-	}
-
-	// Create aggregated signature message for processing
-	msg := entity.AggregatedSignatureMessage{
-		RequestHash:      reqHash,
-		KeyTag:           signatureRequest.KeyTag,
-		Epoch:            signatureRequest.RequiredEpoch,
-		AggregationProof: proof,
-	}
-
+func (s *Syncer) processSingleAggregationProof(ctx context.Context, proof entity.AggregationProof, stats *entity.AggregationProofProcessingStats) {
 	// Process the aggregation proof using the signature processor
-	if err := s.cfg.EntityProcessor.ProcessAggregationProof(ctx, msg); err != nil {
+	if err := s.cfg.EntityProcessor.ProcessAggregationProof(ctx, proof); err != nil {
 		if errors.Is(err, entity.ErrEntityAlreadyExist) {
 			stats.AlreadyExistCount++
 			return

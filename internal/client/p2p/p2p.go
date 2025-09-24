@@ -30,12 +30,12 @@ const (
 	topicSignatureReady = topicPrefix + "/signature/ready"
 	topicAggProofReady  = topicPrefix + "/proof/ready"
 
-	maxP2PMessageSize  = 1<<20 + 1024 // 1 MiB + 1 KiB for overhead
-	maxRequestHashSize = 32
-	maxPubKeySize      = 96
-	maxSignatureSize   = 96
-	maxMsgHashSize     = 64
-	maxProofSize       = 1 << 20
+	maxP2PMessageSize         = 1<<20 + 1024 // 1 MiB + 1 KiB for overhead
+	maxSignatureTargetIDhSize = 32
+	maxPubKeySize             = 96
+	maxSignatureSize          = 96
+	maxMsgHashSize            = 64
+	maxProofSize              = 1 << 20
 )
 
 type metrics interface {
@@ -109,8 +109,8 @@ func (c Config) Validate() error {
 type Service struct {
 	ctx                         context.Context
 	host                        host.Host
-	signatureReceivedHandler    *signals.Signal[p2pEntity.P2PMessage[entity.SignatureMessage]]
-	signaturesAggregatedHandler *signals.Signal[p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]]
+	signatureReceivedHandler    *signals.Signal[p2pEntity.P2PMessage[entity.SignatureExtended]]
+	signaturesAggregatedHandler *signals.Signal[p2pEntity.P2PMessage[entity.AggregationProof]]
 	metrics                     metrics
 	topicsMap                   map[string]*pubsub.Topic
 	p2pGRPCHandler              prototypes.SymbioticP2PServiceServer
@@ -163,8 +163,8 @@ func NewService(ctx context.Context, cfg Config, signalCfg signals.Config) (*Ser
 	service := &Service{
 		ctx:                         log.WithAttrs(ctx, slog.String("component", "p2p")),
 		host:                        h,
-		signatureReceivedHandler:    signals.New[p2pEntity.P2PMessage[entity.SignatureMessage]](signalCfg, "signatureReceive", nil),
-		signaturesAggregatedHandler: signals.New[p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]](signalCfg, "signaturesAggregated", nil),
+		signatureReceivedHandler:    signals.New[p2pEntity.P2PMessage[entity.SignatureExtended]](signalCfg, "signatureReceive", nil),
+		signaturesAggregatedHandler: signals.New[p2pEntity.P2PMessage[entity.AggregationProof]](signalCfg, "signaturesAggregated", nil),
 		metrics:                     cfg.Metrics,
 
 		topicsMap: map[string]*pubsub.Topic{
@@ -211,14 +211,14 @@ func (s *Service) listenForMessages(ctx context.Context, sub *pubsub.Subscriptio
 	}
 }
 
-func (s *Service) StartSignatureMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PMessage[entity.SignatureMessage]) error) error {
+func (s *Service) StartSignatureMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PMessage[entity.SignatureExtended]) error) error {
 	if err := s.signatureReceivedHandler.SetHandler(mh); err != nil {
 		return errors.Errorf("failed to set signature received message handler: %w", err)
 	}
 	return s.signatureReceivedHandler.StartWorkers(s.ctx)
 }
 
-func (s *Service) StartSignaturesAggregatedMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PMessage[entity.AggregatedSignatureMessage]) error) error {
+func (s *Service) StartSignaturesAggregatedMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PMessage[entity.AggregationProof]) error) error {
 	if err := s.signaturesAggregatedHandler.SetHandler(mh); err != nil {
 		return errors.Errorf("failed to set signatures aggregated message handler: %w", err)
 	}

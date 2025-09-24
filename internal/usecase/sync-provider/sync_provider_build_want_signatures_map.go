@@ -73,21 +73,21 @@ func (s *Syncer) buildWantSignaturesMap(ctx context.Context) (map[common.Hash]en
 
 			// Process each request to find missing signatures
 			for _, req := range requests {
-				reqHash := req.Hash()
+				reqSignatureID := req.SignatureTargetID
 
 				// Get current signature map
-				sigMap, err := s.cfg.Repo.GetSignatureMap(ctx, reqHash)
+				sigMap, err := s.cfg.Repo.GetSignatureMap(ctx, reqSignatureID)
 				if err != nil {
-					return nil, errors.Errorf("failed to get signature map for request %s: %w", reqHash.Hex(), err)
+					return nil, errors.Errorf("failed to get signature map for request %s: %w", reqSignatureID.Hex(), err)
 				}
 
 				// Get missing validators from signature map
 				missingValidators := sigMap.GetMissingValidators()
 				if !missingValidators.IsEmpty() {
-					wantSignatures[reqHash] = missingValidators
+					wantSignatures[reqSignatureID] = missingValidators
 				}
 
-				lastHash = reqHash
+				lastHash = reqSignatureID
 			}
 
 			totalRequests += len(requests)

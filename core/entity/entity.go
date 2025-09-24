@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"math/big"
 	"slices"
-	"time"
 
 	"github.com/symbioticfi/relay/core/usecase/ssz"
 
@@ -60,6 +59,7 @@ type RawMessageHash []byte
 type RawPublicKey []byte
 type CompactPublicKey []byte
 type RawMessage []byte
+
 type RawProof []byte
 type VotingPower struct {
 	*big.Int
@@ -135,50 +135,49 @@ func (s ValidatorSetStatus) MarshalJSON() ([]byte, error) {
 }
 
 // SignatureRequest signature request message
-// RequestHash = sha256(SignatureRequest) (use as identifier later)
 type SignatureRequest struct {
 	KeyTag        KeyTag
 	RequiredEpoch Epoch
 	Message       RawMessage
 }
 
-func (r SignatureRequest) Hash() common.Hash {
-	return crypto.Keccak256Hash([]byte{uint8(r.KeyTag)}, new(big.Int).SetInt64(int64(r.RequiredEpoch)).Bytes(), r.Message)
+type SignatureRequestWithTargetID struct {
+	SignatureRequest
+
+	SignatureTargetID common.Hash
 }
 
 // SignatureExtended signer.sign() -> SignatureExtended
 type SignatureExtended struct {
 	MessageHash RawMessageHash // scheme depends on KeyTag
+	KeyTag      KeyTag         // Key tag for validation
+	Epoch       Epoch          // Epoch for validation
+	PublicKey   RawPublicKey   // parse based on KeyTag (for bls will contain g1+g2)
 	Signature   RawSignature   // parse based on KeyTag
-	// PublicKey for bls will contain g1+g2
-	PublicKey RawPublicKey // parse based on KeyTag
 }
 
-type SignatureMessage struct {
-	RequestHash common.Hash
-	KeyTag      KeyTag
-	Epoch       Epoch
-	Signature   SignatureExtended // parse based on KeyTag
+// SignatureTargetID calculates the target ID based on Hash(MessageHash, KeyTag, Epoch)
+func (s SignatureExtended) SignatureTargetID() common.Hash {
+	return crypto.Keccak256Hash(s.MessageHash, []byte{uint8(s.KeyTag)}, new(big.Int).SetInt64(int64(s.Epoch)).Bytes())
 }
 
 // AggregationProof aggregator.proof(signatures []SignatureExtended) -> AggregationProof
 type AggregationProof struct {
-	VerificationType VerificationType // proof verification type
-	MessageHash      RawMessageHash   // scheme depends on KeyTag
-	Proof            RawProof         // parse based on KeyTag & VerificationType
+	MessageHash RawMessageHash // scheme depends on KeyTag
+	KeyTag      KeyTag         // Key tag for validation
+	Epoch       Epoch          // Epoch for validation
+	Proof       RawProof       // parse based on KeyTag
+}
+
+// SignatureTargetID calculates the target ID based on Hash(MessageHash, KeyTag, Epoch)
+func (ap AggregationProof) SignatureTargetID() common.Hash {
+	return crypto.Keccak256Hash(ap.MessageHash, []byte{uint8(ap.KeyTag)}, new(big.Int).SetInt64(int64(ap.Epoch)).Bytes())
 }
 
 // ProofCommitKey represents a proof commit key with its parsed epoch and hash for sorting
 type ProofCommitKey struct {
-	Epoch Epoch
-	Hash  common.Hash
-}
-
-type AggregatedSignatureMessage struct {
-	RequestHash      common.Hash
-	KeyTag           KeyTag
-	Epoch            Epoch
-	AggregationProof AggregationProof
+	Epoch             Epoch
+	SignatureTargetID common.Hash
 }
 
 type AggregationState struct {
@@ -519,6 +518,13 @@ type ValidatorSetHeader struct {
 	ValidatorsSszMRoot common.Hash
 }
 
+type ValidatorSetMetadata struct {
+	SignatureTargetID common.Hash
+	ExtraData         []ExtraData
+	Epoch             Epoch
+	CommitmentData    []byte
+}
+
 type ExtraData struct {
 	Key   common.Hash
 	Value common.Hash
@@ -705,24 +711,6 @@ type TxResult struct {
 type ChainURL struct {
 	ChainID uint64
 	RPCURL  string
-}
-
-type SignatureStatStage string
-
-const (
-	SignatureStatStageUnknown             = "Unknown"
-	SignatureStatStageSignRequestReceived = "SignRequestReceived"
-	SignatureStatStageSignCompleted       = "SignCompleted"
-	SignatureStatStageAggQuorumReached    = "AggQuorumReached"
-	SignatureStatStageAggCompleted        = "AggCompleted"
-	SignatureStatStageAggProofReceived    = "AggProofReceived"
-
-	SignatureStatStageAggregationSkipped = "AggSkipped"
-)
-
-type SignatureStat struct {
-	ReqHash common.Hash
-	StatMap map[SignatureStatStage]time.Time
 }
 
 type AggregationStatus struct {

@@ -15,7 +15,7 @@ import (
 )
 
 // TestGetValidatorSetMetadata tests the GetValidatorSetMetadata API endpoint
-// and verifies that the request hash can be used to retrieve the proof of a committed valset
+// and verifies that the signature target id can be used to retrieve the proof of a committed valset
 func TestGetValidatorSetMetadata(t *testing.T) {
 	t.Log("Starting validator set metadata API test...")
 
@@ -106,19 +106,19 @@ func TestGetValidatorSetMetadata(t *testing.T) {
 		require.NoError(t, err, "Failed to get validator set metadata for committed epoch")
 
 		// Validate response structure
-		require.NotEmpty(t, metadataResp.GetRequestHash(), "Request hash should not be empty")
+		require.NotEmpty(t, metadataResp.GetSignatureTargetId(), "Signature target id should not be empty")
 		require.NotEmpty(t, metadataResp.GetCommitmentData(), "Commitment data should not be empty")
 		// ExtraData can be empty, so we don't require it to be non-empty
 
-		requestHash := metadataResp.GetRequestHash()
-		t.Logf("Got metadata for committed epoch %d with request hash: %s", committedEpoch, requestHash)
+		signatureTargetId := metadataResp.GetSignatureTargetId()
+		t.Logf("Got metadata for committed epoch %d with signature target id: %s", committedEpoch, signatureTargetId)
 
-		// Test 2: Use the request hash to get signature request
+		// Test 2: Use the signature target id to get signature request
 		t.Run("GetSignatureRequestFromHash", func(t *testing.T) {
 			sigReqResp, err := client.GetSignatureRequest(ctx, &apiv1.GetSignatureRequestRequest{
-				RequestHash: requestHash,
+				SignatureTargetId: signatureTargetId,
 			})
-			require.NoError(t, err, "Failed to get signature request using request hash from metadata")
+			require.NoError(t, err, "Failed to get signature request using signature target id from metadata")
 
 			// Validate the signature request
 			require.Equal(t, uint32(entity.ValsetHeaderKeyTag), sigReqResp.GetKeyTag(),
@@ -134,33 +134,31 @@ func TestGetValidatorSetMetadata(t *testing.T) {
 		// Test 3: Get aggregation proof (should exist for committed epochs)
 		t.Run("GetAggregationProofFromHash", func(t *testing.T) {
 			proofResp, err := client.GetAggregationProof(ctx, &apiv1.GetAggregationProofRequest{
-				RequestHash: requestHash,
+				SignatureTargetId: signatureTargetId,
 			})
 
 			// For committed epochs, aggregation proof should be available
-			require.NoError(t, err, "Failed to get aggregation proof for committed epoch request hash %s", requestHash)
+			require.NoError(t, err, "Failed to get aggregation proof for committed epoch signature target id %s", signatureTargetId)
 			require.NotNil(t, proofResp.GetAggregationProof(), "Aggregation proof should not be nil for committed epoch")
 			require.NotEmpty(t, proofResp.GetAggregationProof().GetProof(),
 				"Aggregation proof data should not be empty for committed epoch")
 			require.NotEmpty(t, proofResp.GetAggregationProof().GetMessageHash(),
 				"Aggregation proof message hash should not be empty")
-			require.Positive(t, proofResp.GetAggregationProof().GetVerificationType(),
-				"Verification type should be positive")
-			t.Logf("Successfully retrieved aggregation proof for committed epoch request hash %s", requestHash)
+			t.Logf("Successfully retrieved aggregation proof for committed epoch signature target id %s", signatureTargetId)
 		})
 
-		// Test 4: Get signatures for the request hash (should exist for committed epochs)
+		// Test 4: Get signatures for the signature target id (should exist for committed epochs)
 		t.Run("GetSignaturesFromHash", func(t *testing.T) {
 			signaturesResp, err := client.GetSignatures(ctx, &apiv1.GetSignaturesRequest{
-				RequestHash: requestHash,
+				SignatureTargetId: signatureTargetId,
 			})
 
 			// For committed epochs, signatures should be available
-			require.NoError(t, err, "Failed to get signatures for committed epoch request hash %s", requestHash)
+			require.NoError(t, err, "Failed to get signatures for committed epoch signature target id %s", signatureTargetId)
 			require.NotEmpty(t, signaturesResp.GetSignatures(), "Should have signatures for committed epoch")
 
-			t.Logf("Found %d signatures for committed epoch request hash %s",
-				len(signaturesResp.GetSignatures()), requestHash)
+			t.Logf("Found %d signatures for committed epoch signature target id %s",
+				len(signaturesResp.GetSignatures()), signatureTargetId)
 
 			// Validate signatures structure
 			for i, sig := range signaturesResp.GetSignatures() {
@@ -179,11 +177,11 @@ func TestGetValidatorSetMetadata(t *testing.T) {
 		metadataResp, err := client.GetValidatorSetMetadata(ctx, &apiv1.GetValidatorSetMetadataRequest{})
 		require.NoError(t, err, "Failed to get validator set metadata without specifying epoch")
 
-		require.NotEmpty(t, metadataResp.GetRequestHash(), "Request hash should not be empty")
+		require.NotEmpty(t, metadataResp.GetSignatureTargetId(), "signature target id should not be empty")
 		require.NotEmpty(t, metadataResp.GetCommitmentData(), "Commitment data should not be empty")
 
-		t.Logf("Got metadata without epoch specification with request hash: %s",
-			metadataResp.GetRequestHash())
+		t.Logf("Got metadata without epoch specification with signature target id: %s",
+			metadataResp.GetSignatureTargetId())
 	})
 
 	// Test 6: Try to get metadata for a future epoch (should fail)

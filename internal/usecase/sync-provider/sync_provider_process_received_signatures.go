@@ -35,36 +35,35 @@ import (
 func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.WantSignaturesResponse, wantSignatures map[common.Hash]entity.Bitmap) entity.SignatureProcessingStats {
 	var stats entity.SignatureProcessingStats
 
-	for reqHash, signatures := range response.Signatures {
+	for signatureTargetID, signatures := range response.Signatures {
 		for _, validatorSig := range signatures {
 			// Validate that we actually requested this validator's signature
-			requestedBitmap, exists := wantSignatures[reqHash]
+			requestedBitmap, exists := wantSignatures[signatureTargetID]
 			if !exists {
-				slog.WarnContext(ctx, "Received signature for unrequested hash", "request_hash", reqHash.Hex())
+				slog.WarnContext(ctx, "Received signature for unrequested hash", "signatureTargetId", signatureTargetID.Hex())
 				stats.UnrequestedHashCount++
 				continue
 			}
 
 			if !requestedBitmap.Contains(validatorSig.ValidatorIndex) {
 				slog.WarnContext(ctx, "Received unrequested signature",
-					"request_hash", reqHash.Hex(),
-					"validator_index", validatorSig.ValidatorIndex)
+					"signatureTargetId", signatureTargetID.Hex(),
+					"validatorIndex", validatorSig.ValidatorIndex)
 				stats.UnrequestedSignatureCount++
 				continue
 			}
 
 			// Get the original signature request to extract epoch and other details
-			sigReq, err := s.cfg.Repo.GetSignatureRequest(ctx, reqHash)
+			sigReq, err := s.cfg.Repo.GetSignatureRequest(ctx, signatureTargetID)
 			if err != nil {
 				slog.WarnContext(ctx, "Failed to get signature request for processing",
-					"request_hash", reqHash.Hex(), "error", err)
+					"signatureTargetId", signatureTargetID.Hex(), "error", err)
 				stats.SignatureRequestErrorCount++
 				continue
 			}
 
 			// Process the signature
 			param := entity.SaveSignatureParam{
-				RequestHash:      reqHash,
 				Signature:        validatorSig.Signature,
 				Epoch:            sigReq.RequiredEpoch,
 				SignatureRequest: nil,
@@ -74,13 +73,13 @@ func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.
 			if err := s.cfg.EntityProcessor.ProcessSignature(ctx, param); err != nil {
 				if errors.Is(err, entity.ErrEntityAlreadyExist) {
 					slog.DebugContext(ctx, "Signature already exists",
-						"request_hash", reqHash.Hex(),
-						"validator_index", validatorSig.ValidatorIndex)
+						"signatureTargetId", signatureTargetID.Hex(),
+						"validatorIndex", validatorSig.ValidatorIndex)
 					stats.AlreadyExistCount++
 				} else {
 					slog.WarnContext(ctx, "Failed to process received signature",
-						"request_hash", reqHash.Hex(),
-						"validator_index", validatorSig.ValidatorIndex,
+						"signatureTargetId", signatureTargetID.Hex(),
+						"validatorIndex", validatorSig.ValidatorIndex,
 						"error", err)
 					stats.ProcessingErrorCount++
 				}
@@ -88,7 +87,7 @@ func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.
 			}
 
 			slog.DebugContext(ctx, "Processed received signature",
-				"request_hash", reqHash.Hex(),
+				"signatureTargetId", signatureTargetID.Hex(),
 				"epoch", uint64(sigReq.RequiredEpoch),
 			)
 			stats.ProcessedCount++

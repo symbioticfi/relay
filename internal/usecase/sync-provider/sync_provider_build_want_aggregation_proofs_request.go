@@ -22,7 +22,7 @@ func (s *Syncer) BuildWantAggregationProofsRequest(ctx context.Context) (entity.
 		startEpoch = latestEpoch - s.cfg.EpochsToSync
 	}
 
-	var allRequestHashes []common.Hash
+	var allSignatureTargetIDs []common.Hash
 	totalRequests := 0
 
 	// Iterate through epochs from newest to oldest to prioritize recent requests
@@ -43,9 +43,9 @@ func (s *Syncer) BuildWantAggregationProofsRequest(ctx context.Context) (entity.
 
 			// Collect request hashes
 			for _, req := range requests {
-				allRequestHashes = append(allRequestHashes, req.Hash())
+				allSignatureTargetIDs = append(allSignatureTargetIDs, req.SignatureTargetID)
 				totalRequests++
-				lastHash = req.Hash() // Update for pagination
+				lastHash = req.SignatureTargetID // Update for pagination
 			}
 
 			remaining = s.cfg.MaxAggProofRequestsPerSync - totalRequests
@@ -58,6 +58,6 @@ func (s *Syncer) BuildWantAggregationProofsRequest(ctx context.Context) (entity.
 	}
 
 	return entity.WantAggregationProofsRequest{
-		RequestHashes: allRequestHashes,
+		SignatureTargetIDs: allSignatureTargetIDs,
 	}, nil
 }

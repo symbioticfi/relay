@@ -359,13 +359,6 @@
             <tbody>
               
                 <tr>
-                  <td>verification_type</td>
-                  <td><a href="#uint32">uint32</a></td>
-                  <td></td>
-                  <td><p>Verification type </p></td>
-                </tr>
-              
-                <tr>
                   <td>message_hash</td>
                   <td><a href="#bytes">bytes</a></td>
                   <td></td>
@@ -459,10 +452,10 @@
             <tbody>
               
                 <tr>
-                  <td>request_hash</td>
+                  <td>signature_target_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Request hash </p></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -507,10 +500,10 @@
             <tbody>
               
                 <tr>
-                  <td>request_hash</td>
+                  <td>signature_target_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Request hash </p></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -717,10 +710,10 @@
             <tbody>
               
                 <tr>
-                  <td>request_hash</td>
+                  <td>signature_target_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Request hash </p></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -779,10 +772,10 @@
             <tbody>
               
                 <tr>
-                  <td>request_hash</td>
+                  <td>signature_target_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Request hash </p></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -1010,7 +1003,7 @@
                 </tr>
               
                 <tr>
-                  <td>request_hash</td>
+                  <td>signature_target_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -1193,7 +1186,7 @@
             <tbody>
               
                 <tr>
-                  <td>request_hash</td>
+                  <td>signature_target_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Hash of the signature request </p></td>
@@ -1269,10 +1262,10 @@
                 </tr>
               
                 <tr>
-                  <td>request_hash</td>
+                  <td>signature_target_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Hash of the signature request </p></td>
+                  <td><p>Id of the request </p></td>
                 </tr>
               
                 <tr>
@@ -1574,14 +1567,14 @@
                 <td>GetSignatures</td>
                 <td><a href="#api.proto.v1.GetSignaturesRequest">GetSignaturesRequest</a></td>
                 <td><a href="#api.proto.v1.GetSignaturesResponse">GetSignaturesResponse</a></td>
-                <td><p>Get signature by request hash</p></td>
+                <td><p>Get signature by request signature id</p></td>
               </tr>
             
               <tr>
                 <td>GetSignatureRequest</td>
                 <td><a href="#api.proto.v1.GetSignatureRequestRequest">GetSignatureRequestRequest</a></td>
                 <td><a href="#api.proto.v1.GetSignatureRequestResponse">GetSignatureRequestResponse</a></td>
-                <td><p>Get signature request by request hash</p></td>
+                <td><p>Get signature request by signature id</p></td>
               </tr>
             
               <tr>
@@ -1637,7 +1630,7 @@
                 <td>GetValidatorSetMetadata</td>
                 <td><a href="#api.proto.v1.GetValidatorSetMetadataRequest">GetValidatorSetMetadataRequest</a></td>
                 <td><a href="#api.proto.v1.GetValidatorSetMetadataResponse">GetValidatorSetMetadataResponse</a></td>
-                <td><p>Get validator set metadata like extra data and request hash to fetch aggregation and signature requests</p></td>
+                <td><p>Get validator set metadata like extra data and signature id to fetch aggregation and signature requests</p></td>
               </tr>
             
           </tbody>

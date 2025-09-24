@@ -9,16 +9,16 @@ import (
 )
 
 type SignatureMap struct {
-	RequestHash            common.Hash
+	SignatureTargetID      common.Hash
 	Epoch                  Epoch
 	SignedValidatorsBitmap Bitmap
 	CurrentVotingPower     VotingPower
 	TotalValidators        uint32
 }
 
-func NewSignatureMap(requestHash common.Hash, epoch Epoch, totalValidators uint32) SignatureMap {
+func NewSignatureMap(signatureTargetID common.Hash, epoch Epoch, totalValidators uint32) SignatureMap {
 	return SignatureMap{
-		RequestHash:            requestHash,
+		SignatureTargetID:      signatureTargetID,
 		Epoch:                  epoch,
 		SignedValidatorsBitmap: NewBitmap(),
 		CurrentVotingPower:     ToVotingPower(big.NewInt(0)),
@@ -53,7 +53,6 @@ func (vm *SignatureMap) GetMissingValidators() Bitmap {
 // SaveSignatureParam bundles parameters needed for signature processing with SignatureMap operations
 type SaveSignatureParam struct {
 	KeyTag           KeyTag
-	RequestHash      common.Hash
 	Signature        SignatureExtended
 	Epoch            Epoch
 	SignatureRequest *SignatureRequest // Optional

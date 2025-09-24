@@ -144,9 +144,9 @@ func (s *Runner) runAggregationProofSync(ctx context.Context) error {
 	if err != nil {
 		return errors.Errorf("failed to build want aggregation proofs request: %w", err)
 	}
-	s.cfg.Metrics.ObserveP2PSyncRequestedAggregationProofs(len(request.RequestHashes))
+	s.cfg.Metrics.ObserveP2PSyncRequestedAggregationProofs(len(request.SignatureTargetIDs))
 
-	if len(request.RequestHashes) == 0 {
+	if len(request.SignatureTargetIDs) == 0 {
 		slog.InfoContext(ctx, "No pending aggregation proof requests found")
 		return nil
 	}
@@ -171,7 +171,6 @@ func (s *Runner) runAggregationProofSync(ctx context.Context) error {
 		"processed", stats.ProcessedCount,
 		"total_errors", stats.TotalErrors(),
 		"unrequested_proofs", stats.UnrequestedProofCount,
-		"signature_request_errors", stats.SignatureRequestErrorCount,
 		"verification_errors", stats.VerificationErrorCount,
 		"processing_errors", stats.ProcessingErrorCount,
 		"already_exist", stats.AlreadyExistCount,
@@ -179,7 +178,6 @@ func (s *Runner) runAggregationProofSync(ctx context.Context) error {
 
 	s.cfg.Metrics.ObserveP2PSyncAggregationProofsProcessed("processed", stats.ProcessedCount)
 	s.cfg.Metrics.ObserveP2PSyncAggregationProofsProcessed("unrequested_proofs", stats.UnrequestedProofCount)
-	s.cfg.Metrics.ObserveP2PSyncAggregationProofsProcessed("signature_request_errors", stats.SignatureRequestErrorCount)
 	s.cfg.Metrics.ObserveP2PSyncAggregationProofsProcessed("verification_errors", stats.VerificationErrorCount)
 	s.cfg.Metrics.ObserveP2PSyncAggregationProofsProcessed("processing_errors", stats.ProcessingErrorCount)
 	s.cfg.Metrics.ObserveP2PSyncAggregationProofsProcessed("already_exist", stats.AlreadyExistCount)
