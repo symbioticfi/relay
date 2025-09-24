@@ -23,12 +23,11 @@ func (h *grpcHandler) GetValidatorSetMetadata(ctx context.Context, req *apiv1.Ge
 	}
 
 	extraData, commitData, err := h.cfg.Repo.GetValidatorSetMetadata(ctx, epochRequested)
-	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
+	if err != nil {
+		if errors.Is(err, entity.ErrEntityNotFound) {
+			return nil, errors.New("no metadata found for the requested epoch")
+		}
 		return nil, errors.Errorf("failed to get validator set from epoch: %w", err)
-	}
-
-	if errors.Is(err, entity.ErrEntityNotFound) {
-		return nil, errors.New("no metadata found for the requested epoch")
 	}
 
 	extraDataProto := make([]*apiv1.ExtraData, 0, len(extraData))

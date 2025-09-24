@@ -154,7 +154,7 @@ func (s *Service) process(ctx context.Context) error {
 	}
 
 	if err = s.cfg.Repo.SaveValidatorSetMetadata(ctx, valSet.Epoch, extraData, data); err != nil {
-		return errors.Errorf("failed to save latest signed valset epoch: %w", err)
+		return errors.Errorf("failed to save validator set metadata: %w", err)
 	}
 
 	if err = s.cfg.Signer.Sign(ctx, r); err != nil {
