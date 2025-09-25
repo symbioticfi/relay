@@ -24,6 +24,19 @@ ifeq ($(PUSH_LATEST), true)
 	IMAGE_TAGS := ${IMAGE_TAGS} -t ${IMAGE_REPO}:latest
 endif
 
+.PHONY: local-setup
+local-setup:
+	cd e2e && \
+	GENERATE_SIDECARS=true bash setup.sh && \
+	cd temp-network && \
+	docker compose up -d
+
+.PHONY: clean-local-setup
+clean-local-setup:
+	if [ -d "e2e/temp-network" ]; then \
+		docker compose --project-directory e2e/temp-network down; \
+	fi
+
 .PHONY: lint
 lint: install-tools buf-lint go-lint
 
