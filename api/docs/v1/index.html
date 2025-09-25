@@ -183,6 +183,14 @@
                 </li>
               
                 <li>
+                  <a href="#api.proto.v1.ChainEpochInfo"><span class="badge">M</span>ChainEpochInfo</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.ExtraData"><span class="badge">M</span>ExtraData</a>
+                </li>
+              
+                <li>
                   <a href="#api.proto.v1.GetAggregationProofRequest"><span class="badge">M</span>GetAggregationProofRequest</a>
                 </li>
               
@@ -207,6 +215,26 @@
                 </li>
               
                 <li>
+                  <a href="#api.proto.v1.GetLastAllCommittedRequest"><span class="badge">M</span>GetLastAllCommittedRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.GetLastAllCommittedResponse"><span class="badge">M</span>GetLastAllCommittedResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.GetLastAllCommittedResponse.EpochInfosEntry"><span class="badge">M</span>GetLastAllCommittedResponse.EpochInfosEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.GetLastCommittedRequest"><span class="badge">M</span>GetLastCommittedRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.GetLastCommittedResponse"><span class="badge">M</span>GetLastCommittedResponse</a>
+                </li>
+              
+                <li>
                   <a href="#api.proto.v1.GetSignatureRequestRequest"><span class="badge">M</span>GetSignatureRequestRequest</a>
                 </li>
               
@@ -223,14 +251,6 @@
                 </li>
               
                 <li>
-                  <a href="#api.proto.v1.GetSuggestedEpochRequest"><span class="badge">M</span>GetSuggestedEpochRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#api.proto.v1.GetSuggestedEpochResponse"><span class="badge">M</span>GetSuggestedEpochResponse</a>
-                </li>
-              
-                <li>
                   <a href="#api.proto.v1.GetValidatorByAddressRequest"><span class="badge">M</span>GetValidatorByAddressRequest</a>
                 </li>
               
@@ -244,6 +264,14 @@
               
                 <li>
                   <a href="#api.proto.v1.GetValidatorSetHeaderResponse"><span class="badge">M</span>GetValidatorSetHeaderResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.GetValidatorSetMetadataRequest"><span class="badge">M</span>GetValidatorSetMetadataRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.GetValidatorSetMetadataResponse"><span class="badge">M</span>GetValidatorSetMetadataResponse</a>
                 </li>
               
                 <li>
@@ -349,6 +377,68 @@
                   <td><a href="#bytes">bytes</a></td>
                   <td></td>
                   <td><p>Proof data </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.ChainEpochInfo">ChainEpochInfo</h3>
+        <p>Settlement chain with its last committed epoch</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>last_committed_epoch</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>Last committed epoch for this chain </p></td>
+                </tr>
+              
+                <tr>
+                  <td>start_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>Epoch start time </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.ExtraData">ExtraData</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -499,6 +589,123 @@
 
         
       
+        <h3 id="api.proto.v1.GetLastAllCommittedRequest">GetLastAllCommittedRequest</h3>
+        <p>Request message for getting last committed epochs for all chains</p><p>No parameters needed</p>
+
+        
+
+        
+      
+        <h3 id="api.proto.v1.GetLastAllCommittedResponse">GetLastAllCommittedResponse</h3>
+        <p>Response message for getting all last committed epochs</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>epoch_infos</td>
+                  <td><a href="#api.proto.v1.GetLastAllCommittedResponse.EpochInfosEntry">GetLastAllCommittedResponse.EpochInfosEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>List of settlement chains with their last committed epochs </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.GetLastAllCommittedResponse.EpochInfosEntry">GetLastAllCommittedResponse.EpochInfosEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#api.proto.v1.ChainEpochInfo">ChainEpochInfo</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.GetLastCommittedRequest">GetLastCommittedRequest</h3>
+        <p>Request message for getting last committed epoch for a specific settlement chain</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>settlement_chain_id</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>Settlement chain ID </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.GetLastCommittedResponse">GetLastCommittedResponse</h3>
+        <p>Response message for getting last committed epoch</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>settlement_chain_id</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>Settlement chain ID </p></td>
+                </tr>
+              
+                <tr>
+                  <td>epoch_info</td>
+                  <td><a href="#api.proto.v1.ChainEpochInfo">ChainEpochInfo</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="api.proto.v1.GetSignatureRequestRequest">GetSignatureRequestRequest</h3>
         <p>Request message for getting signature request</p>
 
@@ -600,44 +807,6 @@
                   <td><a href="#api.proto.v1.Signature">Signature</a></td>
                   <td>repeated</td>
                   <td><p>List of signatures </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="api.proto.v1.GetSuggestedEpochRequest">GetSuggestedEpochRequest</h3>
-        <p>Request message for getting suggested epoch</p>
-
-        
-
-        
-      
-        <h3 id="api.proto.v1.GetSuggestedEpochResponse">GetSuggestedEpochResponse</h3>
-        <p>Response message for getting suggested epoch</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>epoch</td>
-                  <td><a href="#uint64">uint64</a></td>
-                  <td></td>
-                  <td><p>Epoch number </p></td>
-                </tr>
-              
-                <tr>
-                  <td>start_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>Epoch start time </p></td>
                 </tr>
               
             </tbody>
@@ -783,6 +952,68 @@
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Validators SSZ Merkle root (hex string) </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.GetValidatorSetMetadataRequest">GetValidatorSetMetadataRequest</h3>
+        <p>Request message for getting validator set metadata</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>epoch</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td>optional</td>
+                  <td><p>Epoch number (optional, if not provided current epoch will be used) </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.GetValidatorSetMetadataResponse">GetValidatorSetMetadataResponse</h3>
+        <p>Response message for getting validator set header</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>extra_data</td>
+                  <td><a href="#api.proto.v1.ExtraData">ExtraData</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>commitment_data</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>request_hash</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -1340,13 +1571,6 @@
               </tr>
             
               <tr>
-                <td>GetSuggestedEpoch</td>
-                <td><a href="#api.proto.v1.GetSuggestedEpochRequest">GetSuggestedEpochRequest</a></td>
-                <td><a href="#api.proto.v1.GetSuggestedEpochResponse">GetSuggestedEpochResponse</a></td>
-                <td><p>Get suggested epoch to request sign</p></td>
-              </tr>
-            
-              <tr>
                 <td>GetSignatures</td>
                 <td><a href="#api.proto.v1.GetSignaturesRequest">GetSignaturesRequest</a></td>
                 <td><a href="#api.proto.v1.GetSignaturesResponse">GetSignaturesResponse</a></td>
@@ -1393,6 +1617,27 @@
                 <td><a href="#api.proto.v1.SignMessageWaitRequest">SignMessageWaitRequest</a></td>
                 <td><a href="#api.proto.v1.SignMessageWaitResponse">SignMessageWaitResponse</a> stream</td>
                 <td><p>Sign a message and wait for aggregation proof via stream</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetLastCommitted</td>
+                <td><a href="#api.proto.v1.GetLastCommittedRequest">GetLastCommittedRequest</a></td>
+                <td><a href="#api.proto.v1.GetLastCommittedResponse">GetLastCommittedResponse</a></td>
+                <td><p>Get last committed epoch for a specific settlement chain</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetLastAllCommitted</td>
+                <td><a href="#api.proto.v1.GetLastAllCommittedRequest">GetLastAllCommittedRequest</a></td>
+                <td><a href="#api.proto.v1.GetLastAllCommittedResponse">GetLastAllCommittedResponse</a></td>
+                <td><p>Get last committed epochs for all settlement chains</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetValidatorSetMetadata</td>
+                <td><a href="#api.proto.v1.GetValidatorSetMetadataRequest">GetValidatorSetMetadataRequest</a></td>
+                <td><a href="#api.proto.v1.GetValidatorSetMetadataResponse">GetValidatorSetMetadataResponse</a></td>
+                <td><p>Get validator set metadata like extra data and request hash to fetch aggregation and signature requests</p></td>
               </tr>
             
           </tbody>

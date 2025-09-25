@@ -39,12 +39,14 @@ type repo interface {
 	GetSignatureRequest(_ context.Context, reqHash common.Hash) (entity.SignatureRequest, error)
 	GetLatestValidatorSetHeader(_ context.Context) (entity.ValidatorSetHeader, error)
 	GetLatestValidatorSetEpoch(_ context.Context) (uint64, error)
+	GetValidatorSetMetadata(ctx context.Context, epoch uint64) ([]entity.ExtraData, []byte, error)
 }
 
 type evmClient interface {
 	GetCurrentEpoch(ctx context.Context) (uint64, error)
 	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
 	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
+	GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (_ uint64, err error)
 }
 
 type aggregator interface {

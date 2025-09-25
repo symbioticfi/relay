@@ -38,6 +38,64 @@ func keyValidatorSetStatus(epoch uint64) []byte {
 	return []byte(fmt.Sprintf("validator_set_status:%d", epoch))
 }
 
+func keyValidatorSetMetadata(epoch uint64) []byte {
+	return []byte(fmt.Sprintf("validator_set_metadata:%d", epoch))
+}
+
+func (r *Repository) SaveValidatorSetMetadata(ctx context.Context, epoch uint64, extraData []entity.ExtraData, commitmentData []byte) error {
+	metadataBytes, err := validatorSetMetadataToBytes(extraData, commitmentData)
+	if err != nil {
+		return errors.Errorf("failed to marshal validator set metadata: %w", err)
+	}
+
+	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
+		_, err := txn.Get(keyValidatorSetMetadata(epoch))
+		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
+			return errors.Errorf("failed to get valset metadata: %w", err)
+		}
+		if err == nil {
+			return errors.Errorf("valset metadata already exists: %w", entity.ErrEntityAlreadyExist)
+		}
+
+		err = txn.Set(keyValidatorSetMetadata(epoch), metadataBytes)
+		if err != nil {
+			return errors.Errorf("failed to store valset metadata: %w", err)
+		}
+		return nil
+	})
+}
+
+func (r *Repository) GetValidatorSetMetadata(ctx context.Context, epoch uint64) ([]entity.ExtraData, []byte, error) {
+	var (
+		extraData      []entity.ExtraData
+		commitmentData []byte
+	)
+
+	return extraData, commitmentData, r.DoViewInTx(ctx, func(ctx context.Context) error {
+		txn := getTxn(ctx)
+		item, err := txn.Get(keyValidatorSetMetadata(epoch))
+		if err != nil {
+			if errors.Is(err, badger.ErrKeyNotFound) {
+				return errors.Errorf("no validatorset metadta found for epoch %v: %w", epoch, entity.ErrEntityNotFound)
+			}
+			return errors.Errorf("failed to get validatorset metadta: %w", err)
+		}
+
+		value, err := item.ValueCopy(nil)
+		if err != nil {
+			return errors.Errorf("failed to copy validatorset metadata value: %w", err)
+		}
+
+		extraData, commitmentData, err = bytesToValidatorSetMetadata(value)
+		if err != nil {
+			return errors.Errorf("failed to unmarshal validatorset metadta: %w", err)
+		}
+
+		return nil
+	})
+}
+
 func (r *Repository) SaveValidatorSet(ctx context.Context, valset entity.ValidatorSet) error {
 	if err := valset.Validators.CheckIsSortedByOperatorAddressAsc(); err != nil {
 		return errors.Errorf("validators must be sorted by operator address ascending: %w", err)
@@ -726,4 +784,45 @@ func extractAdditionalInfoFromHeaderData(data []byte) (aggIndices []uint32, comm
 	}
 
 	return aggIndices, commIndices, nil
+}
+
+type validatorSetMetadataDTO struct {
+	ExtraData      []extraDataDTO `json:"extra_data"`
+	CommitmentData []byte         `json:"commitment_data"`
+}
+
+type extraDataDTO struct {
+	Key   []byte `json:"key"`
+	Value []byte `json:"value"`
+}
+
+func validatorSetMetadataToBytes(extraData []entity.ExtraData, commitmentData []byte) ([]byte, error) {
+	extraDataDTOs := lo.Map(extraData, func(ed entity.ExtraData, _ int) extraDataDTO {
+		return extraDataDTO{
+			Key:   ed.Key.Bytes(),
+			Value: ed.Value.Bytes(),
+		}
+	})
+	metadataData := validatorSetMetadataDTO{
+		ExtraData:      extraDataDTOs,
+		CommitmentData: commitmentData,
+	}
+
+	return json.Marshal(metadataData)
+}
+
+func bytesToValidatorSetMetadata(data []byte) ([]entity.ExtraData, []byte, error) {
+	var metadataDTO validatorSetMetadataDTO
+	if err := json.Unmarshal(data, &metadataDTO); err != nil {
+		return nil, nil, errors.Errorf("failed to unmarshal validator set header: %w", err)
+	}
+
+	extraDataDTOs := lo.Map(metadataDTO.ExtraData, func(ed extraDataDTO, _ int) entity.ExtraData {
+		return entity.ExtraData{
+			Key:   common.BytesToHash(ed.Key),
+			Value: common.BytesToHash(ed.Value),
+		}
+	})
+
+	return extraDataDTOs, metadataDTO.CommitmentData, nil
 }

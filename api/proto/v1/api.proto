@@ -10,46 +10,52 @@ option go_package = "github.com/symbioticfi/relay/api/proto/v1";
 service SymbioticAPIService {
   // Sign a message
   rpc SignMessage(SignMessageRequest) returns (SignMessageResponse);
-  
+
   // Get aggregation proof
   rpc GetAggregationProof(GetAggregationProofRequest) returns (GetAggregationProofResponse);
-  
+
   // Get current epoch
   rpc GetCurrentEpoch(GetCurrentEpochRequest) returns (GetCurrentEpochResponse);
-  
-  // Get suggested epoch to request sign
-  rpc GetSuggestedEpoch(GetSuggestedEpochRequest) returns (GetSuggestedEpochResponse);
-  
+
   // Get signature by request hash
   rpc GetSignatures(GetSignaturesRequest) returns (GetSignaturesResponse);
-  
+
   // Get signature request by request hash
   rpc GetSignatureRequest(GetSignatureRequestRequest) returns (GetSignatureRequestResponse);
-  
+
   // Get aggregation status, can be sent only to aggregator nodes
   rpc GetAggregationStatus(GetAggregationStatusRequest) returns (GetAggregationStatusResponse);
-  
+
   // Get current validator set
   rpc GetValidatorSet(GetValidatorSetRequest) returns (GetValidatorSetResponse);
-  
+
   // Get validator by address
   rpc GetValidatorByAddress(GetValidatorByAddressRequest) returns (GetValidatorByAddressResponse);
-  
+
   // Get validator set header
   rpc GetValidatorSetHeader(GetValidatorSetHeaderRequest) returns (GetValidatorSetHeaderResponse);
-  
+
   // Sign a message and wait for aggregation proof via stream
   rpc SignMessageWait(SignMessageWaitRequest) returns (stream SignMessageWaitResponse);
+
+  // Get last committed epoch for a specific settlement chain
+  rpc GetLastCommitted(GetLastCommittedRequest) returns (GetLastCommittedResponse);
+
+  // Get last committed epochs for all settlement chains
+  rpc GetLastAllCommitted(GetLastAllCommittedRequest) returns (GetLastAllCommittedResponse);
+
+  // Get validator set metadata like extra data and request hash to fetch aggregation and signature requests
+  rpc GetValidatorSetMetadata(GetValidatorSetMetadataRequest) returns (GetValidatorSetMetadataResponse);
 }
 
 // Request message for signing a message
 message SignMessageRequest {
   // Key tag identifier (0-127)
   uint32 key_tag = 1;
-  
+
   // Message to be signed
   bytes message = 2;
-  
+
   // Required epoch (optional, if not provided latest committed epoch will be used)
   optional uint64 required_epoch = 3;
 }
@@ -70,7 +76,7 @@ message SignMessageWaitRequest {
 message SignMessageResponse {
   // Hash of the signature request
   string request_hash = 1;
-  
+
   // Epoch number
   uint64 epoch = 2;
 }
@@ -79,13 +85,13 @@ message SignMessageResponse {
 message SignMessageWaitResponse {
   // Current status of the signing process
   SigningStatus status = 1;
-  
+
   // Hash of the signature request
   string request_hash = 2;
-  
+
   // Epoch number
   uint64 epoch = 3;
-  
+
   // Final aggregation proof (only set when status is SIGNING_STATUS_COMPLETED)
   optional AggregationProof aggregation_proof = 6;
 }
@@ -98,9 +104,6 @@ message GetAggregationProofRequest {
 
 // Request message for getting current epoch
 message GetCurrentEpochRequest {}
-
-// Request message for getting suggested epoch
-message GetSuggestedEpochRequest {}
 
 // Request message for getting signatures
 message GetSignaturesRequest {
@@ -136,7 +139,7 @@ message GetValidatorSetRequest {
 message GetValidatorByAddressRequest {
   // Epoch number (optional, if not provided current epoch will be used)
   optional uint64 epoch = 1;
-  
+
   // Validator address (required)
   string address = 2;
 }
@@ -147,20 +150,17 @@ message GetValidatorSetHeaderRequest {
   optional uint64 epoch = 1;
 }
 
+// Request message for getting validator set metadata
+message GetValidatorSetMetadataRequest {
+  // Epoch number (optional, if not provided current epoch will be used)
+  optional uint64 epoch = 1;
+}
+
 // Response message for getting current epoch
 message GetCurrentEpochResponse {
   // Epoch number
   uint64 epoch = 1;
-  
-  // Epoch start time
-  google.protobuf.Timestamp start_time = 2;
-}
 
-// Response message for getting suggested epoch
-message GetSuggestedEpochResponse {
-  // Epoch number
-  uint64 epoch = 1;
-  
   // Epoch start time
   google.protobuf.Timestamp start_time = 2;
 }
@@ -169,10 +169,10 @@ message GetSuggestedEpochResponse {
 message GetSignatureRequestResponse {
   // Key tag identifier (0-127)
   uint32 key_tag = 1;
-  
+
   // Message to be signed
   bytes message = 2;
-  
+
   // Required epoch
   uint64 required_epoch = 3;
 }
@@ -198,7 +198,7 @@ message AggregationProof {
 message GetAggregationStatusResponse {
   // Current voting power of the aggregator (big integer as string)
   string current_voting_power = 1;
-  
+
   // List of operator addresses that signed the request
   repeated string signer_operators = 2;
 }
@@ -207,10 +207,10 @@ message GetAggregationStatusResponse {
 message Signature {
   // Signature data
   bytes signature = 1;
-  
+
   // Message hash
   bytes message_hash = 2;
-  
+
   // Public key
   bytes public_key = 3;
 }
@@ -219,22 +219,22 @@ message Signature {
 message GetValidatorSetResponse {
   // Version of the validator set
   uint32 version = 1;
-  
+
   // Key tag required to commit next validator set
   uint32 required_key_tag = 2;
-  
+
   // Validator set epoch
   uint64 epoch = 3;
-  
+
   // Epoch capture timestamp
   google.protobuf.Timestamp capture_timestamp = 4;
-  
+
   // Quorum threshold (big integer as string)
   string quorum_threshold = 5;
-  
+
   // Status of validator set header
   ValidatorSetStatus status = 6;
-  
+
   // List of validators
   repeated Validator validators = 7;
 }
@@ -245,26 +245,38 @@ message GetValidatorByAddressResponse {
   Validator validator = 1;
 }
 
+message ExtraData {
+  bytes key = 1;
+  bytes value = 2;
+}
+
+// Response message for getting validator set header
+message GetValidatorSetMetadataResponse {
+  repeated ExtraData extra_data = 1;
+  bytes commitment_data = 2;
+  string request_hash = 3;
+}
+
 // Response message for getting validator set header
 message GetValidatorSetHeaderResponse {
   // Version of the validator set
   uint32 version = 1;
-  
+
   // Key tag required to commit next validator set
   uint32 required_key_tag = 2;
-  
+
   // Validator set epoch
   uint64 epoch = 3;
-  
+
   // Epoch capture timestamp
   google.protobuf.Timestamp capture_timestamp = 4;
-  
+
   // Quorum threshold (big integer as string)
   string quorum_threshold = 5;
 
   // Total voting power (big integer as string)
   string total_voting_power = 6;
-  
+
   // Validators SSZ Merkle root (hex string)
   string validators_ssz_mroot = 7;
 }
@@ -273,10 +285,10 @@ message GetValidatorSetHeaderResponse {
 enum ValidatorSetStatus {
   // Default/unknown status
   VALIDATOR_SET_STATUS_UNSPECIFIED = 0;
-  
+
   // Derived status
-  VALIDATOR_SET_STATUS_DERIVED= 1;
-  
+  VALIDATOR_SET_STATUS_DERIVED = 1;
+
   // Aggregated status
   VALIDATOR_SET_STATUS_AGGREGATED = 2;
 
@@ -288,16 +300,16 @@ enum ValidatorSetStatus {
 message Validator {
   // Operator address (hex string)
   string operator = 1;
-  
+
   // Voting power of the validator (big integer as string)
   string voting_power = 2;
-  
+
   // Indicates if the validator is active
   bool is_active = 3;
-  
+
   // List of cryptographic keys
   repeated Key keys = 4;
-  
+
   // List of validator vaults
   repeated ValidatorVault vaults = 5;
 }
@@ -306,7 +318,7 @@ message Validator {
 message Key {
   // Key tag identifier (0-127)
   uint32 tag = 1;
-  
+
   // Key payload
   bytes payload = 2;
 }
@@ -315,10 +327,10 @@ message Key {
 message ValidatorVault {
   // Chain identifier
   uint64 chain_id = 1;
-  
+
   // Vault address
   string vault = 2;
-  
+
   // Voting power for this vault (big integer as string)
   string voting_power = 3;
 }
@@ -328,16 +340,16 @@ message ValidatorVault {
 enum SigningStatus {
   // Default/unknown status
   SIGNING_STATUS_UNSPECIFIED = 0;
-  
+
   // Request has been created and is waiting for signatures
   SIGNING_STATUS_PENDING = 1;
 
   // Signing process completed successfully with proof
   SIGNING_STATUS_COMPLETED = 2;
-  
+
   // Signing process failed
   SIGNING_STATUS_FAILED = 3;
-  
+
   // Signing request timed out
   SIGNING_STATUS_TIMEOUT = 4;
 }
@@ -346,13 +358,46 @@ enum SigningStatus {
 enum ErrorCode {
   // Default/unknown error
   ERROR_CODE_UNSPECIFIED = 0;
-  
+
   // No data found
   ERROR_CODE_NO_DATA = 1;
-  
+
   // Internal server error
   ERROR_CODE_INTERNAL = 2;
-  
+
   // Not an aggregator node
   ERROR_CODE_NOT_AGGREGATOR = 3;
+}
+
+// Request message for getting last committed epoch for a specific settlement chain
+message GetLastCommittedRequest {
+  // Settlement chain ID
+  uint64 settlement_chain_id = 1;
+}
+
+// Response message for getting last committed epoch
+message GetLastCommittedResponse {
+  // Settlement chain ID
+  uint64 settlement_chain_id = 1;
+  ChainEpochInfo  epoch_info = 2;
+}
+
+// Request message for getting last committed epochs for all chains
+message GetLastAllCommittedRequest {
+  // No parameters needed
+}
+
+// Response message for getting all last committed epochs
+message GetLastAllCommittedResponse {
+  // List of settlement chains with their last committed epochs
+  map<uint64, ChainEpochInfo> epoch_infos = 1;
+}
+
+// Settlement chain with its last committed epoch
+message ChainEpochInfo {
+  // Last committed epoch for this chain
+  uint64 last_committed_epoch = 1;
+
+  // Epoch start time
+  google.protobuf.Timestamp start_time = 2;
 }

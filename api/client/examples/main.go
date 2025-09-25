@@ -60,10 +60,10 @@ func (rc *RelayClient) GetCurrentEpoch(ctx context.Context) (*client.GetCurrentE
 	return rc.client.GetCurrentEpoch(ctx, req)
 }
 
-// GetSuggestedEpoch gets the suggested epoch for signing
-func (rc *RelayClient) GetSuggestedEpoch(ctx context.Context) (*client.GetSuggestedEpochResponse, error) {
-	req := &client.GetSuggestedEpochRequest{}
-	return rc.client.GetSuggestedEpoch(ctx, req)
+// GetLastAllCommitted gets the last all committed epochs for all chains
+func (rc *RelayClient) GetLastAllCommitted(ctx context.Context) (*client.GetLastAllCommittedResponse, error) {
+	req := &client.GetLastAllCommittedRequest{}
+	return rc.client.GetLastAllCommitted(ctx, req)
 }
 
 // SignMessage signs a message using the specified key tag
@@ -140,16 +140,19 @@ func main() {
 	}
 
 	// Example 2: Get suggested epoch
-	fmt.Println("\n=== Getting Suggested Epoch ===")
-	suggestedEpoch, err := relayClient.GetSuggestedEpoch(ctx)
+	fmt.Println("\n=== Calculate Last Committed Epoch ===")
+	suggestedEpoch := 0
+	epochInfos, err := relayClient.GetLastAllCommitted(ctx)
 	if err != nil {
-		log.Printf("Failed to get suggested epoch: %v", err)
+		log.Printf("Failed to get last committed epoch: %v", err)
 	} else {
-		fmt.Printf("Suggested epoch: %d\n", suggestedEpoch.Epoch)
-		if suggestedEpoch.StartTime != nil {
-			fmt.Printf("Start time: %v\n", suggestedEpoch.StartTime.AsTime())
+		for _, info := range epochInfos.EpochInfos {
+			if suggestedEpoch == 0 || int(info.GetLastCommittedEpoch()) < suggestedEpoch {
+				suggestedEpoch = int(info.GetLastCommittedEpoch())
+			}
 		}
 	}
+	fmt.Printf("Last committed epoch: %d\n", suggestedEpoch)
 
 	// Example 3: Get validator set
 	fmt.Println("\n=== Getting Validator Set ===")
