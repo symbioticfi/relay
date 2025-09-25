@@ -643,6 +643,7 @@ func TestEntityProcessor_ProcessSignature_SavesAggregationProofPendingForAggrega
 	pendingSignatureRequests, err := repo.GetSignatureRequestsByEpochPending(t.Context(), req.RequiredEpoch, 10, common.Hash{})
 	require.NoError(t, err)
 	require.Len(t, pendingSignatureRequests, 1)
+	require.Equal(t, param.Signature.SignatureTargetID(), pendingSignatureRequests[0].SignatureTargetID)
 
 	// Verify aggregation proof pending was also saved
 	pendingAggRequests, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), req.RequiredEpoch, 10, common.Hash{})

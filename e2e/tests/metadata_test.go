@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	apiv1 "github.com/symbioticfi/relay/api/client/v1"
 	"github.com/symbioticfi/relay/core/entity"
@@ -22,17 +20,7 @@ func TestGetValidatorSetMetadata(t *testing.T) {
 	_, err := loadDeploymentData(t.Context())
 	require.NoError(t, err, "Failed to load deployment data")
 
-	address := globalTestEnv.GetGRPCAddress(0)
-	t.Logf("Testing validator set metadata API on %s", address)
-
-	conn, err := grpc.NewClient(
-		address,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	require.NoErrorf(t, err, "Failed to connect to relay server at %s", address)
-	defer conn.Close()
-
-	client := apiv1.NewSymbioticClient(conn)
+	client := globalTestEnv.GetGRPCClient(t, 0)
 
 	// Get last committed epochs to find a committed epoch ≥1 for testing
 	// We need committed epochs because that's when proofs and signatures are available
@@ -212,17 +200,9 @@ func TestGetLastAllCommitted(t *testing.T) {
 	deploymentData, err := loadDeploymentData(t.Context())
 	require.NoError(t, err, "Failed to load deployment data")
 
-	address := globalTestEnv.GetGRPCAddress(0)
-	t.Logf("Testing GetLastAllCommitted API on %s", address)
+	t.Logf("Testing GetLastAllCommitted API on %d", 0)
 
-	conn, err := grpc.NewClient(
-		address,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	require.NoErrorf(t, err, "Failed to connect to relay server at %s", address)
-	defer conn.Close()
-
-	client := apiv1.NewSymbioticClient(conn)
+	client := globalTestEnv.GetGRPCClient(t, 0)
 
 	// Get expected data from contracts to validate against
 	expected := getExpectedDataFromContracts(t, deploymentData)

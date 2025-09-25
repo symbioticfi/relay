@@ -9,8 +9,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	apiv1 "github.com/symbioticfi/relay/api/client/v1"
 	"github.com/symbioticfi/relay/core/entity"
@@ -56,15 +54,7 @@ func TestNonHeaderKeySignature(t *testing.T) {
 			signatureTargetID := ""
 			for i := range globalTestEnv.Containers {
 				func() {
-					address := globalTestEnv.GetGRPCAddress(i)
-					conn, err := grpc.NewClient(
-						address,
-						grpc.WithTransportCredentials(insecure.NewCredentials()),
-					)
-					require.NoErrorf(t, err, "Failed to connect to relay server at %s", address)
-					defer conn.Close()
-
-					client := apiv1.NewSymbioticClient(conn)
+					client := globalTestEnv.GetGRPCClient(t, i)
 
 					var resp *apiv1.SignMessageResponse
 					// retry sign call 3 times as it can get transaction conflict
@@ -79,12 +69,12 @@ func TestNonHeaderKeySignature(t *testing.T) {
 							break
 						}
 					}
-					require.NoErrorf(t, err, "Failed to sign message with relay at %s", address)
-					require.NotEmptyf(t, resp.SignatureTargetId, "Empty signature target id from relay at %s", address)
+					require.NoErrorf(t, err, "Failed to sign message with relay at %d", i)
+					require.NotEmptyf(t, resp.SignatureTargetId, "Empty signature target id from relay at %d", i)
 					if signatureTargetID == "" {
 						signatureTargetID = resp.GetSignatureTargetId()
 					} else {
-						require.Equalf(t, signatureTargetID, resp.SignatureTargetId, "Mismatched signature target id from relay at %s", address)
+						require.Equalf(t, signatureTargetID, resp.SignatureTargetId, "Mismatched signature target id from relay at %d", i)
 					}
 				}()
 			}
@@ -100,15 +90,7 @@ func TestNonHeaderKeySignature(t *testing.T) {
 			ticker := time.NewTicker(3 * time.Second)
 			defer ticker.Stop()
 
-			address := globalTestEnv.GetGRPCAddress(0)
-			conn, err := grpc.NewClient(
-				address,
-				grpc.WithTransportCredentials(insecure.NewCredentials()),
-			)
-			require.NoErrorf(t, err, "Failed to connect to relay server at %s", address)
-			defer conn.Close()
-
-			client := apiv1.NewSymbioticClient(conn)
+			client := globalTestEnv.GetGRPCClient(t, 0)
 
 			for {
 				select {
@@ -120,7 +102,7 @@ func TestNonHeaderKeySignature(t *testing.T) {
 							SignatureTargetId: signatureTargetID,
 						})
 
-					require.NoErrorf(t, err, "Failed to get signatures from relay at %s", address)
+					require.NoErrorf(t, err, "Failed to get signatures from relay at %d", 0)
 
 					if tc.keyTag.Type() == entity.KeyTypeEcdsaSecp256k1 && len(resp.GetSignatures()) != len(globalTestEnv.Containers) {
 						// expect all n signatures for ECDSA

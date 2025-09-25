@@ -9,8 +9,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	apiv1 "github.com/symbioticfi/relay/api/client/v1"
 	"github.com/symbioticfi/relay/core/client/evm"
@@ -154,25 +152,17 @@ func TestRelayAPIConnectivity(t *testing.T) {
 
 	for i := range globalTestEnv.SidecarConfigs {
 		t.Run(fmt.Sprintf("Connect_%s", globalTestEnv.GetContainerPort(i)), func(t *testing.T) {
-			address := globalTestEnv.GetGRPCAddress(i)
-			t.Logf("Testing connection to %s", address)
+			t.Logf("Testing connection to %d", i)
 
 			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 			defer cancel()
 
-			conn, err := grpc.NewClient(
-				address,
-				grpc.WithTransportCredentials(insecure.NewCredentials()),
-			)
-			require.NoErrorf(t, err, "Failed to connect to relay server at %s", address)
-			defer conn.Close()
-
-			client := apiv1.NewSymbioticClient(conn)
+			client := globalTestEnv.GetGRPCClient(t, i)
 			epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
-			require.NoErrorf(t, err, "Failed to get current epoch from %s", address)
+			require.NoErrorf(t, err, "Failed to get current epoch from %d", i)
 			require.NotNil(t, epochResp.GetStartTime(), "Epoch start time should be set")
 
-			t.Logf("Successfully connected to %s - Current epoch: %d", address, epochResp.GetEpoch())
+			t.Logf("Successfully connected to %d - Current epoch: %d", i, epochResp.GetEpoch())
 		})
 	}
 
@@ -186,17 +176,7 @@ func TestValidatorSetAPI(t *testing.T) {
 	deploymentData, err := loadDeploymentData(t.Context())
 	require.NoError(t, err, "Failed to load deployment data")
 
-	address := globalTestEnv.GetGRPCAddress(0)
-	t.Logf("Testing validator set API on %s", address)
-
-	conn, err := grpc.NewClient(
-		address,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	require.NoErrorf(t, err, "Failed to connect to relay server at %s", address)
-	defer conn.Close()
-
-	client := apiv1.NewSymbioticClient(conn)
+	client := globalTestEnv.GetGRPCClient(t, 0)
 
 	const retryAttempts = 4
 	for i := 0; i < retryAttempts; i++ {
@@ -205,7 +185,7 @@ func TestValidatorSetAPI(t *testing.T) {
 		cancel()
 
 		if err != nil {
-			t.Logf("Attempt %d: Failed to get validator set from %s: %v", i+1, address, err)
+			t.Logf("Attempt %d: Failed to get validator set from %d: %v", i+1, i, err)
 			if i == retryAttempts-1 {
 				t.Fatalf("Failed to get validator set after %d attempts: %v", retryAttempts, err)
 			}
@@ -228,8 +208,8 @@ func TestValidatorSetAPI(t *testing.T) {
 		require.NotEmpty(t, valsetResp.GetQuorumThreshold(), "Quorum threshold should not be empty")
 		require.NotEmpty(t, valsetResp.GetValidators(), "Validator set should contain validators")
 
-		t.Logf("Validator set from %s: Epoch %d, %d validators, Version %d",
-			address, valsetResp.GetEpoch(), len(valsetResp.GetValidators()), valsetResp.GetVersion())
+		t.Logf("Validator set from %d: Epoch %d, %d validators, Version %d",
+			i, valsetResp.GetEpoch(), len(valsetResp.GetValidators()), valsetResp.GetVersion())
 
 		for i, validator := range valsetResp.GetValidators() {
 			require.NotEmpty(t, validator.GetOperator(), "Validator %d operator should not be empty", i)

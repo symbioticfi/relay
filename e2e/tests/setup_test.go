@@ -14,9 +14,13 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/go-errors/errors"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
+	apiv1 "github.com/symbioticfi/relay/api/client/v1"
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/crypto"
 )
@@ -259,4 +263,18 @@ func (env *TestEnvironment) GetHealthEndpoint(i int) string {
 
 func (env *TestEnvironment) GetGRPCAddress(index int) string {
 	return fmt.Sprintf("localhost:%s", env.GetContainerPort(index))
+}
+
+func (env *TestEnvironment) GetGRPCClient(t *testing.T, index int) *apiv1.SymbioticClient {
+	t.Helper()
+	conn, err := grpc.NewClient(
+		env.GetGRPCAddress(index),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	require.NoErrorf(t, err, "Failed to connect to relay server at %s", env.GetGRPCAddress(index))
+	t.Cleanup(func() {
+		conn.Close()
+	})
+
+	return apiv1.NewSymbioticClient(conn)
 }
