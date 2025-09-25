@@ -19,17 +19,19 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SymbioticAPIService_SignMessage_FullMethodName           = "/api.proto.v1.SymbioticAPIService/SignMessage"
-	SymbioticAPIService_GetAggregationProof_FullMethodName   = "/api.proto.v1.SymbioticAPIService/GetAggregationProof"
-	SymbioticAPIService_GetCurrentEpoch_FullMethodName       = "/api.proto.v1.SymbioticAPIService/GetCurrentEpoch"
-	SymbioticAPIService_GetSuggestedEpoch_FullMethodName     = "/api.proto.v1.SymbioticAPIService/GetSuggestedEpoch"
-	SymbioticAPIService_GetSignatures_FullMethodName         = "/api.proto.v1.SymbioticAPIService/GetSignatures"
-	SymbioticAPIService_GetSignatureRequest_FullMethodName   = "/api.proto.v1.SymbioticAPIService/GetSignatureRequest"
-	SymbioticAPIService_GetAggregationStatus_FullMethodName  = "/api.proto.v1.SymbioticAPIService/GetAggregationStatus"
-	SymbioticAPIService_GetValidatorSet_FullMethodName       = "/api.proto.v1.SymbioticAPIService/GetValidatorSet"
-	SymbioticAPIService_GetValidatorByAddress_FullMethodName = "/api.proto.v1.SymbioticAPIService/GetValidatorByAddress"
-	SymbioticAPIService_GetValidatorSetHeader_FullMethodName = "/api.proto.v1.SymbioticAPIService/GetValidatorSetHeader"
-	SymbioticAPIService_SignMessageWait_FullMethodName       = "/api.proto.v1.SymbioticAPIService/SignMessageWait"
+	SymbioticAPIService_SignMessage_FullMethodName             = "/api.proto.v1.SymbioticAPIService/SignMessage"
+	SymbioticAPIService_GetAggregationProof_FullMethodName     = "/api.proto.v1.SymbioticAPIService/GetAggregationProof"
+	SymbioticAPIService_GetCurrentEpoch_FullMethodName         = "/api.proto.v1.SymbioticAPIService/GetCurrentEpoch"
+	SymbioticAPIService_GetSignatures_FullMethodName           = "/api.proto.v1.SymbioticAPIService/GetSignatures"
+	SymbioticAPIService_GetSignatureRequest_FullMethodName     = "/api.proto.v1.SymbioticAPIService/GetSignatureRequest"
+	SymbioticAPIService_GetAggregationStatus_FullMethodName    = "/api.proto.v1.SymbioticAPIService/GetAggregationStatus"
+	SymbioticAPIService_GetValidatorSet_FullMethodName         = "/api.proto.v1.SymbioticAPIService/GetValidatorSet"
+	SymbioticAPIService_GetValidatorByAddress_FullMethodName   = "/api.proto.v1.SymbioticAPIService/GetValidatorByAddress"
+	SymbioticAPIService_GetValidatorSetHeader_FullMethodName   = "/api.proto.v1.SymbioticAPIService/GetValidatorSetHeader"
+	SymbioticAPIService_SignMessageWait_FullMethodName         = "/api.proto.v1.SymbioticAPIService/SignMessageWait"
+	SymbioticAPIService_GetLastCommitted_FullMethodName        = "/api.proto.v1.SymbioticAPIService/GetLastCommitted"
+	SymbioticAPIService_GetLastAllCommitted_FullMethodName     = "/api.proto.v1.SymbioticAPIService/GetLastAllCommitted"
+	SymbioticAPIService_GetValidatorSetMetadata_FullMethodName = "/api.proto.v1.SymbioticAPIService/GetValidatorSetMetadata"
 )
 
 // SymbioticAPIServiceClient is the client API for SymbioticAPIService service.
@@ -44,8 +46,6 @@ type SymbioticAPIServiceClient interface {
 	GetAggregationProof(ctx context.Context, in *GetAggregationProofRequest, opts ...grpc.CallOption) (*GetAggregationProofResponse, error)
 	// Get current epoch
 	GetCurrentEpoch(ctx context.Context, in *GetCurrentEpochRequest, opts ...grpc.CallOption) (*GetCurrentEpochResponse, error)
-	// Get suggested epoch to request sign
-	GetSuggestedEpoch(ctx context.Context, in *GetSuggestedEpochRequest, opts ...grpc.CallOption) (*GetSuggestedEpochResponse, error)
 	// Get signature by request hash
 	GetSignatures(ctx context.Context, in *GetSignaturesRequest, opts ...grpc.CallOption) (*GetSignaturesResponse, error)
 	// Get signature request by request hash
@@ -60,6 +60,12 @@ type SymbioticAPIServiceClient interface {
 	GetValidatorSetHeader(ctx context.Context, in *GetValidatorSetHeaderRequest, opts ...grpc.CallOption) (*GetValidatorSetHeaderResponse, error)
 	// Sign a message and wait for aggregation proof via stream
 	SignMessageWait(ctx context.Context, in *SignMessageWaitRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SignMessageWaitResponse], error)
+	// Get last committed epoch for a specific settlement chain
+	GetLastCommitted(ctx context.Context, in *GetLastCommittedRequest, opts ...grpc.CallOption) (*GetLastCommittedResponse, error)
+	// Get last committed epochs for all settlement chains
+	GetLastAllCommitted(ctx context.Context, in *GetLastAllCommittedRequest, opts ...grpc.CallOption) (*GetLastAllCommittedResponse, error)
+	// Get validator set metadata like extra data and request hash to fetch aggregation and signature requests
+	GetValidatorSetMetadata(ctx context.Context, in *GetValidatorSetMetadataRequest, opts ...grpc.CallOption) (*GetValidatorSetMetadataResponse, error)
 }
 
 type symbioticAPIServiceClient struct {
@@ -94,16 +100,6 @@ func (c *symbioticAPIServiceClient) GetCurrentEpoch(ctx context.Context, in *Get
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetCurrentEpochResponse)
 	err := c.cc.Invoke(ctx, SymbioticAPIService_GetCurrentEpoch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *symbioticAPIServiceClient) GetSuggestedEpoch(ctx context.Context, in *GetSuggestedEpochRequest, opts ...grpc.CallOption) (*GetSuggestedEpochResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetSuggestedEpochResponse)
-	err := c.cc.Invoke(ctx, SymbioticAPIService_GetSuggestedEpoch_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -189,6 +185,36 @@ func (c *symbioticAPIServiceClient) SignMessageWait(ctx context.Context, in *Sig
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SymbioticAPIService_SignMessageWaitClient = grpc.ServerStreamingClient[SignMessageWaitResponse]
 
+func (c *symbioticAPIServiceClient) GetLastCommitted(ctx context.Context, in *GetLastCommittedRequest, opts ...grpc.CallOption) (*GetLastCommittedResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetLastCommittedResponse)
+	err := c.cc.Invoke(ctx, SymbioticAPIService_GetLastCommitted_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *symbioticAPIServiceClient) GetLastAllCommitted(ctx context.Context, in *GetLastAllCommittedRequest, opts ...grpc.CallOption) (*GetLastAllCommittedResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetLastAllCommittedResponse)
+	err := c.cc.Invoke(ctx, SymbioticAPIService_GetLastAllCommitted_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *symbioticAPIServiceClient) GetValidatorSetMetadata(ctx context.Context, in *GetValidatorSetMetadataRequest, opts ...grpc.CallOption) (*GetValidatorSetMetadataResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetValidatorSetMetadataResponse)
+	err := c.cc.Invoke(ctx, SymbioticAPIService_GetValidatorSetMetadata_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SymbioticAPIServiceServer is the server API for SymbioticAPIService service.
 // All implementations must embed UnimplementedSymbioticAPIServiceServer
 // for forward compatibility.
@@ -201,8 +227,6 @@ type SymbioticAPIServiceServer interface {
 	GetAggregationProof(context.Context, *GetAggregationProofRequest) (*GetAggregationProofResponse, error)
 	// Get current epoch
 	GetCurrentEpoch(context.Context, *GetCurrentEpochRequest) (*GetCurrentEpochResponse, error)
-	// Get suggested epoch to request sign
-	GetSuggestedEpoch(context.Context, *GetSuggestedEpochRequest) (*GetSuggestedEpochResponse, error)
 	// Get signature by request hash
 	GetSignatures(context.Context, *GetSignaturesRequest) (*GetSignaturesResponse, error)
 	// Get signature request by request hash
@@ -217,6 +241,12 @@ type SymbioticAPIServiceServer interface {
 	GetValidatorSetHeader(context.Context, *GetValidatorSetHeaderRequest) (*GetValidatorSetHeaderResponse, error)
 	// Sign a message and wait for aggregation proof via stream
 	SignMessageWait(*SignMessageWaitRequest, grpc.ServerStreamingServer[SignMessageWaitResponse]) error
+	// Get last committed epoch for a specific settlement chain
+	GetLastCommitted(context.Context, *GetLastCommittedRequest) (*GetLastCommittedResponse, error)
+	// Get last committed epochs for all settlement chains
+	GetLastAllCommitted(context.Context, *GetLastAllCommittedRequest) (*GetLastAllCommittedResponse, error)
+	// Get validator set metadata like extra data and request hash to fetch aggregation and signature requests
+	GetValidatorSetMetadata(context.Context, *GetValidatorSetMetadataRequest) (*GetValidatorSetMetadataResponse, error)
 	mustEmbedUnimplementedSymbioticAPIServiceServer()
 }
 
@@ -235,9 +265,6 @@ func (UnimplementedSymbioticAPIServiceServer) GetAggregationProof(context.Contex
 }
 func (UnimplementedSymbioticAPIServiceServer) GetCurrentEpoch(context.Context, *GetCurrentEpochRequest) (*GetCurrentEpochResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentEpoch not implemented")
-}
-func (UnimplementedSymbioticAPIServiceServer) GetSuggestedEpoch(context.Context, *GetSuggestedEpochRequest) (*GetSuggestedEpochResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetSuggestedEpoch not implemented")
 }
 func (UnimplementedSymbioticAPIServiceServer) GetSignatures(context.Context, *GetSignaturesRequest) (*GetSignaturesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSignatures not implemented")
@@ -259,6 +286,15 @@ func (UnimplementedSymbioticAPIServiceServer) GetValidatorSetHeader(context.Cont
 }
 func (UnimplementedSymbioticAPIServiceServer) SignMessageWait(*SignMessageWaitRequest, grpc.ServerStreamingServer[SignMessageWaitResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method SignMessageWait not implemented")
+}
+func (UnimplementedSymbioticAPIServiceServer) GetLastCommitted(context.Context, *GetLastCommittedRequest) (*GetLastCommittedResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLastCommitted not implemented")
+}
+func (UnimplementedSymbioticAPIServiceServer) GetLastAllCommitted(context.Context, *GetLastAllCommittedRequest) (*GetLastAllCommittedResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLastAllCommitted not implemented")
+}
+func (UnimplementedSymbioticAPIServiceServer) GetValidatorSetMetadata(context.Context, *GetValidatorSetMetadataRequest) (*GetValidatorSetMetadataResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetValidatorSetMetadata not implemented")
 }
 func (UnimplementedSymbioticAPIServiceServer) mustEmbedUnimplementedSymbioticAPIServiceServer() {}
 func (UnimplementedSymbioticAPIServiceServer) testEmbeddedByValue()                             {}
@@ -331,24 +367,6 @@ func _SymbioticAPIService_GetCurrentEpoch_Handler(srv interface{}, ctx context.C
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SymbioticAPIServiceServer).GetCurrentEpoch(ctx, req.(*GetCurrentEpochRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _SymbioticAPIService_GetSuggestedEpoch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetSuggestedEpochRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SymbioticAPIServiceServer).GetSuggestedEpoch(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SymbioticAPIService_GetSuggestedEpoch_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SymbioticAPIServiceServer).GetSuggestedEpoch(ctx, req.(*GetSuggestedEpochRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -472,6 +490,60 @@ func _SymbioticAPIService_SignMessageWait_Handler(srv interface{}, stream grpc.S
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type SymbioticAPIService_SignMessageWaitServer = grpc.ServerStreamingServer[SignMessageWaitResponse]
 
+func _SymbioticAPIService_GetLastCommitted_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLastCommittedRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SymbioticAPIServiceServer).GetLastCommitted(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SymbioticAPIService_GetLastCommitted_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SymbioticAPIServiceServer).GetLastCommitted(ctx, req.(*GetLastCommittedRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SymbioticAPIService_GetLastAllCommitted_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLastAllCommittedRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SymbioticAPIServiceServer).GetLastAllCommitted(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SymbioticAPIService_GetLastAllCommitted_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SymbioticAPIServiceServer).GetLastAllCommitted(ctx, req.(*GetLastAllCommittedRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SymbioticAPIService_GetValidatorSetMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetValidatorSetMetadataRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SymbioticAPIServiceServer).GetValidatorSetMetadata(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SymbioticAPIService_GetValidatorSetMetadata_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SymbioticAPIServiceServer).GetValidatorSetMetadata(ctx, req.(*GetValidatorSetMetadataRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SymbioticAPIService_ServiceDesc is the grpc.ServiceDesc for SymbioticAPIService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -490,10 +562,6 @@ var SymbioticAPIService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetCurrentEpoch",
 			Handler:    _SymbioticAPIService_GetCurrentEpoch_Handler,
-		},
-		{
-			MethodName: "GetSuggestedEpoch",
-			Handler:    _SymbioticAPIService_GetSuggestedEpoch_Handler,
 		},
 		{
 			MethodName: "GetSignatures",
@@ -518,6 +586,18 @@ var SymbioticAPIService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetValidatorSetHeader",
 			Handler:    _SymbioticAPIService_GetValidatorSetHeader_Handler,
+		},
+		{
+			MethodName: "GetLastCommitted",
+			Handler:    _SymbioticAPIService_GetLastCommitted_Handler,
+		},
+		{
+			MethodName: "GetLastAllCommitted",
+			Handler:    _SymbioticAPIService_GetLastAllCommitted_Handler,
+		},
+		{
+			MethodName: "GetValidatorSetMetadata",
+			Handler:    _SymbioticAPIService_GetValidatorSetMetadata_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

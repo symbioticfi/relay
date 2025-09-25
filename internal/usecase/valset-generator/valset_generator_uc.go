@@ -49,6 +49,7 @@ type repo interface {
 	GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch entity.Epoch, limit int) ([]entity.ProofCommitKey, error)
 	RemoveProofCommitPending(ctx context.Context, epoch entity.Epoch, reqHash common.Hash) error
 	GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (uint64, error)
+	SaveValidatorSetMetadata(ctx context.Context, epoch uint64, extraData []entity.ExtraData, commitmentData []byte) error
 }
 
 type deriver interface {
@@ -150,6 +151,10 @@ func (s *Service) process(ctx context.Context) error {
 	slog.DebugContext(ctx, "Signed validator set", "header", header, "extra data", extraData, "hash", hex.EncodeToString(data))
 	if err = s.cfg.Repo.SaveLatestSignedValidatorSetEpoch(ctx, valSet); err != nil {
 		return errors.Errorf("failed to save latest signed valset epoch: %w", err)
+	}
+
+	if err = s.cfg.Repo.SaveValidatorSetMetadata(ctx, valSet.Epoch, extraData, data); err != nil {
+		return errors.Errorf("failed to save validator set metadata: %w", err)
 	}
 
 	if err = s.cfg.Signer.Sign(ctx, r); err != nil {

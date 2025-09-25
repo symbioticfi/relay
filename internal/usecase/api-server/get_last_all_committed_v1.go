@@ -1,0 +1,41 @@
+package api_server
+
+import (
+	"context"
+	"time"
+
+	"github.com/go-errors/errors"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
+)
+
+// GetLastAllCommitted handles the gRPC GetLastAllCommitted request
+func (h *grpcHandler) GetLastAllCommitted(ctx context.Context, _ *apiv1.GetLastAllCommittedRequest) (*apiv1.GetLastAllCommittedResponse, error) {
+	cfg, err := h.cfg.EvmClient.GetConfig(ctx, uint64(time.Now().Unix()))
+	if err != nil {
+		return nil, errors.Errorf("failed to get config: %w", err)
+	}
+
+	epochInfos := make(map[uint64]*apiv1.ChainEpochInfo)
+	for _, chain := range cfg.Settlements {
+		lastCommittedEpoch, err := h.cfg.EvmClient.GetLastCommittedHeaderEpoch(ctx, chain)
+		if err != nil {
+			return nil, errors.Errorf("failed to get last committed epoch for chain %d: %w", chain.ChainId, err)
+		}
+
+		epochStart, err := h.cfg.EvmClient.GetEpochStart(ctx, lastCommittedEpoch)
+		if err != nil {
+			return nil, errors.Errorf("failed to get epoch start for chain %d: %w", chain.ChainId, err)
+		}
+
+		epochInfos[chain.ChainId] = &apiv1.ChainEpochInfo{
+			LastCommittedEpoch: lastCommittedEpoch,
+			StartTime:          timestamppb.New(time.Unix(int64(epochStart), 0).UTC()),
+		}
+	}
+
+	return &apiv1.GetLastAllCommittedResponse{
+		EpochInfos: epochInfos,
+	}, nil
+}
