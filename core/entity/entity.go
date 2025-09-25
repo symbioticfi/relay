@@ -520,8 +520,8 @@ type ValidatorSetHeader struct {
 }
 
 type ExtraData struct {
-	Key   common.Hash `json:"key"`
-	Value common.Hash `json:"value"`
+	Key   common.Hash
+	Value common.Hash
 }
 
 type ExtraDataList []ExtraData

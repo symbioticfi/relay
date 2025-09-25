@@ -787,13 +787,24 @@ func extractAdditionalInfoFromHeaderData(data []byte) (aggIndices []uint32, comm
 }
 
 type validatorSetMetadataDTO struct {
-	ExtraData      []entity.ExtraData `json:"extra_data"`
-	CommitmentData []byte             `json:"commitment_data"`
+	ExtraData      []extraDataDTO `json:"extra_data"`
+	CommitmentData []byte         `json:"commitment_data"`
+}
+
+type extraDataDTO struct {
+	Key   []byte `json:"key"`
+	Value []byte `json:"value"`
 }
 
 func validatorSetMetadataToBytes(extraData []entity.ExtraData, commitmentData []byte) ([]byte, error) {
+	extraDataDTOs := lo.Map(extraData, func(ed entity.ExtraData, _ int) extraDataDTO {
+		return extraDataDTO{
+			Key:   ed.Key.Bytes(),
+			Value: ed.Value.Bytes(),
+		}
+	})
 	metadataData := validatorSetMetadataDTO{
-		ExtraData:      extraData,
+		ExtraData:      extraDataDTOs,
 		CommitmentData: commitmentData,
 	}
 
@@ -806,5 +817,12 @@ func bytesToValidatorSetMetadata(data []byte) ([]entity.ExtraData, []byte, error
 		return nil, nil, errors.Errorf("failed to unmarshal validator set header: %w", err)
 	}
 
-	return metadataDTO.ExtraData, metadataDTO.CommitmentData, nil
+	extraDataDTOs := lo.Map(metadataDTO.ExtraData, func(ed extraDataDTO, _ int) entity.ExtraData {
+		return entity.ExtraData{
+			Key:   common.BytesToHash(ed.Key),
+			Value: common.BytesToHash(ed.Value),
+		}
+	})
+
+	return extraDataDTOs, metadataDTO.CommitmentData, nil
 }
