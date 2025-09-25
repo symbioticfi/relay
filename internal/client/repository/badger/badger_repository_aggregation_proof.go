@@ -191,7 +191,7 @@ func (r *Repository) GetSignatureRequestsWithoutAggregationProof(ctx context.Con
 				break
 			}
 
-			// Extract request hash from the pending key: "aggregation_proof_pending:epoch:hash"
+			// Extract signature target id from the pending key: "aggregation_proof_pending:epoch:signature_target_id"
 			item := it.Item()
 			key := string(item.Key())
 

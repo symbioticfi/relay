@@ -41,7 +41,7 @@ func (s *Syncer) BuildWantAggregationProofsRequest(ctx context.Context) (entity.
 				break // No more requests for this epoch
 			}
 
-			// Collect request hashes
+			// Collect signature target ids
 			for _, req := range requests {
 				allSignatureTargetIDs = append(allSignatureTargetIDs, req.SignatureTargetID)
 				totalRequests++

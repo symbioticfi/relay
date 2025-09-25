@@ -188,7 +188,7 @@ func main() {
 		return
 	}
 
-	fmt.Printf("Request hash: %s\n", signResponse.GetSignatureTargetId())
+	fmt.Printf("Signature target id: %s\n", signResponse.GetSignatureTargetId())
 	fmt.Printf("Epoch: %d\n", signResponse.Epoch)
 
 	// Example 5: Get aggregation proof (this might fail if signing is not complete)
@@ -242,7 +242,7 @@ func main() {
 		}
 
 		fmt.Printf("Status: %v\n", response.Status)
-		fmt.Printf("Request hash: %s\n", response.GetSignatureTargetId())
+		fmt.Printf("Signature target id: %s\n", response.GetSignatureTargetId())
 		fmt.Printf("Epoch: %d\n", response.Epoch)
 
 		switch response.Status {

@@ -19,7 +19,7 @@ func (s *Service) handleSignatureReadyMessage(pubSubMsg *pubsub.Message) error {
 
 	// Validate the signatureGenerated message
 	if len(signatureGenerated.GetSignatureTargetId()) > maxSignatureTargetIDhSize {
-		return errors.Errorf("request hash size exceeds maximum allowed size: %d bytes", maxSignatureTargetIDhSize)
+		return errors.Errorf("signature target id size exceeds maximum allowed size: %d bytes", maxSignatureTargetIDhSize)
 	}
 	if len(signatureGenerated.GetSignature().GetPublicKey()) > maxPubKeySize {
 		return errors.Errorf("public key size exceeds maximum allowed size: %d bytes", maxPubKeySize)
@@ -59,7 +59,7 @@ func (s *Service) handleAggregatedProofReadyMessage(pubSubMsg *pubsub.Message) e
 
 	// Validate the signaturesAggregated message
 	if len(signaturesAggregated.GetSignatureTargetId()) > maxSignatureTargetIDhSize {
-		return errors.Errorf("request hash size exceeds maximum allowed size: %d bytes", maxSignatureTargetIDhSize)
+		return errors.Errorf("signature target id size exceeds maximum allowed size: %d bytes", maxSignatureTargetIDhSize)
 	}
 	if len(signaturesAggregated.GetAggregationProof().GetMessageHash()) > maxMsgHashSize {
 		return errors.Errorf("aggregation proof message hash size exceeds maximum allowed size: %d bytes", maxMsgHashSize)

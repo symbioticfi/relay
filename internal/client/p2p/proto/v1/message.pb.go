@@ -344,7 +344,7 @@ func (x *P2PMessage) GetData() []byte {
 
 type WantSignaturesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Map of request hash to bitmap of wanted validator indices
+	// Map of signature target id to bitmap of wanted validator indices
 	WantSignatures map[string][]byte `protobuf:"bytes,1,rep,name=want_signatures,json=wantSignatures,proto3" json:"want_signatures,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // key: hex string of common.Hash, value: roaring bitmap bytes
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -389,7 +389,7 @@ func (x *WantSignaturesRequest) GetWantSignatures() map[string][]byte {
 
 type WantSignaturesResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Map of request hash to list of validator signatures
+	// Map of signature target id to list of validator signatures
 	Signatures    map[string]*ValidatorSignatureList `protobuf:"bytes,2,rep,name=signatures,proto3" json:"signatures,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // key: hex string of common.Hash
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -609,7 +609,7 @@ func (x *SignatureExtended) GetPublicKey() []byte {
 
 type WantAggregationProofsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// List of request hashes for which aggregation proofs are needed
+	// List of signature target ids for which aggregation proofs are needed
 	SignatureTargetIds []string `protobuf:"bytes,1,rep,name=signature_target_ids,json=signatureTargetIds,proto3" json:"signature_target_ids,omitempty"` // hex strings of common.Hash
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -654,7 +654,7 @@ func (x *WantAggregationProofsRequest) GetSignatureTargetIds() []string {
 
 type WantAggregationProofsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Map of request hash to aggregation proof
+	// Map of signature target ids to aggregation proof
 	Proofs        map[string]*AggregationProof `protobuf:"bytes,1,rep,name=proofs,proto3" json:"proofs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // key: hex string of common.Hash
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

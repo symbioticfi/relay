@@ -182,7 +182,7 @@ func TestBadgerRepository_GetSignatureRequestsWithoutAggregationProof(t *testing
 		}
 
 		for _, req := range secondPage {
-			require.False(t, firstPageHashes[req.SignatureTargetID], "Found duplicate request hash between pages")
+			require.False(t, firstPageHashes[req.SignatureTargetID], "Found duplicate signature target id between pages")
 		}
 
 		// Verify all original requests are found across both pages

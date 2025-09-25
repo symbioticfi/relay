@@ -62,15 +62,15 @@ func (r *Repository) saveSignatureRequestToKey(ctx context.Context, req entity.S
 
 func (r *Repository) SaveSignatureRequest(ctx context.Context, signatureTargetID common.Hash, req entity.SignatureRequest) error {
 	primaryKey := keySignatureRequest(req.RequiredEpoch, signatureTargetID)
-	hashIndexKey := keySignatureTargetIDIndex(signatureTargetID)
+	signatureTargetIDIndexKey := keySignatureTargetIDIndex(signatureTargetID)
 
 	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
 		if err := r.saveSignatureRequestToKey(ctx, req, primaryKey); err != nil {
 			return err
 		}
 
-		if err := getTxn(ctx).Set(hashIndexKey, primaryKey); err != nil {
-			return errors.Errorf("failed to store signature request hash index: %w", err)
+		if err := getTxn(ctx).Set(signatureTargetIDIndexKey, primaryKey); err != nil {
+			return errors.Errorf("failed to store signature signature target id index: %w", err)
 		}
 
 		return nil
@@ -156,7 +156,7 @@ func (r *Repository) GetSignatureRequest(ctx context.Context, signatureTargetID 
 			if errors.Is(err, badger.ErrKeyNotFound) {
 				return errors.Errorf("no signature request found for signature target %s: %w", signatureTargetID.String(), entity.ErrEntityNotFound)
 			}
-			return errors.Errorf("failed to get signature request hash index: %w", err)
+			return errors.Errorf("failed to get signature target id index: %w", err)
 		}
 
 		primaryKey, err := hashIndexItem.ValueCopy(nil)
@@ -286,7 +286,7 @@ func (r *Repository) GetSignatureRequestsByEpochPending(ctx context.Context, epo
 				break
 			}
 
-			// Extract request hash from the pending key: "signature_request_pending:epoch:hash"
+			// Extract signature target id from the pending key: "signature_request_pending:epoch:hash"
 			item := it.Item()
 			key := string(item.Key())
 

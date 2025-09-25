@@ -14,9 +14,9 @@ import (
 // the requested signatures that are available in local storage.
 //
 // The method performs the following operations:
-// 1. Iterates through each signature request hash in the incoming request
+// 1. Iterates through each signature target id in the incoming request
 // 2. For each requested validator index, directly retrieves the signature using GetSignatureByIndex
-// 3. Builds a response containing validator signatures organized by request hash
+// 3. Builds a response containing validator signatures organized by signature target id
 //
 // The response is limited by MaxResponseSignatureCount to prevent memory exhaustion
 // and network congestion during P2P synchronization.
@@ -25,7 +25,7 @@ import (
 //   - Processes requests in iteration order (map iteration is non-deterministic)
 //   - Stops processing when MaxResponseSignatureCount limit is reached
 //   - Skips validator indices where signatures are not found locally
-//   - Returns empty signatures map for request hashes where no matching signatures are found
+//   - Returns empty signatures map for signature target ids where no matching signatures are found
 func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity.WantSignaturesRequest) (entity.WantSignaturesResponse, error) {
 	slog.InfoContext(ctx, "Handling want signatures request", "request_count", len(request.WantSignatures))
 

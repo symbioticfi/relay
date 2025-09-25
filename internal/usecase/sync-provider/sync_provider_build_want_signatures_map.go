@@ -21,7 +21,7 @@ func (s *Syncer) BuildWantSignaturesRequest(ctx context.Context) (entity.WantSig
 	}, nil
 }
 
-// buildWantSignaturesMap constructs a map of signature request hashes to missing validator bitmaps
+// buildWantSignaturesMap constructs a map of signature target id to missing validator bitmaps
 // for pending signature requests across multiple epochs.
 //
 // The method performs the following operations:
@@ -29,7 +29,7 @@ func (s *Syncer) BuildWantSignaturesRequest(ctx context.Context) (entity.WantSig
 // 2. Iterates through epochs from newest to oldest to prioritize recent requests
 // 3. For each epoch, fetches pending signature requests in batches
 // 4. For each request, identifies validators that haven't provided signatures yet
-// 5. Builds a map where keys are request hashes and values are bitmaps of missing validators
+// 5. Builds a map where keys are signature target ids and values are bitmaps of missing validators
 //
 // The scanning is limited by MaxSignatureRequestsPerSync to prevent excessive memory usage
 // and network overhead during synchronization.
