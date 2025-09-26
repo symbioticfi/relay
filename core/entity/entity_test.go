@@ -414,3 +414,50 @@ func TestValidatorSet_IsActiveCommitter(t *testing.T) {
 		require.False(t, result, "Should return false when no committers are defined")
 	})
 }
+
+func TestPaddedUint64(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    uint64
+		expected []byte
+	}{
+		{
+			name:     "zero value",
+			input:    0,
+			expected: []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+		},
+		{
+			name:     "small positive value",
+			input:    255,
+			expected: []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff},
+		},
+		{
+			name:     "medium value",
+			input:    65535, // 0xFFFF
+			expected: []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff},
+		},
+		{
+			name:     "large value",
+			input:    4294967295, // 0xFFFFFFFF
+			expected: []byte{0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff},
+		},
+		{
+			name:     "maximum uint64 value",
+			input:    18446744073709551615, // 0xFFFFFFFFFFFFFFFF
+			expected: []byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
+		},
+		{
+			name:     "epoch-like value",
+			input:    1640995200, // Typical epoch timestamp
+			expected: []byte{0x00, 0x00, 0x00, 0x00, 0x61, 0xcf, 0x99, 0x80},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := paddedUint64(tt.input)
+			require.Equal(t, tt.expected, result, "paddedUint64(%d) should return correct big-endian bytes", tt.input)
+			require.Len(t, result, 8, "paddedUint64 should always return 8 bytes")
+		})
+	}
+}

@@ -3,6 +3,7 @@ package entity
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -163,9 +164,15 @@ func (s SignatureExtended) RequestID() common.Hash {
 func requestID(keyTag KeyTag, epoch Epoch, messageHash RawMessageHash) common.Hash {
 	return crypto.Keccak256Hash(
 		[]byte{uint8(keyTag)},
-		new(big.Int).SetUint64(uint64(epoch)).Bytes(),
+		paddedUint64(uint64(epoch)),
 		messageHash,
 	)
+}
+
+func paddedUint64(value uint64) []byte {
+	padded := make([]byte, 8)
+	binary.BigEndian.PutUint64(padded, value)
+	return padded
 }
 
 // AggregationProof aggregator.proof(signatures []SignatureExtended) -> AggregationProof
