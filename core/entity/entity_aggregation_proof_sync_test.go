@@ -23,10 +23,14 @@ func TestAggregationProofSync_Integration(t *testing.T) {
 		// Step 2: Create response with available proofs (only 2 out of 3)
 		proof1 := AggregationProof{
 			MessageHash: []byte("message1"),
+			KeyTag:      KeyTag(15),
+			Epoch:       10,
 			Proof:       []byte("proof1"),
 		}
 		proof2 := AggregationProof{
 			MessageHash: []byte("message2"),
+			KeyTag:      KeyTag(15),
+			Epoch:       10,
 			Proof:       []byte("proof2"),
 		}
 

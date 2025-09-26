@@ -6,8 +6,6 @@ option go_package = "github.com/symbioticfi/relay/internal/client/p2p/proto/v1";
 
 // AggregationProof represents the aggregation proof data
 message AggregationProof {
-  uint32 verification_type = 1;
-  bytes message_hash = 2;
   bytes proof = 3;
 }
 
@@ -16,7 +14,8 @@ message SignaturesAggregated {
   bytes request_id = 1;  // 32 bytes fixed length
   uint32 key_tag = 2;
   uint64 epoch = 3;
-  AggregationProof aggregation_proof = 4;
+  bytes message_hash = 4;
+  AggregationProof aggregation_proof = 5;
 }
 
 // Signature represents individual signature data
@@ -85,6 +84,6 @@ message WantAggregationProofsRequest {
 
 message WantAggregationProofsResponse {
   // Map of request ids to aggregation proof
-  map<string, AggregationProof> proofs = 1;  // key: hex string of common.Hash
+  map<string, SignaturesAggregated> proofs = 1;  // key: hex string of common.Hash
 }
 

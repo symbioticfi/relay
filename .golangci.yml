@@ -96,6 +96,11 @@ linters:
       include:
         - ^github.com/symbioticfi/relay/core/entity.SignatureExtended$
         - ^github.com/symbioticfi/relay/core/entity.SignatureRequest$
+        - ^github.com/symbioticfi/relay/core/entity.ValidatorSignature$
+        - ^github.com/symbioticfi/relay/core/entity.ValidatorSetMetadata$
+        - ^github.com/symbioticfi/relay/core/entity.AggregationProof$
+        - ^github.com/symbioticfi/relay/internal/client/badger/.*$
+        - ^github.com/symbioticfi/relay/internal/client/p2p/proto/v1.*$$
       exclude:
         - ^database/sql.NullBool$
         - ^database/sql.NullString

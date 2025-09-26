@@ -16,7 +16,7 @@ func keySignature(requestID common.Hash, validatorIndex uint32) []byte {
 	return []byte(fmt.Sprintf("signature:%s:%010d", requestID.Hex(), validatorIndex))
 }
 
-// keySignaturePrefix returns prefix for all signatures of a signature target
+// keySignaturePrefix returns prefix for all signatures of a request id
 func keySignaturePrefix(requestID common.Hash) []byte {
 	return []byte("signature:" + requestID.Hex() + ":")
 }

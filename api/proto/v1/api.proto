@@ -17,7 +17,7 @@ service SymbioticAPIService {
   // Get current epoch
   rpc GetCurrentEpoch(GetCurrentEpochRequest) returns (GetCurrentEpochResponse);
 
-  // Get signature by request signature id
+  // Get signature by signature id
   rpc GetSignatures(GetSignaturesRequest) returns (GetSignaturesResponse);
 
   // Get signature request by signature id
@@ -44,7 +44,7 @@ service SymbioticAPIService {
   // Get last committed epochs for all settlement chains
   rpc GetLastAllCommitted(GetLastAllCommittedRequest) returns (GetLastAllCommittedResponse);
 
-  // Get validator set metadata like extra data and signature id to fetch aggregation and signature requests
+  // Get validator set metadata like extra data and request id to fetch aggregation and signature requests
   rpc GetValidatorSetMetadata(GetValidatorSetMetadataRequest) returns (GetValidatorSetMetadataResponse);
 }
 

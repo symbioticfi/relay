@@ -108,7 +108,7 @@ func (r *Repository) RemoveSignatureRequestPending(ctx context.Context, epoch en
 		_, err := txn.Get(pendingKey)
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
-				return errors.Errorf("pending signature request not found for signature target %s: %w", requestID.String(), entity.ErrEntityNotFound)
+				return errors.Errorf("pending signature request not found for request id %s: %w", requestID.String(), entity.ErrEntityNotFound)
 			}
 			return errors.Errorf("failed to check pending signature request: %w", err)
 		}
@@ -154,7 +154,7 @@ func (r *Repository) GetSignatureRequest(ctx context.Context, requestID common.H
 		hashIndexItem, err := txn.Get(keyRequestIDIndex(requestID))
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
-				return errors.Errorf("no signature request found for signature target %s: %w", requestID.String(), entity.ErrEntityNotFound)
+				return errors.Errorf("no signature request found for request id %s: %w", requestID.String(), entity.ErrEntityNotFound)
 			}
 			return errors.Errorf("failed to get request id index: %w", err)
 		}
@@ -308,7 +308,7 @@ func (r *Repository) GetSignatureRequestsByEpochPending(ctx context.Context, epo
 					// Skip this entry and continue
 					continue
 				}
-				return errors.Errorf("failed to get signature request for signature target %s: %w", requestIDStr, err)
+				return errors.Errorf("failed to get signature request for request id %s: %w", requestIDStr, err)
 			}
 
 			value, err := sigReqItem.ValueCopy(nil)

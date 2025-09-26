@@ -176,9 +176,6 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 		"duration", time.Since(appAggregationStart).String(),
 		"request_id", msg.RequestID().Hex(),
 	)
-	// Set additional context fields on the proof
-	proofData.KeyTag = msg.KeyTag
-	proofData.Epoch = msg.Epoch
 
 	err = s.cfg.P2PClient.BroadcastSignatureAggregatedMessage(ctx, proofData)
 	if err != nil {

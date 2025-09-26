@@ -58,7 +58,7 @@ func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.H
 		item, err := txn.Get(keyAggregationProof(requestID))
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
-				return errors.Errorf("no aggregation proof found for signature target %s: %w", requestID.Hex(), entity.ErrEntityNotFound)
+				return errors.Errorf("no aggregation proof found for request id %s: %w", requestID.Hex(), entity.ErrEntityNotFound)
 			}
 			return errors.Errorf("failed to get aggregation proof: %w", err)
 		}
@@ -144,7 +144,7 @@ func (r *Repository) RemoveAggregationProofPending(ctx context.Context, epoch en
 		_, err := txn.Get(pendingKey)
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
-				return errors.Errorf("pending aggregation proof not found for epoch %d and signature target %s: %w", epoch, requestID.Hex(), entity.ErrEntityNotFound)
+				return errors.Errorf("pending aggregation proof not found for epoch %d and request id %s: %w", epoch, requestID.Hex(), entity.ErrEntityNotFound)
 			}
 			return errors.Errorf("failed to check pending aggregation proof: %w", err)
 		}

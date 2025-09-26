@@ -61,7 +61,7 @@ func (s *Service) handleAggregatedProofReadyMessage(pubSubMsg *pubsub.Message) e
 	if len(signaturesAggregated.GetRequestId()) > maxRequestIDSize {
 		return errors.Errorf("request id size exceeds maximum allowed size: %d bytes", maxRequestIDSize)
 	}
-	if len(signaturesAggregated.GetAggregationProof().GetMessageHash()) > maxMsgHashSize {
+	if len(signaturesAggregated.GetMessageHash()) > maxMsgHashSize {
 		return errors.Errorf("aggregation proof message hash size exceeds maximum allowed size: %d bytes", maxMsgHashSize)
 	}
 	if len(signaturesAggregated.GetAggregationProof().GetProof()) > maxProofSize {
@@ -71,7 +71,7 @@ func (s *Service) handleAggregatedProofReadyMessage(pubSubMsg *pubsub.Message) e
 	msg := entity.AggregationProof{
 		KeyTag:      entity.KeyTag(signaturesAggregated.GetKeyTag()),
 		Epoch:       entity.Epoch(signaturesAggregated.GetEpoch()),
-		MessageHash: signaturesAggregated.GetAggregationProof().GetMessageHash(),
+		MessageHash: signaturesAggregated.GetMessageHash(),
 		Proof:       signaturesAggregated.GetAggregationProof().GetProof(),
 	}
 

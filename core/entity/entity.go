@@ -156,7 +156,7 @@ type SignatureExtended struct {
 	Signature   RawSignature   // parse based on KeyTag
 }
 
-// RequestID calculates the target ID based on Hash(MessageHash, KeyTag, Epoch)
+// RequestID calculates the request id based on Hash(MessageHash, KeyTag, Epoch)
 func (s SignatureExtended) RequestID() common.Hash {
 	return requestID(s.KeyTag, s.Epoch, s.MessageHash)
 }
@@ -183,7 +183,7 @@ type AggregationProof struct {
 	Proof       RawProof       // parse based on KeyTag
 }
 
-// RequestID calculates the target ID based on Hash(MessageHash, KeyTag, Epoch)
+// RequestID calculates the request id based on Hash(MessageHash, KeyTag, Epoch)
 func (ap AggregationProof) RequestID() common.Hash {
 	return requestID(ap.KeyTag, ap.Epoch, ap.MessageHash)
 }

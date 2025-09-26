@@ -13,7 +13,7 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 )
 
-// randomRequestID generates a random signature target ID for testing
+// randomRequestID generates a random request id for testing
 func randomRequestID(t *testing.T) common.Hash {
 	t.Helper()
 	return common.BytesToHash(randomBytes(t, 32))

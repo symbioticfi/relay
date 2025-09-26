@@ -212,8 +212,10 @@ func (a Aggregator) Aggregate(
 	proofBytes = append(proofBytes, nonSignersBytes...)
 
 	return entity.AggregationProof{
-		Proof:       proofBytes,
 		MessageHash: messageHash,
+		KeyTag:      keyTag,
+		Epoch:       entity.Epoch(valset.Epoch),
+		Proof:       proofBytes,
 	}, nil
 }
 

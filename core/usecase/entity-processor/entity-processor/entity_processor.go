@@ -118,7 +118,7 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, param entity.Sav
 		}
 
 		if err := signatureMap.SetValidatorPresent(activeIndex, validator.VotingPower); err != nil {
-			return errors.Errorf("failed to set validator present for signature target %s: %w", param.Signature.RequestID().Hex(), err)
+			return errors.Errorf("failed to set validator present for request id %s: %w", param.Signature.RequestID().Hex(), err)
 		}
 
 		if err := s.cfg.Repo.UpdateSignatureMap(ctx, signatureMap); err != nil {
@@ -187,7 +187,7 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, param entity.Sav
 
 // ProcessAggregationProof processes an aggregation proof by saving it and removing from pending collection
 func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregationProof entity.AggregationProof) error {
-	requestId := aggregationProof.RequestID()
+	requestID := aggregationProof.RequestID()
 
 	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(aggregationProof.Epoch))
 	if err != nil {
@@ -204,13 +204,13 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregati
 
 	err = s.cfg.Repo.DoUpdateInTx(ctx, func(ctx context.Context) error {
 		// Save the aggregation proof
-		err := s.cfg.Repo.SaveAggregationProof(ctx, requestId, aggregationProof)
+		err := s.cfg.Repo.SaveAggregationProof(ctx, requestID, aggregationProof)
 		if err != nil {
 			return errors.Errorf("failed to save aggregation proof: %w", err)
 		}
 
 		// Remove from pending collection
-		err = s.cfg.Repo.RemoveAggregationProofPending(ctx, aggregationProof.Epoch, requestId)
+		err = s.cfg.Repo.RemoveAggregationProofPending(ctx, aggregationProof.Epoch, requestID)
 		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 			return errors.Errorf("failed to remove aggregation proof from pending collection: %w", err)
 		}

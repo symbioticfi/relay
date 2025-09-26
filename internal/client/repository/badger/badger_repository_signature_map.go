@@ -51,7 +51,7 @@ func (r *Repository) getSignatureMap(ctx context.Context, requestID common.Hash)
 	item, err := txn.Get(key)
 	if err != nil {
 		if errors.Is(err, badger.ErrKeyNotFound) {
-			return entity.SignatureMap{}, errors.Errorf("no signature map found for signature target %s: %w", requestID.Hex(), entity.ErrEntityNotFound)
+			return entity.SignatureMap{}, errors.Errorf("no signature map found for request id %s: %w", requestID.Hex(), entity.ErrEntityNotFound)
 		}
 		return entity.SignatureMap{}, errors.Errorf("failed to get signature map: %w", err)
 	}

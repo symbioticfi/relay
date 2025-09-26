@@ -658,7 +658,7 @@ SymbioticAPI provides access to the Symbiotic relay functions
 | SignMessage | [SignMessageRequest](#api-proto-v1-SignMessageRequest) | [SignMessageResponse](#api-proto-v1-SignMessageResponse) | Sign a message |
 | GetAggregationProof | [GetAggregationProofRequest](#api-proto-v1-GetAggregationProofRequest) | [GetAggregationProofResponse](#api-proto-v1-GetAggregationProofResponse) | Get aggregation proof |
 | GetCurrentEpoch | [GetCurrentEpochRequest](#api-proto-v1-GetCurrentEpochRequest) | [GetCurrentEpochResponse](#api-proto-v1-GetCurrentEpochResponse) | Get current epoch |
-| GetSignatures | [GetSignaturesRequest](#api-proto-v1-GetSignaturesRequest) | [GetSignaturesResponse](#api-proto-v1-GetSignaturesResponse) | Get signature by request signature id |
+| GetSignatures | [GetSignaturesRequest](#api-proto-v1-GetSignaturesRequest) | [GetSignaturesResponse](#api-proto-v1-GetSignaturesResponse) | Get signature by signature id |
 | GetSignatureRequest | [GetSignatureRequestRequest](#api-proto-v1-GetSignatureRequestRequest) | [GetSignatureRequestResponse](#api-proto-v1-GetSignatureRequestResponse) | Get signature request by signature id |
 | GetAggregationStatus | [GetAggregationStatusRequest](#api-proto-v1-GetAggregationStatusRequest) | [GetAggregationStatusResponse](#api-proto-v1-GetAggregationStatusResponse) | Get aggregation status, can be sent only to aggregator nodes |
 | GetValidatorSet | [GetValidatorSetRequest](#api-proto-v1-GetValidatorSetRequest) | [GetValidatorSetResponse](#api-proto-v1-GetValidatorSetResponse) | Get current validator set |
@@ -667,7 +667,7 @@ SymbioticAPI provides access to the Symbiotic relay functions
 | SignMessageWait | [SignMessageWaitRequest](#api-proto-v1-SignMessageWaitRequest) | [SignMessageWaitResponse](#api-proto-v1-SignMessageWaitResponse) stream | Sign a message and wait for aggregation proof via stream |
 | GetLastCommitted | [GetLastCommittedRequest](#api-proto-v1-GetLastCommittedRequest) | [GetLastCommittedResponse](#api-proto-v1-GetLastCommittedResponse) | Get last committed epoch for a specific settlement chain |
 | GetLastAllCommitted | [GetLastAllCommittedRequest](#api-proto-v1-GetLastAllCommittedRequest) | [GetLastAllCommittedResponse](#api-proto-v1-GetLastAllCommittedResponse) | Get last committed epochs for all settlement chains |
-| GetValidatorSetMetadata | [GetValidatorSetMetadataRequest](#api-proto-v1-GetValidatorSetMetadataRequest) | [GetValidatorSetMetadataResponse](#api-proto-v1-GetValidatorSetMetadataResponse) | Get validator set metadata like extra data and signature id to fetch aggregation and signature requests |
+| GetValidatorSetMetadata | [GetValidatorSetMetadataRequest](#api-proto-v1-GetValidatorSetMetadataRequest) | [GetValidatorSetMetadataResponse](#api-proto-v1-GetValidatorSetMetadataResponse) | Get validator set metadata like extra data and request id to fetch aggregation and signature requests |
 
  
 

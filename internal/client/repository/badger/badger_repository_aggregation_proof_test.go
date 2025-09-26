@@ -32,6 +32,8 @@ func randomAggregationProof(t *testing.T) entity.AggregationProof {
 
 	return entity.AggregationProof{
 		MessageHash: randomBytes(t, 32),
+		KeyTag:      entity.KeyTag(15),
+		Epoch:       10,
 		Proof:       randomBytes(t, 32),
 	}
 }
