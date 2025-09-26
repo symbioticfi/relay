@@ -55,14 +55,14 @@ func TestNonHeaderKeySignature(t *testing.T) {
 			client := globalTestEnv.GetGRPCClient(t, 0)
 			lastCommitted, err := client.GetLastAllCommitted(t.Context(), &apiv1.GetLastAllCommittedRequest{})
 			require.NoError(t, err, "Failed to get last all committed")
-			epoch := lo.Min(lo.Map(lo.Values(lastCommitted.EpochInfos), func(e *apiv1.ChainEpochInfo, _ int) uint64 {
-				return e.LastCommittedEpoch
+			epoch := lo.Min(lo.Map(lo.Values(lastCommitted.GetEpochInfos()), func(e *apiv1.ChainEpochInfo, _ int) uint64 {
+				return e.GetLastCommittedEpoch()
 			}))
 
 			requestID := ""
 			for i := range globalTestEnv.Containers {
 				func() {
-					client := globalTestEnv.GetGRPCClient(t, i)
+					client = globalTestEnv.GetGRPCClient(t, i)
 
 					var resp *apiv1.SignMessageResponse
 					// retry sign call 3 times as it can get transaction conflict
