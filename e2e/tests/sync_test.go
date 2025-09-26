@@ -132,7 +132,7 @@ func TestAggregatorSignatureSync(t *testing.T) {
 
 		err = waitForErrorIsNil(ctx, time.Second*30, func() error {
 			_, err = client.GetAggregationProof(ctx, &apiv1.GetAggregationProofRequest{
-				SignatureTargetId: metadataResp.GetSignatureTargetId(),
+				RequestId: metadataResp.GetRequestId(),
 			})
 			return err
 		})

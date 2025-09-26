@@ -33,7 +33,7 @@ func (h *grpcHandler) GetValidatorSetMetadata(ctx context.Context, req *apiv1.Ge
 	}
 
 	return &apiv1.GetValidatorSetMetadataResponse{
-		SignatureTargetId: metadata.SignatureTargetID.Hex(),
+		RequestId: metadata.RequestID.Hex(),
 		ExtraData: lo.Map(metadata.ExtraData, func(ed entity.ExtraData, _ int) *apiv1.ExtraData {
 			return &apiv1.ExtraData{
 				Key:   ed.Key.Bytes(),

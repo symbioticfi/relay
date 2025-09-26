@@ -7,10 +7,10 @@ import (
 // WantSignaturesRequest represents a request to resync signatures for a specific epoch.
 // Contains missing validator indices for each incomplete signature request.
 type WantSignaturesRequest struct {
-	WantSignatures map[common.Hash]Bitmap // signatureTargetID -> missing validator indices bitmap
+	WantSignatures map[common.Hash]Bitmap // requestID -> missing validator indices bitmap
 }
 
-// WantSignaturesResponse contains signatures grouped by Signature target id.
+// WantSignaturesResponse contains signatures grouped by Request id.
 // Each signature includes the validator index for consistent mapping.
 type WantSignaturesResponse struct {
 	Signatures map[common.Hash][]ValidatorSignature
@@ -40,15 +40,15 @@ func (s SignatureProcessingStats) TotalErrors() int {
 }
 
 // WantAggregationProofsRequest represents a request to resync aggregation proofs for specific signature requests.
-// Contains signature target ids for which aggregation proofs are needed.
+// Contains request ids for which aggregation proofs are needed.
 type WantAggregationProofsRequest struct {
-	SignatureTargetIDs []common.Hash // signatureTargetID list for missing aggregation proofs
+	RequestIDs []common.Hash // requestID list for missing aggregation proofs
 }
 
-// WantAggregationProofsResponse contains aggregation proofs grouped by signature target id.
+// WantAggregationProofsResponse contains aggregation proofs grouped by request id.
 // Each aggregation proof corresponds to a complete signature aggregation for a request.
 type WantAggregationProofsResponse struct {
-	Proofs map[common.Hash]AggregationProof // signatureTargetID -> aggregation proof
+	Proofs map[common.Hash]AggregationProof // requestID -> aggregation proof
 }
 
 // AggregationProofProcessingStats contains detailed statistics for processing received aggregation proofs

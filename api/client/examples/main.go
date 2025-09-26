@@ -78,17 +78,17 @@ func (rc *RelayClient) SignMessage(ctx context.Context, keyTag uint32, message [
 }
 
 // GetAggregationProof gets aggregation proof for a specific request
-func (rc *RelayClient) GetAggregationProof(ctx context.Context, signatureTargetID string) (*client.GetAggregationProofResponse, error) {
+func (rc *RelayClient) GetAggregationProof(ctx context.Context, requestID string) (*client.GetAggregationProofResponse, error) {
 	req := &client.GetAggregationProofRequest{
-		SignatureTargetId: signatureTargetID,
+		RequestId: requestID,
 	}
 	return rc.client.GetAggregationProof(ctx, req)
 }
 
 // GetSignatures gets individual signatures for a request
-func (rc *RelayClient) GetSignatures(ctx context.Context, signatureTargetID string) (*client.GetSignaturesResponse, error) {
+func (rc *RelayClient) GetSignatures(ctx context.Context, requestID string) (*client.GetSignaturesResponse, error) {
 	req := &client.GetSignaturesRequest{
-		SignatureTargetId: signatureTargetID,
+		RequestId: requestID,
 	}
 	return rc.client.GetSignatures(ctx, req)
 }
@@ -188,12 +188,12 @@ func main() {
 		return
 	}
 
-	fmt.Printf("Signature target id: %s\n", signResponse.GetSignatureTargetId())
+	fmt.Printf("Request id: %s\n", signResponse.GetRequestId())
 	fmt.Printf("Epoch: %d\n", signResponse.Epoch)
 
 	// Example 5: Get aggregation proof (this might fail if signing is not complete)
 	fmt.Println("\n=== Getting Aggregation Proof ===")
-	proofResponse, err := relayClient.GetAggregationProof(ctx, signResponse.GetSignatureTargetId())
+	proofResponse, err := relayClient.GetAggregationProof(ctx, signResponse.GetRequestId())
 	if err != nil {
 		fmt.Printf("Could not get aggregation proof yet: %v\n", err)
 	} else if proofResponse.AggregationProof != nil {
@@ -204,7 +204,7 @@ func main() {
 
 	// Example 6: Get individual signatures
 	fmt.Println("\n=== Getting Individual Signatures ===")
-	signaturesResponse, err := relayClient.GetSignatures(ctx, signResponse.GetSignatureTargetId())
+	signaturesResponse, err := relayClient.GetSignatures(ctx, signResponse.GetRequestId())
 	if err != nil {
 		fmt.Printf("Could not get signatures yet: %v\n", err)
 	} else {
@@ -242,7 +242,7 @@ func main() {
 		}
 
 		fmt.Printf("Status: %v\n", response.Status)
-		fmt.Printf("Signature target id: %s\n", response.GetSignatureTargetId())
+		fmt.Printf("Request id: %s\n", response.GetRequestId())
 		fmt.Printf("Epoch: %d\n", response.Epoch)
 
 		switch response.Status {

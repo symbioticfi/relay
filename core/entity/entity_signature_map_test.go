@@ -15,7 +15,7 @@ func TestSignatureMap_SetValidatorPresent(t *testing.T) {
 
 	// Setup common test data
 	setupSignatureMap := func() (*SignatureMap, Validator, Validator) {
-		signatureTargetID := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
+		requestID := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
 		epoch := uint64(5)
 
 		operator1 := common.HexToAddress("0x1111111111111111111111111111111111111111")
@@ -33,7 +33,7 @@ func TestSignatureMap_SetValidatorPresent(t *testing.T) {
 			IsActive:    true,
 		}
 
-		vm := NewSignatureMap(signatureTargetID, Epoch(epoch), 2) // 2 total validators for setup
+		vm := NewSignatureMap(requestID, Epoch(epoch), 2) // 2 total validators for setup
 
 		return &vm, activeValidator1, activeValidator2
 	}
@@ -154,7 +154,7 @@ func TestSignatureMap_IntegrationScenarios(t *testing.T) {
 	t.Parallel()
 
 	t.Run("realistic quorum scenario - threshold reached", func(t *testing.T) {
-		signatureTargetID := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
+		requestID := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
 		epoch := uint64(10)
 
 		// Setup validators with different voting powers
@@ -185,7 +185,7 @@ func TestSignatureMap_IntegrationScenarios(t *testing.T) {
 		// Set quorum threshold to 67% (approximately 500)
 		quorumThreshold := ToVotingPower(big.NewInt(500))
 
-		vm := NewSignatureMap(signatureTargetID, Epoch(epoch), 4) // 4 total validators
+		vm := NewSignatureMap(requestID, Epoch(epoch), 4) // 4 total validators
 
 		// Verify initial state
 		assert.False(t, vm.ThresholdReached(quorumThreshold))
@@ -217,7 +217,7 @@ func TestSignatureMap_IntegrationScenarios(t *testing.T) {
 	})
 
 	t.Run("realistic quorum scenario - threshold not reached", func(t *testing.T) {
-		signatureTargetID := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
+		requestID := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
 		epoch := uint64(15)
 
 		validators := Validators{
@@ -242,7 +242,7 @@ func TestSignatureMap_IntegrationScenarios(t *testing.T) {
 		// Set high quorum threshold that can't be reached
 		quorumThreshold := ToVotingPower(big.NewInt(500))
 
-		vm := NewSignatureMap(signatureTargetID, Epoch(epoch), 4) // 4 total validators
+		vm := NewSignatureMap(requestID, Epoch(epoch), 4) // 4 total validators
 
 		// Add all available active validators (first two are active)
 		err := vm.SetValidatorPresent(uint32(0), validators[0].VotingPower)
@@ -257,7 +257,7 @@ func TestSignatureMap_IntegrationScenarios(t *testing.T) {
 	})
 
 	t.Run("edge case - exactly 100% participation", func(t *testing.T) {
-		signatureTargetID := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
+		requestID := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
 		epoch := uint64(20)
 
 		validators := Validators{
@@ -277,7 +277,7 @@ func TestSignatureMap_IntegrationScenarios(t *testing.T) {
 		// Set quorum threshold to 100%
 		quorumThreshold := ToVotingPower(big.NewInt(500))
 
-		vm := NewSignatureMap(signatureTargetID, Epoch(epoch), 4) // 4 total validators
+		vm := NewSignatureMap(requestID, Epoch(epoch), 4) // 4 total validators
 
 		// Add first validator - threshold not reached
 		err := vm.SetValidatorPresent(uint32(0), validators[0].VotingPower)
@@ -296,8 +296,8 @@ func TestSignatureMap_GetMissingValidators(t *testing.T) {
 	t.Parallel()
 
 	t.Run("returns all validators when none are present", func(t *testing.T) {
-		signatureTargetID := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
-		vm := NewSignatureMap(signatureTargetID, Epoch(1), 4)
+		requestID := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
+		vm := NewSignatureMap(requestID, Epoch(1), 4)
 
 		missing := vm.GetMissingValidators()
 
@@ -310,8 +310,8 @@ func TestSignatureMap_GetMissingValidators(t *testing.T) {
 	})
 
 	t.Run("returns subset when some validators are present", func(t *testing.T) {
-		signatureTargetID := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
-		vm := NewSignatureMap(signatureTargetID, Epoch(1), 4)
+		requestID := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
+		vm := NewSignatureMap(requestID, Epoch(1), 4)
 
 		// Set validators 0 and 2 as present
 		err := vm.SetValidatorPresent(0, ToVotingPower(big.NewInt(100)))
@@ -330,8 +330,8 @@ func TestSignatureMap_GetMissingValidators(t *testing.T) {
 	})
 
 	t.Run("returns empty when all validators are present", func(t *testing.T) {
-		signatureTargetID := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
-		vm := NewSignatureMap(signatureTargetID, Epoch(1), 3)
+		requestID := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
+		vm := NewSignatureMap(requestID, Epoch(1), 3)
 
 		// Set all validators as present
 		for i := uint32(0); i < 3; i++ {
@@ -349,8 +349,8 @@ func TestSignatureMap_GetMissingValidators(t *testing.T) {
 	})
 
 	t.Run("handles single validator", func(t *testing.T) {
-		signatureTargetID := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
-		vm := NewSignatureMap(signatureTargetID, Epoch(1), 1)
+		requestID := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
+		vm := NewSignatureMap(requestID, Epoch(1), 1)
 
 		missing := vm.GetMissingValidators()
 

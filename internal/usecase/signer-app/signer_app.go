@@ -19,9 +19,9 @@ import (
 //go:generate mockgen -source=signer_app.go -destination=mocks/signer_app.go -package=mocks
 
 type repo interface {
-	GetSignatureRequest(ctx context.Context, signatureTargetID common.Hash) (entity.SignatureRequest, error)
-	GetAggregationProof(ctx context.Context, signatureTargetID common.Hash) (entity.AggregationProof, error)
-	SaveAggregationProof(ctx context.Context, signatureTargetID common.Hash, ap entity.AggregationProof) error
+	GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error)
+	GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error)
+	SaveAggregationProof(ctx context.Context, requestID common.Hash, ap entity.AggregationProof) error
 	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 	GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error)
 }
@@ -115,8 +115,8 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) (enti
 		Signature:   signature,
 	}
 
-	signatureTargetId := extendedSignature.SignatureTargetID()
-	_, err = s.cfg.Repo.GetSignatureRequest(ctx, signatureTargetId)
+	requestId := extendedSignature.RequestID()
+	_, err = s.cfg.Repo.GetSignatureRequest(ctx, requestId)
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return entity.SignatureExtended{}, errors.Errorf("failed to get signature request: %w", err)
 	}

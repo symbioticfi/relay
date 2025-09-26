@@ -42,13 +42,13 @@ type repo interface {
 	GetLatestSignedValidatorSetEpoch(_ context.Context) (uint64, error)
 	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 	GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error)
-	GetAggregationProof(ctx context.Context, signatureTargetID common.Hash) (entity.AggregationProof, error)
-	GetSignatureRequest(ctx context.Context, signatureTargetID common.Hash) (entity.SignatureRequest, error)
+	GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error)
+	GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error)
 	SaveLatestSignedValidatorSetEpoch(_ context.Context, valset entity.ValidatorSet) error
-	SaveAggregationProof(ctx context.Context, signatureTargetID common.Hash, ap entity.AggregationProof) error
-	SaveProofCommitPending(ctx context.Context, epoch entity.Epoch, signatureTargetID common.Hash) error
+	SaveAggregationProof(ctx context.Context, requestID common.Hash, ap entity.AggregationProof) error
+	SaveProofCommitPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error
 	GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch entity.Epoch, limit int) ([]entity.ProofCommitKey, error)
-	RemoveProofCommitPending(ctx context.Context, epoch entity.Epoch, signatureTargetID common.Hash) error
+	RemoveProofCommitPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error
 	GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (uint64, error)
 	SaveValidatorSetMetadata(ctx context.Context, data entity.ValidatorSetMetadata) error
 }
@@ -159,10 +159,10 @@ func (s *Service) process(ctx context.Context) error {
 	}
 
 	metadata := entity.ValidatorSetMetadata{
-		SignatureTargetID: signatureExtended.SignatureTargetID(),
-		ExtraData:         extraData,
-		Epoch:             entity.Epoch(valSet.Epoch),
-		CommitmentData:    commitmentData,
+		RequestID:      signatureExtended.RequestID(),
+		ExtraData:      extraData,
+		Epoch:          entity.Epoch(valSet.Epoch),
+		CommitmentData: commitmentData,
 	}
 	if err = s.cfg.Repo.SaveValidatorSetMetadata(ctx, metadata); err != nil {
 		return errors.Errorf("failed to save validator set metadata: %w", err)

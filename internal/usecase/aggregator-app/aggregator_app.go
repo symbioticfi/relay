@@ -20,11 +20,11 @@ import (
 //go:generate mockgen -source=aggregator_app.go -destination=mocks/aggregator_app.go -package=mocks
 type repository interface {
 	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
-	GetAggregationProof(ctx context.Context, signatureTargetID common.Hash) (entity.AggregationProof, error)
-	GetSignatureRequest(_ context.Context, signatureTargetID common.Hash) (entity.SignatureRequest, error)
-	GetAllSignatures(ctx context.Context, signatureTargetID common.Hash) ([]entity.SignatureExtended, error)
+	GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error)
+	GetSignatureRequest(_ context.Context, requestID common.Hash) (entity.SignatureRequest, error)
+	GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity.SignatureExtended, error)
 	GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error)
-	GetSignatureMap(ctx context.Context, signatureTargetID common.Hash) (entity.SignatureMap, error)
+	GetSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error)
 }
 
 type p2pClient interface {
@@ -80,7 +80,7 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(msg.Epoch)))
 	slog.DebugContext(ctx, "Received HandleSignatureProcessedMessage", "message", msg)
 
-	_, err := s.cfg.Repo.GetAggregationProof(ctx, msg.SignatureTargetID())
+	_, err := s.cfg.Repo.GetAggregationProof(ctx, msg.RequestID())
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return errors.Errorf("failed to get aggregation proof: %w", err)
 	}
@@ -89,15 +89,15 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 		return nil
 	}
 
-	signatureMap, err := s.cfg.Repo.GetSignatureMap(ctx, msg.SignatureTargetID())
+	signatureMap, err := s.cfg.Repo.GetSignatureMap(ctx, msg.RequestID())
 	if err != nil {
 		return errors.Errorf("failed to get valset signature map: %w", err)
 	}
 
-	if signatureMap.SignatureTargetID != msg.SignatureTargetID() || signatureMap.Epoch != msg.Epoch {
+	if signatureMap.RequestID != msg.RequestID() || signatureMap.Epoch != msg.Epoch {
 		return errors.Errorf("signature map context mismatch: map %s/%d vs msg %s/%d",
-			signatureMap.SignatureTargetID.Hex(), signatureMap.Epoch,
-			msg.SignatureTargetID().Hex(), msg.Epoch,
+			signatureMap.RequestID.Hex(), signatureMap.Epoch,
+			msg.RequestID().Hex(), msg.Epoch,
 		)
 	}
 
@@ -147,7 +147,7 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 
 	appAggregationStart := time.Now()
 
-	sigs, err := s.cfg.Repo.GetAllSignatures(ctx, msg.SignatureTargetID())
+	sigs, err := s.cfg.Repo.GetAllSignatures(ctx, msg.RequestID())
 	slog.DebugContext(ctx, "Total received signatures", "sigs", len(sigs))
 	if err != nil {
 		return errors.Errorf("failed to get signature aggregated message: %w", err)
@@ -174,7 +174,7 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 
 	slog.InfoContext(ctx, "Proof created, trying to send aggregated signature message",
 		"duration", time.Since(appAggregationStart).String(),
-		"signature_target_id", msg.SignatureTargetID().Hex(),
+		"request_id", msg.RequestID().Hex(),
 	)
 	// Set additional context fields on the proof
 	proofData.KeyTag = msg.KeyTag
@@ -192,8 +192,8 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 	return nil
 }
 
-func (s *AggregatorApp) GetAggregationStatus(ctx context.Context, signatureTargetID common.Hash) (entity.AggregationStatus, error) {
-	signatureRequest, err := s.cfg.Repo.GetSignatureRequest(ctx, signatureTargetID)
+func (s *AggregatorApp) GetAggregationStatus(ctx context.Context, requestID common.Hash) (entity.AggregationStatus, error) {
+	signatureRequest, err := s.cfg.Repo.GetSignatureRequest(ctx, requestID)
 	if err != nil {
 		return entity.AggregationStatus{}, errors.Errorf("failed to get signature request: %w", err)
 	}
@@ -201,7 +201,7 @@ func (s *AggregatorApp) GetAggregationStatus(ctx context.Context, signatureTarge
 	if !signatureRequest.KeyTag.Type().AggregationKey() {
 		return entity.AggregationStatus{}, errors.Errorf("key tag %s is not an aggregation key", signatureRequest.KeyTag)
 	}
-	signatures, err := s.cfg.Repo.GetAllSignatures(ctx, signatureTargetID)
+	signatures, err := s.cfg.Repo.GetAllSignatures(ctx, requestID)
 	if err != nil {
 		return entity.AggregationStatus{}, errors.Errorf("failed to get all signatures: %w", err)
 	}

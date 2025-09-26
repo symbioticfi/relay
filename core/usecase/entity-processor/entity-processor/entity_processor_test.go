@@ -177,9 +177,9 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 			require.NoError(t, err)
 
 			// Verify signature map was created/updated
-			sigMap, err := repo.GetSignatureMap(t.Context(), param.Signature.SignatureTargetID())
+			sigMap, err := repo.GetSignatureMap(t.Context(), param.Signature.RequestID())
 			require.NoError(t, err)
-			require.Equal(t, param.Signature.SignatureTargetID(), sigMap.SignatureTargetID)
+			require.Equal(t, param.Signature.RequestID(), sigMap.RequestID)
 			require.Equal(t, param.Signature.Epoch, sigMap.Epoch)
 			// Verify at least one validator is present in the bitmap
 			require.Positive(t, sigMap.SignedValidatorsBitmap.GetCardinality(), "At least one validator should be present")
@@ -190,7 +190,7 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 			// Verify signature request handling
 			if tt.expectSignatureRequest && param.SignatureRequest != nil {
 				// Should exist in main collection
-				retrievedReq, err := repo.GetSignatureRequest(t.Context(), param.Signature.SignatureTargetID())
+				retrievedReq, err := repo.GetSignatureRequest(t.Context(), param.Signature.RequestID())
 				require.NoError(t, err)
 				require.Equal(t, *param.SignatureRequest, retrievedReq)
 			}
@@ -254,9 +254,9 @@ func TestEntityProcessor_ProcessSignature_ConcurrentSignatures(t *testing.T) {
 	}
 
 	// Verify final state
-	sigMap, err := repo.GetSignatureMap(t.Context(), signatures[0].Signature.SignatureTargetID())
+	sigMap, err := repo.GetSignatureMap(t.Context(), signatures[0].Signature.RequestID())
 	require.NoError(t, err)
-	require.Equal(t, signatures[0].Signature.SignatureTargetID(), sigMap.SignatureTargetID)
+	require.Equal(t, signatures[0].Signature.RequestID(), sigMap.RequestID)
 	require.Equal(t, epoch, sigMap.Epoch)
 
 	// Since all signatures use the same key tag, they would resolve to the same validator
@@ -483,9 +483,9 @@ func TestEntityProcessor_ProcessAggregationProof_SuccessfullyProcesses(t *testin
 	repo := setupTestRepository(t)
 	epoch := entity.Epoch(100)
 	req := randomSignatureRequest(t, epoch)
-	signatureTargetId := common.BytesToHash(randomBytes(t, 32))
-	require.NoError(t, repo.SaveSignatureRequest(t.Context(), signatureTargetId, req))
-	require.NoError(t, repo.SaveSignatureRequestPending(t.Context(), signatureTargetId, req))
+	requestId := common.BytesToHash(randomBytes(t, 32))
+	require.NoError(t, repo.SaveSignatureRequest(t.Context(), requestId, req))
+	require.NoError(t, repo.SaveSignatureRequestPending(t.Context(), requestId, req))
 
 	// Setup validator set for this epoch (required by ProcessAggregationProof)
 	setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(670))
@@ -494,12 +494,12 @@ func TestEntityProcessor_ProcessAggregationProof_SuccessfullyProcesses(t *testin
 	msg := entity.AggregationProof{
 		KeyTag:      req.KeyTag,
 		Epoch:       req.RequiredEpoch,
-		MessageHash: signatureTargetId.Bytes(),
+		MessageHash: requestId.Bytes(),
 		Proof:       randomBytes(t, 96),
 	}
 
 	// Save pending aggregation proof first
-	err := repo.SaveAggregationProofPending(t.Context(), msg.SignatureTargetID(), epoch)
+	err := repo.SaveAggregationProofPending(t.Context(), msg.RequestID(), epoch)
 	require.NoError(t, err)
 
 	processor, err := NewEntityProcessor(Config{
@@ -515,7 +515,7 @@ func TestEntityProcessor_ProcessAggregationProof_SuccessfullyProcesses(t *testin
 	require.NoError(t, err)
 
 	// Verify aggregation proof was saved
-	savedProof, err := repo.GetAggregationProof(t.Context(), msg.SignatureTargetID())
+	savedProof, err := repo.GetAggregationProof(t.Context(), msg.RequestID())
 	require.NoError(t, err)
 	require.Equal(t, msg, savedProof)
 
@@ -530,9 +530,9 @@ func TestEntityProcessor_ProcessAggregationProof_HandlesMissingPendingGracefully
 
 	repo := setupTestRepository(t)
 	req := randomSignatureRequest(t, entity.Epoch(200))
-	signatureTargetId := common.BytesToHash(randomBytes(t, 32))
-	require.NoError(t, repo.SaveSignatureRequest(t.Context(), signatureTargetId, req))
-	require.NoError(t, repo.SaveSignatureRequestPending(t.Context(), signatureTargetId, req))
+	requestId := common.BytesToHash(randomBytes(t, 32))
+	require.NoError(t, repo.SaveSignatureRequest(t.Context(), requestId, req))
+	require.NoError(t, repo.SaveSignatureRequestPending(t.Context(), requestId, req))
 
 	// Setup validator set for this epoch (required by ProcessAggregationProof)
 	setupValidatorSetHeader(t, repo, uint64(req.RequiredEpoch), big.NewInt(670))
@@ -540,7 +540,7 @@ func TestEntityProcessor_ProcessAggregationProof_HandlesMissingPendingGracefully
 	msg := entity.AggregationProof{
 		KeyTag:      req.KeyTag,
 		Epoch:       req.RequiredEpoch,
-		MessageHash: signatureTargetId.Bytes(),
+		MessageHash: requestId.Bytes(),
 		Proof:       randomBytes(t, 128),
 	}
 
@@ -557,7 +557,7 @@ func TestEntityProcessor_ProcessAggregationProof_HandlesMissingPendingGracefully
 	require.NoError(t, err)
 
 	// Verify aggregation proof was still saved
-	savedProof, err := repo.GetAggregationProof(t.Context(), msg.SignatureTargetID())
+	savedProof, err := repo.GetAggregationProof(t.Context(), msg.RequestID())
 	require.NoError(t, err)
 	require.Equal(t, msg, savedProof)
 }
@@ -567,9 +567,9 @@ func TestEntityProcessor_ProcessAggregationProof_FailsWhenAlreadyExists(t *testi
 
 	repo := setupTestRepository(t)
 	req := randomSignatureRequest(t, entity.Epoch(300))
-	signatureTargetId := common.BytesToHash(randomBytes(t, 32))
-	require.NoError(t, repo.SaveSignatureRequest(t.Context(), signatureTargetId, req))
-	require.NoError(t, repo.SaveSignatureRequestPending(t.Context(), signatureTargetId, req))
+	requestId := common.BytesToHash(randomBytes(t, 32))
+	require.NoError(t, repo.SaveSignatureRequest(t.Context(), requestId, req))
+	require.NoError(t, repo.SaveSignatureRequestPending(t.Context(), requestId, req))
 
 	// Setup validator set for this epoch (required by ProcessAggregationProof)
 	setupValidatorSetHeader(t, repo, uint64(req.RequiredEpoch), big.NewInt(670))
@@ -577,12 +577,12 @@ func TestEntityProcessor_ProcessAggregationProof_FailsWhenAlreadyExists(t *testi
 	msg := entity.AggregationProof{
 		KeyTag:      req.KeyTag,
 		Epoch:       req.RequiredEpoch,
-		MessageHash: signatureTargetId.Bytes(),
+		MessageHash: requestId.Bytes(),
 		Proof:       randomBytes(t, 96),
 	}
 
 	// Save aggregation proof first
-	err := repo.SaveAggregationProof(t.Context(), msg.SignatureTargetID(), msg)
+	err := repo.SaveAggregationProof(t.Context(), msg.RequestID(), msg)
 	require.NoError(t, err)
 
 	processor, err := NewEntityProcessor(Config{Repo: repo, Aggregator: createMockAggregator(t), AggProofSignal: createMockAggProofSignal(t), SignatureProcessedSignal: createMockSignatureProcessedSignal(t)})
@@ -625,7 +625,7 @@ func TestEntityProcessor_ProcessSignature_SavesAggregationProofPendingForAggrega
 	pendingSignatureRequests, err := repo.GetSignatureRequestsByEpochPending(t.Context(), req.RequiredEpoch, 10, common.Hash{})
 	require.NoError(t, err)
 	require.Len(t, pendingSignatureRequests, 1)
-	require.Equal(t, param.Signature.SignatureTargetID(), pendingSignatureRequests[0].SignatureTargetID)
+	require.Equal(t, param.Signature.RequestID(), pendingSignatureRequests[0].RequestID)
 
 	// Verify aggregation proof pending was also saved
 	pendingAggRequests, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), req.RequiredEpoch, 10, common.Hash{})
@@ -660,7 +660,7 @@ func TestEntityProcessor_ProcessSignature_DoesNotSaveAggregationProofPendingForN
 	require.NoError(t, err)
 
 	// Verify signature request was saved but NOT to pending collection
-	savedReq, err := repo.GetSignatureRequest(t.Context(), param.Signature.SignatureTargetID())
+	savedReq, err := repo.GetSignatureRequest(t.Context(), param.Signature.RequestID())
 	require.NoError(t, err)
 	require.Equal(t, req, savedReq)
 
@@ -718,7 +718,7 @@ func TestEntityProcessor_ProcessSignature_FullSignatureToAggregationProofFlow(t 
 	require.NoError(t, err)
 
 	// Verify aggregation proof was saved
-	savedProof, err := repo.GetAggregationProof(t.Context(), param.Signature.SignatureTargetID())
+	savedProof, err := repo.GetAggregationProof(t.Context(), param.Signature.RequestID())
 	require.NoError(t, err)
 	require.Equal(t, msg, savedProof)
 

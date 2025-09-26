@@ -39,7 +39,7 @@ func TestHandleSignatureReceivedMessage_HappyPath(t *testing.T) {
 	require.NoError(t, setup.useCase.HandleSignatureReceivedMessage(t.Context(), p2pMsg))
 
 	// Verify that signature was saved
-	signatures, err := setup.repo.GetAllSignatures(t.Context(), p2pMsg.Message.SignatureTargetID())
+	signatures, err := setup.repo.GetAllSignatures(t.Context(), p2pMsg.Message.RequestID())
 	require.NoError(t, err)
 	require.Len(t, signatures, 1)
 
@@ -49,7 +49,7 @@ func TestHandleSignatureReceivedMessage_HappyPath(t *testing.T) {
 	require.Equal(t, privateKey.PublicKey().Raw(), signatures[0].PublicKey)
 
 	// Verify that signature map was updated
-	signatureMap, err := setup.repo.GetSignatureMap(t.Context(), p2pMsg.Message.SignatureTargetID())
+	signatureMap, err := setup.repo.GetSignatureMap(t.Context(), p2pMsg.Message.RequestID())
 	require.NoError(t, err)
 	require.Equal(t, 0, signatureMap.CurrentVotingPower.Cmp(validatorSet.Validators[0].VotingPower.Int))
 }

@@ -13,7 +13,7 @@ message AggregationProof {
 
 // SignaturesAggregated represents the aggregated signatures message
 message SignaturesAggregated {
-  bytes signature_target_id = 1;  // 32 bytes fixed length
+  bytes request_id = 1;  // 32 bytes fixed length
   uint32 key_tag = 2;
   uint64 epoch = 3;
   AggregationProof aggregation_proof = 4;
@@ -28,7 +28,7 @@ message Signature {
 
 // SignatureGenerated represents the signature generated message
 message SignatureGenerated {
-  bytes signature_target_id = 1;  // 32 bytes fixed length
+  bytes request_id = 1;  // 32 bytes fixed length
   uint32 key_tag = 2;
   uint64 epoch = 3;
   Signature signature = 4;
@@ -48,12 +48,12 @@ service SymbioticP2PService {
 }
 
 message WantSignaturesRequest {
-  // Map of signature target id to bitmap of wanted validator indices
+  // Map of request id to bitmap of wanted validator indices
   map<string, bytes> want_signatures = 1;  // key: hex string of common.Hash, value: roaring bitmap bytes
 }
 
 message WantSignaturesResponse {
-  // Map of signature target id to list of validator signatures
+  // Map of request id to list of validator signatures
   map<string, ValidatorSignatureList> signatures = 2;  // key: hex string of common.Hash
 }
 
@@ -79,12 +79,12 @@ message SignatureExtended {
 }
 
 message WantAggregationProofsRequest {
-  // List of signature target ids for which aggregation proofs are needed
-  repeated string signature_target_ids = 1;  // hex strings of common.Hash
+  // List of request ids for which aggregation proofs are needed
+  repeated string request_ids = 1;  // hex strings of common.Hash
 }
 
 message WantAggregationProofsResponse {
-  // Map of signature target ids to aggregation proof
+  // Map of request ids to aggregation proof
   map<string, AggregationProof> proofs = 1;  // key: hex string of common.Hash
 }
 

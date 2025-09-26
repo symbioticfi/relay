@@ -9,16 +9,16 @@ import (
 )
 
 type SignatureMap struct {
-	SignatureTargetID      common.Hash
+	RequestID              common.Hash
 	Epoch                  Epoch
 	SignedValidatorsBitmap Bitmap
 	CurrentVotingPower     VotingPower
 	TotalValidators        uint32
 }
 
-func NewSignatureMap(signatureTargetID common.Hash, epoch Epoch, totalValidators uint32) SignatureMap {
+func NewSignatureMap(requestID common.Hash, epoch Epoch, totalValidators uint32) SignatureMap {
 	return SignatureMap{
-		SignatureTargetID:      signatureTargetID,
+		RequestID:              requestID,
 		Epoch:                  epoch,
 		SignedValidatorsBitmap: NewBitmap(),
 		CurrentVotingPower:     ToVotingPower(big.NewInt(0)),

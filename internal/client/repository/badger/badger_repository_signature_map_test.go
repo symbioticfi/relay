@@ -13,18 +13,18 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 )
 
-// randomSignatureTargetID generates a random signature target ID for testing
-func randomSignatureTargetID(t *testing.T) common.Hash {
+// randomRequestID generates a random signature target ID for testing
+func randomRequestID(t *testing.T) common.Hash {
 	t.Helper()
 	return common.BytesToHash(randomBytes(t, 32))
 }
 
 // randomSignatureMap creates a SignatureMap with test data
-func randomSignatureMap(t *testing.T, signatureTargetId common.Hash) entity.SignatureMap {
+func randomSignatureMap(t *testing.T, requestID common.Hash) entity.SignatureMap {
 	t.Helper()
 
 	return entity.SignatureMap{
-		SignatureTargetID:      signatureTargetId,
+		RequestID:              requestID,
 		Epoch:                  entity.Epoch(randomBigInt(t).Uint64()),
 		SignedValidatorsBitmap: entity.NewBitmapOf(0, 1, 2),
 		CurrentVotingPower:     entity.ToVotingPower(randomBigInt(t)),
@@ -35,7 +35,7 @@ func randomSignatureMap(t *testing.T, signatureTargetId common.Hash) entity.Sign
 func assertSignatureMapsEqual(t *testing.T, expected, actual entity.SignatureMap) {
 	t.Helper()
 
-	assert.Equal(t, expected.SignatureTargetID, actual.SignatureTargetID, "SignatureTargetID mismatch")
+	assert.Equal(t, expected.RequestID, actual.RequestID, "RequestID mismatch")
 	assert.Equal(t, expected.Epoch, actual.Epoch, "Epoch mismatch")
 	assert.True(t, expected.SignedValidatorsBitmap.Equals(actual.SignedValidatorsBitmap.Bitmap), "SignedValidatorsBitmap mismatch")
 	assert.Equal(t, expected.CurrentVotingPower.String(), actual.CurrentVotingPower.String(), "CurrentVotingPower mismatch")
@@ -45,17 +45,17 @@ func TestBadgerRepository_SignatureMap(t *testing.T) {
 	t.Parallel()
 	repo := setupTestRepository(t)
 
-	signatureTargetID1 := randomSignatureTargetID(t)
-	signatureTargetID2 := randomSignatureTargetID(t)
-	vm1 := randomSignatureMap(t, signatureTargetID1)
-	vm2 := randomSignatureMap(t, signatureTargetID2)
+	requestID1 := randomRequestID(t)
+	requestID2 := randomRequestID(t)
+	vm1 := randomSignatureMap(t, requestID1)
+	vm2 := randomSignatureMap(t, requestID2)
 
 	t.Run("UpdateSignatureMap - Success", func(t *testing.T) {
 		err := repo.UpdateSignatureMap(context.Background(), vm1)
 		require.NoError(t, err)
 
 		// Verify data was saved correctly
-		retrieved, err := repo.GetSignatureMap(context.Background(), signatureTargetID1)
+		retrieved, err := repo.GetSignatureMap(context.Background(), requestID1)
 		require.NoError(t, err)
 		assertSignatureMapsEqual(t, vm1, retrieved)
 	})
@@ -74,7 +74,7 @@ func TestBadgerRepository_SignatureMap(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify updated data
-		retrieved, err := repo.GetSignatureMap(context.Background(), signatureTargetID1)
+		retrieved, err := repo.GetSignatureMap(context.Background(), requestID1)
 		require.NoError(t, err)
 		assertSignatureMapsEqual(t, updatedVM, retrieved)
 	})
@@ -87,18 +87,18 @@ func TestBadgerRepository_SignatureMap(t *testing.T) {
 		require.NoError(t, err)
 
 		// Retrieve first signature map
-		retrieved1, err := repo.GetSignatureMap(context.Background(), signatureTargetID1)
+		retrieved1, err := repo.GetSignatureMap(context.Background(), requestID1)
 		require.NoError(t, err)
 		assertSignatureMapsEqual(t, vm1, retrieved1)
 
 		// Retrieve second signature map
-		retrieved2, err := repo.GetSignatureMap(context.Background(), signatureTargetID2)
+		retrieved2, err := repo.GetSignatureMap(context.Background(), requestID2)
 		require.NoError(t, err)
 		assertSignatureMapsEqual(t, vm2, retrieved2)
 	})
 
 	t.Run("GetSignatureMap - Not Found", func(t *testing.T) {
-		nonExistentHash := randomSignatureTargetID(t)
+		nonExistentHash := randomRequestID(t)
 
 		_, err := repo.GetSignatureMap(context.Background(), nonExistentHash)
 		require.Error(t, err)
@@ -111,7 +111,7 @@ func TestBadgerRepository_SignatureMap(t *testing.T) {
 		vms := make([]entity.SignatureMap, 5)
 
 		for i := 0; i < 5; i++ {
-			hashes[i] = randomSignatureTargetID(t)
+			hashes[i] = randomRequestID(t)
 			vms[i] = randomSignatureMap(t, hashes[i])
 
 			err := repo.UpdateSignatureMap(context.Background(), vms[i])
@@ -131,7 +131,7 @@ func TestSignatureMapSerialization(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Serialization Round-Trip - Complete Data", func(t *testing.T) {
-		original := randomSignatureMap(t, randomSignatureTargetID(t))
+		original := randomSignatureMap(t, randomRequestID(t))
 
 		// Serialize
 		data, err := signatureMapToBytes(original)
@@ -148,7 +148,7 @@ func TestSignatureMapSerialization(t *testing.T) {
 
 	t.Run("Serialization - Empty Maps", func(t *testing.T) {
 		vm := entity.SignatureMap{
-			SignatureTargetID:      randomSignatureTargetID(t),
+			RequestID:              randomRequestID(t),
 			Epoch:                  123,
 			SignedValidatorsBitmap: entity.NewBitmap(),
 			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(0)),
@@ -171,7 +171,7 @@ func TestSignatureMapSerialization(t *testing.T) {
 		largeBigInt.SetString("123456789012345678901234567890", 10)
 
 		vm := entity.SignatureMap{
-			SignatureTargetID:      randomSignatureTargetID(t),
+			RequestID:              randomRequestID(t),
 			Epoch:                  18446744073709551615, // Max uint64
 			SignedValidatorsBitmap: entity.NewBitmap(),
 			CurrentVotingPower:     entity.ToVotingPower(new(big.Int).Mul(largeBigInt, big.NewInt(3))),
@@ -191,7 +191,7 @@ func TestSignatureMapSerialization(t *testing.T) {
 		// Test roaring bitmap with specific indexes
 		bitmap := entity.NewBitmapOf(0) // Only validator at index 0 is present
 		vm := entity.SignatureMap{
-			SignatureTargetID:      randomSignatureTargetID(t),
+			RequestID:              randomRequestID(t),
 			Epoch:                  42,
 			SignedValidatorsBitmap: bitmap,
 			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(150)),
@@ -223,8 +223,8 @@ func TestSignatureMapTransactions(t *testing.T) {
 	repo := setupTestRepository(t)
 
 	t.Run("Operations Within Transaction", func(t *testing.T) {
-		signatureTargetID := randomSignatureTargetID(t)
-		vm := randomSignatureMap(t, signatureTargetID)
+		requestID := randomRequestID(t)
+		vm := randomSignatureMap(t, requestID)
 
 		err := repo.DoUpdateInTx(context.Background(), func(ctx context.Context) error {
 			// Update within transaction
@@ -232,7 +232,7 @@ func TestSignatureMapTransactions(t *testing.T) {
 			require.NoError(t, err)
 
 			// Get within same transaction - should work
-			retrieved, err := repo.GetSignatureMap(ctx, signatureTargetID)
+			retrieved, err := repo.GetSignatureMap(ctx, requestID)
 			require.NoError(t, err)
 			assertSignatureMapsEqual(t, vm, retrieved)
 
@@ -241,14 +241,14 @@ func TestSignatureMapTransactions(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify data persisted after transaction
-		retrieved, err := repo.GetSignatureMap(context.Background(), signatureTargetID)
+		retrieved, err := repo.GetSignatureMap(context.Background(), requestID)
 		require.NoError(t, err)
 		assertSignatureMapsEqual(t, vm, retrieved)
 	})
 
 	t.Run("Transaction Rollback", func(t *testing.T) {
-		signatureTargetID := randomSignatureTargetID(t)
-		vm := randomSignatureMap(t, signatureTargetID)
+		requestID := randomRequestID(t)
+		vm := randomSignatureMap(t, requestID)
 
 		// Transaction that will rollback due to error
 		err := repo.DoUpdateInTx(context.Background(), func(ctx context.Context) error {
@@ -256,7 +256,7 @@ func TestSignatureMapTransactions(t *testing.T) {
 			require.NoError(t, err)
 
 			// Verify data exists within transaction
-			_, err = repo.GetSignatureMap(ctx, signatureTargetID)
+			_, err = repo.GetSignatureMap(ctx, requestID)
 			require.NoError(t, err)
 
 			// Return error to trigger rollback
@@ -265,19 +265,19 @@ func TestSignatureMapTransactions(t *testing.T) {
 		require.Error(t, err)
 
 		// Verify data was not persisted due to rollback
-		_, err = repo.GetSignatureMap(context.Background(), signatureTargetID)
+		_, err = repo.GetSignatureMap(context.Background(), requestID)
 		require.Error(t, err)
 		assert.True(t, errors.Is(err, entity.ErrEntityNotFound))
 	})
 
 	t.Run("Mixed Read and Write in Transaction", func(t *testing.T) {
 		// Setup existing data
-		existingHash := randomSignatureTargetID(t)
+		existingHash := randomRequestID(t)
 		existingVM := randomSignatureMap(t, existingHash)
 		err := repo.UpdateSignatureMap(context.Background(), existingVM)
 		require.NoError(t, err)
 
-		newHash := randomSignatureTargetID(t)
+		newHash := randomRequestID(t)
 		newVM := randomSignatureMap(t, newHash)
 
 		err = repo.DoUpdateInTx(context.Background(), func(ctx context.Context) error {
@@ -322,7 +322,7 @@ func TestSignatureMapKeyGeneration(t *testing.T) {
 	})
 
 	t.Run("Key Consistency", func(t *testing.T) {
-		hash := randomSignatureTargetID(t)
+		hash := randomRequestID(t)
 
 		key1 := keySignatureMap(hash)
 		key2 := keySignatureMap(hash)
@@ -331,8 +331,8 @@ func TestSignatureMapKeyGeneration(t *testing.T) {
 	})
 
 	t.Run("Key Uniqueness", func(t *testing.T) {
-		hash1 := randomSignatureTargetID(t)
-		hash2 := randomSignatureTargetID(t)
+		hash1 := randomRequestID(t)
+		hash2 := randomRequestID(t)
 
 		key1 := keySignatureMap(hash1)
 		key2 := keySignatureMap(hash2)
@@ -347,7 +347,7 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 
 	t.Run("Zero Values", func(t *testing.T) {
 		vm := entity.SignatureMap{
-			SignatureTargetID:      common.Hash{}, // Zero hash
+			RequestID:              common.Hash{}, // Zero hash
 			Epoch:                  0,
 			SignedValidatorsBitmap: entity.NewBitmap(),
 			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(0)),
@@ -364,7 +364,7 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 	t.Run("Single Validator", func(t *testing.T) {
 		// Test single validator scenario
 		vm := entity.SignatureMap{
-			SignatureTargetID:      randomSignatureTargetID(t),
+			RequestID:              randomRequestID(t),
 			Epoch:                  1,
 			SignedValidatorsBitmap: entity.NewBitmapOf(0), // Single validator at index 0
 			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(1)),
@@ -373,7 +373,7 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 		err := repo.UpdateSignatureMap(context.Background(), vm)
 		require.NoError(t, err)
 
-		retrieved, err := repo.GetSignatureMap(context.Background(), vm.SignatureTargetID)
+		retrieved, err := repo.GetSignatureMap(context.Background(), vm.RequestID)
 		require.NoError(t, err)
 		assertSignatureMapsEqual(t, vm, retrieved)
 	})
@@ -387,7 +387,7 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 		}
 
 		vm := entity.SignatureMap{
-			SignatureTargetID:      randomSignatureTargetID(t),
+			RequestID:              randomRequestID(t),
 			Epoch:                  100,
 			SignedValidatorsBitmap: bitmap,
 			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(5000)),
@@ -396,7 +396,7 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 		err := repo.UpdateSignatureMap(context.Background(), vm)
 		require.NoError(t, err)
 
-		retrieved, err := repo.GetSignatureMap(context.Background(), vm.SignatureTargetID)
+		retrieved, err := repo.GetSignatureMap(context.Background(), vm.RequestID)
 		require.NoError(t, err)
 		assertSignatureMapsEqual(t, vm, retrieved)
 	})

@@ -785,10 +785,10 @@ func extractAdditionalInfoFromHeaderData(data []byte) (aggIndices []uint32, comm
 }
 
 type validatorSetMetadataDTO struct {
-	SignatureTargetID string         `json:"signature_target_id"`
-	Epoch             uint64         `json:"epoch"`
-	ExtraData         []extraDataDTO `json:"extra_data"`
-	CommitmentData    []byte         `json:"commitment_data"`
+	RequestID      string         `json:"request_id"`
+	Epoch          uint64         `json:"epoch"`
+	ExtraData      []extraDataDTO `json:"extra_data"`
+	CommitmentData []byte         `json:"commitment_data"`
 }
 
 type extraDataDTO struct {
@@ -798,8 +798,8 @@ type extraDataDTO struct {
 
 func validatorSetMetadataToBytes(data entity.ValidatorSetMetadata) ([]byte, error) {
 	metadataData := validatorSetMetadataDTO{
-		SignatureTargetID: data.SignatureTargetID.Hex(),
-		Epoch:             uint64(data.Epoch),
+		RequestID: data.RequestID.Hex(),
+		Epoch:     uint64(data.Epoch),
 		ExtraData: lo.Map(data.ExtraData, func(ed entity.ExtraData, _ int) extraDataDTO {
 			return extraDataDTO{
 				Key:   ed.Key.Bytes(),
@@ -819,7 +819,7 @@ func bytesToValidatorSetMetadata(data []byte) (entity.ValidatorSetMetadata, erro
 	}
 
 	return entity.ValidatorSetMetadata{
-		SignatureTargetID: common.HexToHash(metadataDTO.SignatureTargetID),
+		RequestID: common.HexToHash(metadataDTO.RequestID),
 		ExtraData: lo.Map(metadataDTO.ExtraData, func(ed extraDataDTO, _ int) entity.ExtraData {
 			return entity.ExtraData{
 				Key:   common.BytesToHash(ed.Key),

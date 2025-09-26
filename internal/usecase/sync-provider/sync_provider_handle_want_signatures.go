@@ -14,9 +14,9 @@ import (
 // the requested signatures that are available in local storage.
 //
 // The method performs the following operations:
-// 1. Iterates through each signature target id in the incoming request
+// 1. Iterates through each request id in the incoming request
 // 2. For each requested validator index, directly retrieves the signature using GetSignatureByIndex
-// 3. Builds a response containing validator signatures organized by signature target id
+// 3. Builds a response containing validator signatures organized by request id
 //
 // The response is limited by MaxResponseSignatureCount to prevent memory exhaustion
 // and network congestion during P2P synchronization.
@@ -25,7 +25,7 @@ import (
 //   - Processes requests in iteration order (map iteration is non-deterministic)
 //   - Stops processing when MaxResponseSignatureCount limit is reached
 //   - Skips validator indices where signatures are not found locally
-//   - Returns empty signatures map for signature target ids where no matching signatures are found
+//   - Returns empty signatures map for request ids where no matching signatures are found
 func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity.WantSignaturesRequest) (entity.WantSignaturesResponse, error) {
 	slog.InfoContext(ctx, "Handling want signatures request", "request_count", len(request.WantSignatures))
 
@@ -35,7 +35,7 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity
 
 	totalSignatureCount := 0
 
-	for signatureTargetID, requestedIndices := range request.WantSignatures {
+	for requestID, requestedIndices := range request.WantSignatures {
 		// Check signature count limit before processing each request
 		if totalSignatureCount >= s.cfg.MaxResponseSignatureCount {
 			return entity.WantSignaturesResponse{}, errors.Errorf("response signature limit exceeded")
@@ -53,13 +53,13 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity
 			}
 
 			// Get signature by validator index directly
-			sig, err := s.cfg.Repo.GetSignatureByIndex(ctx, signatureTargetID, validatorIndex)
+			sig, err := s.cfg.Repo.GetSignatureByIndex(ctx, requestID, validatorIndex)
 			if err != nil {
 				if errors.Is(err, entity.ErrEntityNotFound) {
 					// Signature not found for this validator index, skip
 					continue
 				}
-				return entity.WantSignaturesResponse{}, errors.Errorf("failed to get signature for validator %d in request %s: %w", validatorIndex, signatureTargetID.Hex(), err)
+				return entity.WantSignaturesResponse{}, errors.Errorf("failed to get signature for validator %d in request %s: %w", validatorIndex, requestID.Hex(), err)
 			}
 
 			validatorSigs = append(validatorSigs, entity.ValidatorSignature{
@@ -70,7 +70,7 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity
 		}
 
 		if len(validatorSigs) > 0 {
-			response.Signatures[signatureTargetID] = validatorSigs
+			response.Signatures[requestID] = validatorSigs
 		}
 	}
 

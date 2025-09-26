@@ -144,9 +144,9 @@ func (s *Runner) runAggregationProofSync(ctx context.Context) error {
 	if err != nil {
 		return errors.Errorf("failed to build want aggregation proofs request: %w", err)
 	}
-	s.cfg.Metrics.ObserveP2PSyncRequestedAggregationProofs(len(request.SignatureTargetIDs))
+	s.cfg.Metrics.ObserveP2PSyncRequestedAggregationProofs(len(request.RequestIDs))
 
-	if len(request.SignatureTargetIDs) == 0 {
+	if len(request.RequestIDs) == 0 {
 		slog.InfoContext(ctx, "No pending aggregation proof requests found")
 		return nil
 	}

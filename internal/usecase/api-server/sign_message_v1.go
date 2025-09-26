@@ -30,7 +30,7 @@ func (h *grpcHandler) SignMessage(ctx context.Context, req *apiv1.SignMessageReq
 	}
 
 	return &apiv1.SignMessageResponse{
-		SignatureTargetId: signature.SignatureTargetID().Hex(),
-		Epoch:             *requiredEpoch,
+		RequestId: signature.RequestID().Hex(),
+		Epoch:     *requiredEpoch,
 	}, nil
 }

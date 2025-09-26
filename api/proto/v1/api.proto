@@ -75,7 +75,7 @@ message SignMessageWaitRequest {
 // Response message for sign message request
 message SignMessageResponse {
   // Hash of the signature request
-  string signature_target_id = 1;
+  string request_id = 1;
 
   // Epoch number
   uint64 epoch = 2;
@@ -87,7 +87,7 @@ message SignMessageWaitResponse {
   SigningStatus status = 1;
 
   // Id of the request
-  string signature_target_id = 2;
+  string request_id = 2;
 
   // Epoch number
   uint64 epoch = 3;
@@ -98,7 +98,7 @@ message SignMessageWaitResponse {
 
 // Request message for getting aggregation proof
 message GetAggregationProofRequest {
-  string signature_target_id = 1;
+  string request_id = 1;
 }
 
 // Request message for getting current epoch
@@ -106,7 +106,7 @@ message GetCurrentEpochRequest {}
 
 // Request message for getting signatures
 message GetSignaturesRequest {
-  string signature_target_id = 1;
+  string request_id = 1;
 }
 
 // Response message for getting signatures
@@ -117,12 +117,12 @@ message GetSignaturesResponse {
 
 // Request message for getting signature request
 message GetSignatureRequestRequest {
-  string signature_target_id = 1;
+  string request_id = 1;
 }
 
 // Request message for getting aggregation status
 message GetAggregationStatusRequest {
-  string signature_target_id = 1;
+  string request_id = 1;
 }
 
 // Request message for getting validator set
@@ -247,7 +247,7 @@ message ExtraData {
 message GetValidatorSetMetadataResponse {
   repeated ExtraData extra_data = 1;
   bytes commitment_data = 2;
-  string signature_target_id = 3;
+  string request_id = 3;
 }
 
 // Response message for getting validator set header

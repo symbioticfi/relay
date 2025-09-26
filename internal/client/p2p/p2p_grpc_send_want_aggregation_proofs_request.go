@@ -62,7 +62,7 @@ func (s *Service) sendAggregationProofRequestToPeer(ctx context.Context, peerID 
 // entityToProtoAggregationProofRequest converts entity.WantAggregationProofsRequest to protobuf
 func entityToProtoAggregationProofRequest(req entity.WantAggregationProofsRequest) *prototypes.WantAggregationProofsRequest {
 	return &prototypes.WantAggregationProofsRequest{
-		SignatureTargetIds: lo.Map(req.SignatureTargetIDs, func(hash common.Hash, _ int) string {
+		RequestIds: lo.Map(req.RequestIDs, func(hash common.Hash, _ int) string {
 			return hash.Hex()
 		}),
 	}
@@ -89,14 +89,14 @@ func protoToEntityAggregationProofResponse(resp *prototypes.WantAggregationProof
 
 // protoToEntityAggregationProofRequest converts protobuf WantAggregationProofsRequest to entity
 func protoToEntityAggregationProofRequest(req *prototypes.WantAggregationProofsRequest) entity.WantAggregationProofsRequest {
-	signatureTargetIDs := make([]common.Hash, len(req.GetSignatureTargetIds()))
+	requestIDs := make([]common.Hash, len(req.GetRequestIds()))
 
-	for i, hashStr := range req.GetSignatureTargetIds() {
-		signatureTargetIDs[i] = common.HexToHash(hashStr)
+	for i, hashStr := range req.GetRequestIds() {
+		requestIDs[i] = common.HexToHash(hashStr)
 	}
 
 	return entity.WantAggregationProofsRequest{
-		SignatureTargetIDs: signatureTargetIDs,
+		RequestIDs: requestIDs,
 	}
 }
 

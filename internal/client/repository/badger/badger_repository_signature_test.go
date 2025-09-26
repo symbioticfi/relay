@@ -36,13 +36,13 @@ func TestBadgerRepository_Signature(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		retrievedSig, err := repo.GetSignatureByIndex(context.Background(), sig1.SignatureTargetID(), 5)
+		retrievedSig, err := repo.GetSignatureByIndex(context.Background(), sig1.RequestID(), 5)
 		require.NoError(t, err)
 		require.Equal(t, sig1, retrievedSig)
 	})
 
 	t.Run("GetSignatureByIndex - not found", func(t *testing.T) {
-		_, err := repo.GetSignatureByIndex(context.Background(), sig1.SignatureTargetID(), 999)
+		_, err := repo.GetSignatureByIndex(context.Background(), sig1.RequestID(), 999)
 		require.Error(t, err)
 		require.ErrorIs(t, err, entity.ErrEntityNotFound)
 	})
@@ -56,16 +56,16 @@ func TestBadgerRepository_Signature(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		signatures, err := repo.GetAllSignatures(context.Background(), sig1.SignatureTargetID())
+		signatures, err := repo.GetAllSignatures(context.Background(), sig1.RequestID())
 		require.NoError(t, err)
 		require.Len(t, signatures, 3) // sig1 from first test + sig1 and sig2 from this test
 
 		// Verify we can retrieve each signature by index
-		retrievedSig1, err := repo.GetSignatureByIndex(context.Background(), sig1.SignatureTargetID(), 10)
+		retrievedSig1, err := repo.GetSignatureByIndex(context.Background(), sig1.RequestID(), 10)
 		require.NoError(t, err)
 		require.Equal(t, sig1, retrievedSig1)
 
-		retrievedSig2, err := repo.GetSignatureByIndex(context.Background(), sig1.SignatureTargetID(), 20)
+		retrievedSig2, err := repo.GetSignatureByIndex(context.Background(), sig1.RequestID(), 20)
 		require.NoError(t, err)
 		require.Equal(t, sig2, retrievedSig2)
 	})
@@ -102,13 +102,13 @@ func TestBadgerRepository_SignatureOrdering(t *testing.T) {
 	require.NoError(t, err)
 
 	// Retrieve all signatures and verify they are returned in numeric order
-	signatures, err := repo.GetAllSignatures(context.Background(), sig.SignatureTargetID())
+	signatures, err := repo.GetAllSignatures(context.Background(), sig.RequestID())
 	require.NoError(t, err)
 	require.Len(t, signatures, len(testIndices))
 
 	// Verify each signature can be retrieved by its expected index
 	for i, expectedIndex := range expectedOrder {
-		retrievedSig, err := repo.GetSignatureByIndex(context.Background(), sig.SignatureTargetID(), expectedIndex)
+		retrievedSig, err := repo.GetSignatureByIndex(context.Background(), sig.RequestID(), expectedIndex)
 		require.NoError(t, err, "failed to retrieve signature for index %d", expectedIndex)
 
 		// Verify this is the signature we expect (by checking the public key byte)

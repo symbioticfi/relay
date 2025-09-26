@@ -16,12 +16,12 @@ func TestBadgerRepository_SignatureRequest(t *testing.T) {
 	repo := setupTestRepository(t)
 
 	req := randomSignatureRequest(t)
-	signatureTargetId := common.BytesToHash(randomBytes(t, 32))
+	requestId := common.BytesToHash(randomBytes(t, 32))
 
-	err := repo.SaveSignatureRequest(t.Context(), signatureTargetId, req)
+	err := repo.SaveSignatureRequest(t.Context(), requestId, req)
 	require.NoError(t, err)
 
-	loadedConfig, err := repo.GetSignatureRequest(t.Context(), signatureTargetId)
+	loadedConfig, err := repo.GetSignatureRequest(t.Context(), requestId)
 	require.NoError(t, err)
 	require.Equal(t, req, loadedConfig)
 }
@@ -308,7 +308,7 @@ func TestBadgerRepository_RemoveSignatureRequestPending(t *testing.T) {
 
 	t.Run("successfully removes existing pending request", func(t *testing.T) {
 		// Save signature request (creates both main and pending entries)
-		sigTargetID := randomSignatureTargetID(t)
+		sigTargetID := randomRequestID(t)
 		err := repo.SaveSignatureRequest(t.Context(), sigTargetID, req)
 		require.NoError(t, err)
 		err = repo.SaveSignatureRequestPending(t.Context(), sigTargetID, req)
@@ -345,7 +345,7 @@ func TestBadgerRepository_RemoveSignatureRequestPending(t *testing.T) {
 	})
 
 	t.Run("returns error when removing already removed pending request", func(t *testing.T) {
-		sigTargetID := randomSignatureTargetID(t)
+		sigTargetID := randomRequestID(t)
 		req2 := randomSignatureRequestForEpoch(t, epoch)
 		err := repo.SaveSignatureRequest(t.Context(), sigTargetID, req2)
 		require.NoError(t, err)
@@ -372,11 +372,11 @@ func TestBadgerRepository_PendingSignatureRequests_Integration(t *testing.T) {
 	t.Run("pending and regular requests are independent", func(t *testing.T) {
 		// Create multiple requests
 		req1 := randomSignatureRequestForEpoch(t, epoch)
-		sigTargetID1 := randomSignatureTargetID(t)
+		sigTargetID1 := randomRequestID(t)
 		req2 := randomSignatureRequestForEpoch(t, epoch)
-		sigTargetID2 := randomSignatureTargetID(t)
+		sigTargetID2 := randomRequestID(t)
 		req3 := randomSignatureRequestForEpoch(t, epoch)
-		sigTargetID3 := randomSignatureTargetID(t)
+		sigTargetID3 := randomRequestID(t)
 
 		// Save all requests
 		err := repo.SaveSignatureRequest(t.Context(), sigTargetID1, req1)
@@ -427,9 +427,9 @@ func TestBadgerRepository_PendingSignatureRequests_Integration(t *testing.T) {
 		epoch2 := entity.Epoch(300)
 
 		req1 := randomSignatureRequestForEpoch(t, epoch1)
-		sigTargetID1 := randomSignatureTargetID(t)
+		sigTargetID1 := randomRequestID(t)
 		req2 := randomSignatureRequestForEpoch(t, epoch2)
-		sigTargetID2 := randomSignatureTargetID(t)
+		sigTargetID2 := randomRequestID(t)
 
 		// Save requests for different epochs
 		err := repo.SaveSignatureRequest(t.Context(), sigTargetID1, req1)
@@ -474,7 +474,7 @@ func TestBadgerRepository_SaveSignatureRequestPending_DuplicateHandling(t *testi
 
 	epoch := entity.Epoch(100)
 	req := randomSignatureRequestForEpoch(t, epoch)
-	sigTargetID := randomSignatureTargetID(t)
+	sigTargetID := randomRequestID(t)
 
 	// Save signature request to main collection first
 	err := repo.SaveSignatureRequest(t.Context(), sigTargetID, req)

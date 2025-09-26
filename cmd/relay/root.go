@@ -246,7 +246,7 @@ func runApp(ctx context.Context) error {
 		}
 		slog.DebugContext(ctx, "Handled proof aggregated",
 			"proof", msg,
-			"signatureTargetID", msg.SignatureTargetID(),
+			"requestID", msg.RequestID(),
 		)
 
 		return nil

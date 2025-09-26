@@ -12,9 +12,9 @@ import (
 
 func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg entity.AggregationProof) error {
 	dto := prototypes.SignaturesAggregated{
-		SignatureTargetId: msg.SignatureTargetID().Bytes(),
-		KeyTag:            uint32(msg.KeyTag),
-		Epoch:             uint64(msg.Epoch),
+		RequestId: msg.RequestID().Bytes(),
+		KeyTag:    uint32(msg.KeyTag),
+		Epoch:     uint64(msg.Epoch),
 		AggregationProof: &prototypes.AggregationProof{
 			MessageHash: msg.MessageHash,
 			Proof:       msg.Proof,

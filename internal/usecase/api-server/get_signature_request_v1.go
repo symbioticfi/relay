@@ -10,7 +10,7 @@ import (
 
 // GetSignatureRequest handles the gRPC GetSignatureRequest request
 func (h *grpcHandler) GetSignatureRequest(ctx context.Context, req *apiv1.GetSignatureRequestRequest) (*apiv1.GetSignatureRequestResponse, error) {
-	signatureRequest, err := h.cfg.Repo.GetSignatureRequest(ctx, common.HexToHash(req.GetSignatureTargetId()))
+	signatureRequest, err := h.cfg.Repo.GetSignatureRequest(ctx, common.HexToHash(req.GetRequestId()))
 	if err != nil {
 		return nil, err
 	}

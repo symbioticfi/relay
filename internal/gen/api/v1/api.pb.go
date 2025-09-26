@@ -329,7 +329,7 @@ func (x *SignMessageWaitRequest) GetRequiredEpoch() uint64 {
 type SignMessageResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Hash of the signature request
-	SignatureTargetId string `protobuf:"bytes,1,opt,name=signature_target_id,json=signatureTargetId,proto3" json:"signature_target_id,omitempty"`
+	RequestId string `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	// Epoch number
 	Epoch         uint64 `protobuf:"varint,2,opt,name=epoch,proto3" json:"epoch,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -366,9 +366,9 @@ func (*SignMessageResponse) Descriptor() ([]byte, []int) {
 	return file_v1_api_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *SignMessageResponse) GetSignatureTargetId() string {
+func (x *SignMessageResponse) GetRequestId() string {
 	if x != nil {
-		return x.SignatureTargetId
+		return x.RequestId
 	}
 	return ""
 }
@@ -386,7 +386,7 @@ type SignMessageWaitResponse struct {
 	// Current status of the signing process
 	Status SigningStatus `protobuf:"varint,1,opt,name=status,proto3,enum=api.proto.v1.SigningStatus" json:"status,omitempty"`
 	// Id of the request
-	SignatureTargetId string `protobuf:"bytes,2,opt,name=signature_target_id,json=signatureTargetId,proto3" json:"signature_target_id,omitempty"`
+	RequestId string `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	// Epoch number
 	Epoch uint64 `protobuf:"varint,3,opt,name=epoch,proto3" json:"epoch,omitempty"`
 	// Final aggregation proof (only set when status is SIGNING_STATUS_COMPLETED)
@@ -432,9 +432,9 @@ func (x *SignMessageWaitResponse) GetStatus() SigningStatus {
 	return SigningStatus_SIGNING_STATUS_UNSPECIFIED
 }
 
-func (x *SignMessageWaitResponse) GetSignatureTargetId() string {
+func (x *SignMessageWaitResponse) GetRequestId() string {
 	if x != nil {
-		return x.SignatureTargetId
+		return x.RequestId
 	}
 	return ""
 }
@@ -455,10 +455,10 @@ func (x *SignMessageWaitResponse) GetAggregationProof() *AggregationProof {
 
 // Request message for getting aggregation proof
 type GetAggregationProofRequest struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	SignatureTargetId string                 `protobuf:"bytes,1,opt,name=signature_target_id,json=signatureTargetId,proto3" json:"signature_target_id,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetAggregationProofRequest) Reset() {
@@ -491,9 +491,9 @@ func (*GetAggregationProofRequest) Descriptor() ([]byte, []int) {
 	return file_v1_api_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *GetAggregationProofRequest) GetSignatureTargetId() string {
+func (x *GetAggregationProofRequest) GetRequestId() string {
 	if x != nil {
-		return x.SignatureTargetId
+		return x.RequestId
 	}
 	return ""
 }
@@ -537,10 +537,10 @@ func (*GetCurrentEpochRequest) Descriptor() ([]byte, []int) {
 
 // Request message for getting signatures
 type GetSignaturesRequest struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	SignatureTargetId string                 `protobuf:"bytes,1,opt,name=signature_target_id,json=signatureTargetId,proto3" json:"signature_target_id,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetSignaturesRequest) Reset() {
@@ -573,9 +573,9 @@ func (*GetSignaturesRequest) Descriptor() ([]byte, []int) {
 	return file_v1_api_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *GetSignaturesRequest) GetSignatureTargetId() string {
+func (x *GetSignaturesRequest) GetRequestId() string {
 	if x != nil {
-		return x.SignatureTargetId
+		return x.RequestId
 	}
 	return ""
 }
@@ -628,10 +628,10 @@ func (x *GetSignaturesResponse) GetSignatures() []*Signature {
 
 // Request message for getting signature request
 type GetSignatureRequestRequest struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	SignatureTargetId string                 `protobuf:"bytes,1,opt,name=signature_target_id,json=signatureTargetId,proto3" json:"signature_target_id,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetSignatureRequestRequest) Reset() {
@@ -664,19 +664,19 @@ func (*GetSignatureRequestRequest) Descriptor() ([]byte, []int) {
 	return file_v1_api_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *GetSignatureRequestRequest) GetSignatureTargetId() string {
+func (x *GetSignatureRequestRequest) GetRequestId() string {
 	if x != nil {
-		return x.SignatureTargetId
+		return x.RequestId
 	}
 	return ""
 }
 
 // Request message for getting aggregation status
 type GetAggregationStatusRequest struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	SignatureTargetId string                 `protobuf:"bytes,1,opt,name=signature_target_id,json=signatureTargetId,proto3" json:"signature_target_id,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetAggregationStatusRequest) Reset() {
@@ -709,9 +709,9 @@ func (*GetAggregationStatusRequest) Descriptor() ([]byte, []int) {
 	return file_v1_api_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *GetAggregationStatusRequest) GetSignatureTargetId() string {
+func (x *GetAggregationStatusRequest) GetRequestId() string {
 	if x != nil {
-		return x.SignatureTargetId
+		return x.RequestId
 	}
 	return ""
 }
@@ -1447,12 +1447,12 @@ func (x *ExtraData) GetValue() []byte {
 
 // Response message for getting validator set header
 type GetValidatorSetMetadataResponse struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	ExtraData         []*ExtraData           `protobuf:"bytes,1,rep,name=extra_data,json=extraData,proto3" json:"extra_data,omitempty"`
-	CommitmentData    []byte                 `protobuf:"bytes,2,opt,name=commitment_data,json=commitmentData,proto3" json:"commitment_data,omitempty"`
-	SignatureTargetId string                 `protobuf:"bytes,3,opt,name=signature_target_id,json=signatureTargetId,proto3" json:"signature_target_id,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	ExtraData      []*ExtraData           `protobuf:"bytes,1,rep,name=extra_data,json=extraData,proto3" json:"extra_data,omitempty"`
+	CommitmentData []byte                 `protobuf:"bytes,2,opt,name=commitment_data,json=commitmentData,proto3" json:"commitment_data,omitempty"`
+	RequestId      string                 `protobuf:"bytes,3,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *GetValidatorSetMetadataResponse) Reset() {
@@ -1499,9 +1499,9 @@ func (x *GetValidatorSetMetadataResponse) GetCommitmentData() []byte {
 	return nil
 }
 
-func (x *GetValidatorSetMetadataResponse) GetSignatureTargetId() string {
+func (x *GetValidatorSetMetadataResponse) GetRequestId() string {
 	if x != nil {
-		return x.SignatureTargetId
+		return x.RequestId
 	}
 	return ""
 }
@@ -2059,29 +2059,35 @@ const file_v1_api_proto_rawDesc = "" +
 	"\akey_tag\x18\x01 \x01(\rR\x06keyTag\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\fR\amessage\x12*\n" +
 	"\x0erequired_epoch\x18\x03 \x01(\x04H\x00R\rrequiredEpoch\x88\x01\x01B\x11\n" +
-	"\x0f_required_epoch\"[\n" +
-	"\x13SignMessageResponse\x12.\n" +
-	"\x13signature_target_id\x18\x01 \x01(\tR\x11signatureTargetId\x12\x14\n" +
-	"\x05epoch\x18\x02 \x01(\x04R\x05epoch\"\xfc\x01\n" +
+	"\x0f_required_epoch\"J\n" +
+	"\x13SignMessageResponse\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\x12\x14\n" +
+	"\x05epoch\x18\x02 \x01(\x04R\x05epoch\"\xeb\x01\n" +
 	"\x17SignMessageWaitResponse\x123\n" +
-	"\x06status\x18\x01 \x01(\x0e2\x1b.api.proto.v1.SigningStatusR\x06status\x12.\n" +
-	"\x13signature_target_id\x18\x02 \x01(\tR\x11signatureTargetId\x12\x14\n" +
+	"\x06status\x18\x01 \x01(\x0e2\x1b.api.proto.v1.SigningStatusR\x06status\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x02 \x01(\tR\trequestId\x12\x14\n" +
 	"\x05epoch\x18\x03 \x01(\x04R\x05epoch\x12P\n" +
 	"\x11aggregation_proof\x18\x06 \x01(\v2\x1e.api.proto.v1.AggregationProofH\x00R\x10aggregationProof\x88\x01\x01B\x14\n" +
-	"\x12_aggregation_proof\"L\n" +
-	"\x1aGetAggregationProofRequest\x12.\n" +
-	"\x13signature_target_id\x18\x01 \x01(\tR\x11signatureTargetId\"\x18\n" +
-	"\x16GetCurrentEpochRequest\"F\n" +
-	"\x14GetSignaturesRequest\x12.\n" +
-	"\x13signature_target_id\x18\x01 \x01(\tR\x11signatureTargetId\"P\n" +
+	"\x12_aggregation_proof\";\n" +
+	"\x1aGetAggregationProofRequest\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\"\x18\n" +
+	"\x16GetCurrentEpochRequest\"5\n" +
+	"\x14GetSignaturesRequest\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\"P\n" +
 	"\x15GetSignaturesResponse\x127\n" +
 	"\n" +
 	"signatures\x18\x01 \x03(\v2\x17.api.proto.v1.SignatureR\n" +
-	"signatures\"L\n" +
-	"\x1aGetSignatureRequestRequest\x12.\n" +
-	"\x13signature_target_id\x18\x01 \x01(\tR\x11signatureTargetId\"M\n" +
-	"\x1bGetAggregationStatusRequest\x12.\n" +
-	"\x13signature_target_id\x18\x01 \x01(\tR\x11signatureTargetId\"=\n" +
+	"signatures\";\n" +
+	"\x1aGetSignatureRequestRequest\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\"<\n" +
+	"\x1bGetAggregationStatusRequest\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\"=\n" +
 	"\x16GetValidatorSetRequest\x12\x19\n" +
 	"\x05epoch\x18\x01 \x01(\x04H\x00R\x05epoch\x88\x01\x01B\b\n" +
 	"\x06_epoch\"]\n" +
@@ -2130,12 +2136,13 @@ const file_v1_api_proto_rawDesc = "" +
 	"\tvalidator\x18\x01 \x01(\v2\x17.api.proto.v1.ValidatorR\tvalidator\"3\n" +
 	"\tExtraData\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\fR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\fR\x05value\"\xb2\x01\n" +
+	"\x05value\x18\x02 \x01(\fR\x05value\"\xa1\x01\n" +
 	"\x1fGetValidatorSetMetadataResponse\x126\n" +
 	"\n" +
 	"extra_data\x18\x01 \x03(\v2\x17.api.proto.v1.ExtraDataR\textraData\x12'\n" +
-	"\x0fcommitment_data\x18\x02 \x01(\fR\x0ecommitmentData\x12.\n" +
-	"\x13signature_target_id\x18\x03 \x01(\tR\x11signatureTargetId\"\xcd\x02\n" +
+	"\x0fcommitment_data\x18\x02 \x01(\fR\x0ecommitmentData\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x03 \x01(\tR\trequestId\"\xcd\x02\n" +
 	"\x1dGetValidatorSetHeaderResponse\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\rR\aversion\x12(\n" +
 	"\x10required_key_tag\x18\x02 \x01(\rR\x0erequiredKeyTag\x12\x14\n" +

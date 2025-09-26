@@ -68,7 +68,7 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 	}
 
 	slog.InfoContext(ctx, "Listener processed received signature",
-		"signature_target_id", msg.SignatureTargetID().Hex(),
+		"request_id", msg.RequestID().Hex(),
 		"epoch", msg.Epoch,
 	)
 	return nil

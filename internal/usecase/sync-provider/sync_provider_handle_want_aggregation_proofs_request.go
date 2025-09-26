@@ -15,24 +15,24 @@ func (s *Syncer) HandleWantAggregationProofsRequest(ctx context.Context, request
 	responseCount := 0
 
 	// Process each requested hash
-	for _, signatureTargetID := range request.SignatureTargetIDs {
+	for _, requestID := range request.RequestIDs {
 		// Stop if we've reached the maximum response count
 		if responseCount >= s.cfg.MaxResponseAggProofCount {
 			break
 		}
 
 		// Try to get the aggregation proof
-		proof, err := s.cfg.Repo.GetAggregationProof(ctx, signatureTargetID)
+		proof, err := s.cfg.Repo.GetAggregationProof(ctx, requestID)
 		if err != nil {
 			if errors.Is(err, entity.ErrEntityNotFound) {
 				// Aggregation proof not found, skip this request
 				continue
 			}
-			return entity.WantAggregationProofsResponse{}, errors.Errorf("failed to get aggregation proof for hash %s: %w", signatureTargetID.Hex(), err)
+			return entity.WantAggregationProofsResponse{}, errors.Errorf("failed to get aggregation proof for hash %s: %w", requestID.Hex(), err)
 		}
 
 		// Add the proof to the response
-		proofs[signatureTargetID] = proof
+		proofs[requestID] = proof
 		responseCount++
 	}
 

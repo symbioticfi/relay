@@ -59,7 +59,6 @@ type RawMessageHash []byte
 type RawPublicKey []byte
 type CompactPublicKey []byte
 type RawMessage []byte
-
 type RawProof []byte
 type VotingPower struct {
 	*big.Int
@@ -141,10 +140,10 @@ type SignatureRequest struct {
 	Message       RawMessage
 }
 
-type SignatureRequestWithTargetID struct {
+type SignatureRequestWithID struct {
 	SignatureRequest
 
-	SignatureTargetID common.Hash
+	RequestID common.Hash
 }
 
 // SignatureExtended signer.sign() -> SignatureExtended
@@ -156,9 +155,17 @@ type SignatureExtended struct {
 	Signature   RawSignature   // parse based on KeyTag
 }
 
-// SignatureTargetID calculates the target ID based on Hash(MessageHash, KeyTag, Epoch)
-func (s SignatureExtended) SignatureTargetID() common.Hash {
-	return crypto.Keccak256Hash(s.MessageHash, []byte{uint8(s.KeyTag)}, new(big.Int).SetInt64(int64(s.Epoch)).Bytes())
+// RequestID calculates the target ID based on Hash(MessageHash, KeyTag, Epoch)
+func (s SignatureExtended) RequestID() common.Hash {
+	return requestID(s.KeyTag, s.Epoch, s.MessageHash)
+}
+
+func requestID(keyTag KeyTag, epoch Epoch, messageHash RawMessageHash) common.Hash {
+	return crypto.Keccak256Hash(
+		[]byte{uint8(keyTag)},
+		new(big.Int).SetUint64(uint64(epoch)).Bytes(),
+		messageHash,
+	)
 }
 
 // AggregationProof aggregator.proof(signatures []SignatureExtended) -> AggregationProof
@@ -169,15 +176,15 @@ type AggregationProof struct {
 	Proof       RawProof       // parse based on KeyTag
 }
 
-// SignatureTargetID calculates the target ID based on Hash(MessageHash, KeyTag, Epoch)
-func (ap AggregationProof) SignatureTargetID() common.Hash {
-	return crypto.Keccak256Hash(ap.MessageHash, []byte{uint8(ap.KeyTag)}, new(big.Int).SetInt64(int64(ap.Epoch)).Bytes())
+// RequestID calculates the target ID based on Hash(MessageHash, KeyTag, Epoch)
+func (ap AggregationProof) RequestID() common.Hash {
+	return requestID(ap.KeyTag, ap.Epoch, ap.MessageHash)
 }
 
 // ProofCommitKey represents a proof commit key with its parsed epoch and hash for sorting
 type ProofCommitKey struct {
-	Epoch             Epoch
-	SignatureTargetID common.Hash
+	Epoch     Epoch
+	RequestID common.Hash
 }
 
 type AggregationState struct {
@@ -519,10 +526,10 @@ type ValidatorSetHeader struct {
 }
 
 type ValidatorSetMetadata struct {
-	SignatureTargetID common.Hash
-	ExtraData         []ExtraData
-	Epoch             Epoch
-	CommitmentData    []byte
+	RequestID      common.Hash
+	ExtraData      []ExtraData
+	Epoch          Epoch
+	CommitmentData []byte
 }
 
 type ExtraData struct {

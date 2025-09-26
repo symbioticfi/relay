@@ -12,13 +12,13 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 )
 
-func keySignature(signatureTargetId common.Hash, validatorIndex uint32) []byte {
-	return []byte(fmt.Sprintf("signature:%s:%010d", signatureTargetId.Hex(), validatorIndex))
+func keySignature(requestID common.Hash, validatorIndex uint32) []byte {
+	return []byte(fmt.Sprintf("signature:%s:%010d", requestID.Hex(), validatorIndex))
 }
 
 // keySignaturePrefix returns prefix for all signatures of a signature target
-func keySignaturePrefix(signatureTargetId common.Hash) []byte {
-	return []byte("signature:" + signatureTargetId.Hex() + ":")
+func keySignaturePrefix(requestID common.Hash) []byte {
+	return []byte("signature:" + requestID.Hex() + ":")
 }
 
 func (r *Repository) SaveSignature(ctx context.Context, validatorIndex uint32, sig entity.SignatureExtended) error {
@@ -32,7 +32,7 @@ func (r *Repository) SaveSignature(ctx context.Context, validatorIndex uint32, s
 		return errors.Errorf("failed to marshal signature: %w", err)
 	}
 
-	key := keySignature(sig.SignatureTargetID(), validatorIndex)
+	key := keySignature(sig.RequestID(), validatorIndex)
 	err = txn.Set(key, bytes)
 	if err != nil {
 		return errors.Errorf("failed to store signature: %w", err)
@@ -40,12 +40,12 @@ func (r *Repository) SaveSignature(ctx context.Context, validatorIndex uint32, s
 	return nil
 }
 
-func (r *Repository) GetAllSignatures(ctx context.Context, signatureTargetID common.Hash) ([]entity.SignatureExtended, error) {
+func (r *Repository) GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity.SignatureExtended, error) {
 	var signatures []entity.SignatureExtended
 
 	return signatures, r.DoViewInTx(ctx, func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		prefix := keySignaturePrefix(signatureTargetID)
+		prefix := keySignaturePrefix(requestID)
 		opts := badger.DefaultIteratorOptions
 		opts.Prefix = prefix
 
@@ -71,12 +71,12 @@ func (r *Repository) GetAllSignatures(ctx context.Context, signatureTargetID com
 	})
 }
 
-func (r *Repository) GetSignatureByIndex(ctx context.Context, signatureTargetID common.Hash, validatorIndex uint32) (entity.SignatureExtended, error) {
+func (r *Repository) GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (entity.SignatureExtended, error) {
 	var signature entity.SignatureExtended
 
 	err := r.DoViewInTx(ctx, func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		key := keySignature(signatureTargetID, validatorIndex)
+		key := keySignature(requestID, validatorIndex)
 
 		item, err := txn.Get(key)
 		if err != nil {

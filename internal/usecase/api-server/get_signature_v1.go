@@ -13,7 +13,7 @@ import (
 
 // GetSignatures handles the gRPC GetSignatures request
 func (h *grpcHandler) GetSignatures(ctx context.Context, req *apiv1.GetSignaturesRequest) (*apiv1.GetSignaturesResponse, error) {
-	signatures, err := h.cfg.Repo.GetAllSignatures(ctx, common.HexToHash(req.GetSignatureTargetId()))
+	signatures, err := h.cfg.Repo.GetAllSignatures(ctx, common.HexToHash(req.GetRequestId()))
 	if err != nil {
 		return nil, errors.Errorf("failed to get signatures: %w", err)
 	}

@@ -112,7 +112,7 @@ Request message for getting aggregation proof
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| signature_target_id | [string](#string) |  |  |
+| request_id | [string](#string) |  |  |
 
 
 
@@ -142,7 +142,7 @@ Request message for getting aggregation status
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| signature_target_id | [string](#string) |  |  |
+| request_id | [string](#string) |  |  |
 
 
 
@@ -273,7 +273,7 @@ Request message for getting signature request
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| signature_target_id | [string](#string) |  |  |
+| request_id | [string](#string) |  |  |
 
 
 
@@ -305,7 +305,7 @@ Request message for getting signatures
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| signature_target_id | [string](#string) |  |  |
+| request_id | [string](#string) |  |  |
 
 
 
@@ -419,7 +419,7 @@ Response message for getting validator set header
 | ----- | ---- | ----- | ----------- |
 | extra_data | [ExtraData](#api-proto-v1-ExtraData) | repeated |  |
 | commitment_data | [bytes](#bytes) |  |  |
-| signature_target_id | [string](#string) |  |  |
+| request_id | [string](#string) |  |  |
 
 
 
@@ -503,7 +503,7 @@ Response message for sign message request
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| signature_target_id | [string](#string) |  | Hash of the signature request |
+| request_id | [string](#string) |  | Hash of the signature request |
 | epoch | [uint64](#uint64) |  | Epoch number |
 
 
@@ -537,7 +537,7 @@ Streaming response message for sign message wait
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [SigningStatus](#api-proto-v1-SigningStatus) |  | Current status of the signing process |
-| signature_target_id | [string](#string) |  | Id of the request |
+| request_id | [string](#string) |  | Id of the request |
 | epoch | [uint64](#uint64) |  | Epoch number |
 | aggregation_proof | [AggregationProof](#api-proto-v1-AggregationProof) | optional | Final aggregation proof (only set when status is SIGNING_STATUS_COMPLETED) |
 

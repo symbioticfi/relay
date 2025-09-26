@@ -82,33 +82,33 @@ func (m *Mockrepo) EXPECT() *MockrepoMockRecorder {
 }
 
 // GetAggregationProof mocks base method.
-func (m *Mockrepo) GetAggregationProof(ctx context.Context, signatureTargetID common.Hash) (entity.AggregationProof, error) {
+func (m *Mockrepo) GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAggregationProof", ctx, signatureTargetID)
+	ret := m.ctrl.Call(m, "GetAggregationProof", ctx, requestID)
 	ret0, _ := ret[0].(entity.AggregationProof)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAggregationProof indicates an expected call of GetAggregationProof.
-func (mr *MockrepoMockRecorder) GetAggregationProof(ctx, signatureTargetID any) *gomock.Call {
+func (mr *MockrepoMockRecorder) GetAggregationProof(ctx, requestID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAggregationProof", reflect.TypeOf((*Mockrepo)(nil).GetAggregationProof), ctx, signatureTargetID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAggregationProof", reflect.TypeOf((*Mockrepo)(nil).GetAggregationProof), ctx, requestID)
 }
 
 // GetAllSignatures mocks base method.
-func (m *Mockrepo) GetAllSignatures(ctx context.Context, signatureTargetID common.Hash) ([]entity.SignatureExtended, error) {
+func (m *Mockrepo) GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity.SignatureExtended, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllSignatures", ctx, signatureTargetID)
+	ret := m.ctrl.Call(m, "GetAllSignatures", ctx, requestID)
 	ret0, _ := ret[0].([]entity.SignatureExtended)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAllSignatures indicates an expected call of GetAllSignatures.
-func (mr *MockrepoMockRecorder) GetAllSignatures(ctx, signatureTargetID any) *gomock.Call {
+func (mr *MockrepoMockRecorder) GetAllSignatures(ctx, requestID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllSignatures", reflect.TypeOf((*Mockrepo)(nil).GetAllSignatures), ctx, signatureTargetID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllSignatures", reflect.TypeOf((*Mockrepo)(nil).GetAllSignatures), ctx, requestID)
 }
 
 // GetLatestValidatorSetEpoch mocks base method.
@@ -142,18 +142,18 @@ func (mr *MockrepoMockRecorder) GetLatestValidatorSetHeader(arg0 any) *gomock.Ca
 }
 
 // GetSignatureRequest mocks base method.
-func (m *Mockrepo) GetSignatureRequest(ctx context.Context, signatureTargetID common.Hash) (entity.SignatureRequest, error) {
+func (m *Mockrepo) GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSignatureRequest", ctx, signatureTargetID)
+	ret := m.ctrl.Call(m, "GetSignatureRequest", ctx, requestID)
 	ret0, _ := ret[0].(entity.SignatureRequest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetSignatureRequest indicates an expected call of GetSignatureRequest.
-func (mr *MockrepoMockRecorder) GetSignatureRequest(ctx, signatureTargetID any) *gomock.Call {
+func (mr *MockrepoMockRecorder) GetSignatureRequest(ctx, requestID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureRequest", reflect.TypeOf((*Mockrepo)(nil).GetSignatureRequest), ctx, signatureTargetID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureRequest", reflect.TypeOf((*Mockrepo)(nil).GetSignatureRequest), ctx, requestID)
 }
 
 // GetValidatorSetByEpoch mocks base method.
@@ -295,18 +295,18 @@ func (m *Mockaggregator) EXPECT() *MockaggregatorMockRecorder {
 }
 
 // GetAggregationStatus mocks base method.
-func (m *Mockaggregator) GetAggregationStatus(ctx context.Context, signatureTargetID common.Hash) (entity.AggregationStatus, error) {
+func (m *Mockaggregator) GetAggregationStatus(ctx context.Context, requestID common.Hash) (entity.AggregationStatus, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAggregationStatus", ctx, signatureTargetID)
+	ret := m.ctrl.Call(m, "GetAggregationStatus", ctx, requestID)
 	ret0, _ := ret[0].(entity.AggregationStatus)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAggregationStatus indicates an expected call of GetAggregationStatus.
-func (mr *MockaggregatorMockRecorder) GetAggregationStatus(ctx, signatureTargetID any) *gomock.Call {
+func (mr *MockaggregatorMockRecorder) GetAggregationStatus(ctx, requestID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAggregationStatus", reflect.TypeOf((*Mockaggregator)(nil).GetAggregationStatus), ctx, signatureTargetID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAggregationStatus", reflect.TypeOf((*Mockaggregator)(nil).GetAggregationStatus), ctx, requestID)
 }
 
 // Mockderiver is a mock of deriver interface.

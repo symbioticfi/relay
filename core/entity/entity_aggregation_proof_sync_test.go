@@ -15,10 +15,10 @@ func TestAggregationProofSync_Integration(t *testing.T) {
 		hash3 := common.HexToHash("0xdef012")
 
 		request := WantAggregationProofsRequest{
-			SignatureTargetIDs: []common.Hash{hash1, hash2, hash3},
+			RequestIDs: []common.Hash{hash1, hash2, hash3},
 		}
 
-		require.Len(t, request.SignatureTargetIDs, 3)
+		require.Len(t, request.RequestIDs, 3)
 
 		// Step 2: Create response with available proofs (only 2 out of 3)
 		proof1 := AggregationProof{
@@ -44,8 +44,8 @@ func TestAggregationProofSync_Integration(t *testing.T) {
 		stats := AggregationProofProcessingStats{}
 
 		// Simulate processing each requested hash
-		for _, signatureTargetID := range request.SignatureTargetIDs {
-			if proof, exists := response.Proofs[signatureTargetID]; exists {
+		for _, requestID := range request.RequestIDs {
+			if proof, exists := response.Proofs[requestID]; exists {
 				// Proof found and processed successfully
 				_ = proof // Use the proof
 				stats.ProcessedCount++

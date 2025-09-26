@@ -30,12 +30,12 @@ const (
 	topicSignatureReady = topicPrefix + "/signature/ready"
 	topicAggProofReady  = topicPrefix + "/proof/ready"
 
-	maxP2PMessageSize         = 1<<20 + 1024 // 1 MiB + 1 KiB for overhead
-	maxSignatureTargetIDhSize = 32
-	maxPubKeySize             = 96
-	maxSignatureSize          = 96
-	maxMsgHashSize            = 64
-	maxProofSize              = 1 << 20
+	maxP2PMessageSize = 1<<20 + 1024 // 1 MiB + 1 KiB for overhead
+	maxRequestIDSize  = 32
+	maxPubKeySize     = 96
+	maxSignatureSize  = 96
+	maxMsgHashSize    = 64
+	maxProofSize      = 1 << 20
 )
 
 type metrics interface {

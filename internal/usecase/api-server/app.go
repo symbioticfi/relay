@@ -34,10 +34,10 @@ type signer interface {
 }
 
 type repo interface {
-	GetAggregationProof(ctx context.Context, signatureTargetID common.Hash) (entity.AggregationProof, error)
+	GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error)
 	GetValidatorSetByEpoch(_ context.Context, epoch uint64) (entity.ValidatorSet, error)
-	GetAllSignatures(ctx context.Context, signatureTargetID common.Hash) ([]entity.SignatureExtended, error)
-	GetSignatureRequest(ctx context.Context, signatureTargetID common.Hash) (entity.SignatureRequest, error)
+	GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity.SignatureExtended, error)
+	GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error)
 	GetLatestValidatorSetHeader(_ context.Context) (entity.ValidatorSetHeader, error)
 	GetLatestValidatorSetEpoch(_ context.Context) (uint64, error)
 	GetValidatorSetMetadata(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSetMetadata, error)
@@ -51,7 +51,7 @@ type evmClient interface {
 }
 
 type aggregator interface {
-	GetAggregationStatus(ctx context.Context, signatureTargetID common.Hash) (entity.AggregationStatus, error)
+	GetAggregationStatus(ctx context.Context, requestID common.Hash) (entity.AggregationStatus, error)
 }
 
 type deriver interface {
