@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
 	apiv1 "github.com/symbioticfi/relay/api/client/v1"
@@ -51,6 +52,13 @@ func TestNonHeaderKeySignature(t *testing.T) {
 	t.Logf("Running signature test for string: %s", msg)
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
+			client := globalTestEnv.GetGRPCClient(t, 0)
+			lastCommitted, err := client.GetLastAllCommitted(t.Context(), &apiv1.GetLastAllCommittedRequest{})
+			require.NoError(t, err, "Failed to get last all committed")
+			epoch := lo.Min(lo.Map(lo.Values(lastCommitted.EpochInfos), func(e *apiv1.ChainEpochInfo, _ int) uint64 {
+				return e.LastCommittedEpoch
+			}))
+
 			requestID := ""
 			for i := range globalTestEnv.Containers {
 				func() {
@@ -63,7 +71,7 @@ func TestNonHeaderKeySignature(t *testing.T) {
 							&apiv1.SignMessageRequest{
 								KeyTag:        uint32(tc.keyTag),
 								Message:       []byte(msg),
-								RequiredEpoch: nil,
+								RequiredEpoch: &epoch,
 							})
 						if err == nil {
 							break
@@ -90,7 +98,7 @@ func TestNonHeaderKeySignature(t *testing.T) {
 			ticker := time.NewTicker(3 * time.Second)
 			defer ticker.Stop()
 
-			client := globalTestEnv.GetGRPCClient(t, 0)
+			client = globalTestEnv.GetGRPCClient(t, 0)
 
 			for {
 				select {
