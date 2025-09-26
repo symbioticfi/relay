@@ -77,12 +77,12 @@ func NewEntityProcessor(cfg Config) (*EntityProcessor, error) {
 // ProcessSignature processes a signature with SignatureMap operations and optionally saves SignatureRequest
 func (s *EntityProcessor) ProcessSignature(ctx context.Context, param entity.SaveSignatureParam) error {
 	slog.DebugContext(ctx, "Processing signature",
-		"keyTag", param.KeyTag,
+		"keyTag", param.Signature.KeyTag,
 		"signatureTargetId", param.Signature.SignatureTargetID().Hex(),
-		"epoch", param.Epoch,
+		"epoch", param.Signature.Epoch,
 	)
 
-	publicKey, err := crypto.NewPublicKey(param.KeyTag.Type(), param.Signature.PublicKey)
+	publicKey, err := crypto.NewPublicKey(param.Signature.KeyTag.Type(), param.Signature.PublicKey)
 	if err != nil {
 		return errors.Errorf("failed to get public key: %w", err)
 	}
@@ -91,7 +91,7 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, param entity.Sav
 		return errors.Errorf("failed to verify signature: %w", err)
 	}
 
-	validator, activeIndex, err := s.cfg.Repo.GetValidatorByKey(ctx, uint64(param.Epoch), param.KeyTag, publicKey.OnChain())
+	validator, activeIndex, err := s.cfg.Repo.GetValidatorByKey(ctx, uint64(param.Signature.Epoch), param.Signature.KeyTag, publicKey.OnChain())
 	if err != nil {
 		return errors.Errorf("validator not found for public key %x: %w", param.Signature.PublicKey, err)
 	}
@@ -109,12 +109,12 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, param entity.Sav
 		}
 		if errors.Is(err, entity.ErrEntityNotFound) {
 			// Get the total number of active validators for this epoch
-			totalActiveValidators, err := s.cfg.Repo.GetActiveValidatorCountByEpoch(ctx, uint64(param.Epoch))
+			totalActiveValidators, err := s.cfg.Repo.GetActiveValidatorCountByEpoch(ctx, uint64(param.Signature.Epoch))
 			if err != nil {
-				return errors.Errorf("failed to get active validator count for epoch %d: %w", param.Epoch, err)
+				return errors.Errorf("failed to get active validator count for epoch %d: %w", param.Signature.Epoch, err)
 			}
 
-			signatureMap = entity.NewSignatureMap(param.Signature.SignatureTargetID(), param.Epoch, totalActiveValidators)
+			signatureMap = entity.NewSignatureMap(param.Signature.SignatureTargetID(), param.Signature.Epoch, totalActiveValidators)
 		}
 
 		if err := signatureMap.SetValidatorPresent(activeIndex, validator.VotingPower); err != nil {
@@ -132,7 +132,7 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, param entity.Sav
 		slog.DebugContext(ctx, "Saved signature for validator",
 			"activeIndex", activeIndex,
 			"signatureTargetId", param.Signature.SignatureTargetID().Hex(),
-			"epoch", param.Epoch,
+			"epoch", param.Signature.Epoch,
 			"totalSignatures", signatureMap.SignedValidatorsBitmap.GetCardinality(),
 			"presentValidators", signatureMap.SignedValidatorsBitmap.ToArray(),
 		)
@@ -142,7 +142,7 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, param entity.Sav
 				return errors.Errorf("failed to save signature request: %w", err)
 			}
 			// Save to pending collection as well
-			if param.KeyTag.Type().AggregationKey() {
+			if param.Signature.KeyTag.Type().AggregationKey() {
 				if err := s.cfg.Repo.SaveSignatureRequestPending(ctx, param.Signature.SignatureTargetID(), *param.SignatureRequest); err != nil {
 					return errors.Errorf("failed to save signature request to pending collection: %v", err)
 				}
@@ -153,9 +153,9 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, param entity.Sav
 			}
 		}
 
-		if param.KeyTag.Type().AggregationKey() {
+		if param.Signature.KeyTag.Type().AggregationKey() {
 			// Check if quorum is reached and remove from pending collection if so
-			validatorSetHeader, err := s.cfg.Repo.GetValidatorSetHeaderByEpoch(ctx, uint64(param.Epoch))
+			validatorSetHeader, err := s.cfg.Repo.GetValidatorSetHeaderByEpoch(ctx, uint64(param.Signature.Epoch))
 			if err != nil {
 				return errors.Errorf("failed to get validator set header: %v", err)
 			}
@@ -163,7 +163,7 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, param entity.Sav
 			// todo check quorum threshold from signature request
 			if signatureMap.ThresholdReached(validatorSetHeader.QuorumThreshold) {
 				// Remove from pending collection since quorum is reached
-				err := s.cfg.Repo.RemoveSignatureRequestPending(ctx, param.Epoch, param.Signature.SignatureTargetID())
+				err := s.cfg.Repo.RemoveSignatureRequestPending(ctx, param.Signature.Epoch, param.Signature.SignatureTargetID())
 				if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 					return errors.Errorf("failed to remove signature request from pending collection: %v", err)
 				}

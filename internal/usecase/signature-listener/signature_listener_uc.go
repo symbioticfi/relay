@@ -58,9 +58,7 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 	}
 
 	param := entity.SaveSignatureParam{
-		KeyTag:           msg.KeyTag,
 		Signature:        msg,
-		Epoch:            msg.Epoch,
 		SignatureRequest: nil,
 	}
 

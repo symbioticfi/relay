@@ -126,9 +126,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) (enti
 	}
 
 	param := entity.SaveSignatureParam{
-		KeyTag:           req.KeyTag,
 		Signature:        extendedSignature,
-		Epoch:            req.RequiredEpoch,
 		SignatureRequest: &req,
 	}
 

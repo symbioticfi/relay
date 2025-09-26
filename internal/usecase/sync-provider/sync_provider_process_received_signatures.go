@@ -65,9 +65,7 @@ func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.
 			// Process the signature
 			param := entity.SaveSignatureParam{
 				Signature:        validatorSig.Signature,
-				Epoch:            sigReq.RequiredEpoch,
 				SignatureRequest: nil,
-				KeyTag:           sigReq.KeyTag,
 			}
 
 			if err := s.cfg.EntityProcessor.ProcessSignature(ctx, param); err != nil {

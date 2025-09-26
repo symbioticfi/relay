@@ -16,12 +16,16 @@ func TestBadgerRepository_Signature(t *testing.T) {
 
 	sig1 := entity.SignatureExtended{
 		MessageHash: []byte("message1"),
+		KeyTag:      15,
+		Epoch:       100,
 		Signature:   []byte("signature1"),
 		PublicKey:   []byte("publickey1"),
 	}
 
 	sig2 := entity.SignatureExtended{
 		MessageHash: []byte("message1"),
+		KeyTag:      15,
+		Epoch:       100,
 		Signature:   []byte("signature2"),
 		PublicKey:   []byte("publickey2"),
 	}
@@ -81,6 +85,7 @@ func TestBadgerRepository_SignatureOrdering(t *testing.T) {
 		Signature:   []byte("signature"),
 		KeyTag:      entity.KeyTag(15),
 		Epoch:       777,
+		PublicKey:   randomBytes(t, 10),
 	}
 
 	// Save signatures with test indices

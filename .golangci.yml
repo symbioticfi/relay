@@ -21,7 +21,7 @@ linters:
     - errname
     - errorlint
     - exhaustive
-#    - exhaustruct
+    - exhaustruct
     - exptostd
     - fatcontext
     - forbidigo
@@ -41,6 +41,7 @@ linters:
     - importas
     - inamedparam
     - ineffassign
+    - iotamixing
     - loggercheck
     - makezero
     - mirror
@@ -90,6 +91,11 @@ linters:
         - switch
         - map
     exhaustruct:
+      allow-empty-returns: true
+      allow-empty: true
+      include:
+        - ^github.com/symbioticfi/relay/core/entity.SignatureExtended$
+        - ^github.com/symbioticfi/relay/core/entity.SignatureRequest$
       exclude:
         - ^database/sql.NullBool$
         - ^database/sql.NullString
@@ -264,7 +270,6 @@ linters:
       - std-error-handling
     rules:
       - linters:
-          - exhaustruct
           - goconst
         path: _test\.go
       - path: _test\.go
