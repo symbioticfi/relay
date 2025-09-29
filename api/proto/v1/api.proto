@@ -17,7 +17,7 @@ service SymbioticAPIService {
   // Get current epoch
   rpc GetCurrentEpoch(GetCurrentEpochRequest) returns (GetCurrentEpochResponse);
 
-  // Get signature by signature id
+  // Get signature by request id
   rpc GetSignatures(GetSignaturesRequest) returns (GetSignaturesResponse);
 
   // Get signature request by signature id
