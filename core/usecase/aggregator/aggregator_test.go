@@ -231,6 +231,8 @@ func genCorrectTest(numValidators int, nonSigners []int) (entity.ValidatorSet, [
 		}
 		signatures = append(signatures, entity.SignatureExtended{
 			MessageHash: msgHash,
+			KeyTag:      keyTag,
+			Epoch:       1,
 			Signature:   sig,
 			PublicKey:   pks[i].PublicKey().Raw(),
 		})

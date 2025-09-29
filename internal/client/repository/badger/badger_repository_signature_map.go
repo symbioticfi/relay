@@ -12,8 +12,8 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 )
 
-func keySignatureMap(reqHash common.Hash) []byte {
-	return []byte("signature_map:" + reqHash.Hex())
+func keySignatureMap(requestID common.Hash) []byte {
+	return []byte("signature_map:" + requestID.Hex())
 }
 
 func (r *Repository) UpdateSignatureMap(ctx context.Context, vm entity.SignatureMap) error {
@@ -23,7 +23,7 @@ func (r *Repository) UpdateSignatureMap(ctx context.Context, vm entity.Signature
 	}
 
 	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
-		key := keySignatureMap(vm.RequestHash)
+		key := keySignatureMap(vm.RequestID)
 
 		err = getTxn(ctx).Set(key, bytes)
 		if err != nil {
@@ -33,25 +33,25 @@ func (r *Repository) UpdateSignatureMap(ctx context.Context, vm entity.Signature
 	})
 }
 
-func (r *Repository) GetSignatureMap(ctx context.Context, reqHash common.Hash) (entity.SignatureMap, error) {
+func (r *Repository) GetSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error) {
 	var vm entity.SignatureMap
 
 	// Create a new read-only transaction
 	return vm, r.DoViewInTx(ctx, func(ctx context.Context) error {
 		var err error
-		vm, err = r.getSignatureMap(ctx, reqHash)
+		vm, err = r.getSignatureMap(ctx, requestID)
 		return err
 	})
 }
 
-func (r *Repository) getSignatureMap(ctx context.Context, reqHash common.Hash) (entity.SignatureMap, error) {
-	key := keySignatureMap(reqHash)
+func (r *Repository) getSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error) {
+	key := keySignatureMap(requestID)
 
 	txn := getTxn(ctx)
 	item, err := txn.Get(key)
 	if err != nil {
 		if errors.Is(err, badger.ErrKeyNotFound) {
-			return entity.SignatureMap{}, errors.Errorf("no signature map found for request %s: %w", reqHash.Hex(), entity.ErrEntityNotFound)
+			return entity.SignatureMap{}, errors.Errorf("no signature map found for request id %s: %w", requestID.Hex(), entity.ErrEntityNotFound)
 		}
 		return entity.SignatureMap{}, errors.Errorf("failed to get signature map: %w", err)
 	}
@@ -70,7 +70,7 @@ func (r *Repository) getSignatureMap(ctx context.Context, reqHash common.Hash) (
 }
 
 type signatureMapDTO struct {
-	RequestHash                string   `json:"request_hash"`
+	RequestID                  string   `json:"request_id"`
 	Epoch                      uint64   `json:"epoch"`
 	SignedValidatorsBitmapData []byte   `json:"signed_validators_bitmap"`
 	CurrentVotingPower         *big.Int `json:"current_voting_power"`
@@ -84,7 +84,7 @@ func signatureMapToBytes(vm entity.SignatureMap) ([]byte, error) {
 	}
 
 	dto := signatureMapDTO{
-		RequestHash:                vm.RequestHash.Hex(),
+		RequestID:                  vm.RequestID.Hex(),
 		Epoch:                      uint64(vm.Epoch),
 		SignedValidatorsBitmapData: bitmapBytes,
 		CurrentVotingPower:         vm.CurrentVotingPower.Int,
@@ -104,7 +104,7 @@ func bytesToSignatureMap(data []byte) (entity.SignatureMap, error) {
 		return entity.SignatureMap{}, errors.Errorf("failed to unmarshal signature map: %w", err)
 	}
 
-	requestHash := common.HexToHash(dto.RequestHash)
+	requestId := common.HexToHash(dto.RequestID)
 
 	bitmap, err := entity.BitmapFromBytes(dto.SignedValidatorsBitmapData)
 	if err != nil {
@@ -112,7 +112,7 @@ func bytesToSignatureMap(data []byte) (entity.SignatureMap, error) {
 	}
 
 	return entity.SignatureMap{
-		RequestHash:            requestHash,
+		RequestID:              requestId,
 		Epoch:                  entity.Epoch(dto.Epoch),
 		SignedValidatorsBitmap: bitmap,
 		CurrentVotingPower:     entity.ToVotingPower(dto.CurrentVotingPower),

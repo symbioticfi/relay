@@ -14,9 +14,13 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/go-errors/errors"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
+	apiv1 "github.com/symbioticfi/relay/api/client/v1"
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/crypto"
 )
@@ -125,18 +129,6 @@ func setupGlobalTestEnvironment() (*TestEnvironment, error) {
 
 	tempNetworkDir := filepath.Join(projectRoot, "e2e", "temp-network")
 
-	// Clean up existing data directories before starting containers
-	for i := range sidecarConfigs {
-		dataHostDir := filepath.Join(tempNetworkDir, fmt.Sprintf("data-%02d", i+1))
-		if err := os.RemoveAll(dataHostDir); err != nil {
-			fmt.Printf("Warning: failed to clean data directory %s: %v\n", dataHostDir, err)
-		}
-		// Create fresh directory for bind mount
-		if err := os.MkdirAll(dataHostDir, 0755); err != nil {
-			return nil, errors.Errorf("failed to create data directory %s: %v", dataHostDir, err)
-		}
-	}
-
 	// Start each relay sidecar container concurrently
 	type containerResult struct {
 		index     int
@@ -156,7 +148,6 @@ func setupGlobalTestEnvironment() (*TestEnvironment, error) {
 			fmt.Printf("Starting container: %s\n", config.ContainerName)
 
 			// Create data directory path
-			dataHostDir := filepath.Join(tempNetworkDir, fmt.Sprintf("data-%02d", i+1))
 			deployDataDir := filepath.Join(tempNetworkDir, "deploy-data")
 
 			opts := []string{
@@ -180,11 +171,6 @@ func setupGlobalTestEnvironment() (*TestEnvironment, error) {
 				}},
 				HostConfigModifier: func(hostConfig *container.HostConfig) {
 					hostConfig.Mounts = []mount.Mount{
-						{
-							Type:   mount.TypeBind,
-							Source: dataHostDir,
-							Target: config.DataDir,
-						},
 						{
 							Type:   mount.TypeBind,
 							Source: deployDataDir,
@@ -277,4 +263,18 @@ func (env *TestEnvironment) GetHealthEndpoint(i int) string {
 
 func (env *TestEnvironment) GetGRPCAddress(index int) string {
 	return fmt.Sprintf("localhost:%s", env.GetContainerPort(index))
+}
+
+func (env *TestEnvironment) GetGRPCClient(t *testing.T, index int) *apiv1.SymbioticClient {
+	t.Helper()
+	conn, err := grpc.NewClient(
+		env.GetGRPCAddress(index),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	require.NoErrorf(t, err, "Failed to connect to relay server at %s", env.GetGRPCAddress(index))
+	t.Cleanup(func() {
+		conn.Close()
+	})
+
+	return apiv1.NewSymbioticClient(conn)
 }

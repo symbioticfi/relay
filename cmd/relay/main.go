@@ -14,7 +14,6 @@ import (
 var Version = "local"
 var BuildTime = "unknown"
 
-// relay_sidecar --driver.address 0x2Ea1ABBfD18DddA102EF83Fa7ADfFdB47Db9e786 --driver.chain-id 111 --log-level debug --log-mode pretty --secret-keys symb/0/15/1000000000000000000 --signer true --aggregator true --committer true --http-listen :8081 --storage-dir .data/1 --chains 111@http://127.0.0.1:8545
 func main() {
 	slog.Info("Running relay_sidecar command",
 		"version", Version,

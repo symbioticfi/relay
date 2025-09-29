@@ -11,16 +11,15 @@ import (
 
 // GetAggregationProof handles the gRPC GetAggregationProof request
 func (h *grpcHandler) GetAggregationProof(ctx context.Context, req *apiv1.GetAggregationProofRequest) (*apiv1.GetAggregationProofResponse, error) {
-	proof, err := h.cfg.Repo.GetAggregationProof(ctx, common.HexToHash(req.GetRequestHash()))
+	proof, err := h.cfg.Repo.GetAggregationProof(ctx, common.HexToHash(req.GetRequestId()))
 	if err != nil {
 		return nil, errors.Errorf("failed to get aggregation proof: %w", err)
 	}
 
 	return &apiv1.GetAggregationProofResponse{
 		AggregationProof: &apiv1.AggregationProof{
-			VerificationType: uint32(proof.VerificationType),
-			MessageHash:      proof.MessageHash,
-			Proof:            proof.Proof,
+			MessageHash: proof.MessageHash,
+			Proof:       proof.Proof,
 		},
 	}, nil
 }

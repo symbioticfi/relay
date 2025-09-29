@@ -46,11 +46,11 @@ buf-lint:
 
 .PHONY: go-lint
 go-lint:
-	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.4.0 -v run ./...
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0 -v run ./...
 
 .PHONY: go-lint-fix
 go-lint-fix:
-	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.4.0 -v run ./... --fix
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0 -v run ./... --fix
 
 .PHONY: generate
 generate: install-tools generate-mocks generate-api-types generate-client-types generate-p2p-types gen-abi

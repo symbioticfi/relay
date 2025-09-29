@@ -21,7 +21,7 @@ func (s *Syncer) BuildWantSignaturesRequest(ctx context.Context) (entity.WantSig
 	}, nil
 }
 
-// buildWantSignaturesMap constructs a map of signature request hashes to missing validator bitmaps
+// buildWantSignaturesMap constructs a map of request id to missing validator bitmaps
 // for pending signature requests across multiple epochs.
 //
 // The method performs the following operations:
@@ -29,7 +29,7 @@ func (s *Syncer) BuildWantSignaturesRequest(ctx context.Context) (entity.WantSig
 // 2. Iterates through epochs from newest to oldest to prioritize recent requests
 // 3. For each epoch, fetches pending signature requests in batches
 // 4. For each request, identifies validators that haven't provided signatures yet
-// 5. Builds a map where keys are request hashes and values are bitmaps of missing validators
+// 5. Builds a map where keys are request ids and values are bitmaps of missing validators
 //
 // The scanning is limited by MaxSignatureRequestsPerSync to prevent excessive memory usage
 // and network overhead during synchronization.
@@ -73,21 +73,21 @@ func (s *Syncer) buildWantSignaturesMap(ctx context.Context) (map[common.Hash]en
 
 			// Process each request to find missing signatures
 			for _, req := range requests {
-				reqHash := req.Hash()
+				reqSignatureID := req.RequestID
 
 				// Get current signature map
-				sigMap, err := s.cfg.Repo.GetSignatureMap(ctx, reqHash)
+				sigMap, err := s.cfg.Repo.GetSignatureMap(ctx, reqSignatureID)
 				if err != nil {
-					return nil, errors.Errorf("failed to get signature map for request %s: %w", reqHash.Hex(), err)
+					return nil, errors.Errorf("failed to get signature map for request %s: %w", reqSignatureID.Hex(), err)
 				}
 
 				// Get missing validators from signature map
 				missingValidators := sigMap.GetMissingValidators()
 				if !missingValidators.IsEmpty() {
-					wantSignatures[reqHash] = missingValidators
+					wantSignatures[reqSignatureID] = missingValidators
 				}
 
-				lastHash = reqHash
+				lastHash = reqSignatureID
 			}
 
 			totalRequests += len(requests)

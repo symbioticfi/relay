@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/go-errors/errors"
+	"github.com/samber/lo"
+
 	"github.com/symbioticfi/relay/core/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
 )
@@ -22,31 +24,22 @@ func (h *grpcHandler) GetValidatorSetMetadata(ctx context.Context, req *apiv1.Ge
 		epochRequested = req.GetEpoch()
 	}
 
-	extraData, commitData, err := h.cfg.Repo.GetValidatorSetMetadata(ctx, epochRequested)
+	metadata, err := h.cfg.Repo.GetValidatorSetMetadata(ctx, entity.Epoch(epochRequested))
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityNotFound) {
-			return nil, errors.New("no metadata found for the requested epoch")
+			return nil, errors.Errorf("no metadata found for the requested epoch: %w", err)
 		}
 		return nil, errors.Errorf("failed to get validator set from epoch: %w", err)
 	}
 
-	extraDataProto := make([]*apiv1.ExtraData, 0, len(extraData))
-	for _, ed := range extraData {
-		extraDataProto = append(extraDataProto, &apiv1.ExtraData{
-			Key:   ed.Key.Bytes(),
-			Value: ed.Value.Bytes(),
-		})
-	}
-
-	sigRequest := &entity.SignatureRequest{
-		KeyTag:        entity.ValsetHeaderKeyTag,
-		RequiredEpoch: entity.Epoch(epochRequested),
-		Message:       commitData,
-	}
-
 	return &apiv1.GetValidatorSetMetadataResponse{
-		ExtraData:      extraDataProto,
-		CommitmentData: commitData,
-		RequestHash:    sigRequest.Hash().Hex(),
+		RequestId: metadata.RequestID.Hex(),
+		ExtraData: lo.Map(metadata.ExtraData, func(ed entity.ExtraData, _ int) *apiv1.ExtraData {
+			return &apiv1.ExtraData{
+				Key:   ed.Key.Bytes(),
+				Value: ed.Value.Bytes(),
+			}
+		}),
+		CommitmentData: metadata.CommitmentData,
 	}, nil
 }

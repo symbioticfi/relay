@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
+
 	"github.com/symbioticfi/relay/core/entity"
 	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 	"github.com/symbioticfi/relay/pkg/log"
@@ -15,7 +16,7 @@ const (
 	minCommitterPollIntervalSeconds = uint64(5)
 )
 
-func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
+func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.AggregationProof) error {
 	ctx = log.WithComponent(ctx, "generator")
 
 	slog.DebugContext(ctx, "Handling proof aggregated message", "msg", msg)
@@ -43,7 +44,7 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 	}
 
 	// we always try to save the proof, even if we aren't a committer
-	err = s.cfg.Repo.SaveAggregationProof(ctx, msg.RequestHash, msg.AggregationProof)
+	err = s.cfg.Repo.SaveAggregationProof(ctx, msg.RequestID(), msg)
 	if err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
 		return err
 	}
@@ -55,14 +56,14 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 
 	// we store pending commit request for all nodes and not just current commiters because
 	// if committers of this epoch fail then commiters for next epoch should still try to commit old proofs
-	if err := s.cfg.Repo.SaveProofCommitPending(ctx, msg.Epoch, msg.RequestHash); err != nil {
+	if err := s.cfg.Repo.SaveProofCommitPending(ctx, msg.Epoch, msg.RequestID()); err != nil {
 		if !errors.Is(err, entity.ErrEntityAlreadyExist) {
 			return errors.Errorf("failed to mark proof commit as pending: %w", err)
 		}
 		slog.DebugContext(ctx, "Proof commit is already pending, skipping", "epoch", msg.Epoch)
 		return nil
 	}
-	slog.DebugContext(ctx, "Marked proof commit as pending", "epoch", msg.Epoch, "reqHash", msg.RequestHash.Hex())
+	slog.DebugContext(ctx, "Marked proof commit as pending", "epoch", msg.Epoch, "request_id", msg.RequestID().Hex())
 	return nil
 }
 
@@ -144,26 +145,26 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 		}
 
 		for _, proofKey := range pendingProofs {
-			slog.DebugContext(ctx, "Found pending proof commit", "epoch", proofKey.Epoch, "reqHash", proofKey.Hash.Hex())
+			slog.DebugContext(ctx, "Found pending proof commit", "epoch", proofKey.Epoch, "requestId", proofKey.RequestID.Hex())
 
 			// get proof
-			proof, err := s.cfg.Repo.GetAggregationProof(ctx, proofKey.Hash)
+			proof, err := s.cfg.Repo.GetAggregationProof(ctx, proofKey.RequestID)
 			if err != nil {
 				if errors.Is(err, entity.ErrEntityNotFound) {
 					// should not happen, but if it does just remove pending state
-					slog.WarnContext(ctx, "no aggregation proof found for pending proof commit, removing pending state", "epoch", proofKey.Epoch, "reqHash", proofKey.Hash.Hex())
-					if err := s.cfg.Repo.RemoveProofCommitPending(ctx, proofKey.Epoch, proofKey.Hash); err != nil {
-						slog.ErrorContext(ctx, "failed to remove proof commit pending state", "error", err, "epoch", proofKey.Epoch, "reqHash", proofKey.Hash.Hex())
+					slog.WarnContext(ctx, "no aggregation proof found for pending proof commit, removing pending state", "epoch", proofKey.Epoch, "requestId", proofKey.RequestID.Hex())
+					if err := s.cfg.Repo.RemoveProofCommitPending(ctx, proofKey.Epoch, proofKey.RequestID); err != nil {
+						slog.ErrorContext(ctx, "failed to remove proof commit pending state", "error", err, "epoch", proofKey.Epoch, "requestId", proofKey.RequestID.Hex())
 					}
 					break
 				}
-				slog.ErrorContext(ctx, "failed to get aggregation proof", "error", err, "epoch", proofKey.Epoch, "reqHash", proofKey.Hash.Hex())
+				slog.ErrorContext(ctx, "failed to get aggregation proof", "error", err, "epoch", proofKey.Epoch, "requestId", proofKey.RequestID.Hex())
 				break
 			}
 
 			targetValset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(proofKey.Epoch))
 			if err != nil {
-				slog.ErrorContext(ctx, "failed to get validator set by epoch", "error", err, "epoch", proofKey.Epoch, "reqHash", proofKey.Hash.Hex())
+				slog.ErrorContext(ctx, "failed to get validator set by epoch", "error", err, "epoch", proofKey.Epoch, "requestId", proofKey.RequestID.Hex())
 				break
 			}
 
@@ -179,7 +180,7 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 
 			header, err := targetValset.GetHeader()
 			if err != nil {
-				slog.ErrorContext(ctx, "failed to get validator set header", "error", err, "epoch", proofKey.Epoch, "reqHash", proofKey.Hash.Hex())
+				slog.ErrorContext(ctx, "failed to get validator set header", "error", err, "epoch", proofKey.Epoch, "requestId", proofKey.RequestID.Hex())
 				break
 			}
 
@@ -187,12 +188,12 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 
 			err = s.commitValsetToAllSettlements(ctx, config, header, extraData, proof.Proof)
 			if err != nil {
-				slog.ErrorContext(ctx, "failed to commit valset to all settlements", "error", err, "epoch", proofKey.Epoch, "reqHash", proofKey.Hash.Hex())
+				slog.ErrorContext(ctx, "failed to commit valset to all settlements", "error", err, "epoch", proofKey.Epoch, "requestId", proofKey.RequestID.Hex())
 				break
 			}
 
-			if err := s.cfg.Repo.RemoveProofCommitPending(ctx, proofKey.Epoch, proofKey.Hash); err != nil {
-				slog.ErrorContext(ctx, "failed to remove proof commit pending state", "error", err, "epoch", proofKey.Epoch, "reqHash", proofKey.Hash.Hex())
+			if err := s.cfg.Repo.RemoveProofCommitPending(ctx, proofKey.Epoch, proofKey.RequestID); err != nil {
+				slog.ErrorContext(ctx, "failed to remove proof commit pending state", "error", err, "epoch", proofKey.Epoch, "requestId", proofKey.RequestID.Hex())
 				break
 			}
 		}

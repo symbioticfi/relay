@@ -18,9 +18,10 @@ import (
 )
 
 type settlementReplicaData struct {
-	IsCommitted  bool
-	HeaderHash   common.Hash
-	MissedEpochs uint64
+	IsCommitted              bool
+	HeaderHash               common.Hash
+	MissedEpochs             uint64
+	LastCommittedHeaderEpoch uint64
 }
 
 func printAddresses(driver entity.CrossChainAddress, networkConfig *entity.NetworkConfig) string {
@@ -237,6 +238,7 @@ func printSettlementData(
 			strconv.FormatUint(settlement.ChainId, 10),
 			status,
 			integrity,
+			strconv.FormatUint(settlementData[i].LastCommittedHeaderEpoch, 10),
 			strconv.FormatUint(settlementData[i].MissedEpochs, 10),
 			hash,
 		})

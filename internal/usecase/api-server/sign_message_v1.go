@@ -24,13 +24,13 @@ func (h *grpcHandler) SignMessage(ctx context.Context, req *apiv1.SignMessageReq
 		RequiredEpoch: entity.Epoch(*requiredEpoch),
 	}
 
-	err := h.cfg.Signer.Sign(ctx, signReq)
+	signature, err := h.cfg.Signer.Sign(ctx, signReq)
 	if err != nil {
 		return nil, err
 	}
 
 	return &apiv1.SignMessageResponse{
-		RequestHash: signReq.Hash().Hex(),
-		Epoch:       *requiredEpoch,
+		RequestId: signature.RequestID().Hex(),
+		Epoch:     *requiredEpoch,
 	}, nil
 }

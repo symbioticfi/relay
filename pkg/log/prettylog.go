@@ -1,4 +1,4 @@
-//nolint:wrapcheck,exhaustruct // this is the library code, don't need to wrap it
+//nolint:wrapcheck // this is the library code, don't need to wrap it
 package log
 
 import (

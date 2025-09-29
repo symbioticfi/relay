@@ -71,7 +71,7 @@ func (s *Service) Start(ctx context.Context) error {
 	}
 }
 
-func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
+func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.AggregationProof) error {
 	valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
 	if err != nil {
 		return errors.Errorf("failed to get validator set: %w", err) // if not found then it's failure case

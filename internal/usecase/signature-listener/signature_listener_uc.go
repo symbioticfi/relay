@@ -45,12 +45,12 @@ func New(cfg Config) (*SignatureListenerUseCase, error) {
 	}, nil
 }
 
-func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Context, p2pMsg intEntity.P2PMessage[entity.SignatureMessage]) error {
+func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Context, p2pMsg intEntity.P2PMessage[entity.SignatureExtended]) error {
 	ctx = log.WithComponent(ctx, "sign_listener")
 
 	msg := p2pMsg.Message
 
-	slog.DebugContext(ctx, "Received signature hash received message", "message", msg, "sender", p2pMsg.SenderInfo.Sender)
+	slog.DebugContext(ctx, "Received signature message", "message", msg, "sender", p2pMsg.SenderInfo.Sender)
 
 	if p2pMsg.SenderInfo.Sender == s.cfg.SelfP2PID {
 		slog.DebugContext(ctx, "Ignoring signature message from self, because it's already stored in signer")
@@ -58,10 +58,7 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 	}
 
 	param := entity.SaveSignatureParam{
-		KeyTag:           msg.KeyTag,
-		RequestHash:      msg.RequestHash,
-		Signature:        msg.Signature,
-		Epoch:            msg.Epoch,
+		Signature:        msg,
 		SignatureRequest: nil,
 	}
 
@@ -71,7 +68,7 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 	}
 
 	slog.InfoContext(ctx, "Listener processed received signature",
-		"request_hash", msg.RequestHash.Hex(),
+		"request_id", msg.RequestID().Hex(),
 		"epoch", msg.Epoch,
 	)
 	return nil

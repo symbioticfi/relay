@@ -126,6 +126,12 @@ var infoCmd = &cobra.Command{
 						settlementData[i].HeaderHash = headerHash
 					}
 
+					lastCommittedHeaderEpoch, err := evmClient.GetLastCommittedHeaderEpoch(ctx, settlement)
+					if err != nil {
+						return errors.Errorf("Failed to get last committed header epoch: %w", err)
+					}
+					settlementData[i].LastCommittedHeaderEpoch = lastCommittedHeaderEpoch
+
 					allEpochsFromZero := lo.RepeatBy(int(epoch+1), func(i int) uint64 {
 						return uint64(i)
 					})

@@ -26,6 +26,7 @@ func TestCachedRepository_NetworkConfig(t *testing.T) {
 	// Create cached repository
 	cachedRepo, err := NewCached(baseRepo, CachedConfig{
 		NetworkConfigCacheSize: 10,
+		ValidatorSetCacheSize:  10,
 	})
 	require.NoError(t, err)
 
@@ -71,6 +72,7 @@ func TestCachedRepository_InheritedMethods(t *testing.T) {
 	// Create cached repository
 	cachedRepo, err := NewCached(baseRepo, CachedConfig{
 		NetworkConfigCacheSize: 10,
+		ValidatorSetCacheSize:  10,
 	})
 	require.NoError(t, err)
 

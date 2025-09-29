@@ -7,32 +7,20 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	apiv1 "github.com/symbioticfi/relay/api/client/v1"
 	"github.com/symbioticfi/relay/core/entity"
 )
 
 // TestGetValidatorSetMetadata tests the GetValidatorSetMetadata API endpoint
-// and verifies that the request hash can be used to retrieve the proof of a committed valset
+// and verifies that the request id can be used to retrieve the proof of a committed valset
 func TestGetValidatorSetMetadata(t *testing.T) {
 	t.Log("Starting validator set metadata API test...")
 
 	_, err := loadDeploymentData(t.Context())
 	require.NoError(t, err, "Failed to load deployment data")
 
-	address := globalTestEnv.GetGRPCAddress(0)
-	t.Logf("Testing validator set metadata API on %s", address)
-
-	conn, err := grpc.NewClient(
-		address,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	require.NoErrorf(t, err, "Failed to connect to relay server at %s", address)
-	defer conn.Close()
-
-	client := apiv1.NewSymbioticClient(conn)
+	client := globalTestEnv.GetGRPCClient(t, 0)
 
 	// Get last committed epochs to find a committed epoch ≥1 for testing
 	// We need committed epochs because that's when proofs and signatures are available
@@ -106,19 +94,19 @@ func TestGetValidatorSetMetadata(t *testing.T) {
 		require.NoError(t, err, "Failed to get validator set metadata for committed epoch")
 
 		// Validate response structure
-		require.NotEmpty(t, metadataResp.GetRequestHash(), "Request hash should not be empty")
+		require.NotEmpty(t, metadataResp.GetRequestId(), "Request id should not be empty")
 		require.NotEmpty(t, metadataResp.GetCommitmentData(), "Commitment data should not be empty")
 		// ExtraData can be empty, so we don't require it to be non-empty
 
-		requestHash := metadataResp.GetRequestHash()
-		t.Logf("Got metadata for committed epoch %d with request hash: %s", committedEpoch, requestHash)
+		requestId := metadataResp.GetRequestId()
+		t.Logf("Got metadata for committed epoch %d with request id: %s", committedEpoch, requestId)
 
-		// Test 2: Use the request hash to get signature request
+		// Test 2: Use the request id to get signature request
 		t.Run("GetSignatureRequestFromHash", func(t *testing.T) {
 			sigReqResp, err := client.GetSignatureRequest(ctx, &apiv1.GetSignatureRequestRequest{
-				RequestHash: requestHash,
+				RequestId: requestId,
 			})
-			require.NoError(t, err, "Failed to get signature request using request hash from metadata")
+			require.NoError(t, err, "Failed to get signature request using request id from metadata")
 
 			// Validate the signature request
 			require.Equal(t, uint32(entity.ValsetHeaderKeyTag), sigReqResp.GetKeyTag(),
@@ -134,33 +122,31 @@ func TestGetValidatorSetMetadata(t *testing.T) {
 		// Test 3: Get aggregation proof (should exist for committed epochs)
 		t.Run("GetAggregationProofFromHash", func(t *testing.T) {
 			proofResp, err := client.GetAggregationProof(ctx, &apiv1.GetAggregationProofRequest{
-				RequestHash: requestHash,
+				RequestId: requestId,
 			})
 
 			// For committed epochs, aggregation proof should be available
-			require.NoError(t, err, "Failed to get aggregation proof for committed epoch request hash %s", requestHash)
+			require.NoError(t, err, "Failed to get aggregation proof for committed epoch request id %s", requestId)
 			require.NotNil(t, proofResp.GetAggregationProof(), "Aggregation proof should not be nil for committed epoch")
 			require.NotEmpty(t, proofResp.GetAggregationProof().GetProof(),
 				"Aggregation proof data should not be empty for committed epoch")
 			require.NotEmpty(t, proofResp.GetAggregationProof().GetMessageHash(),
 				"Aggregation proof message hash should not be empty")
-			require.Positive(t, proofResp.GetAggregationProof().GetVerificationType(),
-				"Verification type should be positive")
-			t.Logf("Successfully retrieved aggregation proof for committed epoch request hash %s", requestHash)
+			t.Logf("Successfully retrieved aggregation proof for committed epoch request id %s", requestId)
 		})
 
-		// Test 4: Get signatures for the request hash (should exist for committed epochs)
+		// Test 4: Get signatures for the request id (should exist for committed epochs)
 		t.Run("GetSignaturesFromHash", func(t *testing.T) {
 			signaturesResp, err := client.GetSignatures(ctx, &apiv1.GetSignaturesRequest{
-				RequestHash: requestHash,
+				RequestId: requestId,
 			})
 
 			// For committed epochs, signatures should be available
-			require.NoError(t, err, "Failed to get signatures for committed epoch request hash %s", requestHash)
+			require.NoError(t, err, "Failed to get signatures for committed epoch request id %s", requestId)
 			require.NotEmpty(t, signaturesResp.GetSignatures(), "Should have signatures for committed epoch")
 
-			t.Logf("Found %d signatures for committed epoch request hash %s",
-				len(signaturesResp.GetSignatures()), requestHash)
+			t.Logf("Found %d signatures for committed epoch request id %s",
+				len(signaturesResp.GetSignatures()), requestId)
 
 			// Validate signatures structure
 			for i, sig := range signaturesResp.GetSignatures() {
@@ -179,11 +165,11 @@ func TestGetValidatorSetMetadata(t *testing.T) {
 		metadataResp, err := client.GetValidatorSetMetadata(ctx, &apiv1.GetValidatorSetMetadataRequest{})
 		require.NoError(t, err, "Failed to get validator set metadata without specifying epoch")
 
-		require.NotEmpty(t, metadataResp.GetRequestHash(), "Request hash should not be empty")
+		require.NotEmpty(t, metadataResp.GetRequestId(), "request id should not be empty")
 		require.NotEmpty(t, metadataResp.GetCommitmentData(), "Commitment data should not be empty")
 
-		t.Logf("Got metadata without epoch specification with request hash: %s",
-			metadataResp.GetRequestHash())
+		t.Logf("Got metadata without epoch specification with request id: %s",
+			metadataResp.GetRequestId())
 	})
 
 	// Test 6: Try to get metadata for a future epoch (should fail)
@@ -214,17 +200,9 @@ func TestGetLastAllCommitted(t *testing.T) {
 	deploymentData, err := loadDeploymentData(t.Context())
 	require.NoError(t, err, "Failed to load deployment data")
 
-	address := globalTestEnv.GetGRPCAddress(0)
-	t.Logf("Testing GetLastAllCommitted API on %s", address)
+	t.Logf("Testing GetLastAllCommitted API on %d", 0)
 
-	conn, err := grpc.NewClient(
-		address,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	require.NoErrorf(t, err, "Failed to connect to relay server at %s", address)
-	defer conn.Close()
-
-	client := apiv1.NewSymbioticClient(conn)
+	client := globalTestEnv.GetGRPCClient(t, 0)
 
 	// Get expected data from contracts to validate against
 	expected := getExpectedDataFromContracts(t, deploymentData)

@@ -26,9 +26,9 @@ func (h *grpcHandler) SignMessageWait(req *apiv1.SignMessageWaitRequest, stream 
 
 	// Send initial pending status
 	err = stream.Send(&apiv1.SignMessageWaitResponse{
-		Status:      apiv1.SigningStatus_SIGNING_STATUS_PENDING,
-		RequestHash: signResp.GetRequestHash(),
-		Epoch:       signResp.GetEpoch(),
+		Status:    apiv1.SigningStatus_SIGNING_STATUS_PENDING,
+		RequestId: signResp.GetRequestId(),
+		Epoch:     signResp.GetEpoch(),
 	})
 	if err != nil {
 		return err
@@ -48,24 +48,23 @@ func (h *grpcHandler) SignMessageWait(req *apiv1.SignMessageWaitRequest, stream 
 			return ctx.Err()
 		case <-timeout.C:
 			return stream.Send(&apiv1.SignMessageWaitResponse{
-				Status:      apiv1.SigningStatus_SIGNING_STATUS_TIMEOUT,
-				RequestHash: signResp.GetRequestHash(),
-				Epoch:       signResp.GetEpoch(),
+				Status:    apiv1.SigningStatus_SIGNING_STATUS_TIMEOUT,
+				RequestId: signResp.GetRequestId(),
+				Epoch:     signResp.GetEpoch(),
 			})
 		case <-ticker.C:
 			// Check for aggregation proof
-			reqHash := signResp.GetRequestHash()
-			proof, err := h.cfg.Repo.GetAggregationProof(ctx, common.HexToHash(reqHash))
+			requestID := signResp.GetRequestId()
+			proof, err := h.cfg.Repo.GetAggregationProof(ctx, common.HexToHash(requestID))
 			if err == nil {
 				// Success - send final proof
 				return stream.Send(&apiv1.SignMessageWaitResponse{
-					Status:      apiv1.SigningStatus_SIGNING_STATUS_COMPLETED,
-					RequestHash: signResp.GetRequestHash(),
-					Epoch:       signResp.GetEpoch(),
+					Status:    apiv1.SigningStatus_SIGNING_STATUS_COMPLETED,
+					RequestId: signResp.GetRequestId(),
+					Epoch:     signResp.GetEpoch(),
 					AggregationProof: &apiv1.AggregationProof{
-						VerificationType: uint32(proof.VerificationType),
-						MessageHash:      proof.MessageHash,
-						Proof:            proof.Proof,
+						MessageHash: proof.MessageHash,
+						Proof:       proof.Proof,
 					},
 				})
 			}

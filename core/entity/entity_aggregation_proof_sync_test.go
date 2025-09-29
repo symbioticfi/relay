@@ -15,21 +15,23 @@ func TestAggregationProofSync_Integration(t *testing.T) {
 		hash3 := common.HexToHash("0xdef012")
 
 		request := WantAggregationProofsRequest{
-			RequestHashes: []common.Hash{hash1, hash2, hash3},
+			RequestIDs: []common.Hash{hash1, hash2, hash3},
 		}
 
-		require.Len(t, request.RequestHashes, 3)
+		require.Len(t, request.RequestIDs, 3)
 
 		// Step 2: Create response with available proofs (only 2 out of 3)
 		proof1 := AggregationProof{
-			VerificationType: VerificationTypeBlsBn254Simple,
-			MessageHash:      []byte("message1"),
-			Proof:            []byte("proof1"),
+			MessageHash: []byte("message1"),
+			KeyTag:      KeyTag(15),
+			Epoch:       10,
+			Proof:       []byte("proof1"),
 		}
 		proof2 := AggregationProof{
-			VerificationType: VerificationTypeBlsBn254ZK,
-			MessageHash:      []byte("message2"),
-			Proof:            []byte("proof2"),
+			MessageHash: []byte("message2"),
+			KeyTag:      KeyTag(15),
+			Epoch:       10,
+			Proof:       []byte("proof2"),
 		}
 
 		response := WantAggregationProofsResponse{
@@ -46,8 +48,8 @@ func TestAggregationProofSync_Integration(t *testing.T) {
 		stats := AggregationProofProcessingStats{}
 
 		// Simulate processing each requested hash
-		for _, reqHash := range request.RequestHashes {
-			if proof, exists := response.Proofs[reqHash]; exists {
+		for _, requestID := range request.RequestIDs {
+			if proof, exists := response.Proofs[requestID]; exists {
 				// Proof found and processed successfully
 				_ = proof // Use the proof
 				stats.ProcessedCount++

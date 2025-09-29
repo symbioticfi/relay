@@ -146,8 +146,8 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create aggregator: %w", err)
 	}
 
-	signatureProcessedSignal := signals.New[entity.SignatureMessage](cfg.SignalCfg, "signatureProcessed", nil)
-	aggProofReadySignal := signals.New[entity.AggregatedSignatureMessage](cfg.SignalCfg, "aggProofReady", nil)
+	signatureProcessedSignal := signals.New[entity.SignatureExtended](cfg.SignalCfg, "signatureProcessed", nil)
+	aggProofReadySignal := signals.New[entity.AggregationProof](cfg.SignalCfg, "aggProofReady", nil)
 
 	entityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo:                     repo,
@@ -237,14 +237,17 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create valset status tracker: %w", err)
 	}
 
-	err = aggProofReadySignal.SetHandler(func(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
+	err = aggProofReadySignal.SetHandler(func(ctx context.Context, msg entity.AggregationProof) error {
 		if err := statusTracker.HandleProofAggregated(ctx, msg); err != nil {
 			return errors.Errorf("failed to handle proof aggregated: %w", err)
 		}
 		if err := generator.HandleProofAggregated(ctx, msg); err != nil {
 			return errors.Errorf("failed to handle proof aggregated: %w", err)
 		}
-		slog.DebugContext(ctx, "Handled proof aggregated", "request", msg)
+		slog.DebugContext(ctx, "Handled proof aggregated",
+			"proof", msg,
+			"requestID", msg.RequestID(),
+		)
 
 		return nil
 	})

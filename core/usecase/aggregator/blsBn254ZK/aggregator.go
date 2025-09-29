@@ -106,9 +106,10 @@ func (a Aggregator) Aggregate(
 	}
 
 	return entity.AggregationProof{
-		VerificationType: entity.VerificationTypeBlsBn254ZK,
-		MessageHash:      messageHash,
-		Proof:            proofData.Marshal(),
+		MessageHash: messageHash,
+		KeyTag:      keyTag,
+		Epoch:       entity.Epoch(valset.Epoch),
+		Proof:       proofData.Marshal(),
 	}, nil
 }
 

@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/symbioticfi/relay/core/entity"
 )
 
 type Config struct {
@@ -26,8 +24,6 @@ type Metrics struct {
 	evmMethodCall                  *prometheus.HistogramVec
 	evmCommitGasUsed               *prometheus.HistogramVec
 	evmCommitGasPrice              *prometheus.HistogramVec
-	appAggProofCompleted           prometheus.Histogram
-	appAggProofReceived            prometheus.Histogram
 	p2pSyncProcessedSignatures     *prometheus.CounterVec
 	p2pSyncRequestedHashes         prometheus.Counter
 	p2pSyncProcessedAggProofs      *prometheus.CounterVec
@@ -111,20 +107,6 @@ func newMetrics(registerer prometheus.Registerer) *Metrics {
 		Buckets: []float64{1e9, 5e9, 1e10, 5e10, 1e11, 5e11, 1e12, 5e12, 1e13, 5e13, 1e14, 5e14, 1e15, 5e15, 1e16},
 	}, []string{"chainId"})
 	all = append(all, m.evmCommitGasPrice)
-
-	m.appAggProofCompleted = prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name:    "symbiotic_relay_agg_proof_completed_seconds",
-		Help:    "Time taken to complete aggregation proof",
-		Buckets: []float64{.01, .025, .05, .1, .25, .5, 1, 2, 3, 5, 7, 8, 9, 10, 12, 15, 17, 20, 25, 30, 35, 40, 45, 50, 55, 60, 90, 120, 150, 180, 240, 300, 600},
-	})
-	all = append(all, m.appAggProofCompleted)
-
-	m.appAggProofReceived = prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name:    "symbiotic_relay_agg_proof_received_seconds",
-		Help:    "Time taken to receive aggregation proof",
-		Buckets: []float64{.01, .025, .05, .1, .25, .5, 1, 2, 3, 5, 7, 8, 9, 10, 12, 15, 17, 20, 25, 30, 35, 40, 45, 50, 55, 60, 90, 120, 150, 180, 240, 300, 600},
-	})
-	all = append(all, m.appAggProofReceived)
 
 	m.p2pSyncProcessedSignatures = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "symbiotic_relay_p2p_sync_processed_signatures_total",
@@ -215,30 +197,6 @@ func (m *Metrics) ObserveCommitValsetHeaderParams(chainID uint64, gasUsed uint64
 	m.evmCommitGasUsed.WithLabelValues(strconv.FormatInt(int64(chainID), 10)).Observe(float64(gasUsed))
 	gasPrice, _ := effectiveGasPrice.Float64()
 	m.evmCommitGasPrice.WithLabelValues(strconv.FormatInt(int64(chainID), 10)).Observe(gasPrice)
-}
-
-func (m *Metrics) ObserveAggCompleted(stat entity.SignatureStat) {
-	reqReceivedTime, ok := stat.StatMap[entity.SignatureStatStageSignRequestReceived]
-	if !ok {
-		return
-	}
-	aggProofCompletedTime, ok := stat.StatMap[entity.SignatureStatStageAggCompleted]
-	if !ok {
-		return
-	}
-	m.appAggProofCompleted.Observe(aggProofCompletedTime.Sub(reqReceivedTime).Seconds())
-}
-
-func (m *Metrics) ObserveAggReceived(stat entity.SignatureStat) {
-	reqReceivedTime, ok := stat.StatMap[entity.SignatureStatStageSignRequestReceived]
-	if !ok {
-		return
-	}
-	aggProofReceivedTime, ok := stat.StatMap[entity.SignatureStatStageAggProofReceived]
-	if !ok {
-		return
-	}
-	m.appAggProofReceived.Observe(aggProofReceivedTime.Sub(reqReceivedTime).Seconds())
 }
 
 func (m *Metrics) ObserveP2PSyncSignaturesProcessed(resultType string, count int) {

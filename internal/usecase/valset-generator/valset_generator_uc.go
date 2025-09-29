@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
+
 	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 
 	"github.com/symbioticfi/relay/core/entity"
@@ -22,7 +23,7 @@ import (
 const slashableEpochs = 5 // TODO: temp until contracts support
 
 type signer interface {
-	Sign(ctx context.Context, req entity.SignatureRequest) error
+	Sign(ctx context.Context, req entity.SignatureRequest) (entity.SignatureExtended, error)
 }
 
 type evmClient interface {
@@ -41,15 +42,15 @@ type repo interface {
 	GetLatestSignedValidatorSetEpoch(_ context.Context) (uint64, error)
 	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
 	GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error)
-	GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error)
-	GetSignatureRequest(ctx context.Context, reqHash common.Hash) (entity.SignatureRequest, error)
+	GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error)
+	GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error)
 	SaveLatestSignedValidatorSetEpoch(_ context.Context, valset entity.ValidatorSet) error
-	SaveAggregationProof(ctx context.Context, reqHash common.Hash, ap entity.AggregationProof) error
-	SaveProofCommitPending(ctx context.Context, epoch entity.Epoch, reqHash common.Hash) error
+	SaveAggregationProof(ctx context.Context, requestID common.Hash, ap entity.AggregationProof) error
+	SaveProofCommitPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error
 	GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch entity.Epoch, limit int) ([]entity.ProofCommitKey, error)
-	RemoveProofCommitPending(ctx context.Context, epoch entity.Epoch, reqHash common.Hash) error
+	RemoveProofCommitPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error
 	GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (uint64, error)
-	SaveValidatorSetMetadata(ctx context.Context, epoch uint64, extraData []entity.ExtraData, commitmentData []byte) error
+	SaveValidatorSetMetadata(ctx context.Context, data entity.ValidatorSetMetadata) error
 }
 
 type deriver interface {
@@ -137,7 +138,7 @@ func (s *Service) process(ctx context.Context) error {
 	if err != nil {
 		return errors.Errorf("failed to get validator set header: %w", err)
 	}
-	data, err := s.headerCommitmentData(networkData, header, extraData)
+	commitmentData, err := s.headerCommitmentData(networkData, header, extraData)
 	if err != nil {
 		return errors.Errorf("failed to get header commitment hash: %w", err)
 	}
@@ -145,20 +146,26 @@ func (s *Service) process(ctx context.Context) error {
 	r := entity.SignatureRequest{
 		KeyTag:        entity.ValsetHeaderKeyTag,
 		RequiredEpoch: entity.Epoch(valSet.Epoch),
-		Message:       data,
+		Message:       commitmentData,
+	}
+	signatureExtended, err := s.cfg.Signer.Sign(ctx, r)
+	if err != nil {
+		return errors.Errorf("failed to sign new validator set extra: %w", err)
 	}
 
-	slog.DebugContext(ctx, "Signed validator set", "header", header, "extra data", extraData, "hash", hex.EncodeToString(data))
+	slog.DebugContext(ctx, "Signed validator set", "header", header, "extra data", extraData, "hash", hex.EncodeToString(commitmentData))
 	if err = s.cfg.Repo.SaveLatestSignedValidatorSetEpoch(ctx, valSet); err != nil {
 		return errors.Errorf("failed to save latest signed valset epoch: %w", err)
 	}
 
-	if err = s.cfg.Repo.SaveValidatorSetMetadata(ctx, valSet.Epoch, extraData, data); err != nil {
-		return errors.Errorf("failed to save validator set metadata: %w", err)
+	metadata := entity.ValidatorSetMetadata{
+		RequestID:      signatureExtended.RequestID(),
+		ExtraData:      extraData,
+		Epoch:          entity.Epoch(valSet.Epoch),
+		CommitmentData: commitmentData,
 	}
-
-	if err = s.cfg.Signer.Sign(ctx, r); err != nil {
-		return errors.Errorf("failed to sign new validator set extra: %w", err)
+	if err = s.cfg.Repo.SaveValidatorSetMetadata(ctx, metadata); err != nil {
+		return errors.Errorf("failed to save validator set metadata: %w", err)
 	}
 
 	return nil
