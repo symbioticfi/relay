@@ -46,9 +46,9 @@ type SymbioticAPIServiceClient interface {
 	GetAggregationProof(ctx context.Context, in *GetAggregationProofRequest, opts ...grpc.CallOption) (*GetAggregationProofResponse, error)
 	// Get current epoch
 	GetCurrentEpoch(ctx context.Context, in *GetCurrentEpochRequest, opts ...grpc.CallOption) (*GetCurrentEpochResponse, error)
-	// Get signature by signature id
+	// Get signature by request id
 	GetSignatures(ctx context.Context, in *GetSignaturesRequest, opts ...grpc.CallOption) (*GetSignaturesResponse, error)
-	// Get signature request by signature id
+	// Get signature request by request id
 	GetSignatureRequest(ctx context.Context, in *GetSignatureRequestRequest, opts ...grpc.CallOption) (*GetSignatureRequestResponse, error)
 	// Get aggregation status, can be sent only to aggregator nodes
 	GetAggregationStatus(ctx context.Context, in *GetAggregationStatusRequest, opts ...grpc.CallOption) (*GetAggregationStatusResponse, error)
@@ -227,9 +227,9 @@ type SymbioticAPIServiceServer interface {
 	GetAggregationProof(context.Context, *GetAggregationProofRequest) (*GetAggregationProofResponse, error)
 	// Get current epoch
 	GetCurrentEpoch(context.Context, *GetCurrentEpochRequest) (*GetCurrentEpochResponse, error)
-	// Get signature by signature id
+	// Get signature by request id
 	GetSignatures(context.Context, *GetSignaturesRequest) (*GetSignaturesResponse, error)
-	// Get signature request by signature id
+	// Get signature request by request id
 	GetSignatureRequest(context.Context, *GetSignatureRequestRequest) (*GetSignatureRequestResponse, error)
 	// Get aggregation status, can be sent only to aggregator nodes
 	GetAggregationStatus(context.Context, *GetAggregationStatusRequest) (*GetAggregationStatusResponse, error)

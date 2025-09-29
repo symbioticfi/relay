@@ -94,14 +94,16 @@ linters:
       allow-empty-returns: true
       allow-empty: true
       include:
-        - ^github.com/symbioticfi/relay/core/entity.SignatureExtended$
-        - ^github.com/symbioticfi/relay/core/entity.SignatureRequest$
-        - ^github.com/symbioticfi/relay/core/entity.ValidatorSignature$
-        - ^github.com/symbioticfi/relay/core/entity.ValidatorSetMetadata$
-        - ^github.com/symbioticfi/relay/core/entity.AggregationProof$
-        - ^github.com/symbioticfi/relay/internal/client/badger/.*$
+        - ^github.com/symbioticfi/relay/core/entity.*$
+        - ^github.com/symbioticfi/relay/internal/entity.*$
+        - ^github.com/symbioticfi/relay/internal/client/repository/badger.*$
         - ^github.com/symbioticfi/relay/internal/client/p2p/proto/v1.*$$
       exclude:
+        - ^github.com/symbioticfi/relay/core/entity.NetworkConfig$
+        - ^github.com/symbioticfi/relay/core/entity.ValidatorSet$
+        - ^github.com/symbioticfi/relay/core/entity.Eip712Domain$
+        - ^github.com/symbioticfi/relay/core/entity.SignatureMap$
+        - ^github.com/symbioticfi/relay/core/entity.Validator$
         - ^database/sql.NullBool$
         - ^database/sql.NullString
         - ^net/http.Client$
