@@ -9,7 +9,7 @@ require (
 	github.com/dgraph-io/badger/v4 v4.8.0
 	github.com/docker/docker v28.4.0+incompatible
 	github.com/elastic/go-freelru v0.16.0
-	github.com/ethereum/go-ethereum v1.16.3
+	github.com/ethereum/go-ethereum v1.16.4
 	github.com/ferranbt/fastssz v1.0.0
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-errors/errors v1.5.1
@@ -73,7 +73,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/ebitengine/purego v0.9.0 // indirect
 	github.com/emicklei/dot v1.9.0 // indirect
-	github.com/ethereum/c-kzg-4844/v2 v2.1.1 // indirect
+	github.com/ethereum/c-kzg-4844/v2 v2.1.3 // indirect
 	github.com/ethereum/go-verkle v0.2.2 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/filecoin-project/go-clock v0.1.0 // indirect
@@ -202,7 +202,7 @@ require (
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/supranational/blst v0.3.15 // indirect
+	github.com/supranational/blst v0.3.16-0.20250831170142-f48500c1fdbe // indirect
 	github.com/tklauser/go-sysconf v0.3.15 // indirect
 	github.com/tklauser/numcpus v0.10.0 // indirect
 	github.com/whyrusleeping/go-keyspace v0.0.0-20160322163242-5b898ac5add1 // indirect
