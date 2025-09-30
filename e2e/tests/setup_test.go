@@ -165,6 +165,8 @@ func setupGlobalTestEnvironment() (*TestEnvironment, error) {
 				},
 			}
 
+			startupTimeout := 30 * time.Second
+
 			if deploymentData.Env.VerificationType == 0 {
 				opts = append(opts, "--circuits-dir /app/circuits")
 				mounts = append(mounts, mount.Mount{
@@ -172,6 +174,7 @@ func setupGlobalTestEnvironment() (*TestEnvironment, error) {
 					Source: filepath.Join(tempNetworkDir, "circuits"),
 					Target: "/app/circuits",
 				})
+				startupTimeout = 90 * time.Second
 			}
 
 			// Build the command to start the sidecar
@@ -192,7 +195,7 @@ func setupGlobalTestEnvironment() (*TestEnvironment, error) {
 				},
 				Networks: []string{networkName},
 				WaitingFor: wait.ForAll(
-					wait.ForHTTP("/healthz").WithPort("8080/tcp").WithStartupTimeout(30 * time.Second),
+					wait.ForHTTP("/healthz").WithPort("8080/tcp").WithStartupTimeout(startupTimeout),
 				),
 			}
 
