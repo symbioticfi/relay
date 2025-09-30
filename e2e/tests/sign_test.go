@@ -180,15 +180,42 @@ func TestNonHeaderKeySignature(t *testing.T) {
 						require.Truef(t, found, "Signature verification failed for key type %v for request id: %s", tc.keyTag.Type(), requestID)
 					}
 
-					// if it's ZK proof wait longer for the proof to be generated, at least the epoch duration
-					if tc.keyTag.Type() == entity.KeyTypeBlsBn254 && deploymentData.Env.VerificationType == 0 {
-						t.Logf("Waiting for zk aggregation proof to be generated for request id: %s", requestID)
-						time.Sleep(time.Duration(deploymentData.Env.EpochTime) * time.Second)
-					}
 					// check for proof
-					proof, err := client.GetAggregationProof(t.Context(), &apiv1.GetAggregationProofRequest{
-						RequestId: requestID,
-					})
+					var proof *apiv1.GetAggregationProofResponse
+
+					if tc.keyTag.Type() == entity.KeyTypeBlsBn254 && deploymentData.Env.VerificationType == 0 {
+						func() {
+							// if it's ZK proof, poll for the proof to be generated for the epoch duration
+							t.Logf("Polling for zk aggregation proof to be generated for request id: %s", requestID)
+
+							proofTimeoutCtx, proofCancel := context.WithTimeout(t.Context(), time.Duration(deploymentData.Env.EpochTime)*time.Second)
+							defer proofCancel()
+
+							proofTicker := time.NewTicker(2 * time.Second)
+							defer proofTicker.Stop()
+
+							for {
+								select {
+								case <-proofTimeoutCtx.Done():
+									t.Fatalf("Timed out waiting for zk aggregation proof for request id: %s", requestID)
+								case <-proofTicker.C:
+									proof, err = client.GetAggregationProof(t.Context(), &apiv1.GetAggregationProofRequest{
+										RequestId: requestID,
+									})
+									if err == nil {
+										t.Logf("ZK aggregation proof received for request id: %s", requestID)
+										return
+									}
+									t.Logf("ZK aggregation proof not ready yet for request id: %s, retrying...\n%v", requestID, err)
+								}
+							}
+						}()
+					} else {
+						proof, err = client.GetAggregationProof(t.Context(), &apiv1.GetAggregationProofRequest{
+							RequestId: requestID,
+						})
+					}
+
 					if tc.keyTag.Type() == entity.KeyTypeEcdsaSecp256k1 {
 						require.Errorf(t, err, "Expected no aggregation proof for ECDSA key type for request id: %s", requestID)
 					} else if tc.keyTag.Type() == entity.KeyTypeBlsBn254 {
