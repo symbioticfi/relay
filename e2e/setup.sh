@@ -8,7 +8,7 @@ set -eo pipefail
 CONTRACTS_COMMIT="24bcb351c8b6125b0412d5bf7916da405c548000"
 
 # Circuits commit
-CIRCUITS_COMMIT="2f3eada1f03aa4aaee26f9bb67bcf21f66d5de89"
+CIRCUITS_COMMIT="e2e-branch"
 
 # -----------------------------------------
 
