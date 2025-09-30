@@ -122,10 +122,12 @@ jobs:
             operators: 4
             commiters: 1
             aggregators: 1
+            verification_type: 1
           - name: "Multi Committer and Aggregator"
             operators: 10
             commiters: 2
             aggregators: 3
+            verification_type: 1
           - name: "ZK Aggregator Test"
             operators: 10
             commiters: 3
@@ -138,7 +140,7 @@ jobs:
       OPERATORS: ${{ matrix.config.operators }}
       COMMITERS: ${{ matrix.config.commiters }}
       AGGREGATORS: ${{ matrix.config.aggregators }}
-      VERIFICATION_TYPE: ${{ matrix.config.verification_type || 1 }}
+      VERIFICATION_TYPE: ${{ matrix.config.verification_type }}
       EPOCH_TIME: ${{ matrix.config.epoch_time || 60 }}
       BLOCK_TIME: 1
       FINALITY_BLOCKS: 2
