@@ -180,6 +180,11 @@ func TestNonHeaderKeySignature(t *testing.T) {
 						require.Truef(t, found, "Signature verification failed for key type %v for request id: %s", tc.keyTag.Type(), requestID)
 					}
 
+					// if it's ZK proof wait longer for the proof to be generated, at least the epoch duration
+					if tc.keyTag.Type() == entity.KeyTypeBlsBn254 && deploymentData.Env.VerificationType == 0 {
+						t.Logf("Waiting for zk aggregation proof to be generated for request id: %s", requestID)
+						time.Sleep(time.Duration(deploymentData.Env.EpochTime) * time.Second)
+					}
 					// check for proof
 					proof, err := client.GetAggregationProof(t.Context(), &apiv1.GetAggregationProofRequest{
 						RequestId: requestID,

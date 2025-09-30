@@ -224,13 +224,14 @@ func (p *ZkProver) Prove(proveInput ProveInput) (ProofData, error) {
 
 //nolint:revive // function-result-limit: This function needs to return multiple complex types for cryptographic operations
 func loadOrInit(circuitsDir string, valsetLen int) (constraint.ConstraintSystem, groth16.ProvingKey, groth16.VerifyingKey, error) {
+	slog.Info("Loading or initializing zk circuit files", "valsetLen", valsetLen, "dir", circuitsDir)
 	suffix := strconv.Itoa(valsetLen)
 	r1csP := r1csPathTmp(circuitsDir, suffix)
 	pkP := pkPathTmp(circuitsDir, suffix)
 	vkP := vkPathTmp(circuitsDir, suffix)
-	solP := solPathTmp(circuitsDir, suffix)
 
-	if exists(r1csP) && exists(pkP) && exists(vkP) && exists(solP) {
+	if exists(r1csP) && exists(pkP) && exists(vkP) {
+		slog.Warn("Using existing zk circuit files", "r1cs", r1csP, "pk", pkP, "vk", vkP)
 		r1csCS := groth16.NewCS(bn254.ID)
 		data, err := os.Open(r1csP)
 		if err != nil {

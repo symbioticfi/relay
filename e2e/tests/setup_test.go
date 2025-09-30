@@ -156,6 +156,24 @@ func setupGlobalTestEnvironment() (*TestEnvironment, error) {
 				fmt.Sprintf("--storage-dir %s", config.DataDir),
 				fmt.Sprintf("--secret-keys %s", config.Keys),
 			}
+
+			mounts := []mount.Mount{
+				{
+					Type:   mount.TypeBind,
+					Source: deployDataDir,
+					Target: "/deploy-data",
+				},
+			}
+
+			if deploymentData.Env.VerificationType == 0 {
+				opts = append(opts, "--circuits-dir /app/circuits")
+				mounts = append(mounts, mount.Mount{
+					Type:   mount.TypeBind,
+					Source: filepath.Join(tempNetworkDir, "circuits"),
+					Target: "/app/circuits",
+				})
+			}
+
 			// Build the command to start the sidecar
 			startCommand := fmt.Sprintf("./relay_sidecar %s", strings.Join(opts, " "))
 
@@ -170,13 +188,7 @@ func setupGlobalTestEnvironment() (*TestEnvironment, error) {
 					FileMode:          0644,
 				}},
 				HostConfigModifier: func(hostConfig *container.HostConfig) {
-					hostConfig.Mounts = []mount.Mount{
-						{
-							Type:   mount.TypeBind,
-							Source: deployDataDir,
-							Target: "/deploy-data",
-						},
-					}
+					hostConfig.Mounts = mounts
 				},
 				Networks: []string{networkName},
 				WaitingFor: wait.ForAll(

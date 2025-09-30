@@ -242,7 +242,7 @@ func (s *Service) commitValsetToAllSettlements(ctx context.Context, config entit
 		}
 
 		if header.Epoch != lastCommittedEpoch+1 {
-			errs[i] = errors.Errorf("commits should be consequent: %v/%s: %w", settlement.ChainId, settlement.Address.Hex(), err)
+			errs[i] = errors.Errorf("commits should be consequent: %v/%s", settlement.ChainId, settlement.Address.Hex())
 			continue
 		}
 

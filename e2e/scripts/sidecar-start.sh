@@ -25,4 +25,11 @@ p2p-listen: "/ip4/0.0.0.0/tcp/8880"
 enable-mdns: true
 EOFCONFIG
 
-exec /app/relay_sidecar --config /tmp/sidecar.yaml --secret-keys "$1" --storage-dir "$2"
+# Handle optional circuits directory parameter
+if [ -n "$3" ] && [ -d "$3" ]; then
+    echo "Using circuits directory: $3"
+    exec /app/relay_sidecar --config /tmp/sidecar.yaml --secret-keys "$1" --storage-dir "$2" --circuits-dir "$3"
+else
+    echo "No circuits directory provided or directory doesn't exist, running without circuits"
+    exec /app/relay_sidecar --config /tmp/sidecar.yaml --secret-keys "$1" --storage-dir "$2"
+fi

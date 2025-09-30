@@ -292,22 +292,39 @@ EOF
             exit 1
         fi
         
+        # Set circuits directory parameter based on verification type
+        if [ "$verification_type" = "0" ]; then
+            circuits_param="/app/circuits"
+        else
+            circuits_param=""
+        fi
+
         cat >> "$network_dir/docker-compose.yml" << EOF
 
-  # Relay sidecar $i ($role_name)
+  # Relay sidecar $i
   relay-sidecar-$i:
     image: relay_sidecar:dev
     container_name: symbiotic-relay-$i
     command:
       - sh
       - -c
-      - "chmod 777 /app/$storage_dir /deploy-data 2>/dev/null || true && /workspace/scripts/sidecar-start.sh symb/0/15/0x$SYMB_PRIVATE_KEY_HEX,symb/0/11/0x$SYMB_SECONDARY_PRIVATE_KEY_HEX,symb/1/0/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31337/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31338/0x$SYMB_PRIVATE_KEY_HEX,p2p/1/0/$SWARM_KEY,p2p/1/1/$SYMB_PRIVATE_KEY_HEX /app/$storage_dir"
+      - "chmod 777 /app/$storage_dir /deploy-data 2>/dev/null || true && /workspace/scripts/sidecar-start.sh symb/0/15/0x$SYMB_PRIVATE_KEY_HEX,symb/0/11/0x$SYMB_SECONDARY_PRIVATE_KEY_HEX,symb/1/0/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31337/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31338/0x$SYMB_PRIVATE_KEY_HEX,p2p/1/0/$SWARM_KEY,p2p/1/1/$SYMB_PRIVATE_KEY_HEX /app/$storage_dir $circuits_param"
     ports:
       - "$port:8080"
     volumes:
       - ../:/workspace
       - ./$storage_dir:/app/$storage_dir
       - ./deploy-data:/deploy-data
+EOF
+
+        # Add circuits volume only if verification type is 0
+        if [ "$verification_type" = "0" ]; then
+            cat >> "$network_dir/docker-compose.yml" << EOF
+      - ./circuits:/app/circuits
+EOF
+        fi
+
+        cat >> "$network_dir/docker-compose.yml" << EOF
     depends_on:
       genesis-generator:
         condition: service_completed_successfully

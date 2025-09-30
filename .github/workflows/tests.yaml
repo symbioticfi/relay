@@ -126,14 +126,20 @@ jobs:
             operators: 10
             commiters: 2
             aggregators: 3
+          - name: "ZK Aggregator Test"
+            operators: 10
+            commiters: 3
+            aggregators: 3
+            verification_type: 0
+            epoch_time: 120
     
     env:
       # E2E Test Configuration
       OPERATORS: ${{ matrix.config.operators }}
       COMMITERS: ${{ matrix.config.commiters }}
       AGGREGATORS: ${{ matrix.config.aggregators }}
-      VERIFICATION_TYPE: 1
-      EPOCH_TIME: 60
+      VERIFICATION_TYPE: ${{ matrix.config.verification_type || 1 }}
+      EPOCH_TIME: ${{ matrix.config.epoch_time || 60 }}
       BLOCK_TIME: 1
       FINALITY_BLOCKS: 2
       GENERATE_SIDECARS: false
