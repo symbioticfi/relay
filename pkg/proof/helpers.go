@@ -183,7 +183,8 @@ func NormalizeValset(valset []ValidatorData) []ValidatorData {
 
 func getOptimalN(valsetLength int) int {
 	var capSize int
-	for _, m := range MaxValidators {
+	maxValidators := GetMaxValidators()
+	for _, m := range maxValidators {
 		if m >= valsetLength {
 			capSize = m
 			break
