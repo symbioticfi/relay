@@ -5,8 +5,9 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
-	"github.com/symbioticfi/relay/core/entity"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/symbioticfi/relay/core/entity"
 
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
 )
@@ -17,7 +18,7 @@ func (h *grpcHandler) GetLastCommitted(ctx context.Context, req *apiv1.GetLastCo
 		return nil, errors.New("settlement chain ID cannot be 0")
 	}
 
-	cfg, err := h.cfg.EvmClient.GetConfig(ctx, uint64(time.Now().Unix()))
+	cfg, err := h.cfg.EvmClient.GetConfig(ctx, entity.Timestamp(uint64(time.Now().Unix())))
 	if err != nil {
 		return nil, errors.Errorf("failed to get config: %w", err)
 	}
@@ -49,7 +50,7 @@ func (h *grpcHandler) GetLastCommitted(ctx context.Context, req *apiv1.GetLastCo
 	return &apiv1.GetLastCommittedResponse{
 		SettlementChainId: req.GetSettlementChainId(),
 		EpochInfo: &apiv1.ChainEpochInfo{
-			LastCommittedEpoch: lastCommittedEpoch,
+			LastCommittedEpoch: uint64(lastCommittedEpoch),
 			StartTime:          timestamppb.New(time.Unix(int64(epochStart), 0).UTC()),
 		},
 	}, nil

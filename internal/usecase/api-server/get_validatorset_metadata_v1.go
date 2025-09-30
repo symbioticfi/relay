@@ -12,7 +12,7 @@ import (
 
 // GetValidatorSetMetadata handles the gRPC GetValidatorSetMetadata request
 func (h *grpcHandler) GetValidatorSetMetadata(ctx context.Context, req *apiv1.GetValidatorSetMetadataRequest) (*apiv1.GetValidatorSetMetadataResponse, error) {
-	var epochRequested uint64
+	var epochRequested entity.Epoch
 	if req.Epoch == nil {
 		latestEpoch, err := h.cfg.EvmClient.GetCurrentEpoch(ctx)
 		if err != nil {
@@ -21,10 +21,10 @@ func (h *grpcHandler) GetValidatorSetMetadata(ctx context.Context, req *apiv1.Ge
 
 		epochRequested = latestEpoch
 	} else {
-		epochRequested = req.GetEpoch()
+		epochRequested = entity.Epoch(req.GetEpoch())
 	}
 
-	metadata, err := h.cfg.Repo.GetValidatorSetMetadata(ctx, entity.Epoch(epochRequested))
+	metadata, err := h.cfg.Repo.GetValidatorSetMetadata(ctx, epochRequested)
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityNotFound) {
 			return nil, errors.Errorf("no metadata found for the requested epoch: %w", err)

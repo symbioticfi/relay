@@ -23,7 +23,7 @@ func (h *grpcHandler) GetCurrentEpoch(ctx context.Context, req *apiv1.GetCurrent
 	}
 
 	return &apiv1.GetCurrentEpochResponse{
-		Epoch:     currentEpoch,
+		Epoch:     uint64(currentEpoch),
 		StartTime: timestamppb.New(time.Unix(int64(epochStart), 0).UTC()),
 	}, nil
 }

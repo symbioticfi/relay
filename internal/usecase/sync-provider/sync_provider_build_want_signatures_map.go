@@ -47,9 +47,9 @@ func (s *Syncer) buildWantSignaturesMap(ctx context.Context) (map[common.Hash]en
 	}
 
 	// Calculate the starting epoch (go back EpochsToSync epochs)
-	var startEpoch uint64
-	if latestEpoch >= s.cfg.EpochsToSync {
-		startEpoch = latestEpoch - s.cfg.EpochsToSync
+	var startEpoch entity.Epoch
+	if latestEpoch >= entity.Epoch(s.cfg.EpochsToSync) {
+		startEpoch = latestEpoch - entity.Epoch(s.cfg.EpochsToSync)
 	} else {
 		startEpoch = 0
 	}
@@ -62,7 +62,7 @@ func (s *Syncer) buildWantSignaturesMap(ctx context.Context) (map[common.Hash]en
 		remaining := s.cfg.MaxSignatureRequestsPerSync - totalRequests
 
 		for remaining > 0 {
-			requests, err := s.cfg.Repo.GetSignatureRequestsByEpochPending(ctx, entity.Epoch(epoch), remaining, lastHash)
+			requests, err := s.cfg.Repo.GetSignatureRequestsByEpochPending(ctx, epoch, remaining, lastHash)
 			if err != nil {
 				return nil, errors.Errorf("failed to get pending signature requests for epoch %d: %w", epoch, err)
 			}

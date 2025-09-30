@@ -27,7 +27,7 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 	)
 	retryAttempted := false
 	for {
-		valset, err = s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
+		valset, err = s.cfg.Repo.GetValidatorSetByEpoch(ctx, msg.Epoch)
 		if err != nil {
 			if errors.Is(err, entity.ErrEntityNotFound) && !retryAttempted { // TODO: do i need to check if there is a local signature for request? it's still possible to commit
 				if err = s.process(ctx); err != nil {
@@ -122,7 +122,7 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 			return errors.Errorf("failed to get private key for required key tag %s: %w", valset.RequiredKeyTag, err)
 		}
 
-		if !valset.IsActiveCommitter(ctx, nwCfg.CommitterSlotDuration, uint64(time.Now().Unix()), minCommitterPollIntervalSeconds, privKey.PublicKey().OnChain()) {
+		if !valset.IsActiveCommitter(ctx, nwCfg.CommitterSlotDuration, entity.Timestamp(uint64(time.Now().Unix())), minCommitterPollIntervalSeconds, privKey.PublicKey().OnChain()) {
 			slog.DebugContext(ctx, "Not a committer for this valset, skipping proof commitment", "key", privKey.PublicKey().OnChain(), "epoch", valset.Epoch)
 			continue
 		}
@@ -162,7 +162,7 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 				break
 			}
 
-			targetValset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(proofKey.Epoch))
+			targetValset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, proofKey.Epoch)
 			if err != nil {
 				slog.ErrorContext(ctx, "failed to get validator set by epoch", "error", err, "epoch", proofKey.Epoch, "requestId", proofKey.RequestID.Hex())
 				break
@@ -201,7 +201,7 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 }
 
 func (s *Service) detectLastCommittedEpoch(ctx context.Context, config entity.NetworkConfig) entity.Epoch {
-	minVal := uint64(0)
+	minVal := entity.Epoch(0)
 	for _, settlement := range config.Settlements {
 		lastCommittedEpoch, err := s.cfg.EvmClient.GetLastCommittedHeaderEpoch(ctx, settlement)
 		if err != nil {
@@ -214,7 +214,7 @@ func (s *Service) detectLastCommittedEpoch(ctx context.Context, config entity.Ne
 			minVal = lastCommittedEpoch
 		}
 	}
-	return entity.Epoch(minVal)
+	return minVal
 }
 
 func (s *Service) commitValsetToAllSettlements(ctx context.Context, config entity.NetworkConfig, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) error {

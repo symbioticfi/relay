@@ -35,7 +35,7 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 				req := randomSignatureRequest(t, entity.Epoch(100))
 
 				// Setup validator set header with high quorum threshold (1000)
-				_, privateKeys := setupValidatorSetHeader(t, repo, uint64(req.RequiredEpoch), big.NewInt(1000))
+				_, privateKeys := setupValidatorSetHeader(t, repo, req.RequiredEpoch, big.NewInt(1000))
 
 				return entity.SaveSignatureParam{
 					Signature:        signatureExtendedForRequest(t, privateKeys[0][req.KeyTag], req),
@@ -55,7 +55,7 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 				req := randomSignatureRequest(t, epoch)
 
 				// Setup validator set header with low quorum threshold (50)
-				_, privateKeys := setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(50))
+				_, privateKeys := setupValidatorSetHeader(t, repo, epoch, big.NewInt(50))
 
 				return entity.SaveSignatureParam{
 					Signature:        signatureExtendedForRequest(t, privateKeys[0][req.KeyTag], req),
@@ -74,7 +74,7 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 				epoch := entity.Epoch(102)
 
 				// Setup validator set header with high quorum threshold
-				_, privateKeys := setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(1000))
+				_, privateKeys := setupValidatorSetHeader(t, repo, epoch, big.NewInt(1000))
 
 				return entity.SaveSignatureParam{
 					Signature: randomSignatureExtendedForKeyWithParams(t, privateKeys[0][15], entity.SignatureRequest{
@@ -98,7 +98,7 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 				req := randomSignatureRequest(t, epoch)
 
 				// Setup validator set header with quorum threshold of 150
-				_, privateKeys := setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(150))
+				_, privateKeys := setupValidatorSetHeader(t, repo, epoch, big.NewInt(150))
 
 				// First signature - not enough for quorum
 				firstParam := entity.SaveSignatureParam{
@@ -222,7 +222,7 @@ func TestEntityProcessor_ProcessSignature_ConcurrentSignatures(t *testing.T) {
 	req := randomSignatureRequest(t, epoch)
 
 	// Setup validator set header with quorum threshold of 300
-	_, privateKeys := setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(300))
+	_, privateKeys := setupValidatorSetHeader(t, repo, epoch, big.NewInt(300))
 
 	processor, err := NewEntityProcessor(Config{Repo: repo, Aggregator: createMockAggregator(t), AggProofSignal: createMockAggProofSignal(t), SignatureProcessedSignal: createMockSignatureProcessedSignal(t)})
 	require.NoError(t, err)
@@ -276,7 +276,7 @@ func TestEntityProcessor_ProcessSignature_DuplicateSignatureForSameValidator(t *
 	epoch := entity.Epoch(300)
 	req := randomSignatureRequest(t, epoch)
 
-	_, privateKeys := setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(1000))
+	_, privateKeys := setupValidatorSetHeader(t, repo, epoch, big.NewInt(1000))
 
 	param := entity.SaveSignatureParam{
 		Signature:        signatureExtendedForRequest(t, privateKeys[0][15], req),
@@ -304,7 +304,7 @@ func TestEntityProcessor_ProcessSignature_ExactQuorumThreshold(t *testing.T) {
 	req := randomSignatureRequest(t, epoch)
 
 	// Set quorum threshold to exactly 100
-	_, privateKeys := setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(100))
+	_, privateKeys := setupValidatorSetHeader(t, repo, epoch, big.NewInt(100))
 
 	param := entity.SaveSignatureParam{
 		Signature:        signatureExtendedForRequest(t, privateKeys[0][15], req),
@@ -415,7 +415,7 @@ func signatureExtendedForRequest(t *testing.T, privateKey crypto.PrivateKey, req
 	}
 }
 
-func createValidatorSetWithCount(t *testing.T, epoch uint64, quorumThreshold *big.Int, validatorCount int) (entity.ValidatorSet, []map[entity.KeyTag]crypto.PrivateKey) {
+func createValidatorSetWithCount(t *testing.T, epoch entity.Epoch, quorumThreshold *big.Int, validatorCount int) (entity.ValidatorSet, []map[entity.KeyTag]crypto.PrivateKey) {
 	t.Helper()
 
 	privateKeys := make([]map[entity.KeyTag]crypto.PrivateKey, validatorCount)
@@ -469,7 +469,7 @@ func createValidatorSetWithCount(t *testing.T, epoch uint64, quorumThreshold *bi
 	}, privateKeys
 }
 
-func setupValidatorSetHeader(t *testing.T, repo *badger.Repository, epoch uint64, quorumThreshold *big.Int) (entity.ValidatorSet, []map[entity.KeyTag]crypto.PrivateKey) {
+func setupValidatorSetHeader(t *testing.T, repo *badger.Repository, epoch entity.Epoch, quorumThreshold *big.Int) (entity.ValidatorSet, []map[entity.KeyTag]crypto.PrivateKey) {
 	t.Helper()
 	vs, privateKeys := createValidatorSetWithCount(t, epoch, quorumThreshold, 4) // Default to 4 validators for backward compatibility
 	err := repo.SaveValidatorSet(t.Context(), vs)
@@ -488,7 +488,7 @@ func TestEntityProcessor_ProcessAggregationProof_SuccessfullyProcesses(t *testin
 	require.NoError(t, repo.SaveSignatureRequestPending(t.Context(), requestId, req))
 
 	// Setup validator set for this epoch (required by ProcessAggregationProof)
-	setupValidatorSetHeader(t, repo, uint64(epoch), big.NewInt(670))
+	setupValidatorSetHeader(t, repo, epoch, big.NewInt(670))
 
 	// Create aggregation proof
 	msg := entity.AggregationProof{
@@ -535,7 +535,7 @@ func TestEntityProcessor_ProcessAggregationProof_HandlesMissingPendingGracefully
 	require.NoError(t, repo.SaveSignatureRequestPending(t.Context(), requestId, req))
 
 	// Setup validator set for this epoch (required by ProcessAggregationProof)
-	setupValidatorSetHeader(t, repo, uint64(req.RequiredEpoch), big.NewInt(670))
+	setupValidatorSetHeader(t, repo, req.RequiredEpoch, big.NewInt(670))
 
 	msg := entity.AggregationProof{
 		KeyTag:      req.KeyTag,
@@ -572,7 +572,7 @@ func TestEntityProcessor_ProcessAggregationProof_FailsWhenAlreadyExists(t *testi
 	require.NoError(t, repo.SaveSignatureRequestPending(t.Context(), requestId, req))
 
 	// Setup validator set for this epoch (required by ProcessAggregationProof)
-	setupValidatorSetHeader(t, repo, uint64(req.RequiredEpoch), big.NewInt(670))
+	setupValidatorSetHeader(t, repo, req.RequiredEpoch, big.NewInt(670))
 
 	msg := entity.AggregationProof{
 		KeyTag:      req.KeyTag,
@@ -602,7 +602,7 @@ func TestEntityProcessor_ProcessSignature_SavesAggregationProofPendingForAggrega
 	req := randomSignatureRequest(t, entity.Epoch(400))
 	req.KeyTag = entity.KeyTag(15)
 
-	_, privateKeys := setupValidatorSetHeader(t, repo, uint64(req.RequiredEpoch), big.NewInt(1000))
+	_, privateKeys := setupValidatorSetHeader(t, repo, req.RequiredEpoch, big.NewInt(1000))
 
 	param := entity.SaveSignatureParam{
 		Signature:        randomSignatureExtendedForKeyWithParams(t, privateKeys[0][15], req),
@@ -640,7 +640,7 @@ func TestEntityProcessor_ProcessSignature_DoesNotSaveAggregationProofPendingForN
 	req := randomSignatureRequest(t, entity.Epoch(500))
 	req.KeyTag = entity.KeyTag(0x10) // Ensure it's NOT an aggregation key (EcdsaSecp256k1)
 
-	_, privateKeys := setupValidatorSetHeader(t, repo, uint64(req.RequiredEpoch), big.NewInt(1000))
+	_, privateKeys := setupValidatorSetHeader(t, repo, req.RequiredEpoch, big.NewInt(1000))
 
 	param := entity.SaveSignatureParam{
 		Signature:        randomSignatureExtendedForKeyWithParams(t, privateKeys[0][0x10], req),
@@ -682,7 +682,7 @@ func TestEntityProcessor_ProcessSignature_FullSignatureToAggregationProofFlow(t 
 	req := randomSignatureRequest(t, entity.Epoch(600))
 	req.KeyTag = entity.KeyTag(15)
 
-	_, privateKeys := setupValidatorSetHeader(t, repo, uint64(req.RequiredEpoch), big.NewInt(1000))
+	_, privateKeys := setupValidatorSetHeader(t, repo, req.RequiredEpoch, big.NewInt(1000))
 
 	// Step 1: Process signature (should create pending aggregation proof)
 	param := entity.SaveSignatureParam{

@@ -16,12 +16,12 @@ import (
 
 type repo interface {
 	GetLatestValidatorSetHeader(_ context.Context) (entity.ValidatorSetHeader, error)
-	SaveConfig(ctx context.Context, config entity.NetworkConfig, epoch uint64) error
+	SaveConfig(ctx context.Context, config entity.NetworkConfig, epoch entity.Epoch) error
 	SaveValidatorSet(ctx context.Context, valset entity.ValidatorSet) error
 }
 
 type deriver interface {
-	GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error)
+	GetValidatorSet(ctx context.Context, epoch entity.Epoch, config entity.NetworkConfig) (entity.ValidatorSet, error)
 }
 
 type Config struct {
@@ -116,7 +116,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		return errors.Errorf("failed to get latest validator set header: %w", err)
 	}
 
-	nextEpoch := uint64(0)
+	nextEpoch := entity.Epoch(0)
 	if err == nil {
 		nextEpoch = latestHeader.Epoch + 1
 	}

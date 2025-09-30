@@ -20,7 +20,7 @@ func (h *grpcHandler) GetValidatorByAddress(ctx context.Context, req *apiv1.GetV
 
 	epochRequested := latestEpoch
 	if req.Epoch != nil {
-		epochRequested = req.GetEpoch()
+		epochRequested = entity.Epoch(req.GetEpoch())
 	}
 
 	// epoch from future

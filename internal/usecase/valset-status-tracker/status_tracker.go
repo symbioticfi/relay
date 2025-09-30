@@ -17,11 +17,11 @@ import (
 var zeroHeaderHash = common.HexToHash("0x868e09d528a16744c1f38ea3c10cc2251e01a456434f91172247695087d129b7")
 
 type repo interface {
-	GetConfigByEpoch(_ context.Context, epoch uint64) (entity.NetworkConfig, error)
-	GetValidatorSetByEpoch(_ context.Context, epoch uint64) (entity.ValidatorSet, error)
+	GetConfigByEpoch(_ context.Context, epoch entity.Epoch) (entity.NetworkConfig, error)
+	GetValidatorSetByEpoch(_ context.Context, epoch entity.Epoch) (entity.ValidatorSet, error)
 	UpdateValidatorSetStatus(ctx context.Context, valset entity.ValidatorSet) error
-	GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (uint64, error)
-	SaveFirstUncommittedValidatorSetEpoch(_ context.Context, epoch uint64) error
+	GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (entity.Epoch, error)
+	SaveFirstUncommittedValidatorSetEpoch(_ context.Context, epoch entity.Epoch) error
 }
 
 type Config struct {
@@ -72,7 +72,7 @@ func (s *Service) Start(ctx context.Context) error {
 }
 
 func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.AggregationProof) error {
-	valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
+	valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, msg.Epoch)
 	if err != nil {
 		return errors.Errorf("failed to get validator set: %w", err) // if not found then it's failure case
 	}

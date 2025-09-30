@@ -37,27 +37,27 @@ type IEvmClient interface {
 	GetChains() []uint64
 	GetSubnetwork(ctx context.Context) (common.Hash, error)
 	GetNetworkAddress(ctx context.Context) (common.Address, error)
-	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
+	GetConfig(ctx context.Context, timestamp entity.Timestamp) (entity.NetworkConfig, error)
 	GetEip712Domain(ctx context.Context, addr entity.CrossChainAddress) (entity.Eip712Domain, error)
-	GetCurrentEpoch(ctx context.Context) (uint64, error)
+	GetCurrentEpoch(ctx context.Context) (entity.Epoch, error)
 	GetCurrentEpochDuration(ctx context.Context) (uint64, error)
-	GetEpochDuration(ctx context.Context, epoch uint64) (uint64, error)
-	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
-	IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (bool, error)
+	GetEpochDuration(ctx context.Context, epoch entity.Epoch) (uint64, error)
+	GetEpochStart(ctx context.Context, epoch entity.Epoch) (entity.Timestamp, error)
+	IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (bool, error)
 	GetHeaderHash(ctx context.Context, addr entity.CrossChainAddress) (common.Hash, error)
-	GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error)
-	GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (uint64, error)
-	GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (uint64, error)
-	GetValSetHeaderAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (entity.ValidatorSetHeader, error)
+	GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (common.Hash, error)
+	GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (entity.Epoch, error)
+	GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (uint64, error)
+	GetValSetHeaderAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (entity.ValidatorSetHeader, error)
 	GetValSetHeader(ctx context.Context, addr entity.CrossChainAddress) (entity.ValidatorSetHeader, error)
-	GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorVotingPower, error)
-	GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorWithKeys, error)
+	GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) ([]entity.OperatorVotingPower, error)
+	GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) ([]entity.OperatorWithKeys, error)
 	CommitValsetHeader(ctx context.Context, addr entity.CrossChainAddress, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) (entity.TxResult, error)
 	RegisterOperator(ctx context.Context, addr entity.CrossChainAddress) (entity.TxResult, error)
 	RegisterKey(ctx context.Context, addr entity.CrossChainAddress, keyTag entity.KeyTag, key entity.CompactPublicKey, signature entity.RawSignature, extraData []byte) (entity.TxResult, error)
 	SetGenesis(ctx context.Context, addr entity.CrossChainAddress, header entity.ValidatorSetHeader, extraData []entity.ExtraData) (entity.TxResult, error)
-	VerifyQuorumSig(ctx context.Context, addr entity.CrossChainAddress, epoch uint64, message []byte, keyTag entity.KeyTag, threshold *big.Int, proof []byte) (bool, error)
-	IsValsetHeaderCommittedAtEpochs(ctx context.Context, addr entity.CrossChainAddress, epochs []uint64) ([]bool, error)
+	VerifyQuorumSig(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch, message []byte, keyTag entity.KeyTag, threshold *big.Int, proof []byte) (bool, error)
+	IsValsetHeaderCommittedAtEpochs(ctx context.Context, addr entity.CrossChainAddress, epochs []entity.Epoch) ([]bool, error)
 }
 
 type Config struct {
@@ -131,7 +131,7 @@ func (e *Client) GetChains() []uint64 {
 	return chainIds
 }
 
-func (e *Client) GetConfig(ctx context.Context, timestamp uint64) (_ entity.NetworkConfig, err error) {
+func (e *Client) GetConfig(ctx context.Context, timestamp entity.Timestamp) (_ entity.NetworkConfig, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -141,7 +141,7 @@ func (e *Client) GetConfig(ctx context.Context, timestamp uint64) (_ entity.Netw
 	dtoConfig, err := e.driver.GetConfigAt(&bind.CallOpts{
 		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
 		Context:     toCtx,
-	}, new(big.Int).SetUint64(timestamp))
+	}, new(big.Int).SetUint64(uint64(timestamp)))
 	if err != nil {
 		return entity.NetworkConfig{}, errors.Errorf("failed to call getConfigAt: %w", err)
 	}
@@ -185,7 +185,7 @@ func (e *Client) GetConfig(ctx context.Context, timestamp uint64) (_ entity.Netw
 	}, nil
 }
 
-func (e *Client) GetCurrentEpoch(ctx context.Context) (_ uint64, err error) {
+func (e *Client) GetCurrentEpoch(ctx context.Context) (_ entity.Epoch, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -199,7 +199,7 @@ func (e *Client) GetCurrentEpoch(ctx context.Context) (_ uint64, err error) {
 	if err != nil {
 		return 0, errors.Errorf("failed to call getCurrentEpoch: %w", e.formatEVMContractError(gen.IValSetDriverMetaData, err))
 	}
-	return epoch.Uint64(), nil
+	return entity.Epoch(epoch.Uint64()), nil
 }
 
 func (e *Client) GetCurrentEpochDuration(ctx context.Context) (_ uint64, err error) {
@@ -219,7 +219,7 @@ func (e *Client) GetCurrentEpochDuration(ctx context.Context) (_ uint64, err err
 	return epochDuration.Uint64(), nil
 }
 
-func (e *Client) GetEpochDuration(ctx context.Context, epoch uint64) (_ uint64, err error) {
+func (e *Client) GetEpochDuration(ctx context.Context, epoch entity.Epoch) (_ uint64, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -229,14 +229,14 @@ func (e *Client) GetEpochDuration(ctx context.Context, epoch uint64) (_ uint64, 
 	epochDuration, err := e.driver.GetEpochDuration(&bind.CallOpts{
 		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
 		Context:     toCtx,
-	}, new(big.Int).SetUint64(epoch))
+	}, new(big.Int).SetUint64(uint64(epoch)))
 	if err != nil {
 		return 0, errors.Errorf("failed to call getEpochDuration: %w", e.formatEVMContractError(gen.IValSetDriverMetaData, err))
 	}
 	return epochDuration.Uint64(), nil
 }
 
-func (e *Client) GetEpochStart(ctx context.Context, epoch uint64) (_ uint64, err error) {
+func (e *Client) GetEpochStart(ctx context.Context, epoch entity.Epoch) (_ entity.Timestamp, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -246,11 +246,11 @@ func (e *Client) GetEpochStart(ctx context.Context, epoch uint64) (_ uint64, err
 	epochStart, err := e.driver.GetEpochStart(&bind.CallOpts{
 		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
 		Context:     toCtx,
-	}, new(big.Int).SetUint64(epoch))
+	}, new(big.Int).SetUint64(uint64(epoch)))
 	if err != nil {
 		return 0, errors.Errorf("failed to call getEpochStart: %w", e.formatEVMContractError(gen.IValSetDriverMetaData, err))
 	}
-	return epochStart.Uint64(), nil
+	return entity.Timestamp(epochStart.Uint64()), nil
 }
 
 func (e *Client) GetSubnetwork(ctx context.Context) (_ common.Hash, err error) {
@@ -289,7 +289,7 @@ func (e *Client) GetNetworkAddress(ctx context.Context) (_ common.Address, err e
 	return networkAddress, nil
 }
 
-func (e *Client) IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (_ bool, err error) {
+func (e *Client) IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (_ bool, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -304,7 +304,7 @@ func (e *Client) IsValsetHeaderCommittedAt(ctx context.Context, addr entity.Cros
 	ok, err := settlement.IsValSetHeaderCommittedAt(&bind.CallOpts{
 		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
 		Context:     toCtx,
-	}, new(big.Int).SetUint64(epoch))
+	}, new(big.Int).SetUint64(uint64(epoch)))
 	if err != nil {
 		return false, errors.Errorf("failed to call isValsetHeaderCommittedAt: %w", err)
 	}
@@ -334,7 +334,7 @@ func (e *Client) GetHeaderHash(ctx context.Context, addr entity.CrossChainAddres
 	return hash, nil
 }
 
-func (e *Client) GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (_ common.Hash, err error) {
+func (e *Client) GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (_ common.Hash, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -349,7 +349,7 @@ func (e *Client) GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddr
 	hash, err := settlement.GetValSetHeaderHashAt(&bind.CallOpts{
 		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
 		Context:     toCtx,
-	}, new(big.Int).SetUint64(epoch))
+	}, new(big.Int).SetUint64(uint64(epoch)))
 	if err != nil {
 		return common.Hash{}, errors.Errorf("failed to call getValSetHeaderHashAt: %w", err)
 	}
@@ -357,7 +357,7 @@ func (e *Client) GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddr
 	return hash, nil
 }
 
-func (e *Client) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (_ uint64, err error) {
+func (e *Client) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (_ entity.Epoch, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -379,10 +379,10 @@ func (e *Client) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.Cr
 
 	// todo if zero epoch need to check if it's committed or not
 
-	return epoch.Uint64(), nil
+	return entity.Epoch(epoch.Uint64()), nil
 }
 
-func (e *Client) GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (_ uint64, err error) {
+func (e *Client) GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (_ uint64, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -397,7 +397,7 @@ func (e *Client) GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, addr
 	timestamp, err := settlement.GetCaptureTimestampFromValSetHeaderAt(&bind.CallOpts{
 		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
 		Context:     toCtx,
-	}, new(big.Int).SetUint64(epoch))
+	}, new(big.Int).SetUint64(uint64(epoch)))
 	if err != nil {
 		return 0, errors.Errorf("failed to call getCaptureTimestampFromValSetHeaderAt: %w", err)
 	}
@@ -405,7 +405,7 @@ func (e *Client) GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, addr
 	return timestamp.Uint64(), nil
 }
 
-func (e *Client) GetValSetHeaderAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (_ entity.ValidatorSetHeader, err error) {
+func (e *Client) GetValSetHeaderAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (_ entity.ValidatorSetHeader, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -420,7 +420,7 @@ func (e *Client) GetValSetHeaderAt(ctx context.Context, addr entity.CrossChainAd
 	header, err := settlement.GetValSetHeaderAt(&bind.CallOpts{
 		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
 		Context:     toCtx,
-	}, new(big.Int).SetUint64(epoch))
+	}, new(big.Int).SetUint64(uint64(epoch)))
 	if err != nil {
 		return entity.ValidatorSetHeader{}, errors.Errorf("failed to call getValSetHeaderAt: %w", err)
 	}
@@ -428,8 +428,8 @@ func (e *Client) GetValSetHeaderAt(ctx context.Context, addr entity.CrossChainAd
 	return entity.ValidatorSetHeader{
 		Version:            header.Version,
 		RequiredKeyTag:     entity.KeyTag(header.RequiredKeyTag),
-		Epoch:              header.Epoch.Uint64(),
-		CaptureTimestamp:   header.CaptureTimestamp.Uint64(),
+		Epoch:              entity.Epoch(header.Epoch.Uint64()),
+		CaptureTimestamp:   entity.Timestamp(header.CaptureTimestamp.Uint64()),
 		QuorumThreshold:    entity.ToVotingPower(header.QuorumThreshold),
 		TotalVotingPower:   entity.ToVotingPower(header.TotalVotingPower),
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot,
@@ -459,8 +459,8 @@ func (e *Client) GetValSetHeader(ctx context.Context, addr entity.CrossChainAddr
 	return entity.ValidatorSetHeader{
 		Version:            header.Version,
 		RequiredKeyTag:     entity.KeyTag(header.RequiredKeyTag),
-		Epoch:              header.Epoch.Uint64(),
-		CaptureTimestamp:   header.CaptureTimestamp.Uint64(),
+		Epoch:              entity.Epoch(header.Epoch.Uint64()),
+		CaptureTimestamp:   entity.Timestamp(header.CaptureTimestamp.Uint64()),
 		QuorumThreshold:    entity.ToVotingPower(header.QuorumThreshold),
 		TotalVotingPower:   entity.ToVotingPower(header.TotalVotingPower),
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot,
@@ -498,7 +498,7 @@ func (e *Client) GetEip712Domain(ctx context.Context, addr entity.CrossChainAddr
 	}, nil
 }
 
-func (e *Client) GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) (_ []entity.OperatorVotingPower, err error) {
+func (e *Client) GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) (_ []entity.OperatorVotingPower, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -522,7 +522,7 @@ func (e *Client) GetVotingPowers(ctx context.Context, address entity.CrossChainA
 	votingPowersAt, err := votingPowerProvider.GetVotingPowersAt(&bind.CallOpts{
 		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
 		Context:     toCtx,
-	}, [][]byte{}, new(big.Int).SetUint64(timestamp))
+	}, [][]byte{}, new(big.Int).SetUint64(uint64(timestamp)))
 	if err != nil {
 		return nil, errors.Errorf("failed to call getVotingPowersAt: %w", e.formatEVMContractError(gen.IVotingPowerProviderMetaData, err))
 	}
@@ -540,7 +540,7 @@ func (e *Client) GetVotingPowers(ctx context.Context, address entity.CrossChainA
 	}), nil
 }
 
-func (e *Client) GetOperators(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) (_ []common.Address, err error) {
+func (e *Client) GetOperators(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) (_ []common.Address, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -555,7 +555,7 @@ func (e *Client) GetOperators(ctx context.Context, address entity.CrossChainAddr
 	operators, err := votingPowerProvider.GetOperatorsAt(&bind.CallOpts{
 		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
 		Context:     toCtx,
-	}, new(big.Int).SetUint64(timestamp))
+	}, new(big.Int).SetUint64(uint64(timestamp)))
 	if err != nil {
 		return nil, errors.Errorf("failed to call getOperatorsAt: %w", e.formatEVMContractError(gen.IVotingPowerProviderMetaData, err))
 	}
@@ -563,7 +563,7 @@ func (e *Client) GetOperators(ctx context.Context, address entity.CrossChainAddr
 	return operators, nil
 }
 
-func (e *Client) GetKeysOperators(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) (_ []common.Address, err error) {
+func (e *Client) GetKeysOperators(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) (_ []common.Address, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -578,7 +578,7 @@ func (e *Client) GetKeysOperators(ctx context.Context, address entity.CrossChain
 	operators, err := keyRegistry.GetKeysOperatorsAt(&bind.CallOpts{
 		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
 		Context:     toCtx,
-	}, new(big.Int).SetUint64(timestamp))
+	}, new(big.Int).SetUint64(uint64(timestamp)))
 	if err != nil {
 		return nil, errors.Errorf("failed to call getKeysOperatorsAt: %w", e.formatEVMContractError(gen.IKeyRegistryMetaData, err))
 	}
@@ -586,7 +586,7 @@ func (e *Client) GetKeysOperators(ctx context.Context, address entity.CrossChain
 	return operators, nil
 }
 
-func (e *Client) GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) (_ []entity.OperatorWithKeys, err error) {
+func (e *Client) GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) (_ []entity.OperatorWithKeys, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -610,7 +610,7 @@ func (e *Client) GetKeys(ctx context.Context, address entity.CrossChainAddress, 
 	keys, err := keyRegistry.GetKeysAt(&bind.CallOpts{
 		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
 		Context:     toCtx,
-	}, new(big.Int).SetUint64(timestamp))
+	}, new(big.Int).SetUint64(uint64(timestamp)))
 	if err != nil {
 		return nil, errors.Errorf("failed to call getKeysAt: %w", e.formatEVMContractError(gen.IKeyRegistryMetaData, err))
 	}
@@ -628,7 +628,7 @@ func (e *Client) GetKeys(ctx context.Context, address entity.CrossChainAddress, 
 	}), nil
 }
 
-func (e *Client) IsValsetHeaderCommittedAtEpochs(ctx context.Context, addr entity.CrossChainAddress, epochs []uint64) (_ []bool, err error) {
+func (e *Client) IsValsetHeaderCommittedAtEpochs(ctx context.Context, addr entity.CrossChainAddress, epochs []entity.Epoch) (_ []bool, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {

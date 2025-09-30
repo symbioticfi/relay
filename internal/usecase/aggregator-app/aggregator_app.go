@@ -19,11 +19,11 @@ import (
 
 //go:generate mockgen -source=aggregator_app.go -destination=mocks/aggregator_app.go -package=mocks
 type repository interface {
-	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
+	GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error)
 	GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error)
 	GetSignatureRequest(_ context.Context, requestID common.Hash) (entity.SignatureRequest, error)
 	GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity.SignatureExtended, error)
-	GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error)
+	GetConfigByEpoch(ctx context.Context, epoch entity.Epoch) (entity.NetworkConfig, error)
 	GetSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error)
 }
 
@@ -103,7 +103,7 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 
 	// Get validator set for quorum threshold checks
 	// todo load only valset header when totalVotingPower is added to it
-	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(msg.Epoch))
+	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, msg.Epoch)
 	if err != nil {
 		return errors.Errorf("failed to get validator set: %w", err)
 	}
@@ -153,7 +153,7 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 		return errors.Errorf("failed to get signature aggregated message: %w", err)
 	}
 
-	networkConfig, err := s.cfg.Repo.GetConfigByEpoch(ctx, uint64(msg.Epoch))
+	networkConfig, err := s.cfg.Repo.GetConfigByEpoch(ctx, msg.Epoch)
 	if err != nil {
 		return errors.Errorf("failed to get network config: %w", err)
 	}
@@ -209,7 +209,7 @@ func (s *AggregatorApp) GetAggregationStatus(ctx context.Context, requestID comm
 	}
 
 	// Get validator set for quorum threshold checks and aggregation
-	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(signatureRequest.RequiredEpoch))
+	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, signatureRequest.RequiredEpoch)
 	if err != nil {
 		return entity.AggregationStatus{}, errors.Errorf("failed to get validator set: %w", err)
 	}

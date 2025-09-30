@@ -63,7 +63,7 @@ func newTestSetup(t *testing.T) *testSetup {
 
 // createTestValidatorSet creates a sample validator set for testing
 // This is the simpler version used for GetValidatorSetHeader tests
-func createTestValidatorSet(epoch uint64) entity.ValidatorSet {
+func createTestValidatorSet(epoch entity.Epoch) entity.ValidatorSet {
 	return entity.ValidatorSet{
 		Version:          1,
 		RequiredKeyTag:   entity.KeyTag(15),
@@ -89,7 +89,7 @@ func createTestValidatorSet(epoch uint64) entity.ValidatorSet {
 
 // createTestValidatorSetWithMultipleValidators creates a sample validator set with multiple validators for testing
 // This is the richer version used for GetValidatorByAddress tests
-func createTestValidatorSetWithMultipleValidators(epoch uint64) entity.ValidatorSet {
+func createTestValidatorSetWithMultipleValidators(epoch entity.Epoch) entity.ValidatorSet {
 	return entity.ValidatorSet{
 		Version:          1,
 		RequiredKeyTag:   entity.KeyTag(15),

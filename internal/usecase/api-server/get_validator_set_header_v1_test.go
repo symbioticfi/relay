@@ -15,8 +15,8 @@ func TestGetValidatorSetHeader_ValidatorSetFoundInRepo(t *testing.T) {
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := uint64(10)
-	requestedEpoch := uint64(8)
+	currentEpoch := entity.Epoch(10)
+	requestedEpoch := entity.Epoch(8)
 
 	// Create test data
 	validatorSet := createTestValidatorSet(requestedEpoch)
@@ -29,7 +29,7 @@ func TestGetValidatorSetHeader_ValidatorSetFoundInRepo(t *testing.T) {
 
 	// Execute the method under test
 	req := &apiv1.GetValidatorSetHeaderRequest{
-		Epoch: &requestedEpoch,
+		Epoch: (*uint64)(&requestedEpoch),
 	}
 
 	response, err := setup.handler.GetValidatorSetHeader(ctx, req)
@@ -39,7 +39,7 @@ func TestGetValidatorSetHeader_ValidatorSetFoundInRepo(t *testing.T) {
 	require.NotNil(t, response)
 	require.Equal(t, uint32(expectedHeader.Version), response.GetVersion())
 	require.Equal(t, uint32(expectedHeader.RequiredKeyTag), response.GetRequiredKeyTag())
-	require.Equal(t, expectedHeader.Epoch, response.GetEpoch())
+	require.Equal(t, expectedHeader.Epoch, entity.Epoch(response.GetEpoch()))
 	require.Equal(t, expectedHeader.QuorumThreshold.String(), response.GetQuorumThreshold())
 	require.Equal(t, expectedHeader.ValidatorsSszMRoot.Hex(), response.GetValidatorsSszMroot())
 }
@@ -48,9 +48,9 @@ func TestGetValidatorSetHeader_ValidatorSetNotInRepo_DerivedSuccessfully(t *test
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := uint64(10)
-	requestedEpoch := uint64(8)
-	epochStart := uint64(1640995000)
+	currentEpoch := entity.Epoch(10)
+	requestedEpoch := entity.Epoch(8)
+	epochStart := entity.Timestamp(1640995000)
 
 	// Create test data
 	validatorSet := createTestValidatorSet(requestedEpoch)
@@ -70,7 +70,7 @@ func TestGetValidatorSetHeader_ValidatorSetNotInRepo_DerivedSuccessfully(t *test
 
 	// Execute the method under test
 	req := &apiv1.GetValidatorSetHeaderRequest{
-		Epoch: &requestedEpoch,
+		Epoch: (*uint64)(&requestedEpoch),
 	}
 
 	response, err := setup.handler.GetValidatorSetHeader(ctx, req)
@@ -80,7 +80,7 @@ func TestGetValidatorSetHeader_ValidatorSetNotInRepo_DerivedSuccessfully(t *test
 	require.NotNil(t, response)
 	require.Equal(t, uint32(expectedHeader.Version), response.GetVersion())
 	require.Equal(t, uint32(expectedHeader.RequiredKeyTag), response.GetRequiredKeyTag())
-	require.Equal(t, expectedHeader.Epoch, response.GetEpoch())
+	require.Equal(t, expectedHeader.Epoch, entity.Epoch(response.GetEpoch()))
 	require.Equal(t, expectedHeader.QuorumThreshold.String(), response.GetQuorumThreshold())
 	require.Equal(t, expectedHeader.ValidatorsSszMRoot.Hex(), response.GetValidatorsSszMroot())
 }
@@ -89,7 +89,7 @@ func TestGetValidatorSetHeader_UseCurrentEpoch_WhenNoEpochSpecified(t *testing.T
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := uint64(10)
+	currentEpoch := entity.Epoch(10)
 	// Create test data
 	validatorSet := createTestValidatorSet(currentEpoch)
 
@@ -105,14 +105,14 @@ func TestGetValidatorSetHeader_UseCurrentEpoch_WhenNoEpochSpecified(t *testing.T
 	// Assertions
 	require.NoError(t, err)
 	require.NotNil(t, response)
-	require.Equal(t, currentEpoch, response.GetEpoch())
+	require.Equal(t, currentEpoch, entity.Epoch(response.GetEpoch()))
 }
 
 func TestGetValidatorSetHeader_ErrorWhenEpochFromFuture(t *testing.T) {
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := uint64(10)
+	currentEpoch := entity.Epoch(10)
 	futureEpoch := uint64(15)
 
 	// Setup mocks
@@ -138,7 +138,7 @@ func TestGetValidatorSetHeader_ErrorWhenGetCurrentEpochFails(t *testing.T) {
 	expectedError := errors.New("failed to get current epoch")
 
 	// Setup mocks
-	setup.mockEvmClient.EXPECT().GetCurrentEpoch(ctx).Return(uint64(0), expectedError)
+	setup.mockEvmClient.EXPECT().GetCurrentEpoch(ctx).Return(entity.Epoch(0), expectedError)
 
 	// Execute the method under test
 	req := &apiv1.GetValidatorSetHeaderRequest{}
@@ -155,8 +155,8 @@ func TestGetValidatorSetHeader_ErrorWhenRepositoryFails(t *testing.T) {
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := uint64(10)
-	requestedEpoch := uint64(8)
+	currentEpoch := entity.Epoch(10)
+	requestedEpoch := entity.Epoch(8)
 	expectedError := errors.New("repository connection failed")
 
 	// Setup mocks
@@ -165,7 +165,7 @@ func TestGetValidatorSetHeader_ErrorWhenRepositoryFails(t *testing.T) {
 
 	// Execute the method under test
 	req := &apiv1.GetValidatorSetHeaderRequest{
-		Epoch: &requestedEpoch,
+		Epoch: (*uint64)(&requestedEpoch),
 	}
 
 	response, err := setup.handler.GetValidatorSetHeader(ctx, req)
@@ -181,9 +181,9 @@ func TestGetValidatorSetHeader_ErrorWhenDeriverFails(t *testing.T) {
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := uint64(10)
-	requestedEpoch := uint64(8)
-	epochStart := uint64(1640995000)
+	currentEpoch := entity.Epoch(10)
+	requestedEpoch := entity.Epoch(8)
+	epochStart := entity.Timestamp(1640995000)
 	networkConfig := entity.NetworkConfig{}
 	expectedError := errors.New("derivation failed")
 
@@ -196,7 +196,7 @@ func TestGetValidatorSetHeader_ErrorWhenDeriverFails(t *testing.T) {
 
 	// Execute the method under test
 	req := &apiv1.GetValidatorSetHeaderRequest{
-		Epoch: &requestedEpoch,
+		Epoch: (*uint64)(&requestedEpoch),
 	}
 
 	response, err := setup.handler.GetValidatorSetHeader(ctx, req)

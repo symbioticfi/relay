@@ -7,6 +7,7 @@ import (
 	"github.com/go-errors/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/symbioticfi/relay/core/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
 )
 
@@ -19,7 +20,7 @@ func (h *grpcHandler) GetValidatorSetHeader(ctx context.Context, req *apiv1.GetV
 
 	epochRequested := latestEpoch
 	if req.Epoch != nil {
-		epochRequested = req.GetEpoch()
+		epochRequested = entity.Epoch(req.GetEpoch())
 	}
 
 	// epoch from future
@@ -41,7 +42,7 @@ func (h *grpcHandler) GetValidatorSetHeader(ctx context.Context, req *apiv1.GetV
 	return &apiv1.GetValidatorSetHeaderResponse{
 		Version:            uint32(header.Version),
 		RequiredKeyTag:     uint32(header.RequiredKeyTag),
-		Epoch:              header.Epoch,
+		Epoch:              uint64(header.Epoch),
 		CaptureTimestamp:   timestamppb.New(time.Unix(int64(header.CaptureTimestamp), 0).UTC()),
 		QuorumThreshold:    header.QuorumThreshold.String(),
 		TotalVotingPower:   header.TotalVotingPower.String(),

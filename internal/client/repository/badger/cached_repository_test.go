@@ -31,7 +31,7 @@ func TestCachedRepository_NetworkConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	epoch := uint64(123)
+	epoch := entity.Epoch(123)
 
 	// Create test network config
 	testConfig := entity.NetworkConfig{
@@ -102,7 +102,7 @@ func TestCachedRepository_ValidatorSet(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	epoch := uint64(456)
+	epoch := entity.Epoch(456)
 
 	// Create test validator set
 	testValidatorSet := entity.ValidatorSet{

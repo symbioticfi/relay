@@ -25,19 +25,19 @@ const (
 
 //go:generate mockgen -source=valset_deriver.go -destination=mocks/deriver.go -package=mocks -mock_names=evmClient=MockEvmClient
 type evmClient interface {
-	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
-	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
-	GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorVotingPower, error)
-	GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorWithKeys, error)
+	GetConfig(ctx context.Context, timestamp entity.Timestamp) (entity.NetworkConfig, error)
+	GetEpochStart(ctx context.Context, epoch entity.Epoch) (entity.Timestamp, error)
+	GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) ([]entity.OperatorVotingPower, error)
+	GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) ([]entity.OperatorWithKeys, error)
 	GetEip712Domain(ctx context.Context, addr entity.CrossChainAddress) (entity.Eip712Domain, error)
-	GetCurrentEpoch(ctx context.Context) (uint64, error)
+	GetCurrentEpoch(ctx context.Context) (entity.Epoch, error)
 	GetSubnetwork(ctx context.Context) (common.Hash, error)
 	GetNetworkAddress(ctx context.Context) (common.Address, error)
 	GetHeaderHash(ctx context.Context, addr entity.CrossChainAddress) (common.Hash, error)
-	IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (bool, error)
-	GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error)
-	GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (uint64, error)
-	GetOperators(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]common.Address, error)
+	IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (bool, error)
+	GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (common.Hash, error)
+	GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (entity.Epoch, error)
+	GetOperators(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) ([]common.Address, error)
 }
 
 // Deriver coordinates the ETH services
@@ -80,7 +80,7 @@ type dtoOperatorVotingPower struct {
 	votingPowers []entity.OperatorVotingPower
 }
 
-func (v *Deriver) GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error) {
+func (v *Deriver) GetValidatorSet(ctx context.Context, epoch entity.Epoch, config entity.NetworkConfig) (entity.ValidatorSet, error) {
 	timestamp, err := v.evmClient.GetEpochStart(ctx, epoch)
 	if err != nil {
 		return entity.ValidatorSet{}, errors.Errorf("failed to get epoch start timestamp: %w", err)
