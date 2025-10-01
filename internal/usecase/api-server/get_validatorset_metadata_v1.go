@@ -14,11 +14,10 @@ import (
 func (h *grpcHandler) GetValidatorSetMetadata(ctx context.Context, req *apiv1.GetValidatorSetMetadataRequest) (*apiv1.GetValidatorSetMetadataResponse, error) {
 	var epochRequested entity.Epoch
 	if req.Epoch == nil {
-		latestEpoch, err := h.cfg.EvmClient.GetCurrentEpoch(ctx)
+		latestEpoch, err := h.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 		if err != nil {
-			return nil, err
+			return nil, errors.Errorf("failed to get latest validator set epoch: %w", err)
 		}
-
 		epochRequested = latestEpoch
 	} else {
 		epochRequested = entity.Epoch(req.GetEpoch())

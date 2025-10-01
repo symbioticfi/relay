@@ -24,7 +24,7 @@ func TestGetValidatorByAddress_ValidatorFoundInRepo(t *testing.T) {
 	expectedValidator := validatorSet.Validators[0] // First validator has address 0x123
 
 	// Setup mocks - validator set found in repository
-	setup.mockEvmClient.EXPECT().GetCurrentEpoch(ctx).Return(currentEpoch, nil)
+	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(currentEpoch, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, requestedEpoch).Return(validatorSet, nil)
 
 	// Execute the method under test
@@ -48,29 +48,18 @@ func TestGetValidatorByAddress_ValidatorFoundInRepo(t *testing.T) {
 	require.Len(t, response.GetValidator().GetVaults(), len(expectedValidator.Vaults))
 }
 
-func TestGetValidatorByAddress_ValidatorSetNotInRepo_DerivedSuccessfully(t *testing.T) {
+func TestGetValidatorByAddress_ValidatorSetNotInRepo_DerivedFail(t *testing.T) {
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
 	currentEpoch := entity.Epoch(10)
 	requestedEpoch := entity.Epoch(8)
-	epochStart := entity.Timestamp(1640995000)
+
 	validatorAddress := "0x0000000000000000000000000000000000000abc"
 
-	// Create test data
-	validatorSet := createTestValidatorSetWithMultipleValidators(requestedEpoch)
-	expectedValidator := validatorSet.Validators[1] // Second validator has address 0xabc
-
-	networkConfig := entity.NetworkConfig{
-		RequiredHeaderKeyTag: entity.KeyTag(15),
-	}
-
 	// Setup mocks - validator set not in repository, needs to be derived
-	setup.mockEvmClient.EXPECT().GetCurrentEpoch(ctx).Return(currentEpoch, nil)
+	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(currentEpoch, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, requestedEpoch).Return(entity.ValidatorSet{}, entity.ErrEntityNotFound)
-	setup.mockEvmClient.EXPECT().GetEpochStart(ctx, requestedEpoch).Return(epochStart, nil)
-	setup.mockEvmClient.EXPECT().GetConfig(ctx, epochStart).Return(networkConfig, nil)
-	setup.mockDeriver.EXPECT().GetValidatorSet(ctx, requestedEpoch, networkConfig).Return(validatorSet, nil)
 
 	// Execute the method under test
 	req := &apiv1.GetValidatorByAddressRequest{
@@ -81,12 +70,8 @@ func TestGetValidatorByAddress_ValidatorSetNotInRepo_DerivedSuccessfully(t *test
 	response, err := setup.handler.GetValidatorByAddress(ctx, req)
 
 	// Assertions
-	require.NoError(t, err)
-	require.NotNil(t, response)
-	require.NotNil(t, response.GetValidator())
-	require.Equal(t, expectedValidator.Operator.Hex(), response.GetValidator().GetOperator())
-	require.Equal(t, expectedValidator.VotingPower.String(), response.GetValidator().GetVotingPower())
-	require.Equal(t, expectedValidator.IsActive, response.GetValidator().GetIsActive())
+	require.Error(t, err)
+	require.Nil(t, response)
 }
 
 func TestGetValidatorByAddress_UseCurrentEpoch_WhenNoEpochSpecified(t *testing.T) {
@@ -100,7 +85,7 @@ func TestGetValidatorByAddress_UseCurrentEpoch_WhenNoEpochSpecified(t *testing.T
 	validatorSet := createTestValidatorSetWithMultipleValidators(currentEpoch)
 
 	// Setup mocks - no epoch specified, should use current epoch
-	setup.mockEvmClient.EXPECT().GetCurrentEpoch(ctx).Return(currentEpoch, nil)
+	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(currentEpoch, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, currentEpoch).Return(validatorSet, nil)
 
 	// Execute the method under test - no epoch specified
@@ -126,7 +111,7 @@ func TestGetValidatorByAddress_ErrorWhenEpochFromFuture(t *testing.T) {
 	validatorAddress := "0x0000000000000000000000000000000000000123"
 
 	// Setup mocks
-	setup.mockEvmClient.EXPECT().GetCurrentEpoch(ctx).Return(currentEpoch, nil)
+	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(currentEpoch, nil)
 
 	// Execute the method under test
 	req := &apiv1.GetValidatorByAddressRequest{
@@ -151,7 +136,7 @@ func TestGetValidatorByAddress_ErrorWhenInvalidAddress(t *testing.T) {
 	invalidAddress := "not-a-valid-address"
 
 	// Setup mocks
-	setup.mockEvmClient.EXPECT().GetCurrentEpoch(ctx).Return(currentEpoch, nil)
+	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(currentEpoch, nil)
 
 	// Execute the method under test
 	req := &apiv1.GetValidatorByAddressRequest{
@@ -173,19 +158,16 @@ func TestGetValidatorByAddress_ErrorWhenValidatorNotFound(t *testing.T) {
 
 	currentEpoch := entity.Epoch(10)
 	requestedEpoch := entity.Epoch(8)
-	epochStart := entity.Timestamp(1640995000)
-	networkConfig := entity.NetworkConfig{}
 	nonExistentAddress := "0x0000000000000000000000000000000000000999"
 
 	// Create test data without the requested validator
 	validatorSet := createTestValidatorSetWithMultipleValidators(requestedEpoch)
 
 	// Setup mocks - validator set found in repository
-	setup.mockEvmClient.EXPECT().GetCurrentEpoch(ctx).Return(currentEpoch, nil)
-	setup.mockEvmClient.EXPECT().GetEpochStart(ctx, requestedEpoch).Return(epochStart, nil)
-	setup.mockEvmClient.EXPECT().GetConfig(ctx, epochStart).Return(networkConfig, nil)
+	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(currentEpoch, nil)
+	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(requestedEpoch, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, requestedEpoch).Return(entity.ValidatorSet{}, entity.ErrEntityNotFound)
-	setup.mockDeriver.EXPECT().GetValidatorSet(ctx, requestedEpoch, networkConfig).Return(validatorSet, nil)
+	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, requestedEpoch).Return(validatorSet, nil)
 
 	// Execute the method under test
 	req := &apiv1.GetValidatorByAddressRequest{
@@ -194,6 +176,13 @@ func TestGetValidatorByAddress_ErrorWhenValidatorNotFound(t *testing.T) {
 	}
 
 	response, err := setup.handler.GetValidatorByAddress(ctx, req)
+
+	// Assertions
+	require.Error(t, err)
+	require.Nil(t, response)
+	require.Contains(t, err.Error(), "validator set for epoch 8 not found")
+
+	response, err = setup.handler.GetValidatorByAddress(ctx, req)
 
 	// Assertions
 	require.Error(t, err)
@@ -209,7 +198,7 @@ func TestGetValidatorByAddress_ErrorWhenGetCurrentEpochFails(t *testing.T) {
 	expectedError := errors.New("failed to get current epoch")
 
 	// Setup mocks
-	setup.mockEvmClient.EXPECT().GetCurrentEpoch(ctx).Return(entity.Epoch(0), expectedError)
+	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(entity.Epoch(0), expectedError)
 
 	// Execute the method under test
 	req := &apiv1.GetValidatorByAddressRequest{
@@ -221,7 +210,7 @@ func TestGetValidatorByAddress_ErrorWhenGetCurrentEpochFails(t *testing.T) {
 	// Assertions
 	require.Error(t, err)
 	require.Nil(t, response)
-	require.Equal(t, expectedError, err)
+	require.Contains(t, err.Error(), "failed to get latest validator set epoch")
 }
 
 func TestGetValidatorByAddress_ErrorWhenRepositoryFails(t *testing.T) {
@@ -234,7 +223,7 @@ func TestGetValidatorByAddress_ErrorWhenRepositoryFails(t *testing.T) {
 	expectedError := errors.New("repository connection failed")
 
 	// Setup mocks
-	setup.mockEvmClient.EXPECT().GetCurrentEpoch(ctx).Return(currentEpoch, nil)
+	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(currentEpoch, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, requestedEpoch).Return(entity.ValidatorSet{}, expectedError)
 
 	// Execute the method under test
@@ -250,36 +239,4 @@ func TestGetValidatorByAddress_ErrorWhenRepositoryFails(t *testing.T) {
 	require.Nil(t, response)
 	require.Contains(t, err.Error(), "failed to get validator set for epoch")
 	require.Contains(t, err.Error(), expectedError.Error())
-}
-
-func TestGetValidatorByAddress_ErrorWhenDeriverFails(t *testing.T) {
-	setup := newTestSetup(t)
-	ctx := context.Background()
-
-	currentEpoch := entity.Epoch(10)
-	requestedEpoch := entity.Epoch(8)
-	epochStart := entity.Timestamp(1640995000)
-	validatorAddress := "0x0000000000000000000000000000000000000123"
-	networkConfig := entity.NetworkConfig{}
-	expectedError := errors.New("derivation failed")
-
-	// Setup mocks
-	setup.mockEvmClient.EXPECT().GetCurrentEpoch(ctx).Return(currentEpoch, nil)
-	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, requestedEpoch).Return(entity.ValidatorSet{}, entity.ErrEntityNotFound)
-	setup.mockEvmClient.EXPECT().GetEpochStart(ctx, requestedEpoch).Return(epochStart, nil)
-	setup.mockEvmClient.EXPECT().GetConfig(ctx, epochStart).Return(networkConfig, nil)
-	setup.mockDeriver.EXPECT().GetValidatorSet(ctx, requestedEpoch, networkConfig).Return(entity.ValidatorSet{}, expectedError)
-
-	// Execute the method under test
-	req := &apiv1.GetValidatorByAddressRequest{
-		Address: validatorAddress,
-		Epoch:   (*uint64)(&requestedEpoch),
-	}
-
-	response, err := setup.handler.GetValidatorByAddress(ctx, req)
-
-	// Assertions
-	require.Error(t, err)
-	require.Nil(t, response)
-	require.Equal(t, expectedError, err)
 }

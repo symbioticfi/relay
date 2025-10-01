@@ -13,9 +13,9 @@ import (
 
 // GetValidatorByAddress handles the gRPC GetValidatorByAddress request
 func (h *grpcHandler) GetValidatorByAddress(ctx context.Context, req *apiv1.GetValidatorByAddressRequest) (*apiv1.GetValidatorByAddressResponse, error) {
-	latestEpoch, err := h.cfg.EvmClient.GetCurrentEpoch(ctx)
+	latestEpoch, err := h.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("failed to get latest validator set epoch: %w", err)
 	}
 
 	epochRequested := latestEpoch
