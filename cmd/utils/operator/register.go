@@ -38,6 +38,7 @@ var registerCmd = &cobra.Command{
 			RequestTimeout: 5 * time.Second,
 			KeyProvider:    kp,
 			Metrics:        metrics.New(metrics.Config{}),
+			MaxCalls:       0,
 		})
 		if err != nil {
 			return err

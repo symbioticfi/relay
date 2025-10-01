@@ -92,7 +92,8 @@ func New(cfg Config) (*Service, error) {
 	}
 
 	return &Service{
-		cfg: cfg,
+		cfg:   cfg,
+		mutex: sync.Mutex{},
 	}, nil
 }
 

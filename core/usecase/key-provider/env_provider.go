@@ -20,6 +20,7 @@ type EnvKeyProvider struct {
 func NewEnvKeyProvider() *EnvKeyProvider {
 	return &EnvKeyProvider{
 		cache: make(map[string]crypto.PrivateKey),
+		mu:    sync.RWMutex{},
 	}
 }
 

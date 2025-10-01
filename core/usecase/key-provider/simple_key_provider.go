@@ -18,6 +18,7 @@ type SimpleKeystoreProvider struct {
 func NewSimpleKeystoreProvider() (*SimpleKeystoreProvider, error) {
 	return &SimpleKeystoreProvider{
 		keys: make(map[string]crypto.PrivateKey),
+		mu:   sync.RWMutex{},
 	}, nil
 }
 

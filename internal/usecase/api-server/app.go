@@ -122,7 +122,8 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 
 	// Create and register the handler
 	handler := &grpcHandler{
-		cfg: cfg,
+		SymbioticAPIServiceServer: apiv1.UnimplementedSymbioticAPIServiceServer{},
+		cfg:                       cfg,
 	}
 
 	apiv1.RegisterSymbioticAPIServiceServer(grpcServer, handler)

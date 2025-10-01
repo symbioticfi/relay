@@ -54,8 +54,10 @@ func NewSymbiotic(ctx context.Context, cfg Config) (*Symbiotic, error) {
 	evmClient, err := evm.NewEvmClient(ctx, evm.Config{
 		ChainURLs:      cfg.ChainUrls,
 		DriverAddress:  cfg.DriverAddress,
-		KeyProvider:    cfg.KeyProvider,
 		RequestTimeout: cfg.RequestTimeout,
+		KeyProvider:    cfg.KeyProvider,
+		Metrics:        nil,
+		MaxCalls:       0,
 	})
 	if err != nil {
 		return nil, errors.Errorf("failed to create EVM client: %w", err)

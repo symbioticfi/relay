@@ -10,8 +10,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/require"
-	"github.com/symbioticfi/relay/core/usecase/ssz"
 	"go.uber.org/mock/gomock"
+
+	"github.com/symbioticfi/relay/core/usecase/ssz"
 
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/valset-deriver/mocks"
@@ -735,8 +736,13 @@ func TestDeriver_GetNetworkData(t *testing.T) {
 				m.EXPECT().GetNetworkAddress(gomock.Any()).Return(common.HexToAddress("0x123"), nil)
 				m.EXPECT().GetSubnetwork(gomock.Any()).Return(common.HexToHash("0x456"), nil)
 				m.EXPECT().GetEip712Domain(gomock.Any(), gomock.Any()).Return(entity.Eip712Domain{
-					Name:    "TestNetwork",
-					Version: "1",
+					Fields:            [1]byte{},
+					Name:              "TestNetwork",
+					Version:           "1",
+					ChainId:           big.NewInt(111),
+					VerifyingContract: common.HexToAddress("0x123"),
+					Salt:              big.NewInt(222),
+					Extensions:        []*big.Int{big.NewInt(333)},
 				}, nil)
 			},
 			addr: entity.CrossChainAddress{},
@@ -744,8 +750,13 @@ func TestDeriver_GetNetworkData(t *testing.T) {
 				Address:    common.HexToAddress("0x123"),
 				Subnetwork: common.HexToHash("0x456"),
 				Eip712Data: entity.Eip712Domain{
-					Name:    "TestNetwork",
-					Version: "1",
+					Fields:            [1]byte{},
+					Name:              "TestNetwork",
+					Version:           "1",
+					ChainId:           big.NewInt(111),
+					VerifyingContract: common.HexToAddress("0x123"),
+					Salt:              big.NewInt(222),
+					Extensions:        []*big.Int{big.NewInt(333)},
 				},
 			},
 		},

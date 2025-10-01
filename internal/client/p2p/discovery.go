@@ -50,9 +50,17 @@ func NewDiscoveryService(cfg Config) (*DiscoveryService, error) {
 	}
 
 	service := &DiscoveryService{
-		cfg:            cfg,
-		host:           cfg.Host,
-		bootstrapPeers: make([]peer.AddrInfo, 0),
+		cfg:               cfg,
+		host:              cfg.Host,
+		dht:               nil,
+		mdns:              nil,
+		rdiscov:           nil,
+		mu:                sync.RWMutex{},
+		started:           false,
+		ctx:               nil,
+		cancel:            nil,
+		lastAdvertisement: time.Time{},
+		bootstrapPeers:    make([]peer.AddrInfo, 0),
 	}
 
 	return service, nil

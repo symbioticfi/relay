@@ -653,6 +653,7 @@ func validatorSetToSszValidators(v *ValidatorSet) ssz.SszValidatorSet {
 					return &ssz.SszKey{
 						Tag:         uint8(k.Tag),
 						PayloadHash: keyPayloadHash(k),
+						Payload:     k.Payload,
 					}
 				}),
 				Vaults: lo.Map(v.Vaults, func(v ValidatorVault, _ int) *ssz.SszVault {

@@ -24,7 +24,8 @@ type GRPCHandler struct {
 
 func NewP2PHandler(syncHandler syncRequestHandler) *GRPCHandler {
 	return &GRPCHandler{
-		syncHandler: syncHandler,
+		UnimplementedSymbioticP2PServiceServer: p2pv1.UnimplementedSymbioticP2PServiceServer{},
+		syncHandler:                            syncHandler,
 	}
 }
 
