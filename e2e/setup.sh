@@ -7,6 +7,9 @@ set -eo pipefail
 # Contracts commit hash to use
 CONTRACTS_COMMIT="24bcb351c8b6125b0412d5bf7916da405c548000"
 
+# Circuits commit
+CIRCUITS_COMMIT="e2e-branch"
+
 # -----------------------------------------
 
 echo "Building Relay Docker image for e2e tests..."
@@ -60,5 +63,42 @@ export GENERATE_SIDECARS=${GENERATE_SIDECARS}
 
 # Call the generate network script
 ./scripts/generate_network.sh
+
+# If verification type is 0, clone the circuit keys repository
+if [ "${VERIFICATION_TYPE}" = "0" ]; then
+    echo "Verification type is 0, cloning circuit keys repository..."
+    if [ ! -d "temp-network/circuits" ]; then
+        echo "Cloning circuit keys repository (shallow clone of specific commit)..."
+        # Create circuits directory in temp-network
+        mkdir -p temp-network/circuits
+        cd temp-network/circuits
+        
+        # Initialize empty git repo and add remote
+        git init
+        git remote add origin https://github.com/symbioticfi/relay-bn254-example-circuit-keys
+        
+        # Fetch only the specific commit (shallow) with parallel jobs for speed
+        git fetch --depth 1 --jobs=4 origin $CIRCUITS_COMMIT
+        git checkout FETCH_HEAD
+        
+        # Remove git metadata to keep only the files
+        rm -rf .git
+        
+        cd ../..
+        echo "Circuit keys cloned successfully to temp-network/circuits/"
+    else
+        echo "Circuits directory already exists in temp-network, skipping clone..."
+    fi
+
+    echo "Copying circuits to contracts directory and building..."
+    cp -r temp-network/circuits contracts/circuits
+    cd contracts
+    echo "Building circuits with Forge..."
+    forge build circuits/
+else
+    echo "Verification type is not 0, skipping circuit keys clone..."
+fi
+
+
 
 echo "Setup complete! Network configuration generated in temp-network/ directory."

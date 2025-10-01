@@ -12,6 +12,10 @@ env:
   NODE_VERSION: "22"
   FOUNDRY_VERSION: "v1.3.1"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
 
   code-quality:
@@ -111,7 +115,7 @@ jobs:
 
   e2e-tests:
     name: "E2E Tests - ${{ matrix.config.name }}"
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.config.verification_type == 0 && 'relay-16' || 'ubuntu-24.04' }}
     timeout-minutes: 30
     needs: [unit-tests]
     
@@ -122,18 +126,26 @@ jobs:
             operators: 4
             commiters: 1
             aggregators: 1
+            verification_type: 1
           - name: "Multi Committer and Aggregator"
             operators: 10
             commiters: 2
             aggregators: 3
+            verification_type: 1
+          - name: "ZK Aggregator Test"
+            operators: 10
+            commiters: 3
+            aggregators: 3
+            verification_type: 0
+            epoch_time: 120
     
     env:
       # E2E Test Configuration
       OPERATORS: ${{ matrix.config.operators }}
       COMMITERS: ${{ matrix.config.commiters }}
       AGGREGATORS: ${{ matrix.config.aggregators }}
-      VERIFICATION_TYPE: 1
-      EPOCH_TIME: 60
+      VERIFICATION_TYPE: ${{ matrix.config.verification_type }}
+      EPOCH_TIME: ${{ matrix.config.epoch_time || 60 }}
       BLOCK_TIME: 1
       FINALITY_BLOCKS: 2
       GENERATE_SIDECARS: false

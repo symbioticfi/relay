@@ -156,6 +156,32 @@ func setupGlobalTestEnvironment() (*TestEnvironment, error) {
 				fmt.Sprintf("--storage-dir %s", config.DataDir),
 				fmt.Sprintf("--secret-keys %s", config.Keys),
 			}
+
+			mounts := []mount.Mount{
+				{
+					Type:   mount.TypeBind,
+					Source: deployDataDir,
+					Target: "/deploy-data",
+				},
+			}
+
+			startupTimeout := 30 * time.Second
+
+			var env map[string]string
+
+			if deploymentData.Env.VerificationType == 0 {
+				opts = append(opts, "--circuits-dir /app/circuits")
+				mounts = append(mounts, mount.Mount{
+					Type:   mount.TypeBind,
+					Source: filepath.Join(tempNetworkDir, "circuits"),
+					Target: "/app/circuits",
+				})
+				startupTimeout = 90 * time.Second
+				env = map[string]string{
+					"MAX_VALIDATORS": "10,100",
+				}
+			}
+
 			// Build the command to start the sidecar
 			startCommand := fmt.Sprintf("./relay_sidecar %s", strings.Join(opts, " "))
 
@@ -170,18 +196,13 @@ func setupGlobalTestEnvironment() (*TestEnvironment, error) {
 					FileMode:          0644,
 				}},
 				HostConfigModifier: func(hostConfig *container.HostConfig) {
-					hostConfig.Mounts = []mount.Mount{
-						{
-							Type:   mount.TypeBind,
-							Source: deployDataDir,
-							Target: "/deploy-data",
-						},
-					}
+					hostConfig.Mounts = mounts
 				},
 				Networks: []string{networkName},
 				WaitingFor: wait.ForAll(
-					wait.ForHTTP("/healthz").WithPort("8080/tcp").WithStartupTimeout(30 * time.Second),
+					wait.ForHTTP("/healthz").WithPort("8080/tcp").WithStartupTimeout(startupTimeout),
 				),
+				Env: env,
 			}
 
 			containerInstance, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
