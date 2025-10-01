@@ -13,9 +13,9 @@ import (
 
 // GetValidatorSetHeader handles the gRPC GetValidatorSetHeader request
 func (h *grpcHandler) GetValidatorSetHeader(ctx context.Context, req *apiv1.GetValidatorSetHeaderRequest) (*apiv1.GetValidatorSetHeaderResponse, error) {
-	latestEpoch, err := h.cfg.EvmClient.GetCurrentEpoch(ctx)
+	latestEpoch, err := h.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("failed to get latest validator set epoch: %w", err)
 	}
 
 	epochRequested := latestEpoch
