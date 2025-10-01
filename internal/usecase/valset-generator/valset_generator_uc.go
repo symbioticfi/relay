@@ -58,6 +58,10 @@ type deriver interface {
 	GetNetworkData(ctx context.Context, addr entity.CrossChainAddress) (entity.NetworkData, error)
 }
 
+type metrics interface {
+	ObserveAggregationProofSize(proofSize int, validatorCount int)
+}
+
 type Config struct {
 	Signer          signer        `validate:"required"`
 	EvmClient       evmClient     `validate:"required"`
@@ -66,6 +70,7 @@ type Config struct {
 	PollingInterval time.Duration `validate:"required,gt=0"`
 	KeyProvider     keyprovider.KeyProvider
 	Aggregator      aggregator.Aggregator
+	Metrics         metrics
 }
 
 func (c Config) Validate() error {
