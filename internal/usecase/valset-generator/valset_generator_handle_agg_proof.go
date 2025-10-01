@@ -63,6 +63,11 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		slog.DebugContext(ctx, "Proof commit is already pending, skipping", "epoch", msg.Epoch)
 		return nil
 	}
+
+	if s.cfg.Metrics != nil {
+		s.cfg.Metrics.ObserveAggregationProofSize(len(msg.Proof), len(valset.Validators))
+	}
+
 	slog.DebugContext(ctx, "Marked proof commit as pending", "epoch", msg.Epoch, "request_id", msg.RequestID().Hex())
 	return nil
 }
