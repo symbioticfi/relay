@@ -57,7 +57,7 @@ func (mr *MockRepositoryMockRecorder) DoUpdateInTx(ctx, f any) *gomock.Call {
 }
 
 // GetActiveValidatorCountByEpoch mocks base method.
-func (m *MockRepository) GetActiveValidatorCountByEpoch(ctx context.Context, epoch uint64) (uint32, error) {
+func (m *MockRepository) GetActiveValidatorCountByEpoch(ctx context.Context, epoch entity.Epoch) (uint32, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetActiveValidatorCountByEpoch", ctx, epoch)
 	ret0, _ := ret[0].(uint32)
@@ -102,7 +102,7 @@ func (mr *MockRepositoryMockRecorder) GetSignatureRequest(arg0, requestID any) *
 }
 
 // GetValidatorByKey mocks base method.
-func (m *MockRepository) GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error) {
+func (m *MockRepository) GetValidatorByKey(ctx context.Context, epoch entity.Epoch, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorByKey", ctx, epoch, keyTag, publicKey)
 	ret0, _ := ret[0].(entity.Validator)
@@ -118,7 +118,7 @@ func (mr *MockRepositoryMockRecorder) GetValidatorByKey(ctx, epoch, keyTag, publ
 }
 
 // GetValidatorSetByEpoch mocks base method.
-func (m *MockRepository) GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error) {
+func (m *MockRepository) GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorSetByEpoch", ctx, epoch)
 	ret0, _ := ret[0].(entity.ValidatorSet)
@@ -133,7 +133,7 @@ func (mr *MockRepositoryMockRecorder) GetValidatorSetByEpoch(ctx, epoch any) *go
 }
 
 // GetValidatorSetHeaderByEpoch mocks base method.
-func (m *MockRepository) GetValidatorSetHeaderByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSetHeader, error) {
+func (m *MockRepository) GetValidatorSetHeaderByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSetHeader, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorSetHeaderByEpoch", ctx, epoch)
 	ret0, _ := ret[0].(entity.ValidatorSetHeader)

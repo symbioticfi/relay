@@ -27,21 +27,21 @@ type signer interface {
 }
 
 type evmClient interface {
-	GetCurrentEpoch(ctx context.Context) (uint64, error)
-	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
-	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
+	GetCurrentEpoch(ctx context.Context) (entity.Epoch, error)
+	GetConfig(ctx context.Context, timestamp entity.Timestamp) (entity.NetworkConfig, error)
+	GetEpochStart(ctx context.Context, epoch entity.Epoch) (entity.Timestamp, error)
 
-	IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (bool, error)
+	IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (bool, error)
 	CommitValsetHeader(ctx context.Context, addr entity.CrossChainAddress, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) (entity.TxResult, error)
 	SetGenesis(ctx context.Context, addr entity.CrossChainAddress, header entity.ValidatorSetHeader, extraData []entity.ExtraData) (entity.TxResult, error)
-	GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (uint64, error)
+	GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (entity.Epoch, error)
 }
 
 type repo interface {
 	GetLatestValidatorSetHeader(_ context.Context) (entity.ValidatorSetHeader, error)
-	GetLatestSignedValidatorSetEpoch(_ context.Context) (uint64, error)
-	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
-	GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error)
+	GetLatestSignedValidatorSetEpoch(ctx context.Context) (entity.Epoch, error)
+	GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error)
+	GetConfigByEpoch(ctx context.Context, epoch entity.Epoch) (entity.NetworkConfig, error)
 	GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error)
 	GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error)
 	SaveLatestSignedValidatorSetEpoch(_ context.Context, valset entity.ValidatorSet) error
@@ -49,12 +49,12 @@ type repo interface {
 	SaveProofCommitPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error
 	GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch entity.Epoch, limit int) ([]entity.ProofCommitKey, error)
 	RemoveProofCommitPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error
-	GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (uint64, error)
+	GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (entity.Epoch, error)
 	SaveValidatorSetMetadata(ctx context.Context, data entity.ValidatorSetMetadata) error
 }
 
 type deriver interface {
-	GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error)
+	GetValidatorSet(ctx context.Context, epoch entity.Epoch, config entity.NetworkConfig) (entity.ValidatorSet, error)
 	GetNetworkData(ctx context.Context, addr entity.CrossChainAddress) (entity.NetworkData, error)
 }
 
@@ -145,7 +145,7 @@ func (s *Service) process(ctx context.Context) error {
 
 	r := entity.SignatureRequest{
 		KeyTag:        entity.ValsetHeaderKeyTag,
-		RequiredEpoch: entity.Epoch(valSet.Epoch),
+		RequiredEpoch: valSet.Epoch,
 		Message:       commitmentData,
 	}
 	signatureExtended, err := s.cfg.Signer.Sign(ctx, r)
@@ -161,7 +161,7 @@ func (s *Service) process(ctx context.Context) error {
 	metadata := entity.ValidatorSetMetadata{
 		RequestID:      signatureExtended.RequestID(),
 		ExtraData:      extraData,
-		Epoch:          entity.Epoch(valSet.Epoch),
+		Epoch:          valSet.Epoch,
 		CommitmentData: commitmentData,
 	}
 	if err = s.cfg.Repo.SaveValidatorSetMetadata(ctx, metadata); err != nil {
@@ -269,7 +269,7 @@ func (s *Service) headerCommitmentData(
 		PrimaryType: "ValSetHeaderCommit",
 		Message: map[string]interface{}{
 			"subnetwork":    networkData.Subnetwork,
-			"epoch":         new(big.Int).SetUint64(header.Epoch),
+			"epoch":         new(big.Int).SetUint64(uint64(header.Epoch)),
 			"headerHash":    headerHash,
 			"extraDataHash": extraDataHash,
 		},

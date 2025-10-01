@@ -65,7 +65,7 @@ func printNetworkConfig(epochDuration uint64, networkConfig *entity.NetworkConfi
 	return configText
 }
 
-func printNetworkInfo(epoch uint64, epochStart uint64, networkConfig *entity.NetworkConfig, valset *entity.ValidatorSet) string {
+func printNetworkInfo(epoch entity.Epoch, epochStart entity.Timestamp, networkConfig *entity.NetworkConfig, valset *entity.ValidatorSet) string {
 	infoText := fmt.Sprintf("Network epoch: %v\n", epoch)
 	t := time.Unix(int64(epochStart), 0)
 	tFormatted := t.Format("2006-01-02 15:04:05")
@@ -124,7 +124,7 @@ func printHeaderTable(header entity.ValidatorSetHeader) string {
 	headerTableData := pterm.TableData{
 		{"Field", "Value"},
 		{"Version", strconv.FormatUint(uint64(header.Version), 10)},
-		{"Epoch", strconv.FormatUint(header.Epoch, 10)},
+		{"Epoch", strconv.FormatUint(uint64(header.Epoch), 10)},
 		{"CaptureTimestamp", fmt.Sprintf("%d (%s)",
 			header.CaptureTimestamp,
 			time.Unix(int64(header.CaptureTimestamp), 0).Format("2006-01-02 15:04:05"),
@@ -178,9 +178,9 @@ func printHeaderWithExtraDataToJSON(validatorSetHeader entity.ValidatorSetHeader
 	jsonHeaderData := jsonHeader{
 		Version:            validatorSetHeader.Version,
 		ValidatorsSszMRoot: fmt.Sprintf("0x%064x", validatorSetHeader.ValidatorsSszMRoot),
-		Epoch:              validatorSetHeader.Epoch,
+		Epoch:              uint64(validatorSetHeader.Epoch),
 		RequiredKeyTag:     uint8(validatorSetHeader.RequiredKeyTag),
-		CaptureTimestamp:   validatorSetHeader.CaptureTimestamp,
+		CaptureTimestamp:   uint64(validatorSetHeader.CaptureTimestamp),
 		QuorumThreshold:    validatorSetHeader.QuorumThreshold.Int,
 		TotalVotingPower:   validatorSetHeader.TotalVotingPower.Int,
 	}

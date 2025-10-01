@@ -25,10 +25,10 @@ type Repository interface {
 	SaveSignatureRequest(ctx context.Context, requestID common.Hash, req entity.SignatureRequest) error
 	SaveSignatureRequestPending(ctx context.Context, requestID common.Hash, req entity.SignatureRequest) error
 	RemoveSignatureRequestPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error
-	GetValidatorSetHeaderByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSetHeader, error)
-	GetActiveValidatorCountByEpoch(ctx context.Context, epoch uint64) (uint32, error)
-	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
-	GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error)
+	GetValidatorSetHeaderByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSetHeader, error)
+	GetActiveValidatorCountByEpoch(ctx context.Context, epoch entity.Epoch) (uint32, error)
+	GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error)
+	GetValidatorByKey(ctx context.Context, epoch entity.Epoch, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error)
 
 	SaveAggregationProof(ctx context.Context, requestID common.Hash, ap entity.AggregationProof) error
 	SaveAggregationProofPending(ctx context.Context, requestID common.Hash, epoch entity.Epoch) error
@@ -91,7 +91,7 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, param entity.Sav
 		return errors.Errorf("failed to verify signature: %w", err)
 	}
 
-	validator, activeIndex, err := s.cfg.Repo.GetValidatorByKey(ctx, uint64(param.Signature.Epoch), param.Signature.KeyTag, publicKey.OnChain())
+	validator, activeIndex, err := s.cfg.Repo.GetValidatorByKey(ctx, param.Signature.Epoch, param.Signature.KeyTag, publicKey.OnChain())
 	if err != nil {
 		return errors.Errorf("validator not found for public key %x: %w", param.Signature.PublicKey, err)
 	}
@@ -109,7 +109,7 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, param entity.Sav
 		}
 		if errors.Is(err, entity.ErrEntityNotFound) {
 			// Get the total number of active validators for this epoch
-			totalActiveValidators, err := s.cfg.Repo.GetActiveValidatorCountByEpoch(ctx, uint64(param.Signature.Epoch))
+			totalActiveValidators, err := s.cfg.Repo.GetActiveValidatorCountByEpoch(ctx, param.Signature.Epoch)
 			if err != nil {
 				return errors.Errorf("failed to get active validator count for epoch %d: %w", param.Signature.Epoch, err)
 			}
@@ -155,7 +155,7 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, param entity.Sav
 
 		if param.Signature.KeyTag.Type().AggregationKey() {
 			// Check if quorum is reached and remove from pending collection if so
-			validatorSetHeader, err := s.cfg.Repo.GetValidatorSetHeaderByEpoch(ctx, uint64(param.Signature.Epoch))
+			validatorSetHeader, err := s.cfg.Repo.GetValidatorSetHeaderByEpoch(ctx, param.Signature.Epoch)
 			if err != nil {
 				return errors.Errorf("failed to get validator set header: %v", err)
 			}
@@ -189,7 +189,7 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, param entity.Sav
 func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregationProof entity.AggregationProof) error {
 	requestID := aggregationProof.RequestID()
 
-	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, uint64(aggregationProof.Epoch))
+	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, aggregationProof.Epoch)
 	if err != nil {
 		return errors.Errorf("failed to get validator set: %w", err)
 	}

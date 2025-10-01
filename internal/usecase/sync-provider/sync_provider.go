@@ -13,9 +13,9 @@ import (
 type repo interface {
 	GetSignatureRequestsByEpochPending(_ context.Context, epoch entity.Epoch, limit int, lastHash common.Hash) ([]entity.SignatureRequestWithID, error)
 	GetSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error)
-	GetLatestValidatorSetEpoch(ctx context.Context) (uint64, error)
+	GetLatestValidatorSetEpoch(ctx context.Context) (entity.Epoch, error)
 	GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error)
-	GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error)
+	GetValidatorByKey(ctx context.Context, epoch entity.Epoch, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error)
 	GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity.SignatureExtended, error)
 	GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (entity.SignatureExtended, error)
 	GetSignatureRequestsWithoutAggregationProof(ctx context.Context, epoch entity.Epoch, limit int, lastHash common.Hash) ([]entity.SignatureRequestWithID, error)

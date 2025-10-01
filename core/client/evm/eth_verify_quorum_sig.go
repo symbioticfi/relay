@@ -12,15 +12,7 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 )
 
-func (e *Client) VerifyQuorumSig(
-	ctx context.Context,
-	addr entity.CrossChainAddress,
-	epoch uint64,
-	message []byte,
-	keyTag entity.KeyTag,
-	threshold *big.Int,
-	proof []byte,
-) (_ bool, err error) {
+func (e *Client) VerifyQuorumSig(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch, message []byte, keyTag entity.KeyTag, threshold *big.Int, proof []byte) (_ bool, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -35,7 +27,7 @@ func (e *Client) VerifyQuorumSig(
 	result, err := settlement.VerifyQuorumSigAt(&bind.CallOpts{
 		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
 		Context:     toCtx,
-	}, message, uint8(keyTag), threshold, proof, new(big.Int).SetUint64(epoch), []byte{})
+	}, message, uint8(keyTag), threshold, proof, new(big.Int).SetUint64(uint64(epoch)), []byte{})
 
 	if err != nil {
 		return false, err

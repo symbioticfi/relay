@@ -112,10 +112,10 @@ func (mr *MockrepoMockRecorder) GetAllSignatures(ctx, requestID any) *gomock.Cal
 }
 
 // GetLatestValidatorSetEpoch mocks base method.
-func (m *Mockrepo) GetLatestValidatorSetEpoch(arg0 context.Context) (uint64, error) {
+func (m *Mockrepo) GetLatestValidatorSetEpoch(arg0 context.Context) (entity.Epoch, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLatestValidatorSetEpoch", arg0)
-	ret0, _ := ret[0].(uint64)
+	ret0, _ := ret[0].(entity.Epoch)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -157,7 +157,7 @@ func (mr *MockrepoMockRecorder) GetSignatureRequest(ctx, requestID any) *gomock.
 }
 
 // GetValidatorSetByEpoch mocks base method.
-func (m *Mockrepo) GetValidatorSetByEpoch(arg0 context.Context, epoch uint64) (entity.ValidatorSet, error) {
+func (m *Mockrepo) GetValidatorSetByEpoch(arg0 context.Context, epoch entity.Epoch) (entity.ValidatorSet, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorSetByEpoch", arg0, epoch)
 	ret0, _ := ret[0].(entity.ValidatorSet)
@@ -211,7 +211,7 @@ func (m *MockevmClient) EXPECT() *MockevmClientMockRecorder {
 }
 
 // GetConfig mocks base method.
-func (m *MockevmClient) GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error) {
+func (m *MockevmClient) GetConfig(ctx context.Context, timestamp entity.Timestamp) (entity.NetworkConfig, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConfig", ctx, timestamp)
 	ret0, _ := ret[0].(entity.NetworkConfig)
@@ -226,10 +226,10 @@ func (mr *MockevmClientMockRecorder) GetConfig(ctx, timestamp any) *gomock.Call 
 }
 
 // GetCurrentEpoch mocks base method.
-func (m *MockevmClient) GetCurrentEpoch(ctx context.Context) (uint64, error) {
+func (m *MockevmClient) GetCurrentEpoch(ctx context.Context) (entity.Epoch, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetCurrentEpoch", ctx)
-	ret0, _ := ret[0].(uint64)
+	ret0, _ := ret[0].(entity.Epoch)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -241,10 +241,10 @@ func (mr *MockevmClientMockRecorder) GetCurrentEpoch(ctx any) *gomock.Call {
 }
 
 // GetEpochStart mocks base method.
-func (m *MockevmClient) GetEpochStart(ctx context.Context, epoch uint64) (uint64, error) {
+func (m *MockevmClient) GetEpochStart(ctx context.Context, epoch entity.Epoch) (entity.Timestamp, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetEpochStart", ctx, epoch)
-	ret0, _ := ret[0].(uint64)
+	ret0, _ := ret[0].(entity.Timestamp)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -256,10 +256,10 @@ func (mr *MockevmClientMockRecorder) GetEpochStart(ctx, epoch any) *gomock.Call 
 }
 
 // GetLastCommittedHeaderEpoch mocks base method.
-func (m *MockevmClient) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (uint64, error) {
+func (m *MockevmClient) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (entity.Epoch, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLastCommittedHeaderEpoch", ctx, addr)
-	ret0, _ := ret[0].(uint64)
+	ret0, _ := ret[0].(entity.Epoch)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -334,7 +334,7 @@ func (m *Mockderiver) EXPECT() *MockderiverMockRecorder {
 }
 
 // GetValidatorSet mocks base method.
-func (m *Mockderiver) GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error) {
+func (m *Mockderiver) GetValidatorSet(ctx context.Context, epoch entity.Epoch, config entity.NetworkConfig) (entity.ValidatorSet, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorSet", ctx, epoch, config)
 	ret0, _ := ret[0].(entity.ValidatorSet)

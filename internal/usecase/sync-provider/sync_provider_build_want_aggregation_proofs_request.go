@@ -17,9 +17,9 @@ func (s *Syncer) BuildWantAggregationProofsRequest(ctx context.Context) (entity.
 		return entity.WantAggregationProofsRequest{}, errors.Errorf("failed to get latest epoch: %w", err)
 	}
 
-	startEpoch := uint64(0)
-	if latestEpoch >= s.cfg.EpochsToSync {
-		startEpoch = latestEpoch - s.cfg.EpochsToSync
+	startEpoch := entity.Epoch(0)
+	if latestEpoch >= entity.Epoch(s.cfg.EpochsToSync) {
+		startEpoch = latestEpoch - entity.Epoch(s.cfg.EpochsToSync)
 	}
 
 	var allRequestIDs []common.Hash
@@ -32,7 +32,7 @@ func (s *Syncer) BuildWantAggregationProofsRequest(ctx context.Context) (entity.
 
 		// Paginate through signature requests without aggregation proofs for this epoch
 		for remaining > 0 {
-			requests, err := s.cfg.Repo.GetSignatureRequestsWithoutAggregationProof(ctx, entity.Epoch(epoch), remaining, lastHash)
+			requests, err := s.cfg.Repo.GetSignatureRequestsWithoutAggregationProof(ctx, epoch, remaining, lastHash)
 			if err != nil {
 				return entity.WantAggregationProofsRequest{}, errors.Errorf("failed to get signature requests without aggregation proof for epoch %d: %w", epoch, err)
 			}

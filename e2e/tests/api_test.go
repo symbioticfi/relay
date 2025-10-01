@@ -18,8 +18,8 @@ import (
 
 // ContractExpectedData holds expected values derived from smart contracts
 type ContractExpectedData struct {
-	CurrentEpoch         uint64
-	EpochStartTime       uint64
+	CurrentEpoch         entity.Epoch
+	EpochStartTime       entity.Timestamp
 	CurrentEpochDuration uint64
 	ValidatorSet         entity.ValidatorSet
 	NetworkConfig        entity.NetworkConfig
@@ -88,8 +88,8 @@ func getExpectedDataFromContracts(t *testing.T, relayContracts RelayContractsDat
 func validateValidatorSetAgainstExpected(t *testing.T, apiResponse *apiv1.GetValidatorSetResponse, expected *ContractExpectedData) {
 	t.Helper()
 
-	require.Equal(t, expected.ValidatorSet.Epoch, apiResponse.Epoch, "API epoch should match contract epoch")
-	require.Equal(t, expected.ValidatorSet.CaptureTimestamp, uint64(apiResponse.CaptureTimestamp.GetSeconds()),
+	require.Equal(t, expected.ValidatorSet.Epoch, entity.Epoch(apiResponse.Epoch), "API epoch should match contract epoch")
+	require.Equal(t, expected.ValidatorSet.CaptureTimestamp, entity.Timestamp(apiResponse.CaptureTimestamp.GetSeconds()),
 		"API capture timestamp should match contract timestamp")
 	require.Equal(t, uint32(expected.ValidatorSet.Version), apiResponse.Version,
 		"API version should match contract version")
@@ -196,7 +196,7 @@ func TestValidatorSetAPI(t *testing.T) {
 		t.Logf("Performing contract validation...")
 		expected := getExpectedDataFromContracts(t, deploymentData)
 
-		if expected.ValidatorSet.Epoch != valsetResp.GetEpoch() {
+		if expected.ValidatorSet.Epoch != entity.Epoch(valsetResp.GetEpoch()) {
 			continue
 		}
 

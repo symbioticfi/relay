@@ -34,19 +34,19 @@ type signer interface {
 
 type repo interface {
 	GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error)
-	GetValidatorSetByEpoch(_ context.Context, epoch uint64) (entity.ValidatorSet, error)
+	GetValidatorSetByEpoch(_ context.Context, epoch entity.Epoch) (entity.ValidatorSet, error)
 	GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity.SignatureExtended, error)
 	GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error)
 	GetLatestValidatorSetHeader(_ context.Context) (entity.ValidatorSetHeader, error)
-	GetLatestValidatorSetEpoch(_ context.Context) (uint64, error)
+	GetLatestValidatorSetEpoch(_ context.Context) (entity.Epoch, error)
 	GetValidatorSetMetadata(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSetMetadata, error)
 }
 
 type evmClient interface {
-	GetCurrentEpoch(ctx context.Context) (uint64, error)
-	GetEpochStart(ctx context.Context, epoch uint64) (uint64, error)
-	GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error)
-	GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (_ uint64, err error)
+	GetCurrentEpoch(ctx context.Context) (entity.Epoch, error)
+	GetEpochStart(ctx context.Context, epoch entity.Epoch) (entity.Timestamp, error)
+	GetConfig(ctx context.Context, timestamp entity.Timestamp) (entity.NetworkConfig, error)
+	GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (_ entity.Epoch, err error)
 }
 
 type aggregator interface {
@@ -54,7 +54,7 @@ type aggregator interface {
 }
 
 type deriver interface {
-	GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error)
+	GetValidatorSet(ctx context.Context, epoch entity.Epoch, config entity.NetworkConfig) (entity.ValidatorSet, error)
 }
 
 type Config struct {

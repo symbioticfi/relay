@@ -96,14 +96,14 @@ func TestAggregatorSignatureSync(t *testing.T) {
 	client := globalTestEnv.GetGRPCClient(t, onlySignerIndex)
 	err = waitForErrorIsNil(ctx, time.Second*30, func() error {
 		_, err := client.GetValidatorSetMetadata(ctx, &apiv1.GetValidatorSetMetadataRequest{
-			Epoch: &nextEpoch,
+			Epoch: (*uint64)(&nextEpoch),
 		})
 		return err
 	})
 	require.NoError(t, err)
 
 	metadataResp, err := client.GetValidatorSetMetadata(ctx, &apiv1.GetValidatorSetMetadataRequest{
-		Epoch: &nextEpoch,
+		Epoch: (*uint64)(&nextEpoch),
 	})
 	require.NoError(t, err)
 
@@ -210,7 +210,7 @@ func createEVMClient(t *testing.T, deploymentData RelayContractsData) *evm.Clien
 }
 
 // waitForEpoch waits until the specified epoch is reached
-func waitForEpoch(ctx context.Context, client evm.IEvmClient, targetEpoch uint64, timeout time.Duration) error {
+func waitForEpoch(ctx context.Context, client evm.IEvmClient, targetEpoch entity.Epoch, timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 

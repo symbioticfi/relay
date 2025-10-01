@@ -22,8 +22,8 @@ type repo interface {
 	GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error)
 	GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error)
 	SaveAggregationProof(ctx context.Context, requestID common.Hash, ap entity.AggregationProof) error
-	GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error)
-	GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error)
+	GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error)
+	GetValidatorByKey(ctx context.Context, epoch entity.Epoch, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error)
 }
 
 type p2pService interface {

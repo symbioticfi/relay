@@ -111,21 +111,21 @@ func (s *Symbiotic) GetNetworkData(ctx context.Context, addr entity.CrossChainAd
 	return s.deriver.GetNetworkData(ctx, addr)
 }
 
-func (s *Symbiotic) GetValidatorSet(ctx context.Context, epoch uint64, config entity.NetworkConfig) (entity.ValidatorSet, error) {
+func (s *Symbiotic) GetValidatorSet(ctx context.Context, epoch entity.Epoch, config entity.NetworkConfig) (entity.ValidatorSet, error) {
 	return s.deriver.GetValidatorSet(ctx, epoch, config)
 }
 
 // ========= EVM Client methods ==========
 
-func (s *Symbiotic) GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error) {
+func (s *Symbiotic) GetConfig(ctx context.Context, timestamp entity.Timestamp) (entity.NetworkConfig, error) {
 	return s.evmClient.GetConfig(ctx, timestamp)
 }
 
-func (s *Symbiotic) IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (bool, error) {
+func (s *Symbiotic) IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (bool, error) {
 	return s.evmClient.IsValsetHeaderCommittedAt(ctx, addr, epoch)
 }
 
-func (s *Symbiotic) GetCurrentEpoch(ctx context.Context) (uint64, error) {
+func (s *Symbiotic) GetCurrentEpoch(ctx context.Context) (entity.Epoch, error) {
 	return s.evmClient.GetCurrentEpoch(ctx)
 }
 
@@ -133,27 +133,27 @@ func (s *Symbiotic) GetHeaderHash(ctx context.Context, addr entity.CrossChainAdd
 	return s.evmClient.GetHeaderHash(ctx, addr)
 }
 
-func (s *Symbiotic) GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error) {
+func (s *Symbiotic) GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (common.Hash, error) {
 	return s.evmClient.GetHeaderHashAt(ctx, addr, epoch)
 }
 
-func (s *Symbiotic) GetEpochStart(ctx context.Context, epoch uint64) (uint64, error) {
+func (s *Symbiotic) GetEpochStart(ctx context.Context, epoch entity.Epoch) (entity.Timestamp, error) {
 	return s.evmClient.GetEpochStart(ctx, epoch)
 }
 
-func (s *Symbiotic) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (uint64, error) {
+func (s *Symbiotic) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (entity.Epoch, error) {
 	return s.evmClient.GetLastCommittedHeaderEpoch(ctx, addr)
 }
 
-func (s *Symbiotic) GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (uint64, error) {
+func (s *Symbiotic) GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (uint64, error) {
 	return s.evmClient.GetCaptureTimestampFromValsetHeaderAt(ctx, addr, epoch)
 }
 
-func (s *Symbiotic) GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorVotingPower, error) {
+func (s *Symbiotic) GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) ([]entity.OperatorVotingPower, error) {
 	return s.evmClient.GetVotingPowers(ctx, address, timestamp)
 }
 
-func (s *Symbiotic) GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorWithKeys, error) {
+func (s *Symbiotic) GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) ([]entity.OperatorWithKeys, error) {
 	return s.evmClient.GetKeys(ctx, address, timestamp)
 }
 
@@ -165,7 +165,7 @@ func (s *Symbiotic) GetNetworkAddress(ctx context.Context) (common.Address, erro
 	return s.evmClient.GetNetworkAddress(ctx)
 }
 
-func (s *Symbiotic) GetValSetHeaderAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (entity.ValidatorSetHeader, error) {
+func (s *Symbiotic) GetValSetHeaderAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (entity.ValidatorSetHeader, error) {
 	return s.evmClient.GetValSetHeaderAt(ctx, addr, epoch)
 }
 
@@ -177,6 +177,6 @@ func (s *Symbiotic) CommitValsetHeader(ctx context.Context, addr entity.CrossCha
 	return s.evmClient.CommitValsetHeader(ctx, addr, header, extraData, proof)
 }
 
-func (s *Symbiotic) VerifyQuorumSig(ctx context.Context, addr entity.CrossChainAddress, epoch uint64, message []byte, keyTag entity.KeyTag, threshold *big.Int, proof []byte) (bool, error) {
+func (s *Symbiotic) VerifyQuorumSig(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch, message []byte, keyTag entity.KeyTag, threshold *big.Int, proof []byte) (bool, error) {
 	return s.evmClient.VerifyQuorumSig(ctx, addr, epoch, message, keyTag, threshold, proof)
 }

@@ -15,8 +15,8 @@ func TestGetValidatorByAddress_ValidatorFoundInRepo(t *testing.T) {
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	requestedEpoch := uint64(8)
-	currentEpoch := uint64(10)
+	requestedEpoch := entity.Epoch(8)
+	currentEpoch := entity.Epoch(10)
 	validatorAddress := "0x0000000000000000000000000000000000000123"
 
 	// Create test data
@@ -30,7 +30,7 @@ func TestGetValidatorByAddress_ValidatorFoundInRepo(t *testing.T) {
 	// Execute the method under test
 	req := &apiv1.GetValidatorByAddressRequest{
 		Address: validatorAddress,
-		Epoch:   &requestedEpoch,
+		Epoch:   (*uint64)(&requestedEpoch),
 	}
 
 	response, err := setup.handler.GetValidatorByAddress(ctx, req)
@@ -52,9 +52,9 @@ func TestGetValidatorByAddress_ValidatorSetNotInRepo_DerivedSuccessfully(t *test
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := uint64(10)
-	requestedEpoch := uint64(8)
-	epochStart := uint64(1640995000)
+	currentEpoch := entity.Epoch(10)
+	requestedEpoch := entity.Epoch(8)
+	epochStart := entity.Timestamp(1640995000)
 	validatorAddress := "0x0000000000000000000000000000000000000abc"
 
 	// Create test data
@@ -75,7 +75,7 @@ func TestGetValidatorByAddress_ValidatorSetNotInRepo_DerivedSuccessfully(t *test
 	// Execute the method under test
 	req := &apiv1.GetValidatorByAddressRequest{
 		Address: validatorAddress,
-		Epoch:   &requestedEpoch,
+		Epoch:   (*uint64)(&requestedEpoch),
 	}
 
 	response, err := setup.handler.GetValidatorByAddress(ctx, req)
@@ -93,7 +93,7 @@ func TestGetValidatorByAddress_UseCurrentEpoch_WhenNoEpochSpecified(t *testing.T
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := uint64(10)
+	currentEpoch := entity.Epoch(10)
 	validatorAddress := "0x0000000000000000000000000000000000000123"
 
 	// Create test data
@@ -121,7 +121,7 @@ func TestGetValidatorByAddress_ErrorWhenEpochFromFuture(t *testing.T) {
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := uint64(10)
+	currentEpoch := entity.Epoch(10)
 	futureEpoch := uint64(15)
 	validatorAddress := "0x0000000000000000000000000000000000000123"
 
@@ -146,7 +146,7 @@ func TestGetValidatorByAddress_ErrorWhenInvalidAddress(t *testing.T) {
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := uint64(10)
+	currentEpoch := entity.Epoch(10)
 	requestedEpoch := uint64(8)
 	invalidAddress := "not-a-valid-address"
 
@@ -171,9 +171,9 @@ func TestGetValidatorByAddress_ErrorWhenValidatorNotFound(t *testing.T) {
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := uint64(10)
-	requestedEpoch := uint64(8)
-	epochStart := uint64(1640995000)
+	currentEpoch := entity.Epoch(10)
+	requestedEpoch := entity.Epoch(8)
+	epochStart := entity.Timestamp(1640995000)
 	networkConfig := entity.NetworkConfig{}
 	nonExistentAddress := "0x0000000000000000000000000000000000000999"
 
@@ -190,7 +190,7 @@ func TestGetValidatorByAddress_ErrorWhenValidatorNotFound(t *testing.T) {
 	// Execute the method under test
 	req := &apiv1.GetValidatorByAddressRequest{
 		Address: nonExistentAddress,
-		Epoch:   &requestedEpoch,
+		Epoch:   (*uint64)(&requestedEpoch),
 	}
 
 	response, err := setup.handler.GetValidatorByAddress(ctx, req)
@@ -209,7 +209,7 @@ func TestGetValidatorByAddress_ErrorWhenGetCurrentEpochFails(t *testing.T) {
 	expectedError := errors.New("failed to get current epoch")
 
 	// Setup mocks
-	setup.mockEvmClient.EXPECT().GetCurrentEpoch(ctx).Return(uint64(0), expectedError)
+	setup.mockEvmClient.EXPECT().GetCurrentEpoch(ctx).Return(entity.Epoch(0), expectedError)
 
 	// Execute the method under test
 	req := &apiv1.GetValidatorByAddressRequest{
@@ -228,8 +228,8 @@ func TestGetValidatorByAddress_ErrorWhenRepositoryFails(t *testing.T) {
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := uint64(10)
-	requestedEpoch := uint64(8)
+	currentEpoch := entity.Epoch(10)
+	requestedEpoch := entity.Epoch(8)
 	validatorAddress := "0x0000000000000000000000000000000000000123"
 	expectedError := errors.New("repository connection failed")
 
@@ -240,7 +240,7 @@ func TestGetValidatorByAddress_ErrorWhenRepositoryFails(t *testing.T) {
 	// Execute the method under test
 	req := &apiv1.GetValidatorByAddressRequest{
 		Address: validatorAddress,
-		Epoch:   &requestedEpoch,
+		Epoch:   (*uint64)(&requestedEpoch),
 	}
 
 	response, err := setup.handler.GetValidatorByAddress(ctx, req)
@@ -256,9 +256,9 @@ func TestGetValidatorByAddress_ErrorWhenDeriverFails(t *testing.T) {
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := uint64(10)
-	requestedEpoch := uint64(8)
-	epochStart := uint64(1640995000)
+	currentEpoch := entity.Epoch(10)
+	requestedEpoch := entity.Epoch(8)
+	epochStart := entity.Timestamp(1640995000)
 	validatorAddress := "0x0000000000000000000000000000000000000123"
 	networkConfig := entity.NetworkConfig{}
 	expectedError := errors.New("derivation failed")
@@ -273,7 +273,7 @@ func TestGetValidatorByAddress_ErrorWhenDeriverFails(t *testing.T) {
 	// Execute the method under test
 	req := &apiv1.GetValidatorByAddressRequest{
 		Address: validatorAddress,
-		Epoch:   &requestedEpoch,
+		Epoch:   (*uint64)(&requestedEpoch),
 	}
 
 	response, err := setup.handler.GetValidatorByAddress(ctx, req)

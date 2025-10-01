@@ -74,7 +74,7 @@ func (mr *MockrepositoryMockRecorder) GetAllSignatures(ctx, requestID any) *gomo
 }
 
 // GetConfigByEpoch mocks base method.
-func (m *Mockrepository) GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error) {
+func (m *Mockrepository) GetConfigByEpoch(ctx context.Context, epoch entity.Epoch) (entity.NetworkConfig, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConfigByEpoch", ctx, epoch)
 	ret0, _ := ret[0].(entity.NetworkConfig)
@@ -119,7 +119,7 @@ func (mr *MockrepositoryMockRecorder) GetSignatureRequest(arg0, requestID any) *
 }
 
 // GetValidatorSetByEpoch mocks base method.
-func (m *Mockrepository) GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error) {
+func (m *Mockrepository) GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorSetByEpoch", ctx, epoch)
 	ret0, _ := ret[0].(entity.ValidatorSet)

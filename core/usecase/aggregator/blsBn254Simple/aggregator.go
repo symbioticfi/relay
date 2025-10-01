@@ -214,7 +214,7 @@ func (a Aggregator) Aggregate(
 	return entity.AggregationProof{
 		MessageHash: messageHash,
 		KeyTag:      keyTag,
-		Epoch:       entity.Epoch(valset.Epoch),
+		Epoch:       valset.Epoch,
 		Proof:       proofBytes,
 	}, nil
 }
