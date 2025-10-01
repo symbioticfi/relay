@@ -15,19 +15,25 @@ type Config struct {
 type Metrics struct {
 	GRPCMetrics
 
-	pkSignDuration                 prometheus.Summary
-	appSignDuration                prometheus.Summary
-	onlyAggregateDuration          prometheus.Summary
-	appAggregationDuration         prometheus.Summary
+	// signatures and aggregation
+	pkSignDuration         prometheus.Summary
+	appSignDuration        prometheus.Summary
+	onlyAggregateDuration  prometheus.Summary
+	appAggregationDuration prometheus.Summary
+	aggregationProofSize   *prometheus.HistogramVec
+
+	// p2p
 	p2pMessagesSent                *prometheus.CounterVec
 	p2pPeerMessagesSent            *prometheus.CounterVec
-	evmMethodCall                  *prometheus.HistogramVec
-	evmCommitGasUsed               *prometheus.HistogramVec
-	evmCommitGasPrice              *prometheus.HistogramVec
 	p2pSyncProcessedSignatures     *prometheus.CounterVec
 	p2pSyncRequestedHashes         prometheus.Counter
 	p2pSyncProcessedAggProofs      *prometheus.CounterVec
 	p2pSyncRequestedAggProofHashes prometheus.Counter
+
+	// evm
+	evmMethodCall     *prometheus.HistogramVec
+	evmCommitGasUsed  *prometheus.HistogramVec
+	evmCommitGasPrice *prometheus.HistogramVec
 }
 
 func New(cfg Config) *Metrics {
@@ -132,6 +138,30 @@ func newMetrics(registerer prometheus.Registerer) *Metrics {
 	})
 	all = append(all, m.p2pSyncRequestedAggProofHashes)
 
+	proofSizeBuckets := []float64{
+		256,     // 256B
+		512,     // 512B
+		1024,    // 1KB
+		2048,    // 2KB
+		4096,    // 4KB
+		8192,    // 8KB
+		16384,   // 16KB
+		32768,   // 32KB
+		65536,   // 64KB
+		131072,  // 128KB
+		262144,  // 256KB
+		393216,  // 384KB
+		524288,  // 512KB
+		786432,  // 768KB
+		1048576, // 1MB
+	}
+	m.aggregationProofSize = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "symbiotic_relay_aggregation_proof_size_bytes",
+		Help:    "Size of aggregation proofs in bytes, labeled by active validator count",
+		Buckets: proofSizeBuckets,
+	}, []string{"validator_count"})
+	all = append(all, m.aggregationProofSize)
+
 	grpcDurationBuckets := []float64{.005, .01, .025, .05, .1, .25, .5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 10, 15, 20, 40, 45, 60}
 	m.requestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
@@ -213,4 +243,8 @@ func (m *Metrics) ObserveP2PSyncAggregationProofsProcessed(resultType string, co
 
 func (m *Metrics) ObserveP2PSyncRequestedAggregationProofs(count int) {
 	m.p2pSyncRequestedAggProofHashes.Add(float64(count))
+}
+
+func (m *Metrics) ObserveAggregationProofSize(proofSizeBytes int, activeValidatorCount int) {
+	m.aggregationProofSize.WithLabelValues(strconv.Itoa(activeValidatorCount)).Observe(float64(proofSizeBytes))
 }

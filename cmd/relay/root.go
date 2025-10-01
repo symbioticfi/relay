@@ -223,6 +223,7 @@ func runApp(ctx context.Context) error {
 		Aggregator:      agg,
 		PollingInterval: time.Second * 5,
 		KeyProvider:     keyProvider,
+		Metrics:         mtr,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create epoch listener: %w", err)
