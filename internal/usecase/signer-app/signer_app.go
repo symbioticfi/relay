@@ -30,14 +30,6 @@ type keyProvider interface {
 	GetPrivateKey(keyTag entity.KeyTag) (crypto.PrivateKey, error)
 }
 
-type aggProofSignal interface {
-	Emit(payload entity.AggregationProof) error
-}
-
-type aggregator interface {
-	Verify(valset entity.ValidatorSet, keyTag entity.KeyTag, aggregationProof entity.AggregationProof) (bool, error)
-}
-
 type metrics interface {
 	ObservePKSignDuration(d time.Duration)
 	ObserveAppSignDuration(d time.Duration)
@@ -53,8 +45,6 @@ type Config struct {
 	KeyProvider     keyProvider     `validate:"required"`
 	Repo            repo            `validate:"required"`
 	EntityProcessor entityProcessor `validate:"required"`
-	AggProofSignal  aggProofSignal  `validate:"required"`
-	Aggregator      aggregator      `validate:"required"`
 	Metrics         metrics         `validate:"required"`
 }
 
@@ -119,7 +109,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) (enti
 	}
 	if errors.Is(err, entity.ErrEntityAlreadyExist) {
 		slog.DebugContext(ctx, "Signature request already exists", "request", req)
-		return entity.SignatureExtended{}, errors.Errorf("signature request already exists: %w", entity.ErrEntityAlreadyExist)
+		return extendedSignature, nil
 	}
 
 	if err := s.cfg.EntityProcessor.ProcessSignature(ctx, extendedSignature); err != nil {
