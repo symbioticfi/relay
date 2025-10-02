@@ -202,8 +202,6 @@ func runApp(ctx context.Context) error {
 		KeyProvider:     keyProvider,
 		Repo:            repo,
 		EntityProcessor: entityProcessor,
-		AggProofSignal:  aggProofReadySignal,
-		Aggregator:      agg,
 		Metrics:         mtr,
 	})
 	if err != nil {

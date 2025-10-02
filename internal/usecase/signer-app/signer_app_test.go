@@ -55,14 +55,12 @@ func TestSign_HappyPath(t *testing.T) {
 }
 
 type testSetup struct {
-	ctrl           *gomock.Controller
-	repo           *badger.Repository
-	keyProvider    *keyprovider.SimpleKeystoreProvider
-	mockP2P        *mocks.Mockp2pService
-	mockAggProof   *mocks.MockaggProofSignal
-	mockAggregator *mocks.Mockaggregator
-	mockMetrics    *mocks.Mockmetrics
-	app            *SignerApp
+	ctrl        *gomock.Controller
+	repo        *badger.Repository
+	keyProvider *keyprovider.SimpleKeystoreProvider
+	mockP2P     *mocks.Mockp2pService
+	mockMetrics *mocks.Mockmetrics
+	app         *SignerApp
 }
 
 func newTestSetup(t *testing.T) *testSetup {
@@ -84,8 +82,6 @@ func newTestSetup(t *testing.T) *testSetup {
 
 	// Create mocks for other dependencies
 	mockP2P := mocks.NewMockp2pService(ctrl)
-	mockAggProof := mocks.NewMockaggProofSignal(ctrl)
-	mockAggregator := mocks.NewMockaggregator(ctrl)
 	mockMetrics := mocks.NewMockmetrics(ctrl)
 
 	// Create mock aggregator for entity processor
@@ -112,8 +108,6 @@ func newTestSetup(t *testing.T) *testSetup {
 		KeyProvider:     keyProvider,
 		Repo:            repo,
 		EntityProcessor: processor,
-		AggProofSignal:  mockAggProof,
-		Aggregator:      mockAggregator,
 		Metrics:         mockMetrics,
 	}
 
@@ -121,14 +115,12 @@ func newTestSetup(t *testing.T) *testSetup {
 	require.NoError(t, err)
 
 	return &testSetup{
-		ctrl:           ctrl,
-		repo:           repo,
-		mockP2P:        mockP2P,
-		keyProvider:    keyProvider,
-		mockAggProof:   mockAggProof,
-		mockAggregator: mockAggregator,
-		mockMetrics:    mockMetrics,
-		app:            app,
+		ctrl:        ctrl,
+		repo:        repo,
+		mockP2P:     mockP2P,
+		keyProvider: keyProvider,
+		mockMetrics: mockMetrics,
+		app:         app,
 	}
 }
 
