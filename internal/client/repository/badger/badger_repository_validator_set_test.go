@@ -538,7 +538,7 @@ func TestRepository_FirstUncommittedValidatorSetEpoch_EmptyRepository(t *testing
 
 func setupTestRepository(t *testing.T) *Repository {
 	t.Helper()
-	repo, err := New(Config{Dir: t.TempDir()})
+	repo, err := New(Config{Dir: t.TempDir(), Metrics: DoNothingMetrics{}})
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		err := repo.Close()

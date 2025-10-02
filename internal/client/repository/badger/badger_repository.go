@@ -1,6 +1,8 @@
 package badger
 
 import (
+	"time"
+
 	"github.com/go-playground/validator/v10"
 
 	"github.com/dgraph-io/badger/v4"
@@ -8,7 +10,8 @@ import (
 )
 
 type Config struct {
-	Dir string `validate:"required"`
+	Dir     string  `validate:"required"`
+	Metrics metrics `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -18,8 +21,14 @@ func (c Config) Validate() error {
 	return nil
 }
 
+type metrics interface {
+	ObserveRepoQueryDuration(queryName string, status string, d time.Duration)
+	ObserveRepoQueryTotalDuration(queryName string, status string, d time.Duration)
+}
+
 type Repository struct {
-	db *badger.DB
+	db      *badger.DB
+	metrics metrics
 }
 
 func New(cfg Config) (*Repository, error) {
@@ -36,7 +45,8 @@ func New(cfg Config) (*Repository, error) {
 	}
 
 	return &Repository{
-		db: db,
+		db:      db,
+		metrics: cfg.Metrics,
 	}, nil
 }
 
@@ -50,3 +60,11 @@ func (l doNothingLog) Errorf(s string, args ...interface{})   {}
 func (l doNothingLog) Warningf(s string, args ...interface{}) {}
 func (l doNothingLog) Infof(s string, args ...interface{})    {}
 func (l doNothingLog) Debugf(s string, args ...interface{})   {}
+
+type DoNothingMetrics struct {
+}
+
+func (m DoNothingMetrics) ObserveRepoQueryDuration(queryName string, status string, d time.Duration) {
+}
+func (m DoNothingMetrics) ObserveRepoQueryTotalDuration(queryName string, status string, d time.Duration) {
+}

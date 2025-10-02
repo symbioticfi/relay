@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/core/usecase/crypto"
@@ -269,6 +270,43 @@ func TestEntityProcessor_ProcessSignature_ConcurrentSignatures(t *testing.T) {
 	require.Empty(t, pendingReqs)
 }
 
+func TestEntityProcessor_ProcessSignature_Conflict(t *testing.T) {
+	t.Parallel()
+
+	repo := setupTestRepository(t)
+	req := randomSignatureRequest(t, entity.Epoch(200))
+
+	vs, privateKeys := createValidatorSetWithCount(t, req.RequiredEpoch, big.NewInt(300), 20)
+	err := repo.SaveValidatorSet(t.Context(), vs)
+	require.NoError(t, err)
+
+	processor, err := NewEntityProcessor(Config{
+		Repo:                     repo,
+		Aggregator:               createMockAggregator(t),
+		AggProofSignal:           createMockAggProofSignal(t),
+		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+	})
+	require.NoError(t, err)
+
+	err = processor.ProcessSignature(t.Context(), entity.SaveSignatureParam{
+		Signature:        signatureExtendedForRequest(t, privateKeys[0][req.KeyTag], req),
+		SignatureRequest: &req,
+	})
+	require.NoError(t, err, "Failed to process signature")
+
+	eg, egCtx := errgroup.WithContext(t.Context())
+	for i := 1; i < len(privateKeys); i++ {
+		eg.Go(func() error {
+			return processor.ProcessSignature(egCtx, entity.SaveSignatureParam{
+				Signature:        signatureExtendedForRequest(t, privateKeys[i][req.KeyTag], req),
+				SignatureRequest: nil,
+			})
+		})
+	}
+
+	require.NoError(t, eg.Wait())
+}
+
 func TestEntityProcessor_ProcessSignature_DuplicateSignatureForSameValidator(t *testing.T) {
 	t.Parallel()
 
@@ -355,7 +393,7 @@ func createMockSignatureProcessedSignal(t *testing.T) *signals.Signal[entity.Sig
 
 func setupTestRepository(t *testing.T) *badger.Repository {
 	t.Helper()
-	repo, err := badger.New(badger.Config{Dir: t.TempDir()})
+	repo, err := badger.New(badger.Config{Dir: t.TempDir(), Metrics: badger.DoNothingMetrics{}})
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		err := repo.Close()

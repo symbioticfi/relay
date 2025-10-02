@@ -64,7 +64,7 @@ func (r *Repository) SaveSignatureRequest(ctx context.Context, requestID common.
 	primaryKey := keySignatureRequest(req.RequiredEpoch, requestID)
 	requestIDIndexKey := keyRequestIDIndex(requestID)
 
-	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+	return r.DoUpdateInTx(ctx, "SaveSignatureRequest", func(ctx context.Context) error {
 		if err := r.saveSignatureRequestToKey(ctx, req, primaryKey); err != nil {
 			return err
 		}
@@ -78,7 +78,7 @@ func (r *Repository) SaveSignatureRequest(ctx context.Context, requestID common.
 }
 
 func (r *Repository) SaveSignatureRequestPending(ctx context.Context, requestID common.Hash, req entity.SignatureRequest) error {
-	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+	return r.DoUpdateInTx(ctx, "SaveSignatureRequestPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		pendingKey := keySignatureRequestPending(req.RequiredEpoch, requestID)
 
@@ -100,7 +100,7 @@ func (r *Repository) SaveSignatureRequestPending(ctx context.Context, requestID 
 }
 
 func (r *Repository) RemoveSignatureRequestPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error {
-	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+	return r.DoUpdateInTx(ctx, "RemoveSignatureRequestPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		pendingKey := keySignatureRequestPending(epoch, requestID)
 
@@ -148,7 +148,7 @@ func bytesToSignatureRequest(data []byte) (entity.SignatureRequest, error) {
 func (r *Repository) GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error) {
 	var req entity.SignatureRequest
 
-	return req, r.DoViewInTx(ctx, func(ctx context.Context) error {
+	return req, r.DoViewInTx(ctx, "GetSignatureRequest", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		// Get primary key from hash index
 		hashIndexItem, err := txn.Get(keyRequestIDIndex(requestID))
@@ -196,7 +196,7 @@ func (r *Repository) getSignatureRequestsByEpochWithKeys(
 ) ([]entity.SignatureRequest, error) {
 	var requests []entity.SignatureRequest
 
-	return requests, r.DoViewInTx(ctx, func(ctx context.Context) error {
+	return requests, r.DoViewInTx(ctx, "getSignatureRequestsByEpochWithKeys", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		opts := badger.DefaultIteratorOptions
 		opts.Prefix = prefix
@@ -256,7 +256,7 @@ func (r *Repository) GetSignatureRequestsByEpoch(ctx context.Context, epoch enti
 func (r *Repository) GetSignatureRequestsByEpochPending(ctx context.Context, epoch entity.Epoch, limit int, lastHash common.Hash) ([]entity.SignatureRequestWithID, error) {
 	var requests []entity.SignatureRequestWithID
 
-	return requests, r.DoViewInTx(ctx, func(ctx context.Context) error {
+	return requests, r.DoViewInTx(ctx, "GetSignatureRequestsByEpochPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 
 		// Iterate through pending signature request markers

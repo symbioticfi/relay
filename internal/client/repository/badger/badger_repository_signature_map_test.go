@@ -226,7 +226,7 @@ func TestSignatureMapTransactions(t *testing.T) {
 		requestID := randomRequestID(t)
 		vm := randomSignatureMap(t, requestID)
 
-		err := repo.DoUpdateInTx(context.Background(), func(ctx context.Context) error {
+		err := repo.DoUpdateInTx(context.Background(), "test", func(ctx context.Context) error {
 			// Update within transaction
 			err := repo.UpdateSignatureMap(ctx, vm)
 			require.NoError(t, err)
@@ -251,7 +251,7 @@ func TestSignatureMapTransactions(t *testing.T) {
 		vm := randomSignatureMap(t, requestID)
 
 		// Transaction that will rollback due to error
-		err := repo.DoUpdateInTx(context.Background(), func(ctx context.Context) error {
+		err := repo.DoUpdateInTx(context.Background(), "test", func(ctx context.Context) error {
 			err := repo.UpdateSignatureMap(ctx, vm)
 			require.NoError(t, err)
 
@@ -280,7 +280,7 @@ func TestSignatureMapTransactions(t *testing.T) {
 		newHash := randomRequestID(t)
 		newVM := randomSignatureMap(t, newHash)
 
-		err = repo.DoUpdateInTx(context.Background(), func(ctx context.Context) error {
+		err = repo.DoUpdateInTx(context.Background(), "test", func(ctx context.Context) error {
 			// Read existing data
 			retrieved, err := repo.GetSignatureMap(ctx, existingHash)
 			require.NoError(t, err)

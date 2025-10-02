@@ -17,7 +17,7 @@ import (
 
 // Repository defines the interface needed by the entity processor
 type Repository interface {
-	DoUpdateInTx(ctx context.Context, f func(ctx context.Context) error) error
+	DoUpdateInTx(ctx context.Context, name string, f func(ctx context.Context) error) error
 	GetSignatureRequest(_ context.Context, requestID common.Hash) (entity.SignatureRequest, error)
 	GetSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error)
 	UpdateSignatureMap(ctx context.Context, vm entity.SignatureMap) error
@@ -102,7 +102,7 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, param entity.Sav
 
 	slog.DebugContext(ctx, "Found active validator", "validator", validator)
 
-	err = s.cfg.Repo.DoUpdateInTx(ctx, func(ctx context.Context) error {
+	err = s.cfg.Repo.DoUpdateInTx(ctx, "ProcessSignature", func(ctx context.Context) error {
 		signatureMap, err := s.cfg.Repo.GetSignatureMap(ctx, param.Signature.RequestID())
 		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 			return errors.Errorf("failed to get valset signature map: %w", err)
@@ -202,7 +202,7 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregati
 		return errors.Errorf("aggregation proof invalid")
 	}
 
-	err = s.cfg.Repo.DoUpdateInTx(ctx, func(ctx context.Context) error {
+	err = s.cfg.Repo.DoUpdateInTx(ctx, "ProcessProof", func(ctx context.Context) error {
 		// Save the aggregation proof
 		err := s.cfg.Repo.SaveAggregationProof(ctx, requestID, aggregationProof)
 		if err != nil {
