@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	common "github.com/ethereum/go-ethereum/common"
 	entity "github.com/symbioticfi/relay/core/entity"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -67,6 +68,52 @@ func (m *MockRepository) AddSignature(ctx context.Context, signature entity.Sign
 func (mr *MockRepositoryMockRecorder) AddSignature(ctx, signature any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSignature", reflect.TypeOf((*MockRepository)(nil).AddSignature), ctx, signature)
+}
+
+// GetAggregationProof mocks base method.
+func (m *MockRepository) GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAggregationProof", ctx, requestID)
+	ret0, _ := ret[0].(entity.AggregationProof)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAggregationProof indicates an expected call of GetAggregationProof.
+func (mr *MockRepositoryMockRecorder) GetAggregationProof(ctx, requestID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAggregationProof", reflect.TypeOf((*MockRepository)(nil).GetAggregationProof), ctx, requestID)
+}
+
+// GetSignatureByIndex mocks base method.
+func (m *MockRepository) GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (entity.SignatureExtended, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSignatureByIndex", ctx, requestID, validatorIndex)
+	ret0, _ := ret[0].(entity.SignatureExtended)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSignatureByIndex indicates an expected call of GetSignatureByIndex.
+func (mr *MockRepositoryMockRecorder) GetSignatureByIndex(ctx, requestID, validatorIndex any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureByIndex", reflect.TypeOf((*MockRepository)(nil).GetSignatureByIndex), ctx, requestID, validatorIndex)
+}
+
+// GetValidatorByKey mocks base method.
+func (m *MockRepository) GetValidatorByKey(ctx context.Context, epoch entity.Epoch, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetValidatorByKey", ctx, epoch, keyTag, publicKey)
+	ret0, _ := ret[0].(entity.Validator)
+	ret1, _ := ret[1].(uint32)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetValidatorByKey indicates an expected call of GetValidatorByKey.
+func (mr *MockRepositoryMockRecorder) GetValidatorByKey(ctx, epoch, keyTag, publicKey any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorByKey", reflect.TypeOf((*MockRepository)(nil).GetValidatorByKey), ctx, epoch, keyTag, publicKey)
 }
 
 // GetValidatorSetByEpoch mocks base method.
