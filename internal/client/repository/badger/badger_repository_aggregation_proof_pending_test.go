@@ -17,24 +17,24 @@ func TestBadgerRepository_SaveAggregationProofPending(t *testing.T) {
 	requestID := common.HexToHash("0x123456789abcdef")
 
 	t.Run("save new pending aggregation proof", func(t *testing.T) {
-		err := repo.SaveAggregationProofPending(t.Context(), requestID, epoch)
+		err := repo.saveAggregationProofPending(t.Context(), requestID, epoch)
 		require.NoError(t, err)
 	})
 
 	t.Run("save duplicate pending aggregation proof should fail", func(t *testing.T) {
-		err := repo.SaveAggregationProofPending(t.Context(), requestID, epoch)
+		err := repo.saveAggregationProofPending(t.Context(), requestID, epoch)
 		require.ErrorIs(t, err, entity.ErrEntityAlreadyExist)
 	})
 
 	t.Run("save different epoch should succeed", func(t *testing.T) {
 		differentEpoch := entity.Epoch(101)
-		err := repo.SaveAggregationProofPending(t.Context(), requestID, differentEpoch)
+		err := repo.saveAggregationProofPending(t.Context(), requestID, differentEpoch)
 		require.NoError(t, err)
 	})
 
 	t.Run("save different hash should succeed", func(t *testing.T) {
 		differentHash := common.HexToHash("0xabcdef123456789")
-		err := repo.SaveAggregationProofPending(t.Context(), differentHash, epoch)
+		err := repo.saveAggregationProofPending(t.Context(), differentHash, epoch)
 		require.NoError(t, err)
 	})
 }
@@ -47,21 +47,21 @@ func TestBadgerRepository_RemoveAggregationProofPending(t *testing.T) {
 	requestID := common.HexToHash("0x987654321fedcba")
 
 	t.Run("remove non-existent pending aggregation proof should fail", func(t *testing.T) {
-		err := repo.RemoveAggregationProofPending(t.Context(), epoch, requestID)
+		err := repo.removeAggregationProofPending(t.Context(), epoch, requestID)
 		require.ErrorIs(t, err, entity.ErrEntityNotFound)
 	})
 
 	t.Run("save and remove pending aggregation proof", func(t *testing.T) {
 		// First save
-		err := repo.SaveAggregationProofPending(t.Context(), requestID, epoch)
+		err := repo.saveAggregationProofPending(t.Context(), requestID, epoch)
 		require.NoError(t, err)
 
 		// Then remove
-		err = repo.RemoveAggregationProofPending(t.Context(), epoch, requestID)
+		err = repo.removeAggregationProofPending(t.Context(), epoch, requestID)
 		require.NoError(t, err)
 
 		// Try to remove again should fail
-		err = repo.RemoveAggregationProofPending(t.Context(), epoch, requestID)
+		err = repo.removeAggregationProofPending(t.Context(), epoch, requestID)
 		require.ErrorIs(t, err, entity.ErrEntityNotFound)
 	})
 
@@ -72,25 +72,25 @@ func TestBadgerRepository_RemoveAggregationProofPending(t *testing.T) {
 		hash2 := common.HexToHash("0x222222")
 
 		// Save multiple entries
-		err := repo.SaveAggregationProofPending(t.Context(), hash1, epoch1)
+		err := repo.saveAggregationProofPending(t.Context(), hash1, epoch1)
 		require.NoError(t, err)
-		err = repo.SaveAggregationProofPending(t.Context(), hash2, epoch1)
+		err = repo.saveAggregationProofPending(t.Context(), hash2, epoch1)
 		require.NoError(t, err)
-		err = repo.SaveAggregationProofPending(t.Context(), hash1, epoch2)
+		err = repo.saveAggregationProofPending(t.Context(), hash1, epoch2)
 		require.NoError(t, err)
 
 		// Remove one specific entry
-		err = repo.RemoveAggregationProofPending(t.Context(), epoch1, hash1)
+		err = repo.removeAggregationProofPending(t.Context(), epoch1, hash1)
 		require.NoError(t, err)
 
 		// Verify others still exist by trying to save them again (should fail)
-		err = repo.SaveAggregationProofPending(t.Context(), hash2, epoch1)
+		err = repo.saveAggregationProofPending(t.Context(), hash2, epoch1)
 		require.ErrorIs(t, err, entity.ErrEntityAlreadyExist)
-		err = repo.SaveAggregationProofPending(t.Context(), hash1, epoch2)
+		err = repo.saveAggregationProofPending(t.Context(), hash1, epoch2)
 		require.ErrorIs(t, err, entity.ErrEntityAlreadyExist)
 
 		// But the removed one should be gone - we can save it again
-		err = repo.SaveAggregationProofPending(t.Context(), hash1, epoch1)
+		err = repo.saveAggregationProofPending(t.Context(), hash1, epoch1)
 		require.NoError(t, err)
 	})
 }
@@ -105,41 +105,6 @@ func TestBadgerRepository_GetSignatureRequestsWithoutAggregationProof(t *testing
 		requests, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), epoch, 10, common.Hash{})
 		require.NoError(t, err)
 		require.Empty(t, requests)
-	})
-
-	t.Run("returns signature requests for pending aggregation proofs", func(t *testing.T) {
-		// Create signature requests
-		req1 := randomSignatureRequestForEpoch(t, epoch)
-		sigID1 := randomRequestID(t)
-		req2 := randomSignatureRequestForEpoch(t, epoch)
-		sigID2 := randomRequestID(t)
-		req3 := randomSignatureRequestForEpoch(t, epoch)
-		sigID3 := randomRequestID(t)
-
-		// Save signature requests
-		err := repo.SaveSignatureRequest(t.Context(), sigID1, req1)
-		require.NoError(t, err)
-		err = repo.SaveSignatureRequest(t.Context(), sigID2, req2)
-		require.NoError(t, err)
-		err = repo.SaveSignatureRequest(t.Context(), sigID3, req3)
-		require.NoError(t, err)
-
-		// Mark only req1 and req3 as pending aggregation proof
-		err = repo.SaveAggregationProofPending(t.Context(), sigID1, epoch)
-		require.NoError(t, err)
-		err = repo.SaveAggregationProofPending(t.Context(), sigID3, epoch)
-		require.NoError(t, err)
-
-		// Get requests without aggregation proof
-		requests, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), epoch, 10, common.Hash{})
-		require.NoError(t, err)
-		require.Len(t, requests, 2)
-
-		// Verify we got req1 and req3 (order might vary due to map iteration)
-		hashes := []common.Hash{requests[0].RequestID, requests[1].RequestID}
-		require.Contains(t, hashes, sigID1)
-		require.Contains(t, hashes, sigID3)
-		require.NotContains(t, hashes, sigID2)
 	})
 
 	t.Run("pagination works correctly", func(t *testing.T) {
@@ -157,10 +122,6 @@ func TestBadgerRepository_GetSignatureRequestsWithoutAggregationProof(t *testing
 
 			// Save signature request
 			err := repo.SaveSignatureRequest(t.Context(), sigID, req)
-			require.NoError(t, err)
-
-			// Mark as pending aggregation proof
-			err = repo.SaveAggregationProofPending(t.Context(), sigID, testEpoch)
 			require.NoError(t, err)
 		}
 
@@ -204,12 +165,10 @@ func TestBadgerRepository_GetSignatureRequestsWithoutAggregationProof(t *testing
 		sigID := randomRequestID(t)
 		err := repo.SaveSignatureRequest(t.Context(), sigID, req)
 		require.NoError(t, err)
-		err = repo.SaveAggregationProofPending(t.Context(), sigID, testEpoch)
-		require.NoError(t, err)
 
 		// Create a pending aggregation proof marker without corresponding signature request
 		orphanHash := common.HexToHash("0xorphan")
-		err = repo.SaveAggregationProofPending(t.Context(), orphanHash, testEpoch)
+		err = repo.saveAggregationProofPending(t.Context(), orphanHash, testEpoch)
 		require.NoError(t, err)
 
 		// Should only return the valid request, skipping the orphan
@@ -232,11 +191,6 @@ func TestBadgerRepository_GetSignatureRequestsWithoutAggregationProof(t *testing
 		err := repo.SaveSignatureRequest(t.Context(), sigID1, req1)
 		require.NoError(t, err)
 		err = repo.SaveSignatureRequest(t.Context(), sigID2, req2)
-		require.NoError(t, err)
-
-		err = repo.SaveAggregationProofPending(t.Context(), sigID1, epoch1)
-		require.NoError(t, err)
-		err = repo.SaveAggregationProofPending(t.Context(), sigID2, epoch2)
 		require.NoError(t, err)
 
 		// Query epoch1 should only return req1
@@ -265,23 +219,14 @@ func TestBadgerRepository_AggregationProofPendingIntegration(t *testing.T) {
 	err := repo.SaveSignatureRequest(t.Context(), sigID, req)
 	require.NoError(t, err)
 
-	// Initially, no pending aggregation proofs
-	requests, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), epoch, 10, common.Hash{})
-	require.NoError(t, err)
-	require.Empty(t, requests)
-
-	// Mark as pending aggregation proof
-	err = repo.SaveAggregationProofPending(t.Context(), sigID, epoch)
-	require.NoError(t, err)
-
 	// Now it should appear in pending list
-	requests, err = repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), epoch, 10, common.Hash{})
+	requests, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), epoch, 10, common.Hash{})
 	require.NoError(t, err)
 	require.Len(t, requests, 1)
 	require.Equal(t, sigID, requests[0].RequestID)
 
 	// Remove from pending
-	err = repo.RemoveAggregationProofPending(t.Context(), epoch, sigID)
+	err = repo.removeAggregationProofPending(t.Context(), epoch, sigID)
 	require.NoError(t, err)
 
 	// Should no longer appear in pending list

@@ -24,7 +24,7 @@ func (r *Repository) SaveConfig(ctx context.Context, config entity.NetworkConfig
 		return errors.Errorf("failed to marshal network config: %w", err)
 	}
 
-	return r.DoUpdateInTx(ctx, "SaveConfig", func(ctx context.Context) error {
+	return r.doUpdateInTx(ctx, "SaveConfig", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		_, err := txn.Get(keyNetworkConfig(epoch))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
@@ -45,7 +45,7 @@ func (r *Repository) SaveConfig(ctx context.Context, config entity.NetworkConfig
 func (r *Repository) GetConfigByEpoch(ctx context.Context, epoch entity.Epoch) (entity.NetworkConfig, error) {
 	var config entity.NetworkConfig
 
-	return config, r.DoViewInTx(ctx, "GetConfigByEpoch", func(ctx context.Context) error {
+	return config, r.doViewInTx(ctx, "GetConfigByEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		item, err := txn.Get(keyNetworkConfig(epoch))
 		if err != nil {

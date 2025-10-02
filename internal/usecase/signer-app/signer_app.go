@@ -19,11 +19,7 @@ import (
 //go:generate mockgen -source=signer_app.go -destination=mocks/signer_app.go -package=mocks
 
 type repo interface {
-	GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error)
-	GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error)
-	SaveAggregationProof(ctx context.Context, requestID common.Hash, ap entity.AggregationProof) error
-	GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error)
-	GetValidatorByKey(ctx context.Context, epoch entity.Epoch, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error)
+	SaveSignatureRequest(ctx context.Context, requestID common.Hash, req entity.SignatureRequest) error
 }
 
 type p2pService interface {
@@ -48,7 +44,7 @@ type metrics interface {
 }
 
 type entityProcessor interface {
-	ProcessSignature(ctx context.Context, param entity.SaveSignatureParam) error
+	ProcessSignature(ctx context.Context, signature entity.SignatureExtended) error
 	ProcessAggregationProof(ctx context.Context, proof entity.AggregationProof) error
 }
 
@@ -116,21 +112,17 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) (enti
 	}
 
 	requestId := extendedSignature.RequestID()
-	_, err = s.cfg.Repo.GetSignatureRequest(ctx, requestId)
-	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
+
+	err = s.cfg.Repo.SaveSignatureRequest(ctx, requestId, req)
+	if err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
 		return entity.SignatureExtended{}, errors.Errorf("failed to get signature request: %w", err)
 	}
-	if entityFound := !errors.Is(err, entity.ErrEntityNotFound); entityFound {
+	if errors.Is(err, entity.ErrEntityAlreadyExist) {
 		slog.DebugContext(ctx, "Signature request already exists", "request", req)
 		return entity.SignatureExtended{}, errors.Errorf("signature request already exists: %w", entity.ErrEntityAlreadyExist)
 	}
 
-	param := entity.SaveSignatureParam{
-		Signature:        extendedSignature,
-		SignatureRequest: &req,
-	}
-
-	if err := s.cfg.EntityProcessor.ProcessSignature(ctx, param); err != nil {
+	if err := s.cfg.EntityProcessor.ProcessSignature(ctx, extendedSignature); err != nil {
 		return entity.SignatureExtended{}, errors.Errorf("failed to process signature: %w", err)
 	}
 

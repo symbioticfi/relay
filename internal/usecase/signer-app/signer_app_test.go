@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
@@ -22,8 +23,7 @@ import (
 
 func TestSign_HappyPath(t *testing.T) {
 	setup := newTestSetup(t)
-	msg := "test-message-to-sign"
-	req := createTestSignatureRequest(msg)
+	req := createTestSignatureRequest(lo.RandomString(100, lo.AllCharset))
 	privateKey := newPrivateKey(t)
 	createTestValidatorSet(t, setup, privateKey)
 
@@ -51,7 +51,7 @@ func TestSign_HappyPath(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, signatures, 1)
 
-	require.NoError(t, privateKey.PublicKey().Verify([]byte(msg), signatures[0].Signature))
+	require.NoError(t, privateKey.PublicKey().Verify(req.Message, signatures[0].Signature))
 }
 
 type testSetup struct {

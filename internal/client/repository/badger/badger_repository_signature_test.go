@@ -31,7 +31,7 @@ func TestBadgerRepository_Signature(t *testing.T) {
 	}
 
 	t.Run("SaveSignature and GetSignatureByIndex", func(t *testing.T) {
-		err := repo.DoUpdateInTx(context.Background(), "test", func(ctx context.Context) error {
+		err := repo.doUpdateInTx(context.Background(), "test", func(ctx context.Context) error {
 			return repo.SaveSignature(ctx, 5, sig1)
 		})
 		require.NoError(t, err)
@@ -48,7 +48,7 @@ func TestBadgerRepository_Signature(t *testing.T) {
 	})
 
 	t.Run("GetAllSignatures - multiple signatures", func(t *testing.T) {
-		err := repo.DoUpdateInTx(context.Background(), "", func(ctx context.Context) error {
+		err := repo.doUpdateInTx(context.Background(), "", func(ctx context.Context) error {
 			if err := repo.SaveSignature(ctx, 10, sig1); err != nil {
 				return err
 			}
@@ -89,7 +89,7 @@ func TestBadgerRepository_SignatureOrdering(t *testing.T) {
 	}
 
 	// Save signatures with test indices
-	err := repo.DoUpdateInTx(context.Background(), "test", func(ctx context.Context) error {
+	err := repo.doUpdateInTx(context.Background(), "test", func(ctx context.Context) error {
 		for i, index := range testIndices {
 			sigCopy := sig
 			sigCopy.PublicKey = []byte{byte(i)} // Different public key for each

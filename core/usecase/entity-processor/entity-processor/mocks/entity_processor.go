@@ -13,7 +13,6 @@ import (
 	context "context"
 	reflect "reflect"
 
-	common "github.com/ethereum/go-ethereum/common"
 	entity "github.com/symbioticfi/relay/core/entity"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -42,79 +41,32 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 	return m.recorder
 }
 
-// DoUpdateInTx mocks base method.
-func (m *MockRepository) DoUpdateInTx(ctx context.Context, f func(context.Context) error) error {
+// AddProof mocks base method.
+func (m *MockRepository) AddProof(ctx context.Context, aggregationProof entity.AggregationProof) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DoUpdateInTx", ctx, f)
+	ret := m.ctrl.Call(m, "AddProof", ctx, aggregationProof)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// DoUpdateInTx indicates an expected call of DoUpdateInTx.
-func (mr *MockRepositoryMockRecorder) DoUpdateInTx(ctx, f any) *gomock.Call {
+// AddProof indicates an expected call of AddProof.
+func (mr *MockRepositoryMockRecorder) AddProof(ctx, aggregationProof any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DoUpdateInTx", reflect.TypeOf((*MockRepository)(nil).DoUpdateInTx), ctx, f)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddProof", reflect.TypeOf((*MockRepository)(nil).AddProof), ctx, aggregationProof)
 }
 
-// GetActiveValidatorCountByEpoch mocks base method.
-func (m *MockRepository) GetActiveValidatorCountByEpoch(ctx context.Context, epoch entity.Epoch) (uint32, error) {
+// AddSignature mocks base method.
+func (m *MockRepository) AddSignature(ctx context.Context, signature entity.SignatureExtended) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetActiveValidatorCountByEpoch", ctx, epoch)
-	ret0, _ := ret[0].(uint32)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "AddSignature", ctx, signature)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
-// GetActiveValidatorCountByEpoch indicates an expected call of GetActiveValidatorCountByEpoch.
-func (mr *MockRepositoryMockRecorder) GetActiveValidatorCountByEpoch(ctx, epoch any) *gomock.Call {
+// AddSignature indicates an expected call of AddSignature.
+func (mr *MockRepositoryMockRecorder) AddSignature(ctx, signature any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActiveValidatorCountByEpoch", reflect.TypeOf((*MockRepository)(nil).GetActiveValidatorCountByEpoch), ctx, epoch)
-}
-
-// GetSignatureMap mocks base method.
-func (m *MockRepository) GetSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSignatureMap", ctx, requestID)
-	ret0, _ := ret[0].(entity.SignatureMap)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSignatureMap indicates an expected call of GetSignatureMap.
-func (mr *MockRepositoryMockRecorder) GetSignatureMap(ctx, requestID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureMap", reflect.TypeOf((*MockRepository)(nil).GetSignatureMap), ctx, requestID)
-}
-
-// GetSignatureRequest mocks base method.
-func (m *MockRepository) GetSignatureRequest(arg0 context.Context, requestID common.Hash) (entity.SignatureRequest, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSignatureRequest", arg0, requestID)
-	ret0, _ := ret[0].(entity.SignatureRequest)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSignatureRequest indicates an expected call of GetSignatureRequest.
-func (mr *MockRepositoryMockRecorder) GetSignatureRequest(arg0, requestID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureRequest", reflect.TypeOf((*MockRepository)(nil).GetSignatureRequest), arg0, requestID)
-}
-
-// GetValidatorByKey mocks base method.
-func (m *MockRepository) GetValidatorByKey(ctx context.Context, epoch entity.Epoch, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetValidatorByKey", ctx, epoch, keyTag, publicKey)
-	ret0, _ := ret[0].(entity.Validator)
-	ret1, _ := ret[1].(uint32)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// GetValidatorByKey indicates an expected call of GetValidatorByKey.
-func (mr *MockRepositoryMockRecorder) GetValidatorByKey(ctx, epoch, keyTag, publicKey any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorByKey", reflect.TypeOf((*MockRepository)(nil).GetValidatorByKey), ctx, epoch, keyTag, publicKey)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSignature", reflect.TypeOf((*MockRepository)(nil).AddSignature), ctx, signature)
 }
 
 // GetValidatorSetByEpoch mocks base method.
@@ -130,133 +82,6 @@ func (m *MockRepository) GetValidatorSetByEpoch(ctx context.Context, epoch entit
 func (mr *MockRepositoryMockRecorder) GetValidatorSetByEpoch(ctx, epoch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSetByEpoch", reflect.TypeOf((*MockRepository)(nil).GetValidatorSetByEpoch), ctx, epoch)
-}
-
-// GetValidatorSetHeaderByEpoch mocks base method.
-func (m *MockRepository) GetValidatorSetHeaderByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSetHeader, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetValidatorSetHeaderByEpoch", ctx, epoch)
-	ret0, _ := ret[0].(entity.ValidatorSetHeader)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetValidatorSetHeaderByEpoch indicates an expected call of GetValidatorSetHeaderByEpoch.
-func (mr *MockRepositoryMockRecorder) GetValidatorSetHeaderByEpoch(ctx, epoch any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSetHeaderByEpoch", reflect.TypeOf((*MockRepository)(nil).GetValidatorSetHeaderByEpoch), ctx, epoch)
-}
-
-// RemoveAggregationProofPending mocks base method.
-func (m *MockRepository) RemoveAggregationProofPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RemoveAggregationProofPending", ctx, epoch, requestID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// RemoveAggregationProofPending indicates an expected call of RemoveAggregationProofPending.
-func (mr *MockRepositoryMockRecorder) RemoveAggregationProofPending(ctx, epoch, requestID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveAggregationProofPending", reflect.TypeOf((*MockRepository)(nil).RemoveAggregationProofPending), ctx, epoch, requestID)
-}
-
-// RemoveSignatureRequestPending mocks base method.
-func (m *MockRepository) RemoveSignatureRequestPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RemoveSignatureRequestPending", ctx, epoch, requestID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// RemoveSignatureRequestPending indicates an expected call of RemoveSignatureRequestPending.
-func (mr *MockRepositoryMockRecorder) RemoveSignatureRequestPending(ctx, epoch, requestID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveSignatureRequestPending", reflect.TypeOf((*MockRepository)(nil).RemoveSignatureRequestPending), ctx, epoch, requestID)
-}
-
-// SaveAggregationProof mocks base method.
-func (m *MockRepository) SaveAggregationProof(ctx context.Context, requestID common.Hash, ap entity.AggregationProof) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveAggregationProof", ctx, requestID, ap)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SaveAggregationProof indicates an expected call of SaveAggregationProof.
-func (mr *MockRepositoryMockRecorder) SaveAggregationProof(ctx, requestID, ap any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveAggregationProof", reflect.TypeOf((*MockRepository)(nil).SaveAggregationProof), ctx, requestID, ap)
-}
-
-// SaveAggregationProofPending mocks base method.
-func (m *MockRepository) SaveAggregationProofPending(ctx context.Context, requestID common.Hash, epoch entity.Epoch) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveAggregationProofPending", ctx, requestID, epoch)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SaveAggregationProofPending indicates an expected call of SaveAggregationProofPending.
-func (mr *MockRepositoryMockRecorder) SaveAggregationProofPending(ctx, requestID, epoch any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveAggregationProofPending", reflect.TypeOf((*MockRepository)(nil).SaveAggregationProofPending), ctx, requestID, epoch)
-}
-
-// SaveSignature mocks base method.
-func (m *MockRepository) SaveSignature(ctx context.Context, validatorIndex uint32, sig entity.SignatureExtended) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveSignature", ctx, validatorIndex, sig)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SaveSignature indicates an expected call of SaveSignature.
-func (mr *MockRepositoryMockRecorder) SaveSignature(ctx, validatorIndex, sig any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveSignature", reflect.TypeOf((*MockRepository)(nil).SaveSignature), ctx, validatorIndex, sig)
-}
-
-// SaveSignatureRequest mocks base method.
-func (m *MockRepository) SaveSignatureRequest(ctx context.Context, requestID common.Hash, req entity.SignatureRequest) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveSignatureRequest", ctx, requestID, req)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SaveSignatureRequest indicates an expected call of SaveSignatureRequest.
-func (mr *MockRepositoryMockRecorder) SaveSignatureRequest(ctx, requestID, req any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveSignatureRequest", reflect.TypeOf((*MockRepository)(nil).SaveSignatureRequest), ctx, requestID, req)
-}
-
-// SaveSignatureRequestPending mocks base method.
-func (m *MockRepository) SaveSignatureRequestPending(ctx context.Context, requestID common.Hash, req entity.SignatureRequest) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveSignatureRequestPending", ctx, requestID, req)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SaveSignatureRequestPending indicates an expected call of SaveSignatureRequestPending.
-func (mr *MockRepositoryMockRecorder) SaveSignatureRequestPending(ctx, requestID, req any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveSignatureRequestPending", reflect.TypeOf((*MockRepository)(nil).SaveSignatureRequestPending), ctx, requestID, req)
-}
-
-// UpdateSignatureMap mocks base method.
-func (m *MockRepository) UpdateSignatureMap(ctx context.Context, vm entity.SignatureMap) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateSignatureMap", ctx, vm)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateSignatureMap indicates an expected call of UpdateSignatureMap.
-func (mr *MockRepositoryMockRecorder) UpdateSignatureMap(ctx, vm any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSignatureMap", reflect.TypeOf((*MockRepository)(nil).UpdateSignatureMap), ctx, vm)
 }
 
 // MockAggregator is a mock of Aggregator interface.

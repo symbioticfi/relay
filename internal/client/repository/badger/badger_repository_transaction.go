@@ -19,7 +19,7 @@ type ctxQueryNameKey struct{}
 
 var ctxQueryName ctxQueryNameKey
 
-func (r *Repository) DoUpdateInTx(ctx context.Context, name string, f func(ctx context.Context) error) error {
+func (r *Repository) doUpdateInTx(ctx context.Context, name string, f func(ctx context.Context) error) error {
 	if getTxn(ctx) != nil {
 		startSingle := time.Now()
 
@@ -55,7 +55,7 @@ func (r *Repository) DoUpdateInTx(ctx context.Context, name string, f func(ctx c
 	return err
 }
 
-func (r *Repository) DoViewInTx(ctx context.Context, name string, f func(ctx context.Context) error) error {
+func (r *Repository) doViewInTx(ctx context.Context, name string, f func(ctx context.Context) error) error {
 	if getTxn(ctx) != nil {
 		startSingle := time.Now()
 
