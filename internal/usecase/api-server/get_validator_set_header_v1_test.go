@@ -87,7 +87,7 @@ func TestGetValidatorSetHeader_ErrorWhenEpochFromFuture(t *testing.T) {
 	// Assertions
 	require.Error(t, err)
 	require.Nil(t, response)
-	require.Contains(t, err.Error(), "epoch requested is greater than latest epoch")
+	require.Contains(t, err.Error(), "is greater than latest epoch")
 }
 
 func TestGetValidatorSetHeader_ErrorWhenGetCurrentEpochFails(t *testing.T) {

@@ -124,7 +124,7 @@ func TestGetValidatorByAddress_ErrorWhenEpochFromFuture(t *testing.T) {
 	// Assertions
 	require.Error(t, err)
 	require.Nil(t, response)
-	require.Contains(t, err.Error(), "epoch requested is greater than latest epoch")
+	require.Contains(t, err.Error(), "is greater than latest epoch")
 }
 
 func TestGetValidatorByAddress_ErrorWhenInvalidAddress(t *testing.T) {
@@ -187,7 +187,7 @@ func TestGetValidatorByAddress_ErrorWhenValidatorNotFound(t *testing.T) {
 	// Assertions
 	require.Error(t, err)
 	require.Nil(t, response)
-	require.Contains(t, err.Error(), "validator not found for the given address and epoch")
+	require.Contains(t, err.Error(), "not found for epoch")
 }
 
 func TestGetValidatorByAddress_ErrorWhenGetCurrentEpochFails(t *testing.T) {

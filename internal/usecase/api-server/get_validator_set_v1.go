@@ -6,6 +6,8 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/symbioticfi/relay/core/entity"
@@ -26,7 +28,7 @@ func (h *grpcHandler) GetValidatorSet(ctx context.Context, req *apiv1.GetValidat
 
 	// epoch from future
 	if epochRequested > latestEpoch {
-		return nil, errors.New("epoch requested is greater than latest epoch")
+		return nil, status.Errorf(codes.InvalidArgument, "epoch %d is greater than latest epoch %d", epochRequested, latestEpoch)
 	}
 
 	validatorSet, err := h.getValidatorSetForEpoch(ctx, epochRequested)
@@ -45,7 +47,7 @@ func (h *grpcHandler) getValidatorSetForEpoch(ctx context.Context, epochRequeste
 	}
 
 	if errors.Is(err, entity.ErrEntityNotFound) {
-		return entity.ValidatorSet{}, errors.Errorf("validator set for epoch %d not found", epochRequested)
+		return entity.ValidatorSet{}, status.Errorf(codes.NotFound, "validator set for epoch %d not found", epochRequested)
 	}
 
 	return entity.ValidatorSet{}, errors.Errorf("failed to get validator set for epoch %d: %w", epochRequested, err)
