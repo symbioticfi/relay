@@ -71,6 +71,16 @@ func (r *Repository) SaveSignatureRequest(ctx context.Context, requestID common.
 			if err := r.saveSignatureRequestPending(ctx, requestID, req); err != nil {
 				return errors.Errorf("failed to save signature request to pending collection: %v", err)
 			}
+
+			_, err := r.GetAggregationProof(ctx, requestID)
+			if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
+				return errors.Errorf("failed to check existing aggregation proof: %v", err)
+			}
+			if err == nil {
+				// Aggregation proof already exists, no need to add to pending
+				return nil
+			}
+
 			// Also save to pending aggregation proof collection
 			if err := r.saveAggregationProofPending(ctx, requestID, req.RequiredEpoch); err != nil {
 				return errors.Errorf("failed to save aggregation proof to pending collection: %v", err)
