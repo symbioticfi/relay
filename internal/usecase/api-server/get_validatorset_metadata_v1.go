@@ -5,6 +5,8 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/symbioticfi/relay/core/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
@@ -26,9 +28,9 @@ func (h *grpcHandler) GetValidatorSetMetadata(ctx context.Context, req *apiv1.Ge
 	metadata, err := h.cfg.Repo.GetValidatorSetMetadata(ctx, epochRequested)
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityNotFound) {
-			return nil, errors.Errorf("no metadata found for the requested epoch: %w", err)
+			return nil, status.Errorf(codes.NotFound, "no metadata found for epoch %d", epochRequested)
 		}
-		return nil, errors.Errorf("failed to get validator set from epoch: %w", err)
+		return nil, errors.Errorf("failed to get validator set metadata from epoch: %w", err)
 	}
 
 	return &apiv1.GetValidatorSetMetadataResponse{

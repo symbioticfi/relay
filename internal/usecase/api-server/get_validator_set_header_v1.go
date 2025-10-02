@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/symbioticfi/relay/core/entity"
@@ -25,7 +27,7 @@ func (h *grpcHandler) GetValidatorSetHeader(ctx context.Context, req *apiv1.GetV
 
 	// epoch from future
 	if epochRequested > latestEpoch {
-		return nil, errors.New("epoch requested is greater than latest epoch")
+		return nil, status.Errorf(codes.InvalidArgument, "epoch %d is greater than latest epoch %d", epochRequested, latestEpoch)
 	}
 
 	validatorSet, err := h.getValidatorSetForEpoch(ctx, epochRequested)

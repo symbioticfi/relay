@@ -35,6 +35,7 @@ func New(cfg Config) (*Repository, error) {
 		return nil, errors.Errorf("failed to open badger database: %w", err)
 	}
 
+	db.Subscribe()
 	return &Repository{
 		db: db,
 	}, nil

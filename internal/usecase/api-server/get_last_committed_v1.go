@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/symbioticfi/relay/core/entity"
@@ -15,7 +17,7 @@ import (
 // GetLastCommitted handles the gRPC GetLastCommitted request
 func (h *grpcHandler) GetLastCommitted(ctx context.Context, req *apiv1.GetLastCommittedRequest) (*apiv1.GetLastCommittedResponse, error) {
 	if req.GetSettlementChainId() == 0 {
-		return nil, errors.New("settlement chain ID cannot be 0")
+		return nil, status.Error(codes.InvalidArgument, "settlement chain ID cannot be 0")
 	}
 
 	cfg, err := h.cfg.EvmClient.GetConfig(ctx, entity.Timestamp(uint64(time.Now().Unix())))
@@ -33,7 +35,7 @@ func (h *grpcHandler) GetLastCommitted(ctx context.Context, req *apiv1.GetLastCo
 	}
 
 	if settlementChain == nil {
-		return nil, errors.New("invalid settlement chain ID, not such chain found in network config")
+		return nil, status.Errorf(codes.NotFound, "settlement chain ID %d not found in network config", req.GetSettlementChainId())
 	}
 
 	lastCommittedEpoch, err := h.cfg.EvmClient.GetLastCommittedHeaderEpoch(ctx, *settlementChain)
