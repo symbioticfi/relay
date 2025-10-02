@@ -127,8 +127,16 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 			return errors.Errorf("failed to get private key for required key tag %s: %w", valset.RequiredKeyTag, err)
 		}
 
-		if !valset.IsActiveCommitter(ctx, nwCfg.CommitterSlotDuration, entity.Timestamp(uint64(time.Now().Unix())), minCommitterPollIntervalSeconds, privKey.PublicKey().OnChain()) {
-			slog.DebugContext(ctx, "Not a committer for this valset, skipping proof commitment", "key", privKey.PublicKey().OnChain(), "epoch", valset.Epoch)
+		now := entity.Timestamp(uint64(time.Now().Unix()))
+		if !valset.IsActiveCommitter(ctx, nwCfg.CommitterSlotDuration, now, minCommitterPollIntervalSeconds, privKey.PublicKey().OnChain()) {
+			slog.DebugContext(ctx, "Not a committer for this valset, skipping proof commitment",
+				"key", privKey.PublicKey().OnChain(),
+				"epoch", valset.Epoch,
+				"committerSlotDuration", nwCfg.CommitterSlotDuration,
+				"now", now,
+				"minPollInterval", minCommitterPollIntervalSeconds,
+				"committerIndices", valset.CommitterIndices,
+			)
 			continue
 		}
 

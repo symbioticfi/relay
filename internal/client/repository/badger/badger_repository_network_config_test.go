@@ -1,6 +1,7 @@
 package badger
 
 import (
+	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -36,7 +37,12 @@ func randomNetworkConfig(t *testing.T) entity.NetworkConfig {
 		MinInclusionVotingPower: entity.ToVotingPower(randomBigInt(t)),
 		MaxValidatorsCount:      entity.ToVotingPower(randomBigInt(t)),
 		RequiredKeyTags:         []entity.KeyTag{15},
-		NumCommitters:           3,
-		NumAggregators:          5,
+		RequiredHeaderKeyTag:    7,
+		QuorumThresholds: []entity.QuorumThreshold{{
+			KeyTag:          3,
+			QuorumThreshold: entity.ToQuorumThresholdPct(big.NewInt(123456789)),
+		}},
+		NumCommitters:  3,
+		NumAggregators: 5,
 	}
 }
