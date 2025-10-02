@@ -96,6 +96,8 @@ linters:
       include:
         - ^github.com/symbioticfi/relay/.*$
       exclude:
+        - ^github.com/symbioticfi/relay/pkg/proof.ValidatorData$
+        - ^github.com/symbioticfi/relay/pkg/proof.Circuit$
         - ^github.com/symbioticfi/relay/pkg/log.Handler$
         - ^github.com/ethereum/go-ethereum.CallMsg$
     funlen:
@@ -159,7 +161,6 @@ linters:
         - funlen
         - gocognit
         - lll
-        - exhaustruct
     perfsprint:
       strconcat: false
     revive:
@@ -249,6 +250,7 @@ linters:
       - linters:
           - goconst
           - exhaustruct
+          - wrapcheck
         path: _test\.go
       - path: _test\.go
         text: 'subtests should call t.Parallel'
