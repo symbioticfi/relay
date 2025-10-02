@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-errors/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/go-errors/errors"
 	"github.com/symbioticfi/relay/core/entity"
 
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
