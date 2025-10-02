@@ -120,13 +120,15 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch entity.Epoch, confi
 	}
 
 	valset := entity.ValidatorSet{
-		Version:          valsetVersion,
-		RequiredKeyTag:   config.RequiredHeaderKeyTag,
-		Epoch:            epoch,
-		CaptureTimestamp: timestamp,
-		QuorumThreshold:  quorumThreshold,
-		Validators:       validators,
-		Status:           entity.HeaderDerived,
+		Version:           valsetVersion,
+		RequiredKeyTag:    config.RequiredHeaderKeyTag,
+		Epoch:             epoch,
+		CaptureTimestamp:  timestamp,
+		QuorumThreshold:   quorumThreshold,
+		Validators:        validators,
+		Status:            entity.HeaderDerived,
+		AggregatorIndices: nil, // will be initialized later
+		CommitterIndices:  nil, // will be initialized later
 	}
 
 	aggIndices, commIndices, err := GetSchedulerInfo(ctx, valset, config)
