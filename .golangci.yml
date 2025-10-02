@@ -99,7 +99,10 @@ linters:
       allow-empty: true
       include:
         - ^github.com/symbioticfi/relay/internal/client/repository/.*$
+        - ^github.com/symbioticfi/relay/internal/client/p2p/proto/.*$
+        - ^github.com/symbioticfi/relay/internal/gen/.*$
         - ^github.com/symbioticfi/relay/internal/entity/.*$
+        - ^github.com/symbioticfi/relay/core/entity/.*$
         - ^github.com/symbioticfi/relay/core/entity/.*$
       exclude:
         - ^github.com/ethereum/go-ethereum.CallMsg$
