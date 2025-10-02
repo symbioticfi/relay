@@ -93,7 +93,10 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create valset deriver: %w", err)
 	}
 
-	baseRepo, err := badger.New(badger.Config{Dir: cfg.StorageDir})
+	baseRepo, err := badger.New(badger.Config{
+		Dir:     cfg.StorageDir,
+		Metrics: mtr,
+	})
 	if err != nil {
 		return errors.Errorf("failed to create badger repository: %w", err)
 	}

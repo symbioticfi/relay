@@ -22,7 +22,7 @@ func (r *Repository) UpdateSignatureMap(ctx context.Context, vm entity.Signature
 		return errors.Errorf("failed to marshal valset signature map: %w", err)
 	}
 
-	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+	return r.doUpdateInTx(ctx, "UpdateSignatureMap", func(ctx context.Context) error {
 		key := keySignatureMap(vm.RequestID)
 
 		err = getTxn(ctx).Set(key, bytes)
@@ -37,7 +37,7 @@ func (r *Repository) GetSignatureMap(ctx context.Context, requestID common.Hash)
 	var vm entity.SignatureMap
 
 	// Create a new read-only transaction
-	return vm, r.DoViewInTx(ctx, func(ctx context.Context) error {
+	return vm, r.doViewInTx(ctx, "GetSignatureMap", func(ctx context.Context) error {
 		var err error
 		vm, err = r.getSignatureMap(ctx, requestID)
 		return err

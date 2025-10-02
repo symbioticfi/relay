@@ -23,7 +23,7 @@ type repo interface {
 }
 
 type entityProcessor interface {
-	ProcessSignature(ctx context.Context, param entity.SaveSignatureParam) error
+	ProcessSignature(ctx context.Context, signature entity.SignatureExtended) error
 	ProcessAggregationProof(ctx context.Context, proof entity.AggregationProof) error
 }
 

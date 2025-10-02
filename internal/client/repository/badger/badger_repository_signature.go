@@ -43,7 +43,7 @@ func (r *Repository) SaveSignature(ctx context.Context, validatorIndex uint32, s
 func (r *Repository) GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity.SignatureExtended, error) {
 	var signatures []entity.SignatureExtended
 
-	return signatures, r.DoViewInTx(ctx, func(ctx context.Context) error {
+	return signatures, r.doViewInTx(ctx, "GetAllSignatures", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		prefix := keySignaturePrefix(requestID)
 		opts := badger.DefaultIteratorOptions
@@ -74,7 +74,7 @@ func (r *Repository) GetAllSignatures(ctx context.Context, requestID common.Hash
 func (r *Repository) GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (entity.SignatureExtended, error) {
 	var signature entity.SignatureExtended
 
-	err := r.DoViewInTx(ctx, func(ctx context.Context) error {
+	err := r.doViewInTx(ctx, "GetSignatureByIndex", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		key := keySignature(requestID, validatorIndex)
 

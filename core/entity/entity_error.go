@@ -12,4 +12,5 @@ const (
 	ErrNotAnAggregator    = StringError("not an aggregator")
 	ErrChainNotFound      = StringError("chain not found")
 	ErrNoPeers            = StringError("no peers available")
+	ErrTxConflict         = StringError("transaction conflict")
 )

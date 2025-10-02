@@ -43,13 +43,11 @@ type repo interface {
 	GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error)
 	GetConfigByEpoch(ctx context.Context, epoch entity.Epoch) (entity.NetworkConfig, error)
 	GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error)
-	GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error)
 	SaveLatestSignedValidatorSetEpoch(_ context.Context, valset entity.ValidatorSet) error
-	SaveAggregationProof(ctx context.Context, requestID common.Hash, ap entity.AggregationProof) error
+	AddProof(ctx context.Context, aggregationProof entity.AggregationProof) error
 	SaveProofCommitPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error
 	GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch entity.Epoch, limit int) ([]entity.ProofCommitKey, error)
 	RemoveProofCommitPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error
-	GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (entity.Epoch, error)
 	SaveValidatorSetMetadata(ctx context.Context, data entity.ValidatorSetMetadata) error
 }
 

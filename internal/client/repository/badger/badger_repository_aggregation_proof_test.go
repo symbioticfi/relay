@@ -17,9 +17,9 @@ func TestBadgerRepository_AggregationProof(t *testing.T) {
 
 	hash := common.BytesToHash(randomBytes(t, 32))
 
-	err := repo.SaveAggregationProof(t.Context(), hash, ap)
+	err := repo.saveAggregationProof(t.Context(), hash, ap)
 	require.NoError(t, err)
-	err = repo.SaveAggregationProof(t.Context(), hash, ap)
+	err = repo.saveAggregationProof(t.Context(), hash, ap)
 	require.ErrorIs(t, err, entity.ErrEntityAlreadyExist)
 
 	loadedConfig, err := repo.GetAggregationProof(t.Context(), hash)

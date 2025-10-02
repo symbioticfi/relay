@@ -43,21 +43,17 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Save signature request and signature on peer
-	param := entity.SaveSignatureParam{
-		Signature: entity.SignatureExtended{
-			MessageHash: hash,
-			Signature:   signature,
-			PublicKey:   privateKey.PublicKey().Raw(),
-			Epoch:       signatureRequest.RequiredEpoch,
-			KeyTag:      signatureRequest.KeyTag,
-		},
-		SignatureRequest: &signatureRequest,
+	param := entity.SignatureExtended{
+		MessageHash: hash,
+		Signature:   signature,
+		PublicKey:   privateKey.PublicKey().Raw(),
+		Epoch:       signatureRequest.RequiredEpoch,
+		KeyTag:      signatureRequest.KeyTag,
 	}
 	require.NoError(t, peerEntityProcessor.ProcessSignature(t.Context(), param))
 
-	requestID := param.Signature.RequestID()
+	requestID := param.RequestID()
 	require.NoError(t, requesterRepo.SaveSignatureRequest(t.Context(), requestID, signatureRequest))
-	require.NoError(t, requesterRepo.SaveSignatureRequestPending(t.Context(), requestID, signatureRequest))
 
 	// Requester needs SignatureMap for BuildWantSignaturesRequest to work
 	signatureMap := entity.NewSignatureMap(requestID, signatureRequest.RequiredEpoch, uint32(len(validatorSet.Validators)))
@@ -152,7 +148,8 @@ func createMockSignatureProcessedSignal(t *testing.T) *signals.Signal[entity.Sig
 func createTestRepo(t *testing.T) *badger.Repository {
 	t.Helper()
 	repo, err := badger.New(badger.Config{
-		Dir: t.TempDir(),
+		Dir:     t.TempDir(),
+		Metrics: badger.DoNothingMetrics{},
 	})
 	require.NoError(t, err)
 	return repo
@@ -351,18 +348,15 @@ func TestHandleWantSignaturesRequest_MaxResponseSignatureCountLimit(t *testing.T
 		signature, hash, err := privateKeys[i].Sign(signatureRequest.Message)
 		require.NoError(t, err)
 
-		param := entity.SaveSignatureParam{
-			Signature: entity.SignatureExtended{
-				MessageHash: hash,
-				KeyTag:      signatureRequest.KeyTag,
-				Epoch:       signatureRequest.RequiredEpoch,
-				PublicKey:   privateKeys[i].PublicKey().Raw(),
-				Signature:   signature,
-			},
-			SignatureRequest: nil, // Don't save signature request again, it's already saved
+		param := entity.SignatureExtended{
+			MessageHash: hash,
+			KeyTag:      signatureRequest.KeyTag,
+			Epoch:       signatureRequest.RequiredEpoch,
+			PublicKey:   privateKeys[i].PublicKey().Raw(),
+			Signature:   signature,
 		}
 		if i == 0 {
-			requestID = param.Signature.RequestID()
+			requestID = param.RequestID()
 			require.NoError(t, repo.SaveSignatureRequest(t.Context(), requestID, signatureRequest))
 		}
 		require.NoError(t, entityProcessor.ProcessSignature(t.Context(), param))
@@ -454,51 +448,46 @@ func TestHandleWantSignaturesRequest_MultipleRequestIDs(t *testing.T) {
 	require.NoError(t, err)
 
 	// Save signature for first request
-	param1 := entity.SaveSignatureParam{
-		Signature: entity.SignatureExtended{
-			MessageHash: hash,
-			Epoch:       signatureRequest1.RequiredEpoch,
-			KeyTag:      signatureRequest1.KeyTag,
-			Signature:   signature,
-			PublicKey:   privateKeys[0].PublicKey().Raw(),
-		},
-		SignatureRequest: nil, // Don't save signature request again, it's already saved
+	param1 := entity.SignatureExtended{
+		MessageHash: hash,
+		Epoch:       signatureRequest1.RequiredEpoch,
+		KeyTag:      signatureRequest1.KeyTag,
+		Signature:   signature,
+		PublicKey:   privateKeys[0].PublicKey().Raw(),
 	}
 
-	require.NoError(t, repo.SaveSignatureRequest(t.Context(), param1.Signature.RequestID(), signatureRequest1))
+	require.NoError(t, repo.SaveSignatureRequest(t.Context(), param1.RequestID(), signatureRequest1))
 	require.NoError(t, entityProcessor.ProcessSignature(t.Context(), param1))
 
 	// Save signature for second request
 	signature2, hash2, err := privateKeys[1].Sign(signatureRequest2.Message)
 	require.NoError(t, err)
 
-	param2 := entity.SaveSignatureParam{
-		Signature: entity.SignatureExtended{
-			MessageHash: hash2,
-			Epoch:       signatureRequest2.RequiredEpoch,
-			KeyTag:      signatureRequest2.KeyTag,
-			Signature:   signature2,
-			PublicKey:   privateKeys[1].PublicKey().Raw(),
-		},
-		SignatureRequest: nil, // Don't save signature request again, it's already saved
+	param2 := entity.SignatureExtended{
+		MessageHash: hash2,
+		Epoch:       signatureRequest2.RequiredEpoch,
+		KeyTag:      signatureRequest2.KeyTag,
+		Signature:   signature2,
+		PublicKey:   privateKeys[1].PublicKey().Raw(),
 	}
-	require.NoError(t, repo.SaveSignatureRequest(t.Context(), param2.Signature.RequestID(), signatureRequest2))
+
+	require.NoError(t, repo.SaveSignatureRequest(t.Context(), param2.RequestID(), signatureRequest2))
 	require.NoError(t, entityProcessor.ProcessSignature(t.Context(), param2))
 
 	request := entity.WantSignaturesRequest{
 		WantSignatures: map[common.Hash]entity.Bitmap{
-			param1.Signature.RequestID(): entity.NewBitmapOf(0), // Request validator 0 from first request
-			param2.Signature.RequestID(): entity.NewBitmapOf(1), // Request validator 1 from second request
+			param1.RequestID(): entity.NewBitmapOf(0), // Request validator 0 from first request
+			param2.RequestID(): entity.NewBitmapOf(1), // Request validator 1 from second request
 		},
 	}
 
 	response, err := syncer.HandleWantSignaturesRequest(t.Context(), request)
 	require.NoError(t, err)
 	require.Len(t, response.Signatures, 2)
-	require.Len(t, response.Signatures[param1.Signature.RequestID()], 1)
-	require.Len(t, response.Signatures[param2.Signature.RequestID()], 1)
-	require.Equal(t, uint32(0), response.Signatures[param1.Signature.RequestID()][0].ValidatorIndex)
-	require.Equal(t, uint32(1), response.Signatures[param2.Signature.RequestID()][0].ValidatorIndex)
+	require.Len(t, response.Signatures[param1.RequestID()], 1)
+	require.Len(t, response.Signatures[param2.RequestID()], 1)
+	require.Equal(t, uint32(0), response.Signatures[param1.RequestID()][0].ValidatorIndex)
+	require.Equal(t, uint32(1), response.Signatures[param2.RequestID()][0].ValidatorIndex)
 }
 
 func TestHandleWantSignaturesRequest_PartialSignatureAvailability(t *testing.T) {
@@ -527,18 +516,15 @@ func TestHandleWantSignaturesRequest_PartialSignatureAvailability(t *testing.T) 
 	for _, i := range []uint32{0, 2} {
 		signature, hash, err := privateKeys[i].Sign(signatureRequest.Message)
 		require.NoError(t, err)
-		param := entity.SaveSignatureParam{
-			Signature: entity.SignatureExtended{
-				MessageHash: hash,
-				Epoch:       signatureRequest.RequiredEpoch,
-				KeyTag:      signatureRequest.KeyTag,
-				Signature:   signature,
-				PublicKey:   privateKeys[i].PublicKey().Raw(),
-			},
-			SignatureRequest: nil, // Don't save signature request again, it's already saved
+		param := entity.SignatureExtended{
+			MessageHash: hash,
+			Epoch:       signatureRequest.RequiredEpoch,
+			KeyTag:      signatureRequest.KeyTag,
+			Signature:   signature,
+			PublicKey:   privateKeys[i].PublicKey().Raw(),
 		}
 		if i == 0 {
-			requestID = param.Signature.RequestID()
+			requestID = param.RequestID()
 			require.NoError(t, repo.SaveSignatureRequest(t.Context(), requestID, signatureRequest))
 		}
 		require.NoError(t, entityProcessor.ProcessSignature(t.Context(), param))

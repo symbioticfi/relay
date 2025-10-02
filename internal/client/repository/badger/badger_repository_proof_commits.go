@@ -25,7 +25,7 @@ func keyAggregationProofCommited(epoch entity.Epoch, requestID common.Hash) []by
 }
 
 func (r *Repository) SaveProofCommitPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error {
-	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+	return r.doUpdateInTx(ctx, "SaveProofCommitPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		_, err := txn.Get(keyAggregationProofCommited(epoch, requestID))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
@@ -46,7 +46,7 @@ func (r *Repository) SaveProofCommitPending(ctx context.Context, epoch entity.Ep
 }
 
 func (r *Repository) RemoveProofCommitPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error {
-	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+	return r.doUpdateInTx(ctx, "RemoveProofCommitPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		pendingKey := keyAggregationProofCommited(epoch, requestID)
 
@@ -71,7 +71,7 @@ func (r *Repository) RemoveProofCommitPending(ctx context.Context, epoch entity.
 func (r *Repository) GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch entity.Epoch, limit int) ([]entity.ProofCommitKey, error) {
 	var requests []entity.ProofCommitKey
 
-	if err := r.DoViewInTx(ctx, func(ctx context.Context) error {
+	if err := r.doViewInTx(ctx, "GetPendingProofCommitsSinceEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 
 		// Step 1: Collect all keys with their parsed epochs and hashes

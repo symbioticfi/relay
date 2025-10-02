@@ -26,13 +26,13 @@ func keyAggregationProofPendingEpochPrefix(epoch entity.Epoch) []byte {
 	return []byte(fmt.Sprintf("aggregation_proof_pending:%d:", epoch))
 }
 
-func (r *Repository) SaveAggregationProof(ctx context.Context, requestID common.Hash, ap entity.AggregationProof) error {
+func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.Hash, ap entity.AggregationProof) error {
 	proofBytes, err := aggregationProofToBytes(ap)
 	if err != nil {
 		return errors.Errorf("failed to marshal aggregation proof: %w", err)
 	}
 
-	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+	return r.doUpdateInTx(ctx, "saveAggregationProof", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		_, err := txn.Get(keyAggregationProof(requestID))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
@@ -53,7 +53,7 @@ func (r *Repository) SaveAggregationProof(ctx context.Context, requestID common.
 func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error) {
 	var ap entity.AggregationProof
 
-	return ap, r.DoViewInTx(ctx, func(ctx context.Context) error {
+	return ap, r.doViewInTx(ctx, "GetAggregationProof", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		item, err := txn.Get(keyAggregationProof(requestID))
 		if err != nil {
@@ -113,8 +113,8 @@ func bytesToAggregationProof(value []byte) (entity.AggregationProof, error) {
 	}, nil
 }
 
-func (r *Repository) SaveAggregationProofPending(ctx context.Context, requestID common.Hash, epoch entity.Epoch) error {
-	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+func (r *Repository) saveAggregationProofPending(ctx context.Context, requestID common.Hash, epoch entity.Epoch) error {
+	return r.doUpdateInTx(ctx, "saveAggregationProofPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		pendingKey := keyAggregationProofPending(epoch, requestID)
 
@@ -135,8 +135,8 @@ func (r *Repository) SaveAggregationProofPending(ctx context.Context, requestID 
 	})
 }
 
-func (r *Repository) RemoveAggregationProofPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error {
-	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+func (r *Repository) removeAggregationProofPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error {
+	return r.doUpdateInTx(ctx, "removeAggregationProofPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		pendingKey := keyAggregationProofPending(epoch, requestID)
 
@@ -161,7 +161,7 @@ func (r *Repository) RemoveAggregationProofPending(ctx context.Context, epoch en
 func (r *Repository) GetSignatureRequestsWithoutAggregationProof(ctx context.Context, epoch entity.Epoch, limit int, lastHash common.Hash) ([]entity.SignatureRequestWithID, error) {
 	var requests []entity.SignatureRequestWithID
 
-	return requests, r.DoViewInTx(ctx, func(ctx context.Context) error {
+	return requests, r.doViewInTx(ctx, "GetSignatureRequestsWithoutAggregationProof", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 
 		// Iterate through pending aggregation proof markers

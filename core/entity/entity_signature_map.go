@@ -50,12 +50,6 @@ func (vm *SignatureMap) GetMissingValidators() Bitmap {
 	return Bitmap{Bitmap: missing}
 }
 
-// SaveSignatureParam bundles parameters needed for signature processing with SignatureMap operations
-type SaveSignatureParam struct {
-	Signature        SignatureExtended
-	SignatureRequest *SignatureRequest // Optional
-}
-
 type Bitmap struct {
 	*roaring.Bitmap
 }

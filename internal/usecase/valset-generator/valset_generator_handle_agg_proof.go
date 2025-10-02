@@ -44,7 +44,7 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 	}
 
 	// we always try to save the proof, even if we aren't a committer
-	err = s.cfg.Repo.SaveAggregationProof(ctx, msg.RequestID(), msg)
+	err = s.cfg.Repo.AddProof(ctx, msg)
 	if err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
 		return err
 	}

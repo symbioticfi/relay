@@ -30,6 +30,10 @@ type Metrics struct {
 	p2pSyncProcessedAggProofs      *prometheus.CounterVec
 	p2pSyncRequestedAggProofHashes prometheus.Counter
 
+	// repo
+	repoQueryDuration      *prometheus.HistogramVec
+	repoQueryTotalDuration *prometheus.HistogramVec
+
 	// evm
 	evmMethodCall     *prometheus.HistogramVec
 	evmCommitGasUsed  *prometheus.HistogramVec
@@ -49,7 +53,7 @@ func newMetrics(registerer prometheus.Registerer) *Metrics {
 	m := &Metrics{}
 
 	defaultPercentiles := map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001}
-	defaultBuckets := []float64{.01, .025, .05, .1, .25, .5, 1, 2.5, 5, 7.5, 10, 15, 20, 30, 60}
+	defaultBuckets := []float64{.001, .005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 7.5, 10, 15, 20, 30, 60}
 
 	var all []prometheus.Collector
 
@@ -137,6 +141,18 @@ func newMetrics(registerer prometheus.Registerer) *Metrics {
 		Help: "Total number of requested aggregation proof hashes during P2P sync",
 	})
 	all = append(all, m.p2pSyncRequestedAggProofHashes)
+
+	m.repoQueryDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name: "symbiotic_relay_repo_query_duration_seconds",
+		Help: "Duration of repository queries in seconds",
+	}, []string{"query_name", "status"})
+	all = append(all, m.repoQueryDuration)
+
+	m.repoQueryTotalDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name: "symbiotic_relay_repo_query_total_duration_seconds",
+		Help: " Total duration of repository queries in seconds, including retries",
+	}, []string{"query_name", "status"})
+	all = append(all, m.repoQueryTotalDuration)
 
 	proofSizeBuckets := []float64{
 		256,     // 256B
@@ -247,4 +263,12 @@ func (m *Metrics) ObserveP2PSyncRequestedAggregationProofs(count int) {
 
 func (m *Metrics) ObserveAggregationProofSize(proofSizeBytes int, activeValidatorCount int) {
 	m.aggregationProofSize.WithLabelValues(strconv.Itoa(activeValidatorCount)).Observe(float64(proofSizeBytes))
+}
+
+func (m *Metrics) ObserveRepoQueryDuration(queryName, status string, d time.Duration) {
+	m.repoQueryDuration.WithLabelValues(queryName, status).Observe(d.Seconds())
+}
+
+func (m *Metrics) ObserveRepoQueryTotalDuration(queryName, status string, d time.Duration) {
+	m.repoQueryTotalDuration.WithLabelValues(queryName, status).Observe(d.Seconds())
 }
