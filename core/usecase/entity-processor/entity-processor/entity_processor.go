@@ -4,10 +4,12 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	validate "github.com/go-playground/validator/v10"
 
 	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/core/usecase/crypto"
 	"github.com/symbioticfi/relay/pkg/signals"
 )
 
@@ -16,8 +18,10 @@ import (
 // Repository defines the interface needed by the entity processor
 type Repository interface {
 	AddSignature(ctx context.Context, signature entity.SignatureExtended) error
+	GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (entity.SignatureExtended, error)
+	GetValidatorByKey(ctx context.Context, epoch entity.Epoch, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error)
 	GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error)
-
+	GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error)
 	AddProof(ctx context.Context, aggregationProof entity.AggregationProof) error
 }
 
@@ -68,6 +72,32 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature entity
 		"epoch", signature.Epoch,
 	)
 
+	publicKey, err := crypto.NewPublicKey(signature.KeyTag.Type(), signature.PublicKey)
+	if err != nil {
+		return errors.Errorf("failed to get public key: %w", err)
+	}
+	validator, activeIndex, err := s.cfg.Repo.GetValidatorByKey(ctx, signature.Epoch, signature.KeyTag, publicKey.OnChain())
+	if err != nil {
+		return errors.Errorf("validator not found for public key %x: %w", signature.PublicKey, err)
+	}
+	if !validator.IsActive {
+		return errors.Errorf("validator %s is not active", validator.Operator.Hex())
+	}
+
+	// check if signature already exists
+	_, err = s.cfg.Repo.GetSignatureByIndex(ctx, signature.RequestID(), activeIndex)
+	if err == nil {
+		return errors.Errorf("signature already exists for request ID %s and validator index %d: %w", signature.RequestID().Hex(), activeIndex, entity.ErrEntityAlreadyExist)
+	}
+	if !errors.Is(err, entity.ErrEntityNotFound) {
+		return errors.Errorf("failed to check existing signature: %w", err)
+	}
+
+	err = publicKey.VerifyWithHash(signature.MessageHash, signature.Signature)
+	if err != nil {
+		return errors.Errorf("failed to verify signature: %w", err)
+	}
+
 	if err := s.cfg.Repo.AddSignature(ctx, signature); err != nil {
 		return errors.Errorf("failed to add signature: %w", err)
 	}
@@ -82,6 +112,20 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature entity
 
 // ProcessAggregationProof processes an aggregation proof by saving it and removing from pending collection
 func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregationProof entity.AggregationProof) error {
+	slog.DebugContext(ctx, "Processing proof",
+		"keyTag", aggregationProof.KeyTag,
+		"requestId", aggregationProof.RequestID().Hex(),
+		"epoch", aggregationProof.Epoch,
+	)
+
+	_, err := s.cfg.Repo.GetAggregationProof(ctx, aggregationProof.RequestID())
+	if err == nil {
+		return errors.Errorf("aggregation proof already exists for request ID %s: %w", aggregationProof.RequestID().Hex(), entity.ErrEntityAlreadyExist)
+	}
+	if !errors.Is(err, entity.ErrEntityNotFound) {
+		return errors.Errorf("failed to check existing aggregation proof: %w", err)
+	}
+
 	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, aggregationProof.Epoch)
 	if err != nil {
 		return errors.Errorf("failed to get validator set: %w", err)

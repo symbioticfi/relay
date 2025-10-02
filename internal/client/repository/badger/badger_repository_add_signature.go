@@ -16,21 +16,11 @@ func (r *Repository) AddSignature(ctx context.Context, signature entity.Signatur
 	if err != nil {
 		return errors.Errorf("failed to get public key: %w", err)
 	}
-	err = publicKey.VerifyWithHash(signature.MessageHash, signature.Signature)
-	if err != nil {
-		return errors.Errorf("failed to verify signature: %w", err)
-	}
 
 	validator, activeIndex, err := r.GetValidatorByKey(ctx, signature.Epoch, signature.KeyTag, publicKey.OnChain())
 	if err != nil {
 		return errors.Errorf("validator not found for public key %x: %w", signature.PublicKey, err)
 	}
-
-	if !validator.IsActive {
-		return errors.Errorf("validator %s is not active", validator.Operator.Hex())
-	}
-
-	slog.DebugContext(ctx, "Found active validator", "validator", validator)
 
 	// Ensure only one goroutine is processing signatures for this request ID at a time
 	r.signatureMutexMu.Lock()

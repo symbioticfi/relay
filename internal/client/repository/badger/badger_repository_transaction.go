@@ -34,7 +34,7 @@ func (r *Repository) doUpdateInTx(ctx context.Context, name string, f func(ctx c
 	queryName := "update:" + name
 	start := time.Now()
 	err := r.db.Update(func(txn *badger.Txn) error {
-		txnCtx := r.WithName(
+		txnCtx := r.withName(
 			context.WithValue(ctx, badgerTxnKey, txn),
 			queryName,
 		)
@@ -70,7 +70,7 @@ func (r *Repository) doViewInTx(ctx context.Context, name string, f func(ctx con
 
 	queryName := "view:" + name
 	err := r.db.View(func(txn *badger.Txn) error {
-		txnCtx := r.WithName(
+		txnCtx := r.withName(
 			context.WithValue(ctx, badgerTxnKey, txn),
 			queryName,
 		)
@@ -96,7 +96,7 @@ func getTxn(ctx context.Context) *badger.Txn {
 	return nil
 }
 
-func (r *Repository) WithName(ctx context.Context, name string) context.Context {
+func (r *Repository) withName(ctx context.Context, name string) context.Context {
 	return context.WithValue(ctx, ctxQueryName, name)
 }
 

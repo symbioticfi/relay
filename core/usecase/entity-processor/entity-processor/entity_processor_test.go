@@ -568,7 +568,7 @@ func TestEntityProcessor_ProcessAggregationProof_FailsWhenAlreadyExists(t *testi
 	// Attempt to process same aggregation proof should fail
 	err = processor.ProcessAggregationProof(t.Context(), msg)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to save aggregation proof")
+	require.Contains(t, err.Error(), "aggregation proof already exists for request ID")
 	require.ErrorIs(t, err, entity.ErrEntityAlreadyExist)
 }
 
