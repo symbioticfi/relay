@@ -94,11 +94,10 @@ linters:
       allow-empty-returns: true
       allow-empty: true
       include:
-        - ^github.com/symbioticfi/relay/.*$
+        - ^github.com/symbioticfi/relay/internal/client/repository/.*$
+        - ^github.com/symbioticfi/relay/internal/entity/.*$
+        - ^github.com/symbioticfi/relay/core/entity/.*$
       exclude:
-        - ^github.com/symbioticfi/relay/pkg/proof.ValidatorData$
-        - ^github.com/symbioticfi/relay/pkg/proof.Circuit$
-        - ^github.com/symbioticfi/relay/pkg/log.Handler$
         - ^github.com/ethereum/go-ethereum.CallMsg$
     funlen:
       lines: 100

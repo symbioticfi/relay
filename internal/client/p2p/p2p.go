@@ -85,8 +85,6 @@ func DefaultDiscoveryConfig() DiscoveryConfig {
 		MaxDHTReconnectPeerCount:       20,
 		DHTPeerDiscoveryInterval:       5 * time.Minute,
 		DHTRoutingTableRefreshInterval: 10 * time.Minute, // same as kdht package default
-
-		BootstrapPeers: nil,
 	}
 }
 

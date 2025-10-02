@@ -432,12 +432,10 @@ func initP2PService(ctx context.Context, cfg config, keyProvider keyprovider.Key
 	}
 
 	p2pCfg := p2p.Config{
-		Host:            h,
-		Metrics:         mtr,
-		Discovery:       p2p.DefaultDiscoveryConfig(),
-		Handler:         p2p.NewP2PHandler(provider),
-		SkipMessageSign: false,
-		EventTracer:     nil,
+		Host:      h,
+		Metrics:   mtr,
+		Discovery: p2p.DefaultDiscoveryConfig(),
+		Handler:   p2p.NewP2PHandler(provider),
 	}
 	if len(cfg.Bootnodes) > 0 {
 		p2pCfg.Discovery.BootstrapPeers = cfg.Bootnodes

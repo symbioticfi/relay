@@ -37,8 +37,6 @@ var genesisCmd = &cobra.Command{
 			},
 			RequestTimeout: 5 * time.Second,
 			KeyProvider:    kp,
-			Metrics:        nil,
-			MaxCalls:       0,
 		})
 		if err != nil {
 			return err

@@ -65,9 +65,6 @@ func New[T any](cfg Config, id string, handler SignalListener[T]) *Signal[T] {
 		handler:    handler,
 		maxWorkers: cfg.WorkerCount,
 		id:         id,
-		started:    false,
-		stopped:    atomic.Bool{},
-		mutex:      sync.RWMutex{},
 	}
 }
 
@@ -112,7 +109,7 @@ func (s *Signal[T]) EmitWithTimeout(payload T, timeout time.Duration) error {
 	}
 	s.mutex.RUnlock()
 
-	event := Event[T]{Ctx: nil, Payload: payload}
+	event := Event[T]{Payload: payload}
 
 	emitCtx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
