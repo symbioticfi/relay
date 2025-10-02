@@ -5,8 +5,11 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/symbioticfi/relay/core/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
 )
 
@@ -14,6 +17,9 @@ import (
 func (h *grpcHandler) GetCurrentEpoch(ctx context.Context, req *apiv1.GetCurrentEpochRequest) (*apiv1.GetCurrentEpochResponse, error) {
 	currentEpochInfo, err := h.cfg.Repo.GetLatestValidatorSetHeader(ctx)
 	if err != nil {
+		if errors.Is(err, entity.ErrEntityNotFound) {
+			return nil, status.Error(codes.NotFound, "no validator set header found")
+		}
 		return nil, errors.Errorf("failed to get latest validator set header: %w", err)
 	}
 	return &apiv1.GetCurrentEpochResponse{

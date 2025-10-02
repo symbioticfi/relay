@@ -98,39 +98,13 @@ linters:
       allow-empty-returns: true
       allow-empty: true
       include:
-        - ^github.com/symbioticfi/relay/core/entity.*$
-        - ^github.com/symbioticfi/relay/internal/entity.*$
-        - ^github.com/symbioticfi/relay/internal/client/repository/badger.*$
-        - ^github.com/symbioticfi/relay/internal/client/p2p/proto/v1.*$$
+        - ^github.com/symbioticfi/relay/internal/client/repository/.*$
+        - ^github.com/symbioticfi/relay/internal/client/p2p/proto/.*$
+        - ^github.com/symbioticfi/relay/internal/gen/.*$
+        - ^github.com/symbioticfi/relay/internal/entity/.*$
+        - ^github.com/symbioticfi/relay/core/entity/.*$
+        - ^github.com/symbioticfi/relay/core/entity/.*$
       exclude:
-        - ^github.com/symbioticfi/relay/core/entity.NetworkConfig$
-        - ^github.com/symbioticfi/relay/core/entity.ValidatorSet$
-        - ^github.com/symbioticfi/relay/core/entity.Eip712Domain$
-        - ^github.com/symbioticfi/relay/core/entity.SignatureMap$
-        - ^github.com/symbioticfi/relay/core/entity.Validator$
-        - ^database/sql.NullBool$
-        - ^database/sql.NullString
-        - ^net/http.Client$
-        - ^net/http.Cookie$
-        - ^net/http.Request$
-        - ^net/http.Response$
-        - ^net/http.Server$
-        - ^net/http.Transport$
-        - ^net/url.URL$
-        - ^os/exec.Cmd$
-        - ^reflect.StructField$
-        - ^github.com/Shopify/sarama.Config$
-        - ^github.com/Shopify/sarama.ProducerMessage$
-        - ^github.com/mitchellh/mapstructure.DecoderConfig$
-        - ^github.com/prometheus/client_golang/.+Opts$
-        - ^github.com/spf13/cobra.Command$
-        - ^github.com/spf13/cobra.CompletionOptions$
-        - ^github.com/stretchr/testify/mock.Mock$
-        - ^github.com/testcontainers/testcontainers-go.+Request$
-        - ^github.com/testcontainers/testcontainers-go.FromDockerfile$
-        - ^golang.org/x/tools/go/analysis.Analyzer$
-        - ^google.golang.org/protobuf/.+Options$
-        - ^gopkg.in/yaml.v3.Node$
         - ^github.com/ethereum/go-ethereum.CallMsg$
     funlen:
       lines: 100
@@ -193,7 +167,6 @@ linters:
         - funlen
         - gocognit
         - lll
-        - exhaustruct
     perfsprint:
       strconcat: false
     revive:
@@ -282,6 +255,8 @@ linters:
     rules:
       - linters:
           - goconst
+          - exhaustruct
+          - wrapcheck
         path: _test\.go
       - path: _test\.go
         text: 'subtests should call t.Parallel'
