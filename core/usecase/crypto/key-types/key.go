@@ -20,4 +20,5 @@ type PrivateKey interface {
 	Bytes() []byte
 	Sign(msg []byte) (Signature, MessageHash, error)
 	PublicKey() PublicKey
+	Hash(msg []byte) MessageHash
 }

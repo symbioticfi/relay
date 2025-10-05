@@ -84,6 +84,13 @@ func (r *Repository) AddSignature(ctx context.Context, signature entity.Signatur
 				}
 				// If ErrEntityNotFound, it means it was already removed or never added - that's ok
 			}
+		} else if len(signatureMap.GetMissingValidators().ToArray()) == 0 {
+			// for non aggregation keys, we wait for all validators to sign and then remove
+			// worst case the pending request remains and we stop syncing for the stale epochs
+			err := r.RemoveSignatureRequestPending(ctx, signature.Epoch, signature.RequestID())
+			if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
+				return errors.Errorf("failed to remove signature request from pending collection: %v", err)
+			}
 		}
 
 		return nil

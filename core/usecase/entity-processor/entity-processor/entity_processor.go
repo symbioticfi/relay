@@ -78,7 +78,7 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature entity
 	}
 	validator, activeIndex, err := s.cfg.Repo.GetValidatorByKey(ctx, signature.Epoch, signature.KeyTag, publicKey.OnChain())
 	if err != nil {
-		return errors.Errorf("validator not found for public key %x: %w", signature.PublicKey, err)
+		return errors.Errorf("validator not found for public key %x, keyTag=%v, epoch=%v: %w", publicKey.OnChain(), signature.KeyTag, signature.Epoch, err)
 	}
 	if !validator.IsActive {
 		return errors.Errorf("validator %s is not active", validator.Operator.Hex())

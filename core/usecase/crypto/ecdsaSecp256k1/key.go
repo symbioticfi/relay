@@ -31,10 +31,6 @@ type PrivateKey struct {
 	privateKey ecdsa.PrivateKey
 }
 
-func Hash(msg []byte) MessageHash {
-	return crypto.Keccak256(msg)
-}
-
 func NewPrivateKey(b []byte) (*PrivateKey, error) {
 	kInt := big.NewInt(0).SetBytes(b)
 	if kInt.BitLen() > 32*8 { // 32 bytes = 256 bits
@@ -47,6 +43,14 @@ func NewPrivateKey(b []byte) (*PrivateKey, error) {
 		return nil, errors.Errorf("ecdsaSecp256k1: failed to parse private key: %v", err)
 	}
 	return &PrivateKey{privateKey: *k}, nil
+}
+
+func (k *PrivateKey) Hash(msg []byte) MessageHash {
+	return hash(msg)
+}
+
+func hash(msg []byte) MessageHash {
+	return crypto.Keccak256(msg)
 }
 
 func GenerateKey() (*PrivateKey, error) {
@@ -63,7 +67,7 @@ func (k *PrivateKey) Bytes() []byte {
 
 func (k *PrivateKey) Sign(msg []byte) (Signature, MessageHash, error) {
 	// symbiotic using keccak256 for hashing in ecdsaSecp256k1
-	hash := Hash(msg)
+	hash := k.Hash(msg)
 
 	sig, err := crypto.Sign(hash, &k.privateKey)
 	if err != nil {
@@ -89,7 +93,7 @@ func NewPublicKey(x *big.Int, y *big.Int) *PublicKey {
 }
 
 func (k *PublicKey) Verify(msg Message, sig Signature) error {
-	return k.VerifyWithHash(Hash(msg), sig)
+	return k.VerifyWithHash(hash(msg), sig)
 }
 
 func (k *PublicKey) VerifyWithHash(msgHash MessageHash, sig Signature) error {

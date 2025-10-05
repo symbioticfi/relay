@@ -2,9 +2,11 @@ package signer_app
 
 import (
 	"crypto/rand"
+	"log"
 	"log/slog"
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/samber/lo"
@@ -35,6 +37,8 @@ func TestSign_HappyPath(t *testing.T) {
 	setup.mockMetrics.EXPECT().ObservePKSignDuration(gomock.Any())
 	setup.mockMetrics.EXPECT().ObserveAppSignDuration(gomock.Any())
 
+	go setup.app.HandleSignatureRequests(t.Context(), 1, setup.mockP2P)
+
 	// Sign
 	signature, err := setup.app.Sign(t.Context(), req)
 	require.NoError(t, err)
@@ -45,6 +49,8 @@ func TestSign_HappyPath(t *testing.T) {
 	require.Equal(t, req.KeyTag, savedReq.KeyTag)
 	require.Equal(t, req.RequiredEpoch, savedReq.RequiredEpoch)
 	require.Equal(t, req.Message, savedReq.Message)
+
+	time.Sleep(time.Second)
 
 	// Verify that signature is correct
 	signatures, err := setup.repo.GetAllSignatures(t.Context(), signature.RequestID())
@@ -105,7 +111,6 @@ func newTestSetup(t *testing.T) *testSetup {
 	require.NoError(t, err)
 
 	cfg := Config{
-		P2PService:      mockP2P,
 		KeyProvider:     keyProvider,
 		Repo:            repo,
 		EntityProcessor: processor,
@@ -141,6 +146,8 @@ func newPrivateKey(t *testing.T) crypto.PrivateKey {
 
 	privateKey, err := crypto.NewPrivateKey(entity.KeyTypeBlsBn254, privateKeyBytes)
 	require.NoError(t, err)
+
+	log.Printf("Generated onchain key: %x", privateKey.PublicKey().OnChain())
 	return privateKey
 }
 

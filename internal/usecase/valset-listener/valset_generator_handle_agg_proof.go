@@ -1,4 +1,4 @@
-package valset_generator
+package valset_listener
 
 import (
 	"context"
@@ -30,7 +30,7 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		valset, err = s.cfg.Repo.GetValidatorSetByEpoch(ctx, msg.Epoch)
 		if err != nil {
 			if errors.Is(err, entity.ErrEntityNotFound) && !retryAttempted { // TODO: do i need to check if there is a local signature for request? it's still possible to commit
-				if err = s.process(ctx); err != nil {
+				if err = s.tryLoadMissingEpochs(ctx); err != nil {
 					slog.ErrorContext(ctx, "failed to process epochs, on demand from committer", "error", err)
 					return nil
 				}
@@ -47,6 +47,16 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 	err = s.cfg.Repo.AddProof(ctx, msg)
 	if err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
 		return err
+	}
+
+	// check if proof is a valset proof, only then commit
+	valsetMeta, err := s.cfg.Repo.GetValidatorSetMetadata(ctx, msg.Epoch)
+	if err != nil {
+		return errors.Errorf("failed to get validator set metadata: %w", err)
+	}
+	if valsetMeta.RequestID != msg.RequestID() {
+		slog.DebugContext(ctx, "Aggregation proof is not for valset, skipping proof commitment", "epoch", msg.Epoch, "requestId", msg.RequestID().Hex(), "valsetRequestId", valsetMeta.RequestID.Hex())
+		return nil
 	}
 
 	if valset.Status == entity.HeaderCommitted {

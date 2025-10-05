@@ -12,7 +12,7 @@ cat > /tmp/sidecar.yaml << EOFCONFIG
 driver:
   chain-id: 31337
   address: "$DRIVER_ADDRESS"
-log-level: "debug"
+log-level: "info"
 log-mode: "pretty"
 signer: true
 chains:

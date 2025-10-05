@@ -606,7 +606,7 @@ func TestEntityProcessor_ProcessSignature_SavesAggregationProofPendingForAggrega
 	require.Len(t, pendingAggRequests, 1)
 }
 
-func TestEntityProcessor_ProcessSignature_DoesNotSaveAggregationProofPendingForNonAggregationKeys(t *testing.T) {
+func TestEntityProcessor_ProcessSignature_SaveAggregationProofPendingForNonAggregationKeys(t *testing.T) {
 	t.Parallel()
 
 	repo := setupTestRepository(t)
@@ -623,10 +623,11 @@ func TestEntityProcessor_ProcessSignature_DoesNotSaveAggregationProofPendingForN
 	require.NoError(t, err)
 	require.Equal(t, req, savedReq)
 
-	// Verify no pending signature requests (non-aggregation key)
+	// Verify pending signature requests saved (non-aggregation key)
 	pendingSignatureRequests, err := repo.GetSignatureRequestsByEpochPending(t.Context(), req.RequiredEpoch, 10, common.Hash{})
 	require.NoError(t, err)
-	require.Empty(t, pendingSignatureRequests)
+	require.Len(t, pendingSignatureRequests, 1)
+	require.Equal(t, param.RequestID(), pendingSignatureRequests[0].RequestID)
 
 	// Verify no pending aggregation proof requests
 	pendingAggRequests, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), req.RequiredEpoch, 10, common.Hash{})

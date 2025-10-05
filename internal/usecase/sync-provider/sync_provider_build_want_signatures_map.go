@@ -78,6 +78,10 @@ func (s *Syncer) buildWantSignaturesMap(ctx context.Context) (map[common.Hash]en
 				// Get current signature map
 				sigMap, err := s.cfg.Repo.GetSignatureMap(ctx, reqSignatureID)
 				if err != nil {
+					if errors.Is(err, entity.ErrEntityNotFound) {
+						// No signatures yet, all validators are missing
+						continue
+					}
 					return nil, errors.Errorf("failed to get signature map for request %s: %w", reqSignatureID.Hex(), err)
 				}
 
