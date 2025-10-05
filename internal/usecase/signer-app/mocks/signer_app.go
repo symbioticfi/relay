@@ -45,10 +45,10 @@ func (m *Mockrepo) EXPECT() *MockrepoMockRecorder {
 }
 
 // GetSelfSignatureRequestsPending mocks base method.
-func (m *Mockrepo) GetSelfSignatureRequestsPending(ctx context.Context, limit int) ([]entity.SignatureRequestWithID, error) {
+func (m *Mockrepo) GetSelfSignatureRequestsPending(ctx context.Context, limit int) ([]common.Hash, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSelfSignatureRequestsPending", ctx, limit)
-	ret0, _ := ret[0].([]entity.SignatureRequestWithID)
+	ret0, _ := ret[0].([]common.Hash)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

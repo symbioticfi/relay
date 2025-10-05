@@ -324,8 +324,8 @@ func (r *Repository) GetSignatureRequestsByEpoch(ctx context.Context, epoch enti
 	)
 }
 
-func (r *Repository) GetSelfSignatureRequestsPending(ctx context.Context, limit int) ([]entity.SignatureRequestWithID, error) {
-	var requests []entity.SignatureRequestWithID
+func (r *Repository) GetSelfSignatureRequestsPending(ctx context.Context, limit int) ([]common.Hash, error) {
+	var requests []common.Hash
 
 	return requests, r.doViewInTx(ctx, "GetSelfSignatureRequestsPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -357,41 +357,10 @@ func (r *Repository) GetSelfSignatureRequestsPending(ctx context.Context, limit 
 				return errors.Errorf("invalid pending self signature request key format: %s", key)
 			}
 
-			epochStr := parts[1]
-			var epoch entity.Epoch
-			_, err := fmt.Sscanf(epochStr, "%d", &epoch)
-			if err != nil {
-				return errors.Errorf("invalid epoch in pending self signature request key: %s", key)
-			}
 			requestIDStr := parts[2]
 			requestID := common.HexToHash(requestIDStr)
 
-			// Get the actual signature request
-			sigReqKey := keySignatureRequest(epoch, requestID)
-			sigReqItem, err := txn.Get(sigReqKey)
-			if err != nil {
-				if errors.Is(err, badger.ErrKeyNotFound) {
-					// This shouldn't happen - pending marker exists but signature request doesn't
-					// Skip this entry and continue
-					continue
-				}
-				return errors.Errorf("failed to get signature request for request id %s: %w", requestIDStr, err)
-			}
-
-			value, err := sigReqItem.ValueCopy(nil)
-			if err != nil {
-				return errors.Errorf("failed to copy signature request value: %w", err)
-			}
-
-			req, err := bytesToSignatureRequest(value)
-			if err != nil {
-				return errors.Errorf("failed to unmarshal signature request: %w", err)
-			}
-
-			requests = append(requests, entity.SignatureRequestWithID{
-				SignatureRequest: req,
-				RequestID:        requestID,
-			})
+			requests = append(requests, requestID)
 			count++
 		}
 

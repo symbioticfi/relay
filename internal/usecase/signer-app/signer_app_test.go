@@ -2,7 +2,6 @@ package signer_app
 
 import (
 	"crypto/rand"
-	"log"
 	"log/slog"
 	"math/big"
 	"testing"
@@ -147,7 +146,6 @@ func newPrivateKey(t *testing.T) crypto.PrivateKey {
 	privateKey, err := crypto.NewPrivateKey(entity.KeyTypeBlsBn254, privateKeyBytes)
 	require.NoError(t, err)
 
-	log.Printf("Generated onchain key: %x", privateKey.PublicKey().OnChain())
 	return privateKey
 }
 

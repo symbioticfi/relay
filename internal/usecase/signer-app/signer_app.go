@@ -22,7 +22,7 @@ import (
 type repo interface {
 	SaveSignatureRequest(ctx context.Context, requestID common.Hash, req entity.SignatureRequest) error
 	RemoveSelfSignatureRequestPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error
-	GetSelfSignatureRequestsPending(ctx context.Context, limit int) ([]entity.SignatureRequestWithID, error)
+	GetSelfSignatureRequestsPending(ctx context.Context, limit int) ([]common.Hash, error)
 	GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error)
 	GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error)
 }
@@ -62,12 +62,7 @@ func (c Config) Validate() error {
 
 type SignerApp struct {
 	cfg   Config
-	queue *workqueue.Typed[queueItem]
-}
-
-type queueItem struct {
-	Epoch     entity.Epoch
-	RequestID common.Hash
+	queue *workqueue.Typed[common.Hash]
 }
 
 func NewSignerApp(cfg Config) (*SignerApp, error) {
@@ -77,7 +72,7 @@ func NewSignerApp(cfg Config) (*SignerApp, error) {
 
 	app := &SignerApp{
 		cfg:   cfg,
-		queue: workqueue.NewTyped[queueItem](),
+		queue: workqueue.NewTyped[common.Hash](),
 	}
 
 	return app, nil
@@ -113,10 +108,7 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) (enti
 		return entity.SignatureExtended{}, errors.Errorf("failed to get signature request: %w", err)
 	}
 
-	s.queue.Add(queueItem{
-		Epoch:     req.RequiredEpoch,
-		RequestID: requestId,
-	})
+	s.queue.Add(requestId)
 
 	// does not return the actual signature yet
 	return extendedSignature, nil
@@ -239,14 +231,14 @@ func (s *SignerApp) worker(ctx context.Context, id int, p2pService p2pService) {
 		func() {
 			defer s.queue.Done(item)
 
-			req, err := s.cfg.Repo.GetSignatureRequest(ctx, item.RequestID)
+			req, err := s.cfg.Repo.GetSignatureRequest(ctx, item)
 			if err != nil {
-				slog.ErrorContext(ctx, "Failed to get signature request from repo", "request_id", item.RequestID.Hex(), "error", err)
+				slog.ErrorContext(ctx, "Failed to get signature request from repo", "request_id", item.Hex(), "error", err)
 				return
 			}
 
 			if err = s.completeSign(ctx, req, p2pService); err != nil {
-				slog.ErrorContext(ctx, "Failed to complete sign for request", "request_id", item.RequestID.Hex(), "error", err)
+				slog.ErrorContext(ctx, "Failed to complete sign for request", "request_id", item.Hex(), "error", err)
 				return
 			}
 		}()
@@ -264,12 +256,9 @@ func (s *SignerApp) handleMissedSignaturesOnce(ctx context.Context) error {
 	}
 
 	slog.InfoContext(ctx, "Handling pending self signature requests", "count", len(pendingRequests))
-	for _, reqWithID := range pendingRequests {
-		slog.InfoContext(ctx, "Handling pending self signature request", "request_id", reqWithID.RequestID.Hex())
-		s.queue.Add(queueItem{
-			Epoch:     reqWithID.RequiredEpoch,
-			RequestID: reqWithID.RequestID,
-		})
+	for _, reqID := range pendingRequests {
+		slog.InfoContext(ctx, "Handling pending self signature request", "request_id", reqID.Hex())
+		s.queue.Add(reqID)
 	}
 	return nil
 }
