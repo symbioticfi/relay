@@ -39,11 +39,11 @@ func TestSign_HappyPath(t *testing.T) {
 	go setup.app.HandleSignatureRequests(t.Context(), 1, setup.mockP2P)
 
 	// Sign
-	signature, err := setup.app.Sign(t.Context(), req)
+	reqID, err := setup.app.RequestSignature(t.Context(), req)
 	require.NoError(t, err)
 
 	// Verify that signature request was saved
-	savedReq, err := setup.repo.GetSignatureRequest(t.Context(), signature.RequestID())
+	savedReq, err := setup.repo.GetSignatureRequest(t.Context(), reqID)
 	require.NoError(t, err)
 	require.Equal(t, req.KeyTag, savedReq.KeyTag)
 	require.Equal(t, req.RequiredEpoch, savedReq.RequiredEpoch)
@@ -52,7 +52,7 @@ func TestSign_HappyPath(t *testing.T) {
 	time.Sleep(time.Second)
 
 	// Verify that signature is correct
-	signatures, err := setup.repo.GetAllSignatures(t.Context(), signature.RequestID())
+	signatures, err := setup.repo.GetAllSignatures(t.Context(), reqID)
 	require.NoError(t, err)
 	require.Len(t, signatures, 1)
 

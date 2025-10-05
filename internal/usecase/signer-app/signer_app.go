@@ -78,20 +78,19 @@ func NewSignerApp(cfg Config) (*SignerApp, error) {
 	return app, nil
 }
 
-// Sign creates a signature request and queues it for signing
-// It does not return the actual signature yet
+// RequestSignature creates a signature request and queues it for signing, returns requestID
 // The actual signing is done in the background by workers
-func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) (entity.SignatureExtended, error) {
+func (s *SignerApp) RequestSignature(ctx context.Context, req entity.SignatureRequest) (common.Hash, error) {
 	ctx = log.WithComponent(ctx, "signer")
 	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(req.RequiredEpoch)))
 
 	if !req.KeyTag.Type().SignerKey() {
-		return entity.SignatureExtended{}, errors.Errorf("key tag %s is not a signing key", req.KeyTag)
+		return common.Hash{}, errors.Errorf("key tag %s is not a signing key", req.KeyTag)
 	}
 
 	private, err := s.cfg.KeyProvider.GetPrivateKey(req.KeyTag)
 	if err != nil {
-		return entity.SignatureExtended{}, errors.Errorf("failed to get private key: %w", err)
+		return common.Hash{}, errors.Errorf("failed to get private key: %w", err)
 	}
 
 	extendedSignature := entity.SignatureExtended{
@@ -105,13 +104,13 @@ func (s *SignerApp) Sign(ctx context.Context, req entity.SignatureRequest) (enti
 
 	err = s.cfg.Repo.SaveSignatureRequest(ctx, requestId, req)
 	if err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
-		return entity.SignatureExtended{}, errors.Errorf("failed to get signature request: %w", err)
+		return common.Hash{}, errors.Errorf("failed to get signature request: %w", err)
 	}
 
 	s.queue.Add(requestId)
 
 	// does not return the actual signature yet
-	return extendedSignature, nil
+	return requestId, nil
 }
 
 func (s *SignerApp) completeSign(ctx context.Context, req entity.SignatureRequest, p2pService p2pService) error {

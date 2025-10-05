@@ -21,7 +21,7 @@ import (
 )
 
 type signer interface {
-	Sign(ctx context.Context, req entity.SignatureRequest) (entity.SignatureExtended, error)
+	RequestSignature(ctx context.Context, req entity.SignatureRequest) (common.Hash, error)
 }
 
 type repo interface {
@@ -227,7 +227,7 @@ func (s *Service) process(ctx context.Context, valSet entity.ValidatorSet, confi
 
 	// if we are a signer, sign the commitment, otherwise just save the metadata
 	if valSet.IsSigner(symbPrivate.PublicKey().OnChain()) {
-		_, err := s.cfg.Signer.Sign(ctx, r)
+		_, err := s.cfg.Signer.RequestSignature(ctx, r)
 		if err != nil {
 			return errors.Errorf("failed to sign new validator set extra: %w", err)
 		}

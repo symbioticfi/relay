@@ -29,7 +29,7 @@ import (
 
 //go:generate mockgen -source=app.go -destination=mocks/app_mock.go -package=mocks
 type signer interface {
-	Sign(ctx context.Context, req entity.SignatureRequest) (entity.SignatureExtended, error)
+	RequestSignature(ctx context.Context, req entity.SignatureRequest) (common.Hash, error)
 }
 
 type repo interface {
