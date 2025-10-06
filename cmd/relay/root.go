@@ -245,6 +245,10 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create valset status tracker: %w", err)
 	}
 
+	if err := statusTracker.TrackMissingEpochsStatuses(ctx); err != nil {
+		return errors.Errorf("failed to track missing epochs statuses: %w", err)
+	}
+
 	signListener, err := signatureListener.New(signatureListener.Config{
 		Repo:            repo,
 		EntityProcessor: entityProcessor,

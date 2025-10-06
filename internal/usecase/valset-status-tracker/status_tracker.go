@@ -3,6 +3,7 @@ package valsetStatusTracker
 import (
 	"context"
 	"log/slog"
+	"math"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -52,6 +53,37 @@ func New(cfg Config) (*Service, error) {
 	}, nil
 }
 
+// TrackMissingEpochsStatuses runs trackCommittedEpochs until all missing epochs statuses are loaded successfully
+func (s *Service) TrackMissingEpochsStatuses(ctx context.Context) error {
+	ctx = log.WithComponent(ctx, "status_tracker")
+
+	slog.InfoContext(ctx, "Track statuses of all missing epochs before starting services")
+
+	const maxRetries = 10
+	retryCount := 0
+	retryTimer := time.NewTimer(0)
+	defer retryTimer.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-retryTimer.C:
+			if err := s.trackCommittedEpochs(ctx); err != nil {
+				retryCount++
+				if retryCount >= maxRetries {
+					return errors.Errorf("failed to track statuses of missing epochs after %d retries: %w", maxRetries, err)
+				}
+				slog.ErrorContext(ctx, "Failed to track statuses of missing epochs, retrying", "error", err, "attempt", retryCount, "maxRetries", maxRetries)
+				retryTimer.Reset(time.Second * 2)
+				continue
+			}
+			slog.InfoContext(ctx, "Successfully tracked statuses of all missing epochs")
+			return nil
+		}
+	}
+}
+
 func (s *Service) Start(ctx context.Context) error {
 	ctx = log.WithComponent(ctx, "status_tracker")
 
@@ -92,17 +124,37 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 	return nil
 }
 
-// ignore TODO: need to create an algorithm for effective uncommitted valsets tracking, either bitmaps either store reference to next uncommitted epoch
 func (s *Service) trackCommittedEpochs(ctx context.Context) error {
-	epoch, err := s.cfg.Repo.GetFirstUncommittedValidatorSetEpoch(ctx)
+	fce, err := s.cfg.Repo.GetFirstUncommittedValidatorSetEpoch(ctx)
 	if err != nil {
 		return errors.Errorf("failed to get first uncommitted validator set epoch: %w", err)
 	}
 
-	firstUncommittedEpoch := epoch
+	firstUncommittedEpoch := uint64(fce)
 
-	for {
-		valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, epoch)
+	settlements, err := s.findLatestNonZeroSettlements(ctx)
+	if err != nil {
+		return errors.Errorf("failed to find latest settlements: %w", err)
+	}
+
+	if len(settlements) == 0 {
+		slog.InfoContext(ctx, "No settlements found, nothing to do")
+		return nil
+	}
+
+	var lastCommittedEpoch uint64 = math.MaxUint64
+
+	for _, settlement := range settlements {
+		lce, err := s.cfg.EvmClient.GetLastCommittedHeaderEpoch(ctx, settlement)
+		if err != nil {
+			return errors.Errorf("failed to get last committed header epoch: %w", err)
+		}
+
+		lastCommittedEpoch = min(lastCommittedEpoch, uint64(lce))
+	}
+
+	for epoch := firstUncommittedEpoch; epoch <= lastCommittedEpoch; epoch++ {
+		valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, entity.Epoch(epoch))
 		if err != nil {
 			if errors.Is(err, entity.ErrEntityNotFound) {
 				slog.DebugContext(ctx, "No uncommitted valset found, waiting...", "epoch", epoch)
@@ -111,15 +163,7 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 			return errors.Errorf("failed to get validator set for epoch %d: %w", epoch, err)
 		}
 
-		epoch++
-
 		if valset.Status == entity.HeaderCommitted {
-			if valset.Epoch == firstUncommittedEpoch {
-				firstUncommittedEpoch++
-				if err = s.cfg.Repo.SaveFirstUncommittedValidatorSetEpoch(ctx, firstUncommittedEpoch); err != nil {
-					return errors.Errorf("failed to save first uncommitted validator set epoch: %w", err)
-				}
-			}
 			continue
 		}
 
@@ -129,12 +173,6 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 		}
 
 		if len(config.Settlements) == 0 {
-			if valset.Epoch == firstUncommittedEpoch {
-				firstUncommittedEpoch++
-				if err = s.cfg.Repo.SaveFirstUncommittedValidatorSetEpoch(ctx, firstUncommittedEpoch); err != nil {
-					return errors.Errorf("failed to save first uncommitted validator set epoch: %w", err)
-				}
-			}
 			continue
 		}
 
@@ -175,14 +213,46 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 		}
 
 		slog.InfoContext(ctx, "Validator set is committed", "epoch", epoch)
+	}
 
-		if valset.Epoch == firstUncommittedEpoch {
-			firstUncommittedEpoch++
-			if err = s.cfg.Repo.SaveFirstUncommittedValidatorSetEpoch(ctx, firstUncommittedEpoch); err != nil {
-				return errors.Errorf("failed to save first uncommitted validator set epoch: %w", err)
-			}
-		}
+	if err := s.cfg.Repo.SaveFirstUncommittedValidatorSetEpoch(ctx, entity.Epoch(lastCommittedEpoch+1)); err != nil {
+		return errors.Errorf("failed to save last uncommitted validator set: %w", err)
 	}
 
 	return nil
+}
+
+func (s *Service) findLatestNonZeroSettlements(ctx context.Context) ([]entity.CrossChainAddress, error) {
+	currentEpoch, err := s.cfg.EvmClient.GetCurrentEpoch(ctx)
+	if err != nil {
+		return nil, errors.Errorf("failed to get current epoch: %w", err)
+	}
+
+	for epoch := currentEpoch; ; epoch-- {
+		config, err := s.cfg.Repo.GetConfigByEpoch(ctx, epoch)
+		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
+			return nil, errors.Errorf("failed to get config for epoch %d: %w", epoch, err)
+		}
+
+		if errors.Is(err, entity.ErrEntityNotFound) {
+			epochStart, err := s.cfg.EvmClient.GetEpochStart(ctx, epoch)
+			if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
+				return nil, errors.Errorf("failed to get epoch %d: %w", epoch, err)
+			}
+			config, err = s.cfg.EvmClient.GetConfig(ctx, epochStart)
+			if err != nil {
+				return nil, errors.Errorf("failed to get config for epoch %d: %w", epoch, err)
+			}
+		}
+
+		if len(config.Settlements) != 0 {
+			return config.Settlements, nil
+		}
+
+		if epoch == 0 {
+			break
+		}
+	}
+
+	return nil, nil
 }
