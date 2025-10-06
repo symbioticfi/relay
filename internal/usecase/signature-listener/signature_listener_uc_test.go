@@ -25,13 +25,6 @@ func TestHandleSignatureReceivedMessage_HappyPath(t *testing.T) {
 	privateKey := newPrivateKey(t)
 	msg := "test-message-to-sign"
 
-	req := entity.SignatureRequest{
-		RequiredEpoch: 777,
-		KeyTag:        entity.KeyTag(15),
-		Message:       []byte(msg),
-	}
-	require.NoError(t, setup.repo.SaveSignatureRequest(t.Context(), req))
-	require.NoError(t, setup.repo.SaveSignatureRequestPending(t.Context(), req))
 	// Create signature with the private key
 	signature, hash, err := privateKey.Sign([]byte(msg))
 	require.NoError(t, err)
@@ -40,13 +33,13 @@ func TestHandleSignatureReceivedMessage_HappyPath(t *testing.T) {
 	validatorSet := setup.createTestValidatorSetWithKey(t, privateKey)
 
 	// Create P2P message with real signature
-	p2pMsg := createTestP2PMessageWithSignature(privateKey, req, hash, signature)
+	p2pMsg := createTestP2PMessageWithSignature(privateKey, hash, signature)
 
 	// Execute
 	require.NoError(t, setup.useCase.HandleSignatureReceivedMessage(t.Context(), p2pMsg))
 
 	// Verify that signature was saved
-	signatures, err := setup.repo.GetAllSignatures(t.Context(), p2pMsg.Message.RequestHash)
+	signatures, err := setup.repo.GetAllSignatures(t.Context(), p2pMsg.Message.RequestID())
 	require.NoError(t, err)
 	require.Len(t, signatures, 1)
 
@@ -56,7 +49,7 @@ func TestHandleSignatureReceivedMessage_HappyPath(t *testing.T) {
 	require.Equal(t, privateKey.PublicKey().Raw(), signatures[0].PublicKey)
 
 	// Verify that signature map was updated
-	signatureMap, err := setup.repo.GetSignatureMap(t.Context(), p2pMsg.Message.RequestHash)
+	signatureMap, err := setup.repo.GetSignatureMap(t.Context(), p2pMsg.Message.RequestID())
 	require.NoError(t, err)
 	require.Equal(t, 0, signatureMap.CurrentVotingPower.Cmp(validatorSet.Validators[0].VotingPower.Int))
 }
@@ -70,7 +63,8 @@ func newTestSetup(t *testing.T) *testSetup {
 	t.Helper()
 
 	repo, err := badger.New(badger.Config{
-		Dir: t.TempDir(),
+		Dir:     t.TempDir(),
+		Metrics: badger.DoNothingMetrics{},
 	})
 	require.NoError(t, err)
 
@@ -88,7 +82,7 @@ func newTestSetup(t *testing.T) *testSetup {
 	mockAggProofSignal.EXPECT().Emit(gomock.Any()).Return(nil).AnyTimes()
 
 	// Create mock signature processed signal for entity processor
-	signatureProcessedSignal := signals.New[entity.SignatureMessage](signals.DefaultConfig(), "test", nil)
+	signatureProcessedSignal := signals.New[entity.SignatureExtended](signals.DefaultConfig(), "test", nil)
 
 	processor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo:                     repo,
@@ -155,21 +149,18 @@ func (setup *testSetup) createTestValidatorSetWithKey(t *testing.T, privateKey c
 	return vs
 }
 
-func createTestP2PMessageWithSignature(privateKey crypto.PrivateKey, req entity.SignatureRequest, hash []byte, signature []byte) intEntity.P2PMessage[entity.SignatureMessage] {
-	return intEntity.P2PMessage[entity.SignatureMessage]{
+func createTestP2PMessageWithSignature(privateKey crypto.PrivateKey, hash []byte, signature []byte) intEntity.P2PMessage[entity.SignatureExtended] {
+	return intEntity.P2PMessage[entity.SignatureExtended]{
 		SenderInfo: intEntity.SenderInfo{
 			Sender:    "test-peer-id",
 			PublicKey: []byte("test-sender-pubkey"),
 		},
-		Message: entity.SignatureMessage{
-			RequestHash: req.Hash(),
+		Message: entity.SignatureExtended{
 			KeyTag:      entity.KeyTag(15),
 			Epoch:       1,
-			Signature: entity.SignatureExtended{
-				MessageHash: hash,
-				PublicKey:   privateKey.PublicKey().Raw(),
-				Signature:   signature,
-			},
+			MessageHash: hash,
+			PublicKey:   privateKey.PublicKey().Raw(),
+			Signature:   signature,
 		},
 	}
 }

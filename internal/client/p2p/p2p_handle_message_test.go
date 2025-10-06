@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	pubsub_pb "github.com/libp2p/go-libp2p-pubsub/pb"
@@ -46,25 +45,22 @@ func TestService_IntegrationSuccessful(t *testing.T) {
 	}, time.Second, time.Millisecond*100)
 
 	// Set up message listener on service2
-	var receivedMsg p2pEntity.P2PMessage[entity.SignatureMessage]
+	var receivedMsg p2pEntity.P2PMessage[entity.SignatureExtended]
 
 	done := make(chan struct{})
-	require.NoError(t, service2.StartSignatureMessageListener(func(ctx context.Context, msg p2pEntity.P2PMessage[entity.SignatureMessage]) error {
+	require.NoError(t, service2.StartSignatureMessageListener(func(ctx context.Context, msg p2pEntity.P2PMessage[entity.SignatureExtended]) error {
 		receivedMsg = msg
 		close(done)
 		return nil
 	}))
 
 	// Prepare test message
-	testSignatureMsg := entity.SignatureMessage{
-		RequestHash: common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"),
+	testSignatureMsg := entity.SignatureExtended{
 		KeyTag:      entity.KeyTag(1),
 		Epoch:       entity.Epoch(123),
-		Signature: entity.SignatureExtended{
-			MessageHash: entity.RawMessageHash("test message hash"),
-			Signature:   entity.RawSignature("test signature"),
-			PublicKey:   entity.RawPublicKey("test public key"),
-		},
+		MessageHash: entity.RawMessageHash("test message hash"),
+		Signature:   entity.RawSignature("test signature"),
+		PublicKey:   entity.RawPublicKey("test public key"),
 	}
 
 	// Send the message from service1
@@ -76,12 +72,11 @@ func TestService_IntegrationSuccessful(t *testing.T) {
 		// Verify the received message
 		assert.Equal(t, service1.host.ID().String(), receivedMsg.SenderInfo.Sender)
 		assert.NotNil(t, receivedMsg.SenderInfo.PublicKey)
-		assert.Equal(t, testSignatureMsg.RequestHash, receivedMsg.Message.RequestHash)
 		assert.Equal(t, testSignatureMsg.KeyTag, receivedMsg.Message.KeyTag)
 		assert.Equal(t, testSignatureMsg.Epoch, receivedMsg.Message.Epoch)
-		assert.Equal(t, testSignatureMsg.Signature.MessageHash, receivedMsg.Message.Signature.MessageHash)
-		assert.Equal(t, testSignatureMsg.Signature.Signature, receivedMsg.Message.Signature.Signature)
-		assert.Equal(t, testSignatureMsg.Signature.PublicKey, receivedMsg.Message.Signature.PublicKey)
+		assert.Equal(t, testSignatureMsg.MessageHash, receivedMsg.Message.MessageHash)
+		assert.Equal(t, testSignatureMsg.Signature, receivedMsg.Message.Signature)
+		assert.Equal(t, testSignatureMsg.PublicKey, receivedMsg.Message.PublicKey)
 	case <-ctx.Done():
 		require.Fail(t, "Test timed out waiting for message")
 	}
@@ -113,7 +108,7 @@ func TestService_IntegrationFailedSignature(t *testing.T) {
 	}, time.Second, time.Millisecond*100)
 
 	// Send the message from service1
-	err = service1.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureMessage{})
+	err = service1.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureExtended{})
 	require.NoError(t, err)
 
 	select {

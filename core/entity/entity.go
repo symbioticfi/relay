@@ -3,11 +3,11 @@ package entity
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"fmt"
 	"log/slog"
 	"math/big"
 	"slices"
-	"time"
 
 	"github.com/symbioticfi/relay/core/usecase/ssz"
 
@@ -135,50 +135,63 @@ func (s ValidatorSetStatus) MarshalJSON() ([]byte, error) {
 }
 
 // SignatureRequest signature request message
-// RequestHash = sha256(SignatureRequest) (use as identifier later)
 type SignatureRequest struct {
 	KeyTag        KeyTag
 	RequiredEpoch Epoch
 	Message       RawMessage
 }
 
-func (r SignatureRequest) Hash() common.Hash {
-	return crypto.Keccak256Hash([]byte{uint8(r.KeyTag)}, new(big.Int).SetInt64(int64(r.RequiredEpoch)).Bytes(), r.Message)
+type SignatureRequestWithID struct {
+	SignatureRequest
+
+	RequestID common.Hash
 }
 
 // SignatureExtended signer.sign() -> SignatureExtended
 type SignatureExtended struct {
 	MessageHash RawMessageHash // scheme depends on KeyTag
+	KeyTag      KeyTag         // Key tag for validation
+	Epoch       Epoch          // Epoch for validation
+	PublicKey   RawPublicKey   // parse based on KeyTag (for bls will contain g1+g2)
 	Signature   RawSignature   // parse based on KeyTag
-	// PublicKey for bls will contain g1+g2
-	PublicKey RawPublicKey // parse based on KeyTag
 }
 
-type SignatureMessage struct {
-	RequestHash common.Hash
-	KeyTag      KeyTag
-	Epoch       Epoch
-	Signature   SignatureExtended // parse based on KeyTag
+// RequestID calculates the request id based on Hash(MessageHash, KeyTag, Epoch)
+func (s SignatureExtended) RequestID() common.Hash {
+	return requestID(s.KeyTag, s.Epoch, s.MessageHash)
+}
+
+func requestID(keyTag KeyTag, epoch Epoch, messageHash RawMessageHash) common.Hash {
+	return crypto.Keccak256Hash(
+		[]byte{uint8(keyTag)},
+		paddedUint64(uint64(epoch)),
+		messageHash,
+	)
+}
+
+func paddedUint64(value uint64) []byte {
+	padded := make([]byte, 8)
+	binary.BigEndian.PutUint64(padded, value)
+	return padded
 }
 
 // AggregationProof aggregator.proof(signatures []SignatureExtended) -> AggregationProof
 type AggregationProof struct {
-	VerificationType VerificationType // proof verification type
-	MessageHash      RawMessageHash   // scheme depends on KeyTag
-	Proof            RawProof         // parse based on KeyTag & VerificationType
+	MessageHash RawMessageHash // scheme depends on KeyTag
+	KeyTag      KeyTag         // Key tag for validation
+	Epoch       Epoch          // Epoch for validation
+	Proof       RawProof       // parse based on KeyTag
+}
+
+// RequestID calculates the request id based on Hash(MessageHash, KeyTag, Epoch)
+func (ap AggregationProof) RequestID() common.Hash {
+	return requestID(ap.KeyTag, ap.Epoch, ap.MessageHash)
 }
 
 // ProofCommitKey represents a proof commit key with its parsed epoch and hash for sorting
 type ProofCommitKey struct {
-	Epoch Epoch
-	Hash  common.Hash
-}
-
-type AggregatedSignatureMessage struct {
-	RequestHash      common.Hash
-	KeyTag           KeyTag
-	Epoch            Epoch
-	AggregationProof AggregationProof
+	Epoch     Epoch
+	RequestID common.Hash
 }
 
 type AggregationState struct {
@@ -391,8 +404,8 @@ func (v Validator) FindKeyByKeyTag(keyTag KeyTag) ([]byte, bool) {
 type ValidatorSet struct {
 	Version          uint8
 	RequiredKeyTag   KeyTag      // key tag required to commit next valset
-	Epoch            uint64      // valset epoch
-	CaptureTimestamp uint64      // epoch capture timestamp
+	Epoch            Epoch       // valset epoch
+	CaptureTimestamp Timestamp   // epoch capture timestamp
 	QuorumThreshold  VotingPower // absolute number now, not a percent
 	Validators       Validators
 	Status           ValidatorSetStatus
@@ -437,7 +450,13 @@ func (v ValidatorSet) findMembership(indexArray []uint32, requiredKey []byte) (u
 // Each committer has a dedicated time slot of CommitterSlotDuration seconds,
 // starting from the CaptureTimestamp. If the node's slot is about to start
 // i.e. if currentTime + graceSeconds moves us to the next slot, it will also return true.
-func (v ValidatorSet) IsActiveCommitter(ctx context.Context, committerSlotDuration, currentTime, graceSeconds uint64, requiredKey []byte) bool {
+func (v ValidatorSet) IsActiveCommitter(
+	ctx context.Context,
+	committerSlotDuration uint64,
+	currentTime Timestamp,
+	graceSeconds uint64,
+	requiredKey []byte,
+) bool {
 	index, ok := v.findMembership(v.CommitterIndices, requiredKey)
 	if !ok {
 		slog.DebugContext(ctx, "Node is not a committer", "committer-indices", v.CommitterIndices)
@@ -462,7 +481,7 @@ func (v ValidatorSet) IsActiveCommitter(ctx context.Context, committerSlotDurati
 	}
 
 	// Calculate elapsed time since capture
-	elapsedTime := currentTime - v.CaptureTimestamp
+	elapsedTime := uint64(currentTime - v.CaptureTimestamp)
 
 	// Calculate which slot we're currently in
 	currentSlot := elapsedTime / committerSlotDuration
@@ -512,11 +531,18 @@ type ValidatorSetHash struct {
 type ValidatorSetHeader struct {
 	Version            uint8
 	RequiredKeyTag     KeyTag
-	Epoch              uint64
-	CaptureTimestamp   uint64
+	Epoch              Epoch
+	CaptureTimestamp   Timestamp
 	QuorumThreshold    VotingPower
 	TotalVotingPower   VotingPower
 	ValidatorsSszMRoot common.Hash
+}
+
+type ValidatorSetMetadata struct {
+	RequestID      common.Hash
+	ExtraData      []ExtraData
+	Epoch          Epoch
+	CommitmentData []byte
 }
 
 type ExtraData struct {
@@ -627,6 +653,7 @@ func validatorSetToSszValidators(v *ValidatorSet) ssz.SszValidatorSet {
 					return &ssz.SszKey{
 						Tag:         uint8(k.Tag),
 						PayloadHash: keyPayloadHash(k),
+						Payload:     k.Payload,
 					}
 				}),
 				Vaults: lo.Map(v.Vaults, func(v ValidatorVault, _ int) *ssz.SszVault {
@@ -681,7 +708,7 @@ func (v ValidatorSetHeader) AbiEncode() ([]byte, error) {
 		v.TotalVotingPower.Int = big.NewInt(0)
 	}
 
-	pack, err := arguments.Pack(v.Version, v.RequiredKeyTag, new(big.Int).SetUint64(v.Epoch), new(big.Int).SetUint64(v.CaptureTimestamp), v.QuorumThreshold.Int, v.TotalVotingPower.Int, v.ValidatorsSszMRoot)
+	pack, err := arguments.Pack(v.Version, v.RequiredKeyTag, new(big.Int).SetUint64(uint64(v.Epoch)), new(big.Int).SetUint64(uint64(v.CaptureTimestamp)), v.QuorumThreshold.Int, v.TotalVotingPower.Int, v.ValidatorsSszMRoot)
 	if err != nil {
 		return nil, errors.Errorf("failed to pack arguments: %w", err)
 	}
@@ -705,24 +732,6 @@ type TxResult struct {
 type ChainURL struct {
 	ChainID uint64
 	RPCURL  string
-}
-
-type SignatureStatStage string
-
-const (
-	SignatureStatStageUnknown             = "Unknown"
-	SignatureStatStageSignRequestReceived = "SignRequestReceived"
-	SignatureStatStageSignCompleted       = "SignCompleted"
-	SignatureStatStageAggQuorumReached    = "AggQuorumReached"
-	SignatureStatStageAggCompleted        = "AggCompleted"
-	SignatureStatStageAggProofReceived    = "AggProofReceived"
-
-	SignatureStatStageAggregationSkipped = "AggSkipped"
-)
-
-type SignatureStat struct {
-	ReqHash common.Hash
-	StatMap map[SignatureStatStage]time.Time
 }
 
 type AggregationStatus struct {

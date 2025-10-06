@@ -23,12 +23,10 @@ const (
 
 // AggregationProof represents the aggregation proof data
 type AggregationProof struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	VerificationType uint32                 `protobuf:"varint,1,opt,name=verification_type,json=verificationType,proto3" json:"verification_type,omitempty"`
-	MessageHash      []byte                 `protobuf:"bytes,2,opt,name=message_hash,json=messageHash,proto3" json:"message_hash,omitempty"`
-	Proof            []byte                 `protobuf:"bytes,3,opt,name=proof,proto3" json:"proof,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Proof         []byte                 `protobuf:"bytes,3,opt,name=proof,proto3" json:"proof,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AggregationProof) Reset() {
@@ -61,20 +59,6 @@ func (*AggregationProof) Descriptor() ([]byte, []int) {
 	return file_v1_message_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *AggregationProof) GetVerificationType() uint32 {
-	if x != nil {
-		return x.VerificationType
-	}
-	return 0
-}
-
-func (x *AggregationProof) GetMessageHash() []byte {
-	if x != nil {
-		return x.MessageHash
-	}
-	return nil
-}
-
 func (x *AggregationProof) GetProof() []byte {
 	if x != nil {
 		return x.Proof
@@ -85,10 +69,11 @@ func (x *AggregationProof) GetProof() []byte {
 // SignaturesAggregated represents the aggregated signatures message
 type SignaturesAggregated struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	RequestHash      []byte                 `protobuf:"bytes,1,opt,name=request_hash,json=requestHash,proto3" json:"request_hash,omitempty"` // 32 bytes fixed length
+	RequestId        []byte                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"` // 32 bytes fixed length
 	KeyTag           uint32                 `protobuf:"varint,2,opt,name=key_tag,json=keyTag,proto3" json:"key_tag,omitempty"`
 	Epoch            uint64                 `protobuf:"varint,3,opt,name=epoch,proto3" json:"epoch,omitempty"`
-	AggregationProof *AggregationProof      `protobuf:"bytes,4,opt,name=aggregation_proof,json=aggregationProof,proto3" json:"aggregation_proof,omitempty"`
+	MessageHash      []byte                 `protobuf:"bytes,4,opt,name=message_hash,json=messageHash,proto3" json:"message_hash,omitempty"`
+	AggregationProof *AggregationProof      `protobuf:"bytes,5,opt,name=aggregation_proof,json=aggregationProof,proto3" json:"aggregation_proof,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -123,9 +108,9 @@ func (*SignaturesAggregated) Descriptor() ([]byte, []int) {
 	return file_v1_message_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *SignaturesAggregated) GetRequestHash() []byte {
+func (x *SignaturesAggregated) GetRequestId() []byte {
 	if x != nil {
-		return x.RequestHash
+		return x.RequestId
 	}
 	return nil
 }
@@ -142,6 +127,13 @@ func (x *SignaturesAggregated) GetEpoch() uint64 {
 		return x.Epoch
 	}
 	return 0
+}
+
+func (x *SignaturesAggregated) GetMessageHash() []byte {
+	if x != nil {
+		return x.MessageHash
+	}
+	return nil
 }
 
 func (x *SignaturesAggregated) GetAggregationProof() *AggregationProof {
@@ -215,7 +207,7 @@ func (x *Signature) GetPublicKey() []byte {
 // SignatureGenerated represents the signature generated message
 type SignatureGenerated struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	RequestHash   []byte                 `protobuf:"bytes,1,opt,name=request_hash,json=requestHash,proto3" json:"request_hash,omitempty"` // 32 bytes fixed length
+	RequestId     []byte                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"` // 32 bytes fixed length
 	KeyTag        uint32                 `protobuf:"varint,2,opt,name=key_tag,json=keyTag,proto3" json:"key_tag,omitempty"`
 	Epoch         uint64                 `protobuf:"varint,3,opt,name=epoch,proto3" json:"epoch,omitempty"`
 	Signature     *Signature             `protobuf:"bytes,4,opt,name=signature,proto3" json:"signature,omitempty"`
@@ -253,9 +245,9 @@ func (*SignatureGenerated) Descriptor() ([]byte, []int) {
 	return file_v1_message_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *SignatureGenerated) GetRequestHash() []byte {
+func (x *SignatureGenerated) GetRequestId() []byte {
 	if x != nil {
-		return x.RequestHash
+		return x.RequestId
 	}
 	return nil
 }
@@ -344,7 +336,7 @@ func (x *P2PMessage) GetData() []byte {
 
 type WantSignaturesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Map of request hash to bitmap of wanted validator indices
+	// Map of request id to bitmap of wanted validator indices
 	WantSignatures map[string][]byte `protobuf:"bytes,1,rep,name=want_signatures,json=wantSignatures,proto3" json:"want_signatures,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // key: hex string of common.Hash, value: roaring bitmap bytes
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -389,7 +381,7 @@ func (x *WantSignaturesRequest) GetWantSignatures() map[string][]byte {
 
 type WantSignaturesResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Map of request hash to list of validator signatures
+	// Map of request id to list of validator signatures
 	Signatures    map[string]*ValidatorSignatureList `protobuf:"bytes,2,rep,name=signatures,proto3" json:"signatures,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // key: hex string of common.Hash
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -534,8 +526,10 @@ func (x *ValidatorSignature) GetSignature() *SignatureExtended {
 type SignatureExtended struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	MessageHash   []byte                 `protobuf:"bytes,1,opt,name=message_hash,json=messageHash,proto3" json:"message_hash,omitempty"`
-	Signature     []byte                 `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
-	PublicKey     []byte                 `protobuf:"bytes,3,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`
+	KeyTag        uint32                 `protobuf:"varint,2,opt,name=key_tag,json=keyTag,proto3" json:"key_tag,omitempty"`
+	Epoch         uint64                 `protobuf:"varint,3,opt,name=epoch,proto3" json:"epoch,omitempty"`
+	Signature     []byte                 `protobuf:"bytes,4,opt,name=signature,proto3" json:"signature,omitempty"`
+	PublicKey     []byte                 `protobuf:"bytes,5,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -577,6 +571,20 @@ func (x *SignatureExtended) GetMessageHash() []byte {
 	return nil
 }
 
+func (x *SignatureExtended) GetKeyTag() uint32 {
+	if x != nil {
+		return x.KeyTag
+	}
+	return 0
+}
+
+func (x *SignatureExtended) GetEpoch() uint64 {
+	if x != nil {
+		return x.Epoch
+	}
+	return 0
+}
+
 func (x *SignatureExtended) GetSignature() []byte {
 	if x != nil {
 		return x.Signature
@@ -593,8 +601,8 @@ func (x *SignatureExtended) GetPublicKey() []byte {
 
 type WantAggregationProofsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// List of request hashes for which aggregation proofs are needed
-	RequestHashes []string `protobuf:"bytes,1,rep,name=request_hashes,json=requestHashes,proto3" json:"request_hashes,omitempty"` // hex strings of common.Hash
+	// List of request ids for which aggregation proofs are needed
+	RequestIds    []string `protobuf:"bytes,1,rep,name=request_ids,json=requestIds,proto3" json:"request_ids,omitempty"` // hex strings of common.Hash
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -629,17 +637,17 @@ func (*WantAggregationProofsRequest) Descriptor() ([]byte, []int) {
 	return file_v1_message_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *WantAggregationProofsRequest) GetRequestHashes() []string {
+func (x *WantAggregationProofsRequest) GetRequestIds() []string {
 	if x != nil {
-		return x.RequestHashes
+		return x.RequestIds
 	}
 	return nil
 }
 
 type WantAggregationProofsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Map of request hash to aggregation proof
-	Proofs        map[string]*AggregationProof `protobuf:"bytes,1,rep,name=proofs,proto3" json:"proofs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // key: hex string of common.Hash
+	// Map of request ids to aggregation proof
+	Proofs        map[string]*SignaturesAggregated `protobuf:"bytes,1,rep,name=proofs,proto3" json:"proofs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // key: hex string of common.Hash
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -674,7 +682,7 @@ func (*WantAggregationProofsResponse) Descriptor() ([]byte, []int) {
 	return file_v1_message_proto_rawDescGZIP(), []int{11}
 }
 
-func (x *WantAggregationProofsResponse) GetProofs() map[string]*AggregationProof {
+func (x *WantAggregationProofsResponse) GetProofs() map[string]*SignaturesAggregated {
 	if x != nil {
 		return x.Proofs
 	}
@@ -685,23 +693,24 @@ var File_v1_message_proto protoreflect.FileDescriptor
 
 const file_v1_message_proto_rawDesc = "" +
 	"\n" +
-	"\x10v1/message.proto\x12\x1cinternal.client.p2p.proto.v1\"x\n" +
-	"\x10AggregationProof\x12+\n" +
-	"\x11verification_type\x18\x01 \x01(\rR\x10verificationType\x12!\n" +
-	"\fmessage_hash\x18\x02 \x01(\fR\vmessageHash\x12\x14\n" +
-	"\x05proof\x18\x03 \x01(\fR\x05proof\"\xc5\x01\n" +
-	"\x14SignaturesAggregated\x12!\n" +
-	"\frequest_hash\x18\x01 \x01(\fR\vrequestHash\x12\x17\n" +
+	"\x10v1/message.proto\x12\x1cinternal.client.p2p.proto.v1\"(\n" +
+	"\x10AggregationProof\x12\x14\n" +
+	"\x05proof\x18\x03 \x01(\fR\x05proof\"\xe4\x01\n" +
+	"\x14SignaturesAggregated\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\fR\trequestId\x12\x17\n" +
 	"\akey_tag\x18\x02 \x01(\rR\x06keyTag\x12\x14\n" +
-	"\x05epoch\x18\x03 \x01(\x04R\x05epoch\x12[\n" +
-	"\x11aggregation_proof\x18\x04 \x01(\v2..internal.client.p2p.proto.v1.AggregationProofR\x10aggregationProof\"k\n" +
+	"\x05epoch\x18\x03 \x01(\x04R\x05epoch\x12!\n" +
+	"\fmessage_hash\x18\x04 \x01(\fR\vmessageHash\x12[\n" +
+	"\x11aggregation_proof\x18\x05 \x01(\v2..internal.client.p2p.proto.v1.AggregationProofR\x10aggregationProof\"k\n" +
 	"\tSignature\x12!\n" +
 	"\fmessage_hash\x18\x01 \x01(\fR\vmessageHash\x12\x1c\n" +
 	"\tsignature\x18\x02 \x01(\fR\tsignature\x12\x1d\n" +
 	"\n" +
-	"public_key\x18\x03 \x01(\fR\tpublicKey\"\xad\x01\n" +
-	"\x12SignatureGenerated\x12!\n" +
-	"\frequest_hash\x18\x01 \x01(\fR\vrequestHash\x12\x17\n" +
+	"public_key\x18\x03 \x01(\fR\tpublicKey\"\xa9\x01\n" +
+	"\x12SignatureGenerated\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\fR\trequestId\x12\x17\n" +
 	"\akey_tag\x18\x02 \x01(\rR\x06keyTag\x12\x14\n" +
 	"\x05epoch\x18\x03 \x01(\x04R\x05epoch\x12E\n" +
 	"\tsignature\x18\x04 \x01(\v2'.internal.client.p2p.proto.v1.SignatureR\tsignature\"V\n" +
@@ -728,19 +737,22 @@ const file_v1_message_proto_rawDesc = "" +
 	"signatures\"\x8c\x01\n" +
 	"\x12ValidatorSignature\x12'\n" +
 	"\x0fvalidator_index\x18\x01 \x01(\rR\x0evalidatorIndex\x12M\n" +
-	"\tsignature\x18\x02 \x01(\v2/.internal.client.p2p.proto.v1.SignatureExtendedR\tsignature\"s\n" +
+	"\tsignature\x18\x02 \x01(\v2/.internal.client.p2p.proto.v1.SignatureExtendedR\tsignature\"\xa2\x01\n" +
 	"\x11SignatureExtended\x12!\n" +
-	"\fmessage_hash\x18\x01 \x01(\fR\vmessageHash\x12\x1c\n" +
-	"\tsignature\x18\x02 \x01(\fR\tsignature\x12\x1d\n" +
+	"\fmessage_hash\x18\x01 \x01(\fR\vmessageHash\x12\x17\n" +
+	"\akey_tag\x18\x02 \x01(\rR\x06keyTag\x12\x14\n" +
+	"\x05epoch\x18\x03 \x01(\x04R\x05epoch\x12\x1c\n" +
+	"\tsignature\x18\x04 \x01(\fR\tsignature\x12\x1d\n" +
 	"\n" +
-	"public_key\x18\x03 \x01(\fR\tpublicKey\"E\n" +
-	"\x1cWantAggregationProofsRequest\x12%\n" +
-	"\x0erequest_hashes\x18\x01 \x03(\tR\rrequestHashes\"\xeb\x01\n" +
+	"public_key\x18\x05 \x01(\fR\tpublicKey\"?\n" +
+	"\x1cWantAggregationProofsRequest\x12\x1f\n" +
+	"\vrequest_ids\x18\x01 \x03(\tR\n" +
+	"requestIds\"\xef\x01\n" +
 	"\x1dWantAggregationProofsResponse\x12_\n" +
-	"\x06proofs\x18\x01 \x03(\v2G.internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntryR\x06proofs\x1ai\n" +
+	"\x06proofs\x18\x01 \x03(\v2G.internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntryR\x06proofs\x1am\n" +
 	"\vProofsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12D\n" +
-	"\x05value\x18\x02 \x01(\v2..internal.client.p2p.proto.v1.AggregationProofR\x05value:\x028\x012\xa5\x02\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12H\n" +
+	"\x05value\x18\x02 \x01(\v22.internal.client.p2p.proto.v1.SignaturesAggregatedR\x05value:\x028\x012\xa5\x02\n" +
 	"\x13SymbioticP2PService\x12{\n" +
 	"\x0eWantSignatures\x123.internal.client.p2p.proto.v1.WantSignaturesRequest\x1a4.internal.client.p2p.proto.v1.WantSignaturesResponse\x12\x90\x01\n" +
 	"\x15WantAggregationProofs\x12:.internal.client.p2p.proto.v1.WantAggregationProofsRequest\x1a;.internal.client.p2p.proto.v1.WantAggregationProofsResponseB\x80\x02\n" +
@@ -785,7 +797,7 @@ var file_v1_message_proto_depIdxs = []int32{
 	9,  // 5: internal.client.p2p.proto.v1.ValidatorSignature.signature:type_name -> internal.client.p2p.proto.v1.SignatureExtended
 	14, // 6: internal.client.p2p.proto.v1.WantAggregationProofsResponse.proofs:type_name -> internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntry
 	7,  // 7: internal.client.p2p.proto.v1.WantSignaturesResponse.SignaturesEntry.value:type_name -> internal.client.p2p.proto.v1.ValidatorSignatureList
-	0,  // 8: internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntry.value:type_name -> internal.client.p2p.proto.v1.AggregationProof
+	1,  // 8: internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntry.value:type_name -> internal.client.p2p.proto.v1.SignaturesAggregated
 	5,  // 9: internal.client.p2p.proto.v1.SymbioticP2PService.WantSignatures:input_type -> internal.client.p2p.proto.v1.WantSignaturesRequest
 	10, // 10: internal.client.p2p.proto.v1.SymbioticP2PService.WantAggregationProofs:input_type -> internal.client.p2p.proto.v1.WantAggregationProofsRequest
 	6,  // 11: internal.client.p2p.proto.v1.SymbioticP2PService.WantSignatures:output_type -> internal.client.p2p.proto.v1.WantSignaturesResponse

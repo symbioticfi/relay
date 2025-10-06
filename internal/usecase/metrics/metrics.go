@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/symbioticfi/relay/core/entity"
 )
 
 type Config struct {
@@ -17,21 +15,29 @@ type Config struct {
 type Metrics struct {
 	GRPCMetrics
 
-	pkSignDuration                 prometheus.Summary
-	appSignDuration                prometheus.Summary
-	onlyAggregateDuration          prometheus.Summary
-	appAggregationDuration         prometheus.Summary
+	// signatures and aggregation
+	pkSignDuration         prometheus.Summary
+	appSignDuration        prometheus.Summary
+	onlyAggregateDuration  prometheus.Summary
+	appAggregationDuration prometheus.Summary
+	aggregationProofSize   *prometheus.HistogramVec
+
+	// p2p
 	p2pMessagesSent                *prometheus.CounterVec
 	p2pPeerMessagesSent            *prometheus.CounterVec
-	evmMethodCall                  *prometheus.HistogramVec
-	evmCommitGasUsed               *prometheus.HistogramVec
-	evmCommitGasPrice              *prometheus.HistogramVec
-	appAggProofCompleted           prometheus.Histogram
-	appAggProofReceived            prometheus.Histogram
 	p2pSyncProcessedSignatures     *prometheus.CounterVec
 	p2pSyncRequestedHashes         prometheus.Counter
 	p2pSyncProcessedAggProofs      *prometheus.CounterVec
 	p2pSyncRequestedAggProofHashes prometheus.Counter
+
+	// repo
+	repoQueryDuration      *prometheus.HistogramVec
+	repoQueryTotalDuration *prometheus.HistogramVec
+
+	// evm
+	evmMethodCall     *prometheus.HistogramVec
+	evmCommitGasUsed  *prometheus.HistogramVec
+	evmCommitGasPrice *prometheus.HistogramVec
 }
 
 func New(cfg Config) *Metrics {
@@ -47,7 +53,7 @@ func newMetrics(registerer prometheus.Registerer) *Metrics {
 	m := &Metrics{}
 
 	defaultPercentiles := map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001}
-	defaultBuckets := []float64{.01, .025, .05, .1, .25, .5, 1, 2.5, 5, 7.5, 10, 15, 20, 30, 60}
+	defaultBuckets := []float64{.001, .005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 7.5, 10, 15, 20, 30, 60}
 
 	var all []prometheus.Collector
 
@@ -112,20 +118,6 @@ func newMetrics(registerer prometheus.Registerer) *Metrics {
 	}, []string{"chainId"})
 	all = append(all, m.evmCommitGasPrice)
 
-	m.appAggProofCompleted = prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name:    "symbiotic_relay_agg_proof_completed_seconds",
-		Help:    "Time taken to complete aggregation proof",
-		Buckets: []float64{.01, .025, .05, .1, .25, .5, 1, 2, 3, 5, 7, 8, 9, 10, 12, 15, 17, 20, 25, 30, 35, 40, 45, 50, 55, 60, 90, 120, 150, 180, 240, 300, 600},
-	})
-	all = append(all, m.appAggProofCompleted)
-
-	m.appAggProofReceived = prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name:    "symbiotic_relay_agg_proof_received_seconds",
-		Help:    "Time taken to receive aggregation proof",
-		Buckets: []float64{.01, .025, .05, .1, .25, .5, 1, 2, 3, 5, 7, 8, 9, 10, 12, 15, 17, 20, 25, 30, 35, 40, 45, 50, 55, 60, 90, 120, 150, 180, 240, 300, 600},
-	})
-	all = append(all, m.appAggProofReceived)
-
 	m.p2pSyncProcessedSignatures = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "symbiotic_relay_p2p_sync_processed_signatures_total",
 		Help: "Total number of signatures processed during P2P sync",
@@ -149,6 +141,42 @@ func newMetrics(registerer prometheus.Registerer) *Metrics {
 		Help: "Total number of requested aggregation proof hashes during P2P sync",
 	})
 	all = append(all, m.p2pSyncRequestedAggProofHashes)
+
+	m.repoQueryDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name: "symbiotic_relay_repo_query_duration_seconds",
+		Help: "Duration of repository queries in seconds",
+	}, []string{"query_name", "status"})
+	all = append(all, m.repoQueryDuration)
+
+	m.repoQueryTotalDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name: "symbiotic_relay_repo_query_total_duration_seconds",
+		Help: " Total duration of repository queries in seconds, including retries",
+	}, []string{"query_name", "status"})
+	all = append(all, m.repoQueryTotalDuration)
+
+	proofSizeBuckets := []float64{
+		256,     // 256B
+		512,     // 512B
+		1024,    // 1KB
+		2048,    // 2KB
+		4096,    // 4KB
+		8192,    // 8KB
+		16384,   // 16KB
+		32768,   // 32KB
+		65536,   // 64KB
+		131072,  // 128KB
+		262144,  // 256KB
+		393216,  // 384KB
+		524288,  // 512KB
+		786432,  // 768KB
+		1048576, // 1MB
+	}
+	m.aggregationProofSize = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "symbiotic_relay_aggregation_proof_size_bytes",
+		Help:    "Size of aggregation proofs in bytes, labeled by active validator count",
+		Buckets: proofSizeBuckets,
+	}, []string{"validator_count"})
+	all = append(all, m.aggregationProofSize)
 
 	grpcDurationBuckets := []float64{.005, .01, .025, .05, .1, .25, .5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 10, 15, 20, 40, 45, 60}
 	m.requestDuration = prometheus.NewHistogramVec(
@@ -217,30 +245,6 @@ func (m *Metrics) ObserveCommitValsetHeaderParams(chainID uint64, gasUsed uint64
 	m.evmCommitGasPrice.WithLabelValues(strconv.FormatInt(int64(chainID), 10)).Observe(gasPrice)
 }
 
-func (m *Metrics) ObserveAggCompleted(stat entity.SignatureStat) {
-	reqReceivedTime, ok := stat.StatMap[entity.SignatureStatStageSignRequestReceived]
-	if !ok {
-		return
-	}
-	aggProofCompletedTime, ok := stat.StatMap[entity.SignatureStatStageAggCompleted]
-	if !ok {
-		return
-	}
-	m.appAggProofCompleted.Observe(aggProofCompletedTime.Sub(reqReceivedTime).Seconds())
-}
-
-func (m *Metrics) ObserveAggReceived(stat entity.SignatureStat) {
-	reqReceivedTime, ok := stat.StatMap[entity.SignatureStatStageSignRequestReceived]
-	if !ok {
-		return
-	}
-	aggProofReceivedTime, ok := stat.StatMap[entity.SignatureStatStageAggProofReceived]
-	if !ok {
-		return
-	}
-	m.appAggProofReceived.Observe(aggProofReceivedTime.Sub(reqReceivedTime).Seconds())
-}
-
 func (m *Metrics) ObserveP2PSyncSignaturesProcessed(resultType string, count int) {
 	m.p2pSyncProcessedSignatures.WithLabelValues(resultType).Add(float64(count))
 }
@@ -255,4 +259,16 @@ func (m *Metrics) ObserveP2PSyncAggregationProofsProcessed(resultType string, co
 
 func (m *Metrics) ObserveP2PSyncRequestedAggregationProofs(count int) {
 	m.p2pSyncRequestedAggProofHashes.Add(float64(count))
+}
+
+func (m *Metrics) ObserveAggregationProofSize(proofSizeBytes int, activeValidatorCount int) {
+	m.aggregationProofSize.WithLabelValues(strconv.Itoa(activeValidatorCount)).Observe(float64(proofSizeBytes))
+}
+
+func (m *Metrics) ObserveRepoQueryDuration(queryName, status string, d time.Duration) {
+	m.repoQueryDuration.WithLabelValues(queryName, status).Observe(d.Seconds())
+}
+
+func (m *Metrics) ObserveRepoQueryTotalDuration(queryName, status string, d time.Duration) {
+	m.repoQueryTotalDuration.WithLabelValues(queryName, status).Observe(d.Seconds())
 }

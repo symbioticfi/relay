@@ -18,13 +18,25 @@ func convertToGRPCError(ctx context.Context, err error) error {
 		return nil
 	}
 
+	// If the error is already a gRPC status error, return it as-is
+	if _, ok := status.FromError(err); ok {
+		return err
+	}
+
 	slog.DebugContext(ctx, "Converting error to gRPC status", "error", err)
 
+	// Handle known entity errors
 	switch {
 	case errors.Is(err, entity.ErrNotAnAggregator):
 		return status.Error(codes.PermissionDenied, "Not an aggregator node")
 	case errors.Is(err, entity.ErrEntityNotFound):
 		return status.Error(codes.NotFound, "Entity not found")
+	case errors.Is(err, entity.ErrChainNotFound):
+		return status.Error(codes.NotFound, "Chain not found")
+	case errors.Is(err, entity.ErrEntityAlreadyExist):
+		return status.Error(codes.AlreadyExists, "Entity already exists")
+	case errors.Is(err, entity.ErrNoPeers):
+		return status.Error(codes.Unavailable, "No peers available")
 	case errors.Is(err, context.Canceled):
 		return status.Error(codes.Canceled, "Request cancelled")
 	case errors.Is(err, context.DeadlineExceeded):

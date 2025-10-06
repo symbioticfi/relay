@@ -2,10 +2,13 @@ package signer_app
 
 import (
 	"crypto/rand"
+	"log/slog"
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
@@ -21,8 +24,7 @@ import (
 
 func TestSign_HappyPath(t *testing.T) {
 	setup := newTestSetup(t)
-	msg := "test-message-to-sign"
-	req := createTestSignatureRequest(msg)
+	req := createTestSignatureRequest(lo.RandomString(100, lo.AllCharset))
 	privateKey := newPrivateKey(t)
 	createTestValidatorSet(t, setup, privateKey)
 
@@ -34,41 +36,46 @@ func TestSign_HappyPath(t *testing.T) {
 	setup.mockMetrics.EXPECT().ObservePKSignDuration(gomock.Any())
 	setup.mockMetrics.EXPECT().ObserveAppSignDuration(gomock.Any())
 
+	go setup.app.HandleSignatureRequests(t.Context(), 1, setup.mockP2P)
+
 	// Sign
-	require.NoError(t, setup.app.Sign(t.Context(), req))
+	reqID, err := setup.app.RequestSignature(t.Context(), req)
+	require.NoError(t, err)
 
 	// Verify that signature request was saved
-	savedReq, err := setup.repo.GetSignatureRequest(t.Context(), req.Hash())
+	savedReq, err := setup.repo.GetSignatureRequest(t.Context(), reqID)
 	require.NoError(t, err)
 	require.Equal(t, req.KeyTag, savedReq.KeyTag)
 	require.Equal(t, req.RequiredEpoch, savedReq.RequiredEpoch)
 	require.Equal(t, req.Message, savedReq.Message)
 
+	time.Sleep(time.Second)
+
 	// Verify that signature is correct
-	signatures, err := setup.repo.GetAllSignatures(t.Context(), req.Hash())
+	signatures, err := setup.repo.GetAllSignatures(t.Context(), reqID)
 	require.NoError(t, err)
 	require.Len(t, signatures, 1)
 
-	require.NoError(t, privateKey.PublicKey().Verify([]byte(msg), signatures[0].Signature))
+	require.NoError(t, privateKey.PublicKey().Verify(req.Message, signatures[0].Signature))
 }
 
 type testSetup struct {
-	ctrl           *gomock.Controller
-	repo           *badger.Repository
-	keyProvider    *keyprovider.SimpleKeystoreProvider
-	mockP2P        *mocks.Mockp2pService
-	mockAggProof   *mocks.MockaggProofSignal
-	mockAggregator *mocks.Mockaggregator
-	mockMetrics    *mocks.Mockmetrics
-	app            *SignerApp
+	ctrl        *gomock.Controller
+	repo        *badger.Repository
+	keyProvider *keyprovider.SimpleKeystoreProvider
+	mockP2P     *mocks.Mockp2pService
+	mockMetrics *mocks.Mockmetrics
+	app         *SignerApp
 }
 
 func newTestSetup(t *testing.T) *testSetup {
 	t.Helper()
+	slog.SetLogLoggerLevel(slog.LevelDebug)
 	ctrl := gomock.NewController(t)
 
 	repo, err := badger.New(badger.Config{
-		Dir: t.TempDir(),
+		Dir:     t.TempDir(),
+		Metrics: badger.DoNothingMetrics{},
 	})
 	require.NoError(t, err)
 
@@ -81,8 +88,6 @@ func newTestSetup(t *testing.T) *testSetup {
 
 	// Create mocks for other dependencies
 	mockP2P := mocks.NewMockp2pService(ctrl)
-	mockAggProof := mocks.NewMockaggProofSignal(ctrl)
-	mockAggregator := mocks.NewMockaggregator(ctrl)
 	mockMetrics := mocks.NewMockmetrics(ctrl)
 
 	// Create mock aggregator for entity processor
@@ -94,7 +99,7 @@ func newTestSetup(t *testing.T) *testSetup {
 	mockEntityAggProofSignal.EXPECT().Emit(gomock.Any()).Return(nil).AnyTimes()
 
 	// Create mock signature processed signal for entity processor
-	signatureProcessedSignal := signals.New[entity.SignatureMessage](signals.DefaultConfig(), "test", nil)
+	signatureProcessedSignal := signals.New[entity.SignatureExtended](signals.DefaultConfig(), "test", nil)
 
 	processor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo:                     repo,
@@ -105,12 +110,9 @@ func newTestSetup(t *testing.T) *testSetup {
 	require.NoError(t, err)
 
 	cfg := Config{
-		P2PService:      mockP2P,
 		KeyProvider:     keyProvider,
 		Repo:            repo,
 		EntityProcessor: processor,
-		AggProofSignal:  mockAggProof,
-		Aggregator:      mockAggregator,
 		Metrics:         mockMetrics,
 	}
 
@@ -118,14 +120,12 @@ func newTestSetup(t *testing.T) *testSetup {
 	require.NoError(t, err)
 
 	return &testSetup{
-		ctrl:           ctrl,
-		repo:           repo,
-		mockP2P:        mockP2P,
-		keyProvider:    keyProvider,
-		mockAggProof:   mockAggProof,
-		mockAggregator: mockAggregator,
-		mockMetrics:    mockMetrics,
-		app:            app,
+		ctrl:        ctrl,
+		repo:        repo,
+		mockP2P:     mockP2P,
+		keyProvider: keyProvider,
+		mockMetrics: mockMetrics,
+		app:         app,
 	}
 }
 
@@ -145,6 +145,7 @@ func newPrivateKey(t *testing.T) crypto.PrivateKey {
 
 	privateKey, err := crypto.NewPrivateKey(entity.KeyTypeBlsBn254, privateKeyBytes)
 	require.NoError(t, err)
+
 	return privateKey
 }
 

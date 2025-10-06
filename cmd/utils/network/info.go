@@ -52,7 +52,7 @@ var infoCmd = &cobra.Command{
 			return errors.Errorf("Failed to create deriver: %v", err)
 		}
 
-		epoch := globalFlags.Epoch
+		epoch := entity.Epoch(globalFlags.Epoch)
 		if globalFlags.Epoch == 0 {
 			epoch, err = evmClient.GetCurrentEpoch(ctx)
 			if err != nil {
@@ -126,8 +126,14 @@ var infoCmd = &cobra.Command{
 						settlementData[i].HeaderHash = headerHash
 					}
 
-					allEpochsFromZero := lo.RepeatBy(int(epoch+1), func(i int) uint64 {
-						return uint64(i)
+					lastCommittedHeaderEpoch, err := evmClient.GetLastCommittedHeaderEpoch(ctx, settlement)
+					if err != nil {
+						return errors.Errorf("Failed to get last committed header epoch: %w", err)
+					}
+					settlementData[i].LastCommittedHeaderEpoch = uint64(lastCommittedHeaderEpoch)
+
+					allEpochsFromZero := lo.RepeatBy(int(epoch+1), func(i int) entity.Epoch {
+						return entity.Epoch(i)
 					})
 
 					commitmentResults, err := evmClient.IsValsetHeaderCommittedAtEpochs(egCtx, settlement, allEpochsFromZero)

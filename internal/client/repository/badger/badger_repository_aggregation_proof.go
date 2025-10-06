@@ -14,27 +14,27 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 )
 
-func keyAggregationProof(reqHash common.Hash) []byte {
-	return []byte(fmt.Sprintf("aggregation_proof:%s", reqHash.Hex()))
+func keyAggregationProof(requestID common.Hash) []byte {
+	return []byte(fmt.Sprintf("aggregation_proof:%s", requestID.Hex()))
 }
 
-func keyAggregationProofPending(epoch entity.Epoch, reqHash common.Hash) []byte {
-	return []byte(fmt.Sprintf("aggregation_proof_pending:%d:%s", epoch, reqHash.Hex()))
+func keyAggregationProofPending(epoch entity.Epoch, requestID common.Hash) []byte {
+	return []byte(fmt.Sprintf("aggregation_proof_pending:%d:%s", epoch, requestID.Hex()))
 }
 
 func keyAggregationProofPendingEpochPrefix(epoch entity.Epoch) []byte {
 	return []byte(fmt.Sprintf("aggregation_proof_pending:%d:", epoch))
 }
 
-func (r *Repository) SaveAggregationProof(ctx context.Context, reqHash common.Hash, ap entity.AggregationProof) error {
-	bytes, err := aggregationProofToBytes(ap)
+func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.Hash, ap entity.AggregationProof) error {
+	proofBytes, err := aggregationProofToBytes(ap)
 	if err != nil {
 		return errors.Errorf("failed to marshal aggregation proof: %w", err)
 	}
 
-	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+	return r.doUpdateInTx(ctx, "saveAggregationProof", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		_, err := txn.Get(keyAggregationProof(reqHash))
+		_, err := txn.Get(keyAggregationProof(requestID))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
 			return errors.Errorf("failed to get aggregation proof: %w", err)
 		}
@@ -42,7 +42,7 @@ func (r *Repository) SaveAggregationProof(ctx context.Context, reqHash common.Ha
 			return errors.Errorf("aggregation proof already exists: %w", entity.ErrEntityAlreadyExist)
 		}
 
-		err = txn.Set(keyAggregationProof(reqHash), bytes)
+		err = txn.Set(keyAggregationProof(requestID), proofBytes)
 		if err != nil {
 			return errors.Errorf("failed to store aggregation proof: %w", err)
 		}
@@ -50,15 +50,15 @@ func (r *Repository) SaveAggregationProof(ctx context.Context, reqHash common.Ha
 	})
 }
 
-func (r *Repository) GetAggregationProof(ctx context.Context, reqHash common.Hash) (entity.AggregationProof, error) {
+func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error) {
 	var ap entity.AggregationProof
 
-	return ap, r.DoViewInTx(ctx, func(ctx context.Context) error {
+	return ap, r.doViewInTx(ctx, "GetAggregationProof", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		item, err := txn.Get(keyAggregationProof(reqHash))
+		item, err := txn.Get(keyAggregationProof(requestID))
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
-				return errors.Errorf("no aggregation proof found for hash %s: %w", reqHash.Hex(), entity.ErrEntityNotFound)
+				return errors.Errorf("no aggregation proof found for request id %s: %w", requestID.Hex(), entity.ErrEntityNotFound)
 			}
 			return errors.Errorf("failed to get aggregation proof: %w", err)
 		}
@@ -78,16 +78,18 @@ func (r *Repository) GetAggregationProof(ctx context.Context, reqHash common.Has
 }
 
 type aggregationProofDTO struct {
-	VerificationType uint32 `json:"verification_type"`
-	MessageHash      []byte `json:"message_hash"`
-	Proof            []byte `json:"proof"`
+	MessageHash []byte `json:"message_hash"`
+	KeyTag      uint8  `json:"key_tag"`
+	Epoch       uint64 `json:"epoch"`
+	Proof       []byte `json:"proof"`
 }
 
 func aggregationProofToBytes(ap entity.AggregationProof) ([]byte, error) {
 	dto := aggregationProofDTO{
-		VerificationType: uint32(ap.VerificationType),
-		MessageHash:      ap.MessageHash,
-		Proof:            ap.Proof,
+		MessageHash: ap.MessageHash,
+		KeyTag:      uint8(ap.KeyTag),
+		Epoch:       uint64(ap.Epoch),
+		Proof:       ap.Proof,
 	}
 	data, err := json.Marshal(dto)
 	if err != nil {
@@ -104,16 +106,17 @@ func bytesToAggregationProof(value []byte) (entity.AggregationProof, error) {
 	}
 
 	return entity.AggregationProof{
-		VerificationType: entity.VerificationType(dto.VerificationType),
-		MessageHash:      dto.MessageHash,
-		Proof:            dto.Proof,
+		MessageHash: dto.MessageHash,
+		KeyTag:      entity.KeyTag(dto.KeyTag),
+		Epoch:       entity.Epoch(dto.Epoch),
+		Proof:       dto.Proof,
 	}, nil
 }
 
-func (r *Repository) SaveAggregationProofPending(ctx context.Context, reqHash common.Hash, epoch entity.Epoch) error {
-	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+func (r *Repository) saveAggregationProofPending(ctx context.Context, requestID common.Hash, epoch entity.Epoch) error {
+	return r.doUpdateInTx(ctx, "saveAggregationProofPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		pendingKey := keyAggregationProofPending(epoch, reqHash)
+		pendingKey := keyAggregationProofPending(epoch, requestID)
 
 		_, err := txn.Get(pendingKey)
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
@@ -132,16 +135,16 @@ func (r *Repository) SaveAggregationProofPending(ctx context.Context, reqHash co
 	})
 }
 
-func (r *Repository) RemoveAggregationProofPending(ctx context.Context, epoch entity.Epoch, reqHash common.Hash) error {
-	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+func (r *Repository) RemoveAggregationProofPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error {
+	return r.doUpdateInTx(ctx, "RemoveAggregationProofPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		pendingKey := keyAggregationProofPending(epoch, reqHash)
+		pendingKey := keyAggregationProofPending(epoch, requestID)
 
 		// Check if exists before removing
 		_, err := txn.Get(pendingKey)
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
-				return errors.Errorf("pending aggregation proof not found for epoch %d and hash %s: %w", epoch, reqHash.Hex(), entity.ErrEntityNotFound)
+				return errors.Errorf("pending aggregation proof not found for epoch %d and request id %s: %w", epoch, requestID.Hex(), entity.ErrEntityNotFound)
 			}
 			return errors.Errorf("failed to check pending aggregation proof: %w", err)
 		}
@@ -155,10 +158,10 @@ func (r *Repository) RemoveAggregationProofPending(ctx context.Context, epoch en
 	})
 }
 
-func (r *Repository) GetSignatureRequestsWithoutAggregationProof(ctx context.Context, epoch entity.Epoch, limit int, lastHash common.Hash) ([]entity.SignatureRequest, error) {
-	var requests []entity.SignatureRequest
+func (r *Repository) GetSignatureRequestsWithoutAggregationProof(ctx context.Context, epoch entity.Epoch, limit int, lastHash common.Hash) ([]entity.SignatureRequestWithID, error) {
+	var requests []entity.SignatureRequestWithID
 
-	return requests, r.DoViewInTx(ctx, func(ctx context.Context) error {
+	return requests, r.doViewInTx(ctx, "GetSignatureRequestsWithoutAggregationProof", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 
 		// Iterate through pending aggregation proof markers
@@ -188,7 +191,7 @@ func (r *Repository) GetSignatureRequestsWithoutAggregationProof(ctx context.Con
 				break
 			}
 
-			// Extract request hash from the pending key: "aggregation_proof_pending:epoch:hash"
+			// Extract request id from the pending key: "aggregation_proof_pending:epoch:request_id"
 			item := it.Item()
 			key := string(item.Key())
 
@@ -198,11 +201,11 @@ func (r *Repository) GetSignatureRequestsWithoutAggregationProof(ctx context.Con
 				return errors.Errorf("invalid pending aggregation proof key format: %s", key)
 			}
 
-			reqHashStr := parts[2]
-			reqHash := common.HexToHash(reqHashStr)
+			requestIDStr := parts[2]
+			requestID := common.HexToHash(requestIDStr)
 
 			// Get the actual signature request
-			sigReqKey := keySignatureRequest(epoch, reqHash)
+			sigReqKey := keySignatureRequest(epoch, requestID)
 			sigReqItem, err := txn.Get(sigReqKey)
 			if err != nil {
 				if errors.Is(err, badger.ErrKeyNotFound) {
@@ -210,7 +213,7 @@ func (r *Repository) GetSignatureRequestsWithoutAggregationProof(ctx context.Con
 					// Skip this entry and continue
 					continue
 				}
-				return errors.Errorf("failed to get signature request for hash %s: %w", reqHashStr, err)
+				return errors.Errorf("failed to get signature request for hash %s: %w", requestIDStr, err)
 			}
 
 			value, err := sigReqItem.ValueCopy(nil)
@@ -223,7 +226,10 @@ func (r *Repository) GetSignatureRequestsWithoutAggregationProof(ctx context.Con
 				return errors.Errorf("failed to unmarshal signature request: %w", err)
 			}
 
-			requests = append(requests, req)
+			requests = append(requests, entity.SignatureRequestWithID{
+				SignatureRequest: req,
+				RequestID:        requestID,
+			})
 			count++
 		}
 

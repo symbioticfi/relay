@@ -6,6 +6,8 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/symbioticfi/relay/core/entity"
@@ -14,19 +16,19 @@ import (
 
 // GetValidatorSet handles the gRPC GetValidatorSet request
 func (h *grpcHandler) GetValidatorSet(ctx context.Context, req *apiv1.GetValidatorSetRequest) (*apiv1.GetValidatorSetResponse, error) {
-	latestEpoch, err := h.cfg.EvmClient.GetCurrentEpoch(ctx)
+	latestEpoch, err := h.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("failed to get latest validator set epoch: %w", err)
 	}
 
 	epochRequested := latestEpoch
 	if req.Epoch != nil {
-		epochRequested = req.GetEpoch()
+		epochRequested = entity.Epoch(req.GetEpoch())
 	}
 
 	// epoch from future
 	if epochRequested > latestEpoch {
-		return nil, errors.New("epoch requested is greater than latest epoch")
+		return nil, status.Errorf(codes.InvalidArgument, "epoch %d is greater than latest epoch %d", epochRequested, latestEpoch)
 	}
 
 	validatorSet, err := h.getValidatorSetForEpoch(ctx, epochRequested)
@@ -38,39 +40,24 @@ func (h *grpcHandler) GetValidatorSet(ctx context.Context, req *apiv1.GetValidat
 }
 
 // getValidatorSetForEpoch retrieves validator set for a given epoch, either from repo or by deriving it
-func (h *grpcHandler) getValidatorSetForEpoch(ctx context.Context, epochRequested uint64) (entity.ValidatorSet, error) {
-	var validatorSet entity.ValidatorSet
-
+func (h *grpcHandler) getValidatorSetForEpoch(ctx context.Context, epochRequested entity.Epoch) (entity.ValidatorSet, error) {
 	validatorSet, err := h.cfg.Repo.GetValidatorSetByEpoch(ctx, epochRequested)
 	if err == nil {
 		return validatorSet, nil
-	} else if !errors.Is(err, entity.ErrEntityNotFound) {
-		return entity.ValidatorSet{}, errors.Errorf("failed to get validator set for epoch %d: %v", epochRequested, err)
 	}
 
-	epochStart, err := h.cfg.EvmClient.GetEpochStart(ctx, epochRequested)
-	if err != nil {
-		return entity.ValidatorSet{}, err
-	}
-	config, err := h.cfg.EvmClient.GetConfig(ctx, epochStart)
-	if err != nil {
-		return entity.ValidatorSet{}, err
-	}
-	// if error it means that epoch is not derived / committed yet
-	// so we need to derive it
-	validatorSet, err = h.cfg.Deriver.GetValidatorSet(ctx, epochRequested, config)
-	if err != nil {
-		return entity.ValidatorSet{}, err
+	if errors.Is(err, entity.ErrEntityNotFound) {
+		return entity.ValidatorSet{}, status.Errorf(codes.NotFound, "validator set for epoch %d not found", epochRequested)
 	}
 
-	return validatorSet, nil
+	return entity.ValidatorSet{}, errors.Errorf("failed to get validator set for epoch %d: %w", epochRequested, err)
 }
 
 func convertValidatorSetToPB(valSet entity.ValidatorSet) *apiv1.GetValidatorSetResponse {
 	return &apiv1.GetValidatorSetResponse{
 		Version:          uint32(valSet.Version),
 		RequiredKeyTag:   uint32(valSet.RequiredKeyTag),
-		Epoch:            valSet.Epoch,
+		Epoch:            uint64(valSet.Epoch),
 		CaptureTimestamp: timestamppb.New(time.Unix(int64(valSet.CaptureTimestamp), 0).UTC()),
 		QuorumThreshold:  valSet.QuorumThreshold.String(),
 		Status:           convertValidatorSetStatusToPB(valSet.Status),

@@ -14,17 +14,17 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 )
 
-func keyNetworkConfig(epoch uint64) []byte {
+func keyNetworkConfig(epoch entity.Epoch) []byte {
 	return []byte(fmt.Sprintf("network_config:%d", epoch))
 }
 
-func (r *Repository) SaveConfig(ctx context.Context, config entity.NetworkConfig, epoch uint64) error {
+func (r *Repository) SaveConfig(ctx context.Context, config entity.NetworkConfig, epoch entity.Epoch) error {
 	configBytes, err := networkConfigToBytes(config)
 	if err != nil {
 		return errors.Errorf("failed to marshal network config: %w", err)
 	}
 
-	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+	return r.doUpdateInTx(ctx, "SaveConfig", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		_, err := txn.Get(keyNetworkConfig(epoch))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
@@ -42,10 +42,10 @@ func (r *Repository) SaveConfig(ctx context.Context, config entity.NetworkConfig
 	})
 }
 
-func (r *Repository) GetConfigByEpoch(ctx context.Context, epoch uint64) (entity.NetworkConfig, error) {
+func (r *Repository) GetConfigByEpoch(ctx context.Context, epoch entity.Epoch) (entity.NetworkConfig, error) {
 	var config entity.NetworkConfig
 
-	return config, r.DoViewInTx(ctx, func(ctx context.Context) error {
+	return config, r.doViewInTx(ctx, "GetConfigByEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		item, err := txn.Get(keyNetworkConfig(epoch))
 		if err != nil {
@@ -74,6 +74,11 @@ type crossChainAddressDTO struct {
 	ChainId uint64 `json:"chain_id"`
 }
 
+type quorumThresholdDto struct {
+	KeyTag          uint8    `json:"key_tag"`
+	QuorumThreshold *big.Int `json:"quorum_threshold"`
+}
+
 type networkConfigDTO struct {
 	VotingPowerProviders    []crossChainAddressDTO `json:"voting_power_providers"`
 	KeysProvider            crossChainAddressDTO   `json:"keys_provider"`
@@ -83,6 +88,8 @@ type networkConfigDTO struct {
 	MinInclusionVotingPower *big.Int               `json:"min_inclusion_voting_power"`
 	MaxValidatorsCount      *big.Int               `json:"max_validators_count"`
 	RequiredKeyTags         []uint8                `json:"required_key_tags"`
+	RequiredHeaderKeyTag    uint8                  `json:"required_header_key_tags"`
+	QuorumThresholds        []quorumThresholdDto   `json:"quorum_thresholds"`
 	NumCommitters           uint64                 `json:"num_committers"`
 	NumAggregators          uint64                 `json:"num_aggregators"`
 	CommitterSlotDuration   uint64                 `json:"committer_slot_duration,omitempty"`
@@ -111,9 +118,16 @@ func networkConfigToBytes(config entity.NetworkConfig) ([]byte, error) {
 		MinInclusionVotingPower: config.MinInclusionVotingPower.Int,
 		MaxValidatorsCount:      config.MaxValidatorsCount.Int,
 		RequiredKeyTags:         lo.Map(config.RequiredKeyTags, func(tag entity.KeyTag, _ int) uint8 { return uint8(tag) }),
-		NumCommitters:           config.NumCommitters,
-		NumAggregators:          config.NumAggregators,
-		CommitterSlotDuration:   config.CommitterSlotDuration,
+		RequiredHeaderKeyTag:    uint8(config.RequiredHeaderKeyTag),
+		QuorumThresholds: lo.Map(config.QuorumThresholds, func(qt entity.QuorumThreshold, _ int) quorumThresholdDto {
+			return quorumThresholdDto{
+				KeyTag:          uint8(qt.KeyTag),
+				QuorumThreshold: qt.QuorumThreshold.Int,
+			}
+		}),
+		NumCommitters:         config.NumCommitters,
+		NumAggregators:        config.NumAggregators,
+		CommitterSlotDuration: config.CommitterSlotDuration,
 	}
 
 	return json.Marshal(networkConfigDTOFromEntity)
@@ -147,8 +161,15 @@ func bytesToNetworkConfig(data []byte) (entity.NetworkConfig, error) {
 		MinInclusionVotingPower: entity.ToVotingPower(dto.MinInclusionVotingPower),
 		MaxValidatorsCount:      entity.ToVotingPower(dto.MaxValidatorsCount),
 		RequiredKeyTags:         lo.Map(dto.RequiredKeyTags, func(tag uint8, _ int) entity.KeyTag { return entity.KeyTag(tag) }),
-		NumCommitters:           dto.NumCommitters,
-		NumAggregators:          dto.NumAggregators,
-		CommitterSlotDuration:   dto.CommitterSlotDuration,
+		RequiredHeaderKeyTag:    entity.KeyTag(dto.RequiredHeaderKeyTag),
+		QuorumThresholds: lo.Map(dto.QuorumThresholds, func(qt quorumThresholdDto, _ int) entity.QuorumThreshold {
+			return entity.QuorumThreshold{
+				KeyTag:          entity.KeyTag(qt.KeyTag),
+				QuorumThreshold: entity.ToQuorumThresholdPct(qt.QuorumThreshold),
+			}
+		}),
+		NumAggregators:        dto.NumAggregators,
+		NumCommitters:         dto.NumCommitters,
+		CommitterSlotDuration: dto.CommitterSlotDuration,
 	}, nil
 }

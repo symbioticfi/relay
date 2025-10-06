@@ -1,20 +1,16 @@
 package tests
 
 import (
-	"bufio"
 	"context"
-	"encoding/json"
-	"io"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
 
+	apiv1 "github.com/symbioticfi/relay/api/client/v1"
 	"github.com/symbioticfi/relay/core/client/evm"
 	"github.com/symbioticfi/relay/core/entity"
 	valsetDeriver "github.com/symbioticfi/relay/core/usecase/valset-deriver"
@@ -97,11 +93,18 @@ func TestAggregatorSignatureSync(t *testing.T) {
 
 	// Step 4: Verify signers have generated signatures
 	t.Log("Step 4: Verifying signers have generated signatures...")
-	expected := map[string]interface{}{
-		"msg":   "Message signed",
-		"epoch": float64(nextEpoch),
-	}
-	err = waitForLogLine(ctx, globalTestEnv.Containers[onlySignerIndex], expected, 1*time.Minute)
+	client := globalTestEnv.GetGRPCClient(t, onlySignerIndex)
+	err = waitForErrorIsNil(ctx, time.Second*30, func() error {
+		_, err := client.GetValidatorSetMetadata(ctx, &apiv1.GetValidatorSetMetadataRequest{
+			Epoch: (*uint64)(&nextEpoch),
+		})
+		return err
+	})
+	require.NoError(t, err)
+
+	metadataResp, err := client.GetValidatorSetMetadata(ctx, &apiv1.GetValidatorSetMetadataRequest{
+		Epoch: (*uint64)(&nextEpoch),
+	})
 	require.NoError(t, err)
 
 	// Step 5: Start aggregators back up
@@ -127,26 +130,23 @@ func TestAggregatorSignatureSync(t *testing.T) {
 		require.NoError(t, err, "Aggregator %d failed to become healthy after restart", aggIndex)
 		t.Logf("Aggregator %d is healthy", aggIndex)
 
-		proofExpectedLog := map[string]interface{}{
-			"msg":   "Proof created, trying to send aggregated signature message",
-			"epoch": float64(nextEpoch),
-		}
-		err = waitForLogLine(ctx, globalTestEnv.Containers[aggIndex], proofExpectedLog, time.Minute)
-		require.NoError(t, err)
+		err = waitForErrorIsNil(ctx, time.Second*30, func() error {
+			_, err = client.GetAggregationProof(ctx, &apiv1.GetAggregationProofRequest{
+				RequestId: metadataResp.GetRequestId(),
+			})
+			return err
+		})
+		require.NoError(t, err, "Failed to get aggregation proof from aggregator %d", aggIndex)
+
 		t.Logf("Aggregator %d has synced signatures and generated proof", aggIndex)
 	}
 
 	t.Log("✅ Signature sync test completed successfully")
 }
 
-// waitForHealthy polls a health endpoint until it returns 200 or timeout occurs
-func waitForHealthy(ctx context.Context, healthURL string, timeout time.Duration) error {
+func waitForErrorIsNil(ctx context.Context, timeout time.Duration, f func() error) error {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-
-	client := &http.Client{
-		Timeout: 5 * time.Second,
-	}
 
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
@@ -154,88 +154,40 @@ func waitForHealthy(ctx context.Context, healthURL string, timeout time.Duration
 	for {
 		select {
 		case <-ctx.Done():
-			return errors.Errorf("timeout waiting for health endpoint %s: %v", healthURL, ctx.Err())
+			return errors.Errorf("timeout waiting for function to succeed: %v", ctx.Err())
 		case <-ticker.C:
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, healthURL, nil)
-			if err != nil {
-				continue
-			}
-
-			resp, err := client.Do(req)
-			if err != nil {
-				continue // Continue trying on error
-			}
-			resp.Body.Close()
-
-			if resp.StatusCode == http.StatusOK {
+			err := f()
+			if err == nil {
 				return nil
 			}
 		}
 	}
 }
 
-// waitForLogLine waits for a specific line to appear in container logs
-func waitForLogLine(ctx context.Context, container testcontainers.Container, expectedLog map[string]interface{}, timeout time.Duration) error {
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return errors.Errorf("timeout waiting for log line '%v': %v", expectedLog, ctx.Err())
-		case <-ticker.C:
-			logs, err := container.Logs(ctx)
-			if err != nil {
-				continue // Continue trying on error
-			}
-
-			// Read logs content
-			logBytes, err := io.ReadAll(logs)
-			logs.Close()
-			if err != nil {
-				continue
-			}
-
-			// Check each line for JSON match
-			scanner := bufio.NewScanner(strings.NewReader(string(logBytes)))
-			for scanner.Scan() {
-				line := strings.TrimSpace(scanner.Text())
-				if line == "" {
-					continue
-				}
-
-				// Try to parse line as JSON
-				var logMap map[string]interface{}
-				if err := json.Unmarshal([]byte(line), &logMap); err != nil {
-					continue // Skip non-JSON lines
-				}
-
-				// Check if this log contains all expected key-value pairs
-				if containsAllKeyValues(logMap, expectedLog) {
-					return nil
-				}
-			}
-		}
+// waitForHealthy polls a health endpoint until it returns 200 or timeout occurs
+func waitForHealthy(ctx context.Context, healthURL string, timeout time.Duration) error {
+	client := &http.Client{
+		Timeout: 5 * time.Second,
 	}
-}
 
-// containsAllKeyValues checks if logMap contains all key-value pairs from expectedLog
-func containsAllKeyValues(logMap, expectedLog map[string]interface{}) bool {
-	for key, expectedValue := range expectedLog {
-		actualValue, exists := logMap[key]
-		if !exists {
-			return false
+	return waitForErrorIsNil(ctx, timeout, func() error {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, healthURL, nil)
+		if err != nil {
+			return err
 		}
 
-		// Compare values (handles different types appropriately)
-		if actualValue != expectedValue {
-			return false
+		resp, err := client.Do(req)
+		if err != nil {
+			return err
 		}
-	}
-	return true
+		resp.Body.Close()
+
+		if resp.StatusCode == http.StatusOK {
+			return nil
+		}
+
+		return errors.Errorf("health check returned status %d", resp.StatusCode)
+	})
 }
 
 // createEVMClient creates an EVM client for interacting with the blockchain
@@ -258,7 +210,7 @@ func createEVMClient(t *testing.T, deploymentData RelayContractsData) *evm.Clien
 }
 
 // waitForEpoch waits until the specified epoch is reached
-func waitForEpoch(ctx context.Context, client evm.IEvmClient, targetEpoch uint64, timeout time.Duration) error {
+func waitForEpoch(ctx context.Context, client evm.IEvmClient, targetEpoch entity.Epoch, timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 

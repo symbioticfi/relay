@@ -17,7 +17,7 @@ func TestRepository_DoUpdateInTx(t *testing.T) {
 	t.Run("Success - Simple Operation", func(t *testing.T) {
 		var executedInTx bool
 
-		err := repo.DoUpdateInTx(context.Background(), func(ctx context.Context) error {
+		err := repo.doUpdateInTx(context.Background(), "", func(ctx context.Context) error {
 			// Verify we have a transaction in the context
 			txn := getTxn(ctx)
 			require.NotNil(t, txn, "Transaction should be available in context")
@@ -52,7 +52,7 @@ func TestRepository_DoUpdateInTx(t *testing.T) {
 	})
 
 	t.Run("Rollback on Error", func(t *testing.T) {
-		err := repo.DoUpdateInTx(context.Background(), func(ctx context.Context) error {
+		err := repo.doUpdateInTx(context.Background(), "", func(ctx context.Context) error {
 			txn := getTxn(ctx)
 			require.NotNil(t, txn)
 
@@ -79,12 +79,12 @@ func TestRepository_DoUpdateInTx(t *testing.T) {
 	t.Run("Nested Transactions - Same Transaction Context", func(t *testing.T) {
 		var outerTxn, innerTxn *badger.Txn
 
-		err := repo.DoUpdateInTx(context.Background(), func(ctx context.Context) error {
+		err := repo.doUpdateInTx(context.Background(), "", func(ctx context.Context) error {
 			outerTxn = getTxn(ctx)
 			require.NotNil(t, outerTxn)
 
 			// Nested transaction should reuse the same transaction
-			return repo.DoUpdateInTx(ctx, func(ctx context.Context) error {
+			return repo.doUpdateInTx(ctx, "", func(ctx context.Context) error {
 				innerTxn = getTxn(ctx)
 				require.NotNil(t, innerTxn)
 
@@ -126,7 +126,7 @@ func TestRepository_DoUpdateInTx(t *testing.T) {
 			"key3": "value3",
 		}
 
-		err := repo.DoUpdateInTx(context.Background(), func(ctx context.Context) error {
+		err := repo.doUpdateInTx(context.Background(), "", func(ctx context.Context) error {
 			txn := getTxn(ctx)
 			require.NotNil(t, txn)
 
@@ -164,7 +164,7 @@ func TestRepository_DoUpdateInTx(t *testing.T) {
 	})
 
 	t.Run("Update Operation in View Transaction - Should Fail", func(t *testing.T) {
-		err := repo.DoViewInTx(context.Background(), func(ctx context.Context) error {
+		err := repo.doViewInTx(context.Background(), "", func(ctx context.Context) error {
 			txn := getTxn(ctx)
 			require.NotNil(t, txn)
 
@@ -188,7 +188,7 @@ func TestRepository_DoUpdateInTx(t *testing.T) {
 		require.NoError(t, err)
 
 		// Now try to delete it in a view transaction
-		err = repo.DoViewInTx(context.Background(), func(ctx context.Context) error {
+		err = repo.doViewInTx(context.Background(), "", func(ctx context.Context) error {
 			txn := getTxn(ctx)
 			require.NotNil(t, txn)
 

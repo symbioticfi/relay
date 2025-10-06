@@ -12,16 +12,16 @@ import (
 	"github.com/symbioticfi/relay/core/entity"
 )
 
-func keySignature(reqHash common.Hash, validatorIndex uint32) []byte {
-	return []byte(fmt.Sprintf("signature:%s:%010d", reqHash.Hex(), validatorIndex))
+func keySignature(requestID common.Hash, validatorIndex uint32) []byte {
+	return []byte(fmt.Sprintf("signature:%s:%010d", requestID.Hex(), validatorIndex))
 }
 
-// keySignaturePrefix returns prefix for all signatures of a request
-func keySignaturePrefix(reqHash common.Hash) []byte {
-	return []byte("signature:" + reqHash.Hex() + ":")
+// keySignaturePrefix returns prefix for all signatures of a request id
+func keySignaturePrefix(requestID common.Hash) []byte {
+	return []byte("signature:" + requestID.Hex() + ":")
 }
 
-func (r *Repository) SaveSignature(ctx context.Context, reqHash common.Hash, validatorIndex uint32, sig entity.SignatureExtended) error {
+func (r *Repository) saveSignature(ctx context.Context, validatorIndex uint32, sig entity.SignatureExtended) error {
 	txn := getTxn(ctx)
 	if txn == nil {
 		return errors.New("no transaction found in context, use signature processor in order to store signatures")
@@ -32,7 +32,7 @@ func (r *Repository) SaveSignature(ctx context.Context, reqHash common.Hash, val
 		return errors.Errorf("failed to marshal signature: %w", err)
 	}
 
-	key := keySignature(reqHash, validatorIndex)
+	key := keySignature(sig.RequestID(), validatorIndex)
 	err = txn.Set(key, bytes)
 	if err != nil {
 		return errors.Errorf("failed to store signature: %w", err)
@@ -40,12 +40,12 @@ func (r *Repository) SaveSignature(ctx context.Context, reqHash common.Hash, val
 	return nil
 }
 
-func (r *Repository) GetAllSignatures(ctx context.Context, reqHash common.Hash) ([]entity.SignatureExtended, error) {
+func (r *Repository) GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity.SignatureExtended, error) {
 	var signatures []entity.SignatureExtended
 
-	return signatures, r.DoViewInTx(ctx, func(ctx context.Context) error {
+	return signatures, r.doViewInTx(ctx, "GetAllSignatures", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		prefix := keySignaturePrefix(reqHash)
+		prefix := keySignaturePrefix(requestID)
 		opts := badger.DefaultIteratorOptions
 		opts.Prefix = prefix
 
@@ -71,12 +71,12 @@ func (r *Repository) GetAllSignatures(ctx context.Context, reqHash common.Hash) 
 	})
 }
 
-func (r *Repository) GetSignatureByIndex(ctx context.Context, reqHash common.Hash, validatorIndex uint32) (entity.SignatureExtended, error) {
+func (r *Repository) GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (entity.SignatureExtended, error) {
 	var signature entity.SignatureExtended
 
-	err := r.DoViewInTx(ctx, func(ctx context.Context) error {
+	err := r.doViewInTx(ctx, "GetSignatureByIndex", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		key := keySignature(reqHash, validatorIndex)
+		key := keySignature(requestID, validatorIndex)
 
 		item, err := txn.Get(key)
 		if err != nil {
@@ -105,6 +105,8 @@ func (r *Repository) GetSignatureByIndex(ctx context.Context, reqHash common.Has
 
 type signatureDTO struct {
 	MessageHash []byte `json:"message_hash"`
+	KeyTag      uint8  `json:"key_tag"`
+	Epoch       uint64 `json:"epoch"`
 	Signature   []byte `json:"signature"`
 	PublicKey   []byte `json:"public_key"`
 }
@@ -112,6 +114,8 @@ type signatureDTO struct {
 func signatureToBytes(sig entity.SignatureExtended) ([]byte, error) {
 	dto := signatureDTO{
 		MessageHash: sig.MessageHash,
+		KeyTag:      uint8(sig.KeyTag),
+		Epoch:       uint64(sig.Epoch),
 		Signature:   sig.Signature,
 		PublicKey:   sig.PublicKey,
 	}
@@ -130,7 +134,9 @@ func bytesToSignature(value []byte) (entity.SignatureExtended, error) {
 
 	return entity.SignatureExtended{
 		MessageHash: dto.MessageHash,
-		Signature:   dto.Signature,
+		KeyTag:      entity.KeyTag(dto.KeyTag),
+		Epoch:       entity.Epoch(dto.Epoch),
 		PublicKey:   dto.PublicKey,
+		Signature:   dto.Signature,
 	}, nil
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
+
 	"github.com/symbioticfi/relay/core/client/evm/gen"
 	"github.com/symbioticfi/relay/core/entity"
 )
@@ -77,7 +78,7 @@ func (e *Client) multicall(ctx context.Context, chainId uint64, calls []Call) (_
 	return results, nil
 }
 
-func (e *Client) getVotingPowersMulticall(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorVotingPower, error) {
+func (e *Client) getVotingPowersMulticall(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) ([]entity.OperatorVotingPower, error) {
 	abi, err := gen.IVotingPowerProviderMetaData.GetAbi()
 	if err != nil {
 		return nil, errors.Errorf("failed to get ABI: %v", err)
@@ -134,7 +135,7 @@ func (e *Client) getVotingPowersMulticall(ctx context.Context, address entity.Cr
 	return votingPowers, nil
 }
 
-func (e *Client) getKeysMulticall(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) (_ []entity.OperatorWithKeys, err error) {
+func (e *Client) getKeysMulticall(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) (_ []entity.OperatorWithKeys, err error) {
 	abi, err := gen.IKeyRegistryMetaData.GetAbi()
 	if err != nil {
 		return nil, errors.Errorf("failed to get ABI: %v", err)

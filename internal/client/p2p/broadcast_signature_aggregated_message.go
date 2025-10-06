@@ -10,15 +10,14 @@ import (
 	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
 )
 
-func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
+func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg entity.AggregationProof) error {
 	dto := prototypes.SignaturesAggregated{
-		RequestHash: msg.RequestHash.Bytes(),
+		RequestId:   msg.RequestID().Bytes(),
 		KeyTag:      uint32(msg.KeyTag),
 		Epoch:       uint64(msg.Epoch),
+		MessageHash: msg.MessageHash,
 		AggregationProof: &prototypes.AggregationProof{
-			MessageHash:      msg.AggregationProof.MessageHash,
-			Proof:            msg.AggregationProof.Proof,
-			VerificationType: uint32(msg.AggregationProof.VerificationType),
+			Proof: msg.Proof,
 		},
 	}
 

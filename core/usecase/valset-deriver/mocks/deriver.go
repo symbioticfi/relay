@@ -43,7 +43,7 @@ func (m *MockEvmClient) EXPECT() *MockEvmClientMockRecorder {
 }
 
 // GetConfig mocks base method.
-func (m *MockEvmClient) GetConfig(ctx context.Context, timestamp uint64) (entity.NetworkConfig, error) {
+func (m *MockEvmClient) GetConfig(ctx context.Context, timestamp entity.Timestamp) (entity.NetworkConfig, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConfig", ctx, timestamp)
 	ret0, _ := ret[0].(entity.NetworkConfig)
@@ -58,10 +58,10 @@ func (mr *MockEvmClientMockRecorder) GetConfig(ctx, timestamp any) *gomock.Call 
 }
 
 // GetCurrentEpoch mocks base method.
-func (m *MockEvmClient) GetCurrentEpoch(ctx context.Context) (uint64, error) {
+func (m *MockEvmClient) GetCurrentEpoch(ctx context.Context) (entity.Epoch, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetCurrentEpoch", ctx)
-	ret0, _ := ret[0].(uint64)
+	ret0, _ := ret[0].(entity.Epoch)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -88,10 +88,10 @@ func (mr *MockEvmClientMockRecorder) GetEip712Domain(ctx, addr any) *gomock.Call
 }
 
 // GetEpochStart mocks base method.
-func (m *MockEvmClient) GetEpochStart(ctx context.Context, epoch uint64) (uint64, error) {
+func (m *MockEvmClient) GetEpochStart(ctx context.Context, epoch entity.Epoch) (entity.Timestamp, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetEpochStart", ctx, epoch)
-	ret0, _ := ret[0].(uint64)
+	ret0, _ := ret[0].(entity.Timestamp)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -118,7 +118,7 @@ func (mr *MockEvmClientMockRecorder) GetHeaderHash(ctx, addr any) *gomock.Call {
 }
 
 // GetHeaderHashAt mocks base method.
-func (m *MockEvmClient) GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (common.Hash, error) {
+func (m *MockEvmClient) GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (common.Hash, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetHeaderHashAt", ctx, addr, epoch)
 	ret0, _ := ret[0].(common.Hash)
@@ -133,7 +133,7 @@ func (mr *MockEvmClientMockRecorder) GetHeaderHashAt(ctx, addr, epoch any) *gomo
 }
 
 // GetKeys mocks base method.
-func (m *MockEvmClient) GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorWithKeys, error) {
+func (m *MockEvmClient) GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) ([]entity.OperatorWithKeys, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetKeys", ctx, address, timestamp)
 	ret0, _ := ret[0].([]entity.OperatorWithKeys)
@@ -148,10 +148,10 @@ func (mr *MockEvmClientMockRecorder) GetKeys(ctx, address, timestamp any) *gomoc
 }
 
 // GetLastCommittedHeaderEpoch mocks base method.
-func (m *MockEvmClient) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (uint64, error) {
+func (m *MockEvmClient) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (entity.Epoch, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLastCommittedHeaderEpoch", ctx, addr)
-	ret0, _ := ret[0].(uint64)
+	ret0, _ := ret[0].(entity.Epoch)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -178,7 +178,7 @@ func (mr *MockEvmClientMockRecorder) GetNetworkAddress(ctx any) *gomock.Call {
 }
 
 // GetOperators mocks base method.
-func (m *MockEvmClient) GetOperators(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]common.Address, error) {
+func (m *MockEvmClient) GetOperators(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) ([]common.Address, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetOperators", ctx, address, timestamp)
 	ret0, _ := ret[0].([]common.Address)
@@ -208,7 +208,7 @@ func (mr *MockEvmClientMockRecorder) GetSubnetwork(ctx any) *gomock.Call {
 }
 
 // GetVotingPowers mocks base method.
-func (m *MockEvmClient) GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp uint64) ([]entity.OperatorVotingPower, error) {
+func (m *MockEvmClient) GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) ([]entity.OperatorVotingPower, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVotingPowers", ctx, address, timestamp)
 	ret0, _ := ret[0].([]entity.OperatorVotingPower)
@@ -223,7 +223,7 @@ func (mr *MockEvmClientMockRecorder) GetVotingPowers(ctx, address, timestamp any
 }
 
 // IsValsetHeaderCommittedAt mocks base method.
-func (m *MockEvmClient) IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch uint64) (bool, error) {
+func (m *MockEvmClient) IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsValsetHeaderCommittedAt", ctx, addr, epoch)
 	ret0, _ := ret[0].(bool)

@@ -46,9 +46,9 @@ type SymbioticAPIServiceClient interface {
 	GetAggregationProof(ctx context.Context, in *GetAggregationProofRequest, opts ...grpc.CallOption) (*GetAggregationProofResponse, error)
 	// Get current epoch
 	GetCurrentEpoch(ctx context.Context, in *GetCurrentEpochRequest, opts ...grpc.CallOption) (*GetCurrentEpochResponse, error)
-	// Get signature by request hash
+	// Get signature by request id
 	GetSignatures(ctx context.Context, in *GetSignaturesRequest, opts ...grpc.CallOption) (*GetSignaturesResponse, error)
-	// Get signature request by request hash
+	// Get signature request by request id
 	GetSignatureRequest(ctx context.Context, in *GetSignatureRequestRequest, opts ...grpc.CallOption) (*GetSignatureRequestResponse, error)
 	// Get aggregation status, can be sent only to aggregator nodes
 	GetAggregationStatus(ctx context.Context, in *GetAggregationStatusRequest, opts ...grpc.CallOption) (*GetAggregationStatusResponse, error)
@@ -64,7 +64,7 @@ type SymbioticAPIServiceClient interface {
 	GetLastCommitted(ctx context.Context, in *GetLastCommittedRequest, opts ...grpc.CallOption) (*GetLastCommittedResponse, error)
 	// Get last committed epochs for all settlement chains
 	GetLastAllCommitted(ctx context.Context, in *GetLastAllCommittedRequest, opts ...grpc.CallOption) (*GetLastAllCommittedResponse, error)
-	// Get validator set metadata like extra data and request hash to fetch aggregation and signature requests
+	// Get validator set metadata like extra data and request id to fetch aggregation and signature requests
 	GetValidatorSetMetadata(ctx context.Context, in *GetValidatorSetMetadataRequest, opts ...grpc.CallOption) (*GetValidatorSetMetadataResponse, error)
 }
 
@@ -227,9 +227,9 @@ type SymbioticAPIServiceServer interface {
 	GetAggregationProof(context.Context, *GetAggregationProofRequest) (*GetAggregationProofResponse, error)
 	// Get current epoch
 	GetCurrentEpoch(context.Context, *GetCurrentEpochRequest) (*GetCurrentEpochResponse, error)
-	// Get signature by request hash
+	// Get signature by request id
 	GetSignatures(context.Context, *GetSignaturesRequest) (*GetSignaturesResponse, error)
-	// Get signature request by request hash
+	// Get signature request by request id
 	GetSignatureRequest(context.Context, *GetSignatureRequestRequest) (*GetSignatureRequestResponse, error)
 	// Get aggregation status, can be sent only to aggregator nodes
 	GetAggregationStatus(context.Context, *GetAggregationStatusRequest) (*GetAggregationStatusResponse, error)
@@ -245,7 +245,7 @@ type SymbioticAPIServiceServer interface {
 	GetLastCommitted(context.Context, *GetLastCommittedRequest) (*GetLastCommittedResponse, error)
 	// Get last committed epochs for all settlement chains
 	GetLastAllCommitted(context.Context, *GetLastAllCommittedRequest) (*GetLastAllCommittedResponse, error)
-	// Get validator set metadata like extra data and request hash to fetch aggregation and signature requests
+	// Get validator set metadata like extra data and request id to fetch aggregation and signature requests
 	GetValidatorSetMetadata(context.Context, *GetValidatorSetMetadataRequest) (*GetValidatorSetMetadataResponse, error)
 	mustEmbedUnimplementedSymbioticAPIServiceServer()
 }

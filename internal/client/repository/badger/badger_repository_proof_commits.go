@@ -20,14 +20,14 @@ const (
 	aggregationProofCommitPrefix = "aggregation_proof_commit:"
 )
 
-func keyAggregationProofCommited(epoch entity.Epoch, reqHash common.Hash) []byte {
-	return []byte(fmt.Sprintf("%v%d:%s", aggregationProofCommitPrefix, epoch, reqHash.Hex()))
+func keyAggregationProofCommited(epoch entity.Epoch, requestID common.Hash) []byte {
+	return []byte(fmt.Sprintf("%v%d:%s", aggregationProofCommitPrefix, epoch, requestID.Hex()))
 }
 
-func (r *Repository) SaveProofCommitPending(ctx context.Context, epoch entity.Epoch, reqHash common.Hash) error {
-	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+func (r *Repository) SaveProofCommitPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error {
+	return r.doUpdateInTx(ctx, "SaveProofCommitPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		_, err := txn.Get(keyAggregationProofCommited(epoch, reqHash))
+		_, err := txn.Get(keyAggregationProofCommited(epoch, requestID))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
 			return errors.Errorf("failed to get proof commit pending: %w", err)
 		}
@@ -37,7 +37,7 @@ func (r *Repository) SaveProofCommitPending(ctx context.Context, epoch entity.Ep
 
 		// Adding TTL ensure that we don't access the old proofs when querying for pending proofs
 		// DEV: setting to 24hours, if the proof doesn't get committed in that time frame manual intervention is expected
-		err = txn.SetEntry(badger.NewEntry(keyAggregationProofCommited(epoch, reqHash), []byte{0x01}).WithTTL(time.Hour * 24))
+		err = txn.SetEntry(badger.NewEntry(keyAggregationProofCommited(epoch, requestID), []byte{0x01}).WithTTL(time.Hour * 24))
 		if err != nil {
 			return errors.Errorf("failed to store proof commit pending: %w", err)
 		}
@@ -45,16 +45,16 @@ func (r *Repository) SaveProofCommitPending(ctx context.Context, epoch entity.Ep
 	})
 }
 
-func (r *Repository) RemoveProofCommitPending(ctx context.Context, epoch entity.Epoch, reqHash common.Hash) error {
-	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+func (r *Repository) RemoveProofCommitPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error {
+	return r.doUpdateInTx(ctx, "RemoveProofCommitPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		pendingKey := keyAggregationProofCommited(epoch, reqHash)
+		pendingKey := keyAggregationProofCommited(epoch, requestID)
 
 		// Check if exists before removing
 		_, err := txn.Get(pendingKey)
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
-				return errors.Errorf("proof commit pending not found for epoch %d and hash %s: %w", epoch, reqHash.Hex(), entity.ErrEntityNotFound)
+				return errors.Errorf("proof commit pending not found for epoch %d and hash %s: %w", epoch, requestID.Hex(), entity.ErrEntityNotFound)
 			}
 			return errors.Errorf("failed to check proof commit pending: %w", err)
 		}
@@ -71,7 +71,7 @@ func (r *Repository) RemoveProofCommitPending(ctx context.Context, epoch entity.
 func (r *Repository) GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch entity.Epoch, limit int) ([]entity.ProofCommitKey, error) {
 	var requests []entity.ProofCommitKey
 
-	if err := r.DoViewInTx(ctx, func(ctx context.Context) error {
+	if err := r.doViewInTx(ctx, "GetPendingProofCommitsSinceEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 
 		// Step 1: Collect all keys with their parsed epochs and hashes
@@ -112,12 +112,12 @@ func (r *Repository) GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch
 				continue
 			}
 
-			reqHashStr := parts[2]
-			reqHash := common.HexToHash(reqHashStr)
+			requestIDStr := parts[2]
+			requestID := common.HexToHash(requestIDStr)
 
 			keys = append(keys, entity.ProofCommitKey{
-				Epoch: keyEpoch,
-				Hash:  reqHash,
+				Epoch:     keyEpoch,
+				RequestID: requestID,
 			})
 
 			it.Next()
@@ -132,7 +132,7 @@ func (r *Repository) GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch
 			if keys[i].Epoch != keys[j].Epoch {
 				return keys[i].Epoch < keys[j].Epoch
 			}
-			return bytes.Compare(keys[i].Hash[:], keys[j].Hash[:]) < 0
+			return bytes.Compare(keys[i].RequestID[:], keys[j].RequestID[:]) < 0
 		})
 
 		// Step 3: limit response

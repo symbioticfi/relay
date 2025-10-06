@@ -62,7 +62,7 @@ func (s *Service) sendAggregationProofRequestToPeer(ctx context.Context, peerID 
 // entityToProtoAggregationProofRequest converts entity.WantAggregationProofsRequest to protobuf
 func entityToProtoAggregationProofRequest(req entity.WantAggregationProofsRequest) *prototypes.WantAggregationProofsRequest {
 	return &prototypes.WantAggregationProofsRequest{
-		RequestHashes: lo.Map(req.RequestHashes, func(hash common.Hash, _ int) string {
+		RequestIds: lo.Map(req.RequestIDs, func(hash common.Hash, _ int) string {
 			return hash.Hex()
 		}),
 	}
@@ -75,9 +75,10 @@ func protoToEntityAggregationProofResponse(resp *prototypes.WantAggregationProof
 	for hashStr, protoProof := range resp.GetProofs() {
 		// Convert aggregation proof
 		proof := entity.AggregationProof{
-			VerificationType: entity.VerificationType(protoProof.GetVerificationType()),
-			MessageHash:      protoProof.GetMessageHash(),
-			Proof:            protoProof.GetProof(),
+			MessageHash: protoProof.GetMessageHash(),
+			KeyTag:      entity.KeyTag(protoProof.GetKeyTag()),
+			Epoch:       entity.Epoch(protoProof.GetEpoch()),
+			Proof:       protoProof.GetAggregationProof().GetProof(),
 		}
 
 		proofs[common.HexToHash(hashStr)] = proof
@@ -90,27 +91,31 @@ func protoToEntityAggregationProofResponse(resp *prototypes.WantAggregationProof
 
 // protoToEntityAggregationProofRequest converts protobuf WantAggregationProofsRequest to entity
 func protoToEntityAggregationProofRequest(req *prototypes.WantAggregationProofsRequest) entity.WantAggregationProofsRequest {
-	requestHashes := make([]common.Hash, len(req.GetRequestHashes()))
+	requestIDs := make([]common.Hash, len(req.GetRequestIds()))
 
-	for i, hashStr := range req.GetRequestHashes() {
-		requestHashes[i] = common.HexToHash(hashStr)
+	for i, hashStr := range req.GetRequestIds() {
+		requestIDs[i] = common.HexToHash(hashStr)
 	}
 
 	return entity.WantAggregationProofsRequest{
-		RequestHashes: requestHashes,
+		RequestIDs: requestIDs,
 	}
 }
 
 // entityToProtoAggregationProofResponse converts entity WantAggregationProofsResponse to protobuf
 func entityToProtoAggregationProofResponse(resp entity.WantAggregationProofsResponse) *prototypes.WantAggregationProofsResponse {
-	proofs := make(map[string]*prototypes.AggregationProof)
+	proofs := make(map[string]*prototypes.SignaturesAggregated)
 
 	for hash, proof := range resp.Proofs {
 		// Convert aggregation proof
-		protoProof := &prototypes.AggregationProof{
-			VerificationType: uint32(proof.VerificationType),
-			MessageHash:      proof.MessageHash,
-			Proof:            proof.Proof,
+		protoProof := &prototypes.SignaturesAggregated{
+			RequestId:   proof.RequestID().Bytes(),
+			KeyTag:      uint32(proof.KeyTag),
+			Epoch:       uint64(proof.Epoch),
+			MessageHash: proof.MessageHash,
+			AggregationProof: &prototypes.AggregationProof{
+				Proof: proof.Proof,
+			},
 		}
 
 		proofs[hash.Hex()] = protoProof

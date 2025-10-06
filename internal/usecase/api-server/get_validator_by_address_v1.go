@@ -6,6 +6,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/symbioticfi/relay/core/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
@@ -13,24 +15,24 @@ import (
 
 // GetValidatorByAddress handles the gRPC GetValidatorByAddress request
 func (h *grpcHandler) GetValidatorByAddress(ctx context.Context, req *apiv1.GetValidatorByAddressRequest) (*apiv1.GetValidatorByAddressResponse, error) {
-	latestEpoch, err := h.cfg.EvmClient.GetCurrentEpoch(ctx)
+	latestEpoch, err := h.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("failed to get latest validator set epoch: %w", err)
 	}
 
 	epochRequested := latestEpoch
 	if req.Epoch != nil {
-		epochRequested = req.GetEpoch()
+		epochRequested = entity.Epoch(req.GetEpoch())
 	}
 
 	// epoch from future
 	if epochRequested > latestEpoch {
-		return nil, errors.New("epoch requested is greater than latest epoch")
+		return nil, status.Errorf(codes.InvalidArgument, "epoch %d is greater than latest epoch %d", epochRequested, latestEpoch)
 	}
 
 	// parse validator address
 	if !common.IsHexAddress(req.GetAddress()) {
-		return nil, errors.New("invalid validator address format")
+		return nil, status.Errorf(codes.InvalidArgument, "invalid validator address format: %s", req.GetAddress())
 	}
 	validatorAddress := common.HexToAddress(req.GetAddress())
 
@@ -45,7 +47,7 @@ func (h *grpcHandler) GetValidatorByAddress(ctx context.Context, req *apiv1.GetV
 		return v.Operator == validatorAddress
 	})
 	if !found {
-		return nil, errors.New("validator not found for the given address and epoch")
+		return nil, status.Errorf(codes.NotFound, "validator %s not found for epoch %d", validatorAddress.Hex(), epochRequested)
 	}
 
 	return &apiv1.GetValidatorByAddressResponse{

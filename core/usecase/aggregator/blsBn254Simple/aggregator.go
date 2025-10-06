@@ -212,9 +212,10 @@ func (a Aggregator) Aggregate(
 	proofBytes = append(proofBytes, nonSignersBytes...)
 
 	return entity.AggregationProof{
-		Proof:            proofBytes,
-		MessageHash:      messageHash,
-		VerificationType: entity.VerificationTypeBlsBn254Simple,
+		MessageHash: messageHash,
+		KeyTag:      keyTag,
+		Epoch:       valset.Epoch,
+		Proof:       proofBytes,
 	}, nil
 }
 

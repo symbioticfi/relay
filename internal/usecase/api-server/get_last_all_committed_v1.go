@@ -7,12 +7,13 @@ import (
 	"github.com/go-errors/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/symbioticfi/relay/core/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
 )
 
 // GetLastAllCommitted handles the gRPC GetLastAllCommitted request
 func (h *grpcHandler) GetLastAllCommitted(ctx context.Context, _ *apiv1.GetLastAllCommittedRequest) (*apiv1.GetLastAllCommittedResponse, error) {
-	cfg, err := h.cfg.EvmClient.GetConfig(ctx, uint64(time.Now().Unix()))
+	cfg, err := h.cfg.EvmClient.GetConfig(ctx, entity.Timestamp(uint64(time.Now().Unix())))
 	if err != nil {
 		return nil, errors.Errorf("failed to get config: %w", err)
 	}
@@ -30,7 +31,7 @@ func (h *grpcHandler) GetLastAllCommitted(ctx context.Context, _ *apiv1.GetLastA
 		}
 
 		epochInfos[chain.ChainId] = &apiv1.ChainEpochInfo{
-			LastCommittedEpoch: lastCommittedEpoch,
+			LastCommittedEpoch: uint64(lastCommittedEpoch),
 			StartTime:          timestamppb.New(time.Unix(int64(epochStart), 0).UTC()),
 		}
 	}

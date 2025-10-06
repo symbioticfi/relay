@@ -30,7 +30,6 @@ import (
 	signerApp "github.com/symbioticfi/relay/internal/usecase/signer-app"
 	sync_provider "github.com/symbioticfi/relay/internal/usecase/sync-provider"
 	sync_runner "github.com/symbioticfi/relay/internal/usecase/sync-runner"
-	valsetGenerator "github.com/symbioticfi/relay/internal/usecase/valset-generator"
 	valsetListener "github.com/symbioticfi/relay/internal/usecase/valset-listener"
 	valsetStatusTracker "github.com/symbioticfi/relay/internal/usecase/valset-status-tracker"
 	"github.com/symbioticfi/relay/pkg/log"
@@ -93,7 +92,10 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create valset deriver: %w", err)
 	}
 
-	baseRepo, err := badger.New(badger.Config{Dir: cfg.StorageDir})
+	baseRepo, err := badger.New(badger.Config{
+		Dir:     cfg.StorageDir,
+		Metrics: mtr,
+	})
 	if err != nil {
 		return errors.Errorf("failed to create badger repository: %w", err)
 	}
@@ -105,21 +107,6 @@ func runApp(ctx context.Context) error {
 	})
 	if err != nil {
 		return errors.Errorf("failed to create cached repository: %w", err)
-	}
-
-	listener, err := valsetListener.New(valsetListener.Config{
-		EvmClient:       evmClient,
-		Repo:            repo,
-		Deriver:         deriver,
-		PollingInterval: time.Second * 5,
-	})
-	if err != nil {
-		return errors.Errorf("failed to create epoch listener: %w", err)
-	}
-
-	// Load all missing epochs before starting services
-	if err := listener.LoadAllMissingEpochs(ctx); err != nil {
-		return errors.Errorf("failed to load missing epochs: %w", err)
 	}
 
 	currentOnchainEpoch, err := evmClient.GetCurrentEpoch(ctx)
@@ -146,8 +133,8 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create aggregator: %w", err)
 	}
 
-	signatureProcessedSignal := signals.New[entity.SignatureMessage](cfg.SignalCfg, "signatureProcessed", nil)
-	aggProofReadySignal := signals.New[entity.AggregatedSignatureMessage](cfg.SignalCfg, "aggProofReady", nil)
+	signatureProcessedSignal := signals.New[entity.SignatureExtended](cfg.SignalCfg, "signatureProcessed", nil)
+	aggProofReadySignal := signals.New[entity.AggregationProof](cfg.SignalCfg, "aggProofReady", nil)
 
 	entityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo:                     repo,
@@ -171,19 +158,57 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create syncer: %w", err)
 	}
 
+	signer, err := signerApp.NewSignerApp(signerApp.Config{
+		KeyProvider:     keyProvider,
+		Repo:            repo,
+		EntityProcessor: entityProcessor,
+		Metrics:         mtr,
+	})
+	if err != nil {
+		return errors.Errorf("failed to create signer app: %w", err)
+	}
+
+	listener, err := valsetListener.New(valsetListener.Config{
+		EvmClient:       evmClient,
+		Repo:            repo,
+		Deriver:         deriver,
+		PollingInterval: time.Second * 5,
+		Signer:          signer,
+		Aggregator:      agg,
+		KeyProvider:     keyProvider,
+		Metrics:         mtr,
+	})
+	if err != nil {
+		return errors.Errorf("failed to create epoch listener: %w", err)
+	}
+
+	// Load all missing epochs before starting services
+	if err := listener.LoadAllMissingEpochs(ctx); err != nil {
+		return errors.Errorf("failed to load missing epochs: %w", err)
+	}
+
+	eg, egCtx := errgroup.WithContext(ctx)
+
+	// also start monitoring for new epochs immediately so that we don't miss any epochs while starting other services
+	eg.Go(func() error {
+		if err := listener.Start(egCtx); err != nil {
+			return errors.Errorf("failed to start valset listener: %w", err)
+		}
+		return nil
+	})
+
 	p2pService, discoveryService, err := initP2PService(ctx, cfg, keyProvider, syncProvider, mtr)
 	if err != nil {
 		return errors.Errorf("failed to create p2p service: %w", err)
 	}
 	defer p2pService.Close()
 
-	slog.InfoContext(ctx, "Created discovery service", "listenAddr", cfg.P2PListenAddress)
-	if err := discoveryService.Start(ctx); err != nil {
-		return errors.Errorf("failed to start discovery service: %w", err)
-	}
-	defer discoveryService.Close(ctx)
-
-	slog.InfoContext(ctx, "Started discovery service", "listenAddr", cfg.P2PListenAddress)
+	eg.Go(func() error {
+		if err := signer.HandleSignatureRequests(egCtx, cfg.SignalCfg.WorkerCount, p2pService); err != nil {
+			return errors.Errorf("failed to handle missing self signatures: %w", err)
+		}
+		return nil
+	})
 
 	syncRunner, err := sync_runner.New(sync_runner.Config{
 		Enabled:     cfg.Sync.Enabled,
@@ -197,36 +222,19 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create sync runner: %w", err)
 	}
 
-	signerApp, err := signerApp.NewSignerApp(signerApp.Config{
-		P2PService:      p2pService,
-		KeyProvider:     keyProvider,
-		Repo:            repo,
-		EntityProcessor: entityProcessor,
-		AggProofSignal:  aggProofReadySignal,
-		Aggregator:      agg,
-		Metrics:         mtr,
-	})
-	if err != nil {
-		return errors.Errorf("failed to create signer app: %w", err)
+	slog.InfoContext(ctx, "Created discovery service", "listenAddr", cfg.P2PListenAddress)
+	if err := discoveryService.Start(ctx); err != nil {
+		return errors.Errorf("failed to start discovery service: %w", err)
 	}
-	if err := p2pService.StartSignaturesAggregatedMessageListener(signerApp.HandleSignaturesAggregatedMessage); err != nil {
+	defer discoveryService.Close(ctx)
+
+	slog.InfoContext(ctx, "Started discovery service", "listenAddr", cfg.P2PListenAddress)
+
+	if err := p2pService.StartSignaturesAggregatedMessageListener(signer.HandleSignaturesAggregatedMessage); err != nil {
 		return errors.Errorf("failed to start signatures aggregated message listener: %w", err)
 	}
 
 	slog.InfoContext(ctx, "Created signer app, starting")
-
-	generator, err := valsetGenerator.New(valsetGenerator.Config{
-		Signer:          signerApp,
-		EvmClient:       evmClient,
-		Repo:            repo,
-		Deriver:         deriver,
-		Aggregator:      agg,
-		PollingInterval: time.Second * 5,
-		KeyProvider:     keyProvider,
-	})
-	if err != nil {
-		return errors.Errorf("failed to create epoch listener: %w", err)
-	}
 
 	statusTracker, err := valsetStatusTracker.New(valsetStatusTracker.Config{
 		EvmClient:       evmClient,
@@ -241,14 +249,17 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to track missing epochs statuses: %w", err)
 	}
 
-	err = aggProofReadySignal.SetHandler(func(ctx context.Context, msg entity.AggregatedSignatureMessage) error {
+	err = aggProofReadySignal.SetHandler(func(ctx context.Context, msg entity.AggregationProof) error {
+		if err := listener.HandleProofAggregated(ctx, msg); err != nil {
+			return errors.Errorf("failed to handle proof aggregated: %w", err)
+		}
 		if err := statusTracker.HandleProofAggregated(ctx, msg); err != nil {
 			return errors.Errorf("failed to handle proof aggregated: %w", err)
 		}
-		if err := generator.HandleProofAggregated(ctx, msg); err != nil {
-			return errors.Errorf("failed to handle proof aggregated: %w", err)
-		}
-		slog.DebugContext(ctx, "Handled proof aggregated", "request", msg)
+		slog.DebugContext(ctx, "Handled proof aggregated",
+			"proof", msg,
+			"requestID", msg.RequestID(),
+		)
 
 		return nil
 	})
@@ -268,24 +279,10 @@ func runApp(ctx context.Context) error {
 	if err != nil {
 		return errors.Errorf("failed to create signature listener: %w", err)
 	}
+
 	if err := p2pService.StartSignatureMessageListener(signListener.HandleSignatureReceivedMessage); err != nil {
 		return errors.Errorf("failed to start signature message listener: %w", err)
 	}
-
-	eg, egCtx := errgroup.WithContext(ctx)
-	eg.Go(func() error {
-		if err := listener.Start(egCtx); err != nil {
-			return errors.Errorf("failed to start valset listener: %w", err)
-		}
-		return nil
-	})
-
-	eg.Go(func() error {
-		if err := generator.Start(egCtx); err != nil {
-			return errors.Errorf("failed to start valset generator: %w", err)
-		}
-		return nil
-	})
 
 	eg.Go(func() error {
 		if err := statusTracker.Start(egCtx); err != nil {
@@ -295,7 +292,7 @@ func runApp(ctx context.Context) error {
 	})
 
 	eg.Go(func() error {
-		if err := generator.StartCommitterLoop(egCtx); err != nil {
+		if err := listener.StartCommitterLoop(egCtx); err != nil {
 			return errors.Errorf("failed to start committer loop: %w", err)
 		}
 		return nil
@@ -338,7 +335,7 @@ func runApp(ctx context.Context) error {
 		Address:           cfg.HTTPListenAddr,
 		ShutdownTimeout:   time.Second * 5,
 		ReadHeaderTimeout: time.Second,
-		Signer:            signerApp,
+		Signer:            signer,
 		Repo:              repo,
 		EvmClient:         evmClient,
 		Aggregator:        aggApp,

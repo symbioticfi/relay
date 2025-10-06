@@ -50,13 +50,14 @@ var infoCmd = &cobra.Command{
 		}
 
 		if infoFlags.Epoch == 0 {
-			infoFlags.Epoch, err = evmClient.GetCurrentEpoch(ctx)
+			epoch, err := evmClient.GetCurrentEpoch(ctx)
 			if err != nil {
 				return errors.Errorf("failed to get current epoch: %w", err)
 			}
+			infoFlags.Epoch = uint64(epoch)
 		}
 
-		captureTimestamp, err := evmClient.GetEpochStart(ctx, infoFlags.Epoch)
+		captureTimestamp, err := evmClient.GetEpochStart(ctx, entity.Epoch(infoFlags.Epoch))
 		if err != nil {
 			return errors.Errorf("failed to get capture timestamp: %w", err)
 		}

@@ -17,12 +17,12 @@ func (s *Syncer) BuildWantAggregationProofsRequest(ctx context.Context) (entity.
 		return entity.WantAggregationProofsRequest{}, errors.Errorf("failed to get latest epoch: %w", err)
 	}
 
-	startEpoch := uint64(0)
-	if latestEpoch >= s.cfg.EpochsToSync {
-		startEpoch = latestEpoch - s.cfg.EpochsToSync
+	startEpoch := entity.Epoch(0)
+	if latestEpoch >= entity.Epoch(s.cfg.EpochsToSync) {
+		startEpoch = latestEpoch - entity.Epoch(s.cfg.EpochsToSync)
 	}
 
-	var allRequestHashes []common.Hash
+	var allRequestIDs []common.Hash
 	totalRequests := 0
 
 	// Iterate through epochs from newest to oldest to prioritize recent requests
@@ -32,7 +32,7 @@ func (s *Syncer) BuildWantAggregationProofsRequest(ctx context.Context) (entity.
 
 		// Paginate through signature requests without aggregation proofs for this epoch
 		for remaining > 0 {
-			requests, err := s.cfg.Repo.GetSignatureRequestsWithoutAggregationProof(ctx, entity.Epoch(epoch), remaining, lastHash)
+			requests, err := s.cfg.Repo.GetSignatureRequestsWithoutAggregationProof(ctx, epoch, remaining, lastHash)
 			if err != nil {
 				return entity.WantAggregationProofsRequest{}, errors.Errorf("failed to get signature requests without aggregation proof for epoch %d: %w", epoch, err)
 			}
@@ -41,11 +41,22 @@ func (s *Syncer) BuildWantAggregationProofsRequest(ctx context.Context) (entity.
 				break // No more requests for this epoch
 			}
 
-			// Collect request hashes
+			// Collect request ids
 			for _, req := range requests {
-				allRequestHashes = append(allRequestHashes, req.Hash())
+				// check if proof exists
+				_, err := s.cfg.Repo.GetAggregationProof(ctx, req.RequestID)
+				if err == nil {
+					// remove pending from db
+					err = s.cfg.Repo.RemoveAggregationProofPending(ctx, req.RequiredEpoch, req.RequestID)
+					// ignore not found and tx conflict errors, as they indicate the proof was already processed or is being processed
+					if err != nil && !errors.Is(err, entity.ErrEntityNotFound) && !errors.Is(err, entity.ErrTxConflict) {
+						return entity.WantAggregationProofsRequest{}, errors.Errorf("failed to remove aggregation proof from pending collection: %w", err)
+					}
+					continue // Proof already exists, skip
+				}
+				allRequestIDs = append(allRequestIDs, req.RequestID)
 				totalRequests++
-				lastHash = req.Hash() // Update for pagination
+				lastHash = req.RequestID // Update for pagination
 			}
 
 			remaining = s.cfg.MaxAggProofRequestsPerSync - totalRequests
@@ -58,6 +69,6 @@ func (s *Syncer) BuildWantAggregationProofsRequest(ctx context.Context) (entity.
 	}
 
 	return entity.WantAggregationProofsRequest{
-		RequestHashes: allRequestHashes,
+		RequestIDs: allRequestIDs,
 	}, nil
 }

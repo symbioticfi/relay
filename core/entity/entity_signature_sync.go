@@ -7,13 +7,13 @@ import (
 // WantSignaturesRequest represents a request to resync signatures for a specific epoch.
 // Contains missing validator indices for each incomplete signature request.
 type WantSignaturesRequest struct {
-	WantSignatures map[common.Hash]Bitmap // reqHash -> missing validator indices bitmap
+	WantSignatures map[common.Hash]Bitmap // requestID -> missing validator indices bitmap
 }
 
-// WantSignaturesResponse contains signatures grouped by request hash.
+// WantSignaturesResponse contains signatures grouped by Request id.
 // Each signature includes the validator index for consistent mapping.
 type WantSignaturesResponse struct {
-	Signatures map[common.Hash][]ValidatorSignature // grouped by request hash
+	Signatures map[common.Hash][]ValidatorSignature
 }
 
 // ValidatorSignature pairs a signature with its validator index in the active validator set.
@@ -40,29 +40,27 @@ func (s SignatureProcessingStats) TotalErrors() int {
 }
 
 // WantAggregationProofsRequest represents a request to resync aggregation proofs for specific signature requests.
-// Contains request hashes for which aggregation proofs are needed.
+// Contains request ids for which aggregation proofs are needed.
 type WantAggregationProofsRequest struct {
-	RequestHashes []common.Hash // reqHash list for missing aggregation proofs
+	RequestIDs []common.Hash // requestID list for missing aggregation proofs
 }
 
-// WantAggregationProofsResponse contains aggregation proofs grouped by request hash.
+// WantAggregationProofsResponse contains aggregation proofs grouped by request id.
 // Each aggregation proof corresponds to a complete signature aggregation for a request.
 type WantAggregationProofsResponse struct {
-	Proofs map[common.Hash]AggregationProof // reqHash -> aggregation proof
+	Proofs map[common.Hash]AggregationProof // requestID -> aggregation proof
 }
 
 // AggregationProofProcessingStats contains detailed statistics for processing received aggregation proofs
 type AggregationProofProcessingStats struct {
-	ProcessedCount             int // Successfully processed aggregation proofs
-	UnrequestedProofCount      int // Proofs for hashes we didn't request
-	SignatureRequestErrorCount int // Failed to get signature request
-	VerificationErrorCount     int // Failed to verify aggregation proof
-	ProcessingErrorCount       int // Failed to process aggregation proof
-	AlreadyExistCount          int // Aggregation proof already exists (ErrEntityAlreadyExist)
+	ProcessedCount         int // Successfully processed aggregation proofs
+	UnrequestedProofCount  int // Proofs for hashes we didn't request
+	VerificationErrorCount int // Failed to verify aggregation proof
+	ProcessingErrorCount   int // Failed to process aggregation proof
+	AlreadyExistCount      int // Aggregation proof already exists (ErrEntityAlreadyExist)
 }
 
 // TotalErrors returns the total number of errors encountered
 func (s AggregationProofProcessingStats) TotalErrors() int {
-	return s.UnrequestedProofCount + s.SignatureRequestErrorCount +
-		s.VerificationErrorCount + s.ProcessingErrorCount + s.AlreadyExistCount
+	return s.UnrequestedProofCount + s.VerificationErrorCount + s.ProcessingErrorCount + s.AlreadyExistCount
 }

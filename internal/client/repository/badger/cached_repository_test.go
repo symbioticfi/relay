@@ -16,7 +16,7 @@ func TestCachedRepository_NetworkConfig(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create base repository
-	baseRepo, err := New(Config{Dir: tempDir})
+	baseRepo, err := New(Config{Dir: tempDir, Metrics: DoNothingMetrics{}})
 	require.NoError(t, err)
 	defer func() {
 		err := baseRepo.Close()
@@ -26,11 +26,12 @@ func TestCachedRepository_NetworkConfig(t *testing.T) {
 	// Create cached repository
 	cachedRepo, err := NewCached(baseRepo, CachedConfig{
 		NetworkConfigCacheSize: 10,
+		ValidatorSetCacheSize:  10,
 	})
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	epoch := uint64(123)
+	epoch := entity.Epoch(123)
 
 	// Create test network config
 	testConfig := entity.NetworkConfig{
@@ -61,7 +62,7 @@ func TestCachedRepository_InheritedMethods(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create base repository
-	baseRepo, err := New(Config{Dir: tempDir})
+	baseRepo, err := New(Config{Dir: tempDir, Metrics: DoNothingMetrics{}})
 	require.NoError(t, err)
 	defer func() {
 		err := baseRepo.Close()
@@ -71,6 +72,7 @@ func TestCachedRepository_InheritedMethods(t *testing.T) {
 	// Create cached repository
 	cachedRepo, err := NewCached(baseRepo, CachedConfig{
 		NetworkConfigCacheSize: 10,
+		ValidatorSetCacheSize:  10,
 	})
 	require.NoError(t, err)
 
@@ -85,7 +87,7 @@ func TestCachedRepository_ValidatorSet(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create base repository
-	baseRepo, err := New(Config{Dir: tempDir})
+	baseRepo, err := New(Config{Dir: tempDir, Metrics: DoNothingMetrics{}})
 	require.NoError(t, err)
 	defer func() {
 		err := baseRepo.Close()
@@ -100,7 +102,7 @@ func TestCachedRepository_ValidatorSet(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	epoch := uint64(456)
+	epoch := entity.Epoch(456)
 
 	// Create test validator set
 	testValidatorSet := entity.ValidatorSet{

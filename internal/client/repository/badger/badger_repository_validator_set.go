@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
+
 	"github.com/symbioticfi/relay/core/entity"
 )
 
@@ -22,35 +23,35 @@ const (
 	firstUncommittedValidatorSetEpoch = "first_uncommitted_validator_set_epoch"
 )
 
-func keyValidatorSetHeader(epoch uint64) []byte {
+func keyValidatorSetHeader(epoch entity.Epoch) []byte {
 	return []byte(fmt.Sprintf("validator_set_header:%d", epoch))
 }
 
-func keyValidatorByOperator(epoch uint64, operator common.Address) []byte {
+func keyValidatorByOperator(epoch entity.Epoch, operator common.Address) []byte {
 	return []byte(fmt.Sprintf("validator:%d:%s", epoch, operator.Hex()))
 }
 
-func keyValidatorKeyLookup(epoch uint64, keyTag entity.KeyTag, publicKeyHash common.Hash) []byte {
+func keyValidatorKeyLookup(epoch entity.Epoch, keyTag entity.KeyTag, publicKeyHash common.Hash) []byte {
 	return []byte(fmt.Sprintf("validator_key_lookup:%d:%d:%s", epoch, keyTag, publicKeyHash.Hex()))
 }
 
-func keyValidatorSetStatus(epoch uint64) []byte {
+func keyValidatorSetStatus(epoch entity.Epoch) []byte {
 	return []byte(fmt.Sprintf("validator_set_status:%d", epoch))
 }
 
-func keyValidatorSetMetadata(epoch uint64) []byte {
+func keyValidatorSetMetadata(epoch entity.Epoch) []byte {
 	return []byte(fmt.Sprintf("validator_set_metadata:%d", epoch))
 }
 
-func (r *Repository) SaveValidatorSetMetadata(ctx context.Context, epoch uint64, extraData []entity.ExtraData, commitmentData []byte) error {
-	metadataBytes, err := validatorSetMetadataToBytes(extraData, commitmentData)
+func (r *Repository) SaveValidatorSetMetadata(ctx context.Context, data entity.ValidatorSetMetadata) error {
+	metadataBytes, err := validatorSetMetadataToBytes(data)
 	if err != nil {
 		return errors.Errorf("failed to marshal validator set metadata: %w", err)
 	}
 
-	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+	return r.doUpdateInTx(ctx, "SaveValidatorSetMetadata", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		_, err := txn.Get(keyValidatorSetMetadata(epoch))
+		_, err := txn.Get(keyValidatorSetMetadata(data.Epoch))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
 			return errors.Errorf("failed to get valset metadata: %w", err)
 		}
@@ -58,7 +59,7 @@ func (r *Repository) SaveValidatorSetMetadata(ctx context.Context, epoch uint64,
 			return errors.Errorf("valset metadata already exists: %w", entity.ErrEntityAlreadyExist)
 		}
 
-		err = txn.Set(keyValidatorSetMetadata(epoch), metadataBytes)
+		err = txn.Set(keyValidatorSetMetadata(data.Epoch), metadataBytes)
 		if err != nil {
 			return errors.Errorf("failed to store valset metadata: %w", err)
 		}
@@ -66,20 +67,17 @@ func (r *Repository) SaveValidatorSetMetadata(ctx context.Context, epoch uint64,
 	})
 }
 
-func (r *Repository) GetValidatorSetMetadata(ctx context.Context, epoch uint64) ([]entity.ExtraData, []byte, error) {
-	var (
-		extraData      []entity.ExtraData
-		commitmentData []byte
-	)
+func (r *Repository) GetValidatorSetMetadata(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSetMetadata, error) {
+	var metadata entity.ValidatorSetMetadata
 
-	return extraData, commitmentData, r.DoViewInTx(ctx, func(ctx context.Context) error {
+	return metadata, r.doViewInTx(ctx, "GetValidatorSetMetadata", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		item, err := txn.Get(keyValidatorSetMetadata(epoch))
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
-				return errors.Errorf("no validatorset metadta found for epoch %v: %w", epoch, entity.ErrEntityNotFound)
+				return errors.Errorf("no validatorset metadata found for epoch %v: %w", epoch, entity.ErrEntityNotFound)
 			}
-			return errors.Errorf("failed to get validatorset metadta: %w", err)
+			return errors.Errorf("failed to get validatorset metadata: %w", err)
 		}
 
 		value, err := item.ValueCopy(nil)
@@ -87,9 +85,9 @@ func (r *Repository) GetValidatorSetMetadata(ctx context.Context, epoch uint64) 
 			return errors.Errorf("failed to copy validatorset metadata value: %w", err)
 		}
 
-		extraData, commitmentData, err = bytesToValidatorSetMetadata(value)
+		metadata, err = bytesToValidatorSetMetadata(value)
 		if err != nil {
-			return errors.Errorf("failed to unmarshal validatorset metadta: %w", err)
+			return errors.Errorf("failed to unmarshal validatorset metadata: %w", err)
 		}
 
 		return nil
@@ -106,7 +104,7 @@ func (r *Repository) SaveValidatorSet(ctx context.Context, valset entity.Validat
 		return errors.Errorf("failed to marshal validator set header: %w", err)
 	}
 
-	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+	return r.doUpdateInTx(ctx, "SaveValidatorSet", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		// Check if this epoch already exists by checking the header
 		headerKey := keyValidatorSetHeader(valset.Epoch)
@@ -147,13 +145,13 @@ func (r *Repository) SaveValidatorSet(ctx context.Context, valset entity.Validat
 				return errors.Errorf("failed to copy latest validator set epoch value: %w", err)
 			}
 			latestEpoch := binary.BigEndian.Uint64(latestValue)
-			shouldUpdateLatest = latestEpoch < valset.Epoch
+			shouldUpdateLatest = latestEpoch < uint64(valset.Epoch)
 		}
 
 		// Update latest validator set epoch only if this is a newer epoch
 		if shouldUpdateLatest {
 			epochBytes := make([]byte, 8)
-			binary.BigEndian.PutUint64(epochBytes, valset.Epoch)
+			binary.BigEndian.PutUint64(epochBytes, uint64(valset.Epoch))
 			err = txn.Set([]byte(latestValidatorSetEpochKey), epochBytes)
 			if err != nil {
 				return errors.Errorf("failed to store latest validator set epoch: %w", err)
@@ -205,10 +203,10 @@ func (r *Repository) SaveValidatorSet(ctx context.Context, valset entity.Validat
 }
 
 func (r *Repository) SaveLatestSignedValidatorSetEpoch(ctx context.Context, valset entity.ValidatorSet) error {
-	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+	return r.doUpdateInTx(ctx, "SaveLatestSignedValidatorSetEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		epochBytes := make([]byte, 8)
-		binary.BigEndian.PutUint64(epochBytes, valset.Epoch)
+		binary.BigEndian.PutUint64(epochBytes, uint64(valset.Epoch))
 		if err := txn.Set([]byte(latestSignedValidatorSetEpochKey), epochBytes); err != nil {
 			return errors.Errorf("failed to store latest validator set epoch: %w", err)
 		}
@@ -217,11 +215,11 @@ func (r *Repository) SaveLatestSignedValidatorSetEpoch(ctx context.Context, vals
 	})
 }
 
-func (r *Repository) SaveFirstUncommittedValidatorSetEpoch(ctx context.Context, epoch uint64) error {
-	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+func (r *Repository) SaveFirstUncommittedValidatorSetEpoch(ctx context.Context, epoch entity.Epoch) error {
+	return r.doUpdateInTx(ctx, "SaveFirstUncommittedValidatorSetEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		epochBytes := make([]byte, 8)
-		binary.BigEndian.PutUint64(epochBytes, epoch)
+		binary.BigEndian.PutUint64(epochBytes, uint64(epoch))
 		if err := txn.Set([]byte(firstUncommittedValidatorSetEpoch), epochBytes); err != nil {
 			return errors.Errorf("failed to store first uncommitted validator set epoch: %w", err)
 		}
@@ -231,7 +229,7 @@ func (r *Repository) SaveFirstUncommittedValidatorSetEpoch(ctx context.Context, 
 }
 
 func (r *Repository) UpdateValidatorSetStatus(ctx context.Context, valset entity.ValidatorSet) error {
-	return r.DoUpdateInTx(ctx, func(ctx context.Context) error {
+	return r.doUpdateInTx(ctx, "UpdateValidatorSetStatus", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		statusKey := keyValidatorSetStatus(valset.Epoch)
 		_, err := txn.Get(statusKey)
@@ -248,10 +246,10 @@ func (r *Repository) UpdateValidatorSetStatus(ctx context.Context, valset entity
 	})
 }
 
-func (r *Repository) GetValidatorSetHeaderByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSetHeader, error) {
+func (r *Repository) GetValidatorSetHeaderByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSetHeader, error) {
 	var header entity.ValidatorSetHeader
 
-	return header, r.DoViewInTx(ctx, func(ctx context.Context) error {
+	return header, r.doViewInTx(ctx, "GetValidatorSetHeaderByEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		item, err := txn.Get(keyValidatorSetHeader(epoch))
 		if err != nil {
@@ -275,7 +273,7 @@ func (r *Repository) GetValidatorSetHeaderByEpoch(ctx context.Context, epoch uin
 	})
 }
 
-func (r *Repository) getAllValidatorsByEpoch(txn *badger.Txn, epoch uint64) (entity.Validators, error) {
+func (r *Repository) getAllValidatorsByEpoch(txn *badger.Txn, epoch entity.Epoch) (entity.Validators, error) {
 	prefix := []byte(fmt.Sprintf("validator:%d:", epoch))
 	it := txn.NewIterator(badger.DefaultIteratorOptions)
 	defer it.Close()
@@ -301,10 +299,10 @@ func (r *Repository) getAllValidatorsByEpoch(txn *badger.Txn, epoch uint64) (ent
 	return validators, nil
 }
 
-func (r *Repository) GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (entity.ValidatorSet, error) {
+func (r *Repository) GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error) {
 	var vs entity.ValidatorSet
 
-	return vs, r.DoViewInTx(ctx, func(ctx context.Context) error {
+	return vs, r.doViewInTx(ctx, "GetValidatorSetByEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		// Get the validator set header
 		headerItem, err := txn.Get(keyValidatorSetHeader(epoch))
@@ -376,7 +374,7 @@ func (r *Repository) GetValidatorSetByEpoch(ctx context.Context, epoch uint64) (
 func (r *Repository) GetLatestValidatorSetHeader(ctx context.Context) (entity.ValidatorSetHeader, error) {
 	var header entity.ValidatorSetHeader
 
-	return header, r.DoViewInTx(ctx, func(ctx context.Context) error {
+	return header, r.doViewInTx(ctx, "GetLatestValidatorSetHeader", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		// Get the latest epoch
 		item, err := txn.Get([]byte(latestValidatorSetEpochKey))
@@ -392,7 +390,7 @@ func (r *Repository) GetLatestValidatorSetHeader(ctx context.Context) (entity.Va
 			return errors.Errorf("failed to copy latest validator set epoch value: %w", err)
 		}
 
-		latestEpoch := binary.BigEndian.Uint64(value)
+		latestEpoch := entity.Epoch(binary.BigEndian.Uint64(value))
 
 		// Get the validator set header for that epoch in the same transaction
 		headerItem, err := txn.Get(keyValidatorSetHeader(latestEpoch))
@@ -417,10 +415,10 @@ func (r *Repository) GetLatestValidatorSetHeader(ctx context.Context) (entity.Va
 	})
 }
 
-func (r *Repository) GetLatestValidatorSetEpoch(ctx context.Context) (uint64, error) {
-	var epoch uint64
+func (r *Repository) GetLatestValidatorSetEpoch(ctx context.Context) (entity.Epoch, error) {
+	var epoch entity.Epoch
 
-	return epoch, r.DoViewInTx(ctx, func(ctx context.Context) error {
+	return epoch, r.doViewInTx(ctx, "GetLatestValidatorSetEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		// Get the latest epoch
 		item, err := txn.Get([]byte(latestValidatorSetEpochKey))
@@ -436,19 +434,19 @@ func (r *Repository) GetLatestValidatorSetEpoch(ctx context.Context) (uint64, er
 			return errors.Errorf("failed to copy latest validator set epoch value: %w", err)
 		}
 
-		epoch = binary.BigEndian.Uint64(value)
+		epoch = entity.Epoch(binary.BigEndian.Uint64(value))
 		return nil
 	})
 }
 
-func keyActiveValidatorCount(epoch uint64) []byte {
+func keyActiveValidatorCount(epoch entity.Epoch) []byte {
 	return []byte(fmt.Sprintf("active_validator_count:%d", epoch))
 }
 
-func (r *Repository) GetActiveValidatorCountByEpoch(ctx context.Context, epoch uint64) (uint32, error) {
+func (r *Repository) GetActiveValidatorCountByEpoch(ctx context.Context, epoch entity.Epoch) (uint32, error) {
 	var count uint32
 
-	return count, r.DoViewInTx(ctx, func(ctx context.Context) error {
+	return count, r.doViewInTx(ctx, "GetActiveValidatorCountByEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 
 		item, err := txn.Get(keyActiveValidatorCount(epoch))
@@ -469,10 +467,10 @@ func (r *Repository) GetActiveValidatorCountByEpoch(ctx context.Context, epoch u
 	})
 }
 
-func (r *Repository) GetLatestSignedValidatorSetEpoch(ctx context.Context) (uint64, error) {
-	var epoch uint64
+func (r *Repository) GetLatestSignedValidatorSetEpoch(ctx context.Context) (entity.Epoch, error) {
+	var epoch entity.Epoch
 
-	return epoch, r.DoViewInTx(ctx, func(ctx context.Context) error {
+	return epoch, r.doViewInTx(ctx, "GetLatestSignedValidatorSetEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		item, err := txn.Get([]byte(latestSignedValidatorSetEpochKey))
 		if err != nil {
@@ -487,15 +485,15 @@ func (r *Repository) GetLatestSignedValidatorSetEpoch(ctx context.Context) (uint
 			return errors.Errorf("failed to copy latest validator set epoch value: %w", err)
 		}
 
-		epoch = binary.BigEndian.Uint64(value)
+		epoch = entity.Epoch(binary.BigEndian.Uint64(value))
 		return nil
 	})
 }
 
-func (r *Repository) GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (uint64, error) {
-	var epoch uint64
+func (r *Repository) GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (entity.Epoch, error) {
+	var epoch entity.Epoch
 
-	return epoch, r.DoViewInTx(ctx, func(ctx context.Context) error {
+	return epoch, r.doViewInTx(ctx, "GetFirstUncommittedValidatorSetEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		// Get the latest epoch
 		item, err := txn.Get([]byte(firstUncommittedValidatorSetEpoch))
@@ -511,18 +509,18 @@ func (r *Repository) GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (
 			return errors.Errorf("failed to copy first uncommitted validator set epoch value: %w", err)
 		}
 
-		epoch = binary.BigEndian.Uint64(value)
+		epoch = entity.Epoch(binary.BigEndian.Uint64(value))
 		return nil
 	})
 }
 
-func (r *Repository) GetValidatorByKey(ctx context.Context, epoch uint64, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error) {
+func (r *Repository) GetValidatorByKey(ctx context.Context, epoch entity.Epoch, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error) {
 	publicKeyHash := crypto.Keccak256Hash(publicKey)
 	keyLookup := keyValidatorKeyLookup(epoch, keyTag, publicKeyHash)
 
 	var validator entity.Validator
 	var activeIndex uint32
-	return validator, activeIndex, r.DoViewInTx(ctx, func(ctx context.Context) error {
+	return validator, activeIndex, r.doViewInTx(ctx, "GetValidatorByKey", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		// First, find the operator address from the key lookup table
 		item, err := txn.Get(keyLookup)
@@ -679,8 +677,8 @@ func validatorSetHeaderToBytes(valset entity.ValidatorSet) ([]byte, error) {
 	headerDTO := validatorSetHeaderOnlyDTO{
 		Version:            header.Version,
 		RequiredKeyTag:     uint8(header.RequiredKeyTag),
-		Epoch:              header.Epoch,
-		CaptureTimestamp:   header.CaptureTimestamp,
+		Epoch:              uint64(header.Epoch),
+		CaptureTimestamp:   uint64(header.CaptureTimestamp),
 		QuorumThreshold:    header.QuorumThreshold.String(),
 		TotalVotingPower:   header.TotalVotingPower.String(),
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot.Hex(),
@@ -737,8 +735,8 @@ func bytesToValidatorSetHeader(data []byte) (entity.ValidatorSetHeader, error) {
 	return entity.ValidatorSetHeader{
 		Version:            headerDTO.Version,
 		RequiredKeyTag:     entity.KeyTag(headerDTO.RequiredKeyTag),
-		Epoch:              headerDTO.Epoch,
-		CaptureTimestamp:   headerDTO.CaptureTimestamp,
+		Epoch:              entity.Epoch(headerDTO.Epoch),
+		CaptureTimestamp:   entity.Timestamp(headerDTO.CaptureTimestamp),
 		QuorumThreshold:    entity.ToVotingPower(quorumThreshold),
 		TotalVotingPower:   entity.ToVotingPower(totalVotingPower),
 		ValidatorsSszMRoot: common.HexToHash(headerDTO.ValidatorsSszMRoot),
@@ -787,6 +785,8 @@ func extractAdditionalInfoFromHeaderData(data []byte) (aggIndices []uint32, comm
 }
 
 type validatorSetMetadataDTO struct {
+	RequestID      string         `json:"request_id"`
+	Epoch          uint64         `json:"epoch"`
 	ExtraData      []extraDataDTO `json:"extra_data"`
 	CommitmentData []byte         `json:"commitment_data"`
 }
@@ -796,33 +796,37 @@ type extraDataDTO struct {
 	Value []byte `json:"value"`
 }
 
-func validatorSetMetadataToBytes(extraData []entity.ExtraData, commitmentData []byte) ([]byte, error) {
-	extraDataDTOs := lo.Map(extraData, func(ed entity.ExtraData, _ int) extraDataDTO {
-		return extraDataDTO{
-			Key:   ed.Key.Bytes(),
-			Value: ed.Value.Bytes(),
-		}
-	})
+func validatorSetMetadataToBytes(data entity.ValidatorSetMetadata) ([]byte, error) {
 	metadataData := validatorSetMetadataDTO{
-		ExtraData:      extraDataDTOs,
-		CommitmentData: commitmentData,
+		RequestID: data.RequestID.Hex(),
+		Epoch:     uint64(data.Epoch),
+		ExtraData: lo.Map(data.ExtraData, func(ed entity.ExtraData, _ int) extraDataDTO {
+			return extraDataDTO{
+				Key:   ed.Key.Bytes(),
+				Value: ed.Value.Bytes(),
+			}
+		}),
+		CommitmentData: data.CommitmentData,
 	}
 
 	return json.Marshal(metadataData)
 }
 
-func bytesToValidatorSetMetadata(data []byte) ([]entity.ExtraData, []byte, error) {
+func bytesToValidatorSetMetadata(data []byte) (entity.ValidatorSetMetadata, error) {
 	var metadataDTO validatorSetMetadataDTO
 	if err := json.Unmarshal(data, &metadataDTO); err != nil {
-		return nil, nil, errors.Errorf("failed to unmarshal validator set header: %w", err)
+		return entity.ValidatorSetMetadata{}, errors.Errorf("failed to unmarshal validator set header: %w", err)
 	}
 
-	extraDataDTOs := lo.Map(metadataDTO.ExtraData, func(ed extraDataDTO, _ int) entity.ExtraData {
-		return entity.ExtraData{
-			Key:   common.BytesToHash(ed.Key),
-			Value: common.BytesToHash(ed.Value),
-		}
-	})
-
-	return extraDataDTOs, metadataDTO.CommitmentData, nil
+	return entity.ValidatorSetMetadata{
+		RequestID: common.HexToHash(metadataDTO.RequestID),
+		ExtraData: lo.Map(metadataDTO.ExtraData, func(ed extraDataDTO, _ int) entity.ExtraData {
+			return entity.ExtraData{
+				Key:   common.BytesToHash(ed.Key),
+				Value: common.BytesToHash(ed.Value),
+			}
+		}),
+		Epoch:          entity.Epoch(metadataDTO.Epoch),
+		CommitmentData: metadataDTO.CommitmentData,
+	}, nil
 }

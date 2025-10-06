@@ -5,26 +5,29 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/symbioticfi/relay/core/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
 )
 
 // GetValidatorSetHeader handles the gRPC GetValidatorSetHeader request
 func (h *grpcHandler) GetValidatorSetHeader(ctx context.Context, req *apiv1.GetValidatorSetHeaderRequest) (*apiv1.GetValidatorSetHeaderResponse, error) {
-	latestEpoch, err := h.cfg.EvmClient.GetCurrentEpoch(ctx)
+	latestEpoch, err := h.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("failed to get latest validator set epoch: %w", err)
 	}
 
 	epochRequested := latestEpoch
 	if req.Epoch != nil {
-		epochRequested = req.GetEpoch()
+		epochRequested = entity.Epoch(req.GetEpoch())
 	}
 
 	// epoch from future
 	if epochRequested > latestEpoch {
-		return nil, errors.New("epoch requested is greater than latest epoch")
+		return nil, status.Errorf(codes.InvalidArgument, "epoch %d is greater than latest epoch %d", epochRequested, latestEpoch)
 	}
 
 	validatorSet, err := h.getValidatorSetForEpoch(ctx, epochRequested)
@@ -41,7 +44,7 @@ func (h *grpcHandler) GetValidatorSetHeader(ctx context.Context, req *apiv1.GetV
 	return &apiv1.GetValidatorSetHeaderResponse{
 		Version:            uint32(header.Version),
 		RequiredKeyTag:     uint32(header.RequiredKeyTag),
-		Epoch:              header.Epoch,
+		Epoch:              uint64(header.Epoch),
 		CaptureTimestamp:   timestamppb.New(time.Unix(int64(header.CaptureTimestamp), 0).UTC()),
 		QuorumThreshold:    header.QuorumThreshold.String(),
 		TotalVotingPower:   header.TotalVotingPower.String(),

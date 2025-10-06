@@ -17,10 +17,10 @@ service SymbioticAPIService {
   // Get current epoch
   rpc GetCurrentEpoch(GetCurrentEpochRequest) returns (GetCurrentEpochResponse);
 
-  // Get signature by request hash
+  // Get signature by request id
   rpc GetSignatures(GetSignaturesRequest) returns (GetSignaturesResponse);
 
-  // Get signature request by request hash
+  // Get signature request by request id
   rpc GetSignatureRequest(GetSignatureRequestRequest) returns (GetSignatureRequestResponse);
 
   // Get aggregation status, can be sent only to aggregator nodes
@@ -44,7 +44,7 @@ service SymbioticAPIService {
   // Get last committed epochs for all settlement chains
   rpc GetLastAllCommitted(GetLastAllCommittedRequest) returns (GetLastAllCommittedResponse);
 
-  // Get validator set metadata like extra data and request hash to fetch aggregation and signature requests
+  // Get validator set metadata like extra data and request id to fetch aggregation and signature requests
   rpc GetValidatorSetMetadata(GetValidatorSetMetadataRequest) returns (GetValidatorSetMetadataResponse);
 }
 
@@ -75,7 +75,7 @@ message SignMessageWaitRequest {
 // Response message for sign message request
 message SignMessageResponse {
   // Hash of the signature request
-  string request_hash = 1;
+  string request_id = 1;
 
   // Epoch number
   uint64 epoch = 2;
@@ -86,8 +86,8 @@ message SignMessageWaitResponse {
   // Current status of the signing process
   SigningStatus status = 1;
 
-  // Hash of the signature request
-  string request_hash = 2;
+  // Id of the request
+  string request_id = 2;
 
   // Epoch number
   uint64 epoch = 3;
@@ -98,8 +98,7 @@ message SignMessageWaitResponse {
 
 // Request message for getting aggregation proof
 message GetAggregationProofRequest {
-  // Request hash
-  string request_hash = 1;
+  string request_id = 1;
 }
 
 // Request message for getting current epoch
@@ -107,8 +106,7 @@ message GetCurrentEpochRequest {}
 
 // Request message for getting signatures
 message GetSignaturesRequest {
-  // Request hash
-  string request_hash = 1;
+  string request_id = 1;
 }
 
 // Response message for getting signatures
@@ -119,14 +117,12 @@ message GetSignaturesResponse {
 
 // Request message for getting signature request
 message GetSignatureRequestRequest {
-  // Request hash
-  string request_hash = 1;
+  string request_id = 1;
 }
 
 // Request message for getting aggregation status
 message GetAggregationStatusRequest {
-  // Request hash
-  string request_hash = 1;
+  string request_id = 1;
 }
 
 // Request message for getting validator set
@@ -184,9 +180,6 @@ message GetAggregationProofResponse {
 
 // Response message for getting aggregation proof
 message AggregationProof {
-  // Verification type
-  uint32 verification_type = 1;
-
   // Message hash
   bytes message_hash = 2;
 
@@ -254,7 +247,7 @@ message ExtraData {
 message GetValidatorSetMetadataResponse {
   repeated ExtraData extra_data = 1;
   bytes commitment_data = 2;
-  string request_hash = 3;
+  string request_id = 3;
 }
 
 // Response message for getting validator set header
