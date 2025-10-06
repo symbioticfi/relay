@@ -135,8 +135,8 @@ func (r *Repository) saveAggregationProofPending(ctx context.Context, requestID 
 	})
 }
 
-func (r *Repository) removeAggregationProofPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error {
-	return r.doUpdateInTx(ctx, "removeAggregationProofPending", func(ctx context.Context) error {
+func (r *Repository) RemoveAggregationProofPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error {
+	return r.doUpdateInTx(ctx, "RemoveAggregationProofPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		pendingKey := keyAggregationProofPending(epoch, requestID)
 

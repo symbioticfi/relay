@@ -32,7 +32,7 @@ type repo interface {
 	GetConfigByEpoch(ctx context.Context, epoch entity.Epoch) (entity.NetworkConfig, error)
 	GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error)
 	SaveLatestSignedValidatorSetEpoch(_ context.Context, valset entity.ValidatorSet) error
-	AddProof(ctx context.Context, aggregationProof entity.AggregationProof) error
+	SaveProof(ctx context.Context, aggregationProof entity.AggregationProof) error
 	SaveProofCommitPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error
 	GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch entity.Epoch, limit int) ([]entity.ProofCommitKey, error)
 	RemoveProofCommitPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error

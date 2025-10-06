@@ -21,7 +21,7 @@ func keySignaturePrefix(requestID common.Hash) []byte {
 	return []byte("signature:" + requestID.Hex() + ":")
 }
 
-func (r *Repository) SaveSignature(ctx context.Context, validatorIndex uint32, sig entity.SignatureExtended) error {
+func (r *Repository) saveSignature(ctx context.Context, validatorIndex uint32, sig entity.SignatureExtended) error {
 	txn := getTxn(ctx)
 	if txn == nil {
 		return errors.New("no transaction found in context, use signature processor in order to store signatures")

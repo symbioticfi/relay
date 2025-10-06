@@ -42,34 +42,6 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 	return m.recorder
 }
 
-// AddProof mocks base method.
-func (m *MockRepository) AddProof(ctx context.Context, aggregationProof entity.AggregationProof) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddProof", ctx, aggregationProof)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// AddProof indicates an expected call of AddProof.
-func (mr *MockRepositoryMockRecorder) AddProof(ctx, aggregationProof any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddProof", reflect.TypeOf((*MockRepository)(nil).AddProof), ctx, aggregationProof)
-}
-
-// AddSignature mocks base method.
-func (m *MockRepository) AddSignature(ctx context.Context, signature entity.SignatureExtended) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddSignature", ctx, signature)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// AddSignature indicates an expected call of AddSignature.
-func (mr *MockRepositoryMockRecorder) AddSignature(ctx, signature any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSignature", reflect.TypeOf((*MockRepository)(nil).AddSignature), ctx, signature)
-}
-
 // GetAggregationProof mocks base method.
 func (m *MockRepository) GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error) {
 	m.ctrl.T.Helper()
@@ -129,6 +101,34 @@ func (m *MockRepository) GetValidatorSetByEpoch(ctx context.Context, epoch entit
 func (mr *MockRepositoryMockRecorder) GetValidatorSetByEpoch(ctx, epoch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSetByEpoch", reflect.TypeOf((*MockRepository)(nil).GetValidatorSetByEpoch), ctx, epoch)
+}
+
+// SaveProof mocks base method.
+func (m *MockRepository) SaveProof(ctx context.Context, aggregationProof entity.AggregationProof) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SaveProof", ctx, aggregationProof)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SaveProof indicates an expected call of SaveProof.
+func (mr *MockRepositoryMockRecorder) SaveProof(ctx, aggregationProof any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveProof", reflect.TypeOf((*MockRepository)(nil).SaveProof), ctx, aggregationProof)
+}
+
+// SaveSignature mocks base method.
+func (m *MockRepository) SaveSignature(ctx context.Context, signature entity.SignatureExtended) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SaveSignature", ctx, signature)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SaveSignature indicates an expected call of SaveSignature.
+func (mr *MockRepositoryMockRecorder) SaveSignature(ctx, signature any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveSignature", reflect.TypeOf((*MockRepository)(nil).SaveSignature), ctx, signature)
 }
 
 // MockAggregator is a mock of Aggregator interface.

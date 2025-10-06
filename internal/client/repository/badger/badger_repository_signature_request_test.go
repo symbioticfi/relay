@@ -238,7 +238,7 @@ func TestBadgerRepository_GetSignatureRequestsByEpochPending(t *testing.T) {
 	})
 
 	t.Run("get all pending requests for epoch", func(t *testing.T) {
-		results, err := repo.GetSignatureRequestsByEpochPending(t.Context(), epoch, 0, common.Hash{})
+		results, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch, 0, common.Hash{})
 		require.NoError(t, err)
 		require.Len(t, results, 5)
 
@@ -249,7 +249,7 @@ func TestBadgerRepository_GetSignatureRequestsByEpochPending(t *testing.T) {
 	})
 
 	t.Run("get pending requests with limit", func(t *testing.T) {
-		results, err := repo.GetSignatureRequestsByEpochPending(t.Context(), epoch, 3, common.Hash{})
+		results, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch, 3, common.Hash{})
 		require.NoError(t, err)
 		require.Len(t, results, 3)
 
@@ -261,7 +261,7 @@ func TestBadgerRepository_GetSignatureRequestsByEpochPending(t *testing.T) {
 
 	t.Run("cursor-based pagination for pending requests", func(t *testing.T) {
 		// Get first page (2 items)
-		firstPage, err := repo.GetSignatureRequestsByEpochPending(t.Context(), epoch, 2, common.Hash{})
+		firstPage, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch, 2, common.Hash{})
 		require.NoError(t, err)
 		require.Len(t, firstPage, 2)
 		require.Equal(t, requests[0].req, firstPage[0].SignatureRequest)
@@ -269,7 +269,7 @@ func TestBadgerRepository_GetSignatureRequestsByEpochPending(t *testing.T) {
 
 		// Get second page using cursor
 		lastHash := requests[len(firstPage)-1].hash
-		secondPage, err := repo.GetSignatureRequestsByEpochPending(t.Context(), epoch, 2, lastHash)
+		secondPage, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch, 2, lastHash)
 		require.NoError(t, err)
 		require.Len(t, secondPage, 2)
 		require.Equal(t, requests[2].req, secondPage[0].SignatureRequest)
@@ -277,21 +277,21 @@ func TestBadgerRepository_GetSignatureRequestsByEpochPending(t *testing.T) {
 
 		// Get third page using cursor
 		lastHash = requests[len(firstPage)+len(secondPage)-1].hash
-		thirdPage, err := repo.GetSignatureRequestsByEpochPending(t.Context(), epoch, 2, lastHash)
+		thirdPage, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch, 2, lastHash)
 		require.NoError(t, err)
 		require.Len(t, thirdPage, 1)
 		require.Equal(t, requests[4].req, thirdPage[0].SignatureRequest)
 
 		// Get fourth page (should be empty)
 		lastHash = requests[len(firstPage)+len(secondPage)+len(thirdPage)-1].hash
-		fourthPage, err := repo.GetSignatureRequestsByEpochPending(t.Context(), epoch, 2, lastHash)
+		fourthPage, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch, 2, lastHash)
 		require.NoError(t, err)
 		require.Empty(t, fourthPage)
 	})
 
 	t.Run("empty epoch for pending requests", func(t *testing.T) {
 		emptyEpoch := entity.Epoch(999)
-		results, err := repo.GetSignatureRequestsByEpochPending(t.Context(), emptyEpoch, 0, common.Hash{})
+		results, err := repo.GetSignaturePendingByEpoch(t.Context(), emptyEpoch, 0, common.Hash{})
 		require.NoError(t, err)
 		require.Empty(t, results)
 	})
@@ -311,7 +311,7 @@ func TestBadgerRepository_RemoveSignatureRequestPending(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify pending request exists
-		pendingReqs, err := repo.GetSignatureRequestsByEpochPending(t.Context(), epoch, 0, common.Hash{})
+		pendingReqs, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch, 0, common.Hash{})
 		require.NoError(t, err)
 		require.Len(t, pendingReqs, 1)
 		require.Equal(t, req, pendingReqs[0].SignatureRequest)
@@ -321,7 +321,7 @@ func TestBadgerRepository_RemoveSignatureRequestPending(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify pending request is removed
-		pendingReqs, err = repo.GetSignatureRequestsByEpochPending(t.Context(), epoch, 0, common.Hash{})
+		pendingReqs, err = repo.GetSignaturePendingByEpoch(t.Context(), epoch, 0, common.Hash{})
 		require.NoError(t, err)
 		require.Empty(t, pendingReqs)
 
@@ -381,7 +381,7 @@ func TestBadgerRepository_PendingSignatureRequests_Integration(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify all are pending
-		pendingReqs, err := repo.GetSignatureRequestsByEpochPending(t.Context(), epoch, 0, common.Hash{})
+		pendingReqs, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch, 0, common.Hash{})
 		require.NoError(t, err)
 		require.Len(t, pendingReqs, 3)
 
@@ -395,7 +395,7 @@ func TestBadgerRepository_PendingSignatureRequests_Integration(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify pending count decreased
-		pendingReqs, err = repo.GetSignatureRequestsByEpochPending(t.Context(), epoch, 0, common.Hash{})
+		pendingReqs, err = repo.GetSignaturePendingByEpoch(t.Context(), epoch, 0, common.Hash{})
 		require.NoError(t, err)
 		require.Len(t, pendingReqs, 2)
 
@@ -426,12 +426,12 @@ func TestBadgerRepository_PendingSignatureRequests_Integration(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify each epoch has its pending request
-		pendingReqs1, err := repo.GetSignatureRequestsByEpochPending(t.Context(), epoch1, 0, common.Hash{})
+		pendingReqs1, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch1, 0, common.Hash{})
 		require.NoError(t, err)
 		require.Len(t, pendingReqs1, 1)
 		require.Equal(t, req1, pendingReqs1[0].SignatureRequest)
 
-		pendingReqs2, err := repo.GetSignatureRequestsByEpochPending(t.Context(), epoch2, 0, common.Hash{})
+		pendingReqs2, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch2, 0, common.Hash{})
 		require.NoError(t, err)
 		require.Len(t, pendingReqs2, 1)
 		require.Equal(t, req2, pendingReqs2[0].SignatureRequest)
@@ -441,11 +441,11 @@ func TestBadgerRepository_PendingSignatureRequests_Integration(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify epoch1 has no pending, epoch2 still has pending
-		pendingReqs1, err = repo.GetSignatureRequestsByEpochPending(t.Context(), epoch1, 0, common.Hash{})
+		pendingReqs1, err = repo.GetSignaturePendingByEpoch(t.Context(), epoch1, 0, common.Hash{})
 		require.NoError(t, err)
 		require.Empty(t, pendingReqs1)
 
-		pendingReqs2, err = repo.GetSignatureRequestsByEpochPending(t.Context(), epoch2, 0, common.Hash{})
+		pendingReqs2, err = repo.GetSignaturePendingByEpoch(t.Context(), epoch2, 0, common.Hash{})
 		require.NoError(t, err)
 		require.Len(t, pendingReqs2, 1)
 		require.Equal(t, req2, pendingReqs2[0].SignatureRequest)
@@ -465,13 +465,13 @@ func TestBadgerRepository_SaveSignatureRequestPending_DuplicateHandling(t *testi
 	require.NoError(t, err)
 
 	// Try to save the same request to pending again - should fail
-	err = repo.saveSignatureRequestPending(t.Context(), sigTargetID, req)
+	err = repo.saveSignaturePending(t.Context(), sigTargetID, req)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "pending signature request already exists")
 	require.ErrorIs(t, err, entity.ErrEntityAlreadyExist)
 
 	// Verify the pending request still exists and is functional
-	pendingReqs, err := repo.GetSignatureRequestsByEpochPending(t.Context(), epoch, 0, common.Hash{})
+	pendingReqs, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch, 0, common.Hash{})
 	require.NoError(t, err)
 	require.Len(t, pendingReqs, 1)
 	require.Equal(t, req, pendingReqs[0].SignatureRequest)

@@ -43,6 +43,17 @@ func (s *Syncer) BuildWantAggregationProofsRequest(ctx context.Context) (entity.
 
 			// Collect request ids
 			for _, req := range requests {
+				// check if proof exists
+				_, err := s.cfg.Repo.GetAggregationProof(ctx, req.RequestID)
+				if err == nil {
+					// remove pending from db
+					err = s.cfg.Repo.RemoveAggregationProofPending(ctx, req.RequiredEpoch, req.RequestID)
+					// ignore not found and tx conflict errors, as they indicate the proof was already processed or is being processed
+					if err != nil && !errors.Is(err, entity.ErrEntityNotFound) && !errors.Is(err, entity.ErrTxConflict) {
+						return entity.WantAggregationProofsRequest{}, errors.Errorf("failed to remove aggregation proof from pending collection: %w", err)
+					}
+					continue // Proof already exists, skip
+				}
 				allRequestIDs = append(allRequestIDs, req.RequestID)
 				totalRequests++
 				lastHash = req.RequestID // Update for pagination

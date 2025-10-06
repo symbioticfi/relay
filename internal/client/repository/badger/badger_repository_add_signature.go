@@ -11,7 +11,7 @@ import (
 	"github.com/symbioticfi/relay/core/usecase/crypto"
 )
 
-func (r *Repository) AddSignature(ctx context.Context, signature entity.SignatureExtended) error {
+func (r *Repository) SaveSignature(ctx context.Context, signature entity.SignatureExtended) error {
 	publicKey, err := crypto.NewPublicKey(signature.KeyTag.Type(), signature.PublicKey)
 	if err != nil {
 		return errors.Errorf("failed to get public key: %w", err)
@@ -56,7 +56,7 @@ func (r *Repository) AddSignature(ctx context.Context, signature entity.Signatur
 			return errors.Errorf("failed to update valset signature map: %w", err)
 		}
 
-		if err := r.SaveSignature(ctx, activeIndex, signature); err != nil {
+		if err := r.saveSignature(ctx, activeIndex, signature); err != nil {
 			return errors.Errorf("failed to save signature: %w", err)
 		}
 
@@ -69,6 +69,12 @@ func (r *Repository) AddSignature(ctx context.Context, signature entity.Signatur
 		)
 
 		if signature.KeyTag.Type().AggregationKey() {
+			// Blindly save to pending aggregation proof collection
+			// syncer will remove it from collection once proof is found
+			if err := r.saveAggregationProofPending(ctx, signature.RequestID(), signature.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
+				return errors.Errorf("failed to save aggregation proof to pending collection: %v", err)
+			}
+
 			// Check if quorum is reached and remove from pending collection if so
 			validatorSetHeader, err := r.GetValidatorSetHeaderByEpoch(ctx, signature.Epoch)
 			if err != nil {
@@ -79,7 +85,7 @@ func (r *Repository) AddSignature(ctx context.Context, signature entity.Signatur
 			if signatureMap.ThresholdReached(validatorSetHeader.QuorumThreshold) {
 				// Remove from pending collection since quorum is reached
 				err := r.RemoveSignatureRequestPending(ctx, signature.Epoch, signature.RequestID())
-				if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
+				if err != nil && !errors.Is(err, entity.ErrEntityNotFound) && !errors.Is(err, entity.ErrTxConflict) {
 					return errors.Errorf("failed to remove signature request from pending collection: %v", err)
 				}
 				// If ErrEntityNotFound, it means it was already removed or never added - that's ok
@@ -88,7 +94,7 @@ func (r *Repository) AddSignature(ctx context.Context, signature entity.Signatur
 			// for non aggregation keys, we wait for all validators to sign and then remove
 			// worst case the pending request remains and we stop syncing for the stale epochs
 			err := r.RemoveSignatureRequestPending(ctx, signature.Epoch, signature.RequestID())
-			if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
+			if err != nil && !errors.Is(err, entity.ErrEntityNotFound) && !errors.Is(err, entity.ErrTxConflict) {
 				return errors.Errorf("failed to remove signature request from pending collection: %v", err)
 			}
 		}

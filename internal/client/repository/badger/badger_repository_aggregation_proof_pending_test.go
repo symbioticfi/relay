@@ -47,7 +47,7 @@ func TestBadgerRepository_RemoveAggregationProofPending(t *testing.T) {
 	requestID := common.HexToHash("0x987654321fedcba")
 
 	t.Run("remove non-existent pending aggregation proof should fail", func(t *testing.T) {
-		err := repo.removeAggregationProofPending(t.Context(), epoch, requestID)
+		err := repo.RemoveAggregationProofPending(t.Context(), epoch, requestID)
 		require.ErrorIs(t, err, entity.ErrEntityNotFound)
 	})
 
@@ -57,11 +57,11 @@ func TestBadgerRepository_RemoveAggregationProofPending(t *testing.T) {
 		require.NoError(t, err)
 
 		// Then remove
-		err = repo.removeAggregationProofPending(t.Context(), epoch, requestID)
+		err = repo.RemoveAggregationProofPending(t.Context(), epoch, requestID)
 		require.NoError(t, err)
 
 		// Try to remove again should fail
-		err = repo.removeAggregationProofPending(t.Context(), epoch, requestID)
+		err = repo.RemoveAggregationProofPending(t.Context(), epoch, requestID)
 		require.ErrorIs(t, err, entity.ErrEntityNotFound)
 	})
 
@@ -80,7 +80,7 @@ func TestBadgerRepository_RemoveAggregationProofPending(t *testing.T) {
 		require.NoError(t, err)
 
 		// Remove one specific entry
-		err = repo.removeAggregationProofPending(t.Context(), epoch1, hash1)
+		err = repo.RemoveAggregationProofPending(t.Context(), epoch1, hash1)
 		require.NoError(t, err)
 
 		// Verify others still exist by trying to save them again (should fail)
@@ -226,7 +226,7 @@ func TestBadgerRepository_AggregationProofPendingIntegration(t *testing.T) {
 	require.Equal(t, sigID, requests[0].RequestID)
 
 	// Remove from pending
-	err = repo.removeAggregationProofPending(t.Context(), epoch, sigID)
+	err = repo.RemoveAggregationProofPending(t.Context(), epoch, sigID)
 	require.NoError(t, err)
 
 	// Should no longer appear in pending list
