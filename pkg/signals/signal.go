@@ -19,7 +19,7 @@ const (
 // It uses a buffered channel queue to handle events and multiple worker goroutines for parallel processing.
 type Signal[T any] struct {
 	queue      chan Event[T]
-	handler    SignalListener[T]
+	handlers   []SignalListener[T]
 	maxWorkers int
 	id         string
 
@@ -57,30 +57,53 @@ type Event[T any] struct {
 type SignalListener[T any] func(context.Context, T) error
 
 // New creates a new Signal instance with the specified configuration.
-// The handler can be nil and set later using SetHandler.
+// Handlers can be provided during construction or set later using SetHandlers.
 // The id is used for logging and error identification.
-func New[T any](cfg Config, id string, handler SignalListener[T]) *Signal[T] {
+// Nil handlers are automatically filtered out.
+func New[T any](cfg Config, id string, handlers ...SignalListener[T]) *Signal[T] {
+	// Filter out nil handlers
+	var validHandlers []SignalListener[T]
+	for _, h := range handlers {
+		if h != nil {
+			validHandlers = append(validHandlers, h)
+		}
+	}
+
 	return &Signal[T]{
 		queue:      make(chan Event[T], cfg.BufferSize),
-		handler:    handler,
+		handlers:   validHandlers,
 		maxWorkers: cfg.WorkerCount,
 		id:         id,
 	}
 }
 
-// SetHandler sets the event handler for this signal.
-// Returns an error if workers are started or handler is already set, as handlers cannot be replaced.
+// SetHandlers sets the event handlers for this signal.
+// Returns an error if workers are started or handlers are already set, as handlers cannot be replaced.
 // This method is thread-safe and should be called before starting workers.
-func (s *Signal[T]) SetHandler(handler SignalListener[T]) error {
+// Accepts one or more handlers which will be executed sequentially in the order provided.
+// Nil handlers are automatically filtered out.
+func (s *Signal[T]) SetHandlers(handlers ...SignalListener[T]) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	if s.started {
 		return errors.Errorf("signal workers are already started for %v signal, cannot set handler", s.id)
 	}
-	if s.handler != nil {
-		return errors.Errorf("signal handler is already set for %v signal, cannot reset handler", s.id)
+	if len(s.handlers) > 0 {
+		return errors.Errorf("signal handlers are already set for %v signal, cannot reset handlers", s.id)
 	}
-	s.handler = handler
+
+	// Filter out nil handlers
+	var validHandlers []SignalListener[T]
+	for _, h := range handlers {
+		if h != nil {
+			validHandlers = append(validHandlers, h)
+		}
+	}
+
+	if len(validHandlers) == 0 {
+		return errors.Errorf("at least one non-nil handler must be provided for %v signal", s.id)
+	}
+	s.handlers = validHandlers
 	return nil
 }
 
@@ -103,7 +126,7 @@ func (s *Signal[T]) EmitWithTimeout(payload T, timeout time.Duration) error {
 	// We might not have handlers set for specific signals like the signals dealing
 	// with aggregation on non aggregator nodes in such case we ignore the event completely
 	// if we don't ignore the queue will get full and requests will timeout
-	if s.handler == nil {
+	if len(s.handlers) == 0 {
 		s.mutex.RUnlock()
 		return nil
 	}
@@ -148,11 +171,11 @@ func (s *Signal[T]) StartWorkers(ctx context.Context) error {
 		s.mutex.Unlock()
 		return errors.Errorf("signal workers are already started for %v signal", s.id)
 	}
-	if s.handler == nil {
+	if len(s.handlers) == 0 {
 		s.mutex.Unlock()
-		return errors.Errorf("signal handler is not set for %v signal, cannot start workers", s.id)
+		return errors.Errorf("signal handlers are not set for %v signal, cannot start workers", s.id)
 	}
-	handler := s.handler
+	handlers := s.handlers
 	s.started = true
 	s.mutex.Unlock()
 
@@ -172,8 +195,17 @@ func (s *Signal[T]) StartWorkers(ctx context.Context) error {
 						slog.Info("signal queue closed, shutting down worker", slog.Int("worker", j), slog.String("signal", s.id))
 						return
 					}
-					if err := handler(ctx, event.Payload); err != nil {
-						slog.Error("failed to handle signal", slog.Any("error", err), slog.Int("worker", j), slog.Any("event", event.Payload), slog.String("signal", s.id))
+					// Execute handlers sequentially with fail-fast behavior
+					for i, handler := range handlers {
+						if err := handler(ctx, event.Payload); err != nil {
+							slog.Error("handler failed",
+								slog.Any("error", err),
+								slog.Int("handler_index", i),
+								slog.Int("worker", j),
+								slog.Any("event", event.Payload),
+								slog.String("signal", s.id))
+							break // fail-fast: stop on first error
+						}
 					}
 				}
 			}
