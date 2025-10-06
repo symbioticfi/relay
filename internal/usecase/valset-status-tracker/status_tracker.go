@@ -125,10 +125,12 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 }
 
 func (s *Service) trackCommittedEpochs(ctx context.Context) error {
-	firstUncommittedEpoch, err := s.cfg.Repo.GetFirstUncommittedValidatorSetEpoch(ctx)
+	fce, err := s.cfg.Repo.GetFirstUncommittedValidatorSetEpoch(ctx)
 	if err != nil {
 		return errors.Errorf("failed to get first uncommitted validator set epoch: %w", err)
 	}
+
+	firstUncommittedEpoch := uint64(fce)
 
 	settlements, err := s.findLatestNonZeroSettlements(ctx)
 	if err != nil {
@@ -148,11 +150,11 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 			return errors.Errorf("failed to get last committed header epoch: %w", err)
 		}
 
-		lastCommittedEpoch = min(lastCommittedEpoch, lce)
+		lastCommittedEpoch = min(lastCommittedEpoch, uint64(lce))
 	}
 
 	for epoch := firstUncommittedEpoch; epoch <= lastCommittedEpoch; epoch++ {
-		valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, epoch)
+		valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, entity.Epoch(epoch))
 		if err != nil {
 			if errors.Is(err, entity.ErrEntityNotFound) {
 				slog.DebugContext(ctx, "No uncommitted valset found, waiting...", "epoch", epoch)
@@ -213,7 +215,7 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 		slog.InfoContext(ctx, "Validator set is committed", "epoch", epoch)
 	}
 
-	if err := s.cfg.Repo.SaveFirstUncommittedValidatorSetEpoch(ctx, lastCommittedEpoch+1); err != nil {
+	if err := s.cfg.Repo.SaveFirstUncommittedValidatorSetEpoch(ctx, entity.Epoch(lastCommittedEpoch+1)); err != nil {
 		return errors.Errorf("failed to save last uncommitted validator set: %w", err)
 	}
 
