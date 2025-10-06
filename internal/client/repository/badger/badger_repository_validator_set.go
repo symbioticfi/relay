@@ -49,7 +49,7 @@ func (r *Repository) SaveValidatorSetMetadata(ctx context.Context, data entity.V
 		return errors.Errorf("failed to marshal validator set metadata: %w", err)
 	}
 
-	return r.doUpdateInTx(ctx, "SaveValidatorSetMetadata", func(ctx context.Context) error {
+	return r.doUpdateInTxWithLock(ctx, "SaveValidatorSetMetadata", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		_, err := txn.Get(keyValidatorSetMetadata(data.Epoch))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
@@ -64,7 +64,7 @@ func (r *Repository) SaveValidatorSetMetadata(ctx context.Context, data entity.V
 			return errors.Errorf("failed to store valset metadata: %w", err)
 		}
 		return nil
-	})
+	}, &r.valsetMutexMap, data.Epoch)
 }
 
 func (r *Repository) GetValidatorSetMetadata(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSetMetadata, error) {
@@ -104,7 +104,7 @@ func (r *Repository) SaveValidatorSet(ctx context.Context, valset entity.Validat
 		return errors.Errorf("failed to marshal validator set header: %w", err)
 	}
 
-	return r.doUpdateInTx(ctx, "SaveValidatorSet", func(ctx context.Context) error {
+	return r.doUpdateInTxWithLock(ctx, "SaveValidatorSet", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		// Check if this epoch already exists by checking the header
 		headerKey := keyValidatorSetHeader(valset.Epoch)
@@ -199,11 +199,11 @@ func (r *Repository) SaveValidatorSet(ctx context.Context, valset entity.Validat
 		}
 
 		return nil
-	})
+	}, &r.valsetMutexMap, valset.Epoch)
 }
 
 func (r *Repository) SaveLatestSignedValidatorSetEpoch(ctx context.Context, valset entity.ValidatorSet) error {
-	return r.doUpdateInTx(ctx, "SaveLatestSignedValidatorSetEpoch", func(ctx context.Context) error {
+	return r.doUpdateInTxWithLock(ctx, "SaveLatestSignedValidatorSetEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		epochBytes := make([]byte, 8)
 		binary.BigEndian.PutUint64(epochBytes, uint64(valset.Epoch))
@@ -212,11 +212,11 @@ func (r *Repository) SaveLatestSignedValidatorSetEpoch(ctx context.Context, vals
 		}
 
 		return nil
-	})
+	}, &r.valsetMutexMap, valset.Epoch)
 }
 
 func (r *Repository) SaveFirstUncommittedValidatorSetEpoch(ctx context.Context, epoch entity.Epoch) error {
-	return r.doUpdateInTx(ctx, "SaveFirstUncommittedValidatorSetEpoch", func(ctx context.Context) error {
+	return r.doUpdateInTxWithLock(ctx, "SaveFirstUncommittedValidatorSetEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		epochBytes := make([]byte, 8)
 		binary.BigEndian.PutUint64(epochBytes, uint64(epoch))
@@ -225,11 +225,11 @@ func (r *Repository) SaveFirstUncommittedValidatorSetEpoch(ctx context.Context, 
 		}
 
 		return nil
-	})
+	}, &r.valsetMutexMap, epoch)
 }
 
 func (r *Repository) UpdateValidatorSetStatus(ctx context.Context, valset entity.ValidatorSet) error {
-	return r.doUpdateInTx(ctx, "UpdateValidatorSetStatus", func(ctx context.Context) error {
+	return r.doUpdateInTxWithLock(ctx, "UpdateValidatorSetStatus", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		statusKey := keyValidatorSetStatus(valset.Epoch)
 		_, err := txn.Get(statusKey)
@@ -243,7 +243,7 @@ func (r *Repository) UpdateValidatorSetStatus(ctx context.Context, valset entity
 		}
 
 		return nil
-	})
+	}, &r.valsetMutexMap, valset.Epoch)
 }
 
 func (r *Repository) GetValidatorSetHeaderByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSetHeader, error) {
