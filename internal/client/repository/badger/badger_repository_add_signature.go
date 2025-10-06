@@ -79,15 +79,14 @@ func (r *Repository) SaveSignature(ctx context.Context, signature entity.Signatu
 	if signature.KeyTag.Type().AggregationKey() {
 		_, err := r.GetAggregationProof(ctx, signature.RequestID())
 		if err != nil {
-			if errors.Is(err, entity.ErrEntityNotFound) {
-				// Blindly save to pending aggregation proof collection
-				// syncer will remove it from collection once proof is found
-				if err := r.saveAggregationProofPending(ctx, signature.RequestID(), signature.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) && !errors.Is(err, entity.ErrTxConflict) {
-					// ignore ErrEntityAlreadyExist and ErrTxConflict - it means it's already there or being processed
-					return errors.Errorf("failed to save aggregation proof to pending collection: %v", err)
-				}
-			} else {
+			if !errors.Is(err, entity.ErrEntityNotFound) {
 				return errors.Errorf("failed to get aggregation proof: %v", err)
+			}
+			// Blindly save to pending aggregation proof collection
+			// syncer will remove it from collection once proof is found
+			if err := r.saveAggregationProofPending(ctx, signature.RequestID(), signature.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) && !errors.Is(err, entity.ErrTxConflict) {
+				// ignore ErrEntityAlreadyExist and ErrTxConflict - it means it's already there or being processed
+				return errors.Errorf("failed to save aggregation proof to pending collection: %v", err)
 			}
 		}
 
