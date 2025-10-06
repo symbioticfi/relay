@@ -641,6 +641,7 @@ Validator set status enumeration
 | VALIDATOR_SET_STATUS_DERIVED | 1 | Derived status |
 | VALIDATOR_SET_STATUS_AGGREGATED | 2 | Aggregated status |
 | VALIDATOR_SET_STATUS_COMMITTED | 3 | Committed status |
+| VALIDATOR_SET_STATUS_MISSED | 4 | Missed status |
 
 
  

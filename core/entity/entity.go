@@ -41,7 +41,6 @@ var (
 
 var (
 	SimpleVerificationValidatorSetHashKeccak256Hash = crypto.Keccak256Hash([]byte("validatorSetHashKeccak256"))
-	SimpleVerificationTotalVotingPowerHash          = crypto.Keccak256Hash([]byte("totalVotingPower"))
 	SimpleVerificationAggPublicKeyG1Hash            = crypto.Keccak256Hash([]byte("aggPublicKeyG1"))
 )
 
@@ -51,6 +50,7 @@ const (
 	HeaderDerived ValidatorSetStatus = iota
 	HeaderAggregated
 	HeaderCommitted
+	HeaderMissed
 )
 
 const ValsetHeaderKeyTag = KeyTag(15)
@@ -129,6 +129,8 @@ func (s ValidatorSetStatus) MarshalJSON() ([]byte, error) {
 		return []byte("\"Aggregated\""), nil
 	case HeaderCommitted:
 		return []byte("\"Committed\""), nil
+	case HeaderMissed:
+		return []byte("\"Missed\""), nil
 	default:
 		return []byte("\"Unknown\""), nil
 	}

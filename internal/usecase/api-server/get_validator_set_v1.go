@@ -96,6 +96,8 @@ func convertValidatorSetStatusToPB(status entity.ValidatorSetStatus) apiv1.Valid
 		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_AGGREGATED
 	case entity.HeaderCommitted:
 		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED
+	case entity.HeaderMissed:
+		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_MISSED
 	default:
 		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_UNSPECIFIED
 	}
