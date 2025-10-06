@@ -92,7 +92,7 @@ func TestSetHandler_Success(t *testing.T) {
 
 	sig := New[string](DefaultConfig(), "test-signal")
 
-	err := sig.SetHandler(func(ctx context.Context, s string) error { return nil })
+	err := sig.SetHandlers(func(ctx context.Context, s string) error { return nil })
 
 	require.NoError(t, err)
 	require.NotEmpty(t, sig.handlers)
@@ -106,7 +106,7 @@ func TestSetHandler_FailsWhenHandlersAlreadySet(t *testing.T) {
 		func(ctx context.Context, s string) error { return nil },
 	}
 
-	err := sig.SetHandler(func(ctx context.Context, s string) error { return nil })
+	err := sig.SetHandlers(func(ctx context.Context, s string) error { return nil })
 
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "handlers are already set")
@@ -118,7 +118,7 @@ func TestSetHandler_FailsWhenWorkersAlreadyStarted(t *testing.T) {
 	sig := New[string](DefaultConfig(), "test-signal")
 	sig.started = true
 
-	err := sig.SetHandler(func(ctx context.Context, s string) error { return nil })
+	err := sig.SetHandlers(func(ctx context.Context, s string) error { return nil })
 
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "workers are already started")
@@ -129,7 +129,7 @@ func TestSetHandler_FailsWhenAllHandlersAreNil(t *testing.T) {
 
 	sig := New[string](DefaultConfig(), "test-signal")
 
-	err := sig.SetHandler(nil, nil)
+	err := sig.SetHandlers(nil, nil)
 
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "at least one non-nil handler must be provided")
@@ -140,7 +140,7 @@ func TestSetHandler_FiltersNilHandlers(t *testing.T) {
 
 	sig := New[string](DefaultConfig(), "test-signal")
 
-	err := sig.SetHandler(
+	err := sig.SetHandlers(
 		nil,
 		func(ctx context.Context, s string) error { return nil },
 		nil,

@@ -57,7 +57,7 @@ type Event[T any] struct {
 type SignalListener[T any] func(context.Context, T) error
 
 // New creates a new Signal instance with the specified configuration.
-// Handlers can be provided during construction or set later using SetHandler.
+// Handlers can be provided during construction or set later using SetHandlers.
 // The id is used for logging and error identification.
 // Nil handlers are automatically filtered out.
 func New[T any](cfg Config, id string, handlers ...SignalListener[T]) *Signal[T] {
@@ -77,12 +77,12 @@ func New[T any](cfg Config, id string, handlers ...SignalListener[T]) *Signal[T]
 	}
 }
 
-// SetHandler sets the event handlers for this signal.
+// SetHandlers sets the event handlers for this signal.
 // Returns an error if workers are started or handlers are already set, as handlers cannot be replaced.
 // This method is thread-safe and should be called before starting workers.
 // Accepts one or more handlers which will be executed sequentially in the order provided.
 // Nil handlers are automatically filtered out.
-func (s *Signal[T]) SetHandler(handlers ...SignalListener[T]) error {
+func (s *Signal[T]) SetHandlers(handlers ...SignalListener[T]) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	if s.started {

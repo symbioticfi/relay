@@ -295,7 +295,7 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create aggregator app: %w", err)
 	}
 
-	if err := signatureProcessedSignal.SetHandler(aggApp.HandleSignatureProcessedMessage); err != nil {
+	if err := signatureProcessedSignal.SetHandlers(aggApp.HandleSignatureProcessedMessage); err != nil {
 		return errors.Errorf("failed to set signature received message handler: %w", err)
 	}
 	if err := signatureProcessedSignal.StartWorkers(ctx); err != nil {
@@ -324,7 +324,7 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create api app: %w", err)
 	}
 
-	err = aggProofReadySignal.SetHandler(
+	err = aggProofReadySignal.SetHandlers(
 		func(ctx context.Context, msg entity.AggregationProof) error {
 			if err := listener.HandleProofAggregated(ctx, msg); err != nil {
 				return errors.Errorf("failed to handle proof aggregated by status tracker: %w", err)
