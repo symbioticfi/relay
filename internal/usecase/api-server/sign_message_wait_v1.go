@@ -62,6 +62,22 @@ func (h *grpcHandler) SignMessageWait(req *apiv1.SignMessageWaitRequest, stream 
 		close(proofCh)
 	}()
 
+	// Second check for proof to avoid race condition where proof arrives
+	// after initial check but before subscription is established.
+	proof, err = h.cfg.Repo.GetAggregationProof(ctx, requestIDHash)
+	if err == nil {
+		// Proof already exists, return immediately
+		return stream.Send(&apiv1.SignMessageWaitResponse{
+			Status:    apiv1.SigningStatus_SIGNING_STATUS_COMPLETED,
+			RequestId: requestID,
+			Epoch:     signResp.GetEpoch(),
+			AggregationProof: &apiv1.AggregationProof{
+				MessageHash: proof.MessageHash,
+				Proof:       proof.Proof,
+			},
+		})
+	}
+
 	// TODO: decide timeout
 	timeout := time.NewTimer(5 * time.Minute)
 	defer timeout.Stop()
