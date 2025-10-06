@@ -75,9 +75,9 @@ func (r *Repository) GetValidatorSetMetadata(ctx context.Context, epoch entity.E
 		item, err := txn.Get(keyValidatorSetMetadata(epoch))
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
-				return errors.Errorf("no validatorset metadta found for epoch %v: %w", epoch, entity.ErrEntityNotFound)
+				return errors.Errorf("no validatorset metadata found for epoch %v: %w", epoch, entity.ErrEntityNotFound)
 			}
-			return errors.Errorf("failed to get validatorset metadta: %w", err)
+			return errors.Errorf("failed to get validatorset metadata: %w", err)
 		}
 
 		value, err := item.ValueCopy(nil)
@@ -87,7 +87,7 @@ func (r *Repository) GetValidatorSetMetadata(ctx context.Context, epoch entity.E
 
 		metadata, err = bytesToValidatorSetMetadata(value)
 		if err != nil {
-			return errors.Errorf("failed to unmarshal validatorset metadta: %w", err)
+			return errors.Errorf("failed to unmarshal validatorset metadata: %w", err)
 		}
 
 		return nil

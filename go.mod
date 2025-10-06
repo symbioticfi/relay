@@ -38,6 +38,7 @@ require (
 	google.golang.org/grpc v1.75.1
 	google.golang.org/protobuf v1.36.9
 	gopkg.in/yaml.v2 v2.4.0
+	k8s.io/client-go v0.34.1
 )
 
 require (
@@ -94,7 +95,7 @@ require (
 	github.com/google/pprof v0.0.0-20250820193118-f64d9cf942d6 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gookit/color v1.5.4 // indirect
-	github.com/gorilla/websocket v1.5.3 // indirect
+	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/holiman/uint256 v1.3.2 // indirect
@@ -233,6 +234,9 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20250908214217-97024824d090 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250908214217-97024824d090 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	k8s.io/apimachinery v0.34.1 // indirect
+	k8s.io/klog/v2 v2.130.1 // indirect
+	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397 // indirect
 	lukechampine.com/blake3 v1.4.1 // indirect
 )
 

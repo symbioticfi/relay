@@ -42,19 +42,19 @@ func (m *Mocksigner) EXPECT() *MocksignerMockRecorder {
 	return m.recorder
 }
 
-// Sign mocks base method.
-func (m *Mocksigner) Sign(ctx context.Context, req entity.SignatureRequest) (entity.SignatureExtended, error) {
+// RequestSignature mocks base method.
+func (m *Mocksigner) RequestSignature(ctx context.Context, req entity.SignatureRequest) (common.Hash, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Sign", ctx, req)
-	ret0, _ := ret[0].(entity.SignatureExtended)
+	ret := m.ctrl.Call(m, "RequestSignature", ctx, req)
+	ret0, _ := ret[0].(common.Hash)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Sign indicates an expected call of Sign.
-func (mr *MocksignerMockRecorder) Sign(ctx, req any) *gomock.Call {
+// RequestSignature indicates an expected call of RequestSignature.
+func (mr *MocksignerMockRecorder) RequestSignature(ctx, req any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Sign", reflect.TypeOf((*Mocksigner)(nil).Sign), ctx, req)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RequestSignature", reflect.TypeOf((*Mocksigner)(nil).RequestSignature), ctx, req)
 }
 
 // Mockrepo is a mock of repo interface.

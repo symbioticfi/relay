@@ -17,12 +17,12 @@ import (
 
 // Repository defines the interface needed by the entity processor
 type Repository interface {
-	AddSignature(ctx context.Context, signature entity.SignatureExtended) error
+	SaveSignature(ctx context.Context, signature entity.SignatureExtended) error
 	GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (entity.SignatureExtended, error)
 	GetValidatorByKey(ctx context.Context, epoch entity.Epoch, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error)
 	GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error)
 	GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error)
-	AddProof(ctx context.Context, aggregationProof entity.AggregationProof) error
+	SaveProof(ctx context.Context, aggregationProof entity.AggregationProof) error
 }
 
 type Aggregator interface {
@@ -78,7 +78,7 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature entity
 	}
 	validator, activeIndex, err := s.cfg.Repo.GetValidatorByKey(ctx, signature.Epoch, signature.KeyTag, publicKey.OnChain())
 	if err != nil {
-		return errors.Errorf("validator not found for public key %x: %w", signature.PublicKey, err)
+		return errors.Errorf("validator not found for public key %x, keyTag=%v, epoch=%v: %w", publicKey.OnChain(), signature.KeyTag, signature.Epoch, err)
 	}
 	if !validator.IsActive {
 		return errors.Errorf("validator %s is not active", validator.Operator.Hex())
@@ -98,7 +98,7 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature entity
 		return errors.Errorf("failed to verify signature: %w", err)
 	}
 
-	if err := s.cfg.Repo.AddSignature(ctx, signature); err != nil {
+	if err := s.cfg.Repo.SaveSignature(ctx, signature); err != nil {
 		return errors.Errorf("failed to add signature: %w", err)
 	}
 
@@ -139,7 +139,7 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregati
 		return errors.Errorf("aggregation proof invalid")
 	}
 
-	if err := s.cfg.Repo.AddProof(ctx, aggregationProof); err != nil {
+	if err := s.cfg.Repo.SaveProof(ctx, aggregationProof); err != nil {
 		return errors.Errorf("failed to add aggregation proof: %w", err)
 	}
 

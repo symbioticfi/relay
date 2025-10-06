@@ -44,6 +44,65 @@ func (m *Mockrepo) EXPECT() *MockrepoMockRecorder {
 	return m.recorder
 }
 
+// GetSelfSignaturePending mocks base method.
+func (m *Mockrepo) GetSelfSignaturePending(ctx context.Context, limit int) ([]common.Hash, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSelfSignaturePending", ctx, limit)
+	ret0, _ := ret[0].([]common.Hash)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSelfSignaturePending indicates an expected call of GetSelfSignaturePending.
+func (mr *MockrepoMockRecorder) GetSelfSignaturePending(ctx, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSelfSignaturePending", reflect.TypeOf((*Mockrepo)(nil).GetSelfSignaturePending), ctx, limit)
+}
+
+// GetSignatureRequest mocks base method.
+func (m *Mockrepo) GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSignatureRequest", ctx, requestID)
+	ret0, _ := ret[0].(entity.SignatureRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSignatureRequest indicates an expected call of GetSignatureRequest.
+func (mr *MockrepoMockRecorder) GetSignatureRequest(ctx, requestID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureRequest", reflect.TypeOf((*Mockrepo)(nil).GetSignatureRequest), ctx, requestID)
+}
+
+// GetValidatorSetByEpoch mocks base method.
+func (m *Mockrepo) GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetValidatorSetByEpoch", ctx, epoch)
+	ret0, _ := ret[0].(entity.ValidatorSet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetValidatorSetByEpoch indicates an expected call of GetValidatorSetByEpoch.
+func (mr *MockrepoMockRecorder) GetValidatorSetByEpoch(ctx, epoch any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSetByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetValidatorSetByEpoch), ctx, epoch)
+}
+
+// RemoveSelfSignaturePending mocks base method.
+func (m *Mockrepo) RemoveSelfSignaturePending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveSelfSignaturePending", ctx, epoch, requestID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemoveSelfSignaturePending indicates an expected call of RemoveSelfSignaturePending.
+func (mr *MockrepoMockRecorder) RemoveSelfSignaturePending(ctx, epoch, requestID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveSelfSignaturePending", reflect.TypeOf((*Mockrepo)(nil).RemoveSelfSignaturePending), ctx, epoch, requestID)
+}
+
 // SaveSignatureRequest mocks base method.
 func (m *Mockrepo) SaveSignatureRequest(ctx context.Context, requestID common.Hash, req entity.SignatureRequest) error {
 	m.ctrl.T.Helper()
