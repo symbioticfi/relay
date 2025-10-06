@@ -216,13 +216,24 @@ func randomSignatureRequestForEpoch(t *testing.T, epoch entity.Epoch) entity.Sig
 	}
 }
 
+func randomSignatureExtendedForEpoch(t *testing.T, epoch entity.Epoch) entity.SignatureExtended {
+	t.Helper()
+	return entity.SignatureExtended{
+		MessageHash: randomBytes(t, 32),
+		KeyTag:      15,
+		Epoch:       epoch,
+		Signature:   []byte("signature1"),
+		PublicKey:   []byte("publickey1"),
+	}
+}
+
 func TestBadgerRepository_GetSignatureRequestsByEpochPending(t *testing.T) {
 	t.Parallel()
 	repo := setupTestRepository(t)
 
 	epoch := entity.Epoch(100)
 
-	// Create multiple pending signature requests for the same epoch
+	// Create multiple pending signature for the same epoch
 	requests := make([]reqWithTargetID, 5)
 	for i := 0; i < 5; i++ {
 		requests[i].req = randomSignatureRequestForEpoch(t, epoch)
@@ -336,7 +347,7 @@ func TestBadgerRepository_RemoveSignatureRequestPending(t *testing.T) {
 
 		err := repo.RemoveSignatureRequestPending(t.Context(), epoch, nonExistentHash)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "pending signature request not found")
+		require.Contains(t, err.Error(), "pending signature not found")
 		require.Contains(t, err.Error(), entity.ErrEntityNotFound)
 	})
 
@@ -352,7 +363,7 @@ func TestBadgerRepository_RemoveSignatureRequestPending(t *testing.T) {
 		// Try to remove again
 		err = repo.RemoveSignatureRequestPending(t.Context(), epoch, sigTargetID)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "pending signature request not found")
+		require.Contains(t, err.Error(), "pending signature not found")
 		require.Contains(t, err.Error(), entity.ErrEntityNotFound)
 	})
 }
@@ -467,7 +478,7 @@ func TestBadgerRepository_SaveSignatureRequestPending_DuplicateHandling(t *testi
 	// Try to save the same request to pending again - should fail
 	err = repo.saveSignaturePending(t.Context(), sigTargetID, req)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "pending signature request already exists")
+	require.Contains(t, err.Error(), "pending signature already exists")
 	require.ErrorIs(t, err, entity.ErrEntityAlreadyExist)
 
 	// Verify the pending request still exists and is functional

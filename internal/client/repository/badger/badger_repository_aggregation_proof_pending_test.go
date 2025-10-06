@@ -111,17 +111,17 @@ func TestBadgerRepository_GetSignatureRequestsWithoutAggregationProof(t *testing
 		testEpoch := entity.Epoch(500)
 
 		// Create multiple signature requests
-		var requests []entity.SignatureRequestWithID
+		var requests []entity.SignatureExtended
 		for i := 0; i < 5; i++ {
-			req := randomSignatureRequestForEpoch(t, testEpoch)
-			sigID := randomRequestID(t)
-			requests = append(requests, entity.SignatureRequestWithID{
-				SignatureRequest: req,
-				RequestID:        sigID,
-			})
+			sigReq := randomSignatureRequestForEpoch(t, testEpoch)
+			req := randomSignatureExtendedForEpoch(t, testEpoch)
+			requests = append(requests, req)
 
 			// Save signature request
-			err := repo.SaveSignatureRequest(t.Context(), sigID, req)
+			err := repo.saveAggregationProofPending(t.Context(), req.RequestID(), req.Epoch)
+			require.NoError(t, err)
+
+			err = repo.SaveSignatureRequest(t.Context(), req.RequestID(), sigReq)
 			require.NoError(t, err)
 		}
 
@@ -153,7 +153,7 @@ func TestBadgerRepository_GetSignatureRequestsWithoutAggregationProof(t *testing
 		}
 
 		for _, originalReq := range requests {
-			require.True(t, allFoundHashes[originalReq.RequestID], "Original request not found in paginated results")
+			require.True(t, allFoundHashes[originalReq.RequestID()], "Original request not found in paginated results")
 		}
 	})
 
@@ -161,9 +161,14 @@ func TestBadgerRepository_GetSignatureRequestsWithoutAggregationProof(t *testing
 		testEpoch := entity.Epoch(600)
 
 		// Create one valid signature request
-		req := randomSignatureRequestForEpoch(t, testEpoch)
-		sigID := randomRequestID(t)
-		err := repo.SaveSignatureRequest(t.Context(), sigID, req)
+		sigReq := randomSignatureRequestForEpoch(t, testEpoch)
+		req := randomSignatureExtendedForEpoch(t, testEpoch)
+
+		// Save signature request
+		err := repo.saveAggregationProofPending(t.Context(), req.RequestID(), req.Epoch)
+		require.NoError(t, err)
+
+		err = repo.SaveSignatureRequest(t.Context(), req.RequestID(), sigReq)
 		require.NoError(t, err)
 
 		// Create a pending aggregation proof marker without corresponding signature request
@@ -175,35 +180,40 @@ func TestBadgerRepository_GetSignatureRequestsWithoutAggregationProof(t *testing
 		requests, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), testEpoch, 10, common.Hash{})
 		require.NoError(t, err)
 		require.Len(t, requests, 1)
-		require.Equal(t, sigID, requests[0].RequestID)
+		require.Equal(t, req.RequestID(), requests[0].RequestID)
 	})
 
 	t.Run("handles multiple epochs correctly", func(t *testing.T) {
 		epoch1 := entity.Epoch(700)
 		epoch2 := entity.Epoch(701)
 
-		// Create requests in different epochs
-		req1 := randomSignatureRequestForEpoch(t, epoch1)
-		sigID1 := randomRequestID(t)
-		req2 := randomSignatureRequestForEpoch(t, epoch2)
-		sigID2 := randomRequestID(t)
-
-		err := repo.SaveSignatureRequest(t.Context(), sigID1, req1)
+		sigReq := randomSignatureRequestForEpoch(t, epoch1)
+		req := randomSignatureExtendedForEpoch(t, epoch1)
+		// Save signature request
+		err := repo.saveAggregationProofPending(t.Context(), req.RequestID(), req.Epoch)
 		require.NoError(t, err)
-		err = repo.SaveSignatureRequest(t.Context(), sigID2, req2)
+		err = repo.SaveSignatureRequest(t.Context(), req.RequestID(), sigReq)
+		require.NoError(t, err)
+
+		sigReq1 := randomSignatureRequestForEpoch(t, epoch2)
+		req1 := randomSignatureExtendedForEpoch(t, epoch2)
+		// Save signature request
+		err = repo.saveAggregationProofPending(t.Context(), req1.RequestID(), req1.Epoch)
+		require.NoError(t, err)
+		err = repo.SaveSignatureRequest(t.Context(), req1.RequestID(), sigReq1)
 		require.NoError(t, err)
 
 		// Query epoch1 should only return req1
 		requests1, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), epoch1, 10, common.Hash{})
 		require.NoError(t, err)
 		require.Len(t, requests1, 1)
-		require.Equal(t, sigID1, requests1[0].RequestID)
+		require.Equal(t, req.RequestID(), requests1[0].RequestID)
 
 		// Query epoch2 should only return req2
 		requests2, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), epoch2, 10, common.Hash{})
 		require.NoError(t, err)
 		require.Len(t, requests2, 1)
-		require.Equal(t, sigID2, requests2[0].RequestID)
+		require.Equal(t, req1.RequestID(), requests2[0].RequestID)
 	})
 }
 
@@ -212,21 +222,22 @@ func TestBadgerRepository_AggregationProofPendingIntegration(t *testing.T) {
 	repo := setupTestRepository(t)
 
 	epoch := entity.Epoch(800)
-	req := randomSignatureRequestForEpoch(t, epoch)
-	sigID := randomRequestID(t)
-
+	sigReq := randomSignatureRequestForEpoch(t, epoch)
+	req := randomSignatureExtendedForEpoch(t, epoch)
 	// Save signature request
-	err := repo.SaveSignatureRequest(t.Context(), sigID, req)
+	err := repo.saveAggregationProofPending(t.Context(), req.RequestID(), req.Epoch)
+	require.NoError(t, err)
+	err = repo.SaveSignatureRequest(t.Context(), req.RequestID(), sigReq)
 	require.NoError(t, err)
 
 	// Now it should appear in pending list
 	requests, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), epoch, 10, common.Hash{})
 	require.NoError(t, err)
 	require.Len(t, requests, 1)
-	require.Equal(t, sigID, requests[0].RequestID)
+	require.Equal(t, req.RequestID(), requests[0].RequestID)
 
 	// Remove from pending
-	err = repo.RemoveAggregationProofPending(t.Context(), epoch, sigID)
+	err = repo.RemoveAggregationProofPending(t.Context(), epoch, req.RequestID())
 	require.NoError(t, err)
 
 	// Should no longer appear in pending list
