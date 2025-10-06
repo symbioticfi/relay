@@ -245,20 +245,20 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create valset status tracker: %w", err)
 	}
 
-	err = aggProofReadySignal.SetHandler(func(ctx context.Context, msg entity.AggregationProof) error {
-		if err := listener.HandleProofAggregated(ctx, msg); err != nil {
-			return errors.Errorf("failed to handle proof aggregated: %w", err)
-		}
-		if err := statusTracker.HandleProofAggregated(ctx, msg); err != nil {
-			return errors.Errorf("failed to handle proof aggregated: %w", err)
-		}
-		slog.DebugContext(ctx, "Handled proof aggregated",
-			"proof", msg,
-			"requestID", msg.RequestID(),
-		)
-
-		return nil
-	})
+	err = aggProofReadySignal.SetHandler(
+		func(ctx context.Context, msg entity.AggregationProof) error {
+			if err := listener.HandleProofAggregated(ctx, msg); err != nil {
+				return errors.Errorf("failed to handle proof aggregated by status tracker: %w", err)
+			}
+			return nil
+		},
+		func(ctx context.Context, msg entity.AggregationProof) error {
+			if err := statusTracker.HandleProofAggregated(ctx, msg); err != nil {
+				return errors.Errorf("failed to handle proof aggregated by generator: %w", err)
+			}
+			return nil
+		},
+	)
 	if err != nil {
 		return errors.Errorf("failed to set agg proof ready signal handler: %w", err)
 	}
