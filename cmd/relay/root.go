@@ -245,27 +245,6 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create valset status tracker: %w", err)
 	}
 
-	err = aggProofReadySignal.SetHandler(func(ctx context.Context, msg entity.AggregationProof) error {
-		if err := listener.HandleProofAggregated(ctx, msg); err != nil {
-			return errors.Errorf("failed to handle proof aggregated: %w", err)
-		}
-		if err := statusTracker.HandleProofAggregated(ctx, msg); err != nil {
-			return errors.Errorf("failed to handle proof aggregated: %w", err)
-		}
-		slog.DebugContext(ctx, "Handled proof aggregated",
-			"proof", msg,
-			"requestID", msg.RequestID(),
-		)
-
-		return nil
-	})
-	if err != nil {
-		return errors.Errorf("failed to set agg proof ready signal handler: %w", err)
-	}
-	if err := aggProofReadySignal.StartWorkers(ctx); err != nil {
-		return errors.Errorf("failed to start agg proof ready signal workers: %w", err)
-	}
-
 	signListener, err := signatureListener.New(signatureListener.Config{
 		Repo:            repo,
 		EntityProcessor: entityProcessor,
@@ -316,7 +295,7 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create aggregator app: %w", err)
 	}
 
-	if err := signatureProcessedSignal.SetHandler(aggApp.HandleSignatureProcessedMessage); err != nil {
+	if err := signatureProcessedSignal.SetHandlers(aggApp.HandleSignatureProcessedMessage); err != nil {
 		return errors.Errorf("failed to set signature received message handler: %w", err)
 	}
 	if err := signatureProcessedSignal.StartWorkers(ctx); err != nil {
@@ -339,9 +318,32 @@ func runApp(ctx context.Context) error {
 		Metrics:           mtr,
 		ServeMetrics:      serveMetricsOnAPIAddress,
 		KeyProvider:       keyProvider,
+		AggProofSignal:    aggProofReadySignal,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create api app: %w", err)
+	}
+
+	err = aggProofReadySignal.SetHandlers(
+		func(ctx context.Context, msg entity.AggregationProof) error {
+			if err := listener.HandleProofAggregated(ctx, msg); err != nil {
+				return errors.Errorf("failed to handle proof aggregated by status tracker: %w", err)
+			}
+			return nil
+		},
+		func(ctx context.Context, msg entity.AggregationProof) error {
+			if err := statusTracker.HandleProofAggregated(ctx, msg); err != nil {
+				return errors.Errorf("failed to handle proof aggregated by generator: %w", err)
+			}
+			return nil
+		},
+		api.HandleProofAggregated(),
+	)
+	if err != nil {
+		return errors.Errorf("failed to set agg proof ready signal handler: %w", err)
+	}
+	if err := aggProofReadySignal.StartWorkers(ctx); err != nil {
+		return errors.Errorf("failed to start agg proof ready signal workers: %w", err)
 	}
 
 	eg.Go(func() error {

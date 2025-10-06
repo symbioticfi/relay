@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -25,6 +26,7 @@ import (
 	"github.com/symbioticfi/relay/internal/usecase/metrics"
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/server"
+	"github.com/symbioticfi/relay/pkg/signals"
 )
 
 //go:generate mockgen -source=app.go -destination=mocks/app_mock.go -package=mocks
@@ -62,14 +64,15 @@ type Config struct {
 	ReadHeaderTimeout time.Duration `validate:"required,gt=0"`
 	ShutdownTimeout   time.Duration `validate:"required,gt=0"`
 
-	Signer       signer    `validate:"required"`
-	Repo         repo      `validate:"required"`
-	EvmClient    evmClient `validate:"required"`
-	Deriver      deriver   `validate:"required"`
-	Aggregator   aggregator
-	ServeMetrics bool
-	Metrics      *metrics.Metrics `validate:"required"`
-	KeyProvider  keyprovider.KeyProvider
+	Signer         signer    `validate:"required"`
+	Repo           repo      `validate:"required"`
+	EvmClient      evmClient `validate:"required"`
+	Deriver        deriver   `validate:"required"`
+	Aggregator     aggregator
+	ServeMetrics   bool
+	Metrics        *metrics.Metrics `validate:"required"`
+	KeyProvider    keyprovider.KeyProvider
+	AggProofSignal *signals.Signal[entity.AggregationProof] `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -83,7 +86,26 @@ func (c Config) Validate() error {
 type grpcHandler struct {
 	apiv1.SymbioticAPIServiceServer
 
-	cfg Config
+	cfg           Config
+	subscriptions sync.Map // map[requestID]chan entity.AggregationProof
+}
+
+// handleProofAggregated processes aggregation proof events from the signal
+func (h *grpcHandler) handleProofAggregated(_ context.Context, proof entity.AggregationProof) error {
+	requestID := proof.RequestID().Hex()
+
+	// Check if there's a subscription for this requestID
+	if ch, ok := h.subscriptions.Load(requestID); ok {
+		// Non-blocking send to the channel
+		select {
+		case ch.(chan entity.AggregationProof) <- proof:
+			// Successfully sent
+		default:
+			// Channel is full or closed, ignore
+		}
+	}
+
+	return nil
 }
 
 type SymbioticServer struct {
@@ -91,6 +113,7 @@ type SymbioticServer struct {
 	httpServer *http.Server
 	listener   net.Listener
 	cfg        Config
+	handler    *grpcHandler
 }
 
 func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, error) {
@@ -192,7 +215,13 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 		httpServer: httpServer,
 		listener:   listener,
 		cfg:        cfg,
+		handler:    handler,
 	}, nil
+}
+
+// HandleProofAggregated returns the handler function for aggregation proof events
+func (a *SymbioticServer) HandleProofAggregated() func(context.Context, entity.AggregationProof) error {
+	return a.handler.handleProofAggregated
 }
 
 // createMuxHandler creates a handler that multiplexes between gRPC and HTTP

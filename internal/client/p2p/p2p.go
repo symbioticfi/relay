@@ -212,14 +212,14 @@ func (s *Service) listenForMessages(ctx context.Context, sub *pubsub.Subscriptio
 }
 
 func (s *Service) StartSignatureMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PMessage[entity.SignatureExtended]) error) error {
-	if err := s.signatureReceivedHandler.SetHandler(mh); err != nil {
+	if err := s.signatureReceivedHandler.SetHandlers(mh); err != nil {
 		return errors.Errorf("failed to set signature received message handler: %w", err)
 	}
 	return s.signatureReceivedHandler.StartWorkers(s.ctx)
 }
 
 func (s *Service) StartSignaturesAggregatedMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PMessage[entity.AggregationProof]) error) error {
-	if err := s.signaturesAggregatedHandler.SetHandler(mh); err != nil {
+	if err := s.signaturesAggregatedHandler.SetHandlers(mh); err != nil {
 		return errors.Errorf("failed to set signatures aggregated message handler: %w", err)
 	}
 	return s.signaturesAggregatedHandler.StartWorkers(s.ctx)
