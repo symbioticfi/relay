@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 	"github.com/symbioticfi/relay/core/client/evm"
 	"github.com/symbioticfi/relay/core/usecase/aggregator"
+	"github.com/symbioticfi/relay/core/usecase/crypto"
 	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 
 	"github.com/go-errors/errors"
@@ -214,29 +215,45 @@ func (s *Service) process(ctx context.Context, valSet entity.ValidatorSet, confi
 		return errors.Errorf("failed to get header commitment hash: %w", err)
 	}
 
-	r := entity.SignatureRequest{
-		KeyTag:        entity.ValsetHeaderKeyTag,
-		RequiredEpoch: valSet.Epoch,
-		Message:       commitmentData,
+	valsetToCheck := valSet
+
+	// process valset signature if not genesis epoch
+	if valSet.Epoch > 0 {
+		// get previous epoch valset to check if we are a signer
+		prevValSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, valSet.Epoch-1)
+		if err != nil {
+			return errors.Errorf("failed to get previous validator set: %w", err)
+		}
+		valsetToCheck = prevValSet
 	}
 
-	symbPrivate, err := s.cfg.KeyProvider.GetPrivateKey(valSet.RequiredKeyTag)
+	symbPrivate, err := s.cfg.KeyProvider.GetPrivateKey(valsetToCheck.RequiredKeyTag)
 	if err != nil {
 		return errors.Errorf("failed to get symb private key: %w", err)
 	}
 
 	// if we are a signer, sign the commitment, otherwise just save the metadata
-	if valSet.IsSigner(symbPrivate.PublicKey().OnChain()) {
+	if valsetToCheck.IsSigner(symbPrivate.PublicKey().OnChain()) {
+		r := entity.SignatureRequest{
+			KeyTag:        valsetToCheck.RequiredKeyTag,
+			RequiredEpoch: valsetToCheck.Epoch,
+			Message:       commitmentData,
+		}
 		_, err := s.cfg.Signer.RequestSignature(ctx, r)
 		if err != nil {
 			return errors.Errorf("failed to sign new validator set extra: %w", err)
 		}
 	}
 
+	msgHash, err := crypto.HashMessage(valsetToCheck.RequiredKeyTag.Type(), commitmentData)
+	if err != nil {
+		return errors.Errorf("failed to hash message: %w", err)
+	}
+
 	extendedSig := entity.SignatureExtended{
-		MessageHash: symbPrivate.Hash(r.Message),
-		KeyTag:      valSet.RequiredKeyTag,
-		Epoch:       valSet.Epoch,
+		MessageHash: msgHash,
+		KeyTag:      valsetToCheck.RequiredKeyTag,
+		Epoch:       valsetToCheck.Epoch,
 	}
 
 	metadata := entity.ValidatorSetMetadata{

@@ -36,6 +36,18 @@ func NewPrivateKey(keyType entity.KeyType, keyBytes []byte) (PrivateKey, error) 
 	return nil, errors.New("unsupported key type")
 }
 
+func HashMessage(keyType entity.KeyType, msg []byte) (entity.RawMessageHash, error) {
+	switch keyType {
+	case entity.KeyTypeBlsBn254:
+		return blsBn254.HashMessage(msg), nil
+	case entity.KeyTypeEcdsaSecp256k1:
+		return ecdsaSecp256k1.HashMessage(msg), nil
+	case entity.KeyTypeInvalid:
+		return nil, errors.New("unsupported key type")
+	}
+	return nil, errors.New("unsupported key type")
+}
+
 func GeneratePrivateKey(keyType entity.KeyType) (PrivateKey, error) {
 	switch keyType {
 	case entity.KeyTypeBlsBn254:
