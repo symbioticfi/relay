@@ -367,7 +367,7 @@ func TestWorkerProcessing_ExecutesMultipleHandlersSequentially(t *testing.T) {
 	require.Equal(t, int32(4), callCount.Load()) // 2 events * 2 handlers
 }
 
-func TestWorkerProcessing_StopsOnFirstHandlerError(t *testing.T) {
+func TestWorkerProcessing_ContinuesOnHandlerError(t *testing.T) {
 	var callCount atomic.Int32
 	handler1 := func(ctx context.Context, i int) error {
 		callCount.Add(1)
@@ -392,7 +392,7 @@ func TestWorkerProcessing_StopsOnFirstHandlerError(t *testing.T) {
 	// Wait for processing
 	time.Sleep(100 * time.Millisecond)
 
-	require.Equal(t, int32(1), callCount.Load()) // Only first handler should be called
+	require.Equal(t, int32(2), callCount.Load()) // Both handlers should be called despite first one erroring
 }
 
 func TestWorkerShutdown_OnContextCancellation(t *testing.T) {
