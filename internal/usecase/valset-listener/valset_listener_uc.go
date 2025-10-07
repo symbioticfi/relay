@@ -217,7 +217,7 @@ func (s *Service) process(ctx context.Context, valSet entity.ValidatorSet, confi
 
 	valsetToCheck := valSet
 
-	// process valset signature if not genesis epoch
+	// process valset signature with previous epoch if not genesis epoch
 	if valSet.Epoch > 0 {
 		// get previous epoch valset to check if we are a signer
 		prevValSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, valSet.Epoch-1)
