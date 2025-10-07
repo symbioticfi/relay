@@ -56,9 +56,11 @@ func (h *grpcHandler) SignMessageWait(req *apiv1.SignMessageWaitRequest, stream 
 
 	// Create subscription channel for this request
 	proofCh := make(chan entity.AggregationProof, 1)
-	h.subscriptions.Store(requestID, proofCh)
+
+	// Subscribe to notifications for this specific request ID
+	unsubscribe := h.broadcaster.Subscribe(requestID, proofCh)
 	defer func() {
-		h.subscriptions.Delete(requestID)
+		unsubscribe()
 		close(proofCh)
 	}()
 

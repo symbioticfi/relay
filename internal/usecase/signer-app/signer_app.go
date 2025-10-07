@@ -88,16 +88,15 @@ func (s *SignerApp) RequestSignature(ctx context.Context, req entity.SignatureRe
 		return common.Hash{}, errors.Errorf("key tag %s is not a signing key", req.KeyTag)
 	}
 
-	private, err := s.cfg.KeyProvider.GetPrivateKey(req.KeyTag)
+	msgHash, err := crypto.HashMessage(req.KeyTag.Type(), req.Message)
 	if err != nil {
-		return common.Hash{}, errors.Errorf("failed to get private key: %w", err)
+		return common.Hash{}, errors.Errorf("failed to hash message: %w", err)
 	}
 
 	extendedSignature := entity.SignatureExtended{
-		MessageHash: private.Hash(req.Message),
+		MessageHash: msgHash,
 		KeyTag:      req.KeyTag,
 		Epoch:       req.RequiredEpoch,
-		PublicKey:   private.PublicKey().Raw(),
 	}
 
 	requestId := extendedSignature.RequestID()
@@ -134,8 +133,13 @@ func (s *SignerApp) completeSign(ctx context.Context, req entity.SignatureReques
 			"key_tag", req.KeyTag,
 			"epoch", req.RequiredEpoch,
 		)
+		msgHash, err := crypto.HashMessage(req.KeyTag.Type(), req.Message)
+		if err != nil {
+			return errors.Errorf("failed to hash message: %w", err)
+		}
+
 		extendedSignature := entity.SignatureExtended{
-			MessageHash: private.Hash(req.Message),
+			MessageHash: msgHash,
 			KeyTag:      req.KeyTag,
 			Epoch:       req.RequiredEpoch,
 			PublicKey:   private.PublicKey().Raw(),

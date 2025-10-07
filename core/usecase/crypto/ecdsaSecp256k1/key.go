@@ -45,11 +45,7 @@ func NewPrivateKey(b []byte) (*PrivateKey, error) {
 	return &PrivateKey{privateKey: *k}, nil
 }
 
-func (k *PrivateKey) Hash(msg []byte) MessageHash {
-	return hash(msg)
-}
-
-func hash(msg []byte) MessageHash {
+func HashMessage(msg []byte) MessageHash {
 	return crypto.Keccak256(msg)
 }
 
@@ -67,7 +63,7 @@ func (k *PrivateKey) Bytes() []byte {
 
 func (k *PrivateKey) Sign(msg []byte) (Signature, MessageHash, error) {
 	// symbiotic using keccak256 for hashing in ecdsaSecp256k1
-	hash := k.Hash(msg)
+	hash := HashMessage(msg)
 
 	sig, err := crypto.Sign(hash, &k.privateKey)
 	if err != nil {
@@ -93,7 +89,7 @@ func NewPublicKey(x *big.Int, y *big.Int) *PublicKey {
 }
 
 func (k *PublicKey) Verify(msg Message, sig Signature) error {
-	return k.VerifyWithHash(hash(msg), sig)
+	return k.VerifyWithHash(HashMessage(msg), sig)
 }
 
 func (k *PublicKey) VerifyWithHash(msgHash MessageHash, sig Signature) error {

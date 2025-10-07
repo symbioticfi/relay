@@ -105,6 +105,7 @@ linters:
         - ^github.com/symbioticfi/relay/core/entity/.*$
         - ^github.com/symbioticfi/relay/core/entity/.*$
       exclude:
+        - ^github.com/symbioticfi/relay/internal/client/repository/badger.Repository$
         - ^github.com/ethereum/go-ethereum.CallMsg$
     funlen:
       lines: 100

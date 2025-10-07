@@ -3,7 +3,6 @@ package badger
 import (
 	"context"
 	"log/slog"
-	"sync"
 
 	"github.com/go-errors/errors"
 
@@ -22,20 +21,9 @@ func (r *Repository) SaveSignature(ctx context.Context, signature entity.Signatu
 		return errors.Errorf("validator not found for public key %x: %w", signature.PublicKey, err)
 	}
 
-	// Ensure only one goroutine is processing signatures for this request ID at a time
-	r.signatureMutexMu.Lock()
-	if _, exists := r.signatureMutexMap[signature.RequestID()]; !exists {
-		r.signatureMutexMap[signature.RequestID()] = &sync.Mutex{}
-	}
-	activeMutex := r.signatureMutexMap[signature.RequestID()]
-	r.signatureMutexMu.Unlock()
-
-	activeMutex.Lock()
-	defer activeMutex.Unlock()
-
 	var signatureMap entity.SignatureMap
 
-	if err := r.doUpdateInTx(ctx, "ProcessSignature", func(ctx context.Context) error {
+	if err := r.doUpdateInTxWithLock(ctx, "ProcessSignature", func(ctx context.Context) error {
 		signatureMap, err = r.GetSignatureMap(ctx, signature.RequestID())
 		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 			return errors.Errorf("failed to get valset signature map: %w", err)
@@ -71,7 +59,7 @@ func (r *Repository) SaveSignature(ctx context.Context, signature entity.Signatu
 		)
 
 		return nil
-	}); err != nil {
+	}, &r.signatureMutexMap, signature.RequestID()); err != nil {
 		return err
 	}
 

@@ -41,11 +41,7 @@ func NewPrivateKey(b []byte) (*PrivateKey, error) {
 	}, nil
 }
 
-func (k *PrivateKey) Hash(msg []byte) MessageHash {
-	return hash(msg)
-}
-
-func hash(msg []byte) MessageHash {
+func HashMessage(msg []byte) MessageHash {
 	return crypto.Keccak256(msg)
 }
 
@@ -69,7 +65,7 @@ func (k *PrivateKey) Bytes() []byte {
 
 func (k *PrivateKey) Sign(msg []byte) (Signature, MessageHash, error) {
 	// symbiotic using keccak256 for hashing in bls-bn254
-	hash := k.Hash(msg)
+	hash := HashMessage(msg)
 
 	g1Hash, err := HashToG1(hash)
 	if err != nil {
@@ -164,7 +160,7 @@ func NewPublicKey(g1PubKey bn254.G1Affine, g2PubKey bn254.G2Affine) *PublicKey {
 }
 
 func (k *PublicKey) Verify(msg Message, sig Signature) error {
-	msgHash := hash(msg)
+	msgHash := HashMessage(msg)
 
 	// Hash the message to a point on G1
 	g1Hash, err := HashToG1(msgHash)

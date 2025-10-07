@@ -26,7 +26,6 @@ import (
 	"github.com/symbioticfi/relay/internal/usecase/metrics"
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/server"
-	"github.com/symbioticfi/relay/pkg/signals"
 )
 
 //go:generate mockgen -source=app.go -destination=mocks/app_mock.go -package=mocks
@@ -64,15 +63,14 @@ type Config struct {
 	ReadHeaderTimeout time.Duration `validate:"required,gt=0"`
 	ShutdownTimeout   time.Duration `validate:"required,gt=0"`
 
-	Signer         signer    `validate:"required"`
-	Repo           repo      `validate:"required"`
-	EvmClient      evmClient `validate:"required"`
-	Deriver        deriver   `validate:"required"`
-	Aggregator     aggregator
-	ServeMetrics   bool
-	Metrics        *metrics.Metrics `validate:"required"`
-	KeyProvider    keyprovider.KeyProvider
-	AggProofSignal *signals.Signal[entity.AggregationProof] `validate:"required"`
+	Signer       signer    `validate:"required"`
+	Repo         repo      `validate:"required"`
+	EvmClient    evmClient `validate:"required"`
+	Deriver      deriver   `validate:"required"`
+	Aggregator   aggregator
+	ServeMetrics bool
+	Metrics      *metrics.Metrics `validate:"required"`
+	KeyProvider  keyprovider.KeyProvider
 }
 
 func (c Config) Validate() error {
@@ -82,29 +80,89 @@ func (c Config) Validate() error {
 	return nil
 }
 
+// broadcasterHandler manages subscriptions grouped by request ID for O(1) lookup
+type broadcasterHandler struct {
+	lock        sync.RWMutex
+	subscribers map[string][]chan entity.AggregationProof // map[requestID][]*subscriber
+}
+
+// newBroadcasterHandler creates a new broadcaster handler
+func newBroadcasterHandler() *broadcasterHandler {
+	return &broadcasterHandler{
+		subscribers: make(map[string][]chan entity.AggregationProof),
+	}
+}
+
+// Subscribe registers a new subscriber for a specific request ID
+// Returns an unsubscribe function that should be called to clean up the subscription
+func (b *broadcasterHandler) Subscribe(requestID string, ch chan entity.AggregationProof) func() {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+
+	b.subscribers[requestID] = append(b.subscribers[requestID], ch)
+
+	// Return unsubscribe function
+	return func() {
+		b.lock.Lock()
+		defer b.lock.Unlock()
+
+		subs := b.subscribers[requestID]
+		// Find and remove this subscriber
+		for i, s := range subs {
+			if s == ch {
+				// Remove by replacing with last element and truncating
+				subs[i] = subs[len(subs)-1]
+				b.subscribers[requestID] = subs[:len(subs)-1]
+
+				// Clean up empty slice to avoid memory leaks
+				if len(b.subscribers[requestID]) == 0 {
+					delete(b.subscribers, requestID)
+				}
+				break
+			}
+		}
+	}
+}
+
+// Notify broadcasts an event to all subscribers for a specific request ID - O(1) lookup
+func (b *broadcasterHandler) Notify(proof entity.AggregationProof) {
+	requestID := proof.RequestID().Hex()
+
+	b.lock.RLock()
+	subs := b.subscribers[requestID]
+	if len(subs) == 0 {
+		b.lock.RUnlock()
+		return
+	}
+
+	// Make a copy to avoid holding lock during notification
+	subscribers := make([]chan entity.AggregationProof, len(subs))
+	copy(subscribers, subs)
+	b.lock.RUnlock()
+
+	// Broadcast to all subscribers for this request ID
+	for _, subCh := range subscribers {
+		// Non-blocking send to avoid blocking the signal handler
+		select {
+		case subCh <- proof:
+			// Successfully sent
+		default:
+			// Channel is full or closed, skip
+		}
+	}
+}
+
 // grpcHandler implements the gRPC service interface
 type grpcHandler struct {
 	apiv1.SymbioticAPIServiceServer
 
-	cfg           Config
-	subscriptions sync.Map // map[requestID]chan entity.AggregationProof
+	cfg         Config
+	broadcaster *broadcasterHandler
 }
 
 // handleProofAggregated processes aggregation proof events from the signal
 func (h *grpcHandler) handleProofAggregated(_ context.Context, proof entity.AggregationProof) error {
-	requestID := proof.RequestID().Hex()
-
-	// Check if there's a subscription for this requestID
-	if ch, ok := h.subscriptions.Load(requestID); ok {
-		// Non-blocking send to the channel
-		select {
-		case ch.(chan entity.AggregationProof) <- proof:
-			// Successfully sent
-		default:
-			// Channel is full or closed, ignore
-		}
-	}
-
+	h.broadcaster.Notify(proof)
 	return nil
 }
 
@@ -145,7 +203,8 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 
 	// Create and register the handler
 	handler := &grpcHandler{
-		cfg: cfg,
+		cfg:         cfg,
+		broadcaster: newBroadcasterHandler(),
 	}
 
 	apiv1.RegisterSymbioticAPIServiceServer(grpcServer, handler)
