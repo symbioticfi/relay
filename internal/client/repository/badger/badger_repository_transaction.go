@@ -2,6 +2,7 @@ package badger
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
@@ -18,6 +19,19 @@ var badgerTxnKey ctxTxnKey
 type ctxQueryNameKey struct{}
 
 var ctxQueryName ctxQueryNameKey
+
+func (r *Repository) doUpdateInTxWithLock(ctx context.Context, name string, f func(ctx context.Context) error, lockMap *sync.Map, key any) error {
+	mutexInterface, ok := lockMap.Load(key)
+	if !ok {
+		mutexInterface, _ = lockMap.LoadOrStore(key, &sync.Mutex{})
+	}
+	activeMutex := mutexInterface.(*sync.Mutex)
+
+	activeMutex.Lock()
+	defer activeMutex.Unlock()
+
+	return r.doUpdateInTx(ctx, name, f)
+}
 
 func (r *Repository) doUpdateInTx(ctx context.Context, name string, f func(ctx context.Context) error) error {
 	if getTxn(ctx) != nil {
