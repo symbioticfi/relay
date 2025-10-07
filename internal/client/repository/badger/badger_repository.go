@@ -4,7 +4,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-playground/validator/v10"
 
 	"github.com/dgraph-io/badger/v4"
@@ -32,8 +31,9 @@ type Repository struct {
 	db      *badger.DB
 	metrics metrics
 
-	signatureMutexMu  sync.Mutex
-	signatureMutexMap map[common.Hash]*sync.Mutex
+	signatureMutexMap sync.Map // map[requestId]*sync.Mutex
+	proofsMutexMap    sync.Map // map[requestId]*sync.Mutex
+	valsetMutexMap    sync.Map // map[epoch]*sync.Mutex
 }
 
 func New(cfg Config) (*Repository, error) {
@@ -50,10 +50,8 @@ func New(cfg Config) (*Repository, error) {
 	}
 
 	return &Repository{
-		db:                db,
-		metrics:           cfg.Metrics,
-		signatureMutexMu:  sync.Mutex{},
-		signatureMutexMap: make(map[common.Hash]*sync.Mutex),
+		db:      db,
+		metrics: cfg.Metrics,
 	}, nil
 }
 

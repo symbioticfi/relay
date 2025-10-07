@@ -32,7 +32,7 @@ func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.
 		return errors.Errorf("failed to marshal aggregation proof: %w", err)
 	}
 
-	return r.doUpdateInTx(ctx, "saveAggregationProof", func(ctx context.Context) error {
+	return r.doUpdateInTxWithLock(ctx, "saveAggregationProof", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		_, err := txn.Get(keyAggregationProof(requestID))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
@@ -47,7 +47,7 @@ func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.
 			return errors.Errorf("failed to store aggregation proof: %w", err)
 		}
 		return nil
-	})
+	}, &r.proofsMutexMap, requestID)
 }
 
 func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error) {

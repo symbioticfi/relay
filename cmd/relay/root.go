@@ -322,7 +322,6 @@ func runApp(ctx context.Context) error {
 		Metrics:           mtr,
 		ServeMetrics:      serveMetricsOnAPIAddress,
 		KeyProvider:       keyProvider,
-		AggProofSignal:    aggProofReadySignal,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create api app: %w", err)
