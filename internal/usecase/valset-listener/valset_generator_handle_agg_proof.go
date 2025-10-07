@@ -49,28 +49,31 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		return err
 	}
 
+	// the epoch for the valset is always signature request epoch + 1
+	valsetEpoch := msg.Epoch + 1
+
 	// check if proof is a valset proof, only then commit
-	valsetMeta, err := s.cfg.Repo.GetValidatorSetMetadata(ctx, msg.Epoch)
+	valsetMeta, err := s.cfg.Repo.GetValidatorSetMetadata(ctx, valsetEpoch)
 	if err != nil {
 		return errors.Errorf("failed to get validator set metadata: %w", err)
 	}
 	if valsetMeta.RequestID != msg.RequestID() {
-		slog.DebugContext(ctx, "Aggregation proof is not for valset, skipping proof commitment", "epoch", msg.Epoch, "requestId", msg.RequestID().Hex(), "valsetRequestId", valsetMeta.RequestID.Hex())
+		slog.DebugContext(ctx, "Aggregation proof is not for valset, skipping proof commitment", "epoch", valsetEpoch, "requestId", msg.RequestID().Hex(), "valsetRequestId", valsetMeta.RequestID.Hex())
 		return nil
 	}
 
 	if valset.Status == entity.HeaderCommitted {
-		slog.DebugContext(ctx, "Valset is already committed", "epoch", msg.Epoch)
+		slog.DebugContext(ctx, "Valset is already committed", "epoch", valsetEpoch)
 		return nil
 	}
 
 	// we store pending commit request for all nodes and not just current commiters because
 	// if committers of this epoch fail then commiters for next epoch should still try to commit old proofs
-	if err := s.cfg.Repo.SaveProofCommitPending(ctx, msg.Epoch, msg.RequestID()); err != nil {
+	if err := s.cfg.Repo.SaveProofCommitPending(ctx, valsetEpoch, msg.RequestID()); err != nil {
 		if !errors.Is(err, entity.ErrEntityAlreadyExist) {
 			return errors.Errorf("failed to mark proof commit as pending: %w", err)
 		}
-		slog.DebugContext(ctx, "Proof commit is already pending, skipping", "epoch", msg.Epoch)
+		slog.DebugContext(ctx, "Proof commit is already pending, skipping", "epoch", valsetEpoch)
 		return nil
 	}
 
@@ -78,7 +81,7 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		s.cfg.Metrics.ObserveAggregationProofSize(len(msg.Proof), len(valset.Validators))
 	}
 
-	slog.DebugContext(ctx, "Marked proof commit as pending", "epoch", msg.Epoch, "request_id", msg.RequestID().Hex())
+	slog.DebugContext(ctx, "Marked proof commit as pending", "epoch", valsetEpoch, "request_id", msg.RequestID().Hex())
 	return nil
 }
 

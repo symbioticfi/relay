@@ -111,8 +111,8 @@ func TestGetValidatorSetMetadata(t *testing.T) {
 			// Validate the signature request
 			require.Equal(t, uint32(entity.ValsetHeaderKeyTag), sigReqResp.GetKeyTag(),
 				"Key tag should be ValsetHeaderKeyTag")
-			require.Equal(t, committedEpoch, sigReqResp.GetRequiredEpoch(),
-				"Required epoch should match committed epoch")
+			require.Equal(t, committedEpoch-1, sigReqResp.GetRequiredEpoch(),
+				"Required epoch should match committed - 1 epoch")
 			require.NotEmpty(t, sigReqResp.GetMessage(), "Message should not be empty")
 
 			t.Logf("Successfully retrieved signature request for key tag %d, epoch %d",
