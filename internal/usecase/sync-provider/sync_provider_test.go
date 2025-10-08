@@ -380,9 +380,10 @@ func TestHandleWantSignaturesRequest_MaxResponseSignatureCountLimit(t *testing.T
 			},
 		}
 
-		_, err = syncer.HandleWantSignaturesRequest(t.Context(), request)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "response signature limit exceeded")
+		response, err := syncer.HandleWantSignaturesRequest(t.Context(), request)
+		require.NoError(t, err)
+		require.Len(t, response.Signatures, 1)
+		require.Len(t, response.Signatures[requestID], 2) // Should return only 2 signatures due to limit
 	})
 
 	t.Run("limit respected", func(t *testing.T) {
