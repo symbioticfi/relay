@@ -25,18 +25,18 @@ type ValidatorSignature struct {
 
 // SignatureProcessingStats contains detailed statistics for processing received signatures
 type SignatureProcessingStats struct {
-	ProcessedCount             int // Successfully processed signatures
-	UnrequestedSignatureCount  int // Signatures for validators we didn't request
-	UnrequestedHashCount       int // Signatures for hashes we didn't request
-	SignatureRequestErrorCount int // Failed to get signature request
-	ProcessingErrorCount       int // Failed to process signature
-	AlreadyExistCount          int // Signature already exists (ErrEntityAlreadyExist)
+	ProcessedCount            int // Successfully processed signatures
+	UnrequestedSignatureCount int // Signatures for validators we didn't request
+	UnrequestedHashCount      int // Signatures for hashes we didn't request
+	SignatureRequestFailCount int // Failed to get signature request
+	ProcessingFailCount       int // Failed to process signature
+	AlreadyExistCount         int // Signature already exists (ErrEntityAlreadyExist)
 }
 
 // TotalErrors returns the total number of errors encountered
 func (s SignatureProcessingStats) TotalErrors() int {
-	return s.UnrequestedSignatureCount + s.UnrequestedHashCount + s.SignatureRequestErrorCount +
-		s.ProcessingErrorCount + s.AlreadyExistCount
+	return s.UnrequestedSignatureCount + s.UnrequestedHashCount + s.SignatureRequestFailCount +
+		s.ProcessingFailCount + s.AlreadyExistCount
 }
 
 // WantAggregationProofsRequest represents a request to resync aggregation proofs for specific signature requests.
@@ -53,14 +53,14 @@ type WantAggregationProofsResponse struct {
 
 // AggregationProofProcessingStats contains detailed statistics for processing received aggregation proofs
 type AggregationProofProcessingStats struct {
-	ProcessedCount         int // Successfully processed aggregation proofs
-	UnrequestedProofCount  int // Proofs for hashes we didn't request
-	VerificationErrorCount int // Failed to verify aggregation proof
-	ProcessingErrorCount   int // Failed to process aggregation proof
-	AlreadyExistCount      int // Aggregation proof already exists (ErrEntityAlreadyExist)
+	ProcessedCount        int // Successfully processed aggregation proofs
+	UnrequestedProofCount int // Proofs for hashes we didn't request
+	VerificationFailCount int // Failed to verify aggregation proof
+	ProcessingFailCount   int // Failed to process aggregation proof
+	AlreadyExistCount     int // Aggregation proof already exists (ErrEntityAlreadyExist)
 }
 
 // TotalErrors returns the total number of errors encountered
 func (s AggregationProofProcessingStats) TotalErrors() int {
-	return s.UnrequestedProofCount + s.VerificationErrorCount + s.ProcessingErrorCount + s.AlreadyExistCount
+	return s.UnrequestedProofCount + s.VerificationFailCount + s.ProcessingFailCount + s.AlreadyExistCount
 }

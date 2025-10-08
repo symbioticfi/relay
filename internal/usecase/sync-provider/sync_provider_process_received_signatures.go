@@ -58,7 +58,7 @@ func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.
 			if err != nil {
 				slog.WarnContext(ctx, "Failed to get signature request for processing",
 					"requestId", requestID.Hex(), "error", err)
-				stats.SignatureRequestErrorCount++
+				stats.SignatureRequestFailCount++
 				continue
 			}
 
@@ -73,7 +73,7 @@ func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.
 						"requestId", requestID.Hex(),
 						"validatorIndex", validatorSig.ValidatorIndex,
 						"error", err)
-					stats.ProcessingErrorCount++
+					stats.ProcessingFailCount++
 				}
 				continue
 			}

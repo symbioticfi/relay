@@ -28,7 +28,7 @@ func (s *Syncer) processSingleAggregationProof(ctx context.Context, proof entity
 			stats.AlreadyExistCount++
 			return
 		}
-		stats.ProcessingErrorCount++
+		stats.ProcessingFailCount++
 		return // Continue processing other proofs
 	}
 

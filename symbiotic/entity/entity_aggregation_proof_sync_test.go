@@ -62,7 +62,7 @@ func TestAggregationProofSync_Integration(t *testing.T) {
 		require.Equal(t, 0, stats.TotalErrors())
 
 		// Step 4: Simulate some processing errors for remaining proof
-		stats.VerificationErrorCount = 1 // hash3 had verification error
+		stats.VerificationFailCount = 1 // hash3 had verification error
 		require.Equal(t, 1, stats.TotalErrors())
 	})
 }
