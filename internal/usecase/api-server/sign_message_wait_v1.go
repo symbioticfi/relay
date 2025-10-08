@@ -6,8 +6,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"google.golang.org/grpc"
 
-	"github.com/symbioticfi/relay/core/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
+	"github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // SignMessageWait handles the streaming gRPC SignMessageWait request

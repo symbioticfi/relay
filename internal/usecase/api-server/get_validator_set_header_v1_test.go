@@ -7,8 +7,8 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/require"
 
-	"github.com/symbioticfi/relay/core/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
+	"github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func TestGetValidatorSetHeader_ValidatorSetFoundInRepo(t *testing.T) {

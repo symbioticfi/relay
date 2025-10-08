@@ -5,8 +5,8 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/internal/client/repository/cache"
+	"github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 type CachedConfig struct {

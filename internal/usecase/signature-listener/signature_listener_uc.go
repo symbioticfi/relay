@@ -7,10 +7,10 @@ import (
 	"github.com/go-errors/errors"
 	validate "github.com/go-playground/validator/v10"
 
-	"github.com/symbioticfi/relay/core/entity"
 	intEntity "github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/signals"
+	"github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 //go:generate mockgen -source=signature_listener_uc.go -destination=mocks/signature_listener_uc.go -package=mocks

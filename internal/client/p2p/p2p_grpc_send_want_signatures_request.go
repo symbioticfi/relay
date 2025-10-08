@@ -14,9 +14,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/symbioticfi/relay/core/entity"
 	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
 	"github.com/symbioticfi/relay/pkg/log"
+	"github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 const grpcProtocolTag protocol.ID = "/relay/v1/grpc"

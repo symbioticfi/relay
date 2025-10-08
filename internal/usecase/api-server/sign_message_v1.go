@@ -3,8 +3,8 @@ package api_server
 import (
 	"context"
 
-	"github.com/symbioticfi/relay/core/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
+	"github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // SignMessage handles the gRPC SignMessage request

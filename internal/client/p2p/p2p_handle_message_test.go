@@ -17,10 +17,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 
-	"github.com/symbioticfi/relay/core/entity"
-	symbioticCrypto "github.com/symbioticfi/relay/core/usecase/crypto"
 	p2pEntity "github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/signals"
+	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbioticCrypto "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 // TestService_IntegrationSuccessful tests full P2P communication between two services

@@ -1,6 +1,6 @@
 package lowCostPolicy
 
-import "github.com/symbioticfi/relay/core/entity"
+import "github.com/symbioticfi/relay/symbiotic/entity"
 
 type LowCostPolicy struct {
 	maxUnsigners uint64

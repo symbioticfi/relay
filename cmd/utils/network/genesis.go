@@ -5,12 +5,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/symbioticfi/relay/core/client/evm"
-	"github.com/symbioticfi/relay/core/entity"
-	"github.com/symbioticfi/relay/core/usecase/aggregator"
-	symbioticCrypto "github.com/symbioticfi/relay/core/usecase/crypto"
-	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
-	valsetDeriver "github.com/symbioticfi/relay/core/usecase/valset-deriver"
+	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
+	"github.com/symbioticfi/relay/symbiotic/client/evm"
+	"github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator"
+	symbioticCrypto "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
+	valsetDeriver "github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"

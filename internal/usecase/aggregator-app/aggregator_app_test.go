@@ -6,18 +6,16 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/samber/lo"
-
-	"github.com/symbioticfi/relay/core/usecase/crypto"
-	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
-	aggregationPolicy2 "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
-
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/symbioticfi/relay/core/entity"
+	aggregationPolicy2 "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
 	"github.com/symbioticfi/relay/internal/usecase/aggregator-app/mocks"
+	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
+	"github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 type testSetup struct {

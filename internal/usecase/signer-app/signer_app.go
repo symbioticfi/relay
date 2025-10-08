@@ -5,16 +5,14 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/symbioticfi/relay/core/usecase/crypto"
 	"github.com/symbioticfi/relay/pkg/log"
-	"k8s.io/client-go/util/workqueue"
+	"github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/go-errors/errors"
 	validate "github.com/go-playground/validator/v10"
-
-	"github.com/symbioticfi/relay/core/entity"
+	"k8s.io/client-go/util/workqueue"
 )
 
 //go:generate mockgen -source=signer_app.go -destination=mocks/signer_app.go -package=mocks

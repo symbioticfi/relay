@@ -15,7 +15,7 @@ import (
 	time "time"
 
 	common "github.com/ethereum/go-ethereum/common"
-	entity "github.com/symbioticfi/relay/core/entity"
+	entity "github.com/symbioticfi/relay/symbiotic/entity"
 	gomock "go.uber.org/mock/gomock"
 )
 

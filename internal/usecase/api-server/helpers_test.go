@@ -8,9 +8,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"go.uber.org/mock/gomock"
 
-	"github.com/symbioticfi/relay/core/entity"
-	deriverMocks "github.com/symbioticfi/relay/core/usecase/valset-deriver/mocks"
 	"github.com/symbioticfi/relay/internal/usecase/api-server/mocks"
+	"github.com/symbioticfi/relay/symbiotic/entity"
+	deriverMocks "github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver/mocks"
 )
 
 // testSetup contains all the mocks and test helper functions

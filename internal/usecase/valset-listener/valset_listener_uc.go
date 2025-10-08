@@ -9,16 +9,15 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-	"github.com/symbioticfi/relay/core/client/evm"
-	"github.com/symbioticfi/relay/core/usecase/aggregator"
-	"github.com/symbioticfi/relay/core/usecase/crypto"
-	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
-
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/symbiotic/client/evm"
+	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
+
 	"github.com/symbioticfi/relay/pkg/log"
+	"github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 type signer interface {
@@ -51,13 +50,17 @@ type metrics interface {
 	ObserveAggregationProofSize(proofSize int, validatorCount int)
 }
 
+type keyProvider interface {
+	GetPrivateKey(keyTag entity.KeyTag) (crypto.PrivateKey, error)
+}
+
 type Config struct {
 	EvmClient       evm.IEvmClient `validate:"required"`
 	Repo            repo           `validate:"required"`
 	Deriver         deriver        `validate:"required"`
 	PollingInterval time.Duration  `validate:"required,gt=0"`
 	Signer          signer         `validate:"required"`
-	KeyProvider     keyprovider.KeyProvider
+	KeyProvider     keyProvider
 	Aggregator      aggregator.Aggregator
 	Metrics         metrics
 }

@@ -20,12 +20,11 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/symbioticfi/relay/core/entity"
-	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
 	"github.com/symbioticfi/relay/internal/usecase/metrics"
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/server"
+	"github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 //go:generate mockgen -source=app.go -destination=mocks/app_mock.go -package=mocks
@@ -70,7 +69,6 @@ type Config struct {
 	Aggregator   aggregator
 	ServeMetrics bool
 	Metrics      *metrics.Metrics `validate:"required"`
-	KeyProvider  keyprovider.KeyProvider
 }
 
 func (c Config) Validate() error {

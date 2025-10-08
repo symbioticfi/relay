@@ -1,6 +1,6 @@
 package lowLatencyPolicy
 
-import "github.com/symbioticfi/relay/core/entity"
+import "github.com/symbioticfi/relay/symbiotic/entity"
 
 type LowLatencyPolicy struct {
 }

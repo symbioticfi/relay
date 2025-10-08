@@ -12,14 +12,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/symbioticfi/relay/core/entity"
-	"github.com/symbioticfi/relay/core/usecase/crypto"
-	entity_processor "github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor"
-	entity_mocks "github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor/mocks"
-	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
+	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
 	"github.com/symbioticfi/relay/internal/usecase/signer-app/mocks"
 	"github.com/symbioticfi/relay/pkg/signals"
+	"github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
+	entity_processor "github.com/symbioticfi/relay/symbiotic/usecase/entity-processor/entity-processor"
+	entity_mocks "github.com/symbioticfi/relay/symbiotic/usecase/entity-processor/entity-processor/mocks"
 )
 
 func TestSign_HappyPath(t *testing.T) {

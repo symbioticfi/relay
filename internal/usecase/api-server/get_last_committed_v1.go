@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/go-errors/errors"
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/symbiotic/entity"
 
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
 )
