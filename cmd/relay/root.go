@@ -329,13 +329,13 @@ func runApp(ctx context.Context) error {
 	err = aggProofReadySignal.SetHandlers(
 		func(ctx context.Context, msg entity.AggregationProof) error {
 			if err := listener.HandleProofAggregated(ctx, msg); err != nil {
-				return errors.Errorf("failed to handle proof aggregated by status tracker: %w", err)
+				return errors.Errorf("failed to handle proof aggregated by valset listener: %w", err)
 			}
 			return nil
 		},
 		func(ctx context.Context, msg entity.AggregationProof) error {
 			if err := statusTracker.HandleProofAggregated(ctx, msg); err != nil {
-				return errors.Errorf("failed to handle proof aggregated by generator: %w", err)
+				return errors.Errorf("failed to handle proof aggregated by valset status tracker: %w", err)
 			}
 			return nil
 		},
