@@ -11,10 +11,10 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
+	"github.com/symbioticfi/relay/internal/usecase/entity-processor/mocks"
 	"github.com/symbioticfi/relay/pkg/signals"
 	"github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
-	"github.com/symbioticfi/relay/symbiotic/usecase/entity-processor/entity-processor/mocks"
 )
 
 func TestEntityProcessor_ProcessSignature(t *testing.T) {
