@@ -21,8 +21,8 @@ import (
 
 type repo interface {
 	SaveSignatureRequest(ctx context.Context, requestID common.Hash, req entity.SignatureRequest) error
-	RemoveSelfSignaturePending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error
-	GetSelfSignaturePending(ctx context.Context, limit int) ([]common.Hash, error)
+	RemoveSignaturePending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error
+	GetSignaturePending(ctx context.Context, limit int) ([]common.Hash, error)
 	GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error)
 	GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error)
 }
@@ -144,7 +144,7 @@ func (s *SignerApp) completeSign(ctx context.Context, req entity.SignatureReques
 			Epoch:       req.RequiredEpoch,
 			PublicKey:   private.PublicKey().Raw(),
 		}
-		if err := s.cfg.Repo.RemoveSelfSignaturePending(ctx, req.RequiredEpoch, extendedSignature.RequestID()); err != nil {
+		if err := s.cfg.Repo.RemoveSignaturePending(ctx, req.RequiredEpoch, extendedSignature.RequestID()); err != nil {
 			return errors.Errorf("failed to remove self signature request pending: %w", err)
 		}
 		return nil
@@ -177,7 +177,7 @@ func (s *SignerApp) completeSign(ctx context.Context, req entity.SignatureReques
 		return errors.Errorf("failed to process signature: %w", err)
 	}
 
-	if err := s.cfg.Repo.RemoveSelfSignaturePending(ctx, req.RequiredEpoch, extendedSignature.RequestID()); err != nil {
+	if err := s.cfg.Repo.RemoveSignaturePending(ctx, req.RequiredEpoch, extendedSignature.RequestID()); err != nil {
 		return errors.Errorf("failed to remove self signature request pending: %w", err)
 	}
 
@@ -249,7 +249,7 @@ func (s *SignerApp) worker(ctx context.Context, id int, p2pService p2pService) {
 }
 
 func (s *SignerApp) handleMissedSignaturesOnce(ctx context.Context) error {
-	pendingRequests, err := s.cfg.Repo.GetSelfSignaturePending(ctx, 10)
+	pendingRequests, err := s.cfg.Repo.GetSignaturePending(ctx, 10)
 	if err != nil {
 		return errors.Errorf("failed to get self signature requests pending: %w", err)
 	}

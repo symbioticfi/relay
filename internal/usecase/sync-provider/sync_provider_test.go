@@ -26,13 +26,22 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 
 	// Create test data
 	privateKey := newPrivateKey(t)
+	privateKey1 := newPrivateKey(t)
 	signatureRequest := createTestSignatureRequest(t)
-	validatorSet := createTestValidatorSet(t, privateKey)
+	validatorSet := createTestValidatorSet(t, privateKey, privateKey1)
 	require.NoError(t, peerRepo.SaveValidatorSet(t.Context(), validatorSet))
 	require.NoError(t, requesterRepo.SaveValidatorSet(t.Context(), validatorSet))
 
 	peerEntityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo:                     peerRepo,
+		Aggregator:               createMockAggregator(t),
+		AggProofSignal:           createMockAggProofSignal(t),
+		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+	})
+	require.NoError(t, err)
+
+	requesterEntityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
+		Repo:                     requesterRepo,
 		Aggregator:               createMockAggregator(t),
 		AggProofSignal:           createMockAggProofSignal(t),
 		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
@@ -53,21 +62,23 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	require.NoError(t, peerEntityProcessor.ProcessSignature(t.Context(), param))
 
 	requestID := param.RequestID()
+
+	signature1, _, err := privateKey1.Sign(signatureRequest.Message)
+	require.NoError(t, err)
+	param1 := entity.SignatureExtended{
+		MessageHash: hash,
+		Signature:   signature1,
+		PublicKey:   privateKey1.PublicKey().Raw(),
+		Epoch:       signatureRequest.RequiredEpoch,
+		KeyTag:      signatureRequest.KeyTag,
+	}
+	require.NoError(t, requesterEntityProcessor.ProcessSignature(t.Context(), param1))
+
 	require.NoError(t, requesterRepo.SaveSignatureRequest(t.Context(), requestID, signatureRequest))
 
 	// Requester needs SignatureMap for BuildWantSignaturesRequest to work
 	signatureMap := entity.NewSignatureMap(requestID, signatureRequest.RequiredEpoch, uint32(len(validatorSet.Validators)))
 	require.NoError(t, requesterRepo.UpdateSignatureMap(t.Context(), signatureMap))
-
-	// Setup requester processor
-
-	requesterEntityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
-		Repo:                     requesterRepo,
-		Aggregator:               createMockAggregator(t),
-		AggProofSignal:           createMockAggProofSignal(t),
-		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
-	})
-	require.NoError(t, err)
 
 	// Create peer syncer first (with a temporary mock)
 	peerSyncer, err := New(Config{
@@ -96,7 +107,8 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	// Verify requester initially has no signatures
 	initialSignatures, err := requesterRepo.GetAllSignatures(t.Context(), requestID)
 	require.NoError(t, err)
-	require.Empty(t, initialSignatures)
+	require.Len(t, initialSignatures, 1) // Already has one signature from param1
+
 	// Verify requester has signature request
 	_, err = requesterRepo.GetSignatureRequest(t.Context(), requestID)
 	require.NoError(t, err)
@@ -115,11 +127,13 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	// Verify requester now has the signature
 	finalSignatures, err := requesterRepo.GetAllSignatures(t.Context(), requestID)
 	require.NoError(t, err)
-	require.Len(t, finalSignatures, 1)
+	require.Len(t, finalSignatures, 2)
 
 	// Verify the signature is correct
 	require.Equal(t, privateKey.PublicKey().Raw(), finalSignatures[0].PublicKey)
 	require.NoError(t, privateKey.PublicKey().Verify(signatureRequest.Message, finalSignatures[0].Signature))
+	require.Equal(t, privateKey1.PublicKey().Raw(), finalSignatures[1].PublicKey)
+	require.NoError(t, privateKey1.PublicKey().Verify(signatureRequest.Message, finalSignatures[1].Signature))
 }
 
 func createMockAggregator(t *testing.T) *mocks.MockAggregator {
@@ -175,24 +189,28 @@ func newPrivateKey(t *testing.T) crypto.PrivateKey {
 	return privateKey
 }
 
-func createTestValidatorSet(t *testing.T, privateKey crypto.PrivateKey) entity.ValidatorSet {
+func createTestValidatorSet(t *testing.T, privateKey ...crypto.PrivateKey) entity.ValidatorSet {
 	t.Helper()
-	return entity.ValidatorSet{
-		Version:         1,
-		RequiredKeyTag:  entity.ValsetHeaderKeyTag,
-		Epoch:           1,
-		QuorumThreshold: entity.ToVotingPower(big.NewInt(670)),
-		Validators: []entity.Validator{{
-			Operator:    common.HexToAddress("0x123"),
+	validators := make([]entity.Validator, len(privateKey))
+	for i, pk := range privateKey {
+		validators[i] = entity.Validator{
+			Operator:    common.HexToAddress(fmt.Sprintf("0x%d", i+1)),
 			VotingPower: entity.ToVotingPower(big.NewInt(1000)),
 			IsActive:    true,
 			Keys: []entity.ValidatorKey{
 				{
 					Tag:     entity.ValsetHeaderKeyTag,
-					Payload: privateKey.PublicKey().OnChain(),
+					Payload: pk.PublicKey().OnChain(),
 				},
 			},
-		}},
+		}
+	}
+	return entity.ValidatorSet{
+		Version:         1,
+		RequiredKeyTag:  entity.ValsetHeaderKeyTag,
+		Epoch:           1,
+		QuorumThreshold: entity.ToVotingPower(big.NewInt(670)),
+		Validators:      validators,
 	}
 }
 
