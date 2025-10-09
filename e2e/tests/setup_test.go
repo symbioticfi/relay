@@ -21,8 +21,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	apiv1 "github.com/symbioticfi/relay/api/client/v1"
-	"github.com/symbioticfi/relay/core/entity"
-	"github.com/symbioticfi/relay/core/usecase/crypto"
+	"github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 var globalTestEnv *TestEnvironment

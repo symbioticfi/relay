@@ -1,8 +1,8 @@
 package keys
 
 import (
-	"github.com/symbioticfi/relay/core/entity"
-	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
+	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
+	"github.com/symbioticfi/relay/symbiotic/entity"
 
 	"github.com/spf13/cobra"
 )

@@ -5,16 +5,14 @@ import (
 	"log/slog"
 	"time"
 
-	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
-	aggregationPolicyTypes "github.com/symbioticfi/relay/internal/usecase/aggregation-policy/types"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	validate "github.com/go-playground/validator/v10"
 
-	"github.com/symbioticfi/relay/core/entity"
-	"github.com/symbioticfi/relay/core/usecase/crypto"
+	aggregationPolicyTypes "github.com/symbioticfi/relay/internal/usecase/aggregation-policy/types"
 	"github.com/symbioticfi/relay/pkg/log"
+	"github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 //go:generate mockgen -source=aggregator_app.go -destination=mocks/aggregator_app.go -package=mocks
@@ -40,15 +38,19 @@ type aggregator interface {
 	Aggregate(valset entity.ValidatorSet, keyTag entity.KeyTag, messageHash []byte, signatures []entity.SignatureExtended) (entity.AggregationProof, error)
 }
 
+type keyProvider interface {
+	GetPrivateKey(keyTag entity.KeyTag) (crypto.PrivateKey, error)
+}
+
 type aggregatorPolicy = aggregationPolicyTypes.AggregationPolicy
 
 type Config struct {
-	Repo              repository              `validate:"required"`
-	P2PClient         p2pClient               `validate:"required"`
-	Aggregator        aggregator              `validate:"required"`
-	Metrics           metrics                 `validate:"required"`
-	AggregationPolicy aggregatorPolicy        `validate:"required"`
-	KeyProvider       keyprovider.KeyProvider `validate:"required"`
+	Repo              repository       `validate:"required"`
+	P2PClient         p2pClient        `validate:"required"`
+	Aggregator        aggregator       `validate:"required"`
+	Metrics           metrics          `validate:"required"`
+	AggregationPolicy aggregatorPolicy `validate:"required"`
+	KeyProvider       keyProvider      `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -110,7 +112,7 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 
 	privKey, err := s.cfg.KeyProvider.GetPrivateKey(validatorSet.RequiredKeyTag)
 	if err != nil {
-		if errors.Is(err, keyprovider.ErrKeyNotFound) {
+		if errors.Is(err, entity.ErrKeyNotFound) {
 			slog.DebugContext(ctx, "No key for required key tag, skipping proof aggregation", "keyTag", validatorSet.RequiredKeyTag)
 			return nil
 		}

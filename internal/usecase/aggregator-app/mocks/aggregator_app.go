@@ -15,7 +15,8 @@ import (
 	time "time"
 
 	common "github.com/ethereum/go-ethereum/common"
-	entity "github.com/symbioticfi/relay/core/entity"
+	entity "github.com/symbioticfi/relay/symbiotic/entity"
+	crypto "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -256,4 +257,43 @@ func (m *Mockaggregator) Aggregate(valset entity.ValidatorSet, keyTag entity.Key
 func (mr *MockaggregatorMockRecorder) Aggregate(valset, keyTag, messageHash, signatures any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Aggregate", reflect.TypeOf((*Mockaggregator)(nil).Aggregate), valset, keyTag, messageHash, signatures)
+}
+
+// MockkeyProvider is a mock of keyProvider interface.
+type MockkeyProvider struct {
+	ctrl     *gomock.Controller
+	recorder *MockkeyProviderMockRecorder
+	isgomock struct{}
+}
+
+// MockkeyProviderMockRecorder is the mock recorder for MockkeyProvider.
+type MockkeyProviderMockRecorder struct {
+	mock *MockkeyProvider
+}
+
+// NewMockkeyProvider creates a new mock instance.
+func NewMockkeyProvider(ctrl *gomock.Controller) *MockkeyProvider {
+	mock := &MockkeyProvider{ctrl: ctrl}
+	mock.recorder = &MockkeyProviderMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockkeyProvider) EXPECT() *MockkeyProviderMockRecorder {
+	return m.recorder
+}
+
+// GetPrivateKey mocks base method.
+func (m *MockkeyProvider) GetPrivateKey(keyTag entity.KeyTag) (crypto.PrivateKey, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPrivateKey", keyTag)
+	ret0, _ := ret[0].(crypto.PrivateKey)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPrivateKey indicates an expected call of GetPrivateKey.
+func (mr *MockkeyProviderMockRecorder) GetPrivateKey(keyTag any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPrivateKey", reflect.TypeOf((*MockkeyProvider)(nil).GetPrivateKey), keyTag)
 }

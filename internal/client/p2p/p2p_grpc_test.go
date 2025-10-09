@@ -19,8 +19,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/symbioticfi/relay/core/entity"
 	v2 "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
+	"github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func TestP2P_GRPC(t *testing.T) {

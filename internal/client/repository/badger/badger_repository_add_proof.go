@@ -6,7 +6,7 @@ import (
 	"github.com/dgraph-io/badger/v4"
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func (r *Repository) SaveProof(ctx context.Context, aggregationProof entity.AggregationProof) error {

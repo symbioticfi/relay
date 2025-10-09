@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func keySignatureMap(requestID common.Hash) []byte {

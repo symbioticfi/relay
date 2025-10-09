@@ -9,8 +9,8 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/kelseyhightower/envconfig"
 
-	"github.com/symbioticfi/relay/core/entity"
-	symbioticCrypto "github.com/symbioticfi/relay/core/usecase/crypto"
+	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbioticCrypto "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 var (

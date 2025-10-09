@@ -6,8 +6,8 @@ import (
 	"github.com/go-errors/errors"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/symbioticfi/relay/core/entity"
 	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
+	"github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg entity.AggregationProof) error {

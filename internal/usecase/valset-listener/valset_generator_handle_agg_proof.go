@@ -7,9 +7,8 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/core/entity"
-	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 	"github.com/symbioticfi/relay/pkg/log"
+	"github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 const (
@@ -37,7 +36,12 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 	for {
 		valset, err = s.cfg.Repo.GetValidatorSetByEpoch(ctx, valsetEpoch)
 		if err != nil {
-			if errors.Is(err, entity.ErrEntityNotFound) && !retryAttempted { // TODO: do i need to check if there is a local signature for request? it's still possible to commit
+			if !errors.Is(err, entity.ErrEntityNotFound) {
+				return errors.Errorf("failed to get validator set by epoch %d: %w", valsetEpoch, err)
+			}
+			// if not found, try to load missing epochs and retry once
+			// this can happen if we receive proof before valset is processed from signature requests
+			if !retryAttempted {
 				if err = s.tryLoadMissingEpochs(ctx); err != nil {
 					slog.ErrorContext(ctx, "failed to process epochs, on demand from committer", "error", err)
 					return nil
@@ -132,7 +136,7 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 
 		privKey, err := s.cfg.KeyProvider.GetPrivateKey(valset.RequiredKeyTag)
 		if err != nil {
-			if errors.Is(err, keyprovider.ErrKeyNotFound) {
+			if errors.Is(err, entity.ErrKeyNotFound) {
 				slog.DebugContext(ctx, "No key for required key tag, skipping proof commitment", "keyTag", valset.RequiredKeyTag)
 				continue
 			}

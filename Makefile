@@ -92,25 +92,25 @@ e2e-test:
 .PHONY: gen-abi
 gen-abi:
 	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
-		--abi core/client/evm/abi/IValSetDriver.abi.json \
+		--abi symbiotic/client/evm/abi/IValSetDriver.abi.json \
 		--type IValSetDriver \
 		--pkg gen \
-		--out core/client/evm/gen/valsetDriver.go
+		--out symbiotic/client/evm/gen/valsetDriver.go
 	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
-		--abi core/client/evm/abi/ISettlement.abi.json \
+		--abi symbiotic/client/evm/abi/ISettlement.abi.json \
 		--type ISettlement \
 		--pkg gen \
-		--out core/client/evm/gen/settlement.go
+		--out symbiotic/client/evm/gen/settlement.go
 	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
-		--abi core/client/evm/abi/IKeyRegistry.abi.json \
+		--abi symbiotic/client/evm/abi/IKeyRegistry.abi.json \
 		--type IKeyRegistry \
 		--pkg gen \
-		--out core/client/evm/gen/keyRegistry.go
+		--out symbiotic/client/evm/gen/keyRegistry.go
 	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
-		--abi core/client/evm/abi/IVotingPowerProvider.abi.json \
+		--abi symbiotic/client/evm/abi/IVotingPowerProvider.abi.json \
 		--type IVotingPowerProvider \
 		--pkg gen \
-		--out core/client/evm/gen/votingPowerProvider.go
+		--out symbiotic/client/evm/gen/votingPowerProvider.go
 
 # Generic build target that takes OS and architecture as parameters
 # Usage: make build-relay-utils OS=linux ARCH=amd64

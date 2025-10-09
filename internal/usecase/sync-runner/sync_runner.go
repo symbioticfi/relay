@@ -9,8 +9,8 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/pkg/log"
+	"github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 type p2pService interface {
@@ -118,19 +118,19 @@ func (s *Runner) runSignatureSync(ctx context.Context) error {
 
 	slog.InfoContext(ctx, "Signature sync completed",
 		"processed", stats.ProcessedCount,
-		"total_errors", stats.TotalErrors(),
+		"total_fails", stats.TotalErrors(),
 		"unrequested_signatures", stats.UnrequestedSignatureCount,
 		"unrequested_hashes", stats.UnrequestedHashCount,
-		"signature_request_errors", stats.SignatureRequestErrorCount,
-		"processing_errors", stats.ProcessingErrorCount,
+		"signature_request_fails", stats.SignatureRequestFailCount,
+		"processing_fails", stats.ProcessingFailCount,
 		"already_exist", stats.AlreadyExistCount,
 	)
 
 	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("processed", stats.ProcessedCount)
 	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("unrequested_signatures", stats.UnrequestedSignatureCount)
 	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("unrequested_hashes", stats.UnrequestedHashCount)
-	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("signature_request_errors", stats.SignatureRequestErrorCount)
-	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("processing_errors", stats.ProcessingErrorCount)
+	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("signature_request_fails", stats.SignatureRequestFailCount)
+	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("processing_fails", stats.ProcessingFailCount)
 	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("already_exist", stats.AlreadyExistCount)
 
 	return nil
@@ -169,17 +169,17 @@ func (s *Runner) runAggregationProofSync(ctx context.Context) error {
 
 	slog.InfoContext(ctx, "Aggregation proof sync completed",
 		"processed", stats.ProcessedCount,
-		"total_errors", stats.TotalErrors(),
+		"total_fails", stats.TotalErrors(),
 		"unrequested_proofs", stats.UnrequestedProofCount,
-		"verification_errors", stats.VerificationErrorCount,
-		"processing_errors", stats.ProcessingErrorCount,
+		"verification_fails", stats.VerificationFailCount,
+		"processing_fails", stats.ProcessingFailCount,
 		"already_exist", stats.AlreadyExistCount,
 	)
 
 	s.cfg.Metrics.ObserveP2PSyncAggregationProofsProcessed("processed", stats.ProcessedCount)
 	s.cfg.Metrics.ObserveP2PSyncAggregationProofsProcessed("unrequested_proofs", stats.UnrequestedProofCount)
-	s.cfg.Metrics.ObserveP2PSyncAggregationProofsProcessed("verification_errors", stats.VerificationErrorCount)
-	s.cfg.Metrics.ObserveP2PSyncAggregationProofsProcessed("processing_errors", stats.ProcessingErrorCount)
+	s.cfg.Metrics.ObserveP2PSyncAggregationProofsProcessed("verification_fails", stats.VerificationFailCount)
+	s.cfg.Metrics.ObserveP2PSyncAggregationProofsProcessed("processing_fails", stats.ProcessingFailCount)
 	s.cfg.Metrics.ObserveP2PSyncAggregationProofsProcessed("already_exist", stats.AlreadyExistCount)
 
 	return nil

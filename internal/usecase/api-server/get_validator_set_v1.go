@@ -10,8 +10,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/symbioticfi/relay/core/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
+	"github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // GetValidatorSet handles the gRPC GetValidatorSet request

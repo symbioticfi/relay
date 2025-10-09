@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	apiv1 "github.com/symbioticfi/relay/api/client/v1"
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // TestGetValidatorSetMetadata tests the GetValidatorSetMetadata API endpoint

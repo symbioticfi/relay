@@ -11,7 +11,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func keyNetworkConfig(epoch entity.Epoch) []byte {

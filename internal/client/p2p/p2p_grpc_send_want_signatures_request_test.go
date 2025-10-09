@@ -11,8 +11,8 @@ import (
 	"github.com/libp2p/go-libp2p/core/peerstore"
 	"github.com/stretchr/testify/require"
 
-	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/pkg/signals"
+	"github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func TestSendWantSignaturesRequest_HappyPath(t *testing.T) {

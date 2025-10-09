@@ -6,18 +6,16 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/samber/lo"
-
-	"github.com/symbioticfi/relay/core/usecase/crypto"
-	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
-	aggregationPolicy2 "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
-
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/symbioticfi/relay/core/entity"
+	aggregationPolicy "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
 	"github.com/symbioticfi/relay/internal/usecase/aggregator-app/mocks"
+	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
+	"github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 type testSetup struct {
@@ -39,7 +37,7 @@ func newTestSetup(t *testing.T, policyType entity.AggregationPolicyType, maxUnsi
 	mockP2PClient := mocks.NewMockp2pClient(ctrl)
 	mockAggregator := mocks.NewMockaggregator(ctrl)
 	mockMetrics := mocks.NewMockmetrics(ctrl)
-	aggregationPolicy, err := aggregationPolicy2.NewAggregationPolicy(policyType, maxUnsigners)
+	aggPolicy, err := aggregationPolicy.NewAggregationPolicy(policyType, maxUnsigners)
 	require.NoError(t, err)
 
 	privateKey, err := crypto.GeneratePrivateKey(entity.KeyTypeBlsBn254)
@@ -55,7 +53,7 @@ func newTestSetup(t *testing.T, policyType entity.AggregationPolicyType, maxUnsi
 		P2PClient:         mockP2PClient,
 		Aggregator:        mockAggregator,
 		Metrics:           mockMetrics,
-		AggregationPolicy: aggregationPolicy,
+		AggregationPolicy: aggPolicy,
 		KeyProvider:       kp,
 	}
 

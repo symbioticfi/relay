@@ -16,12 +16,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/symbioticfi/relay/core/entity"
 	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
 	p2pEntity "github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/server"
 	"github.com/symbioticfi/relay/pkg/signals"
+	"github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 const (

@@ -13,18 +13,12 @@ import (
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/symbioticfi/relay/core/client/evm"
-	"github.com/symbioticfi/relay/core/entity"
-	"github.com/symbioticfi/relay/core/usecase/aggregator"
-	symbioticCrypto "github.com/symbioticfi/relay/core/usecase/crypto"
-	entity_processor "github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor"
-	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
-	valsetDeriver "github.com/symbioticfi/relay/core/usecase/valset-deriver"
 	"github.com/symbioticfi/relay/internal/client/p2p"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
 	aggregationPolicy "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
 	aggregatorApp "github.com/symbioticfi/relay/internal/usecase/aggregator-app"
 	api_server "github.com/symbioticfi/relay/internal/usecase/api-server"
+	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
 	"github.com/symbioticfi/relay/internal/usecase/metrics"
 	signatureListener "github.com/symbioticfi/relay/internal/usecase/signature-listener"
 	signerApp "github.com/symbioticfi/relay/internal/usecase/signer-app"
@@ -35,6 +29,12 @@ import (
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/proof"
 	"github.com/symbioticfi/relay/pkg/signals"
+	"github.com/symbioticfi/relay/symbiotic/client/evm"
+	"github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator"
+	symbioticCrypto "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
+	entity_processor "github.com/symbioticfi/relay/symbiotic/usecase/entity-processor/entity-processor"
+	valsetDeriver "github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver"
 )
 
 func runApp(ctx context.Context) error {
@@ -321,7 +321,6 @@ func runApp(ctx context.Context) error {
 		Deriver:           deriver,
 		Metrics:           mtr,
 		ServeMetrics:      serveMetricsOnAPIAddress,
-		KeyProvider:       keyProvider,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create api app: %w", err)
@@ -330,13 +329,13 @@ func runApp(ctx context.Context) error {
 	err = aggProofReadySignal.SetHandlers(
 		func(ctx context.Context, msg entity.AggregationProof) error {
 			if err := listener.HandleProofAggregated(ctx, msg); err != nil {
-				return errors.Errorf("failed to handle proof aggregated by status tracker: %w", err)
+				return errors.Errorf("failed to handle proof aggregated by valset listener: %w", err)
 			}
 			return nil
 		},
 		func(ctx context.Context, msg entity.AggregationProof) error {
 			if err := statusTracker.HandleProofAggregated(ctx, msg); err != nil {
-				return errors.Errorf("failed to handle proof aggregated by generator: %w", err)
+				return errors.Errorf("failed to handle proof aggregated by valset status tracker: %w", err)
 			}
 			return nil
 		},
@@ -398,10 +397,10 @@ func initP2PService(ctx context.Context, cfg config, keyProvider keyprovider.Key
 	}
 
 	p2pIdentityPKRaw, err := keyProvider.GetPrivateKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, entity.KeyTypeEcdsaSecp256k1, keyprovider.P2P_HOST_IDENTITY_KEY_ID)
-	if err != nil && !errors.Is(err, keyprovider.ErrKeyNotFound) {
+	if err != nil && !errors.Is(err, entity.ErrKeyNotFound) {
 		return nil, nil, errors.Errorf("failed to get P2P identity private key: %w", err)
 	}
-	if errors.Is(err, keyprovider.ErrKeyNotFound) {
+	if errors.Is(err, entity.ErrKeyNotFound) {
 		slog.WarnContext(ctx, "P2P identity private key not found, generating a new one")
 		p2pIdentityPKRaw, err = symbioticCrypto.GeneratePrivateKey(entity.KeyTypeEcdsaSecp256k1)
 		if err != nil {

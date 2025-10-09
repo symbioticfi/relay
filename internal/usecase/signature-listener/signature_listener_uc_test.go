@@ -9,13 +9,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/symbioticfi/relay/core/entity"
-	"github.com/symbioticfi/relay/core/usecase/crypto"
-	entity_processor "github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor"
-	"github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor/mocks"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
 	intEntity "github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/signals"
+	"github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
+	entity_processor "github.com/symbioticfi/relay/symbiotic/usecase/entity-processor/entity-processor"
+	"github.com/symbioticfi/relay/symbiotic/usecase/entity-processor/entity-processor/mocks"
 )
 
 func TestHandleSignatureReceivedMessage_HappyPath(t *testing.T) {

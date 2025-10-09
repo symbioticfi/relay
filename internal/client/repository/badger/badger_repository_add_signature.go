@@ -6,8 +6,8 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/core/entity"
-	"github.com/symbioticfi/relay/core/usecase/crypto"
+	"github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 func (r *Repository) SaveSignature(ctx context.Context, signature entity.SignatureExtended) error {

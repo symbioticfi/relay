@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	apiv1 "github.com/symbioticfi/relay/api/client/v1"
-	"github.com/symbioticfi/relay/core/entity"
-	cryptoModule "github.com/symbioticfi/relay/core/usecase/crypto"
+	"github.com/symbioticfi/relay/symbiotic/entity"
+	cryptoModule "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 const (
