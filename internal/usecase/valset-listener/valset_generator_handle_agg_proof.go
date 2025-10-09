@@ -62,10 +62,6 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 
 	// check if proof is a valset proof, only then commit
 	valsetMeta, err := s.cfg.Repo.GetValidatorSetMetadata(ctx, valsetEpoch)
-	if errors.Is(err, entity.ErrEntityNotFound) {
-		slog.DebugContext(ctx, "No valset metadata found, skipping proof commitment", "epoch", valsetEpoch)
-		return nil
-	}
 	if err != nil {
 		return errors.Errorf("failed to get validator set metadata: %w", err)
 	}
