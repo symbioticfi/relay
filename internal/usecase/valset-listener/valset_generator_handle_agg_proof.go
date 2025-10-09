@@ -21,13 +21,21 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 
 	slog.DebugContext(ctx, "Handling proof aggregated message", "msg", msg)
 
+	// we always try to save the proof, even if we aren't a committer
+	if err := s.cfg.Repo.SaveProof(ctx, msg); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
+		return err
+	}
+
+	// the epoch for the valset is always signature request epoch + 1
+	valsetEpoch := msg.Epoch + 1
+
 	var (
 		valset entity.ValidatorSet
 		err    error
 	)
 	retryAttempted := false
 	for {
-		valset, err = s.cfg.Repo.GetValidatorSetByEpoch(ctx, msg.Epoch)
+		valset, err = s.cfg.Repo.GetValidatorSetByEpoch(ctx, valsetEpoch)
 		if err != nil {
 			if errors.Is(err, entity.ErrEntityNotFound) && !retryAttempted { // TODO: do i need to check if there is a local signature for request? it's still possible to commit
 				if err = s.tryLoadMissingEpochs(ctx); err != nil {
@@ -43,14 +51,10 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		break
 	}
 
-	// we always try to save the proof, even if we aren't a committer
-	err = s.cfg.Repo.SaveProof(ctx, msg)
-	if err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
-		return err
+	if valset.Status == entity.HeaderCommitted {
+		slog.DebugContext(ctx, "Valset is already committed", "epoch", valsetEpoch)
+		return nil
 	}
-
-	// the epoch for the valset is always signature request epoch + 1
-	valsetEpoch := msg.Epoch + 1
 
 	// check if proof is a valset proof, only then commit
 	valsetMeta, err := s.cfg.Repo.GetValidatorSetMetadata(ctx, valsetEpoch)
@@ -59,11 +63,6 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 	}
 	if valsetMeta.RequestID != msg.RequestID() {
 		slog.DebugContext(ctx, "Aggregation proof is not for valset, skipping proof commitment", "epoch", valsetEpoch, "requestId", msg.RequestID().Hex(), "valsetRequestId", valsetMeta.RequestID.Hex())
-		return nil
-	}
-
-	if valset.Status == entity.HeaderCommitted {
-		slog.DebugContext(ctx, "Valset is already committed", "epoch", valsetEpoch)
 		return nil
 	}
 

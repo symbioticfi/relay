@@ -38,7 +38,8 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity
 	for requestID, requestedIndices := range request.WantSignatures {
 		// Check signature count limit before processing each request
 		if totalSignatureCount >= s.cfg.MaxResponseSignatureCount {
-			return entity.WantSignaturesResponse{}, errors.Errorf("response signature limit exceeded")
+			slog.DebugContext(ctx, "Response signature limit reached, stopping collection", "total_collected", totalSignatureCount, "limit", s.cfg.MaxResponseSignatureCount)
+			break
 		}
 
 		var validatorSigs []entity.ValidatorSignature
@@ -49,7 +50,8 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity
 			validatorIndex := it.Next()
 			// Check limit before processing each signature
 			if totalSignatureCount >= s.cfg.MaxResponseSignatureCount {
-				return entity.WantSignaturesResponse{}, errors.Errorf("response signature limit exceeded")
+				slog.DebugContext(ctx, "Response signature limit reached during iteration, stopping", "total_collected", totalSignatureCount, "limit", s.cfg.MaxResponseSignatureCount, "request_id", requestID.Hex())
+				break
 			}
 
 			// Get signature by validator index directly

@@ -195,7 +195,7 @@ func (s *Signal[T]) StartWorkers(ctx context.Context) error {
 						slog.Info("signal queue closed, shutting down worker", slog.Int("worker", j), slog.String("signal", s.id))
 						return
 					}
-					// Execute handlers sequentially with fail-fast behavior
+					// Execute all handlers regardless of errors
 					for i, handler := range handlers {
 						if err := handler(ctx, event.Payload); err != nil {
 							slog.Error("handler failed",
@@ -204,7 +204,7 @@ func (s *Signal[T]) StartWorkers(ctx context.Context) error {
 								slog.Int("worker", j),
 								slog.Any("event", event.Payload),
 								slog.String("signal", s.id))
-							break // fail-fast: stop on first error
+							// Continue executing remaining handlers
 						}
 					}
 				}
