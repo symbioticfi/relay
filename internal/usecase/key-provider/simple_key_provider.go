@@ -6,7 +6,8 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
@@ -21,7 +22,7 @@ func NewSimpleKeystoreProvider() (*SimpleKeystoreProvider, error) {
 	}, nil
 }
 
-func (k *SimpleKeystoreProvider) GetPrivateKey(keyTag entity.KeyTag) (crypto.PrivateKey, error) {
+func (k *SimpleKeystoreProvider) GetPrivateKey(keyTag symbiotic.KeyTag) (crypto.PrivateKey, error) {
 	alias, err := KeyTagToAlias(keyTag)
 	if err != nil {
 		return nil, err
@@ -40,7 +41,7 @@ func (k *SimpleKeystoreProvider) GetPrivateKeyByAlias(alias string) (crypto.Priv
 	return entry, nil
 }
 
-func (k *SimpleKeystoreProvider) GetPrivateKeyByNamespaceTypeId(namespace string, keyType entity.KeyType, id int) (crypto.PrivateKey, error) {
+func (k *SimpleKeystoreProvider) GetPrivateKeyByNamespaceTypeId(namespace string, keyType symbiotic.KeyType, id int) (crypto.PrivateKey, error) {
 	alias, err := ToAlias(namespace, keyType, id)
 	if err != nil {
 		return nil, err
@@ -61,7 +62,7 @@ func (k *SimpleKeystoreProvider) GetPrivateKeyByNamespaceTypeId(namespace string
 	return key, nil
 }
 
-func (k *SimpleKeystoreProvider) HasKey(keyTag entity.KeyTag) (bool, error) {
+func (k *SimpleKeystoreProvider) HasKey(keyTag symbiotic.KeyTag) (bool, error) {
 	alias, err := KeyTagToAlias(keyTag)
 	if err != nil {
 		return false, err
@@ -79,7 +80,7 @@ func (k *SimpleKeystoreProvider) HasKeyByAlias(alias string) (bool, error) {
 	return ok, nil
 }
 
-func (k *SimpleKeystoreProvider) HasKeyByNamespaceTypeId(namespace string, keyType entity.KeyType, id int) (bool, error) {
+func (k *SimpleKeystoreProvider) HasKeyByNamespaceTypeId(namespace string, keyType symbiotic.KeyType, id int) (bool, error) {
 	alias, err := ToAlias(namespace, keyType, id)
 	if err != nil {
 		return false, err
@@ -87,7 +88,7 @@ func (k *SimpleKeystoreProvider) HasKeyByNamespaceTypeId(namespace string, keyTy
 	return k.HasKeyByAlias(alias)
 }
 
-func (k *SimpleKeystoreProvider) AddKey(keyTag entity.KeyTag, privateKey crypto.PrivateKey) error {
+func (k *SimpleKeystoreProvider) AddKey(keyTag symbiotic.KeyTag, privateKey crypto.PrivateKey) error {
 	k.mu.Lock()
 	defer k.mu.Unlock()
 
@@ -101,7 +102,7 @@ func (k *SimpleKeystoreProvider) AddKey(keyTag entity.KeyTag, privateKey crypto.
 	return nil
 }
 
-func (k *SimpleKeystoreProvider) AddKeyByNamespaceTypeId(ns string, tp entity.KeyType, id int, privateKey crypto.PrivateKey) error {
+func (k *SimpleKeystoreProvider) AddKeyByNamespaceTypeId(ns string, tp symbiotic.KeyType, id int, privateKey crypto.PrivateKey) error {
 	k.mu.Lock()
 	defer k.mu.Unlock()
 
@@ -115,7 +116,7 @@ func (k *SimpleKeystoreProvider) AddKeyByNamespaceTypeId(ns string, tp entity.Ke
 	return nil
 }
 
-func (k *SimpleKeystoreProvider) DeleteKey(keyTag entity.KeyTag) error {
+func (k *SimpleKeystoreProvider) DeleteKey(keyTag symbiotic.KeyTag) error {
 	k.mu.Lock()
 	defer k.mu.Unlock()
 

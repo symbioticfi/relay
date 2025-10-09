@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	proof2 "github.com/symbioticfi/relay/pkg/proof"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator/blsBn254Simple"
 	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator/blsBn254ZK"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
@@ -63,7 +63,7 @@ func TestSimpleAggregatorExtraData(t *testing.T) {
 	valset, keyTag := genExtraDataTest(t)
 	agg, err := blsBn254Simple.NewAggregator()
 	require.NoError(t, err)
-	data, err := agg.GenerateExtraData(valset, []entity.KeyTag{keyTag})
+	data, err := agg.GenerateExtraData(valset, []symbiotic.KeyTag{keyTag})
 	require.NoError(t, err)
 	expected := [][]string{
 		{
@@ -88,7 +88,7 @@ func TestAggregatorZKExtraData(t *testing.T) {
 	prover := proof2.NewZkProver("circuits")
 	agg, err := blsBn254ZK.NewAggregator(prover)
 	require.NoError(t, err)
-	data, err := agg.GenerateExtraData(valset, []entity.KeyTag{keyTag})
+	data, err := agg.GenerateExtraData(valset, []symbiotic.KeyTag{keyTag})
 	require.NoError(t, err)
 	expected := [][]string{
 		{
@@ -128,18 +128,18 @@ func TestZkAggregator(t *testing.T) {
 	}
 }
 
-func genExtraDataTest(t *testing.T) (entity.ValidatorSet, entity.KeyTag) {
+func genExtraDataTest(t *testing.T) (symbiotic.ValidatorSet, symbiotic.KeyTag) {
 	t.Helper()
-	valset := entity.ValidatorSet{}
+	valset := symbiotic.ValidatorSet{}
 	pksHex := []string{"3d49215a0647a140dbc5e199ee896bfd075f7444ff6c3b13ade0eb014d4a83", "0fc6313bf6a88f31475108677cab0fa54be50e3025444b77043c89502ee49d79", "23059516e460695291d5dcc94361a5f67ce01bf027142c650b06773ef9a08311"}
 	pks2Hex := []string{"29af2884cac3904eb71c5fd2e9dfbec69870cfb659f30aa2c1fb187c6cf6f96c", "1a6687dbf130e536cdfe7194fac593e927e8dd12eef2f7b929777b37e9a07cb4", "013ee8da42bfd9e45e6b19dc4df341c5cf449e9f5d2fd78f8fbbcef126d05281"}
 
 	require.Len(t, pksHex, len(pks2Hex))
 	numValidators := len(pksHex)
 	pks := make([]crypto.PrivateKey, len(pksHex))
-	keyTag := entity.KeyTag(1)
+	keyTag := symbiotic.KeyTag(1)
 
-	valset.Validators = make([]entity.Validator, numValidators)
+	valset.Validators = make([]symbiotic.Validator, numValidators)
 	for i := 0; i < len(pksHex); i++ {
 		var err error
 		decodeString, err := hex.DecodeString(pksHex[i])
@@ -149,7 +149,7 @@ func genExtraDataTest(t *testing.T) (entity.ValidatorSet, entity.KeyTag) {
 
 		pks[i] = pk
 
-		valset.Validators[i].Keys = []entity.ValidatorKey{
+		valset.Validators[i].Keys = []symbiotic.ValidatorKey{
 			{
 				Tag:     keyTag,
 				Payload: pks[i].PublicKey().OnChain(),
@@ -165,10 +165,10 @@ func genExtraDataTest(t *testing.T) (entity.ValidatorSet, entity.KeyTag) {
 
 		valset.Validators[i].Operator = crypto2.PubkeyToAddress(pkEcdsa.PublicKey)
 		valset.Validators[i].IsActive = true
-		valset.Validators[i].VotingPower = entity.ToVotingPower(big.NewInt(100))
+		valset.Validators[i].VotingPower = symbiotic.ToVotingPower(big.NewInt(100))
 	}
 
-	valset.QuorumThreshold = entity.ToVotingPower(big.NewInt(int64(100 * (len(pksHex)))))
+	valset.QuorumThreshold = symbiotic.ToVotingPower(big.NewInt(int64(100 * (len(pksHex)))))
 	valset.RequiredKeyTag = keyTag
 
 	valset.Validators.SortByOperatorAddressAsc()
@@ -176,13 +176,13 @@ func genExtraDataTest(t *testing.T) (entity.ValidatorSet, entity.KeyTag) {
 	return valset, keyTag
 }
 
-func genCorrectTest(numValidators int, nonSigners []int) (entity.ValidatorSet, []entity.SignatureExtended, entity.KeyTag) {
-	valset := entity.ValidatorSet{}
-	signatures := make([]entity.SignatureExtended, 0)
+func genCorrectTest(numValidators int, nonSigners []int) (symbiotic.ValidatorSet, []symbiotic.SignatureExtended, symbiotic.KeyTag) {
+	valset := symbiotic.ValidatorSet{}
+	signatures := make([]symbiotic.SignatureExtended, 0)
 	pks := make([]crypto.PrivateKey, numValidators)
 	msg := []byte("message")
-	keyTag := entity.KeyTag(1)
-	valset.Validators = make([]entity.Validator, numValidators)
+	keyTag := symbiotic.KeyTag(1)
+	valset.Validators = make([]symbiotic.Validator, numValidators)
 	for i := 0; i < numValidators; i++ {
 		var err error
 		pks[i], err = crypto.GeneratePrivateKey(keyTag.Type())
@@ -190,14 +190,14 @@ func genCorrectTest(numValidators int, nonSigners []int) (entity.ValidatorSet, [
 			panic(err)
 		}
 
-		valset.Validators[i].Keys = []entity.ValidatorKey{
+		valset.Validators[i].Keys = []symbiotic.ValidatorKey{
 			{
 				Tag:     keyTag,
 				Payload: pks[i].PublicKey().OnChain(),
 			},
 		}
 
-		pk2, err := crypto.GeneratePrivateKey(entity.KeyTypeEcdsaSecp256k1)
+		pk2, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeEcdsaSecp256k1)
 		if err != nil {
 			panic(err)
 		}
@@ -208,10 +208,10 @@ func genCorrectTest(numValidators int, nonSigners []int) (entity.ValidatorSet, [
 		}
 		valset.Validators[i].Operator = crypto2.PubkeyToAddress(pkEcdsa.PublicKey)
 		valset.Validators[i].IsActive = true
-		valset.Validators[i].VotingPower = entity.ToVotingPower(big.NewInt(100))
+		valset.Validators[i].VotingPower = symbiotic.ToVotingPower(big.NewInt(100))
 	}
 
-	valset.QuorumThreshold = entity.ToVotingPower(big.NewInt(int64(100 * (numValidators - len(nonSigners)))))
+	valset.QuorumThreshold = symbiotic.ToVotingPower(big.NewInt(int64(100 * (numValidators - len(nonSigners)))))
 	valset.RequiredKeyTag = keyTag
 
 	valset.Validators.SortByOperatorAddressAsc()
@@ -229,7 +229,7 @@ func genCorrectTest(numValidators int, nonSigners []int) (entity.ValidatorSet, [
 		if err != nil {
 			panic(err)
 		}
-		signatures = append(signatures, entity.SignatureExtended{
+		signatures = append(signatures, symbiotic.SignatureExtended{
 			MessageHash: msgHash,
 			KeyTag:      keyTag,
 			Epoch:       1,

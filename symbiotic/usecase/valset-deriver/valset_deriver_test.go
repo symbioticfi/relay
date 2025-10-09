@@ -12,65 +12,64 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/ssz"
-
-	"github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver/mocks"
 )
 
 func TestDeriver_calcQuorumThreshold(t *testing.T) {
 	tests := []struct {
 		name           string
-		config         entity.NetworkConfig
-		totalVP        entity.VotingPower
+		config         symbiotic.NetworkConfig
+		totalVP        symbiotic.VotingPower
 		expectedQuorum *big.Int
 		expectError    error
 	}{
 		{
 			name: "valid quorum threshold calculation",
-			config: entity.NetworkConfig{
+			config: symbiotic.NetworkConfig{
 				RequiredHeaderKeyTag: 15,
-				QuorumThresholds: []entity.QuorumThreshold{
+				QuorumThresholds: []symbiotic.QuorumThreshold{
 					{
 						KeyTag:          15,
-						QuorumThreshold: entity.ToQuorumThresholdPct(big.NewInt(670000000000000000)), // 67%
+						QuorumThreshold: symbiotic.ToQuorumThresholdPct(big.NewInt(670000000000000000)), // 67%
 					},
 				},
 			},
-			totalVP:        entity.ToVotingPower(big.NewInt(1000)),
+			totalVP:        symbiotic.ToVotingPower(big.NewInt(1000)),
 			expectedQuorum: big.NewInt(1000*.67 + 1), // (1000 * 67% + 1)
 			expectError:    nil,
 		},
 		{
 			name: "zero quorum threshold should error",
-			config: entity.NetworkConfig{
+			config: symbiotic.NetworkConfig{
 				RequiredHeaderKeyTag: 15,
-				QuorumThresholds: []entity.QuorumThreshold{
+				QuorumThresholds: []symbiotic.QuorumThreshold{
 					{
 						KeyTag:          16,
-						QuorumThreshold: entity.ToQuorumThresholdPct(big.NewInt(670000000000000000)),
+						QuorumThreshold: symbiotic.ToQuorumThresholdPct(big.NewInt(670000000000000000)),
 					},
 				},
 			},
-			totalVP:     entity.ToVotingPower(big.NewInt(1000)),
+			totalVP:     symbiotic.ToVotingPower(big.NewInt(1000)),
 			expectError: errors.New("quorum threshold is zero"),
 		},
 		{
 			name: "multiple thresholds - correct key selected",
-			config: entity.NetworkConfig{
+			config: symbiotic.NetworkConfig{
 				RequiredHeaderKeyTag: 15,
-				QuorumThresholds: []entity.QuorumThreshold{
+				QuorumThresholds: []symbiotic.QuorumThreshold{
 					{
 						KeyTag:          16,
-						QuorumThreshold: entity.ToQuorumThresholdPct(big.NewInt(500000000000000000)),
+						QuorumThreshold: symbiotic.ToQuorumThresholdPct(big.NewInt(500000000000000000)),
 					},
 					{
 						KeyTag:          15,
-						QuorumThreshold: entity.ToQuorumThresholdPct(big.NewInt(750000000000000000)), // 75%
+						QuorumThreshold: symbiotic.ToQuorumThresholdPct(big.NewInt(750000000000000000)), // 75%
 					},
 				},
 			},
-			totalVP:        entity.ToVotingPower(big.NewInt(2000)),
+			totalVP:        symbiotic.ToVotingPower(big.NewInt(2000)),
 			expectedQuorum: big.NewInt(2000*.75 + 1), // (2000 * 75% + 1)
 			expectError:    nil,
 		},
@@ -95,53 +94,53 @@ func TestDeriver_fillValidators(t *testing.T) {
 	tests := []struct {
 		name         string
 		votingPowers []dtoOperatorVotingPower
-		keys         []entity.OperatorWithKeys
-		expected     entity.Validators
+		keys         []symbiotic.OperatorWithKeys
+		expected     symbiotic.Validators
 	}{
 		{
 			name: "single operator with voting power and keys",
 			votingPowers: []dtoOperatorVotingPower{
 				{
 					chainId: 1,
-					votingPowers: []entity.OperatorVotingPower{
+					votingPowers: []symbiotic.OperatorVotingPower{
 						{
 							Operator: common.HexToAddress("0x123"),
-							Vaults: []entity.VaultVotingPower{
+							Vaults: []symbiotic.VaultVotingPower{
 								{
 									Vault:       common.HexToAddress("0x456"),
-									VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+									VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
 								},
 							},
 						},
 					},
 				},
 			},
-			keys: []entity.OperatorWithKeys{
+			keys: []symbiotic.OperatorWithKeys{
 				{
 					Operator: common.HexToAddress("0x123"),
-					Keys: []entity.ValidatorKey{
+					Keys: []symbiotic.ValidatorKey{
 						{
-							Tag:     entity.KeyTag(15),
-							Payload: entity.CompactPublicKey("key1"),
+							Tag:     symbiotic.KeyTag(15),
+							Payload: symbiotic.CompactPublicKey("key1"),
 						},
 					},
 				},
 			},
-			expected: entity.Validators{
+			expected: symbiotic.Validators{
 				{
 					Operator:    common.HexToAddress("0x123"),
-					VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
 					IsActive:    false,
-					Keys: []entity.ValidatorKey{
+					Keys: []symbiotic.ValidatorKey{
 						{
-							Tag:     entity.KeyTag(15),
-							Payload: entity.CompactPublicKey("key1"),
+							Tag:     symbiotic.KeyTag(15),
+							Payload: symbiotic.CompactPublicKey("key1"),
 						},
 					},
-					Vaults: []entity.ValidatorVault{
+					Vaults: []symbiotic.ValidatorVault{
 						{
 							Vault:       common.HexToAddress("0x456"),
-							VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+							VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
 							ChainID:     1,
 						},
 					},
@@ -153,54 +152,54 @@ func TestDeriver_fillValidators(t *testing.T) {
 			votingPowers: []dtoOperatorVotingPower{
 				{
 					chainId: 1,
-					votingPowers: []entity.OperatorVotingPower{
+					votingPowers: []symbiotic.OperatorVotingPower{
 						{
 							Operator: common.HexToAddress("0x123"),
-							Vaults: []entity.VaultVotingPower{
+							Vaults: []symbiotic.VaultVotingPower{
 								{
 									Vault:       common.HexToAddress("0x456"),
-									VotingPower: entity.ToVotingPower(big.NewInt(500)),
+									VotingPower: symbiotic.ToVotingPower(big.NewInt(500)),
 								},
 								{
 									Vault:       common.HexToAddress("0x789"),
-									VotingPower: entity.ToVotingPower(big.NewInt(300)),
+									VotingPower: symbiotic.ToVotingPower(big.NewInt(300)),
 								},
 							},
 						},
 					},
 				},
 			},
-			keys: []entity.OperatorWithKeys{
+			keys: []symbiotic.OperatorWithKeys{
 				{
 					Operator: common.HexToAddress("0x123"),
-					Keys: []entity.ValidatorKey{
+					Keys: []symbiotic.ValidatorKey{
 						{
-							Tag:     entity.KeyTag(15),
-							Payload: entity.CompactPublicKey("key1"),
+							Tag:     symbiotic.KeyTag(15),
+							Payload: symbiotic.CompactPublicKey("key1"),
 						},
 					},
 				},
 			},
-			expected: entity.Validators{
+			expected: symbiotic.Validators{
 				{
 					Operator:    common.HexToAddress("0x123"),
-					VotingPower: entity.ToVotingPower(big.NewInt(800)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(800)),
 					IsActive:    false,
-					Keys: []entity.ValidatorKey{
+					Keys: []symbiotic.ValidatorKey{
 						{
-							Tag:     entity.KeyTag(15),
-							Payload: entity.CompactPublicKey("key1"),
+							Tag:     symbiotic.KeyTag(15),
+							Payload: symbiotic.CompactPublicKey("key1"),
 						},
 					},
-					Vaults: []entity.ValidatorVault{
+					Vaults: []symbiotic.ValidatorVault{
 						{
 							Vault:       common.HexToAddress("0x456"),
-							VotingPower: entity.ToVotingPower(big.NewInt(500)),
+							VotingPower: symbiotic.ToVotingPower(big.NewInt(500)),
 							ChainID:     1,
 						},
 						{
 							Vault:       common.HexToAddress("0x789"),
-							VotingPower: entity.ToVotingPower(big.NewInt(300)),
+							VotingPower: symbiotic.ToVotingPower(big.NewInt(300)),
 							ChainID:     1,
 						},
 					},
@@ -212,81 +211,81 @@ func TestDeriver_fillValidators(t *testing.T) {
 			votingPowers: []dtoOperatorVotingPower{
 				{
 					chainId: 1,
-					votingPowers: []entity.OperatorVotingPower{
+					votingPowers: []symbiotic.OperatorVotingPower{
 						{
 							Operator: common.HexToAddress("0x123"),
-							Vaults: []entity.VaultVotingPower{
+							Vaults: []symbiotic.VaultVotingPower{
 								{
 									Vault:       common.HexToAddress("0x456"),
-									VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+									VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
 								},
 							},
 						},
 						{
 							Operator: common.HexToAddress("0xabc"),
-							Vaults: []entity.VaultVotingPower{
+							Vaults: []symbiotic.VaultVotingPower{
 								{
 									Vault:       common.HexToAddress("0xdef"),
-									VotingPower: entity.ToVotingPower(big.NewInt(2000)),
+									VotingPower: symbiotic.ToVotingPower(big.NewInt(2000)),
 								},
 							},
 						},
 					},
 				},
 			},
-			keys: []entity.OperatorWithKeys{
+			keys: []symbiotic.OperatorWithKeys{
 				{
 					Operator: common.HexToAddress("0x123"),
-					Keys: []entity.ValidatorKey{
+					Keys: []symbiotic.ValidatorKey{
 						{
-							Tag:     entity.KeyTag(15),
-							Payload: entity.CompactPublicKey("key1"),
+							Tag:     symbiotic.KeyTag(15),
+							Payload: symbiotic.CompactPublicKey("key1"),
 						},
 					},
 				},
 				{
 					Operator: common.HexToAddress("0xabc"),
-					Keys: []entity.ValidatorKey{
+					Keys: []symbiotic.ValidatorKey{
 						{
-							Tag:     entity.KeyTag(16),
-							Payload: entity.CompactPublicKey("key2"),
+							Tag:     symbiotic.KeyTag(16),
+							Payload: symbiotic.CompactPublicKey("key2"),
 						},
 					},
 				},
 			},
-			expected: entity.Validators{
+			expected: symbiotic.Validators{
 				{
 					Operator:    common.HexToAddress("0x123"),
-					VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
 					IsActive:    false,
-					Keys: []entity.ValidatorKey{
+					Keys: []symbiotic.ValidatorKey{
 						{
-							Tag:     entity.KeyTag(15),
-							Payload: entity.CompactPublicKey("key1"),
+							Tag:     symbiotic.KeyTag(15),
+							Payload: symbiotic.CompactPublicKey("key1"),
 						},
 					},
-					Vaults: []entity.ValidatorVault{
+					Vaults: []symbiotic.ValidatorVault{
 						{
 							Vault:       common.HexToAddress("0x456"),
-							VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+							VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
 							ChainID:     1,
 						},
 					},
 				},
 				{
 					Operator:    common.HexToAddress("0xabc"),
-					VotingPower: entity.ToVotingPower(big.NewInt(2000)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(2000)),
 					IsActive:    false,
-					Keys: []entity.ValidatorKey{
+					Keys: []symbiotic.ValidatorKey{
 						{
-							Tag:     entity.KeyTag(16),
-							Payload: entity.CompactPublicKey("key2"),
+							Tag:     symbiotic.KeyTag(16),
+							Payload: symbiotic.CompactPublicKey("key2"),
 						},
 					},
-					Vaults: []entity.ValidatorVault{
+					Vaults: []symbiotic.ValidatorVault{
 						{
 							Vault:       common.HexToAddress("0xdef"),
-							VotingPower: entity.ToVotingPower(big.NewInt(2000)),
+							VotingPower: symbiotic.ToVotingPower(big.NewInt(2000)),
 							ChainID:     1,
 						},
 					},
@@ -298,30 +297,30 @@ func TestDeriver_fillValidators(t *testing.T) {
 			votingPowers: []dtoOperatorVotingPower{
 				{
 					chainId: 1,
-					votingPowers: []entity.OperatorVotingPower{
+					votingPowers: []symbiotic.OperatorVotingPower{
 						{
 							Operator: common.HexToAddress("0x123"),
-							Vaults: []entity.VaultVotingPower{
+							Vaults: []symbiotic.VaultVotingPower{
 								{
 									Vault:       common.HexToAddress("0x456"),
-									VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+									VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
 								},
 							},
 						},
 					},
 				},
 			},
-			keys: []entity.OperatorWithKeys{},
-			expected: entity.Validators{
+			keys: []symbiotic.OperatorWithKeys{},
+			expected: symbiotic.Validators{
 				{
 					Operator:    common.HexToAddress("0x123"),
-					VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
 					IsActive:    false,
-					Keys:        []entity.ValidatorKey{},
-					Vaults: []entity.ValidatorVault{
+					Keys:        []symbiotic.ValidatorKey{},
+					Vaults: []symbiotic.ValidatorVault{
 						{
 							Vault:       common.HexToAddress("0x456"),
-							VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+							VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
 							ChainID:     1,
 						},
 					},
@@ -333,13 +332,13 @@ func TestDeriver_fillValidators(t *testing.T) {
 			votingPowers: []dtoOperatorVotingPower{
 				{
 					chainId: 1,
-					votingPowers: []entity.OperatorVotingPower{
+					votingPowers: []symbiotic.OperatorVotingPower{
 						{
 							Operator: common.HexToAddress("0x123"),
-							Vaults: []entity.VaultVotingPower{
+							Vaults: []symbiotic.VaultVotingPower{
 								{
 									Vault:       common.HexToAddress("0x456"),
-									VotingPower: entity.ToVotingPower(big.NewInt(500)),
+									VotingPower: symbiotic.ToVotingPower(big.NewInt(500)),
 								},
 							},
 						},
@@ -347,50 +346,50 @@ func TestDeriver_fillValidators(t *testing.T) {
 				},
 				{
 					chainId: 137,
-					votingPowers: []entity.OperatorVotingPower{
+					votingPowers: []symbiotic.OperatorVotingPower{
 						{
 							Operator: common.HexToAddress("0x123"),
-							Vaults: []entity.VaultVotingPower{
+							Vaults: []symbiotic.VaultVotingPower{
 								{
 									Vault:       common.HexToAddress("0x789"),
-									VotingPower: entity.ToVotingPower(big.NewInt(300)),
+									VotingPower: symbiotic.ToVotingPower(big.NewInt(300)),
 								},
 							},
 						},
 					},
 				},
 			},
-			keys: []entity.OperatorWithKeys{
+			keys: []symbiotic.OperatorWithKeys{
 				{
 					Operator: common.HexToAddress("0x123"),
-					Keys: []entity.ValidatorKey{
+					Keys: []symbiotic.ValidatorKey{
 						{
-							Tag:     entity.KeyTag(15),
-							Payload: entity.CompactPublicKey("key1"),
+							Tag:     symbiotic.KeyTag(15),
+							Payload: symbiotic.CompactPublicKey("key1"),
 						},
 					},
 				},
 			},
-			expected: entity.Validators{
+			expected: symbiotic.Validators{
 				{
 					Operator:    common.HexToAddress("0x123"),
-					VotingPower: entity.ToVotingPower(big.NewInt(800)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(800)),
 					IsActive:    false,
-					Keys: []entity.ValidatorKey{
+					Keys: []symbiotic.ValidatorKey{
 						{
-							Tag:     entity.KeyTag(15),
-							Payload: entity.CompactPublicKey("key1"),
+							Tag:     symbiotic.KeyTag(15),
+							Payload: symbiotic.CompactPublicKey("key1"),
 						},
 					},
-					Vaults: []entity.ValidatorVault{
+					Vaults: []symbiotic.ValidatorVault{
 						{
 							Vault:       common.HexToAddress("0x456"),
-							VotingPower: entity.ToVotingPower(big.NewInt(500)),
+							VotingPower: symbiotic.ToVotingPower(big.NewInt(500)),
 							ChainID:     1,
 						},
 						{
 							Vault:       common.HexToAddress("0x789"),
-							VotingPower: entity.ToVotingPower(big.NewInt(300)),
+							VotingPower: symbiotic.ToVotingPower(big.NewInt(300)),
 							ChainID:     137,
 						},
 					},
@@ -400,8 +399,8 @@ func TestDeriver_fillValidators(t *testing.T) {
 		{
 			name:         "empty inputs",
 			votingPowers: []dtoOperatorVotingPower{},
-			keys:         []entity.OperatorWithKeys{},
-			expected:     entity.Validators{},
+			keys:         []symbiotic.OperatorWithKeys{},
+			expected:     symbiotic.Validators{},
 		},
 	}
 
@@ -432,8 +431,8 @@ func TestDeriver_fillValidators(t *testing.T) {
 func TestDeriver_fillValidatorsActive(t *testing.T) {
 	tests := []struct {
 		name                       string
-		config                     entity.NetworkConfig
-		validators                 entity.Validators
+		config                     symbiotic.NetworkConfig
+		validators                 symbiotic.Validators
 		expectedTotalVotingPower   *big.Int
 		expectedActiveValidators   []common.Address    // operator addresses that should be active
 		expectedInactiveValidators []common.Address    // operator addresses that should be inactive
@@ -441,34 +440,34 @@ func TestDeriver_fillValidatorsActive(t *testing.T) {
 	}{
 		{
 			name: "basic activation with minimum voting power",
-			config: entity.NetworkConfig{
-				MinInclusionVotingPower: entity.ToVotingPower(big.NewInt(100)),
-				MaxVotingPower:          entity.ToVotingPower(big.NewInt(0)), // no max limit
-				MaxValidatorsCount:      entity.ToVotingPower(big.NewInt(0)), // no max count
+			config: symbiotic.NetworkConfig{
+				MinInclusionVotingPower: symbiotic.ToVotingPower(big.NewInt(100)),
+				MaxVotingPower:          symbiotic.ToVotingPower(big.NewInt(0)), // no max limit
+				MaxValidatorsCount:      symbiotic.ToVotingPower(big.NewInt(0)), // no max count
 			},
-			validators: entity.Validators{
+			validators: symbiotic.Validators{
 				{
 					Operator:    common.HexToAddress("0x123"),
-					VotingPower: entity.ToVotingPower(big.NewInt(500)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(500)),
 					IsActive:    false,
-					Keys: []entity.ValidatorKey{
-						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key1")},
+					Keys: []symbiotic.ValidatorKey{
+						{Tag: symbiotic.KeyTag(15), Payload: symbiotic.CompactPublicKey("key1")},
 					},
 				},
 				{
 					Operator:    common.HexToAddress("0x456"),
-					VotingPower: entity.ToVotingPower(big.NewInt(200)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(200)),
 					IsActive:    false,
-					Keys: []entity.ValidatorKey{
-						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key2")},
+					Keys: []symbiotic.ValidatorKey{
+						{Tag: symbiotic.KeyTag(15), Payload: symbiotic.CompactPublicKey("key2")},
 					},
 				},
 				{
 					Operator:    common.HexToAddress("0x789"),
-					VotingPower: entity.ToVotingPower(big.NewInt(50)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(50)),
 					IsActive:    false,
-					Keys: []entity.ValidatorKey{
-						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key3")},
+					Keys: []symbiotic.ValidatorKey{
+						{Tag: symbiotic.KeyTag(15), Payload: symbiotic.CompactPublicKey("key3")},
 					},
 				},
 			},
@@ -483,25 +482,25 @@ func TestDeriver_fillValidatorsActive(t *testing.T) {
 		},
 		{
 			name: "validator without keys should be inactive",
-			config: entity.NetworkConfig{
-				MinInclusionVotingPower: entity.ToVotingPower(big.NewInt(100)),
-				MaxVotingPower:          entity.ToVotingPower(big.NewInt(0)),
-				MaxValidatorsCount:      entity.ToVotingPower(big.NewInt(0)),
+			config: symbiotic.NetworkConfig{
+				MinInclusionVotingPower: symbiotic.ToVotingPower(big.NewInt(100)),
+				MaxVotingPower:          symbiotic.ToVotingPower(big.NewInt(0)),
+				MaxValidatorsCount:      symbiotic.ToVotingPower(big.NewInt(0)),
 			},
-			validators: entity.Validators{
+			validators: symbiotic.Validators{
 				{
 					Operator:    common.HexToAddress("0x123"),
-					VotingPower: entity.ToVotingPower(big.NewInt(500)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(500)),
 					IsActive:    false,
-					Keys: []entity.ValidatorKey{
-						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key1")},
+					Keys: []symbiotic.ValidatorKey{
+						{Tag: symbiotic.KeyTag(15), Payload: symbiotic.CompactPublicKey("key1")},
 					},
 				},
 				{
 					Operator:    common.HexToAddress("0x456"),
-					VotingPower: entity.ToVotingPower(big.NewInt(300)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(300)),
 					IsActive:    false,
-					Keys:        []entity.ValidatorKey{}, // no keys
+					Keys:        []symbiotic.ValidatorKey{}, // no keys
 				},
 			},
 			expectedTotalVotingPower:   big.NewInt(500),
@@ -514,26 +513,26 @@ func TestDeriver_fillValidatorsActive(t *testing.T) {
 		},
 		{
 			name: "max voting power capping",
-			config: entity.NetworkConfig{
-				MinInclusionVotingPower: entity.ToVotingPower(big.NewInt(100)),
-				MaxVotingPower:          entity.ToVotingPower(big.NewInt(400)),
-				MaxValidatorsCount:      entity.ToVotingPower(big.NewInt(0)),
+			config: symbiotic.NetworkConfig{
+				MinInclusionVotingPower: symbiotic.ToVotingPower(big.NewInt(100)),
+				MaxVotingPower:          symbiotic.ToVotingPower(big.NewInt(400)),
+				MaxValidatorsCount:      symbiotic.ToVotingPower(big.NewInt(0)),
 			},
-			validators: entity.Validators{
+			validators: symbiotic.Validators{
 				{
 					Operator:    common.HexToAddress("0x123"),
-					VotingPower: entity.ToVotingPower(big.NewInt(600)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(600)),
 					IsActive:    false,
-					Keys: []entity.ValidatorKey{
-						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key1")},
+					Keys: []symbiotic.ValidatorKey{
+						{Tag: symbiotic.KeyTag(15), Payload: symbiotic.CompactPublicKey("key1")},
 					},
 				},
 				{
 					Operator:    common.HexToAddress("0x456"),
-					VotingPower: entity.ToVotingPower(big.NewInt(200)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(200)),
 					IsActive:    false,
-					Keys: []entity.ValidatorKey{
-						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key2")},
+					Keys: []symbiotic.ValidatorKey{
+						{Tag: symbiotic.KeyTag(15), Payload: symbiotic.CompactPublicKey("key2")},
 					},
 				},
 			},
@@ -546,34 +545,34 @@ func TestDeriver_fillValidatorsActive(t *testing.T) {
 		},
 		{
 			name: "max validators count limit",
-			config: entity.NetworkConfig{
-				MinInclusionVotingPower: entity.ToVotingPower(big.NewInt(100)),
-				MaxVotingPower:          entity.ToVotingPower(big.NewInt(0)),
-				MaxValidatorsCount:      entity.ToVotingPower(big.NewInt(2)),
+			config: symbiotic.NetworkConfig{
+				MinInclusionVotingPower: symbiotic.ToVotingPower(big.NewInt(100)),
+				MaxVotingPower:          symbiotic.ToVotingPower(big.NewInt(0)),
+				MaxValidatorsCount:      symbiotic.ToVotingPower(big.NewInt(2)),
 			},
-			validators: entity.Validators{
+			validators: symbiotic.Validators{
 				{
 					Operator:    common.HexToAddress("0x123"),
-					VotingPower: entity.ToVotingPower(big.NewInt(500)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(500)),
 					IsActive:    false,
-					Keys: []entity.ValidatorKey{
-						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key1")},
+					Keys: []symbiotic.ValidatorKey{
+						{Tag: symbiotic.KeyTag(15), Payload: symbiotic.CompactPublicKey("key1")},
 					},
 				},
 				{
 					Operator:    common.HexToAddress("0x456"),
-					VotingPower: entity.ToVotingPower(big.NewInt(400)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(400)),
 					IsActive:    false,
-					Keys: []entity.ValidatorKey{
-						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key2")},
+					Keys: []symbiotic.ValidatorKey{
+						{Tag: symbiotic.KeyTag(15), Payload: symbiotic.CompactPublicKey("key2")},
 					},
 				},
 				{
 					Operator:    common.HexToAddress("0x789"),
-					VotingPower: entity.ToVotingPower(big.NewInt(300)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(300)),
 					IsActive:    false,
-					Keys: []entity.ValidatorKey{
-						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key3")},
+					Keys: []symbiotic.ValidatorKey{
+						{Tag: symbiotic.KeyTag(15), Payload: symbiotic.CompactPublicKey("key3")},
 					},
 				},
 			},
@@ -588,42 +587,42 @@ func TestDeriver_fillValidatorsActive(t *testing.T) {
 		},
 		{
 			name: "combined constraints - min power, max power, max count",
-			config: entity.NetworkConfig{
-				MinInclusionVotingPower: entity.ToVotingPower(big.NewInt(150)),
-				MaxVotingPower:          entity.ToVotingPower(big.NewInt(350)),
-				MaxValidatorsCount:      entity.ToVotingPower(big.NewInt(2)),
+			config: symbiotic.NetworkConfig{
+				MinInclusionVotingPower: symbiotic.ToVotingPower(big.NewInt(150)),
+				MaxVotingPower:          symbiotic.ToVotingPower(big.NewInt(350)),
+				MaxValidatorsCount:      symbiotic.ToVotingPower(big.NewInt(2)),
 			},
-			validators: entity.Validators{
+			validators: symbiotic.Validators{
 				{
 					Operator:    common.HexToAddress("0x123"),
-					VotingPower: entity.ToVotingPower(big.NewInt(500)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(500)),
 					IsActive:    false,
-					Keys: []entity.ValidatorKey{
-						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key1")},
+					Keys: []symbiotic.ValidatorKey{
+						{Tag: symbiotic.KeyTag(15), Payload: symbiotic.CompactPublicKey("key1")},
 					},
 				},
 				{
 					Operator:    common.HexToAddress("0x456"),
-					VotingPower: entity.ToVotingPower(big.NewInt(200)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(200)),
 					IsActive:    false,
-					Keys: []entity.ValidatorKey{
-						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key2")},
+					Keys: []symbiotic.ValidatorKey{
+						{Tag: symbiotic.KeyTag(15), Payload: symbiotic.CompactPublicKey("key2")},
 					},
 				},
 				{
 					Operator:    common.HexToAddress("0x789"),
-					VotingPower: entity.ToVotingPower(big.NewInt(180)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(180)),
 					IsActive:    false,
-					Keys: []entity.ValidatorKey{
-						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key3")},
+					Keys: []symbiotic.ValidatorKey{
+						{Tag: symbiotic.KeyTag(15), Payload: symbiotic.CompactPublicKey("key3")},
 					},
 				},
 				{
 					Operator:    common.HexToAddress("0xabc"),
-					VotingPower: entity.ToVotingPower(big.NewInt(100)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(100)),
 					IsActive:    false,
-					Keys: []entity.ValidatorKey{
-						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key4")},
+					Keys: []symbiotic.ValidatorKey{
+						{Tag: symbiotic.KeyTag(15), Payload: symbiotic.CompactPublicKey("key4")},
 					},
 				},
 			},
@@ -639,18 +638,18 @@ func TestDeriver_fillValidatorsActive(t *testing.T) {
 		},
 		{
 			name: "no validators meet criteria",
-			config: entity.NetworkConfig{
-				MinInclusionVotingPower: entity.ToVotingPower(big.NewInt(1000)),
-				MaxVotingPower:          entity.ToVotingPower(big.NewInt(0)),
-				MaxValidatorsCount:      entity.ToVotingPower(big.NewInt(0)),
+			config: symbiotic.NetworkConfig{
+				MinInclusionVotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
+				MaxVotingPower:          symbiotic.ToVotingPower(big.NewInt(0)),
+				MaxValidatorsCount:      symbiotic.ToVotingPower(big.NewInt(0)),
 			},
-			validators: entity.Validators{
+			validators: symbiotic.Validators{
 				{
 					Operator:    common.HexToAddress("0x123"),
-					VotingPower: entity.ToVotingPower(big.NewInt(500)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(500)),
 					IsActive:    false,
-					Keys: []entity.ValidatorKey{
-						{Tag: entity.KeyTag(15), Payload: entity.CompactPublicKey("key1")},
+					Keys: []symbiotic.ValidatorKey{
+						{Tag: symbiotic.KeyTag(15), Payload: symbiotic.CompactPublicKey("key1")},
 					},
 				},
 			},
@@ -663,12 +662,12 @@ func TestDeriver_fillValidatorsActive(t *testing.T) {
 		},
 		{
 			name: "empty validators list",
-			config: entity.NetworkConfig{
-				MinInclusionVotingPower: entity.ToVotingPower(big.NewInt(100)),
-				MaxVotingPower:          entity.ToVotingPower(big.NewInt(0)),
-				MaxValidatorsCount:      entity.ToVotingPower(big.NewInt(0)),
+			config: symbiotic.NetworkConfig{
+				MinInclusionVotingPower: symbiotic.ToVotingPower(big.NewInt(100)),
+				MaxVotingPower:          symbiotic.ToVotingPower(big.NewInt(0)),
+				MaxValidatorsCount:      symbiotic.ToVotingPower(big.NewInt(0)),
 			},
-			validators:                 entity.Validators{},
+			validators:                 symbiotic.Validators{},
 			expectedTotalVotingPower:   big.NewInt(0),
 			expectedActiveValidators:   []common.Address{},
 			expectedInactiveValidators: []common.Address{},
@@ -679,14 +678,14 @@ func TestDeriver_fillValidatorsActive(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Make a copy of validators to avoid modifying the test data
-			validatorsCopy := make(entity.Validators, len(tt.validators))
+			validatorsCopy := make(symbiotic.Validators, len(tt.validators))
 			for i, v := range tt.validators {
-				validatorsCopy[i] = entity.Validator{
+				validatorsCopy[i] = symbiotic.Validator{
 					Operator:    v.Operator,
-					VotingPower: entity.ToVotingPower(new(big.Int).Set(v.VotingPower.Int)),
+					VotingPower: symbiotic.ToVotingPower(new(big.Int).Set(v.VotingPower.Int)),
 					IsActive:    v.IsActive,
-					Keys:        append([]entity.ValidatorKey{}, v.Keys...),
-					Vaults:      append([]entity.ValidatorVault{}, v.Vaults...),
+					Keys:        append([]symbiotic.ValidatorKey{}, v.Keys...),
+					Vaults:      append([]symbiotic.ValidatorVault{}, v.Vaults...),
 				}
 			}
 
@@ -726,8 +725,8 @@ func TestDeriver_GetNetworkData(t *testing.T) {
 	tests := []struct {
 		name       string
 		setupMocks func(evmClient *mocks.MockEvmClient)
-		addr       entity.CrossChainAddress
-		expected   entity.NetworkData
+		addr       symbiotic.CrossChainAddress
+		expected   symbiotic.NetworkData
 		errorMsg   string
 	}{
 		{
@@ -735,7 +734,7 @@ func TestDeriver_GetNetworkData(t *testing.T) {
 			setupMocks: func(m *mocks.MockEvmClient) {
 				m.EXPECT().GetNetworkAddress(gomock.Any()).Return(common.HexToAddress("0x123"), nil)
 				m.EXPECT().GetSubnetwork(gomock.Any()).Return(common.HexToHash("0x456"), nil)
-				m.EXPECT().GetEip712Domain(gomock.Any(), gomock.Any()).Return(entity.Eip712Domain{
+				m.EXPECT().GetEip712Domain(gomock.Any(), gomock.Any()).Return(symbiotic.Eip712Domain{
 					Fields:            [1]byte{},
 					Name:              "TestNetwork",
 					Version:           "1",
@@ -745,11 +744,11 @@ func TestDeriver_GetNetworkData(t *testing.T) {
 					Extensions:        []*big.Int{big.NewInt(333)},
 				}, nil)
 			},
-			addr: entity.CrossChainAddress{},
-			expected: entity.NetworkData{
+			addr: symbiotic.CrossChainAddress{},
+			expected: symbiotic.NetworkData{
 				Address:    common.HexToAddress("0x123"),
 				Subnetwork: common.HexToHash("0x456"),
-				Eip712Data: entity.Eip712Domain{
+				Eip712Data: symbiotic.Eip712Domain{
 					Fields:            [1]byte{},
 					Name:              "TestNetwork",
 					Version:           "1",
@@ -765,7 +764,7 @@ func TestDeriver_GetNetworkData(t *testing.T) {
 			setupMocks: func(m *mocks.MockEvmClient) {
 				m.EXPECT().GetNetworkAddress(gomock.Any()).Return(common.Address{}, errors.New("network address error"))
 			},
-			addr:     entity.CrossChainAddress{},
+			addr:     symbiotic.CrossChainAddress{},
 			errorMsg: "failed to get network address",
 		},
 		{
@@ -774,7 +773,7 @@ func TestDeriver_GetNetworkData(t *testing.T) {
 				m.EXPECT().GetNetworkAddress(gomock.Any()).Return(common.HexToAddress("0x123"), nil)
 				m.EXPECT().GetSubnetwork(gomock.Any()).Return(common.Hash{}, errors.New("subnetwork error"))
 			},
-			addr:     entity.CrossChainAddress{},
+			addr:     symbiotic.CrossChainAddress{},
 			errorMsg: "failed to get subnetwork",
 		},
 		{
@@ -782,9 +781,9 @@ func TestDeriver_GetNetworkData(t *testing.T) {
 			setupMocks: func(m *mocks.MockEvmClient) {
 				m.EXPECT().GetNetworkAddress(gomock.Any()).Return(common.HexToAddress("0x123"), nil)
 				m.EXPECT().GetSubnetwork(gomock.Any()).Return(common.HexToHash("0x456"), nil)
-				m.EXPECT().GetEip712Domain(gomock.Any(), gomock.Any()).Return(entity.Eip712Domain{}, errors.New("eip712 error"))
+				m.EXPECT().GetEip712Domain(gomock.Any(), gomock.Any()).Return(symbiotic.Eip712Domain{}, errors.New("eip712 error"))
 			},
-			addr:     entity.CrossChainAddress{},
+			addr:     symbiotic.CrossChainAddress{},
 			errorMsg: "failed to get eip712 domain",
 		},
 	}
@@ -830,7 +829,7 @@ func TestDeriver_fillValidators_VaultLimitExceeded(t *testing.T) {
 	)
 
 	totalVaults := ssz.VaultsListMaxElements + extraVaults
-	vaults := make([]entity.VaultVotingPower, totalVaults)
+	vaults := make([]symbiotic.VaultVotingPower, totalVaults)
 
 	// Create test vaults with different voting powers
 	for i := 0; i < totalVaults; i++ {
@@ -844,26 +843,26 @@ func TestDeriver_fillValidators_VaultLimitExceeded(t *testing.T) {
 			power = lowPower
 		}
 
-		vaults[i] = entity.VaultVotingPower{
+		vaults[i] = symbiotic.VaultVotingPower{
 			Vault:       common.HexToAddress(fmt.Sprintf("0x%040d", i+1)),
-			VotingPower: entity.ToVotingPower(big.NewInt(power)),
+			VotingPower: symbiotic.ToVotingPower(big.NewInt(power)),
 		}
 	}
 
 	// Setup test data
 	votingPowers := []dtoOperatorVotingPower{{
 		chainId: 1,
-		votingPowers: []entity.OperatorVotingPower{{
+		votingPowers: []symbiotic.OperatorVotingPower{{
 			Operator: common.HexToAddress("0x123"),
 			Vaults:   vaults,
 		}},
 	}}
 
-	keys := []entity.OperatorWithKeys{{
+	keys := []symbiotic.OperatorWithKeys{{
 		Operator: common.HexToAddress("0x123"),
-		Keys: []entity.ValidatorKey{{
-			Tag:     entity.KeyTag(15),
-			Payload: entity.CompactPublicKey("key1"),
+		Keys: []symbiotic.ValidatorKey{{
+			Tag:     symbiotic.KeyTag(15),
+			Payload: symbiotic.CompactPublicKey("key1"),
 		}},
 	}}
 
@@ -919,15 +918,15 @@ func TestDeriver_fillValidators_VaultLimitExceeded(t *testing.T) {
 		require.Equal(t, common.HexToAddress("0x123"), validator.Operator)
 		require.False(t, validator.IsActive)
 		require.Len(t, validator.Keys, 1)
-		require.Equal(t, entity.KeyTag(15), validator.Keys[0].Tag)
+		require.Equal(t, symbiotic.KeyTag(15), validator.Keys[0].Tag)
 	})
 }
 
 func TestDeriver_GetSchedulerInfo(t *testing.T) {
 	tests := []struct {
 		name                string
-		valset              entity.ValidatorSet
-		config              entity.NetworkConfig
+		valset              symbiotic.ValidatorSet
+		config              symbiotic.NetworkConfig
 		expectedAggIndices  []uint32
 		expectedCommIndices []uint32
 		expectError         bool
@@ -935,21 +934,21 @@ func TestDeriver_GetSchedulerInfo(t *testing.T) {
 	}{
 		{
 			name: "basic scheduling with 3 validators, 2 aggregators, 1 committer",
-			valset: entity.ValidatorSet{
-				Validators: entity.Validators{
+			valset: symbiotic.ValidatorSet{
+				Validators: symbiotic.Validators{
 					{
 						Operator:    common.HexToAddress("0x1111111111111111111111111111111111111111"),
-						VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+						VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
 						IsActive:    true,
 					},
 					{
 						Operator:    common.HexToAddress("0x2222222222222222222222222222222222222222"),
-						VotingPower: entity.ToVotingPower(big.NewInt(2000)),
+						VotingPower: symbiotic.ToVotingPower(big.NewInt(2000)),
 						IsActive:    true,
 					},
 					{
 						Operator:    common.HexToAddress("0x3333333333333333333333333333333333333333"),
-						VotingPower: entity.ToVotingPower(big.NewInt(1500)),
+						VotingPower: symbiotic.ToVotingPower(big.NewInt(1500)),
 						IsActive:    true,
 					},
 				},
@@ -958,7 +957,7 @@ func TestDeriver_GetSchedulerInfo(t *testing.T) {
 				Epoch:            100,
 				CaptureTimestamp: 1234567890,
 			},
-			config: entity.NetworkConfig{
+			config: symbiotic.NetworkConfig{
 				NumAggregators: 2,
 				NumCommitters:  1,
 			},
@@ -969,11 +968,11 @@ func TestDeriver_GetSchedulerInfo(t *testing.T) {
 		},
 		{
 			name: "single validator with multiple roles",
-			valset: entity.ValidatorSet{
-				Validators: entity.Validators{
+			valset: symbiotic.ValidatorSet{
+				Validators: symbiotic.Validators{
 					{
 						Operator:    common.HexToAddress("0x1111111111111111111111111111111111111111"),
-						VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+						VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
 						IsActive:    true,
 					},
 				},
@@ -982,7 +981,7 @@ func TestDeriver_GetSchedulerInfo(t *testing.T) {
 				Epoch:            50,
 				CaptureTimestamp: 1234567890,
 			},
-			config: entity.NetworkConfig{
+			config: symbiotic.NetworkConfig{
 				NumAggregators: 1,
 				NumCommitters:  1,
 			},
@@ -992,14 +991,14 @@ func TestDeriver_GetSchedulerInfo(t *testing.T) {
 		},
 		{
 			name: "empty validator set",
-			valset: entity.ValidatorSet{
-				Validators:       entity.Validators{},
+			valset: symbiotic.ValidatorSet{
+				Validators:       symbiotic.Validators{},
 				Version:          1,
 				RequiredKeyTag:   15,
 				Epoch:            100,
 				CaptureTimestamp: 1234567890,
 			},
-			config: entity.NetworkConfig{
+			config: symbiotic.NetworkConfig{
 				NumAggregators: 2,
 				NumCommitters:  1,
 			},
@@ -1009,16 +1008,16 @@ func TestDeriver_GetSchedulerInfo(t *testing.T) {
 		},
 		{
 			name: "unsorted validators should error",
-			valset: entity.ValidatorSet{
-				Validators: entity.Validators{
+			valset: symbiotic.ValidatorSet{
+				Validators: symbiotic.Validators{
 					{
 						Operator:    common.HexToAddress("0x2222222222222222222222222222222222222222"),
-						VotingPower: entity.ToVotingPower(big.NewInt(2000)),
+						VotingPower: symbiotic.ToVotingPower(big.NewInt(2000)),
 						IsActive:    true,
 					},
 					{
 						Operator:    common.HexToAddress("0x1111111111111111111111111111111111111111"),
-						VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+						VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
 						IsActive:    true,
 					},
 				},
@@ -1027,7 +1026,7 @@ func TestDeriver_GetSchedulerInfo(t *testing.T) {
 				Epoch:            100,
 				CaptureTimestamp: 1234567890,
 			},
-			config: entity.NetworkConfig{
+			config: symbiotic.NetworkConfig{
 				NumAggregators: 1,
 				NumCommitters:  1,
 			},
@@ -1058,21 +1057,21 @@ func TestDeriver_GetSchedulerInfo(t *testing.T) {
 
 func TestDeriver_GetSchedulerInfo_Deterministic(t *testing.T) {
 	// Test that GetSchedulerInfo returns consistent results for the same inputs
-	valset := entity.ValidatorSet{
-		Validators: entity.Validators{
+	valset := symbiotic.ValidatorSet{
+		Validators: symbiotic.Validators{
 			{
 				Operator:    common.HexToAddress("0x1111111111111111111111111111111111111111"),
-				VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+				VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
 				IsActive:    true,
 			},
 			{
 				Operator:    common.HexToAddress("0x2222222222222222222222222222222222222222"),
-				VotingPower: entity.ToVotingPower(big.NewInt(2000)),
+				VotingPower: symbiotic.ToVotingPower(big.NewInt(2000)),
 				IsActive:    true,
 			},
 			{
 				Operator:    common.HexToAddress("0x3333333333333333333333333333333333333333"),
-				VotingPower: entity.ToVotingPower(big.NewInt(1500)),
+				VotingPower: symbiotic.ToVotingPower(big.NewInt(1500)),
 				IsActive:    true,
 			},
 		},
@@ -1082,7 +1081,7 @@ func TestDeriver_GetSchedulerInfo_Deterministic(t *testing.T) {
 		CaptureTimestamp: 1234567890,
 	}
 
-	config := entity.NetworkConfig{
+	config := symbiotic.NetworkConfig{
 		NumAggregators: 2,
 		NumCommitters:  1,
 	}
@@ -1109,21 +1108,21 @@ func TestDeriver_GetSchedulerInfo_Deterministic(t *testing.T) {
 
 func TestDeriver_GetSchedulerInfo_VerifyRandomness(t *testing.T) {
 	// Test that different inputs produce different results
-	baseValset := entity.ValidatorSet{
-		Validators: entity.Validators{
+	baseValset := symbiotic.ValidatorSet{
+		Validators: symbiotic.Validators{
 			{
 				Operator:    common.HexToAddress("0x1111111111111111111111111111111111111111"),
-				VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+				VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
 				IsActive:    true,
 			},
 			{
 				Operator:    common.HexToAddress("0x2222222222222222222222222222222222222222"),
-				VotingPower: entity.ToVotingPower(big.NewInt(2000)),
+				VotingPower: symbiotic.ToVotingPower(big.NewInt(2000)),
 				IsActive:    true,
 			},
 			{
 				Operator:    common.HexToAddress("0x3333333333333333333333333333333333333333"),
-				VotingPower: entity.ToVotingPower(big.NewInt(1500)),
+				VotingPower: symbiotic.ToVotingPower(big.NewInt(1500)),
 				IsActive:    true,
 			},
 		},
@@ -1133,7 +1132,7 @@ func TestDeriver_GetSchedulerInfo_VerifyRandomness(t *testing.T) {
 		CaptureTimestamp: 1234567890,
 	}
 
-	config := entity.NetworkConfig{
+	config := symbiotic.NetworkConfig{
 		NumAggregators: 2,
 		NumCommitters:  1,
 	}

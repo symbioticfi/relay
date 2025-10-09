@@ -6,10 +6,11 @@ import (
 	"github.com/dgraph-io/badger/v4"
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-func (r *Repository) SaveProof(ctx context.Context, aggregationProof entity.AggregationProof) error {
+func (r *Repository) SaveProof(ctx context.Context, aggregationProof symbiotic.AggregationProof) error {
 	requestID := aggregationProof.RequestID()
 
 	err := r.saveAggregationProof(ctx, requestID, aggregationProof)

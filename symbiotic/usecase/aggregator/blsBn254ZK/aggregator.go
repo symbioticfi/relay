@@ -6,7 +6,7 @@ import (
 	"sort"
 
 	"github.com/symbioticfi/relay/pkg/proof"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	types "github.com/symbioticfi/relay/symbiotic/usecase/aggregator/aggregator-types"
 	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator/helpers"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/blsBn254"
@@ -28,13 +28,13 @@ func NewAggregator(prover types.Prover) (*Aggregator, error) {
 }
 
 func (a Aggregator) Aggregate(
-	valset entity.ValidatorSet,
-	keyTag entity.KeyTag,
+	valset symbiotic.ValidatorSet,
+	keyTag symbiotic.KeyTag,
 	messageHash []byte,
-	signatures []entity.SignatureExtended,
-) (entity.AggregationProof, error) {
+	signatures []symbiotic.SignatureExtended,
+) (symbiotic.AggregationProof, error) {
 	if !helpers.CompareMessageHasher(signatures, messageHash) {
-		return entity.AggregationProof{}, errors.New("message hashes mismatch")
+		return symbiotic.AggregationProof{}, errors.New("message hashes mismatch")
 	}
 
 	aggG1Sig := new(bn254.G1Affine)
@@ -45,11 +45,11 @@ func (a Aggregator) Aggregate(
 	for _, sig := range signatures {
 		pubKey, err := blsBn254.FromRaw(sig.PublicKey)
 		if err != nil {
-			return entity.AggregationProof{}, err
+			return symbiotic.AggregationProof{}, err
 		}
 		idx, ok := valKeysToIdx[string(pubKey.OnChain())]
 		if !ok {
-			return entity.AggregationProof{}, errors.New("failed to find validator by key")
+			return symbiotic.AggregationProof{}, errors.New("failed to find validator by key")
 		}
 		val := valset.Validators[idx]
 		if !val.IsActive {
@@ -58,7 +58,7 @@ func (a Aggregator) Aggregate(
 		g1Sig := new(bn254.G1Affine)
 		_, err = g1Sig.SetBytes(sig.Signature)
 		if err != nil {
-			return entity.AggregationProof{}, err
+			return symbiotic.AggregationProof{}, err
 		}
 		aggG1Sig = aggG1Sig.Add(aggG1Sig, g1Sig)
 		aggG2Key = aggG2Key.Add(aggG2Key, pubKey.G2())
@@ -70,13 +70,13 @@ func (a Aggregator) Aggregate(
 		if val.IsActive {
 			keyBytes, ok := val.FindKeyByKeyTag(keyTag)
 			if !ok {
-				return entity.AggregationProof{}, errors.New("failed to find key by keyTag")
+				return symbiotic.AggregationProof{}, errors.New("failed to find key by keyTag")
 			}
 			_, isSigner := signers[val.Operator]
 			g1Key := new(bn254.G1Affine)
 			_, err := g1Key.SetBytes(keyBytes)
 			if err != nil {
-				return entity.AggregationProof{}, errors.Errorf("failed to deserialize G1 key: %w", err)
+				return symbiotic.AggregationProof{}, errors.Errorf("failed to deserialize G1 key: %w", err)
 			}
 
 			validatorsData = append(validatorsData, proof.ValidatorData{
@@ -89,7 +89,7 @@ func (a Aggregator) Aggregate(
 
 	messageG1, err := blsBn254.HashToG1(messageHash)
 	if err != nil {
-		return entity.AggregationProof{}, err
+		return symbiotic.AggregationProof{}, err
 	}
 	messageG1Bn254 := bn254.G1Affine{X: messageG1.X, Y: messageG1.Y}
 
@@ -102,10 +102,10 @@ func (a Aggregator) Aggregate(
 
 	proofData, err := a.prover.Prove(proverInput)
 	if err != nil {
-		return entity.AggregationProof{}, err
+		return symbiotic.AggregationProof{}, err
 	}
 
-	return entity.AggregationProof{
+	return symbiotic.AggregationProof{
 		MessageHash: messageHash,
 		KeyTag:      keyTag,
 		Epoch:       valset.Epoch,
@@ -114,9 +114,9 @@ func (a Aggregator) Aggregate(
 }
 
 func (a Aggregator) Verify(
-	valset entity.ValidatorSet,
-	keyTag entity.KeyTag,
-	aggregationProof entity.AggregationProof,
+	valset symbiotic.ValidatorSet,
+	keyTag symbiotic.KeyTag,
+	aggregationProof symbiotic.AggregationProof,
 ) (bool, error) {
 	activeVals := 0
 	for _, val := range valset.Validators {
@@ -156,10 +156,10 @@ func (a Aggregator) Verify(
 	return ok, nil
 }
 
-func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []entity.KeyTag) ([]entity.ExtraData, error) {
-	extraData := make([]entity.ExtraData, 0)
+func (a Aggregator) GenerateExtraData(valset symbiotic.ValidatorSet, keyTags []symbiotic.KeyTag) ([]symbiotic.ExtraData, error) {
+	extraData := make([]symbiotic.ExtraData, 0)
 
-	totalActiveValidatorsKey, err := helpers.GetExtraDataKey(entity.VerificationTypeBlsBn254ZK, entity.ZkVerificationTotalActiveValidatorsHash)
+	totalActiveValidatorsKey, err := helpers.GetExtraDataKey(symbiotic.VerificationTypeBlsBn254ZK, symbiotic.ZkVerificationTotalActiveValidatorsHash)
 	if err != nil {
 		return nil, errors.Errorf("failed to get extra data key: %w", err)
 	}
@@ -167,7 +167,7 @@ func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []enti
 	totalActiveValidators := big.NewInt(valset.GetTotalActiveValidators())
 	totalActiveValidatorsBytes32 := common.Hash{}
 	totalActiveValidators.FillBytes(totalActiveValidatorsBytes32[:])
-	extraData = append(extraData, entity.ExtraData{
+	extraData = append(extraData, symbiotic.ExtraData{
 		Key:   totalActiveValidatorsKey,
 		Value: totalActiveValidatorsBytes32,
 	})
@@ -180,12 +180,12 @@ func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []enti
 			return nil, errors.Errorf("failed to generate validator set MiMC accumulator: %w", err)
 		}
 
-		validatorSetHashKey, err := helpers.GetExtraDataKeyTagged(entity.VerificationTypeBlsBn254ZK, key.Tag, entity.ZkVerificationValidatorSetHashMimcHash)
+		validatorSetHashKey, err := helpers.GetExtraDataKeyTagged(symbiotic.VerificationTypeBlsBn254ZK, key.Tag, symbiotic.ZkVerificationValidatorSetHashMimcHash)
 		if err != nil {
 			return nil, errors.Errorf("failed to get extra data key: %w", err)
 		}
 
-		extraData = append(extraData, entity.ExtraData{
+		extraData = append(extraData, symbiotic.ExtraData{
 			Key:   validatorSetHashKey,
 			Value: mimcAccumulator,
 		})
@@ -199,15 +199,15 @@ func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []enti
 	return extraData, nil
 }
 
-func validatorSetMimcAccumulator(valset []entity.Validator, requiredKeyTag entity.KeyTag) (common.Hash, error) {
-	validatorsData, err := toValidatorsData([]entity.Validator{}, valset, requiredKeyTag)
+func validatorSetMimcAccumulator(valset []symbiotic.Validator, requiredKeyTag symbiotic.KeyTag) (common.Hash, error) {
+	validatorsData, err := toValidatorsData([]symbiotic.Validator{}, valset, requiredKeyTag)
 	if err != nil {
 		return common.Hash{}, err
 	}
 	return common.Hash(proof.HashValset(validatorsData)), nil
 }
 
-func toValidatorsData(signerValidators []entity.Validator, allValidators entity.Validators, requiredKeyTag entity.KeyTag) ([]proof.ValidatorData, error) {
+func toValidatorsData(signerValidators []symbiotic.Validator, allValidators symbiotic.Validators, requiredKeyTag symbiotic.KeyTag) ([]proof.ValidatorData, error) {
 	activeValidators := allValidators.GetActiveValidators()
 	valset := make([]proof.ValidatorData, 0)
 	for i := range activeValidators {

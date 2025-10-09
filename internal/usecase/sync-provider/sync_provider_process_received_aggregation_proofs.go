@@ -5,7 +5,8 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // ProcessReceivedAggregationProofs processes aggregation proofs received from peers
@@ -21,7 +22,7 @@ func (s *Syncer) ProcessReceivedAggregationProofs(ctx context.Context, response 
 }
 
 // processSingleAggregationProof processes a single aggregation proof
-func (s *Syncer) processSingleAggregationProof(ctx context.Context, proof entity.AggregationProof, stats *entity.AggregationProofProcessingStats) {
+func (s *Syncer) processSingleAggregationProof(ctx context.Context, proof symbiotic.AggregationProof, stats *entity.AggregationProofProcessingStats) {
 	// Process the aggregation proof using the signature processor
 	if err := s.cfg.EntityProcessor.ProcessAggregationProof(ctx, proof); err != nil {
 		if errors.Is(err, entity.ErrEntityAlreadyExist) {

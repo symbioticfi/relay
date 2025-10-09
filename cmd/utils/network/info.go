@@ -6,7 +6,7 @@ import (
 	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
 	"github.com/symbioticfi/relay/internal/usecase/metrics"
 	"github.com/symbioticfi/relay/symbiotic/client/evm"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	valsetDeriver "github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -31,7 +31,7 @@ var infoCmd = &cobra.Command{
 
 		evmClient, err := evm.NewEvmClient(ctx, evm.Config{
 			ChainURLs: globalFlags.Chains,
-			DriverAddress: entity.CrossChainAddress{
+			DriverAddress: symbiotic.CrossChainAddress{
 				ChainId: globalFlags.DriverChainId,
 				Address: common.HexToAddress(globalFlags.DriverAddress),
 			},
@@ -51,7 +51,7 @@ var infoCmd = &cobra.Command{
 			return errors.Errorf("Failed to create deriver: %v", err)
 		}
 
-		epoch := entity.Epoch(globalFlags.Epoch)
+		epoch := symbiotic.Epoch(globalFlags.Epoch)
 		if globalFlags.Epoch == 0 {
 			epoch, err = evmClient.GetCurrentEpoch(ctx)
 			if err != nil {
@@ -95,7 +95,7 @@ var infoCmd = &cobra.Command{
 		if infoFlags.Addresses {
 			panels = append(panels, []pterm.Panel{
 				{Data: pterm.DefaultBox.WithTitle("Addresses").Sprint(
-					printAddresses(entity.CrossChainAddress{
+					printAddresses(symbiotic.CrossChainAddress{
 						ChainId: globalFlags.DriverChainId,
 						Address: common.HexToAddress(globalFlags.DriverAddress),
 					}, &networkConfig),
@@ -131,8 +131,8 @@ var infoCmd = &cobra.Command{
 					}
 					settlementData[i].LastCommittedHeaderEpoch = uint64(lastCommittedHeaderEpoch)
 
-					allEpochsFromZero := lo.RepeatBy(int(epoch+1), func(i int) entity.Epoch {
-						return entity.Epoch(i)
+					allEpochsFromZero := lo.RepeatBy(int(epoch+1), func(i int) symbiotic.Epoch {
+						return symbiotic.Epoch(i)
 					})
 
 					commitmentResults, err := evmClient.IsValsetHeaderCommittedAtEpochs(egCtx, settlement, allEpochsFromZero)

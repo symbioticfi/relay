@@ -3,7 +3,7 @@ package keys
 import (
 	cmdhelpers "github.com/symbioticfi/relay/internal/usecase/cmd-helpers"
 	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 
 	"github.com/go-errors/errors"
 	"github.com/spf13/cobra"
@@ -35,7 +35,7 @@ var removeEVMKeyCmd = &cobra.Command{
 			return err
 		}
 
-		if err = keyStore.DeleteKeyByNamespaceTypeId(keyprovider.EVM_KEY_NAMESPACE, entity.KeyTypeEcdsaSecp256k1, int(removeEvmFlags.ChainId), globalFlags.Password); err != nil {
+		if err = keyStore.DeleteKeyByNamespaceTypeId(keyprovider.EVM_KEY_NAMESPACE, symbiotic.KeyTypeEcdsaSecp256k1, int(removeEvmFlags.ChainId), globalFlags.Password); err != nil {
 			return err
 		}
 

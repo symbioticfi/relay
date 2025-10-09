@@ -4,7 +4,7 @@ import (
 	"crypto/ecdsa"
 	"math/big"
 
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	symbKeys "github.com/symbioticfi/relay/symbiotic/usecase/crypto/key-types"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -12,11 +12,11 @@ import (
 	"github.com/go-errors/errors"
 )
 
-type Signature = entity.RawSignature
+type Signature = symbiotic.RawSignature
 type Message = []byte
-type MessageHash = entity.RawMessageHash
-type CompactPublicKey = entity.CompactPublicKey
-type RawPublicKey = entity.RawPublicKey
+type MessageHash = symbiotic.RawMessageHash
+type CompactPublicKey = symbiotic.CompactPublicKey
+type RawPublicKey = symbiotic.RawPublicKey
 
 const (
 	RawKeyLength      int = 33

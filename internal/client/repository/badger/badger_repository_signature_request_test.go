@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func TestBadgerRepository_SignatureRequest(t *testing.T) {
@@ -27,7 +27,7 @@ func TestBadgerRepository_SignatureRequest(t *testing.T) {
 }
 
 type reqWithTargetID struct {
-	req  entity.SignatureRequest
+	req  symbiotic.SignatureRequest
 	hash common.Hash
 }
 
@@ -35,7 +35,7 @@ func TestBadgerRepository_GetSignatureRequestsByEpoch(t *testing.T) {
 	t.Parallel()
 	repo := setupTestRepository(t)
 
-	epoch := entity.Epoch(100)
+	epoch := symbiotic.Epoch(100)
 
 	requests := make([]reqWithTargetID, 5)
 	for i := 0; i < 5; i++ {
@@ -106,7 +106,7 @@ func TestBadgerRepository_GetSignatureRequestsByEpoch(t *testing.T) {
 	})
 
 	t.Run("empty epoch", func(t *testing.T) {
-		emptyEpoch := entity.Epoch(999)
+		emptyEpoch := symbiotic.Epoch(999)
 		results, err := repo.GetSignatureRequestsByEpoch(t.Context(), emptyEpoch, 0, common.Hash{})
 		require.NoError(t, err)
 		require.Empty(t, results)
@@ -164,8 +164,8 @@ func TestBadgerRepository_GetSignatureRequestsByEpoch_MultipleEpochs(t *testing.
 	t.Parallel()
 	repo := setupTestRepository(t)
 
-	epoch1 := entity.Epoch(100)
-	epoch2 := entity.Epoch(200)
+	epoch1 := symbiotic.Epoch(100)
+	epoch2 := symbiotic.Epoch(200)
 
 	// Create requests for epoch1
 	for i := 0; i < 3; i++ {
@@ -198,27 +198,27 @@ func TestBadgerRepository_GetSignatureRequestsByEpoch_MultipleEpochs(t *testing.
 	}
 }
 
-func randomSignatureRequest(t *testing.T) entity.SignatureRequest {
+func randomSignatureRequest(t *testing.T) symbiotic.SignatureRequest {
 	t.Helper()
-	return entity.SignatureRequest{
-		KeyTag:        entity.KeyTag(15),
-		RequiredEpoch: entity.Epoch(randomBigInt(t).Uint64()),
+	return symbiotic.SignatureRequest{
+		KeyTag:        symbiotic.KeyTag(15),
+		RequiredEpoch: symbiotic.Epoch(randomBigInt(t).Uint64()),
 		Message:       randomBytes(t, 32),
 	}
 }
 
-func randomSignatureRequestForEpoch(t *testing.T, epoch entity.Epoch) entity.SignatureRequest {
+func randomSignatureRequestForEpoch(t *testing.T, epoch symbiotic.Epoch) symbiotic.SignatureRequest {
 	t.Helper()
-	return entity.SignatureRequest{
-		KeyTag:        entity.KeyTag(15),
+	return symbiotic.SignatureRequest{
+		KeyTag:        symbiotic.KeyTag(15),
 		RequiredEpoch: epoch,
 		Message:       randomBytes(t, 32),
 	}
 }
 
-func randomSignatureExtendedForEpoch(t *testing.T, epoch entity.Epoch) entity.SignatureExtended {
+func randomSignatureExtendedForEpoch(t *testing.T, epoch symbiotic.Epoch) symbiotic.SignatureExtended {
 	t.Helper()
-	return entity.SignatureExtended{
+	return symbiotic.SignatureExtended{
 		MessageHash: randomBytes(t, 32),
 		KeyTag:      15,
 		Epoch:       epoch,

@@ -7,7 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/internal/entity"
 )
 
 // ProcessReceivedSignatures validates and processes signatures received from peer nodes during

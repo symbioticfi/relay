@@ -6,8 +6,8 @@ import (
 	"github.com/go-errors/errors"
 
 	p2pv1 "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
+	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
-	"github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // syncRequestHandler defines the interface for handling both signature and aggregation proof requests

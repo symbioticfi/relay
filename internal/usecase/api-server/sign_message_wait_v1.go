@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc"
 
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // SignMessageWait handles the streaming gRPC SignMessageWait request
@@ -55,7 +55,7 @@ func (h *grpcHandler) SignMessageWait(req *apiv1.SignMessageWaitRequest, stream 
 	}
 
 	// Create subscription channel for this request
-	proofCh := make(chan entity.AggregationProof, 1)
+	proofCh := make(chan symbiotic.AggregationProof, 1)
 
 	// Subscribe to notifications for this specific request ID
 	unsubscribe := h.broadcaster.Subscribe(requestID, proofCh)

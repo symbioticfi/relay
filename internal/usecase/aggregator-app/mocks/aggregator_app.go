@@ -15,7 +15,8 @@ import (
 	time "time"
 
 	common "github.com/ethereum/go-ethereum/common"
-	entity "github.com/symbioticfi/relay/symbiotic/entity"
+	entity "github.com/symbioticfi/relay/internal/entity"
+	entity0 "github.com/symbioticfi/relay/symbiotic/entity"
 	crypto "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -45,10 +46,10 @@ func (m *Mockrepository) EXPECT() *MockrepositoryMockRecorder {
 }
 
 // GetAggregationProof mocks base method.
-func (m *Mockrepository) GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error) {
+func (m *Mockrepository) GetAggregationProof(ctx context.Context, requestID common.Hash) (entity0.AggregationProof, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAggregationProof", ctx, requestID)
-	ret0, _ := ret[0].(entity.AggregationProof)
+	ret0, _ := ret[0].(entity0.AggregationProof)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -60,10 +61,10 @@ func (mr *MockrepositoryMockRecorder) GetAggregationProof(ctx, requestID any) *g
 }
 
 // GetAllSignatures mocks base method.
-func (m *Mockrepository) GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity.SignatureExtended, error) {
+func (m *Mockrepository) GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity0.SignatureExtended, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllSignatures", ctx, requestID)
-	ret0, _ := ret[0].([]entity.SignatureExtended)
+	ret0, _ := ret[0].([]entity0.SignatureExtended)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -75,10 +76,10 @@ func (mr *MockrepositoryMockRecorder) GetAllSignatures(ctx, requestID any) *gomo
 }
 
 // GetConfigByEpoch mocks base method.
-func (m *Mockrepository) GetConfigByEpoch(ctx context.Context, epoch entity.Epoch) (entity.NetworkConfig, error) {
+func (m *Mockrepository) GetConfigByEpoch(ctx context.Context, epoch entity0.Epoch) (entity0.NetworkConfig, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConfigByEpoch", ctx, epoch)
-	ret0, _ := ret[0].(entity.NetworkConfig)
+	ret0, _ := ret[0].(entity0.NetworkConfig)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -105,10 +106,10 @@ func (mr *MockrepositoryMockRecorder) GetSignatureMap(ctx, requestID any) *gomoc
 }
 
 // GetSignatureRequest mocks base method.
-func (m *Mockrepository) GetSignatureRequest(arg0 context.Context, requestID common.Hash) (entity.SignatureRequest, error) {
+func (m *Mockrepository) GetSignatureRequest(arg0 context.Context, requestID common.Hash) (entity0.SignatureRequest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSignatureRequest", arg0, requestID)
-	ret0, _ := ret[0].(entity.SignatureRequest)
+	ret0, _ := ret[0].(entity0.SignatureRequest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -120,10 +121,10 @@ func (mr *MockrepositoryMockRecorder) GetSignatureRequest(arg0, requestID any) *
 }
 
 // GetValidatorSetByEpoch mocks base method.
-func (m *Mockrepository) GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error) {
+func (m *Mockrepository) GetValidatorSetByEpoch(ctx context.Context, epoch entity0.Epoch) (entity0.ValidatorSet, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorSetByEpoch", ctx, epoch)
-	ret0, _ := ret[0].(entity.ValidatorSet)
+	ret0, _ := ret[0].(entity0.ValidatorSet)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -159,7 +160,7 @@ func (m *Mockp2pClient) EXPECT() *Mockp2pClientMockRecorder {
 }
 
 // BroadcastSignatureAggregatedMessage mocks base method.
-func (m *Mockp2pClient) BroadcastSignatureAggregatedMessage(ctx context.Context, proof entity.AggregationProof) error {
+func (m *Mockp2pClient) BroadcastSignatureAggregatedMessage(ctx context.Context, proof entity0.AggregationProof) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "BroadcastSignatureAggregatedMessage", ctx, proof)
 	ret0, _ := ret[0].(error)
@@ -245,10 +246,10 @@ func (m *Mockaggregator) EXPECT() *MockaggregatorMockRecorder {
 }
 
 // Aggregate mocks base method.
-func (m *Mockaggregator) Aggregate(valset entity.ValidatorSet, keyTag entity.KeyTag, messageHash []byte, signatures []entity.SignatureExtended) (entity.AggregationProof, error) {
+func (m *Mockaggregator) Aggregate(valset entity0.ValidatorSet, keyTag entity0.KeyTag, messageHash []byte, signatures []entity0.SignatureExtended) (entity0.AggregationProof, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Aggregate", valset, keyTag, messageHash, signatures)
-	ret0, _ := ret[0].(entity.AggregationProof)
+	ret0, _ := ret[0].(entity0.AggregationProof)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -284,7 +285,7 @@ func (m *MockkeyProvider) EXPECT() *MockkeyProviderMockRecorder {
 }
 
 // GetPrivateKey mocks base method.
-func (m *MockkeyProvider) GetPrivateKey(keyTag entity.KeyTag) (crypto.PrivateKey, error) {
+func (m *MockkeyProvider) GetPrivateKey(keyTag entity0.KeyTag) (crypto.PrivateKey, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPrivateKey", keyTag)
 	ret0, _ := ret[0].(crypto.PrivateKey)

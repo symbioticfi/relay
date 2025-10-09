@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/symbioticfi/relay/symbiotic/client/evm"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // TestEpochProgression tests that epochs progress correctly over time
@@ -21,7 +21,7 @@ func TestEpochProgression(t *testing.T) {
 
 	config := evm.Config{
 		ChainURLs: settlementChains,
-		DriverAddress: entity.CrossChainAddress{
+		DriverAddress: symbiotic.CrossChainAddress{
 			ChainId: deployData.Driver.ChainId,
 			Address: common.HexToAddress(deployData.Driver.Addr),
 		},
@@ -34,7 +34,7 @@ func TestEpochProgression(t *testing.T) {
 	evmClient, err := evm.NewEvmClient(ctx, config)
 	require.NoError(t, err, "Failed to create EVM client")
 
-	initialEpoch, err := evmClient.GetLastCommittedHeaderEpoch(ctx, entity.CrossChainAddress{
+	initialEpoch, err := evmClient.GetLastCommittedHeaderEpoch(ctx, symbiotic.CrossChainAddress{
 		ChainId: deployData.Settlements[0].ChainId,
 		Address: common.HexToAddress(deployData.Settlements[0].Addr),
 	})
@@ -52,7 +52,7 @@ initialEpochCheck:
 			t.Fatal("Timed out waiting for epoch to commit")
 		default:
 			// Check if the epoch has been committed
-			committed, err := evmClient.IsValsetHeaderCommittedAt(ctx, entity.CrossChainAddress{
+			committed, err := evmClient.IsValsetHeaderCommittedAt(ctx, symbiotic.CrossChainAddress{
 				ChainId: deployData.Settlements[0].ChainId,
 				Address: common.HexToAddress(deployData.Settlements[0].Addr),
 			}, initialEpoch)
@@ -77,7 +77,7 @@ initialEpochCheck:
 		case <-ctx.Done():
 			t.Fatal("Timed out waiting for epoch progression")
 		default:
-			currentEpoch, err := evmClient.GetLastCommittedHeaderEpoch(ctx, entity.CrossChainAddress{
+			currentEpoch, err := evmClient.GetLastCommittedHeaderEpoch(ctx, symbiotic.CrossChainAddress{
 				ChainId: deployData.Settlements[0].ChainId,
 				Address: common.HexToAddress(deployData.Settlements[0].Addr),
 			})

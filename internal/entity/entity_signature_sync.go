@@ -2,6 +2,8 @@ package entity
 
 import (
 	"github.com/ethereum/go-ethereum/common"
+
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // WantSignaturesRequest represents a request to resync signatures for a specific epoch.
@@ -19,8 +21,8 @@ type WantSignaturesResponse struct {
 // ValidatorSignature pairs a signature with its validator index in the active validator set.
 // The validator index corresponds to the position in ValidatorSet.Validators.GetActiveValidators().
 type ValidatorSignature struct {
-	ValidatorIndex uint32            // Index in active validator set
-	Signature      SignatureExtended // The actual signature data
+	ValidatorIndex uint32                      // Index in active validator set
+	Signature      symbiotic.SignatureExtended // The actual signature data
 }
 
 // SignatureProcessingStats contains detailed statistics for processing received signatures
@@ -48,7 +50,7 @@ type WantAggregationProofsRequest struct {
 // WantAggregationProofsResponse contains aggregation proofs grouped by request id.
 // Each aggregation proof corresponds to a complete signature aggregation for a request.
 type WantAggregationProofsResponse struct {
-	Proofs map[common.Hash]AggregationProof // requestID -> aggregation proof
+	Proofs map[common.Hash]symbiotic.AggregationProof // requestID -> aggregation proof
 }
 
 // AggregationProofProcessingStats contains detailed statistics for processing received aggregation proofs

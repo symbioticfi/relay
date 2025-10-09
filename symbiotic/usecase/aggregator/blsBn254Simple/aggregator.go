@@ -6,21 +6,17 @@ import (
 	"math/big"
 	"sort"
 
+	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fp"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
-
-	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator/helpers"
-	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/blsBn254"
-
-	"github.com/consensys/gnark-crypto/ecc/bn254"
-	"github.com/ethereum/go-ethereum/crypto"
-
 	"github.com/ethereum/go-ethereum/accounts/abi"
-
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator/helpers"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/blsBn254"
 )
 
 const maxValidators = 65_536
@@ -90,21 +86,21 @@ func createABITypes() (abiTypes, error) {
 }
 
 func (a Aggregator) Aggregate(
-	valset entity.ValidatorSet,
-	keyTag entity.KeyTag,
+	valset symbiotic.ValidatorSet,
+	keyTag symbiotic.KeyTag,
 	messageHash []byte,
-	signatures []entity.SignatureExtended,
-) (entity.AggregationProof, error) {
+	signatures []symbiotic.SignatureExtended,
+) (symbiotic.AggregationProof, error) {
 	if !helpers.CompareMessageHasher(signatures, messageHash) {
-		return entity.AggregationProof{}, errors.New("message hashes mismatch")
+		return symbiotic.AggregationProof{}, errors.New("message hashes mismatch")
 	}
 	if err := valset.Validators.CheckIsSortedByOperatorAddressAsc(); err != nil {
-		return entity.AggregationProof{}, errors.Errorf("valset is not sorted by operator address asc: %w", err)
+		return symbiotic.AggregationProof{}, errors.Errorf("valset is not sorted by operator address asc: %w", err)
 	}
 
 	validatorsData, err := processValidators(valset.Validators, keyTag)
 	if err != nil {
-		return entity.AggregationProof{}, err
+		return symbiotic.AggregationProof{}, err
 	}
 
 	nonSigners := make([]int, 0)
@@ -118,12 +114,12 @@ func (a Aggregator) Aggregate(
 	for _, sig := range signatures {
 		pubKey, err := blsBn254.FromRaw(sig.PublicKey)
 		if err != nil {
-			return entity.AggregationProof{}, err
+			return symbiotic.AggregationProof{}, err
 		}
 
 		idx, ok := valKeysToIdx[string(pubKey.OnChain())]
 		if !ok {
-			return entity.AggregationProof{}, errors.New("failed to find validator by key")
+			return symbiotic.AggregationProof{}, errors.New("failed to find validator by key")
 		}
 
 		val := valset.Validators[idx]
@@ -134,23 +130,23 @@ func (a Aggregator) Aggregate(
 		g1Key := new(bn254.G1Affine)
 		_, err = g1Key.SetBytes(pubKey.OnChain())
 		if err != nil {
-			return entity.AggregationProof{}, err
+			return symbiotic.AggregationProof{}, err
 		}
 
 		compressedKeyG1, err := compress(g1Key)
 		if err != nil {
-			return entity.AggregationProof{}, errors.Errorf("failed to compress G1 key: %w", err)
+			return symbiotic.AggregationProof{}, errors.Errorf("failed to compress G1 key: %w", err)
 		}
 
 		if _, exists := signersMap[compressedKeyG1]; exists {
-			return entity.AggregationProof{}, errors.Errorf("duplicate signature from validator")
+			return symbiotic.AggregationProof{}, errors.Errorf("duplicate signature from validator")
 		}
 		signersMap[compressedKeyG1] = struct{}{}
 
 		g1Sig := new(bn254.G1Affine)
 		_, err = g1Sig.SetBytes(sig.Signature)
 		if err != nil {
-			return entity.AggregationProof{}, err
+			return symbiotic.AggregationProof{}, err
 		}
 
 		aggG1Sig = aggG1Sig.Add(aggG1Sig, g1Sig)
@@ -171,7 +167,7 @@ func (a Aggregator) Aggregate(
 		Y: aggG1Sig.Y.BigInt(new(big.Int)),
 	})
 	if err != nil {
-		return entity.AggregationProof{}, err
+		return symbiotic.AggregationProof{}, err
 	}
 
 	aggG2KeyBytes, err := a.abiTypes.g2Args.Pack(struct {
@@ -188,13 +184,13 @@ func (a Aggregator) Aggregate(
 		},
 	})
 	if err != nil {
-		return entity.AggregationProof{}, err
+		return symbiotic.AggregationProof{}, err
 	}
 
 	// Pack validators data with anonymous structs
 	validatorsDataBytes, err := a.packValidatorsData(validatorsData)
 	if err != nil {
-		return entity.AggregationProof{}, err
+		return symbiotic.AggregationProof{}, err
 	}
 
 	// Encode non-signers indices
@@ -211,7 +207,7 @@ func (a Aggregator) Aggregate(
 	proofBytes = append(proofBytes, validatorsDataBytes[32:]...)
 	proofBytes = append(proofBytes, nonSignersBytes...)
 
-	return entity.AggregationProof{
+	return symbiotic.AggregationProof{
 		MessageHash: messageHash,
 		KeyTag:      keyTag,
 		Epoch:       valset.Epoch,
@@ -220,12 +216,12 @@ func (a Aggregator) Aggregate(
 }
 
 func (a Aggregator) Verify(
-	valset entity.ValidatorSet,
-	keyTag entity.KeyTag,
-	aggregationProof entity.AggregationProof,
+	valset symbiotic.ValidatorSet,
+	keyTag symbiotic.KeyTag,
+	aggregationProof symbiotic.AggregationProof,
 ) (bool, error) {
 	// Check key tag type
-	if keyTag.Type() != entity.KeyTypeBlsBn254 {
+	if keyTag.Type() != symbiotic.KeyTypeBlsBn254 {
 		return false, errors.New("unsupported key tag")
 	}
 
@@ -400,7 +396,7 @@ func (a Aggregator) Verify(
 	}
 
 	// Get aggregated public key from valset (equivalent to extra data in Solidity)
-	aggregatedPubKeys := helpers.GetAggregatedPubKeys(valset, []entity.KeyTag{keyTag})
+	aggregatedPubKeys := helpers.GetAggregatedPubKeys(valset, []symbiotic.KeyTag{keyTag})
 	if len(aggregatedPubKeys) == 0 {
 		return false, errors.New("no aggregated public key found")
 	}
@@ -485,8 +481,8 @@ func calcAlpha(aggPubKeyG1 *bn254.G1Affine, aggPubKeyG2 *bn254.G2Affine, aggSig 
 	return alpha
 }
 
-func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []entity.KeyTag) ([]entity.ExtraData, error) {
-	extraData := make([]entity.ExtraData, 0)
+func (a Aggregator) GenerateExtraData(valset symbiotic.ValidatorSet, keyTags []symbiotic.KeyTag) ([]symbiotic.ExtraData, error) {
+	extraData := make([]symbiotic.ExtraData, 0)
 
 	aggregatedPubKeys := helpers.GetAggregatedPubKeys(valset, keyTags)
 
@@ -496,7 +492,7 @@ func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []enti
 			return nil, errors.Errorf("failed to encode validators: %w", err)
 		}
 
-		validatorSetHashKey, err := helpers.GetExtraDataKeyTagged(entity.VerificationTypeBlsBn254Simple, key.Tag, entity.SimpleVerificationValidatorSetHashKeccak256Hash)
+		validatorSetHashKey, err := helpers.GetExtraDataKeyTagged(symbiotic.VerificationTypeBlsBn254Simple, key.Tag, symbiotic.SimpleVerificationValidatorSetHashKeccak256Hash)
 		if err != nil {
 			return nil, errors.Errorf("failed to get extra data key: %w", err)
 		}
@@ -506,13 +502,13 @@ func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []enti
 			return nil, errors.Errorf("failed to generate validator set keccak accumulator: %w", err)
 		}
 
-		extraData = append(extraData, entity.ExtraData{
+		extraData = append(extraData, symbiotic.ExtraData{
 			Key:   validatorSetHashKey,
 			Value: keccakHashAccumulator,
 		})
 
 		// Pack aggregated keys
-		activeAggregatedKeyKey, err := helpers.GetExtraDataKeyTagged(entity.VerificationTypeBlsBn254Simple, key.Tag, entity.SimpleVerificationAggPublicKeyG1Hash)
+		activeAggregatedKeyKey, err := helpers.GetExtraDataKeyTagged(symbiotic.VerificationTypeBlsBn254Simple, key.Tag, symbiotic.SimpleVerificationAggPublicKeyG1Hash)
 		if err != nil {
 			return nil, errors.Errorf("failed to get extra data key: %w", err)
 		}
@@ -528,7 +524,7 @@ func (a Aggregator) GenerateExtraData(valset entity.ValidatorSet, keyTags []enti
 			return nil, errors.Errorf("failed to compress G1: %w", err)
 		}
 
-		extraData = append(extraData, entity.ExtraData{
+		extraData = append(extraData, symbiotic.ExtraData{
 			Key:   activeAggregatedKeyKey,
 			Value: compressedG1,
 		})
@@ -556,7 +552,7 @@ func (a Aggregator) packValidatorsData(validatorsData []ValidatorData) ([]byte, 
 	return a.abiTypes.validatorsArgs.Pack(abiData)
 }
 
-func processValidators(validators []entity.Validator, keyTag entity.KeyTag) ([]ValidatorData, error) {
+func processValidators(validators []symbiotic.Validator, keyTag symbiotic.KeyTag) ([]ValidatorData, error) {
 	validatorsData := make([]ValidatorData, 0, len(validators))
 
 	for _, val := range validators {

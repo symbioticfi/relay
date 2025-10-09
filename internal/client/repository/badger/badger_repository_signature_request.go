@@ -11,18 +11,19 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 const (
 	keySignatureRequestPendingPrefix = "signature_pending:"
 )
 
-func keySignatureRequest(epoch entity.Epoch, requestID common.Hash) []byte {
+func keySignatureRequest(epoch symbiotic.Epoch, requestID common.Hash) []byte {
 	return []byte(fmt.Sprintf("signature_request:%d:%s", epoch, requestID.Hex()))
 }
 
-func keySignatureRequestEpochPrefix(epoch entity.Epoch) []byte {
+func keySignatureRequestEpochPrefix(epoch symbiotic.Epoch) []byte {
 	return []byte(fmt.Sprintf("signature_request:%d:", epoch))
 }
 
@@ -30,12 +31,12 @@ func keyRequestIDIndex(requestID common.Hash) []byte {
 	return []byte(fmt.Sprintf("request_id:%s", requestID.Hex()))
 }
 
-func keySignatureRequestPending(epoch entity.Epoch, requestID common.Hash) []byte {
+func keySignatureRequestPending(epoch symbiotic.Epoch, requestID common.Hash) []byte {
 	return []byte(fmt.Sprintf("%v%d:%s", keySignatureRequestPendingPrefix, epoch, requestID.Hex()))
 }
 
 // saveSignatureRequestToKey saves a signature request to a specific key
-func (r *Repository) saveSignatureRequestToKey(ctx context.Context, req entity.SignatureRequest, key []byte) error {
+func (r *Repository) saveSignatureRequestToKey(ctx context.Context, req symbiotic.SignatureRequest, key []byte) error {
 	requestBytes, err := signatureRequestToBytes(req)
 	if err != nil {
 		return errors.Errorf("failed to marshal signature request: %w", err)
@@ -60,7 +61,7 @@ func (r *Repository) saveSignatureRequestToKey(ctx context.Context, req entity.S
 	return nil
 }
 
-func (r *Repository) SaveSignatureRequest(ctx context.Context, requestID common.Hash, req entity.SignatureRequest) error {
+func (r *Repository) SaveSignatureRequest(ctx context.Context, requestID common.Hash, req symbiotic.SignatureRequest) error {
 	return r.doUpdateInTx(ctx, "SaveSignatureRequest", func(ctx context.Context) error {
 		if err := r.saveSignatureRequest(ctx, requestID, req); err != nil {
 			return err
@@ -75,7 +76,7 @@ func (r *Repository) SaveSignatureRequest(ctx context.Context, requestID common.
 	})
 }
 
-func (r *Repository) saveSignatureRequest(ctx context.Context, requestID common.Hash, req entity.SignatureRequest) error {
+func (r *Repository) saveSignatureRequest(ctx context.Context, requestID common.Hash, req symbiotic.SignatureRequest) error {
 	return r.doUpdateInTx(ctx, "saveSignatureRequest", func(ctx context.Context) error {
 		primaryKey := keySignatureRequest(req.RequiredEpoch, requestID)
 		requestIDIndexKey := keyRequestIDIndex(requestID)
@@ -92,7 +93,7 @@ func (r *Repository) saveSignatureRequest(ctx context.Context, requestID common.
 	})
 }
 
-func (r *Repository) saveSignaturePending(ctx context.Context, requestID common.Hash, req entity.SignatureRequest) error {
+func (r *Repository) saveSignaturePending(ctx context.Context, requestID common.Hash, req symbiotic.SignatureRequest) error {
 	return r.doUpdateInTx(ctx, "saveSignaturePending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		pendingKey := keySignatureRequestPending(req.RequiredEpoch, requestID)
@@ -114,7 +115,7 @@ func (r *Repository) saveSignaturePending(ctx context.Context, requestID common.
 	})
 }
 
-func (r *Repository) RemoveSignaturePending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error {
+func (r *Repository) RemoveSignaturePending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
 	return r.doUpdateInTx(ctx, "RemoveSignaturePending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		pendingKey := keySignatureRequestPending(epoch, requestID)
@@ -128,7 +129,7 @@ func (r *Repository) RemoveSignaturePending(ctx context.Context, epoch entity.Ep
 	})
 }
 
-func signatureRequestToBytes(req entity.SignatureRequest) ([]byte, error) {
+func signatureRequestToBytes(req symbiotic.SignatureRequest) ([]byte, error) {
 	dto := signatureRequestDTO{
 		KeyTag:        uint8(req.KeyTag),
 		RequiredEpoch: uint64(req.RequiredEpoch),
@@ -137,21 +138,21 @@ func signatureRequestToBytes(req entity.SignatureRequest) ([]byte, error) {
 	return json.Marshal(dto)
 }
 
-func bytesToSignatureRequest(data []byte) (entity.SignatureRequest, error) {
+func bytesToSignatureRequest(data []byte) (symbiotic.SignatureRequest, error) {
 	var dto signatureRequestDTO
 	if err := json.Unmarshal(data, &dto); err != nil {
-		return entity.SignatureRequest{}, errors.Errorf("failed to unmarshal signature request: %w", err)
+		return symbiotic.SignatureRequest{}, errors.Errorf("failed to unmarshal signature request: %w", err)
 	}
 
-	return entity.SignatureRequest{
-		KeyTag:        entity.KeyTag(dto.KeyTag),
-		RequiredEpoch: entity.Epoch(dto.RequiredEpoch),
+	return symbiotic.SignatureRequest{
+		KeyTag:        symbiotic.KeyTag(dto.KeyTag),
+		RequiredEpoch: symbiotic.Epoch(dto.RequiredEpoch),
 		Message:       dto.Message,
 	}, nil
 }
 
-func (r *Repository) GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error) {
-	var req entity.SignatureRequest
+func (r *Repository) GetSignatureRequest(ctx context.Context, requestID common.Hash) (symbiotic.SignatureRequest, error) {
+	var req symbiotic.SignatureRequest
 
 	return req, r.doViewInTx(ctx, "GetSignatureRequest", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -193,13 +194,13 @@ func (r *Repository) GetSignatureRequest(ctx context.Context, requestID common.H
 // using provided prefix and key generation function
 func (r *Repository) getSignatureRequestsByEpochWithKeys(
 	ctx context.Context,
-	epoch entity.Epoch,
+	epoch symbiotic.Epoch,
 	limit int,
 	lastHash common.Hash,
 	prefix []byte,
-	keyFunc func(entity.Epoch, common.Hash) []byte,
-) ([]entity.SignatureRequest, error) {
-	var requests []entity.SignatureRequest
+	keyFunc func(symbiotic.Epoch, common.Hash) []byte,
+) ([]symbiotic.SignatureRequest, error) {
+	var requests []symbiotic.SignatureRequest
 
 	return requests, r.doViewInTx(ctx, "getSignatureRequestsByEpochWithKeys", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -247,7 +248,7 @@ func (r *Repository) getSignatureRequestsByEpochWithKeys(
 	})
 }
 
-func (r *Repository) GetSignatureRequestsByEpoch(ctx context.Context, epoch entity.Epoch, limit int, lastHash common.Hash) ([]entity.SignatureRequest, error) {
+func (r *Repository) GetSignatureRequestsByEpoch(ctx context.Context, epoch symbiotic.Epoch, limit int, lastHash common.Hash) ([]symbiotic.SignatureRequest, error) {
 	return r.getSignatureRequestsByEpochWithKeys(
 		ctx,
 		epoch,
