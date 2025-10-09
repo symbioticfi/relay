@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	aggregationPolicy2 "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
+	aggregationPolicy "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
 	"github.com/symbioticfi/relay/internal/usecase/aggregator-app/mocks"
 	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
 	"github.com/symbioticfi/relay/symbiotic/entity"
