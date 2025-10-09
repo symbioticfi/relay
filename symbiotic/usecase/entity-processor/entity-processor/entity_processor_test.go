@@ -103,7 +103,7 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 				require.NoError(t, err)
 
 				// Verify pending exists after first signature
-				_, err = repo.GetSignaturePendingByEpoch(t.Context(), epoch, 1, common.Hash{})
+				_, err = repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), epoch, 1, common.Hash{})
 				require.NoError(t, err)
 
 				// Return second signature that will reach quorum
@@ -168,13 +168,13 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 
 			// Verify pending collection state
 			if tt.expectPendingExists {
-				pendingReqs, err := repo.GetSignaturePendingByEpoch(t.Context(), param.Epoch, 10, common.Hash{})
+				pendingReqs, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), param.Epoch, 10, common.Hash{})
 				require.NoError(t, err)
 				require.Len(t, pendingReqs, 1)
 			}
 
 			if tt.expectPendingRemoved || !tt.expectPendingExists {
-				pendingReqs, err := repo.GetSignaturePendingByEpoch(t.Context(), param.Epoch, 10, common.Hash{})
+				pendingReqs, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), param.Epoch, 10, common.Hash{})
 				require.NoError(t, err)
 				require.Empty(t, pendingReqs)
 			}
@@ -220,7 +220,7 @@ func TestEntityProcessor_ProcessSignature_ConcurrentSignatures(t *testing.T) {
 	require.Positive(t, sigMap.SignedValidatorsBitmap.GetCardinality(), "At least one validator should be present")
 
 	// Pending collection should be empty (quorum reached)
-	pendingReqs, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch, 10, common.Hash{})
+	pendingReqs, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), epoch, 10, common.Hash{})
 	require.NoError(t, err)
 	require.Empty(t, pendingReqs)
 }
@@ -304,7 +304,7 @@ func TestEntityProcessor_ProcessSignature_ExactQuorumThreshold(t *testing.T) {
 	require.NoError(t, err)
 
 	// Should reach quorum and remove from pending
-	pendingReqs, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch, 10, common.Hash{})
+	pendingReqs, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), epoch, 10, common.Hash{})
 	require.NoError(t, err)
 	require.Empty(t, pendingReqs)
 }
@@ -594,12 +594,6 @@ func TestEntityProcessor_ProcessSignature_SavesAggregationProofPendingForAggrega
 	err = processor.ProcessSignature(t.Context(), param)
 	require.NoError(t, err)
 
-	// Verify signature request pending was saved
-	pendingSignatureRequests, err := repo.GetSignaturePendingByEpoch(t.Context(), req.RequiredEpoch, 10, common.Hash{})
-	require.NoError(t, err)
-	require.Len(t, pendingSignatureRequests, 1)
-	require.Equal(t, param.RequestID(), pendingSignatureRequests[0].RequestID)
-
 	// Verify aggregation proof pending was also saved
 	pendingAggRequests, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), req.RequiredEpoch, 10, common.Hash{})
 	require.NoError(t, err)
@@ -622,12 +616,6 @@ func TestEntityProcessor_ProcessSignature_SaveAggregationProofPendingForNonAggre
 	savedReq, err := repo.GetSignatureRequest(t.Context(), param.RequestID())
 	require.NoError(t, err)
 	require.Equal(t, req, savedReq)
-
-	// Verify pending signature requests saved (non-aggregation key)
-	pendingSignatureRequests, err := repo.GetSignaturePendingByEpoch(t.Context(), req.RequiredEpoch, 10, common.Hash{})
-	require.NoError(t, err)
-	require.Len(t, pendingSignatureRequests, 1)
-	require.Equal(t, param.RequestID(), pendingSignatureRequests[0].RequestID)
 
 	// Verify no pending aggregation proof requests
 	pendingAggRequests, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), req.RequiredEpoch, 10, common.Hash{})

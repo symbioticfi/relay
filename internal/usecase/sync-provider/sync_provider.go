@@ -11,7 +11,6 @@ import (
 )
 
 type repo interface {
-	GetSignaturePendingByEpoch(_ context.Context, epoch entity.Epoch, limit int, lastHash common.Hash) ([]entity.SignatureRequestWithID, error)
 	GetSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error)
 	GetLatestValidatorSetEpoch(ctx context.Context) (entity.Epoch, error)
 	GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error)

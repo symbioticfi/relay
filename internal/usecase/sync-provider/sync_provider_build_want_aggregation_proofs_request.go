@@ -43,6 +43,9 @@ func (s *Syncer) BuildWantAggregationProofsRequest(ctx context.Context) (entity.
 
 			// Collect request ids
 			for _, req := range requests {
+				if !req.KeyTag.Type().AggregationKey() {
+					continue // Skip non-aggregation requests
+				}
 				// check if proof exists
 				_, err := s.cfg.Repo.GetAggregationProof(ctx, req.RequestID)
 				if err == nil {
