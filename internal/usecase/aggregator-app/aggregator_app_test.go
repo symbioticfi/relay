@@ -37,7 +37,7 @@ func newTestSetup(t *testing.T, policyType entity.AggregationPolicyType, maxUnsi
 	mockP2PClient := mocks.NewMockp2pClient(ctrl)
 	mockAggregator := mocks.NewMockaggregator(ctrl)
 	mockMetrics := mocks.NewMockmetrics(ctrl)
-	aggregationPolicy, err := aggregationPolicy2.NewAggregationPolicy(policyType, maxUnsigners)
+	aggPolicy, err := aggregationPolicy.NewAggregationPolicy(policyType, maxUnsigners)
 	require.NoError(t, err)
 
 	privateKey, err := crypto.GeneratePrivateKey(entity.KeyTypeBlsBn254)
@@ -53,7 +53,7 @@ func newTestSetup(t *testing.T, policyType entity.AggregationPolicyType, maxUnsi
 		P2PClient:         mockP2PClient,
 		Aggregator:        mockAggregator,
 		Metrics:           mockMetrics,
-		AggregationPolicy: aggregationPolicy,
+		AggregationPolicy: aggPolicy,
 		KeyProvider:       kp,
 	}
 
