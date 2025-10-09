@@ -13,6 +13,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
@@ -320,6 +321,7 @@ func (s *Service) ID() string {
 
 func (s *Service) StartGRPCServer(ctx context.Context) error {
 	grpcServer := grpc.NewServer(
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.ChainUnaryInterceptor(
 			server.PanicRecoveryInterceptor(),
 			s.metrics.UnaryServerInterceptor(),

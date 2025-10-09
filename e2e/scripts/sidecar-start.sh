@@ -60,6 +60,11 @@ pruner:
 
   interval: 1m
 
+tracing:
+  enabled: false
+  endpoint: "jaeger:4317"
+  sample-rate: 1.0
+
 EOFCONFIG
 
 # Ensure environment variables are explicitly preserved

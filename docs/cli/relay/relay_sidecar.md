@@ -56,5 +56,8 @@ relay_sidecar [flags]
       --sync.epochs uint                        Epochs to sync (default 5)
       --sync.period duration                    Signature sync period (default 5s)
       --sync.timeout duration                   Signature sync timeout (default 1m0s)
+      --tracing.enabled                         Enable distributed tracing
+      --tracing.endpoint string                 OTLP endpoint for tracing (e.g., Jaeger) (default "localhost:4317")
+      --tracing.sample-rate float               Trace sampling rate (0.0 to 1.0) (default 1)
 ```
 

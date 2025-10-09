@@ -4,6 +4,8 @@ package log
 import (
 	"context"
 	"log/slog"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 type ContextHandler struct {
@@ -21,6 +23,18 @@ var attrsKeyValue attrsKey
 
 func WithComponent(ctx context.Context, component string) context.Context {
 	return WithAttrs(ctx, slog.String("component", component))
+}
+
+func WithTraceContext(ctx context.Context) context.Context {
+	spanCtx := trace.SpanFromContext(ctx).SpanContext()
+	if !spanCtx.IsValid() {
+		return ctx
+	}
+
+	return WithAttrs(ctx,
+		slog.String("trace_id", spanCtx.TraceID().String()),
+		slog.String("span_id", spanCtx.SpanID().String()),
+	)
 }
 
 func WithAttrs(ctx context.Context, as ...slog.Attr) context.Context {

@@ -48,8 +48,9 @@ func (s *Service) handleSignatureReadyMessage(pubSubMsg *pubsub.Message) error {
 	}
 
 	return s.signatureReceivedHandler.Emit(p2pEntity.P2PMessage[symbiotic.Signature]{
-		SenderInfo: si,
-		Message:    msg,
+		SenderInfo:   si,
+		Message:      msg,
+		TraceContext: signature.GetTraceContext(),
 	})
 }
 
@@ -81,8 +82,9 @@ func (s *Service) handleAggregatedProofReadyMessage(pubSubMsg *pubsub.Message) e
 	}
 
 	return s.signaturesAggregatedHandler.Emit(p2pEntity.P2PMessage[symbiotic.AggregationProof]{
-		SenderInfo: si,
-		Message:    msg,
+		SenderInfo:   si,
+		Message:      msg,
+		TraceContext: signaturesAggregated.GetTraceContext(),
 	})
 }
 

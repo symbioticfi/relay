@@ -34,6 +34,7 @@ import (
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/proof"
 	"github.com/symbioticfi/relay/pkg/signals"
+	"github.com/symbioticfi/relay/pkg/tracing"
 	"github.com/symbioticfi/relay/symbiotic/client/evm"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator"
@@ -47,6 +48,26 @@ func runApp(ctx context.Context) error {
 	cfg := cfgFromCtx(ctx)
 	log.Init(cfg.Log.Level, cfg.Log.Mode)
 	mtr := metrics.New(metrics.Config{})
+
+	// Initialize tracing
+	if cfg.Tracing.Enabled {
+		tracer, err := tracing.New(ctx, tracing.Config{
+			Enabled:    cfg.Tracing.Enabled,
+			Endpoint:   cfg.Tracing.Endpoint,
+			SampleRate: cfg.Tracing.SampleRate,
+		})
+		if err != nil {
+			return errors.Errorf("failed to create tracer: %w", err)
+		}
+		defer func() {
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := tracer.Shutdown(shutdownCtx); err != nil {
+				slog.ErrorContext(ctx, "Failed to shutdown tracer", "error", err)
+			}
+		}()
+		slog.InfoContext(ctx, "Tracing enabled", "endpoint", cfg.Tracing.Endpoint, "service", tracing.ServiceName)
+	}
 
 	var keyProvider *keyprovider.CacheKeyProvider
 	if cfg.KeyStore.Path != "" {

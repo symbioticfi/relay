@@ -10,6 +10,7 @@ message AggregationProof {
   uint64 epoch = 3;
   bytes message_hash = 4;
   bytes proof = 5;
+  map<string, string> trace_context = 6;
 }
 
 // P2PMessage represents a peer-to-peer message wrapper
@@ -54,6 +55,7 @@ message Signature {
   uint64 epoch = 3;
   bytes signature = 4;
   bytes public_key = 5;
+  map<string, string> trace_context = 6;
 }
 
 message WantAggregationProofsRequest {
