@@ -44,7 +44,7 @@ func (m *Mockrepo) EXPECT() *MockrepoMockRecorder {
 	return m.recorder
 }
 
-// GetSelfSignaturePending mocks base method.
+// GetSignaturePending mocks base method.
 func (m *Mockrepo) GetSignaturePending(ctx context.Context, limit int) ([]common.Hash, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSignaturePending", ctx, limit)
@@ -53,8 +53,8 @@ func (m *Mockrepo) GetSignaturePending(ctx context.Context, limit int) ([]common
 	return ret0, ret1
 }
 
-// GetSelfSignaturePending indicates an expected call of GetSelfSignaturePending.
-func (mr *MockrepoMockRecorder) GetSelfSignaturePending(ctx, limit any) *gomock.Call {
+// GetSignaturePending indicates an expected call of GetSignaturePending.
+func (mr *MockrepoMockRecorder) GetSignaturePending(ctx, limit any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignaturePending", reflect.TypeOf((*Mockrepo)(nil).GetSignaturePending), ctx, limit)
 }
@@ -89,7 +89,7 @@ func (mr *MockrepoMockRecorder) GetValidatorSetByEpoch(ctx, epoch any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSetByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetValidatorSetByEpoch), ctx, epoch)
 }
 
-// RemoveSelfSignaturePending mocks base method.
+// RemoveSignaturePending mocks base method.
 func (m *Mockrepo) RemoveSignaturePending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RemoveSignaturePending", ctx, epoch, requestID)
@@ -97,8 +97,8 @@ func (m *Mockrepo) RemoveSignaturePending(ctx context.Context, epoch entity.Epoc
 	return ret0
 }
 
-// RemoveSelfSignaturePending indicates an expected call of RemoveSelfSignaturePending.
-func (mr *MockrepoMockRecorder) RemoveSelfSignaturePending(ctx, epoch, requestID any) *gomock.Call {
+// RemoveSignaturePending indicates an expected call of RemoveSignaturePending.
+func (mr *MockrepoMockRecorder) RemoveSignaturePending(ctx, epoch, requestID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveSignaturePending", reflect.TypeOf((*Mockrepo)(nil).RemoveSignaturePending), ctx, epoch, requestID)
 }
