@@ -11,11 +11,11 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
+	entity_processor "github.com/symbioticfi/relay/internal/usecase/entity-processor"
+	"github.com/symbioticfi/relay/internal/usecase/entity-processor/mocks"
 	"github.com/symbioticfi/relay/pkg/signals"
 	"github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
-	entity_processor "github.com/symbioticfi/relay/symbiotic/usecase/entity-processor/entity-processor"
-	"github.com/symbioticfi/relay/symbiotic/usecase/entity-processor/entity-processor/mocks"
 )
 
 func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {

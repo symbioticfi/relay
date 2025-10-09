@@ -18,6 +18,7 @@ import (
 	aggregationPolicy "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
 	aggregatorApp "github.com/symbioticfi/relay/internal/usecase/aggregator-app"
 	api_server "github.com/symbioticfi/relay/internal/usecase/api-server"
+	entity_processor "github.com/symbioticfi/relay/internal/usecase/entity-processor"
 	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
 	"github.com/symbioticfi/relay/internal/usecase/metrics"
 	signatureListener "github.com/symbioticfi/relay/internal/usecase/signature-listener"
@@ -33,7 +34,6 @@ import (
 	"github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator"
 	symbioticCrypto "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
-	entity_processor "github.com/symbioticfi/relay/symbiotic/usecase/entity-processor/entity-processor"
 	valsetDeriver "github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver"
 )
 
