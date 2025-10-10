@@ -114,6 +114,7 @@ type config struct {
 	P2PListenAddress  string               `mapstructure:"p2p-listen" validate:"required"`
 	HTTPListenAddr    string               `mapstructure:"http-listen" validate:"required"`
 	MetricsListenAddr string               `mapstructure:"metrics-listen"`
+	EnablePprof       bool                 `mapstructure:"enable-pprof"`
 	SecretKeys        CMDSecretKeySlice    `mapstructure:"secret-keys"`
 	StorageDir        string               `mapstructure:"storage-dir"`
 	Chains            []string             `mapstructure:"chains" validate:"required"`
@@ -164,6 +165,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().String("p2p-listen", "", "P2P listen address")
 	rootCmd.PersistentFlags().String("http-listen", "", "Http listener address")
 	rootCmd.PersistentFlags().String("metrics-listen", "", "Http listener address for metrics endpoint")
+	rootCmd.PersistentFlags().Bool("enable-pprof", false, "Enable pprof debug endpoints")
 	rootCmd.PersistentFlags().String("storage-dir", ".data", "Dir to store data")
 	rootCmd.PersistentFlags().StringSlice("chains", nil, "Chains, comma separated rpc-url,..")
 	rootCmd.PersistentFlags().Var(&CMDSecretKeySlice{}, "secret-keys", "Secret keys, comma separated {namespace}/{type}/{id}/{key},..")
@@ -244,6 +246,9 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("metrics-listen", cmd.PersistentFlags().Lookup("metrics-listen")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("enable-pprof", cmd.PersistentFlags().Lookup("enable-pprof")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("storage-dir", cmd.PersistentFlags().Lookup("storage-dir")); err != nil {
