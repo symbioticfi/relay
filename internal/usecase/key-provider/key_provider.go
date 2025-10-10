@@ -58,7 +58,7 @@ func ToAlias(namespace string, keyType symbiotic.KeyType, keyId int) (string, er
 }
 
 func AliasToKeyTag(alias string) (symbiotic.KeyTag, error) {
-	keyType, keyId, err := AliasToKeyTypeId(alias)
+	_, keyType, keyId, err := AliasToKeyTypeId(alias)
 	if err != nil {
 		return 0, err
 	}
@@ -71,21 +71,21 @@ func AliasToKeyTag(alias string) (symbiotic.KeyTag, error) {
 	return symbiotic.KeyTag(uint8(keyType)<<4 | (uint8(keyId) & 0x0F)), nil
 }
 
-func AliasToKeyTypeId(alias string) (symbiotic.KeyType, int, error) {
+func AliasToKeyTypeId(alias string) (string, symbiotic.KeyType, int, error) {
 	keyTagParts := strings.Split(alias, "-")
 	if len(keyTagParts) != 3 {
-		return 0, 0, errors.New("invalid alias")
+		return "", 0, 0, errors.New("invalid alias")
 	}
 
 	keyType, err := symbiotic.KeyTypeFromString(keyTagParts[1])
 	if err != nil {
-		return 0, 0, err
+		return "", 0, 0, err
 	}
 
 	keyId, err := strconv.Atoi(keyTagParts[2])
 	if err != nil {
-		return 0, 0, err
+		return "", 0, 0, err
 	}
 
-	return keyType, keyId, nil
+	return keyTagParts[0], keyType, keyId, nil
 }

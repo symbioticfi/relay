@@ -2,7 +2,6 @@ package cmdhelpers
 
 import (
 	"fmt"
-	"log/slog"
 	"math/big"
 	"sort"
 	"strconv"
@@ -66,7 +65,7 @@ func (s *SecretKeyMapFlag) Type() string {
 }
 
 func GetPassword() (string, error) {
-	slog.Info("Enter password: ")
+	fmt.Printf("Enter password: \n")
 	passwordBytes, err := term.ReadPassword(syscall.Stdin)
 	if err != nil {
 		return "", err
