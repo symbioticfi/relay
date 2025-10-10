@@ -23,6 +23,7 @@ bootnodes:
 http-listen: ":8080"
 p2p-listen: "/ip4/0.0.0.0/tcp/8880"
 enable-mdns: true
+enable-pprof: true
 EOFCONFIG
 
 # Ensure environment variables are explicitly preserved
