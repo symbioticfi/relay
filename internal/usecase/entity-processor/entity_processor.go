@@ -66,37 +66,41 @@ func NewEntityProcessor(cfg Config) (*EntityProcessor, error) {
 }
 
 // ProcessSignature processes a signature with SignatureMap operations and optionally saves SignatureRequest
-func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature symbiotic.SignatureExtended) error {
+func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature symbiotic.SignatureExtended, self bool) error {
 	slog.DebugContext(ctx, "Processing signature",
 		"keyTag", signature.KeyTag,
 		"requestId", signature.RequestID().Hex(),
 		"epoch", signature.Epoch,
+		"self", self,
 	)
 
-	publicKey, err := crypto.NewPublicKey(signature.KeyTag.Type(), signature.PublicKey)
-	if err != nil {
-		return errors.Errorf("failed to get public key: %w", err)
-	}
-	validator, activeIndex, err := s.cfg.Repo.GetValidatorByKey(ctx, signature.Epoch, signature.KeyTag, publicKey.OnChain())
-	if err != nil {
-		return errors.Errorf("validator not found for public key %x, keyTag=%v, epoch=%v: %w", publicKey.OnChain(), signature.KeyTag, signature.Epoch, err)
-	}
-	if !validator.IsActive {
-		return errors.Errorf("validator %s is not active", validator.Operator.Hex())
-	}
+	// if self signature ignore validator check and signature existence check
+	if !self {
+		publicKey, err := crypto.NewPublicKey(signature.KeyTag.Type(), signature.PublicKey)
+		if err != nil {
+			return errors.Errorf("failed to get public key: %w", err)
+		}
+		validator, activeIndex, err := s.cfg.Repo.GetValidatorByKey(ctx, signature.Epoch, signature.KeyTag, publicKey.OnChain())
+		if err != nil {
+			return errors.Errorf("validator not found for public key %x, keyTag=%v, epoch=%v: %w", publicKey.OnChain(), signature.KeyTag, signature.Epoch, err)
+		}
+		if !validator.IsActive {
+			return errors.Errorf("validator %s is not active", validator.Operator.Hex())
+		}
 
-	// check if signature already exists
-	_, err = s.cfg.Repo.GetSignatureByIndex(ctx, signature.RequestID(), activeIndex)
-	if err == nil {
-		return errors.Errorf("signature already exists for request ID %s and validator index %d: %w", signature.RequestID().Hex(), activeIndex, entity.ErrEntityAlreadyExist)
-	}
-	if !errors.Is(err, entity.ErrEntityNotFound) {
-		return errors.Errorf("failed to check existing signature: %w", err)
-	}
+		// check if signature already exists
+		_, err = s.cfg.Repo.GetSignatureByIndex(ctx, signature.RequestID(), activeIndex)
+		if err == nil {
+			return errors.Errorf("signature already exists for request ID %s and validator index %d: %w", signature.RequestID().Hex(), activeIndex, entity.ErrEntityAlreadyExist)
+		}
+		if !errors.Is(err, entity.ErrEntityNotFound) {
+			return errors.Errorf("failed to check existing signature: %w", err)
+		}
 
-	err = publicKey.VerifyWithHash(signature.MessageHash, signature.Signature)
-	if err != nil {
-		return errors.Errorf("failed to verify signature: %w", err)
+		err = publicKey.VerifyWithHash(signature.MessageHash, signature.Signature)
+		if err != nil {
+			return errors.Errorf("failed to verify signature: %w", err)
+		}
 	}
 
 	if err := s.cfg.Repo.SaveSignature(ctx, signature); err != nil {

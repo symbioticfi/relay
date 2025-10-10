@@ -60,7 +60,7 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 		Epoch:       signatureRequest.RequiredEpoch,
 		KeyTag:      signatureRequest.KeyTag,
 	}
-	require.NoError(t, peerEntityProcessor.ProcessSignature(t.Context(), param))
+	require.NoError(t, peerEntityProcessor.ProcessSignature(t.Context(), param, false))
 
 	requestID := param.RequestID()
 
@@ -73,7 +73,7 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 		Epoch:       signatureRequest.RequiredEpoch,
 		KeyTag:      signatureRequest.KeyTag,
 	}
-	require.NoError(t, requesterEntityProcessor.ProcessSignature(t.Context(), param1))
+	require.NoError(t, requesterEntityProcessor.ProcessSignature(t.Context(), param1, false))
 
 	require.NoError(t, requesterRepo.SaveSignatureRequest(t.Context(), requestID, signatureRequest))
 
@@ -378,7 +378,7 @@ func TestHandleWantSignaturesRequest_MaxResponseSignatureCountLimit(t *testing.T
 			requestID = param.RequestID()
 			require.NoError(t, repo.SaveSignatureRequest(t.Context(), requestID, signatureRequest))
 		}
-		require.NoError(t, entityProcessor.ProcessSignature(t.Context(), param))
+		require.NoError(t, entityProcessor.ProcessSignature(t.Context(), param, false))
 	}
 
 	t.Run("limit exceeded with single request", func(t *testing.T) {
@@ -477,7 +477,7 @@ func TestHandleWantSignaturesRequest_MultipleRequestIDs(t *testing.T) {
 	}
 
 	require.NoError(t, repo.SaveSignatureRequest(t.Context(), param1.RequestID(), signatureRequest1))
-	require.NoError(t, entityProcessor.ProcessSignature(t.Context(), param1))
+	require.NoError(t, entityProcessor.ProcessSignature(t.Context(), param1, false))
 
 	// Save signature for second request
 	signature2, hash2, err := privateKeys[1].Sign(signatureRequest2.Message)
@@ -492,7 +492,7 @@ func TestHandleWantSignaturesRequest_MultipleRequestIDs(t *testing.T) {
 	}
 
 	require.NoError(t, repo.SaveSignatureRequest(t.Context(), param2.RequestID(), signatureRequest2))
-	require.NoError(t, entityProcessor.ProcessSignature(t.Context(), param2))
+	require.NoError(t, entityProcessor.ProcessSignature(t.Context(), param2, false))
 
 	request := entity.WantSignaturesRequest{
 		WantSignatures: map[common.Hash]entity.Bitmap{
@@ -547,7 +547,7 @@ func TestHandleWantSignaturesRequest_PartialSignatureAvailability(t *testing.T) 
 			requestID = param.RequestID()
 			require.NoError(t, repo.SaveSignatureRequest(t.Context(), requestID, signatureRequest))
 		}
-		require.NoError(t, entityProcessor.ProcessSignature(t.Context(), param))
+		require.NoError(t, entityProcessor.ProcessSignature(t.Context(), param, false))
 	}
 
 	syncer, err := New(Config{

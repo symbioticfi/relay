@@ -24,7 +24,7 @@ type repo interface {
 }
 
 type entityProcessor interface {
-	ProcessSignature(ctx context.Context, signature symbiotic.SignatureExtended) error
+	ProcessSignature(ctx context.Context, signature symbiotic.SignatureExtended, self bool) error
 	ProcessAggregationProof(ctx context.Context, proof symbiotic.AggregationProof) error
 }
 
