@@ -11,22 +11,23 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func keyAggregationProof(requestID common.Hash) []byte {
 	return []byte(fmt.Sprintf("aggregation_proof:%s", requestID.Hex()))
 }
 
-func keyAggregationProofPending(epoch entity.Epoch, requestID common.Hash) []byte {
+func keyAggregationProofPending(epoch symbiotic.Epoch, requestID common.Hash) []byte {
 	return []byte(fmt.Sprintf("aggregation_proof_pending:%d:%s", epoch, requestID.Hex()))
 }
 
-func keyAggregationProofPendingEpochPrefix(epoch entity.Epoch) []byte {
+func keyAggregationProofPendingEpochPrefix(epoch symbiotic.Epoch) []byte {
 	return []byte(fmt.Sprintf("aggregation_proof_pending:%d:", epoch))
 }
 
-func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.Hash, ap entity.AggregationProof) error {
+func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.Hash, ap symbiotic.AggregationProof) error {
 	proofBytes, err := aggregationProofToBytes(ap)
 	if err != nil {
 		return errors.Errorf("failed to marshal aggregation proof: %w", err)
@@ -50,8 +51,8 @@ func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.
 	}, &r.proofsMutexMap, requestID)
 }
 
-func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error) {
-	var ap entity.AggregationProof
+func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error) {
+	var ap symbiotic.AggregationProof
 
 	return ap, r.doViewInTx(ctx, "GetAggregationProof", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -84,7 +85,7 @@ type aggregationProofDTO struct {
 	Proof       []byte `json:"proof"`
 }
 
-func aggregationProofToBytes(ap entity.AggregationProof) ([]byte, error) {
+func aggregationProofToBytes(ap symbiotic.AggregationProof) ([]byte, error) {
 	dto := aggregationProofDTO{
 		MessageHash: ap.MessageHash,
 		KeyTag:      uint8(ap.KeyTag),
@@ -99,21 +100,21 @@ func aggregationProofToBytes(ap entity.AggregationProof) ([]byte, error) {
 	return data, nil
 }
 
-func bytesToAggregationProof(value []byte) (entity.AggregationProof, error) {
+func bytesToAggregationProof(value []byte) (symbiotic.AggregationProof, error) {
 	var dto aggregationProofDTO
 	if err := json.Unmarshal(value, &dto); err != nil {
-		return entity.AggregationProof{}, errors.Errorf("failed to unmarshal aggregation proof: %w", err)
+		return symbiotic.AggregationProof{}, errors.Errorf("failed to unmarshal aggregation proof: %w", err)
 	}
 
-	return entity.AggregationProof{
+	return symbiotic.AggregationProof{
 		MessageHash: dto.MessageHash,
-		KeyTag:      entity.KeyTag(dto.KeyTag),
-		Epoch:       entity.Epoch(dto.Epoch),
+		KeyTag:      symbiotic.KeyTag(dto.KeyTag),
+		Epoch:       symbiotic.Epoch(dto.Epoch),
 		Proof:       dto.Proof,
 	}, nil
 }
 
-func (r *Repository) saveAggregationProofPending(ctx context.Context, requestID common.Hash, epoch entity.Epoch) error {
+func (r *Repository) saveAggregationProofPending(ctx context.Context, requestID common.Hash, epoch symbiotic.Epoch) error {
 	return r.doUpdateInTx(ctx, "saveAggregationProofPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		pendingKey := keyAggregationProofPending(epoch, requestID)
@@ -135,7 +136,7 @@ func (r *Repository) saveAggregationProofPending(ctx context.Context, requestID 
 	})
 }
 
-func (r *Repository) RemoveAggregationProofPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error {
+func (r *Repository) RemoveAggregationProofPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
 	return r.doUpdateInTx(ctx, "RemoveAggregationProofPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		pendingKey := keyAggregationProofPending(epoch, requestID)
@@ -158,8 +159,8 @@ func (r *Repository) RemoveAggregationProofPending(ctx context.Context, epoch en
 	})
 }
 
-func (r *Repository) GetSignatureRequestsWithoutAggregationProof(ctx context.Context, epoch entity.Epoch, limit int, lastHash common.Hash) ([]entity.SignatureRequestWithID, error) {
-	var requests []entity.SignatureRequestWithID
+func (r *Repository) GetSignatureRequestsWithoutAggregationProof(ctx context.Context, epoch symbiotic.Epoch, limit int, lastHash common.Hash) ([]symbiotic.SignatureRequestWithID, error) {
+	var requests []symbiotic.SignatureRequestWithID
 
 	return requests, r.doViewInTx(ctx, "GetSignatureRequestsWithoutAggregationProof", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -226,7 +227,7 @@ func (r *Repository) GetSignatureRequestsWithoutAggregationProof(ctx context.Con
 				return errors.Errorf("failed to unmarshal signature request: %w", err)
 			}
 
-			requests = append(requests, entity.SignatureRequestWithID{
+			requests = append(requests, symbiotic.SignatureRequestWithID{
 				SignatureRequest: req,
 				RequestID:        requestID,
 			})

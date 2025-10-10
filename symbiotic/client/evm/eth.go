@@ -21,8 +21,9 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
+	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/symbiotic/client/evm/gen"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	cryptoSym "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
@@ -36,37 +37,37 @@ type IEvmClient interface {
 	GetChains() []uint64
 	GetSubnetwork(ctx context.Context) (common.Hash, error)
 	GetNetworkAddress(ctx context.Context) (common.Address, error)
-	GetConfig(ctx context.Context, timestamp entity.Timestamp) (entity.NetworkConfig, error)
-	GetEip712Domain(ctx context.Context, addr entity.CrossChainAddress) (entity.Eip712Domain, error)
-	GetCurrentEpoch(ctx context.Context) (entity.Epoch, error)
+	GetConfig(ctx context.Context, timestamp symbiotic.Timestamp) (symbiotic.NetworkConfig, error)
+	GetEip712Domain(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.Eip712Domain, error)
+	GetCurrentEpoch(ctx context.Context) (symbiotic.Epoch, error)
 	GetCurrentEpochDuration(ctx context.Context) (uint64, error)
-	GetEpochDuration(ctx context.Context, epoch entity.Epoch) (uint64, error)
-	GetEpochStart(ctx context.Context, epoch entity.Epoch) (entity.Timestamp, error)
-	IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (bool, error)
-	GetHeaderHash(ctx context.Context, addr entity.CrossChainAddress) (common.Hash, error)
-	GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (common.Hash, error)
-	GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (entity.Epoch, error)
-	GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (uint64, error)
-	GetValSetHeaderAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (entity.ValidatorSetHeader, error)
-	GetValSetHeader(ctx context.Context, addr entity.CrossChainAddress) (entity.ValidatorSetHeader, error)
-	GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) ([]entity.OperatorVotingPower, error)
-	GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) ([]entity.OperatorWithKeys, error)
-	CommitValsetHeader(ctx context.Context, addr entity.CrossChainAddress, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) (entity.TxResult, error)
-	RegisterOperator(ctx context.Context, addr entity.CrossChainAddress) (entity.TxResult, error)
-	RegisterKey(ctx context.Context, addr entity.CrossChainAddress, keyTag entity.KeyTag, key entity.CompactPublicKey, signature entity.RawSignature, extraData []byte) (entity.TxResult, error)
-	SetGenesis(ctx context.Context, addr entity.CrossChainAddress, header entity.ValidatorSetHeader, extraData []entity.ExtraData) (entity.TxResult, error)
-	VerifyQuorumSig(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch, message []byte, keyTag entity.KeyTag, threshold *big.Int, proof []byte) (bool, error)
-	IsValsetHeaderCommittedAtEpochs(ctx context.Context, addr entity.CrossChainAddress, epochs []entity.Epoch) ([]bool, error)
+	GetEpochDuration(ctx context.Context, epoch symbiotic.Epoch) (uint64, error)
+	GetEpochStart(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.Timestamp, error)
+	IsValsetHeaderCommittedAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch) (bool, error)
+	GetHeaderHash(ctx context.Context, addr symbiotic.CrossChainAddress) (common.Hash, error)
+	GetHeaderHashAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch) (common.Hash, error)
+	GetLastCommittedHeaderEpoch(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.Epoch, error)
+	GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch) (uint64, error)
+	GetValSetHeaderAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch) (symbiotic.ValidatorSetHeader, error)
+	GetValSetHeader(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.ValidatorSetHeader, error)
+	GetVotingPowers(ctx context.Context, address symbiotic.CrossChainAddress, timestamp symbiotic.Timestamp) ([]symbiotic.OperatorVotingPower, error)
+	GetKeys(ctx context.Context, address symbiotic.CrossChainAddress, timestamp symbiotic.Timestamp) ([]symbiotic.OperatorWithKeys, error)
+	CommitValsetHeader(ctx context.Context, addr symbiotic.CrossChainAddress, header symbiotic.ValidatorSetHeader, extraData []symbiotic.ExtraData, proof []byte) (symbiotic.TxResult, error)
+	RegisterOperator(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.TxResult, error)
+	RegisterKey(ctx context.Context, addr symbiotic.CrossChainAddress, keyTag symbiotic.KeyTag, key symbiotic.CompactPublicKey, signature symbiotic.RawSignature, extraData []byte) (symbiotic.TxResult, error)
+	SetGenesis(ctx context.Context, addr symbiotic.CrossChainAddress, header symbiotic.ValidatorSetHeader, extraData []symbiotic.ExtraData) (symbiotic.TxResult, error)
+	VerifyQuorumSig(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch, message []byte, keyTag symbiotic.KeyTag, threshold *big.Int, proof []byte) (bool, error)
+	IsValsetHeaderCommittedAtEpochs(ctx context.Context, addr symbiotic.CrossChainAddress, epochs []symbiotic.Epoch) ([]bool, error)
 }
 
 type keyProvider interface {
-	GetPrivateKeyByNamespaceTypeId(namespace string, keyType entity.KeyType, id int) (cryptoSym.PrivateKey, error)
+	GetPrivateKeyByNamespaceTypeId(namespace string, keyType symbiotic.KeyType, id int) (cryptoSym.PrivateKey, error)
 }
 
 type Config struct {
-	ChainURLs      []string                 `validate:"required"`
-	DriverAddress  entity.CrossChainAddress `validate:"required"`
-	RequestTimeout time.Duration            `validate:"required,gt=0"`
+	ChainURLs      []string                    `validate:"required"`
+	DriverAddress  symbiotic.CrossChainAddress `validate:"required"`
+	RequestTimeout time.Duration               `validate:"required,gt=0"`
 	KeyProvider    keyProvider
 	Metrics        metrics
 	MaxCalls       int
@@ -134,7 +135,7 @@ func (e *Client) GetChains() []uint64 {
 	return chainIds
 }
 
-func (e *Client) GetConfig(ctx context.Context, timestamp entity.Timestamp) (_ entity.NetworkConfig, err error) {
+func (e *Client) GetConfig(ctx context.Context, timestamp symbiotic.Timestamp) (_ symbiotic.NetworkConfig, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -146,38 +147,38 @@ func (e *Client) GetConfig(ctx context.Context, timestamp entity.Timestamp) (_ e
 		Context:     toCtx,
 	}, new(big.Int).SetUint64(uint64(timestamp)))
 	if err != nil {
-		return entity.NetworkConfig{}, errors.Errorf("failed to call getConfigAt: %w", err)
+		return symbiotic.NetworkConfig{}, errors.Errorf("failed to call getConfigAt: %w", err)
 	}
 
-	return entity.NetworkConfig{
-		VotingPowerProviders: lo.Map(dtoConfig.VotingPowerProviders, func(v gen.IValSetDriverCrossChainAddress, _ int) entity.CrossChainAddress {
-			return entity.CrossChainAddress{
+	return symbiotic.NetworkConfig{
+		VotingPowerProviders: lo.Map(dtoConfig.VotingPowerProviders, func(v gen.IValSetDriverCrossChainAddress, _ int) symbiotic.CrossChainAddress {
+			return symbiotic.CrossChainAddress{
 				ChainId: v.ChainId,
 				Address: v.Addr,
 			}
 		}),
-		KeysProvider: entity.CrossChainAddress{
+		KeysProvider: symbiotic.CrossChainAddress{
 			Address: dtoConfig.KeysProvider.Addr,
 			ChainId: dtoConfig.KeysProvider.ChainId,
 		},
-		Settlements: lo.Map(dtoConfig.Settlements, func(v gen.IValSetDriverCrossChainAddress, _ int) entity.CrossChainAddress {
-			return entity.CrossChainAddress{
+		Settlements: lo.Map(dtoConfig.Settlements, func(v gen.IValSetDriverCrossChainAddress, _ int) symbiotic.CrossChainAddress {
+			return symbiotic.CrossChainAddress{
 				ChainId: v.ChainId,
 				Address: v.Addr,
 			}
 		}),
-		VerificationType:        entity.VerificationType(dtoConfig.VerificationType),
-		MaxVotingPower:          entity.ToVotingPower(dtoConfig.MaxVotingPower),
-		MinInclusionVotingPower: entity.ToVotingPower(dtoConfig.MinInclusionVotingPower),
-		MaxValidatorsCount:      entity.ToVotingPower(dtoConfig.MaxValidatorsCount),
-		RequiredKeyTags: lo.Map(dtoConfig.RequiredKeyTags, func(v uint8, _ int) entity.KeyTag {
-			return entity.KeyTag(v)
+		VerificationType:        symbiotic.VerificationType(dtoConfig.VerificationType),
+		MaxVotingPower:          symbiotic.ToVotingPower(dtoConfig.MaxVotingPower),
+		MinInclusionVotingPower: symbiotic.ToVotingPower(dtoConfig.MinInclusionVotingPower),
+		MaxValidatorsCount:      symbiotic.ToVotingPower(dtoConfig.MaxValidatorsCount),
+		RequiredKeyTags: lo.Map(dtoConfig.RequiredKeyTags, func(v uint8, _ int) symbiotic.KeyTag {
+			return symbiotic.KeyTag(v)
 		}),
-		RequiredHeaderKeyTag: entity.KeyTag(dtoConfig.RequiredHeaderKeyTag),
-		QuorumThresholds: lo.Map(dtoConfig.QuorumThresholds, func(v gen.IValSetDriverQuorumThreshold, _ int) entity.QuorumThreshold {
-			return entity.QuorumThreshold{
-				KeyTag:          entity.KeyTag(v.KeyTag),
-				QuorumThreshold: entity.ToQuorumThresholdPct(v.QuorumThreshold),
+		RequiredHeaderKeyTag: symbiotic.KeyTag(dtoConfig.RequiredHeaderKeyTag),
+		QuorumThresholds: lo.Map(dtoConfig.QuorumThresholds, func(v gen.IValSetDriverQuorumThreshold, _ int) symbiotic.QuorumThreshold {
+			return symbiotic.QuorumThreshold{
+				KeyTag:          symbiotic.KeyTag(v.KeyTag),
+				QuorumThreshold: symbiotic.ToQuorumThresholdPct(v.QuorumThreshold),
 			}
 		}),
 		NumCommitters:  dtoConfig.NumCommitters.Uint64(),
@@ -188,7 +189,7 @@ func (e *Client) GetConfig(ctx context.Context, timestamp entity.Timestamp) (_ e
 	}, nil
 }
 
-func (e *Client) GetCurrentEpoch(ctx context.Context) (_ entity.Epoch, err error) {
+func (e *Client) GetCurrentEpoch(ctx context.Context) (_ symbiotic.Epoch, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -202,7 +203,7 @@ func (e *Client) GetCurrentEpoch(ctx context.Context) (_ entity.Epoch, err error
 	if err != nil {
 		return 0, errors.Errorf("failed to call getCurrentEpoch: %w", e.formatEVMContractError(gen.IValSetDriverMetaData, err))
 	}
-	return entity.Epoch(epoch.Uint64()), nil
+	return symbiotic.Epoch(epoch.Uint64()), nil
 }
 
 func (e *Client) GetCurrentEpochDuration(ctx context.Context) (_ uint64, err error) {
@@ -222,7 +223,7 @@ func (e *Client) GetCurrentEpochDuration(ctx context.Context) (_ uint64, err err
 	return epochDuration.Uint64(), nil
 }
 
-func (e *Client) GetEpochDuration(ctx context.Context, epoch entity.Epoch) (_ uint64, err error) {
+func (e *Client) GetEpochDuration(ctx context.Context, epoch symbiotic.Epoch) (_ uint64, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -239,7 +240,7 @@ func (e *Client) GetEpochDuration(ctx context.Context, epoch entity.Epoch) (_ ui
 	return epochDuration.Uint64(), nil
 }
 
-func (e *Client) GetEpochStart(ctx context.Context, epoch entity.Epoch) (_ entity.Timestamp, err error) {
+func (e *Client) GetEpochStart(ctx context.Context, epoch symbiotic.Epoch) (_ symbiotic.Timestamp, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -253,7 +254,7 @@ func (e *Client) GetEpochStart(ctx context.Context, epoch entity.Epoch) (_ entit
 	if err != nil {
 		return 0, errors.Errorf("failed to call getEpochStart: %w", e.formatEVMContractError(gen.IValSetDriverMetaData, err))
 	}
-	return entity.Timestamp(epochStart.Uint64()), nil
+	return symbiotic.Timestamp(epochStart.Uint64()), nil
 }
 
 func (e *Client) GetSubnetwork(ctx context.Context) (_ common.Hash, err error) {
@@ -292,7 +293,7 @@ func (e *Client) GetNetworkAddress(ctx context.Context) (_ common.Address, err e
 	return networkAddress, nil
 }
 
-func (e *Client) IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (_ bool, err error) {
+func (e *Client) IsValsetHeaderCommittedAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch) (_ bool, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -314,7 +315,7 @@ func (e *Client) IsValsetHeaderCommittedAt(ctx context.Context, addr entity.Cros
 	return ok, nil
 }
 
-func (e *Client) GetHeaderHash(ctx context.Context, addr entity.CrossChainAddress) (_ common.Hash, err error) {
+func (e *Client) GetHeaderHash(ctx context.Context, addr symbiotic.CrossChainAddress) (_ common.Hash, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -337,7 +338,7 @@ func (e *Client) GetHeaderHash(ctx context.Context, addr entity.CrossChainAddres
 	return hash, nil
 }
 
-func (e *Client) GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (_ common.Hash, err error) {
+func (e *Client) GetHeaderHashAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch) (_ common.Hash, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -360,7 +361,7 @@ func (e *Client) GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddr
 	return hash, nil
 }
 
-func (e *Client) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (_ entity.Epoch, err error) {
+func (e *Client) GetLastCommittedHeaderEpoch(ctx context.Context, addr symbiotic.CrossChainAddress) (_ symbiotic.Epoch, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -382,10 +383,10 @@ func (e *Client) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.Cr
 
 	// todo if zero epoch need to check if it's committed or not
 
-	return entity.Epoch(epoch.Uint64()), nil
+	return symbiotic.Epoch(epoch.Uint64()), nil
 }
 
-func (e *Client) GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (_ uint64, err error) {
+func (e *Client) GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch) (_ uint64, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -408,7 +409,7 @@ func (e *Client) GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, addr
 	return timestamp.Uint64(), nil
 }
 
-func (e *Client) GetValSetHeaderAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (_ entity.ValidatorSetHeader, err error) {
+func (e *Client) GetValSetHeaderAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch) (_ symbiotic.ValidatorSetHeader, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -417,7 +418,7 @@ func (e *Client) GetValSetHeaderAt(ctx context.Context, addr entity.CrossChainAd
 
 	settlement, err := e.getSettlementContract(addr)
 	if err != nil {
-		return entity.ValidatorSetHeader{}, errors.Errorf("failed to get settlement contract: %w", err)
+		return symbiotic.ValidatorSetHeader{}, errors.Errorf("failed to get settlement contract: %w", err)
 	}
 
 	header, err := settlement.GetValSetHeaderAt(&bind.CallOpts{
@@ -425,21 +426,21 @@ func (e *Client) GetValSetHeaderAt(ctx context.Context, addr entity.CrossChainAd
 		Context:     toCtx,
 	}, new(big.Int).SetUint64(uint64(epoch)))
 	if err != nil {
-		return entity.ValidatorSetHeader{}, errors.Errorf("failed to call getValSetHeaderAt: %w", err)
+		return symbiotic.ValidatorSetHeader{}, errors.Errorf("failed to call getValSetHeaderAt: %w", err)
 	}
 
-	return entity.ValidatorSetHeader{
+	return symbiotic.ValidatorSetHeader{
 		Version:            header.Version,
-		RequiredKeyTag:     entity.KeyTag(header.RequiredKeyTag),
-		Epoch:              entity.Epoch(header.Epoch.Uint64()),
-		CaptureTimestamp:   entity.Timestamp(header.CaptureTimestamp.Uint64()),
-		QuorumThreshold:    entity.ToVotingPower(header.QuorumThreshold),
-		TotalVotingPower:   entity.ToVotingPower(header.TotalVotingPower),
+		RequiredKeyTag:     symbiotic.KeyTag(header.RequiredKeyTag),
+		Epoch:              symbiotic.Epoch(header.Epoch.Uint64()),
+		CaptureTimestamp:   symbiotic.Timestamp(header.CaptureTimestamp.Uint64()),
+		QuorumThreshold:    symbiotic.ToVotingPower(header.QuorumThreshold),
+		TotalVotingPower:   symbiotic.ToVotingPower(header.TotalVotingPower),
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot,
 	}, nil
 }
 
-func (e *Client) GetValSetHeader(ctx context.Context, addr entity.CrossChainAddress) (_ entity.ValidatorSetHeader, err error) {
+func (e *Client) GetValSetHeader(ctx context.Context, addr symbiotic.CrossChainAddress) (_ symbiotic.ValidatorSetHeader, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -448,7 +449,7 @@ func (e *Client) GetValSetHeader(ctx context.Context, addr entity.CrossChainAddr
 
 	settlement, err := e.getSettlementContract(addr)
 	if err != nil {
-		return entity.ValidatorSetHeader{}, errors.Errorf("failed to get settlement contract: %w", err)
+		return symbiotic.ValidatorSetHeader{}, errors.Errorf("failed to get settlement contract: %w", err)
 	}
 
 	header, err := settlement.GetValSetHeader(&bind.CallOpts{
@@ -456,21 +457,21 @@ func (e *Client) GetValSetHeader(ctx context.Context, addr entity.CrossChainAddr
 		Context:     toCtx,
 	})
 	if err != nil {
-		return entity.ValidatorSetHeader{}, errors.Errorf("failed to call getValSetHeader: %w", err)
+		return symbiotic.ValidatorSetHeader{}, errors.Errorf("failed to call getValSetHeader: %w", err)
 	}
 
-	return entity.ValidatorSetHeader{
+	return symbiotic.ValidatorSetHeader{
 		Version:            header.Version,
-		RequiredKeyTag:     entity.KeyTag(header.RequiredKeyTag),
-		Epoch:              entity.Epoch(header.Epoch.Uint64()),
-		CaptureTimestamp:   entity.Timestamp(header.CaptureTimestamp.Uint64()),
-		QuorumThreshold:    entity.ToVotingPower(header.QuorumThreshold),
-		TotalVotingPower:   entity.ToVotingPower(header.TotalVotingPower),
+		RequiredKeyTag:     symbiotic.KeyTag(header.RequiredKeyTag),
+		Epoch:              symbiotic.Epoch(header.Epoch.Uint64()),
+		CaptureTimestamp:   symbiotic.Timestamp(header.CaptureTimestamp.Uint64()),
+		QuorumThreshold:    symbiotic.ToVotingPower(header.QuorumThreshold),
+		TotalVotingPower:   symbiotic.ToVotingPower(header.TotalVotingPower),
 		ValidatorsSszMRoot: header.ValidatorsSszMRoot,
 	}, nil
 }
 
-func (e *Client) GetEip712Domain(ctx context.Context, addr entity.CrossChainAddress) (_ entity.Eip712Domain, err error) {
+func (e *Client) GetEip712Domain(ctx context.Context, addr symbiotic.CrossChainAddress) (_ symbiotic.Eip712Domain, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -479,7 +480,7 @@ func (e *Client) GetEip712Domain(ctx context.Context, addr entity.CrossChainAddr
 
 	settlement, err := e.getSettlementContract(addr)
 	if err != nil {
-		return entity.Eip712Domain{}, errors.Errorf("failed to get settlement contract: %w", err)
+		return symbiotic.Eip712Domain{}, errors.Errorf("failed to get settlement contract: %w", err)
 	}
 
 	eip712Domain, err := settlement.Eip712Domain(&bind.CallOpts{
@@ -487,10 +488,10 @@ func (e *Client) GetEip712Domain(ctx context.Context, addr entity.CrossChainAddr
 		Context:     toCtx,
 	})
 	if err != nil {
-		return entity.Eip712Domain{}, errors.Errorf("failed to call Eip712Domain: %w", err)
+		return symbiotic.Eip712Domain{}, errors.Errorf("failed to call Eip712Domain: %w", err)
 	}
 
-	return entity.Eip712Domain{
+	return symbiotic.Eip712Domain{
 		Fields:            eip712Domain.Fields,
 		Name:              eip712Domain.Name,
 		Version:           eip712Domain.Version,
@@ -501,7 +502,7 @@ func (e *Client) GetEip712Domain(ctx context.Context, addr entity.CrossChainAddr
 	}, nil
 }
 
-func (e *Client) GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) (_ []entity.OperatorVotingPower, err error) {
+func (e *Client) GetVotingPowers(ctx context.Context, address symbiotic.CrossChainAddress, timestamp symbiotic.Timestamp) (_ []symbiotic.OperatorVotingPower, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -530,20 +531,20 @@ func (e *Client) GetVotingPowers(ctx context.Context, address entity.CrossChainA
 		return nil, errors.Errorf("failed to call getVotingPowersAt: %w", e.formatEVMContractError(gen.IVotingPowerProviderMetaData, err))
 	}
 
-	return lo.Map(votingPowersAt, func(v gen.IVotingPowerProviderOperatorVotingPower, _ int) entity.OperatorVotingPower {
-		return entity.OperatorVotingPower{
+	return lo.Map(votingPowersAt, func(v gen.IVotingPowerProviderOperatorVotingPower, _ int) symbiotic.OperatorVotingPower {
+		return symbiotic.OperatorVotingPower{
 			Operator: v.Operator,
-			Vaults: lo.Map(v.Vaults, func(v gen.IVotingPowerProviderVaultValue, _ int) entity.VaultVotingPower {
-				return entity.VaultVotingPower{
+			Vaults: lo.Map(v.Vaults, func(v gen.IVotingPowerProviderVaultValue, _ int) symbiotic.VaultVotingPower {
+				return symbiotic.VaultVotingPower{
 					Vault:       v.Vault,
-					VotingPower: entity.ToVotingPower(v.Value),
+					VotingPower: symbiotic.ToVotingPower(v.Value),
 				}
 			}),
 		}
 	}), nil
 }
 
-func (e *Client) GetOperators(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) (_ []common.Address, err error) {
+func (e *Client) GetOperators(ctx context.Context, address symbiotic.CrossChainAddress, timestamp symbiotic.Timestamp) (_ []common.Address, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -566,7 +567,7 @@ func (e *Client) GetOperators(ctx context.Context, address entity.CrossChainAddr
 	return operators, nil
 }
 
-func (e *Client) GetKeysOperators(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) (_ []common.Address, err error) {
+func (e *Client) GetKeysOperators(ctx context.Context, address symbiotic.CrossChainAddress, timestamp symbiotic.Timestamp) (_ []common.Address, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -589,7 +590,7 @@ func (e *Client) GetKeysOperators(ctx context.Context, address entity.CrossChain
 	return operators, nil
 }
 
-func (e *Client) GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) (_ []entity.OperatorWithKeys, err error) {
+func (e *Client) GetKeys(ctx context.Context, address symbiotic.CrossChainAddress, timestamp symbiotic.Timestamp) (_ []symbiotic.OperatorWithKeys, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -618,12 +619,12 @@ func (e *Client) GetKeys(ctx context.Context, address entity.CrossChainAddress, 
 		return nil, errors.Errorf("failed to call getKeysAt: %w", e.formatEVMContractError(gen.IKeyRegistryMetaData, err))
 	}
 
-	return lo.Map(keys, func(v gen.IKeyRegistryOperatorWithKeys, _ int) entity.OperatorWithKeys {
-		return entity.OperatorWithKeys{
+	return lo.Map(keys, func(v gen.IKeyRegistryOperatorWithKeys, _ int) symbiotic.OperatorWithKeys {
+		return symbiotic.OperatorWithKeys{
 			Operator: v.Operator,
-			Keys: lo.Map(v.Keys, func(v gen.IKeyRegistryKey, _ int) entity.ValidatorKey {
-				return entity.ValidatorKey{
-					Tag:     entity.KeyTag(v.Tag),
+			Keys: lo.Map(v.Keys, func(v gen.IKeyRegistryKey, _ int) symbiotic.ValidatorKey {
+				return symbiotic.ValidatorKey{
+					Tag:     symbiotic.KeyTag(v.Tag),
 					Payload: v.Payload,
 				}
 			}),
@@ -631,7 +632,7 @@ func (e *Client) GetKeys(ctx context.Context, address entity.CrossChainAddress, 
 	}), nil
 }
 
-func (e *Client) IsValsetHeaderCommittedAtEpochs(ctx context.Context, addr entity.CrossChainAddress, epochs []entity.Epoch) (_ []bool, err error) {
+func (e *Client) IsValsetHeaderCommittedAtEpochs(ctx context.Context, addr symbiotic.CrossChainAddress, epochs []symbiotic.Epoch) (_ []bool, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -763,7 +764,7 @@ func (e *Client) formatEVMError(err error) error {
 	return errors.Errorf("%w: %s", err, errDef.String())
 }
 
-func (e *Client) getSettlementContract(addr entity.CrossChainAddress) (*gen.ISettlement, error) {
+func (e *Client) getSettlementContract(addr symbiotic.CrossChainAddress) (*gen.ISettlement, error) {
 	client, ok := e.conns[addr.ChainId]
 	if !ok {
 		return nil, errors.Errorf("no connection for chain ID %d: %w", addr.ChainId, entity.ErrChainNotFound)
@@ -772,7 +773,7 @@ func (e *Client) getSettlementContract(addr entity.CrossChainAddress) (*gen.ISet
 	return gen.NewISettlement(addr.Address, client)
 }
 
-func (e *Client) getVotingPowerProviderContract(addr entity.CrossChainAddress) (*gen.IVotingPowerProviderCaller, error) {
+func (e *Client) getVotingPowerProviderContract(addr symbiotic.CrossChainAddress) (*gen.IVotingPowerProviderCaller, error) {
 	client, ok := e.conns[addr.ChainId]
 	if !ok {
 		return nil, errors.Errorf("no connection for chain ID %d: %w", addr.ChainId, entity.ErrChainNotFound)
@@ -781,7 +782,7 @@ func (e *Client) getVotingPowerProviderContract(addr entity.CrossChainAddress) (
 	return gen.NewIVotingPowerProviderCaller(addr.Address, client)
 }
 
-func (e *Client) getKeyRegistryContract(addr entity.CrossChainAddress) (*gen.IKeyRegistry, error) {
+func (e *Client) getKeyRegistryContract(addr symbiotic.CrossChainAddress) (*gen.IKeyRegistry, error) {
 	client, ok := e.conns[addr.ChainId]
 	if !ok {
 		return nil, errors.Errorf("no connection for chain ID %d: %w", addr.ChainId, entity.ErrChainNotFound)
@@ -790,7 +791,7 @@ func (e *Client) getKeyRegistryContract(addr entity.CrossChainAddress) (*gen.IKe
 	return gen.NewIKeyRegistry(addr.Address, client)
 }
 
-func (e *Client) getOperatorRegistryContract(addr entity.CrossChainAddress) (*gen.OperatorRegistry, error) {
+func (e *Client) getOperatorRegistryContract(addr symbiotic.CrossChainAddress) (*gen.OperatorRegistry, error) {
 	client, ok := e.conns[addr.ChainId]
 	if !ok {
 		return nil, errors.Errorf("no connection for chain ID %d: %w", addr.ChainId, entity.ErrChainNotFound)

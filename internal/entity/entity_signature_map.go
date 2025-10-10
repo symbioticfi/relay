@@ -6,27 +6,29 @@ import (
 	"github.com/RoaringBitmap/roaring/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
+
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 type SignatureMap struct {
 	RequestID              common.Hash
-	Epoch                  Epoch
+	Epoch                  symbiotic.Epoch
 	SignedValidatorsBitmap Bitmap
-	CurrentVotingPower     VotingPower
+	CurrentVotingPower     symbiotic.VotingPower
 	TotalValidators        uint32
 }
 
-func NewSignatureMap(requestID common.Hash, epoch Epoch, totalValidators uint32) SignatureMap {
+func NewSignatureMap(requestID common.Hash, epoch symbiotic.Epoch, totalValidators uint32) SignatureMap {
 	return SignatureMap{
 		RequestID:              requestID,
 		Epoch:                  epoch,
 		SignedValidatorsBitmap: NewBitmap(),
-		CurrentVotingPower:     ToVotingPower(big.NewInt(0)),
+		CurrentVotingPower:     symbiotic.ToVotingPower(big.NewInt(0)),
 		TotalValidators:        totalValidators,
 	}
 }
 
-func (vm *SignatureMap) SetValidatorPresent(activeIndex uint32, votingPower VotingPower) error {
+func (vm *SignatureMap) SetValidatorPresent(activeIndex uint32, votingPower symbiotic.VotingPower) error {
 	if activeIndex >= vm.TotalValidators {
 		return errors.New("invalid active index")
 	}
@@ -35,12 +37,12 @@ func (vm *SignatureMap) SetValidatorPresent(activeIndex uint32, votingPower Voti
 	}
 
 	vm.SignedValidatorsBitmap.Add(activeIndex)
-	vm.CurrentVotingPower = ToVotingPower(new(big.Int).Add(vm.CurrentVotingPower.Int, votingPower.Int))
+	vm.CurrentVotingPower = symbiotic.ToVotingPower(new(big.Int).Add(vm.CurrentVotingPower.Int, votingPower.Int))
 
 	return nil
 }
 
-func (vm *SignatureMap) ThresholdReached(quorumThreshold VotingPower) bool {
+func (vm *SignatureMap) ThresholdReached(quorumThreshold symbiotic.VotingPower) bool {
 	return vm.CurrentVotingPower.Cmp(quorumThreshold.Int) >= 0
 }
 

@@ -1,7 +1,10 @@
 package aggregationPolicyTypes
 
-import "github.com/symbioticfi/relay/symbiotic/entity"
+import (
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+)
 
 type AggregationPolicy interface {
-	ShouldAggregate(signatureMap entity.SignatureMap, validatorSet entity.ValidatorSet) bool
+	ShouldAggregate(signatureMap entity.SignatureMap, validatorSet symbiotic.ValidatorSet) bool
 }

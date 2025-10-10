@@ -194,12 +194,6 @@ type ProofCommitKey struct {
 	RequestID common.Hash
 }
 
-type AggregationState struct {
-	SignaturesCnt       uint32
-	CurrentVotingPower  VotingPower
-	RequiredVotingPower VotingPower
-}
-
 func (vt VerificationType) MarshalText() (text []byte, err error) {
 	return []byte(vt.String()), nil
 }

@@ -7,24 +7,25 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 type repo interface {
 	GetSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error)
-	GetLatestValidatorSetEpoch(ctx context.Context) (entity.Epoch, error)
-	GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error)
-	GetValidatorByKey(ctx context.Context, epoch entity.Epoch, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error)
-	GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity.SignatureExtended, error)
-	GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (entity.SignatureExtended, error)
-	GetSignatureRequestsWithoutAggregationProof(ctx context.Context, epoch entity.Epoch, limit int, lastHash common.Hash) ([]entity.SignatureRequestWithID, error)
-	GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error)
-	RemoveAggregationProofPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error
+	GetLatestValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
+	GetSignatureRequest(ctx context.Context, requestID common.Hash) (symbiotic.SignatureRequest, error)
+	GetValidatorByKey(ctx context.Context, epoch symbiotic.Epoch, keyTag symbiotic.KeyTag, publicKey []byte) (symbiotic.Validator, uint32, error)
+	GetAllSignatures(ctx context.Context, requestID common.Hash) ([]symbiotic.SignatureExtended, error)
+	GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (symbiotic.SignatureExtended, error)
+	GetSignatureRequestsWithoutAggregationProof(ctx context.Context, epoch symbiotic.Epoch, limit int, lastHash common.Hash) ([]symbiotic.SignatureRequestWithID, error)
+	GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error)
+	RemoveAggregationProofPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error
 }
 
 type entityProcessor interface {
-	ProcessSignature(ctx context.Context, signature entity.SignatureExtended) error
-	ProcessAggregationProof(ctx context.Context, proof entity.AggregationProof) error
+	ProcessSignature(ctx context.Context, signature symbiotic.SignatureExtended) error
+	ProcessAggregationProof(ctx context.Context, proof symbiotic.AggregationProof) error
 }
 
 type Config struct {

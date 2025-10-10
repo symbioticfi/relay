@@ -25,37 +25,37 @@ import (
 	"github.com/symbioticfi/relay/internal/usecase/metrics"
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/server"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 //go:generate mockgen -source=app.go -destination=mocks/app_mock.go -package=mocks
 type signer interface {
-	RequestSignature(ctx context.Context, req entity.SignatureRequest) (common.Hash, error)
+	RequestSignature(ctx context.Context, req symbiotic.SignatureRequest) (common.Hash, error)
 }
 
 type repo interface {
-	GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error)
-	GetValidatorSetByEpoch(_ context.Context, epoch entity.Epoch) (entity.ValidatorSet, error)
-	GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity.SignatureExtended, error)
-	GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error)
-	GetLatestValidatorSetHeader(_ context.Context) (entity.ValidatorSetHeader, error)
-	GetLatestValidatorSetEpoch(_ context.Context) (entity.Epoch, error)
-	GetValidatorSetMetadata(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSetMetadata, error)
+	GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error)
+	GetValidatorSetByEpoch(_ context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error)
+	GetAllSignatures(ctx context.Context, requestID common.Hash) ([]symbiotic.SignatureExtended, error)
+	GetSignatureRequest(ctx context.Context, requestID common.Hash) (symbiotic.SignatureRequest, error)
+	GetLatestValidatorSetHeader(_ context.Context) (symbiotic.ValidatorSetHeader, error)
+	GetLatestValidatorSetEpoch(_ context.Context) (symbiotic.Epoch, error)
+	GetValidatorSetMetadata(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSetMetadata, error)
 }
 
 type evmClient interface {
-	GetCurrentEpoch(ctx context.Context) (entity.Epoch, error)
-	GetEpochStart(ctx context.Context, epoch entity.Epoch) (entity.Timestamp, error)
-	GetConfig(ctx context.Context, timestamp entity.Timestamp) (entity.NetworkConfig, error)
-	GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (_ entity.Epoch, err error)
+	GetCurrentEpoch(ctx context.Context) (symbiotic.Epoch, error)
+	GetEpochStart(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.Timestamp, error)
+	GetConfig(ctx context.Context, timestamp symbiotic.Timestamp) (symbiotic.NetworkConfig, error)
+	GetLastCommittedHeaderEpoch(ctx context.Context, addr symbiotic.CrossChainAddress) (_ symbiotic.Epoch, err error)
 }
 
 type aggregator interface {
-	GetAggregationStatus(ctx context.Context, requestID common.Hash) (entity.AggregationStatus, error)
+	GetAggregationStatus(ctx context.Context, requestID common.Hash) (symbiotic.AggregationStatus, error)
 }
 
 type deriver interface {
-	GetValidatorSet(ctx context.Context, epoch entity.Epoch, config entity.NetworkConfig) (entity.ValidatorSet, error)
+	GetValidatorSet(ctx context.Context, epoch symbiotic.Epoch, config symbiotic.NetworkConfig) (symbiotic.ValidatorSet, error)
 }
 
 type Config struct {
@@ -83,19 +83,19 @@ func (c Config) Validate() error {
 // broadcasterHandler manages subscriptions grouped by request ID for O(1) lookup
 type broadcasterHandler struct {
 	lock        sync.RWMutex
-	subscribers map[string][]chan entity.AggregationProof // map[requestID][]*subscriber
+	subscribers map[string][]chan symbiotic.AggregationProof // map[requestID][]*subscriber
 }
 
 // newBroadcasterHandler creates a new broadcaster handler
 func newBroadcasterHandler() *broadcasterHandler {
 	return &broadcasterHandler{
-		subscribers: make(map[string][]chan entity.AggregationProof),
+		subscribers: make(map[string][]chan symbiotic.AggregationProof),
 	}
 }
 
 // Subscribe registers a new subscriber for a specific request ID
 // Returns an unsubscribe function that should be called to clean up the subscription
-func (b *broadcasterHandler) Subscribe(requestID string, ch chan entity.AggregationProof) func() {
+func (b *broadcasterHandler) Subscribe(requestID string, ch chan symbiotic.AggregationProof) func() {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
@@ -125,7 +125,7 @@ func (b *broadcasterHandler) Subscribe(requestID string, ch chan entity.Aggregat
 }
 
 // Notify broadcasts an event to all subscribers for a specific request ID - O(1) lookup
-func (b *broadcasterHandler) Notify(proof entity.AggregationProof) {
+func (b *broadcasterHandler) Notify(proof symbiotic.AggregationProof) {
 	requestID := proof.RequestID().Hex()
 
 	b.lock.RLock()
@@ -136,7 +136,7 @@ func (b *broadcasterHandler) Notify(proof entity.AggregationProof) {
 	}
 
 	// Make a copy to avoid holding lock during notification
-	subscribers := make([]chan entity.AggregationProof, len(subs))
+	subscribers := make([]chan symbiotic.AggregationProof, len(subs))
 	copy(subscribers, subs)
 	b.lock.RUnlock()
 
@@ -161,7 +161,7 @@ type grpcHandler struct {
 }
 
 // handleProofAggregated processes aggregation proof events from the signal
-func (h *grpcHandler) handleProofAggregated(_ context.Context, proof entity.AggregationProof) error {
+func (h *grpcHandler) handleProofAggregated(_ context.Context, proof symbiotic.AggregationProof) error {
 	h.broadcaster.Notify(proof)
 	return nil
 }
@@ -298,7 +298,7 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 }
 
 // HandleProofAggregated returns the handler function for aggregation proof events
-func (a *SymbioticServer) HandleProofAggregated() func(context.Context, entity.AggregationProof) error {
+func (a *SymbioticServer) HandleProofAggregated() func(context.Context, symbiotic.AggregationProof) error {
 	return a.handler.handleProofAggregated
 }
 

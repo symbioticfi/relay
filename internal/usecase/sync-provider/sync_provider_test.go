@@ -11,10 +11,11 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
+	"github.com/symbioticfi/relay/internal/entity"
 	entity_processor "github.com/symbioticfi/relay/internal/usecase/entity-processor"
 	"github.com/symbioticfi/relay/internal/usecase/entity-processor/mocks"
 	"github.com/symbioticfi/relay/pkg/signals"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
@@ -52,7 +53,7 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Save signature request and signature on peer
-	param := entity.SignatureExtended{
+	param := symbiotic.SignatureExtended{
 		MessageHash: hash,
 		Signature:   signature,
 		PublicKey:   privateKey.PublicKey().Raw(),
@@ -65,7 +66,7 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 
 	signature1, _, err := privateKey1.Sign(signatureRequest.Message)
 	require.NoError(t, err)
-	param1 := entity.SignatureExtended{
+	param1 := symbiotic.SignatureExtended{
 		MessageHash: hash,
 		Signature:   signature1,
 		PublicKey:   privateKey1.PublicKey().Raw(),
@@ -154,9 +155,9 @@ func createMockAggProofSignal(t *testing.T) *mocks.MockAggProofSignal {
 	return mockSignal
 }
 
-func createMockSignatureProcessedSignal(t *testing.T) *signals.Signal[entity.SignatureExtended] {
+func createMockSignatureProcessedSignal(t *testing.T) *signals.Signal[symbiotic.SignatureExtended] {
 	t.Helper()
-	return signals.New[entity.SignatureExtended](signals.DefaultConfig(), "test", nil)
+	return signals.New[symbiotic.SignatureExtended](signals.DefaultConfig(), "test", nil)
 }
 
 func createTestRepo(t *testing.T) *badger.Repository {
@@ -169,11 +170,11 @@ func createTestRepo(t *testing.T) *badger.Repository {
 	return repo
 }
 
-func createTestSignatureRequest(t *testing.T) entity.SignatureRequest {
+func createTestSignatureRequest(t *testing.T) symbiotic.SignatureRequest {
 	t.Helper()
-	return entity.SignatureRequest{
-		KeyTag:        entity.ValsetHeaderKeyTag,
-		RequiredEpoch: entity.Epoch(1),
+	return symbiotic.SignatureRequest{
+		KeyTag:        symbiotic.ValsetHeaderKeyTag,
+		RequiredEpoch: symbiotic.Epoch(1),
 		Message:       randomBytes(t, 100), // Random message makes each request unique
 	}
 }
@@ -184,63 +185,63 @@ func newPrivateKey(t *testing.T) crypto.PrivateKey {
 	_, err := rand.Read(privateKeyBytes)
 	require.NoError(t, err)
 
-	privateKey, err := crypto.NewPrivateKey(entity.KeyTypeBlsBn254, privateKeyBytes)
+	privateKey, err := crypto.NewPrivateKey(symbiotic.KeyTypeBlsBn254, privateKeyBytes)
 	require.NoError(t, err)
 	return privateKey
 }
 
-func createTestValidatorSet(t *testing.T, privateKey ...crypto.PrivateKey) entity.ValidatorSet {
+func createTestValidatorSet(t *testing.T, privateKey ...crypto.PrivateKey) symbiotic.ValidatorSet {
 	t.Helper()
-	validators := make([]entity.Validator, len(privateKey))
+	validators := make([]symbiotic.Validator, len(privateKey))
 	for i, pk := range privateKey {
-		validators[i] = entity.Validator{
+		validators[i] = symbiotic.Validator{
 			Operator:    common.HexToAddress(fmt.Sprintf("0x%d", i+1)),
-			VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+			VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
 			IsActive:    true,
-			Keys: []entity.ValidatorKey{
+			Keys: []symbiotic.ValidatorKey{
 				{
-					Tag:     entity.ValsetHeaderKeyTag,
+					Tag:     symbiotic.ValsetHeaderKeyTag,
 					Payload: pk.PublicKey().OnChain(),
 				},
 			},
 		}
 	}
-	return entity.ValidatorSet{
+	return symbiotic.ValidatorSet{
 		Version:         1,
-		RequiredKeyTag:  entity.ValsetHeaderKeyTag,
+		RequiredKeyTag:  symbiotic.ValsetHeaderKeyTag,
 		Epoch:           1,
-		QuorumThreshold: entity.ToVotingPower(big.NewInt(670)),
+		QuorumThreshold: symbiotic.ToVotingPower(big.NewInt(670)),
 		Validators:      validators,
 	}
 }
 
-func createTestValidatorSetWithMultipleValidators(t *testing.T, count int) (entity.ValidatorSet, []crypto.PrivateKey) {
+func createTestValidatorSetWithMultipleValidators(t *testing.T, count int) (symbiotic.ValidatorSet, []crypto.PrivateKey) {
 	t.Helper()
 	privateKeys := make([]crypto.PrivateKey, count)
 
-	validators := make([]entity.Validator, count)
+	validators := make([]symbiotic.Validator, count)
 	for i := 0; i < count; i++ {
 		privateKey := newPrivateKey(t)
 		privateKeys[i] = privateKey
 
-		validators[i] = entity.Validator{
+		validators[i] = symbiotic.Validator{
 			Operator:    common.HexToAddress(fmt.Sprintf("0x%d", i+1)),
-			VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+			VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
 			IsActive:    true,
-			Keys: []entity.ValidatorKey{
+			Keys: []symbiotic.ValidatorKey{
 				{
-					Tag:     entity.ValsetHeaderKeyTag,
+					Tag:     symbiotic.ValsetHeaderKeyTag,
 					Payload: privateKey.PublicKey().OnChain(), // Same key for all validators for simplicity
 				},
 			},
 		}
 	}
 
-	return entity.ValidatorSet{
+	return symbiotic.ValidatorSet{
 		Version:         1,
-		RequiredKeyTag:  entity.ValsetHeaderKeyTag,
+		RequiredKeyTag:  symbiotic.ValsetHeaderKeyTag,
 		Epoch:           1,
-		QuorumThreshold: entity.ToVotingPower(big.NewInt(670)),
+		QuorumThreshold: symbiotic.ToVotingPower(big.NewInt(670)),
 		Validators:      validators,
 	}, privateKeys
 }
@@ -366,7 +367,7 @@ func TestHandleWantSignaturesRequest_MaxResponseSignatureCountLimit(t *testing.T
 		signature, hash, err := privateKeys[i].Sign(signatureRequest.Message)
 		require.NoError(t, err)
 
-		param := entity.SignatureExtended{
+		param := symbiotic.SignatureExtended{
 			MessageHash: hash,
 			KeyTag:      signatureRequest.KeyTag,
 			Epoch:       signatureRequest.RequiredEpoch,
@@ -467,7 +468,7 @@ func TestHandleWantSignaturesRequest_MultipleRequestIDs(t *testing.T) {
 	require.NoError(t, err)
 
 	// Save signature for first request
-	param1 := entity.SignatureExtended{
+	param1 := symbiotic.SignatureExtended{
 		MessageHash: hash,
 		Epoch:       signatureRequest1.RequiredEpoch,
 		KeyTag:      signatureRequest1.KeyTag,
@@ -482,7 +483,7 @@ func TestHandleWantSignaturesRequest_MultipleRequestIDs(t *testing.T) {
 	signature2, hash2, err := privateKeys[1].Sign(signatureRequest2.Message)
 	require.NoError(t, err)
 
-	param2 := entity.SignatureExtended{
+	param2 := symbiotic.SignatureExtended{
 		MessageHash: hash2,
 		Epoch:       signatureRequest2.RequiredEpoch,
 		KeyTag:      signatureRequest2.KeyTag,
@@ -535,7 +536,7 @@ func TestHandleWantSignaturesRequest_PartialSignatureAvailability(t *testing.T) 
 	for _, i := range []uint32{0, 2} {
 		signature, hash, err := privateKeys[i].Sign(signatureRequest.Message)
 		require.NoError(t, err)
-		param := entity.SignatureExtended{
+		param := symbiotic.SignatureExtended{
 			MessageHash: hash,
 			Epoch:       signatureRequest.RequiredEpoch,
 			KeyTag:      signatureRequest.KeyTag,

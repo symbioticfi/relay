@@ -3,7 +3,7 @@ package keys
 import (
 	cmdhelpers "github.com/symbioticfi/relay/internal/usecase/cmd-helpers"
 	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 
 	"github.com/go-errors/errors"
@@ -28,7 +28,7 @@ var updateKeyCmd = &cobra.Command{
 			return err
 		}
 
-		kt := entity.KeyTag(updateFlags.KeyTag)
+		kt := symbiotic.KeyTag(updateFlags.KeyTag)
 		exists, err := keyStore.HasKey(kt)
 		if err != nil {
 			return err

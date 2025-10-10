@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/symbioticfi/relay/symbiotic/client/evm"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // TestGenesisDone tests that the genesis validator set header has been committed
@@ -21,7 +21,7 @@ func TestGenesisDone(t *testing.T) {
 
 	config := evm.Config{
 		ChainURLs: settlementChains,
-		DriverAddress: entity.CrossChainAddress{
+		DriverAddress: symbiotic.CrossChainAddress{
 			ChainId: deployData.Driver.ChainId,
 			Address: common.HexToAddress(deployData.Driver.Addr),
 		},
@@ -37,7 +37,7 @@ func TestGenesisDone(t *testing.T) {
 
 	for _, settlement := range deployData.Settlements {
 		t.Logf("Checking settlement %s on chain %d", settlement.Addr, settlement.ChainId)
-		_, err := evmClient.GetValSetHeader(ctx, entity.CrossChainAddress{
+		_, err := evmClient.GetValSetHeader(ctx, symbiotic.CrossChainAddress{
 			ChainId: settlement.ChainId,
 			Address: common.HexToAddress(settlement.Addr),
 		})

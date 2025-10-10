@@ -12,31 +12,31 @@ import (
 
 	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
 	"github.com/symbioticfi/relay/symbiotic/client/evm/gen"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func (e *Client) SetGenesis(
 	ctx context.Context,
-	addr entity.CrossChainAddress,
-	header entity.ValidatorSetHeader,
-	extraData []entity.ExtraData,
-) (_ entity.TxResult, err error) {
+	addr symbiotic.CrossChainAddress,
+	header symbiotic.ValidatorSetHeader,
+	extraData []symbiotic.ExtraData,
+) (_ symbiotic.TxResult, err error) {
 	pk, err := e.cfg.KeyProvider.GetPrivateKeyByNamespaceTypeId(
 		keyprovider.EVM_KEY_NAMESPACE,
-		entity.KeyTypeEcdsaSecp256k1,
+		symbiotic.KeyTypeEcdsaSecp256k1,
 		int(addr.ChainId),
 	)
 	if err != nil {
-		return entity.TxResult{}, err
+		return symbiotic.TxResult{}, err
 	}
 	ecdsaKey, err := crypto.ToECDSA(pk.Bytes())
 	if err != nil {
-		return entity.TxResult{}, err
+		return symbiotic.TxResult{}, err
 	}
 
 	txOpts, err := bind.NewKeyedTransactorWithChainID(ecdsaKey, new(big.Int).SetUint64(addr.ChainId))
 	if err != nil {
-		return entity.TxResult{}, errors.Errorf("failed to create new keyed transactor: %w", err)
+		return symbiotic.TxResult{}, errors.Errorf("failed to create new keyed transactor: %w", err)
 	}
 
 	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
@@ -64,24 +64,24 @@ func (e *Client) SetGenesis(
 
 	settlement, err := e.getSettlementContract(addr)
 	if err != nil {
-		return entity.TxResult{}, errors.Errorf("failed to get settlement contract: %w", err)
+		return symbiotic.TxResult{}, errors.Errorf("failed to get settlement contract: %w", err)
 	}
 
 	tx, err := settlement.SetGenesis(txOpts, headerDTO, extraDataDTO)
 	if err != nil {
-		return entity.TxResult{}, e.formatEVMError(err)
+		return symbiotic.TxResult{}, e.formatEVMError(err)
 	}
 
 	receipt, err := bind.WaitMined(ctx, e.conns[addr.ChainId], tx)
 	if err != nil {
-		return entity.TxResult{}, errors.Errorf("failed to wait for tx mining: %w", err)
+		return symbiotic.TxResult{}, errors.Errorf("failed to wait for tx mining: %w", err)
 	}
 
 	if receipt.Status == types.ReceiptStatusFailed {
-		return entity.TxResult{}, errors.New("transaction reverted on chain")
+		return symbiotic.TxResult{}, errors.New("transaction reverted on chain")
 	}
 
-	return entity.TxResult{
+	return symbiotic.TxResult{
 		TxHash: receipt.TxHash,
 	}, nil
 }

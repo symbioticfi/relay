@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
@@ -23,26 +23,26 @@ const (
 )
 
 type KeyProvider interface {
-	GetPrivateKey(keyTag entity.KeyTag) (crypto.PrivateKey, error)
+	GetPrivateKey(keyTag symbiotic.KeyTag) (crypto.PrivateKey, error)
 	GetPrivateKeyByAlias(alias string) (crypto.PrivateKey, error)
-	GetPrivateKeyByNamespaceTypeId(namespace string, keyType entity.KeyType, id int) (crypto.PrivateKey, error)
-	HasKey(keyTag entity.KeyTag) (bool, error)
+	GetPrivateKeyByNamespaceTypeId(namespace string, keyType symbiotic.KeyType, id int) (crypto.PrivateKey, error)
+	HasKey(keyTag symbiotic.KeyTag) (bool, error)
 	HasKeyByAlias(alias string) (bool, error)
-	HasKeyByNamespaceTypeId(namespace string, keyType entity.KeyType, id int) (bool, error)
+	HasKeyByNamespaceTypeId(namespace string, keyType symbiotic.KeyType, id int) (bool, error)
 }
 
-func KeyTagToAliasWithNS(namespace string, keyTag entity.KeyTag) (string, error) {
+func KeyTagToAliasWithNS(namespace string, keyTag symbiotic.KeyTag) (string, error) {
 	// https://github.com/symbioticfi/middleware-sdk-mirror/blob/change-header/src/contracts/libraries/utils/KeyTags.sol#L24-L40
 	keyId := keyTag & 0x0F
 
 	return ToAlias(namespace, keyTag.Type(), int(keyId))
 }
 
-func KeyTagToAlias(keyTag entity.KeyTag) (string, error) {
+func KeyTagToAlias(keyTag symbiotic.KeyTag) (string, error) {
 	return KeyTagToAliasWithNS(SYMBIOTIC_KEY_NAMESPACE, keyTag)
 }
 
-func ToAlias(namespace string, keyType entity.KeyType, keyId int) (string, error) {
+func ToAlias(namespace string, keyType symbiotic.KeyType, keyId int) (string, error) {
 	keyTypeStr, err := keyType.String()
 	if err != nil {
 		return "", err
@@ -57,7 +57,7 @@ func ToAlias(namespace string, keyType entity.KeyType, keyId int) (string, error
 	return namespace + "-" + keyTypeStr + "-" + keyIdStr, nil
 }
 
-func AliasToKeyTag(alias string) (entity.KeyTag, error) {
+func AliasToKeyTag(alias string) (symbiotic.KeyTag, error) {
 	keyType, keyId, err := AliasToKeyTypeId(alias)
 	if err != nil {
 		return 0, err
@@ -68,16 +68,16 @@ func AliasToKeyTag(alias string) (entity.KeyTag, error) {
 		return 0, errors.New("unsupported key id for KeyTag")
 	}
 
-	return entity.KeyTag(uint8(keyType)<<4 | (uint8(keyId) & 0x0F)), nil
+	return symbiotic.KeyTag(uint8(keyType)<<4 | (uint8(keyId) & 0x0F)), nil
 }
 
-func AliasToKeyTypeId(alias string) (entity.KeyType, int, error) {
+func AliasToKeyTypeId(alias string) (symbiotic.KeyType, int, error) {
 	keyTagParts := strings.Split(alias, "-")
 	if len(keyTagParts) != 3 {
 		return 0, 0, errors.New("invalid alias")
 	}
 
-	keyType, err := entity.KeyTypeFromString(keyTagParts[1])
+	keyType, err := symbiotic.KeyTypeFromString(keyTagParts[1])
 	if err != nil {
 		return 0, 0, err
 	}

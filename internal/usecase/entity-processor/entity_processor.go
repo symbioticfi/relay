@@ -8,8 +8,9 @@ import (
 	"github.com/go-errors/errors"
 	validate "github.com/go-playground/validator/v10"
 
+	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/signals"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
@@ -17,27 +18,27 @@ import (
 
 // Repository defines the interface needed by the entity processor
 type Repository interface {
-	SaveSignature(ctx context.Context, signature entity.SignatureExtended) error
-	GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (entity.SignatureExtended, error)
-	GetValidatorByKey(ctx context.Context, epoch entity.Epoch, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error)
-	GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error)
-	GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error)
-	SaveProof(ctx context.Context, aggregationProof entity.AggregationProof) error
+	SaveSignature(ctx context.Context, signature symbiotic.SignatureExtended) error
+	GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (symbiotic.SignatureExtended, error)
+	GetValidatorByKey(ctx context.Context, epoch symbiotic.Epoch, keyTag symbiotic.KeyTag, publicKey []byte) (symbiotic.Validator, uint32, error)
+	GetValidatorSetByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error)
+	GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error)
+	SaveProof(ctx context.Context, aggregationProof symbiotic.AggregationProof) error
 }
 
 type Aggregator interface {
-	Verify(valset entity.ValidatorSet, keyTag entity.KeyTag, aggregationProof entity.AggregationProof) (bool, error)
+	Verify(valset symbiotic.ValidatorSet, keyTag symbiotic.KeyTag, aggregationProof symbiotic.AggregationProof) (bool, error)
 }
 
 type AggProofSignal interface {
-	Emit(payload entity.AggregationProof) error
+	Emit(payload symbiotic.AggregationProof) error
 }
 
 type Config struct {
-	Repo                     Repository                                `validate:"required"`
-	Aggregator               Aggregator                                `validate:"required"`
-	AggProofSignal           AggProofSignal                            `validate:"required"`
-	SignatureProcessedSignal *signals.Signal[entity.SignatureExtended] `validate:"required"`
+	Repo                     Repository                                   `validate:"required"`
+	Aggregator               Aggregator                                   `validate:"required"`
+	AggProofSignal           AggProofSignal                               `validate:"required"`
+	SignatureProcessedSignal *signals.Signal[symbiotic.SignatureExtended] `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -65,7 +66,7 @@ func NewEntityProcessor(cfg Config) (*EntityProcessor, error) {
 }
 
 // ProcessSignature processes a signature with SignatureMap operations and optionally saves SignatureRequest
-func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature entity.SignatureExtended) error {
+func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature symbiotic.SignatureExtended) error {
 	slog.DebugContext(ctx, "Processing signature",
 		"keyTag", signature.KeyTag,
 		"requestId", signature.RequestID().Hex(),
@@ -111,7 +112,7 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature entity
 }
 
 // ProcessAggregationProof processes an aggregation proof by saving it and removing from pending collection
-func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregationProof entity.AggregationProof) error {
+func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregationProof symbiotic.AggregationProof) error {
 	slog.DebugContext(ctx, "Processing proof",
 		"keyTag", aggregationProof.KeyTag,
 		"requestId", aggregationProof.RequestID().Hex(),

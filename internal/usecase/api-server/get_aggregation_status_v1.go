@@ -10,8 +10,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/symbioticfi/relay/internal/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // GetAggregationStatus handles the gRPC GetAggregationStatus request
@@ -28,7 +29,7 @@ func (h *grpcHandler) GetAggregationStatus(ctx context.Context, req *apiv1.GetAg
 		return nil, err
 	}
 
-	operators := lo.Map(aggregationStatus.Validators, func(v entity.Validator, _ int) string {
+	operators := lo.Map(aggregationStatus.Validators, func(v symbiotic.Validator, _ int) string {
 		return v.Operator.Hex()
 	})
 	sort.Strings(operators)

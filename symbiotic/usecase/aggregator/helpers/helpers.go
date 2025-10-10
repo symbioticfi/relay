@@ -4,16 +4,15 @@ import (
 	"bytes"
 	"math/big"
 
-	"github.com/symbioticfi/relay/symbiotic/entity"
-
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/ethereum/go-ethereum/common"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-func CompareMessageHasher(signatures []entity.SignatureExtended, msgHash []byte) bool {
+func CompareMessageHasher(signatures []symbiotic.SignatureExtended, msgHash []byte) bool {
 	for i := range signatures {
 		if !bytes.Equal(msgHash, signatures[i].MessageHash) {
 			return false
@@ -22,7 +21,7 @@ func CompareMessageHasher(signatures []entity.SignatureExtended, msgHash []byte)
 	return true
 }
 
-func GetExtraDataKey(verificationType entity.VerificationType, nameHash common.Hash) (common.Hash, error) {
+func GetExtraDataKey(verificationType symbiotic.VerificationType, nameHash common.Hash) (common.Hash, error) {
 	bytes32Ty, _ := abi.NewType("bytes32", "", nil)
 	u32Ty, _ := abi.NewType("uint32", "", nil)
 
@@ -41,7 +40,7 @@ func GetExtraDataKey(verificationType entity.VerificationType, nameHash common.H
 	return crypto.Keccak256Hash(packed), nil
 }
 
-func GetExtraDataKeyTagged(verificationType entity.VerificationType, keyTag entity.KeyTag, nameHash common.Hash) (common.Hash, error) {
+func GetExtraDataKeyTagged(verificationType symbiotic.VerificationType, keyTag symbiotic.KeyTag, nameHash common.Hash) (common.Hash, error) {
 	bytes32Ty, _ := abi.NewType("bytes32", "", nil)
 	u32Ty, _ := abi.NewType("uint32", "", nil)
 	u8Ty, _ := abi.NewType("uint8", "", nil)
@@ -55,7 +54,7 @@ func GetExtraDataKeyTagged(verificationType entity.VerificationType, keyTag enti
 
 	packed, err := args.Pack(
 		uint32(verificationType),
-		entity.ExtraDataKeyTagPrefixHash,
+		symbiotic.ExtraDataKeyTagPrefixHash,
 		keyTag,
 		nameHash,
 	)
@@ -66,13 +65,13 @@ func GetExtraDataKeyTagged(verificationType entity.VerificationType, keyTag enti
 }
 
 func GetAggregatedPubKeys(
-	valset entity.ValidatorSet,
-	keyTags []entity.KeyTag,
-) []entity.ValidatorKey {
-	needToAggregateTags := map[entity.KeyTag]interface{}{}
+	valset symbiotic.ValidatorSet,
+	keyTags []symbiotic.KeyTag,
+) []symbiotic.ValidatorKey {
+	needToAggregateTags := map[symbiotic.KeyTag]interface{}{}
 	for _, tag := range keyTags {
 		// only bn254 bls for now
-		if tag.Type() == entity.KeyTypeBlsBn254 {
+		if tag.Type() == symbiotic.KeyTypeBlsBn254 {
 			needToAggregateTags[tag] = new(bn254.G1Affine)
 		}
 	}
@@ -84,7 +83,7 @@ func GetAggregatedPubKeys(
 
 		for _, key := range validator.Keys {
 			if keyValue, ok := needToAggregateTags[key.Tag]; ok {
-				if key.Tag.Type() == entity.KeyTypeBlsBn254 {
+				if key.Tag.Type() == symbiotic.KeyTypeBlsBn254 {
 					aggG1Key := keyValue.(*bn254.G1Affine)
 					valG1Key := new(bn254.G1Affine)
 					valG1Key.SetBytes(key.Payload)
@@ -95,13 +94,13 @@ func GetAggregatedPubKeys(
 		}
 	}
 
-	var aggregatedPubKeys []entity.ValidatorKey
+	var aggregatedPubKeys []symbiotic.ValidatorKey
 	for tag, keyValue := range needToAggregateTags {
-		if tag.Type() == entity.KeyTypeBlsBn254 {
+		if tag.Type() == symbiotic.KeyTypeBlsBn254 {
 			aggG1Key := keyValue.(*bn254.G1Affine)
 			// pack g1 point to bytes and add to list
 			aggG1KeyBytes := aggG1Key.Bytes()
-			aggregatedPubKeys = append(aggregatedPubKeys, entity.ValidatorKey{
+			aggregatedPubKeys = append(aggregatedPubKeys, symbiotic.ValidatorKey{
 				Tag:     tag,
 				Payload: aggG1KeyBytes[:],
 			})
@@ -113,8 +112,8 @@ func GetAggregatedPubKeys(
 
 // will be used later
 func GetExtraDataKeyIndexed(
-	verificationType entity.VerificationType,
-	keyTag entity.KeyTag,
+	verificationType symbiotic.VerificationType,
+	keyTag symbiotic.KeyTag,
 	nameHash common.Hash,
 	index *big.Int,
 ) (common.Hash, error) {
@@ -129,7 +128,7 @@ func GetExtraDataKeyIndexed(
 	return out, nil
 }
 
-func GetValidatorsIndexesMapByKey(valset entity.ValidatorSet, keyTag entity.KeyTag) map[string]int {
+func GetValidatorsIndexesMapByKey(valset symbiotic.ValidatorSet, keyTag symbiotic.KeyTag) map[string]int {
 	keysMap := make(map[string]int)
 
 	for i, validator := range valset.Validators {
