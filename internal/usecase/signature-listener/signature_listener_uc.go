@@ -21,7 +21,7 @@ type repo interface {
 }
 
 type entityProcessor interface {
-	ProcessSignature(ctx context.Context, signature symbiotic.SignatureExtended) error
+	ProcessSignature(ctx context.Context, signature symbiotic.SignatureExtended, self bool) error
 }
 
 type Config struct {
@@ -57,7 +57,7 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 		return nil
 	}
 
-	err := s.cfg.EntityProcessor.ProcessSignature(ctx, msg)
+	err := s.cfg.EntityProcessor.ProcessSignature(ctx, msg, false)
 	if err != nil {
 		return errors.Errorf("failed to process signature: %w", err)
 	}

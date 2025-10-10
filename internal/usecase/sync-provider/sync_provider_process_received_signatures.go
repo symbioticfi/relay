@@ -62,7 +62,7 @@ func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.
 				continue
 			}
 
-			if err := s.cfg.EntityProcessor.ProcessSignature(ctx, validatorSig.Signature); err != nil {
+			if err := s.cfg.EntityProcessor.ProcessSignature(ctx, validatorSig.Signature, false); err != nil {
 				if errors.Is(err, entity.ErrEntityAlreadyExist) {
 					slog.DebugContext(ctx, "Signature already exists",
 						"requestId", requestID.Hex(),

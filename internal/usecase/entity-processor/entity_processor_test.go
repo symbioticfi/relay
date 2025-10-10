@@ -100,7 +100,7 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				err = processor.ProcessSignature(t.Context(), firstParam)
+				err = processor.ProcessSignature(t.Context(), firstParam, false)
 				require.NoError(t, err)
 
 				// Verify pending exists after first signature
@@ -147,7 +147,7 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			err = processor.ProcessSignature(t.Context(), param)
+			err = processor.ProcessSignature(t.Context(), param, false)
 
 			if tt.expectError {
 				require.Error(t, err)
@@ -206,7 +206,7 @@ func TestEntityProcessor_ProcessSignature_ConcurrentSignatures(t *testing.T) {
 
 	// Process signatures sequentially (testing transaction consistency)
 	for i, sig := range signatures {
-		err := processor.ProcessSignature(t.Context(), sig)
+		err := processor.ProcessSignature(t.Context(), sig, false)
 		require.NoError(t, err, "Failed to process signature %d", i)
 	}
 
@@ -244,13 +244,13 @@ func TestEntityProcessor_ProcessSignature_Conflict(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	err = processor.ProcessSignature(t.Context(), signatureExtendedForRequest(t, privateKeys[0][req.KeyTag], req))
+	err = processor.ProcessSignature(t.Context(), signatureExtendedForRequest(t, privateKeys[0][req.KeyTag], req), false)
 	require.NoError(t, err, "Failed to process signature")
 
 	eg, egCtx := errgroup.WithContext(t.Context())
 	for i := 1; i < len(privateKeys); i++ {
 		eg.Go(func() error {
-			return processor.ProcessSignature(egCtx, signatureExtendedForRequest(t, privateKeys[i][req.KeyTag], req))
+			return processor.ProcessSignature(egCtx, signatureExtendedForRequest(t, privateKeys[i][req.KeyTag], req), false)
 		})
 	}
 
@@ -272,11 +272,11 @@ func TestEntityProcessor_ProcessSignature_DuplicateSignatureForSameValidator(t *
 	require.NoError(t, err)
 
 	// First signature should succeed
-	err = processor.ProcessSignature(t.Context(), param)
+	err = processor.ProcessSignature(t.Context(), param, false)
 	require.NoError(t, err)
 
 	// Duplicate signature should fail
-	err = processor.ProcessSignature(t.Context(), param)
+	err = processor.ProcessSignature(t.Context(), param, false)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "already exist")
 }
@@ -301,7 +301,7 @@ func TestEntityProcessor_ProcessSignature_ExactQuorumThreshold(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	err = processor.ProcessSignature(t.Context(), param)
+	err = processor.ProcessSignature(t.Context(), param, false)
 	require.NoError(t, err)
 
 	// Should reach quorum and remove from pending
@@ -592,7 +592,7 @@ func TestEntityProcessor_ProcessSignature_SavesAggregationProofPendingForAggrega
 	require.NoError(t, err)
 
 	// Process signature
-	err = processor.ProcessSignature(t.Context(), param)
+	err = processor.ProcessSignature(t.Context(), param, false)
 	require.NoError(t, err)
 
 	// Verify aggregation proof pending was also saved
@@ -643,7 +643,7 @@ func TestEntityProcessor_ProcessSignature_FullSignatureToAggregationProofFlow(t 
 	})
 	require.NoError(t, err)
 
-	err = processor.ProcessSignature(t.Context(), param)
+	err = processor.ProcessSignature(t.Context(), param, false)
 	require.NoError(t, err)
 
 	// Verify pending aggregation proof exists

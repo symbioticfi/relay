@@ -40,7 +40,7 @@ type metrics interface {
 }
 
 type entityProcessor interface {
-	ProcessSignature(ctx context.Context, signature symbiotic.SignatureExtended) error
+	ProcessSignature(ctx context.Context, signature symbiotic.SignatureExtended, self bool) error
 	ProcessAggregationProof(ctx context.Context, proof symbiotic.AggregationProof) error
 }
 
@@ -168,7 +168,7 @@ func (s *SignerApp) completeSign(ctx context.Context, req symbiotic.SignatureReq
 		Signature:   signature,
 	}
 
-	if err := s.cfg.EntityProcessor.ProcessSignature(ctx, extendedSignature); err != nil {
+	if err := s.cfg.EntityProcessor.ProcessSignature(ctx, extendedSignature, true); err != nil {
 		if errors.Is(err, entity.ErrEntityAlreadyExist) {
 			slog.InfoContext(ctx, "Signature already exists, skipping", "key_tag", req.KeyTag, "epoch", req.RequiredEpoch)
 			return nil
