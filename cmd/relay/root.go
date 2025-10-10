@@ -394,7 +394,6 @@ func runApp(ctx context.Context) error {
 }
 
 func initP2PService(ctx context.Context, cfg config, keyProvider keyprovider.KeyProvider, provider *sync_provider.Syncer, mtr *metrics.Metrics) (*p2p.Service, *p2p.DiscoveryService, error) {
-
 	swarmPSK, err := hexutil.Decode(cfg.Driver.Address)
 	if err != nil {
 		return nil, nil, errors.Errorf("failed to get P2P swarm psk: %w", err)

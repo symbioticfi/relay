@@ -1,7 +1,7 @@
 package keys
 
 import (
-	"fmt"
+	"strconv"
 
 	"github.com/pterm/pterm"
 	cmdhelpers "github.com/symbioticfi/relay/internal/usecase/cmd-helpers"
@@ -45,7 +45,7 @@ var printKeysCmd = &cobra.Command{
 				return err
 			}
 			tableData = append(tableData, []string{
-				fmt.Sprintf("%d", i+1),
+				strconv.Itoa(i + 1),
 				alias,
 				string(prettyPk),
 			})

@@ -18,7 +18,6 @@ const (
 	// DEFAULT_EVM_CHAIN_ID chain id used to identify the default key for all chains
 	DEFAULT_EVM_CHAIN_ID = 0
 
-	P2P_SWARM_NETWORK_KEY_ID = 0
 	P2P_HOST_IDENTITY_KEY_ID = 1
 )
 
@@ -57,20 +56,7 @@ func ToAlias(namespace string, keyType symbiotic.KeyType, keyId int) (string, er
 	return namespace + "-" + keyTypeStr + "-" + keyIdStr, nil
 }
 
-func AliasToKeyTag(alias string) (symbiotic.KeyTag, error) {
-	_, keyType, keyId, err := AliasToKeyTypeId(alias)
-	if err != nil {
-		return 0, err
-	}
-
-	// KeyTag support only
-	if keyId > 255 {
-		return 0, errors.New("unsupported key id for KeyTag")
-	}
-
-	return symbiotic.KeyTag(uint8(keyType)<<4 | (uint8(keyId) & 0x0F)), nil
-}
-
+//nolint:revive // we need to return the ns too
 func AliasToKeyTypeId(alias string) (string, symbiotic.KeyType, int, error) {
 	keyTagParts := strings.Split(alias, "-")
 	if len(keyTagParts) != 3 {
