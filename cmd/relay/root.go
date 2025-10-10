@@ -6,17 +6,18 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-errors/errors"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
+	"github.com/symbioticfi/relay/internal/entity"
 
 	"golang.org/x/sync/errgroup"
 
 	"github.com/symbioticfi/relay/internal/client/p2p"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
-	"github.com/symbioticfi/relay/internal/entity"
 	aggregationPolicy "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
 	aggregatorApp "github.com/symbioticfi/relay/internal/usecase/aggregator-app"
 	api_server "github.com/symbioticfi/relay/internal/usecase/api-server"
@@ -394,11 +395,18 @@ func runApp(ctx context.Context) error {
 }
 
 func initP2PService(ctx context.Context, cfg config, keyProvider keyprovider.KeyProvider, provider *sync_provider.Syncer, mtr *metrics.Metrics) (*p2p.Service, *p2p.DiscoveryService, error) {
-	swarmPK, err := keyProvider.GetPrivateKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, symbiotic.KeyTypeEcdsaSecp256k1, keyprovider.P2P_SWARM_NETWORK_KEY_ID)
+	swarmPSK, err := hexutil.Decode(cfg.Driver.Address)
 	if err != nil {
-		return nil, nil, errors.Errorf("failed to get P2P swarm private key: %w", err)
+		return nil, nil, errors.Errorf("failed to get P2P swarm psk: %w", err)
+	}
+	// pad to make 20 byte to 32 bytes
+	swarmPSK = append(swarmPSK, make([]byte, 32-len(swarmPSK))...)
+
+	if len(swarmPSK) != 32 {
+		return nil, nil, errors.Errorf("invalid swarm psk length: %d, expected 20", len(swarmPSK))
 	}
 
+	// TODO: include p2p key in valset
 	p2pIdentityPKRaw, err := keyProvider.GetPrivateKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, symbiotic.KeyTypeEcdsaSecp256k1, keyprovider.P2P_HOST_IDENTITY_KEY_ID)
 	if err != nil && !errors.Is(err, entity.ErrKeyNotFound) {
 		return nil, nil, errors.Errorf("failed to get P2P identity private key: %w", err)
@@ -418,8 +426,8 @@ func initP2PService(ctx context.Context, cfg config, keyProvider keyprovider.Key
 
 	opts := []libp2p.Option{
 		libp2p.Transport(tcp.NewTCPTransport),
-		libp2p.PrivateNetwork(swarmPK.Bytes()), // Use a private network with the provided swarm key
-		libp2p.Identity(p2pIdentityPK),         // Use the provided identity private key to sign messages that will be sent over the P2P gossip sub
+		libp2p.PrivateNetwork(swarmPSK), // Use a private network with the provided swarm key
+		libp2p.Identity(p2pIdentityPK),  // Use the provided identity private key to sign messages that will be sent over the P2P gossip sub
 		libp2p.Security(noise.ID, noise.New),
 		libp2p.DefaultMuxers,
 	}

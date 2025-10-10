@@ -59,7 +59,7 @@ func (k *KeystoreProvider) GetPrivateKeyByAlias(alias string) (crypto.PrivateKey
 		}
 		return nil, err
 	}
-	keyType, _, err := AliasToKeyTypeId(alias)
+	_, keyType, _, err := AliasToKeyTypeId(alias)
 	if err != nil {
 		return nil, err
 	}

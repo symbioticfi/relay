@@ -19,15 +19,32 @@ var addKeyCmd = &cobra.Command{
 			return errors.New("add --generate if private key omitted")
 		}
 
-		kt := symbiotic.KeyTag(addFlags.KeyTag)
-		return addKey(addFlags.Namespace, kt, addFlags.Generate, addFlags.Force, addFlags.PrivateKey)
+		if addFlags.EvmNs {
+			if addFlags.ChainID < 0 {
+				return errors.New("chain ID is required for evm namespace, use --chain-id=0 for default key for all chains")
+			}
+			return addKeyWithNamespace(keyprovider.EVM_KEY_NAMESPACE, symbiotic.KeyTypeEcdsaSecp256k1, int(addFlags.ChainID), addFlags.Generate, addFlags.Force, addFlags.PrivateKey)
+		} else if addFlags.RelayNs {
+			if addFlags.KeyTag == uint8(symbiotic.KeyTypeInvalid) {
+				return errors.New("key tag is required for relay namespace")
+			}
+			kt := symbiotic.KeyTag(addFlags.KeyTag)
+			if kt.Type() == symbiotic.KeyTypeInvalid {
+				return errors.New("invalid key tag, type not supported")
+			}
+			keyId := kt & 0x0F
+			return addKeyWithNamespace(keyprovider.SYMBIOTIC_KEY_NAMESPACE, kt.Type(), int(keyId), addFlags.Generate, addFlags.Force, addFlags.PrivateKey)
+		} else if addFlags.P2PNs {
+			return addKeyWithNamespace(keyprovider.P2P_KEY_NAMESPACE, symbiotic.KeyTypeEcdsaSecp256k1, keyprovider.P2P_HOST_IDENTITY_KEY_ID, addFlags.Generate, addFlags.Force, addFlags.PrivateKey)
+		}
+		return errors.New("either --evm or --relay or --p2p must be specified")
 	},
 }
 
-func addKey(namespace string, keyTag symbiotic.KeyTag, generate bool, force bool, privateKey string) error {
+func addKeyWithNamespace(ns string, keyType symbiotic.KeyType, id int, generate bool, force bool, privateKey string) error {
 	var err error
 	if generate {
-		pk, err := crypto.GeneratePrivateKey(keyTag.Type())
+		pk, err := crypto.GeneratePrivateKey(keyType)
 		if err != nil {
 			return err
 		}
@@ -53,12 +70,12 @@ func addKey(namespace string, keyTag symbiotic.KeyTag, generate bool, force bool
 		return err
 	}
 
-	key, err := crypto.NewPrivateKey(keyTag.Type(), []byte(privateKey))
+	key, err := crypto.NewPrivateKey(keyType, []byte(privateKey))
 	if err != nil {
 		return err
 	}
 
-	if err = keyStore.AddKey(namespace, keyTag, key, globalFlags.Password, force); err != nil {
+	if err = keyStore.AddKeyByNamespaceTypeId(ns, keyType, id, key, globalFlags.Password, force); err != nil {
 		return err
 	}
 

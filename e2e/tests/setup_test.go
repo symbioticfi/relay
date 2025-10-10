@@ -61,7 +61,6 @@ type TestEnvironment struct {
 func generateSidecarConfigs(env EnvInfo) []RelaySidecarConfig {
 	const (
 		basePrivateKey = 1000000000000000000
-		swarmKey       = "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140"
 	)
 
 	configs := make([]RelaySidecarConfig, env.Operators)
@@ -80,7 +79,6 @@ func generateSidecarConfigs(env EnvInfo) []RelaySidecarConfig {
 			fmt.Sprintf("symb/1/0/0x%s", symbPrivateKeyHex),
 			fmt.Sprintf("evm/1/31337/0x%s", symbPrivateKeyHex),
 			fmt.Sprintf("evm/1/31338/0x%s", symbPrivateKeyHex),
-			fmt.Sprintf("p2p/1/0/%s", swarmKey),
 			fmt.Sprintf("p2p/1/1/%s", symbPrivateKeyHex),
 		}
 		keysString := strings.Join(keys, ",")
