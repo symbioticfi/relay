@@ -3,7 +3,7 @@ package keys
 import (
 	cmdhelpers "github.com/symbioticfi/relay/internal/usecase/cmd-helpers"
 	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -27,11 +27,11 @@ var addEvmKeyCmd = &cobra.Command{
 			addEvmFlags.ChainId = keyprovider.DEFAULT_EVM_CHAIN_ID
 		}
 
-		return addKeyWithNamespace(keyprovider.EVM_KEY_NAMESPACE, entity.KeyTypeEcdsaSecp256k1, int(addEvmFlags.ChainId), addEvmFlags.Generate, addEvmFlags.Force, addEvmFlags.PrivateKey)
+		return addKeyWithNamespace(keyprovider.EVM_KEY_NAMESPACE, symbiotic.KeyTypeEcdsaSecp256k1, int(addEvmFlags.ChainId), addEvmFlags.Generate, addEvmFlags.Force, addEvmFlags.PrivateKey)
 	},
 }
 
-func addKeyWithNamespace(ns string, keyTag entity.KeyType, id int, generate bool, force bool, privateKey string) error {
+func addKeyWithNamespace(ns string, keyTag symbiotic.KeyType, id int, generate bool, force bool, privateKey string) error {
 	var err error
 	if generate {
 		pk, err := crypto.GeneratePrivateKey(keyTag)

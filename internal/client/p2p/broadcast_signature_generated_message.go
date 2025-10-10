@@ -7,10 +7,10 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureExtended) error {
+func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg symbiotic.SignatureExtended) error {
 	dto := prototypes.SignatureGenerated{
 		RequestId: msg.RequestID().Bytes(),
 		KeyTag:    uint32(msg.KeyTag),

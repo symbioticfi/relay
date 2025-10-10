@@ -8,15 +8,15 @@ import (
 	"github.com/stretchr/testify/require"
 
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func TestGetValidatorSetHeader_ValidatorSetFoundInRepo(t *testing.T) {
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := entity.Epoch(10)
-	requestedEpoch := entity.Epoch(8)
+	currentEpoch := symbiotic.Epoch(10)
+	requestedEpoch := symbiotic.Epoch(8)
 
 	// Create test data
 	validatorSet := createTestValidatorSet(requestedEpoch)
@@ -39,7 +39,7 @@ func TestGetValidatorSetHeader_ValidatorSetFoundInRepo(t *testing.T) {
 	require.NotNil(t, response)
 	require.Equal(t, uint32(expectedHeader.Version), response.GetVersion())
 	require.Equal(t, uint32(expectedHeader.RequiredKeyTag), response.GetRequiredKeyTag())
-	require.Equal(t, expectedHeader.Epoch, entity.Epoch(response.GetEpoch()))
+	require.Equal(t, expectedHeader.Epoch, symbiotic.Epoch(response.GetEpoch()))
 	require.Equal(t, expectedHeader.QuorumThreshold.String(), response.GetQuorumThreshold())
 	require.Equal(t, expectedHeader.ValidatorsSszMRoot.Hex(), response.GetValidatorsSszMroot())
 }
@@ -48,7 +48,7 @@ func TestGetValidatorSetHeader_UseCurrentEpoch_WhenNoEpochSpecified(t *testing.T
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := entity.Epoch(10)
+	currentEpoch := symbiotic.Epoch(10)
 	// Create test data
 	validatorSet := createTestValidatorSet(currentEpoch)
 
@@ -64,14 +64,14 @@ func TestGetValidatorSetHeader_UseCurrentEpoch_WhenNoEpochSpecified(t *testing.T
 	// Assertions
 	require.NoError(t, err)
 	require.NotNil(t, response)
-	require.Equal(t, currentEpoch, entity.Epoch(response.GetEpoch()))
+	require.Equal(t, currentEpoch, symbiotic.Epoch(response.GetEpoch()))
 }
 
 func TestGetValidatorSetHeader_ErrorWhenEpochFromFuture(t *testing.T) {
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := entity.Epoch(10)
+	currentEpoch := symbiotic.Epoch(10)
 	futureEpoch := uint64(15)
 
 	// Setup mocks
@@ -97,7 +97,7 @@ func TestGetValidatorSetHeader_ErrorWhenGetCurrentEpochFails(t *testing.T) {
 	expectedError := errors.New("failed to get current epoch")
 
 	// Setup mocks
-	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(entity.Epoch(0), expectedError)
+	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(0), expectedError)
 
 	// Execute the method under test
 	req := &apiv1.GetValidatorSetHeaderRequest{}
@@ -114,13 +114,13 @@ func TestGetValidatorSetHeader_ErrorWhenRepositoryFails(t *testing.T) {
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := entity.Epoch(10)
-	requestedEpoch := entity.Epoch(8)
+	currentEpoch := symbiotic.Epoch(10)
+	requestedEpoch := symbiotic.Epoch(8)
 	expectedError := errors.New("repository connection failed")
 
 	// Setup mocks
 	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(currentEpoch, nil)
-	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, requestedEpoch).Return(entity.ValidatorSet{}, expectedError)
+	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, requestedEpoch).Return(symbiotic.ValidatorSet{}, expectedError)
 
 	// Execute the method under test
 	req := &apiv1.GetValidatorSetHeaderRequest{

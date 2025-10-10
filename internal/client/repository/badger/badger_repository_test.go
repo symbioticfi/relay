@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func randomBytes(t *testing.T, n int) []byte {
@@ -19,13 +19,13 @@ func randomBytes(t *testing.T, n int) []byte {
 	return b
 }
 
-func randomAddr(t *testing.T) entity.CrossChainAddress {
+func randomAddr(t *testing.T) symbiotic.CrossChainAddress {
 	t.Helper()
 
 	chainID, err := rand.Int(rand.Reader, big.NewInt(10000))
 	require.NoError(t, err)
 
-	return entity.CrossChainAddress{
+	return symbiotic.CrossChainAddress{
 		ChainId: chainID.Uint64(),
 		Address: common.BytesToAddress(randomBytes(t, 20)),
 	}

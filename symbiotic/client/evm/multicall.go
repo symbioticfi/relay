@@ -11,8 +11,9 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
 
+	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/symbiotic/client/evm/gen"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 const Multicall3 = "0xcA11bde05977b3631167028862bE2a173976CA11"
@@ -78,7 +79,7 @@ func (e *Client) multicall(ctx context.Context, chainId uint64, calls []Call) (_
 	return results, nil
 }
 
-func (e *Client) getVotingPowersMulticall(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) ([]entity.OperatorVotingPower, error) {
+func (e *Client) getVotingPowersMulticall(ctx context.Context, address symbiotic.CrossChainAddress, timestamp symbiotic.Timestamp) ([]symbiotic.OperatorVotingPower, error) {
 	abi, err := gen.IVotingPowerProviderMetaData.GetAbi()
 	if err != nil {
 		return nil, errors.Errorf("failed to get ABI: %v", err)
@@ -89,7 +90,7 @@ func (e *Client) getVotingPowersMulticall(ctx context.Context, address entity.Cr
 		return nil, errors.Errorf("get operators failed: %v", err)
 	}
 
-	votingPowers := make([]entity.OperatorVotingPower, 0, len(operators))
+	votingPowers := make([]symbiotic.OperatorVotingPower, 0, len(operators))
 
 	calls := make([]Call, 0, len(operators))
 
@@ -121,12 +122,12 @@ func (e *Client) getVotingPowersMulticall(ctx context.Context, address entity.Cr
 			return nil, errors.Errorf("failed to unpack getOperatorVotingPowers: %v", err)
 		}
 
-		votingPowers = append(votingPowers, entity.OperatorVotingPower{
+		votingPowers = append(votingPowers, symbiotic.OperatorVotingPower{
 			Operator: operators[i],
-			Vaults: lo.Map(res, func(v gen.IVotingPowerProviderVaultValue, _ int) entity.VaultVotingPower {
-				return entity.VaultVotingPower{
+			Vaults: lo.Map(res, func(v gen.IVotingPowerProviderVaultValue, _ int) symbiotic.VaultVotingPower {
+				return symbiotic.VaultVotingPower{
 					Vault:       v.Vault,
-					VotingPower: entity.ToVotingPower(v.Value),
+					VotingPower: symbiotic.ToVotingPower(v.Value),
 				}
 			}),
 		})
@@ -135,7 +136,7 @@ func (e *Client) getVotingPowersMulticall(ctx context.Context, address entity.Cr
 	return votingPowers, nil
 }
 
-func (e *Client) getKeysMulticall(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) (_ []entity.OperatorWithKeys, err error) {
+func (e *Client) getKeysMulticall(ctx context.Context, address symbiotic.CrossChainAddress, timestamp symbiotic.Timestamp) (_ []symbiotic.OperatorWithKeys, err error) {
 	abi, err := gen.IKeyRegistryMetaData.GetAbi()
 	if err != nil {
 		return nil, errors.Errorf("failed to get ABI: %v", err)
@@ -146,7 +147,7 @@ func (e *Client) getKeysMulticall(ctx context.Context, address entity.CrossChain
 		return nil, errors.Errorf("get keys operators failed: %v", err)
 	}
 
-	keys := make([]entity.OperatorWithKeys, 0, len(operators))
+	keys := make([]symbiotic.OperatorWithKeys, 0, len(operators))
 	calls := make([]Call, 0, len(operators))
 
 	for _, operator := range operators {
@@ -178,11 +179,11 @@ func (e *Client) getKeysMulticall(ctx context.Context, address entity.CrossChain
 			return nil, errors.Errorf("failed to unpack getKeysAt0: %v", err)
 		}
 
-		keys = append(keys, entity.OperatorWithKeys{
+		keys = append(keys, symbiotic.OperatorWithKeys{
 			Operator: operators[i],
-			Keys: lo.Map(res, func(v gen.IKeyRegistryKey, _ int) entity.ValidatorKey {
-				return entity.ValidatorKey{
-					Tag:     entity.KeyTag(v.Tag),
+			Keys: lo.Map(res, func(v gen.IKeyRegistryKey, _ int) symbiotic.ValidatorKey {
+				return symbiotic.ValidatorKey{
+					Tag:     symbiotic.KeyTag(v.Tag),
 					Payload: v.Payload,
 				}
 			}),

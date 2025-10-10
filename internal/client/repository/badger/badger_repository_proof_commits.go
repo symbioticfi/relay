@@ -13,18 +13,19 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 const (
 	aggregationProofCommitPrefix = "aggregation_proof_commit:"
 )
 
-func keyAggregationProofCommited(epoch entity.Epoch, requestID common.Hash) []byte {
+func keyAggregationProofCommited(epoch symbiotic.Epoch, requestID common.Hash) []byte {
 	return []byte(fmt.Sprintf("%v%d:%s", aggregationProofCommitPrefix, epoch, requestID.Hex()))
 }
 
-func (r *Repository) SaveProofCommitPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error {
+func (r *Repository) SaveProofCommitPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
 	return r.doUpdateInTx(ctx, "SaveProofCommitPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		_, err := txn.Get(keyAggregationProofCommited(epoch, requestID))
@@ -45,7 +46,7 @@ func (r *Repository) SaveProofCommitPending(ctx context.Context, epoch entity.Ep
 	})
 }
 
-func (r *Repository) RemoveProofCommitPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error {
+func (r *Repository) RemoveProofCommitPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
 	return r.doUpdateInTx(ctx, "RemoveProofCommitPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		pendingKey := keyAggregationProofCommited(epoch, requestID)
@@ -68,14 +69,14 @@ func (r *Repository) RemoveProofCommitPending(ctx context.Context, epoch entity.
 	})
 }
 
-func (r *Repository) GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch entity.Epoch, limit int) ([]entity.ProofCommitKey, error) {
-	var requests []entity.ProofCommitKey
+func (r *Repository) GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch symbiotic.Epoch, limit int) ([]symbiotic.ProofCommitKey, error) {
+	var requests []symbiotic.ProofCommitKey
 
 	if err := r.doViewInTx(ctx, "GetPendingProofCommitsSinceEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 
 		// Step 1: Collect all keys with their parsed epochs and hashes
-		var keys []entity.ProofCommitKey
+		var keys []symbiotic.ProofCommitKey
 
 		// Use broader prefix to capture all epochs
 		// Key format: "aggregation_proof_commit:epoch:hash"
@@ -104,7 +105,7 @@ func (r *Repository) GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch
 				it.Next()
 				continue // Skip invalid epoch
 			}
-			keyEpoch := entity.Epoch(keyEpochInt)
+			keyEpoch := symbiotic.Epoch(keyEpochInt)
 
 			// Skip if this epoch is less than our target epoch
 			if keyEpoch < epoch {
@@ -115,7 +116,7 @@ func (r *Repository) GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch
 			requestIDStr := parts[2]
 			requestID := common.HexToHash(requestIDStr)
 
-			keys = append(keys, entity.ProofCommitKey{
+			keys = append(keys, symbiotic.ProofCommitKey{
 				Epoch:     keyEpoch,
 				RequestID: requestID,
 			})

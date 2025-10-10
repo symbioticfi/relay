@@ -9,7 +9,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/symbioticfi/relay/internal/usecase/api-server/mocks"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	deriverMocks "github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver/mocks"
 )
 
@@ -63,88 +63,88 @@ func newTestSetup(t *testing.T) *testSetup {
 
 // createTestValidatorSet creates a sample validator set for testing
 // This is the simpler version used for GetValidatorSetHeader tests
-func createTestValidatorSet(epoch entity.Epoch) entity.ValidatorSet {
-	return entity.ValidatorSet{
+func createTestValidatorSet(epoch symbiotic.Epoch) symbiotic.ValidatorSet {
+	return symbiotic.ValidatorSet{
 		Version:          1,
-		RequiredKeyTag:   entity.KeyTag(15),
+		RequiredKeyTag:   symbiotic.KeyTag(15),
 		Epoch:            epoch,
 		CaptureTimestamp: 1640995200, // 2022-01-01 00:00:00 UTC
-		QuorumThreshold:  entity.ToVotingPower(big.NewInt(670)),
-		Validators: []entity.Validator{
+		QuorumThreshold:  symbiotic.ToVotingPower(big.NewInt(670)),
+		Validators: []symbiotic.Validator{
 			{
 				Operator:    common.HexToAddress("0x123"),
-				VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+				VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
 				IsActive:    true,
-				Keys: []entity.ValidatorKey{
+				Keys: []symbiotic.ValidatorKey{
 					{
-						Tag:     entity.KeyTag(15),
-						Payload: entity.CompactPublicKey("test-key"),
+						Tag:     symbiotic.KeyTag(15),
+						Payload: symbiotic.CompactPublicKey("test-key"),
 					},
 				},
 			},
 		},
-		Status: entity.HeaderDerived,
+		Status: symbiotic.HeaderDerived,
 	}
 }
 
 // createTestValidatorSetWithMultipleValidators creates a sample validator set with multiple validators for testing
 // This is the richer version used for GetValidatorByAddress tests
-func createTestValidatorSetWithMultipleValidators(epoch entity.Epoch) entity.ValidatorSet {
-	return entity.ValidatorSet{
+func createTestValidatorSetWithMultipleValidators(epoch symbiotic.Epoch) symbiotic.ValidatorSet {
+	return symbiotic.ValidatorSet{
 		Version:          1,
-		RequiredKeyTag:   entity.KeyTag(15),
+		RequiredKeyTag:   symbiotic.KeyTag(15),
 		Epoch:            epoch,
 		CaptureTimestamp: 1640995200, // 2022-01-01 00:00:00 UTC
-		QuorumThreshold:  entity.ToVotingPower(big.NewInt(670)),
-		Validators: []entity.Validator{
+		QuorumThreshold:  symbiotic.ToVotingPower(big.NewInt(670)),
+		Validators: []symbiotic.Validator{
 			{
 				Operator:    common.HexToAddress("0x0000000000000000000000000000000000000123"),
-				VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+				VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
 				IsActive:    true,
-				Keys: []entity.ValidatorKey{
+				Keys: []symbiotic.ValidatorKey{
 					{
-						Tag:     entity.KeyTag(15),
-						Payload: entity.CompactPublicKey("test-key-1"),
+						Tag:     symbiotic.KeyTag(15),
+						Payload: symbiotic.CompactPublicKey("test-key-1"),
 					},
 				},
-				Vaults: []entity.ValidatorVault{
+				Vaults: []symbiotic.ValidatorVault{
 					{
 						ChainID:     1,
 						Vault:       common.HexToAddress("0x456"),
-						VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+						VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
 					},
 				},
 			},
 			{
 				Operator:    common.HexToAddress("0x0000000000000000000000000000000000000abc"),
-				VotingPower: entity.ToVotingPower(big.NewInt(2000)),
+				VotingPower: symbiotic.ToVotingPower(big.NewInt(2000)),
 				IsActive:    true,
-				Keys: []entity.ValidatorKey{
+				Keys: []symbiotic.ValidatorKey{
 					{
-						Tag:     entity.KeyTag(15),
-						Payload: entity.CompactPublicKey("test-key-2"),
+						Tag:     symbiotic.KeyTag(15),
+						Payload: symbiotic.CompactPublicKey("test-key-2"),
 					},
 				},
-				Vaults: []entity.ValidatorVault{
+				Vaults: []symbiotic.ValidatorVault{
 					{
 						ChainID:     1,
 						Vault:       common.HexToAddress("0xdef"),
-						VotingPower: entity.ToVotingPower(big.NewInt(2000)),
+						VotingPower: symbiotic.ToVotingPower(big.NewInt(2000)),
 					},
 				},
 			},
 			{
 				Operator:    common.HexToAddress("0x0000000000000000000000000000000000000789"),
-				VotingPower: entity.ToVotingPower(big.NewInt(500)),
+				VotingPower: symbiotic.ToVotingPower(big.NewInt(500)),
 				IsActive:    false,
-				Keys: []entity.ValidatorKey{
+				Keys: []symbiotic.ValidatorKey{
 					{
-						Tag:     entity.KeyTag(15),
-						Payload: entity.CompactPublicKey("test-key-3"),
+						Tag:     symbiotic.KeyTag(15),
+						Payload: symbiotic.CompactPublicKey("test-key-3"),
 					},
 				},
 			},
 		},
-		Status: entity.HeaderDerived,
+		Status: symbiotic.HeaderDerived,
 	}
 }

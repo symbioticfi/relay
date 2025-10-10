@@ -9,8 +9,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/symbioticfi/relay/internal/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // GetSignatures handles the gRPC GetSignatures request
@@ -28,13 +29,13 @@ func (h *grpcHandler) GetSignatures(ctx context.Context, req *apiv1.GetSignature
 	}, nil
 }
 
-func convertSignaturesToPB(signatures []entity.SignatureExtended) []*apiv1.Signature {
-	return lo.Map(signatures, func(sig entity.SignatureExtended, _ int) *apiv1.Signature {
+func convertSignaturesToPB(signatures []symbiotic.SignatureExtended) []*apiv1.Signature {
+	return lo.Map(signatures, func(sig symbiotic.SignatureExtended, _ int) *apiv1.Signature {
 		return convertSignatureToPB(sig)
 	})
 }
 
-func convertSignatureToPB(sig entity.SignatureExtended) *apiv1.Signature {
+func convertSignatureToPB(sig symbiotic.SignatureExtended) *apiv1.Signature {
 	return &apiv1.Signature{
 		Signature:   sig.Signature,
 		MessageHash: sig.MessageHash,

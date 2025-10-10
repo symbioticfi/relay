@@ -3,7 +3,7 @@ package keys
 import (
 	cmdhelpers "github.com/symbioticfi/relay/internal/usecase/cmd-helpers"
 	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -19,12 +19,12 @@ var addKeyCmd = &cobra.Command{
 			return errors.New("add --generate if private key omitted")
 		}
 
-		kt := entity.KeyTag(addFlags.KeyTag)
+		kt := symbiotic.KeyTag(addFlags.KeyTag)
 		return addKey(addFlags.Namespace, kt, addFlags.Generate, addFlags.Force, addFlags.PrivateKey)
 	},
 }
 
-func addKey(namespace string, keyTag entity.KeyTag, generate bool, force bool, privateKey string) error {
+func addKey(namespace string, keyTag symbiotic.KeyTag, generate bool, force bool, privateKey string) error {
 	var err error
 	if generate {
 		pk, err := crypto.GeneratePrivateKey(keyTag.Type())

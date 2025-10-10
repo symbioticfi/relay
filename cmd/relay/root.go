@@ -11,10 +11,12 @@ import (
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
+
 	"golang.org/x/sync/errgroup"
 
 	"github.com/symbioticfi/relay/internal/client/p2p"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
+	"github.com/symbioticfi/relay/internal/entity"
 	aggregationPolicy "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
 	aggregatorApp "github.com/symbioticfi/relay/internal/usecase/aggregator-app"
 	api_server "github.com/symbioticfi/relay/internal/usecase/api-server"
@@ -31,7 +33,7 @@ import (
 	"github.com/symbioticfi/relay/pkg/proof"
 	"github.com/symbioticfi/relay/pkg/signals"
 	"github.com/symbioticfi/relay/symbiotic/client/evm"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator"
 	symbioticCrypto "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 	valsetDeriver "github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver"
@@ -60,11 +62,11 @@ func runApp(ctx context.Context) error {
 			if len(keyBytes) == 0 {
 				return errors.Errorf("invalid key bytes for key %s/%d/%d/%s", key.Namespace, key.KeyType, key.KeyId, keyBytes)
 			}
-			pk, err := symbioticCrypto.NewPrivateKey(entity.KeyType(key.KeyType), keyBytes)
+			pk, err := symbioticCrypto.NewPrivateKey(symbiotic.KeyType(key.KeyType), keyBytes)
 			if err != nil {
 				return errors.Errorf("failed to create private key: %w", err)
 			}
-			err = simpleKeyProvider.AddKeyByNamespaceTypeId(key.Namespace, entity.KeyType(key.KeyType), key.KeyId, pk)
+			err = simpleKeyProvider.AddKeyByNamespaceTypeId(key.Namespace, symbiotic.KeyType(key.KeyType), key.KeyId, pk)
 			if err != nil {
 				return errors.Errorf("failed to add key to keystore: %w", err)
 			}
@@ -74,7 +76,7 @@ func runApp(ctx context.Context) error {
 
 	evmClient, err := evm.NewEvmClient(ctx, evm.Config{
 		ChainURLs: cfg.Chains,
-		DriverAddress: entity.CrossChainAddress{
+		DriverAddress: symbiotic.CrossChainAddress{
 			ChainId: cfg.Driver.ChainID,
 			Address: common.HexToAddress(cfg.Driver.Address),
 		},
@@ -125,7 +127,7 @@ func runApp(ctx context.Context) error {
 	}
 
 	var prover *proof.ZkProver
-	if config.VerificationType == entity.VerificationTypeBlsBn254ZK {
+	if config.VerificationType == symbiotic.VerificationTypeBlsBn254ZK {
 		prover = proof.NewZkProver(cfg.CircuitsDir)
 	}
 	agg, err := aggregator.NewAggregator(config.VerificationType, prover)
@@ -133,8 +135,8 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create aggregator: %w", err)
 	}
 
-	signatureProcessedSignal := signals.New[entity.SignatureExtended](cfg.SignalCfg, "signatureProcessed", nil)
-	aggProofReadySignal := signals.New[entity.AggregationProof](cfg.SignalCfg, "aggProofReady", nil)
+	signatureProcessedSignal := signals.New[symbiotic.SignatureExtended](cfg.SignalCfg, "signatureProcessed", nil)
+	aggProofReadySignal := signals.New[symbiotic.AggregationProof](cfg.SignalCfg, "aggProofReady", nil)
 
 	entityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo:                     repo,
@@ -277,9 +279,9 @@ func runApp(ctx context.Context) error {
 		return nil
 	})
 
-	aggPolicyType := entity.AggregationPolicyLowLatency
-	if config.VerificationType == entity.VerificationTypeBlsBn254Simple {
-		aggPolicyType = entity.AggregationPolicyLowCost
+	aggPolicyType := symbiotic.AggregationPolicyLowLatency
+	if config.VerificationType == symbiotic.VerificationTypeBlsBn254Simple {
+		aggPolicyType = symbiotic.AggregationPolicyLowCost
 	}
 	aggPolicy, err := aggregationPolicy.NewAggregationPolicy(aggPolicyType, cfg.MaxUnsigners)
 	if err != nil {
@@ -327,13 +329,13 @@ func runApp(ctx context.Context) error {
 	}
 
 	err = aggProofReadySignal.SetHandlers(
-		func(ctx context.Context, msg entity.AggregationProof) error {
+		func(ctx context.Context, msg symbiotic.AggregationProof) error {
 			if err := listener.HandleProofAggregated(ctx, msg); err != nil {
 				return errors.Errorf("failed to handle proof aggregated by valset listener: %w", err)
 			}
 			return nil
 		},
-		func(ctx context.Context, msg entity.AggregationProof) error {
+		func(ctx context.Context, msg symbiotic.AggregationProof) error {
 			if err := statusTracker.HandleProofAggregated(ctx, msg); err != nil {
 				return errors.Errorf("failed to handle proof aggregated by valset status tracker: %w", err)
 			}
@@ -391,18 +393,18 @@ func runApp(ctx context.Context) error {
 }
 
 func initP2PService(ctx context.Context, cfg config, keyProvider keyprovider.KeyProvider, provider *sync_provider.Syncer, mtr *metrics.Metrics) (*p2p.Service, *p2p.DiscoveryService, error) {
-	swarmPK, err := keyProvider.GetPrivateKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, entity.KeyTypeEcdsaSecp256k1, keyprovider.P2P_SWARM_NETWORK_KEY_ID)
+	swarmPK, err := keyProvider.GetPrivateKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, symbiotic.KeyTypeEcdsaSecp256k1, keyprovider.P2P_SWARM_NETWORK_KEY_ID)
 	if err != nil {
 		return nil, nil, errors.Errorf("failed to get P2P swarm private key: %w", err)
 	}
 
-	p2pIdentityPKRaw, err := keyProvider.GetPrivateKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, entity.KeyTypeEcdsaSecp256k1, keyprovider.P2P_HOST_IDENTITY_KEY_ID)
+	p2pIdentityPKRaw, err := keyProvider.GetPrivateKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, symbiotic.KeyTypeEcdsaSecp256k1, keyprovider.P2P_HOST_IDENTITY_KEY_ID)
 	if err != nil && !errors.Is(err, entity.ErrKeyNotFound) {
 		return nil, nil, errors.Errorf("failed to get P2P identity private key: %w", err)
 	}
 	if errors.Is(err, entity.ErrKeyNotFound) {
 		slog.WarnContext(ctx, "P2P identity private key not found, generating a new one")
-		p2pIdentityPKRaw, err = symbioticCrypto.GeneratePrivateKey(entity.KeyTypeEcdsaSecp256k1)
+		p2pIdentityPKRaw, err = symbioticCrypto.GeneratePrivateKey(symbiotic.KeyTypeEcdsaSecp256k1)
 		if err != nil {
 			return nil, nil, errors.Errorf("failed to create P2P identity private key: %w", err)
 		}

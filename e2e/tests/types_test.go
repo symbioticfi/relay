@@ -9,7 +9,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/kelseyhightower/envconfig"
 
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	symbioticCrypto "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
@@ -127,7 +127,7 @@ func loadDeploymentData(ctx context.Context) (RelayContractsData, error) {
 // testMockKeyProvider is a mock key provider for testing
 type testMockKeyProvider struct{}
 
-func (m *testMockKeyProvider) GetPrivateKey(_ entity.KeyTag) (symbioticCrypto.PrivateKey, error) {
+func (m *testMockKeyProvider) GetPrivateKey(_ symbiotic.KeyTag) (symbioticCrypto.PrivateKey, error) {
 	return nil, errors.New("mock key provider - no keys available")
 }
 
@@ -135,11 +135,11 @@ func (m *testMockKeyProvider) GetPrivateKeyByAlias(_ string) (symbioticCrypto.Pr
 	return nil, errors.New("mock key provider - no keys available")
 }
 
-func (m *testMockKeyProvider) GetPrivateKeyByNamespaceTypeId(_ string, _ entity.KeyType, _ int) (symbioticCrypto.PrivateKey, error) {
+func (m *testMockKeyProvider) GetPrivateKeyByNamespaceTypeId(_ string, _ symbiotic.KeyType, _ int) (symbioticCrypto.PrivateKey, error) {
 	return nil, errors.New("mock key provider - no keys available")
 }
 
-func (m *testMockKeyProvider) HasKey(_ entity.KeyTag) (bool, error) {
+func (m *testMockKeyProvider) HasKey(_ symbiotic.KeyTag) (bool, error) {
 	return false, nil
 }
 
@@ -147,6 +147,6 @@ func (m *testMockKeyProvider) HasKeyByAlias(_ string) (bool, error) {
 	return false, nil
 }
 
-func (m *testMockKeyProvider) HasKeyByNamespaceTypeId(_ string, _ entity.KeyType, _ int) (bool, error) {
+func (m *testMockKeyProvider) HasKeyByNamespaceTypeId(_ string, _ symbiotic.KeyType, _ int) (bool, error) {
 	return false, nil
 }

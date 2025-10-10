@@ -2,7 +2,7 @@ package keys
 
 import (
 	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 
 	"github.com/spf13/cobra"
 )
@@ -73,7 +73,7 @@ func initFlags() {
 	keysCmd.PersistentFlags().StringVar(&globalFlags.Password, "password", "", "Keystore password")
 
 	addKeyCmd.PersistentFlags().StringVar(&addFlags.Namespace, "namespace", keyprovider.SYMBIOTIC_KEY_NAMESPACE, "namespace")
-	addKeyCmd.PersistentFlags().Uint8Var(&addFlags.KeyTag, "key-tag", uint8(entity.KeyTypeInvalid), "key tag")
+	addKeyCmd.PersistentFlags().Uint8Var(&addFlags.KeyTag, "key-tag", uint8(symbiotic.KeyTypeInvalid), "key tag")
 	addKeyCmd.PersistentFlags().StringVar(&addFlags.PrivateKey, "private-key", "", "private key to add in hex")
 	addKeyCmd.PersistentFlags().BoolVar(&addFlags.Generate, "generate", false, "generate key")
 	addKeyCmd.PersistentFlags().BoolVar(&addFlags.Force, "force", false, "force overwrite key")
@@ -87,7 +87,7 @@ func initFlags() {
 	addEvmKeyCmd.PersistentFlags().BoolVar(&addEvmFlags.Force, "force", false, "force overwrite key")
 	addEvmKeyCmd.PersistentFlags().BoolVar(&addEvmFlags.DefaultKey, "default-key", false, "set as default key for the all chains")
 
-	removeKeyCmd.PersistentFlags().Uint8Var(&removeFlags.KeyTag, "key-tag", uint8(entity.KeyTypeInvalid), "key tag")
+	removeKeyCmd.PersistentFlags().Uint8Var(&removeFlags.KeyTag, "key-tag", uint8(symbiotic.KeyTypeInvalid), "key tag")
 	if err := removeKeyCmd.MarkPersistentFlagRequired("key-tag"); err != nil {
 		panic(err)
 	}
@@ -96,7 +96,7 @@ func initFlags() {
 	removeEVMKeyCmd.PersistentFlags().BoolVar(&removeEvmFlags.DefaultKey, "default-key", false, "remove default key from keystore")
 
 	updateKeyCmd.PersistentFlags().StringVar(&updateFlags.Namespace, "namespace", keyprovider.SYMBIOTIC_KEY_NAMESPACE, "namespace")
-	updateKeyCmd.PersistentFlags().Uint8Var(&updateFlags.KeyTag, "key-tag", uint8(entity.KeyTypeInvalid), "key tag")
+	updateKeyCmd.PersistentFlags().Uint8Var(&updateFlags.KeyTag, "key-tag", uint8(symbiotic.KeyTypeInvalid), "key tag")
 	updateKeyCmd.PersistentFlags().StringVar(&updateFlags.PrivateKey, "private-key", "", "private key")
 	if err := updateKeyCmd.MarkPersistentFlagRequired("key-tag"); err != nil {
 		panic(err)

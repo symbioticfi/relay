@@ -10,7 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // randomRequestID generates a random request id for testing
@@ -25,9 +26,9 @@ func randomSignatureMap(t *testing.T, requestID common.Hash) entity.SignatureMap
 
 	return entity.SignatureMap{
 		RequestID:              requestID,
-		Epoch:                  entity.Epoch(randomBigInt(t).Uint64()),
+		Epoch:                  symbiotic.Epoch(randomBigInt(t).Uint64()),
 		SignedValidatorsBitmap: entity.NewBitmapOf(0, 1, 2),
-		CurrentVotingPower:     entity.ToVotingPower(randomBigInt(t)),
+		CurrentVotingPower:     symbiotic.ToVotingPower(randomBigInt(t)),
 	}
 }
 
@@ -68,7 +69,7 @@ func TestBadgerRepository_SignatureMap(t *testing.T) {
 		// Update with modified data
 		updatedVM := vm1
 		updatedVM.Epoch = vm1.Epoch + 1
-		updatedVM.CurrentVotingPower = entity.ToVotingPower(big.NewInt(999))
+		updatedVM.CurrentVotingPower = symbiotic.ToVotingPower(big.NewInt(999))
 
 		err = repo.UpdateSignatureMap(context.Background(), updatedVM)
 		require.NoError(t, err)
@@ -151,7 +152,7 @@ func TestSignatureMapSerialization(t *testing.T) {
 			RequestID:              randomRequestID(t),
 			Epoch:                  123,
 			SignedValidatorsBitmap: entity.NewBitmap(),
-			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(0)),
+			CurrentVotingPower:     symbiotic.ToVotingPower(big.NewInt(0)),
 		}
 
 		// Serialize
@@ -174,7 +175,7 @@ func TestSignatureMapSerialization(t *testing.T) {
 			RequestID:              randomRequestID(t),
 			Epoch:                  18446744073709551615, // Max uint64
 			SignedValidatorsBitmap: entity.NewBitmap(),
-			CurrentVotingPower:     entity.ToVotingPower(new(big.Int).Mul(largeBigInt, big.NewInt(3))),
+			CurrentVotingPower:     symbiotic.ToVotingPower(new(big.Int).Mul(largeBigInt, big.NewInt(3))),
 		}
 
 		// Serialize and deserialize
@@ -194,7 +195,7 @@ func TestSignatureMapSerialization(t *testing.T) {
 			RequestID:              randomRequestID(t),
 			Epoch:                  42,
 			SignedValidatorsBitmap: bitmap,
-			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(150)),
+			CurrentVotingPower:     symbiotic.ToVotingPower(big.NewInt(150)),
 		}
 
 		// Serialize and deserialize
@@ -350,7 +351,7 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 			RequestID:              common.Hash{}, // Zero hash
 			Epoch:                  0,
 			SignedValidatorsBitmap: entity.NewBitmap(),
-			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(0)),
+			CurrentVotingPower:     symbiotic.ToVotingPower(big.NewInt(0)),
 		}
 
 		err := repo.UpdateSignatureMap(context.Background(), vm)
@@ -367,7 +368,7 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 			RequestID:              randomRequestID(t),
 			Epoch:                  1,
 			SignedValidatorsBitmap: entity.NewBitmapOf(0), // Single validator at index 0
-			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(1)),
+			CurrentVotingPower:     symbiotic.ToVotingPower(big.NewInt(1)),
 		}
 
 		err := repo.UpdateSignatureMap(context.Background(), vm)
@@ -390,7 +391,7 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 			RequestID:              randomRequestID(t),
 			Epoch:                  100,
 			SignedValidatorsBitmap: bitmap,
-			CurrentVotingPower:     entity.ToVotingPower(big.NewInt(5000)),
+			CurrentVotingPower:     symbiotic.ToVotingPower(big.NewInt(5000)),
 		}
 
 		err := repo.UpdateSignatureMap(context.Background(), vm)

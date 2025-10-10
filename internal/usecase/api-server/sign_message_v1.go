@@ -4,7 +4,7 @@ import (
 	"context"
 
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // SignMessage handles the gRPC SignMessage request
@@ -18,10 +18,10 @@ func (h *grpcHandler) SignMessage(ctx context.Context, req *apiv1.SignMessageReq
 		requiredEpoch = (*uint64)(&latestEpoch)
 	}
 
-	signReq := entity.SignatureRequest{
-		KeyTag:        entity.KeyTag(req.GetKeyTag()),
+	signReq := symbiotic.SignatureRequest{
+		KeyTag:        symbiotic.KeyTag(req.GetKeyTag()),
 		Message:       req.GetMessage(),
-		RequiredEpoch: entity.Epoch(*requiredEpoch),
+		RequiredEpoch: symbiotic.Epoch(*requiredEpoch),
 	}
 
 	reqID, err := h.cfg.Signer.RequestSignature(ctx, signReq)

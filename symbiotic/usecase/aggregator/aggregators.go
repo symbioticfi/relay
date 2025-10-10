@@ -1,7 +1,7 @@
 package aggregator
 
 import (
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	types "github.com/symbioticfi/relay/symbiotic/usecase/aggregator/aggregator-types"
 	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator/blsBn254Simple"
 	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator/blsBn254ZK"
@@ -12,11 +12,11 @@ import (
 type Aggregator = types.Aggregator
 type Prover = types.Prover
 
-func NewAggregator(verificationType entity.VerificationType, prover Prover) (Aggregator, error) {
+func NewAggregator(verificationType symbiotic.VerificationType, prover Prover) (Aggregator, error) {
 	switch verificationType {
-	case entity.VerificationTypeBlsBn254ZK:
+	case symbiotic.VerificationTypeBlsBn254ZK:
 		return blsBn254ZK.NewAggregator(prover)
-	case entity.VerificationTypeBlsBn254Simple:
+	case symbiotic.VerificationTypeBlsBn254Simple:
 		return blsBn254Simple.NewAggregator()
 	}
 

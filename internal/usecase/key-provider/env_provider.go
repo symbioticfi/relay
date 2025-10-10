@@ -6,7 +6,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 
 	"github.com/go-errors/errors"
@@ -23,7 +24,7 @@ func NewEnvKeyProvider() *EnvKeyProvider {
 	}
 }
 
-func (e *EnvKeyProvider) GetPrivateKey(keyTag entity.KeyTag) (crypto.PrivateKey, error) {
+func (e *EnvKeyProvider) GetPrivateKey(keyTag symbiotic.KeyTag) (crypto.PrivateKey, error) {
 	alias, err := KeyTagToAlias(keyTag)
 	if err != nil {
 		return nil, err
@@ -34,7 +35,7 @@ func (e *EnvKeyProvider) GetPrivateKey(keyTag entity.KeyTag) (crypto.PrivateKey,
 
 func (e *EnvKeyProvider) GetPrivateKeyByNamespaceTypeId(
 	namespace string,
-	keyType entity.KeyType,
+	keyType symbiotic.KeyType,
 	keyId int,
 ) (crypto.PrivateKey, error) {
 	alias, err := ToAlias(namespace, keyType, keyId)
@@ -79,7 +80,7 @@ func (e *EnvKeyProvider) GetPrivateKeyByAlias(alias string) (crypto.PrivateKey, 
 	return key, nil
 }
 
-func (e *EnvKeyProvider) HasKey(keyTag entity.KeyTag) (bool, error) {
+func (e *EnvKeyProvider) HasKey(keyTag symbiotic.KeyTag) (bool, error) {
 	alias, err := KeyTagToAlias(keyTag)
 	if err != nil {
 		return false, err
@@ -105,7 +106,7 @@ func (e *EnvKeyProvider) HasKeyByAlias(alias string) (bool, error) {
 	return true, nil
 }
 
-func (e *EnvKeyProvider) HasKeyByNamespaceTypeId(namespace string, keyType entity.KeyType, id int) (bool, error) {
+func (e *EnvKeyProvider) HasKeyByNamespaceTypeId(namespace string, keyType symbiotic.KeyType, id int) (bool, error) {
 	alias, err := ToAlias(namespace, keyType, id)
 	if err != nil {
 		return false, err

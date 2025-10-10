@@ -9,7 +9,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 
 	"github.com/go-errors/errors"
 	"github.com/pterm/pterm"
@@ -75,7 +75,7 @@ func GetPassword() (string, error) {
 	return string(passwordBytes), nil
 }
 
-func PrintTreeValidator(leveledList pterm.LeveledList, validator entity.Validator, totalVotingPower *big.Int) pterm.LeveledList {
+func PrintTreeValidator(leveledList pterm.LeveledList, validator symbiotic.Validator, totalVotingPower *big.Int) pterm.LeveledList {
 	leveledList = append(leveledList, pterm.LeveledListItem{
 		Level: 0,
 		Text:  fmt.Sprintf("Validator: %s", validator.Operator.String()),

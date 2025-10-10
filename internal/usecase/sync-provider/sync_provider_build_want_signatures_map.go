@@ -6,7 +6,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func (s *Syncer) BuildWantSignaturesRequest(ctx context.Context) (entity.WantSignaturesRequest, error) {
@@ -47,9 +48,9 @@ func (s *Syncer) buildWantSignaturesMap(ctx context.Context) (map[common.Hash]en
 	}
 
 	// Calculate the starting epoch (go back EpochsToSync epochs)
-	var startEpoch entity.Epoch
-	if latestEpoch >= entity.Epoch(s.cfg.EpochsToSync) {
-		startEpoch = latestEpoch - entity.Epoch(s.cfg.EpochsToSync)
+	var startEpoch symbiotic.Epoch
+	if latestEpoch >= symbiotic.Epoch(s.cfg.EpochsToSync) {
+		startEpoch = latestEpoch - symbiotic.Epoch(s.cfg.EpochsToSync)
 	} else {
 		startEpoch = 0
 	}

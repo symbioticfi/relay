@@ -11,9 +11,10 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
+	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/internal/usecase/entity-processor/mocks"
 	"github.com/symbioticfi/relay/pkg/signals"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
@@ -22,7 +23,7 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 
 	tests := []struct {
 		name                   string
-		setupFunc              func(t *testing.T, repo *badger.Repository) entity.SignatureExtended
+		setupFunc              func(t *testing.T, repo *badger.Repository) symbiotic.SignatureExtended
 		expectPendingExists    bool
 		expectPendingRemoved   bool
 		expectError            bool
@@ -30,9 +31,9 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 	}{
 		{
 			name: "new signature request - no quorum reached",
-			setupFunc: func(t *testing.T, repo *badger.Repository) entity.SignatureExtended {
+			setupFunc: func(t *testing.T, repo *badger.Repository) symbiotic.SignatureExtended {
 				t.Helper()
-				req := randomSignatureRequest(t, entity.Epoch(100))
+				req := randomSignatureRequest(t, symbiotic.Epoch(100))
 
 				// Setup validator set header with high quorum threshold (1000)
 				_, privateKeys := setupValidatorSetHeader(t, repo, req.RequiredEpoch, big.NewInt(1000))
@@ -45,9 +46,9 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 		},
 		{
 			name: "new signature request - quorum reached",
-			setupFunc: func(t *testing.T, repo *badger.Repository) entity.SignatureExtended {
+			setupFunc: func(t *testing.T, repo *badger.Repository) symbiotic.SignatureExtended {
 				t.Helper()
-				epoch := entity.Epoch(101)
+				epoch := symbiotic.Epoch(101)
 				req := randomSignatureRequest(t, epoch)
 
 				// Setup validator set header with low quorum threshold (50)
@@ -61,15 +62,15 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 		},
 		{
 			name: "signature without signature request",
-			setupFunc: func(t *testing.T, repo *badger.Repository) entity.SignatureExtended {
+			setupFunc: func(t *testing.T, repo *badger.Repository) symbiotic.SignatureExtended {
 				t.Helper()
-				epoch := entity.Epoch(102)
+				epoch := symbiotic.Epoch(102)
 
 				// Setup validator set header with high quorum threshold
 				_, privateKeys := setupValidatorSetHeader(t, repo, epoch, big.NewInt(1000))
 
-				return randomSignatureExtendedForKeyWithParams(t, privateKeys[0][15], entity.SignatureRequest{
-					KeyTag:        entity.KeyTag(15),
+				return randomSignatureExtendedForKeyWithParams(t, privateKeys[0][15], symbiotic.SignatureRequest{
+					KeyTag:        symbiotic.KeyTag(15),
 					RequiredEpoch: epoch,
 					Message:       nil,
 				})
@@ -80,9 +81,9 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 		},
 		{
 			name: "multiple signatures - quorum reached on second",
-			setupFunc: func(t *testing.T, repo *badger.Repository) entity.SignatureExtended {
+			setupFunc: func(t *testing.T, repo *badger.Repository) symbiotic.SignatureExtended {
 				t.Helper()
-				epoch := entity.Epoch(103)
+				epoch := symbiotic.Epoch(103)
 				req := randomSignatureRequest(t, epoch)
 
 				// Setup validator set header with quorum threshold of 150
@@ -115,13 +116,13 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 		},
 		{
 			name: "missing validator set header",
-			setupFunc: func(t *testing.T, repo *badger.Repository) entity.SignatureExtended {
+			setupFunc: func(t *testing.T, repo *badger.Repository) symbiotic.SignatureExtended {
 				t.Helper()
 				// Don't setup validator set header - will cause error
-				privateKey, err := crypto.GeneratePrivateKey(entity.KeyTypeBlsBn254)
+				privateKey, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
 				require.NoError(t, err)
 
-				req := randomSignatureRequest(t, entity.Epoch(999))
+				req := randomSignatureRequest(t, symbiotic.Epoch(999))
 				return randomSignatureExtendedForKeyWithParams(t, privateKey, req)
 			},
 			expectPendingExists:    false,
@@ -186,7 +187,7 @@ func TestEntityProcessor_ProcessSignature_ConcurrentSignatures(t *testing.T) {
 	t.Parallel()
 
 	repo := setupTestRepository(t)
-	epoch := entity.Epoch(200)
+	epoch := symbiotic.Epoch(200)
 	req := randomSignatureRequest(t, epoch)
 
 	// Setup validator set header with quorum threshold of 300
@@ -196,7 +197,7 @@ func TestEntityProcessor_ProcessSignature_ConcurrentSignatures(t *testing.T) {
 	require.NoError(t, err)
 
 	// Simulate 4 concurrent signatures
-	signatures := []entity.SignatureExtended{
+	signatures := []symbiotic.SignatureExtended{
 		signatureExtendedForRequest(t, privateKeys[0][req.KeyTag], req),
 		signatureExtendedForRequest(t, privateKeys[1][req.KeyTag], req),
 		signatureExtendedForRequest(t, privateKeys[2][req.KeyTag], req),
@@ -229,7 +230,7 @@ func TestEntityProcessor_ProcessSignature_Conflict(t *testing.T) {
 	t.Parallel()
 
 	repo := setupTestRepository(t)
-	req := randomSignatureRequest(t, entity.Epoch(200))
+	req := randomSignatureRequest(t, symbiotic.Epoch(200))
 
 	vs, privateKeys := createValidatorSetWithCount(t, req.RequiredEpoch, big.NewInt(300), 20)
 	err := repo.SaveValidatorSet(t.Context(), vs)
@@ -260,7 +261,7 @@ func TestEntityProcessor_ProcessSignature_DuplicateSignatureForSameValidator(t *
 	t.Parallel()
 
 	repo := setupTestRepository(t)
-	epoch := entity.Epoch(300)
+	epoch := symbiotic.Epoch(300)
 	req := randomSignatureRequest(t, epoch)
 
 	_, privateKeys := setupValidatorSetHeader(t, repo, epoch, big.NewInt(1000))
@@ -284,7 +285,7 @@ func TestEntityProcessor_ProcessSignature_ExactQuorumThreshold(t *testing.T) {
 	t.Parallel()
 
 	repo := setupTestRepository(t)
-	epoch := entity.Epoch(302)
+	epoch := symbiotic.Epoch(302)
 	req := randomSignatureRequest(t, epoch)
 
 	// Set quorum threshold to exactly 100
@@ -329,9 +330,9 @@ func createMockAggProofSignal(t *testing.T) *mocks.MockAggProofSignal {
 	return mockSignal
 }
 
-func createMockSignatureProcessedSignal(t *testing.T) *signals.Signal[entity.SignatureExtended] {
+func createMockSignatureProcessedSignal(t *testing.T) *signals.Signal[symbiotic.SignatureExtended] {
 	t.Helper()
-	return signals.New[entity.SignatureExtended](signals.DefaultConfig(), "test", nil)
+	return signals.New[symbiotic.SignatureExtended](signals.DefaultConfig(), "test", nil)
 }
 
 func setupTestRepository(t *testing.T) *badger.Repository {
@@ -353,24 +354,24 @@ func randomBytes(t *testing.T, n int) []byte {
 	return b
 }
 
-func randomSignatureRequest(t *testing.T, epoch entity.Epoch) entity.SignatureRequest {
+func randomSignatureRequest(t *testing.T, epoch symbiotic.Epoch) symbiotic.SignatureRequest {
 	t.Helper()
-	req := entity.SignatureRequest{
-		KeyTag:        entity.KeyTag(15),
+	req := symbiotic.SignatureRequest{
+		KeyTag:        symbiotic.KeyTag(15),
 		RequiredEpoch: epoch,
 		Message:       randomBytes(t, 512),
 	}
 	return req
 }
 
-func randomSignatureExtendedForKeyWithParams(t *testing.T, privateKey crypto.PrivateKey, req entity.SignatureRequest) entity.SignatureExtended {
+func randomSignatureExtendedForKeyWithParams(t *testing.T, privateKey crypto.PrivateKey, req symbiotic.SignatureRequest) symbiotic.SignatureExtended {
 	t.Helper()
 
 	publicKey := privateKey.PublicKey()
 	signature, messageHash, err := privateKey.Sign(req.Message)
 	require.NoError(t, err)
 
-	return entity.SignatureExtended{
+	return symbiotic.SignatureExtended{
 		KeyTag:      req.KeyTag,
 		Epoch:       req.RequiredEpoch,
 		MessageHash: messageHash,
@@ -380,14 +381,14 @@ func randomSignatureExtendedForKeyWithParams(t *testing.T, privateKey crypto.Pri
 }
 
 // signatureExtendedForRequest creates a SignatureExtended for a given SignatureRequest using the same message
-func signatureExtendedForRequest(t *testing.T, privateKey crypto.PrivateKey, req entity.SignatureRequest) entity.SignatureExtended {
+func signatureExtendedForRequest(t *testing.T, privateKey crypto.PrivateKey, req symbiotic.SignatureRequest) symbiotic.SignatureExtended {
 	t.Helper()
 
 	publicKey := privateKey.PublicKey()
 	signature, messageHash, err := privateKey.Sign(req.Message)
 	require.NoError(t, err)
 
-	return entity.SignatureExtended{
+	return symbiotic.SignatureExtended{
 		KeyTag:      req.KeyTag,
 		Epoch:       req.RequiredEpoch,
 		MessageHash: messageHash,
@@ -396,61 +397,61 @@ func signatureExtendedForRequest(t *testing.T, privateKey crypto.PrivateKey, req
 	}
 }
 
-func createValidatorSetWithCount(t *testing.T, epoch entity.Epoch, quorumThreshold *big.Int, validatorCount int) (entity.ValidatorSet, []map[entity.KeyTag]crypto.PrivateKey) {
+func createValidatorSetWithCount(t *testing.T, epoch symbiotic.Epoch, quorumThreshold *big.Int, validatorCount int) (symbiotic.ValidatorSet, []map[symbiotic.KeyTag]crypto.PrivateKey) {
 	t.Helper()
 
-	privateKeys := make([]map[entity.KeyTag]crypto.PrivateKey, validatorCount)
-	validators := make([]entity.Validator, validatorCount)
+	privateKeys := make([]map[symbiotic.KeyTag]crypto.PrivateKey, validatorCount)
+	validators := make([]symbiotic.Validator, validatorCount)
 	for i := 0; i < validatorCount; i++ {
-		privateKeys[i] = make(map[entity.KeyTag]crypto.PrivateKey)
+		privateKeys[i] = make(map[symbiotic.KeyTag]crypto.PrivateKey)
 		// Generate a valid key for the validator
-		privateKeyBLS, err := crypto.GeneratePrivateKey(entity.KeyTypeBlsBn254)
+		privateKeyBLS, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
 		require.NoError(t, err)
 		privateKeys[i][15] = privateKeyBLS
 
-		privateKeyECDSA, err := crypto.GeneratePrivateKey(entity.KeyTypeEcdsaSecp256k1)
+		privateKeyECDSA, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeEcdsaSecp256k1)
 		require.NoError(t, err)
 		privateKeys[i][0x10] = privateKeyECDSA
 
-		validators[i] = entity.Validator{
+		validators[i] = symbiotic.Validator{
 			Operator:    common.BytesToAddress(randomBytes(t, 20)),
-			VotingPower: entity.ToVotingPower(big.NewInt(500)),
+			VotingPower: symbiotic.ToVotingPower(big.NewInt(500)),
 			IsActive:    true,
-			Keys: []entity.ValidatorKey{
+			Keys: []symbiotic.ValidatorKey{
 				{
-					Tag:     entity.KeyTag(15),
+					Tag:     symbiotic.KeyTag(15),
 					Payload: privateKeyBLS.PublicKey().OnChain(), // Use the actual on-chain representation
 				},
 				{
-					Tag:     entity.KeyTag(0x10),
+					Tag:     symbiotic.KeyTag(0x10),
 					Payload: privateKeyECDSA.PublicKey().OnChain(), // Use the actual on-chain representation
 				},
 			},
-			Vaults: []entity.ValidatorVault{
+			Vaults: []symbiotic.ValidatorVault{
 				{
 					ChainID:     1,
 					Vault:       common.BytesToAddress(randomBytes(t, 20)),
-					VotingPower: entity.ToVotingPower(big.NewInt(500)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(500)),
 				},
 			},
 		}
 	}
 
-	validatorsList := entity.Validators(validators)
+	validatorsList := symbiotic.Validators(validators)
 	validatorsList.SortByOperatorAddressAsc() // Sort validators by operator address
 
-	return entity.ValidatorSet{
+	return symbiotic.ValidatorSet{
 		Version:          1,
-		RequiredKeyTag:   entity.KeyTag(15),
+		RequiredKeyTag:   symbiotic.KeyTag(15),
 		Epoch:            epoch,
 		CaptureTimestamp: 1234567890,
-		QuorumThreshold:  entity.ToVotingPower(quorumThreshold),
+		QuorumThreshold:  symbiotic.ToVotingPower(quorumThreshold),
 		Validators:       validatorsList,
-		Status:           entity.HeaderCommitted,
+		Status:           symbiotic.HeaderCommitted,
 	}, privateKeys
 }
 
-func setupValidatorSetHeader(t *testing.T, repo *badger.Repository, epoch entity.Epoch, quorumThreshold *big.Int) (entity.ValidatorSet, []map[entity.KeyTag]crypto.PrivateKey) {
+func setupValidatorSetHeader(t *testing.T, repo *badger.Repository, epoch symbiotic.Epoch, quorumThreshold *big.Int) (symbiotic.ValidatorSet, []map[symbiotic.KeyTag]crypto.PrivateKey) {
 	t.Helper()
 	vs, privateKeys := createValidatorSetWithCount(t, epoch, quorumThreshold, 4) // Default to 4 validators for backward compatibility
 	err := repo.SaveValidatorSet(t.Context(), vs)
@@ -462,9 +463,9 @@ func TestEntityProcessor_ProcessAggregationProof_SuccessfullyProcesses(t *testin
 	t.Parallel()
 
 	repo := setupTestRepository(t)
-	req := randomSignatureRequest(t, entity.Epoch(100))
+	req := randomSignatureRequest(t, symbiotic.Epoch(100))
 
-	msg := entity.AggregationProof{
+	msg := symbiotic.AggregationProof{
 		KeyTag:      req.KeyTag,
 		Epoch:       req.RequiredEpoch,
 		MessageHash: common.BytesToHash(randomBytes(t, 32)).Bytes(),
@@ -504,8 +505,8 @@ func TestEntityProcessor_ProcessAggregationProof_HandlesMissingPendingGracefully
 	t.Parallel()
 
 	repo := setupTestRepository(t)
-	req := randomSignatureRequest(t, entity.Epoch(200))
-	msg := entity.AggregationProof{
+	req := randomSignatureRequest(t, symbiotic.Epoch(200))
+	msg := symbiotic.AggregationProof{
 		KeyTag:      req.KeyTag,
 		Epoch:       req.RequiredEpoch,
 		MessageHash: common.BytesToHash(randomBytes(t, 32)).Bytes(),
@@ -540,8 +541,8 @@ func TestEntityProcessor_ProcessAggregationProof_FailsWhenAlreadyExists(t *testi
 	t.Parallel()
 
 	repo := setupTestRepository(t)
-	req := randomSignatureRequest(t, entity.Epoch(300))
-	msg := entity.AggregationProof{
+	req := randomSignatureRequest(t, symbiotic.Epoch(300))
+	msg := symbiotic.AggregationProof{
 		KeyTag:      req.KeyTag,
 		Epoch:       req.RequiredEpoch,
 		MessageHash: common.BytesToHash(randomBytes(t, 32)).Bytes(),
@@ -576,7 +577,7 @@ func TestEntityProcessor_ProcessSignature_SavesAggregationProofPendingForAggrega
 	t.Parallel()
 
 	repo := setupTestRepository(t)
-	req := randomSignatureRequest(t, entity.Epoch(400))
+	req := randomSignatureRequest(t, symbiotic.Epoch(400))
 
 	_, privateKeys := setupValidatorSetHeader(t, repo, req.RequiredEpoch, big.NewInt(1000))
 	param := randomSignatureExtendedForKeyWithParams(t, privateKeys[0][15], req)
@@ -604,8 +605,8 @@ func TestEntityProcessor_ProcessSignature_SaveAggregationProofPendingForNonAggre
 	t.Parallel()
 
 	repo := setupTestRepository(t)
-	req := randomSignatureRequest(t, entity.Epoch(500))
-	req.KeyTag = entity.KeyTag(0x10) // Ensure it's NOT an aggregation key (EcdsaSecp256k1)
+	req := randomSignatureRequest(t, symbiotic.Epoch(500))
+	req.KeyTag = symbiotic.KeyTag(0x10) // Ensure it's NOT an aggregation key (EcdsaSecp256k1)
 
 	_, privateKeys := setupValidatorSetHeader(t, repo, req.RequiredEpoch, big.NewInt(1000))
 
@@ -627,7 +628,7 @@ func TestEntityProcessor_ProcessSignature_FullSignatureToAggregationProofFlow(t 
 	t.Parallel()
 
 	repo := setupTestRepository(t)
-	req := randomSignatureRequest(t, entity.Epoch(600))
+	req := randomSignatureRequest(t, symbiotic.Epoch(600))
 	_, privateKeys := setupValidatorSetHeader(t, repo, req.RequiredEpoch, big.NewInt(1000))
 
 	// Step 1: Process signature (should create pending aggregation proof)
@@ -651,7 +652,7 @@ func TestEntityProcessor_ProcessSignature_FullSignatureToAggregationProofFlow(t 
 	require.Len(t, pendingAggRequests, 1)
 
 	// Step 2: Process aggregation proof (should remove from pending)
-	msg := entity.AggregationProof{
+	msg := symbiotic.AggregationProof{
 		KeyTag:      req.KeyTag,
 		Epoch:       req.RequiredEpoch,
 		MessageHash: param.MessageHash,

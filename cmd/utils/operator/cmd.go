@@ -7,14 +7,14 @@ import (
 	"syscall"
 
 	cmdhelpers "github.com/symbioticfi/relay/internal/usecase/cmd-helpers"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
 
-var operatorRegistries = map[uint64]entity.CrossChainAddress{
+var operatorRegistries = map[uint64]symbiotic.CrossChainAddress{
 	111: {
 		ChainId: 111,
 		Address: common.HexToAddress("0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"),
@@ -84,7 +84,7 @@ func initFlags() {
 	infoCmd.PersistentFlags().BoolVarP(&infoFlags.Full, "full", "f", false, "Print full validator info")
 	infoCmd.PersistentFlags().StringVarP(&infoFlags.Path, "path", "p", "./keystore.jks", "Path to keystore")
 	infoCmd.PersistentFlags().StringVar(&infoFlags.Password, "password", "", "Keystore password")
-	infoCmd.PersistentFlags().Uint8Var(&infoFlags.KeyTag, "key-tag", uint8(entity.KeyTypeInvalid), "key tag")
+	infoCmd.PersistentFlags().Uint8Var(&infoFlags.KeyTag, "key-tag", uint8(symbiotic.KeyTypeInvalid), "key tag")
 	if err := infoCmd.MarkPersistentFlagRequired("key-tag"); err != nil {
 		panic(err)
 	}
@@ -94,7 +94,7 @@ func initFlags() {
 	registerKeyCmd.PersistentFlags().Var(&registerFlags.Secrets, "secret-keys", "Secret key for key register in format 'chainId:key' (e.g. '1:0xabc')")
 	registerKeyCmd.PersistentFlags().StringVarP(&infoFlags.Path, "path", "p", "./keystore.jks", "Path to keystore")
 	registerKeyCmd.PersistentFlags().StringVar(&infoFlags.Password, "password", "", "Keystore password")
-	registerKeyCmd.PersistentFlags().Uint8Var(&infoFlags.KeyTag, "key-tag", uint8(entity.KeyTypeInvalid), "key tag")
+	registerKeyCmd.PersistentFlags().Uint8Var(&infoFlags.KeyTag, "key-tag", uint8(symbiotic.KeyTypeInvalid), "key tag")
 	if err := registerKeyCmd.MarkPersistentFlagRequired("key-tag"); err != nil {
 		panic(err)
 	}

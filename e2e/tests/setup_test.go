@@ -21,7 +21,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	apiv1 "github.com/symbioticfi/relay/api/client/v1"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
@@ -89,7 +89,7 @@ func generateSidecarConfigs(env EnvInfo) []RelaySidecarConfig {
 		if err != nil {
 			panic(fmt.Sprintf("failed to decode symb private key hex: %v", err))
 		}
-		symbKey, err := crypto.NewPrivateKey(entity.KeyTypeBlsBn254, privBytes)
+		symbKey, err := crypto.NewPrivateKey(symbiotic.KeyTypeBlsBn254, privBytes)
 		if err != nil {
 			panic(fmt.Sprintf("failed to create symb private key: %v", err))
 		}

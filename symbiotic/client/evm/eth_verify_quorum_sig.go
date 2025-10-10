@@ -9,10 +9,10 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-func (e *Client) VerifyQuorumSig(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch, message []byte, keyTag entity.KeyTag, threshold *big.Int, proof []byte) (_ bool, err error) {
+func (e *Client) VerifyQuorumSig(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch, message []byte, keyTag symbiotic.KeyTag, threshold *big.Int, proof []byte) (_ bool, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {

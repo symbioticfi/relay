@@ -13,7 +13,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
 
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/ssz"
 )
 
@@ -25,19 +25,19 @@ const (
 
 //go:generate mockgen -source=valset_deriver.go -destination=mocks/deriver.go -package=mocks -mock_names=evmClient=MockEvmClient
 type evmClient interface {
-	GetConfig(ctx context.Context, timestamp entity.Timestamp) (entity.NetworkConfig, error)
-	GetEpochStart(ctx context.Context, epoch entity.Epoch) (entity.Timestamp, error)
-	GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) ([]entity.OperatorVotingPower, error)
-	GetKeys(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) ([]entity.OperatorWithKeys, error)
-	GetEip712Domain(ctx context.Context, addr entity.CrossChainAddress) (entity.Eip712Domain, error)
-	GetCurrentEpoch(ctx context.Context) (entity.Epoch, error)
+	GetConfig(ctx context.Context, timestamp symbiotic.Timestamp) (symbiotic.NetworkConfig, error)
+	GetEpochStart(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.Timestamp, error)
+	GetVotingPowers(ctx context.Context, address symbiotic.CrossChainAddress, timestamp symbiotic.Timestamp) ([]symbiotic.OperatorVotingPower, error)
+	GetKeys(ctx context.Context, address symbiotic.CrossChainAddress, timestamp symbiotic.Timestamp) ([]symbiotic.OperatorWithKeys, error)
+	GetEip712Domain(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.Eip712Domain, error)
+	GetCurrentEpoch(ctx context.Context) (symbiotic.Epoch, error)
 	GetSubnetwork(ctx context.Context) (common.Hash, error)
 	GetNetworkAddress(ctx context.Context) (common.Address, error)
-	GetHeaderHash(ctx context.Context, addr entity.CrossChainAddress) (common.Hash, error)
-	IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (bool, error)
-	GetHeaderHashAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (common.Hash, error)
-	GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (entity.Epoch, error)
-	GetOperators(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) ([]common.Address, error)
+	GetHeaderHash(ctx context.Context, addr symbiotic.CrossChainAddress) (common.Hash, error)
+	IsValsetHeaderCommittedAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch) (bool, error)
+	GetHeaderHashAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch) (common.Hash, error)
+	GetLastCommittedHeaderEpoch(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.Epoch, error)
+	GetOperators(ctx context.Context, address symbiotic.CrossChainAddress, timestamp symbiotic.Timestamp) ([]common.Address, error)
 }
 
 // Deriver coordinates the ETH services
@@ -52,23 +52,23 @@ func NewDeriver(evmClient evmClient) (*Deriver, error) {
 	}, nil
 }
 
-func (v *Deriver) GetNetworkData(ctx context.Context, addr entity.CrossChainAddress) (entity.NetworkData, error) {
+func (v *Deriver) GetNetworkData(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.NetworkData, error) {
 	address, err := v.evmClient.GetNetworkAddress(ctx)
 	if err != nil {
-		return entity.NetworkData{}, errors.Errorf("failed to get network address: %w", err)
+		return symbiotic.NetworkData{}, errors.Errorf("failed to get network address: %w", err)
 	}
 
 	subnetwork, err := v.evmClient.GetSubnetwork(ctx)
 	if err != nil {
-		return entity.NetworkData{}, errors.Errorf("failed to get subnetwork: %w", err)
+		return symbiotic.NetworkData{}, errors.Errorf("failed to get subnetwork: %w", err)
 	}
 
 	eip712Data, err := v.evmClient.GetEip712Domain(ctx, addr)
 	if err != nil {
-		return entity.NetworkData{}, errors.Errorf("failed to get eip712 domain: %w", err)
+		return symbiotic.NetworkData{}, errors.Errorf("failed to get eip712 domain: %w", err)
 	}
 
-	return entity.NetworkData{
+	return symbiotic.NetworkData{
 		Address:    address,
 		Subnetwork: subnetwork,
 		Eip712Data: eip712Data,
@@ -77,13 +77,13 @@ func (v *Deriver) GetNetworkData(ctx context.Context, addr entity.CrossChainAddr
 
 type dtoOperatorVotingPower struct {
 	chainId      uint64
-	votingPowers []entity.OperatorVotingPower
+	votingPowers []symbiotic.OperatorVotingPower
 }
 
-func (v *Deriver) GetValidatorSet(ctx context.Context, epoch entity.Epoch, config entity.NetworkConfig) (entity.ValidatorSet, error) {
+func (v *Deriver) GetValidatorSet(ctx context.Context, epoch symbiotic.Epoch, config symbiotic.NetworkConfig) (symbiotic.ValidatorSet, error) {
 	timestamp, err := v.evmClient.GetEpochStart(ctx, epoch)
 	if err != nil {
-		return entity.ValidatorSet{}, errors.Errorf("failed to get epoch start timestamp: %w", err)
+		return symbiotic.ValidatorSet{}, errors.Errorf("failed to get epoch start timestamp: %w", err)
 	}
 	slog.DebugContext(ctx, "Got current valset timestamp", "timestamp", strconv.Itoa(int(timestamp)), "epoch", epoch)
 
@@ -92,7 +92,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch entity.Epoch, confi
 	for i, provider := range config.VotingPowerProviders {
 		votingPowers, err := v.evmClient.GetVotingPowers(ctx, provider, timestamp)
 		if err != nil {
-			return entity.ValidatorSet{}, errors.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
+			return symbiotic.ValidatorSet{}, errors.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
 		}
 
 		slog.DebugContext(ctx, "Got voting powers from provider", "provider", provider.Address.Hex(), "votingPowers", votingPowers)
@@ -106,7 +106,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch entity.Epoch, confi
 	// Get keys from the keys provider
 	keys, err := v.evmClient.GetKeys(ctx, config.KeysProvider, timestamp)
 	if err != nil {
-		return entity.ValidatorSet{}, errors.Errorf("failed to get keys: %w", err)
+		return symbiotic.ValidatorSet{}, errors.Errorf("failed to get keys: %w", err)
 	}
 	slog.DebugContext(ctx, "Got keys from provider", "provider", config.KeysProvider.Address.Hex(), "keys", keys)
 
@@ -116,24 +116,24 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch entity.Epoch, confi
 	// calc new quorum threshold
 	quorumThreshold, err := config.CalcQuorumThreshold(validators.GetTotalActiveVotingPower())
 	if err != nil {
-		return entity.ValidatorSet{}, errors.Errorf("failed to calc quorum threshold: %w", err)
+		return symbiotic.ValidatorSet{}, errors.Errorf("failed to calc quorum threshold: %w", err)
 	}
 
-	valset := entity.ValidatorSet{
+	valset := symbiotic.ValidatorSet{
 		Version:           valsetVersion,
 		RequiredKeyTag:    config.RequiredHeaderKeyTag,
 		Epoch:             epoch,
 		CaptureTimestamp:  timestamp,
 		QuorumThreshold:   quorumThreshold,
 		Validators:        validators,
-		Status:            entity.HeaderDerived,
+		Status:            symbiotic.HeaderDerived,
 		AggregatorIndices: nil, // will be initialized later
 		CommitterIndices:  nil, // will be initialized later
 	}
 
 	aggIndices, commIndices, err := GetSchedulerInfo(ctx, valset, config)
 	if err != nil {
-		return entity.ValidatorSet{}, errors.Errorf("failed to get scheduler info: %w", err)
+		return symbiotic.ValidatorSet{}, errors.Errorf("failed to get scheduler info: %w", err)
 	}
 	valset.AggregatorIndices = aggIndices
 	valset.CommitterIndices = commIndices
@@ -141,7 +141,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch entity.Epoch, confi
 	return valset, nil
 }
 
-func GetSchedulerInfo(_ context.Context, valset entity.ValidatorSet, config entity.NetworkConfig) (aggIndices []uint32, commIndices []uint32, err error) {
+func GetSchedulerInfo(_ context.Context, valset symbiotic.ValidatorSet, config symbiotic.NetworkConfig) (aggIndices []uint32, commIndices []uint32, err error) {
 	// ensure validators sorted already, function expects sorted list
 	if err := valset.Validators.CheckIsSortedByOperatorAddressAsc(); err != nil {
 		return nil, nil, err
@@ -207,10 +207,10 @@ func findNextAvailableIndex(startIndex uint32, validatorCount int, usedIndices m
 }
 
 func (v *Deriver) formValidators(
-	config entity.NetworkConfig,
+	config symbiotic.NetworkConfig,
 	votingPowers []dtoOperatorVotingPower,
-	keys []entity.OperatorWithKeys,
-) entity.Validators {
+	keys []symbiotic.OperatorWithKeys,
+) symbiotic.Validators {
 	validators := fillValidators(votingPowers, keys)
 
 	markValidatorsActive(config, validators)
@@ -220,7 +220,7 @@ func (v *Deriver) formValidators(
 	return validators
 }
 
-func markValidatorsActive(config entity.NetworkConfig, validators entity.Validators) {
+func markValidatorsActive(config symbiotic.NetworkConfig, validators symbiotic.Validators) {
 	totalActive := 0
 
 	for i := range validators {
@@ -239,7 +239,7 @@ func markValidatorsActive(config entity.NetworkConfig, validators entity.Validat
 
 		if config.MaxVotingPower.Int64() != 0 {
 			if validators[i].VotingPower.Cmp(config.MaxVotingPower.Int) > 0 {
-				validators[i].VotingPower = entity.ToVotingPower(new(big.Int).Set(config.MaxVotingPower.Int))
+				validators[i].VotingPower = symbiotic.ToVotingPower(new(big.Int).Set(config.MaxVotingPower.Int))
 			}
 		}
 
@@ -251,33 +251,33 @@ func markValidatorsActive(config entity.NetworkConfig, validators entity.Validat
 	}
 }
 
-func fillValidators(votingPowers []dtoOperatorVotingPower, keys []entity.OperatorWithKeys) entity.Validators {
+func fillValidators(votingPowers []dtoOperatorVotingPower, keys []symbiotic.OperatorWithKeys) symbiotic.Validators {
 	// Create validators map to consolidate voting powers and keys
-	validatorsMap := make(map[string]*entity.Validator)
+	validatorsMap := make(map[string]*symbiotic.Validator)
 
 	// Process voting powers
 	for _, chainVp := range votingPowers {
 		for _, vp := range chainVp.votingPowers {
 			operatorAddr := vp.Operator.Hex()
 			if _, exists := validatorsMap[operatorAddr]; !exists {
-				validatorsMap[operatorAddr] = &entity.Validator{
+				validatorsMap[operatorAddr] = &symbiotic.Validator{
 					Operator:    vp.Operator,
-					VotingPower: entity.ToVotingPower(big.NewInt(0)),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(0)),
 					IsActive:    false, // Default to active, will filter later
-					Keys:        []entity.ValidatorKey{},
-					Vaults:      []entity.ValidatorVault{},
+					Keys:        []symbiotic.ValidatorKey{},
+					Vaults:      []symbiotic.ValidatorVault{},
 				}
 			}
 
 			// Add vaults and their voting powers
 			for _, vault := range vp.Vaults {
-				validatorsMap[operatorAddr].VotingPower = entity.ToVotingPower(new(big.Int).Add(
+				validatorsMap[operatorAddr].VotingPower = symbiotic.ToVotingPower(new(big.Int).Add(
 					validatorsMap[operatorAddr].VotingPower.Int,
 					vault.VotingPower.Int,
 				))
 
 				// Add vault to validator's vaults
-				validatorsMap[operatorAddr].Vaults = append(validatorsMap[operatorAddr].Vaults, entity.ValidatorVault{
+				validatorsMap[operatorAddr].Vaults = append(validatorsMap[operatorAddr].Vaults, symbiotic.ValidatorVault{
 					Vault:       vault.Vault,
 					VotingPower: vault.VotingPower,
 					ChainID:     chainVp.chainId,
@@ -299,7 +299,7 @@ func fillValidators(votingPowers []dtoOperatorVotingPower, keys []entity.Operato
 		for _, vault := range validatorsMap[val].Vaults {
 			totalVP.Add(totalVP, vault.VotingPower.Int)
 		}
-		validatorsMap[val].VotingPower = entity.ToVotingPower(totalVP)
+		validatorsMap[val].VotingPower = symbiotic.ToVotingPower(totalVP)
 	}
 
 	// Process required keys
@@ -308,7 +308,7 @@ func fillValidators(votingPowers []dtoOperatorVotingPower, keys []entity.Operato
 		if validator, exists := validatorsMap[operatorAddr]; exists {
 			// Add all keys for this operator
 			for _, key := range rk.Keys {
-				validator.Keys = append(validator.Keys, entity.ValidatorKey{
+				validator.Keys = append(validator.Keys, symbiotic.ValidatorKey{
 					Tag:     key.Tag,
 					Payload: key.Payload,
 				})
@@ -316,7 +316,7 @@ func fillValidators(votingPowers []dtoOperatorVotingPower, keys []entity.Operato
 		}
 	}
 
-	validators := entity.Validators(lo.Map(lo.Values(validatorsMap), func(item *entity.Validator, _ int) entity.Validator {
+	validators := symbiotic.Validators(lo.Map(lo.Values(validatorsMap), func(item *symbiotic.Validator, _ int) symbiotic.Validator {
 		return *item
 	}))
 

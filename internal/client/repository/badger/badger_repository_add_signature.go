@@ -6,11 +6,12 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
-func (r *Repository) SaveSignature(ctx context.Context, signature entity.SignatureExtended) error {
+func (r *Repository) SaveSignature(ctx context.Context, signature symbiotic.SignatureExtended) error {
 	publicKey, err := crypto.NewPublicKey(signature.KeyTag.Type(), signature.PublicKey)
 	if err != nil {
 		return errors.Errorf("failed to get public key: %w", err)

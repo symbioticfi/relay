@@ -6,12 +6,12 @@ import (
 
 	"github.com/go-errors/errors"
 
-	p2pEntity "github.com/symbioticfi/relay/internal/entity"
+	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, p2pMsg p2pEntity.P2PMessage[entity.AggregationProof]) error {
+func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, p2pMsg entity.P2PMessage[symbiotic.AggregationProof]) error {
 	ctx = log.WithComponent(ctx, "signer")
 	msg := p2pMsg.Message
 

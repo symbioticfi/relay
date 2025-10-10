@@ -5,6 +5,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
+
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func TestAggregationProofSync_Integration(t *testing.T) {
@@ -21,21 +23,21 @@ func TestAggregationProofSync_Integration(t *testing.T) {
 		require.Len(t, request.RequestIDs, 3)
 
 		// Step 2: Create response with available proofs (only 2 out of 3)
-		proof1 := AggregationProof{
+		proof1 := symbiotic.AggregationProof{
 			MessageHash: []byte("message1"),
-			KeyTag:      KeyTag(15),
+			KeyTag:      symbiotic.KeyTag(15),
 			Epoch:       10,
 			Proof:       []byte("proof1"),
 		}
-		proof2 := AggregationProof{
+		proof2 := symbiotic.AggregationProof{
 			MessageHash: []byte("message2"),
-			KeyTag:      KeyTag(15),
+			KeyTag:      symbiotic.KeyTag(15),
 			Epoch:       10,
 			Proof:       []byte("proof2"),
 		}
 
 		response := WantAggregationProofsResponse{
-			Proofs: map[common.Hash]AggregationProof{
+			Proofs: map[common.Hash]symbiotic.AggregationProof{
 				hash1: proof1,
 				hash2: proof2,
 				// hash3 is missing - peer doesn't have it

@@ -7,10 +7,10 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
-	"github.com/symbioticfi/relay/symbiotic/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg entity.AggregationProof) error {
+func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg symbiotic.AggregationProof) error {
 	dto := prototypes.SignaturesAggregated{
 		RequestId:   msg.RequestID().Bytes(),
 		KeyTag:      uint32(msg.KeyTag),
