@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/http/pprof"
 	"strings"
 	"sync"
 	"time"
@@ -68,6 +69,7 @@ type Config struct {
 	Deriver      deriver   `validate:"required"`
 	Aggregator   aggregator
 	ServeMetrics bool
+	ServePprof   bool
 	Metrics      *metrics.Metrics `validate:"required"`
 }
 
@@ -251,6 +253,25 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 		w.Write([]byte(`{"status":"ok"}`))
 	})
 
+	// Debug pprof endpoints if enabled
+	if cfg.ServePprof {
+		httpMux.HandleFunc("/pprof", func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, r.RequestURI+"/", http.StatusMovedPermanently)
+		})
+		httpMux.HandleFunc("/pprof/", pprof.Index)
+		httpMux.HandleFunc("/pprof/cmdline", pprof.Cmdline)
+		httpMux.HandleFunc("/pprof/profile", pprof.Profile)
+		httpMux.HandleFunc("/pprof/symbol", pprof.Symbol)
+		httpMux.HandleFunc("/pprof/trace", pprof.Trace)
+		httpMux.Handle("/pprof/goroutine", pprof.Handler("goroutine"))
+		httpMux.Handle("/pprof/threadcreate", pprof.Handler("threadcreate"))
+		httpMux.Handle("/pprof/mutex", pprof.Handler("mutex"))
+		httpMux.Handle("/pprof/heap", pprof.Handler("heap"))
+		httpMux.Handle("/pprof/block", pprof.Handler("block"))
+		httpMux.Handle("/pprof/allocs", pprof.Handler("allocs"))
+		slog.InfoContext(ctx, "Pprof debug endpoints enabled", "path", "/pprof/")
+	}
+
 	// Serve API documentation
 	docFS := http.FileServer(http.Dir("api/docs/v1"))
 	httpMux.Handle("/docs/", http.StripPrefix("/docs/", docFS))
@@ -303,7 +324,8 @@ func (a *SymbioticServer) Start(ctx context.Context) error {
 		"grpc_address", a.cfg.Address,
 		"docs_path", "/docs/",
 		"metrics_path", "/metrics",
-		"metrics_enabled", a.cfg.ServeMetrics)
+		"metrics_enabled", a.cfg.ServeMetrics,
+		"pprof_enabled", a.cfg.ServePprof)
 
 	// Start serving in a goroutine
 	errChan := make(chan error, 1)
