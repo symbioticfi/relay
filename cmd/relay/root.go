@@ -12,6 +12,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
+	"github.com/symbioticfi/relay/internal/entity"
 
 	"golang.org/x/sync/errgroup"
 
@@ -199,7 +200,7 @@ func runApp(ctx context.Context) error {
 		return nil
 	})
 
-	p2pService, discoveryService, err := initP2PService(ctx, cfg, syncProvider, mtr)
+	p2pService, discoveryService, err := initP2PService(ctx, cfg, keyProvider, syncProvider, mtr)
 	if err != nil {
 		return errors.Errorf("failed to create p2p service: %w", err)
 	}
@@ -392,20 +393,30 @@ func runApp(ctx context.Context) error {
 	return eg.Wait()
 }
 
-func initP2PService(ctx context.Context, cfg config, provider *sync_provider.Syncer, mtr *metrics.Metrics) (*p2p.Service, *p2p.DiscoveryService, error) {
+func initP2PService(ctx context.Context, cfg config, keyProvider keyprovider.KeyProvider, provider *sync_provider.Syncer, mtr *metrics.Metrics) (*p2p.Service, *p2p.DiscoveryService, error) {
 
 	swarmPSK, err := hexutil.Decode(cfg.Driver.Address)
 	if err != nil {
 		return nil, nil, errors.Errorf("failed to get P2P swarm psk: %w", err)
 	}
+	// pad to make 20 byte to 32 bytes
+	swarmPSK = append(swarmPSK, make([]byte, 32-len(swarmPSK))...)
+
 	if len(swarmPSK) != 32 {
-		return nil, nil, errors.Errorf("invalid swarm psk length: %d", len(swarmPSK))
+		return nil, nil, errors.Errorf("invalid swarm psk length: %d, expected 20", len(swarmPSK))
 	}
 
 	// TODO: include p2p key in valset
-	p2pIdentityPKRaw, err := symbioticCrypto.GeneratePrivateKey(symbiotic.KeyTypeEcdsaSecp256k1)
-	if err != nil {
-		return nil, nil, errors.Errorf("failed to create P2P identity private key: %w", err)
+	p2pIdentityPKRaw, err := keyProvider.GetPrivateKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, symbiotic.KeyTypeEcdsaSecp256k1, keyprovider.P2P_HOST_IDENTITY_KEY_ID)
+	if err != nil && !errors.Is(err, entity.ErrKeyNotFound) {
+		return nil, nil, errors.Errorf("failed to get P2P identity private key: %w", err)
+	}
+	if errors.Is(err, entity.ErrKeyNotFound) {
+		slog.WarnContext(ctx, "P2P identity private key not found, generating a new one")
+		p2pIdentityPKRaw, err = symbioticCrypto.GeneratePrivateKey(symbiotic.KeyTypeEcdsaSecp256k1)
+		if err != nil {
+			return nil, nil, errors.Errorf("failed to create P2P identity private key: %w", err)
+		}
 	}
 
 	p2pIdentityPK, err := crypto.UnmarshalSecp256k1PrivateKey(p2pIdentityPKRaw.Bytes())
