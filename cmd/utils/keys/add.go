@@ -34,8 +34,10 @@ var addKeyCmd = &cobra.Command{
 			}
 			keyId := kt & 0x0F
 			return addKeyWithNamespace(keyprovider.SYMBIOTIC_KEY_NAMESPACE, kt.Type(), int(keyId), addFlags.Generate, addFlags.Force, addFlags.PrivateKey)
+		} else if addFlags.P2PNs {
+			return addKeyWithNamespace(keyprovider.P2P_KEY_NAMESPACE, symbiotic.KeyTypeEcdsaSecp256k1, keyprovider.P2P_HOST_IDENTITY_KEY_ID, addFlags.Generate, addFlags.Force, addFlags.PrivateKey)
 		}
-		return errors.New("either --evm-ns or --relay-ns must be specified")
+		return errors.New("either --evm or --relay or --p2p must be specified")
 	},
 }
 

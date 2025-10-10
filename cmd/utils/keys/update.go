@@ -73,13 +73,29 @@ var updateKeyCmd = &cobra.Command{
 				return errors.New("key doesn't exist")
 			}
 
-			key, err := crypto.NewPrivateKey(symbiotic.KeyTypeEcdsaSecp256k1, privKeyBytes)
+			key, err := crypto.NewPrivateKey(kt.Type(), privKeyBytes)
 			if err != nil {
 				return err
 			}
 
 			return keyStore.AddKeyByNamespaceTypeId(keyprovider.SYMBIOTIC_KEY_NAMESPACE, kt.Type(), int(keyId), key, globalFlags.Password, true)
+		} else if updateFlags.P2PNs {
+			exists, err := keyStore.HasKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, symbiotic.KeyTypeEcdsaSecp256k1, keyprovider.P2P_HOST_IDENTITY_KEY_ID)
+			if err != nil {
+				return err
+			}
+
+			if !exists {
+				return errors.New("key doesn't exist")
+			}
+
+			key, err := crypto.NewPrivateKey(symbiotic.KeyTypeEcdsaSecp256k1, privKeyBytes)
+			if err != nil {
+				return err
+			}
+
+			return keyStore.AddKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, symbiotic.KeyTypeEcdsaSecp256k1, keyprovider.P2P_HOST_IDENTITY_KEY_ID, key, globalFlags.Password, true)
 		}
-		return errors.New("either --evm-ns or --relay-ns must be specified")
+		return errors.New("either --evm or --relay or --p2p must be specified")
 	},
 }

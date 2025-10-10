@@ -30,6 +30,7 @@ type GlobalFlags struct {
 type AddFlags struct {
 	EvmNs      bool
 	RelayNs    bool
+	P2PNs      bool
 	KeyTag     uint8
 	ChainID    int16
 	PrivateKey string
@@ -37,29 +38,18 @@ type AddFlags struct {
 	Force      bool
 }
 
-type AddEvmFlags struct {
-	ChainId    uint8
-	PrivateKey string
-	Generate   bool
-	Force      bool
-	DefaultKey bool
-}
-
 type RemoveFlags struct {
 	EvmNs   bool
 	RelayNs bool
+	P2PNs   bool
 	KeyTag  uint8
 	ChainID int16
-}
-
-type RemoveEvmFlags struct {
-	ChainId    uint8
-	DefaultKey bool
 }
 
 type UpdateFlags struct {
 	EvmNs      bool
 	RelayNs    bool
+	P2PNs      bool
 	KeyTag     uint8
 	ChainID    int16
 	PrivateKey string
@@ -78,6 +68,7 @@ func initFlags() {
 
 	addKeyCmd.PersistentFlags().BoolVar(&addFlags.EvmNs, "evm", false, "use evm namespace keys")
 	addKeyCmd.PersistentFlags().BoolVar(&addFlags.RelayNs, "relay", false, "use relay namespace keys")
+	addKeyCmd.PersistentFlags().BoolVar(&addFlags.P2PNs, "p2p", false, "use p2p key")
 	addKeyCmd.PersistentFlags().Uint8Var(&addFlags.KeyTag, "key-tag", uint8(symbiotic.KeyTypeInvalid), "key tag for relay keys")
 	addKeyCmd.PersistentFlags().Int16Var(&addFlags.ChainID, "chain-id", -1, "chain id for evm keys, use 0 for default key for all chains")
 	addKeyCmd.PersistentFlags().StringVar(&addFlags.PrivateKey, "private-key", "", "private key to add in hex")
@@ -88,6 +79,7 @@ func initFlags() {
 	removeKeyCmd.PersistentFlags().BoolVar(&removeFlags.RelayNs, "relay", false, "use relay namespace keys")
 	removeKeyCmd.PersistentFlags().Uint8Var(&removeFlags.KeyTag, "key-tag", uint8(symbiotic.KeyTypeInvalid), "key tag for relay keys")
 	removeKeyCmd.PersistentFlags().Int16Var(&removeFlags.ChainID, "chain-id", -1, "chain id for evm keys, use 0 for default key for all chains")
+	removeKeyCmd.PersistentFlags().BoolVar(&removeFlags.P2PNs, "p2p", false, "use p2p key")
 
 	updateKeyCmd.PersistentFlags().BoolVar(&updateFlags.EvmNs, "evm", false, "use evm namespace keys")
 	updateKeyCmd.PersistentFlags().BoolVar(&updateFlags.RelayNs, "relay", false, "use relay namespace keys")
@@ -95,4 +87,5 @@ func initFlags() {
 	updateKeyCmd.PersistentFlags().Int16Var(&updateFlags.ChainID, "chain-id", -1, "chain id for evm keys, use 0 for default key for all chains")
 	updateKeyCmd.PersistentFlags().StringVar(&updateFlags.PrivateKey, "private-key", "", "private key to add in hex")
 	updateKeyCmd.PersistentFlags().BoolVar(&updateFlags.Force, "force", false, "force overwrite key")
+	updateKeyCmd.PersistentFlags().BoolVar(&updateFlags.P2PNs, "p2p", false, "use p2p key")
 }

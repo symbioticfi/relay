@@ -42,7 +42,9 @@ var removeKeyCmd = &cobra.Command{
 			}
 			keyId := kt & 0x0F
 			return keyStore.DeleteKeyByNamespaceTypeId(keyprovider.SYMBIOTIC_KEY_NAMESPACE, kt.Type(), int(keyId), globalFlags.Password)
+		} else if removeFlags.P2PNs {
+			return keyStore.DeleteKeyByNamespaceTypeId(keyprovider.P2P_KEY_NAMESPACE, symbiotic.KeyTypeEcdsaSecp256k1, keyprovider.P2P_HOST_IDENTITY_KEY_ID, globalFlags.Password)
 		}
-		return errors.New("either --evm-ns or --relay-ns must be specified")
+		return errors.New("either --evm or --relay or --p2p must be specified")
 	},
 }
