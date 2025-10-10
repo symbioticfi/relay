@@ -1,7 +1,6 @@
 package keys
 
 import (
-	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 
 	"github.com/spf13/cobra"
@@ -10,7 +9,6 @@ import (
 func NewKeysCmd() *cobra.Command {
 	keysCmd.AddCommand(printKeysCmd)
 	keysCmd.AddCommand(addKeyCmd)
-	keysCmd.AddCommand(addEvmKeyCmd)
 	keysCmd.AddCommand(removeKeyCmd)
 	keysCmd.AddCommand(updateKeyCmd)
 
@@ -30,78 +28,64 @@ type GlobalFlags struct {
 }
 
 type AddFlags struct {
-	Namespace  string
+	EvmNs      bool
+	RelayNs    bool
+	P2PNs      bool
 	KeyTag     uint8
+	ChainID    int16
 	PrivateKey string
 	Generate   bool
 	Force      bool
-}
-
-type AddEvmFlags struct {
-	ChainId    uint8
-	PrivateKey string
-	Generate   bool
-	Force      bool
-	DefaultKey bool
 }
 
 type RemoveFlags struct {
-	KeyTag uint8
-}
-
-type RemoveEvmFlags struct {
-	ChainId    uint8
-	DefaultKey bool
+	EvmNs   bool
+	RelayNs bool
+	P2PNs   bool
+	KeyTag  uint8
+	ChainID int16
 }
 
 type UpdateFlags struct {
-	Namespace  string
+	EvmNs      bool
+	RelayNs    bool
+	P2PNs      bool
 	KeyTag     uint8
+	ChainID    int16
 	PrivateKey string
+	Force      bool
 }
 
 var globalFlags GlobalFlags
 var addFlags AddFlags
 
-var addEvmFlags AddEvmFlags
 var removeFlags RemoveFlags
 var updateFlags UpdateFlags
-var removeEvmFlags RemoveEvmFlags
 
 func initFlags() {
 	keysCmd.PersistentFlags().StringVarP(&globalFlags.Path, "path", "p", "./keystore.jks", "Path to keystore")
 	keysCmd.PersistentFlags().StringVar(&globalFlags.Password, "password", "", "Keystore password")
 
-	addKeyCmd.PersistentFlags().StringVar(&addFlags.Namespace, "namespace", keyprovider.SYMBIOTIC_KEY_NAMESPACE, "namespace")
-	addKeyCmd.PersistentFlags().Uint8Var(&addFlags.KeyTag, "key-tag", uint8(symbiotic.KeyTypeInvalid), "key tag")
+	addKeyCmd.PersistentFlags().BoolVar(&addFlags.EvmNs, "evm", false, "use evm namespace keys")
+	addKeyCmd.PersistentFlags().BoolVar(&addFlags.RelayNs, "relay", false, "use relay namespace keys")
+	addKeyCmd.PersistentFlags().BoolVar(&addFlags.P2PNs, "p2p", false, "use p2p key")
+	addKeyCmd.PersistentFlags().Uint8Var(&addFlags.KeyTag, "key-tag", uint8(symbiotic.KeyTypeInvalid), "key tag for relay keys")
+	addKeyCmd.PersistentFlags().Int16Var(&addFlags.ChainID, "chain-id", -1, "chain id for evm keys, use 0 for default key for all chains")
 	addKeyCmd.PersistentFlags().StringVar(&addFlags.PrivateKey, "private-key", "", "private key to add in hex")
 	addKeyCmd.PersistentFlags().BoolVar(&addFlags.Generate, "generate", false, "generate key")
 	addKeyCmd.PersistentFlags().BoolVar(&addFlags.Force, "force", false, "force overwrite key")
-	if err := addKeyCmd.MarkPersistentFlagRequired("key-tag"); err != nil {
-		panic(err)
-	}
 
-	addEvmKeyCmd.PersistentFlags().Uint8Var(&addEvmFlags.ChainId, "chain-id", 0, "evm chain id")
-	addEvmKeyCmd.PersistentFlags().StringVar(&addEvmFlags.PrivateKey, "private-key", "", "private key to add in hex")
-	addEvmKeyCmd.PersistentFlags().BoolVar(&addEvmFlags.Generate, "generate", false, "generate random key")
-	addEvmKeyCmd.PersistentFlags().BoolVar(&addEvmFlags.Force, "force", false, "force overwrite key")
-	addEvmKeyCmd.PersistentFlags().BoolVar(&addEvmFlags.DefaultKey, "default-key", false, "set as default key for the all chains")
+	removeKeyCmd.PersistentFlags().BoolVar(&removeFlags.EvmNs, "evm", false, "use evm namespace keys")
+	removeKeyCmd.PersistentFlags().BoolVar(&removeFlags.RelayNs, "relay", false, "use relay namespace keys")
+	removeKeyCmd.PersistentFlags().Uint8Var(&removeFlags.KeyTag, "key-tag", uint8(symbiotic.KeyTypeInvalid), "key tag for relay keys")
+	removeKeyCmd.PersistentFlags().Int16Var(&removeFlags.ChainID, "chain-id", -1, "chain id for evm keys, use 0 for default key for all chains")
+	removeKeyCmd.PersistentFlags().BoolVar(&removeFlags.P2PNs, "p2p", false, "use p2p key")
 
-	removeKeyCmd.PersistentFlags().Uint8Var(&removeFlags.KeyTag, "key-tag", uint8(symbiotic.KeyTypeInvalid), "key tag")
-	if err := removeKeyCmd.MarkPersistentFlagRequired("key-tag"); err != nil {
-		panic(err)
-	}
-
-	removeEVMKeyCmd.PersistentFlags().Uint8Var(&removeEvmFlags.ChainId, "chain-id", 0, "evm chain id")
-	removeEVMKeyCmd.PersistentFlags().BoolVar(&removeEvmFlags.DefaultKey, "default-key", false, "remove default key from keystore")
-
-	updateKeyCmd.PersistentFlags().StringVar(&updateFlags.Namespace, "namespace", keyprovider.SYMBIOTIC_KEY_NAMESPACE, "namespace")
-	updateKeyCmd.PersistentFlags().Uint8Var(&updateFlags.KeyTag, "key-tag", uint8(symbiotic.KeyTypeInvalid), "key tag")
-	updateKeyCmd.PersistentFlags().StringVar(&updateFlags.PrivateKey, "private-key", "", "private key")
-	if err := updateKeyCmd.MarkPersistentFlagRequired("key-tag"); err != nil {
-		panic(err)
-	}
-	if err := updateKeyCmd.MarkPersistentFlagRequired("private-key"); err != nil {
-		panic(err)
-	}
+	updateKeyCmd.PersistentFlags().BoolVar(&updateFlags.EvmNs, "evm", false, "use evm namespace keys")
+	updateKeyCmd.PersistentFlags().BoolVar(&updateFlags.RelayNs, "relay", false, "use relay namespace keys")
+	updateKeyCmd.PersistentFlags().Uint8Var(&updateFlags.KeyTag, "key-tag", uint8(symbiotic.KeyTypeInvalid), "key tag for relay keys")
+	updateKeyCmd.PersistentFlags().Int16Var(&updateFlags.ChainID, "chain-id", -1, "chain id for evm keys, use 0 for default key for all chains")
+	updateKeyCmd.PersistentFlags().StringVar(&updateFlags.PrivateKey, "private-key", "", "private key to add in hex")
+	updateKeyCmd.PersistentFlags().BoolVar(&updateFlags.Force, "force", false, "force overwrite key")
+	updateKeyCmd.PersistentFlags().BoolVar(&updateFlags.P2PNs, "p2p", false, "use p2p key")
 }

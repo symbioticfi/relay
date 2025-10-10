@@ -1,8 +1,9 @@
 package keys
 
 import (
-	"fmt"
+	"strconv"
 
+	"github.com/pterm/pterm"
 	cmdhelpers "github.com/symbioticfi/relay/internal/usecase/cmd-helpers"
 	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
 
@@ -29,28 +30,26 @@ var printKeysCmd = &cobra.Command{
 
 		aliases := keyStore.GetAliases()
 
-		fmt.Printf("\nKeys (%d):\n", len(aliases)) // assuming 'keys' is your collection
-		fmt.Printf("   # | Alias                | Public Key\n")
-
+		tableData := pterm.TableData{{"#", "Alias", "Public Key"}}
 		for i, alias := range aliases {
-			keyTag, err := keyprovider.AliasToKeyTag(alias)
+			ns, kType, id, err := keyprovider.AliasToKeyTypeId(alias)
 			if err != nil {
 				return err
 			}
-
-			pk, err := keyStore.GetPrivateKey(keyTag)
+			pk, err := keyStore.GetPrivateKeyByNamespaceTypeId(ns, kType, id)
 			if err != nil {
 				return err
 			}
-
 			prettyPk, err := pk.PublicKey().OnChain().MarshalText()
 			if err != nil {
 				return err
 			}
-
-			fmt.Printf("   %d | %-20s | %s\n", i+1, alias, prettyPk)
+			tableData = append(tableData, []string{
+				strconv.Itoa(i + 1),
+				alias,
+				string(prettyPk),
+			})
 		}
-
-		return nil
+		return pterm.DefaultTable.WithHasHeader().WithData(tableData).Render()
 	},
 }
