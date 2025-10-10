@@ -323,6 +323,7 @@ func runApp(ctx context.Context) error {
 		Deriver:           deriver,
 		Metrics:           mtr,
 		ServeMetrics:      serveMetricsOnAPIAddress,
+		ServePprof:        cfg.EnablePprof,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create api app: %w", err)
