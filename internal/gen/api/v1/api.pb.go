@@ -34,6 +34,8 @@ const (
 	ValidatorSetStatus_VALIDATOR_SET_STATUS_AGGREGATED ValidatorSetStatus = 2
 	// Committed status
 	ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED ValidatorSetStatus = 3
+	// Missed status
+	ValidatorSetStatus_VALIDATOR_SET_STATUS_MISSED ValidatorSetStatus = 4
 )
 
 // Enum value maps for ValidatorSetStatus.
@@ -43,12 +45,14 @@ var (
 		1: "VALIDATOR_SET_STATUS_DERIVED",
 		2: "VALIDATOR_SET_STATUS_AGGREGATED",
 		3: "VALIDATOR_SET_STATUS_COMMITTED",
+		4: "VALIDATOR_SET_STATUS_MISSED",
 	}
 	ValidatorSetStatus_value = map[string]int32{
 		"VALIDATOR_SET_STATUS_UNSPECIFIED": 0,
 		"VALIDATOR_SET_STATUS_DERIVED":     1,
 		"VALIDATOR_SET_STATUS_AGGREGATED":  2,
 		"VALIDATOR_SET_STATUS_COMMITTED":   3,
+		"VALIDATOR_SET_STATUS_MISSED":      4,
 	}
 )
 
@@ -2180,12 +2184,13 @@ const file_v1_api_proto_rawDesc = "" +
 	"\x0eChainEpochInfo\x120\n" +
 	"\x14last_committed_epoch\x18\x01 \x01(\x04R\x12lastCommittedEpoch\x129\n" +
 	"\n" +
-	"start_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime*\xa5\x01\n" +
+	"start_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime*\xc6\x01\n" +
 	"\x12ValidatorSetStatus\x12$\n" +
 	" VALIDATOR_SET_STATUS_UNSPECIFIED\x10\x00\x12 \n" +
 	"\x1cVALIDATOR_SET_STATUS_DERIVED\x10\x01\x12#\n" +
 	"\x1fVALIDATOR_SET_STATUS_AGGREGATED\x10\x02\x12\"\n" +
-	"\x1eVALIDATOR_SET_STATUS_COMMITTED\x10\x03*\xa0\x01\n" +
+	"\x1eVALIDATOR_SET_STATUS_COMMITTED\x10\x03\x12\x1f\n" +
+	"\x1bVALIDATOR_SET_STATUS_MISSED\x10\x04*\xa0\x01\n" +
 	"\rSigningStatus\x12\x1e\n" +
 	"\x1aSIGNING_STATUS_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16SIGNING_STATUS_PENDING\x10\x01\x12\x1c\n" +
