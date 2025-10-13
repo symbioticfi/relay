@@ -3,6 +3,7 @@ package aggregator_app
 import (
 	"context"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -64,6 +65,10 @@ func (c Config) Validate() error {
 
 type AggregatorApp struct {
 	cfg Config
+
+	// stores the current node onchain key for each key tag
+	// helps speed up aggregator/committer/signer checks
+	nodeKeyMap sync.Map // map[keyTag]CompactPublicKey
 }
 
 func NewAggregatorApp(cfg Config) (*AggregatorApp, error) {
@@ -111,25 +116,28 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 		return errors.Errorf("failed to get validator set: %w", err)
 	}
 
-	privKey, err := s.cfg.KeyProvider.GetPrivateKey(validatorSet.RequiredKeyTag)
-	if err != nil {
+	onchainKey, ok := s.nodeKeyMap.Load(validatorSet.RequiredKeyTag)
+	if !ok {
+		symbPrivate, err := s.cfg.KeyProvider.GetPrivateKey(validatorSet.RequiredKeyTag)
 		if errors.Is(err, entity.ErrKeyNotFound) {
 			slog.DebugContext(ctx, "No key for required key tag, skipping proof aggregation", "keyTag", validatorSet.RequiredKeyTag)
 			return nil
 		}
-		return errors.Errorf("failed to get private key for required key tag %s: %w", validatorSet.RequiredKeyTag, err)
+
+		onchainKey = symbPrivate.PublicKey().OnChain()
+		s.nodeKeyMap.Store(validatorSet.RequiredKeyTag, onchainKey)
 	}
 
-	if !validatorSet.IsAggregator(privKey.PublicKey().OnChain()) {
+	if !validatorSet.IsAggregator(onchainKey.(symbiotic.CompactPublicKey)) {
 		slog.DebugContext(ctx, "Not an Aggregator for this valset, skipping proof aggregation",
-			"key", privKey.PublicKey().OnChain(),
+			"key", onchainKey,
 			"epoch", msg.Epoch,
 			"aggIndices", validatorSet.AggregatorIndices,
 		)
 		return nil
 	}
 
-	slog.DebugContext(ctx, "Is an Aggregator for this valset, checking quorum", "key", privKey.PublicKey().OnChain(), "epoch", msg.Epoch)
+	slog.DebugContext(ctx, "Is an Aggregator for this valset, checking quorum", "key", onchainKey, "epoch", msg.Epoch)
 
 	totalActiveVotingPower := validatorSet.GetTotalActiveVotingPower()
 

@@ -77,6 +77,10 @@ func (c Config) Validate() error {
 type Service struct {
 	cfg   Config
 	mutex sync.Mutex
+
+	// stores the current node onchain key for each key tag
+	// helps speed up aggregator/committer/signer checks
+	nodeKeyMap sync.Map // map[keyTag]CompactPublicKey
 }
 
 func New(cfg Config) (*Service, error) {
@@ -231,13 +235,19 @@ func (s *Service) process(ctx context.Context, valSet symbiotic.ValidatorSet, co
 		valsetToCheck = prevValSet
 	}
 
-	symbPrivate, err := s.cfg.KeyProvider.GetPrivateKey(valsetToCheck.RequiredKeyTag)
-	if err != nil {
-		return errors.Errorf("failed to get symb private key: %w", err)
+	onchainKey, ok := s.nodeKeyMap.Load(valsetToCheck.RequiredKeyTag)
+	if !ok {
+		symbPrivate, err := s.cfg.KeyProvider.GetPrivateKey(valsetToCheck.RequiredKeyTag)
+		if err != nil {
+			return errors.Errorf("failed to get symb private key: %w", err)
+		}
+
+		onchainKey = symbPrivate.PublicKey().OnChain()
+		s.nodeKeyMap.Store(valsetToCheck.RequiredKeyTag, onchainKey)
 	}
 
 	// if we are a signer, sign the commitment, otherwise just save the metadata
-	if valsetToCheck.IsSigner(symbPrivate.PublicKey().OnChain()) {
+	if valsetToCheck.IsSigner(onchainKey.(symbiotic.CompactPublicKey)) {
 		r := symbiotic.SignatureRequest{
 			KeyTag:        valsetToCheck.RequiredKeyTag,
 			RequiredEpoch: valsetToCheck.Epoch,
