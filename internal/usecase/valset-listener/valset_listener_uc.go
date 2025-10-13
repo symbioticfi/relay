@@ -254,7 +254,7 @@ func (s *Service) process(ctx context.Context, valSet symbiotic.ValidatorSet, co
 		return errors.Errorf("failed to hash message: %w", err)
 	}
 
-	extendedSig := symbiotic.SignatureExtended{
+	extendedSig := symbiotic.Signature{
 		MessageHash: msgHash,
 		KeyTag:      valsetToCheck.RequiredKeyTag,
 		Epoch:       valsetToCheck.Epoch,

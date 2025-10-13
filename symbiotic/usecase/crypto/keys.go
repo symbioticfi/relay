@@ -1,16 +1,14 @@
 package crypto
 
 import (
+	"github.com/go-errors/errors"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/blsBn254"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/ecdsaSecp256k1"
-	key_types "github.com/symbioticfi/relay/symbiotic/usecase/crypto/key-types"
-
-	"github.com/go-errors/errors"
 )
 
-type PublicKey = key_types.PublicKey
-type PrivateKey = key_types.PrivateKey
+type PublicKey = symbiotic.PublicKey
+type PrivateKey = symbiotic.PrivateKey
 
 func NewPublicKey(keyType symbiotic.KeyType, keyBytes symbiotic.RawPublicKey) (PublicKey, error) {
 	switch keyType {

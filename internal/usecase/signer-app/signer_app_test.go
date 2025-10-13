@@ -99,7 +99,7 @@ func newTestSetup(t *testing.T) *testSetup {
 	mockEntityAggProofSignal.EXPECT().Emit(gomock.Any()).Return(nil).AnyTimes()
 
 	// Create mock signature processed signal for entity processor
-	signatureProcessedSignal := signals.New[symbiotic.SignatureExtended](signals.DefaultConfig(), "test", nil)
+	signatureProcessedSignal := signals.New[symbiotic.Signature](signals.DefaultConfig(), "test", nil)
 
 	processor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo:                     repo,

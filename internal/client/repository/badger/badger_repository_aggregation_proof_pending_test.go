@@ -112,7 +112,7 @@ func TestBadgerRepository_GetSignatureRequestsWithoutAggregationProof(t *testing
 		testEpoch := symbiotic.Epoch(500)
 
 		// Create multiple signature requests
-		var requests []symbiotic.SignatureExtended
+		var requests []symbiotic.Signature
 		for i := 0; i < 5; i++ {
 			sigReq := randomSignatureRequestForEpoch(t, testEpoch)
 			req := randomSignatureExtendedForEpoch(t, testEpoch)

@@ -58,10 +58,10 @@ func (mr *MockRepositoryMockRecorder) GetAggregationProof(ctx, requestID any) *g
 }
 
 // GetSignatureByIndex mocks base method.
-func (m *MockRepository) GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (entity.SignatureExtended, error) {
+func (m *MockRepository) GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (entity.Signature, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSignatureByIndex", ctx, requestID, validatorIndex)
-	ret0, _ := ret[0].(entity.SignatureExtended)
+	ret0, _ := ret[0].(entity.Signature)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -118,7 +118,7 @@ func (mr *MockRepositoryMockRecorder) SaveProof(ctx, aggregationProof any) *gomo
 }
 
 // SaveSignature mocks base method.
-func (m *MockRepository) SaveSignature(ctx context.Context, signature entity.SignatureExtended) error {
+func (m *MockRepository) SaveSignature(ctx context.Context, signature entity.Signature) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SaveSignature", ctx, signature)
 	ret0, _ := ret[0].(error)

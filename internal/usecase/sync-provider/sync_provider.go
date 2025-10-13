@@ -16,15 +16,15 @@ type repo interface {
 	GetLatestValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
 	GetSignatureRequest(ctx context.Context, requestID common.Hash) (symbiotic.SignatureRequest, error)
 	GetValidatorByKey(ctx context.Context, epoch symbiotic.Epoch, keyTag symbiotic.KeyTag, publicKey []byte) (symbiotic.Validator, uint32, error)
-	GetAllSignatures(ctx context.Context, requestID common.Hash) ([]symbiotic.SignatureExtended, error)
-	GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (symbiotic.SignatureExtended, error)
+	GetAllSignatures(ctx context.Context, requestID common.Hash) ([]symbiotic.Signature, error)
+	GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (symbiotic.Signature, error)
 	GetSignatureRequestsWithoutAggregationProof(ctx context.Context, epoch symbiotic.Epoch, limit int, lastHash common.Hash) ([]symbiotic.SignatureRequestWithID, error)
 	GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error)
 	RemoveAggregationProofPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error
 }
 
 type entityProcessor interface {
-	ProcessSignature(ctx context.Context, signature symbiotic.SignatureExtended, self bool) error
+	ProcessSignature(ctx context.Context, signature symbiotic.Signature, self bool) error
 	ProcessAggregationProof(ctx context.Context, proof symbiotic.AggregationProof) error
 }
 

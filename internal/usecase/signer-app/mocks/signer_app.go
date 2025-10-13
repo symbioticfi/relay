@@ -142,7 +142,7 @@ func (m *Mockp2pService) EXPECT() *Mockp2pServiceMockRecorder {
 }
 
 // BroadcastSignatureGeneratedMessage mocks base method.
-func (m *Mockp2pService) BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureExtended) error {
+func (m *Mockp2pService) BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.Signature) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "BroadcastSignatureGeneratedMessage", ctx, msg)
 	ret0, _ := ret[0].(error)
@@ -281,7 +281,7 @@ func (mr *MockentityProcessorMockRecorder) ProcessAggregationProof(ctx, proof an
 }
 
 // ProcessSignature mocks base method.
-func (m *MockentityProcessor) ProcessSignature(ctx context.Context, signature entity.SignatureExtended, self bool) error {
+func (m *MockentityProcessor) ProcessSignature(ctx context.Context, signature entity.Signature, self bool) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ProcessSignature", ctx, signature, self)
 	ret0, _ := ret[0].(error)

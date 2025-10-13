@@ -4,33 +4,12 @@ package internal.client.p2p.proto.v1;
 
 option go_package = "github.com/symbioticfi/relay/internal/client/p2p/proto/v1";
 
-// AggregationProof represents the aggregation proof data
-message AggregationProof {
-  bytes proof = 3;
-}
-
 // SignaturesAggregated represents the aggregated signatures message
-message SignaturesAggregated {
-  bytes request_id = 1;  // 32 bytes fixed length
+message AggregationProof {
   uint32 key_tag = 2;
   uint64 epoch = 3;
   bytes message_hash = 4;
-  AggregationProof aggregation_proof = 5;
-}
-
-// Signature represents individual signature data
-message Signature {
-  bytes message_hash = 1;
-  bytes signature = 2;
-  bytes public_key = 3;
-}
-
-// SignatureGenerated represents the signature generated message
-message SignatureGenerated {
-  bytes request_id = 1;  // 32 bytes fixed length
-  uint32 key_tag = 2;
-  uint64 epoch = 3;
-  Signature signature = 4;
+  bytes proof = 5;
 }
 
 // P2PMessage represents a peer-to-peer message wrapper
@@ -65,11 +44,11 @@ message ValidatorSignatureList {
 // ValidatorSignature pairs a signature with its validator index
 message ValidatorSignature {
   uint32 validator_index = 1;
-  SignatureExtended signature = 2;
+  Signature signature = 2;
 }
 
-// SignatureExtended represents extended signature data
-message SignatureExtended {
+// Signature represents extended signature data
+message Signature {
   bytes message_hash = 1;
   uint32 key_tag = 2;
   uint64 epoch = 3;
@@ -84,6 +63,6 @@ message WantAggregationProofsRequest {
 
 message WantAggregationProofsResponse {
   // Map of request ids to aggregation proof
-  map<string, SignaturesAggregated> proofs = 1;  // key: hex string of common.Hash
+  map<string, AggregationProof> proofs = 1;  // key: hex string of common.Hash
 }
 

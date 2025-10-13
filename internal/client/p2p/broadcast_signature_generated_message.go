@@ -10,16 +10,13 @@ import (
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg symbiotic.SignatureExtended) error {
-	dto := prototypes.SignatureGenerated{
-		RequestId: msg.RequestID().Bytes(),
-		KeyTag:    uint32(msg.KeyTag),
-		Epoch:     uint64(msg.Epoch),
-		Signature: &prototypes.Signature{
-			MessageHash: msg.MessageHash,
-			PublicKey:   msg.PublicKey,
-			Signature:   msg.Signature,
-		},
+func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg symbiotic.Signature) error {
+	dto := prototypes.Signature{
+		KeyTag:      uint32(msg.KeyTag),
+		Epoch:       uint64(msg.Epoch),
+		MessageHash: msg.MessageHash,
+		PublicKey:   msg.PublicKey.Raw(),
+		Signature:   msg.Signature,
 	}
 
 	data, err := proto.Marshal(&dto)

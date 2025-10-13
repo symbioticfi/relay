@@ -23,7 +23,7 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 
 	tests := []struct {
 		name                   string
-		setupFunc              func(t *testing.T, repo *badger.Repository) symbiotic.SignatureExtended
+		setupFunc              func(t *testing.T, repo *badger.Repository) symbiotic.Signature
 		expectPendingExists    bool
 		expectPendingRemoved   bool
 		expectError            bool
@@ -31,7 +31,7 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 	}{
 		{
 			name: "new signature request - no quorum reached",
-			setupFunc: func(t *testing.T, repo *badger.Repository) symbiotic.SignatureExtended {
+			setupFunc: func(t *testing.T, repo *badger.Repository) symbiotic.Signature {
 				t.Helper()
 				req := randomSignatureRequest(t, symbiotic.Epoch(100))
 
@@ -46,7 +46,7 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 		},
 		{
 			name: "new signature request - quorum reached",
-			setupFunc: func(t *testing.T, repo *badger.Repository) symbiotic.SignatureExtended {
+			setupFunc: func(t *testing.T, repo *badger.Repository) symbiotic.Signature {
 				t.Helper()
 				epoch := symbiotic.Epoch(101)
 				req := randomSignatureRequest(t, epoch)
@@ -62,7 +62,7 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 		},
 		{
 			name: "signature without signature request",
-			setupFunc: func(t *testing.T, repo *badger.Repository) symbiotic.SignatureExtended {
+			setupFunc: func(t *testing.T, repo *badger.Repository) symbiotic.Signature {
 				t.Helper()
 				epoch := symbiotic.Epoch(102)
 
@@ -81,7 +81,7 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 		},
 		{
 			name: "multiple signatures - quorum reached on second",
-			setupFunc: func(t *testing.T, repo *badger.Repository) symbiotic.SignatureExtended {
+			setupFunc: func(t *testing.T, repo *badger.Repository) symbiotic.Signature {
 				t.Helper()
 				epoch := symbiotic.Epoch(103)
 				req := randomSignatureRequest(t, epoch)
@@ -116,7 +116,7 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 		},
 		{
 			name: "missing validator set header",
-			setupFunc: func(t *testing.T, repo *badger.Repository) symbiotic.SignatureExtended {
+			setupFunc: func(t *testing.T, repo *badger.Repository) symbiotic.Signature {
 				t.Helper()
 				// Don't setup validator set header - will cause error
 				privateKey, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
@@ -197,7 +197,7 @@ func TestEntityProcessor_ProcessSignature_ConcurrentSignatures(t *testing.T) {
 	require.NoError(t, err)
 
 	// Simulate 4 concurrent signatures
-	signatures := []symbiotic.SignatureExtended{
+	signatures := []symbiotic.Signature{
 		signatureExtendedForRequest(t, privateKeys[0][req.KeyTag], req),
 		signatureExtendedForRequest(t, privateKeys[1][req.KeyTag], req),
 		signatureExtendedForRequest(t, privateKeys[2][req.KeyTag], req),
@@ -330,9 +330,9 @@ func createMockAggProofSignal(t *testing.T) *mocks.MockAggProofSignal {
 	return mockSignal
 }
 
-func createMockSignatureProcessedSignal(t *testing.T) *signals.Signal[symbiotic.SignatureExtended] {
+func createMockSignatureProcessedSignal(t *testing.T) *signals.Signal[symbiotic.Signature] {
 	t.Helper()
-	return signals.New[symbiotic.SignatureExtended](signals.DefaultConfig(), "test", nil)
+	return signals.New[symbiotic.Signature](signals.DefaultConfig(), "test", nil)
 }
 
 func setupTestRepository(t *testing.T) *badger.Repository {
@@ -364,36 +364,36 @@ func randomSignatureRequest(t *testing.T, epoch symbiotic.Epoch) symbiotic.Signa
 	return req
 }
 
-func randomSignatureExtendedForKeyWithParams(t *testing.T, privateKey crypto.PrivateKey, req symbiotic.SignatureRequest) symbiotic.SignatureExtended {
+func randomSignatureExtendedForKeyWithParams(t *testing.T, privateKey crypto.PrivateKey, req symbiotic.SignatureRequest) symbiotic.Signature {
 	t.Helper()
 
 	publicKey := privateKey.PublicKey()
 	signature, messageHash, err := privateKey.Sign(req.Message)
 	require.NoError(t, err)
 
-	return symbiotic.SignatureExtended{
+	return symbiotic.Signature{
 		KeyTag:      req.KeyTag,
 		Epoch:       req.RequiredEpoch,
 		MessageHash: messageHash,
 		Signature:   signature,
-		PublicKey:   publicKey.Raw(),
+		PublicKey:   publicKey,
 	}
 }
 
-// signatureExtendedForRequest creates a SignatureExtended for a given SignatureRequest using the same message
-func signatureExtendedForRequest(t *testing.T, privateKey crypto.PrivateKey, req symbiotic.SignatureRequest) symbiotic.SignatureExtended {
+// signatureExtendedForRequest creates a Signature for a given SignatureRequest using the same message
+func signatureExtendedForRequest(t *testing.T, privateKey crypto.PrivateKey, req symbiotic.SignatureRequest) symbiotic.Signature {
 	t.Helper()
 
 	publicKey := privateKey.PublicKey()
 	signature, messageHash, err := privateKey.Sign(req.Message)
 	require.NoError(t, err)
 
-	return symbiotic.SignatureExtended{
+	return symbiotic.Signature{
 		KeyTag:      req.KeyTag,
 		Epoch:       req.RequiredEpoch,
 		MessageHash: messageHash,
 		Signature:   signature,
-		PublicKey:   publicKey.Raw(),
+		PublicKey:   publicKey,
 	}
 }
 

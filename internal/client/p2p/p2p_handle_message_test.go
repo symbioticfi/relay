@@ -15,6 +15,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"google.golang.org/grpc"
 
 	p2pEntity "github.com/symbioticfi/relay/internal/entity"
@@ -45,22 +46,25 @@ func TestService_IntegrationSuccessful(t *testing.T) {
 	}, time.Second, time.Millisecond*100)
 
 	// Set up message listener on service2
-	var receivedMsg p2pEntity.P2PMessage[symbiotic.SignatureExtended]
+	var receivedMsg p2pEntity.P2PMessage[symbiotic.Signature]
 
 	done := make(chan struct{})
-	require.NoError(t, service2.StartSignatureMessageListener(func(ctx context.Context, msg p2pEntity.P2PMessage[symbiotic.SignatureExtended]) error {
+	require.NoError(t, service2.StartSignatureMessageListener(func(ctx context.Context, msg p2pEntity.P2PMessage[symbiotic.Signature]) error {
 		receivedMsg = msg
 		close(done)
 		return nil
 	}))
 
+	priv, err := symbioticCrypto.GeneratePrivateKey(symbiotic.KeyTag(1).Type())
+	require.NoError(t, err)
+
 	// Prepare test message
-	testSignatureMsg := symbiotic.SignatureExtended{
+	testSignatureMsg := symbiotic.Signature{
 		KeyTag:      symbiotic.KeyTag(1),
 		Epoch:       symbiotic.Epoch(123),
 		MessageHash: symbiotic.RawMessageHash("test message hash"),
 		Signature:   symbiotic.RawSignature("test signature"),
-		PublicKey:   symbiotic.RawPublicKey("test public key"),
+		PublicKey:   priv.PublicKey(),
 	}
 
 	// Send the message from service1
@@ -107,8 +111,13 @@ func TestService_IntegrationFailedSignature(t *testing.T) {
 		return len(service1.host.Peerstore().Peers()) > 0 && len(service2.host.Peerstore().Peers()) > 0
 	}, time.Second, time.Millisecond*100)
 
+	priv, err := symbioticCrypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
+	require.NoError(t, err)
+
 	// Send the message from service1
-	err = service1.BroadcastSignatureGeneratedMessage(ctx, symbiotic.SignatureExtended{})
+	err = service1.BroadcastSignatureGeneratedMessage(ctx, symbiotic.Signature{
+		PublicKey: priv.PublicKey(),
+	})
 	require.NoError(t, err)
 
 	select {

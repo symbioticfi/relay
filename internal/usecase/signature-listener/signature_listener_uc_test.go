@@ -46,7 +46,7 @@ func TestHandleSignatureReceivedMessage_HappyPath(t *testing.T) {
 	// Verify the signature matches what we expect
 	require.Equal(t, hash, signatures[0].MessageHash)
 	require.Equal(t, signature, signatures[0].Signature)
-	require.Equal(t, privateKey.PublicKey().Raw(), signatures[0].PublicKey)
+	require.Equal(t, privateKey.PublicKey().Raw(), signatures[0].PublicKey.Raw())
 
 	// Verify that signature map was updated
 	signatureMap, err := setup.repo.GetSignatureMap(t.Context(), p2pMsg.Message.RequestID())
@@ -82,7 +82,7 @@ func newTestSetup(t *testing.T) *testSetup {
 	mockAggProofSignal.EXPECT().Emit(gomock.Any()).Return(nil).AnyTimes()
 
 	// Create mock signature processed signal for entity processor
-	signatureProcessedSignal := signals.New[symbiotic.SignatureExtended](signals.DefaultConfig(), "test", nil)
+	signatureProcessedSignal := signals.New[symbiotic.Signature](signals.DefaultConfig(), "test", nil)
 
 	processor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo:                     repo,
@@ -149,17 +149,17 @@ func (setup *testSetup) createTestValidatorSetWithKey(t *testing.T, privateKey c
 	return vs
 }
 
-func createTestP2PMessageWithSignature(privateKey crypto.PrivateKey, hash []byte, signature []byte) intEntity.P2PMessage[symbiotic.SignatureExtended] {
-	return intEntity.P2PMessage[symbiotic.SignatureExtended]{
+func createTestP2PMessageWithSignature(privateKey crypto.PrivateKey, hash []byte, signature []byte) intEntity.P2PMessage[symbiotic.Signature] {
+	return intEntity.P2PMessage[symbiotic.Signature]{
 		SenderInfo: intEntity.SenderInfo{
 			Sender:    "test-peer-id",
 			PublicKey: []byte("test-sender-pubkey"),
 		},
-		Message: symbiotic.SignatureExtended{
+		Message: symbiotic.Signature{
 			KeyTag:      symbiotic.KeyTag(15),
 			Epoch:       1,
 			MessageHash: hash,
-			PublicKey:   privateKey.PublicKey().Raw(),
+			PublicKey:   privateKey.PublicKey(),
 			Signature:   signature,
 		},
 	}

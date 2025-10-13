@@ -21,7 +21,7 @@ type repo interface {
 }
 
 type entityProcessor interface {
-	ProcessSignature(ctx context.Context, signature symbiotic.SignatureExtended, self bool) error
+	ProcessSignature(ctx context.Context, signature symbiotic.Signature, self bool) error
 }
 
 type Config struct {
@@ -45,7 +45,7 @@ func New(cfg Config) (*SignatureListenerUseCase, error) {
 	}, nil
 }
 
-func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Context, p2pMsg entity.P2PMessage[symbiotic.SignatureExtended]) error {
+func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Context, p2pMsg entity.P2PMessage[symbiotic.Signature]) error {
 	ctx = log.WithComponent(ctx, "sign_listener")
 
 	msg := p2pMsg.Message

@@ -72,17 +72,17 @@ func newTestSetup(t *testing.T, policyType symbiotic.AggregationPolicyType, maxU
 	}
 }
 
-func createTestSignatureExtended(t *testing.T, pk crypto.PrivateKey) symbiotic.SignatureExtended {
+func createTestSignatureExtended(t *testing.T, pk crypto.PrivateKey) symbiotic.Signature {
 	t.Helper()
 	msg := "test-message"
 	sign, hash, err := pk.Sign([]byte(msg))
 	require.NoError(t, err)
 
-	return symbiotic.SignatureExtended{
+	return symbiotic.Signature{
 		KeyTag:      symbiotic.KeyTag(15),
 		Epoch:       1,
 		MessageHash: hash,
-		PublicKey:   pk.PublicKey().Raw(),
+		PublicKey:   pk.PublicKey(),
 		Signature:   sign,
 	}
 }
@@ -153,8 +153,8 @@ func createTestDataWithQuorum(requestID common.Hash, epoch symbiotic.Epoch, thre
 }
 
 // Setup mocks for successful aggregation using unified test data
-func setupSuccessfulAggregationMocks(setup *testSetup, msg symbiotic.SignatureExtended, testData testData) {
-	var signatures []symbiotic.SignatureExtended
+func setupSuccessfulAggregationMocks(setup *testSetup, msg symbiotic.Signature, testData testData) {
+	var signatures []symbiotic.Signature
 	networkConfig := symbiotic.NetworkConfig{
 		VerificationType: symbiotic.VerificationTypeBlsBn254Simple,
 	}

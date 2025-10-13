@@ -97,7 +97,7 @@ func (m *MockentityProcessor) EXPECT() *MockentityProcessorMockRecorder {
 }
 
 // ProcessSignature mocks base method.
-func (m *MockentityProcessor) ProcessSignature(ctx context.Context, signature entity.SignatureExtended, self bool) error {
+func (m *MockentityProcessor) ProcessSignature(ctx context.Context, signature entity.Signature, self bool) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ProcessSignature", ctx, signature, self)
 	ret0, _ := ret[0].(error)

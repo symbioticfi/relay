@@ -136,7 +136,7 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create aggregator: %w", err)
 	}
 
-	signatureProcessedSignal := signals.New[symbiotic.SignatureExtended](cfg.SignalCfg, "signatureProcessed", nil)
+	signatureProcessedSignal := signals.New[symbiotic.Signature](cfg.SignalCfg, "signatureProcessed", nil)
 	aggProofReadySignal := signals.New[symbiotic.AggregationProof](cfg.SignalCfg, "aggProofReady", nil)
 
 	entityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{

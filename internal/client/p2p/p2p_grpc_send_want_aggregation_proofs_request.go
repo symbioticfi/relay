@@ -79,7 +79,7 @@ func protoToEntityAggregationProofResponse(resp *prototypes.WantAggregationProof
 			MessageHash: protoProof.GetMessageHash(),
 			KeyTag:      symbiotic.KeyTag(protoProof.GetKeyTag()),
 			Epoch:       symbiotic.Epoch(protoProof.GetEpoch()),
-			Proof:       protoProof.GetAggregationProof().GetProof(),
+			Proof:       protoProof.GetProof(),
 		}
 
 		proofs[common.HexToHash(hashStr)] = proof
@@ -105,18 +105,15 @@ func protoToEntityAggregationProofRequest(req *prototypes.WantAggregationProofsR
 
 // entityToProtoAggregationProofResponse converts entity WantAggregationProofsResponse to protobuf
 func entityToProtoAggregationProofResponse(resp entity.WantAggregationProofsResponse) *prototypes.WantAggregationProofsResponse {
-	proofs := make(map[string]*prototypes.SignaturesAggregated)
+	proofs := make(map[string]*prototypes.AggregationProof)
 
 	for hash, proof := range resp.Proofs {
 		// Convert aggregation proof
-		protoProof := &prototypes.SignaturesAggregated{
-			RequestId:   proof.RequestID().Bytes(),
+		protoProof := &prototypes.AggregationProof{
 			KeyTag:      uint32(proof.KeyTag),
 			Epoch:       uint64(proof.Epoch),
 			MessageHash: proof.MessageHash,
-			AggregationProof: &prototypes.AggregationProof{
-				Proof: proof.Proof,
-			},
+			Proof:       proof.Proof,
 		}
 
 		proofs[hash.Hex()] = protoProof
