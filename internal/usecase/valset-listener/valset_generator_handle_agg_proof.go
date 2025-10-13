@@ -160,6 +160,7 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 		// get lat committed epoch
 		// TODO(oxsteins): if this is too slow, might have to update status-tracker to catchup quickly and store last committed epoch in db
 		// currently it is polling one by one and asynchronously so might not catchup early enough for committer to work
+		// (alrxy) i think it's better to do in listener cuz listener provides valsets and configs, it will be more consistent
 		lastCommittedEpoch := s.detectLastCommittedEpoch(ctx, nwCfg)
 
 		slog.DebugContext(ctx, "Detected last committed epoch", "epoch", lastCommittedEpoch, "knownValsetEpoch", valset.Epoch)

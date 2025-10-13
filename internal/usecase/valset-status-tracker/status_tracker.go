@@ -204,11 +204,12 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 			}
 		}
 
-		if !isCommitted {
-			continue
+		if isCommitted {
+			valset.Status = symbiotic.HeaderCommitted
+		} else {
+			valset.Status = symbiotic.HeaderMissed
 		}
 
-		valset.Status = symbiotic.HeaderCommitted
 		if err := s.cfg.Repo.UpdateValidatorSetStatus(ctx, valset); err != nil {
 			return errors.Errorf("failed to save validator set: %w", err)
 		}
