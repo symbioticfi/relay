@@ -21,7 +21,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// SignaturesAggregated represents the aggregated signatures message
+// AggregationProof represents the aggregated signatures message
 type AggregationProof struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	KeyTag        uint32                 `protobuf:"varint,2,opt,name=key_tag,json=keyTag,proto3" json:"key_tag,omitempty"`
