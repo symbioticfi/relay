@@ -97,7 +97,7 @@ func convertValidatorSetStatusToPB(status symbiotic.ValidatorSetStatus) apiv1.Va
 		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_AGGREGATED
 	case symbiotic.HeaderCommitted:
 		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED
-	case entity.HeaderMissed:
+	case symbiotic.HeaderMissed:
 		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_MISSED
 	default:
 		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_UNSPECIFIED
