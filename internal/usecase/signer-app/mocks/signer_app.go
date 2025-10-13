@@ -179,6 +179,21 @@ func (m *MockkeyProvider) EXPECT() *MockkeyProviderMockRecorder {
 	return m.recorder
 }
 
+// GetOnchainKeyFromCache mocks base method.
+func (m *MockkeyProvider) GetOnchainKeyFromCache(keyTag entity.KeyTag) (entity.CompactPublicKey, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOnchainKeyFromCache", keyTag)
+	ret0, _ := ret[0].(entity.CompactPublicKey)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOnchainKeyFromCache indicates an expected call of GetOnchainKeyFromCache.
+func (mr *MockkeyProviderMockRecorder) GetOnchainKeyFromCache(keyTag any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOnchainKeyFromCache", reflect.TypeOf((*MockkeyProvider)(nil).GetOnchainKeyFromCache), keyTag)
+}
+
 // GetPrivateKey mocks base method.
 func (m *MockkeyProvider) GetPrivateKey(keyTag entity.KeyTag) (crypto.PrivateKey, error) {
 	m.ctrl.T.Helper()

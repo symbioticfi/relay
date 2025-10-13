@@ -3,7 +3,6 @@ package aggregator_app
 import (
 	"context"
 	"log/slog"
-	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -42,6 +41,7 @@ type aggregator interface {
 
 type keyProvider interface {
 	GetPrivateKey(keyTag symbiotic.KeyTag) (crypto.PrivateKey, error)
+	GetOnchainKeyFromCache(keyTag symbiotic.KeyTag) (symbiotic.CompactPublicKey, error)
 }
 
 type aggregatorPolicy = aggregationPolicyTypes.AggregationPolicy
@@ -65,10 +65,6 @@ func (c Config) Validate() error {
 
 type AggregatorApp struct {
 	cfg Config
-
-	// stores the current node onchain key for each key tag
-	// helps speed up aggregator/committer/signer checks
-	nodeKeyMap sync.Map // map[keyTag]CompactPublicKey
 }
 
 func NewAggregatorApp(cfg Config) (*AggregatorApp, error) {
@@ -116,19 +112,16 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 		return errors.Errorf("failed to get validator set: %w", err)
 	}
 
-	onchainKey, ok := s.nodeKeyMap.Load(validatorSet.RequiredKeyTag)
-	if !ok {
-		symbPrivate, err := s.cfg.KeyProvider.GetPrivateKey(validatorSet.RequiredKeyTag)
+	onchainKey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(validatorSet.RequiredKeyTag)
+	if err != nil {
 		if errors.Is(err, entity.ErrKeyNotFound) {
-			slog.DebugContext(ctx, "No key for required key tag, skipping proof aggregation", "keyTag", validatorSet.RequiredKeyTag)
+			slog.DebugContext(ctx, "No Onchain key for required key tag, skipping proof aggregation", "keyTag", validatorSet.RequiredKeyTag)
 			return nil
 		}
-
-		onchainKey = symbPrivate.PublicKey().OnChain()
-		s.nodeKeyMap.Store(validatorSet.RequiredKeyTag, onchainKey)
+		return errors.Errorf("failed to get private key for required key tag %s: %w", validatorSet.RequiredKeyTag, err)
 	}
 
-	if !validatorSet.IsAggregator(onchainKey.(symbiotic.CompactPublicKey)) {
+	if !validatorSet.IsAggregator(onchainKey) {
 		slog.DebugContext(ctx, "Not an Aggregator for this valset, skipping proof aggregation",
 			"key", onchainKey,
 			"epoch", msg.Epoch,

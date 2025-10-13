@@ -45,13 +45,14 @@ func runApp(ctx context.Context) error {
 	log.Init(cfg.LogLevel, cfg.LogMode)
 	mtr := metrics.New(metrics.Config{})
 
-	var keyProvider keyprovider.KeyProvider
+	var keyProvider *keyprovider.CacheKeyProvider
 	if cfg.KeyStore.Path != "" {
 		var err error
-		keyProvider, err = keyprovider.NewKeystoreProvider(cfg.KeyStore.Path, cfg.KeyStore.Password)
+		kp, err := keyprovider.NewKeystoreProvider(cfg.KeyStore.Path, cfg.KeyStore.Password)
 		if err != nil {
 			return errors.Errorf("failed to create keystore provider from keystore file: %w", err)
 		}
+		keyProvider = keyprovider.NewCacheKeyProvider(kp)
 	} else {
 		simpleKeyProvider, err := keyprovider.NewSimpleKeystoreProvider()
 		if err != nil {
@@ -72,7 +73,7 @@ func runApp(ctx context.Context) error {
 				return errors.Errorf("failed to add key to keystore: %w", err)
 			}
 		}
-		keyProvider = simpleKeyProvider
+		keyProvider = keyprovider.NewCacheKeyProvider(simpleKeyProvider)
 	}
 
 	evmClient, err := evm.NewEvmClient(ctx, evm.Config{

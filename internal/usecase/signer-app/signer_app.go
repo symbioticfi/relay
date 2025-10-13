@@ -3,7 +3,6 @@ package signer_app
 import (
 	"context"
 	"log/slog"
-	"sync"
 	"time"
 
 	"github.com/symbioticfi/relay/internal/entity"
@@ -33,6 +32,7 @@ type p2pService interface {
 
 type keyProvider interface {
 	GetPrivateKey(keyTag symbiotic.KeyTag) (crypto.PrivateKey, error)
+	GetOnchainKeyFromCache(keyTag symbiotic.KeyTag) (symbiotic.CompactPublicKey, error)
 }
 
 type metrics interface {
@@ -63,10 +63,6 @@ func (c Config) Validate() error {
 type SignerApp struct {
 	cfg   Config
 	queue *workqueue.Typed[common.Hash]
-
-	// stores the current node onchain key for each key tag
-	// helps speed up aggregator/committer/signer checks
-	nodeKeyMap sync.Map // map[keyTag]CompactPublicKey
 }
 
 func NewSignerApp(cfg Config) (*SignerApp, error) {
@@ -127,19 +123,12 @@ func (s *SignerApp) completeSign(ctx context.Context, req symbiotic.SignatureReq
 		return errors.Errorf("failed to get private key: %w", err)
 	}
 
-	onchainKey, ok := s.nodeKeyMap.Load(valset.RequiredKeyTag)
-	if !ok {
-		symbPrivate, err := s.cfg.KeyProvider.GetPrivateKey(valset.RequiredKeyTag)
-		if errors.Is(err, entity.ErrKeyNotFound) {
-			slog.DebugContext(ctx, "No key for required key tag, skipping proof aggregation", "keyTag", valset.RequiredKeyTag)
-			return nil
-		}
-
-		onchainKey = symbPrivate.PublicKey().OnChain()
-		s.nodeKeyMap.Store(valset.RequiredKeyTag, onchainKey)
+	onchainKey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(valset.RequiredKeyTag)
+	if err != nil {
+		return errors.Errorf("failed to get onchain symb key from cache: %w", err)
 	}
 
-	if !valset.IsSigner(onchainKey.(symbiotic.CompactPublicKey)) {
+	if !valset.IsSigner(onchainKey) {
 		slog.DebugContext(ctx, "Not a signer for this valset, skipping signing",
 			"key_tag", req.KeyTag,
 			"epoch", req.RequiredEpoch,

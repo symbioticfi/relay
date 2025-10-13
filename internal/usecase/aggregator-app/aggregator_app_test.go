@@ -55,7 +55,7 @@ func newTestSetup(t *testing.T, policyType symbiotic.AggregationPolicyType, maxU
 		Aggregator:        mockAggregator,
 		Metrics:           mockMetrics,
 		AggregationPolicy: aggPolicy,
-		KeyProvider:       kp,
+		KeyProvider:       keyprovider.NewCacheKeyProvider(kp),
 	}
 
 	app, err := NewAggregatorApp(cfg)

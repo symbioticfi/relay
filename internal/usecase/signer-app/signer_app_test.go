@@ -110,7 +110,7 @@ func newTestSetup(t *testing.T) *testSetup {
 	require.NoError(t, err)
 
 	cfg := Config{
-		KeyProvider:     keyProvider,
+		KeyProvider:     keyprovider.NewCacheKeyProvider(keyProvider),
 		Repo:            repo,
 		EntityProcessor: processor,
 		Metrics:         mockMetrics,
