@@ -53,7 +53,7 @@ go-lint-fix:
 	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0 -v run ./... --fix
 
 .PHONY: generate
-generate: install-tools generate-mocks generate-api-types generate-client-types generate-p2p-types gen-abi
+generate: install-tools generate-mocks generate-api-types generate-client-types generate-p2p-types generate-badger-types gen-abi
 
 .PHONY: install-tools
 install-tools:
@@ -74,6 +74,11 @@ generate-api-types:
 .PHONY: generate-p2p-types
 generate-p2p-types:
 	buf generate --template=buf.p2p.gen.yaml
+
+.PHONY: generate-badger-types
+generate-badger-types:
+	buf generate --template=buf.badger.gen.yaml
+
 .PHONY: generate-client-types
 generate-client-types:
 	go run hack/codegen/generate-client-types.go

@@ -2,13 +2,13 @@ package badger
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
+	"github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -104,40 +104,27 @@ func (r *Repository) GetSignatureByIndex(ctx context.Context, requestID common.H
 	return signature, err
 }
 
-type signatureDTO struct {
-	MessageHash []byte `json:"message_hash"`
-	KeyTag      uint8  `json:"key_tag"`
-	Epoch       uint64 `json:"epoch"`
-	Signature   []byte `json:"signature"`
-	PublicKey   []byte `json:"public_key"`
-}
-
 func signatureToBytes(sig symbiotic.SignatureExtended) ([]byte, error) {
-	dto := signatureDTO{
+	return marshalAndCompress(&v1.Signature{
 		MessageHash: sig.MessageHash,
-		KeyTag:      uint8(sig.KeyTag),
+		KeyTag:      uint32(sig.KeyTag),
 		Epoch:       uint64(sig.Epoch),
 		Signature:   sig.Signature,
 		PublicKey:   sig.PublicKey,
-	}
-	data, err := json.Marshal(dto)
-	if err != nil {
-		return nil, errors.Errorf("failed to marshal signature: %w", err)
-	}
-	return data, nil
+	})
 }
 
 func bytesToSignature(value []byte) (symbiotic.SignatureExtended, error) {
-	var dto signatureDTO
-	if err := json.Unmarshal(value, &dto); err != nil {
+	pb := &v1.Signature{}
+	if err := unmarshalAndDecompress(value, pb); err != nil {
 		return symbiotic.SignatureExtended{}, errors.Errorf("failed to unmarshal signature: %w", err)
 	}
 
 	return symbiotic.SignatureExtended{
-		MessageHash: dto.MessageHash,
-		KeyTag:      symbiotic.KeyTag(dto.KeyTag),
-		Epoch:       symbiotic.Epoch(dto.Epoch),
-		PublicKey:   dto.PublicKey,
-		Signature:   dto.Signature,
+		MessageHash: pb.GetMessageHash(),
+		KeyTag:      symbiotic.KeyTag(pb.GetKeyTag()),
+		Epoch:       symbiotic.Epoch(pb.GetEpoch()),
+		PublicKey:   pb.GetPublicKey(),
+		Signature:   pb.GetSignature(),
 	}, nil
 }

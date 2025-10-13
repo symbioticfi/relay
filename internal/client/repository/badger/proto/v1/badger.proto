@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package badger.v1;
+
+option go_package = "github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1";
+
+message Validator {
+  bytes operator = 1;
+  string voting_power = 2;
+  bool is_active = 3;
+  uint32 active_index = 4;
+  repeated ValidatorKey keys = 5;
+  repeated ValidatorVault vaults = 6;
+}
+
+message ValidatorKey {
+  uint32 tag = 1;
+  bytes payload = 2;
+}
+
+message ValidatorVault {
+  uint64 chain_id = 1;
+  bytes vault = 2;
+  string voting_power = 3;
+}
+
+message ValidatorSetHeader {
+  uint32 version = 1;
+  uint32 required_key_tag = 2;
+  uint64 epoch = 3;
+  uint64 capture_timestamp = 4;
+  string quorum_threshold = 5;
+  string total_voting_power = 6;
+  bytes validators_ssz_mroot = 7;
+  bytes aggregator_indices = 8;
+  bytes committer_indices = 9;
+}
+
+message ValidatorSetMetadata {
+  bytes request_id = 1;
+  uint64 epoch = 2;
+  repeated ExtraData extra_data = 3;
+  bytes commitment_data = 4;
+}
+
+message ExtraData {
+  bytes key = 1;
+  bytes value = 2;
+}
+
+message AggregationProof {
+  bytes message_hash = 1;
+  uint32 key_tag = 2;
+  uint64 epoch = 3;
+  bytes proof = 4;
+}
+
+message Signature {
+  bytes message_hash = 1;
+  uint32 key_tag = 2;
+  uint64 epoch = 3;
+  bytes signature = 4;
+  bytes public_key = 5;
+}
+
+message SignatureRequest {
+  uint32 key_tag = 1;
+  uint64 required_epoch = 2;
+  bytes message = 3;
+}
+
+message SignatureMap {
+  bytes request_id = 1;
+  uint64 epoch = 2;
+  bytes signed_validators_bitmap = 3;
+  string current_voting_power = 4;
+  uint32 total_validators = 5;
+}
+
+message NetworkConfig {
+  repeated CrossChainAddress voting_power_providers = 1;
+  CrossChainAddress keys_provider = 2;
+  repeated CrossChainAddress settlements = 3;
+  uint32 verification_type = 4;
+  string max_voting_power = 5;
+  string min_inclusion_voting_power = 6;
+  string max_validators_count = 7;
+  repeated uint32 required_key_tags = 8;
+  uint32 required_header_key_tag = 9;
+  repeated QuorumThreshold quorum_thresholds = 10;
+  uint64 num_committers = 11;
+  uint64 num_aggregators = 12;
+  uint64 committer_slot_duration = 13;
+}
+
+message CrossChainAddress {
+  bytes address = 1;
+  uint64 chain_id = 2;
+}
+
+message QuorumThreshold {
+  uint32 key_tag = 1;
+  string quorum_threshold = 2;
+}

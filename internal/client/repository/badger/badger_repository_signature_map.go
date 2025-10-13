@@ -2,13 +2,13 @@ package badger
 
 import (
 	"context"
-	"encoding/json"
 	"math/big"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
+	"github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -70,53 +70,44 @@ func (r *Repository) getSignatureMap(ctx context.Context, requestID common.Hash)
 	return vm, nil
 }
 
-type signatureMapDTO struct {
-	RequestID                  string   `json:"request_id"`
-	Epoch                      uint64   `json:"epoch"`
-	SignedValidatorsBitmapData []byte   `json:"signed_validators_bitmap"`
-	CurrentVotingPower         *big.Int `json:"current_voting_power"`
-	TotalValidators            uint32   `json:"total_validators"`
-}
-
 func signatureMapToBytes(vm entity.SignatureMap) ([]byte, error) {
 	bitmapBytes, err := vm.SignedValidatorsBitmap.ToBytes()
 	if err != nil {
 		return nil, errors.Errorf("failed to serialize roaring bitmap: %w", err)
 	}
 
-	dto := signatureMapDTO{
-		RequestID:                  vm.RequestID.Hex(),
-		Epoch:                      uint64(vm.Epoch),
-		SignedValidatorsBitmapData: bitmapBytes,
-		CurrentVotingPower:         vm.CurrentVotingPower.Int,
-		TotalValidators:            vm.TotalValidators,
-	}
-
-	data, err := json.Marshal(dto)
-	if err != nil {
-		return nil, errors.Errorf("failed to marshal valset signature map: %w", err)
-	}
-	return data, nil
+	return marshalAndCompress(&v1.SignatureMap{
+		RequestId:              vm.RequestID.Bytes(),
+		Epoch:                  uint64(vm.Epoch),
+		SignedValidatorsBitmap: bitmapBytes,
+		CurrentVotingPower:     vm.CurrentVotingPower.String(),
+		TotalValidators:        vm.TotalValidators,
+	})
 }
 
 func bytesToSignatureMap(data []byte) (entity.SignatureMap, error) {
-	var dto signatureMapDTO
-	if err := json.Unmarshal(data, &dto); err != nil {
+	pb := &v1.SignatureMap{}
+	if err := unmarshalAndDecompress(data, pb); err != nil {
 		return entity.SignatureMap{}, errors.Errorf("failed to unmarshal signature map: %w", err)
 	}
 
-	requestId := common.HexToHash(dto.RequestID)
+	requestId := common.BytesToHash(pb.GetRequestId())
 
-	bitmap, err := entity.BitmapFromBytes(dto.SignedValidatorsBitmapData)
+	bitmap, err := entity.BitmapFromBytes(pb.GetSignedValidatorsBitmap())
 	if err != nil {
 		return entity.SignatureMap{}, errors.Errorf("failed to deserialize bitmap: %w", err)
 	}
 
+	currentVotingPower, ok := new(big.Int).SetString(pb.GetCurrentVotingPower(), 10)
+	if !ok {
+		return entity.SignatureMap{}, errors.Errorf("failed to parse current voting power: %s", pb.GetCurrentVotingPower())
+	}
+
 	return entity.SignatureMap{
 		RequestID:              requestId,
-		Epoch:                  symbiotic.Epoch(dto.Epoch),
+		Epoch:                  symbiotic.Epoch(pb.GetEpoch()),
 		SignedValidatorsBitmap: bitmap,
-		CurrentVotingPower:     symbiotic.ToVotingPower(dto.CurrentVotingPower),
-		TotalValidators:        dto.TotalValidators,
+		CurrentVotingPower:     symbiotic.ToVotingPower(currentVotingPower),
+		TotalValidators:        pb.GetTotalValidators(),
 	}, nil
 }
