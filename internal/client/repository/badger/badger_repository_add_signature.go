@@ -6,11 +6,12 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/core/entity"
-	"github.com/symbioticfi/relay/core/usecase/crypto"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
-func (r *Repository) SaveSignature(ctx context.Context, signature entity.SignatureExtended) error {
+func (r *Repository) SaveSignature(ctx context.Context, signature symbiotic.SignatureExtended) error {
 	publicKey, err := crypto.NewPublicKey(signature.KeyTag.Type(), signature.PublicKey)
 	if err != nil {
 		return errors.Errorf("failed to get public key: %w", err)
@@ -77,28 +78,21 @@ func (r *Repository) SaveSignature(ctx context.Context, signature entity.Signatu
 				return errors.Errorf("failed to save aggregation proof to pending collection: %v", err)
 			}
 		}
-
-		// Check if quorum is reached and remove from pending collection if so
-		validatorSetHeader, err := r.GetValidatorSetHeaderByEpoch(ctx, signature.Epoch)
-		if err != nil {
-			return errors.Errorf("failed to get validator set header: %v", err)
-		}
-
-		// todo check quorum threshold from signature request
-		if signatureMap.ThresholdReached(validatorSetHeader.QuorumThreshold) {
-			// Remove from pending collection since quorum is reached
-			err := r.RemoveSignatureRequestPending(ctx, signature.Epoch, signature.RequestID())
+	} else {
+		if len(signatureMap.GetMissingValidators().ToArray()) == 0 {
+			// for non aggregation keys, we wait for all validators to sign and then remove
+			// the pending aggregation marker to stop syncing signatures for this request
+			err := r.RemoveAggregationProofPending(ctx, signature.Epoch, signature.RequestID())
 			if err != nil && !errors.Is(err, entity.ErrEntityNotFound) && !errors.Is(err, entity.ErrTxConflict) {
 				return errors.Errorf("failed to remove signature request from pending collection: %v", err)
 			}
-			// If ErrEntityNotFound, it means it was already removed or never added - that's ok
-		}
-	} else if len(signatureMap.GetMissingValidators().ToArray()) == 0 {
-		// for non aggregation keys, we wait for all validators to sign and then remove
-		// worst case the pending request remains and we stop syncing for the stale epochs
-		err := r.RemoveSignatureRequestPending(ctx, signature.Epoch, signature.RequestID())
-		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) && !errors.Is(err, entity.ErrTxConflict) {
-			return errors.Errorf("failed to remove signature request from pending collection: %v", err)
+		} else {
+			// Save to pending aggregation proof collection, to sync for missing signatures
+			// syncer will remove it from collection once all signatures are found
+			if err := r.saveAggregationProofPending(ctx, signature.RequestID(), signature.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) && !errors.Is(err, entity.ErrTxConflict) {
+				// ignore ErrEntityAlreadyExist and ErrTxConflict - it means it's already there or being processed
+				return errors.Errorf("failed to save aggregation proof to pending collection: %v", err)
+			}
 		}
 	}
 	return nil

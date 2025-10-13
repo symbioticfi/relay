@@ -9,46 +9,50 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-	"github.com/symbioticfi/relay/core/client/evm"
-	"github.com/symbioticfi/relay/core/usecase/aggregator"
-	"github.com/symbioticfi/relay/core/usecase/crypto"
-	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
-
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/symbiotic/client/evm"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
+
+	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
 )
 
 type signer interface {
-	RequestSignature(ctx context.Context, req entity.SignatureRequest) (common.Hash, error)
+	RequestSignature(ctx context.Context, req symbiotic.SignatureRequest) (common.Hash, error)
 }
 
 type repo interface {
-	GetLatestValidatorSetHeader(_ context.Context) (entity.ValidatorSetHeader, error)
-	GetLatestSignedValidatorSetEpoch(ctx context.Context) (entity.Epoch, error)
-	GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error)
-	GetValidatorSetMetadata(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSetMetadata, error)
-	GetConfigByEpoch(ctx context.Context, epoch entity.Epoch) (entity.NetworkConfig, error)
-	GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error)
-	SaveLatestSignedValidatorSetEpoch(_ context.Context, valset entity.ValidatorSet) error
-	SaveProof(ctx context.Context, aggregationProof entity.AggregationProof) error
-	SaveProofCommitPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error
-	GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch entity.Epoch, limit int) ([]entity.ProofCommitKey, error)
-	RemoveProofCommitPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error
-	SaveValidatorSetMetadata(ctx context.Context, data entity.ValidatorSetMetadata) error
-	SaveConfig(ctx context.Context, config entity.NetworkConfig, epoch entity.Epoch) error
-	SaveValidatorSet(ctx context.Context, valset entity.ValidatorSet) error
+	GetLatestValidatorSetHeader(_ context.Context) (symbiotic.ValidatorSetHeader, error)
+	GetLatestSignedValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
+	GetValidatorSetByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error)
+	GetValidatorSetMetadata(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSetMetadata, error)
+	GetConfigByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.NetworkConfig, error)
+	GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error)
+	SaveLatestSignedValidatorSetEpoch(_ context.Context, valset symbiotic.ValidatorSet) error
+	SaveProof(ctx context.Context, aggregationProof symbiotic.AggregationProof) error
+	SaveProofCommitPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error
+	GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch symbiotic.Epoch, limit int) ([]symbiotic.ProofCommitKey, error)
+	RemoveProofCommitPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error
+	SaveValidatorSetMetadata(ctx context.Context, data symbiotic.ValidatorSetMetadata) error
+	SaveConfig(ctx context.Context, config symbiotic.NetworkConfig, epoch symbiotic.Epoch) error
+	SaveValidatorSet(ctx context.Context, valset symbiotic.ValidatorSet) error
 }
 
 type deriver interface {
-	GetValidatorSet(ctx context.Context, epoch entity.Epoch, config entity.NetworkConfig) (entity.ValidatorSet, error)
-	GetNetworkData(ctx context.Context, addr entity.CrossChainAddress) (entity.NetworkData, error)
+	GetValidatorSet(ctx context.Context, epoch symbiotic.Epoch, config symbiotic.NetworkConfig) (symbiotic.ValidatorSet, error)
+	GetNetworkData(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.NetworkData, error)
 }
 
 type metrics interface {
 	ObserveAggregationProofSize(proofSize int, validatorCount int)
+}
+
+type keyProvider interface {
+	GetPrivateKey(keyTag symbiotic.KeyTag) (crypto.PrivateKey, error)
 }
 
 type Config struct {
@@ -57,7 +61,7 @@ type Config struct {
 	Deriver         deriver        `validate:"required"`
 	PollingInterval time.Duration  `validate:"required,gt=0"`
 	Signer          signer         `validate:"required"`
-	KeyProvider     keyprovider.KeyProvider
+	KeyProvider     keyProvider
 	Aggregator      aggregator.Aggregator
 	Metrics         metrics
 }
@@ -152,7 +156,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		return errors.Errorf("failed to get latest validator set header: %w", err)
 	}
 
-	nextEpoch := entity.Epoch(0)
+	nextEpoch := symbiotic.Epoch(0)
 	if err == nil {
 		nextEpoch = latestHeader.Epoch + 1
 	}
@@ -195,7 +199,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) process(ctx context.Context, valSet entity.ValidatorSet, config entity.NetworkConfig) error {
+func (s *Service) process(ctx context.Context, valSet symbiotic.ValidatorSet, config symbiotic.NetworkConfig) error {
 	networkData, err := s.getNetworkData(ctx, config)
 	if err != nil {
 		return errors.Errorf("failed to get network data: %w", err)
@@ -234,7 +238,7 @@ func (s *Service) process(ctx context.Context, valSet entity.ValidatorSet, confi
 
 	// if we are a signer, sign the commitment, otherwise just save the metadata
 	if valsetToCheck.IsSigner(symbPrivate.PublicKey().OnChain()) {
-		r := entity.SignatureRequest{
+		r := symbiotic.SignatureRequest{
 			KeyTag:        valsetToCheck.RequiredKeyTag,
 			RequiredEpoch: valsetToCheck.Epoch,
 			Message:       commitmentData,
@@ -250,13 +254,13 @@ func (s *Service) process(ctx context.Context, valSet entity.ValidatorSet, confi
 		return errors.Errorf("failed to hash message: %w", err)
 	}
 
-	extendedSig := entity.SignatureExtended{
+	extendedSig := symbiotic.SignatureExtended{
 		MessageHash: msgHash,
 		KeyTag:      valsetToCheck.RequiredKeyTag,
 		Epoch:       valsetToCheck.Epoch,
 	}
 
-	metadata := entity.ValidatorSetMetadata{
+	metadata := symbiotic.ValidatorSetMetadata{
 		RequestID:      extendedSig.RequestID(),
 		ExtraData:      extraData,
 		Epoch:          valSet.Epoch,
@@ -270,7 +274,7 @@ func (s *Service) process(ctx context.Context, valSet entity.ValidatorSet, confi
 	return nil
 }
 
-func (s *Service) getNetworkData(ctx context.Context, config entity.NetworkConfig) (entity.NetworkData, error) {
+func (s *Service) getNetworkData(ctx context.Context, config symbiotic.NetworkConfig) (symbiotic.NetworkData, error) {
 	for _, settlement := range config.Settlements {
 		networkData, err := s.cfg.Deriver.GetNetworkData(ctx, settlement)
 		if err != nil {
@@ -280,20 +284,20 @@ func (s *Service) getNetworkData(ctx context.Context, config entity.NetworkConfi
 		return networkData, nil
 	}
 
-	return entity.NetworkData{}, errors.New("failed to get network data for any settlement")
+	return symbiotic.NetworkData{}, errors.New("failed to get network data for any settlement")
 }
 
 func (s *Service) headerCommitmentData(
-	networkData entity.NetworkData,
-	header entity.ValidatorSetHeader,
-	extraData []entity.ExtraData,
+	networkData symbiotic.NetworkData,
+	header symbiotic.ValidatorSetHeader,
+	extraData []symbiotic.ExtraData,
 ) ([]byte, error) {
 	headerHash, err := header.Hash()
 	if err != nil {
 		return nil, errors.Errorf("failed to hash valset header: %w", err)
 	}
 
-	extraDataHash, err := entity.ExtraDataList(extraData).Hash()
+	extraDataHash, err := symbiotic.ExtraDataList(extraData).Hash()
 	if err != nil {
 		return nil, errors.Errorf("failed to hash extra data: %w", err)
 	}

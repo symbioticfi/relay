@@ -5,12 +5,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/symbioticfi/relay/core/client/evm"
-	"github.com/symbioticfi/relay/core/entity"
-	symbioticCrypto "github.com/symbioticfi/relay/core/usecase/crypto"
-	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 	cmdhelpers "github.com/symbioticfi/relay/internal/usecase/cmd-helpers"
+	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
 	"github.com/symbioticfi/relay/internal/usecase/metrics"
+	"github.com/symbioticfi/relay/symbiotic/client/evm"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	symbioticCrypto "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -34,7 +34,7 @@ var registerKeyCmd = &cobra.Command{
 
 		evmClient, err := evm.NewEvmClient(ctx, evm.Config{
 			ChainURLs: globalFlags.Chains,
-			DriverAddress: entity.CrossChainAddress{
+			DriverAddress: symbiotic.CrossChainAddress{
 				ChainId: globalFlags.DriverChainId,
 				Address: common.HexToAddress(globalFlags.DriverAddress),
 			},
@@ -58,13 +58,13 @@ var registerKeyCmd = &cobra.Command{
 		if !ok {
 			secret, _ = privateKeyInput.Show("Enter private key for chain with ID: " + strconv.Itoa(int(chainId)))
 		}
-		pk, err := symbioticCrypto.NewPrivateKey(entity.KeyTypeEcdsaSecp256k1, common.FromHex(secret))
+		pk, err := symbioticCrypto.NewPrivateKey(symbiotic.KeyTypeEcdsaSecp256k1, common.FromHex(secret))
 		if err != nil {
 			return err
 		}
 		err = kp.AddKeyByNamespaceTypeId(
 			keyprovider.EVM_KEY_NAMESPACE,
-			entity.KeyTypeEcdsaSecp256k1,
+			symbiotic.KeyTypeEcdsaSecp256k1,
 			int(chainId),
 			pk,
 		)
@@ -84,7 +84,7 @@ var registerKeyCmd = &cobra.Command{
 			return err
 		}
 
-		kt := entity.KeyTag(registerKeyFlags.KeyTag)
+		kt := symbiotic.KeyTag(registerKeyFlags.KeyTag)
 		pk, err = keyStore.GetPrivateKey(kt)
 		if err != nil {
 			return err
@@ -127,7 +127,7 @@ var registerKeyCmd = &cobra.Command{
 		}
 
 		var extraData []byte
-		if kt.Type() == entity.KeyTypeBlsBn254 {
+		if kt.Type() == symbiotic.KeyTypeBlsBn254 {
 			extraData = pk.PublicKey().Raw()[32:]
 		}
 
@@ -142,7 +142,7 @@ var registerKeyCmd = &cobra.Command{
 	},
 }
 
-func keyCommitmentData(eip712Domain entity.Eip712Domain, operator common.Address, keyHash []byte) ([]byte, error) {
+func keyCommitmentData(eip712Domain symbiotic.Eip712Domain, operator common.Address, keyHash []byte) ([]byte, error) {
 	typedData := apitypes.TypedData{
 		Types: apitypes.Types{
 			"EIP712Domain": []apitypes.Type{

@@ -7,21 +7,21 @@ import (
 	"github.com/go-errors/errors"
 	validate "github.com/go-playground/validator/v10"
 
-	"github.com/symbioticfi/relay/core/entity"
-	intEntity "github.com/symbioticfi/relay/internal/entity"
+	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/signals"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 //go:generate mockgen -source=signature_listener_uc.go -destination=mocks/signature_listener_uc.go -package=mocks
 
 type repo interface {
-	GetValidatorByKey(ctx context.Context, epoch entity.Epoch, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error)
-	GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error)
+	GetValidatorByKey(ctx context.Context, epoch symbiotic.Epoch, keyTag symbiotic.KeyTag, publicKey []byte) (symbiotic.Validator, uint32, error)
+	GetValidatorSetByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error)
 }
 
 type entityProcessor interface {
-	ProcessSignature(ctx context.Context, signature entity.SignatureExtended) error
+	ProcessSignature(ctx context.Context, signature symbiotic.SignatureExtended, self bool) error
 }
 
 type Config struct {
@@ -45,7 +45,7 @@ func New(cfg Config) (*SignatureListenerUseCase, error) {
 	}, nil
 }
 
-func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Context, p2pMsg intEntity.P2PMessage[entity.SignatureExtended]) error {
+func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Context, p2pMsg entity.P2PMessage[symbiotic.SignatureExtended]) error {
 	ctx = log.WithComponent(ctx, "sign_listener")
 
 	msg := p2pMsg.Message
@@ -57,7 +57,7 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 		return nil
 	}
 
-	err := s.cfg.EntityProcessor.ProcessSignature(ctx, msg)
+	err := s.cfg.EntityProcessor.ProcessSignature(ctx, msg, false)
 	if err != nil {
 		return errors.Errorf("failed to process signature: %w", err)
 	}

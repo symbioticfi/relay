@@ -7,16 +7,16 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/core/entity"
-	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
+	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 const (
 	minCommitterPollIntervalSeconds = uint64(5)
 )
 
-func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.AggregationProof) error {
+func (s *Service) HandleProofAggregated(ctx context.Context, msg symbiotic.AggregationProof) error {
 	ctx = log.WithComponent(ctx, "generator")
 
 	slog.DebugContext(ctx, "Handling proof aggregated message", "msg", msg)
@@ -30,14 +30,19 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 	valsetEpoch := msg.Epoch + 1
 
 	var (
-		valset entity.ValidatorSet
+		valset symbiotic.ValidatorSet
 		err    error
 	)
 	retryAttempted := false
 	for {
 		valset, err = s.cfg.Repo.GetValidatorSetByEpoch(ctx, valsetEpoch)
 		if err != nil {
-			if errors.Is(err, entity.ErrEntityNotFound) && !retryAttempted { // TODO: do i need to check if there is a local signature for request? it's still possible to commit
+			if !errors.Is(err, entity.ErrEntityNotFound) {
+				return errors.Errorf("failed to get validator set by epoch %d: %w", valsetEpoch, err)
+			}
+			// if not found, try to load missing epochs and retry once
+			// this can happen if we receive proof before valset is processed from signature requests
+			if !retryAttempted {
 				if err = s.tryLoadMissingEpochs(ctx); err != nil {
 					slog.ErrorContext(ctx, "failed to process epochs, on demand from committer", "error", err)
 					return nil
@@ -51,7 +56,7 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.Aggregat
 		break
 	}
 
-	if valset.Status == entity.HeaderCommitted {
+	if valset.Status == symbiotic.HeaderCommitted {
 		slog.DebugContext(ctx, "Valset is already committed", "epoch", valsetEpoch)
 		return nil
 	}
@@ -132,14 +137,14 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 
 		privKey, err := s.cfg.KeyProvider.GetPrivateKey(valset.RequiredKeyTag)
 		if err != nil {
-			if errors.Is(err, keyprovider.ErrKeyNotFound) {
+			if errors.Is(err, entity.ErrKeyNotFound) {
 				slog.DebugContext(ctx, "No key for required key tag, skipping proof commitment", "keyTag", valset.RequiredKeyTag)
 				continue
 			}
 			return errors.Errorf("failed to get private key for required key tag %s: %w", valset.RequiredKeyTag, err)
 		}
 
-		now := entity.Timestamp(uint64(time.Now().Unix()))
+		now := symbiotic.Timestamp(uint64(time.Now().Unix()))
 		if !valset.IsActiveCommitter(ctx, nwCfg.CommitterSlotDuration, now, minCommitterPollIntervalSeconds, privKey.PublicKey().OnChain()) {
 			slog.DebugContext(ctx, "Not a committer for this valset, skipping proof commitment",
 				"key", privKey.PublicKey().OnChain(),
@@ -226,8 +231,8 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 	}
 }
 
-func (s *Service) detectLastCommittedEpoch(ctx context.Context, config entity.NetworkConfig) entity.Epoch {
-	minVal := entity.Epoch(0)
+func (s *Service) detectLastCommittedEpoch(ctx context.Context, config symbiotic.NetworkConfig) symbiotic.Epoch {
+	minVal := symbiotic.Epoch(0)
 	for _, settlement := range config.Settlements {
 		lastCommittedEpoch, err := s.cfg.EvmClient.GetLastCommittedHeaderEpoch(ctx, settlement)
 		if err != nil {
@@ -243,7 +248,7 @@ func (s *Service) detectLastCommittedEpoch(ctx context.Context, config entity.Ne
 	return minVal
 }
 
-func (s *Service) commitValsetToAllSettlements(ctx context.Context, config entity.NetworkConfig, header entity.ValidatorSetHeader, extraData []entity.ExtraData, proof []byte) error {
+func (s *Service) commitValsetToAllSettlements(ctx context.Context, config symbiotic.NetworkConfig, header symbiotic.ValidatorSetHeader, extraData []symbiotic.ExtraData, proof []byte) error {
 	errs := make([]error, len(config.Settlements))
 	for i, settlement := range config.Settlements {
 		slog.DebugContext(ctx, "Trying to commit valset header to settlement", "settlement", settlement)

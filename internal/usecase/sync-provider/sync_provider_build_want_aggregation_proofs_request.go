@@ -6,7 +6,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // BuildWantAggregationProofsRequest builds a request for missing aggregation proofs from recent epochs
@@ -17,9 +18,9 @@ func (s *Syncer) BuildWantAggregationProofsRequest(ctx context.Context) (entity.
 		return entity.WantAggregationProofsRequest{}, errors.Errorf("failed to get latest epoch: %w", err)
 	}
 
-	startEpoch := entity.Epoch(0)
-	if latestEpoch >= entity.Epoch(s.cfg.EpochsToSync) {
-		startEpoch = latestEpoch - entity.Epoch(s.cfg.EpochsToSync)
+	startEpoch := symbiotic.Epoch(0)
+	if latestEpoch >= symbiotic.Epoch(s.cfg.EpochsToSync) {
+		startEpoch = latestEpoch - symbiotic.Epoch(s.cfg.EpochsToSync)
 	}
 
 	var allRequestIDs []common.Hash
@@ -43,6 +44,9 @@ func (s *Syncer) BuildWantAggregationProofsRequest(ctx context.Context) (entity.
 
 			// Collect request ids
 			for _, req := range requests {
+				if !req.KeyTag.Type().AggregationKey() {
+					continue // Skip non-aggregation requests
+				}
 				// check if proof exists
 				_, err := s.cfg.Repo.GetAggregationProof(ctx, req.RequestID)
 				if err == nil {

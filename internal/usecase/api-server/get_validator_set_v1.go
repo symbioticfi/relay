@@ -10,8 +10,9 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // GetValidatorSet handles the gRPC GetValidatorSet request
@@ -23,7 +24,7 @@ func (h *grpcHandler) GetValidatorSet(ctx context.Context, req *apiv1.GetValidat
 
 	epochRequested := latestEpoch
 	if req.Epoch != nil {
-		epochRequested = entity.Epoch(req.GetEpoch())
+		epochRequested = symbiotic.Epoch(req.GetEpoch())
 	}
 
 	// epoch from future
@@ -40,20 +41,20 @@ func (h *grpcHandler) GetValidatorSet(ctx context.Context, req *apiv1.GetValidat
 }
 
 // getValidatorSetForEpoch retrieves validator set for a given epoch, either from repo or by deriving it
-func (h *grpcHandler) getValidatorSetForEpoch(ctx context.Context, epochRequested entity.Epoch) (entity.ValidatorSet, error) {
+func (h *grpcHandler) getValidatorSetForEpoch(ctx context.Context, epochRequested symbiotic.Epoch) (symbiotic.ValidatorSet, error) {
 	validatorSet, err := h.cfg.Repo.GetValidatorSetByEpoch(ctx, epochRequested)
 	if err == nil {
 		return validatorSet, nil
 	}
 
 	if errors.Is(err, entity.ErrEntityNotFound) {
-		return entity.ValidatorSet{}, status.Errorf(codes.NotFound, "validator set for epoch %d not found", epochRequested)
+		return symbiotic.ValidatorSet{}, status.Errorf(codes.NotFound, "validator set for epoch %d not found", epochRequested)
 	}
 
-	return entity.ValidatorSet{}, errors.Errorf("failed to get validator set for epoch %d: %w", epochRequested, err)
+	return symbiotic.ValidatorSet{}, errors.Errorf("failed to get validator set for epoch %d: %w", epochRequested, err)
 }
 
-func convertValidatorSetToPB(valSet entity.ValidatorSet) *apiv1.GetValidatorSetResponse {
+func convertValidatorSetToPB(valSet symbiotic.ValidatorSet) *apiv1.GetValidatorSetResponse {
 	return &apiv1.GetValidatorSetResponse{
 		Version:          uint32(valSet.Version),
 		RequiredKeyTag:   uint32(valSet.RequiredKeyTag),
@@ -61,24 +62,24 @@ func convertValidatorSetToPB(valSet entity.ValidatorSet) *apiv1.GetValidatorSetR
 		CaptureTimestamp: timestamppb.New(time.Unix(int64(valSet.CaptureTimestamp), 0).UTC()),
 		QuorumThreshold:  valSet.QuorumThreshold.String(),
 		Status:           convertValidatorSetStatusToPB(valSet.Status),
-		Validators: lo.Map(valSet.Validators, func(v entity.Validator, _ int) *apiv1.Validator {
+		Validators: lo.Map(valSet.Validators, func(v symbiotic.Validator, _ int) *apiv1.Validator {
 			return convertValidatorToPB(v)
 		}),
 	}
 }
 
-func convertValidatorToPB(v entity.Validator) *apiv1.Validator {
+func convertValidatorToPB(v symbiotic.Validator) *apiv1.Validator {
 	return &apiv1.Validator{
 		Operator:    v.Operator.Hex(),
 		VotingPower: v.VotingPower.String(),
 		IsActive:    v.IsActive,
-		Keys: lo.Map(v.Keys, func(k entity.ValidatorKey, _ int) *apiv1.Key {
+		Keys: lo.Map(v.Keys, func(k symbiotic.ValidatorKey, _ int) *apiv1.Key {
 			return &apiv1.Key{
 				Tag:     uint32(k.Tag),
 				Payload: k.Payload,
 			}
 		}),
-		Vaults: lo.Map(v.Vaults, func(v entity.ValidatorVault, _ int) *apiv1.ValidatorVault {
+		Vaults: lo.Map(v.Vaults, func(v symbiotic.ValidatorVault, _ int) *apiv1.ValidatorVault {
 			return &apiv1.ValidatorVault{
 				ChainId:     v.ChainID,
 				Vault:       v.Vault.Hex(),
@@ -88,13 +89,13 @@ func convertValidatorToPB(v entity.Validator) *apiv1.Validator {
 	}
 }
 
-func convertValidatorSetStatusToPB(status entity.ValidatorSetStatus) apiv1.ValidatorSetStatus {
+func convertValidatorSetStatusToPB(status symbiotic.ValidatorSetStatus) apiv1.ValidatorSetStatus {
 	switch status {
-	case entity.HeaderDerived:
+	case symbiotic.HeaderDerived:
 		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_DERIVED
-	case entity.HeaderAggregated:
+	case symbiotic.HeaderAggregated:
 		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_AGGREGATED
-	case entity.HeaderCommitted:
+	case symbiotic.HeaderCommitted:
 		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED
 	case entity.HeaderMissed:
 		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_MISSED

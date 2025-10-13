@@ -1,6 +1,10 @@
 package lowCostPolicy
 
-import "github.com/symbioticfi/relay/core/entity"
+import (
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+
+	"github.com/symbioticfi/relay/internal/entity"
+)
 
 type LowCostPolicy struct {
 	maxUnsigners uint64
@@ -10,7 +14,7 @@ func NewLowCostPolicy(maxUnsigners uint64) *LowCostPolicy {
 	return &LowCostPolicy{maxUnsigners: maxUnsigners}
 }
 
-func (lcp *LowCostPolicy) ShouldAggregate(signatureMap entity.SignatureMap, validatorSet entity.ValidatorSet) bool {
+func (lcp *LowCostPolicy) ShouldAggregate(signatureMap entity.SignatureMap, validatorSet symbiotic.ValidatorSet) bool {
 	if !signatureMap.ThresholdReached(validatorSet.QuorumThreshold) {
 		return false
 	}

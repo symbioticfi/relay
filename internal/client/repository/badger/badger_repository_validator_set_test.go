@@ -9,7 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func TestRepository_ValidatorSet(t *testing.T) {
@@ -131,7 +132,7 @@ func TestRepository_ValidatorSet(t *testing.T) {
 
 		// Test non-existent validator
 		fakeKey := []byte("fake-key-that-does-not-exist")
-		_, _, err := repo.GetValidatorByKey(t.Context(), vs1.Epoch, entity.KeyTag(1), fakeKey)
+		_, _, err := repo.GetValidatorByKey(t.Context(), vs1.Epoch, symbiotic.KeyTag(1), fakeKey)
 		assert.True(t, errors.Is(err, entity.ErrEntityNotFound))
 
 		// Test non-existent epoch
@@ -173,7 +174,7 @@ func TestRepository_ValidatorSet_EmptyRepository(t *testing.T) {
 
 	t.Run("get validator by key from empty repo", func(t *testing.T) {
 		fakeKey := []byte("fake-key")
-		_, _, err := repo.GetValidatorByKey(t.Context(), 1, entity.KeyTag(1), fakeKey)
+		_, _, err := repo.GetValidatorByKey(t.Context(), 1, symbiotic.KeyTag(1), fakeKey)
 		assert.True(t, errors.Is(err, entity.ErrEntityNotFound))
 	})
 }
@@ -218,7 +219,7 @@ func TestRepository_ValidatorSet_EpochOrdering(t *testing.T) {
 	})
 
 	t.Run("can retrieve any validator set by epoch", func(t *testing.T) {
-		tests := []entity.ValidatorSet{vs1, vs2, vs3, vs4}
+		tests := []symbiotic.ValidatorSet{vs1, vs2, vs3, vs4}
 		for _, expected := range tests {
 			got, err := repo.GetValidatorSetByEpoch(t.Context(), expected.Epoch)
 			require.NoError(t, err)
@@ -266,10 +267,10 @@ func TestRepository_ValidatorSet_MultiKeyStorageProblem(t *testing.T) {
 		vs := randomValidatorSet(t, 1)
 
 		// Modify the first validator to have 3 different keys
-		vs.Validators[0].Keys = []entity.ValidatorKey{
-			{Tag: entity.KeyTag(1), Payload: randomBytes(t, 32)},
-			{Tag: entity.KeyTag(2), Payload: randomBytes(t, 32)},
-			{Tag: entity.KeyTag(3), Payload: randomBytes(t, 32)},
+		vs.Validators[0].Keys = []symbiotic.ValidatorKey{
+			{Tag: symbiotic.KeyTag(1), Payload: randomBytes(t, 32)},
+			{Tag: symbiotic.KeyTag(2), Payload: randomBytes(t, 32)},
+			{Tag: symbiotic.KeyTag(3), Payload: randomBytes(t, 32)},
 		}
 
 		require.NoError(t, repo.SaveValidatorSet(t.Context(), vs))
@@ -282,7 +283,7 @@ func TestRepository_ValidatorSet_MultiKeyStorageProblem(t *testing.T) {
 		assert.Len(t, retrievedVS.Validators, len(vs.Validators), "Validators should not be duplicated")
 
 		// Find our multi-key validator in the retrieved set
-		var foundValidator *entity.Validator
+		var foundValidator *symbiotic.Validator
 		for _, v := range retrievedVS.Validators {
 			if v.Operator == vs.Validators[0].Operator {
 				foundValidator = &v
@@ -350,8 +351,8 @@ func TestRepository_LatestSignedValidatorSetEpoch(t *testing.T) {
 		latestSignedEpoch, err := repo.GetLatestSignedValidatorSetEpoch(t.Context())
 		require.NoError(t, err)
 
-		assert.Equal(t, entity.Epoch(5), latestEpoch)
-		assert.Equal(t, entity.Epoch(5), latestSignedEpoch)
+		assert.Equal(t, symbiotic.Epoch(5), latestEpoch)
+		assert.Equal(t, symbiotic.Epoch(5), latestSignedEpoch)
 
 		// Now save a signed epoch that's lower than the latest validator set
 		err = repo.SaveLatestSignedValidatorSetEpoch(t.Context(), vs1) // epoch 1
@@ -360,12 +361,12 @@ func TestRepository_LatestSignedValidatorSetEpoch(t *testing.T) {
 		// Latest validator set epoch should remain 5
 		latestEpoch, err = repo.GetLatestValidatorSetEpoch(t.Context())
 		require.NoError(t, err)
-		assert.Equal(t, entity.Epoch(5), latestEpoch)
+		assert.Equal(t, symbiotic.Epoch(5), latestEpoch)
 
 		// But latest signed epoch should now be 1
 		latestSignedEpoch, err = repo.GetLatestSignedValidatorSetEpoch(t.Context())
 		require.NoError(t, err)
-		assert.Equal(t, entity.Epoch(1), latestSignedEpoch)
+		assert.Equal(t, symbiotic.Epoch(1), latestSignedEpoch)
 	})
 }
 
@@ -394,8 +395,8 @@ func TestRepository_LatestSignedValidatorSetEpoch_Ordering(t *testing.T) {
 	repo := setupTestRepository(t)
 
 	// Create validator sets with different epochs
-	epochs := []entity.Epoch{10, 1, 15, 5, 8, 3}
-	validatorSets := make([]entity.ValidatorSet, len(epochs))
+	epochs := []symbiotic.Epoch{10, 1, 15, 5, 8, 3}
+	validatorSets := make([]symbiotic.ValidatorSet, len(epochs))
 
 	for i, epoch := range epochs {
 		validatorSets[i] = randomValidatorSet(t, epoch)
@@ -422,12 +423,12 @@ func TestRepository_LatestSignedValidatorSetEpoch_Ordering(t *testing.T) {
 		// Final latest signed epoch should be from the last saved (index 3 = epoch 5)
 		latestSignedEpoch, err := repo.GetLatestSignedValidatorSetEpoch(t.Context())
 		require.NoError(t, err)
-		assert.Equal(t, entity.Epoch(5), latestSignedEpoch)
+		assert.Equal(t, symbiotic.Epoch(5), latestSignedEpoch)
 
 		// But latest validator set epoch should be the highest saved epoch (15)
 		latestEpoch, err := repo.GetLatestValidatorSetEpoch(t.Context())
 		require.NoError(t, err)
-		assert.Equal(t, entity.Epoch(15), latestEpoch)
+		assert.Equal(t, symbiotic.Epoch(15), latestEpoch)
 	})
 }
 
@@ -439,29 +440,29 @@ func TestRepository_ValidatorSet_ActiveIndex(t *testing.T) {
 
 	// Modify validators to have specific active/inactive states and addresses
 	// Note: validators must be sorted by operator address ascending
-	vs.Validators = []entity.Validator{
+	vs.Validators = []symbiotic.Validator{
 		{
 			Operator:    common.HexToAddress("0x0000000000000000000000000000000000000000"),
-			VotingPower: entity.ToVotingPower(big.NewInt(300)),
+			VotingPower: symbiotic.ToVotingPower(big.NewInt(300)),
 			IsActive:    true, // Should get active index 0 (first when sorted by address)
-			Keys: []entity.ValidatorKey{
-				{Tag: entity.KeyTag(1), Payload: []byte("active_key_0")},
+			Keys: []symbiotic.ValidatorKey{
+				{Tag: symbiotic.KeyTag(1), Payload: []byte("active_key_0")},
 			},
 		},
 		{
 			Operator:    common.HexToAddress("0x2222222222222222222222222222222222222222"),
-			VotingPower: entity.ToVotingPower(big.NewInt(200)),
+			VotingPower: symbiotic.ToVotingPower(big.NewInt(200)),
 			IsActive:    false, // Should get active index 0 (inactive) - positioned between two active validators
-			Keys: []entity.ValidatorKey{
-				{Tag: entity.KeyTag(1), Payload: []byte("inactive_key")},
+			Keys: []symbiotic.ValidatorKey{
+				{Tag: symbiotic.KeyTag(1), Payload: []byte("inactive_key")},
 			},
 		},
 		{
 			Operator:    common.HexToAddress("0x3333333333333333333333333333333333333333"),
-			VotingPower: entity.ToVotingPower(big.NewInt(100)),
+			VotingPower: symbiotic.ToVotingPower(big.NewInt(100)),
 			IsActive:    true, // Should get active index 1 (second active validator, despite inactive validator in between)
-			Keys: []entity.ValidatorKey{
-				{Tag: entity.KeyTag(1), Payload: []byte("active_key_2")},
+			Keys: []symbiotic.ValidatorKey{
+				{Tag: symbiotic.KeyTag(1), Payload: []byte("active_key_2")},
 			},
 		},
 	}
@@ -472,7 +473,7 @@ func TestRepository_ValidatorSet_ActiveIndex(t *testing.T) {
 
 	t.Run("active validator gets correct index", func(t *testing.T) {
 		// Test first active validator (0x0000... should be index 0)
-		validator, activeIndex, err := repo.GetValidatorByKey(t.Context(), vs.Epoch, entity.KeyTag(1), []byte("active_key_0"))
+		validator, activeIndex, err := repo.GetValidatorByKey(t.Context(), vs.Epoch, symbiotic.KeyTag(1), []byte("active_key_0"))
 		require.NoError(t, err)
 
 		assert.Equal(t, common.HexToAddress("0x0000000000000000000000000000000000000000"), validator.Operator)
@@ -482,7 +483,7 @@ func TestRepository_ValidatorSet_ActiveIndex(t *testing.T) {
 
 	t.Run("second active validator gets correct index despite inactive validator in between", func(t *testing.T) {
 		// Test second active validator (0x3333... should be index 1, even though inactive 0x2222... is between them)
-		validator, activeIndex, err := repo.GetValidatorByKey(t.Context(), vs.Epoch, entity.KeyTag(1), []byte("active_key_2"))
+		validator, activeIndex, err := repo.GetValidatorByKey(t.Context(), vs.Epoch, symbiotic.KeyTag(1), []byte("active_key_2"))
 		require.NoError(t, err)
 
 		assert.Equal(t, common.HexToAddress("0x3333333333333333333333333333333333333333"), validator.Operator)
@@ -492,7 +493,7 @@ func TestRepository_ValidatorSet_ActiveIndex(t *testing.T) {
 
 	t.Run("inactive validator gets index 0", func(t *testing.T) {
 		// Test inactive validator
-		validator, activeIndex, err := repo.GetValidatorByKey(t.Context(), vs.Epoch, entity.KeyTag(1), []byte("inactive_key"))
+		validator, activeIndex, err := repo.GetValidatorByKey(t.Context(), vs.Epoch, symbiotic.KeyTag(1), []byte("inactive_key"))
 		require.NoError(t, err)
 
 		assert.Equal(t, common.HexToAddress("0x2222222222222222222222222222222222222222"), validator.Operator)
@@ -512,7 +513,7 @@ func TestRepository_FirstUncommittedValidatorSetEpoch(t *testing.T) {
 		// Get first uncommitted epoch
 		epoch, err := repo.GetFirstUncommittedValidatorSetEpoch(t.Context())
 		require.NoError(t, err)
-		assert.Equal(t, entity.Epoch(42), epoch)
+		assert.Equal(t, symbiotic.Epoch(42), epoch)
 
 		// Update to a different epoch
 		err = repo.SaveFirstUncommittedValidatorSetEpoch(t.Context(), 100)
@@ -521,7 +522,7 @@ func TestRepository_FirstUncommittedValidatorSetEpoch(t *testing.T) {
 		// Verify it was updated
 		epoch, err = repo.GetFirstUncommittedValidatorSetEpoch(t.Context())
 		require.NoError(t, err)
-		assert.Equal(t, entity.Epoch(100), epoch)
+		assert.Equal(t, symbiotic.Epoch(100), epoch)
 	})
 }
 
@@ -532,7 +533,7 @@ func TestRepository_FirstUncommittedValidatorSetEpoch_EmptyRepository(t *testing
 		// Should return 0 and no error when not set (based on implementation)
 		epoch, err := repo.GetFirstUncommittedValidatorSetEpoch(t.Context())
 		require.NoError(t, err)
-		assert.Equal(t, entity.Epoch(0), epoch)
+		assert.Equal(t, symbiotic.Epoch(0), epoch)
 	})
 }
 
@@ -547,35 +548,35 @@ func setupTestRepository(t *testing.T) *Repository {
 	return repo
 }
 
-func randomValidatorSet(t *testing.T, epoch entity.Epoch) entity.ValidatorSet {
+func randomValidatorSet(t *testing.T, epoch symbiotic.Epoch) symbiotic.ValidatorSet {
 	t.Helper()
-	return entity.ValidatorSet{
+	return symbiotic.ValidatorSet{
 		Version:          1,
-		RequiredKeyTag:   entity.KeyTag(15),
+		RequiredKeyTag:   symbiotic.KeyTag(15),
 		Epoch:            epoch,
 		CaptureTimestamp: 1234567890,
-		QuorumThreshold:  entity.ToVotingPower(big.NewInt(1000)),
-		Validators: []entity.Validator{
+		QuorumThreshold:  symbiotic.ToVotingPower(big.NewInt(1000)),
+		Validators: []symbiotic.Validator{
 			{
 				Operator:    common.BytesToAddress(randomBytes(t, 20)),
-				VotingPower: entity.ToVotingPower(big.NewInt(500)),
+				VotingPower: symbiotic.ToVotingPower(big.NewInt(500)),
 				IsActive:    true,
-				Keys: []entity.ValidatorKey{
+				Keys: []symbiotic.ValidatorKey{
 					{
-						Tag:     entity.KeyTag(15),
+						Tag:     symbiotic.KeyTag(15),
 						Payload: randomBytes(t, 32),
 					},
 				},
-				Vaults: []entity.ValidatorVault{
+				Vaults: []symbiotic.ValidatorVault{
 					{
 						ChainID:     1,
 						Vault:       common.BytesToAddress(randomBytes(t, 20)),
-						VotingPower: entity.ToVotingPower(big.NewInt(500)),
+						VotingPower: symbiotic.ToVotingPower(big.NewInt(500)),
 					},
 				},
 			},
 		},
-		Status:            entity.HeaderCommitted,
+		Status:            symbiotic.HeaderCommitted,
 		AggregatorIndices: []uint32{},
 		CommitterIndices:  []uint32{},
 	}

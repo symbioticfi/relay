@@ -9,13 +9,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/symbioticfi/relay/core/entity"
-	"github.com/symbioticfi/relay/core/usecase/crypto"
-	entity_processor "github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor"
-	"github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor/mocks"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
 	intEntity "github.com/symbioticfi/relay/internal/entity"
+	entity_processor "github.com/symbioticfi/relay/internal/usecase/entity-processor"
+	"github.com/symbioticfi/relay/internal/usecase/entity-processor/mocks"
 	"github.com/symbioticfi/relay/pkg/signals"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 func TestHandleSignatureReceivedMessage_HappyPath(t *testing.T) {
@@ -82,7 +82,7 @@ func newTestSetup(t *testing.T) *testSetup {
 	mockAggProofSignal.EXPECT().Emit(gomock.Any()).Return(nil).AnyTimes()
 
 	// Create mock signature processed signal for entity processor
-	signatureProcessedSignal := signals.New[entity.SignatureExtended](signals.DefaultConfig(), "test", nil)
+	signatureProcessedSignal := signals.New[symbiotic.SignatureExtended](signals.DefaultConfig(), "test", nil)
 
 	processor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo:                     repo,
@@ -117,25 +117,25 @@ func newPrivateKey(t *testing.T) crypto.PrivateKey {
 	_, err := rand.Read(privateKeyBytes)
 	require.NoError(t, err)
 
-	privateKey, err := crypto.NewPrivateKey(entity.KeyTypeBlsBn254, privateKeyBytes)
+	privateKey, err := crypto.NewPrivateKey(symbiotic.KeyTypeBlsBn254, privateKeyBytes)
 	require.NoError(t, err)
 	return privateKey
 }
 
-func (setup *testSetup) createTestValidatorSetWithKey(t *testing.T, privateKey crypto.PrivateKey) entity.ValidatorSet {
+func (setup *testSetup) createTestValidatorSetWithKey(t *testing.T, privateKey crypto.PrivateKey) symbiotic.ValidatorSet {
 	t.Helper()
-	vs := entity.ValidatorSet{
+	vs := symbiotic.ValidatorSet{
 		Version:         1,
-		RequiredKeyTag:  entity.KeyTag(15),
+		RequiredKeyTag:  symbiotic.KeyTag(15),
 		Epoch:           1,
-		QuorumThreshold: entity.ToVotingPower(big.NewInt(670)),
-		Validators: []entity.Validator{{
+		QuorumThreshold: symbiotic.ToVotingPower(big.NewInt(670)),
+		Validators: []symbiotic.Validator{{
 			Operator:    common.HexToAddress("0x123"),
-			VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+			VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
 			IsActive:    true,
-			Keys: []entity.ValidatorKey{
+			Keys: []symbiotic.ValidatorKey{
 				{
-					Tag:     entity.KeyTag(15),
+					Tag:     symbiotic.KeyTag(15),
 					Payload: privateKey.PublicKey().OnChain(),
 				},
 			},
@@ -149,14 +149,14 @@ func (setup *testSetup) createTestValidatorSetWithKey(t *testing.T, privateKey c
 	return vs
 }
 
-func createTestP2PMessageWithSignature(privateKey crypto.PrivateKey, hash []byte, signature []byte) intEntity.P2PMessage[entity.SignatureExtended] {
-	return intEntity.P2PMessage[entity.SignatureExtended]{
+func createTestP2PMessageWithSignature(privateKey crypto.PrivateKey, hash []byte, signature []byte) intEntity.P2PMessage[symbiotic.SignatureExtended] {
+	return intEntity.P2PMessage[symbiotic.SignatureExtended]{
 		SenderInfo: intEntity.SenderInfo{
 			Sender:    "test-peer-id",
 			PublicKey: []byte("test-sender-pubkey"),
 		},
-		Message: entity.SignatureExtended{
-			KeyTag:      entity.KeyTag(15),
+		Message: symbiotic.SignatureExtended{
+			KeyTag:      symbiotic.KeyTag(15),
 			Epoch:       1,
 			MessageHash: hash,
 			PublicKey:   privateKey.PublicKey().Raw(),

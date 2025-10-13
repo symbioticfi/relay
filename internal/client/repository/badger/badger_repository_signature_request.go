@@ -11,18 +11,19 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 const (
-	keySelfSignatureRequestPendingPrefix = "self_signature_pending:"
+	keySignatureRequestPendingPrefix = "signature_pending:"
 )
 
-func keySignatureRequest(epoch entity.Epoch, requestID common.Hash) []byte {
+func keySignatureRequest(epoch symbiotic.Epoch, requestID common.Hash) []byte {
 	return []byte(fmt.Sprintf("signature_request:%d:%s", epoch, requestID.Hex()))
 }
 
-func keySignatureRequestEpochPrefix(epoch entity.Epoch) []byte {
+func keySignatureRequestEpochPrefix(epoch symbiotic.Epoch) []byte {
 	return []byte(fmt.Sprintf("signature_request:%d:", epoch))
 }
 
@@ -30,20 +31,12 @@ func keyRequestIDIndex(requestID common.Hash) []byte {
 	return []byte(fmt.Sprintf("request_id:%s", requestID.Hex()))
 }
 
-func keySignaturePending(epoch entity.Epoch, requestID common.Hash) []byte {
-	return []byte(fmt.Sprintf("signature_pending:%d:%s", epoch, requestID.Hex()))
-}
-
-func keySelfSignatureRequestPending(epoch entity.Epoch, requestID common.Hash) []byte {
-	return []byte(fmt.Sprintf("%v%d:%s", keySelfSignatureRequestPendingPrefix, epoch, requestID.Hex()))
-}
-
-func keySignatureRequestPendingEpochPrefix(epoch entity.Epoch) []byte {
-	return []byte(fmt.Sprintf("signature_pending:%d:", epoch))
+func keySignatureRequestPending(epoch symbiotic.Epoch, requestID common.Hash) []byte {
+	return []byte(fmt.Sprintf("%v%d:%s", keySignatureRequestPendingPrefix, epoch, requestID.Hex()))
 }
 
 // saveSignatureRequestToKey saves a signature request to a specific key
-func (r *Repository) saveSignatureRequestToKey(ctx context.Context, req entity.SignatureRequest, key []byte) error {
+func (r *Repository) saveSignatureRequestToKey(ctx context.Context, req symbiotic.SignatureRequest, key []byte) error {
 	requestBytes, err := signatureRequestToBytes(req)
 	if err != nil {
 		return errors.Errorf("failed to marshal signature request: %w", err)
@@ -68,7 +61,7 @@ func (r *Repository) saveSignatureRequestToKey(ctx context.Context, req entity.S
 	return nil
 }
 
-func (r *Repository) SaveSignatureRequest(ctx context.Context, requestID common.Hash, req entity.SignatureRequest) error {
+func (r *Repository) SaveSignatureRequest(ctx context.Context, requestID common.Hash, req symbiotic.SignatureRequest) error {
 	return r.doUpdateInTx(ctx, "SaveSignatureRequest", func(ctx context.Context) error {
 		if err := r.saveSignatureRequest(ctx, requestID, req); err != nil {
 			return err
@@ -83,7 +76,7 @@ func (r *Repository) SaveSignatureRequest(ctx context.Context, requestID common.
 	})
 }
 
-func (r *Repository) saveSignatureRequest(ctx context.Context, requestID common.Hash, req entity.SignatureRequest) error {
+func (r *Repository) saveSignatureRequest(ctx context.Context, requestID common.Hash, req symbiotic.SignatureRequest) error {
 	return r.doUpdateInTx(ctx, "saveSignatureRequest", func(ctx context.Context) error {
 		primaryKey := keySignatureRequest(req.RequiredEpoch, requestID)
 		requestIDIndexKey := keyRequestIDIndex(requestID)
@@ -100,10 +93,10 @@ func (r *Repository) saveSignatureRequest(ctx context.Context, requestID common.
 	})
 }
 
-func (r *Repository) saveSignaturePending(ctx context.Context, requestID common.Hash, req entity.SignatureRequest) error {
+func (r *Repository) saveSignaturePending(ctx context.Context, requestID common.Hash, req symbiotic.SignatureRequest) error {
 	return r.doUpdateInTx(ctx, "saveSignaturePending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		pendingKey := keySignaturePending(req.RequiredEpoch, requestID)
+		pendingKey := keySignatureRequestPending(req.RequiredEpoch, requestID)
 
 		_, err := txn.Get(pendingKey)
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
@@ -118,57 +111,17 @@ func (r *Repository) saveSignaturePending(ctx context.Context, requestID common.
 		if err != nil {
 			return errors.Errorf("failed to store pending signature: %w", err)
 		}
-
-		pendingKey = keySelfSignatureRequestPending(req.RequiredEpoch, requestID)
-
-		_, err = txn.Get(pendingKey)
-		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
-			return errors.Errorf("failed to check pending self signature: %w", err)
-		}
-		if err == nil {
-			return errors.Errorf("pending self signature already exists: %w", entity.ErrEntityAlreadyExist)
-		}
-
-		// Store just a marker (empty value) - we don't need the full request data here
-		err = txn.Set(pendingKey, []byte{})
-		if err != nil {
-			return errors.Errorf("failed to store pending self signature: %w", err)
-		}
 		return nil
 	})
 }
 
-func (r *Repository) RemoveSelfSignaturePending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error {
-	return r.doUpdateInTx(ctx, "RemoveSelfSignaturePending", func(ctx context.Context) error {
+func (r *Repository) RemoveSignaturePending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
+	return r.doUpdateInTx(ctx, "RemoveSignaturePending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		pendingKey := keySelfSignatureRequestPending(epoch, requestID)
+		pendingKey := keySignatureRequestPending(epoch, requestID)
 
 		// Remove from pending collection
 		if err := txn.Delete(pendingKey); err != nil {
-			return errors.Errorf("failed to remove pending self signature: %w", err)
-		}
-
-		return nil
-	})
-}
-
-func (r *Repository) RemoveSignatureRequestPending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error {
-	return r.doUpdateInTx(ctx, "RemoveSignatureRequestPending", func(ctx context.Context) error {
-		txn := getTxn(ctx)
-		pendingKey := keySignaturePending(epoch, requestID)
-
-		// Check if exists before removing
-		_, err := txn.Get(pendingKey)
-		if err != nil {
-			if errors.Is(err, badger.ErrKeyNotFound) {
-				return errors.Errorf("pending signature not found for request id %s: %w", requestID.String(), entity.ErrEntityNotFound)
-			}
-			return errors.Errorf("failed to check pending signature: %w", err)
-		}
-
-		// Remove from pending collection
-		err = txn.Delete(pendingKey)
-		if err != nil {
 			return errors.Errorf("failed to remove pending signature: %w", err)
 		}
 
@@ -176,7 +129,7 @@ func (r *Repository) RemoveSignatureRequestPending(ctx context.Context, epoch en
 	})
 }
 
-func signatureRequestToBytes(req entity.SignatureRequest) ([]byte, error) {
+func signatureRequestToBytes(req symbiotic.SignatureRequest) ([]byte, error) {
 	dto := signatureRequestDTO{
 		KeyTag:        uint8(req.KeyTag),
 		RequiredEpoch: uint64(req.RequiredEpoch),
@@ -185,21 +138,21 @@ func signatureRequestToBytes(req entity.SignatureRequest) ([]byte, error) {
 	return json.Marshal(dto)
 }
 
-func bytesToSignatureRequest(data []byte) (entity.SignatureRequest, error) {
+func bytesToSignatureRequest(data []byte) (symbiotic.SignatureRequest, error) {
 	var dto signatureRequestDTO
 	if err := json.Unmarshal(data, &dto); err != nil {
-		return entity.SignatureRequest{}, errors.Errorf("failed to unmarshal signature request: %w", err)
+		return symbiotic.SignatureRequest{}, errors.Errorf("failed to unmarshal signature request: %w", err)
 	}
 
-	return entity.SignatureRequest{
-		KeyTag:        entity.KeyTag(dto.KeyTag),
-		RequiredEpoch: entity.Epoch(dto.RequiredEpoch),
+	return symbiotic.SignatureRequest{
+		KeyTag:        symbiotic.KeyTag(dto.KeyTag),
+		RequiredEpoch: symbiotic.Epoch(dto.RequiredEpoch),
 		Message:       dto.Message,
 	}, nil
 }
 
-func (r *Repository) GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error) {
-	var req entity.SignatureRequest
+func (r *Repository) GetSignatureRequest(ctx context.Context, requestID common.Hash) (symbiotic.SignatureRequest, error) {
+	var req symbiotic.SignatureRequest
 
 	return req, r.doViewInTx(ctx, "GetSignatureRequest", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -241,13 +194,13 @@ func (r *Repository) GetSignatureRequest(ctx context.Context, requestID common.H
 // using provided prefix and key generation function
 func (r *Repository) getSignatureRequestsByEpochWithKeys(
 	ctx context.Context,
-	epoch entity.Epoch,
+	epoch symbiotic.Epoch,
 	limit int,
 	lastHash common.Hash,
 	prefix []byte,
-	keyFunc func(entity.Epoch, common.Hash) []byte,
-) ([]entity.SignatureRequest, error) {
-	var requests []entity.SignatureRequest
+	keyFunc func(symbiotic.Epoch, common.Hash) []byte,
+) ([]symbiotic.SignatureRequest, error) {
+	var requests []symbiotic.SignatureRequest
 
 	return requests, r.doViewInTx(ctx, "getSignatureRequestsByEpochWithKeys", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -295,7 +248,7 @@ func (r *Repository) getSignatureRequestsByEpochWithKeys(
 	})
 }
 
-func (r *Repository) GetSignatureRequestsByEpoch(ctx context.Context, epoch entity.Epoch, limit int, lastHash common.Hash) ([]entity.SignatureRequest, error) {
+func (r *Repository) GetSignatureRequestsByEpoch(ctx context.Context, epoch symbiotic.Epoch, limit int, lastHash common.Hash) ([]symbiotic.SignatureRequest, error) {
 	return r.getSignatureRequestsByEpochWithKeys(
 		ctx,
 		epoch,
@@ -306,15 +259,15 @@ func (r *Repository) GetSignatureRequestsByEpoch(ctx context.Context, epoch enti
 	)
 }
 
-func (r *Repository) GetSelfSignaturePending(ctx context.Context, limit int) ([]common.Hash, error) {
+func (r *Repository) GetSignaturePending(ctx context.Context, limit int) ([]common.Hash, error) {
 	var requests []common.Hash
 
-	return requests, r.doViewInTx(ctx, "GetSelfSignaturePending", func(ctx context.Context) error {
+	return requests, r.doViewInTx(ctx, "GetSignaturePending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 
 		// Iterate through pending signature markers
 		opts := badger.DefaultIteratorOptions
-		prefix := []byte(keySelfSignatureRequestPendingPrefix)
+		prefix := []byte(keySignatureRequestPendingPrefix)
 		opts.Prefix = prefix
 		opts.PrefetchValues = false
 		it := txn.NewIterator(opts)
@@ -336,92 +289,13 @@ func (r *Repository) GetSelfSignaturePending(ctx context.Context, limit int) ([]
 			// Find the hash part after the second colon
 			parts := strings.Split(key, ":")
 			if len(parts) != 3 {
-				return errors.Errorf("invalid pending self signature key format: %s", key)
-			}
-
-			requestIDStr := parts[2]
-			requestID := common.HexToHash(requestIDStr)
-
-			requests = append(requests, requestID)
-			count++
-		}
-
-		return nil
-	})
-}
-
-func (r *Repository) GetSignaturePendingByEpoch(ctx context.Context, epoch entity.Epoch, limit int, lastHash common.Hash) ([]entity.SignatureRequestWithID, error) {
-	var requests []entity.SignatureRequestWithID
-
-	return requests, r.doViewInTx(ctx, "GetSignaturePendingByEpoch", func(ctx context.Context) error {
-		txn := getTxn(ctx)
-
-		// Iterate through pending signature markers
-		prefix := keySignatureRequestPendingEpochPrefix(epoch)
-		opts := badger.DefaultIteratorOptions
-		opts.Prefix = prefix
-		opts.PrefetchValues = false // We don't need the values, just the keys
-		it := txn.NewIterator(opts)
-		defer it.Close()
-
-		seekKey := prefix
-		if lastHash != (common.Hash{}) {
-			// Subsequent pages: seek to the record after lastHash
-			seekKey = keySignaturePending(epoch, lastHash)
-		}
-
-		count := 0
-		it.Seek(seekKey)
-		// If we're seeking from a specific hash and positioned exactly on that key, skip it (already returned in previous page)
-		if lastHash != (common.Hash{}) && it.ValidForPrefix(prefix) && bytes.Equal(it.Item().Key(), seekKey) {
-			it.Next()
-		}
-
-		for ; it.ValidForPrefix(prefix); it.Next() {
-			// Stop if we've reached the limit
-			if limit > 0 && count >= limit {
-				break
-			}
-
-			// Extract request id from the pending key: "signature_pending:epoch:hash"
-			item := it.Item()
-			key := string(item.Key())
-
-			// Find the hash part after the second colon
-			parts := strings.Split(key, ":")
-			if len(parts) != 3 {
 				return errors.Errorf("invalid pending signature key format: %s", key)
 			}
 
 			requestIDStr := parts[2]
 			requestID := common.HexToHash(requestIDStr)
 
-			// Get the actual signature request
-			sigReqKey := keySignatureRequest(epoch, requestID)
-			sigReqItem, err := txn.Get(sigReqKey)
-			if err != nil {
-				if errors.Is(err, badger.ErrKeyNotFound) {
-					// This shouldn't happen - pending marker exists but signature request doesn't
-					// Skip this entry and continue
-					continue
-				}
-				return errors.Errorf("failed to get signature request for request id %s: %w", requestIDStr, err)
-			}
-
-			value, err := sigReqItem.ValueCopy(nil)
-			if err != nil {
-				return errors.Errorf("failed to copy signature request value: %w", err)
-			}
-
-			req, err := bytesToSignatureRequest(value)
-			if err != nil {
-				return errors.Errorf("failed to unmarshal signature request: %w", err)
-			}
-
-			requests = append(requests, entity.SignatureRequestWithID{
-				SignatureRequest: req,
-				RequestID:        requestID,
-			})
+			requests = append(requests, requestID)
 			count++
 		}
 

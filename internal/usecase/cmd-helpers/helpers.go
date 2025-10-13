@@ -2,14 +2,13 @@ package cmdhelpers
 
 import (
 	"fmt"
-	"log/slog"
 	"math/big"
 	"sort"
 	"strconv"
 	"strings"
 	"syscall"
 
-	"github.com/symbioticfi/relay/core/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 
 	"github.com/go-errors/errors"
 	"github.com/pterm/pterm"
@@ -66,7 +65,7 @@ func (s *SecretKeyMapFlag) Type() string {
 }
 
 func GetPassword() (string, error) {
-	slog.Info("Enter password: ")
+	fmt.Printf("Enter password: \n")
 	passwordBytes, err := term.ReadPassword(syscall.Stdin)
 	if err != nil {
 		return "", err
@@ -75,7 +74,7 @@ func GetPassword() (string, error) {
 	return string(passwordBytes), nil
 }
 
-func PrintTreeValidator(leveledList pterm.LeveledList, validator entity.Validator, totalVotingPower *big.Int) pterm.LeveledList {
+func PrintTreeValidator(leveledList pterm.LeveledList, validator symbiotic.Validator, totalVotingPower *big.Int) pterm.LeveledList {
 	leveledList = append(leveledList, pterm.LeveledListItem{
 		Level: 0,
 		Text:  fmt.Sprintf("Validator: %s", validator.Operator.String()),

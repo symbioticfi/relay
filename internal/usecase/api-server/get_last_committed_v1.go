@@ -4,14 +4,13 @@ import (
 	"context"
 	"time"
 
+	"github.com/go-errors/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/go-errors/errors"
-	"github.com/symbioticfi/relay/core/entity"
-
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // GetLastCommitted handles the gRPC GetLastCommitted request
@@ -20,12 +19,12 @@ func (h *grpcHandler) GetLastCommitted(ctx context.Context, req *apiv1.GetLastCo
 		return nil, status.Error(codes.InvalidArgument, "settlement chain ID cannot be 0")
 	}
 
-	cfg, err := h.cfg.EvmClient.GetConfig(ctx, entity.Timestamp(uint64(time.Now().Unix())))
+	cfg, err := h.cfg.EvmClient.GetConfig(ctx, symbiotic.Timestamp(uint64(time.Now().Unix())))
 	if err != nil {
 		return nil, errors.Errorf("failed to get config: %w", err)
 	}
 
-	var settlementChain *entity.CrossChainAddress
+	var settlementChain *symbiotic.CrossChainAddress
 
 	for _, settlement := range cfg.Settlements {
 		if settlement.ChainId == req.GetSettlementChainId() {

@@ -6,14 +6,15 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func TestBadgerRepository_SaveAggregationProofPending(t *testing.T) {
 	t.Parallel()
 	repo := setupTestRepository(t)
 
-	epoch := entity.Epoch(100)
+	epoch := symbiotic.Epoch(100)
 	requestID := common.HexToHash("0x123456789abcdef")
 
 	t.Run("save new pending aggregation proof", func(t *testing.T) {
@@ -27,7 +28,7 @@ func TestBadgerRepository_SaveAggregationProofPending(t *testing.T) {
 	})
 
 	t.Run("save different epoch should succeed", func(t *testing.T) {
-		differentEpoch := entity.Epoch(101)
+		differentEpoch := symbiotic.Epoch(101)
 		err := repo.saveAggregationProofPending(t.Context(), requestID, differentEpoch)
 		require.NoError(t, err)
 	})
@@ -43,7 +44,7 @@ func TestBadgerRepository_RemoveAggregationProofPending(t *testing.T) {
 	t.Parallel()
 	repo := setupTestRepository(t)
 
-	epoch := entity.Epoch(200)
+	epoch := symbiotic.Epoch(200)
 	requestID := common.HexToHash("0x987654321fedcba")
 
 	t.Run("remove non-existent pending aggregation proof should fail", func(t *testing.T) {
@@ -66,8 +67,8 @@ func TestBadgerRepository_RemoveAggregationProofPending(t *testing.T) {
 	})
 
 	t.Run("remove only affects specific epoch and hash", func(t *testing.T) {
-		epoch1 := entity.Epoch(300)
-		epoch2 := entity.Epoch(301)
+		epoch1 := symbiotic.Epoch(300)
+		epoch2 := symbiotic.Epoch(301)
 		hash1 := common.HexToHash("0x111111")
 		hash2 := common.HexToHash("0x222222")
 
@@ -99,7 +100,7 @@ func TestBadgerRepository_GetSignatureRequestsWithoutAggregationProof(t *testing
 	t.Parallel()
 	repo := setupTestRepository(t)
 
-	epoch := entity.Epoch(400)
+	epoch := symbiotic.Epoch(400)
 
 	t.Run("empty epoch returns empty list", func(t *testing.T) {
 		requests, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), epoch, 10, common.Hash{})
@@ -108,10 +109,10 @@ func TestBadgerRepository_GetSignatureRequestsWithoutAggregationProof(t *testing
 	})
 
 	t.Run("pagination works correctly", func(t *testing.T) {
-		testEpoch := entity.Epoch(500)
+		testEpoch := symbiotic.Epoch(500)
 
 		// Create multiple signature requests
-		var requests []entity.SignatureExtended
+		var requests []symbiotic.SignatureExtended
 		for i := 0; i < 5; i++ {
 			sigReq := randomSignatureRequestForEpoch(t, testEpoch)
 			req := randomSignatureExtendedForEpoch(t, testEpoch)
@@ -158,7 +159,7 @@ func TestBadgerRepository_GetSignatureRequestsWithoutAggregationProof(t *testing
 	})
 
 	t.Run("skips entries with missing signature requests", func(t *testing.T) {
-		testEpoch := entity.Epoch(600)
+		testEpoch := symbiotic.Epoch(600)
 
 		// Create one valid signature request
 		sigReq := randomSignatureRequestForEpoch(t, testEpoch)
@@ -184,8 +185,8 @@ func TestBadgerRepository_GetSignatureRequestsWithoutAggregationProof(t *testing
 	})
 
 	t.Run("handles multiple epochs correctly", func(t *testing.T) {
-		epoch1 := entity.Epoch(700)
-		epoch2 := entity.Epoch(701)
+		epoch1 := symbiotic.Epoch(700)
+		epoch2 := symbiotic.Epoch(701)
 
 		sigReq := randomSignatureRequestForEpoch(t, epoch1)
 		req := randomSignatureExtendedForEpoch(t, epoch1)
@@ -221,7 +222,7 @@ func TestBadgerRepository_AggregationProofPendingIntegration(t *testing.T) {
 	t.Parallel()
 	repo := setupTestRepository(t)
 
-	epoch := entity.Epoch(800)
+	epoch := symbiotic.Epoch(800)
 	sigReq := randomSignatureRequestForEpoch(t, epoch)
 	req := randomSignatureExtendedForEpoch(t, epoch)
 	// Save signature request

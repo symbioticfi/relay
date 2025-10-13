@@ -8,13 +8,14 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // GetValidatorSetMetadata handles the gRPC GetValidatorSetMetadata request
 func (h *grpcHandler) GetValidatorSetMetadata(ctx context.Context, req *apiv1.GetValidatorSetMetadataRequest) (*apiv1.GetValidatorSetMetadataResponse, error) {
-	var epochRequested entity.Epoch
+	var epochRequested symbiotic.Epoch
 	if req.Epoch == nil {
 		latestEpoch, err := h.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 		if err != nil {
@@ -22,7 +23,7 @@ func (h *grpcHandler) GetValidatorSetMetadata(ctx context.Context, req *apiv1.Ge
 		}
 		epochRequested = latestEpoch
 	} else {
-		epochRequested = entity.Epoch(req.GetEpoch())
+		epochRequested = symbiotic.Epoch(req.GetEpoch())
 	}
 
 	metadata, err := h.cfg.Repo.GetValidatorSetMetadata(ctx, epochRequested)
@@ -35,7 +36,7 @@ func (h *grpcHandler) GetValidatorSetMetadata(ctx context.Context, req *apiv1.Ge
 
 	return &apiv1.GetValidatorSetMetadataResponse{
 		RequestId: metadata.RequestID.Hex(),
-		ExtraData: lo.Map(metadata.ExtraData, func(ed entity.ExtraData, _ int) *apiv1.ExtraData {
+		ExtraData: lo.Map(metadata.ExtraData, func(ed symbiotic.ExtraData, _ int) *apiv1.ExtraData {
 			return &apiv1.ExtraData{
 				Key:   ed.Key.Bytes(),
 				Value: ed.Value.Bytes(),

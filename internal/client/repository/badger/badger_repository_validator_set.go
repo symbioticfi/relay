@@ -14,7 +14,8 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 const (
@@ -23,27 +24,27 @@ const (
 	firstUncommittedValidatorSetEpoch = "first_uncommitted_validator_set_epoch"
 )
 
-func keyValidatorSetHeader(epoch entity.Epoch) []byte {
+func keyValidatorSetHeader(epoch symbiotic.Epoch) []byte {
 	return []byte(fmt.Sprintf("validator_set_header:%d", epoch))
 }
 
-func keyValidatorByOperator(epoch entity.Epoch, operator common.Address) []byte {
+func keyValidatorByOperator(epoch symbiotic.Epoch, operator common.Address) []byte {
 	return []byte(fmt.Sprintf("validator:%d:%s", epoch, operator.Hex()))
 }
 
-func keyValidatorKeyLookup(epoch entity.Epoch, keyTag entity.KeyTag, publicKeyHash common.Hash) []byte {
+func keyValidatorKeyLookup(epoch symbiotic.Epoch, keyTag symbiotic.KeyTag, publicKeyHash common.Hash) []byte {
 	return []byte(fmt.Sprintf("validator_key_lookup:%d:%d:%s", epoch, keyTag, publicKeyHash.Hex()))
 }
 
-func keyValidatorSetStatus(epoch entity.Epoch) []byte {
+func keyValidatorSetStatus(epoch symbiotic.Epoch) []byte {
 	return []byte(fmt.Sprintf("validator_set_status:%d", epoch))
 }
 
-func keyValidatorSetMetadata(epoch entity.Epoch) []byte {
+func keyValidatorSetMetadata(epoch symbiotic.Epoch) []byte {
 	return []byte(fmt.Sprintf("validator_set_metadata:%d", epoch))
 }
 
-func (r *Repository) SaveValidatorSetMetadata(ctx context.Context, data entity.ValidatorSetMetadata) error {
+func (r *Repository) SaveValidatorSetMetadata(ctx context.Context, data symbiotic.ValidatorSetMetadata) error {
 	metadataBytes, err := validatorSetMetadataToBytes(data)
 	if err != nil {
 		return errors.Errorf("failed to marshal validator set metadata: %w", err)
@@ -67,8 +68,8 @@ func (r *Repository) SaveValidatorSetMetadata(ctx context.Context, data entity.V
 	}, &r.valsetMutexMap, data.Epoch)
 }
 
-func (r *Repository) GetValidatorSetMetadata(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSetMetadata, error) {
-	var metadata entity.ValidatorSetMetadata
+func (r *Repository) GetValidatorSetMetadata(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSetMetadata, error) {
+	var metadata symbiotic.ValidatorSetMetadata
 
 	return metadata, r.doViewInTx(ctx, "GetValidatorSetMetadata", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -94,7 +95,7 @@ func (r *Repository) GetValidatorSetMetadata(ctx context.Context, epoch entity.E
 	})
 }
 
-func (r *Repository) SaveValidatorSet(ctx context.Context, valset entity.ValidatorSet) error {
+func (r *Repository) SaveValidatorSet(ctx context.Context, valset symbiotic.ValidatorSet) error {
 	if err := valset.Validators.CheckIsSortedByOperatorAddressAsc(); err != nil {
 		return errors.Errorf("validators must be sorted by operator address ascending: %w", err)
 	}
@@ -202,7 +203,7 @@ func (r *Repository) SaveValidatorSet(ctx context.Context, valset entity.Validat
 	}, &r.valsetMutexMap, valset.Epoch)
 }
 
-func (r *Repository) SaveLatestSignedValidatorSetEpoch(ctx context.Context, valset entity.ValidatorSet) error {
+func (r *Repository) SaveLatestSignedValidatorSetEpoch(ctx context.Context, valset symbiotic.ValidatorSet) error {
 	return r.doUpdateInTxWithLock(ctx, "SaveLatestSignedValidatorSetEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		epochBytes := make([]byte, 8)
@@ -215,7 +216,7 @@ func (r *Repository) SaveLatestSignedValidatorSetEpoch(ctx context.Context, vals
 	}, &r.valsetMutexMap, valset.Epoch)
 }
 
-func (r *Repository) SaveFirstUncommittedValidatorSetEpoch(ctx context.Context, epoch entity.Epoch) error {
+func (r *Repository) SaveFirstUncommittedValidatorSetEpoch(ctx context.Context, epoch symbiotic.Epoch) error {
 	return r.doUpdateInTxWithLock(ctx, "SaveFirstUncommittedValidatorSetEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		epochBytes := make([]byte, 8)
@@ -228,7 +229,7 @@ func (r *Repository) SaveFirstUncommittedValidatorSetEpoch(ctx context.Context, 
 	}, &r.valsetMutexMap, epoch)
 }
 
-func (r *Repository) UpdateValidatorSetStatus(ctx context.Context, valset entity.ValidatorSet) error {
+func (r *Repository) UpdateValidatorSetStatus(ctx context.Context, valset symbiotic.ValidatorSet) error {
 	return r.doUpdateInTxWithLock(ctx, "UpdateValidatorSetStatus", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		statusKey := keyValidatorSetStatus(valset.Epoch)
@@ -246,8 +247,8 @@ func (r *Repository) UpdateValidatorSetStatus(ctx context.Context, valset entity
 	}, &r.valsetMutexMap, valset.Epoch)
 }
 
-func (r *Repository) GetValidatorSetHeaderByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSetHeader, error) {
-	var header entity.ValidatorSetHeader
+func (r *Repository) GetValidatorSetHeaderByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSetHeader, error) {
+	var header symbiotic.ValidatorSetHeader
 
 	return header, r.doViewInTx(ctx, "GetValidatorSetHeaderByEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -273,12 +274,12 @@ func (r *Repository) GetValidatorSetHeaderByEpoch(ctx context.Context, epoch ent
 	})
 }
 
-func (r *Repository) getAllValidatorsByEpoch(txn *badger.Txn, epoch entity.Epoch) (entity.Validators, error) {
+func (r *Repository) getAllValidatorsByEpoch(txn *badger.Txn, epoch symbiotic.Epoch) (symbiotic.Validators, error) {
 	prefix := []byte(fmt.Sprintf("validator:%d:", epoch))
 	it := txn.NewIterator(badger.DefaultIteratorOptions)
 	defer it.Close()
 
-	var validators entity.Validators
+	var validators symbiotic.Validators
 	for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
 		item := it.Item()
 		value, err := item.ValueCopy(nil)
@@ -299,8 +300,8 @@ func (r *Repository) getAllValidatorsByEpoch(txn *badger.Txn, epoch entity.Epoch
 	return validators, nil
 }
 
-func (r *Repository) GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error) {
-	var vs entity.ValidatorSet
+func (r *Repository) GetValidatorSetByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error) {
+	var vs symbiotic.ValidatorSet
 
 	return vs, r.doViewInTx(ctx, "GetValidatorSetByEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -340,7 +341,7 @@ func (r *Repository) GetValidatorSetByEpoch(ctx context.Context, epoch entity.Ep
 			return errors.New("failed to get validator set status value: invalid length")
 		}
 
-		status := entity.ValidatorSetStatus(statusValue[0])
+		status := symbiotic.ValidatorSetStatus(statusValue[0])
 
 		// Get all validators for this epoch
 		validators, err := r.getAllValidatorsByEpoch(txn, epoch)
@@ -355,7 +356,7 @@ func (r *Repository) GetValidatorSetByEpoch(ctx context.Context, epoch entity.Ep
 		}
 
 		// Build the validator set from header + validators
-		vs = entity.ValidatorSet{
+		vs = symbiotic.ValidatorSet{
 			Version:           header.Version,
 			RequiredKeyTag:    header.RequiredKeyTag,
 			Epoch:             header.Epoch,
@@ -371,8 +372,8 @@ func (r *Repository) GetValidatorSetByEpoch(ctx context.Context, epoch entity.Ep
 	})
 }
 
-func (r *Repository) GetLatestValidatorSetHeader(ctx context.Context) (entity.ValidatorSetHeader, error) {
-	var header entity.ValidatorSetHeader
+func (r *Repository) GetLatestValidatorSetHeader(ctx context.Context) (symbiotic.ValidatorSetHeader, error) {
+	var header symbiotic.ValidatorSetHeader
 
 	return header, r.doViewInTx(ctx, "GetLatestValidatorSetHeader", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -390,7 +391,7 @@ func (r *Repository) GetLatestValidatorSetHeader(ctx context.Context) (entity.Va
 			return errors.Errorf("failed to copy latest validator set epoch value: %w", err)
 		}
 
-		latestEpoch := entity.Epoch(binary.BigEndian.Uint64(value))
+		latestEpoch := symbiotic.Epoch(binary.BigEndian.Uint64(value))
 
 		// Get the validator set header for that epoch in the same transaction
 		headerItem, err := txn.Get(keyValidatorSetHeader(latestEpoch))
@@ -415,8 +416,8 @@ func (r *Repository) GetLatestValidatorSetHeader(ctx context.Context) (entity.Va
 	})
 }
 
-func (r *Repository) GetLatestValidatorSetEpoch(ctx context.Context) (entity.Epoch, error) {
-	var epoch entity.Epoch
+func (r *Repository) GetLatestValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error) {
+	var epoch symbiotic.Epoch
 
 	return epoch, r.doViewInTx(ctx, "GetLatestValidatorSetEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -434,16 +435,16 @@ func (r *Repository) GetLatestValidatorSetEpoch(ctx context.Context) (entity.Epo
 			return errors.Errorf("failed to copy latest validator set epoch value: %w", err)
 		}
 
-		epoch = entity.Epoch(binary.BigEndian.Uint64(value))
+		epoch = symbiotic.Epoch(binary.BigEndian.Uint64(value))
 		return nil
 	})
 }
 
-func keyActiveValidatorCount(epoch entity.Epoch) []byte {
+func keyActiveValidatorCount(epoch symbiotic.Epoch) []byte {
 	return []byte(fmt.Sprintf("active_validator_count:%d", epoch))
 }
 
-func (r *Repository) GetActiveValidatorCountByEpoch(ctx context.Context, epoch entity.Epoch) (uint32, error) {
+func (r *Repository) GetActiveValidatorCountByEpoch(ctx context.Context, epoch symbiotic.Epoch) (uint32, error) {
 	var count uint32
 
 	return count, r.doViewInTx(ctx, "GetActiveValidatorCountByEpoch", func(ctx context.Context) error {
@@ -467,8 +468,8 @@ func (r *Repository) GetActiveValidatorCountByEpoch(ctx context.Context, epoch e
 	})
 }
 
-func (r *Repository) GetLatestSignedValidatorSetEpoch(ctx context.Context) (entity.Epoch, error) {
-	var epoch entity.Epoch
+func (r *Repository) GetLatestSignedValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error) {
+	var epoch symbiotic.Epoch
 
 	return epoch, r.doViewInTx(ctx, "GetLatestSignedValidatorSetEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -485,13 +486,13 @@ func (r *Repository) GetLatestSignedValidatorSetEpoch(ctx context.Context) (enti
 			return errors.Errorf("failed to copy latest validator set epoch value: %w", err)
 		}
 
-		epoch = entity.Epoch(binary.BigEndian.Uint64(value))
+		epoch = symbiotic.Epoch(binary.BigEndian.Uint64(value))
 		return nil
 	})
 }
 
-func (r *Repository) GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (entity.Epoch, error) {
-	var epoch entity.Epoch
+func (r *Repository) GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error) {
+	var epoch symbiotic.Epoch
 
 	return epoch, r.doViewInTx(ctx, "GetFirstUncommittedValidatorSetEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -509,16 +510,16 @@ func (r *Repository) GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (
 			return errors.Errorf("failed to copy first uncommitted validator set epoch value: %w", err)
 		}
 
-		epoch = entity.Epoch(binary.BigEndian.Uint64(value))
+		epoch = symbiotic.Epoch(binary.BigEndian.Uint64(value))
 		return nil
 	})
 }
 
-func (r *Repository) GetValidatorByKey(ctx context.Context, epoch entity.Epoch, keyTag entity.KeyTag, publicKey []byte) (entity.Validator, uint32, error) {
+func (r *Repository) GetValidatorByKey(ctx context.Context, epoch symbiotic.Epoch, keyTag symbiotic.KeyTag, publicKey []byte) (symbiotic.Validator, uint32, error) {
 	publicKeyHash := crypto.Keccak256Hash(publicKey)
 	keyLookup := keyValidatorKeyLookup(epoch, keyTag, publicKeyHash)
 
-	var validator entity.Validator
+	var validator symbiotic.Validator
 	var activeIndex uint32
 	return validator, activeIndex, r.doViewInTx(ctx, "GetValidatorByKey", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -602,19 +603,19 @@ type validatorSetFullDTO struct {
 	Info   validatorSetAdditionalInfoDTO `json:"info"`
 }
 
-func validatorToBytes(validator entity.Validator, activeIndex uint32) ([]byte, error) {
+func validatorToBytes(validator symbiotic.Validator, activeIndex uint32) ([]byte, error) {
 	dto := validatorDTO{
 		Operator:    validator.Operator.Hex(),
 		VotingPower: validator.VotingPower.String(),
 		IsActive:    validator.IsActive,
 		ActiveIndex: activeIndex,
-		Keys: lo.Map(validator.Keys, func(k entity.ValidatorKey, _ int) keyDTO {
+		Keys: lo.Map(validator.Keys, func(k symbiotic.ValidatorKey, _ int) keyDTO {
 			return keyDTO{
 				Tag:     uint8(k.Tag),
 				Payload: k.Payload,
 			}
 		}),
-		Vaults: lo.Map(validator.Vaults, func(v entity.ValidatorVault, _ int) validatorVaultDTO {
+		Vaults: lo.Map(validator.Vaults, func(v symbiotic.ValidatorVault, _ int) validatorVaultDTO {
 			return validatorVaultDTO{
 				ChainID:     v.ChainID,
 				Vault:       v.Vault.Hex(),
@@ -626,49 +627,49 @@ func validatorToBytes(validator entity.Validator, activeIndex uint32) ([]byte, e
 	return json.Marshal(dto)
 }
 
-func bytesToValidator(data []byte) (entity.Validator, uint32, error) {
+func bytesToValidator(data []byte) (symbiotic.Validator, uint32, error) {
 	var dto validatorDTO
 	if err := json.Unmarshal(data, &dto); err != nil {
-		return entity.Validator{}, 0, errors.Errorf("failed to unmarshal validator: %w", err)
+		return symbiotic.Validator{}, 0, errors.Errorf("failed to unmarshal validator: %w", err)
 	}
 
 	operator := common.HexToAddress(dto.Operator)
 
 	votingPower, ok := new(big.Int).SetString(dto.VotingPower, 10)
 	if !ok {
-		return entity.Validator{}, 0, errors.Errorf("failed to parse voting power: %s", dto.VotingPower)
+		return symbiotic.Validator{}, 0, errors.Errorf("failed to parse voting power: %s", dto.VotingPower)
 	}
 
-	keys := lo.Map(dto.Keys, func(k keyDTO, _ int) entity.ValidatorKey {
-		return entity.ValidatorKey{
-			Tag:     entity.KeyTag(k.Tag),
+	keys := lo.Map(dto.Keys, func(k keyDTO, _ int) symbiotic.ValidatorKey {
+		return symbiotic.ValidatorKey{
+			Tag:     symbiotic.KeyTag(k.Tag),
 			Payload: k.Payload,
 		}
 	})
 
-	vaults := make([]entity.ValidatorVault, 0, len(dto.Vaults))
+	vaults := make([]symbiotic.ValidatorVault, 0, len(dto.Vaults))
 	for _, v := range dto.Vaults {
 		votingPowerVault, parseOk := new(big.Int).SetString(v.VotingPower, 10)
 		if !parseOk {
-			return entity.Validator{}, 0, errors.Errorf("failed to parse vault voting power for operator %s: %s", dto.Operator, v.VotingPower)
+			return symbiotic.Validator{}, 0, errors.Errorf("failed to parse vault voting power for operator %s: %s", dto.Operator, v.VotingPower)
 		}
-		vaults = append(vaults, entity.ValidatorVault{
+		vaults = append(vaults, symbiotic.ValidatorVault{
 			ChainID:     v.ChainID,
 			Vault:       common.HexToAddress(v.Vault),
-			VotingPower: entity.ToVotingPower(votingPowerVault),
+			VotingPower: symbiotic.ToVotingPower(votingPowerVault),
 		})
 	}
 
-	return entity.Validator{
+	return symbiotic.Validator{
 		Operator:    operator,
-		VotingPower: entity.ToVotingPower(votingPower),
+		VotingPower: symbiotic.ToVotingPower(votingPower),
 		IsActive:    dto.IsActive,
 		Keys:        keys,
 		Vaults:      vaults,
 	}, dto.ActiveIndex, nil
 }
 
-func validatorSetHeaderToBytes(valset entity.ValidatorSet) ([]byte, error) {
+func validatorSetHeaderToBytes(valset symbiotic.ValidatorSet) ([]byte, error) {
 	header, err := valset.GetHeader()
 	if err != nil {
 		return nil, errors.Errorf("failed to get validator set header: %w", err)
@@ -714,31 +715,31 @@ func validatorSetHeaderToBytes(valset entity.ValidatorSet) ([]byte, error) {
 	return json.Marshal(fullDTO)
 }
 
-func bytesToValidatorSetHeader(data []byte) (entity.ValidatorSetHeader, error) {
+func bytesToValidatorSetHeader(data []byte) (symbiotic.ValidatorSetHeader, error) {
 	var fullDTO validatorSetFullDTO
 	if err := json.Unmarshal(data, &fullDTO); err != nil {
-		return entity.ValidatorSetHeader{}, errors.Errorf("failed to unmarshal validator set header: %w", err)
+		return symbiotic.ValidatorSetHeader{}, errors.Errorf("failed to unmarshal validator set header: %w", err)
 	}
 
 	headerDTO := fullDTO.Header
 
 	quorumThreshold, ok := new(big.Int).SetString(headerDTO.QuorumThreshold, 10)
 	if !ok {
-		return entity.ValidatorSetHeader{}, errors.Errorf("failed to parse quorum threshold: %s", headerDTO.QuorumThreshold)
+		return symbiotic.ValidatorSetHeader{}, errors.Errorf("failed to parse quorum threshold: %s", headerDTO.QuorumThreshold)
 	}
 
 	totalVotingPower, ok := new(big.Int).SetString(headerDTO.TotalVotingPower, 10)
 	if !ok {
-		return entity.ValidatorSetHeader{}, errors.Errorf("failed to parse total voting power: %s", headerDTO.TotalVotingPower)
+		return symbiotic.ValidatorSetHeader{}, errors.Errorf("failed to parse total voting power: %s", headerDTO.TotalVotingPower)
 	}
 
-	return entity.ValidatorSetHeader{
+	return symbiotic.ValidatorSetHeader{
 		Version:            headerDTO.Version,
-		RequiredKeyTag:     entity.KeyTag(headerDTO.RequiredKeyTag),
-		Epoch:              entity.Epoch(headerDTO.Epoch),
-		CaptureTimestamp:   entity.Timestamp(headerDTO.CaptureTimestamp),
-		QuorumThreshold:    entity.ToVotingPower(quorumThreshold),
-		TotalVotingPower:   entity.ToVotingPower(totalVotingPower),
+		RequiredKeyTag:     symbiotic.KeyTag(headerDTO.RequiredKeyTag),
+		Epoch:              symbiotic.Epoch(headerDTO.Epoch),
+		CaptureTimestamp:   symbiotic.Timestamp(headerDTO.CaptureTimestamp),
+		QuorumThreshold:    symbiotic.ToVotingPower(quorumThreshold),
+		TotalVotingPower:   symbiotic.ToVotingPower(totalVotingPower),
 		ValidatorsSszMRoot: common.HexToHash(headerDTO.ValidatorsSszMRoot),
 	}, nil
 }
@@ -796,11 +797,11 @@ type extraDataDTO struct {
 	Value []byte `json:"value"`
 }
 
-func validatorSetMetadataToBytes(data entity.ValidatorSetMetadata) ([]byte, error) {
+func validatorSetMetadataToBytes(data symbiotic.ValidatorSetMetadata) ([]byte, error) {
 	metadataData := validatorSetMetadataDTO{
 		RequestID: data.RequestID.Hex(),
 		Epoch:     uint64(data.Epoch),
-		ExtraData: lo.Map(data.ExtraData, func(ed entity.ExtraData, _ int) extraDataDTO {
+		ExtraData: lo.Map(data.ExtraData, func(ed symbiotic.ExtraData, _ int) extraDataDTO {
 			return extraDataDTO{
 				Key:   ed.Key.Bytes(),
 				Value: ed.Value.Bytes(),
@@ -812,21 +813,21 @@ func validatorSetMetadataToBytes(data entity.ValidatorSetMetadata) ([]byte, erro
 	return json.Marshal(metadataData)
 }
 
-func bytesToValidatorSetMetadata(data []byte) (entity.ValidatorSetMetadata, error) {
+func bytesToValidatorSetMetadata(data []byte) (symbiotic.ValidatorSetMetadata, error) {
 	var metadataDTO validatorSetMetadataDTO
 	if err := json.Unmarshal(data, &metadataDTO); err != nil {
-		return entity.ValidatorSetMetadata{}, errors.Errorf("failed to unmarshal validator set header: %w", err)
+		return symbiotic.ValidatorSetMetadata{}, errors.Errorf("failed to unmarshal validator set header: %w", err)
 	}
 
-	return entity.ValidatorSetMetadata{
+	return symbiotic.ValidatorSetMetadata{
 		RequestID: common.HexToHash(metadataDTO.RequestID),
-		ExtraData: lo.Map(metadataDTO.ExtraData, func(ed extraDataDTO, _ int) entity.ExtraData {
-			return entity.ExtraData{
+		ExtraData: lo.Map(metadataDTO.ExtraData, func(ed extraDataDTO, _ int) symbiotic.ExtraData {
+			return symbiotic.ExtraData{
 				Key:   common.BytesToHash(ed.Key),
 				Value: common.BytesToHash(ed.Value),
 			}
 		}),
-		Epoch:          entity.Epoch(metadataDTO.Epoch),
+		Epoch:          symbiotic.Epoch(metadataDTO.Epoch),
 		CommitmentData: metadataDTO.CommitmentData,
 	}, nil
 }

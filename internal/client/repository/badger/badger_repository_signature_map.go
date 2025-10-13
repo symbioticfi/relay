@@ -9,7 +9,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func keySignatureMap(requestID common.Hash) []byte {
@@ -113,9 +114,9 @@ func bytesToSignatureMap(data []byte) (entity.SignatureMap, error) {
 
 	return entity.SignatureMap{
 		RequestID:              requestId,
-		Epoch:                  entity.Epoch(dto.Epoch),
+		Epoch:                  symbiotic.Epoch(dto.Epoch),
 		SignedValidatorsBitmap: bitmap,
-		CurrentVotingPower:     entity.ToVotingPower(dto.CurrentVotingPower),
+		CurrentVotingPower:     symbiotic.ToVotingPower(dto.CurrentVotingPower),
 		TotalValidators:        dto.TotalValidators,
 	}, nil
 }

@@ -11,8 +11,9 @@ import (
 	"github.com/libp2p/go-libp2p/core/peerstore"
 	"github.com/stretchr/testify/require"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/signals"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func TestSendWantSignaturesRequest_HappyPath(t *testing.T) {
@@ -44,8 +45,8 @@ func TestSendWantSignaturesRequest_HappyPath(t *testing.T) {
 	wantBitmap1 := entity.NewBitmapOf(0, 2, 5)
 	wantBitmap2 := entity.NewBitmapOf(1, 3)
 
-	epoch := entity.Epoch(777)
-	keyTag := entity.KeyTag(15)
+	epoch := symbiotic.Epoch(777)
+	keyTag := symbiotic.KeyTag(15)
 
 	request := entity.WantSignaturesRequest{
 		WantSignatures: map[common.Hash]entity.Bitmap{
@@ -57,7 +58,7 @@ func TestSendWantSignaturesRequest_HappyPath(t *testing.T) {
 	// Create expected response data
 	expectedSig1 := entity.ValidatorSignature{
 		ValidatorIndex: 0,
-		Signature: entity.SignatureExtended{
+		Signature: symbiotic.SignatureExtended{
 			MessageHash: testHash1.Bytes(),
 			KeyTag:      keyTag,
 			Epoch:       epoch,
@@ -67,7 +68,7 @@ func TestSendWantSignaturesRequest_HappyPath(t *testing.T) {
 	}
 	expectedSig2 := entity.ValidatorSignature{
 		ValidatorIndex: 2,
-		Signature: entity.SignatureExtended{
+		Signature: symbiotic.SignatureExtended{
 			MessageHash: testHash1.Bytes(),
 			KeyTag:      keyTag,
 			Epoch:       epoch,
@@ -77,7 +78,7 @@ func TestSendWantSignaturesRequest_HappyPath(t *testing.T) {
 	}
 	expectedSig3 := entity.ValidatorSignature{
 		ValidatorIndex: 1,
-		Signature: entity.SignatureExtended{
+		Signature: symbiotic.SignatureExtended{
 			MessageHash: testHash2.Bytes(),
 			KeyTag:      keyTag,
 			Epoch:       epoch,
@@ -225,6 +226,6 @@ func (m *mockSyncRequestHandler) HandleWantSignaturesRequest(_ context.Context, 
 func (m *mockSyncRequestHandler) HandleWantAggregationProofsRequest(_ context.Context, request entity.WantAggregationProofsRequest) (entity.WantAggregationProofsResponse, error) {
 	// Return empty response for tests that don't need aggregation proof functionality
 	return entity.WantAggregationProofsResponse{
-		Proofs: make(map[common.Hash]entity.AggregationProof),
+		Proofs: make(map[common.Hash]symbiotic.AggregationProof),
 	}, nil
 }

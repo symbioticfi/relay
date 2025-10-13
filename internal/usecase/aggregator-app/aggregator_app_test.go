@@ -6,18 +6,17 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/samber/lo"
-
-	"github.com/symbioticfi/relay/core/usecase/crypto"
-	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
-	aggregationPolicy2 "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
-
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	aggregationPolicy "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
 	"github.com/symbioticfi/relay/internal/usecase/aggregator-app/mocks"
+	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 type testSetup struct {
@@ -30,7 +29,7 @@ type testSetup struct {
 	privateKey     crypto.PrivateKey
 }
 
-func newTestSetup(t *testing.T, policyType entity.AggregationPolicyType, maxUnsigners uint64) *testSetup {
+func newTestSetup(t *testing.T, policyType symbiotic.AggregationPolicyType, maxUnsigners uint64) *testSetup {
 	t.Helper()
 	ctrl := gomock.NewController(t)
 	t.Cleanup(ctrl.Finish)
@@ -39,10 +38,10 @@ func newTestSetup(t *testing.T, policyType entity.AggregationPolicyType, maxUnsi
 	mockP2PClient := mocks.NewMockp2pClient(ctrl)
 	mockAggregator := mocks.NewMockaggregator(ctrl)
 	mockMetrics := mocks.NewMockmetrics(ctrl)
-	aggregationPolicy, err := aggregationPolicy2.NewAggregationPolicy(policyType, maxUnsigners)
+	aggPolicy, err := aggregationPolicy.NewAggregationPolicy(policyType, maxUnsigners)
 	require.NoError(t, err)
 
-	privateKey, err := crypto.GeneratePrivateKey(entity.KeyTypeBlsBn254)
+	privateKey, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
 	require.NoError(t, err)
 
 	kp, err := keyprovider.NewSimpleKeystoreProvider()
@@ -55,7 +54,7 @@ func newTestSetup(t *testing.T, policyType entity.AggregationPolicyType, maxUnsi
 		P2PClient:         mockP2PClient,
 		Aggregator:        mockAggregator,
 		Metrics:           mockMetrics,
-		AggregationPolicy: aggregationPolicy,
+		AggregationPolicy: aggPolicy,
 		KeyProvider:       kp,
 	}
 
@@ -73,14 +72,14 @@ func newTestSetup(t *testing.T, policyType entity.AggregationPolicyType, maxUnsi
 	}
 }
 
-func createTestSignatureExtended(t *testing.T, pk crypto.PrivateKey) entity.SignatureExtended {
+func createTestSignatureExtended(t *testing.T, pk crypto.PrivateKey) symbiotic.SignatureExtended {
 	t.Helper()
 	msg := "test-message"
 	sign, hash, err := pk.Sign([]byte(msg))
 	require.NoError(t, err)
 
-	return entity.SignatureExtended{
-		KeyTag:      entity.KeyTag(15),
+	return symbiotic.SignatureExtended{
+		KeyTag:      symbiotic.KeyTag(15),
 		Epoch:       1,
 		MessageHash: hash,
 		PublicKey:   pk.PublicKey().Raw(),
@@ -90,22 +89,22 @@ func createTestSignatureExtended(t *testing.T, pk crypto.PrivateKey) entity.Sign
 
 // Unified test data structure that keeps ValidatorSet and SignatureMap in sync
 type testData struct {
-	ValidatorSet entity.ValidatorSet
+	ValidatorSet symbiotic.ValidatorSet
 	SignatureMap entity.SignatureMap
 }
 
 // Create unified test data with a single ValidatorSet used consistently
-func createTestData(requestID common.Hash, epoch entity.Epoch, totalValidators, signers int, key crypto.PrivateKey) testData {
+func createTestData(requestID common.Hash, epoch symbiotic.Epoch, totalValidators, signers int, key crypto.PrivateKey) testData {
 	// Create validators
-	validators := make([]entity.Validator, totalValidators)
+	validators := make([]symbiotic.Validator, totalValidators)
 	for i := 0; i < totalValidators; i++ {
-		validators[i] = entity.Validator{
+		validators[i] = symbiotic.Validator{
 			Operator:    common.HexToAddress(fmt.Sprintf("0x%040d", i+1)),
-			VotingPower: entity.ToVotingPower(big.NewInt(100)), // Each validator has 100 voting power
+			VotingPower: symbiotic.ToVotingPower(big.NewInt(100)), // Each validator has 100 voting power
 			IsActive:    true,
-			Keys: []entity.ValidatorKey{
+			Keys: []symbiotic.ValidatorKey{
 				{
-					Tag:     entity.KeyTag(15),
+					Tag:     symbiotic.KeyTag(15),
 					Payload: key.PublicKey().OnChain(),
 				},
 			},
@@ -113,13 +112,13 @@ func createTestData(requestID common.Hash, epoch entity.Epoch, totalValidators, 
 	}
 
 	// Create the unified ValidatorSet
-	validatorSet := entity.ValidatorSet{
+	validatorSet := symbiotic.ValidatorSet{
 		Version:         1,
-		RequiredKeyTag:  entity.KeyTag(15),
+		RequiredKeyTag:  symbiotic.KeyTag(15),
 		Epoch:           epoch,
-		QuorumThreshold: entity.ToVotingPower(big.NewInt(670)), // Need 670 voting power for quorum
+		QuorumThreshold: symbiotic.ToVotingPower(big.NewInt(670)), // Need 670 voting power for quorum
 		Validators:      validators,
-		AggregatorIndices: lo.Map(validators, func(_ entity.Validator, idx int) uint32 {
+		AggregatorIndices: lo.Map(validators, func(_ symbiotic.Validator, idx int) uint32 {
 			return uint32(idx)
 		}),
 	}
@@ -143,7 +142,7 @@ func createTestData(requestID common.Hash, epoch entity.Epoch, totalValidators, 
 }
 
 // Convenience function for common test scenarios
-func createTestDataWithQuorum(requestID common.Hash, epoch entity.Epoch, thresholdReached bool, key crypto.PrivateKey) testData {
+func createTestDataWithQuorum(requestID common.Hash, epoch symbiotic.Epoch, thresholdReached bool, key crypto.PrivateKey) testData {
 	if thresholdReached {
 		// 8 signers * 100 voting power = 800 > 670 threshold
 		return createTestData(requestID, epoch, 10, 8, key)
@@ -154,12 +153,12 @@ func createTestDataWithQuorum(requestID common.Hash, epoch entity.Epoch, thresho
 }
 
 // Setup mocks for successful aggregation using unified test data
-func setupSuccessfulAggregationMocks(setup *testSetup, msg entity.SignatureExtended, testData testData) {
-	var signatures []entity.SignatureExtended
-	networkConfig := entity.NetworkConfig{
-		VerificationType: entity.VerificationTypeBlsBn254Simple,
+func setupSuccessfulAggregationMocks(setup *testSetup, msg symbiotic.SignatureExtended, testData testData) {
+	var signatures []symbiotic.SignatureExtended
+	networkConfig := symbiotic.NetworkConfig{
+		VerificationType: symbiotic.VerificationTypeBlsBn254Simple,
 	}
-	proofData := entity.AggregationProof{
+	proofData := symbiotic.AggregationProof{
 		KeyTag:      msg.KeyTag,
 		Epoch:       msg.Epoch,
 		MessageHash: msg.MessageHash,
@@ -171,7 +170,7 @@ func setupSuccessfulAggregationMocks(setup *testSetup, msg entity.SignatureExten
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), msg.Epoch).Return(testData.ValidatorSet, nil)
 	setup.mockRepo.EXPECT().GetAllSignatures(gomock.Any(), msg.RequestID()).Return(signatures, nil)
 	setup.mockRepo.EXPECT().GetConfigByEpoch(gomock.Any(), msg.Epoch).Return(networkConfig, nil)
-	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(entity.AggregationProof{}, entity.ErrEntityNotFound)
+	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
 
 	setup.mockAggregator.EXPECT().Aggregate(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(proofData, nil)
 
@@ -184,7 +183,7 @@ func setupSuccessfulAggregationMocks(setup *testSetup, msg entity.SignatureExten
 // LOW LATENCY POLICY TESTS
 
 func TestHandleSignatureGeneratedMessage_LowLatencyPolicy_QuorumNotReached(t *testing.T) {
-	setup := newTestSetup(t, entity.AggregationPolicyLowLatency, 0)
+	setup := newTestSetup(t, symbiotic.AggregationPolicyLowLatency, 0)
 	msg := createTestSignatureExtended(t, setup.privateKey)
 
 	// Setup mocks for quorum NOT reached case
@@ -192,7 +191,7 @@ func TestHandleSignatureGeneratedMessage_LowLatencyPolicy_QuorumNotReached(t *te
 
 	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestID()).Return(testingData.SignatureMap, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), msg.Epoch).Return(testingData.ValidatorSet, nil)
-	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(entity.AggregationProof{}, entity.ErrEntityNotFound)
+	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
 
 	// Execute
 	err := setup.app.HandleSignatureProcessedMessage(t.Context(), msg)
@@ -202,7 +201,7 @@ func TestHandleSignatureGeneratedMessage_LowLatencyPolicy_QuorumNotReached(t *te
 }
 
 func TestHandleSignatureGeneratedMessage_LowLatencyPolicy_QuorumReached(t *testing.T) {
-	setup := newTestSetup(t, entity.AggregationPolicyLowLatency, 0)
+	setup := newTestSetup(t, symbiotic.AggregationPolicyLowLatency, 0)
 	ctx := context.Background()
 	msg := createTestSignatureExtended(t, setup.privateKey)
 
@@ -221,7 +220,7 @@ func TestHandleSignatureGeneratedMessage_LowLatencyPolicy_QuorumReached(t *testi
 // LOW COST POLICY TESTS
 
 func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumNotReached(t *testing.T) {
-	setup := newTestSetup(t, entity.AggregationPolicyLowCost, 5)
+	setup := newTestSetup(t, symbiotic.AggregationPolicyLowCost, 5)
 	ctx := context.Background()
 	msg := createTestSignatureExtended(t, setup.privateKey)
 
@@ -230,7 +229,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumNotReached(t *testi
 
 	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestID()).Return(testingData.SignatureMap, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), msg.Epoch).Return(testingData.ValidatorSet, nil)
-	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(entity.AggregationProof{}, entity.ErrEntityNotFound)
+	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
 
 	// Execute
 	err := setup.app.HandleSignatureProcessedMessage(ctx, msg)
@@ -240,7 +239,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumNotReached(t *testi
 }
 
 func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_TooManyUnsigners(t *testing.T) {
-	setup := newTestSetup(t, entity.AggregationPolicyLowCost, 2) // Allow max 2 unsigners
+	setup := newTestSetup(t, symbiotic.AggregationPolicyLowCost, 2) // Allow max 2 unsigners
 	ctx := context.Background()
 	msg := createTestSignatureExtended(t, setup.privateKey)
 
@@ -249,7 +248,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_TooManyUnsi
 
 	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestID()).Return(testingData.SignatureMap, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), msg.Epoch).Return(testingData.ValidatorSet, nil)
-	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(entity.AggregationProof{}, entity.ErrEntityNotFound)
+	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
 
 	// Execute
 	err := setup.app.HandleSignatureProcessedMessage(ctx, msg)
@@ -259,7 +258,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_TooManyUnsi
 }
 
 func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_AcceptableUnsigners(t *testing.T) {
-	setup := newTestSetup(t, entity.AggregationPolicyLowCost, 3) // Allow max 3 unsigners
+	setup := newTestSetup(t, symbiotic.AggregationPolicyLowCost, 3) // Allow max 3 unsigners
 	ctx := context.Background()
 	msg := createTestSignatureExtended(t, setup.privateKey)
 
@@ -276,7 +275,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_AcceptableU
 }
 
 func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_ExactUnsignersLimit(t *testing.T) {
-	setup := newTestSetup(t, entity.AggregationPolicyLowCost, 3) // Allow max 3 unsigners
+	setup := newTestSetup(t, symbiotic.AggregationPolicyLowCost, 3) // Allow max 3 unsigners
 	ctx := context.Background()
 	msg := createTestSignatureExtended(t, setup.privateKey)
 
@@ -293,7 +292,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_ExactUnsign
 }
 
 func TestHandleSignatureGeneratedMessage_LowCostPolicy_AllValidatorsSigned(t *testing.T) {
-	setup := newTestSetup(t, entity.AggregationPolicyLowCost, 1) // Allow max 1 unsigner
+	setup := newTestSetup(t, symbiotic.AggregationPolicyLowCost, 1) // Allow max 1 unsigner
 	ctx := context.Background()
 	msg := createTestSignatureExtended(t, setup.privateKey)
 
@@ -312,7 +311,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_AllValidatorsSigned(t *te
 // EDGE CASES
 
 func TestHandleSignatureGeneratedMessage_LowCostPolicy_ZeroMaxUnsigners(t *testing.T) {
-	setup := newTestSetup(t, entity.AggregationPolicyLowCost, 0) // Allow 0 unsigners
+	setup := newTestSetup(t, symbiotic.AggregationPolicyLowCost, 0) // Allow 0 unsigners
 	ctx := context.Background()
 	msg := createTestSignatureExtended(t, setup.privateKey)
 
@@ -321,7 +320,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_ZeroMaxUnsigners(t *testi
 
 	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestID()).Return(testingData.SignatureMap, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), msg.Epoch).Return(testingData.ValidatorSet, nil)
-	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(entity.AggregationProof{}, entity.ErrEntityNotFound)
+	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
 
 	// Execute
 	err := setup.app.HandleSignatureProcessedMessage(ctx, msg)
@@ -331,7 +330,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_ZeroMaxUnsigners(t *testi
 }
 
 func TestHandleSignatureGeneratedMessage_LowCostPolicy_HighMaxUnsigners(t *testing.T) {
-	setup := newTestSetup(t, entity.AggregationPolicyLowCost, 100) // Allow 100 unsigners
+	setup := newTestSetup(t, symbiotic.AggregationPolicyLowCost, 100) // Allow 100 unsigners
 	ctx := context.Background()
 	msg := createTestSignatureExtended(t, setup.privateKey)
 
@@ -353,7 +352,7 @@ func TestSignatureMapFunctionality(t *testing.T) {
 	requestID := common.HexToHash("0x123")
 
 	// Test with unified creation
-	pk, err := crypto.GeneratePrivateKey(entity.KeyTypeBlsBn254)
+	pk, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
 	require.NoError(t, err)
 	testingData := createTestData(requestID, 1, 5, 0, pk) // 5 validators, 0 signers initially
 	signatureMap := testingData.SignatureMap
@@ -381,10 +380,10 @@ func TestSignatureMapFunctionality(t *testing.T) {
 	}
 
 	require.Equal(t, uint64(5), signatureMap.SignedValidatorsBitmap.GetCardinality())
-	require.False(t, signatureMap.ThresholdReached(validatorSet.QuorumThreshold))         // 500 < 670
-	require.True(t, signatureMap.ThresholdReached(entity.ToVotingPower(big.NewInt(400)))) // 500 >= 400
+	require.False(t, signatureMap.ThresholdReached(validatorSet.QuorumThreshold))            // 500 < 670
+	require.True(t, signatureMap.ThresholdReached(symbiotic.ToVotingPower(big.NewInt(400)))) // 500 >= 400
 
 	// Verify that the SignatureMap and ValidatorSet are consistent
 	require.Equal(t, int64(5), validatorSet.GetTotalActiveValidators())
-	require.Equal(t, validatorSet.QuorumThreshold, entity.ToVotingPower(big.NewInt(670)))
+	require.Equal(t, validatorSet.QuorumThreshold, symbiotic.ToVotingPower(big.NewInt(670)))
 }

@@ -9,9 +9,10 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/samber/lo"
 
-	"github.com/symbioticfi/relay/core/entity"
 	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
+	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // SendWantAggregationProofsRequest sends a synchronous aggregation proof request to a peer
@@ -70,14 +71,14 @@ func entityToProtoAggregationProofRequest(req entity.WantAggregationProofsReques
 
 // protoToEntityAggregationProofResponse converts protobuf WantAggregationProofsResponse to entity
 func protoToEntityAggregationProofResponse(resp *prototypes.WantAggregationProofsResponse) entity.WantAggregationProofsResponse {
-	proofs := make(map[common.Hash]entity.AggregationProof)
+	proofs := make(map[common.Hash]symbiotic.AggregationProof)
 
 	for hashStr, protoProof := range resp.GetProofs() {
 		// Convert aggregation proof
-		proof := entity.AggregationProof{
+		proof := symbiotic.AggregationProof{
 			MessageHash: protoProof.GetMessageHash(),
-			KeyTag:      entity.KeyTag(protoProof.GetKeyTag()),
-			Epoch:       entity.Epoch(protoProof.GetEpoch()),
+			KeyTag:      symbiotic.KeyTag(protoProof.GetKeyTag()),
+			Epoch:       symbiotic.Epoch(protoProof.GetEpoch()),
 			Proof:       protoProof.GetAggregationProof().GetProof(),
 		}
 

@@ -19,8 +19,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/symbioticfi/relay/core/entity"
 	v2 "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func TestP2P_GRPC(t *testing.T) {
@@ -111,6 +112,6 @@ func (m myHandler) HandleWantSignaturesRequest(ctx context.Context, request enti
 
 func (m myHandler) HandleWantAggregationProofsRequest(ctx context.Context, request entity.WantAggregationProofsRequest) (entity.WantAggregationProofsResponse, error) {
 	return entity.WantAggregationProofsResponse{
-		Proofs: make(map[common.Hash]entity.AggregationProof),
+		Proofs: make(map[common.Hash]symbiotic.AggregationProof),
 	}, nil
 }

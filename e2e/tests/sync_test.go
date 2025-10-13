@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	apiv1 "github.com/symbioticfi/relay/api/client/v1"
-	"github.com/symbioticfi/relay/core/client/evm"
-	"github.com/symbioticfi/relay/core/entity"
-	valsetDeriver "github.com/symbioticfi/relay/core/usecase/valset-deriver"
+	"github.com/symbioticfi/relay/symbiotic/client/evm"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	valsetDeriver "github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver"
 )
 
 // TestAggregatorSignatureSync tests that aggregators can sync missed signatures
@@ -195,7 +195,7 @@ func createEVMClient(t *testing.T, deploymentData RelayContractsData) *evm.Clien
 	t.Helper()
 	config := evm.Config{
 		ChainURLs: settlementChains,
-		DriverAddress: entity.CrossChainAddress{
+		DriverAddress: symbiotic.CrossChainAddress{
 			ChainId: 31337,
 			Address: common.HexToAddress(deploymentData.GetDriverAddress()),
 		},
@@ -210,7 +210,7 @@ func createEVMClient(t *testing.T, deploymentData RelayContractsData) *evm.Clien
 }
 
 // waitForEpoch waits until the specified epoch is reached
-func waitForEpoch(ctx context.Context, client evm.IEvmClient, targetEpoch entity.Epoch, timeout time.Duration) error {
+func waitForEpoch(ctx context.Context, client evm.IEvmClient, targetEpoch symbiotic.Epoch, timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 

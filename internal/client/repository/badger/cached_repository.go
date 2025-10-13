@@ -5,8 +5,8 @@ import (
 
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/core/entity"
 	"github.com/symbioticfi/relay/internal/client/repository/cache"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 type CachedConfig struct {
@@ -17,15 +17,15 @@ type CachedConfig struct {
 type CachedRepository struct {
 	*Repository
 
-	networkConfigCache        cache.Cache[entity.Epoch, entity.NetworkConfig]
-	validatorSetCache         cache.Cache[entity.Epoch, entity.ValidatorSet]
-	validatorSetMetadataCache cache.Cache[entity.Epoch, entity.ValidatorSetMetadata]
+	networkConfigCache        cache.Cache[symbiotic.Epoch, symbiotic.NetworkConfig]
+	validatorSetCache         cache.Cache[symbiotic.Epoch, symbiotic.ValidatorSet]
+	validatorSetMetadataCache cache.Cache[symbiotic.Epoch, symbiotic.ValidatorSetMetadata]
 }
 
 func NewCached(repo *Repository, cfg CachedConfig) (*CachedRepository, error) {
-	networkConfigCache, err := cache.NewCache[entity.Epoch, entity.NetworkConfig](
+	networkConfigCache, err := cache.NewCache[symbiotic.Epoch, symbiotic.NetworkConfig](
 		cache.Config{Size: cfg.NetworkConfigCacheSize},
-		func(epoch entity.Epoch) uint32 {
+		func(epoch symbiotic.Epoch) uint32 {
 			return uint32(epoch)
 		},
 	)
@@ -33,9 +33,9 @@ func NewCached(repo *Repository, cfg CachedConfig) (*CachedRepository, error) {
 		return nil, errors.Errorf("failed to create network config cache: %w", err)
 	}
 
-	validatorSetCache, err := cache.NewCache[entity.Epoch, entity.ValidatorSet](
+	validatorSetCache, err := cache.NewCache[symbiotic.Epoch, symbiotic.ValidatorSet](
 		cache.Config{Size: cfg.ValidatorSetCacheSize},
-		func(epoch entity.Epoch) uint32 {
+		func(epoch symbiotic.Epoch) uint32 {
 			return uint32(epoch)
 		},
 	)
@@ -43,9 +43,9 @@ func NewCached(repo *Repository, cfg CachedConfig) (*CachedRepository, error) {
 		return nil, errors.Errorf("failed to create validator set cache: %w", err)
 	}
 
-	validatorSetMetadataCache, err := cache.NewCache[entity.Epoch, entity.ValidatorSetMetadata](
+	validatorSetMetadataCache, err := cache.NewCache[symbiotic.Epoch, symbiotic.ValidatorSetMetadata](
 		cache.Config{Size: cfg.ValidatorSetCacheSize},
-		func(epoch entity.Epoch) uint32 {
+		func(epoch symbiotic.Epoch) uint32 {
 			return uint32(epoch)
 		},
 	)
@@ -60,7 +60,7 @@ func NewCached(repo *Repository, cfg CachedConfig) (*CachedRepository, error) {
 	}, nil
 }
 
-func (r *CachedRepository) GetConfigByEpoch(ctx context.Context, epoch entity.Epoch) (entity.NetworkConfig, error) {
+func (r *CachedRepository) GetConfigByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.NetworkConfig, error) {
 	// Try cache first
 	if config, ok := r.networkConfigCache.Get(epoch); ok {
 		return config, nil
@@ -69,7 +69,7 @@ func (r *CachedRepository) GetConfigByEpoch(ctx context.Context, epoch entity.Ep
 	// Cache miss - load from underlying repository
 	config, err := r.Repository.GetConfigByEpoch(ctx, epoch)
 	if err != nil {
-		return entity.NetworkConfig{}, err
+		return symbiotic.NetworkConfig{}, err
 	}
 
 	// Store in cache for future use
@@ -77,7 +77,7 @@ func (r *CachedRepository) GetConfigByEpoch(ctx context.Context, epoch entity.Ep
 	return config, nil
 }
 
-func (r *CachedRepository) SaveConfig(ctx context.Context, config entity.NetworkConfig, epoch entity.Epoch) error {
+func (r *CachedRepository) SaveConfig(ctx context.Context, config symbiotic.NetworkConfig, epoch symbiotic.Epoch) error {
 	err := r.Repository.SaveConfig(ctx, config, epoch)
 	if err != nil {
 		return err
@@ -87,7 +87,7 @@ func (r *CachedRepository) SaveConfig(ctx context.Context, config entity.Network
 	return nil
 }
 
-func (r *CachedRepository) GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error) {
+func (r *CachedRepository) GetValidatorSetByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error) {
 	// Try cache first
 	if validatorSet, ok := r.validatorSetCache.Get(epoch); ok {
 		return validatorSet, nil
@@ -96,7 +96,7 @@ func (r *CachedRepository) GetValidatorSetByEpoch(ctx context.Context, epoch ent
 	// Cache miss - load from underlying repository
 	validatorSet, err := r.Repository.GetValidatorSetByEpoch(ctx, epoch)
 	if err != nil {
-		return entity.ValidatorSet{}, err
+		return symbiotic.ValidatorSet{}, err
 	}
 
 	// Store in cache for future use
@@ -104,7 +104,7 @@ func (r *CachedRepository) GetValidatorSetByEpoch(ctx context.Context, epoch ent
 	return validatorSet, nil
 }
 
-func (r *CachedRepository) GetValidatorSetMetadata(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSetMetadata, error) {
+func (r *CachedRepository) GetValidatorSetMetadata(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSetMetadata, error) {
 	// Try cache first
 	if validatorSetMetadata, ok := r.validatorSetMetadataCache.Get(epoch); ok {
 		return validatorSetMetadata, nil
@@ -113,7 +113,7 @@ func (r *CachedRepository) GetValidatorSetMetadata(ctx context.Context, epoch en
 	// Cache miss - load from underlying repository
 	validatorSetMetadata, err := r.Repository.GetValidatorSetMetadata(ctx, epoch)
 	if err != nil {
-		return entity.ValidatorSetMetadata{}, err
+		return symbiotic.ValidatorSetMetadata{}, err
 	}
 
 	// Store in cache for future use
@@ -121,7 +121,7 @@ func (r *CachedRepository) GetValidatorSetMetadata(ctx context.Context, epoch en
 	return validatorSetMetadata, nil
 }
 
-func (r *CachedRepository) SaveValidatorSet(ctx context.Context, validatorSet entity.ValidatorSet) error {
+func (r *CachedRepository) SaveValidatorSet(ctx context.Context, validatorSet symbiotic.ValidatorSet) error {
 	err := r.Repository.SaveValidatorSet(ctx, validatorSet)
 	if err != nil {
 		return err
@@ -131,7 +131,7 @@ func (r *CachedRepository) SaveValidatorSet(ctx context.Context, validatorSet en
 	return nil
 }
 
-func (r *CachedRepository) SaveValidatorSetMetadata(ctx context.Context, validatorSetMetadata entity.ValidatorSetMetadata) error {
+func (r *CachedRepository) SaveValidatorSetMetadata(ctx context.Context, validatorSetMetadata symbiotic.ValidatorSetMetadata) error {
 	err := r.Repository.SaveValidatorSetMetadata(ctx, validatorSetMetadata)
 	if err != nil {
 		return err

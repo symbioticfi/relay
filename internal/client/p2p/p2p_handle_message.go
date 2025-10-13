@@ -5,9 +5,9 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/symbioticfi/relay/core/entity"
 	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
 	p2pEntity "github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func (s *Service) handleSignatureReadyMessage(pubSubMsg *pubsub.Message) error {
@@ -31,9 +31,9 @@ func (s *Service) handleSignatureReadyMessage(pubSubMsg *pubsub.Message) error {
 		return errors.Errorf("message hash size exceeds maximum allowed size: %d bytes", maxMsgHashSize)
 	}
 
-	msg := entity.SignatureExtended{
-		KeyTag:      entity.KeyTag(signatureGenerated.GetKeyTag()),
-		Epoch:       entity.Epoch(signatureGenerated.GetEpoch()),
+	msg := symbiotic.SignatureExtended{
+		KeyTag:      symbiotic.KeyTag(signatureGenerated.GetKeyTag()),
+		Epoch:       symbiotic.Epoch(signatureGenerated.GetEpoch()),
 		PublicKey:   signatureGenerated.GetSignature().GetPublicKey(),
 		Signature:   signatureGenerated.GetSignature().GetSignature(),
 		MessageHash: signatureGenerated.GetSignature().GetMessageHash(),
@@ -44,7 +44,7 @@ func (s *Service) handleSignatureReadyMessage(pubSubMsg *pubsub.Message) error {
 		return errors.Errorf("failed to extract sender info from received message: %w", err)
 	}
 
-	return s.signatureReceivedHandler.Emit(p2pEntity.P2PMessage[entity.SignatureExtended]{
+	return s.signatureReceivedHandler.Emit(p2pEntity.P2PMessage[symbiotic.SignatureExtended]{
 		SenderInfo: si,
 		Message:    msg,
 	})
@@ -68,9 +68,9 @@ func (s *Service) handleAggregatedProofReadyMessage(pubSubMsg *pubsub.Message) e
 		return errors.Errorf("aggregation proof size exceeds maximum allowed size: %d bytes", maxProofSize)
 	}
 
-	msg := entity.AggregationProof{
-		KeyTag:      entity.KeyTag(signaturesAggregated.GetKeyTag()),
-		Epoch:       entity.Epoch(signaturesAggregated.GetEpoch()),
+	msg := symbiotic.AggregationProof{
+		KeyTag:      symbiotic.KeyTag(signaturesAggregated.GetKeyTag()),
+		Epoch:       symbiotic.Epoch(signaturesAggregated.GetEpoch()),
 		MessageHash: signaturesAggregated.GetMessageHash(),
 		Proof:       signaturesAggregated.GetAggregationProof().GetProof(),
 	}
@@ -80,7 +80,7 @@ func (s *Service) handleAggregatedProofReadyMessage(pubSubMsg *pubsub.Message) e
 		return errors.Errorf("failed to extract sender info from received message: %w", err)
 	}
 
-	return s.signaturesAggregatedHandler.Emit(p2pEntity.P2PMessage[entity.AggregationProof]{
+	return s.signaturesAggregatedHandler.Emit(p2pEntity.P2PMessage[symbiotic.AggregationProof]{
 		SenderInfo: si,
 		Message:    msg,
 	})

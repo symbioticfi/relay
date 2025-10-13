@@ -17,10 +17,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 
-	"github.com/symbioticfi/relay/core/entity"
-	symbioticCrypto "github.com/symbioticfi/relay/core/usecase/crypto"
 	p2pEntity "github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/signals"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	symbioticCrypto "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 // TestService_IntegrationSuccessful tests full P2P communication between two services
@@ -45,22 +45,22 @@ func TestService_IntegrationSuccessful(t *testing.T) {
 	}, time.Second, time.Millisecond*100)
 
 	// Set up message listener on service2
-	var receivedMsg p2pEntity.P2PMessage[entity.SignatureExtended]
+	var receivedMsg p2pEntity.P2PMessage[symbiotic.SignatureExtended]
 
 	done := make(chan struct{})
-	require.NoError(t, service2.StartSignatureMessageListener(func(ctx context.Context, msg p2pEntity.P2PMessage[entity.SignatureExtended]) error {
+	require.NoError(t, service2.StartSignatureMessageListener(func(ctx context.Context, msg p2pEntity.P2PMessage[symbiotic.SignatureExtended]) error {
 		receivedMsg = msg
 		close(done)
 		return nil
 	}))
 
 	// Prepare test message
-	testSignatureMsg := entity.SignatureExtended{
-		KeyTag:      entity.KeyTag(1),
-		Epoch:       entity.Epoch(123),
-		MessageHash: entity.RawMessageHash("test message hash"),
-		Signature:   entity.RawSignature("test signature"),
-		PublicKey:   entity.RawPublicKey("test public key"),
+	testSignatureMsg := symbiotic.SignatureExtended{
+		KeyTag:      symbiotic.KeyTag(1),
+		Epoch:       symbiotic.Epoch(123),
+		MessageHash: symbiotic.RawMessageHash("test message hash"),
+		Signature:   symbiotic.RawSignature("test signature"),
+		PublicKey:   symbiotic.RawPublicKey("test public key"),
 	}
 
 	// Send the message from service1
@@ -108,7 +108,7 @@ func TestService_IntegrationFailedSignature(t *testing.T) {
 	}, time.Second, time.Millisecond*100)
 
 	// Send the message from service1
-	err = service1.BroadcastSignatureGeneratedMessage(ctx, entity.SignatureExtended{})
+	err = service1.BroadcastSignatureGeneratedMessage(ctx, symbiotic.SignatureExtended{})
 	require.NoError(t, err)
 
 	select {
@@ -123,7 +123,7 @@ func TestService_IntegrationFailedSignature(t *testing.T) {
 func createTestService(t *testing.T, skipMessageSigning bool, tracer pubsub.EventTracer) *Service {
 	t.Helper()
 
-	p2pIdentityPKRaw, err := symbioticCrypto.GeneratePrivateKey(entity.KeyTypeEcdsaSecp256k1)
+	p2pIdentityPKRaw, err := symbioticCrypto.GeneratePrivateKey(symbiotic.KeyTypeEcdsaSecp256k1)
 	require.NoError(t, err)
 
 	p2pIdentityPK, err := crypto.UnmarshalSecp256k1PrivateKey(p2pIdentityPKRaw.Bytes())

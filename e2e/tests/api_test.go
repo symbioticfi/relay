@@ -11,18 +11,18 @@ import (
 	"github.com/stretchr/testify/require"
 
 	apiv1 "github.com/symbioticfi/relay/api/client/v1"
-	"github.com/symbioticfi/relay/core/client/evm"
-	"github.com/symbioticfi/relay/core/entity"
-	valsetDeriver "github.com/symbioticfi/relay/core/usecase/valset-deriver"
+	"github.com/symbioticfi/relay/symbiotic/client/evm"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	valsetDeriver "github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver"
 )
 
 // ContractExpectedData holds expected values derived from smart contracts
 type ContractExpectedData struct {
-	CurrentEpoch         entity.Epoch
-	EpochStartTime       entity.Timestamp
+	CurrentEpoch         symbiotic.Epoch
+	EpochStartTime       symbiotic.Timestamp
 	CurrentEpochDuration uint64
-	ValidatorSet         entity.ValidatorSet
-	NetworkConfig        entity.NetworkConfig
+	ValidatorSet         symbiotic.ValidatorSet
+	NetworkConfig        symbiotic.NetworkConfig
 	IsEpochCommitted     bool
 }
 
@@ -32,7 +32,7 @@ func getExpectedDataFromContracts(t *testing.T, relayContracts RelayContractsDat
 
 	config := evm.Config{
 		ChainURLs: settlementChains,
-		DriverAddress: entity.CrossChainAddress{
+		DriverAddress: symbiotic.CrossChainAddress{
 			ChainId: 31337,
 			Address: common.HexToAddress(relayContracts.GetDriverAddress()),
 		},
@@ -88,8 +88,8 @@ func getExpectedDataFromContracts(t *testing.T, relayContracts RelayContractsDat
 func validateValidatorSetAgainstExpected(t *testing.T, apiResponse *apiv1.GetValidatorSetResponse, expected *ContractExpectedData) {
 	t.Helper()
 
-	require.Equal(t, expected.ValidatorSet.Epoch, entity.Epoch(apiResponse.Epoch), "API epoch should match contract epoch")
-	require.Equal(t, expected.ValidatorSet.CaptureTimestamp, entity.Timestamp(apiResponse.CaptureTimestamp.GetSeconds()),
+	require.Equal(t, expected.ValidatorSet.Epoch, symbiotic.Epoch(apiResponse.Epoch), "API epoch should match contract epoch")
+	require.Equal(t, expected.ValidatorSet.CaptureTimestamp, symbiotic.Timestamp(apiResponse.CaptureTimestamp.GetSeconds()),
 		"API capture timestamp should match contract timestamp")
 	require.Equal(t, uint32(expected.ValidatorSet.Version), apiResponse.Version,
 		"API version should match contract version")
@@ -196,7 +196,7 @@ func TestValidatorSetAPI(t *testing.T) {
 		t.Logf("Performing contract validation...")
 		expected := getExpectedDataFromContracts(t, deploymentData)
 
-		if expected.ValidatorSet.Epoch != entity.Epoch(valsetResp.GetEpoch()) {
+		if expected.ValidatorSet.Epoch != symbiotic.Epoch(valsetResp.GetEpoch()) {
 			continue
 		}
 

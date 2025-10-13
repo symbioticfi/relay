@@ -21,8 +21,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	apiv1 "github.com/symbioticfi/relay/api/client/v1"
-	"github.com/symbioticfi/relay/core/entity"
-	"github.com/symbioticfi/relay/core/usecase/crypto"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 var globalTestEnv *TestEnvironment
@@ -61,7 +61,6 @@ type TestEnvironment struct {
 func generateSidecarConfigs(env EnvInfo) []RelaySidecarConfig {
 	const (
 		basePrivateKey = 1000000000000000000
-		swarmKey       = "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140"
 	)
 
 	configs := make([]RelaySidecarConfig, env.Operators)
@@ -80,7 +79,6 @@ func generateSidecarConfigs(env EnvInfo) []RelaySidecarConfig {
 			fmt.Sprintf("symb/1/0/0x%s", symbPrivateKeyHex),
 			fmt.Sprintf("evm/1/31337/0x%s", symbPrivateKeyHex),
 			fmt.Sprintf("evm/1/31338/0x%s", symbPrivateKeyHex),
-			fmt.Sprintf("p2p/1/0/%s", swarmKey),
 			fmt.Sprintf("p2p/1/1/%s", symbPrivateKeyHex),
 		}
 		keysString := strings.Join(keys, ",")
@@ -89,7 +87,7 @@ func generateSidecarConfigs(env EnvInfo) []RelaySidecarConfig {
 		if err != nil {
 			panic(fmt.Sprintf("failed to decode symb private key hex: %v", err))
 		}
-		symbKey, err := crypto.NewPrivateKey(entity.KeyTypeBlsBn254, privBytes)
+		symbKey, err := crypto.NewPrivateKey(symbiotic.KeyTypeBlsBn254, privBytes)
 		if err != nil {
 			panic(fmt.Sprintf("failed to create symb private key: %v", err))
 		}

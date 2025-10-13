@@ -14,9 +14,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/symbioticfi/relay/core/entity"
 	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
+	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 const grpcProtocolTag protocol.ID = "/relay/v1/grpc"
@@ -132,10 +133,10 @@ func protoToEntityResponse(resp *prototypes.WantSignaturesResponse) entity.WantS
 		for _, protoSig := range sigList.GetSignatures() {
 			sig := entity.ValidatorSignature{
 				ValidatorIndex: protoSig.GetValidatorIndex(),
-				Signature: entity.SignatureExtended{
+				Signature: symbiotic.SignatureExtended{
 					MessageHash: protoSig.GetSignature().GetMessageHash(),
-					KeyTag:      entity.KeyTag(protoSig.GetSignature().GetKeyTag()),
-					Epoch:       entity.Epoch(protoSig.GetSignature().GetEpoch()),
+					KeyTag:      symbiotic.KeyTag(protoSig.GetSignature().GetKeyTag()),
+					Epoch:       symbiotic.Epoch(protoSig.GetSignature().GetEpoch()),
 					PublicKey:   protoSig.GetSignature().GetPublicKey(),
 					Signature:   protoSig.GetSignature().GetSignature(),
 				},

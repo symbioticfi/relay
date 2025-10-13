@@ -9,7 +9,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func keySignature(requestID common.Hash, validatorIndex uint32) []byte {
@@ -21,7 +22,7 @@ func keySignaturePrefix(requestID common.Hash) []byte {
 	return []byte("signature:" + requestID.Hex() + ":")
 }
 
-func (r *Repository) saveSignature(ctx context.Context, validatorIndex uint32, sig entity.SignatureExtended) error {
+func (r *Repository) saveSignature(ctx context.Context, validatorIndex uint32, sig symbiotic.SignatureExtended) error {
 	txn := getTxn(ctx)
 	if txn == nil {
 		return errors.New("no transaction found in context, use signature processor in order to store signatures")
@@ -40,8 +41,8 @@ func (r *Repository) saveSignature(ctx context.Context, validatorIndex uint32, s
 	return nil
 }
 
-func (r *Repository) GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity.SignatureExtended, error) {
-	var signatures []entity.SignatureExtended
+func (r *Repository) GetAllSignatures(ctx context.Context, requestID common.Hash) ([]symbiotic.SignatureExtended, error) {
+	var signatures []symbiotic.SignatureExtended
 
 	return signatures, r.doViewInTx(ctx, "GetAllSignatures", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -71,8 +72,8 @@ func (r *Repository) GetAllSignatures(ctx context.Context, requestID common.Hash
 	})
 }
 
-func (r *Repository) GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (entity.SignatureExtended, error) {
-	var signature entity.SignatureExtended
+func (r *Repository) GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (symbiotic.SignatureExtended, error) {
+	var signature symbiotic.SignatureExtended
 
 	err := r.doViewInTx(ctx, "GetSignatureByIndex", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -111,7 +112,7 @@ type signatureDTO struct {
 	PublicKey   []byte `json:"public_key"`
 }
 
-func signatureToBytes(sig entity.SignatureExtended) ([]byte, error) {
+func signatureToBytes(sig symbiotic.SignatureExtended) ([]byte, error) {
 	dto := signatureDTO{
 		MessageHash: sig.MessageHash,
 		KeyTag:      uint8(sig.KeyTag),
@@ -126,16 +127,16 @@ func signatureToBytes(sig entity.SignatureExtended) ([]byte, error) {
 	return data, nil
 }
 
-func bytesToSignature(value []byte) (entity.SignatureExtended, error) {
+func bytesToSignature(value []byte) (symbiotic.SignatureExtended, error) {
 	var dto signatureDTO
 	if err := json.Unmarshal(value, &dto); err != nil {
-		return entity.SignatureExtended{}, errors.Errorf("failed to unmarshal signature: %w", err)
+		return symbiotic.SignatureExtended{}, errors.Errorf("failed to unmarshal signature: %w", err)
 	}
 
-	return entity.SignatureExtended{
+	return symbiotic.SignatureExtended{
 		MessageHash: dto.MessageHash,
-		KeyTag:      entity.KeyTag(dto.KeyTag),
-		Epoch:       entity.Epoch(dto.Epoch),
+		KeyTag:      symbiotic.KeyTag(dto.KeyTag),
+		Epoch:       symbiotic.Epoch(dto.Epoch),
 		PublicKey:   dto.PublicKey,
 		Signature:   dto.Signature,
 	}, nil

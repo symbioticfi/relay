@@ -11,14 +11,15 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-func keyNetworkConfig(epoch entity.Epoch) []byte {
+func keyNetworkConfig(epoch symbiotic.Epoch) []byte {
 	return []byte(fmt.Sprintf("network_config:%d", epoch))
 }
 
-func (r *Repository) SaveConfig(ctx context.Context, config entity.NetworkConfig, epoch entity.Epoch) error {
+func (r *Repository) SaveConfig(ctx context.Context, config symbiotic.NetworkConfig, epoch symbiotic.Epoch) error {
 	configBytes, err := networkConfigToBytes(config)
 	if err != nil {
 		return errors.Errorf("failed to marshal network config: %w", err)
@@ -42,8 +43,8 @@ func (r *Repository) SaveConfig(ctx context.Context, config entity.NetworkConfig
 	})
 }
 
-func (r *Repository) GetConfigByEpoch(ctx context.Context, epoch entity.Epoch) (entity.NetworkConfig, error) {
-	var config entity.NetworkConfig
+func (r *Repository) GetConfigByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.NetworkConfig, error) {
+	var config symbiotic.NetworkConfig
 
 	return config, r.doViewInTx(ctx, "GetConfigByEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -95,9 +96,9 @@ type networkConfigDTO struct {
 	CommitterSlotDuration   uint64                 `json:"committer_slot_duration,omitempty"`
 }
 
-func networkConfigToBytes(config entity.NetworkConfig) ([]byte, error) {
+func networkConfigToBytes(config symbiotic.NetworkConfig) ([]byte, error) {
 	networkConfigDTOFromEntity := networkConfigDTO{
-		VotingPowerProviders: lo.Map(config.VotingPowerProviders, func(addr entity.CrossChainAddress, _ int) crossChainAddressDTO {
+		VotingPowerProviders: lo.Map(config.VotingPowerProviders, func(addr symbiotic.CrossChainAddress, _ int) crossChainAddressDTO {
 			return crossChainAddressDTO{
 				ChainId: addr.ChainId,
 				Address: addr.Address.Hex(),
@@ -107,7 +108,7 @@ func networkConfigToBytes(config entity.NetworkConfig) ([]byte, error) {
 			Address: config.KeysProvider.Address.Hex(),
 			ChainId: config.KeysProvider.ChainId,
 		},
-		Settlements: lo.Map(config.Settlements, func(addr entity.CrossChainAddress, _ int) crossChainAddressDTO {
+		Settlements: lo.Map(config.Settlements, func(addr symbiotic.CrossChainAddress, _ int) crossChainAddressDTO {
 			return crossChainAddressDTO{
 				ChainId: addr.ChainId,
 				Address: addr.Address.Hex(),
@@ -117,9 +118,9 @@ func networkConfigToBytes(config entity.NetworkConfig) ([]byte, error) {
 		MaxVotingPower:          config.MaxVotingPower.Int,
 		MinInclusionVotingPower: config.MinInclusionVotingPower.Int,
 		MaxValidatorsCount:      config.MaxValidatorsCount.Int,
-		RequiredKeyTags:         lo.Map(config.RequiredKeyTags, func(tag entity.KeyTag, _ int) uint8 { return uint8(tag) }),
+		RequiredKeyTags:         lo.Map(config.RequiredKeyTags, func(tag symbiotic.KeyTag, _ int) uint8 { return uint8(tag) }),
 		RequiredHeaderKeyTag:    uint8(config.RequiredHeaderKeyTag),
-		QuorumThresholds: lo.Map(config.QuorumThresholds, func(qt entity.QuorumThreshold, _ int) quorumThresholdDto {
+		QuorumThresholds: lo.Map(config.QuorumThresholds, func(qt symbiotic.QuorumThreshold, _ int) quorumThresholdDto {
 			return quorumThresholdDto{
 				KeyTag:          uint8(qt.KeyTag),
 				QuorumThreshold: qt.QuorumThreshold.Int,
@@ -133,39 +134,39 @@ func networkConfigToBytes(config entity.NetworkConfig) ([]byte, error) {
 	return json.Marshal(networkConfigDTOFromEntity)
 }
 
-func bytesToNetworkConfig(data []byte) (entity.NetworkConfig, error) {
+func bytesToNetworkConfig(data []byte) (symbiotic.NetworkConfig, error) {
 	var dto networkConfigDTO
 	if err := json.Unmarshal(data, &dto); err != nil {
-		return entity.NetworkConfig{}, errors.Errorf("failed to unmarshal network config: %w", err)
+		return symbiotic.NetworkConfig{}, errors.Errorf("failed to unmarshal network config: %w", err)
 	}
 
-	return entity.NetworkConfig{
-		VotingPowerProviders: lo.Map(dto.VotingPowerProviders, func(addr crossChainAddressDTO, _ int) entity.CrossChainAddress {
-			return entity.CrossChainAddress{
+	return symbiotic.NetworkConfig{
+		VotingPowerProviders: lo.Map(dto.VotingPowerProviders, func(addr crossChainAddressDTO, _ int) symbiotic.CrossChainAddress {
+			return symbiotic.CrossChainAddress{
 				ChainId: addr.ChainId,
 				Address: common.HexToAddress(addr.Address),
 			}
 		}),
-		KeysProvider: entity.CrossChainAddress{
+		KeysProvider: symbiotic.CrossChainAddress{
 			ChainId: dto.KeysProvider.ChainId,
 			Address: common.HexToAddress(dto.KeysProvider.Address),
 		},
-		Settlements: lo.Map(dto.Settlements, func(addr crossChainAddressDTO, _ int) entity.CrossChainAddress {
-			return entity.CrossChainAddress{
+		Settlements: lo.Map(dto.Settlements, func(addr crossChainAddressDTO, _ int) symbiotic.CrossChainAddress {
+			return symbiotic.CrossChainAddress{
 				ChainId: addr.ChainId,
 				Address: common.HexToAddress(addr.Address),
 			}
 		}),
-		VerificationType:        entity.VerificationType(dto.VerificationType),
-		MaxVotingPower:          entity.ToVotingPower(dto.MaxVotingPower),
-		MinInclusionVotingPower: entity.ToVotingPower(dto.MinInclusionVotingPower),
-		MaxValidatorsCount:      entity.ToVotingPower(dto.MaxValidatorsCount),
-		RequiredKeyTags:         lo.Map(dto.RequiredKeyTags, func(tag uint8, _ int) entity.KeyTag { return entity.KeyTag(tag) }),
-		RequiredHeaderKeyTag:    entity.KeyTag(dto.RequiredHeaderKeyTag),
-		QuorumThresholds: lo.Map(dto.QuorumThresholds, func(qt quorumThresholdDto, _ int) entity.QuorumThreshold {
-			return entity.QuorumThreshold{
-				KeyTag:          entity.KeyTag(qt.KeyTag),
-				QuorumThreshold: entity.ToQuorumThresholdPct(qt.QuorumThreshold),
+		VerificationType:        symbiotic.VerificationType(dto.VerificationType),
+		MaxVotingPower:          symbiotic.ToVotingPower(dto.MaxVotingPower),
+		MinInclusionVotingPower: symbiotic.ToVotingPower(dto.MinInclusionVotingPower),
+		MaxValidatorsCount:      symbiotic.ToVotingPower(dto.MaxValidatorsCount),
+		RequiredKeyTags:         lo.Map(dto.RequiredKeyTags, func(tag uint8, _ int) symbiotic.KeyTag { return symbiotic.KeyTag(tag) }),
+		RequiredHeaderKeyTag:    symbiotic.KeyTag(dto.RequiredHeaderKeyTag),
+		QuorumThresholds: lo.Map(dto.QuorumThresholds, func(qt quorumThresholdDto, _ int) symbiotic.QuorumThreshold {
+			return symbiotic.QuorumThreshold{
+				KeyTag:          symbiotic.KeyTag(qt.KeyTag),
+				QuorumThreshold: symbiotic.ToQuorumThresholdPct(qt.QuorumThreshold),
 			}
 		}),
 		NumAggregators:        dto.NumAggregators,

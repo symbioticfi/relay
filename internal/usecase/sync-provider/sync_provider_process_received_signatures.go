@@ -7,7 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/entity"
 )
 
 // ProcessReceivedSignatures validates and processes signatures received from peer nodes during
@@ -58,11 +58,11 @@ func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.
 			if err != nil {
 				slog.WarnContext(ctx, "Failed to get signature request for processing",
 					"requestId", requestID.Hex(), "error", err)
-				stats.SignatureRequestErrorCount++
+				stats.SignatureRequestFailCount++
 				continue
 			}
 
-			if err := s.cfg.EntityProcessor.ProcessSignature(ctx, validatorSig.Signature); err != nil {
+			if err := s.cfg.EntityProcessor.ProcessSignature(ctx, validatorSig.Signature, false); err != nil {
 				if errors.Is(err, entity.ErrEntityAlreadyExist) {
 					slog.DebugContext(ctx, "Signature already exists",
 						"requestId", requestID.Hex(),
@@ -73,7 +73,7 @@ func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.
 						"requestId", requestID.Hex(),
 						"validatorIndex", validatorSig.ValidatorIndex,
 						"error", err)
-					stats.ProcessingErrorCount++
+					stats.ProcessingFailCount++
 				}
 				continue
 			}

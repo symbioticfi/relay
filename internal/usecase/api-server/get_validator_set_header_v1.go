@@ -9,8 +9,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/symbioticfi/relay/core/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // GetValidatorSetHeader handles the gRPC GetValidatorSetHeader request
@@ -22,7 +22,7 @@ func (h *grpcHandler) GetValidatorSetHeader(ctx context.Context, req *apiv1.GetV
 
 	epochRequested := latestEpoch
 	if req.Epoch != nil {
-		epochRequested = entity.Epoch(req.GetEpoch())
+		epochRequested = symbiotic.Epoch(req.GetEpoch())
 	}
 
 	// epoch from future

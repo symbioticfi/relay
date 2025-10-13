@@ -6,12 +6,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // HandleWantAggregationProofsRequest handles incoming requests for aggregation proofs from peers
 func (s *Syncer) HandleWantAggregationProofsRequest(ctx context.Context, request entity.WantAggregationProofsRequest) (entity.WantAggregationProofsResponse, error) {
-	proofs := make(map[common.Hash]entity.AggregationProof)
+	proofs := make(map[common.Hash]symbiotic.AggregationProof)
 	responseCount := 0
 
 	// Process each requested hash

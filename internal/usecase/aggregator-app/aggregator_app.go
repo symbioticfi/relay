@@ -5,30 +5,29 @@ import (
 	"log/slog"
 	"time"
 
-	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
-	aggregationPolicyTypes "github.com/symbioticfi/relay/internal/usecase/aggregation-policy/types"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	validate "github.com/go-playground/validator/v10"
 
-	"github.com/symbioticfi/relay/core/entity"
-	"github.com/symbioticfi/relay/core/usecase/crypto"
+	"github.com/symbioticfi/relay/internal/entity"
+	aggregationPolicyTypes "github.com/symbioticfi/relay/internal/usecase/aggregation-policy/types"
 	"github.com/symbioticfi/relay/pkg/log"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 //go:generate mockgen -source=aggregator_app.go -destination=mocks/aggregator_app.go -package=mocks
 type repository interface {
-	GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error)
-	GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error)
-	GetSignatureRequest(_ context.Context, requestID common.Hash) (entity.SignatureRequest, error)
-	GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity.SignatureExtended, error)
-	GetConfigByEpoch(ctx context.Context, epoch entity.Epoch) (entity.NetworkConfig, error)
+	GetValidatorSetByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error)
+	GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error)
+	GetSignatureRequest(_ context.Context, requestID common.Hash) (symbiotic.SignatureRequest, error)
+	GetAllSignatures(ctx context.Context, requestID common.Hash) ([]symbiotic.SignatureExtended, error)
+	GetConfigByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.NetworkConfig, error)
 	GetSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error)
 }
 
 type p2pClient interface {
-	BroadcastSignatureAggregatedMessage(ctx context.Context, proof entity.AggregationProof) error
+	BroadcastSignatureAggregatedMessage(ctx context.Context, proof symbiotic.AggregationProof) error
 }
 
 type metrics interface {
@@ -37,18 +36,22 @@ type metrics interface {
 }
 
 type aggregator interface {
-	Aggregate(valset entity.ValidatorSet, keyTag entity.KeyTag, messageHash []byte, signatures []entity.SignatureExtended) (entity.AggregationProof, error)
+	Aggregate(valset symbiotic.ValidatorSet, keyTag symbiotic.KeyTag, messageHash []byte, signatures []symbiotic.SignatureExtended) (symbiotic.AggregationProof, error)
+}
+
+type keyProvider interface {
+	GetPrivateKey(keyTag symbiotic.KeyTag) (crypto.PrivateKey, error)
 }
 
 type aggregatorPolicy = aggregationPolicyTypes.AggregationPolicy
 
 type Config struct {
-	Repo              repository              `validate:"required"`
-	P2PClient         p2pClient               `validate:"required"`
-	Aggregator        aggregator              `validate:"required"`
-	Metrics           metrics                 `validate:"required"`
-	AggregationPolicy aggregatorPolicy        `validate:"required"`
-	KeyProvider       keyprovider.KeyProvider `validate:"required"`
+	Repo              repository       `validate:"required"`
+	P2PClient         p2pClient        `validate:"required"`
+	Aggregator        aggregator       `validate:"required"`
+	Metrics           metrics          `validate:"required"`
+	AggregationPolicy aggregatorPolicy `validate:"required"`
+	KeyProvider       keyProvider      `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -75,7 +78,7 @@ func NewAggregatorApp(cfg Config) (*AggregatorApp, error) {
 	return app, nil
 }
 
-func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg entity.SignatureExtended) error {
+func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg symbiotic.SignatureExtended) error {
 	ctx = log.WithComponent(ctx, "aggregator")
 	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(msg.Epoch)))
 	slog.DebugContext(ctx, "Received HandleSignatureProcessedMessage", "message", msg)
@@ -110,7 +113,7 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 
 	privKey, err := s.cfg.KeyProvider.GetPrivateKey(validatorSet.RequiredKeyTag)
 	if err != nil {
-		if errors.Is(err, keyprovider.ErrKeyNotFound) {
+		if errors.Is(err, entity.ErrKeyNotFound) {
 			slog.DebugContext(ctx, "No key for required key tag, skipping proof aggregation", "keyTag", validatorSet.RequiredKeyTag)
 			return nil
 		}
@@ -189,44 +192,44 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 	return nil
 }
 
-func (s *AggregatorApp) GetAggregationStatus(ctx context.Context, requestID common.Hash) (entity.AggregationStatus, error) {
+func (s *AggregatorApp) GetAggregationStatus(ctx context.Context, requestID common.Hash) (symbiotic.AggregationStatus, error) {
 	signatureRequest, err := s.cfg.Repo.GetSignatureRequest(ctx, requestID)
 	if err != nil {
-		return entity.AggregationStatus{}, errors.Errorf("failed to get signature request: %w", err)
+		return symbiotic.AggregationStatus{}, errors.Errorf("failed to get signature request: %w", err)
 	}
 
 	if !signatureRequest.KeyTag.Type().AggregationKey() {
-		return entity.AggregationStatus{}, errors.Errorf("key tag %s is not an aggregation key", signatureRequest.KeyTag)
+		return symbiotic.AggregationStatus{}, errors.Errorf("key tag %s is not an aggregation key", signatureRequest.KeyTag)
 	}
 	signatures, err := s.cfg.Repo.GetAllSignatures(ctx, requestID)
 	if err != nil {
-		return entity.AggregationStatus{}, errors.Errorf("failed to get all signatures: %w", err)
+		return symbiotic.AggregationStatus{}, errors.Errorf("failed to get all signatures: %w", err)
 	}
 
 	publicKeys, err := extractPublicKeys(signatureRequest.KeyTag, signatures)
 	if err != nil {
-		return entity.AggregationStatus{}, errors.Errorf("failed to extract public keys: %w", err)
+		return symbiotic.AggregationStatus{}, errors.Errorf("failed to extract public keys: %w", err)
 	}
 
 	// Get validator set for quorum threshold checks and aggregation
 	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, signatureRequest.RequiredEpoch)
 	if err != nil {
-		return entity.AggregationStatus{}, errors.Errorf("failed to get validator set: %w", err)
+		return symbiotic.AggregationStatus{}, errors.Errorf("failed to get validator set: %w", err)
 	}
 
 	validators, err := validatorSet.FindValidatorsByKeys(signatureRequest.KeyTag, publicKeys)
 	if err != nil {
-		return entity.AggregationStatus{}, errors.Errorf("failed to find validators by keys: %w", err)
+		return symbiotic.AggregationStatus{}, errors.Errorf("failed to find validators by keys: %w", err)
 	}
 
-	return entity.AggregationStatus{
+	return symbiotic.AggregationStatus{
 		VotingPower: validators.GetTotalActiveVotingPower(),
 		Validators:  validators,
 	}, nil
 }
 
-func extractPublicKeys(keyTag entity.KeyTag, signatures []entity.SignatureExtended) ([]entity.CompactPublicKey, error) {
-	publicKeys := make([]entity.CompactPublicKey, 0, len(signatures))
+func extractPublicKeys(keyTag symbiotic.KeyTag, signatures []symbiotic.SignatureExtended) ([]symbiotic.CompactPublicKey, error) {
+	publicKeys := make([]symbiotic.CompactPublicKey, 0, len(signatures))
 	for _, signature := range signatures {
 		pk, err := crypto.NewPublicKey(keyTag.Type(), signature.PublicKey)
 		if err != nil {

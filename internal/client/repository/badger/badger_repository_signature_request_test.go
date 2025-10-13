@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 
-	"github.com/symbioticfi/relay/core/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func TestBadgerRepository_SignatureRequest(t *testing.T) {
@@ -27,7 +27,7 @@ func TestBadgerRepository_SignatureRequest(t *testing.T) {
 }
 
 type reqWithTargetID struct {
-	req  entity.SignatureRequest
+	req  symbiotic.SignatureRequest
 	hash common.Hash
 }
 
@@ -35,7 +35,7 @@ func TestBadgerRepository_GetSignatureRequestsByEpoch(t *testing.T) {
 	t.Parallel()
 	repo := setupTestRepository(t)
 
-	epoch := entity.Epoch(100)
+	epoch := symbiotic.Epoch(100)
 
 	requests := make([]reqWithTargetID, 5)
 	for i := 0; i < 5; i++ {
@@ -106,7 +106,7 @@ func TestBadgerRepository_GetSignatureRequestsByEpoch(t *testing.T) {
 	})
 
 	t.Run("empty epoch", func(t *testing.T) {
-		emptyEpoch := entity.Epoch(999)
+		emptyEpoch := symbiotic.Epoch(999)
 		results, err := repo.GetSignatureRequestsByEpoch(t.Context(), emptyEpoch, 0, common.Hash{})
 		require.NoError(t, err)
 		require.Empty(t, results)
@@ -164,8 +164,8 @@ func TestBadgerRepository_GetSignatureRequestsByEpoch_MultipleEpochs(t *testing.
 	t.Parallel()
 	repo := setupTestRepository(t)
 
-	epoch1 := entity.Epoch(100)
-	epoch2 := entity.Epoch(200)
+	epoch1 := symbiotic.Epoch(100)
+	epoch2 := symbiotic.Epoch(200)
 
 	// Create requests for epoch1
 	for i := 0; i < 3; i++ {
@@ -198,292 +198,31 @@ func TestBadgerRepository_GetSignatureRequestsByEpoch_MultipleEpochs(t *testing.
 	}
 }
 
-func randomSignatureRequest(t *testing.T) entity.SignatureRequest {
+func randomSignatureRequest(t *testing.T) symbiotic.SignatureRequest {
 	t.Helper()
-	return entity.SignatureRequest{
-		KeyTag:        entity.KeyTag(15),
-		RequiredEpoch: entity.Epoch(randomBigInt(t).Uint64()),
+	return symbiotic.SignatureRequest{
+		KeyTag:        symbiotic.KeyTag(15),
+		RequiredEpoch: symbiotic.Epoch(randomBigInt(t).Uint64()),
 		Message:       randomBytes(t, 32),
 	}
 }
 
-func randomSignatureRequestForEpoch(t *testing.T, epoch entity.Epoch) entity.SignatureRequest {
+func randomSignatureRequestForEpoch(t *testing.T, epoch symbiotic.Epoch) symbiotic.SignatureRequest {
 	t.Helper()
-	return entity.SignatureRequest{
-		KeyTag:        entity.KeyTag(15),
+	return symbiotic.SignatureRequest{
+		KeyTag:        symbiotic.KeyTag(15),
 		RequiredEpoch: epoch,
 		Message:       randomBytes(t, 32),
 	}
 }
 
-func randomSignatureExtendedForEpoch(t *testing.T, epoch entity.Epoch) entity.SignatureExtended {
+func randomSignatureExtendedForEpoch(t *testing.T, epoch symbiotic.Epoch) symbiotic.SignatureExtended {
 	t.Helper()
-	return entity.SignatureExtended{
+	return symbiotic.SignatureExtended{
 		MessageHash: randomBytes(t, 32),
 		KeyTag:      15,
 		Epoch:       epoch,
 		Signature:   []byte("signature1"),
 		PublicKey:   []byte("publickey1"),
 	}
-}
-
-func TestBadgerRepository_GetSignatureRequestsByEpochPending(t *testing.T) {
-	t.Parallel()
-	repo := setupTestRepository(t)
-
-	epoch := entity.Epoch(100)
-
-	// Create multiple pending signature for the same epoch
-	requests := make([]reqWithTargetID, 5)
-	for i := 0; i < 5; i++ {
-		requests[i].req = randomSignatureRequestForEpoch(t, epoch)
-		requests[i].hash = common.BytesToHash(randomBytes(t, 32))
-
-		err := repo.SaveSignatureRequest(t.Context(), requests[i].hash, requests[i].req)
-		require.NoError(t, err)
-	}
-
-	// Sort requests by hash (lexicographic order) to match expected retrieval order
-	sort.Slice(requests, func(i, j int) bool {
-		return requests[i].hash.Hex() < requests[j].hash.Hex()
-	})
-
-	t.Run("get all pending requests for epoch", func(t *testing.T) {
-		results, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch, 0, common.Hash{})
-		require.NoError(t, err)
-		require.Len(t, results, 5)
-
-		// Verify they are in correct order
-		for i, result := range results {
-			require.Equal(t, requests[i].req, result.SignatureRequest)
-		}
-	})
-
-	t.Run("get pending requests with limit", func(t *testing.T) {
-		results, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch, 3, common.Hash{})
-		require.NoError(t, err)
-		require.Len(t, results, 3)
-
-		// Verify first 3 requests
-		for i, result := range results {
-			require.Equal(t, requests[i].req, result.SignatureRequest)
-		}
-	})
-
-	t.Run("cursor-based pagination for pending requests", func(t *testing.T) {
-		// Get first page (2 items)
-		firstPage, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch, 2, common.Hash{})
-		require.NoError(t, err)
-		require.Len(t, firstPage, 2)
-		require.Equal(t, requests[0].req, firstPage[0].SignatureRequest)
-		require.Equal(t, requests[1].req, firstPage[1].SignatureRequest)
-
-		// Get second page using cursor
-		lastHash := requests[len(firstPage)-1].hash
-		secondPage, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch, 2, lastHash)
-		require.NoError(t, err)
-		require.Len(t, secondPage, 2)
-		require.Equal(t, requests[2].req, secondPage[0].SignatureRequest)
-		require.Equal(t, requests[3].req, secondPage[1].SignatureRequest)
-
-		// Get third page using cursor
-		lastHash = requests[len(firstPage)+len(secondPage)-1].hash
-		thirdPage, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch, 2, lastHash)
-		require.NoError(t, err)
-		require.Len(t, thirdPage, 1)
-		require.Equal(t, requests[4].req, thirdPage[0].SignatureRequest)
-
-		// Get fourth page (should be empty)
-		lastHash = requests[len(firstPage)+len(secondPage)+len(thirdPage)-1].hash
-		fourthPage, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch, 2, lastHash)
-		require.NoError(t, err)
-		require.Empty(t, fourthPage)
-	})
-
-	t.Run("empty epoch for pending requests", func(t *testing.T) {
-		emptyEpoch := entity.Epoch(999)
-		results, err := repo.GetSignaturePendingByEpoch(t.Context(), emptyEpoch, 0, common.Hash{})
-		require.NoError(t, err)
-		require.Empty(t, results)
-	})
-}
-
-func TestBadgerRepository_RemoveSignatureRequestPending(t *testing.T) {
-	t.Parallel()
-	repo := setupTestRepository(t)
-
-	epoch := entity.Epoch(100)
-	req := randomSignatureRequestForEpoch(t, epoch)
-
-	t.Run("successfully removes existing pending request", func(t *testing.T) {
-		// Save signature request (creates both main and pending entries)
-		sigTargetID := randomRequestID(t)
-		err := repo.SaveSignatureRequest(t.Context(), sigTargetID, req)
-		require.NoError(t, err)
-
-		// Verify pending request exists
-		pendingReqs, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch, 0, common.Hash{})
-		require.NoError(t, err)
-		require.Len(t, pendingReqs, 1)
-		require.Equal(t, req, pendingReqs[0].SignatureRequest)
-
-		// Remove pending request
-		err = repo.RemoveSignatureRequestPending(t.Context(), epoch, sigTargetID)
-		require.NoError(t, err)
-
-		// Verify pending request is removed
-		pendingReqs, err = repo.GetSignaturePendingByEpoch(t.Context(), epoch, 0, common.Hash{})
-		require.NoError(t, err)
-		require.Empty(t, pendingReqs)
-
-		// Verify main signature request still exists
-		retrievedReq, err := repo.GetSignatureRequest(t.Context(), sigTargetID)
-		require.NoError(t, err)
-		require.Equal(t, req, retrievedReq)
-	})
-
-	t.Run("returns error when removing non-existent pending request", func(t *testing.T) {
-		nonExistentHash := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
-
-		err := repo.RemoveSignatureRequestPending(t.Context(), epoch, nonExistentHash)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "pending signature not found")
-		require.Contains(t, err.Error(), entity.ErrEntityNotFound)
-	})
-
-	t.Run("returns error when removing already removed pending request", func(t *testing.T) {
-		sigTargetID := randomRequestID(t)
-		req2 := randomSignatureRequestForEpoch(t, epoch)
-		err := repo.SaveSignatureRequest(t.Context(), sigTargetID, req2)
-		require.NoError(t, err)
-
-		err = repo.RemoveSignatureRequestPending(t.Context(), epoch, sigTargetID)
-		require.NoError(t, err)
-
-		// Try to remove again
-		err = repo.RemoveSignatureRequestPending(t.Context(), epoch, sigTargetID)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "pending signature not found")
-		require.Contains(t, err.Error(), entity.ErrEntityNotFound)
-	})
-}
-
-func TestBadgerRepository_PendingSignatureRequests_Integration(t *testing.T) {
-	t.Parallel()
-	repo := setupTestRepository(t)
-
-	epoch := entity.Epoch(100)
-
-	t.Run("pending and regular requests are independent", func(t *testing.T) {
-		// Create multiple requests
-		req1 := randomSignatureRequestForEpoch(t, epoch)
-		sigTargetID1 := randomRequestID(t)
-		req2 := randomSignatureRequestForEpoch(t, epoch)
-		sigTargetID2 := randomRequestID(t)
-		req3 := randomSignatureRequestForEpoch(t, epoch)
-		sigTargetID3 := randomRequestID(t)
-
-		// Save all requests
-		err := repo.SaveSignatureRequest(t.Context(), sigTargetID1, req1)
-		require.NoError(t, err)
-		err = repo.SaveSignatureRequest(t.Context(), sigTargetID2, req2)
-		require.NoError(t, err)
-		err = repo.SaveSignatureRequest(t.Context(), sigTargetID3, req3)
-		require.NoError(t, err)
-
-		// Verify all are pending
-		pendingReqs, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch, 0, common.Hash{})
-		require.NoError(t, err)
-		require.Len(t, pendingReqs, 3)
-
-		// Verify all are in regular collection
-		allReqs, err := repo.GetSignatureRequestsByEpoch(t.Context(), epoch, 0, common.Hash{})
-		require.NoError(t, err)
-		require.Len(t, allReqs, 3)
-
-		// Remove one from pending
-		err = repo.RemoveSignatureRequestPending(t.Context(), epoch, sigTargetID2)
-		require.NoError(t, err)
-
-		// Verify pending count decreased
-		pendingReqs, err = repo.GetSignaturePendingByEpoch(t.Context(), epoch, 0, common.Hash{})
-		require.NoError(t, err)
-		require.Len(t, pendingReqs, 2)
-
-		// Verify regular collection unchanged
-		allReqs, err = repo.GetSignatureRequestsByEpoch(t.Context(), epoch, 0, common.Hash{})
-		require.NoError(t, err)
-		require.Len(t, allReqs, 3)
-
-		// Verify the removed request still accessible via regular method
-		retrievedReq, err := repo.GetSignatureRequest(t.Context(), sigTargetID2)
-		require.NoError(t, err)
-		require.Equal(t, req2, retrievedReq)
-	})
-
-	t.Run("pending requests across different epochs", func(t *testing.T) {
-		epoch1 := entity.Epoch(200)
-		epoch2 := entity.Epoch(300)
-
-		req1 := randomSignatureRequestForEpoch(t, epoch1)
-		sigTargetID1 := randomRequestID(t)
-		req2 := randomSignatureRequestForEpoch(t, epoch2)
-		sigTargetID2 := randomRequestID(t)
-
-		// Save requests for different epochs
-		err := repo.SaveSignatureRequest(t.Context(), sigTargetID1, req1)
-		require.NoError(t, err)
-		err = repo.SaveSignatureRequest(t.Context(), sigTargetID2, req2)
-		require.NoError(t, err)
-
-		// Verify each epoch has its pending request
-		pendingReqs1, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch1, 0, common.Hash{})
-		require.NoError(t, err)
-		require.Len(t, pendingReqs1, 1)
-		require.Equal(t, req1, pendingReqs1[0].SignatureRequest)
-
-		pendingReqs2, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch2, 0, common.Hash{})
-		require.NoError(t, err)
-		require.Len(t, pendingReqs2, 1)
-		require.Equal(t, req2, pendingReqs2[0].SignatureRequest)
-
-		// Remove pending from epoch1
-		err = repo.RemoveSignatureRequestPending(t.Context(), epoch1, sigTargetID1)
-		require.NoError(t, err)
-
-		// Verify epoch1 has no pending, epoch2 still has pending
-		pendingReqs1, err = repo.GetSignaturePendingByEpoch(t.Context(), epoch1, 0, common.Hash{})
-		require.NoError(t, err)
-		require.Empty(t, pendingReqs1)
-
-		pendingReqs2, err = repo.GetSignaturePendingByEpoch(t.Context(), epoch2, 0, common.Hash{})
-		require.NoError(t, err)
-		require.Len(t, pendingReqs2, 1)
-		require.Equal(t, req2, pendingReqs2[0].SignatureRequest)
-	})
-}
-
-func TestBadgerRepository_SaveSignatureRequestPending_DuplicateHandling(t *testing.T) {
-	t.Parallel()
-	repo := setupTestRepository(t)
-
-	epoch := entity.Epoch(100)
-	req := randomSignatureRequestForEpoch(t, epoch)
-	sigTargetID := randomRequestID(t)
-
-	// Save signature request to main collection first
-	err := repo.SaveSignatureRequest(t.Context(), sigTargetID, req)
-	require.NoError(t, err)
-
-	// Try to save the same request to pending again - should fail
-	err = repo.saveSignaturePending(t.Context(), sigTargetID, req)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "pending signature already exists")
-	require.ErrorIs(t, err, entity.ErrEntityAlreadyExist)
-
-	// Verify the pending request still exists and is functional
-	pendingReqs, err := repo.GetSignaturePendingByEpoch(t.Context(), epoch, 0, common.Hash{})
-	require.NoError(t, err)
-	require.Len(t, pendingReqs, 1)
-	require.Equal(t, req, pendingReqs[0].SignatureRequest)
 }

@@ -9,8 +9,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/symbioticfi/relay/core/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // GetValidatorByAddress handles the gRPC GetValidatorByAddress request
@@ -22,7 +22,7 @@ func (h *grpcHandler) GetValidatorByAddress(ctx context.Context, req *apiv1.GetV
 
 	epochRequested := latestEpoch
 	if req.Epoch != nil {
-		epochRequested = entity.Epoch(req.GetEpoch())
+		epochRequested = symbiotic.Epoch(req.GetEpoch())
 	}
 
 	// epoch from future
@@ -43,7 +43,7 @@ func (h *grpcHandler) GetValidatorByAddress(ctx context.Context, req *apiv1.GetV
 	}
 
 	// find validator by address
-	validator, found := lo.Find(validatorSet.Validators, func(v entity.Validator) bool {
+	validator, found := lo.Find(validatorSet.Validators, func(v symbiotic.Validator) bool {
 		return v.Operator == validatorAddress
 	})
 	if !found {

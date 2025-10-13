@@ -3,12 +3,12 @@ package operator
 import (
 	"time"
 
-	"github.com/symbioticfi/relay/core/client/evm"
-	"github.com/symbioticfi/relay/core/entity"
-	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
-	valsetDeriver "github.com/symbioticfi/relay/core/usecase/valset-deriver"
 	cmdhelpers "github.com/symbioticfi/relay/internal/usecase/cmd-helpers"
+	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
 	"github.com/symbioticfi/relay/internal/usecase/metrics"
+	"github.com/symbioticfi/relay/symbiotic/client/evm"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	valsetDeriver "github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
@@ -30,7 +30,7 @@ var infoCmd = &cobra.Command{
 
 		evmClient, err := evm.NewEvmClient(ctx, evm.Config{
 			ChainURLs: globalFlags.Chains,
-			DriverAddress: entity.CrossChainAddress{
+			DriverAddress: symbiotic.CrossChainAddress{
 				ChainId: globalFlags.DriverChainId,
 				Address: common.HexToAddress(globalFlags.DriverAddress),
 			},
@@ -57,7 +57,7 @@ var infoCmd = &cobra.Command{
 			infoFlags.Epoch = uint64(epoch)
 		}
 
-		captureTimestamp, err := evmClient.GetEpochStart(ctx, entity.Epoch(infoFlags.Epoch))
+		captureTimestamp, err := evmClient.GetEpochStart(ctx, symbiotic.Epoch(infoFlags.Epoch))
 		if err != nil {
 			return errors.Errorf("failed to get capture timestamp: %w", err)
 		}
@@ -87,7 +87,7 @@ var infoCmd = &cobra.Command{
 			return err
 		}
 
-		kt := entity.KeyTag(infoFlags.KeyTag)
+		kt := symbiotic.KeyTag(infoFlags.KeyTag)
 		pk, err := keyStore.GetPrivateKey(kt)
 		if err != nil {
 			return err

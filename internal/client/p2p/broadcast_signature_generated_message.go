@@ -6,11 +6,11 @@ import (
 	"github.com/go-errors/errors"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/symbioticfi/relay/core/entity"
 	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureExtended) error {
+func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg symbiotic.SignatureExtended) error {
 	dto := prototypes.SignatureGenerated{
 		RequestId: msg.RequestID().Bytes(),
 		KeyTag:    uint32(msg.KeyTag),

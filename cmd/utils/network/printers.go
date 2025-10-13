@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/symbioticfi/relay/core/entity"
 	cmdhelpers "github.com/symbioticfi/relay/internal/usecase/cmd-helpers"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pterm/pterm"
@@ -24,7 +24,7 @@ type settlementReplicaData struct {
 	LastCommittedHeaderEpoch uint64
 }
 
-func printAddresses(driver entity.CrossChainAddress, networkConfig *entity.NetworkConfig) string {
+func printAddresses(driver symbiotic.CrossChainAddress, networkConfig *symbiotic.NetworkConfig) string {
 	addressesTableData := pterm.TableData{
 		{"Type", "Chain ID", "Address"},
 		{"Driver", strconv.FormatUint(driver.ChainId, 10), driver.Address.String()},
@@ -48,16 +48,16 @@ func printAddresses(driver entity.CrossChainAddress, networkConfig *entity.Netwo
 	return addressesText
 }
 
-func printNetworkConfig(epochDuration uint64, networkConfig *entity.NetworkConfig) string {
+func printNetworkConfig(epochDuration uint64, networkConfig *symbiotic.NetworkConfig) string {
 	configText := fmt.Sprintf("Verification type: %s\n", networkConfig.VerificationType.String())
 	configText += fmt.Sprintf("Max voting power: %0.4e\n", new(big.Float).SetInt(networkConfig.MaxVotingPower.Int))
 	configText += fmt.Sprintf("Min inclusion voting power: %v\n", networkConfig.MinInclusionVotingPower)
 	configText += fmt.Sprintf("Max validators count: %v\n", networkConfig.MaxValidatorsCount)
 	configText += fmt.Sprintf("Epoch duration: %d sec\n", epochDuration)
-	configText += fmt.Sprintf("Required key tags: %s\n", strings.Join(lo.Map(networkConfig.RequiredKeyTags, func(item entity.KeyTag, _ int) string {
+	configText += fmt.Sprintf("Required key tags: %s\n", strings.Join(lo.Map(networkConfig.RequiredKeyTags, func(item symbiotic.KeyTag, _ int) string {
 		return strconv.FormatUint(uint64(item), 10)
 	}), ", "))
-	configText += fmt.Sprintf("Quorum thresholds (keyTag/%%): %s\n", strings.Join(lo.Map(networkConfig.QuorumThresholds, func(item entity.QuorumThreshold, _ int) string {
+	configText += fmt.Sprintf("Quorum thresholds (keyTag/%%): %s\n", strings.Join(lo.Map(networkConfig.QuorumThresholds, func(item symbiotic.QuorumThreshold, _ int) string {
 		return fmt.Sprintf("%d/%0.3f%%", uint8(item.KeyTag), cmdhelpers.GetPct(item.QuorumThreshold.Int, new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)))
 	}), ", "))
 	configText += fmt.Sprintf("Header key tag: %s\n", networkConfig.RequiredHeaderKeyTag.String())
@@ -65,7 +65,7 @@ func printNetworkConfig(epochDuration uint64, networkConfig *entity.NetworkConfi
 	return configText
 }
 
-func printNetworkInfo(epoch entity.Epoch, epochStart entity.Timestamp, networkConfig *entity.NetworkConfig, valset *entity.ValidatorSet) string {
+func printNetworkInfo(epoch symbiotic.Epoch, epochStart symbiotic.Timestamp, networkConfig *symbiotic.NetworkConfig, valset *symbiotic.ValidatorSet) string {
 	infoText := fmt.Sprintf("Network epoch: %v\n", epoch)
 	t := time.Unix(int64(epochStart), 0)
 	tFormatted := t.Format("2006-01-02 15:04:05")
@@ -79,7 +79,7 @@ func printNetworkInfo(epoch entity.Epoch, epochStart entity.Timestamp, networkCo
 	return infoText
 }
 
-func printValidatorsTree(valset *entity.ValidatorSet) string {
+func printValidatorsTree(valset *symbiotic.ValidatorSet) string {
 	leveledList := pterm.LeveledList{}
 
 	validators := valset.Validators
@@ -93,7 +93,7 @@ func printValidatorsTree(valset *entity.ValidatorSet) string {
 	return text
 }
 
-func printValidatorsTable(valset *entity.ValidatorSet) string {
+func printValidatorsTable(valset *symbiotic.ValidatorSet) string {
 	tableData := pterm.TableData{
 		{"Address", "Status", "Voting Power", "Vaults", "Keys"},
 	}
@@ -120,7 +120,7 @@ func printValidatorsTable(valset *entity.ValidatorSet) string {
 	return text
 }
 
-func printHeaderTable(header entity.ValidatorSetHeader) string {
+func printHeaderTable(header symbiotic.ValidatorSetHeader) string {
 	headerTableData := pterm.TableData{
 		{"Field", "Value"},
 		{"Version", strconv.FormatUint(uint64(header.Version), 10)},
@@ -140,7 +140,7 @@ func printHeaderTable(header entity.ValidatorSetHeader) string {
 	return text
 }
 
-func printExtraDataTable(extraData entity.ExtraDataList) string {
+func printExtraDataTable(extraData symbiotic.ExtraDataList) string {
 	extraDataTable := pterm.TableData{{"Key", "Value"}}
 
 	for _, extraData := range extraData {
@@ -154,7 +154,7 @@ func printExtraDataTable(extraData entity.ExtraDataList) string {
 	return text
 }
 
-func printHeaderWithExtraDataToJSON(validatorSetHeader entity.ValidatorSetHeader, extraDataList entity.ExtraDataList) string {
+func printHeaderWithExtraDataToJSON(validatorSetHeader symbiotic.ValidatorSetHeader, extraDataList symbiotic.ExtraDataList) string {
 	type jsonHeader struct {
 		Version            uint8    `json:"version"`
 		ValidatorsSszMRoot string   `json:"validatorsSszMRoot"` // hex string
@@ -205,8 +205,8 @@ func printHeaderWithExtraDataToJSON(validatorSetHeader entity.ValidatorSetHeader
 }
 
 func printSettlementData(
-	valsetHeader entity.ValidatorSetHeader,
-	networkConfig entity.NetworkConfig,
+	valsetHeader symbiotic.ValidatorSetHeader,
+	networkConfig symbiotic.NetworkConfig,
 	settlementData []settlementReplicaData,
 ) string {
 	tableData := pterm.TableData{

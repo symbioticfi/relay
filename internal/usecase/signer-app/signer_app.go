@@ -5,34 +5,33 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/symbioticfi/relay/core/usecase/crypto"
+	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
-	"k8s.io/client-go/util/workqueue"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/go-errors/errors"
 	validate "github.com/go-playground/validator/v10"
-
-	"github.com/symbioticfi/relay/core/entity"
+	"k8s.io/client-go/util/workqueue"
 )
 
 //go:generate mockgen -source=signer_app.go -destination=mocks/signer_app.go -package=mocks
 
 type repo interface {
-	SaveSignatureRequest(ctx context.Context, requestID common.Hash, req entity.SignatureRequest) error
-	RemoveSelfSignaturePending(ctx context.Context, epoch entity.Epoch, requestID common.Hash) error
-	GetSelfSignaturePending(ctx context.Context, limit int) ([]common.Hash, error)
-	GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error)
-	GetValidatorSetByEpoch(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSet, error)
+	SaveSignatureRequest(ctx context.Context, requestID common.Hash, req symbiotic.SignatureRequest) error
+	RemoveSignaturePending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error
+	GetSignaturePending(ctx context.Context, limit int) ([]common.Hash, error)
+	GetSignatureRequest(ctx context.Context, requestID common.Hash) (symbiotic.SignatureRequest, error)
+	GetValidatorSetByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error)
 }
 
 type p2pService interface {
-	BroadcastSignatureGeneratedMessage(ctx context.Context, msg entity.SignatureExtended) error
+	BroadcastSignatureGeneratedMessage(ctx context.Context, msg symbiotic.SignatureExtended) error
 }
 
 type keyProvider interface {
-	GetPrivateKey(keyTag entity.KeyTag) (crypto.PrivateKey, error)
+	GetPrivateKey(keyTag symbiotic.KeyTag) (crypto.PrivateKey, error)
 }
 
 type metrics interface {
@@ -41,8 +40,8 @@ type metrics interface {
 }
 
 type entityProcessor interface {
-	ProcessSignature(ctx context.Context, signature entity.SignatureExtended) error
-	ProcessAggregationProof(ctx context.Context, proof entity.AggregationProof) error
+	ProcessSignature(ctx context.Context, signature symbiotic.SignatureExtended, self bool) error
+	ProcessAggregationProof(ctx context.Context, proof symbiotic.AggregationProof) error
 }
 
 type Config struct {
@@ -80,7 +79,7 @@ func NewSignerApp(cfg Config) (*SignerApp, error) {
 
 // RequestSignature creates a signature request and queues it for signing, returns requestID
 // The actual signing is done in the background by workers
-func (s *SignerApp) RequestSignature(ctx context.Context, req entity.SignatureRequest) (common.Hash, error) {
+func (s *SignerApp) RequestSignature(ctx context.Context, req symbiotic.SignatureRequest) (common.Hash, error) {
 	ctx = log.WithComponent(ctx, "signer")
 	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(req.RequiredEpoch)))
 
@@ -93,7 +92,7 @@ func (s *SignerApp) RequestSignature(ctx context.Context, req entity.SignatureRe
 		return common.Hash{}, errors.Errorf("failed to hash message: %w", err)
 	}
 
-	extendedSignature := entity.SignatureExtended{
+	extendedSignature := symbiotic.SignatureExtended{
 		MessageHash: msgHash,
 		KeyTag:      req.KeyTag,
 		Epoch:       req.RequiredEpoch,
@@ -112,7 +111,7 @@ func (s *SignerApp) RequestSignature(ctx context.Context, req entity.SignatureRe
 	return requestId, nil
 }
 
-func (s *SignerApp) completeSign(ctx context.Context, req entity.SignatureRequest, p2pService p2pService) error {
+func (s *SignerApp) completeSign(ctx context.Context, req symbiotic.SignatureRequest, p2pService p2pService) error {
 	valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, req.RequiredEpoch)
 	if err != nil {
 		return errors.Errorf("failed to get validator set: %w", err)
@@ -138,13 +137,13 @@ func (s *SignerApp) completeSign(ctx context.Context, req entity.SignatureReques
 			return errors.Errorf("failed to hash message: %w", err)
 		}
 
-		extendedSignature := entity.SignatureExtended{
+		extendedSignature := symbiotic.SignatureExtended{
 			MessageHash: msgHash,
 			KeyTag:      req.KeyTag,
 			Epoch:       req.RequiredEpoch,
 			PublicKey:   private.PublicKey().Raw(),
 		}
-		if err := s.cfg.Repo.RemoveSelfSignaturePending(ctx, req.RequiredEpoch, extendedSignature.RequestID()); err != nil {
+		if err := s.cfg.Repo.RemoveSignaturePending(ctx, req.RequiredEpoch, extendedSignature.RequestID()); err != nil {
 			return errors.Errorf("failed to remove self signature request pending: %w", err)
 		}
 		return nil
@@ -161,7 +160,7 @@ func (s *SignerApp) completeSign(ctx context.Context, req entity.SignatureReques
 	}
 	s.cfg.Metrics.ObservePKSignDuration(time.Since(pkSignStart))
 
-	extendedSignature := entity.SignatureExtended{
+	extendedSignature := symbiotic.SignatureExtended{
 		MessageHash: hash,
 		KeyTag:      req.KeyTag,
 		Epoch:       req.RequiredEpoch,
@@ -169,7 +168,7 @@ func (s *SignerApp) completeSign(ctx context.Context, req entity.SignatureReques
 		Signature:   signature,
 	}
 
-	if err := s.cfg.EntityProcessor.ProcessSignature(ctx, extendedSignature); err != nil {
+	if err := s.cfg.EntityProcessor.ProcessSignature(ctx, extendedSignature, true); err != nil {
 		if errors.Is(err, entity.ErrEntityAlreadyExist) {
 			slog.InfoContext(ctx, "Signature already exists, skipping", "key_tag", req.KeyTag, "epoch", req.RequiredEpoch)
 			return nil
@@ -177,7 +176,7 @@ func (s *SignerApp) completeSign(ctx context.Context, req entity.SignatureReques
 		return errors.Errorf("failed to process signature: %w", err)
 	}
 
-	if err := s.cfg.Repo.RemoveSelfSignaturePending(ctx, req.RequiredEpoch, extendedSignature.RequestID()); err != nil {
+	if err := s.cfg.Repo.RemoveSignaturePending(ctx, req.RequiredEpoch, extendedSignature.RequestID()); err != nil {
 		return errors.Errorf("failed to remove self signature request pending: %w", err)
 	}
 
@@ -249,7 +248,7 @@ func (s *SignerApp) worker(ctx context.Context, id int, p2pService p2pService) {
 }
 
 func (s *SignerApp) handleMissedSignaturesOnce(ctx context.Context) error {
-	pendingRequests, err := s.cfg.Repo.GetSelfSignaturePending(ctx, 10)
+	pendingRequests, err := s.cfg.Repo.GetSignaturePending(ctx, 10)
 	if err != nil {
 		return errors.Errorf("failed to get self signature requests pending: %w", err)
 	}

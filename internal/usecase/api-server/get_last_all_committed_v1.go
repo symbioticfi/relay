@@ -7,13 +7,13 @@ import (
 	"github.com/go-errors/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/symbioticfi/relay/core/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // GetLastAllCommitted handles the gRPC GetLastAllCommitted request
 func (h *grpcHandler) GetLastAllCommitted(ctx context.Context, _ *apiv1.GetLastAllCommittedRequest) (*apiv1.GetLastAllCommittedResponse, error) {
-	cfg, err := h.cfg.EvmClient.GetConfig(ctx, entity.Timestamp(uint64(time.Now().Unix())))
+	cfg, err := h.cfg.EvmClient.GetConfig(ctx, symbiotic.Timestamp(uint64(time.Now().Unix())))
 	if err != nil {
 		return nil, errors.Errorf("failed to get config: %w", err)
 	}

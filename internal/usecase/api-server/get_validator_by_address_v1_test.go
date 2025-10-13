@@ -7,16 +7,17 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/require"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func TestGetValidatorByAddress_ValidatorFoundInRepo(t *testing.T) {
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	requestedEpoch := entity.Epoch(8)
-	currentEpoch := entity.Epoch(10)
+	requestedEpoch := symbiotic.Epoch(8)
+	currentEpoch := symbiotic.Epoch(10)
 	validatorAddress := "0x0000000000000000000000000000000000000123"
 
 	// Create test data
@@ -52,14 +53,14 @@ func TestGetValidatorByAddress_ValidatorSetNotInRepo_DerivedFail(t *testing.T) {
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := entity.Epoch(10)
-	requestedEpoch := entity.Epoch(8)
+	currentEpoch := symbiotic.Epoch(10)
+	requestedEpoch := symbiotic.Epoch(8)
 
 	validatorAddress := "0x0000000000000000000000000000000000000abc"
 
 	// Setup mocks - validator set not in repository, needs to be derived
 	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(currentEpoch, nil)
-	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, requestedEpoch).Return(entity.ValidatorSet{}, entity.ErrEntityNotFound)
+	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, requestedEpoch).Return(symbiotic.ValidatorSet{}, entity.ErrEntityNotFound)
 
 	// Execute the method under test
 	req := &apiv1.GetValidatorByAddressRequest{
@@ -78,7 +79,7 @@ func TestGetValidatorByAddress_UseCurrentEpoch_WhenNoEpochSpecified(t *testing.T
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := entity.Epoch(10)
+	currentEpoch := symbiotic.Epoch(10)
 	validatorAddress := "0x0000000000000000000000000000000000000123"
 
 	// Create test data
@@ -106,7 +107,7 @@ func TestGetValidatorByAddress_ErrorWhenEpochFromFuture(t *testing.T) {
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := entity.Epoch(10)
+	currentEpoch := symbiotic.Epoch(10)
 	futureEpoch := uint64(15)
 	validatorAddress := "0x0000000000000000000000000000000000000123"
 
@@ -131,7 +132,7 @@ func TestGetValidatorByAddress_ErrorWhenInvalidAddress(t *testing.T) {
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := entity.Epoch(10)
+	currentEpoch := symbiotic.Epoch(10)
 	requestedEpoch := uint64(8)
 	invalidAddress := "not-a-valid-address"
 
@@ -156,8 +157,8 @@ func TestGetValidatorByAddress_ErrorWhenValidatorNotFound(t *testing.T) {
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := entity.Epoch(10)
-	requestedEpoch := entity.Epoch(8)
+	currentEpoch := symbiotic.Epoch(10)
+	requestedEpoch := symbiotic.Epoch(8)
 	nonExistentAddress := "0x0000000000000000000000000000000000000999"
 
 	// Create test data without the requested validator
@@ -166,7 +167,7 @@ func TestGetValidatorByAddress_ErrorWhenValidatorNotFound(t *testing.T) {
 	// Setup mocks - validator set found in repository
 	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(currentEpoch, nil)
 	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(requestedEpoch, nil)
-	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, requestedEpoch).Return(entity.ValidatorSet{}, entity.ErrEntityNotFound)
+	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, requestedEpoch).Return(symbiotic.ValidatorSet{}, entity.ErrEntityNotFound)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, requestedEpoch).Return(validatorSet, nil)
 
 	// Execute the method under test
@@ -198,7 +199,7 @@ func TestGetValidatorByAddress_ErrorWhenGetCurrentEpochFails(t *testing.T) {
 	expectedError := errors.New("failed to get current epoch")
 
 	// Setup mocks
-	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(entity.Epoch(0), expectedError)
+	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(0), expectedError)
 
 	// Execute the method under test
 	req := &apiv1.GetValidatorByAddressRequest{
@@ -217,14 +218,14 @@ func TestGetValidatorByAddress_ErrorWhenRepositoryFails(t *testing.T) {
 	setup := newTestSetup(t)
 	ctx := context.Background()
 
-	currentEpoch := entity.Epoch(10)
-	requestedEpoch := entity.Epoch(8)
+	currentEpoch := symbiotic.Epoch(10)
+	requestedEpoch := symbiotic.Epoch(8)
 	validatorAddress := "0x0000000000000000000000000000000000000123"
 	expectedError := errors.New("repository connection failed")
 
 	// Setup mocks
 	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(currentEpoch, nil)
-	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, requestedEpoch).Return(entity.ValidatorSet{}, expectedError)
+	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, requestedEpoch).Return(symbiotic.ValidatorSet{}, expectedError)
 
 	// Execute the method under test
 	req := &apiv1.GetValidatorByAddressRequest{

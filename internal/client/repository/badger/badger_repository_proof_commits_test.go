@@ -6,14 +6,15 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func TestBadgerRepository_SaveProofCommitPending(t *testing.T) {
 	t.Parallel()
 	repo := setupTestRepository(t)
 
-	epoch := entity.Epoch(100)
+	epoch := symbiotic.Epoch(100)
 	requestID := common.HexToHash("0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01")
 
 	t.Run("save new pending proof commit", func(t *testing.T) {
@@ -27,7 +28,7 @@ func TestBadgerRepository_SaveProofCommitPending(t *testing.T) {
 	})
 
 	t.Run("save different epoch should succeed", func(t *testing.T) {
-		differentEpoch := entity.Epoch(101)
+		differentEpoch := symbiotic.Epoch(101)
 		err := repo.SaveProofCommitPending(t.Context(), differentEpoch, requestID)
 		require.NoError(t, err)
 	})
@@ -39,7 +40,7 @@ func TestBadgerRepository_SaveProofCommitPending(t *testing.T) {
 	})
 
 	t.Run("save with zero epoch should succeed", func(t *testing.T) {
-		zeroEpoch := entity.Epoch(0)
+		zeroEpoch := symbiotic.Epoch(0)
 		zeroHash := common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000")
 		err := repo.SaveProofCommitPending(t.Context(), zeroEpoch, zeroHash)
 		require.NoError(t, err)
@@ -50,7 +51,7 @@ func TestBadgerRepository_RemoveProofCommitPending(t *testing.T) {
 	t.Parallel()
 	repo := setupTestRepository(t)
 
-	epoch := entity.Epoch(200)
+	epoch := symbiotic.Epoch(200)
 	requestID := common.HexToHash("0x987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba09")
 
 	t.Run("remove non-existent pending proof commit should fail", func(t *testing.T) {
@@ -73,8 +74,8 @@ func TestBadgerRepository_RemoveProofCommitPending(t *testing.T) {
 	})
 
 	t.Run("remove only affects specific epoch and hash", func(t *testing.T) {
-		epoch1 := entity.Epoch(300)
-		epoch2 := entity.Epoch(301)
+		epoch1 := symbiotic.Epoch(300)
+		epoch2 := symbiotic.Epoch(301)
 		hash1 := common.HexToHash("0x111111111111111111111111111111111111111111111111111111111111111")
 		hash2 := common.HexToHash("0x222222222222222222222222222222222222222222222222222222222222222")
 
@@ -107,16 +108,16 @@ func TestBadgerRepository_GetPendingProofCommitsSinceEpoch(t *testing.T) {
 	repo := setupTestRepository(t)
 
 	t.Run("empty repository returns empty list", func(t *testing.T) {
-		commits, err := repo.GetPendingProofCommitsSinceEpoch(t.Context(), entity.Epoch(100), 10)
+		commits, err := repo.GetPendingProofCommitsSinceEpoch(t.Context(), symbiotic.Epoch(100), 10)
 		require.NoError(t, err)
 		require.Empty(t, commits)
 	})
 
 	t.Run("returns commits for epochs >= since epoch", func(t *testing.T) {
 		// Save commits in different epochs
-		epoch50 := entity.Epoch(50)
-		epoch100 := entity.Epoch(100)
-		epoch150 := entity.Epoch(150)
+		epoch50 := symbiotic.Epoch(50)
+		epoch100 := symbiotic.Epoch(100)
+		epoch150 := symbiotic.Epoch(150)
 
 		hash1 := common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")
 		hash2 := common.HexToHash("0x2222222222222222222222222222222222222222222222222222222222222222")
@@ -135,7 +136,7 @@ func TestBadgerRepository_GetPendingProofCommitsSinceEpoch(t *testing.T) {
 		require.Len(t, commits, 2)
 
 		// Should return commits for epochs 100 and 150, not 50
-		epochsFound := make(map[entity.Epoch]bool)
+		epochsFound := make(map[symbiotic.Epoch]bool)
 		hashesFound := make(map[common.Hash]bool)
 		for _, commit := range commits {
 			epochsFound[commit.Epoch] = true
@@ -152,7 +153,7 @@ func TestBadgerRepository_GetPendingProofCommitsSinceEpoch(t *testing.T) {
 	})
 
 	t.Run("sorting works correctly - epoch ascending, then hash ascending", func(t *testing.T) {
-		testEpoch := entity.Epoch(500)
+		testEpoch := symbiotic.Epoch(500)
 
 		// Create commits with same epoch but different hashes to test hash sorting
 		hash1 := common.HexToHash("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
@@ -180,7 +181,7 @@ func TestBadgerRepository_GetPendingProofCommitsSinceEpoch(t *testing.T) {
 		}
 
 		// Verify hash ordering within same epoch
-		sameEpochCommits := make(map[entity.Epoch][]entity.ProofCommitKey)
+		sameEpochCommits := make(map[symbiotic.Epoch][]symbiotic.ProofCommitKey)
 		for _, commit := range commits {
 			sameEpochCommits[commit.Epoch] = append(sameEpochCommits[commit.Epoch], commit)
 		}
@@ -197,7 +198,7 @@ func TestBadgerRepository_GetPendingProofCommitsSinceEpoch(t *testing.T) {
 	})
 
 	t.Run("limit parameter works correctly", func(t *testing.T) {
-		testEpoch := entity.Epoch(600)
+		testEpoch := symbiotic.Epoch(600)
 
 		// Create multiple commits
 		for i := 0; i < 5; i++ {
@@ -223,9 +224,9 @@ func TestBadgerRepository_GetPendingProofCommitsSinceEpoch(t *testing.T) {
 	})
 
 	t.Run("handles multiple epochs correctly", func(t *testing.T) {
-		epoch700 := entity.Epoch(700)
-		epoch701 := entity.Epoch(701)
-		epoch702 := entity.Epoch(702)
+		epoch700 := symbiotic.Epoch(700)
+		epoch701 := symbiotic.Epoch(701)
+		epoch702 := symbiotic.Epoch(702)
 
 		hash1 := common.HexToHash("0x7000000000000000000000000000000000000000000000000000000000000001")
 		hash2 := common.HexToHash("0x7000000000000000000000000000000000000000000000000000000000000002")
@@ -255,7 +256,7 @@ func TestBadgerRepository_GetPendingProofCommitsSinceEpoch(t *testing.T) {
 		// We can't directly insert malformed keys through the public API, but the function
 		// should be robust against them. This test mainly verifies no panic occurs.
 
-		testEpoch := entity.Epoch(800)
+		testEpoch := symbiotic.Epoch(800)
 		hash := common.HexToHash("0x8000000000000000000000000000000000000000000000000000000000000001")
 
 		err := repo.SaveProofCommitPending(t.Context(), testEpoch, hash)

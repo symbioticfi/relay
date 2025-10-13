@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/http/pprof"
 	"strings"
 	"sync"
 	"time"
@@ -20,42 +21,41 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/symbioticfi/relay/core/entity"
-	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
 	"github.com/symbioticfi/relay/internal/usecase/metrics"
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/server"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 //go:generate mockgen -source=app.go -destination=mocks/app_mock.go -package=mocks
 type signer interface {
-	RequestSignature(ctx context.Context, req entity.SignatureRequest) (common.Hash, error)
+	RequestSignature(ctx context.Context, req symbiotic.SignatureRequest) (common.Hash, error)
 }
 
 type repo interface {
-	GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error)
-	GetValidatorSetByEpoch(_ context.Context, epoch entity.Epoch) (entity.ValidatorSet, error)
-	GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity.SignatureExtended, error)
-	GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error)
-	GetLatestValidatorSetHeader(_ context.Context) (entity.ValidatorSetHeader, error)
-	GetLatestValidatorSetEpoch(_ context.Context) (entity.Epoch, error)
-	GetValidatorSetMetadata(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSetMetadata, error)
+	GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error)
+	GetValidatorSetByEpoch(_ context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error)
+	GetAllSignatures(ctx context.Context, requestID common.Hash) ([]symbiotic.SignatureExtended, error)
+	GetSignatureRequest(ctx context.Context, requestID common.Hash) (symbiotic.SignatureRequest, error)
+	GetLatestValidatorSetHeader(_ context.Context) (symbiotic.ValidatorSetHeader, error)
+	GetLatestValidatorSetEpoch(_ context.Context) (symbiotic.Epoch, error)
+	GetValidatorSetMetadata(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSetMetadata, error)
 }
 
 type evmClient interface {
-	GetCurrentEpoch(ctx context.Context) (entity.Epoch, error)
-	GetEpochStart(ctx context.Context, epoch entity.Epoch) (entity.Timestamp, error)
-	GetConfig(ctx context.Context, timestamp entity.Timestamp) (entity.NetworkConfig, error)
-	GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (_ entity.Epoch, err error)
+	GetCurrentEpoch(ctx context.Context) (symbiotic.Epoch, error)
+	GetEpochStart(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.Timestamp, error)
+	GetConfig(ctx context.Context, timestamp symbiotic.Timestamp) (symbiotic.NetworkConfig, error)
+	GetLastCommittedHeaderEpoch(ctx context.Context, addr symbiotic.CrossChainAddress) (_ symbiotic.Epoch, err error)
 }
 
 type aggregator interface {
-	GetAggregationStatus(ctx context.Context, requestID common.Hash) (entity.AggregationStatus, error)
+	GetAggregationStatus(ctx context.Context, requestID common.Hash) (symbiotic.AggregationStatus, error)
 }
 
 type deriver interface {
-	GetValidatorSet(ctx context.Context, epoch entity.Epoch, config entity.NetworkConfig) (entity.ValidatorSet, error)
+	GetValidatorSet(ctx context.Context, epoch symbiotic.Epoch, config symbiotic.NetworkConfig) (symbiotic.ValidatorSet, error)
 }
 
 type Config struct {
@@ -69,8 +69,8 @@ type Config struct {
 	Deriver      deriver   `validate:"required"`
 	Aggregator   aggregator
 	ServeMetrics bool
+	ServePprof   bool
 	Metrics      *metrics.Metrics `validate:"required"`
-	KeyProvider  keyprovider.KeyProvider
 }
 
 func (c Config) Validate() error {
@@ -83,19 +83,19 @@ func (c Config) Validate() error {
 // broadcasterHandler manages subscriptions grouped by request ID for O(1) lookup
 type broadcasterHandler struct {
 	lock        sync.RWMutex
-	subscribers map[string][]chan entity.AggregationProof // map[requestID][]*subscriber
+	subscribers map[string][]chan symbiotic.AggregationProof // map[requestID][]*subscriber
 }
 
 // newBroadcasterHandler creates a new broadcaster handler
 func newBroadcasterHandler() *broadcasterHandler {
 	return &broadcasterHandler{
-		subscribers: make(map[string][]chan entity.AggregationProof),
+		subscribers: make(map[string][]chan symbiotic.AggregationProof),
 	}
 }
 
 // Subscribe registers a new subscriber for a specific request ID
 // Returns an unsubscribe function that should be called to clean up the subscription
-func (b *broadcasterHandler) Subscribe(requestID string, ch chan entity.AggregationProof) func() {
+func (b *broadcasterHandler) Subscribe(requestID string, ch chan symbiotic.AggregationProof) func() {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
@@ -125,7 +125,7 @@ func (b *broadcasterHandler) Subscribe(requestID string, ch chan entity.Aggregat
 }
 
 // Notify broadcasts an event to all subscribers for a specific request ID - O(1) lookup
-func (b *broadcasterHandler) Notify(proof entity.AggregationProof) {
+func (b *broadcasterHandler) Notify(proof symbiotic.AggregationProof) {
 	requestID := proof.RequestID().Hex()
 
 	b.lock.RLock()
@@ -136,7 +136,7 @@ func (b *broadcasterHandler) Notify(proof entity.AggregationProof) {
 	}
 
 	// Make a copy to avoid holding lock during notification
-	subscribers := make([]chan entity.AggregationProof, len(subs))
+	subscribers := make([]chan symbiotic.AggregationProof, len(subs))
 	copy(subscribers, subs)
 	b.lock.RUnlock()
 
@@ -161,7 +161,7 @@ type grpcHandler struct {
 }
 
 // handleProofAggregated processes aggregation proof events from the signal
-func (h *grpcHandler) handleProofAggregated(_ context.Context, proof entity.AggregationProof) error {
+func (h *grpcHandler) handleProofAggregated(_ context.Context, proof symbiotic.AggregationProof) error {
 	h.broadcaster.Notify(proof)
 	return nil
 }
@@ -253,6 +253,25 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 		w.Write([]byte(`{"status":"ok"}`))
 	})
 
+	// Debug pprof endpoints if enabled
+	if cfg.ServePprof {
+		httpMux.HandleFunc("/pprof", func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, r.RequestURI+"/", http.StatusMovedPermanently)
+		})
+		httpMux.HandleFunc("/pprof/", pprof.Index)
+		httpMux.HandleFunc("/pprof/cmdline", pprof.Cmdline)
+		httpMux.HandleFunc("/pprof/profile", pprof.Profile)
+		httpMux.HandleFunc("/pprof/symbol", pprof.Symbol)
+		httpMux.HandleFunc("/pprof/trace", pprof.Trace)
+		httpMux.Handle("/pprof/goroutine", pprof.Handler("goroutine"))
+		httpMux.Handle("/pprof/threadcreate", pprof.Handler("threadcreate"))
+		httpMux.Handle("/pprof/mutex", pprof.Handler("mutex"))
+		httpMux.Handle("/pprof/heap", pprof.Handler("heap"))
+		httpMux.Handle("/pprof/block", pprof.Handler("block"))
+		httpMux.Handle("/pprof/allocs", pprof.Handler("allocs"))
+		slog.InfoContext(ctx, "Pprof debug endpoints enabled", "path", "/pprof/")
+	}
+
 	// Serve API documentation
 	docFS := http.FileServer(http.Dir("api/docs/v1"))
 	httpMux.Handle("/docs/", http.StripPrefix("/docs/", docFS))
@@ -279,7 +298,7 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 }
 
 // HandleProofAggregated returns the handler function for aggregation proof events
-func (a *SymbioticServer) HandleProofAggregated() func(context.Context, entity.AggregationProof) error {
+func (a *SymbioticServer) HandleProofAggregated() func(context.Context, symbiotic.AggregationProof) error {
 	return a.handler.handleProofAggregated
 }
 
@@ -305,7 +324,8 @@ func (a *SymbioticServer) Start(ctx context.Context) error {
 		"grpc_address", a.cfg.Address,
 		"docs_path", "/docs/",
 		"metrics_path", "/metrics",
-		"metrics_enabled", a.cfg.ServeMetrics)
+		"metrics_enabled", a.cfg.ServeMetrics,
+		"pprof_enabled", a.cfg.ServePprof)
 
 	// Start serving in a goroutine
 	errChan := make(chan error, 1)

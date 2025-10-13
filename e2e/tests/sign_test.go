@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	apiv1 "github.com/symbioticfi/relay/api/client/v1"
-	"github.com/symbioticfi/relay/core/entity"
-	cryptoModule "github.com/symbioticfi/relay/core/usecase/crypto"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	cryptoModule "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 const (
@@ -34,17 +34,17 @@ func TestNonHeaderKeySignature(t *testing.T) {
 
 	testCases := []struct {
 		name     string
-		keyTag   entity.KeyTag
+		keyTag   symbiotic.KeyTag
 		testName string
 	}{
 		{
 			name:     "ECDSA non-header key",
-			keyTag:   entity.KeyTag(defaultECDSAKeyTag),
+			keyTag:   symbiotic.KeyTag(defaultECDSAKeyTag),
 			testName: "Signing with ECDSA non-header key",
 		},
 		{
 			name:     "BLS non-header key",
-			keyTag:   entity.KeyTag(secondaryBLSKeyTag),
+			keyTag:   symbiotic.KeyTag(secondaryBLSKeyTag),
 			testName: "Signing with BLS non-header key",
 		},
 	}
@@ -112,11 +112,11 @@ func TestNonHeaderKeySignature(t *testing.T) {
 
 					require.NoErrorf(t, err, "Failed to get signatures from relay at %d", 0)
 
-					if tc.keyTag.Type() == entity.KeyTypeEcdsaSecp256k1 && len(resp.GetSignatures()) != len(globalTestEnv.Containers) {
+					if tc.keyTag.Type() == symbiotic.KeyTypeEcdsaSecp256k1 && len(resp.GetSignatures()) != len(globalTestEnv.Containers) {
 						// expect all n signatures for ECDSA
 						t.Logf("Received %d/%d signatures for request id: %s. Waiting for all signatures...", len(resp.GetSignatures()), len(globalTestEnv.Containers), requestID)
 						continue
-					} else if tc.keyTag.Type() == entity.KeyTypeBlsBn254 && (len(globalTestEnv.Containers)*2/3+1) > len(resp.GetSignatures()) {
+					} else if tc.keyTag.Type() == symbiotic.KeyTypeBlsBn254 && (len(globalTestEnv.Containers)*2/3+1) > len(resp.GetSignatures()) {
 						// need at least 2/3 signatures for BLS, signers skip signing is proof is already generated so we may not get all n sigs
 						t.Logf("Received %d/%d signatures for request id: %s. Waiting for all signatures...", len(resp.GetSignatures()), len(globalTestEnv.Containers), requestID)
 						continue
@@ -128,7 +128,7 @@ func TestNonHeaderKeySignature(t *testing.T) {
 					for _, sig := range resp.GetSignatures() {
 						found := false
 
-						if tc.keyTag.Type() == entity.KeyTypeEcdsaSecp256k1 {
+						if tc.keyTag.Type() == symbiotic.KeyTypeEcdsaSecp256k1 {
 							// ECDSA signature verification using ethereum crypto
 							publicKeyBytes, err := crypto.Ecrecover(sig.GetMessageHash(), sig.GetSignature())
 							require.NoErrorf(t, err, "Failed to recover public key from signature for request id: %s", requestID)
@@ -151,7 +151,7 @@ func TestNonHeaderKeySignature(t *testing.T) {
 									}
 								}
 							}
-						} else if tc.keyTag.Type() == entity.KeyTypeBlsBn254 {
+						} else if tc.keyTag.Type() == symbiotic.KeyTypeBlsBn254 {
 							// Create public key from stored payload
 							publicKey, err := cryptoModule.NewPublicKey(tc.keyTag.Type(), sig.GetPublicKey())
 							require.NoErrorf(t, err, "Failed to create public key for request id: %s", requestID)
@@ -183,7 +183,7 @@ func TestNonHeaderKeySignature(t *testing.T) {
 					// check for proof
 					var proof *apiv1.GetAggregationProofResponse
 
-					if tc.keyTag.Type() == entity.KeyTypeBlsBn254 && deploymentData.Env.VerificationType == 0 {
+					if tc.keyTag.Type() == symbiotic.KeyTypeBlsBn254 && deploymentData.Env.VerificationType == 0 {
 						func() {
 							// if it's ZK proof, poll for the proof to be generated for the epoch duration
 							t.Logf("Polling for zk aggregation proof to be generated for request id: %s", requestID)
@@ -216,9 +216,9 @@ func TestNonHeaderKeySignature(t *testing.T) {
 						})
 					}
 
-					if tc.keyTag.Type() == entity.KeyTypeEcdsaSecp256k1 {
+					if tc.keyTag.Type() == symbiotic.KeyTypeEcdsaSecp256k1 {
 						require.Errorf(t, err, "Expected no aggregation proof for ECDSA key type for request id: %s", requestID)
-					} else if tc.keyTag.Type() == entity.KeyTypeBlsBn254 {
+					} else if tc.keyTag.Type() == symbiotic.KeyTypeBlsBn254 {
 						require.NoErrorf(t, err, "Failed to get aggregation proof for BLS key type for request id: %s", requestID)
 						require.NotNilf(t, proof, "Expected aggregation proof for BLS key type for request id: %s", requestID)
 						require.NotEmptyf(t, proof.GetAggregationProof().GetProof(), "Empty aggregation proof for BLS key type for request id: %s", requestID)

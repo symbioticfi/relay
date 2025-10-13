@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 
-	"github.com/symbioticfi/relay/core/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func TestCachedRepository_NetworkConfig(t *testing.T) {
@@ -31,11 +31,11 @@ func TestCachedRepository_NetworkConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	epoch := entity.Epoch(123)
+	epoch := symbiotic.Epoch(123)
 
 	// Create test network config
-	testConfig := entity.NetworkConfig{
-		VerificationType: entity.VerificationTypeBlsBn254Simple,
+	testConfig := symbiotic.NetworkConfig{
+		VerificationType: symbiotic.VerificationTypeBlsBn254Simple,
 	}
 
 	// Test cache miss - config doesn't exist
@@ -102,19 +102,19 @@ func TestCachedRepository_ValidatorSet(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	epoch := entity.Epoch(456)
+	epoch := symbiotic.Epoch(456)
 
 	// Create test validator set
-	testValidatorSet := entity.ValidatorSet{
+	testValidatorSet := symbiotic.ValidatorSet{
 		Version:          1,
-		RequiredKeyTag:   entity.KeyTag(15),
+		RequiredKeyTag:   symbiotic.KeyTag(15),
 		Epoch:            epoch,
 		CaptureTimestamp: 1234567890,
-		QuorumThreshold:  entity.ToVotingPower(big.NewInt(100)),
-		Validators: entity.Validators{
+		QuorumThreshold:  symbiotic.ToVotingPower(big.NewInt(100)),
+		Validators: symbiotic.Validators{
 			{
 				Operator:    common.HexToAddress("0x1234567890123456789012345678901234567890"),
-				VotingPower: entity.ToVotingPower(big.NewInt(50)),
+				VotingPower: symbiotic.ToVotingPower(big.NewInt(50)),
 				IsActive:    true,
 			},
 		},

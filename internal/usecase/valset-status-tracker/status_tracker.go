@@ -10,19 +10,20 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
-	"github.com/symbioticfi/relay/core/client/evm"
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
+	"github.com/symbioticfi/relay/symbiotic/client/evm"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 var zeroHeaderHash = common.HexToHash("0x868e09d528a16744c1f38ea3c10cc2251e01a456434f91172247695087d129b7")
 
 type repo interface {
-	GetConfigByEpoch(_ context.Context, epoch entity.Epoch) (entity.NetworkConfig, error)
-	GetValidatorSetByEpoch(_ context.Context, epoch entity.Epoch) (entity.ValidatorSet, error)
-	UpdateValidatorSetStatus(ctx context.Context, valset entity.ValidatorSet) error
-	GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (entity.Epoch, error)
-	SaveFirstUncommittedValidatorSetEpoch(_ context.Context, epoch entity.Epoch) error
+	GetConfigByEpoch(_ context.Context, epoch symbiotic.Epoch) (symbiotic.NetworkConfig, error)
+	GetValidatorSetByEpoch(_ context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error)
+	UpdateValidatorSetStatus(ctx context.Context, valset symbiotic.ValidatorSet) error
+	GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
+	SaveFirstUncommittedValidatorSetEpoch(_ context.Context, epoch symbiotic.Epoch) error
 }
 
 type Config struct {
@@ -103,18 +104,18 @@ func (s *Service) Start(ctx context.Context) error {
 	}
 }
 
-func (s *Service) HandleProofAggregated(ctx context.Context, msg entity.AggregationProof) error {
+func (s *Service) HandleProofAggregated(ctx context.Context, msg symbiotic.AggregationProof) error {
 	valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, msg.Epoch)
 	if err != nil {
 		return errors.Errorf("failed to get validator set: %w", err) // if not found then it's failure case
 	}
 
-	if valset.Status != entity.HeaderDerived {
+	if valset.Status != symbiotic.HeaderDerived {
 		slog.DebugContext(ctx, "Validator set is already aggregated or committed", "epoch", valset.Epoch)
 		return nil
 	}
 
-	valset.Status = entity.HeaderAggregated
+	valset.Status = symbiotic.HeaderAggregated
 	if err := s.cfg.Repo.UpdateValidatorSetStatus(ctx, valset); err != nil {
 		return errors.Errorf("failed to save validator set: %w", err)
 	}
@@ -154,7 +155,7 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 	}
 
 	for epoch := firstUncommittedEpoch; epoch <= lastCommittedEpoch; epoch++ {
-		valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, entity.Epoch(epoch))
+		valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, symbiotic.Epoch(epoch))
 		if err != nil {
 			if errors.Is(err, entity.ErrEntityNotFound) {
 				slog.DebugContext(ctx, "No uncommitted valset found, waiting...", "epoch", epoch)
@@ -163,7 +164,7 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 			return errors.Errorf("failed to get validator set for epoch %d: %w", epoch, err)
 		}
 
-		if valset.Status == entity.HeaderCommitted {
+		if valset.Status == symbiotic.HeaderCommitted {
 			continue
 		}
 
@@ -204,9 +205,9 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 		}
 
 		if isCommitted {
-			valset.Status = entity.HeaderCommitted
+			valset.Status = symbiotic.HeaderCommitted
 		} else {
-			valset.Status = entity.HeaderMissed
+			valset.Status = symbiotic.HeaderMissed
 		}
 
 		if err := s.cfg.Repo.UpdateValidatorSetStatus(ctx, valset); err != nil {
@@ -216,14 +217,14 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 		slog.InfoContext(ctx, "Validator set is committed", "epoch", epoch)
 	}
 
-	if err := s.cfg.Repo.SaveFirstUncommittedValidatorSetEpoch(ctx, entity.Epoch(lastCommittedEpoch+1)); err != nil {
+	if err := s.cfg.Repo.SaveFirstUncommittedValidatorSetEpoch(ctx, symbiotic.Epoch(lastCommittedEpoch+1)); err != nil {
 		return errors.Errorf("failed to save last uncommitted validator set: %w", err)
 	}
 
 	return nil
 }
 
-func (s *Service) findLatestNonZeroSettlements(ctx context.Context) ([]entity.CrossChainAddress, error) {
+func (s *Service) findLatestNonZeroSettlements(ctx context.Context) ([]symbiotic.CrossChainAddress, error) {
 	currentEpoch, err := s.cfg.EvmClient.GetCurrentEpoch(ctx)
 	if err != nil {
 		return nil, errors.Errorf("failed to get current epoch: %w", err)

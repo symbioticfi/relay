@@ -6,7 +6,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func TestBadgerRepository_AggregationProof(t *testing.T) {
@@ -27,12 +28,12 @@ func TestBadgerRepository_AggregationProof(t *testing.T) {
 	require.Equal(t, ap, loadedConfig)
 }
 
-func randomAggregationProof(t *testing.T) entity.AggregationProof {
+func randomAggregationProof(t *testing.T) symbiotic.AggregationProof {
 	t.Helper()
 
-	return entity.AggregationProof{
+	return symbiotic.AggregationProof{
 		MessageHash: randomBytes(t, 32),
-		KeyTag:      entity.KeyTag(15),
+		KeyTag:      symbiotic.KeyTag(15),
 		Epoch:       10,
 		Proof:       randomBytes(t, 32),
 	}

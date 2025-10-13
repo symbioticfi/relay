@@ -6,7 +6,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/symbioticfi/relay/core/entity"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func TestBadgerRepository_Signature(t *testing.T) {
@@ -14,7 +15,7 @@ func TestBadgerRepository_Signature(t *testing.T) {
 
 	repo := setupTestRepository(t)
 
-	sig1 := entity.SignatureExtended{
+	sig1 := symbiotic.SignatureExtended{
 		MessageHash: []byte("message1"),
 		KeyTag:      15,
 		Epoch:       100,
@@ -22,7 +23,7 @@ func TestBadgerRepository_Signature(t *testing.T) {
 		PublicKey:   []byte("publickey1"),
 	}
 
-	sig2 := entity.SignatureExtended{
+	sig2 := symbiotic.SignatureExtended{
 		MessageHash: []byte("message1"),
 		KeyTag:      15,
 		Epoch:       100,
@@ -80,10 +81,10 @@ func TestBadgerRepository_SignatureOrdering(t *testing.T) {
 	testIndices := []uint32{9, 11, 100, 1000, 2}
 	expectedOrder := []uint32{2, 9, 11, 100, 1000} // Expected numeric order
 
-	sig := entity.SignatureExtended{
+	sig := symbiotic.SignatureExtended{
 		MessageHash: []byte("message"),
 		Signature:   []byte("signature"),
-		KeyTag:      entity.KeyTag(15),
+		KeyTag:      symbiotic.KeyTag(15),
 		Epoch:       777,
 		PublicKey:   randomBytes(t, 10),
 	}

@@ -16,12 +16,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/symbioticfi/relay/core/entity"
 	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
 	p2pEntity "github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/server"
 	"github.com/symbioticfi/relay/pkg/signals"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 const (
@@ -109,8 +109,8 @@ func (c Config) Validate() error {
 type Service struct {
 	ctx                         context.Context
 	host                        host.Host
-	signatureReceivedHandler    *signals.Signal[p2pEntity.P2PMessage[entity.SignatureExtended]]
-	signaturesAggregatedHandler *signals.Signal[p2pEntity.P2PMessage[entity.AggregationProof]]
+	signatureReceivedHandler    *signals.Signal[p2pEntity.P2PMessage[symbiotic.SignatureExtended]]
+	signaturesAggregatedHandler *signals.Signal[p2pEntity.P2PMessage[symbiotic.AggregationProof]]
 	metrics                     metrics
 	topicsMap                   map[string]*pubsub.Topic
 	p2pGRPCHandler              prototypes.SymbioticP2PServiceServer
@@ -163,8 +163,8 @@ func NewService(ctx context.Context, cfg Config, signalCfg signals.Config) (*Ser
 	service := &Service{
 		ctx:                         log.WithAttrs(ctx, slog.String("component", "p2p")),
 		host:                        h,
-		signatureReceivedHandler:    signals.New[p2pEntity.P2PMessage[entity.SignatureExtended]](signalCfg, "signatureReceive", nil),
-		signaturesAggregatedHandler: signals.New[p2pEntity.P2PMessage[entity.AggregationProof]](signalCfg, "signaturesAggregated", nil),
+		signatureReceivedHandler:    signals.New[p2pEntity.P2PMessage[symbiotic.SignatureExtended]](signalCfg, "signatureReceive", nil),
+		signaturesAggregatedHandler: signals.New[p2pEntity.P2PMessage[symbiotic.AggregationProof]](signalCfg, "signaturesAggregated", nil),
 		metrics:                     cfg.Metrics,
 
 		topicsMap: map[string]*pubsub.Topic{
@@ -211,14 +211,14 @@ func (s *Service) listenForMessages(ctx context.Context, sub *pubsub.Subscriptio
 	}
 }
 
-func (s *Service) StartSignatureMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PMessage[entity.SignatureExtended]) error) error {
+func (s *Service) StartSignatureMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PMessage[symbiotic.SignatureExtended]) error) error {
 	if err := s.signatureReceivedHandler.SetHandlers(mh); err != nil {
 		return errors.Errorf("failed to set signature received message handler: %w", err)
 	}
 	return s.signatureReceivedHandler.StartWorkers(s.ctx)
 }
 
-func (s *Service) StartSignaturesAggregatedMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PMessage[entity.AggregationProof]) error) error {
+func (s *Service) StartSignaturesAggregatedMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PMessage[symbiotic.AggregationProof]) error) error {
 	if err := s.signaturesAggregatedHandler.SetHandlers(mh); err != nil {
 		return errors.Errorf("failed to set signatures aggregated message handler: %w", err)
 	}

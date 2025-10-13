@@ -12,14 +12,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/symbioticfi/relay/core/entity"
-	"github.com/symbioticfi/relay/core/usecase/crypto"
-	entity_processor "github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor"
-	entity_mocks "github.com/symbioticfi/relay/core/usecase/entity-processor/entity-processor/mocks"
-	keyprovider "github.com/symbioticfi/relay/core/usecase/key-provider"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
+	entity_processor "github.com/symbioticfi/relay/internal/usecase/entity-processor"
+	entity_mocks "github.com/symbioticfi/relay/internal/usecase/entity-processor/mocks"
+	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
 	"github.com/symbioticfi/relay/internal/usecase/signer-app/mocks"
 	"github.com/symbioticfi/relay/pkg/signals"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 func TestSign_HappyPath(t *testing.T) {
@@ -99,7 +99,7 @@ func newTestSetup(t *testing.T) *testSetup {
 	mockEntityAggProofSignal.EXPECT().Emit(gomock.Any()).Return(nil).AnyTimes()
 
 	// Create mock signature processed signal for entity processor
-	signatureProcessedSignal := signals.New[entity.SignatureExtended](signals.DefaultConfig(), "test", nil)
+	signatureProcessedSignal := signals.New[symbiotic.SignatureExtended](signals.DefaultConfig(), "test", nil)
 
 	processor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo:                     repo,
@@ -129,10 +129,10 @@ func newTestSetup(t *testing.T) *testSetup {
 	}
 }
 
-func createTestSignatureRequest(msg string) entity.SignatureRequest {
-	return entity.SignatureRequest{
-		KeyTag:        entity.KeyTag(15),
-		RequiredEpoch: entity.Epoch(1),
+func createTestSignatureRequest(msg string) symbiotic.SignatureRequest {
+	return symbiotic.SignatureRequest{
+		KeyTag:        symbiotic.KeyTag(15),
+		RequiredEpoch: symbiotic.Epoch(1),
 		Message:       []byte(msg),
 	}
 }
@@ -143,26 +143,26 @@ func newPrivateKey(t *testing.T) crypto.PrivateKey {
 	_, err := rand.Read(privateKeyBytes)
 	require.NoError(t, err)
 
-	privateKey, err := crypto.NewPrivateKey(entity.KeyTypeBlsBn254, privateKeyBytes)
+	privateKey, err := crypto.NewPrivateKey(symbiotic.KeyTypeBlsBn254, privateKeyBytes)
 	require.NoError(t, err)
 
 	return privateKey
 }
 
-func createTestValidatorSet(t *testing.T, setup *testSetup, privateKey crypto.PrivateKey) entity.ValidatorSet {
+func createTestValidatorSet(t *testing.T, setup *testSetup, privateKey crypto.PrivateKey) symbiotic.ValidatorSet {
 	t.Helper()
-	vs := entity.ValidatorSet{
+	vs := symbiotic.ValidatorSet{
 		Version:         1,
-		RequiredKeyTag:  entity.KeyTag(15),
+		RequiredKeyTag:  symbiotic.KeyTag(15),
 		Epoch:           1,
-		QuorumThreshold: entity.ToVotingPower(big.NewInt(670)),
-		Validators: []entity.Validator{{
+		QuorumThreshold: symbiotic.ToVotingPower(big.NewInt(670)),
+		Validators: []symbiotic.Validator{{
 			Operator:    common.HexToAddress("0x123"),
-			VotingPower: entity.ToVotingPower(big.NewInt(1000)),
+			VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
 			IsActive:    true,
-			Keys: []entity.ValidatorKey{
+			Keys: []symbiotic.ValidatorKey{
 				{
-					Tag:     entity.KeyTag(15),
+					Tag:     symbiotic.KeyTag(15),
 					Payload: privateKey.PublicKey().OnChain(),
 				},
 			},
