@@ -17,7 +17,7 @@ import (
 
 // Repository defines the interface needed by the entity processor
 type Repository interface {
-	SaveSignature(ctx context.Context, signature symbiotic.Signature) error
+	SaveSignature(ctx context.Context, signature symbiotic.Signature, validator symbiotic.Validator, activeIndex uint32) error
 	GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (symbiotic.Signature, error)
 	GetValidatorByKey(ctx context.Context, epoch symbiotic.Epoch, keyTag symbiotic.KeyTag, publicKey []byte) (symbiotic.Validator, uint32, error)
 	GetValidatorSetByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error)
@@ -73,12 +73,13 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature symbio
 		"self", self,
 	)
 
+	validator, activeIndex, err := s.cfg.Repo.GetValidatorByKey(ctx, signature.Epoch, signature.KeyTag, signature.PublicKey.OnChain())
+	if err != nil {
+		return errors.Errorf("validator not found for public key %x, keyTag=%v, epoch=%v: %w", signature.PublicKey.OnChain(), signature.KeyTag, signature.Epoch, err)
+	}
+
 	// if self signature ignore validator check and signature existence check
 	if !self {
-		validator, activeIndex, err := s.cfg.Repo.GetValidatorByKey(ctx, signature.Epoch, signature.KeyTag, signature.PublicKey.OnChain())
-		if err != nil {
-			return errors.Errorf("validator not found for public key %x, keyTag=%v, epoch=%v: %w", signature.PublicKey.OnChain(), signature.KeyTag, signature.Epoch, err)
-		}
 		if !validator.IsActive {
 			return errors.Errorf("validator %s is not active", validator.Operator.Hex())
 		}
@@ -98,7 +99,7 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature symbio
 		}
 	}
 
-	if err := s.cfg.Repo.SaveSignature(ctx, signature); err != nil {
+	if err := s.cfg.Repo.SaveSignature(ctx, signature, validator, activeIndex); err != nil {
 		return errors.Errorf("failed to add signature: %w", err)
 	}
 

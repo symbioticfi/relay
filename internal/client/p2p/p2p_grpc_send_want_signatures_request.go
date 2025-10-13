@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"context"
+	"log/slog"
 	"math/rand/v2"
 	"net"
 	"time"
@@ -46,7 +47,7 @@ func (s *Service) SendWantSignaturesRequest(ctx context.Context, request entity.
 	}
 
 	// Convert protobuf response to entity
-	entityResp := protoToEntityResponse(response)
+	entityResp := protoToEntityResponse(ctx, response)
 
 	return entityResp, nil
 }
@@ -125,7 +126,7 @@ func entityToProtoRequest(req entity.WantSignaturesRequest) (*prototypes.WantSig
 }
 
 // protoToEntityResponse converts protobuf WantSignaturesResponse to entity
-func protoToEntityResponse(resp *prototypes.WantSignaturesResponse) entity.WantSignaturesResponse {
+func protoToEntityResponse(ctx context.Context, resp *prototypes.WantSignaturesResponse) entity.WantSignaturesResponse {
 	signatures := make(map[common.Hash][]entity.ValidatorSignature)
 
 	for hashStr, sigList := range resp.GetSignatures() {
@@ -134,6 +135,7 @@ func protoToEntityResponse(resp *prototypes.WantSignaturesResponse) entity.WantS
 		for _, protoSig := range sigList.GetSignatures() {
 			pubKey, err := crypto.NewPublicKey(symbiotic.KeyTag(protoSig.GetSignature().GetKeyTag()).Type(), protoSig.GetSignature().GetPublicKey())
 			if err != nil {
+				slog.WarnContext(ctx, "Failed to parse public key from peer[WantSignaturesResponse], skipping signature", "error", err)
 				continue
 			}
 			sig := entity.ValidatorSignature{

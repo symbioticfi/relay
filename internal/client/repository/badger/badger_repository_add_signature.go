@@ -10,13 +10,11 @@ import (
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-func (r *Repository) SaveSignature(ctx context.Context, signature symbiotic.Signature) error {
-	validator, activeIndex, err := r.GetValidatorByKey(ctx, signature.Epoch, signature.KeyTag, signature.PublicKey.OnChain())
-	if err != nil {
-		return errors.Errorf("validator not found for public key %x: %w", signature.PublicKey, err)
-	}
-
-	var signatureMap entity.SignatureMap
+func (r *Repository) SaveSignature(ctx context.Context, signature symbiotic.Signature, validator symbiotic.Validator, activeIndex uint32) error {
+	var (
+		signatureMap entity.SignatureMap
+		err          error
+	)
 
 	if err := r.doUpdateInTxWithLock(ctx, "ProcessSignature", func(ctx context.Context) error {
 		signatureMap, err = r.GetSignatureMap(ctx, signature.RequestID())

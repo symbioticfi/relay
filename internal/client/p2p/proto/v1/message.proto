@@ -4,7 +4,7 @@ package internal.client.p2p.proto.v1;
 
 option go_package = "github.com/symbioticfi/relay/internal/client/p2p/proto/v1";
 
-// SignaturesAggregated represents the aggregated signatures message
+// AggregationProof represents the aggregated signatures message
 message AggregationProof {
   uint32 key_tag = 2;
   uint64 epoch = 3;
