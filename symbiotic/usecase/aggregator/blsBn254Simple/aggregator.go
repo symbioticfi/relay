@@ -89,7 +89,7 @@ func (a Aggregator) Aggregate(
 	valset symbiotic.ValidatorSet,
 	keyTag symbiotic.KeyTag,
 	messageHash []byte,
-	signatures []symbiotic.SignatureExtended,
+	signatures []symbiotic.Signature,
 ) (symbiotic.AggregationProof, error) {
 	if !helpers.CompareMessageHasher(signatures, messageHash) {
 		return symbiotic.AggregationProof{}, errors.New("message hashes mismatch")
@@ -112,7 +112,7 @@ func (a Aggregator) Aggregate(
 	valKeysToIdx := helpers.GetValidatorsIndexesMapByKey(valset, keyTag)
 
 	for _, sig := range signatures {
-		pubKey, err := blsBn254.FromRaw(sig.PublicKey)
+		pubKey, err := blsBn254.FromRaw(sig.PublicKey.Raw())
 		if err != nil {
 			return symbiotic.AggregationProof{}, err
 		}

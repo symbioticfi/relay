@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
@@ -15,20 +16,26 @@ func TestBadgerRepository_Signature(t *testing.T) {
 
 	repo := setupTestRepository(t)
 
-	sig1 := symbiotic.SignatureExtended{
+	priv1, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
+	require.NoError(t, err)
+
+	priv2, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
+	require.NoError(t, err)
+
+	sig1 := symbiotic.Signature{
 		MessageHash: []byte("message1"),
 		KeyTag:      15,
 		Epoch:       100,
 		Signature:   []byte("signature1"),
-		PublicKey:   []byte("publickey1"),
+		PublicKey:   priv1.PublicKey(),
 	}
 
-	sig2 := symbiotic.SignatureExtended{
+	sig2 := symbiotic.Signature{
 		MessageHash: []byte("message1"),
 		KeyTag:      15,
 		Epoch:       100,
 		Signature:   []byte("signature2"),
-		PublicKey:   []byte("publickey2"),
+		PublicKey:   priv2.PublicKey(),
 	}
 
 	t.Run("saveSignature and GetSignatureByIndex", func(t *testing.T) {
@@ -81,19 +88,26 @@ func TestBadgerRepository_SignatureOrdering(t *testing.T) {
 	testIndices := []uint32{9, 11, 100, 1000, 2}
 	expectedOrder := []uint32{2, 9, 11, 100, 1000} // Expected numeric order
 
-	sig := symbiotic.SignatureExtended{
+	priv1, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
+	require.NoError(t, err)
+
+	sig := symbiotic.Signature{
 		MessageHash: []byte("message"),
 		Signature:   []byte("signature"),
 		KeyTag:      symbiotic.KeyTag(15),
 		Epoch:       777,
-		PublicKey:   randomBytes(t, 10),
+		PublicKey:   priv1.PublicKey(),
 	}
 
+	pubs := []crypto.PublicKey{}
 	// Save signatures with test indices
-	err := repo.doUpdateInTx(context.Background(), "test", func(ctx context.Context) error {
-		for i, index := range testIndices {
+	err = repo.doUpdateInTx(context.Background(), "test", func(ctx context.Context) error {
+		for _, index := range testIndices {
+			priv, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
+			require.NoError(t, err)
+			pubs = append(pubs, priv.PublicKey())
 			sigCopy := sig
-			sigCopy.PublicKey = []byte{byte(i)} // Different public key for each
+			sigCopy.PublicKey = priv.PublicKey() // Different public key for each
 			if err := repo.saveSignature(ctx, index, sigCopy); err != nil {
 				return err
 			}
@@ -121,7 +135,7 @@ func TestBadgerRepository_SignatureOrdering(t *testing.T) {
 			}
 		}
 		require.NotEqual(t, -1, originalIndex, "could not find original index")
-		require.Equal(t, byte(originalIndex), retrievedSig.PublicKey[0])
+		require.Equal(t, pubs[originalIndex].Raw(), retrievedSig.PublicKey.Raw())
 
 		// The signature returned by GetAllSignatures should match
 		require.Equal(t, retrievedSig, signatures[i], "signature order mismatch at position %d", i)

@@ -11,14 +11,11 @@ import (
 )
 
 func (s *Service) BroadcastSignatureAggregatedMessage(ctx context.Context, msg symbiotic.AggregationProof) error {
-	dto := prototypes.SignaturesAggregated{
-		RequestId:   msg.RequestID().Bytes(),
+	dto := prototypes.AggregationProof{
 		KeyTag:      uint32(msg.KeyTag),
 		Epoch:       uint64(msg.Epoch),
 		MessageHash: msg.MessageHash,
-		AggregationProof: &prototypes.AggregationProof{
-			Proof: msg.Proof,
-		},
+		Proof:       msg.Proof,
 	}
 
 	data, err := proto.Marshal(&dto)

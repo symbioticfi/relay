@@ -29,16 +29,16 @@ func (h *grpcHandler) GetSignatures(ctx context.Context, req *apiv1.GetSignature
 	}, nil
 }
 
-func convertSignaturesToPB(signatures []symbiotic.SignatureExtended) []*apiv1.Signature {
-	return lo.Map(signatures, func(sig symbiotic.SignatureExtended, _ int) *apiv1.Signature {
+func convertSignaturesToPB(signatures []symbiotic.Signature) []*apiv1.Signature {
+	return lo.Map(signatures, func(sig symbiotic.Signature, _ int) *apiv1.Signature {
 		return convertSignatureToPB(sig)
 	})
 }
 
-func convertSignatureToPB(sig symbiotic.SignatureExtended) *apiv1.Signature {
+func convertSignatureToPB(sig symbiotic.Signature) *apiv1.Signature {
 	return &apiv1.Signature{
 		Signature:   sig.Signature,
 		MessageHash: sig.MessageHash,
-		PublicKey:   sig.PublicKey,
+		PublicKey:   sig.PublicKey.Raw(),
 	}
 }

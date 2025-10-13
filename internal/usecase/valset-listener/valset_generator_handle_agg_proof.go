@@ -135,19 +135,19 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 
 		ticker.Reset(time.Duration(tickInterval) * time.Second)
 
-		privKey, err := s.cfg.KeyProvider.GetPrivateKey(valset.RequiredKeyTag)
+		onchainKey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(valset.RequiredKeyTag)
 		if err != nil {
 			if errors.Is(err, entity.ErrKeyNotFound) {
-				slog.DebugContext(ctx, "No key for required key tag, skipping proof commitment", "keyTag", valset.RequiredKeyTag)
+				slog.DebugContext(ctx, "No Onchain key for required key tag, skipping proof commitment", "keyTag", valset.RequiredKeyTag)
 				continue
 			}
-			return errors.Errorf("failed to get private key for required key tag %s: %w", valset.RequiredKeyTag, err)
+			return errors.Errorf("failed to get onchain key for required key tag %s: %w", valset.RequiredKeyTag, err)
 		}
 
 		now := symbiotic.Timestamp(uint64(time.Now().Unix()))
-		if !valset.IsActiveCommitter(ctx, nwCfg.CommitterSlotDuration, now, minCommitterPollIntervalSeconds, privKey.PublicKey().OnChain()) {
+		if !valset.IsActiveCommitter(ctx, nwCfg.CommitterSlotDuration, now, minCommitterPollIntervalSeconds, onchainKey) {
 			slog.DebugContext(ctx, "Not a committer for this valset, skipping proof commitment",
-				"key", privKey.PublicKey().OnChain(),
+				"key", onchainKey,
 				"epoch", valset.Epoch,
 				"committerSlotDuration", nwCfg.CommitterSlotDuration,
 				"now", now,

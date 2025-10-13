@@ -21,8 +21,8 @@ type WantSignaturesResponse struct {
 // ValidatorSignature pairs a signature with its validator index in the active validator set.
 // The validator index corresponds to the position in ValidatorSet.Validators.GetActiveValidators().
 type ValidatorSignature struct {
-	ValidatorIndex uint32                      // Index in active validator set
-	Signature      symbiotic.SignatureExtended // The actual signature data
+	ValidatorIndex uint32              // Index in active validator set
+	Signature      symbiotic.Signature // The actual signature data
 }
 
 // SignatureProcessingStats contains detailed statistics for processing received signatures

@@ -4,15 +4,13 @@ import (
 	"fmt"
 	"math/big"
 
-	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
-	symbKeys "github.com/symbioticfi/relay/symbiotic/usecase/crypto/key-types"
-
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fp"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 type Signature = symbiotic.RawSignature
@@ -135,7 +133,7 @@ func findYFromX(x *big.Int) (beta *big.Int, y *big.Int, err error) {
 	return beta, y, nil
 }
 
-func (k *PrivateKey) PublicKey() symbKeys.PublicKey {
+func (k *PrivateKey) PublicKey() symbiotic.PublicKey {
 	g1PubKey := bn254.G1Affine{}
 	g2PubKey := bn254.G2Affine{}
 
@@ -273,6 +271,6 @@ func FromRaw(rawKey RawPublicKey) (*PublicKey, error) {
 	return &PublicKey{g1, g2}, nil
 }
 
-func FromPrivateKey(privateKey *PrivateKey) symbKeys.PublicKey {
+func FromPrivateKey(privateKey *PrivateKey) symbiotic.PublicKey {
 	return privateKey.PublicKey()
 }

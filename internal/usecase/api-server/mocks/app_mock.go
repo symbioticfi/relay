@@ -97,10 +97,10 @@ func (mr *MockrepoMockRecorder) GetAggregationProof(ctx, requestID any) *gomock.
 }
 
 // GetAllSignatures mocks base method.
-func (m *Mockrepo) GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity.SignatureExtended, error) {
+func (m *Mockrepo) GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity.Signature, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllSignatures", ctx, requestID)
-	ret0, _ := ret[0].([]entity.SignatureExtended)
+	ret0, _ := ret[0].([]entity.Signature)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

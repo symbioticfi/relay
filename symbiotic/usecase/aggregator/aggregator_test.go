@@ -176,9 +176,9 @@ func genExtraDataTest(t *testing.T) (symbiotic.ValidatorSet, symbiotic.KeyTag) {
 	return valset, keyTag
 }
 
-func genCorrectTest(numValidators int, nonSigners []int) (symbiotic.ValidatorSet, []symbiotic.SignatureExtended, symbiotic.KeyTag) {
+func genCorrectTest(numValidators int, nonSigners []int) (symbiotic.ValidatorSet, []symbiotic.Signature, symbiotic.KeyTag) {
 	valset := symbiotic.ValidatorSet{}
-	signatures := make([]symbiotic.SignatureExtended, 0)
+	signatures := make([]symbiotic.Signature, 0)
 	pks := make([]crypto.PrivateKey, numValidators)
 	msg := []byte("message")
 	keyTag := symbiotic.KeyTag(1)
@@ -229,12 +229,12 @@ func genCorrectTest(numValidators int, nonSigners []int) (symbiotic.ValidatorSet
 		if err != nil {
 			panic(err)
 		}
-		signatures = append(signatures, symbiotic.SignatureExtended{
+		signatures = append(signatures, symbiotic.Signature{
 			MessageHash: msgHash,
 			KeyTag:      keyTag,
 			Epoch:       1,
 			Signature:   sig,
-			PublicKey:   pks[i].PublicKey().Raw(),
+			PublicKey:   pks[i].PublicKey(),
 		})
 	}
 

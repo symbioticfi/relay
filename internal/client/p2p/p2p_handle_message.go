@@ -3,6 +3,7 @@ package p2p
 import (
 	"github.com/go-errors/errors"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 	"google.golang.org/protobuf/proto"
 
 	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
@@ -11,32 +12,34 @@ import (
 )
 
 func (s *Service) handleSignatureReadyMessage(pubSubMsg *pubsub.Message) error {
-	var signatureGenerated prototypes.SignatureGenerated
-	err := unmarshalMessage(pubSubMsg, &signatureGenerated)
+	var signature prototypes.Signature
+	err := unmarshalMessage(pubSubMsg, &signature)
 	if err != nil {
-		return errors.Errorf("failed to unmarshal signatureGenerated message: %w", err)
+		return errors.Errorf("failed to unmarshal signature message: %w", err)
 	}
 
-	// Validate the signatureGenerated message
-	if len(signatureGenerated.GetRequestId()) > maxRequestIDSize {
-		return errors.Errorf("request id size exceeds maximum allowed size: %d bytes", maxRequestIDSize)
-	}
-	if len(signatureGenerated.GetSignature().GetPublicKey()) > maxPubKeySize {
+	// Validate the signature message
+	if len(signature.GetPublicKey()) > maxPubKeySize {
 		return errors.Errorf("public key size exceeds maximum allowed size: %d bytes", maxPubKeySize)
 	}
-	if len(signatureGenerated.GetSignature().GetSignature()) > maxSignatureSize {
+	if len(signature.GetSignature()) > maxSignatureSize {
 		return errors.Errorf("signature size exceeds maximum allowed size: %d bytes", maxSignatureSize)
 	}
-	if len(signatureGenerated.GetSignature().GetMessageHash()) > maxMsgHashSize {
+	if len(signature.GetMessageHash()) > maxMsgHashSize {
 		return errors.Errorf("message hash size exceeds maximum allowed size: %d bytes", maxMsgHashSize)
 	}
 
-	msg := symbiotic.SignatureExtended{
-		KeyTag:      symbiotic.KeyTag(signatureGenerated.GetKeyTag()),
-		Epoch:       symbiotic.Epoch(signatureGenerated.GetEpoch()),
-		PublicKey:   signatureGenerated.GetSignature().GetPublicKey(),
-		Signature:   signatureGenerated.GetSignature().GetSignature(),
-		MessageHash: signatureGenerated.GetSignature().GetMessageHash(),
+	pubKey, err := crypto.NewPublicKey(symbiotic.KeyTag(signature.GetKeyTag()).Type(), signature.GetPublicKey())
+	if err != nil {
+		return errors.Errorf("failed to parse public key: %w", err)
+	}
+
+	msg := symbiotic.Signature{
+		KeyTag:      symbiotic.KeyTag(signature.GetKeyTag()),
+		Epoch:       symbiotic.Epoch(signature.GetEpoch()),
+		PublicKey:   pubKey,
+		Signature:   signature.GetSignature(),
+		MessageHash: signature.GetMessageHash(),
 	}
 
 	si, err := extractSenderInfo(pubSubMsg)
@@ -44,27 +47,24 @@ func (s *Service) handleSignatureReadyMessage(pubSubMsg *pubsub.Message) error {
 		return errors.Errorf("failed to extract sender info from received message: %w", err)
 	}
 
-	return s.signatureReceivedHandler.Emit(p2pEntity.P2PMessage[symbiotic.SignatureExtended]{
+	return s.signatureReceivedHandler.Emit(p2pEntity.P2PMessage[symbiotic.Signature]{
 		SenderInfo: si,
 		Message:    msg,
 	})
 }
 
 func (s *Service) handleAggregatedProofReadyMessage(pubSubMsg *pubsub.Message) error {
-	var signaturesAggregated prototypes.SignaturesAggregated
+	var signaturesAggregated prototypes.AggregationProof
 	err := unmarshalMessage(pubSubMsg, &signaturesAggregated)
 	if err != nil {
-		return errors.Errorf("failed to unmarshal signatureGenerated message: %w", err)
+		return errors.Errorf("failed to unmarshal signature message: %w", err)
 	}
 
 	// Validate the signaturesAggregated message
-	if len(signaturesAggregated.GetRequestId()) > maxRequestIDSize {
-		return errors.Errorf("request id size exceeds maximum allowed size: %d bytes", maxRequestIDSize)
-	}
 	if len(signaturesAggregated.GetMessageHash()) > maxMsgHashSize {
 		return errors.Errorf("aggregation proof message hash size exceeds maximum allowed size: %d bytes", maxMsgHashSize)
 	}
-	if len(signaturesAggregated.GetAggregationProof().GetProof()) > maxProofSize {
+	if len(signaturesAggregated.GetProof()) > maxProofSize {
 		return errors.Errorf("aggregation proof size exceeds maximum allowed size: %d bytes", maxProofSize)
 	}
 
@@ -72,7 +72,7 @@ func (s *Service) handleAggregatedProofReadyMessage(pubSubMsg *pubsub.Message) e
 		KeyTag:      symbiotic.KeyTag(signaturesAggregated.GetKeyTag()),
 		Epoch:       symbiotic.Epoch(signaturesAggregated.GetEpoch()),
 		MessageHash: signaturesAggregated.GetMessageHash(),
-		Proof:       signaturesAggregated.GetAggregationProof().GetProof(),
+		Proof:       signaturesAggregated.GetProof(),
 	}
 
 	si, err := extractSenderInfo(pubSubMsg)

@@ -11,15 +11,14 @@ import (
 	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/signals"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
-	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 //go:generate mockgen -source=entity_processor.go -destination=mocks/entity_processor.go -package=mocks
 
 // Repository defines the interface needed by the entity processor
 type Repository interface {
-	SaveSignature(ctx context.Context, signature symbiotic.SignatureExtended) error
-	GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (symbiotic.SignatureExtended, error)
+	SaveSignature(ctx context.Context, signature symbiotic.Signature, validator symbiotic.Validator, activeIndex uint32) error
+	GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (symbiotic.Signature, error)
 	GetValidatorByKey(ctx context.Context, epoch symbiotic.Epoch, keyTag symbiotic.KeyTag, publicKey []byte) (symbiotic.Validator, uint32, error)
 	GetValidatorSetByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error)
 	GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error)
@@ -35,10 +34,10 @@ type AggProofSignal interface {
 }
 
 type Config struct {
-	Repo                     Repository                                   `validate:"required"`
-	Aggregator               Aggregator                                   `validate:"required"`
-	AggProofSignal           AggProofSignal                               `validate:"required"`
-	SignatureProcessedSignal *signals.Signal[symbiotic.SignatureExtended] `validate:"required"`
+	Repo                     Repository                           `validate:"required"`
+	Aggregator               Aggregator                           `validate:"required"`
+	AggProofSignal           AggProofSignal                       `validate:"required"`
+	SignatureProcessedSignal *signals.Signal[symbiotic.Signature] `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -66,7 +65,7 @@ func NewEntityProcessor(cfg Config) (*EntityProcessor, error) {
 }
 
 // ProcessSignature processes a signature with SignatureMap operations and optionally saves SignatureRequest
-func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature symbiotic.SignatureExtended, self bool) error {
+func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature symbiotic.Signature, self bool) error {
 	slog.DebugContext(ctx, "Processing signature",
 		"keyTag", signature.KeyTag,
 		"requestId", signature.RequestID().Hex(),
@@ -74,16 +73,13 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature symbio
 		"self", self,
 	)
 
+	validator, activeIndex, err := s.cfg.Repo.GetValidatorByKey(ctx, signature.Epoch, signature.KeyTag, signature.PublicKey.OnChain())
+	if err != nil {
+		return errors.Errorf("validator not found for public key %x, keyTag=%v, epoch=%v: %w", signature.PublicKey.OnChain(), signature.KeyTag, signature.Epoch, err)
+	}
+
 	// if self signature ignore validator check and signature existence check
 	if !self {
-		publicKey, err := crypto.NewPublicKey(signature.KeyTag.Type(), signature.PublicKey)
-		if err != nil {
-			return errors.Errorf("failed to get public key: %w", err)
-		}
-		validator, activeIndex, err := s.cfg.Repo.GetValidatorByKey(ctx, signature.Epoch, signature.KeyTag, publicKey.OnChain())
-		if err != nil {
-			return errors.Errorf("validator not found for public key %x, keyTag=%v, epoch=%v: %w", publicKey.OnChain(), signature.KeyTag, signature.Epoch, err)
-		}
 		if !validator.IsActive {
 			return errors.Errorf("validator %s is not active", validator.Operator.Hex())
 		}
@@ -97,13 +93,13 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature symbio
 			return errors.Errorf("failed to check existing signature: %w", err)
 		}
 
-		err = publicKey.VerifyWithHash(signature.MessageHash, signature.Signature)
+		err = signature.PublicKey.VerifyWithHash(signature.MessageHash, signature.Signature)
 		if err != nil {
 			return errors.Errorf("failed to verify signature: %w", err)
 		}
 	}
 
-	if err := s.cfg.Repo.SaveSignature(ctx, signature); err != nil {
+	if err := s.cfg.Repo.SaveSignature(ctx, signature, validator, activeIndex); err != nil {
 		return errors.Errorf("failed to add signature: %w", err)
 	}
 
