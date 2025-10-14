@@ -7,11 +7,12 @@
 package v1
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -973,14 +974,14 @@ var File_v1_badger_proto protoreflect.FileDescriptor
 
 const file_v1_badger_proto_rawDesc = "" +
 	"\n" +
-	"\x0fv1/badger.proto\x12\tbadger.v1\"\xea\x01\n" +
+	"\x0fv1/badger.proto\x12*internal.client.repository.badger.proto.v1\"\xac\x02\n" +
 	"\tValidator\x12\x1a\n" +
 	"\boperator\x18\x01 \x01(\fR\boperator\x12!\n" +
 	"\fvoting_power\x18\x02 \x01(\tR\vvotingPower\x12\x1b\n" +
 	"\tis_active\x18\x03 \x01(\bR\bisActive\x12!\n" +
-	"\factive_index\x18\x04 \x01(\rR\vactiveIndex\x12+\n" +
-	"\x04keys\x18\x05 \x03(\v2\x17.badger.v1.ValidatorKeyR\x04keys\x121\n" +
-	"\x06vaults\x18\x06 \x03(\v2\x19.badger.v1.ValidatorVaultR\x06vaults\":\n" +
+	"\factive_index\x18\x04 \x01(\rR\vactiveIndex\x12L\n" +
+	"\x04keys\x18\x05 \x03(\v28.internal.client.repository.badger.proto.v1.ValidatorKeyR\x04keys\x12R\n" +
+	"\x06vaults\x18\x06 \x03(\v2:.internal.client.repository.badger.proto.v1.ValidatorVaultR\x06vaults\":\n" +
 	"\fValidatorKey\x12\x10\n" +
 	"\x03tag\x18\x01 \x01(\rR\x03tag\x12\x18\n" +
 	"\apayload\x18\x02 \x01(\fR\apayload\"d\n" +
@@ -997,13 +998,13 @@ const file_v1_badger_proto_rawDesc = "" +
 	"\x12total_voting_power\x18\x06 \x01(\tR\x10totalVotingPower\x120\n" +
 	"\x14validators_ssz_mroot\x18\a \x01(\fR\x12validatorsSszMroot\x12-\n" +
 	"\x12aggregator_indices\x18\b \x01(\fR\x11aggregatorIndices\x12+\n" +
-	"\x11committer_indices\x18\t \x01(\fR\x10committerIndices\"\xa9\x01\n" +
+	"\x11committer_indices\x18\t \x01(\fR\x10committerIndices\"\xca\x01\n" +
 	"\x14ValidatorSetMetadata\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\fR\trequestId\x12\x14\n" +
-	"\x05epoch\x18\x02 \x01(\x04R\x05epoch\x123\n" +
+	"\x05epoch\x18\x02 \x01(\x04R\x05epoch\x12T\n" +
 	"\n" +
-	"extra_data\x18\x03 \x03(\v2\x14.badger.v1.ExtraDataR\textraData\x12'\n" +
+	"extra_data\x18\x03 \x03(\v25.internal.client.repository.badger.proto.v1.ExtraDataR\textraData\x12'\n" +
 	"\x0fcommitment_data\x18\x04 \x01(\fR\x0ecommitmentData\"3\n" +
 	"\tExtraData\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\fR\x03key\x12\x14\n" +
@@ -1029,19 +1030,19 @@ const file_v1_badger_proto_rawDesc = "" +
 	"\x05epoch\x18\x02 \x01(\x04R\x05epoch\x128\n" +
 	"\x18signed_validators_bitmap\x18\x03 \x01(\fR\x16signedValidatorsBitmap\x120\n" +
 	"\x14current_voting_power\x18\x04 \x01(\tR\x12currentVotingPower\x12)\n" +
-	"\x10total_validators\x18\x05 \x01(\rR\x0ftotalValidators\"\xe0\x05\n" +
-	"\rNetworkConfig\x12R\n" +
-	"\x16voting_power_providers\x18\x01 \x03(\v2\x1c.badger.v1.CrossChainAddressR\x14votingPowerProviders\x12A\n" +
-	"\rkeys_provider\x18\x02 \x01(\v2\x1c.badger.v1.CrossChainAddressR\fkeysProvider\x12>\n" +
-	"\vsettlements\x18\x03 \x03(\v2\x1c.badger.v1.CrossChainAddressR\vsettlements\x12+\n" +
+	"\x10total_validators\x18\x05 \x01(\rR\x0ftotalValidators\"\xe4\x06\n" +
+	"\rNetworkConfig\x12s\n" +
+	"\x16voting_power_providers\x18\x01 \x03(\v2=.internal.client.repository.badger.proto.v1.CrossChainAddressR\x14votingPowerProviders\x12b\n" +
+	"\rkeys_provider\x18\x02 \x01(\v2=.internal.client.repository.badger.proto.v1.CrossChainAddressR\fkeysProvider\x12_\n" +
+	"\vsettlements\x18\x03 \x03(\v2=.internal.client.repository.badger.proto.v1.CrossChainAddressR\vsettlements\x12+\n" +
 	"\x11verification_type\x18\x04 \x01(\rR\x10verificationType\x12(\n" +
 	"\x10max_voting_power\x18\x05 \x01(\tR\x0emaxVotingPower\x12;\n" +
 	"\x1amin_inclusion_voting_power\x18\x06 \x01(\tR\x17minInclusionVotingPower\x120\n" +
 	"\x14max_validators_count\x18\a \x01(\tR\x12maxValidatorsCount\x12*\n" +
 	"\x11required_key_tags\x18\b \x03(\rR\x0frequiredKeyTags\x125\n" +
-	"\x17required_header_key_tag\x18\t \x01(\rR\x14requiredHeaderKeyTag\x12G\n" +
+	"\x17required_header_key_tag\x18\t \x01(\rR\x14requiredHeaderKeyTag\x12h\n" +
 	"\x11quorum_thresholds\x18\n" +
-	" \x03(\v2\x1a.badger.v1.QuorumThresholdR\x10quorumThresholds\x12%\n" +
+	" \x03(\v2;.internal.client.repository.badger.proto.v1.QuorumThresholdR\x10quorumThresholds\x12%\n" +
 	"\x0enum_committers\x18\v \x01(\x04R\rnumCommitters\x12'\n" +
 	"\x0fnum_aggregators\x18\f \x01(\x04R\x0enumAggregators\x126\n" +
 	"\x17committer_slot_duration\x18\r \x01(\x04R\x15committerSlotDuration\"H\n" +
@@ -1050,9 +1051,8 @@ const file_v1_badger_proto_rawDesc = "" +
 	"\bchain_id\x18\x02 \x01(\x04R\achainId\"U\n" +
 	"\x0fQuorumThreshold\x12\x17\n" +
 	"\akey_tag\x18\x01 \x01(\rR\x06keyTag\x12)\n" +
-	"\x10quorum_threshold\x18\x02 \x01(\tR\x0fquorumThresholdB\xaa\x01\n" +
-	"\rcom.badger.v1B\vBadgerProtoP\x01ZGgithub.com/symbioticfi/relay/internal/client/repository/badger/proto/v1\xa2\x02\x03BXX\xaa\x02\tBadger.V1\xca\x02\tBadger\\V1\xe2\x02\x15Badger\\V1\\GPBMetadata\xea\x02\n" +
-	"Badger::V1b\x06proto3"
+	"\x10quorum_threshold\x18\x02 \x01(\tR\x0fquorumThresholdB\xd5\x02\n" +
+	".com.internal.client.repository.badger.proto.v1B\vBadgerProtoP\x01ZGgithub.com/symbioticfi/relay/internal/client/repository/badger/proto/v1\xa2\x02\x05ICRBP\xaa\x02*Internal.Client.Repository.Badger.Proto.V1\xca\x02*Internal\\Client\\Repository\\Badger\\Proto\\V1\xe2\x026Internal\\Client\\Repository\\Badger\\Proto\\V1\\GPBMetadata\xea\x02/Internal::Client::Repository::Badger::Proto::V1b\x06proto3"
 
 var (
 	file_v1_badger_proto_rawDescOnce sync.Once
@@ -1068,28 +1068,28 @@ func file_v1_badger_proto_rawDescGZIP() []byte {
 
 var file_v1_badger_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_v1_badger_proto_goTypes = []any{
-	(*Validator)(nil),            // 0: badger.v1.Validator
-	(*ValidatorKey)(nil),         // 1: badger.v1.ValidatorKey
-	(*ValidatorVault)(nil),       // 2: badger.v1.ValidatorVault
-	(*ValidatorSetHeader)(nil),   // 3: badger.v1.ValidatorSetHeader
-	(*ValidatorSetMetadata)(nil), // 4: badger.v1.ValidatorSetMetadata
-	(*ExtraData)(nil),            // 5: badger.v1.ExtraData
-	(*AggregationProof)(nil),     // 6: badger.v1.AggregationProof
-	(*Signature)(nil),            // 7: badger.v1.Signature
-	(*SignatureRequest)(nil),     // 8: badger.v1.SignatureRequest
-	(*SignatureMap)(nil),         // 9: badger.v1.SignatureMap
-	(*NetworkConfig)(nil),        // 10: badger.v1.NetworkConfig
-	(*CrossChainAddress)(nil),    // 11: badger.v1.CrossChainAddress
-	(*QuorumThreshold)(nil),      // 12: badger.v1.QuorumThreshold
+	(*Validator)(nil),            // 0: internal.client.repository.badger.proto.v1.Validator
+	(*ValidatorKey)(nil),         // 1: internal.client.repository.badger.proto.v1.ValidatorKey
+	(*ValidatorVault)(nil),       // 2: internal.client.repository.badger.proto.v1.ValidatorVault
+	(*ValidatorSetHeader)(nil),   // 3: internal.client.repository.badger.proto.v1.ValidatorSetHeader
+	(*ValidatorSetMetadata)(nil), // 4: internal.client.repository.badger.proto.v1.ValidatorSetMetadata
+	(*ExtraData)(nil),            // 5: internal.client.repository.badger.proto.v1.ExtraData
+	(*AggregationProof)(nil),     // 6: internal.client.repository.badger.proto.v1.AggregationProof
+	(*Signature)(nil),            // 7: internal.client.repository.badger.proto.v1.Signature
+	(*SignatureRequest)(nil),     // 8: internal.client.repository.badger.proto.v1.SignatureRequest
+	(*SignatureMap)(nil),         // 9: internal.client.repository.badger.proto.v1.SignatureMap
+	(*NetworkConfig)(nil),        // 10: internal.client.repository.badger.proto.v1.NetworkConfig
+	(*CrossChainAddress)(nil),    // 11: internal.client.repository.badger.proto.v1.CrossChainAddress
+	(*QuorumThreshold)(nil),      // 12: internal.client.repository.badger.proto.v1.QuorumThreshold
 }
 var file_v1_badger_proto_depIdxs = []int32{
-	1,  // 0: badger.v1.Validator.keys:type_name -> badger.v1.ValidatorKey
-	2,  // 1: badger.v1.Validator.vaults:type_name -> badger.v1.ValidatorVault
-	5,  // 2: badger.v1.ValidatorSetMetadata.extra_data:type_name -> badger.v1.ExtraData
-	11, // 3: badger.v1.NetworkConfig.voting_power_providers:type_name -> badger.v1.CrossChainAddress
-	11, // 4: badger.v1.NetworkConfig.keys_provider:type_name -> badger.v1.CrossChainAddress
-	11, // 5: badger.v1.NetworkConfig.settlements:type_name -> badger.v1.CrossChainAddress
-	12, // 6: badger.v1.NetworkConfig.quorum_thresholds:type_name -> badger.v1.QuorumThreshold
+	1,  // 0: internal.client.repository.badger.proto.v1.Validator.keys:type_name -> internal.client.repository.badger.proto.v1.ValidatorKey
+	2,  // 1: internal.client.repository.badger.proto.v1.Validator.vaults:type_name -> internal.client.repository.badger.proto.v1.ValidatorVault
+	5,  // 2: internal.client.repository.badger.proto.v1.ValidatorSetMetadata.extra_data:type_name -> internal.client.repository.badger.proto.v1.ExtraData
+	11, // 3: internal.client.repository.badger.proto.v1.NetworkConfig.voting_power_providers:type_name -> internal.client.repository.badger.proto.v1.CrossChainAddress
+	11, // 4: internal.client.repository.badger.proto.v1.NetworkConfig.keys_provider:type_name -> internal.client.repository.badger.proto.v1.CrossChainAddress
+	11, // 5: internal.client.repository.badger.proto.v1.NetworkConfig.settlements:type_name -> internal.client.repository.badger.proto.v1.CrossChainAddress
+	12, // 6: internal.client.repository.badger.proto.v1.NetworkConfig.quorum_thresholds:type_name -> internal.client.repository.badger.proto.v1.QuorumThreshold
 	7,  // [7:7] is the sub-list for method output_type
 	7,  // [7:7] is the sub-list for method input_type
 	7,  // [7:7] is the sub-list for extension type_name

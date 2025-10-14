@@ -7,8 +7,7 @@ import (
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
-
-	"github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
+	pb "github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -76,7 +75,7 @@ func signatureMapToBytes(vm entity.SignatureMap) ([]byte, error) {
 		return nil, errors.Errorf("failed to serialize roaring bitmap: %w", err)
 	}
 
-	return marshalProto(&v1.SignatureMap{
+	return marshalProto(&pb.SignatureMap{
 		RequestId:              vm.RequestID.Bytes(),
 		Epoch:                  uint64(vm.Epoch),
 		SignedValidatorsBitmap: bitmapBytes,
@@ -86,28 +85,28 @@ func signatureMapToBytes(vm entity.SignatureMap) ([]byte, error) {
 }
 
 func bytesToSignatureMap(data []byte) (entity.SignatureMap, error) {
-	pb := &v1.SignatureMap{}
-	if err := unmarshalProto(data, pb); err != nil {
+	signatureMap := &pb.SignatureMap{}
+	if err := unmarshalProto(data, signatureMap); err != nil {
 		return entity.SignatureMap{}, errors.Errorf("failed to unmarshal signature map: %w", err)
 	}
 
-	requestId := common.BytesToHash(pb.GetRequestId())
+	requestId := common.BytesToHash(signatureMap.GetRequestId())
 
-	bitmap, err := entity.BitmapFromBytes(pb.GetSignedValidatorsBitmap())
+	bitmap, err := entity.BitmapFromBytes(signatureMap.GetSignedValidatorsBitmap())
 	if err != nil {
 		return entity.SignatureMap{}, errors.Errorf("failed to deserialize bitmap: %w", err)
 	}
 
-	currentVotingPower, ok := new(big.Int).SetString(pb.GetCurrentVotingPower(), 10)
+	currentVotingPower, ok := new(big.Int).SetString(signatureMap.GetCurrentVotingPower(), 10)
 	if !ok {
-		return entity.SignatureMap{}, errors.Errorf("failed to parse current voting power: %s", pb.GetCurrentVotingPower())
+		return entity.SignatureMap{}, errors.Errorf("failed to parse current voting power: %s", signatureMap.GetCurrentVotingPower())
 	}
 
 	return entity.SignatureMap{
 		RequestID:              requestId,
-		Epoch:                  symbiotic.Epoch(pb.GetEpoch()),
+		Epoch:                  symbiotic.Epoch(signatureMap.GetEpoch()),
 		SignedValidatorsBitmap: bitmap,
 		CurrentVotingPower:     symbiotic.ToVotingPower(currentVotingPower),
-		TotalValidators:        pb.GetTotalValidators(),
+		TotalValidators:        signatureMap.GetTotalValidators(),
 	}, nil
 }

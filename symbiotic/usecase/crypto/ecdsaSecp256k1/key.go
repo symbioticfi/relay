@@ -7,7 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
-
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 

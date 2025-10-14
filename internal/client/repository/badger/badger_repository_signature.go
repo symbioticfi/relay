@@ -7,13 +7,11 @@ import (
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
-
-	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/blsBn254"
-	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/ecdsaSecp256k1"
-
-	"github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
+	pb "github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/blsBn254"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/ecdsaSecp256k1"
 )
 
 func keySignature(requestID common.Hash, validatorIndex uint32) []byte {
@@ -108,7 +106,7 @@ func (r *Repository) GetSignatureByIndex(ctx context.Context, requestID common.H
 }
 
 func signatureToBytes(sig symbiotic.Signature) ([]byte, error) {
-	return marshalProto(&v1.Signature{
+	return marshalProto(&pb.Signature{
 		MessageHash:  sig.MessageHash,
 		KeyTag:       uint32(sig.KeyTag),
 		Epoch:        uint64(sig.Epoch),
@@ -118,35 +116,38 @@ func signatureToBytes(sig symbiotic.Signature) ([]byte, error) {
 }
 
 func bytesToSignature(value []byte) (symbiotic.Signature, error) {
-	pb := &v1.Signature{}
-	if err := unmarshalProto(value, pb); err != nil {
+	signaturePB := &pb.Signature{}
+	if err := unmarshalProto(value, signaturePB); err != nil {
 		return symbiotic.Signature{}, errors.Errorf("failed to unmarshal signature: %w", err)
 	}
 
 	signature := symbiotic.Signature{
-		MessageHash: pb.GetMessageHash(),
-		KeyTag:      symbiotic.KeyTag(pb.GetKeyTag()),
-		Epoch:       symbiotic.Epoch(pb.GetEpoch()),
-		Signature:   pb.GetSignature(),
+		MessageHash: signaturePB.GetMessageHash(),
+		KeyTag:      symbiotic.KeyTag(signaturePB.GetKeyTag()),
+		Epoch:       symbiotic.Epoch(signaturePB.GetEpoch()),
+		Signature:   signaturePB.GetSignature(),
 	}
 
 	keyType := signature.KeyTag.Type()
 
-	if keyType == symbiotic.KeyTypeBlsBn254 {
-		publicKey, err := blsBn254.FromRaw(pb.GetRawPublicKey())
+	switch keyType {
+	case symbiotic.KeyTypeBlsBn254:
+		publicKey, err := blsBn254.FromRaw(signaturePB.GetRawPublicKey())
 		if err != nil {
 			return symbiotic.Signature{}, errors.Errorf("failed to get signature from raw: %w", err)
 		}
 
 		signature.PublicKey = publicKey
-	} else if keyType == symbiotic.KeyTypeEcdsaSecp256k1 {
-		publicKey, err := ecdsaSecp256k1.FromRaw(pb.GetRawPublicKey())
+	case symbiotic.KeyTypeEcdsaSecp256k1:
+		publicKey, err := ecdsaSecp256k1.FromRaw(signaturePB.GetRawPublicKey())
 		if err != nil {
 			return symbiotic.Signature{}, errors.Errorf("failed to get signature from raw: %w", err)
 		}
 
 		signature.PublicKey = publicKey
-	} else {
+	case symbiotic.KeyTypeInvalid:
+		return symbiotic.Signature{}, errors.Errorf("invalid signature key type")
+	default:
 		return symbiotic.Signature{}, errors.Errorf("unsupported key type: %v", keyType)
 	}
 

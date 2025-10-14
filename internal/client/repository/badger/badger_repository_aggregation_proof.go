@@ -9,8 +9,7 @@ import (
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
-
-	"github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
+	pb "github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -79,7 +78,7 @@ func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.H
 }
 
 func aggregationProofToBytes(ap symbiotic.AggregationProof) ([]byte, error) {
-	return marshalProto(&v1.AggregationProof{
+	return marshalProto(&pb.AggregationProof{
 		MessageHash: ap.MessageHash,
 		KeyTag:      uint32(ap.KeyTag),
 		Epoch:       uint64(ap.Epoch),
@@ -88,16 +87,16 @@ func aggregationProofToBytes(ap symbiotic.AggregationProof) ([]byte, error) {
 }
 
 func bytesToAggregationProof(value []byte) (symbiotic.AggregationProof, error) {
-	pb := &v1.AggregationProof{}
-	if err := unmarshalProto(value, pb); err != nil {
+	aggregationProof := &pb.AggregationProof{}
+	if err := unmarshalProto(value, aggregationProof); err != nil {
 		return symbiotic.AggregationProof{}, errors.Errorf("failed to unmarshal aggregation proof: %w", err)
 	}
 
 	return symbiotic.AggregationProof{
-		MessageHash: pb.GetMessageHash(),
-		KeyTag:      symbiotic.KeyTag(pb.GetKeyTag()),
-		Epoch:       symbiotic.Epoch(pb.GetEpoch()),
-		Proof:       pb.GetProof(),
+		MessageHash: aggregationProof.GetMessageHash(),
+		KeyTag:      symbiotic.KeyTag(aggregationProof.GetKeyTag()),
+		Epoch:       symbiotic.Epoch(aggregationProof.GetEpoch()),
+		Proof:       aggregationProof.GetProof(),
 	}, nil
 }
 

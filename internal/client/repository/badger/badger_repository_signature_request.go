@@ -9,8 +9,7 @@ import (
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
-
-	"github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
+	pb "github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -130,7 +129,7 @@ func (r *Repository) RemoveSignaturePending(ctx context.Context, epoch symbiotic
 }
 
 func signatureRequestToBytes(req symbiotic.SignatureRequest) ([]byte, error) {
-	return marshalProto(&v1.SignatureRequest{
+	return marshalProto(&pb.SignatureRequest{
 		KeyTag:        uint32(req.KeyTag),
 		RequiredEpoch: uint64(req.RequiredEpoch),
 		Message:       req.Message,
@@ -138,15 +137,15 @@ func signatureRequestToBytes(req symbiotic.SignatureRequest) ([]byte, error) {
 }
 
 func bytesToSignatureRequest(data []byte) (symbiotic.SignatureRequest, error) {
-	pb := &v1.SignatureRequest{}
-	if err := unmarshalProto(data, pb); err != nil {
+	signatureRequest := &pb.SignatureRequest{}
+	if err := unmarshalProto(data, signatureRequest); err != nil {
 		return symbiotic.SignatureRequest{}, errors.Errorf("failed to unmarshal signature request: %w", err)
 	}
 
 	return symbiotic.SignatureRequest{
-		KeyTag:        symbiotic.KeyTag(pb.GetKeyTag()),
-		RequiredEpoch: symbiotic.Epoch(pb.GetRequiredEpoch()),
-		Message:       pb.GetMessage(),
+		KeyTag:        symbiotic.KeyTag(signatureRequest.GetKeyTag()),
+		RequiredEpoch: symbiotic.Epoch(signatureRequest.GetRequiredEpoch()),
+		Message:       signatureRequest.GetMessage(),
 	}, nil
 }
 
