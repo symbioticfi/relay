@@ -50,7 +50,7 @@ func TestAggregatorSignatureSync(t *testing.T) {
 	captureTimestamp, err := evmClient.GetEpochStart(ctx, currentEpoch)
 	require.NoError(t, err, "Failed to get epoch start timestamp")
 
-	nwConfig, err := evmClient.GetConfig(ctx, captureTimestamp)
+	nwConfig, err := evmClient.GetConfig(ctx, captureTimestamp, currentEpoch)
 	require.NoError(t, err, "Failed to get network config")
 
 	nextEpoch := currentEpoch + 1

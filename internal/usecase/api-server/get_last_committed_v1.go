@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
+	"github.com/symbioticfi/relay/internal/entity"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -19,7 +20,14 @@ func (h *grpcHandler) GetLastCommitted(ctx context.Context, req *apiv1.GetLastCo
 		return nil, status.Error(codes.InvalidArgument, "settlement chain ID cannot be 0")
 	}
 
-	cfg, err := h.cfg.EvmClient.GetConfig(ctx, symbiotic.Timestamp(uint64(time.Now().Unix())))
+	currentEpoch, err := h.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
+	if err != nil {
+		if !errors.Is(err, entity.ErrEntityNotFound) {
+			return nil, errors.Errorf("failed to get current epoch: %w", err)
+		}
+	}
+
+	cfg, err := h.cfg.EvmClient.GetConfig(ctx, symbiotic.Timestamp(uint64(time.Now().Unix())), currentEpoch)
 	if err != nil {
 		return nil, errors.Errorf("failed to get config: %w", err)
 	}
