@@ -76,6 +76,13 @@ func runApp(ctx context.Context) error {
 		keyProvider = keyprovider.NewCacheKeyProvider(simpleKeyProvider)
 	}
 
+	if cfg.KeyCache.Enabled {
+		if err := symbioticCrypto.InitializePubkeyCache(cfg.KeyCache.Size); err != nil {
+			return errors.Errorf("failed to initialize public key cache: %w", err)
+		}
+		slog.DebugContext(ctx, "Initialized public key cache", "size", cfg.KeyCache.Size)
+	}
+
 	evmClient, err := evm.NewEvmClient(ctx, evm.Config{
 		ChainURLs: cfg.Chains,
 		DriverAddress: symbiotic.CrossChainAddress{
