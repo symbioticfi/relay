@@ -245,7 +245,7 @@ type NetworkConfig struct {
 	RequiredKeyTags         []KeyTag
 	RequiredHeaderKeyTag    KeyTag
 	QuorumThresholds        []QuorumThreshold
-
+	EpochDuration           uint64 // in seconds
 	// scheduler config
 	NumAggregators        uint64
 	NumCommitters         uint64

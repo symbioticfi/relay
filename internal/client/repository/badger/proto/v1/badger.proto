@@ -91,6 +91,7 @@ message NetworkConfig {
   uint64 num_committers = 11;
   uint64 num_aggregators = 12;
   uint64 committer_slot_duration = 13;
+  uint64 epoch_duration = 14;
 }
 
 message CrossChainAddress {

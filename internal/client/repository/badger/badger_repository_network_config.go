@@ -102,6 +102,7 @@ func networkConfigToBytes(config symbiotic.NetworkConfig) ([]byte, error) {
 		NumCommitters:         config.NumCommitters,
 		NumAggregators:        config.NumAggregators,
 		CommitterSlotDuration: config.CommitterSlotDuration,
+		EpochDuration:         config.EpochDuration,
 	})
 }
 
@@ -167,5 +168,6 @@ func bytesToNetworkConfig(data []byte) (symbiotic.NetworkConfig, error) {
 		NumAggregators:          networkConfig.GetNumAggregators(),
 		NumCommitters:           networkConfig.GetNumCommitters(),
 		CommitterSlotDuration:   networkConfig.GetCommitterSlotDuration(),
+		EpochDuration:           networkConfig.GetEpochDuration(),
 	}, nil
 }

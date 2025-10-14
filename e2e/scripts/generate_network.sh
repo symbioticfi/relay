@@ -170,6 +170,9 @@ generate_docker_compose() {
     local relay_start_port=8081
     local sum_start_port=9091
     
+    # Calculate timestamp as current unix timestamp + 5 seconds
+    local timestamp=$(($(date +%s) + 5))
+    
     cat > "$network_dir/docker-compose.yml" << EOF
 services:
   # Main Anvil local Ethereum network (Chain ID: 31337)
@@ -177,7 +180,7 @@ services:
     image: ghcr.io/foundry-rs/foundry:v1.2.3
     container_name: symbiotic-anvil
     entrypoint: ["anvil"]
-    command: "--port 8545 --chain-id 31337 --timestamp 1754051800 --auto-impersonate --slots-in-an-epoch $finality_blocks --accounts 10 --balance 10000 --gas-limit 30000000"
+    command: "--port 8545 --chain-id 31337 --timestamp $timestamp --auto-impersonate --slots-in-an-epoch $finality_blocks --accounts 10 --balance 10000 --gas-limit 30000000"
     environment:
       - ANVIL_IP_ADDR=0.0.0.0
     ports:
@@ -195,7 +198,7 @@ services:
     image: ghcr.io/foundry-rs/foundry:v1.2.3
     container_name: symbiotic-anvil-settlement
     entrypoint: ["anvil"]
-    command: "--port 8546 --chain-id 31338 --timestamp 1754051800 --auto-impersonate --slots-in-an-epoch $finality_blocks --accounts 10 --balance 10000 --gas-limit 30000000"
+    command: "--port 8546 --chain-id 31338 --timestamp $timestamp --auto-impersonate --slots-in-an-epoch $finality_blocks --accounts 10 --balance 10000 --gas-limit 30000000"
     environment:
       - ANVIL_IP_ADDR=0.0.0.0
     ports:

@@ -62,7 +62,7 @@ var infoCmd = &cobra.Command{
 			return errors.Errorf("failed to get capture timestamp: %w", err)
 		}
 
-		networkConfig, err := evmClient.GetConfig(ctx, captureTimestamp)
+		networkConfig, err := evmClient.GetConfig(ctx, captureTimestamp, symbiotic.Epoch(infoFlags.Epoch))
 		if err != nil {
 			return errors.Errorf("failed to get config: %w", err)
 		}

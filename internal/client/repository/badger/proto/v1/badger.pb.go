@@ -7,12 +7,11 @@
 package v1
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -741,6 +740,7 @@ type NetworkConfig struct {
 	NumCommitters           uint64                 `protobuf:"varint,11,opt,name=num_committers,json=numCommitters,proto3" json:"num_committers,omitempty"`
 	NumAggregators          uint64                 `protobuf:"varint,12,opt,name=num_aggregators,json=numAggregators,proto3" json:"num_aggregators,omitempty"`
 	CommitterSlotDuration   uint64                 `protobuf:"varint,13,opt,name=committer_slot_duration,json=committerSlotDuration,proto3" json:"committer_slot_duration,omitempty"`
+	EpochDuration           uint64                 `protobuf:"varint,14,opt,name=epoch_duration,json=epochDuration,proto3" json:"epoch_duration,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -862,6 +862,13 @@ func (x *NetworkConfig) GetNumAggregators() uint64 {
 func (x *NetworkConfig) GetCommitterSlotDuration() uint64 {
 	if x != nil {
 		return x.CommitterSlotDuration
+	}
+	return 0
+}
+
+func (x *NetworkConfig) GetEpochDuration() uint64 {
+	if x != nil {
+		return x.EpochDuration
 	}
 	return 0
 }
@@ -1030,7 +1037,7 @@ const file_v1_badger_proto_rawDesc = "" +
 	"\x05epoch\x18\x02 \x01(\x04R\x05epoch\x128\n" +
 	"\x18signed_validators_bitmap\x18\x03 \x01(\fR\x16signedValidatorsBitmap\x120\n" +
 	"\x14current_voting_power\x18\x04 \x01(\tR\x12currentVotingPower\x12)\n" +
-	"\x10total_validators\x18\x05 \x01(\rR\x0ftotalValidators\"\xe4\x06\n" +
+	"\x10total_validators\x18\x05 \x01(\rR\x0ftotalValidators\"\x8b\a\n" +
 	"\rNetworkConfig\x12s\n" +
 	"\x16voting_power_providers\x18\x01 \x03(\v2=.internal.client.repository.badger.proto.v1.CrossChainAddressR\x14votingPowerProviders\x12b\n" +
 	"\rkeys_provider\x18\x02 \x01(\v2=.internal.client.repository.badger.proto.v1.CrossChainAddressR\fkeysProvider\x12_\n" +
@@ -1045,7 +1052,8 @@ const file_v1_badger_proto_rawDesc = "" +
 	" \x03(\v2;.internal.client.repository.badger.proto.v1.QuorumThresholdR\x10quorumThresholds\x12%\n" +
 	"\x0enum_committers\x18\v \x01(\x04R\rnumCommitters\x12'\n" +
 	"\x0fnum_aggregators\x18\f \x01(\x04R\x0enumAggregators\x126\n" +
-	"\x17committer_slot_duration\x18\r \x01(\x04R\x15committerSlotDuration\"H\n" +
+	"\x17committer_slot_duration\x18\r \x01(\x04R\x15committerSlotDuration\x12%\n" +
+	"\x0eepoch_duration\x18\x0e \x01(\x04R\repochDuration\"H\n" +
 	"\x11CrossChainAddress\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\fR\aaddress\x12\x19\n" +
 	"\bchain_id\x18\x02 \x01(\x04R\achainId\"U\n" +

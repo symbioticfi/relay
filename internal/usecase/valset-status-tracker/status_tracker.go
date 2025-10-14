@@ -241,7 +241,7 @@ func (s *Service) findLatestNonZeroSettlements(ctx context.Context) ([]symbiotic
 			if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 				return nil, errors.Errorf("failed to get epoch %d: %w", epoch, err)
 			}
-			config, err = s.cfg.EvmClient.GetConfig(ctx, epochStart)
+			config, err = s.cfg.EvmClient.GetConfig(ctx, epochStart, epoch)
 			if err != nil {
 				return nil, errors.Errorf("failed to get config for epoch %d: %w", epoch, err)
 			}

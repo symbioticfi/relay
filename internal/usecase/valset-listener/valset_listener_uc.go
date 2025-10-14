@@ -147,19 +147,27 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 
 	slog.DebugContext(ctx, "Checking for missing epochs")
 
-	currentEpoch, err := s.cfg.EvmClient.GetCurrentEpoch(ctx)
-	if err != nil {
-		return errors.Errorf("failed to get current epoch: %w", err)
-	}
-
 	latestHeader, err := s.cfg.Repo.GetLatestValidatorSetHeader(ctx)
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return errors.Errorf("failed to get latest validator set header: %w", err)
 	}
-
 	nextEpoch := symbiotic.Epoch(0)
 	if err == nil {
+		headerEpochConfig, err := s.cfg.Repo.GetConfigByEpoch(ctx, latestHeader.Epoch)
+		if err != nil {
+			return errors.Errorf("failed to get network config for epoch %d: %w", latestHeader.Epoch, err)
+		}
+		if time.Unix(int64(latestHeader.CaptureTimestamp), 0).Add(time.Duration(headerEpochConfig.EpochDuration) * time.Second).After(time.Now()) {
+			// nothing to do here, latest epoch is still ongoing
+			slog.DebugContext(ctx, "Last epoch is still ongoing, no new valset to process", "last-epoch", latestHeader.Epoch)
+			return nil
+		}
 		nextEpoch = latestHeader.Epoch + 1
+	}
+
+	currentEpoch, err := s.cfg.EvmClient.GetCurrentEpoch(ctx)
+	if err != nil {
+		return errors.Errorf("failed to get current epoch: %w", err)
 	}
 
 	for nextEpoch <= currentEpoch {
@@ -168,7 +176,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 			return errors.Errorf("failed to get epoch start for epoch %d: %w", nextEpoch, err)
 		}
 
-		nextEpochConfig, err := s.cfg.EvmClient.GetConfig(ctx, epochStart)
+		nextEpochConfig, err := s.cfg.EvmClient.GetConfig(ctx, epochStart, nextEpoch)
 		if err != nil {
 			return errors.Errorf("failed to get network config for epoch %d: %w", nextEpoch, err)
 		}
@@ -272,6 +280,17 @@ func (s *Service) process(ctx context.Context, valSet symbiotic.ValidatorSet, co
 		return errors.Errorf("failed to save validator set metadata: %w", err)
 	}
 
+	// save pending proof commit here
+	// we store pending commit request for all nodes and not just current commiters because
+	// if committers of this epoch fail then commiters for next epoch should still try to commit old proofs
+	if err := s.cfg.Repo.SaveProofCommitPending(ctx, valSet.Epoch, extendedSig.RequestID()); err != nil {
+		if !errors.Is(err, entity.ErrEntityAlreadyExist) {
+			return errors.Errorf("failed to mark proof commit as pending: %w", err)
+		}
+		slog.DebugContext(ctx, "Proof commit is already pending, skipping", "epoch", valSet.Epoch)
+		return nil
+	}
+	slog.DebugContext(ctx, "Marked proof commit as pending", "epoch", valSet.Epoch, "request_id", extendedSig.RequestID().Hex())
 	return nil
 }
 

@@ -46,7 +46,7 @@ type repo interface {
 type evmClient interface {
 	GetCurrentEpoch(ctx context.Context) (symbiotic.Epoch, error)
 	GetEpochStart(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.Timestamp, error)
-	GetConfig(ctx context.Context, timestamp symbiotic.Timestamp) (symbiotic.NetworkConfig, error)
+	GetConfig(ctx context.Context, timestamp symbiotic.Timestamp, epoch symbiotic.Epoch) (symbiotic.NetworkConfig, error)
 	GetLastCommittedHeaderEpoch(ctx context.Context, addr symbiotic.CrossChainAddress) (_ symbiotic.Epoch, err error)
 }
 
