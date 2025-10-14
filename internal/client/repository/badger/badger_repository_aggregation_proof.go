@@ -79,7 +79,7 @@ func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.H
 }
 
 func aggregationProofToBytes(ap symbiotic.AggregationProof) ([]byte, error) {
-	return marshalAndCompress(&v1.AggregationProof{
+	return marshalProto(&v1.AggregationProof{
 		MessageHash: ap.MessageHash,
 		KeyTag:      uint32(ap.KeyTag),
 		Epoch:       uint64(ap.Epoch),
@@ -89,7 +89,7 @@ func aggregationProofToBytes(ap symbiotic.AggregationProof) ([]byte, error) {
 
 func bytesToAggregationProof(value []byte) (symbiotic.AggregationProof, error) {
 	pb := &v1.AggregationProof{}
-	if err := unmarshalAndDecompress(value, pb); err != nil {
+	if err := unmarshalProto(value, pb); err != nil {
 		return symbiotic.AggregationProof{}, errors.Errorf("failed to unmarshal aggregation proof: %w", err)
 	}
 

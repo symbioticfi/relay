@@ -71,7 +71,7 @@ func (r *Repository) GetConfigByEpoch(ctx context.Context, epoch symbiotic.Epoch
 }
 
 func networkConfigToBytes(config symbiotic.NetworkConfig) ([]byte, error) {
-	return marshalAndCompress(&v1.NetworkConfig{
+	return marshalProto(&v1.NetworkConfig{
 		VotingPowerProviders: lo.Map(config.VotingPowerProviders, func(addr symbiotic.CrossChainAddress, _ int) *v1.CrossChainAddress {
 			return &v1.CrossChainAddress{
 				ChainId: addr.ChainId,
@@ -108,7 +108,7 @@ func networkConfigToBytes(config symbiotic.NetworkConfig) ([]byte, error) {
 
 func bytesToNetworkConfig(data []byte) (symbiotic.NetworkConfig, error) {
 	pb := &v1.NetworkConfig{}
-	if err := unmarshalAndDecompress(data, pb); err != nil {
+	if err := unmarshalProto(data, pb); err != nil {
 		return symbiotic.NetworkConfig{}, errors.Errorf("failed to unmarshal network config: %w", err)
 	}
 

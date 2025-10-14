@@ -8,21 +8,13 @@ import (
 
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
-	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
-func (r *Repository) SaveSignature(ctx context.Context, signature symbiotic.SignatureExtended) error {
-	publicKey, err := crypto.NewPublicKey(signature.KeyTag.Type(), signature.PublicKey)
-	if err != nil {
-		return errors.Errorf("failed to get public key: %w", err)
-	}
-
-	validator, activeIndex, err := r.GetValidatorByKey(ctx, signature.Epoch, signature.KeyTag, publicKey.OnChain())
-	if err != nil {
-		return errors.Errorf("validator not found for public key %x: %w", signature.PublicKey, err)
-	}
-
-	var signatureMap entity.SignatureMap
+func (r *Repository) SaveSignature(ctx context.Context, signature symbiotic.Signature, validator symbiotic.Validator, activeIndex uint32) error {
+	var (
+		signatureMap entity.SignatureMap
+		err          error
+	)
 
 	if err := r.doUpdateInTxWithLock(ctx, "ProcessSignature", func(ctx context.Context) error {
 		signatureMap, err = r.GetSignatureMap(ctx, signature.RequestID())

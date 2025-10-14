@@ -53,10 +53,10 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Save signature request and signature on peer
-	param := symbiotic.SignatureExtended{
+	param := symbiotic.Signature{
 		MessageHash: hash,
 		Signature:   signature,
-		PublicKey:   privateKey.PublicKey().Raw(),
+		PublicKey:   privateKey.PublicKey(),
 		Epoch:       signatureRequest.RequiredEpoch,
 		KeyTag:      signatureRequest.KeyTag,
 	}
@@ -66,10 +66,10 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 
 	signature1, _, err := privateKey1.Sign(signatureRequest.Message)
 	require.NoError(t, err)
-	param1 := symbiotic.SignatureExtended{
+	param1 := symbiotic.Signature{
 		MessageHash: hash,
 		Signature:   signature1,
-		PublicKey:   privateKey1.PublicKey().Raw(),
+		PublicKey:   privateKey1.PublicKey(),
 		Epoch:       signatureRequest.RequiredEpoch,
 		KeyTag:      signatureRequest.KeyTag,
 	}
@@ -131,9 +131,9 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	require.Len(t, finalSignatures, 2)
 
 	// Verify the signature is correct
-	require.Equal(t, privateKey.PublicKey().Raw(), finalSignatures[0].PublicKey)
+	require.Equal(t, privateKey.PublicKey(), finalSignatures[0].PublicKey)
 	require.NoError(t, privateKey.PublicKey().Verify(signatureRequest.Message, finalSignatures[0].Signature))
-	require.Equal(t, privateKey1.PublicKey().Raw(), finalSignatures[1].PublicKey)
+	require.Equal(t, privateKey1.PublicKey(), finalSignatures[1].PublicKey)
 	require.NoError(t, privateKey1.PublicKey().Verify(signatureRequest.Message, finalSignatures[1].Signature))
 }
 
@@ -155,9 +155,9 @@ func createMockAggProofSignal(t *testing.T) *mocks.MockAggProofSignal {
 	return mockSignal
 }
 
-func createMockSignatureProcessedSignal(t *testing.T) *signals.Signal[symbiotic.SignatureExtended] {
+func createMockSignatureProcessedSignal(t *testing.T) *signals.Signal[symbiotic.Signature] {
 	t.Helper()
-	return signals.New[symbiotic.SignatureExtended](signals.DefaultConfig(), "test", nil)
+	return signals.New[symbiotic.Signature](signals.DefaultConfig(), "test", nil)
 }
 
 func createTestRepo(t *testing.T) *badger.Repository {
@@ -367,11 +367,11 @@ func TestHandleWantSignaturesRequest_MaxResponseSignatureCountLimit(t *testing.T
 		signature, hash, err := privateKeys[i].Sign(signatureRequest.Message)
 		require.NoError(t, err)
 
-		param := symbiotic.SignatureExtended{
+		param := symbiotic.Signature{
 			MessageHash: hash,
 			KeyTag:      signatureRequest.KeyTag,
 			Epoch:       signatureRequest.RequiredEpoch,
-			PublicKey:   privateKeys[i].PublicKey().Raw(),
+			PublicKey:   privateKeys[i].PublicKey(),
 			Signature:   signature,
 		}
 		if i == 0 {
@@ -468,12 +468,12 @@ func TestHandleWantSignaturesRequest_MultipleRequestIDs(t *testing.T) {
 	require.NoError(t, err)
 
 	// Save signature for first request
-	param1 := symbiotic.SignatureExtended{
+	param1 := symbiotic.Signature{
 		MessageHash: hash,
 		Epoch:       signatureRequest1.RequiredEpoch,
 		KeyTag:      signatureRequest1.KeyTag,
 		Signature:   signature,
-		PublicKey:   privateKeys[0].PublicKey().Raw(),
+		PublicKey:   privateKeys[0].PublicKey(),
 	}
 
 	require.NoError(t, repo.SaveSignatureRequest(t.Context(), param1.RequestID(), signatureRequest1))
@@ -483,12 +483,12 @@ func TestHandleWantSignaturesRequest_MultipleRequestIDs(t *testing.T) {
 	signature2, hash2, err := privateKeys[1].Sign(signatureRequest2.Message)
 	require.NoError(t, err)
 
-	param2 := symbiotic.SignatureExtended{
+	param2 := symbiotic.Signature{
 		MessageHash: hash2,
 		Epoch:       signatureRequest2.RequiredEpoch,
 		KeyTag:      signatureRequest2.KeyTag,
 		Signature:   signature2,
-		PublicKey:   privateKeys[1].PublicKey().Raw(),
+		PublicKey:   privateKeys[1].PublicKey(),
 	}
 
 	require.NoError(t, repo.SaveSignatureRequest(t.Context(), param2.RequestID(), signatureRequest2))
@@ -536,12 +536,12 @@ func TestHandleWantSignaturesRequest_PartialSignatureAvailability(t *testing.T) 
 	for _, i := range []uint32{0, 2} {
 		signature, hash, err := privateKeys[i].Sign(signatureRequest.Message)
 		require.NoError(t, err)
-		param := symbiotic.SignatureExtended{
+		param := symbiotic.Signature{
 			MessageHash: hash,
 			Epoch:       signatureRequest.RequiredEpoch,
 			KeyTag:      signatureRequest.KeyTag,
 			Signature:   signature,
-			PublicKey:   privateKeys[i].PublicKey().Raw(),
+			PublicKey:   privateKeys[i].PublicKey(),
 		}
 		if i == 0 {
 			requestID = param.RequestID()

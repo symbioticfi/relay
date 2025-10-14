@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package badger.v1;
+package internal.client.repository.badger.proto.v1;
 
 option go_package = "github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1";
 
@@ -60,7 +60,7 @@ message Signature {
   uint32 key_tag = 2;
   uint64 epoch = 3;
   bytes signature = 4;
-  bytes public_key = 5;
+  bytes raw_public_key = 5;
 }
 
 message SignatureRequest {

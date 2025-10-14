@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -216,13 +217,15 @@ func randomSignatureRequestForEpoch(t *testing.T, epoch symbiotic.Epoch) symbiot
 	}
 }
 
-func randomSignatureExtendedForEpoch(t *testing.T, epoch symbiotic.Epoch) symbiotic.SignatureExtended {
+func randomSignatureExtendedForEpoch(t *testing.T, epoch symbiotic.Epoch) symbiotic.Signature {
 	t.Helper()
-	return symbiotic.SignatureExtended{
+	priv, err := crypto.GeneratePrivateKey(symbiotic.KeyTag(15).Type())
+	require.NoError(t, err)
+	return symbiotic.Signature{
 		MessageHash: randomBytes(t, 32),
 		KeyTag:      15,
 		Epoch:       epoch,
 		Signature:   []byte("signature1"),
-		PublicKey:   []byte("publickey1"),
+		PublicKey:   priv.PublicKey(),
 	}
 }

@@ -27,11 +27,12 @@ type repo interface {
 }
 
 type p2pService interface {
-	BroadcastSignatureGeneratedMessage(ctx context.Context, msg symbiotic.SignatureExtended) error
+	BroadcastSignatureGeneratedMessage(ctx context.Context, msg symbiotic.Signature) error
 }
 
 type keyProvider interface {
 	GetPrivateKey(keyTag symbiotic.KeyTag) (crypto.PrivateKey, error)
+	GetOnchainKeyFromCache(keyTag symbiotic.KeyTag) (symbiotic.CompactPublicKey, error)
 }
 
 type metrics interface {
@@ -40,7 +41,7 @@ type metrics interface {
 }
 
 type entityProcessor interface {
-	ProcessSignature(ctx context.Context, signature symbiotic.SignatureExtended, self bool) error
+	ProcessSignature(ctx context.Context, signature symbiotic.Signature, self bool) error
 	ProcessAggregationProof(ctx context.Context, proof symbiotic.AggregationProof) error
 }
 
@@ -92,7 +93,7 @@ func (s *SignerApp) RequestSignature(ctx context.Context, req symbiotic.Signatur
 		return common.Hash{}, errors.Errorf("failed to hash message: %w", err)
 	}
 
-	extendedSignature := symbiotic.SignatureExtended{
+	extendedSignature := symbiotic.Signature{
 		MessageHash: msgHash,
 		KeyTag:      req.KeyTag,
 		Epoch:       req.RequiredEpoch,
@@ -122,26 +123,27 @@ func (s *SignerApp) completeSign(ctx context.Context, req symbiotic.SignatureReq
 		return errors.Errorf("failed to get private key: %w", err)
 	}
 
-	symbPrivate, err := s.cfg.KeyProvider.GetPrivateKey(valset.RequiredKeyTag)
+	onchainKey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(valset.RequiredKeyTag)
 	if err != nil {
-		return errors.Errorf("failed to get symb private key: %w", err)
+		return errors.Errorf("failed to get onchain symb key from cache: %w", err)
 	}
 
-	if !valset.IsSigner(symbPrivate.PublicKey().OnChain()) {
+	if !valset.IsSigner(onchainKey) {
 		slog.DebugContext(ctx, "Not a signer for this valset, skipping signing",
 			"key_tag", req.KeyTag,
 			"epoch", req.RequiredEpoch,
+			"key", onchainKey,
 		)
 		msgHash, err := crypto.HashMessage(req.KeyTag.Type(), req.Message)
 		if err != nil {
 			return errors.Errorf("failed to hash message: %w", err)
 		}
 
-		extendedSignature := symbiotic.SignatureExtended{
+		extendedSignature := symbiotic.Signature{
 			MessageHash: msgHash,
 			KeyTag:      req.KeyTag,
 			Epoch:       req.RequiredEpoch,
-			PublicKey:   private.PublicKey().Raw(),
+			PublicKey:   private.PublicKey(),
 		}
 		if err := s.cfg.Repo.RemoveSignaturePending(ctx, req.RequiredEpoch, extendedSignature.RequestID()); err != nil {
 			return errors.Errorf("failed to remove self signature request pending: %w", err)
@@ -160,11 +162,11 @@ func (s *SignerApp) completeSign(ctx context.Context, req symbiotic.SignatureReq
 	}
 	s.cfg.Metrics.ObservePKSignDuration(time.Since(pkSignStart))
 
-	extendedSignature := symbiotic.SignatureExtended{
+	extendedSignature := symbiotic.Signature{
 		MessageHash: hash,
 		KeyTag:      req.KeyTag,
 		Epoch:       req.RequiredEpoch,
-		PublicKey:   private.PublicKey().Raw(),
+		PublicKey:   private.PublicKey(),
 		Signature:   signature,
 	}
 

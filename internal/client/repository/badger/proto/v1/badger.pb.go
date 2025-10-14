@@ -519,7 +519,7 @@ type Signature struct {
 	KeyTag        uint32                 `protobuf:"varint,2,opt,name=key_tag,json=keyTag,proto3" json:"key_tag,omitempty"`
 	Epoch         uint64                 `protobuf:"varint,3,opt,name=epoch,proto3" json:"epoch,omitempty"`
 	Signature     []byte                 `protobuf:"bytes,4,opt,name=signature,proto3" json:"signature,omitempty"`
-	PublicKey     []byte                 `protobuf:"bytes,5,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`
+	RawPublicKey  []byte                 `protobuf:"bytes,5,opt,name=raw_public_key,json=rawPublicKey,proto3" json:"raw_public_key,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -582,9 +582,9 @@ func (x *Signature) GetSignature() []byte {
 	return nil
 }
 
-func (x *Signature) GetPublicKey() []byte {
+func (x *Signature) GetRawPublicKey() []byte {
 	if x != nil {
-		return x.PublicKey
+		return x.RawPublicKey
 	}
 	return nil
 }
@@ -1012,14 +1012,13 @@ const file_v1_badger_proto_rawDesc = "" +
 	"\fmessage_hash\x18\x01 \x01(\fR\vmessageHash\x12\x17\n" +
 	"\akey_tag\x18\x02 \x01(\rR\x06keyTag\x12\x14\n" +
 	"\x05epoch\x18\x03 \x01(\x04R\x05epoch\x12\x14\n" +
-	"\x05proof\x18\x04 \x01(\fR\x05proof\"\x9a\x01\n" +
+	"\x05proof\x18\x04 \x01(\fR\x05proof\"\xa1\x01\n" +
 	"\tSignature\x12!\n" +
 	"\fmessage_hash\x18\x01 \x01(\fR\vmessageHash\x12\x17\n" +
 	"\akey_tag\x18\x02 \x01(\rR\x06keyTag\x12\x14\n" +
 	"\x05epoch\x18\x03 \x01(\x04R\x05epoch\x12\x1c\n" +
-	"\tsignature\x18\x04 \x01(\fR\tsignature\x12\x1d\n" +
-	"\n" +
-	"public_key\x18\x05 \x01(\fR\tpublicKey\"l\n" +
+	"\tsignature\x18\x04 \x01(\fR\tsignature\x12$\n" +
+	"\x0eraw_public_key\x18\x05 \x01(\fR\frawPublicKey\"l\n" +
 	"\x10SignatureRequest\x12\x17\n" +
 	"\akey_tag\x18\x01 \x01(\rR\x06keyTag\x12%\n" +
 	"\x0erequired_epoch\x18\x02 \x01(\x04R\rrequiredEpoch\x12\x18\n" +

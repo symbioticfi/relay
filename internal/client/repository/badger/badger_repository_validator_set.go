@@ -563,7 +563,7 @@ func (r *Repository) GetValidatorByKey(ctx context.Context, epoch symbiotic.Epoc
 }
 
 func validatorToBytes(validator symbiotic.Validator, activeIndex uint32) ([]byte, error) {
-	return marshalAndCompress(&v1.Validator{
+	return marshalProto(&v1.Validator{
 		Operator:    validator.Operator.Bytes(),
 		VotingPower: validator.VotingPower.String(),
 		IsActive:    validator.IsActive,
@@ -586,7 +586,7 @@ func validatorToBytes(validator symbiotic.Validator, activeIndex uint32) ([]byte
 
 func bytesToValidator(data []byte) (symbiotic.Validator, uint32, error) {
 	pb := &v1.Validator{}
-	if err := unmarshalAndDecompress(data, pb); err != nil {
+	if err := unmarshalProto(data, pb); err != nil {
 		return symbiotic.Validator{}, 0, errors.Errorf("failed to unmarshal validator: %w", err)
 	}
 
@@ -649,7 +649,7 @@ func validatorSetHeaderToBytes(valset symbiotic.ValidatorSet) ([]byte, error) {
 		}
 	}
 
-	return marshalAndCompress(&v1.ValidatorSetHeader{
+	return marshalProto(&v1.ValidatorSetHeader{
 		Version:            uint32(header.Version),
 		RequiredKeyTag:     uint32(header.RequiredKeyTag),
 		Epoch:              uint64(header.Epoch),
@@ -664,7 +664,7 @@ func validatorSetHeaderToBytes(valset symbiotic.ValidatorSet) ([]byte, error) {
 
 func bytesToValidatorSetHeader(data []byte) (symbiotic.ValidatorSetHeader, error) {
 	pb := &v1.ValidatorSetHeader{}
-	if err := unmarshalAndDecompress(data, pb); err != nil {
+	if err := unmarshalProto(data, pb); err != nil {
 		return symbiotic.ValidatorSetHeader{}, errors.Errorf("failed to unmarshal validator set header: %w", err)
 	}
 
@@ -691,7 +691,7 @@ func bytesToValidatorSetHeader(data []byte) (symbiotic.ValidatorSetHeader, error
 
 func extractAdditionalInfoFromHeaderData(data []byte) (aggIndices []uint32, commIndices []uint32, err error) {
 	pb := &v1.ValidatorSetHeader{}
-	if err := unmarshalAndDecompress(data, pb); err != nil {
+	if err := unmarshalProto(data, pb); err != nil {
 		return nil, nil, errors.Errorf("failed to unmarshal validator set header: %w", err)
 	}
 
@@ -719,7 +719,7 @@ func extractAdditionalInfoFromHeaderData(data []byte) (aggIndices []uint32, comm
 }
 
 func validatorSetMetadataToBytes(data symbiotic.ValidatorSetMetadata) ([]byte, error) {
-	return marshalAndCompress(&v1.ValidatorSetMetadata{
+	return marshalProto(&v1.ValidatorSetMetadata{
 		RequestId: data.RequestID.Bytes(),
 		Epoch:     uint64(data.Epoch),
 		ExtraData: lo.Map(data.ExtraData, func(ed symbiotic.ExtraData, _ int) *v1.ExtraData {
@@ -734,7 +734,7 @@ func validatorSetMetadataToBytes(data symbiotic.ValidatorSetMetadata) ([]byte, e
 
 func bytesToValidatorSetMetadata(data []byte) (symbiotic.ValidatorSetMetadata, error) {
 	pb := &v1.ValidatorSetMetadata{}
-	if err := unmarshalAndDecompress(data, pb); err != nil {
+	if err := unmarshalProto(data, pb); err != nil {
 		return symbiotic.ValidatorSetMetadata{}, errors.Errorf("failed to unmarshal validator set metadata: %w", err)
 	}
 

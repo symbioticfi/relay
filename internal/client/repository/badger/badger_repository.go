@@ -75,7 +75,7 @@ func (m DoNothingMetrics) ObserveRepoQueryDuration(queryName string, status stri
 func (m DoNothingMetrics) ObserveRepoQueryTotalDuration(queryName string, status string, d time.Duration) {
 }
 
-func marshalAndCompress(msg proto.Message) ([]byte, error) {
+func marshalProto(msg proto.Message) ([]byte, error) {
 	data, err := proto.Marshal(msg)
 	if err != nil {
 		return nil, errors.Errorf("failed to marshal proto: %v", err)
@@ -83,7 +83,7 @@ func marshalAndCompress(msg proto.Message) ([]byte, error) {
 	return data, nil
 }
 
-func unmarshalAndDecompress(data []byte, msg proto.Message) error {
+func unmarshalProto(data []byte, msg proto.Message) error {
 	if err := proto.Unmarshal(data, msg); err != nil {
 		return errors.Errorf("failed to unmarshal proto: %v", err)
 	}

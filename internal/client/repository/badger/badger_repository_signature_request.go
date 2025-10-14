@@ -130,7 +130,7 @@ func (r *Repository) RemoveSignaturePending(ctx context.Context, epoch symbiotic
 }
 
 func signatureRequestToBytes(req symbiotic.SignatureRequest) ([]byte, error) {
-	return marshalAndCompress(&v1.SignatureRequest{
+	return marshalProto(&v1.SignatureRequest{
 		KeyTag:        uint32(req.KeyTag),
 		RequiredEpoch: uint64(req.RequiredEpoch),
 		Message:       req.Message,
@@ -139,7 +139,7 @@ func signatureRequestToBytes(req symbiotic.SignatureRequest) ([]byte, error) {
 
 func bytesToSignatureRequest(data []byte) (symbiotic.SignatureRequest, error) {
 	pb := &v1.SignatureRequest{}
-	if err := unmarshalAndDecompress(data, pb); err != nil {
+	if err := unmarshalProto(data, pb); err != nil {
 		return symbiotic.SignatureRequest{}, errors.Errorf("failed to unmarshal signature request: %w", err)
 	}
 

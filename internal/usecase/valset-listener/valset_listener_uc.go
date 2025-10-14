@@ -53,6 +53,7 @@ type metrics interface {
 
 type keyProvider interface {
 	GetPrivateKey(keyTag symbiotic.KeyTag) (crypto.PrivateKey, error)
+	GetOnchainKeyFromCache(keyTag symbiotic.KeyTag) (symbiotic.CompactPublicKey, error)
 }
 
 type Config struct {
@@ -231,13 +232,13 @@ func (s *Service) process(ctx context.Context, valSet symbiotic.ValidatorSet, co
 		valsetToCheck = prevValSet
 	}
 
-	symbPrivate, err := s.cfg.KeyProvider.GetPrivateKey(valsetToCheck.RequiredKeyTag)
+	onchainKey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(valsetToCheck.RequiredKeyTag)
 	if err != nil {
-		return errors.Errorf("failed to get symb private key: %w", err)
+		return errors.Errorf("failed to get onchain symb key from cache: %w", err)
 	}
 
 	// if we are a signer, sign the commitment, otherwise just save the metadata
-	if valsetToCheck.IsSigner(symbPrivate.PublicKey().OnChain()) {
+	if valsetToCheck.IsSigner(onchainKey) {
 		r := symbiotic.SignatureRequest{
 			KeyTag:        valsetToCheck.RequiredKeyTag,
 			RequiredEpoch: valsetToCheck.Epoch,
@@ -254,7 +255,7 @@ func (s *Service) process(ctx context.Context, valSet symbiotic.ValidatorSet, co
 		return errors.Errorf("failed to hash message: %w", err)
 	}
 
-	extendedSig := symbiotic.SignatureExtended{
+	extendedSig := symbiotic.Signature{
 		MessageHash: msgHash,
 		KeyTag:      valsetToCheck.RequiredKeyTag,
 		Epoch:       valsetToCheck.Epoch,

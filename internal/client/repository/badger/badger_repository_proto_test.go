@@ -10,6 +10,7 @@ import (
 
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 func TestValidatorProtoConversion(t *testing.T) {
@@ -247,26 +248,57 @@ func TestSignatureMapProtoConversion(t *testing.T) {
 }
 
 func TestSignatureProtoConversion(t *testing.T) {
-	original := symbiotic.SignatureExtended{
-		MessageHash: []byte("test-message-hash-32-bytes-long!"),
-		KeyTag:      symbiotic.KeyTag(1),
-		Epoch:       symbiotic.Epoch(100),
-		Signature:   []byte("test-signature-data"),
-		PublicKey:   []byte("test-public-key-data"),
-	}
+	t.Run("BLS signature conversion", func(t *testing.T) {
+		privateKey, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
+		require.NoError(t, err)
 
-	bytes, err := signatureToBytes(original)
-	require.NoError(t, err)
-	require.NotEmpty(t, bytes)
+		original := symbiotic.Signature{
+			MessageHash: []byte("test-message-hash-32-bytes-long!"),
+			KeyTag:      symbiotic.KeyTag(4), // 4 is BLS (upper nibble = 0)
+			Epoch:       symbiotic.Epoch(100),
+			Signature:   []byte("test-signature-data"),
+			PublicKey:   privateKey.PublicKey(),
+		}
 
-	decoded, err := bytesToSignature(bytes)
-	require.NoError(t, err)
+		bytes, err := signatureToBytes(original)
+		require.NoError(t, err)
+		require.NotEmpty(t, bytes)
 
-	assert.Equal(t, original.MessageHash, decoded.MessageHash)
-	assert.Equal(t, original.KeyTag, decoded.KeyTag)
-	assert.Equal(t, original.Epoch, decoded.Epoch)
-	assert.Equal(t, original.Signature, decoded.Signature)
-	assert.Equal(t, original.PublicKey, decoded.PublicKey)
+		decoded, err := bytesToSignature(bytes)
+		require.NoError(t, err)
+
+		assert.Equal(t, original.MessageHash, decoded.MessageHash)
+		assert.Equal(t, original.KeyTag, decoded.KeyTag)
+		assert.Equal(t, original.Epoch, decoded.Epoch)
+		assert.Equal(t, original.Signature, decoded.Signature)
+		assert.Equal(t, original.PublicKey.Raw(), decoded.PublicKey.Raw())
+	})
+
+	t.Run("ECDSA signature conversion", func(t *testing.T) {
+		privateKey, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeEcdsaSecp256k1)
+		require.NoError(t, err)
+
+		original := symbiotic.Signature{
+			MessageHash: []byte("test-message-hash-32-bytes-long!"),
+			KeyTag:      symbiotic.KeyTag(16), // 16 is ECDSA (upper nibble = 1)
+			Epoch:       symbiotic.Epoch(100),
+			Signature:   []byte("test-signature-data"),
+			PublicKey:   privateKey.PublicKey(),
+		}
+
+		bytes, err := signatureToBytes(original)
+		require.NoError(t, err)
+		require.NotEmpty(t, bytes)
+
+		decoded, err := bytesToSignature(bytes)
+		require.NoError(t, err)
+
+		assert.Equal(t, original.MessageHash, decoded.MessageHash)
+		assert.Equal(t, original.KeyTag, decoded.KeyTag)
+		assert.Equal(t, original.Epoch, decoded.Epoch)
+		assert.Equal(t, original.Signature, decoded.Signature)
+		assert.Equal(t, original.PublicKey.Raw(), decoded.PublicKey.Raw())
+	})
 }
 
 func TestSignatureRequestProtoConversion(t *testing.T) {

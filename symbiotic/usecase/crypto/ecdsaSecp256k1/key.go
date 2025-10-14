@@ -4,12 +4,11 @@ import (
 	"crypto/ecdsa"
 	"math/big"
 
-	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
-	symbKeys "github.com/symbioticfi/relay/symbiotic/usecase/crypto/key-types"
-
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
+
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 type Signature = symbiotic.RawSignature
@@ -73,7 +72,7 @@ func (k *PrivateKey) Sign(msg []byte) (Signature, MessageHash, error) {
 	return sig, hash, nil
 }
 
-func (k *PrivateKey) PublicKey() symbKeys.PublicKey {
+func (k *PrivateKey) PublicKey() symbiotic.PublicKey {
 	pub := PublicKey{}
 	pub.pubKey = k.privateKey.PublicKey
 	return &pub
@@ -145,6 +144,6 @@ func FromRaw(rawKey RawPublicKey) (*PublicKey, error) {
 	return &PublicKey{pubKey: *pk}, nil
 }
 
-func FromPrivateKey(privateKey *PrivateKey) symbKeys.PublicKey {
+func FromPrivateKey(privateKey *PrivateKey) symbiotic.PublicKey {
 	return privateKey.PublicKey()
 }

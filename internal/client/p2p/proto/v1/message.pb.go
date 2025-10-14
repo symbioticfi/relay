@@ -21,10 +21,13 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// AggregationProof represents the aggregation proof data
+// AggregationProof represents the aggregated signatures message
 type AggregationProof struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Proof         []byte                 `protobuf:"bytes,3,opt,name=proof,proto3" json:"proof,omitempty"`
+	KeyTag        uint32                 `protobuf:"varint,2,opt,name=key_tag,json=keyTag,proto3" json:"key_tag,omitempty"`
+	Epoch         uint64                 `protobuf:"varint,3,opt,name=epoch,proto3" json:"epoch,omitempty"`
+	MessageHash   []byte                 `protobuf:"bytes,4,opt,name=message_hash,json=messageHash,proto3" json:"message_hash,omitempty"`
+	Proof         []byte                 `protobuf:"bytes,5,opt,name=proof,proto3" json:"proof,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -59,216 +62,30 @@ func (*AggregationProof) Descriptor() ([]byte, []int) {
 	return file_v1_message_proto_rawDescGZIP(), []int{0}
 }
 
+func (x *AggregationProof) GetKeyTag() uint32 {
+	if x != nil {
+		return x.KeyTag
+	}
+	return 0
+}
+
+func (x *AggregationProof) GetEpoch() uint64 {
+	if x != nil {
+		return x.Epoch
+	}
+	return 0
+}
+
+func (x *AggregationProof) GetMessageHash() []byte {
+	if x != nil {
+		return x.MessageHash
+	}
+	return nil
+}
+
 func (x *AggregationProof) GetProof() []byte {
 	if x != nil {
 		return x.Proof
-	}
-	return nil
-}
-
-// SignaturesAggregated represents the aggregated signatures message
-type SignaturesAggregated struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	RequestId        []byte                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"` // 32 bytes fixed length
-	KeyTag           uint32                 `protobuf:"varint,2,opt,name=key_tag,json=keyTag,proto3" json:"key_tag,omitempty"`
-	Epoch            uint64                 `protobuf:"varint,3,opt,name=epoch,proto3" json:"epoch,omitempty"`
-	MessageHash      []byte                 `protobuf:"bytes,4,opt,name=message_hash,json=messageHash,proto3" json:"message_hash,omitempty"`
-	AggregationProof *AggregationProof      `protobuf:"bytes,5,opt,name=aggregation_proof,json=aggregationProof,proto3" json:"aggregation_proof,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *SignaturesAggregated) Reset() {
-	*x = SignaturesAggregated{}
-	mi := &file_v1_message_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SignaturesAggregated) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SignaturesAggregated) ProtoMessage() {}
-
-func (x *SignaturesAggregated) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_message_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SignaturesAggregated.ProtoReflect.Descriptor instead.
-func (*SignaturesAggregated) Descriptor() ([]byte, []int) {
-	return file_v1_message_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *SignaturesAggregated) GetRequestId() []byte {
-	if x != nil {
-		return x.RequestId
-	}
-	return nil
-}
-
-func (x *SignaturesAggregated) GetKeyTag() uint32 {
-	if x != nil {
-		return x.KeyTag
-	}
-	return 0
-}
-
-func (x *SignaturesAggregated) GetEpoch() uint64 {
-	if x != nil {
-		return x.Epoch
-	}
-	return 0
-}
-
-func (x *SignaturesAggregated) GetMessageHash() []byte {
-	if x != nil {
-		return x.MessageHash
-	}
-	return nil
-}
-
-func (x *SignaturesAggregated) GetAggregationProof() *AggregationProof {
-	if x != nil {
-		return x.AggregationProof
-	}
-	return nil
-}
-
-// Signature represents individual signature data
-type Signature struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	MessageHash   []byte                 `protobuf:"bytes,1,opt,name=message_hash,json=messageHash,proto3" json:"message_hash,omitempty"`
-	Signature     []byte                 `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
-	PublicKey     []byte                 `protobuf:"bytes,3,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Signature) Reset() {
-	*x = Signature{}
-	mi := &file_v1_message_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Signature) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Signature) ProtoMessage() {}
-
-func (x *Signature) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_message_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Signature.ProtoReflect.Descriptor instead.
-func (*Signature) Descriptor() ([]byte, []int) {
-	return file_v1_message_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *Signature) GetMessageHash() []byte {
-	if x != nil {
-		return x.MessageHash
-	}
-	return nil
-}
-
-func (x *Signature) GetSignature() []byte {
-	if x != nil {
-		return x.Signature
-	}
-	return nil
-}
-
-func (x *Signature) GetPublicKey() []byte {
-	if x != nil {
-		return x.PublicKey
-	}
-	return nil
-}
-
-// SignatureGenerated represents the signature generated message
-type SignatureGenerated struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	RequestId     []byte                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"` // 32 bytes fixed length
-	KeyTag        uint32                 `protobuf:"varint,2,opt,name=key_tag,json=keyTag,proto3" json:"key_tag,omitempty"`
-	Epoch         uint64                 `protobuf:"varint,3,opt,name=epoch,proto3" json:"epoch,omitempty"`
-	Signature     *Signature             `protobuf:"bytes,4,opt,name=signature,proto3" json:"signature,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SignatureGenerated) Reset() {
-	*x = SignatureGenerated{}
-	mi := &file_v1_message_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SignatureGenerated) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SignatureGenerated) ProtoMessage() {}
-
-func (x *SignatureGenerated) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_message_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SignatureGenerated.ProtoReflect.Descriptor instead.
-func (*SignatureGenerated) Descriptor() ([]byte, []int) {
-	return file_v1_message_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *SignatureGenerated) GetRequestId() []byte {
-	if x != nil {
-		return x.RequestId
-	}
-	return nil
-}
-
-func (x *SignatureGenerated) GetKeyTag() uint32 {
-	if x != nil {
-		return x.KeyTag
-	}
-	return 0
-}
-
-func (x *SignatureGenerated) GetEpoch() uint64 {
-	if x != nil {
-		return x.Epoch
-	}
-	return 0
-}
-
-func (x *SignatureGenerated) GetSignature() *Signature {
-	if x != nil {
-		return x.Signature
 	}
 	return nil
 }
@@ -285,7 +102,7 @@ type P2PMessage struct {
 
 func (x *P2PMessage) Reset() {
 	*x = P2PMessage{}
-	mi := &file_v1_message_proto_msgTypes[4]
+	mi := &file_v1_message_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -297,7 +114,7 @@ func (x *P2PMessage) String() string {
 func (*P2PMessage) ProtoMessage() {}
 
 func (x *P2PMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_message_proto_msgTypes[4]
+	mi := &file_v1_message_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -310,7 +127,7 @@ func (x *P2PMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use P2PMessage.ProtoReflect.Descriptor instead.
 func (*P2PMessage) Descriptor() ([]byte, []int) {
-	return file_v1_message_proto_rawDescGZIP(), []int{4}
+	return file_v1_message_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *P2PMessage) GetSender() string {
@@ -344,7 +161,7 @@ type WantSignaturesRequest struct {
 
 func (x *WantSignaturesRequest) Reset() {
 	*x = WantSignaturesRequest{}
-	mi := &file_v1_message_proto_msgTypes[5]
+	mi := &file_v1_message_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -356,7 +173,7 @@ func (x *WantSignaturesRequest) String() string {
 func (*WantSignaturesRequest) ProtoMessage() {}
 
 func (x *WantSignaturesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_message_proto_msgTypes[5]
+	mi := &file_v1_message_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -369,7 +186,7 @@ func (x *WantSignaturesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WantSignaturesRequest.ProtoReflect.Descriptor instead.
 func (*WantSignaturesRequest) Descriptor() ([]byte, []int) {
-	return file_v1_message_proto_rawDescGZIP(), []int{5}
+	return file_v1_message_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *WantSignaturesRequest) GetWantSignatures() map[string][]byte {
@@ -389,7 +206,7 @@ type WantSignaturesResponse struct {
 
 func (x *WantSignaturesResponse) Reset() {
 	*x = WantSignaturesResponse{}
-	mi := &file_v1_message_proto_msgTypes[6]
+	mi := &file_v1_message_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -401,7 +218,7 @@ func (x *WantSignaturesResponse) String() string {
 func (*WantSignaturesResponse) ProtoMessage() {}
 
 func (x *WantSignaturesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_message_proto_msgTypes[6]
+	mi := &file_v1_message_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -414,7 +231,7 @@ func (x *WantSignaturesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WantSignaturesResponse.ProtoReflect.Descriptor instead.
 func (*WantSignaturesResponse) Descriptor() ([]byte, []int) {
-	return file_v1_message_proto_rawDescGZIP(), []int{6}
+	return file_v1_message_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *WantSignaturesResponse) GetSignatures() map[string]*ValidatorSignatureList {
@@ -434,7 +251,7 @@ type ValidatorSignatureList struct {
 
 func (x *ValidatorSignatureList) Reset() {
 	*x = ValidatorSignatureList{}
-	mi := &file_v1_message_proto_msgTypes[7]
+	mi := &file_v1_message_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -446,7 +263,7 @@ func (x *ValidatorSignatureList) String() string {
 func (*ValidatorSignatureList) ProtoMessage() {}
 
 func (x *ValidatorSignatureList) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_message_proto_msgTypes[7]
+	mi := &file_v1_message_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -459,7 +276,7 @@ func (x *ValidatorSignatureList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidatorSignatureList.ProtoReflect.Descriptor instead.
 func (*ValidatorSignatureList) Descriptor() ([]byte, []int) {
-	return file_v1_message_proto_rawDescGZIP(), []int{7}
+	return file_v1_message_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ValidatorSignatureList) GetSignatures() []*ValidatorSignature {
@@ -473,14 +290,14 @@ func (x *ValidatorSignatureList) GetSignatures() []*ValidatorSignature {
 type ValidatorSignature struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	ValidatorIndex uint32                 `protobuf:"varint,1,opt,name=validator_index,json=validatorIndex,proto3" json:"validator_index,omitempty"`
-	Signature      *SignatureExtended     `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
+	Signature      *Signature             `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
 
 func (x *ValidatorSignature) Reset() {
 	*x = ValidatorSignature{}
-	mi := &file_v1_message_proto_msgTypes[8]
+	mi := &file_v1_message_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -492,7 +309,7 @@ func (x *ValidatorSignature) String() string {
 func (*ValidatorSignature) ProtoMessage() {}
 
 func (x *ValidatorSignature) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_message_proto_msgTypes[8]
+	mi := &file_v1_message_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -505,7 +322,7 @@ func (x *ValidatorSignature) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidatorSignature.ProtoReflect.Descriptor instead.
 func (*ValidatorSignature) Descriptor() ([]byte, []int) {
-	return file_v1_message_proto_rawDescGZIP(), []int{8}
+	return file_v1_message_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ValidatorSignature) GetValidatorIndex() uint32 {
@@ -515,15 +332,15 @@ func (x *ValidatorSignature) GetValidatorIndex() uint32 {
 	return 0
 }
 
-func (x *ValidatorSignature) GetSignature() *SignatureExtended {
+func (x *ValidatorSignature) GetSignature() *Signature {
 	if x != nil {
 		return x.Signature
 	}
 	return nil
 }
 
-// SignatureExtended represents extended signature data
-type SignatureExtended struct {
+// Signature represents extended signature data
+type Signature struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	MessageHash   []byte                 `protobuf:"bytes,1,opt,name=message_hash,json=messageHash,proto3" json:"message_hash,omitempty"`
 	KeyTag        uint32                 `protobuf:"varint,2,opt,name=key_tag,json=keyTag,proto3" json:"key_tag,omitempty"`
@@ -534,21 +351,21 @@ type SignatureExtended struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SignatureExtended) Reset() {
-	*x = SignatureExtended{}
-	mi := &file_v1_message_proto_msgTypes[9]
+func (x *Signature) Reset() {
+	*x = Signature{}
+	mi := &file_v1_message_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SignatureExtended) String() string {
+func (x *Signature) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SignatureExtended) ProtoMessage() {}
+func (*Signature) ProtoMessage() {}
 
-func (x *SignatureExtended) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_message_proto_msgTypes[9]
+func (x *Signature) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_message_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -559,40 +376,40 @@ func (x *SignatureExtended) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SignatureExtended.ProtoReflect.Descriptor instead.
-func (*SignatureExtended) Descriptor() ([]byte, []int) {
-	return file_v1_message_proto_rawDescGZIP(), []int{9}
+// Deprecated: Use Signature.ProtoReflect.Descriptor instead.
+func (*Signature) Descriptor() ([]byte, []int) {
+	return file_v1_message_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *SignatureExtended) GetMessageHash() []byte {
+func (x *Signature) GetMessageHash() []byte {
 	if x != nil {
 		return x.MessageHash
 	}
 	return nil
 }
 
-func (x *SignatureExtended) GetKeyTag() uint32 {
+func (x *Signature) GetKeyTag() uint32 {
 	if x != nil {
 		return x.KeyTag
 	}
 	return 0
 }
 
-func (x *SignatureExtended) GetEpoch() uint64 {
+func (x *Signature) GetEpoch() uint64 {
 	if x != nil {
 		return x.Epoch
 	}
 	return 0
 }
 
-func (x *SignatureExtended) GetSignature() []byte {
+func (x *Signature) GetSignature() []byte {
 	if x != nil {
 		return x.Signature
 	}
 	return nil
 }
 
-func (x *SignatureExtended) GetPublicKey() []byte {
+func (x *Signature) GetPublicKey() []byte {
 	if x != nil {
 		return x.PublicKey
 	}
@@ -609,7 +426,7 @@ type WantAggregationProofsRequest struct {
 
 func (x *WantAggregationProofsRequest) Reset() {
 	*x = WantAggregationProofsRequest{}
-	mi := &file_v1_message_proto_msgTypes[10]
+	mi := &file_v1_message_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -621,7 +438,7 @@ func (x *WantAggregationProofsRequest) String() string {
 func (*WantAggregationProofsRequest) ProtoMessage() {}
 
 func (x *WantAggregationProofsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_message_proto_msgTypes[10]
+	mi := &file_v1_message_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -634,7 +451,7 @@ func (x *WantAggregationProofsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WantAggregationProofsRequest.ProtoReflect.Descriptor instead.
 func (*WantAggregationProofsRequest) Descriptor() ([]byte, []int) {
-	return file_v1_message_proto_rawDescGZIP(), []int{10}
+	return file_v1_message_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *WantAggregationProofsRequest) GetRequestIds() []string {
@@ -647,14 +464,14 @@ func (x *WantAggregationProofsRequest) GetRequestIds() []string {
 type WantAggregationProofsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Map of request ids to aggregation proof
-	Proofs        map[string]*SignaturesAggregated `protobuf:"bytes,1,rep,name=proofs,proto3" json:"proofs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // key: hex string of common.Hash
+	Proofs        map[string]*AggregationProof `protobuf:"bytes,1,rep,name=proofs,proto3" json:"proofs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // key: hex string of common.Hash
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WantAggregationProofsResponse) Reset() {
 	*x = WantAggregationProofsResponse{}
-	mi := &file_v1_message_proto_msgTypes[11]
+	mi := &file_v1_message_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -666,7 +483,7 @@ func (x *WantAggregationProofsResponse) String() string {
 func (*WantAggregationProofsResponse) ProtoMessage() {}
 
 func (x *WantAggregationProofsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_message_proto_msgTypes[11]
+	mi := &file_v1_message_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -679,10 +496,10 @@ func (x *WantAggregationProofsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WantAggregationProofsResponse.ProtoReflect.Descriptor instead.
 func (*WantAggregationProofsResponse) Descriptor() ([]byte, []int) {
-	return file_v1_message_proto_rawDescGZIP(), []int{11}
+	return file_v1_message_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *WantAggregationProofsResponse) GetProofs() map[string]*SignaturesAggregated {
+func (x *WantAggregationProofsResponse) GetProofs() map[string]*AggregationProof {
 	if x != nil {
 		return x.Proofs
 	}
@@ -693,27 +510,12 @@ var File_v1_message_proto protoreflect.FileDescriptor
 
 const file_v1_message_proto_rawDesc = "" +
 	"\n" +
-	"\x10v1/message.proto\x12\x1cinternal.client.p2p.proto.v1\"(\n" +
-	"\x10AggregationProof\x12\x14\n" +
-	"\x05proof\x18\x03 \x01(\fR\x05proof\"\xe4\x01\n" +
-	"\x14SignaturesAggregated\x12\x1d\n" +
-	"\n" +
-	"request_id\x18\x01 \x01(\fR\trequestId\x12\x17\n" +
+	"\x10v1/message.proto\x12\x1cinternal.client.p2p.proto.v1\"z\n" +
+	"\x10AggregationProof\x12\x17\n" +
 	"\akey_tag\x18\x02 \x01(\rR\x06keyTag\x12\x14\n" +
 	"\x05epoch\x18\x03 \x01(\x04R\x05epoch\x12!\n" +
-	"\fmessage_hash\x18\x04 \x01(\fR\vmessageHash\x12[\n" +
-	"\x11aggregation_proof\x18\x05 \x01(\v2..internal.client.p2p.proto.v1.AggregationProofR\x10aggregationProof\"k\n" +
-	"\tSignature\x12!\n" +
-	"\fmessage_hash\x18\x01 \x01(\fR\vmessageHash\x12\x1c\n" +
-	"\tsignature\x18\x02 \x01(\fR\tsignature\x12\x1d\n" +
-	"\n" +
-	"public_key\x18\x03 \x01(\fR\tpublicKey\"\xa9\x01\n" +
-	"\x12SignatureGenerated\x12\x1d\n" +
-	"\n" +
-	"request_id\x18\x01 \x01(\fR\trequestId\x12\x17\n" +
-	"\akey_tag\x18\x02 \x01(\rR\x06keyTag\x12\x14\n" +
-	"\x05epoch\x18\x03 \x01(\x04R\x05epoch\x12E\n" +
-	"\tsignature\x18\x04 \x01(\v2'.internal.client.p2p.proto.v1.SignatureR\tsignature\"V\n" +
+	"\fmessage_hash\x18\x04 \x01(\fR\vmessageHash\x12\x14\n" +
+	"\x05proof\x18\x05 \x01(\fR\x05proof\"V\n" +
 	"\n" +
 	"P2PMessage\x12\x16\n" +
 	"\x06sender\x18\x01 \x01(\tR\x06sender\x12\x1c\n" +
@@ -734,11 +536,11 @@ const file_v1_message_proto_rawDesc = "" +
 	"\x16ValidatorSignatureList\x12P\n" +
 	"\n" +
 	"signatures\x18\x01 \x03(\v20.internal.client.p2p.proto.v1.ValidatorSignatureR\n" +
-	"signatures\"\x8c\x01\n" +
+	"signatures\"\x84\x01\n" +
 	"\x12ValidatorSignature\x12'\n" +
-	"\x0fvalidator_index\x18\x01 \x01(\rR\x0evalidatorIndex\x12M\n" +
-	"\tsignature\x18\x02 \x01(\v2/.internal.client.p2p.proto.v1.SignatureExtendedR\tsignature\"\xa2\x01\n" +
-	"\x11SignatureExtended\x12!\n" +
+	"\x0fvalidator_index\x18\x01 \x01(\rR\x0evalidatorIndex\x12E\n" +
+	"\tsignature\x18\x02 \x01(\v2'.internal.client.p2p.proto.v1.SignatureR\tsignature\"\x9a\x01\n" +
+	"\tSignature\x12!\n" +
 	"\fmessage_hash\x18\x01 \x01(\fR\vmessageHash\x12\x17\n" +
 	"\akey_tag\x18\x02 \x01(\rR\x06keyTag\x12\x14\n" +
 	"\x05epoch\x18\x03 \x01(\x04R\x05epoch\x12\x1c\n" +
@@ -747,12 +549,12 @@ const file_v1_message_proto_rawDesc = "" +
 	"public_key\x18\x05 \x01(\fR\tpublicKey\"?\n" +
 	"\x1cWantAggregationProofsRequest\x12\x1f\n" +
 	"\vrequest_ids\x18\x01 \x03(\tR\n" +
-	"requestIds\"\xef\x01\n" +
+	"requestIds\"\xeb\x01\n" +
 	"\x1dWantAggregationProofsResponse\x12_\n" +
-	"\x06proofs\x18\x01 \x03(\v2G.internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntryR\x06proofs\x1am\n" +
+	"\x06proofs\x18\x01 \x03(\v2G.internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntryR\x06proofs\x1ai\n" +
 	"\vProofsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12H\n" +
-	"\x05value\x18\x02 \x01(\v22.internal.client.p2p.proto.v1.SignaturesAggregatedR\x05value:\x028\x012\xa5\x02\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12D\n" +
+	"\x05value\x18\x02 \x01(\v2..internal.client.p2p.proto.v1.AggregationProofR\x05value:\x028\x012\xa5\x02\n" +
 	"\x13SymbioticP2PService\x12{\n" +
 	"\x0eWantSignatures\x123.internal.client.p2p.proto.v1.WantSignaturesRequest\x1a4.internal.client.p2p.proto.v1.WantSignaturesResponse\x12\x90\x01\n" +
 	"\x15WantAggregationProofs\x12:.internal.client.p2p.proto.v1.WantAggregationProofsRequest\x1a;.internal.client.p2p.proto.v1.WantAggregationProofsResponseB\x80\x02\n" +
@@ -770,43 +572,38 @@ func file_v1_message_proto_rawDescGZIP() []byte {
 	return file_v1_message_proto_rawDescData
 }
 
-var file_v1_message_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_v1_message_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_v1_message_proto_goTypes = []any{
 	(*AggregationProof)(nil),              // 0: internal.client.p2p.proto.v1.AggregationProof
-	(*SignaturesAggregated)(nil),          // 1: internal.client.p2p.proto.v1.SignaturesAggregated
-	(*Signature)(nil),                     // 2: internal.client.p2p.proto.v1.Signature
-	(*SignatureGenerated)(nil),            // 3: internal.client.p2p.proto.v1.SignatureGenerated
-	(*P2PMessage)(nil),                    // 4: internal.client.p2p.proto.v1.P2PMessage
-	(*WantSignaturesRequest)(nil),         // 5: internal.client.p2p.proto.v1.WantSignaturesRequest
-	(*WantSignaturesResponse)(nil),        // 6: internal.client.p2p.proto.v1.WantSignaturesResponse
-	(*ValidatorSignatureList)(nil),        // 7: internal.client.p2p.proto.v1.ValidatorSignatureList
-	(*ValidatorSignature)(nil),            // 8: internal.client.p2p.proto.v1.ValidatorSignature
-	(*SignatureExtended)(nil),             // 9: internal.client.p2p.proto.v1.SignatureExtended
-	(*WantAggregationProofsRequest)(nil),  // 10: internal.client.p2p.proto.v1.WantAggregationProofsRequest
-	(*WantAggregationProofsResponse)(nil), // 11: internal.client.p2p.proto.v1.WantAggregationProofsResponse
-	nil,                                   // 12: internal.client.p2p.proto.v1.WantSignaturesRequest.WantSignaturesEntry
-	nil,                                   // 13: internal.client.p2p.proto.v1.WantSignaturesResponse.SignaturesEntry
-	nil,                                   // 14: internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntry
+	(*P2PMessage)(nil),                    // 1: internal.client.p2p.proto.v1.P2PMessage
+	(*WantSignaturesRequest)(nil),         // 2: internal.client.p2p.proto.v1.WantSignaturesRequest
+	(*WantSignaturesResponse)(nil),        // 3: internal.client.p2p.proto.v1.WantSignaturesResponse
+	(*ValidatorSignatureList)(nil),        // 4: internal.client.p2p.proto.v1.ValidatorSignatureList
+	(*ValidatorSignature)(nil),            // 5: internal.client.p2p.proto.v1.ValidatorSignature
+	(*Signature)(nil),                     // 6: internal.client.p2p.proto.v1.Signature
+	(*WantAggregationProofsRequest)(nil),  // 7: internal.client.p2p.proto.v1.WantAggregationProofsRequest
+	(*WantAggregationProofsResponse)(nil), // 8: internal.client.p2p.proto.v1.WantAggregationProofsResponse
+	nil,                                   // 9: internal.client.p2p.proto.v1.WantSignaturesRequest.WantSignaturesEntry
+	nil,                                   // 10: internal.client.p2p.proto.v1.WantSignaturesResponse.SignaturesEntry
+	nil,                                   // 11: internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntry
 }
 var file_v1_message_proto_depIdxs = []int32{
-	0,  // 0: internal.client.p2p.proto.v1.SignaturesAggregated.aggregation_proof:type_name -> internal.client.p2p.proto.v1.AggregationProof
-	2,  // 1: internal.client.p2p.proto.v1.SignatureGenerated.signature:type_name -> internal.client.p2p.proto.v1.Signature
-	12, // 2: internal.client.p2p.proto.v1.WantSignaturesRequest.want_signatures:type_name -> internal.client.p2p.proto.v1.WantSignaturesRequest.WantSignaturesEntry
-	13, // 3: internal.client.p2p.proto.v1.WantSignaturesResponse.signatures:type_name -> internal.client.p2p.proto.v1.WantSignaturesResponse.SignaturesEntry
-	8,  // 4: internal.client.p2p.proto.v1.ValidatorSignatureList.signatures:type_name -> internal.client.p2p.proto.v1.ValidatorSignature
-	9,  // 5: internal.client.p2p.proto.v1.ValidatorSignature.signature:type_name -> internal.client.p2p.proto.v1.SignatureExtended
-	14, // 6: internal.client.p2p.proto.v1.WantAggregationProofsResponse.proofs:type_name -> internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntry
-	7,  // 7: internal.client.p2p.proto.v1.WantSignaturesResponse.SignaturesEntry.value:type_name -> internal.client.p2p.proto.v1.ValidatorSignatureList
-	1,  // 8: internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntry.value:type_name -> internal.client.p2p.proto.v1.SignaturesAggregated
-	5,  // 9: internal.client.p2p.proto.v1.SymbioticP2PService.WantSignatures:input_type -> internal.client.p2p.proto.v1.WantSignaturesRequest
-	10, // 10: internal.client.p2p.proto.v1.SymbioticP2PService.WantAggregationProofs:input_type -> internal.client.p2p.proto.v1.WantAggregationProofsRequest
-	6,  // 11: internal.client.p2p.proto.v1.SymbioticP2PService.WantSignatures:output_type -> internal.client.p2p.proto.v1.WantSignaturesResponse
-	11, // 12: internal.client.p2p.proto.v1.SymbioticP2PService.WantAggregationProofs:output_type -> internal.client.p2p.proto.v1.WantAggregationProofsResponse
-	11, // [11:13] is the sub-list for method output_type
-	9,  // [9:11] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	9,  // 0: internal.client.p2p.proto.v1.WantSignaturesRequest.want_signatures:type_name -> internal.client.p2p.proto.v1.WantSignaturesRequest.WantSignaturesEntry
+	10, // 1: internal.client.p2p.proto.v1.WantSignaturesResponse.signatures:type_name -> internal.client.p2p.proto.v1.WantSignaturesResponse.SignaturesEntry
+	5,  // 2: internal.client.p2p.proto.v1.ValidatorSignatureList.signatures:type_name -> internal.client.p2p.proto.v1.ValidatorSignature
+	6,  // 3: internal.client.p2p.proto.v1.ValidatorSignature.signature:type_name -> internal.client.p2p.proto.v1.Signature
+	11, // 4: internal.client.p2p.proto.v1.WantAggregationProofsResponse.proofs:type_name -> internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntry
+	4,  // 5: internal.client.p2p.proto.v1.WantSignaturesResponse.SignaturesEntry.value:type_name -> internal.client.p2p.proto.v1.ValidatorSignatureList
+	0,  // 6: internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntry.value:type_name -> internal.client.p2p.proto.v1.AggregationProof
+	2,  // 7: internal.client.p2p.proto.v1.SymbioticP2PService.WantSignatures:input_type -> internal.client.p2p.proto.v1.WantSignaturesRequest
+	7,  // 8: internal.client.p2p.proto.v1.SymbioticP2PService.WantAggregationProofs:input_type -> internal.client.p2p.proto.v1.WantAggregationProofsRequest
+	3,  // 9: internal.client.p2p.proto.v1.SymbioticP2PService.WantSignatures:output_type -> internal.client.p2p.proto.v1.WantSignaturesResponse
+	8,  // 10: internal.client.p2p.proto.v1.SymbioticP2PService.WantAggregationProofs:output_type -> internal.client.p2p.proto.v1.WantAggregationProofsResponse
+	9,  // [9:11] is the sub-list for method output_type
+	7,  // [7:9] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_v1_message_proto_init() }
@@ -820,7 +617,7 @@ func file_v1_message_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_message_proto_rawDesc), len(file_v1_message_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

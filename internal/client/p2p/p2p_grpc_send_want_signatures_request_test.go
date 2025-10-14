@@ -10,6 +10,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/peerstore"
 	"github.com/stretchr/testify/require"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 
 	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/signals"
@@ -55,35 +56,44 @@ func TestSendWantSignaturesRequest_HappyPath(t *testing.T) {
 		},
 	}
 
+	priv1, err := crypto.GeneratePrivateKey(keyTag.Type())
+	require.NoError(t, err)
+
+	priv2, err := crypto.GeneratePrivateKey(keyTag.Type())
+	require.NoError(t, err)
+
+	priv3, err := crypto.GeneratePrivateKey(keyTag.Type())
+	require.NoError(t, err)
+
 	// Create expected response data
 	expectedSig1 := entity.ValidatorSignature{
 		ValidatorIndex: 0,
-		Signature: symbiotic.SignatureExtended{
+		Signature: symbiotic.Signature{
 			MessageHash: testHash1.Bytes(),
 			KeyTag:      keyTag,
 			Epoch:       epoch,
-			PublicKey:   []byte("public_key_validator_0"),
+			PublicKey:   priv1.PublicKey(),
 			Signature:   []byte("signature_for_validator_0"),
 		},
 	}
 	expectedSig2 := entity.ValidatorSignature{
 		ValidatorIndex: 2,
-		Signature: symbiotic.SignatureExtended{
+		Signature: symbiotic.Signature{
 			MessageHash: testHash1.Bytes(),
 			KeyTag:      keyTag,
 			Epoch:       epoch,
 			Signature:   []byte("signature_for_validator_2"),
-			PublicKey:   []byte("public_key_validator_2"),
+			PublicKey:   priv2.PublicKey(),
 		},
 	}
 	expectedSig3 := entity.ValidatorSignature{
 		ValidatorIndex: 1,
-		Signature: symbiotic.SignatureExtended{
+		Signature: symbiotic.Signature{
 			MessageHash: testHash2.Bytes(),
 			KeyTag:      keyTag,
 			Epoch:       epoch,
 			Signature:   []byte("signature_for_validator_1"),
-			PublicKey:   []byte("public_key_validator_1"),
+			PublicKey:   priv3.PublicKey(),
 		},
 	}
 

@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"context"
+	"log/slog"
 	"math/rand/v2"
 	"net"
 	"time"
@@ -11,6 +12,7 @@ import (
 	gostream "github.com/libp2p/go-libp2p-gostream"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -45,7 +47,7 @@ func (s *Service) SendWantSignaturesRequest(ctx context.Context, request entity.
 	}
 
 	// Convert protobuf response to entity
-	entityResp := protoToEntityResponse(response)
+	entityResp := protoToEntityResponse(ctx, response)
 
 	return entityResp, nil
 }
@@ -124,20 +126,25 @@ func entityToProtoRequest(req entity.WantSignaturesRequest) (*prototypes.WantSig
 }
 
 // protoToEntityResponse converts protobuf WantSignaturesResponse to entity
-func protoToEntityResponse(resp *prototypes.WantSignaturesResponse) entity.WantSignaturesResponse {
+func protoToEntityResponse(ctx context.Context, resp *prototypes.WantSignaturesResponse) entity.WantSignaturesResponse {
 	signatures := make(map[common.Hash][]entity.ValidatorSignature)
 
 	for hashStr, sigList := range resp.GetSignatures() {
 		// Convert validator signatures
 		var validatorSigs []entity.ValidatorSignature
 		for _, protoSig := range sigList.GetSignatures() {
+			pubKey, err := crypto.NewPublicKey(symbiotic.KeyTag(protoSig.GetSignature().GetKeyTag()).Type(), protoSig.GetSignature().GetPublicKey())
+			if err != nil {
+				slog.WarnContext(ctx, "Failed to parse public key from peer[WantSignaturesResponse], skipping signature", "error", err)
+				continue
+			}
 			sig := entity.ValidatorSignature{
 				ValidatorIndex: protoSig.GetValidatorIndex(),
-				Signature: symbiotic.SignatureExtended{
+				Signature: symbiotic.Signature{
 					MessageHash: protoSig.GetSignature().GetMessageHash(),
 					KeyTag:      symbiotic.KeyTag(protoSig.GetSignature().GetKeyTag()),
 					Epoch:       symbiotic.Epoch(protoSig.GetSignature().GetEpoch()),
-					PublicKey:   protoSig.GetSignature().GetPublicKey(),
+					PublicKey:   pubKey,
 					Signature:   protoSig.GetSignature().GetSignature(),
 				},
 			}
@@ -193,12 +200,12 @@ func entityToProtoResponse(resp entity.WantSignaturesResponse) *prototypes.WantS
 		for _, validatorSig := range sigList {
 			protoSig := &prototypes.ValidatorSignature{
 				ValidatorIndex: validatorSig.ValidatorIndex,
-				Signature: &prototypes.SignatureExtended{
+				Signature: &prototypes.Signature{
 					MessageHash: validatorSig.Signature.MessageHash,
 					KeyTag:      uint32(validatorSig.Signature.KeyTag),
 					Epoch:       uint64(validatorSig.Signature.Epoch),
 					Signature:   validatorSig.Signature.Signature,
-					PublicKey:   validatorSig.Signature.PublicKey,
+					PublicKey:   validatorSig.Signature.PublicKey.Raw(),
 				},
 			}
 			protoSigs = append(protoSigs, protoSig)

@@ -76,7 +76,7 @@ func signatureMapToBytes(vm entity.SignatureMap) ([]byte, error) {
 		return nil, errors.Errorf("failed to serialize roaring bitmap: %w", err)
 	}
 
-	return marshalAndCompress(&v1.SignatureMap{
+	return marshalProto(&v1.SignatureMap{
 		RequestId:              vm.RequestID.Bytes(),
 		Epoch:                  uint64(vm.Epoch),
 		SignedValidatorsBitmap: bitmapBytes,
@@ -87,7 +87,7 @@ func signatureMapToBytes(vm entity.SignatureMap) ([]byte, error) {
 
 func bytesToSignatureMap(data []byte) (entity.SignatureMap, error) {
 	pb := &v1.SignatureMap{}
-	if err := unmarshalAndDecompress(data, pb); err != nil {
+	if err := unmarshalProto(data, pb); err != nil {
 		return entity.SignatureMap{}, errors.Errorf("failed to unmarshal signature map: %w", err)
 	}
 

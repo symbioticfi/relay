@@ -109,7 +109,7 @@ func (c Config) Validate() error {
 type Service struct {
 	ctx                         context.Context
 	host                        host.Host
-	signatureReceivedHandler    *signals.Signal[p2pEntity.P2PMessage[symbiotic.SignatureExtended]]
+	signatureReceivedHandler    *signals.Signal[p2pEntity.P2PMessage[symbiotic.Signature]]
 	signaturesAggregatedHandler *signals.Signal[p2pEntity.P2PMessage[symbiotic.AggregationProof]]
 	metrics                     metrics
 	topicsMap                   map[string]*pubsub.Topic
@@ -163,7 +163,7 @@ func NewService(ctx context.Context, cfg Config, signalCfg signals.Config) (*Ser
 	service := &Service{
 		ctx:                         log.WithAttrs(ctx, slog.String("component", "p2p")),
 		host:                        h,
-		signatureReceivedHandler:    signals.New[p2pEntity.P2PMessage[symbiotic.SignatureExtended]](signalCfg, "signatureReceive", nil),
+		signatureReceivedHandler:    signals.New[p2pEntity.P2PMessage[symbiotic.Signature]](signalCfg, "signatureReceive", nil),
 		signaturesAggregatedHandler: signals.New[p2pEntity.P2PMessage[symbiotic.AggregationProof]](signalCfg, "signaturesAggregated", nil),
 		metrics:                     cfg.Metrics,
 
@@ -211,7 +211,7 @@ func (s *Service) listenForMessages(ctx context.Context, sub *pubsub.Subscriptio
 	}
 }
 
-func (s *Service) StartSignatureMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PMessage[symbiotic.SignatureExtended]) error) error {
+func (s *Service) StartSignatureMessageListener(mh func(ctx context.Context, msg p2pEntity.P2PMessage[symbiotic.Signature]) error) error {
 	if err := s.signatureReceivedHandler.SetHandlers(mh); err != nil {
 		return errors.Errorf("failed to set signature received message handler: %w", err)
 	}

@@ -8,6 +8,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/blsBn254"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/ecdsaSecp256k1"
+
 	"github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
@@ -22,7 +25,7 @@ func keySignaturePrefix(requestID common.Hash) []byte {
 	return []byte("signature:" + requestID.Hex() + ":")
 }
 
-func (r *Repository) saveSignature(ctx context.Context, validatorIndex uint32, sig symbiotic.SignatureExtended) error {
+func (r *Repository) saveSignature(ctx context.Context, validatorIndex uint32, sig symbiotic.Signature) error {
 	txn := getTxn(ctx)
 	if txn == nil {
 		return errors.New("no transaction found in context, use signature processor in order to store signatures")
@@ -41,8 +44,8 @@ func (r *Repository) saveSignature(ctx context.Context, validatorIndex uint32, s
 	return nil
 }
 
-func (r *Repository) GetAllSignatures(ctx context.Context, requestID common.Hash) ([]symbiotic.SignatureExtended, error) {
-	var signatures []symbiotic.SignatureExtended
+func (r *Repository) GetAllSignatures(ctx context.Context, requestID common.Hash) ([]symbiotic.Signature, error) {
+	var signatures []symbiotic.Signature
 
 	return signatures, r.doViewInTx(ctx, "GetAllSignatures", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -72,8 +75,8 @@ func (r *Repository) GetAllSignatures(ctx context.Context, requestID common.Hash
 	})
 }
 
-func (r *Repository) GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (symbiotic.SignatureExtended, error) {
-	var signature symbiotic.SignatureExtended
+func (r *Repository) GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (symbiotic.Signature, error) {
+	var signature symbiotic.Signature
 
 	err := r.doViewInTx(ctx, "GetSignatureByIndex", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -104,27 +107,48 @@ func (r *Repository) GetSignatureByIndex(ctx context.Context, requestID common.H
 	return signature, err
 }
 
-func signatureToBytes(sig symbiotic.SignatureExtended) ([]byte, error) {
-	return marshalAndCompress(&v1.Signature{
-		MessageHash: sig.MessageHash,
-		KeyTag:      uint32(sig.KeyTag),
-		Epoch:       uint64(sig.Epoch),
-		Signature:   sig.Signature,
-		PublicKey:   sig.PublicKey,
+func signatureToBytes(sig symbiotic.Signature) ([]byte, error) {
+	return marshalProto(&v1.Signature{
+		MessageHash:  sig.MessageHash,
+		KeyTag:       uint32(sig.KeyTag),
+		Epoch:        uint64(sig.Epoch),
+		Signature:    sig.Signature,
+		RawPublicKey: sig.PublicKey.Raw(),
 	})
 }
 
-func bytesToSignature(value []byte) (symbiotic.SignatureExtended, error) {
+func bytesToSignature(value []byte) (symbiotic.Signature, error) {
 	pb := &v1.Signature{}
-	if err := unmarshalAndDecompress(value, pb); err != nil {
-		return symbiotic.SignatureExtended{}, errors.Errorf("failed to unmarshal signature: %w", err)
+	if err := unmarshalProto(value, pb); err != nil {
+		return symbiotic.Signature{}, errors.Errorf("failed to unmarshal signature: %w", err)
 	}
 
-	return symbiotic.SignatureExtended{
+	signature := symbiotic.Signature{
 		MessageHash: pb.GetMessageHash(),
 		KeyTag:      symbiotic.KeyTag(pb.GetKeyTag()),
 		Epoch:       symbiotic.Epoch(pb.GetEpoch()),
-		PublicKey:   pb.GetPublicKey(),
 		Signature:   pb.GetSignature(),
-	}, nil
+	}
+
+	keyType := signature.KeyTag.Type()
+
+	if keyType == symbiotic.KeyTypeBlsBn254 {
+		publicKey, err := blsBn254.FromRaw(pb.GetRawPublicKey())
+		if err != nil {
+			return symbiotic.Signature{}, errors.Errorf("failed to get signature from raw: %w", err)
+		}
+
+		signature.PublicKey = publicKey
+	} else if keyType == symbiotic.KeyTypeEcdsaSecp256k1 {
+		publicKey, err := ecdsaSecp256k1.FromRaw(pb.GetRawPublicKey())
+		if err != nil {
+			return symbiotic.Signature{}, errors.Errorf("failed to get signature from raw: %w", err)
+		}
+
+		signature.PublicKey = publicKey
+	} else {
+		return symbiotic.Signature{}, errors.Errorf("unsupported key type: %v", keyType)
+	}
+
+	return signature, nil
 }

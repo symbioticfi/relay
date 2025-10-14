@@ -61,10 +61,10 @@ func (mr *MockrepositoryMockRecorder) GetAggregationProof(ctx, requestID any) *g
 }
 
 // GetAllSignatures mocks base method.
-func (m *Mockrepository) GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity0.SignatureExtended, error) {
+func (m *Mockrepository) GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity0.Signature, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllSignatures", ctx, requestID)
-	ret0, _ := ret[0].([]entity0.SignatureExtended)
+	ret0, _ := ret[0].([]entity0.Signature)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -246,7 +246,7 @@ func (m *Mockaggregator) EXPECT() *MockaggregatorMockRecorder {
 }
 
 // Aggregate mocks base method.
-func (m *Mockaggregator) Aggregate(valset entity0.ValidatorSet, keyTag entity0.KeyTag, messageHash []byte, signatures []entity0.SignatureExtended) (entity0.AggregationProof, error) {
+func (m *Mockaggregator) Aggregate(valset entity0.ValidatorSet, keyTag entity0.KeyTag, messageHash []byte, signatures []entity0.Signature) (entity0.AggregationProof, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Aggregate", valset, keyTag, messageHash, signatures)
 	ret0, _ := ret[0].(entity0.AggregationProof)
@@ -282,6 +282,21 @@ func NewMockkeyProvider(ctrl *gomock.Controller) *MockkeyProvider {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockkeyProvider) EXPECT() *MockkeyProviderMockRecorder {
 	return m.recorder
+}
+
+// GetOnchainKeyFromCache mocks base method.
+func (m *MockkeyProvider) GetOnchainKeyFromCache(keyTag entity0.KeyTag) (entity0.CompactPublicKey, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOnchainKeyFromCache", keyTag)
+	ret0, _ := ret[0].(entity0.CompactPublicKey)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOnchainKeyFromCache indicates an expected call of GetOnchainKeyFromCache.
+func (mr *MockkeyProviderMockRecorder) GetOnchainKeyFromCache(keyTag any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOnchainKeyFromCache", reflect.TypeOf((*MockkeyProvider)(nil).GetOnchainKeyFromCache), keyTag)
 }
 
 // GetPrivateKey mocks base method.

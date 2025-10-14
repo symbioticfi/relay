@@ -41,7 +41,6 @@ var (
 
 var (
 	SimpleVerificationValidatorSetHashKeccak256Hash = crypto.Keccak256Hash([]byte("validatorSetHashKeccak256"))
-	SimpleVerificationTotalVotingPowerHash          = crypto.Keccak256Hash([]byte("totalVotingPower"))
 	SimpleVerificationAggPublicKeyG1Hash            = crypto.Keccak256Hash([]byte("aggPublicKeyG1"))
 )
 
@@ -51,6 +50,7 @@ const (
 	HeaderDerived ValidatorSetStatus = iota
 	HeaderAggregated
 	HeaderCommitted
+	HeaderMissed
 )
 
 const ValsetHeaderKeyTag = KeyTag(15)
@@ -129,6 +129,8 @@ func (s ValidatorSetStatus) MarshalJSON() ([]byte, error) {
 		return []byte("\"Aggregated\""), nil
 	case HeaderCommitted:
 		return []byte("\"Committed\""), nil
+	case HeaderMissed:
+		return []byte("\"Missed\""), nil
 	default:
 		return []byte("\"Unknown\""), nil
 	}
@@ -147,17 +149,17 @@ type SignatureRequestWithID struct {
 	RequestID common.Hash
 }
 
-// SignatureExtended signer.sign() -> SignatureExtended
-type SignatureExtended struct {
+// Signature signer.sign() -> Signature
+type Signature struct {
 	MessageHash RawMessageHash // scheme depends on KeyTag
 	KeyTag      KeyTag         // Key tag for validation
 	Epoch       Epoch          // Epoch for validation
-	PublicKey   RawPublicKey   // parse based on KeyTag (for bls will contain g1+g2)
+	PublicKey   PublicKey      // parse based on KeyTag (for bls will contain g1+g2)
 	Signature   RawSignature   // parse based on KeyTag
 }
 
 // RequestID calculates the request id based on Hash(MessageHash, KeyTag, Epoch)
-func (s SignatureExtended) RequestID() common.Hash {
+func (s Signature) RequestID() common.Hash {
 	return requestID(s.KeyTag, s.Epoch, s.MessageHash)
 }
 
@@ -175,7 +177,7 @@ func paddedUint64(value uint64) []byte {
 	return padded
 }
 
-// AggregationProof aggregator.proof(signatures []SignatureExtended) -> AggregationProof
+// AggregationProof aggregator.proof(signatures []Signature) -> AggregationProof
 type AggregationProof struct {
 	MessageHash RawMessageHash // scheme depends on KeyTag
 	KeyTag      KeyTag         // Key tag for validation

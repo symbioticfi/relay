@@ -12,7 +12,7 @@ import (
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-func CompareMessageHasher(signatures []symbiotic.SignatureExtended, msgHash []byte) bool {
+func CompareMessageHasher(signatures []symbiotic.Signature, msgHash []byte) bool {
 	for i := range signatures {
 		if !bytes.Equal(msgHash, signatures[i].MessageHash) {
 			return false
