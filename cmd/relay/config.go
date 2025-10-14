@@ -102,6 +102,12 @@ type KeyStore struct {
 	Password string `json:"password"`
 }
 
+type KeyCache struct {
+	// max size of the cache
+	Size    int  `mapstructure:"size"`
+	Enabled bool `mapstructure:"enabled"`
+}
+
 // The config can be populated from command-line flags, environment variables, and a config.yaml file.
 // Priority order (highest to lowest):
 // 1. Command-line flags
@@ -128,6 +134,7 @@ type config struct {
 	Cache             CacheConfig          `mapstructure:"cache"`
 	MaxUnsigners      uint64               `mapstructure:"aggregation-policy-max-unsigners"`
 	Sync              SyncConfig           `mapstructure:"sync"`
+	KeyCache          KeyCache             `mapstructure:"key-cache"`
 }
 
 type CacheConfig struct {
@@ -185,6 +192,8 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Duration("sync.period", time.Second*5, "Signature sync period")
 	rootCmd.PersistentFlags().Duration("sync.timeout", time.Minute, "Signature sync timeout")
 	rootCmd.PersistentFlags().Uint64("sync.epochs", 5, "Epochs to sync")
+	rootCmd.PersistentFlags().Int("key-cache.size", 100, "Key cache size")
+	rootCmd.PersistentFlags().Bool("key-cache.enabled", true, "Enable key cache")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
@@ -306,6 +315,12 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("sync.epochs", cmd.PersistentFlags().Lookup("sync.epochs")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("key-cache.size", cmd.PersistentFlags().Lookup("key-cache.size")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("key-cache.enabled", cmd.PersistentFlags().Lookup("key-cache.enabled")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 
