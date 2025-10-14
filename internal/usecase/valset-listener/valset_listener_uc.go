@@ -162,7 +162,6 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 			slog.DebugContext(ctx, "Last epoch is still ongoing, no new valset to process", "last-epoch", latestHeader.Epoch)
 			return nil
 		}
-
 		nextEpoch = latestHeader.Epoch + 1
 	}
 
