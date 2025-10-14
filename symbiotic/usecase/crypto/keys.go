@@ -1,6 +1,8 @@
 package crypto
 
 import (
+	"sync"
+
 	"github.com/go-errors/errors"
 	"github.com/symbioticfi/relay/internal/client/repository/cache"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
@@ -12,32 +14,35 @@ type PublicKey = symbiotic.PublicKey
 type PrivateKey = symbiotic.PrivateKey
 
 var (
-	pubKeyCache cache.Cache[pubKeyCacheKey, symbiotic.PublicKey]
+	pubKeyCache   cache.Cache[pubKeyCacheKey, symbiotic.PublicKey]
+	initCacheOnce sync.Once
 )
 
 // InitializePubkeyCache initializes the public key cache with the given size.
 // Dev: Should be called only once during application startup.
 func InitializePubkeyCache(cacheSize int) (err error) {
-	pubKeyCache, err = cache.NewCache[pubKeyCacheKey, symbiotic.PublicKey](
-		cache.Config{Size: cacheSize},
-		func(key pubKeyCacheKey) uint32 {
-			// FNV-1a 32-bit hash
-			const (
-				offset32 = uint32(2166136261)
-				prime32  = uint32(16777619)
-			)
-			hash := offset32
-			hash ^= uint32(key.keyTag)
-			hash *= prime32
-
-			// Process each byte of the key string
-			for i := 0; i < len(key.key); i++ {
-				hash ^= uint32(key.key[i])
+	initCacheOnce.Do(func() {
+		pubKeyCache, err = cache.NewCache[pubKeyCacheKey, symbiotic.PublicKey](
+			cache.Config{Size: cacheSize},
+			func(key pubKeyCacheKey) uint32 {
+				// FNV-1a 32-bit hash
+				const (
+					offset32 = uint32(2166136261)
+					prime32  = uint32(16777619)
+				)
+				hash := offset32
+				hash ^= uint32(key.keyTag)
 				hash *= prime32
-			}
-			return hash
-		},
-	)
+
+				// Process each byte of the key string
+				for i := 0; i < len(key.key); i++ {
+					hash ^= uint32(key.key[i])
+					hash *= prime32
+				}
+				return hash
+			},
+		)
+	})
 	return err
 }
 
