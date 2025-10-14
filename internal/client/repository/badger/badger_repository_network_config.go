@@ -94,6 +94,7 @@ type networkConfigDTO struct {
 	NumCommitters           uint64                 `json:"num_committers"`
 	NumAggregators          uint64                 `json:"num_aggregators"`
 	CommitterSlotDuration   uint64                 `json:"committer_slot_duration,omitempty"`
+	EpochDuration           uint64                 `json:"epoch_duration,omitempty"`
 }
 
 func networkConfigToBytes(config symbiotic.NetworkConfig) ([]byte, error) {
@@ -129,6 +130,7 @@ func networkConfigToBytes(config symbiotic.NetworkConfig) ([]byte, error) {
 		NumCommitters:         config.NumCommitters,
 		NumAggregators:        config.NumAggregators,
 		CommitterSlotDuration: config.CommitterSlotDuration,
+		EpochDuration:         config.EpochDuration,
 	}
 
 	return json.Marshal(networkConfigDTOFromEntity)
@@ -172,5 +174,6 @@ func bytesToNetworkConfig(data []byte) (symbiotic.NetworkConfig, error) {
 		NumAggregators:        dto.NumAggregators,
 		NumCommitters:         dto.NumCommitters,
 		CommitterSlotDuration: dto.CommitterSlotDuration,
+		EpochDuration:         dto.EpochDuration,
 	}, nil
 }

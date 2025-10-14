@@ -43,18 +43,18 @@ func (m *MockEvmClient) EXPECT() *MockEvmClientMockRecorder {
 }
 
 // GetConfig mocks base method.
-func (m *MockEvmClient) GetConfig(ctx context.Context, timestamp entity.Timestamp) (entity.NetworkConfig, error) {
+func (m *MockEvmClient) GetConfig(ctx context.Context, timestamp entity.Timestamp, epoch entity.Epoch) (entity.NetworkConfig, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetConfig", ctx, timestamp)
+	ret := m.ctrl.Call(m, "GetConfig", ctx, timestamp, epoch)
 	ret0, _ := ret[0].(entity.NetworkConfig)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetConfig indicates an expected call of GetConfig.
-func (mr *MockEvmClientMockRecorder) GetConfig(ctx, timestamp any) *gomock.Call {
+func (mr *MockEvmClientMockRecorder) GetConfig(ctx, timestamp, epoch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfig", reflect.TypeOf((*MockEvmClient)(nil).GetConfig), ctx, timestamp)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfig", reflect.TypeOf((*MockEvmClient)(nil).GetConfig), ctx, timestamp, epoch)
 }
 
 // GetCurrentEpoch mocks base method.

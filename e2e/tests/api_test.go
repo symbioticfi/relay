@@ -55,7 +55,7 @@ func getExpectedDataFromContracts(t *testing.T, relayContracts RelayContractsDat
 	epochStart, err := evmClient.GetEpochStart(ctx, currentEpoch)
 	require.NoError(t, err, "Failed to get epoch start time from contract")
 
-	networkConfig, err := evmClient.GetConfig(ctx, epochStart)
+	networkConfig, err := evmClient.GetConfig(ctx, epochStart, currentEpoch)
 	require.NoError(t, err, "Failed to get network config from contract")
 
 	deriver, err := valsetDeriver.NewDeriver(evmClient)

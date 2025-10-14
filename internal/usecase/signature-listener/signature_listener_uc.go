@@ -59,6 +59,11 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 
 	err := s.cfg.EntityProcessor.ProcessSignature(ctx, msg, false)
 	if err != nil {
+		// ignore if signature already exists
+		if errors.Is(err, entity.ErrEntityAlreadyExist) {
+			slog.DebugContext(ctx, "Signature already exists, ignoring", "request_id", msg.RequestID().Hex(), "epoch", msg.Epoch)
+			return nil
+		}
 		return errors.Errorf("failed to process signature: %w", err)
 	}
 

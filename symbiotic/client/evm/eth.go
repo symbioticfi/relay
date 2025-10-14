@@ -37,7 +37,7 @@ type IEvmClient interface {
 	GetChains() []uint64
 	GetSubnetwork(ctx context.Context) (common.Hash, error)
 	GetNetworkAddress(ctx context.Context) (common.Address, error)
-	GetConfig(ctx context.Context, timestamp symbiotic.Timestamp) (symbiotic.NetworkConfig, error)
+	GetConfig(ctx context.Context, timestamp symbiotic.Timestamp, epoch symbiotic.Epoch) (symbiotic.NetworkConfig, error)
 	GetEip712Domain(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.Eip712Domain, error)
 	GetCurrentEpoch(ctx context.Context) (symbiotic.Epoch, error)
 	GetCurrentEpochDuration(ctx context.Context) (uint64, error)
@@ -135,7 +135,7 @@ func (e *Client) GetChains() []uint64 {
 	return chainIds
 }
 
-func (e *Client) GetConfig(ctx context.Context, timestamp symbiotic.Timestamp) (_ symbiotic.NetworkConfig, err error) {
+func (e *Client) GetConfig(ctx context.Context, timestamp symbiotic.Timestamp, epoch symbiotic.Epoch) (_ symbiotic.NetworkConfig, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -148,6 +148,11 @@ func (e *Client) GetConfig(ctx context.Context, timestamp symbiotic.Timestamp) (
 	}, new(big.Int).SetUint64(uint64(timestamp)))
 	if err != nil {
 		return symbiotic.NetworkConfig{}, errors.Errorf("failed to call getConfigAt: %w", err)
+	}
+
+	epochDuration, err := e.GetEpochDuration(ctx, epoch)
+	if err != nil {
+		return symbiotic.NetworkConfig{}, errors.Errorf("failed to get current epoch duration: %w", err)
 	}
 
 	return symbiotic.NetworkConfig{
@@ -183,6 +188,7 @@ func (e *Client) GetConfig(ctx context.Context, timestamp symbiotic.Timestamp) (
 		}),
 		NumCommitters:  dtoConfig.NumCommitters.Uint64(),
 		NumAggregators: dtoConfig.NumAggregators.Uint64(),
+		EpochDuration:  epochDuration,
 
 		// TODO: get from contract
 		CommitterSlotDuration: 10,

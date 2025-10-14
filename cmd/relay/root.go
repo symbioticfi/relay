@@ -130,7 +130,7 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to get capture timestamp: %w", err)
 	}
 
-	config, err := evmClient.GetConfig(ctx, captureTimestamp)
+	config, err := evmClient.GetConfig(ctx, captureTimestamp, currentOnchainEpoch)
 	if err != nil {
 		return errors.Errorf("failed to get config: %w", err)
 	}
@@ -339,12 +339,6 @@ func runApp(ctx context.Context) error {
 	}
 
 	err = aggProofReadySignal.SetHandlers(
-		func(ctx context.Context, msg symbiotic.AggregationProof) error {
-			if err := listener.HandleProofAggregated(ctx, msg); err != nil {
-				return errors.Errorf("failed to handle proof aggregated by valset listener: %w", err)
-			}
-			return nil
-		},
 		func(ctx context.Context, msg symbiotic.AggregationProof) error {
 			if err := statusTracker.HandleProofAggregated(ctx, msg); err != nil {
 				return errors.Errorf("failed to handle proof aggregated by valset status tracker: %w", err)

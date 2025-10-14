@@ -100,7 +100,7 @@ var registerKeyCmd = &cobra.Command{
 			return errors.Errorf("failed to get capture timestamp: %w", err)
 		}
 
-		networkConfig, err := evmClient.GetConfig(ctx, captureTimestamp)
+		networkConfig, err := evmClient.GetConfig(ctx, captureTimestamp, currentOnchainEpoch)
 		if err != nil {
 			return errors.Errorf("failed to get config: %w", err)
 		}
