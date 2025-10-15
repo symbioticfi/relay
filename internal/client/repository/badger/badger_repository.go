@@ -154,47 +154,9 @@ func (r *Repository) cleanupStaleMutexes() {
 	now := time.Now()
 	staleThreshold := now.Add(-r.cleanupStaleAfter)
 
-	var signatureCount, proofsCount, valsetCount int
-
-	// Clean up signature mutexes
-	r.signatureMutexMap.Range(func(key, value any) bool {
-		mutex := value.(*mutexWithUseTime)
-		if mutex.lastAccess().Before(staleThreshold) {
-			// Try to acquire the lock to ensure it's not in use
-			if mutex.tryLock() {
-				r.signatureMutexMap.Delete(key)
-				mutex.mutex.Unlock()
-				signatureCount++
-			}
-		}
-		return true
-	})
-
-	// Clean up proofs mutexes
-	r.proofsMutexMap.Range(func(key, value any) bool {
-		mutex := value.(*mutexWithUseTime)
-		if mutex.lastAccess().Before(staleThreshold) {
-			if mutex.tryLock() {
-				r.proofsMutexMap.Delete(key)
-				mutex.mutex.Unlock()
-				proofsCount++
-			}
-		}
-		return true
-	})
-
-	// Clean up valset mutexes
-	r.valsetMutexMap.Range(func(key, value any) bool {
-		mutex := value.(*mutexWithUseTime)
-		if mutex.lastAccess().Before(staleThreshold) {
-			if mutex.tryLock() {
-				r.valsetMutexMap.Delete(key)
-				mutex.mutex.Unlock()
-				valsetCount++
-			}
-		}
-		return true
-	})
+	signatureCount := cleanupMutexMap(&r.signatureMutexMap, staleThreshold)
+	proofsCount := cleanupMutexMap(&r.proofsMutexMap, staleThreshold)
+	valsetCount := cleanupMutexMap(&r.valsetMutexMap, staleThreshold)
 
 	if signatureCount > 0 || proofsCount > 0 || valsetCount > 0 {
 		slog.Info("Cleaned up stale mutexes",
@@ -204,4 +166,38 @@ func (r *Repository) cleanupStaleMutexes() {
 			"staleThreshold", staleThreshold,
 		)
 	}
+}
+
+// cleanupMutexMap removes stale mutexes from a single sync.Map using double-check pattern
+func cleanupMutexMap(mutexMap *sync.Map, staleThreshold time.Time) int {
+	var count int
+
+	mutexMap.Range(func(key, value any) bool {
+		mutex := value.(*mutexWithUseTime)
+
+		// First check: if recently accessed, skip
+		if !mutex.lastAccess().Before(staleThreshold) {
+			return true
+		}
+
+		// Try to acquire the lock to ensure it's not in use
+		if !mutex.tryLock() {
+			return true
+		}
+		defer mutex.mutex.Unlock()
+
+		// Double-check last access time after acquiring lock
+		// This handles the race where updateAccess() was called between the first check and TryLock
+		if !mutex.lastAccess().Before(staleThreshold) {
+			return true
+		}
+
+		// Safe to delete now
+		mutexMap.Delete(key)
+		count++
+
+		return true
+	})
+
+	return count
 }
