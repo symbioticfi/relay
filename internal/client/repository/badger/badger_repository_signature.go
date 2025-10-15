@@ -10,8 +10,7 @@ import (
 	pb "github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
-	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/blsBn254"
-	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/ecdsaSecp256k1"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 func keySignature(requestID common.Hash, validatorIndex uint32) []byte {
@@ -128,28 +127,12 @@ func bytesToSignature(value []byte) (symbiotic.Signature, error) {
 		Signature:   signaturePB.GetSignature(),
 	}
 
-	keyType := signature.KeyTag.Type()
-
-	switch keyType {
-	case symbiotic.KeyTypeBlsBn254:
-		publicKey, err := blsBn254.FromRaw(signaturePB.GetRawPublicKey())
-		if err != nil {
-			return symbiotic.Signature{}, errors.Errorf("failed to get signature from raw: %w", err)
-		}
-
-		signature.PublicKey = publicKey
-	case symbiotic.KeyTypeEcdsaSecp256k1:
-		publicKey, err := ecdsaSecp256k1.FromRaw(signaturePB.GetRawPublicKey())
-		if err != nil {
-			return symbiotic.Signature{}, errors.Errorf("failed to get signature from raw: %w", err)
-		}
-
-		signature.PublicKey = publicKey
-	case symbiotic.KeyTypeInvalid:
-		return symbiotic.Signature{}, errors.Errorf("invalid signature key type")
-	default:
-		return symbiotic.Signature{}, errors.Errorf("unsupported key type: %v", keyType)
+	publicKey, err := crypto.NewPublicKey(signature.KeyTag.Type(), signaturePB.GetRawPublicKey())
+	if err != nil {
+		return symbiotic.Signature{}, errors.Errorf("failed to get public key from raw: %w", err)
 	}
+
+	signature.PublicKey = publicKey
 
 	return signature, nil
 }
