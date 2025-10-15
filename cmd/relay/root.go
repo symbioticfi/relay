@@ -319,10 +319,10 @@ func runApp(ctx context.Context) error {
 
 	slog.DebugContext(ctx, "Created aggregator app, starting")
 
-	serveMetricsOnAPIAddress := cfg.HTTPListenAddr == cfg.MetricsListenAddr || cfg.MetricsListenAddr == ""
+	serveMetricsOnAPIAddress := cfg.APIListenAddr == cfg.MetricsListenAddr || cfg.MetricsListenAddr == ""
 
 	api, err := api_server.NewSymbioticServer(ctx, api_server.Config{
-		Address:           cfg.HTTPListenAddr,
+		Address:           cfg.APIListenAddr,
 		ShutdownTimeout:   time.Second * 5,
 		ReadHeaderTimeout: time.Second,
 		Signer:            signer,
@@ -333,6 +333,7 @@ func runApp(ctx context.Context) error {
 		Metrics:           mtr,
 		ServeMetrics:      serveMetricsOnAPIAddress,
 		ServePprof:        cfg.EnablePprof,
+		VerboseLogging:    cfg.APIVerboseLogging,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create api app: %w", err)

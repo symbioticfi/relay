@@ -20,7 +20,7 @@ chains:
   - "http://anvil-settlement:8546"
 bootnodes:
   - /dns4/relay-sidecar-1/tcp/8880/p2p/16Uiu2HAmFUiPYAJ7bE88Q8d7Kznrw5ifrje2e5QFyt7uFPk2G3iR
-http-listen: ":8080"
+api-listen: ":8080"
 p2p-listen: "/ip4/0.0.0.0/tcp/8880"
 enable-mdns: true
 enable-pprof: true

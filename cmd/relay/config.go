@@ -118,7 +118,8 @@ type config struct {
 	LogLevel          string               `mapstructure:"log-level" validate:"oneof=debug info warn error"`
 	LogMode           string               `mapstructure:"log-mode" validate:"oneof=json text pretty"`
 	P2PListenAddress  string               `mapstructure:"p2p-listen" validate:"required"`
-	HTTPListenAddr    string               `mapstructure:"http-listen" validate:"required"`
+	APIListenAddr     string               `mapstructure:"api-listen" validate:"required"`
+	APIVerboseLogging bool                 `mapstructure:"api-verbose-logging"`
 	MetricsListenAddr string               `mapstructure:"metrics-listen"`
 	EnablePprof       bool                 `mapstructure:"enable-pprof"`
 	SecretKeys        CMDSecretKeySlice    `mapstructure:"secret-keys"`
@@ -170,7 +171,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().String("log-level", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().String("log-mode", "json", "Log mode (text, pretty, json)")
 	rootCmd.PersistentFlags().String("p2p-listen", "", "P2P listen address")
-	rootCmd.PersistentFlags().String("http-listen", "", "Http listener address")
+	rootCmd.PersistentFlags().String("api-listen", "", "API Server listener address")
 	rootCmd.PersistentFlags().String("metrics-listen", "", "Http listener address for metrics endpoint")
 	rootCmd.PersistentFlags().Bool("enable-pprof", false, "Enable pprof debug endpoints")
 	rootCmd.PersistentFlags().String("storage-dir", ".data", "Dir to store data")
@@ -194,6 +195,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Uint64("sync.epochs", 5, "Epochs to sync")
 	rootCmd.PersistentFlags().Int("key-cache.size", 100, "Key cache size")
 	rootCmd.PersistentFlags().Bool("key-cache.enabled", true, "Enable key cache")
+	rootCmd.PersistentFlags().Bool("api-verbose-logging", false, "Enable verbose logging for the API Server")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
@@ -251,7 +253,10 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	if err := v.BindPFlag("p2p-listen", cmd.PersistentFlags().Lookup("p2p-listen")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("http-listen", cmd.PersistentFlags().Lookup("http-listen")); err != nil {
+	if err := v.BindPFlag("api-listen", cmd.PersistentFlags().Lookup("api-listen")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("api-verbose-logging", cmd.PersistentFlags().Lookup("api-verbose-logging")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("metrics-listen", cmd.PersistentFlags().Lookup("metrics-listen")); err != nil {
