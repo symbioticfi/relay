@@ -2,9 +2,7 @@ package badger
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"math/big"
 
@@ -13,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
-
+	pb "github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -563,99 +561,57 @@ func (r *Repository) GetValidatorByKey(ctx context.Context, epoch symbiotic.Epoc
 	})
 }
 
-type validatorVaultDTO struct {
-	ChainID     uint64 `json:"chain_id"`
-	Vault       string `json:"vault"`
-	VotingPower string `json:"voting_power"`
-}
-
-type keyDTO struct {
-	Tag     uint8  `json:"tag"`
-	Payload []byte `json:"payload"`
-}
-
-type validatorDTO struct {
-	Operator    string              `json:"operator"`
-	VotingPower string              `json:"voting_power"`
-	IsActive    bool                `json:"is_active"`
-	ActiveIndex uint32              `json:"active_index"`
-	Keys        []keyDTO            `json:"keys"`
-	Vaults      []validatorVaultDTO `json:"vaults"`
-}
-
-type validatorSetHeaderOnlyDTO struct {
-	Version            uint8  `json:"version"`
-	RequiredKeyTag     uint8  `json:"required_key_tag"`
-	Epoch              uint64 `json:"epoch"`
-	CaptureTimestamp   uint64 `json:"capture_timestamp"`
-	QuorumThreshold    string `json:"quorum_threshold"`
-	TotalVotingPower   string `json:"total_voting_power"`
-	ValidatorsSszMRoot string `json:"validators_ssz_mroot"`
-}
-
-type validatorSetAdditionalInfoDTO struct {
-	AggregatorIndices string `json:"aggregator_indices,omitempty"`
-	CommitterIndices  string `json:"committer_indices,omitempty"`
-}
-
-type validatorSetFullDTO struct {
-	Header validatorSetHeaderOnlyDTO     `json:"header"`
-	Info   validatorSetAdditionalInfoDTO `json:"info"`
-}
-
 func validatorToBytes(validator symbiotic.Validator, activeIndex uint32) ([]byte, error) {
-	dto := validatorDTO{
-		Operator:    validator.Operator.Hex(),
+	return marshalProto(&pb.Validator{
+		Operator:    validator.Operator.Bytes(),
 		VotingPower: validator.VotingPower.String(),
 		IsActive:    validator.IsActive,
 		ActiveIndex: activeIndex,
-		Keys: lo.Map(validator.Keys, func(k symbiotic.ValidatorKey, _ int) keyDTO {
-			return keyDTO{
-				Tag:     uint8(k.Tag),
+		Keys: lo.Map(validator.Keys, func(k symbiotic.ValidatorKey, _ int) *pb.ValidatorKey {
+			return &pb.ValidatorKey{
+				Tag:     uint32(k.Tag),
 				Payload: k.Payload,
 			}
 		}),
-		Vaults: lo.Map(validator.Vaults, func(v symbiotic.ValidatorVault, _ int) validatorVaultDTO {
-			return validatorVaultDTO{
-				ChainID:     v.ChainID,
-				Vault:       v.Vault.Hex(),
+		Vaults: lo.Map(validator.Vaults, func(v symbiotic.ValidatorVault, _ int) *pb.ValidatorVault {
+			return &pb.ValidatorVault{
+				ChainId:     v.ChainID,
+				Vault:       v.Vault.Bytes(),
 				VotingPower: v.VotingPower.String(),
 			}
 		}),
-	}
-
-	return json.Marshal(dto)
+	})
 }
 
 func bytesToValidator(data []byte) (symbiotic.Validator, uint32, error) {
-	var dto validatorDTO
-	if err := json.Unmarshal(data, &dto); err != nil {
+	validator := &pb.Validator{}
+	if err := unmarshalProto(data, validator); err != nil {
 		return symbiotic.Validator{}, 0, errors.Errorf("failed to unmarshal validator: %w", err)
 	}
 
-	operator := common.HexToAddress(dto.Operator)
+	operator := common.BytesToAddress(validator.GetOperator())
 
-	votingPower, ok := new(big.Int).SetString(dto.VotingPower, 10)
+	votingPower, ok := new(big.Int).SetString(validator.GetVotingPower(), 10)
 	if !ok {
-		return symbiotic.Validator{}, 0, errors.Errorf("failed to parse voting power: %s", dto.VotingPower)
+		return symbiotic.Validator{}, 0, errors.Errorf("failed to parse voting power: %s", validator.GetVotingPower())
 	}
 
-	keys := lo.Map(dto.Keys, func(k keyDTO, _ int) symbiotic.ValidatorKey {
+	keys := lo.Map(validator.GetKeys(), func(k *pb.ValidatorKey, _ int) symbiotic.ValidatorKey {
 		return symbiotic.ValidatorKey{
-			Tag:     symbiotic.KeyTag(k.Tag),
-			Payload: k.Payload,
+			Tag:     symbiotic.KeyTag(k.GetTag()),
+			Payload: k.GetPayload(),
 		}
 	})
 
-	vaults := make([]symbiotic.ValidatorVault, 0, len(dto.Vaults))
-	for _, v := range dto.Vaults {
-		votingPowerVault, parseOk := new(big.Int).SetString(v.VotingPower, 10)
+	vaults := make([]symbiotic.ValidatorVault, 0, len(validator.GetVaults()))
+	for _, v := range validator.GetVaults() {
+		votingPowerVault, parseOk := new(big.Int).SetString(v.GetVotingPower(), 10)
 		if !parseOk {
-			return symbiotic.Validator{}, 0, errors.Errorf("failed to parse vault voting power for operator %s: %s", dto.Operator, v.VotingPower)
+			return symbiotic.Validator{}, 0, errors.Errorf("failed to parse vault voting power for operator %s: %s", operator.Hex(), v.GetVotingPower())
 		}
 		vaults = append(vaults, symbiotic.ValidatorVault{
-			ChainID:     v.ChainID,
-			Vault:       common.HexToAddress(v.Vault),
+			ChainID:     v.GetChainId(),
+			Vault:       common.BytesToAddress(v.GetVault()),
 			VotingPower: symbiotic.ToVotingPower(votingPowerVault),
 		})
 	}
@@ -663,10 +619,10 @@ func bytesToValidator(data []byte) (symbiotic.Validator, uint32, error) {
 	return symbiotic.Validator{
 		Operator:    operator,
 		VotingPower: symbiotic.ToVotingPower(votingPower),
-		IsActive:    dto.IsActive,
+		IsActive:    validator.GetIsActive(),
 		Keys:        keys,
 		Vaults:      vaults,
-	}, dto.ActiveIndex, nil
+	}, validator.GetActiveIndex(), nil
 }
 
 func validatorSetHeaderToBytes(valset symbiotic.ValidatorSet) ([]byte, error) {
@@ -675,90 +631,71 @@ func validatorSetHeaderToBytes(valset symbiotic.ValidatorSet) ([]byte, error) {
 		return nil, errors.Errorf("failed to get validator set header: %w", err)
 	}
 
-	headerDTO := validatorSetHeaderOnlyDTO{
-		Version:            header.Version,
-		RequiredKeyTag:     uint8(header.RequiredKeyTag),
+	var aggIndices, commIndices []byte
+	if len(valset.AggregatorIndices) > 0 {
+		aggBitmap := entity.NewBitmapOf(valset.AggregatorIndices...)
+		aggIndices, err = aggBitmap.ToBytes()
+		if err != nil {
+			return nil, errors.Errorf("failed to serialize aggregator indices: %w", err)
+		}
+	}
+
+	if len(valset.CommitterIndices) > 0 {
+		commBitmap := entity.NewBitmapOf(valset.CommitterIndices...)
+		commIndices, err = commBitmap.ToBytes()
+		if err != nil {
+			return nil, errors.Errorf("failed to serialize committer indices: %w", err)
+		}
+	}
+
+	return marshalProto(&pb.ValidatorSetHeader{
+		Version:            uint32(header.Version),
+		RequiredKeyTag:     uint32(header.RequiredKeyTag),
 		Epoch:              uint64(header.Epoch),
 		CaptureTimestamp:   uint64(header.CaptureTimestamp),
 		QuorumThreshold:    header.QuorumThreshold.String(),
 		TotalVotingPower:   header.TotalVotingPower.String(),
-		ValidatorsSszMRoot: header.ValidatorsSszMRoot.Hex(),
-	}
-
-	infoDTO := validatorSetAdditionalInfoDTO{}
-
-	// Serialize AggregatorIndices bitmap
-	if len(valset.AggregatorIndices) > 0 {
-		aggBitmap := entity.NewBitmapOf(valset.AggregatorIndices...)
-		aggBytes, err := aggBitmap.ToBytes()
-		if err != nil {
-			return nil, errors.Errorf("failed to serialize aggregator indices: %w", err)
-		}
-		infoDTO.AggregatorIndices = base64.StdEncoding.EncodeToString(aggBytes)
-	}
-
-	// Serialize CommitterIndices bitmap
-	if len(valset.CommitterIndices) > 0 {
-		commBitmap := entity.NewBitmapOf(valset.CommitterIndices...)
-		commBytes, err := commBitmap.ToBytes()
-		if err != nil {
-			return nil, errors.Errorf("failed to serialize committer indices: %w", err)
-		}
-		infoDTO.CommitterIndices = base64.StdEncoding.EncodeToString(commBytes)
-	}
-
-	fullDTO := validatorSetFullDTO{
-		Header: headerDTO,
-		Info:   infoDTO,
-	}
-
-	return json.Marshal(fullDTO)
+		ValidatorsSszMroot: header.ValidatorsSszMRoot.Bytes(),
+		AggregatorIndices:  aggIndices,
+		CommitterIndices:   commIndices,
+	})
 }
 
 func bytesToValidatorSetHeader(data []byte) (symbiotic.ValidatorSetHeader, error) {
-	var fullDTO validatorSetFullDTO
-	if err := json.Unmarshal(data, &fullDTO); err != nil {
+	validatorSetHeader := &pb.ValidatorSetHeader{}
+	if err := unmarshalProto(data, validatorSetHeader); err != nil {
 		return symbiotic.ValidatorSetHeader{}, errors.Errorf("failed to unmarshal validator set header: %w", err)
 	}
 
-	headerDTO := fullDTO.Header
-
-	quorumThreshold, ok := new(big.Int).SetString(headerDTO.QuorumThreshold, 10)
+	quorumThreshold, ok := new(big.Int).SetString(validatorSetHeader.GetQuorumThreshold(), 10)
 	if !ok {
-		return symbiotic.ValidatorSetHeader{}, errors.Errorf("failed to parse quorum threshold: %s", headerDTO.QuorumThreshold)
+		return symbiotic.ValidatorSetHeader{}, errors.Errorf("failed to parse quorum threshold: %s", validatorSetHeader.GetQuorumThreshold())
 	}
 
-	totalVotingPower, ok := new(big.Int).SetString(headerDTO.TotalVotingPower, 10)
+	totalVotingPower, ok := new(big.Int).SetString(validatorSetHeader.GetTotalVotingPower(), 10)
 	if !ok {
-		return symbiotic.ValidatorSetHeader{}, errors.Errorf("failed to parse total voting power: %s", headerDTO.TotalVotingPower)
+		return symbiotic.ValidatorSetHeader{}, errors.Errorf("failed to parse total voting power: %s", validatorSetHeader.GetTotalVotingPower())
 	}
 
 	return symbiotic.ValidatorSetHeader{
-		Version:            headerDTO.Version,
-		RequiredKeyTag:     symbiotic.KeyTag(headerDTO.RequiredKeyTag),
-		Epoch:              symbiotic.Epoch(headerDTO.Epoch),
-		CaptureTimestamp:   symbiotic.Timestamp(headerDTO.CaptureTimestamp),
+		Version:            uint8(validatorSetHeader.GetVersion()),
+		RequiredKeyTag:     symbiotic.KeyTag(validatorSetHeader.GetRequiredKeyTag()),
+		Epoch:              symbiotic.Epoch(validatorSetHeader.GetEpoch()),
+		CaptureTimestamp:   symbiotic.Timestamp(validatorSetHeader.GetCaptureTimestamp()),
 		QuorumThreshold:    symbiotic.ToVotingPower(quorumThreshold),
 		TotalVotingPower:   symbiotic.ToVotingPower(totalVotingPower),
-		ValidatorsSszMRoot: common.HexToHash(headerDTO.ValidatorsSszMRoot),
+		ValidatorsSszMRoot: common.BytesToHash(validatorSetHeader.GetValidatorsSszMroot()),
 	}, nil
 }
 
 func extractAdditionalInfoFromHeaderData(data []byte) (aggIndices []uint32, commIndices []uint32, err error) {
-	var fullDTO validatorSetFullDTO
-	if err := json.Unmarshal(data, &fullDTO); err != nil {
+	validatorSetHeader := &pb.ValidatorSetHeader{}
+	if err := unmarshalProto(data, validatorSetHeader); err != nil {
 		return nil, nil, errors.Errorf("failed to unmarshal validator set header: %w", err)
 	}
 
-	infoDTO := fullDTO.Info
-
-	// Deserialize AggregatorIndices
-	if infoDTO.AggregatorIndices != "" {
-		aggBytes, err := base64.StdEncoding.DecodeString(infoDTO.AggregatorIndices)
-		if err != nil {
-			return nil, nil, errors.Errorf("failed to decode aggregator indices: %w", err)
-		}
-		aggBitmap, err := entity.BitmapFromBytes(aggBytes)
+	if len(validatorSetHeader.GetAggregatorIndices()) > 0 {
+		aggBitmap, err := entity.BitmapFromBytes(validatorSetHeader.GetAggregatorIndices())
 		if err != nil {
 			return nil, nil, errors.Errorf("failed to deserialize aggregator indices: %w", err)
 		}
@@ -767,13 +704,8 @@ func extractAdditionalInfoFromHeaderData(data []byte) (aggIndices []uint32, comm
 		aggIndices = []uint32{}
 	}
 
-	// Deserialize CommitterIndices
-	if infoDTO.CommitterIndices != "" {
-		commBytes, err := base64.StdEncoding.DecodeString(infoDTO.CommitterIndices)
-		if err != nil {
-			return nil, nil, errors.Errorf("failed to decode committer indices: %w", err)
-		}
-		commBitmap, err := entity.BitmapFromBytes(commBytes)
+	if len(validatorSetHeader.GetCommitterIndices()) > 0 {
+		commBitmap, err := entity.BitmapFromBytes(validatorSetHeader.GetCommitterIndices())
 		if err != nil {
 			return nil, nil, errors.Errorf("failed to deserialize committer indices: %w", err)
 		}
@@ -785,49 +717,35 @@ func extractAdditionalInfoFromHeaderData(data []byte) (aggIndices []uint32, comm
 	return aggIndices, commIndices, nil
 }
 
-type validatorSetMetadataDTO struct {
-	RequestID      string         `json:"request_id"`
-	Epoch          uint64         `json:"epoch"`
-	ExtraData      []extraDataDTO `json:"extra_data"`
-	CommitmentData []byte         `json:"commitment_data"`
-}
-
-type extraDataDTO struct {
-	Key   []byte `json:"key"`
-	Value []byte `json:"value"`
-}
-
 func validatorSetMetadataToBytes(data symbiotic.ValidatorSetMetadata) ([]byte, error) {
-	metadataData := validatorSetMetadataDTO{
-		RequestID: data.RequestID.Hex(),
+	return marshalProto(&pb.ValidatorSetMetadata{
+		RequestId: data.RequestID.Bytes(),
 		Epoch:     uint64(data.Epoch),
-		ExtraData: lo.Map(data.ExtraData, func(ed symbiotic.ExtraData, _ int) extraDataDTO {
-			return extraDataDTO{
+		ExtraData: lo.Map(data.ExtraData, func(ed symbiotic.ExtraData, _ int) *pb.ExtraData {
+			return &pb.ExtraData{
 				Key:   ed.Key.Bytes(),
 				Value: ed.Value.Bytes(),
 			}
 		}),
 		CommitmentData: data.CommitmentData,
-	}
-
-	return json.Marshal(metadataData)
+	})
 }
 
 func bytesToValidatorSetMetadata(data []byte) (symbiotic.ValidatorSetMetadata, error) {
-	var metadataDTO validatorSetMetadataDTO
-	if err := json.Unmarshal(data, &metadataDTO); err != nil {
-		return symbiotic.ValidatorSetMetadata{}, errors.Errorf("failed to unmarshal validator set header: %w", err)
+	validatorSetMetadata := &pb.ValidatorSetMetadata{}
+	if err := unmarshalProto(data, validatorSetMetadata); err != nil {
+		return symbiotic.ValidatorSetMetadata{}, errors.Errorf("failed to unmarshal validator set metadata: %w", err)
 	}
 
 	return symbiotic.ValidatorSetMetadata{
-		RequestID: common.HexToHash(metadataDTO.RequestID),
-		ExtraData: lo.Map(metadataDTO.ExtraData, func(ed extraDataDTO, _ int) symbiotic.ExtraData {
+		RequestID: common.BytesToHash(validatorSetMetadata.GetRequestId()),
+		ExtraData: lo.Map(validatorSetMetadata.GetExtraData(), func(ed *pb.ExtraData, _ int) symbiotic.ExtraData {
 			return symbiotic.ExtraData{
-				Key:   common.BytesToHash(ed.Key),
-				Value: common.BytesToHash(ed.Value),
+				Key:   common.BytesToHash(ed.GetKey()),
+				Value: common.BytesToHash(ed.GetValue()),
 			}
 		}),
-		Epoch:          symbiotic.Epoch(metadataDTO.Epoch),
-		CommitmentData: metadataDTO.CommitmentData,
+		Epoch:          symbiotic.Epoch(validatorSetMetadata.GetEpoch()),
+		CommitmentData: validatorSetMetadata.GetCommitmentData(),
 	}, nil
 }

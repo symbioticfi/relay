@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/go-errors/errors"
@@ -72,4 +73,19 @@ type DoNothingMetrics struct {
 func (m DoNothingMetrics) ObserveRepoQueryDuration(queryName string, status string, d time.Duration) {
 }
 func (m DoNothingMetrics) ObserveRepoQueryTotalDuration(queryName string, status string, d time.Duration) {
+}
+
+func marshalProto(msg proto.Message) ([]byte, error) {
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		return nil, errors.Errorf("failed to marshal proto: %v", err)
+	}
+	return data, nil
+}
+
+func unmarshalProto(data []byte, msg proto.Message) error {
+	if err := proto.Unmarshal(data, msg); err != nil {
+		return errors.Errorf("failed to unmarshal proto: %v", err)
+	}
+	return nil
 }
