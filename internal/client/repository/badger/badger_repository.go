@@ -1,6 +1,7 @@
 package badger
 
 import (
+	"log/slog"
 	"sync"
 	"time"
 
@@ -12,8 +13,10 @@ import (
 )
 
 type Config struct {
-	Dir     string  `validate:"required"`
-	Metrics metrics `validate:"required"`
+	Dir                      string        `validate:"required"`
+	Metrics                  metrics       `validate:"required"`
+	MutexCleanupInterval     time.Duration // How often to run mutex cleanup (e.g., 1 hour). Zero disables cleanup.
+	MutexCleanupStaleTimeout time.Duration // Remove mutexes not used for this duration, default 1 hour.
 }
 
 func (c Config) Validate() error {
@@ -32,9 +35,13 @@ type Repository struct {
 	db      *badger.DB
 	metrics metrics
 
-	signatureMutexMap sync.Map // map[requestId]*sync.Mutex
-	proofsMutexMap    sync.Map // map[requestId]*sync.Mutex
-	valsetMutexMap    sync.Map // map[epoch]*sync.Mutex
+	signatureMutexMap sync.Map // map[requestId]*mutexWithUseTime
+	proofsMutexMap    sync.Map // map[requestId]*mutexWithUseTime
+	valsetMutexMap    sync.Map // map[epoch]*mutexWithUseTime
+
+	cleanupTicker     *time.Ticker
+	cleanupStop       chan struct{}
+	cleanupStaleAfter time.Duration
 }
 
 func New(cfg Config) (*Repository, error) {
@@ -50,13 +57,20 @@ func New(cfg Config) (*Repository, error) {
 		return nil, errors.Errorf("failed to open badger database: %w", err)
 	}
 
-	return &Repository{
+	repo := &Repository{
 		db:      db,
 		metrics: cfg.Metrics,
-	}, nil
+	}
+
+	// Start mutex cleanup goroutine if configured
+	repo.startMutexCleanup(cfg.MutexCleanupInterval, cfg.MutexCleanupStaleTimeout)
+
+	return repo, nil
 }
 
 func (r *Repository) Close() error {
+	// Stop the mutex cleanup goroutine before closing the database
+	r.stopMutexCleanup()
 	return r.db.Close()
 }
 
@@ -88,4 +102,106 @@ func unmarshalProto(data []byte, msg proto.Message) error {
 		return errors.Errorf("failed to unmarshal proto: %v", err)
 	}
 	return nil
+}
+
+// startMutexCleanup starts a background goroutine that periodically cleans up stale mutexes
+func (r *Repository) startMutexCleanup(interval, staleTimeout time.Duration) {
+	// Default stale timeout to 1 hour if not set
+	if staleTimeout == 0 {
+		staleTimeout = time.Hour
+	}
+	r.cleanupStaleAfter = staleTimeout
+
+	// If interval is 0, cleanup is disabled
+	if interval == 0 {
+		slog.Info("Mutex cleanup disabled (interval is 0)")
+		return
+	}
+
+	r.cleanupTicker = time.NewTicker(interval)
+	r.cleanupStop = make(chan struct{})
+
+	go func() {
+		slog.Info("Starting mutex cleanup goroutine",
+			"interval", interval,
+			"staleTimeout", staleTimeout,
+		)
+
+		for {
+			select {
+			case <-r.cleanupTicker.C:
+				r.cleanupStaleMutexes()
+			case <-r.cleanupStop:
+				slog.Info("Stopping mutex cleanup goroutine")
+				return
+			}
+		}
+	}()
+}
+
+// stopMutexCleanup stops the background cleanup goroutine
+func (r *Repository) stopMutexCleanup() {
+	if r.cleanupTicker != nil {
+		r.cleanupTicker.Stop()
+	}
+	if r.cleanupStop != nil {
+		close(r.cleanupStop)
+	}
+}
+
+// cleanupStaleMutexes removes mutexes that haven't been used for longer than cleanupStaleAfter
+func (r *Repository) cleanupStaleMutexes() {
+	now := time.Now()
+	staleThreshold := now.Add(-r.cleanupStaleAfter)
+
+	var signatureCount, proofsCount, valsetCount int
+
+	// Clean up signature mutexes
+	r.signatureMutexMap.Range(func(key, value any) bool {
+		mutex := value.(*mutexWithUseTime)
+		if mutex.lastAccess().Before(staleThreshold) {
+			// Try to acquire the lock to ensure it's not in use
+			if mutex.tryLock() {
+				r.signatureMutexMap.Delete(key)
+				mutex.mutex.Unlock()
+				signatureCount++
+			}
+		}
+		return true
+	})
+
+	// Clean up proofs mutexes
+	r.proofsMutexMap.Range(func(key, value any) bool {
+		mutex := value.(*mutexWithUseTime)
+		if mutex.lastAccess().Before(staleThreshold) {
+			if mutex.tryLock() {
+				r.proofsMutexMap.Delete(key)
+				mutex.mutex.Unlock()
+				proofsCount++
+			}
+		}
+		return true
+	})
+
+	// Clean up valset mutexes
+	r.valsetMutexMap.Range(func(key, value any) bool {
+		mutex := value.(*mutexWithUseTime)
+		if mutex.lastAccess().Before(staleThreshold) {
+			if mutex.tryLock() {
+				r.valsetMutexMap.Delete(key)
+				mutex.mutex.Unlock()
+				valsetCount++
+			}
+		}
+		return true
+	})
+
+	if signatureCount > 0 || proofsCount > 0 || valsetCount > 0 {
+		slog.Info("Cleaned up stale mutexes",
+			"signatureMutexes", signatureCount,
+			"proofsMutexes", proofsCount,
+			"valsetMutexes", valsetCount,
+			"staleThreshold", staleThreshold,
+		)
+	}
 }

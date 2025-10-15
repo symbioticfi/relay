@@ -12,12 +12,11 @@ import (
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
-	"github.com/symbioticfi/relay/internal/entity"
-
 	"golang.org/x/sync/errgroup"
 
 	"github.com/symbioticfi/relay/internal/client/p2p"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
+	"github.com/symbioticfi/relay/internal/entity"
 	aggregationPolicy "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
 	aggregatorApp "github.com/symbioticfi/relay/internal/usecase/aggregator-app"
 	api_server "github.com/symbioticfi/relay/internal/usecase/api-server"
@@ -104,8 +103,10 @@ func runApp(ctx context.Context) error {
 	}
 
 	baseRepo, err := badger.New(badger.Config{
-		Dir:     cfg.StorageDir,
-		Metrics: mtr,
+		Dir:                      cfg.StorageDir,
+		Metrics:                  mtr,
+		MutexCleanupInterval:     time.Hour,
+		MutexCleanupStaleTimeout: time.Hour - time.Minute,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create badger repository: %w", err)
