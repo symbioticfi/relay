@@ -117,25 +117,25 @@ type config struct {
 	Driver            CMDCrossChainAddress `mapstructure:"driver" validate:"required"`
 	LogLevel          string               `mapstructure:"log-level" validate:"oneof=debug info warn error"`
 	LogMode           string               `mapstructure:"log-mode" validate:"oneof=json text pretty"`
-	P2PListenAddress  string               `mapstructure:"p2p-listen" validate:"required"`
-	APIListenAddr     string               `mapstructure:"api-listen" validate:"required"`
-	APIVerboseLogging bool                 `mapstructure:"api-verbose-logging"`
+	Server            ServerConfig         `mapstructure:"server" validate:"required"`
 	MetricsListenAddr string               `mapstructure:"metrics-listen"`
-	EnablePprof       bool                 `mapstructure:"enable-pprof"`
 	SecretKeys        CMDSecretKeySlice    `mapstructure:"secret-keys"`
 	StorageDir        string               `mapstructure:"storage-dir"`
-	Chains            []string             `mapstructure:"chains" validate:"required"`
 	CircuitsDir       string               `mapstructure:"circuits-dir"`
 	KeyStore          KeyStore             `mapstructure:"keystore"`
-	Bootnodes         []string             `mapstructure:"bootnodes"`
-	DHTMode           string               `mapstructure:"dht-mode" validate:"oneof=auto server client disabled"`
-	MDnsEnabled       bool                 `mapstructure:"enable-mdns"`
-	MaxCalls          int                  `mapstructure:"evm-max-calls"`
 	SignalCfg         signals.Config       `mapstructure:"signal"`
 	Cache             CacheConfig          `mapstructure:"cache"`
 	MaxUnsigners      uint64               `mapstructure:"aggregation-policy-max-unsigners"`
 	Sync              SyncConfig           `mapstructure:"sync"`
 	KeyCache          KeyCache             `mapstructure:"key-cache"`
+	P2P               P2PConfig            `mapstructure:"p2p" validate:"required"`
+	Evm               EvmConfig            `mapstructure:"evm" validate:"required"`
+}
+
+type ServerConfig struct {
+	ListenAddress  string `mapstructure:"listen" validate:"required"`
+	VerboseLogging bool   `mapstructure:"verbose-logging"`
+	EnablePprof    bool   `mapstructure:"enable-pprof"`
 }
 
 type CacheConfig struct {
@@ -148,6 +148,18 @@ type SyncConfig struct {
 	Period       time.Duration `mapstructure:"period"`
 	Timeout      time.Duration `mapstructure:"timeout"`
 	EpochsToSync uint64        `mapstructure:"epochs"`
+}
+
+type P2PConfig struct {
+	ListenAddress string   `mapstructure:"listen" validate:"required"` // p2p
+	Bootnodes     []string `mapstructure:"bootnodes"`
+	DHTMode       string   `mapstructure:"dht-mode" validate:"oneof=auto server client disabled"`
+	MDnsEnabled   bool     `mapstructure:"enable-mdns"`
+}
+
+type EvmConfig struct {
+	Chains   []string `mapstructure:"chains" validate:"required"`
+	MaxCalls int      `mapstructure:"max-calls"`
 }
 
 func (c config) Validate() error {
@@ -170,22 +182,17 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().String("driver.address", "", "Driver contract address")
 	rootCmd.PersistentFlags().String("log-level", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().String("log-mode", "json", "Log mode (text, pretty, json)")
-	rootCmd.PersistentFlags().String("p2p-listen", "", "P2P listen address")
-	rootCmd.PersistentFlags().String("api-listen", "", "API Server listener address")
+	rootCmd.PersistentFlags().String("server.listen", "", "API Server listener address")
+	rootCmd.PersistentFlags().Bool("server.verbose-logging", false, "Enable verbose logging for the API Server")
+	rootCmd.PersistentFlags().Bool("server.enable-pprof", false, "Enable pprof debug endpoints")
 	rootCmd.PersistentFlags().String("metrics-listen", "", "Http listener address for metrics endpoint")
-	rootCmd.PersistentFlags().Bool("enable-pprof", false, "Enable pprof debug endpoints")
 	rootCmd.PersistentFlags().String("storage-dir", ".data", "Dir to store data")
-	rootCmd.PersistentFlags().StringSlice("chains", nil, "Chains, comma separated rpc-url,..")
 	rootCmd.PersistentFlags().Var(&CMDSecretKeySlice{}, "secret-keys", "Secret keys, comma separated {namespace}/{type}/{id}/{key},..")
 	rootCmd.PersistentFlags().String("circuits-dir", "", "Directory path to load zk circuits from, if empty then zp prover is disabled")
 	rootCmd.PersistentFlags().String("keystore.path", "", "Path to optional keystore file, if provided will be used instead of secret-keys flag")
 	rootCmd.PersistentFlags().String("keystore.password", "", "Password for the keystore file, if provided will be used to decrypt the keystore file")
-	rootCmd.PersistentFlags().StringSlice("bootnodes", nil, "List of bootnodes in multiaddr format")
-	rootCmd.PersistentFlags().String("dht-mode", "server", "DHT mode: auto, server, client, disabled")
-	rootCmd.PersistentFlags().Bool("enable-mdns", false, "Enable mDNS discovery for P2P")
 	rootCmd.PersistentFlags().Int64("signal.worker-count", 10, "Signal worker count")
 	rootCmd.PersistentFlags().Int64("signal.buffer-size", 20, "Signal buffer size")
-	rootCmd.PersistentFlags().Int("evm-max-calls", 0, "Max calls in multicall")
 	rootCmd.PersistentFlags().Int("cache.network-config-size", 10, "Network config cache size")
 	rootCmd.PersistentFlags().Int("cache.validator-set-size", 10, "Validator set cache size")
 	rootCmd.PersistentFlags().Uint64("aggregation-policy-max-unsigners", 50, "Max unsigners for low cost agg policy")
@@ -195,7 +202,12 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Uint64("sync.epochs", 5, "Epochs to sync")
 	rootCmd.PersistentFlags().Int("key-cache.size", 100, "Key cache size")
 	rootCmd.PersistentFlags().Bool("key-cache.enabled", true, "Enable key cache")
-	rootCmd.PersistentFlags().Bool("api-verbose-logging", false, "Enable verbose logging for the API Server")
+	rootCmd.PersistentFlags().String("p2p.listen", "", "P2P listen address")
+	rootCmd.PersistentFlags().StringSlice("p2p.bootnodes", nil, "List of bootnodes in multiaddr format")
+	rootCmd.PersistentFlags().String("p2p.dht-mode", "server", "DHT mode: auto, server, client, disabled")
+	rootCmd.PersistentFlags().Bool("p2p.enable-mdns", false, "Enable mDNS discovery for P2P")
+	rootCmd.PersistentFlags().StringSlice("evm.chains", nil, "Chains, comma separated rpc-url,..")
+	rootCmd.PersistentFlags().Int("evm.max-calls", 0, "Max calls in multicall")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
@@ -250,28 +262,22 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	if err := v.BindPFlag("log-mode", cmd.PersistentFlags().Lookup("log-mode")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("p2p-listen", cmd.PersistentFlags().Lookup("p2p-listen")); err != nil {
+	if err := v.BindPFlag("server.listen", cmd.PersistentFlags().Lookup("server.listen")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("api-listen", cmd.PersistentFlags().Lookup("api-listen")); err != nil {
+	if err := v.BindPFlag("server.verbose-logging", cmd.PersistentFlags().Lookup("server.verbose-logging")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("api-verbose-logging", cmd.PersistentFlags().Lookup("api-verbose-logging")); err != nil {
+	if err := v.BindPFlag("server.enable-pprof", cmd.PersistentFlags().Lookup("server.enable-pprof")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("metrics-listen", cmd.PersistentFlags().Lookup("metrics-listen")); err != nil {
-		return errors.Errorf("failed to bind flag: %w", err)
-	}
-	if err := v.BindPFlag("enable-pprof", cmd.PersistentFlags().Lookup("enable-pprof")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("storage-dir", cmd.PersistentFlags().Lookup("storage-dir")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("secret-keys", cmd.PersistentFlags().Lookup("secret-keys")); err != nil {
-		return errors.Errorf("failed to bind flag: %w", err)
-	}
-	if err := v.BindPFlag("chains", cmd.PersistentFlags().Lookup("chains")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("circuits-dir", cmd.PersistentFlags().Lookup("circuits-dir")); err != nil {
@@ -283,22 +289,10 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	if err := v.BindPFlag("keystore.password", cmd.PersistentFlags().Lookup("keystore.password")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("bootnodes", cmd.PersistentFlags().Lookup("bootnodes")); err != nil {
-		return errors.Errorf("failed to bind flag: %w", err)
-	}
-	if err := v.BindPFlag("dht-mode", cmd.PersistentFlags().Lookup("dht-mode")); err != nil {
-		return errors.Errorf("failed to bind flag: %w", err)
-	}
-	if err := v.BindPFlag("enable-mdns", cmd.PersistentFlags().Lookup("enable-mdns")); err != nil {
-		return errors.Errorf("failed to bind flag: %w", err)
-	}
 	if err := v.BindPFlag("signal.buffer-size", cmd.PersistentFlags().Lookup("signal.buffer-size")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("signal.worker-count", cmd.PersistentFlags().Lookup("signal.worker-count")); err != nil {
-		return errors.Errorf("failed to bind flag: %w", err)
-	}
-	if err := v.BindPFlag("evm-max-calls", cmd.PersistentFlags().Lookup("evm-max-calls")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("cache.network-config-size", cmd.PersistentFlags().Lookup("cache.network-config-size")); err != nil {
@@ -326,6 +320,24 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("key-cache.enabled", cmd.PersistentFlags().Lookup("key-cache.enabled")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("p2p.listen", cmd.PersistentFlags().Lookup("p2p.listen")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("p2p.bootnodes", cmd.PersistentFlags().Lookup("p2p.bootnodes")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("p2p.dht-mode", cmd.PersistentFlags().Lookup("p2p.dht-mode")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("p2p.enable-mdns", cmd.PersistentFlags().Lookup("p2p.enable-mdns")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("evm.chains", cmd.PersistentFlags().Lookup("evm.chains")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("evm.max-calls", cmd.PersistentFlags().Lookup("evm.max-calls")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 
