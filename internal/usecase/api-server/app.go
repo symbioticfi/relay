@@ -63,14 +63,15 @@ type Config struct {
 	ReadHeaderTimeout time.Duration `validate:"required,gt=0"`
 	ShutdownTimeout   time.Duration `validate:"required,gt=0"`
 
-	Signer       signer    `validate:"required"`
-	Repo         repo      `validate:"required"`
-	EvmClient    evmClient `validate:"required"`
-	Deriver      deriver   `validate:"required"`
-	Aggregator   aggregator
-	ServeMetrics bool
-	ServePprof   bool
-	Metrics      *metrics.Metrics `validate:"required"`
+	Signer         signer    `validate:"required"`
+	Repo           repo      `validate:"required"`
+	EvmClient      evmClient `validate:"required"`
+	Deriver        deriver   `validate:"required"`
+	Aggregator     aggregator
+	ServeMetrics   bool
+	ServePprof     bool
+	Metrics        *metrics.Metrics `validate:"required"`
+	VerboseLogging bool
 }
 
 func (c Config) Validate() error {
@@ -190,13 +191,14 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 		grpc.ChainUnaryInterceptor(
 			server.PanicRecoveryInterceptor(),
 			cfg.Metrics.UnaryServerInterceptor(),
-			server.LoggingInterceptor(),
+			server.LoggingInterceptor(cfg.VerboseLogging),
 			ErrorHandlingInterceptor(),
 		),
 		grpc.ChainStreamInterceptor(
 			server.StreamPanicRecoveryInterceptor(),
 			cfg.Metrics.StreamServerInterceptor(),
-			server.StreamLoggingInterceptor(),
+			//nolint:contextcheck // the context comes from th stream
+			server.StreamLoggingInterceptor(cfg.VerboseLogging),
 			StreamErrorHandlingInterceptor(),
 		),
 	)

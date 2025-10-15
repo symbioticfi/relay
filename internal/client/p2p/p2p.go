@@ -308,12 +308,13 @@ func (s *Service) StartGRPCServer(ctx context.Context) error {
 		grpc.ChainUnaryInterceptor(
 			server.PanicRecoveryInterceptor(),
 			s.metrics.UnaryServerInterceptor(),
-			server.LoggingInterceptor(),
+			server.LoggingInterceptor(true),
 		),
 		grpc.ChainStreamInterceptor(
 			server.StreamPanicRecoveryInterceptor(),
 			s.metrics.StreamServerInterceptor(),
-			server.StreamLoggingInterceptor(),
+			//nolint:contextcheck // the context comes from th stream
+			server.StreamLoggingInterceptor(true),
 		),
 	)
 	prototypes.RegisterSymbioticP2PServiceServer(grpcServer, s.p2pGRPCHandler)

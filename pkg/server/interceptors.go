@@ -13,7 +13,13 @@ import (
 )
 
 // LoggingInterceptor provides request logging for unary RPCs
-func LoggingInterceptor() grpc.UnaryServerInterceptor {
+func LoggingInterceptor(verboseLogging bool) grpc.UnaryServerInterceptor {
+	errorLogger := slog.DebugContext
+	infoLogger := slog.DebugContext
+	if verboseLogging {
+		errorLogger = slog.ErrorContext
+		infoLogger = slog.InfoContext
+	}
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		start := time.Now()
 
@@ -24,9 +30,9 @@ func LoggingInterceptor() grpc.UnaryServerInterceptor {
 
 		duration := time.Since(start)
 		if err != nil {
-			slog.ErrorContext(logCtx, "gRPC request failed", "method", info.FullMethod, "duration", duration, "error", err)
+			errorLogger(logCtx, "gRPC request failed", "method", info.FullMethod, "duration", duration, "error", err)
 		} else {
-			slog.InfoContext(logCtx, "gRPC request completed", "method", info.FullMethod, "duration", duration)
+			infoLogger(logCtx, "gRPC request completed", "method", info.FullMethod, "duration", duration)
 		}
 
 		return resp, err
@@ -45,7 +51,14 @@ func (w *wrappedStream) Context() context.Context {
 }
 
 // StreamLoggingInterceptor provides request logging for streaming RPCs
-func StreamLoggingInterceptor() grpc.StreamServerInterceptor {
+func StreamLoggingInterceptor(verboseLogging bool) grpc.StreamServerInterceptor {
+	errorLogger := slog.DebugContext
+	infoLogger := slog.DebugContext
+	if verboseLogging {
+		errorLogger = slog.ErrorContext
+		infoLogger = slog.InfoContext
+	}
+
 	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		start := time.Now()
 
@@ -57,9 +70,9 @@ func StreamLoggingInterceptor() grpc.StreamServerInterceptor {
 
 		duration := time.Since(start)
 		if err != nil {
-			slog.ErrorContext(logCtx, "gRPC stream failed", "method", info.FullMethod, "duration", duration, "error", err)
+			errorLogger(logCtx, "gRPC stream failed", "method", info.FullMethod, "duration", duration, "error", err)
 		} else {
-			slog.InfoContext(logCtx, "gRPC stream completed", "method", info.FullMethod, "duration", duration)
+			infoLogger(logCtx, "gRPC stream completed", "method", info.FullMethod, "duration", duration)
 		}
 
 		return err
