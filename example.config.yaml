@@ -8,15 +8,15 @@ log-mode: "pretty"
 storage-dir: ".data"
 # circuits-dir: ""  # Optional: Path to ZK circuits directory
 
-# Server Configuration
-server:
+# API Server Configuration
+api:
   listen: ":8080"
   verbose-logging: false
-  pprof: false
 
-# Metrics (optional)
+# Metrics Configuration (optional)
 metrics:
   listen: ":9090"
+  pprof: false
 
 # Driver Contract
 driver:

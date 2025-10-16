@@ -165,14 +165,14 @@ storage-dir: ".data"                  # Directory for persistent data
 circuits-dir: ""                      # Path to ZK circuits (optional, empty disables ZK proofs)
 
 # API Server
-server:
+api:
   listen: ":8080"                     # API server address
   verbose-logging: false              # Enable verbose API logging
-  pprof: false                        # Enable pprof debug endpoints
 
 # Metrics (optional)
 metrics:
   listen: ":9090"                     # Metrics endpoint address
+  pprof: false                        # Enable pprof debug endpoints
 
 # Driver Contract
 driver:
@@ -251,7 +251,7 @@ You can override config file values with command-line flags:
   --config config.yaml \
   --log-level debug \
   --storage-dir /var/lib/relay \
-  --server.listen ":8080" \
+  --api.listen ":8080" \
   --p2p.listen "/ip4/0.0.0.0/tcp/8880" \
   --driver.chain-id 1 \
   --driver.address "0x..." \
@@ -266,7 +266,7 @@ Environment variables use the `SYMB_` prefix with underscores instead of dashes 
 ```bash
 export SYMB_LOG_LEVEL=debug
 export SYMB_STORAGE_DIR=/var/lib/relay
-export SYMB_SERVER_LISTEN=":8080"
+export SYMB_API_LISTEN=":8080"
 export SYMB_P2P_LISTEN="/ip4/0.0.0.0/tcp/8880"
 export SYMB_DRIVER_CHAIN_ID=1
 export SYMB_DRIVER_ADDRESS="0x..."

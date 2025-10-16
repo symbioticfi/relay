@@ -32,7 +32,7 @@ type config struct {
 	CircuitsDir  string `mapstructure:"circuits-dir"`
 	MaxUnsigners uint64 `mapstructure:"aggregation-policy-max-unsigners"`
 
-	Server     ServerConfig         `mapstructure:"server" validate:"required"`
+	API        APIConfig            `mapstructure:"api" validate:"required"`
 	Metrics    MetricsConfig        `mapstructure:"metrics"`
 	Driver     CMDCrossChainAddress `mapstructure:"driver" validate:"required"`
 	SecretKeys CMDSecretKeySlice    `mapstructure:"secret-keys"`
@@ -45,14 +45,14 @@ type config struct {
 	Evm        EvmConfig            `mapstructure:"evm" validate:"required"`
 }
 
-type ServerConfig struct {
+type APIConfig struct {
 	ListenAddress  string `mapstructure:"listen" validate:"required"`
 	VerboseLogging bool   `mapstructure:"verbose-logging"`
-	PprofEnabled   bool   `mapstructure:"pprof"`
 }
 
 type MetricsConfig struct {
 	ListenAddress string `mapstructure:"listen"`
+	PprofEnabled  bool   `mapstructure:"pprof"`
 }
 
 type CMDCrossChainAddress struct {
@@ -188,10 +188,10 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().String("storage-dir", ".data", "Dir to store data")
 	rootCmd.PersistentFlags().String("circuits-dir", "", "Directory path to load zk circuits from, if empty then zp prover is disabled")
 	rootCmd.PersistentFlags().Uint64("aggregation-policy-max-unsigners", 50, "Max unsigners for low cost agg policy")
-	rootCmd.PersistentFlags().String("server.listen", "", "API Server listener address")
-	rootCmd.PersistentFlags().Bool("server.verbose-logging", false, "Enable verbose logging for the API Server")
-	rootCmd.PersistentFlags().Bool("server.pprof", false, "Enable pprof debug endpoints")
+	rootCmd.PersistentFlags().String("api.listen", "", "API Server listener address")
+	rootCmd.PersistentFlags().Bool("api.verbose-logging", false, "Enable verbose logging for the API Server")
 	rootCmd.PersistentFlags().String("metrics.listen", "", "Http listener address for metrics endpoint")
+	rootCmd.PersistentFlags().Bool("metrics.pprof", false, "Enable pprof debug endpoints")
 	rootCmd.PersistentFlags().Uint64("driver.chain-id", 0, "Driver contract chain id")
 	rootCmd.PersistentFlags().String("driver.address", "", "Driver contract address")
 	rootCmd.PersistentFlags().Var(&CMDSecretKeySlice{}, "secret-keys", "Secret keys, comma separated {namespace}/{type}/{id}/{key},..")
@@ -270,16 +270,16 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	if err := v.BindPFlag("aggregation-policy-max-unsigners", cmd.PersistentFlags().Lookup("aggregation-policy-max-unsigners")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("server.listen", cmd.PersistentFlags().Lookup("server.listen")); err != nil {
+	if err := v.BindPFlag("api.listen", cmd.PersistentFlags().Lookup("api.listen")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("server.verbose-logging", cmd.PersistentFlags().Lookup("server.verbose-logging")); err != nil {
-		return errors.Errorf("failed to bind flag: %w", err)
-	}
-	if err := v.BindPFlag("server.pprof", cmd.PersistentFlags().Lookup("server.pprof")); err != nil {
+	if err := v.BindPFlag("api.verbose-logging", cmd.PersistentFlags().Lookup("api.verbose-logging")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("metrics.listen", cmd.PersistentFlags().Lookup("metrics.listen")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("metrics.pprof", cmd.PersistentFlags().Lookup("metrics.pprof")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("driver.chain-id", cmd.PersistentFlags().Lookup("driver.chain-id")); err != nil {

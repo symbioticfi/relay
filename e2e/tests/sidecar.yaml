@@ -4,10 +4,13 @@
 log-level: "debug"
 log-mode: "json"
 
-# Server Configuration
-server:
+# API Server Configuration
+api:
   listen: ":8080"
   verbose-logging: false
+
+# Metrics Configuration
+metrics:
   pprof: false
 
 # Driver Contract (address is set via command-line flag in tests)

@@ -13,9 +13,13 @@ cat > /tmp/sidecar.yaml << EOFCONFIG
 log-level: "debug"
 log-mode: "pretty"
 
-# Server Configuration
-server:
+# API Server Configuration
+api:
   listen: ":8080"
+
+# Metrics Configuration
+metrics:
+  pprof: true
 
 # Driver Contract
 driver:
