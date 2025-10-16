@@ -9,7 +9,6 @@ package v1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	_ "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -2286,7 +2285,7 @@ var File_v1_api_proto protoreflect.FileDescriptor
 
 const file_v1_api_proto_rawDesc = "" +
 	"\n" +
-	"\fv1/api.proto\x12\fapi.proto.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bgoogle/protobuf/empty.proto\"\x86\x01\n" +
+	"\fv1/api.proto\x12\fapi.proto.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x86\x01\n" +
 	"\x12SignMessageRequest\x12\x17\n" +
 	"\akey_tag\x18\x01 \x01(\rR\x06keyTag\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\fR\amessage\x12*\n" +
