@@ -9,21 +9,33 @@ DRIVER_ADDRESS=$(jq -r '.driver.addr' /deploy-data/relay_contracts.json)
 echo "Driver address from relay_contracts.json: $DRIVER_ADDRESS"
 
 cat > /tmp/sidecar.yaml << EOFCONFIG
+# Logging
+log-level: "debug"
+log-mode: "pretty"
+
+# Server Configuration
+server:
+  listen: ":8080"
+
+# Driver Contract
 driver:
   chain-id: 31337
   address: "$DRIVER_ADDRESS"
-log-level: "debug"
-log-mode: "pretty"
-signer: true
-chains:
-  - "http://anvil:8545"
-  - "http://anvil-settlement:8546"
-bootnodes:
-  - /dns4/relay-sidecar-1/tcp/8880/p2p/16Uiu2HAmFUiPYAJ7bE88Q8d7Kznrw5ifrje2e5QFyt7uFPk2G3iR
-api-listen: ":8080"
-p2p-listen: "/ip4/0.0.0.0/tcp/8880"
-enable-mdns: true
-enable-pprof: true
+
+# P2P Configuration
+p2p:
+  listen: "/ip4/0.0.0.0/tcp/8880"
+  bootnodes:
+    - /dns4/relay-sidecar-1/tcp/8880/p2p/16Uiu2HAmFUiPYAJ7bE88Q8d7Kznrw5ifrje2e5QFyt7uFPk2G3iR
+  dht-mode: "server"
+  mdns: true
+
+# EVM Configuration
+evm:
+  chains:
+    - "http://anvil:8545"
+    - "http://anvil-settlement:8546"
+  max-calls: 30
 EOFCONFIG
 
 # Ensure environment variables are explicitly preserved

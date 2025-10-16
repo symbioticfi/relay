@@ -1,13 +1,30 @@
-driver:
-  chain-id: 31337
+# E2E Test Sidecar Configuration
+
+# Logging
 log-level: "debug"
 log-mode: "json"
-signer: true
-chains:
-  - "http://anvil:8545"
-  - "http://anvil-settlement:8546"
-bootnodes:
-  - /dns4/relay-sidecar-1/tcp/8880/p2p/16Uiu2HAmFUiPYAJ7bE88Q8d7Kznrw5ifrje2e5QFyt7uFPk2G3iR
-api-listen: ":8080"
-p2p-listen: "/ip4/0.0.0.0/tcp/8880"
-enable-mdns: true
+
+# Server Configuration
+server:
+  listen: ":8080"
+  verbose-logging: false
+  pprof: false
+
+# Driver Contract (address is set via command-line flag in tests)
+driver:
+  chain-id: 31337
+
+# P2P Configuration
+p2p:
+  listen: "/ip4/0.0.0.0/tcp/8880"
+  bootnodes:
+    - /dns4/relay-sidecar-1/tcp/8880/p2p/16Uiu2HAmFUiPYAJ7bE88Q8d7Kznrw5ifrje2e5QFyt7uFPk2G3iR
+  dht-mode: "server"
+  mdns: true
+
+# EVM Configuration
+evm:
+  chains:
+    - "http://anvil:8545"
+    - "http://anvil-settlement:8546"
+  max-calls: 30
