@@ -40,7 +40,7 @@ import (
 
 func runApp(ctx context.Context) error {
 	cfg := cfgFromCtx(ctx)
-	log.Init(cfg.General.LogLevel, cfg.General.LogMode)
+	log.Init(cfg.LogLevel, cfg.LogMode)
 	mtr := metrics.New(metrics.Config{})
 
 	var keyProvider *keyprovider.CacheKeyProvider
@@ -102,7 +102,7 @@ func runApp(ctx context.Context) error {
 	}
 
 	baseRepo, err := badger.New(badger.Config{
-		Dir:     cfg.General.StorageDir,
+		Dir:     cfg.StorageDir,
 		Metrics: mtr,
 	})
 	if err != nil {
@@ -135,7 +135,7 @@ func runApp(ctx context.Context) error {
 
 	var prover *proof.ZkProver
 	if config.VerificationType == symbiotic.VerificationTypeBlsBn254ZK {
-		prover = proof.NewZkProver(cfg.General.CircuitsDir)
+		prover = proof.NewZkProver(cfg.CircuitsDir)
 	}
 	agg, err := aggregator.NewAggregator(config.VerificationType, prover)
 	if err != nil {
@@ -290,7 +290,7 @@ func runApp(ctx context.Context) error {
 	if config.VerificationType == symbiotic.VerificationTypeBlsBn254Simple {
 		aggPolicyType = symbiotic.AggregationPolicyLowCost
 	}
-	aggPolicy, err := aggregationPolicy.NewAggregationPolicy(aggPolicyType, cfg.General.MaxUnsigners)
+	aggPolicy, err := aggregationPolicy.NewAggregationPolicy(aggPolicyType, cfg.MaxUnsigners)
 	if err != nil {
 		return errors.Errorf("failed to create aggregator policy: %w", err)
 	}
@@ -317,7 +317,7 @@ func runApp(ctx context.Context) error {
 
 	slog.DebugContext(ctx, "Created aggregator app, starting")
 
-	serveMetricsOnAPIAddress := cfg.Server.ListenAddress == cfg.General.MetricsListenAddr || cfg.General.MetricsListenAddr == ""
+	serveMetricsOnAPIAddress := cfg.Server.ListenAddress == cfg.Metrics.ListenAddress || cfg.Metrics.ListenAddress == ""
 
 	api, err := api_server.NewSymbioticServer(ctx, api_server.Config{
 		Address:           cfg.Server.ListenAddress,
@@ -376,7 +376,7 @@ func runApp(ctx context.Context) error {
 
 	if !serveMetricsOnAPIAddress {
 		mtrApp, err := metrics.NewApp(metrics.AppConfig{
-			Address:           cfg.General.MetricsListenAddr,
+			Address:           cfg.Metrics.ListenAddress,
 			ReadHeaderTimeout: time.Second * 5,
 		})
 		if err != nil {
