@@ -40,7 +40,7 @@ import (
 
 func runApp(ctx context.Context) error {
 	cfg := cfgFromCtx(ctx)
-	log.Init(cfg.LogLevel, cfg.LogMode)
+	log.Init(cfg.Log.Level, cfg.Log.Mode)
 	mtr := metrics.New(metrics.Config{})
 
 	var keyProvider *keyprovider.CacheKeyProvider

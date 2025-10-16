@@ -1,8 +1,9 @@
 # E2E Test Sidecar Configuration
 
 # Logging
-log-level: "debug"
-log-mode: "json"
+log:
+  level: "debug"
+  mode: "json"
 
 # API Server Configuration
 api:

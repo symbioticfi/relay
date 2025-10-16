@@ -10,8 +10,9 @@ echo "Driver address from relay_contracts.json: $DRIVER_ADDRESS"
 
 cat > /tmp/sidecar.yaml << EOFCONFIG
 # Logging
-log-level: "debug"
-log-mode: "pretty"
+log:
+  level: "debug"
+  mode: "pretty"
 
 # API Server Configuration
 api:

@@ -26,12 +26,11 @@ import (
 // 2. Environment variables (prefixed with SYMB_ and dashes replaced by underscores)
 // 3. config.yaml file (specified by --config or default "config.yaml")
 type config struct {
-	LogLevel     string `mapstructure:"log-level" validate:"oneof=debug info warn error"`
-	LogMode      string `mapstructure:"log-mode" validate:"oneof=json text pretty"`
 	StorageDir   string `mapstructure:"storage-dir"`
 	CircuitsDir  string `mapstructure:"circuits-dir"`
 	MaxUnsigners uint64 `mapstructure:"aggregation-policy-max-unsigners"`
 
+	Log        LogConfig            `mapstructure:"log" validate:"required"`
 	API        APIConfig            `mapstructure:"api" validate:"required"`
 	Metrics    MetricsConfig        `mapstructure:"metrics"`
 	Driver     CMDCrossChainAddress `mapstructure:"driver" validate:"required"`
@@ -43,6 +42,11 @@ type config struct {
 	KeyCache   KeyCache             `mapstructure:"key-cache"`
 	P2P        P2PConfig            `mapstructure:"p2p" validate:"required"`
 	Evm        EvmConfig            `mapstructure:"evm" validate:"required"`
+}
+
+type LogConfig struct {
+	Level string `mapstructure:"level" validate:"oneof=debug info warn error"`
+	Mode  string `mapstructure:"mode" validate:"oneof=json text pretty"`
 }
 
 type APIConfig struct {
@@ -183,8 +187,8 @@ var (
 func addRootFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVar(&configFile, "config", "config.yaml", "Path to config file")
 
-	rootCmd.PersistentFlags().String("log-level", "info", "Log level (debug, info, warn, error)")
-	rootCmd.PersistentFlags().String("log-mode", "json", "Log mode (text, pretty, json)")
+	rootCmd.PersistentFlags().String("log.level", "info", "Log level (debug, info, warn, error)")
+	rootCmd.PersistentFlags().String("log.mode", "json", "Log mode (text, pretty, json)")
 	rootCmd.PersistentFlags().String("storage-dir", ".data", "Dir to store data")
 	rootCmd.PersistentFlags().String("circuits-dir", "", "Directory path to load zk circuits from, if empty then zp prover is disabled")
 	rootCmd.PersistentFlags().Uint64("aggregation-policy-max-unsigners", 50, "Max unsigners for low cost agg policy")
@@ -255,10 +259,10 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 	v.AutomaticEnv()
 
-	if err := v.BindPFlag("log-level", cmd.PersistentFlags().Lookup("log-level")); err != nil {
+	if err := v.BindPFlag("log.level", cmd.PersistentFlags().Lookup("log.level")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("log-mode", cmd.PersistentFlags().Lookup("log-mode")); err != nil {
+	if err := v.BindPFlag("log.mode", cmd.PersistentFlags().Lookup("log.mode")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("storage-dir", cmd.PersistentFlags().Lookup("storage-dir")); err != nil {

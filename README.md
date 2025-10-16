@@ -157,8 +157,9 @@ Create a `config.yaml` file with the following structure:
 
 ```yaml
 # Logging
-log-level: "debug"                    # Options: debug, info, warn, error
-log-mode: "pretty"                    # Options: json, text, pretty
+log:
+  level: "debug"                      # Options: debug, info, warn, error
+  mode: "pretty"                      # Options: json, text, pretty
 
 # Storage
 storage-dir: ".data"                  # Directory for persistent data
@@ -249,7 +250,7 @@ You can override config file values with command-line flags:
 ```bash
 ./relay_sidecar \
   --config config.yaml \
-  --log-level debug \
+  --log.level debug \
   --storage-dir /var/lib/relay \
   --api.listen ":8080" \
   --p2p.listen "/ip4/0.0.0.0/tcp/8880" \
@@ -265,6 +266,7 @@ Environment variables use the `SYMB_` prefix with underscores instead of dashes 
 
 ```bash
 export SYMB_LOG_LEVEL=debug
+export SYMB_LOG_MODE=pretty
 export SYMB_STORAGE_DIR=/var/lib/relay
 export SYMB_API_LISTEN=":8080"
 export SYMB_P2P_LISTEN="/ip4/0.0.0.0/tcp/8880"
