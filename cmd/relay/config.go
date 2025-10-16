@@ -136,6 +136,7 @@ type config struct {
 	MaxUnsigners      uint64               `mapstructure:"aggregation-policy-max-unsigners"`
 	Sync              SyncConfig           `mapstructure:"sync"`
 	KeyCache          KeyCache             `mapstructure:"key-cache"`
+	MaxAllowedStreams uint64               `mapstructure:"max-allowed-streams" validate:"required"`
 }
 
 type CacheConfig struct {
@@ -196,6 +197,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Int("key-cache.size", 100, "Key cache size")
 	rootCmd.PersistentFlags().Bool("key-cache.enabled", true, "Enable key cache")
 	rootCmd.PersistentFlags().Bool("api-verbose-logging", false, "Enable verbose logging for the API Server")
+	rootCmd.PersistentFlags().Uint64("max-allowed-streams", 100, "Max allowed streams count API Server")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
@@ -326,6 +328,9 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("key-cache.enabled", cmd.PersistentFlags().Lookup("key-cache.enabled")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("max-allowed-streams", cmd.PersistentFlags().Lookup("max-allowed-streams")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 
