@@ -50,7 +50,7 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity
 			validatorIndex := it.Next()
 			// Check limit before processing each signature
 			if totalSignatureCount >= s.cfg.MaxResponseSignatureCount {
-				slog.DebugContext(ctx, "Response signature limit reached during iteration, stopping", "total_collected", totalSignatureCount, "limit", s.cfg.MaxResponseSignatureCount, "request_id", requestID.Hex())
+				slog.DebugContext(ctx, "Response signature limit reached during iteration, stopping", "total_collected", totalSignatureCount, "limit", s.cfg.MaxResponseSignatureCount, "requestId", requestID.Hex())
 				break
 			}
 

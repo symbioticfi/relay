@@ -19,7 +19,7 @@ func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, p2pMs
 	if err != nil {
 		// if the aggregation proof already exists, we have already seen the message and broadcasted it so short-circuit
 		if errors.Is(err, entity.ErrEntityAlreadyExist) {
-			slog.DebugContext(ctx, "Aggregation proof already exists, skipping", "request_id", msg.RequestID().Hex())
+			slog.DebugContext(ctx, "Aggregation proof already exists, skipping", "requestId", msg.RequestID().Hex())
 			return nil
 		}
 		return err
