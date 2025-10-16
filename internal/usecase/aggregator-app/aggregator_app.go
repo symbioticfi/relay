@@ -19,9 +19,9 @@ import (
 //go:generate mockgen -source=aggregator_app.go -destination=mocks/aggregator_app.go -package=mocks
 type repository interface {
 	GetValidatorSetByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error)
-	GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error)
+	GetAggregationProof(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) (symbiotic.AggregationProof, error)
 	GetSignatureRequest(_ context.Context, requestID common.Hash) (symbiotic.SignatureRequest, error)
-	GetAllSignatures(ctx context.Context, requestID common.Hash) ([]symbiotic.Signature, error)
+	GetAllSignatures(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) ([]symbiotic.Signature, error)
 	GetConfigByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.NetworkConfig, error)
 	GetSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error)
 }
@@ -84,7 +84,7 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(msg.Epoch)))
 	slog.DebugContext(ctx, "Received HandleSignatureProcessedMessage", "message", msg)
 
-	_, err := s.cfg.Repo.GetAggregationProof(ctx, msg.RequestID())
+	_, err := s.cfg.Repo.GetAggregationProof(ctx, msg.Epoch, msg.RequestID())
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return errors.Errorf("failed to get aggregation proof: %w", err)
 	}
@@ -151,7 +151,7 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 
 	appAggregationStart := time.Now()
 
-	sigs, err := s.cfg.Repo.GetAllSignatures(ctx, msg.RequestID())
+	sigs, err := s.cfg.Repo.GetAllSignatures(ctx, msg.Epoch, msg.RequestID())
 	slog.DebugContext(ctx, "Total received signatures", "sigs", len(sigs))
 	if err != nil {
 		return errors.Errorf("failed to get signature aggregated message: %w", err)
@@ -202,7 +202,7 @@ func (s *AggregatorApp) GetAggregationStatus(ctx context.Context, requestID comm
 	if !signatureRequest.KeyTag.Type().AggregationKey() {
 		return symbiotic.AggregationStatus{}, errors.Errorf("key tag %s is not an aggregation key", signatureRequest.KeyTag)
 	}
-	signatures, err := s.cfg.Repo.GetAllSignatures(ctx, requestID)
+	signatures, err := s.cfg.Repo.GetAllSignatures(ctx, signatureRequest.RequiredEpoch, requestID)
 	if err != nil {
 		return symbiotic.AggregationStatus{}, errors.Errorf("failed to get all signatures: %w", err)
 	}

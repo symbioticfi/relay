@@ -35,9 +35,6 @@ service SymbioticAPIService {
   // Get validator set header
   rpc GetValidatorSetHeader(GetValidatorSetHeaderRequest) returns (GetValidatorSetHeaderResponse);
 
-  // Sign a message and wait for aggregation proof via stream
-  rpc SignMessageWait(SignMessageWaitRequest) returns (stream SignMessageWaitResponse);
-
   // Get last committed epoch for a specific settlement chain
   rpc GetLastCommitted(GetLastCommittedRequest) returns (GetLastCommittedResponse);
 
@@ -46,22 +43,19 @@ service SymbioticAPIService {
 
   // Get validator set metadata like extra data and request id to fetch aggregation and signature requests
   rpc GetValidatorSetMetadata(GetValidatorSetMetadataRequest) returns (GetValidatorSetMetadataResponse);
+
+  // Stream signatures in real-time. If start_epoch is provided, sends historical data first
+  rpc ListenSignatures(ListenSignaturesRequest) returns (stream ListenSignaturesResponse);
+
+  // Stream aggregation proofs in real-time. If start_epoch is provided, sends historical data first
+  rpc ListenProofs(ListenProofsRequest) returns (stream ListenProofsResponse);
+
+  // Stream validator set changes in real-time. If start_epoch is provided, sends historical data first
+  rpc ListenValidatorSet(ListenValidatorSetRequest) returns (stream ListenValidatorSetResponse);
 }
 
 // Request message for signing a message
 message SignMessageRequest {
-  // Key tag identifier (0-127)
-  uint32 key_tag = 1;
-
-  // Message to be signed
-  bytes message = 2;
-
-  // Required epoch (optional, if not provided latest committed epoch will be used)
-  optional uint64 required_epoch = 3;
-}
-
-// Request message for signing a message
-message SignMessageWaitRequest {
   // Key tag identifier (0-127)
   uint32 key_tag = 1;
 
@@ -81,19 +75,73 @@ message SignMessageResponse {
   uint64 epoch = 2;
 }
 
-// Streaming response message for sign message wait
-message SignMessageWaitResponse {
-  // Current status of the signing process
-  SigningStatus status = 1;
+// Request message for listening to signatures stream
+message ListenSignaturesRequest {
+  // Optional: start epoch. If provided, stream will first send all historical signatures starting from this epoch, then continue with real-time updates
+  // If not provided, only signatures generated after stream creation will be sent
+  optional uint64 start_epoch = 1;
+}
 
-  // Id of the request
-  string request_id = 2;
+// Response message for signatures stream
+message ListenSignaturesResponse {
+  // Id of the signature request
+  string request_id = 1;
 
   // Epoch number
+  uint64 epoch = 2;
+
+  // Signature data
+  Signature signature = 3;
+}
+
+// Request message for listening to aggregation proofs stream
+message ListenProofsRequest {
+  // Optional: start epoch. If provided, stream will first send all historical proofs starting from this epoch, then continue with real-time updates
+  // If not provided, only proofs generated after stream creation will be sent
+  optional uint64 start_epoch = 1;
+}
+
+// Response message for aggregation proofs stream
+message ListenProofsResponse {
+  // Id of the request
+  string request_id = 1;
+
+  // Epoch number
+  uint64 epoch = 2;
+
+  // Final aggregation proof
+  AggregationProof aggregation_proof = 3;
+}
+
+// Request message for listening to validator set changes stream
+message ListenValidatorSetRequest {
+  // Optional: start epoch. If provided, stream will first send all historical validator sets starting from this epoch, then continue with real-time updates
+  // If not provided, only validator sets generated after stream creation will be sent
+  optional uint64 start_epoch = 1;
+}
+
+// Response message for validator set changes stream
+message ListenValidatorSetResponse {
+  // Version of the validator set
+  uint32 version = 1;
+
+  // Key tag required to commit next validator set
+  uint32 required_key_tag = 2;
+
+  // Validator set epoch
   uint64 epoch = 3;
 
-  // Final aggregation proof (only set when status is SIGNING_STATUS_COMPLETED)
-  optional AggregationProof aggregation_proof = 6;
+  // Epoch capture timestamp
+  google.protobuf.Timestamp capture_timestamp = 4;
+
+  // Quorum threshold (big integer as string)
+  string quorum_threshold = 5;
+
+  // Status of validator set header
+  ValidatorSetStatus status = 6;
+
+  // List of validators
+  repeated Validator validators = 7;
 }
 
 // Request message for getting aggregation proof

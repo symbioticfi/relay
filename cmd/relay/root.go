@@ -147,6 +147,7 @@ func runApp(ctx context.Context) error {
 
 	signatureProcessedSignal := signals.New[symbiotic.Signature](cfg.SignalCfg, "signatureProcessed", nil)
 	aggProofReadySignal := signals.New[symbiotic.AggregationProof](cfg.SignalCfg, "aggProofReady", nil)
+	validatorSetSetSignal := signals.New[symbiotic.ValidatorSet](cfg.SignalCfg, "validatorSetSet", nil)
 
 	entityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo:                     repo,
@@ -185,6 +186,7 @@ func runApp(ctx context.Context) error {
 		Repo:            repo,
 		Deriver:         deriver,
 		PollingInterval: time.Second * 5,
+		ValidatorSetSet: validatorSetSetSignal,
 		Signer:          signer,
 		Aggregator:      agg,
 		KeyProvider:     keyProvider,
@@ -311,15 +313,6 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create aggregator app: %w", err)
 	}
 
-	if err := signatureProcessedSignal.SetHandlers(aggApp.HandleSignatureProcessedMessage); err != nil {
-		return errors.Errorf("failed to set signature received message handler: %w", err)
-	}
-	if err := signatureProcessedSignal.StartWorkers(ctx); err != nil {
-		return errors.Errorf("failed to start signature received signal workers: %w", err)
-	}
-
-	slog.DebugContext(ctx, "Created aggregator app, starting")
-
 	serveMetricsOnAPIAddress := cfg.APIListenAddr == cfg.MetricsListenAddr || cfg.MetricsListenAddr == ""
 
 	api, err := api_server.NewSymbioticServer(ctx, api_server.Config{
@@ -340,6 +333,25 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create api app: %w", err)
 	}
 
+	if err := validatorSetSetSignal.SetHandlers(
+		api.HandleValidatorSetSet(),
+	); err != nil {
+		return errors.Errorf("failed to set validator set set message handler: %w", err)
+	}
+	if err := validatorSetSetSignal.StartWorkers(ctx); err != nil {
+		return errors.Errorf("failed to start validator set set signal workers: %w", err)
+	}
+
+	if err := signatureProcessedSignal.SetHandlers(
+		aggApp.HandleSignatureProcessedMessage,
+		api.HandleSignatureProcessed(),
+	); err != nil {
+		return errors.Errorf("failed to set signature received message handler: %w", err)
+	}
+	if err := signatureProcessedSignal.StartWorkers(ctx); err != nil {
+		return errors.Errorf("failed to start signature received signal workers: %w", err)
+	}
+
 	err = aggProofReadySignal.SetHandlers(
 		func(ctx context.Context, msg symbiotic.AggregationProof) error {
 			if err := statusTracker.HandleProofAggregated(ctx, msg); err != nil {
@@ -355,6 +367,8 @@ func runApp(ctx context.Context) error {
 	if err := aggProofReadySignal.StartWorkers(ctx); err != nil {
 		return errors.Errorf("failed to start agg proof ready signal workers: %w", err)
 	}
+
+	slog.DebugContext(ctx, "Created aggregator app, starting")
 
 	eg.Go(func() error {
 		if err := api.Start(egCtx); err != nil {

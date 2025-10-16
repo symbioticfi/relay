@@ -79,6 +79,14 @@ func ToQuorumThresholdPct(val *big.Int) QuorumThresholdPct {
 type Epoch uint64
 type Timestamp uint64
 
+// Bytes returns the epoch as a BigEndian encoded byte slice for use in database keys.
+// BigEndian encoding ensures that lexicographic byte ordering matches numeric ordering,
+// which is crucial for proper sorting in key-value stores like Badger.
+// Example: Epoch(51).Bytes() < Epoch(501).Bytes() when comparing bytes lexicographically.
+func (e Epoch) Bytes() []byte {
+	return paddedUint64(uint64(e))
+}
+
 func (raw RawSignature) MarshalText() ([]byte, error) {
 	return []byte(hexutil.Encode(raw)), nil
 }

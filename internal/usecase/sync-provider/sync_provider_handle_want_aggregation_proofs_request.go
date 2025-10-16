@@ -22,8 +22,17 @@ func (s *Syncer) HandleWantAggregationProofsRequest(ctx context.Context, request
 			break
 		}
 
+		signatureRequest, err := s.cfg.Repo.GetSignatureRequest(ctx, requestID)
+		if err != nil {
+			return entity.WantAggregationProofsResponse{}, errors.Errorf("failed to get signature request: %w", err)
+		}
+
+		if !signatureRequest.KeyTag.Type().AggregationKey() {
+			return entity.WantAggregationProofsResponse{}, errors.Errorf("key tag %s is not an aggregation key", signatureRequest.KeyTag)
+		}
+
 		// Try to get the aggregation proof
-		proof, err := s.cfg.Repo.GetAggregationProof(ctx, requestID)
+		proof, err := s.cfg.Repo.GetAggregationProof(ctx, signatureRequest.RequiredEpoch, requestID)
 		if err != nil {
 			if errors.Is(err, entity.ErrEntityNotFound) {
 				// Aggregation proof not found, skip this request

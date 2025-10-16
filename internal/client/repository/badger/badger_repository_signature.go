@@ -13,16 +13,37 @@ import (
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
-func keySignature(requestID common.Hash, validatorIndex uint32) []byte {
-	return []byte(fmt.Sprintf("signature:%s:%010d", requestID.Hex(), validatorIndex))
+// keySignature returns key for a specific signature
+// Format: "signature:" + epoch.Bytes() + ":" + requestID.Hex() + ":" + validatorIndex
+// Epoch is first to enable efficient querying by epoch range
+func keySignature(epoch symbiotic.Epoch, requestID common.Hash, validatorIndex uint32) []byte {
+	key := []byte("signature:")
+	key = append(key, epoch.Bytes()...)
+	key = append(key, []byte(fmt.Sprintf(":%s:%010d", requestID.Hex(), validatorIndex))...)
+	return key
 }
 
-// keySignaturePrefix returns prefix for all signatures of a request id
-func keySignaturePrefix(requestID common.Hash) []byte {
-	return []byte("signature:" + requestID.Hex() + ":")
+// keySignatureByEpochPrefix returns prefix for all signatures of a specific epoch
+func keySignatureByEpochPrefix(epoch symbiotic.Epoch) []byte {
+	key := []byte("signature:")
+	key = append(key, epoch.Bytes()...)
+	key = append(key, ':')
+	return key
 }
 
-func (r *Repository) saveSignature(ctx context.Context, validatorIndex uint32, sig symbiotic.Signature) error {
+// keySignatureByRequestIDPrefix returns prefix for all signatures of a specific request id within an epoch
+func keySignatureByRequestIDPrefix(epoch symbiotic.Epoch, requestID common.Hash) []byte {
+	key := []byte("signature:")
+	key = append(key, epoch.Bytes()...)
+	key = append(key, []byte(":"+requestID.Hex()+":")...)
+	return key
+}
+
+func (r *Repository) saveSignature(
+	ctx context.Context,
+	validatorIndex uint32,
+	sig symbiotic.Signature,
+) error {
 	txn := getTxn(ctx)
 	if txn == nil {
 		return errors.New("no transaction found in context, use signature processor in order to store signatures")
@@ -33,7 +54,7 @@ func (r *Repository) saveSignature(ctx context.Context, validatorIndex uint32, s
 		return errors.Errorf("failed to marshal signature: %w", err)
 	}
 
-	key := keySignature(sig.RequestID(), validatorIndex)
+	key := keySignature(sig.Epoch, sig.RequestID(), validatorIndex)
 	err = txn.Set(key, bytes)
 	if err != nil {
 		return errors.Errorf("failed to store signature: %w", err)
@@ -41,19 +62,19 @@ func (r *Repository) saveSignature(ctx context.Context, validatorIndex uint32, s
 	return nil
 }
 
-func (r *Repository) GetAllSignatures(ctx context.Context, requestID common.Hash) ([]symbiotic.Signature, error) {
+func (r *Repository) GetAllSignatures(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) ([]symbiotic.Signature, error) {
 	var signatures []symbiotic.Signature
 
 	return signatures, r.doViewInTx(ctx, "GetAllSignatures", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		prefix := keySignaturePrefix(requestID)
+		prefix := keySignatureByRequestIDPrefix(epoch, requestID)
 		opts := badger.DefaultIteratorOptions
 		opts.Prefix = prefix
 
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
-		for it.Rewind(); it.Valid(); it.Next() {
+		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
 			item := it.Item()
 			value, err := item.ValueCopy(nil)
 			if err != nil {
@@ -72,12 +93,43 @@ func (r *Repository) GetAllSignatures(ctx context.Context, requestID common.Hash
 	})
 }
 
-func (r *Repository) GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (symbiotic.Signature, error) {
+func (r *Repository) GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error) {
+	var signatures []symbiotic.Signature
+
+	return signatures, r.doViewInTx(ctx, "GetSignaturesByEpoch", func(ctx context.Context) error {
+		txn := getTxn(ctx)
+		prefix := keySignatureByEpochPrefix(epoch)
+		opts := badger.DefaultIteratorOptions
+		opts.Prefix = prefix
+
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		for it.Seek(prefix); it.Valid(); it.Next() {
+			item := it.Item()
+			value, err := item.ValueCopy(nil)
+			if err != nil {
+				return errors.Errorf("failed to copy signature value: %w", err)
+			}
+
+			sig, err := bytesToSignature(value)
+			if err != nil {
+				return errors.Errorf("failed to unmarshal signature: %w", err)
+			}
+
+			signatures = append(signatures, sig)
+		}
+
+		return nil
+	})
+}
+
+func (r *Repository) GetSignatureByIndex(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash, validatorIndex uint32) (symbiotic.Signature, error) {
 	var signature symbiotic.Signature
 
 	err := r.doViewInTx(ctx, "GetSignatureByIndex", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		key := keySignature(requestID, validatorIndex)
+		key := keySignature(epoch, requestID, validatorIndex)
 
 		item, err := txn.Get(key)
 		if err != nil {

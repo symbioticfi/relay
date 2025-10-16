@@ -43,33 +43,33 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 }
 
 // GetAggregationProof mocks base method.
-func (m *MockRepository) GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error) {
+func (m *MockRepository) GetAggregationProof(ctx context.Context, epoch entity.Epoch, requestID common.Hash) (entity.AggregationProof, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAggregationProof", ctx, requestID)
+	ret := m.ctrl.Call(m, "GetAggregationProof", ctx, epoch, requestID)
 	ret0, _ := ret[0].(entity.AggregationProof)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAggregationProof indicates an expected call of GetAggregationProof.
-func (mr *MockRepositoryMockRecorder) GetAggregationProof(ctx, requestID any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetAggregationProof(ctx, epoch, requestID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAggregationProof", reflect.TypeOf((*MockRepository)(nil).GetAggregationProof), ctx, requestID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAggregationProof", reflect.TypeOf((*MockRepository)(nil).GetAggregationProof), ctx, epoch, requestID)
 }
 
 // GetSignatureByIndex mocks base method.
-func (m *MockRepository) GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (entity.Signature, error) {
+func (m *MockRepository) GetSignatureByIndex(ctx context.Context, epoch entity.Epoch, requestID common.Hash, validatorIndex uint32) (entity.Signature, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSignatureByIndex", ctx, requestID, validatorIndex)
+	ret := m.ctrl.Call(m, "GetSignatureByIndex", ctx, epoch, requestID, validatorIndex)
 	ret0, _ := ret[0].(entity.Signature)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetSignatureByIndex indicates an expected call of GetSignatureByIndex.
-func (mr *MockRepositoryMockRecorder) GetSignatureByIndex(ctx, requestID, validatorIndex any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetSignatureByIndex(ctx, epoch, requestID, validatorIndex any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureByIndex", reflect.TypeOf((*MockRepository)(nil).GetSignatureByIndex), ctx, requestID, validatorIndex)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureByIndex", reflect.TypeOf((*MockRepository)(nil).GetSignatureByIndex), ctx, epoch, requestID, validatorIndex)
 }
 
 // GetValidatorByKey mocks base method.

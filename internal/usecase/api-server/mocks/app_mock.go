@@ -82,33 +82,48 @@ func (m *Mockrepo) EXPECT() *MockrepoMockRecorder {
 }
 
 // GetAggregationProof mocks base method.
-func (m *Mockrepo) GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error) {
+func (m *Mockrepo) GetAggregationProof(ctx context.Context, epoch entity.Epoch, requestID common.Hash) (entity.AggregationProof, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAggregationProof", ctx, requestID)
+	ret := m.ctrl.Call(m, "GetAggregationProof", ctx, epoch, requestID)
 	ret0, _ := ret[0].(entity.AggregationProof)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAggregationProof indicates an expected call of GetAggregationProof.
-func (mr *MockrepoMockRecorder) GetAggregationProof(ctx, requestID any) *gomock.Call {
+func (mr *MockrepoMockRecorder) GetAggregationProof(ctx, epoch, requestID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAggregationProof", reflect.TypeOf((*Mockrepo)(nil).GetAggregationProof), ctx, requestID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAggregationProof", reflect.TypeOf((*Mockrepo)(nil).GetAggregationProof), ctx, epoch, requestID)
+}
+
+// GetAggregationProofsByEpoch mocks base method.
+func (m *Mockrepo) GetAggregationProofsByEpoch(ctx context.Context, epoch entity.Epoch) ([]entity.AggregationProof, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAggregationProofsByEpoch", ctx, epoch)
+	ret0, _ := ret[0].([]entity.AggregationProof)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAggregationProofsByEpoch indicates an expected call of GetAggregationProofsByEpoch.
+func (mr *MockrepoMockRecorder) GetAggregationProofsByEpoch(ctx, epoch any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAggregationProofsByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetAggregationProofsByEpoch), ctx, epoch)
 }
 
 // GetAllSignatures mocks base method.
-func (m *Mockrepo) GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity.Signature, error) {
+func (m *Mockrepo) GetAllSignatures(ctx context.Context, epoch entity.Epoch, requestID common.Hash) ([]entity.Signature, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllSignatures", ctx, requestID)
+	ret := m.ctrl.Call(m, "GetAllSignatures", ctx, epoch, requestID)
 	ret0, _ := ret[0].([]entity.Signature)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAllSignatures indicates an expected call of GetAllSignatures.
-func (mr *MockrepoMockRecorder) GetAllSignatures(ctx, requestID any) *gomock.Call {
+func (mr *MockrepoMockRecorder) GetAllSignatures(ctx, epoch, requestID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllSignatures", reflect.TypeOf((*Mockrepo)(nil).GetAllSignatures), ctx, requestID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllSignatures", reflect.TypeOf((*Mockrepo)(nil).GetAllSignatures), ctx, epoch, requestID)
 }
 
 // GetLatestValidatorSetEpoch mocks base method.
@@ -154,6 +169,21 @@ func (m *Mockrepo) GetSignatureRequest(ctx context.Context, requestID common.Has
 func (mr *MockrepoMockRecorder) GetSignatureRequest(ctx, requestID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureRequest", reflect.TypeOf((*Mockrepo)(nil).GetSignatureRequest), ctx, requestID)
+}
+
+// GetSignaturesByEpoch mocks base method.
+func (m *Mockrepo) GetSignaturesByEpoch(ctx context.Context, epoch entity.Epoch) ([]entity.Signature, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSignaturesByEpoch", ctx, epoch)
+	ret0, _ := ret[0].([]entity.Signature)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSignaturesByEpoch indicates an expected call of GetSignaturesByEpoch.
+func (mr *MockrepoMockRecorder) GetSignaturesByEpoch(ctx, epoch any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignaturesByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetSignaturesByEpoch), ctx, epoch)
 }
 
 // GetValidatorSetByEpoch mocks base method.

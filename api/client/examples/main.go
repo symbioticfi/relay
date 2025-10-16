@@ -13,7 +13,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"time"
@@ -99,16 +98,6 @@ func (rc *RelayClient) GetValidatorSet(ctx context.Context, epoch *uint64) (*cli
 		Epoch: epoch,
 	}
 	return rc.client.GetValidatorSet(ctx, req)
-}
-
-// SignMessageAndWait signs a message and waits for aggregation via streaming response
-func (rc *RelayClient) SignMessageAndWait(ctx context.Context, keyTag uint32, message []byte, requiredEpoch *uint64) (grpc.ServerStreamingClient[client.SignMessageWaitResponse], error) {
-	req := &client.SignMessageWaitRequest{
-		KeyTag:        keyTag,
-		Message:       message,
-		RequiredEpoch: requiredEpoch,
-	}
-	return rc.client.SignMessageWait(ctx, req)
 }
 
 func main() {
@@ -217,61 +206,4 @@ func main() {
 			fmt.Printf("  - Message hash length: %d bytes\n", len(signature.GetMessageHash()))
 		}
 	}
-
-	// Example 7: Sign and wait for completion (streaming)
-	fmt.Println("\n=== Sign and Wait (Streaming) ===")
-	messageToSignStream := []byte("Streaming example")
-
-	fmt.Println("Starting streaming sign request... (ensure to run the script for all active relay servers)")
-
-	stream, err := relayClient.SignMessageAndWait(ctx, keyTag, messageToSignStream, nil)
-	if err != nil {
-		log.Printf("Failed to start streaming sign: %v", err)
-		return
-	}
-
-	for {
-		response, err := stream.Recv()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				fmt.Println("Stream completed")
-				break
-			}
-			log.Printf("Stream error: %v", err)
-			break
-		}
-
-		fmt.Printf("Status: %v\n", response.Status)
-		fmt.Printf("Request id: %s\n", response.GetRequestId())
-		fmt.Printf("Epoch: %d\n", response.Epoch)
-
-		switch response.Status {
-		case client.SigningStatus_SIGNING_STATUS_PENDING:
-			fmt.Println("Request created, waiting for signatures...")
-		case client.SigningStatus_SIGNING_STATUS_COMPLETED:
-			fmt.Println("Signing completed!")
-			if response.AggregationProof != nil {
-				proof := response.AggregationProof
-				fmt.Printf("Proof length: %d bytes\n", len(proof.GetProof()))
-			}
-			// Exit the streaming loop
-			goto streamComplete
-		case client.SigningStatus_SIGNING_STATUS_FAILED:
-			fmt.Println("Signing failed")
-			goto streamComplete
-		case client.SigningStatus_SIGNING_STATUS_TIMEOUT:
-			fmt.Println("Signing timed out")
-			goto streamComplete
-		case client.SigningStatus_SIGNING_STATUS_UNSPECIFIED:
-			fmt.Println("Unknown Signing status : unspecified")
-		default:
-			fmt.Printf("Unknown status: %v\n", response.Status)
-		}
-
-		// Add a small delay to make the output more readable
-		time.Sleep(100 * time.Millisecond)
-	}
-
-streamComplete:
-	fmt.Println("\nExample completed")
 }

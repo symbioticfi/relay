@@ -11,14 +11,13 @@ import (
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
-
+	"github.com/symbioticfi/relay/internal/entity"
+	"github.com/symbioticfi/relay/pkg/log"
+	"github.com/symbioticfi/relay/pkg/signals"
 	"github.com/symbioticfi/relay/symbiotic/client/evm"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
-
-	"github.com/symbioticfi/relay/internal/entity"
-	"github.com/symbioticfi/relay/pkg/log"
 )
 
 type signer interface {
@@ -31,7 +30,7 @@ type repo interface {
 	GetValidatorSetByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error)
 	GetValidatorSetMetadata(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSetMetadata, error)
 	GetConfigByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.NetworkConfig, error)
-	GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error)
+	GetAggregationProof(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) (symbiotic.AggregationProof, error)
 	SaveLatestSignedValidatorSetEpoch(_ context.Context, valset symbiotic.ValidatorSet) error
 	SaveProof(ctx context.Context, aggregationProof symbiotic.AggregationProof) error
 	SaveProofCommitPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error
@@ -57,11 +56,12 @@ type keyProvider interface {
 }
 
 type Config struct {
-	EvmClient       evm.IEvmClient `validate:"required"`
-	Repo            repo           `validate:"required"`
-	Deriver         deriver        `validate:"required"`
-	PollingInterval time.Duration  `validate:"required,gt=0"`
-	Signer          signer         `validate:"required"`
+	EvmClient       evm.IEvmClient                          `validate:"required"`
+	Repo            repo                                    `validate:"required"`
+	Deriver         deriver                                 `validate:"required"`
+	PollingInterval time.Duration                           `validate:"required,gt=0"`
+	Signer          signer                                  `validate:"required"`
+	ValidatorSetSet *signals.Signal[symbiotic.ValidatorSet] `validate:"required"`
 	KeyProvider     keyProvider
 	Aggregator      aggregator.Aggregator
 	Metrics         metrics
@@ -198,6 +198,10 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 
 		if err := s.process(ctx, nextValset, nextEpochConfig); err != nil {
 			return errors.Errorf("failed to process validator set for epoch %d: %w", nextEpoch, err)
+		}
+
+		if err = s.cfg.ValidatorSetSet.Emit(nextValset); err != nil {
+			slog.ErrorContext(ctx, "Failed to emit validator set", "error", err)
 		}
 
 		nextEpoch = nextValset.Epoch + 1

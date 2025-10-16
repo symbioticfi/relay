@@ -52,7 +52,7 @@ func TestSign_HappyPath(t *testing.T) {
 	time.Sleep(time.Second)
 
 	// Verify that signature is correct
-	signatures, err := setup.repo.GetAllSignatures(t.Context(), reqID)
+	signatures, err := setup.repo.GetAllSignatures(t.Context(), savedReq.RequiredEpoch, reqID)
 	require.NoError(t, err)
 	require.Len(t, signatures, 1)
 

@@ -105,7 +105,7 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 			slog.DebugContext(ctx, "Found pending proof commit", "epoch", proofKey.Epoch, "requestId", proofKey.RequestID.Hex())
 
 			// get proof
-			proof, err := s.cfg.Repo.GetAggregationProof(ctx, proofKey.RequestID)
+			proof, err := s.cfg.Repo.GetAggregationProof(ctx, proofKey.Epoch, proofKey.RequestID)
 			if err != nil {
 				if errors.Is(err, entity.ErrEntityNotFound) {
 					slog.WarnContext(ctx, "no aggregation proof found for pending proof commit, ending current commit attempt", "epoch", proofKey.Epoch, "requestId", proofKey.RequestID.Hex())

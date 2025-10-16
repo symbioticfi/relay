@@ -168,9 +168,9 @@ func setupSuccessfulAggregationMocks(setup *testSetup, msg symbiotic.Signature, 
 	// Use the unified test data
 	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestID()).Return(testData.SignatureMap, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), msg.Epoch).Return(testData.ValidatorSet, nil)
-	setup.mockRepo.EXPECT().GetAllSignatures(gomock.Any(), msg.RequestID()).Return(signatures, nil)
+	setup.mockRepo.EXPECT().GetAllSignatures(gomock.Any(), msg.Epoch, msg.RequestID()).Return(signatures, nil)
 	setup.mockRepo.EXPECT().GetConfigByEpoch(gomock.Any(), msg.Epoch).Return(networkConfig, nil)
-	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
+	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.Epoch, msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
 
 	setup.mockAggregator.EXPECT().Aggregate(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(proofData, nil)
 
@@ -191,7 +191,7 @@ func TestHandleSignatureGeneratedMessage_LowLatencyPolicy_QuorumNotReached(t *te
 
 	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestID()).Return(testingData.SignatureMap, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), msg.Epoch).Return(testingData.ValidatorSet, nil)
-	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
+	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.Epoch, msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
 
 	// Execute
 	err := setup.app.HandleSignatureProcessedMessage(t.Context(), msg)
@@ -229,7 +229,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumNotReached(t *testi
 
 	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestID()).Return(testingData.SignatureMap, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), msg.Epoch).Return(testingData.ValidatorSet, nil)
-	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
+	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.Epoch, msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
 
 	// Execute
 	err := setup.app.HandleSignatureProcessedMessage(ctx, msg)
@@ -248,7 +248,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_TooManyUnsi
 
 	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestID()).Return(testingData.SignatureMap, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), msg.Epoch).Return(testingData.ValidatorSet, nil)
-	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
+	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.Epoch, msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
 
 	// Execute
 	err := setup.app.HandleSignatureProcessedMessage(ctx, msg)
@@ -320,7 +320,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_ZeroMaxUnsigners(t *testi
 
 	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestID()).Return(testingData.SignatureMap, nil)
 	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), msg.Epoch).Return(testingData.ValidatorSet, nil)
-	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
+	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.Epoch, msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
 
 	// Execute
 	err := setup.app.HandleSignatureProcessedMessage(ctx, msg)

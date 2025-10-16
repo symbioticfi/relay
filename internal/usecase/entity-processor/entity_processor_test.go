@@ -491,7 +491,7 @@ func TestEntityProcessor_ProcessAggregationProof_SuccessfullyProcesses(t *testin
 	require.NoError(t, err)
 
 	// Verify aggregation proof was saved
-	savedProof, err := repo.GetAggregationProof(t.Context(), msg.RequestID())
+	savedProof, err := repo.GetAggregationProof(t.Context(), msg.Epoch, msg.RequestID())
 	require.NoError(t, err)
 	require.Equal(t, msg, savedProof)
 
@@ -532,7 +532,7 @@ func TestEntityProcessor_ProcessAggregationProof_HandlesMissingPendingGracefully
 	require.NoError(t, err)
 
 	// Verify aggregation proof was still saved
-	savedProof, err := repo.GetAggregationProof(t.Context(), msg.RequestID())
+	savedProof, err := repo.GetAggregationProof(t.Context(), msg.Epoch, msg.RequestID())
 	require.NoError(t, err)
 	require.Equal(t, msg, savedProof)
 }
@@ -663,7 +663,7 @@ func TestEntityProcessor_ProcessSignature_FullSignatureToAggregationProofFlow(t 
 	require.NoError(t, err)
 
 	// Verify aggregation proof was saved
-	savedProof, err := repo.GetAggregationProof(t.Context(), param.RequestID())
+	savedProof, err := repo.GetAggregationProof(t.Context(), msg.Epoch, param.RequestID())
 	require.NoError(t, err)
 	require.Equal(t, msg, savedProof)
 

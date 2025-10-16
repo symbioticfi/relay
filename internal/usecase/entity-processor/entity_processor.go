@@ -18,10 +18,10 @@ import (
 // Repository defines the interface needed by the entity processor
 type Repository interface {
 	SaveSignature(ctx context.Context, signature symbiotic.Signature, validator symbiotic.Validator, activeIndex uint32) error
-	GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (symbiotic.Signature, error)
+	GetSignatureByIndex(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash, validatorIndex uint32) (symbiotic.Signature, error)
 	GetValidatorByKey(ctx context.Context, epoch symbiotic.Epoch, keyTag symbiotic.KeyTag, publicKey []byte) (symbiotic.Validator, uint32, error)
 	GetValidatorSetByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error)
-	GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error)
+	GetAggregationProof(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) (symbiotic.AggregationProof, error)
 	SaveProof(ctx context.Context, aggregationProof symbiotic.AggregationProof) error
 }
 
@@ -85,7 +85,7 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature symbio
 		}
 
 		// check if signature already exists
-		_, err = s.cfg.Repo.GetSignatureByIndex(ctx, signature.RequestID(), activeIndex)
+		_, err = s.cfg.Repo.GetSignatureByIndex(ctx, signature.Epoch, signature.RequestID(), activeIndex)
 		if err == nil {
 			return errors.Errorf("signature already exists for request ID %s and validator index %d: %w", signature.RequestID().Hex(), activeIndex, entity.ErrEntityAlreadyExist)
 		}
@@ -119,7 +119,7 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregati
 		"epoch", aggregationProof.Epoch,
 	)
 
-	_, err := s.cfg.Repo.GetAggregationProof(ctx, aggregationProof.RequestID())
+	_, err := s.cfg.Repo.GetAggregationProof(ctx, aggregationProof.Epoch, aggregationProof.RequestID())
 	if err == nil {
 		return errors.Errorf("aggregation proof already exists for request ID %s: %w", aggregationProof.RequestID().Hex(), entity.ErrEntityAlreadyExist)
 	}

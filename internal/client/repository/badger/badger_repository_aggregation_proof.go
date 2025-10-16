@@ -14,8 +14,22 @@ import (
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-func keyAggregationProof(requestID common.Hash) []byte {
-	return []byte(fmt.Sprintf("aggregation_proof:%s", requestID.Hex()))
+// keyAggregationProof returns key for a specific aggregation proof
+// Format: "aggregation_proof:" + epoch.Bytes() + ":" + requestID.Hex()
+// Epoch is first to enable efficient querying by epoch range
+func keyAggregationProof(epoch symbiotic.Epoch, requestID common.Hash) []byte {
+	key := []byte("aggregation_proof:")
+	key = append(key, epoch.Bytes()...)
+	key = append(key, []byte(":"+requestID.Hex())...)
+	return key
+}
+
+// keyAggregationProofByEpochPrefix returns prefix for all aggregation proofs of a specific epoch
+func keyAggregationProofByEpochPrefix(epoch symbiotic.Epoch) []byte {
+	key := []byte("aggregation_proof:")
+	key = append(key, epoch.Bytes()...)
+	key = append(key, ':')
+	return key
 }
 
 func keyAggregationProofPending(epoch symbiotic.Epoch, requestID common.Hash) []byte {
@@ -34,7 +48,8 @@ func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.
 
 	return r.doUpdateInTxWithLock(ctx, "saveAggregationProof", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		_, err := txn.Get(keyAggregationProof(requestID))
+		key := keyAggregationProof(ap.Epoch, requestID)
+		_, err := txn.Get(key)
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
 			return errors.Errorf("failed to get aggregation proof: %w", err)
 		}
@@ -42,7 +57,7 @@ func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.
 			return errors.Errorf("aggregation proof already exists: %w", entity.ErrEntityAlreadyExist)
 		}
 
-		err = txn.Set(keyAggregationProof(requestID), proofBytes)
+		err = txn.Set(key, proofBytes)
 		if err != nil {
 			return errors.Errorf("failed to store aggregation proof: %w", err)
 		}
@@ -50,12 +65,13 @@ func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.
 	}, &r.proofsMutexMap, requestID)
 }
 
-func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error) {
+func (r *Repository) GetAggregationProof(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) (symbiotic.AggregationProof, error) {
 	var ap symbiotic.AggregationProof
 
 	return ap, r.doViewInTx(ctx, "GetAggregationProof", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		item, err := txn.Get(keyAggregationProof(requestID))
+		key := keyAggregationProof(epoch, requestID)
+		item, err := txn.Get(key)
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
 				return errors.Errorf("no aggregation proof found for request id %s: %w", requestID.Hex(), entity.ErrEntityNotFound)
@@ -65,12 +81,43 @@ func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.H
 
 		value, err := item.ValueCopy(nil)
 		if err != nil {
-			return errors.Errorf("failed to copy network config value: %w", err)
+			return errors.Errorf("failed to copy aggregation proof value: %w", err)
 		}
 
 		ap, err = bytesToAggregationProof(value)
 		if err != nil {
 			return errors.Errorf("failed to unmarshal aggregation proof: %w", err)
+		}
+
+		return nil
+	})
+}
+
+func (r *Repository) GetAggregationProofsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.AggregationProof, error) {
+	var proofs []symbiotic.AggregationProof
+
+	return proofs, r.doViewInTx(ctx, "GetAggregationProofsByEpoch", func(ctx context.Context) error {
+		txn := getTxn(ctx)
+		prefix := keyAggregationProofByEpochPrefix(epoch)
+		opts := badger.DefaultIteratorOptions
+		opts.Prefix = prefix
+
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		for it.Seek(prefix); it.Valid(); it.Next() {
+			item := it.Item()
+			value, err := item.ValueCopy(nil)
+			if err != nil {
+				return errors.Errorf("failed to copy aggregation proof value: %w", err)
+			}
+
+			proof, err := bytesToAggregationProof(value)
+			if err != nil {
+				return errors.Errorf("failed to unmarshal aggregation proof: %w", err)
+			}
+
+			proofs = append(proofs, proof)
 		}
 
 		return nil

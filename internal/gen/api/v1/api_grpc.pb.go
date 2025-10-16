@@ -28,10 +28,12 @@ const (
 	SymbioticAPIService_GetValidatorSet_FullMethodName         = "/api.proto.v1.SymbioticAPIService/GetValidatorSet"
 	SymbioticAPIService_GetValidatorByAddress_FullMethodName   = "/api.proto.v1.SymbioticAPIService/GetValidatorByAddress"
 	SymbioticAPIService_GetValidatorSetHeader_FullMethodName   = "/api.proto.v1.SymbioticAPIService/GetValidatorSetHeader"
-	SymbioticAPIService_SignMessageWait_FullMethodName         = "/api.proto.v1.SymbioticAPIService/SignMessageWait"
 	SymbioticAPIService_GetLastCommitted_FullMethodName        = "/api.proto.v1.SymbioticAPIService/GetLastCommitted"
 	SymbioticAPIService_GetLastAllCommitted_FullMethodName     = "/api.proto.v1.SymbioticAPIService/GetLastAllCommitted"
 	SymbioticAPIService_GetValidatorSetMetadata_FullMethodName = "/api.proto.v1.SymbioticAPIService/GetValidatorSetMetadata"
+	SymbioticAPIService_ListenSignatures_FullMethodName        = "/api.proto.v1.SymbioticAPIService/ListenSignatures"
+	SymbioticAPIService_ListenProofs_FullMethodName            = "/api.proto.v1.SymbioticAPIService/ListenProofs"
+	SymbioticAPIService_ListenValidatorSet_FullMethodName      = "/api.proto.v1.SymbioticAPIService/ListenValidatorSet"
 )
 
 // SymbioticAPIServiceClient is the client API for SymbioticAPIService service.
@@ -58,14 +60,18 @@ type SymbioticAPIServiceClient interface {
 	GetValidatorByAddress(ctx context.Context, in *GetValidatorByAddressRequest, opts ...grpc.CallOption) (*GetValidatorByAddressResponse, error)
 	// Get validator set header
 	GetValidatorSetHeader(ctx context.Context, in *GetValidatorSetHeaderRequest, opts ...grpc.CallOption) (*GetValidatorSetHeaderResponse, error)
-	// Sign a message and wait for aggregation proof via stream
-	SignMessageWait(ctx context.Context, in *SignMessageWaitRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SignMessageWaitResponse], error)
 	// Get last committed epoch for a specific settlement chain
 	GetLastCommitted(ctx context.Context, in *GetLastCommittedRequest, opts ...grpc.CallOption) (*GetLastCommittedResponse, error)
 	// Get last committed epochs for all settlement chains
 	GetLastAllCommitted(ctx context.Context, in *GetLastAllCommittedRequest, opts ...grpc.CallOption) (*GetLastAllCommittedResponse, error)
 	// Get validator set metadata like extra data and request id to fetch aggregation and signature requests
 	GetValidatorSetMetadata(ctx context.Context, in *GetValidatorSetMetadataRequest, opts ...grpc.CallOption) (*GetValidatorSetMetadataResponse, error)
+	// Stream signatures in real-time. If start_epoch is provided, sends historical data first
+	ListenSignatures(ctx context.Context, in *ListenSignaturesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ListenSignaturesResponse], error)
+	// Stream aggregation proofs in real-time. If start_epoch is provided, sends historical data first
+	ListenProofs(ctx context.Context, in *ListenProofsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ListenProofsResponse], error)
+	// Stream validator set changes in real-time. If start_epoch is provided, sends historical data first
+	ListenValidatorSet(ctx context.Context, in *ListenValidatorSetRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ListenValidatorSetResponse], error)
 }
 
 type symbioticAPIServiceClient struct {
@@ -166,25 +172,6 @@ func (c *symbioticAPIServiceClient) GetValidatorSetHeader(ctx context.Context, i
 	return out, nil
 }
 
-func (c *symbioticAPIServiceClient) SignMessageWait(ctx context.Context, in *SignMessageWaitRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SignMessageWaitResponse], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &SymbioticAPIService_ServiceDesc.Streams[0], SymbioticAPIService_SignMessageWait_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[SignMessageWaitRequest, SignMessageWaitResponse]{ClientStream: stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type SymbioticAPIService_SignMessageWaitClient = grpc.ServerStreamingClient[SignMessageWaitResponse]
-
 func (c *symbioticAPIServiceClient) GetLastCommitted(ctx context.Context, in *GetLastCommittedRequest, opts ...grpc.CallOption) (*GetLastCommittedResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetLastCommittedResponse)
@@ -215,6 +202,63 @@ func (c *symbioticAPIServiceClient) GetValidatorSetMetadata(ctx context.Context,
 	return out, nil
 }
 
+func (c *symbioticAPIServiceClient) ListenSignatures(ctx context.Context, in *ListenSignaturesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ListenSignaturesResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &SymbioticAPIService_ServiceDesc.Streams[0], SymbioticAPIService_ListenSignatures_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ListenSignaturesRequest, ListenSignaturesResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type SymbioticAPIService_ListenSignaturesClient = grpc.ServerStreamingClient[ListenSignaturesResponse]
+
+func (c *symbioticAPIServiceClient) ListenProofs(ctx context.Context, in *ListenProofsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ListenProofsResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &SymbioticAPIService_ServiceDesc.Streams[1], SymbioticAPIService_ListenProofs_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ListenProofsRequest, ListenProofsResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type SymbioticAPIService_ListenProofsClient = grpc.ServerStreamingClient[ListenProofsResponse]
+
+func (c *symbioticAPIServiceClient) ListenValidatorSet(ctx context.Context, in *ListenValidatorSetRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ListenValidatorSetResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &SymbioticAPIService_ServiceDesc.Streams[2], SymbioticAPIService_ListenValidatorSet_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ListenValidatorSetRequest, ListenValidatorSetResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type SymbioticAPIService_ListenValidatorSetClient = grpc.ServerStreamingClient[ListenValidatorSetResponse]
+
 // SymbioticAPIServiceServer is the server API for SymbioticAPIService service.
 // All implementations must embed UnimplementedSymbioticAPIServiceServer
 // for forward compatibility.
@@ -239,14 +283,18 @@ type SymbioticAPIServiceServer interface {
 	GetValidatorByAddress(context.Context, *GetValidatorByAddressRequest) (*GetValidatorByAddressResponse, error)
 	// Get validator set header
 	GetValidatorSetHeader(context.Context, *GetValidatorSetHeaderRequest) (*GetValidatorSetHeaderResponse, error)
-	// Sign a message and wait for aggregation proof via stream
-	SignMessageWait(*SignMessageWaitRequest, grpc.ServerStreamingServer[SignMessageWaitResponse]) error
 	// Get last committed epoch for a specific settlement chain
 	GetLastCommitted(context.Context, *GetLastCommittedRequest) (*GetLastCommittedResponse, error)
 	// Get last committed epochs for all settlement chains
 	GetLastAllCommitted(context.Context, *GetLastAllCommittedRequest) (*GetLastAllCommittedResponse, error)
 	// Get validator set metadata like extra data and request id to fetch aggregation and signature requests
 	GetValidatorSetMetadata(context.Context, *GetValidatorSetMetadataRequest) (*GetValidatorSetMetadataResponse, error)
+	// Stream signatures in real-time. If start_epoch is provided, sends historical data first
+	ListenSignatures(*ListenSignaturesRequest, grpc.ServerStreamingServer[ListenSignaturesResponse]) error
+	// Stream aggregation proofs in real-time. If start_epoch is provided, sends historical data first
+	ListenProofs(*ListenProofsRequest, grpc.ServerStreamingServer[ListenProofsResponse]) error
+	// Stream validator set changes in real-time. If start_epoch is provided, sends historical data first
+	ListenValidatorSet(*ListenValidatorSetRequest, grpc.ServerStreamingServer[ListenValidatorSetResponse]) error
 	mustEmbedUnimplementedSymbioticAPIServiceServer()
 }
 
@@ -284,9 +332,6 @@ func (UnimplementedSymbioticAPIServiceServer) GetValidatorByAddress(context.Cont
 func (UnimplementedSymbioticAPIServiceServer) GetValidatorSetHeader(context.Context, *GetValidatorSetHeaderRequest) (*GetValidatorSetHeaderResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetValidatorSetHeader not implemented")
 }
-func (UnimplementedSymbioticAPIServiceServer) SignMessageWait(*SignMessageWaitRequest, grpc.ServerStreamingServer[SignMessageWaitResponse]) error {
-	return status.Errorf(codes.Unimplemented, "method SignMessageWait not implemented")
-}
 func (UnimplementedSymbioticAPIServiceServer) GetLastCommitted(context.Context, *GetLastCommittedRequest) (*GetLastCommittedResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLastCommitted not implemented")
 }
@@ -295,6 +340,15 @@ func (UnimplementedSymbioticAPIServiceServer) GetLastAllCommitted(context.Contex
 }
 func (UnimplementedSymbioticAPIServiceServer) GetValidatorSetMetadata(context.Context, *GetValidatorSetMetadataRequest) (*GetValidatorSetMetadataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetValidatorSetMetadata not implemented")
+}
+func (UnimplementedSymbioticAPIServiceServer) ListenSignatures(*ListenSignaturesRequest, grpc.ServerStreamingServer[ListenSignaturesResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method ListenSignatures not implemented")
+}
+func (UnimplementedSymbioticAPIServiceServer) ListenProofs(*ListenProofsRequest, grpc.ServerStreamingServer[ListenProofsResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method ListenProofs not implemented")
+}
+func (UnimplementedSymbioticAPIServiceServer) ListenValidatorSet(*ListenValidatorSetRequest, grpc.ServerStreamingServer[ListenValidatorSetResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method ListenValidatorSet not implemented")
 }
 func (UnimplementedSymbioticAPIServiceServer) mustEmbedUnimplementedSymbioticAPIServiceServer() {}
 func (UnimplementedSymbioticAPIServiceServer) testEmbeddedByValue()                             {}
@@ -479,17 +533,6 @@ func _SymbioticAPIService_GetValidatorSetHeader_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SymbioticAPIService_SignMessageWait_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(SignMessageWaitRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(SymbioticAPIServiceServer).SignMessageWait(m, &grpc.GenericServerStream[SignMessageWaitRequest, SignMessageWaitResponse]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type SymbioticAPIService_SignMessageWaitServer = grpc.ServerStreamingServer[SignMessageWaitResponse]
-
 func _SymbioticAPIService_GetLastCommitted_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetLastCommittedRequest)
 	if err := dec(in); err != nil {
@@ -543,6 +586,39 @@ func _SymbioticAPIService_GetValidatorSetMetadata_Handler(srv interface{}, ctx c
 	}
 	return interceptor(ctx, in, info, handler)
 }
+
+func _SymbioticAPIService_ListenSignatures_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ListenSignaturesRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(SymbioticAPIServiceServer).ListenSignatures(m, &grpc.GenericServerStream[ListenSignaturesRequest, ListenSignaturesResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type SymbioticAPIService_ListenSignaturesServer = grpc.ServerStreamingServer[ListenSignaturesResponse]
+
+func _SymbioticAPIService_ListenProofs_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ListenProofsRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(SymbioticAPIServiceServer).ListenProofs(m, &grpc.GenericServerStream[ListenProofsRequest, ListenProofsResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type SymbioticAPIService_ListenProofsServer = grpc.ServerStreamingServer[ListenProofsResponse]
+
+func _SymbioticAPIService_ListenValidatorSet_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ListenValidatorSetRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(SymbioticAPIServiceServer).ListenValidatorSet(m, &grpc.GenericServerStream[ListenValidatorSetRequest, ListenValidatorSetResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type SymbioticAPIService_ListenValidatorSetServer = grpc.ServerStreamingServer[ListenValidatorSetResponse]
 
 // SymbioticAPIService_ServiceDesc is the grpc.ServiceDesc for SymbioticAPIService service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -602,8 +678,18 @@ var SymbioticAPIService_ServiceDesc = grpc.ServiceDesc{
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "SignMessageWait",
-			Handler:       _SymbioticAPIService_SignMessageWait_Handler,
+			StreamName:    "ListenSignatures",
+			Handler:       _SymbioticAPIService_ListenSignatures_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "ListenProofs",
+			Handler:       _SymbioticAPIService_ListenProofs_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "ListenValidatorSet",
+			Handler:       _SymbioticAPIService_ListenValidatorSet_Handler,
 			ServerStreams: true,
 		},
 	},

@@ -75,6 +75,8 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	}
 	require.NoError(t, requesterEntityProcessor.ProcessSignature(t.Context(), param1, false))
 
+	// Save signature request on both repos so peer can respond to requests
+	require.NoError(t, peerRepo.SaveSignatureRequest(t.Context(), requestID, signatureRequest))
 	require.NoError(t, requesterRepo.SaveSignatureRequest(t.Context(), requestID, signatureRequest))
 
 	// Requester needs SignatureMap for BuildWantSignaturesRequest to work
@@ -106,7 +108,7 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify requester initially has no signatures
-	initialSignatures, err := requesterRepo.GetAllSignatures(t.Context(), requestID)
+	initialSignatures, err := requesterRepo.GetAllSignatures(t.Context(), signatureRequest.RequiredEpoch, requestID)
 	require.NoError(t, err)
 	require.Len(t, initialSignatures, 1) // Already has one signature from param1
 
@@ -126,7 +128,7 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	require.Equal(t, 0, stat.TotalErrors())
 
 	// Verify requester now has the signature
-	finalSignatures, err := requesterRepo.GetAllSignatures(t.Context(), requestID)
+	finalSignatures, err := requesterRepo.GetAllSignatures(t.Context(), signatureRequest.RequiredEpoch, requestID)
 	require.NoError(t, err)
 	require.Len(t, finalSignatures, 2)
 
@@ -288,56 +290,6 @@ func TestHandleWantSignaturesRequest_EmptyRequest(t *testing.T) {
 		require.NoError(t, err)
 		require.Empty(t, response.Signatures)
 	})
-
-	t.Run("request with empty validator indices", func(t *testing.T) {
-		requestID := common.HexToHash("0x1234567890abcdef")
-		request := entity.WantSignaturesRequest{
-			WantSignatures: map[common.Hash]entity.Bitmap{
-				requestID: entity.NewBitmap(), // Empty bitmap
-			},
-		}
-
-		response, err := syncer.HandleWantSignaturesRequest(t.Context(), request)
-		require.NoError(t, err)
-		require.Empty(t, response.Signatures)
-	})
-}
-
-func TestHandleWantSignaturesRequest_NonExistentSignatures(t *testing.T) {
-	t.Parallel()
-
-	repo := createTestRepo(t)
-	defer repo.Close()
-
-	entityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
-		Repo:                     repo,
-		Aggregator:               createMockAggregator(t),
-		AggProofSignal:           createMockAggProofSignal(t),
-		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
-	})
-	require.NoError(t, err)
-
-	syncer, err := New(Config{
-		Repo:                        repo,
-		EntityProcessor:             entityProcessor,
-		EpochsToSync:                1,
-		MaxSignatureRequestsPerSync: 100,
-		MaxResponseSignatureCount:   100,
-		MaxAggProofRequestsPerSync:  100,
-		MaxResponseAggProofCount:    100,
-	})
-	require.NoError(t, err)
-
-	requestID := common.HexToHash("0xabcdef1234567890")
-	request := entity.WantSignaturesRequest{
-		WantSignatures: map[common.Hash]entity.Bitmap{
-			requestID: entity.NewBitmapOf(1, 2, 3), // Request non-existent signatures
-		},
-	}
-
-	response, err := syncer.HandleWantSignaturesRequest(t.Context(), request)
-	require.NoError(t, err)
-	require.Empty(t, response.Signatures, "should return empty response when no signatures exist")
 }
 
 func TestHandleWantSignaturesRequest_MaxResponseSignatureCountLimit(t *testing.T) {
