@@ -40,7 +40,7 @@ import (
 
 func runApp(ctx context.Context) error {
 	cfg := cfgFromCtx(ctx)
-	log.Init(cfg.LogLevel, cfg.LogMode)
+	log.Init(cfg.General.LogLevel, cfg.General.LogMode)
 	mtr := metrics.New(metrics.Config{})
 
 	var keyProvider *keyprovider.CacheKeyProvider
@@ -102,7 +102,7 @@ func runApp(ctx context.Context) error {
 	}
 
 	baseRepo, err := badger.New(badger.Config{
-		Dir:     cfg.StorageDir,
+		Dir:     cfg.General.StorageDir,
 		Metrics: mtr,
 	})
 	if err != nil {
@@ -135,7 +135,7 @@ func runApp(ctx context.Context) error {
 
 	var prover *proof.ZkProver
 	if config.VerificationType == symbiotic.VerificationTypeBlsBn254ZK {
-		prover = proof.NewZkProver(cfg.CircuitsDir)
+		prover = proof.NewZkProver(cfg.General.CircuitsDir)
 	}
 	agg, err := aggregator.NewAggregator(config.VerificationType, prover)
 	if err != nil {
@@ -290,7 +290,7 @@ func runApp(ctx context.Context) error {
 	if config.VerificationType == symbiotic.VerificationTypeBlsBn254Simple {
 		aggPolicyType = symbiotic.AggregationPolicyLowCost
 	}
-	aggPolicy, err := aggregationPolicy.NewAggregationPolicy(aggPolicyType, cfg.MaxUnsigners)
+	aggPolicy, err := aggregationPolicy.NewAggregationPolicy(aggPolicyType, cfg.General.MaxUnsigners)
 	if err != nil {
 		return errors.Errorf("failed to create aggregator policy: %w", err)
 	}
@@ -317,7 +317,7 @@ func runApp(ctx context.Context) error {
 
 	slog.DebugContext(ctx, "Created aggregator app, starting")
 
-	serveMetricsOnAPIAddress := cfg.Server.ListenAddress == cfg.MetricsListenAddr || cfg.MetricsListenAddr == ""
+	serveMetricsOnAPIAddress := cfg.Server.ListenAddress == cfg.General.MetricsListenAddr || cfg.General.MetricsListenAddr == ""
 
 	api, err := api_server.NewSymbioticServer(ctx, api_server.Config{
 		Address:           cfg.Server.ListenAddress,
@@ -330,7 +330,7 @@ func runApp(ctx context.Context) error {
 		Deriver:           deriver,
 		Metrics:           mtr,
 		ServeMetrics:      serveMetricsOnAPIAddress,
-		ServePprof:        cfg.Server.EnablePprof,
+		ServePprof:        cfg.Server.PprofEnabled,
 		VerboseLogging:    cfg.Server.VerboseLogging,
 	})
 	if err != nil {
@@ -376,7 +376,7 @@ func runApp(ctx context.Context) error {
 
 	if !serveMetricsOnAPIAddress {
 		mtrApp, err := metrics.NewApp(metrics.AppConfig{
-			Address:           cfg.MetricsListenAddr,
+			Address:           cfg.General.MetricsListenAddr,
 			ReadHeaderTimeout: time.Second * 5,
 		})
 		if err != nil {
