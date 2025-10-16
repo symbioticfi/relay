@@ -27,8 +27,13 @@ type mutexWithUseTime struct {
 	lastAccessNs atomic.Int64 // Unix nanoseconds
 }
 
-func (m *mutexWithUseTime) updateAccess() {
+func (m *mutexWithUseTime) lock() {
+	m.mutex.Lock()
 	m.lastAccessNs.Store(time.Now().UnixNano())
+}
+
+func (m *mutexWithUseTime) unlock() {
+	m.mutex.Unlock()
 }
 
 func (m *mutexWithUseTime) lastAccess() time.Time {
@@ -43,14 +48,13 @@ func (r *Repository) doUpdateInTxWithLock(ctx context.Context, name string, f fu
 	mutexInterface, ok := lockMap.Load(key)
 	if !ok {
 		newMutex := &mutexWithUseTime{}
-		newMutex.updateAccess()
+		newMutex.lastAccessNs.Store(time.Now().UnixNano())
 		mutexInterface, _ = lockMap.LoadOrStore(key, newMutex)
 	}
 	activeMutex := mutexInterface.(*mutexWithUseTime)
 
-	activeMutex.mutex.Lock()
-	activeMutex.updateAccess()
-	defer activeMutex.mutex.Unlock()
+	activeMutex.lock()
+	defer activeMutex.unlock()
 
 	return r.doUpdateInTx(ctx, name, f)
 }

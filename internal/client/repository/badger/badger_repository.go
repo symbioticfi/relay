@@ -39,9 +39,7 @@ type Repository struct {
 	proofsMutexMap    sync.Map // map[requestId]*mutexWithUseTime
 	valsetMutexMap    sync.Map // map[epoch]*mutexWithUseTime
 
-	cleanupTicker     *time.Ticker
-	cleanupStop       chan struct{}
-	cleanupStaleAfter time.Duration
+	cleanupStop chan struct{}
 }
 
 func New(cfg Config) (*Repository, error) {
@@ -106,22 +104,20 @@ func unmarshalProto(data []byte, msg proto.Message) error {
 
 // startMutexCleanup starts a background goroutine that periodically cleans up stale mutexes
 func (r *Repository) startMutexCleanup(interval, staleTimeout time.Duration) {
-	// Default stale timeout to 1 hour if not set
-	if staleTimeout == 0 {
-		staleTimeout = time.Hour
-	}
-	r.cleanupStaleAfter = staleTimeout
-
 	// If interval is 0, cleanup is disabled
 	if interval == 0 {
 		slog.Info("Mutex cleanup disabled (interval is 0)")
 		return
 	}
 
-	r.cleanupTicker = time.NewTicker(interval)
 	r.cleanupStop = make(chan struct{})
 
 	go func() {
+		cleanupTicker := time.NewTicker(interval)
+		defer func() {
+			cleanupTicker.Stop()
+		}()
+
 		slog.Info("Starting mutex cleanup goroutine",
 			"interval", interval,
 			"staleTimeout", staleTimeout,
@@ -129,8 +125,8 @@ func (r *Repository) startMutexCleanup(interval, staleTimeout time.Duration) {
 
 		for {
 			select {
-			case <-r.cleanupTicker.C:
-				r.cleanupStaleMutexes()
+			case <-cleanupTicker.C:
+				r.cleanupStaleMutexes(staleTimeout)
 			case <-r.cleanupStop:
 				slog.Info("Stopping mutex cleanup goroutine")
 				return
@@ -141,18 +137,20 @@ func (r *Repository) startMutexCleanup(interval, staleTimeout time.Duration) {
 
 // stopMutexCleanup stops the background cleanup goroutine
 func (r *Repository) stopMutexCleanup() {
-	if r.cleanupTicker != nil {
-		r.cleanupTicker.Stop()
-	}
 	if r.cleanupStop != nil {
 		close(r.cleanupStop)
 	}
 }
 
 // cleanupStaleMutexes removes mutexes that haven't been used for longer than cleanupStaleAfter
-func (r *Repository) cleanupStaleMutexes() {
+func (r *Repository) cleanupStaleMutexes(staleTimeout time.Duration) {
+	// Default stale timeout to 1 hour if not set
+	if staleTimeout == 0 {
+		staleTimeout = time.Hour
+	}
+
 	now := time.Now()
-	staleThreshold := now.Add(-r.cleanupStaleAfter)
+	staleThreshold := now.Add(-staleTimeout)
 
 	signatureCount := cleanupMutexMap(&r.signatureMutexMap, staleThreshold)
 	proofsCount := cleanupMutexMap(&r.proofsMutexMap, staleThreshold)
@@ -184,7 +182,7 @@ func cleanupMutexMap(mutexMap *sync.Map, staleThreshold time.Time) int {
 		if !mutex.tryLock() {
 			return true
 		}
-		defer mutex.mutex.Unlock()
+		defer mutex.unlock()
 
 		// Double-check last access time after acquiring lock
 		// This handles the race where updateAccess() was called between the first check and TryLock
