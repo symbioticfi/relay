@@ -2,6 +2,8 @@
 
 We welcome contributions from the community! Please read the following guidelines carefully to ensure a smooth development workflow and consistent project quality.
 
+For detailed development setup, testing, and API change management, see the [Development Guide](DEVELOPMENT.md).
+
 ---
 
 ## Branching Strategy
