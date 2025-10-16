@@ -3,14 +3,13 @@ package badger
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
-
+	pb "github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -78,39 +77,26 @@ func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.H
 	})
 }
 
-type aggregationProofDTO struct {
-	MessageHash []byte `json:"message_hash"`
-	KeyTag      uint8  `json:"key_tag"`
-	Epoch       uint64 `json:"epoch"`
-	Proof       []byte `json:"proof"`
-}
-
 func aggregationProofToBytes(ap symbiotic.AggregationProof) ([]byte, error) {
-	dto := aggregationProofDTO{
+	return marshalProto(&pb.AggregationProof{
 		MessageHash: ap.MessageHash,
-		KeyTag:      uint8(ap.KeyTag),
+		KeyTag:      uint32(ap.KeyTag),
 		Epoch:       uint64(ap.Epoch),
 		Proof:       ap.Proof,
-	}
-	data, err := json.Marshal(dto)
-	if err != nil {
-		return nil, errors.Errorf("failed to marshal aggregation proof: %w", err)
-	}
-
-	return data, nil
+	})
 }
 
 func bytesToAggregationProof(value []byte) (symbiotic.AggregationProof, error) {
-	var dto aggregationProofDTO
-	if err := json.Unmarshal(value, &dto); err != nil {
+	aggregationProof := &pb.AggregationProof{}
+	if err := unmarshalProto(value, aggregationProof); err != nil {
 		return symbiotic.AggregationProof{}, errors.Errorf("failed to unmarshal aggregation proof: %w", err)
 	}
 
 	return symbiotic.AggregationProof{
-		MessageHash: dto.MessageHash,
-		KeyTag:      symbiotic.KeyTag(dto.KeyTag),
-		Epoch:       symbiotic.Epoch(dto.Epoch),
-		Proof:       dto.Proof,
+		MessageHash: aggregationProof.GetMessageHash(),
+		KeyTag:      symbiotic.KeyTag(aggregationProof.GetKeyTag()),
+		Epoch:       symbiotic.Epoch(aggregationProof.GetEpoch()),
+		Proof:       aggregationProof.GetProof(),
 	}, nil
 }
 

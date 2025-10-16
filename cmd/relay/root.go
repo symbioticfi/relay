@@ -102,8 +102,10 @@ func runApp(ctx context.Context) error {
 	}
 
 	baseRepo, err := badger.New(badger.Config{
-		Dir:     cfg.StorageDir,
-		Metrics: mtr,
+		Dir:                      cfg.StorageDir,
+		Metrics:                  mtr,
+		MutexCleanupInterval:     time.Hour,
+		MutexCleanupStaleTimeout: time.Hour - time.Minute,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create badger repository: %w", err)

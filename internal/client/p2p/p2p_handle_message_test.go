@@ -196,6 +196,4 @@ func (m *mockMetrics) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	}
 }
 
-func (m *mockMetrics) ObserveP2PMessageSent(messageType string) {}
-
 func (m *mockMetrics) ObserveP2PPeerMessageSent(messageType, status string) {}

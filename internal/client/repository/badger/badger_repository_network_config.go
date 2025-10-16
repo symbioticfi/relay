@@ -2,7 +2,6 @@ package badger
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"math/big"
 
@@ -10,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
-
+	pb "github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -70,110 +69,105 @@ func (r *Repository) GetConfigByEpoch(ctx context.Context, epoch symbiotic.Epoch
 	})
 }
 
-type crossChainAddressDTO struct {
-	Address string `json:"address"`
-	ChainId uint64 `json:"chain_id"`
-}
-
-type quorumThresholdDto struct {
-	KeyTag          uint8    `json:"key_tag"`
-	QuorumThreshold *big.Int `json:"quorum_threshold"`
-}
-
-type networkConfigDTO struct {
-	VotingPowerProviders    []crossChainAddressDTO `json:"voting_power_providers"`
-	KeysProvider            crossChainAddressDTO   `json:"keys_provider"`
-	Settlements             []crossChainAddressDTO `json:"settlements"`
-	VerificationType        uint32                 `json:"verification_type"`
-	MaxVotingPower          *big.Int               `json:"max_voting_power"`
-	MinInclusionVotingPower *big.Int               `json:"min_inclusion_voting_power"`
-	MaxValidatorsCount      *big.Int               `json:"max_validators_count"`
-	RequiredKeyTags         []uint8                `json:"required_key_tags"`
-	RequiredHeaderKeyTag    uint8                  `json:"required_header_key_tags"`
-	QuorumThresholds        []quorumThresholdDto   `json:"quorum_thresholds"`
-	NumCommitters           uint64                 `json:"num_committers"`
-	NumAggregators          uint64                 `json:"num_aggregators"`
-	CommitterSlotDuration   uint64                 `json:"committer_slot_duration,omitempty"`
-	EpochDuration           uint64                 `json:"epoch_duration,omitempty"`
-}
-
 func networkConfigToBytes(config symbiotic.NetworkConfig) ([]byte, error) {
-	networkConfigDTOFromEntity := networkConfigDTO{
-		VotingPowerProviders: lo.Map(config.VotingPowerProviders, func(addr symbiotic.CrossChainAddress, _ int) crossChainAddressDTO {
-			return crossChainAddressDTO{
+	return marshalProto(&pb.NetworkConfig{
+		VotingPowerProviders: lo.Map(config.VotingPowerProviders, func(addr symbiotic.CrossChainAddress, _ int) *pb.CrossChainAddress {
+			return &pb.CrossChainAddress{
 				ChainId: addr.ChainId,
-				Address: addr.Address.Hex(),
+				Address: addr.Address.Bytes(),
 			}
 		}),
-		KeysProvider: crossChainAddressDTO{
-			Address: config.KeysProvider.Address.Hex(),
+		KeysProvider: &pb.CrossChainAddress{
+			Address: config.KeysProvider.Address.Bytes(),
 			ChainId: config.KeysProvider.ChainId,
 		},
-		Settlements: lo.Map(config.Settlements, func(addr symbiotic.CrossChainAddress, _ int) crossChainAddressDTO {
-			return crossChainAddressDTO{
+		Settlements: lo.Map(config.Settlements, func(addr symbiotic.CrossChainAddress, _ int) *pb.CrossChainAddress {
+			return &pb.CrossChainAddress{
 				ChainId: addr.ChainId,
-				Address: addr.Address.Hex(),
+				Address: addr.Address.Bytes(),
 			}
 		}),
 		VerificationType:        uint32(config.VerificationType),
-		MaxVotingPower:          config.MaxVotingPower.Int,
-		MinInclusionVotingPower: config.MinInclusionVotingPower.Int,
-		MaxValidatorsCount:      config.MaxValidatorsCount.Int,
-		RequiredKeyTags:         lo.Map(config.RequiredKeyTags, func(tag symbiotic.KeyTag, _ int) uint8 { return uint8(tag) }),
-		RequiredHeaderKeyTag:    uint8(config.RequiredHeaderKeyTag),
-		QuorumThresholds: lo.Map(config.QuorumThresholds, func(qt symbiotic.QuorumThreshold, _ int) quorumThresholdDto {
-			return quorumThresholdDto{
-				KeyTag:          uint8(qt.KeyTag),
-				QuorumThreshold: qt.QuorumThreshold.Int,
+		MaxVotingPower:          config.MaxVotingPower.String(),
+		MinInclusionVotingPower: config.MinInclusionVotingPower.String(),
+		MaxValidatorsCount:      config.MaxValidatorsCount.String(),
+		RequiredKeyTags:         lo.Map(config.RequiredKeyTags, func(tag symbiotic.KeyTag, _ int) uint32 { return uint32(tag) }),
+		RequiredHeaderKeyTag:    uint32(config.RequiredHeaderKeyTag),
+		QuorumThresholds: lo.Map(config.QuorumThresholds, func(qt symbiotic.QuorumThreshold, _ int) *pb.QuorumThreshold {
+			return &pb.QuorumThreshold{
+				KeyTag:          uint32(qt.KeyTag),
+				QuorumThreshold: qt.QuorumThreshold.String(),
 			}
 		}),
 		NumCommitters:         config.NumCommitters,
 		NumAggregators:        config.NumAggregators,
 		CommitterSlotDuration: config.CommitterSlotDuration,
 		EpochDuration:         config.EpochDuration,
-	}
-
-	return json.Marshal(networkConfigDTOFromEntity)
+	})
 }
 
 func bytesToNetworkConfig(data []byte) (symbiotic.NetworkConfig, error) {
-	var dto networkConfigDTO
-	if err := json.Unmarshal(data, &dto); err != nil {
+	networkConfig := &pb.NetworkConfig{}
+	if err := unmarshalProto(data, networkConfig); err != nil {
 		return symbiotic.NetworkConfig{}, errors.Errorf("failed to unmarshal network config: %w", err)
 	}
 
+	maxVotingPower, ok := new(big.Int).SetString(networkConfig.GetMaxVotingPower(), 10)
+	if !ok {
+		return symbiotic.NetworkConfig{}, errors.Errorf("failed to parse max voting power: %s", networkConfig.GetMaxVotingPower())
+	}
+
+	minInclusionVotingPower, ok := new(big.Int).SetString(networkConfig.GetMinInclusionVotingPower(), 10)
+	if !ok {
+		return symbiotic.NetworkConfig{}, errors.Errorf("failed to parse min inclusion voting power: %s", networkConfig.GetMinInclusionVotingPower())
+	}
+
+	maxValidatorsCount, ok := new(big.Int).SetString(networkConfig.GetMaxValidatorsCount(), 10)
+	if !ok {
+		return symbiotic.NetworkConfig{}, errors.Errorf("failed to parse max validators count: %s", networkConfig.GetMaxValidatorsCount())
+	}
+
+	quorumThresholds := make([]symbiotic.QuorumThreshold, 0, len(networkConfig.GetQuorumThresholds()))
+
+	for _, qt := range networkConfig.GetQuorumThresholds() {
+		threshold, parseOk := new(big.Int).SetString(qt.GetQuorumThreshold(), 10)
+		if !parseOk {
+			return symbiotic.NetworkConfig{}, errors.Errorf("failed to parse quorum threshold: %s", qt.GetQuorumThreshold())
+		}
+
+		quorumThresholds = append(quorumThresholds, symbiotic.QuorumThreshold{
+			KeyTag:          symbiotic.KeyTag(qt.GetKeyTag()),
+			QuorumThreshold: symbiotic.ToQuorumThresholdPct(threshold),
+		})
+	}
+
 	return symbiotic.NetworkConfig{
-		VotingPowerProviders: lo.Map(dto.VotingPowerProviders, func(addr crossChainAddressDTO, _ int) symbiotic.CrossChainAddress {
+		VotingPowerProviders: lo.Map(networkConfig.GetVotingPowerProviders(), func(addr *pb.CrossChainAddress, _ int) symbiotic.CrossChainAddress {
 			return symbiotic.CrossChainAddress{
-				ChainId: addr.ChainId,
-				Address: common.HexToAddress(addr.Address),
+				ChainId: addr.GetChainId(),
+				Address: common.BytesToAddress(addr.GetAddress()),
 			}
 		}),
 		KeysProvider: symbiotic.CrossChainAddress{
-			ChainId: dto.KeysProvider.ChainId,
-			Address: common.HexToAddress(dto.KeysProvider.Address),
+			ChainId: networkConfig.GetKeysProvider().GetChainId(),
+			Address: common.BytesToAddress(networkConfig.GetKeysProvider().GetAddress()),
 		},
-		Settlements: lo.Map(dto.Settlements, func(addr crossChainAddressDTO, _ int) symbiotic.CrossChainAddress {
+		Settlements: lo.Map(networkConfig.GetSettlements(), func(addr *pb.CrossChainAddress, _ int) symbiotic.CrossChainAddress {
 			return symbiotic.CrossChainAddress{
-				ChainId: addr.ChainId,
-				Address: common.HexToAddress(addr.Address),
+				ChainId: addr.GetChainId(),
+				Address: common.BytesToAddress(addr.GetAddress()),
 			}
 		}),
-		VerificationType:        symbiotic.VerificationType(dto.VerificationType),
-		MaxVotingPower:          symbiotic.ToVotingPower(dto.MaxVotingPower),
-		MinInclusionVotingPower: symbiotic.ToVotingPower(dto.MinInclusionVotingPower),
-		MaxValidatorsCount:      symbiotic.ToVotingPower(dto.MaxValidatorsCount),
-		RequiredKeyTags:         lo.Map(dto.RequiredKeyTags, func(tag uint8, _ int) symbiotic.KeyTag { return symbiotic.KeyTag(tag) }),
-		RequiredHeaderKeyTag:    symbiotic.KeyTag(dto.RequiredHeaderKeyTag),
-		QuorumThresholds: lo.Map(dto.QuorumThresholds, func(qt quorumThresholdDto, _ int) symbiotic.QuorumThreshold {
-			return symbiotic.QuorumThreshold{
-				KeyTag:          symbiotic.KeyTag(qt.KeyTag),
-				QuorumThreshold: symbiotic.ToQuorumThresholdPct(qt.QuorumThreshold),
-			}
-		}),
-		NumAggregators:        dto.NumAggregators,
-		NumCommitters:         dto.NumCommitters,
-		CommitterSlotDuration: dto.CommitterSlotDuration,
-		EpochDuration:         dto.EpochDuration,
+		VerificationType:        symbiotic.VerificationType(networkConfig.GetVerificationType()),
+		MaxVotingPower:          symbiotic.ToVotingPower(maxVotingPower),
+		MinInclusionVotingPower: symbiotic.ToVotingPower(minInclusionVotingPower),
+		MaxValidatorsCount:      symbiotic.ToVotingPower(maxValidatorsCount),
+		RequiredKeyTags:         lo.Map(networkConfig.GetRequiredKeyTags(), func(tag uint32, _ int) symbiotic.KeyTag { return symbiotic.KeyTag(tag) }),
+		RequiredHeaderKeyTag:    symbiotic.KeyTag(networkConfig.GetRequiredHeaderKeyTag()),
+		QuorumThresholds:        quorumThresholds,
+		NumAggregators:          networkConfig.GetNumAggregators(),
+		NumCommitters:           networkConfig.GetNumCommitters(),
+		CommitterSlotDuration:   networkConfig.GetCommitterSlotDuration(),
+		EpochDuration:           networkConfig.GetEpochDuration(),
 	}, nil
 }

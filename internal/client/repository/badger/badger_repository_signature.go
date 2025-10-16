@@ -2,16 +2,15 @@ package badger
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
-	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
-
+	pb "github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 func keySignature(requestID common.Hash, validatorIndex uint32) []byte {
@@ -105,45 +104,35 @@ func (r *Repository) GetSignatureByIndex(ctx context.Context, requestID common.H
 	return signature, err
 }
 
-type signatureDTO struct {
-	MessageHash []byte `json:"message_hash"`
-	KeyTag      uint8  `json:"key_tag"`
-	Epoch       uint64 `json:"epoch"`
-	Signature   []byte `json:"signature"`
-	PublicKey   []byte `json:"public_key"`
-}
-
 func signatureToBytes(sig symbiotic.Signature) ([]byte, error) {
-	dto := signatureDTO{
-		MessageHash: sig.MessageHash,
-		KeyTag:      uint8(sig.KeyTag),
-		Epoch:       uint64(sig.Epoch),
-		Signature:   sig.Signature,
-		PublicKey:   sig.PublicKey.Raw(),
-	}
-	data, err := json.Marshal(dto)
-	if err != nil {
-		return nil, errors.Errorf("failed to marshal signature: %w", err)
-	}
-	return data, nil
+	return marshalProto(&pb.Signature{
+		MessageHash:  sig.MessageHash,
+		KeyTag:       uint32(sig.KeyTag),
+		Epoch:        uint64(sig.Epoch),
+		Signature:    sig.Signature,
+		RawPublicKey: sig.PublicKey.Raw(),
+	})
 }
 
 func bytesToSignature(value []byte) (symbiotic.Signature, error) {
-	var dto signatureDTO
-	if err := json.Unmarshal(value, &dto); err != nil {
+	signaturePB := &pb.Signature{}
+	if err := unmarshalProto(value, signaturePB); err != nil {
 		return symbiotic.Signature{}, errors.Errorf("failed to unmarshal signature: %w", err)
 	}
 
-	pubKey, err := crypto.NewPublicKey(symbiotic.KeyTag(dto.KeyTag).Type(), dto.PublicKey)
-	if err != nil {
-		return symbiotic.Signature{}, errors.Errorf("failed to parse public key: %w", err)
+	signature := symbiotic.Signature{
+		MessageHash: signaturePB.GetMessageHash(),
+		KeyTag:      symbiotic.KeyTag(signaturePB.GetKeyTag()),
+		Epoch:       symbiotic.Epoch(signaturePB.GetEpoch()),
+		Signature:   signaturePB.GetSignature(),
 	}
 
-	return symbiotic.Signature{
-		MessageHash: dto.MessageHash,
-		KeyTag:      symbiotic.KeyTag(dto.KeyTag),
-		Epoch:       symbiotic.Epoch(dto.Epoch),
-		PublicKey:   pubKey,
-		Signature:   dto.Signature,
-	}, nil
+	publicKey, err := crypto.NewPublicKey(signature.KeyTag.Type(), signaturePB.GetRawPublicKey())
+	if err != nil {
+		return symbiotic.Signature{}, errors.Errorf("failed to get public key from raw: %w", err)
+	}
+
+	signature.PublicKey = publicKey
+
+	return signature, nil
 }
