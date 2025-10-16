@@ -3,6 +3,7 @@ package badger
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
@@ -20,15 +21,40 @@ type ctxQueryNameKey struct{}
 
 var ctxQueryName ctxQueryNameKey
 
+// mutexWithUseTime wraps a mutex with a timestamp of last access
+type mutexWithUseTime struct {
+	mutex        sync.Mutex
+	lastAccessNs atomic.Int64 // Unix nanoseconds
+}
+
+func (m *mutexWithUseTime) lock() {
+	m.mutex.Lock()
+	m.lastAccessNs.Store(time.Now().UnixNano())
+}
+
+func (m *mutexWithUseTime) unlock() {
+	m.mutex.Unlock()
+}
+
+func (m *mutexWithUseTime) lastAccess() time.Time {
+	return time.Unix(0, m.lastAccessNs.Load())
+}
+
+func (m *mutexWithUseTime) tryLock() bool {
+	return m.mutex.TryLock()
+}
+
 func (r *Repository) doUpdateInTxWithLock(ctx context.Context, name string, f func(ctx context.Context) error, lockMap *sync.Map, key any) error {
 	mutexInterface, ok := lockMap.Load(key)
 	if !ok {
-		mutexInterface, _ = lockMap.LoadOrStore(key, &sync.Mutex{})
+		newMutex := &mutexWithUseTime{}
+		newMutex.lastAccessNs.Store(time.Now().UnixNano())
+		mutexInterface, _ = lockMap.LoadOrStore(key, newMutex)
 	}
-	activeMutex := mutexInterface.(*sync.Mutex)
+	activeMutex := mutexInterface.(*mutexWithUseTime)
 
-	activeMutex.Lock()
-	defer activeMutex.Unlock()
+	activeMutex.lock()
+	defer activeMutex.unlock()
 
 	return r.doUpdateInTx(ctx, name, f)
 }

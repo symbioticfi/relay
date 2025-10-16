@@ -39,7 +39,6 @@ const (
 )
 
 type metrics interface {
-	ObserveP2PMessageSent(messageType string)
 	ObserveP2PPeerMessageSent(messageType, status string)
 	UnaryServerInterceptor() grpc.UnaryServerInterceptor
 	StreamServerInterceptor() grpc.StreamServerInterceptor
