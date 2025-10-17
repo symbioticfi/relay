@@ -141,3 +141,110 @@ func TestBadgerRepository_SignatureOrdering(t *testing.T) {
 		require.Equal(t, retrievedSig, signatures[i], "signature order mismatch at position %d", i)
 	}
 }
+
+func TestBadgerRepository_GetSignaturesByEpoch(t *testing.T) {
+	t.Parallel()
+
+	repo := setupTestRepository(t)
+
+	priv1, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
+	require.NoError(t, err)
+	priv2, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
+	require.NoError(t, err)
+	priv3, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
+	require.NoError(t, err)
+
+	// Create three signatures with epochs 1, 2, 3
+	sig1 := symbiotic.Signature{
+		MessageHash: []byte("message1"),
+		KeyTag:      15,
+		Epoch:       1,
+		Signature:   []byte("signature1"),
+		PublicKey:   priv1.PublicKey(),
+	}
+
+	sig2 := symbiotic.Signature{
+		MessageHash: []byte("message2"),
+		KeyTag:      15,
+		Epoch:       2,
+		Signature:   []byte("signature2"),
+		PublicKey:   priv2.PublicKey(),
+	}
+
+	sig3 := symbiotic.Signature{
+		MessageHash: []byte("message3"),
+		KeyTag:      15,
+		Epoch:       3,
+		Signature:   []byte("signature3"),
+		PublicKey:   priv3.PublicKey(),
+	}
+
+	// Save all three signatures
+	err = repo.doUpdateInTx(context.Background(), "test", func(ctx context.Context) error {
+		if err := repo.saveSignature(ctx, 1, sig1); err != nil {
+			return err
+		}
+		return nil
+	})
+	require.NoError(t, err)
+
+	err = repo.doUpdateInTx(context.Background(), "test", func(ctx context.Context) error {
+		if err := repo.saveSignature(ctx, 1, sig2); err != nil {
+			return err
+		}
+		return nil
+	})
+	require.NoError(t, err)
+
+	err = repo.doUpdateInTx(context.Background(), "test", func(ctx context.Context) error {
+		if err := repo.saveSignature(ctx, 1, sig3); err != nil {
+			return err
+		}
+		return nil
+	})
+	require.NoError(t, err)
+
+	t.Run("get signatures starting from epoch 2", func(t *testing.T) {
+		// Query starting from epoch 2
+		signatures, err := repo.GetSignaturesByEpoch(context.Background(), 2)
+		require.NoError(t, err)
+
+		// Should return exactly 2 signatures (epochs 2 and 3)
+		require.Len(t, signatures, 2, "Should return 2 signatures (epochs 2 and 3)")
+
+		// Verify epochs are 2 and 3
+		require.Equal(t, symbiotic.Epoch(2), signatures[0].Epoch)
+		require.Equal(t, sig2, signatures[0])
+
+		require.Equal(t, symbiotic.Epoch(3), signatures[1].Epoch)
+		require.Equal(t, sig3, signatures[1])
+	})
+
+	t.Run("get signatures starting from epoch 1", func(t *testing.T) {
+		// Query starting from epoch 1 - should return all 3
+		signatures, err := repo.GetSignaturesByEpoch(context.Background(), 1)
+		require.NoError(t, err)
+
+		require.Len(t, signatures, 3, "Should return all 3 signatures")
+		require.Equal(t, symbiotic.Epoch(1), signatures[0].Epoch)
+		require.Equal(t, symbiotic.Epoch(2), signatures[1].Epoch)
+		require.Equal(t, symbiotic.Epoch(3), signatures[2].Epoch)
+	})
+
+	t.Run("get signatures starting from epoch 3", func(t *testing.T) {
+		// Query starting from epoch 3 - should return only epoch 3
+		signatures, err := repo.GetSignaturesByEpoch(context.Background(), 3)
+		require.NoError(t, err)
+
+		require.Len(t, signatures, 1, "Should return only 1 signature (epoch 3)")
+		require.Equal(t, symbiotic.Epoch(3), signatures[0].Epoch)
+		require.Equal(t, sig3, signatures[0])
+	})
+
+	t.Run("get signatures starting from non-existent epoch", func(t *testing.T) {
+		// Query starting from epoch 10 (doesn't exist) - should return empty
+		signatures, err := repo.GetSignaturesByEpoch(context.Background(), 10)
+		require.NoError(t, err)
+		require.Empty(t, signatures, "Should return empty slice for non-existent epoch")
+	})
+}

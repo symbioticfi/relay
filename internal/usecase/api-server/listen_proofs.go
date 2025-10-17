@@ -24,7 +24,6 @@ func (h *grpcHandler) ListenProofs(
 	proofsCh := h.proofsHub.Subscribe(subscriptionID.String())
 	defer h.proofsHub.Unsubscribe(subscriptionID.String())
 
-	// Send historical data if start_epoch is provided
 	if epoch := req.GetStartEpoch(); epoch != 0 {
 		proofs, err := h.cfg.Repo.GetAggregationProofsByEpoch(ctx, symbiotic.Epoch(epoch))
 		if err != nil {
@@ -45,7 +44,6 @@ func (h *grpcHandler) ListenProofs(
 		}
 	}
 
-	// Stream real-time updates
 	for {
 		select {
 		case <-ctx.Done():

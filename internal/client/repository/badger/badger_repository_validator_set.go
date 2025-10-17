@@ -22,8 +22,18 @@ const (
 	firstUncommittedValidatorSetEpoch = "first_uncommitted_validator_set_epoch"
 )
 
+// keyValidatorSetHeader returns key for validator set header
+// Format: "validator_set_header:" + epoch.Bytes()
+// Using epoch.Bytes() ensures proper lexicographic sorting
 func keyValidatorSetHeader(epoch symbiotic.Epoch) []byte {
-	return []byte(fmt.Sprintf("validator_set_header:%d", epoch))
+	key := []byte("validator_set_header:")
+	key = append(key, epoch.Bytes()...)
+	return key
+}
+
+// keyValidatorSetHeaderPrefix returns prefix for all validator set headers
+func keyValidatorSetHeaderPrefix() []byte {
+	return []byte("validator_set_header:")
 }
 
 func keyValidatorByOperator(epoch symbiotic.Epoch, operator common.Address) []byte {
@@ -296,6 +306,79 @@ func (r *Repository) getAllValidatorsByEpoch(txn *badger.Txn, epoch symbiotic.Ep
 	validators.SortByOperatorAddressAsc()
 
 	return validators, nil
+}
+
+func (r *Repository) GetValidatorSetsByEpoch(ctx context.Context, startEpoch symbiotic.Epoch) ([]symbiotic.ValidatorSet, error) {
+	var validatorSets []symbiotic.ValidatorSet
+
+	return validatorSets, r.doViewInTx(ctx, "GetValidatorSetsByEpoch", func(ctx context.Context) error {
+		txn := getTxn(ctx)
+
+		// Create iterator starting from startEpoch
+		startKey := keyValidatorSetHeader(startEpoch)
+		opts := badger.DefaultIteratorOptions
+		opts.Prefix = keyValidatorSetHeaderPrefix()
+
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		for it.Seek(startKey); it.Valid(); it.Next() {
+			item := it.Item()
+
+			headerValue, err := item.ValueCopy(nil)
+			if err != nil {
+				return errors.Errorf("failed to copy validator set header value: %w", err)
+			}
+
+			header, err := bytesToValidatorSetHeader(headerValue)
+			if err != nil {
+				return errors.Errorf("failed to unmarshal validator set header: %w", err)
+			}
+
+			statusItem, err := txn.Get(keyValidatorSetStatus(header.Epoch))
+			if err != nil {
+				if errors.Is(err, badger.ErrKeyNotFound) {
+					continue
+				}
+				return errors.Errorf("failed to get validator set status: %w", err)
+			}
+
+			statusValue, err := statusItem.ValueCopy(nil)
+			if err != nil {
+				return errors.Errorf("failed to copy validator set status value: %w", err)
+			}
+
+			if len(statusValue) != 1 {
+				return errors.New("failed to get validator set status value: invalid length")
+			}
+
+			status := symbiotic.ValidatorSetStatus(statusValue[0])
+
+			validators, err := r.getAllValidatorsByEpoch(txn, header.Epoch)
+			if err != nil {
+				return errors.Errorf("failed to get validators for epoch %d: %w", header.Epoch, err)
+			}
+
+			aggIndices, commIndices, err := extractAdditionalInfoFromHeaderData(headerValue)
+			if err != nil {
+				return errors.Errorf("failed to extract bitmap indices: %w", err)
+			}
+
+			validatorSets = append(validatorSets, symbiotic.ValidatorSet{
+				Version:           header.Version,
+				RequiredKeyTag:    header.RequiredKeyTag,
+				Epoch:             header.Epoch,
+				CaptureTimestamp:  header.CaptureTimestamp,
+				QuorumThreshold:   header.QuorumThreshold,
+				Validators:        validators,
+				Status:            status,
+				AggregatorIndices: aggIndices,
+				CommitterIndices:  commIndices,
+			})
+		}
+
+		return nil
+	})
 }
 
 func (r *Repository) GetValidatorSetByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error) {

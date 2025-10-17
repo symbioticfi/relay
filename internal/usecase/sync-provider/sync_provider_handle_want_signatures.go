@@ -47,10 +47,6 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity
 			return entity.WantSignaturesResponse{}, errors.Errorf("failed to get signature request: %w", err)
 		}
 
-		if !signatureRequest.KeyTag.Type().AggregationKey() {
-			return entity.WantSignaturesResponse{}, errors.Errorf("key tag %s is not an aggregation key", signatureRequest.KeyTag)
-		}
-
 		var validatorSigs []entity.ValidatorSignature
 
 		// Iterate over requested validator indices and get signatures directly

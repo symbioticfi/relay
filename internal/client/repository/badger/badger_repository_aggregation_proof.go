@@ -32,6 +32,11 @@ func keyAggregationProofByEpochPrefix(epoch symbiotic.Epoch) []byte {
 	return key
 }
 
+// keyAggregationProofPrefix returns prefix for all aggregation proofs
+func keyAggregationProofPrefix() []byte {
+	return []byte("aggregation_proof:")
+}
+
 func keyAggregationProofPending(epoch symbiotic.Epoch, requestID common.Hash) []byte {
 	return []byte(fmt.Sprintf("aggregation_proof_pending:%d:%s", epoch, requestID.Hex()))
 }
@@ -98,14 +103,15 @@ func (r *Repository) GetAggregationProofsByEpoch(ctx context.Context, epoch symb
 
 	return proofs, r.doViewInTx(ctx, "GetAggregationProofsByEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		prefix := keyAggregationProofByEpochPrefix(epoch)
+		// Use general prefix for all aggregation proofs and start from specific epoch
+		startKey := keyAggregationProofByEpochPrefix(epoch)
 		opts := badger.DefaultIteratorOptions
-		opts.Prefix = prefix
+		opts.Prefix = keyAggregationProofPrefix()
 
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
-		for it.Seek(prefix); it.Valid(); it.Next() {
+		for it.Seek(startKey); it.Valid(); it.Next() {
 			item := it.Item()
 			value, err := item.ValueCopy(nil)
 			if err != nil {

@@ -29,21 +29,19 @@ func (h *grpcHandler) ListenValidatorSet(
 	validatorSetCh := h.validatorSetsHub.Subscribe(subscriptionID.String())
 	defer h.validatorSetsHub.Unsubscribe(subscriptionID.String())
 
-	//// Send historical data if start_epoch is provided
-	//if epoch := req.GetStartEpoch(); epoch != 0 {
-	//	validatorSets, err := h.cfg.Repo.GetValidatorSetsByEpoch(ctx, symbiotic.Epoch(epoch))
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	for _, valSet := range validatorSets {
-	//		if err = stream.Send(convertValidatorSetToStreamResponse(valSet)); err != nil {
-	//			return err
-	//		}
-	//	}
-	//}
+	if epoch := req.GetStartEpoch(); epoch != 0 {
+		validatorSets, err := h.cfg.Repo.GetValidatorSetsByEpoch(ctx, symbiotic.Epoch(epoch))
+		if err != nil {
+			return err
+		}
 
-	// Stream real-time updates
+		for _, valSet := range validatorSets {
+			if err = stream.Send(convertValidatorSetToStreamResponse(valSet)); err != nil {
+				return err
+			}
+		}
+	}
+
 	for {
 		select {
 		case <-ctx.Done():

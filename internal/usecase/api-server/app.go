@@ -44,6 +44,7 @@ type repo interface {
 	GetValidatorSetMetadata(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSetMetadata, error)
 	GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error)
 	GetAggregationProofsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.AggregationProof, error)
+	GetValidatorSetsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.ValidatorSet, error)
 }
 
 type evmClient interface {

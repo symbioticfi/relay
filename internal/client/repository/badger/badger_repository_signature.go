@@ -31,6 +31,11 @@ func keySignatureByEpochPrefix(epoch symbiotic.Epoch) []byte {
 	return key
 }
 
+// keySignaturePrefix returns prefix for all signatures
+func keySignaturePrefix() []byte {
+	return []byte("signature:")
+}
+
 // keySignatureByRequestIDPrefix returns prefix for all signatures of a specific request id within an epoch
 func keySignatureByRequestIDPrefix(epoch symbiotic.Epoch, requestID common.Hash) []byte {
 	key := []byte("signature:")
@@ -98,14 +103,15 @@ func (r *Repository) GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.E
 
 	return signatures, r.doViewInTx(ctx, "GetSignaturesByEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		prefix := keySignatureByEpochPrefix(epoch)
+		// Use general prefix for all signatures and start from specific epoch
+		startKey := keySignatureByEpochPrefix(epoch)
 		opts := badger.DefaultIteratorOptions
-		opts.Prefix = prefix
+		opts.Prefix = keySignaturePrefix()
 
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
-		for it.Seek(prefix); it.Valid(); it.Next() {
+		for it.Seek(startKey); it.Valid(); it.Next() {
 			item := it.Item()
 			value, err := item.ValueCopy(nil)
 			if err != nil {

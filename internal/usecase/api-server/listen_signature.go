@@ -24,7 +24,6 @@ func (h *grpcHandler) ListenSignatures(
 	signatureCh := h.signatureHub.Subscribe(subscriptionID.String())
 	defer h.signatureHub.Unsubscribe(subscriptionID.String())
 
-	// Send historical data if start_epoch is provided
 	if epoch := req.GetStartEpoch(); epoch != 0 {
 		signatures, err := h.cfg.Repo.GetSignaturesByEpoch(ctx, symbiotic.Epoch(epoch))
 		if err != nil {
@@ -42,7 +41,6 @@ func (h *grpcHandler) ListenSignatures(
 		}
 	}
 
-	// Stream real-time updates
 	for {
 		select {
 		case <-ctx.Done():

@@ -216,6 +216,21 @@ func (mr *MockrepoMockRecorder) GetValidatorSetMetadata(ctx, epoch any) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSetMetadata", reflect.TypeOf((*Mockrepo)(nil).GetValidatorSetMetadata), ctx, epoch)
 }
 
+// GetValidatorSetsByEpoch mocks base method.
+func (m *Mockrepo) GetValidatorSetsByEpoch(ctx context.Context, epoch entity.Epoch) ([]entity.ValidatorSet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetValidatorSetsByEpoch", ctx, epoch)
+	ret0, _ := ret[0].([]entity.ValidatorSet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetValidatorSetsByEpoch indicates an expected call of GetValidatorSetsByEpoch.
+func (mr *MockrepoMockRecorder) GetValidatorSetsByEpoch(ctx, epoch any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSetsByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetValidatorSetsByEpoch), ctx, epoch)
+}
+
 // MockevmClient is a mock of evmClient interface.
 type MockevmClient struct {
 	ctrl     *gomock.Controller
