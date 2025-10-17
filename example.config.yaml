@@ -1,9 +1,30 @@
+# Relay Sidecar Configuration Example
+
+# Logging
+log:
+  level: "debug"
+  mode: "pretty"
+
+# Storage
+storage-dir: ".data"
+# circuits-dir: ""  # Optional: Path to ZK circuits directory
+
+# API Server Configuration
+api:
+  listen: ":8080"
+  verbose-logging: false
+
+# Metrics Configuration (optional)
+metrics:
+  listen: ":9090"
+  pprof: false
+
+# Driver Contract
 driver:
   chain-id: 31337
   address: "0x4826533B4897376654Bb4d4AD88B7faFD0C98528"
-log-level: "debug"
-log-mode: "pretty"
-api-listen: ":8081"
+
+# Secret Keys
 secret-keys:
   - namespace: "symb"
     key-type: 0
@@ -13,14 +34,41 @@ secret-keys:
     key-type: 1
     key-id: 31337
     secret: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-aggregator: true
-signer: true
-committer: true
-storage-dir: ".data"
-chains:
-  - "http://127.0.0.1:8545"
-enable-mdns: true
-dht-mode: disabled
-p2p-listen: "/ip4/0.0.0.0/tcp/8881"
-evm-max-calls: 30
+
+# Signal Configuration
+signal:
+  worker-count: 10
+  buffer-size: 20
+
+# Cache Configuration
+cache:
+  network-config-size: 10
+  validator-set-size: 10
+
+# Sync Configuration
+sync:
+  enabled: true
+  period: 5s
+  timeout: 1m
+  epochs: 5
+
+# Key Cache
+key-cache:
+  size: 100
+  enabled: true
+
+# P2P Configuration
+p2p:
+  listen: "/ip4/0.0.0.0/tcp/8880"
+  bootnodes: []
+  dht-mode: "disabled"
+  mdns: true
+
+# EVM Configuration
+evm:
+  chains:
+    - "http://127.0.0.1:8545"
+  max-calls: 30
+
+# Aggregation Policy
 aggregation-policy-max-unsigners: 50

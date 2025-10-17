@@ -12,8 +12,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
-	"golang.org/x/sync/errgroup"
-
 	"github.com/symbioticfi/relay/internal/client/p2p"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
 	"github.com/symbioticfi/relay/internal/entity"
@@ -37,11 +35,12 @@ import (
 	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator"
 	symbioticCrypto "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 	valsetDeriver "github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver"
+	"golang.org/x/sync/errgroup"
 )
 
 func runApp(ctx context.Context) error {
 	cfg := cfgFromCtx(ctx)
-	log.Init(cfg.LogLevel, cfg.LogMode)
+	log.Init(cfg.Log.Level, cfg.Log.Mode)
 	mtr := metrics.New(metrics.Config{})
 
 	var keyProvider *keyprovider.CacheKeyProvider
@@ -83,7 +82,7 @@ func runApp(ctx context.Context) error {
 	}
 
 	evmClient, err := evm.NewEvmClient(ctx, evm.Config{
-		ChainURLs: cfg.Chains,
+		ChainURLs: cfg.Evm.Chains,
 		DriverAddress: symbiotic.CrossChainAddress{
 			ChainId: cfg.Driver.ChainID,
 			Address: common.HexToAddress(cfg.Driver.Address),
@@ -91,7 +90,7 @@ func runApp(ctx context.Context) error {
 		RequestTimeout: time.Second * 5,
 		KeyProvider:    keyProvider,
 		Metrics:        mtr,
-		MaxCalls:       cfg.MaxCalls,
+		MaxCalls:       cfg.Evm.MaxCalls,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create symbiotic client: %w", err)
@@ -234,13 +233,13 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create sync runner: %w", err)
 	}
 
-	slog.InfoContext(ctx, "Created discovery service", "listenAddr", cfg.P2PListenAddress)
+	slog.InfoContext(ctx, "Created discovery service", "listenAddr", cfg.P2P.ListenAddress)
 	if err := discoveryService.Start(ctx); err != nil {
 		return errors.Errorf("failed to start discovery service: %w", err)
 	}
 	defer discoveryService.Close(ctx)
 
-	slog.InfoContext(ctx, "Started discovery service", "listenAddr", cfg.P2PListenAddress)
+	slog.InfoContext(ctx, "Started discovery service", "listenAddr", cfg.P2P.ListenAddress)
 
 	if err := p2pService.StartSignaturesAggregatedMessageListener(signer.HandleSignaturesAggregatedMessage); err != nil {
 		return errors.Errorf("failed to start signatures aggregated message listener: %w", err)
@@ -320,10 +319,10 @@ func runApp(ctx context.Context) error {
 
 	slog.DebugContext(ctx, "Created aggregator app, starting")
 
-	serveMetricsOnAPIAddress := cfg.APIListenAddr == cfg.MetricsListenAddr || cfg.MetricsListenAddr == ""
+	serveMetricsOnAPIAddress := cfg.API.ListenAddress == cfg.Metrics.ListenAddress || cfg.Metrics.ListenAddress == ""
 
 	api, err := api_server.NewSymbioticServer(ctx, api_server.Config{
-		Address:           cfg.APIListenAddr,
+		Address:           cfg.API.ListenAddress,
 		ShutdownTimeout:   time.Second * 5,
 		ReadHeaderTimeout: time.Second,
 		Signer:            signer,
@@ -333,8 +332,8 @@ func runApp(ctx context.Context) error {
 		Deriver:           deriver,
 		Metrics:           mtr,
 		ServeMetrics:      serveMetricsOnAPIAddress,
-		ServePprof:        cfg.EnablePprof,
-		VerboseLogging:    cfg.APIVerboseLogging,
+		ServePprof:        cfg.Metrics.PprofEnabled,
+		VerboseLogging:    cfg.API.VerboseLogging,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create api app: %w", err)
@@ -379,7 +378,7 @@ func runApp(ctx context.Context) error {
 
 	if !serveMetricsOnAPIAddress {
 		mtrApp, err := metrics.NewApp(metrics.AppConfig{
-			Address:           cfg.MetricsListenAddr,
+			Address:           cfg.Metrics.ListenAddress,
 			ReadHeaderTimeout: time.Second * 5,
 		})
 		if err != nil {
@@ -435,8 +434,8 @@ func initP2PService(ctx context.Context, cfg config, keyProvider keyprovider.Key
 		libp2p.Security(noise.ID, noise.New),
 		libp2p.DefaultMuxers,
 	}
-	if cfg.P2PListenAddress != "" {
-		opts = append(opts, libp2p.ListenAddrStrings(cfg.P2PListenAddress))
+	if cfg.P2P.ListenAddress != "" {
+		opts = append(opts, libp2p.ListenAddrStrings(cfg.P2P.ListenAddress))
 	}
 	h, err := libp2p.New(opts...)
 	if err != nil {
@@ -449,11 +448,11 @@ func initP2PService(ctx context.Context, cfg config, keyProvider keyprovider.Key
 		Discovery: p2p.DefaultDiscoveryConfig(),
 		Handler:   p2p.NewP2PHandler(provider),
 	}
-	if len(cfg.Bootnodes) > 0 {
-		p2pCfg.Discovery.BootstrapPeers = cfg.Bootnodes
+	if len(cfg.P2P.Bootnodes) > 0 {
+		p2pCfg.Discovery.BootstrapPeers = cfg.P2P.Bootnodes
 	}
-	p2pCfg.Discovery.DHTMode = cfg.DHTMode
-	p2pCfg.Discovery.EnableMDNS = cfg.MDnsEnabled
+	p2pCfg.Discovery.DHTMode = cfg.P2P.DHTMode
+	p2pCfg.Discovery.EnableMDNS = cfg.P2P.MDnsEnabled
 
 	p2pService, err := p2p.NewService(ctx, p2pCfg, cfg.SignalCfg)
 	if err != nil {
