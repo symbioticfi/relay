@@ -25,7 +25,7 @@ func (h *grpcHandler) GetAggregationProof(ctx context.Context, req *apiv1.GetAgg
 		return nil, errors.Errorf("key tag %s is not an aggregation key", signatureRequest.KeyTag)
 	}
 
-	proof, err := h.cfg.Repo.GetAggregationProof(ctx, signatureRequest.RequiredEpoch, requestID)
+	proof, err := h.cfg.Repo.GetAggregationProof(ctx, requestID)
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityNotFound) {
 			return nil, status.Errorf(codes.NotFound, "aggregation proof for request %s not found", req.GetRequestId())

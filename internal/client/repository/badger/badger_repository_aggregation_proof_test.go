@@ -3,7 +3,6 @@ package badger
 import (
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 
 	"github.com/symbioticfi/relay/internal/entity"
@@ -16,14 +15,14 @@ func TestBadgerRepository_AggregationProof(t *testing.T) {
 
 	ap := randomAggregationProof(t)
 
-	hash := common.BytesToHash(randomBytes(t, 32))
+	hash := ap.RequestID()
 
 	err := repo.saveAggregationProof(t.Context(), hash, ap)
 	require.NoError(t, err)
 	err = repo.saveAggregationProof(t.Context(), hash, ap)
 	require.ErrorIs(t, err, entity.ErrEntityAlreadyExist)
 
-	loadedConfig, err := repo.GetAggregationProof(t.Context(), 10, hash)
+	loadedConfig, err := repo.GetAggregationProof(t.Context(), hash)
 	require.NoError(t, err)
 	require.Equal(t, ap, loadedConfig)
 }
@@ -55,9 +54,9 @@ func TestBadgerRepository_GetAggregationProofsByEpoch(t *testing.T) {
 		Proof:       randomBytes(t, 32),
 	}
 
-	hash1 := common.BytesToHash(randomBytes(t, 32))
-	hash2 := common.BytesToHash(randomBytes(t, 32))
-	hash3 := common.BytesToHash(randomBytes(t, 32))
+	hash1 := ap1.RequestID()
+	hash2 := ap2.RequestID()
+	hash3 := ap3.RequestID()
 
 	// Save all three aggregation proofs
 	err := repo.saveAggregationProof(t.Context(), hash1, ap1)

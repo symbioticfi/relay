@@ -2,7 +2,7 @@ package badger
 
 import (
 	"context"
-	"fmt"
+	"encoding/binary"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
@@ -14,21 +14,20 @@ import (
 )
 
 // keySignature returns key for a specific signature
-// Format: "signature:" + epoch.Bytes() + ":" + requestID.Hex() + ":" + validatorIndex
-// Epoch is first to enable efficient querying by epoch range
-func keySignature(epoch symbiotic.Epoch, requestID common.Hash, validatorIndex uint32) []byte {
-	key := []byte("signature:")
-	key = append(key, epoch.Bytes()...)
-	key = append(key, []byte(fmt.Sprintf(":%s:%010d", requestID.Hex(), validatorIndex))...)
-	return key
+// Format: "signature:" + requestID.Bytes() + ":" + validatorIndex (4 bytes BigEndian)
+// Epoch is embedded in requestID (first 8 bytes) to enable efficient querying by epoch range
+func keySignature(requestID common.Hash, validatorIndex uint32) []byte {
+	key := append([]byte("signature:"), requestID.Bytes()...)
+	key = append(key, ':')
+	// Append validatorIndex as 4-byte BigEndian uint32
+	indexBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(indexBytes, validatorIndex)
+	return append(key, indexBytes...)
 }
 
 // keySignatureByEpochPrefix returns prefix for all signatures of a specific epoch
 func keySignatureByEpochPrefix(epoch symbiotic.Epoch) []byte {
-	key := []byte("signature:")
-	key = append(key, epoch.Bytes()...)
-	key = append(key, ':')
-	return key
+	return append([]byte("signature:"), epoch.Bytes()...)
 }
 
 // keySignaturePrefix returns prefix for all signatures
@@ -37,11 +36,8 @@ func keySignaturePrefix() []byte {
 }
 
 // keySignatureByRequestIDPrefix returns prefix for all signatures of a specific request id within an epoch
-func keySignatureByRequestIDPrefix(epoch symbiotic.Epoch, requestID common.Hash) []byte {
-	key := []byte("signature:")
-	key = append(key, epoch.Bytes()...)
-	key = append(key, []byte(":"+requestID.Hex()+":")...)
-	return key
+func keySignatureByRequestIDPrefix(requestID common.Hash) []byte {
+	return append([]byte("signature:"), requestID.Bytes()...)
 }
 
 func (r *Repository) saveSignature(
@@ -59,7 +55,7 @@ func (r *Repository) saveSignature(
 		return errors.Errorf("failed to marshal signature: %w", err)
 	}
 
-	key := keySignature(sig.Epoch, sig.RequestID(), validatorIndex)
+	key := keySignature(sig.RequestID(), validatorIndex)
 	err = txn.Set(key, bytes)
 	if err != nil {
 		return errors.Errorf("failed to store signature: %w", err)
@@ -67,12 +63,12 @@ func (r *Repository) saveSignature(
 	return nil
 }
 
-func (r *Repository) GetAllSignatures(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) ([]symbiotic.Signature, error) {
+func (r *Repository) GetAllSignatures(ctx context.Context, requestID common.Hash) ([]symbiotic.Signature, error) {
 	var signatures []symbiotic.Signature
 
 	return signatures, r.doViewInTx(ctx, "GetAllSignatures", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		prefix := keySignatureByRequestIDPrefix(epoch, requestID)
+		prefix := keySignatureByRequestIDPrefix(requestID)
 		opts := badger.DefaultIteratorOptions
 		opts.Prefix = prefix
 
@@ -130,12 +126,12 @@ func (r *Repository) GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.E
 	})
 }
 
-func (r *Repository) GetSignatureByIndex(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash, validatorIndex uint32) (symbiotic.Signature, error) {
+func (r *Repository) GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (symbiotic.Signature, error) {
 	var signature symbiotic.Signature
 
 	err := r.doViewInTx(ctx, "GetSignatureByIndex", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		key := keySignature(epoch, requestID, validatorIndex)
+		key := keySignature(requestID, validatorIndex)
 
 		item, err := txn.Get(key)
 		if err != nil {

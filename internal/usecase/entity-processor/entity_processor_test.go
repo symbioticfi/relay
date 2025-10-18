@@ -354,6 +354,15 @@ func randomBytes(t *testing.T, n int) []byte {
 	return b
 }
 
+func computeMessageHash(t *testing.T, keyTag symbiotic.KeyTag, message []byte) []byte {
+	t.Helper()
+	priv, err := crypto.GeneratePrivateKey(keyTag.Type())
+	require.NoError(t, err)
+	_, messageHash, err := priv.Sign(message)
+	require.NoError(t, err)
+	return messageHash
+}
+
 func randomSignatureRequest(t *testing.T, epoch symbiotic.Epoch) symbiotic.SignatureRequest {
 	t.Helper()
 	req := symbiotic.SignatureRequest{
@@ -468,7 +477,7 @@ func TestEntityProcessor_ProcessAggregationProof_SuccessfullyProcesses(t *testin
 	msg := symbiotic.AggregationProof{
 		KeyTag:      req.KeyTag,
 		Epoch:       req.RequiredEpoch,
-		MessageHash: common.BytesToHash(randomBytes(t, 32)).Bytes(),
+		MessageHash: computeMessageHash(t, req.KeyTag, req.Message),
 		Proof:       randomBytes(t, 96),
 	}
 
@@ -491,7 +500,7 @@ func TestEntityProcessor_ProcessAggregationProof_SuccessfullyProcesses(t *testin
 	require.NoError(t, err)
 
 	// Verify aggregation proof was saved
-	savedProof, err := repo.GetAggregationProof(t.Context(), msg.Epoch, msg.RequestID())
+	savedProof, err := repo.GetAggregationProof(t.Context(), msg.RequestID())
 	require.NoError(t, err)
 	require.Equal(t, msg, savedProof)
 
@@ -509,7 +518,7 @@ func TestEntityProcessor_ProcessAggregationProof_HandlesMissingPendingGracefully
 	msg := symbiotic.AggregationProof{
 		KeyTag:      req.KeyTag,
 		Epoch:       req.RequiredEpoch,
-		MessageHash: common.BytesToHash(randomBytes(t, 32)).Bytes(),
+		MessageHash: computeMessageHash(t, req.KeyTag, req.Message),
 		Proof:       randomBytes(t, 128),
 	}
 
@@ -532,7 +541,7 @@ func TestEntityProcessor_ProcessAggregationProof_HandlesMissingPendingGracefully
 	require.NoError(t, err)
 
 	// Verify aggregation proof was still saved
-	savedProof, err := repo.GetAggregationProof(t.Context(), msg.Epoch, msg.RequestID())
+	savedProof, err := repo.GetAggregationProof(t.Context(), msg.RequestID())
 	require.NoError(t, err)
 	require.Equal(t, msg, savedProof)
 }
@@ -545,7 +554,7 @@ func TestEntityProcessor_ProcessAggregationProof_FailsWhenAlreadyExists(t *testi
 	msg := symbiotic.AggregationProof{
 		KeyTag:      req.KeyTag,
 		Epoch:       req.RequiredEpoch,
-		MessageHash: common.BytesToHash(randomBytes(t, 32)).Bytes(),
+		MessageHash: computeMessageHash(t, req.KeyTag, req.Message),
 		Proof:       randomBytes(t, 96),
 	}
 
@@ -663,7 +672,7 @@ func TestEntityProcessor_ProcessSignature_FullSignatureToAggregationProofFlow(t 
 	require.NoError(t, err)
 
 	// Verify aggregation proof was saved
-	savedProof, err := repo.GetAggregationProof(t.Context(), msg.Epoch, param.RequestID())
+	savedProof, err := repo.GetAggregationProof(t.Context(), param.RequestID())
 	require.NoError(t, err)
 	require.Equal(t, msg, savedProof)
 

@@ -35,9 +35,9 @@ type signer interface {
 }
 
 type repo interface {
-	GetAggregationProof(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) (symbiotic.AggregationProof, error)
+	GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error)
 	GetValidatorSetByEpoch(_ context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error)
-	GetAllSignatures(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) ([]symbiotic.Signature, error)
+	GetAllSignatures(ctx context.Context, requestID common.Hash) ([]symbiotic.Signature, error)
 	GetSignatureRequest(ctx context.Context, requestID common.Hash) (symbiotic.SignatureRequest, error)
 	GetLatestValidatorSetHeader(_ context.Context) (symbiotic.ValidatorSetHeader, error)
 	GetLatestValidatorSetEpoch(_ context.Context) (symbiotic.Epoch, error)

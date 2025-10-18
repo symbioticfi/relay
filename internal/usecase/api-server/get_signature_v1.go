@@ -18,16 +18,7 @@ import (
 func (h *grpcHandler) GetSignatures(ctx context.Context, req *apiv1.GetSignaturesRequest) (*apiv1.GetSignaturesResponse, error) {
 	requestID := common.HexToHash(req.GetRequestId())
 
-	signatureRequest, err := h.cfg.Repo.GetSignatureRequest(ctx, requestID)
-	if err != nil {
-		return nil, errors.Errorf("failed to get signature request: %w", err)
-	}
-
-	if !signatureRequest.KeyTag.Type().AggregationKey() {
-		return nil, errors.Errorf("key tag %s is not an aggregation key", signatureRequest.KeyTag)
-	}
-
-	signatures, err := h.cfg.Repo.GetAllSignatures(ctx, signatureRequest.RequiredEpoch, requestID)
+	signatures, err := h.cfg.Repo.GetAllSignatures(ctx, requestID)
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityNotFound) {
 			return nil, status.Errorf(codes.NotFound, "signatures for request %s not found", req.GetRequestId())

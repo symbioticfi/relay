@@ -172,11 +172,21 @@ func (s Signature) RequestID() common.Hash {
 }
 
 func requestID(keyTag KeyTag, epoch Epoch, messageHash RawMessageHash) common.Hash {
-	return crypto.Keccak256Hash(
+	var result common.Hash
+
+	copy(result[0:8], epoch.Bytes())
+
+	result[8] = uint8(keyTag)
+
+	msgHash := crypto.Keccak256Hash(
 		[]byte{uint8(keyTag)},
 		paddedUint64(uint64(epoch)),
 		messageHash,
 	)
+
+	copy(result[9:], msgHash[9:])
+
+	return result
 }
 
 func paddedUint64(value uint64) []byte {

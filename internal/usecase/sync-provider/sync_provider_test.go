@@ -108,7 +108,7 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify requester initially has no signatures
-	initialSignatures, err := requesterRepo.GetAllSignatures(t.Context(), signatureRequest.RequiredEpoch, requestID)
+	initialSignatures, err := requesterRepo.GetAllSignatures(t.Context(), requestID)
 	require.NoError(t, err)
 	require.Len(t, initialSignatures, 1) // Already has one signature from param1
 
@@ -128,7 +128,7 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	require.Equal(t, 0, stat.TotalErrors())
 
 	// Verify requester now has the signature
-	finalSignatures, err := requesterRepo.GetAllSignatures(t.Context(), signatureRequest.RequiredEpoch, requestID)
+	finalSignatures, err := requesterRepo.GetAllSignatures(t.Context(), requestID)
 	require.NoError(t, err)
 	require.Len(t, finalSignatures, 2)
 

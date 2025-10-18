@@ -12,12 +12,30 @@ import (
 
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
-// randomRequestID generates a random request id for testing
+// randomRequestID generates a valid request id for testing
 func randomRequestID(t *testing.T) common.Hash {
 	t.Helper()
-	return common.BytesToHash(randomBytes(t, 32))
+	req := symbiotic.SignatureRequest{
+		KeyTag:        symbiotic.KeyTag(15),
+		RequiredEpoch: symbiotic.Epoch(randomBigInt(t).Uint64()),
+		Message:       randomBytes(t, 32),
+	}
+	priv, err := crypto.GeneratePrivateKey(req.KeyTag.Type())
+	require.NoError(t, err)
+	_, messageHash, err := priv.Sign(req.Message)
+	require.NoError(t, err)
+
+	sig := symbiotic.Signature{
+		KeyTag:      req.KeyTag,
+		Epoch:       req.RequiredEpoch,
+		MessageHash: messageHash,
+		Signature:   nil,
+		PublicKey:   priv.PublicKey(),
+	}
+	return sig.RequestID()
 }
 
 // randomSignatureMap creates a SignatureMap with test data

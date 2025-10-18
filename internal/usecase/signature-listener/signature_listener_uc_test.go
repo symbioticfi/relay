@@ -39,7 +39,7 @@ func TestHandleSignatureReceivedMessage_HappyPath(t *testing.T) {
 	require.NoError(t, setup.useCase.HandleSignatureReceivedMessage(t.Context(), p2pMsg))
 
 	// Verify that signature was saved
-	signatures, err := setup.repo.GetAllSignatures(t.Context(), p2pMsg.Message.Epoch, p2pMsg.Message.RequestID())
+	signatures, err := setup.repo.GetAllSignatures(t.Context(), p2pMsg.Message.RequestID())
 	require.NoError(t, err)
 	require.Len(t, signatures, 1)
 

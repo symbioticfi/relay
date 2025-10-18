@@ -42,11 +42,6 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity
 			break
 		}
 
-		signatureRequest, err := s.cfg.Repo.GetSignatureRequest(ctx, requestID)
-		if err != nil {
-			return entity.WantSignaturesResponse{}, errors.Errorf("failed to get signature request: %w", err)
-		}
-
 		var validatorSigs []entity.ValidatorSignature
 
 		// Iterate over requested validator indices and get signatures directly
@@ -60,7 +55,7 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity
 			}
 
 			// Get signature by validator index directly
-			sig, err := s.cfg.Repo.GetSignatureByIndex(ctx, signatureRequest.RequiredEpoch, requestID, validatorIndex)
+			sig, err := s.cfg.Repo.GetSignatureByIndex(ctx, requestID, validatorIndex)
 			if err != nil {
 				if errors.Is(err, entity.ErrEntityNotFound) {
 					// Signature not found for this validator index, skip

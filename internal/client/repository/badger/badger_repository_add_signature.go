@@ -58,7 +58,7 @@ func (r *Repository) SaveSignature(ctx context.Context, signature symbiotic.Sign
 
 	// outside previous transaction, check if we can remove from pending collection
 	if signature.KeyTag.Type().AggregationKey() {
-		_, err := r.GetAggregationProof(ctx, signature.Epoch, signature.RequestID())
+		_, err := r.GetAggregationProof(ctx, signature.RequestID())
 		if err != nil {
 			if !errors.Is(err, entity.ErrEntityNotFound) {
 				return errors.Errorf("failed to get aggregation proof: %v", err)

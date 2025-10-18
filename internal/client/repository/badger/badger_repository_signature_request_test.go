@@ -12,12 +12,30 @@ import (
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
+// signatureRequestID computes the RequestID for a SignatureRequest
+func signatureRequestID(t *testing.T, req symbiotic.SignatureRequest) common.Hash {
+	t.Helper()
+	priv, err := crypto.GeneratePrivateKey(req.KeyTag.Type())
+	require.NoError(t, err)
+	_, messageHash, err := priv.Sign(req.Message)
+	require.NoError(t, err)
+
+	sig := symbiotic.Signature{
+		KeyTag:      req.KeyTag,
+		Epoch:       req.RequiredEpoch,
+		MessageHash: messageHash,
+		Signature:   nil,
+		PublicKey:   priv.PublicKey(),
+	}
+	return sig.RequestID()
+}
+
 func TestBadgerRepository_SignatureRequest(t *testing.T) {
 	t.Parallel()
 	repo := setupTestRepository(t)
 
 	req := randomSignatureRequest(t)
-	requestId := common.BytesToHash(randomBytes(t, 32))
+	requestId := signatureRequestID(t, req)
 
 	err := repo.SaveSignatureRequest(t.Context(), requestId, req)
 	require.NoError(t, err)
@@ -43,7 +61,7 @@ func TestBadgerRepository_GetSignatureRequestsByEpoch(t *testing.T) {
 		req := randomSignatureRequestForEpoch(t, epoch)
 		req.Message = append([]byte(strconv.Itoa(i)+"-"), req.Message...)
 		requests[i].req = req
-		requests[i].hash = common.BytesToHash(randomBytes(t, 32))
+		requests[i].hash = signatureRequestID(t, req)
 
 		err := repo.SaveSignatureRequest(t.Context(), requests[i].hash, req)
 		require.NoError(t, err)
@@ -171,14 +189,14 @@ func TestBadgerRepository_GetSignatureRequestsByEpoch_MultipleEpochs(t *testing.
 	// Create requests for epoch1
 	for i := 0; i < 3; i++ {
 		req := randomSignatureRequestForEpoch(t, epoch1)
-		err := repo.SaveSignatureRequest(t.Context(), common.BytesToHash(randomBytes(t, 32)), req)
+		err := repo.SaveSignatureRequest(t.Context(), signatureRequestID(t, req), req)
 		require.NoError(t, err)
 	}
 
 	// Create requests for epoch2
 	for i := 0; i < 2; i++ {
 		req := randomSignatureRequestForEpoch(t, epoch2)
-		err := repo.SaveSignatureRequest(t.Context(), common.BytesToHash(randomBytes(t, 32)), req)
+		err := repo.SaveSignatureRequest(t.Context(), signatureRequestID(t, req), req)
 		require.NoError(t, err)
 	}
 

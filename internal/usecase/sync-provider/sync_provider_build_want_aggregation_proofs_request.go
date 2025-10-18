@@ -48,7 +48,7 @@ func (s *Syncer) BuildWantAggregationProofsRequest(ctx context.Context) (entity.
 					continue // Skip non-aggregation requests
 				}
 				// check if proof exists
-				_, err := s.cfg.Repo.GetAggregationProof(ctx, req.RequiredEpoch, req.RequestID)
+				_, err := s.cfg.Repo.GetAggregationProof(ctx, req.RequestID)
 				if err == nil {
 					// remove pending from db
 					err = s.cfg.Repo.RemoveAggregationProofPending(ctx, req.RequiredEpoch, req.RequestID)

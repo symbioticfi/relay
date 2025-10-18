@@ -15,21 +15,15 @@ import (
 )
 
 // keyAggregationProof returns key for a specific aggregation proof
-// Format: "aggregation_proof:" + epoch.Bytes() + ":" + requestID.Hex()
-// Epoch is first to enable efficient querying by epoch range
-func keyAggregationProof(epoch symbiotic.Epoch, requestID common.Hash) []byte {
-	key := []byte("aggregation_proof:")
-	key = append(key, epoch.Bytes()...)
-	key = append(key, []byte(":"+requestID.Hex())...)
-	return key
+// Format: "aggregation_proof:" + requestID bytes (where first 8 bytes of requestID is epoch)
+// Epoch is embedded in requestID to enable efficient querying by epoch range
+func keyAggregationProof(requestID common.Hash) []byte {
+	return append([]byte("aggregation_proof:"), requestID.Bytes()...)
 }
 
 // keyAggregationProofByEpochPrefix returns prefix for all aggregation proofs of a specific epoch
 func keyAggregationProofByEpochPrefix(epoch symbiotic.Epoch) []byte {
-	key := []byte("aggregation_proof:")
-	key = append(key, epoch.Bytes()...)
-	key = append(key, ':')
-	return key
+	return append([]byte("aggregation_proof:"), epoch.Bytes()...)
 }
 
 // keyAggregationProofPrefix returns prefix for all aggregation proofs
@@ -53,7 +47,7 @@ func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.
 
 	return r.doUpdateInTxWithLock(ctx, "saveAggregationProof", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		key := keyAggregationProof(ap.Epoch, requestID)
+		key := keyAggregationProof(requestID)
 		_, err := txn.Get(key)
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
 			return errors.Errorf("failed to get aggregation proof: %w", err)
@@ -70,12 +64,12 @@ func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.
 	}, &r.proofsMutexMap, requestID)
 }
 
-func (r *Repository) GetAggregationProof(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) (symbiotic.AggregationProof, error) {
+func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error) {
 	var ap symbiotic.AggregationProof
 
 	return ap, r.doViewInTx(ctx, "GetAggregationProof", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		key := keyAggregationProof(epoch, requestID)
+		key := keyAggregationProof(requestID)
 		item, err := txn.Get(key)
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
