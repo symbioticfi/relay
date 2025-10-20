@@ -47,7 +47,10 @@ func New(cfg Config) (*SignatureListenerUseCase, error) {
 
 func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Context, p2pMsg entity.P2PMessage[symbiotic.Signature]) error {
 	ctx = log.WithComponent(ctx, "sign_listener")
-	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(p2pMsg.Message.Epoch)), slog.String("requestId", p2pMsg.Message.RequestID().Hex()))
+	ctx = log.WithAttrs(ctx,
+		slog.Uint64("epoch", uint64(p2pMsg.Message.Epoch)),
+		slog.String("requestId", p2pMsg.Message.RequestID().Hex()),
+	)
 
 	msg := p2pMsg.Message
 
