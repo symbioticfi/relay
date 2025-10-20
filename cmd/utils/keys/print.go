@@ -6,6 +6,7 @@ import (
 	"github.com/pterm/pterm"
 	cmdhelpers "github.com/symbioticfi/relay/internal/usecase/cmd-helpers"
 	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
+	"github.com/symbioticfi/relay/symbiotic/entity"
 
 	"github.com/spf13/cobra"
 )
@@ -30,7 +31,7 @@ var printKeysCmd = &cobra.Command{
 
 		aliases := keyStore.GetAliases()
 
-		tableData := pterm.TableData{{"#", "Alias", "Public Key"}}
+		tableData := pterm.TableData{{"#", "Alias", "Key Tag (Symb Keys)", "Public Key"}}
 		for i, alias := range aliases {
 			ns, kType, id, err := keyprovider.AliasToKeyTypeId(alias)
 			if err != nil {
@@ -44,9 +45,19 @@ var printKeysCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
+			tag := "-"
+			// for other namespace no guarantees can be made about the key id size
+			if ns == keyprovider.SYMBIOTIC_KEY_NAMESPACE {
+				kTag, err := entity.KeyTagFromTypeAndId(kType, uint8(id))
+				if err != nil {
+					return err
+				}
+				tag = kTag.String()
+			}
 			tableData = append(tableData, []string{
 				strconv.Itoa(i + 1),
 				alias,
+				tag,
 				string(prettyPk),
 			})
 		}

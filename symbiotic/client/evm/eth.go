@@ -807,16 +807,25 @@ func (e *Client) getOperatorRegistryContract(addr symbiotic.CrossChainAddress) (
 }
 
 func findErrorBySelector(errSelector string) (abi.Error, bool) {
-	settlementAbi, err := gen.ISettlementMetaData.GetAbi()
-	if err != nil {
-		slog.Warn("Failed to get settlement ABI", "error", err)
-		return abi.Error{}, false
+	errorDefs := map[string]*bind.MetaData{
+		"settlement":          gen.ISettlementMetaData,
+		"driver":              gen.IValSetDriverMetaData,
+		"votingPowerProvider": gen.IVotingPowerProviderMetaData,
+		"keyRegistry":         gen.IKeyRegistryMetaData,
 	}
 
-	for _, errDef := range settlementAbi.Errors {
-		selector := hex.EncodeToString(crypto.Keccak256([]byte(errDef.Sig))[:4])
-		if "0x"+selector == errSelector {
-			return errDef, true
+	for contract, meta := range errorDefs {
+		contractAbi, err := meta.GetAbi()
+		if err != nil {
+			slog.Warn("Failed to get ABI", "contract", contract, "error", err)
+			return abi.Error{}, false
+		}
+
+		for _, errDef := range contractAbi.Errors {
+			selector := hex.EncodeToString(crypto.Keccak256([]byte(errDef.Sig))[:4])
+			if "0x"+selector == errSelector {
+				return errDef, true
+			}
 		}
 	}
 

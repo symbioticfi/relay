@@ -51,6 +51,10 @@ func ToAlias(namespace string, keyType symbiotic.KeyType, keyId int) (string, er
 		return "", errors.New("namespace must not contain dash")
 	}
 
+	if namespace == SYMBIOTIC_KEY_NAMESPACE && (keyId < 0 || keyId > 15) {
+		return "", errors.New("key ID must be between 0 and 15 for symbiotic namespace")
+	}
+
 	keyIdStr := strconv.Itoa(keyId)
 
 	return namespace + "-" + keyTypeStr + "-" + keyIdStr, nil

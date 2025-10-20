@@ -24,8 +24,8 @@ var BuildTime = "unknown"
 var cfg config
 
 func main() {
-	rootCmd.PersistentFlags().StringVar(&cfg.logLevel, "log-level", "info", "log level")
-	rootCmd.PersistentFlags().StringVar(&cfg.logMode, "log-mode", "debug", "log mode")
+	rootCmd.PersistentFlags().StringVar(&cfg.logLevel, "log.level", "info", "log level(info, debug, warn, error)")
+	rootCmd.PersistentFlags().StringVar(&cfg.logMode, "log.mode", "text", "log mode(pretty, text, json)")
 
 	rootCmd.AddCommand(keys.NewKeysCmd())
 	rootCmd.AddCommand(network.NewNetworkCmd())
