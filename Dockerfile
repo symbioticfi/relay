@@ -33,3 +33,4 @@ WORKDIR /app
 
 COPY --from=builder /app/relay_utils .
 COPY --from=builder /app/relay_sidecar .
+COPY --from=builder /app/docs ./docs
