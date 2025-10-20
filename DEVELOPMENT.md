@@ -407,7 +407,7 @@ Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for our branching strategy, PR 
 
 ## Additional Resources
 
-- **API Documentation**: [api/docs/v1/doc.md](api/docs/v1/doc.md)
+- **API Documentation**: [docs/api/v1/doc.md](docs/api/v1/doc.md)
 - **Main README**: [README.md](README.md)
 - **Contributing Guide**: [CONTRIBUTING.md](CONTRIBUTING.md)
 - **Official Docs**: https://docs.symbiotic.fi/category/relay-sdk

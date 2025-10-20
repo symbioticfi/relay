@@ -31,6 +31,7 @@ For detailed architecture information, see [DEVELOPMENT.md](DEVELOPMENT.md).
 
 - **[Development Guide](DEVELOPMENT.md)** - Comprehensive guide for developers including testing, API changes, and code generation
 - **[Relay Docs](https://docs.symbiotic.fi/category/relay-sdk)** - Official documentation
+- **[CLI Documentation](docs/cli/)** - Command-line interface reference for relay_sidecar and relay_utils
 - **[Contributing](CONTRIBUTING.md)** - Contribution guidelines and workflow
 
 ## Running Examples
@@ -43,7 +44,7 @@ For a complete end-to-end example application using the relay, see:
 
 The relay exposes a gRPC API for interacting with the network. See:
 
-- **API Documentation**: [api/docs/v1/doc.md](api/docs/v1/doc.md)
+- **API Documentation**: [docs/api/v1/doc.md](docs/api/v1/doc.md)
 - **Proto Definitions**: [api/proto/v1/api.proto](api/proto/v1/api.proto)
 - **Go Client**: [api/client/v1/](api/client/v1/)
 - **Client Examples**: [api/client/examples/](api/client/examples/)
@@ -152,6 +153,8 @@ OPERATORS=6 COMMITERS=2 AGGREGATORS=1 make local-setup
 ```
 
 ## Configuration File Structure
+
+> **Note**: For a complete reference of all configuration options and command-line flags, see the [relay_sidecar CLI documentation](docs/cli/relay/relay_sidecar.md).
 
 Create a `config.yaml` file with the following structure:
 

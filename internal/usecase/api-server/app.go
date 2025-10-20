@@ -275,7 +275,7 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 	}
 
 	// Serve API documentation
-	docFS := http.FileServer(http.Dir("api/docs/v1"))
+	docFS := http.FileServer(http.Dir("docs/api/v1"))
 	httpMux.Handle("/docs/", http.StripPrefix("/docs/", docFS))
 
 	// Serve metrics endpoint if enabled
