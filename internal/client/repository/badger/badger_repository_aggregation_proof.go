@@ -19,8 +19,7 @@ func keyAggregationProof(requestID common.Hash) []byte {
 }
 
 func keyAggregationProofByEpoch(epoch symbiotic.Epoch, prevKey []byte) []byte {
-	key := append([]byte("aggregation_proof_by_epoch:"), epoch.Bytes()...)
-	return append(append(key, ':'), prevKey...)
+	return append(keyAggregationProofByEpochPrefix(epoch), prevKey...)
 }
 
 func keyAggregationProofByEpochPrefix(epoch symbiotic.Epoch) []byte {

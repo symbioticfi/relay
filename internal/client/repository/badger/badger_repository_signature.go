@@ -18,8 +18,7 @@ func keySignature(requestID common.Hash, validatorIndex uint32) []byte {
 }
 
 func keySignatureByEpoch(epoch symbiotic.Epoch, prevKey []byte) []byte {
-	key := append([]byte("signature_by_epoch:"), epoch.Bytes()...)
-	return append(append(key, ':'), prevKey...)
+	return append(keySignatureByEpochPrefix(epoch), prevKey...)
 }
 
 func keySignatureByEpochPrefix(epoch symbiotic.Epoch) []byte {
