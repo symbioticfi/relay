@@ -2,7 +2,7 @@ package badger
 
 import (
 	"context"
-	"encoding/binary"
+	"fmt"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
@@ -13,31 +13,26 @@ import (
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
-// keySignature returns key for a specific signature
-// Format: "signature:" + requestID.Bytes() + ":" + validatorIndex (4 bytes BigEndian)
-// Epoch is embedded in requestID (first 8 bytes) to enable efficient querying by epoch range
 func keySignature(requestID common.Hash, validatorIndex uint32) []byte {
-	key := append([]byte("signature:"), requestID.Bytes()...)
-	key = append(key, ':')
-	// Append validatorIndex as 4-byte BigEndian uint32
-	indexBytes := make([]byte, 4)
-	binary.BigEndian.PutUint32(indexBytes, validatorIndex)
-	return append(key, indexBytes...)
+	return []byte(fmt.Sprintf("signature:%s:%010d", requestID.Hex(), validatorIndex))
 }
 
-// keySignatureByEpochPrefix returns prefix for all signatures of a specific epoch
+func keySignatureByEpoch(epoch symbiotic.Epoch, prevKey []byte) []byte {
+	key := append([]byte("signature_by_epoch:"), epoch.Bytes()...)
+	return append(append(key, ':'), prevKey...)
+}
+
 func keySignatureByEpochPrefix(epoch symbiotic.Epoch) []byte {
-	return append([]byte("signature:"), epoch.Bytes()...)
+	key := append([]byte("signature_by_epoch:"), epoch.Bytes()...)
+	return append(key, ':')
 }
 
-// keySignaturePrefix returns prefix for all signatures
-func keySignaturePrefix() []byte {
-	return []byte("signature:")
+func keySignatureByEpochPrefixAll() []byte {
+	return []byte("signature_by_epoch:")
 }
 
-// keySignatureByRequestIDPrefix returns prefix for all signatures of a specific request id within an epoch
-func keySignatureByRequestIDPrefix(requestID common.Hash) []byte {
-	return append([]byte("signature:"), requestID.Bytes()...)
+func keySignatureRequestIDPrefix(requestID common.Hash) []byte {
+	return []byte("signature:" + requestID.Hex() + ":")
 }
 
 func (r *Repository) saveSignature(
@@ -55,11 +50,19 @@ func (r *Repository) saveSignature(
 		return errors.Errorf("failed to marshal signature: %w", err)
 	}
 
-	key := keySignature(sig.RequestID(), validatorIndex)
-	err = txn.Set(key, bytes)
-	if err != nil {
+	valueKey := keySignature(sig.RequestID(), validatorIndex)
+
+	if err = txn.Set(valueKey, bytes); err != nil {
 		return errors.Errorf("failed to store signature: %w", err)
 	}
+
+	if err = txn.Set(
+		keySignatureByEpoch(sig.Epoch, valueKey),
+		valueKey,
+	); err != nil {
+		return errors.Errorf("failed to store signature map key by epoch: %w", err)
+	}
+
 	return nil
 }
 
@@ -68,14 +71,14 @@ func (r *Repository) GetAllSignatures(ctx context.Context, requestID common.Hash
 
 	return signatures, r.doViewInTx(ctx, "GetAllSignatures", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		prefix := keySignatureByRequestIDPrefix(requestID)
+		prefix := keySignatureRequestIDPrefix(requestID)
 		opts := badger.DefaultIteratorOptions
 		opts.Prefix = prefix
 
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
-		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+		for it.Rewind(); it.Valid(); it.Next() {
 			item := it.Item()
 			value, err := item.ValueCopy(nil)
 			if err != nil {
@@ -99,24 +102,34 @@ func (r *Repository) GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.E
 
 	return signatures, r.doViewInTx(ctx, "GetSignaturesByEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		// Use general prefix for all signatures and start from specific epoch
 		startKey := keySignatureByEpochPrefix(epoch)
 		opts := badger.DefaultIteratorOptions
-		opts.Prefix = keySignaturePrefix()
+		opts.Prefix = keySignatureByEpochPrefixAll()
 
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
 		for it.Seek(startKey); it.Valid(); it.Next() {
 			item := it.Item()
+
 			value, err := item.ValueCopy(nil)
+			if err != nil {
+				return errors.Errorf("failed to copy signature key: %w", err)
+			}
+
+			item, err = txn.Get(value)
+			if err != nil {
+				return errors.Errorf("failed to get signature key: %w", err)
+			}
+
+			value, err = item.ValueCopy(nil)
 			if err != nil {
 				return errors.Errorf("failed to copy signature value: %w", err)
 			}
 
 			sig, err := bytesToSignature(value)
 			if err != nil {
-				return errors.Errorf("failed to unmarshal signature: %w", err)
+				return errors.Errorf("failed to unmarshal signature value: %w", err)
 			}
 
 			signatures = append(signatures, sig)

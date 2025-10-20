@@ -14,21 +14,22 @@ import (
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-// keyAggregationProof returns key for a specific aggregation proof
-// Format: "aggregation_proof:" + requestID bytes (where first 8 bytes of requestID is epoch)
-// Epoch is embedded in requestID to enable efficient querying by epoch range
 func keyAggregationProof(requestID common.Hash) []byte {
 	return append([]byte("aggregation_proof:"), requestID.Bytes()...)
 }
 
-// keyAggregationProofByEpochPrefix returns prefix for all aggregation proofs of a specific epoch
-func keyAggregationProofByEpochPrefix(epoch symbiotic.Epoch) []byte {
-	return append([]byte("aggregation_proof:"), epoch.Bytes()...)
+func keyAggregationProofByEpoch(epoch symbiotic.Epoch, prevKey []byte) []byte {
+	key := append([]byte("aggregation_proof_by_epoch:"), epoch.Bytes()...)
+	return append(append(key, ':'), prevKey...)
 }
 
-// keyAggregationProofPrefix returns prefix for all aggregation proofs
-func keyAggregationProofPrefix() []byte {
-	return []byte("aggregation_proof:")
+func keyAggregationProofByEpochPrefix(epoch symbiotic.Epoch) []byte {
+	key := append([]byte("aggregation_proof_by_epoch:"), epoch.Bytes()...)
+	return append(key, ':')
+}
+
+func keyAggregationProofByEpochPrefixAll() []byte {
+	return []byte("aggregation_proof_by_epoch:")
 }
 
 func keyAggregationProofPending(epoch symbiotic.Epoch, requestID common.Hash) []byte {
@@ -47,8 +48,10 @@ func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.
 
 	return r.doUpdateInTxWithLock(ctx, "saveAggregationProof", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		key := keyAggregationProof(requestID)
-		_, err := txn.Get(key)
+
+		valueKey := keyAggregationProof(requestID)
+
+		_, err := txn.Get(valueKey)
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
 			return errors.Errorf("failed to get aggregation proof: %w", err)
 		}
@@ -56,10 +59,17 @@ func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.
 			return errors.Errorf("aggregation proof already exists: %w", entity.ErrEntityAlreadyExist)
 		}
 
-		err = txn.Set(key, proofBytes)
-		if err != nil {
+		if err = txn.Set(valueKey, proofBytes); err != nil {
 			return errors.Errorf("failed to store aggregation proof: %w", err)
 		}
+
+		if err = txn.Set(
+			keyAggregationProofByEpoch(ap.Epoch, valueKey),
+			valueKey,
+		); err != nil {
+			return errors.Errorf("failed to store aggregation proof map key by epoch: %w", err)
+		}
+
 		return nil
 	}, &r.proofsMutexMap, requestID)
 }
@@ -97,19 +107,30 @@ func (r *Repository) GetAggregationProofsByEpoch(ctx context.Context, epoch symb
 
 	return proofs, r.doViewInTx(ctx, "GetAggregationProofsByEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		// Use general prefix for all aggregation proofs and start from specific epoch
+
 		startKey := keyAggregationProofByEpochPrefix(epoch)
 		opts := badger.DefaultIteratorOptions
-		opts.Prefix = keyAggregationProofPrefix()
+		opts.Prefix = keyAggregationProofByEpochPrefixAll()
 
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
 		for it.Seek(startKey); it.Valid(); it.Next() {
 			item := it.Item()
+
 			value, err := item.ValueCopy(nil)
 			if err != nil {
-				return errors.Errorf("failed to copy aggregation proof value: %w", err)
+				return errors.Errorf("failed to copy aggregation proof key: %w", err)
+			}
+
+			item, err = txn.Get(value)
+			if err != nil {
+				return errors.Errorf("failed to get aggregation proof key: %w", err)
+			}
+
+			value, err = item.ValueCopy(nil)
+			if err != nil {
+				return errors.Errorf("failed to copy aggregation proof: %w", err)
 			}
 
 			proof, err := bytesToAggregationProof(value)
