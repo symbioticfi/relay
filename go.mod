@@ -3,7 +3,7 @@ module github.com/symbioticfi/relay
 go 1.24.5
 
 require (
-	github.com/RoaringBitmap/roaring/v2 v2.10.0
+	github.com/RoaringBitmap/roaring/v2 v2.11.0
 	github.com/consensys/gnark v0.0.0-00010101000000-000000000000 // pinned with replace
 	github.com/consensys/gnark-crypto v0.19.0 // pinned with replace
 	github.com/dgraph-io/badger/v4 v4.8.0
@@ -51,7 +51,7 @@ require (
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bits-and-blooms/bitset v1.24.0 // indirect
+	github.com/bits-and-blooms/bitset v1.24.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
