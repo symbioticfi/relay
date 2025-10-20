@@ -16,9 +16,7 @@ import (
 
 // GetSignatures handles the gRPC GetSignatures request
 func (h *grpcHandler) GetSignatures(ctx context.Context, req *apiv1.GetSignaturesRequest) (*apiv1.GetSignaturesResponse, error) {
-	requestID := common.HexToHash(req.GetRequestId())
-
-	signatures, err := h.cfg.Repo.GetAllSignatures(ctx, requestID)
+	signatures, err := h.cfg.Repo.GetAllSignatures(ctx, common.HexToHash(req.GetRequestId()))
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityNotFound) {
 			return nil, status.Errorf(codes.NotFound, "signatures for request %s not found", req.GetRequestId())
