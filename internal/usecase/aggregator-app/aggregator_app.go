@@ -81,7 +81,10 @@ func NewAggregatorApp(cfg Config) (*AggregatorApp, error) {
 
 func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg symbiotic.Signature) error {
 	ctx = log.WithComponent(ctx, "aggregator")
-	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(msg.Epoch)))
+	ctx = log.WithAttrs(ctx,
+		slog.Uint64("epoch", uint64(msg.Epoch)),
+		slog.String("requestId", msg.RequestID().Hex()),
+	)
 	slog.DebugContext(ctx, "Received HandleSignatureProcessedMessage", "message", msg)
 
 	_, err := s.cfg.Repo.GetAggregationProof(ctx, msg.RequestID())
@@ -178,7 +181,6 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 
 	slog.InfoContext(ctx, "Proof created, trying to send aggregated signature message",
 		"duration", time.Since(appAggregationStart).String(),
-		"request_id", msg.RequestID().Hex(),
 	)
 
 	err = s.cfg.P2PClient.BroadcastSignatureAggregatedMessage(ctx, proofData)

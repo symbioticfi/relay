@@ -47,6 +47,10 @@ func New(cfg Config) (*SignatureListenerUseCase, error) {
 
 func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Context, p2pMsg entity.P2PMessage[symbiotic.Signature]) error {
 	ctx = log.WithComponent(ctx, "sign_listener")
+	ctx = log.WithAttrs(ctx,
+		slog.Uint64("epoch", uint64(p2pMsg.Message.Epoch)),
+		slog.String("requestId", p2pMsg.Message.RequestID().Hex()),
+	)
 
 	msg := p2pMsg.Message
 
@@ -61,15 +65,12 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 	if err != nil {
 		// ignore if signature already exists
 		if errors.Is(err, entity.ErrEntityAlreadyExist) {
-			slog.DebugContext(ctx, "Signature already exists, ignoring", "request_id", msg.RequestID().Hex(), "epoch", msg.Epoch)
+			slog.DebugContext(ctx, "Signature already exists, ignoring")
 			return nil
 		}
 		return errors.Errorf("failed to process signature: %w", err)
 	}
 
-	slog.InfoContext(ctx, "Listener processed received signature",
-		"request_id", msg.RequestID().Hex(),
-		"epoch", msg.Epoch,
-	)
+	slog.InfoContext(ctx, "Listener processed received signature")
 	return nil
 }

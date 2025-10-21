@@ -177,8 +177,14 @@ func (p *ZkProver) Prove(proveInput ProveInput) (ProofData, error) {
 	assignment := Circuit{}
 	setCircuitData(&assignment, proveInput)
 
-	witness, _ := frontend.NewWitness(&assignment, ecc.BN254.ScalarField())
-	publicWitness, _ := witness.Public()
+	witness, err := frontend.NewWitness(&assignment, ecc.BN254.ScalarField())
+	if err != nil {
+		return ProofData{}, errors.Errorf("failed to create witness: %w", err)
+	}
+	publicWitness, err := witness.Public()
+	if err != nil {
+		return ProofData{}, errors.Errorf("failed to create public witness: %w", err)
+	}
 
 	// groth16: Prove & Verify
 	proof, err := groth16.Prove(r1cs, pk, witness, backend.WithProverHashToFieldFunction(sha256.New()))
