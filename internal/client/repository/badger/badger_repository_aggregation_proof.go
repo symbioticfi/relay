@@ -16,7 +16,7 @@ import (
 )
 
 func keyAggregationProof(requestID common.Hash) []byte {
-	return append([]byte("aggregation_proof:"), requestID.Bytes()...)
+	return []byte(fmt.Sprintf("aggregation_proof:%s", requestID.Hex()))
 }
 
 func keyAggregationProofPending(epoch symbiotic.Epoch, requestID common.Hash) []byte {
