@@ -237,12 +237,12 @@ func (s *SignerApp) worker(ctx context.Context, id int, p2pService p2pService) {
 
 			req, err := s.cfg.Repo.GetSignatureRequest(ctx, item)
 			if err != nil {
-				slog.ErrorContext(ctx, "Failed to get signature request from repo", "request_id", item.Hex(), "error", err)
+				slog.ErrorContext(ctx, "Failed to get signature request from repo", "requestId", item.Hex(), "error", err)
 				return
 			}
 
 			if err = s.completeSign(ctx, req, p2pService); err != nil {
-				slog.ErrorContext(ctx, "Failed to complete sign for request", "request_id", item.Hex(), "error", err)
+				slog.ErrorContext(ctx, "Failed to complete sign for request", "requestId", item.Hex(), "error", err)
 				return
 			}
 		}()
@@ -261,7 +261,7 @@ func (s *SignerApp) handleMissedSignaturesOnce(ctx context.Context) error {
 
 	slog.InfoContext(ctx, "Handling pending self signature requests", "count", len(pendingRequests))
 	for _, reqID := range pendingRequests {
-		slog.InfoContext(ctx, "Handling pending self signature request", "request_id", reqID.Hex())
+		slog.InfoContext(ctx, "Handling pending self signature request", "requestId", reqID.Hex())
 		s.queue.Add(reqID)
 	}
 	return nil
