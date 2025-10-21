@@ -324,7 +324,3 @@ We welcome contributions! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for:
 - Testing requirements
 
 For development workflows, API changes, and testing procedures, see [DEVELOPMENT.md](DEVELOPMENT.md).
-
-## License
-
-See [LICENSE](LICENSE) file for details.
