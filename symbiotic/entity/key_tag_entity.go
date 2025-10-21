@@ -33,14 +33,14 @@ func (kt KeyTag) Type() KeyType {
 
 func (kt KeyTag) MarshalText() (text []byte, err error) {
 	keyType := kt.Type()
-	keyTag := uint8(kt) & 0x0F
+	keyID := uint8(kt) & 0x0F
 	switch keyType {
 	case KeyTypeBlsBn254:
-		return []byte(fmt.Sprintf("%d (BLS-BN254/%d)", uint8(kt), keyTag)), nil
+		return []byte(fmt.Sprintf("%d (BLS-BN254/%d)", uint8(kt), keyID)), nil
 	case KeyTypeEcdsaSecp256k1:
-		return []byte(fmt.Sprintf("%d (ECDSA-SECP256K1/%d)", uint8(kt), keyTag)), nil
+		return []byte(fmt.Sprintf("%d (ECDSA-SECP256K1/%d)", uint8(kt), keyID)), nil
 	case KeyTypeInvalid:
-		return []byte(fmt.Sprintf("%d (UNKNOWN/%d)", uint8(kt), keyTag)), nil
+		return []byte(fmt.Sprintf("%d (UNKNOWN/%d)", uint8(kt), keyID)), nil
 	}
 	return nil, errors.Errorf("unsupported key type: %d", keyType)
 }
@@ -103,4 +103,21 @@ func KeyTypeFromString(typeStr string) (KeyType, error) {
 		return KeyTypeInvalid, nil
 	}
 	return 0, errors.New("invalid key type")
+}
+
+func KeyTagFromTypeAndId(keyType KeyType, keyId uint8) (KeyTag, error) {
+	if keyId > 15 {
+		return 0, errors.New("key id must be between 0 and 15")
+	}
+
+	switch keyType {
+	case KeyTypeBlsBn254:
+	case KeyTypeEcdsaSecp256k1:
+	case KeyTypeInvalid:
+		return 0, errors.New("invalid key type")
+	default:
+		return 0, errors.New("unsupported key type")
+	}
+
+	return KeyTag((uint8(keyType) << 4) | keyId), nil
 }

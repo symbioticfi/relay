@@ -1,0 +1,35 @@
+# `utils network generate-genesis` Command Reference
+
+## utils network generate-genesis
+
+Generate genesis validator set header
+
+```
+utils network generate-genesis [flags]
+```
+
+### Options
+
+```
+      --commit                     Commit genesis flag
+  -h, --help                       help for generate-genesis
+  -j, --json                       Print as json
+  -o, --output string              Output file path
+      --secret-keys secretKeyMap   Secret key for genesis commit  in format 'chainId:key,chainId:key' (e.g. '1:0xabc,137:0xdef')
+```
+
+### Options inherited from parent commands
+
+```
+  -c, --chains strings          Chains rpc url, comma separated
+      --driver.address string   Driver contract address
+      --driver.chainid uint     Driver contract chain id
+  -e, --epoch uint              Network epoch to fetch info
+      --log.level string        log level(info, debug, warn, error) (default "info")
+      --log.mode string         log mode(pretty, text, json) (default "text")
+```
+
+### SEE ALSO
+
+* [utils network](utils_network.md)	 - Network tool
+

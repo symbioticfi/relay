@@ -5,11 +5,11 @@ managed:
   enabled: true
 plugins:
   - local: protoc-gen-doc
-    out: api/docs/v1
+    out: docs/api/v1
     opt:
       - "html,index.html"
   - local: protoc-gen-doc
-    out: api/docs/v1
+    out: docs/api/v1
     opt:
       - "markdown,doc.md"
   - local: protoc-gen-go

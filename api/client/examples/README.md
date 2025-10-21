@@ -72,7 +72,7 @@ For a more comprehensive example of using the client library in a real-world app
 
 For complete API documentation, refer to:
 
-- **API Documentation**: [`api/docs/v1/doc.md`](../../docs/v1/doc.md)
+- **API Documentation**: [`docs/api/v1/doc.md`](../../../docs/api/v1/doc.md)
 - **Protocol Buffer definitions**: [`api/proto/v1/api.proto`](../../proto/v1/api.proto)
 - **Generated Go types**: [`api/client/v1/types.go`](../v1/types.go)
 - **Client interface**: [`api/client/v1/client.go`](../v1/client.go)
