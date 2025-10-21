@@ -93,17 +93,17 @@ func TestDefaultEVMKey(t *testing.T) {
 	key, err := crypto.NewPrivateKey(symbiotic.KeyTypeBlsBn254, pk)
 	require.NoError(t, err)
 
-	_, err = kp.GetPrivateKeyByNamespaceTypeId(EVM_KEY_NAMESPACE, symbiotic.KeyTypeBlsBn254, 111)
+	_, err = kp.GetPrivateKeyByNamespaceTypeId(EVM_KEY_NAMESPACE, symbiotic.KeyTypeBlsBn254, 11)
 	require.ErrorIs(t, err, entity.ErrKeyNotFound, "expected entry not found error for non-existing key")
 
 	err = kp.AddKeyByNamespaceTypeId(EVM_KEY_NAMESPACE, symbiotic.KeyTypeBlsBn254, DEFAULT_EVM_CHAIN_ID, key, password, false)
 	require.NoError(t, err)
 
-	storedPk, err := kp.GetPrivateKeyByNamespaceTypeId(EVM_KEY_NAMESPACE, symbiotic.KeyTypeBlsBn254, 111)
+	storedPk, err := kp.GetPrivateKeyByNamespaceTypeId(EVM_KEY_NAMESPACE, symbiotic.KeyTypeBlsBn254, 11)
 	require.NoError(t, err)
 	require.Equal(t, storedPk.Bytes(), pk)
 
 	// shouldn't work for other chains
-	_, err = kp.GetPrivateKeyByNamespaceTypeId(SYMBIOTIC_KEY_NAMESPACE, symbiotic.KeyTypeBlsBn254, 111)
+	_, err = kp.GetPrivateKeyByNamespaceTypeId(SYMBIOTIC_KEY_NAMESPACE, symbiotic.KeyTypeBlsBn254, 11)
 	require.ErrorIs(t, err, entity.ErrKeyNotFound, "expected entry not found error for non-existing key")
 }

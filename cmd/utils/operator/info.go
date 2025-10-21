@@ -93,7 +93,7 @@ var infoCmd = &cobra.Command{
 			return err
 		}
 
-		validator, found := valset.FindValidatorByKey(kt, pk.PublicKey().Raw())
+		validator, found := valset.FindValidatorByKey(kt, pk.PublicKey().OnChain())
 		if !found {
 			return errors.Errorf("validator not found for key: %d %s", kt, common.Bytes2Hex(pk.PublicKey().Raw()))
 		}

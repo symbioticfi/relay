@@ -4,61 +4,15 @@ import (
 	"context"
 	"log/slog"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/go-errors/errors"
-	"github.com/spf13/cobra"
+	"github.com/symbioticfi/relay/cmd/relay/root"
 )
 
-var Version = "local"
-var BuildTime = "unknown"
-
 func main() {
-	slog.Info("Running relay_sidecar command",
-		"version", Version,
-		"buildTime", BuildTime,
-		"args", os.Args,
-	)
-
-	if err := runRootCMD(); err != nil && !errors.Is(err, context.Canceled) {
+	if err := root.NewRootCommand().Execute(); err != nil && !errors.Is(err, context.Canceled) {
 		slog.Error("Error executing command", "error", err)
 		os.Exit(1)
 	}
 	slog.Info("Relay sidecar completed successfully")
-}
-
-func runRootCMD() error {
-	addRootFlags(rootCmd)
-
-	return rootCmd.Execute()
-}
-
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:               "relay_sidecar",
-	Short:             "Relay sidecar for signature aggregation",
-	Long:              "A P2P service for collecting and aggregating signatures for Ethereum contracts.",
-	SilenceUsage:      true,
-	SilenceErrors:     true,
-	PersistentPreRunE: initConfig,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runApp(signalContext(cmd.Context()))
-	},
-}
-
-// signalContext returns a context that is canceled if either SIGTERM or SIGINT signal is received.
-func signalContext(ctx context.Context) context.Context {
-	cnCtx, cancel := context.WithCancel(ctx)
-
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGTERM, syscall.SIGINT)
-
-	go func() {
-		sig := <-c
-		slog.Info("Received signal", "signal", sig)
-		cancel()
-	}()
-
-	return cnCtx
 }

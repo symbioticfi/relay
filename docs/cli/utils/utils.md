@@ -1,0 +1,21 @@
+# `utils` Command Reference
+
+## utils
+
+Utils tool
+
+### Options
+
+```
+  -h, --help               help for utils
+      --log.level string   log level(info, debug, warn, error) (default "info")
+      --log.mode string    log mode(pretty, text, json) (default "text")
+```
+
+### SEE ALSO
+
+* [utils keys](utils_keys.md)	 - Keys tool
+* [utils network](utils_network.md)	 - Network tool
+* [utils operator](utils_operator.md)	 - Operator tool
+* [utils version](utils_version.md)	 - Print the version of the utils tool
+

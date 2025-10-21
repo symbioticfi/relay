@@ -5,12 +5,14 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common/math"
 	cmdhelpers "github.com/symbioticfi/relay/internal/usecase/cmd-helpers"
 	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
 	"github.com/symbioticfi/relay/internal/usecase/metrics"
 	"github.com/symbioticfi/relay/symbiotic/client/evm"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	symbioticCrypto "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/blsBn254"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -54,7 +56,7 @@ var registerKeyCmd = &cobra.Command{
 
 		// duplicate from genesis
 		privateKeyInput := pterm.DefaultInteractiveTextInput.WithMask("*")
-		secret, ok := registerFlags.Secrets.Secrets[chainId]
+		secret, ok := registerKeyFlags.Secrets.Secrets[chainId]
 		if !ok {
 			secret, _ = privateKeyInput.Show("Enter private key for chain with ID: " + strconv.Itoa(int(chainId)))
 		}
@@ -87,7 +89,7 @@ var registerKeyCmd = &cobra.Command{
 		kt := symbiotic.KeyTag(registerKeyFlags.KeyTag)
 		pk, err = keyStore.GetPrivateKey(kt)
 		if err != nil {
-			return err
+			return errors.Errorf("failed to get private key  for keyTag %v from keystore: %w", kt, err)
 		}
 
 		currentOnchainEpoch, err := evmClient.GetCurrentEpoch(ctx)
@@ -115,8 +117,10 @@ var registerKeyCmd = &cobra.Command{
 			return err
 		}
 		operator := crypto.PubkeyToAddress(ecdsaPk.PublicKey)
+
 		key := pk.PublicKey().OnChain()
-		commitmentData, err := keyCommitmentData(eip712Domain, operator, crypto.Keccak256(key))
+
+		commitmentData, err := keyCommitmentData(eip712Domain, operator, key)
 		if err != nil {
 			return errors.Errorf("failed to get commitment data: %w", err)
 		}
@@ -126,28 +130,43 @@ var registerKeyCmd = &cobra.Command{
 			return errors.Errorf("failed to sign commitment data: %w", err)
 		}
 
-		var extraData []byte
-		if kt.Type() == symbiotic.KeyTypeBlsBn254 {
-			extraData = pk.PublicKey().Raw()[32:]
+		// For ECDSA signatures, we need to adjust the recovery ID
+		// Go's crypto.Sign() returns V as 0 or 1, but Ethereum expects 27 or 28
+		if kt.Type() == symbiotic.KeyTypeEcdsaSecp256k1 && len(signature) == 65 {
+			// Convert recovery ID from 0/1 to 27/28 for Ethereum
+			signature[64] += 27
 		}
 
+		var extraData []byte
+		if kt.Type() == symbiotic.KeyTypeBlsBn254 {
+			blsKey, err := blsBn254.FromRaw(pk.PublicKey().Raw())
+			if err != nil {
+				return errors.Errorf("failed to parse BLS public key: %w", err)
+			}
+			rawByte := blsKey.G2().RawBytes()
+			extraData = rawByte[:]
+		}
+
+		// Use the adjusted signature for registration
 		txResult, err := evmClient.RegisterKey(ctx, networkConfig.KeysProvider, kt, key, signature, extraData)
 		if err != nil {
 			return errors.Errorf("failed to register operator: %w", err)
 		}
 
-		slog.InfoContext(ctx, "Operator registered!", "addr", operatorRegistries[chainId], "txHash", txResult.TxHash.String())
+		slog.InfoContext(ctx, "Operator Key registered!", "txHash", txResult.TxHash.String(), "key-tag", kt)
 
 		return nil
 	},
 }
 
-func keyCommitmentData(eip712Domain symbiotic.Eip712Domain, operator common.Address, keyHash []byte) ([]byte, error) {
+func keyCommitmentData(eip712Domain symbiotic.Eip712Domain, operator common.Address, keyBytes []byte) ([]byte, error) {
 	typedData := apitypes.TypedData{
 		Types: apitypes.Types{
 			"EIP712Domain": []apitypes.Type{
 				{Name: "name", Type: "string"},
 				{Name: "version", Type: "string"},
+				{Name: "chainId", Type: "uint256"},
+				{Name: "verifyingContract", Type: "address"},
 			},
 			"KeyOwnership": []apitypes.Type{
 				{Name: "operator", Type: "address"},
@@ -155,16 +174,22 @@ func keyCommitmentData(eip712Domain symbiotic.Eip712Domain, operator common.Addr
 			},
 		},
 		Domain: apitypes.TypedDataDomain{
-			Name:    eip712Domain.Name,
-			Version: eip712Domain.Version,
+			Name:              eip712Domain.Name,
+			Version:           eip712Domain.Version,
+			ChainId:           (*math.HexOrDecimal256)(eip712Domain.ChainId),
+			VerifyingContract: eip712Domain.VerifyingContract.Hex(),
 		},
 		PrimaryType: "KeyOwnership",
 		Message: map[string]interface{}{
-			"operator": operator,
-			"key":      keyHash,
+			"operator": operator.Hex(),
+			"key":      keyBytes,
 		},
 	}
 
-	_, data, err := apitypes.TypedDataAndHash(typedData)
-	return []byte(data), err
+	_, preHashedData, err := apitypes.TypedDataAndHash(typedData)
+	if err != nil {
+		return nil, err
+	}
+
+	return []byte(preHashedData), nil
 }

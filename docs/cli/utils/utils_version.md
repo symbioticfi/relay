@@ -1,0 +1,27 @@
+# `utils version` Command Reference
+
+## utils version
+
+Print the version of the utils tool
+
+```
+utils version [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for version
+```
+
+### Options inherited from parent commands
+
+```
+      --log.level string   log level(info, debug, warn, error) (default "info")
+      --log.mode string    log mode(pretty, text, json) (default "text")
+```
+
+### SEE ALSO
+
+* [utils](utils.md)	 - Utils tool
+

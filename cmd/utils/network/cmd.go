@@ -53,16 +53,16 @@ var genesisFlags GenesisFlags
 
 func initFlags() {
 	networkCmd.PersistentFlags().StringSliceVarP(&globalFlags.Chains, "chains", "c", nil, "Chains rpc url, comma separated")
-	networkCmd.PersistentFlags().StringVar(&globalFlags.DriverAddress, "driver-address", "", "Driver contract address")
-	networkCmd.PersistentFlags().Uint64Var(&globalFlags.DriverChainId, "driver-chainid", 0, "Driver contract chain id")
+	networkCmd.PersistentFlags().StringVar(&globalFlags.DriverAddress, "driver.address", "", "Driver contract address")
+	networkCmd.PersistentFlags().Uint64Var(&globalFlags.DriverChainId, "driver.chainid", 0, "Driver contract chain id")
 	networkCmd.PersistentFlags().Uint64VarP(&globalFlags.Epoch, "epoch", "e", 0, "Network epoch to fetch info")
 	if err := networkCmd.MarkPersistentFlagRequired("chains"); err != nil {
 		panic(err)
 	}
-	if err := networkCmd.MarkPersistentFlagRequired("driver-address"); err != nil {
+	if err := networkCmd.MarkPersistentFlagRequired("driver.address"); err != nil {
 		panic(err)
 	}
-	if err := networkCmd.MarkPersistentFlagRequired("driver-chainid"); err != nil {
+	if err := networkCmd.MarkPersistentFlagRequired("driver.chainid"); err != nil {
 		panic(err)
 	}
 

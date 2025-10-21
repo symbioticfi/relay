@@ -53,7 +53,7 @@ go-lint-fix:
 	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0 -v run ./... --fix
 
 .PHONY: generate
-generate: install-tools generate-mocks generate-api-types generate-client-types generate-p2p-types generate-badger-types gen-abi
+generate: install-tools generate-mocks generate-api-types generate-client-types generate-p2p-types generate-badger-types gen-abi generate-cli-docs
 
 .PHONY: install-tools
 install-tools:
@@ -82,6 +82,12 @@ generate-badger-types:
 .PHONY: generate-client-types
 generate-client-types:
 	go run hack/codegen/generate-client-types.go
+
+.PHONY: generate-cli-docs
+generate-cli-docs:
+	@echo "Generating CLI documentation..."
+	go run hack/docgen/generate-cli-docs.go
+	@echo "CLI documentation generated in docs/cli/"
 
 .PHONY: unit-test
 unit-test:
@@ -127,7 +133,7 @@ build-relay-utils:
 		echo "Usage: make build-relay-utils OS=<os> ARCH=<arch>"; \
 		exit 1; \
 	fi
-	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'main.Version=$(APP_VERSION)' -X 'main.BuildTime=$(BUILD_TIME)'" -o relay_utils_$(OS)_$(ARCH) ./cmd/utils && \
+	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'github.com/symbioticfi/relay/cmd/utils/root.Version=$(APP_VERSION)' -X 'github.com/symbioticfi/relay/cmd/utils/root.BuildTime=$(BUILD_TIME)'" -o relay_utils_$(OS)_$(ARCH) ./cmd/utils && \
 		chmod a+x relay_utils_$(OS)_$(ARCH)
 
 .PHONY: build-relay-sidecar
@@ -137,7 +143,7 @@ build-relay-sidecar:
 		echo "Usage: make build-relay-sidecar OS=<os> ARCH=<arch>"; \
 		exit 1; \
 	fi
-	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'main.Version=$(APP_VERSION)' -X 'main.BuildTime=$(BUILD_TIME)'" -o relay_sidecar_$(OS)_$(ARCH) ./cmd/relay && \
+	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'github.com/symbioticfi/relay/cmd/relay/root.Version=$(APP_VERSION)' -X 'github.com/symbioticfi/relay/cmd/relay/root.BuildTime=$(BUILD_TIME)'" -o relay_sidecar_$(OS)_$(ARCH) ./cmd/relay && \
 		chmod a+x relay_sidecar_$(OS)_$(ARCH)
 
 # Legacy targets for backward compatibility
