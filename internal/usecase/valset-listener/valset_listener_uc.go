@@ -213,7 +213,6 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 }
 
 func (s *Service) process(ctx context.Context, valSet symbiotic.ValidatorSet, config symbiotic.NetworkConfig) error {
-	slog.InfoContext(ctx, "!!Processing validator set", "epoch", valSet.Epoch)
 	networkData, err := s.getNetworkData(ctx, config)
 	if err != nil {
 		return errors.Errorf("failed to get network data: %w", err)

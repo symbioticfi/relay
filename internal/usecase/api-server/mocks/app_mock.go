@@ -96,19 +96,19 @@ func (mr *MockrepoMockRecorder) GetAggregationProof(ctx, requestID any) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAggregationProof", reflect.TypeOf((*Mockrepo)(nil).GetAggregationProof), ctx, requestID)
 }
 
-// GetAggregationProofsByEpoch mocks base method.
-func (m *Mockrepo) GetAggregationProofsByEpoch(ctx context.Context, epoch entity.Epoch) ([]entity.AggregationProof, error) {
+// GetAggregationProofsStartingFromEpoch mocks base method.
+func (m *Mockrepo) GetAggregationProofsStartingFromEpoch(ctx context.Context, epoch entity.Epoch) ([]entity.AggregationProof, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAggregationProofsByEpoch", ctx, epoch)
+	ret := m.ctrl.Call(m, "GetAggregationProofsStartingFromEpoch", ctx, epoch)
 	ret0, _ := ret[0].([]entity.AggregationProof)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAggregationProofsByEpoch indicates an expected call of GetAggregationProofsByEpoch.
-func (mr *MockrepoMockRecorder) GetAggregationProofsByEpoch(ctx, epoch any) *gomock.Call {
+// GetAggregationProofsStartingFromEpoch indicates an expected call of GetAggregationProofsStartingFromEpoch.
+func (mr *MockrepoMockRecorder) GetAggregationProofsStartingFromEpoch(ctx, epoch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAggregationProofsByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetAggregationProofsByEpoch), ctx, epoch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAggregationProofsStartingFromEpoch", reflect.TypeOf((*Mockrepo)(nil).GetAggregationProofsStartingFromEpoch), ctx, epoch)
 }
 
 // GetAllSignatures mocks base method.
@@ -171,19 +171,19 @@ func (mr *MockrepoMockRecorder) GetSignatureRequest(ctx, requestID any) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureRequest", reflect.TypeOf((*Mockrepo)(nil).GetSignatureRequest), ctx, requestID)
 }
 
-// GetSignaturesByEpoch mocks base method.
-func (m *Mockrepo) GetSignaturesByEpoch(ctx context.Context, epoch entity.Epoch) ([]entity.Signature, error) {
+// GetSignaturesStartingFromEpoch mocks base method.
+func (m *Mockrepo) GetSignaturesStartingFromEpoch(ctx context.Context, epoch entity.Epoch) ([]entity.Signature, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSignaturesByEpoch", ctx, epoch)
+	ret := m.ctrl.Call(m, "GetSignaturesStartingFromEpoch", ctx, epoch)
 	ret0, _ := ret[0].([]entity.Signature)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetSignaturesByEpoch indicates an expected call of GetSignaturesByEpoch.
-func (mr *MockrepoMockRecorder) GetSignaturesByEpoch(ctx, epoch any) *gomock.Call {
+// GetSignaturesStartingFromEpoch indicates an expected call of GetSignaturesStartingFromEpoch.
+func (mr *MockrepoMockRecorder) GetSignaturesStartingFromEpoch(ctx, epoch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignaturesByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetSignaturesByEpoch), ctx, epoch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignaturesStartingFromEpoch", reflect.TypeOf((*Mockrepo)(nil).GetSignaturesStartingFromEpoch), ctx, epoch)
 }
 
 // GetValidatorSetByEpoch mocks base method.
@@ -216,19 +216,19 @@ func (mr *MockrepoMockRecorder) GetValidatorSetMetadata(ctx, epoch any) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSetMetadata", reflect.TypeOf((*Mockrepo)(nil).GetValidatorSetMetadata), ctx, epoch)
 }
 
-// GetValidatorSetsByEpoch mocks base method.
-func (m *Mockrepo) GetValidatorSetsByEpoch(ctx context.Context, epoch entity.Epoch) ([]entity.ValidatorSet, error) {
+// GetValidatorSetsStartingFromEpoch mocks base method.
+func (m *Mockrepo) GetValidatorSetsStartingFromEpoch(ctx context.Context, epoch entity.Epoch) ([]entity.ValidatorSet, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetValidatorSetsByEpoch", ctx, epoch)
+	ret := m.ctrl.Call(m, "GetValidatorSetsStartingFromEpoch", ctx, epoch)
 	ret0, _ := ret[0].([]entity.ValidatorSet)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetValidatorSetsByEpoch indicates an expected call of GetValidatorSetsByEpoch.
-func (mr *MockrepoMockRecorder) GetValidatorSetsByEpoch(ctx, epoch any) *gomock.Call {
+// GetValidatorSetsStartingFromEpoch indicates an expected call of GetValidatorSetsStartingFromEpoch.
+func (mr *MockrepoMockRecorder) GetValidatorSetsStartingFromEpoch(ctx, epoch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSetsByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetValidatorSetsByEpoch), ctx, epoch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSetsStartingFromEpoch", reflect.TypeOf((*Mockrepo)(nil).GetValidatorSetsStartingFromEpoch), ctx, epoch)
 }
 
 // MockevmClient is a mock of evmClient interface.

@@ -25,7 +25,7 @@ func (h *grpcHandler) ListenSignatures(
 	defer h.signatureHub.Unsubscribe(subscriptionID.String())
 
 	if epoch := req.GetStartEpoch(); epoch != 0 {
-		signatures, err := h.cfg.Repo.GetSignaturesByEpoch(ctx, symbiotic.Epoch(epoch))
+		signatures, err := h.cfg.Repo.GetSignaturesStartingFromEpoch(ctx, symbiotic.Epoch(epoch))
 		if err != nil {
 			return err
 		}

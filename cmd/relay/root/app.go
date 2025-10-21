@@ -146,7 +146,7 @@ func runApp(ctx context.Context) error {
 
 	signatureProcessedSignal := signals.New[symbiotic.Signature](cfg.SignalCfg, "signatureProcessed", nil)
 	aggProofReadySignal := signals.New[symbiotic.AggregationProof](cfg.SignalCfg, "aggProofReady", nil)
-	validatorSetSetSignal := signals.New[symbiotic.ValidatorSet](cfg.SignalCfg, "validatorSetSet", nil)
+	validatorSetSignal := signals.New[symbiotic.ValidatorSet](cfg.SignalCfg, "validatorSet", nil)
 
 	entityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo:                     repo,
@@ -185,7 +185,7 @@ func runApp(ctx context.Context) error {
 		Repo:            repo,
 		Deriver:         deriver,
 		PollingInterval: time.Second * 5,
-		ValidatorSetSet: validatorSetSetSignal,
+		ValidatorSetSet: validatorSetSignal,
 		Signer:          signer,
 		Aggregator:      agg,
 		KeyProvider:     keyProvider,
@@ -333,12 +333,10 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create api app: %w", err)
 	}
 
-	if err := validatorSetSetSignal.SetHandlers(
-		api.HandleValidatorSetSet(),
-	); err != nil {
+	if err := validatorSetSignal.SetHandlers(api.HandleValidatorSetSet()); err != nil {
 		return errors.Errorf("failed to set validator set set message handler: %w", err)
 	}
-	if err := validatorSetSetSignal.StartWorkers(ctx); err != nil {
+	if err := validatorSetSignal.StartWorkers(ctx); err != nil {
 		return errors.Errorf("failed to start validator set set signal workers: %w", err)
 	}
 

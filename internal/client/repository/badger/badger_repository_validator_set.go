@@ -308,10 +308,10 @@ func (r *Repository) getAllValidatorsByEpoch(txn *badger.Txn, epoch symbiotic.Ep
 	return validators, nil
 }
 
-func (r *Repository) GetValidatorSetsByEpoch(ctx context.Context, startEpoch symbiotic.Epoch) ([]symbiotic.ValidatorSet, error) {
+func (r *Repository) GetValidatorSetsStartingFromEpoch(ctx context.Context, startEpoch symbiotic.Epoch) ([]symbiotic.ValidatorSet, error) {
 	var validatorSets []symbiotic.ValidatorSet
 
-	return validatorSets, r.doViewInTx(ctx, "GetValidatorSetsByEpoch", func(ctx context.Context) error {
+	return validatorSets, r.doViewInTx(ctx, "GetValidatorSetsStartingFromEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 
 		// Create iterator starting from startEpoch

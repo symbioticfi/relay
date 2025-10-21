@@ -94,10 +94,10 @@ func (r *Repository) GetAllSignatures(ctx context.Context, requestID common.Hash
 	})
 }
 
-func (r *Repository) GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error) {
+func (r *Repository) GetSignaturesStartingFromEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error) {
 	var signatures []symbiotic.Signature
 
-	return signatures, r.doViewInTx(ctx, "GetSignaturesByEpoch", func(ctx context.Context) error {
+	return signatures, r.doViewInTx(ctx, "GetSignaturesStartingFromEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 
 		startKey := keyRequestIDEpochPrefix(epoch)

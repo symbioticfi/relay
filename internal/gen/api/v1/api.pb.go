@@ -592,20 +592,8 @@ func (x *ListenValidatorSetRequest) GetStartEpoch() uint64 {
 // Response message for validator set changes stream
 type ListenValidatorSetResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Version of the validator set
-	Version uint32 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
-	// Key tag required to commit next validator set
-	RequiredKeyTag uint32 `protobuf:"varint,2,opt,name=required_key_tag,json=requiredKeyTag,proto3" json:"required_key_tag,omitempty"`
-	// Validator set epoch
-	Epoch uint64 `protobuf:"varint,3,opt,name=epoch,proto3" json:"epoch,omitempty"`
-	// Epoch capture timestamp
-	CaptureTimestamp *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=capture_timestamp,json=captureTimestamp,proto3" json:"capture_timestamp,omitempty"`
-	// Quorum threshold (big integer as string)
-	QuorumThreshold string `protobuf:"bytes,5,opt,name=quorum_threshold,json=quorumThreshold,proto3" json:"quorum_threshold,omitempty"`
-	// Status of validator set header
-	Status ValidatorSetStatus `protobuf:"varint,6,opt,name=status,proto3,enum=api.proto.v1.ValidatorSetStatus" json:"status,omitempty"`
-	// List of validators
-	Validators    []*Validator `protobuf:"bytes,7,rep,name=validators,proto3" json:"validators,omitempty"`
+	// The validator set
+	ValidatorSet  *ValidatorSet `protobuf:"bytes,1,opt,name=validator_set,json=validatorSet,proto3" json:"validator_set,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -640,51 +628,9 @@ func (*ListenValidatorSetResponse) Descriptor() ([]byte, []int) {
 	return file_v1_api_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *ListenValidatorSetResponse) GetVersion() uint32 {
+func (x *ListenValidatorSetResponse) GetValidatorSet() *ValidatorSet {
 	if x != nil {
-		return x.Version
-	}
-	return 0
-}
-
-func (x *ListenValidatorSetResponse) GetRequiredKeyTag() uint32 {
-	if x != nil {
-		return x.RequiredKeyTag
-	}
-	return 0
-}
-
-func (x *ListenValidatorSetResponse) GetEpoch() uint64 {
-	if x != nil {
-		return x.Epoch
-	}
-	return 0
-}
-
-func (x *ListenValidatorSetResponse) GetCaptureTimestamp() *timestamppb.Timestamp {
-	if x != nil {
-		return x.CaptureTimestamp
-	}
-	return nil
-}
-
-func (x *ListenValidatorSetResponse) GetQuorumThreshold() string {
-	if x != nil {
-		return x.QuorumThreshold
-	}
-	return ""
-}
-
-func (x *ListenValidatorSetResponse) GetStatus() ValidatorSetStatus {
-	if x != nil {
-		return x.Status
-	}
-	return ValidatorSetStatus_VALIDATOR_SET_STATUS_UNSPECIFIED
-}
-
-func (x *ListenValidatorSetResponse) GetValidators() []*Validator {
-	if x != nil {
-		return x.Validators
+		return x.ValidatorSet
 	}
 	return nil
 }
@@ -1486,20 +1432,8 @@ func (x *Signature) GetPublicKey() []byte {
 // Response message for getting validator set
 type GetValidatorSetResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Version of the validator set
-	Version uint32 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
-	// Key tag required to commit next validator set
-	RequiredKeyTag uint32 `protobuf:"varint,2,opt,name=required_key_tag,json=requiredKeyTag,proto3" json:"required_key_tag,omitempty"`
-	// Validator set epoch
-	Epoch uint64 `protobuf:"varint,3,opt,name=epoch,proto3" json:"epoch,omitempty"`
-	// Epoch capture timestamp
-	CaptureTimestamp *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=capture_timestamp,json=captureTimestamp,proto3" json:"capture_timestamp,omitempty"`
-	// Quorum threshold (big integer as string)
-	QuorumThreshold string `protobuf:"bytes,5,opt,name=quorum_threshold,json=quorumThreshold,proto3" json:"quorum_threshold,omitempty"`
-	// Status of validator set header
-	Status ValidatorSetStatus `protobuf:"varint,6,opt,name=status,proto3,enum=api.proto.v1.ValidatorSetStatus" json:"status,omitempty"`
-	// List of validators
-	Validators    []*Validator `protobuf:"bytes,7,rep,name=validators,proto3" json:"validators,omitempty"`
+	// The validator set
+	ValidatorSet  *ValidatorSet `protobuf:"bytes,1,opt,name=validator_set,json=validatorSet,proto3" json:"validator_set,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1534,51 +1468,9 @@ func (*GetValidatorSetResponse) Descriptor() ([]byte, []int) {
 	return file_v1_api_proto_rawDescGZIP(), []int{24}
 }
 
-func (x *GetValidatorSetResponse) GetVersion() uint32 {
+func (x *GetValidatorSetResponse) GetValidatorSet() *ValidatorSet {
 	if x != nil {
-		return x.Version
-	}
-	return 0
-}
-
-func (x *GetValidatorSetResponse) GetRequiredKeyTag() uint32 {
-	if x != nil {
-		return x.RequiredKeyTag
-	}
-	return 0
-}
-
-func (x *GetValidatorSetResponse) GetEpoch() uint64 {
-	if x != nil {
-		return x.Epoch
-	}
-	return 0
-}
-
-func (x *GetValidatorSetResponse) GetCaptureTimestamp() *timestamppb.Timestamp {
-	if x != nil {
-		return x.CaptureTimestamp
-	}
-	return nil
-}
-
-func (x *GetValidatorSetResponse) GetQuorumThreshold() string {
-	if x != nil {
-		return x.QuorumThreshold
-	}
-	return ""
-}
-
-func (x *GetValidatorSetResponse) GetStatus() ValidatorSetStatus {
-	if x != nil {
-		return x.Status
-	}
-	return ValidatorSetStatus_VALIDATOR_SET_STATUS_UNSPECIFIED
-}
-
-func (x *GetValidatorSetResponse) GetValidators() []*Validator {
-	if x != nil {
-		return x.Validators
+		return x.ValidatorSet
 	}
 	return nil
 }
@@ -2281,6 +2173,105 @@ func (x *ChainEpochInfo) GetStartTime() *timestamppb.Timestamp {
 	return nil
 }
 
+type ValidatorSet struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Version of the validator set
+	Version uint32 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
+	// Key tag required to commit next validator set
+	RequiredKeyTag uint32 `protobuf:"varint,2,opt,name=required_key_tag,json=requiredKeyTag,proto3" json:"required_key_tag,omitempty"`
+	// Validator set epoch
+	Epoch uint64 `protobuf:"varint,3,opt,name=epoch,proto3" json:"epoch,omitempty"`
+	// Epoch capture timestamp
+	CaptureTimestamp *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=capture_timestamp,json=captureTimestamp,proto3" json:"capture_timestamp,omitempty"`
+	// Quorum threshold (big integer as string)
+	QuorumThreshold string `protobuf:"bytes,5,opt,name=quorum_threshold,json=quorumThreshold,proto3" json:"quorum_threshold,omitempty"`
+	// Status of validator set header
+	Status ValidatorSetStatus `protobuf:"varint,6,opt,name=status,proto3,enum=api.proto.v1.ValidatorSetStatus" json:"status,omitempty"`
+	// List of validators
+	Validators    []*Validator `protobuf:"bytes,7,rep,name=validators,proto3" json:"validators,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ValidatorSet) Reset() {
+	*x = ValidatorSet{}
+	mi := &file_v1_api_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ValidatorSet) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ValidatorSet) ProtoMessage() {}
+
+func (x *ValidatorSet) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_api_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ValidatorSet.ProtoReflect.Descriptor instead.
+func (*ValidatorSet) Descriptor() ([]byte, []int) {
+	return file_v1_api_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *ValidatorSet) GetVersion() uint32 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *ValidatorSet) GetRequiredKeyTag() uint32 {
+	if x != nil {
+		return x.RequiredKeyTag
+	}
+	return 0
+}
+
+func (x *ValidatorSet) GetEpoch() uint64 {
+	if x != nil {
+		return x.Epoch
+	}
+	return 0
+}
+
+func (x *ValidatorSet) GetCaptureTimestamp() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CaptureTimestamp
+	}
+	return nil
+}
+
+func (x *ValidatorSet) GetQuorumThreshold() string {
+	if x != nil {
+		return x.QuorumThreshold
+	}
+	return ""
+}
+
+func (x *ValidatorSet) GetStatus() ValidatorSetStatus {
+	if x != nil {
+		return x.Status
+	}
+	return ValidatorSetStatus_VALIDATOR_SET_STATUS_UNSPECIFIED
+}
+
+func (x *ValidatorSet) GetValidators() []*Validator {
+	if x != nil {
+		return x.Validators
+	}
+	return nil
+}
+
 var File_v1_api_proto protoreflect.FileDescriptor
 
 const file_v1_api_proto_rawDesc = "" +
@@ -2316,17 +2307,9 @@ const file_v1_api_proto_rawDesc = "" +
 	"\x19ListenValidatorSetRequest\x12$\n" +
 	"\vstart_epoch\x18\x01 \x01(\x04H\x00R\n" +
 	"startEpoch\x88\x01\x01B\x0e\n" +
-	"\f_start_epoch\"\xdd\x02\n" +
-	"\x1aListenValidatorSetResponse\x12\x18\n" +
-	"\aversion\x18\x01 \x01(\rR\aversion\x12(\n" +
-	"\x10required_key_tag\x18\x02 \x01(\rR\x0erequiredKeyTag\x12\x14\n" +
-	"\x05epoch\x18\x03 \x01(\x04R\x05epoch\x12G\n" +
-	"\x11capture_timestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x10captureTimestamp\x12)\n" +
-	"\x10quorum_threshold\x18\x05 \x01(\tR\x0fquorumThreshold\x128\n" +
-	"\x06status\x18\x06 \x01(\x0e2 .api.proto.v1.ValidatorSetStatusR\x06status\x127\n" +
-	"\n" +
-	"validators\x18\a \x03(\v2\x17.api.proto.v1.ValidatorR\n" +
-	"validators\";\n" +
+	"\f_start_epoch\"]\n" +
+	"\x1aListenValidatorSetResponse\x12?\n" +
+	"\rvalidator_set\x18\x01 \x01(\v2\x1a.api.proto.v1.ValidatorSetR\fvalidatorSet\";\n" +
 	"\x1aGetAggregationProofRequest\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\"\x18\n" +
@@ -2377,17 +2360,9 @@ const file_v1_api_proto_rawDesc = "" +
 	"\tsignature\x18\x01 \x01(\fR\tsignature\x12!\n" +
 	"\fmessage_hash\x18\x02 \x01(\fR\vmessageHash\x12\x1d\n" +
 	"\n" +
-	"public_key\x18\x03 \x01(\fR\tpublicKey\"\xda\x02\n" +
-	"\x17GetValidatorSetResponse\x12\x18\n" +
-	"\aversion\x18\x01 \x01(\rR\aversion\x12(\n" +
-	"\x10required_key_tag\x18\x02 \x01(\rR\x0erequiredKeyTag\x12\x14\n" +
-	"\x05epoch\x18\x03 \x01(\x04R\x05epoch\x12G\n" +
-	"\x11capture_timestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x10captureTimestamp\x12)\n" +
-	"\x10quorum_threshold\x18\x05 \x01(\tR\x0fquorumThreshold\x128\n" +
-	"\x06status\x18\x06 \x01(\x0e2 .api.proto.v1.ValidatorSetStatusR\x06status\x127\n" +
-	"\n" +
-	"validators\x18\a \x03(\v2\x17.api.proto.v1.ValidatorR\n" +
-	"validators\"V\n" +
+	"public_key\x18\x03 \x01(\fR\tpublicKey\"Z\n" +
+	"\x17GetValidatorSetResponse\x12?\n" +
+	"\rvalidator_set\x18\x01 \x01(\v2\x1a.api.proto.v1.ValidatorSetR\fvalidatorSet\"V\n" +
 	"\x1dGetValidatorByAddressResponse\x125\n" +
 	"\tvalidator\x18\x01 \x01(\v2\x17.api.proto.v1.ValidatorR\tvalidator\"3\n" +
 	"\tExtraData\x12\x10\n" +
@@ -2436,7 +2411,17 @@ const file_v1_api_proto_rawDesc = "" +
 	"\x0eChainEpochInfo\x120\n" +
 	"\x14last_committed_epoch\x18\x01 \x01(\x04R\x12lastCommittedEpoch\x129\n" +
 	"\n" +
-	"start_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime*\xc6\x01\n" +
+	"start_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\"\xcf\x02\n" +
+	"\fValidatorSet\x12\x18\n" +
+	"\aversion\x18\x01 \x01(\rR\aversion\x12(\n" +
+	"\x10required_key_tag\x18\x02 \x01(\rR\x0erequiredKeyTag\x12\x14\n" +
+	"\x05epoch\x18\x03 \x01(\x04R\x05epoch\x12G\n" +
+	"\x11capture_timestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x10captureTimestamp\x12)\n" +
+	"\x10quorum_threshold\x18\x05 \x01(\tR\x0fquorumThreshold\x128\n" +
+	"\x06status\x18\x06 \x01(\x0e2 .api.proto.v1.ValidatorSetStatusR\x06status\x127\n" +
+	"\n" +
+	"validators\x18\a \x03(\v2\x17.api.proto.v1.ValidatorR\n" +
+	"validators*\xc6\x01\n" +
 	"\x12ValidatorSetStatus\x12$\n" +
 	" VALIDATOR_SET_STATUS_UNSPECIFIED\x10\x00\x12 \n" +
 	"\x1cVALIDATOR_SET_STATUS_DERIVED\x10\x01\x12#\n" +
@@ -2485,7 +2470,7 @@ func file_v1_api_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_api_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 38)
+var file_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 39)
 var file_v1_api_proto_goTypes = []any{
 	(ValidatorSetStatus)(0),                 // 0: api.proto.v1.ValidatorSetStatus
 	(SigningStatus)(0),                      // 1: api.proto.v1.SigningStatus
@@ -2527,65 +2512,65 @@ var file_v1_api_proto_goTypes = []any{
 	(*GetLastAllCommittedRequest)(nil),      // 37: api.proto.v1.GetLastAllCommittedRequest
 	(*GetLastAllCommittedResponse)(nil),     // 38: api.proto.v1.GetLastAllCommittedResponse
 	(*ChainEpochInfo)(nil),                  // 39: api.proto.v1.ChainEpochInfo
-	nil,                                     // 40: api.proto.v1.GetLastAllCommittedResponse.EpochInfosEntry
-	(*timestamppb.Timestamp)(nil),           // 41: google.protobuf.Timestamp
+	(*ValidatorSet)(nil),                    // 40: api.proto.v1.ValidatorSet
+	nil,                                     // 41: api.proto.v1.GetLastAllCommittedResponse.EpochInfosEntry
+	(*timestamppb.Timestamp)(nil),           // 42: google.protobuf.Timestamp
 }
 var file_v1_api_proto_depIdxs = []int32{
 	26, // 0: api.proto.v1.ListenSignaturesResponse.signature:type_name -> api.proto.v1.Signature
 	24, // 1: api.proto.v1.ListenProofsResponse.aggregation_proof:type_name -> api.proto.v1.AggregationProof
-	41, // 2: api.proto.v1.ListenValidatorSetResponse.capture_timestamp:type_name -> google.protobuf.Timestamp
-	0,  // 3: api.proto.v1.ListenValidatorSetResponse.status:type_name -> api.proto.v1.ValidatorSetStatus
-	32, // 4: api.proto.v1.ListenValidatorSetResponse.validators:type_name -> api.proto.v1.Validator
-	26, // 5: api.proto.v1.GetSignaturesResponse.signatures:type_name -> api.proto.v1.Signature
-	41, // 6: api.proto.v1.GetCurrentEpochResponse.start_time:type_name -> google.protobuf.Timestamp
-	24, // 7: api.proto.v1.GetAggregationProofResponse.aggregation_proof:type_name -> api.proto.v1.AggregationProof
-	41, // 8: api.proto.v1.GetValidatorSetResponse.capture_timestamp:type_name -> google.protobuf.Timestamp
-	0,  // 9: api.proto.v1.GetValidatorSetResponse.status:type_name -> api.proto.v1.ValidatorSetStatus
-	32, // 10: api.proto.v1.GetValidatorSetResponse.validators:type_name -> api.proto.v1.Validator
-	32, // 11: api.proto.v1.GetValidatorByAddressResponse.validator:type_name -> api.proto.v1.Validator
-	29, // 12: api.proto.v1.GetValidatorSetMetadataResponse.extra_data:type_name -> api.proto.v1.ExtraData
-	41, // 13: api.proto.v1.GetValidatorSetHeaderResponse.capture_timestamp:type_name -> google.protobuf.Timestamp
-	33, // 14: api.proto.v1.Validator.keys:type_name -> api.proto.v1.Key
-	34, // 15: api.proto.v1.Validator.vaults:type_name -> api.proto.v1.ValidatorVault
-	39, // 16: api.proto.v1.GetLastCommittedResponse.epoch_info:type_name -> api.proto.v1.ChainEpochInfo
-	40, // 17: api.proto.v1.GetLastAllCommittedResponse.epoch_infos:type_name -> api.proto.v1.GetLastAllCommittedResponse.EpochInfosEntry
-	41, // 18: api.proto.v1.ChainEpochInfo.start_time:type_name -> google.protobuf.Timestamp
-	39, // 19: api.proto.v1.GetLastAllCommittedResponse.EpochInfosEntry.value:type_name -> api.proto.v1.ChainEpochInfo
-	3,  // 20: api.proto.v1.SymbioticAPIService.SignMessage:input_type -> api.proto.v1.SignMessageRequest
-	11, // 21: api.proto.v1.SymbioticAPIService.GetAggregationProof:input_type -> api.proto.v1.GetAggregationProofRequest
-	12, // 22: api.proto.v1.SymbioticAPIService.GetCurrentEpoch:input_type -> api.proto.v1.GetCurrentEpochRequest
-	13, // 23: api.proto.v1.SymbioticAPIService.GetSignatures:input_type -> api.proto.v1.GetSignaturesRequest
-	15, // 24: api.proto.v1.SymbioticAPIService.GetSignatureRequest:input_type -> api.proto.v1.GetSignatureRequestRequest
-	16, // 25: api.proto.v1.SymbioticAPIService.GetAggregationStatus:input_type -> api.proto.v1.GetAggregationStatusRequest
-	17, // 26: api.proto.v1.SymbioticAPIService.GetValidatorSet:input_type -> api.proto.v1.GetValidatorSetRequest
-	18, // 27: api.proto.v1.SymbioticAPIService.GetValidatorByAddress:input_type -> api.proto.v1.GetValidatorByAddressRequest
-	19, // 28: api.proto.v1.SymbioticAPIService.GetValidatorSetHeader:input_type -> api.proto.v1.GetValidatorSetHeaderRequest
-	35, // 29: api.proto.v1.SymbioticAPIService.GetLastCommitted:input_type -> api.proto.v1.GetLastCommittedRequest
-	37, // 30: api.proto.v1.SymbioticAPIService.GetLastAllCommitted:input_type -> api.proto.v1.GetLastAllCommittedRequest
-	20, // 31: api.proto.v1.SymbioticAPIService.GetValidatorSetMetadata:input_type -> api.proto.v1.GetValidatorSetMetadataRequest
-	5,  // 32: api.proto.v1.SymbioticAPIService.ListenSignatures:input_type -> api.proto.v1.ListenSignaturesRequest
-	7,  // 33: api.proto.v1.SymbioticAPIService.ListenProofs:input_type -> api.proto.v1.ListenProofsRequest
-	9,  // 34: api.proto.v1.SymbioticAPIService.ListenValidatorSet:input_type -> api.proto.v1.ListenValidatorSetRequest
-	4,  // 35: api.proto.v1.SymbioticAPIService.SignMessage:output_type -> api.proto.v1.SignMessageResponse
-	23, // 36: api.proto.v1.SymbioticAPIService.GetAggregationProof:output_type -> api.proto.v1.GetAggregationProofResponse
-	21, // 37: api.proto.v1.SymbioticAPIService.GetCurrentEpoch:output_type -> api.proto.v1.GetCurrentEpochResponse
-	14, // 38: api.proto.v1.SymbioticAPIService.GetSignatures:output_type -> api.proto.v1.GetSignaturesResponse
-	22, // 39: api.proto.v1.SymbioticAPIService.GetSignatureRequest:output_type -> api.proto.v1.GetSignatureRequestResponse
-	25, // 40: api.proto.v1.SymbioticAPIService.GetAggregationStatus:output_type -> api.proto.v1.GetAggregationStatusResponse
-	27, // 41: api.proto.v1.SymbioticAPIService.GetValidatorSet:output_type -> api.proto.v1.GetValidatorSetResponse
-	28, // 42: api.proto.v1.SymbioticAPIService.GetValidatorByAddress:output_type -> api.proto.v1.GetValidatorByAddressResponse
-	31, // 43: api.proto.v1.SymbioticAPIService.GetValidatorSetHeader:output_type -> api.proto.v1.GetValidatorSetHeaderResponse
-	36, // 44: api.proto.v1.SymbioticAPIService.GetLastCommitted:output_type -> api.proto.v1.GetLastCommittedResponse
-	38, // 45: api.proto.v1.SymbioticAPIService.GetLastAllCommitted:output_type -> api.proto.v1.GetLastAllCommittedResponse
-	30, // 46: api.proto.v1.SymbioticAPIService.GetValidatorSetMetadata:output_type -> api.proto.v1.GetValidatorSetMetadataResponse
-	6,  // 47: api.proto.v1.SymbioticAPIService.ListenSignatures:output_type -> api.proto.v1.ListenSignaturesResponse
-	8,  // 48: api.proto.v1.SymbioticAPIService.ListenProofs:output_type -> api.proto.v1.ListenProofsResponse
-	10, // 49: api.proto.v1.SymbioticAPIService.ListenValidatorSet:output_type -> api.proto.v1.ListenValidatorSetResponse
-	35, // [35:50] is the sub-list for method output_type
-	20, // [20:35] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	40, // 2: api.proto.v1.ListenValidatorSetResponse.validator_set:type_name -> api.proto.v1.ValidatorSet
+	26, // 3: api.proto.v1.GetSignaturesResponse.signatures:type_name -> api.proto.v1.Signature
+	42, // 4: api.proto.v1.GetCurrentEpochResponse.start_time:type_name -> google.protobuf.Timestamp
+	24, // 5: api.proto.v1.GetAggregationProofResponse.aggregation_proof:type_name -> api.proto.v1.AggregationProof
+	40, // 6: api.proto.v1.GetValidatorSetResponse.validator_set:type_name -> api.proto.v1.ValidatorSet
+	32, // 7: api.proto.v1.GetValidatorByAddressResponse.validator:type_name -> api.proto.v1.Validator
+	29, // 8: api.proto.v1.GetValidatorSetMetadataResponse.extra_data:type_name -> api.proto.v1.ExtraData
+	42, // 9: api.proto.v1.GetValidatorSetHeaderResponse.capture_timestamp:type_name -> google.protobuf.Timestamp
+	33, // 10: api.proto.v1.Validator.keys:type_name -> api.proto.v1.Key
+	34, // 11: api.proto.v1.Validator.vaults:type_name -> api.proto.v1.ValidatorVault
+	39, // 12: api.proto.v1.GetLastCommittedResponse.epoch_info:type_name -> api.proto.v1.ChainEpochInfo
+	41, // 13: api.proto.v1.GetLastAllCommittedResponse.epoch_infos:type_name -> api.proto.v1.GetLastAllCommittedResponse.EpochInfosEntry
+	42, // 14: api.proto.v1.ChainEpochInfo.start_time:type_name -> google.protobuf.Timestamp
+	42, // 15: api.proto.v1.ValidatorSet.capture_timestamp:type_name -> google.protobuf.Timestamp
+	0,  // 16: api.proto.v1.ValidatorSet.status:type_name -> api.proto.v1.ValidatorSetStatus
+	32, // 17: api.proto.v1.ValidatorSet.validators:type_name -> api.proto.v1.Validator
+	39, // 18: api.proto.v1.GetLastAllCommittedResponse.EpochInfosEntry.value:type_name -> api.proto.v1.ChainEpochInfo
+	3,  // 19: api.proto.v1.SymbioticAPIService.SignMessage:input_type -> api.proto.v1.SignMessageRequest
+	11, // 20: api.proto.v1.SymbioticAPIService.GetAggregationProof:input_type -> api.proto.v1.GetAggregationProofRequest
+	12, // 21: api.proto.v1.SymbioticAPIService.GetCurrentEpoch:input_type -> api.proto.v1.GetCurrentEpochRequest
+	13, // 22: api.proto.v1.SymbioticAPIService.GetSignatures:input_type -> api.proto.v1.GetSignaturesRequest
+	15, // 23: api.proto.v1.SymbioticAPIService.GetSignatureRequest:input_type -> api.proto.v1.GetSignatureRequestRequest
+	16, // 24: api.proto.v1.SymbioticAPIService.GetAggregationStatus:input_type -> api.proto.v1.GetAggregationStatusRequest
+	17, // 25: api.proto.v1.SymbioticAPIService.GetValidatorSet:input_type -> api.proto.v1.GetValidatorSetRequest
+	18, // 26: api.proto.v1.SymbioticAPIService.GetValidatorByAddress:input_type -> api.proto.v1.GetValidatorByAddressRequest
+	19, // 27: api.proto.v1.SymbioticAPIService.GetValidatorSetHeader:input_type -> api.proto.v1.GetValidatorSetHeaderRequest
+	35, // 28: api.proto.v1.SymbioticAPIService.GetLastCommitted:input_type -> api.proto.v1.GetLastCommittedRequest
+	37, // 29: api.proto.v1.SymbioticAPIService.GetLastAllCommitted:input_type -> api.proto.v1.GetLastAllCommittedRequest
+	20, // 30: api.proto.v1.SymbioticAPIService.GetValidatorSetMetadata:input_type -> api.proto.v1.GetValidatorSetMetadataRequest
+	5,  // 31: api.proto.v1.SymbioticAPIService.ListenSignatures:input_type -> api.proto.v1.ListenSignaturesRequest
+	7,  // 32: api.proto.v1.SymbioticAPIService.ListenProofs:input_type -> api.proto.v1.ListenProofsRequest
+	9,  // 33: api.proto.v1.SymbioticAPIService.ListenValidatorSet:input_type -> api.proto.v1.ListenValidatorSetRequest
+	4,  // 34: api.proto.v1.SymbioticAPIService.SignMessage:output_type -> api.proto.v1.SignMessageResponse
+	23, // 35: api.proto.v1.SymbioticAPIService.GetAggregationProof:output_type -> api.proto.v1.GetAggregationProofResponse
+	21, // 36: api.proto.v1.SymbioticAPIService.GetCurrentEpoch:output_type -> api.proto.v1.GetCurrentEpochResponse
+	14, // 37: api.proto.v1.SymbioticAPIService.GetSignatures:output_type -> api.proto.v1.GetSignaturesResponse
+	22, // 38: api.proto.v1.SymbioticAPIService.GetSignatureRequest:output_type -> api.proto.v1.GetSignatureRequestResponse
+	25, // 39: api.proto.v1.SymbioticAPIService.GetAggregationStatus:output_type -> api.proto.v1.GetAggregationStatusResponse
+	27, // 40: api.proto.v1.SymbioticAPIService.GetValidatorSet:output_type -> api.proto.v1.GetValidatorSetResponse
+	28, // 41: api.proto.v1.SymbioticAPIService.GetValidatorByAddress:output_type -> api.proto.v1.GetValidatorByAddressResponse
+	31, // 42: api.proto.v1.SymbioticAPIService.GetValidatorSetHeader:output_type -> api.proto.v1.GetValidatorSetHeaderResponse
+	36, // 43: api.proto.v1.SymbioticAPIService.GetLastCommitted:output_type -> api.proto.v1.GetLastCommittedResponse
+	38, // 44: api.proto.v1.SymbioticAPIService.GetLastAllCommitted:output_type -> api.proto.v1.GetLastAllCommittedResponse
+	30, // 45: api.proto.v1.SymbioticAPIService.GetValidatorSetMetadata:output_type -> api.proto.v1.GetValidatorSetMetadataResponse
+	6,  // 46: api.proto.v1.SymbioticAPIService.ListenSignatures:output_type -> api.proto.v1.ListenSignaturesResponse
+	8,  // 47: api.proto.v1.SymbioticAPIService.ListenProofs:output_type -> api.proto.v1.ListenProofsResponse
+	10, // 48: api.proto.v1.SymbioticAPIService.ListenValidatorSet:output_type -> api.proto.v1.ListenValidatorSetResponse
+	34, // [34:49] is the sub-list for method output_type
+	19, // [19:34] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_v1_api_proto_init() }
@@ -2607,7 +2592,7 @@ func file_v1_api_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_api_proto_rawDesc), len(file_v1_api_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   38,
+			NumMessages:   39,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -25,7 +25,7 @@ func (h *grpcHandler) ListenProofs(
 	defer h.proofsHub.Unsubscribe(subscriptionID.String())
 
 	if epoch := req.GetStartEpoch(); epoch != 0 {
-		proofs, err := h.cfg.Repo.GetAggregationProofsByEpoch(ctx, symbiotic.Epoch(epoch))
+		proofs, err := h.cfg.Repo.GetAggregationProofsStartingFromEpoch(ctx, symbiotic.Epoch(epoch))
 		if err != nil {
 			return err
 		}

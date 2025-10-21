@@ -1,17 +1,12 @@
 package api_server
 
 import (
-	"time"
-
 	"github.com/google/uuid"
-	"github.com/samber/lo"
+	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
-
-	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
-	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func (h *grpcHandler) ListenValidatorSet(
@@ -30,7 +25,7 @@ func (h *grpcHandler) ListenValidatorSet(
 	defer h.validatorSetsHub.Unsubscribe(subscriptionID.String())
 
 	if epoch := req.GetStartEpoch(); epoch != 0 {
-		validatorSets, err := h.cfg.Repo.GetValidatorSetsByEpoch(ctx, symbiotic.Epoch(epoch))
+		validatorSets, err := h.cfg.Repo.GetValidatorSetsStartingFromEpoch(ctx, symbiotic.Epoch(epoch))
 		if err != nil {
 			return err
 		}
@@ -54,17 +49,6 @@ func (h *grpcHandler) ListenValidatorSet(
 	}
 }
 
-// convertValidatorSetToStreamResponse converts ValidatorSet to ListenValidatorSetResponse
 func convertValidatorSetToStreamResponse(valSet symbiotic.ValidatorSet) *apiv1.ListenValidatorSetResponse {
-	return &apiv1.ListenValidatorSetResponse{
-		Version:          uint32(valSet.Version),
-		RequiredKeyTag:   uint32(valSet.RequiredKeyTag),
-		Epoch:            uint64(valSet.Epoch),
-		CaptureTimestamp: timestamppb.New(time.Unix(int64(valSet.CaptureTimestamp), 0).UTC()),
-		QuorumThreshold:  valSet.QuorumThreshold.String(),
-		Status:           convertValidatorSetStatusToPB(valSet.Status),
-		Validators: lo.Map(valSet.Validators, func(v symbiotic.Validator, _ int) *apiv1.Validator {
-			return convertValidatorToPB(v)
-		}),
-	}
+	return &apiv1.ListenValidatorSetResponse{ValidatorSet: convertValidatorSetToPB(valSet)}
 }

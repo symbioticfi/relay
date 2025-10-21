@@ -122,26 +122,8 @@ message ListenValidatorSetRequest {
 
 // Response message for validator set changes stream
 message ListenValidatorSetResponse {
-  // Version of the validator set
-  uint32 version = 1;
-
-  // Key tag required to commit next validator set
-  uint32 required_key_tag = 2;
-
-  // Validator set epoch
-  uint64 epoch = 3;
-
-  // Epoch capture timestamp
-  google.protobuf.Timestamp capture_timestamp = 4;
-
-  // Quorum threshold (big integer as string)
-  string quorum_threshold = 5;
-
-  // Status of validator set header
-  ValidatorSetStatus status = 6;
-
-  // List of validators
-  repeated Validator validators = 7;
+  // The validator set
+  ValidatorSet validator_set = 1;
 }
 
 // Request message for getting aggregation proof
@@ -258,26 +240,8 @@ message Signature {
 
 // Response message for getting validator set
 message GetValidatorSetResponse {
-  // Version of the validator set
-  uint32 version = 1;
-
-  // Key tag required to commit next validator set
-  uint32 required_key_tag = 2;
-
-  // Validator set epoch
-  uint64 epoch = 3;
-
-  // Epoch capture timestamp
-  google.protobuf.Timestamp capture_timestamp = 4;
-
-  // Quorum threshold (big integer as string)
-  string quorum_threshold = 5;
-
-  // Status of validator set header
-  ValidatorSetStatus status = 6;
-
-  // List of validators
-  repeated Validator validators = 7;
+  // The validator set
+  ValidatorSet validator_set = 1;
 }
 
 // Response message for getting validator by address
@@ -444,4 +408,27 @@ message ChainEpochInfo {
 
   // Epoch start time
   google.protobuf.Timestamp start_time = 2;
+}
+
+message ValidatorSet {
+  // Version of the validator set
+  uint32 version = 1;
+
+  // Key tag required to commit next validator set
+  uint32 required_key_tag = 2;
+
+  // Validator set epoch
+  uint64 epoch = 3;
+
+  // Epoch capture timestamp
+  google.protobuf.Timestamp capture_timestamp = 4;
+
+  // Quorum threshold (big integer as string)
+  string quorum_threshold = 5;
+
+  // Status of validator set header
+  ValidatorSetStatus status = 6;
+
+  // List of validators
+  repeated Validator validators = 7;
 }

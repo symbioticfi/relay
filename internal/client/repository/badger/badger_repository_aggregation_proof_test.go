@@ -70,7 +70,7 @@ func TestBadgerRepository_GetAggregationProofsByEpoch(t *testing.T) {
 
 	t.Run("get aggregation proofs starting from epoch 2", func(t *testing.T) {
 		// Query starting from epoch 2
-		proofs, err := repo.GetAggregationProofsByEpoch(t.Context(), 2)
+		proofs, err := repo.GetAggregationProofsStartingFromEpoch(t.Context(), 2)
 		require.NoError(t, err)
 
 		// Should return exactly 2 proofs (epochs 2 and 3)
@@ -86,7 +86,7 @@ func TestBadgerRepository_GetAggregationProofsByEpoch(t *testing.T) {
 
 	t.Run("get aggregation proofs starting from epoch 1", func(t *testing.T) {
 		// Query starting from epoch 1 - should return all 3
-		proofs, err := repo.GetAggregationProofsByEpoch(t.Context(), 1)
+		proofs, err := repo.GetAggregationProofsStartingFromEpoch(t.Context(), 1)
 		require.NoError(t, err)
 
 		require.Len(t, proofs, 3, "Should return all 3 aggregation proofs")
@@ -97,7 +97,7 @@ func TestBadgerRepository_GetAggregationProofsByEpoch(t *testing.T) {
 
 	t.Run("get aggregation proofs starting from epoch 3", func(t *testing.T) {
 		// Query starting from epoch 3 - should return only epoch 3
-		proofs, err := repo.GetAggregationProofsByEpoch(t.Context(), 3)
+		proofs, err := repo.GetAggregationProofsStartingFromEpoch(t.Context(), 3)
 		require.NoError(t, err)
 
 		require.Len(t, proofs, 1, "Should return only 1 aggregation proof (epoch 3)")
@@ -107,7 +107,7 @@ func TestBadgerRepository_GetAggregationProofsByEpoch(t *testing.T) {
 
 	t.Run("get aggregation proofs starting from non-existent epoch", func(t *testing.T) {
 		// Query starting from epoch 10 (doesn't exist) - should return empty
-		proofs, err := repo.GetAggregationProofsByEpoch(t.Context(), 10)
+		proofs, err := repo.GetAggregationProofsStartingFromEpoch(t.Context(), 10)
 		require.NoError(t, err)
 		require.Empty(t, proofs, "Should return empty slice for non-existent epoch")
 	})

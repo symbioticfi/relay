@@ -327,6 +327,10 @@
                 </li>
               
                 <li>
+                  <a href="#api.proto.v1.ValidatorSet"><span class="badge">M</span>ValidatorSet</a>
+                </li>
+              
+                <li>
                   <a href="#api.proto.v1.ValidatorVault"><span class="badge">M</span>ValidatorVault</a>
                 </li>
               
@@ -1067,52 +1071,10 @@
             <tbody>
               
                 <tr>
-                  <td>version</td>
-                  <td><a href="#uint32">uint32</a></td>
+                  <td>validator_set</td>
+                  <td><a href="#api.proto.v1.ValidatorSet">ValidatorSet</a></td>
                   <td></td>
-                  <td><p>Version of the validator set </p></td>
-                </tr>
-              
-                <tr>
-                  <td>required_key_tag</td>
-                  <td><a href="#uint32">uint32</a></td>
-                  <td></td>
-                  <td><p>Key tag required to commit next validator set </p></td>
-                </tr>
-              
-                <tr>
-                  <td>epoch</td>
-                  <td><a href="#uint64">uint64</a></td>
-                  <td></td>
-                  <td><p>Validator set epoch </p></td>
-                </tr>
-              
-                <tr>
-                  <td>capture_timestamp</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>Epoch capture timestamp </p></td>
-                </tr>
-              
-                <tr>
-                  <td>quorum_threshold</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Quorum threshold (big integer as string) </p></td>
-                </tr>
-              
-                <tr>
-                  <td>status</td>
-                  <td><a href="#api.proto.v1.ValidatorSetStatus">ValidatorSetStatus</a></td>
-                  <td></td>
-                  <td><p>Status of validator set header </p></td>
-                </tr>
-              
-                <tr>
-                  <td>validators</td>
-                  <td><a href="#api.proto.v1.Validator">Validator</a></td>
-                  <td>repeated</td>
-                  <td><p>List of validators </p></td>
+                  <td><p>The validator set </p></td>
                 </tr>
               
             </tbody>
@@ -1315,52 +1277,10 @@ If not provided, only validator sets generated after stream creation will be sen
             <tbody>
               
                 <tr>
-                  <td>version</td>
-                  <td><a href="#uint32">uint32</a></td>
+                  <td>validator_set</td>
+                  <td><a href="#api.proto.v1.ValidatorSet">ValidatorSet</a></td>
                   <td></td>
-                  <td><p>Version of the validator set </p></td>
-                </tr>
-              
-                <tr>
-                  <td>required_key_tag</td>
-                  <td><a href="#uint32">uint32</a></td>
-                  <td></td>
-                  <td><p>Key tag required to commit next validator set </p></td>
-                </tr>
-              
-                <tr>
-                  <td>epoch</td>
-                  <td><a href="#uint64">uint64</a></td>
-                  <td></td>
-                  <td><p>Validator set epoch </p></td>
-                </tr>
-              
-                <tr>
-                  <td>capture_timestamp</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>Epoch capture timestamp </p></td>
-                </tr>
-              
-                <tr>
-                  <td>quorum_threshold</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Quorum threshold (big integer as string) </p></td>
-                </tr>
-              
-                <tr>
-                  <td>status</td>
-                  <td><a href="#api.proto.v1.ValidatorSetStatus">ValidatorSetStatus</a></td>
-                  <td></td>
-                  <td><p>Status of validator set header </p></td>
-                </tr>
-              
-                <tr>
-                  <td>validators</td>
-                  <td><a href="#api.proto.v1.Validator">Validator</a></td>
-                  <td>repeated</td>
-                  <td><p>List of validators </p></td>
+                  <td><p>The validator set </p></td>
                 </tr>
               
             </tbody>
@@ -1520,6 +1440,72 @@ If not provided, only validator sets generated after stream creation will be sen
                   <td><a href="#api.proto.v1.ValidatorVault">ValidatorVault</a></td>
                   <td>repeated</td>
                   <td><p>List of validator vaults </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.ValidatorSet">ValidatorSet</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>Version of the validator set </p></td>
+                </tr>
+              
+                <tr>
+                  <td>required_key_tag</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>Key tag required to commit next validator set </p></td>
+                </tr>
+              
+                <tr>
+                  <td>epoch</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>Validator set epoch </p></td>
+                </tr>
+              
+                <tr>
+                  <td>capture_timestamp</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>Epoch capture timestamp </p></td>
+                </tr>
+              
+                <tr>
+                  <td>quorum_threshold</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Quorum threshold (big integer as string) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status</td>
+                  <td><a href="#api.proto.v1.ValidatorSetStatus">ValidatorSetStatus</a></td>
+                  <td></td>
+                  <td><p>Status of validator set header </p></td>
+                </tr>
+              
+                <tr>
+                  <td>validators</td>
+                  <td><a href="#api.proto.v1.Validator">Validator</a></td>
+                  <td>repeated</td>
+                  <td><p>List of validators </p></td>
                 </tr>
               
             </tbody>

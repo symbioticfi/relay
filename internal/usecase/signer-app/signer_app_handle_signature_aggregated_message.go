@@ -31,7 +31,7 @@ func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, p2pMs
 		return err
 	}
 
-	slog.InfoContext(ctx, "Proof saved")
+	slog.DebugContext(ctx, "Proof saved")
 
 	return nil
 }

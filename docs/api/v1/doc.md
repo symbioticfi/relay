@@ -41,6 +41,7 @@
     - [SignMessageResponse](#api-proto-v1-SignMessageResponse)
     - [Signature](#api-proto-v1-Signature)
     - [Validator](#api-proto-v1-Validator)
+    - [ValidatorSet](#api-proto-v1-ValidatorSet)
     - [ValidatorVault](#api-proto-v1-ValidatorVault)
   
     - [ErrorCode](#api-proto-v1-ErrorCode)
@@ -453,13 +454,7 @@ Response message for getting validator set
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| version | [uint32](#uint32) |  | Version of the validator set |
-| required_key_tag | [uint32](#uint32) |  | Key tag required to commit next validator set |
-| epoch | [uint64](#uint64) |  | Validator set epoch |
-| capture_timestamp | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Epoch capture timestamp |
-| quorum_threshold | [string](#string) |  | Quorum threshold (big integer as string) |
-| status | [ValidatorSetStatus](#api-proto-v1-ValidatorSetStatus) |  | Status of validator set header |
-| validators | [Validator](#api-proto-v1-Validator) | repeated | List of validators |
+| validator_set | [ValidatorSet](#api-proto-v1-ValidatorSet) |  | The validator set |
 
 
 
@@ -569,13 +564,7 @@ Response message for validator set changes stream
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| version | [uint32](#uint32) |  | Version of the validator set |
-| required_key_tag | [uint32](#uint32) |  | Key tag required to commit next validator set |
-| epoch | [uint64](#uint64) |  | Validator set epoch |
-| capture_timestamp | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Epoch capture timestamp |
-| quorum_threshold | [string](#string) |  | Quorum threshold (big integer as string) |
-| status | [ValidatorSetStatus](#api-proto-v1-ValidatorSetStatus) |  | Status of validator set header |
-| validators | [Validator](#api-proto-v1-Validator) | repeated | List of validators |
+| validator_set | [ValidatorSet](#api-proto-v1-ValidatorSet) |  | The validator set |
 
 
 
@@ -645,6 +634,27 @@ Validator information
 | is_active | [bool](#bool) |  | Indicates if the validator is active |
 | keys | [Key](#api-proto-v1-Key) | repeated | List of cryptographic keys |
 | vaults | [ValidatorVault](#api-proto-v1-ValidatorVault) | repeated | List of validator vaults |
+
+
+
+
+
+
+<a name="api-proto-v1-ValidatorSet"></a>
+
+### ValidatorSet
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| version | [uint32](#uint32) |  | Version of the validator set |
+| required_key_tag | [uint32](#uint32) |  | Key tag required to commit next validator set |
+| epoch | [uint64](#uint64) |  | Validator set epoch |
+| capture_timestamp | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Epoch capture timestamp |
+| quorum_threshold | [string](#string) |  | Quorum threshold (big integer as string) |
+| status | [ValidatorSetStatus](#api-proto-v1-ValidatorSetStatus) |  | Status of validator set header |
+| validators | [Validator](#api-proto-v1-Validator) | repeated | List of validators |
 
 
 

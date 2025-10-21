@@ -552,7 +552,7 @@ func TestRepository_GetValidatorSetsByEpoch(t *testing.T) {
 
 	t.Run("get validator sets starting from epoch 2", func(t *testing.T) {
 		// Query starting from epoch 2
-		validatorSets, err := repo.GetValidatorSetsByEpoch(t.Context(), 2)
+		validatorSets, err := repo.GetValidatorSetsStartingFromEpoch(t.Context(), 2)
 		require.NoError(t, err)
 
 		// Should return exactly 2 validator sets (epochs 2 and 3)
@@ -569,7 +569,7 @@ func TestRepository_GetValidatorSetsByEpoch(t *testing.T) {
 
 	t.Run("get validator sets starting from epoch 1", func(t *testing.T) {
 		// Query starting from epoch 1 - should return all 3
-		validatorSets, err := repo.GetValidatorSetsByEpoch(t.Context(), 1)
+		validatorSets, err := repo.GetValidatorSetsStartingFromEpoch(t.Context(), 1)
 		require.NoError(t, err)
 
 		require.Len(t, validatorSets, 3, "Should return all 3 validator sets")
@@ -580,7 +580,7 @@ func TestRepository_GetValidatorSetsByEpoch(t *testing.T) {
 
 	t.Run("get validator sets starting from epoch 3", func(t *testing.T) {
 		// Query starting from epoch 3 - should return only epoch 3
-		validatorSets, err := repo.GetValidatorSetsByEpoch(t.Context(), 3)
+		validatorSets, err := repo.GetValidatorSetsStartingFromEpoch(t.Context(), 3)
 		require.NoError(t, err)
 
 		require.Len(t, validatorSets, 1, "Should return only 1 validator set (epoch 3)")
@@ -590,7 +590,7 @@ func TestRepository_GetValidatorSetsByEpoch(t *testing.T) {
 
 	t.Run("get validator sets starting from non-existent epoch", func(t *testing.T) {
 		// Query starting from epoch 10 (doesn't exist) - should return empty
-		validatorSets, err := repo.GetValidatorSetsByEpoch(t.Context(), 10)
+		validatorSets, err := repo.GetValidatorSetsStartingFromEpoch(t.Context(), 10)
 		require.NoError(t, err)
 		assert.Empty(t, validatorSets, "Should return empty slice for non-existent epoch")
 	})

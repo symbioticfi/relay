@@ -206,7 +206,7 @@ func TestBadgerRepository_GetSignaturesByEpoch(t *testing.T) {
 
 	t.Run("get signatures starting from epoch 2", func(t *testing.T) {
 		// Query starting from epoch 2
-		signatures, err := repo.GetSignaturesByEpoch(context.Background(), 2)
+		signatures, err := repo.GetSignaturesStartingFromEpoch(context.Background(), 2)
 		require.NoError(t, err)
 
 		// Should return exactly 2 signatures (epochs 2 and 3)
@@ -222,7 +222,7 @@ func TestBadgerRepository_GetSignaturesByEpoch(t *testing.T) {
 
 	t.Run("get signatures starting from epoch 1", func(t *testing.T) {
 		// Query starting from epoch 1 - should return all 3
-		signatures, err := repo.GetSignaturesByEpoch(context.Background(), 1)
+		signatures, err := repo.GetSignaturesStartingFromEpoch(context.Background(), 1)
 		require.NoError(t, err)
 
 		require.Len(t, signatures, 3, "Should return all 3 signatures")
@@ -233,7 +233,7 @@ func TestBadgerRepository_GetSignaturesByEpoch(t *testing.T) {
 
 	t.Run("get signatures starting from epoch 3", func(t *testing.T) {
 		// Query starting from epoch 3 - should return only epoch 3
-		signatures, err := repo.GetSignaturesByEpoch(context.Background(), 3)
+		signatures, err := repo.GetSignaturesStartingFromEpoch(context.Background(), 3)
 		require.NoError(t, err)
 
 		require.Len(t, signatures, 1, "Should return only 1 signature (epoch 3)")
@@ -243,7 +243,7 @@ func TestBadgerRepository_GetSignaturesByEpoch(t *testing.T) {
 
 	t.Run("get signatures starting from non-existent epoch", func(t *testing.T) {
 		// Query starting from epoch 10 (doesn't exist) - should return empty
-		signatures, err := repo.GetSignaturesByEpoch(context.Background(), 10)
+		signatures, err := repo.GetSignaturesStartingFromEpoch(context.Background(), 10)
 		require.NoError(t, err)
 		require.Empty(t, signatures, "Should return empty slice for non-existent epoch")
 	})

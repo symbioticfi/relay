@@ -96,10 +96,10 @@ func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.H
 	})
 }
 
-func (r *Repository) GetAggregationProofsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.AggregationProof, error) {
+func (r *Repository) GetAggregationProofsStartingFromEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.AggregationProof, error) {
 	var proofs []symbiotic.AggregationProof
 
-	return proofs, r.doViewInTx(ctx, "GetAggregationProofsByEpoch", func(ctx context.Context) error {
+	return proofs, r.doViewInTx(ctx, "GetAggregationProofsStartingFromEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 
 		startKey := keyRequestIDEpochPrefix(epoch)

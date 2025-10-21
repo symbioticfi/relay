@@ -69,7 +69,7 @@ initialEpochCheck:
 
 	// start watching for any new epochs being committed, will keep timeout to 5x the epoch duration
 	t.Log("Waiting for epoch progression...")
-	ctx, cancel = context.WithTimeout(t.Context(), time.Duration(deployData.Env.EpochTime*5)*time.Hour)
+	ctx, cancel = context.WithTimeout(t.Context(), time.Duration(deployData.Env.EpochTime*5)*time.Second)
 	defer cancel()
 
 	for {
