@@ -61,7 +61,7 @@ type Config struct {
 	Deriver         deriver                                 `validate:"required"`
 	PollingInterval time.Duration                           `validate:"required,gt=0"`
 	Signer          signer                                  `validate:"required"`
-	ValidatorSetSet *signals.Signal[symbiotic.ValidatorSet] `validate:"required"`
+	ValidatorSet    *signals.Signal[symbiotic.ValidatorSet] `validate:"required"`
 	KeyProvider     keyProvider
 	Aggregator      aggregator.Aggregator
 	Metrics         metrics
@@ -200,7 +200,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 			return errors.Errorf("failed to process validator set for epoch %d: %w", nextEpoch, err)
 		}
 
-		if err = s.cfg.ValidatorSetSet.Emit(nextValset); err != nil {
+		if err = s.cfg.ValidatorSet.Emit(nextValset); err != nil {
 			slog.ErrorContext(ctx, "Failed to emit validator set", "error", err)
 		}
 

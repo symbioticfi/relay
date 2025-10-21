@@ -185,7 +185,7 @@ func runApp(ctx context.Context) error {
 		Repo:            repo,
 		Deriver:         deriver,
 		PollingInterval: time.Second * 5,
-		ValidatorSetSet: validatorSetSignal,
+		ValidatorSet:    validatorSetSignal,
 		Signer:          signer,
 		Aggregator:      agg,
 		KeyProvider:     keyProvider,
@@ -333,7 +333,7 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create api app: %w", err)
 	}
 
-	if err := validatorSetSignal.SetHandlers(api.HandleValidatorSetSet()); err != nil {
+	if err := validatorSetSignal.SetHandlers(api.HandleValidatorSet()); err != nil {
 		return errors.Errorf("failed to set validator set set message handler: %w", err)
 	}
 	if err := validatorSetSignal.StartWorkers(ctx); err != nil {

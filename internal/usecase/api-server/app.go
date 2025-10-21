@@ -323,7 +323,7 @@ func (a *SymbioticServer) HandleSignatureProcessed() func(context.Context, symbi
 	}
 }
 
-func (a *SymbioticServer) HandleValidatorSetSet() func(context.Context, symbiotic.ValidatorSet) error {
+func (a *SymbioticServer) HandleValidatorSet() func(context.Context, symbiotic.ValidatorSet) error {
 	return func(ctx context.Context, validatorSet symbiotic.ValidatorSet) error {
 		a.handler.validatorSetsHub.Broadcast(validatorSet)
 		return nil
