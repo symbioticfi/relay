@@ -53,6 +53,7 @@ type Config struct {
 	Metrics           metrics          `validate:"required"`
 	AggregationPolicy aggregatorPolicy `validate:"required"`
 	KeyProvider       keyProvider      `validate:"required"`
+	ForceAggregator   bool
 }
 
 func (c Config) Validate() error {
@@ -115,25 +116,29 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 		return errors.Errorf("failed to get validator set: %w", err)
 	}
 
-	onchainKey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(validatorSet.RequiredKeyTag)
-	if err != nil {
-		if errors.Is(err, entity.ErrKeyNotFound) {
-			slog.DebugContext(ctx, "No Onchain key for required key tag, skipping proof aggregation", "keyTag", validatorSet.RequiredKeyTag)
+	if s.cfg.ForceAggregator {
+		slog.DebugContext(ctx, "Force aggregator mode enabled, acting as aggregator")
+	} else {
+		onchainKey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(validatorSet.RequiredKeyTag)
+		if err != nil {
+			if errors.Is(err, entity.ErrKeyNotFound) {
+				slog.DebugContext(ctx, "No Onchain key for required key tag, skipping proof aggregation", "keyTag", validatorSet.RequiredKeyTag)
+				return nil
+			}
+			return errors.Errorf("failed to get private key for required key tag %s: %w", validatorSet.RequiredKeyTag, err)
+		}
+
+		if !validatorSet.IsAggregator(onchainKey) {
+			slog.DebugContext(ctx, "Not an Aggregator for this valset, skipping proof aggregation",
+				"key", onchainKey,
+				"epoch", msg.Epoch,
+				"aggIndices", validatorSet.AggregatorIndices,
+			)
 			return nil
 		}
-		return errors.Errorf("failed to get private key for required key tag %s: %w", validatorSet.RequiredKeyTag, err)
 	}
 
-	if !validatorSet.IsAggregator(onchainKey) {
-		slog.DebugContext(ctx, "Not an Aggregator for this valset, skipping proof aggregation",
-			"key", onchainKey,
-			"epoch", msg.Epoch,
-			"aggIndices", validatorSet.AggregatorIndices,
-		)
-		return nil
-	}
-
-	slog.DebugContext(ctx, "Is an Aggregator for this valset, checking quorum", "key", onchainKey, "epoch", msg.Epoch)
+	slog.DebugContext(ctx, "Is an Aggregator for this valset, checking quorum")
 
 	totalActiveVotingPower := validatorSet.GetTotalActiveVotingPower()
 

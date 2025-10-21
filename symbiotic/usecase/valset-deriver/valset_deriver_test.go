@@ -990,6 +990,29 @@ func TestDeriver_GetSchedulerInfo(t *testing.T) {
 			expectError:         false,
 		},
 		{
+			name: "zero aggregators and committers",
+			valset: symbiotic.ValidatorSet{
+				Validators: symbiotic.Validators{
+					{
+						Operator:    common.HexToAddress("0x1111111111111111111111111111111111111111"),
+						VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
+						IsActive:    true,
+					},
+				},
+				Version:          1,
+				RequiredKeyTag:   15,
+				Epoch:            50,
+				CaptureTimestamp: 1234567890,
+			},
+			config: symbiotic.NetworkConfig{
+				NumAggregators: 0,
+				NumCommitters:  0,
+			},
+			expectedAggIndices:  nil,
+			expectedCommIndices: nil,
+			expectError:         false,
+		},
+		{
 			name: "empty validator set",
 			valset: symbiotic.ValidatorSet{
 				Validators:       symbiotic.Validators{},
