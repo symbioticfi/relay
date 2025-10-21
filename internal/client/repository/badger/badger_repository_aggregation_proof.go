@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/dgraph-io/badger/v4"
@@ -16,19 +17,6 @@ import (
 
 func keyAggregationProof(requestID common.Hash) []byte {
 	return append([]byte("aggregation_proof:"), requestID.Bytes()...)
-}
-
-func keyAggregationProofByEpoch(epoch symbiotic.Epoch, prevKey []byte) []byte {
-	return append(keyAggregationProofByEpochPrefix(epoch), prevKey...)
-}
-
-func keyAggregationProofByEpochPrefix(epoch symbiotic.Epoch) []byte {
-	key := append([]byte("aggregation_proof_by_epoch:"), epoch.Bytes()...)
-	return append(key, ':')
-}
-
-func keyAggregationProofByEpochPrefixAll() []byte {
-	return []byte("aggregation_proof_by_epoch:")
 }
 
 func keyAggregationProofPending(epoch symbiotic.Epoch, requestID common.Hash) []byte {
@@ -62,11 +50,18 @@ func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.
 			return errors.Errorf("failed to store aggregation proof: %w", err)
 		}
 
-		if err = txn.Set(
-			keyAggregationProofByEpoch(ap.Epoch, valueKey),
-			valueKey,
-		); err != nil {
-			return errors.Errorf("failed to store aggregation proof map key by epoch: %w", err)
+		reqIDEpochKey := keyRequestIDEpoch(ap.Epoch, requestID)
+
+		_, err = txn.Get(reqIDEpochKey)
+		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
+			return errors.Errorf("failed to get request id epoch link: %w", err)
+		}
+		if err == nil {
+			return nil
+		}
+
+		if err = txn.Set(reqIDEpochKey, []byte{}); err != nil {
+			return errors.Errorf("failed to store request id epoch link: %w", err)
 		}
 
 		return nil
@@ -107,27 +102,28 @@ func (r *Repository) GetAggregationProofsByEpoch(ctx context.Context, epoch symb
 	return proofs, r.doViewInTx(ctx, "GetAggregationProofsByEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 
-		startKey := keyAggregationProofByEpochPrefix(epoch)
+		startKey := keyRequestIDEpochPrefix(epoch)
 		opts := badger.DefaultIteratorOptions
-		opts.Prefix = keyAggregationProofByEpochPrefixAll()
+		opts.Prefix = keyRequestIDEpochAll()
 
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
 		for it.Seek(startKey); it.Valid(); it.Next() {
-			item := it.Item()
+			key := it.Item().Key()
+
+			parts := strings.Split(string(key), ":")
+			if len(parts) != 3 {
+				slog.ErrorContext(ctx, "failed to parse request id epoch link", "key", string(key))
+				continue
+			}
+
+			item, err := txn.Get(keyAggregationProof(common.Hash(common.FromHex(parts[2]))))
+			if err != nil {
+				return errors.Errorf("failed to get aggregation proof: %w", err)
+			}
 
 			value, err := item.ValueCopy(nil)
-			if err != nil {
-				return errors.Errorf("failed to copy aggregation proof key: %w", err)
-			}
-
-			item, err = txn.Get(value)
-			if err != nil {
-				return errors.Errorf("failed to get aggregation proof key: %w", err)
-			}
-
-			value, err = item.ValueCopy(nil)
 			if err != nil {
 				return errors.Errorf("failed to copy aggregation proof: %w", err)
 			}
