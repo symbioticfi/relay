@@ -26,6 +26,8 @@ relay_sidecar [flags]
       --driver.chain-id uint                    Driver contract chain id
       --evm.chains strings                      Chains, comma separated rpc-url,..
       --evm.max-calls int                       Max calls in multicall
+      --force-role.aggregator                   Force node to act as aggregator regardless of deterministic scheduling
+      --force-role.committer                    Force node to act as committer regardless of deterministic scheduling
   -h, --help                                    help for relay_sidecar
       --key-cache.enabled                       Enable key cache (default true)
       --key-cache.size int                      Key cache size (default 100)
