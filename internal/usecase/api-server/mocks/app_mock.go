@@ -96,6 +96,21 @@ func (mr *MockrepoMockRecorder) GetAggregationProof(ctx, requestID any) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAggregationProof", reflect.TypeOf((*Mockrepo)(nil).GetAggregationProof), ctx, requestID)
 }
 
+// GetAggregationProofsByEpoch mocks base method.
+func (m *Mockrepo) GetAggregationProofsByEpoch(ctx context.Context, epoch entity.Epoch) ([]entity.AggregationProof, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAggregationProofsByEpoch", ctx, epoch)
+	ret0, _ := ret[0].([]entity.AggregationProof)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAggregationProofsByEpoch indicates an expected call of GetAggregationProofsByEpoch.
+func (mr *MockrepoMockRecorder) GetAggregationProofsByEpoch(ctx, epoch any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAggregationProofsByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetAggregationProofsByEpoch), ctx, epoch)
+}
+
 // GetAggregationProofsStartingFromEpoch mocks base method.
 func (m *Mockrepo) GetAggregationProofsStartingFromEpoch(ctx context.Context, epoch entity.Epoch) ([]entity.AggregationProof, error) {
 	m.ctrl.T.Helper()
@@ -169,6 +184,21 @@ func (m *Mockrepo) GetSignatureRequest(ctx context.Context, requestID common.Has
 func (mr *MockrepoMockRecorder) GetSignatureRequest(ctx, requestID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureRequest", reflect.TypeOf((*Mockrepo)(nil).GetSignatureRequest), ctx, requestID)
+}
+
+// GetSignaturesByEpoch mocks base method.
+func (m *Mockrepo) GetSignaturesByEpoch(ctx context.Context, epoch entity.Epoch) ([]entity.Signature, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSignaturesByEpoch", ctx, epoch)
+	ret0, _ := ret[0].([]entity.Signature)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSignaturesByEpoch indicates an expected call of GetSignaturesByEpoch.
+func (mr *MockrepoMockRecorder) GetSignaturesByEpoch(ctx, epoch any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignaturesByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetSignaturesByEpoch), ctx, epoch)
 }
 
 // GetSignaturesStartingFromEpoch mocks base method.
@@ -391,4 +421,43 @@ func (m *Mockderiver) GetValidatorSet(ctx context.Context, epoch entity.Epoch, c
 func (mr *MockderiverMockRecorder) GetValidatorSet(ctx, epoch, config any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSet", reflect.TypeOf((*Mockderiver)(nil).GetValidatorSet), ctx, epoch, config)
+}
+
+// MockkeyProvider is a mock of keyProvider interface.
+type MockkeyProvider struct {
+	ctrl     *gomock.Controller
+	recorder *MockkeyProviderMockRecorder
+	isgomock struct{}
+}
+
+// MockkeyProviderMockRecorder is the mock recorder for MockkeyProvider.
+type MockkeyProviderMockRecorder struct {
+	mock *MockkeyProvider
+}
+
+// NewMockkeyProvider creates a new mock instance.
+func NewMockkeyProvider(ctrl *gomock.Controller) *MockkeyProvider {
+	mock := &MockkeyProvider{ctrl: ctrl}
+	mock.recorder = &MockkeyProviderMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockkeyProvider) EXPECT() *MockkeyProviderMockRecorder {
+	return m.recorder
+}
+
+// GetOnchainKeyFromCache mocks base method.
+func (m *MockkeyProvider) GetOnchainKeyFromCache(keyTag entity.KeyTag) (entity.CompactPublicKey, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOnchainKeyFromCache", keyTag)
+	ret0, _ := ret[0].(entity.CompactPublicKey)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOnchainKeyFromCache indicates an expected call of GetOnchainKeyFromCache.
+func (mr *MockkeyProviderMockRecorder) GetOnchainKeyFromCache(keyTag any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOnchainKeyFromCache", reflect.TypeOf((*MockkeyProvider)(nil).GetOnchainKeyFromCache), keyTag)
 }

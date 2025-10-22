@@ -110,27 +110,13 @@ func (r *Repository) GetAggregationProofsStartingFromEpoch(ctx context.Context, 
 		defer it.Close()
 
 		for it.Seek(startKey); it.Valid(); it.Next() {
-			key := it.Item().Key()
-
-			parts := strings.Split(string(key), ":")
-			if len(parts) != 3 {
-				slog.ErrorContext(ctx, "failed to parse request id epoch link", "key", string(key))
-				continue
-			}
-
-			item, err := txn.Get(keyAggregationProof(common.Hash(common.FromHex(parts[2]))))
+			proof, err := getAggregationProofByEpochFromItem(ctx, it)
 			if err != nil {
-				return errors.Errorf("failed to get aggregation proof: %w", err)
-			}
-
-			value, err := item.ValueCopy(nil)
-			if err != nil {
-				return errors.Errorf("failed to copy aggregation proof: %w", err)
-			}
-
-			proof, err := bytesToAggregationProof(value)
-			if err != nil {
-				return errors.Errorf("failed to unmarshal aggregation proof: %w", err)
+				if errors.Is(err, errCorruptedRequestIDEpochLink) {
+					slog.ErrorContext(ctx, errCorruptedRequestIDEpochLink.Error(), "key", string(it.Item().Key()))
+					continue
+				}
+				return err
 			}
 
 			proofs = append(proofs, proof)
@@ -138,6 +124,62 @@ func (r *Repository) GetAggregationProofsStartingFromEpoch(ctx context.Context, 
 
 		return nil
 	})
+}
+
+func (r *Repository) GetAggregationProofsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.AggregationProof, error) {
+	var proofs []symbiotic.AggregationProof
+
+	return proofs, r.doViewInTx(ctx, "GetAggregationProofsByEpoch", func(ctx context.Context) error {
+		txn := getTxn(ctx)
+
+		startKey := keyRequestIDEpochPrefix(epoch)
+		opts := badger.DefaultIteratorOptions
+		opts.Prefix = keyRequestIDEpochAll()
+
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		for it.Seek(startKey); it.ValidForPrefix(startKey); it.Next() {
+			proof, err := getAggregationProofByEpochFromItem(ctx, it)
+			if err != nil {
+				if errors.Is(err, errCorruptedRequestIDEpochLink) {
+					slog.ErrorContext(ctx, errCorruptedRequestIDEpochLink.Error(), "key", string(it.Item().Key()))
+					continue
+				}
+				return err
+			}
+
+			proofs = append(proofs, proof)
+		}
+
+		return nil
+	})
+}
+
+func getAggregationProofByEpochFromItem(ctx context.Context, it *badger.Iterator) (symbiotic.AggregationProof, error) {
+	key := it.Item().Key()
+
+	requestID, err := extractRequestIDFromEpochKey(key)
+	if err != nil {
+		return symbiotic.AggregationProof{}, errors.Join(errCorruptedRequestIDEpochLink, err)
+	}
+
+	item, err := getTxn(ctx).Get(keyAggregationProof(requestID))
+	if err != nil {
+		return symbiotic.AggregationProof{}, errors.Errorf("failed to get aggregation proof: %w", err)
+	}
+
+	value, err := item.ValueCopy(nil)
+	if err != nil {
+		return symbiotic.AggregationProof{}, errors.Errorf("failed to copy aggregation proof: %w", err)
+	}
+
+	proof, err := bytesToAggregationProof(value)
+	if err != nil {
+		return symbiotic.AggregationProof{}, errors.Errorf("failed to unmarshal aggregation proof: %w", err)
+	}
+
+	return proof, nil
 }
 
 func aggregationProofToBytes(ap symbiotic.AggregationProof) ([]byte, error) {

@@ -321,6 +321,7 @@ func runApp(ctx context.Context) error {
 		Signer:                 signer,
 		Repo:                   repo,
 		EvmClient:              evmClient,
+		KeyProvider:            keyProvider,
 		Aggregator:             aggApp,
 		Deriver:                deriver,
 		Metrics:                mtr,

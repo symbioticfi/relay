@@ -142,7 +142,7 @@ func TestBadgerRepository_SignatureOrdering(t *testing.T) {
 	}
 }
 
-func TestBadgerRepository_GetSignaturesByEpoch(t *testing.T) {
+func TestBadgerRepository_GetSignaturesStartingFromEpoch(t *testing.T) {
 	t.Parallel()
 
 	repo := setupTestRepository(t)
@@ -242,9 +242,102 @@ func TestBadgerRepository_GetSignaturesByEpoch(t *testing.T) {
 	})
 
 	t.Run("get signatures starting from non-existent epoch", func(t *testing.T) {
-		// Query starting from epoch 10 (doesn't exist) - should return empty
 		signatures, err := repo.GetSignaturesStartingFromEpoch(context.Background(), 10)
 		require.NoError(t, err)
 		require.Empty(t, signatures, "Should return empty slice for non-existent epoch")
+	})
+}
+
+func TestBadgerRepository_GetSignaturesByEpoch(t *testing.T) {
+	t.Parallel()
+
+	repo := setupTestRepository(t)
+
+	priv1, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
+	require.NoError(t, err)
+	priv2, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
+	require.NoError(t, err)
+	priv3, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
+	require.NoError(t, err)
+
+	sig1 := symbiotic.Signature{
+		MessageHash: []byte("message1"),
+		KeyTag:      15,
+		Epoch:       1,
+		Signature:   []byte("signature1"),
+		PublicKey:   priv1.PublicKey(),
+	}
+
+	sig2 := symbiotic.Signature{
+		MessageHash: []byte("message2"),
+		KeyTag:      15,
+		Epoch:       2,
+		Signature:   []byte("signature2"),
+		PublicKey:   priv2.PublicKey(),
+	}
+
+	sig3 := symbiotic.Signature{
+		MessageHash: []byte("message3"),
+		KeyTag:      15,
+		Epoch:       3,
+		Signature:   []byte("signature3"),
+		PublicKey:   priv3.PublicKey(),
+	}
+
+	err = repo.doUpdateInTx(context.Background(), "test", func(ctx context.Context) error {
+		if err := repo.saveSignature(ctx, 1, sig1); err != nil {
+			return err
+		}
+		return nil
+	})
+	require.NoError(t, err)
+
+	err = repo.doUpdateInTx(context.Background(), "test", func(ctx context.Context) error {
+		if err := repo.saveSignature(ctx, 1, sig2); err != nil {
+			return err
+		}
+		return nil
+	})
+	require.NoError(t, err)
+
+	err = repo.doUpdateInTx(context.Background(), "test", func(ctx context.Context) error {
+		if err := repo.saveSignature(ctx, 1, sig3); err != nil {
+			return err
+		}
+		return nil
+	})
+	require.NoError(t, err)
+
+	t.Run("get signatures for epoch 2", func(t *testing.T) {
+		signatures, err := repo.GetSignaturesByEpoch(context.Background(), 2)
+		require.NoError(t, err)
+
+		require.Len(t, signatures, 1)
+		require.Equal(t, symbiotic.Epoch(2), signatures[0].Epoch)
+		require.Equal(t, sig2, signatures[0])
+	})
+
+	t.Run("get signatures for epoch 1", func(t *testing.T) {
+		signatures, err := repo.GetSignaturesByEpoch(context.Background(), 1)
+		require.NoError(t, err)
+
+		require.Len(t, signatures, 1)
+		require.Equal(t, symbiotic.Epoch(1), signatures[0].Epoch)
+		require.Equal(t, sig1, signatures[0])
+	})
+
+	t.Run("get signatures for epoch 3", func(t *testing.T) {
+		signatures, err := repo.GetSignaturesByEpoch(context.Background(), 3)
+		require.NoError(t, err)
+
+		require.Len(t, signatures, 1)
+		require.Equal(t, symbiotic.Epoch(3), signatures[0].Epoch)
+		require.Equal(t, sig3, signatures[0])
+	})
+
+	t.Run("get signatures for non-existent epoch", func(t *testing.T) {
+		signatures, err := repo.GetSignaturesByEpoch(context.Background(), 10)
+		require.NoError(t, err)
+		require.Empty(t, signatures)
 	})
 }

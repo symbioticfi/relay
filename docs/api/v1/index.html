@@ -199,6 +199,14 @@
                 </li>
               
                 <li>
+                  <a href="#api.proto.v1.GetAggregationProofsByEpochRequest"><span class="badge">M</span>GetAggregationProofsByEpochRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.GetAggregationProofsByEpochResponse"><span class="badge">M</span>GetAggregationProofsByEpochResponse</a>
+                </li>
+              
+                <li>
                   <a href="#api.proto.v1.GetAggregationStatusRequest"><span class="badge">M</span>GetAggregationStatusRequest</a>
                 </li>
               
@@ -235,11 +243,27 @@
                 </li>
               
                 <li>
+                  <a href="#api.proto.v1.GetLocalValidatorRequest"><span class="badge">M</span>GetLocalValidatorRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.GetLocalValidatorResponse"><span class="badge">M</span>GetLocalValidatorResponse</a>
+                </li>
+              
+                <li>
                   <a href="#api.proto.v1.GetSignatureRequestRequest"><span class="badge">M</span>GetSignatureRequestRequest</a>
                 </li>
               
                 <li>
                   <a href="#api.proto.v1.GetSignatureRequestResponse"><span class="badge">M</span>GetSignatureRequestResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.GetSignaturesByEpochRequest"><span class="badge">M</span>GetSignaturesByEpochRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.GetSignaturesByEpochResponse"><span class="badge">M</span>GetSignaturesByEpochResponse</a>
                 </li>
               
                 <li>
@@ -256,6 +280,14 @@
               
                 <li>
                   <a href="#api.proto.v1.GetValidatorByAddressResponse"><span class="badge">M</span>GetValidatorByAddressResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.GetValidatorByKeyRequest"><span class="badge">M</span>GetValidatorByKeyRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.GetValidatorByKeyResponse"><span class="badge">M</span>GetValidatorByKeyResponse</a>
                 </li>
               
                 <li>
@@ -509,6 +541,54 @@
 
         
       
+        <h3 id="api.proto.v1.GetAggregationProofsByEpochRequest">GetAggregationProofsByEpochRequest</h3>
+        <p>Request message for getting aggregation proof</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>epoch</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>Epoch number </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.GetAggregationProofsByEpochResponse">GetAggregationProofsByEpochResponse</h3>
+        <p>Response message for getting aggregation proof</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>aggregation_proofs</td>
+                  <td><a href="#api.proto.v1.AggregationProof">AggregationProof</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="api.proto.v1.GetAggregationStatusRequest">GetAggregationStatusRequest</h3>
         <p>Request message for getting aggregation status</p>
 
@@ -719,6 +799,54 @@
 
         
       
+        <h3 id="api.proto.v1.GetLocalValidatorRequest">GetLocalValidatorRequest</h3>
+        <p>Request message for getting local validator</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>epoch</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td>optional</td>
+                  <td><p>Epoch number (optional, if not provided current epoch will be used) </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.GetLocalValidatorResponse">GetLocalValidatorResponse</h3>
+        <p>Response message for getting local validator</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>validator</td>
+                  <td><a href="#api.proto.v1.Validator">Validator</a></td>
+                  <td></td>
+                  <td><p>The validator </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="api.proto.v1.GetSignatureRequestRequest">GetSignatureRequestRequest</h3>
         <p>Request message for getting signature request</p>
 
@@ -772,6 +900,54 @@
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
                   <td><p>Required epoch </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.GetSignaturesByEpochRequest">GetSignaturesByEpochRequest</h3>
+        <p>Request message for getting signatures by epoch</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>epoch</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>Epoch number </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.GetSignaturesByEpochResponse">GetSignaturesByEpochResponse</h3>
+        <p>Response message for getting signatures by epoch</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>signatures</td>
+                  <td><a href="#api.proto.v1.Signature">Signature</a></td>
+                  <td>repeated</td>
+                  <td><p>List of signatures </p></td>
                 </tr>
               
             </tbody>
@@ -862,6 +1038,68 @@
       
         <h3 id="api.proto.v1.GetValidatorByAddressResponse">GetValidatorByAddressResponse</h3>
         <p>Response message for getting validator by address</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>validator</td>
+                  <td><a href="#api.proto.v1.Validator">Validator</a></td>
+                  <td></td>
+                  <td><p>The validator </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.GetValidatorByKeyRequest">GetValidatorByKeyRequest</h3>
+        <p>Request message for getting validator by key</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>epoch</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td>optional</td>
+                  <td><p>Epoch number (optional, if not provided current epoch will be used) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>key_tag</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>Validator key tag (required) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>on_chain_key</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>Validator on chain (public) key (required) </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.GetValidatorByKeyResponse">GetValidatorByKeyResponse</h3>
+        <p>Response message for getting validator by key</p>
 
         
           <table class="field-table">
@@ -1699,6 +1937,13 @@ If not provided, only validator sets generated after stream creation will be sen
               </tr>
             
               <tr>
+                <td>GetAggregationProofsByEpoch</td>
+                <td><a href="#api.proto.v1.GetAggregationProofsByEpochRequest">GetAggregationProofsByEpochRequest</a></td>
+                <td><a href="#api.proto.v1.GetAggregationProofsByEpochResponse">GetAggregationProofsByEpochResponse</a></td>
+                <td><p>Get aggregation proofs by epoch</p></td>
+              </tr>
+            
+              <tr>
                 <td>GetCurrentEpoch</td>
                 <td><a href="#api.proto.v1.GetCurrentEpochRequest">GetCurrentEpochRequest</a></td>
                 <td><a href="#api.proto.v1.GetCurrentEpochResponse">GetCurrentEpochResponse</a></td>
@@ -1710,6 +1955,13 @@ If not provided, only validator sets generated after stream creation will be sen
                 <td><a href="#api.proto.v1.GetSignaturesRequest">GetSignaturesRequest</a></td>
                 <td><a href="#api.proto.v1.GetSignaturesResponse">GetSignaturesResponse</a></td>
                 <td><p>Get signature by request id</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetSignaturesByEpoch</td>
+                <td><a href="#api.proto.v1.GetSignaturesByEpochRequest">GetSignaturesByEpochRequest</a></td>
+                <td><a href="#api.proto.v1.GetSignaturesByEpochResponse">GetSignaturesByEpochResponse</a></td>
+                <td><p>Get signature by epoch</p></td>
               </tr>
             
               <tr>
@@ -1738,6 +1990,20 @@ If not provided, only validator sets generated after stream creation will be sen
                 <td><a href="#api.proto.v1.GetValidatorByAddressRequest">GetValidatorByAddressRequest</a></td>
                 <td><a href="#api.proto.v1.GetValidatorByAddressResponse">GetValidatorByAddressResponse</a></td>
                 <td><p>Get validator by address</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetValidatorByKey</td>
+                <td><a href="#api.proto.v1.GetValidatorByKeyRequest">GetValidatorByKeyRequest</a></td>
+                <td><a href="#api.proto.v1.GetValidatorByKeyResponse">GetValidatorByKeyResponse</a></td>
+                <td><p>Get validator by key</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetLocalValidator</td>
+                <td><a href="#api.proto.v1.GetLocalValidatorRequest">GetLocalValidatorRequest</a></td>
+                <td><a href="#api.proto.v1.GetLocalValidatorResponse">GetLocalValidatorResponse</a></td>
+                <td><p>Get local validator</p></td>
               </tr>
             
               <tr>

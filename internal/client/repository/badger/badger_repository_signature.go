@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
@@ -94,40 +93,6 @@ func (r *Repository) GetAllSignatures(ctx context.Context, requestID common.Hash
 	})
 }
 
-func (r *Repository) GetSignaturesStartingFromEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error) {
-	var signatures []symbiotic.Signature
-
-	return signatures, r.doViewInTx(ctx, "GetSignaturesStartingFromEpoch", func(ctx context.Context) error {
-		txn := getTxn(ctx)
-
-		startKey := keyRequestIDEpochPrefix(epoch)
-		opts := badger.DefaultIteratorOptions
-		opts.Prefix = keyRequestIDEpochAll()
-
-		it := txn.NewIterator(opts)
-		defer it.Close()
-
-		for it.Seek(startKey); it.Valid(); it.Next() {
-			key := it.Item().Key()
-
-			parts := strings.Split(string(key), ":")
-			if len(parts) != 3 {
-				slog.ErrorContext(ctx, "failed to parse request id epoch link", "key", string(key))
-				continue
-			}
-
-			signaturesByRequestID, err := r.GetAllSignatures(ctx, common.Hash(common.FromHex(parts[2])))
-			if err != nil {
-				return err
-			}
-
-			signatures = append(signatures, signaturesByRequestID...)
-		}
-
-		return nil
-	})
-}
-
 func (r *Repository) GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (symbiotic.Signature, error) {
 	var signature symbiotic.Signature
 
@@ -158,6 +123,77 @@ func (r *Repository) GetSignatureByIndex(ctx context.Context, requestID common.H
 	})
 
 	return signature, err
+}
+
+func (r *Repository) GetSignaturesStartingFromEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error) {
+	var signatures []symbiotic.Signature
+
+	return signatures, r.doViewInTx(ctx, "GetSignaturesStartingFromEpoch", func(ctx context.Context) error {
+		txn := getTxn(ctx)
+
+		startKey := keyRequestIDEpochPrefix(epoch)
+		opts := badger.DefaultIteratorOptions
+		opts.Prefix = keyRequestIDEpochAll()
+
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		for it.Seek(startKey); it.Valid(); it.Next() {
+			signaturesFromItem, err := r.getSignaturesByEpochFromItem(ctx, it)
+			if err != nil {
+				if errors.Is(err, errCorruptedRequestIDEpochLink) {
+					slog.ErrorContext(ctx, errCorruptedRequestIDEpochLink.Error(), "key", string(it.Item().Key()))
+					continue
+				}
+				return err
+			}
+
+			signatures = append(signatures, signaturesFromItem...)
+		}
+
+		return nil
+	})
+}
+
+func (r *Repository) GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error) {
+	var signatures []symbiotic.Signature
+
+	return signatures, r.doViewInTx(ctx, "GetSignaturesByEpoch", func(ctx context.Context) error {
+		txn := getTxn(ctx)
+
+		startKey := keyRequestIDEpochPrefix(epoch)
+		opts := badger.DefaultIteratorOptions
+		opts.Prefix = keyRequestIDEpochAll()
+
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		for it.Seek(startKey); it.ValidForPrefix(startKey); it.Next() {
+			signaturesFromItem, err := r.getSignaturesByEpochFromItem(ctx, it)
+			if err != nil {
+				if errors.Is(err, errCorruptedRequestIDEpochLink) {
+					slog.ErrorContext(ctx, errCorruptedRequestIDEpochLink.Error(), "key", string(it.Item().Key()))
+					continue
+				}
+				return err
+			}
+
+			signatures = append(signatures, signaturesFromItem...)
+		}
+
+		return nil
+	})
+}
+
+func (r *Repository) getSignaturesByEpochFromItem(ctx context.Context, it *badger.Iterator) ([]symbiotic.Signature, error) {
+	key := it.Item().Key()
+
+	requestID, err := extractRequestIDFromEpochKey(key)
+	if err != nil {
+		return nil, errors.Join(errCorruptedRequestIDEpochLink, err)
+	}
+
+	return r.GetAllSignatures(ctx, requestID)
 }
 
 func signatureToBytes(sig symbiotic.Signature) ([]byte, error) {
