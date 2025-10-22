@@ -42,6 +42,7 @@ type config struct {
 	KeyCache   KeyCache             `mapstructure:"key-cache"`
 	P2P        P2PConfig            `mapstructure:"p2p" validate:"required"`
 	Evm        EvmConfig            `mapstructure:"evm" validate:"required"`
+	ForceRole  ForceRole            `mapstructure:"force-role"`
 }
 
 type LogConfig struct {
@@ -171,6 +172,11 @@ type EvmConfig struct {
 	MaxCalls int      `mapstructure:"max-calls"`
 }
 
+type ForceRole struct {
+	Aggregator bool `mapstructure:"aggregator"`
+	Committer  bool `mapstructure:"committer"`
+}
+
 func (c config) Validate() error {
 	validate := validator.New()
 	if err := validate.Struct(c); err != nil {
@@ -218,6 +224,8 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("p2p.mdns", false, "Enable mDNS discovery for P2P")
 	rootCmd.PersistentFlags().StringSlice("evm.chains", nil, "Chains, comma separated rpc-url,..")
 	rootCmd.PersistentFlags().Int("evm.max-calls", 0, "Max calls in multicall")
+	rootCmd.PersistentFlags().Bool("force-role.aggregator", false, "Force node to act as aggregator regardless of deterministic scheduling")
+	rootCmd.PersistentFlags().Bool("force-role.committer", false, "Force node to act as committer regardless of deterministic scheduling")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
@@ -351,6 +359,12 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("evm.max-calls", cmd.PersistentFlags().Lookup("evm.max-calls")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("force-role.aggregator", cmd.PersistentFlags().Lookup("force-role.aggregator")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("force-role.committer", cmd.PersistentFlags().Lookup("force-role.committer")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 

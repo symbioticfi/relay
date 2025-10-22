@@ -65,6 +65,7 @@ type Config struct {
 	KeyProvider     keyProvider
 	Aggregator      aggregator.Aggregator
 	Metrics         metrics
+	ForceCommitter  bool
 }
 
 func (c Config) Validate() error {

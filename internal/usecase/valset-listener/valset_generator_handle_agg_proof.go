@@ -61,26 +61,31 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 
 		ticker.Reset(time.Duration(tickInterval) * time.Second)
 
-		onchainKey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(valset.RequiredKeyTag)
-		if err != nil {
-			if errors.Is(err, entity.ErrKeyNotFound) {
-				slog.DebugContext(ctx, "No Onchain key for required key tag, skipping proof commitment", "keyTag", valset.RequiredKeyTag)
+		if s.cfg.ForceCommitter {
+			slog.DebugContext(ctx, "Force committer mode enabled, acting as committer", "epoch", valsetHeader.Epoch)
+		} else {
+			onchainKey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(valset.RequiredKeyTag)
+			if err != nil {
+				if errors.Is(err, entity.ErrKeyNotFound) {
+					slog.DebugContext(ctx, "No Onchain key for required key tag, skipping proof commitment", "keyTag", valset.RequiredKeyTag, "epoch", valsetHeader.Epoch)
+					continue
+				}
+				return errors.Errorf("failed to get onchain key for required key tag %s: %w", valset.RequiredKeyTag, err)
+			}
+
+			now := symbiotic.Timestamp(uint64(time.Now().Unix()))
+
+			if !valset.IsActiveCommitter(ctx, nwCfg.CommitterSlotDuration, now, minCommitterPollIntervalSeconds, onchainKey) {
+				slog.DebugContext(ctx, "Not a committer for this valset, skipping proof commitment",
+					"key", onchainKey,
+					"epoch", valset.Epoch,
+					"committerSlotDuration", nwCfg.CommitterSlotDuration,
+					"now", now,
+					"minPollInterval", minCommitterPollIntervalSeconds,
+					"committerIndices", valset.CommitterIndices,
+				)
 				continue
 			}
-			return errors.Errorf("failed to get onchain key for required key tag %s: %w", valset.RequiredKeyTag, err)
-		}
-
-		now := symbiotic.Timestamp(uint64(time.Now().Unix()))
-		if !valset.IsActiveCommitter(ctx, nwCfg.CommitterSlotDuration, now, minCommitterPollIntervalSeconds, onchainKey) {
-			slog.DebugContext(ctx, "Not a committer for this valset, skipping proof commitment",
-				"key", onchainKey,
-				"epoch", valset.Epoch,
-				"committerSlotDuration", nwCfg.CommitterSlotDuration,
-				"now", now,
-				"minPollInterval", minCommitterPollIntervalSeconds,
-				"committerIndices", valset.CommitterIndices,
-			)
-			continue
 		}
 
 		// get lat committed epoch
@@ -89,7 +94,7 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 		// (alrxy) i think it's better to do in listener cuz listener provides valsets and configs, it will be more consistent
 		lastCommittedEpoch := s.detectLastCommittedEpoch(ctx, nwCfg)
 
-		slog.DebugContext(ctx, "Detected last committed epoch", "epoch", lastCommittedEpoch, "knownValsetEpoch", valset.Epoch)
+		slog.DebugContext(ctx, "Detected last committed epoch", "lastCommittedEpoch", lastCommittedEpoch, "knownValsetEpoch", valset.Epoch)
 
 		pendingProofs, err := s.cfg.Repo.GetPendingProofCommitsSinceEpoch(ctx, lastCommittedEpoch+1, 5)
 		if err != nil {

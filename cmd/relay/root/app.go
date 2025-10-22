@@ -190,6 +190,7 @@ func runApp(ctx context.Context) error {
 		Aggregator:      agg,
 		KeyProvider:     keyProvider,
 		Metrics:         mtr,
+		ForceCommitter:  cfg.ForceRole.Committer,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create epoch listener: %w", err)
@@ -307,6 +308,7 @@ func runApp(ctx context.Context) error {
 		Metrics:           mtr,
 		AggregationPolicy: aggPolicy,
 		KeyProvider:       keyProvider,
+		ForceAggregator:   cfg.ForceRole.Aggregator,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create aggregator app: %w", err)
