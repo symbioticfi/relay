@@ -17,6 +17,7 @@ relay_sidecar [flags]
 ```
       --aggregation-policy-max-unsigners uint   Max unsigners for low cost agg policy (default 50)
       --api.listen string                       API Server listener address
+      --api.max-allowed-streams uint            Max allowed streams count API Server (default 100)
       --api.verbose-logging                     Enable verbose logging for the API Server
       --cache.network-config-size int           Network config cache size (default 10)
       --cache.validator-set-size int            Validator set cache size (default 10)

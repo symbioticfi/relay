@@ -3,6 +3,8 @@ package badger
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"strings"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
@@ -17,12 +19,15 @@ func keySignature(requestID common.Hash, validatorIndex uint32) []byte {
 	return []byte(fmt.Sprintf("signature:%s:%010d", requestID.Hex(), validatorIndex))
 }
 
-// keySignaturePrefix returns prefix for all signatures of a request id
-func keySignaturePrefix(requestID common.Hash) []byte {
+func keySignatureRequestIDPrefix(requestID common.Hash) []byte {
 	return []byte("signature:" + requestID.Hex() + ":")
 }
 
-func (r *Repository) saveSignature(ctx context.Context, validatorIndex uint32, sig symbiotic.Signature) error {
+func (r *Repository) saveSignature(
+	ctx context.Context,
+	validatorIndex uint32,
+	sig symbiotic.Signature,
+) error {
 	txn := getTxn(ctx)
 	if txn == nil {
 		return errors.New("no transaction found in context, use signature processor in order to store signatures")
@@ -33,11 +38,28 @@ func (r *Repository) saveSignature(ctx context.Context, validatorIndex uint32, s
 		return errors.Errorf("failed to marshal signature: %w", err)
 	}
 
-	key := keySignature(sig.RequestID(), validatorIndex)
-	err = txn.Set(key, bytes)
-	if err != nil {
+	requestID := sig.RequestID()
+
+	valueKey := keySignature(requestID, validatorIndex)
+
+	if err = txn.Set(valueKey, bytes); err != nil {
 		return errors.Errorf("failed to store signature: %w", err)
 	}
+
+	reqIDEpochKey := keyRequestIDEpoch(sig.Epoch, requestID)
+
+	_, err = txn.Get(reqIDEpochKey)
+	if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
+		return errors.Errorf("failed to get request id epoch link: %w", err)
+	}
+	if err == nil {
+		return nil
+	}
+
+	if err = txn.Set(reqIDEpochKey, []byte{}); err != nil {
+		return errors.Errorf("failed to store request id epoch link: %w", err)
+	}
+
 	return nil
 }
 
@@ -46,7 +68,7 @@ func (r *Repository) GetAllSignatures(ctx context.Context, requestID common.Hash
 
 	return signatures, r.doViewInTx(ctx, "GetAllSignatures", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		prefix := keySignaturePrefix(requestID)
+		prefix := keySignatureRequestIDPrefix(requestID)
 		opts := badger.DefaultIteratorOptions
 		opts.Prefix = prefix
 
@@ -66,6 +88,40 @@ func (r *Repository) GetAllSignatures(ctx context.Context, requestID common.Hash
 			}
 
 			signatures = append(signatures, sig)
+		}
+
+		return nil
+	})
+}
+
+func (r *Repository) GetSignaturesStartingFromEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error) {
+	var signatures []symbiotic.Signature
+
+	return signatures, r.doViewInTx(ctx, "GetSignaturesStartingFromEpoch", func(ctx context.Context) error {
+		txn := getTxn(ctx)
+
+		startKey := keyRequestIDEpochPrefix(epoch)
+		opts := badger.DefaultIteratorOptions
+		opts.Prefix = keyRequestIDEpochAll()
+
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		for it.Seek(startKey); it.Valid(); it.Next() {
+			key := it.Item().Key()
+
+			parts := strings.Split(string(key), ":")
+			if len(parts) != 3 {
+				slog.ErrorContext(ctx, "failed to parse request id epoch link", "key", string(key))
+				continue
+			}
+
+			signaturesByRequestID, err := r.GetAllSignatures(ctx, common.Hash(common.FromHex(parts[2])))
+			if err != nil {
+				return err
+			}
+
+			signatures = append(signatures, signaturesByRequestID...)
 		}
 
 		return nil

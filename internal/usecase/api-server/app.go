@@ -7,8 +7,9 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"strings"
-	"sync"
 	"time"
+
+	"github.com/symbioticfi/relay/internal/usecase/broadcaster"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
@@ -41,6 +42,9 @@ type repo interface {
 	GetLatestValidatorSetHeader(_ context.Context) (symbiotic.ValidatorSetHeader, error)
 	GetLatestValidatorSetEpoch(_ context.Context) (symbiotic.Epoch, error)
 	GetValidatorSetMetadata(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSetMetadata, error)
+	GetSignaturesStartingFromEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error)
+	GetAggregationProofsStartingFromEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.AggregationProof, error)
+	GetValidatorSetsStartingFromEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.ValidatorSet, error)
 }
 
 type evmClient interface {
@@ -63,15 +67,16 @@ type Config struct {
 	ReadHeaderTimeout time.Duration `validate:"required,gt=0"`
 	ShutdownTimeout   time.Duration `validate:"required,gt=0"`
 
-	Signer         signer    `validate:"required"`
-	Repo           repo      `validate:"required"`
-	EvmClient      evmClient `validate:"required"`
-	Deriver        deriver   `validate:"required"`
-	Aggregator     aggregator
-	ServeMetrics   bool
-	ServePprof     bool
-	Metrics        *metrics.Metrics `validate:"required"`
-	VerboseLogging bool
+	Signer                 signer    `validate:"required"`
+	Repo                   repo      `validate:"required"`
+	EvmClient              evmClient `validate:"required"`
+	Deriver                deriver   `validate:"required"`
+	Aggregator             aggregator
+	ServeMetrics           bool
+	ServePprof             bool
+	Metrics                *metrics.Metrics `validate:"required"`
+	VerboseLogging         bool
+	MaxAllowedStreamsCount int `validate:"required,gt=0"`
 }
 
 func (c Config) Validate() error {
@@ -81,92 +86,16 @@ func (c Config) Validate() error {
 	return nil
 }
 
-// broadcasterHandler manages subscriptions grouped by request ID for O(1) lookup
-type broadcasterHandler struct {
-	lock        sync.RWMutex
-	subscribers map[string][]chan symbiotic.AggregationProof // map[requestID][]*subscriber
-}
-
-// newBroadcasterHandler creates a new broadcaster handler
-func newBroadcasterHandler() *broadcasterHandler {
-	return &broadcasterHandler{
-		subscribers: make(map[string][]chan symbiotic.AggregationProof),
-	}
-}
-
-// Subscribe registers a new subscriber for a specific request ID
-// Returns an unsubscribe function that should be called to clean up the subscription
-func (b *broadcasterHandler) Subscribe(requestID string, ch chan symbiotic.AggregationProof) func() {
-	b.lock.Lock()
-	defer b.lock.Unlock()
-
-	b.subscribers[requestID] = append(b.subscribers[requestID], ch)
-
-	// Return unsubscribe function
-	return func() {
-		b.lock.Lock()
-		defer b.lock.Unlock()
-
-		subs := b.subscribers[requestID]
-		// Find and remove this subscriber
-		for i, s := range subs {
-			if s == ch {
-				// Remove by replacing with last element and truncating
-				subs[i] = subs[len(subs)-1]
-				b.subscribers[requestID] = subs[:len(subs)-1]
-
-				// Clean up empty slice to avoid memory leaks
-				if len(b.subscribers[requestID]) == 0 {
-					delete(b.subscribers, requestID)
-				}
-				break
-			}
-		}
-	}
-}
-
-// Notify broadcasts an event to all subscribers for a specific request ID - O(1) lookup
-func (b *broadcasterHandler) Notify(proof symbiotic.AggregationProof) {
-	requestID := proof.RequestID().Hex()
-
-	b.lock.RLock()
-	subs := b.subscribers[requestID]
-	if len(subs) == 0 {
-		b.lock.RUnlock()
-		return
-	}
-
-	// Make a copy to avoid holding lock during notification
-	subscribers := make([]chan symbiotic.AggregationProof, len(subs))
-	copy(subscribers, subs)
-	b.lock.RUnlock()
-
-	// Broadcast to all subscribers for this request ID
-	for _, subCh := range subscribers {
-		// Non-blocking send to avoid blocking the signal handler
-		select {
-		case subCh <- proof:
-			// Successfully sent
-		default:
-			// Channel is full or closed, skip
-		}
-	}
-}
-
 // grpcHandler implements the gRPC service interface
 type grpcHandler struct {
 	apiv1.SymbioticAPIServiceServer
 
-	cfg         Config
-	broadcaster *broadcasterHandler
-}
+	cfg Config
 
-// handleProofAggregated processes aggregation proof events from the signal
-func (h *grpcHandler) handleProofAggregated(_ context.Context, proof symbiotic.AggregationProof) error {
-	h.broadcaster.Notify(proof)
-	return nil
+	proofsHub        *broadcaster.Hub[symbiotic.AggregationProof]
+	signatureHub     *broadcaster.Hub[symbiotic.Signature]
+	validatorSetsHub *broadcaster.Hub[symbiotic.ValidatorSet]
 }
-
 type SymbioticServer struct {
 	grpcServer *grpc.Server
 	httpServer *http.Server
@@ -205,8 +134,16 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 
 	// Create and register the handler
 	handler := &grpcHandler{
-		cfg:         cfg,
-		broadcaster: newBroadcasterHandler(),
+		cfg: cfg,
+		proofsHub: broadcaster.NewHub[symbiotic.AggregationProof](
+			broadcaster.WithBufferSize[symbiotic.AggregationProof](cfg.MaxAllowedStreamsCount),
+		),
+		signatureHub: broadcaster.NewHub[symbiotic.Signature](
+			broadcaster.WithBufferSize[symbiotic.Signature](cfg.MaxAllowedStreamsCount),
+		),
+		validatorSetsHub: broadcaster.NewHub[symbiotic.ValidatorSet](
+			broadcaster.WithBufferSize[symbiotic.ValidatorSet](cfg.MaxAllowedStreamsCount),
+		),
 	}
 
 	apiv1.RegisterSymbioticAPIServiceServer(grpcServer, handler)
@@ -299,11 +236,6 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 	}, nil
 }
 
-// HandleProofAggregated returns the handler function for aggregation proof events
-func (a *SymbioticServer) HandleProofAggregated() func(context.Context, symbiotic.AggregationProof) error {
-	return a.handler.handleProofAggregated
-}
-
 // createMuxHandler creates a handler that multiplexes between gRPC and HTTP
 func createMuxHandler(grpcServer *grpc.Server, httpHandler http.Handler) http.Handler {
 	return h2c.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -374,5 +306,26 @@ func (a *SymbioticServer) Start(ctx context.Context) error {
 		return ctx.Err()
 	case err := <-errChan:
 		return err
+	}
+}
+
+func (a *SymbioticServer) HandleProofAggregated() func(context.Context, symbiotic.AggregationProof) error {
+	return func(ctx context.Context, proof symbiotic.AggregationProof) error {
+		a.handler.proofsHub.Broadcast(proof)
+		return nil
+	}
+}
+
+func (a *SymbioticServer) HandleSignatureProcessed() func(context.Context, symbiotic.Signature) error {
+	return func(ctx context.Context, signature symbiotic.Signature) error {
+		a.handler.signatureHub.Broadcast(signature)
+		return nil
+	}
+}
+
+func (a *SymbioticServer) HandleValidatorSet() func(context.Context, symbiotic.ValidatorSet) error {
+	return func(ctx context.Context, validatorSet symbiotic.ValidatorSet) error {
+		a.handler.validatorSetsHub.Broadcast(validatorSet)
+		return nil
 	}
 }

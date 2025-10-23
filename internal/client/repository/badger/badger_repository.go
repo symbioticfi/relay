@@ -5,11 +5,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-playground/validator/v10"
-	"google.golang.org/protobuf/proto"
-
 	"github.com/dgraph-io/badger/v4"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
+	"github.com/go-playground/validator/v10"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	"google.golang.org/protobuf/proto"
 )
 
 type Config struct {
@@ -198,4 +199,17 @@ func cleanupMutexMap(mutexMap *sync.Map, staleThreshold time.Time) int {
 	})
 
 	return count
+}
+
+func keyRequestIDEpoch(epoch symbiotic.Epoch, requestID common.Hash) []byte {
+	return append(keyRequestIDEpochPrefix(epoch), []byte(requestID.Hex())...)
+}
+
+func keyRequestIDEpochPrefix(epoch symbiotic.Epoch) []byte {
+	key := append(keyRequestIDEpochAll(), epoch.Bytes()...)
+	return append(key, ':')
+}
+
+func keyRequestIDEpochAll() []byte {
+	return []byte("request_id_epoch:")
 }

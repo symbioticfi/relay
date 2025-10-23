@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/dgraph-io/badger/v4"
@@ -34,7 +35,10 @@ func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.
 
 	return r.doUpdateInTxWithLock(ctx, "saveAggregationProof", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		_, err := txn.Get(keyAggregationProof(requestID))
+
+		valueKey := keyAggregationProof(requestID)
+
+		_, err := txn.Get(valueKey)
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
 			return errors.Errorf("failed to get aggregation proof: %w", err)
 		}
@@ -42,10 +46,24 @@ func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.
 			return errors.Errorf("aggregation proof already exists: %w", entity.ErrEntityAlreadyExist)
 		}
 
-		err = txn.Set(keyAggregationProof(requestID), proofBytes)
-		if err != nil {
+		if err = txn.Set(valueKey, proofBytes); err != nil {
 			return errors.Errorf("failed to store aggregation proof: %w", err)
 		}
+
+		reqIDEpochKey := keyRequestIDEpoch(ap.Epoch, requestID)
+
+		_, err = txn.Get(reqIDEpochKey)
+		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
+			return errors.Errorf("failed to get request id epoch link: %w", err)
+		}
+		if err == nil {
+			return nil
+		}
+
+		if err = txn.Set(reqIDEpochKey, []byte{}); err != nil {
+			return errors.Errorf("failed to store request id epoch link: %w", err)
+		}
+
 		return nil
 	}, &r.proofsMutexMap, requestID)
 }
@@ -55,7 +73,8 @@ func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.H
 
 	return ap, r.doViewInTx(ctx, "GetAggregationProof", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		item, err := txn.Get(keyAggregationProof(requestID))
+		key := keyAggregationProof(requestID)
+		item, err := txn.Get(key)
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
 				return errors.Errorf("no aggregation proof found for request id %s: %w", requestID.Hex(), entity.ErrEntityNotFound)
@@ -65,12 +84,56 @@ func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.H
 
 		value, err := item.ValueCopy(nil)
 		if err != nil {
-			return errors.Errorf("failed to copy network config value: %w", err)
+			return errors.Errorf("failed to copy aggregation proof value: %w", err)
 		}
 
 		ap, err = bytesToAggregationProof(value)
 		if err != nil {
 			return errors.Errorf("failed to unmarshal aggregation proof: %w", err)
+		}
+
+		return nil
+	})
+}
+
+func (r *Repository) GetAggregationProofsStartingFromEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.AggregationProof, error) {
+	var proofs []symbiotic.AggregationProof
+
+	return proofs, r.doViewInTx(ctx, "GetAggregationProofsStartingFromEpoch", func(ctx context.Context) error {
+		txn := getTxn(ctx)
+
+		startKey := keyRequestIDEpochPrefix(epoch)
+		opts := badger.DefaultIteratorOptions
+		opts.Prefix = keyRequestIDEpochAll()
+
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		for it.Seek(startKey); it.Valid(); it.Next() {
+			key := it.Item().Key()
+
+			parts := strings.Split(string(key), ":")
+			if len(parts) != 3 {
+				slog.ErrorContext(ctx, "failed to parse request id epoch link", "key", string(key))
+				continue
+			}
+
+			item, err := txn.Get(keyAggregationProof(common.Hash(common.FromHex(parts[2]))))
+			if err != nil {
+				return errors.Errorf("failed to get aggregation proof: %w", err)
+			}
+
+			value, err := item.ValueCopy(nil)
+			if err != nil {
+				return errors.Errorf("failed to copy aggregation proof: %w", err)
+			}
+
+			proof, err := bytesToAggregationProof(value)
+			if err != nil {
+				return errors.Errorf("failed to unmarshal aggregation proof: %w", err)
+			}
+
+			proofs = append(proofs, proof)
 		}
 
 		return nil

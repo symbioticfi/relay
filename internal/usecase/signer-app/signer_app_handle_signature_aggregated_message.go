@@ -13,10 +13,12 @@ import (
 
 func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, p2pMsg entity.P2PMessage[symbiotic.AggregationProof]) error {
 	ctx = log.WithComponent(ctx, "signer")
+
 	ctx = log.WithAttrs(ctx,
 		slog.Uint64("epoch", uint64(p2pMsg.Message.Epoch)),
 		slog.String("requestId", p2pMsg.Message.RequestID().Hex()),
 	)
+
 	msg := p2pMsg.Message
 
 	err := s.cfg.EntityProcessor.ProcessAggregationProof(ctx, msg)
@@ -28,6 +30,8 @@ func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, p2pMs
 		}
 		return err
 	}
+
+	slog.DebugContext(ctx, "Proof saved")
 
 	return nil
 }

@@ -6,14 +6,16 @@
 // 3. Sign a message
 // 4. Retrieve aggregation proofs
 // 5. Get validator set information
-// 6. Sign and wait for completion via streaming
+// 6. Get individual signatures
+// 7. Stream signatures in real-time
+// 8. Stream aggregation proofs in real-time
+// 9. Stream validator set changes in real-time
 
 package main
 
 import (
 	"context"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"time"
@@ -101,14 +103,28 @@ func (rc *RelayClient) GetValidatorSet(ctx context.Context, epoch *uint64) (*cli
 	return rc.client.GetValidatorSet(ctx, req)
 }
 
-// SignMessageAndWait signs a message and waits for aggregation via streaming response
-func (rc *RelayClient) SignMessageAndWait(ctx context.Context, keyTag uint32, message []byte, requiredEpoch *uint64) (grpc.ServerStreamingClient[client.SignMessageWaitResponse], error) {
-	req := &client.SignMessageWaitRequest{
-		KeyTag:        keyTag,
-		Message:       message,
-		RequiredEpoch: requiredEpoch,
+// ListenSignatures streams signatures in real-time
+func (rc *RelayClient) ListenSignatures(ctx context.Context, startEpoch *uint64) (grpc.ServerStreamingClient[client.ListenSignaturesResponse], error) {
+	req := &client.ListenSignaturesRequest{
+		StartEpoch: startEpoch,
 	}
-	return rc.client.SignMessageWait(ctx, req)
+	return rc.client.ListenSignatures(ctx, req)
+}
+
+// ListenProofs streams aggregation proofs in real-time
+func (rc *RelayClient) ListenProofs(ctx context.Context, startEpoch *uint64) (grpc.ServerStreamingClient[client.ListenProofsResponse], error) {
+	req := &client.ListenProofsRequest{
+		StartEpoch: startEpoch,
+	}
+	return rc.client.ListenProofs(ctx, req)
+}
+
+// ListenValidatorSet streams validator set changes in real-time
+func (rc *RelayClient) ListenValidatorSet(ctx context.Context, startEpoch *uint64) (grpc.ServerStreamingClient[client.ListenValidatorSetResponse], error) {
+	req := &client.ListenValidatorSetRequest{
+		StartEpoch: startEpoch,
+	}
+	return rc.client.ListenValidatorSet(ctx, req)
 }
 
 func main() {
@@ -147,7 +163,7 @@ func main() {
 	if err != nil {
 		log.Printf("Failed to get last committed epoch: %v", err)
 	} else {
-		for _, info := range epochInfos.EpochInfos {
+		for _, info := range epochInfos.GetEpochInfos() {
 			if suggestedEpoch == 0 || int(info.GetLastCommittedEpoch()) < suggestedEpoch {
 				suggestedEpoch = int(info.GetLastCommittedEpoch())
 			}
@@ -157,19 +173,21 @@ func main() {
 
 	// Example 3: Get validator set
 	fmt.Println("\n=== Getting Validator Set ===")
-	validatorSet, err := relayClient.GetValidatorSet(ctx, nil)
+	validatorSetResp, err := relayClient.GetValidatorSet(ctx, nil)
 	if err != nil {
 		log.Printf("Failed to get validator set: %v", err)
 	} else {
-		fmt.Printf("Validator set version: %d\n", validatorSet.Version)
-		fmt.Printf("Epoch: %d\n", validatorSet.Epoch)
-		fmt.Printf("Status: %v\n", validatorSet.Status)
-		fmt.Printf("Number of validators: %d\n", len(validatorSet.Validators))
-		fmt.Printf("Quorum threshold: %s\n", validatorSet.QuorumThreshold)
+		validatorSet := validatorSetResp.GetValidatorSet()
+
+		fmt.Printf("Validator set version: %d\n", validatorSet.GetVersion())
+		fmt.Printf("Epoch: %d\n", validatorSet.GetEpoch())
+		fmt.Printf("Status: %v\n", validatorSet.GetStatus())
+		fmt.Printf("Number of validators: %d\n", len(validatorSet.GetValidators()))
+		fmt.Printf("Quorum threshold: %s\n", validatorSet.GetQuorumThreshold())
 
 		// Display some validator details
-		if len(validatorSet.Validators) > 0 {
-			firstValidator := validatorSet.Validators[0]
+		if len(validatorSet.GetValidators()) > 0 {
+			firstValidator := validatorSet.GetValidators()[0]
 			fmt.Printf("First validator operator: %s\n", firstValidator.GetOperator())
 			fmt.Printf("First validator voting power: %s\n", firstValidator.GetVotingPower())
 			fmt.Printf("First validator is active: %t\n", firstValidator.GetIsActive())
@@ -196,8 +214,8 @@ func main() {
 	proofResponse, err := relayClient.GetAggregationProof(ctx, signResponse.GetRequestId())
 	if err != nil {
 		fmt.Printf("Could not get aggregation proof yet: %v\n", err)
-	} else if proofResponse.AggregationProof != nil {
-		proof := proofResponse.AggregationProof
+	} else if proofResponse.GetAggregationProof() != nil {
+		proof := proofResponse.GetAggregationProof()
 		fmt.Printf("Proof length: %d bytes\n", len(proof.GetProof()))
 		fmt.Printf("Message hash length: %d bytes\n", len(proof.GetMessageHash()))
 	}
@@ -208,7 +226,7 @@ func main() {
 	if err != nil {
 		fmt.Printf("Could not get signatures yet: %v\n", err)
 	} else {
-		fmt.Printf("Number of signatures: %d\n", len(signaturesResponse.Signatures))
+		fmt.Printf("Number of signatures: %d\n", len(signaturesResponse.GetSignatures()))
 
 		for i, signature := range signaturesResponse.Signatures {
 			fmt.Printf("Signature %d:\n", i+1)
@@ -218,60 +236,109 @@ func main() {
 		}
 	}
 
-	// Example 7: Sign and wait for completion (streaming)
-	fmt.Println("\n=== Sign and Wait (Streaming) ===")
-	messageToSignStream := []byte("Streaming example")
+	// Example 7: Listen to signatures stream
+	fmt.Println("\n=== Listening to Signatures Stream ===")
+	// Create a new context with a shorter timeout for streaming example
+	streamCtx, streamCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer streamCancel()
 
-	fmt.Println("Starting streaming sign request... (ensure to run the script for all active relay servers)")
-
-	stream, err := relayClient.SignMessageAndWait(ctx, keyTag, messageToSignStream, nil)
-	if err != nil {
-		log.Printf("Failed to start streaming sign: %v", err)
-		return
+	// Start listening from a specific epoch (optional)
+	var startEpoch *uint64
+	if epochResponse != nil && epochResponse.GetEpoch() > 0 {
+		epoch := epochResponse.GetEpoch() - 1 // Start from previous epoch to get some historical data
+		startEpoch = &epoch
+		fmt.Printf("Starting stream from epoch: %d\n", *startEpoch)
 	}
 
-	for {
-		response, err := stream.Recv()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				fmt.Println("Stream completed")
+	sigStream, err := relayClient.ListenSignatures(streamCtx, startEpoch)
+	if err != nil {
+		log.Printf("Failed to start signatures stream: %v", err)
+	} else {
+		fmt.Println("Listening for signatures (max 5 events)...")
+		count := 0
+		maxEvents := 5
+
+		for count < maxEvents {
+			resp, err := sigStream.Recv()
+			if err != nil {
+				fmt.Printf("Stream ended or error: %v\n", err)
 				break
 			}
-			log.Printf("Stream error: %v", err)
-			break
-		}
 
-		fmt.Printf("Status: %v\n", response.Status)
-		fmt.Printf("Request id: %s\n", response.GetRequestId())
-		fmt.Printf("Epoch: %d\n", response.Epoch)
-
-		switch response.Status {
-		case client.SigningStatus_SIGNING_STATUS_PENDING:
-			fmt.Println("Request created, waiting for signatures...")
-		case client.SigningStatus_SIGNING_STATUS_COMPLETED:
-			fmt.Println("Signing completed!")
-			if response.AggregationProof != nil {
-				proof := response.AggregationProof
-				fmt.Printf("Proof length: %d bytes\n", len(proof.GetProof()))
+			count++
+			fmt.Printf("Signature event %d:\n", count)
+			fmt.Printf("  - Request ID: %s\n", resp.GetRequestId())
+			fmt.Printf("  - Epoch: %d\n", resp.GetEpoch())
+			if resp.GetSignature() != nil {
+				fmt.Printf("  - Signature length: %d bytes\n", len(resp.GetSignature().GetSignature()))
+				fmt.Printf("  - Public key length: %d bytes\n", len(resp.GetSignature().GetPublicKey()))
 			}
-			// Exit the streaming loop
-			goto streamComplete
-		case client.SigningStatus_SIGNING_STATUS_FAILED:
-			fmt.Println("Signing failed")
-			goto streamComplete
-		case client.SigningStatus_SIGNING_STATUS_TIMEOUT:
-			fmt.Println("Signing timed out")
-			goto streamComplete
-		case client.SigningStatus_SIGNING_STATUS_UNSPECIFIED:
-			fmt.Println("Unknown Signing status : unspecified")
-		default:
-			fmt.Printf("Unknown status: %v\n", response.Status)
 		}
-
-		// Add a small delay to make the output more readable
-		time.Sleep(100 * time.Millisecond)
 	}
 
-streamComplete:
-	fmt.Println("\nExample completed")
+	// Example 8: Listen to aggregation proofs stream
+	fmt.Println("\n=== Listening to Aggregation Proofs Stream ===")
+	proofStreamCtx, proofStreamCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer proofStreamCancel()
+
+	proofStream, err := relayClient.ListenProofs(proofStreamCtx, startEpoch)
+	if err != nil {
+		log.Printf("Failed to start proofs stream: %v", err)
+	} else {
+		fmt.Println("Listening for aggregation proofs (max 5 events)...")
+		count := 0
+		maxEvents := 5
+
+		for count < maxEvents {
+			resp, err := proofStream.Recv()
+			if err != nil {
+				fmt.Printf("Stream ended or error: %v\n", err)
+				break
+			}
+
+			count++
+			fmt.Printf("Proof event %d:\n", count)
+			fmt.Printf("  - Request ID: %s\n", resp.GetRequestId())
+			fmt.Printf("  - Epoch: %d\n", resp.GetEpoch())
+			if resp.GetAggregationProof() != nil {
+				fmt.Printf("  - Proof length: %d bytes\n", len(resp.GetAggregationProof().GetProof()))
+				fmt.Printf("  - Message hash length: %d bytes\n", len(resp.GetAggregationProof().GetMessageHash()))
+			}
+		}
+	}
+
+	// Example 9: Listen to validator set changes stream
+	fmt.Println("\n=== Listening to Validator Set Changes Stream ===")
+	vsStreamCtx, vsStreamCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer vsStreamCancel()
+
+	vsStream, err := relayClient.ListenValidatorSet(vsStreamCtx, startEpoch)
+	if err != nil {
+		log.Printf("Failed to start validator set stream: %v", err)
+	} else {
+		fmt.Println("Listening for validator set changes (max 3 events)...")
+		count := 0
+		maxEvents := 3
+
+		for count < maxEvents {
+			resp, err := vsStream.Recv()
+			if err != nil {
+				fmt.Printf("Stream ended or error: %v\n", err)
+				break
+			}
+
+			count++
+			vs := resp.GetValidatorSet()
+			if vs != nil {
+				fmt.Printf("Validator Set event %d:\n", count)
+				fmt.Printf("  - Epoch: %d\n", vs.GetEpoch())
+				fmt.Printf("  - Version: %d\n", vs.GetVersion())
+				fmt.Printf("  - Status: %v\n", vs.GetStatus())
+				fmt.Printf("  - Validators count: %d\n", len(vs.GetValidators()))
+				fmt.Printf("  - Quorum threshold: %s\n", vs.GetQuorumThreshold())
+			}
+		}
+	}
+
+	fmt.Println("\n=== Examples completed ===")
 }

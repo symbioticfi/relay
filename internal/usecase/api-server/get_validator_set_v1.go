@@ -37,7 +37,7 @@ func (h *grpcHandler) GetValidatorSet(ctx context.Context, req *apiv1.GetValidat
 		return nil, err
 	}
 
-	return convertValidatorSetToPB(validatorSet), nil
+	return &apiv1.GetValidatorSetResponse{ValidatorSet: convertValidatorSetToPB(validatorSet)}, nil
 }
 
 // getValidatorSetForEpoch retrieves validator set for a given epoch, either from repo or by deriving it
@@ -54,17 +54,15 @@ func (h *grpcHandler) getValidatorSetForEpoch(ctx context.Context, epochRequeste
 	return symbiotic.ValidatorSet{}, errors.Errorf("failed to get validator set for epoch %d: %w", epochRequested, err)
 }
 
-func convertValidatorSetToPB(valSet symbiotic.ValidatorSet) *apiv1.GetValidatorSetResponse {
-	return &apiv1.GetValidatorSetResponse{
+func convertValidatorSetToPB(valSet symbiotic.ValidatorSet) *apiv1.ValidatorSet {
+	return &apiv1.ValidatorSet{
 		Version:          uint32(valSet.Version),
 		RequiredKeyTag:   uint32(valSet.RequiredKeyTag),
 		Epoch:            uint64(valSet.Epoch),
 		CaptureTimestamp: timestamppb.New(time.Unix(int64(valSet.CaptureTimestamp), 0).UTC()),
 		QuorumThreshold:  valSet.QuorumThreshold.String(),
 		Status:           convertValidatorSetStatusToPB(valSet.Status),
-		Validators: lo.Map(valSet.Validators, func(v symbiotic.Validator, _ int) *apiv1.Validator {
-			return convertValidatorToPB(v)
-		}),
+		Validators:       lo.Map(valSet.Validators, func(v symbiotic.Validator, _ int) *apiv1.Validator { return convertValidatorToPB(v) }),
 	}
 }
 

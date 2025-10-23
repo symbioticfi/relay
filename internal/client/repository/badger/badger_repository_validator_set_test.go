@@ -537,6 +537,65 @@ func TestRepository_FirstUncommittedValidatorSetEpoch_EmptyRepository(t *testing
 	})
 }
 
+func TestRepository_GetValidatorSetsByEpoch(t *testing.T) {
+	repo := setupTestRepository(t)
+
+	// Create three validator sets with epochs 1, 2, 3
+	vs1 := randomValidatorSet(t, 1)
+	vs2 := randomValidatorSet(t, 2)
+	vs3 := randomValidatorSet(t, 3)
+
+	// Save all three validator sets
+	require.NoError(t, repo.SaveValidatorSet(t.Context(), vs1))
+	require.NoError(t, repo.SaveValidatorSet(t.Context(), vs2))
+	require.NoError(t, repo.SaveValidatorSet(t.Context(), vs3))
+
+	t.Run("get validator sets starting from epoch 2", func(t *testing.T) {
+		// Query starting from epoch 2
+		validatorSets, err := repo.GetValidatorSetsStartingFromEpoch(t.Context(), 2)
+		require.NoError(t, err)
+
+		// Should return exactly 2 validator sets (epochs 2 and 3)
+		require.Len(t, validatorSets, 2, "Should return 2 validator sets (epochs 2 and 3)")
+
+		// First result should be epoch 2
+		assert.Equal(t, symbiotic.Epoch(2), validatorSets[0].Epoch)
+		assert.Equal(t, vs2, validatorSets[0])
+
+		// Second result should be epoch 3
+		assert.Equal(t, symbiotic.Epoch(3), validatorSets[1].Epoch)
+		assert.Equal(t, vs3, validatorSets[1])
+	})
+
+	t.Run("get validator sets starting from epoch 1", func(t *testing.T) {
+		// Query starting from epoch 1 - should return all 3
+		validatorSets, err := repo.GetValidatorSetsStartingFromEpoch(t.Context(), 1)
+		require.NoError(t, err)
+
+		require.Len(t, validatorSets, 3, "Should return all 3 validator sets")
+		assert.Equal(t, symbiotic.Epoch(1), validatorSets[0].Epoch)
+		assert.Equal(t, symbiotic.Epoch(2), validatorSets[1].Epoch)
+		assert.Equal(t, symbiotic.Epoch(3), validatorSets[2].Epoch)
+	})
+
+	t.Run("get validator sets starting from epoch 3", func(t *testing.T) {
+		// Query starting from epoch 3 - should return only epoch 3
+		validatorSets, err := repo.GetValidatorSetsStartingFromEpoch(t.Context(), 3)
+		require.NoError(t, err)
+
+		require.Len(t, validatorSets, 1, "Should return only 1 validator set (epoch 3)")
+		assert.Equal(t, symbiotic.Epoch(3), validatorSets[0].Epoch)
+		assert.Equal(t, vs3, validatorSets[0])
+	})
+
+	t.Run("get validator sets starting from non-existent epoch", func(t *testing.T) {
+		// Query starting from epoch 10 (doesn't exist) - should return empty
+		validatorSets, err := repo.GetValidatorSetsStartingFromEpoch(t.Context(), 10)
+		require.NoError(t, err)
+		assert.Empty(t, validatorSets, "Should return empty slice for non-existent epoch")
+	})
+}
+
 func setupTestRepository(t *testing.T) *Repository {
 	t.Helper()
 	repo, err := New(Config{Dir: t.TempDir(), Metrics: DoNothingMetrics{}})

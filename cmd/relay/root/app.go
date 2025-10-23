@@ -146,6 +146,7 @@ func runApp(ctx context.Context) error {
 
 	signatureProcessedSignal := signals.New[symbiotic.Signature](cfg.SignalCfg, "signatureProcessed", nil)
 	aggProofReadySignal := signals.New[symbiotic.AggregationProof](cfg.SignalCfg, "aggProofReady", nil)
+	validatorSetSignal := signals.New[symbiotic.ValidatorSet](cfg.SignalCfg, "validatorSet", nil)
 
 	entityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo:                     repo,
@@ -184,6 +185,7 @@ func runApp(ctx context.Context) error {
 		Repo:            repo,
 		Deriver:         deriver,
 		PollingInterval: time.Second * 5,
+		ValidatorSet:    validatorSetSignal,
 		Signer:          signer,
 		Aggregator:      agg,
 		KeyProvider:     keyProvider,
@@ -312,33 +314,42 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create aggregator app: %w", err)
 	}
 
-	if err := signatureProcessedSignal.SetHandlers(aggApp.HandleSignatureProcessedMessage); err != nil {
+	serveMetricsOnAPIAddress := cfg.API.ListenAddress == cfg.Metrics.ListenAddress || cfg.Metrics.ListenAddress == ""
+
+	api, err := api_server.NewSymbioticServer(ctx, api_server.Config{
+		Address:                cfg.API.ListenAddress,
+		ShutdownTimeout:        time.Second * 5,
+		ReadHeaderTimeout:      time.Second,
+		Signer:                 signer,
+		Repo:                   repo,
+		EvmClient:              evmClient,
+		Aggregator:             aggApp,
+		Deriver:                deriver,
+		Metrics:                mtr,
+		ServeMetrics:           serveMetricsOnAPIAddress,
+		ServePprof:             cfg.Metrics.PprofEnabled,
+		VerboseLogging:         cfg.API.VerboseLogging,
+		MaxAllowedStreamsCount: int(cfg.API.MaxAllowedStreams),
+	})
+	if err != nil {
+		return errors.Errorf("failed to create api app: %w", err)
+	}
+
+	if err := validatorSetSignal.SetHandlers(api.HandleValidatorSet()); err != nil {
+		return errors.Errorf("failed to set validator set set message handler: %w", err)
+	}
+	if err := validatorSetSignal.StartWorkers(ctx); err != nil {
+		return errors.Errorf("failed to start validator set set signal workers: %w", err)
+	}
+
+	if err := signatureProcessedSignal.SetHandlers(
+		aggApp.HandleSignatureProcessedMessage,
+		api.HandleSignatureProcessed(),
+	); err != nil {
 		return errors.Errorf("failed to set signature received message handler: %w", err)
 	}
 	if err := signatureProcessedSignal.StartWorkers(ctx); err != nil {
 		return errors.Errorf("failed to start signature received signal workers: %w", err)
-	}
-
-	slog.DebugContext(ctx, "Created aggregator app, starting")
-
-	serveMetricsOnAPIAddress := cfg.API.ListenAddress == cfg.Metrics.ListenAddress || cfg.Metrics.ListenAddress == ""
-
-	api, err := api_server.NewSymbioticServer(ctx, api_server.Config{
-		Address:           cfg.API.ListenAddress,
-		ShutdownTimeout:   time.Second * 5,
-		ReadHeaderTimeout: time.Second,
-		Signer:            signer,
-		Repo:              repo,
-		EvmClient:         evmClient,
-		Aggregator:        aggApp,
-		Deriver:           deriver,
-		Metrics:           mtr,
-		ServeMetrics:      serveMetricsOnAPIAddress,
-		ServePprof:        cfg.Metrics.PprofEnabled,
-		VerboseLogging:    cfg.API.VerboseLogging,
-	})
-	if err != nil {
-		return errors.Errorf("failed to create api app: %w", err)
 	}
 
 	err = aggProofReadySignal.SetHandlers(
@@ -356,6 +367,8 @@ func runApp(ctx context.Context) error {
 	if err := aggProofReadySignal.StartWorkers(ctx); err != nil {
 		return errors.Errorf("failed to start agg proof ready signal workers: %w", err)
 	}
+
+	slog.DebugContext(ctx, "Created aggregator app, starting")
 
 	eg.Go(func() error {
 		if err := api.Start(egCtx); err != nil {

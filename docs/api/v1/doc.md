@@ -31,12 +31,17 @@
     - [GetValidatorSetRequest](#api-proto-v1-GetValidatorSetRequest)
     - [GetValidatorSetResponse](#api-proto-v1-GetValidatorSetResponse)
     - [Key](#api-proto-v1-Key)
+    - [ListenProofsRequest](#api-proto-v1-ListenProofsRequest)
+    - [ListenProofsResponse](#api-proto-v1-ListenProofsResponse)
+    - [ListenSignaturesRequest](#api-proto-v1-ListenSignaturesRequest)
+    - [ListenSignaturesResponse](#api-proto-v1-ListenSignaturesResponse)
+    - [ListenValidatorSetRequest](#api-proto-v1-ListenValidatorSetRequest)
+    - [ListenValidatorSetResponse](#api-proto-v1-ListenValidatorSetResponse)
     - [SignMessageRequest](#api-proto-v1-SignMessageRequest)
     - [SignMessageResponse](#api-proto-v1-SignMessageResponse)
-    - [SignMessageWaitRequest](#api-proto-v1-SignMessageWaitRequest)
-    - [SignMessageWaitResponse](#api-proto-v1-SignMessageWaitResponse)
     - [Signature](#api-proto-v1-Signature)
     - [Validator](#api-proto-v1-Validator)
+    - [ValidatorSet](#api-proto-v1-ValidatorSet)
     - [ValidatorVault](#api-proto-v1-ValidatorVault)
   
     - [ErrorCode](#api-proto-v1-ErrorCode)
@@ -449,13 +454,7 @@ Response message for getting validator set
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| version | [uint32](#uint32) |  | Version of the validator set |
-| required_key_tag | [uint32](#uint32) |  | Key tag required to commit next validator set |
-| epoch | [uint64](#uint64) |  | Validator set epoch |
-| capture_timestamp | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Epoch capture timestamp |
-| quorum_threshold | [string](#string) |  | Quorum threshold (big integer as string) |
-| status | [ValidatorSetStatus](#api-proto-v1-ValidatorSetStatus) |  | Status of validator set header |
-| validators | [Validator](#api-proto-v1-Validator) | repeated | List of validators |
+| validator_set | [ValidatorSet](#api-proto-v1-ValidatorSet) |  | The validator set |
 
 
 
@@ -472,6 +471,100 @@ Cryptographic key
 | ----- | ---- | ----- | ----------- |
 | tag | [uint32](#uint32) |  | Key tag identifier (0-127) |
 | payload | [bytes](#bytes) |  | Key payload |
+
+
+
+
+
+
+<a name="api-proto-v1-ListenProofsRequest"></a>
+
+### ListenProofsRequest
+Request message for listening to aggregation proofs stream
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start_epoch | [uint64](#uint64) | optional | Optional: start epoch. If provided, stream will first send all historical proofs starting from this epoch, then continue with real-time updates If not provided, only proofs generated after stream creation will be sent |
+
+
+
+
+
+
+<a name="api-proto-v1-ListenProofsResponse"></a>
+
+### ListenProofsResponse
+Response message for aggregation proofs stream
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| request_id | [string](#string) |  | Id of the request |
+| epoch | [uint64](#uint64) |  | Epoch number |
+| aggregation_proof | [AggregationProof](#api-proto-v1-AggregationProof) |  | Final aggregation proof |
+
+
+
+
+
+
+<a name="api-proto-v1-ListenSignaturesRequest"></a>
+
+### ListenSignaturesRequest
+Request message for listening to signatures stream
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start_epoch | [uint64](#uint64) | optional | Optional: start epoch. If provided, stream will first send all historical signatures starting from this epoch, then continue with real-time updates If not provided, only signatures generated after stream creation will be sent |
+
+
+
+
+
+
+<a name="api-proto-v1-ListenSignaturesResponse"></a>
+
+### ListenSignaturesResponse
+Response message for signatures stream
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| request_id | [string](#string) |  | Id of the signature request |
+| epoch | [uint64](#uint64) |  | Epoch number |
+| signature | [Signature](#api-proto-v1-Signature) |  | Signature data |
+
+
+
+
+
+
+<a name="api-proto-v1-ListenValidatorSetRequest"></a>
+
+### ListenValidatorSetRequest
+Request message for listening to validator set changes stream
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start_epoch | [uint64](#uint64) | optional | Optional: start epoch. If provided, stream will first send all historical validator sets starting from this epoch, then continue with real-time updates If not provided, only validator sets generated after stream creation will be sent |
+
+
+
+
+
+
+<a name="api-proto-v1-ListenValidatorSetResponse"></a>
+
+### ListenValidatorSetResponse
+Response message for validator set changes stream
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| validator_set | [ValidatorSet](#api-proto-v1-ValidatorSet) |  | The validator set |
 
 
 
@@ -511,41 +604,6 @@ Response message for sign message request
 
 
 
-<a name="api-proto-v1-SignMessageWaitRequest"></a>
-
-### SignMessageWaitRequest
-Request message for signing a message
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key_tag | [uint32](#uint32) |  | Key tag identifier (0-127) |
-| message | [bytes](#bytes) |  | Message to be signed |
-| required_epoch | [uint64](#uint64) | optional | Required epoch (optional, if not provided latest committed epoch will be used) |
-
-
-
-
-
-
-<a name="api-proto-v1-SignMessageWaitResponse"></a>
-
-### SignMessageWaitResponse
-Streaming response message for sign message wait
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| status | [SigningStatus](#api-proto-v1-SigningStatus) |  | Current status of the signing process |
-| request_id | [string](#string) |  | Id of the request |
-| epoch | [uint64](#uint64) |  | Epoch number |
-| aggregation_proof | [AggregationProof](#api-proto-v1-AggregationProof) | optional | Final aggregation proof (only set when status is SIGNING_STATUS_COMPLETED) |
-
-
-
-
-
-
 <a name="api-proto-v1-Signature"></a>
 
 ### Signature
@@ -576,6 +634,27 @@ Validator information
 | is_active | [bool](#bool) |  | Indicates if the validator is active |
 | keys | [Key](#api-proto-v1-Key) | repeated | List of cryptographic keys |
 | vaults | [ValidatorVault](#api-proto-v1-ValidatorVault) | repeated | List of validator vaults |
+
+
+
+
+
+
+<a name="api-proto-v1-ValidatorSet"></a>
+
+### ValidatorSet
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| version | [uint32](#uint32) |  | Version of the validator set |
+| required_key_tag | [uint32](#uint32) |  | Key tag required to commit next validator set |
+| epoch | [uint64](#uint64) |  | Validator set epoch |
+| capture_timestamp | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Epoch capture timestamp |
+| quorum_threshold | [string](#string) |  | Quorum threshold (big integer as string) |
+| status | [ValidatorSetStatus](#api-proto-v1-ValidatorSetStatus) |  | Status of validator set header |
+| validators | [Validator](#api-proto-v1-Validator) | repeated | List of validators |
 
 
 
@@ -665,10 +744,12 @@ SymbioticAPI provides access to the Symbiotic relay functions
 | GetValidatorSet | [GetValidatorSetRequest](#api-proto-v1-GetValidatorSetRequest) | [GetValidatorSetResponse](#api-proto-v1-GetValidatorSetResponse) | Get current validator set |
 | GetValidatorByAddress | [GetValidatorByAddressRequest](#api-proto-v1-GetValidatorByAddressRequest) | [GetValidatorByAddressResponse](#api-proto-v1-GetValidatorByAddressResponse) | Get validator by address |
 | GetValidatorSetHeader | [GetValidatorSetHeaderRequest](#api-proto-v1-GetValidatorSetHeaderRequest) | [GetValidatorSetHeaderResponse](#api-proto-v1-GetValidatorSetHeaderResponse) | Get validator set header |
-| SignMessageWait | [SignMessageWaitRequest](#api-proto-v1-SignMessageWaitRequest) | [SignMessageWaitResponse](#api-proto-v1-SignMessageWaitResponse) stream | Sign a message and wait for aggregation proof via stream |
 | GetLastCommitted | [GetLastCommittedRequest](#api-proto-v1-GetLastCommittedRequest) | [GetLastCommittedResponse](#api-proto-v1-GetLastCommittedResponse) | Get last committed epoch for a specific settlement chain |
 | GetLastAllCommitted | [GetLastAllCommittedRequest](#api-proto-v1-GetLastAllCommittedRequest) | [GetLastAllCommittedResponse](#api-proto-v1-GetLastAllCommittedResponse) | Get last committed epochs for all settlement chains |
 | GetValidatorSetMetadata | [GetValidatorSetMetadataRequest](#api-proto-v1-GetValidatorSetMetadataRequest) | [GetValidatorSetMetadataResponse](#api-proto-v1-GetValidatorSetMetadataResponse) | Get validator set metadata like extra data and request id to fetch aggregation and signature requests |
+| ListenSignatures | [ListenSignaturesRequest](#api-proto-v1-ListenSignaturesRequest) | [ListenSignaturesResponse](#api-proto-v1-ListenSignaturesResponse) stream | Stream signatures in real-time. If start_epoch is provided, sends historical data first |
+| ListenProofs | [ListenProofsRequest](#api-proto-v1-ListenProofsRequest) | [ListenProofsResponse](#api-proto-v1-ListenProofsResponse) stream | Stream aggregation proofs in real-time. If start_epoch is provided, sends historical data first |
+| ListenValidatorSet | [ListenValidatorSetRequest](#api-proto-v1-ListenValidatorSetRequest) | [ListenValidatorSetResponse](#api-proto-v1-ListenValidatorSetResponse) stream | Stream validator set changes in real-time. If start_epoch is provided, sends historical data first |
 
  
 

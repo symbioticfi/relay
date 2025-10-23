@@ -51,8 +51,9 @@ type LogConfig struct {
 }
 
 type APIConfig struct {
-	ListenAddress  string `mapstructure:"listen" validate:"required"`
-	VerboseLogging bool   `mapstructure:"verbose-logging"`
+	ListenAddress     string `mapstructure:"listen" validate:"required"`
+	MaxAllowedStreams uint64 `mapstructure:"max-allowed-streams" validate:"required"`
+	VerboseLogging    bool   `mapstructure:"verbose-logging"`
 }
 
 type MetricsConfig struct {
@@ -141,7 +142,6 @@ type KeyStore struct {
 	Path     string `json:"path"`
 	Password string `json:"password"`
 }
-
 type CacheConfig struct {
 	NetworkConfigCacheSize int `mapstructure:"network-config-size"`
 	ValidatorSetCacheSize  int `mapstructure:"validator-set-size"`
@@ -199,6 +199,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().String("circuits-dir", "", "Directory path to load zk circuits from, if empty then zp prover is disabled")
 	rootCmd.PersistentFlags().Uint64("aggregation-policy-max-unsigners", 50, "Max unsigners for low cost agg policy")
 	rootCmd.PersistentFlags().String("api.listen", "", "API Server listener address")
+	rootCmd.PersistentFlags().Uint64("api.max-allowed-streams", 100, "Max allowed streams count API Server")
 	rootCmd.PersistentFlags().Bool("api.verbose-logging", false, "Enable verbose logging for the API Server")
 	rootCmd.PersistentFlags().String("metrics.listen", "", "Http listener address for metrics endpoint")
 	rootCmd.PersistentFlags().Bool("metrics.pprof", false, "Enable pprof debug endpoints")
@@ -286,6 +287,9 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("api.verbose-logging", cmd.PersistentFlags().Lookup("api.verbose-logging")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("api.max-allowed-streams", cmd.PersistentFlags().Lookup("api.max-allowed-streams")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("metrics.listen", cmd.PersistentFlags().Lookup("metrics.listen")); err != nil {

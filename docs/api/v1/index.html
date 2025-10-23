@@ -287,6 +287,30 @@
                 </li>
               
                 <li>
+                  <a href="#api.proto.v1.ListenProofsRequest"><span class="badge">M</span>ListenProofsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.ListenProofsResponse"><span class="badge">M</span>ListenProofsResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.ListenSignaturesRequest"><span class="badge">M</span>ListenSignaturesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.ListenSignaturesResponse"><span class="badge">M</span>ListenSignaturesResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.ListenValidatorSetRequest"><span class="badge">M</span>ListenValidatorSetRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.ListenValidatorSetResponse"><span class="badge">M</span>ListenValidatorSetResponse</a>
+                </li>
+              
+                <li>
                   <a href="#api.proto.v1.SignMessageRequest"><span class="badge">M</span>SignMessageRequest</a>
                 </li>
               
@@ -295,19 +319,15 @@
                 </li>
               
                 <li>
-                  <a href="#api.proto.v1.SignMessageWaitRequest"><span class="badge">M</span>SignMessageWaitRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#api.proto.v1.SignMessageWaitResponse"><span class="badge">M</span>SignMessageWaitResponse</a>
-                </li>
-              
-                <li>
                   <a href="#api.proto.v1.Signature"><span class="badge">M</span>Signature</a>
                 </li>
               
                 <li>
                   <a href="#api.proto.v1.Validator"><span class="badge">M</span>Validator</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.ValidatorSet"><span class="badge">M</span>ValidatorSet</a>
                 </li>
               
                 <li>
@@ -1051,52 +1071,10 @@
             <tbody>
               
                 <tr>
-                  <td>version</td>
-                  <td><a href="#uint32">uint32</a></td>
+                  <td>validator_set</td>
+                  <td><a href="#api.proto.v1.ValidatorSet">ValidatorSet</a></td>
                   <td></td>
-                  <td><p>Version of the validator set </p></td>
-                </tr>
-              
-                <tr>
-                  <td>required_key_tag</td>
-                  <td><a href="#uint32">uint32</a></td>
-                  <td></td>
-                  <td><p>Key tag required to commit next validator set </p></td>
-                </tr>
-              
-                <tr>
-                  <td>epoch</td>
-                  <td><a href="#uint64">uint64</a></td>
-                  <td></td>
-                  <td><p>Validator set epoch </p></td>
-                </tr>
-              
-                <tr>
-                  <td>capture_timestamp</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>Epoch capture timestamp </p></td>
-                </tr>
-              
-                <tr>
-                  <td>quorum_threshold</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Quorum threshold (big integer as string) </p></td>
-                </tr>
-              
-                <tr>
-                  <td>status</td>
-                  <td><a href="#api.proto.v1.ValidatorSetStatus">ValidatorSetStatus</a></td>
-                  <td></td>
-                  <td><p>Status of validator set header </p></td>
-                </tr>
-              
-                <tr>
-                  <td>validators</td>
-                  <td><a href="#api.proto.v1.Validator">Validator</a></td>
-                  <td>repeated</td>
-                  <td><p>List of validators </p></td>
+                  <td><p>The validator set </p></td>
                 </tr>
               
             </tbody>
@@ -1128,6 +1106,181 @@
                   <td><a href="#bytes">bytes</a></td>
                   <td></td>
                   <td><p>Key payload </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.ListenProofsRequest">ListenProofsRequest</h3>
+        <p>Request message for listening to aggregation proofs stream</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start_epoch</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td>optional</td>
+                  <td><p>Optional: start epoch. If provided, stream will first send all historical proofs starting from this epoch, then continue with real-time updates
+If not provided, only proofs generated after stream creation will be sent </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.ListenProofsResponse">ListenProofsResponse</h3>
+        <p>Response message for aggregation proofs stream</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>request_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Id of the request </p></td>
+                </tr>
+              
+                <tr>
+                  <td>epoch</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>Epoch number </p></td>
+                </tr>
+              
+                <tr>
+                  <td>aggregation_proof</td>
+                  <td><a href="#api.proto.v1.AggregationProof">AggregationProof</a></td>
+                  <td></td>
+                  <td><p>Final aggregation proof </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.ListenSignaturesRequest">ListenSignaturesRequest</h3>
+        <p>Request message for listening to signatures stream</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start_epoch</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td>optional</td>
+                  <td><p>Optional: start epoch. If provided, stream will first send all historical signatures starting from this epoch, then continue with real-time updates
+If not provided, only signatures generated after stream creation will be sent </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.ListenSignaturesResponse">ListenSignaturesResponse</h3>
+        <p>Response message for signatures stream</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>request_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Id of the signature request </p></td>
+                </tr>
+              
+                <tr>
+                  <td>epoch</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>Epoch number </p></td>
+                </tr>
+              
+                <tr>
+                  <td>signature</td>
+                  <td><a href="#api.proto.v1.Signature">Signature</a></td>
+                  <td></td>
+                  <td><p>Signature data </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.ListenValidatorSetRequest">ListenValidatorSetRequest</h3>
+        <p>Request message for listening to validator set changes stream</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start_epoch</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td>optional</td>
+                  <td><p>Optional: start epoch. If provided, stream will first send all historical validator sets starting from this epoch, then continue with real-time updates
+If not provided, only validator sets generated after stream creation will be sent </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.ListenValidatorSetResponse">ListenValidatorSetResponse</h3>
+        <p>Response message for validator set changes stream</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>validator_set</td>
+                  <td><a href="#api.proto.v1.ValidatorSet">ValidatorSet</a></td>
+                  <td></td>
+                  <td><p>The validator set </p></td>
                 </tr>
               
             </tbody>
@@ -1197,89 +1350,6 @@
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
                   <td><p>Epoch number </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="api.proto.v1.SignMessageWaitRequest">SignMessageWaitRequest</h3>
-        <p>Request message for signing a message</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key_tag</td>
-                  <td><a href="#uint32">uint32</a></td>
-                  <td></td>
-                  <td><p>Key tag identifier (0-127) </p></td>
-                </tr>
-              
-                <tr>
-                  <td>message</td>
-                  <td><a href="#bytes">bytes</a></td>
-                  <td></td>
-                  <td><p>Message to be signed </p></td>
-                </tr>
-              
-                <tr>
-                  <td>required_epoch</td>
-                  <td><a href="#uint64">uint64</a></td>
-                  <td>optional</td>
-                  <td><p>Required epoch (optional, if not provided latest committed epoch will be used) </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="api.proto.v1.SignMessageWaitResponse">SignMessageWaitResponse</h3>
-        <p>Streaming response message for sign message wait</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>status</td>
-                  <td><a href="#api.proto.v1.SigningStatus">SigningStatus</a></td>
-                  <td></td>
-                  <td><p>Current status of the signing process </p></td>
-                </tr>
-              
-                <tr>
-                  <td>request_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Id of the request </p></td>
-                </tr>
-              
-                <tr>
-                  <td>epoch</td>
-                  <td><a href="#uint64">uint64</a></td>
-                  <td></td>
-                  <td><p>Epoch number </p></td>
-                </tr>
-              
-                <tr>
-                  <td>aggregation_proof</td>
-                  <td><a href="#api.proto.v1.AggregationProof">AggregationProof</a></td>
-                  <td>optional</td>
-                  <td><p>Final aggregation proof (only set when status is SIGNING_STATUS_COMPLETED) </p></td>
                 </tr>
               
             </tbody>
@@ -1370,6 +1440,72 @@
                   <td><a href="#api.proto.v1.ValidatorVault">ValidatorVault</a></td>
                   <td>repeated</td>
                   <td><p>List of validator vaults </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.ValidatorSet">ValidatorSet</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>Version of the validator set </p></td>
+                </tr>
+              
+                <tr>
+                  <td>required_key_tag</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>Key tag required to commit next validator set </p></td>
+                </tr>
+              
+                <tr>
+                  <td>epoch</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>Validator set epoch </p></td>
+                </tr>
+              
+                <tr>
+                  <td>capture_timestamp</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>Epoch capture timestamp </p></td>
+                </tr>
+              
+                <tr>
+                  <td>quorum_threshold</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Quorum threshold (big integer as string) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status</td>
+                  <td><a href="#api.proto.v1.ValidatorSetStatus">ValidatorSetStatus</a></td>
+                  <td></td>
+                  <td><p>Status of validator set header </p></td>
+                </tr>
+              
+                <tr>
+                  <td>validators</td>
+                  <td><a href="#api.proto.v1.Validator">Validator</a></td>
+                  <td>repeated</td>
+                  <td><p>List of validators </p></td>
                 </tr>
               
             </tbody>
@@ -1612,13 +1748,6 @@
               </tr>
             
               <tr>
-                <td>SignMessageWait</td>
-                <td><a href="#api.proto.v1.SignMessageWaitRequest">SignMessageWaitRequest</a></td>
-                <td><a href="#api.proto.v1.SignMessageWaitResponse">SignMessageWaitResponse</a> stream</td>
-                <td><p>Sign a message and wait for aggregation proof via stream</p></td>
-              </tr>
-            
-              <tr>
                 <td>GetLastCommitted</td>
                 <td><a href="#api.proto.v1.GetLastCommittedRequest">GetLastCommittedRequest</a></td>
                 <td><a href="#api.proto.v1.GetLastCommittedResponse">GetLastCommittedResponse</a></td>
@@ -1637,6 +1766,27 @@
                 <td><a href="#api.proto.v1.GetValidatorSetMetadataRequest">GetValidatorSetMetadataRequest</a></td>
                 <td><a href="#api.proto.v1.GetValidatorSetMetadataResponse">GetValidatorSetMetadataResponse</a></td>
                 <td><p>Get validator set metadata like extra data and request id to fetch aggregation and signature requests</p></td>
+              </tr>
+            
+              <tr>
+                <td>ListenSignatures</td>
+                <td><a href="#api.proto.v1.ListenSignaturesRequest">ListenSignaturesRequest</a></td>
+                <td><a href="#api.proto.v1.ListenSignaturesResponse">ListenSignaturesResponse</a> stream</td>
+                <td><p>Stream signatures in real-time. If start_epoch is provided, sends historical data first</p></td>
+              </tr>
+            
+              <tr>
+                <td>ListenProofs</td>
+                <td><a href="#api.proto.v1.ListenProofsRequest">ListenProofsRequest</a></td>
+                <td><a href="#api.proto.v1.ListenProofsResponse">ListenProofsResponse</a> stream</td>
+                <td><p>Stream aggregation proofs in real-time. If start_epoch is provided, sends historical data first</p></td>
+              </tr>
+            
+              <tr>
+                <td>ListenValidatorSet</td>
+                <td><a href="#api.proto.v1.ListenValidatorSetRequest">ListenValidatorSetRequest</a></td>
+                <td><a href="#api.proto.v1.ListenValidatorSetResponse">ListenValidatorSetResponse</a> stream</td>
+                <td><p>Stream validator set changes in real-time. If start_epoch is provided, sends historical data first</p></td>
               </tr>
             
           </tbody>

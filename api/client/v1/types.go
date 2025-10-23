@@ -47,8 +47,10 @@ type GetValidatorByAddressRequest = apiv1.GetValidatorByAddressRequest
 type GetValidatorSetHeaderRequest = apiv1.GetValidatorSetHeaderRequest
 type GetValidatorSetMetadataRequest = apiv1.GetValidatorSetMetadataRequest
 type GetValidatorSetRequest = apiv1.GetValidatorSetRequest
+type ListenProofsRequest = apiv1.ListenProofsRequest
+type ListenSignaturesRequest = apiv1.ListenSignaturesRequest
+type ListenValidatorSetRequest = apiv1.ListenValidatorSetRequest
 type SignMessageRequest = apiv1.SignMessageRequest
-type SignMessageWaitRequest = apiv1.SignMessageWaitRequest
 
 // Response types
 type GetAggregationProofResponse = apiv1.GetAggregationProofResponse
@@ -62,8 +64,10 @@ type GetValidatorByAddressResponse = apiv1.GetValidatorByAddressResponse
 type GetValidatorSetHeaderResponse = apiv1.GetValidatorSetHeaderResponse
 type GetValidatorSetMetadataResponse = apiv1.GetValidatorSetMetadataResponse
 type GetValidatorSetResponse = apiv1.GetValidatorSetResponse
+type ListenProofsResponse = apiv1.ListenProofsResponse
+type ListenSignaturesResponse = apiv1.ListenSignaturesResponse
+type ListenValidatorSetResponse = apiv1.ListenValidatorSetResponse
 type SignMessageResponse = apiv1.SignMessageResponse
-type SignMessageWaitResponse = apiv1.SignMessageWaitResponse
 
 // Data types
 type AggregationProof = apiv1.AggregationProof
@@ -72,4 +76,5 @@ type ExtraData = apiv1.ExtraData
 type Key = apiv1.Key
 type Signature = apiv1.Signature
 type Validator = apiv1.Validator
+type ValidatorSet = apiv1.ValidatorSet
 type ValidatorVault = apiv1.ValidatorVault

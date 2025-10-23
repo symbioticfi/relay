@@ -88,21 +88,23 @@ func getExpectedDataFromContracts(t *testing.T, relayContracts RelayContractsDat
 func validateValidatorSetAgainstExpected(t *testing.T, apiResponse *apiv1.GetValidatorSetResponse, expected *ContractExpectedData) {
 	t.Helper()
 
-	require.Equal(t, expected.ValidatorSet.Epoch, symbiotic.Epoch(apiResponse.Epoch), "API epoch should match contract epoch")
-	require.Equal(t, expected.ValidatorSet.CaptureTimestamp, symbiotic.Timestamp(apiResponse.CaptureTimestamp.GetSeconds()),
+	validatorSet := apiResponse.GetValidatorSet()
+
+	require.Equal(t, expected.ValidatorSet.Epoch, symbiotic.Epoch(validatorSet.GetEpoch()), "API epoch should match contract epoch")
+	require.Equal(t, expected.ValidatorSet.CaptureTimestamp, symbiotic.Timestamp(validatorSet.GetCaptureTimestamp().GetSeconds()),
 		"API capture timestamp should match contract timestamp")
-	require.Equal(t, uint32(expected.ValidatorSet.Version), apiResponse.Version,
+	require.Equal(t, uint32(expected.ValidatorSet.Version), validatorSet.GetVersion(),
 		"API version should match contract version")
 
 	expectedQuorum := expected.ValidatorSet.QuorumThreshold.String()
-	require.Equal(t, expectedQuorum, apiResponse.QuorumThreshold,
+	require.Equal(t, expectedQuorum, validatorSet.GetQuorumThreshold(),
 		"API quorum threshold should match contract quorum threshold")
-	require.Len(t, apiResponse.Validators, len(expected.ValidatorSet.Validators),
+	require.Len(t, validatorSet.GetValidators(), len(expected.ValidatorSet.Validators),
 		"API should return same number of validators as contract")
 
 	for i, expectedValidator := range expected.ValidatorSet.Validators {
-		require.Less(t, i, len(apiResponse.Validators), "API response should have validator %d", i)
-		apiValidator := apiResponse.Validators[i]
+		require.Less(t, i, len(validatorSet.GetValidators()), "API response should have validator %d", i)
+		apiValidator := validatorSet.GetValidators()[i]
 
 		require.Equal(t, expectedValidator.Operator.Hex(), apiValidator.GetOperator(),
 			"Validator %d operator should match contract", i)
@@ -143,7 +145,7 @@ func validateValidatorSetAgainstExpected(t *testing.T, apiResponse *apiv1.GetVal
 	}
 
 	t.Logf("Validator set validation passed: %d validators, epoch %d, quorum %s",
-		len(apiResponse.Validators), apiResponse.Epoch, apiResponse.QuorumThreshold)
+		len(validatorSet.GetValidators()), validatorSet.GetEpoch(), validatorSet.GetQuorumThreshold())
 }
 
 // TestRelayAPIConnectivity tests that all relay servers are accessible via gRPC
@@ -196,22 +198,24 @@ func TestValidatorSetAPI(t *testing.T) {
 		t.Logf("Performing contract validation...")
 		expected := getExpectedDataFromContracts(t, deploymentData)
 
-		if expected.ValidatorSet.Epoch != symbiotic.Epoch(valsetResp.GetEpoch()) {
+		valset := valsetResp.GetValidatorSet()
+
+		if expected.ValidatorSet.Epoch != symbiotic.Epoch(valset.GetEpoch()) {
 			continue
 		}
 
 		validateValidatorSetAgainstExpected(t, valsetResp, expected)
 		t.Logf("✓ Contract validation passed")
 
-		require.Positive(t, valsetResp.GetVersion(), "Validator set version should be greater than 0")
-		require.NotNil(t, valsetResp.GetCaptureTimestamp(), "Capture timestamp should be set")
-		require.NotEmpty(t, valsetResp.GetQuorumThreshold(), "Quorum threshold should not be empty")
-		require.NotEmpty(t, valsetResp.GetValidators(), "Validator set should contain validators")
+		require.Positive(t, valset.GetVersion(), "Validator set version should be greater than 0")
+		require.NotNil(t, valset.GetCaptureTimestamp(), "Capture timestamp should be set")
+		require.NotEmpty(t, valset.GetQuorumThreshold(), "Quorum threshold should not be empty")
+		require.NotEmpty(t, valset.GetValidators(), "Validator set should contain validators")
 
 		t.Logf("Validator set from %d: Epoch %d, %d validators, Version %d",
-			i, valsetResp.GetEpoch(), len(valsetResp.GetValidators()), valsetResp.GetVersion())
+			i, valset.GetEpoch(), len(valset.GetValidators()), valset.GetVersion())
 
-		for i, validator := range valsetResp.GetValidators() {
+		for i, validator := range valset.GetValidators() {
 			require.NotEmpty(t, validator.GetOperator(), "Validator %d operator should not be empty", i)
 			require.NotEmpty(t, validator.GetVotingPower(), "Validator %d voting power should not be empty", i)
 			require.NotEmpty(t, validator.GetKeys(), "Validator %d should have keys", i)
@@ -235,17 +239,17 @@ func TestValidatorSetAPI(t *testing.T) {
 				i, validator.GetOperator(), validator.GetVotingPower(), validator.GetIsActive(), len(validator.GetKeys()), len(validator.GetVaults()))
 		}
 
-		if valsetResp.GetEpoch() > 0 {
+		if valset.GetEpoch() > 0 {
 			ctx, cancel = context.WithTimeout(t.Context(), 5*time.Second)
 			specificEpochResp, err := client.GetValidatorSet(ctx, &apiv1.GetValidatorSetRequest{
-				Epoch: &valsetResp.Epoch,
+				Epoch: &valset.Epoch,
 			})
 			cancel()
 
 			if err == nil {
-				require.Equal(t, valsetResp.GetEpoch(), specificEpochResp.GetEpoch(), "Epoch should match")
-				require.Len(t, specificEpochResp.GetValidators(), len(valsetResp.GetValidators()), "Number of validators should match")
-				require.Equal(t, valsetResp.GetQuorumThreshold(), specificEpochResp.GetQuorumThreshold(), "Quorum threshold should match")
+				require.Equal(t, valset.GetEpoch(), specificEpochResp.GetValidatorSet().GetEpoch(), "Epoch should match")
+				require.Len(t, specificEpochResp.GetValidatorSet().GetValidators(), len(valset.GetValidators()), "Number of validators should match")
+				require.Equal(t, valset.GetQuorumThreshold(), specificEpochResp.GetValidatorSet().GetQuorumThreshold(), "Quorum threshold should match")
 			}
 		}
 		return
