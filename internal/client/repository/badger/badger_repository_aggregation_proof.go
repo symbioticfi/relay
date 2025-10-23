@@ -110,7 +110,7 @@ func (r *Repository) GetAggregationProofsStartingFromEpoch(ctx context.Context, 
 		defer it.Close()
 
 		for it.Seek(startKey); it.Valid(); it.Next() {
-			proof, err := getAggregationProofByEpochFromItem(ctx, it)
+			proof, err := getAggregationProofByEpochFromItem(txn, it)
 			if err != nil {
 				if errors.Is(err, errCorruptedRequestIDEpochLink) {
 					slog.ErrorContext(ctx, errCorruptedRequestIDEpochLink.Error(), "key", string(it.Item().Key()))
@@ -140,7 +140,7 @@ func (r *Repository) GetAggregationProofsByEpoch(ctx context.Context, epoch symb
 		defer it.Close()
 
 		for it.Seek(startKey); it.ValidForPrefix(startKey); it.Next() {
-			proof, err := getAggregationProofByEpochFromItem(ctx, it)
+			proof, err := getAggregationProofByEpochFromItem(txn, it)
 			if err != nil {
 				if errors.Is(err, errCorruptedRequestIDEpochLink) {
 					slog.ErrorContext(ctx, errCorruptedRequestIDEpochLink.Error(), "key", string(it.Item().Key()))
@@ -156,7 +156,7 @@ func (r *Repository) GetAggregationProofsByEpoch(ctx context.Context, epoch symb
 	})
 }
 
-func getAggregationProofByEpochFromItem(ctx context.Context, it *badger.Iterator) (symbiotic.AggregationProof, error) {
+func getAggregationProofByEpochFromItem(txn *badger.Txn, it *badger.Iterator) (symbiotic.AggregationProof, error) {
 	key := it.Item().Key()
 
 	requestID, err := extractRequestIDFromEpochKey(key)
@@ -164,7 +164,7 @@ func getAggregationProofByEpochFromItem(ctx context.Context, it *badger.Iterator
 		return symbiotic.AggregationProof{}, errors.Join(errCorruptedRequestIDEpochLink, err)
 	}
 
-	item, err := getTxn(ctx).Get(keyAggregationProof(requestID))
+	item, err := txn.Get(keyAggregationProof(requestID))
 	if err != nil {
 		return symbiotic.AggregationProof{}, errors.Errorf("failed to get aggregation proof: %w", err)
 	}

@@ -66,30 +66,9 @@ func (r *Repository) GetAllSignatures(ctx context.Context, requestID common.Hash
 	var signatures []symbiotic.Signature
 
 	return signatures, r.doViewInTx(ctx, "GetAllSignatures", func(ctx context.Context) error {
-		txn := getTxn(ctx)
-		prefix := keySignatureRequestIDPrefix(requestID)
-		opts := badger.DefaultIteratorOptions
-		opts.Prefix = prefix
-
-		it := txn.NewIterator(opts)
-		defer it.Close()
-
-		for it.Rewind(); it.Valid(); it.Next() {
-			item := it.Item()
-			value, err := item.ValueCopy(nil)
-			if err != nil {
-				return errors.Errorf("failed to copy signature value: %w", err)
-			}
-
-			sig, err := bytesToSignature(value)
-			if err != nil {
-				return errors.Errorf("failed to unmarshal signature: %w", err)
-			}
-
-			signatures = append(signatures, sig)
-		}
-
-		return nil
+		var err error
+		signatures, err = gatAllSignatures(getTxn(ctx), requestID)
+		return err
 	})
 }
 
@@ -139,7 +118,7 @@ func (r *Repository) GetSignaturesStartingFromEpoch(ctx context.Context, epoch s
 		defer it.Close()
 
 		for it.Seek(startKey); it.Valid(); it.Next() {
-			signaturesFromItem, err := r.getSignaturesByEpochFromItem(ctx, it)
+			signaturesFromItem, err := r.getSignaturesByEpochFromItem(txn, it)
 			if err != nil {
 				if errors.Is(err, errCorruptedRequestIDEpochLink) {
 					slog.ErrorContext(ctx, errCorruptedRequestIDEpochLink.Error(), "key", string(it.Item().Key()))
@@ -169,7 +148,7 @@ func (r *Repository) GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.E
 		defer it.Close()
 
 		for it.Seek(startKey); it.ValidForPrefix(startKey); it.Next() {
-			signaturesFromItem, err := r.getSignaturesByEpochFromItem(ctx, it)
+			signaturesFromItem, err := r.getSignaturesByEpochFromItem(txn, it)
 			if err != nil {
 				if errors.Is(err, errCorruptedRequestIDEpochLink) {
 					slog.ErrorContext(ctx, errCorruptedRequestIDEpochLink.Error(), "key", string(it.Item().Key()))
@@ -185,7 +164,7 @@ func (r *Repository) GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.E
 	})
 }
 
-func (r *Repository) getSignaturesByEpochFromItem(ctx context.Context, it *badger.Iterator) ([]symbiotic.Signature, error) {
+func (r *Repository) getSignaturesByEpochFromItem(txn *badger.Txn, it *badger.Iterator) ([]symbiotic.Signature, error) {
 	key := it.Item().Key()
 
 	requestID, err := extractRequestIDFromEpochKey(key)
@@ -193,7 +172,35 @@ func (r *Repository) getSignaturesByEpochFromItem(ctx context.Context, it *badge
 		return nil, errors.Join(errCorruptedRequestIDEpochLink, err)
 	}
 
-	return r.GetAllSignatures(ctx, requestID)
+	return gatAllSignatures(txn, requestID)
+}
+
+func gatAllSignatures(txn *badger.Txn, requestID common.Hash) ([]symbiotic.Signature, error) {
+	var signatures []symbiotic.Signature
+
+	prefix := keySignatureRequestIDPrefix(requestID)
+	opts := badger.DefaultIteratorOptions
+	opts.Prefix = prefix
+
+	it := txn.NewIterator(opts)
+	defer it.Close()
+
+	for it.Rewind(); it.Valid(); it.Next() {
+		item := it.Item()
+		value, err := item.ValueCopy(nil)
+		if err != nil {
+			return nil, errors.Errorf("failed to copy signature value: %w", err)
+		}
+
+		sig, err := bytesToSignature(value)
+		if err != nil {
+			return nil, errors.Errorf("failed to unmarshal signature: %w", err)
+		}
+
+		signatures = append(signatures, sig)
+	}
+
+	return signatures, nil
 }
 
 func signatureToBytes(sig symbiotic.Signature) ([]byte, error) {

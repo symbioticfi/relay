@@ -258,112 +258,17 @@ func TestValidatorSetAPI(t *testing.T) {
 	t.Fatalf("Validator set API test failed to verify after %d attempts", retryAttempts)
 }
 
-func TestGetSignaturesByEpochAPI(t *testing.T) {
-	t.Log("Starting GetSignaturesByEpoch API test...")
-
-	client := globalTestEnv.GetGRPCClient(t, 0)
-
-	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
-	defer cancel()
-
-	epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
-	require.NoError(t, err)
-
-	currentEpoch := epochResp.GetEpoch()
-
-	ctx, cancel = context.WithTimeout(t.Context(), 5*time.Second)
-	defer cancel()
-
-	resp, err := client.GetSignaturesByEpoch(ctx, &apiv1.GetSignaturesByEpochRequest{
-		Epoch: currentEpoch,
-	})
-	require.NoError(t, err)
-	require.NotNil(t, resp)
-
-	t.Logf("GetSignaturesByEpoch for epoch %d returned %d signatures", currentEpoch, len(resp.GetSignatures()))
+func TestAPIsSequence(t *testing.T) {
+	t.Run("ListenSignatures", testListenSignaturesAPI)
+	t.Run("ListenProofs", testListenProofsAPI)
+	t.Run("ListenValidatorSet", testListenValidatorSetAPI)
+	t.Run("GetSignaturesByEpoch", testGetSignaturesByEpochAPI)
+	t.Run("GetAggregationProofsByEpoch", testGetAggregationProofsByEpochAPI)
+	t.Run("GetValidatorByKey", testGetValidatorByKeyAPI)
+	t.Run("GetLocalValidator", testGetLocalValidatorAPI)
 }
 
-func TestGetAggregationProofsByEpochAPI(t *testing.T) {
-	t.Log("Starting GetAggregationProofsByEpoch API test...")
-
-	client := globalTestEnv.GetGRPCClient(t, 0)
-
-	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
-	defer cancel()
-
-	epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
-	require.NoError(t, err)
-
-	currentEpoch := epochResp.GetEpoch()
-
-	ctx, cancel = context.WithTimeout(t.Context(), 5*time.Second)
-	defer cancel()
-
-	resp, err := client.GetAggregationProofsByEpoch(ctx, &apiv1.GetAggregationProofsByEpochRequest{
-		Epoch: currentEpoch,
-	})
-	require.NoError(t, err)
-	require.NotNil(t, resp)
-
-	t.Logf("GetAggregationProofsByEpoch for epoch %d returned %d proofs", currentEpoch, len(resp.GetAggregationProofs()))
-}
-
-func TestGetValidatorByKeyAPI(t *testing.T) {
-	t.Log("Starting GetValidatorByKey API test...")
-
-	client := globalTestEnv.GetGRPCClient(t, 0)
-
-	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
-	defer cancel()
-
-	valsetResp, err := client.GetValidatorSet(ctx, &apiv1.GetValidatorSetRequest{})
-	require.NoError(t, err)
-	require.NotEmpty(t, valsetResp.GetValidatorSet().GetValidators())
-
-	firstValidator := valsetResp.GetValidatorSet().GetValidators()[0]
-	require.NotEmpty(t, firstValidator.GetKeys())
-
-	firstKey := firstValidator.GetKeys()[0]
-	epoch := valsetResp.GetValidatorSet().GetEpoch()
-
-	ctx, cancel = context.WithTimeout(t.Context(), 5*time.Second)
-	defer cancel()
-
-	resp, err := client.GetValidatorByKey(ctx, &apiv1.GetValidatorByKeyRequest{
-		Epoch:      &epoch,
-		KeyTag:     firstKey.GetTag(),
-		OnChainKey: firstKey.GetPayload(),
-	})
-	require.NoError(t, err)
-	require.NotNil(t, resp)
-	require.NotNil(t, resp.GetValidator())
-	require.Equal(t, firstValidator.GetOperator(), resp.GetValidator().GetOperator())
-
-	t.Logf("GetValidatorByKey returned validator %s", resp.GetValidator().GetOperator())
-}
-
-func TestGetLocalValidatorAPI(t *testing.T) {
-	t.Log("Starting GetLocalValidator API test...")
-
-	client := globalTestEnv.GetGRPCClient(t, 0)
-
-	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
-	defer cancel()
-
-	resp, err := client.GetLocalValidator(ctx, &apiv1.GetLocalValidatorRequest{})
-
-	if err != nil {
-		t.Logf("GetLocalValidator returned error (expected if node is not a validator): %v", err)
-		return
-	}
-
-	require.NotNil(t, resp)
-	if resp.GetValidator() != nil {
-		t.Logf("GetLocalValidator returned validator %s", resp.GetValidator().GetOperator())
-	}
-}
-
-func TestListenSignaturesAPI(t *testing.T) {
+func testListenSignaturesAPI(t *testing.T) {
 	t.Log("Starting ListenSignatures API test...")
 
 	client := globalTestEnv.GetGRPCClient(t, 0)
@@ -400,7 +305,7 @@ func TestListenSignaturesAPI(t *testing.T) {
 	t.Logf("ListenSignatures received %d signatures", receivedCount)
 }
 
-func TestListenProofsAPI(t *testing.T) {
+func testListenProofsAPI(t *testing.T) {
 	t.Log("Starting ListenProofs API test...")
 
 	client := globalTestEnv.GetGRPCClient(t, 0)
@@ -437,7 +342,7 @@ func TestListenProofsAPI(t *testing.T) {
 	t.Logf("ListenProofs received %d proofs", receivedCount)
 }
 
-func TestListenValidatorSetAPI(t *testing.T) {
+func testListenValidatorSetAPI(t *testing.T) {
 	t.Log("Starting ListenValidatorSet API test...")
 
 	client := globalTestEnv.GetGRPCClient(t, 0)
@@ -473,4 +378,109 @@ func TestListenValidatorSetAPI(t *testing.T) {
 	}
 
 	t.Logf("ListenValidatorSet received %d validator sets", receivedCount)
+}
+
+func testGetSignaturesByEpochAPI(t *testing.T) {
+	t.Log("Starting GetSignaturesByEpoch API test...")
+
+	client := globalTestEnv.GetGRPCClient(t, 0)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
+	require.NoError(t, err)
+
+	currentEpoch := epochResp.GetEpoch()
+
+	ctx, cancel = context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	resp, err := client.GetSignaturesByEpoch(ctx, &apiv1.GetSignaturesByEpochRequest{
+		Epoch: currentEpoch,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+
+	t.Logf("GetSignaturesByEpoch for epoch %d returned %d signatures", currentEpoch, len(resp.GetSignatures()))
+}
+
+func testGetAggregationProofsByEpochAPI(t *testing.T) {
+	t.Log("Starting GetAggregationProofsByEpoch API test...")
+
+	client := globalTestEnv.GetGRPCClient(t, 0)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
+	require.NoError(t, err)
+
+	currentEpoch := epochResp.GetEpoch()
+
+	ctx, cancel = context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	resp, err := client.GetAggregationProofsByEpoch(ctx, &apiv1.GetAggregationProofsByEpochRequest{
+		Epoch: currentEpoch,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+
+	t.Logf("GetAggregationProofsByEpoch for epoch %d returned %d proofs", currentEpoch, len(resp.GetAggregationProofs()))
+}
+
+func testGetValidatorByKeyAPI(t *testing.T) {
+	t.Log("Starting GetValidatorByKey API test...")
+
+	client := globalTestEnv.GetGRPCClient(t, 0)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	valsetResp, err := client.GetValidatorSet(ctx, &apiv1.GetValidatorSetRequest{})
+	require.NoError(t, err)
+	require.NotEmpty(t, valsetResp.GetValidatorSet().GetValidators())
+
+	firstValidator := valsetResp.GetValidatorSet().GetValidators()[0]
+	require.NotEmpty(t, firstValidator.GetKeys())
+
+	firstKey := firstValidator.GetKeys()[0]
+	epoch := valsetResp.GetValidatorSet().GetEpoch()
+
+	ctx, cancel = context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	resp, err := client.GetValidatorByKey(ctx, &apiv1.GetValidatorByKeyRequest{
+		Epoch:      &epoch,
+		KeyTag:     firstKey.GetTag(),
+		OnChainKey: firstKey.GetPayload(),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.NotNil(t, resp.GetValidator())
+	require.Equal(t, firstValidator.GetOperator(), resp.GetValidator().GetOperator())
+
+	t.Logf("GetValidatorByKey returned validator %s", resp.GetValidator().GetOperator())
+}
+
+func testGetLocalValidatorAPI(t *testing.T) {
+	t.Log("Starting GetLocalValidator API test...")
+
+	client := globalTestEnv.GetGRPCClient(t, 0)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	resp, err := client.GetLocalValidator(ctx, &apiv1.GetLocalValidatorRequest{})
+
+	if err != nil {
+		t.Logf("GetLocalValidator returned error (expected if node is not a validator): %v", err)
+		return
+	}
+
+	require.NotNil(t, resp)
+	if resp.GetValidator() != nil {
+		t.Logf("GetLocalValidator returned validator %s", resp.GetValidator().GetOperator())
+	}
 }
