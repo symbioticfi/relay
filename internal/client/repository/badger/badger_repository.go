@@ -201,15 +201,33 @@ func cleanupMutexMap(mutexMap *sync.Map, staleThreshold time.Time) int {
 	return count
 }
 
+var errCorruptedRequestIDEpochLink = errors.New("corrupted request id epoch link")
+
 func keyRequestIDEpoch(epoch symbiotic.Epoch, requestID common.Hash) []byte {
-	return append(keyRequestIDEpochPrefix(epoch), []byte(requestID.Hex())...)
+	return append(keyRequestIDEpochPrefix(epoch), requestID.Bytes()...)
 }
 
 func keyRequestIDEpochPrefix(epoch symbiotic.Epoch) []byte {
-	key := append(keyRequestIDEpochAll(), epoch.Bytes()...)
-	return append(key, ':')
+	return append(keyRequestIDEpochAll(), epoch.Bytes()...)
 }
 
 func keyRequestIDEpochAll() []byte {
-	return []byte("request_id_epoch:")
+	return []byte("request_id_epoch")
+}
+
+const (
+	epochLen = 8
+	hashLen  = 32
+)
+
+// extractRequestIDFromEpochKey extracts request ID from the epoch key link
+// Key format: "request_id_epoch" (16 bytes) + epoch (8 bytes) + requestID (32 bytes)
+func extractRequestIDFromEpochKey(key []byte) (common.Hash, error) {
+	prefixLen := len(keyRequestIDEpochAll())
+
+	if len(key) < prefixLen+epochLen+hashLen {
+		return common.Hash{}, errors.New("invalid key length")
+	}
+
+	return common.BytesToHash(key[prefixLen+epochLen:]), nil
 }

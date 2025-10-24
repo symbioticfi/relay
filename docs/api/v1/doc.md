@@ -9,6 +9,8 @@
     - [ExtraData](#api-proto-v1-ExtraData)
     - [GetAggregationProofRequest](#api-proto-v1-GetAggregationProofRequest)
     - [GetAggregationProofResponse](#api-proto-v1-GetAggregationProofResponse)
+    - [GetAggregationProofsByEpochRequest](#api-proto-v1-GetAggregationProofsByEpochRequest)
+    - [GetAggregationProofsByEpochResponse](#api-proto-v1-GetAggregationProofsByEpochResponse)
     - [GetAggregationStatusRequest](#api-proto-v1-GetAggregationStatusRequest)
     - [GetAggregationStatusResponse](#api-proto-v1-GetAggregationStatusResponse)
     - [GetCurrentEpochRequest](#api-proto-v1-GetCurrentEpochRequest)
@@ -18,12 +20,18 @@
     - [GetLastAllCommittedResponse.EpochInfosEntry](#api-proto-v1-GetLastAllCommittedResponse-EpochInfosEntry)
     - [GetLastCommittedRequest](#api-proto-v1-GetLastCommittedRequest)
     - [GetLastCommittedResponse](#api-proto-v1-GetLastCommittedResponse)
+    - [GetLocalValidatorRequest](#api-proto-v1-GetLocalValidatorRequest)
+    - [GetLocalValidatorResponse](#api-proto-v1-GetLocalValidatorResponse)
     - [GetSignatureRequestRequest](#api-proto-v1-GetSignatureRequestRequest)
     - [GetSignatureRequestResponse](#api-proto-v1-GetSignatureRequestResponse)
+    - [GetSignaturesByEpochRequest](#api-proto-v1-GetSignaturesByEpochRequest)
+    - [GetSignaturesByEpochResponse](#api-proto-v1-GetSignaturesByEpochResponse)
     - [GetSignaturesRequest](#api-proto-v1-GetSignaturesRequest)
     - [GetSignaturesResponse](#api-proto-v1-GetSignaturesResponse)
     - [GetValidatorByAddressRequest](#api-proto-v1-GetValidatorByAddressRequest)
     - [GetValidatorByAddressResponse](#api-proto-v1-GetValidatorByAddressResponse)
+    - [GetValidatorByKeyRequest](#api-proto-v1-GetValidatorByKeyRequest)
+    - [GetValidatorByKeyResponse](#api-proto-v1-GetValidatorByKeyResponse)
     - [GetValidatorSetHeaderRequest](#api-proto-v1-GetValidatorSetHeaderRequest)
     - [GetValidatorSetHeaderResponse](#api-proto-v1-GetValidatorSetHeaderResponse)
     - [GetValidatorSetMetadataRequest](#api-proto-v1-GetValidatorSetMetadataRequest)
@@ -133,6 +141,36 @@ Response message for getting aggregation proof
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | aggregation_proof | [AggregationProof](#api-proto-v1-AggregationProof) |  |  |
+
+
+
+
+
+
+<a name="api-proto-v1-GetAggregationProofsByEpochRequest"></a>
+
+### GetAggregationProofsByEpochRequest
+Request message for getting aggregation proof
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| epoch | [uint64](#uint64) |  | Epoch number |
+
+
+
+
+
+
+<a name="api-proto-v1-GetAggregationProofsByEpochResponse"></a>
+
+### GetAggregationProofsByEpochResponse
+Response message for getting aggregation proof
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| aggregation_proofs | [AggregationProof](#api-proto-v1-AggregationProof) | repeated |  |
 
 
 
@@ -270,6 +308,36 @@ Response message for getting last committed epoch
 
 
 
+<a name="api-proto-v1-GetLocalValidatorRequest"></a>
+
+### GetLocalValidatorRequest
+Request message for getting local validator
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| epoch | [uint64](#uint64) | optional | Epoch number (optional, if not provided current epoch will be used) |
+
+
+
+
+
+
+<a name="api-proto-v1-GetLocalValidatorResponse"></a>
+
+### GetLocalValidatorResponse
+Response message for getting local validator
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| validator | [Validator](#api-proto-v1-Validator) |  | The validator |
+
+
+
+
+
+
 <a name="api-proto-v1-GetSignatureRequestRequest"></a>
 
 ### GetSignatureRequestRequest
@@ -296,6 +364,36 @@ Response message for getting signature request
 | key_tag | [uint32](#uint32) |  | Key tag identifier (0-127) |
 | message | [bytes](#bytes) |  | Message to be signed |
 | required_epoch | [uint64](#uint64) |  | Required epoch |
+
+
+
+
+
+
+<a name="api-proto-v1-GetSignaturesByEpochRequest"></a>
+
+### GetSignaturesByEpochRequest
+Request message for getting signatures by epoch
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| epoch | [uint64](#uint64) |  | Epoch number |
+
+
+
+
+
+
+<a name="api-proto-v1-GetSignaturesByEpochResponse"></a>
+
+### GetSignaturesByEpochResponse
+Response message for getting signatures by epoch
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| signatures | [Signature](#api-proto-v1-Signature) | repeated | List of signatures |
 
 
 
@@ -352,6 +450,38 @@ Request message for getting validator by address
 
 ### GetValidatorByAddressResponse
 Response message for getting validator by address
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| validator | [Validator](#api-proto-v1-Validator) |  | The validator |
+
+
+
+
+
+
+<a name="api-proto-v1-GetValidatorByKeyRequest"></a>
+
+### GetValidatorByKeyRequest
+Request message for getting validator by key
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| epoch | [uint64](#uint64) | optional | Epoch number (optional, if not provided current epoch will be used) |
+| key_tag | [uint32](#uint32) |  | Validator key tag (required) |
+| on_chain_key | [bytes](#bytes) |  | Validator on chain (public) key (required) |
+
+
+
+
+
+
+<a name="api-proto-v1-GetValidatorByKeyResponse"></a>
+
+### GetValidatorByKeyResponse
+Response message for getting validator by key
 
 
 | Field | Type | Label | Description |
@@ -737,12 +867,16 @@ SymbioticAPI provides access to the Symbiotic relay functions
 | ----------- | ------------ | ------------- | ------------|
 | SignMessage | [SignMessageRequest](#api-proto-v1-SignMessageRequest) | [SignMessageResponse](#api-proto-v1-SignMessageResponse) | Sign a message |
 | GetAggregationProof | [GetAggregationProofRequest](#api-proto-v1-GetAggregationProofRequest) | [GetAggregationProofResponse](#api-proto-v1-GetAggregationProofResponse) | Get aggregation proof |
+| GetAggregationProofsByEpoch | [GetAggregationProofsByEpochRequest](#api-proto-v1-GetAggregationProofsByEpochRequest) | [GetAggregationProofsByEpochResponse](#api-proto-v1-GetAggregationProofsByEpochResponse) | Get aggregation proofs by epoch |
 | GetCurrentEpoch | [GetCurrentEpochRequest](#api-proto-v1-GetCurrentEpochRequest) | [GetCurrentEpochResponse](#api-proto-v1-GetCurrentEpochResponse) | Get current epoch |
 | GetSignatures | [GetSignaturesRequest](#api-proto-v1-GetSignaturesRequest) | [GetSignaturesResponse](#api-proto-v1-GetSignaturesResponse) | Get signature by request id |
+| GetSignaturesByEpoch | [GetSignaturesByEpochRequest](#api-proto-v1-GetSignaturesByEpochRequest) | [GetSignaturesByEpochResponse](#api-proto-v1-GetSignaturesByEpochResponse) | Get signature by epoch |
 | GetSignatureRequest | [GetSignatureRequestRequest](#api-proto-v1-GetSignatureRequestRequest) | [GetSignatureRequestResponse](#api-proto-v1-GetSignatureRequestResponse) | Get signature request by request id |
 | GetAggregationStatus | [GetAggregationStatusRequest](#api-proto-v1-GetAggregationStatusRequest) | [GetAggregationStatusResponse](#api-proto-v1-GetAggregationStatusResponse) | Get aggregation status, can be sent only to aggregator nodes |
 | GetValidatorSet | [GetValidatorSetRequest](#api-proto-v1-GetValidatorSetRequest) | [GetValidatorSetResponse](#api-proto-v1-GetValidatorSetResponse) | Get current validator set |
 | GetValidatorByAddress | [GetValidatorByAddressRequest](#api-proto-v1-GetValidatorByAddressRequest) | [GetValidatorByAddressResponse](#api-proto-v1-GetValidatorByAddressResponse) | Get validator by address |
+| GetValidatorByKey | [GetValidatorByKeyRequest](#api-proto-v1-GetValidatorByKeyRequest) | [GetValidatorByKeyResponse](#api-proto-v1-GetValidatorByKeyResponse) | Get validator by key |
+| GetLocalValidator | [GetLocalValidatorRequest](#api-proto-v1-GetLocalValidatorRequest) | [GetLocalValidatorResponse](#api-proto-v1-GetLocalValidatorResponse) | Get local validator |
 | GetValidatorSetHeader | [GetValidatorSetHeaderRequest](#api-proto-v1-GetValidatorSetHeaderRequest) | [GetValidatorSetHeaderResponse](#api-proto-v1-GetValidatorSetHeaderResponse) | Get validator set header |
 | GetLastCommitted | [GetLastCommittedRequest](#api-proto-v1-GetLastCommittedRequest) | [GetLastCommittedResponse](#api-proto-v1-GetLastCommittedResponse) | Get last committed epoch for a specific settlement chain |
 | GetLastAllCommitted | [GetLastAllCommittedRequest](#api-proto-v1-GetLastAllCommittedRequest) | [GetLastAllCommittedResponse](#api-proto-v1-GetLastAllCommittedResponse) | Get last committed epochs for all settlement chains |

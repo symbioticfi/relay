@@ -43,10 +43,11 @@ type repo interface {
 	GetLatestValidatorSetEpoch(_ context.Context) (symbiotic.Epoch, error)
 	GetValidatorSetMetadata(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSetMetadata, error)
 	GetSignaturesStartingFromEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error)
+	GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error)
 	GetAggregationProofsStartingFromEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.AggregationProof, error)
+	GetAggregationProofsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.AggregationProof, error)
 	GetValidatorSetsStartingFromEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.ValidatorSet, error)
 }
-
 type evmClient interface {
 	GetCurrentEpoch(ctx context.Context) (symbiotic.Epoch, error)
 	GetEpochStart(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.Timestamp, error)
@@ -62,15 +63,20 @@ type deriver interface {
 	GetValidatorSet(ctx context.Context, epoch symbiotic.Epoch, config symbiotic.NetworkConfig) (symbiotic.ValidatorSet, error)
 }
 
+type keyProvider interface {
+	GetOnchainKeyFromCache(keyTag symbiotic.KeyTag) (symbiotic.CompactPublicKey, error)
+}
+
 type Config struct {
 	Address           string        `validate:"required"`
 	ReadHeaderTimeout time.Duration `validate:"required,gt=0"`
 	ShutdownTimeout   time.Duration `validate:"required,gt=0"`
 
-	Signer                 signer    `validate:"required"`
-	Repo                   repo      `validate:"required"`
-	EvmClient              evmClient `validate:"required"`
-	Deriver                deriver   `validate:"required"`
+	Signer                 signer      `validate:"required"`
+	Repo                   repo        `validate:"required"`
+	EvmClient              evmClient   `validate:"required"`
+	Deriver                deriver     `validate:"required"`
+	KeyProvider            keyProvider `validate:"required"`
 	Aggregator             aggregator
 	ServeMetrics           bool
 	ServePprof             bool

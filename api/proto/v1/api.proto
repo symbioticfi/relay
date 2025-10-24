@@ -14,11 +14,17 @@ service SymbioticAPIService {
   // Get aggregation proof
   rpc GetAggregationProof(GetAggregationProofRequest) returns (GetAggregationProofResponse);
 
+  // Get aggregation proofs by epoch
+  rpc GetAggregationProofsByEpoch(GetAggregationProofsByEpochRequest) returns (GetAggregationProofsByEpochResponse);
+
   // Get current epoch
   rpc GetCurrentEpoch(GetCurrentEpochRequest) returns (GetCurrentEpochResponse);
 
   // Get signature by request id
   rpc GetSignatures(GetSignaturesRequest) returns (GetSignaturesResponse);
+
+  // Get signature by epoch
+  rpc GetSignaturesByEpoch(GetSignaturesByEpochRequest) returns (GetSignaturesByEpochResponse);
 
   // Get signature request by request id
   rpc GetSignatureRequest(GetSignatureRequestRequest) returns (GetSignatureRequestResponse);
@@ -31,6 +37,12 @@ service SymbioticAPIService {
 
   // Get validator by address
   rpc GetValidatorByAddress(GetValidatorByAddressRequest) returns (GetValidatorByAddressResponse);
+
+  // Get validator by key
+  rpc GetValidatorByKey(GetValidatorByKeyRequest) returns (GetValidatorByKeyResponse);
+
+  // Get local validator
+  rpc GetLocalValidator(GetLocalValidatorRequest) returns (GetLocalValidatorResponse);
 
   // Get validator set header
   rpc GetValidatorSetHeader(GetValidatorSetHeaderRequest) returns (GetValidatorSetHeaderResponse);
@@ -131,6 +143,13 @@ message GetAggregationProofRequest {
   string request_id = 1;
 }
 
+
+// Request message for getting aggregation proof
+message GetAggregationProofsByEpochRequest {
+  // Epoch number
+  uint64 epoch = 1;
+}
+
 // Request message for getting current epoch
 message GetCurrentEpochRequest {}
 
@@ -139,8 +158,20 @@ message GetSignaturesRequest {
   string request_id = 1;
 }
 
+// Request message for getting signatures by epoch
+message GetSignaturesByEpochRequest {
+  // Epoch number
+  uint64 epoch = 1;
+}
+
 // Response message for getting signatures
 message GetSignaturesResponse {
+  // List of signatures
+  repeated Signature signatures = 1;
+}
+
+// Response message for getting signatures by epoch
+message GetSignaturesByEpochResponse {
   // List of signatures
   repeated Signature signatures = 1;
 }
@@ -168,6 +199,25 @@ message GetValidatorByAddressRequest {
 
   // Validator address (required)
   string address = 2;
+}
+
+
+// Request message for getting validator by key
+message GetValidatorByKeyRequest {
+  // Epoch number (optional, if not provided current epoch will be used)
+  optional uint64 epoch = 1;
+
+  // Validator key tag (required)
+  uint32 key_tag = 2;
+
+  // Validator on chain (public) key (required)
+  bytes on_chain_key = 3;
+}
+
+// Request message for getting local validator
+message GetLocalValidatorRequest {
+  // Epoch number (optional, if not provided current epoch will be used)
+  optional uint64 epoch = 1;
 }
 
 // Request message for getting validator set header
@@ -209,6 +259,11 @@ message GetAggregationProofResponse {
 }
 
 // Response message for getting aggregation proof
+message GetAggregationProofsByEpochResponse {
+  repeated AggregationProof aggregation_proofs = 1;
+}
+
+// Response message for getting aggregation proof
 message AggregationProof {
   // Message hash
   bytes message_hash = 2;
@@ -246,6 +301,18 @@ message GetValidatorSetResponse {
 
 // Response message for getting validator by address
 message GetValidatorByAddressResponse {
+  // The validator
+  Validator validator = 1;
+}
+
+// Response message for getting validator by key
+message GetValidatorByKeyResponse {
+  // The validator
+  Validator validator = 1;
+}
+
+// Response message for getting local validator
+message GetLocalValidatorResponse {
   // The validator
   Validator validator = 1;
 }
