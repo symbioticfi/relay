@@ -424,16 +424,6 @@ func (v ValidatorSet) IsAggregator(requiredKey []byte) bool {
 	return ok
 }
 
-func (v ValidatorSet) FindLocalValidator(requiredKey []byte) (Validator, bool) {
-	for _, validator := range v.Validators {
-		key, found := validator.FindKeyByKeyTag(ValsetHeaderKeyTag)
-		if found && bytes.Equal(key, requiredKey) {
-			return validator, true
-		}
-	}
-	return Validator{}, false
-}
-
 func (v ValidatorSet) IsCommitter(requiredKey []byte) bool {
 	_, ok := v.findMembership(v.CommitterIndices, requiredKey)
 	return ok

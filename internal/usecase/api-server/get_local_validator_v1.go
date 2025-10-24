@@ -36,7 +36,7 @@ func (h *grpcHandler) GetLocalValidator(ctx context.Context, req *apiv1.GetLocal
 		return nil, errors.Errorf("failed to get onchain key from cache: %w", err)
 	}
 
-	validator, found := validatorSet.FindLocalValidator(pubkey)
+	validator, found := validatorSet.FindValidatorByKey(symbiotic.ValsetHeaderKeyTag, pubkey)
 	if !found {
 		return nil, status.Errorf(codes.NotFound, "local validator not found")
 	}
