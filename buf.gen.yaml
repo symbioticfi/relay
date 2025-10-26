@@ -20,3 +20,12 @@ plugins:
     out: internal/gen/api
     opt:
       - paths=source_relative
+  - local: protoc-gen-grpc-gateway
+    out: internal/gen/api
+    opt:
+      - paths=source_relative
+      - generate_unbound_methods=true
+  - local: protoc-gen-openapiv2
+    out: docs/api
+    opt:
+      - openapi_naming_strategy=simple
