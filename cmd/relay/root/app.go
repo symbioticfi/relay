@@ -329,6 +329,7 @@ func runApp(ctx context.Context) error {
 		Metrics:                mtr,
 		ServeMetrics:           serveMetricsOnAPIAddress,
 		ServePprof:             cfg.Metrics.PprofEnabled,
+		ServeHTTPGateway:       cfg.API.HTTPGateway,
 		VerboseLogging:         cfg.API.VerboseLogging,
 		MaxAllowedStreamsCount: int(cfg.API.MaxAllowedStreams),
 	})

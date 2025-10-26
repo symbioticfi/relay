@@ -42,18 +42,39 @@ For a complete end-to-end example application using the relay, see:
 
 ## API
 
-The relay exposes a gRPC API for interacting with the network. See:
+The relay exposes both gRPC and HTTP/JSON REST APIs for interacting with the network:
+
+### gRPC API
 
 - **API Documentation**: [docs/api/v1/doc.md](docs/api/v1/doc.md)
 - **Proto Definitions**: [api/proto/v1/api.proto](api/proto/v1/api.proto)
 - **Go Client**: [api/client/v1/](api/client/v1/)
 - **Client Examples**: [api/client/examples/](api/client/examples/)
 
+### HTTP/JSON REST API Gateway
+
+The relay includes an optional HTTP/JSON REST API gateway that translates HTTP requests to gRPC:
+- **Swagger File**: [docs/v1/api.swagger.json](docs/api/v1/api.swagger.json)
+- **OpenAPI/Swagger Spec**: Available at `/docs/api.swagger.json` when enabled
+- **Endpoints**: All gRPC methods accessible via RESTful HTTP at `/api/v1/*`
+
+Enable via configuration:
+```yaml
+api:
+  http-gateway: true
+```
+
+Or via command-line flag:
+```bash
+./relay_sidecar --api.http-gateway=true
+```
+
 ### Client Libraries
 
 - **Go**: Included in this repository at `github.com/symbioticfi/relay/api/client/v1`
 - **TypeScript**: [relay-client-ts](https://github.com/symbioticfi/relay-client-ts)
 - **Rust**: [relay-client-rs](https://github.com/symbioticfi/relay-client-rs)
+- **HTTP/cURL**: Use the HTTP gateway for language-agnostic access
 
 
 ## Quick Start
