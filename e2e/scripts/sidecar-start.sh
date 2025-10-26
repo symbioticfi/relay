@@ -17,6 +17,7 @@ log:
 # API Server Configuration
 api:
   listen: ":8080"
+  http-gateway: true
 
 # Metrics Configuration
 metrics:
