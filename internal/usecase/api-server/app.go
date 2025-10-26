@@ -166,12 +166,6 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 	// Create HTTP server for documentation with panic recovery
 	httpMux := http.NewServeMux()
 
-	// Register HTTP gateway if enabled
-	var startGatewayFunc func() error
-	if cfg.ServeHTTPGateway {
-		startGatewayFunc = setupHttpProxy(ctx, cfg.Address, httpMux)
-	}
-
 	// Wrap the entire mux with panic recovery
 	recoveredMux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func(ctx context.Context) {
@@ -188,6 +182,12 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 		}(r.Context())
 		httpMux.ServeHTTP(w, r)
 	})
+
+	// Register HTTP gateway if enabled
+	var startGatewayFunc func() error
+	if cfg.ServeHTTPGateway {
+		startGatewayFunc = setupHttpProxy(ctx, cfg.Address, httpMux)
+	}
 
 	// Root redirect to docs
 	httpMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -292,7 +292,6 @@ func (a *SymbioticServer) Start(ctx context.Context) error {
 		var lastErr error
 
 		for i := 0; i < maxRetries; i++ {
-			// Wait before attempting (exponential backoff)
 			if i > 0 {
 				backoff := time.Duration(50*(1<<uint(i-1))) * time.Millisecond
 				slog.DebugContext(logCtx, "Retrying HTTP gateway connection",
@@ -310,7 +309,6 @@ func (a *SymbioticServer) Start(ctx context.Context) error {
 				continue
 			}
 
-			// Success
 			lastErr = nil
 			break
 		}

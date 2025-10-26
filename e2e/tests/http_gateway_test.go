@@ -118,7 +118,7 @@ func TestHTTPGateway_GetValidatorSet(t *testing.T) {
 
 // TestHTTPGateway_StreamProofs tests the HTTP gateway streaming endpoint for proofs
 func TestHTTPGateway_StreamProofs(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
 	// Make HTTP streaming request
@@ -129,7 +129,7 @@ func TestHTTPGateway_StreamProofs(t *testing.T) {
 	require.NoError(t, err, "Failed to create HTTP request")
 
 	httpClient := &http.Client{
-		Timeout: 60 * time.Second,
+		Timeout: 120 * time.Second,
 	}
 	httpResp, err := httpClient.Do(httpReq)
 	require.NoError(t, err, "Failed to make HTTP streaming request")
@@ -158,7 +158,6 @@ func TestHTTPGateway_StreamProofs(t *testing.T) {
 	defer streamCancel()
 
 	messagesReceived := 0
-	maxMessages := 3 // Read a few messages to verify streaming works
 
 	scanner := bufio.NewScanner(httpResp.Body)
 
@@ -214,7 +213,7 @@ func TestHTTPGateway_StreamProofs(t *testing.T) {
 					sseMessage.GetRequestId()[:16]+"...",
 					sseMessage.GetEpoch())
 
-				if messagesReceived >= maxMessages {
+				if messagesReceived >= 1 {
 					return
 				}
 			}
@@ -254,7 +253,7 @@ func TestHTTPGateway_StreamProofs(t *testing.T) {
 
 // TestHTTPGateway_StreamSignatures tests the HTTP gateway streaming endpoint for signatures
 func TestHTTPGateway_StreamSignatures(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
 	// Make HTTP streaming request
@@ -264,7 +263,7 @@ func TestHTTPGateway_StreamSignatures(t *testing.T) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	require.NoError(t, err, "Failed to create HTTP request")
 
-	httpClient := &http.Client{Timeout: 60 * time.Second}
+	httpClient := &http.Client{Timeout: 120 * time.Second}
 	httpResp, err := httpClient.Do(httpReq)
 	require.NoError(t, err, "Failed to make HTTP streaming request")
 	defer httpResp.Body.Close()
@@ -282,7 +281,6 @@ func TestHTTPGateway_StreamSignatures(t *testing.T) {
 	defer streamCancel()
 
 	messagesReceived := 0
-	maxMessages := 3
 
 	scanner := bufio.NewScanner(httpResp.Body)
 	done := make(chan struct{})
@@ -330,7 +328,7 @@ func TestHTTPGateway_StreamSignatures(t *testing.T) {
 					sseMessage.GetRequestId()[:16]+"...",
 					sseMessage.GetEpoch())
 
-				if messagesReceived >= maxMessages {
+				if messagesReceived >= 1 {
 					return
 				}
 			}

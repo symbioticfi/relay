@@ -63,24 +63,20 @@ func (s *sseResponseWriter) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
-// Flush implements http.Flusher
 func (s *sseResponseWriter) Flush() {
 	s.flusher.Flush()
 }
 
-// setupHttpProxy configures the HTTP-to-gRPC gateway with real TCP connection for high performance
+// setupHttpProxy configures the HTTP-to-gRPC gateway proxy
 // Returns a start function that should be called after the gRPC server starts listening
 func setupHttpProxy(ctx context.Context, grpcAddr string, httpMux *http.ServeMux) func() error {
-	// Configure the gateway mux with streaming support using newline-delimited JSON
 	gwMux := runtime.NewServeMux(
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{}),
 	)
 
 	// Create gRPC client connection to the actual gRPC server via TCP
-	// This provides much better performance and concurrency than local in memory connection
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		// Connection pooling and keepalive for better performance
 		grpc.WithDefaultCallOptions(
 			grpc.MaxCallRecvMsgSize(10*1024*1024), // 10MB
 			grpc.MaxCallSendMsgSize(10*1024*1024), // 10MB
@@ -91,14 +87,12 @@ func setupHttpProxy(ctx context.Context, grpcAddr string, httpMux *http.ServeMux
 
 	// Start function that will be called after gRPC server is listening
 	startFn := func() error {
-		// Dial the gRPC server - it should be listening by now
 		var err error
 		conn, err = grpc.NewClient(grpcAddr, opts...)
 		if err != nil {
 			return errors.Errorf("failed to create gRPC client for gateway: %w", err)
 		}
 
-		// Register the gateway handler with the client connection (supports streaming)
 		if err := apiv1.RegisterSymbioticAPIServiceHandler(ctx, gwMux, conn); err != nil {
 			return errors.Errorf("failed to register gateway handler: %w", err)
 		}
@@ -130,10 +124,9 @@ func setupHttpProxy(ctx context.Context, grpcAddr string, httpMux *http.ServeMux
 			return
 		}
 
-		// Strip the /api prefix
 		r.URL.Path = strings.TrimPrefix(r.URL.Path, "/api")
 
-		// For streaming endpoints, wrap the response writer to intercept and convert
+		// For streaming endpoints, wrap the response writer to intercept and convert to SSE
 		if strings.HasPrefix(r.URL.Path, "/v1/stream/") {
 			if flusher, ok := w.(http.Flusher); ok {
 				// Wrap with SSE writer that will handle headers and format conversion
