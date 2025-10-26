@@ -17,6 +17,7 @@ import (
 // sseResponseWriter wraps http.ResponseWriter to convert newline-delimited JSON to SSE format
 type sseResponseWriter struct {
 	http.ResponseWriter
+
 	flusher        http.Flusher
 	headersWritten bool
 }
@@ -69,7 +70,7 @@ func (s *sseResponseWriter) Flush() {
 
 // setupHttpProxy configures the HTTP-to-gRPC gateway with real TCP connection for high performance
 // Returns a start function that should be called after the gRPC server starts listening
-func setupHttpProxy(ctx context.Context, grpcAddr string, httpMux *http.ServeMux) (func() error, error) {
+func setupHttpProxy(ctx context.Context, grpcAddr string, httpMux *http.ServeMux) func() error {
 	// Configure the gateway mux with streaming support using newline-delimited JSON
 	gwMux := runtime.NewServeMux(
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{}),
@@ -87,7 +88,6 @@ func setupHttpProxy(ctx context.Context, grpcAddr string, httpMux *http.ServeMux
 	}
 
 	var conn *grpc.ClientConn
-	var registerErr error
 
 	// Start function that will be called after gRPC server is listening
 	startFn := func() error {
@@ -144,5 +144,5 @@ func setupHttpProxy(ctx context.Context, grpcAddr string, httpMux *http.ServeMux
 		gwMux.ServeHTTP(w, r)
 	})
 
-	return startFn, registerErr
+	return startFn
 }

@@ -169,11 +169,7 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 	// Register HTTP gateway if enabled
 	var startGatewayFunc func() error
 	if cfg.ServeHTTPGateway {
-		var err error
-		startGatewayFunc, err = setupHttpProxy(ctx, cfg.Address, httpMux)
-		if err != nil {
-			return nil, errors.Errorf("failed to setup HTTP gateway: %w", err)
-		}
+		startGatewayFunc = setupHttpProxy(ctx, cfg.Address, httpMux)
 	}
 
 	// Wrap the entire mux with panic recovery
