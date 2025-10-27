@@ -1,11 +1,14 @@
 package api_server
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/go-errors/errors"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -14,12 +17,16 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+const maxBufferSize = 5 * 1024 * 1024 // 5MB
+
 // sseResponseWriter wraps http.ResponseWriter to convert newline-delimited JSON to SSE format
 type sseResponseWriter struct {
 	http.ResponseWriter
 
 	flusher        http.Flusher
 	headersWritten bool
+	buffer         bytes.Buffer // Buffer for incomplete lines
+	mu             sync.Mutex   // Protect buffer from concurrent writes
 }
 
 // WriteHeader intercepts header writes to set SSE headers
@@ -36,35 +43,74 @@ func (s *sseResponseWriter) WriteHeader(statusCode int) {
 }
 
 func (s *sseResponseWriter) Write(b []byte) (int, error) {
-	// Ensure headers are written
+	if len(b) == 0 {
+		return 0, nil
+	}
+
+	if s.flusher == nil {
+		return 0, errors.New("SSE requires a flushable response writer")
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if !s.headersWritten {
 		s.WriteHeader(http.StatusOK)
 	}
 
-	// Convert each line to SSE format: data: {json}\n\n
-	lines := strings.Split(string(b), "\n")
-	totalWritten := 0
+	bytesWritten := len(b)
 
-	for _, line := range lines {
-		if strings.TrimSpace(line) == "" {
+	if s.buffer.Len()+bytesWritten > maxBufferSize {
+		return 0, errors.Errorf("SSE buffer overflow: message exceeds %d bytes without newline", maxBufferSize)
+	}
+
+	if _, err := s.buffer.Write(b); err != nil {
+		return 0, errors.Errorf("failed to write to buffer: %w", err)
+	}
+
+	// Process complete lines (those ending with \n)
+	for {
+		line, err := s.buffer.ReadBytes('\n')
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				// No complete line yet - restore partial data to buffer
+				// ReadBytes with EOF consumes all data from buffer, so we put it back
+				if len(line) > 0 {
+					if _, writeErr := s.buffer.Write(line); writeErr != nil {
+						return bytesWritten, errors.Errorf("failed to restore partial line to buffer: %w", writeErr)
+					}
+				}
+				break
+			}
+			// Unexpected error from ReadBytes
+			return bytesWritten, errors.Errorf("error reading from buffer: %w", err)
+		}
+
+		line = bytes.TrimSpace(line)
+		if len(line) == 0 {
 			continue
 		}
 
-		// Write in SSE format
-		sseData := fmt.Sprintf("data: %s\n\n", line)
-		n, err := s.ResponseWriter.Write([]byte(sseData))
-		totalWritten += n
-		if err != nil {
-			return totalWritten, err
+		// Write in SSE format: data: {json}\n\n
+		sseData := fmt.Sprintf("data: %s\n\n", string(line))
+		n, writeErr := s.ResponseWriter.Write([]byte(sseData))
+		if writeErr != nil {
+			return bytesWritten, errors.Errorf("failed to write SSE data: %w", writeErr)
+		}
+		if n != len(sseData) {
+			return bytesWritten, errors.Errorf("incomplete SSE write: wrote %d of %d bytes", n, len(sseData))
 		}
 		s.flusher.Flush()
 	}
 
-	return len(b), nil
+	// Return the number of bytes we accepted from the input
+	return bytesWritten, nil
 }
 
 func (s *sseResponseWriter) Flush() {
-	s.flusher.Flush()
+	if s.flusher != nil {
+		s.flusher.Flush()
+	}
 }
 
 // setupHttpProxy configures the HTTP-to-gRPC gateway proxy
