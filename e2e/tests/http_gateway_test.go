@@ -26,7 +26,7 @@ func httpGatewayBaseURL(t *testing.T) string {
 
 // TestHTTPGateway_GetCurrentEpoch tests the HTTP gateway GET endpoint for current epoch
 func TestHTTPGateway_GetCurrentEpoch(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	// Get expected data from gRPC API
@@ -73,7 +73,7 @@ func TestHTTPGateway_GetCurrentEpoch(t *testing.T) {
 
 // TestHTTPGateway_GetValidatorSet tests the HTTP gateway GET endpoint for validator set
 func TestHTTPGateway_GetValidatorSet(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	// Get expected data from gRPC API
@@ -118,7 +118,7 @@ func TestHTTPGateway_GetValidatorSet(t *testing.T) {
 
 // TestHTTPGateway_StreamProofs tests the HTTP gateway streaming endpoint for proofs
 func TestHTTPGateway_StreamProofs(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 120*time.Second)
 	defer cancel()
 
 	// Make HTTP streaming request
@@ -253,7 +253,7 @@ func TestHTTPGateway_StreamProofs(t *testing.T) {
 
 // TestHTTPGateway_StreamSignatures tests the HTTP gateway streaming endpoint for signatures
 func TestHTTPGateway_StreamSignatures(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 120*time.Second)
 	defer cancel()
 
 	// Make HTTP streaming request
