@@ -9,6 +9,7 @@ log:
 api:
   listen: ":8080"
   verbose-logging: false
+  http-gateway: true
 
 # Metrics Configuration
 metrics:

@@ -7,6 +7,7 @@
 package v1
 
 import (
+	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -2661,7 +2662,7 @@ var File_v1_api_proto protoreflect.FileDescriptor
 
 const file_v1_api_proto_rawDesc = "" +
 	"\n" +
-	"\fv1/api.proto\x12\fapi.proto.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x86\x01\n" +
+	"\fv1/api.proto\x12\fapi.proto.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cgoogle/api/annotations.proto\"\x86\x01\n" +
 	"\x12SignMessageRequest\x12\x17\n" +
 	"\akey_tag\x18\x01 \x01(\rR\x06keyTag\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\fR\amessage\x12*\n" +
@@ -2846,27 +2847,27 @@ const file_v1_api_proto_rawDesc = "" +
 	"\x16ERROR_CODE_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12ERROR_CODE_NO_DATA\x10\x01\x12\x17\n" +
 	"\x13ERROR_CODE_INTERNAL\x10\x02\x12\x1d\n" +
-	"\x19ERROR_CODE_NOT_AGGREGATOR\x10\x032\xde\x0f\n" +
-	"\x13SymbioticAPIService\x12R\n" +
-	"\vSignMessage\x12 .api.proto.v1.SignMessageRequest\x1a!.api.proto.v1.SignMessageResponse\x12j\n" +
-	"\x13GetAggregationProof\x12(.api.proto.v1.GetAggregationProofRequest\x1a).api.proto.v1.GetAggregationProofResponse\x12\x82\x01\n" +
-	"\x1bGetAggregationProofsByEpoch\x120.api.proto.v1.GetAggregationProofsByEpochRequest\x1a1.api.proto.v1.GetAggregationProofsByEpochResponse\x12^\n" +
-	"\x0fGetCurrentEpoch\x12$.api.proto.v1.GetCurrentEpochRequest\x1a%.api.proto.v1.GetCurrentEpochResponse\x12X\n" +
-	"\rGetSignatures\x12\".api.proto.v1.GetSignaturesRequest\x1a#.api.proto.v1.GetSignaturesResponse\x12m\n" +
-	"\x14GetSignaturesByEpoch\x12).api.proto.v1.GetSignaturesByEpochRequest\x1a*.api.proto.v1.GetSignaturesByEpochResponse\x12j\n" +
-	"\x13GetSignatureRequest\x12(.api.proto.v1.GetSignatureRequestRequest\x1a).api.proto.v1.GetSignatureRequestResponse\x12m\n" +
-	"\x14GetAggregationStatus\x12).api.proto.v1.GetAggregationStatusRequest\x1a*.api.proto.v1.GetAggregationStatusResponse\x12^\n" +
-	"\x0fGetValidatorSet\x12$.api.proto.v1.GetValidatorSetRequest\x1a%.api.proto.v1.GetValidatorSetResponse\x12p\n" +
-	"\x15GetValidatorByAddress\x12*.api.proto.v1.GetValidatorByAddressRequest\x1a+.api.proto.v1.GetValidatorByAddressResponse\x12d\n" +
-	"\x11GetValidatorByKey\x12&.api.proto.v1.GetValidatorByKeyRequest\x1a'.api.proto.v1.GetValidatorByKeyResponse\x12d\n" +
-	"\x11GetLocalValidator\x12&.api.proto.v1.GetLocalValidatorRequest\x1a'.api.proto.v1.GetLocalValidatorResponse\x12p\n" +
-	"\x15GetValidatorSetHeader\x12*.api.proto.v1.GetValidatorSetHeaderRequest\x1a+.api.proto.v1.GetValidatorSetHeaderResponse\x12a\n" +
-	"\x10GetLastCommitted\x12%.api.proto.v1.GetLastCommittedRequest\x1a&.api.proto.v1.GetLastCommittedResponse\x12j\n" +
-	"\x13GetLastAllCommitted\x12(.api.proto.v1.GetLastAllCommittedRequest\x1a).api.proto.v1.GetLastAllCommittedResponse\x12v\n" +
-	"\x17GetValidatorSetMetadata\x12,.api.proto.v1.GetValidatorSetMetadataRequest\x1a-.api.proto.v1.GetValidatorSetMetadataResponse\x12c\n" +
-	"\x10ListenSignatures\x12%.api.proto.v1.ListenSignaturesRequest\x1a&.api.proto.v1.ListenSignaturesResponse0\x01\x12W\n" +
-	"\fListenProofs\x12!.api.proto.v1.ListenProofsRequest\x1a\".api.proto.v1.ListenProofsResponse0\x01\x12i\n" +
-	"\x12ListenValidatorSet\x12'.api.proto.v1.ListenValidatorSetRequest\x1a(.api.proto.v1.ListenValidatorSetResponse0\x01B\x99\x01\n" +
+	"\x19ERROR_CODE_NOT_AGGREGATOR\x10\x032\x9e\x15\n" +
+	"\x13SymbioticAPIService\x12g\n" +
+	"\vSignMessage\x12 .api.proto.v1.SignMessageRequest\x1a!.api.proto.v1.SignMessageResponse\"\x13\x82\xd3\xe4\x93\x02\r:\x01*\"\b/v1/sign\x12\x96\x01\n" +
+	"\x13GetAggregationProof\x12(.api.proto.v1.GetAggregationProofRequest\x1a).api.proto.v1.GetAggregationProofResponse\"*\x82\xd3\xe4\x93\x02$\x12\"/v1/aggregation/proof/{request_id}\x12\xb0\x01\n" +
+	"\x1bGetAggregationProofsByEpoch\x120.api.proto.v1.GetAggregationProofsByEpochRequest\x1a1.api.proto.v1.GetAggregationProofsByEpochResponse\",\x82\xd3\xe4\x93\x02&\x12$/v1/aggregation/proofs/epoch/{epoch}\x12y\n" +
+	"\x0fGetCurrentEpoch\x12$.api.proto.v1.GetCurrentEpochRequest\x1a%.api.proto.v1.GetCurrentEpochResponse\"\x19\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/epoch/current\x12}\n" +
+	"\rGetSignatures\x12\".api.proto.v1.GetSignaturesRequest\x1a#.api.proto.v1.GetSignaturesResponse\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/v1/signatures/{request_id}\x12\x93\x01\n" +
+	"\x14GetSignaturesByEpoch\x12).api.proto.v1.GetSignaturesByEpochRequest\x1a*.api.proto.v1.GetSignaturesByEpochResponse\"$\x82\xd3\xe4\x93\x02\x1e\x12\x1c/v1/signatures/epoch/{epoch}\x12\x96\x01\n" +
+	"\x13GetSignatureRequest\x12(.api.proto.v1.GetSignatureRequestRequest\x1a).api.proto.v1.GetSignatureRequestResponse\"*\x82\xd3\xe4\x93\x02$\x12\"/v1/signature-request/{request_id}\x12\x9a\x01\n" +
+	"\x14GetAggregationStatus\x12).api.proto.v1.GetAggregationStatusRequest\x1a*.api.proto.v1.GetAggregationStatusResponse\"+\x82\xd3\xe4\x93\x02%\x12#/v1/aggregation/status/{request_id}\x12y\n" +
+	"\x0fGetValidatorSet\x12$.api.proto.v1.GetValidatorSetRequest\x1a%.api.proto.v1.GetValidatorSetResponse\"\x19\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/validator-set\x12\x99\x01\n" +
+	"\x15GetValidatorByAddress\x12*.api.proto.v1.GetValidatorByAddressRequest\x1a+.api.proto.v1.GetValidatorByAddressResponse\"'\x82\xd3\xe4\x93\x02!\x12\x1f/v1/validator/address/{address}\x12\x98\x01\n" +
+	"\x11GetValidatorByKey\x12&.api.proto.v1.GetValidatorByKeyRequest\x1a'.api.proto.v1.GetValidatorByKeyResponse\"2\x82\xd3\xe4\x93\x02,\x12*/v1/validator/key/{key_tag}/{on_chain_key}\x12\x81\x01\n" +
+	"\x11GetLocalValidator\x12&.api.proto.v1.GetLocalValidatorRequest\x1a'.api.proto.v1.GetLocalValidatorResponse\"\x1b\x82\xd3\xe4\x93\x02\x15\x12\x13/v1/validator/local\x12\x92\x01\n" +
+	"\x15GetValidatorSetHeader\x12*.api.proto.v1.GetValidatorSetHeaderRequest\x1a+.api.proto.v1.GetValidatorSetHeaderResponse\" \x82\xd3\xe4\x93\x02\x1a\x12\x18/v1/validator-set/header\x12\x94\x01\n" +
+	"\x10GetLastCommitted\x12%.api.proto.v1.GetLastCommittedRequest\x1a&.api.proto.v1.GetLastCommittedResponse\"1\x82\xd3\xe4\x93\x02+\x12)/v1/committed/chain/{settlement_chain_id}\x12\x85\x01\n" +
+	"\x13GetLastAllCommitted\x12(.api.proto.v1.GetLastAllCommittedRequest\x1a).api.proto.v1.GetLastAllCommittedResponse\"\x19\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/committed/all\x12\x9a\x01\n" +
+	"\x17GetValidatorSetMetadata\x12,.api.proto.v1.GetValidatorSetMetadataRequest\x1a-.api.proto.v1.GetValidatorSetMetadataResponse\"\"\x82\xd3\xe4\x93\x02\x1c\x12\x1a/v1/validator-set/metadata\x12\x82\x01\n" +
+	"\x10ListenSignatures\x12%.api.proto.v1.ListenSignaturesRequest\x1a&.api.proto.v1.ListenSignaturesResponse\"\x1d\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/stream/signatures0\x01\x12r\n" +
+	"\fListenProofs\x12!.api.proto.v1.ListenProofsRequest\x1a\".api.proto.v1.ListenProofsResponse\"\x19\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/stream/proofs0\x01\x12\x8b\x01\n" +
+	"\x12ListenValidatorSet\x12'.api.proto.v1.ListenValidatorSetRequest\x1a(.api.proto.v1.ListenValidatorSetResponse\" \x82\xd3\xe4\x93\x02\x1a\x12\x18/v1/stream/validator-set0\x01B\x99\x01\n" +
 	"\x10com.api.proto.v1B\bApiProtoP\x01Z)github.com/symbioticfi/relay/api/proto/v1\xa2\x02\x03APX\xaa\x02\fApi.Proto.V1\xca\x02\fApi\\Proto\\V1\xe2\x02\x18Api\\Proto\\V1\\GPBMetadata\xea\x02\x0eApi::Proto::V1b\x06proto3"
 
 var (

@@ -3,67 +3,145 @@ syntax = "proto3";
 package api.proto.v1;
 
 import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
 
 option go_package = "github.com/symbioticfi/relay/api/proto/v1";
 
 // SymbioticAPI provides access to the Symbiotic relay functions
 service SymbioticAPIService {
   // Sign a message
-  rpc SignMessage(SignMessageRequest) returns (SignMessageResponse);
+  rpc SignMessage(SignMessageRequest) returns (SignMessageResponse) {
+    option (google.api.http) = {
+      post: "/v1/sign"
+      body: "*"
+    };
+  }
 
   // Get aggregation proof
-  rpc GetAggregationProof(GetAggregationProofRequest) returns (GetAggregationProofResponse);
+  rpc GetAggregationProof(GetAggregationProofRequest) returns (GetAggregationProofResponse) {
+    option (google.api.http) = {
+      get: "/v1/aggregation/proof/{request_id}"
+    };
+  }
 
   // Get aggregation proofs by epoch
-  rpc GetAggregationProofsByEpoch(GetAggregationProofsByEpochRequest) returns (GetAggregationProofsByEpochResponse);
+  rpc GetAggregationProofsByEpoch(GetAggregationProofsByEpochRequest) returns (GetAggregationProofsByEpochResponse) {
+    option (google.api.http) = {
+      get: "/v1/aggregation/proofs/epoch/{epoch}"
+    };
+  }
 
   // Get current epoch
-  rpc GetCurrentEpoch(GetCurrentEpochRequest) returns (GetCurrentEpochResponse);
+  rpc GetCurrentEpoch(GetCurrentEpochRequest) returns (GetCurrentEpochResponse) {
+    option (google.api.http) = {
+      get: "/v1/epoch/current"
+    };
+  }
 
   // Get signature by request id
-  rpc GetSignatures(GetSignaturesRequest) returns (GetSignaturesResponse);
+  rpc GetSignatures(GetSignaturesRequest) returns (GetSignaturesResponse) {
+    option (google.api.http) = {
+      get: "/v1/signatures/{request_id}"
+    };
+  }
 
   // Get signature by epoch
-  rpc GetSignaturesByEpoch(GetSignaturesByEpochRequest) returns (GetSignaturesByEpochResponse);
+  rpc GetSignaturesByEpoch(GetSignaturesByEpochRequest) returns (GetSignaturesByEpochResponse) {
+    option (google.api.http) = {
+      get: "/v1/signatures/epoch/{epoch}"
+    };
+  }
 
   // Get signature request by request id
-  rpc GetSignatureRequest(GetSignatureRequestRequest) returns (GetSignatureRequestResponse);
+  rpc GetSignatureRequest(GetSignatureRequestRequest) returns (GetSignatureRequestResponse) {
+    option (google.api.http) = {
+      get: "/v1/signature-request/{request_id}"
+    };
+  }
 
   // Get aggregation status, can be sent only to aggregator nodes
-  rpc GetAggregationStatus(GetAggregationStatusRequest) returns (GetAggregationStatusResponse);
+  rpc GetAggregationStatus(GetAggregationStatusRequest) returns (GetAggregationStatusResponse) {
+    option (google.api.http) = {
+      get: "/v1/aggregation/status/{request_id}"
+    };
+  }
 
   // Get current validator set
-  rpc GetValidatorSet(GetValidatorSetRequest) returns (GetValidatorSetResponse);
+  rpc GetValidatorSet(GetValidatorSetRequest) returns (GetValidatorSetResponse) {
+    option (google.api.http) = {
+      get: "/v1/validator-set"
+    };
+  }
 
   // Get validator by address
-  rpc GetValidatorByAddress(GetValidatorByAddressRequest) returns (GetValidatorByAddressResponse);
+  rpc GetValidatorByAddress(GetValidatorByAddressRequest) returns (GetValidatorByAddressResponse) {
+    option (google.api.http) = {
+      get: "/v1/validator/address/{address}"
+    };
+  }
 
   // Get validator by key
-  rpc GetValidatorByKey(GetValidatorByKeyRequest) returns (GetValidatorByKeyResponse);
+  rpc GetValidatorByKey(GetValidatorByKeyRequest) returns (GetValidatorByKeyResponse) {
+    option (google.api.http) = {
+      get: "/v1/validator/key/{key_tag}/{on_chain_key}"
+    };
+  }
 
   // Get local validator
-  rpc GetLocalValidator(GetLocalValidatorRequest) returns (GetLocalValidatorResponse);
+  rpc GetLocalValidator(GetLocalValidatorRequest) returns (GetLocalValidatorResponse) {
+    option (google.api.http) = {
+      get: "/v1/validator/local"
+    };
+  }
 
   // Get validator set header
-  rpc GetValidatorSetHeader(GetValidatorSetHeaderRequest) returns (GetValidatorSetHeaderResponse);
+  rpc GetValidatorSetHeader(GetValidatorSetHeaderRequest) returns (GetValidatorSetHeaderResponse) {
+    option (google.api.http) = {
+      get: "/v1/validator-set/header"
+    };
+  }
 
   // Get last committed epoch for a specific settlement chain
-  rpc GetLastCommitted(GetLastCommittedRequest) returns (GetLastCommittedResponse);
+  rpc GetLastCommitted(GetLastCommittedRequest) returns (GetLastCommittedResponse) {
+    option (google.api.http) = {
+      get: "/v1/committed/chain/{settlement_chain_id}"
+    };
+  }
 
   // Get last committed epochs for all settlement chains
-  rpc GetLastAllCommitted(GetLastAllCommittedRequest) returns (GetLastAllCommittedResponse);
+  rpc GetLastAllCommitted(GetLastAllCommittedRequest) returns (GetLastAllCommittedResponse) {
+    option (google.api.http) = {
+      get: "/v1/committed/all"
+    };
+  }
 
   // Get validator set metadata like extra data and request id to fetch aggregation and signature requests
-  rpc GetValidatorSetMetadata(GetValidatorSetMetadataRequest) returns (GetValidatorSetMetadataResponse);
+  rpc GetValidatorSetMetadata(GetValidatorSetMetadataRequest) returns (GetValidatorSetMetadataResponse) {
+    option (google.api.http) = {
+      get: "/v1/validator-set/metadata"
+    };
+  }
 
   // Stream signatures in real-time. If start_epoch is provided, sends historical data first
-  rpc ListenSignatures(ListenSignaturesRequest) returns (stream ListenSignaturesResponse);
+  rpc ListenSignatures(ListenSignaturesRequest) returns (stream ListenSignaturesResponse) {
+    option (google.api.http) = {
+      get: "/v1/stream/signatures"
+    };
+  }
 
   // Stream aggregation proofs in real-time. If start_epoch is provided, sends historical data first
-  rpc ListenProofs(ListenProofsRequest) returns (stream ListenProofsResponse);
+  rpc ListenProofs(ListenProofsRequest) returns (stream ListenProofsResponse) {
+    option (google.api.http) = {
+      get: "/v1/stream/proofs"
+    };
+  }
 
   // Stream validator set changes in real-time. If start_epoch is provided, sends historical data first
-  rpc ListenValidatorSet(ListenValidatorSetRequest) returns (stream ListenValidatorSetResponse);
+  rpc ListenValidatorSet(ListenValidatorSetRequest) returns (stream ListenValidatorSetResponse) {
+    option (google.api.http) = {
+      get: "/v1/stream/validator-set"
+    };
+  }
 }
 
 // Request message for signing a message

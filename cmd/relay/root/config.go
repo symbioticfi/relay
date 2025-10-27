@@ -54,6 +54,7 @@ type APIConfig struct {
 	ListenAddress     string `mapstructure:"listen" validate:"required"`
 	MaxAllowedStreams uint64 `mapstructure:"max-allowed-streams" validate:"required"`
 	VerboseLogging    bool   `mapstructure:"verbose-logging"`
+	HTTPGateway       bool   `mapstructure:"http-gateway"`
 }
 
 type MetricsConfig struct {
@@ -201,6 +202,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().String("api.listen", "", "API Server listener address")
 	rootCmd.PersistentFlags().Uint64("api.max-allowed-streams", 100, "Max allowed streams count API Server")
 	rootCmd.PersistentFlags().Bool("api.verbose-logging", false, "Enable verbose logging for the API Server")
+	rootCmd.PersistentFlags().Bool("api.http-gateway", false, "Enable HTTP/JSON REST API gateway on /api/v1/* path")
 	rootCmd.PersistentFlags().String("metrics.listen", "", "Http listener address for metrics endpoint")
 	rootCmd.PersistentFlags().Bool("metrics.pprof", false, "Enable pprof debug endpoints")
 	rootCmd.PersistentFlags().Uint64("driver.chain-id", 0, "Driver contract chain id")
@@ -287,6 +289,9 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("api.verbose-logging", cmd.PersistentFlags().Lookup("api.verbose-logging")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("api.http-gateway", cmd.PersistentFlags().Lookup("api.http-gateway")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("api.max-allowed-streams", cmd.PersistentFlags().Lookup("api.max-allowed-streams")); err != nil {

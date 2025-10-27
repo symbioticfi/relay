@@ -2059,6 +2059,214 @@ If not provided, only validator sets generated after stream creation will be sen
         </table>
 
         
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              
+              
+              <tr>
+                <td>SignMessage</td>
+                <td>POST</td>
+                <td>/v1/sign</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetAggregationProof</td>
+                <td>GET</td>
+                <td>/v1/aggregation/proof/{request_id}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetAggregationProofsByEpoch</td>
+                <td>GET</td>
+                <td>/v1/aggregation/proofs/epoch/{epoch}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetCurrentEpoch</td>
+                <td>GET</td>
+                <td>/v1/epoch/current</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetSignatures</td>
+                <td>GET</td>
+                <td>/v1/signatures/{request_id}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetSignaturesByEpoch</td>
+                <td>GET</td>
+                <td>/v1/signatures/epoch/{epoch}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetSignatureRequest</td>
+                <td>GET</td>
+                <td>/v1/signature-request/{request_id}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetAggregationStatus</td>
+                <td>GET</td>
+                <td>/v1/aggregation/status/{request_id}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetValidatorSet</td>
+                <td>GET</td>
+                <td>/v1/validator-set</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetValidatorByAddress</td>
+                <td>GET</td>
+                <td>/v1/validator/address/{address}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetValidatorByKey</td>
+                <td>GET</td>
+                <td>/v1/validator/key/{key_tag}/{on_chain_key}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetLocalValidator</td>
+                <td>GET</td>
+                <td>/v1/validator/local</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetValidatorSetHeader</td>
+                <td>GET</td>
+                <td>/v1/validator-set/header</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetLastCommitted</td>
+                <td>GET</td>
+                <td>/v1/committed/chain/{settlement_chain_id}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetLastAllCommitted</td>
+                <td>GET</td>
+                <td>/v1/committed/all</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetValidatorSetMetadata</td>
+                <td>GET</td>
+                <td>/v1/validator-set/metadata</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListenSignatures</td>
+                <td>GET</td>
+                <td>/v1/stream/signatures</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListenProofs</td>
+                <td>GET</td>
+                <td>/v1/stream/proofs</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListenValidatorSet</td>
+                <td>GET</td>
+                <td>/v1/stream/validator-set</td>
+                <td></td>
+              </tr>
+              
+            
+            </tbody>
+          </table>
+          
+        
     
 
     <h2 id="scalar-value-types">Scalar Value Types</h2>

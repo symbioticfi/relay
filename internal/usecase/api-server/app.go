@@ -15,18 +15,17 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
+	"github.com/symbioticfi/relay/internal/usecase/metrics"
+	"github.com/symbioticfi/relay/pkg/log"
+	"github.com/symbioticfi/relay/pkg/server"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
-
-	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
-	"github.com/symbioticfi/relay/internal/usecase/metrics"
-	"github.com/symbioticfi/relay/pkg/log"
-	"github.com/symbioticfi/relay/pkg/server"
-	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 //go:generate mockgen -source=app.go -destination=mocks/app_mock.go -package=mocks
@@ -80,6 +79,7 @@ type Config struct {
 	Aggregator             aggregator
 	ServeMetrics           bool
 	ServePprof             bool
+	ServeHTTPGateway       bool
 	Metrics                *metrics.Metrics `validate:"required"`
 	VerboseLogging         bool
 	MaxAllowedStreamsCount int `validate:"required,gt=0"`
@@ -103,11 +103,12 @@ type grpcHandler struct {
 	validatorSetsHub *broadcaster.Hub[symbiotic.ValidatorSet]
 }
 type SymbioticServer struct {
-	grpcServer *grpc.Server
-	httpServer *http.Server
-	listener   net.Listener
-	cfg        Config
-	handler    *grpcHandler
+	grpcServer       *grpc.Server
+	httpServer       *http.Server
+	listener         net.Listener
+	cfg              Config
+	handler          *grpcHandler
+	startGatewayFunc func() error
 }
 
 func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, error) {
@@ -182,6 +183,12 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 		httpMux.ServeHTTP(w, r)
 	})
 
+	// Register HTTP gateway if enabled
+	var startGatewayFunc func() error
+	if cfg.ServeHTTPGateway {
+		startGatewayFunc = setupHttpProxy(ctx, cfg.Address, httpMux)
+	}
+
 	// Root redirect to docs
 	httpMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
@@ -234,11 +241,12 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 	}
 
 	return &SymbioticServer{
-		grpcServer: grpcServer,
-		httpServer: httpServer,
-		listener:   listener,
-		cfg:        cfg,
-		handler:    handler,
+		grpcServer:       grpcServer,
+		httpServer:       httpServer,
+		listener:         listener,
+		cfg:              cfg,
+		handler:          handler,
+		startGatewayFunc: startGatewayFunc,
 	}, nil
 }
 
@@ -262,6 +270,8 @@ func (a *SymbioticServer) Start(ctx context.Context) error {
 
 	slog.InfoContext(logCtx, "Starting gRPC/HTTP multiplexed server",
 		"grpc_address", a.cfg.Address,
+		"http_gateway_enabled", a.cfg.ServeHTTPGateway,
+		"http_gateway_path", "/api/v1/",
 		"docs_path", "/docs/",
 		"metrics_path", "/metrics",
 		"metrics_enabled", a.cfg.ServeMetrics,
@@ -274,6 +284,39 @@ func (a *SymbioticServer) Start(ctx context.Context) error {
 			errChan <- errors.Errorf("failed to serve HTTP/gRPC multiplexed server: %w", err)
 		}
 	}()
+
+	// Initialize HTTP gateway connection after server starts
+	if a.startGatewayFunc != nil {
+		// Retry connection to gRPC server with exponential backoff
+		const maxRetries = 5
+		var lastErr error
+
+		for i := 0; i < maxRetries; i++ {
+			if i > 0 {
+				backoff := time.Duration(50*(1<<uint(i-1))) * time.Millisecond
+				slog.DebugContext(logCtx, "Retrying HTTP gateway connection",
+					"attempt", i+1,
+					"max_retries", maxRetries,
+					"backoff", backoff)
+				time.Sleep(backoff)
+			}
+
+			if err := a.startGatewayFunc(); err != nil {
+				lastErr = err
+				slog.WarnContext(logCtx, "Failed to connect HTTP gateway to gRPC server",
+					"attempt", i+1,
+					"error", err)
+				continue
+			}
+
+			lastErr = nil
+			break
+		}
+
+		if lastErr != nil {
+			return errors.Errorf("failed to start HTTP gateway after %d attempts: %w", maxRetries, lastErr)
+		}
+	}
 
 	// Wait for context cancellation or server error
 	select {

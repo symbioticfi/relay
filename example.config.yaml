@@ -13,6 +13,7 @@ storage-dir: ".data"
 api:
   listen: ":8080"
   verbose-logging: false
+  http-gateway: false  # Enable HTTP/JSON REST API gateway (default: false)
 
 # Metrics Configuration (optional)
 metrics:

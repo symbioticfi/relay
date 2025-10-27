@@ -1,0 +1,1201 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "v1/api.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "SymbioticAPIService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/aggregation/proof/{requestId}": {
+      "get": {
+        "summary": "Get aggregation proof",
+        "operationId": "SymbioticAPIService_GetAggregationProof",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetAggregationProofResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    },
+    "/v1/aggregation/proofs/epoch/{epoch}": {
+      "get": {
+        "summary": "Get aggregation proofs by epoch",
+        "operationId": "SymbioticAPIService_GetAggregationProofsByEpoch",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetAggregationProofsByEpochResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "epoch",
+            "description": "Epoch number",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    },
+    "/v1/aggregation/status/{requestId}": {
+      "get": {
+        "summary": "Get aggregation status, can be sent only to aggregator nodes",
+        "operationId": "SymbioticAPIService_GetAggregationStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetAggregationStatusResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    },
+    "/v1/committed/all": {
+      "get": {
+        "summary": "Get last committed epochs for all settlement chains",
+        "operationId": "SymbioticAPIService_GetLastAllCommitted",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetLastAllCommittedResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    },
+    "/v1/committed/chain/{settlementChainId}": {
+      "get": {
+        "summary": "Get last committed epoch for a specific settlement chain",
+        "operationId": "SymbioticAPIService_GetLastCommitted",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetLastCommittedResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "settlementChainId",
+            "description": "Settlement chain ID",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    },
+    "/v1/epoch/current": {
+      "get": {
+        "summary": "Get current epoch",
+        "operationId": "SymbioticAPIService_GetCurrentEpoch",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetCurrentEpochResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    },
+    "/v1/sign": {
+      "post": {
+        "summary": "Sign a message",
+        "operationId": "SymbioticAPIService_SignMessage",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/SignMessageResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SignMessageRequest"
+            }
+          }
+        ],
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    },
+    "/v1/signature-request/{requestId}": {
+      "get": {
+        "summary": "Get signature request by request id",
+        "operationId": "SymbioticAPIService_GetSignatureRequest",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetSignatureRequestResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    },
+    "/v1/signatures/epoch/{epoch}": {
+      "get": {
+        "summary": "Get signature by epoch",
+        "operationId": "SymbioticAPIService_GetSignaturesByEpoch",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetSignaturesByEpochResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "epoch",
+            "description": "Epoch number",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    },
+    "/v1/signatures/{requestId}": {
+      "get": {
+        "summary": "Get signature by request id",
+        "operationId": "SymbioticAPIService_GetSignatures",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetSignaturesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    },
+    "/v1/stream/proofs": {
+      "get": {
+        "summary": "Stream aggregation proofs in real-time. If start_epoch is provided, sends historical data first",
+        "operationId": "SymbioticAPIService_ListenProofs",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/ListenProofsResponse"
+                },
+                "error": {
+                  "$ref": "#/definitions/Status"
+                }
+              },
+              "title": "Stream result of ListenProofsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "startEpoch",
+            "description": "Optional: start epoch. If provided, stream will first send all historical proofs starting from this epoch, then continue with real-time updates\nIf not provided, only proofs generated after stream creation will be sent",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    },
+    "/v1/stream/signatures": {
+      "get": {
+        "summary": "Stream signatures in real-time. If start_epoch is provided, sends historical data first",
+        "operationId": "SymbioticAPIService_ListenSignatures",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/ListenSignaturesResponse"
+                },
+                "error": {
+                  "$ref": "#/definitions/Status"
+                }
+              },
+              "title": "Stream result of ListenSignaturesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "startEpoch",
+            "description": "Optional: start epoch. If provided, stream will first send all historical signatures starting from this epoch, then continue with real-time updates\nIf not provided, only signatures generated after stream creation will be sent",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    },
+    "/v1/stream/validator-set": {
+      "get": {
+        "summary": "Stream validator set changes in real-time. If start_epoch is provided, sends historical data first",
+        "operationId": "SymbioticAPIService_ListenValidatorSet",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/ListenValidatorSetResponse"
+                },
+                "error": {
+                  "$ref": "#/definitions/Status"
+                }
+              },
+              "title": "Stream result of ListenValidatorSetResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "startEpoch",
+            "description": "Optional: start epoch. If provided, stream will first send all historical validator sets starting from this epoch, then continue with real-time updates\nIf not provided, only validator sets generated after stream creation will be sent",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    },
+    "/v1/validator-set": {
+      "get": {
+        "summary": "Get current validator set",
+        "operationId": "SymbioticAPIService_GetValidatorSet",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetValidatorSetResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "epoch",
+            "description": "Epoch number (optional, if not provided current epoch will be used)",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    },
+    "/v1/validator-set/header": {
+      "get": {
+        "summary": "Get validator set header",
+        "operationId": "SymbioticAPIService_GetValidatorSetHeader",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetValidatorSetHeaderResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "epoch",
+            "description": "Epoch number (optional, if not provided current epoch will be used)",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    },
+    "/v1/validator-set/metadata": {
+      "get": {
+        "summary": "Get validator set metadata like extra data and request id to fetch aggregation and signature requests",
+        "operationId": "SymbioticAPIService_GetValidatorSetMetadata",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetValidatorSetMetadataResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "epoch",
+            "description": "Epoch number (optional, if not provided current epoch will be used)",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    },
+    "/v1/validator/address/{address}": {
+      "get": {
+        "summary": "Get validator by address",
+        "operationId": "SymbioticAPIService_GetValidatorByAddress",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetValidatorByAddressResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "description": "Validator address (required)",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "epoch",
+            "description": "Epoch number (optional, if not provided current epoch will be used)",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    },
+    "/v1/validator/key/{keyTag}/{onChainKey}": {
+      "get": {
+        "summary": "Get validator by key",
+        "operationId": "SymbioticAPIService_GetValidatorByKey",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetValidatorByKeyResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "keyTag",
+            "description": "Validator key tag (required)",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "onChainKey",
+            "description": "Validator on chain (public) key (required)",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "epoch",
+            "description": "Epoch number (optional, if not provided current epoch will be used)",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    },
+    "/v1/validator/local": {
+      "get": {
+        "summary": "Get local validator",
+        "operationId": "SymbioticAPIService_GetLocalValidator",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetLocalValidatorResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "epoch",
+            "description": "Epoch number (optional, if not provided current epoch will be used)",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "AggregationProof": {
+      "type": "object",
+      "properties": {
+        "messageHash": {
+          "type": "string",
+          "format": "byte",
+          "title": "Message hash"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "Proof data"
+        }
+      },
+      "title": "Response message for getting aggregation proof"
+    },
+    "Any": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "ChainEpochInfo": {
+      "type": "object",
+      "properties": {
+        "lastCommittedEpoch": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Last committed epoch for this chain"
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Epoch start time"
+        }
+      },
+      "title": "Settlement chain with its last committed epoch"
+    },
+    "ExtraData": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "byte"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "GetAggregationProofResponse": {
+      "type": "object",
+      "properties": {
+        "aggregationProof": {
+          "$ref": "#/definitions/AggregationProof"
+        }
+      },
+      "title": "Response message for getting aggregation proof"
+    },
+    "GetAggregationProofsByEpochResponse": {
+      "type": "object",
+      "properties": {
+        "aggregationProofs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/AggregationProof"
+          }
+        }
+      },
+      "title": "Response message for getting aggregation proof"
+    },
+    "GetAggregationStatusResponse": {
+      "type": "object",
+      "properties": {
+        "currentVotingPower": {
+          "type": "string",
+          "title": "Current voting power of the aggregator (big integer as string)"
+        },
+        "signerOperators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "List of operator addresses that signed the request"
+        }
+      },
+      "title": "Response message for getting aggregation status"
+    },
+    "GetCurrentEpochResponse": {
+      "type": "object",
+      "properties": {
+        "epoch": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Epoch number"
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Epoch start time"
+        }
+      },
+      "title": "Response message for getting current epoch"
+    },
+    "GetLastAllCommittedResponse": {
+      "type": "object",
+      "properties": {
+        "epochInfos": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/ChainEpochInfo"
+          },
+          "title": "List of settlement chains with their last committed epochs"
+        }
+      },
+      "title": "Response message for getting all last committed epochs"
+    },
+    "GetLastCommittedResponse": {
+      "type": "object",
+      "properties": {
+        "settlementChainId": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Settlement chain ID"
+        },
+        "epochInfo": {
+          "$ref": "#/definitions/ChainEpochInfo"
+        }
+      },
+      "title": "Response message for getting last committed epoch"
+    },
+    "GetLocalValidatorResponse": {
+      "type": "object",
+      "properties": {
+        "validator": {
+          "$ref": "#/definitions/Validator",
+          "title": "The validator"
+        }
+      },
+      "title": "Response message for getting local validator"
+    },
+    "GetSignatureRequestResponse": {
+      "type": "object",
+      "properties": {
+        "keyTag": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Key tag identifier (0-127)"
+        },
+        "message": {
+          "type": "string",
+          "format": "byte",
+          "title": "Message to be signed"
+        },
+        "requiredEpoch": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Required epoch"
+        }
+      },
+      "title": "Response message for getting signature request"
+    },
+    "GetSignaturesByEpochResponse": {
+      "type": "object",
+      "properties": {
+        "signatures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Signature"
+          },
+          "title": "List of signatures"
+        }
+      },
+      "title": "Response message for getting signatures by epoch"
+    },
+    "GetSignaturesResponse": {
+      "type": "object",
+      "properties": {
+        "signatures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Signature"
+          },
+          "title": "List of signatures"
+        }
+      },
+      "title": "Response message for getting signatures"
+    },
+    "GetValidatorByAddressResponse": {
+      "type": "object",
+      "properties": {
+        "validator": {
+          "$ref": "#/definitions/Validator",
+          "title": "The validator"
+        }
+      },
+      "title": "Response message for getting validator by address"
+    },
+    "GetValidatorByKeyResponse": {
+      "type": "object",
+      "properties": {
+        "validator": {
+          "$ref": "#/definitions/Validator",
+          "title": "The validator"
+        }
+      },
+      "title": "Response message for getting validator by key"
+    },
+    "GetValidatorSetHeaderResponse": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Version of the validator set"
+        },
+        "requiredKeyTag": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Key tag required to commit next validator set"
+        },
+        "epoch": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Validator set epoch"
+        },
+        "captureTimestamp": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Epoch capture timestamp"
+        },
+        "quorumThreshold": {
+          "type": "string",
+          "title": "Quorum threshold (big integer as string)"
+        },
+        "totalVotingPower": {
+          "type": "string",
+          "title": "Total voting power (big integer as string)"
+        },
+        "validatorsSszMroot": {
+          "type": "string",
+          "title": "Validators SSZ Merkle root (hex string)"
+        }
+      },
+      "title": "Response message for getting validator set header"
+    },
+    "GetValidatorSetMetadataResponse": {
+      "type": "object",
+      "properties": {
+        "extraData": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ExtraData"
+          }
+        },
+        "commitmentData": {
+          "type": "string",
+          "format": "byte"
+        },
+        "requestId": {
+          "type": "string"
+        }
+      },
+      "title": "Response message for getting validator set header"
+    },
+    "GetValidatorSetResponse": {
+      "type": "object",
+      "properties": {
+        "validatorSet": {
+          "$ref": "#/definitions/ValidatorSet",
+          "title": "The validator set"
+        }
+      },
+      "title": "Response message for getting validator set"
+    },
+    "Key": {
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Key tag identifier (0-127)"
+        },
+        "payload": {
+          "type": "string",
+          "format": "byte",
+          "title": "Key payload"
+        }
+      },
+      "title": "Cryptographic key"
+    },
+    "ListenProofsResponse": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "title": "Id of the request"
+        },
+        "epoch": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Epoch number"
+        },
+        "aggregationProof": {
+          "$ref": "#/definitions/AggregationProof",
+          "title": "Final aggregation proof"
+        }
+      },
+      "title": "Response message for aggregation proofs stream"
+    },
+    "ListenSignaturesResponse": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "title": "Id of the signature request"
+        },
+        "epoch": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Epoch number"
+        },
+        "signature": {
+          "$ref": "#/definitions/Signature",
+          "title": "Signature data"
+        }
+      },
+      "title": "Response message for signatures stream"
+    },
+    "ListenValidatorSetResponse": {
+      "type": "object",
+      "properties": {
+        "validatorSet": {
+          "$ref": "#/definitions/ValidatorSet",
+          "title": "The validator set"
+        }
+      },
+      "title": "Response message for validator set changes stream"
+    },
+    "SignMessageRequest": {
+      "type": "object",
+      "properties": {
+        "keyTag": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Key tag identifier (0-127)"
+        },
+        "message": {
+          "type": "string",
+          "format": "byte",
+          "title": "Message to be signed"
+        },
+        "requiredEpoch": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Required epoch (optional, if not provided latest committed epoch will be used)"
+        }
+      },
+      "title": "Request message for signing a message"
+    },
+    "SignMessageResponse": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "title": "Hash of the signature request"
+        },
+        "epoch": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Epoch number"
+        }
+      },
+      "title": "Response message for sign message request"
+    },
+    "Signature": {
+      "type": "object",
+      "properties": {
+        "signature": {
+          "type": "string",
+          "format": "byte",
+          "title": "Signature data"
+        },
+        "messageHash": {
+          "type": "string",
+          "format": "byte",
+          "title": "Message hash"
+        },
+        "publicKey": {
+          "type": "string",
+          "format": "byte",
+          "title": "Public key"
+        }
+      },
+      "title": "Digital signature"
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Any"
+          }
+        }
+      }
+    },
+    "Validator": {
+      "type": "object",
+      "properties": {
+        "operator": {
+          "type": "string",
+          "title": "Operator address (hex string)"
+        },
+        "votingPower": {
+          "type": "string",
+          "title": "Voting power of the validator (big integer as string)"
+        },
+        "isActive": {
+          "type": "boolean",
+          "title": "Indicates if the validator is active"
+        },
+        "keys": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Key"
+          },
+          "title": "List of cryptographic keys"
+        },
+        "vaults": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ValidatorVault"
+          },
+          "title": "List of validator vaults"
+        }
+      },
+      "title": "Validator information"
+    },
+    "ValidatorSet": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Version of the validator set"
+        },
+        "requiredKeyTag": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Key tag required to commit next validator set"
+        },
+        "epoch": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Validator set epoch"
+        },
+        "captureTimestamp": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Epoch capture timestamp"
+        },
+        "quorumThreshold": {
+          "type": "string",
+          "title": "Quorum threshold (big integer as string)"
+        },
+        "status": {
+          "$ref": "#/definitions/ValidatorSetStatus",
+          "title": "Status of validator set header"
+        },
+        "validators": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Validator"
+          },
+          "title": "List of validators"
+        }
+      }
+    },
+    "ValidatorSetStatus": {
+      "type": "string",
+      "enum": [
+        "VALIDATOR_SET_STATUS_UNSPECIFIED",
+        "VALIDATOR_SET_STATUS_DERIVED",
+        "VALIDATOR_SET_STATUS_AGGREGATED",
+        "VALIDATOR_SET_STATUS_COMMITTED",
+        "VALIDATOR_SET_STATUS_MISSED"
+      ],
+      "default": "VALIDATOR_SET_STATUS_UNSPECIFIED",
+      "description": "- VALIDATOR_SET_STATUS_UNSPECIFIED: Default/unknown status\n - VALIDATOR_SET_STATUS_DERIVED: Derived status\n - VALIDATOR_SET_STATUS_AGGREGATED: Aggregated status\n - VALIDATOR_SET_STATUS_COMMITTED: Committed status\n - VALIDATOR_SET_STATUS_MISSED: Missed status",
+      "title": "Validator set status enumeration"
+    },
+    "ValidatorVault": {
+      "type": "object",
+      "properties": {
+        "chainId": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Chain identifier"
+        },
+        "vault": {
+          "type": "string",
+          "title": "Vault address"
+        },
+        "votingPower": {
+          "type": "string",
+          "title": "Voting power for this vault (big integer as string)"
+        }
+      },
+      "title": "Validator vault information"
+    }
+  }
+}
