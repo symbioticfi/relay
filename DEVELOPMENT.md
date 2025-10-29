@@ -405,7 +405,8 @@ log:
 | **Warn**                | Recoverable issues, unusual but handled situations, security concerns | "Message signing disabled", "Retrying after temporary failure", "Invalid signature received" |
 | **Error**               | Unrecoverable failures, critical problems requiring attention         | "Failed to load validator set", "Database connection lost", "Contract call failed"           |
 
-**Important:** Errors should only be logged at **boundaries** (API handlers, main event loops, service entry points), not at every error occurrence in internal functions.
+**Important:** Log errors only at high-level error handlers (API handlers, main event loops, service entry points), not at every location where an error occurs. Internal functions should return errors without logging them, allowing the top-level handler to log once with full context.
+
 
 ### Context Propagation Pattern
 
@@ -477,9 +478,11 @@ When adding custom fields not in this list:
 
 **1. Error Wrapping (Internal Functions):**
 
-Always wrap errors with context using `github.com/go-errors/errors`:
+Always wrap errors using `github.com/go-errors/errors` to capture stacktrace in the place of error:
 
 ```go
+import "github.com/go-errors/errors"
+
 func (s *Service) loadData(id string) error {
     data, err := s.repo.Get(id)
     if err != nil {
@@ -495,6 +498,16 @@ func (s *Service) loadData(id string) error {
 Log errors at **boundaries** (API handlers, main loops, service entry points):
 
 **3. Always use `"error"` as the field name** (not "err"):
+
+```go
+// ❌ Incorrect: Using "err" as field name
+slog.ErrorContext(ctx, "Failed to process request", "err", err)
+slog.WarnContext(ctx, "Retry attempt failed", "err", retryErr)
+
+// ✅ Correct: Always use "error" for consistency
+slog.ErrorContext(ctx, "Failed to process request", "error", err)
+slog.WarnContext(ctx, "Retry attempt failed", "error", retryErr)
+```
 
 ### Duration Tracking
 
@@ -544,16 +557,15 @@ slog.InfoContext(ctx, "Signature receive")        // noun only
 
 Use these standard component names with `log.WithComponent()`:
 
-| Component           | Usage                        |
-|---------------------|------------------------------|
-| `"api"` or `"grpc"` | API server and gRPC handlers |
-| `"signer"`          | Signer application           |
-| `"aggregator"`      | Aggregator application       |
-| `"sign_listener"`   | Signature listener service   |
-| `"listener"`        | Validator set listener       |
-| `"committer"`       | Committer service            |
-| `"p2p"`             | P2P network layer            |
-| `"evm"`             | EVM client interactions      |
+| Component         | Usage                      |
+|-------------------|----------------------------|
+| `"grpc"`          | gRPC handlers              |
+| `"signer"`        | Signer application         |
+| `"aggregator"`    | Aggregator application     |
+| `"sign_listener"` | Signature listener service |
+| `"listener"`      | Validator set listener     |
+| `"p2p"`           | P2P network layer          |
+| `"evm"`           | EVM client interactions    |
 
 Keep component names:
 - Lowercase
