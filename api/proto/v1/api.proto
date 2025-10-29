@@ -52,6 +52,13 @@ service SymbioticAPIService {
     };
   }
 
+  // Get all signature request IDs by epoch
+  rpc GetSignatureRequestIDsByEpoch(GetSignatureRequestIDsByEpochRequest) returns (GetSignatureRequestIDsByEpochResponse) {
+    option (google.api.http) = {
+      get: "/v1/signature-request-ids/epoch/{epoch}"
+    };
+  }
+
   // Get signature request by request id
   rpc GetSignatureRequest(GetSignatureRequestRequest) returns (GetSignatureRequestResponse) {
     option (google.api.http) = {
@@ -254,6 +261,18 @@ message GetSignaturesByEpochResponse {
   repeated Signature signatures = 1;
 }
 
+// Request message for getting all signature request IDs by epoch
+message GetSignatureRequestIDsByEpochRequest {
+  // Epoch number
+  uint64 epoch = 1;
+}
+
+// Response message for getting all signature request IDs by epoch
+message GetSignatureRequestIDsByEpochResponse {
+  // List of all signature request IDs for the epoch
+  repeated string request_ids = 1;
+}
+
 // Request message for getting signature request
 message GetSignatureRequestRequest {
   string request_id = 1;
@@ -348,6 +367,9 @@ message AggregationProof {
 
   // Proof data
   bytes proof = 3;
+
+  // Request ID
+  string request_id = 4;
 }
 
 // Response message for getting aggregation status
@@ -369,6 +391,9 @@ message Signature {
 
   // Public key
   bytes public_key = 3;
+
+  // Request ID
+  string request_id = 4;
 }
 
 // Response message for getting validator set

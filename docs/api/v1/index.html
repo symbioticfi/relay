@@ -251,6 +251,14 @@
                 </li>
               
                 <li>
+                  <a href="#api.proto.v1.GetSignatureRequestIDsByEpochRequest"><span class="badge">M</span>GetSignatureRequestIDsByEpochRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.GetSignatureRequestIDsByEpochResponse"><span class="badge">M</span>GetSignatureRequestIDsByEpochResponse</a>
+                </li>
+              
+                <li>
                   <a href="#api.proto.v1.GetSignatureRequestRequest"><span class="badge">M</span>GetSignatureRequestRequest</a>
                 </li>
               
@@ -422,6 +430,13 @@
                   <td><a href="#bytes">bytes</a></td>
                   <td></td>
                   <td><p>Proof data </p></td>
+                </tr>
+              
+                <tr>
+                  <td>request_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Request ID </p></td>
                 </tr>
               
             </tbody>
@@ -838,6 +853,54 @@
                   <td><a href="#api.proto.v1.Validator">Validator</a></td>
                   <td></td>
                   <td><p>The validator </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.GetSignatureRequestIDsByEpochRequest">GetSignatureRequestIDsByEpochRequest</h3>
+        <p>Request message for getting all signature request IDs by epoch</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>epoch</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>Epoch number </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.GetSignatureRequestIDsByEpochResponse">GetSignatureRequestIDsByEpochResponse</h3>
+        <p>Response message for getting all signature request IDs by epoch</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>request_ids</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>List of all signature request IDs for the epoch </p></td>
                 </tr>
               
             </tbody>
@@ -1628,6 +1691,13 @@ If not provided, only validator sets generated after stream creation will be sen
                   <td><p>Public key </p></td>
                 </tr>
               
+                <tr>
+                  <td>request_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Request ID </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -1965,6 +2035,13 @@ If not provided, only validator sets generated after stream creation will be sen
               </tr>
             
               <tr>
+                <td>GetSignatureRequestIDsByEpoch</td>
+                <td><a href="#api.proto.v1.GetSignatureRequestIDsByEpochRequest">GetSignatureRequestIDsByEpochRequest</a></td>
+                <td><a href="#api.proto.v1.GetSignatureRequestIDsByEpochResponse">GetSignatureRequestIDsByEpochResponse</a></td>
+                <td><p>Get all signature request IDs by epoch</p></td>
+              </tr>
+            
+              <tr>
                 <td>GetSignatureRequest</td>
                 <td><a href="#api.proto.v1.GetSignatureRequestRequest">GetSignatureRequestRequest</a></td>
                 <td><a href="#api.proto.v1.GetSignatureRequestResponse">GetSignatureRequestResponse</a></td>
@@ -2129,6 +2206,16 @@ If not provided, only validator sets generated after stream creation will be sen
                 <td>GetSignaturesByEpoch</td>
                 <td>GET</td>
                 <td>/v1/signatures/epoch/{epoch}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetSignatureRequestIDsByEpoch</td>
+                <td>GET</td>
+                <td>/v1/signature-request-ids/epoch/{epoch}</td>
                 <td></td>
               </tr>
               

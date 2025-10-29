@@ -22,6 +22,8 @@
     - [GetLastCommittedResponse](#api-proto-v1-GetLastCommittedResponse)
     - [GetLocalValidatorRequest](#api-proto-v1-GetLocalValidatorRequest)
     - [GetLocalValidatorResponse](#api-proto-v1-GetLocalValidatorResponse)
+    - [GetSignatureRequestIDsByEpochRequest](#api-proto-v1-GetSignatureRequestIDsByEpochRequest)
+    - [GetSignatureRequestIDsByEpochResponse](#api-proto-v1-GetSignatureRequestIDsByEpochResponse)
     - [GetSignatureRequestRequest](#api-proto-v1-GetSignatureRequestRequest)
     - [GetSignatureRequestResponse](#api-proto-v1-GetSignatureRequestResponse)
     - [GetSignaturesByEpochRequest](#api-proto-v1-GetSignaturesByEpochRequest)
@@ -79,6 +81,7 @@ Response message for getting aggregation proof
 | ----- | ---- | ----- | ----------- |
 | message_hash | [bytes](#bytes) |  | Message hash |
 | proof | [bytes](#bytes) |  | Proof data |
+| request_id | [string](#string) |  | Request ID |
 
 
 
@@ -332,6 +335,36 @@ Response message for getting local validator
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | validator | [Validator](#api-proto-v1-Validator) |  | The validator |
+
+
+
+
+
+
+<a name="api-proto-v1-GetSignatureRequestIDsByEpochRequest"></a>
+
+### GetSignatureRequestIDsByEpochRequest
+Request message for getting all signature request IDs by epoch
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| epoch | [uint64](#uint64) |  | Epoch number |
+
+
+
+
+
+
+<a name="api-proto-v1-GetSignatureRequestIDsByEpochResponse"></a>
+
+### GetSignatureRequestIDsByEpochResponse
+Response message for getting all signature request IDs by epoch
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| request_ids | [string](#string) | repeated | List of all signature request IDs for the epoch |
 
 
 
@@ -745,6 +778,7 @@ Digital signature
 | signature | [bytes](#bytes) |  | Signature data |
 | message_hash | [bytes](#bytes) |  | Message hash |
 | public_key | [bytes](#bytes) |  | Public key |
+| request_id | [string](#string) |  | Request ID |
 
 
 
@@ -871,6 +905,7 @@ SymbioticAPI provides access to the Symbiotic relay functions
 | GetCurrentEpoch | [GetCurrentEpochRequest](#api-proto-v1-GetCurrentEpochRequest) | [GetCurrentEpochResponse](#api-proto-v1-GetCurrentEpochResponse) | Get current epoch |
 | GetSignatures | [GetSignaturesRequest](#api-proto-v1-GetSignaturesRequest) | [GetSignaturesResponse](#api-proto-v1-GetSignaturesResponse) | Get signature by request id |
 | GetSignaturesByEpoch | [GetSignaturesByEpochRequest](#api-proto-v1-GetSignaturesByEpochRequest) | [GetSignaturesByEpochResponse](#api-proto-v1-GetSignaturesByEpochResponse) | Get signature by epoch |
+| GetSignatureRequestIDsByEpoch | [GetSignatureRequestIDsByEpochRequest](#api-proto-v1-GetSignatureRequestIDsByEpochRequest) | [GetSignatureRequestIDsByEpochResponse](#api-proto-v1-GetSignatureRequestIDsByEpochResponse) | Get all signature request IDs by epoch |
 | GetSignatureRequest | [GetSignatureRequestRequest](#api-proto-v1-GetSignatureRequestRequest) | [GetSignatureRequestResponse](#api-proto-v1-GetSignatureRequestResponse) | Get signature request by request id |
 | GetAggregationStatus | [GetAggregationStatusRequest](#api-proto-v1-GetAggregationStatusRequest) | [GetAggregationStatusResponse](#api-proto-v1-GetAggregationStatusResponse) | Get aggregation status, can be sent only to aggregator nodes |
 | GetValidatorSet | [GetValidatorSetRequest](#api-proto-v1-GetValidatorSetRequest) | [GetValidatorSetResponse](#api-proto-v1-GetValidatorSetResponse) | Get current validator set |

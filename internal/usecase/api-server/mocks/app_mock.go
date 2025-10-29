@@ -186,6 +186,21 @@ func (mr *MockrepoMockRecorder) GetSignatureRequest(ctx, requestID any) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureRequest", reflect.TypeOf((*Mockrepo)(nil).GetSignatureRequest), ctx, requestID)
 }
 
+// GetSignatureRequestIDsByEpoch mocks base method.
+func (m *Mockrepo) GetSignatureRequestIDsByEpoch(ctx context.Context, epoch entity.Epoch) ([]common.Hash, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSignatureRequestIDsByEpoch", ctx, epoch)
+	ret0, _ := ret[0].([]common.Hash)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSignatureRequestIDsByEpoch indicates an expected call of GetSignatureRequestIDsByEpoch.
+func (mr *MockrepoMockRecorder) GetSignatureRequestIDsByEpoch(ctx, epoch any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureRequestIDsByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetSignatureRequestIDsByEpoch), ctx, epoch)
+}
+
 // GetSignaturesByEpoch mocks base method.
 func (m *Mockrepo) GetSignaturesByEpoch(ctx context.Context, epoch entity.Epoch) ([]entity.Signature, error) {
 	m.ctrl.T.Helper()

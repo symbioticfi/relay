@@ -247,3 +247,77 @@ func randomSignatureExtendedForEpoch(t *testing.T, epoch symbiotic.Epoch) symbio
 		PublicKey:   priv.PublicKey(),
 	}
 }
+
+func TestBadgerRepository_GetSignatureRequestIDsByEpoch(t *testing.T) {
+	t.Parallel()
+	repo := setupTestRepository(t)
+
+	epoch := symbiotic.Epoch(100)
+
+	// Create 5 signature requests for the same epoch
+	expectedIDs := make([]common.Hash, 5)
+	for i := 0; i < 5; i++ {
+		req := randomSignatureRequestForEpoch(t, epoch)
+		req.Message = append([]byte(strconv.Itoa(i)+"-"), req.Message...)
+		requestID := signatureRequestID(t, req)
+		expectedIDs[i] = requestID
+
+		err := repo.SaveSignatureRequest(t.Context(), requestID, req)
+		require.NoError(t, err)
+	}
+
+	// Sort expected IDs by hex string (lexicographic order)
+	sort.Slice(expectedIDs, func(i, j int) bool {
+		return expectedIDs[i].Hex() < expectedIDs[j].Hex()
+	})
+
+	t.Run("get all request IDs for epoch", func(t *testing.T) {
+		results, err := repo.GetSignatureRequestIDsByEpoch(t.Context(), epoch)
+		require.NoError(t, err)
+		require.Len(t, results, 5)
+
+		// Verify they are in correct lexicographic order
+		for i, result := range results {
+			require.Equal(t, expectedIDs[i], result)
+		}
+	})
+
+	t.Run("empty epoch returns no IDs", func(t *testing.T) {
+		emptyEpoch := symbiotic.Epoch(999)
+		results, err := repo.GetSignatureRequestIDsByEpoch(t.Context(), emptyEpoch)
+		require.NoError(t, err)
+		require.Empty(t, results)
+	})
+
+	t.Run("different epochs have different request IDs", func(t *testing.T) {
+		epoch2 := symbiotic.Epoch(200)
+
+		// Create requests for epoch2
+		epoch2IDs := make([]common.Hash, 3)
+		for i := 0; i < 3; i++ {
+			req := randomSignatureRequestForEpoch(t, epoch2)
+			requestID := signatureRequestID(t, req)
+			epoch2IDs[i] = requestID
+
+			err := repo.SaveSignatureRequest(t.Context(), requestID, req)
+			require.NoError(t, err)
+		}
+
+		// Query epoch1 should return only epoch1 IDs
+		epoch1Results, err := repo.GetSignatureRequestIDsByEpoch(t.Context(), epoch)
+		require.NoError(t, err)
+		require.Len(t, epoch1Results, 5)
+
+		// Query epoch2 should return only epoch2 IDs
+		epoch2Results, err := repo.GetSignatureRequestIDsByEpoch(t.Context(), epoch2)
+		require.NoError(t, err)
+		require.Len(t, epoch2Results, 3)
+
+		// Verify no overlap between epochs
+		for _, id1 := range epoch1Results {
+			for _, id2 := range epoch2Results {
+				require.NotEqual(t, id1, id2)
+			}
+		}
+	})
+}

@@ -7,9 +7,10 @@
 // 4. Retrieve aggregation proofs
 // 5. Get validator set information
 // 6. Get individual signatures
-// 7. Stream signatures in real-time
-// 8. Stream aggregation proofs in real-time
-// 9. Stream validator set changes in real-time
+// 7. Get signature request IDs by epoch
+// 8. Stream signatures in real-time
+// 9. Stream aggregation proofs in real-time
+// 10. Stream validator set changes in real-time
 
 package main
 
@@ -93,6 +94,14 @@ func (rc *RelayClient) GetSignatures(ctx context.Context, requestID string) (*cl
 		RequestId: requestID,
 	}
 	return rc.client.GetSignatures(ctx, req)
+}
+
+// GetSignatureRequestIDsByEpoch gets all signature request IDs for a given epoch
+func (rc *RelayClient) GetSignatureRequestIDsByEpoch(ctx context.Context, epoch uint64) (*client.GetSignatureRequestIDsByEpochResponse, error) {
+	req := &client.GetSignatureRequestIDsByEpochRequest{
+		Epoch: epoch,
+	}
+	return rc.client.GetSignatureRequestIDsByEpoch(ctx, req)
 }
 
 // GetValidatorSet gets validator set information
@@ -216,6 +225,7 @@ func main() {
 		fmt.Printf("Could not get aggregation proof yet: %v\n", err)
 	} else if proofResponse.GetAggregationProof() != nil {
 		proof := proofResponse.GetAggregationProof()
+		fmt.Printf("Request ID: %s\n", proof.GetRequestId())
 		fmt.Printf("Proof length: %d bytes\n", len(proof.GetProof()))
 		fmt.Printf("Message hash length: %d bytes\n", len(proof.GetMessageHash()))
 	}
@@ -230,13 +240,38 @@ func main() {
 
 		for i, signature := range signaturesResponse.Signatures {
 			fmt.Printf("Signature %d:\n", i+1)
+			fmt.Printf("  - Request ID: %s\n", signature.GetRequestId())
 			fmt.Printf("  - Signature length: %d bytes\n", len(signature.GetSignature()))
 			fmt.Printf("  - Public key length: %d bytes\n", len(signature.GetPublicKey()))
 			fmt.Printf("  - Message hash length: %d bytes\n", len(signature.GetMessageHash()))
 		}
 	}
 
-	// Example 7: Listen to signatures stream
+	// Example 7: Get signature request IDs by epoch
+	fmt.Println("\n=== Getting Signature Request IDs by Epoch ===")
+	if epochResponse != nil {
+		requestIDsResp, err := relayClient.GetSignatureRequestIDsByEpoch(ctx, epochResponse.GetEpoch())
+		if err != nil {
+			fmt.Printf("Failed to get signature request IDs: %v\n", err)
+		} else {
+			fmt.Printf("Number of signature request IDs for epoch %d: %d\n", epochResponse.GetEpoch(), len(requestIDsResp.GetRequestIds()))
+
+			// Display first few request IDs
+			maxDisplay := 5
+			if len(requestIDsResp.GetRequestIds()) > 0 {
+				fmt.Println("Sample request IDs:")
+				for i, reqID := range requestIDsResp.GetRequestIds() {
+					if i >= maxDisplay {
+						fmt.Printf("... and %d more\n", len(requestIDsResp.GetRequestIds())-maxDisplay)
+						break
+					}
+					fmt.Printf("  %d. %s\n", i+1, reqID)
+				}
+			}
+		}
+	}
+
+	// Example 8: Listen to signatures stream
 	fmt.Println("\n=== Listening to Signatures Stream ===")
 	// Create a new context with a shorter timeout for streaming example
 	streamCtx, streamCancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -270,13 +305,14 @@ func main() {
 			fmt.Printf("  - Request ID: %s\n", resp.GetRequestId())
 			fmt.Printf("  - Epoch: %d\n", resp.GetEpoch())
 			if resp.GetSignature() != nil {
+				fmt.Printf("  - Signature Request ID: %s\n", resp.GetSignature().GetRequestId())
 				fmt.Printf("  - Signature length: %d bytes\n", len(resp.GetSignature().GetSignature()))
 				fmt.Printf("  - Public key length: %d bytes\n", len(resp.GetSignature().GetPublicKey()))
 			}
 		}
 	}
 
-	// Example 8: Listen to aggregation proofs stream
+	// Example 9: Listen to aggregation proofs stream
 	fmt.Println("\n=== Listening to Aggregation Proofs Stream ===")
 	proofStreamCtx, proofStreamCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer proofStreamCancel()
@@ -301,13 +337,14 @@ func main() {
 			fmt.Printf("  - Request ID: %s\n", resp.GetRequestId())
 			fmt.Printf("  - Epoch: %d\n", resp.GetEpoch())
 			if resp.GetAggregationProof() != nil {
+				fmt.Printf("  - Proof Request ID: %s\n", resp.GetAggregationProof().GetRequestId())
 				fmt.Printf("  - Proof length: %d bytes\n", len(resp.GetAggregationProof().GetProof()))
 				fmt.Printf("  - Message hash length: %d bytes\n", len(resp.GetAggregationProof().GetMessageHash()))
 			}
 		}
 	}
 
-	// Example 9: Listen to validator set changes stream
+	// Example 10: Listen to validator set changes stream
 	fmt.Println("\n=== Listening to Validator Set Changes Stream ===")
 	vsStreamCtx, vsStreamCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer vsStreamCancel()

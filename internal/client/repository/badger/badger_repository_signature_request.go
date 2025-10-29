@@ -257,6 +257,40 @@ func (r *Repository) GetSignatureRequestsByEpoch(ctx context.Context, epoch symb
 	)
 }
 
+func (r *Repository) GetSignatureRequestIDsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]common.Hash, error) {
+	var requestIDs []common.Hash
+
+	return requestIDs, r.doViewInTx(ctx, "GetSignatureRequestIDsByEpoch", func(ctx context.Context) error {
+		txn := getTxn(ctx)
+
+		// Iterate through signature request keys without fetching values
+		opts := badger.DefaultIteratorOptions
+		prefix := keySignatureRequestEpochPrefix(epoch)
+		opts.Prefix = prefix
+		opts.PrefetchValues = false // Don't fetch values - we only need keys
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		it.Seek(prefix)
+
+		for ; it.ValidForPrefix(prefix); it.Next() {
+			// Extract request id from the key: "signature_request:epoch:hash"
+			item := it.Item()
+			key := string(item.Key())
+
+			// Find the hash part after the second colon
+			parts := strings.Split(key, ":")
+			if len(parts) != 3 {
+				return errors.Errorf("invalid signature request key format: %s", key)
+			}
+
+			requestIDs = append(requestIDs, common.HexToHash(parts[2]))
+		}
+
+		return nil
+	})
+}
+
 func (r *Repository) GetSignaturePending(ctx context.Context, limit int) ([]common.Hash, error) {
 	var requests []common.Hash
 

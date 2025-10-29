@@ -223,6 +223,39 @@
         ]
       }
     },
+    "/v1/signature-request-ids/epoch/{epoch}": {
+      "get": {
+        "summary": "Get all signature request IDs by epoch",
+        "operationId": "SymbioticAPIService_GetSignatureRequestIDsByEpoch",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetSignatureRequestIDsByEpochResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "epoch",
+            "description": "Epoch number",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    },
     "/v1/signature-request/{requestId}": {
       "get": {
         "summary": "Get signature request by request id",
@@ -679,6 +712,10 @@
           "type": "string",
           "format": "byte",
           "title": "Proof data"
+        },
+        "requestId": {
+          "type": "string",
+          "title": "Request ID"
         }
       },
       "title": "Response message for getting aggregation proof"
@@ -812,6 +849,19 @@
         }
       },
       "title": "Response message for getting local validator"
+    },
+    "GetSignatureRequestIDsByEpochResponse": {
+      "type": "object",
+      "properties": {
+        "requestIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "List of all signature request IDs for the epoch"
+        }
+      },
+      "title": "Response message for getting all signature request IDs by epoch"
     },
     "GetSignatureRequestResponse": {
       "type": "object",
@@ -1067,6 +1117,10 @@
           "type": "string",
           "format": "byte",
           "title": "Public key"
+        },
+        "requestId": {
+          "type": "string",
+          "title": "Request ID"
         }
       },
       "title": "Digital signature"
