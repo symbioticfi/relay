@@ -534,7 +534,7 @@ Log messages **must** follow these conventions:
 **1. Start with past tense verb:**
 
 ```go
-// ✅ Correct
+// ✅ Correct: Past tense verbs indicating completed actions
 slog.InfoContext(ctx, "Signature received")
 slog.InfoContext(ctx, "Validator set loaded")
 slog.InfoContext(ctx, "Proof submitted to chain")
@@ -544,6 +544,15 @@ slog.DebugContext(ctx, "Checked for missing epochs")
 slog.InfoContext(ctx, "Receiving signature")      // present continuous
 slog.InfoContext(ctx, "Load validator set")       // imperative
 slog.InfoContext(ctx, "Signature receive")        // noun only
+```
+
+**Note:** Present continuous tense ("Processing...", "Aggregating signatures...") may be valid for long-running operations where you want to communicate progress and show that the process is active, not stuck. However, always pair these with a past tense completion log:
+
+```go
+// ✅ Acceptable for long-running operations
+slog.DebugContext(ctx, "Aggregating signatures from validators", "count", validatorCount)
+// ... long operation ...
+slog.InfoContext(ctx, "Aggregation completed", "duration", time.Since(start))
 ```
 
 **2. Use consistent terminology:**
