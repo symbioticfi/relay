@@ -14,7 +14,8 @@ import (
 	reflect "reflect"
 
 	common "github.com/ethereum/go-ethereum/common"
-	entity "github.com/symbioticfi/relay/symbiotic/entity"
+	entity "github.com/symbioticfi/relay/internal/entity"
+	entity0 "github.com/symbioticfi/relay/symbiotic/entity"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -43,7 +44,7 @@ func (m *Mocksigner) EXPECT() *MocksignerMockRecorder {
 }
 
 // RequestSignature mocks base method.
-func (m *Mocksigner) RequestSignature(ctx context.Context, req entity.SignatureRequest) (common.Hash, error) {
+func (m *Mocksigner) RequestSignature(ctx context.Context, req entity0.SignatureRequest) (common.Hash, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RequestSignature", ctx, req)
 	ret0, _ := ret[0].(common.Hash)
@@ -82,10 +83,10 @@ func (m *Mockrepo) EXPECT() *MockrepoMockRecorder {
 }
 
 // GetAggregationProof mocks base method.
-func (m *Mockrepo) GetAggregationProof(ctx context.Context, requestID common.Hash) (entity.AggregationProof, error) {
+func (m *Mockrepo) GetAggregationProof(ctx context.Context, requestID common.Hash) (entity0.AggregationProof, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAggregationProof", ctx, requestID)
-	ret0, _ := ret[0].(entity.AggregationProof)
+	ret0, _ := ret[0].(entity0.AggregationProof)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -97,10 +98,10 @@ func (mr *MockrepoMockRecorder) GetAggregationProof(ctx, requestID any) *gomock.
 }
 
 // GetAggregationProofsByEpoch mocks base method.
-func (m *Mockrepo) GetAggregationProofsByEpoch(ctx context.Context, epoch entity.Epoch) ([]entity.AggregationProof, error) {
+func (m *Mockrepo) GetAggregationProofsByEpoch(ctx context.Context, epoch entity0.Epoch) ([]entity0.AggregationProof, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAggregationProofsByEpoch", ctx, epoch)
-	ret0, _ := ret[0].([]entity.AggregationProof)
+	ret0, _ := ret[0].([]entity0.AggregationProof)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -112,10 +113,10 @@ func (mr *MockrepoMockRecorder) GetAggregationProofsByEpoch(ctx, epoch any) *gom
 }
 
 // GetAggregationProofsStartingFromEpoch mocks base method.
-func (m *Mockrepo) GetAggregationProofsStartingFromEpoch(ctx context.Context, epoch entity.Epoch) ([]entity.AggregationProof, error) {
+func (m *Mockrepo) GetAggregationProofsStartingFromEpoch(ctx context.Context, epoch entity0.Epoch) ([]entity0.AggregationProof, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAggregationProofsStartingFromEpoch", ctx, epoch)
-	ret0, _ := ret[0].([]entity.AggregationProof)
+	ret0, _ := ret[0].([]entity0.AggregationProof)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -127,10 +128,10 @@ func (mr *MockrepoMockRecorder) GetAggregationProofsStartingFromEpoch(ctx, epoch
 }
 
 // GetAllSignatures mocks base method.
-func (m *Mockrepo) GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity.Signature, error) {
+func (m *Mockrepo) GetAllSignatures(ctx context.Context, requestID common.Hash) ([]entity0.Signature, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllSignatures", ctx, requestID)
-	ret0, _ := ret[0].([]entity.Signature)
+	ret0, _ := ret[0].([]entity0.Signature)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -142,10 +143,10 @@ func (mr *MockrepoMockRecorder) GetAllSignatures(ctx, requestID any) *gomock.Cal
 }
 
 // GetLatestValidatorSetEpoch mocks base method.
-func (m *Mockrepo) GetLatestValidatorSetEpoch(arg0 context.Context) (entity.Epoch, error) {
+func (m *Mockrepo) GetLatestValidatorSetEpoch(arg0 context.Context) (entity0.Epoch, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLatestValidatorSetEpoch", arg0)
-	ret0, _ := ret[0].(entity.Epoch)
+	ret0, _ := ret[0].(entity0.Epoch)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -157,10 +158,10 @@ func (mr *MockrepoMockRecorder) GetLatestValidatorSetEpoch(arg0 any) *gomock.Cal
 }
 
 // GetLatestValidatorSetHeader mocks base method.
-func (m *Mockrepo) GetLatestValidatorSetHeader(arg0 context.Context) (entity.ValidatorSetHeader, error) {
+func (m *Mockrepo) GetLatestValidatorSetHeader(arg0 context.Context) (entity0.ValidatorSetHeader, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLatestValidatorSetHeader", arg0)
-	ret0, _ := ret[0].(entity.ValidatorSetHeader)
+	ret0, _ := ret[0].(entity0.ValidatorSetHeader)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -172,10 +173,10 @@ func (mr *MockrepoMockRecorder) GetLatestValidatorSetHeader(arg0 any) *gomock.Ca
 }
 
 // GetSignatureRequest mocks base method.
-func (m *Mockrepo) GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity.SignatureRequest, error) {
+func (m *Mockrepo) GetSignatureRequest(ctx context.Context, requestID common.Hash) (entity0.SignatureRequest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSignatureRequest", ctx, requestID)
-	ret0, _ := ret[0].(entity.SignatureRequest)
+	ret0, _ := ret[0].(entity0.SignatureRequest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -187,7 +188,7 @@ func (mr *MockrepoMockRecorder) GetSignatureRequest(ctx, requestID any) *gomock.
 }
 
 // GetSignatureRequestIDsByEpoch mocks base method.
-func (m *Mockrepo) GetSignatureRequestIDsByEpoch(ctx context.Context, epoch entity.Epoch) ([]common.Hash, error) {
+func (m *Mockrepo) GetSignatureRequestIDsByEpoch(ctx context.Context, epoch entity0.Epoch) ([]common.Hash, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSignatureRequestIDsByEpoch", ctx, epoch)
 	ret0, _ := ret[0].([]common.Hash)
@@ -201,11 +202,26 @@ func (mr *MockrepoMockRecorder) GetSignatureRequestIDsByEpoch(ctx, epoch any) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureRequestIDsByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetSignatureRequestIDsByEpoch), ctx, epoch)
 }
 
+// GetSignatureRequestsWithIDByEpoch mocks base method.
+func (m *Mockrepo) GetSignatureRequestsWithIDByEpoch(ctx context.Context, epoch entity0.Epoch) ([]entity.SignatureRequestWithID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSignatureRequestsWithIDByEpoch", ctx, epoch)
+	ret0, _ := ret[0].([]entity.SignatureRequestWithID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSignatureRequestsWithIDByEpoch indicates an expected call of GetSignatureRequestsWithIDByEpoch.
+func (mr *MockrepoMockRecorder) GetSignatureRequestsWithIDByEpoch(ctx, epoch any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureRequestsWithIDByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetSignatureRequestsWithIDByEpoch), ctx, epoch)
+}
+
 // GetSignaturesByEpoch mocks base method.
-func (m *Mockrepo) GetSignaturesByEpoch(ctx context.Context, epoch entity.Epoch) ([]entity.Signature, error) {
+func (m *Mockrepo) GetSignaturesByEpoch(ctx context.Context, epoch entity0.Epoch) ([]entity0.Signature, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSignaturesByEpoch", ctx, epoch)
-	ret0, _ := ret[0].([]entity.Signature)
+	ret0, _ := ret[0].([]entity0.Signature)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -217,10 +233,10 @@ func (mr *MockrepoMockRecorder) GetSignaturesByEpoch(ctx, epoch any) *gomock.Cal
 }
 
 // GetSignaturesStartingFromEpoch mocks base method.
-func (m *Mockrepo) GetSignaturesStartingFromEpoch(ctx context.Context, epoch entity.Epoch) ([]entity.Signature, error) {
+func (m *Mockrepo) GetSignaturesStartingFromEpoch(ctx context.Context, epoch entity0.Epoch) ([]entity0.Signature, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSignaturesStartingFromEpoch", ctx, epoch)
-	ret0, _ := ret[0].([]entity.Signature)
+	ret0, _ := ret[0].([]entity0.Signature)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -232,10 +248,10 @@ func (mr *MockrepoMockRecorder) GetSignaturesStartingFromEpoch(ctx, epoch any) *
 }
 
 // GetValidatorSetByEpoch mocks base method.
-func (m *Mockrepo) GetValidatorSetByEpoch(arg0 context.Context, epoch entity.Epoch) (entity.ValidatorSet, error) {
+func (m *Mockrepo) GetValidatorSetByEpoch(arg0 context.Context, epoch entity0.Epoch) (entity0.ValidatorSet, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorSetByEpoch", arg0, epoch)
-	ret0, _ := ret[0].(entity.ValidatorSet)
+	ret0, _ := ret[0].(entity0.ValidatorSet)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -247,10 +263,10 @@ func (mr *MockrepoMockRecorder) GetValidatorSetByEpoch(arg0, epoch any) *gomock.
 }
 
 // GetValidatorSetMetadata mocks base method.
-func (m *Mockrepo) GetValidatorSetMetadata(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSetMetadata, error) {
+func (m *Mockrepo) GetValidatorSetMetadata(ctx context.Context, epoch entity0.Epoch) (entity0.ValidatorSetMetadata, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorSetMetadata", ctx, epoch)
-	ret0, _ := ret[0].(entity.ValidatorSetMetadata)
+	ret0, _ := ret[0].(entity0.ValidatorSetMetadata)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -262,10 +278,10 @@ func (mr *MockrepoMockRecorder) GetValidatorSetMetadata(ctx, epoch any) *gomock.
 }
 
 // GetValidatorSetsStartingFromEpoch mocks base method.
-func (m *Mockrepo) GetValidatorSetsStartingFromEpoch(ctx context.Context, epoch entity.Epoch) ([]entity.ValidatorSet, error) {
+func (m *Mockrepo) GetValidatorSetsStartingFromEpoch(ctx context.Context, epoch entity0.Epoch) ([]entity0.ValidatorSet, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorSetsStartingFromEpoch", ctx, epoch)
-	ret0, _ := ret[0].([]entity.ValidatorSet)
+	ret0, _ := ret[0].([]entity0.ValidatorSet)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -301,10 +317,10 @@ func (m *MockevmClient) EXPECT() *MockevmClientMockRecorder {
 }
 
 // GetConfig mocks base method.
-func (m *MockevmClient) GetConfig(ctx context.Context, timestamp entity.Timestamp, epoch entity.Epoch) (entity.NetworkConfig, error) {
+func (m *MockevmClient) GetConfig(ctx context.Context, timestamp entity0.Timestamp, epoch entity0.Epoch) (entity0.NetworkConfig, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConfig", ctx, timestamp, epoch)
-	ret0, _ := ret[0].(entity.NetworkConfig)
+	ret0, _ := ret[0].(entity0.NetworkConfig)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -316,10 +332,10 @@ func (mr *MockevmClientMockRecorder) GetConfig(ctx, timestamp, epoch any) *gomoc
 }
 
 // GetCurrentEpoch mocks base method.
-func (m *MockevmClient) GetCurrentEpoch(ctx context.Context) (entity.Epoch, error) {
+func (m *MockevmClient) GetCurrentEpoch(ctx context.Context) (entity0.Epoch, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetCurrentEpoch", ctx)
-	ret0, _ := ret[0].(entity.Epoch)
+	ret0, _ := ret[0].(entity0.Epoch)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -331,10 +347,10 @@ func (mr *MockevmClientMockRecorder) GetCurrentEpoch(ctx any) *gomock.Call {
 }
 
 // GetEpochStart mocks base method.
-func (m *MockevmClient) GetEpochStart(ctx context.Context, epoch entity.Epoch) (entity.Timestamp, error) {
+func (m *MockevmClient) GetEpochStart(ctx context.Context, epoch entity0.Epoch) (entity0.Timestamp, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetEpochStart", ctx, epoch)
-	ret0, _ := ret[0].(entity.Timestamp)
+	ret0, _ := ret[0].(entity0.Timestamp)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -346,10 +362,10 @@ func (mr *MockevmClientMockRecorder) GetEpochStart(ctx, epoch any) *gomock.Call 
 }
 
 // GetLastCommittedHeaderEpoch mocks base method.
-func (m *MockevmClient) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (entity.Epoch, error) {
+func (m *MockevmClient) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity0.CrossChainAddress) (entity0.Epoch, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLastCommittedHeaderEpoch", ctx, addr)
-	ret0, _ := ret[0].(entity.Epoch)
+	ret0, _ := ret[0].(entity0.Epoch)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -385,10 +401,10 @@ func (m *Mockaggregator) EXPECT() *MockaggregatorMockRecorder {
 }
 
 // GetAggregationStatus mocks base method.
-func (m *Mockaggregator) GetAggregationStatus(ctx context.Context, requestID common.Hash) (entity.AggregationStatus, error) {
+func (m *Mockaggregator) GetAggregationStatus(ctx context.Context, requestID common.Hash) (entity0.AggregationStatus, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAggregationStatus", ctx, requestID)
-	ret0, _ := ret[0].(entity.AggregationStatus)
+	ret0, _ := ret[0].(entity0.AggregationStatus)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -424,10 +440,10 @@ func (m *Mockderiver) EXPECT() *MockderiverMockRecorder {
 }
 
 // GetValidatorSet mocks base method.
-func (m *Mockderiver) GetValidatorSet(ctx context.Context, epoch entity.Epoch, config entity.NetworkConfig) (entity.ValidatorSet, error) {
+func (m *Mockderiver) GetValidatorSet(ctx context.Context, epoch entity0.Epoch, config entity0.NetworkConfig) (entity0.ValidatorSet, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorSet", ctx, epoch, config)
-	ret0, _ := ret[0].(entity.ValidatorSet)
+	ret0, _ := ret[0].(entity0.ValidatorSet)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -463,10 +479,10 @@ func (m *MockkeyProvider) EXPECT() *MockkeyProviderMockRecorder {
 }
 
 // GetOnchainKeyFromCache mocks base method.
-func (m *MockkeyProvider) GetOnchainKeyFromCache(keyTag entity.KeyTag) (entity.CompactPublicKey, error) {
+func (m *MockkeyProvider) GetOnchainKeyFromCache(keyTag entity0.KeyTag) (entity0.CompactPublicKey, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetOnchainKeyFromCache", keyTag)
-	ret0, _ := ret[0].(entity.CompactPublicKey)
+	ret0, _ := ret[0].(entity0.CompactPublicKey)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

@@ -8,9 +8,11 @@
 // 5. Get validator set information
 // 6. Get individual signatures
 // 7. Get signature request IDs by epoch
-// 8. Stream signatures in real-time
-// 9. Stream aggregation proofs in real-time
-// 10. Stream validator set changes in real-time
+// 8. Get signature requests by epoch
+// 9. Get a signature request by request ID
+// 10. Stream signatures in real-time
+// 11. Stream aggregation proofs in real-time
+// 12. Stream validator set changes in real-time
 
 package main
 
@@ -102,6 +104,22 @@ func (rc *RelayClient) GetSignatureRequestIDsByEpoch(ctx context.Context, epoch 
 		Epoch: epoch,
 	}
 	return rc.client.GetSignatureRequestIDsByEpoch(ctx, req)
+}
+
+// GetSignatureRequestsByEpoch gets all signature requests for a given epoch
+func (rc *RelayClient) GetSignatureRequestsByEpoch(ctx context.Context, epoch uint64) (*client.GetSignatureRequestsByEpochResponse, error) {
+	req := &client.GetSignatureRequestsByEpochRequest{
+		Epoch: epoch,
+	}
+	return rc.client.GetSignatureRequestsByEpoch(ctx, req)
+}
+
+// GetSignatureRequest gets a signature request by its request ID
+func (rc *RelayClient) GetSignatureRequest(ctx context.Context, requestID string) (*client.GetSignatureRequestResponse, error) {
+	req := &client.GetSignatureRequestRequest{
+		RequestId: requestID,
+	}
+	return rc.client.GetSignatureRequest(ctx, req)
 }
 
 // GetValidatorSet gets validator set information
@@ -271,7 +289,48 @@ func main() {
 		}
 	}
 
-	// Example 8: Listen to signatures stream
+	// Example 8: Get signature requests by epoch
+	fmt.Println("\n=== Getting Signature Requests by Epoch ===")
+	if epochResponse != nil {
+		signatureRequestsResp, err := relayClient.GetSignatureRequestsByEpoch(ctx, epochResponse.GetEpoch())
+		if err != nil {
+			fmt.Printf("Failed to get signature requests: %v\n", err)
+		} else {
+			fmt.Printf("Number of signature requests for epoch %d: %d\n", epochResponse.GetEpoch(), len(signatureRequestsResp.GetSignatureRequests()))
+
+			// Display first few signature requests
+			maxDisplay := 3
+			if len(signatureRequestsResp.GetSignatureRequests()) > 0 {
+				fmt.Println("Sample signature requests:")
+				for i, sigReq := range signatureRequestsResp.GetSignatureRequests() {
+					if i >= maxDisplay {
+						fmt.Printf("... and %d more\n", len(signatureRequestsResp.GetSignatureRequests())-maxDisplay)
+						break
+					}
+					fmt.Printf("  %d. Request ID: %s\n", i+1, sigReq.GetRequestId())
+					fmt.Printf("     Key Tag: %d\n", sigReq.GetKeyTag())
+					fmt.Printf("     Message Length: %d bytes\n", len(sigReq.GetMessage()))
+					fmt.Printf("     Required Epoch: %d\n", sigReq.GetRequiredEpoch())
+				}
+			}
+		}
+	}
+
+	// Example 9: Get a signature request by request ID
+	fmt.Println("\n=== Getting Signature Request by Request ID ===")
+	sigRequestResp, err := relayClient.GetSignatureRequest(ctx, signResponse.GetRequestId())
+	if err != nil {
+		fmt.Printf("Failed to get signature request: %v\n", err)
+	} else if sigRequestResp.GetSignatureRequest() != nil {
+		sigReq := sigRequestResp.GetSignatureRequest()
+		fmt.Printf("Signature Request Details:\n")
+		fmt.Printf("  - Request ID: %s\n", sigReq.GetRequestId())
+		fmt.Printf("  - Key Tag: %d\n", sigReq.GetKeyTag())
+		fmt.Printf("  - Message Length: %d bytes\n", len(sigReq.GetMessage()))
+		fmt.Printf("  - Required Epoch: %d\n", sigReq.GetRequiredEpoch())
+	}
+
+	// Example 10: Listen to signatures stream
 	fmt.Println("\n=== Listening to Signatures Stream ===")
 	// Create a new context with a shorter timeout for streaming example
 	streamCtx, streamCancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -312,7 +371,7 @@ func main() {
 		}
 	}
 
-	// Example 9: Listen to aggregation proofs stream
+	// Example 11: Listen to aggregation proofs stream
 	fmt.Println("\n=== Listening to Aggregation Proofs Stream ===")
 	proofStreamCtx, proofStreamCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer proofStreamCancel()
@@ -344,7 +403,7 @@ func main() {
 		}
 	}
 
-	// Example 10: Listen to validator set changes stream
+	// Example 12: Listen to validator set changes stream
 	fmt.Println("\n=== Listening to Validator Set Changes Stream ===")
 	vsStreamCtx, vsStreamCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer vsStreamCancel()

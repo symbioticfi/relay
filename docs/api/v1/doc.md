@@ -26,6 +26,8 @@
     - [GetSignatureRequestIDsByEpochResponse](#api-proto-v1-GetSignatureRequestIDsByEpochResponse)
     - [GetSignatureRequestRequest](#api-proto-v1-GetSignatureRequestRequest)
     - [GetSignatureRequestResponse](#api-proto-v1-GetSignatureRequestResponse)
+    - [GetSignatureRequestsByEpochRequest](#api-proto-v1-GetSignatureRequestsByEpochRequest)
+    - [GetSignatureRequestsByEpochResponse](#api-proto-v1-GetSignatureRequestsByEpochResponse)
     - [GetSignaturesByEpochRequest](#api-proto-v1-GetSignaturesByEpochRequest)
     - [GetSignaturesByEpochResponse](#api-proto-v1-GetSignaturesByEpochResponse)
     - [GetSignaturesRequest](#api-proto-v1-GetSignaturesRequest)
@@ -50,6 +52,7 @@
     - [SignMessageRequest](#api-proto-v1-SignMessageRequest)
     - [SignMessageResponse](#api-proto-v1-SignMessageResponse)
     - [Signature](#api-proto-v1-Signature)
+    - [SignatureRequest](#api-proto-v1-SignatureRequest)
     - [Validator](#api-proto-v1-Validator)
     - [ValidatorSet](#api-proto-v1-ValidatorSet)
     - [ValidatorVault](#api-proto-v1-ValidatorVault)
@@ -394,9 +397,37 @@ Response message for getting signature request
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| key_tag | [uint32](#uint32) |  | Key tag identifier (0-127) |
-| message | [bytes](#bytes) |  | Message to be signed |
-| required_epoch | [uint64](#uint64) |  | Required epoch |
+| signature_request | [SignatureRequest](#api-proto-v1-SignatureRequest) |  |  |
+
+
+
+
+
+
+<a name="api-proto-v1-GetSignatureRequestsByEpochRequest"></a>
+
+### GetSignatureRequestsByEpochRequest
+Request message for getting all signature requests by epoch
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| epoch | [uint64](#uint64) |  | Epoch number |
+
+
+
+
+
+
+<a name="api-proto-v1-GetSignatureRequestsByEpochResponse"></a>
+
+### GetSignatureRequestsByEpochResponse
+Response message for getting all signature requests by epoch
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| signature_requests | [SignatureRequest](#api-proto-v1-SignatureRequest) | repeated | List of all signature requests for the epoch |
 
 
 
@@ -785,6 +816,24 @@ Digital signature
 
 
 
+<a name="api-proto-v1-SignatureRequest"></a>
+
+### SignatureRequest
+SignatureRequest represents a signature request
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| request_id | [string](#string) |  | Request ID |
+| key_tag | [uint32](#uint32) |  | Key tag identifier (0-127) |
+| message | [bytes](#bytes) |  | Message to be signed |
+| required_epoch | [uint64](#uint64) |  | Required epoch |
+
+
+
+
+
+
 <a name="api-proto-v1-Validator"></a>
 
 ### Validator
@@ -906,6 +955,7 @@ SymbioticAPI provides access to the Symbiotic relay functions
 | GetSignatures | [GetSignaturesRequest](#api-proto-v1-GetSignaturesRequest) | [GetSignaturesResponse](#api-proto-v1-GetSignaturesResponse) | Get signature by request id |
 | GetSignaturesByEpoch | [GetSignaturesByEpochRequest](#api-proto-v1-GetSignaturesByEpochRequest) | [GetSignaturesByEpochResponse](#api-proto-v1-GetSignaturesByEpochResponse) | Get signature by epoch |
 | GetSignatureRequestIDsByEpoch | [GetSignatureRequestIDsByEpochRequest](#api-proto-v1-GetSignatureRequestIDsByEpochRequest) | [GetSignatureRequestIDsByEpochResponse](#api-proto-v1-GetSignatureRequestIDsByEpochResponse) | Get all signature request IDs by epoch |
+| GetSignatureRequestsByEpoch | [GetSignatureRequestsByEpochRequest](#api-proto-v1-GetSignatureRequestsByEpochRequest) | [GetSignatureRequestsByEpochResponse](#api-proto-v1-GetSignatureRequestsByEpochResponse) | Get all signature requests by epoch |
 | GetSignatureRequest | [GetSignatureRequestRequest](#api-proto-v1-GetSignatureRequestRequest) | [GetSignatureRequestResponse](#api-proto-v1-GetSignatureRequestResponse) | Get signature request by request id |
 | GetAggregationStatus | [GetAggregationStatusRequest](#api-proto-v1-GetAggregationStatusRequest) | [GetAggregationStatusResponse](#api-proto-v1-GetAggregationStatusResponse) | Get aggregation status, can be sent only to aggregator nodes |
 | GetValidatorSet | [GetValidatorSetRequest](#api-proto-v1-GetValidatorSetRequest) | [GetValidatorSetResponse](#api-proto-v1-GetValidatorSetResponse) | Get current validator set |

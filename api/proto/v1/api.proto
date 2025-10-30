@@ -59,6 +59,13 @@ service SymbioticAPIService {
     };
   }
 
+  // Get all signature requests by epoch
+  rpc GetSignatureRequestsByEpoch(GetSignatureRequestsByEpochRequest) returns (GetSignatureRequestsByEpochResponse) {
+    option (google.api.http) = {
+      get: "/v1/signature-requests/epoch/{epoch}"
+    };
+  }
+
   // Get signature request by request id
   rpc GetSignatureRequest(GetSignatureRequestRequest) returns (GetSignatureRequestResponse) {
     option (google.api.http) = {
@@ -273,6 +280,18 @@ message GetSignatureRequestIDsByEpochResponse {
   repeated string request_ids = 1;
 }
 
+// Request message for getting all signature requests by epoch
+message GetSignatureRequestsByEpochRequest {
+  // Epoch number
+  uint64 epoch = 1;
+}
+
+// Response message for getting all signature requests by epoch
+message GetSignatureRequestsByEpochResponse {
+  // List of all signature requests for the epoch
+  repeated SignatureRequest signature_requests = 1;
+}
+
 // Request message for getting signature request
 message GetSignatureRequestRequest {
   string request_id = 1;
@@ -338,16 +357,24 @@ message GetCurrentEpochResponse {
   google.protobuf.Timestamp start_time = 2;
 }
 
-// Response message for getting signature request
-message GetSignatureRequestResponse {
+// SignatureRequest represents a signature request
+message SignatureRequest {
+  // Request ID
+  string request_id = 1;
+
   // Key tag identifier (0-127)
-  uint32 key_tag = 1;
+  uint32 key_tag = 2;
 
   // Message to be signed
-  bytes message = 2;
+  bytes message = 3;
 
   // Required epoch
-  uint64 required_epoch = 3;
+  uint64 required_epoch = 4;
+}
+
+// Response message for getting signature request
+message GetSignatureRequestResponse {
+  SignatureRequest signature_request = 1;
 }
 
 // Response message for getting aggregation proof

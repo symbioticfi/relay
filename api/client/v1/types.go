@@ -45,6 +45,7 @@ type GetLastCommittedRequest = apiv1.GetLastCommittedRequest
 type GetLocalValidatorRequest = apiv1.GetLocalValidatorRequest
 type GetSignatureRequestIDsByEpochRequest = apiv1.GetSignatureRequestIDsByEpochRequest
 type GetSignatureRequestRequest = apiv1.GetSignatureRequestRequest
+type GetSignatureRequestsByEpochRequest = apiv1.GetSignatureRequestsByEpochRequest
 type GetSignaturesByEpochRequest = apiv1.GetSignaturesByEpochRequest
 type GetSignaturesRequest = apiv1.GetSignaturesRequest
 type GetValidatorByAddressRequest = apiv1.GetValidatorByAddressRequest
@@ -56,6 +57,7 @@ type ListenProofsRequest = apiv1.ListenProofsRequest
 type ListenSignaturesRequest = apiv1.ListenSignaturesRequest
 type ListenValidatorSetRequest = apiv1.ListenValidatorSetRequest
 type SignMessageRequest = apiv1.SignMessageRequest
+type SignatureRequest = apiv1.SignatureRequest
 
 // Response types
 type GetAggregationProofResponse = apiv1.GetAggregationProofResponse
@@ -67,6 +69,7 @@ type GetLastCommittedResponse = apiv1.GetLastCommittedResponse
 type GetLocalValidatorResponse = apiv1.GetLocalValidatorResponse
 type GetSignatureRequestIDsByEpochResponse = apiv1.GetSignatureRequestIDsByEpochResponse
 type GetSignatureRequestResponse = apiv1.GetSignatureRequestResponse
+type GetSignatureRequestsByEpochResponse = apiv1.GetSignatureRequestsByEpochResponse
 type GetSignaturesByEpochResponse = apiv1.GetSignaturesByEpochResponse
 type GetSignaturesResponse = apiv1.GetSignaturesResponse
 type GetValidatorByAddressResponse = apiv1.GetValidatorByAddressResponse

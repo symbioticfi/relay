@@ -26,6 +26,7 @@ const (
 	SymbioticAPIService_GetSignatures_FullMethodName                 = "/api.proto.v1.SymbioticAPIService/GetSignatures"
 	SymbioticAPIService_GetSignaturesByEpoch_FullMethodName          = "/api.proto.v1.SymbioticAPIService/GetSignaturesByEpoch"
 	SymbioticAPIService_GetSignatureRequestIDsByEpoch_FullMethodName = "/api.proto.v1.SymbioticAPIService/GetSignatureRequestIDsByEpoch"
+	SymbioticAPIService_GetSignatureRequestsByEpoch_FullMethodName   = "/api.proto.v1.SymbioticAPIService/GetSignatureRequestsByEpoch"
 	SymbioticAPIService_GetSignatureRequest_FullMethodName           = "/api.proto.v1.SymbioticAPIService/GetSignatureRequest"
 	SymbioticAPIService_GetAggregationStatus_FullMethodName          = "/api.proto.v1.SymbioticAPIService/GetAggregationStatus"
 	SymbioticAPIService_GetValidatorSet_FullMethodName               = "/api.proto.v1.SymbioticAPIService/GetValidatorSet"
@@ -61,6 +62,8 @@ type SymbioticAPIServiceClient interface {
 	GetSignaturesByEpoch(ctx context.Context, in *GetSignaturesByEpochRequest, opts ...grpc.CallOption) (*GetSignaturesByEpochResponse, error)
 	// Get all signature request IDs by epoch
 	GetSignatureRequestIDsByEpoch(ctx context.Context, in *GetSignatureRequestIDsByEpochRequest, opts ...grpc.CallOption) (*GetSignatureRequestIDsByEpochResponse, error)
+	// Get all signature requests by epoch
+	GetSignatureRequestsByEpoch(ctx context.Context, in *GetSignatureRequestsByEpochRequest, opts ...grpc.CallOption) (*GetSignatureRequestsByEpochResponse, error)
 	// Get signature request by request id
 	GetSignatureRequest(ctx context.Context, in *GetSignatureRequestRequest, opts ...grpc.CallOption) (*GetSignatureRequestResponse, error)
 	// Get aggregation status, can be sent only to aggregator nodes
@@ -161,6 +164,16 @@ func (c *symbioticAPIServiceClient) GetSignatureRequestIDsByEpoch(ctx context.Co
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetSignatureRequestIDsByEpochResponse)
 	err := c.cc.Invoke(ctx, SymbioticAPIService_GetSignatureRequestIDsByEpoch_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *symbioticAPIServiceClient) GetSignatureRequestsByEpoch(ctx context.Context, in *GetSignatureRequestsByEpochRequest, opts ...grpc.CallOption) (*GetSignatureRequestsByEpochResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSignatureRequestsByEpochResponse)
+	err := c.cc.Invoke(ctx, SymbioticAPIService_GetSignatureRequestsByEpoch_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -344,6 +357,8 @@ type SymbioticAPIServiceServer interface {
 	GetSignaturesByEpoch(context.Context, *GetSignaturesByEpochRequest) (*GetSignaturesByEpochResponse, error)
 	// Get all signature request IDs by epoch
 	GetSignatureRequestIDsByEpoch(context.Context, *GetSignatureRequestIDsByEpochRequest) (*GetSignatureRequestIDsByEpochResponse, error)
+	// Get all signature requests by epoch
+	GetSignatureRequestsByEpoch(context.Context, *GetSignatureRequestsByEpochRequest) (*GetSignatureRequestsByEpochResponse, error)
 	// Get signature request by request id
 	GetSignatureRequest(context.Context, *GetSignatureRequestRequest) (*GetSignatureRequestResponse, error)
 	// Get aggregation status, can be sent only to aggregator nodes
@@ -400,6 +415,9 @@ func (UnimplementedSymbioticAPIServiceServer) GetSignaturesByEpoch(context.Conte
 }
 func (UnimplementedSymbioticAPIServiceServer) GetSignatureRequestIDsByEpoch(context.Context, *GetSignatureRequestIDsByEpochRequest) (*GetSignatureRequestIDsByEpochResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSignatureRequestIDsByEpoch not implemented")
+}
+func (UnimplementedSymbioticAPIServiceServer) GetSignatureRequestsByEpoch(context.Context, *GetSignatureRequestsByEpochRequest) (*GetSignatureRequestsByEpochResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSignatureRequestsByEpoch not implemented")
 }
 func (UnimplementedSymbioticAPIServiceServer) GetSignatureRequest(context.Context, *GetSignatureRequestRequest) (*GetSignatureRequestResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSignatureRequest not implemented")
@@ -583,6 +601,24 @@ func _SymbioticAPIService_GetSignatureRequestIDsByEpoch_Handler(srv interface{},
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SymbioticAPIServiceServer).GetSignatureRequestIDsByEpoch(ctx, req.(*GetSignatureRequestIDsByEpochRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SymbioticAPIService_GetSignatureRequestsByEpoch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSignatureRequestsByEpochRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SymbioticAPIServiceServer).GetSignatureRequestsByEpoch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SymbioticAPIService_GetSignatureRequestsByEpoch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SymbioticAPIServiceServer).GetSignatureRequestsByEpoch(ctx, req.(*GetSignatureRequestsByEpochRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -834,6 +870,10 @@ var SymbioticAPIService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSignatureRequestIDsByEpoch",
 			Handler:    _SymbioticAPIService_GetSignatureRequestIDsByEpoch_Handler,
+		},
+		{
+			MethodName: "GetSignatureRequestsByEpoch",
+			Handler:    _SymbioticAPIService_GetSignatureRequestsByEpoch_Handler,
 		},
 		{
 			MethodName: "GetSignatureRequest",

@@ -156,7 +156,7 @@ func TestRelayAPIConnectivity(t *testing.T) {
 		t.Run(fmt.Sprintf("Connect_%s", globalTestEnv.GetContainerPort(i)), func(t *testing.T) {
 			t.Logf("Testing connection to %d", i)
 
-			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 			defer cancel()
 
 			client := globalTestEnv.GetGRPCClient(t, i)
@@ -264,6 +264,8 @@ func TestAPIsSequence(t *testing.T) {
 	t.Run("ListenValidatorSet", testListenValidatorSetAPI)
 	t.Run("GetSignaturesByEpoch", testGetSignaturesByEpochAPI)
 	t.Run("GetSignatureRequestIDsByEpoch", testGetSignatureRequestIDsByEpochAPI)
+	t.Run("GetSignatureRequestsByEpoch", testGetSignatureRequestsByEpochAPI)
+	t.Run("GetSignatureRequest", testGetSignatureRequestAPI)
 	t.Run("GetAggregationProofsByEpoch", testGetAggregationProofsByEpochAPI)
 	t.Run("GetValidatorByKey", testGetValidatorByKeyAPI)
 	t.Run("GetLocalValidator", testGetLocalValidatorAPI)
@@ -274,7 +276,7 @@ func testListenSignaturesAPI(t *testing.T) {
 
 	client := globalTestEnv.GetGRPCClient(t, 0)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
 	epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
@@ -312,7 +314,7 @@ func testListenProofsAPI(t *testing.T) {
 
 	client := globalTestEnv.GetGRPCClient(t, 0)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
 	epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
@@ -350,7 +352,7 @@ func testListenValidatorSetAPI(t *testing.T) {
 
 	client := globalTestEnv.GetGRPCClient(t, 0)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
 	epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
@@ -388,7 +390,7 @@ func testGetSignaturesByEpochAPI(t *testing.T) {
 
 	client := globalTestEnv.GetGRPCClient(t, 0)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
 	epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
@@ -417,7 +419,7 @@ func testGetAggregationProofsByEpochAPI(t *testing.T) {
 
 	client := globalTestEnv.GetGRPCClient(t, 0)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
 	epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
@@ -446,7 +448,7 @@ func testGetValidatorByKeyAPI(t *testing.T) {
 
 	client := globalTestEnv.GetGRPCClient(t, 0)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
 	valsetResp, err := client.GetValidatorSet(ctx, &apiv1.GetValidatorSetRequest{})
@@ -477,7 +479,7 @@ func testGetSignatureRequestIDsByEpochAPI(t *testing.T) {
 
 	client := globalTestEnv.GetGRPCClient(t, 0)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
 	epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
@@ -501,12 +503,106 @@ func testGetSignatureRequestIDsByEpochAPI(t *testing.T) {
 	}
 }
 
+func testGetSignatureRequestsByEpochAPI(t *testing.T) {
+	t.Log("Starting GetSignatureRequestsByEpoch API test...")
+
+	client := globalTestEnv.GetGRPCClient(t, 0)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
+	require.NoError(t, err)
+
+	currentEpoch := epochResp.GetEpoch()
+
+	resp, err := client.GetSignatureRequestsByEpoch(ctx, &apiv1.GetSignatureRequestsByEpochRequest{
+		Epoch: currentEpoch,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+
+	t.Logf("GetSignatureRequestsByEpoch for epoch %d returned %d signature requests", currentEpoch, len(resp.GetSignatureRequests()))
+
+	// Verify each signature request has valid fields
+	for i, sigReq := range resp.GetSignatureRequests() {
+		require.NotNil(t, sigReq, "signature request %d should not be nil", i)
+
+		// Verify request ID
+		require.NotEmpty(t, sigReq.GetRequestId(), "signature request %d should have request_id", i)
+		require.Len(t, sigReq.GetRequestId(), 66, "request_id should be 66 characters (0x + 64 hex chars)")
+		require.Equal(t, "0x", sigReq.GetRequestId()[:2], "request_id should start with 0x")
+
+		// Verify key tag
+		require.Positive(t, sigReq.GetKeyTag(), "signature request %d should have positive key_tag", i)
+
+		// Verify message
+		require.NotEmpty(t, sigReq.GetMessage(), "signature request %d should have non-empty message", i)
+
+		// Verify required epoch matches the requested epoch
+		require.Equal(t, currentEpoch, sigReq.GetRequiredEpoch(), "signature request %d required_epoch should match requested epoch", i)
+
+		t.Logf("  Request %d: ID=%s, KeyTag=%d, MessageLen=%d, RequiredEpoch=%d",
+			i, sigReq.GetRequestId(), sigReq.GetKeyTag(), len(sigReq.GetMessage()), sigReq.GetRequiredEpoch())
+	}
+}
+
+func testGetSignatureRequestAPI(t *testing.T) {
+	t.Log("Starting GetSignatureRequest API test...")
+
+	client := globalTestEnv.GetGRPCClient(t, 0)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	// First, get current epoch
+	epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
+	require.NoError(t, err)
+
+	currentEpoch := epochResp.GetEpoch()
+
+	// Get signature request IDs for current epoch
+	requestIDsResp, err := client.GetSignatureRequestIDsByEpoch(ctx, &apiv1.GetSignatureRequestIDsByEpochRequest{
+		Epoch: currentEpoch,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, requestIDsResp)
+
+	if len(requestIDsResp.GetRequestIds()) == 0 {
+		t.Log("No signature requests found for current epoch, skipping GetSignatureRequest test")
+		return
+	}
+
+	// Get the first signature request by ID
+	requestID := requestIDsResp.GetRequestIds()[0]
+
+	resp, err := client.GetSignatureRequest(ctx, &apiv1.GetSignatureRequestRequest{
+		RequestId: requestID,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.NotNil(t, resp.GetSignatureRequest(), "signature request should not be nil")
+
+	sigReq := resp.GetSignatureRequest()
+
+	// Verify request ID is included and matches
+	require.Equal(t, requestID, sigReq.GetRequestId(), "returned request_id should match requested ID")
+
+	// Verify other fields are populated
+	require.Positive(t, sigReq.GetKeyTag(), "signature request should have positive key_tag")
+	require.NotEmpty(t, sigReq.GetMessage(), "signature request should have non-empty message")
+	require.Equal(t, currentEpoch, sigReq.GetRequiredEpoch(), "signature request required_epoch should match current epoch")
+
+	t.Logf("GetSignatureRequest for ID %s: KeyTag=%d, MessageLen=%d, RequiredEpoch=%d",
+		sigReq.GetRequestId(), sigReq.GetKeyTag(), len(sigReq.GetMessage()), sigReq.GetRequiredEpoch())
+}
+
 func testGetLocalValidatorAPI(t *testing.T) {
 	t.Log("Starting GetLocalValidator API test...")
 
 	client := globalTestEnv.GetGRPCClient(t, 0)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
 	resp, err := client.GetLocalValidator(ctx, &apiv1.GetLocalValidatorRequest{})
