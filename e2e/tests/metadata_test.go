@@ -30,7 +30,7 @@ func TestGetValidatorSetMetadata(t *testing.T) {
 
 	t.Log("Waiting for committed epoch ≥1 on all chains...")
 	for attempt := 1; attempt <= maxRetries; attempt++ {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 		lastAllCommittedResp, err := client.GetLastAllCommitted(ctx, &apiv1.GetLastAllCommittedRequest{})
 		cancel()
 

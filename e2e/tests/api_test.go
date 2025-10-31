@@ -156,7 +156,7 @@ func TestRelayAPIConnectivity(t *testing.T) {
 		t.Run(fmt.Sprintf("Connect_%s", globalTestEnv.GetContainerPort(i)), func(t *testing.T) {
 			t.Logf("Testing connection to %d", i)
 
-			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 			defer cancel()
 
 			client := globalTestEnv.GetGRPCClient(t, i)
@@ -276,7 +276,7 @@ func testListenSignaturesAPI(t *testing.T) {
 
 	client := globalTestEnv.GetGRPCClient(t, 0)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
 
 	epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
@@ -314,7 +314,7 @@ func testListenProofsAPI(t *testing.T) {
 
 	client := globalTestEnv.GetGRPCClient(t, 0)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
 
 	epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
@@ -352,7 +352,7 @@ func testListenValidatorSetAPI(t *testing.T) {
 
 	client := globalTestEnv.GetGRPCClient(t, 0)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
 
 	epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
@@ -390,7 +390,7 @@ func testGetSignaturesByEpochAPI(t *testing.T) {
 
 	client := globalTestEnv.GetGRPCClient(t, 0)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
 
 	epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
@@ -419,7 +419,7 @@ func testGetAggregationProofsByEpochAPI(t *testing.T) {
 
 	client := globalTestEnv.GetGRPCClient(t, 0)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
 
 	epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
@@ -448,7 +448,7 @@ func testGetValidatorByKeyAPI(t *testing.T) {
 
 	client := globalTestEnv.GetGRPCClient(t, 0)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
 
 	valsetResp, err := client.GetValidatorSet(ctx, &apiv1.GetValidatorSetRequest{})
@@ -479,7 +479,7 @@ func testGetSignatureRequestIDsByEpochAPI(t *testing.T) {
 
 	client := globalTestEnv.GetGRPCClient(t, 0)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
 
 	epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
@@ -508,7 +508,7 @@ func testGetSignatureRequestsByEpochAPI(t *testing.T) {
 
 	client := globalTestEnv.GetGRPCClient(t, 0)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
 
 	epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
@@ -552,7 +552,7 @@ func testGetSignatureRequestAPI(t *testing.T) {
 
 	client := globalTestEnv.GetGRPCClient(t, 0)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
 
 	// First, get current epoch
@@ -602,7 +602,7 @@ func testGetLocalValidatorAPI(t *testing.T) {
 
 	client := globalTestEnv.GetGRPCClient(t, 0)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
 
 	resp, err := client.GetLocalValidator(ctx, &apiv1.GetLocalValidatorRequest{})
