@@ -1,6 +1,6 @@
 module github.com/symbioticfi/relay
 
-go 1.24.9
+go 1.25.3
 
 require (
 	github.com/RoaringBitmap/roaring/v2 v2.13.0

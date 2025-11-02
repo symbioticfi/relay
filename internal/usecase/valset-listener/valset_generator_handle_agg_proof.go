@@ -36,7 +36,7 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 		// get latest known valset
 		valsetHeader, err := s.cfg.Repo.GetLatestValidatorSetHeader(ctx)
 		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
-			slog.ErrorContext(ctx, "failed to get latest signed epoch", "error", err)
+			slog.ErrorContext(ctx, "Failed to get latest signed epoch", "error", err)
 			continue
 		}
 		if errors.Is(err, entity.ErrEntityNotFound) {
@@ -45,13 +45,13 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 
 		valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, valsetHeader.Epoch)
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to get validator set by epoch", "error", err, "epoch", valsetHeader.Epoch)
+			slog.ErrorContext(ctx, "Failed to get validator set by epoch", "error", err, "epoch", valsetHeader.Epoch)
 			continue
 		}
 
 		nwCfg, err := s.cfg.Repo.GetConfigByEpoch(ctx, valsetHeader.Epoch)
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to get network config by epoch", "error", err, "epoch", valsetHeader.Epoch)
+			slog.ErrorContext(ctx, "Failed to get network config by epoch", "error", err, "epoch", valsetHeader.Epoch)
 			continue
 		}
 
@@ -119,16 +119,16 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 			proof, err := s.cfg.Repo.GetAggregationProof(ctx, proofKey.RequestID)
 			if err != nil {
 				if errors.Is(err, entity.ErrEntityNotFound) {
-					slog.WarnContext(ctx, "no aggregation proof found for pending proof commit, ending current commit attempt")
+					slog.WarnContext(ctx, "No aggregation proof found for pending proof commit, ending current commit attempt")
 					break
 				}
-				slog.ErrorContext(ctx, "failed to get aggregation proof", "error", err)
+				slog.ErrorContext(ctx, "Failed to get aggregation proof", "error", err)
 				break
 			}
 
 			targetValset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, proofKey.Epoch)
 			if err != nil {
-				slog.ErrorContext(ctx, "failed to get validator set by epoch", "error", err)
+				slog.ErrorContext(ctx, "Failed to get validator set by epoch", "error", err)
 				break
 			}
 
@@ -148,20 +148,20 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 
 			header, err := targetValset.GetHeader()
 			if err != nil {
-				slog.ErrorContext(ctx, "failed to get validator set header", "error", err)
+				slog.ErrorContext(ctx, "Failed to get validator set header", "error", err)
 				break
 			}
 
-			slog.DebugContext(ctx, "On commit proof", "header", header, "extraData", extraData)
+			slog.DebugContext(ctx, "Committing proof to settlements", "header", header, "extraData", extraData)
 
 			err = s.commitValsetToAllSettlements(ctx, config, header, extraData, proof.Proof)
 			if err != nil {
-				slog.ErrorContext(ctx, "failed to commit valset to all settlements", "error", err)
+				slog.ErrorContext(ctx, "Failed to commit valset to all settlements", "error", err)
 				break
 			}
 
 			if err := s.cfg.Repo.RemoveProofCommitPending(ctx, proofKey.Epoch, proofKey.RequestID); err != nil {
-				slog.ErrorContext(ctx, "failed to remove proof commit pending state", "error", err)
+				slog.ErrorContext(ctx, "Failed to remove proof commit pending state", "error", err)
 				break
 			}
 		}

@@ -5,7 +5,7 @@ This directory contains end-to-end tests for the Symbiotic Relay project. The te
 ## Prerequisites
 
 - Docker and Docker Compose
-- Go 1.24+
+- Go 1.25+
 - Node.js and npm (for smart contract compilation)
 - Foundry (forge) for contract building
 

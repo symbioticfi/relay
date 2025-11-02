@@ -17,7 +17,7 @@ The example shows how to:
 
 Before running the examples, ensure you have:
 
-- **[Go 1.24 or later](https://golang.org/doc/install)** installed
+- **[Go 1.25 or later](https://golang.org/doc/install)** installed
 - **Access to a running Symbiotic Relay Network**
 - **Network connectivity** to the relay server
 - **Valid key configurations** on the relay server (for signing operations)
