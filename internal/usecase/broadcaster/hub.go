@@ -54,7 +54,7 @@ func (h *Hub[T]) Subscribe(id string) chan T {
 	// Check if subscriber already exists
 	if sub, exists := h.subscribers[id]; exists {
 		slog.Warn(
-			"subscriber already exists, returning existing channel",
+			"Subscriber already exists",
 			"id", id,
 		)
 
@@ -70,9 +70,9 @@ func (h *Hub[T]) Subscribe(id string) chan T {
 	}
 
 	slog.Debug(
-		"subscriber added",
+		"Subscriber added",
 		"id", id,
-		"total_subscribers", len(h.subscribers),
+		"totalSubscribers", len(h.subscribers),
 	)
 
 	return ch
@@ -98,9 +98,9 @@ func (h *Hub[T]) Unsubscribe(id string) {
 	delete(h.subscribers, id)
 
 	slog.Debug(
-		"subscriber removed",
+		"Subscriber removed",
 		"id", id,
-		"remaining_subscribers", len(h.subscribers),
+		"remainingSubscribers", len(h.subscribers),
 	)
 }
 
@@ -131,18 +131,18 @@ func (h *Hub[T]) Broadcast(msg T) {
 			// channel is full, drop message
 			droppedCount++
 			slog.Warn(
-				"dropped message for slow subscriber",
-				"subscriber_id", sub.id,
-				"buffer_size", h.bufferSize,
+				"Dropped message for slow subscriber",
+				"subscriberId", sub.id,
+				"bufferSize", h.bufferSize,
 			)
 		}
 	}
 
 	if droppedCount > 0 {
 		slog.Warn(
-			"broadcast completed with drops",
-			"total_subscribers", len(h.subscribers),
-			"dropped_count", droppedCount,
+			"Broadcast completed with drops",
+			"totalSubscribers", len(h.subscribers),
+			"droppedCount", droppedCount,
 		)
 	}
 }
@@ -197,5 +197,5 @@ func (h *Hub[T]) Close() {
 		delete(h.subscribers, id)
 	}
 
-	slog.Info("hub closed, all subscribers removed")
+	slog.Info("Hub closed, all subscribers removed")
 }
