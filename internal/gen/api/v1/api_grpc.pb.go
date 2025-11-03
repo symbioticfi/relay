@@ -19,25 +19,27 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SymbioticAPIService_SignMessage_FullMethodName                 = "/api.proto.v1.SymbioticAPIService/SignMessage"
-	SymbioticAPIService_GetAggregationProof_FullMethodName         = "/api.proto.v1.SymbioticAPIService/GetAggregationProof"
-	SymbioticAPIService_GetAggregationProofsByEpoch_FullMethodName = "/api.proto.v1.SymbioticAPIService/GetAggregationProofsByEpoch"
-	SymbioticAPIService_GetCurrentEpoch_FullMethodName             = "/api.proto.v1.SymbioticAPIService/GetCurrentEpoch"
-	SymbioticAPIService_GetSignatures_FullMethodName               = "/api.proto.v1.SymbioticAPIService/GetSignatures"
-	SymbioticAPIService_GetSignaturesByEpoch_FullMethodName        = "/api.proto.v1.SymbioticAPIService/GetSignaturesByEpoch"
-	SymbioticAPIService_GetSignatureRequest_FullMethodName         = "/api.proto.v1.SymbioticAPIService/GetSignatureRequest"
-	SymbioticAPIService_GetAggregationStatus_FullMethodName        = "/api.proto.v1.SymbioticAPIService/GetAggregationStatus"
-	SymbioticAPIService_GetValidatorSet_FullMethodName             = "/api.proto.v1.SymbioticAPIService/GetValidatorSet"
-	SymbioticAPIService_GetValidatorByAddress_FullMethodName       = "/api.proto.v1.SymbioticAPIService/GetValidatorByAddress"
-	SymbioticAPIService_GetValidatorByKey_FullMethodName           = "/api.proto.v1.SymbioticAPIService/GetValidatorByKey"
-	SymbioticAPIService_GetLocalValidator_FullMethodName           = "/api.proto.v1.SymbioticAPIService/GetLocalValidator"
-	SymbioticAPIService_GetValidatorSetHeader_FullMethodName       = "/api.proto.v1.SymbioticAPIService/GetValidatorSetHeader"
-	SymbioticAPIService_GetLastCommitted_FullMethodName            = "/api.proto.v1.SymbioticAPIService/GetLastCommitted"
-	SymbioticAPIService_GetLastAllCommitted_FullMethodName         = "/api.proto.v1.SymbioticAPIService/GetLastAllCommitted"
-	SymbioticAPIService_GetValidatorSetMetadata_FullMethodName     = "/api.proto.v1.SymbioticAPIService/GetValidatorSetMetadata"
-	SymbioticAPIService_ListenSignatures_FullMethodName            = "/api.proto.v1.SymbioticAPIService/ListenSignatures"
-	SymbioticAPIService_ListenProofs_FullMethodName                = "/api.proto.v1.SymbioticAPIService/ListenProofs"
-	SymbioticAPIService_ListenValidatorSet_FullMethodName          = "/api.proto.v1.SymbioticAPIService/ListenValidatorSet"
+	SymbioticAPIService_SignMessage_FullMethodName                   = "/api.proto.v1.SymbioticAPIService/SignMessage"
+	SymbioticAPIService_GetAggregationProof_FullMethodName           = "/api.proto.v1.SymbioticAPIService/GetAggregationProof"
+	SymbioticAPIService_GetAggregationProofsByEpoch_FullMethodName   = "/api.proto.v1.SymbioticAPIService/GetAggregationProofsByEpoch"
+	SymbioticAPIService_GetCurrentEpoch_FullMethodName               = "/api.proto.v1.SymbioticAPIService/GetCurrentEpoch"
+	SymbioticAPIService_GetSignatures_FullMethodName                 = "/api.proto.v1.SymbioticAPIService/GetSignatures"
+	SymbioticAPIService_GetSignaturesByEpoch_FullMethodName          = "/api.proto.v1.SymbioticAPIService/GetSignaturesByEpoch"
+	SymbioticAPIService_GetSignatureRequestIDsByEpoch_FullMethodName = "/api.proto.v1.SymbioticAPIService/GetSignatureRequestIDsByEpoch"
+	SymbioticAPIService_GetSignatureRequestsByEpoch_FullMethodName   = "/api.proto.v1.SymbioticAPIService/GetSignatureRequestsByEpoch"
+	SymbioticAPIService_GetSignatureRequest_FullMethodName           = "/api.proto.v1.SymbioticAPIService/GetSignatureRequest"
+	SymbioticAPIService_GetAggregationStatus_FullMethodName          = "/api.proto.v1.SymbioticAPIService/GetAggregationStatus"
+	SymbioticAPIService_GetValidatorSet_FullMethodName               = "/api.proto.v1.SymbioticAPIService/GetValidatorSet"
+	SymbioticAPIService_GetValidatorByAddress_FullMethodName         = "/api.proto.v1.SymbioticAPIService/GetValidatorByAddress"
+	SymbioticAPIService_GetValidatorByKey_FullMethodName             = "/api.proto.v1.SymbioticAPIService/GetValidatorByKey"
+	SymbioticAPIService_GetLocalValidator_FullMethodName             = "/api.proto.v1.SymbioticAPIService/GetLocalValidator"
+	SymbioticAPIService_GetValidatorSetHeader_FullMethodName         = "/api.proto.v1.SymbioticAPIService/GetValidatorSetHeader"
+	SymbioticAPIService_GetLastCommitted_FullMethodName              = "/api.proto.v1.SymbioticAPIService/GetLastCommitted"
+	SymbioticAPIService_GetLastAllCommitted_FullMethodName           = "/api.proto.v1.SymbioticAPIService/GetLastAllCommitted"
+	SymbioticAPIService_GetValidatorSetMetadata_FullMethodName       = "/api.proto.v1.SymbioticAPIService/GetValidatorSetMetadata"
+	SymbioticAPIService_ListenSignatures_FullMethodName              = "/api.proto.v1.SymbioticAPIService/ListenSignatures"
+	SymbioticAPIService_ListenProofs_FullMethodName                  = "/api.proto.v1.SymbioticAPIService/ListenProofs"
+	SymbioticAPIService_ListenValidatorSet_FullMethodName            = "/api.proto.v1.SymbioticAPIService/ListenValidatorSet"
 )
 
 // SymbioticAPIServiceClient is the client API for SymbioticAPIService service.
@@ -58,6 +60,10 @@ type SymbioticAPIServiceClient interface {
 	GetSignatures(ctx context.Context, in *GetSignaturesRequest, opts ...grpc.CallOption) (*GetSignaturesResponse, error)
 	// Get signature by epoch
 	GetSignaturesByEpoch(ctx context.Context, in *GetSignaturesByEpochRequest, opts ...grpc.CallOption) (*GetSignaturesByEpochResponse, error)
+	// Get all signature request IDs by epoch
+	GetSignatureRequestIDsByEpoch(ctx context.Context, in *GetSignatureRequestIDsByEpochRequest, opts ...grpc.CallOption) (*GetSignatureRequestIDsByEpochResponse, error)
+	// Get all signature requests by epoch
+	GetSignatureRequestsByEpoch(ctx context.Context, in *GetSignatureRequestsByEpochRequest, opts ...grpc.CallOption) (*GetSignatureRequestsByEpochResponse, error)
 	// Get signature request by request id
 	GetSignatureRequest(ctx context.Context, in *GetSignatureRequestRequest, opts ...grpc.CallOption) (*GetSignatureRequestResponse, error)
 	// Get aggregation status, can be sent only to aggregator nodes
@@ -148,6 +154,26 @@ func (c *symbioticAPIServiceClient) GetSignaturesByEpoch(ctx context.Context, in
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetSignaturesByEpochResponse)
 	err := c.cc.Invoke(ctx, SymbioticAPIService_GetSignaturesByEpoch_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *symbioticAPIServiceClient) GetSignatureRequestIDsByEpoch(ctx context.Context, in *GetSignatureRequestIDsByEpochRequest, opts ...grpc.CallOption) (*GetSignatureRequestIDsByEpochResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSignatureRequestIDsByEpochResponse)
+	err := c.cc.Invoke(ctx, SymbioticAPIService_GetSignatureRequestIDsByEpoch_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *symbioticAPIServiceClient) GetSignatureRequestsByEpoch(ctx context.Context, in *GetSignatureRequestsByEpochRequest, opts ...grpc.CallOption) (*GetSignatureRequestsByEpochResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSignatureRequestsByEpochResponse)
+	err := c.cc.Invoke(ctx, SymbioticAPIService_GetSignatureRequestsByEpoch_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -329,6 +355,10 @@ type SymbioticAPIServiceServer interface {
 	GetSignatures(context.Context, *GetSignaturesRequest) (*GetSignaturesResponse, error)
 	// Get signature by epoch
 	GetSignaturesByEpoch(context.Context, *GetSignaturesByEpochRequest) (*GetSignaturesByEpochResponse, error)
+	// Get all signature request IDs by epoch
+	GetSignatureRequestIDsByEpoch(context.Context, *GetSignatureRequestIDsByEpochRequest) (*GetSignatureRequestIDsByEpochResponse, error)
+	// Get all signature requests by epoch
+	GetSignatureRequestsByEpoch(context.Context, *GetSignatureRequestsByEpochRequest) (*GetSignatureRequestsByEpochResponse, error)
 	// Get signature request by request id
 	GetSignatureRequest(context.Context, *GetSignatureRequestRequest) (*GetSignatureRequestResponse, error)
 	// Get aggregation status, can be sent only to aggregator nodes
@@ -382,6 +412,12 @@ func (UnimplementedSymbioticAPIServiceServer) GetSignatures(context.Context, *Ge
 }
 func (UnimplementedSymbioticAPIServiceServer) GetSignaturesByEpoch(context.Context, *GetSignaturesByEpochRequest) (*GetSignaturesByEpochResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSignaturesByEpoch not implemented")
+}
+func (UnimplementedSymbioticAPIServiceServer) GetSignatureRequestIDsByEpoch(context.Context, *GetSignatureRequestIDsByEpochRequest) (*GetSignatureRequestIDsByEpochResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSignatureRequestIDsByEpoch not implemented")
+}
+func (UnimplementedSymbioticAPIServiceServer) GetSignatureRequestsByEpoch(context.Context, *GetSignatureRequestsByEpochRequest) (*GetSignatureRequestsByEpochResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSignatureRequestsByEpoch not implemented")
 }
 func (UnimplementedSymbioticAPIServiceServer) GetSignatureRequest(context.Context, *GetSignatureRequestRequest) (*GetSignatureRequestResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSignatureRequest not implemented")
@@ -547,6 +583,42 @@ func _SymbioticAPIService_GetSignaturesByEpoch_Handler(srv interface{}, ctx cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SymbioticAPIServiceServer).GetSignaturesByEpoch(ctx, req.(*GetSignaturesByEpochRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SymbioticAPIService_GetSignatureRequestIDsByEpoch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSignatureRequestIDsByEpochRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SymbioticAPIServiceServer).GetSignatureRequestIDsByEpoch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SymbioticAPIService_GetSignatureRequestIDsByEpoch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SymbioticAPIServiceServer).GetSignatureRequestIDsByEpoch(ctx, req.(*GetSignatureRequestIDsByEpochRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SymbioticAPIService_GetSignatureRequestsByEpoch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSignatureRequestsByEpochRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SymbioticAPIServiceServer).GetSignatureRequestsByEpoch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SymbioticAPIService_GetSignatureRequestsByEpoch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SymbioticAPIServiceServer).GetSignatureRequestsByEpoch(ctx, req.(*GetSignatureRequestsByEpochRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -794,6 +866,14 @@ var SymbioticAPIService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSignaturesByEpoch",
 			Handler:    _SymbioticAPIService_GetSignaturesByEpoch_Handler,
+		},
+		{
+			MethodName: "GetSignatureRequestIDsByEpoch",
+			Handler:    _SymbioticAPIService_GetSignatureRequestIDsByEpoch_Handler,
+		},
+		{
+			MethodName: "GetSignatureRequestsByEpoch",
+			Handler:    _SymbioticAPIService_GetSignatureRequestsByEpoch_Handler,
 		},
 		{
 			MethodName: "GetSignatureRequest",

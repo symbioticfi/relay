@@ -239,6 +239,84 @@ func local_request_SymbioticAPIService_GetSignaturesByEpoch_0(ctx context.Contex
 	return msg, metadata, err
 }
 
+func request_SymbioticAPIService_GetSignatureRequestIDsByEpoch_0(ctx context.Context, marshaler runtime.Marshaler, client SymbioticAPIServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq GetSignatureRequestIDsByEpochRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["epoch"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "epoch")
+	}
+	protoReq.Epoch, err = runtime.Uint64(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "epoch", err)
+	}
+	msg, err := client.GetSignatureRequestIDsByEpoch(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_SymbioticAPIService_GetSignatureRequestIDsByEpoch_0(ctx context.Context, marshaler runtime.Marshaler, server SymbioticAPIServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq GetSignatureRequestIDsByEpochRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	val, ok := pathParams["epoch"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "epoch")
+	}
+	protoReq.Epoch, err = runtime.Uint64(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "epoch", err)
+	}
+	msg, err := server.GetSignatureRequestIDsByEpoch(ctx, &protoReq)
+	return msg, metadata, err
+}
+
+func request_SymbioticAPIService_GetSignatureRequestsByEpoch_0(ctx context.Context, marshaler runtime.Marshaler, client SymbioticAPIServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq GetSignatureRequestsByEpochRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["epoch"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "epoch")
+	}
+	protoReq.Epoch, err = runtime.Uint64(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "epoch", err)
+	}
+	msg, err := client.GetSignatureRequestsByEpoch(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_SymbioticAPIService_GetSignatureRequestsByEpoch_0(ctx context.Context, marshaler runtime.Marshaler, server SymbioticAPIServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq GetSignatureRequestsByEpochRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	val, ok := pathParams["epoch"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "epoch")
+	}
+	protoReq.Epoch, err = runtime.Uint64(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "epoch", err)
+	}
+	msg, err := server.GetSignatureRequestsByEpoch(ctx, &protoReq)
+	return msg, metadata, err
+}
+
 func request_SymbioticAPIService_GetSignatureRequest_0(ctx context.Context, marshaler runtime.Marshaler, client SymbioticAPIServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq GetSignatureRequestRequest
@@ -849,6 +927,46 @@ func RegisterSymbioticAPIServiceHandlerServer(ctx context.Context, mux *runtime.
 		}
 		forward_SymbioticAPIService_GetSignaturesByEpoch_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
+	mux.Handle(http.MethodGet, pattern_SymbioticAPIService_GetSignatureRequestIDsByEpoch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/api.proto.v1.SymbioticAPIService/GetSignatureRequestIDsByEpoch", runtime.WithHTTPPathPattern("/v1/signature-request-ids/epoch/{epoch}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_SymbioticAPIService_GetSignatureRequestIDsByEpoch_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_SymbioticAPIService_GetSignatureRequestIDsByEpoch_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodGet, pattern_SymbioticAPIService_GetSignatureRequestsByEpoch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/api.proto.v1.SymbioticAPIService/GetSignatureRequestsByEpoch", runtime.WithHTTPPathPattern("/v1/signature-requests/epoch/{epoch}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_SymbioticAPIService_GetSignatureRequestsByEpoch_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_SymbioticAPIService_GetSignatureRequestsByEpoch_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
 	mux.Handle(http.MethodGet, pattern_SymbioticAPIService_GetSignatureRequest_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -1212,6 +1330,40 @@ func RegisterSymbioticAPIServiceHandlerClient(ctx context.Context, mux *runtime.
 		}
 		forward_SymbioticAPIService_GetSignaturesByEpoch_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
+	mux.Handle(http.MethodGet, pattern_SymbioticAPIService_GetSignatureRequestIDsByEpoch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/api.proto.v1.SymbioticAPIService/GetSignatureRequestIDsByEpoch", runtime.WithHTTPPathPattern("/v1/signature-request-ids/epoch/{epoch}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_SymbioticAPIService_GetSignatureRequestIDsByEpoch_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_SymbioticAPIService_GetSignatureRequestIDsByEpoch_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodGet, pattern_SymbioticAPIService_GetSignatureRequestsByEpoch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/api.proto.v1.SymbioticAPIService/GetSignatureRequestsByEpoch", runtime.WithHTTPPathPattern("/v1/signature-requests/epoch/{epoch}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_SymbioticAPIService_GetSignatureRequestsByEpoch_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_SymbioticAPIService_GetSignatureRequestsByEpoch_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
 	mux.Handle(http.MethodGet, pattern_SymbioticAPIService_GetSignatureRequest_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -1437,45 +1589,49 @@ func RegisterSymbioticAPIServiceHandlerClient(ctx context.Context, mux *runtime.
 }
 
 var (
-	pattern_SymbioticAPIService_SignMessage_0                 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "sign"}, ""))
-	pattern_SymbioticAPIService_GetAggregationProof_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1", "aggregation", "proof", "request_id"}, ""))
-	pattern_SymbioticAPIService_GetAggregationProofsByEpoch_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3}, []string{"v1", "aggregation", "proofs", "epoch"}, ""))
-	pattern_SymbioticAPIService_GetCurrentEpoch_0             = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "epoch", "current"}, ""))
-	pattern_SymbioticAPIService_GetSignatures_0               = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "signatures", "request_id"}, ""))
-	pattern_SymbioticAPIService_GetSignaturesByEpoch_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 2}, []string{"v1", "signatures", "epoch"}, ""))
-	pattern_SymbioticAPIService_GetSignatureRequest_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "signature-request", "request_id"}, ""))
-	pattern_SymbioticAPIService_GetAggregationStatus_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1", "aggregation", "status", "request_id"}, ""))
-	pattern_SymbioticAPIService_GetValidatorSet_0             = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "validator-set"}, ""))
-	pattern_SymbioticAPIService_GetValidatorByAddress_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 2}, []string{"v1", "validator", "address"}, ""))
-	pattern_SymbioticAPIService_GetValidatorByKey_0           = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "validator", "key", "key_tag", "on_chain_key"}, ""))
-	pattern_SymbioticAPIService_GetLocalValidator_0           = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "validator", "local"}, ""))
-	pattern_SymbioticAPIService_GetValidatorSetHeader_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "validator-set", "header"}, ""))
-	pattern_SymbioticAPIService_GetLastCommitted_0            = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1", "committed", "chain", "settlement_chain_id"}, ""))
-	pattern_SymbioticAPIService_GetLastAllCommitted_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "committed", "all"}, ""))
-	pattern_SymbioticAPIService_GetValidatorSetMetadata_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "validator-set", "metadata"}, ""))
-	pattern_SymbioticAPIService_ListenSignatures_0            = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "stream", "signatures"}, ""))
-	pattern_SymbioticAPIService_ListenProofs_0                = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "stream", "proofs"}, ""))
-	pattern_SymbioticAPIService_ListenValidatorSet_0          = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "stream", "validator-set"}, ""))
+	pattern_SymbioticAPIService_SignMessage_0                   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "sign"}, ""))
+	pattern_SymbioticAPIService_GetAggregationProof_0           = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1", "aggregation", "proof", "request_id"}, ""))
+	pattern_SymbioticAPIService_GetAggregationProofsByEpoch_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 3}, []string{"v1", "aggregation", "proofs", "epoch"}, ""))
+	pattern_SymbioticAPIService_GetCurrentEpoch_0               = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "epoch", "current"}, ""))
+	pattern_SymbioticAPIService_GetSignatures_0                 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "signatures", "request_id"}, ""))
+	pattern_SymbioticAPIService_GetSignaturesByEpoch_0          = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 2}, []string{"v1", "signatures", "epoch"}, ""))
+	pattern_SymbioticAPIService_GetSignatureRequestIDsByEpoch_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 2}, []string{"v1", "signature-request-ids", "epoch"}, ""))
+	pattern_SymbioticAPIService_GetSignatureRequestsByEpoch_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 2}, []string{"v1", "signature-requests", "epoch"}, ""))
+	pattern_SymbioticAPIService_GetSignatureRequest_0           = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "signature-request", "request_id"}, ""))
+	pattern_SymbioticAPIService_GetAggregationStatus_0          = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1", "aggregation", "status", "request_id"}, ""))
+	pattern_SymbioticAPIService_GetValidatorSet_0               = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "validator-set"}, ""))
+	pattern_SymbioticAPIService_GetValidatorByAddress_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 2}, []string{"v1", "validator", "address"}, ""))
+	pattern_SymbioticAPIService_GetValidatorByKey_0             = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "validator", "key", "key_tag", "on_chain_key"}, ""))
+	pattern_SymbioticAPIService_GetLocalValidator_0             = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "validator", "local"}, ""))
+	pattern_SymbioticAPIService_GetValidatorSetHeader_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "validator-set", "header"}, ""))
+	pattern_SymbioticAPIService_GetLastCommitted_0              = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1", "committed", "chain", "settlement_chain_id"}, ""))
+	pattern_SymbioticAPIService_GetLastAllCommitted_0           = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "committed", "all"}, ""))
+	pattern_SymbioticAPIService_GetValidatorSetMetadata_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "validator-set", "metadata"}, ""))
+	pattern_SymbioticAPIService_ListenSignatures_0              = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "stream", "signatures"}, ""))
+	pattern_SymbioticAPIService_ListenProofs_0                  = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "stream", "proofs"}, ""))
+	pattern_SymbioticAPIService_ListenValidatorSet_0            = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "stream", "validator-set"}, ""))
 )
 
 var (
-	forward_SymbioticAPIService_SignMessage_0                 = runtime.ForwardResponseMessage
-	forward_SymbioticAPIService_GetAggregationProof_0         = runtime.ForwardResponseMessage
-	forward_SymbioticAPIService_GetAggregationProofsByEpoch_0 = runtime.ForwardResponseMessage
-	forward_SymbioticAPIService_GetCurrentEpoch_0             = runtime.ForwardResponseMessage
-	forward_SymbioticAPIService_GetSignatures_0               = runtime.ForwardResponseMessage
-	forward_SymbioticAPIService_GetSignaturesByEpoch_0        = runtime.ForwardResponseMessage
-	forward_SymbioticAPIService_GetSignatureRequest_0         = runtime.ForwardResponseMessage
-	forward_SymbioticAPIService_GetAggregationStatus_0        = runtime.ForwardResponseMessage
-	forward_SymbioticAPIService_GetValidatorSet_0             = runtime.ForwardResponseMessage
-	forward_SymbioticAPIService_GetValidatorByAddress_0       = runtime.ForwardResponseMessage
-	forward_SymbioticAPIService_GetValidatorByKey_0           = runtime.ForwardResponseMessage
-	forward_SymbioticAPIService_GetLocalValidator_0           = runtime.ForwardResponseMessage
-	forward_SymbioticAPIService_GetValidatorSetHeader_0       = runtime.ForwardResponseMessage
-	forward_SymbioticAPIService_GetLastCommitted_0            = runtime.ForwardResponseMessage
-	forward_SymbioticAPIService_GetLastAllCommitted_0         = runtime.ForwardResponseMessage
-	forward_SymbioticAPIService_GetValidatorSetMetadata_0     = runtime.ForwardResponseMessage
-	forward_SymbioticAPIService_ListenSignatures_0            = runtime.ForwardResponseStream
-	forward_SymbioticAPIService_ListenProofs_0                = runtime.ForwardResponseStream
-	forward_SymbioticAPIService_ListenValidatorSet_0          = runtime.ForwardResponseStream
+	forward_SymbioticAPIService_SignMessage_0                   = runtime.ForwardResponseMessage
+	forward_SymbioticAPIService_GetAggregationProof_0           = runtime.ForwardResponseMessage
+	forward_SymbioticAPIService_GetAggregationProofsByEpoch_0   = runtime.ForwardResponseMessage
+	forward_SymbioticAPIService_GetCurrentEpoch_0               = runtime.ForwardResponseMessage
+	forward_SymbioticAPIService_GetSignatures_0                 = runtime.ForwardResponseMessage
+	forward_SymbioticAPIService_GetSignaturesByEpoch_0          = runtime.ForwardResponseMessage
+	forward_SymbioticAPIService_GetSignatureRequestIDsByEpoch_0 = runtime.ForwardResponseMessage
+	forward_SymbioticAPIService_GetSignatureRequestsByEpoch_0   = runtime.ForwardResponseMessage
+	forward_SymbioticAPIService_GetSignatureRequest_0           = runtime.ForwardResponseMessage
+	forward_SymbioticAPIService_GetAggregationStatus_0          = runtime.ForwardResponseMessage
+	forward_SymbioticAPIService_GetValidatorSet_0               = runtime.ForwardResponseMessage
+	forward_SymbioticAPIService_GetValidatorByAddress_0         = runtime.ForwardResponseMessage
+	forward_SymbioticAPIService_GetValidatorByKey_0             = runtime.ForwardResponseMessage
+	forward_SymbioticAPIService_GetLocalValidator_0             = runtime.ForwardResponseMessage
+	forward_SymbioticAPIService_GetValidatorSetHeader_0         = runtime.ForwardResponseMessage
+	forward_SymbioticAPIService_GetLastCommitted_0              = runtime.ForwardResponseMessage
+	forward_SymbioticAPIService_GetLastAllCommitted_0           = runtime.ForwardResponseMessage
+	forward_SymbioticAPIService_GetValidatorSetMetadata_0       = runtime.ForwardResponseMessage
+	forward_SymbioticAPIService_ListenSignatures_0              = runtime.ForwardResponseStream
+	forward_SymbioticAPIService_ListenProofs_0                  = runtime.ForwardResponseStream
+	forward_SymbioticAPIService_ListenValidatorSet_0            = runtime.ForwardResponseStream
 )

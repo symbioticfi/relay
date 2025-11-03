@@ -40,5 +40,6 @@ func convertSignatureToPB(sig symbiotic.Signature) *apiv1.Signature {
 		Signature:   sig.Signature,
 		MessageHash: sig.MessageHash,
 		PublicKey:   sig.PublicKey.Raw(),
+		RequestId:   sig.RequestID().Hex(),
 	}
 }

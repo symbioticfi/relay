@@ -30,7 +30,7 @@ func TestGetValidatorSetMetadata(t *testing.T) {
 
 	t.Log("Waiting for committed epoch ≥1 on all chains...")
 	for attempt := 1; attempt <= maxRetries; attempt++ {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 		lastAllCommittedResp, err := client.GetLastAllCommitted(ctx, &apiv1.GetLastAllCommittedRequest{})
 		cancel()
 
@@ -109,14 +109,14 @@ func TestGetValidatorSetMetadata(t *testing.T) {
 			require.NoError(t, err, "Failed to get signature request using request id from metadata")
 
 			// Validate the signature request
-			require.Equal(t, uint32(symbiotic.ValsetHeaderKeyTag), sigReqResp.GetKeyTag(),
+			require.Equal(t, uint32(symbiotic.ValsetHeaderKeyTag), sigReqResp.GetSignatureRequest().GetKeyTag(),
 				"Key tag should be ValsetHeaderKeyTag")
-			require.Equal(t, committedEpoch-1, sigReqResp.GetRequiredEpoch(),
+			require.Equal(t, committedEpoch-1, sigReqResp.GetSignatureRequest().GetRequiredEpoch(),
 				"Required epoch should match committed - 1 epoch")
-			require.NotEmpty(t, sigReqResp.GetMessage(), "Message should not be empty")
+			require.NotEmpty(t, sigReqResp.GetSignatureRequest().GetMessage(), "Message should not be empty")
 
 			t.Logf("Successfully retrieved signature request for key tag %d, epoch %d",
-				sigReqResp.GetKeyTag(), sigReqResp.GetRequiredEpoch())
+				sigReqResp.GetSignatureRequest().GetKeyTag(), sigReqResp.GetSignatureRequest().GetRequiredEpoch())
 		})
 
 		// Test 3: Get aggregation proof (should exist for committed epochs)

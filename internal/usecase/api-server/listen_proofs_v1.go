@@ -37,6 +37,7 @@ func (h *grpcHandler) ListenProofs(
 				AggregationProof: &apiv1.AggregationProof{
 					MessageHash: proof.MessageHash,
 					Proof:       proof.Proof,
+					RequestId:   proof.RequestID().Hex(),
 				},
 			}); err != nil {
 				return err
@@ -55,6 +56,7 @@ func (h *grpcHandler) ListenProofs(
 				AggregationProof: &apiv1.AggregationProof{
 					MessageHash: proof.MessageHash,
 					Proof:       proof.Proof,
+					RequestId:   proof.RequestID().Hex(),
 				},
 			}); err != nil {
 				return err

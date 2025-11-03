@@ -15,6 +15,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/symbioticfi/relay/internal/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
 	"github.com/symbioticfi/relay/internal/usecase/metrics"
 	"github.com/symbioticfi/relay/pkg/log"
@@ -43,6 +44,8 @@ type repo interface {
 	GetValidatorSetMetadata(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSetMetadata, error)
 	GetSignaturesStartingFromEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error)
 	GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error)
+	GetSignatureRequestIDsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]common.Hash, error)
+	GetSignatureRequestsWithIDByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]entity.SignatureRequestWithID, error)
 	GetAggregationProofsStartingFromEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.AggregationProof, error)
 	GetAggregationProofsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.AggregationProof, error)
 	GetValidatorSetsStartingFromEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.ValidatorSet, error)
