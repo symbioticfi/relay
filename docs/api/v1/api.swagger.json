@@ -223,6 +223,39 @@
         ]
       }
     },
+    "/v1/signature-request-ids/epoch/{epoch}": {
+      "get": {
+        "summary": "Get all signature request IDs by epoch",
+        "operationId": "SymbioticAPIService_GetSignatureRequestIDsByEpoch",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetSignatureRequestIDsByEpochResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "epoch",
+            "description": "Epoch number",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    },
     "/v1/signature-request/{requestId}": {
       "get": {
         "summary": "Get signature request by request id",
@@ -247,6 +280,39 @@
             "in": "path",
             "required": true,
             "type": "string"
+          }
+        ],
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    },
+    "/v1/signature-requests/epoch/{epoch}": {
+      "get": {
+        "summary": "Get all signature requests by epoch",
+        "operationId": "SymbioticAPIService_GetSignatureRequestsByEpoch",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetSignatureRequestsByEpochResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "epoch",
+            "description": "Epoch number",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
           }
         ],
         "tags": [
@@ -679,6 +745,10 @@
           "type": "string",
           "format": "byte",
           "title": "Proof data"
+        },
+        "requestId": {
+          "type": "string",
+          "title": "Request ID"
         }
       },
       "title": "Response message for getting aggregation proof"
@@ -813,26 +883,41 @@
       },
       "title": "Response message for getting local validator"
     },
+    "GetSignatureRequestIDsByEpochResponse": {
+      "type": "object",
+      "properties": {
+        "requestIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "List of all signature request IDs for the epoch"
+        }
+      },
+      "title": "Response message for getting all signature request IDs by epoch"
+    },
     "GetSignatureRequestResponse": {
       "type": "object",
       "properties": {
-        "keyTag": {
-          "type": "integer",
-          "format": "int64",
-          "title": "Key tag identifier (0-127)"
-        },
-        "message": {
-          "type": "string",
-          "format": "byte",
-          "title": "Message to be signed"
-        },
-        "requiredEpoch": {
-          "type": "string",
-          "format": "uint64",
-          "title": "Required epoch"
+        "signatureRequest": {
+          "$ref": "#/definitions/SignatureRequest"
         }
       },
       "title": "Response message for getting signature request"
+    },
+    "GetSignatureRequestsByEpochResponse": {
+      "type": "object",
+      "properties": {
+        "signatureRequests": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/SignatureRequest"
+          },
+          "title": "List of all signature requests for the epoch"
+        }
+      },
+      "title": "Response message for getting all signature requests by epoch"
     },
     "GetSignaturesByEpochResponse": {
       "type": "object",
@@ -1067,9 +1152,38 @@
           "type": "string",
           "format": "byte",
           "title": "Public key"
+        },
+        "requestId": {
+          "type": "string",
+          "title": "Request ID"
         }
       },
       "title": "Digital signature"
+    },
+    "SignatureRequest": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "title": "Request ID"
+        },
+        "keyTag": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Key tag identifier (0-127)"
+        },
+        "message": {
+          "type": "string",
+          "format": "byte",
+          "title": "Message to be signed"
+        },
+        "requiredEpoch": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Required epoch"
+        }
+      },
+      "title": "SignatureRequest represents a signature request"
     },
     "Status": {
       "type": "object",

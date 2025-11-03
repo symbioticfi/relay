@@ -34,6 +34,16 @@ func keySignatureRequestPending(epoch symbiotic.Epoch, requestID common.Hash) []
 	return []byte(fmt.Sprintf("%v%d:%s", keySignatureRequestPendingPrefix, epoch, requestID.Hex()))
 }
 
+// extractRequestIDFromKey extracts the request ID from a signature request key
+// Key format: "signature_request:epoch:hash"
+func extractRequestIDFromKey(key []byte) (common.Hash, error) {
+	parts := strings.Split(string(key), ":")
+	if len(parts) != 3 {
+		return common.Hash{}, errors.Errorf("invalid signature request key format: %s", string(key))
+	}
+	return common.HexToHash(parts[2]), nil
+}
+
 // saveSignatureRequestToKey saves a signature request to a specific key
 func (r *Repository) saveSignatureRequestToKey(ctx context.Context, req symbiotic.SignatureRequest, key []byte) error {
 	requestBytes, err := signatureRequestToBytes(req)
@@ -246,6 +256,51 @@ func (r *Repository) getSignatureRequestsByEpochWithKeys(
 	})
 }
 
+// GetSignatureRequestsWithIDByEpoch gets all signature requests with their request IDs for a given epoch
+func (r *Repository) GetSignatureRequestsWithIDByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]entity.SignatureRequestWithID, error) {
+	var requests []entity.SignatureRequestWithID
+
+	return requests, r.doViewInTx(ctx, "GetSignatureRequestsWithIDByEpoch", func(ctx context.Context) error {
+		txn := getTxn(ctx)
+
+		opts := badger.DefaultIteratorOptions
+		prefix := keySignatureRequestEpochPrefix(epoch)
+		opts.Prefix = prefix
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		it.Seek(prefix)
+
+		for ; it.ValidForPrefix(prefix); it.Next() {
+			item := it.Item()
+
+			// Extract request ID from key
+			requestID, err := extractRequestIDFromKey(item.Key())
+			if err != nil {
+				return err
+			}
+
+			value, err := item.ValueCopy(nil)
+			if err != nil {
+				return errors.Errorf("failed to copy signature request value: %w", err)
+			}
+
+			req, err := bytesToSignatureRequest(value)
+			if err != nil {
+				return errors.Errorf("failed to unmarshal signature request: %w", err)
+			}
+
+			requests = append(requests, entity.SignatureRequestWithID{
+				RequestID:        requestID,
+				SignatureRequest: req,
+			})
+		}
+
+		return nil
+	})
+}
+
+// GetSignatureRequestsByEpoch gets signature requests for a given epoch with pagination
 func (r *Repository) GetSignatureRequestsByEpoch(ctx context.Context, epoch symbiotic.Epoch, limit int, lastHash common.Hash) ([]symbiotic.SignatureRequest, error) {
 	return r.getSignatureRequestsByEpochWithKeys(
 		ctx,
@@ -255,6 +310,38 @@ func (r *Repository) GetSignatureRequestsByEpoch(ctx context.Context, epoch symb
 		keySignatureRequestEpochPrefix(epoch),
 		keySignatureRequest,
 	)
+}
+
+func (r *Repository) GetSignatureRequestIDsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]common.Hash, error) {
+	var requestIDs []common.Hash
+
+	return requestIDs, r.doViewInTx(ctx, "GetSignatureRequestIDsByEpoch", func(ctx context.Context) error {
+		txn := getTxn(ctx)
+
+		// Iterate through signature request keys without fetching values
+		opts := badger.DefaultIteratorOptions
+		prefix := keySignatureRequestEpochPrefix(epoch)
+		opts.Prefix = prefix
+		opts.PrefetchValues = false // Don't fetch values - we only need keys
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		it.Seek(prefix)
+
+		for ; it.ValidForPrefix(prefix); it.Next() {
+			item := it.Item()
+
+			// Extract request ID from key
+			requestID, err := extractRequestIDFromKey(item.Key())
+			if err != nil {
+				return err
+			}
+
+			requestIDs = append(requestIDs, requestID)
+		}
+
+		return nil
+	})
 }
 
 func (r *Repository) GetSignaturePending(ctx context.Context, limit int) ([]common.Hash, error) {

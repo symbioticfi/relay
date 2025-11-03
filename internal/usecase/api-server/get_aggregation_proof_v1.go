@@ -29,5 +29,6 @@ func convertAggregationProofToPB(proof symbiotic.AggregationProof) *apiv1.Aggreg
 	return &apiv1.AggregationProof{
 		MessageHash: proof.MessageHash,
 		Proof:       proof.Proof,
+		RequestId:   proof.RequestID().Hex(),
 	}
 }
