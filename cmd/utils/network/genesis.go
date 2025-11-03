@@ -157,7 +157,7 @@ var genesisCmd = &cobra.Command{
 					extraData)
 				if err != nil {
 					spinner.Fail("Transaction failed: ", err)
-					return errors.Errorf("failed to set genesis: %w", err)
+					return errors.Errorf("failed to set genesis for network %d: %w", settlement.ChainId, err)
 				}
 				spinner.Success("Transaction hash: ", txResult.TxHash.String())
 			}
