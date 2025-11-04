@@ -103,7 +103,7 @@ var registerSignatureCmd = &cobra.Command{
 			},
 			Message: apitypes.TypedDataMessage{
 				"operator": operator.Hex(),
-				"nonce":    nonce.String(),
+				"nonce":    (*math.HexOrDecimal256)(nonce),
 			},
 		}
 
