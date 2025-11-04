@@ -1,7 +1,7 @@
 package keys
 
 import (
-	cmdhelpers "github.com/symbioticfi/relay/internal/usecase/cmd-helpers"
+	cmdhelpers "github.com/symbioticfi/relay/cmd/utils/cmd-helpers"
 	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 

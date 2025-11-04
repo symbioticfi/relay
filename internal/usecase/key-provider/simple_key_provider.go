@@ -50,7 +50,7 @@ func (k *SimpleKeystoreProvider) GetPrivateKeyByNamespaceTypeId(namespace string
 	if err != nil {
 		if errors.Is(err, entity.ErrKeyNotFound) && namespace == EVM_KEY_NAMESPACE {
 			// For EVM keys, we check for default key with chain ID 0 if the requested chain id is absent
-			slog.Warn("Key not found, checking for default EVM key", "alias", alias)
+			slog.Warn("Key not found, falling back to default EVM key", "alias", alias)
 			defaultAlias, err := ToAlias(EVM_KEY_NAMESPACE, keyType, DEFAULT_EVM_CHAIN_ID)
 			if err != nil {
 				return nil, err

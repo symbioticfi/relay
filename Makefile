@@ -46,11 +46,11 @@ buf-lint:
 
 .PHONY: go-lint
 go-lint:
-	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0 -v run ./...
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.6.0 -v run ./...
 
 .PHONY: go-lint-fix
 go-lint-fix:
-	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0 -v run ./... --fix
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.6.0 -v run ./... --fix
 
 .PHONY: generate
 generate: install-tools generate-mocks generate-api-types generate-client-types generate-p2p-types generate-badger-types gen-abi generate-cli-docs
@@ -58,7 +58,7 @@ generate: install-tools generate-mocks generate-api-types generate-client-types 
 .PHONY: install-tools
 install-tools:
 	go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.5.1
-	go install go.uber.org/mock/mockgen@v0.5.2
+	go install go.uber.org/mock/mockgen@v0.6.0
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.6
 	go install github.com/bufbuild/buf/cmd/buf@v1.55.1

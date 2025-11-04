@@ -8,6 +8,7 @@ import (
 	"github.com/go-errors/errors"
 
 	"github.com/symbioticfi/relay/internal/entity"
+	"github.com/symbioticfi/relay/pkg/log"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
@@ -35,7 +36,7 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 		// get latest known valset
 		valsetHeader, err := s.cfg.Repo.GetLatestValidatorSetHeader(ctx)
 		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
-			slog.ErrorContext(ctx, "failed to get latest signed epoch", "error", err)
+			slog.ErrorContext(ctx, "Failed to get latest signed epoch", "error", err)
 			continue
 		}
 		if errors.Is(err, entity.ErrEntityNotFound) {
@@ -44,13 +45,13 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 
 		valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, valsetHeader.Epoch)
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to get validator set by epoch", "error", err, "epoch", valsetHeader.Epoch)
+			slog.ErrorContext(ctx, "Failed to get validator set by epoch", "error", err, "epoch", valsetHeader.Epoch)
 			continue
 		}
 
 		nwCfg, err := s.cfg.Repo.GetConfigByEpoch(ctx, valsetHeader.Epoch)
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to get network config by epoch", "error", err, "epoch", valsetHeader.Epoch)
+			slog.ErrorContext(ctx, "Failed to get network config by epoch", "error", err, "epoch", valsetHeader.Epoch)
 			continue
 		}
 
@@ -62,12 +63,12 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 		ticker.Reset(time.Duration(tickInterval) * time.Second)
 
 		if s.cfg.ForceCommitter {
-			slog.DebugContext(ctx, "Force committer mode enabled, acting as committer", "epoch", valsetHeader.Epoch)
+			slog.DebugContext(ctx, "Force committer mode enabled", "epoch", valsetHeader.Epoch)
 		} else {
 			onchainKey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(valset.RequiredKeyTag)
 			if err != nil {
 				if errors.Is(err, entity.ErrKeyNotFound) {
-					slog.DebugContext(ctx, "No Onchain key for required key tag, skipping proof commitment", "keyTag", valset.RequiredKeyTag, "epoch", valsetHeader.Epoch)
+					slog.DebugContext(ctx, "Skipped proof commitment, no onchain key for required key tag", "keyTag", valset.RequiredKeyTag, "epoch", valsetHeader.Epoch)
 					continue
 				}
 				return errors.Errorf("failed to get onchain key for required key tag %s: %w", valset.RequiredKeyTag, err)
@@ -76,7 +77,7 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 			now := symbiotic.Timestamp(uint64(time.Now().Unix()))
 
 			if !valset.IsActiveCommitter(ctx, nwCfg.CommitterSlotDuration, now, minCommitterPollIntervalSeconds, onchainKey) {
-				slog.DebugContext(ctx, "Not a committer for this valset, skipping proof commitment",
+				slog.DebugContext(ctx, "Skipped proof commitment, not a committer for this validator set",
 					"key", onchainKey,
 					"epoch", valset.Epoch,
 					"committerSlotDuration", nwCfg.CommitterSlotDuration,
@@ -107,22 +108,27 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 		}
 
 		for _, proofKey := range pendingProofs {
-			slog.DebugContext(ctx, "Found pending proof commit", "epoch", proofKey.Epoch, "requestId", proofKey.RequestID.Hex())
+			//nolint:govet // shadow is ok here, we need separate ctx for each iteration
+			ctx := log.WithAttrs(ctx,
+				slog.String("requestId", proofKey.RequestID.Hex()),
+				slog.Uint64("epoch", uint64(proofKey.Epoch)),
+			)
+			slog.DebugContext(ctx, "Found pending proof commit")
 
 			// get proof
 			proof, err := s.cfg.Repo.GetAggregationProof(ctx, proofKey.RequestID)
 			if err != nil {
 				if errors.Is(err, entity.ErrEntityNotFound) {
-					slog.WarnContext(ctx, "no aggregation proof found for pending proof commit, ending current commit attempt", "epoch", proofKey.Epoch, "requestId", proofKey.RequestID.Hex())
+					slog.WarnContext(ctx, "No aggregation proof found for pending proof commit, ending current commit attempt")
 					break
 				}
-				slog.ErrorContext(ctx, "failed to get aggregation proof", "error", err, "epoch", proofKey.Epoch, "requestId", proofKey.RequestID.Hex())
+				slog.ErrorContext(ctx, "Failed to get aggregation proof", "error", err)
 				break
 			}
 
 			targetValset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, proofKey.Epoch)
 			if err != nil {
-				slog.ErrorContext(ctx, "failed to get validator set by epoch", "error", err, "epoch", proofKey.Epoch, "requestId", proofKey.RequestID.Hex())
+				slog.ErrorContext(ctx, "Failed to get validator set by epoch", "error", err)
 				break
 			}
 
@@ -142,20 +148,20 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 
 			header, err := targetValset.GetHeader()
 			if err != nil {
-				slog.ErrorContext(ctx, "failed to get validator set header", "error", err, "epoch", proofKey.Epoch, "requestId", proofKey.RequestID.Hex())
+				slog.ErrorContext(ctx, "Failed to get validator set header", "error", err)
 				break
 			}
 
-			slog.DebugContext(ctx, "On commit proof", "header", header, "extraData", extraData)
+			slog.DebugContext(ctx, "Committing proof to settlements", "header", header, "extraData", extraData)
 
 			err = s.commitValsetToAllSettlements(ctx, config, header, extraData, proof.Proof)
 			if err != nil {
-				slog.ErrorContext(ctx, "failed to commit valset to all settlements", "error", err, "epoch", proofKey.Epoch, "requestId", proofKey.RequestID.Hex())
+				slog.ErrorContext(ctx, "Failed to commit valset to all settlements", "error", err)
 				break
 			}
 
 			if err := s.cfg.Repo.RemoveProofCommitPending(ctx, proofKey.Epoch, proofKey.RequestID); err != nil {
-				slog.ErrorContext(ctx, "failed to remove proof commit pending state", "error", err, "epoch", proofKey.Epoch, "requestId", proofKey.RequestID.Hex())
+				slog.ErrorContext(ctx, "Failed to remove proof commit pending state", "error", err)
 				break
 			}
 		}
@@ -182,7 +188,7 @@ func (s *Service) detectLastCommittedEpoch(ctx context.Context, config symbiotic
 func (s *Service) commitValsetToAllSettlements(ctx context.Context, config symbiotic.NetworkConfig, header symbiotic.ValidatorSetHeader, extraData []symbiotic.ExtraData, proof []byte) error {
 	errs := make([]error, len(config.Settlements))
 	for i, settlement := range config.Settlements {
-		slog.DebugContext(ctx, "Trying to commit valset header to settlement", "settlement", settlement)
+		slog.DebugContext(ctx, "Attempting to commit valset header to settlement", "settlement", settlement)
 
 		// todo replace it with tx check instead of call to contract
 		// if commit tx was sent but still not finalized this check will
@@ -215,7 +221,6 @@ func (s *Service) commitValsetToAllSettlements(ctx context.Context, config symbi
 		}
 
 		slog.InfoContext(ctx, "Validator set header committed",
-			"epoch", header.Epoch,
 			"settlement", settlement,
 			"txHash", result.TxHash,
 		)

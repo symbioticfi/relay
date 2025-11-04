@@ -463,7 +463,7 @@ func (v ValidatorSet) IsActiveCommitter(
 ) bool {
 	index, ok := v.findMembership(v.CommitterIndices, requiredKey)
 	if !ok {
-		slog.DebugContext(ctx, "Node is not a committer", "committer-indices", v.CommitterIndices)
+		slog.DebugContext(ctx, "Node is not a committer", "committerIndices", v.CommitterIndices)
 		return false
 	}
 
@@ -474,13 +474,13 @@ func (v ValidatorSet) IsActiveCommitter(
 
 	// If current time is before capture timestamp, we're not in any slot yet
 	if currentTime < v.CaptureTimestamp {
-		slog.DebugContext(ctx, "Current time is before capture timestamp, not in any slot yet", "current-time", currentTime, "capture-timestamp", v.CaptureTimestamp)
+		slog.DebugContext(ctx, "Current time is before capture timestamp, not in any slot yet", "currentTime", currentTime, "captureTimestamp", v.CaptureTimestamp)
 		return false
 	}
 
 	// single committer no need to check time slots
 	if len(v.CommitterIndices) == 1 {
-		slog.DebugContext(ctx, "Only one committer, defaulting to always allow", "committer-indices", v.CommitterIndices)
+		slog.DebugContext(ctx, "Only one committer, defaulting to always allow", "committerIndices", v.CommitterIndices)
 		return true
 	}
 
@@ -495,7 +495,7 @@ func (v ValidatorSet) IsActiveCommitter(
 
 	// Check if the required key matches the current slot's committer
 	if index == v.CommitterIndices[activeCommitterIndex] {
-		slog.DebugContext(ctx, "Node is active committer", "current-slot", currentSlot, "active-committer-index", activeCommitterIndex, "committer-indices", v.CommitterIndices)
+		slog.DebugContext(ctx, "Node is active committer", "currentSlot", currentSlot, "activeCommitterIndex", activeCommitterIndex, "committerIndices", v.CommitterIndices)
 		return true
 	}
 
@@ -506,12 +506,12 @@ func (v ValidatorSet) IsActiveCommitter(
 	if slotWithGrace != currentSlot {
 		nextActiveCommitterIndex := slotWithGrace % uint64(len(v.CommitterIndices))
 		if index == v.CommitterIndices[nextActiveCommitterIndex] {
-			slog.DebugContext(ctx, "Node is active committer in upcoming slot", "current-slot", currentSlot, "active-committer-index", activeCommitterIndex, "committer-index", index)
+			slog.DebugContext(ctx, "Node is active committer in upcoming slot", "currentSlot", currentSlot, "activeCommitterIndex", activeCommitterIndex, "committerIndex", index)
 			return true
 		}
 	}
 
-	slog.DebugContext(ctx, "Node is not active committer", "current-slot", currentSlot, "active-committer-index", activeCommitterIndex, "committer-index", index, "committer-indices", v.CommitterIndices)
+	slog.DebugContext(ctx, "Node is not active committer", "currentSlot", currentSlot, "activeCommitterIndex", activeCommitterIndex, "committerIndex", index, "committerIndices", v.CommitterIndices)
 	return false
 }
 

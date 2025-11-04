@@ -13,7 +13,6 @@ import (
 
 func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, p2pMsg entity.P2PMessage[symbiotic.AggregationProof]) error {
 	ctx = log.WithComponent(ctx, "signer")
-
 	ctx = log.WithAttrs(ctx,
 		slog.Uint64("epoch", uint64(p2pMsg.Message.Epoch)),
 		slog.String("requestId", p2pMsg.Message.RequestID().Hex()),
@@ -25,7 +24,7 @@ func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, p2pMs
 	if err != nil {
 		// if the aggregation proof already exists, we have already seen the message and broadcasted it so short-circuit
 		if errors.Is(err, entity.ErrEntityAlreadyExist) {
-			slog.DebugContext(ctx, "Aggregation proof already exists, skipping")
+			slog.DebugContext(ctx, "Skipped aggregation proof, already exists")
 			return nil
 		}
 		return err

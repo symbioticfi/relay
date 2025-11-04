@@ -87,7 +87,7 @@ func (s *DiscoveryService) initDHT(ctx context.Context) error {
 
 	go s.maintainConnections(ctx)
 
-	slog.InfoContext(ctx, "DHT initialized", "mode", mode, "bucket_size", 25, "concurrency", 20)
+	slog.InfoContext(ctx, "DHT initialized", "mode", mode, "bucketSize", 25, "concurrency", 20)
 	return nil
 }
 
@@ -132,7 +132,7 @@ func (s *DiscoveryService) initMDNS(ctx context.Context) error {
 		return errors.Errorf("failed to start mDNS: %w", err)
 	}
 
-	slog.InfoContext(ctx, "mDNS initialized", "service-name", s.cfg.Discovery.MDNSServiceName)
+	slog.InfoContext(ctx, "mDNS initialized", "serviceName", s.cfg.Discovery.MDNSServiceName)
 	return nil
 }
 

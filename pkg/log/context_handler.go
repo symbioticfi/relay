@@ -31,7 +31,19 @@ func WithAttrs(ctx context.Context, as ...slog.Attr) context.Context {
 	parentAttrs := getAttrs(ctx)
 	newAttrs := copyAttrs(parentAttrs, len(as))
 
-	newAttrs = append(newAttrs, as...)
+	for _, a := range as {
+		replaced := false
+		for i := range newAttrs {
+			if newAttrs[i].Key == a.Key {
+				newAttrs[i] = a
+				replaced = true
+				break
+			}
+		}
+		if !replaced {
+			newAttrs = append(newAttrs, a)
+		}
+	}
 
 	return context.WithValue(ctx, attrsKeyValue, newAttrs)
 }
