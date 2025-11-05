@@ -18,8 +18,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var unregisterSignatureCmd = &cobra.Command{
-	Use:   "unregister-signature",
+var unregisterOperatorWithSignatureCmd = &cobra.Command{
+	Use:   "unregister-operator-with-signature",
 	Short: "Generate EIP-712 signature for operator unregistration",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := signalContext(cmd.Context())
@@ -38,7 +38,7 @@ var unregisterSignatureCmd = &cobra.Command{
 		}
 
 		privateKeyInput := pterm.DefaultInteractiveTextInput.WithMask("*")
-		secret, ok := unregisterSignatureFlags.Secrets.Secrets[globalFlags.DriverChainId]
+		secret, ok := unregisterOperatorWithSignatureFlags.Secrets.Secrets[globalFlags.DriverChainId]
 		if !ok {
 			secret, _ = privateKeyInput.Show("Enter operator private key for chain with ID: " + strconv.Itoa(int(globalFlags.DriverChainId)))
 		}

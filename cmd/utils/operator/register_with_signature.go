@@ -18,8 +18,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var registerSignatureCmd = &cobra.Command{
-	Use:   "register-signature",
+var registerOperatorWithSignatureCmd = &cobra.Command{
+	Use:   "register-operator-with-signature",
 	Short: "Generate EIP-712 signature for operator registration",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := signalContext(cmd.Context())
@@ -38,7 +38,7 @@ var registerSignatureCmd = &cobra.Command{
 		}
 
 		privateKeyInput := pterm.DefaultInteractiveTextInput.WithMask("*")
-		secret, ok := registerSignatureFlags.Secrets.Secrets[globalFlags.DriverChainId]
+		secret, ok := registerOperatorWithSignatureFlags.Secrets.Secrets[globalFlags.DriverChainId]
 		if !ok {
 			secret, _ = privateKeyInput.Show("Enter operator private key for chain with ID: " + strconv.Itoa(int(globalFlags.DriverChainId)))
 		}
