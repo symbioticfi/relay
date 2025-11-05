@@ -112,18 +112,18 @@ func (s *Runner) runSignatureSync(ctx context.Context) error {
 		return errors.Errorf("failed to send want signatures request: %w", err)
 	}
 
-	slog.InfoContext(ctx, "Received signature response", "signatures_count", len(response.Signatures))
+	slog.InfoContext(ctx, "Received signature response", "signaturesCount", len(response.Signatures))
 
 	stats := s.cfg.Provider.ProcessReceivedSignatures(ctx, response, request.WantSignatures)
 
 	slog.InfoContext(ctx, "Signature sync completed",
 		"processed", stats.ProcessedCount,
-		"total_fails", stats.TotalErrors(),
-		"unrequested_signatures", stats.UnrequestedSignatureCount,
-		"unrequested_hashes", stats.UnrequestedHashCount,
-		"signature_request_fails", stats.SignatureRequestFailCount,
-		"processing_fails", stats.ProcessingFailCount,
-		"already_exist", stats.AlreadyExistCount,
+		"totalFails", stats.TotalErrors(),
+		"unrequestedSignatures", stats.UnrequestedSignatureCount,
+		"unrequestedHashes", stats.UnrequestedHashCount,
+		"signatureRequestFails", stats.SignatureRequestFailCount,
+		"processingFails", stats.ProcessingFailCount,
+		"alreadyExist", stats.AlreadyExistCount,
 	)
 
 	s.cfg.Metrics.ObserveP2PSyncSignaturesProcessed("processed", stats.ProcessedCount)
@@ -160,7 +160,7 @@ func (s *Runner) runAggregationProofSync(ctx context.Context) error {
 		return errors.Errorf("failed to send want aggregation proofs request: %w", err)
 	}
 
-	slog.InfoContext(ctx, "Received aggregation proof response", "proofs_count", len(response.Proofs))
+	slog.InfoContext(ctx, "Received aggregation proof response", "proofsCount", len(response.Proofs))
 
 	stats, err := s.cfg.Provider.ProcessReceivedAggregationProofs(ctx, response)
 	if err != nil {
@@ -169,11 +169,11 @@ func (s *Runner) runAggregationProofSync(ctx context.Context) error {
 
 	slog.InfoContext(ctx, "Aggregation proof sync completed",
 		"processed", stats.ProcessedCount,
-		"total_fails", stats.TotalErrors(),
-		"unrequested_proofs", stats.UnrequestedProofCount,
-		"verification_fails", stats.VerificationFailCount,
-		"processing_fails", stats.ProcessingFailCount,
-		"already_exist", stats.AlreadyExistCount,
+		"totalFails", stats.TotalErrors(),
+		"unrequestedProofs", stats.UnrequestedProofCount,
+		"verificationFails", stats.VerificationFailCount,
+		"processingFails", stats.ProcessingFailCount,
+		"alreadyExist", stats.AlreadyExistCount,
 	)
 
 	s.cfg.Metrics.ObserveP2PSyncAggregationProofsProcessed("processed", stats.ProcessedCount)

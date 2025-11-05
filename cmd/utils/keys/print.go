@@ -4,7 +4,8 @@ import (
 	"strconv"
 
 	"github.com/pterm/pterm"
-	cmdhelpers "github.com/symbioticfi/relay/internal/usecase/cmd-helpers"
+
+	cmdhelpers "github.com/symbioticfi/relay/cmd/utils/cmd-helpers"
 	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
 	"github.com/symbioticfi/relay/symbiotic/entity"
 

@@ -86,14 +86,14 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 		slog.Uint64("epoch", uint64(msg.Epoch)),
 		slog.String("requestId", msg.RequestID().Hex()),
 	)
-	slog.DebugContext(ctx, "Received HandleSignatureProcessedMessage", "message", msg)
+	slog.DebugContext(ctx, "Received signature processed message", "message", msg)
 
 	_, err := s.cfg.Repo.GetAggregationProof(ctx, msg.RequestID())
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return errors.Errorf("failed to get aggregation proof: %w", err)
 	}
 	if err == nil {
-		slog.DebugContext(ctx, "Aggregation proof already exists", "request", msg)
+		slog.DebugContext(ctx, "Skipped aggregation, proof already exists", "request", msg)
 		return nil
 	}
 
@@ -117,19 +117,19 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 	}
 
 	if s.cfg.ForceAggregator {
-		slog.DebugContext(ctx, "Force aggregator mode enabled, acting as aggregator")
+		slog.DebugContext(ctx, "Force aggregator mode enabled")
 	} else {
 		onchainKey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(validatorSet.RequiredKeyTag)
 		if err != nil {
 			if errors.Is(err, entity.ErrKeyNotFound) {
-				slog.DebugContext(ctx, "No Onchain key for required key tag, skipping proof aggregation", "keyTag", validatorSet.RequiredKeyTag)
+				slog.DebugContext(ctx, "Skipped aggregation, no onchain key for required key tag", "keyTag", validatorSet.RequiredKeyTag)
 				return nil
 			}
 			return errors.Errorf("failed to get private key for required key tag %s: %w", validatorSet.RequiredKeyTag, err)
 		}
 
 		if !validatorSet.IsAggregator(onchainKey) {
-			slog.DebugContext(ctx, "Not an Aggregator for this valset, skipping proof aggregation",
+			slog.DebugContext(ctx, "Skipped aggregation, not an aggregator for this validator set",
 				"key", onchainKey,
 				"epoch", msg.Epoch,
 				"aggIndices", validatorSet.AggregatorIndices,
@@ -138,12 +138,12 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 		}
 	}
 
-	slog.DebugContext(ctx, "Is an Aggregator for this valset, checking quorum")
+	slog.DebugContext(ctx, "Confirmed as aggregator for this validator set")
 
 	totalActiveVotingPower := validatorSet.GetTotalActiveVotingPower()
 
 	if !s.cfg.AggregationPolicy.ShouldAggregate(signatureMap, validatorSet) {
-		slog.DebugContext(ctx, "Quorum not reached yet",
+		slog.DebugContext(ctx, "Skipped aggregation, quorum not reached",
 			"currentVotingPower", signatureMap.CurrentVotingPower.String(),
 			"quorumThreshold", validatorSet.QuorumThreshold.String(),
 			"totalActiveVotingPower", totalActiveVotingPower.String(),
@@ -151,7 +151,7 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 		return nil
 	}
 
-	slog.InfoContext(ctx, "Quorum reached, aggregating signatures and creating proof",
+	slog.InfoContext(ctx, "Quorum reached, starting aggregation",
 		"currentVotingPower", signatureMap.CurrentVotingPower.String(),
 		"quorumThreshold", validatorSet.QuorumThreshold.String(),
 		"totalActiveVotingPower", totalActiveVotingPower.String(),
@@ -160,7 +160,7 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 	appAggregationStart := time.Now()
 
 	sigs, err := s.cfg.Repo.GetAllSignatures(ctx, msg.RequestID())
-	slog.DebugContext(ctx, "Total received signatures", "sigs", len(sigs))
+	slog.DebugContext(ctx, "Loaded signatures for aggregation", "count", len(sigs))
 	if err != nil {
 		return errors.Errorf("failed to get signature aggregated message: %w", err)
 	}
@@ -170,7 +170,7 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 		return errors.Errorf("failed to get network config: %w", err)
 	}
 
-	slog.DebugContext(ctx, "Received network config", "networkConfig", networkConfig)
+	slog.DebugContext(ctx, "Loaded network config", "networkConfig", networkConfig)
 
 	onlyAggregateStart := time.Now()
 	proofData, err := s.cfg.Aggregator.Aggregate(
@@ -184,7 +184,7 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 	}
 	s.cfg.Metrics.ObserveOnlyAggregateDuration(time.Since(onlyAggregateStart))
 
-	slog.InfoContext(ctx, "Proof created, trying to send aggregated signature message",
+	slog.InfoContext(ctx, "Aggregation proof created",
 		"duration", time.Since(appAggregationStart).String(),
 	)
 
@@ -194,8 +194,8 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 	}
 	s.cfg.Metrics.ObserveAppAggregateDuration(time.Since(appAggregationStart))
 
-	slog.InfoContext(ctx, "Proof sent via p2p",
-		"totalAggDuration", time.Since(appAggregationStart).String())
+	slog.InfoContext(ctx, "Aggregation completed, proof broadcast via p2p",
+		"totalDuration", time.Since(appAggregationStart).String())
 
 	return nil
 }

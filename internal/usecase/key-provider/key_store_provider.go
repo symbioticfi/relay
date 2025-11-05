@@ -75,7 +75,7 @@ func (k *KeystoreProvider) GetPrivateKeyByNamespaceTypeId(namespace string, keyT
 	if err != nil {
 		if errors.Is(err, entity.ErrKeyNotFound) && namespace == EVM_KEY_NAMESPACE {
 			// For EVM keys, we check for default key with chain ID 0 if the requested chain id is absent
-			slog.Warn("Key not found, checking for default EVM key", "alias", alias)
+			slog.Warn("Key not found, falling back to default EVM key", "alias", alias)
 			defaultAlias, err := ToAlias(EVM_KEY_NAMESPACE, keyType, DEFAULT_EVM_CHAIN_ID)
 			if err != nil {
 				return nil, err
@@ -137,7 +137,7 @@ func (k *KeystoreProvider) AddKey(namespace string, keyTag symbiotic.KeyTag, pri
 	}
 
 	if exists {
-		slog.Info("Key was updated!")
+		slog.Info("Key updated")
 	}
 
 	return nil
@@ -198,7 +198,7 @@ func (k *KeystoreProvider) AddKeyByNamespaceTypeId(ns string, tp symbiotic.KeyTy
 	}
 
 	if exists {
-		slog.Info("Key was updated!")
+		slog.Info("Key updated")
 	}
 
 	return nil
@@ -237,13 +237,13 @@ func (k *KeystoreProvider) dump(password string) error {
 
 	f, err := os.Create(k.filePath)
 	if err != nil {
-		slog.Error("Failed to create file", "err", err.Error(), "path", k.filePath)
+		slog.Error("Failed to create file", "error", err.Error(), "path", k.filePath)
 		return err
 	}
 
 	defer func() {
 		if err := f.Close(); err != nil {
-			slog.Warn("Failed to close file", "err", err.Error())
+			slog.Warn("Failed to close file", "error", err.Error())
 		}
 	}()
 

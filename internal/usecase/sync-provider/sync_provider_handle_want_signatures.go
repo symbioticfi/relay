@@ -27,7 +27,7 @@ import (
 //   - Skips validator indices where signatures are not found locally
 //   - Returns empty signatures map for request ids where no matching signatures are found
 func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity.WantSignaturesRequest) (entity.WantSignaturesResponse, error) {
-	slog.InfoContext(ctx, "Handling want signatures request", "request_count", len(request.WantSignatures))
+	slog.InfoContext(ctx, "Handling want signatures request", "requestCount", len(request.WantSignatures))
 
 	response := entity.WantSignaturesResponse{
 		Signatures: make(map[common.Hash][]entity.ValidatorSignature),
@@ -38,7 +38,7 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity
 	for requestID, requestedIndices := range request.WantSignatures {
 		// Check signature count limit before processing each request
 		if totalSignatureCount >= s.cfg.MaxResponseSignatureCount {
-			slog.DebugContext(ctx, "Response signature limit reached, stopping collection", "total_collected", totalSignatureCount, "limit", s.cfg.MaxResponseSignatureCount)
+			slog.DebugContext(ctx, "Response signature limit reached, stopping collection", "totalCollected", totalSignatureCount, "limit", s.cfg.MaxResponseSignatureCount)
 			break
 		}
 
@@ -50,7 +50,7 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity
 			validatorIndex := it.Next()
 			// Check limit before processing each signature
 			if totalSignatureCount >= s.cfg.MaxResponseSignatureCount {
-				slog.DebugContext(ctx, "Response signature limit reached during iteration, stopping", "total_collected", totalSignatureCount, "limit", s.cfg.MaxResponseSignatureCount)
+				slog.DebugContext(ctx, "Response signature limit reached during iteration, stopping", "totalCollected", totalSignatureCount, "limit", s.cfg.MaxResponseSignatureCount)
 				break
 			}
 
@@ -76,7 +76,7 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity
 		}
 	}
 
-	slog.InfoContext(ctx, "Want signatures request handled", "response_signatures", totalSignatureCount, "response_requests", len(response.Signatures))
+	slog.InfoContext(ctx, "Want signatures request handled", "responseSignatures", totalSignatureCount, "responseRequests", len(response.Signatures))
 
 	return response, nil
 }

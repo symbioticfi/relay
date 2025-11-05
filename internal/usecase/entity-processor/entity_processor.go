@@ -9,6 +9,7 @@ import (
 	validate "github.com/go-playground/validator/v10"
 
 	"github.com/symbioticfi/relay/internal/entity"
+	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/signals"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -66,12 +67,12 @@ func NewEntityProcessor(cfg Config) (*EntityProcessor, error) {
 
 // ProcessSignature processes a signature with SignatureMap operations and optionally saves SignatureRequest
 func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature symbiotic.Signature, self bool) error {
-	slog.DebugContext(ctx, "Processing signature",
-		"keyTag", signature.KeyTag,
-		"requestId", signature.RequestID().Hex(),
-		"epoch", signature.Epoch,
-		"self", self,
+	ctx = log.WithAttrs(ctx,
+		slog.String("requestId", signature.RequestID().Hex()),
+		slog.Uint64("epoch", uint64(signature.Epoch)),
+		slog.Uint64("keyTag", uint64(signature.KeyTag)),
 	)
+	slog.DebugContext(ctx, "Started processing signature", "self", self)
 
 	validator, activeIndex, err := s.cfg.Repo.GetValidatorByKey(ctx, signature.Epoch, signature.KeyTag, signature.PublicKey.OnChain())
 	if err != nil {
@@ -113,11 +114,12 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature symbio
 
 // ProcessAggregationProof processes an aggregation proof by saving it and removing from pending collection
 func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregationProof symbiotic.AggregationProof) error {
-	slog.DebugContext(ctx, "Processing proof",
-		"keyTag", aggregationProof.KeyTag,
-		"requestId", aggregationProof.RequestID().Hex(),
-		"epoch", aggregationProof.Epoch,
+	ctx = log.WithAttrs(ctx,
+		slog.String("requestId", aggregationProof.RequestID().Hex()),
+		slog.Uint64("epoch", uint64(aggregationProof.Epoch)),
+		slog.Uint64("keyTag", uint64(aggregationProof.KeyTag)),
 	)
+	slog.DebugContext(ctx, "Started processing aggregation proof")
 
 	_, err := s.cfg.Repo.GetAggregationProof(ctx, aggregationProof.RequestID())
 	if err == nil {

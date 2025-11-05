@@ -113,6 +113,10 @@ func (s *SignerApp) RequestSignature(ctx context.Context, req symbiotic.Signatur
 }
 
 func (s *SignerApp) completeSign(ctx context.Context, req symbiotic.SignatureRequest, p2pService p2pService) error {
+	ctx = log.WithAttrs(ctx,
+		slog.Uint64("epoch", uint64(req.RequiredEpoch)),
+		slog.Uint64("keyTag", uint64(req.KeyTag)),
+	)
 	valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, req.RequiredEpoch)
 	if err != nil {
 		return errors.Errorf("failed to get validator set: %w", err)
@@ -129,9 +133,7 @@ func (s *SignerApp) completeSign(ctx context.Context, req symbiotic.SignatureReq
 	}
 
 	if !valset.IsSigner(onchainKey) {
-		slog.DebugContext(ctx, "Not a signer for this valset, skipping signing",
-			"key_tag", req.KeyTag,
-			"epoch", req.RequiredEpoch,
+		slog.DebugContext(ctx, "Skipped signing, not a signer for this validator set",
 			"key", onchainKey,
 		)
 		msgHash, err := crypto.HashMessage(req.KeyTag.Type(), req.Message)
@@ -151,8 +153,6 @@ func (s *SignerApp) completeSign(ctx context.Context, req symbiotic.SignatureReq
 		return nil
 	}
 
-	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(req.RequiredEpoch)))
-
 	timeAppSignStart := time.Now()
 
 	pkSignStart := time.Now()
@@ -170,9 +170,11 @@ func (s *SignerApp) completeSign(ctx context.Context, req symbiotic.SignatureReq
 		Signature:   signature,
 	}
 
+	ctx = log.WithAttrs(ctx, slog.String("requestId", extendedSignature.RequestID().Hex()))
+
 	if err := s.cfg.EntityProcessor.ProcessSignature(ctx, extendedSignature, true); err != nil {
 		if errors.Is(err, entity.ErrEntityAlreadyExist) {
-			slog.InfoContext(ctx, "Signature already exists, skipping", "key_tag", req.KeyTag, "epoch", req.RequiredEpoch)
+			slog.InfoContext(ctx, "Skipped signature, already exists")
 			return nil
 		}
 		return errors.Errorf("failed to process signature: %w", err)
@@ -190,7 +192,6 @@ func (s *SignerApp) completeSign(ctx context.Context, req symbiotic.SignatureReq
 	slog.InfoContext(ctx, "Message signed",
 		"hash", hash,
 		"signature", signature,
-		"key_tag", req.KeyTag,
 		"duration", time.Since(timeAppSignStart),
 	)
 	s.cfg.Metrics.ObserveAppSignDuration(time.Since(timeAppSignStart))
@@ -224,11 +225,11 @@ func (s *SignerApp) HandleSignatureRequests(ctx context.Context, workerCount int
 }
 
 func (s *SignerApp) worker(ctx context.Context, id int, p2pService p2pService) {
-	slog.InfoContext(ctx, "Signature worker started", "worker_id", id)
+	slog.InfoContext(ctx, "Signature worker started", "workerId", id)
 	for {
 		item, shutdown := s.queue.Get()
 		if shutdown {
-			slog.InfoContext(ctx, "Worker shutting down", "worker_id", id)
+			slog.InfoContext(ctx, "Worker shutting down", "workerId", id)
 			return
 		}
 
@@ -255,13 +256,13 @@ func (s *SignerApp) handleMissedSignaturesOnce(ctx context.Context) error {
 		return errors.Errorf("failed to get self signature requests pending: %w", err)
 	}
 	if len(pendingRequests) == 0 {
-		slog.DebugContext(ctx, "No pending self signature requests")
+		slog.DebugContext(ctx, "No pending self signature requests found")
 		return nil
 	}
 
-	slog.InfoContext(ctx, "Handling pending self signature requests", "count", len(pendingRequests))
+	slog.InfoContext(ctx, "Found pending self signature requests", "count", len(pendingRequests))
 	for _, reqID := range pendingRequests {
-		slog.InfoContext(ctx, "Handling pending self signature request", "requestId", reqID.Hex())
+		slog.InfoContext(ctx, "Queued pending self signature request", "requestId", reqID.Hex())
 		s.queue.Add(reqID)
 	}
 	return nil

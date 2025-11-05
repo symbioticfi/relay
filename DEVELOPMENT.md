@@ -77,7 +77,7 @@ Exposes gRPC API for external clients to create signature requests, query proofs
 
 ### Prerequisites
 
-- **Go 1.24.3 or later**
+- **Go 1.25.3 or later**
 - **Node.js** (for contract compilation in E2E tests)
 - **Foundry/Forge** (for Solidity contracts)
 - **Docker & Docker Compose** (for E2E testing)

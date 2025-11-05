@@ -57,7 +57,7 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 	slog.DebugContext(ctx, "Received signature message", "message", msg, "sender", p2pMsg.SenderInfo.Sender)
 
 	if p2pMsg.SenderInfo.Sender == s.cfg.SelfP2PID {
-		slog.DebugContext(ctx, "Ignoring signature message from self, because it's already stored in signer")
+		slog.DebugContext(ctx, "Skipped signature from self, already stored by signer")
 		return nil
 	}
 
@@ -65,7 +65,7 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 	if err != nil {
 		// ignore if signature already exists
 		if errors.Is(err, entity.ErrEntityAlreadyExist) {
-			slog.DebugContext(ctx, "Signature already exists, ignoring")
+			slog.DebugContext(ctx, "Skipped signature, already exists")
 			return nil
 		}
 		return errors.Errorf("failed to process signature: %w", err)

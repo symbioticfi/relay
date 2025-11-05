@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
+
 	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/signals"
@@ -160,7 +161,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		}
 		if time.Unix(int64(latestHeader.CaptureTimestamp), 0).Add(time.Duration(headerEpochConfig.EpochDuration) * time.Second).After(time.Now()) {
 			// nothing to do here, latest epoch is still ongoing
-			slog.DebugContext(ctx, "Last epoch is still ongoing, no new valset to process", "last-epoch", latestHeader.Epoch)
+			slog.DebugContext(ctx, "Last epoch is still ongoing, no new valset to process", "lastEpoch", latestHeader.Epoch)
 			return nil
 		}
 		nextEpoch = latestHeader.Epoch + 1
@@ -292,10 +293,10 @@ func (s *Service) process(ctx context.Context, valSet symbiotic.ValidatorSet, co
 		if !errors.Is(err, entity.ErrEntityAlreadyExist) {
 			return errors.Errorf("failed to mark proof commit as pending: %w", err)
 		}
-		slog.DebugContext(ctx, "Proof commit is already pending, skipping", "epoch", valSet.Epoch)
+		slog.DebugContext(ctx, "Skipped proof commit, already pending", "epoch", valSet.Epoch)
 		return nil
 	}
-	slog.DebugContext(ctx, "Marked proof commit as pending", "epoch", valSet.Epoch, "request_id", extendedSig.RequestID().Hex())
+	slog.DebugContext(ctx, "Marked proof commit as pending", "epoch", valSet.Epoch, "requestId", extendedSig.RequestID().Hex())
 	return nil
 }
 

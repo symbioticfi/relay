@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	cmdhelpers "github.com/symbioticfi/relay/internal/usecase/cmd-helpers"
+	cmdhelpers "github.com/symbioticfi/relay/cmd/utils/cmd-helpers"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 
 	"github.com/ethereum/go-ethereum/common"

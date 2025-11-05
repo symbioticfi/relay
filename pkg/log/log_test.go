@@ -13,9 +13,9 @@ func TestLog(t *testing.T) {
 	Init("debug", "pretty")
 
 	slog.Info("calculations completed")
-	slog.Error("oh, no", "err", myFund(), "someTime", time.Now(), "result", 42, "duration", time.Second)
+	slog.Error("oh, no", "err", errorFunc(), "someTime", time.Now(), "result", 42, "duration", time.Second)
 	slog.Info("calculations completed", "someTime", time.Now(), "result", 42, "duration", time.Second)
-	slog.Error("oh, no", "err", errors.Errorf("hello error: %w", myFund()))
+	slog.Error("oh, no", "err", errors.Errorf("hello error: %w", errorFunc()))
 }
 
 func TestComponent(t *testing.T) {
@@ -23,12 +23,21 @@ func TestComponent(t *testing.T) {
 
 	ctx := WithComponent(t.Context(), "aggregator")
 	slog.InfoContext(ctx, "calculations completed")
-	slog.ErrorContext(ctx, "oh, no", "err", myFund(), "someTime", time.Now(), "result", 42, "duration", time.Second)
+	slog.ErrorContext(ctx, "oh, no", "err", errorFunc(), "someTime", time.Now(), "result", 42, "duration", time.Second)
 	slog.InfoContext(ctx, "calculations completed", "someTime", time.Now(), "result", 42, "duration", time.Second)
-	slog.ErrorContext(ctx, "oh, no", "err", errors.Errorf("hello error: %w", myFund()))
+	slog.ErrorContext(ctx, "oh, no", "err", errors.Errorf("hello error: %w", errorFunc()))
+
+	slog.InfoContext(WithComponent(ctx, "anotherComponent"), "with 2 components")
 }
 
-func myFund() error {
+func TestComponentJSON(t *testing.T) {
+	Init("debug", "json")
+
+	ctx := WithComponent(t.Context(), "aggregator")
+	slog.InfoContext(WithComponent(ctx, "anotherComponent"), "with 2 components")
+}
+
+func errorFunc() error {
 	return errors.New("my error")
 }
 
