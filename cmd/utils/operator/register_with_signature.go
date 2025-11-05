@@ -107,12 +107,12 @@ var registerOperatorWithSignatureCmd = &cobra.Command{
 			},
 		}
 
-		_, preHashedData, err := apitypes.TypedDataAndHash(typedData)
+		typedDataHash, _, err := apitypes.TypedDataAndHash(typedData)
 		if err != nil {
 			return errors.Errorf("failed to hash typed data: %w", err)
 		}
 
-		signature, err := crypto.Sign([]byte(preHashedData), ecdsaPk)
+		signature, err := crypto.Sign(typedDataHash, ecdsaPk)
 		if err != nil {
 			return errors.Errorf("failed to sign: %w", err)
 		}
