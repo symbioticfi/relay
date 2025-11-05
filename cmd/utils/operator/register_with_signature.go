@@ -1,7 +1,6 @@
 package operator
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -122,7 +121,7 @@ var registerOperatorWithSignatureCmd = &cobra.Command{
 			signature[64] += 27
 		}
 
-		fmt.Printf("0x%x\n", signature)
+		pterm.Success.Printf("0x%x\n", signature)
 
 		return nil
 	},
