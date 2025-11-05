@@ -94,7 +94,7 @@ func newMetrics(registerer prometheus.Registerer) *Metrics {
 		Name:    "symbiotic_relay_evm_method_call_duration_seconds",
 		Help:    "Duration of EVM method calls in seconds",
 		Buckets: defaultBuckets,
-	}, []string{"method", "status"})
+	}, []string{"method", "chainId", "status"})
 	all = append(all, m.evmMethodCall)
 
 	m.evmCommitGasUsed = prometheus.NewHistogramVec(prometheus.HistogramOpts{
@@ -224,8 +224,8 @@ func (m *Metrics) ObserveP2PPeerMessageSent(messageType, status string) {
 	m.p2pPeerMessagesSent.WithLabelValues(messageType, status).Add(1)
 }
 
-func (m *Metrics) ObserveEVMMethodCall(method string, status string, d time.Duration) {
-	m.evmMethodCall.WithLabelValues(method, status).Observe(d.Seconds())
+func (m *Metrics) ObserveEVMMethodCall(method string, chainID uint64, status string, d time.Duration) {
+	m.evmMethodCall.WithLabelValues(method, strconv.FormatUint(chainID, 10), status).Observe(d.Seconds())
 }
 
 func (m *Metrics) ObserveCommitValsetHeaderParams(chainID uint64, gasUsed uint64, effectiveGasPrice *big.Int) {

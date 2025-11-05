@@ -12,6 +12,8 @@ import (
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/symbioticfi/relay/internal/client/p2p"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
 	"github.com/symbioticfi/relay/internal/entity"
@@ -35,7 +37,6 @@ import (
 	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator"
 	symbioticCrypto "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 	valsetDeriver "github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver"
-	"golang.org/x/sync/errgroup"
 )
 
 func runApp(ctx context.Context) error {

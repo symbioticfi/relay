@@ -39,7 +39,7 @@ func (e *Client) multicall(ctx context.Context, chainId uint64, calls []Call) (_
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("Multicall", err, now)
+		e.observeMetrics("Multicall", chainId, err, now)
 	}(time.Now())
 
 	client, ok := e.conns[chainId]
