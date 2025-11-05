@@ -24,5 +24,6 @@ Operator tool
 
 * [utils](utils.md)	 - Utils tool
 * [utils operator info](utils_operator_info.md)	 - Print operator information
+* [utils operator invalidate-old-signatures](utils_operator_invalidate-old-signatures.md)	 - Invalidate old signatures for operator
 * [utils operator register-key](utils_operator_register-key.md)	 - Register operator key in key registry
 

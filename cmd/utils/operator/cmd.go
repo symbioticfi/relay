@@ -16,6 +16,7 @@ import (
 func NewOperatorCmd() *cobra.Command {
 	operatorCmd.AddCommand(infoCmd)
 	operatorCmd.AddCommand(registerKeyCmd)
+	operatorCmd.AddCommand(invalidateOldSignaturesCmd)
 
 	initFlags()
 
@@ -48,9 +49,14 @@ type RegisterKeyFlags struct {
 	KeyTag   uint8
 }
 
+type InvalidateOldSignaturesFlags struct {
+	Secrets cmdhelpers.SecretKeyMapFlag
+}
+
 var globalFlags GlobalFlags
 var infoFlags InfoFlags
 var registerKeyFlags RegisterKeyFlags
+var invalidateOldSignaturesFlags InvalidateOldSignaturesFlags
 
 func initFlags() {
 	operatorCmd.PersistentFlags().StringSliceVarP(&globalFlags.Chains, "chains", "c", nil, "Chains rpc url, comma separated")
@@ -81,6 +87,8 @@ func initFlags() {
 	if err := registerKeyCmd.MarkPersistentFlagRequired("key-tag"); err != nil {
 		panic(err)
 	}
+
+	invalidateOldSignaturesCmd.PersistentFlags().Var(&invalidateOldSignaturesFlags.Secrets, "secret-keys", "Secret key for signing in format 'chainId:key' (e.g. '1:0xabc')")
 }
 
 // signalContext returns a context that is canceled if either SIGTERM or SIGINT signal is received.
