@@ -41,26 +41,6 @@ var invalidateOldSignaturesCmd = &cobra.Command{
 			return err
 		}
 
-		privateKeyInput := pterm.DefaultInteractiveTextInput.WithMask("*")
-		secret, ok := invalidateOldSignaturesFlags.Secrets.Secrets[globalFlags.DriverChainId]
-		if !ok {
-			secret, _ = privateKeyInput.Show("Enter operator private key for chain with ID: " + strconv.Itoa(int(globalFlags.DriverChainId)))
-		}
-
-		pk, err := symbioticCrypto.NewPrivateKey(symbiotic.KeyTypeEcdsaSecp256k1, common.FromHex(secret))
-		if err != nil {
-			return err
-		}
-		err = kp.AddKeyByNamespaceTypeId(
-			keyprovider.EVM_KEY_NAMESPACE,
-			symbiotic.KeyTypeEcdsaSecp256k1,
-			int(globalFlags.DriverChainId),
-			pk,
-		)
-		if err != nil {
-			return err
-		}
-
 		currentOnChainEpoch, err := evmClient.GetCurrentEpoch(ctx)
 		if err != nil {
 			return errors.Errorf("failed to get current epoch: %w", err)
@@ -79,7 +59,29 @@ var invalidateOldSignaturesCmd = &cobra.Command{
 		if len(networkConfig.VotingPowerProviders) == 0 {
 			return errors.New("no voting power providers found in network config")
 		}
+
 		votingPowerProvider := networkConfig.VotingPowerProviders[0]
+
+		// Load the operator key for the voting power provider's chain
+		privateKeyInput := pterm.DefaultInteractiveTextInput.WithMask("*")
+		secret, ok := invalidateOldSignaturesFlags.Secrets.Secrets[votingPowerProvider.ChainId]
+		if !ok {
+			secret, _ = privateKeyInput.Show("Enter operator private key for chain with ID: " + strconv.Itoa(int(votingPowerProvider.ChainId)))
+		}
+
+		pk, err := symbioticCrypto.NewPrivateKey(symbiotic.KeyTypeEcdsaSecp256k1, common.FromHex(secret))
+		if err != nil {
+			return err
+		}
+		err = kp.AddKeyByNamespaceTypeId(
+			keyprovider.EVM_KEY_NAMESPACE,
+			symbiotic.KeyTypeEcdsaSecp256k1,
+			int(votingPowerProvider.ChainId),
+			pk,
+		)
+		if err != nil {
+			return err
+		}
 
 		txResult, err := evmClient.InvalidateOldSignatures(ctx, votingPowerProvider)
 		if err != nil {
