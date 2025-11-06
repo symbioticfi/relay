@@ -39,6 +39,8 @@ type IEvmClient interface {
 	GetNetworkAddress(ctx context.Context) (common.Address, error)
 	GetConfig(ctx context.Context, timestamp symbiotic.Timestamp, epoch symbiotic.Epoch) (symbiotic.NetworkConfig, error)
 	GetEip712Domain(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.Eip712Domain, error)
+	GetVotingPowerProviderEip712Domain(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.Eip712Domain, error)
+	GetOperatorNonce(ctx context.Context, votingPowerProvider symbiotic.CrossChainAddress, operator common.Address) (*big.Int, error)
 	GetCurrentEpoch(ctx context.Context) (symbiotic.Epoch, error)
 	GetCurrentEpochDuration(ctx context.Context) (uint64, error)
 	GetEpochDuration(ctx context.Context, epoch symbiotic.Epoch) (uint64, error)
@@ -507,6 +509,60 @@ func (e *Client) GetEip712Domain(ctx context.Context, addr symbiotic.CrossChainA
 		Salt:              new(big.Int).SetBytes(eip712Domain.Salt[:]),
 		Extensions:        eip712Domain.Extensions,
 	}, nil
+}
+
+func (e *Client) GetVotingPowerProviderEip712Domain(ctx context.Context, addr symbiotic.CrossChainAddress) (_ symbiotic.Eip712Domain, err error) {
+	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
+	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("VotingPowerProviderEip712Domain", err, now)
+	}(time.Now())
+
+	votingPowerProvider, err := e.getVotingPowerProviderContract(addr)
+	if err != nil {
+		return symbiotic.Eip712Domain{}, errors.Errorf("failed to get voting power provider contract: %w", err)
+	}
+
+	eip712Domain, err := votingPowerProvider.Eip712Domain(&bind.CallOpts{
+		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
+		Context:     toCtx,
+	})
+	if err != nil {
+		return symbiotic.Eip712Domain{}, errors.Errorf("failed to call Eip712Domain: %w", err)
+	}
+
+	return symbiotic.Eip712Domain{
+		Fields:            eip712Domain.Fields,
+		Name:              eip712Domain.Name,
+		Version:           eip712Domain.Version,
+		ChainId:           eip712Domain.ChainId,
+		VerifyingContract: eip712Domain.VerifyingContract,
+		Salt:              new(big.Int).SetBytes(eip712Domain.Salt[:]),
+		Extensions:        eip712Domain.Extensions,
+	}, nil
+}
+
+func (e *Client) GetOperatorNonce(ctx context.Context, votingPowerProvider symbiotic.CrossChainAddress, operator common.Address) (_ *big.Int, err error) {
+	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
+	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("GetOperatorNonce", err, now)
+	}(time.Now())
+
+	contract, err := e.getVotingPowerProviderContract(votingPowerProvider)
+	if err != nil {
+		return nil, errors.Errorf("failed to get voting power provider contract: %w", err)
+	}
+
+	nonce, err := contract.Nonces(&bind.CallOpts{
+		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
+		Context:     toCtx,
+	}, operator)
+	if err != nil {
+		return nil, errors.Errorf("failed to call nonces: %w", err)
+	}
+
+	return nonce, nil
 }
 
 func (e *Client) GetVotingPowers(ctx context.Context, address symbiotic.CrossChainAddress, timestamp symbiotic.Timestamp) (_ []symbiotic.OperatorVotingPower, err error) {
