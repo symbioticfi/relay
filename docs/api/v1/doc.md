@@ -261,6 +261,7 @@ Response message for getting all last committed epochs
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | epoch_infos | [GetLastAllCommittedResponse.EpochInfosEntry](#api-proto-v1-GetLastAllCommittedResponse-EpochInfosEntry) | repeated | List of settlement chains with their last committed epochs |
+| suggested_epoch_info | [ChainEpochInfo](#api-proto-v1-ChainEpochInfo) |  | Suggested epoch info for signatures, it is the minimum commited epoch among all chains |
 
 
 

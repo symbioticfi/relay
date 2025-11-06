@@ -27,6 +27,8 @@ func (h *grpcHandler) GetLastAllCommitted(ctx context.Context, _ *apiv1.GetLastA
 	}
 
 	epochInfos := make(map[uint64]*apiv1.ChainEpochInfo)
+	var minLastCommited *apiv1.ChainEpochInfo
+
 	for _, chain := range cfg.Settlements {
 		lastCommittedEpoch, err := h.cfg.EvmClient.GetLastCommittedHeaderEpoch(ctx, chain)
 		if err != nil {
@@ -42,9 +44,14 @@ func (h *grpcHandler) GetLastAllCommitted(ctx context.Context, _ *apiv1.GetLastA
 			LastCommittedEpoch: uint64(lastCommittedEpoch),
 			StartTime:          timestamppb.New(time.Unix(int64(epochStart), 0).UTC()),
 		}
+
+		if minLastCommited == nil || epochInfos[chain.ChainId].LastCommittedEpoch < minLastCommited.LastCommittedEpoch {
+			minLastCommited = epochInfos[chain.ChainId]
+		}
 	}
 
 	return &apiv1.GetLastAllCommittedResponse{
-		EpochInfos: epochInfos,
+		EpochInfos:         epochInfos,
+		SuggestedEpochInfo: minLastCommited,
 	}, nil
 }
