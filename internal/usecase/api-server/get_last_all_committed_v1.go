@@ -45,7 +45,7 @@ func (h *grpcHandler) GetLastAllCommitted(ctx context.Context, _ *apiv1.GetLastA
 			StartTime:          timestamppb.New(time.Unix(int64(epochStart), 0).UTC()),
 		}
 
-		if minLastCommited == nil || epochInfos[chain.ChainId].LastCommittedEpoch < minLastCommited.LastCommittedEpoch {
+		if minLastCommited == nil || epochInfos[chain.ChainId].GetLastCommittedEpoch() < minLastCommited.GetLastCommittedEpoch() {
 			minLastCommited = epochInfos[chain.ChainId]
 		}
 	}
