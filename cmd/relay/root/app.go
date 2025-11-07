@@ -421,16 +421,15 @@ func runApp(ctx context.Context) error {
 			addr = os.Getenv("PPROF_LISTEN_ADDRESS")
 		}
 
-		server := &http.Server{Addr: addr, Handler: httpMux}
+		server := &http.Server{Addr: addr, Handler: httpMux, ReadHeaderTimeout: time.Second * 5}
 
 		go func() {
-			select {
-			case <-egCtx.Done():
-				shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-				defer cancel()
-				if err := server.Shutdown(shutdownCtx); err != nil {
-					slog.ErrorContext(ctx, "Failed to shutdown pprof server", "error", err)
-				}
+			<-egCtx.Done()
+
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := server.Shutdown(shutdownCtx); err != nil { //nolint:contextcheck // it's ok to use background context here
+				slog.ErrorContext(ctx, "Failed to shutdown pprof server", "error", err)
 			}
 		}()
 
