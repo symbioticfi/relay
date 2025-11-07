@@ -112,7 +112,7 @@ func (s *Runner) runSignatureSync(ctx context.Context) error {
 		return errors.Errorf("failed to send want signatures request: %w", err)
 	}
 
-	slog.InfoContext(ctx, "Received signature response", "signaturesCount", len(response.Signatures))
+	slog.DebugContext(ctx, "Received signature response", "signaturesCount", len(response.Signatures))
 
 	stats := s.cfg.Provider.ProcessReceivedSignatures(ctx, response, request.WantSignatures)
 
@@ -160,7 +160,7 @@ func (s *Runner) runAggregationProofSync(ctx context.Context) error {
 		return errors.Errorf("failed to send want aggregation proofs request: %w", err)
 	}
 
-	slog.InfoContext(ctx, "Received aggregation proof response", "proofsCount", len(response.Proofs))
+	slog.DebugContext(ctx, "Received aggregation proof response", "proofsCount", len(response.Proofs))
 
 	stats, err := s.cfg.Provider.ProcessReceivedAggregationProofs(ctx, response)
 	if err != nil {

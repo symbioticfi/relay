@@ -3,6 +3,9 @@ package root
 import (
 	"context"
 	"log/slog"
+	"net/http"
+	"net/http/pprof"
+	"os"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -392,6 +395,46 @@ func runApp(ctx context.Context) error {
 			return errors.Errorf("failed to start p2p grpc server: %w", err)
 		}
 		return nil
+	})
+
+	eg.Go(func() error {
+		httpMux := http.NewServeMux()
+
+		httpMux.HandleFunc("/pprof", func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, r.RequestURI+"/", http.StatusMovedPermanently)
+		})
+		httpMux.HandleFunc("/pprof/", pprof.Index)
+		httpMux.HandleFunc("/pprof/cmdline", pprof.Cmdline)
+		httpMux.HandleFunc("/pprof/profile", pprof.Profile)
+		httpMux.HandleFunc("/pprof/symbol", pprof.Symbol)
+		httpMux.HandleFunc("/pprof/trace", pprof.Trace)
+		httpMux.Handle("/pprof/goroutine", pprof.Handler("goroutine"))
+		httpMux.Handle("/pprof/threadcreate", pprof.Handler("threadcreate"))
+		httpMux.Handle("/pprof/mutex", pprof.Handler("mutex"))
+		httpMux.Handle("/pprof/heap", pprof.Handler("heap"))
+		httpMux.Handle("/pprof/block", pprof.Handler("block"))
+		httpMux.Handle("/pprof/allocs", pprof.Handler("allocs"))
+		slog.InfoContext(ctx, "Pprof debug endpoints enabled", "path", "/pprof/")
+
+		addr := ":9999"
+		if os.Getenv("PPROF_LISTEN_ADDRESS") != "" {
+			addr = os.Getenv("PPROF_LISTEN_ADDRESS")
+		}
+
+		server := &http.Server{Addr: addr, Handler: httpMux}
+
+		go func() {
+			select {
+			case <-egCtx.Done():
+				shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				if err := server.Shutdown(shutdownCtx); err != nil {
+					slog.ErrorContext(ctx, "Failed to shutdown pprof server", "error", err)
+				}
+			}
+		}()
+
+		return server.ListenAndServe()
 	})
 
 	if !serveMetricsOnAPIAddress {
