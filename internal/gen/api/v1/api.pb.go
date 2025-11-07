@@ -2718,9 +2718,11 @@ func (*GetLastAllCommittedRequest) Descriptor() ([]byte, []int) {
 type GetLastAllCommittedResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// List of settlement chains with their last committed epochs
-	EpochInfos    map[uint64]*ChainEpochInfo `protobuf:"bytes,1,rep,name=epoch_infos,json=epochInfos,proto3" json:"epoch_infos,omitempty" protobuf_key:"varint,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	EpochInfos map[uint64]*ChainEpochInfo `protobuf:"bytes,1,rep,name=epoch_infos,json=epochInfos,proto3" json:"epoch_infos,omitempty" protobuf_key:"varint,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// Suggested epoch info for signatures, it is the minimum commited epoch among all chains
+	SuggestedEpochInfo *ChainEpochInfo `protobuf:"bytes,2,opt,name=suggested_epoch_info,json=suggestedEpochInfo,proto3" json:"suggested_epoch_info,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *GetLastAllCommittedResponse) Reset() {
@@ -2756,6 +2758,13 @@ func (*GetLastAllCommittedResponse) Descriptor() ([]byte, []int) {
 func (x *GetLastAllCommittedResponse) GetEpochInfos() map[uint64]*ChainEpochInfo {
 	if x != nil {
 		return x.EpochInfos
+	}
+	return nil
+}
+
+func (x *GetLastAllCommittedResponse) GetSuggestedEpochInfo() *ChainEpochInfo {
+	if x != nil {
+		return x.SuggestedEpochInfo
 	}
 	return nil
 }
@@ -3083,10 +3092,11 @@ const file_v1_api_proto_rawDesc = "" +
 	"\x13settlement_chain_id\x18\x01 \x01(\x04R\x11settlementChainId\x12;\n" +
 	"\n" +
 	"epoch_info\x18\x02 \x01(\v2\x1c.api.proto.v1.ChainEpochInfoR\tepochInfo\"\x1c\n" +
-	"\x1aGetLastAllCommittedRequest\"\xd6\x01\n" +
+	"\x1aGetLastAllCommittedRequest\"\xa6\x02\n" +
 	"\x1bGetLastAllCommittedResponse\x12Z\n" +
 	"\vepoch_infos\x18\x01 \x03(\v29.api.proto.v1.GetLastAllCommittedResponse.EpochInfosEntryR\n" +
-	"epochInfos\x1a[\n" +
+	"epochInfos\x12N\n" +
+	"\x14suggested_epoch_info\x18\x02 \x01(\v2\x1c.api.proto.v1.ChainEpochInfoR\x12suggestedEpochInfo\x1a[\n" +
 	"\x0fEpochInfosEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\x04R\x03key\x122\n" +
 	"\x05value\x18\x02 \x01(\v2\x1c.api.proto.v1.ChainEpochInfoR\x05value:\x028\x01\"}\n" +
@@ -3238,58 +3248,59 @@ var file_v1_api_proto_depIdxs = []int32{
 	47, // 17: api.proto.v1.Validator.vaults:type_name -> api.proto.v1.ValidatorVault
 	52, // 18: api.proto.v1.GetLastCommittedResponse.epoch_info:type_name -> api.proto.v1.ChainEpochInfo
 	54, // 19: api.proto.v1.GetLastAllCommittedResponse.epoch_infos:type_name -> api.proto.v1.GetLastAllCommittedResponse.EpochInfosEntry
-	55, // 20: api.proto.v1.ChainEpochInfo.start_time:type_name -> google.protobuf.Timestamp
-	55, // 21: api.proto.v1.ValidatorSet.capture_timestamp:type_name -> google.protobuf.Timestamp
-	0,  // 22: api.proto.v1.ValidatorSet.status:type_name -> api.proto.v1.ValidatorSetStatus
-	45, // 23: api.proto.v1.ValidatorSet.validators:type_name -> api.proto.v1.Validator
-	52, // 24: api.proto.v1.GetLastAllCommittedResponse.EpochInfosEntry.value:type_name -> api.proto.v1.ChainEpochInfo
-	3,  // 25: api.proto.v1.SymbioticAPIService.SignMessage:input_type -> api.proto.v1.SignMessageRequest
-	11, // 26: api.proto.v1.SymbioticAPIService.GetAggregationProof:input_type -> api.proto.v1.GetAggregationProofRequest
-	12, // 27: api.proto.v1.SymbioticAPIService.GetAggregationProofsByEpoch:input_type -> api.proto.v1.GetAggregationProofsByEpochRequest
-	13, // 28: api.proto.v1.SymbioticAPIService.GetCurrentEpoch:input_type -> api.proto.v1.GetCurrentEpochRequest
-	14, // 29: api.proto.v1.SymbioticAPIService.GetSignatures:input_type -> api.proto.v1.GetSignaturesRequest
-	15, // 30: api.proto.v1.SymbioticAPIService.GetSignaturesByEpoch:input_type -> api.proto.v1.GetSignaturesByEpochRequest
-	18, // 31: api.proto.v1.SymbioticAPIService.GetSignatureRequestIDsByEpoch:input_type -> api.proto.v1.GetSignatureRequestIDsByEpochRequest
-	20, // 32: api.proto.v1.SymbioticAPIService.GetSignatureRequestsByEpoch:input_type -> api.proto.v1.GetSignatureRequestsByEpochRequest
-	22, // 33: api.proto.v1.SymbioticAPIService.GetSignatureRequest:input_type -> api.proto.v1.GetSignatureRequestRequest
-	23, // 34: api.proto.v1.SymbioticAPIService.GetAggregationStatus:input_type -> api.proto.v1.GetAggregationStatusRequest
-	24, // 35: api.proto.v1.SymbioticAPIService.GetValidatorSet:input_type -> api.proto.v1.GetValidatorSetRequest
-	25, // 36: api.proto.v1.SymbioticAPIService.GetValidatorByAddress:input_type -> api.proto.v1.GetValidatorByAddressRequest
-	26, // 37: api.proto.v1.SymbioticAPIService.GetValidatorByKey:input_type -> api.proto.v1.GetValidatorByKeyRequest
-	27, // 38: api.proto.v1.SymbioticAPIService.GetLocalValidator:input_type -> api.proto.v1.GetLocalValidatorRequest
-	28, // 39: api.proto.v1.SymbioticAPIService.GetValidatorSetHeader:input_type -> api.proto.v1.GetValidatorSetHeaderRequest
-	48, // 40: api.proto.v1.SymbioticAPIService.GetLastCommitted:input_type -> api.proto.v1.GetLastCommittedRequest
-	50, // 41: api.proto.v1.SymbioticAPIService.GetLastAllCommitted:input_type -> api.proto.v1.GetLastAllCommittedRequest
-	29, // 42: api.proto.v1.SymbioticAPIService.GetValidatorSetMetadata:input_type -> api.proto.v1.GetValidatorSetMetadataRequest
-	5,  // 43: api.proto.v1.SymbioticAPIService.ListenSignatures:input_type -> api.proto.v1.ListenSignaturesRequest
-	7,  // 44: api.proto.v1.SymbioticAPIService.ListenProofs:input_type -> api.proto.v1.ListenProofsRequest
-	9,  // 45: api.proto.v1.SymbioticAPIService.ListenValidatorSet:input_type -> api.proto.v1.ListenValidatorSetRequest
-	4,  // 46: api.proto.v1.SymbioticAPIService.SignMessage:output_type -> api.proto.v1.SignMessageResponse
-	33, // 47: api.proto.v1.SymbioticAPIService.GetAggregationProof:output_type -> api.proto.v1.GetAggregationProofResponse
-	34, // 48: api.proto.v1.SymbioticAPIService.GetAggregationProofsByEpoch:output_type -> api.proto.v1.GetAggregationProofsByEpochResponse
-	30, // 49: api.proto.v1.SymbioticAPIService.GetCurrentEpoch:output_type -> api.proto.v1.GetCurrentEpochResponse
-	16, // 50: api.proto.v1.SymbioticAPIService.GetSignatures:output_type -> api.proto.v1.GetSignaturesResponse
-	17, // 51: api.proto.v1.SymbioticAPIService.GetSignaturesByEpoch:output_type -> api.proto.v1.GetSignaturesByEpochResponse
-	19, // 52: api.proto.v1.SymbioticAPIService.GetSignatureRequestIDsByEpoch:output_type -> api.proto.v1.GetSignatureRequestIDsByEpochResponse
-	21, // 53: api.proto.v1.SymbioticAPIService.GetSignatureRequestsByEpoch:output_type -> api.proto.v1.GetSignatureRequestsByEpochResponse
-	32, // 54: api.proto.v1.SymbioticAPIService.GetSignatureRequest:output_type -> api.proto.v1.GetSignatureRequestResponse
-	36, // 55: api.proto.v1.SymbioticAPIService.GetAggregationStatus:output_type -> api.proto.v1.GetAggregationStatusResponse
-	38, // 56: api.proto.v1.SymbioticAPIService.GetValidatorSet:output_type -> api.proto.v1.GetValidatorSetResponse
-	39, // 57: api.proto.v1.SymbioticAPIService.GetValidatorByAddress:output_type -> api.proto.v1.GetValidatorByAddressResponse
-	40, // 58: api.proto.v1.SymbioticAPIService.GetValidatorByKey:output_type -> api.proto.v1.GetValidatorByKeyResponse
-	41, // 59: api.proto.v1.SymbioticAPIService.GetLocalValidator:output_type -> api.proto.v1.GetLocalValidatorResponse
-	44, // 60: api.proto.v1.SymbioticAPIService.GetValidatorSetHeader:output_type -> api.proto.v1.GetValidatorSetHeaderResponse
-	49, // 61: api.proto.v1.SymbioticAPIService.GetLastCommitted:output_type -> api.proto.v1.GetLastCommittedResponse
-	51, // 62: api.proto.v1.SymbioticAPIService.GetLastAllCommitted:output_type -> api.proto.v1.GetLastAllCommittedResponse
-	43, // 63: api.proto.v1.SymbioticAPIService.GetValidatorSetMetadata:output_type -> api.proto.v1.GetValidatorSetMetadataResponse
-	6,  // 64: api.proto.v1.SymbioticAPIService.ListenSignatures:output_type -> api.proto.v1.ListenSignaturesResponse
-	8,  // 65: api.proto.v1.SymbioticAPIService.ListenProofs:output_type -> api.proto.v1.ListenProofsResponse
-	10, // 66: api.proto.v1.SymbioticAPIService.ListenValidatorSet:output_type -> api.proto.v1.ListenValidatorSetResponse
-	46, // [46:67] is the sub-list for method output_type
-	25, // [25:46] is the sub-list for method input_type
-	25, // [25:25] is the sub-list for extension type_name
-	25, // [25:25] is the sub-list for extension extendee
-	0,  // [0:25] is the sub-list for field type_name
+	52, // 20: api.proto.v1.GetLastAllCommittedResponse.suggested_epoch_info:type_name -> api.proto.v1.ChainEpochInfo
+	55, // 21: api.proto.v1.ChainEpochInfo.start_time:type_name -> google.protobuf.Timestamp
+	55, // 22: api.proto.v1.ValidatorSet.capture_timestamp:type_name -> google.protobuf.Timestamp
+	0,  // 23: api.proto.v1.ValidatorSet.status:type_name -> api.proto.v1.ValidatorSetStatus
+	45, // 24: api.proto.v1.ValidatorSet.validators:type_name -> api.proto.v1.Validator
+	52, // 25: api.proto.v1.GetLastAllCommittedResponse.EpochInfosEntry.value:type_name -> api.proto.v1.ChainEpochInfo
+	3,  // 26: api.proto.v1.SymbioticAPIService.SignMessage:input_type -> api.proto.v1.SignMessageRequest
+	11, // 27: api.proto.v1.SymbioticAPIService.GetAggregationProof:input_type -> api.proto.v1.GetAggregationProofRequest
+	12, // 28: api.proto.v1.SymbioticAPIService.GetAggregationProofsByEpoch:input_type -> api.proto.v1.GetAggregationProofsByEpochRequest
+	13, // 29: api.proto.v1.SymbioticAPIService.GetCurrentEpoch:input_type -> api.proto.v1.GetCurrentEpochRequest
+	14, // 30: api.proto.v1.SymbioticAPIService.GetSignatures:input_type -> api.proto.v1.GetSignaturesRequest
+	15, // 31: api.proto.v1.SymbioticAPIService.GetSignaturesByEpoch:input_type -> api.proto.v1.GetSignaturesByEpochRequest
+	18, // 32: api.proto.v1.SymbioticAPIService.GetSignatureRequestIDsByEpoch:input_type -> api.proto.v1.GetSignatureRequestIDsByEpochRequest
+	20, // 33: api.proto.v1.SymbioticAPIService.GetSignatureRequestsByEpoch:input_type -> api.proto.v1.GetSignatureRequestsByEpochRequest
+	22, // 34: api.proto.v1.SymbioticAPIService.GetSignatureRequest:input_type -> api.proto.v1.GetSignatureRequestRequest
+	23, // 35: api.proto.v1.SymbioticAPIService.GetAggregationStatus:input_type -> api.proto.v1.GetAggregationStatusRequest
+	24, // 36: api.proto.v1.SymbioticAPIService.GetValidatorSet:input_type -> api.proto.v1.GetValidatorSetRequest
+	25, // 37: api.proto.v1.SymbioticAPIService.GetValidatorByAddress:input_type -> api.proto.v1.GetValidatorByAddressRequest
+	26, // 38: api.proto.v1.SymbioticAPIService.GetValidatorByKey:input_type -> api.proto.v1.GetValidatorByKeyRequest
+	27, // 39: api.proto.v1.SymbioticAPIService.GetLocalValidator:input_type -> api.proto.v1.GetLocalValidatorRequest
+	28, // 40: api.proto.v1.SymbioticAPIService.GetValidatorSetHeader:input_type -> api.proto.v1.GetValidatorSetHeaderRequest
+	48, // 41: api.proto.v1.SymbioticAPIService.GetLastCommitted:input_type -> api.proto.v1.GetLastCommittedRequest
+	50, // 42: api.proto.v1.SymbioticAPIService.GetLastAllCommitted:input_type -> api.proto.v1.GetLastAllCommittedRequest
+	29, // 43: api.proto.v1.SymbioticAPIService.GetValidatorSetMetadata:input_type -> api.proto.v1.GetValidatorSetMetadataRequest
+	5,  // 44: api.proto.v1.SymbioticAPIService.ListenSignatures:input_type -> api.proto.v1.ListenSignaturesRequest
+	7,  // 45: api.proto.v1.SymbioticAPIService.ListenProofs:input_type -> api.proto.v1.ListenProofsRequest
+	9,  // 46: api.proto.v1.SymbioticAPIService.ListenValidatorSet:input_type -> api.proto.v1.ListenValidatorSetRequest
+	4,  // 47: api.proto.v1.SymbioticAPIService.SignMessage:output_type -> api.proto.v1.SignMessageResponse
+	33, // 48: api.proto.v1.SymbioticAPIService.GetAggregationProof:output_type -> api.proto.v1.GetAggregationProofResponse
+	34, // 49: api.proto.v1.SymbioticAPIService.GetAggregationProofsByEpoch:output_type -> api.proto.v1.GetAggregationProofsByEpochResponse
+	30, // 50: api.proto.v1.SymbioticAPIService.GetCurrentEpoch:output_type -> api.proto.v1.GetCurrentEpochResponse
+	16, // 51: api.proto.v1.SymbioticAPIService.GetSignatures:output_type -> api.proto.v1.GetSignaturesResponse
+	17, // 52: api.proto.v1.SymbioticAPIService.GetSignaturesByEpoch:output_type -> api.proto.v1.GetSignaturesByEpochResponse
+	19, // 53: api.proto.v1.SymbioticAPIService.GetSignatureRequestIDsByEpoch:output_type -> api.proto.v1.GetSignatureRequestIDsByEpochResponse
+	21, // 54: api.proto.v1.SymbioticAPIService.GetSignatureRequestsByEpoch:output_type -> api.proto.v1.GetSignatureRequestsByEpochResponse
+	32, // 55: api.proto.v1.SymbioticAPIService.GetSignatureRequest:output_type -> api.proto.v1.GetSignatureRequestResponse
+	36, // 56: api.proto.v1.SymbioticAPIService.GetAggregationStatus:output_type -> api.proto.v1.GetAggregationStatusResponse
+	38, // 57: api.proto.v1.SymbioticAPIService.GetValidatorSet:output_type -> api.proto.v1.GetValidatorSetResponse
+	39, // 58: api.proto.v1.SymbioticAPIService.GetValidatorByAddress:output_type -> api.proto.v1.GetValidatorByAddressResponse
+	40, // 59: api.proto.v1.SymbioticAPIService.GetValidatorByKey:output_type -> api.proto.v1.GetValidatorByKeyResponse
+	41, // 60: api.proto.v1.SymbioticAPIService.GetLocalValidator:output_type -> api.proto.v1.GetLocalValidatorResponse
+	44, // 61: api.proto.v1.SymbioticAPIService.GetValidatorSetHeader:output_type -> api.proto.v1.GetValidatorSetHeaderResponse
+	49, // 62: api.proto.v1.SymbioticAPIService.GetLastCommitted:output_type -> api.proto.v1.GetLastCommittedResponse
+	51, // 63: api.proto.v1.SymbioticAPIService.GetLastAllCommitted:output_type -> api.proto.v1.GetLastAllCommittedResponse
+	43, // 64: api.proto.v1.SymbioticAPIService.GetValidatorSetMetadata:output_type -> api.proto.v1.GetValidatorSetMetadataResponse
+	6,  // 65: api.proto.v1.SymbioticAPIService.ListenSignatures:output_type -> api.proto.v1.ListenSignaturesResponse
+	8,  // 66: api.proto.v1.SymbioticAPIService.ListenProofs:output_type -> api.proto.v1.ListenProofsResponse
+	10, // 67: api.proto.v1.SymbioticAPIService.ListenValidatorSet:output_type -> api.proto.v1.ListenValidatorSetResponse
+	47, // [47:68] is the sub-list for method output_type
+	26, // [26:47] is the sub-list for method input_type
+	26, // [26:26] is the sub-list for extension type_name
+	26, // [26:26] is the sub-list for extension extendee
+	0,  // [0:26] is the sub-list for field type_name
 }
 
 func init() { file_v1_api_proto_init() }
