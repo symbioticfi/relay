@@ -25,4 +25,6 @@ Operator tool
 * [utils](utils.md)	 - Utils tool
 * [utils operator info](utils_operator_info.md)	 - Print operator information
 * [utils operator register-key](utils_operator_register-key.md)	 - Register operator key in key registry
+* [utils operator register-operator-with-signature](utils_operator_register-operator-with-signature.md)	 - Generate EIP-712 signature for operator registration
+* [utils operator unregister-operator-with-signature](utils_operator_unregister-operator-with-signature.md)	 - Generate EIP-712 signature for operator unregistration
 
