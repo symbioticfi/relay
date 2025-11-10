@@ -146,7 +146,7 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregati
 		return errors.Errorf("failed to add aggregation proof: %w", err)
 	}
 
-	slog.InfoContext(ctx, "Proof saved")
+	slog.DebugContext(ctx, "Proof saved")
 
 	// Emit signal after successful save
 	if err := s.cfg.AggProofSignal.Emit(aggregationProof); err != nil {

@@ -516,7 +516,7 @@ func (e *Client) GetVotingPowerProviderEip712Domain(ctx context.Context, addr sy
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("VotingPowerProviderEip712Domain", err, now)
+		e.observeMetrics("VotingPowerProviderEip712Domain", addr.ChainId, err, now)
 	}(time.Now())
 
 	votingPowerProvider, err := e.getVotingPowerProviderContract(addr)
@@ -547,7 +547,7 @@ func (e *Client) GetOperatorNonce(ctx context.Context, votingPowerProvider symbi
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("GetOperatorNonce", err, now)
+		e.observeMetrics("GetOperatorNonce", e.driverChainID, err, now)
 	}(time.Now())
 
 	contract, err := e.getVotingPowerProviderContract(votingPowerProvider)

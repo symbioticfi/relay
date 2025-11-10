@@ -183,79 +183,29 @@ func NewService(ctx context.Context, cfg Config, signalCfg signals.Config) (*Ser
 
 func (s *Service) listenForMessages(ctx context.Context, sub *pubsub.Subscription, topic *pubsub.Topic, handler func(msg *pubsub.Message) error) {
 	slog.DebugContext(ctx, "Starting message listener", "topic", topic.String())
-
-	// Heartbeat ticker to monitor listener health
-	heartbeat := time.NewTicker(1 * time.Minute)
-	defer heartbeat.Stop()
-
-	messageCount := 0
-	lastMessageTime := time.Now()
-	handlerTimeouts := 0
-
 	defer func() {
 		if err := topic.Close(); err != nil && !errors.Is(err, context.Canceled) {
 			slog.WarnContext(ctx, "Failed to close topic", "topic", topic.String(), "error", err)
 		}
 		sub.Cancel()
-		slog.InfoContext(ctx, "Subscription and topic closed", "topic", topic.String(),
-			"totalMessages", messageCount, "handlerTimeouts", handlerTimeouts)
+		slog.InfoContext(ctx, "Subscription and topic closed", "topic", topic.String())
 	}()
 
 	for {
-		select {
-		case <-heartbeat.C:
-			// Log heartbeat to verify listener is still alive
-			slog.InfoContext(ctx, "Listener heartbeat",
-				"topic", topic.String(),
-				"messagesProcessed", messageCount,
-				"timeSinceLastMessage", time.Since(lastMessageTime),
-				"handlerTimeouts", handlerTimeouts,
-				"subscriptionValid", sub != nil)
-			continue
-
-		default:
-			// Continue to message processing
-		}
-
 		msg, err := sub.Next(ctx)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				slog.InfoContext(ctx, "Subscription context canceled, stopping listener", "topic", topic.String())
 				return
 			}
-			slog.ErrorContext(ctx, "Failed to read from subscription", "error", err, "topic", topic.String())
+			slog.ErrorContext(ctx, "Failed to read from subscription", "error", err)
 			return
 		}
 
-		messageCount++
-		lastMessageTime = time.Now()
-
-		slog.DebugContext(ctx, "Received message from p2p", "topic", msg.Topic, "from", msg.ReceivedFrom, "messageNumber", messageCount)
-
-		// Create a timeout context for handler to prevent blocking indefinitely
-		handlerCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
-
-		// Run handler in goroutine with timeout protection
-		handlerDone := make(chan error, 1)
-		go func() {
-			handlerDone <- handler(msg)
-		}()
-
-		select {
-		case err := <-handlerDone:
-			cancel()
-			if err != nil {
-				slog.ErrorContext(ctx, "Failed to handle message", "error", err, "topic", msg.Topic, "from", msg.ReceivedFrom)
-			}
-		case <-handlerCtx.Done():
-			cancel()
-			handlerTimeouts++
-			slog.ErrorContext(ctx, "Handler timeout - message processing blocked",
-				"topic", *msg.Topic,
-				"from", msg.ReceivedFrom,
-				"timeout", "30s",
-				"totalTimeouts", handlerTimeouts)
-			s.metrics.ObserveP2PPeerMessageSent(*msg.Topic, "handler_timeout")
+		slog.DebugContext(ctx, "Received message from p2p", "topic", msg.Topic, "from", msg.ReceivedFrom)
+		if err := handler(msg); err != nil {
+			slog.ErrorContext(ctx, "Failed to handle message", "error", err, "message", msg)
+			continue
 		}
 	}
 }

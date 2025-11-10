@@ -3,9 +3,6 @@ package root
 import (
 	"context"
 	"log/slog"
-	"net/http"
-	"net/http/pprof"
-	"os"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -43,6 +40,8 @@ import (
 )
 
 func runApp(ctx context.Context) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	cfg := cfgFromCtx(ctx)
 	log.Init(cfg.Log.Level, cfg.Log.Mode)
 	mtr := metrics.New(metrics.Config{})
@@ -209,11 +208,12 @@ func runApp(ctx context.Context) error {
 
 	// also start monitoring for new epochs immediately so that we don't miss any epochs while starting other services
 	eg.Go(func() error {
-		if err := listener.Start(egCtx); err != nil {
-			slog.ErrorContext(ctx, "!!!Valset listener failed", "error", err)
+		err := listener.Start(egCtx)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.ErrorContext(ctx, "Valset listener failed", "error", err)
 			return errors.Errorf("failed to start valset listener: %w", err)
 		}
-		slog.InfoContext(ctx, "!!!Finished valset listener")
+		slog.InfoContext(ctx, "Valset listener stopped")
 		return nil
 	})
 
@@ -224,11 +224,12 @@ func runApp(ctx context.Context) error {
 	defer p2pService.Close()
 
 	eg.Go(func() error {
-		if err := signer.HandleSignatureRequests(egCtx, cfg.SignalCfg.WorkerCount, p2pService); err != nil {
-			slog.ErrorContext(ctx, "!!!Valset listener failed", "error", err)
+		err := signer.HandleSignatureRequests(egCtx, cfg.SignalCfg.WorkerCount, p2pService)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.ErrorContext(ctx, "Signature requests handler failed", "error", err)
 			return errors.Errorf("failed to handle missing self signatures: %w", err)
 		}
-		slog.InfoContext(ctx, "!!!Finished handling missing self signatures")
+		slog.InfoContext(ctx, "Signature requests handler stopped")
 		return nil
 	})
 
@@ -286,20 +287,22 @@ func runApp(ctx context.Context) error {
 	}
 
 	eg.Go(func() error {
-		if err := statusTracker.Start(egCtx); err != nil {
-			slog.ErrorContext(ctx, "!!!Valset status tracker failed", "error", err)
+		err := statusTracker.Start(egCtx)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.ErrorContext(ctx, "Valset status tracker failed", "error", err)
 			return errors.Errorf("failed to start valset status tracker: %w", err)
 		}
-		slog.InfoContext(ctx, "!!!Finished valset status tracker")
+		slog.InfoContext(ctx, "Valset status tracker stopped")
 		return nil
 	})
 
 	eg.Go(func() error {
-		if err := listener.StartCommitterLoop(egCtx); err != nil {
-			slog.ErrorContext(ctx, "!!!Valset listener committer loop failed", "error", err)
+		err := listener.StartCommitterLoop(egCtx)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.ErrorContext(ctx, "Valset listener committer loop failed", "error", err)
 			return errors.Errorf("failed to start committer loop: %w", err)
 		}
-		slog.InfoContext(ctx, "!!!Finished valset listener committer loop")
+		slog.InfoContext(ctx, "Valset listener committer loop stopped")
 		return nil
 	})
 
@@ -385,70 +388,33 @@ func runApp(ctx context.Context) error {
 	slog.DebugContext(ctx, "Created aggregator app, starting")
 
 	eg.Go(func() error {
-		if err := api.Start(egCtx); err != nil {
-			slog.ErrorContext(ctx, "!!!API server failed", "error", err)
+		err := api.Start(egCtx)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.ErrorContext(ctx, "API server failed", "error", err)
 			return errors.Errorf("failed to start api server: %w", err)
 		}
-		slog.InfoContext(ctx, "!!!Finished api server", "address", cfg.API.ListenAddress)
+		slog.InfoContext(ctx, "API server stopped")
 		return nil
 	})
 
 	eg.Go(func() error {
-		if err := syncRunner.Start(ctx); err != nil {
-			slog.ErrorContext(ctx, "!!!Sync runner failed", "error", err)
+		err := syncRunner.Start(egCtx)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.ErrorContext(ctx, "Sync runner failed", "error", err)
 			return errors.Errorf("failed to start sync runner: %w", err)
 		}
-		slog.InfoContext(ctx, "!!!Started sync finished")
+		slog.InfoContext(ctx, "Sync finished stopped")
 		return nil
 	})
 
 	eg.Go(func() error {
-		if err := p2pService.StartGRPCServer(egCtx); err != nil {
-			slog.ErrorContext(ctx, "!!!P2P grpc server failed", "error", err)
+		err := p2pService.StartGRPCServer(egCtx)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.ErrorContext(ctx, "P2P grpc server failed", "error", err)
 			return errors.Errorf("failed to start p2p grpc server: %w", err)
 		}
-		slog.InfoContext(ctx, "!!!Finished p2p grpc server")
+		slog.InfoContext(ctx, "P2P grpc server stopped")
 		return nil
-	})
-
-	eg.Go(func() error {
-		httpMux := http.NewServeMux()
-
-		httpMux.HandleFunc("/pprof", func(w http.ResponseWriter, r *http.Request) {
-			http.Redirect(w, r, r.RequestURI+"/", http.StatusMovedPermanently)
-		})
-		httpMux.HandleFunc("/pprof/", pprof.Index)
-		httpMux.HandleFunc("/pprof/cmdline", pprof.Cmdline)
-		httpMux.HandleFunc("/pprof/profile", pprof.Profile)
-		httpMux.HandleFunc("/pprof/symbol", pprof.Symbol)
-		httpMux.HandleFunc("/pprof/trace", pprof.Trace)
-		httpMux.Handle("/pprof/goroutine", pprof.Handler("goroutine"))
-		httpMux.Handle("/pprof/threadcreate", pprof.Handler("threadcreate"))
-		httpMux.Handle("/pprof/mutex", pprof.Handler("mutex"))
-		httpMux.Handle("/pprof/heap", pprof.Handler("heap"))
-		httpMux.Handle("/pprof/block", pprof.Handler("block"))
-		httpMux.Handle("/pprof/allocs", pprof.Handler("allocs"))
-		slog.InfoContext(ctx, "Pprof debug endpoints enabled", "path", "/pprof/")
-
-		addr := ":9999"
-		if os.Getenv("PPROF_LISTEN_ADDRESS") != "" {
-			addr = os.Getenv("PPROF_LISTEN_ADDRESS")
-		}
-
-		server := &http.Server{Addr: addr, Handler: httpMux, ReadHeaderTimeout: time.Second * 5}
-
-		go func() {
-			<-egCtx.Done()
-			slog.InfoContext(ctx, "Shutting down pprof server")
-
-			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			if err := server.Shutdown(shutdownCtx); err != nil { //nolint:contextcheck // it's ok to use background context here
-				slog.ErrorContext(ctx, "Failed to shutdown pprof server", "error", err)
-			}
-		}()
-
-		return server.ListenAndServe()
 	})
 
 	if !serveMetricsOnAPIAddress {
@@ -462,11 +428,12 @@ func runApp(ctx context.Context) error {
 
 		slog.DebugContext(ctx, "Created metrics app, starting")
 		eg.Go(func() error {
-			if err := mtrApp.Start(egCtx); err != nil {
-				slog.ErrorContext(ctx, "!!!Metrics server failed", "error", err)
+			err := mtrApp.Start(egCtx)
+			if err != nil {
+				slog.ErrorContext(ctx, "Metrics server failed", "error", err)
 				return errors.Errorf("failed to start metrics server: %w", err)
 			}
-			slog.InfoContext(ctx, "!!!Finished metrics server", "address", cfg.Metrics.ListenAddress)
+			slog.InfoContext(ctx, "Metrics server stopped")
 			return nil
 		})
 	}
