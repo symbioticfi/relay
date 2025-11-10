@@ -3,6 +3,7 @@ package root
 import (
 	"context"
 	"log/slog"
+	"net/http"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -12,6 +13,8 @@ import (
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/symbioticfi/relay/internal/client/p2p"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
 	"github.com/symbioticfi/relay/internal/entity"
@@ -35,10 +38,11 @@ import (
 	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator"
 	symbioticCrypto "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 	valsetDeriver "github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver"
-	"golang.org/x/sync/errgroup"
 )
 
 func runApp(ctx context.Context) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	cfg := cfgFromCtx(ctx)
 	log.Init(cfg.Log.Level, cfg.Log.Mode)
 	mtr := metrics.New(metrics.Config{})
@@ -205,9 +209,12 @@ func runApp(ctx context.Context) error {
 
 	// also start monitoring for new epochs immediately so that we don't miss any epochs while starting other services
 	eg.Go(func() error {
-		if err := listener.Start(egCtx); err != nil {
+		err := listener.Start(egCtx)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.ErrorContext(ctx, "Valset listener failed", "error", err)
 			return errors.Errorf("failed to start valset listener: %w", err)
 		}
+		slog.InfoContext(ctx, "Valset listener stopped")
 		return nil
 	})
 
@@ -218,9 +225,12 @@ func runApp(ctx context.Context) error {
 	defer p2pService.Close()
 
 	eg.Go(func() error {
-		if err := signer.HandleSignatureRequests(egCtx, cfg.SignalCfg.WorkerCount, p2pService); err != nil {
+		err := signer.HandleSignatureRequests(egCtx, cfg.SignalCfg.WorkerCount, p2pService)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.ErrorContext(ctx, "Signature requests handler failed", "error", err)
 			return errors.Errorf("failed to handle missing self signatures: %w", err)
 		}
+		slog.InfoContext(ctx, "Signature requests handler stopped")
 		return nil
 	})
 
@@ -278,16 +288,22 @@ func runApp(ctx context.Context) error {
 	}
 
 	eg.Go(func() error {
-		if err := statusTracker.Start(egCtx); err != nil {
+		err := statusTracker.Start(egCtx)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.ErrorContext(ctx, "Valset status tracker failed", "error", err)
 			return errors.Errorf("failed to start valset status tracker: %w", err)
 		}
+		slog.InfoContext(ctx, "Valset status tracker stopped")
 		return nil
 	})
 
 	eg.Go(func() error {
-		if err := listener.StartCommitterLoop(egCtx); err != nil {
+		err := listener.StartCommitterLoop(egCtx)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.ErrorContext(ctx, "Valset listener committer loop failed", "error", err)
 			return errors.Errorf("failed to start committer loop: %w", err)
 		}
+		slog.InfoContext(ctx, "Valset listener committer loop stopped")
 		return nil
 	})
 
@@ -373,23 +389,32 @@ func runApp(ctx context.Context) error {
 	slog.DebugContext(ctx, "Created aggregator app, starting")
 
 	eg.Go(func() error {
-		if err := api.Start(egCtx); err != nil {
+		err := api.Start(egCtx)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.ErrorContext(ctx, "API server failed", "error", err)
 			return errors.Errorf("failed to start api server: %w", err)
 		}
+		slog.InfoContext(ctx, "API server stopped")
 		return nil
 	})
 
 	eg.Go(func() error {
-		if err := syncRunner.Start(ctx); err != nil {
+		err := syncRunner.Start(egCtx)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.ErrorContext(ctx, "Sync runner failed", "error", err)
 			return errors.Errorf("failed to start sync runner: %w", err)
 		}
+		slog.InfoContext(ctx, "Sync finished stopped")
 		return nil
 	})
 
 	eg.Go(func() error {
-		if err := p2pService.StartGRPCServer(ctx); err != nil {
+		err := p2pService.StartGRPCServer(egCtx)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.ErrorContext(ctx, "P2P grpc server failed", "error", err)
 			return errors.Errorf("failed to start p2p grpc server: %w", err)
 		}
+		slog.InfoContext(ctx, "P2P grpc server stopped")
 		return nil
 	})
 
@@ -404,9 +429,12 @@ func runApp(ctx context.Context) error {
 
 		slog.DebugContext(ctx, "Created metrics app, starting")
 		eg.Go(func() error {
-			if err := mtrApp.Start(egCtx); err != nil {
+			err := mtrApp.Start(egCtx)
+			if err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, http.ErrServerClosed) {
+				slog.ErrorContext(ctx, "Metrics server failed", "error", err)
 				return errors.Errorf("failed to start metrics server: %w", err)
 			}
+			slog.InfoContext(ctx, "Metrics server stopped")
 			return nil
 		})
 	}
