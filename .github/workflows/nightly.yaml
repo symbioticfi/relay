@@ -67,7 +67,7 @@ jobs:
           merge-multiple: true
 
       - name: Create nightly release
-        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # pin@v2.2.2
+        uses: softprops/action-gh-release@5be0e66d93ac7ed76da52eca8bb058f665c3a5fe # pin@v2.4.2
         with:
           tag_name: ${{ steps.nightly_tag.outputs.tag }}
           draft: false
