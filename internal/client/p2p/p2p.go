@@ -299,7 +299,7 @@ func (s *Service) Connected(n network.Network, conn network.Conn) {
 		"totalConnections", len(conns),
 		"direction", conn.Stat().Direction.String(),
 		"remoteAddr", conn.RemoteMultiaddr().String(),
-		"allPeers", peers)
+	)
 }
 
 func (s *Service) Disconnected(n network.Network, conn network.Conn) {
@@ -311,7 +311,7 @@ func (s *Service) Disconnected(n network.Network, conn network.Conn) {
 		"totalPeers", len(peers),
 		"totalConnections", len(conns),
 		"remoteAddr", conn.RemoteMultiaddr().String(),
-		"remainingPeers", peers)
+	)
 }
 
 func (s *Service) ID() string {

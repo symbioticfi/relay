@@ -3,6 +3,7 @@ package root
 import (
 	"context"
 	"log/slog"
+	"net/http"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -429,7 +430,7 @@ func runApp(ctx context.Context) error {
 		slog.DebugContext(ctx, "Created metrics app, starting")
 		eg.Go(func() error {
 			err := mtrApp.Start(egCtx)
-			if err != nil {
+			if err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, http.ErrServerClosed) {
 				slog.ErrorContext(ctx, "Metrics server failed", "error", err)
 				return errors.Errorf("failed to start metrics server: %w", err)
 			}
