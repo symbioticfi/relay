@@ -35,7 +35,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.39.0
 	go.uber.org/mock v0.6.0
 	golang.org/x/net v0.46.0
-	golang.org/x/sync v0.17.0
+	golang.org/x/sync v0.18.0
 	golang.org/x/term v0.36.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20251029180050-ab9386a59fda
 	google.golang.org/grpc v1.76.0
