@@ -596,6 +596,9 @@ message GetLastAllCommittedRequest {
 message GetLastAllCommittedResponse {
   // List of settlement chains with their last committed epochs
   map<uint64, ChainEpochInfo> epoch_infos = 1;
+
+  // Suggested epoch info for signatures, it is the minimum commited epoch among all chains
+  ChainEpochInfo suggested_epoch_info = 2;
 }
 
 // Settlement chain with its last committed epoch

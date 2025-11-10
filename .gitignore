@@ -1,5 +1,6 @@
 .idea/
 .claude/
+.local/
 
 CLAUDE.md
 go.sum
