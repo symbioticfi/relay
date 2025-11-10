@@ -9,7 +9,7 @@ require (
 	github.com/dgraph-io/badger/v4 v4.8.0
 	github.com/docker/docker v28.5.1+incompatible
 	github.com/elastic/go-freelru v0.16.0
-	github.com/ethereum/go-ethereum v1.16.5
+	github.com/ethereum/go-ethereum v1.16.7
 	github.com/ferranbt/fastssz v1.0.0
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-errors/errors v1.5.1
@@ -51,6 +51,7 @@ require (
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
+	github.com/ProjectZKM/Ziren/crates/go-runtime/zkvm_runtime v0.0.0-20251001021608-1fe7b43fc4d6 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
