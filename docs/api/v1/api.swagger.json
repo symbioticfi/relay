@@ -855,6 +855,10 @@
             "$ref": "#/definitions/ChainEpochInfo"
           },
           "title": "List of settlement chains with their last committed epochs"
+        },
+        "suggestedEpochInfo": {
+          "$ref": "#/definitions/ChainEpochInfo",
+          "title": "Suggested epoch info for signatures, it is the minimum commited epoch among all chains"
         }
       },
       "title": "Response message for getting all last committed epochs"
