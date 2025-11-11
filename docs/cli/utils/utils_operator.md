@@ -7,10 +7,11 @@ Operator tool
 ### Options
 
 ```
-  -c, --chains strings          Chains rpc url, comma separated
-      --driver.address string   Driver contract address
-      --driver.chainid uint     Driver contract chain id
-  -h, --help                    help for operator
+  -c, --chains strings                  Chains rpc url, comma separated
+      --driver.address string           Driver contract address
+      --driver.chainid uint             Driver contract chain id
+  -h, --help                            help for operator
+      --voting-provider-chain-id uint   Voting power provider chain id
 ```
 
 ### Options inherited from parent commands

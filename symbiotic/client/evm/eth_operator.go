@@ -147,7 +147,7 @@ func (e *Client) InvalidateOldSignatures(
 	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("InvalidateOldSignatures", err, now)
+		e.observeMetrics("InvalidateOldSignatures", addr.ChainId, err, now)
 	}(time.Now())
 	txOpts.Context = tmCtx
 

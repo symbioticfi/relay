@@ -6,6 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/go-errors/errors"
+
 	cmdhelpers "github.com/symbioticfi/relay/cmd/utils/cmd-helpers"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 
@@ -31,9 +33,10 @@ var operatorCmd = &cobra.Command{
 }
 
 type GlobalFlags struct {
-	Chains        []string
-	DriverAddress string
-	DriverChainId uint64
+	Chains                []string
+	DriverAddress         string
+	DriverChainId         uint64
+	VotingProviderChainId uint64
 }
 
 type InfoFlags struct {
@@ -74,6 +77,7 @@ func initFlags() {
 	operatorCmd.PersistentFlags().StringSliceVarP(&globalFlags.Chains, "chains", "c", nil, "Chains rpc url, comma separated")
 	operatorCmd.PersistentFlags().StringVar(&globalFlags.DriverAddress, "driver.address", "", "Driver contract address")
 	operatorCmd.PersistentFlags().Uint64Var(&globalFlags.DriverChainId, "driver.chainid", 0, "Driver contract chain id")
+	operatorCmd.PersistentFlags().Uint64Var(&globalFlags.VotingProviderChainId, "voting-provider-chain-id", 0, "Voting power provider chain id")
 	if err := operatorCmd.MarkPersistentFlagRequired("chains"); err != nil {
 		panic(err)
 	}
@@ -81,6 +85,9 @@ func initFlags() {
 		panic(err)
 	}
 	if err := operatorCmd.MarkPersistentFlagRequired("driver.chainid"); err != nil {
+		panic(err)
+	}
+	if err := operatorCmd.MarkPersistentFlagRequired("voting-provider-chain-id"); err != nil {
 		panic(err)
 	}
 
@@ -119,4 +126,14 @@ func signalContext(ctx context.Context) context.Context {
 	}()
 
 	return cnCtx
+}
+
+// findVotingPowerProviderByChainId finds a voting power provider by chain id from the list
+func findVotingPowerProviderByChainId(providers []symbiotic.CrossChainAddress, chainId uint64) (symbiotic.CrossChainAddress, error) {
+	for _, provider := range providers {
+		if provider.ChainId == chainId {
+			return provider, nil
+		}
+	}
+	return symbiotic.CrossChainAddress{}, errors.Errorf("voting power provider with chain id %d not found", chainId)
 }

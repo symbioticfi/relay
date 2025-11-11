@@ -60,7 +60,10 @@ var invalidateOldSignaturesCmd = &cobra.Command{
 			return errors.New("no voting power providers found in network config")
 		}
 
-		votingPowerProvider := networkConfig.VotingPowerProviders[0]
+		votingPowerProvider, err := findVotingPowerProviderByChainId(networkConfig.VotingPowerProviders, globalFlags.VotingProviderChainId)
+		if err != nil {
+			return err
+		}
 
 		// Load the operator key for the voting power provider's chain
 		privateKeyInput := pterm.DefaultInteractiveTextInput.WithMask("*")
