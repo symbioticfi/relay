@@ -362,18 +362,23 @@ func (mr *MockevmClientMockRecorder) GetEpochStart(ctx, epoch any) *gomock.Call 
 }
 
 // GetLastCommittedHeaderEpoch mocks base method.
-func (m *MockevmClient) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity0.CrossChainAddress) (entity0.Epoch, error) {
+func (m *MockevmClient) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity0.CrossChainAddress, opts ...entity.EVMOption) (entity0.Epoch, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLastCommittedHeaderEpoch", ctx, addr)
+	varargs := []any{ctx, addr}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetLastCommittedHeaderEpoch", varargs...)
 	ret0, _ := ret[0].(entity0.Epoch)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetLastCommittedHeaderEpoch indicates an expected call of GetLastCommittedHeaderEpoch.
-func (mr *MockevmClientMockRecorder) GetLastCommittedHeaderEpoch(ctx, addr any) *gomock.Call {
+func (mr *MockevmClientMockRecorder) GetLastCommittedHeaderEpoch(ctx, addr any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastCommittedHeaderEpoch", reflect.TypeOf((*MockevmClient)(nil).GetLastCommittedHeaderEpoch), ctx, addr)
+	varargs := append([]any{ctx, addr}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastCommittedHeaderEpoch", reflect.TypeOf((*MockevmClient)(nil).GetLastCommittedHeaderEpoch), varargs...)
 }
 
 // Mockaggregator is a mock of aggregator interface.

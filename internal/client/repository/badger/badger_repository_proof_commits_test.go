@@ -33,12 +33,6 @@ func TestBadgerRepository_SaveProofCommitPending(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("save different hash should succeed", func(t *testing.T) {
-		differentHash := common.HexToHash("0xabcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789")
-		err := repo.SaveProofCommitPending(t.Context(), epoch, differentHash)
-		require.NoError(t, err)
-	})
-
 	t.Run("save with zero epoch should succeed", func(t *testing.T) {
 		zeroEpoch := symbiotic.Epoch(0)
 		zeroHash := common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000")
@@ -55,7 +49,7 @@ func TestBadgerRepository_RemoveProofCommitPending(t *testing.T) {
 	requestID := common.HexToHash("0x987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba09")
 
 	t.Run("remove non-existent pending proof commit should fail", func(t *testing.T) {
-		err := repo.RemoveProofCommitPending(t.Context(), epoch, requestID)
+		err := repo.RemoveProofCommitPending(t.Context(), epoch)
 		require.ErrorIs(t, err, entity.ErrEntityNotFound)
 	})
 
@@ -65,11 +59,11 @@ func TestBadgerRepository_RemoveProofCommitPending(t *testing.T) {
 		require.NoError(t, err)
 
 		// Then remove
-		err = repo.RemoveProofCommitPending(t.Context(), epoch, requestID)
+		err = repo.RemoveProofCommitPending(t.Context(), epoch)
 		require.NoError(t, err)
 
 		// Try to remove again should fail
-		err = repo.RemoveProofCommitPending(t.Context(), epoch, requestID)
+		err = repo.RemoveProofCommitPending(t.Context(), epoch)
 		require.ErrorIs(t, err, entity.ErrEntityNotFound)
 	})
 
@@ -82,19 +76,15 @@ func TestBadgerRepository_RemoveProofCommitPending(t *testing.T) {
 		// Save multiple entries
 		err := repo.SaveProofCommitPending(t.Context(), epoch1, hash1)
 		require.NoError(t, err)
-		err = repo.SaveProofCommitPending(t.Context(), epoch1, hash2)
-		require.NoError(t, err)
-		err = repo.SaveProofCommitPending(t.Context(), epoch2, hash1)
+		err = repo.SaveProofCommitPending(t.Context(), epoch2, hash2)
 		require.NoError(t, err)
 
 		// Remove one specific entry
-		err = repo.RemoveProofCommitPending(t.Context(), epoch1, hash1)
+		err = repo.RemoveProofCommitPending(t.Context(), epoch1)
 		require.NoError(t, err)
 
 		// Verify others still exist by trying to save them again (should fail)
-		err = repo.SaveProofCommitPending(t.Context(), epoch1, hash2)
-		require.ErrorIs(t, err, entity.ErrEntityAlreadyExist)
-		err = repo.SaveProofCommitPending(t.Context(), epoch2, hash1)
+		err = repo.SaveProofCommitPending(t.Context(), epoch2, hash2)
 		require.ErrorIs(t, err, entity.ErrEntityAlreadyExist)
 
 		// But the removed one should be gone - we can save it again
@@ -167,12 +157,10 @@ func TestBadgerRepository_GetPendingProofCommitsSinceEpoch(t *testing.T) {
 		require.NoError(t, err)
 		err = repo.SaveProofCommitPending(t.Context(), testEpoch+1, hash1)
 		require.NoError(t, err)
-		err = repo.SaveProofCommitPending(t.Context(), testEpoch, hash1)
-		require.NoError(t, err)
 
 		commits, err := repo.GetPendingProofCommitsSinceEpoch(t.Context(), testEpoch, 10)
 		require.NoError(t, err)
-		require.Len(t, commits, 4)
+		require.Len(t, commits, 3)
 
 		// Verify epoch ordering (ascending)
 		for i := 1; i < len(commits); i++ {
@@ -203,7 +191,7 @@ func TestBadgerRepository_GetPendingProofCommitsSinceEpoch(t *testing.T) {
 		// Create multiple commits
 		for i := 0; i < 5; i++ {
 			hash := common.HexToHash(string(rune('a'+i)) + "000000000000000000000000000000000000000000000000000000000000000")
-			err := repo.SaveProofCommitPending(t.Context(), testEpoch, hash)
+			err := repo.SaveProofCommitPending(t.Context(), symbiotic.Epoch(uint64(testEpoch)+uint64(i)), hash)
 			require.NoError(t, err)
 		}
 

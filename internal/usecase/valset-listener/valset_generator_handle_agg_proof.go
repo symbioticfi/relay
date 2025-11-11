@@ -17,7 +17,7 @@ const (
 )
 
 func (s *Service) StartCommitterLoop(ctx context.Context) error {
-	// get the latest epoch and try find schedule of committers and start committing
+	// get the latest epoch and try to find schedule of committers and start committing
 
 	slog.InfoContext(ctx, "Starting valset committer loop")
 
@@ -108,64 +108,65 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 		}
 
 		for _, proofKey := range pendingProofs {
-			//nolint:govet // shadow is ok here, we need separate ctx for each iteration
-			ctx := log.WithAttrs(ctx,
-				slog.String("requestId", proofKey.RequestID.Hex()),
-				slog.Uint64("epoch", uint64(proofKey.Epoch)),
-			)
-			slog.DebugContext(ctx, "Found pending proof commit")
-
-			// get proof
-			proof, err := s.cfg.Repo.GetAggregationProof(ctx, proofKey.RequestID)
+			err = s.processPendingProof(ctx, proofKey)
 			if err != nil {
-				if errors.Is(err, entity.ErrEntityNotFound) {
-					slog.WarnContext(ctx, "No aggregation proof found for pending proof commit, ending current commit attempt")
-					break
-				}
-				slog.ErrorContext(ctx, "Failed to get aggregation proof", "error", err)
-				break
-			}
-
-			targetValset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, proofKey.Epoch)
-			if err != nil {
-				slog.ErrorContext(ctx, "Failed to get validator set by epoch", "error", err)
-				break
-			}
-
-			if s.cfg.Metrics != nil {
-				s.cfg.Metrics.ObserveAggregationProofSize(len(proof.Proof), len(targetValset.Validators))
-			}
-
-			config, err := s.cfg.EvmClient.GetConfig(ctx, targetValset.CaptureTimestamp, proofKey.Epoch)
-			if err != nil {
-				return errors.Errorf("failed to get config for epoch %d: %w", proofKey.Epoch, err)
-			}
-
-			extraData, err := s.cfg.Aggregator.GenerateExtraData(targetValset, config.RequiredKeyTags)
-			if err != nil {
-				return errors.Errorf("failed to generate extra data for validator set: %w", err)
-			}
-
-			header, err := targetValset.GetHeader()
-			if err != nil {
-				slog.ErrorContext(ctx, "Failed to get validator set header", "error", err)
-				break
-			}
-
-			slog.DebugContext(ctx, "Committing proof to settlements", "header", header, "extraData", extraData)
-
-			err = s.commitValsetToAllSettlements(ctx, config, header, extraData, proof.Proof)
-			if err != nil {
-				slog.ErrorContext(ctx, "Failed to commit valset to all settlements", "error", err)
-				break
-			}
-
-			if err := s.cfg.Repo.RemoveProofCommitPending(ctx, proofKey.Epoch, proofKey.RequestID); err != nil {
-				slog.ErrorContext(ctx, "Failed to remove proof commit pending state", "error", err)
-				break
+				slog.ErrorContext(ctx, "Error processing pending proof",
+					slog.String("requestId", proofKey.RequestID.Hex()),
+					slog.Uint64("epoch", uint64(proofKey.Epoch)),
+					slog.String("error", err.Error()),
+				)
 			}
 		}
 	}
+}
+
+func (s *Service) processPendingProof(ctx context.Context, proofKey symbiotic.ProofCommitKey) error {
+	ctx = log.WithAttrs(ctx,
+		slog.String("requestId", proofKey.RequestID.Hex()),
+		slog.Uint64("epoch", uint64(proofKey.Epoch)),
+	)
+	slog.DebugContext(ctx, "Found pending proof commit")
+
+	// get proof
+	proof, err := s.cfg.Repo.GetAggregationProof(ctx, proofKey.RequestID)
+	if err != nil {
+		if errors.Is(err, entity.ErrEntityNotFound) {
+			slog.WarnContext(ctx, "No aggregation proof found for pending proof commit, ending current commit attempt")
+			return nil
+		}
+		return errors.Errorf("failed to get aggregation proof for request ID %s: %w", proofKey.RequestID.Hex(), err)
+	}
+
+	targetValset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, proofKey.Epoch)
+	if err != nil {
+		return errors.Errorf("failed to get validator set by epoch %d: %w", proofKey.Epoch, err)
+	}
+
+	s.cfg.Metrics.ObserveAggregationProofSize(len(proof.Proof), len(targetValset.Validators))
+
+	config, err := s.cfg.EvmClient.GetConfig(ctx, targetValset.CaptureTimestamp, proofKey.Epoch)
+	if err != nil {
+		return errors.Errorf("failed to get config for epoch %d: %w", proofKey.Epoch, err)
+	}
+
+	extraData, err := s.cfg.Aggregator.GenerateExtraData(targetValset, config.RequiredKeyTags)
+	if err != nil {
+		return errors.Errorf("failed to generate extra data for validator set: %w", err)
+	}
+
+	header, err := targetValset.GetHeader()
+	if err != nil {
+		return errors.Errorf("failed to get validator set header: %w", err)
+	}
+
+	slog.DebugContext(ctx, "Committing proof to settlements", "header", header, "extraData", extraData)
+
+	err = s.commitValsetToAllSettlements(ctx, config, header, extraData, proof.Proof)
+	if err != nil {
+		return errors.Errorf("failed to commit valset to all settlements: %w", err)
+	}
+
+	return nil
 }
 
 func (s *Service) detectLastCommittedEpoch(ctx context.Context, config symbiotic.NetworkConfig) symbiotic.Epoch {
@@ -193,17 +194,18 @@ func (s *Service) commitValsetToAllSettlements(ctx context.Context, config symbi
 		// todo replace it with tx check instead of call to contract
 		// if commit tx was sent but still not finalized this check will
 		// return false positive and trigger one more commitment tx
-		committed, err := s.cfg.EvmClient.IsValsetHeaderCommittedAt(ctx, settlement, header.Epoch)
+		committed, err := s.cfg.EvmClient.IsValsetHeaderCommittedAt(ctx, settlement, header.Epoch, entity.WithEVMBlockNumber(entity.BlockNumberLatest))
 		if err != nil {
 			errs[i] = errors.Errorf("failed to check if header is committed at epoch %d: %v/%s: %w", header.Epoch, settlement.ChainId, settlement.Address.Hex(), err)
 			continue
 		}
 
 		if committed {
+			slog.DebugContext(ctx, "Valset header already committed at settlement", "settlement", settlement, "epoch", header.Epoch)
 			continue
 		}
 
-		lastCommittedEpoch, err := s.cfg.EvmClient.GetLastCommittedHeaderEpoch(ctx, settlement)
+		lastCommittedEpoch, err := s.cfg.EvmClient.GetLastCommittedHeaderEpoch(ctx, settlement, entity.WithEVMBlockNumber(entity.BlockNumberLatest))
 		if err != nil {
 			errs[i] = errors.Errorf("failed to get last committed header epoch: %v/%s: %w", settlement.ChainId, settlement.Address.Hex(), err)
 			continue
