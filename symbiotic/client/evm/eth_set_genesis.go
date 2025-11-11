@@ -42,7 +42,7 @@ func (e *Client) SetGenesis(
 	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("SetGenesis", err, now)
+		e.observeMetrics("SetGenesis", addr.ChainId, err, now)
 	}(time.Now())
 	txOpts.Context = tmCtx
 

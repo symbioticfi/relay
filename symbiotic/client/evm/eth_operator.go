@@ -38,7 +38,7 @@ func (e *Client) RegisterOperator(
 	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("RegisterOperator", err, now)
+		e.observeMetrics("RegisterOperator", addr.ChainId, err, now)
 	}(time.Now())
 	txOpts.Context = tmCtx
 
@@ -95,7 +95,7 @@ func (e *Client) RegisterKey(
 	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("SetKey", err, now)
+		e.observeMetrics("SetKey", addr.ChainId, err, now)
 	}(time.Now())
 	txOpts.Context = tmCtx
 

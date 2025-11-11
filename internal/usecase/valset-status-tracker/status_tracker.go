@@ -97,7 +97,7 @@ func (s *Service) Start(ctx context.Context) error {
 			return ctx.Err()
 		case <-timer.C:
 			if err := s.trackCommittedEpochs(ctx); err != nil {
-				return errors.Errorf("failed to track committed epochs: %w", err)
+				slog.ErrorContext(ctx, "Failed to track committed epochs", "error", err)
 			}
 			timer.Reset(s.cfg.PollingInterval)
 		}
