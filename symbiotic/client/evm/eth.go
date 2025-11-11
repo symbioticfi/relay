@@ -59,6 +59,7 @@ type IEvmClient interface {
 	CommitValsetHeader(ctx context.Context, addr symbiotic.CrossChainAddress, header symbiotic.ValidatorSetHeader, extraData []symbiotic.ExtraData, proof []byte) (symbiotic.TxResult, error)
 	RegisterOperator(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.TxResult, error)
 	RegisterKey(ctx context.Context, addr symbiotic.CrossChainAddress, keyTag symbiotic.KeyTag, key symbiotic.CompactPublicKey, signature symbiotic.RawSignature, extraData []byte) (symbiotic.TxResult, error)
+	InvalidateOldSignatures(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.TxResult, error)
 	RegisterOperatorVotingPowerProvider(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.TxResult, error)
 	UnregisterOperatorVotingPowerProvider(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.TxResult, error)
 	SetGenesis(ctx context.Context, addr symbiotic.CrossChainAddress, header symbiotic.ValidatorSetHeader, extraData []symbiotic.ExtraData) (symbiotic.TxResult, error)
