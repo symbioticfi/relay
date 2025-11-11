@@ -147,7 +147,7 @@ func (e *Client) RegisterOperatorVotingPowerProvider(
 	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("RegisterOperatorVotingPowerProvider", err, now)
+		e.observeMetrics("RegisterOperatorVotingPowerProvider", addr.ChainId, err, now)
 	}(time.Now())
 	txOpts.Context = tmCtx
 
@@ -199,7 +199,7 @@ func (e *Client) UnregisterOperatorVotingPowerProvider(
 	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("UnregisterOperatorVotingPowerProvider", err, now)
+		e.observeMetrics("UnregisterOperatorVotingPowerProvider", addr.ChainId, err, now)
 	}(time.Now())
 	txOpts.Context = tmCtx
 
