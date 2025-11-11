@@ -122,3 +122,107 @@ func (e *Client) RegisterKey(
 		TxHash: receipt.TxHash,
 	}, nil
 }
+
+func (e *Client) RegisterOperatorVotingPowerProvider(
+	ctx context.Context,
+	addr symbiotic.CrossChainAddress,
+) (_ symbiotic.TxResult, err error) {
+	pk, err := e.cfg.KeyProvider.GetPrivateKeyByNamespaceTypeId(
+		keyprovider.EVM_KEY_NAMESPACE,
+		symbiotic.KeyTypeEcdsaSecp256k1,
+		int(addr.ChainId),
+	)
+	if err != nil {
+		return symbiotic.TxResult{}, err
+	}
+	ecdsaKey, err := crypto.ToECDSA(pk.Bytes())
+	if err != nil {
+		return symbiotic.TxResult{}, err
+	}
+	txOpts, err := bind.NewKeyedTransactorWithChainID(ecdsaKey, new(big.Int).SetUint64(addr.ChainId))
+	if err != nil {
+		return symbiotic.TxResult{}, errors.Errorf("failed to create new keyed transactor: %w", err)
+	}
+
+	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
+	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("RegisterOperatorVotingPowerProvider", addr.ChainId, err, now)
+	}(time.Now())
+	txOpts.Context = tmCtx
+
+	votingPowerProvider, err := e.getVotingPowerProviderContractTransactor(addr)
+	if err != nil {
+		return symbiotic.TxResult{}, errors.Errorf("failed to get voting power provider contract: %w", err)
+	}
+
+	tx, err := votingPowerProvider.RegisterOperator(txOpts)
+	if err != nil {
+		return symbiotic.TxResult{}, e.formatEVMError(err)
+	}
+
+	receipt, err := bind.WaitMined(ctx, e.conns[addr.ChainId], tx)
+	if err != nil {
+		return symbiotic.TxResult{}, errors.Errorf("failed to wait for tx mining: %w", err)
+	}
+
+	if receipt.Status == types.ReceiptStatusFailed {
+		return symbiotic.TxResult{}, errors.New("transaction reverted on chain")
+	}
+
+	return symbiotic.TxResult{
+		TxHash: receipt.TxHash,
+	}, nil
+}
+
+func (e *Client) UnregisterOperatorVotingPowerProvider(
+	ctx context.Context,
+	addr symbiotic.CrossChainAddress,
+) (_ symbiotic.TxResult, err error) {
+	pk, err := e.cfg.KeyProvider.GetPrivateKeyByNamespaceTypeId(
+		keyprovider.EVM_KEY_NAMESPACE,
+		symbiotic.KeyTypeEcdsaSecp256k1,
+		int(addr.ChainId),
+	)
+	if err != nil {
+		return symbiotic.TxResult{}, err
+	}
+	ecdsaKey, err := crypto.ToECDSA(pk.Bytes())
+	if err != nil {
+		return symbiotic.TxResult{}, err
+	}
+	txOpts, err := bind.NewKeyedTransactorWithChainID(ecdsaKey, new(big.Int).SetUint64(addr.ChainId))
+	if err != nil {
+		return symbiotic.TxResult{}, errors.Errorf("failed to create new keyed transactor: %w", err)
+	}
+
+	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
+	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("UnregisterOperatorVotingPowerProvider", addr.ChainId, err, now)
+	}(time.Now())
+	txOpts.Context = tmCtx
+
+	votingPowerProvider, err := e.getVotingPowerProviderContractTransactor(addr)
+	if err != nil {
+		return symbiotic.TxResult{}, errors.Errorf("failed to get voting power provider contract: %w", err)
+	}
+
+	tx, err := votingPowerProvider.UnregisterOperator(txOpts)
+	if err != nil {
+		return symbiotic.TxResult{}, e.formatEVMError(err)
+	}
+
+	receipt, err := bind.WaitMined(ctx, e.conns[addr.ChainId], tx)
+	if err != nil {
+		return symbiotic.TxResult{}, errors.Errorf("failed to wait for tx mining: %w", err)
+	}
+
+	if receipt.Status == types.ReceiptStatusFailed {
+		return symbiotic.TxResult{}, errors.New("transaction reverted on chain")
+	}
+
+	return symbiotic.TxResult{
+		TxHash: receipt.TxHash,
+	}, nil
+}

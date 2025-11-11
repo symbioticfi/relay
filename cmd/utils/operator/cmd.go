@@ -18,6 +18,8 @@ func NewOperatorCmd() *cobra.Command {
 	operatorCmd.AddCommand(registerKeyCmd)
 	operatorCmd.AddCommand(registerOperatorWithSignatureCmd)
 	operatorCmd.AddCommand(unregisterOperatorWithSignatureCmd)
+	operatorCmd.AddCommand(registerOperatorCmd)
+	operatorCmd.AddCommand(unregisterOperatorCmd)
 
 	initFlags()
 
@@ -58,11 +60,21 @@ type UnregisterOperatorWithSignatureFlags struct {
 	Secrets cmdhelpers.SecretKeyMapFlag
 }
 
+type RegisterOperatorFlags struct {
+	Secrets cmdhelpers.SecretKeyMapFlag
+}
+
+type UnregisterOperatorFlags struct {
+	Secrets cmdhelpers.SecretKeyMapFlag
+}
+
 var globalFlags GlobalFlags
 var infoFlags InfoFlags
 var registerKeyFlags RegisterKeyFlags
 var registerOperatorWithSignatureFlags RegisterOperatorWithSignatureFlags
 var unregisterOperatorWithSignatureFlags UnregisterOperatorWithSignatureFlags
+var registerOperatorFlags RegisterOperatorFlags
+var unregisterOperatorFlags UnregisterOperatorFlags
 
 func initFlags() {
 	operatorCmd.PersistentFlags().StringSliceVarP(&globalFlags.Chains, "chains", "c", nil, "Chains rpc url, comma separated")
@@ -97,6 +109,10 @@ func initFlags() {
 	registerOperatorWithSignatureCmd.PersistentFlags().Var(&registerOperatorWithSignatureFlags.Secrets, "secret-keys", "Secret key for signing in format 'chainId:key' (e.g. '1:0xabc')")
 
 	unregisterOperatorWithSignatureCmd.PersistentFlags().Var(&unregisterOperatorWithSignatureFlags.Secrets, "secret-keys", "Secret key for signing in format 'chainId:key' (e.g. '1:0xabc')")
+
+	registerOperatorCmd.PersistentFlags().Var(&registerOperatorFlags.Secrets, "secret-keys", "Secret key for operator in format 'chainId:key' (e.g. '1:0xabc')")
+
+	unregisterOperatorCmd.PersistentFlags().Var(&unregisterOperatorFlags.Secrets, "secret-keys", "Secret key for operator in format 'chainId:key' (e.g. '1:0xabc')")
 }
 
 // signalContext returns a context that is canceled if either SIGTERM or SIGINT signal is received.

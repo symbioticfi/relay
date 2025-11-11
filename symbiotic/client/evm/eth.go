@@ -57,6 +57,8 @@ type IEvmClient interface {
 	CommitValsetHeader(ctx context.Context, addr symbiotic.CrossChainAddress, header symbiotic.ValidatorSetHeader, extraData []symbiotic.ExtraData, proof []byte) (symbiotic.TxResult, error)
 	RegisterOperator(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.TxResult, error)
 	RegisterKey(ctx context.Context, addr symbiotic.CrossChainAddress, keyTag symbiotic.KeyTag, key symbiotic.CompactPublicKey, signature symbiotic.RawSignature, extraData []byte) (symbiotic.TxResult, error)
+	RegisterOperatorVotingPowerProvider(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.TxResult, error)
+	UnregisterOperatorVotingPowerProvider(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.TxResult, error)
 	SetGenesis(ctx context.Context, addr symbiotic.CrossChainAddress, header symbiotic.ValidatorSetHeader, extraData []symbiotic.ExtraData) (symbiotic.TxResult, error)
 	VerifyQuorumSig(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch, message []byte, keyTag symbiotic.KeyTag, threshold *big.Int, proof []byte) (bool, error)
 	IsValsetHeaderCommittedAtEpochs(ctx context.Context, addr symbiotic.CrossChainAddress, epochs []symbiotic.Epoch) ([]bool, error)
@@ -844,6 +846,15 @@ func (e *Client) getVotingPowerProviderContract(addr symbiotic.CrossChainAddress
 	}
 
 	return gen.NewIVotingPowerProviderCaller(addr.Address, client)
+}
+
+func (e *Client) getVotingPowerProviderContractTransactor(addr symbiotic.CrossChainAddress) (*gen.IVotingPowerProvider, error) {
+	client, ok := e.conns[addr.ChainId]
+	if !ok {
+		return nil, errors.Errorf("no connection for chain ID %d: %w", addr.ChainId, entity.ErrChainNotFound)
+	}
+
+	return gen.NewIVotingPowerProvider(addr.Address, client)
 }
 
 func (e *Client) getKeyRegistryContract(addr symbiotic.CrossChainAddress) (*gen.IKeyRegistry, error) {
