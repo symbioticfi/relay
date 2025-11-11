@@ -27,6 +27,8 @@ import (
 	cryptoSym "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
+//go:generate mockgen -source=eth.go -destination=mocks/eth.go -package=mocks
+
 type metrics interface {
 	ObserveEVMMethodCall(method string, chainID uint64, status string, d time.Duration)
 	ObserveCommitValsetHeaderParams(chainID uint64, gasUsed uint64, effectiveGasPrice *big.Int)
