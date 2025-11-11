@@ -1,17 +1,17 @@
-# `utils operator unregister-operator-with-signature` Command Reference
+# `utils operator invalidate-old-signatures` Command Reference
 
-## utils operator unregister-operator-with-signature
+## utils operator invalidate-old-signatures
 
-Generate EIP-712 signature for operator unregistration
+Invalidate old signatures for operator
 
 ```
-utils operator unregister-operator-with-signature [flags]
+utils operator invalidate-old-signatures [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help                       help for unregister-operator-with-signature
+  -h, --help                       help for invalidate-old-signatures
       --secret-keys secretKeyMap   Secret key for signing in format 'chainId:key' (e.g. '1:0xabc')
 ```
 

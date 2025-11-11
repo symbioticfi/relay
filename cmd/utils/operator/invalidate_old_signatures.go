@@ -16,9 +16,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var unregisterOperatorCmd = &cobra.Command{
-	Use:   "unregister-operator",
-	Short: "Unregister operator on-chain via VotingPowerProvider",
+var invalidateOldSignaturesCmd = &cobra.Command{
+	Use:   "invalidate-old-signatures",
+	Short: "Invalidate old signatures for operator",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := signalContext(cmd.Context())
 
@@ -41,17 +41,17 @@ var unregisterOperatorCmd = &cobra.Command{
 			return err
 		}
 
-		currentOnchainEpoch, err := evmClient.GetCurrentEpoch(ctx)
+		currentOnChainEpoch, err := evmClient.GetCurrentEpoch(ctx)
 		if err != nil {
 			return errors.Errorf("failed to get current epoch: %w", err)
 		}
 
-		captureTimestamp, err := evmClient.GetEpochStart(ctx, currentOnchainEpoch)
+		captureTimestamp, err := evmClient.GetEpochStart(ctx, currentOnChainEpoch)
 		if err != nil {
 			return errors.Errorf("failed to get capture timestamp: %w", err)
 		}
 
-		networkConfig, err := evmClient.GetConfig(ctx, captureTimestamp, currentOnchainEpoch)
+		networkConfig, err := evmClient.GetConfig(ctx, captureTimestamp, currentOnChainEpoch)
 		if err != nil {
 			return errors.Errorf("failed to get config: %w", err)
 		}
@@ -67,7 +67,7 @@ var unregisterOperatorCmd = &cobra.Command{
 
 		// Load the operator key for the voting power provider's chain
 		privateKeyInput := pterm.DefaultInteractiveTextInput.WithMask("*")
-		secret, ok := unregisterOperatorFlags.Secrets.Secrets[votingPowerProvider.ChainId]
+		secret, ok := invalidateOldSignaturesFlags.Secrets.Secrets[votingPowerProvider.ChainId]
 		if !ok {
 			secret, _ = privateKeyInput.Show("Enter operator private key for chain with ID: " + strconv.Itoa(int(votingPowerProvider.ChainId)))
 		}
@@ -86,12 +86,12 @@ var unregisterOperatorCmd = &cobra.Command{
 			return err
 		}
 
-		txResult, err := evmClient.UnregisterOperatorVotingPowerProvider(ctx, votingPowerProvider)
+		txResult, err := evmClient.InvalidateOldSignatures(ctx, votingPowerProvider)
 		if err != nil {
-			return errors.Errorf("failed to unregister operator: %w", err)
+			return errors.Errorf("failed to invalidate old signatures: %w", err)
 		}
 
-		pterm.Success.Println("Operator unregistered! TxHash:", txResult.TxHash.String())
+		pterm.Success.Println("Old signatures invalidated! TxHash:", txResult.TxHash.String())
 
 		return nil
 	},
