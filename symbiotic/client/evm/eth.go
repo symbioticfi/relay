@@ -28,7 +28,7 @@ import (
 )
 
 type metrics interface {
-	ObserveEVMMethodCall(method, status string, d time.Duration)
+	ObserveEVMMethodCall(method string, chainID uint64, status string, d time.Duration)
 	ObserveCommitValsetHeaderParams(chainID uint64, gasUsed uint64, effectiveGasPrice *big.Int)
 }
 
@@ -87,8 +87,9 @@ func (c Config) Validate() error {
 type Client struct {
 	cfg Config
 
-	conns  map[uint64]*ethclient.Client
-	driver *gen.IValSetDriverCaller
+	conns         map[uint64]*ethclient.Client
+	driver        *gen.IValSetDriverCaller
+	driverChainID uint64
 
 	metrics metrics
 }
@@ -123,10 +124,11 @@ func NewEvmClient(ctx context.Context, cfg Config) (*Client, error) {
 	}
 
 	return &Client{
-		cfg:     cfg,
-		conns:   conns,
-		driver:  driver,
-		metrics: cfg.Metrics,
+		cfg:           cfg,
+		conns:         conns,
+		driver:        driver,
+		driverChainID: cfg.DriverAddress.ChainId,
+		metrics:       cfg.Metrics,
 	}, nil
 }
 
@@ -142,7 +144,7 @@ func (e *Client) GetConfig(ctx context.Context, timestamp symbiotic.Timestamp, e
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("GetConfigAt", err, now)
+		e.observeMetrics("GetConfigAt", e.driverChainID, err, now)
 	}(time.Now())
 
 	dtoConfig, err := e.driver.GetConfigAt(&bind.CallOpts{
@@ -202,7 +204,7 @@ func (e *Client) GetCurrentEpoch(ctx context.Context) (_ symbiotic.Epoch, err er
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("GetCurrentEpoch", err, now)
+		e.observeMetrics("GetCurrentEpoch", e.driverChainID, err, now)
 	}(time.Now())
 
 	epoch, err := e.driver.GetCurrentEpoch(&bind.CallOpts{
@@ -219,7 +221,7 @@ func (e *Client) GetCurrentEpochDuration(ctx context.Context) (_ uint64, err err
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("GetCurrentEpochDuration", err, now)
+		e.observeMetrics("GetCurrentEpochDuration", e.driverChainID, err, now)
 	}(time.Now())
 
 	epochDuration, err := e.driver.GetCurrentEpochDuration(&bind.CallOpts{
@@ -236,7 +238,7 @@ func (e *Client) GetEpochDuration(ctx context.Context, epoch symbiotic.Epoch) (_
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("GetEpochDuration", err, now)
+		e.observeMetrics("GetEpochDuration", e.driverChainID, err, now)
 	}(time.Now())
 
 	epochDuration, err := e.driver.GetEpochDuration(&bind.CallOpts{
@@ -253,7 +255,7 @@ func (e *Client) GetEpochStart(ctx context.Context, epoch symbiotic.Epoch) (_ sy
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("GetEpochStart", err, now)
+		e.observeMetrics("GetEpochStart", e.driverChainID, err, now)
 	}(time.Now())
 
 	epochStart, err := e.driver.GetEpochStart(&bind.CallOpts{
@@ -270,7 +272,7 @@ func (e *Client) GetSubnetwork(ctx context.Context) (_ common.Hash, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("SUBNETWORK", err, now)
+		e.observeMetrics("SUBNETWORK", e.driverChainID, err, now)
 	}(time.Now())
 
 	subnetwork, err := e.driver.SUBNETWORK(&bind.CallOpts{
@@ -288,7 +290,7 @@ func (e *Client) GetNetworkAddress(ctx context.Context) (_ common.Address, err e
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("NETWORK", err, now)
+		e.observeMetrics("NETWORK", e.driverChainID, err, now)
 	}(time.Now())
 
 	networkAddress, err := e.driver.NETWORK(&bind.CallOpts{
@@ -306,7 +308,7 @@ func (e *Client) IsValsetHeaderCommittedAt(ctx context.Context, addr symbiotic.C
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("IsValSetHeaderCommittedAt", err, now)
+		e.observeMetrics("IsValSetHeaderCommittedAt", addr.ChainId, err, now)
 	}(time.Now())
 
 	settlement, err := e.getSettlementContract(addr)
@@ -328,7 +330,7 @@ func (e *Client) GetHeaderHash(ctx context.Context, addr symbiotic.CrossChainAdd
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("GetValSetHeaderHash", err, now)
+		e.observeMetrics("GetValSetHeaderHash", addr.ChainId, err, now)
 	}(time.Now())
 
 	settlement, err := e.getSettlementContract(addr)
@@ -351,7 +353,7 @@ func (e *Client) GetHeaderHashAt(ctx context.Context, addr symbiotic.CrossChainA
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("GetValSetHeaderHashAt", err, now)
+		e.observeMetrics("GetValSetHeaderHashAt", addr.ChainId, err, now)
 	}(time.Now())
 
 	settlement, err := e.getSettlementContract(addr)
@@ -374,7 +376,7 @@ func (e *Client) GetLastCommittedHeaderEpoch(ctx context.Context, addr symbiotic
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("GetLastCommittedHeaderEpoch", err, now)
+		e.observeMetrics("GetLastCommittedHeaderEpoch", addr.ChainId, err, now)
 	}(time.Now())
 
 	settlement, err := e.getSettlementContract(addr)
@@ -399,7 +401,7 @@ func (e *Client) GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, addr
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("GetCaptureTimestampFromValSetHeaderAt", err, now)
+		e.observeMetrics("GetCaptureTimestampFromValSetHeaderAt", addr.ChainId, err, now)
 	}(time.Now())
 
 	settlement, err := e.getSettlementContract(addr)
@@ -422,7 +424,7 @@ func (e *Client) GetValSetHeaderAt(ctx context.Context, addr symbiotic.CrossChai
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("GetValSetHeaderAt", err, now)
+		e.observeMetrics("GetValSetHeaderAt", addr.ChainId, err, now)
 	}(time.Now())
 
 	settlement, err := e.getSettlementContract(addr)
@@ -453,7 +455,7 @@ func (e *Client) GetValSetHeader(ctx context.Context, addr symbiotic.CrossChainA
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("GetValSetHeader", err, now)
+		e.observeMetrics("GetValSetHeader", addr.ChainId, err, now)
 	}(time.Now())
 
 	settlement, err := e.getSettlementContract(addr)
@@ -484,7 +486,7 @@ func (e *Client) GetEip712Domain(ctx context.Context, addr symbiotic.CrossChainA
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("Eip712Domain", err, now)
+		e.observeMetrics("Eip712Domain", addr.ChainId, err, now)
 	}(time.Now())
 
 	settlement, err := e.getSettlementContract(addr)
@@ -515,7 +517,7 @@ func (e *Client) GetVotingPowerProviderEip712Domain(ctx context.Context, addr sy
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("VotingPowerProviderEip712Domain", err, now)
+		e.observeMetrics("VotingPowerProviderEip712Domain", addr.ChainId, err, now)
 	}(time.Now())
 
 	votingPowerProvider, err := e.getVotingPowerProviderContract(addr)
@@ -546,7 +548,7 @@ func (e *Client) GetOperatorNonce(ctx context.Context, votingPowerProvider symbi
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("GetOperatorNonce", err, now)
+		e.observeMetrics("GetOperatorNonce", e.driverChainID, err, now)
 	}(time.Now())
 
 	contract, err := e.getVotingPowerProviderContract(votingPowerProvider)
@@ -569,7 +571,7 @@ func (e *Client) GetVotingPowers(ctx context.Context, address symbiotic.CrossCha
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("GetVotingPowersAt", err, now)
+		e.observeMetrics("GetVotingPowersAt", address.ChainId, err, now)
 	}(time.Now())
 
 	multicallExists, err := e.multicallExists(ctx, address.ChainId)
@@ -611,7 +613,7 @@ func (e *Client) GetOperators(ctx context.Context, address symbiotic.CrossChainA
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("GetOperators", err, now)
+		e.observeMetrics("GetOperators", address.ChainId, err, now)
 	}(time.Now())
 
 	votingPowerProvider, err := e.getVotingPowerProviderContract(address)
@@ -634,7 +636,7 @@ func (e *Client) GetKeysOperators(ctx context.Context, address symbiotic.CrossCh
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("GetKeysOperators", err, now)
+		e.observeMetrics("GetKeysOperators", address.ChainId, err, now)
 	}(time.Now())
 
 	keyRegistry, err := e.getKeyRegistryContract(address)
@@ -657,7 +659,7 @@ func (e *Client) GetKeys(ctx context.Context, address symbiotic.CrossChainAddres
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("GetKeysAt", err, now)
+		e.observeMetrics("GetKeysAt", address.ChainId, err, now)
 	}(time.Now())
 
 	multicallExists, err := e.multicallExists(ctx, address.ChainId)
@@ -699,7 +701,7 @@ func (e *Client) IsValsetHeaderCommittedAtEpochs(ctx context.Context, addr symbi
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("IsValSetHeaderCommittedAt", err, now)
+		e.observeMetrics("IsValSetHeaderCommittedAt", addr.ChainId, err, now)
 	}(time.Now())
 
 	multicallExists, err := e.multicallExists(ctx, addr.ChainId)
@@ -898,9 +900,9 @@ func findErrorBySelector(errSelector string) (abi.Error, bool) {
 	return abi.Error{}, false
 }
 
-func (e *Client) observeMetrics(method string, err error, start time.Time) {
+func (e *Client) observeMetrics(method string, chainID uint64, err error, start time.Time) {
 	if e.metrics != nil {
 		status := lo.Ternary(err != nil, "error", "success")
-		e.metrics.ObserveEVMMethodCall(method, status, time.Since(start))
+		e.metrics.ObserveEVMMethodCall(method, chainID, status, time.Since(start))
 	}
 }

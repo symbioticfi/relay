@@ -16,7 +16,7 @@ func (e *Client) VerifyQuorumSig(ctx context.Context, addr symbiotic.CrossChainA
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("VerifyQuorumSigAt", err, now)
+		e.observeMetrics("VerifyQuorumSigAt", addr.ChainId, err, now)
 	}(time.Now())
 
 	settlement, err := e.getSettlementContract(addr)

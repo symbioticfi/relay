@@ -42,7 +42,7 @@ func (e *Client) CommitValsetHeader(
 	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
-		e.observeMetrics("CommitValSetHeader", err, now)
+		e.observeMetrics("CommitValSetHeader", addr.ChainId, err, now)
 	}(time.Now())
 	txOpts.Context = tmCtx
 
