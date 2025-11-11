@@ -393,6 +393,21 @@ func (mr *MockIEvmClientMockRecorder) GetVotingPowers(ctx, address, timestamp an
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVotingPowers", reflect.TypeOf((*MockIEvmClient)(nil).GetVotingPowers), ctx, address, timestamp)
 }
 
+// InvalidateOldSignatures mocks base method.
+func (m *MockIEvmClient) InvalidateOldSignatures(ctx context.Context, addr entity.CrossChainAddress) (entity.TxResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InvalidateOldSignatures", ctx, addr)
+	ret0, _ := ret[0].(entity.TxResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// InvalidateOldSignatures indicates an expected call of InvalidateOldSignatures.
+func (mr *MockIEvmClientMockRecorder) InvalidateOldSignatures(ctx, addr any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InvalidateOldSignatures", reflect.TypeOf((*MockIEvmClient)(nil).InvalidateOldSignatures), ctx, addr)
+}
+
 // IsValsetHeaderCommittedAt mocks base method.
 func (m *MockIEvmClient) IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (bool, error) {
 	m.ctrl.T.Helper()
