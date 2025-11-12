@@ -5,7 +5,6 @@ import (
 	"context"
 	"math/big"
 	"sort"
-	"strings"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
@@ -86,18 +85,15 @@ func (r *Repository) GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch
 		it.Seek(basePrefix)
 		for it.Valid() && bytes.HasPrefix(it.Item().Key(), basePrefix) {
 			item := it.Item()
-			key := string(item.Key())
-
-			// Parse the key: "aggregation_proof_commit:epoch:hash"
-			parts := strings.Split(key, ":")
-			if len(parts) != 2 {
+			keyBytes := item.Key()
+			if !bytes.HasPrefix(keyBytes, basePrefix) {
 				it.Next()
 				continue // Skip invalid keys
 			}
 
 			// Parse the epoch
-
-			keyEpochInt := big.NewInt(0).SetBytes([]byte(parts[1])).Uint64()
+			epochBytes := keyBytes[len(basePrefix):]
+			keyEpochInt := big.NewInt(0).SetBytes(epochBytes).Uint64()
 			keyEpoch := symbiotic.Epoch(keyEpochInt)
 
 			// Skip if this epoch is less than our target epoch
