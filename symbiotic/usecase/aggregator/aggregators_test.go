@@ -5,9 +5,11 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	proof2 "github.com/symbioticfi/relay/pkg/proof"
+	"github.com/symbioticfi/relay/pkg/proof"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator/blsBn254Simple"
 	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator/blsBn254ZK"
@@ -16,6 +18,16 @@ import (
 	crypto2 "github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 )
+
+type mockProver struct{}
+
+func (m *mockProver) Prove(proveInput proof.ProveInput) (proof.ProofData, error) {
+	return proof.ProofData{}, nil
+}
+
+func (m *mockProver) Verify(valsetLen int, publicInputHash common.Hash, proofBytes []byte) (bool, error) {
+	return true, nil
+}
 
 func TestSimpleAggregator(t *testing.T) {
 	agg, err := blsBn254Simple.NewAggregator()
@@ -85,7 +97,7 @@ func TestSimpleAggregatorExtraData(t *testing.T) {
 func TestAggregatorZKExtraData(t *testing.T) {
 	t.Skipf("it works too long, so set skip here. For local debugging can remove this skip")
 	valset, keyTag := genExtraDataTest(t)
-	prover := proof2.NewZkProver("circuits")
+	prover := proof.NewZkProver("circuits")
 	agg, err := blsBn254ZK.NewAggregator(prover)
 	require.NoError(t, err)
 	data, err := agg.GenerateExtraData(valset, []symbiotic.KeyTag{keyTag})
@@ -109,7 +121,7 @@ func TestAggregatorZKExtraData(t *testing.T) {
 
 func TestZkAggregator(t *testing.T) {
 	t.Skipf("it works too long, so set skip here. For local debugging can remove this skip")
-	prover := proof2.NewZkProver("circuits")
+	prover := proof.NewZkProver("circuits")
 	agg, err := blsBn254ZK.NewAggregator(prover)
 	require.NoError(t, err)
 	valset, signatures, keyTag := genCorrectTest(10, []int{1, 2, 3})
@@ -239,4 +251,40 @@ func genCorrectTest(numValidators int, nonSigners []int) (symbiotic.ValidatorSet
 	}
 
 	return valset, signatures, keyTag
+}
+
+func TestNewAggregator_WithBlsBn254Simple_ReturnsAggregator(t *testing.T) {
+	agg, err := NewAggregator(symbiotic.VerificationTypeBlsBn254Simple, nil)
+
+	require.NoError(t, err)
+	assert.NotNil(t, agg)
+}
+
+func TestNewAggregator_WithBlsBn254ZK_ReturnsAggregator(t *testing.T) {
+	prover := &mockProver{}
+
+	agg, err := NewAggregator(symbiotic.VerificationTypeBlsBn254ZK, prover)
+
+	require.NoError(t, err)
+	assert.NotNil(t, agg)
+}
+
+func TestNewAggregator_WithUnsupportedType_ReturnsError(t *testing.T) {
+	unsupportedType := symbiotic.VerificationType(999)
+
+	agg, err := NewAggregator(unsupportedType, nil)
+
+	require.Error(t, err)
+	assert.Nil(t, agg)
+	assert.Contains(t, err.Error(), "unsupported verification type")
+}
+
+func TestNewAggregator_WithDifferentTypes_ReturnsDifferentImplementations(t *testing.T) {
+	prover := &mockProver{}
+
+	_, err := NewAggregator(symbiotic.VerificationTypeBlsBn254Simple, nil)
+	require.NoError(t, err)
+
+	_, err = NewAggregator(symbiotic.VerificationTypeBlsBn254ZK, prover)
+	require.NoError(t, err)
 }
