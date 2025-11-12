@@ -8,7 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -55,7 +54,6 @@ func TestSetGenesis_NoSettlementContract_ReturnsError(t *testing.T) {
 		GetPrivateKeyByNamespaceTypeId(gomock.Any(), symbiotic.KeyTypeEcdsaSecp256k1, int(chainID)).
 		Return(&mockPrivateKey{key: privateKey}, nil)
 
-	// Metrics are called with "error" because settlement contract doesn't exist
 	mockMetrics.EXPECT().
 		ObserveEVMMethodCall("SetGenesis", chainID, "error", gomock.Any())
 
@@ -65,7 +63,7 @@ func TestSetGenesis_NoSettlementContract_ReturnsError(t *testing.T) {
 			KeyProvider:    mockKeyProv,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]*ethclient.Client),
+		conns:   make(map[uint64]conn),
 		metrics: mockMetrics,
 	}
 
@@ -99,15 +97,13 @@ func TestSetGenesis_KeyProviderFails_ReturnsError(t *testing.T) {
 		GetPrivateKeyByNamespaceTypeId(gomock.Any(), symbiotic.KeyTypeEcdsaSecp256k1, int(chainID)).
 		Return(nil, expectedErr)
 
-	// Note: Metrics are not called because the error occurs before the defer is set up
-
 	client := &Client{
 		cfg: Config{
 			RequestTimeout: 5 * time.Second,
 			KeyProvider:    mockKeyProv,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]*ethclient.Client),
+		conns:   make(map[uint64]conn),
 		metrics: mockMetrics,
 	}
 
@@ -140,15 +136,13 @@ func TestSetGenesis_InvalidECDSAKey_ReturnsError(t *testing.T) {
 		GetPrivateKeyByNamespaceTypeId(gomock.Any(), symbiotic.KeyTypeEcdsaSecp256k1, int(chainID)).
 		Return(&mockPrivateKey{key: nil}, nil)
 
-	// Note: Metrics are not called because the error occurs before the defer is set up
-
 	client := &Client{
 		cfg: Config{
 			RequestTimeout: 5 * time.Second,
 			KeyProvider:    mockKeyProv,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]*ethclient.Client),
+		conns:   make(map[uint64]conn),
 		metrics: mockMetrics,
 	}
 
@@ -189,7 +183,6 @@ func TestSetGenesis_ContextTimeout_ReturnsError(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
 	defer cancel()
-	time.Sleep(10 * time.Millisecond)
 
 	client := &Client{
 		cfg: Config{
@@ -197,7 +190,7 @@ func TestSetGenesis_ContextTimeout_ReturnsError(t *testing.T) {
 			KeyProvider:    mockKeyProv,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]*ethclient.Client),
+		conns:   make(map[uint64]conn),
 		metrics: mockMetrics,
 	}
 
@@ -241,7 +234,7 @@ func TestSetGenesis_InvalidChainID_ReturnsError(t *testing.T) {
 			KeyProvider:    mockKeyProv,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]*ethclient.Client),
+		conns:   make(map[uint64]conn),
 		metrics: mockMetrics,
 	}
 
@@ -290,7 +283,7 @@ func TestSetGenesis_EmptyExtraData_HandlesCorrectly(t *testing.T) {
 			KeyProvider:    mockKeyProv,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]*ethclient.Client),
+		conns:   make(map[uint64]conn),
 		metrics: mockMetrics,
 	}
 
@@ -338,12 +331,69 @@ func TestSetGenesis_NilExtraData_HandlesCorrectly(t *testing.T) {
 			KeyProvider:    mockKeyProv,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]*ethclient.Client),
+		conns:   make(map[uint64]conn),
 		metrics: mockMetrics,
 	}
 
 	result, err := client.SetGenesis(context.Background(), addr, header, nil)
 
 	require.Error(t, err)
+	assert.Empty(t, result.TxHash)
+}
+
+func TestSetGenesis_PartialHappyPath_ValidatesDataPreparation(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockKeyProv := mocks.NewMockkeyProvider(ctrl)
+	mockMetrics := mocks.NewMockmetrics(ctrl)
+
+	privateKey, err := crypto.GenerateKey()
+	require.NoError(t, err)
+
+	chainID := uint64(1)
+	addr := symbiotic.CrossChainAddress{
+		ChainId: chainID,
+		Address: common.HexToAddress("0x1234567890123456789012345678901234567890"),
+	}
+
+	header := symbiotic.ValidatorSetHeader{
+		Version:            1,
+		RequiredKeyTag:     symbiotic.KeyTag(1),
+		Epoch:              symbiotic.Epoch(0),
+		CaptureTimestamp:   symbiotic.Timestamp(1000),
+		QuorumThreshold:    symbiotic.VotingPower{Int: big.NewInt(100)},
+		TotalVotingPower:   symbiotic.VotingPower{Int: big.NewInt(1000)},
+		ValidatorsSszMRoot: common.HexToHash("0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"),
+	}
+
+	extraData := []symbiotic.ExtraData{
+		{
+			Key:   common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111"),
+			Value: common.HexToHash("0x2222222222222222222222222222222222222222222222222222222222222222"),
+		},
+	}
+
+	mockKeyProv.EXPECT().
+		GetPrivateKeyByNamespaceTypeId(gomock.Any(), symbiotic.KeyTypeEcdsaSecp256k1, int(chainID)).
+		Return(&mockPrivateKey{key: privateKey}, nil)
+
+	mockMetrics.EXPECT().
+		ObserveEVMMethodCall("SetGenesis", chainID, "error", gomock.Any())
+
+	client := &Client{
+		cfg: Config{
+			RequestTimeout: 5 * time.Second,
+			KeyProvider:    mockKeyProv,
+			Metrics:        mockMetrics,
+		},
+		conns:   make(map[uint64]conn),
+		metrics: mockMetrics,
+	}
+
+	result, err := client.SetGenesis(context.Background(), addr, header, extraData)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get settlement contract")
 	assert.Empty(t, result.TxHash)
 }
