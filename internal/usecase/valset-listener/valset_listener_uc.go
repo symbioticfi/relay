@@ -1,5 +1,8 @@
 package valset_listener
 
+//go:generate mockgen -destination=mocks/valset_listener.go -package=mocks github.com/symbioticfi/relay/internal/usecase/valset-listener signer,repo,deriver,metrics,keyProvider
+//go:generate mockgen -destination=mocks/evm_client.go -package=mocks github.com/symbioticfi/relay/symbiotic/client/evm IEvmClient
+
 import (
 	"context"
 	"log/slog"
