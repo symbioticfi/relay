@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/internal/usecase/valset-listener/mocks"
 	"github.com/symbioticfi/relay/pkg/signals"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
@@ -666,4 +667,233 @@ func TestCommitValsetToAllSettlements_WhenEpochNotSequential_ReturnsError(t *tes
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "commits should be consequent")
+}
+
+func TestHeaderCommitmentData_WithValidInputs_ReturnsCommitmentData(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockEvmClient := mocks.NewMockIEvmClient(ctrl)
+	mockRepo := mocks.NewMockrepo(ctrl)
+	mockDeriver := mocks.NewMockderiver(ctrl)
+	mockSigner := mocks.NewMocksigner(ctrl)
+	mockValidatorSetSignal := signals.New[symbiotic.ValidatorSet](signals.Config{}, "test-valset")
+
+	service, err := New(Config{
+		EvmClient:       mockEvmClient,
+		Repo:            mockRepo,
+		Deriver:         mockDeriver,
+		PollingInterval: time.Second * 10,
+		Signer:          mockSigner,
+		ValidatorSet:    mockValidatorSetSignal,
+	})
+	require.NoError(t, err)
+
+	networkData := symbiotic.NetworkData{
+		Subnetwork: [32]byte{1, 2, 3},
+		Eip712Data: symbiotic.Eip712Domain{
+			Name:    "TestNetwork",
+			Version: "1.0",
+		},
+	}
+
+	header := symbiotic.ValidatorSetHeader{
+		Epoch:            10,
+		CaptureTimestamp: 1234567890,
+	}
+
+	extraData := []symbiotic.ExtraData{
+		{Key: common.HexToHash("0x01"), Value: common.HexToHash("0x02")},
+	}
+
+	result, err := service.headerCommitmentData(networkData, header, extraData)
+
+	require.NoError(t, err)
+	assert.NotEmpty(t, result)
+	assert.Greater(t, len(result), 0)
+}
+
+func TestHeaderCommitmentData_WithEmptyExtraData_ReturnsCommitmentData(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockEvmClient := mocks.NewMockIEvmClient(ctrl)
+	mockRepo := mocks.NewMockrepo(ctrl)
+	mockDeriver := mocks.NewMockderiver(ctrl)
+	mockSigner := mocks.NewMocksigner(ctrl)
+	mockValidatorSetSignal := signals.New[symbiotic.ValidatorSet](signals.Config{}, "test-valset")
+
+	service, err := New(Config{
+		EvmClient:       mockEvmClient,
+		Repo:            mockRepo,
+		Deriver:         mockDeriver,
+		PollingInterval: time.Second * 10,
+		Signer:          mockSigner,
+		ValidatorSet:    mockValidatorSetSignal,
+	})
+	require.NoError(t, err)
+
+	networkData := symbiotic.NetworkData{
+		Subnetwork: [32]byte{5, 6, 7},
+		Eip712Data: symbiotic.Eip712Domain{
+			Name:    "TestNet",
+			Version: "2.0",
+		},
+	}
+
+	header := symbiotic.ValidatorSetHeader{
+		Epoch:            5,
+		CaptureTimestamp: 9876543210,
+	}
+
+	result, err := service.headerCommitmentData(networkData, header, []symbiotic.ExtraData{})
+
+	require.NoError(t, err)
+	assert.NotEmpty(t, result)
+	assert.Greater(t, len(result), 0)
+}
+
+func TestTryLoadMissingEpochs_WithLatestEpochOngoing_ReturnsNil(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockEvmClient := mocks.NewMockIEvmClient(ctrl)
+	mockRepo := mocks.NewMockrepo(ctrl)
+	mockDeriver := mocks.NewMockderiver(ctrl)
+	mockSigner := mocks.NewMocksigner(ctrl)
+	mockValidatorSetSignal := signals.New[symbiotic.ValidatorSet](signals.Config{}, "test-valset")
+
+	service, err := New(Config{
+		EvmClient:       mockEvmClient,
+		Repo:            mockRepo,
+		Deriver:         mockDeriver,
+		PollingInterval: time.Second * 10,
+		Signer:          mockSigner,
+		ValidatorSet:    mockValidatorSetSignal,
+	})
+	require.NoError(t, err)
+
+	ctx := context.Background()
+
+	header := symbiotic.ValidatorSetHeader{
+		Epoch:            5,
+		CaptureTimestamp: symbiotic.Timestamp(time.Now().Add(1 * time.Hour).Unix()),
+	}
+
+	config := symbiotic.NetworkConfig{
+		EpochDuration: 7200,
+	}
+
+	mockRepo.EXPECT().
+		GetLatestValidatorSetHeader(ctx).
+		Return(header, nil)
+
+	mockRepo.EXPECT().
+		GetConfigByEpoch(ctx, header.Epoch).
+		Return(config, nil)
+
+	err = service.tryLoadMissingEpochs(ctx)
+
+	require.NoError(t, err)
+}
+
+func TestTryLoadMissingEpochs_WhenGetLatestHeaderFails_ReturnsError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockEvmClient := mocks.NewMockIEvmClient(ctrl)
+	mockRepo := mocks.NewMockrepo(ctrl)
+	mockDeriver := mocks.NewMockderiver(ctrl)
+	mockSigner := mocks.NewMocksigner(ctrl)
+	mockValidatorSetSignal := signals.New[symbiotic.ValidatorSet](signals.Config{}, "test-valset")
+
+	service, err := New(Config{
+		EvmClient:       mockEvmClient,
+		Repo:            mockRepo,
+		Deriver:         mockDeriver,
+		PollingInterval: time.Second * 10,
+		Signer:          mockSigner,
+		ValidatorSet:    mockValidatorSetSignal,
+	})
+	require.NoError(t, err)
+
+	ctx := context.Background()
+
+	mockRepo.EXPECT().
+		GetLatestValidatorSetHeader(ctx).
+		Return(symbiotic.ValidatorSetHeader{}, errors.New("database error"))
+
+	err = service.tryLoadMissingEpochs(ctx)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get latest validator set header")
+}
+
+func TestTryLoadMissingEpochs_WhenGetCurrentEpochFails_ReturnsError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockEvmClient := mocks.NewMockIEvmClient(ctrl)
+	mockRepo := mocks.NewMockrepo(ctrl)
+	mockDeriver := mocks.NewMockderiver(ctrl)
+	mockSigner := mocks.NewMocksigner(ctrl)
+	mockValidatorSetSignal := signals.New[symbiotic.ValidatorSet](signals.Config{}, "test-valset")
+
+	service, err := New(Config{
+		EvmClient:       mockEvmClient,
+		Repo:            mockRepo,
+		Deriver:         mockDeriver,
+		PollingInterval: time.Second * 10,
+		Signer:          mockSigner,
+		ValidatorSet:    mockValidatorSetSignal,
+	})
+	require.NoError(t, err)
+
+	ctx := context.Background()
+
+	mockRepo.EXPECT().
+		GetLatestValidatorSetHeader(ctx).
+		Return(symbiotic.ValidatorSetHeader{}, entity.ErrEntityNotFound)
+
+	mockEvmClient.EXPECT().
+		GetCurrentEpoch(ctx).
+		Return(symbiotic.Epoch(0), errors.New("rpc connection failed"))
+
+	err = service.tryLoadMissingEpochs(ctx)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get current epoch")
+}
+
+func TestLoadAllMissingEpochs_WhenTryLoadFails_RetriesAndFails(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockEvmClient := mocks.NewMockIEvmClient(ctrl)
+	mockRepo := mocks.NewMockrepo(ctrl)
+	mockDeriver := mocks.NewMockderiver(ctrl)
+	mockSigner := mocks.NewMocksigner(ctrl)
+	mockValidatorSetSignal := signals.New[symbiotic.ValidatorSet](signals.Config{}, "test-valset")
+
+	service, err := New(Config{
+		EvmClient:       mockEvmClient,
+		Repo:            mockRepo,
+		Deriver:         mockDeriver,
+		PollingInterval: time.Second * 10,
+		Signer:          mockSigner,
+		ValidatorSet:    mockValidatorSetSignal,
+	})
+	require.NoError(t, err)
+
+	ctx := context.Background()
+
+	mockRepo.EXPECT().
+		GetLatestValidatorSetHeader(gomock.Any()).
+		Return(symbiotic.ValidatorSetHeader{}, errors.New("database error")).
+		Times(10)
+
+	err = service.LoadAllMissingEpochs(ctx)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load missing epochs after")
 }
