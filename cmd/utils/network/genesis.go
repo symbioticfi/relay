@@ -72,9 +72,14 @@ var genesisCmd = &cobra.Command{
 			return errors.Errorf("failed to create deriver: %v", err)
 		}
 
-		currentOnchainEpoch, err := evmClient.GetCurrentEpoch(ctx)
-		if err != nil {
-			return errors.Errorf("failed to get current epoch: %w", err)
+		currentOnchainEpoch := symbiotic.Epoch(0)
+		if genesisFlags.Epoch >= 0 {
+			currentOnchainEpoch = symbiotic.Epoch(genesisFlags.Epoch)
+		} else {
+			currentOnchainEpoch, err = evmClient.GetCurrentEpoch(ctx)
+			if err != nil {
+				return errors.Errorf("failed to get current epoch: %w", err)
+			}
 		}
 
 		captureTimestamp, err := evmClient.GetEpochStart(ctx, currentOnchainEpoch)
