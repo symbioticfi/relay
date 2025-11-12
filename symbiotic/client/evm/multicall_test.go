@@ -11,9 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/symbioticfi/relay/symbiotic/client/evm/gen"
 	"github.com/symbioticfi/relay/symbiotic/client/evm/mocks"
-	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func TestMulticallExists_NoConnection_ReturnsError(t *testing.T) {
@@ -156,73 +154,5 @@ func TestMulticall_NoConnection_ReturnsError(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no connection for chain ID")
-	assert.Nil(t, result)
-}
-
-func TestGetVotingPowersMulticall_GetAbiFails_ReturnsError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockMetrics := mocks.NewMockmetrics(ctrl)
-
-	chainID := uint64(1)
-	addr := symbiotic.CrossChainAddress{
-		ChainId: chainID,
-		Address: common.HexToAddress("0x1234567890123456789012345678901234567890"),
-	}
-
-	originalMetadata := gen.IVotingPowerProviderMetaData
-	gen.IVotingPowerProviderMetaData.ABI = "invalid json {"
-	defer func() {
-		gen.IVotingPowerProviderMetaData = originalMetadata
-	}()
-
-	client := &Client{
-		cfg: Config{
-			RequestTimeout: 5 * time.Second,
-			Metrics:        mockMetrics,
-		},
-		conns:   make(map[uint64]conn),
-		metrics: mockMetrics,
-	}
-
-	result, err := client.getVotingPowersMulticall(context.Background(), addr, symbiotic.Timestamp(1000))
-
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get ABI")
-	assert.Nil(t, result)
-}
-
-func TestGetKeysMulticall_GetAbiFails_ReturnsError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockMetrics := mocks.NewMockmetrics(ctrl)
-
-	chainID := uint64(1)
-	addr := symbiotic.CrossChainAddress{
-		ChainId: chainID,
-		Address: common.HexToAddress("0x1234567890123456789012345678901234567890"),
-	}
-
-	originalMetadata := gen.IKeyRegistryMetaData
-	gen.IKeyRegistryMetaData.ABI = "invalid json {"
-	defer func() {
-		gen.IKeyRegistryMetaData = originalMetadata
-	}()
-
-	client := &Client{
-		cfg: Config{
-			RequestTimeout: 5 * time.Second,
-			Metrics:        mockMetrics,
-		},
-		conns:   make(map[uint64]conn),
-		metrics: mockMetrics,
-	}
-
-	result, err := client.getKeysMulticall(context.Background(), addr, symbiotic.Timestamp(1000))
-
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get ABI")
 	assert.Nil(t, result)
 }

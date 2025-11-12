@@ -27,7 +27,7 @@ import (
 	cryptoSym "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
-//go:generate mockgen -destination=mocks/eth.go -package=mocks github.com/symbioticfi/relay/symbiotic/client/evm IEvmClient,conn,metrics,keyProvider
+//go:generate mockgen -destination=mocks/eth.go -package=mocks github.com/symbioticfi/relay/symbiotic/client/evm IEvmClient,conn,metrics,keyProvider,driverContract
 
 type metrics interface {
 	ObserveEVMMethodCall(method string, chainID uint64, status string, d time.Duration)
@@ -78,6 +78,20 @@ type conn interface {
 	bind.DeployBackend
 }
 
+var _ driverContract = (*gen.IValSetDriverCaller)(nil)
+
+// driverContract defines the interface for driver contract operations
+// gen.IValSetDriverCaller implements this interface
+type driverContract interface {
+	GetConfigAt(opts *bind.CallOpts, timestamp *big.Int) (gen.IValSetDriverConfig, error)
+	GetCurrentEpoch(opts *bind.CallOpts) (*big.Int, error)
+	GetCurrentEpochDuration(opts *bind.CallOpts) (*big.Int, error)
+	GetEpochDuration(opts *bind.CallOpts, epoch *big.Int) (*big.Int, error)
+	GetEpochStart(opts *bind.CallOpts, epoch *big.Int) (*big.Int, error)
+	SUBNETWORK(opts *bind.CallOpts) ([32]byte, error)
+	NETWORK(opts *bind.CallOpts) (common.Address, error)
+}
+
 type Config struct {
 	ChainURLs      []string                    `validate:"required"`
 	DriverAddress  symbiotic.CrossChainAddress `validate:"required"`
@@ -99,7 +113,7 @@ type Client struct {
 	cfg Config
 
 	conns         map[uint64]conn
-	driver        *gen.IValSetDriverCaller
+	driver        driverContract
 	driverChainID uint64
 
 	metrics metrics
