@@ -6,6 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/go-errors/errors"
+
 	cmdhelpers "github.com/symbioticfi/relay/cmd/utils/cmd-helpers"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 
@@ -16,8 +18,11 @@ import (
 func NewOperatorCmd() *cobra.Command {
 	operatorCmd.AddCommand(infoCmd)
 	operatorCmd.AddCommand(registerKeyCmd)
+	operatorCmd.AddCommand(invalidateOldSignaturesCmd)
 	operatorCmd.AddCommand(registerOperatorWithSignatureCmd)
 	operatorCmd.AddCommand(unregisterOperatorWithSignatureCmd)
+	operatorCmd.AddCommand(registerOperatorCmd)
+	operatorCmd.AddCommand(unregisterOperatorCmd)
 
 	initFlags()
 
@@ -30,9 +35,10 @@ var operatorCmd = &cobra.Command{
 }
 
 type GlobalFlags struct {
-	Chains        []string
-	DriverAddress string
-	DriverChainId uint64
+	Chains                []string
+	DriverAddress         string
+	DriverChainId         uint64
+	VotingProviderChainId uint64
 }
 
 type InfoFlags struct {
@@ -50,6 +56,10 @@ type RegisterKeyFlags struct {
 	KeyTag   uint8
 }
 
+type InvalidateOldSignaturesFlags struct {
+	Secrets cmdhelpers.SecretKeyMapFlag
+}
+
 type RegisterOperatorWithSignatureFlags struct {
 	Secrets cmdhelpers.SecretKeyMapFlag
 }
@@ -58,16 +68,28 @@ type UnregisterOperatorWithSignatureFlags struct {
 	Secrets cmdhelpers.SecretKeyMapFlag
 }
 
+type RegisterOperatorFlags struct {
+	Secrets cmdhelpers.SecretKeyMapFlag
+}
+
+type UnregisterOperatorFlags struct {
+	Secrets cmdhelpers.SecretKeyMapFlag
+}
+
 var globalFlags GlobalFlags
 var infoFlags InfoFlags
 var registerKeyFlags RegisterKeyFlags
+var invalidateOldSignaturesFlags InvalidateOldSignaturesFlags
 var registerOperatorWithSignatureFlags RegisterOperatorWithSignatureFlags
 var unregisterOperatorWithSignatureFlags UnregisterOperatorWithSignatureFlags
+var registerOperatorFlags RegisterOperatorFlags
+var unregisterOperatorFlags UnregisterOperatorFlags
 
 func initFlags() {
 	operatorCmd.PersistentFlags().StringSliceVarP(&globalFlags.Chains, "chains", "c", nil, "Chains rpc url, comma separated")
 	operatorCmd.PersistentFlags().StringVar(&globalFlags.DriverAddress, "driver.address", "", "Driver contract address")
 	operatorCmd.PersistentFlags().Uint64Var(&globalFlags.DriverChainId, "driver.chainid", 0, "Driver contract chain id")
+	operatorCmd.PersistentFlags().Uint64Var(&globalFlags.VotingProviderChainId, "voting-provider-chain-id", 0, "Voting power provider chain id")
 	if err := operatorCmd.MarkPersistentFlagRequired("chains"); err != nil {
 		panic(err)
 	}
@@ -75,6 +97,9 @@ func initFlags() {
 		panic(err)
 	}
 	if err := operatorCmd.MarkPersistentFlagRequired("driver.chainid"); err != nil {
+		panic(err)
+	}
+	if err := operatorCmd.MarkPersistentFlagRequired("voting-provider-chain-id"); err != nil {
 		panic(err)
 	}
 
@@ -94,9 +119,13 @@ func initFlags() {
 		panic(err)
 	}
 
+	invalidateOldSignaturesCmd.PersistentFlags().Var(&invalidateOldSignaturesFlags.Secrets, "secret-keys", "Secret key for signing in format 'chainId:key' (e.g. '1:0xabc')")
 	registerOperatorWithSignatureCmd.PersistentFlags().Var(&registerOperatorWithSignatureFlags.Secrets, "secret-keys", "Secret key for signing in format 'chainId:key' (e.g. '1:0xabc')")
-
 	unregisterOperatorWithSignatureCmd.PersistentFlags().Var(&unregisterOperatorWithSignatureFlags.Secrets, "secret-keys", "Secret key for signing in format 'chainId:key' (e.g. '1:0xabc')")
+
+	registerOperatorCmd.PersistentFlags().Var(&registerOperatorFlags.Secrets, "secret-keys", "Secret key for operator in format 'chainId:key' (e.g. '1:0xabc')")
+
+	unregisterOperatorCmd.PersistentFlags().Var(&unregisterOperatorFlags.Secrets, "secret-keys", "Secret key for operator in format 'chainId:key' (e.g. '1:0xabc')")
 }
 
 // signalContext returns a context that is canceled if either SIGTERM or SIGINT signal is received.
@@ -113,4 +142,14 @@ func signalContext(ctx context.Context) context.Context {
 	}()
 
 	return cnCtx
+}
+
+// findVotingPowerProviderByChainId finds a voting power provider by chain id from the list
+func findVotingPowerProviderByChainId(providers []symbiotic.CrossChainAddress, chainId uint64) (symbiotic.CrossChainAddress, error) {
+	for _, provider := range providers {
+		if provider.ChainId == chainId {
+			return provider, nil
+		}
+	}
+	return symbiotic.CrossChainAddress{}, errors.Errorf("voting power provider with chain id %d not found", chainId)
 }

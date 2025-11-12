@@ -1,18 +1,18 @@
-# `utils operator unregister-operator-with-signature` Command Reference
+# `utils operator unregister-operator` Command Reference
 
-## utils operator unregister-operator-with-signature
+## utils operator unregister-operator
 
-Generate EIP-712 signature for operator unregistration
+Unregister operator on-chain via VotingPowerProvider
 
 ```
-utils operator unregister-operator-with-signature [flags]
+utils operator unregister-operator [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help                       help for unregister-operator-with-signature
-      --secret-keys secretKeyMap   Secret key for signing in format 'chainId:key' (e.g. '1:0xabc')
+  -h, --help                       help for unregister-operator
+      --secret-keys secretKeyMap   Secret key for operator in format 'chainId:key' (e.g. '1:0xabc')
 ```
 
 ### Options inherited from parent commands

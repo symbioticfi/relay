@@ -63,11 +63,14 @@ var unregisterOperatorWithSignatureCmd = &cobra.Command{
 			return errors.Errorf("failed to get config: %w", err)
 		}
 
-		// Use the first VotingPowerProvider from network config
+		// Find VotingPowerProvider by chain ID
 		if len(networkConfig.VotingPowerProviders) == 0 {
 			return errors.New("no voting power providers found in network config")
 		}
-		votingPowerProvider := networkConfig.VotingPowerProviders[0]
+		votingPowerProvider, err := findVotingPowerProviderByChainId(networkConfig.VotingPowerProviders, globalFlags.VotingProviderChainId)
+		if err != nil {
+			return err
+		}
 
 		eip712Domain, err := evmClient.GetVotingPowerProviderEip712Domain(ctx, votingPowerProvider)
 		if err != nil {
