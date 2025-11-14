@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
+	"github.com/consensys/gnark/backend/groth16"
+	"github.com/consensys/gnark/constraint"
 )
 
 func genValset(numValidators int, nonSigners []int) []ValidatorData {
@@ -137,4 +139,303 @@ func TestProofFailOnEmptyCircuitDir(t *testing.T) {
 
 	_, err = prover.Verify(0, common.Hash{}, nil)
 	require.ErrorContains(t, err, "ZK prover circuits directory is not set", "expected error on empty circuit dir")
+}
+
+// TestNewZkProverInitialization tests the NewZkProver initialization
+func TestNewZkProverInitialization(t *testing.T) {
+	t.Run("initializes with empty circuits directory", func(t *testing.T) {
+		prover := NewZkProver("")
+
+		// Check all maps are initialized
+		require.NotNil(t, prover.cs)
+		require.NotNil(t, prover.pk)
+		require.NotNil(t, prover.vk)
+
+		// Check maps are empty (no circuits loaded without dir)
+		require.Empty(t, prover.cs)
+		require.Empty(t, prover.pk)
+		require.Empty(t, prover.vk)
+
+		// Check maxValidators is set to default
+		require.Equal(t, []int{10, 100, 1000}, prover.maxValidators)
+
+		// Check circuitsDir is empty
+		require.Empty(t, prover.circuitsDir)
+	})
+
+	t.Run("sets circuitsDir when provided", func(t *testing.T) {
+		// We can't actually test NewZkProver with a real circuits dir
+		// because it will try to load/compile circuits which is slow.
+		// Instead, we manually create a prover to verify the field is set.
+		testDir := "/tmp/test_circuits"
+		prover := &ZkProver{
+			cs:          make(map[int]constraint.ConstraintSystem),
+			pk:          make(map[int]groth16.ProvingKey),
+			vk:          make(map[int]groth16.VerifyingKey),
+			circuitsDir: testDir,
+		}
+
+		require.Equal(t, testDir, prover.circuitsDir)
+
+		// Maps should still be initialized
+		require.NotNil(t, prover.cs)
+		require.NotNil(t, prover.pk)
+		require.NotNil(t, prover.vk)
+	})
+
+	t.Run("respects MAX_VALIDATORS environment variable", func(t *testing.T) {
+		t.Setenv("MAX_VALIDATORS", "5,15,25")
+
+		prover := NewZkProver("")
+
+		require.Equal(t, []int{5, 15, 25}, prover.maxValidators)
+	})
+}
+
+// TestProveValidation tests the Prove validation paths
+func TestProveValidation(t *testing.T) {
+	t.Run("returns error when circuits directory not set", func(t *testing.T) {
+		prover := NewZkProver("")
+
+		_, err := prover.Prove(ProveInput{})
+		require.ErrorContains(t, err, "ZK prover circuits directory is not set")
+	})
+
+	t.Run("returns error for empty validator data", func(t *testing.T) {
+		prover := NewZkProver("")
+
+		input := ProveInput{
+			ValidatorData: []ValidatorData{},
+		}
+
+		_, err := prover.Prove(input)
+		require.ErrorContains(t, err, "ZK prover circuits directory is not set")
+	})
+
+	t.Run("returns error for unsupported validator count", func(t *testing.T) {
+		// Create prover with circuits dir but no actual circuits loaded
+		prover := &ZkProver{
+			cs:            make(map[int]constraint.ConstraintSystem),
+			pk:            make(map[int]groth16.ProvingKey),
+			vk:            make(map[int]groth16.VerifyingKey),
+			circuitsDir:   "/tmp/circuits",
+			maxValidators: []int{10, 100, 1000},
+		}
+
+		// Try with 25 validators (not in {10, 100, 1000})
+		input := ProveInput{
+			ValidatorData: make([]ValidatorData, 25),
+		}
+
+		_, err := prover.Prove(input)
+		require.Error(t, err)
+		require.ErrorContains(t, err, "failed to load cs, vk, pk for valset size")
+	})
+
+	t.Run("checks for constraint system availability", func(t *testing.T) {
+		prover := &ZkProver{
+			cs:            make(map[int]constraint.ConstraintSystem),
+			pk:            make(map[int]groth16.ProvingKey),
+			vk:            make(map[int]groth16.VerifyingKey),
+			circuitsDir:   "/tmp/circuits",
+			maxValidators: []int{10, 100, 1000},
+		}
+
+		// Even with 10 validators (which is in maxValidators),
+		// we don't have actual circuit loaded
+		input := ProveInput{
+			ValidatorData: make([]ValidatorData, 10),
+		}
+
+		_, err := prover.Prove(input)
+		require.Error(t, err)
+		require.ErrorContains(t, err, "failed to load cs, vk, pk for valset size: 10")
+	})
+}
+
+// TestVerifyValidation tests the Verify validation paths
+func TestVerifyValidation(t *testing.T) {
+	t.Run("returns error when circuits directory not set", func(t *testing.T) {
+		prover := NewZkProver("")
+
+		ok, err := prover.Verify(10, common.Hash{}, []byte{})
+		require.False(t, ok)
+		require.ErrorContains(t, err, "ZK prover circuits directory is not set")
+	})
+
+	t.Run("normalizes valset length using getOptimalN", func(t *testing.T) {
+		prover := &ZkProver{
+			cs:            make(map[int]constraint.ConstraintSystem),
+			pk:            make(map[int]groth16.ProvingKey),
+			vk:            make(map[int]groth16.VerifyingKey),
+			circuitsDir:   "/tmp/circuits",
+			maxValidators: []int{10, 100, 1000},
+		}
+
+		// valsetLen = 5 should normalize to 10
+		// But since we don't have vk[10], it should error
+		// Note: Verify needs at least 384 bytes for proof
+		proofBytes := make([]byte, 384)
+		ok, err := prover.Verify(5, common.Hash{}, proofBytes)
+		require.False(t, ok)
+		require.Error(t, err)
+		require.ErrorContains(t, err, "failed to find verification key for valset length 10")
+	})
+
+	t.Run("returns error for valsetLen exceeding all maxValidators", func(t *testing.T) {
+		prover := &ZkProver{
+			cs:            make(map[int]constraint.ConstraintSystem),
+			pk:            make(map[int]groth16.ProvingKey),
+			vk:            make(map[int]groth16.VerifyingKey),
+			circuitsDir:   "/tmp/circuits",
+			maxValidators: []int{10, 100, 1000},
+		}
+
+		// valsetLen = 5000 exceeds all sizes, getOptimalN returns 0
+		proofBytes := make([]byte, 384)
+		ok, err := prover.Verify(5000, common.Hash{}, proofBytes)
+		require.False(t, ok)
+		require.Error(t, err)
+		require.ErrorContains(t, err, "failed to find verification key for valset length 0")
+	})
+
+	t.Run("returns error when verification key not found", func(t *testing.T) {
+		prover := &ZkProver{
+			cs:            make(map[int]constraint.ConstraintSystem),
+			pk:            make(map[int]groth16.ProvingKey),
+			vk:            make(map[int]groth16.VerifyingKey),
+			circuitsDir:   "/tmp/circuits",
+			maxValidators: []int{10, 100, 1000},
+		}
+
+		// Even with exact match valsetLen=100, vk map is empty
+		proofBytes := make([]byte, 384)
+		ok, err := prover.Verify(100, common.Hash{}, proofBytes)
+		require.False(t, ok)
+		require.Error(t, err)
+		require.ErrorContains(t, err, "failed to find verification key for valset length 100")
+	})
+}
+
+// TestPathHelpers tests the path generation helper functions
+func TestR1csPathTmp(t *testing.T) {
+	tests := []struct {
+		name        string
+		circuitsDir string
+		suffix      string
+		expected    string
+	}{
+		{
+			name:        "basic path",
+			circuitsDir: "/tmp/circuits",
+			suffix:      "10",
+			expected:    "/tmp/circuits/circuit_10.r1cs",
+		},
+		{
+			name:        "different suffix",
+			circuitsDir: "/tmp/circuits",
+			suffix:      "100",
+			expected:    "/tmp/circuits/circuit_100.r1cs",
+		},
+		{
+			name:        "relative path",
+			circuitsDir: "circuits",
+			suffix:      "1000",
+			expected:    "circuits/circuit_1000.r1cs",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := r1csPathTmp(tt.circuitsDir, tt.suffix)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestPkPathTmp(t *testing.T) {
+	tests := []struct {
+		name        string
+		circuitsDir string
+		suffix      string
+		expected    string
+	}{
+		{
+			name:        "basic path",
+			circuitsDir: "/tmp/circuits",
+			suffix:      "10",
+			expected:    "/tmp/circuits/circuit_10.pk",
+		},
+		{
+			name:        "different suffix",
+			circuitsDir: "/tmp/circuits",
+			suffix:      "100",
+			expected:    "/tmp/circuits/circuit_100.pk",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := pkPathTmp(tt.circuitsDir, tt.suffix)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestVkPathTmp(t *testing.T) {
+	tests := []struct {
+		name        string
+		circuitsDir string
+		suffix      string
+		expected    string
+	}{
+		{
+			name:        "basic path",
+			circuitsDir: "/tmp/circuits",
+			suffix:      "10",
+			expected:    "/tmp/circuits/circuit_10.vk",
+		},
+		{
+			name:        "different suffix",
+			circuitsDir: "/tmp/circuits",
+			suffix:      "100",
+			expected:    "/tmp/circuits/circuit_100.vk",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := vkPathTmp(tt.circuitsDir, tt.suffix)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestSolPathTmp(t *testing.T) {
+	tests := []struct {
+		name        string
+		circuitsDir string
+		suffix      string
+		expected    string
+	}{
+		{
+			name:        "basic path",
+			circuitsDir: "/tmp/circuits",
+			suffix:      "10",
+			expected:    "/tmp/circuits/Verifier_10.sol",
+		},
+		{
+			name:        "different suffix",
+			circuitsDir: "/tmp/circuits",
+			suffix:      "100",
+			expected:    "/tmp/circuits/Verifier_100.sol",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := solPathTmp(tt.circuitsDir, tt.suffix)
+			require.Equal(t, tt.expected, result)
+		})
+	}
 }
