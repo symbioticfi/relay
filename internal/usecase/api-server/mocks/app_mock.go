@@ -362,7 +362,7 @@ func (mr *MockevmClientMockRecorder) GetEpochStart(ctx, epoch any) *gomock.Call 
 }
 
 // GetLastCommittedHeaderEpoch mocks base method.
-func (m *MockevmClient) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity0.CrossChainAddress, opts ...entity.EVMOption) (entity0.Epoch, error) {
+func (m *MockevmClient) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity0.CrossChainAddress, opts ...entity0.EVMOption) (entity0.Epoch, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx, addr}
 	for _, a := range opts {

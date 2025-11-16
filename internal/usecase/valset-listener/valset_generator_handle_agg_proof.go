@@ -214,7 +214,7 @@ func (s *Service) commitValsetToAllSettlements(ctx context.Context, config symbi
 		// todo replace it with tx check instead of call to contract
 		// if commit tx was sent but still not finalized this check will
 		// return false positive and trigger one more commitment tx
-		committed, err := s.cfg.EvmClient.IsValsetHeaderCommittedAt(ctx, settlement, header.Epoch, entity.WithEVMBlockNumber(entity.BlockNumberLatest))
+		committed, err := s.cfg.EvmClient.IsValsetHeaderCommittedAt(ctx, settlement, header.Epoch, symbiotic.WithEVMBlockNumber(symbiotic.BlockNumberLatest))
 		if err != nil {
 			errs[i] = errors.Errorf("failed to check if header is committed at epoch %d: %v/%s: %w", header.Epoch, settlement.ChainId, settlement.Address.Hex(), err)
 			continue
@@ -225,7 +225,7 @@ func (s *Service) commitValsetToAllSettlements(ctx context.Context, config symbi
 			continue
 		}
 
-		lastCommittedEpoch, err := s.cfg.EvmClient.GetLastCommittedHeaderEpoch(ctx, settlement, entity.WithEVMBlockNumber(entity.BlockNumberLatest))
+		lastCommittedEpoch, err := s.cfg.EvmClient.GetLastCommittedHeaderEpoch(ctx, settlement, symbiotic.WithEVMBlockNumber(symbiotic.BlockNumberLatest))
 		if err != nil {
 			errs[i] = errors.Errorf("failed to get last committed header epoch: %v/%s: %w", settlement.ChainId, settlement.Address.Hex(), err)
 			continue
