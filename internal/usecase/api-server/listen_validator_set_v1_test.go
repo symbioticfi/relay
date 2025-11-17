@@ -413,3 +413,23 @@ func TestListenValidatorSet_ConcurrentBroadcasts(t *testing.T) {
 
 	require.Len(t, stream.sentItems, broadcastCount)
 }
+
+func TestListenValidatorSet_MaxStreamsReached_ReturnsError(t *testing.T) {
+	validatorSetsHub := broadcaster.NewHub[symbiotic.ValidatorSet]()
+
+	handler := &grpcHandler{
+		cfg: Config{
+			MaxAllowedStreamsCount: 0,
+		},
+		validatorSetsHub: validatorSetsHub,
+	}
+
+	ctx := context.Background()
+	stream := &mockValidatorSetsStream{ctx: ctx}
+	req := &apiv1.ListenValidatorSetRequest{}
+
+	err := handler.ListenValidatorSet(req, stream)
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "max allowed streams limit reached")
+}
