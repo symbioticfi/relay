@@ -27,6 +27,8 @@ import (
 	cryptoSym "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
+//go:generate mockgen -destination=mocks/eth.go -package=mocks github.com/symbioticfi/relay/symbiotic/client/evm IEvmClient,conn,metrics,keyProvider,driverContract
+
 type metrics interface {
 	ObserveEVMMethodCall(method string, chainID uint64, status string, d time.Duration)
 	ObserveCommitValsetHeaderParams(chainID uint64, gasUsed uint64, effectiveGasPrice *big.Int)
@@ -69,6 +71,27 @@ type keyProvider interface {
 	GetPrivateKeyByNamespaceTypeId(namespace string, keyType symbiotic.KeyType, id int) (cryptoSym.PrivateKey, error)
 }
 
+// conn defines the interface for Ethereum client operations
+// ethclient.Client implements this interface
+type conn interface {
+	bind.ContractBackend
+	bind.DeployBackend
+}
+
+var _ driverContract = (*gen.IValSetDriverCaller)(nil)
+
+// driverContract defines the interface for driver contract operations
+// gen.IValSetDriverCaller implements this interface
+type driverContract interface {
+	GetConfigAt(opts *bind.CallOpts, timestamp *big.Int) (gen.IValSetDriverConfig, error)
+	GetCurrentEpoch(opts *bind.CallOpts) (*big.Int, error)
+	GetCurrentEpochDuration(opts *bind.CallOpts) (*big.Int, error)
+	GetEpochDuration(opts *bind.CallOpts, epoch *big.Int) (*big.Int, error)
+	GetEpochStart(opts *bind.CallOpts, epoch *big.Int) (*big.Int, error)
+	SUBNETWORK(opts *bind.CallOpts) ([32]byte, error)
+	NETWORK(opts *bind.CallOpts) (common.Address, error)
+}
+
 type Config struct {
 	ChainURLs      []string                    `validate:"required"`
 	DriverAddress  symbiotic.CrossChainAddress `validate:"required"`
@@ -89,8 +112,8 @@ func (c Config) Validate() error {
 type Client struct {
 	cfg Config
 
-	conns         map[uint64]*ethclient.Client
-	driver        *gen.IValSetDriverCaller
+	conns         map[uint64]conn
+	driver        driverContract
 	driverChainID uint64
 
 	metrics metrics
@@ -101,7 +124,7 @@ func NewEvmClient(ctx context.Context, cfg Config) (*Client, error) {
 		return nil, errors.Errorf("failed to validate config: %w", err)
 	}
 
-	conns := make(map[uint64]*ethclient.Client)
+	conns := make(map[uint64]conn)
 
 	for _, chainURL := range cfg.ChainURLs {
 		client, err := ethclient.DialContext(ctx, chainURL)

@@ -197,3 +197,52 @@ func (m *mockMetrics) StreamServerInterceptor() grpc.StreamServerInterceptor {
 }
 
 func (m *mockMetrics) ObserveP2PPeerMessageSent(messageType, status string) {}
+
+func TestService_AggregatedProofIntegrationSuccessful(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	service1 := createTestService(t, false, nil)
+	service2 := createTestService(t, false, nil)
+
+	host1Addr := host.InfoFromHost(service1.host)
+	err := service2.addPeer(*host1Addr)
+	require.NoError(t, err)
+
+	time.Sleep(100 * time.Millisecond)
+
+	require.Eventually(t, func() bool {
+		return len(service1.host.Peerstore().Peers()) > 0 && len(service2.host.Peerstore().Peers()) > 0
+	}, time.Second, time.Millisecond*100)
+
+	var receivedMsg p2pEntity.P2PMessage[symbiotic.AggregationProof]
+
+	done := make(chan struct{})
+	require.NoError(t, service2.StartSignaturesAggregatedMessageListener(func(ctx context.Context, msg p2pEntity.P2PMessage[symbiotic.AggregationProof]) error {
+		receivedMsg = msg
+		close(done)
+		return nil
+	}))
+
+	testProofMsg := symbiotic.AggregationProof{
+		KeyTag:      symbiotic.KeyTag(1),
+		Epoch:       symbiotic.Epoch(456),
+		MessageHash: symbiotic.RawMessageHash("test aggregation proof hash"),
+		Proof:       symbiotic.RawProof("test aggregation proof data"),
+	}
+
+	err = service1.BroadcastSignatureAggregatedMessage(ctx, testProofMsg)
+	require.NoError(t, err)
+
+	select {
+	case <-done:
+		assert.Equal(t, service1.host.ID().String(), receivedMsg.SenderInfo.Sender)
+		assert.NotNil(t, receivedMsg.SenderInfo.PublicKey)
+		assert.Equal(t, testProofMsg.KeyTag, receivedMsg.Message.KeyTag)
+		assert.Equal(t, testProofMsg.Epoch, receivedMsg.Message.Epoch)
+		assert.Equal(t, testProofMsg.MessageHash, receivedMsg.Message.MessageHash)
+		assert.Equal(t, testProofMsg.Proof, receivedMsg.Message.Proof)
+	case <-ctx.Done():
+		require.Fail(t, "Test timed out waiting for aggregated proof message")
+	}
+}
