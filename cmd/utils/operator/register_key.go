@@ -13,6 +13,7 @@ import (
 	"github.com/symbioticfi/relay/symbiotic/client/evm"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	symbioticCrypto "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/bls12381Bn254"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/blsBn254"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -139,8 +140,16 @@ var registerKeyCmd = &cobra.Command{
 		}
 
 		var extraData []byte
-		if kt.Type() == symbiotic.KeyTypeBlsBn254 {
+		switch kt.Type() {
+		case symbiotic.KeyTypeBlsBn254:
 			blsKey, err := blsBn254.FromRaw(pk.PublicKey().Raw())
+			if err != nil {
+				return errors.Errorf("failed to parse BLS public key: %w", err)
+			}
+			rawByte := blsKey.G2().RawBytes()
+			extraData = rawByte[:]
+		case symbiotic.KeyTypeBls12381Bn254:
+			blsKey, err := bls12381Bn254.FromRaw(pk.PublicKey().Raw())
 			if err != nil {
 				return errors.Errorf("failed to parse BLS public key: %w", err)
 			}
