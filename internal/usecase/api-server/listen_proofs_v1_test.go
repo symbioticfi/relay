@@ -365,6 +365,26 @@ func TestListenProofs_MultipleBroadcasts(t *testing.T) {
 	require.Len(t, stream.sentItems, 5)
 }
 
+func TestListenProofs_MaxStreamsReached_ReturnsError(t *testing.T) {
+	proofsHub := broadcaster.NewHub[symbiotic.AggregationProof]()
+
+	handler := &grpcHandler{
+		cfg: Config{
+			MaxAllowedStreamsCount: 0,
+		},
+		proofsHub: proofsHub,
+	}
+
+	ctx := context.Background()
+	stream := &mockProofsStream{ctx: ctx}
+	req := &apiv1.ListenProofsRequest{}
+
+	err := handler.ListenProofs(req, stream)
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "max allowed streams limit reached")
+}
+
 func TestListenProofs_EmptyHistoricalData(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
