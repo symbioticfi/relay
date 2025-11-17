@@ -136,7 +136,7 @@ func getNonSignersData(valset []ValidatorData) (aggKey *bn254.G1Affine, aggVotin
 	return aggKey, aggVotingPower, totalVotingPower
 }
 
-func getAggSignature(message bn254.G1Affine, valset *[]ValidatorData) (signature *bn254.G1Affine, aggKeyG2 *bn254.G2Affine, aggKeyG1 *bn254.G1Affine) {
+func getAggSignature(message bn254.G1Affine, valset *[]ValidatorData) (signature *bn254.G1Affine, aggKeyG2 *bn254.G2Affine, aggKeyG1 *bn254.G1Affine) { //nolint:unparam // keep aggKeyG1 for potential future use
 	aggKeyG2 = new(bn254.G2Affine)
 	aggKeyG2.SetInfinity()
 
@@ -149,7 +149,6 @@ func getAggSignature(message bn254.G1Affine, valset *[]ValidatorData) (signature
 	for i := range *valset {
 		if !(*valset)[i].IsNonSigner {
 			aggKeyG2 = aggKeyG2.Add(aggKeyG2, &(*valset)[i].KeyG2)
-			aggKeyG1 = aggKeyG1.Add(aggKeyG1, &(*valset)[i].Key)
 			msg := bn254.G1Affine{X: message.X, Y: message.Y} // have to copy msg since ScalarMultiplication rewrite it
 			sig := msg.ScalarMultiplication(&msg, (*valset)[i].PrivateKey)
 			aggSignature = aggSignature.Add(aggSignature, sig)

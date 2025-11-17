@@ -155,6 +155,10 @@ var registerKeyCmd = &cobra.Command{
 			}
 			rawByte := blsKey.G2().RawBytes()
 			extraData = rawByte[:]
+		case symbiotic.KeyTypeEcdsaSecp256k1:
+			// no extra data needed for ECDSA keys
+		case symbiotic.KeyTypeInvalid:
+			return errors.New("invalid key type")
 		}
 
 		// Use the adjusted signature for registration
