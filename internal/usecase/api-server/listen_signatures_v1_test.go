@@ -389,3 +389,23 @@ func TestListenSignatures_MultipleBroadcasts(t *testing.T) {
 
 	require.Len(t, stream.sentItems, 5)
 }
+
+func TestListenSignatures_MaxStreamsReached_ReturnsError(t *testing.T) {
+	signatureHub := broadcaster.NewHub[symbiotic.Signature]()
+
+	handler := &grpcHandler{
+		cfg: Config{
+			MaxAllowedStreamsCount: 0,
+		},
+		signatureHub: signatureHub,
+	}
+
+	ctx := context.Background()
+	stream := &mockSignaturesStream{ctx: ctx}
+	req := &apiv1.ListenSignaturesRequest{}
+
+	err := handler.ListenSignatures(req, stream)
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "too many signatures")
+}
