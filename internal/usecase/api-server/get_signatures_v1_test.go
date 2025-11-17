@@ -1,7 +1,6 @@
 package api_server
 
 import (
-	"context"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -29,7 +28,7 @@ func TestGetSignatures_Success_ReturnsAllSignatures(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	requestID := common.HexToHash("0xabcd")
 	requestIDStr := requestID.Hex()
 
@@ -77,8 +76,8 @@ func TestGetSignatures_NotFound_ReturnsNotFoundError(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
-	requestID := common.HexToHash("0xnonexistent")
+	ctx := t.Context()
+	requestID := common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000001")
 	requestIDStr := requestID.Hex()
 
 	mockRepo.EXPECT().
@@ -111,7 +110,7 @@ func TestGetSignatures_RepositoryError_ReturnsError(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	requestID := common.HexToHash("0x1234")
 	requestIDStr := requestID.Hex()
 	repoError := assert.AnError

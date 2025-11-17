@@ -1,7 +1,6 @@
 package api_server
 
 import (
-	"context"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -28,7 +27,7 @@ func TestGetAggregationProof_Success_ReturnsProof(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	requestID := common.HexToHash("0xabcd1234")
 	requestIDStr := requestID.Hex()
 
@@ -65,8 +64,8 @@ func TestGetAggregationProof_NotFound_ReturnsNotFoundError(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
-	requestID := common.HexToHash("0xnonexistent")
+	ctx := t.Context()
+	requestID := common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000001")
 	requestIDStr := requestID.Hex()
 
 	mockRepo.EXPECT().
@@ -100,7 +99,7 @@ func TestGetAggregationProof_RepositoryError_ReturnsError(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	requestID := common.HexToHash("0x1234")
 	requestIDStr := requestID.Hex()
 	repoError := assert.AnError

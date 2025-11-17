@@ -1,7 +1,6 @@
 package api_server
 
 import (
-	"context"
 	"math/big"
 	"testing"
 
@@ -29,7 +28,7 @@ func TestGetAggregationStatus_Success_ReturnsStatusWithSortedOperators(t *testin
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	requestID := common.HexToHash("0x1234")
 	requestIDStr := requestID.Hex()
 
@@ -69,7 +68,7 @@ func TestGetAggregationStatus_NoAggregator_ReturnsError(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	req := &apiv1.GetAggregationStatusRequest{
 		RequestId: "0x1234",
 	}
@@ -92,8 +91,8 @@ func TestGetAggregationStatus_NotFound_ReturnsNotFoundError(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
-	requestID := common.HexToHash("0xnonexistent")
+	ctx := t.Context()
+	requestID := common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000001")
 	requestIDStr := requestID.Hex()
 
 	mockAggregator.EXPECT().
@@ -126,7 +125,7 @@ func TestGetAggregationStatus_AggregatorError_ReturnsError(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	requestID := common.HexToHash("0x1234")
 	requestIDStr := requestID.Hex()
 	aggregatorError := assert.AnError
