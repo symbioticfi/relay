@@ -131,10 +131,6 @@ func (s *Service) processPendingProof(ctx context.Context, proofKey symbiotic.Pr
 	// get proof
 	proof, err := s.cfg.Repo.GetAggregationProof(ctx, proofKey.RequestID)
 	if err != nil {
-		if errors.Is(err, entity.ErrEntityNotFound) {
-			slog.WarnContext(ctx, "No aggregation proof found for pending proof commit, ending current commit attempt")
-			return nil
-		}
 		return errors.Errorf("failed to get aggregation proof for request ID %s: %w", proofKey.RequestID.Hex(), err)
 	}
 
