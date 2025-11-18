@@ -15,18 +15,19 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/symbioticfi/relay/internal/entity"
-	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
-	"github.com/symbioticfi/relay/internal/usecase/metrics"
-	"github.com/symbioticfi/relay/pkg/log"
-	"github.com/symbioticfi/relay/pkg/server"
-	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
+
+	"github.com/symbioticfi/relay/internal/entity"
+	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
+	"github.com/symbioticfi/relay/internal/usecase/metrics"
+	"github.com/symbioticfi/relay/pkg/log"
+	"github.com/symbioticfi/relay/pkg/server"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 //go:generate mockgen -source=app.go -destination=mocks/app_mock.go -package=mocks
@@ -54,7 +55,7 @@ type evmClient interface {
 	GetCurrentEpoch(ctx context.Context) (symbiotic.Epoch, error)
 	GetEpochStart(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.Timestamp, error)
 	GetConfig(ctx context.Context, timestamp symbiotic.Timestamp, epoch symbiotic.Epoch) (symbiotic.NetworkConfig, error)
-	GetLastCommittedHeaderEpoch(ctx context.Context, addr symbiotic.CrossChainAddress) (_ symbiotic.Epoch, err error)
+	GetLastCommittedHeaderEpoch(ctx context.Context, addr symbiotic.CrossChainAddress, opts ...symbiotic.EVMOption) (_ symbiotic.Epoch, err error)
 }
 
 type aggregator interface {

@@ -52,7 +52,7 @@ func (e *Client) RegisterOperator(
 		return symbiotic.TxResult{}, e.formatEVMError(err)
 	}
 
-	receipt, err := bind.WaitMined(ctx, e.conns[addr.ChainId], tx)
+	receipt, err := bind.WaitMined(tmCtx, e.conns[addr.ChainId], tx)
 	if err != nil {
 		return symbiotic.TxResult{}, errors.Errorf("failed to wait for tx mining: %w", err)
 	}
@@ -109,7 +109,7 @@ func (e *Client) RegisterKey(
 		return symbiotic.TxResult{}, e.formatEVMError(err)
 	}
 
-	receipt, err := bind.WaitMined(ctx, e.conns[addr.ChainId], tx)
+	receipt, err := bind.WaitMined(tmCtx, e.conns[addr.ChainId], tx)
 	if err != nil {
 		return symbiotic.TxResult{}, errors.Errorf("failed to wait for tx mining: %w", err)
 	}
@@ -161,7 +161,7 @@ func (e *Client) InvalidateOldSignatures(
 		return symbiotic.TxResult{}, e.formatEVMError(err)
 	}
 
-	receipt, err := bind.WaitMined(ctx, e.conns[addr.ChainId], tx)
+	receipt, err := bind.WaitMined(tmCtx, e.conns[addr.ChainId], tx)
 	if err != nil {
 		return symbiotic.TxResult{}, errors.Errorf("failed to wait for tx mining: %w", err)
 	}
@@ -213,7 +213,7 @@ func (e *Client) RegisterOperatorVotingPowerProvider(
 		return symbiotic.TxResult{}, e.formatEVMError(err)
 	}
 
-	receipt, err := bind.WaitMined(ctx, e.conns[addr.ChainId], tx)
+	receipt, err := bind.WaitMined(tmCtx, e.conns[addr.ChainId], tx)
 	if err != nil {
 		return symbiotic.TxResult{}, errors.Errorf("failed to wait for tx mining: %w", err)
 	}
@@ -265,7 +265,7 @@ func (e *Client) UnregisterOperatorVotingPowerProvider(
 		return symbiotic.TxResult{}, e.formatEVMError(err)
 	}
 
-	receipt, err := bind.WaitMined(ctx, e.conns[addr.ChainId], tx)
+	receipt, err := bind.WaitMined(tmCtx, e.conns[addr.ChainId], tx)
 	if err != nil {
 		return symbiotic.TxResult{}, errors.Errorf("failed to wait for tx mining: %w", err)
 	}
