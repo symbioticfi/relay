@@ -140,7 +140,8 @@ func getNonSignersData(valset []ValidatorData) (aggKey *bn254.G1Affine, aggVotin
 	return aggKey, aggVotingPower, totalVotingPower
 }
 
-func getAggSignature(message bn254.G1Affine, valset *[]ValidatorData) (signature *bn254.G1Affine, aggKeyG2 *bn254.G2Affine, aggKeyG1 *bn254.G1Affine) { //nolint:unparam // keep aggKeyG1 for potential future use
+//nolint:revive,exhaustruct // getAggSignature returns multiple aggregates for testing/CI comparisons
+func getAggSignature(message bn254.G1Affine, valset *[]ValidatorData) (signature *bn254.G1Affine, aggKeyG2 *bn254.G2Affine, aggKeyG1 *bn254.G1Affine) {
 	aggKeyG2 = new(bn254.G2Affine)
 	aggKeyG2.SetInfinity()
 
