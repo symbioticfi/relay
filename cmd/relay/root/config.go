@@ -43,6 +43,7 @@ type config struct {
 	P2P        P2PConfig            `mapstructure:"p2p" validate:"required"`
 	Evm        EvmConfig            `mapstructure:"evm" validate:"required"`
 	ForceRole  ForceRole            `mapstructure:"force-role"`
+	Retention  RetentionConfig      `mapstructure:"retention"`
 }
 
 type LogConfig struct {
@@ -178,10 +179,19 @@ type ForceRole struct {
 	Committer  bool `mapstructure:"committer"`
 }
 
+type RetentionConfig struct {
+	ValSetEpochs uint64 `mapstructure:"valset-epochs"`
+}
+
 func (c config) Validate() error {
 	validate := validator.New()
 	if err := validate.Struct(c); err != nil {
 		return errors.Errorf("invalid config: %w", err)
+	}
+
+	// Validate that sync.epochs doesn't exceed retention.valset-epochs
+	if c.Retention.ValSetEpochs > 0 && c.Sync.EpochsToSync > c.Retention.ValSetEpochs {
+		return errors.Errorf("sync.epochs (%d) cannot exceed retention.valset-epochs (%d)", c.Sync.EpochsToSync, c.Retention.ValSetEpochs)
 	}
 
 	return nil
@@ -228,6 +238,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Int("evm.max-calls", 0, "Max calls in multicall")
 	rootCmd.PersistentFlags().Bool("force-role.aggregator", false, "Force node to act as aggregator regardless of deterministic scheduling")
 	rootCmd.PersistentFlags().Bool("force-role.committer", false, "Force node to act as committer regardless of deterministic scheduling")
+	rootCmd.PersistentFlags().Uint64("retention.valset-epochs", 0, "Number of historical validator set epochs to retain on fresh node startup (0 = unlimited)")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
@@ -370,6 +381,9 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("force-role.committer", cmd.PersistentFlags().Lookup("force-role.committer")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("retention.valset-epochs", cmd.PersistentFlags().Lookup("retention.valset-epochs")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 

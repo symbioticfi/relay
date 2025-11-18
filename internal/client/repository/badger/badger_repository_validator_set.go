@@ -549,6 +549,35 @@ func (r *Repository) GetActiveValidatorCountByEpoch(ctx context.Context, epoch s
 	})
 }
 
+func (r *Repository) GetOldestValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error) {
+	var epoch symbiotic.Epoch
+
+	return epoch, r.doViewInTx(ctx, "GetOldestValidatorSetEpoch", func(ctx context.Context) error {
+		txn := getTxn(ctx)
+
+		opts := badger.DefaultIteratorOptions
+		prefix := keyValidatorSetHeaderPrefix()
+		opts.Prefix = prefix
+		opts.PrefetchValues = false
+
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		it.Rewind()
+		if !it.ValidForPrefix(prefix) {
+			return errors.Errorf("no validator set headers found: %w", entity.ErrEntityNotFound)
+		}
+
+		key := it.Item().KeyCopy(nil)
+		if len(key) != len(prefix)+8 {
+			return errors.New("validator set header key has invalid length")
+		}
+
+		epoch = symbiotic.Epoch(binary.BigEndian.Uint64(key[len(prefix):]))
+		return nil
+	})
+}
+
 func (r *Repository) GetLatestSignedValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error) {
 	var epoch symbiotic.Epoch
 
