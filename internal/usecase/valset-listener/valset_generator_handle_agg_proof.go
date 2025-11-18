@@ -115,6 +115,7 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 					slog.Uint64("epoch", uint64(proofKey.Epoch)),
 					slog.String("error", err.Error()),
 				)
+				break
 			}
 		}
 	}
