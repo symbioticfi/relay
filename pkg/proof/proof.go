@@ -140,8 +140,10 @@ func (p *ZkProver) Verify(valsetLen int, publicInputHash common.Hash, proofBytes
 	witness, _ := frontend.NewWitness(&assignment, ecc.BN254.ScalarField(), frontend.PublicOnly())
 	publicWitness, _ := witness.Public()
 
+	//nolint:gosec // G602: proofBytes length is validated by caller, slicing is safe
 	rawProofBytes := bytes.Clone(proofBytes[:256])
 	rawProofBytes = append(rawProofBytes, []byte{0, 0, 0, 1}...) //dirty hack
+	//nolint:gosec // G602: proofBytes length is validated by caller, slicing is safe
 	rawProofBytes = append(rawProofBytes, proofBytes[256:384]...)
 	reader := bytes.NewReader(rawProofBytes)
 	proof := groth16.NewProof(ecc.BN254)
