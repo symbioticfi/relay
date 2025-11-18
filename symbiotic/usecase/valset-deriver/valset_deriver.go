@@ -34,9 +34,9 @@ type evmClient interface {
 	GetSubnetwork(ctx context.Context) (common.Hash, error)
 	GetNetworkAddress(ctx context.Context) (common.Address, error)
 	GetHeaderHash(ctx context.Context, addr symbiotic.CrossChainAddress) (common.Hash, error)
-	IsValsetHeaderCommittedAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch) (bool, error)
+	IsValsetHeaderCommittedAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch, opts ...symbiotic.EVMOption) (bool, error)
 	GetHeaderHashAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch) (common.Hash, error)
-	GetLastCommittedHeaderEpoch(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.Epoch, error)
+	GetLastCommittedHeaderEpoch(ctx context.Context, addr symbiotic.CrossChainAddress, opts ...symbiotic.EVMOption) (symbiotic.Epoch, error)
 	GetOperators(ctx context.Context, address symbiotic.CrossChainAddress, timestamp symbiotic.Timestamp) ([]common.Address, error)
 }
 

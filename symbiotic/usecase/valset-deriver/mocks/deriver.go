@@ -148,18 +148,23 @@ func (mr *MockEvmClientMockRecorder) GetKeys(ctx, address, timestamp any) *gomoc
 }
 
 // GetLastCommittedHeaderEpoch mocks base method.
-func (m *MockEvmClient) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress) (entity.Epoch, error) {
+func (m *MockEvmClient) GetLastCommittedHeaderEpoch(ctx context.Context, addr entity.CrossChainAddress, opts ...entity.EVMOption) (entity.Epoch, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLastCommittedHeaderEpoch", ctx, addr)
+	varargs := []any{ctx, addr}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetLastCommittedHeaderEpoch", varargs...)
 	ret0, _ := ret[0].(entity.Epoch)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetLastCommittedHeaderEpoch indicates an expected call of GetLastCommittedHeaderEpoch.
-func (mr *MockEvmClientMockRecorder) GetLastCommittedHeaderEpoch(ctx, addr any) *gomock.Call {
+func (mr *MockEvmClientMockRecorder) GetLastCommittedHeaderEpoch(ctx, addr any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastCommittedHeaderEpoch", reflect.TypeOf((*MockEvmClient)(nil).GetLastCommittedHeaderEpoch), ctx, addr)
+	varargs := append([]any{ctx, addr}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastCommittedHeaderEpoch", reflect.TypeOf((*MockEvmClient)(nil).GetLastCommittedHeaderEpoch), varargs...)
 }
 
 // GetNetworkAddress mocks base method.
@@ -223,16 +228,21 @@ func (mr *MockEvmClientMockRecorder) GetVotingPowers(ctx, address, timestamp any
 }
 
 // IsValsetHeaderCommittedAt mocks base method.
-func (m *MockEvmClient) IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch) (bool, error) {
+func (m *MockEvmClient) IsValsetHeaderCommittedAt(ctx context.Context, addr entity.CrossChainAddress, epoch entity.Epoch, opts ...entity.EVMOption) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsValsetHeaderCommittedAt", ctx, addr, epoch)
+	varargs := []any{ctx, addr, epoch}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "IsValsetHeaderCommittedAt", varargs...)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // IsValsetHeaderCommittedAt indicates an expected call of IsValsetHeaderCommittedAt.
-func (mr *MockEvmClientMockRecorder) IsValsetHeaderCommittedAt(ctx, addr, epoch any) *gomock.Call {
+func (mr *MockEvmClientMockRecorder) IsValsetHeaderCommittedAt(ctx, addr, epoch any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsValsetHeaderCommittedAt", reflect.TypeOf((*MockEvmClient)(nil).IsValsetHeaderCommittedAt), ctx, addr, epoch)
+	varargs := append([]any{ctx, addr, epoch}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsValsetHeaderCommittedAt", reflect.TypeOf((*MockEvmClient)(nil).IsValsetHeaderCommittedAt), varargs...)
 }

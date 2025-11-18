@@ -37,7 +37,7 @@ type repo interface {
 	SaveProof(ctx context.Context, aggregationProof symbiotic.AggregationProof) error
 	SaveProofCommitPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error
 	GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch symbiotic.Epoch, limit int) ([]symbiotic.ProofCommitKey, error)
-	RemoveProofCommitPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error
+	RemoveProofCommitPending(ctx context.Context, epoch symbiotic.Epoch) error
 	SaveValidatorSetMetadata(ctx context.Context, data symbiotic.ValidatorSetMetadata) error
 	SaveConfig(ctx context.Context, config symbiotic.NetworkConfig, epoch symbiotic.Epoch) error
 	SaveValidatorSet(ctx context.Context, valset symbiotic.ValidatorSet) error
@@ -66,7 +66,7 @@ type Config struct {
 	ValidatorSet        *signals.Signal[symbiotic.ValidatorSet] `validate:"required"`
 	KeyProvider         keyProvider
 	Aggregator          aggregator.Aggregator
-	Metrics             metrics
+	Metrics             metrics `validate:"required"`
 	ForceCommitter      bool
 	EpochRetentionCount uint64
 }

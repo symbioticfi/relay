@@ -43,6 +43,7 @@ type InfoFlags struct {
 type GenesisFlags struct {
 	Json    bool
 	Commit  bool
+	Epoch   int64
 	Output  string
 	Secrets cmdhelpers.SecretKeyMapFlag
 }
@@ -75,6 +76,7 @@ func initFlags() {
 	genesisCmd.PersistentFlags().Var(&genesisFlags.Secrets, "secret-keys", "Secret key for genesis commit  in format 'chainId:key,chainId:key' (e.g. '1:0xabc,137:0xdef')")
 	genesisCmd.PersistentFlags().BoolVarP(&genesisFlags.Json, "json", "j", false, "Print as json")
 	genesisCmd.PersistentFlags().StringVarP(&genesisFlags.Output, "output", "o", "", "Output file path")
+	genesisCmd.PersistentFlags().Int64VarP(&genesisFlags.Epoch, "epoch", "e", -1, "Epoch to generate genesis for (default: current epoch - 1)")
 }
 
 // signalContext returns a context that is canceled if either SIGTERM or SIGINT signal is received.

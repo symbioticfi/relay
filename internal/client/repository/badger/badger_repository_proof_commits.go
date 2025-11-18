@@ -3,15 +3,13 @@ package badger
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"math/big"
 	"sort"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
+
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -20,14 +18,14 @@ const (
 	aggregationProofCommitPrefix = "aggregation_proof_commit:"
 )
 
-func keyAggregationProofCommited(epoch symbiotic.Epoch, requestID common.Hash) []byte {
-	return []byte(fmt.Sprintf("%v%d:%s", aggregationProofCommitPrefix, epoch, requestID.Hex()))
+func keyAggregationProofCommited(epoch symbiotic.Epoch) []byte {
+	return append([]byte(aggregationProofCommitPrefix), epoch.Bytes()...)
 }
 
 func (r *Repository) SaveProofCommitPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
 	return r.doUpdateInTx(ctx, "SaveProofCommitPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		_, err := txn.Get(keyAggregationProofCommited(epoch, requestID))
+		_, err := txn.Get(keyAggregationProofCommited(epoch))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
 			return errors.Errorf("failed to get proof commit pending: %w", err)
 		}
@@ -35,9 +33,7 @@ func (r *Repository) SaveProofCommitPending(ctx context.Context, epoch symbiotic
 			return errors.Errorf("proof commit pending already exists: %w", entity.ErrEntityAlreadyExist)
 		}
 
-		// Adding TTL ensure that we don't access the old proofs when querying for pending proofs
-		// DEV: setting to 24hours, if the proof doesn't get committed in that time frame manual intervention is expected
-		err = txn.SetEntry(badger.NewEntry(keyAggregationProofCommited(epoch, requestID), []byte{0x01}).WithTTL(time.Hour * 24))
+		err = txn.SetEntry(badger.NewEntry(keyAggregationProofCommited(epoch), requestID.Bytes()))
 		if err != nil {
 			return errors.Errorf("failed to store proof commit pending: %w", err)
 		}
@@ -45,16 +41,16 @@ func (r *Repository) SaveProofCommitPending(ctx context.Context, epoch symbiotic
 	})
 }
 
-func (r *Repository) RemoveProofCommitPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
+func (r *Repository) RemoveProofCommitPending(ctx context.Context, epoch symbiotic.Epoch) error {
 	return r.doUpdateInTx(ctx, "RemoveProofCommitPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-		pendingKey := keyAggregationProofCommited(epoch, requestID)
+		pendingKey := keyAggregationProofCommited(epoch)
 
 		// Check if exists before removing
 		_, err := txn.Get(pendingKey)
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
-				return errors.Errorf("proof commit pending not found for epoch %d and hash %s: %w", epoch, requestID.Hex(), entity.ErrEntityNotFound)
+				return errors.Errorf("proof commit pending not found for epoch %d: %w", epoch, entity.ErrEntityNotFound)
 			}
 			return errors.Errorf("failed to check proof commit pending: %w", err)
 		}
@@ -81,7 +77,7 @@ func (r *Repository) GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch
 		// Key format: "aggregation_proof_commit:epoch:hash"
 		basePrefix := []byte(aggregationProofCommitPrefix)
 		opts := badger.DefaultIteratorOptions
-		opts.PrefetchValues = false // We only need keys, not values
+		opts.PrefetchValues = true
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
@@ -89,21 +85,15 @@ func (r *Repository) GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch
 		it.Seek(basePrefix)
 		for it.Valid() && bytes.HasPrefix(it.Item().Key(), basePrefix) {
 			item := it.Item()
-			key := string(item.Key())
-
-			// Parse the key: "aggregation_proof_commit:epoch:hash"
-			parts := strings.Split(key, ":")
-			if len(parts) != 3 {
+			keyBytes := item.Key()
+			if !bytes.HasPrefix(keyBytes, basePrefix) {
 				it.Next()
 				continue // Skip invalid keys
 			}
 
 			// Parse the epoch
-			keyEpochInt, err := strconv.ParseUint(parts[1], 10, 64)
-			if err != nil {
-				it.Next()
-				continue // Skip invalid epoch
-			}
+			epochBytes := keyBytes[len(basePrefix):]
+			keyEpochInt := big.NewInt(0).SetBytes(epochBytes).Uint64()
 			keyEpoch := symbiotic.Epoch(keyEpochInt)
 
 			// Skip if this epoch is less than our target epoch
@@ -112,8 +102,12 @@ func (r *Repository) GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch
 				continue
 			}
 
-			requestIDStr := parts[2]
-			requestID := common.HexToHash(requestIDStr)
+			requestIDBytes, err := it.Item().ValueCopy(nil)
+			if err != nil || len(requestIDBytes) != 32 {
+				it.Next()
+				continue // Skip invalid request IDs
+			}
+			requestID := common.BytesToHash(requestIDBytes)
 
 			keys = append(keys, symbiotic.ProofCommitKey{
 				Epoch:     keyEpoch,
