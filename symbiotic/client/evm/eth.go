@@ -47,10 +47,10 @@ type IEvmClient interface {
 	GetCurrentEpochDuration(ctx context.Context) (uint64, error)
 	GetEpochDuration(ctx context.Context, epoch symbiotic.Epoch) (uint64, error)
 	GetEpochStart(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.Timestamp, error)
-	IsValsetHeaderCommittedAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch) (bool, error)
+	IsValsetHeaderCommittedAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch, opts ...symbiotic.EVMOption) (bool, error)
 	GetHeaderHash(ctx context.Context, addr symbiotic.CrossChainAddress) (common.Hash, error)
 	GetHeaderHashAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch) (common.Hash, error)
-	GetLastCommittedHeaderEpoch(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.Epoch, error)
+	GetLastCommittedHeaderEpoch(ctx context.Context, addr symbiotic.CrossChainAddress, evmOptions ...symbiotic.EVMOption) (symbiotic.Epoch, error)
 	GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch) (uint64, error)
 	GetValSetHeaderAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch) (symbiotic.ValidatorSetHeader, error)
 	GetValSetHeader(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.ValidatorSetHeader, error)
@@ -329,7 +329,7 @@ func (e *Client) GetNetworkAddress(ctx context.Context) (_ common.Address, err e
 	return networkAddress, nil
 }
 
-func (e *Client) IsValsetHeaderCommittedAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch) (_ bool, err error) {
+func (e *Client) IsValsetHeaderCommittedAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch, opts ...symbiotic.EVMOption) (_ bool, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -341,8 +341,9 @@ func (e *Client) IsValsetHeaderCommittedAt(ctx context.Context, addr symbiotic.C
 		return false, errors.Errorf("failed to get settlement contract: %w", err)
 	}
 
+	opt := symbiotic.AppliedEVMOptions(opts...)
 	ok, err := settlement.IsValSetHeaderCommittedAt(&bind.CallOpts{
-		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
+		BlockNumber: getRPCBlockNumber(opt.BlockNumber),
 		Context:     toCtx,
 	}, new(big.Int).SetUint64(uint64(epoch)))
 	if err != nil {
@@ -397,7 +398,7 @@ func (e *Client) GetHeaderHashAt(ctx context.Context, addr symbiotic.CrossChainA
 	return hash, nil
 }
 
-func (e *Client) GetLastCommittedHeaderEpoch(ctx context.Context, addr symbiotic.CrossChainAddress) (_ symbiotic.Epoch, err error) {
+func (e *Client) GetLastCommittedHeaderEpoch(ctx context.Context, addr symbiotic.CrossChainAddress, opts ...symbiotic.EVMOption) (_ symbiotic.Epoch, err error) {
 	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
 	defer cancel()
 	defer func(now time.Time) {
@@ -409,8 +410,10 @@ func (e *Client) GetLastCommittedHeaderEpoch(ctx context.Context, addr symbiotic
 		return 0, errors.Errorf("failed to get settlement contract: %w", err)
 	}
 
+	opt := symbiotic.AppliedEVMOptions(opts...)
+
 	epoch, err := settlement.GetLastCommittedHeaderEpoch(&bind.CallOpts{
-		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
+		BlockNumber: getRPCBlockNumber(opt.BlockNumber),
 		Context:     toCtx,
 	})
 	if err != nil {
@@ -420,6 +423,15 @@ func (e *Client) GetLastCommittedHeaderEpoch(ctx context.Context, addr symbiotic
 	// todo if zero epoch need to check if it's committed or not
 
 	return symbiotic.Epoch(epoch.Uint64()), nil
+}
+
+func getRPCBlockNumber(number symbiotic.BlockNumber) *big.Int {
+	blockNumber := rpc.FinalizedBlockNumber
+	if number == symbiotic.BlockNumberLatest {
+		blockNumber = rpc.LatestBlockNumber
+	}
+
+	return new(big.Int).SetInt64(blockNumber.Int64())
 }
 
 func (e *Client) GetCaptureTimestampFromValsetHeaderAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch) (_ uint64, err error) {

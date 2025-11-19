@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
+
 	pb "github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
@@ -235,6 +236,20 @@ func (r *Repository) SaveFirstUncommittedValidatorSetEpoch(ctx context.Context, 
 
 		return nil
 	}, &r.valsetMutexMap, epoch)
+}
+
+func (r *Repository) UpdateValidatorSetStatusAndRemovePendingProof(ctx context.Context, valset symbiotic.ValidatorSet) error {
+	return r.doUpdateInTx(ctx, "UpdateValidatorSetStatusAndRemovePendingProof", func(ctx context.Context) error {
+		if err := r.UpdateValidatorSetStatus(ctx, valset); err != nil {
+			return errors.Errorf("failed to update validator set status: %w", err)
+		}
+
+		if err := r.RemoveProofCommitPending(ctx, valset.Epoch); err != nil {
+			return errors.Errorf("failed to remove proof commit pending: %w", err)
+		}
+
+		return nil
+	})
 }
 
 func (r *Repository) UpdateValidatorSetStatus(ctx context.Context, valset symbiotic.ValidatorSet) error {

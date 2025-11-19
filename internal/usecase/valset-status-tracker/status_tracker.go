@@ -22,6 +22,7 @@ type repo interface {
 	GetConfigByEpoch(_ context.Context, epoch symbiotic.Epoch) (symbiotic.NetworkConfig, error)
 	GetValidatorSetByEpoch(_ context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error)
 	UpdateValidatorSetStatus(ctx context.Context, valset symbiotic.ValidatorSet) error
+	UpdateValidatorSetStatusAndRemovePendingProof(ctx context.Context, valset symbiotic.ValidatorSet) error
 	GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
 	SaveFirstUncommittedValidatorSetEpoch(_ context.Context, epoch symbiotic.Epoch) error
 }
@@ -126,12 +127,10 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg symbiotic.Aggre
 }
 
 func (s *Service) trackCommittedEpochs(ctx context.Context) error {
-	fce, err := s.cfg.Repo.GetFirstUncommittedValidatorSetEpoch(ctx)
+	firstUncommittedEpoch, err := s.cfg.Repo.GetFirstUncommittedValidatorSetEpoch(ctx)
 	if err != nil {
 		return errors.Errorf("failed to get first uncommitted validator set epoch: %w", err)
 	}
-
-	firstUncommittedEpoch := uint64(fce)
 
 	settlements, err := s.findLatestNonZeroSettlements(ctx)
 	if err != nil {
@@ -144,7 +143,6 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 	}
 
 	var lastCommittedEpoch uint64 = math.MaxUint64
-
 	for _, settlement := range settlements {
 		lce, err := s.cfg.EvmClient.GetLastCommittedHeaderEpoch(ctx, settlement)
 		if err != nil {
@@ -154,7 +152,7 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 		lastCommittedEpoch = min(lastCommittedEpoch, uint64(lce))
 	}
 
-	for epoch := firstUncommittedEpoch; epoch <= lastCommittedEpoch; epoch++ {
+	for epoch := uint64(firstUncommittedEpoch); epoch <= lastCommittedEpoch; epoch++ {
 		valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, symbiotic.Epoch(epoch))
 		if err != nil {
 			if errors.Is(err, entity.ErrEntityNotFound) {
@@ -206,15 +204,19 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 
 		if isCommitted {
 			valset.Status = symbiotic.HeaderCommitted
+
+			if err := s.cfg.Repo.UpdateValidatorSetStatusAndRemovePendingProof(ctx, valset); err != nil {
+				return errors.Errorf("failed to save validator set and remove pending proof: %w", err)
+			}
+			slog.InfoContext(ctx, "Validator set is committed", "epoch", epoch)
 		} else {
 			valset.Status = symbiotic.HeaderMissed
-		}
 
-		if err := s.cfg.Repo.UpdateValidatorSetStatus(ctx, valset); err != nil {
-			return errors.Errorf("failed to save validator set: %w", err)
+			if err := s.cfg.Repo.UpdateValidatorSetStatus(ctx, valset); err != nil {
+				return errors.Errorf("failed to save validator set: %w", err)
+			}
+			slog.InfoContext(ctx, "Validator set is missing", "epoch", epoch)
 		}
-
-		slog.InfoContext(ctx, "Validator set is committed", "epoch", epoch)
 	}
 
 	if err := s.cfg.Repo.SaveFirstUncommittedValidatorSetEpoch(ctx, symbiotic.Epoch(lastCommittedEpoch+1)); err != nil {

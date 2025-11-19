@@ -12,6 +12,7 @@ utils network generate-genesis [flags]
 
 ```
       --commit                     Commit genesis flag
+  -e, --epoch int                  Epoch to generate genesis for (default: current epoch - 1) (default -1)
   -h, --help                       help for generate-genesis
   -j, --json                       Print as json
   -o, --output string              Output file path
@@ -24,7 +25,6 @@ utils network generate-genesis [flags]
   -c, --chains strings          Chains rpc url, comma separated
       --driver.address string   Driver contract address
       --driver.chainid uint     Driver contract chain id
-  -e, --epoch uint              Network epoch to fetch info
       --log.level string        log level(info, debug, warn, error) (default "info")
       --log.mode string         log mode(pretty, text, json) (default "text")
 ```
