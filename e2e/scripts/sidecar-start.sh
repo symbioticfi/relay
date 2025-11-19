@@ -42,6 +42,10 @@ evm:
     - "http://anvil:8545"
     - "http://anvil-settlement:8546"
   max-calls: 30
+
+# Retention config
+retention:
+  valset-epochs: 5
 EOFCONFIG
 
 # Ensure environment variables are explicitly preserved
