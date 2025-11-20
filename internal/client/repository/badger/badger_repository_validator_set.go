@@ -3,8 +3,8 @@ package badger
 import (
 	"context"
 	"encoding/binary"
-	"fmt"
 	"math/big"
+	"strconv"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
@@ -37,20 +37,41 @@ func keyValidatorSetHeaderPrefix() []byte {
 	return []byte("validator_set_header:")
 }
 
+const (
+	validatorPrefixStr          = "validator:"
+	validatorKeyLookupPrefixStr = "validator_key_lookup:"
+	validatorSetStatusPrefix    = "validator_set_status:"
+	validatorSetMetadataPrefix  = "validator_set_metadata:"
+	activeValidatorCountPrefix  = "active_validator_count:"
+)
+
 func keyValidatorByOperator(epoch symbiotic.Epoch, operator common.Address) []byte {
-	return []byte(fmt.Sprintf("validator:%d:%s", epoch, operator.Hex()))
+	key := epochKeyWithColon(validatorPrefixStr, epoch)
+	return append(key, []byte(operator.Hex())...)
+}
+
+func keyValidatorPrefix(epoch symbiotic.Epoch) []byte {
+	return epochKeyWithColon(validatorPrefixStr, epoch)
 }
 
 func keyValidatorKeyLookup(epoch symbiotic.Epoch, keyTag symbiotic.KeyTag, publicKeyHash common.Hash) []byte {
-	return []byte(fmt.Sprintf("validator_key_lookup:%d:%d:%s", epoch, keyTag, publicKeyHash.Hex()))
+	key := epochKeyWithColon(validatorKeyLookupPrefixStr, epoch)
+	key = strconv.AppendUint(key, uint64(keyTag), 10)
+	key = append(key, colonByte)
+	key = append(key, []byte(publicKeyHash.Hex())...)
+	return key
+}
+
+func keyValidatorKeyLookupPrefix(epoch symbiotic.Epoch) []byte {
+	return epochKeyWithColon(validatorKeyLookupPrefixStr, epoch)
 }
 
 func keyValidatorSetStatus(epoch symbiotic.Epoch) []byte {
-	return []byte(fmt.Sprintf("validator_set_status:%d", epoch))
+	return epochKey(validatorSetStatusPrefix, epoch)
 }
 
 func keyValidatorSetMetadata(epoch symbiotic.Epoch) []byte {
-	return []byte(fmt.Sprintf("validator_set_metadata:%d", epoch))
+	return epochKey(validatorSetMetadataPrefix, epoch)
 }
 
 func (r *Repository) SaveValidatorSetMetadata(ctx context.Context, data symbiotic.ValidatorSetMetadata) error {
@@ -298,7 +319,7 @@ func (r *Repository) GetValidatorSetHeaderByEpoch(ctx context.Context, epoch sym
 }
 
 func (r *Repository) getAllValidatorsByEpoch(txn *badger.Txn, epoch symbiotic.Epoch) (symbiotic.Validators, error) {
-	prefix := []byte(fmt.Sprintf("validator:%d:", epoch))
+	prefix := keyValidatorPrefix(epoch)
 	it := txn.NewIterator(badger.DefaultIteratorOptions)
 	defer it.Close()
 
@@ -537,7 +558,7 @@ func (r *Repository) GetLatestValidatorSetEpoch(ctx context.Context) (symbiotic.
 }
 
 func keyActiveValidatorCount(epoch symbiotic.Epoch) []byte {
-	return []byte(fmt.Sprintf("active_validator_count:%d", epoch))
+	return epochKey(activeValidatorCountPrefix, epoch)
 }
 
 func (r *Repository) GetActiveValidatorCountByEpoch(ctx context.Context, epoch symbiotic.Epoch) (uint32, error) {

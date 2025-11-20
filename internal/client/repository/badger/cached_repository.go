@@ -140,3 +140,41 @@ func (r *CachedRepository) SaveValidatorSetMetadata(ctx context.Context, validat
 	r.validatorSetMetadataCache.Add(validatorSetMetadata.Epoch, validatorSetMetadata)
 	return nil
 }
+
+// PruneValsetEntities delegates to the underlying repository and evicts validator set caches.
+func (r *CachedRepository) PruneValsetEntities(ctx context.Context, epoch symbiotic.Epoch) error {
+	if err := r.Repository.PruneValsetEntities(ctx, epoch); err != nil {
+		return err
+	}
+
+	r.evictValsetCaches(epoch)
+	return nil
+}
+
+// PruneProofEntities delegates to the underlying repository.
+// No cache eviction needed as proofs are not cached.
+func (r *CachedRepository) PruneProofEntities(ctx context.Context, epoch symbiotic.Epoch) error {
+	return r.Repository.PruneProofEntities(ctx, epoch)
+}
+
+// PruneSignatureEntitiesForEpoch delegates to the underlying repository.
+// No cache eviction needed as signatures are not cached.
+func (r *CachedRepository) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch symbiotic.Epoch) error {
+	return r.Repository.PruneSignatureEntitiesForEpoch(ctx, epoch)
+}
+
+func (r *CachedRepository) evictEpochCaches(epoch symbiotic.Epoch) {
+	r.evictValsetCaches(epoch)
+}
+
+func (r *CachedRepository) evictValsetCaches(epoch symbiotic.Epoch) {
+	if r.networkConfigCache != nil {
+		r.networkConfigCache.Delete(epoch)
+	}
+	if r.validatorSetCache != nil {
+		r.validatorSetCache.Delete(epoch)
+	}
+	if r.validatorSetMetadataCache != nil {
+		r.validatorSetMetadataCache.Delete(epoch)
+	}
+}

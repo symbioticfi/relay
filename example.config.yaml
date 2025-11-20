@@ -83,3 +83,14 @@ retention:
   # Note: Only applies to fresh nodes. Existing nodes continue from last synced epoch.
   # Should match your pruning retention period to avoid re-syncing pruned data.
   valset-epochs: 0
+
+# Automatic Pruning Configuration (optional)
+# Periodically deletes old epoch data to prevent unbounded storage growth
+pruner:
+  # Enable automatic pruning (default: false for safety)
+  enabled: false
+
+  # How often to run the pruning process (default: 1h)
+  # Examples: 30m, 1h, 6h, 24h
+  interval: 1h
+

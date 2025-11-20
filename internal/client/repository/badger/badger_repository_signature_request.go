@@ -3,45 +3,38 @@ package badger
 import (
 	"bytes"
 	"context"
-	"fmt"
-	"strings"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
+
 	pb "github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 const (
+	keySignatureRequestPrefix        = "signature_request:"
 	keySignatureRequestPendingPrefix = "signature_pending:"
 )
 
 func keySignatureRequest(epoch symbiotic.Epoch, requestID common.Hash) []byte {
-	return []byte(fmt.Sprintf("signature_request:%d:%s", epoch, requestID.Hex()))
+	key := epochKeyWithColon(keySignatureRequestPrefix, epoch)
+	return append(key, []byte(requestID.Hex())...)
 }
 
 func keySignatureRequestEpochPrefix(epoch symbiotic.Epoch) []byte {
-	return []byte(fmt.Sprintf("signature_request:%d:", epoch))
+	return epochKeyWithColon(keySignatureRequestPrefix, epoch)
 }
 
 func keyRequestIDIndex(requestID common.Hash) []byte {
-	return []byte(fmt.Sprintf("request_id:%s", requestID.Hex()))
+	key := []byte("request_id:")
+	return append(key, []byte(requestID.Hex())...)
 }
 
 func keySignatureRequestPending(epoch symbiotic.Epoch, requestID common.Hash) []byte {
-	return []byte(fmt.Sprintf("%v%d:%s", keySignatureRequestPendingPrefix, epoch, requestID.Hex()))
-}
-
-// extractRequestIDFromKey extracts the request ID from a signature request key
-// Key format: "signature_request:epoch:hash"
-func extractRequestIDFromKey(key []byte) (common.Hash, error) {
-	parts := strings.Split(string(key), ":")
-	if len(parts) != 3 {
-		return common.Hash{}, errors.Errorf("invalid signature request key format: %s", string(key))
-	}
-	return common.HexToHash(parts[2]), nil
+	key := epochKeyWithColon(keySignatureRequestPendingPrefix, epoch)
+	return append(key, []byte(requestID.Hex())...)
 }
 
 // saveSignatureRequestToKey saves a signature request to a specific key
@@ -275,7 +268,7 @@ func (r *Repository) GetSignatureRequestsWithIDByEpoch(ctx context.Context, epoc
 			item := it.Item()
 
 			// Extract request ID from key
-			requestID, err := extractRequestIDFromKey(item.Key())
+			requestID, err := extractRequestIDFromEpochDelimitedKey(item.Key(), keySignatureRequestPrefix)
 			if err != nil {
 				return err
 			}
@@ -332,7 +325,7 @@ func (r *Repository) GetSignatureRequestIDsByEpoch(ctx context.Context, epoch sy
 			item := it.Item()
 
 			// Extract request ID from key
-			requestID, err := extractRequestIDFromKey(item.Key())
+			requestID, err := extractRequestIDFromEpochDelimitedKey(item.Key(), keySignatureRequestPrefix)
 			if err != nil {
 				return err
 			}
@@ -367,18 +360,10 @@ func (r *Repository) GetSignaturePending(ctx context.Context, limit int) ([]comm
 				break
 			}
 
-			// Extract request id from the pending key: "signature_pending:epoch:hash"
-			item := it.Item()
-			key := string(item.Key())
-
-			// Find the hash part after the second colon
-			parts := strings.Split(key, ":")
-			if len(parts) != 3 {
-				return errors.Errorf("invalid pending signature key format: %s", key)
+			requestID, err := extractRequestIDFromEpochDelimitedKey(it.Item().Key(), keySignatureRequestPendingPrefix)
+			if err != nil {
+				return err
 			}
-
-			requestIDStr := parts[2]
-			requestID := common.HexToHash(requestIDStr)
 
 			requests = append(requests, requestID)
 			count++

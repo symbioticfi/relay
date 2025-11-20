@@ -24,6 +24,7 @@ import (
 	entity_processor "github.com/symbioticfi/relay/internal/usecase/entity-processor"
 	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
 	"github.com/symbioticfi/relay/internal/usecase/metrics"
+	"github.com/symbioticfi/relay/internal/usecase/pruner"
 	signatureListener "github.com/symbioticfi/relay/internal/usecase/signature-listener"
 	signerApp "github.com/symbioticfi/relay/internal/usecase/signer-app"
 	sync_provider "github.com/symbioticfi/relay/internal/usecase/sync-provider"
@@ -247,6 +248,19 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create sync runner: %w", err)
 	}
 
+	prunerService, err := pruner.New(pruner.Config{
+		Repo:                     repo,
+		Metrics:                  mtr,
+		Enabled:                  cfg.Pruner.Enabled,
+		Interval:                 cfg.Pruner.Interval,
+		ValsetRetentionEpochs:    cfg.Retention.ValSetEpochs,
+		ProofRetentionEpochs:     cfg.Retention.ProofEpochs,
+		SignatureRetentionEpochs: cfg.Retention.SignatureEpochs,
+	})
+	if err != nil {
+		return errors.Errorf("failed to create pruner: %w", err)
+	}
+
 	slog.InfoContext(ctx, "Created discovery service", "listenAddr", cfg.P2P.ListenAddress)
 	if err := discoveryService.Start(ctx); err != nil {
 		return errors.Errorf("failed to start discovery service: %w", err)
@@ -406,6 +420,12 @@ func runApp(ctx context.Context) error {
 			return errors.Errorf("failed to start sync runner: %w", err)
 		}
 		slog.InfoContext(ctx, "Sync finished stopped")
+		return nil
+	})
+
+	eg.Go(func() error {
+		prunerService.Start(egCtx)
+		slog.InfoContext(ctx, "Pruner stopped")
 		return nil
 	})
 

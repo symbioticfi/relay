@@ -2,7 +2,6 @@ package badger
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 
 	"github.com/dgraph-io/badger/v4"
@@ -14,8 +13,10 @@ import (
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
+const networkConfigPrefix = "network_config:"
+
 func keyNetworkConfig(epoch symbiotic.Epoch) []byte {
-	return []byte(fmt.Sprintf("network_config:%d", epoch))
+	return epochKey(networkConfigPrefix, epoch)
 }
 
 func (r *Repository) SaveConfig(ctx context.Context, config symbiotic.NetworkConfig, epoch symbiotic.Epoch) error {
