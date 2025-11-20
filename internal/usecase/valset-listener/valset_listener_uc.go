@@ -267,13 +267,13 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context, nextEpoch, currentEp
 		prevValset, err = s.cfg.Repo.GetValidatorSetByEpoch(ctx, prevEpoch)
 		if err != nil {
 			if !errors.Is(err, entity.ErrEntityNotFound) {
-				return 0, errors.Errorf("failed to get previous validator set for epoch %d: %w", prevEpoch, err)
+				return s.cfg.PollingInterval, errors.Errorf("failed to get previous validator set for epoch %d: %w", prevEpoch, err)
 			}
 
 			// we couldn't find previous valset in repo, maybe we start fresh node with empty db
 			prevValset, _, err = s.derive(ctx, prevEpoch)
 			if err != nil {
-				return 0, errors.Errorf("failed to derive previous validator set for epoch %d: %w", prevEpoch, err)
+				return s.cfg.PollingInterval, errors.Errorf("failed to derive previous validator set for epoch %d: %w", prevEpoch, err)
 			}
 		}
 		slog.DebugContext(ctx, "Loaded previous validator set", "epoch", prevEpoch)
@@ -287,15 +287,15 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context, nextEpoch, currentEp
 	for nextEpoch <= currentEpoch {
 		nextValset, nextEpochConfig, err := s.derive(ctx, nextEpoch)
 		if err != nil {
-			return 0, errors.Errorf("failed to derive validator set extra for epoch %d: %w", nextEpoch, err)
+			return s.cfg.PollingInterval, errors.Errorf("failed to derive validator set extra for epoch %d: %w", nextEpoch, err)
 		}
 
 		if err := s.cfg.Repo.SaveConfig(ctx, nextEpochConfig, nextEpoch); err != nil {
-			return 0, errors.Errorf("failed to save validator set extra for epoch %d: %w", nextEpoch, err)
+			return s.cfg.PollingInterval, errors.Errorf("failed to save validator set extra for epoch %d: %w", nextEpoch, err)
 		}
 
 		if err := s.cfg.Repo.SaveValidatorSet(ctx, nextValset); err != nil {
-			return 0, errors.Errorf("failed to save validator set extra for epoch %d: %w", nextEpoch, err)
+			return s.cfg.PollingInterval, errors.Errorf("failed to save validator set extra for epoch %d: %w", nextEpoch, err)
 		}
 
 		slog.DebugContext(ctx, "Synced validator set", "epoch", nextEpoch, "config", nextEpochConfig, "valset", nextValset)
@@ -305,7 +305,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context, nextEpoch, currentEp
 		}
 
 		if err := s.process(ctx, prevValset, nextValset, nextEpochConfig); err != nil {
-			return 0, errors.Errorf("failed to process validator set for epoch %d: %w", nextEpoch, err)
+			return s.cfg.PollingInterval, errors.Errorf("failed to process validator set for epoch %d: %w", nextEpoch, err)
 		}
 
 		if err = s.cfg.ValidatorSet.Emit(nextValset); err != nil {
