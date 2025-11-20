@@ -185,16 +185,17 @@ func runApp(ctx context.Context) error {
 	}
 
 	listener, err := valsetListener.New(valsetListener.Config{
-		EvmClient:       evmClient,
-		Repo:            repo,
-		Deriver:         deriver,
-		PollingInterval: time.Second * 5,
-		ValidatorSet:    validatorSetSignal,
-		Signer:          signer,
-		Aggregator:      agg,
-		KeyProvider:     keyProvider,
-		Metrics:         mtr,
-		ForceCommitter:  cfg.ForceRole.Committer,
+		EvmClient:           evmClient,
+		Repo:                repo,
+		Deriver:             deriver,
+		PollingInterval:     time.Second * 5,
+		ValidatorSet:        validatorSetSignal,
+		Signer:              signer,
+		Aggregator:          agg,
+		KeyProvider:         keyProvider,
+		Metrics:             mtr,
+		ForceCommitter:      cfg.ForceRole.Committer,
+		EpochRetentionCount: cfg.Retention.ValSetEpochs,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create epoch listener: %w", err)

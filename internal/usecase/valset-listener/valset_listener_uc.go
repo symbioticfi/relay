@@ -27,6 +27,7 @@ type signer interface {
 
 type repo interface {
 	GetLatestValidatorSetHeader(_ context.Context) (symbiotic.ValidatorSetHeader, error)
+	GetOldestValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
 	GetLatestSignedValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
 	GetValidatorSetByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error)
 	GetValidatorSetMetadata(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSetMetadata, error)
@@ -57,16 +58,17 @@ type keyProvider interface {
 }
 
 type Config struct {
-	EvmClient       evm.IEvmClient                          `validate:"required"`
-	Repo            repo                                    `validate:"required"`
-	Deriver         deriver                                 `validate:"required"`
-	PollingInterval time.Duration                           `validate:"required,gt=0"`
-	Signer          signer                                  `validate:"required"`
-	ValidatorSet    *signals.Signal[symbiotic.ValidatorSet] `validate:"required"`
-	KeyProvider     keyProvider
-	Aggregator      aggregator.Aggregator
-	Metrics         metrics `validate:"required"`
-	ForceCommitter  bool
+	EvmClient           evm.IEvmClient                          `validate:"required"`
+	Repo                repo                                    `validate:"required"`
+	Deriver             deriver                                 `validate:"required"`
+	PollingInterval     time.Duration                           `validate:"required,gt=0"`
+	Signer              signer                                  `validate:"required"`
+	ValidatorSet        *signals.Signal[symbiotic.ValidatorSet] `validate:"required"`
+	KeyProvider         keyProvider
+	Aggregator          aggregator.Aggregator
+	Metrics             metrics `validate:"required"`
+	ForceCommitter      bool
+	EpochRetentionCount uint64
 }
 
 func (c Config) Validate() error {
@@ -108,7 +110,8 @@ func (s *Service) LoadAllMissingEpochs(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-retryTimer.C:
-			if err := s.tryLoadMissingEpochs(ctx); err != nil {
+			fromEpoch, toEpoch, err := s.determineStartupSyncRange(ctx)
+			if err != nil {
 				retryCount++
 				if retryCount >= maxRetries {
 					return errors.Errorf("failed to load missing epochs after %d retries: %w", maxRetries, err)
@@ -117,6 +120,17 @@ func (s *Service) LoadAllMissingEpochs(ctx context.Context) error {
 				retryTimer.Reset(time.Second * 2)
 				continue
 			}
+
+			if err := s.tryLoadMissingEpochs(ctx, fromEpoch, toEpoch); err != nil {
+				retryCount++
+				if retryCount >= maxRetries {
+					return errors.Errorf("failed to load missing epochs after %d retries: %w", maxRetries, err)
+				}
+				slog.ErrorContext(ctx, "Failed to load missing epochs, retrying", "error", err, "attempt", retryCount, "maxRetries", maxRetries)
+				retryTimer.Reset(time.Second * 2)
+				continue
+			}
+
 			slog.InfoContext(ctx, "Successfully loaded all missing epochs")
 			return nil
 		}
@@ -134,56 +148,148 @@ func (s *Service) Start(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-timer.C:
-			if err := s.tryLoadMissingEpochs(ctx); err != nil {
+			fromEpoch, toEpoch, err := s.determineSteadySyncRange(ctx)
+			if err != nil {
+				slog.ErrorContext(ctx, "Failed to determine sync range", "error", err)
+				timer.Reset(s.cfg.PollingInterval)
+				continue
+			}
+
+			if err := s.tryLoadMissingEpochs(ctx, fromEpoch, toEpoch); err != nil {
 				slog.ErrorContext(ctx, "Failed to process epochs", "error", err)
 			}
+
 			timer.Reset(s.cfg.PollingInterval)
 		}
 	}
 }
 
-func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
+func (s *Service) determineStartupSyncRange(ctx context.Context) (from symbiotic.Epoch, to symbiotic.Epoch, err error) {
+	latestHeader, err := s.cfg.Repo.GetLatestValidatorSetHeader(ctx)
+	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
+		return 0, 0, errors.Errorf("failed to get latest validator set header: %w", err)
+	}
+	freshNode := errors.Is(err, entity.ErrEntityNotFound)
+
+	currentEpoch, err := s.cfg.EvmClient.GetCurrentEpoch(ctx)
+	if err != nil {
+		return 0, 0, errors.Errorf("failed to get current epoch: %w", err)
+	}
+
+	if !freshNode {
+		return s.determineSyncRangeFromLatestWithHeader(ctx, latestHeader, currentEpoch)
+	}
+
+	nextEpoch := symbiotic.Epoch(0)
+	if s.cfg.EpochRetentionCount == 0 {
+		slog.InfoContext(ctx, "Fresh node syncing from genesis (unlimited retention)")
+		return nextEpoch, currentEpoch, nil
+	}
+
+	if currentEpoch >= symbiotic.Epoch(s.cfg.EpochRetentionCount) {
+		nextEpoch = currentEpoch - symbiotic.Epoch(s.cfg.EpochRetentionCount) + 1
+		slog.InfoContext(ctx, "Fresh node with epoch retention enabled",
+			"epochRetentionCount", s.cfg.EpochRetentionCount,
+			"currentEpoch", currentEpoch,
+			"startEpoch", nextEpoch,
+			"skippedEpochs", nextEpoch,
+		)
+	} else {
+		slog.InfoContext(ctx, "Fresh node syncing from genesis (network younger than retention)",
+			"epochRetentionCount", s.cfg.EpochRetentionCount,
+			"currentEpoch", currentEpoch,
+		)
+	}
+
+	return nextEpoch, currentEpoch, nil
+}
+
+func (s *Service) determineSteadySyncRange(ctx context.Context) (from symbiotic.Epoch, to symbiotic.Epoch, err error) {
+	latestHeader, err := s.cfg.Repo.GetLatestValidatorSetHeader(ctx)
+	if err != nil {
+		if errors.Is(err, entity.ErrEntityNotFound) {
+			return 0, 0, errors.New("latest validator set header not found during steady-state sync")
+		}
+		return 0, 0, errors.Errorf("failed to get latest validator set header: %w", err)
+	}
+
+	currentEpoch, err := s.cfg.EvmClient.GetCurrentEpoch(ctx)
+	if err != nil {
+		return 0, 0, errors.Errorf("failed to get current epoch: %w", err)
+	}
+
+	return s.determineSyncRangeFromLatestWithHeader(ctx, latestHeader, currentEpoch)
+}
+
+func (s *Service) determineSyncRangeFromLatestWithHeader(
+	ctx context.Context,
+	latestHeader symbiotic.ValidatorSetHeader,
+	currentEpoch symbiotic.Epoch,
+) (from symbiotic.Epoch, to symbiotic.Epoch, err error) {
+	headerEpochConfig, err := s.cfg.Repo.GetConfigByEpoch(ctx, latestHeader.Epoch)
+	if err != nil {
+		return 0, 0, errors.Errorf("failed to get network config for epoch %d: %w", latestHeader.Epoch, err)
+	}
+
+	if time.Unix(int64(latestHeader.CaptureTimestamp), 0).Add(time.Duration(headerEpochConfig.EpochDuration) * time.Second).After(time.Now()) {
+		slog.DebugContext(ctx, "Last epoch is still ongoing, no new valset to process", "lastEpoch", latestHeader.Epoch)
+		return latestHeader.Epoch + 1, currentEpoch, nil
+	}
+
+	nextEpoch := latestHeader.Epoch + 1
+
+	if s.cfg.EpochRetentionCount > 0 {
+		expectedStartEpoch := symbiotic.Epoch(0)
+		if currentEpoch >= symbiotic.Epoch(s.cfg.EpochRetentionCount) {
+			expectedStartEpoch = currentEpoch - symbiotic.Epoch(s.cfg.EpochRetentionCount) + 1
+		}
+
+		oldestEpoch, err := s.cfg.Repo.GetOldestValidatorSetEpoch(ctx)
+		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
+			return 0, 0, errors.Errorf("failed to get oldest validator set epoch: %w", err)
+		}
+
+		if err == nil && oldestEpoch > expectedStartEpoch {
+			slog.WarnContext(ctx,
+				"Detected epoch gap due to retention configuration change. Gap will persist until data is pruned or retention is decreased. Increasing retention on existing nodes does not backfill historical data.",
+				"epochRetentionCount", s.cfg.EpochRetentionCount,
+				"currentEpoch", currentEpoch,
+				"expectedStartEpoch", expectedStartEpoch,
+				"oldestStoredEpoch", oldestEpoch,
+			)
+		}
+	}
+
+	return nextEpoch, currentEpoch, nil
+}
+
+func (s *Service) tryLoadMissingEpochs(ctx context.Context, nextEpoch, currentEpoch symbiotic.Epoch) (err error) {
 	// locking up mutex to prevent concurrent processing
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	slog.DebugContext(ctx, "Checking for missing epochs")
 
-	latestHeader, err := s.cfg.Repo.GetLatestValidatorSetHeader(ctx)
-	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
-		return errors.Errorf("failed to get latest validator set header: %w", err)
-	}
-	nextEpoch := symbiotic.Epoch(0)
-	if err == nil {
-		headerEpochConfig, err := s.cfg.Repo.GetConfigByEpoch(ctx, latestHeader.Epoch)
+	var prevValset symbiotic.ValidatorSet
+	if nextEpoch != 0 {
+		prevEpoch := nextEpoch - 1
+		prevValset, err = s.cfg.Repo.GetValidatorSetByEpoch(ctx, prevEpoch)
 		if err != nil {
-			return errors.Errorf("failed to get network config for epoch %d: %w", latestHeader.Epoch, err)
-		}
-		if time.Unix(int64(latestHeader.CaptureTimestamp), 0).Add(time.Duration(headerEpochConfig.EpochDuration) * time.Second).After(time.Now()) {
-			// nothing to do here, latest epoch is still ongoing
-			slog.DebugContext(ctx, "Last epoch is still ongoing, no new valset to process", "lastEpoch", latestHeader.Epoch)
-			return nil
-		}
-		nextEpoch = latestHeader.Epoch + 1
-	}
+			if !errors.Is(err, entity.ErrEntityNotFound) {
+				return errors.Errorf("failed to get previous validator set for epoch %d: %w", prevEpoch, err)
+			}
 
-	currentEpoch, err := s.cfg.EvmClient.GetCurrentEpoch(ctx)
-	if err != nil {
-		return errors.Errorf("failed to get current epoch: %w", err)
+			// we couldn't find previous valset in repo, maybe we start fresh node with empty db
+			prevValset, _, err = s.derive(ctx, prevEpoch)
+			if err != nil {
+				return errors.Errorf("failed to derive previous validator set for epoch %d: %w", prevEpoch, err)
+			}
+		}
+		slog.DebugContext(ctx, "Loaded previous validator set", "epoch", prevEpoch)
 	}
 
 	for nextEpoch <= currentEpoch {
-		epochStart, err := s.cfg.EvmClient.GetEpochStart(ctx, nextEpoch)
-		if err != nil {
-			return errors.Errorf("failed to get epoch start for epoch %d: %w", nextEpoch, err)
-		}
-
-		nextEpochConfig, err := s.cfg.EvmClient.GetConfig(ctx, epochStart, nextEpoch)
-		if err != nil {
-			return errors.Errorf("failed to get network config for epoch %d: %w", nextEpoch, err)
-		}
-
-		nextValset, err := s.cfg.Deriver.GetValidatorSet(ctx, nextEpoch, nextEpochConfig)
+		nextValset, nextEpochConfig, err := s.derive(ctx, nextEpoch)
 		if err != nil {
 			return errors.Errorf("failed to derive validator set extra for epoch %d: %w", nextEpoch, err)
 		}
@@ -198,7 +304,11 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 
 		slog.DebugContext(ctx, "Synced validator set", "epoch", nextEpoch, "config", nextEpochConfig, "valset", nextValset)
 
-		if err := s.process(ctx, nextValset, nextEpochConfig); err != nil {
+		if nextEpoch == 0 {
+			prevValset = nextValset
+		}
+
+		if err := s.process(ctx, prevValset, nextValset, nextEpochConfig); err != nil {
 			return errors.Errorf("failed to process validator set for epoch %d: %w", nextEpoch, err)
 		}
 
@@ -207,6 +317,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 		}
 
 		nextEpoch = nextValset.Epoch + 1
+		prevValset = nextValset
 	}
 
 	slog.DebugContext(ctx, "All missing epochs loaded", "latestProcessedEpoch", currentEpoch)
@@ -214,7 +325,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) process(ctx context.Context, valSet symbiotic.ValidatorSet, config symbiotic.NetworkConfig) error {
+func (s *Service) process(ctx context.Context, prevValSet symbiotic.ValidatorSet, valSet symbiotic.ValidatorSet, config symbiotic.NetworkConfig) error {
 	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(valSet.Epoch)))
 	slog.DebugContext(ctx, "Started processing valset for epoch")
 
@@ -237,28 +348,16 @@ func (s *Service) process(ctx context.Context, valSet symbiotic.ValidatorSet, co
 		return errors.Errorf("failed to get header commitment hash: %w", err)
 	}
 
-	valsetToCheck := valSet
-
-	// process valset signature with previous epoch if not genesis epoch
-	if valSet.Epoch > 0 {
-		// get previous epoch valset to check if we are a signer
-		prevValSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, valSet.Epoch-1)
-		if err != nil {
-			return errors.Errorf("failed to get previous validator set: %w", err)
-		}
-		valsetToCheck = prevValSet
-	}
-
-	onchainKey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(valsetToCheck.RequiredKeyTag)
+	onchainKey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(prevValSet.RequiredKeyTag)
 	if err != nil {
 		return errors.Errorf("failed to get onchain symb key from cache: %w", err)
 	}
 
 	// if we are a signer, sign the commitment, otherwise just save the metadata
-	if valsetToCheck.IsSigner(onchainKey) {
+	if prevValSet.IsSigner(onchainKey) {
 		r := symbiotic.SignatureRequest{
-			KeyTag:        valsetToCheck.RequiredKeyTag,
-			RequiredEpoch: valsetToCheck.Epoch,
+			KeyTag:        prevValSet.RequiredKeyTag,
+			RequiredEpoch: prevValSet.Epoch,
 			Message:       commitmentData,
 		}
 		_, err := s.cfg.Signer.RequestSignature(ctx, r)
@@ -267,15 +366,15 @@ func (s *Service) process(ctx context.Context, valSet symbiotic.ValidatorSet, co
 		}
 	}
 
-	msgHash, err := crypto.HashMessage(valsetToCheck.RequiredKeyTag.Type(), commitmentData)
+	msgHash, err := crypto.HashMessage(prevValSet.RequiredKeyTag.Type(), commitmentData)
 	if err != nil {
 		return errors.Errorf("failed to hash message: %w", err)
 	}
 
 	extendedSig := symbiotic.Signature{
 		MessageHash: msgHash,
-		KeyTag:      valsetToCheck.RequiredKeyTag,
-		Epoch:       valsetToCheck.Epoch,
+		KeyTag:      prevValSet.RequiredKeyTag,
+		Epoch:       prevValSet.Epoch,
 	}
 
 	metadata := symbiotic.ValidatorSetMetadata{
@@ -363,4 +462,23 @@ func (s *Service) headerCommitmentData(
 	}
 
 	return []byte(data), nil
+}
+
+func (s *Service) derive(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, symbiotic.NetworkConfig, error) {
+	epochStart, err := s.cfg.EvmClient.GetEpochStart(ctx, epoch)
+	if err != nil {
+		return symbiotic.ValidatorSet{}, symbiotic.NetworkConfig{}, errors.Errorf("failed to get epoch start for epoch %d: %w", epoch, err)
+	}
+
+	config, err := s.cfg.EvmClient.GetConfig(ctx, epochStart, epoch)
+	if err != nil {
+		return symbiotic.ValidatorSet{}, symbiotic.NetworkConfig{}, errors.Errorf("failed to get network config for epoch %d: %w", epoch, err)
+	}
+
+	valset, err := s.cfg.Deriver.GetValidatorSet(ctx, epoch, config)
+	if err != nil {
+		return symbiotic.ValidatorSet{}, symbiotic.NetworkConfig{}, errors.Errorf("failed to derive validator set extra for epoch %d: %w", epoch, err)
+	}
+
+	return valset, config, nil
 }

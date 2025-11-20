@@ -131,7 +131,7 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregati
 
 	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, aggregationProof.Epoch)
 	if err != nil {
-		return errors.Errorf("failed to get validator set: %w", err)
+		return errors.Errorf("failed to get validator set for epoch %d: %w", aggregationProof.Epoch, err)
 	}
 
 	ok, err := s.cfg.Aggregator.Verify(validatorSet, aggregationProof.KeyTag, aggregationProof)

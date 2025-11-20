@@ -73,3 +73,13 @@ evm:
 
 # Aggregation Policy
 aggregation-policy-max-unsigners: 50
+
+# Data Retention Configuration (optional)
+# Controls how much historical data to keep on this node
+retention:
+  # Maximum number of historical validator set epochs to sync on fresh node startup
+  # - 0 (default): Unlimited - sync from genesis epoch
+  # - N > 0: Sync only the most recent N epochs
+  # Note: Only applies to fresh nodes. Existing nodes continue from last synced epoch.
+  # Should match your pruning retention period to avoid re-syncing pruned data.
+  valset-epochs: 0

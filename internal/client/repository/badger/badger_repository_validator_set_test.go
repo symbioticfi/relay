@@ -179,6 +179,34 @@ func TestRepository_ValidatorSet_EmptyRepository(t *testing.T) {
 	})
 }
 
+func TestRepository_GetOldestValidatorSetEpoch(t *testing.T) {
+	t.Parallel()
+	t.Run("returns error when repository is empty", func(t *testing.T) {
+		repo := setupTestRepository(t)
+		_, err := repo.GetOldestValidatorSetEpoch(t.Context())
+		require.Error(t, err)
+		assert.ErrorIs(t, err, entity.ErrEntityNotFound)
+	})
+
+	t.Run("returns earliest epoch", func(t *testing.T) {
+		repo := setupTestRepository(t)
+
+		valsets := []symbiotic.ValidatorSet{
+			randomValidatorSet(t, 10),
+			randomValidatorSet(t, 5),
+			randomValidatorSet(t, 7),
+		}
+
+		for _, vs := range valsets {
+			require.NoError(t, repo.SaveValidatorSet(t.Context(), vs))
+		}
+
+		epoch, err := repo.GetOldestValidatorSetEpoch(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, symbiotic.Epoch(5), epoch)
+	})
+}
+
 func TestRepository_ValidatorSet_EpochOrdering(t *testing.T) {
 	repo := setupTestRepository(t)
 
