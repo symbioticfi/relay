@@ -25,6 +25,7 @@ type repo interface {
 	UpdateValidatorSetStatusAndRemovePendingProof(ctx context.Context, valset symbiotic.ValidatorSet) error
 	GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
 	SaveFirstUncommittedValidatorSetEpoch(_ context.Context, epoch symbiotic.Epoch) error
+	GetLatestValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
 }
 
 type Config struct {
@@ -130,6 +131,20 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 	firstUncommittedEpoch, err := s.cfg.Repo.GetFirstUncommittedValidatorSetEpoch(ctx)
 	if err != nil {
 		return errors.Errorf("failed to get first uncommitted validator set epoch: %w", err)
+	}
+
+	latestEpoch, err := s.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
+	if err != nil {
+		if errors.Is(err, entity.ErrEntityNotFound) {
+			slog.InfoContext(ctx, "No validator sets found, nothing to do")
+			return nil
+		}
+		return errors.Errorf("failed to get latest validator set epoch: %w", err)
+	}
+
+	if firstUncommittedEpoch > latestEpoch {
+		slog.DebugContext(ctx, "All validator sets are already committed, nothing to do", "firstUncommittedEpoch", firstUncommittedEpoch, "latestEpoch", latestEpoch)
+		return nil
 	}
 
 	settlements, err := s.findLatestNonZeroSettlements(ctx)
