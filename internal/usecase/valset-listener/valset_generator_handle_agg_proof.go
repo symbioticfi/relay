@@ -49,6 +49,12 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 			continue
 		}
 
+		// if latest valset is already committed, nothing to do
+		if valset.Status == symbiotic.HeaderCommitted {
+			slog.DebugContext(ctx, "Latest validator set already committed. skipping commit loop", "epoch", valset.Epoch)
+			continue
+		}
+
 		nwCfg, err := s.cfg.Repo.GetConfigByEpoch(ctx, valsetHeader.Epoch)
 		if err != nil {
 			slog.ErrorContext(ctx, "Failed to get network config by epoch", "error", err, "epoch", valsetHeader.Epoch)
