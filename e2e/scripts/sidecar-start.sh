@@ -45,9 +45,9 @@ evm:
 
 # Retention config
 retention:
-  valset-epochs: 5
-  signature-epochs: 5
-  proof-epochs: 5
+  valset-epochs: 10
+  signature-epochs: 10
+  proof-epochs: 10
 
 pruner:
   enabled: true

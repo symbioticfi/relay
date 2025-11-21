@@ -101,9 +101,7 @@ func (s *Service) runPruning(ctx context.Context) error {
 	latestEpoch, err := s.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityNotFound) {
-			slog.DebugContext(ctx, "Pruning skipped",
-				"reason", "no validator sets in storage yet",
-			)
+			slog.DebugContext(ctx, "Pruning skipped", "reason", "no validator sets in storage yet")
 			return nil
 		}
 		return errors.Errorf("failed to get latest validator set epoch: %w", err)
@@ -117,28 +115,25 @@ func (s *Service) runPruning(ctx context.Context) error {
 	// Prune each entity type according to its retention setting
 	valsetCount, err := s.pruneValsetEntities(ctx, latestEpoch, oldestStoredEpoch)
 	if err != nil {
-		return errors.Errorf("failed to prune valset entities: %w", err)
+		slog.ErrorContext(ctx, "Failed to prune valset entities", "error", err)
 	}
 
 	proofCount, err := s.pruneProofEntities(ctx, latestEpoch, oldestStoredEpoch)
 	if err != nil {
-		return errors.Errorf("failed to prune proof entities: %w", err)
+		slog.ErrorContext(ctx, "Failed to prune proof entities", "error", err)
 	}
 
 	signatureCount, err := s.pruneSignatureEntities(ctx, latestEpoch, oldestStoredEpoch)
 	if err != nil {
-		return errors.Errorf("failed to prune signature entities: %w", err)
+		slog.ErrorContext(ctx, "Failed to prune signature entities", "error", err)
 	}
 
-	totalCount := valsetCount + proofCount + signatureCount
-	if totalCount > 0 {
-		slog.InfoContext(ctx, "Pruning completed",
-			"valsetEpochs", valsetCount,
-			"proofEpochs", proofCount,
-			"signatureEpochs", signatureCount,
-			"duration", time.Since(start),
-		)
-	}
+	slog.InfoContext(ctx, "Pruning completed",
+		"valsetEpochs", valsetCount,
+		"proofEpochs", proofCount,
+		"signatureEpochs", signatureCount,
+		"duration", time.Since(start),
+	)
 
 	return nil
 }

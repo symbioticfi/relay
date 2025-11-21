@@ -11,7 +11,6 @@ import (
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-// PruneValsetEntities deletes validator sets and network configs for a specific epoch.
 func (r *Repository) PruneValsetEntities(ctx context.Context, epoch symbiotic.Epoch) error {
 	if err := r.pruneNetworkConfigs(ctx, epoch); err != nil {
 		return errors.Errorf("failed to prune network configs: %w", err)
@@ -24,7 +23,6 @@ func (r *Repository) PruneValsetEntities(ctx context.Context, epoch symbiotic.Ep
 	return nil
 }
 
-// PruneProofEntities deletes aggregation proofs and proof commits for a specific epoch.
 func (r *Repository) PruneProofEntities(ctx context.Context, epoch symbiotic.Epoch) error {
 	if err := r.pruneProofCommits(ctx, epoch); err != nil {
 		return errors.Errorf("failed to prune proof commits: %w", err)
@@ -46,7 +44,6 @@ func (r *Repository) PruneProofEntities(ctx context.Context, epoch symbiotic.Epo
 	return nil
 }
 
-// PruneSignatureEntitiesForEpoch deletes all signature-related entities for a specific epoch.
 func (r *Repository) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch symbiotic.Epoch) error {
 	requestIDs, err := r.getRequestIDsByEpoch(ctx, epoch)
 	if err != nil {
@@ -66,7 +63,6 @@ func (r *Repository) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch s
 	return nil
 }
 
-// pruneProofCommits deletes proof commit markers for the epoch.
 func (r *Repository) pruneProofCommits(ctx context.Context, epoch symbiotic.Epoch) error {
 	return r.doUpdateInTx(ctx, "pruneProofCommits", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -77,7 +73,6 @@ func (r *Repository) pruneProofCommits(ctx context.Context, epoch symbiotic.Epoc
 	})
 }
 
-// pruneNetworkConfigs deletes network configuration for the epoch.
 func (r *Repository) pruneNetworkConfigs(ctx context.Context, epoch symbiotic.Epoch) error {
 	return r.doUpdateInTx(ctx, "pruneNetworkConfigs", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -88,12 +83,10 @@ func (r *Repository) pruneNetworkConfigs(ctx context.Context, epoch symbiotic.Ep
 	})
 }
 
-// pruneValidatorSets deletes all validator set data for the epoch.
 func (r *Repository) pruneValidatorSets(ctx context.Context, epoch symbiotic.Epoch) error {
 	err := r.doUpdateInTxWithLock(ctx, "pruneValidatorSets", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 
-		// Delete validator set header and metadata keys
 		staticKeys := [][]byte{
 			keyValidatorSetHeader(epoch),
 			keyValidatorSetStatus(epoch),
@@ -107,7 +100,6 @@ func (r *Repository) pruneValidatorSets(ctx context.Context, epoch symbiotic.Epo
 			}
 		}
 
-		// Delete all validators for this epoch
 		validatorPrefix := keyValidatorPrefix(epoch)
 		opts := badger.DefaultIteratorOptions
 		opts.Prefix = validatorPrefix
@@ -124,7 +116,6 @@ func (r *Repository) pruneValidatorSets(ctx context.Context, epoch symbiotic.Epo
 		}
 		it.Close() // Close before opening another iterator
 
-		// Delete all validator key lookups for this epoch
 		keyLookupPrefix := keyValidatorKeyLookupPrefix(epoch)
 		opts.Prefix = keyLookupPrefix
 		it = txn.NewIterator(opts)
@@ -147,7 +138,6 @@ func (r *Repository) pruneValidatorSets(ctx context.Context, epoch symbiotic.Epo
 	return nil
 }
 
-// getRequestIDsByEpoch extracts all requestIDs associated with an epoch from the index.
 func (r *Repository) getRequestIDsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]common.Hash, error) {
 	var requestIDs []common.Hash
 
@@ -181,13 +171,10 @@ func (r *Repository) getRequestIDsByEpoch(ctx context.Context, epoch symbiotic.E
 	return requestIDs, err
 }
 
-// pruneSignatureEntities deletes all signature-related entities for a requestID in a single transaction.
-// This includes: signatures, signature map, signature request, and related markers.
 func (r *Repository) pruneSignatureEntities(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
 	return r.doUpdateInTxWithLock(ctx, "pruneSignatureEntities", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 
-		// Delete all individual signatures for this requestID
 		signaturePrefix := keySignatureRequestIDPrefix(requestID)
 		opts := badger.DefaultIteratorOptions
 		opts.Prefix = signaturePrefix
@@ -203,22 +190,18 @@ func (r *Repository) pruneSignatureEntities(ctx context.Context, epoch symbiotic
 			}
 		}
 
-		// Delete signature map
 		if err := txn.Delete(keySignatureMap(requestID)); err != nil {
 			return errors.Errorf("failed to delete signature map: %w", err)
 		}
 
-		// Delete signature request
 		if err := txn.Delete(keySignatureRequest(epoch, requestID)); err != nil {
 			return errors.Errorf("failed to delete signature request: %w", err)
 		}
 
-		// Delete signature pending marker
 		if err := txn.Delete(keySignatureRequestPending(epoch, requestID)); err != nil {
 			return errors.Errorf("failed to delete signature pending: %w", err)
 		}
 
-		// Delete requestID index
 		if err := txn.Delete(keyRequestIDIndex(requestID)); err != nil {
 			return errors.Errorf("failed to delete request ID index: %w", err)
 		}
@@ -227,17 +210,14 @@ func (r *Repository) pruneSignatureEntities(ctx context.Context, epoch symbiotic
 	}, &r.signatureMutexMap, requestID)
 }
 
-// pruneAggregationProof deletes the aggregation proof and pending marker for a requestID.
 func (r *Repository) pruneAggregationProof(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
 	return r.doUpdateInTxWithLock(ctx, "pruneAggregationProof", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 
-		// Delete aggregation proof
 		if err := txn.Delete(keyAggregationProof(requestID)); err != nil {
 			return errors.Errorf("failed to delete aggregation proof: %w", err)
 		}
 
-		// Delete pending marker
 		if err := txn.Delete(keyAggregationProofPending(epoch, requestID)); err != nil {
 			return errors.Errorf("failed to delete aggregation proof pending: %w", err)
 		}

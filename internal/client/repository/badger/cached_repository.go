@@ -163,10 +163,6 @@ func (r *CachedRepository) PruneSignatureEntitiesForEpoch(ctx context.Context, e
 	return r.Repository.PruneSignatureEntitiesForEpoch(ctx, epoch)
 }
 
-func (r *CachedRepository) evictEpochCaches(epoch symbiotic.Epoch) {
-	r.evictValsetCaches(epoch)
-}
-
 func (r *CachedRepository) evictValsetCaches(epoch symbiotic.Epoch) {
 	if r.networkConfigCache != nil {
 		r.networkConfigCache.Delete(epoch)

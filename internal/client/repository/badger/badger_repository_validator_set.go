@@ -21,6 +21,11 @@ const (
 	latestValidatorSetEpochKey        = "latest_validator_set_epoch"
 	latestSignedValidatorSetEpochKey  = "latest_signed_validator_set_epoch"
 	firstUncommittedValidatorSetEpoch = "first_uncommitted_validator_set_epoch"
+	validatorPrefixStr                = "validator:"
+	validatorKeyLookupPrefixStr       = "validator_key_lookup:"
+	validatorSetStatusPrefix          = "validator_set_status:"
+	validatorSetMetadataPrefix        = "validator_set_metadata:"
+	activeValidatorCountPrefix        = "active_validator_count:"
 )
 
 // keyValidatorSetHeader returns key for validator set header
@@ -36,14 +41,6 @@ func keyValidatorSetHeader(epoch symbiotic.Epoch) []byte {
 func keyValidatorSetHeaderPrefix() []byte {
 	return []byte("validator_set_header:")
 }
-
-const (
-	validatorPrefixStr          = "validator:"
-	validatorKeyLookupPrefixStr = "validator_key_lookup:"
-	validatorSetStatusPrefix    = "validator_set_status:"
-	validatorSetMetadataPrefix  = "validator_set_metadata:"
-	activeValidatorCountPrefix  = "active_validator_count:"
-)
 
 func keyValidatorByOperator(epoch symbiotic.Epoch, operator common.Address) []byte {
 	key := epochKeyWithColon(validatorPrefixStr, epoch)
