@@ -294,14 +294,6 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context, nextEpoch, currentEp
 			return errors.Errorf("failed to derive validator set extra for epoch %d: %w", nextEpoch, err)
 		}
 
-		if err := s.cfg.Repo.SaveConfig(ctx, nextEpochConfig, nextEpoch); err != nil {
-			return errors.Errorf("failed to save validator set extra for epoch %d: %w", nextEpoch, err)
-		}
-
-		if err := s.cfg.Repo.SaveValidatorSet(ctx, nextValset); err != nil {
-			return errors.Errorf("failed to save validator set extra for epoch %d: %w", nextEpoch, err)
-		}
-
 		slog.DebugContext(ctx, "Synced validator set", "epoch", nextEpoch, "config", nextEpochConfig, "valset", nextValset)
 
 		if nextEpoch == 0 {
@@ -478,6 +470,14 @@ func (s *Service) derive(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.
 	valset, err := s.cfg.Deriver.GetValidatorSet(ctx, epoch, config)
 	if err != nil {
 		return symbiotic.ValidatorSet{}, symbiotic.NetworkConfig{}, errors.Errorf("failed to derive validator set extra for epoch %d: %w", epoch, err)
+	}
+
+	if err := s.cfg.Repo.SaveConfig(ctx, config, epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
+		return symbiotic.ValidatorSet{}, symbiotic.NetworkConfig{}, errors.Errorf("failed to save network config for epoch %d: %w", epoch, err)
+	}
+
+	if err := s.cfg.Repo.SaveValidatorSet(ctx, valset); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
+		return symbiotic.ValidatorSet{}, symbiotic.NetworkConfig{}, errors.Errorf("failed to save validator set for epoch %d: %w", epoch, err)
 	}
 
 	return valset, config, nil
