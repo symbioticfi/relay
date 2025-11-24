@@ -141,71 +141,53 @@ func (s *Service) runPruning(ctx context.Context) error {
 }
 
 func (s *Service) pruneValsetEntities(ctx context.Context, latestEpoch, oldestStoredEpoch symbiotic.Epoch) (uint64, error) {
-	if s.cfg.ValsetRetentionEpochs == 0 {
-		return 0, nil
-	}
-
-	retentionWindow := symbiotic.Epoch(s.cfg.ValsetRetentionEpochs)
-	if latestEpoch < retentionWindow {
-		return 0, nil
-	}
-
-	oldestToKeep := latestEpoch - retentionWindow + 1
-	if oldestStoredEpoch >= oldestToKeep {
-		return 0, nil
-	}
-
-	count := uint64(0)
-	for epoch := oldestStoredEpoch; epoch < oldestToKeep; epoch++ {
-		slog.DebugContext(ctx, "Pruning valset entities", "epoch", epoch)
-
-		if err := s.cfg.Repo.PruneValsetEntities(ctx, epoch); err != nil {
-			return count, errors.Errorf("failed to prune valset entities for epoch %d: %w", epoch, err)
-		}
-
-		count++
-		s.cfg.Metrics.IncPrunedEpochsCount("valset")
-	}
-
-	return count, nil
+	return s.pruneEntities(
+		ctx,
+		latestEpoch,
+		oldestStoredEpoch,
+		s.cfg.ValsetRetentionEpochs,
+		"valset",
+		s.cfg.Repo.PruneValsetEntities,
+	)
 }
 
 func (s *Service) pruneProofEntities(ctx context.Context, latestEpoch, oldestStoredEpoch symbiotic.Epoch) (uint64, error) {
-	if s.cfg.ProofRetentionEpochs == 0 {
-		return 0, nil
-	}
-
-	retentionWindow := symbiotic.Epoch(s.cfg.ProofRetentionEpochs)
-	if latestEpoch < retentionWindow {
-		return 0, nil
-	}
-
-	oldestToKeep := latestEpoch - retentionWindow + 1
-	if oldestStoredEpoch >= oldestToKeep {
-		return 0, nil
-	}
-
-	count := uint64(0)
-	for epoch := oldestStoredEpoch; epoch < oldestToKeep; epoch++ {
-		slog.DebugContext(ctx, "Pruning proof entities", "epoch", epoch)
-
-		if err := s.cfg.Repo.PruneProofEntities(ctx, epoch); err != nil {
-			return count, errors.Errorf("failed to prune proof entities for epoch %d: %w", epoch, err)
-		}
-
-		count++
-		s.cfg.Metrics.IncPrunedEpochsCount("proof")
-	}
-
-	return count, nil
+	return s.pruneEntities(
+		ctx,
+		latestEpoch,
+		oldestStoredEpoch,
+		s.cfg.ProofRetentionEpochs,
+		"proof",
+		s.cfg.Repo.PruneProofEntities,
+	)
 }
 
 func (s *Service) pruneSignatureEntities(ctx context.Context, latestEpoch, oldestStoredEpoch symbiotic.Epoch) (uint64, error) {
-	if s.cfg.SignatureRetentionEpochs == 0 {
+	return s.pruneEntities(
+		ctx,
+		latestEpoch,
+		oldestStoredEpoch,
+		s.cfg.SignatureRetentionEpochs,
+		"signature",
+		s.cfg.Repo.PruneSignatureEntitiesForEpoch,
+	)
+}
+
+// pruneEntities is a common utility function that implements the pruning logic for all entity types.
+// It calculates the retention window and iterates through epochs to delete, calling the provided
+// pruneFunc for each epoch.
+func (s *Service) pruneEntities(
+	ctx context.Context,
+	latestEpoch, oldestStoredEpoch symbiotic.Epoch,
+	retentionEpochs uint64,
+	entityType string,
+	pruneFunc func(context.Context, symbiotic.Epoch) error,
+) (uint64, error) {
+	if retentionEpochs == 0 {
 		return 0, nil
 	}
 
-	retentionWindow := symbiotic.Epoch(s.cfg.SignatureRetentionEpochs)
+	retentionWindow := symbiotic.Epoch(retentionEpochs)
 	if latestEpoch < retentionWindow {
 		return 0, nil
 	}
@@ -217,14 +199,14 @@ func (s *Service) pruneSignatureEntities(ctx context.Context, latestEpoch, oldes
 
 	count := uint64(0)
 	for epoch := oldestStoredEpoch; epoch < oldestToKeep; epoch++ {
-		slog.DebugContext(ctx, "Pruning signature entities", "epoch", epoch)
+		slog.DebugContext(ctx, "Pruning entities", "entityType", entityType, "epoch", epoch)
 
-		if err := s.cfg.Repo.PruneSignatureEntitiesForEpoch(ctx, epoch); err != nil {
-			return count, errors.Errorf("failed to prune signature entities for epoch %d: %w", epoch, err)
+		if err := pruneFunc(ctx, epoch); err != nil {
+			return count, errors.Errorf("failed to prune %s entities for epoch %d: %w", entityType, epoch, err)
 		}
 
 		count++
-		s.cfg.Metrics.IncPrunedEpochsCount("signature")
+		s.cfg.Metrics.IncPrunedEpochsCount(entityType)
 	}
 
 	return count, nil
