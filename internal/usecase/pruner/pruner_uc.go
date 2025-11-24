@@ -13,6 +13,8 @@ import (
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
+//go:generate mockgen -source=pruner_uc.go -destination=mocks/pruner_mocks.go -package=mocks
+
 type metrics interface {
 	IncPrunedEpochsCount(entityType string)
 }
@@ -144,11 +146,11 @@ func (s *Service) pruneValsetEntities(ctx context.Context, latestEpoch, oldestSt
 	}
 
 	retentionWindow := symbiotic.Epoch(s.cfg.ValsetRetentionEpochs)
-	if latestEpoch <= retentionWindow {
+	if latestEpoch < retentionWindow {
 		return 0, nil
 	}
 
-	oldestToKeep := latestEpoch - retentionWindow
+	oldestToKeep := latestEpoch - retentionWindow + 1
 	if oldestStoredEpoch >= oldestToKeep {
 		return 0, nil
 	}
@@ -174,11 +176,11 @@ func (s *Service) pruneProofEntities(ctx context.Context, latestEpoch, oldestSto
 	}
 
 	retentionWindow := symbiotic.Epoch(s.cfg.ProofRetentionEpochs)
-	if latestEpoch <= retentionWindow {
+	if latestEpoch < retentionWindow {
 		return 0, nil
 	}
 
-	oldestToKeep := latestEpoch - retentionWindow
+	oldestToKeep := latestEpoch - retentionWindow + 1
 	if oldestStoredEpoch >= oldestToKeep {
 		return 0, nil
 	}
@@ -204,11 +206,11 @@ func (s *Service) pruneSignatureEntities(ctx context.Context, latestEpoch, oldes
 	}
 
 	retentionWindow := symbiotic.Epoch(s.cfg.SignatureRetentionEpochs)
-	if latestEpoch <= retentionWindow {
+	if latestEpoch < retentionWindow {
 		return 0, nil
 	}
 
-	oldestToKeep := latestEpoch - retentionWindow
+	oldestToKeep := latestEpoch - retentionWindow + 1
 	if oldestStoredEpoch >= oldestToKeep {
 		return 0, nil
 	}

@@ -354,15 +354,11 @@ func TestRepository_PruneAggregationProof_IndexCleanup(t *testing.T) {
 
 	for i, epoch := range epochs {
 		// Create signature to get requestID
-		sigRequest := symbiotic.SignatureRequest{
-			KeyTag:        symbiotic.KeyTag(15),
-			RequiredEpoch: epoch,
-			Message:       randomBytes(t, 32),
-		}
-		_, messageHash, err := priv.Sign(sigRequest.Message)
+		message := randomBytes(t, 32)
+		_, messageHash, err := priv.Sign(message)
 		require.NoError(t, err)
 		signature := symbiotic.Signature{
-			KeyTag:      sigRequest.KeyTag,
+			KeyTag:      symbiotic.KeyTag(15),
 			Epoch:       epoch,
 			MessageHash: messageHash,
 			Signature:   randomBytes(t, 96),
@@ -411,7 +407,7 @@ func TestRepository_PruneAggregationProof_IndexCleanup(t *testing.T) {
 	t.Run("GetAggregationProofsByEpoch returns empty for pruned epoch", func(t *testing.T) {
 		proofs, err := repo.GetAggregationProofsByEpoch(ctx, epochs[1])
 		require.NoError(t, err, "GetAggregationProofsByEpoch should not error on pruned epoch")
-		require.Len(t, proofs, 0, "GetAggregationProofsByEpoch should return empty slice for pruned epoch")
+		require.Empty(t, proofs, "GetAggregationProofsByEpoch should return empty slice for pruned epoch")
 	})
 
 	// Verify GetAggregationProofsByEpoch still works for non-pruned epochs
