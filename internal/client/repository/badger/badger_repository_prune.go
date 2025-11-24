@@ -222,6 +222,10 @@ func (r *Repository) pruneAggregationProof(ctx context.Context, epoch symbiotic.
 			return errors.Errorf("failed to delete aggregation proof pending: %w", err)
 		}
 
+		if err := txn.Delete(keyRequestIDEpoch(epoch, requestID)); err != nil {
+			return errors.Errorf("failed to delete request ID epoch index: %w", err)
+		}
+
 		return nil
 	}, &r.proofsMutexMap, requestID)
 }

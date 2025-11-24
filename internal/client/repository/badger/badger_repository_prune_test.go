@@ -339,3 +339,117 @@ func TestRepository_PruneEntityTypes_Separately(t *testing.T) {
 		require.ErrorIs(t, err, entity.ErrEntityNotFound)
 	})
 }
+
+func TestRepository_PruneAggregationProof_IndexCleanup(t *testing.T) {
+	t.Parallel()
+	repo := setupTestRepository(t)
+	ctx := t.Context()
+
+	priv, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
+	require.NoError(t, err)
+
+	// Create aggregation proofs for three epochs
+	epochs := []symbiotic.Epoch{100, 101, 102}
+	requestIDs := make([]common.Hash, len(epochs))
+
+	for i, epoch := range epochs {
+		// Create signature to get requestID
+		sigRequest := symbiotic.SignatureRequest{
+			KeyTag:        symbiotic.KeyTag(15),
+			RequiredEpoch: epoch,
+			Message:       randomBytes(t, 32),
+		}
+		_, messageHash, err := priv.Sign(sigRequest.Message)
+		require.NoError(t, err)
+		signature := symbiotic.Signature{
+			KeyTag:      sigRequest.KeyTag,
+			Epoch:       epoch,
+			MessageHash: messageHash,
+			Signature:   randomBytes(t, 96),
+			PublicKey:   priv.PublicKey(),
+		}
+		requestID := signature.RequestID()
+		requestIDs[i] = requestID
+
+		// Save aggregation proof
+		aggProof := symbiotic.AggregationProof{
+			MessageHash: messageHash,
+			KeyTag:      symbiotic.KeyTag(15),
+			Epoch:       epoch,
+			Proof:       randomBytes(t, 96),
+		}
+		err = repo.saveAggregationProof(ctx, requestID, aggProof)
+		require.NoError(t, err)
+	}
+
+	// Verify all proofs exist before pruning
+	t.Run("verify all proofs exist before pruning", func(t *testing.T) {
+		for i, epoch := range epochs {
+			proofs, err := repo.GetAggregationProofsByEpoch(ctx, epoch)
+			require.NoError(t, err)
+			require.Len(t, proofs, 1)
+			require.Equal(t, requestIDs[i], proofs[0].RequestID())
+		}
+
+		// Test GetAggregationProofsStartingFromEpoch
+		proofs, err := repo.GetAggregationProofsStartingFromEpoch(ctx, epochs[0])
+		require.NoError(t, err)
+		require.Len(t, proofs, 3)
+	})
+
+	// Prune the middle epoch (101)
+	t.Run("prune middle epoch", func(t *testing.T) {
+		err := repo.PruneProofEntities(ctx, epochs[1])
+		require.NoError(t, err)
+
+		// Direct get should fail
+		_, err = repo.GetAggregationProof(ctx, requestIDs[1])
+		require.ErrorIs(t, err, entity.ErrEntityNotFound)
+	})
+
+	// Verify GetAggregationProofsByEpoch returns empty for pruned epoch
+	t.Run("GetAggregationProofsByEpoch returns empty for pruned epoch", func(t *testing.T) {
+		proofs, err := repo.GetAggregationProofsByEpoch(ctx, epochs[1])
+		require.NoError(t, err, "GetAggregationProofsByEpoch should not error on pruned epoch")
+		require.Len(t, proofs, 0, "GetAggregationProofsByEpoch should return empty slice for pruned epoch")
+	})
+
+	// Verify GetAggregationProofsByEpoch still works for non-pruned epochs
+	t.Run("GetAggregationProofsByEpoch works for non-pruned epochs", func(t *testing.T) {
+		// First epoch should still have its proof
+		proofs, err := repo.GetAggregationProofsByEpoch(ctx, epochs[0])
+		require.NoError(t, err)
+		require.Len(t, proofs, 1)
+		require.Equal(t, requestIDs[0], proofs[0].RequestID())
+
+		// Last epoch should still have its proof
+		proofs, err = repo.GetAggregationProofsByEpoch(ctx, epochs[2])
+		require.NoError(t, err)
+		require.Len(t, proofs, 1)
+		require.Equal(t, requestIDs[2], proofs[0].RequestID())
+	})
+
+	// Verify GetAggregationProofsStartingFromEpoch skips pruned epoch
+	t.Run("GetAggregationProofsStartingFromEpoch skips pruned epoch", func(t *testing.T) {
+		// Starting from epoch 100 should return proofs for epochs 100 and 102 only
+		proofs, err := repo.GetAggregationProofsStartingFromEpoch(ctx, epochs[0])
+		require.NoError(t, err, "GetAggregationProofsStartingFromEpoch should not error when iterating past pruned epochs")
+		require.Len(t, proofs, 2, "GetAggregationProofsStartingFromEpoch should return 2 proofs (skipping pruned epoch 101)")
+
+		// Verify the proofs are from epochs 100 and 102
+		require.Equal(t, epochs[0], proofs[0].Epoch)
+		require.Equal(t, requestIDs[0], proofs[0].RequestID())
+		require.Equal(t, epochs[2], proofs[1].Epoch)
+		require.Equal(t, requestIDs[2], proofs[1].RequestID())
+	})
+
+	// Verify GetAggregationProofsStartingFromEpoch works when starting from pruned epoch
+	t.Run("GetAggregationProofsStartingFromEpoch works when starting from pruned epoch", func(t *testing.T) {
+		// Starting from pruned epoch 101 should return only epoch 102
+		proofs, err := repo.GetAggregationProofsStartingFromEpoch(ctx, epochs[1])
+		require.NoError(t, err)
+		require.Len(t, proofs, 1)
+		require.Equal(t, epochs[2], proofs[0].Epoch)
+		require.Equal(t, requestIDs[2], proofs[0].RequestID())
+	})
+}
