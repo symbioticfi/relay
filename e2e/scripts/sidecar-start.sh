@@ -45,9 +45,15 @@ evm:
 
 # Retention config
 retention:
-  valset-epochs: 10
-  signature-epochs: 10
-  proof-epochs: 10
+  valset-epochs: 1000
+  signature-epochs: 1000
+  proof-epochs: 1000
+
+sync:
+  enabled: true
+  period: 5s
+  timeout: 1m
+  epochs: 1000
 
 pruner:
   enabled: true
