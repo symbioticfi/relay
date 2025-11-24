@@ -148,8 +148,8 @@ Reserved values:
 
 | Name | Value | Description |
 | --- | --- | --- |
-| `VerificationTypeBn254Simple` | 0 | BLS signature aggregation/verification on the BN254 curve (supports fast aggregation, single pairing verification). |
-| `VerificationTypeBn254ZK` | 1 | Zero-knowledge proof based verification for BLS signatures on BN254 (used for privacy-preserving or batched proofs). |
+| `VerificationTypeBn254ZK` | 0 | Zero-knowledge proof based verification for BLS signatures on BN254 (used for privacy-preserving or batched proofs). |
+| `VerificationTypeBn254Simple` | 1 | BLS signature aggregation/verification on the BN254 curve (supports fast aggregation, single pairing verification). |
 | `VerificationTypeUnknown` | 255 | Unknown or unsupported verification type |
 
 Underlying type: `uint32`
