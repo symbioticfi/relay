@@ -35,7 +35,7 @@ jobs:
           echo "GOPRIVATE=github.com/symbioticfi/relay" >> $GITHUB_ENV
           
       - name: "Setup Go Environment"
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
@@ -78,7 +78,7 @@ jobs:
           echo "GOPRIVATE=github.com/symbioticfi/relay" >> $GITHUB_ENV
           
       - name: "Setup Go Environment"
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
@@ -162,7 +162,7 @@ jobs:
           echo "GOPRIVATE=github.com/symbioticfi/relay" >> $GITHUB_ENV
 
       - name: "Setup Go Environment"
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
