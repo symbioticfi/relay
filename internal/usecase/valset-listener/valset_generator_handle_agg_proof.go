@@ -96,10 +96,12 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 		}
 
 		// get lat committed epoch
-		// TODO(oxsteins): if this is too slow, might have to update status-tracker to catchup quickly and store last committed epoch in db
-		// currently it is polling one by one and asynchronously so might not catchup early enough for committer to work
-		// (alrxy) i think it's better to do in listener cuz listener provides valsets and configs, it will be more consistent
-		lastCommittedEpoch := s.detectLastCommittedEpoch(ctx, nwCfg)
+		lastCommittedEpoch := s.detectLastCommittedEpoch(ctx)
+
+		if lastCommittedEpoch >= valset.Epoch {
+			slog.DebugContext(ctx, "No pending proofs to commit, all epochs committed", "lastCommittedEpoch", lastCommittedEpoch, "knownValsetEpoch", valset.Epoch)
+			continue
+		}
 
 		slog.DebugContext(ctx, "Detected last committed epoch", "lastCommittedEpoch", lastCommittedEpoch, "knownValsetEpoch", valset.Epoch)
 
@@ -172,22 +174,17 @@ func (s *Service) processPendingProof(ctx context.Context, proofKey symbiotic.Pr
 	return nil
 }
 
-func (s *Service) detectLastCommittedEpoch(ctx context.Context, config symbiotic.NetworkConfig) symbiotic.Epoch {
-	minVal := symbiotic.Epoch(0)
-	for _, settlement := range config.Settlements {
-		lastCommittedEpoch, err := s.cfg.EvmClient.GetLastCommittedHeaderEpoch(ctx, settlement)
-		if err != nil {
-			slog.WarnContext(ctx, "Failed to get last committed epoch for settlement, skipping", "settlement", settlement, "error", err)
-			// skip chain if networking issue, we will recheck again anyway and if the rpc/chain recovers we will detect issue later
-			continue
+func (s *Service) detectLastCommittedEpoch(ctx context.Context) symbiotic.Epoch {
+	uncommitted, err := s.cfg.Repo.GetFirstUncommittedValidatorSetEpoch(ctx)
+	if err != nil {
+		if errors.Is(err, entity.ErrEntityNotFound) {
+			slog.DebugContext(ctx, "No uncommitted validator sets found, assuming none committed yet")
+			return symbiotic.Epoch(0)
 		}
-		if minVal == 0 {
-			minVal = lastCommittedEpoch
-		} else if lastCommittedEpoch < minVal {
-			minVal = lastCommittedEpoch
-		}
+		slog.ErrorContext(ctx, "Failed to get first uncommitted validator set epoch", "error", err)
+		return symbiotic.Epoch(0)
 	}
-	return minVal
+	return uncommitted - 1
 }
 
 // commitValsetToAllSettlements commits the validator set header to all configured settlement chains.

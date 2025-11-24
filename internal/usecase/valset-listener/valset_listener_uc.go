@@ -40,6 +40,7 @@ type repo interface {
 	SaveValidatorSetMetadata(ctx context.Context, data symbiotic.ValidatorSetMetadata) error
 	SaveConfig(ctx context.Context, config symbiotic.NetworkConfig, epoch symbiotic.Epoch) error
 	SaveValidatorSet(ctx context.Context, valset symbiotic.ValidatorSet) error
+	GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
 }
 
 type deriver interface {
