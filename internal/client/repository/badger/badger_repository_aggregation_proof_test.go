@@ -3,6 +3,7 @@ package badger
 import (
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 
 	"github.com/symbioticfi/relay/internal/entity"
@@ -25,6 +26,17 @@ func TestBadgerRepository_AggregationProof(t *testing.T) {
 	loadedConfig, err := repo.GetAggregationProof(t.Context(), hash)
 	require.NoError(t, err)
 	require.Equal(t, ap, loadedConfig)
+}
+
+func TestKeyAggregationProofPendingBinaryFormat(t *testing.T) {
+	epoch := symbiotic.Epoch(11)
+	requestID := common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")
+
+	key := keyAggregationProofPending(epoch, requestID)
+
+	extracted, err := extractRequestIDFromEpochDelimitedKey(key, aggregationProofPendingPrefix)
+	require.NoError(t, err)
+	require.Equal(t, requestID, extracted)
 }
 
 func TestBadgerRepository_GetAggregationProofsStartingFromEpoch(t *testing.T) {

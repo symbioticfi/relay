@@ -33,3 +33,20 @@ evm:
     - "http://anvil:8545"
     - "http://anvil-settlement:8546"
   max-calls: 30
+
+sync:
+  enabled: true
+  period: 5s
+  timeout: 1m
+  epochs: 1000
+
+# Retention config
+retention:
+  valset-epochs: 1000
+  signature-epochs: 1000
+  proof-epochs: 1000
+
+pruner:
+  enabled: true
+
+  interval: 1m

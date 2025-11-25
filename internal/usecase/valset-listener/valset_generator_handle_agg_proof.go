@@ -14,11 +14,12 @@ import (
 
 const (
 	minCommitterPollIntervalSeconds = uint64(5)
+	commitCheckBatchSize            = 5
 )
 
 func (s *Service) StartCommitterLoop(ctx context.Context) error {
+	ctx = log.WithComponent(ctx, "valset_committer_loop")
 	// get the latest epoch and try to find schedule of committers and start committing
-
 	slog.InfoContext(ctx, "Starting valset committer loop")
 
 	// force to tick immediately as soon as it starts
@@ -96,7 +97,7 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 		}
 
 		// get lat committed epoch
-		lastCommittedEpoch := s.detectLastCommittedEpoch(ctx)
+		lastCommittedEpoch := s.detectLastCommittedEpochFromDB(ctx)
 
 		if lastCommittedEpoch >= valset.Epoch {
 			slog.DebugContext(ctx, "No pending proofs to commit, all epochs committed", "lastCommittedEpoch", lastCommittedEpoch, "knownValsetEpoch", valset.Epoch)
@@ -105,7 +106,22 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 
 		slog.DebugContext(ctx, "Detected last committed epoch", "lastCommittedEpoch", lastCommittedEpoch, "knownValsetEpoch", valset.Epoch)
 
-		pendingProofs, err := s.cfg.Repo.GetPendingProofCommitsSinceEpoch(ctx, lastCommittedEpoch+1, 5)
+		// Dev: we check if the no. of uncommitted epochs is > the batch size then there's a chance
+		// that we might've already committed some epochs but those are not finalized,
+		// hence to optimize for both time and network calls we directly check on the
+		// settlement layers to see what's the latest(not finalized) commit
+		if valset.Epoch-lastCommittedEpoch > symbiotic.Epoch(commitCheckBatchSize) {
+			newLastCommit := s.detectLastCommittedEpochFromChain(ctx, nwCfg)
+			if newLastCommit > lastCommittedEpoch {
+				slog.InfoContext(ctx, "Number of uncommitted epochs exceeds batch size, updated last committed epoch based on settlement chain data",
+					"oldLastCommittedEpoch", lastCommittedEpoch,
+					"newLastCommittedEpoch", newLastCommit,
+				)
+				lastCommittedEpoch = newLastCommit
+			}
+		}
+
+		pendingProofs, err := s.cfg.Repo.GetPendingProofCommitsSinceEpoch(ctx, lastCommittedEpoch+1, commitCheckBatchSize)
 		if err != nil {
 			return errors.Errorf("failed to get pending proof commits since epoch %d: %w", valset.Epoch, err)
 		}
@@ -174,7 +190,7 @@ func (s *Service) processPendingProof(ctx context.Context, proofKey symbiotic.Pr
 	return nil
 }
 
-func (s *Service) detectLastCommittedEpoch(ctx context.Context) symbiotic.Epoch {
+func (s *Service) detectLastCommittedEpochFromDB(ctx context.Context) symbiotic.Epoch {
 	uncommitted, err := s.cfg.Repo.GetFirstUncommittedValidatorSetEpoch(ctx)
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityNotFound) {
@@ -185,6 +201,24 @@ func (s *Service) detectLastCommittedEpoch(ctx context.Context) symbiotic.Epoch 
 		return symbiotic.Epoch(0)
 	}
 	return uncommitted - 1
+}
+
+func (s *Service) detectLastCommittedEpochFromChain(ctx context.Context, config symbiotic.NetworkConfig) symbiotic.Epoch {
+	minVal := symbiotic.Epoch(0)
+	for _, settlement := range config.Settlements {
+		lastCommittedEpoch, err := s.cfg.EvmClient.GetLastCommittedHeaderEpoch(ctx, settlement, symbiotic.WithEVMBlockNumber(symbiotic.BlockNumberLatest))
+		if err != nil {
+			slog.WarnContext(ctx, "Failed to get last committed epoch for settlement, skipping", "settlement", settlement, "error", err)
+			// skip chain if networking issue, we will recheck again anyway and if the rpc/chain recovers we will detect issue later
+			continue
+		}
+		if minVal == 0 {
+			minVal = lastCommittedEpoch
+		} else if lastCommittedEpoch < minVal {
+			minVal = lastCommittedEpoch
+		}
+	}
+	return minVal
 }
 
 // commitValsetToAllSettlements commits the validator set header to all configured settlement chains.

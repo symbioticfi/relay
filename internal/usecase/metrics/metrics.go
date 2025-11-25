@@ -37,6 +37,9 @@ type Metrics struct {
 	evmMethodCall     *prometheus.HistogramVec
 	evmCommitGasUsed  *prometheus.HistogramVec
 	evmCommitGasPrice *prometheus.HistogramVec
+
+	// pruner
+	prunedEpochsTotal *prometheus.CounterVec
 }
 
 func New(cfg Config) *Metrics {
@@ -200,6 +203,12 @@ func newMetrics(registerer prometheus.Registerer) *Metrics {
 	)
 	all = append(all, m.requestsInFlight)
 
+	m.prunedEpochsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "symbiotic_relay_pruned_epochs_total",
+		Help: "Total number of epochs pruned from storage",
+	}, []string{"entity_type"})
+	all = append(all, m.prunedEpochsTotal)
+
 	registerer.MustRegister(all...)
 	return m
 }
@@ -260,4 +269,8 @@ func (m *Metrics) ObserveRepoQueryDuration(queryName, status string, d time.Dura
 
 func (m *Metrics) ObserveRepoQueryTotalDuration(queryName, status string, d time.Duration) {
 	m.repoQueryTotalDuration.WithLabelValues(queryName, status).Observe(d.Seconds())
+}
+
+func (m *Metrics) IncPrunedEpochsCount(entityType string) {
+	m.prunedEpochsTotal.WithLabelValues(entityType).Inc()
 }

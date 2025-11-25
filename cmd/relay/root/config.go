@@ -44,6 +44,7 @@ type config struct {
 	Evm        EvmConfig            `mapstructure:"evm" validate:"required"`
 	ForceRole  ForceRole            `mapstructure:"force-role"`
 	Retention  RetentionConfig      `mapstructure:"retention"`
+	Pruner     PrunerConfig         `mapstructure:"pruner"`
 }
 
 type LogConfig struct {
@@ -180,7 +181,14 @@ type ForceRole struct {
 }
 
 type RetentionConfig struct {
-	ValSetEpochs uint64 `mapstructure:"valset-epochs"`
+	ValSetEpochs    uint64 `mapstructure:"valset-epochs"`
+	ProofEpochs     uint64 `mapstructure:"proof-epochs"`
+	SignatureEpochs uint64 `mapstructure:"signature-epochs"`
+}
+
+type PrunerConfig struct {
+	Enabled  bool          `mapstructure:"enabled"`
+	Interval time.Duration `mapstructure:"interval"`
 }
 
 func (c config) Validate() error {
@@ -238,7 +246,11 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Int("evm.max-calls", 0, "Max calls in multicall")
 	rootCmd.PersistentFlags().Bool("force-role.aggregator", false, "Force node to act as aggregator regardless of deterministic scheduling")
 	rootCmd.PersistentFlags().Bool("force-role.committer", false, "Force node to act as committer regardless of deterministic scheduling")
-	rootCmd.PersistentFlags().Uint64("retention.valset-epochs", 0, "Number of historical validator set epochs to retain on fresh node startup (0 = unlimited)")
+	rootCmd.PersistentFlags().Uint64("retention.valset-epochs", 0, "Number of historical validator set epochs to retain (0 = unlimited)")
+	rootCmd.PersistentFlags().Uint64("retention.proof-epochs", 0, "Number of historical proof epochs to retain (0 = unlimited)")
+	rootCmd.PersistentFlags().Uint64("retention.signature-epochs", 0, "Number of historical signature epochs to retain (0 = unlimited)")
+	rootCmd.PersistentFlags().Bool("pruner.enabled", false, "Enable automatic pruning of old epoch data (default: false)")
+	rootCmd.PersistentFlags().Duration("pruner.interval", time.Hour, "How often to run pruning (default: 1h)")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
@@ -384,6 +396,18 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("retention.valset-epochs", cmd.PersistentFlags().Lookup("retention.valset-epochs")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("retention.proof-epochs", cmd.PersistentFlags().Lookup("retention.proof-epochs")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("retention.signature-epochs", cmd.PersistentFlags().Lookup("retention.signature-epochs")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("pruner.enabled", cmd.PersistentFlags().Lookup("pruner.enabled")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("pruner.interval", cmd.PersistentFlags().Lookup("pruner.interval")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 

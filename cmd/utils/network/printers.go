@@ -61,6 +61,9 @@ func printNetworkConfig(epochDuration uint64, networkConfig *symbiotic.NetworkCo
 		return fmt.Sprintf("%d/%0.3f%%", uint8(item.KeyTag), cmdhelpers.GetPct(item.QuorumThreshold.Int, new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)))
 	}), ", "))
 	configText += fmt.Sprintf("Header key tag: %s\n", networkConfig.RequiredHeaderKeyTag.String())
+	configText += fmt.Sprintf("Number of aggregator nodes: %d\n", networkConfig.NumAggregators)
+	configText += fmt.Sprintf("Number of committer nodes: %d\n", networkConfig.NumCommitters)
+	configText += fmt.Sprintf("Committer slot duration: %ds\n", networkConfig.CommitterSlotDuration)
 
 	return configText
 }

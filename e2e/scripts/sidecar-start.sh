@@ -45,7 +45,21 @@ evm:
 
 # Retention config
 retention:
-  valset-epochs: 5
+  valset-epochs: 1000
+  signature-epochs: 1000
+  proof-epochs: 1000
+
+sync:
+  enabled: true
+  period: 5s
+  timeout: 1m
+  epochs: 1000
+
+pruner:
+  enabled: true
+
+  interval: 1m
+
 EOFCONFIG
 
 # Ensure environment variables are explicitly preserved

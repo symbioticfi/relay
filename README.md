@@ -284,9 +284,29 @@ Control historical data sync for new nodes:
 
 **Important Notes**:
 - Only affects fresh nodes (no existing epoch data)
-- Set to match your planned pruning retention period
+- Set to match your pruner retention period (if pruning is enabled)
 - Must be >= `--sync.epochs` if both are set
 - Does not backfill gaps if increased on existing node
+
+#### Automatic Data Pruning
+
+Periodically delete old epoch data to prevent unbounded storage growth:
+
+```bash
+--pruner.enabled=true                # Enable automatic pruning (default: false)
+--pruner.interval=1h                 # How often to run pruning (default: 1h)
+```
+
+**How it works**:
+- Runs every `interval` and deletes epochs older than `retention.valset-epochs`
+- Keeps N+1 epochs (N operational + 1 anchor for signing)
+- Example: `retention.valset-epochs=100` keeps epochs [currentEpoch-100, currentEpoch]
+- Metric: `symbiotic_relay_pruned_epochs_total` tracks pruned epochs
+
+**Important Notes**:
+- Pruning is disabled by default for safety
+- All nodes prune independently based on their own config
+- Pruning skipped when `retention.valset-epochs=0` (unlimited)
 
 #### Configuration via Command-Line Flags
 
