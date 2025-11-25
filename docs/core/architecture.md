@@ -1,4 +1,4 @@
-# Core System Overview
+# Architecture Overview
 
 ## Introduction
 
@@ -20,6 +20,8 @@ The system operates through four main interconnected processes:
 ### Validator Set Management
 
 The system maintains a chain of validator sets (see [`ValidatorSet`](./types.md#validatorset)), where each epoch has a derived validator set that represents the voting power distribution at that point in time. Validator sets are deterministically derived from on-chain data, ensuring all nodes compute the same set.
+
+**See**: [Epoch Progression](./epoch_progression.md) for how epochs progress from creation through derivation to commitment
 
 ### Signature Aggregation
 
@@ -120,7 +122,7 @@ BN254 Simple provides:
 ## System Lifecycle
 
 1. **Genesis**: The first valset header and extra data are set through trusted genesis functionality on settlement contracts
-2. **Epoch Transitions**: New epochs trigger valset derivation
+2. **Epoch Transitions**: New epochs trigger valset derivation (see [Epoch Progression](./epoch_progression.md) for detailed lifecycle)
 3. **Commitment Cycles**: Each derived valset is committed to settlement contracts with aggregation proofs
 4. **API Requests**: Client applications can request signatures at any time, which are aggregated and can be verified on-chain
 
@@ -135,4 +137,16 @@ The processes are interconnected:
 All processes rely on the same validator set structure (see [`ValidatorSet`](./types.md#validatorset)) and aggregation mechanisms, ensuring consistency across the system.
 
 **See**: [Core Types Reference](./types.md) for complete type definitions
+
+
+##  Related specifications
+
+- [Core Types Reference](./types.md)
+- [Epoch Progression](./epoch_progression.md)
+- [Validator Lifecycle](./validator-lifecycle.md)
+- [Signature Aggregation](./aggregation.md)
+- [Proof Format](./proofs.md)
+- [Quorum and Voting Power](./quorum.md)
+- [Protocol Security](./security.md)
+- [Cross-Chain Operation](./multichain.md)
 
