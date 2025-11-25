@@ -10,20 +10,19 @@ The document contains abstract core types definitions with fields size and their
 
 | Field | Type | Size(b) | Description |
 |-------|------|------|-------------|
+| `NumAggregators` | `uint208` | 26 | Number of aggregators assigned per epoch |
+| `NumCommitters` | `uint208` | 26 | Number of committers assigned per epoch |
+| `CommitterSlotDuration` | `uint48` | 6 | Duration of each committer's time slot in seconds |
 | `VotingPowerProviders` | `[]`[`CrossChainAddress`](#crosschainaddress) | variable | List of VotingPowerProvider contract addresses across different chains |
 | `KeysProvider` | [`CrossChainAddress`](#crosschainaddress) | 28 | KeyRegistry contract address for retrieving validator keys |
 | `Settlements` | `[]`[`CrossChainAddress`](#crosschainaddress) | variable | List of Settlement contract addresses where valsets are committed |
-| `VerificationType` | [`VerificationType`](#verificationtype) | 4 | Type of verification (BN254 Simple or BN254 ZK) |
 | `MaxVotingPower` | `uint256` | 32 | Maximum voting power cap per validator (0 = no cap) |
 | `MinInclusionVotingPower` | `uint256` | 32 | Minimum voting power required for validator inclusion |
-| `MaxValidatorsCount` | `uint256` | 32 | Maximum number of validators (0 = no limit) |
+| `MaxValidatorsCount` | `uint208` | 26 | Maximum number of validators (0 = no limit) |
 | `RequiredKeyTags` | `[]`[`KeyTag`](#keytag) | variable | List of key tags required for validators |
+| `QuorumThresholds` | `[]`[`QuorumThreshold`](#quorumthreshold) | variable | Quorum threshold configurations per key tag |
 | `RequiredHeaderKeyTag` | [`KeyTag`](#keytag) | 1 | Key tag required for signing valset header commitments |
-| `QuorumThresholds` | `[]uint256` | variable | Quorum threshold configurations per key tag |
-| `EpochDuration` | `uint64` | 8 | Duration of an epoch in seconds |
-| `NumAggregators` | `uint64` | 8 | Number of aggregators assigned per epoch |
-| `NumCommitters` | `uint64` | 8 | Number of committers assigned per epoch |
-| `CommitterSlotDuration` | `uint64` | 8 | Duration of each committer's time slot in seconds |
+| `VerificationType` | [`VerificationType`](#verificationtype) | 4 | Type of verification (BN254 Simple or BN254 ZK) |
 
 ### CrossChainAddress
 
@@ -32,15 +31,22 @@ The document contains abstract core types definitions with fields size and their
 | `ChainId` | `uint64` | 8 | Chain ID where the contract is deployed |
 | `Address` | `address` | 20 | Contract address on the specified chain |
 
+### QuorumThreshold
+
+| Field | Type | Size(b) | Description |
+|-------|------|------|-------------|
+| `KeyTag` | `KeyTag` | 8 | Chain ID where the contract is deployed |
+| `QuorumThreshold` | `uint248` | 31 | Contract address on the specified chain |
+
 ### ValidatorSet
 
 | Field | Type | Size(b) | Description |
 |-------|------|------|-------------|
 | `Version` | `uint8` | 1 | Validator set version |
 | `RequiredKeyTag` | [`KeyTag`](#keytag) | 1 | Key tag required to commit the next valset |
-| `Epoch` | `uint64` | 8 | Epoch number for this validator set |
-| `CaptureTimestamp` | `uint64` | 8 | Timestamp when the validator set was captured |
-| `QuorumThreshold` | `uint256` | 32 | Absolute quorum threshold (not percentage) |
+| `Epoch` | `uint48` | 6 | Epoch number for this validator set |
+| `CaptureTimestamp` | `uint48` | 6 | Timestamp when the validator set was captured |
+| `QuorumThreshold` | `uint256` | 32 | Absolute quorum threshold required to commit the next valset (not percentage) |
 | `Validators` | `[]`[`Validator`](#validator) | variable | List of validators in the set |
 | `Status` | [`ValidatorSetStatus`](#validatorsetstatus) | 1 | Current status (Derived, Aggregated, Committed, Missed) |
 | `AggregatorIndices` | `[]uint32` | variable | Indices of validators assigned as aggregators (off-chain) |
@@ -54,8 +60,8 @@ The document contains abstract core types definitions with fields size and their
 |-------|------|------|-------------|
 | `Version` | `uint8` | 1 | Validator set version |
 | `RequiredKeyTag` | [`KeyTag`](#keytag) | 1 | Key tag required for signing |
-| `Epoch` | `uint64` | 8 | Epoch number |
-| `CaptureTimestamp` | `uint64` | 8 | Timestamp when validator set was captured |
+| `Epoch` | `uint48` | 6 | Epoch number |
+| `CaptureTimestamp` | `uint48` | 8 | Timestamp when validator set was captured |
 | `QuorumThreshold` | `uint256` | 32 | Absolute quorum threshold |
 | `TotalVotingPower` | `uint256` | 32 | Total voting power of active validators |
 | `ValidatorsSszMRoot` | `bytes32` | 32 | Merkle root of validators tree (SSZ encoding, see details: [`ValidatorsSszMRoot`](#validatorssszmroot)) |
@@ -93,7 +99,7 @@ The document contains abstract core types definitions with fields size and their
 | Field | Type | Size(b) | Description |
 |-------|------|------|-------------|
 | `KeyTag` | [`KeyTag`](#keytag) | 1 | Key tag specifying which validator keys should sign |
-| `RequiredEpoch` | `uint64` | 8 | Epoch in which the signature is required |
+| `RequiredEpoch` | `uint48` | 6 | Epoch in which the signature is required |
 | `Message` | `[]byte` | variable | Raw message bytes to be signed |
 
 ### Signature
@@ -102,7 +108,7 @@ The document contains abstract core types definitions with fields size and their
 |-------|------|------|-------------|
 | `MessageHash` | `[]byte` | variable | Hash of the message (scheme depends on [`KeyTag`](#keytag)) |
 | `KeyTag` | [`KeyTag`](#keytag) | 1 | Key tag used for validation |
-| `Epoch` | `uint64` | 8 | Epoch for validation |
+| `Epoch` | `uint48` | 6 | Epoch for validation |
 | `PublicKey` | `[]byte` | variable | Public key of the signer (format depends on [`KeyTag`](#keytag)) |
 | `Signature` | `[]byte` | variable | Raw signature bytes (format depends on [`KeyTag`](#keytag)) |
 
@@ -112,7 +118,7 @@ The document contains abstract core types definitions with fields size and their
 |-------|------|------|-------------|
 | `MessageHash` | `[]byte` | variable | Hash of the message (scheme depends on [`KeyTag`](#keytag)) |
 | `KeyTag` | [`KeyTag`](#keytag) | 1 | Key tag used for validation |
-| `Epoch` | `uint64` | 8 | Epoch for validation |
+| `Epoch` | `uint48` | 6 | Epoch for validation |
 | `Proof` | `[]byte` | variable | Raw aggregation proof bytes (format depends on [`VerificationType`](#verificationtype)) |
 
 
