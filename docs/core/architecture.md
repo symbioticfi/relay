@@ -141,12 +141,10 @@ All processes rely on the same validator set structure (see [`ValidatorSet`](./t
 
 ##  Related specifications
 
-- [Core Types Reference](./types.md)
 - [Epoch Progression](./epoch_progression.md)
-- [Validator Lifecycle](./validator-lifecycle.md)
-- [Signature Aggregation](./aggregation.md)
-- [Proof Format](./proofs.md)
-- [Quorum and Voting Power](./quorum.md)
-- [Protocol Security](./security.md)
-- [Cross-Chain Operation](./multichain.md)
+- [Validator Set Derivation](./valset_commitment.md)
+- [Validator Set Commitment](./valset_commitment.md)
+- [Signature Aggregation](./signature_aggregation.md)
+- [Sign Message API](./sign_message.md)
+- [Core Types Reference](./types.md)
 
