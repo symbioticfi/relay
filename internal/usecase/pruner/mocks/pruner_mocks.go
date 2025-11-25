@@ -121,6 +121,20 @@ func (mr *MockrepoMockRecorder) PruneProofEntities(ctx, epoch any) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PruneProofEntities", reflect.TypeOf((*Mockrepo)(nil).PruneProofEntities), ctx, epoch)
 }
 
+// PruneRequestIDEpochIndices mocks base method.
+func (m *Mockrepo) PruneRequestIDEpochIndices(ctx context.Context, epoch entity.Epoch) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PruneRequestIDEpochIndices", ctx, epoch)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PruneRequestIDEpochIndices indicates an expected call of PruneRequestIDEpochIndices.
+func (mr *MockrepoMockRecorder) PruneRequestIDEpochIndices(ctx, epoch any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PruneRequestIDEpochIndices", reflect.TypeOf((*Mockrepo)(nil).PruneRequestIDEpochIndices), ctx, epoch)
+}
+
 // PruneSignatureEntitiesForEpoch mocks base method.
 func (m *Mockrepo) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch entity.Epoch) error {
 	m.ctrl.T.Helper()

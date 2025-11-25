@@ -222,10 +222,61 @@ func (r *Repository) pruneAggregationProof(ctx context.Context, epoch symbiotic.
 			return errors.Errorf("failed to delete aggregation proof pending: %w", err)
 		}
 
+		return nil
+	}, &r.proofsMutexMap, requestID)
+}
+
+// PruneRequestIDEpochIndices removes the request ID epoch indices for the given epoch.
+// This should be called AFTER both PruneProofEntities and PruneSignatureEntitiesForEpoch
+// to ensure that the index is only deleted when both the aggregation proof and signatures
+// have been removed. This handles cases where proof and signature retention settings differ.
+func (r *Repository) PruneRequestIDEpochIndices(ctx context.Context, epoch symbiotic.Epoch) error {
+	requestIDs, err := r.getRequestIDsByEpoch(ctx, epoch)
+	if err != nil {
+		return errors.Errorf("failed to get request IDs: %w", err)
+	}
+
+	slog.DebugContext(ctx, "Pruning request ID epoch indices", "epoch", epoch, "requestCount", len(requestIDs))
+
+	for _, requestID := range requestIDs {
+		if err := r.deleteRequestIDEpochIndex(ctx, epoch, requestID); err != nil {
+			return errors.Errorf("failed to delete request ID epoch index for request %s: %w", requestID.Hex(), err)
+		}
+	}
+
+	return nil
+}
+
+// deleteRequestIDEpochIndex deletes the request ID epoch index entry if both
+// the aggregation proof and signatures have been pruned for the given requestID.
+func (r *Repository) deleteRequestIDEpochIndex(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
+	return r.doUpdateInTx(ctx, "deleteRequestIDEpochIndex", func(ctx context.Context) error {
+		txn := getTxn(ctx)
+
+		// Check if aggregation proof still exists
+		_, err := txn.Get(keyAggregationProof(requestID))
+		if err == nil {
+			// Proof still exists, don't delete the index
+			return nil
+		}
+		if !errors.Is(err, badger.ErrKeyNotFound) {
+			return errors.Errorf("failed to check aggregation proof: %w", err)
+		}
+
+		// Check if signatures still exist
+		_, err = txn.Get(keyRequestIDIndex(requestID))
+		if err == nil {
+			// Signatures still exist, don't delete the index
+			return nil
+		}
+		if !errors.Is(err, badger.ErrKeyNotFound) {
+			return errors.Errorf("failed to check signature request: %w", err)
+		}
+
+		// Both proof and signatures are gone, safe to delete the index
 		if err := txn.Delete(keyRequestIDEpoch(epoch, requestID)); err != nil {
 			return errors.Errorf("failed to delete request ID epoch index: %w", err)
 		}
-
 		return nil
-	}, &r.proofsMutexMap, requestID)
+	})
 }

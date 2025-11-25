@@ -25,6 +25,7 @@ type repo interface {
 	PruneValsetEntities(ctx context.Context, epoch symbiotic.Epoch) error
 	PruneProofEntities(ctx context.Context, epoch symbiotic.Epoch) error
 	PruneSignatureEntitiesForEpoch(ctx context.Context, epoch symbiotic.Epoch) error
+	PruneRequestIDEpochIndices(ctx context.Context, epoch symbiotic.Epoch) error
 }
 
 type Config struct {
@@ -130,10 +131,19 @@ func (s *Service) runPruning(ctx context.Context) error {
 		slog.ErrorContext(ctx, "Failed to prune signature entities", "error", err)
 	}
 
+	// Clean up request ID epoch indices AFTER both proofs and signatures have been pruned
+	// This ensures indices are only deleted when both the proof and signatures are gone,
+	// which is important when proof and signature retention settings differ
+	indexCount, err := s.pruneRequestIDEpochIndices(ctx, latestEpoch, oldestStoredEpoch)
+	if err != nil {
+		slog.ErrorContext(ctx, "Failed to prune request ID epoch indices", "error", err)
+	}
+
 	slog.InfoContext(ctx, "Pruning completed",
 		"valsetEpochs", valsetCount,
 		"proofEpochs", proofCount,
 		"signatureEpochs", signatureCount,
+		"indexCleanupEpochs", indexCount,
 		"duration", time.Since(start),
 	)
 
@@ -170,6 +180,27 @@ func (s *Service) pruneSignatureEntities(ctx context.Context, latestEpoch, oldes
 		s.cfg.SignatureRetentionEpochs,
 		"signature",
 		s.cfg.Repo.PruneSignatureEntitiesForEpoch,
+	)
+}
+
+// pruneRequestIDEpochIndices cleans up request ID epoch indices for old epochs.
+// It uses the maximum retention window of proofs and signatures to determine which epochs
+// might have indices to clean up. The actual deletion only happens if both the aggregation
+// proof and signatures have been pruned for a given requestID.
+func (s *Service) pruneRequestIDEpochIndices(ctx context.Context, latestEpoch, oldestStoredEpoch symbiotic.Epoch) (uint64, error) {
+	// Use the maximum of proof and signature retention to determine the range to scan
+	maxRetention := s.cfg.ProofRetentionEpochs
+	if s.cfg.SignatureRetentionEpochs > maxRetention {
+		maxRetention = s.cfg.SignatureRetentionEpochs
+	}
+
+	return s.pruneEntities(
+		ctx,
+		latestEpoch,
+		oldestStoredEpoch,
+		maxRetention,
+		"requestIdEpochIndex",
+		s.cfg.Repo.PruneRequestIDEpochIndices,
 	)
 }
 

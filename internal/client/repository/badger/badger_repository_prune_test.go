@@ -401,6 +401,10 @@ func TestRepository_PruneAggregationProof_IndexCleanup(t *testing.T) {
 		// Direct get should fail
 		_, err = repo.GetAggregationProof(ctx, requestIDs[1])
 		require.ErrorIs(t, err, entity.ErrEntityNotFound)
+
+		// Clean up indices (since no signatures exist in this test, indices should be deleted)
+		err = repo.PruneRequestIDEpochIndices(ctx, epochs[1])
+		require.NoError(t, err)
 	})
 
 	// Verify GetAggregationProofsByEpoch returns empty for pruned epoch
@@ -447,5 +451,167 @@ func TestRepository_PruneAggregationProof_IndexCleanup(t *testing.T) {
 		require.Len(t, proofs, 1)
 		require.Equal(t, epochs[2], proofs[0].Epoch)
 		require.Equal(t, requestIDs[2], proofs[0].RequestID())
+	})
+}
+
+func TestRepository_PruneRequestIDEpochIndices_DifferentRetentionSettings(t *testing.T) {
+	t.Parallel()
+	repo := setupTestRepository(t)
+	ctx := t.Context()
+
+	priv, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
+	require.NoError(t, err)
+
+	epoch := symbiotic.Epoch(100)
+
+	// Create signature and proof for the same epoch
+	message := randomBytes(t, 32)
+	_, messageHash, err := priv.Sign(message)
+	require.NoError(t, err)
+
+	signature := symbiotic.Signature{
+		KeyTag:      symbiotic.KeyTag(15),
+		Epoch:       epoch,
+		MessageHash: messageHash,
+		Signature:   randomBytes(t, 96),
+		PublicKey:   priv.PublicKey(),
+	}
+	requestID := signature.RequestID()
+
+	// Save aggregation proof
+	aggProof := symbiotic.AggregationProof{
+		MessageHash: messageHash,
+		KeyTag:      symbiotic.KeyTag(15),
+		Epoch:       epoch,
+		Proof:       randomBytes(t, 96),
+	}
+	err = repo.saveAggregationProof(ctx, requestID, aggProof)
+	require.NoError(t, err)
+
+	// Save signature request and signature
+	sigRequest := symbiotic.SignatureRequest{
+		KeyTag:  symbiotic.KeyTag(15),
+		Message: message,
+	}
+	err = repo.SaveSignatureRequest(ctx, requestID, sigRequest)
+	require.NoError(t, err)
+
+	err = repo.doUpdateInTx(ctx, "saveSignature", func(ctx context.Context) error {
+		return repo.saveSignature(ctx, 0, signature)
+	})
+	require.NoError(t, err)
+
+	// Verify index exists
+	requestIDs, err := repo.getRequestIDsByEpoch(ctx, epoch)
+	require.NoError(t, err)
+	require.Len(t, requestIDs, 1)
+	require.Equal(t, requestID, requestIDs[0])
+
+	// Scenario 1: Delete only proof, index should remain (signature still exists)
+	t.Run("index remains when only proof is deleted", func(t *testing.T) {
+		err := repo.PruneProofEntities(ctx, epoch)
+		require.NoError(t, err)
+
+		// Try to clean up indices
+		err = repo.PruneRequestIDEpochIndices(ctx, epoch)
+		require.NoError(t, err)
+
+		// Index should still exist because signatures are still there
+		remainingIDs, err := repo.getRequestIDsByEpoch(ctx, epoch)
+		require.NoError(t, err)
+		require.Len(t, remainingIDs, 1, "Index should remain when signatures still exist")
+	})
+
+	// Scenario 2: Now delete signatures, index should be removed
+	t.Run("index is deleted when both proof and signatures are gone", func(t *testing.T) {
+		err := repo.PruneSignatureEntitiesForEpoch(ctx, epoch)
+		require.NoError(t, err)
+
+		// Try to clean up indices again
+		err = repo.PruneRequestIDEpochIndices(ctx, epoch)
+		require.NoError(t, err)
+
+		// Now index should be gone
+		finalIDs, err := repo.getRequestIDsByEpoch(ctx, epoch)
+		require.NoError(t, err)
+		require.Empty(t, finalIDs, "Index should be deleted when both proof and signatures are gone")
+	})
+}
+
+func TestRepository_PruneRequestIDEpochIndices_SignaturesDeletedFirst(t *testing.T) {
+	t.Parallel()
+	repo := setupTestRepository(t)
+	ctx := t.Context()
+
+	priv, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
+	require.NoError(t, err)
+
+	epoch := symbiotic.Epoch(100)
+
+	// Create signature and proof for the same epoch
+	message := randomBytes(t, 32)
+	_, messageHash, err := priv.Sign(message)
+	require.NoError(t, err)
+
+	signature := symbiotic.Signature{
+		KeyTag:      symbiotic.KeyTag(15),
+		Epoch:       epoch,
+		MessageHash: messageHash,
+		Signature:   randomBytes(t, 96),
+		PublicKey:   priv.PublicKey(),
+	}
+	requestID := signature.RequestID()
+
+	// Save aggregation proof
+	aggProof := symbiotic.AggregationProof{
+		MessageHash: messageHash,
+		KeyTag:      symbiotic.KeyTag(15),
+		Epoch:       epoch,
+		Proof:       randomBytes(t, 96),
+	}
+	err = repo.saveAggregationProof(ctx, requestID, aggProof)
+	require.NoError(t, err)
+
+	// Save signature request and signature
+	sigRequest := symbiotic.SignatureRequest{
+		KeyTag:  symbiotic.KeyTag(15),
+		Message: message,
+	}
+	err = repo.SaveSignatureRequest(ctx, requestID, sigRequest)
+	require.NoError(t, err)
+
+	err = repo.doUpdateInTx(ctx, "saveSignature", func(ctx context.Context) error {
+		return repo.saveSignature(ctx, 0, signature)
+	})
+	require.NoError(t, err)
+
+	// Scenario 1: Delete only signatures, index should remain (proof still exists)
+	t.Run("index remains when only signatures are deleted", func(t *testing.T) {
+		err := repo.PruneSignatureEntitiesForEpoch(ctx, epoch)
+		require.NoError(t, err)
+
+		// Try to clean up indices
+		err = repo.PruneRequestIDEpochIndices(ctx, epoch)
+		require.NoError(t, err)
+
+		// Index should still exist because proof is still there
+		remainingIDs, err := repo.getRequestIDsByEpoch(ctx, epoch)
+		require.NoError(t, err)
+		require.Len(t, remainingIDs, 1, "Index should remain when proof still exists")
+	})
+
+	// Scenario 2: Now delete proof, index should be removed
+	t.Run("index is deleted when both signatures and proof are gone", func(t *testing.T) {
+		err := repo.PruneProofEntities(ctx, epoch)
+		require.NoError(t, err)
+
+		// Try to clean up indices again
+		err = repo.PruneRequestIDEpochIndices(ctx, epoch)
+		require.NoError(t, err)
+
+		// Now index should be gone
+		finalIDs, err := repo.getRequestIDsByEpoch(ctx, epoch)
+		require.NoError(t, err)
+		require.Empty(t, finalIDs, "Index should be deleted when both signatures and proof are gone")
 	})
 }
