@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
@@ -19,12 +18,15 @@ func keyAggregationProof(requestID common.Hash) []byte {
 	return []byte(fmt.Sprintf("aggregation_proof:%s", requestID.Hex()))
 }
 
+const aggregationProofPendingPrefix = "aggregation_proof_pending:"
+
 func keyAggregationProofPending(epoch symbiotic.Epoch, requestID common.Hash) []byte {
-	return []byte(fmt.Sprintf("aggregation_proof_pending:%d:%s", epoch, requestID.Hex()))
+	key := epochKeyWithColon(aggregationProofPendingPrefix, epoch)
+	return append(key, []byte(requestID.Hex())...)
 }
 
 func keyAggregationProofPendingEpochPrefix(epoch symbiotic.Epoch) []byte {
-	return []byte(fmt.Sprintf("aggregation_proof_pending:%d:", epoch))
+	return epochKeyWithColon(aggregationProofPendingPrefix, epoch)
 }
 
 func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.Hash, ap symbiotic.AggregationProof) error {
@@ -283,18 +285,10 @@ func (r *Repository) GetSignatureRequestsWithoutAggregationProof(ctx context.Con
 				break
 			}
 
-			// Extract request id from the pending key: "aggregation_proof_pending:epoch:request_id"
-			item := it.Item()
-			key := string(item.Key())
-
-			// Find the hash part after the second colon
-			parts := strings.Split(key, ":")
-			if len(parts) != 3 {
-				return errors.Errorf("invalid pending aggregation proof key format: %s", key)
+			requestID, err := extractRequestIDFromEpochDelimitedKey(it.Item().Key(), aggregationProofPendingPrefix)
+			if err != nil {
+				return err
 			}
-
-			requestIDStr := parts[2]
-			requestID := common.HexToHash(requestIDStr)
 
 			// Get the actual signature request
 			sigReqKey := keySignatureRequest(epoch, requestID)
@@ -305,7 +299,7 @@ func (r *Repository) GetSignatureRequestsWithoutAggregationProof(ctx context.Con
 					// Skip this entry and continue
 					continue
 				}
-				return errors.Errorf("failed to get signature request for hash %s: %w", requestIDStr, err)
+				return errors.Errorf("failed to get signature request for hash %s: %w", requestID.Hex(), err)
 			}
 
 			value, err := sigReqItem.ValueCopy(nil)

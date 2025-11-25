@@ -1,6 +1,7 @@
 package badger
 
 import (
+	"bytes"
 	"log/slog"
 	"sync"
 	"time"
@@ -216,8 +217,10 @@ func keyRequestIDEpochAll() []byte {
 }
 
 const (
-	epochLen = 8
-	hashLen  = 32
+	epochLen   = 8
+	hashLen    = 32
+	hashHexLen = 66
+	colonByte  = byte(':')
 )
 
 // extractRequestIDFromEpochKey extracts request ID from the epoch key link
@@ -230,4 +233,42 @@ func extractRequestIDFromEpochKey(key []byte) (common.Hash, error) {
 	}
 
 	return common.BytesToHash(key[prefixLen+epochLen:]), nil
+}
+
+func epochKey(prefix string, epoch symbiotic.Epoch) []byte {
+	epochBytes := epoch.Bytes()
+	key := make([]byte, len(prefix)+len(epochBytes))
+	copy(key, prefix)
+	copy(key[len(prefix):], epochBytes)
+	return key
+}
+
+func epochKeyWithColon(prefix string, epoch symbiotic.Epoch) []byte {
+	key := epochKey(prefix, epoch)
+	return append(key, colonByte)
+}
+
+func extractRequestIDFromEpochDelimitedKey(key []byte, prefix string) (common.Hash, error) {
+	prefixBytes := []byte(prefix)
+	prefixLen := len(prefixBytes)
+
+	if len(key) < prefixLen+epochLen+1+hashHexLen {
+		return common.Hash{}, errors.Errorf("invalid key length for prefix %s", prefix)
+	}
+
+	if !bytes.HasPrefix(key, prefixBytes) {
+		return common.Hash{}, errors.Errorf("invalid key prefix: %s", prefix)
+	}
+
+	delimiterIndex := prefixLen + epochLen
+	if key[delimiterIndex] != colonByte {
+		return common.Hash{}, errors.Errorf("missing delimiter for prefix %s", prefix)
+	}
+
+	hashBytes := key[delimiterIndex+1:]
+	if len(hashBytes) != hashHexLen {
+		return common.Hash{}, errors.Errorf("unexpected hash length for prefix %s", prefix)
+	}
+
+	return common.HexToHash(string(hashBytes)), nil
 }

@@ -43,7 +43,11 @@ relay_sidecar [flags]
       --p2p.dht-mode string                     DHT mode: auto, server, client, disabled (default "server")
       --p2p.listen string                       P2P listen address
       --p2p.mdns                                Enable mDNS discovery for P2P
-      --retention.valset-epochs uint            Number of historical validator set epochs to retain on fresh node startup (0 = unlimited)
+      --pruner.enabled                          Enable automatic pruning of old epoch data (default: false)
+      --pruner.interval duration                How often to run pruning (default: 1h) (default 1h0m0s)
+      --retention.proof-epochs uint             Number of historical proof epochs to retain (0 = unlimited)
+      --retention.signature-epochs uint         Number of historical signature epochs to retain (0 = unlimited)
+      --retention.valset-epochs uint            Number of historical validator set epochs to retain (0 = unlimited)
       --secret-keys secret-key-slice            Secret keys, comma separated {namespace}/{type}/{id}/{key},..
       --signal.buffer-size int                  Signal buffer size (default 20)
       --signal.worker-count int                 Signal worker count (default 10)

@@ -9,6 +9,7 @@ import (
 type Cache[K comparable, V any] interface {
 	Get(key K) (V, bool)
 	Add(key K, value V)
+	Delete(key K)
 }
 
 // Config holds cache configuration
@@ -43,4 +44,8 @@ func (c *lruCache[K, V]) Get(key K) (V, bool) {
 
 func (c *lruCache[K, V]) Add(key K, value V) {
 	c.cache.Add(key, value)
+}
+
+func (c *lruCache[K, V]) Delete(key K) {
+	c.cache.Remove(key)
 }

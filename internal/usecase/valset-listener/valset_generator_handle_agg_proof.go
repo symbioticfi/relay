@@ -18,8 +18,8 @@ const (
 )
 
 func (s *Service) StartCommitterLoop(ctx context.Context) error {
+	ctx = log.WithComponent(ctx, "valset_committer_loop")
 	// get the latest epoch and try to find schedule of committers and start committing
-
 	slog.InfoContext(ctx, "Starting valset committer loop")
 
 	// force to tick immediately as soon as it starts

@@ -1,12 +1,14 @@
 package badger
 
 import (
+	"bytes"
 	"sort"
 	"strconv"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
+
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
@@ -28,6 +30,32 @@ func signatureRequestID(t *testing.T, req symbiotic.SignatureRequest) common.Has
 		PublicKey:   priv.PublicKey(),
 	}
 	return sig.RequestID()
+}
+
+func TestKeySignatureRequestBinaryFormat(t *testing.T) {
+	epoch := symbiotic.Epoch(42)
+	requestID := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
+
+	key := keySignatureRequest(epoch, requestID)
+	prefix := []byte(keySignatureRequestPrefix)
+
+	require.True(t, bytes.HasPrefix(key, prefix), "key must start with signature request prefix")
+	require.Equal(t, colonByte, key[len(prefix)+epochLen], "delimiter must follow epoch bytes")
+
+	extracted, err := extractRequestIDFromEpochDelimitedKey(key, keySignatureRequestPrefix)
+	require.NoError(t, err)
+	require.Equal(t, requestID, extracted)
+}
+
+func TestKeySignatureRequestPendingBinaryFormat(t *testing.T) {
+	epoch := symbiotic.Epoch(7)
+	requestID := common.HexToHash("0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd")
+
+	key := keySignatureRequestPending(epoch, requestID)
+
+	extracted, err := extractRequestIDFromEpochDelimitedKey(key, keySignatureRequestPendingPrefix)
+	require.NoError(t, err)
+	require.Equal(t, requestID, extracted)
 }
 
 func TestBadgerRepository_SignatureRequest(t *testing.T) {
