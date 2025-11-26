@@ -171,7 +171,7 @@ Filter epochs by application-specific criteria beyond finality and commitment st
 | **Latest Finalized** | ✅ Yes |  ✅ Guaranteed | ❌ Not available
 | **Lagged (Latest - 1)** | ✅ Yes  | ✅ Guaranteed | ✅  Likely
 | **Latest by Settlement** | ✅ Yes | ✅ Guaranteed | ✅ Guaranteed
-| **Custom** | ✅ Yes | Varies | Varies | Varies 
+| **Custom** | ✅ Yes | ✅ Yes | Varies  
 
 
 ## References
