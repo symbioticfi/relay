@@ -47,7 +47,7 @@ The system supports multiple key types, each with different capabilities:
 | `KeyTypeBlsBn254` | 0 | ✅ Yes | ✅ Yes | ✅ Yes | BLS signatures on BN254 curve. Supports efficient signature aggregation. |
 | `KeyTypeEcdsaSecp256k1` | 1 | ✅ Yes | ✅ Yes | ❌ No | ECDSA signatures on secp256k1 curve. Standard Ethereum signing. |
 | `KeyTypeBls12381Bn254` | 2 | ✅ Yes | ✅ Yes | ❌ No | BLS signatures on BLS12-381/BN254. Signing only, no aggregation. |
-| `KeyTypeBls12381Bn254` | any | ✅ Yes | ❌ No | ❌ No | Any unknown key type can be just listed. |
+| `unknown` | any | ✅ Yes | ❌ No | ❌ No | Any unknown key type can be just listed. |
 | `KeyTypeInvalid` | 255 | ❌ No | ❌ No | ❌ No | Invalid key type. |
 
 ### Key Type Properties
