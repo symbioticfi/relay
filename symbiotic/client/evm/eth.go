@@ -137,6 +137,8 @@ func NewEvmClient(ctx context.Context, cfg Config) (*Client, error) {
 		}
 
 		conns[chainID.Uint64()] = client
+
+		cfg.Metrics.ObserveEVMMethodCall("CommitValSetHeader", chainID.Uint64(), "success", 0)
 	}
 
 	if _, found := conns[cfg.DriverAddress.ChainId]; !found {
