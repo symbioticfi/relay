@@ -11,9 +11,11 @@ import (
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
+
 	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/signals"
+	"github.com/symbioticfi/relay/pkg/tracing"
 	"github.com/symbioticfi/relay/symbiotic/client/evm"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator"
@@ -330,35 +332,50 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context, nextEpoch, currentEp
 }
 
 func (s *Service) process(ctx context.Context, prevValSet symbiotic.ValidatorSet, valSet symbiotic.ValidatorSet, config symbiotic.NetworkConfig) error {
+	ctx, span := tracing.StartSpan(ctx, "valset_listener.Process",
+		tracing.AttrEpoch.Int64(int64(valSet.Epoch)),
+	)
+	defer span.End()
+
 	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(valSet.Epoch)))
 	slog.DebugContext(ctx, "Started processing valset for epoch")
 
+	tracing.AddEvent(span, "getting_network_data")
 	networkData, err := s.getNetworkData(ctx, config)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get network data: %w", err)
 	}
 
+	tracing.AddEvent(span, "generating_extra_data")
 	extraData, err := s.cfg.Aggregator.GenerateExtraData(valSet, config.RequiredKeyTags)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to generate extra data: %w", err)
 	}
 
+	tracing.AddEvent(span, "computing_commitment")
 	header, err := valSet.GetHeader()
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get validator set header: %w", err)
 	}
 	commitmentData, err := s.headerCommitmentData(networkData, header, extraData)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get header commitment hash: %w", err)
 	}
 
+	tracing.AddEvent(span, "checking_signer_role")
 	onchainKey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(prevValSet.RequiredKeyTag)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get onchain symb key from cache: %w", err)
 	}
 
 	// if we are a signer, sign the commitment, otherwise just save the metadata
 	if prevValSet.IsSigner(onchainKey) {
+		tracing.AddEvent(span, "requesting_signature")
 		r := symbiotic.SignatureRequest{
 			KeyTag:        prevValSet.RequiredKeyTag,
 			RequiredEpoch: prevValSet.Epoch,
@@ -366,12 +383,14 @@ func (s *Service) process(ctx context.Context, prevValSet symbiotic.ValidatorSet
 		}
 		_, err := s.cfg.Signer.RequestSignature(ctx, r)
 		if err != nil {
+			tracing.RecordError(span, err)
 			return errors.Errorf("failed to sign new validator set extra: %w", err)
 		}
 	}
 
 	msgHash, err := crypto.HashMessage(prevValSet.RequiredKeyTag.Type(), commitmentData)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to hash message: %w", err)
 	}
 
@@ -388,15 +407,21 @@ func (s *Service) process(ctx context.Context, prevValSet symbiotic.ValidatorSet
 		CommitmentData: commitmentData,
 	}
 
+	tracing.SetAttributes(span, tracing.AttrRequestID.String(extendedSig.RequestID().Hex()))
+
+	tracing.AddEvent(span, "saving_metadata")
 	if err = s.cfg.Repo.SaveValidatorSetMetadata(ctx, metadata); err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to save validator set metadata: %w", err)
 	}
 
 	// save pending proof commit here
 	// we store pending commit request for all nodes and not just current commiters because
 	// if committers of this epoch fail then commiters for next epoch should still try to commit old proofs
+	tracing.AddEvent(span, "saving_pending_commit")
 	if err := s.cfg.Repo.SaveProofCommitPending(ctx, valSet.Epoch, extendedSig.RequestID()); err != nil {
 		if !errors.Is(err, entity.ErrEntityAlreadyExist) {
+			tracing.RecordError(span, err)
 			return errors.Errorf("failed to mark proof commit as pending: %w", err)
 		}
 		slog.DebugContext(ctx, "Skipped proof commit, already pending", "epoch", valSet.Epoch)
@@ -469,26 +494,43 @@ func (s *Service) headerCommitmentData(
 }
 
 func (s *Service) derive(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, symbiotic.NetworkConfig, error) {
+	ctx, span := tracing.StartSpan(ctx, "valset_listener.Derive",
+		tracing.AttrEpoch.Int64(int64(epoch)),
+	)
+	defer span.End()
+
+	tracing.AddEvent(span, "getting_epoch_start")
 	epochStart, err := s.cfg.EvmClient.GetEpochStart(ctx, epoch)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return symbiotic.ValidatorSet{}, symbiotic.NetworkConfig{}, errors.Errorf("failed to get epoch start for epoch %d: %w", epoch, err)
 	}
 
+	tracing.AddEvent(span, "loading_network_config")
 	config, err := s.cfg.EvmClient.GetConfig(ctx, epochStart, epoch)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return symbiotic.ValidatorSet{}, symbiotic.NetworkConfig{}, errors.Errorf("failed to get network config for epoch %d: %w", epoch, err)
 	}
 
+	tracing.AddEvent(span, "deriving_validator_set")
 	valset, err := s.cfg.Deriver.GetValidatorSet(ctx, epoch, config)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return symbiotic.ValidatorSet{}, symbiotic.NetworkConfig{}, errors.Errorf("failed to derive validator set extra for epoch %d: %w", epoch, err)
 	}
 
+	tracing.SetAttributes(span, tracing.AttrValidatorCount.Int(len(valset.Validators)))
+
+	tracing.AddEvent(span, "saving_config")
 	if err := s.cfg.Repo.SaveConfig(ctx, config, epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
+		tracing.RecordError(span, err)
 		return symbiotic.ValidatorSet{}, symbiotic.NetworkConfig{}, errors.Errorf("failed to save network config for epoch %d: %w", epoch, err)
 	}
 
+	tracing.AddEvent(span, "saving_validator_set")
 	if err := s.cfg.Repo.SaveValidatorSet(ctx, valset); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
+		tracing.RecordError(span, err)
 		return symbiotic.ValidatorSet{}, symbiotic.NetworkConfig{}, errors.Errorf("failed to save validator set for epoch %d: %w", epoch, err)
 	}
 

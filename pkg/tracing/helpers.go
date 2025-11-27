@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
+
+	"github.com/symbioticfi/relay/pkg/log"
 )
 
 func StartSpan(ctx context.Context, spanName string, attrs ...attribute.KeyValue) (context.Context, trace.Span) {
@@ -45,6 +47,8 @@ func StartDBSpan(ctx context.Context, operation, statement string) (context.Cont
 		)
 	}
 
+	ctx = log.WithTraceContext(ctx)
+
 	return ctx, span
 }
 
@@ -55,6 +59,8 @@ func startSpanWithKind(ctx context.Context, spanName string, kind trace.SpanKind
 	if span.IsRecording() && len(attrs) > 0 {
 		span.SetAttributes(attrs...)
 	}
+
+	ctx = log.WithTraceContext(ctx)
 
 	return ctx, span
 }
@@ -89,11 +95,12 @@ var (
 	AttrAddress = attribute.Key("address")
 
 	// Signature and validation attributes
-	AttrKeyTag          = attribute.Key("key.tag")
-	AttrValidatorIndex  = attribute.Key("validator.index")
-	AttrValidatorCount  = attribute.Key("validator.count")
-	AttrSignatureCount  = attribute.Key("signature.count")
-	AttrQuorumThreshold = attribute.Key("quorum.threshold")
+	AttrKeyTag           = attribute.Key("key.tag")
+	AttrValidatorIndex   = attribute.Key("validator.index")
+	AttrValidatorCount   = attribute.Key("validator.count")
+	AttrValidatorAddress = attribute.Key("validator.address")
+	AttrSignatureCount   = attribute.Key("signature.count")
+	AttrQuorumThreshold  = attribute.Key("quorum.threshold")
 
 	// P2P attributes
 	AttrPeerID      = attribute.Key("peer.id")

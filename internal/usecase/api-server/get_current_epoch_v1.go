@@ -22,6 +22,7 @@ func (h *grpcHandler) GetCurrentEpoch(ctx context.Context, req *apiv1.GetCurrent
 		}
 		return nil, errors.Errorf("failed to get latest validator set header: %w", err)
 	}
+
 	return &apiv1.GetCurrentEpochResponse{
 		Epoch:     uint64(currentEpochInfo.Epoch),
 		StartTime: timestamppb.New(time.Unix(int64(currentEpochInfo.CaptureTimestamp), 0).UTC()),

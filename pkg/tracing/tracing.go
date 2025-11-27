@@ -12,7 +12,6 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -46,7 +45,6 @@ func New(ctx context.Context, cfg Config) (*Tracer, error) {
 	exporter, err := otlptracegrpc.New(ctx,
 		otlptracegrpc.WithEndpoint(cfg.Endpoint),
 		otlptracegrpc.WithTLSCredentials(insecure.NewCredentials()),
-		otlptracegrpc.WithDialOption(grpc.WithBlock()),
 	)
 	if err != nil {
 		return nil, errors.Errorf("failed to create OTLP exporter: %w", err)
@@ -108,6 +106,9 @@ func (t *Tracer) Tracer() trace.Tracer {
 }
 
 // StartSpan starts a new span with the given name
+//
+//nolint:spancheck // Span is returned to caller who must call span.End()
 func (t *Tracer) StartSpan(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
-	return t.tracer.Start(ctx, spanName, opts...)
+	newCtx, span := t.tracer.Start(ctx, spanName, opts...)
+	return newCtx, span
 }

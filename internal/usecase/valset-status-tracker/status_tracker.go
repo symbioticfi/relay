@@ -12,6 +12,7 @@ import (
 
 	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
+	"github.com/symbioticfi/relay/pkg/tracing"
 	"github.com/symbioticfi/relay/symbiotic/client/evm"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -107,18 +108,29 @@ func (s *Service) Start(ctx context.Context) error {
 }
 
 func (s *Service) HandleProofAggregated(ctx context.Context, msg symbiotic.AggregationProof) error {
+	ctx, span := tracing.StartSpan(ctx, "status_tracker.HandleProofAggregated",
+		tracing.AttrEpoch.Int64(int64(msg.Epoch)),
+		tracing.AttrRequestID.String(msg.RequestID().Hex()),
+	)
+	defer span.End()
+
+	tracing.AddEvent(span, "loading_validator_set")
 	valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, msg.Epoch)
 	if err != nil {
-		return errors.Errorf("failed to get validator set: %w", err) // if not found then it's failure case
+		tracing.RecordError(span, err)
+		return errors.Errorf("failed to get validator set: %w", err)
 	}
 
 	if valset.Status != symbiotic.HeaderDerived {
+		tracing.AddEvent(span, "already_aggregated")
 		slog.DebugContext(ctx, "Validator set is already aggregated or committed", "epoch", valset.Epoch)
 		return nil
 	}
 
+	tracing.AddEvent(span, "updating_status")
 	valset.Status = symbiotic.HeaderAggregated
 	if err := s.cfg.Repo.UpdateValidatorSetStatus(ctx, valset); err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to save validator set: %w", err)
 	}
 
@@ -128,27 +140,40 @@ func (s *Service) HandleProofAggregated(ctx context.Context, msg symbiotic.Aggre
 }
 
 func (s *Service) trackCommittedEpochs(ctx context.Context) error {
+	ctx, span := tracing.StartSpan(ctx, "status_tracker.TrackCommittedEpochs")
+	defer span.End()
+
+	tracing.AddEvent(span, "loading_uncommitted_epoch")
 	firstUncommittedEpoch, err := s.cfg.Repo.GetFirstUncommittedValidatorSetEpoch(ctx)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get first uncommitted validator set epoch: %w", err)
 	}
 
+	tracing.AddEvent(span, "loading_latest_epoch")
 	latestEpoch, err := s.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityNotFound) {
 			slog.InfoContext(ctx, "No validator sets found, nothing to do")
 			return nil
 		}
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get latest validator set epoch: %w", err)
 	}
+
+	tracing.SetAttributes(span,
+		tracing.AttrEpoch.Int64(int64(firstUncommittedEpoch)),
+	)
 
 	if firstUncommittedEpoch > latestEpoch {
 		slog.DebugContext(ctx, "All validator sets are already committed, nothing to do", "firstUncommittedEpoch", firstUncommittedEpoch, "latestEpoch", latestEpoch)
 		return nil
 	}
 
+	tracing.AddEvent(span, "finding_settlements")
 	settlements, err := s.findLatestNonZeroSettlements(ctx)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to find latest settlements: %w", err)
 	}
 

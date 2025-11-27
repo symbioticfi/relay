@@ -88,7 +88,6 @@ func (s *SignerApp) RequestSignature(ctx context.Context, req symbiotic.Signatur
 	)
 	defer span.End()
 	ctx = log.WithComponent(ctx, "signer")
-	ctx = log.WithTraceContext(ctx)
 	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(req.RequiredEpoch)))
 
 	if !req.KeyTag.Type().SignerKey() {

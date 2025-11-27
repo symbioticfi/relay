@@ -9,6 +9,7 @@ import (
 
 	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
+	"github.com/symbioticfi/relay/pkg/tracing"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
@@ -146,44 +147,78 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 }
 
 func (s *Service) processPendingProof(ctx context.Context, proofKey symbiotic.ProofCommitKey) error {
+	ctx, span := tracing.StartSpan(ctx, "valset_listener.ProcessPendingProof",
+		tracing.AttrRequestID.String(proofKey.RequestID.Hex()),
+		tracing.AttrEpoch.Int64(int64(proofKey.Epoch)),
+	)
+	defer span.End()
+
 	ctx = log.WithAttrs(ctx,
 		slog.String("requestId", proofKey.RequestID.Hex()),
 		slog.Uint64("epoch", uint64(proofKey.Epoch)),
 	)
 	slog.DebugContext(ctx, "Found pending proof commit")
 
-	// get proof
+	tracing.AddEvent(span, "loading_proof")
 	proof, err := s.cfg.Repo.GetAggregationProof(ctx, proofKey.RequestID)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get aggregation proof for request ID %s: %w", proofKey.RequestID.Hex(), err)
 	}
 
+	tracing.SetAttributes(span, tracing.AttrProofSize.Int(len(proof.Proof)))
+
+	tracing.AddEvent(span, "loading_validator_set")
 	targetValset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, proofKey.Epoch)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get validator set by epoch %d: %w", proofKey.Epoch, err)
 	}
 
+	tracing.SetAttributes(span, tracing.AttrValidatorCount.Int(len(targetValset.Validators)))
 	s.cfg.Metrics.ObserveAggregationProofSize(len(proof.Proof), len(targetValset.Validators))
 
+	tracing.AddEvent(span, "loading_config")
 	config, err := s.cfg.EvmClient.GetConfig(ctx, targetValset.CaptureTimestamp, proofKey.Epoch)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get config for epoch %d: %w", proofKey.Epoch, err)
 	}
 
+	tracing.AddEvent(span, "generating_extra_data")
 	extraData, err := s.cfg.Aggregator.GenerateExtraData(targetValset, config.RequiredKeyTags)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to generate extra data for validator set: %w", err)
 	}
 
 	header, err := targetValset.GetHeader()
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get validator set header: %w", err)
 	}
 
+	pubkey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(header.RequiredKeyTag)
+	if err != nil {
+		return errors.Errorf("failed to get onchain key from cache: %w", err)
+	}
+
+	validator, found := targetValset.FindValidatorByKey(symbiotic.ValsetHeaderKeyTag, pubkey)
+	if !found {
+		return errors.Errorf("local validator not found")
+	}
+
+	ctx = log.WithAttrs(ctx,
+		slog.String("validatorAddress", validator.Operator.Hex()),
+	)
+	tracing.SetAttributes(span, tracing.AttrValidatorAddress.String(validator.Operator.Hex()))
+
 	slog.DebugContext(ctx, "Committing proof to settlements", "header", header, "extraData", extraData)
 
+	tracing.AddEvent(span, "committing_to_settlements")
 	err = s.commitValsetToAllSettlements(ctx, config, header, extraData, proof.Proof)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to commit valset to all settlements: %w", err)
 	}
 

@@ -13,7 +13,7 @@ import (
 
 func (s *Service) handleSignatureReadyMessage(pubSubMsg *pubsub.Message) error {
 	var signature prototypes.Signature
-	err := unmarshalMessage(pubSubMsg, &signature)
+	p2pMsg, err := unmarshalMessage(pubSubMsg, &signature)
 	if err != nil {
 		return errors.Errorf("failed to unmarshal signature message: %w", err)
 	}
@@ -50,13 +50,13 @@ func (s *Service) handleSignatureReadyMessage(pubSubMsg *pubsub.Message) error {
 	return s.signatureReceivedHandler.Emit(p2pEntity.P2PMessage[symbiotic.Signature]{
 		SenderInfo:   si,
 		Message:      msg,
-		TraceContext: signature.GetTraceContext(),
+		TraceContext: p2pMsg.GetTraceContext(),
 	})
 }
 
 func (s *Service) handleAggregatedProofReadyMessage(pubSubMsg *pubsub.Message) error {
 	var signaturesAggregated prototypes.AggregationProof
-	err := unmarshalMessage(pubSubMsg, &signaturesAggregated)
+	p2pMsg, err := unmarshalMessage(pubSubMsg, &signaturesAggregated)
 	if err != nil {
 		return errors.Errorf("failed to unmarshal signature message: %w", err)
 	}
@@ -84,7 +84,7 @@ func (s *Service) handleAggregatedProofReadyMessage(pubSubMsg *pubsub.Message) e
 	return s.signaturesAggregatedHandler.Emit(p2pEntity.P2PMessage[symbiotic.AggregationProof]{
 		SenderInfo:   si,
 		Message:      msg,
-		TraceContext: signaturesAggregated.GetTraceContext(),
+		TraceContext: p2pMsg.GetTraceContext(),
 	})
 }
 
@@ -106,15 +106,15 @@ func extractSenderInfo(pubSubMsg *pubsub.Message) (p2pEntity.SenderInfo, error) 
 	}, nil
 }
 
-func unmarshalMessage(msg *pubsub.Message, v proto.Message) error {
+func unmarshalMessage(msg *pubsub.Message, v proto.Message) (*prototypes.P2PMessage, error) {
 	var message prototypes.P2PMessage
 	if err := proto.Unmarshal(msg.GetData(), &message); err != nil {
-		return errors.Errorf("failed to unmarshal message: %w", err)
+		return nil, errors.Errorf("failed to unmarshal message: %w", err)
 	}
 
 	if err := proto.Unmarshal(message.GetData(), v); err != nil {
-		return errors.Errorf("failed to unmarshal message: %w", err)
+		return nil, errors.Errorf("failed to unmarshal message: %w", err)
 	}
 
-	return nil
+	return &message, nil
 }

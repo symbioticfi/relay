@@ -10,6 +10,7 @@ import (
 
 	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
+	"github.com/symbioticfi/relay/pkg/tracing"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
@@ -99,41 +100,50 @@ func (s *Service) Start(ctx context.Context) {
 }
 
 func (s *Service) runPruning(ctx context.Context) error {
+	ctx, span := tracing.StartSpan(ctx, "pruner.RunPruning")
+	defer span.End()
+
 	start := time.Now()
 
+	tracing.AddEvent(span, "loading_latest_epoch")
 	latestEpoch, err := s.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityNotFound) {
 			slog.DebugContext(ctx, "Pruning skipped", "reason", "no validator sets in storage yet")
 			return nil
 		}
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get latest validator set epoch: %w", err)
 	}
 
+	tracing.SetAttributes(span, tracing.AttrEpoch.Int64(int64(latestEpoch)))
+
+	tracing.AddEvent(span, "loading_oldest_epoch")
 	oldestStoredEpoch, err := s.cfg.Repo.GetOldestValidatorSetEpoch(ctx)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get oldest validator set epoch: %w", err)
 	}
 
-	// Prune each entity type according to its retention setting
+	tracing.AddEvent(span, "pruning_valsets")
 	valsetCount, err := s.pruneValsetEntities(ctx, latestEpoch, oldestStoredEpoch)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to prune valset entities", "error", err)
 	}
 
+	tracing.AddEvent(span, "pruning_proofs")
 	proofCount, err := s.pruneProofEntities(ctx, latestEpoch, oldestStoredEpoch)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to prune proof entities", "error", err)
 	}
 
+	tracing.AddEvent(span, "pruning_signatures")
 	signatureCount, err := s.pruneSignatureEntities(ctx, latestEpoch, oldestStoredEpoch)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to prune signature entities", "error", err)
 	}
 
-	// Clean up request ID epoch indices AFTER both proofs and signatures have been pruned
-	// This ensures indices are only deleted when both the proof and signatures are gone,
-	// which is important when proof and signature retention settings differ
+	tracing.AddEvent(span, "pruning_indices")
 	indexCount, err := s.pruneRequestIDEpochIndices(ctx, latestEpoch, oldestStoredEpoch)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to prune request ID epoch indices", "error", err)

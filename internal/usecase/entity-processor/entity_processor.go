@@ -75,7 +75,6 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature symbio
 	)
 	defer span.End()
 
-	ctx = log.WithTraceContext(ctx)
 	ctx = log.WithAttrs(ctx,
 		slog.String("requestId", signature.RequestID().Hex()),
 		slog.Uint64("epoch", uint64(signature.Epoch)),
@@ -145,7 +144,6 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregati
 	)
 	defer span.End()
 
-	ctx = log.WithTraceContext(ctx)
 	ctx = log.WithAttrs(ctx,
 		slog.String("requestId", aggregationProof.RequestID().Hex()),
 		slog.Uint64("epoch", uint64(aggregationProof.Epoch)),

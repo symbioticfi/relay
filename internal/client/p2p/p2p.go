@@ -14,6 +14,9 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
@@ -251,9 +254,18 @@ func (s *Service) broadcast(ctx context.Context, topicName string, data []byte) 
 	}
 
 	msg := prototypes.P2PMessage{
-		Sender:    s.host.ID().String(),
-		Timestamp: time.Now().Unix(),
-		Data:      data,
+		Sender:       s.host.ID().String(),
+		Timestamp:    time.Now().Unix(),
+		Data:         data,
+		TraceContext: nil,
+	}
+
+	// Inject trace context if span is recording
+	span := trace.SpanFromContext(ctx)
+	if span.IsRecording() {
+		carrier := propagation.MapCarrier{}
+		otel.GetTextMapPropagator().Inject(ctx, carrier)
+		msg.TraceContext = carrier
 	}
 
 	// Marshal and send the message
@@ -324,11 +336,13 @@ func (s *Service) StartGRPCServer(ctx context.Context) error {
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.ChainUnaryInterceptor(
 			server.PanicRecoveryInterceptor(),
+			server.TraceContextInterceptor(),
 			s.metrics.UnaryServerInterceptor(),
 			server.LoggingInterceptor(true),
 		),
 		grpc.ChainStreamInterceptor(
 			server.StreamPanicRecoveryInterceptor(),
+			server.StreamTraceContextInterceptor(),
 			s.metrics.StreamServerInterceptor(),
 			//nolint:contextcheck // the context comes from th stream
 			server.StreamLoggingInterceptor(true),

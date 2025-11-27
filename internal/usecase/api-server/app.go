@@ -132,12 +132,14 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.ChainUnaryInterceptor(
 			server.PanicRecoveryInterceptor(),
+			server.TraceContextInterceptor(),
 			cfg.Metrics.UnaryServerInterceptor(),
 			server.LoggingInterceptor(cfg.VerboseLogging),
 			ErrorHandlingInterceptor(),
 		),
 		grpc.ChainStreamInterceptor(
 			server.StreamPanicRecoveryInterceptor(),
+			server.StreamTraceContextInterceptor(),
 			cfg.Metrics.StreamServerInterceptor(),
 			//nolint:contextcheck // the context comes from th stream
 			server.StreamLoggingInterceptor(cfg.VerboseLogging),

@@ -60,13 +60,17 @@ func runApp(ctx context.Context) error {
 			return errors.Errorf("failed to create tracer: %w", err)
 		}
 		defer func() {
-			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
+			shutdownCtx, shutdownCancel := context.WithTimeout(ctx, 5*time.Second)
+			defer shutdownCancel()
 			if err := tracer.Shutdown(shutdownCtx); err != nil {
 				slog.ErrorContext(ctx, "Failed to shutdown tracer", "error", err)
 			}
 		}()
-		slog.InfoContext(ctx, "Tracing enabled", "endpoint", cfg.Tracing.Endpoint, "service", tracing.ServiceName)
+		slog.InfoContext(ctx, "Tracing enabled",
+			"endpoint", cfg.Tracing.Endpoint,
+			"service", tracing.ServiceName,
+			"sampleRate", cfg.Tracing.SampleRate,
+		)
 	}
 
 	var keyProvider *keyprovider.CacheKeyProvider

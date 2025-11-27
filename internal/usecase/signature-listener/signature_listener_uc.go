@@ -61,7 +61,6 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 	)
 	defer span.End()
 	ctx = log.WithComponent(ctx, "sign_listener")
-	ctx = log.WithTraceContext(ctx)
 	ctx = log.WithAttrs(ctx,
 		slog.Uint64("epoch", uint64(p2pMsg.Message.Epoch)),
 		slog.String("requestId", p2pMsg.Message.RequestID().Hex()),
