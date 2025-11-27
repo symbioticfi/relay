@@ -11,6 +11,7 @@ import (
 	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/signals"
+	"github.com/symbioticfi/relay/pkg/tracing"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
@@ -67,6 +68,14 @@ func NewEntityProcessor(cfg Config) (*EntityProcessor, error) {
 
 // ProcessSignature processes a signature with SignatureMap operations and optionally saves SignatureRequest
 func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature symbiotic.Signature, self bool) error {
+	ctx, span := tracing.StartSpan(ctx, "entity_processor.ProcessSignature",
+		tracing.AttrRequestID.String(signature.RequestID().Hex()),
+		tracing.AttrEpoch.Int64(int64(signature.Epoch)),
+		tracing.AttrKeyTag.String(signature.KeyTag.String()),
+	)
+	defer span.End()
+
+	ctx = log.WithTraceContext(ctx)
 	ctx = log.WithAttrs(ctx,
 		slog.String("requestId", signature.RequestID().Hex()),
 		slog.Uint64("epoch", uint64(signature.Epoch)),
@@ -74,46 +83,69 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature symbio
 	)
 	slog.DebugContext(ctx, "Started processing signature", "self", self)
 
+	tracing.AddEvent(span, "looking_up_validator")
 	validator, activeIndex, err := s.cfg.Repo.GetValidatorByKey(ctx, signature.Epoch, signature.KeyTag, signature.PublicKey.OnChain())
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("validator not found for public key %x, keyTag=%v, epoch=%v: %w", signature.PublicKey.OnChain(), signature.KeyTag, signature.Epoch, err)
 	}
+
+	tracing.SetAttributes(span, tracing.AttrValidatorIndex.Int(int(activeIndex)))
 
 	// if self signature ignore validator check and signature existence check
 	if !self {
 		if !validator.IsActive {
-			return errors.Errorf("validator %s is not active", validator.Operator.Hex())
+			err := errors.Errorf("validator %s is not active", validator.Operator.Hex())
+			tracing.RecordError(span, err)
+			return err
 		}
 
-		// check if signature already exists
+		tracing.AddEvent(span, "checking_signature_existence")
 		_, err = s.cfg.Repo.GetSignatureByIndex(ctx, signature.RequestID(), activeIndex)
 		if err == nil {
+			tracing.AddEvent(span, "signature_already_exists")
 			return errors.Errorf("signature already exists for request ID %s and validator index %d: %w", signature.RequestID().Hex(), activeIndex, entity.ErrEntityAlreadyExist)
 		}
 		if !errors.Is(err, entity.ErrEntityNotFound) {
+			tracing.RecordError(span, err)
 			return errors.Errorf("failed to check existing signature: %w", err)
 		}
 
+		tracing.AddEvent(span, "verifying_signature")
 		err = signature.PublicKey.VerifyWithHash(signature.MessageHash, signature.Signature)
 		if err != nil {
+			tracing.RecordError(span, err)
 			return errors.Errorf("failed to verify signature: %w", err)
 		}
 	}
 
+	tracing.AddEvent(span, "saving_signature")
 	if err := s.cfg.Repo.SaveSignature(ctx, signature, validator, activeIndex); err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to add signature: %w", err)
 	}
 
-	// Emit signal after successful processing
+	tracing.AddEvent(span, "emitting_signal")
 	if err := s.cfg.SignatureProcessedSignal.Emit(signature); err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to emit signature processed signal: %w", err)
 	}
 
+	tracing.AddEvent(span, "signature_processed")
 	return nil
 }
 
 // ProcessAggregationProof processes an aggregation proof by saving it and removing from pending collection
 func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregationProof symbiotic.AggregationProof) error {
+	ctx, span := tracing.StartSpan(ctx, "entity_processor.ProcessAggregationProof",
+		tracing.AttrRequestID.String(aggregationProof.RequestID().Hex()),
+		tracing.AttrEpoch.Int64(int64(aggregationProof.Epoch)),
+		tracing.AttrKeyTag.String(aggregationProof.KeyTag.String()),
+		tracing.AttrProofSize.Int(len(aggregationProof.Proof)),
+	)
+	defer span.End()
+
+	ctx = log.WithTraceContext(ctx)
 	ctx = log.WithAttrs(ctx,
 		slog.String("requestId", aggregationProof.RequestID().Hex()),
 		slog.Uint64("epoch", uint64(aggregationProof.Epoch)),
@@ -121,37 +153,52 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregati
 	)
 	slog.DebugContext(ctx, "Started processing aggregation proof")
 
+	tracing.AddEvent(span, "checking_proof_existence")
 	_, err := s.cfg.Repo.GetAggregationProof(ctx, aggregationProof.RequestID())
 	if err == nil {
+		tracing.AddEvent(span, "proof_already_exists")
 		return errors.Errorf("aggregation proof already exists for request ID %s: %w", aggregationProof.RequestID().Hex(), entity.ErrEntityAlreadyExist)
 	}
 	if !errors.Is(err, entity.ErrEntityNotFound) {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to check existing aggregation proof: %w", err)
 	}
 
+	tracing.AddEvent(span, "loading_validator_set")
 	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, aggregationProof.Epoch)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get validator set for epoch %d: %w", aggregationProof.Epoch, err)
 	}
 
+	tracing.SetAttributes(span, tracing.AttrValidatorCount.Int(len(validatorSet.Validators)))
+
+	tracing.AddEvent(span, "verifying_proof")
 	ok, err := s.cfg.Aggregator.Verify(validatorSet, aggregationProof.KeyTag, aggregationProof)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to verify aggregation proof: %w", err)
 	}
 	if !ok {
-		return errors.Errorf("aggregation proof invalid")
+		err := errors.Errorf("aggregation proof invalid")
+		tracing.RecordError(span, err)
+		return err
 	}
 
+	tracing.AddEvent(span, "saving_proof")
 	if err := s.cfg.Repo.SaveProof(ctx, aggregationProof); err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to add aggregation proof: %w", err)
 	}
 
 	slog.DebugContext(ctx, "Proof saved")
 
-	// Emit signal after successful save
+	tracing.AddEvent(span, "emitting_signal")
 	if err := s.cfg.AggProofSignal.Emit(aggregationProof); err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to emit aggregation proof signal: %w", err)
 	}
 
+	tracing.AddEvent(span, "proof_processed")
 	return nil
 }
