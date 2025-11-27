@@ -251,6 +251,11 @@ func (s *Service) determineSyncRangeFromLatestWithHeader(
 		}
 	}
 
+	slog.InfoContext(ctx, "Determined sync range from latest header",
+		"latestStoredEpoch", latestHeader.Epoch,
+		"currentEpoch", currentEpoch,
+	)
+
 	return latestHeader.Epoch + 1, currentEpoch, nil
 }
 
