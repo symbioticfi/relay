@@ -287,5 +287,5 @@ func (s *Service) commitValsetToAllSettlements(ctx context.Context, config symbi
 		)
 	}
 
-	return len(errs) != len(config.Settlements), errors.Join(errs...)
+	return len(config.Settlements) == 0 || len(errs) != len(config.Settlements), errors.Join(errs...)
 }
