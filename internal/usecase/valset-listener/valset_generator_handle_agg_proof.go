@@ -182,9 +182,12 @@ func (s *Service) processPendingProof(ctx context.Context, proofKey symbiotic.Pr
 
 	slog.DebugContext(ctx, "Committing proof to settlements", "header", header, "extraData", extraData)
 
-	err = s.commitValsetToAllSettlements(ctx, config, header, extraData, proof.Proof)
-	if err != nil {
-		return errors.Errorf("failed to commit valset to all settlements: %w", err)
+	ok, err := s.commitValsetToAllSettlements(ctx, config, header, extraData, proof.Proof)
+	if !ok {
+		return errors.Errorf("failed to commit valset to all settlements for epoch %d, error=%w", proofKey.Epoch, err)
+	} else if err != nil {
+		// on partial failure just log error and continue, we will retry later
+		slog.ErrorContext(ctx, "Failed to commit valset to some settlements", "error", err)
 	}
 
 	return nil
@@ -240,9 +243,11 @@ func (s *Service) detectLastCommittedEpochFromChain(ctx context.Context, config 
 //  2. False negatives (missing a commitment due to reorg) will be corrected in the next iteration
 //  3. The performance benefit of reduced latency outweighs the minimal reorg risk
 //  4. Final cleanup only happens after finalized block confirmation in the status tracker
-func (s *Service) commitValsetToAllSettlements(ctx context.Context, config symbiotic.NetworkConfig, header symbiotic.ValidatorSetHeader, extraData []symbiotic.ExtraData, proof []byte) error {
-	errs := make([]error, len(config.Settlements))
-	for i, settlement := range config.Settlements {
+//
+// Returns a bool to indicate if at least once settlement commit worked and error if any commitment fails
+func (s *Service) commitValsetToAllSettlements(ctx context.Context, config symbiotic.NetworkConfig, header symbiotic.ValidatorSetHeader, extraData []symbiotic.ExtraData, proof []byte) (bool, error) {
+	errs := []error{}
+	for _, settlement := range config.Settlements {
 		slog.DebugContext(ctx, "Attempting to commit valset header to settlement", "settlement", settlement)
 
 		// todo replace it with tx check instead of call to contract
@@ -250,7 +255,7 @@ func (s *Service) commitValsetToAllSettlements(ctx context.Context, config symbi
 		// return false positive and trigger one more commitment tx
 		committed, err := s.cfg.EvmClient.IsValsetHeaderCommittedAt(ctx, settlement, header.Epoch, symbiotic.WithEVMBlockNumber(symbiotic.BlockNumberLatest))
 		if err != nil {
-			errs[i] = errors.Errorf("failed to check if header is committed at epoch %d: %v/%s: %w", header.Epoch, settlement.ChainId, settlement.Address.Hex(), err)
+			errs = append(errs, errors.Errorf("failed to check if header is committed at epoch %d: %v/%s: %w", header.Epoch, settlement.ChainId, settlement.Address.Hex(), err))
 			continue
 		}
 
@@ -261,18 +266,18 @@ func (s *Service) commitValsetToAllSettlements(ctx context.Context, config symbi
 
 		lastCommittedEpoch, err := s.cfg.EvmClient.GetLastCommittedHeaderEpoch(ctx, settlement, symbiotic.WithEVMBlockNumber(symbiotic.BlockNumberLatest))
 		if err != nil {
-			errs[i] = errors.Errorf("failed to get last committed header epoch: %v/%s: %w", settlement.ChainId, settlement.Address.Hex(), err)
+			errs = append(errs, errors.Errorf("failed to get last committed header epoch: %v/%s: %w", settlement.ChainId, settlement.Address.Hex(), err))
 			continue
 		}
 
 		if header.Epoch != lastCommittedEpoch+1 {
-			errs[i] = errors.Errorf("commits should be consequent: %v/%s", settlement.ChainId, settlement.Address.Hex())
+			errs = append(errs, errors.Errorf("commits should be consequent: %v/%s", settlement.ChainId, settlement.Address.Hex()))
 			continue
 		}
 
 		result, err := s.cfg.EvmClient.CommitValsetHeader(ctx, settlement, header, extraData, proof)
 		if err != nil {
-			errs[i] = errors.Errorf("failed to commit valset header to settlement %v/%s: %w", settlement.ChainId, settlement.Address.Hex(), err)
+			errs = append(errs, errors.Errorf("failed to commit valset header to settlement %v/%s: %w", settlement.ChainId, settlement.Address.Hex(), err))
 			continue
 		}
 
@@ -282,5 +287,5 @@ func (s *Service) commitValsetToAllSettlements(ctx context.Context, config symbi
 		)
 	}
 
-	return errors.Join(errs...)
+	return len(errs) != len(config.Settlements), errors.Join(errs...)
 }
