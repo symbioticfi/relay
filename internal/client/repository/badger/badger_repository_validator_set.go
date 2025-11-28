@@ -262,7 +262,7 @@ func (r *Repository) UpdateValidatorSetStatusAndRemovePendingProof(ctx context.C
 			return errors.Errorf("failed to update validator set status: %w", err)
 		}
 
-		if err := r.RemoveProofCommitPending(ctx, valset.Epoch); err != nil {
+		if err := r.RemoveProofCommitPending(ctx, valset.Epoch); err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 			return errors.Errorf("failed to remove proof commit pending: %w", err)
 		}
 
