@@ -156,7 +156,9 @@ func (r *Repository) doViewInTx(ctx context.Context, name string, f func(ctx con
 	r.metrics.ObserveRepoQueryTotalDuration(queryName, lo.Ternary(err == nil, "ok", "error"), time.Since(start))
 
 	if err != nil {
-		tracing.RecordError(span, err)
+		if !errors.Is(err, entity.ErrEntityNotFound) {
+			tracing.RecordError(span, err)
+		}
 		return errors.Errorf("failed to do view in tx: %w", err)
 	}
 

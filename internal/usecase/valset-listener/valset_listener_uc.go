@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
@@ -112,31 +113,49 @@ func (s *Service) LoadAllMissingEpochs(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-retryTimer.C:
-			fromEpoch, toEpoch, err := s.determineStartupSyncRange(ctx)
-			if err != nil {
-				retryCount++
-				if retryCount >= maxRetries {
-					return errors.Errorf("failed to load missing epochs after %d retries: %w", maxRetries, err)
-				}
-				slog.ErrorContext(ctx, "Failed to load missing epochs, retrying", "error", err, "attempt", retryCount, "maxRetries", maxRetries)
-				retryTimer.Reset(time.Second * 2)
-				continue
+			err := s.determineStartupSyncRangeAndLoadMissingEpochs(ctx)
+			if err == nil {
+				slog.InfoContext(ctx, "Successfully loaded all missing epochs")
+				return nil
 			}
 
-			if _, err := s.tryLoadMissingEpochs(ctx, fromEpoch, toEpoch); err != nil {
-				retryCount++
-				if retryCount >= maxRetries {
-					return errors.Errorf("failed to load missing epochs after %d retries: %w", maxRetries, err)
-				}
-				slog.ErrorContext(ctx, "Failed to load missing epochs, retrying", "error", err, "attempt", retryCount, "maxRetries", maxRetries)
-				retryTimer.Reset(time.Second * 2)
-				continue
+			slog.ErrorContext(ctx, "Failed to load missing epochs, retrying", "error", err, "attempt", retryCount, "maxRetries", maxRetries)
+
+			retryCount++
+			if retryCount >= maxRetries {
+				return errors.Errorf("failed to load missing epochs after %d retries: %w", maxRetries, err)
 			}
 
-			slog.InfoContext(ctx, "Successfully loaded all missing epochs")
-			return nil
+			retryTimer.Reset(time.Second * 2)
 		}
 	}
+}
+
+func (s *Service) determineStartupSyncRangeAndLoadMissingEpochs(ctx context.Context) error {
+	ctx, span := tracing.StartSpan(ctx, "valset_listener.DetermineStartupSyncRangeAndLoadMissingEpochs")
+	defer span.End()
+
+	tracing.AddEvent(span, "determining_startup_sync_range")
+	fromEpoch, toEpoch, err := s.determineStartupSyncRange(ctx)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return errors.Errorf("failed to determine startup sync range: %w", err)
+	}
+
+	tracing.SetAttributes(span,
+		attribute.Int64("from_epoch", int64(fromEpoch)),
+		attribute.Int64("to_epoch", int64(toEpoch)),
+		attribute.Int64("epochs_to_sync", int64(toEpoch-fromEpoch+1)),
+	)
+
+	tracing.AddEvent(span, "loading_missing_epochs")
+	if _, err := s.tryLoadMissingEpochs(ctx, fromEpoch, toEpoch); err != nil {
+		tracing.RecordError(span, err)
+		return errors.Errorf("failed to load missing epochs: %w", err)
+	}
+
+	tracing.AddEvent(span, "startup_sync_completed")
+	return nil
 }
 
 func (s *Service) Start(ctx context.Context) error {
@@ -150,21 +169,50 @@ func (s *Service) Start(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-timer.C:
-			fromEpoch, toEpoch, err := s.determineSteadySyncRange(ctx)
+			timerInterval, err := s.determineSteadySyncRangeAndLoadMissingEpochs(ctx)
 			if err != nil {
-				slog.ErrorContext(ctx, "Failed to determine sync range", "error", err)
-				timer.Reset(s.cfg.PollingInterval)
-				continue
+				slog.ErrorContext(ctx, "Failed to load missing epochs", "error", err)
 			}
-
-			timeUntilNextEpoch, err := s.tryLoadMissingEpochs(ctx, fromEpoch, toEpoch)
-			if err != nil {
-				slog.ErrorContext(ctx, "Failed to process epochs", "error", err)
-			}
-
-			timer.Reset(timeUntilNextEpoch)
+			timer.Reset(timerInterval)
 		}
 	}
+}
+
+func (s *Service) determineSteadySyncRangeAndLoadMissingEpochs(ctx context.Context) (time.Duration, error) {
+	ctx, span := tracing.StartSpan(ctx, "valset_listener.DetermineSteadySyncRangeAndLoadMissingEpochs")
+	defer span.End()
+
+	tracing.AddEvent(span, "determining_steady_sync_range")
+	fromEpoch, toEpoch, err := s.determineSteadySyncRange(ctx)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return s.cfg.PollingInterval, errors.Errorf("failed to determine steady sync range: %w", err)
+	}
+
+	epochsToSync := int64(0)
+	if toEpoch >= fromEpoch {
+		epochsToSync = int64(toEpoch - fromEpoch + 1)
+	}
+
+	tracing.SetAttributes(span,
+		attribute.Int64("from_epoch", int64(fromEpoch)),
+		attribute.Int64("to_epoch", int64(toEpoch)),
+		attribute.Int64("epochs_to_sync", epochsToSync),
+	)
+
+	tracing.AddEvent(span, "loading_missing_epochs")
+	timeUntilNextEpoch, err := s.tryLoadMissingEpochs(ctx, fromEpoch, toEpoch)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return timeUntilNextEpoch, errors.Errorf("failed to load missing epochs: %w", err)
+	}
+
+	tracing.SetAttributes(span,
+		attribute.String("time_until_next_epoch", timeUntilNextEpoch.String()),
+	)
+
+	tracing.AddEvent(span, "steady_sync_completed")
+	return timeUntilNextEpoch, nil
 }
 
 func (s *Service) determineStartupSyncRange(ctx context.Context) (from symbiotic.Epoch, to symbiotic.Epoch, err error) {
