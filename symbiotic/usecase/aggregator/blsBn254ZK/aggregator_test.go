@@ -1,6 +1,7 @@
 package blsBn254ZK
 
 import (
+	"context"
 	"math/big"
 	"testing"
 
@@ -339,7 +340,7 @@ func TestAggregator_GenerateExtraData_WithValidValidators_ReturnsExtraData(t *te
 
 	keyTags := []symbiotic.KeyTag{symbiotic.KeyTag(1)}
 
-	result, err := agg.GenerateExtraData(valset, keyTags)
+	result, err := agg.GenerateExtraData(context.Background(), valset, keyTags)
 
 	require.NoError(t, err)
 	assert.NotEmpty(t, result)
@@ -379,7 +380,7 @@ func TestAggregator_GenerateExtraData_WithMultipleKeyTags_ReturnsMultipleExtraDa
 
 	keyTags := []symbiotic.KeyTag{symbiotic.KeyTag(1), symbiotic.KeyTag(2)}
 
-	result, err := agg.GenerateExtraData(valset, keyTags)
+	result, err := agg.GenerateExtraData(context.Background(), valset, keyTags)
 
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, len(result), 3)
@@ -410,7 +411,7 @@ func TestAggregator_GenerateExtraData_ReturnsSortedData(t *testing.T) {
 
 	keyTags := []symbiotic.KeyTag{symbiotic.KeyTag(1)}
 
-	result, err := agg.GenerateExtraData(valset, keyTags)
+	result, err := agg.GenerateExtraData(context.Background(), valset, keyTags)
 
 	require.NoError(t, err)
 	require.NotEmpty(t, result)

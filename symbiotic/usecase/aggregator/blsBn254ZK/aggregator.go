@@ -2,6 +2,7 @@ package blsBn254ZK
 
 import (
 	"bytes"
+	"context"
 	"math/big"
 	"sort"
 
@@ -15,6 +16,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
+
+	"github.com/symbioticfi/relay/pkg/tracing"
 )
 
 type Aggregator struct {
@@ -157,11 +160,18 @@ func (a Aggregator) Verify(
 	return ok, nil
 }
 
-func (a Aggregator) GenerateExtraData(valset symbiotic.ValidatorSet, keyTags []symbiotic.KeyTag) ([]symbiotic.ExtraData, error) {
+func (a Aggregator) GenerateExtraData(ctx context.Context, valset symbiotic.ValidatorSet, keyTags []symbiotic.KeyTag) ([]symbiotic.ExtraData, error) {
+	_, span := tracing.StartSpan(ctx, "GenerateExtraData",
+		tracing.AttrEpoch.Int64(int64(valset.Epoch)),
+		tracing.AttrValidatorCount.Int(len(valset.Validators)),
+	)
+	defer span.End()
+
 	extraData := make([]symbiotic.ExtraData, 0)
 
 	totalActiveValidatorsKey, err := helpers.GetExtraDataKey(symbiotic.VerificationTypeBlsBn254ZK, symbiotic.ZkVerificationTotalActiveValidatorsHash)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return nil, errors.Errorf("failed to get extra data key: %w", err)
 	}
 
@@ -174,15 +184,21 @@ func (a Aggregator) GenerateExtraData(valset symbiotic.ValidatorSet, keyTags []s
 	})
 
 	aggregatedPubKeys := helpers.GetAggregatedPubKeys(valset, keyTags)
+	tracing.SetAttributes(span, tracing.AttrKeyTag.Int(len(aggregatedPubKeys)))
 
 	for _, key := range aggregatedPubKeys {
+		tracing.AddEvent(span, "processing_key_tag", tracing.AttrKeyTag.String(key.Tag.String()))
+
+		tracing.AddEvent(span, "calculating_mimc_accumulator")
 		mimcAccumulator, err := validatorSetMimcAccumulator(valset.Validators, key.Tag)
 		if err != nil {
+			tracing.RecordError(span, err)
 			return nil, errors.Errorf("failed to generate validator set MiMC accumulator: %w", err)
 		}
 
 		validatorSetHashKey, err := helpers.GetExtraDataKeyTagged(symbiotic.VerificationTypeBlsBn254ZK, key.Tag, symbiotic.ZkVerificationValidatorSetHashMimcHash)
 		if err != nil {
+			tracing.RecordError(span, err)
 			return nil, errors.Errorf("failed to get extra data key: %w", err)
 		}
 
@@ -190,13 +206,17 @@ func (a Aggregator) GenerateExtraData(valset symbiotic.ValidatorSet, keyTags []s
 			Key:   validatorSetHashKey,
 			Value: mimcAccumulator,
 		})
+
+		tracing.AddEvent(span, "key_tag_processed")
 	}
 
+	tracing.AddEvent(span, "sorting_extra_data")
 	// sort extra data by key to ensure deterministic order
 	sort.Slice(extraData, func(i, j int) bool {
 		return bytes.Compare(extraData[i].Key[:], extraData[j].Key[:]) < 0
 	})
 
+	tracing.SetAttributes(span, tracing.AttrKeyTag.Int(len(extraData)))
 	return extraData, nil
 }
 

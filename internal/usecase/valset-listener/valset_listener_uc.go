@@ -401,7 +401,7 @@ func (s *Service) process(ctx context.Context, prevValSet symbiotic.ValidatorSet
 	}
 
 	tracing.AddEvent(span, "generating_extra_data")
-	extraData, err := s.cfg.Aggregator.GenerateExtraData(valSet, config.RequiredKeyTags)
+	extraData, err := s.cfg.Aggregator.GenerateExtraData(ctx, valSet, config.RequiredKeyTags)
 	if err != nil {
 		tracing.RecordError(span, err)
 		return errors.Errorf("failed to generate extra data: %w", err)

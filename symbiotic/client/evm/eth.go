@@ -175,7 +175,7 @@ func NewEvmClient(ctx context.Context, cfg Config) (*Client, error) {
 			return nil, errors.Errorf("failed to get chain ID: %w", err)
 		}
 
-		conns[chainID.Uint64()] = client
+		conns[chainID.Uint64()] = newTracingConn(chainID.Uint64(), client)
 
 		if cfg.Metrics != nil {
 			cfg.Metrics.ObserveEVMMethodCall("CommitValSetHeader", chainID.Uint64(), "success", 0)

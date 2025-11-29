@@ -6,9 +6,11 @@ import (
 	"math/big"
 	"strconv"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/go-errors/errors"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/symbioticfi/relay/pkg/tracing"
@@ -18,6 +20,464 @@ import (
 
 type tracingDriver struct {
 	base driverContract
+}
+
+type tracingConn struct {
+	base    conn
+	chainID uint64
+}
+
+var (
+	_ conn                         = (*tracingConn)(nil)
+	_ bind.PendingContractCaller   = (*tracingConn)(nil)
+	_ bind.BlockHashContractCaller = (*tracingConn)(nil)
+)
+
+func newTracingConn(chainID uint64, base conn) conn {
+	if base == nil {
+		return nil
+	}
+
+	if _, ok := base.(*tracingConn); ok {
+		return base
+	}
+
+	return &tracingConn{
+		base:    base,
+		chainID: chainID,
+	}
+}
+
+func (t *tracingConn) CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error) {
+	ctx = ensureContext(ctx)
+	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.CodeAt",
+		t.spanAttributes("CodeAt",
+			tracing.AttrAddress.String(contract.Hex()),
+			attribute.String("block.number", blockNumberValue(blockNumber)),
+		)...,
+	)
+	defer span.End()
+
+	code, err := t.base.CodeAt(ctx, contract, blockNumber)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return nil, err
+	}
+
+	tracing.SetAttributes(span,
+		attribute.Int("response.length", len(code)),
+	)
+
+	return code, nil
+}
+
+func (t *tracingConn) CodeAtHash(ctx context.Context, contract common.Address, blockHash common.Hash) ([]byte, error) {
+	ctx = ensureContext(ctx)
+	blockHasher, ok := t.base.(bind.BlockHashContractCaller)
+	if !ok {
+		return nil, bind.ErrNoBlockHashState
+	}
+
+	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.CodeAtHash",
+		t.spanAttributes("CodeAtHash",
+			tracing.AttrAddress.String(contract.Hex()),
+			attribute.String("block.hash", blockHash.Hex()),
+		)...,
+	)
+	defer span.End()
+
+	code, err := blockHasher.CodeAtHash(ctx, contract, blockHash)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return nil, err
+	}
+
+	tracing.SetAttributes(span,
+		attribute.Int("response.length", len(code)),
+	)
+
+	return code, nil
+}
+
+func (t *tracingConn) CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
+	ctx = ensureContext(ctx)
+	attrs := append(t.spanAttributes("CallContract",
+		attribute.String("block.number", blockNumberValue(blockNumber)),
+	), callMsgAttributes(call)...)
+
+	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.CallContract", attrs...)
+	defer span.End()
+
+	result, err := t.base.CallContract(ctx, call, blockNumber)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return nil, err
+	}
+
+	tracing.SetAttributes(span,
+		attribute.Int("response.length", len(result)),
+	)
+
+	return result, nil
+}
+
+func (t *tracingConn) CallContractAtHash(ctx context.Context, call ethereum.CallMsg, blockHash common.Hash) ([]byte, error) {
+	ctx = ensureContext(ctx)
+	blockHasher, ok := t.base.(bind.BlockHashContractCaller)
+	if !ok {
+		return nil, bind.ErrNoBlockHashState
+	}
+
+	attrs := append(t.spanAttributes("CallContractAtHash",
+		attribute.String("block.hash", blockHash.Hex()),
+	), callMsgAttributes(call)...)
+
+	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.CallContractAtHash", attrs...)
+	defer span.End()
+
+	result, err := blockHasher.CallContractAtHash(ctx, call, blockHash)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return nil, err
+	}
+
+	tracing.SetAttributes(span,
+		attribute.Int("response.length", len(result)),
+	)
+
+	return result, nil
+}
+
+func (t *tracingConn) PendingCallContract(ctx context.Context, call ethereum.CallMsg) ([]byte, error) {
+	ctx = ensureContext(ctx)
+	pendingCaller, ok := t.base.(bind.PendingContractCaller)
+	if !ok {
+		return nil, bind.ErrNoPendingState
+	}
+
+	attrs := append(t.spanAttributes("PendingCallContract"), callMsgAttributes(call)...)
+
+	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.PendingCallContract", attrs...)
+	defer span.End()
+
+	result, err := pendingCaller.PendingCallContract(ctx, call)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return nil, err
+	}
+
+	tracing.SetAttributes(span,
+		attribute.Int("response.length", len(result)),
+	)
+
+	return result, nil
+}
+
+func (t *tracingConn) HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error) {
+	ctx = ensureContext(ctx)
+	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.HeaderByNumber",
+		t.spanAttributes("HeaderByNumber",
+			attribute.String("block.number", blockNumberValue(number)),
+		)...,
+	)
+	defer span.End()
+
+	header, err := t.base.HeaderByNumber(ctx, number)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return nil, err
+	}
+
+	if header != nil {
+		tracing.SetAttributes(span,
+			attribute.String("response.hash", header.Hash().Hex()),
+			attribute.String("response.number", header.Number.String()),
+		)
+	}
+
+	return header, nil
+}
+
+func (t *tracingConn) PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error) {
+	ctx = ensureContext(ctx)
+	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.PendingCodeAt",
+		t.spanAttributes("PendingCodeAt",
+			tracing.AttrAddress.String(account.Hex()),
+		)...,
+	)
+	defer span.End()
+
+	code, err := t.base.PendingCodeAt(ctx, account)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return nil, err
+	}
+
+	tracing.SetAttributes(span,
+		attribute.Int("response.length", len(code)),
+	)
+
+	return code, nil
+}
+
+func (t *tracingConn) PendingNonceAt(ctx context.Context, account common.Address) (uint64, error) {
+	ctx = ensureContext(ctx)
+	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.PendingNonceAt",
+		t.spanAttributes("PendingNonceAt",
+			tracing.AttrAddress.String(account.Hex()),
+		)...,
+	)
+	defer span.End()
+
+	nonce, err := t.base.PendingNonceAt(ctx, account)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return 0, err
+	}
+
+	tracing.SetAttributes(span,
+		attribute.String("response.nonce", strconv.FormatUint(nonce, 10)),
+	)
+
+	return nonce, nil
+}
+
+func (t *tracingConn) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
+	ctx = ensureContext(ctx)
+	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.SuggestGasPrice",
+		t.spanAttributes("SuggestGasPrice")...,
+	)
+	defer span.End()
+
+	price, err := t.base.SuggestGasPrice(ctx)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return nil, err
+	}
+
+	tracing.SetAttributes(span,
+		attribute.String("response.gas_price", price.String()),
+	)
+
+	return price, nil
+}
+
+func (t *tracingConn) SuggestGasTipCap(ctx context.Context) (*big.Int, error) {
+	ctx = ensureContext(ctx)
+	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.SuggestGasTipCap",
+		t.spanAttributes("SuggestGasTipCap")...,
+	)
+	defer span.End()
+
+	price, err := t.base.SuggestGasTipCap(ctx)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return nil, err
+	}
+
+	tracing.SetAttributes(span,
+		attribute.String("response.gas_tip_cap", price.String()),
+	)
+
+	return price, nil
+}
+
+func (t *tracingConn) EstimateGas(ctx context.Context, call ethereum.CallMsg) (uint64, error) {
+	ctx = ensureContext(ctx)
+	attrs := append(t.spanAttributes("EstimateGas"), callMsgAttributes(call)...)
+
+	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.EstimateGas", attrs...)
+	defer span.End()
+
+	gas, err := t.base.EstimateGas(ctx, call)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return 0, err
+	}
+
+	tracing.SetAttributes(span,
+		attribute.String("response.gas", strconv.FormatUint(gas, 10)),
+	)
+
+	return gas, nil
+}
+
+func (t *tracingConn) SendTransaction(ctx context.Context, tx *types.Transaction) error {
+	ctx = ensureContext(ctx)
+	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.SendTransaction",
+		t.spanAttributes("SendTransaction",
+			tracing.AttrTxHash.String(tx.Hash().Hex()),
+			attribute.String("tx.nonce", strconv.FormatUint(tx.Nonce(), 10)),
+			attribute.String("tx.gas", strconv.FormatUint(tx.Gas(), 10)),
+		)...,
+	)
+	defer span.End()
+
+	if price := tx.GasPrice(); price != nil {
+		tracing.SetAttributes(span, attribute.String("tx.gas_price", price.String()))
+	}
+	if tip := tx.GasTipCap(); tip != nil {
+		tracing.SetAttributes(span, attribute.String("tx.gas_tip_cap", tip.String()))
+	}
+	if fee := tx.GasFeeCap(); fee != nil {
+		tracing.SetAttributes(span, attribute.String("tx.gas_fee_cap", fee.String()))
+	}
+
+	if err := t.base.SendTransaction(ctx, tx); err != nil {
+		tracing.RecordError(span, err)
+		return err
+	}
+
+	return nil
+}
+
+func (t *tracingConn) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
+	ctx = ensureContext(ctx)
+	attrs := append(t.spanAttributes("FilterLogs"), filterQueryAttributes(q)...)
+
+	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.FilterLogs", attrs...)
+	defer span.End()
+
+	logs, err := t.base.FilterLogs(ctx, q)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return nil, err
+	}
+
+	tracing.SetAttributes(span,
+		attribute.Int("response.log_count", len(logs)),
+	)
+
+	return logs, nil
+}
+
+func (t *tracingConn) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error) {
+	ctx = ensureContext(ctx)
+	attrs := append(t.spanAttributes("SubscribeFilterLogs"), filterQueryAttributes(q)...)
+
+	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.SubscribeFilterLogs", attrs...)
+	defer span.End()
+
+	sub, err := t.base.SubscribeFilterLogs(ctx, q, ch)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return nil, err
+	}
+
+	return sub, nil
+}
+
+func (t *tracingConn) TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
+	ctx = ensureContext(ctx)
+	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.TransactionReceipt",
+		t.spanAttributes("TransactionReceipt",
+			tracing.AttrTxHash.String(txHash.Hex()),
+		)...,
+	)
+	defer span.End()
+
+	receipt, err := t.base.TransactionReceipt(ctx, txHash)
+	if err != nil {
+		if !errors.Is(err, ethereum.NotFound) {
+			tracing.RecordError(span, err)
+		}
+		return nil, err
+	}
+
+	tracing.SetAttributes(span,
+		attribute.Int("receipt.status", int(receipt.Status)),
+		attribute.String("receipt.block_number", bigIntValue(receipt.BlockNumber)),
+		attribute.String("receipt.gas_used", strconv.FormatUint(receipt.GasUsed, 10)),
+	)
+
+	return receipt, nil
+}
+
+func (t *tracingConn) spanAttributes(method string, extra ...attribute.KeyValue) []attribute.KeyValue {
+	attrs := []attribute.KeyValue{
+		tracing.AttrChainID.Int64(int64(t.chainID)),
+		tracing.AttrMethodName.String(method),
+	}
+
+	return append(attrs, extra...)
+}
+
+func ensureContext(ctx context.Context) context.Context {
+	if ctx == nil {
+		return context.Background()
+	}
+
+	return ctx
+}
+
+func blockNumberValue(blockNumber *big.Int) string {
+	if blockNumber == nil {
+		return "latest"
+	}
+
+	return blockNumber.String()
+}
+
+func bigIntValue(value *big.Int) string {
+	if value == nil {
+		return "0"
+	}
+
+	return value.String()
+}
+
+func callMsgAttributes(call ethereum.CallMsg) []attribute.KeyValue {
+	attrs := []attribute.KeyValue{
+		attribute.String("call.from", call.From.Hex()),
+		attribute.String("call.to", optionalAddressHex(call.To)),
+		attribute.String("call.value", bigIntValue(call.Value)),
+		attribute.String("call.gas", strconv.FormatUint(call.Gas, 10)),
+		attribute.Int("call.access_list_len", len(call.AccessList)),
+		attribute.Int("call.data_size", len(call.Data)),
+	}
+
+	if call.GasPrice != nil {
+		attrs = append(attrs, attribute.String("call.gas_price", call.GasPrice.String()))
+	}
+
+	if call.GasFeeCap != nil {
+		attrs = append(attrs, attribute.String("call.gas_fee_cap", call.GasFeeCap.String()))
+	}
+
+	if call.GasTipCap != nil {
+		attrs = append(attrs, attribute.String("call.gas_tip_cap", call.GasTipCap.String()))
+	}
+
+	return attrs
+}
+
+func filterQueryAttributes(q ethereum.FilterQuery) []attribute.KeyValue {
+	attrs := []attribute.KeyValue{
+		attribute.Int("filter.address_count", len(q.Addresses)),
+		attribute.Int("filter.topic_count", len(q.Topics)),
+	}
+
+	if q.BlockHash != nil {
+		attrs = append(attrs, attribute.String("filter.block_hash", q.BlockHash.Hex()))
+	}
+
+	if q.FromBlock != nil {
+		attrs = append(attrs, attribute.String("filter.from_block", q.FromBlock.String()))
+	}
+
+	if q.ToBlock != nil {
+		attrs = append(attrs, attribute.String("filter.to_block", q.ToBlock.String()))
+	}
+
+	return attrs
+}
+
+func optionalAddressHex(addr *common.Address) string {
+	if addr == nil {
+		return ""
+	}
+
+	return addr.Hex()
 }
 
 func (t tracingDriver) GetConfigAt(opts *bind.CallOpts, timestamp *big.Int) (gen.IValSetDriverConfig, error) {

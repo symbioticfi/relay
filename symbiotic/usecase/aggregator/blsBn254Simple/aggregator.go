@@ -2,6 +2,7 @@ package blsBn254Simple
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"math/big"
 	"sort"
@@ -14,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 
+	"github.com/symbioticfi/relay/pkg/tracing"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator/helpers"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/blsBn254"
@@ -481,24 +483,37 @@ func calcAlpha(aggPubKeyG1 *bn254.G1Affine, aggPubKeyG2 *bn254.G2Affine, aggSig 
 	return alpha
 }
 
-func (a Aggregator) GenerateExtraData(valset symbiotic.ValidatorSet, keyTags []symbiotic.KeyTag) ([]symbiotic.ExtraData, error) {
+func (a Aggregator) GenerateExtraData(ctx context.Context, valset symbiotic.ValidatorSet, keyTags []symbiotic.KeyTag) ([]symbiotic.ExtraData, error) {
+	_, span := tracing.StartSpan(ctx, "GenerateExtraData",
+		tracing.AttrEpoch.Int64(int64(valset.Epoch)),
+		tracing.AttrValidatorCount.Int(len(valset.Validators)),
+	)
+	defer span.End()
+
 	extraData := make([]symbiotic.ExtraData, 0)
 
 	aggregatedPubKeys := helpers.GetAggregatedPubKeys(valset, keyTags)
+	tracing.SetAttributes(span, tracing.AttrKeyTag.Int(len(aggregatedPubKeys)))
 
 	for _, key := range aggregatedPubKeys {
+		tracing.AddEvent(span, "processing_key_tag", tracing.AttrKeyTag.String(key.Tag.String()))
+
 		validatorsData, err := processValidators(valset.Validators, key.Tag)
 		if err != nil {
+			tracing.RecordError(span, err)
 			return nil, errors.Errorf("failed to encode validators: %w", err)
 		}
 
 		validatorSetHashKey, err := helpers.GetExtraDataKeyTagged(symbiotic.VerificationTypeBlsBn254Simple, key.Tag, symbiotic.SimpleVerificationValidatorSetHashKeccak256Hash)
 		if err != nil {
+			tracing.RecordError(span, err)
 			return nil, errors.Errorf("failed to get extra data key: %w", err)
 		}
 
+		tracing.AddEvent(span, "calculating_validators_keccak")
 		keccakHashAccumulator, err := a.calculateValidatorsKeccak(validatorsData)
 		if err != nil {
+			tracing.RecordError(span, err)
 			return nil, errors.Errorf("failed to generate validator set keccak accumulator: %w", err)
 		}
 
@@ -510,17 +525,21 @@ func (a Aggregator) GenerateExtraData(valset symbiotic.ValidatorSet, keyTags []s
 		// Pack aggregated keys
 		activeAggregatedKeyKey, err := helpers.GetExtraDataKeyTagged(symbiotic.VerificationTypeBlsBn254Simple, key.Tag, symbiotic.SimpleVerificationAggPublicKeyG1Hash)
 		if err != nil {
+			tracing.RecordError(span, err)
 			return nil, errors.Errorf("failed to get extra data key: %w", err)
 		}
 
 		keyG1Raw := new(bn254.G1Affine)
 		_, err = keyG1Raw.SetBytes(key.Payload)
 		if err != nil {
+			tracing.RecordError(span, err)
 			return nil, errors.Errorf("failed to deserialize G1: %w", err)
 		}
 
+		tracing.AddEvent(span, "compressing_g1_key")
 		compressedG1, err := compress(keyG1Raw)
 		if err != nil {
+			tracing.RecordError(span, err)
 			return nil, errors.Errorf("failed to compress G1: %w", err)
 		}
 
@@ -528,13 +547,17 @@ func (a Aggregator) GenerateExtraData(valset symbiotic.ValidatorSet, keyTags []s
 			Key:   activeAggregatedKeyKey,
 			Value: compressedG1,
 		})
+
+		tracing.AddEvent(span, "key_tag_processed")
 	}
 
+	tracing.AddEvent(span, "sorting_extra_data")
 	// sort extra data by key to ensure deterministic order
 	sort.Slice(extraData, func(i, j int) bool {
 		return bytes.Compare(extraData[i].Key[:], extraData[j].Key[:]) < 0
 	})
 
+	tracing.SetAttributes(span, tracing.AttrKeyTag.Int(len(extraData)))
 	return extraData, nil
 }
 

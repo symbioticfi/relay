@@ -235,7 +235,7 @@ func (s *Service) processPendingProof(ctx context.Context, proofKey symbiotic.Pr
 	}
 
 	tracing.AddEvent(span, "generating_extra_data")
-	extraData, err := s.cfg.Aggregator.GenerateExtraData(targetValset, config.RequiredKeyTags)
+	extraData, err := s.cfg.Aggregator.GenerateExtraData(ctx, targetValset, config.RequiredKeyTags)
 	if err != nil {
 		tracing.RecordError(span, err)
 		return errors.Errorf("failed to generate extra data for validator set: %w", err)
