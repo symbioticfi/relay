@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/samber/lo"
 
@@ -27,7 +28,7 @@ import (
 	cryptoSym "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
-//go:generate mockgen -destination=mocks/eth.go -package=mocks github.com/symbioticfi/relay/symbiotic/client/evm IEvmClient,conn,metrics,keyProvider,driverContract
+//go:generate mockgen -destination=mocks/eth.go -package=mocks github.com/symbioticfi/relay/symbiotic/client/evm IEvmClient,conn,metrics,keyProvider,driverContract,settlementContract,votingPowerProviderContract,votingPowerProviderTransactor,keyRegistryContract,operatorRegistryContract
 
 type metrics interface {
 	ObserveEVMMethodCall(method string, chainID uint64, status string, d time.Duration)
@@ -90,6 +91,44 @@ type driverContract interface {
 	GetEpochStart(opts *bind.CallOpts, epoch *big.Int) (*big.Int, error)
 	SUBNETWORK(opts *bind.CallOpts) ([32]byte, error)
 	NETWORK(opts *bind.CallOpts) (common.Address, error)
+}
+
+type settlementContract interface {
+	IsValSetHeaderCommittedAt(opts *bind.CallOpts, epoch *big.Int) (bool, error)
+	GetValSetHeaderHash(opts *bind.CallOpts) ([32]byte, error)
+	GetValSetHeaderHashAt(opts *bind.CallOpts, epoch *big.Int) ([32]byte, error)
+	GetLastCommittedHeaderEpoch(opts *bind.CallOpts) (*big.Int, error)
+	GetCaptureTimestampFromValSetHeaderAt(opts *bind.CallOpts, epoch *big.Int) (*big.Int, error)
+	GetValSetHeaderAt(opts *bind.CallOpts, epoch *big.Int) (gen.ISettlementValSetHeader, error)
+	GetValSetHeader(opts *bind.CallOpts) (gen.ISettlementValSetHeader, error)
+	Eip712Domain(opts *bind.CallOpts) (symbiotic.Eip712Domain, error)
+
+	CommitValSetHeader(opts *bind.TransactOpts, header gen.ISettlementValSetHeader, extraData []gen.ISettlementExtraData, proof []byte) (*types.Transaction, error)
+	SetGenesis(opts *bind.TransactOpts, valSetHeader gen.ISettlementValSetHeader, extraData []gen.ISettlementExtraData) (*types.Transaction, error)
+	VerifyQuorumSigAt(opts *bind.CallOpts, message []byte, keyTag uint8, quorumThreshold *big.Int, proof []byte, epoch *big.Int, hint []byte) (bool, error)
+}
+
+type votingPowerProviderContract interface {
+	Nonces(opts *bind.CallOpts, owner common.Address) (*big.Int, error)
+	GetVotingPowersAt(opts *bind.CallOpts, extraData [][]byte, timestamp *big.Int) ([]gen.IVotingPowerProviderOperatorVotingPower, error)
+	GetOperatorsAt(opts *bind.CallOpts, timestamp *big.Int) ([]common.Address, error)
+	Eip712Domain(opts *bind.CallOpts) (symbiotic.Eip712Domain, error)
+}
+
+type votingPowerProviderTransactor interface {
+	InvalidateOldSignatures(opts *bind.TransactOpts) (*types.Transaction, error)
+	RegisterOperator(opts *bind.TransactOpts) (*types.Transaction, error)
+	UnregisterOperator(opts *bind.TransactOpts) (*types.Transaction, error)
+}
+
+type keyRegistryContract interface {
+	GetKeysOperatorsAt(opts *bind.CallOpts, timestamp *big.Int) ([]common.Address, error)
+	GetKeysAt(opts *bind.CallOpts, timestamp *big.Int) ([]gen.IKeyRegistryOperatorWithKeys, error)
+	SetKey(opts *bind.TransactOpts, tag uint8, key []byte, signature []byte, extraData []byte) (*types.Transaction, error)
+}
+
+type operatorRegistryContract interface {
+	RegisterOperator(opts *bind.TransactOpts) (*types.Transaction, error)
 }
 
 type Config struct {
@@ -155,7 +194,7 @@ func NewEvmClient(ctx context.Context, cfg Config) (*Client, error) {
 	return &Client{
 		cfg:           cfg,
 		conns:         conns,
-		driver:        driver,
+		driver:        tracingDriver{base: driver},
 		driverChainID: cfg.DriverAddress.ChainId,
 		metrics:       cfg.Metrics,
 	}, nil
@@ -549,7 +588,7 @@ func (e *Client) GetEip712Domain(ctx context.Context, addr symbiotic.CrossChainA
 		Version:           eip712Domain.Version,
 		ChainId:           eip712Domain.ChainId,
 		VerifyingContract: eip712Domain.VerifyingContract,
-		Salt:              new(big.Int).SetBytes(eip712Domain.Salt[:]),
+		Salt:              eip712Domain.Salt,
 		Extensions:        eip712Domain.Extensions,
 	}, nil
 }
@@ -580,7 +619,7 @@ func (e *Client) GetVotingPowerProviderEip712Domain(ctx context.Context, addr sy
 		Version:           eip712Domain.Version,
 		ChainId:           eip712Domain.ChainId,
 		VerifyingContract: eip712Domain.VerifyingContract,
-		Salt:              new(big.Int).SetBytes(eip712Domain.Salt[:]),
+		Salt:              eip712Domain.Salt,
 		Extensions:        eip712Domain.Extensions,
 	}, nil
 }
@@ -870,49 +909,74 @@ func (e *Client) formatEVMError(err error) error {
 	return errors.Errorf("%w: %s", err, errDef.String())
 }
 
-func (e *Client) getSettlementContract(addr symbiotic.CrossChainAddress) (*gen.ISettlement, error) {
+func (e *Client) getSettlementContract(addr symbiotic.CrossChainAddress) (settlementContract, error) {
 	client, ok := e.conns[addr.ChainId]
 	if !ok {
 		return nil, errors.Errorf("no connection for chain ID %d: %w", addr.ChainId, entity.ErrChainNotFound)
 	}
 
-	return gen.NewISettlement(addr.Address, client)
+	base, err := gen.NewISettlement(addr.Address, client)
+	if err != nil {
+		return nil, err
+	}
+
+	return tracingSettlement{base: base}, nil
 }
 
-func (e *Client) getVotingPowerProviderContract(addr symbiotic.CrossChainAddress) (*gen.IVotingPowerProviderCaller, error) {
+func (e *Client) getVotingPowerProviderContract(addr symbiotic.CrossChainAddress) (votingPowerProviderContract, error) {
 	client, ok := e.conns[addr.ChainId]
 	if !ok {
 		return nil, errors.Errorf("no connection for chain ID %d: %w", addr.ChainId, entity.ErrChainNotFound)
 	}
 
-	return gen.NewIVotingPowerProviderCaller(addr.Address, client)
+	base, err := gen.NewIVotingPowerProviderCaller(addr.Address, client)
+	if err != nil {
+		return nil, err
+	}
+
+	return tracingVotingPowerProvider{base: base}, nil
 }
 
-func (e *Client) getVotingPowerProviderContractTransactor(addr symbiotic.CrossChainAddress) (*gen.IVotingPowerProvider, error) {
+func (e *Client) getVotingPowerProviderContractTransactor(addr symbiotic.CrossChainAddress) (votingPowerProviderTransactor, error) {
 	client, ok := e.conns[addr.ChainId]
 	if !ok {
 		return nil, errors.Errorf("no connection for chain ID %d: %w", addr.ChainId, entity.ErrChainNotFound)
 	}
 
-	return gen.NewIVotingPowerProvider(addr.Address, client)
+	base, err := gen.NewIVotingPowerProvider(addr.Address, client)
+	if err != nil {
+		return nil, err
+	}
+
+	return tracingVotingPowerProviderTransactor{base: base}, nil
 }
 
-func (e *Client) getKeyRegistryContract(addr symbiotic.CrossChainAddress) (*gen.IKeyRegistry, error) {
+func (e *Client) getKeyRegistryContract(addr symbiotic.CrossChainAddress) (keyRegistryContract, error) {
 	client, ok := e.conns[addr.ChainId]
 	if !ok {
 		return nil, errors.Errorf("no connection for chain ID %d: %w", addr.ChainId, entity.ErrChainNotFound)
 	}
 
-	return gen.NewIKeyRegistry(addr.Address, client)
+	base, err := gen.NewIKeyRegistry(addr.Address, client)
+	if err != nil {
+		return nil, err
+	}
+
+	return tracingKeyRegistry{base: base}, nil
 }
 
-func (e *Client) getOperatorRegistryContract(addr symbiotic.CrossChainAddress) (*gen.OperatorRegistry, error) {
+func (e *Client) getOperatorRegistryContract(addr symbiotic.CrossChainAddress) (operatorRegistryContract, error) {
 	client, ok := e.conns[addr.ChainId]
 	if !ok {
 		return nil, errors.Errorf("no connection for chain ID %d: %w", addr.ChainId, entity.ErrChainNotFound)
 	}
 
-	return gen.NewOperatorRegistry(addr.Address, client)
+	base, err := gen.NewOperatorRegistry(addr.Address, client)
+	if err != nil {
+		return nil, err
+	}
+
+	return tracingOperatorRegistry{base: base}, nil
 }
 
 func findErrorBySelector(errSelector string) (abi.Error, bool) {

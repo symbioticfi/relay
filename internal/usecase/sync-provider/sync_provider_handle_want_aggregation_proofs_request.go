@@ -5,13 +5,20 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/symbioticfi/relay/internal/entity"
+	"github.com/symbioticfi/relay/pkg/tracing"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // HandleWantAggregationProofsRequest handles incoming requests for aggregation proofs from peers
 func (s *Syncer) HandleWantAggregationProofsRequest(ctx context.Context, request entity.WantAggregationProofsRequest) (entity.WantAggregationProofsResponse, error) {
+	ctx, span := tracing.StartSpan(ctx, "sync-provider.HandleWantAggregationProofsRequest",
+		attribute.Int("request.request_ids_count", len(request.RequestIDs)),
+	)
+	defer span.End()
+
 	proofs := make(map[common.Hash]symbiotic.AggregationProof)
 	responseCount := 0
 
@@ -36,6 +43,10 @@ func (s *Syncer) HandleWantAggregationProofsRequest(ctx context.Context, request
 		proofs[requestID] = proof
 		responseCount++
 	}
+
+	tracing.SetAttributes(span,
+		attribute.Int("response.proofs_count", len(proofs)),
+	)
 
 	return entity.WantAggregationProofsResponse{
 		Proofs: proofs,

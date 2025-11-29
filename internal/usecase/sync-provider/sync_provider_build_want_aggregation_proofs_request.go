@@ -5,16 +5,21 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/symbioticfi/relay/internal/entity"
+	"github.com/symbioticfi/relay/pkg/tracing"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // BuildWantAggregationProofsRequest builds a request for missing aggregation proofs from recent epochs
 func (s *Syncer) BuildWantAggregationProofsRequest(ctx context.Context) (entity.WantAggregationProofsRequest, error) {
-	// Get the latest epoch
+	ctx, span := tracing.StartSpan(ctx, "sync-provider.BuildWantAggregationProofsRequest")
+	defer span.End()
+
 	latestEpoch, err := s.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return entity.WantAggregationProofsRequest{}, errors.Errorf("failed to get latest epoch: %w", err)
 	}
 
@@ -22,6 +27,11 @@ func (s *Syncer) BuildWantAggregationProofsRequest(ctx context.Context) (entity.
 	if latestEpoch >= symbiotic.Epoch(s.cfg.EpochsToSync) {
 		startEpoch = latestEpoch - symbiotic.Epoch(s.cfg.EpochsToSync)
 	}
+
+	tracing.SetAttributes(span,
+		tracing.AttrEpoch.Int64(int64(latestEpoch)),
+		attribute.Int64("start_epoch", int64(startEpoch)),
+	)
 
 	var allRequestIDs []common.Hash
 	totalRequests := 0
@@ -71,6 +81,10 @@ func (s *Syncer) BuildWantAggregationProofsRequest(ctx context.Context) (entity.
 			break
 		}
 	}
+
+	tracing.SetAttributes(span,
+		attribute.Int("response.request_ids_count", len(allRequestIDs)),
+	)
 
 	return entity.WantAggregationProofsRequest{
 		RequestIDs: allRequestIDs,

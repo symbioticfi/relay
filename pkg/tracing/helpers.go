@@ -52,6 +52,7 @@ func StartDBSpan(ctx context.Context, operation, statement string) (context.Cont
 	return ctx, span
 }
 
+//nolint:spancheck // spancheck is not able to follow our context wrapping
 func startSpanWithKind(ctx context.Context, spanName string, kind trace.SpanKind, attrs ...attribute.KeyValue) (context.Context, trace.Span) {
 	tracer := otel.Tracer(ServiceName)
 	ctx, span := tracer.Start(ctx, spanName, trace.WithSpanKind(kind), trace.WithAttributes(attrs...))
