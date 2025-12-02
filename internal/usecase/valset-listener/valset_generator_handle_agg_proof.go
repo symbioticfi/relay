@@ -144,13 +144,15 @@ func (s *Service) tryToCommitPendingProofs(ctx context.Context) (uint64, error) 
 	uncommittedCount := valset.Epoch - lastCommittedEpoch
 	tracing.SetAttributes(span, attribute.Int64("uncommitted_epochs", int64(uncommittedCount)))
 
+	// Dev: we check if the no. of uncommitted epochs is > the batch size then there's a chance
+	// that we might've already committed some epochs but those are not finalized,
+	// hence to optimize for both time and network calls we directly check on the
+	// settlement layers to see what's the latest(not finalized) commit
 	if uncommittedCount > symbiotic.Epoch(commitCheckBatchSize) {
 		tracing.AddEvent(span, "detecting_last_committed_epoch_from_chain")
 		newLastCommit := s.detectLastCommittedEpochFromChain(ctx, nwCfg)
 		if newLastCommit > lastCommittedEpoch {
-			tracing.SetAttributes(span,
-				attribute.Int64("last_committed_epoch_updated", int64(newLastCommit)),
-			)
+			tracing.SetAttributes(span, attribute.Int64("last_committed_epoch_updated", int64(newLastCommit)))
 			slog.InfoContext(ctx, "Number of uncommitted epochs exceeds batch size, updated last committed epoch based on settlement chain data",
 				"oldLastCommittedEpoch", lastCommittedEpoch,
 				"newLastCommittedEpoch", newLastCommit,
@@ -257,9 +259,7 @@ func (s *Service) processPendingProof(ctx context.Context, proofKey symbiotic.Pr
 		return errors.Errorf("local validator not found")
 	}
 
-	ctx = log.WithAttrs(ctx,
-		slog.String("validatorAddress", validator.Operator.Hex()),
-	)
+	ctx = log.WithAttrs(ctx, slog.String("validatorAddress", validator.Operator.Hex()))
 	tracing.SetAttributes(span, tracing.AttrValidatorAddress.String(validator.Operator.Hex()))
 
 	slog.DebugContext(ctx, "Committing proof to settlements", "header", header, "extraData", extraData)

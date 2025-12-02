@@ -263,9 +263,7 @@ func (s *Service) pruneEntities(
 		s.cfg.Metrics.IncPrunedEpochsCount(entityType)
 	}
 
-	tracing.SetAttributes(span,
-		tracing.AttrValidatorCount.Int(int(count)),
-	)
+	tracing.SetAttributes(span, tracing.AttrEpochCount.Int(int(count)))
 	tracing.AddEvent(span, "pruning_completed")
 
 	return count, nil

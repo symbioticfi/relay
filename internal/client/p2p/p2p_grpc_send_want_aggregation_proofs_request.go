@@ -22,7 +22,7 @@ func (s *Service) SendWantAggregationProofsRequest(ctx context.Context, request 
 	defer span.End()
 
 	tracing.SetAttributes(span,
-		tracing.AttrRequestID.Int(len(request.RequestIDs)),
+		tracing.AttrRequestIDCount.Int(len(request.RequestIDs)),
 	)
 
 	ctx = log.WithComponent(ctx, "p2p")
@@ -53,7 +53,7 @@ func (s *Service) SendWantAggregationProofsRequest(ctx context.Context, request 
 	entityResp := protoToEntityAggregationProofResponse(response)
 
 	tracing.SetAttributes(span,
-		tracing.AttrProofSize.Int(len(entityResp.Proofs)),
+		tracing.AttrProofCount.Int(len(entityResp.Proofs)),
 	)
 
 	tracing.AddEvent(span, "request_completed")

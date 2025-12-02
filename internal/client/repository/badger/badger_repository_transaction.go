@@ -46,7 +46,7 @@ func (m *mutexWithUseTime) tryLock() bool {
 }
 
 func (r *Repository) doUpdateInTxWithLock(ctx context.Context, name string, f func(ctx context.Context) error, lockMap *sync.Map, key any) error {
-	ctx, span := tracing.StartDBSpan(ctx, "update", name)
+	ctx, span := tracing.StartDBSpan(ctx, "updateWithLock", name)
 	defer span.End()
 
 	mutexInterface, ok := lockMap.Load(key)
@@ -105,7 +105,7 @@ func (r *Repository) doUpdateInTx(ctx context.Context, name string, f func(ctx c
 		status = "conflict"
 		tracing.AddEvent(span, "transaction_conflict")
 		err = errors.Errorf("transaction conflict: %w", entity.ErrTxConflict)
-	} else if err != nil && !errors.Is(err, entity.ErrEntityNotFound) && !errors.Is(err, entity.ErrEntityAlreadyExist) {
+	} else if err != nil {
 		err = errors.Errorf("failed to do update in tx: %w", err)
 	}
 

@@ -134,9 +134,7 @@ func (s *SignerApp) completeSign(ctx context.Context, requestID common.Hash, p2p
 		tracing.AttrRequestID.String(requestID.Hex()),
 	)
 	defer span.End()
-	ctx = log.WithAttrs(ctx,
-		slog.String("requestId", requestID.Hex()),
-	)
+	ctx = log.WithAttrs(ctx, slog.String("requestId", requestID.Hex()))
 
 	req, err := s.cfg.Repo.GetSignatureRequest(ctx, requestID)
 	if err != nil {

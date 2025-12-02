@@ -10,5 +10,5 @@ type SenderInfo struct {
 type P2PMessage[T any] struct {
 	SenderInfo   SenderInfo
 	Message      T
-	TraceContext map[string]string `json:"trace_context,omitempty"`
+	TraceContext map[string]string
 }

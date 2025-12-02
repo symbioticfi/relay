@@ -77,7 +77,7 @@ func TestSimpleAggregatorExtraData(t *testing.T) {
 	valset, keyTag := genExtraDataTest(t)
 	agg, err := blsBn254Simple.NewAggregator()
 	require.NoError(t, err)
-	data, err := agg.GenerateExtraData(context.Background(), valset, []symbiotic.KeyTag{keyTag})
+	data, err := agg.GenerateExtraData(t.Context(), valset, []symbiotic.KeyTag{keyTag})
 	require.NoError(t, err)
 	expected := [][]string{
 		{
@@ -102,7 +102,7 @@ func TestAggregatorZKExtraData(t *testing.T) {
 	prover := proof.NewZkProver("circuits")
 	agg, err := blsBn254ZK.NewAggregator(prover)
 	require.NoError(t, err)
-	data, err := agg.GenerateExtraData(context.Background(), valset, []symbiotic.KeyTag{keyTag})
+	data, err := agg.GenerateExtraData(t.Context(), valset, []symbiotic.KeyTag{keyTag})
 	require.NoError(t, err)
 	expected := [][]string{
 		{

@@ -44,9 +44,7 @@ func (s *Syncer) HandleWantAggregationProofsRequest(ctx context.Context, request
 		responseCount++
 	}
 
-	tracing.SetAttributes(span,
-		attribute.Int("response.proofs_count", len(proofs)),
-	)
+	tracing.SetAttributes(span, attribute.Int("response.proofs_count", len(proofs)))
 
 	return entity.WantAggregationProofsResponse{
 		Proofs: proofs,

@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/symbioticfi/relay/pkg/tracing"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
@@ -87,7 +88,13 @@ func createABITypes() (abiTypes, error) {
 	}, nil
 }
 
-func (a Aggregator) Aggregate(ctx context.Context, valset symbiotic.ValidatorSet, keyTag symbiotic.KeyTag, messageHash []byte, signatures []symbiotic.Signature) (symbiotic.AggregationProof, error) {
+func (a Aggregator) Aggregate(
+	ctx context.Context,
+	valset symbiotic.ValidatorSet,
+	keyTag symbiotic.KeyTag,
+	messageHash []byte,
+	signatures []symbiotic.Signature,
+) (symbiotic.AggregationProof, error) {
 	_, span := tracing.StartSpan(ctx, "aggregator.Aggregate",
 		tracing.AttrEpoch.Int64(int64(valset.Epoch)),
 		tracing.AttrValidatorCount.Int(len(valset.Validators)),
@@ -181,7 +188,7 @@ func (a Aggregator) Aggregate(ctx context.Context, valset symbiotic.ValidatorSet
 		}
 	}
 
-	tracing.SetAttributes(span, tracing.AttrValidatorCount.Int(len(nonSigners)))
+	tracing.SetAttributes(span, attribute.Int("non_signers.count", len(nonSigners)))
 	tracing.AddEvent(span, "packing_proof")
 
 	aggG1SigBytes, err := a.abiTypes.g1Args.Pack(struct {
@@ -550,7 +557,6 @@ func (a Aggregator) GenerateExtraData(ctx context.Context, valset symbiotic.Vali
 	extraData := make([]symbiotic.ExtraData, 0)
 
 	aggregatedPubKeys := helpers.GetAggregatedPubKeys(valset, keyTags)
-	tracing.SetAttributes(span, tracing.AttrKeyTag.Int(len(aggregatedPubKeys)))
 
 	for _, key := range aggregatedPubKeys {
 		tracing.AddEvent(span, "processing_key_tag", tracing.AttrKeyTag.String(key.Tag.String()))
@@ -614,7 +620,7 @@ func (a Aggregator) GenerateExtraData(ctx context.Context, valset symbiotic.Vali
 		return bytes.Compare(extraData[i].Key[:], extraData[j].Key[:]) < 0
 	})
 
-	tracing.SetAttributes(span, tracing.AttrKeyTag.Int(len(extraData)))
+	tracing.SetAttributes(span, attribute.Int("extra_data.leb", len(extraData)))
 	return extraData, nil
 }
 

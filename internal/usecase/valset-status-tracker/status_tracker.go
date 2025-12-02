@@ -161,9 +161,7 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 		return errors.Errorf("failed to get latest validator set epoch: %w", err)
 	}
 
-	tracing.SetAttributes(span,
-		tracing.AttrEpoch.Int64(int64(firstUncommittedEpoch)),
-	)
+	tracing.SetAttributes(span, tracing.AttrEpoch.Int64(int64(firstUncommittedEpoch)))
 
 	if firstUncommittedEpoch > latestEpoch {
 		slog.DebugContext(ctx, "All validator sets are already committed, nothing to do", "firstUncommittedEpoch", firstUncommittedEpoch, "latestEpoch", latestEpoch)

@@ -22,9 +22,7 @@ func (s *Syncer) BuildWantSignaturesRequest(ctx context.Context) (entity.WantSig
 		return entity.WantSignaturesRequest{}, errors.Errorf("failed to build want signatures map: %w", err)
 	}
 
-	tracing.SetAttributes(span,
-		attribute.Int("response.request_count", len(wantSignatures)),
-	)
+	tracing.SetAttributes(span, attribute.Int("response.request_count", len(wantSignatures)))
 
 	return entity.WantSignaturesRequest{
 		WantSignatures: wantSignatures,
@@ -125,9 +123,7 @@ func (s *Syncer) buildWantSignaturesMap(ctx context.Context) (map[common.Hash]en
 		}
 	}
 
-	tracing.SetAttributes(span,
-		attribute.Int("response.want_signatures_count", len(wantSignatures)),
-	)
+	tracing.SetAttributes(span, attribute.Int("response.want_signatures_count", len(wantSignatures)))
 
 	return wantSignatures, nil
 }

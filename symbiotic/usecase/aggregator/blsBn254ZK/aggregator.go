@@ -6,6 +6,8 @@ import (
 	"math/big"
 	"sort"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/symbioticfi/relay/pkg/proof"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	types "github.com/symbioticfi/relay/symbiotic/usecase/aggregator/aggregator-types"
@@ -30,7 +32,13 @@ func NewAggregator(prover types.Prover) (*Aggregator, error) {
 	}, nil
 }
 
-func (a Aggregator) Aggregate(ctx context.Context, valset symbiotic.ValidatorSet, keyTag symbiotic.KeyTag, messageHash []byte, signatures []symbiotic.Signature) (symbiotic.AggregationProof, error) {
+func (a Aggregator) Aggregate(
+	ctx context.Context,
+	valset symbiotic.ValidatorSet,
+	keyTag symbiotic.KeyTag,
+	messageHash []byte,
+	signatures []symbiotic.Signature,
+) (symbiotic.AggregationProof, error) {
 	ctx, span := tracing.StartSpan(ctx, "aggregator.Aggregate",
 		tracing.AttrEpoch.Int64(int64(valset.Epoch)),
 		tracing.AttrValidatorCount.Int(len(valset.Validators)),
@@ -230,7 +238,6 @@ func (a Aggregator) GenerateExtraData(ctx context.Context, valset symbiotic.Vali
 	})
 
 	aggregatedPubKeys := helpers.GetAggregatedPubKeys(valset, keyTags)
-	tracing.SetAttributes(span, tracing.AttrKeyTag.Int(len(aggregatedPubKeys)))
 
 	for _, key := range aggregatedPubKeys {
 		tracing.AddEvent(span, "processing_key_tag", tracing.AttrKeyTag.String(key.Tag.String()))
@@ -262,7 +269,7 @@ func (a Aggregator) GenerateExtraData(ctx context.Context, valset symbiotic.Vali
 		return bytes.Compare(extraData[i].Key[:], extraData[j].Key[:]) < 0
 	})
 
-	tracing.SetAttributes(span, tracing.AttrKeyTag.Int(len(extraData)))
+	tracing.SetAttributes(span, attribute.Int("extra_data.len", len(extraData)))
 	return extraData, nil
 }
 

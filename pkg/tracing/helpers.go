@@ -87,9 +87,10 @@ func SetAttributes(span trace.Span, attrs ...attribute.KeyValue) {
 // Common attribute keys for consistency across the codebase
 var (
 	// Chain and network attributes
-	AttrChainID = attribute.Key("chain.id")
-	AttrEpoch   = attribute.Key("epoch")
-	AttrAddress = attribute.Key("address")
+	AttrChainID    = attribute.Key("chain.id")
+	AttrEpoch      = attribute.Key("epoch")
+	AttrAddress    = attribute.Key("address")
+	AttrEpochCount = attribute.Key("epoch.count")
 
 	// Signature and validation attributes
 	AttrKeyTag           = attribute.Key("key.tag")
@@ -101,13 +102,8 @@ var (
 
 	// P2P attributes
 	AttrPeerID      = attribute.Key("peer.id")
-	AttrMessageType = attribute.Key("message.type")
 	AttrTopic       = attribute.Key("topic")
 	AttrMessageSize = attribute.Key("message.size")
-
-	// Database attributes
-	AttrQueryName = attribute.Key("query.name")
-	AttrCacheHit  = attribute.Key("cache.hit")
 
 	// EVM attributes
 	AttrMethodName = attribute.Key("evm.method")
@@ -116,8 +112,8 @@ var (
 
 	// Aggregation attributes
 	AttrProofSize      = attribute.Key("proof.size")
+	AttrProofCount     = attribute.Key("proof.count")
 	AttrProofType      = attribute.Key("proof.type")
-	AttrAggregationID  = attribute.Key("aggregation.id")
 	AttrRequestID      = attribute.Key("request.id")
-	AttrVerifyDuration = attribute.Key("verify.duration_ms")
+	AttrRequestIDCount = attribute.Key("request.id.count")
 )
