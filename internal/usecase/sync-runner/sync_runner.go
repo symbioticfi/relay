@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
@@ -108,6 +109,7 @@ func (s *Runner) runSignatureSync(ctx context.Context) error {
 	s.cfg.Metrics.ObserveP2PSyncRequestedHashes(len(request.WantSignatures))
 
 	if len(request.WantSignatures) == 0 {
+		tracing.AddEvent(span, "no_pending_requests")
 		slog.InfoContext(ctx, "No pending signature requests found")
 		return nil
 	}
@@ -167,6 +169,7 @@ func (s *Runner) runAggregationProofSync(ctx context.Context) error {
 	s.cfg.Metrics.ObserveP2PSyncRequestedAggregationProofs(len(request.RequestIDs))
 
 	if len(request.RequestIDs) == 0 {
+		tracing.AddEvent(span, "no_pending_requests")
 		slog.InfoContext(ctx, "No pending aggregation proof requests found")
 		return nil
 	}
@@ -191,7 +194,7 @@ func (s *Runner) runAggregationProofSync(ctx context.Context) error {
 		return errors.Errorf("failed to process received aggregation proofs: %w", err)
 	}
 
-	tracing.SetAttributes(span, tracing.AttrProofSize.Int(stats.ProcessedCount))
+	tracing.SetAttributes(span, attribute.Int("processed_count", stats.ProcessedCount))
 	slog.InfoContext(ctx, "Aggregation proof sync completed",
 		"processed", stats.ProcessedCount,
 		"totalFails", stats.TotalErrors(),

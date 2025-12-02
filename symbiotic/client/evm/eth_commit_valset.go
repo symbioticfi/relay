@@ -10,8 +10,10 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
+	"go.opentelemetry.io/otel/attribute"
 
 	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
+	"github.com/symbioticfi/relay/pkg/tracing"
 	"github.com/symbioticfi/relay/symbiotic/client/evm/gen"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -72,20 +74,34 @@ func (e *Client) CommitValsetHeader(
 		return symbiotic.TxResult{}, e.formatEVMContractError(gen.ISettlementMetaData, err)
 	}
 
-	receipt, err := bind.WaitMined(ctx, e.conns[addr.ChainId], tx)
+	receipt, err := e.waitTxMined(ctx, addr.ChainId, tx)
 	if err != nil {
-		return symbiotic.TxResult{}, errors.Errorf("failed to wait for tx mining: %w", err)
-	}
-
-	if receipt.Status == types.ReceiptStatusFailed {
-		return symbiotic.TxResult{}, errors.New("transaction reverted on chain")
+		return symbiotic.TxResult{}, err
 	}
 
 	slog.DebugContext(ctx, "Valset header committed", "receipt", receipt)
-
 	e.metrics.ObserveCommitValsetHeaderParams(addr.ChainId, receipt.GasUsed, receipt.EffectiveGasPrice)
 
 	return symbiotic.TxResult{
 		TxHash: receipt.TxHash,
 	}, nil
+}
+
+func (e *Client) waitTxMined(ctx context.Context, chainId uint64, tx *types.Transaction) (*types.Receipt, error) {
+	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.waitMined",
+		attribute.String("transaction_hash", tx.Hash().Hex()),
+		tracing.AttrChainID.String(tx.ChainId().String()),
+	)
+	defer span.End()
+
+	receipt, err := bind.WaitMined(ctx, e.conns[chainId], tx)
+	if err != nil {
+		return nil, errors.Errorf("failed to wait for tx mining: %w", err)
+	}
+
+	if receipt.Status == types.ReceiptStatusFailed {
+		return nil, errors.New("transaction reverted on chain")
+	}
+
+	return receipt, nil
 }

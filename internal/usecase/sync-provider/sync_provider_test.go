@@ -144,7 +144,7 @@ func createMockAggregator(t *testing.T) *mocks.MockAggregator {
 	ctrl := gomock.NewController(t)
 	mockAgg := mocks.NewMockAggregator(ctrl)
 	// Default behavior: return true for verification
-	mockAgg.EXPECT().Verify(gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes()
+	mockAgg.EXPECT().Verify(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes()
 	return mockAgg
 }
 

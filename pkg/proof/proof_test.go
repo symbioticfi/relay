@@ -105,7 +105,7 @@ func TestProof(t *testing.T) {
 	}
 
 	startTime = time.Now()
-	proofData, err := prover.Prove(proveInput)
+	proofData, err := prover.Prove(t.Context(), proveInput)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,7 +118,7 @@ func TestProof(t *testing.T) {
 
 	inputHash := calculateInputHash(HashValset(valset), proofData.SignersAggVotingPower, messageG1)
 	startTime = time.Now()
-	res, err := prover.Verify(len(validatorData), inputHash, proofData.Marshal())
+	res, err := prover.Verify(t.Context(), len(validatorData), inputHash, proofData.Marshal())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,10 +134,10 @@ func TestProofFailOnEmptyCircuitDir(t *testing.T) {
 	prover := NewZkProver("")
 	fmt.Printf("prover initialation took %v\n", time.Since(startTime))
 
-	_, err := prover.Prove(ProveInput{})
+	_, err := prover.Prove(t.Context(), ProveInput{})
 	require.ErrorContains(t, err, "ZK prover circuits directory is not set", "expected error on empty circuit dir")
 
-	_, err = prover.Verify(0, common.Hash{}, nil)
+	_, err = prover.Verify(t.Context(), 0, common.Hash{}, nil)
 	require.ErrorContains(t, err, "ZK prover circuits directory is not set", "expected error on empty circuit dir")
 }
 
@@ -197,7 +197,7 @@ func TestProveValidation(t *testing.T) {
 	t.Run("returns error when circuits directory not set", func(t *testing.T) {
 		prover := NewZkProver("")
 
-		_, err := prover.Prove(ProveInput{})
+		_, err := prover.Prove(t.Context(), ProveInput{})
 		require.ErrorContains(t, err, "ZK prover circuits directory is not set")
 	})
 
@@ -208,7 +208,7 @@ func TestProveValidation(t *testing.T) {
 			ValidatorData: []ValidatorData{},
 		}
 
-		_, err := prover.Prove(input)
+		_, err := prover.Prove(t.Context(), input)
 		require.ErrorContains(t, err, "ZK prover circuits directory is not set")
 	})
 
@@ -227,7 +227,7 @@ func TestProveValidation(t *testing.T) {
 			ValidatorData: make([]ValidatorData, 25),
 		}
 
-		_, err := prover.Prove(input)
+		_, err := prover.Prove(t.Context(), input)
 		require.Error(t, err)
 		require.ErrorContains(t, err, "failed to load cs, vk, pk for valset size")
 	})
@@ -247,7 +247,7 @@ func TestProveValidation(t *testing.T) {
 			ValidatorData: make([]ValidatorData, 10),
 		}
 
-		_, err := prover.Prove(input)
+		_, err := prover.Prove(t.Context(), input)
 		require.Error(t, err)
 		require.ErrorContains(t, err, "failed to load cs, vk, pk for valset size: 10")
 	})
@@ -258,7 +258,7 @@ func TestVerifyValidation(t *testing.T) {
 	t.Run("returns error when circuits directory not set", func(t *testing.T) {
 		prover := NewZkProver("")
 
-		ok, err := prover.Verify(10, common.Hash{}, []byte{})
+		ok, err := prover.Verify(t.Context(), 10, common.Hash{}, []byte{})
 		require.False(t, ok)
 		require.ErrorContains(t, err, "ZK prover circuits directory is not set")
 	})
@@ -276,7 +276,7 @@ func TestVerifyValidation(t *testing.T) {
 		// But since we don't have vk[10], it should error
 		// Note: Verify needs at least 384 bytes for proof
 		proofBytes := make([]byte, 384)
-		ok, err := prover.Verify(5, common.Hash{}, proofBytes)
+		ok, err := prover.Verify(t.Context(), 5, common.Hash{}, proofBytes)
 		require.False(t, ok)
 		require.Error(t, err)
 		require.ErrorContains(t, err, "failed to find verification key for valset length 10")
@@ -293,7 +293,7 @@ func TestVerifyValidation(t *testing.T) {
 
 		// valsetLen = 5000 exceeds all sizes, getOptimalN returns 0
 		proofBytes := make([]byte, 384)
-		ok, err := prover.Verify(5000, common.Hash{}, proofBytes)
+		ok, err := prover.Verify(t.Context(), 5000, common.Hash{}, proofBytes)
 		require.False(t, ok)
 		require.Error(t, err)
 		require.ErrorContains(t, err, "failed to find verification key for valset length 0")
@@ -310,7 +310,7 @@ func TestVerifyValidation(t *testing.T) {
 
 		// Even with exact match valsetLen=100, vk map is empty
 		proofBytes := make([]byte, 384)
-		ok, err := prover.Verify(100, common.Hash{}, proofBytes)
+		ok, err := prover.Verify(t.Context(), 100, common.Hash{}, proofBytes)
 		require.False(t, ok)
 		require.Error(t, err)
 		require.ErrorContains(t, err, "failed to find verification key for valset length 100")

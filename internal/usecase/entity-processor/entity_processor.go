@@ -28,7 +28,7 @@ type Repository interface {
 }
 
 type Aggregator interface {
-	Verify(valset symbiotic.ValidatorSet, keyTag symbiotic.KeyTag, aggregationProof symbiotic.AggregationProof) (bool, error)
+	Verify(ctx context.Context, valset symbiotic.ValidatorSet, keyTag symbiotic.KeyTag, aggregationProof symbiotic.AggregationProof) (bool, error)
 }
 
 type AggProofSignal interface {
@@ -172,7 +172,7 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregati
 	tracing.SetAttributes(span, tracing.AttrValidatorCount.Int(len(validatorSet.Validators)))
 
 	tracing.AddEvent(span, "verifying_proof")
-	ok, err := s.cfg.Aggregator.Verify(validatorSet, aggregationProof.KeyTag, aggregationProof)
+	ok, err := s.cfg.Aggregator.Verify(ctx, validatorSet, aggregationProof.KeyTag, aggregationProof)
 	if err != nil {
 		tracing.RecordError(span, err)
 		return errors.Errorf("failed to verify aggregation proof: %w", err)

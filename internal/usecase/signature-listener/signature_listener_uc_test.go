@@ -75,7 +75,7 @@ func newTestSetup(t *testing.T) *testSetup {
 	// Create mock aggregator for entity processor
 	ctrl := gomock.NewController(t)
 	mockAggregator := mocks.NewMockAggregator(ctrl)
-	mockAggregator.EXPECT().Verify(gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes()
+	mockAggregator.EXPECT().Verify(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes()
 
 	// Create mock aggregation proof signal for entity processor
 	mockAggProofSignal := mocks.NewMockAggProofSignal(ctrl)

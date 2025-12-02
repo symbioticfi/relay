@@ -16,7 +16,7 @@ func (r *Repository) SaveSignature(ctx context.Context, signature symbiotic.Sign
 		err          error
 	)
 
-	if err := r.doUpdateInTxWithLock(ctx, "ProcessSignature", func(ctx context.Context) error {
+	if err := r.doUpdateInTxWithLock(ctx, "SaveSignature", func(ctx context.Context) error {
 		signatureMap, err = r.GetSignatureMap(ctx, signature.RequestID())
 		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 			return errors.Errorf("failed to get valset signature map: %w", err)

@@ -325,6 +325,7 @@ func TestAggregator_Aggregate_WithEmptySignatures_Succeeds(t *testing.T) {
 	agg, err := NewAggregator()
 	require.NoError(t, err)
 
+	ctx := context.Background()
 	valset := symbiotic.ValidatorSet{
 		Validators: []symbiotic.Validator{},
 	}
@@ -332,7 +333,7 @@ func TestAggregator_Aggregate_WithEmptySignatures_Succeeds(t *testing.T) {
 	messageHash := []byte("test-message")
 	signatures := []symbiotic.Signature{}
 
-	proof, err := agg.Aggregate(valset, keyTag, messageHash, signatures)
+	proof, err := agg.Aggregate(ctx, valset, keyTag, messageHash, signatures)
 
 	require.NoError(t, err)
 	assert.NotNil(t, proof)
@@ -342,6 +343,7 @@ func TestAggregator_Aggregate_WithMismatchedMessageHashes_ReturnsError(t *testin
 	agg, err := NewAggregator()
 	require.NoError(t, err)
 
+	ctx := context.Background()
 	valset := symbiotic.ValidatorSet{}
 	keyTag := symbiotic.KeyTag(1)
 	messageHash := []byte("test-message")
@@ -349,7 +351,7 @@ func TestAggregator_Aggregate_WithMismatchedMessageHashes_ReturnsError(t *testin
 		{MessageHash: []byte("different-message")},
 	}
 
-	_, err = agg.Aggregate(valset, keyTag, messageHash, signatures)
+	_, err = agg.Aggregate(ctx, valset, keyTag, messageHash, signatures)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "message hashes mismatch")
@@ -359,6 +361,7 @@ func TestAggregator_Verify_WithInvalidMessageHashLength_ReturnsError(t *testing.
 	agg, err := NewAggregator()
 	require.NoError(t, err)
 
+	ctx := context.Background()
 	valset := symbiotic.ValidatorSet{}
 	keyTag := symbiotic.KeyTag(1)
 	proof := symbiotic.AggregationProof{
@@ -366,7 +369,7 @@ func TestAggregator_Verify_WithInvalidMessageHashLength_ReturnsError(t *testing.
 		Proof:       make([]byte, 224),
 	}
 
-	success, err := agg.Verify(valset, keyTag, proof)
+	success, err := agg.Verify(ctx, valset, keyTag, proof)
 
 	require.Error(t, err)
 	assert.False(t, success)
@@ -377,6 +380,7 @@ func TestAggregator_Verify_WithShortProof_ReturnsError(t *testing.T) {
 	agg, err := NewAggregator()
 	require.NoError(t, err)
 
+	ctx := context.Background()
 	valset := symbiotic.ValidatorSet{}
 	keyTag := symbiotic.KeyTag(1)
 	proof := symbiotic.AggregationProof{
@@ -384,7 +388,7 @@ func TestAggregator_Verify_WithShortProof_ReturnsError(t *testing.T) {
 		Proof:       make([]byte, 100),
 	}
 
-	success, err := agg.Verify(valset, keyTag, proof)
+	success, err := agg.Verify(ctx, valset, keyTag, proof)
 
 	require.Error(t, err)
 	assert.False(t, success)

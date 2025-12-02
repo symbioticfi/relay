@@ -3,8 +3,9 @@ package p2p
 import (
 	"github.com/go-errors/errors"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
-	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 
 	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
 	p2pEntity "github.com/symbioticfi/relay/internal/entity"

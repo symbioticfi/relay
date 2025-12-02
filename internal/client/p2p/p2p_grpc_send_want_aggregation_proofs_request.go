@@ -12,29 +12,52 @@ import (
 	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
 	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
+	"github.com/symbioticfi/relay/pkg/tracing"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // SendWantAggregationProofsRequest sends a synchronous aggregation proof request to a peer
 func (s *Service) SendWantAggregationProofsRequest(ctx context.Context, request entity.WantAggregationProofsRequest) (entity.WantAggregationProofsResponse, error) {
+	ctx, span := tracing.StartClientSpan(ctx, "p2p.SendWantAggregationProofsRequest")
+	defer span.End()
+
+	tracing.SetAttributes(span,
+		tracing.AttrRequestID.Int(len(request.RequestIDs)),
+	)
+
 	ctx = log.WithComponent(ctx, "p2p")
 
+	tracing.AddEvent(span, "converting_request")
 	// Convert entity request to protobuf
 	protoReq := entityToProtoAggregationProofRequest(request)
 
+	tracing.AddEvent(span, "selecting_peer")
 	// Select a peer for the request
 	peerID, err := s.selectPeerForSync()
 	if err != nil {
+		tracing.RecordError(span, err)
 		return entity.WantAggregationProofsResponse{}, errors.Errorf("failed to select peer: %w", err)
 	}
 
+	tracing.SetAttributes(span, tracing.AttrPeerID.String(peerID.String()))
+
+	tracing.AddEvent(span, "sending_request")
 	// Send request to the selected peer
 	response, err := s.sendAggregationProofRequestToPeer(ctx, peerID, protoReq)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return entity.WantAggregationProofsResponse{}, errors.Errorf("failed to get aggregation proofs from peer %s: %w", peerID, err)
 	}
 
-	return protoToEntityAggregationProofResponse(response), nil
+	tracing.AddEvent(span, "converting_response")
+	entityResp := protoToEntityAggregationProofResponse(response)
+
+	tracing.SetAttributes(span,
+		tracing.AttrProofSize.Int(len(entityResp.Proofs)),
+	)
+
+	tracing.AddEvent(span, "request_completed")
+	return entityResp, nil
 }
 
 // sendAggregationProofRequestToPeer sends a gRPC aggregation proof request to a specific peer

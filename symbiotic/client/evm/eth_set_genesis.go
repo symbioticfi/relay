@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 
@@ -72,13 +71,9 @@ func (e *Client) SetGenesis(
 		return symbiotic.TxResult{}, e.formatEVMError(err)
 	}
 
-	receipt, err := bind.WaitMined(ctx, e.conns[addr.ChainId], tx)
+	receipt, err := e.waitTxMined(ctx, addr.ChainId, tx)
 	if err != nil {
-		return symbiotic.TxResult{}, errors.Errorf("failed to wait for tx mining: %w", err)
-	}
-
-	if receipt.Status == types.ReceiptStatusFailed {
-		return symbiotic.TxResult{}, errors.New("transaction reverted on chain")
+		return symbiotic.TxResult{}, err
 	}
 
 	return symbiotic.TxResult{

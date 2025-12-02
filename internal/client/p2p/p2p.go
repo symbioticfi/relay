@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
@@ -25,6 +24,7 @@ import (
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/server"
 	"github.com/symbioticfi/relay/pkg/signals"
+	"github.com/symbioticfi/relay/pkg/tracing"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
@@ -248,11 +248,21 @@ func (s *Service) addPeer(pi peer.AddrInfo) error {
 
 // broadcast sends a message to all connected peers
 func (s *Service) broadcast(ctx context.Context, topicName string, data []byte) error {
+	ctx, span := tracing.StartSpan(ctx, "p2p.broadcast",
+		tracing.AttrTopic.String(topicName),
+		tracing.AttrMessageSize.Int(len(data)),
+	)
+	defer span.End()
+
+	tracing.AddEvent(span, "looking_up_topic")
 	topic, ok := s.topicsMap[topicName]
 	if !ok {
-		return errors.Errorf("topic %s not found", topicName)
+		err := errors.Errorf("topic %s not found", topicName)
+		tracing.RecordError(span, err)
+		return err
 	}
 
+	tracing.AddEvent(span, "creating_message")
 	msg := prototypes.P2PMessage{
 		Sender:       s.host.ID().String(),
 		Timestamp:    time.Now().Unix(),
@@ -261,25 +271,31 @@ func (s *Service) broadcast(ctx context.Context, topicName string, data []byte) 
 	}
 
 	// Inject trace context if span is recording
-	span := trace.SpanFromContext(ctx)
 	if span.IsRecording() {
 		carrier := propagation.MapCarrier{}
 		otel.GetTextMapPropagator().Inject(ctx, carrier)
 		msg.TraceContext = carrier
 	}
 
+	tracing.AddEvent(span, "marshaling_message")
 	// Marshal and send the message
 	data, err := proto.Marshal(&msg)
 	if err != nil {
-		return errors.Errorf("failed to marshal message: %w", err)
+		err = errors.Errorf("failed to marshal message: %w", err)
+		tracing.RecordError(span, err)
+		return err
 	}
 
+	tracing.AddEvent(span, "publishing_to_topic")
 	err = topic.Publish(ctx, data)
 	if err != nil {
 		s.metrics.ObserveP2PPeerMessageSent(topicName, "error")
-		return errors.Errorf("failed to publish data to topic %s: %w", topic.String(), err)
+		err = errors.Errorf("failed to publish data to topic %s: %w", topic.String(), err)
+		tracing.RecordError(span, err)
+		return err
 	}
 
+	tracing.AddEvent(span, "broadcast_completed")
 	slog.DebugContext(ctx, "Message published to topic", "topic", topicName)
 	s.metrics.ObserveP2PPeerMessageSent(topicName, "ok")
 

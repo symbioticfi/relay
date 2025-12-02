@@ -102,6 +102,8 @@ var (
 	// P2P attributes
 	AttrPeerID      = attribute.Key("peer.id")
 	AttrMessageType = attribute.Key("message.type")
+	AttrTopic       = attribute.Key("topic")
+	AttrMessageSize = attribute.Key("message.size")
 
 	// Database attributes
 	AttrQueryName = attribute.Key("query.name")

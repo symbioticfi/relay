@@ -37,7 +37,7 @@ type metrics interface {
 }
 
 type aggregator interface {
-	Aggregate(valset symbiotic.ValidatorSet, keyTag symbiotic.KeyTag, messageHash []byte, signatures []symbiotic.Signature) (symbiotic.AggregationProof, error)
+	Aggregate(ctx context.Context, valset symbiotic.ValidatorSet, keyTag symbiotic.KeyTag, messageHash []byte, signatures []symbiotic.Signature) (symbiotic.AggregationProof, error)
 }
 
 type keyProvider interface {
@@ -210,6 +210,7 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 	tracing.AddEvent(span, "aggregating_proof")
 	onlyAggregateStart := time.Now()
 	proofData, err := s.cfg.Aggregator.Aggregate(
+		ctx,
 		validatorSet,
 		msg.KeyTag,
 		msg.MessageHash,

@@ -224,31 +224,49 @@ func (s *Service) pruneEntities(
 	entityType string,
 	pruneFunc func(context.Context, symbiotic.Epoch) error,
 ) (uint64, error) {
+	ctx, span := tracing.StartSpan(ctx, "pruner.pruneEntities")
+	defer span.End()
+
+	tracing.SetAttributes(span,
+		tracing.AttrEpoch.Int64(int64(latestEpoch)),
+	)
+
 	if retentionEpochs == 0 {
+		tracing.AddEvent(span, "skipped_no_retention")
 		return 0, nil
 	}
 
+	tracing.AddEvent(span, "calculating_retention_window")
 	retentionWindow := symbiotic.Epoch(retentionEpochs)
 	if latestEpoch < retentionWindow {
+		tracing.AddEvent(span, "skipped_insufficient_epochs")
 		return 0, nil
 	}
 
 	oldestToKeep := latestEpoch - retentionWindow + 1
 	if oldestStoredEpoch >= oldestToKeep {
+		tracing.AddEvent(span, "skipped_no_epochs_to_prune")
 		return 0, nil
 	}
 
+	tracing.AddEvent(span, "pruning_epochs")
 	count := uint64(0)
 	for epoch := oldestStoredEpoch; epoch < oldestToKeep; epoch++ {
 		slog.DebugContext(ctx, "Pruning entities", "entityType", entityType, "epoch", epoch)
 
 		if err := pruneFunc(ctx, epoch); err != nil {
+			tracing.RecordError(span, err)
 			return count, errors.Errorf("failed to prune %s entities for epoch %d: %w", entityType, epoch, err)
 		}
 
 		count++
 		s.cfg.Metrics.IncPrunedEpochsCount(entityType)
 	}
+
+	tracing.SetAttributes(span,
+		tracing.AttrValidatorCount.Int(int(count)),
+	)
+	tracing.AddEvent(span, "pruning_completed")
 
 	return count, nil
 }

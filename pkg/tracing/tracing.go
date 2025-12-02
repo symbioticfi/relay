@@ -19,8 +19,10 @@ const ServiceName = "symbiotic-relay"
 
 type Config struct {
 	Enabled    bool
-	Endpoint   string // OTLP endpoint (e.g., "localhost:4317" for Jaeger)
+	Endpoint   string
 	SampleRate float64
+	InstanceID string
+	Version    string
 }
 
 type Tracer struct {
@@ -38,7 +40,6 @@ func New(ctx context.Context, cfg Config) (*Tracer, error) {
 		}, nil
 	}
 
-	// Create OTLP gRPC exporter
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -50,12 +51,22 @@ func New(ctx context.Context, cfg Config) (*Tracer, error) {
 		return nil, errors.Errorf("failed to create OTLP exporter: %w", err)
 	}
 
-	// Create resource with service name
-	res, err := resource.New(ctx,
+	// Create resource with service name and instance-specific attributes
+	resourceAttrs := []resource.Option{
 		resource.WithAttributes(
 			semconv.ServiceNameKey.String(ServiceName),
 		),
-	)
+		resource.WithAttributes(
+			semconv.ServiceInstanceIDKey.String(cfg.InstanceID),
+		),
+		resource.WithAttributes(
+			semconv.ServiceVersionKey.String(cfg.Version),
+		),
+	}
+
+	resourceAttrs = append(resourceAttrs, resource.WithHost())
+
+	res, err := resource.New(ctx, resourceAttrs...)
 	if err != nil {
 		return nil, errors.Errorf("failed to create resource: %w", err)
 	}

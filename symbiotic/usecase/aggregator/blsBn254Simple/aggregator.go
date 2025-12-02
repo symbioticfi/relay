@@ -87,21 +87,31 @@ func createABITypes() (abiTypes, error) {
 	}, nil
 }
 
-func (a Aggregator) Aggregate(
-	valset symbiotic.ValidatorSet,
-	keyTag symbiotic.KeyTag,
-	messageHash []byte,
-	signatures []symbiotic.Signature,
-) (symbiotic.AggregationProof, error) {
+func (a Aggregator) Aggregate(ctx context.Context, valset symbiotic.ValidatorSet, keyTag symbiotic.KeyTag, messageHash []byte, signatures []symbiotic.Signature) (symbiotic.AggregationProof, error) {
+	_, span := tracing.StartSpan(ctx, "aggregator.Aggregate",
+		tracing.AttrEpoch.Int64(int64(valset.Epoch)),
+		tracing.AttrValidatorCount.Int(len(valset.Validators)),
+		tracing.AttrSignatureCount.Int(len(signatures)),
+		tracing.AttrKeyTag.String(keyTag.String()),
+		tracing.AttrProofType.String("bls-bn254-simple"),
+	)
+	defer span.End()
+
+	tracing.AddEvent(span, "validating_inputs")
 	if !helpers.CompareMessageHasher(signatures, messageHash) {
-		return symbiotic.AggregationProof{}, errors.New("message hashes mismatch")
+		err := errors.New("message hashes mismatch")
+		tracing.RecordError(span, err)
+		return symbiotic.AggregationProof{}, err
 	}
 	if err := valset.Validators.CheckIsSortedByOperatorAddressAsc(); err != nil {
+		tracing.RecordError(span, err)
 		return symbiotic.AggregationProof{}, errors.Errorf("valset is not sorted by operator address asc: %w", err)
 	}
 
+	tracing.AddEvent(span, "processing_validators")
 	validatorsData, err := processValidators(valset.Validators, keyTag)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return symbiotic.AggregationProof{}, err
 	}
 
@@ -113,15 +123,19 @@ func (a Aggregator) Aggregate(
 
 	valKeysToIdx := helpers.GetValidatorsIndexesMapByKey(valset, keyTag)
 
+	tracing.AddEvent(span, "aggregating_signatures")
 	for _, sig := range signatures {
 		pubKey, err := blsBn254.FromRaw(sig.PublicKey.Raw())
 		if err != nil {
+			tracing.RecordError(span, err)
 			return symbiotic.AggregationProof{}, err
 		}
 
 		idx, ok := valKeysToIdx[string(pubKey.OnChain())]
 		if !ok {
-			return symbiotic.AggregationProof{}, errors.New("failed to find validator by key")
+			err := errors.New("failed to find validator by key")
+			tracing.RecordError(span, err)
+			return symbiotic.AggregationProof{}, err
 		}
 
 		val := valset.Validators[idx]
@@ -132,22 +146,27 @@ func (a Aggregator) Aggregate(
 		g1Key := new(bn254.G1Affine)
 		_, err = g1Key.SetBytes(pubKey.OnChain())
 		if err != nil {
+			tracing.RecordError(span, err)
 			return symbiotic.AggregationProof{}, err
 		}
 
 		compressedKeyG1, err := compress(g1Key)
 		if err != nil {
+			tracing.RecordError(span, err)
 			return symbiotic.AggregationProof{}, errors.Errorf("failed to compress G1 key: %w", err)
 		}
 
 		if _, exists := signersMap[compressedKeyG1]; exists {
-			return symbiotic.AggregationProof{}, errors.Errorf("duplicate signature from validator")
+			err := errors.Errorf("duplicate signature from validator")
+			tracing.RecordError(span, err)
+			return symbiotic.AggregationProof{}, err
 		}
 		signersMap[compressedKeyG1] = struct{}{}
 
 		g1Sig := new(bn254.G1Affine)
 		_, err = g1Sig.SetBytes(sig.Signature)
 		if err != nil {
+			tracing.RecordError(span, err)
 			return symbiotic.AggregationProof{}, err
 		}
 
@@ -155,11 +174,15 @@ func (a Aggregator) Aggregate(
 		aggG2Key = aggG2Key.Add(aggG2Key, pubKey.G2())
 	}
 
+	tracing.AddEvent(span, "identifying_non_signers")
 	for i, val := range validatorsData {
 		if _, isSigner := signersMap[val.KeySerialized]; !isSigner {
 			nonSigners = append(nonSigners, i)
 		}
 	}
+
+	tracing.SetAttributes(span, tracing.AttrValidatorCount.Int(len(nonSigners)))
+	tracing.AddEvent(span, "packing_proof")
 
 	aggG1SigBytes, err := a.abiTypes.g1Args.Pack(struct {
 		X *big.Int
@@ -169,6 +192,7 @@ func (a Aggregator) Aggregate(
 		Y: aggG1Sig.Y.BigInt(new(big.Int)),
 	})
 	if err != nil {
+		tracing.RecordError(span, err)
 		return symbiotic.AggregationProof{}, err
 	}
 
@@ -186,12 +210,14 @@ func (a Aggregator) Aggregate(
 		},
 	})
 	if err != nil {
+		tracing.RecordError(span, err)
 		return symbiotic.AggregationProof{}, err
 	}
 
 	// Pack validators data with anonymous structs
 	validatorsDataBytes, err := a.packValidatorsData(validatorsData)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return symbiotic.AggregationProof{}, err
 	}
 
@@ -203,11 +229,15 @@ func (a Aggregator) Aggregate(
 		nonSignersBytes = append(nonSignersBytes, bidEndianBytes...)
 	}
 
+	tracing.AddEvent(span, "assembling_proof")
 	// Assemble proof
 	proofBytes := bytes.Clone(aggG1SigBytes)
 	proofBytes = append(proofBytes, aggG2KeyBytes...)
 	proofBytes = append(proofBytes, validatorsDataBytes[32:]...)
 	proofBytes = append(proofBytes, nonSignersBytes...)
+
+	tracing.SetAttributes(span, tracing.AttrProofSize.Int(len(proofBytes)))
+	tracing.AddEvent(span, "aggregation_completed")
 
 	return symbiotic.AggregationProof{
 		MessageHash: messageHash,
@@ -218,29 +248,48 @@ func (a Aggregator) Aggregate(
 }
 
 func (a Aggregator) Verify(
+	ctx context.Context,
 	valset symbiotic.ValidatorSet,
 	keyTag symbiotic.KeyTag,
 	aggregationProof symbiotic.AggregationProof,
 ) (bool, error) {
+	_, span := tracing.StartSpan(ctx, "aggregator.Verify",
+		tracing.AttrEpoch.Int64(int64(valset.Epoch)),
+		tracing.AttrValidatorCount.Int(len(valset.Validators)),
+		tracing.AttrKeyTag.String(keyTag.String()),
+		tracing.AttrProofType.String("bls-bn254-simple"),
+		tracing.AttrProofSize.Int(len(aggregationProof.Proof)),
+	)
+	defer span.End()
+
+	tracing.AddEvent(span, "validating_inputs")
 	// Check key tag type
 	if keyTag.Type() != symbiotic.KeyTypeBlsBn254 {
-		return false, errors.New("unsupported key tag")
+		err := errors.New("unsupported key tag")
+		tracing.RecordError(span, err)
+		return false, err
 	}
 
 	if len(aggregationProof.MessageHash) != 32 {
-		return false, errors.New("aggregation proof message hash has invalid length")
+		err := errors.New("aggregation proof message hash has invalid length")
+		tracing.RecordError(span, err)
+		return false, err
 	}
 
 	if len(aggregationProof.Proof) < 224 {
-		return false, errors.New("aggregation proof is too short")
+		err := errors.New("aggregation proof is too short")
+		tracing.RecordError(span, err)
+		return false, err
 	}
 
+	tracing.AddEvent(span, "parsing_proof_components")
 	// Parse proof components
 	offset := 0
 	length := 64
 
 	rawAggSig, err := a.abiTypes.g1Args.Unpack(aggregationProof.Proof[offset : offset+length])
 	if err != nil {
+		tracing.RecordError(span, err)
 		return false, err
 	}
 
@@ -389,14 +438,18 @@ func (a Aggregator) Verify(
 		}
 	}
 
+	tracing.AddEvent(span, "checking_quorum")
 	// Check quorum using the same logic as Solidity
 	totalActiveVotingPower := valset.GetTotalActiveVotingPower()
 	signersVotingPower := new(big.Int).Sub(totalActiveVotingPower.Int, &nonSignersVotingPower)
 
 	if valset.QuorumThreshold.Cmp(signersVotingPower) > 0 {
-		return false, errors.Errorf("signers do not meet threshold voting power (%s < %s)", signersVotingPower.String(), valset.QuorumThreshold.String())
+		err := errors.Errorf("signers do not meet threshold voting power (%s < %s)", signersVotingPower.String(), valset.QuorumThreshold.String())
+		tracing.RecordError(span, err)
+		return false, err
 	}
 
+	tracing.AddEvent(span, "verifying_bls_signature")
 	// Get aggregated public key from valset (equivalent to extra data in Solidity)
 	aggregatedPubKeys := helpers.GetAggregatedPubKeys(valset, []symbiotic.KeyTag{keyTag})
 	if len(aggregatedPubKeys) == 0 {
@@ -438,12 +491,16 @@ func (a Aggregator) Verify(
 
 	ok, err := bn254.PairingCheck(p[:], q[:])
 	if err != nil {
+		tracing.RecordError(span, err)
 		return false, errors.Errorf("pairing check failed: %w", err)
 	}
 	if !ok {
-		return false, errors.New("pairing check failed")
+		err := errors.New("pairing check failed")
+		tracing.RecordError(span, err)
+		return false, err
 	}
 
+	tracing.AddEvent(span, "verification_successful")
 	return true, nil
 }
 

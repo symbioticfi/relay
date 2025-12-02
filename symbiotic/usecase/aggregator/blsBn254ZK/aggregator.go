@@ -30,14 +30,21 @@ func NewAggregator(prover types.Prover) (*Aggregator, error) {
 	}, nil
 }
 
-func (a Aggregator) Aggregate(
-	valset symbiotic.ValidatorSet,
-	keyTag symbiotic.KeyTag,
-	messageHash []byte,
-	signatures []symbiotic.Signature,
-) (symbiotic.AggregationProof, error) {
+func (a Aggregator) Aggregate(ctx context.Context, valset symbiotic.ValidatorSet, keyTag symbiotic.KeyTag, messageHash []byte, signatures []symbiotic.Signature) (symbiotic.AggregationProof, error) {
+	ctx, span := tracing.StartSpan(ctx, "aggregator.Aggregate",
+		tracing.AttrEpoch.Int64(int64(valset.Epoch)),
+		tracing.AttrValidatorCount.Int(len(valset.Validators)),
+		tracing.AttrSignatureCount.Int(len(signatures)),
+		tracing.AttrKeyTag.String(keyTag.String()),
+		tracing.AttrProofType.String("bls-bn254-zk"),
+	)
+	defer span.End()
+
+	tracing.AddEvent(span, "validating_inputs")
 	if !helpers.CompareMessageHasher(signatures, messageHash) {
-		return symbiotic.AggregationProof{}, errors.New("message hashes mismatch")
+		err := errors.New("message hashes mismatch")
+		tracing.RecordError(span, err)
+		return symbiotic.AggregationProof{}, err
 	}
 
 	aggG1Sig := new(bn254.G1Affine)
@@ -45,15 +52,19 @@ func (a Aggregator) Aggregate(
 	signers := make(map[common.Address]bool)
 	valKeysToIdx := helpers.GetValidatorsIndexesMapByKey(valset, keyTag)
 
+	tracing.AddEvent(span, "aggregating_signatures")
 	for _, sig := range signatures {
 		pubKey, err := blsBn254.FromRaw(sig.PublicKey.Raw())
 		if err != nil {
+			tracing.RecordError(span, err)
 			return symbiotic.AggregationProof{}, err
 		}
 
 		idx, ok := valKeysToIdx[string(pubKey.OnChain())]
 		if !ok {
-			return symbiotic.AggregationProof{}, errors.New("failed to find validator by key")
+			err := errors.New("failed to find validator by key")
+			tracing.RecordError(span, err)
+			return symbiotic.AggregationProof{}, err
 		}
 		val := valset.Validators[idx]
 		if !val.IsActive {
@@ -62,6 +73,7 @@ func (a Aggregator) Aggregate(
 		g1Sig := new(bn254.G1Affine)
 		_, err = g1Sig.SetBytes(sig.Signature)
 		if err != nil {
+			tracing.RecordError(span, err)
 			return symbiotic.AggregationProof{}, err
 		}
 		aggG1Sig = aggG1Sig.Add(aggG1Sig, g1Sig)
@@ -69,17 +81,21 @@ func (a Aggregator) Aggregate(
 		signers[val.Operator] = true
 	}
 
+	tracing.AddEvent(span, "building_validator_data")
 	var validatorsData []proof.ValidatorData
 	for _, val := range valset.Validators {
 		if val.IsActive {
 			keyBytes, ok := val.FindKeyByKeyTag(keyTag)
 			if !ok {
-				return symbiotic.AggregationProof{}, errors.New("failed to find key by keyTag")
+				err := errors.New("failed to find key by keyTag")
+				tracing.RecordError(span, err)
+				return symbiotic.AggregationProof{}, err
 			}
 			_, isSigner := signers[val.Operator]
 			g1Key := new(bn254.G1Affine)
 			_, err := g1Key.SetBytes(keyBytes)
 			if err != nil {
+				tracing.RecordError(span, err)
 				return symbiotic.AggregationProof{}, errors.Errorf("failed to deserialize G1 key: %w", err)
 			}
 
@@ -91,12 +107,15 @@ func (a Aggregator) Aggregate(
 		}
 	}
 
+	tracing.AddEvent(span, "hashing_message_to_g1")
 	messageG1, err := blsBn254.HashToG1(messageHash)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return symbiotic.AggregationProof{}, err
 	}
 	messageG1Bn254 := bn254.G1Affine{X: messageG1.X, Y: messageG1.Y}
 
+	tracing.AddEvent(span, "generating_zk_proof")
 	proverInput := proof.ProveInput{
 		ValidatorData:   proof.NormalizeValset(validatorsData),
 		MessageG1:       messageG1Bn254,
@@ -104,24 +123,40 @@ func (a Aggregator) Aggregate(
 		SignersAggKeyG2: *aggG2Key,
 	}
 
-	proofData, err := a.prover.Prove(proverInput)
+	proofData, err := a.prover.Prove(ctx, proverInput)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return symbiotic.AggregationProof{}, err
 	}
+
+	proofBytes := proofData.Marshal()
+	tracing.SetAttributes(span, tracing.AttrProofSize.Int(len(proofBytes)))
+	tracing.AddEvent(span, "aggregation_completed")
 
 	return symbiotic.AggregationProof{
 		MessageHash: messageHash,
 		KeyTag:      keyTag,
 		Epoch:       valset.Epoch,
-		Proof:       proofData.Marshal(),
+		Proof:       proofBytes,
 	}, nil
 }
 
 func (a Aggregator) Verify(
+	ctx context.Context,
 	valset symbiotic.ValidatorSet,
 	keyTag symbiotic.KeyTag,
 	aggregationProof symbiotic.AggregationProof,
 ) (bool, error) {
+	ctx, span := tracing.StartSpan(ctx, "aggregator.Verify",
+		tracing.AttrEpoch.Int64(int64(valset.Epoch)),
+		tracing.AttrValidatorCount.Int(len(valset.Validators)),
+		tracing.AttrKeyTag.String(keyTag.String()),
+		tracing.AttrProofType.String("bls-bn254-zk"),
+		tracing.AttrProofSize.Int(len(aggregationProof.Proof)),
+	)
+	defer span.End()
+
+	tracing.AddEvent(span, "counting_active_validators")
 	activeVals := 0
 	for _, val := range valset.Validators {
 		if val.IsActive {
@@ -129,34 +164,45 @@ func (a Aggregator) Verify(
 		}
 	}
 
+	tracing.AddEvent(span, "calculating_mimc_accumulator")
 	mimcAccum, err := validatorSetMimcAccumulator(valset.Validators, keyTag)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return false, err
 	}
 	// last 32 bytes is aggVotingPowerBytes
 	aggVotingPowerBytes := aggregationProof.Proof[len(aggregationProof.Proof)-32:]
 
+	tracing.AddEvent(span, "hashing_message_to_g1")
 	messageG1, err := blsBn254.HashToG1(aggregationProof.MessageHash)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return false, errors.Errorf("failed to hash message to G1: %w", err)
 	}
 	messageG1Bytes := messageG1.RawBytes() // non compressed
 
+	tracing.AddEvent(span, "preparing_public_inputs")
 	inpBytes := mimcAccum[:]
 	inpBytes = append(inpBytes, aggVotingPowerBytes...)
 	inpBytes = append(inpBytes, messageG1Bytes[:]...)
 	inpHash := crypto.Keccak256Hash(inpBytes)
 
-	ok, err := a.prover.Verify(activeVals, inpHash, aggregationProof.Proof)
+	tracing.AddEvent(span, "verifying_zk_proof")
+	ok, err := a.prover.Verify(ctx, activeVals, inpHash, aggregationProof.Proof)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return false, err
 	}
 
+	tracing.AddEvent(span, "checking_quorum")
 	aggVotingPower := new(big.Int).SetBytes(aggVotingPowerBytes)
 	if aggVotingPower.Cmp(valset.QuorumThreshold.Int) < 0 {
-		return false, errors.Errorf("agg voting power %s is less than quorum threshold %s", aggVotingPower.String(), valset.QuorumThreshold.String())
+		err := errors.Errorf("agg voting power %s is less than quorum threshold %s", aggVotingPower.String(), valset.QuorumThreshold.String())
+		tracing.RecordError(span, err)
+		return false, err
 	}
 
+	tracing.AddEvent(span, "verification_successful")
 	return ok, nil
 }
 
