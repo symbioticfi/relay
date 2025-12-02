@@ -6,6 +6,7 @@ import (
 	"github.com/go-errors/errors"
 
 	"github.com/symbioticfi/relay/internal/client/repository/cache"
+	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
@@ -148,6 +149,22 @@ func (r *CachedRepository) PruneValsetEntities(ctx context.Context, epoch symbio
 	}
 
 	r.evictValsetCaches(epoch)
+	return nil
+}
+
+func (r *CachedRepository) SaveNextValsetData(ctx context.Context, data entity.NextValsetData) error {
+	err := r.Repository.SaveNextValsetData(ctx, data)
+	if err != nil {
+		return err
+	}
+
+	r.validatorSetCache.Add(data.PrevValidatorSet.Epoch, data.PrevValidatorSet)
+	r.networkConfigCache.Add(data.PrevValidatorSet.Epoch, data.NextNetworkConfig)
+
+	r.validatorSetCache.Add(data.NextValidatorSet.Epoch, data.NextValidatorSet)
+	r.networkConfigCache.Add(data.NextValidatorSet.Epoch, data.NextNetworkConfig)
+
+	r.validatorSetMetadataCache.Add(data.ValidatorSetMetadata.Epoch, data.ValidatorSetMetadata)
 	return nil
 }
 

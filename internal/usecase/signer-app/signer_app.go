@@ -112,6 +112,10 @@ func (s *SignerApp) RequestSignature(ctx context.Context, req symbiotic.Signatur
 	return requestId, nil
 }
 
+func (s *SignerApp) EnqueueRequestID(requestID common.Hash) {
+	s.queue.Add(requestID)
+}
+
 func (s *SignerApp) completeSign(ctx context.Context, req symbiotic.SignatureRequest, p2pService p2pService) error {
 	ctx = log.WithAttrs(ctx,
 		slog.Uint64("epoch", uint64(req.RequiredEpoch)),
