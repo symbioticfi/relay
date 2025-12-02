@@ -287,6 +287,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context, nextEpoch, currentEp
 
 		if nextEpoch == 0 {
 			prevValset = nextValset
+			prevNetworkConfig = nextEpochConfig
 		}
 
 		if err := s.process(ctx, prevNetworkConfig, prevValset, nextValset, nextEpochConfig); err != nil {
