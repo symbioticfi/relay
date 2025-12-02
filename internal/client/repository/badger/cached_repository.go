@@ -159,7 +159,7 @@ func (r *CachedRepository) SaveNextValsetData(ctx context.Context, data entity.N
 	}
 
 	r.validatorSetCache.Add(data.PrevValidatorSet.Epoch, data.PrevValidatorSet)
-	r.networkConfigCache.Add(data.PrevValidatorSet.Epoch, data.NextNetworkConfig)
+	r.networkConfigCache.Add(data.PrevValidatorSet.Epoch, data.PrevNetworkConfig)
 
 	r.validatorSetCache.Add(data.NextValidatorSet.Epoch, data.NextValidatorSet)
 	r.networkConfigCache.Add(data.NextValidatorSet.Epoch, data.NextNetworkConfig)

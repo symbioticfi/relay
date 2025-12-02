@@ -21,7 +21,7 @@ func (r *Repository) SaveNextValsetData(ctx context.Context, data entity.NextVal
 
 		// Save next validator set and config
 		if err := r.SaveConfig(ctx, data.NextNetworkConfig, data.NextValidatorSet.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
-			return errors.Errorf("failed to save network config for epoch %d: %w", data.PrevValidatorSet.Epoch, err)
+			return errors.Errorf("failed to save network config for epoch %d: %w", data.NextValidatorSet.Epoch, err)
 		}
 
 		if err := r.SaveValidatorSet(ctx, data.NextValidatorSet); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
@@ -31,7 +31,7 @@ func (r *Repository) SaveNextValsetData(ctx context.Context, data entity.NextVal
 		if data.SignatureRequest != nil {
 			err := r.SaveSignatureRequest(ctx, data.ValidatorSetMetadata.RequestID, *data.SignatureRequest)
 			if err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
-				return errors.Errorf("failed to get signature request: %w", err)
+				return errors.Errorf("failed to save signature request: %w", err)
 			}
 		}
 
