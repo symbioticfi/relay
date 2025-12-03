@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
@@ -270,8 +271,8 @@ func (s *Service) broadcast(ctx context.Context, topicName string, data []byte) 
 		TraceContext: nil,
 	}
 
-	// Inject trace context if span is recording
-	if span.IsRecording() {
+	// Inject trace context if the span context is valid so downstream nodes can link traces
+	if spanContext := trace.SpanFromContext(ctx).SpanContext(); spanContext.IsValid() {
 		carrier := propagation.MapCarrier{}
 		otel.GetTextMapPropagator().Inject(ctx, carrier)
 		msg.TraceContext = carrier

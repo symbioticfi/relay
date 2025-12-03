@@ -120,9 +120,8 @@ func (s *Service) createGRPCConnection(ctx context.Context, peerID peer.ID) (*gr
 		),
 	}
 
-	// Attach tracing interceptors if span is recording
-	span := trace.SpanFromContext(ctx)
-	if span.IsRecording() {
+	// Attach tracing interceptors whenever we have a valid span context so trace headers propagate
+	if spanCtx := trace.SpanFromContext(ctx).SpanContext(); spanCtx.IsValid() {
 		dialOpts = append(dialOpts,
 			grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 		)
