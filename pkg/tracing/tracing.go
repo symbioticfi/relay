@@ -110,16 +110,3 @@ func (t *Tracer) Shutdown(ctx context.Context) error {
 	}
 	return t.provider.Shutdown(ctx)
 }
-
-// Tracer returns the OpenTelemetry tracer instance
-func (t *Tracer) Tracer() trace.Tracer {
-	return t.tracer
-}
-
-// StartSpan starts a new span with the given name
-//
-//nolint:spancheck // Span is returned to caller who must call span.End()
-func (t *Tracer) StartSpan(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
-	newCtx, span := t.tracer.Start(ctx, spanName, opts...)
-	return newCtx, span
-}
