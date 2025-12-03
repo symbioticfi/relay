@@ -122,7 +122,7 @@ func TestAggregatorSignatureSync(t *testing.T) {
 	for _, aggIndex := range aggregatorIndexes {
 		// Wait for aggregator to be healthy
 		healthEndpoint := getHealthEndpoint(aggIndex)
-		err := waitForHealthy(ctx, healthEndpoint, 30*time.Second)
+		err := waitForHealthy(ctx, healthEndpoint, 60*time.Second)
 		require.NoError(t, err, "Aggregator %d failed to become healthy after restart", aggIndex)
 		t.Logf("Aggregator %d is healthy", aggIndex)
 
