@@ -129,6 +129,10 @@ func (s *SignerApp) RequestSignature(ctx context.Context, req symbiotic.Signatur
 	return requestId, nil
 }
 
+func (s *SignerApp) EnqueueRequestID(requestID common.Hash) {
+	s.queue.Add(requestID)
+}
+
 func (s *SignerApp) completeSign(ctx context.Context, requestID common.Hash, p2pService p2pService) error {
 	ctx, span := tracing.StartSpan(ctx, "signer.completeSign",
 		tracing.AttrRequestID.String(requestID.Hex()),
@@ -140,7 +144,6 @@ func (s *SignerApp) completeSign(ctx context.Context, requestID common.Hash, p2p
 	if err != nil {
 		return errors.Errorf("failed to get signature request for requestId %s : %w", requestID.Hex(), err)
 	}
-
 	ctx = log.WithAttrs(ctx,
 		slog.Uint64("epoch", uint64(req.RequiredEpoch)),
 		slog.Uint64("keyTag", uint64(req.KeyTag)),
