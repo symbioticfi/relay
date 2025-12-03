@@ -12,11 +12,9 @@
 #   EPOCH_TIME       - Time for new epochs in relay network (default: 30)
 #   BLOCK_TIME       - Block time in seconds for anvil interval mining (default: 1)
 #   FINALITY_BLOCKS  - Number of blocks for finality (default: 1)
-#   GENERATE_SIDECARS - Generate relay sidecar services (default: true)
 #
 # Example usage:
 #   OPERATORS=6 COMMITERS=2 AGGREGATORS=1 VERIFICATION_TYPE=0 EPOCH_TIME=32 BLOCK_TIME=2 ./generate_network.sh
-#   GENERATE_SIDECARS=false ./generate_network.sh  # Skip generating relay sidecars
 
 set -e
 
@@ -34,7 +32,6 @@ DEFAULT_VERIFICATION_TYPE=1  # BLS-BN254-SIMPLE
 DEFAULT_EPOCH_TIME=30
 DEFAULT_BLOCK_TIME=1
 DEFAULT_FINALITY_BLOCKS=2
-DEFAULT_GENERATE_SIDECARS=false
 MAX_OPERATORS=999
 
 
@@ -88,7 +85,6 @@ get_config_from_env() {
     epoch_size=${EPOCH_TIME:-$DEFAULT_EPOCH_TIME}
     block_time=${BLOCK_TIME:-$DEFAULT_BLOCK_TIME}
     finality_blocks=${FINALITY_BLOCKS:-$DEFAULT_FINALITY_BLOCKS}
-    generate_sidecars=${GENERATE_SIDECARS:-$DEFAULT_GENERATE_SIDECARS}
     
     # Validate inputs
     validate_number "$operators" "Number of operators (OPERATORS env var)"
@@ -98,13 +94,7 @@ get_config_from_env() {
     validate_number "$epoch_size" "Epoch size (EPOCH_TIME env var)"
     validate_number "$block_time" "Block time (BLOCK_TIME env var)"
     validate_number "$finality_blocks" "Finality blocks (FINALITY_BLOCKS env var)"
-    
-    # Validate generate_sidecars is true or false
-    if [[ "$generate_sidecars" != "true" && "$generate_sidecars" != "false" ]]; then
-        print_error "GENERATE_SIDECARS must be 'true' or 'false', got: $generate_sidecars"
-        exit 1
-    fi
-    
+
     # Validate that commiters + aggregators <= operators
     total_special_roles=$((commiters + aggregators))
     if [ "$total_special_roles" -gt "$operators" ]; then
@@ -133,7 +123,6 @@ get_config_from_env() {
     print_status "  Epoch size: $epoch_size slots (EPOCH_TIME=${EPOCH_TIME:-default})"
     print_status "  Block time: $block_time seconds (BLOCK_TIME=${BLOCK_TIME:-default})"
     print_status "  Finality blocks: $finality_blocks (FINALITY_BLOCKS=${FINALITY_BLOCKS:-default})"
-    print_status "  Generate sidecars: $generate_sidecars (GENERATE_SIDECARS=${GENERATE_SIDECARS:-default})"
 }
 
 # Function to generate Docker Compose file
@@ -145,7 +134,6 @@ generate_docker_compose() {
     local epoch_size=$5
     local block_time=$6
     local finality_blocks=$7
-    local generate_sidecars=$8
     
     local network_dir="temp-network"
     
@@ -255,19 +243,6 @@ services:
 
 EOF
 
-    # Skip generating relay sidecars if disabled
-    if [ "$generate_sidecars" = "false" ]; then
-        print_status "Skipping relay sidecar generation (GENERATE_SIDECARS=false)"
-        cat >> "$network_dir/docker-compose.yml" << EOF
-
-networks:
-  symbiotic-network:
-    driver: bridge
-
-EOF
-        return
-    fi
-
     local committer_count=0
     local aggregator_count=0
     local signer_count=0
@@ -375,7 +350,7 @@ main() {
 
     print_status "Generating Docker Compose configuration..."
     print_status "Creating $operators new operator accounts..."
-    generate_docker_compose "$operators" "$commiters" "$aggregators" "$verification_type" "$epoch_size" "$block_time" "$finality_blocks" "$generate_sidecars"
+    generate_docker_compose "$operators" "$commiters" "$aggregators" "$verification_type" "$epoch_size" "$block_time" "$finality_blocks"
 }
 
 main "$@" 
