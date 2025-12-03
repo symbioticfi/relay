@@ -59,7 +59,6 @@ export VERIFICATION_TYPE=${VERIFICATION_TYPE}
 export EPOCH_TIME=${EPOCH_TIME}
 export BLOCK_TIME=${BLOCK_TIME}
 export FINALITY_BLOCKS=${FINALITY_BLOCKS}
-export GENERATE_SIDECARS=${GENERATE_SIDECARS}
 
 # Call the generate network script
 ./scripts/generate_network.sh

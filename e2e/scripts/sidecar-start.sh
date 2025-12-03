@@ -12,7 +12,7 @@ cat > /tmp/sidecar.yaml << EOFCONFIG
 # Logging
 log:
   level: "debug"
-  mode: "pretty"
+  mode: "json"
 
 # API Server Configuration
 api:

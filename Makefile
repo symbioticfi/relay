@@ -27,7 +27,7 @@ endif
 .PHONY: local-setup
 local-setup:
 	cd e2e && \
-	GENERATE_SIDECARS=true bash setup.sh && \
+	bash setup.sh && \
 	cd temp-network && \
 	docker compose up -d
 

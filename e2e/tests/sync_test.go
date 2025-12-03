@@ -57,8 +57,8 @@ func TestAggregatorSignatureSync(t *testing.T) {
 	nextValset, err := deriver.GetValidatorSet(ctx, nextEpoch, nwConfig)
 	require.NoError(t, err, "Failed to get validator set")
 
-	for i := range globalTestEnv.SidecarConfigs {
-		onChainKey := globalTestEnv.SidecarConfigs[i].RequiredSymKey.PublicKey().OnChain()
+	for i, sidecarConfig := range deploymentData.Env.GetSidecarConfigs() {
+		onChainKey := sidecarConfig.RequiredSymKey.PublicKey().OnChain()
 		if nextValset.IsAggregator(onChainKey) {
 			aggregatorIndexes = append(aggregatorIndexes, i)
 		} else if !nextValset.IsCommitter(onChainKey) && nextValset.IsSigner(onChainKey) {
@@ -76,8 +76,8 @@ func TestAggregatorSignatureSync(t *testing.T) {
 	t.Log("Step 2: Stopping all aggregator containers...")
 	stoppedAggregators := make([]int, 0, len(aggregatorIndexes))
 	for _, aggIndex := range aggregatorIndexes {
-		container := globalTestEnv.Containers[aggIndex]
-		err := container.Stop(ctx, nil)
+		container := deploymentData.Env.GetSidecarConfigs()[aggIndex].ContainerName
+		err := stopContainer(ctx, container)
 		require.NoError(t, err, "Failed to stop aggregator container %d", aggIndex)
 		stoppedAggregators = append(stoppedAggregators, aggIndex)
 		t.Logf("Stopped aggregator container %d", aggIndex)
@@ -93,7 +93,7 @@ func TestAggregatorSignatureSync(t *testing.T) {
 
 	// Step 4: Verify signers have generated signatures
 	t.Log("Step 4: Verifying signers have generated signatures...")
-	client := globalTestEnv.GetGRPCClient(t, onlySignerIndex)
+	client := getGRPCClient(t, onlySignerIndex)
 	err = waitForErrorIsNil(ctx, time.Second*30, func() error {
 		_, err := client.GetValidatorSetMetadata(ctx, &apiv1.GetValidatorSetMetadataRequest{
 			Epoch: (*uint64)(&nextEpoch),
@@ -110,14 +110,10 @@ func TestAggregatorSignatureSync(t *testing.T) {
 	// Step 5: Start aggregators back up
 	t.Log("Step 5: Starting aggregator containers back up...")
 	for _, aggIndex := range stoppedAggregators {
-		container := globalTestEnv.Containers[aggIndex]
-		err := container.Start(ctx)
+		container := deploymentData.Env.GetSidecarConfigs()[aggIndex].ContainerName
+		err := startContainer(ctx, container)
 		require.NoError(t, err, "Failed to restart aggregator container %d", aggIndex)
 		t.Logf("Restarted aggregator container %d", aggIndex)
-
-		mappedPort, err := container.MappedPort(ctx, "8080/tcp")
-		require.NoError(t, err, "Failed to get mapped port for aggregator %d", aggIndex)
-		globalTestEnv.ContainerPorts[aggIndex] = mappedPort.Port()
 	}
 
 	// Step 6: Verify aggregators have synced and generated proofs
@@ -125,8 +121,8 @@ func TestAggregatorSignatureSync(t *testing.T) {
 
 	for _, aggIndex := range aggregatorIndexes {
 		// Wait for aggregator to be healthy
-		healthEndpoint := globalTestEnv.GetHealthEndpoint(aggIndex)
-		err := waitForHealthy(ctx, healthEndpoint, 30*time.Second)
+		healthEndpoint := getHealthEndpoint(aggIndex)
+		err := waitForHealthy(ctx, healthEndpoint, 60*time.Second)
 		require.NoError(t, err, "Aggregator %d failed to become healthy after restart", aggIndex)
 		t.Logf("Aggregator %d is healthy", aggIndex)
 
