@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
+
 	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/signals"
@@ -21,25 +22,17 @@ import (
 )
 
 type signer interface {
-	RequestSignature(ctx context.Context, req symbiotic.SignatureRequest) (common.Hash, error)
+	EnqueueRequestID(requestID common.Hash)
 }
 
 type repo interface {
 	GetLatestValidatorSetHeader(_ context.Context) (symbiotic.ValidatorSetHeader, error)
 	GetOldestValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
-	GetLatestSignedValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
 	GetValidatorSetByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error)
-	GetValidatorSetMetadata(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSetMetadata, error)
 	GetConfigByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.NetworkConfig, error)
 	GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error)
-	SaveLatestSignedValidatorSetEpoch(_ context.Context, valset symbiotic.ValidatorSet) error
-	SaveProof(ctx context.Context, aggregationProof symbiotic.AggregationProof) error
-	SaveProofCommitPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error
 	GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch symbiotic.Epoch, limit int) ([]symbiotic.ProofCommitKey, error)
-	RemoveProofCommitPending(ctx context.Context, epoch symbiotic.Epoch) error
-	SaveValidatorSetMetadata(ctx context.Context, data symbiotic.ValidatorSetMetadata) error
-	SaveConfig(ctx context.Context, config symbiotic.NetworkConfig, epoch symbiotic.Epoch) error
-	SaveValidatorSet(ctx context.Context, valset symbiotic.ValidatorSet) error
+	SaveNextValsetData(ctx context.Context, data entity.NextValsetData) error
 	GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
 }
 
@@ -259,12 +252,11 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context, nextEpoch, currentEp
 
 	slog.DebugContext(ctx, "Checking for missing epochs")
 
-	var (
-		prevValset symbiotic.ValidatorSet
-		err        error
-	)
+	var prevValset symbiotic.ValidatorSet
+	var prevNetworkConfig symbiotic.NetworkConfig
 	if nextEpoch != 0 {
 		prevEpoch := nextEpoch - 1
+		var err error
 		prevValset, err = s.cfg.Repo.GetValidatorSetByEpoch(ctx, prevEpoch)
 		if err != nil {
 			if !errors.Is(err, entity.ErrEntityNotFound) {
@@ -272,7 +264,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context, nextEpoch, currentEp
 			}
 
 			// we couldn't find previous valset in repo, maybe we start fresh node with empty db
-			prevValset, _, err = s.derive(ctx, prevEpoch)
+			prevValset, prevNetworkConfig, err = s.derive(ctx, prevEpoch)
 			if err != nil {
 				return s.cfg.PollingInterval, errors.Errorf("failed to derive previous validator set for epoch %d: %w", prevEpoch, err)
 			}
@@ -295,9 +287,10 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context, nextEpoch, currentEp
 
 		if nextEpoch == 0 {
 			prevValset = nextValset
+			prevNetworkConfig = nextEpochConfig
 		}
 
-		if err := s.process(ctx, prevValset, nextValset, nextEpochConfig); err != nil {
+		if err := s.process(ctx, prevNetworkConfig, prevValset, nextValset, nextEpochConfig); err != nil {
 			return s.cfg.PollingInterval, errors.Errorf("failed to process validator set for epoch %d: %w", nextEpoch, err)
 		}
 
@@ -307,6 +300,7 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context, nextEpoch, currentEp
 
 		nextEpoch = nextValset.Epoch + 1
 		prevValset = nextValset
+		prevNetworkConfig = nextEpochConfig
 
 		latestEpochConfig = &nextEpochConfig
 		latestEpochTimestamp = (*uint64)(&nextValset.CaptureTimestamp)
@@ -329,7 +323,13 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context, nextEpoch, currentEp
 	return timeUntilNextEpoch, nil
 }
 
-func (s *Service) process(ctx context.Context, prevValSet symbiotic.ValidatorSet, valSet symbiotic.ValidatorSet, config symbiotic.NetworkConfig) error {
+func (s *Service) process(
+	ctx context.Context,
+	prevNetworkConfig symbiotic.NetworkConfig,
+	prevValSet symbiotic.ValidatorSet,
+	valSet symbiotic.ValidatorSet,
+	config symbiotic.NetworkConfig,
+) error {
 	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(valSet.Epoch)))
 	slog.DebugContext(ctx, "Started processing valset for epoch")
 
@@ -358,15 +358,12 @@ func (s *Service) process(ctx context.Context, prevValSet symbiotic.ValidatorSet
 	}
 
 	// if we are a signer, sign the commitment, otherwise just save the metadata
+	var signatureRequest *symbiotic.SignatureRequest
 	if prevValSet.IsSigner(onchainKey) {
-		r := symbiotic.SignatureRequest{
+		signatureRequest = &symbiotic.SignatureRequest{
 			KeyTag:        prevValSet.RequiredKeyTag,
 			RequiredEpoch: prevValSet.Epoch,
 			Message:       commitmentData,
-		}
-		_, err := s.cfg.Signer.RequestSignature(ctx, r)
-		if err != nil {
-			return errors.Errorf("failed to sign new validator set extra: %w", err)
 		}
 	}
 
@@ -388,20 +385,19 @@ func (s *Service) process(ctx context.Context, prevValSet symbiotic.ValidatorSet
 		CommitmentData: commitmentData,
 	}
 
-	if err = s.cfg.Repo.SaveValidatorSetMetadata(ctx, metadata); err != nil {
-		return errors.Errorf("failed to save validator set metadata: %w", err)
+	data := entity.NextValsetData{
+		PrevValidatorSet:     prevValSet,
+		PrevNetworkConfig:    prevNetworkConfig,
+		NextValidatorSet:     valSet,
+		NextNetworkConfig:    config,
+		SignatureRequest:     signatureRequest,
+		ValidatorSetMetadata: metadata,
 	}
+	if err = s.cfg.Repo.SaveNextValsetData(ctx, data); err != nil {
+		return errors.Errorf("failed to save validator set data: %w", err)
+	}
+	s.cfg.Signer.EnqueueRequestID(metadata.RequestID)
 
-	// save pending proof commit here
-	// we store pending commit request for all nodes and not just current commiters because
-	// if committers of this epoch fail then commiters for next epoch should still try to commit old proofs
-	if err := s.cfg.Repo.SaveProofCommitPending(ctx, valSet.Epoch, extendedSig.RequestID()); err != nil {
-		if !errors.Is(err, entity.ErrEntityAlreadyExist) {
-			return errors.Errorf("failed to mark proof commit as pending: %w", err)
-		}
-		slog.DebugContext(ctx, "Skipped proof commit, already pending", "epoch", valSet.Epoch)
-		return nil
-	}
 	slog.DebugContext(ctx, "Marked proof commit as pending", "epoch", valSet.Epoch, "requestId", extendedSig.RequestID().Hex())
 	return nil
 }
@@ -482,14 +478,6 @@ func (s *Service) derive(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.
 	valset, err := s.cfg.Deriver.GetValidatorSet(ctx, epoch, config)
 	if err != nil {
 		return symbiotic.ValidatorSet{}, symbiotic.NetworkConfig{}, errors.Errorf("failed to derive validator set extra for epoch %d: %w", epoch, err)
-	}
-
-	if err := s.cfg.Repo.SaveConfig(ctx, config, epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
-		return symbiotic.ValidatorSet{}, symbiotic.NetworkConfig{}, errors.Errorf("failed to save network config for epoch %d: %w", epoch, err)
-	}
-
-	if err := s.cfg.Repo.SaveValidatorSet(ctx, valset); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
-		return symbiotic.ValidatorSet{}, symbiotic.NetworkConfig{}, errors.Errorf("failed to save validator set for epoch %d: %w", epoch, err)
 	}
 
 	return valset, config, nil
