@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	apiv1 "github.com/symbioticfi/relay/api/client/v1"
-	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // TestGetValidatorSetMetadata tests the GetValidatorSetMetadata API endpoint
@@ -109,7 +108,7 @@ func TestGetValidatorSetMetadata(t *testing.T) {
 			require.NoError(t, err, "Failed to get signature request using request id from metadata")
 
 			// Validate the signature request
-			require.Equal(t, uint32(symbiotic.ValsetHeaderKeyTag), sigReqResp.GetSignatureRequest().GetKeyTag(),
+			require.Equal(t, uint32(15), sigReqResp.GetSignatureRequest().GetKeyTag(),
 				"Key tag should be ValsetHeaderKeyTag")
 			require.Equal(t, committedEpoch-1, sigReqResp.GetSignatureRequest().GetRequiredEpoch(),
 				"Required epoch should match committed - 1 epoch")

@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/go-errors/errors"
-	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
-	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/symbioticfi/relay/internal/entity"
+	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // GetLocalValidator handles the gRPC GetLocalValidator request
@@ -31,15 +33,21 @@ func (h *grpcHandler) GetLocalValidator(ctx context.Context, req *apiv1.GetLocal
 		return nil, err
 	}
 
-	pubkey, err := h.cfg.KeyProvider.GetOnchainKeyFromCache(symbiotic.ValsetHeaderKeyTag)
-	if err != nil {
-		return nil, errors.Errorf("failed to get onchain key from cache: %w", err)
+	keyTags := validatorSet.GetUniqueKeyTags()
+	for _, keyTag := range keyTags {
+		pubkey, err := h.cfg.KeyProvider.GetOnchainKeyFromCache(keyTag)
+		if err != nil {
+			if errors.Is(err, entity.ErrKeyNotFound) {
+				continue
+			}
+			return nil, errors.Errorf("failed to get onchain key from cache: %w", err)
+		}
+
+		validator, found := validatorSet.FindValidatorByKey(keyTag, pubkey)
+		if found {
+			return &apiv1.GetLocalValidatorResponse{Validator: convertValidatorToPB(validator)}, nil
+		}
 	}
 
-	validator, found := validatorSet.FindValidatorByKey(symbiotic.ValsetHeaderKeyTag, pubkey)
-	if !found {
-		return nil, status.Errorf(codes.NotFound, "local validator not found")
-	}
-
-	return &apiv1.GetLocalValidatorResponse{Validator: convertValidatorToPB(validator)}, nil
+	return nil, status.Errorf(codes.NotFound, "local validator not found")
 }
