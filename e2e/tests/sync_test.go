@@ -27,7 +27,6 @@ import (
 // 5. Start aggregators back up
 // 6. Verify aggregators sync missed signatures and generate proofs
 func TestAggregatorSignatureSync(t *testing.T) {
-	t.SkipNow()
 	ctx := t.Context()
 
 	// Load deployment data to get contract addresses and environment info
