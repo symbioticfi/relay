@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
@@ -89,6 +90,7 @@ func newTestSetup(t *testing.T) *testSetup {
 		Aggregator:               mockAggregator,
 		AggProofSignal:           mockAggProofSignal,
 		SignatureProcessedSignal: signatureProcessedSignal,
+		Metrics:                  doNothingMetrics{},
 	})
 	require.NoError(t, err)
 
@@ -142,11 +144,29 @@ func (setup *testSetup) createTestValidatorSetWithKey(t *testing.T, privateKey c
 		}},
 	}
 
+	nextValsetData := intEntity.NextValsetData{
+		NextValidatorSet:     vs,
+		NextNetworkConfig:    randomNetworkConfig(),
+		PrevValidatorSet:     vs,
+		PrevNetworkConfig:    randomNetworkConfig(),
+		ValidatorSetMetadata: symbiotic.ValidatorSetMetadata{},
+	}
+
 	// Save the validator set to the repository
-	err := setup.repo.SaveValidatorSet(t.Context(), vs)
+	err := setup.repo.SaveNextValsetData(t.Context(), nextValsetData)
 	require.NoError(t, err)
 
 	return vs
+}
+
+func randomNetworkConfig() symbiotic.NetworkConfig {
+	return symbiotic.NetworkConfig{
+		VerificationType:     symbiotic.VerificationTypeBlsBn254Simple,
+		RequiredHeaderKeyTag: symbiotic.KeyTag(15),
+		EpochDuration:        uint64(time.Minute.Seconds()),
+		NumAggregators:       1,
+		NumCommitters:        1,
+	}
 }
 
 func createTestP2PMessageWithSignature(privateKey crypto.PrivateKey, hash []byte, signature []byte) intEntity.P2PMessage[symbiotic.Signature] {
@@ -164,3 +184,7 @@ func createTestP2PMessageWithSignature(privateKey crypto.PrivateKey, hash []byte
 		},
 	}
 }
+
+type doNothingMetrics struct{}
+
+func (d doNothingMetrics) ObserveEpoch(epochType string, epochNumber uint64) {}

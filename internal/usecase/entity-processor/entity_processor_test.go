@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
@@ -97,6 +98,7 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 					Aggregator:               createMockAggregator(t),
 					AggProofSignal:           createMockAggProofSignal(t),
 					SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+					Metrics:                  doNothingMetrics{},
 				})
 				require.NoError(t, err)
 
@@ -144,6 +146,7 @@ func TestEntityProcessor_ProcessSignature(t *testing.T) {
 				Aggregator:               createMockAggregator(t),
 				AggProofSignal:           createMockAggProofSignal(t),
 				SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+				Metrics:                  doNothingMetrics{},
 			})
 			require.NoError(t, err)
 
@@ -193,7 +196,13 @@ func TestEntityProcessor_ProcessSignature_ConcurrentSignatures(t *testing.T) {
 	// Setup validator set header with quorum threshold of 300
 	_, privateKeys := setupValidatorSetHeader(t, repo, epoch, big.NewInt(300))
 
-	processor, err := NewEntityProcessor(Config{Repo: repo, Aggregator: createMockAggregator(t), AggProofSignal: createMockAggProofSignal(t), SignatureProcessedSignal: createMockSignatureProcessedSignal(t)})
+	processor, err := NewEntityProcessor(Config{
+		Repo:                     repo,
+		Aggregator:               createMockAggregator(t),
+		AggProofSignal:           createMockAggProofSignal(t),
+		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+		Metrics:                  doNothingMetrics{},
+	})
 	require.NoError(t, err)
 
 	// Simulate 4 concurrent signatures
@@ -233,7 +242,15 @@ func TestEntityProcessor_ProcessSignature_Conflict(t *testing.T) {
 	req := randomSignatureRequest(t, symbiotic.Epoch(200))
 
 	vs, privateKeys := createValidatorSetWithCount(t, req.RequiredEpoch, big.NewInt(300), 20)
-	err := repo.SaveValidatorSet(t.Context(), vs)
+
+	err := repo.SaveNextValsetData(t.Context(), entity.NextValsetData{
+		NextValidatorSet:     vs,
+		NextNetworkConfig:    randomNetworkConfig(),
+		PrevValidatorSet:     vs,
+		PrevNetworkConfig:    randomNetworkConfig(),
+		SignatureRequest:     nil,
+		ValidatorSetMetadata: symbiotic.ValidatorSetMetadata{},
+	})
 	require.NoError(t, err)
 
 	processor, err := NewEntityProcessor(Config{
@@ -241,6 +258,7 @@ func TestEntityProcessor_ProcessSignature_Conflict(t *testing.T) {
 		Aggregator:               createMockAggregator(t),
 		AggProofSignal:           createMockAggProofSignal(t),
 		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+		Metrics:                  doNothingMetrics{},
 	})
 	require.NoError(t, err)
 
@@ -268,7 +286,13 @@ func TestEntityProcessor_ProcessSignature_DuplicateSignatureForSameValidator(t *
 
 	param := signatureExtendedForRequest(t, privateKeys[0][15], req)
 
-	processor, err := NewEntityProcessor(Config{Repo: repo, Aggregator: createMockAggregator(t), AggProofSignal: createMockAggProofSignal(t), SignatureProcessedSignal: createMockSignatureProcessedSignal(t)})
+	processor, err := NewEntityProcessor(Config{
+		Repo:                     repo,
+		Aggregator:               createMockAggregator(t),
+		AggProofSignal:           createMockAggProofSignal(t),
+		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+		Metrics:                  doNothingMetrics{},
+	})
 	require.NoError(t, err)
 
 	// First signature should succeed
@@ -298,6 +322,7 @@ func TestEntityProcessor_ProcessSignature_ExactQuorumThreshold(t *testing.T) {
 		Aggregator:               createMockAggregator(t),
 		AggProofSignal:           createMockAggProofSignal(t),
 		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+		Metrics:                  doNothingMetrics{},
 	})
 	require.NoError(t, err)
 
@@ -406,6 +431,16 @@ func signatureExtendedForRequest(t *testing.T, privateKey crypto.PrivateKey, req
 	}
 }
 
+func randomNetworkConfig() symbiotic.NetworkConfig {
+	return symbiotic.NetworkConfig{
+		VerificationType:     symbiotic.VerificationTypeBlsBn254Simple,
+		RequiredHeaderKeyTag: symbiotic.KeyTag(15),
+		EpochDuration:        uint64(time.Minute.Seconds()),
+		NumAggregators:       1,
+		NumCommitters:        1,
+	}
+}
+
 func createValidatorSetWithCount(t *testing.T, epoch symbiotic.Epoch, quorumThreshold *big.Int, validatorCount int) (symbiotic.ValidatorSet, []map[symbiotic.KeyTag]crypto.PrivateKey) {
 	t.Helper()
 
@@ -456,14 +491,21 @@ func createValidatorSetWithCount(t *testing.T, epoch symbiotic.Epoch, quorumThre
 		CaptureTimestamp: 1234567890,
 		QuorumThreshold:  symbiotic.ToVotingPower(quorumThreshold),
 		Validators:       validatorsList,
-		Status:           symbiotic.HeaderCommitted,
+		Status:           symbiotic.ValidatorSetStatus(symbiotic.HeaderCommitted),
 	}, privateKeys
 }
 
 func setupValidatorSetHeader(t *testing.T, repo *badger.Repository, epoch symbiotic.Epoch, quorumThreshold *big.Int) (symbiotic.ValidatorSet, []map[symbiotic.KeyTag]crypto.PrivateKey) {
 	t.Helper()
 	vs, privateKeys := createValidatorSetWithCount(t, epoch, quorumThreshold, 4) // Default to 4 validators for backward compatibility
-	err := repo.SaveValidatorSet(t.Context(), vs)
+	err := repo.SaveNextValsetData(t.Context(), entity.NextValsetData{
+		NextValidatorSet:     vs,
+		NextNetworkConfig:    randomNetworkConfig(),
+		PrevValidatorSet:     vs,
+		PrevNetworkConfig:    randomNetworkConfig(),
+		SignatureRequest:     nil,
+		ValidatorSetMetadata: symbiotic.ValidatorSetMetadata{},
+	})
 	require.NoError(t, err)
 	return vs, privateKeys
 }
@@ -492,6 +534,7 @@ func TestEntityProcessor_ProcessAggregationProof_SuccessfullyProcesses(t *testin
 		Aggregator:               createMockAggregator(t),
 		AggProofSignal:           createMockAggProofSignal(t),
 		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+		Metrics:                  doNothingMetrics{},
 	})
 	require.NoError(t, err)
 
@@ -533,6 +576,7 @@ func TestEntityProcessor_ProcessAggregationProof_HandlesMissingPendingGracefully
 		Aggregator:               createMockAggregator(t),
 		AggProofSignal:           createMockAggProofSignal(t),
 		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+		Metrics:                  doNothingMetrics{},
 	})
 	require.NoError(t, err)
 
@@ -569,6 +613,7 @@ func TestEntityProcessor_ProcessAggregationProof_FailsWhenAlreadyExists(t *testi
 		Aggregator:               createMockAggregator(t),
 		AggProofSignal:           createMockAggProofSignal(t),
 		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+		Metrics:                  doNothingMetrics{},
 	})
 	require.NoError(t, err)
 
@@ -597,6 +642,7 @@ func TestEntityProcessor_ProcessSignature_SavesAggregationProofPendingForAggrega
 		Aggregator:               createMockAggregator(t),
 		AggProofSignal:           createMockAggProofSignal(t),
 		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+		Metrics:                  doNothingMetrics{},
 	})
 	require.NoError(t, err)
 
@@ -649,6 +695,7 @@ func TestEntityProcessor_ProcessSignature_FullSignatureToAggregationProofFlow(t 
 		Aggregator:               createMockAggregator(t),
 		AggProofSignal:           createMockAggProofSignal(t),
 		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+		Metrics:                  doNothingMetrics{},
 	})
 	require.NoError(t, err)
 
@@ -681,3 +728,7 @@ func TestEntityProcessor_ProcessSignature_FullSignatureToAggregationProofFlow(t 
 	require.NoError(t, err)
 	require.Empty(t, pendingAggRequests)
 }
+
+type doNothingMetrics struct{}
+
+func (d doNothingMetrics) ObserveEpoch(epochType string, epochNumber uint64) {}

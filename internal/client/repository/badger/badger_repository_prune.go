@@ -94,6 +94,26 @@ func (r *Repository) pruneValidatorSets(ctx context.Context, epoch symbiotic.Epo
 			keyActiveValidatorCount(epoch),
 		}
 
+		// Try to get and delete the request ID mappings (if they exist)
+		epochToRequestIDKey := keyValsetHeaderEpochToRequestID(epoch)
+		requestIDItem, err := txn.Get(epochToRequestIDKey)
+		if err == nil {
+			// Mapping exists, extract request ID and add both mapping keys to deletion list
+			requestIDBytes, err := requestIDItem.ValueCopy(nil)
+			if err != nil {
+				return errors.Errorf("failed to read request ID for epoch %d: %w", epoch, err)
+			}
+
+			requestID := common.BytesToHash(requestIDBytes)
+			staticKeys = append(staticKeys,
+				keyValsetHeaderRequestIDToEpoch(requestID),
+				epochToRequestIDKey,
+			)
+		} else if !errors.Is(err, badger.ErrKeyNotFound) {
+			return errors.Errorf("failed to get epoch to request ID mapping for epoch %d: %w", epoch, err)
+		}
+		// If mapping doesn't exist (ErrKeyNotFound), just skip deleting it (for backward compatibility)
+
 		for _, key := range staticKeys {
 			if err := txn.Delete(key); err != nil {
 				return errors.Errorf("failed to delete static key: %w", err)
@@ -129,7 +149,7 @@ func (r *Repository) pruneValidatorSets(ctx context.Context, epoch symbiotic.Epo
 		}
 
 		return nil
-	}, &r.valsetMutexMap, epoch)
+	}, lock{lockMap: &r.valsetMutexMap, key: epoch})
 
 	if err != nil {
 		return errors.Errorf("failed to prune validator sets: %w", err)
@@ -207,7 +227,7 @@ func (r *Repository) pruneSignatureEntities(ctx context.Context, epoch symbiotic
 		}
 
 		return nil
-	}, &r.signatureMutexMap, requestID)
+	}, lock{lockMap: &r.signatureMutexMap, key: requestID})
 }
 
 func (r *Repository) pruneAggregationProof(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
@@ -223,7 +243,7 @@ func (r *Repository) pruneAggregationProof(ctx context.Context, epoch symbiotic.
 		}
 
 		return nil
-	}, &r.proofsMutexMap, requestID)
+	}, lock{lockMap: &r.proofsMutexMap, key: requestID})
 }
 
 // PruneRequestIDEpochIndices removes the request ID epoch indices for the given epoch.

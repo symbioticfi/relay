@@ -10,8 +10,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
-	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"google.golang.org/protobuf/proto"
+
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 type Config struct {
@@ -271,4 +272,38 @@ func extractRequestIDFromEpochDelimitedKey(key []byte, prefix string) (common.Ha
 	}
 
 	return common.HexToHash(string(hashBytes)), nil
+}
+
+// extractEpochFromKey extracts epoch from a key with format: prefix + epoch
+func extractEpochFromKey(key []byte, prefix string) (symbiotic.Epoch, error) {
+	prefixBytes := []byte(prefix)
+	prefixLen := len(prefixBytes)
+
+	if len(key) != prefixLen+epochLen {
+		return 0, errors.Errorf("invalid key length for prefix %s: expected %d, got %d", prefix, prefixLen+epochLen, len(key))
+	}
+
+	if !bytes.HasPrefix(key, prefixBytes) {
+		return 0, errors.Errorf("invalid key prefix: expected %s", prefix)
+	}
+
+	epochBytes := key[prefixLen:]
+	epoch, err := symbiotic.EpochFromBytes(epochBytes)
+	if err != nil {
+		return 0, errors.Errorf("failed to decode epoch from key: %w", err)
+	}
+	return epoch, nil
+}
+
+// extractEpochFromValue extracts epoch from a stored value (8-byte big-endian uint64)
+func extractEpochFromValue(value []byte) (symbiotic.Epoch, error) {
+	if len(value) != epochLen {
+		return 0, errors.Errorf("invalid value length for epoch: expected %d, got %d", epochLen, len(value))
+	}
+
+	epoch, err := symbiotic.EpochFromBytes(value)
+	if err != nil {
+		return 0, errors.Errorf("failed to decode epoch from value: %w", err)
+	}
+	return epoch, nil
 }

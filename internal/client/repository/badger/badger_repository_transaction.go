@@ -44,17 +44,24 @@ func (m *mutexWithUseTime) tryLock() bool {
 	return m.mutex.TryLock()
 }
 
-func (r *Repository) doUpdateInTxWithLock(ctx context.Context, name string, f func(ctx context.Context) error, lockMap *sync.Map, key any) error {
-	mutexInterface, ok := lockMap.Load(key)
-	if !ok {
-		newMutex := &mutexWithUseTime{}
-		newMutex.lastAccessNs.Store(time.Now().UnixNano())
-		mutexInterface, _ = lockMap.LoadOrStore(key, newMutex)
-	}
-	activeMutex := mutexInterface.(*mutexWithUseTime)
+type lock struct {
+	lockMap *sync.Map
+	key     any
+}
 
-	activeMutex.lock()
-	defer activeMutex.unlock()
+func (r *Repository) doUpdateInTxWithLock(ctx context.Context, name string, f func(ctx context.Context) error, locks ...lock) error {
+	for _, l := range locks {
+		mutexInterface, ok := l.lockMap.Load(l.key)
+		if !ok {
+			newMutex := &mutexWithUseTime{}
+			newMutex.lastAccessNs.Store(time.Now().UnixNano())
+			mutexInterface, _ = l.lockMap.LoadOrStore(l.key, newMutex)
+		}
+		activeMutex := mutexInterface.(*mutexWithUseTime)
+
+		activeMutex.lock()
+		defer activeMutex.unlock() //nolint:revive // defer in loop is intentional here
+	}
 
 	return r.doUpdateInTx(ctx, name, f)
 }

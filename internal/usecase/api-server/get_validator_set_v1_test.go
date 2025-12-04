@@ -156,27 +156,27 @@ func TestConvertValidatorSetStatusToPB_AllStatuses(t *testing.T) {
 	}{
 		{
 			name:     "HeaderDerived",
-			status:   symbiotic.HeaderDerived,
+			status:   symbiotic.ValidatorSetStatus(symbiotic.HeaderDerived),
 			expected: apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_DERIVED,
 		},
 		{
 			name:     "HeaderAggregated",
-			status:   symbiotic.HeaderAggregated,
+			status:   symbiotic.ValidatorSetStatus(symbiotic.HeaderAggregated),
 			expected: apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_AGGREGATED,
 		},
 		{
 			name:     "HeaderCommitted",
-			status:   symbiotic.HeaderCommitted,
+			status:   symbiotic.ValidatorSetStatus(symbiotic.HeaderCommitted),
 			expected: apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED,
 		},
 		{
 			name:     "HeaderMissed",
-			status:   symbiotic.HeaderMissed,
+			status:   symbiotic.ValidatorSetStatus(symbiotic.HeaderMissed),
 			expected: apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_MISSED,
 		},
 		{
 			name:     "UnknownStatus",
-			status:   symbiotic.ValidatorSetStatus(255),
+			status:   symbiotic.ValidatorSetStatus(2 << 6),
 			expected: apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_UNSPECIFIED,
 		},
 	}

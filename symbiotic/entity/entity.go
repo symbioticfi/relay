@@ -45,13 +45,44 @@ var (
 )
 
 type ValidatorSetStatus uint8
+type ValidatorSetStatusItem uint8
 
 const (
-	HeaderDerived ValidatorSetStatus = iota
-	HeaderAggregated
-	HeaderCommitted
-	HeaderMissed
+	HeaderDerived    ValidatorSetStatusItem = 2 << 0
+	HeaderSigned     ValidatorSetStatusItem = 2 << 1
+	HeaderAggregated ValidatorSetStatusItem = 2 << 2
+	HeaderCommitted  ValidatorSetStatusItem = 2 << 3
+	HeaderMissed     ValidatorSetStatusItem = 2 << 4
 )
+
+func (s ValidatorSetStatus) IsOn(v ValidatorSetStatusItem) bool {
+	return (s & ValidatorSetStatus(v)) != 0
+}
+
+func (s *ValidatorSetStatus) TurnOn(v ValidatorSetStatusItem) {
+	var turnOns, turnOffs []ValidatorSetStatusItem
+	switch v {
+	case HeaderDerived:
+		turnOns = append(turnOns, HeaderDerived)
+	case HeaderSigned:
+		turnOns = append(turnOns, HeaderDerived, HeaderSigned)
+	case HeaderAggregated:
+		turnOns = append(turnOns, HeaderDerived, HeaderSigned, HeaderAggregated)
+	case HeaderCommitted:
+		turnOns = append(turnOns, HeaderDerived, HeaderSigned, HeaderAggregated, HeaderCommitted)
+		turnOffs = append(turnOffs, HeaderMissed)
+	case HeaderMissed:
+		turnOns = append(turnOns, HeaderMissed)
+		turnOffs = append(turnOffs, HeaderCommitted)
+	}
+
+	for _, on := range turnOns {
+		*s |= ValidatorSetStatus(on)
+	}
+	for _, off := range turnOffs {
+		*s &^= ValidatorSetStatus(off)
+	}
+}
 
 type RawSignature []byte
 type RawMessageHash []byte
@@ -83,6 +114,16 @@ type Timestamp uint64
 // Example: Epoch(51).Bytes() < Epoch(501).Bytes() when comparing bytes lexicographically.
 func (e Epoch) Bytes() []byte {
 	return paddedUint64(uint64(e))
+}
+
+// EpochFromBytes decodes a BigEndian encoded byte slice back to an Epoch.
+// This is the inverse operation of Epoch.Bytes().
+// Returns an error if the input is not exactly 8 bytes long.
+func EpochFromBytes(b []byte) (Epoch, error) {
+	if len(b) != 8 {
+		return 0, errors.Errorf("invalid epoch bytes length: expected 8, got %d", len(b))
+	}
+	return Epoch(binary.BigEndian.Uint64(b)), nil
 }
 
 func (raw RawSignature) MarshalText() ([]byte, error) {
@@ -128,15 +169,17 @@ func (q QuorumThresholdPct) MarshalJSON() ([]byte, error) {
 }
 
 func (s ValidatorSetStatus) MarshalJSON() ([]byte, error) {
-	switch s {
-	case HeaderDerived:
-		return []byte("\"Derived\""), nil
-	case HeaderAggregated:
-		return []byte("\"Aggregated\""), nil
-	case HeaderCommitted:
+	switch {
+	case s.IsOn(HeaderCommitted):
 		return []byte("\"Committed\""), nil
-	case HeaderMissed:
+	case s.IsOn(HeaderMissed):
 		return []byte("\"Missed\""), nil
+	case s.IsOn(HeaderAggregated):
+		return []byte("\"Aggregated\""), nil
+	case s.IsOn(HeaderSigned):
+		return []byte("\"Signed\""), nil
+	case s.IsOn(HeaderDerived):
+		return []byte("\"Derived\""), nil
 	default:
 		return []byte("\"Unknown\""), nil
 	}

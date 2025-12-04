@@ -158,6 +158,7 @@ func runApp(ctx context.Context) error {
 		Aggregator:               agg,
 		AggProofSignal:           aggProofReadySignal,
 		SignatureProcessedSignal: signatureProcessedSignal,
+		Metrics:                  mtr,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create entity processor: %w", err)
@@ -279,6 +280,7 @@ func runApp(ctx context.Context) error {
 		EvmClient:       evmClient,
 		Repo:            repo,
 		PollingInterval: time.Second * 5,
+		Metrics:         mtr,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create valset status tracker: %w", err)
@@ -386,12 +388,6 @@ func runApp(ctx context.Context) error {
 	}
 
 	err = aggProofReadySignal.SetHandlers(
-		func(ctx context.Context, msg symbiotic.AggregationProof) error {
-			if err := statusTracker.HandleProofAggregated(ctx, msg); err != nil {
-				return errors.Errorf("failed to handle proof aggregated by valset status tracker: %w", err)
-			}
-			return nil
-		},
 		api.HandleProofAggregated(),
 	)
 	if err != nil {

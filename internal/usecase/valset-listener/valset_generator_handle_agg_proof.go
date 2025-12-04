@@ -51,7 +51,7 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 		}
 
 		// if latest valset is already committed, nothing to do
-		if valset.Status == symbiotic.HeaderCommitted {
+		if valset.Status.IsOn(symbiotic.HeaderCommitted) {
 			slog.DebugContext(ctx, "Latest validator set already committed. skipping commit loop", "epoch", valset.Epoch)
 			continue
 		}

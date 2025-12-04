@@ -9,6 +9,7 @@ import (
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
+
 	pb "github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
@@ -67,7 +68,7 @@ func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.
 		}
 
 		return nil
-	}, &r.proofsMutexMap, requestID)
+	}, lock{lockMap: &r.proofsMutexMap, key: requestID})
 }
 
 func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error) {
@@ -321,4 +322,33 @@ func (r *Repository) GetSignatureRequestsWithoutAggregationProof(ctx context.Con
 
 		return nil
 	})
+}
+
+func (r *Repository) GetValsetHeaderProofForEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.AggregationProof, error) {
+	var requestID common.Hash
+
+	err := r.doViewInTx(ctx, "GetValsetHeaderProofForEpoch", func(ctx context.Context) error {
+		txn := getTxn(ctx)
+		item, err := txn.Get(keyValsetHeaderEpochToRequestID(epoch))
+		if err != nil {
+			if errors.Is(err, badger.ErrKeyNotFound) {
+				return errors.Errorf("no request ID found for epoch %d: %w", epoch, entity.ErrEntityNotFound)
+			}
+			return errors.Errorf("failed to get request ID for epoch %d: %w", epoch, err)
+		}
+
+		value, err := item.ValueCopy(nil)
+		if err != nil {
+			return errors.Errorf("failed to copy request ID value: %w", err)
+		}
+
+		requestID = common.BytesToHash(value)
+		return nil
+	})
+
+	if err != nil {
+		return symbiotic.AggregationProof{}, err
+	}
+
+	return r.GetAggregationProof(ctx, requestID)
 }

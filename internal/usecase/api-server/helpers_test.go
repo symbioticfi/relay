@@ -83,7 +83,7 @@ func createTestValidatorSet(epoch symbiotic.Epoch) symbiotic.ValidatorSet {
 				},
 			},
 		},
-		Status: symbiotic.HeaderDerived,
+		Status: symbiotic.ValidatorSetStatus(symbiotic.HeaderDerived),
 	}
 }
 
@@ -145,6 +145,6 @@ func createTestValidatorSetWithMultipleValidators(epoch symbiotic.Epoch) symbiot
 				},
 			},
 		},
-		Status: symbiotic.HeaderDerived,
+		Status: symbiotic.ValidatorSetStatus(symbiotic.HeaderDerived),
 	}
 }

@@ -126,7 +126,7 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch symbiotic.Epoch, co
 		CaptureTimestamp:  timestamp,
 		QuorumThreshold:   quorumThreshold,
 		Validators:        validators,
-		Status:            symbiotic.HeaderDerived,
+		Status:            symbiotic.ValidatorSetStatus(symbiotic.HeaderDerived),
 		AggregatorIndices: nil, // will be initialized later
 		CommitterIndices:  nil, // will be initialized later
 	}

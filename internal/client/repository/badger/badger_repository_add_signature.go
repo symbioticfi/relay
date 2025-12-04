@@ -52,7 +52,7 @@ func (r *Repository) SaveSignature(ctx context.Context, signature symbiotic.Sign
 		)
 
 		return nil
-	}, &r.signatureMutexMap, signature.RequestID()); err != nil {
+	}, lock{lockMap: &r.signatureMutexMap, key: signature.RequestID()}); err != nil {
 		return err
 	}
 
