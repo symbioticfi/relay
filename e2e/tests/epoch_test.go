@@ -14,7 +14,6 @@ import (
 
 // TestEpochProgression tests that epochs progress correctly over time
 func TestEpochProgression(t *testing.T) {
-	t.SkipNow()
 	t.Log("Starting epoch progression test...")
 
 	deployData, err := loadDeploymentData(t.Context())
