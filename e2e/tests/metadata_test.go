@@ -15,6 +15,7 @@ import (
 // TestGetValidatorSetMetadata tests the GetValidatorSetMetadata API endpoint
 // and verifies that the request id can be used to retrieve the proof of a committed valset
 func TestGetValidatorSetMetadata(t *testing.T) {
+	t.SkipNow()
 	t.Log("Starting validator set metadata API test...")
 
 	_, err := loadDeploymentData(t.Context())

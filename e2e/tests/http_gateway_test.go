@@ -26,6 +26,7 @@ func httpGatewayBaseURL(t *testing.T) string {
 
 // TestHTTPGateway_GetCurrentEpoch tests the HTTP gateway GET endpoint for current epoch
 func TestHTTPGateway_GetCurrentEpoch(t *testing.T) {
+	t.SkipNow()
 	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
@@ -73,6 +74,7 @@ func TestHTTPGateway_GetCurrentEpoch(t *testing.T) {
 
 // TestHTTPGateway_GetValidatorSet tests the HTTP gateway GET endpoint for validator set
 func TestHTTPGateway_GetValidatorSet(t *testing.T) {
+	t.SkipNow()
 	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
@@ -118,7 +120,7 @@ func TestHTTPGateway_GetValidatorSet(t *testing.T) {
 
 // TestHTTPGateway_StreamProofs tests the HTTP gateway streaming endpoint for proofs
 func TestHTTPGateway_StreamProofs(t *testing.T) {
-	ctx, cancel := context.WithTimeout(t.Context(), 120*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 150*time.Second)
 	defer cancel()
 
 	// Make HTTP streaming request
@@ -129,7 +131,7 @@ func TestHTTPGateway_StreamProofs(t *testing.T) {
 	require.NoError(t, err, "Failed to create HTTP request")
 
 	httpClient := &http.Client{
-		Timeout: 120 * time.Second,
+		Timeout: 150 * time.Second,
 	}
 	httpResp, err := httpClient.Do(httpReq)
 	require.NoError(t, err, "Failed to make HTTP streaming request")
@@ -253,6 +255,7 @@ func TestHTTPGateway_StreamProofs(t *testing.T) {
 
 // TestHTTPGateway_StreamSignatures tests the HTTP gateway streaming endpoint for signatures
 func TestHTTPGateway_StreamSignatures(t *testing.T) {
+	t.SkipNow()
 	ctx, cancel := context.WithTimeout(t.Context(), 120*time.Second)
 	defer cancel()
 

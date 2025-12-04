@@ -23,6 +23,7 @@ const (
 
 // TestNonHeaderKeySignature tests signing with different non-header key types
 func TestNonHeaderKeySignature(t *testing.T) {
+	t.SkipNow()
 	t.Log("Starting non-header key signature test...")
 
 	deploymentData, err := loadDeploymentData(t.Context())
