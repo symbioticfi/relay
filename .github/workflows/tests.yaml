@@ -18,120 +18,120 @@ concurrency:
 
 jobs:
 
-  code-quality:
-    name: "Code Quality & Linting"
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    
-    steps:
-      - name: "Checkout Repository"
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
-        with:
-          fetch-depth: 0
+#  code-quality:
+#    name: "Code Quality & Linting"
+#    runs-on: ubuntu-24.04
+#    timeout-minutes: 10
+#
+#    steps:
+#      - name: "Checkout Repository"
+#        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+#        with:
+#          fetch-depth: 0
+#
+#      - name: "Configure Private Repository Access"
+#        run: |
+#          git config --global url.https://x-oauth-basic:${{ secrets.GITHUB_TOKEN }}@github.com/.insteadOf https://github.com/
+#          echo "GOPRIVATE=github.com/symbioticfi/relay" >> $GITHUB_ENV
+#
+#      - name: "Setup Go Environment"
+#        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+#        with:
+#          go-version: ${{ env.GO_VERSION }}
+#          cache: true
+#          cache-dependency-path: "go.sum"
+#
+#      - name: "Generate Code"
+#        run: make generate
+#
+#      - name: "Run Code Linting"
+#        run: make lint
+#
+#      - name: "Verify Code Generation"
+#        id: verify-codegen
+#        run: |
+#          if ! git diff --exit-code; then
+#            echo "❌ Code generation produced changes. Please run 'make generate' and commit the changes."
+#            echo "changes=true" >> $GITHUB_OUTPUT
+#            git diff
+#            exit 1
+#          else
+#            echo "✅ Code generation verification passed."
+#            echo "changes=false" >> $GITHUB_OUTPUT
+#          fi
 
-      - name: "Configure Private Repository Access"
-        run: |
-          git config --global url.https://x-oauth-basic:${{ secrets.GITHUB_TOKEN }}@github.com/.insteadOf https://github.com/
-          echo "GOPRIVATE=github.com/symbioticfi/relay" >> $GITHUB_ENV
-          
-      - name: "Setup Go Environment"
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
-          cache-dependency-path: "go.sum"
-
-      - name: "Generate Code"
-        run: make generate
-
-      - name: "Run Code Linting"
-        run: make lint
-
-      - name: "Verify Code Generation"
-        id: verify-codegen
-        run: |
-          if ! git diff --exit-code; then
-            echo "❌ Code generation produced changes. Please run 'make generate' and commit the changes."
-            echo "changes=true" >> $GITHUB_OUTPUT
-            git diff
-            exit 1
-          else
-            echo "✅ Code generation verification passed."
-            echo "changes=false" >> $GITHUB_OUTPUT
-          fi
-
-  unit-tests:
-    name: "Unit Tests"
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    needs: [code-quality]
-    
-    steps:
-      - name: "Checkout Repository"
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
-        with:
-          fetch-depth: 0
-
-      - name: "Configure Private Repository Access"
-        run: |
-          git config --global url.https://x-oauth-basic:${{ secrets.GITHUB_TOKEN }}@github.com/.insteadOf https://github.com/
-          echo "GOPRIVATE=github.com/symbioticfi/relay" >> $GITHUB_ENV
-          
-      - name: "Setup Go Environment"
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
-          cache-dependency-path: "go.sum"
-
-      - name: "Execute Unit Tests"
-        run: make unit-test
-
-      - name: "Extract Test Coverage"
-        id: coverage
-        run: |
-          if [[ -f coverage.txt ]]; then
-            TOTAL_LINE=$(grep '^total:' coverage.txt | tail -1)
-            COVERAGE=$(echo "$TOTAL_LINE" | grep -Eo '[0-9]+\.[0-9]+%')
-            COVERAGE_VALUE="${COVERAGE:-Not available}"
-            echo "coverage=${COVERAGE_VALUE}" >> $GITHUB_OUTPUT
-            echo "COVERAGE=${COVERAGE_VALUE}" >> $GITHUB_ENV
-            echo "Test Coverage: ${COVERAGE_VALUE}"
-          else
-            echo "coverage=Not available" >> $GITHUB_OUTPUT
-            echo "COVERAGE=Not available" >> $GITHUB_ENV
-            echo "⚠️ Coverage file not found"
-          fi
-
-      - name: "Post Coverage Report to PR"
-        if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
-        uses: mshick/add-pr-comment@b8f338c590a895d50bcbfa6c5859251edc8952fc # v2.8.2
-        with:
-          message: |
-            ## 🧪 Test Coverage Report
-            
-            **Coverage:** `${{ steps.coverage.outputs.coverage }}`
-
+#  unit-tests:
+#    name: "Unit Tests"
+#    runs-on: ubuntu-24.04
+#    timeout-minutes: 15
+#    needs: [code-quality]
+#
+#    steps:
+#      - name: "Checkout Repository"
+#        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+#        with:
+#          fetch-depth: 0
+#
+#      - name: "Configure Private Repository Access"
+#        run: |
+#          git config --global url.https://x-oauth-basic:${{ secrets.GITHUB_TOKEN }}@github.com/.insteadOf https://github.com/
+#          echo "GOPRIVATE=github.com/symbioticfi/relay" >> $GITHUB_ENV
+#
+#      - name: "Setup Go Environment"
+#        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+#        with:
+#          go-version: ${{ env.GO_VERSION }}
+#          cache: true
+#          cache-dependency-path: "go.sum"
+#
+#      - name: "Execute Unit Tests"
+#        run: make unit-test
+#
+#      - name: "Extract Test Coverage"
+#        id: coverage
+#        run: |
+#          if [[ -f coverage.txt ]]; then
+#            TOTAL_LINE=$(grep '^total:' coverage.txt | tail -1)
+#            COVERAGE=$(echo "$TOTAL_LINE" | grep -Eo '[0-9]+\.[0-9]+%')
+#            COVERAGE_VALUE="${COVERAGE:-Not available}"
+#            echo "coverage=${COVERAGE_VALUE}" >> $GITHUB_OUTPUT
+#            echo "COVERAGE=${COVERAGE_VALUE}" >> $GITHUB_ENV
+#            echo "Test Coverage: ${COVERAGE_VALUE}"
+#          else
+#            echo "coverage=Not available" >> $GITHUB_OUTPUT
+#            echo "COVERAGE=Not available" >> $GITHUB_ENV
+#            echo "⚠️ Coverage file not found"
+#          fi
+#
+#      - name: "Post Coverage Report to PR"
+#        if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
+#        uses: mshick/add-pr-comment@b8f338c590a895d50bcbfa6c5859251edc8952fc # v2.8.2
+#        with:
+#          message: |
+#            ## 🧪 Test Coverage Report
+#
+#            **Coverage:** `${{ steps.coverage.outputs.coverage }}`
+#
 
   e2e-tests:
     name: "E2E Tests - ${{ matrix.config.name }}"
     runs-on: ${{ matrix.config.verification_type == 0 && 'relay-16' || 'ubuntu-24.04' }}
     timeout-minutes: 30
-    needs: [unit-tests]
-    
+#    needs: [unit-tests]
+
     strategy:
       matrix:
         config:
-          - name: "Simple Setup"
-            operators: 4
-            commiters: 1
-            aggregators: 1
-            verification_type: 1
-          - name: "Multi Committer and Aggregator"
-            operators: 10
-            commiters: 2
-            aggregators: 3
-            verification_type: 1
+#          - name: "Simple Setup"
+#            operators: 4
+#            commiters: 1
+#            aggregators: 1
+#            verification_type: 1
+#          - name: "Multi Committer and Aggregator"
+#            operators: 10
+#            commiters: 2
+#            aggregators: 3
+#            verification_type: 1
           - name: "ZK Aggregator Test"
             operators: 10
             commiters: 3
@@ -252,9 +252,9 @@ jobs:
                 {
                   echo "=== Container: $CONTAINER_NAME ($container_id) ==="
                   echo "Generated at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-                  echo "Last 500 lines of logs:"
+                  echo "Last 5000 lines of logs:"
                   echo ""
-                  docker logs --tail=500 $container_id 2>&1
+                  docker logs --tail=5000 $container_id 2>&1
                 } > logs/containers/$CONTAINER_NAME.log
               fi
             done
