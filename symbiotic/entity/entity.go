@@ -526,17 +526,6 @@ func (v ValidatorSet) FindValidatorByKey(keyTag KeyTag, publicKey []byte) (Valid
 	return Validator{}, false
 }
 
-func (v ValidatorSet) GetUniqueKeyTags() []KeyTag {
-	m := make(map[KeyTag]struct{})
-	for _, validator := range v.Validators {
-		for _, key := range validator.Keys {
-			m[key.Tag] = struct{}{}
-		}
-	}
-
-	return lo.Keys(m)
-}
-
 type ValidatorSetHash struct {
 	KeyTag KeyTag
 	Hash   common.Hash
