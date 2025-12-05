@@ -19,7 +19,7 @@ func TestGetValidatorSetMetadata(t *testing.T) {
 	_, err := loadDeploymentData(t.Context())
 	require.NoError(t, err, "Failed to load deployment data")
 
-	client := globalTestEnv.GetGRPCClient(t, 0)
+	client := getGRPCClient(t, 0)
 
 	// Get last committed epochs to find a committed epoch ≥1 for testing
 	// We need committed epochs because that's when proofs and signatures are available
@@ -201,7 +201,7 @@ func TestGetLastAllCommitted(t *testing.T) {
 
 	t.Logf("Testing GetLastAllCommitted API on %d", 0)
 
-	client := globalTestEnv.GetGRPCClient(t, 0)
+	client := getGRPCClient(t, 0)
 
 	// Get expected data from contracts to validate against
 	expected := getExpectedDataFromContracts(t, deploymentData)

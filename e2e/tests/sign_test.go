@@ -52,17 +52,20 @@ func TestNonHeaderKeySignature(t *testing.T) {
 	t.Logf("Running signature test for string: %s", msg)
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			client := globalTestEnv.GetGRPCClient(t, 0)
+			client := getGRPCClient(t, 0)
 			lastCommitted, err := client.GetLastAllCommitted(t.Context(), &apiv1.GetLastAllCommittedRequest{})
 			require.NoError(t, err, "Failed to get last all committed")
 			epoch := lo.Min(lo.Map(lo.Values(lastCommitted.GetEpochInfos()), func(e *apiv1.ChainEpochInfo, _ int) uint64 {
 				return e.GetLastCommittedEpoch()
 			}))
 
+			data, err := loadDeploymentData(t.Context())
+			require.NoError(t, err, "Failed to load deployment data")
+
 			requestID := ""
-			for i := range globalTestEnv.Containers {
+			for i := range data.Env.GetSidecarConfigs() {
 				func() {
-					client = globalTestEnv.GetGRPCClient(t, i)
+					client = getGRPCClient(t, i)
 
 					var resp *apiv1.SignMessageResponse
 					// retry sign call 3 times as it can get transaction conflict
@@ -98,7 +101,7 @@ func TestNonHeaderKeySignature(t *testing.T) {
 			ticker := time.NewTicker(3 * time.Second)
 			defer ticker.Stop()
 
-			client = globalTestEnv.GetGRPCClient(t, 0)
+			client = getGRPCClient(t, 0)
 
 			for {
 				select {
@@ -112,13 +115,13 @@ func TestNonHeaderKeySignature(t *testing.T) {
 
 					require.NoErrorf(t, err, "Failed to get signatures from relay at %d", 0)
 
-					if tc.keyTag.Type() == symbiotic.KeyTypeEcdsaSecp256k1 && len(resp.GetSignatures()) != len(globalTestEnv.Containers) {
+					if tc.keyTag.Type() == symbiotic.KeyTypeEcdsaSecp256k1 && len(resp.GetSignatures()) != len(data.Env.GetSidecarConfigs()) {
 						// expect all n signatures for ECDSA
-						t.Logf("Received %d/%d signatures for request id: %s. Waiting for all signatures...", len(resp.GetSignatures()), len(globalTestEnv.Containers), requestID)
+						t.Logf("Received %d/%d signatures for request id: %s. Waiting for all signatures...", len(resp.GetSignatures()), len(data.Env.GetSidecarConfigs()), requestID)
 						continue
-					} else if tc.keyTag.Type() == symbiotic.KeyTypeBlsBn254 && (len(globalTestEnv.Containers)*2/3+1) > len(resp.GetSignatures()) {
+					} else if tc.keyTag.Type() == symbiotic.KeyTypeBlsBn254 && (len(data.Env.GetSidecarConfigs())*2/3+1) > len(resp.GetSignatures()) {
 						// need at least 2/3 signatures for BLS, signers skip signing is proof is already generated so we may not get all n sigs
-						t.Logf("Received %d/%d signatures for request id: %s. Waiting for all signatures...", len(resp.GetSignatures()), len(globalTestEnv.Containers), requestID)
+						t.Logf("Received %d/%d signatures for request id: %s. Waiting for all signatures...", len(resp.GetSignatures()), len(data.Env.GetSidecarConfigs()), requestID)
 						continue
 					}
 					t.Logf("All %d signatures received for request id: %s", len(resp.GetSignatures()), requestID)
