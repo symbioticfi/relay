@@ -148,8 +148,7 @@ jobs:
       EPOCH_TIME: ${{ matrix.config.epoch_time || 60 }}
       BLOCK_TIME: 1
       FINALITY_BLOCKS: 2
-      GENERATE_SIDECARS: false
-    
+
     steps:
       - name: "Checkout Repository"
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
@@ -253,9 +252,9 @@ jobs:
                 {
                   echo "=== Container: $CONTAINER_NAME ($container_id) ==="
                   echo "Generated at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-                  echo "Last 500 lines of logs:"
+                  echo "Last 5000 lines of logs:"
                   echo ""
-                  docker logs --tail=500 $container_id 2>&1
+                  docker logs --tail=5000 $container_id 2>&1
                 } > logs/containers/$CONTAINER_NAME.log
               fi
             done
