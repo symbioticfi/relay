@@ -1,0 +1,27 @@
+name: Validate Pull Request
+
+on:
+  pull_request_target:
+    branches:
+      - dev
+      - main
+
+jobs:
+  qodo:
+    if: ${{ github.event.sender.type != 'Bot' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - name: PR Agent action step
+        id: pragent
+        uses: qodo-ai/pr-agent@d36ad319f7fb0049205017405a71275c41599587   # pin@v0.31
+        env:
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          github_action_config.auto_review: "true"
+          github_action_config.auto_describe: "true"
+          github_action_config.auto_improve: "true"
+          github_action_config.pr_actions: '["opened", "reopened"]'
