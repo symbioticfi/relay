@@ -53,8 +53,6 @@ const (
 	HeaderMissed
 )
 
-const ValsetHeaderKeyTag = KeyTag(15)
-
 type RawSignature []byte
 type RawMessageHash []byte
 type RawPublicKey []byte
