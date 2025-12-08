@@ -4,10 +4,11 @@ import (
 	"context"
 
 	"github.com/go-errors/errors"
-	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
-	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // GetLocalValidator handles the gRPC GetLocalValidator request
@@ -31,12 +32,12 @@ func (h *grpcHandler) GetLocalValidator(ctx context.Context, req *apiv1.GetLocal
 		return nil, err
 	}
 
-	pubkey, err := h.cfg.KeyProvider.GetOnchainKeyFromCache(symbiotic.ValsetHeaderKeyTag)
+	pubkey, err := h.cfg.KeyProvider.GetOnchainKeyFromCache(validatorSet.RequiredKeyTag)
 	if err != nil {
 		return nil, errors.Errorf("failed to get onchain key from cache: %w", err)
 	}
 
-	validator, found := validatorSet.FindValidatorByKey(symbiotic.ValsetHeaderKeyTag, pubkey)
+	validator, found := validatorSet.FindValidatorByKey(validatorSet.RequiredKeyTag, pubkey)
 	if !found {
 		return nil, status.Errorf(codes.NotFound, "local validator not found")
 	}

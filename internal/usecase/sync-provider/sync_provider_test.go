@@ -175,7 +175,7 @@ func createTestRepo(t *testing.T) *badger.Repository {
 func createTestSignatureRequest(t *testing.T) symbiotic.SignatureRequest {
 	t.Helper()
 	return symbiotic.SignatureRequest{
-		KeyTag:        symbiotic.ValsetHeaderKeyTag,
+		KeyTag:        symbiotic.KeyTag(15),
 		RequiredEpoch: symbiotic.Epoch(1),
 		Message:       randomBytes(t, 100), // Random message makes each request unique
 	}
@@ -202,7 +202,7 @@ func createTestValidatorSet(t *testing.T, privateKey ...crypto.PrivateKey) symbi
 			IsActive:    true,
 			Keys: []symbiotic.ValidatorKey{
 				{
-					Tag:     symbiotic.ValsetHeaderKeyTag,
+					Tag:     symbiotic.KeyTag(15),
 					Payload: pk.PublicKey().OnChain(),
 				},
 			},
@@ -210,7 +210,7 @@ func createTestValidatorSet(t *testing.T, privateKey ...crypto.PrivateKey) symbi
 	}
 	return symbiotic.ValidatorSet{
 		Version:         1,
-		RequiredKeyTag:  symbiotic.ValsetHeaderKeyTag,
+		RequiredKeyTag:  symbiotic.KeyTag(15),
 		Epoch:           1,
 		QuorumThreshold: symbiotic.ToVotingPower(big.NewInt(670)),
 		Validators:      validators,
@@ -232,7 +232,7 @@ func createTestValidatorSetWithMultipleValidators(t *testing.T, count int) (symb
 			IsActive:    true,
 			Keys: []symbiotic.ValidatorKey{
 				{
-					Tag:     symbiotic.ValsetHeaderKeyTag,
+					Tag:     symbiotic.KeyTag(15),
 					Payload: privateKey.PublicKey().OnChain(), // Same key for all validators for simplicity
 				},
 			},
@@ -241,7 +241,7 @@ func createTestValidatorSetWithMultipleValidators(t *testing.T, count int) (symb
 
 	return symbiotic.ValidatorSet{
 		Version:         1,
-		RequiredKeyTag:  symbiotic.ValsetHeaderKeyTag,
+		RequiredKeyTag:  symbiotic.KeyTag(15),
 		Epoch:           1,
 		QuorumThreshold: symbiotic.ToVotingPower(big.NewInt(670)),
 		Validators:      validators,
