@@ -1,12 +1,6 @@
 #!/bin/sh
 
-apk add --no-cache jq
-
-echo "Waiting for relay_contracts.json file..."
-until [ -f /deploy-data/relay_contracts.json ]; do sleep 2; done
-
-DRIVER_ADDRESS=$(jq -r '.driver.addr' /deploy-data/relay_contracts.json)
-echo "Driver address from relay_contracts.json: $DRIVER_ADDRESS"
+DRIVER_ADDRESS=0x43C27243F96591892976FFf886511807B65a33d5
 
 cat > /tmp/sidecar.yaml << EOFCONFIG
 # Logging
@@ -57,7 +51,6 @@ sync:
 
 pruner:
   enabled: true
-
   interval: 1m
 
 EOFCONFIG

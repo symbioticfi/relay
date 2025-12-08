@@ -220,12 +220,10 @@ func (e *Client) GetConfig(ctx context.Context, timestamp symbiotic.Timestamp, e
 				QuorumThreshold: symbiotic.ToQuorumThresholdPct(v.QuorumThreshold),
 			}
 		}),
-		NumCommitters:  dtoConfig.NumCommitters.Uint64(),
-		NumAggregators: dtoConfig.NumAggregators.Uint64(),
-		EpochDuration:  epochDuration,
-
-		// TODO: get from contract
-		CommitterSlotDuration: 10,
+		NumCommitters:         dtoConfig.NumCommitters.Uint64(),
+		NumAggregators:        dtoConfig.NumAggregators.Uint64(),
+		EpochDuration:         epochDuration,
+		CommitterSlotDuration: dtoConfig.CommitterSlotDuration.Uint64(),
 	}, nil
 }
 

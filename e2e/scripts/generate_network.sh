@@ -33,6 +33,7 @@ DEFAULT_EPOCH_TIME=30
 DEFAULT_BLOCK_TIME=1
 DEFAULT_FINALITY_BLOCKS=2
 MAX_OPERATORS=999
+DEFAULT_COMMITTER_SLOT_DURATION=10
 
 
 print_status() {
@@ -85,6 +86,7 @@ get_config_from_env() {
     epoch_size=${EPOCH_TIME:-$DEFAULT_EPOCH_TIME}
     block_time=${BLOCK_TIME:-$DEFAULT_BLOCK_TIME}
     finality_blocks=${FINALITY_BLOCKS:-$DEFAULT_FINALITY_BLOCKS}
+    committer_slot_duration=${COMMITTER_SLOT_DURATION:-$DEFAULT_COMMITTER_SLOT_DURATION}
     
     # Validate inputs
     validate_number "$operators" "Number of operators (OPERATORS env var)"
@@ -94,6 +96,7 @@ get_config_from_env() {
     validate_number "$epoch_size" "Epoch size (EPOCH_TIME env var)"
     validate_number "$block_time" "Block time (BLOCK_TIME env var)"
     validate_number "$finality_blocks" "Finality blocks (FINALITY_BLOCKS env var)"
+    validate_number "$committer_slot_duration" "Committer slot duration (COMMITTER_SLOT_DURATION env var)"
 
     # Validate that commiters + aggregators <= operators
     total_special_roles=$((commiters + aggregators))
@@ -101,7 +104,7 @@ get_config_from_env() {
         print_error "Total commiters ($commiters) + aggregators ($aggregators) cannot exceed total operators ($operators)"
         exit 1
     fi
-    
+
     if [ "$operators" -gt $MAX_OPERATORS ]; then
         print_error "Maximum $MAX_OPERATORS operators supported. Requested: $operators"
         exit 1
@@ -123,6 +126,7 @@ get_config_from_env() {
     print_status "  Epoch size: $epoch_size slots (EPOCH_TIME=${EPOCH_TIME:-default})"
     print_status "  Block time: $block_time seconds (BLOCK_TIME=${BLOCK_TIME:-default})"
     print_status "  Finality blocks: $finality_blocks (FINALITY_BLOCKS=${FINALITY_BLOCKS:-default})"
+    print_status "  Committer slot duration: $committer_slot_duration seconds (COMMITTER_SLOT_DURATION=${COMMITTER_SLOT_DURATION:-default})"
 }
 
 # Function to generate Docker Compose file
@@ -134,18 +138,33 @@ generate_docker_compose() {
     local epoch_size=$5
     local block_time=$6
     local finality_blocks=$7
+    local committer_slot_duration=$8
     
     local network_dir="temp-network"
-    
+
     if [ -d "$network_dir" ]; then
         print_status "Cleaning up existing $network_dir directory..."
         rm -rf "$network_dir"
     fi
-    
+
     mkdir -p "$network_dir/deploy-data"
     # Ensure deploy-data directory is writable for Docker containers
     chmod 777 "$network_dir/deploy-data"
-    
+
+    # Create cache and broadcast directories with proper permissions
+    print_status "Creating out, cache and broadcast directories..."
+    mkdir -p "$network_dir/out" "$network_dir/cache" "$network_dir/broadcast"
+    chmod 777 "$network_dir/out" "$network_dir/cache" "$network_dir/broadcast"
+
+    local deploy_config_src="contracts/script/my-relay-deploy.toml"
+    local deploy_config_dst="$network_dir/my-relay-deploy.toml"
+    if [ ! -f "$deploy_config_src" ]; then
+        print_error "Deployment config not found at $deploy_config_src"
+        exit 1
+    fi
+    print_status "Copying deployment config to $deploy_config_dst"
+    cp "$deploy_config_src" "$deploy_config_dst"
+
     for i in $(seq 1 $operators); do
         local storage_dir="$network_dir/data-$(printf "%02d" $i)"
         mkdir -p "$storage_dir"
@@ -165,7 +184,7 @@ generate_docker_compose() {
 services:
   # Main Anvil local Ethereum network (Chain ID: 31337)
   anvil:
-    image: ghcr.io/foundry-rs/foundry:v1.2.3
+    image: ghcr.io/foundry-rs/foundry:v1.4.3
     container_name: symbiotic-anvil
     entrypoint: ["anvil"]
     command: "--port 8545 --chain-id 31337 --timestamp $timestamp --auto-impersonate --slots-in-an-epoch $finality_blocks --accounts 10 --balance 10000 --gas-limit 30000000"
@@ -183,7 +202,7 @@ services:
 
   # Settlement Anvil local Ethereum network (Chain ID: 31338)
   anvil-settlement:
-    image: ghcr.io/foundry-rs/foundry:v1.2.3
+    image: ghcr.io/foundry-rs/foundry:v1.4.3
     container_name: symbiotic-anvil-settlement
     entrypoint: ["anvil"]
     command: "--port 8546 --chain-id 31338 --timestamp $timestamp --auto-impersonate --slots-in-an-epoch $finality_blocks --accounts 10 --balance 10000 --gas-limit 30000000"
@@ -201,13 +220,21 @@ services:
 
   # Contract deployment service for main chain
   deployer:
-    image: ghcr.io/foundry-rs/foundry:v1.3.0
+    build:
+      context: ..
+      dockerfile: scripts/deployer.Dockerfile
+    image: symbiotic-deployer
     container_name: symbiotic-deployer
+    user: "1000:1000"
     volumes:
       - ../contracts/:/app
       - ../scripts:/app/deploy-scripts
       - ../temp-network:/app/temp-network
+      - ./cache:/app/cache
+      - ./broadcast:/app/broadcast
+      - ./out:/app/out
       - ./deploy-data:/deploy-data
+      - ./my-relay-deploy.toml:/my-relay-deploy.toml
     working_dir: /app
     command: ./deploy-scripts/deploy.sh
     depends_on:
@@ -225,6 +252,7 @@ services:
       - FOUNDRY_CACHE_PATH=/tmp/.foundry-cache
       - NUM_AGGREGATORS=$aggregators
       - NUM_COMMITTERS=$commiters
+      - COMMITTER_SLOT_DURATION=$committer_slot_duration
 
   # Genesis generation service
   genesis-generator:
@@ -333,13 +361,13 @@ EOF
 # Main execution
 main() {
     print_header "Symbiotic Network Generator"
-    
+
     # Check if required tools are available
     if ! command -v docker &> /dev/null; then
         print_error "Docker is not installed or not in PATH"
         exit 1
     fi
-    
+
     if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
         print_error "Docker Compose is not installed or not in PATH"
         exit 1
@@ -350,7 +378,7 @@ main() {
 
     print_status "Generating Docker Compose configuration..."
     print_status "Creating $operators new operator accounts..."
-    generate_docker_compose "$operators" "$commiters" "$aggregators" "$verification_type" "$epoch_size" "$block_time" "$finality_blocks"
+    generate_docker_compose "$operators" "$commiters" "$aggregators" "$verification_type" "$epoch_size" "$block_time" "$finality_blocks" "$committer_slot_duration"
 }
 
 main "$@" 

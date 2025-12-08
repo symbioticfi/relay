@@ -105,22 +105,22 @@ e2e-test:
 .PHONY: gen-abi
 gen-abi:
 	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
-		--abi symbiotic/client/evm/abi/IValSetDriver.abi.json \
+		--abi symbiotic/client/evm/abi/ValSetDriver.abi.json \
 		--type IValSetDriver \
 		--pkg gen \
 		--out symbiotic/client/evm/gen/valsetDriver.go
 	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
-		--abi symbiotic/client/evm/abi/ISettlement.abi.json \
+		--abi symbiotic/client/evm/abi/Settlement.abi.json \
 		--type ISettlement \
 		--pkg gen \
 		--out symbiotic/client/evm/gen/settlement.go
 	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
-		--abi symbiotic/client/evm/abi/IKeyRegistry.abi.json \
+		--abi symbiotic/client/evm/abi/KeyRegistry.abi.json \
 		--type IKeyRegistry \
 		--pkg gen \
 		--out symbiotic/client/evm/gen/keyRegistry.go
 	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
-		--abi symbiotic/client/evm/abi/IVotingPowerProvider.abi.json \
+		--abi symbiotic/client/evm/abi/VotingPowerProvider.abi.json \
 		--type IVotingPowerProvider \
 		--pkg gen \
 		--out symbiotic/client/evm/gen/votingPowerProvider.go
