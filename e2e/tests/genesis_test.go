@@ -16,7 +16,7 @@ import (
 func TestGenesisDone(t *testing.T) {
 	t.Log("Starting genesis generation test...")
 
-	deployData, err := loadDeploymentData(t.Context())
+	deployData, err := loadDeploymentData()
 	require.NoError(t, err, "Failed to load deployment data")
 
 	config := evm.Config{
@@ -35,13 +35,13 @@ func TestGenesisDone(t *testing.T) {
 	evmClient, err := evm.NewEvmClient(ctx, config)
 	require.NoError(t, err, "Failed to create EVM client")
 
-	for _, settlement := range deployData.Settlements {
-		t.Logf("Checking settlement %s on chain %d", settlement.Addr, settlement.ChainId)
-		_, err := evmClient.GetValSetHeader(ctx, symbiotic.CrossChainAddress{
-			ChainId: settlement.ChainId,
-			Address: common.HexToAddress(settlement.Addr),
-		})
-		require.NoErrorf(t, err, "Failed to get validator set header for settlement %s", settlement.Addr)
+	cfg, err := evmClient.GetConfig(ctx, symbiotic.Timestamp(time.Now().Unix()), 0)
+	require.NoError(t, err, "Failed to get settlement config")
+
+	for _, settlement := range cfg.Settlements {
+		t.Logf("Checking settlement %s on chain %d", settlement.Address, settlement.ChainId)
+		_, err := evmClient.GetValSetHeader(ctx, settlement)
+		require.NoErrorf(t, err, "Failed to get validator set header for settlement %s", settlement.Address)
 	}
 
 	t.Log("Genesis generation test completed successfully")
@@ -49,7 +49,7 @@ func TestGenesisDone(t *testing.T) {
 
 // TestContractData tests that the data in the contract matches expected values
 func TestContractData(t *testing.T) {
-	deployData, err := loadDeploymentData(t.Context())
+	deployData, err := loadDeploymentData()
 	require.NoError(t, err, "Failed to load deployment data")
 
 	expectedContractData := getExpectedDataFromContracts(t, deployData)
