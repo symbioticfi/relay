@@ -1445,8 +1445,9 @@ func TestGetConfig_Success_ReturnsConfig(t *testing.T) {
 		QuorumThresholds: []gen.IValSetDriverQuorumThreshold{
 			{KeyTag: 1, QuorumThreshold: big.NewInt(66)},
 		},
-		RequiredHeaderKeyTag: 1,
-		VerificationType:     0,
+		RequiredHeaderKeyTag:  1,
+		VerificationType:      0,
+		CommitterSlotDuration: big.NewInt(10),
 	}
 
 	mockMetrics.EXPECT().
