@@ -337,7 +337,7 @@ EOF
       - symbiotic-network
     restart: unless-stopped
     environment:
-      - MAX_VALIDATORS=10,100
+      - MAX_VALIDATORS=10
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/healthz"]
       interval: 30s
