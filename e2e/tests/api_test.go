@@ -152,7 +152,7 @@ func validateValidatorSetAgainstExpected(t *testing.T, apiResponse *apiv1.GetVal
 func TestRelayAPIConnectivity(t *testing.T) {
 	t.Log("Starting relay API connectivity test...")
 
-	data, err := loadDeploymentData(t.Context())
+	data, err := loadDeploymentData()
 	require.NoError(t, err, "Failed to load deployment data")
 
 	for i := range data.Env.GetSidecarConfigs() {
@@ -178,7 +178,7 @@ func TestRelayAPIConnectivity(t *testing.T) {
 func TestValidatorSetAPI(t *testing.T) {
 	t.Log("Starting validator set API test...")
 
-	deploymentData, err := loadDeploymentData(t.Context())
+	deploymentData, err := loadDeploymentData()
 	require.NoError(t, err, "Failed to load deployment data")
 
 	client := getGRPCClient(t, 0)

@@ -33,6 +33,7 @@ var (
 type IValSetDriverConfig struct {
 	NumAggregators          *big.Int
 	NumCommitters           *big.Int
+	CommitterSlotDuration   *big.Int
 	VotingPowerProviders    []IValSetDriverCrossChainAddress
 	KeysProvider            IValSetDriverCrossChainAddress
 	Settlements             []IValSetDriverCrossChainAddress
@@ -57,113 +58,113 @@ type IValSetDriverQuorumThreshold struct {
 	QuorumThreshold *big.Int
 }
 
-// IValSetDriverMetaData contains all meta data concerning the IValSetDriver contract.
-var IValSetDriverMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"MAX_QUORUM_THRESHOLD\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint248\",\"internalType\":\"uint248\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"NETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK_IDENTIFIER\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"addQuorumThreshold\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addSettlement\",\"inputs\":[{\"name\":\"settlement\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getConfig\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.Config\",\"components\":[{\"name\":\"numAggregators\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"numCommitters\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"settlements\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxValidatorsCount\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"},{\"name\":\"quorumThresholds\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.QuorumThreshold[]\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]},{\"name\":\"requiredHeaderKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"verificationType\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getConfigAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.Config\",\"components\":[{\"name\":\"numAggregators\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"numCommitters\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"settlements\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxValidatorsCount\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"},{\"name\":\"quorumThresholds\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.QuorumThreshold[]\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]},{\"name\":\"requiredHeaderKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"verificationType\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpoch\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpochDuration\",\"inputs\":[],\"outputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpochStart\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochDuration\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochIndex\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochStart\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getKeysProvider\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getKeysProviderAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxValidatorsCount\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxValidatorsCountAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxVotingPower\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxVotingPowerAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMinInclusionVotingPower\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMinInclusionVotingPowerAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextEpoch\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextEpochDuration\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextEpochStart\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNumAggregators\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNumAggregatorsAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNumCommitters\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNumCommittersAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQuorumThresholds\",\"inputs\":[],\"outputs\":[{\"name\":\"quorumThresholds\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.QuorumThreshold[]\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQuorumThresholdsAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"quorumThresholds\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.QuorumThreshold[]\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredHeaderKeyTag\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredHeaderKeyTagAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTags\",\"inputs\":[],\"outputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTagsAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSettlements\",\"inputs\":[],\"outputs\":[{\"name\":\"settlements\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSettlementsAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"settlements\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVerificationType\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVerificationTypeAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVotingPowerProviders\",\"inputs\":[],\"outputs\":[{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVotingPowerProvidersAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isQuorumThresholdRegistered\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isQuorumThresholdRegisteredAt\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isSettlementRegistered\",\"inputs\":[{\"name\":\"settlement\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isSettlementRegisteredAt\",\"inputs\":[{\"name\":\"settlement\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isVotingPowerProviderRegistered\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isVotingPowerProviderRegisteredAt\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"multicall\",\"inputs\":[{\"name\":\"data\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"outputs\":[{\"name\":\"results\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeQuorumThreshold\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeSettlement\",\"inputs\":[{\"name\":\"settlement\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setEpochDuration\",\"inputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setKeysProvider\",\"inputs\":[{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMaxValidatorsCount\",\"inputs\":[{\"name\":\"maxValidatorsCount\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMaxVotingPower\",\"inputs\":[{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMinInclusionVotingPower\",\"inputs\":[{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setNumAggregators\",\"inputs\":[{\"name\":\"numAggregators\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setNumCommitters\",\"inputs\":[{\"name\":\"numCommitters\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setRequiredHeaderKeyTag\",\"inputs\":[{\"name\":\"requiredHeaderKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setRequiredKeyTags\",\"inputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setVerificationType\",\"inputs\":[{\"name\":\"verificationType\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"staticDelegateCall\",\"inputs\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"AddQuorumThreshold\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"AddSettlement\",\"inputs\":[{\"name\":\"settlement\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"AddVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitEpochDuration\",\"inputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"indexed\":false,\"internalType\":\"uint48\"},{\"name\":\"epochDurationTimestamp\",\"type\":\"uint48\",\"indexed\":false,\"internalType\":\"uint48\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitSubnetwork\",\"inputs\":[{\"name\":\"network\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"subnetworkId\",\"type\":\"uint96\",\"indexed\":false,\"internalType\":\"uint96\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RemoveQuorumThreshold\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RemoveSettlement\",\"inputs\":[{\"name\":\"settlement\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RemoveVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetEpochDuration\",\"inputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"indexed\":false,\"internalType\":\"uint48\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetKeysProvider\",\"inputs\":[{\"name\":\"keysProvider\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetMaxValidatorsCount\",\"inputs\":[{\"name\":\"maxValidatorsCount\",\"type\":\"uint208\",\"indexed\":false,\"internalType\":\"uint208\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetMaxVotingPower\",\"inputs\":[{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetMinInclusionVotingPower\",\"inputs\":[{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetNumAggregators\",\"inputs\":[{\"name\":\"numAggregators\",\"type\":\"uint208\",\"indexed\":false,\"internalType\":\"uint208\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetNumCommitters\",\"inputs\":[{\"name\":\"numCommitters\",\"type\":\"uint208\",\"indexed\":false,\"internalType\":\"uint208\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetRequiredHeaderKeyTag\",\"inputs\":[{\"name\":\"requiredHeaderKeyTag\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetRequiredKeyTags\",\"inputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"indexed\":false,\"internalType\":\"uint8[]\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetVerificationType\",\"inputs\":[{\"name\":\"verificationType\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AddressEmptyCode\",\"inputs\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"CheckpointUnorderedInsertion\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"DuplicateKeyTag\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_InvalidEpochDuration\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_InvalidEpochDurationTimestamp\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_TooOldTimestamp\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"FailedCall\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidInitialization\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidKey\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidKeyTag\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NetworkManager_InvalidNetwork\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotInitializing\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_ChainAlreadyAdded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_InvalidCrossChainAddress\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_InvalidMaxValidatorsCount\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_InvalidQuorumThreshold\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_KeyTagAlreadyAdded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_NotAdded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_ZeroNumAggregators\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_ZeroNumCommitters\",\"inputs\":[]}]",
+// ValSetDriverMetaData contains all meta data concerning the ValSetDriver contract.
+var ValSetDriverMetaData = &bind.MetaData{
+	ABI: "[{\"type\":\"function\",\"name\":\"MAX_QUORUM_THRESHOLD\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint248\",\"internalType\":\"uint248\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"NETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SUBNETWORK_IDENTIFIER\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"addQuorumThreshold\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addSettlement\",\"inputs\":[{\"name\":\"settlement\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getCommitterSlotDuration\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCommitterSlotDurationAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getConfig\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.Config\",\"components\":[{\"name\":\"numAggregators\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"numCommitters\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"committerSlotDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"settlements\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxValidatorsCount\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"},{\"name\":\"quorumThresholds\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.QuorumThreshold[]\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]},{\"name\":\"requiredHeaderKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"verificationType\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getConfigAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.Config\",\"components\":[{\"name\":\"numAggregators\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"numCommitters\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"committerSlotDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"settlements\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxValidatorsCount\",\"type\":\"uint208\",\"internalType\":\"uint208\"},{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"},{\"name\":\"quorumThresholds\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.QuorumThreshold[]\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]},{\"name\":\"requiredHeaderKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"verificationType\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpoch\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpochDuration\",\"inputs\":[],\"outputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentEpochStart\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochDuration\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochIndex\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEpochStart\",\"inputs\":[{\"name\":\"epoch\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getKeysProvider\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getKeysProviderAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxValidatorsCount\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxValidatorsCountAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxVotingPower\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMaxVotingPowerAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMinInclusionVotingPower\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMinInclusionVotingPowerAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextEpoch\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextEpochDuration\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextEpochStart\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNumAggregators\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNumAggregatorsAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNumCommitters\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNumCommittersAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQuorumThresholds\",\"inputs\":[],\"outputs\":[{\"name\":\"quorumThresholds\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.QuorumThreshold[]\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQuorumThresholdsAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"quorumThresholds\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.QuorumThreshold[]\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredHeaderKeyTag\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredHeaderKeyTagAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTags\",\"inputs\":[],\"outputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRequiredKeyTagsAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSettlements\",\"inputs\":[],\"outputs\":[{\"name\":\"settlements\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSettlementsAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"settlements\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVerificationType\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVerificationTypeAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVotingPowerProviders\",\"inputs\":[],\"outputs\":[{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVotingPowerProvidersAt\",\"inputs\":[{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"votingPowerProviders\",\"type\":\"tuple[]\",\"internalType\":\"structIValSetDriver.CrossChainAddress[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isQuorumThresholdRegistered\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isQuorumThresholdRegisteredAt\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isSettlementRegistered\",\"inputs\":[{\"name\":\"settlement\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isSettlementRegisteredAt\",\"inputs\":[{\"name\":\"settlement\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isVotingPowerProviderRegistered\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isVotingPowerProviderRegisteredAt\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"timestamp\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"multicall\",\"inputs\":[{\"name\":\"data\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"outputs\":[{\"name\":\"results\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeQuorumThreshold\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeSettlement\",\"inputs\":[{\"name\":\"settlement\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setCommitterSlotDuration\",\"inputs\":[{\"name\":\"slotDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setEpochDuration\",\"inputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"internalType\":\"uint48\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setKeysProvider\",\"inputs\":[{\"name\":\"keysProvider\",\"type\":\"tuple\",\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMaxValidatorsCount\",\"inputs\":[{\"name\":\"maxValidatorsCount\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMaxVotingPower\",\"inputs\":[{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMinInclusionVotingPower\",\"inputs\":[{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setNumAggregators\",\"inputs\":[{\"name\":\"numAggregators\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setNumCommitters\",\"inputs\":[{\"name\":\"numCommitters\",\"type\":\"uint208\",\"internalType\":\"uint208\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setRequiredHeaderKeyTag\",\"inputs\":[{\"name\":\"requiredHeaderKeyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setRequiredKeyTags\",\"inputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"internalType\":\"uint8[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setVerificationType\",\"inputs\":[{\"name\":\"verificationType\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"staticDelegateCall\",\"inputs\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"AddQuorumThreshold\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"AddSettlement\",\"inputs\":[{\"name\":\"settlement\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"AddVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitEpochDuration\",\"inputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"indexed\":false,\"internalType\":\"uint48\"},{\"name\":\"epochDurationTimestamp\",\"type\":\"uint48\",\"indexed\":false,\"internalType\":\"uint48\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InitSubnetwork\",\"inputs\":[{\"name\":\"network\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"subnetworkId\",\"type\":\"uint96\",\"indexed\":false,\"internalType\":\"uint96\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RemoveQuorumThreshold\",\"inputs\":[{\"name\":\"quorumThreshold\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.QuorumThreshold\",\"components\":[{\"name\":\"keyTag\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"quorumThreshold\",\"type\":\"uint248\",\"internalType\":\"uint248\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RemoveSettlement\",\"inputs\":[{\"name\":\"settlement\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RemoveVotingPowerProvider\",\"inputs\":[{\"name\":\"votingPowerProvider\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetCommitterSlotDuration\",\"inputs\":[{\"name\":\"committerSlotDuration\",\"type\":\"uint48\",\"indexed\":false,\"internalType\":\"uint48\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetEpochDuration\",\"inputs\":[{\"name\":\"epochDuration\",\"type\":\"uint48\",\"indexed\":false,\"internalType\":\"uint48\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetKeysProvider\",\"inputs\":[{\"name\":\"keysProvider\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIValSetDriver.CrossChainAddress\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"addr\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetMaxValidatorsCount\",\"inputs\":[{\"name\":\"maxValidatorsCount\",\"type\":\"uint208\",\"indexed\":false,\"internalType\":\"uint208\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetMaxVotingPower\",\"inputs\":[{\"name\":\"maxVotingPower\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetMinInclusionVotingPower\",\"inputs\":[{\"name\":\"minInclusionVotingPower\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetNumAggregators\",\"inputs\":[{\"name\":\"numAggregators\",\"type\":\"uint208\",\"indexed\":false,\"internalType\":\"uint208\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetNumCommitters\",\"inputs\":[{\"name\":\"numCommitters\",\"type\":\"uint208\",\"indexed\":false,\"internalType\":\"uint208\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetRequiredHeaderKeyTag\",\"inputs\":[{\"name\":\"requiredHeaderKeyTag\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetRequiredKeyTags\",\"inputs\":[{\"name\":\"requiredKeyTags\",\"type\":\"uint8[]\",\"indexed\":false,\"internalType\":\"uint8[]\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetVerificationType\",\"inputs\":[{\"name\":\"verificationType\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AddressEmptyCode\",\"inputs\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"CheckpointUnorderedInsertion\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"DuplicateKeyTag\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_InvalidEpochDuration\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_InvalidEpochDurationTimestamp\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EpochManager_TooOldTimestamp\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"FailedCall\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidInitialization\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidKey\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidKeyTag\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NetworkManager_InvalidNetwork\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotInitializing\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_ChainAlreadyAdded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_InvalidCrossChainAddress\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_InvalidMaxValidatorsCount\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_InvalidQuorumThreshold\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_KeyTagAlreadyAdded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_NotAdded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_ZeroCommitterSlotDuration\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_ZeroNumAggregators\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValSetDriver_ZeroNumCommitters\",\"inputs\":[]}]",
 }
 
-// IValSetDriverABI is the input ABI used to generate the binding from.
-// Deprecated: Use IValSetDriverMetaData.ABI instead.
-var IValSetDriverABI = IValSetDriverMetaData.ABI
+// ValSetDriverABI is the input ABI used to generate the binding from.
+// Deprecated: Use ValSetDriverMetaData.ABI instead.
+var ValSetDriverABI = ValSetDriverMetaData.ABI
 
-// IValSetDriver is an auto generated Go binding around an Ethereum contract.
-type IValSetDriver struct {
-	IValSetDriverCaller     // Read-only binding to the contract
-	IValSetDriverTransactor // Write-only binding to the contract
-	IValSetDriverFilterer   // Log filterer for contract events
+// ValSetDriver is an auto generated Go binding around an Ethereum contract.
+type ValSetDriver struct {
+	ValSetDriverCaller     // Read-only binding to the contract
+	ValSetDriverTransactor // Write-only binding to the contract
+	ValSetDriverFilterer   // Log filterer for contract events
 }
 
-// IValSetDriverCaller is an auto generated read-only Go binding around an Ethereum contract.
-type IValSetDriverCaller struct {
+// ValSetDriverCaller is an auto generated read-only Go binding around an Ethereum contract.
+type ValSetDriverCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// IValSetDriverTransactor is an auto generated write-only Go binding around an Ethereum contract.
-type IValSetDriverTransactor struct {
+// ValSetDriverTransactor is an auto generated write-only Go binding around an Ethereum contract.
+type ValSetDriverTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// IValSetDriverFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
-type IValSetDriverFilterer struct {
+// ValSetDriverFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
+type ValSetDriverFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// IValSetDriverSession is an auto generated Go binding around an Ethereum contract,
+// ValSetDriverSession is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.
-type IValSetDriverSession struct {
-	Contract     *IValSetDriver    // Generic contract binding to set the session for
+type ValSetDriverSession struct {
+	Contract     *ValSetDriver     // Generic contract binding to set the session for
 	CallOpts     bind.CallOpts     // Call options to use throughout this session
 	TransactOpts bind.TransactOpts // Transaction auth options to use throughout this session
 }
 
-// IValSetDriverCallerSession is an auto generated read-only Go binding around an Ethereum contract,
+// ValSetDriverCallerSession is an auto generated read-only Go binding around an Ethereum contract,
 // with pre-set call options.
-type IValSetDriverCallerSession struct {
-	Contract *IValSetDriverCaller // Generic contract caller binding to set the session for
-	CallOpts bind.CallOpts        // Call options to use throughout this session
+type ValSetDriverCallerSession struct {
+	Contract *ValSetDriverCaller // Generic contract caller binding to set the session for
+	CallOpts bind.CallOpts       // Call options to use throughout this session
 }
 
-// IValSetDriverTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
+// ValSetDriverTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
 // with pre-set transact options.
-type IValSetDriverTransactorSession struct {
-	Contract     *IValSetDriverTransactor // Generic contract transactor binding to set the session for
-	TransactOpts bind.TransactOpts        // Transaction auth options to use throughout this session
+type ValSetDriverTransactorSession struct {
+	Contract     *ValSetDriverTransactor // Generic contract transactor binding to set the session for
+	TransactOpts bind.TransactOpts       // Transaction auth options to use throughout this session
 }
 
-// IValSetDriverRaw is an auto generated low-level Go binding around an Ethereum contract.
-type IValSetDriverRaw struct {
-	Contract *IValSetDriver // Generic contract binding to access the raw methods on
+// ValSetDriverRaw is an auto generated low-level Go binding around an Ethereum contract.
+type ValSetDriverRaw struct {
+	Contract *ValSetDriver // Generic contract binding to access the raw methods on
 }
 
-// IValSetDriverCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
-type IValSetDriverCallerRaw struct {
-	Contract *IValSetDriverCaller // Generic read-only contract binding to access the raw methods on
+// ValSetDriverCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
+type ValSetDriverCallerRaw struct {
+	Contract *ValSetDriverCaller // Generic read-only contract binding to access the raw methods on
 }
 
-// IValSetDriverTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
-type IValSetDriverTransactorRaw struct {
-	Contract *IValSetDriverTransactor // Generic write-only contract binding to access the raw methods on
+// ValSetDriverTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
+type ValSetDriverTransactorRaw struct {
+	Contract *ValSetDriverTransactor // Generic write-only contract binding to access the raw methods on
 }
 
-// NewIValSetDriver creates a new instance of IValSetDriver, bound to a specific deployed contract.
-func NewIValSetDriver(address common.Address, backend bind.ContractBackend) (*IValSetDriver, error) {
-	contract, err := bindIValSetDriver(address, backend, backend, backend)
+// NewValSetDriver creates a new instance of ValSetDriver, bound to a specific deployed contract.
+func NewValSetDriver(address common.Address, backend bind.ContractBackend) (*ValSetDriver, error) {
+	contract, err := bindValSetDriver(address, backend, backend, backend)
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriver{IValSetDriverCaller: IValSetDriverCaller{contract: contract}, IValSetDriverTransactor: IValSetDriverTransactor{contract: contract}, IValSetDriverFilterer: IValSetDriverFilterer{contract: contract}}, nil
+	return &ValSetDriver{ValSetDriverCaller: ValSetDriverCaller{contract: contract}, ValSetDriverTransactor: ValSetDriverTransactor{contract: contract}, ValSetDriverFilterer: ValSetDriverFilterer{contract: contract}}, nil
 }
 
-// NewIValSetDriverCaller creates a new read-only instance of IValSetDriver, bound to a specific deployed contract.
-func NewIValSetDriverCaller(address common.Address, caller bind.ContractCaller) (*IValSetDriverCaller, error) {
-	contract, err := bindIValSetDriver(address, caller, nil, nil)
+// NewValSetDriverCaller creates a new read-only instance of ValSetDriver, bound to a specific deployed contract.
+func NewValSetDriverCaller(address common.Address, caller bind.ContractCaller) (*ValSetDriverCaller, error) {
+	contract, err := bindValSetDriver(address, caller, nil, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverCaller{contract: contract}, nil
+	return &ValSetDriverCaller{contract: contract}, nil
 }
 
-// NewIValSetDriverTransactor creates a new write-only instance of IValSetDriver, bound to a specific deployed contract.
-func NewIValSetDriverTransactor(address common.Address, transactor bind.ContractTransactor) (*IValSetDriverTransactor, error) {
-	contract, err := bindIValSetDriver(address, nil, transactor, nil)
+// NewValSetDriverTransactor creates a new write-only instance of ValSetDriver, bound to a specific deployed contract.
+func NewValSetDriverTransactor(address common.Address, transactor bind.ContractTransactor) (*ValSetDriverTransactor, error) {
+	contract, err := bindValSetDriver(address, nil, transactor, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverTransactor{contract: contract}, nil
+	return &ValSetDriverTransactor{contract: contract}, nil
 }
 
-// NewIValSetDriverFilterer creates a new log filterer instance of IValSetDriver, bound to a specific deployed contract.
-func NewIValSetDriverFilterer(address common.Address, filterer bind.ContractFilterer) (*IValSetDriverFilterer, error) {
-	contract, err := bindIValSetDriver(address, nil, nil, filterer)
+// NewValSetDriverFilterer creates a new log filterer instance of ValSetDriver, bound to a specific deployed contract.
+func NewValSetDriverFilterer(address common.Address, filterer bind.ContractFilterer) (*ValSetDriverFilterer, error) {
+	contract, err := bindValSetDriver(address, nil, nil, filterer)
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverFilterer{contract: contract}, nil
+	return &ValSetDriverFilterer{contract: contract}, nil
 }
 
-// bindIValSetDriver binds a generic wrapper to an already deployed contract.
-func bindIValSetDriver(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
-	parsed, err := IValSetDriverMetaData.GetAbi()
+// bindValSetDriver binds a generic wrapper to an already deployed contract.
+func bindValSetDriver(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
+	parsed, err := ValSetDriverMetaData.GetAbi()
 	if err != nil {
 		return nil, err
 	}
@@ -174,46 +175,46 @@ func bindIValSetDriver(address common.Address, caller bind.ContractCaller, trans
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_IValSetDriver *IValSetDriverRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
-	return _IValSetDriver.Contract.IValSetDriverCaller.contract.Call(opts, result, method, params...)
+func (_ValSetDriver *ValSetDriverRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _ValSetDriver.Contract.ValSetDriverCaller.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_IValSetDriver *IValSetDriverRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.IValSetDriverTransactor.contract.Transfer(opts)
+func (_ValSetDriver *ValSetDriverRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.ValSetDriverTransactor.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_IValSetDriver *IValSetDriverRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.IValSetDriverTransactor.contract.Transact(opts, method, params...)
+func (_ValSetDriver *ValSetDriverRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.ValSetDriverTransactor.contract.Transact(opts, method, params...)
 }
 
 // Call invokes the (constant) contract method with params as input values and
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_IValSetDriver *IValSetDriverCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
-	return _IValSetDriver.Contract.contract.Call(opts, result, method, params...)
+func (_ValSetDriver *ValSetDriverCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _ValSetDriver.Contract.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_IValSetDriver *IValSetDriverTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.contract.Transfer(opts)
+func (_ValSetDriver *ValSetDriverTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_IValSetDriver *IValSetDriverTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.contract.Transact(opts, method, params...)
+func (_ValSetDriver *ValSetDriverTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.contract.Transact(opts, method, params...)
 }
 
 // MAXQUORUMTHRESHOLD is a free data retrieval call binding the contract method 0x127ec283.
 //
 // Solidity: function MAX_QUORUM_THRESHOLD() view returns(uint248)
-func (_IValSetDriver *IValSetDriverCaller) MAXQUORUMTHRESHOLD(opts *bind.CallOpts) (*big.Int, error) {
+func (_ValSetDriver *ValSetDriverCaller) MAXQUORUMTHRESHOLD(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "MAX_QUORUM_THRESHOLD")
+	err := _ValSetDriver.contract.Call(opts, &out, "MAX_QUORUM_THRESHOLD")
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -228,23 +229,23 @@ func (_IValSetDriver *IValSetDriverCaller) MAXQUORUMTHRESHOLD(opts *bind.CallOpt
 // MAXQUORUMTHRESHOLD is a free data retrieval call binding the contract method 0x127ec283.
 //
 // Solidity: function MAX_QUORUM_THRESHOLD() view returns(uint248)
-func (_IValSetDriver *IValSetDriverSession) MAXQUORUMTHRESHOLD() (*big.Int, error) {
-	return _IValSetDriver.Contract.MAXQUORUMTHRESHOLD(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverSession) MAXQUORUMTHRESHOLD() (*big.Int, error) {
+	return _ValSetDriver.Contract.MAXQUORUMTHRESHOLD(&_ValSetDriver.CallOpts)
 }
 
 // MAXQUORUMTHRESHOLD is a free data retrieval call binding the contract method 0x127ec283.
 //
 // Solidity: function MAX_QUORUM_THRESHOLD() view returns(uint248)
-func (_IValSetDriver *IValSetDriverCallerSession) MAXQUORUMTHRESHOLD() (*big.Int, error) {
-	return _IValSetDriver.Contract.MAXQUORUMTHRESHOLD(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverCallerSession) MAXQUORUMTHRESHOLD() (*big.Int, error) {
+	return _ValSetDriver.Contract.MAXQUORUMTHRESHOLD(&_ValSetDriver.CallOpts)
 }
 
 // NETWORK is a free data retrieval call binding the contract method 0x8759e6d1.
 //
 // Solidity: function NETWORK() view returns(address)
-func (_IValSetDriver *IValSetDriverCaller) NETWORK(opts *bind.CallOpts) (common.Address, error) {
+func (_ValSetDriver *ValSetDriverCaller) NETWORK(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "NETWORK")
+	err := _ValSetDriver.contract.Call(opts, &out, "NETWORK")
 
 	if err != nil {
 		return *new(common.Address), err
@@ -259,23 +260,23 @@ func (_IValSetDriver *IValSetDriverCaller) NETWORK(opts *bind.CallOpts) (common.
 // NETWORK is a free data retrieval call binding the contract method 0x8759e6d1.
 //
 // Solidity: function NETWORK() view returns(address)
-func (_IValSetDriver *IValSetDriverSession) NETWORK() (common.Address, error) {
-	return _IValSetDriver.Contract.NETWORK(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverSession) NETWORK() (common.Address, error) {
+	return _ValSetDriver.Contract.NETWORK(&_ValSetDriver.CallOpts)
 }
 
 // NETWORK is a free data retrieval call binding the contract method 0x8759e6d1.
 //
 // Solidity: function NETWORK() view returns(address)
-func (_IValSetDriver *IValSetDriverCallerSession) NETWORK() (common.Address, error) {
-	return _IValSetDriver.Contract.NETWORK(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverCallerSession) NETWORK() (common.Address, error) {
+	return _ValSetDriver.Contract.NETWORK(&_ValSetDriver.CallOpts)
 }
 
 // SUBNETWORK is a free data retrieval call binding the contract method 0x773e6b54.
 //
 // Solidity: function SUBNETWORK() view returns(bytes32)
-func (_IValSetDriver *IValSetDriverCaller) SUBNETWORK(opts *bind.CallOpts) ([32]byte, error) {
+func (_ValSetDriver *ValSetDriverCaller) SUBNETWORK(opts *bind.CallOpts) ([32]byte, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "SUBNETWORK")
+	err := _ValSetDriver.contract.Call(opts, &out, "SUBNETWORK")
 
 	if err != nil {
 		return *new([32]byte), err
@@ -290,23 +291,23 @@ func (_IValSetDriver *IValSetDriverCaller) SUBNETWORK(opts *bind.CallOpts) ([32]
 // SUBNETWORK is a free data retrieval call binding the contract method 0x773e6b54.
 //
 // Solidity: function SUBNETWORK() view returns(bytes32)
-func (_IValSetDriver *IValSetDriverSession) SUBNETWORK() ([32]byte, error) {
-	return _IValSetDriver.Contract.SUBNETWORK(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverSession) SUBNETWORK() ([32]byte, error) {
+	return _ValSetDriver.Contract.SUBNETWORK(&_ValSetDriver.CallOpts)
 }
 
 // SUBNETWORK is a free data retrieval call binding the contract method 0x773e6b54.
 //
 // Solidity: function SUBNETWORK() view returns(bytes32)
-func (_IValSetDriver *IValSetDriverCallerSession) SUBNETWORK() ([32]byte, error) {
-	return _IValSetDriver.Contract.SUBNETWORK(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverCallerSession) SUBNETWORK() ([32]byte, error) {
+	return _ValSetDriver.Contract.SUBNETWORK(&_ValSetDriver.CallOpts)
 }
 
 // SUBNETWORKIDENTIFIER is a free data retrieval call binding the contract method 0xabacb807.
 //
 // Solidity: function SUBNETWORK_IDENTIFIER() view returns(uint96)
-func (_IValSetDriver *IValSetDriverCaller) SUBNETWORKIDENTIFIER(opts *bind.CallOpts) (*big.Int, error) {
+func (_ValSetDriver *ValSetDriverCaller) SUBNETWORKIDENTIFIER(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "SUBNETWORK_IDENTIFIER")
+	err := _ValSetDriver.contract.Call(opts, &out, "SUBNETWORK_IDENTIFIER")
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -321,23 +322,85 @@ func (_IValSetDriver *IValSetDriverCaller) SUBNETWORKIDENTIFIER(opts *bind.CallO
 // SUBNETWORKIDENTIFIER is a free data retrieval call binding the contract method 0xabacb807.
 //
 // Solidity: function SUBNETWORK_IDENTIFIER() view returns(uint96)
-func (_IValSetDriver *IValSetDriverSession) SUBNETWORKIDENTIFIER() (*big.Int, error) {
-	return _IValSetDriver.Contract.SUBNETWORKIDENTIFIER(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverSession) SUBNETWORKIDENTIFIER() (*big.Int, error) {
+	return _ValSetDriver.Contract.SUBNETWORKIDENTIFIER(&_ValSetDriver.CallOpts)
 }
 
 // SUBNETWORKIDENTIFIER is a free data retrieval call binding the contract method 0xabacb807.
 //
 // Solidity: function SUBNETWORK_IDENTIFIER() view returns(uint96)
-func (_IValSetDriver *IValSetDriverCallerSession) SUBNETWORKIDENTIFIER() (*big.Int, error) {
-	return _IValSetDriver.Contract.SUBNETWORKIDENTIFIER(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverCallerSession) SUBNETWORKIDENTIFIER() (*big.Int, error) {
+	return _ValSetDriver.Contract.SUBNETWORKIDENTIFIER(&_ValSetDriver.CallOpts)
+}
+
+// GetCommitterSlotDuration is a free data retrieval call binding the contract method 0xcdad0bb6.
+//
+// Solidity: function getCommitterSlotDuration() view returns(uint48)
+func (_ValSetDriver *ValSetDriverCaller) GetCommitterSlotDuration(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _ValSetDriver.contract.Call(opts, &out, "getCommitterSlotDuration")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetCommitterSlotDuration is a free data retrieval call binding the contract method 0xcdad0bb6.
+//
+// Solidity: function getCommitterSlotDuration() view returns(uint48)
+func (_ValSetDriver *ValSetDriverSession) GetCommitterSlotDuration() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetCommitterSlotDuration(&_ValSetDriver.CallOpts)
+}
+
+// GetCommitterSlotDuration is a free data retrieval call binding the contract method 0xcdad0bb6.
+//
+// Solidity: function getCommitterSlotDuration() view returns(uint48)
+func (_ValSetDriver *ValSetDriverCallerSession) GetCommitterSlotDuration() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetCommitterSlotDuration(&_ValSetDriver.CallOpts)
+}
+
+// GetCommitterSlotDurationAt is a free data retrieval call binding the contract method 0x490be3bd.
+//
+// Solidity: function getCommitterSlotDurationAt(uint48 timestamp) view returns(uint48)
+func (_ValSetDriver *ValSetDriverCaller) GetCommitterSlotDurationAt(opts *bind.CallOpts, timestamp *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _ValSetDriver.contract.Call(opts, &out, "getCommitterSlotDurationAt", timestamp)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetCommitterSlotDurationAt is a free data retrieval call binding the contract method 0x490be3bd.
+//
+// Solidity: function getCommitterSlotDurationAt(uint48 timestamp) view returns(uint48)
+func (_ValSetDriver *ValSetDriverSession) GetCommitterSlotDurationAt(timestamp *big.Int) (*big.Int, error) {
+	return _ValSetDriver.Contract.GetCommitterSlotDurationAt(&_ValSetDriver.CallOpts, timestamp)
+}
+
+// GetCommitterSlotDurationAt is a free data retrieval call binding the contract method 0x490be3bd.
+//
+// Solidity: function getCommitterSlotDurationAt(uint48 timestamp) view returns(uint48)
+func (_ValSetDriver *ValSetDriverCallerSession) GetCommitterSlotDurationAt(timestamp *big.Int) (*big.Int, error) {
+	return _ValSetDriver.Contract.GetCommitterSlotDurationAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetConfig is a free data retrieval call binding the contract method 0xc3f909d4.
 //
-// Solidity: function getConfig() view returns((uint208,uint208,(uint64,address)[],(uint64,address),(uint64,address)[],uint256,uint256,uint208,uint8[],(uint8,uint248)[],uint8,uint32))
-func (_IValSetDriver *IValSetDriverCaller) GetConfig(opts *bind.CallOpts) (IValSetDriverConfig, error) {
+// Solidity: function getConfig() view returns((uint208,uint208,uint48,(uint64,address)[],(uint64,address),(uint64,address)[],uint256,uint256,uint208,uint8[],(uint8,uint248)[],uint8,uint32))
+func (_ValSetDriver *ValSetDriverCaller) GetConfig(opts *bind.CallOpts) (IValSetDriverConfig, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getConfig")
+	err := _ValSetDriver.contract.Call(opts, &out, "getConfig")
 
 	if err != nil {
 		return *new(IValSetDriverConfig), err
@@ -351,24 +414,24 @@ func (_IValSetDriver *IValSetDriverCaller) GetConfig(opts *bind.CallOpts) (IValS
 
 // GetConfig is a free data retrieval call binding the contract method 0xc3f909d4.
 //
-// Solidity: function getConfig() view returns((uint208,uint208,(uint64,address)[],(uint64,address),(uint64,address)[],uint256,uint256,uint208,uint8[],(uint8,uint248)[],uint8,uint32))
-func (_IValSetDriver *IValSetDriverSession) GetConfig() (IValSetDriverConfig, error) {
-	return _IValSetDriver.Contract.GetConfig(&_IValSetDriver.CallOpts)
+// Solidity: function getConfig() view returns((uint208,uint208,uint48,(uint64,address)[],(uint64,address),(uint64,address)[],uint256,uint256,uint208,uint8[],(uint8,uint248)[],uint8,uint32))
+func (_ValSetDriver *ValSetDriverSession) GetConfig() (IValSetDriverConfig, error) {
+	return _ValSetDriver.Contract.GetConfig(&_ValSetDriver.CallOpts)
 }
 
 // GetConfig is a free data retrieval call binding the contract method 0xc3f909d4.
 //
-// Solidity: function getConfig() view returns((uint208,uint208,(uint64,address)[],(uint64,address),(uint64,address)[],uint256,uint256,uint208,uint8[],(uint8,uint248)[],uint8,uint32))
-func (_IValSetDriver *IValSetDriverCallerSession) GetConfig() (IValSetDriverConfig, error) {
-	return _IValSetDriver.Contract.GetConfig(&_IValSetDriver.CallOpts)
+// Solidity: function getConfig() view returns((uint208,uint208,uint48,(uint64,address)[],(uint64,address),(uint64,address)[],uint256,uint256,uint208,uint8[],(uint8,uint248)[],uint8,uint32))
+func (_ValSetDriver *ValSetDriverCallerSession) GetConfig() (IValSetDriverConfig, error) {
+	return _ValSetDriver.Contract.GetConfig(&_ValSetDriver.CallOpts)
 }
 
 // GetConfigAt is a free data retrieval call binding the contract method 0x13fb0877.
 //
-// Solidity: function getConfigAt(uint48 timestamp) view returns((uint208,uint208,(uint64,address)[],(uint64,address),(uint64,address)[],uint256,uint256,uint208,uint8[],(uint8,uint248)[],uint8,uint32))
-func (_IValSetDriver *IValSetDriverCaller) GetConfigAt(opts *bind.CallOpts, timestamp *big.Int) (IValSetDriverConfig, error) {
+// Solidity: function getConfigAt(uint48 timestamp) view returns((uint208,uint208,uint48,(uint64,address)[],(uint64,address),(uint64,address)[],uint256,uint256,uint208,uint8[],(uint8,uint248)[],uint8,uint32))
+func (_ValSetDriver *ValSetDriverCaller) GetConfigAt(opts *bind.CallOpts, timestamp *big.Int) (IValSetDriverConfig, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getConfigAt", timestamp)
+	err := _ValSetDriver.contract.Call(opts, &out, "getConfigAt", timestamp)
 
 	if err != nil {
 		return *new(IValSetDriverConfig), err
@@ -382,24 +445,24 @@ func (_IValSetDriver *IValSetDriverCaller) GetConfigAt(opts *bind.CallOpts, time
 
 // GetConfigAt is a free data retrieval call binding the contract method 0x13fb0877.
 //
-// Solidity: function getConfigAt(uint48 timestamp) view returns((uint208,uint208,(uint64,address)[],(uint64,address),(uint64,address)[],uint256,uint256,uint208,uint8[],(uint8,uint248)[],uint8,uint32))
-func (_IValSetDriver *IValSetDriverSession) GetConfigAt(timestamp *big.Int) (IValSetDriverConfig, error) {
-	return _IValSetDriver.Contract.GetConfigAt(&_IValSetDriver.CallOpts, timestamp)
+// Solidity: function getConfigAt(uint48 timestamp) view returns((uint208,uint208,uint48,(uint64,address)[],(uint64,address),(uint64,address)[],uint256,uint256,uint208,uint8[],(uint8,uint248)[],uint8,uint32))
+func (_ValSetDriver *ValSetDriverSession) GetConfigAt(timestamp *big.Int) (IValSetDriverConfig, error) {
+	return _ValSetDriver.Contract.GetConfigAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetConfigAt is a free data retrieval call binding the contract method 0x13fb0877.
 //
-// Solidity: function getConfigAt(uint48 timestamp) view returns((uint208,uint208,(uint64,address)[],(uint64,address),(uint64,address)[],uint256,uint256,uint208,uint8[],(uint8,uint248)[],uint8,uint32))
-func (_IValSetDriver *IValSetDriverCallerSession) GetConfigAt(timestamp *big.Int) (IValSetDriverConfig, error) {
-	return _IValSetDriver.Contract.GetConfigAt(&_IValSetDriver.CallOpts, timestamp)
+// Solidity: function getConfigAt(uint48 timestamp) view returns((uint208,uint208,uint48,(uint64,address)[],(uint64,address),(uint64,address)[],uint256,uint256,uint208,uint8[],(uint8,uint248)[],uint8,uint32))
+func (_ValSetDriver *ValSetDriverCallerSession) GetConfigAt(timestamp *big.Int) (IValSetDriverConfig, error) {
+	return _ValSetDriver.Contract.GetConfigAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetCurrentEpoch is a free data retrieval call binding the contract method 0xb97dd9e2.
 //
 // Solidity: function getCurrentEpoch() view returns(uint48)
-func (_IValSetDriver *IValSetDriverCaller) GetCurrentEpoch(opts *bind.CallOpts) (*big.Int, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetCurrentEpoch(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getCurrentEpoch")
+	err := _ValSetDriver.contract.Call(opts, &out, "getCurrentEpoch")
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -414,23 +477,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetCurrentEpoch(opts *bind.CallOpts) 
 // GetCurrentEpoch is a free data retrieval call binding the contract method 0xb97dd9e2.
 //
 // Solidity: function getCurrentEpoch() view returns(uint48)
-func (_IValSetDriver *IValSetDriverSession) GetCurrentEpoch() (*big.Int, error) {
-	return _IValSetDriver.Contract.GetCurrentEpoch(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverSession) GetCurrentEpoch() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetCurrentEpoch(&_ValSetDriver.CallOpts)
 }
 
 // GetCurrentEpoch is a free data retrieval call binding the contract method 0xb97dd9e2.
 //
 // Solidity: function getCurrentEpoch() view returns(uint48)
-func (_IValSetDriver *IValSetDriverCallerSession) GetCurrentEpoch() (*big.Int, error) {
-	return _IValSetDriver.Contract.GetCurrentEpoch(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverCallerSession) GetCurrentEpoch() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetCurrentEpoch(&_ValSetDriver.CallOpts)
 }
 
 // GetCurrentEpochDuration is a free data retrieval call binding the contract method 0x558e2eb6.
 //
 // Solidity: function getCurrentEpochDuration() view returns(uint48 epochDuration)
-func (_IValSetDriver *IValSetDriverCaller) GetCurrentEpochDuration(opts *bind.CallOpts) (*big.Int, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetCurrentEpochDuration(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getCurrentEpochDuration")
+	err := _ValSetDriver.contract.Call(opts, &out, "getCurrentEpochDuration")
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -445,23 +508,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetCurrentEpochDuration(opts *bind.Ca
 // GetCurrentEpochDuration is a free data retrieval call binding the contract method 0x558e2eb6.
 //
 // Solidity: function getCurrentEpochDuration() view returns(uint48 epochDuration)
-func (_IValSetDriver *IValSetDriverSession) GetCurrentEpochDuration() (*big.Int, error) {
-	return _IValSetDriver.Contract.GetCurrentEpochDuration(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverSession) GetCurrentEpochDuration() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetCurrentEpochDuration(&_ValSetDriver.CallOpts)
 }
 
 // GetCurrentEpochDuration is a free data retrieval call binding the contract method 0x558e2eb6.
 //
 // Solidity: function getCurrentEpochDuration() view returns(uint48 epochDuration)
-func (_IValSetDriver *IValSetDriverCallerSession) GetCurrentEpochDuration() (*big.Int, error) {
-	return _IValSetDriver.Contract.GetCurrentEpochDuration(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverCallerSession) GetCurrentEpochDuration() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetCurrentEpochDuration(&_ValSetDriver.CallOpts)
 }
 
 // GetCurrentEpochStart is a free data retrieval call binding the contract method 0xa6e16c4d.
 //
 // Solidity: function getCurrentEpochStart() view returns(uint48)
-func (_IValSetDriver *IValSetDriverCaller) GetCurrentEpochStart(opts *bind.CallOpts) (*big.Int, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetCurrentEpochStart(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getCurrentEpochStart")
+	err := _ValSetDriver.contract.Call(opts, &out, "getCurrentEpochStart")
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -476,23 +539,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetCurrentEpochStart(opts *bind.CallO
 // GetCurrentEpochStart is a free data retrieval call binding the contract method 0xa6e16c4d.
 //
 // Solidity: function getCurrentEpochStart() view returns(uint48)
-func (_IValSetDriver *IValSetDriverSession) GetCurrentEpochStart() (*big.Int, error) {
-	return _IValSetDriver.Contract.GetCurrentEpochStart(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverSession) GetCurrentEpochStart() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetCurrentEpochStart(&_ValSetDriver.CallOpts)
 }
 
 // GetCurrentEpochStart is a free data retrieval call binding the contract method 0xa6e16c4d.
 //
 // Solidity: function getCurrentEpochStart() view returns(uint48)
-func (_IValSetDriver *IValSetDriverCallerSession) GetCurrentEpochStart() (*big.Int, error) {
-	return _IValSetDriver.Contract.GetCurrentEpochStart(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverCallerSession) GetCurrentEpochStart() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetCurrentEpochStart(&_ValSetDriver.CallOpts)
 }
 
 // GetEpochDuration is a free data retrieval call binding the contract method 0xf6fd6f14.
 //
 // Solidity: function getEpochDuration(uint48 epoch) view returns(uint48 epochDuration)
-func (_IValSetDriver *IValSetDriverCaller) GetEpochDuration(opts *bind.CallOpts, epoch *big.Int) (*big.Int, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetEpochDuration(opts *bind.CallOpts, epoch *big.Int) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getEpochDuration", epoch)
+	err := _ValSetDriver.contract.Call(opts, &out, "getEpochDuration", epoch)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -507,23 +570,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetEpochDuration(opts *bind.CallOpts,
 // GetEpochDuration is a free data retrieval call binding the contract method 0xf6fd6f14.
 //
 // Solidity: function getEpochDuration(uint48 epoch) view returns(uint48 epochDuration)
-func (_IValSetDriver *IValSetDriverSession) GetEpochDuration(epoch *big.Int) (*big.Int, error) {
-	return _IValSetDriver.Contract.GetEpochDuration(&_IValSetDriver.CallOpts, epoch)
+func (_ValSetDriver *ValSetDriverSession) GetEpochDuration(epoch *big.Int) (*big.Int, error) {
+	return _ValSetDriver.Contract.GetEpochDuration(&_ValSetDriver.CallOpts, epoch)
 }
 
 // GetEpochDuration is a free data retrieval call binding the contract method 0xf6fd6f14.
 //
 // Solidity: function getEpochDuration(uint48 epoch) view returns(uint48 epochDuration)
-func (_IValSetDriver *IValSetDriverCallerSession) GetEpochDuration(epoch *big.Int) (*big.Int, error) {
-	return _IValSetDriver.Contract.GetEpochDuration(&_IValSetDriver.CallOpts, epoch)
+func (_ValSetDriver *ValSetDriverCallerSession) GetEpochDuration(epoch *big.Int) (*big.Int, error) {
+	return _ValSetDriver.Contract.GetEpochDuration(&_ValSetDriver.CallOpts, epoch)
 }
 
 // GetEpochIndex is a free data retrieval call binding the contract method 0xccafd209.
 //
 // Solidity: function getEpochIndex(uint48 timestamp) view returns(uint48)
-func (_IValSetDriver *IValSetDriverCaller) GetEpochIndex(opts *bind.CallOpts, timestamp *big.Int) (*big.Int, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetEpochIndex(opts *bind.CallOpts, timestamp *big.Int) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getEpochIndex", timestamp)
+	err := _ValSetDriver.contract.Call(opts, &out, "getEpochIndex", timestamp)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -538,23 +601,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetEpochIndex(opts *bind.CallOpts, ti
 // GetEpochIndex is a free data retrieval call binding the contract method 0xccafd209.
 //
 // Solidity: function getEpochIndex(uint48 timestamp) view returns(uint48)
-func (_IValSetDriver *IValSetDriverSession) GetEpochIndex(timestamp *big.Int) (*big.Int, error) {
-	return _IValSetDriver.Contract.GetEpochIndex(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverSession) GetEpochIndex(timestamp *big.Int) (*big.Int, error) {
+	return _ValSetDriver.Contract.GetEpochIndex(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetEpochIndex is a free data retrieval call binding the contract method 0xccafd209.
 //
 // Solidity: function getEpochIndex(uint48 timestamp) view returns(uint48)
-func (_IValSetDriver *IValSetDriverCallerSession) GetEpochIndex(timestamp *big.Int) (*big.Int, error) {
-	return _IValSetDriver.Contract.GetEpochIndex(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverCallerSession) GetEpochIndex(timestamp *big.Int) (*big.Int, error) {
+	return _ValSetDriver.Contract.GetEpochIndex(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetEpochStart is a free data retrieval call binding the contract method 0x246e158f.
 //
 // Solidity: function getEpochStart(uint48 epoch) view returns(uint48)
-func (_IValSetDriver *IValSetDriverCaller) GetEpochStart(opts *bind.CallOpts, epoch *big.Int) (*big.Int, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetEpochStart(opts *bind.CallOpts, epoch *big.Int) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getEpochStart", epoch)
+	err := _ValSetDriver.contract.Call(opts, &out, "getEpochStart", epoch)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -569,23 +632,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetEpochStart(opts *bind.CallOpts, ep
 // GetEpochStart is a free data retrieval call binding the contract method 0x246e158f.
 //
 // Solidity: function getEpochStart(uint48 epoch) view returns(uint48)
-func (_IValSetDriver *IValSetDriverSession) GetEpochStart(epoch *big.Int) (*big.Int, error) {
-	return _IValSetDriver.Contract.GetEpochStart(&_IValSetDriver.CallOpts, epoch)
+func (_ValSetDriver *ValSetDriverSession) GetEpochStart(epoch *big.Int) (*big.Int, error) {
+	return _ValSetDriver.Contract.GetEpochStart(&_ValSetDriver.CallOpts, epoch)
 }
 
 // GetEpochStart is a free data retrieval call binding the contract method 0x246e158f.
 //
 // Solidity: function getEpochStart(uint48 epoch) view returns(uint48)
-func (_IValSetDriver *IValSetDriverCallerSession) GetEpochStart(epoch *big.Int) (*big.Int, error) {
-	return _IValSetDriver.Contract.GetEpochStart(&_IValSetDriver.CallOpts, epoch)
+func (_ValSetDriver *ValSetDriverCallerSession) GetEpochStart(epoch *big.Int) (*big.Int, error) {
+	return _ValSetDriver.Contract.GetEpochStart(&_ValSetDriver.CallOpts, epoch)
 }
 
 // GetKeysProvider is a free data retrieval call binding the contract method 0x297d29b8.
 //
 // Solidity: function getKeysProvider() view returns((uint64,address))
-func (_IValSetDriver *IValSetDriverCaller) GetKeysProvider(opts *bind.CallOpts) (IValSetDriverCrossChainAddress, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetKeysProvider(opts *bind.CallOpts) (IValSetDriverCrossChainAddress, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getKeysProvider")
+	err := _ValSetDriver.contract.Call(opts, &out, "getKeysProvider")
 
 	if err != nil {
 		return *new(IValSetDriverCrossChainAddress), err
@@ -600,23 +663,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetKeysProvider(opts *bind.CallOpts) 
 // GetKeysProvider is a free data retrieval call binding the contract method 0x297d29b8.
 //
 // Solidity: function getKeysProvider() view returns((uint64,address))
-func (_IValSetDriver *IValSetDriverSession) GetKeysProvider() (IValSetDriverCrossChainAddress, error) {
-	return _IValSetDriver.Contract.GetKeysProvider(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverSession) GetKeysProvider() (IValSetDriverCrossChainAddress, error) {
+	return _ValSetDriver.Contract.GetKeysProvider(&_ValSetDriver.CallOpts)
 }
 
 // GetKeysProvider is a free data retrieval call binding the contract method 0x297d29b8.
 //
 // Solidity: function getKeysProvider() view returns((uint64,address))
-func (_IValSetDriver *IValSetDriverCallerSession) GetKeysProvider() (IValSetDriverCrossChainAddress, error) {
-	return _IValSetDriver.Contract.GetKeysProvider(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverCallerSession) GetKeysProvider() (IValSetDriverCrossChainAddress, error) {
+	return _ValSetDriver.Contract.GetKeysProvider(&_ValSetDriver.CallOpts)
 }
 
 // GetKeysProviderAt is a free data retrieval call binding the contract method 0x10a49295.
 //
 // Solidity: function getKeysProviderAt(uint48 timestamp) view returns((uint64,address))
-func (_IValSetDriver *IValSetDriverCaller) GetKeysProviderAt(opts *bind.CallOpts, timestamp *big.Int) (IValSetDriverCrossChainAddress, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetKeysProviderAt(opts *bind.CallOpts, timestamp *big.Int) (IValSetDriverCrossChainAddress, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getKeysProviderAt", timestamp)
+	err := _ValSetDriver.contract.Call(opts, &out, "getKeysProviderAt", timestamp)
 
 	if err != nil {
 		return *new(IValSetDriverCrossChainAddress), err
@@ -631,23 +694,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetKeysProviderAt(opts *bind.CallOpts
 // GetKeysProviderAt is a free data retrieval call binding the contract method 0x10a49295.
 //
 // Solidity: function getKeysProviderAt(uint48 timestamp) view returns((uint64,address))
-func (_IValSetDriver *IValSetDriverSession) GetKeysProviderAt(timestamp *big.Int) (IValSetDriverCrossChainAddress, error) {
-	return _IValSetDriver.Contract.GetKeysProviderAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverSession) GetKeysProviderAt(timestamp *big.Int) (IValSetDriverCrossChainAddress, error) {
+	return _ValSetDriver.Contract.GetKeysProviderAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetKeysProviderAt is a free data retrieval call binding the contract method 0x10a49295.
 //
 // Solidity: function getKeysProviderAt(uint48 timestamp) view returns((uint64,address))
-func (_IValSetDriver *IValSetDriverCallerSession) GetKeysProviderAt(timestamp *big.Int) (IValSetDriverCrossChainAddress, error) {
-	return _IValSetDriver.Contract.GetKeysProviderAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverCallerSession) GetKeysProviderAt(timestamp *big.Int) (IValSetDriverCrossChainAddress, error) {
+	return _ValSetDriver.Contract.GetKeysProviderAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetMaxValidatorsCount is a free data retrieval call binding the contract method 0x06ce894d.
 //
 // Solidity: function getMaxValidatorsCount() view returns(uint208)
-func (_IValSetDriver *IValSetDriverCaller) GetMaxValidatorsCount(opts *bind.CallOpts) (*big.Int, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetMaxValidatorsCount(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getMaxValidatorsCount")
+	err := _ValSetDriver.contract.Call(opts, &out, "getMaxValidatorsCount")
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -662,23 +725,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetMaxValidatorsCount(opts *bind.Call
 // GetMaxValidatorsCount is a free data retrieval call binding the contract method 0x06ce894d.
 //
 // Solidity: function getMaxValidatorsCount() view returns(uint208)
-func (_IValSetDriver *IValSetDriverSession) GetMaxValidatorsCount() (*big.Int, error) {
-	return _IValSetDriver.Contract.GetMaxValidatorsCount(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverSession) GetMaxValidatorsCount() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetMaxValidatorsCount(&_ValSetDriver.CallOpts)
 }
 
 // GetMaxValidatorsCount is a free data retrieval call binding the contract method 0x06ce894d.
 //
 // Solidity: function getMaxValidatorsCount() view returns(uint208)
-func (_IValSetDriver *IValSetDriverCallerSession) GetMaxValidatorsCount() (*big.Int, error) {
-	return _IValSetDriver.Contract.GetMaxValidatorsCount(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverCallerSession) GetMaxValidatorsCount() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetMaxValidatorsCount(&_ValSetDriver.CallOpts)
 }
 
 // GetMaxValidatorsCountAt is a free data retrieval call binding the contract method 0x4f938edc.
 //
 // Solidity: function getMaxValidatorsCountAt(uint48 timestamp) view returns(uint208)
-func (_IValSetDriver *IValSetDriverCaller) GetMaxValidatorsCountAt(opts *bind.CallOpts, timestamp *big.Int) (*big.Int, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetMaxValidatorsCountAt(opts *bind.CallOpts, timestamp *big.Int) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getMaxValidatorsCountAt", timestamp)
+	err := _ValSetDriver.contract.Call(opts, &out, "getMaxValidatorsCountAt", timestamp)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -693,23 +756,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetMaxValidatorsCountAt(opts *bind.Ca
 // GetMaxValidatorsCountAt is a free data retrieval call binding the contract method 0x4f938edc.
 //
 // Solidity: function getMaxValidatorsCountAt(uint48 timestamp) view returns(uint208)
-func (_IValSetDriver *IValSetDriverSession) GetMaxValidatorsCountAt(timestamp *big.Int) (*big.Int, error) {
-	return _IValSetDriver.Contract.GetMaxValidatorsCountAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverSession) GetMaxValidatorsCountAt(timestamp *big.Int) (*big.Int, error) {
+	return _ValSetDriver.Contract.GetMaxValidatorsCountAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetMaxValidatorsCountAt is a free data retrieval call binding the contract method 0x4f938edc.
 //
 // Solidity: function getMaxValidatorsCountAt(uint48 timestamp) view returns(uint208)
-func (_IValSetDriver *IValSetDriverCallerSession) GetMaxValidatorsCountAt(timestamp *big.Int) (*big.Int, error) {
-	return _IValSetDriver.Contract.GetMaxValidatorsCountAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverCallerSession) GetMaxValidatorsCountAt(timestamp *big.Int) (*big.Int, error) {
+	return _ValSetDriver.Contract.GetMaxValidatorsCountAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetMaxVotingPower is a free data retrieval call binding the contract method 0x9f9c3080.
 //
 // Solidity: function getMaxVotingPower() view returns(uint256)
-func (_IValSetDriver *IValSetDriverCaller) GetMaxVotingPower(opts *bind.CallOpts) (*big.Int, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetMaxVotingPower(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getMaxVotingPower")
+	err := _ValSetDriver.contract.Call(opts, &out, "getMaxVotingPower")
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -724,23 +787,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetMaxVotingPower(opts *bind.CallOpts
 // GetMaxVotingPower is a free data retrieval call binding the contract method 0x9f9c3080.
 //
 // Solidity: function getMaxVotingPower() view returns(uint256)
-func (_IValSetDriver *IValSetDriverSession) GetMaxVotingPower() (*big.Int, error) {
-	return _IValSetDriver.Contract.GetMaxVotingPower(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverSession) GetMaxVotingPower() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetMaxVotingPower(&_ValSetDriver.CallOpts)
 }
 
 // GetMaxVotingPower is a free data retrieval call binding the contract method 0x9f9c3080.
 //
 // Solidity: function getMaxVotingPower() view returns(uint256)
-func (_IValSetDriver *IValSetDriverCallerSession) GetMaxVotingPower() (*big.Int, error) {
-	return _IValSetDriver.Contract.GetMaxVotingPower(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverCallerSession) GetMaxVotingPower() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetMaxVotingPower(&_ValSetDriver.CallOpts)
 }
 
 // GetMaxVotingPowerAt is a free data retrieval call binding the contract method 0x848b3040.
 //
 // Solidity: function getMaxVotingPowerAt(uint48 timestamp) view returns(uint256)
-func (_IValSetDriver *IValSetDriverCaller) GetMaxVotingPowerAt(opts *bind.CallOpts, timestamp *big.Int) (*big.Int, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetMaxVotingPowerAt(opts *bind.CallOpts, timestamp *big.Int) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getMaxVotingPowerAt", timestamp)
+	err := _ValSetDriver.contract.Call(opts, &out, "getMaxVotingPowerAt", timestamp)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -755,23 +818,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetMaxVotingPowerAt(opts *bind.CallOp
 // GetMaxVotingPowerAt is a free data retrieval call binding the contract method 0x848b3040.
 //
 // Solidity: function getMaxVotingPowerAt(uint48 timestamp) view returns(uint256)
-func (_IValSetDriver *IValSetDriverSession) GetMaxVotingPowerAt(timestamp *big.Int) (*big.Int, error) {
-	return _IValSetDriver.Contract.GetMaxVotingPowerAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverSession) GetMaxVotingPowerAt(timestamp *big.Int) (*big.Int, error) {
+	return _ValSetDriver.Contract.GetMaxVotingPowerAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetMaxVotingPowerAt is a free data retrieval call binding the contract method 0x848b3040.
 //
 // Solidity: function getMaxVotingPowerAt(uint48 timestamp) view returns(uint256)
-func (_IValSetDriver *IValSetDriverCallerSession) GetMaxVotingPowerAt(timestamp *big.Int) (*big.Int, error) {
-	return _IValSetDriver.Contract.GetMaxVotingPowerAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverCallerSession) GetMaxVotingPowerAt(timestamp *big.Int) (*big.Int, error) {
+	return _ValSetDriver.Contract.GetMaxVotingPowerAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetMinInclusionVotingPower is a free data retrieval call binding the contract method 0xb6a94695.
 //
 // Solidity: function getMinInclusionVotingPower() view returns(uint256)
-func (_IValSetDriver *IValSetDriverCaller) GetMinInclusionVotingPower(opts *bind.CallOpts) (*big.Int, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetMinInclusionVotingPower(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getMinInclusionVotingPower")
+	err := _ValSetDriver.contract.Call(opts, &out, "getMinInclusionVotingPower")
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -786,23 +849,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetMinInclusionVotingPower(opts *bind
 // GetMinInclusionVotingPower is a free data retrieval call binding the contract method 0xb6a94695.
 //
 // Solidity: function getMinInclusionVotingPower() view returns(uint256)
-func (_IValSetDriver *IValSetDriverSession) GetMinInclusionVotingPower() (*big.Int, error) {
-	return _IValSetDriver.Contract.GetMinInclusionVotingPower(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverSession) GetMinInclusionVotingPower() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetMinInclusionVotingPower(&_ValSetDriver.CallOpts)
 }
 
 // GetMinInclusionVotingPower is a free data retrieval call binding the contract method 0xb6a94695.
 //
 // Solidity: function getMinInclusionVotingPower() view returns(uint256)
-func (_IValSetDriver *IValSetDriverCallerSession) GetMinInclusionVotingPower() (*big.Int, error) {
-	return _IValSetDriver.Contract.GetMinInclusionVotingPower(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverCallerSession) GetMinInclusionVotingPower() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetMinInclusionVotingPower(&_ValSetDriver.CallOpts)
 }
 
 // GetMinInclusionVotingPowerAt is a free data retrieval call binding the contract method 0x456705a2.
 //
 // Solidity: function getMinInclusionVotingPowerAt(uint48 timestamp) view returns(uint256)
-func (_IValSetDriver *IValSetDriverCaller) GetMinInclusionVotingPowerAt(opts *bind.CallOpts, timestamp *big.Int) (*big.Int, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetMinInclusionVotingPowerAt(opts *bind.CallOpts, timestamp *big.Int) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getMinInclusionVotingPowerAt", timestamp)
+	err := _ValSetDriver.contract.Call(opts, &out, "getMinInclusionVotingPowerAt", timestamp)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -817,23 +880,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetMinInclusionVotingPowerAt(opts *bi
 // GetMinInclusionVotingPowerAt is a free data retrieval call binding the contract method 0x456705a2.
 //
 // Solidity: function getMinInclusionVotingPowerAt(uint48 timestamp) view returns(uint256)
-func (_IValSetDriver *IValSetDriverSession) GetMinInclusionVotingPowerAt(timestamp *big.Int) (*big.Int, error) {
-	return _IValSetDriver.Contract.GetMinInclusionVotingPowerAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverSession) GetMinInclusionVotingPowerAt(timestamp *big.Int) (*big.Int, error) {
+	return _ValSetDriver.Contract.GetMinInclusionVotingPowerAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetMinInclusionVotingPowerAt is a free data retrieval call binding the contract method 0x456705a2.
 //
 // Solidity: function getMinInclusionVotingPowerAt(uint48 timestamp) view returns(uint256)
-func (_IValSetDriver *IValSetDriverCallerSession) GetMinInclusionVotingPowerAt(timestamp *big.Int) (*big.Int, error) {
-	return _IValSetDriver.Contract.GetMinInclusionVotingPowerAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverCallerSession) GetMinInclusionVotingPowerAt(timestamp *big.Int) (*big.Int, error) {
+	return _ValSetDriver.Contract.GetMinInclusionVotingPowerAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetNextEpoch is a free data retrieval call binding the contract method 0xefe97d05.
 //
 // Solidity: function getNextEpoch() view returns(uint48)
-func (_IValSetDriver *IValSetDriverCaller) GetNextEpoch(opts *bind.CallOpts) (*big.Int, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetNextEpoch(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getNextEpoch")
+	err := _ValSetDriver.contract.Call(opts, &out, "getNextEpoch")
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -848,23 +911,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetNextEpoch(opts *bind.CallOpts) (*b
 // GetNextEpoch is a free data retrieval call binding the contract method 0xefe97d05.
 //
 // Solidity: function getNextEpoch() view returns(uint48)
-func (_IValSetDriver *IValSetDriverSession) GetNextEpoch() (*big.Int, error) {
-	return _IValSetDriver.Contract.GetNextEpoch(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverSession) GetNextEpoch() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetNextEpoch(&_ValSetDriver.CallOpts)
 }
 
 // GetNextEpoch is a free data retrieval call binding the contract method 0xefe97d05.
 //
 // Solidity: function getNextEpoch() view returns(uint48)
-func (_IValSetDriver *IValSetDriverCallerSession) GetNextEpoch() (*big.Int, error) {
-	return _IValSetDriver.Contract.GetNextEpoch(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverCallerSession) GetNextEpoch() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetNextEpoch(&_ValSetDriver.CallOpts)
 }
 
 // GetNextEpochDuration is a free data retrieval call binding the contract method 0x038cf1c0.
 //
 // Solidity: function getNextEpochDuration() view returns(uint48)
-func (_IValSetDriver *IValSetDriverCaller) GetNextEpochDuration(opts *bind.CallOpts) (*big.Int, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetNextEpochDuration(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getNextEpochDuration")
+	err := _ValSetDriver.contract.Call(opts, &out, "getNextEpochDuration")
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -879,23 +942,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetNextEpochDuration(opts *bind.CallO
 // GetNextEpochDuration is a free data retrieval call binding the contract method 0x038cf1c0.
 //
 // Solidity: function getNextEpochDuration() view returns(uint48)
-func (_IValSetDriver *IValSetDriverSession) GetNextEpochDuration() (*big.Int, error) {
-	return _IValSetDriver.Contract.GetNextEpochDuration(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverSession) GetNextEpochDuration() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetNextEpochDuration(&_ValSetDriver.CallOpts)
 }
 
 // GetNextEpochDuration is a free data retrieval call binding the contract method 0x038cf1c0.
 //
 // Solidity: function getNextEpochDuration() view returns(uint48)
-func (_IValSetDriver *IValSetDriverCallerSession) GetNextEpochDuration() (*big.Int, error) {
-	return _IValSetDriver.Contract.GetNextEpochDuration(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverCallerSession) GetNextEpochDuration() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetNextEpochDuration(&_ValSetDriver.CallOpts)
 }
 
 // GetNextEpochStart is a free data retrieval call binding the contract method 0x65c5f94a.
 //
 // Solidity: function getNextEpochStart() view returns(uint48)
-func (_IValSetDriver *IValSetDriverCaller) GetNextEpochStart(opts *bind.CallOpts) (*big.Int, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetNextEpochStart(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getNextEpochStart")
+	err := _ValSetDriver.contract.Call(opts, &out, "getNextEpochStart")
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -910,23 +973,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetNextEpochStart(opts *bind.CallOpts
 // GetNextEpochStart is a free data retrieval call binding the contract method 0x65c5f94a.
 //
 // Solidity: function getNextEpochStart() view returns(uint48)
-func (_IValSetDriver *IValSetDriverSession) GetNextEpochStart() (*big.Int, error) {
-	return _IValSetDriver.Contract.GetNextEpochStart(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverSession) GetNextEpochStart() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetNextEpochStart(&_ValSetDriver.CallOpts)
 }
 
 // GetNextEpochStart is a free data retrieval call binding the contract method 0x65c5f94a.
 //
 // Solidity: function getNextEpochStart() view returns(uint48)
-func (_IValSetDriver *IValSetDriverCallerSession) GetNextEpochStart() (*big.Int, error) {
-	return _IValSetDriver.Contract.GetNextEpochStart(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverCallerSession) GetNextEpochStart() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetNextEpochStart(&_ValSetDriver.CallOpts)
 }
 
 // GetNumAggregators is a free data retrieval call binding the contract method 0x21fbfe0d.
 //
 // Solidity: function getNumAggregators() view returns(uint208)
-func (_IValSetDriver *IValSetDriverCaller) GetNumAggregators(opts *bind.CallOpts) (*big.Int, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetNumAggregators(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getNumAggregators")
+	err := _ValSetDriver.contract.Call(opts, &out, "getNumAggregators")
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -941,23 +1004,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetNumAggregators(opts *bind.CallOpts
 // GetNumAggregators is a free data retrieval call binding the contract method 0x21fbfe0d.
 //
 // Solidity: function getNumAggregators() view returns(uint208)
-func (_IValSetDriver *IValSetDriverSession) GetNumAggregators() (*big.Int, error) {
-	return _IValSetDriver.Contract.GetNumAggregators(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverSession) GetNumAggregators() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetNumAggregators(&_ValSetDriver.CallOpts)
 }
 
 // GetNumAggregators is a free data retrieval call binding the contract method 0x21fbfe0d.
 //
 // Solidity: function getNumAggregators() view returns(uint208)
-func (_IValSetDriver *IValSetDriverCallerSession) GetNumAggregators() (*big.Int, error) {
-	return _IValSetDriver.Contract.GetNumAggregators(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverCallerSession) GetNumAggregators() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetNumAggregators(&_ValSetDriver.CallOpts)
 }
 
 // GetNumAggregatorsAt is a free data retrieval call binding the contract method 0x6bb7e08a.
 //
 // Solidity: function getNumAggregatorsAt(uint48 timestamp) view returns(uint208)
-func (_IValSetDriver *IValSetDriverCaller) GetNumAggregatorsAt(opts *bind.CallOpts, timestamp *big.Int) (*big.Int, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetNumAggregatorsAt(opts *bind.CallOpts, timestamp *big.Int) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getNumAggregatorsAt", timestamp)
+	err := _ValSetDriver.contract.Call(opts, &out, "getNumAggregatorsAt", timestamp)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -972,23 +1035,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetNumAggregatorsAt(opts *bind.CallOp
 // GetNumAggregatorsAt is a free data retrieval call binding the contract method 0x6bb7e08a.
 //
 // Solidity: function getNumAggregatorsAt(uint48 timestamp) view returns(uint208)
-func (_IValSetDriver *IValSetDriverSession) GetNumAggregatorsAt(timestamp *big.Int) (*big.Int, error) {
-	return _IValSetDriver.Contract.GetNumAggregatorsAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverSession) GetNumAggregatorsAt(timestamp *big.Int) (*big.Int, error) {
+	return _ValSetDriver.Contract.GetNumAggregatorsAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetNumAggregatorsAt is a free data retrieval call binding the contract method 0x6bb7e08a.
 //
 // Solidity: function getNumAggregatorsAt(uint48 timestamp) view returns(uint208)
-func (_IValSetDriver *IValSetDriverCallerSession) GetNumAggregatorsAt(timestamp *big.Int) (*big.Int, error) {
-	return _IValSetDriver.Contract.GetNumAggregatorsAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverCallerSession) GetNumAggregatorsAt(timestamp *big.Int) (*big.Int, error) {
+	return _ValSetDriver.Contract.GetNumAggregatorsAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetNumCommitters is a free data retrieval call binding the contract method 0x7861db16.
 //
 // Solidity: function getNumCommitters() view returns(uint208)
-func (_IValSetDriver *IValSetDriverCaller) GetNumCommitters(opts *bind.CallOpts) (*big.Int, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetNumCommitters(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getNumCommitters")
+	err := _ValSetDriver.contract.Call(opts, &out, "getNumCommitters")
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -1003,23 +1066,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetNumCommitters(opts *bind.CallOpts)
 // GetNumCommitters is a free data retrieval call binding the contract method 0x7861db16.
 //
 // Solidity: function getNumCommitters() view returns(uint208)
-func (_IValSetDriver *IValSetDriverSession) GetNumCommitters() (*big.Int, error) {
-	return _IValSetDriver.Contract.GetNumCommitters(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverSession) GetNumCommitters() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetNumCommitters(&_ValSetDriver.CallOpts)
 }
 
 // GetNumCommitters is a free data retrieval call binding the contract method 0x7861db16.
 //
 // Solidity: function getNumCommitters() view returns(uint208)
-func (_IValSetDriver *IValSetDriverCallerSession) GetNumCommitters() (*big.Int, error) {
-	return _IValSetDriver.Contract.GetNumCommitters(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverCallerSession) GetNumCommitters() (*big.Int, error) {
+	return _ValSetDriver.Contract.GetNumCommitters(&_ValSetDriver.CallOpts)
 }
 
 // GetNumCommittersAt is a free data retrieval call binding the contract method 0xe0078c64.
 //
 // Solidity: function getNumCommittersAt(uint48 timestamp) view returns(uint208)
-func (_IValSetDriver *IValSetDriverCaller) GetNumCommittersAt(opts *bind.CallOpts, timestamp *big.Int) (*big.Int, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetNumCommittersAt(opts *bind.CallOpts, timestamp *big.Int) (*big.Int, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getNumCommittersAt", timestamp)
+	err := _ValSetDriver.contract.Call(opts, &out, "getNumCommittersAt", timestamp)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -1034,23 +1097,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetNumCommittersAt(opts *bind.CallOpt
 // GetNumCommittersAt is a free data retrieval call binding the contract method 0xe0078c64.
 //
 // Solidity: function getNumCommittersAt(uint48 timestamp) view returns(uint208)
-func (_IValSetDriver *IValSetDriverSession) GetNumCommittersAt(timestamp *big.Int) (*big.Int, error) {
-	return _IValSetDriver.Contract.GetNumCommittersAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverSession) GetNumCommittersAt(timestamp *big.Int) (*big.Int, error) {
+	return _ValSetDriver.Contract.GetNumCommittersAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetNumCommittersAt is a free data retrieval call binding the contract method 0xe0078c64.
 //
 // Solidity: function getNumCommittersAt(uint48 timestamp) view returns(uint208)
-func (_IValSetDriver *IValSetDriverCallerSession) GetNumCommittersAt(timestamp *big.Int) (*big.Int, error) {
-	return _IValSetDriver.Contract.GetNumCommittersAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverCallerSession) GetNumCommittersAt(timestamp *big.Int) (*big.Int, error) {
+	return _ValSetDriver.Contract.GetNumCommittersAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetQuorumThresholds is a free data retrieval call binding the contract method 0x5796148c.
 //
 // Solidity: function getQuorumThresholds() view returns((uint8,uint248)[] quorumThresholds)
-func (_IValSetDriver *IValSetDriverCaller) GetQuorumThresholds(opts *bind.CallOpts) ([]IValSetDriverQuorumThreshold, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetQuorumThresholds(opts *bind.CallOpts) ([]IValSetDriverQuorumThreshold, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getQuorumThresholds")
+	err := _ValSetDriver.contract.Call(opts, &out, "getQuorumThresholds")
 
 	if err != nil {
 		return *new([]IValSetDriverQuorumThreshold), err
@@ -1065,23 +1128,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetQuorumThresholds(opts *bind.CallOp
 // GetQuorumThresholds is a free data retrieval call binding the contract method 0x5796148c.
 //
 // Solidity: function getQuorumThresholds() view returns((uint8,uint248)[] quorumThresholds)
-func (_IValSetDriver *IValSetDriverSession) GetQuorumThresholds() ([]IValSetDriverQuorumThreshold, error) {
-	return _IValSetDriver.Contract.GetQuorumThresholds(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverSession) GetQuorumThresholds() ([]IValSetDriverQuorumThreshold, error) {
+	return _ValSetDriver.Contract.GetQuorumThresholds(&_ValSetDriver.CallOpts)
 }
 
 // GetQuorumThresholds is a free data retrieval call binding the contract method 0x5796148c.
 //
 // Solidity: function getQuorumThresholds() view returns((uint8,uint248)[] quorumThresholds)
-func (_IValSetDriver *IValSetDriverCallerSession) GetQuorumThresholds() ([]IValSetDriverQuorumThreshold, error) {
-	return _IValSetDriver.Contract.GetQuorumThresholds(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverCallerSession) GetQuorumThresholds() ([]IValSetDriverQuorumThreshold, error) {
+	return _ValSetDriver.Contract.GetQuorumThresholds(&_ValSetDriver.CallOpts)
 }
 
 // GetQuorumThresholdsAt is a free data retrieval call binding the contract method 0xf2f46b83.
 //
 // Solidity: function getQuorumThresholdsAt(uint48 timestamp) view returns((uint8,uint248)[] quorumThresholds)
-func (_IValSetDriver *IValSetDriverCaller) GetQuorumThresholdsAt(opts *bind.CallOpts, timestamp *big.Int) ([]IValSetDriverQuorumThreshold, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetQuorumThresholdsAt(opts *bind.CallOpts, timestamp *big.Int) ([]IValSetDriverQuorumThreshold, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getQuorumThresholdsAt", timestamp)
+	err := _ValSetDriver.contract.Call(opts, &out, "getQuorumThresholdsAt", timestamp)
 
 	if err != nil {
 		return *new([]IValSetDriverQuorumThreshold), err
@@ -1096,23 +1159,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetQuorumThresholdsAt(opts *bind.Call
 // GetQuorumThresholdsAt is a free data retrieval call binding the contract method 0xf2f46b83.
 //
 // Solidity: function getQuorumThresholdsAt(uint48 timestamp) view returns((uint8,uint248)[] quorumThresholds)
-func (_IValSetDriver *IValSetDriverSession) GetQuorumThresholdsAt(timestamp *big.Int) ([]IValSetDriverQuorumThreshold, error) {
-	return _IValSetDriver.Contract.GetQuorumThresholdsAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverSession) GetQuorumThresholdsAt(timestamp *big.Int) ([]IValSetDriverQuorumThreshold, error) {
+	return _ValSetDriver.Contract.GetQuorumThresholdsAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetQuorumThresholdsAt is a free data retrieval call binding the contract method 0xf2f46b83.
 //
 // Solidity: function getQuorumThresholdsAt(uint48 timestamp) view returns((uint8,uint248)[] quorumThresholds)
-func (_IValSetDriver *IValSetDriverCallerSession) GetQuorumThresholdsAt(timestamp *big.Int) ([]IValSetDriverQuorumThreshold, error) {
-	return _IValSetDriver.Contract.GetQuorumThresholdsAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverCallerSession) GetQuorumThresholdsAt(timestamp *big.Int) ([]IValSetDriverQuorumThreshold, error) {
+	return _ValSetDriver.Contract.GetQuorumThresholdsAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetRequiredHeaderKeyTag is a free data retrieval call binding the contract method 0x6582e9f7.
 //
 // Solidity: function getRequiredHeaderKeyTag() view returns(uint8)
-func (_IValSetDriver *IValSetDriverCaller) GetRequiredHeaderKeyTag(opts *bind.CallOpts) (uint8, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetRequiredHeaderKeyTag(opts *bind.CallOpts) (uint8, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getRequiredHeaderKeyTag")
+	err := _ValSetDriver.contract.Call(opts, &out, "getRequiredHeaderKeyTag")
 
 	if err != nil {
 		return *new(uint8), err
@@ -1127,23 +1190,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetRequiredHeaderKeyTag(opts *bind.Ca
 // GetRequiredHeaderKeyTag is a free data retrieval call binding the contract method 0x6582e9f7.
 //
 // Solidity: function getRequiredHeaderKeyTag() view returns(uint8)
-func (_IValSetDriver *IValSetDriverSession) GetRequiredHeaderKeyTag() (uint8, error) {
-	return _IValSetDriver.Contract.GetRequiredHeaderKeyTag(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverSession) GetRequiredHeaderKeyTag() (uint8, error) {
+	return _ValSetDriver.Contract.GetRequiredHeaderKeyTag(&_ValSetDriver.CallOpts)
 }
 
 // GetRequiredHeaderKeyTag is a free data retrieval call binding the contract method 0x6582e9f7.
 //
 // Solidity: function getRequiredHeaderKeyTag() view returns(uint8)
-func (_IValSetDriver *IValSetDriverCallerSession) GetRequiredHeaderKeyTag() (uint8, error) {
-	return _IValSetDriver.Contract.GetRequiredHeaderKeyTag(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverCallerSession) GetRequiredHeaderKeyTag() (uint8, error) {
+	return _ValSetDriver.Contract.GetRequiredHeaderKeyTag(&_ValSetDriver.CallOpts)
 }
 
 // GetRequiredHeaderKeyTagAt is a free data retrieval call binding the contract method 0xbc12e1fd.
 //
 // Solidity: function getRequiredHeaderKeyTagAt(uint48 timestamp) view returns(uint8)
-func (_IValSetDriver *IValSetDriverCaller) GetRequiredHeaderKeyTagAt(opts *bind.CallOpts, timestamp *big.Int) (uint8, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetRequiredHeaderKeyTagAt(opts *bind.CallOpts, timestamp *big.Int) (uint8, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getRequiredHeaderKeyTagAt", timestamp)
+	err := _ValSetDriver.contract.Call(opts, &out, "getRequiredHeaderKeyTagAt", timestamp)
 
 	if err != nil {
 		return *new(uint8), err
@@ -1158,23 +1221,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetRequiredHeaderKeyTagAt(opts *bind.
 // GetRequiredHeaderKeyTagAt is a free data retrieval call binding the contract method 0xbc12e1fd.
 //
 // Solidity: function getRequiredHeaderKeyTagAt(uint48 timestamp) view returns(uint8)
-func (_IValSetDriver *IValSetDriverSession) GetRequiredHeaderKeyTagAt(timestamp *big.Int) (uint8, error) {
-	return _IValSetDriver.Contract.GetRequiredHeaderKeyTagAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverSession) GetRequiredHeaderKeyTagAt(timestamp *big.Int) (uint8, error) {
+	return _ValSetDriver.Contract.GetRequiredHeaderKeyTagAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetRequiredHeaderKeyTagAt is a free data retrieval call binding the contract method 0xbc12e1fd.
 //
 // Solidity: function getRequiredHeaderKeyTagAt(uint48 timestamp) view returns(uint8)
-func (_IValSetDriver *IValSetDriverCallerSession) GetRequiredHeaderKeyTagAt(timestamp *big.Int) (uint8, error) {
-	return _IValSetDriver.Contract.GetRequiredHeaderKeyTagAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverCallerSession) GetRequiredHeaderKeyTagAt(timestamp *big.Int) (uint8, error) {
+	return _ValSetDriver.Contract.GetRequiredHeaderKeyTagAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetRequiredKeyTags is a free data retrieval call binding the contract method 0xf9bfa78a.
 //
 // Solidity: function getRequiredKeyTags() view returns(uint8[] requiredKeyTags)
-func (_IValSetDriver *IValSetDriverCaller) GetRequiredKeyTags(opts *bind.CallOpts) ([]uint8, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetRequiredKeyTags(opts *bind.CallOpts) ([]uint8, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getRequiredKeyTags")
+	err := _ValSetDriver.contract.Call(opts, &out, "getRequiredKeyTags")
 
 	if err != nil {
 		return *new([]uint8), err
@@ -1189,23 +1252,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetRequiredKeyTags(opts *bind.CallOpt
 // GetRequiredKeyTags is a free data retrieval call binding the contract method 0xf9bfa78a.
 //
 // Solidity: function getRequiredKeyTags() view returns(uint8[] requiredKeyTags)
-func (_IValSetDriver *IValSetDriverSession) GetRequiredKeyTags() ([]uint8, error) {
-	return _IValSetDriver.Contract.GetRequiredKeyTags(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverSession) GetRequiredKeyTags() ([]uint8, error) {
+	return _ValSetDriver.Contract.GetRequiredKeyTags(&_ValSetDriver.CallOpts)
 }
 
 // GetRequiredKeyTags is a free data retrieval call binding the contract method 0xf9bfa78a.
 //
 // Solidity: function getRequiredKeyTags() view returns(uint8[] requiredKeyTags)
-func (_IValSetDriver *IValSetDriverCallerSession) GetRequiredKeyTags() ([]uint8, error) {
-	return _IValSetDriver.Contract.GetRequiredKeyTags(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverCallerSession) GetRequiredKeyTags() ([]uint8, error) {
+	return _ValSetDriver.Contract.GetRequiredKeyTags(&_ValSetDriver.CallOpts)
 }
 
 // GetRequiredKeyTagsAt is a free data retrieval call binding the contract method 0x1161fc83.
 //
 // Solidity: function getRequiredKeyTagsAt(uint48 timestamp) view returns(uint8[] requiredKeyTags)
-func (_IValSetDriver *IValSetDriverCaller) GetRequiredKeyTagsAt(opts *bind.CallOpts, timestamp *big.Int) ([]uint8, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetRequiredKeyTagsAt(opts *bind.CallOpts, timestamp *big.Int) ([]uint8, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getRequiredKeyTagsAt", timestamp)
+	err := _ValSetDriver.contract.Call(opts, &out, "getRequiredKeyTagsAt", timestamp)
 
 	if err != nil {
 		return *new([]uint8), err
@@ -1220,23 +1283,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetRequiredKeyTagsAt(opts *bind.CallO
 // GetRequiredKeyTagsAt is a free data retrieval call binding the contract method 0x1161fc83.
 //
 // Solidity: function getRequiredKeyTagsAt(uint48 timestamp) view returns(uint8[] requiredKeyTags)
-func (_IValSetDriver *IValSetDriverSession) GetRequiredKeyTagsAt(timestamp *big.Int) ([]uint8, error) {
-	return _IValSetDriver.Contract.GetRequiredKeyTagsAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverSession) GetRequiredKeyTagsAt(timestamp *big.Int) ([]uint8, error) {
+	return _ValSetDriver.Contract.GetRequiredKeyTagsAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetRequiredKeyTagsAt is a free data retrieval call binding the contract method 0x1161fc83.
 //
 // Solidity: function getRequiredKeyTagsAt(uint48 timestamp) view returns(uint8[] requiredKeyTags)
-func (_IValSetDriver *IValSetDriverCallerSession) GetRequiredKeyTagsAt(timestamp *big.Int) ([]uint8, error) {
-	return _IValSetDriver.Contract.GetRequiredKeyTagsAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverCallerSession) GetRequiredKeyTagsAt(timestamp *big.Int) ([]uint8, error) {
+	return _ValSetDriver.Contract.GetRequiredKeyTagsAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetSettlements is a free data retrieval call binding the contract method 0xa0c2bc25.
 //
 // Solidity: function getSettlements() view returns((uint64,address)[] settlements)
-func (_IValSetDriver *IValSetDriverCaller) GetSettlements(opts *bind.CallOpts) ([]IValSetDriverCrossChainAddress, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetSettlements(opts *bind.CallOpts) ([]IValSetDriverCrossChainAddress, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getSettlements")
+	err := _ValSetDriver.contract.Call(opts, &out, "getSettlements")
 
 	if err != nil {
 		return *new([]IValSetDriverCrossChainAddress), err
@@ -1251,23 +1314,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetSettlements(opts *bind.CallOpts) (
 // GetSettlements is a free data retrieval call binding the contract method 0xa0c2bc25.
 //
 // Solidity: function getSettlements() view returns((uint64,address)[] settlements)
-func (_IValSetDriver *IValSetDriverSession) GetSettlements() ([]IValSetDriverCrossChainAddress, error) {
-	return _IValSetDriver.Contract.GetSettlements(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverSession) GetSettlements() ([]IValSetDriverCrossChainAddress, error) {
+	return _ValSetDriver.Contract.GetSettlements(&_ValSetDriver.CallOpts)
 }
 
 // GetSettlements is a free data retrieval call binding the contract method 0xa0c2bc25.
 //
 // Solidity: function getSettlements() view returns((uint64,address)[] settlements)
-func (_IValSetDriver *IValSetDriverCallerSession) GetSettlements() ([]IValSetDriverCrossChainAddress, error) {
-	return _IValSetDriver.Contract.GetSettlements(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverCallerSession) GetSettlements() ([]IValSetDriverCrossChainAddress, error) {
+	return _ValSetDriver.Contract.GetSettlements(&_ValSetDriver.CallOpts)
 }
 
 // GetSettlementsAt is a free data retrieval call binding the contract method 0x763d255a.
 //
 // Solidity: function getSettlementsAt(uint48 timestamp) view returns((uint64,address)[] settlements)
-func (_IValSetDriver *IValSetDriverCaller) GetSettlementsAt(opts *bind.CallOpts, timestamp *big.Int) ([]IValSetDriverCrossChainAddress, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetSettlementsAt(opts *bind.CallOpts, timestamp *big.Int) ([]IValSetDriverCrossChainAddress, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getSettlementsAt", timestamp)
+	err := _ValSetDriver.contract.Call(opts, &out, "getSettlementsAt", timestamp)
 
 	if err != nil {
 		return *new([]IValSetDriverCrossChainAddress), err
@@ -1282,23 +1345,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetSettlementsAt(opts *bind.CallOpts,
 // GetSettlementsAt is a free data retrieval call binding the contract method 0x763d255a.
 //
 // Solidity: function getSettlementsAt(uint48 timestamp) view returns((uint64,address)[] settlements)
-func (_IValSetDriver *IValSetDriverSession) GetSettlementsAt(timestamp *big.Int) ([]IValSetDriverCrossChainAddress, error) {
-	return _IValSetDriver.Contract.GetSettlementsAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverSession) GetSettlementsAt(timestamp *big.Int) ([]IValSetDriverCrossChainAddress, error) {
+	return _ValSetDriver.Contract.GetSettlementsAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetSettlementsAt is a free data retrieval call binding the contract method 0x763d255a.
 //
 // Solidity: function getSettlementsAt(uint48 timestamp) view returns((uint64,address)[] settlements)
-func (_IValSetDriver *IValSetDriverCallerSession) GetSettlementsAt(timestamp *big.Int) ([]IValSetDriverCrossChainAddress, error) {
-	return _IValSetDriver.Contract.GetSettlementsAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverCallerSession) GetSettlementsAt(timestamp *big.Int) ([]IValSetDriverCrossChainAddress, error) {
+	return _ValSetDriver.Contract.GetSettlementsAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetVerificationType is a free data retrieval call binding the contract method 0x24acc119.
 //
 // Solidity: function getVerificationType() view returns(uint32)
-func (_IValSetDriver *IValSetDriverCaller) GetVerificationType(opts *bind.CallOpts) (uint32, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetVerificationType(opts *bind.CallOpts) (uint32, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getVerificationType")
+	err := _ValSetDriver.contract.Call(opts, &out, "getVerificationType")
 
 	if err != nil {
 		return *new(uint32), err
@@ -1313,23 +1376,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetVerificationType(opts *bind.CallOp
 // GetVerificationType is a free data retrieval call binding the contract method 0x24acc119.
 //
 // Solidity: function getVerificationType() view returns(uint32)
-func (_IValSetDriver *IValSetDriverSession) GetVerificationType() (uint32, error) {
-	return _IValSetDriver.Contract.GetVerificationType(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverSession) GetVerificationType() (uint32, error) {
+	return _ValSetDriver.Contract.GetVerificationType(&_ValSetDriver.CallOpts)
 }
 
 // GetVerificationType is a free data retrieval call binding the contract method 0x24acc119.
 //
 // Solidity: function getVerificationType() view returns(uint32)
-func (_IValSetDriver *IValSetDriverCallerSession) GetVerificationType() (uint32, error) {
-	return _IValSetDriver.Contract.GetVerificationType(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverCallerSession) GetVerificationType() (uint32, error) {
+	return _ValSetDriver.Contract.GetVerificationType(&_ValSetDriver.CallOpts)
 }
 
 // GetVerificationTypeAt is a free data retrieval call binding the contract method 0x3a0ad9ec.
 //
 // Solidity: function getVerificationTypeAt(uint48 timestamp) view returns(uint32)
-func (_IValSetDriver *IValSetDriverCaller) GetVerificationTypeAt(opts *bind.CallOpts, timestamp *big.Int) (uint32, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetVerificationTypeAt(opts *bind.CallOpts, timestamp *big.Int) (uint32, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getVerificationTypeAt", timestamp)
+	err := _ValSetDriver.contract.Call(opts, &out, "getVerificationTypeAt", timestamp)
 
 	if err != nil {
 		return *new(uint32), err
@@ -1344,23 +1407,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetVerificationTypeAt(opts *bind.Call
 // GetVerificationTypeAt is a free data retrieval call binding the contract method 0x3a0ad9ec.
 //
 // Solidity: function getVerificationTypeAt(uint48 timestamp) view returns(uint32)
-func (_IValSetDriver *IValSetDriverSession) GetVerificationTypeAt(timestamp *big.Int) (uint32, error) {
-	return _IValSetDriver.Contract.GetVerificationTypeAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverSession) GetVerificationTypeAt(timestamp *big.Int) (uint32, error) {
+	return _ValSetDriver.Contract.GetVerificationTypeAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetVerificationTypeAt is a free data retrieval call binding the contract method 0x3a0ad9ec.
 //
 // Solidity: function getVerificationTypeAt(uint48 timestamp) view returns(uint32)
-func (_IValSetDriver *IValSetDriverCallerSession) GetVerificationTypeAt(timestamp *big.Int) (uint32, error) {
-	return _IValSetDriver.Contract.GetVerificationTypeAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverCallerSession) GetVerificationTypeAt(timestamp *big.Int) (uint32, error) {
+	return _ValSetDriver.Contract.GetVerificationTypeAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetVotingPowerProviders is a free data retrieval call binding the contract method 0x3e39b8db.
 //
 // Solidity: function getVotingPowerProviders() view returns((uint64,address)[] votingPowerProviders)
-func (_IValSetDriver *IValSetDriverCaller) GetVotingPowerProviders(opts *bind.CallOpts) ([]IValSetDriverCrossChainAddress, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetVotingPowerProviders(opts *bind.CallOpts) ([]IValSetDriverCrossChainAddress, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getVotingPowerProviders")
+	err := _ValSetDriver.contract.Call(opts, &out, "getVotingPowerProviders")
 
 	if err != nil {
 		return *new([]IValSetDriverCrossChainAddress), err
@@ -1375,23 +1438,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetVotingPowerProviders(opts *bind.Ca
 // GetVotingPowerProviders is a free data retrieval call binding the contract method 0x3e39b8db.
 //
 // Solidity: function getVotingPowerProviders() view returns((uint64,address)[] votingPowerProviders)
-func (_IValSetDriver *IValSetDriverSession) GetVotingPowerProviders() ([]IValSetDriverCrossChainAddress, error) {
-	return _IValSetDriver.Contract.GetVotingPowerProviders(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverSession) GetVotingPowerProviders() ([]IValSetDriverCrossChainAddress, error) {
+	return _ValSetDriver.Contract.GetVotingPowerProviders(&_ValSetDriver.CallOpts)
 }
 
 // GetVotingPowerProviders is a free data retrieval call binding the contract method 0x3e39b8db.
 //
 // Solidity: function getVotingPowerProviders() view returns((uint64,address)[] votingPowerProviders)
-func (_IValSetDriver *IValSetDriverCallerSession) GetVotingPowerProviders() ([]IValSetDriverCrossChainAddress, error) {
-	return _IValSetDriver.Contract.GetVotingPowerProviders(&_IValSetDriver.CallOpts)
+func (_ValSetDriver *ValSetDriverCallerSession) GetVotingPowerProviders() ([]IValSetDriverCrossChainAddress, error) {
+	return _ValSetDriver.Contract.GetVotingPowerProviders(&_ValSetDriver.CallOpts)
 }
 
 // GetVotingPowerProvidersAt is a free data retrieval call binding the contract method 0x09bba5ca.
 //
 // Solidity: function getVotingPowerProvidersAt(uint48 timestamp) view returns((uint64,address)[] votingPowerProviders)
-func (_IValSetDriver *IValSetDriverCaller) GetVotingPowerProvidersAt(opts *bind.CallOpts, timestamp *big.Int) ([]IValSetDriverCrossChainAddress, error) {
+func (_ValSetDriver *ValSetDriverCaller) GetVotingPowerProvidersAt(opts *bind.CallOpts, timestamp *big.Int) ([]IValSetDriverCrossChainAddress, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "getVotingPowerProvidersAt", timestamp)
+	err := _ValSetDriver.contract.Call(opts, &out, "getVotingPowerProvidersAt", timestamp)
 
 	if err != nil {
 		return *new([]IValSetDriverCrossChainAddress), err
@@ -1406,23 +1469,23 @@ func (_IValSetDriver *IValSetDriverCaller) GetVotingPowerProvidersAt(opts *bind.
 // GetVotingPowerProvidersAt is a free data retrieval call binding the contract method 0x09bba5ca.
 //
 // Solidity: function getVotingPowerProvidersAt(uint48 timestamp) view returns((uint64,address)[] votingPowerProviders)
-func (_IValSetDriver *IValSetDriverSession) GetVotingPowerProvidersAt(timestamp *big.Int) ([]IValSetDriverCrossChainAddress, error) {
-	return _IValSetDriver.Contract.GetVotingPowerProvidersAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverSession) GetVotingPowerProvidersAt(timestamp *big.Int) ([]IValSetDriverCrossChainAddress, error) {
+	return _ValSetDriver.Contract.GetVotingPowerProvidersAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // GetVotingPowerProvidersAt is a free data retrieval call binding the contract method 0x09bba5ca.
 //
 // Solidity: function getVotingPowerProvidersAt(uint48 timestamp) view returns((uint64,address)[] votingPowerProviders)
-func (_IValSetDriver *IValSetDriverCallerSession) GetVotingPowerProvidersAt(timestamp *big.Int) ([]IValSetDriverCrossChainAddress, error) {
-	return _IValSetDriver.Contract.GetVotingPowerProvidersAt(&_IValSetDriver.CallOpts, timestamp)
+func (_ValSetDriver *ValSetDriverCallerSession) GetVotingPowerProvidersAt(timestamp *big.Int) ([]IValSetDriverCrossChainAddress, error) {
+	return _ValSetDriver.Contract.GetVotingPowerProvidersAt(&_ValSetDriver.CallOpts, timestamp)
 }
 
 // IsQuorumThresholdRegistered is a free data retrieval call binding the contract method 0x79a4c359.
 //
 // Solidity: function isQuorumThresholdRegistered((uint8,uint248) quorumThreshold) view returns(bool)
-func (_IValSetDriver *IValSetDriverCaller) IsQuorumThresholdRegistered(opts *bind.CallOpts, quorumThreshold IValSetDriverQuorumThreshold) (bool, error) {
+func (_ValSetDriver *ValSetDriverCaller) IsQuorumThresholdRegistered(opts *bind.CallOpts, quorumThreshold IValSetDriverQuorumThreshold) (bool, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "isQuorumThresholdRegistered", quorumThreshold)
+	err := _ValSetDriver.contract.Call(opts, &out, "isQuorumThresholdRegistered", quorumThreshold)
 
 	if err != nil {
 		return *new(bool), err
@@ -1437,23 +1500,23 @@ func (_IValSetDriver *IValSetDriverCaller) IsQuorumThresholdRegistered(opts *bin
 // IsQuorumThresholdRegistered is a free data retrieval call binding the contract method 0x79a4c359.
 //
 // Solidity: function isQuorumThresholdRegistered((uint8,uint248) quorumThreshold) view returns(bool)
-func (_IValSetDriver *IValSetDriverSession) IsQuorumThresholdRegistered(quorumThreshold IValSetDriverQuorumThreshold) (bool, error) {
-	return _IValSetDriver.Contract.IsQuorumThresholdRegistered(&_IValSetDriver.CallOpts, quorumThreshold)
+func (_ValSetDriver *ValSetDriverSession) IsQuorumThresholdRegistered(quorumThreshold IValSetDriverQuorumThreshold) (bool, error) {
+	return _ValSetDriver.Contract.IsQuorumThresholdRegistered(&_ValSetDriver.CallOpts, quorumThreshold)
 }
 
 // IsQuorumThresholdRegistered is a free data retrieval call binding the contract method 0x79a4c359.
 //
 // Solidity: function isQuorumThresholdRegistered((uint8,uint248) quorumThreshold) view returns(bool)
-func (_IValSetDriver *IValSetDriverCallerSession) IsQuorumThresholdRegistered(quorumThreshold IValSetDriverQuorumThreshold) (bool, error) {
-	return _IValSetDriver.Contract.IsQuorumThresholdRegistered(&_IValSetDriver.CallOpts, quorumThreshold)
+func (_ValSetDriver *ValSetDriverCallerSession) IsQuorumThresholdRegistered(quorumThreshold IValSetDriverQuorumThreshold) (bool, error) {
+	return _ValSetDriver.Contract.IsQuorumThresholdRegistered(&_ValSetDriver.CallOpts, quorumThreshold)
 }
 
 // IsQuorumThresholdRegisteredAt is a free data retrieval call binding the contract method 0x80c2fc48.
 //
 // Solidity: function isQuorumThresholdRegisteredAt((uint8,uint248) quorumThreshold, uint48 timestamp) view returns(bool)
-func (_IValSetDriver *IValSetDriverCaller) IsQuorumThresholdRegisteredAt(opts *bind.CallOpts, quorumThreshold IValSetDriverQuorumThreshold, timestamp *big.Int) (bool, error) {
+func (_ValSetDriver *ValSetDriverCaller) IsQuorumThresholdRegisteredAt(opts *bind.CallOpts, quorumThreshold IValSetDriverQuorumThreshold, timestamp *big.Int) (bool, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "isQuorumThresholdRegisteredAt", quorumThreshold, timestamp)
+	err := _ValSetDriver.contract.Call(opts, &out, "isQuorumThresholdRegisteredAt", quorumThreshold, timestamp)
 
 	if err != nil {
 		return *new(bool), err
@@ -1468,23 +1531,23 @@ func (_IValSetDriver *IValSetDriverCaller) IsQuorumThresholdRegisteredAt(opts *b
 // IsQuorumThresholdRegisteredAt is a free data retrieval call binding the contract method 0x80c2fc48.
 //
 // Solidity: function isQuorumThresholdRegisteredAt((uint8,uint248) quorumThreshold, uint48 timestamp) view returns(bool)
-func (_IValSetDriver *IValSetDriverSession) IsQuorumThresholdRegisteredAt(quorumThreshold IValSetDriverQuorumThreshold, timestamp *big.Int) (bool, error) {
-	return _IValSetDriver.Contract.IsQuorumThresholdRegisteredAt(&_IValSetDriver.CallOpts, quorumThreshold, timestamp)
+func (_ValSetDriver *ValSetDriverSession) IsQuorumThresholdRegisteredAt(quorumThreshold IValSetDriverQuorumThreshold, timestamp *big.Int) (bool, error) {
+	return _ValSetDriver.Contract.IsQuorumThresholdRegisteredAt(&_ValSetDriver.CallOpts, quorumThreshold, timestamp)
 }
 
 // IsQuorumThresholdRegisteredAt is a free data retrieval call binding the contract method 0x80c2fc48.
 //
 // Solidity: function isQuorumThresholdRegisteredAt((uint8,uint248) quorumThreshold, uint48 timestamp) view returns(bool)
-func (_IValSetDriver *IValSetDriverCallerSession) IsQuorumThresholdRegisteredAt(quorumThreshold IValSetDriverQuorumThreshold, timestamp *big.Int) (bool, error) {
-	return _IValSetDriver.Contract.IsQuorumThresholdRegisteredAt(&_IValSetDriver.CallOpts, quorumThreshold, timestamp)
+func (_ValSetDriver *ValSetDriverCallerSession) IsQuorumThresholdRegisteredAt(quorumThreshold IValSetDriverQuorumThreshold, timestamp *big.Int) (bool, error) {
+	return _ValSetDriver.Contract.IsQuorumThresholdRegisteredAt(&_ValSetDriver.CallOpts, quorumThreshold, timestamp)
 }
 
 // IsSettlementRegistered is a free data retrieval call binding the contract method 0x965c0768.
 //
 // Solidity: function isSettlementRegistered((uint64,address) settlement) view returns(bool)
-func (_IValSetDriver *IValSetDriverCaller) IsSettlementRegistered(opts *bind.CallOpts, settlement IValSetDriverCrossChainAddress) (bool, error) {
+func (_ValSetDriver *ValSetDriverCaller) IsSettlementRegistered(opts *bind.CallOpts, settlement IValSetDriverCrossChainAddress) (bool, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "isSettlementRegistered", settlement)
+	err := _ValSetDriver.contract.Call(opts, &out, "isSettlementRegistered", settlement)
 
 	if err != nil {
 		return *new(bool), err
@@ -1499,23 +1562,23 @@ func (_IValSetDriver *IValSetDriverCaller) IsSettlementRegistered(opts *bind.Cal
 // IsSettlementRegistered is a free data retrieval call binding the contract method 0x965c0768.
 //
 // Solidity: function isSettlementRegistered((uint64,address) settlement) view returns(bool)
-func (_IValSetDriver *IValSetDriverSession) IsSettlementRegistered(settlement IValSetDriverCrossChainAddress) (bool, error) {
-	return _IValSetDriver.Contract.IsSettlementRegistered(&_IValSetDriver.CallOpts, settlement)
+func (_ValSetDriver *ValSetDriverSession) IsSettlementRegistered(settlement IValSetDriverCrossChainAddress) (bool, error) {
+	return _ValSetDriver.Contract.IsSettlementRegistered(&_ValSetDriver.CallOpts, settlement)
 }
 
 // IsSettlementRegistered is a free data retrieval call binding the contract method 0x965c0768.
 //
 // Solidity: function isSettlementRegistered((uint64,address) settlement) view returns(bool)
-func (_IValSetDriver *IValSetDriverCallerSession) IsSettlementRegistered(settlement IValSetDriverCrossChainAddress) (bool, error) {
-	return _IValSetDriver.Contract.IsSettlementRegistered(&_IValSetDriver.CallOpts, settlement)
+func (_ValSetDriver *ValSetDriverCallerSession) IsSettlementRegistered(settlement IValSetDriverCrossChainAddress) (bool, error) {
+	return _ValSetDriver.Contract.IsSettlementRegistered(&_ValSetDriver.CallOpts, settlement)
 }
 
 // IsSettlementRegisteredAt is a free data retrieval call binding the contract method 0x01749b26.
 //
 // Solidity: function isSettlementRegisteredAt((uint64,address) settlement, uint48 timestamp) view returns(bool)
-func (_IValSetDriver *IValSetDriverCaller) IsSettlementRegisteredAt(opts *bind.CallOpts, settlement IValSetDriverCrossChainAddress, timestamp *big.Int) (bool, error) {
+func (_ValSetDriver *ValSetDriverCaller) IsSettlementRegisteredAt(opts *bind.CallOpts, settlement IValSetDriverCrossChainAddress, timestamp *big.Int) (bool, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "isSettlementRegisteredAt", settlement, timestamp)
+	err := _ValSetDriver.contract.Call(opts, &out, "isSettlementRegisteredAt", settlement, timestamp)
 
 	if err != nil {
 		return *new(bool), err
@@ -1530,23 +1593,23 @@ func (_IValSetDriver *IValSetDriverCaller) IsSettlementRegisteredAt(opts *bind.C
 // IsSettlementRegisteredAt is a free data retrieval call binding the contract method 0x01749b26.
 //
 // Solidity: function isSettlementRegisteredAt((uint64,address) settlement, uint48 timestamp) view returns(bool)
-func (_IValSetDriver *IValSetDriverSession) IsSettlementRegisteredAt(settlement IValSetDriverCrossChainAddress, timestamp *big.Int) (bool, error) {
-	return _IValSetDriver.Contract.IsSettlementRegisteredAt(&_IValSetDriver.CallOpts, settlement, timestamp)
+func (_ValSetDriver *ValSetDriverSession) IsSettlementRegisteredAt(settlement IValSetDriverCrossChainAddress, timestamp *big.Int) (bool, error) {
+	return _ValSetDriver.Contract.IsSettlementRegisteredAt(&_ValSetDriver.CallOpts, settlement, timestamp)
 }
 
 // IsSettlementRegisteredAt is a free data retrieval call binding the contract method 0x01749b26.
 //
 // Solidity: function isSettlementRegisteredAt((uint64,address) settlement, uint48 timestamp) view returns(bool)
-func (_IValSetDriver *IValSetDriverCallerSession) IsSettlementRegisteredAt(settlement IValSetDriverCrossChainAddress, timestamp *big.Int) (bool, error) {
-	return _IValSetDriver.Contract.IsSettlementRegisteredAt(&_IValSetDriver.CallOpts, settlement, timestamp)
+func (_ValSetDriver *ValSetDriverCallerSession) IsSettlementRegisteredAt(settlement IValSetDriverCrossChainAddress, timestamp *big.Int) (bool, error) {
+	return _ValSetDriver.Contract.IsSettlementRegisteredAt(&_ValSetDriver.CallOpts, settlement, timestamp)
 }
 
 // IsVotingPowerProviderRegistered is a free data retrieval call binding the contract method 0x1265b3be.
 //
 // Solidity: function isVotingPowerProviderRegistered((uint64,address) votingPowerProvider) view returns(bool)
-func (_IValSetDriver *IValSetDriverCaller) IsVotingPowerProviderRegistered(opts *bind.CallOpts, votingPowerProvider IValSetDriverCrossChainAddress) (bool, error) {
+func (_ValSetDriver *ValSetDriverCaller) IsVotingPowerProviderRegistered(opts *bind.CallOpts, votingPowerProvider IValSetDriverCrossChainAddress) (bool, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "isVotingPowerProviderRegistered", votingPowerProvider)
+	err := _ValSetDriver.contract.Call(opts, &out, "isVotingPowerProviderRegistered", votingPowerProvider)
 
 	if err != nil {
 		return *new(bool), err
@@ -1561,23 +1624,23 @@ func (_IValSetDriver *IValSetDriverCaller) IsVotingPowerProviderRegistered(opts 
 // IsVotingPowerProviderRegistered is a free data retrieval call binding the contract method 0x1265b3be.
 //
 // Solidity: function isVotingPowerProviderRegistered((uint64,address) votingPowerProvider) view returns(bool)
-func (_IValSetDriver *IValSetDriverSession) IsVotingPowerProviderRegistered(votingPowerProvider IValSetDriverCrossChainAddress) (bool, error) {
-	return _IValSetDriver.Contract.IsVotingPowerProviderRegistered(&_IValSetDriver.CallOpts, votingPowerProvider)
+func (_ValSetDriver *ValSetDriverSession) IsVotingPowerProviderRegistered(votingPowerProvider IValSetDriverCrossChainAddress) (bool, error) {
+	return _ValSetDriver.Contract.IsVotingPowerProviderRegistered(&_ValSetDriver.CallOpts, votingPowerProvider)
 }
 
 // IsVotingPowerProviderRegistered is a free data retrieval call binding the contract method 0x1265b3be.
 //
 // Solidity: function isVotingPowerProviderRegistered((uint64,address) votingPowerProvider) view returns(bool)
-func (_IValSetDriver *IValSetDriverCallerSession) IsVotingPowerProviderRegistered(votingPowerProvider IValSetDriverCrossChainAddress) (bool, error) {
-	return _IValSetDriver.Contract.IsVotingPowerProviderRegistered(&_IValSetDriver.CallOpts, votingPowerProvider)
+func (_ValSetDriver *ValSetDriverCallerSession) IsVotingPowerProviderRegistered(votingPowerProvider IValSetDriverCrossChainAddress) (bool, error) {
+	return _ValSetDriver.Contract.IsVotingPowerProviderRegistered(&_ValSetDriver.CallOpts, votingPowerProvider)
 }
 
 // IsVotingPowerProviderRegisteredAt is a free data retrieval call binding the contract method 0xc16ccb73.
 //
 // Solidity: function isVotingPowerProviderRegisteredAt((uint64,address) votingPowerProvider, uint48 timestamp) view returns(bool)
-func (_IValSetDriver *IValSetDriverCaller) IsVotingPowerProviderRegisteredAt(opts *bind.CallOpts, votingPowerProvider IValSetDriverCrossChainAddress, timestamp *big.Int) (bool, error) {
+func (_ValSetDriver *ValSetDriverCaller) IsVotingPowerProviderRegisteredAt(opts *bind.CallOpts, votingPowerProvider IValSetDriverCrossChainAddress, timestamp *big.Int) (bool, error) {
 	var out []interface{}
-	err := _IValSetDriver.contract.Call(opts, &out, "isVotingPowerProviderRegisteredAt", votingPowerProvider, timestamp)
+	err := _ValSetDriver.contract.Call(opts, &out, "isVotingPowerProviderRegisteredAt", votingPowerProvider, timestamp)
 
 	if err != nil {
 		return *new(bool), err
@@ -1592,398 +1655,419 @@ func (_IValSetDriver *IValSetDriverCaller) IsVotingPowerProviderRegisteredAt(opt
 // IsVotingPowerProviderRegisteredAt is a free data retrieval call binding the contract method 0xc16ccb73.
 //
 // Solidity: function isVotingPowerProviderRegisteredAt((uint64,address) votingPowerProvider, uint48 timestamp) view returns(bool)
-func (_IValSetDriver *IValSetDriverSession) IsVotingPowerProviderRegisteredAt(votingPowerProvider IValSetDriverCrossChainAddress, timestamp *big.Int) (bool, error) {
-	return _IValSetDriver.Contract.IsVotingPowerProviderRegisteredAt(&_IValSetDriver.CallOpts, votingPowerProvider, timestamp)
+func (_ValSetDriver *ValSetDriverSession) IsVotingPowerProviderRegisteredAt(votingPowerProvider IValSetDriverCrossChainAddress, timestamp *big.Int) (bool, error) {
+	return _ValSetDriver.Contract.IsVotingPowerProviderRegisteredAt(&_ValSetDriver.CallOpts, votingPowerProvider, timestamp)
 }
 
 // IsVotingPowerProviderRegisteredAt is a free data retrieval call binding the contract method 0xc16ccb73.
 //
 // Solidity: function isVotingPowerProviderRegisteredAt((uint64,address) votingPowerProvider, uint48 timestamp) view returns(bool)
-func (_IValSetDriver *IValSetDriverCallerSession) IsVotingPowerProviderRegisteredAt(votingPowerProvider IValSetDriverCrossChainAddress, timestamp *big.Int) (bool, error) {
-	return _IValSetDriver.Contract.IsVotingPowerProviderRegisteredAt(&_IValSetDriver.CallOpts, votingPowerProvider, timestamp)
+func (_ValSetDriver *ValSetDriverCallerSession) IsVotingPowerProviderRegisteredAt(votingPowerProvider IValSetDriverCrossChainAddress, timestamp *big.Int) (bool, error) {
+	return _ValSetDriver.Contract.IsVotingPowerProviderRegisteredAt(&_ValSetDriver.CallOpts, votingPowerProvider, timestamp)
 }
 
 // AddQuorumThreshold is a paid mutator transaction binding the contract method 0x0fe5e0c2.
 //
 // Solidity: function addQuorumThreshold((uint8,uint248) quorumThreshold) returns()
-func (_IValSetDriver *IValSetDriverTransactor) AddQuorumThreshold(opts *bind.TransactOpts, quorumThreshold IValSetDriverQuorumThreshold) (*types.Transaction, error) {
-	return _IValSetDriver.contract.Transact(opts, "addQuorumThreshold", quorumThreshold)
+func (_ValSetDriver *ValSetDriverTransactor) AddQuorumThreshold(opts *bind.TransactOpts, quorumThreshold IValSetDriverQuorumThreshold) (*types.Transaction, error) {
+	return _ValSetDriver.contract.Transact(opts, "addQuorumThreshold", quorumThreshold)
 }
 
 // AddQuorumThreshold is a paid mutator transaction binding the contract method 0x0fe5e0c2.
 //
 // Solidity: function addQuorumThreshold((uint8,uint248) quorumThreshold) returns()
-func (_IValSetDriver *IValSetDriverSession) AddQuorumThreshold(quorumThreshold IValSetDriverQuorumThreshold) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.AddQuorumThreshold(&_IValSetDriver.TransactOpts, quorumThreshold)
+func (_ValSetDriver *ValSetDriverSession) AddQuorumThreshold(quorumThreshold IValSetDriverQuorumThreshold) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.AddQuorumThreshold(&_ValSetDriver.TransactOpts, quorumThreshold)
 }
 
 // AddQuorumThreshold is a paid mutator transaction binding the contract method 0x0fe5e0c2.
 //
 // Solidity: function addQuorumThreshold((uint8,uint248) quorumThreshold) returns()
-func (_IValSetDriver *IValSetDriverTransactorSession) AddQuorumThreshold(quorumThreshold IValSetDriverQuorumThreshold) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.AddQuorumThreshold(&_IValSetDriver.TransactOpts, quorumThreshold)
+func (_ValSetDriver *ValSetDriverTransactorSession) AddQuorumThreshold(quorumThreshold IValSetDriverQuorumThreshold) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.AddQuorumThreshold(&_ValSetDriver.TransactOpts, quorumThreshold)
 }
 
 // AddSettlement is a paid mutator transaction binding the contract method 0x52ab8872.
 //
 // Solidity: function addSettlement((uint64,address) settlement) returns()
-func (_IValSetDriver *IValSetDriverTransactor) AddSettlement(opts *bind.TransactOpts, settlement IValSetDriverCrossChainAddress) (*types.Transaction, error) {
-	return _IValSetDriver.contract.Transact(opts, "addSettlement", settlement)
+func (_ValSetDriver *ValSetDriverTransactor) AddSettlement(opts *bind.TransactOpts, settlement IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	return _ValSetDriver.contract.Transact(opts, "addSettlement", settlement)
 }
 
 // AddSettlement is a paid mutator transaction binding the contract method 0x52ab8872.
 //
 // Solidity: function addSettlement((uint64,address) settlement) returns()
-func (_IValSetDriver *IValSetDriverSession) AddSettlement(settlement IValSetDriverCrossChainAddress) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.AddSettlement(&_IValSetDriver.TransactOpts, settlement)
+func (_ValSetDriver *ValSetDriverSession) AddSettlement(settlement IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.AddSettlement(&_ValSetDriver.TransactOpts, settlement)
 }
 
 // AddSettlement is a paid mutator transaction binding the contract method 0x52ab8872.
 //
 // Solidity: function addSettlement((uint64,address) settlement) returns()
-func (_IValSetDriver *IValSetDriverTransactorSession) AddSettlement(settlement IValSetDriverCrossChainAddress) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.AddSettlement(&_IValSetDriver.TransactOpts, settlement)
+func (_ValSetDriver *ValSetDriverTransactorSession) AddSettlement(settlement IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.AddSettlement(&_ValSetDriver.TransactOpts, settlement)
 }
 
 // AddVotingPowerProvider is a paid mutator transaction binding the contract method 0x6940ed80.
 //
 // Solidity: function addVotingPowerProvider((uint64,address) votingPowerProvider) returns()
-func (_IValSetDriver *IValSetDriverTransactor) AddVotingPowerProvider(opts *bind.TransactOpts, votingPowerProvider IValSetDriverCrossChainAddress) (*types.Transaction, error) {
-	return _IValSetDriver.contract.Transact(opts, "addVotingPowerProvider", votingPowerProvider)
+func (_ValSetDriver *ValSetDriverTransactor) AddVotingPowerProvider(opts *bind.TransactOpts, votingPowerProvider IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	return _ValSetDriver.contract.Transact(opts, "addVotingPowerProvider", votingPowerProvider)
 }
 
 // AddVotingPowerProvider is a paid mutator transaction binding the contract method 0x6940ed80.
 //
 // Solidity: function addVotingPowerProvider((uint64,address) votingPowerProvider) returns()
-func (_IValSetDriver *IValSetDriverSession) AddVotingPowerProvider(votingPowerProvider IValSetDriverCrossChainAddress) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.AddVotingPowerProvider(&_IValSetDriver.TransactOpts, votingPowerProvider)
+func (_ValSetDriver *ValSetDriverSession) AddVotingPowerProvider(votingPowerProvider IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.AddVotingPowerProvider(&_ValSetDriver.TransactOpts, votingPowerProvider)
 }
 
 // AddVotingPowerProvider is a paid mutator transaction binding the contract method 0x6940ed80.
 //
 // Solidity: function addVotingPowerProvider((uint64,address) votingPowerProvider) returns()
-func (_IValSetDriver *IValSetDriverTransactorSession) AddVotingPowerProvider(votingPowerProvider IValSetDriverCrossChainAddress) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.AddVotingPowerProvider(&_IValSetDriver.TransactOpts, votingPowerProvider)
+func (_ValSetDriver *ValSetDriverTransactorSession) AddVotingPowerProvider(votingPowerProvider IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.AddVotingPowerProvider(&_ValSetDriver.TransactOpts, votingPowerProvider)
 }
 
 // Multicall is a paid mutator transaction binding the contract method 0xac9650d8.
 //
 // Solidity: function multicall(bytes[] data) returns(bytes[] results)
-func (_IValSetDriver *IValSetDriverTransactor) Multicall(opts *bind.TransactOpts, data [][]byte) (*types.Transaction, error) {
-	return _IValSetDriver.contract.Transact(opts, "multicall", data)
+func (_ValSetDriver *ValSetDriverTransactor) Multicall(opts *bind.TransactOpts, data [][]byte) (*types.Transaction, error) {
+	return _ValSetDriver.contract.Transact(opts, "multicall", data)
 }
 
 // Multicall is a paid mutator transaction binding the contract method 0xac9650d8.
 //
 // Solidity: function multicall(bytes[] data) returns(bytes[] results)
-func (_IValSetDriver *IValSetDriverSession) Multicall(data [][]byte) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.Multicall(&_IValSetDriver.TransactOpts, data)
+func (_ValSetDriver *ValSetDriverSession) Multicall(data [][]byte) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.Multicall(&_ValSetDriver.TransactOpts, data)
 }
 
 // Multicall is a paid mutator transaction binding the contract method 0xac9650d8.
 //
 // Solidity: function multicall(bytes[] data) returns(bytes[] results)
-func (_IValSetDriver *IValSetDriverTransactorSession) Multicall(data [][]byte) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.Multicall(&_IValSetDriver.TransactOpts, data)
+func (_ValSetDriver *ValSetDriverTransactorSession) Multicall(data [][]byte) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.Multicall(&_ValSetDriver.TransactOpts, data)
 }
 
 // RemoveQuorumThreshold is a paid mutator transaction binding the contract method 0xf388db18.
 //
 // Solidity: function removeQuorumThreshold((uint8,uint248) quorumThreshold) returns()
-func (_IValSetDriver *IValSetDriverTransactor) RemoveQuorumThreshold(opts *bind.TransactOpts, quorumThreshold IValSetDriverQuorumThreshold) (*types.Transaction, error) {
-	return _IValSetDriver.contract.Transact(opts, "removeQuorumThreshold", quorumThreshold)
+func (_ValSetDriver *ValSetDriverTransactor) RemoveQuorumThreshold(opts *bind.TransactOpts, quorumThreshold IValSetDriverQuorumThreshold) (*types.Transaction, error) {
+	return _ValSetDriver.contract.Transact(opts, "removeQuorumThreshold", quorumThreshold)
 }
 
 // RemoveQuorumThreshold is a paid mutator transaction binding the contract method 0xf388db18.
 //
 // Solidity: function removeQuorumThreshold((uint8,uint248) quorumThreshold) returns()
-func (_IValSetDriver *IValSetDriverSession) RemoveQuorumThreshold(quorumThreshold IValSetDriverQuorumThreshold) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.RemoveQuorumThreshold(&_IValSetDriver.TransactOpts, quorumThreshold)
+func (_ValSetDriver *ValSetDriverSession) RemoveQuorumThreshold(quorumThreshold IValSetDriverQuorumThreshold) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.RemoveQuorumThreshold(&_ValSetDriver.TransactOpts, quorumThreshold)
 }
 
 // RemoveQuorumThreshold is a paid mutator transaction binding the contract method 0xf388db18.
 //
 // Solidity: function removeQuorumThreshold((uint8,uint248) quorumThreshold) returns()
-func (_IValSetDriver *IValSetDriverTransactorSession) RemoveQuorumThreshold(quorumThreshold IValSetDriverQuorumThreshold) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.RemoveQuorumThreshold(&_IValSetDriver.TransactOpts, quorumThreshold)
+func (_ValSetDriver *ValSetDriverTransactorSession) RemoveQuorumThreshold(quorumThreshold IValSetDriverQuorumThreshold) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.RemoveQuorumThreshold(&_ValSetDriver.TransactOpts, quorumThreshold)
 }
 
 // RemoveSettlement is a paid mutator transaction binding the contract method 0x502bb1ad.
 //
 // Solidity: function removeSettlement((uint64,address) settlement) returns()
-func (_IValSetDriver *IValSetDriverTransactor) RemoveSettlement(opts *bind.TransactOpts, settlement IValSetDriverCrossChainAddress) (*types.Transaction, error) {
-	return _IValSetDriver.contract.Transact(opts, "removeSettlement", settlement)
+func (_ValSetDriver *ValSetDriverTransactor) RemoveSettlement(opts *bind.TransactOpts, settlement IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	return _ValSetDriver.contract.Transact(opts, "removeSettlement", settlement)
 }
 
 // RemoveSettlement is a paid mutator transaction binding the contract method 0x502bb1ad.
 //
 // Solidity: function removeSettlement((uint64,address) settlement) returns()
-func (_IValSetDriver *IValSetDriverSession) RemoveSettlement(settlement IValSetDriverCrossChainAddress) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.RemoveSettlement(&_IValSetDriver.TransactOpts, settlement)
+func (_ValSetDriver *ValSetDriverSession) RemoveSettlement(settlement IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.RemoveSettlement(&_ValSetDriver.TransactOpts, settlement)
 }
 
 // RemoveSettlement is a paid mutator transaction binding the contract method 0x502bb1ad.
 //
 // Solidity: function removeSettlement((uint64,address) settlement) returns()
-func (_IValSetDriver *IValSetDriverTransactorSession) RemoveSettlement(settlement IValSetDriverCrossChainAddress) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.RemoveSettlement(&_IValSetDriver.TransactOpts, settlement)
+func (_ValSetDriver *ValSetDriverTransactorSession) RemoveSettlement(settlement IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.RemoveSettlement(&_ValSetDriver.TransactOpts, settlement)
 }
 
 // RemoveVotingPowerProvider is a paid mutator transaction binding the contract method 0x325234d5.
 //
 // Solidity: function removeVotingPowerProvider((uint64,address) votingPowerProvider) returns()
-func (_IValSetDriver *IValSetDriverTransactor) RemoveVotingPowerProvider(opts *bind.TransactOpts, votingPowerProvider IValSetDriverCrossChainAddress) (*types.Transaction, error) {
-	return _IValSetDriver.contract.Transact(opts, "removeVotingPowerProvider", votingPowerProvider)
+func (_ValSetDriver *ValSetDriverTransactor) RemoveVotingPowerProvider(opts *bind.TransactOpts, votingPowerProvider IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	return _ValSetDriver.contract.Transact(opts, "removeVotingPowerProvider", votingPowerProvider)
 }
 
 // RemoveVotingPowerProvider is a paid mutator transaction binding the contract method 0x325234d5.
 //
 // Solidity: function removeVotingPowerProvider((uint64,address) votingPowerProvider) returns()
-func (_IValSetDriver *IValSetDriverSession) RemoveVotingPowerProvider(votingPowerProvider IValSetDriverCrossChainAddress) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.RemoveVotingPowerProvider(&_IValSetDriver.TransactOpts, votingPowerProvider)
+func (_ValSetDriver *ValSetDriverSession) RemoveVotingPowerProvider(votingPowerProvider IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.RemoveVotingPowerProvider(&_ValSetDriver.TransactOpts, votingPowerProvider)
 }
 
 // RemoveVotingPowerProvider is a paid mutator transaction binding the contract method 0x325234d5.
 //
 // Solidity: function removeVotingPowerProvider((uint64,address) votingPowerProvider) returns()
-func (_IValSetDriver *IValSetDriverTransactorSession) RemoveVotingPowerProvider(votingPowerProvider IValSetDriverCrossChainAddress) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.RemoveVotingPowerProvider(&_IValSetDriver.TransactOpts, votingPowerProvider)
+func (_ValSetDriver *ValSetDriverTransactorSession) RemoveVotingPowerProvider(votingPowerProvider IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.RemoveVotingPowerProvider(&_ValSetDriver.TransactOpts, votingPowerProvider)
+}
+
+// SetCommitterSlotDuration is a paid mutator transaction binding the contract method 0xf86b8fa1.
+//
+// Solidity: function setCommitterSlotDuration(uint48 slotDuration) returns()
+func (_ValSetDriver *ValSetDriverTransactor) SetCommitterSlotDuration(opts *bind.TransactOpts, slotDuration *big.Int) (*types.Transaction, error) {
+	return _ValSetDriver.contract.Transact(opts, "setCommitterSlotDuration", slotDuration)
+}
+
+// SetCommitterSlotDuration is a paid mutator transaction binding the contract method 0xf86b8fa1.
+//
+// Solidity: function setCommitterSlotDuration(uint48 slotDuration) returns()
+func (_ValSetDriver *ValSetDriverSession) SetCommitterSlotDuration(slotDuration *big.Int) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.SetCommitterSlotDuration(&_ValSetDriver.TransactOpts, slotDuration)
+}
+
+// SetCommitterSlotDuration is a paid mutator transaction binding the contract method 0xf86b8fa1.
+//
+// Solidity: function setCommitterSlotDuration(uint48 slotDuration) returns()
+func (_ValSetDriver *ValSetDriverTransactorSession) SetCommitterSlotDuration(slotDuration *big.Int) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.SetCommitterSlotDuration(&_ValSetDriver.TransactOpts, slotDuration)
 }
 
 // SetEpochDuration is a paid mutator transaction binding the contract method 0x2f53d5ff.
 //
 // Solidity: function setEpochDuration(uint48 epochDuration) returns()
-func (_IValSetDriver *IValSetDriverTransactor) SetEpochDuration(opts *bind.TransactOpts, epochDuration *big.Int) (*types.Transaction, error) {
-	return _IValSetDriver.contract.Transact(opts, "setEpochDuration", epochDuration)
+func (_ValSetDriver *ValSetDriverTransactor) SetEpochDuration(opts *bind.TransactOpts, epochDuration *big.Int) (*types.Transaction, error) {
+	return _ValSetDriver.contract.Transact(opts, "setEpochDuration", epochDuration)
 }
 
 // SetEpochDuration is a paid mutator transaction binding the contract method 0x2f53d5ff.
 //
 // Solidity: function setEpochDuration(uint48 epochDuration) returns()
-func (_IValSetDriver *IValSetDriverSession) SetEpochDuration(epochDuration *big.Int) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.SetEpochDuration(&_IValSetDriver.TransactOpts, epochDuration)
+func (_ValSetDriver *ValSetDriverSession) SetEpochDuration(epochDuration *big.Int) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.SetEpochDuration(&_ValSetDriver.TransactOpts, epochDuration)
 }
 
 // SetEpochDuration is a paid mutator transaction binding the contract method 0x2f53d5ff.
 //
 // Solidity: function setEpochDuration(uint48 epochDuration) returns()
-func (_IValSetDriver *IValSetDriverTransactorSession) SetEpochDuration(epochDuration *big.Int) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.SetEpochDuration(&_IValSetDriver.TransactOpts, epochDuration)
+func (_ValSetDriver *ValSetDriverTransactorSession) SetEpochDuration(epochDuration *big.Int) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.SetEpochDuration(&_ValSetDriver.TransactOpts, epochDuration)
 }
 
 // SetKeysProvider is a paid mutator transaction binding the contract method 0xdd08bbff.
 //
 // Solidity: function setKeysProvider((uint64,address) keysProvider) returns()
-func (_IValSetDriver *IValSetDriverTransactor) SetKeysProvider(opts *bind.TransactOpts, keysProvider IValSetDriverCrossChainAddress) (*types.Transaction, error) {
-	return _IValSetDriver.contract.Transact(opts, "setKeysProvider", keysProvider)
+func (_ValSetDriver *ValSetDriverTransactor) SetKeysProvider(opts *bind.TransactOpts, keysProvider IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	return _ValSetDriver.contract.Transact(opts, "setKeysProvider", keysProvider)
 }
 
 // SetKeysProvider is a paid mutator transaction binding the contract method 0xdd08bbff.
 //
 // Solidity: function setKeysProvider((uint64,address) keysProvider) returns()
-func (_IValSetDriver *IValSetDriverSession) SetKeysProvider(keysProvider IValSetDriverCrossChainAddress) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.SetKeysProvider(&_IValSetDriver.TransactOpts, keysProvider)
+func (_ValSetDriver *ValSetDriverSession) SetKeysProvider(keysProvider IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.SetKeysProvider(&_ValSetDriver.TransactOpts, keysProvider)
 }
 
 // SetKeysProvider is a paid mutator transaction binding the contract method 0xdd08bbff.
 //
 // Solidity: function setKeysProvider((uint64,address) keysProvider) returns()
-func (_IValSetDriver *IValSetDriverTransactorSession) SetKeysProvider(keysProvider IValSetDriverCrossChainAddress) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.SetKeysProvider(&_IValSetDriver.TransactOpts, keysProvider)
+func (_ValSetDriver *ValSetDriverTransactorSession) SetKeysProvider(keysProvider IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.SetKeysProvider(&_ValSetDriver.TransactOpts, keysProvider)
 }
 
 // SetMaxValidatorsCount is a paid mutator transaction binding the contract method 0xd2384cd3.
 //
 // Solidity: function setMaxValidatorsCount(uint208 maxValidatorsCount) returns()
-func (_IValSetDriver *IValSetDriverTransactor) SetMaxValidatorsCount(opts *bind.TransactOpts, maxValidatorsCount *big.Int) (*types.Transaction, error) {
-	return _IValSetDriver.contract.Transact(opts, "setMaxValidatorsCount", maxValidatorsCount)
+func (_ValSetDriver *ValSetDriverTransactor) SetMaxValidatorsCount(opts *bind.TransactOpts, maxValidatorsCount *big.Int) (*types.Transaction, error) {
+	return _ValSetDriver.contract.Transact(opts, "setMaxValidatorsCount", maxValidatorsCount)
 }
 
 // SetMaxValidatorsCount is a paid mutator transaction binding the contract method 0xd2384cd3.
 //
 // Solidity: function setMaxValidatorsCount(uint208 maxValidatorsCount) returns()
-func (_IValSetDriver *IValSetDriverSession) SetMaxValidatorsCount(maxValidatorsCount *big.Int) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.SetMaxValidatorsCount(&_IValSetDriver.TransactOpts, maxValidatorsCount)
+func (_ValSetDriver *ValSetDriverSession) SetMaxValidatorsCount(maxValidatorsCount *big.Int) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.SetMaxValidatorsCount(&_ValSetDriver.TransactOpts, maxValidatorsCount)
 }
 
 // SetMaxValidatorsCount is a paid mutator transaction binding the contract method 0xd2384cd3.
 //
 // Solidity: function setMaxValidatorsCount(uint208 maxValidatorsCount) returns()
-func (_IValSetDriver *IValSetDriverTransactorSession) SetMaxValidatorsCount(maxValidatorsCount *big.Int) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.SetMaxValidatorsCount(&_IValSetDriver.TransactOpts, maxValidatorsCount)
+func (_ValSetDriver *ValSetDriverTransactorSession) SetMaxValidatorsCount(maxValidatorsCount *big.Int) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.SetMaxValidatorsCount(&_ValSetDriver.TransactOpts, maxValidatorsCount)
 }
 
 // SetMaxVotingPower is a paid mutator transaction binding the contract method 0xf6af258c.
 //
 // Solidity: function setMaxVotingPower(uint256 maxVotingPower) returns()
-func (_IValSetDriver *IValSetDriverTransactor) SetMaxVotingPower(opts *bind.TransactOpts, maxVotingPower *big.Int) (*types.Transaction, error) {
-	return _IValSetDriver.contract.Transact(opts, "setMaxVotingPower", maxVotingPower)
+func (_ValSetDriver *ValSetDriverTransactor) SetMaxVotingPower(opts *bind.TransactOpts, maxVotingPower *big.Int) (*types.Transaction, error) {
+	return _ValSetDriver.contract.Transact(opts, "setMaxVotingPower", maxVotingPower)
 }
 
 // SetMaxVotingPower is a paid mutator transaction binding the contract method 0xf6af258c.
 //
 // Solidity: function setMaxVotingPower(uint256 maxVotingPower) returns()
-func (_IValSetDriver *IValSetDriverSession) SetMaxVotingPower(maxVotingPower *big.Int) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.SetMaxVotingPower(&_IValSetDriver.TransactOpts, maxVotingPower)
+func (_ValSetDriver *ValSetDriverSession) SetMaxVotingPower(maxVotingPower *big.Int) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.SetMaxVotingPower(&_ValSetDriver.TransactOpts, maxVotingPower)
 }
 
 // SetMaxVotingPower is a paid mutator transaction binding the contract method 0xf6af258c.
 //
 // Solidity: function setMaxVotingPower(uint256 maxVotingPower) returns()
-func (_IValSetDriver *IValSetDriverTransactorSession) SetMaxVotingPower(maxVotingPower *big.Int) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.SetMaxVotingPower(&_IValSetDriver.TransactOpts, maxVotingPower)
+func (_ValSetDriver *ValSetDriverTransactorSession) SetMaxVotingPower(maxVotingPower *big.Int) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.SetMaxVotingPower(&_ValSetDriver.TransactOpts, maxVotingPower)
 }
 
 // SetMinInclusionVotingPower is a paid mutator transaction binding the contract method 0xfaae42d7.
 //
 // Solidity: function setMinInclusionVotingPower(uint256 minInclusionVotingPower) returns()
-func (_IValSetDriver *IValSetDriverTransactor) SetMinInclusionVotingPower(opts *bind.TransactOpts, minInclusionVotingPower *big.Int) (*types.Transaction, error) {
-	return _IValSetDriver.contract.Transact(opts, "setMinInclusionVotingPower", minInclusionVotingPower)
+func (_ValSetDriver *ValSetDriverTransactor) SetMinInclusionVotingPower(opts *bind.TransactOpts, minInclusionVotingPower *big.Int) (*types.Transaction, error) {
+	return _ValSetDriver.contract.Transact(opts, "setMinInclusionVotingPower", minInclusionVotingPower)
 }
 
 // SetMinInclusionVotingPower is a paid mutator transaction binding the contract method 0xfaae42d7.
 //
 // Solidity: function setMinInclusionVotingPower(uint256 minInclusionVotingPower) returns()
-func (_IValSetDriver *IValSetDriverSession) SetMinInclusionVotingPower(minInclusionVotingPower *big.Int) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.SetMinInclusionVotingPower(&_IValSetDriver.TransactOpts, minInclusionVotingPower)
+func (_ValSetDriver *ValSetDriverSession) SetMinInclusionVotingPower(minInclusionVotingPower *big.Int) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.SetMinInclusionVotingPower(&_ValSetDriver.TransactOpts, minInclusionVotingPower)
 }
 
 // SetMinInclusionVotingPower is a paid mutator transaction binding the contract method 0xfaae42d7.
 //
 // Solidity: function setMinInclusionVotingPower(uint256 minInclusionVotingPower) returns()
-func (_IValSetDriver *IValSetDriverTransactorSession) SetMinInclusionVotingPower(minInclusionVotingPower *big.Int) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.SetMinInclusionVotingPower(&_IValSetDriver.TransactOpts, minInclusionVotingPower)
+func (_ValSetDriver *ValSetDriverTransactorSession) SetMinInclusionVotingPower(minInclusionVotingPower *big.Int) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.SetMinInclusionVotingPower(&_ValSetDriver.TransactOpts, minInclusionVotingPower)
 }
 
 // SetNumAggregators is a paid mutator transaction binding the contract method 0x0dec288b.
 //
 // Solidity: function setNumAggregators(uint208 numAggregators) returns()
-func (_IValSetDriver *IValSetDriverTransactor) SetNumAggregators(opts *bind.TransactOpts, numAggregators *big.Int) (*types.Transaction, error) {
-	return _IValSetDriver.contract.Transact(opts, "setNumAggregators", numAggregators)
+func (_ValSetDriver *ValSetDriverTransactor) SetNumAggregators(opts *bind.TransactOpts, numAggregators *big.Int) (*types.Transaction, error) {
+	return _ValSetDriver.contract.Transact(opts, "setNumAggregators", numAggregators)
 }
 
 // SetNumAggregators is a paid mutator transaction binding the contract method 0x0dec288b.
 //
 // Solidity: function setNumAggregators(uint208 numAggregators) returns()
-func (_IValSetDriver *IValSetDriverSession) SetNumAggregators(numAggregators *big.Int) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.SetNumAggregators(&_IValSetDriver.TransactOpts, numAggregators)
+func (_ValSetDriver *ValSetDriverSession) SetNumAggregators(numAggregators *big.Int) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.SetNumAggregators(&_ValSetDriver.TransactOpts, numAggregators)
 }
 
 // SetNumAggregators is a paid mutator transaction binding the contract method 0x0dec288b.
 //
 // Solidity: function setNumAggregators(uint208 numAggregators) returns()
-func (_IValSetDriver *IValSetDriverTransactorSession) SetNumAggregators(numAggregators *big.Int) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.SetNumAggregators(&_IValSetDriver.TransactOpts, numAggregators)
+func (_ValSetDriver *ValSetDriverTransactorSession) SetNumAggregators(numAggregators *big.Int) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.SetNumAggregators(&_ValSetDriver.TransactOpts, numAggregators)
 }
 
 // SetNumCommitters is a paid mutator transaction binding the contract method 0x15ddbbe8.
 //
 // Solidity: function setNumCommitters(uint208 numCommitters) returns()
-func (_IValSetDriver *IValSetDriverTransactor) SetNumCommitters(opts *bind.TransactOpts, numCommitters *big.Int) (*types.Transaction, error) {
-	return _IValSetDriver.contract.Transact(opts, "setNumCommitters", numCommitters)
+func (_ValSetDriver *ValSetDriverTransactor) SetNumCommitters(opts *bind.TransactOpts, numCommitters *big.Int) (*types.Transaction, error) {
+	return _ValSetDriver.contract.Transact(opts, "setNumCommitters", numCommitters)
 }
 
 // SetNumCommitters is a paid mutator transaction binding the contract method 0x15ddbbe8.
 //
 // Solidity: function setNumCommitters(uint208 numCommitters) returns()
-func (_IValSetDriver *IValSetDriverSession) SetNumCommitters(numCommitters *big.Int) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.SetNumCommitters(&_IValSetDriver.TransactOpts, numCommitters)
+func (_ValSetDriver *ValSetDriverSession) SetNumCommitters(numCommitters *big.Int) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.SetNumCommitters(&_ValSetDriver.TransactOpts, numCommitters)
 }
 
 // SetNumCommitters is a paid mutator transaction binding the contract method 0x15ddbbe8.
 //
 // Solidity: function setNumCommitters(uint208 numCommitters) returns()
-func (_IValSetDriver *IValSetDriverTransactorSession) SetNumCommitters(numCommitters *big.Int) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.SetNumCommitters(&_IValSetDriver.TransactOpts, numCommitters)
+func (_ValSetDriver *ValSetDriverTransactorSession) SetNumCommitters(numCommitters *big.Int) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.SetNumCommitters(&_ValSetDriver.TransactOpts, numCommitters)
 }
 
 // SetRequiredHeaderKeyTag is a paid mutator transaction binding the contract method 0xd9736e12.
 //
 // Solidity: function setRequiredHeaderKeyTag(uint8 requiredHeaderKeyTag) returns()
-func (_IValSetDriver *IValSetDriverTransactor) SetRequiredHeaderKeyTag(opts *bind.TransactOpts, requiredHeaderKeyTag uint8) (*types.Transaction, error) {
-	return _IValSetDriver.contract.Transact(opts, "setRequiredHeaderKeyTag", requiredHeaderKeyTag)
+func (_ValSetDriver *ValSetDriverTransactor) SetRequiredHeaderKeyTag(opts *bind.TransactOpts, requiredHeaderKeyTag uint8) (*types.Transaction, error) {
+	return _ValSetDriver.contract.Transact(opts, "setRequiredHeaderKeyTag", requiredHeaderKeyTag)
 }
 
 // SetRequiredHeaderKeyTag is a paid mutator transaction binding the contract method 0xd9736e12.
 //
 // Solidity: function setRequiredHeaderKeyTag(uint8 requiredHeaderKeyTag) returns()
-func (_IValSetDriver *IValSetDriverSession) SetRequiredHeaderKeyTag(requiredHeaderKeyTag uint8) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.SetRequiredHeaderKeyTag(&_IValSetDriver.TransactOpts, requiredHeaderKeyTag)
+func (_ValSetDriver *ValSetDriverSession) SetRequiredHeaderKeyTag(requiredHeaderKeyTag uint8) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.SetRequiredHeaderKeyTag(&_ValSetDriver.TransactOpts, requiredHeaderKeyTag)
 }
 
 // SetRequiredHeaderKeyTag is a paid mutator transaction binding the contract method 0xd9736e12.
 //
 // Solidity: function setRequiredHeaderKeyTag(uint8 requiredHeaderKeyTag) returns()
-func (_IValSetDriver *IValSetDriverTransactorSession) SetRequiredHeaderKeyTag(requiredHeaderKeyTag uint8) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.SetRequiredHeaderKeyTag(&_IValSetDriver.TransactOpts, requiredHeaderKeyTag)
+func (_ValSetDriver *ValSetDriverTransactorSession) SetRequiredHeaderKeyTag(requiredHeaderKeyTag uint8) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.SetRequiredHeaderKeyTag(&_ValSetDriver.TransactOpts, requiredHeaderKeyTag)
 }
 
 // SetRequiredKeyTags is a paid mutator transaction binding the contract method 0x4678a284.
 //
 // Solidity: function setRequiredKeyTags(uint8[] requiredKeyTags) returns()
-func (_IValSetDriver *IValSetDriverTransactor) SetRequiredKeyTags(opts *bind.TransactOpts, requiredKeyTags []uint8) (*types.Transaction, error) {
-	return _IValSetDriver.contract.Transact(opts, "setRequiredKeyTags", requiredKeyTags)
+func (_ValSetDriver *ValSetDriverTransactor) SetRequiredKeyTags(opts *bind.TransactOpts, requiredKeyTags []uint8) (*types.Transaction, error) {
+	return _ValSetDriver.contract.Transact(opts, "setRequiredKeyTags", requiredKeyTags)
 }
 
 // SetRequiredKeyTags is a paid mutator transaction binding the contract method 0x4678a284.
 //
 // Solidity: function setRequiredKeyTags(uint8[] requiredKeyTags) returns()
-func (_IValSetDriver *IValSetDriverSession) SetRequiredKeyTags(requiredKeyTags []uint8) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.SetRequiredKeyTags(&_IValSetDriver.TransactOpts, requiredKeyTags)
+func (_ValSetDriver *ValSetDriverSession) SetRequiredKeyTags(requiredKeyTags []uint8) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.SetRequiredKeyTags(&_ValSetDriver.TransactOpts, requiredKeyTags)
 }
 
 // SetRequiredKeyTags is a paid mutator transaction binding the contract method 0x4678a284.
 //
 // Solidity: function setRequiredKeyTags(uint8[] requiredKeyTags) returns()
-func (_IValSetDriver *IValSetDriverTransactorSession) SetRequiredKeyTags(requiredKeyTags []uint8) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.SetRequiredKeyTags(&_IValSetDriver.TransactOpts, requiredKeyTags)
+func (_ValSetDriver *ValSetDriverTransactorSession) SetRequiredKeyTags(requiredKeyTags []uint8) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.SetRequiredKeyTags(&_ValSetDriver.TransactOpts, requiredKeyTags)
 }
 
 // SetVerificationType is a paid mutator transaction binding the contract method 0x7b8ef42d.
 //
 // Solidity: function setVerificationType(uint32 verificationType) returns()
-func (_IValSetDriver *IValSetDriverTransactor) SetVerificationType(opts *bind.TransactOpts, verificationType uint32) (*types.Transaction, error) {
-	return _IValSetDriver.contract.Transact(opts, "setVerificationType", verificationType)
+func (_ValSetDriver *ValSetDriverTransactor) SetVerificationType(opts *bind.TransactOpts, verificationType uint32) (*types.Transaction, error) {
+	return _ValSetDriver.contract.Transact(opts, "setVerificationType", verificationType)
 }
 
 // SetVerificationType is a paid mutator transaction binding the contract method 0x7b8ef42d.
 //
 // Solidity: function setVerificationType(uint32 verificationType) returns()
-func (_IValSetDriver *IValSetDriverSession) SetVerificationType(verificationType uint32) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.SetVerificationType(&_IValSetDriver.TransactOpts, verificationType)
+func (_ValSetDriver *ValSetDriverSession) SetVerificationType(verificationType uint32) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.SetVerificationType(&_ValSetDriver.TransactOpts, verificationType)
 }
 
 // SetVerificationType is a paid mutator transaction binding the contract method 0x7b8ef42d.
 //
 // Solidity: function setVerificationType(uint32 verificationType) returns()
-func (_IValSetDriver *IValSetDriverTransactorSession) SetVerificationType(verificationType uint32) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.SetVerificationType(&_IValSetDriver.TransactOpts, verificationType)
+func (_ValSetDriver *ValSetDriverTransactorSession) SetVerificationType(verificationType uint32) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.SetVerificationType(&_ValSetDriver.TransactOpts, verificationType)
 }
 
 // StaticDelegateCall is a paid mutator transaction binding the contract method 0x9f86fd85.
 //
 // Solidity: function staticDelegateCall(address target, bytes data) returns()
-func (_IValSetDriver *IValSetDriverTransactor) StaticDelegateCall(opts *bind.TransactOpts, target common.Address, data []byte) (*types.Transaction, error) {
-	return _IValSetDriver.contract.Transact(opts, "staticDelegateCall", target, data)
+func (_ValSetDriver *ValSetDriverTransactor) StaticDelegateCall(opts *bind.TransactOpts, target common.Address, data []byte) (*types.Transaction, error) {
+	return _ValSetDriver.contract.Transact(opts, "staticDelegateCall", target, data)
 }
 
 // StaticDelegateCall is a paid mutator transaction binding the contract method 0x9f86fd85.
 //
 // Solidity: function staticDelegateCall(address target, bytes data) returns()
-func (_IValSetDriver *IValSetDriverSession) StaticDelegateCall(target common.Address, data []byte) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.StaticDelegateCall(&_IValSetDriver.TransactOpts, target, data)
+func (_ValSetDriver *ValSetDriverSession) StaticDelegateCall(target common.Address, data []byte) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.StaticDelegateCall(&_ValSetDriver.TransactOpts, target, data)
 }
 
 // StaticDelegateCall is a paid mutator transaction binding the contract method 0x9f86fd85.
 //
 // Solidity: function staticDelegateCall(address target, bytes data) returns()
-func (_IValSetDriver *IValSetDriverTransactorSession) StaticDelegateCall(target common.Address, data []byte) (*types.Transaction, error) {
-	return _IValSetDriver.Contract.StaticDelegateCall(&_IValSetDriver.TransactOpts, target, data)
+func (_ValSetDriver *ValSetDriverTransactorSession) StaticDelegateCall(target common.Address, data []byte) (*types.Transaction, error) {
+	return _ValSetDriver.Contract.StaticDelegateCall(&_ValSetDriver.TransactOpts, target, data)
 }
 
-// IValSetDriverAddQuorumThresholdIterator is returned from FilterAddQuorumThreshold and is used to iterate over the raw logs and unpacked data for AddQuorumThreshold events raised by the IValSetDriver contract.
-type IValSetDriverAddQuorumThresholdIterator struct {
-	Event *IValSetDriverAddQuorumThreshold // Event containing the contract specifics and raw log
+// ValSetDriverAddQuorumThresholdIterator is returned from FilterAddQuorumThreshold and is used to iterate over the raw logs and unpacked data for AddQuorumThreshold events raised by the ValSetDriver contract.
+type ValSetDriverAddQuorumThresholdIterator struct {
+	Event *ValSetDriverAddQuorumThreshold // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1997,7 +2081,7 @@ type IValSetDriverAddQuorumThresholdIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IValSetDriverAddQuorumThresholdIterator) Next() bool {
+func (it *ValSetDriverAddQuorumThresholdIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -2006,7 +2090,7 @@ func (it *IValSetDriverAddQuorumThresholdIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IValSetDriverAddQuorumThreshold)
+			it.Event = new(ValSetDriverAddQuorumThreshold)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -2021,7 +2105,7 @@ func (it *IValSetDriverAddQuorumThresholdIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IValSetDriverAddQuorumThreshold)
+		it.Event = new(ValSetDriverAddQuorumThreshold)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -2037,19 +2121,19 @@ func (it *IValSetDriverAddQuorumThresholdIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IValSetDriverAddQuorumThresholdIterator) Error() error {
+func (it *ValSetDriverAddQuorumThresholdIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IValSetDriverAddQuorumThresholdIterator) Close() error {
+func (it *ValSetDriverAddQuorumThresholdIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IValSetDriverAddQuorumThreshold represents a AddQuorumThreshold event raised by the IValSetDriver contract.
-type IValSetDriverAddQuorumThreshold struct {
+// ValSetDriverAddQuorumThreshold represents a AddQuorumThreshold event raised by the ValSetDriver contract.
+type ValSetDriverAddQuorumThreshold struct {
 	QuorumThreshold IValSetDriverQuorumThreshold
 	Raw             types.Log // Blockchain specific contextual infos
 }
@@ -2057,21 +2141,21 @@ type IValSetDriverAddQuorumThreshold struct {
 // FilterAddQuorumThreshold is a free log retrieval operation binding the contract event 0x88ee37bfc079201d8493557f757c8ff6b14222ae13a8393747fb3c74b8ddf06f.
 //
 // Solidity: event AddQuorumThreshold((uint8,uint248) quorumThreshold)
-func (_IValSetDriver *IValSetDriverFilterer) FilterAddQuorumThreshold(opts *bind.FilterOpts) (*IValSetDriverAddQuorumThresholdIterator, error) {
+func (_ValSetDriver *ValSetDriverFilterer) FilterAddQuorumThreshold(opts *bind.FilterOpts) (*ValSetDriverAddQuorumThresholdIterator, error) {
 
-	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "AddQuorumThreshold")
+	logs, sub, err := _ValSetDriver.contract.FilterLogs(opts, "AddQuorumThreshold")
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverAddQuorumThresholdIterator{contract: _IValSetDriver.contract, event: "AddQuorumThreshold", logs: logs, sub: sub}, nil
+	return &ValSetDriverAddQuorumThresholdIterator{contract: _ValSetDriver.contract, event: "AddQuorumThreshold", logs: logs, sub: sub}, nil
 }
 
 // WatchAddQuorumThreshold is a free log subscription operation binding the contract event 0x88ee37bfc079201d8493557f757c8ff6b14222ae13a8393747fb3c74b8ddf06f.
 //
 // Solidity: event AddQuorumThreshold((uint8,uint248) quorumThreshold)
-func (_IValSetDriver *IValSetDriverFilterer) WatchAddQuorumThreshold(opts *bind.WatchOpts, sink chan<- *IValSetDriverAddQuorumThreshold) (event.Subscription, error) {
+func (_ValSetDriver *ValSetDriverFilterer) WatchAddQuorumThreshold(opts *bind.WatchOpts, sink chan<- *ValSetDriverAddQuorumThreshold) (event.Subscription, error) {
 
-	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "AddQuorumThreshold")
+	logs, sub, err := _ValSetDriver.contract.WatchLogs(opts, "AddQuorumThreshold")
 	if err != nil {
 		return nil, err
 	}
@@ -2081,8 +2165,8 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchAddQuorumThreshold(opts *bind.
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IValSetDriverAddQuorumThreshold)
-				if err := _IValSetDriver.contract.UnpackLog(event, "AddQuorumThreshold", log); err != nil {
+				event := new(ValSetDriverAddQuorumThreshold)
+				if err := _ValSetDriver.contract.UnpackLog(event, "AddQuorumThreshold", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -2106,18 +2190,18 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchAddQuorumThreshold(opts *bind.
 // ParseAddQuorumThreshold is a log parse operation binding the contract event 0x88ee37bfc079201d8493557f757c8ff6b14222ae13a8393747fb3c74b8ddf06f.
 //
 // Solidity: event AddQuorumThreshold((uint8,uint248) quorumThreshold)
-func (_IValSetDriver *IValSetDriverFilterer) ParseAddQuorumThreshold(log types.Log) (*IValSetDriverAddQuorumThreshold, error) {
-	event := new(IValSetDriverAddQuorumThreshold)
-	if err := _IValSetDriver.contract.UnpackLog(event, "AddQuorumThreshold", log); err != nil {
+func (_ValSetDriver *ValSetDriverFilterer) ParseAddQuorumThreshold(log types.Log) (*ValSetDriverAddQuorumThreshold, error) {
+	event := new(ValSetDriverAddQuorumThreshold)
+	if err := _ValSetDriver.contract.UnpackLog(event, "AddQuorumThreshold", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// IValSetDriverAddSettlementIterator is returned from FilterAddSettlement and is used to iterate over the raw logs and unpacked data for AddSettlement events raised by the IValSetDriver contract.
-type IValSetDriverAddSettlementIterator struct {
-	Event *IValSetDriverAddSettlement // Event containing the contract specifics and raw log
+// ValSetDriverAddSettlementIterator is returned from FilterAddSettlement and is used to iterate over the raw logs and unpacked data for AddSettlement events raised by the ValSetDriver contract.
+type ValSetDriverAddSettlementIterator struct {
+	Event *ValSetDriverAddSettlement // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -2131,7 +2215,7 @@ type IValSetDriverAddSettlementIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IValSetDriverAddSettlementIterator) Next() bool {
+func (it *ValSetDriverAddSettlementIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -2140,7 +2224,7 @@ func (it *IValSetDriverAddSettlementIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IValSetDriverAddSettlement)
+			it.Event = new(ValSetDriverAddSettlement)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -2155,7 +2239,7 @@ func (it *IValSetDriverAddSettlementIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IValSetDriverAddSettlement)
+		it.Event = new(ValSetDriverAddSettlement)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -2171,19 +2255,19 @@ func (it *IValSetDriverAddSettlementIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IValSetDriverAddSettlementIterator) Error() error {
+func (it *ValSetDriverAddSettlementIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IValSetDriverAddSettlementIterator) Close() error {
+func (it *ValSetDriverAddSettlementIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IValSetDriverAddSettlement represents a AddSettlement event raised by the IValSetDriver contract.
-type IValSetDriverAddSettlement struct {
+// ValSetDriverAddSettlement represents a AddSettlement event raised by the ValSetDriver contract.
+type ValSetDriverAddSettlement struct {
 	Settlement IValSetDriverCrossChainAddress
 	Raw        types.Log // Blockchain specific contextual infos
 }
@@ -2191,21 +2275,21 @@ type IValSetDriverAddSettlement struct {
 // FilterAddSettlement is a free log retrieval operation binding the contract event 0xd66c27144960b789ff7b5514538e3d85a3623c1669b8d6db4eb85658df2aad57.
 //
 // Solidity: event AddSettlement((uint64,address) settlement)
-func (_IValSetDriver *IValSetDriverFilterer) FilterAddSettlement(opts *bind.FilterOpts) (*IValSetDriverAddSettlementIterator, error) {
+func (_ValSetDriver *ValSetDriverFilterer) FilterAddSettlement(opts *bind.FilterOpts) (*ValSetDriverAddSettlementIterator, error) {
 
-	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "AddSettlement")
+	logs, sub, err := _ValSetDriver.contract.FilterLogs(opts, "AddSettlement")
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverAddSettlementIterator{contract: _IValSetDriver.contract, event: "AddSettlement", logs: logs, sub: sub}, nil
+	return &ValSetDriverAddSettlementIterator{contract: _ValSetDriver.contract, event: "AddSettlement", logs: logs, sub: sub}, nil
 }
 
 // WatchAddSettlement is a free log subscription operation binding the contract event 0xd66c27144960b789ff7b5514538e3d85a3623c1669b8d6db4eb85658df2aad57.
 //
 // Solidity: event AddSettlement((uint64,address) settlement)
-func (_IValSetDriver *IValSetDriverFilterer) WatchAddSettlement(opts *bind.WatchOpts, sink chan<- *IValSetDriverAddSettlement) (event.Subscription, error) {
+func (_ValSetDriver *ValSetDriverFilterer) WatchAddSettlement(opts *bind.WatchOpts, sink chan<- *ValSetDriverAddSettlement) (event.Subscription, error) {
 
-	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "AddSettlement")
+	logs, sub, err := _ValSetDriver.contract.WatchLogs(opts, "AddSettlement")
 	if err != nil {
 		return nil, err
 	}
@@ -2215,8 +2299,8 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchAddSettlement(opts *bind.Watch
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IValSetDriverAddSettlement)
-				if err := _IValSetDriver.contract.UnpackLog(event, "AddSettlement", log); err != nil {
+				event := new(ValSetDriverAddSettlement)
+				if err := _ValSetDriver.contract.UnpackLog(event, "AddSettlement", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -2240,18 +2324,18 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchAddSettlement(opts *bind.Watch
 // ParseAddSettlement is a log parse operation binding the contract event 0xd66c27144960b789ff7b5514538e3d85a3623c1669b8d6db4eb85658df2aad57.
 //
 // Solidity: event AddSettlement((uint64,address) settlement)
-func (_IValSetDriver *IValSetDriverFilterer) ParseAddSettlement(log types.Log) (*IValSetDriverAddSettlement, error) {
-	event := new(IValSetDriverAddSettlement)
-	if err := _IValSetDriver.contract.UnpackLog(event, "AddSettlement", log); err != nil {
+func (_ValSetDriver *ValSetDriverFilterer) ParseAddSettlement(log types.Log) (*ValSetDriverAddSettlement, error) {
+	event := new(ValSetDriverAddSettlement)
+	if err := _ValSetDriver.contract.UnpackLog(event, "AddSettlement", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// IValSetDriverAddVotingPowerProviderIterator is returned from FilterAddVotingPowerProvider and is used to iterate over the raw logs and unpacked data for AddVotingPowerProvider events raised by the IValSetDriver contract.
-type IValSetDriverAddVotingPowerProviderIterator struct {
-	Event *IValSetDriverAddVotingPowerProvider // Event containing the contract specifics and raw log
+// ValSetDriverAddVotingPowerProviderIterator is returned from FilterAddVotingPowerProvider and is used to iterate over the raw logs and unpacked data for AddVotingPowerProvider events raised by the ValSetDriver contract.
+type ValSetDriverAddVotingPowerProviderIterator struct {
+	Event *ValSetDriverAddVotingPowerProvider // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -2265,7 +2349,7 @@ type IValSetDriverAddVotingPowerProviderIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IValSetDriverAddVotingPowerProviderIterator) Next() bool {
+func (it *ValSetDriverAddVotingPowerProviderIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -2274,7 +2358,7 @@ func (it *IValSetDriverAddVotingPowerProviderIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IValSetDriverAddVotingPowerProvider)
+			it.Event = new(ValSetDriverAddVotingPowerProvider)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -2289,7 +2373,7 @@ func (it *IValSetDriverAddVotingPowerProviderIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IValSetDriverAddVotingPowerProvider)
+		it.Event = new(ValSetDriverAddVotingPowerProvider)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -2305,19 +2389,19 @@ func (it *IValSetDriverAddVotingPowerProviderIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IValSetDriverAddVotingPowerProviderIterator) Error() error {
+func (it *ValSetDriverAddVotingPowerProviderIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IValSetDriverAddVotingPowerProviderIterator) Close() error {
+func (it *ValSetDriverAddVotingPowerProviderIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IValSetDriverAddVotingPowerProvider represents a AddVotingPowerProvider event raised by the IValSetDriver contract.
-type IValSetDriverAddVotingPowerProvider struct {
+// ValSetDriverAddVotingPowerProvider represents a AddVotingPowerProvider event raised by the ValSetDriver contract.
+type ValSetDriverAddVotingPowerProvider struct {
 	VotingPowerProvider IValSetDriverCrossChainAddress
 	Raw                 types.Log // Blockchain specific contextual infos
 }
@@ -2325,21 +2409,21 @@ type IValSetDriverAddVotingPowerProvider struct {
 // FilterAddVotingPowerProvider is a free log retrieval operation binding the contract event 0xa8ba28fa43d2ebdcd4f5c29ee4f5e5fb568e9986ae8be7c6ae54540176d6147f.
 //
 // Solidity: event AddVotingPowerProvider((uint64,address) votingPowerProvider)
-func (_IValSetDriver *IValSetDriverFilterer) FilterAddVotingPowerProvider(opts *bind.FilterOpts) (*IValSetDriverAddVotingPowerProviderIterator, error) {
+func (_ValSetDriver *ValSetDriverFilterer) FilterAddVotingPowerProvider(opts *bind.FilterOpts) (*ValSetDriverAddVotingPowerProviderIterator, error) {
 
-	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "AddVotingPowerProvider")
+	logs, sub, err := _ValSetDriver.contract.FilterLogs(opts, "AddVotingPowerProvider")
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverAddVotingPowerProviderIterator{contract: _IValSetDriver.contract, event: "AddVotingPowerProvider", logs: logs, sub: sub}, nil
+	return &ValSetDriverAddVotingPowerProviderIterator{contract: _ValSetDriver.contract, event: "AddVotingPowerProvider", logs: logs, sub: sub}, nil
 }
 
 // WatchAddVotingPowerProvider is a free log subscription operation binding the contract event 0xa8ba28fa43d2ebdcd4f5c29ee4f5e5fb568e9986ae8be7c6ae54540176d6147f.
 //
 // Solidity: event AddVotingPowerProvider((uint64,address) votingPowerProvider)
-func (_IValSetDriver *IValSetDriverFilterer) WatchAddVotingPowerProvider(opts *bind.WatchOpts, sink chan<- *IValSetDriverAddVotingPowerProvider) (event.Subscription, error) {
+func (_ValSetDriver *ValSetDriverFilterer) WatchAddVotingPowerProvider(opts *bind.WatchOpts, sink chan<- *ValSetDriverAddVotingPowerProvider) (event.Subscription, error) {
 
-	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "AddVotingPowerProvider")
+	logs, sub, err := _ValSetDriver.contract.WatchLogs(opts, "AddVotingPowerProvider")
 	if err != nil {
 		return nil, err
 	}
@@ -2349,8 +2433,8 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchAddVotingPowerProvider(opts *b
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IValSetDriverAddVotingPowerProvider)
-				if err := _IValSetDriver.contract.UnpackLog(event, "AddVotingPowerProvider", log); err != nil {
+				event := new(ValSetDriverAddVotingPowerProvider)
+				if err := _ValSetDriver.contract.UnpackLog(event, "AddVotingPowerProvider", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -2374,18 +2458,18 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchAddVotingPowerProvider(opts *b
 // ParseAddVotingPowerProvider is a log parse operation binding the contract event 0xa8ba28fa43d2ebdcd4f5c29ee4f5e5fb568e9986ae8be7c6ae54540176d6147f.
 //
 // Solidity: event AddVotingPowerProvider((uint64,address) votingPowerProvider)
-func (_IValSetDriver *IValSetDriverFilterer) ParseAddVotingPowerProvider(log types.Log) (*IValSetDriverAddVotingPowerProvider, error) {
-	event := new(IValSetDriverAddVotingPowerProvider)
-	if err := _IValSetDriver.contract.UnpackLog(event, "AddVotingPowerProvider", log); err != nil {
+func (_ValSetDriver *ValSetDriverFilterer) ParseAddVotingPowerProvider(log types.Log) (*ValSetDriverAddVotingPowerProvider, error) {
+	event := new(ValSetDriverAddVotingPowerProvider)
+	if err := _ValSetDriver.contract.UnpackLog(event, "AddVotingPowerProvider", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// IValSetDriverInitEpochDurationIterator is returned from FilterInitEpochDuration and is used to iterate over the raw logs and unpacked data for InitEpochDuration events raised by the IValSetDriver contract.
-type IValSetDriverInitEpochDurationIterator struct {
-	Event *IValSetDriverInitEpochDuration // Event containing the contract specifics and raw log
+// ValSetDriverInitEpochDurationIterator is returned from FilterInitEpochDuration and is used to iterate over the raw logs and unpacked data for InitEpochDuration events raised by the ValSetDriver contract.
+type ValSetDriverInitEpochDurationIterator struct {
+	Event *ValSetDriverInitEpochDuration // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -2399,7 +2483,7 @@ type IValSetDriverInitEpochDurationIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IValSetDriverInitEpochDurationIterator) Next() bool {
+func (it *ValSetDriverInitEpochDurationIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -2408,7 +2492,7 @@ func (it *IValSetDriverInitEpochDurationIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IValSetDriverInitEpochDuration)
+			it.Event = new(ValSetDriverInitEpochDuration)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -2423,7 +2507,7 @@ func (it *IValSetDriverInitEpochDurationIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IValSetDriverInitEpochDuration)
+		it.Event = new(ValSetDriverInitEpochDuration)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -2439,19 +2523,19 @@ func (it *IValSetDriverInitEpochDurationIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IValSetDriverInitEpochDurationIterator) Error() error {
+func (it *ValSetDriverInitEpochDurationIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IValSetDriverInitEpochDurationIterator) Close() error {
+func (it *ValSetDriverInitEpochDurationIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IValSetDriverInitEpochDuration represents a InitEpochDuration event raised by the IValSetDriver contract.
-type IValSetDriverInitEpochDuration struct {
+// ValSetDriverInitEpochDuration represents a InitEpochDuration event raised by the ValSetDriver contract.
+type ValSetDriverInitEpochDuration struct {
 	EpochDuration          *big.Int
 	EpochDurationTimestamp *big.Int
 	Raw                    types.Log // Blockchain specific contextual infos
@@ -2460,21 +2544,21 @@ type IValSetDriverInitEpochDuration struct {
 // FilterInitEpochDuration is a free log retrieval operation binding the contract event 0xf688b7b02a20c2dda7d7de03a41637b274af7706eb975ea4af45858648370f55.
 //
 // Solidity: event InitEpochDuration(uint48 epochDuration, uint48 epochDurationTimestamp)
-func (_IValSetDriver *IValSetDriverFilterer) FilterInitEpochDuration(opts *bind.FilterOpts) (*IValSetDriverInitEpochDurationIterator, error) {
+func (_ValSetDriver *ValSetDriverFilterer) FilterInitEpochDuration(opts *bind.FilterOpts) (*ValSetDriverInitEpochDurationIterator, error) {
 
-	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "InitEpochDuration")
+	logs, sub, err := _ValSetDriver.contract.FilterLogs(opts, "InitEpochDuration")
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverInitEpochDurationIterator{contract: _IValSetDriver.contract, event: "InitEpochDuration", logs: logs, sub: sub}, nil
+	return &ValSetDriverInitEpochDurationIterator{contract: _ValSetDriver.contract, event: "InitEpochDuration", logs: logs, sub: sub}, nil
 }
 
 // WatchInitEpochDuration is a free log subscription operation binding the contract event 0xf688b7b02a20c2dda7d7de03a41637b274af7706eb975ea4af45858648370f55.
 //
 // Solidity: event InitEpochDuration(uint48 epochDuration, uint48 epochDurationTimestamp)
-func (_IValSetDriver *IValSetDriverFilterer) WatchInitEpochDuration(opts *bind.WatchOpts, sink chan<- *IValSetDriverInitEpochDuration) (event.Subscription, error) {
+func (_ValSetDriver *ValSetDriverFilterer) WatchInitEpochDuration(opts *bind.WatchOpts, sink chan<- *ValSetDriverInitEpochDuration) (event.Subscription, error) {
 
-	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "InitEpochDuration")
+	logs, sub, err := _ValSetDriver.contract.WatchLogs(opts, "InitEpochDuration")
 	if err != nil {
 		return nil, err
 	}
@@ -2484,8 +2568,8 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchInitEpochDuration(opts *bind.W
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IValSetDriverInitEpochDuration)
-				if err := _IValSetDriver.contract.UnpackLog(event, "InitEpochDuration", log); err != nil {
+				event := new(ValSetDriverInitEpochDuration)
+				if err := _ValSetDriver.contract.UnpackLog(event, "InitEpochDuration", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -2509,18 +2593,18 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchInitEpochDuration(opts *bind.W
 // ParseInitEpochDuration is a log parse operation binding the contract event 0xf688b7b02a20c2dda7d7de03a41637b274af7706eb975ea4af45858648370f55.
 //
 // Solidity: event InitEpochDuration(uint48 epochDuration, uint48 epochDurationTimestamp)
-func (_IValSetDriver *IValSetDriverFilterer) ParseInitEpochDuration(log types.Log) (*IValSetDriverInitEpochDuration, error) {
-	event := new(IValSetDriverInitEpochDuration)
-	if err := _IValSetDriver.contract.UnpackLog(event, "InitEpochDuration", log); err != nil {
+func (_ValSetDriver *ValSetDriverFilterer) ParseInitEpochDuration(log types.Log) (*ValSetDriverInitEpochDuration, error) {
+	event := new(ValSetDriverInitEpochDuration)
+	if err := _ValSetDriver.contract.UnpackLog(event, "InitEpochDuration", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// IValSetDriverInitSubnetworkIterator is returned from FilterInitSubnetwork and is used to iterate over the raw logs and unpacked data for InitSubnetwork events raised by the IValSetDriver contract.
-type IValSetDriverInitSubnetworkIterator struct {
-	Event *IValSetDriverInitSubnetwork // Event containing the contract specifics and raw log
+// ValSetDriverInitSubnetworkIterator is returned from FilterInitSubnetwork and is used to iterate over the raw logs and unpacked data for InitSubnetwork events raised by the ValSetDriver contract.
+type ValSetDriverInitSubnetworkIterator struct {
+	Event *ValSetDriverInitSubnetwork // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -2534,7 +2618,7 @@ type IValSetDriverInitSubnetworkIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IValSetDriverInitSubnetworkIterator) Next() bool {
+func (it *ValSetDriverInitSubnetworkIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -2543,7 +2627,7 @@ func (it *IValSetDriverInitSubnetworkIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IValSetDriverInitSubnetwork)
+			it.Event = new(ValSetDriverInitSubnetwork)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -2558,7 +2642,7 @@ func (it *IValSetDriverInitSubnetworkIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IValSetDriverInitSubnetwork)
+		it.Event = new(ValSetDriverInitSubnetwork)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -2574,19 +2658,19 @@ func (it *IValSetDriverInitSubnetworkIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IValSetDriverInitSubnetworkIterator) Error() error {
+func (it *ValSetDriverInitSubnetworkIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IValSetDriverInitSubnetworkIterator) Close() error {
+func (it *ValSetDriverInitSubnetworkIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IValSetDriverInitSubnetwork represents a InitSubnetwork event raised by the IValSetDriver contract.
-type IValSetDriverInitSubnetwork struct {
+// ValSetDriverInitSubnetwork represents a InitSubnetwork event raised by the ValSetDriver contract.
+type ValSetDriverInitSubnetwork struct {
 	Network      common.Address
 	SubnetworkId *big.Int
 	Raw          types.Log // Blockchain specific contextual infos
@@ -2595,21 +2679,21 @@ type IValSetDriverInitSubnetwork struct {
 // FilterInitSubnetwork is a free log retrieval operation binding the contract event 0x469c2e982e7d76d34cf5d1e72abee29749bb9971942c180e9023cea09f5f8e83.
 //
 // Solidity: event InitSubnetwork(address network, uint96 subnetworkId)
-func (_IValSetDriver *IValSetDriverFilterer) FilterInitSubnetwork(opts *bind.FilterOpts) (*IValSetDriverInitSubnetworkIterator, error) {
+func (_ValSetDriver *ValSetDriverFilterer) FilterInitSubnetwork(opts *bind.FilterOpts) (*ValSetDriverInitSubnetworkIterator, error) {
 
-	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "InitSubnetwork")
+	logs, sub, err := _ValSetDriver.contract.FilterLogs(opts, "InitSubnetwork")
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverInitSubnetworkIterator{contract: _IValSetDriver.contract, event: "InitSubnetwork", logs: logs, sub: sub}, nil
+	return &ValSetDriverInitSubnetworkIterator{contract: _ValSetDriver.contract, event: "InitSubnetwork", logs: logs, sub: sub}, nil
 }
 
 // WatchInitSubnetwork is a free log subscription operation binding the contract event 0x469c2e982e7d76d34cf5d1e72abee29749bb9971942c180e9023cea09f5f8e83.
 //
 // Solidity: event InitSubnetwork(address network, uint96 subnetworkId)
-func (_IValSetDriver *IValSetDriverFilterer) WatchInitSubnetwork(opts *bind.WatchOpts, sink chan<- *IValSetDriverInitSubnetwork) (event.Subscription, error) {
+func (_ValSetDriver *ValSetDriverFilterer) WatchInitSubnetwork(opts *bind.WatchOpts, sink chan<- *ValSetDriverInitSubnetwork) (event.Subscription, error) {
 
-	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "InitSubnetwork")
+	logs, sub, err := _ValSetDriver.contract.WatchLogs(opts, "InitSubnetwork")
 	if err != nil {
 		return nil, err
 	}
@@ -2619,8 +2703,8 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchInitSubnetwork(opts *bind.Watc
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IValSetDriverInitSubnetwork)
-				if err := _IValSetDriver.contract.UnpackLog(event, "InitSubnetwork", log); err != nil {
+				event := new(ValSetDriverInitSubnetwork)
+				if err := _ValSetDriver.contract.UnpackLog(event, "InitSubnetwork", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -2644,18 +2728,18 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchInitSubnetwork(opts *bind.Watc
 // ParseInitSubnetwork is a log parse operation binding the contract event 0x469c2e982e7d76d34cf5d1e72abee29749bb9971942c180e9023cea09f5f8e83.
 //
 // Solidity: event InitSubnetwork(address network, uint96 subnetworkId)
-func (_IValSetDriver *IValSetDriverFilterer) ParseInitSubnetwork(log types.Log) (*IValSetDriverInitSubnetwork, error) {
-	event := new(IValSetDriverInitSubnetwork)
-	if err := _IValSetDriver.contract.UnpackLog(event, "InitSubnetwork", log); err != nil {
+func (_ValSetDriver *ValSetDriverFilterer) ParseInitSubnetwork(log types.Log) (*ValSetDriverInitSubnetwork, error) {
+	event := new(ValSetDriverInitSubnetwork)
+	if err := _ValSetDriver.contract.UnpackLog(event, "InitSubnetwork", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// IValSetDriverInitializedIterator is returned from FilterInitialized and is used to iterate over the raw logs and unpacked data for Initialized events raised by the IValSetDriver contract.
-type IValSetDriverInitializedIterator struct {
-	Event *IValSetDriverInitialized // Event containing the contract specifics and raw log
+// ValSetDriverInitializedIterator is returned from FilterInitialized and is used to iterate over the raw logs and unpacked data for Initialized events raised by the ValSetDriver contract.
+type ValSetDriverInitializedIterator struct {
+	Event *ValSetDriverInitialized // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -2669,7 +2753,7 @@ type IValSetDriverInitializedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IValSetDriverInitializedIterator) Next() bool {
+func (it *ValSetDriverInitializedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -2678,7 +2762,7 @@ func (it *IValSetDriverInitializedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IValSetDriverInitialized)
+			it.Event = new(ValSetDriverInitialized)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -2693,7 +2777,7 @@ func (it *IValSetDriverInitializedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IValSetDriverInitialized)
+		it.Event = new(ValSetDriverInitialized)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -2709,19 +2793,19 @@ func (it *IValSetDriverInitializedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IValSetDriverInitializedIterator) Error() error {
+func (it *ValSetDriverInitializedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IValSetDriverInitializedIterator) Close() error {
+func (it *ValSetDriverInitializedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IValSetDriverInitialized represents a Initialized event raised by the IValSetDriver contract.
-type IValSetDriverInitialized struct {
+// ValSetDriverInitialized represents a Initialized event raised by the ValSetDriver contract.
+type ValSetDriverInitialized struct {
 	Version uint64
 	Raw     types.Log // Blockchain specific contextual infos
 }
@@ -2729,21 +2813,21 @@ type IValSetDriverInitialized struct {
 // FilterInitialized is a free log retrieval operation binding the contract event 0xc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d2.
 //
 // Solidity: event Initialized(uint64 version)
-func (_IValSetDriver *IValSetDriverFilterer) FilterInitialized(opts *bind.FilterOpts) (*IValSetDriverInitializedIterator, error) {
+func (_ValSetDriver *ValSetDriverFilterer) FilterInitialized(opts *bind.FilterOpts) (*ValSetDriverInitializedIterator, error) {
 
-	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "Initialized")
+	logs, sub, err := _ValSetDriver.contract.FilterLogs(opts, "Initialized")
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverInitializedIterator{contract: _IValSetDriver.contract, event: "Initialized", logs: logs, sub: sub}, nil
+	return &ValSetDriverInitializedIterator{contract: _ValSetDriver.contract, event: "Initialized", logs: logs, sub: sub}, nil
 }
 
 // WatchInitialized is a free log subscription operation binding the contract event 0xc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d2.
 //
 // Solidity: event Initialized(uint64 version)
-func (_IValSetDriver *IValSetDriverFilterer) WatchInitialized(opts *bind.WatchOpts, sink chan<- *IValSetDriverInitialized) (event.Subscription, error) {
+func (_ValSetDriver *ValSetDriverFilterer) WatchInitialized(opts *bind.WatchOpts, sink chan<- *ValSetDriverInitialized) (event.Subscription, error) {
 
-	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "Initialized")
+	logs, sub, err := _ValSetDriver.contract.WatchLogs(opts, "Initialized")
 	if err != nil {
 		return nil, err
 	}
@@ -2753,8 +2837,8 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchInitialized(opts *bind.WatchOp
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IValSetDriverInitialized)
-				if err := _IValSetDriver.contract.UnpackLog(event, "Initialized", log); err != nil {
+				event := new(ValSetDriverInitialized)
+				if err := _ValSetDriver.contract.UnpackLog(event, "Initialized", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -2778,18 +2862,18 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchInitialized(opts *bind.WatchOp
 // ParseInitialized is a log parse operation binding the contract event 0xc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d2.
 //
 // Solidity: event Initialized(uint64 version)
-func (_IValSetDriver *IValSetDriverFilterer) ParseInitialized(log types.Log) (*IValSetDriverInitialized, error) {
-	event := new(IValSetDriverInitialized)
-	if err := _IValSetDriver.contract.UnpackLog(event, "Initialized", log); err != nil {
+func (_ValSetDriver *ValSetDriverFilterer) ParseInitialized(log types.Log) (*ValSetDriverInitialized, error) {
+	event := new(ValSetDriverInitialized)
+	if err := _ValSetDriver.contract.UnpackLog(event, "Initialized", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// IValSetDriverRemoveQuorumThresholdIterator is returned from FilterRemoveQuorumThreshold and is used to iterate over the raw logs and unpacked data for RemoveQuorumThreshold events raised by the IValSetDriver contract.
-type IValSetDriverRemoveQuorumThresholdIterator struct {
-	Event *IValSetDriverRemoveQuorumThreshold // Event containing the contract specifics and raw log
+// ValSetDriverRemoveQuorumThresholdIterator is returned from FilterRemoveQuorumThreshold and is used to iterate over the raw logs and unpacked data for RemoveQuorumThreshold events raised by the ValSetDriver contract.
+type ValSetDriverRemoveQuorumThresholdIterator struct {
+	Event *ValSetDriverRemoveQuorumThreshold // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -2803,7 +2887,7 @@ type IValSetDriverRemoveQuorumThresholdIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IValSetDriverRemoveQuorumThresholdIterator) Next() bool {
+func (it *ValSetDriverRemoveQuorumThresholdIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -2812,7 +2896,7 @@ func (it *IValSetDriverRemoveQuorumThresholdIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IValSetDriverRemoveQuorumThreshold)
+			it.Event = new(ValSetDriverRemoveQuorumThreshold)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -2827,7 +2911,7 @@ func (it *IValSetDriverRemoveQuorumThresholdIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IValSetDriverRemoveQuorumThreshold)
+		it.Event = new(ValSetDriverRemoveQuorumThreshold)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -2843,19 +2927,19 @@ func (it *IValSetDriverRemoveQuorumThresholdIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IValSetDriverRemoveQuorumThresholdIterator) Error() error {
+func (it *ValSetDriverRemoveQuorumThresholdIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IValSetDriverRemoveQuorumThresholdIterator) Close() error {
+func (it *ValSetDriverRemoveQuorumThresholdIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IValSetDriverRemoveQuorumThreshold represents a RemoveQuorumThreshold event raised by the IValSetDriver contract.
-type IValSetDriverRemoveQuorumThreshold struct {
+// ValSetDriverRemoveQuorumThreshold represents a RemoveQuorumThreshold event raised by the ValSetDriver contract.
+type ValSetDriverRemoveQuorumThreshold struct {
 	QuorumThreshold IValSetDriverQuorumThreshold
 	Raw             types.Log // Blockchain specific contextual infos
 }
@@ -2863,21 +2947,21 @@ type IValSetDriverRemoveQuorumThreshold struct {
 // FilterRemoveQuorumThreshold is a free log retrieval operation binding the contract event 0xb321a5a0425badf1acf0a0b21b7984fa61e1e6405ae9011d4dcdb29b0e2f43ec.
 //
 // Solidity: event RemoveQuorumThreshold((uint8,uint248) quorumThreshold)
-func (_IValSetDriver *IValSetDriverFilterer) FilterRemoveQuorumThreshold(opts *bind.FilterOpts) (*IValSetDriverRemoveQuorumThresholdIterator, error) {
+func (_ValSetDriver *ValSetDriverFilterer) FilterRemoveQuorumThreshold(opts *bind.FilterOpts) (*ValSetDriverRemoveQuorumThresholdIterator, error) {
 
-	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "RemoveQuorumThreshold")
+	logs, sub, err := _ValSetDriver.contract.FilterLogs(opts, "RemoveQuorumThreshold")
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverRemoveQuorumThresholdIterator{contract: _IValSetDriver.contract, event: "RemoveQuorumThreshold", logs: logs, sub: sub}, nil
+	return &ValSetDriverRemoveQuorumThresholdIterator{contract: _ValSetDriver.contract, event: "RemoveQuorumThreshold", logs: logs, sub: sub}, nil
 }
 
 // WatchRemoveQuorumThreshold is a free log subscription operation binding the contract event 0xb321a5a0425badf1acf0a0b21b7984fa61e1e6405ae9011d4dcdb29b0e2f43ec.
 //
 // Solidity: event RemoveQuorumThreshold((uint8,uint248) quorumThreshold)
-func (_IValSetDriver *IValSetDriverFilterer) WatchRemoveQuorumThreshold(opts *bind.WatchOpts, sink chan<- *IValSetDriverRemoveQuorumThreshold) (event.Subscription, error) {
+func (_ValSetDriver *ValSetDriverFilterer) WatchRemoveQuorumThreshold(opts *bind.WatchOpts, sink chan<- *ValSetDriverRemoveQuorumThreshold) (event.Subscription, error) {
 
-	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "RemoveQuorumThreshold")
+	logs, sub, err := _ValSetDriver.contract.WatchLogs(opts, "RemoveQuorumThreshold")
 	if err != nil {
 		return nil, err
 	}
@@ -2887,8 +2971,8 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchRemoveQuorumThreshold(opts *bi
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IValSetDriverRemoveQuorumThreshold)
-				if err := _IValSetDriver.contract.UnpackLog(event, "RemoveQuorumThreshold", log); err != nil {
+				event := new(ValSetDriverRemoveQuorumThreshold)
+				if err := _ValSetDriver.contract.UnpackLog(event, "RemoveQuorumThreshold", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -2912,18 +2996,18 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchRemoveQuorumThreshold(opts *bi
 // ParseRemoveQuorumThreshold is a log parse operation binding the contract event 0xb321a5a0425badf1acf0a0b21b7984fa61e1e6405ae9011d4dcdb29b0e2f43ec.
 //
 // Solidity: event RemoveQuorumThreshold((uint8,uint248) quorumThreshold)
-func (_IValSetDriver *IValSetDriverFilterer) ParseRemoveQuorumThreshold(log types.Log) (*IValSetDriverRemoveQuorumThreshold, error) {
-	event := new(IValSetDriverRemoveQuorumThreshold)
-	if err := _IValSetDriver.contract.UnpackLog(event, "RemoveQuorumThreshold", log); err != nil {
+func (_ValSetDriver *ValSetDriverFilterer) ParseRemoveQuorumThreshold(log types.Log) (*ValSetDriverRemoveQuorumThreshold, error) {
+	event := new(ValSetDriverRemoveQuorumThreshold)
+	if err := _ValSetDriver.contract.UnpackLog(event, "RemoveQuorumThreshold", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// IValSetDriverRemoveSettlementIterator is returned from FilterRemoveSettlement and is used to iterate over the raw logs and unpacked data for RemoveSettlement events raised by the IValSetDriver contract.
-type IValSetDriverRemoveSettlementIterator struct {
-	Event *IValSetDriverRemoveSettlement // Event containing the contract specifics and raw log
+// ValSetDriverRemoveSettlementIterator is returned from FilterRemoveSettlement and is used to iterate over the raw logs and unpacked data for RemoveSettlement events raised by the ValSetDriver contract.
+type ValSetDriverRemoveSettlementIterator struct {
+	Event *ValSetDriverRemoveSettlement // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -2937,7 +3021,7 @@ type IValSetDriverRemoveSettlementIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IValSetDriverRemoveSettlementIterator) Next() bool {
+func (it *ValSetDriverRemoveSettlementIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -2946,7 +3030,7 @@ func (it *IValSetDriverRemoveSettlementIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IValSetDriverRemoveSettlement)
+			it.Event = new(ValSetDriverRemoveSettlement)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -2961,7 +3045,7 @@ func (it *IValSetDriverRemoveSettlementIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IValSetDriverRemoveSettlement)
+		it.Event = new(ValSetDriverRemoveSettlement)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -2977,19 +3061,19 @@ func (it *IValSetDriverRemoveSettlementIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IValSetDriverRemoveSettlementIterator) Error() error {
+func (it *ValSetDriverRemoveSettlementIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IValSetDriverRemoveSettlementIterator) Close() error {
+func (it *ValSetDriverRemoveSettlementIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IValSetDriverRemoveSettlement represents a RemoveSettlement event raised by the IValSetDriver contract.
-type IValSetDriverRemoveSettlement struct {
+// ValSetDriverRemoveSettlement represents a RemoveSettlement event raised by the ValSetDriver contract.
+type ValSetDriverRemoveSettlement struct {
 	Settlement IValSetDriverCrossChainAddress
 	Raw        types.Log // Blockchain specific contextual infos
 }
@@ -2997,21 +3081,21 @@ type IValSetDriverRemoveSettlement struct {
 // FilterRemoveSettlement is a free log retrieval operation binding the contract event 0x6307047e2a245d2a5867f7667a4a48687593b73e3b2f95d2204256cbff350cf3.
 //
 // Solidity: event RemoveSettlement((uint64,address) settlement)
-func (_IValSetDriver *IValSetDriverFilterer) FilterRemoveSettlement(opts *bind.FilterOpts) (*IValSetDriverRemoveSettlementIterator, error) {
+func (_ValSetDriver *ValSetDriverFilterer) FilterRemoveSettlement(opts *bind.FilterOpts) (*ValSetDriverRemoveSettlementIterator, error) {
 
-	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "RemoveSettlement")
+	logs, sub, err := _ValSetDriver.contract.FilterLogs(opts, "RemoveSettlement")
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverRemoveSettlementIterator{contract: _IValSetDriver.contract, event: "RemoveSettlement", logs: logs, sub: sub}, nil
+	return &ValSetDriverRemoveSettlementIterator{contract: _ValSetDriver.contract, event: "RemoveSettlement", logs: logs, sub: sub}, nil
 }
 
 // WatchRemoveSettlement is a free log subscription operation binding the contract event 0x6307047e2a245d2a5867f7667a4a48687593b73e3b2f95d2204256cbff350cf3.
 //
 // Solidity: event RemoveSettlement((uint64,address) settlement)
-func (_IValSetDriver *IValSetDriverFilterer) WatchRemoveSettlement(opts *bind.WatchOpts, sink chan<- *IValSetDriverRemoveSettlement) (event.Subscription, error) {
+func (_ValSetDriver *ValSetDriverFilterer) WatchRemoveSettlement(opts *bind.WatchOpts, sink chan<- *ValSetDriverRemoveSettlement) (event.Subscription, error) {
 
-	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "RemoveSettlement")
+	logs, sub, err := _ValSetDriver.contract.WatchLogs(opts, "RemoveSettlement")
 	if err != nil {
 		return nil, err
 	}
@@ -3021,8 +3105,8 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchRemoveSettlement(opts *bind.Wa
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IValSetDriverRemoveSettlement)
-				if err := _IValSetDriver.contract.UnpackLog(event, "RemoveSettlement", log); err != nil {
+				event := new(ValSetDriverRemoveSettlement)
+				if err := _ValSetDriver.contract.UnpackLog(event, "RemoveSettlement", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -3046,18 +3130,18 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchRemoveSettlement(opts *bind.Wa
 // ParseRemoveSettlement is a log parse operation binding the contract event 0x6307047e2a245d2a5867f7667a4a48687593b73e3b2f95d2204256cbff350cf3.
 //
 // Solidity: event RemoveSettlement((uint64,address) settlement)
-func (_IValSetDriver *IValSetDriverFilterer) ParseRemoveSettlement(log types.Log) (*IValSetDriverRemoveSettlement, error) {
-	event := new(IValSetDriverRemoveSettlement)
-	if err := _IValSetDriver.contract.UnpackLog(event, "RemoveSettlement", log); err != nil {
+func (_ValSetDriver *ValSetDriverFilterer) ParseRemoveSettlement(log types.Log) (*ValSetDriverRemoveSettlement, error) {
+	event := new(ValSetDriverRemoveSettlement)
+	if err := _ValSetDriver.contract.UnpackLog(event, "RemoveSettlement", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// IValSetDriverRemoveVotingPowerProviderIterator is returned from FilterRemoveVotingPowerProvider and is used to iterate over the raw logs and unpacked data for RemoveVotingPowerProvider events raised by the IValSetDriver contract.
-type IValSetDriverRemoveVotingPowerProviderIterator struct {
-	Event *IValSetDriverRemoveVotingPowerProvider // Event containing the contract specifics and raw log
+// ValSetDriverRemoveVotingPowerProviderIterator is returned from FilterRemoveVotingPowerProvider and is used to iterate over the raw logs and unpacked data for RemoveVotingPowerProvider events raised by the ValSetDriver contract.
+type ValSetDriverRemoveVotingPowerProviderIterator struct {
+	Event *ValSetDriverRemoveVotingPowerProvider // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -3071,7 +3155,7 @@ type IValSetDriverRemoveVotingPowerProviderIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IValSetDriverRemoveVotingPowerProviderIterator) Next() bool {
+func (it *ValSetDriverRemoveVotingPowerProviderIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -3080,7 +3164,7 @@ func (it *IValSetDriverRemoveVotingPowerProviderIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IValSetDriverRemoveVotingPowerProvider)
+			it.Event = new(ValSetDriverRemoveVotingPowerProvider)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -3095,7 +3179,7 @@ func (it *IValSetDriverRemoveVotingPowerProviderIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IValSetDriverRemoveVotingPowerProvider)
+		it.Event = new(ValSetDriverRemoveVotingPowerProvider)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -3111,19 +3195,19 @@ func (it *IValSetDriverRemoveVotingPowerProviderIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IValSetDriverRemoveVotingPowerProviderIterator) Error() error {
+func (it *ValSetDriverRemoveVotingPowerProviderIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IValSetDriverRemoveVotingPowerProviderIterator) Close() error {
+func (it *ValSetDriverRemoveVotingPowerProviderIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IValSetDriverRemoveVotingPowerProvider represents a RemoveVotingPowerProvider event raised by the IValSetDriver contract.
-type IValSetDriverRemoveVotingPowerProvider struct {
+// ValSetDriverRemoveVotingPowerProvider represents a RemoveVotingPowerProvider event raised by the ValSetDriver contract.
+type ValSetDriverRemoveVotingPowerProvider struct {
 	VotingPowerProvider IValSetDriverCrossChainAddress
 	Raw                 types.Log // Blockchain specific contextual infos
 }
@@ -3131,21 +3215,21 @@ type IValSetDriverRemoveVotingPowerProvider struct {
 // FilterRemoveVotingPowerProvider is a free log retrieval operation binding the contract event 0x2a2103a52b9c3907936be3fea265a7bd34fdfc0c8c09cc3b8e3938b7deda761f.
 //
 // Solidity: event RemoveVotingPowerProvider((uint64,address) votingPowerProvider)
-func (_IValSetDriver *IValSetDriverFilterer) FilterRemoveVotingPowerProvider(opts *bind.FilterOpts) (*IValSetDriverRemoveVotingPowerProviderIterator, error) {
+func (_ValSetDriver *ValSetDriverFilterer) FilterRemoveVotingPowerProvider(opts *bind.FilterOpts) (*ValSetDriverRemoveVotingPowerProviderIterator, error) {
 
-	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "RemoveVotingPowerProvider")
+	logs, sub, err := _ValSetDriver.contract.FilterLogs(opts, "RemoveVotingPowerProvider")
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverRemoveVotingPowerProviderIterator{contract: _IValSetDriver.contract, event: "RemoveVotingPowerProvider", logs: logs, sub: sub}, nil
+	return &ValSetDriverRemoveVotingPowerProviderIterator{contract: _ValSetDriver.contract, event: "RemoveVotingPowerProvider", logs: logs, sub: sub}, nil
 }
 
 // WatchRemoveVotingPowerProvider is a free log subscription operation binding the contract event 0x2a2103a52b9c3907936be3fea265a7bd34fdfc0c8c09cc3b8e3938b7deda761f.
 //
 // Solidity: event RemoveVotingPowerProvider((uint64,address) votingPowerProvider)
-func (_IValSetDriver *IValSetDriverFilterer) WatchRemoveVotingPowerProvider(opts *bind.WatchOpts, sink chan<- *IValSetDriverRemoveVotingPowerProvider) (event.Subscription, error) {
+func (_ValSetDriver *ValSetDriverFilterer) WatchRemoveVotingPowerProvider(opts *bind.WatchOpts, sink chan<- *ValSetDriverRemoveVotingPowerProvider) (event.Subscription, error) {
 
-	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "RemoveVotingPowerProvider")
+	logs, sub, err := _ValSetDriver.contract.WatchLogs(opts, "RemoveVotingPowerProvider")
 	if err != nil {
 		return nil, err
 	}
@@ -3155,8 +3239,8 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchRemoveVotingPowerProvider(opts
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IValSetDriverRemoveVotingPowerProvider)
-				if err := _IValSetDriver.contract.UnpackLog(event, "RemoveVotingPowerProvider", log); err != nil {
+				event := new(ValSetDriverRemoveVotingPowerProvider)
+				if err := _ValSetDriver.contract.UnpackLog(event, "RemoveVotingPowerProvider", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -3180,18 +3264,18 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchRemoveVotingPowerProvider(opts
 // ParseRemoveVotingPowerProvider is a log parse operation binding the contract event 0x2a2103a52b9c3907936be3fea265a7bd34fdfc0c8c09cc3b8e3938b7deda761f.
 //
 // Solidity: event RemoveVotingPowerProvider((uint64,address) votingPowerProvider)
-func (_IValSetDriver *IValSetDriverFilterer) ParseRemoveVotingPowerProvider(log types.Log) (*IValSetDriverRemoveVotingPowerProvider, error) {
-	event := new(IValSetDriverRemoveVotingPowerProvider)
-	if err := _IValSetDriver.contract.UnpackLog(event, "RemoveVotingPowerProvider", log); err != nil {
+func (_ValSetDriver *ValSetDriverFilterer) ParseRemoveVotingPowerProvider(log types.Log) (*ValSetDriverRemoveVotingPowerProvider, error) {
+	event := new(ValSetDriverRemoveVotingPowerProvider)
+	if err := _ValSetDriver.contract.UnpackLog(event, "RemoveVotingPowerProvider", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// IValSetDriverSetEpochDurationIterator is returned from FilterSetEpochDuration and is used to iterate over the raw logs and unpacked data for SetEpochDuration events raised by the IValSetDriver contract.
-type IValSetDriverSetEpochDurationIterator struct {
-	Event *IValSetDriverSetEpochDuration // Event containing the contract specifics and raw log
+// ValSetDriverSetCommitterSlotDurationIterator is returned from FilterSetCommitterSlotDuration and is used to iterate over the raw logs and unpacked data for SetCommitterSlotDuration events raised by the ValSetDriver contract.
+type ValSetDriverSetCommitterSlotDurationIterator struct {
+	Event *ValSetDriverSetCommitterSlotDuration // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -3205,7 +3289,7 @@ type IValSetDriverSetEpochDurationIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IValSetDriverSetEpochDurationIterator) Next() bool {
+func (it *ValSetDriverSetCommitterSlotDurationIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -3214,7 +3298,7 @@ func (it *IValSetDriverSetEpochDurationIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IValSetDriverSetEpochDuration)
+			it.Event = new(ValSetDriverSetCommitterSlotDuration)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -3229,7 +3313,7 @@ func (it *IValSetDriverSetEpochDurationIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IValSetDriverSetEpochDuration)
+		it.Event = new(ValSetDriverSetCommitterSlotDuration)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -3245,41 +3329,41 @@ func (it *IValSetDriverSetEpochDurationIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IValSetDriverSetEpochDurationIterator) Error() error {
+func (it *ValSetDriverSetCommitterSlotDurationIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IValSetDriverSetEpochDurationIterator) Close() error {
+func (it *ValSetDriverSetCommitterSlotDurationIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IValSetDriverSetEpochDuration represents a SetEpochDuration event raised by the IValSetDriver contract.
-type IValSetDriverSetEpochDuration struct {
-	EpochDuration *big.Int
-	Raw           types.Log // Blockchain specific contextual infos
+// ValSetDriverSetCommitterSlotDuration represents a SetCommitterSlotDuration event raised by the ValSetDriver contract.
+type ValSetDriverSetCommitterSlotDuration struct {
+	CommitterSlotDuration *big.Int
+	Raw                   types.Log // Blockchain specific contextual infos
 }
 
-// FilterSetEpochDuration is a free log retrieval operation binding the contract event 0xc950f06b73b224f8b32d39245a5905020aebfc426a15833a70ac2e4e2ebe098c.
+// FilterSetCommitterSlotDuration is a free log retrieval operation binding the contract event 0x853ac7224393856467cf1f4981ef9fa5d586d71783e6f66221f7af0a987f7d51.
 //
-// Solidity: event SetEpochDuration(uint48 epochDuration)
-func (_IValSetDriver *IValSetDriverFilterer) FilterSetEpochDuration(opts *bind.FilterOpts) (*IValSetDriverSetEpochDurationIterator, error) {
+// Solidity: event SetCommitterSlotDuration(uint48 committerSlotDuration)
+func (_ValSetDriver *ValSetDriverFilterer) FilterSetCommitterSlotDuration(opts *bind.FilterOpts) (*ValSetDriverSetCommitterSlotDurationIterator, error) {
 
-	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "SetEpochDuration")
+	logs, sub, err := _ValSetDriver.contract.FilterLogs(opts, "SetCommitterSlotDuration")
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverSetEpochDurationIterator{contract: _IValSetDriver.contract, event: "SetEpochDuration", logs: logs, sub: sub}, nil
+	return &ValSetDriverSetCommitterSlotDurationIterator{contract: _ValSetDriver.contract, event: "SetCommitterSlotDuration", logs: logs, sub: sub}, nil
 }
 
-// WatchSetEpochDuration is a free log subscription operation binding the contract event 0xc950f06b73b224f8b32d39245a5905020aebfc426a15833a70ac2e4e2ebe098c.
+// WatchSetCommitterSlotDuration is a free log subscription operation binding the contract event 0x853ac7224393856467cf1f4981ef9fa5d586d71783e6f66221f7af0a987f7d51.
 //
-// Solidity: event SetEpochDuration(uint48 epochDuration)
-func (_IValSetDriver *IValSetDriverFilterer) WatchSetEpochDuration(opts *bind.WatchOpts, sink chan<- *IValSetDriverSetEpochDuration) (event.Subscription, error) {
+// Solidity: event SetCommitterSlotDuration(uint48 committerSlotDuration)
+func (_ValSetDriver *ValSetDriverFilterer) WatchSetCommitterSlotDuration(opts *bind.WatchOpts, sink chan<- *ValSetDriverSetCommitterSlotDuration) (event.Subscription, error) {
 
-	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "SetEpochDuration")
+	logs, sub, err := _ValSetDriver.contract.WatchLogs(opts, "SetCommitterSlotDuration")
 	if err != nil {
 		return nil, err
 	}
@@ -3289,8 +3373,142 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchSetEpochDuration(opts *bind.Wa
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IValSetDriverSetEpochDuration)
-				if err := _IValSetDriver.contract.UnpackLog(event, "SetEpochDuration", log); err != nil {
+				event := new(ValSetDriverSetCommitterSlotDuration)
+				if err := _ValSetDriver.contract.UnpackLog(event, "SetCommitterSlotDuration", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseSetCommitterSlotDuration is a log parse operation binding the contract event 0x853ac7224393856467cf1f4981ef9fa5d586d71783e6f66221f7af0a987f7d51.
+//
+// Solidity: event SetCommitterSlotDuration(uint48 committerSlotDuration)
+func (_ValSetDriver *ValSetDriverFilterer) ParseSetCommitterSlotDuration(log types.Log) (*ValSetDriverSetCommitterSlotDuration, error) {
+	event := new(ValSetDriverSetCommitterSlotDuration)
+	if err := _ValSetDriver.contract.UnpackLog(event, "SetCommitterSlotDuration", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// ValSetDriverSetEpochDurationIterator is returned from FilterSetEpochDuration and is used to iterate over the raw logs and unpacked data for SetEpochDuration events raised by the ValSetDriver contract.
+type ValSetDriverSetEpochDurationIterator struct {
+	Event *ValSetDriverSetEpochDuration // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *ValSetDriverSetEpochDurationIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(ValSetDriverSetEpochDuration)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(ValSetDriverSetEpochDuration)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *ValSetDriverSetEpochDurationIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *ValSetDriverSetEpochDurationIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// ValSetDriverSetEpochDuration represents a SetEpochDuration event raised by the ValSetDriver contract.
+type ValSetDriverSetEpochDuration struct {
+	EpochDuration *big.Int
+	Raw           types.Log // Blockchain specific contextual infos
+}
+
+// FilterSetEpochDuration is a free log retrieval operation binding the contract event 0xc950f06b73b224f8b32d39245a5905020aebfc426a15833a70ac2e4e2ebe098c.
+//
+// Solidity: event SetEpochDuration(uint48 epochDuration)
+func (_ValSetDriver *ValSetDriverFilterer) FilterSetEpochDuration(opts *bind.FilterOpts) (*ValSetDriverSetEpochDurationIterator, error) {
+
+	logs, sub, err := _ValSetDriver.contract.FilterLogs(opts, "SetEpochDuration")
+	if err != nil {
+		return nil, err
+	}
+	return &ValSetDriverSetEpochDurationIterator{contract: _ValSetDriver.contract, event: "SetEpochDuration", logs: logs, sub: sub}, nil
+}
+
+// WatchSetEpochDuration is a free log subscription operation binding the contract event 0xc950f06b73b224f8b32d39245a5905020aebfc426a15833a70ac2e4e2ebe098c.
+//
+// Solidity: event SetEpochDuration(uint48 epochDuration)
+func (_ValSetDriver *ValSetDriverFilterer) WatchSetEpochDuration(opts *bind.WatchOpts, sink chan<- *ValSetDriverSetEpochDuration) (event.Subscription, error) {
+
+	logs, sub, err := _ValSetDriver.contract.WatchLogs(opts, "SetEpochDuration")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(ValSetDriverSetEpochDuration)
+				if err := _ValSetDriver.contract.UnpackLog(event, "SetEpochDuration", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -3314,18 +3532,18 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchSetEpochDuration(opts *bind.Wa
 // ParseSetEpochDuration is a log parse operation binding the contract event 0xc950f06b73b224f8b32d39245a5905020aebfc426a15833a70ac2e4e2ebe098c.
 //
 // Solidity: event SetEpochDuration(uint48 epochDuration)
-func (_IValSetDriver *IValSetDriverFilterer) ParseSetEpochDuration(log types.Log) (*IValSetDriverSetEpochDuration, error) {
-	event := new(IValSetDriverSetEpochDuration)
-	if err := _IValSetDriver.contract.UnpackLog(event, "SetEpochDuration", log); err != nil {
+func (_ValSetDriver *ValSetDriverFilterer) ParseSetEpochDuration(log types.Log) (*ValSetDriverSetEpochDuration, error) {
+	event := new(ValSetDriverSetEpochDuration)
+	if err := _ValSetDriver.contract.UnpackLog(event, "SetEpochDuration", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// IValSetDriverSetKeysProviderIterator is returned from FilterSetKeysProvider and is used to iterate over the raw logs and unpacked data for SetKeysProvider events raised by the IValSetDriver contract.
-type IValSetDriverSetKeysProviderIterator struct {
-	Event *IValSetDriverSetKeysProvider // Event containing the contract specifics and raw log
+// ValSetDriverSetKeysProviderIterator is returned from FilterSetKeysProvider and is used to iterate over the raw logs and unpacked data for SetKeysProvider events raised by the ValSetDriver contract.
+type ValSetDriverSetKeysProviderIterator struct {
+	Event *ValSetDriverSetKeysProvider // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -3339,7 +3557,7 @@ type IValSetDriverSetKeysProviderIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IValSetDriverSetKeysProviderIterator) Next() bool {
+func (it *ValSetDriverSetKeysProviderIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -3348,7 +3566,7 @@ func (it *IValSetDriverSetKeysProviderIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IValSetDriverSetKeysProvider)
+			it.Event = new(ValSetDriverSetKeysProvider)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -3363,7 +3581,7 @@ func (it *IValSetDriverSetKeysProviderIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IValSetDriverSetKeysProvider)
+		it.Event = new(ValSetDriverSetKeysProvider)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -3379,19 +3597,19 @@ func (it *IValSetDriverSetKeysProviderIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IValSetDriverSetKeysProviderIterator) Error() error {
+func (it *ValSetDriverSetKeysProviderIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IValSetDriverSetKeysProviderIterator) Close() error {
+func (it *ValSetDriverSetKeysProviderIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IValSetDriverSetKeysProvider represents a SetKeysProvider event raised by the IValSetDriver contract.
-type IValSetDriverSetKeysProvider struct {
+// ValSetDriverSetKeysProvider represents a SetKeysProvider event raised by the ValSetDriver contract.
+type ValSetDriverSetKeysProvider struct {
 	KeysProvider IValSetDriverCrossChainAddress
 	Raw          types.Log // Blockchain specific contextual infos
 }
@@ -3399,21 +3617,21 @@ type IValSetDriverSetKeysProvider struct {
 // FilterSetKeysProvider is a free log retrieval operation binding the contract event 0x15ceb492f5dd0988720d5f2258f4de98a2ac5df85b25ed2f33eda91e90e07321.
 //
 // Solidity: event SetKeysProvider((uint64,address) keysProvider)
-func (_IValSetDriver *IValSetDriverFilterer) FilterSetKeysProvider(opts *bind.FilterOpts) (*IValSetDriverSetKeysProviderIterator, error) {
+func (_ValSetDriver *ValSetDriverFilterer) FilterSetKeysProvider(opts *bind.FilterOpts) (*ValSetDriverSetKeysProviderIterator, error) {
 
-	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "SetKeysProvider")
+	logs, sub, err := _ValSetDriver.contract.FilterLogs(opts, "SetKeysProvider")
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverSetKeysProviderIterator{contract: _IValSetDriver.contract, event: "SetKeysProvider", logs: logs, sub: sub}, nil
+	return &ValSetDriverSetKeysProviderIterator{contract: _ValSetDriver.contract, event: "SetKeysProvider", logs: logs, sub: sub}, nil
 }
 
 // WatchSetKeysProvider is a free log subscription operation binding the contract event 0x15ceb492f5dd0988720d5f2258f4de98a2ac5df85b25ed2f33eda91e90e07321.
 //
 // Solidity: event SetKeysProvider((uint64,address) keysProvider)
-func (_IValSetDriver *IValSetDriverFilterer) WatchSetKeysProvider(opts *bind.WatchOpts, sink chan<- *IValSetDriverSetKeysProvider) (event.Subscription, error) {
+func (_ValSetDriver *ValSetDriverFilterer) WatchSetKeysProvider(opts *bind.WatchOpts, sink chan<- *ValSetDriverSetKeysProvider) (event.Subscription, error) {
 
-	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "SetKeysProvider")
+	logs, sub, err := _ValSetDriver.contract.WatchLogs(opts, "SetKeysProvider")
 	if err != nil {
 		return nil, err
 	}
@@ -3423,8 +3641,8 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchSetKeysProvider(opts *bind.Wat
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IValSetDriverSetKeysProvider)
-				if err := _IValSetDriver.contract.UnpackLog(event, "SetKeysProvider", log); err != nil {
+				event := new(ValSetDriverSetKeysProvider)
+				if err := _ValSetDriver.contract.UnpackLog(event, "SetKeysProvider", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -3448,18 +3666,18 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchSetKeysProvider(opts *bind.Wat
 // ParseSetKeysProvider is a log parse operation binding the contract event 0x15ceb492f5dd0988720d5f2258f4de98a2ac5df85b25ed2f33eda91e90e07321.
 //
 // Solidity: event SetKeysProvider((uint64,address) keysProvider)
-func (_IValSetDriver *IValSetDriverFilterer) ParseSetKeysProvider(log types.Log) (*IValSetDriverSetKeysProvider, error) {
-	event := new(IValSetDriverSetKeysProvider)
-	if err := _IValSetDriver.contract.UnpackLog(event, "SetKeysProvider", log); err != nil {
+func (_ValSetDriver *ValSetDriverFilterer) ParseSetKeysProvider(log types.Log) (*ValSetDriverSetKeysProvider, error) {
+	event := new(ValSetDriverSetKeysProvider)
+	if err := _ValSetDriver.contract.UnpackLog(event, "SetKeysProvider", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// IValSetDriverSetMaxValidatorsCountIterator is returned from FilterSetMaxValidatorsCount and is used to iterate over the raw logs and unpacked data for SetMaxValidatorsCount events raised by the IValSetDriver contract.
-type IValSetDriverSetMaxValidatorsCountIterator struct {
-	Event *IValSetDriverSetMaxValidatorsCount // Event containing the contract specifics and raw log
+// ValSetDriverSetMaxValidatorsCountIterator is returned from FilterSetMaxValidatorsCount and is used to iterate over the raw logs and unpacked data for SetMaxValidatorsCount events raised by the ValSetDriver contract.
+type ValSetDriverSetMaxValidatorsCountIterator struct {
+	Event *ValSetDriverSetMaxValidatorsCount // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -3473,7 +3691,7 @@ type IValSetDriverSetMaxValidatorsCountIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IValSetDriverSetMaxValidatorsCountIterator) Next() bool {
+func (it *ValSetDriverSetMaxValidatorsCountIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -3482,7 +3700,7 @@ func (it *IValSetDriverSetMaxValidatorsCountIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IValSetDriverSetMaxValidatorsCount)
+			it.Event = new(ValSetDriverSetMaxValidatorsCount)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -3497,7 +3715,7 @@ func (it *IValSetDriverSetMaxValidatorsCountIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IValSetDriverSetMaxValidatorsCount)
+		it.Event = new(ValSetDriverSetMaxValidatorsCount)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -3513,19 +3731,19 @@ func (it *IValSetDriverSetMaxValidatorsCountIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IValSetDriverSetMaxValidatorsCountIterator) Error() error {
+func (it *ValSetDriverSetMaxValidatorsCountIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IValSetDriverSetMaxValidatorsCountIterator) Close() error {
+func (it *ValSetDriverSetMaxValidatorsCountIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IValSetDriverSetMaxValidatorsCount represents a SetMaxValidatorsCount event raised by the IValSetDriver contract.
-type IValSetDriverSetMaxValidatorsCount struct {
+// ValSetDriverSetMaxValidatorsCount represents a SetMaxValidatorsCount event raised by the ValSetDriver contract.
+type ValSetDriverSetMaxValidatorsCount struct {
 	MaxValidatorsCount *big.Int
 	Raw                types.Log // Blockchain specific contextual infos
 }
@@ -3533,21 +3751,21 @@ type IValSetDriverSetMaxValidatorsCount struct {
 // FilterSetMaxValidatorsCount is a free log retrieval operation binding the contract event 0x37ca3532b507cfa33b11765ae8b499cb6830421b982a7f8837ee71ca5a3119c8.
 //
 // Solidity: event SetMaxValidatorsCount(uint208 maxValidatorsCount)
-func (_IValSetDriver *IValSetDriverFilterer) FilterSetMaxValidatorsCount(opts *bind.FilterOpts) (*IValSetDriverSetMaxValidatorsCountIterator, error) {
+func (_ValSetDriver *ValSetDriverFilterer) FilterSetMaxValidatorsCount(opts *bind.FilterOpts) (*ValSetDriverSetMaxValidatorsCountIterator, error) {
 
-	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "SetMaxValidatorsCount")
+	logs, sub, err := _ValSetDriver.contract.FilterLogs(opts, "SetMaxValidatorsCount")
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverSetMaxValidatorsCountIterator{contract: _IValSetDriver.contract, event: "SetMaxValidatorsCount", logs: logs, sub: sub}, nil
+	return &ValSetDriverSetMaxValidatorsCountIterator{contract: _ValSetDriver.contract, event: "SetMaxValidatorsCount", logs: logs, sub: sub}, nil
 }
 
 // WatchSetMaxValidatorsCount is a free log subscription operation binding the contract event 0x37ca3532b507cfa33b11765ae8b499cb6830421b982a7f8837ee71ca5a3119c8.
 //
 // Solidity: event SetMaxValidatorsCount(uint208 maxValidatorsCount)
-func (_IValSetDriver *IValSetDriverFilterer) WatchSetMaxValidatorsCount(opts *bind.WatchOpts, sink chan<- *IValSetDriverSetMaxValidatorsCount) (event.Subscription, error) {
+func (_ValSetDriver *ValSetDriverFilterer) WatchSetMaxValidatorsCount(opts *bind.WatchOpts, sink chan<- *ValSetDriverSetMaxValidatorsCount) (event.Subscription, error) {
 
-	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "SetMaxValidatorsCount")
+	logs, sub, err := _ValSetDriver.contract.WatchLogs(opts, "SetMaxValidatorsCount")
 	if err != nil {
 		return nil, err
 	}
@@ -3557,8 +3775,8 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchSetMaxValidatorsCount(opts *bi
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IValSetDriverSetMaxValidatorsCount)
-				if err := _IValSetDriver.contract.UnpackLog(event, "SetMaxValidatorsCount", log); err != nil {
+				event := new(ValSetDriverSetMaxValidatorsCount)
+				if err := _ValSetDriver.contract.UnpackLog(event, "SetMaxValidatorsCount", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -3582,18 +3800,18 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchSetMaxValidatorsCount(opts *bi
 // ParseSetMaxValidatorsCount is a log parse operation binding the contract event 0x37ca3532b507cfa33b11765ae8b499cb6830421b982a7f8837ee71ca5a3119c8.
 //
 // Solidity: event SetMaxValidatorsCount(uint208 maxValidatorsCount)
-func (_IValSetDriver *IValSetDriverFilterer) ParseSetMaxValidatorsCount(log types.Log) (*IValSetDriverSetMaxValidatorsCount, error) {
-	event := new(IValSetDriverSetMaxValidatorsCount)
-	if err := _IValSetDriver.contract.UnpackLog(event, "SetMaxValidatorsCount", log); err != nil {
+func (_ValSetDriver *ValSetDriverFilterer) ParseSetMaxValidatorsCount(log types.Log) (*ValSetDriverSetMaxValidatorsCount, error) {
+	event := new(ValSetDriverSetMaxValidatorsCount)
+	if err := _ValSetDriver.contract.UnpackLog(event, "SetMaxValidatorsCount", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// IValSetDriverSetMaxVotingPowerIterator is returned from FilterSetMaxVotingPower and is used to iterate over the raw logs and unpacked data for SetMaxVotingPower events raised by the IValSetDriver contract.
-type IValSetDriverSetMaxVotingPowerIterator struct {
-	Event *IValSetDriverSetMaxVotingPower // Event containing the contract specifics and raw log
+// ValSetDriverSetMaxVotingPowerIterator is returned from FilterSetMaxVotingPower and is used to iterate over the raw logs and unpacked data for SetMaxVotingPower events raised by the ValSetDriver contract.
+type ValSetDriverSetMaxVotingPowerIterator struct {
+	Event *ValSetDriverSetMaxVotingPower // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -3607,7 +3825,7 @@ type IValSetDriverSetMaxVotingPowerIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IValSetDriverSetMaxVotingPowerIterator) Next() bool {
+func (it *ValSetDriverSetMaxVotingPowerIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -3616,7 +3834,7 @@ func (it *IValSetDriverSetMaxVotingPowerIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IValSetDriverSetMaxVotingPower)
+			it.Event = new(ValSetDriverSetMaxVotingPower)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -3631,7 +3849,7 @@ func (it *IValSetDriverSetMaxVotingPowerIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IValSetDriverSetMaxVotingPower)
+		it.Event = new(ValSetDriverSetMaxVotingPower)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -3647,19 +3865,19 @@ func (it *IValSetDriverSetMaxVotingPowerIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IValSetDriverSetMaxVotingPowerIterator) Error() error {
+func (it *ValSetDriverSetMaxVotingPowerIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IValSetDriverSetMaxVotingPowerIterator) Close() error {
+func (it *ValSetDriverSetMaxVotingPowerIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IValSetDriverSetMaxVotingPower represents a SetMaxVotingPower event raised by the IValSetDriver contract.
-type IValSetDriverSetMaxVotingPower struct {
+// ValSetDriverSetMaxVotingPower represents a SetMaxVotingPower event raised by the ValSetDriver contract.
+type ValSetDriverSetMaxVotingPower struct {
 	MaxVotingPower *big.Int
 	Raw            types.Log // Blockchain specific contextual infos
 }
@@ -3667,21 +3885,21 @@ type IValSetDriverSetMaxVotingPower struct {
 // FilterSetMaxVotingPower is a free log retrieval operation binding the contract event 0xe891886eac9e583940fb0844098689693a4d105206ec1f789d119b4314383b95.
 //
 // Solidity: event SetMaxVotingPower(uint256 maxVotingPower)
-func (_IValSetDriver *IValSetDriverFilterer) FilterSetMaxVotingPower(opts *bind.FilterOpts) (*IValSetDriverSetMaxVotingPowerIterator, error) {
+func (_ValSetDriver *ValSetDriverFilterer) FilterSetMaxVotingPower(opts *bind.FilterOpts) (*ValSetDriverSetMaxVotingPowerIterator, error) {
 
-	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "SetMaxVotingPower")
+	logs, sub, err := _ValSetDriver.contract.FilterLogs(opts, "SetMaxVotingPower")
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverSetMaxVotingPowerIterator{contract: _IValSetDriver.contract, event: "SetMaxVotingPower", logs: logs, sub: sub}, nil
+	return &ValSetDriverSetMaxVotingPowerIterator{contract: _ValSetDriver.contract, event: "SetMaxVotingPower", logs: logs, sub: sub}, nil
 }
 
 // WatchSetMaxVotingPower is a free log subscription operation binding the contract event 0xe891886eac9e583940fb0844098689693a4d105206ec1f789d119b4314383b95.
 //
 // Solidity: event SetMaxVotingPower(uint256 maxVotingPower)
-func (_IValSetDriver *IValSetDriverFilterer) WatchSetMaxVotingPower(opts *bind.WatchOpts, sink chan<- *IValSetDriverSetMaxVotingPower) (event.Subscription, error) {
+func (_ValSetDriver *ValSetDriverFilterer) WatchSetMaxVotingPower(opts *bind.WatchOpts, sink chan<- *ValSetDriverSetMaxVotingPower) (event.Subscription, error) {
 
-	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "SetMaxVotingPower")
+	logs, sub, err := _ValSetDriver.contract.WatchLogs(opts, "SetMaxVotingPower")
 	if err != nil {
 		return nil, err
 	}
@@ -3691,8 +3909,8 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchSetMaxVotingPower(opts *bind.W
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IValSetDriverSetMaxVotingPower)
-				if err := _IValSetDriver.contract.UnpackLog(event, "SetMaxVotingPower", log); err != nil {
+				event := new(ValSetDriverSetMaxVotingPower)
+				if err := _ValSetDriver.contract.UnpackLog(event, "SetMaxVotingPower", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -3716,18 +3934,18 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchSetMaxVotingPower(opts *bind.W
 // ParseSetMaxVotingPower is a log parse operation binding the contract event 0xe891886eac9e583940fb0844098689693a4d105206ec1f789d119b4314383b95.
 //
 // Solidity: event SetMaxVotingPower(uint256 maxVotingPower)
-func (_IValSetDriver *IValSetDriverFilterer) ParseSetMaxVotingPower(log types.Log) (*IValSetDriverSetMaxVotingPower, error) {
-	event := new(IValSetDriverSetMaxVotingPower)
-	if err := _IValSetDriver.contract.UnpackLog(event, "SetMaxVotingPower", log); err != nil {
+func (_ValSetDriver *ValSetDriverFilterer) ParseSetMaxVotingPower(log types.Log) (*ValSetDriverSetMaxVotingPower, error) {
+	event := new(ValSetDriverSetMaxVotingPower)
+	if err := _ValSetDriver.contract.UnpackLog(event, "SetMaxVotingPower", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// IValSetDriverSetMinInclusionVotingPowerIterator is returned from FilterSetMinInclusionVotingPower and is used to iterate over the raw logs and unpacked data for SetMinInclusionVotingPower events raised by the IValSetDriver contract.
-type IValSetDriverSetMinInclusionVotingPowerIterator struct {
-	Event *IValSetDriverSetMinInclusionVotingPower // Event containing the contract specifics and raw log
+// ValSetDriverSetMinInclusionVotingPowerIterator is returned from FilterSetMinInclusionVotingPower and is used to iterate over the raw logs and unpacked data for SetMinInclusionVotingPower events raised by the ValSetDriver contract.
+type ValSetDriverSetMinInclusionVotingPowerIterator struct {
+	Event *ValSetDriverSetMinInclusionVotingPower // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -3741,7 +3959,7 @@ type IValSetDriverSetMinInclusionVotingPowerIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IValSetDriverSetMinInclusionVotingPowerIterator) Next() bool {
+func (it *ValSetDriverSetMinInclusionVotingPowerIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -3750,7 +3968,7 @@ func (it *IValSetDriverSetMinInclusionVotingPowerIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IValSetDriverSetMinInclusionVotingPower)
+			it.Event = new(ValSetDriverSetMinInclusionVotingPower)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -3765,7 +3983,7 @@ func (it *IValSetDriverSetMinInclusionVotingPowerIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IValSetDriverSetMinInclusionVotingPower)
+		it.Event = new(ValSetDriverSetMinInclusionVotingPower)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -3781,19 +3999,19 @@ func (it *IValSetDriverSetMinInclusionVotingPowerIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IValSetDriverSetMinInclusionVotingPowerIterator) Error() error {
+func (it *ValSetDriverSetMinInclusionVotingPowerIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IValSetDriverSetMinInclusionVotingPowerIterator) Close() error {
+func (it *ValSetDriverSetMinInclusionVotingPowerIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IValSetDriverSetMinInclusionVotingPower represents a SetMinInclusionVotingPower event raised by the IValSetDriver contract.
-type IValSetDriverSetMinInclusionVotingPower struct {
+// ValSetDriverSetMinInclusionVotingPower represents a SetMinInclusionVotingPower event raised by the ValSetDriver contract.
+type ValSetDriverSetMinInclusionVotingPower struct {
 	MinInclusionVotingPower *big.Int
 	Raw                     types.Log // Blockchain specific contextual infos
 }
@@ -3801,21 +4019,21 @@ type IValSetDriverSetMinInclusionVotingPower struct {
 // FilterSetMinInclusionVotingPower is a free log retrieval operation binding the contract event 0x7ea1f11872caff0567f050bd06f29f128a1407e56e3272abbadef87f6cbb6188.
 //
 // Solidity: event SetMinInclusionVotingPower(uint256 minInclusionVotingPower)
-func (_IValSetDriver *IValSetDriverFilterer) FilterSetMinInclusionVotingPower(opts *bind.FilterOpts) (*IValSetDriverSetMinInclusionVotingPowerIterator, error) {
+func (_ValSetDriver *ValSetDriverFilterer) FilterSetMinInclusionVotingPower(opts *bind.FilterOpts) (*ValSetDriverSetMinInclusionVotingPowerIterator, error) {
 
-	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "SetMinInclusionVotingPower")
+	logs, sub, err := _ValSetDriver.contract.FilterLogs(opts, "SetMinInclusionVotingPower")
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverSetMinInclusionVotingPowerIterator{contract: _IValSetDriver.contract, event: "SetMinInclusionVotingPower", logs: logs, sub: sub}, nil
+	return &ValSetDriverSetMinInclusionVotingPowerIterator{contract: _ValSetDriver.contract, event: "SetMinInclusionVotingPower", logs: logs, sub: sub}, nil
 }
 
 // WatchSetMinInclusionVotingPower is a free log subscription operation binding the contract event 0x7ea1f11872caff0567f050bd06f29f128a1407e56e3272abbadef87f6cbb6188.
 //
 // Solidity: event SetMinInclusionVotingPower(uint256 minInclusionVotingPower)
-func (_IValSetDriver *IValSetDriverFilterer) WatchSetMinInclusionVotingPower(opts *bind.WatchOpts, sink chan<- *IValSetDriverSetMinInclusionVotingPower) (event.Subscription, error) {
+func (_ValSetDriver *ValSetDriverFilterer) WatchSetMinInclusionVotingPower(opts *bind.WatchOpts, sink chan<- *ValSetDriverSetMinInclusionVotingPower) (event.Subscription, error) {
 
-	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "SetMinInclusionVotingPower")
+	logs, sub, err := _ValSetDriver.contract.WatchLogs(opts, "SetMinInclusionVotingPower")
 	if err != nil {
 		return nil, err
 	}
@@ -3825,8 +4043,8 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchSetMinInclusionVotingPower(opt
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IValSetDriverSetMinInclusionVotingPower)
-				if err := _IValSetDriver.contract.UnpackLog(event, "SetMinInclusionVotingPower", log); err != nil {
+				event := new(ValSetDriverSetMinInclusionVotingPower)
+				if err := _ValSetDriver.contract.UnpackLog(event, "SetMinInclusionVotingPower", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -3850,18 +4068,18 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchSetMinInclusionVotingPower(opt
 // ParseSetMinInclusionVotingPower is a log parse operation binding the contract event 0x7ea1f11872caff0567f050bd06f29f128a1407e56e3272abbadef87f6cbb6188.
 //
 // Solidity: event SetMinInclusionVotingPower(uint256 minInclusionVotingPower)
-func (_IValSetDriver *IValSetDriverFilterer) ParseSetMinInclusionVotingPower(log types.Log) (*IValSetDriverSetMinInclusionVotingPower, error) {
-	event := new(IValSetDriverSetMinInclusionVotingPower)
-	if err := _IValSetDriver.contract.UnpackLog(event, "SetMinInclusionVotingPower", log); err != nil {
+func (_ValSetDriver *ValSetDriverFilterer) ParseSetMinInclusionVotingPower(log types.Log) (*ValSetDriverSetMinInclusionVotingPower, error) {
+	event := new(ValSetDriverSetMinInclusionVotingPower)
+	if err := _ValSetDriver.contract.UnpackLog(event, "SetMinInclusionVotingPower", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// IValSetDriverSetNumAggregatorsIterator is returned from FilterSetNumAggregators and is used to iterate over the raw logs and unpacked data for SetNumAggregators events raised by the IValSetDriver contract.
-type IValSetDriverSetNumAggregatorsIterator struct {
-	Event *IValSetDriverSetNumAggregators // Event containing the contract specifics and raw log
+// ValSetDriverSetNumAggregatorsIterator is returned from FilterSetNumAggregators and is used to iterate over the raw logs and unpacked data for SetNumAggregators events raised by the ValSetDriver contract.
+type ValSetDriverSetNumAggregatorsIterator struct {
+	Event *ValSetDriverSetNumAggregators // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -3875,7 +4093,7 @@ type IValSetDriverSetNumAggregatorsIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IValSetDriverSetNumAggregatorsIterator) Next() bool {
+func (it *ValSetDriverSetNumAggregatorsIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -3884,7 +4102,7 @@ func (it *IValSetDriverSetNumAggregatorsIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IValSetDriverSetNumAggregators)
+			it.Event = new(ValSetDriverSetNumAggregators)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -3899,7 +4117,7 @@ func (it *IValSetDriverSetNumAggregatorsIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IValSetDriverSetNumAggregators)
+		it.Event = new(ValSetDriverSetNumAggregators)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -3915,19 +4133,19 @@ func (it *IValSetDriverSetNumAggregatorsIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IValSetDriverSetNumAggregatorsIterator) Error() error {
+func (it *ValSetDriverSetNumAggregatorsIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IValSetDriverSetNumAggregatorsIterator) Close() error {
+func (it *ValSetDriverSetNumAggregatorsIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IValSetDriverSetNumAggregators represents a SetNumAggregators event raised by the IValSetDriver contract.
-type IValSetDriverSetNumAggregators struct {
+// ValSetDriverSetNumAggregators represents a SetNumAggregators event raised by the ValSetDriver contract.
+type ValSetDriverSetNumAggregators struct {
 	NumAggregators *big.Int
 	Raw            types.Log // Blockchain specific contextual infos
 }
@@ -3935,21 +4153,21 @@ type IValSetDriverSetNumAggregators struct {
 // FilterSetNumAggregators is a free log retrieval operation binding the contract event 0xa47e6808a463c6134cf3bb23d54ee0ccb5c8056ab8c8b5fd5277fc83cc2f25f3.
 //
 // Solidity: event SetNumAggregators(uint208 numAggregators)
-func (_IValSetDriver *IValSetDriverFilterer) FilterSetNumAggregators(opts *bind.FilterOpts) (*IValSetDriverSetNumAggregatorsIterator, error) {
+func (_ValSetDriver *ValSetDriverFilterer) FilterSetNumAggregators(opts *bind.FilterOpts) (*ValSetDriverSetNumAggregatorsIterator, error) {
 
-	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "SetNumAggregators")
+	logs, sub, err := _ValSetDriver.contract.FilterLogs(opts, "SetNumAggregators")
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverSetNumAggregatorsIterator{contract: _IValSetDriver.contract, event: "SetNumAggregators", logs: logs, sub: sub}, nil
+	return &ValSetDriverSetNumAggregatorsIterator{contract: _ValSetDriver.contract, event: "SetNumAggregators", logs: logs, sub: sub}, nil
 }
 
 // WatchSetNumAggregators is a free log subscription operation binding the contract event 0xa47e6808a463c6134cf3bb23d54ee0ccb5c8056ab8c8b5fd5277fc83cc2f25f3.
 //
 // Solidity: event SetNumAggregators(uint208 numAggregators)
-func (_IValSetDriver *IValSetDriverFilterer) WatchSetNumAggregators(opts *bind.WatchOpts, sink chan<- *IValSetDriverSetNumAggregators) (event.Subscription, error) {
+func (_ValSetDriver *ValSetDriverFilterer) WatchSetNumAggregators(opts *bind.WatchOpts, sink chan<- *ValSetDriverSetNumAggregators) (event.Subscription, error) {
 
-	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "SetNumAggregators")
+	logs, sub, err := _ValSetDriver.contract.WatchLogs(opts, "SetNumAggregators")
 	if err != nil {
 		return nil, err
 	}
@@ -3959,8 +4177,8 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchSetNumAggregators(opts *bind.W
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IValSetDriverSetNumAggregators)
-				if err := _IValSetDriver.contract.UnpackLog(event, "SetNumAggregators", log); err != nil {
+				event := new(ValSetDriverSetNumAggregators)
+				if err := _ValSetDriver.contract.UnpackLog(event, "SetNumAggregators", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -3984,18 +4202,18 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchSetNumAggregators(opts *bind.W
 // ParseSetNumAggregators is a log parse operation binding the contract event 0xa47e6808a463c6134cf3bb23d54ee0ccb5c8056ab8c8b5fd5277fc83cc2f25f3.
 //
 // Solidity: event SetNumAggregators(uint208 numAggregators)
-func (_IValSetDriver *IValSetDriverFilterer) ParseSetNumAggregators(log types.Log) (*IValSetDriverSetNumAggregators, error) {
-	event := new(IValSetDriverSetNumAggregators)
-	if err := _IValSetDriver.contract.UnpackLog(event, "SetNumAggregators", log); err != nil {
+func (_ValSetDriver *ValSetDriverFilterer) ParseSetNumAggregators(log types.Log) (*ValSetDriverSetNumAggregators, error) {
+	event := new(ValSetDriverSetNumAggregators)
+	if err := _ValSetDriver.contract.UnpackLog(event, "SetNumAggregators", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// IValSetDriverSetNumCommittersIterator is returned from FilterSetNumCommitters and is used to iterate over the raw logs and unpacked data for SetNumCommitters events raised by the IValSetDriver contract.
-type IValSetDriverSetNumCommittersIterator struct {
-	Event *IValSetDriverSetNumCommitters // Event containing the contract specifics and raw log
+// ValSetDriverSetNumCommittersIterator is returned from FilterSetNumCommitters and is used to iterate over the raw logs and unpacked data for SetNumCommitters events raised by the ValSetDriver contract.
+type ValSetDriverSetNumCommittersIterator struct {
+	Event *ValSetDriverSetNumCommitters // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -4009,7 +4227,7 @@ type IValSetDriverSetNumCommittersIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IValSetDriverSetNumCommittersIterator) Next() bool {
+func (it *ValSetDriverSetNumCommittersIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -4018,7 +4236,7 @@ func (it *IValSetDriverSetNumCommittersIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IValSetDriverSetNumCommitters)
+			it.Event = new(ValSetDriverSetNumCommitters)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -4033,7 +4251,7 @@ func (it *IValSetDriverSetNumCommittersIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IValSetDriverSetNumCommitters)
+		it.Event = new(ValSetDriverSetNumCommitters)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -4049,19 +4267,19 @@ func (it *IValSetDriverSetNumCommittersIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IValSetDriverSetNumCommittersIterator) Error() error {
+func (it *ValSetDriverSetNumCommittersIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IValSetDriverSetNumCommittersIterator) Close() error {
+func (it *ValSetDriverSetNumCommittersIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IValSetDriverSetNumCommitters represents a SetNumCommitters event raised by the IValSetDriver contract.
-type IValSetDriverSetNumCommitters struct {
+// ValSetDriverSetNumCommitters represents a SetNumCommitters event raised by the ValSetDriver contract.
+type ValSetDriverSetNumCommitters struct {
 	NumCommitters *big.Int
 	Raw           types.Log // Blockchain specific contextual infos
 }
@@ -4069,21 +4287,21 @@ type IValSetDriverSetNumCommitters struct {
 // FilterSetNumCommitters is a free log retrieval operation binding the contract event 0x931a819f63102a134c17aeb8b67a254fc3e215c35487041ff43fd3225b272b5f.
 //
 // Solidity: event SetNumCommitters(uint208 numCommitters)
-func (_IValSetDriver *IValSetDriverFilterer) FilterSetNumCommitters(opts *bind.FilterOpts) (*IValSetDriverSetNumCommittersIterator, error) {
+func (_ValSetDriver *ValSetDriverFilterer) FilterSetNumCommitters(opts *bind.FilterOpts) (*ValSetDriverSetNumCommittersIterator, error) {
 
-	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "SetNumCommitters")
+	logs, sub, err := _ValSetDriver.contract.FilterLogs(opts, "SetNumCommitters")
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverSetNumCommittersIterator{contract: _IValSetDriver.contract, event: "SetNumCommitters", logs: logs, sub: sub}, nil
+	return &ValSetDriverSetNumCommittersIterator{contract: _ValSetDriver.contract, event: "SetNumCommitters", logs: logs, sub: sub}, nil
 }
 
 // WatchSetNumCommitters is a free log subscription operation binding the contract event 0x931a819f63102a134c17aeb8b67a254fc3e215c35487041ff43fd3225b272b5f.
 //
 // Solidity: event SetNumCommitters(uint208 numCommitters)
-func (_IValSetDriver *IValSetDriverFilterer) WatchSetNumCommitters(opts *bind.WatchOpts, sink chan<- *IValSetDriverSetNumCommitters) (event.Subscription, error) {
+func (_ValSetDriver *ValSetDriverFilterer) WatchSetNumCommitters(opts *bind.WatchOpts, sink chan<- *ValSetDriverSetNumCommitters) (event.Subscription, error) {
 
-	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "SetNumCommitters")
+	logs, sub, err := _ValSetDriver.contract.WatchLogs(opts, "SetNumCommitters")
 	if err != nil {
 		return nil, err
 	}
@@ -4093,8 +4311,8 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchSetNumCommitters(opts *bind.Wa
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IValSetDriverSetNumCommitters)
-				if err := _IValSetDriver.contract.UnpackLog(event, "SetNumCommitters", log); err != nil {
+				event := new(ValSetDriverSetNumCommitters)
+				if err := _ValSetDriver.contract.UnpackLog(event, "SetNumCommitters", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -4118,18 +4336,18 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchSetNumCommitters(opts *bind.Wa
 // ParseSetNumCommitters is a log parse operation binding the contract event 0x931a819f63102a134c17aeb8b67a254fc3e215c35487041ff43fd3225b272b5f.
 //
 // Solidity: event SetNumCommitters(uint208 numCommitters)
-func (_IValSetDriver *IValSetDriverFilterer) ParseSetNumCommitters(log types.Log) (*IValSetDriverSetNumCommitters, error) {
-	event := new(IValSetDriverSetNumCommitters)
-	if err := _IValSetDriver.contract.UnpackLog(event, "SetNumCommitters", log); err != nil {
+func (_ValSetDriver *ValSetDriverFilterer) ParseSetNumCommitters(log types.Log) (*ValSetDriverSetNumCommitters, error) {
+	event := new(ValSetDriverSetNumCommitters)
+	if err := _ValSetDriver.contract.UnpackLog(event, "SetNumCommitters", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// IValSetDriverSetRequiredHeaderKeyTagIterator is returned from FilterSetRequiredHeaderKeyTag and is used to iterate over the raw logs and unpacked data for SetRequiredHeaderKeyTag events raised by the IValSetDriver contract.
-type IValSetDriverSetRequiredHeaderKeyTagIterator struct {
-	Event *IValSetDriverSetRequiredHeaderKeyTag // Event containing the contract specifics and raw log
+// ValSetDriverSetRequiredHeaderKeyTagIterator is returned from FilterSetRequiredHeaderKeyTag and is used to iterate over the raw logs and unpacked data for SetRequiredHeaderKeyTag events raised by the ValSetDriver contract.
+type ValSetDriverSetRequiredHeaderKeyTagIterator struct {
+	Event *ValSetDriverSetRequiredHeaderKeyTag // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -4143,7 +4361,7 @@ type IValSetDriverSetRequiredHeaderKeyTagIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IValSetDriverSetRequiredHeaderKeyTagIterator) Next() bool {
+func (it *ValSetDriverSetRequiredHeaderKeyTagIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -4152,7 +4370,7 @@ func (it *IValSetDriverSetRequiredHeaderKeyTagIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IValSetDriverSetRequiredHeaderKeyTag)
+			it.Event = new(ValSetDriverSetRequiredHeaderKeyTag)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -4167,7 +4385,7 @@ func (it *IValSetDriverSetRequiredHeaderKeyTagIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IValSetDriverSetRequiredHeaderKeyTag)
+		it.Event = new(ValSetDriverSetRequiredHeaderKeyTag)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -4183,19 +4401,19 @@ func (it *IValSetDriverSetRequiredHeaderKeyTagIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IValSetDriverSetRequiredHeaderKeyTagIterator) Error() error {
+func (it *ValSetDriverSetRequiredHeaderKeyTagIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IValSetDriverSetRequiredHeaderKeyTagIterator) Close() error {
+func (it *ValSetDriverSetRequiredHeaderKeyTagIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IValSetDriverSetRequiredHeaderKeyTag represents a SetRequiredHeaderKeyTag event raised by the IValSetDriver contract.
-type IValSetDriverSetRequiredHeaderKeyTag struct {
+// ValSetDriverSetRequiredHeaderKeyTag represents a SetRequiredHeaderKeyTag event raised by the ValSetDriver contract.
+type ValSetDriverSetRequiredHeaderKeyTag struct {
 	RequiredHeaderKeyTag uint8
 	Raw                  types.Log // Blockchain specific contextual infos
 }
@@ -4203,21 +4421,21 @@ type IValSetDriverSetRequiredHeaderKeyTag struct {
 // FilterSetRequiredHeaderKeyTag is a free log retrieval operation binding the contract event 0xba7887224500eabdaa5bddd0e0210aec811345379939ffbbc4bc87bdfb673b70.
 //
 // Solidity: event SetRequiredHeaderKeyTag(uint8 requiredHeaderKeyTag)
-func (_IValSetDriver *IValSetDriverFilterer) FilterSetRequiredHeaderKeyTag(opts *bind.FilterOpts) (*IValSetDriverSetRequiredHeaderKeyTagIterator, error) {
+func (_ValSetDriver *ValSetDriverFilterer) FilterSetRequiredHeaderKeyTag(opts *bind.FilterOpts) (*ValSetDriverSetRequiredHeaderKeyTagIterator, error) {
 
-	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "SetRequiredHeaderKeyTag")
+	logs, sub, err := _ValSetDriver.contract.FilterLogs(opts, "SetRequiredHeaderKeyTag")
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverSetRequiredHeaderKeyTagIterator{contract: _IValSetDriver.contract, event: "SetRequiredHeaderKeyTag", logs: logs, sub: sub}, nil
+	return &ValSetDriverSetRequiredHeaderKeyTagIterator{contract: _ValSetDriver.contract, event: "SetRequiredHeaderKeyTag", logs: logs, sub: sub}, nil
 }
 
 // WatchSetRequiredHeaderKeyTag is a free log subscription operation binding the contract event 0xba7887224500eabdaa5bddd0e0210aec811345379939ffbbc4bc87bdfb673b70.
 //
 // Solidity: event SetRequiredHeaderKeyTag(uint8 requiredHeaderKeyTag)
-func (_IValSetDriver *IValSetDriverFilterer) WatchSetRequiredHeaderKeyTag(opts *bind.WatchOpts, sink chan<- *IValSetDriverSetRequiredHeaderKeyTag) (event.Subscription, error) {
+func (_ValSetDriver *ValSetDriverFilterer) WatchSetRequiredHeaderKeyTag(opts *bind.WatchOpts, sink chan<- *ValSetDriverSetRequiredHeaderKeyTag) (event.Subscription, error) {
 
-	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "SetRequiredHeaderKeyTag")
+	logs, sub, err := _ValSetDriver.contract.WatchLogs(opts, "SetRequiredHeaderKeyTag")
 	if err != nil {
 		return nil, err
 	}
@@ -4227,8 +4445,8 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchSetRequiredHeaderKeyTag(opts *
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IValSetDriverSetRequiredHeaderKeyTag)
-				if err := _IValSetDriver.contract.UnpackLog(event, "SetRequiredHeaderKeyTag", log); err != nil {
+				event := new(ValSetDriverSetRequiredHeaderKeyTag)
+				if err := _ValSetDriver.contract.UnpackLog(event, "SetRequiredHeaderKeyTag", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -4252,18 +4470,18 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchSetRequiredHeaderKeyTag(opts *
 // ParseSetRequiredHeaderKeyTag is a log parse operation binding the contract event 0xba7887224500eabdaa5bddd0e0210aec811345379939ffbbc4bc87bdfb673b70.
 //
 // Solidity: event SetRequiredHeaderKeyTag(uint8 requiredHeaderKeyTag)
-func (_IValSetDriver *IValSetDriverFilterer) ParseSetRequiredHeaderKeyTag(log types.Log) (*IValSetDriverSetRequiredHeaderKeyTag, error) {
-	event := new(IValSetDriverSetRequiredHeaderKeyTag)
-	if err := _IValSetDriver.contract.UnpackLog(event, "SetRequiredHeaderKeyTag", log); err != nil {
+func (_ValSetDriver *ValSetDriverFilterer) ParseSetRequiredHeaderKeyTag(log types.Log) (*ValSetDriverSetRequiredHeaderKeyTag, error) {
+	event := new(ValSetDriverSetRequiredHeaderKeyTag)
+	if err := _ValSetDriver.contract.UnpackLog(event, "SetRequiredHeaderKeyTag", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// IValSetDriverSetRequiredKeyTagsIterator is returned from FilterSetRequiredKeyTags and is used to iterate over the raw logs and unpacked data for SetRequiredKeyTags events raised by the IValSetDriver contract.
-type IValSetDriverSetRequiredKeyTagsIterator struct {
-	Event *IValSetDriverSetRequiredKeyTags // Event containing the contract specifics and raw log
+// ValSetDriverSetRequiredKeyTagsIterator is returned from FilterSetRequiredKeyTags and is used to iterate over the raw logs and unpacked data for SetRequiredKeyTags events raised by the ValSetDriver contract.
+type ValSetDriverSetRequiredKeyTagsIterator struct {
+	Event *ValSetDriverSetRequiredKeyTags // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -4277,7 +4495,7 @@ type IValSetDriverSetRequiredKeyTagsIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IValSetDriverSetRequiredKeyTagsIterator) Next() bool {
+func (it *ValSetDriverSetRequiredKeyTagsIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -4286,7 +4504,7 @@ func (it *IValSetDriverSetRequiredKeyTagsIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IValSetDriverSetRequiredKeyTags)
+			it.Event = new(ValSetDriverSetRequiredKeyTags)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -4301,7 +4519,7 @@ func (it *IValSetDriverSetRequiredKeyTagsIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IValSetDriverSetRequiredKeyTags)
+		it.Event = new(ValSetDriverSetRequiredKeyTags)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -4317,19 +4535,19 @@ func (it *IValSetDriverSetRequiredKeyTagsIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IValSetDriverSetRequiredKeyTagsIterator) Error() error {
+func (it *ValSetDriverSetRequiredKeyTagsIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IValSetDriverSetRequiredKeyTagsIterator) Close() error {
+func (it *ValSetDriverSetRequiredKeyTagsIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IValSetDriverSetRequiredKeyTags represents a SetRequiredKeyTags event raised by the IValSetDriver contract.
-type IValSetDriverSetRequiredKeyTags struct {
+// ValSetDriverSetRequiredKeyTags represents a SetRequiredKeyTags event raised by the ValSetDriver contract.
+type ValSetDriverSetRequiredKeyTags struct {
 	RequiredKeyTags []uint8
 	Raw             types.Log // Blockchain specific contextual infos
 }
@@ -4337,21 +4555,21 @@ type IValSetDriverSetRequiredKeyTags struct {
 // FilterSetRequiredKeyTags is a free log retrieval operation binding the contract event 0x14f8998266f37e593027a05efebf63b8710681d1cdbd39e6d7a156ff7e1485cd.
 //
 // Solidity: event SetRequiredKeyTags(uint8[] requiredKeyTags)
-func (_IValSetDriver *IValSetDriverFilterer) FilterSetRequiredKeyTags(opts *bind.FilterOpts) (*IValSetDriverSetRequiredKeyTagsIterator, error) {
+func (_ValSetDriver *ValSetDriverFilterer) FilterSetRequiredKeyTags(opts *bind.FilterOpts) (*ValSetDriverSetRequiredKeyTagsIterator, error) {
 
-	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "SetRequiredKeyTags")
+	logs, sub, err := _ValSetDriver.contract.FilterLogs(opts, "SetRequiredKeyTags")
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverSetRequiredKeyTagsIterator{contract: _IValSetDriver.contract, event: "SetRequiredKeyTags", logs: logs, sub: sub}, nil
+	return &ValSetDriverSetRequiredKeyTagsIterator{contract: _ValSetDriver.contract, event: "SetRequiredKeyTags", logs: logs, sub: sub}, nil
 }
 
 // WatchSetRequiredKeyTags is a free log subscription operation binding the contract event 0x14f8998266f37e593027a05efebf63b8710681d1cdbd39e6d7a156ff7e1485cd.
 //
 // Solidity: event SetRequiredKeyTags(uint8[] requiredKeyTags)
-func (_IValSetDriver *IValSetDriverFilterer) WatchSetRequiredKeyTags(opts *bind.WatchOpts, sink chan<- *IValSetDriverSetRequiredKeyTags) (event.Subscription, error) {
+func (_ValSetDriver *ValSetDriverFilterer) WatchSetRequiredKeyTags(opts *bind.WatchOpts, sink chan<- *ValSetDriverSetRequiredKeyTags) (event.Subscription, error) {
 
-	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "SetRequiredKeyTags")
+	logs, sub, err := _ValSetDriver.contract.WatchLogs(opts, "SetRequiredKeyTags")
 	if err != nil {
 		return nil, err
 	}
@@ -4361,8 +4579,8 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchSetRequiredKeyTags(opts *bind.
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IValSetDriverSetRequiredKeyTags)
-				if err := _IValSetDriver.contract.UnpackLog(event, "SetRequiredKeyTags", log); err != nil {
+				event := new(ValSetDriverSetRequiredKeyTags)
+				if err := _ValSetDriver.contract.UnpackLog(event, "SetRequiredKeyTags", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -4386,18 +4604,18 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchSetRequiredKeyTags(opts *bind.
 // ParseSetRequiredKeyTags is a log parse operation binding the contract event 0x14f8998266f37e593027a05efebf63b8710681d1cdbd39e6d7a156ff7e1485cd.
 //
 // Solidity: event SetRequiredKeyTags(uint8[] requiredKeyTags)
-func (_IValSetDriver *IValSetDriverFilterer) ParseSetRequiredKeyTags(log types.Log) (*IValSetDriverSetRequiredKeyTags, error) {
-	event := new(IValSetDriverSetRequiredKeyTags)
-	if err := _IValSetDriver.contract.UnpackLog(event, "SetRequiredKeyTags", log); err != nil {
+func (_ValSetDriver *ValSetDriverFilterer) ParseSetRequiredKeyTags(log types.Log) (*ValSetDriverSetRequiredKeyTags, error) {
+	event := new(ValSetDriverSetRequiredKeyTags)
+	if err := _ValSetDriver.contract.UnpackLog(event, "SetRequiredKeyTags", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// IValSetDriverSetVerificationTypeIterator is returned from FilterSetVerificationType and is used to iterate over the raw logs and unpacked data for SetVerificationType events raised by the IValSetDriver contract.
-type IValSetDriverSetVerificationTypeIterator struct {
-	Event *IValSetDriverSetVerificationType // Event containing the contract specifics and raw log
+// ValSetDriverSetVerificationTypeIterator is returned from FilterSetVerificationType and is used to iterate over the raw logs and unpacked data for SetVerificationType events raised by the ValSetDriver contract.
+type ValSetDriverSetVerificationTypeIterator struct {
+	Event *ValSetDriverSetVerificationType // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -4411,7 +4629,7 @@ type IValSetDriverSetVerificationTypeIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IValSetDriverSetVerificationTypeIterator) Next() bool {
+func (it *ValSetDriverSetVerificationTypeIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -4420,7 +4638,7 @@ func (it *IValSetDriverSetVerificationTypeIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IValSetDriverSetVerificationType)
+			it.Event = new(ValSetDriverSetVerificationType)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -4435,7 +4653,7 @@ func (it *IValSetDriverSetVerificationTypeIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IValSetDriverSetVerificationType)
+		it.Event = new(ValSetDriverSetVerificationType)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -4451,19 +4669,19 @@ func (it *IValSetDriverSetVerificationTypeIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IValSetDriverSetVerificationTypeIterator) Error() error {
+func (it *ValSetDriverSetVerificationTypeIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IValSetDriverSetVerificationTypeIterator) Close() error {
+func (it *ValSetDriverSetVerificationTypeIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IValSetDriverSetVerificationType represents a SetVerificationType event raised by the IValSetDriver contract.
-type IValSetDriverSetVerificationType struct {
+// ValSetDriverSetVerificationType represents a SetVerificationType event raised by the ValSetDriver contract.
+type ValSetDriverSetVerificationType struct {
 	VerificationType uint32
 	Raw              types.Log // Blockchain specific contextual infos
 }
@@ -4471,21 +4689,21 @@ type IValSetDriverSetVerificationType struct {
 // FilterSetVerificationType is a free log retrieval operation binding the contract event 0x2acc7be3ff5df4b911488f72502071dcf3f4a8f778a8abc351af3220bcd15b7f.
 //
 // Solidity: event SetVerificationType(uint32 verificationType)
-func (_IValSetDriver *IValSetDriverFilterer) FilterSetVerificationType(opts *bind.FilterOpts) (*IValSetDriverSetVerificationTypeIterator, error) {
+func (_ValSetDriver *ValSetDriverFilterer) FilterSetVerificationType(opts *bind.FilterOpts) (*ValSetDriverSetVerificationTypeIterator, error) {
 
-	logs, sub, err := _IValSetDriver.contract.FilterLogs(opts, "SetVerificationType")
+	logs, sub, err := _ValSetDriver.contract.FilterLogs(opts, "SetVerificationType")
 	if err != nil {
 		return nil, err
 	}
-	return &IValSetDriverSetVerificationTypeIterator{contract: _IValSetDriver.contract, event: "SetVerificationType", logs: logs, sub: sub}, nil
+	return &ValSetDriverSetVerificationTypeIterator{contract: _ValSetDriver.contract, event: "SetVerificationType", logs: logs, sub: sub}, nil
 }
 
 // WatchSetVerificationType is a free log subscription operation binding the contract event 0x2acc7be3ff5df4b911488f72502071dcf3f4a8f778a8abc351af3220bcd15b7f.
 //
 // Solidity: event SetVerificationType(uint32 verificationType)
-func (_IValSetDriver *IValSetDriverFilterer) WatchSetVerificationType(opts *bind.WatchOpts, sink chan<- *IValSetDriverSetVerificationType) (event.Subscription, error) {
+func (_ValSetDriver *ValSetDriverFilterer) WatchSetVerificationType(opts *bind.WatchOpts, sink chan<- *ValSetDriverSetVerificationType) (event.Subscription, error) {
 
-	logs, sub, err := _IValSetDriver.contract.WatchLogs(opts, "SetVerificationType")
+	logs, sub, err := _ValSetDriver.contract.WatchLogs(opts, "SetVerificationType")
 	if err != nil {
 		return nil, err
 	}
@@ -4495,8 +4713,8 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchSetVerificationType(opts *bind
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IValSetDriverSetVerificationType)
-				if err := _IValSetDriver.contract.UnpackLog(event, "SetVerificationType", log); err != nil {
+				event := new(ValSetDriverSetVerificationType)
+				if err := _ValSetDriver.contract.UnpackLog(event, "SetVerificationType", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -4520,9 +4738,9 @@ func (_IValSetDriver *IValSetDriverFilterer) WatchSetVerificationType(opts *bind
 // ParseSetVerificationType is a log parse operation binding the contract event 0x2acc7be3ff5df4b911488f72502071dcf3f4a8f778a8abc351af3220bcd15b7f.
 //
 // Solidity: event SetVerificationType(uint32 verificationType)
-func (_IValSetDriver *IValSetDriverFilterer) ParseSetVerificationType(log types.Log) (*IValSetDriverSetVerificationType, error) {
-	event := new(IValSetDriverSetVerificationType)
-	if err := _IValSetDriver.contract.UnpackLog(event, "SetVerificationType", log); err != nil {
+func (_ValSetDriver *ValSetDriverFilterer) ParseSetVerificationType(log types.Log) (*ValSetDriverSetVerificationType, error) {
+	event := new(ValSetDriverSetVerificationType)
+	if err := _ValSetDriver.contract.UnpackLog(event, "SetVerificationType", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

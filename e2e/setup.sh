@@ -5,7 +5,7 @@ set -eo pipefail
 # Configuration
 
 # Contracts commit hash to use
-CONTRACTS_COMMIT="24bcb351c8b6125b0412d5bf7916da405c548000"
+CONTRACTS_COMMIT="0a36bac862a8a73bcbadd67e6ac29cd94b60d75e"
 
 # Circuits commit
 CIRCUITS_COMMIT="e2e-branch"
@@ -59,6 +59,7 @@ export VERIFICATION_TYPE=${VERIFICATION_TYPE}
 export EPOCH_TIME=${EPOCH_TIME}
 export BLOCK_TIME=${BLOCK_TIME}
 export FINALITY_BLOCKS=${FINALITY_BLOCKS}
+export COMMITTER_SLOT_DURATION=${COMMITTER_SLOT_DURATION}
 
 # Call the generate network script
 ./scripts/generate_network.sh

@@ -16,7 +16,7 @@ import (
 func TestGetValidatorSetMetadata(t *testing.T) {
 	t.Log("Starting validator set metadata API test...")
 
-	_, err := loadDeploymentData(t.Context())
+	_, err := loadDeploymentData()
 	require.NoError(t, err, "Failed to load deployment data")
 
 	client := getGRPCClient(t, 0)
@@ -196,7 +196,7 @@ func TestGetValidatorSetMetadata(t *testing.T) {
 func TestGetLastAllCommitted(t *testing.T) {
 	t.Log("Starting GetLastAllCommitted API test...")
 
-	deploymentData, err := loadDeploymentData(t.Context())
+	deploymentData, err := loadDeploymentData()
 	require.NoError(t, err, "Failed to load deployment data")
 
 	t.Logf("Testing GetLastAllCommitted API on %d", 0)

@@ -3,13 +3,10 @@ package tests
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/go-errors/errors"
 	"github.com/kelseyhightower/envconfig"
@@ -37,12 +34,7 @@ type ContractAddress struct {
 
 // RelayContractsData represents the structure from relay_contracts.json
 type RelayContractsData struct {
-	Driver               ContractAddress   `json:"driver"`
-	KeyRegistry          ContractAddress   `json:"keyRegistry"`
-	Network              string            `json:"network"`
-	Settlements          []ContractAddress `json:"settlements"`
-	StakingTokens        []ContractAddress `json:"stakingTokens"`
-	VotingPowerProviders []ContractAddress `json:"votingPowerProviders"`
+	Driver ContractAddress `json:"driver"`
 
 	Env EnvInfo `json:"-"`
 }
@@ -91,62 +83,12 @@ func (d RelayContractsData) GetDriverAddress() string {
 	return d.Driver.Addr
 }
 
-// GetKeyRegistryAddress returns the key registry address as a string
-func (d RelayContractsData) GetKeyRegistryAddress() string {
-	return d.KeyRegistry.Addr
-}
-
-// GetVotingPowerProviderAddress returns the first voting power provider address
-func (d RelayContractsData) GetVotingPowerProviderAddress() string {
-	if len(d.VotingPowerProviders) > 0 {
-		return d.VotingPowerProviders[0].Addr
-	}
-	return ""
-}
-
-// GetSettlementAddresses returns all settlement addresses
-func (d RelayContractsData) GetSettlementAddresses() []ContractAddress {
-	return d.Settlements
-}
-
-func loadDeploymentData(ctx context.Context) (RelayContractsData, error) {
-	path := "../temp-network/deploy-data/relay_contracts.json"
-
-	// Wait for relay_contracts.json to be created by shell script
-	const maxWaitTime = 60 * time.Second
-	const checkInterval = 500 * time.Millisecond
-	startTime := time.Now()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return RelayContractsData{}, errors.Errorf("context cancelled while waiting for %s: %w", path, ctx.Err())
-		default:
-		}
-
-		if _, err := os.Stat(path); err == nil {
-			break // File exists, break the loop
-		}
-
-		if time.Since(startTime) > maxWaitTime {
-			return RelayContractsData{}, errors.Errorf("timeout waiting for %s to be created after %v", path, maxWaitTime)
-		}
-
-		select {
-		case <-ctx.Done():
-			return RelayContractsData{}, errors.Errorf("context cancelled while waiting for %s: %w", path, ctx.Err())
-		case <-time.After(checkInterval):
-		}
-	}
-
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return RelayContractsData{}, errors.Errorf("failed to read %s: %w", path, err)
-	}
-
-	var relayContracts RelayContractsData
-	if err := json.Unmarshal(data, &relayContracts); err != nil {
-		return RelayContractsData{}, errors.Errorf("failed to unmarshal %s: %w", path, err)
+func loadDeploymentData() (RelayContractsData, error) {
+	relayContracts := RelayContractsData{
+		Driver: ContractAddress{
+			Addr:    "0x43C27243F96591892976FFf886511807B65a33d5",
+			ChainId: 31337,
+		},
 	}
 
 	relayContracts.Env = EnvInfo{}

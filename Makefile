@@ -105,23 +105,23 @@ e2e-test:
 .PHONY: gen-abi
 gen-abi:
 	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
-		--abi symbiotic/client/evm/abi/IValSetDriver.abi.json \
-		--type IValSetDriver \
+		--abi symbiotic/client/evm/abi/ValSetDriver.abi.json \
+		--type ValSetDriver \
 		--pkg gen \
 		--out symbiotic/client/evm/gen/valsetDriver.go
 	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
-		--abi symbiotic/client/evm/abi/ISettlement.abi.json \
-		--type ISettlement \
+		--abi symbiotic/client/evm/abi/Settlement.abi.json \
+		--type Settlement \
 		--pkg gen \
 		--out symbiotic/client/evm/gen/settlement.go
 	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
-		--abi symbiotic/client/evm/abi/IKeyRegistry.abi.json \
-		--type IKeyRegistry \
+		--abi symbiotic/client/evm/abi/KeyRegistry.abi.json \
+		--type KeyRegistry \
 		--pkg gen \
 		--out symbiotic/client/evm/gen/keyRegistry.go
 	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
-		--abi symbiotic/client/evm/abi/IVotingPowerProvider.abi.json \
-		--type IVotingPowerProvider \
+		--abi symbiotic/client/evm/abi/VotingPowerProvider.abi.json \
+		--type VotingPowerProvider \
 		--pkg gen \
 		--out symbiotic/client/evm/gen/votingPowerProvider.go
 

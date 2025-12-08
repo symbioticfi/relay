@@ -25,7 +25,7 @@ const (
 func TestNonHeaderKeySignature(t *testing.T) {
 	t.Log("Starting non-header key signature test...")
 
-	deploymentData, err := loadDeploymentData(t.Context())
+	deploymentData, err := loadDeploymentData()
 	require.NoError(t, err, "Failed to load deployment data")
 
 	expected := getExpectedDataFromContracts(t, deploymentData)
@@ -59,7 +59,7 @@ func TestNonHeaderKeySignature(t *testing.T) {
 				return e.GetLastCommittedEpoch()
 			}))
 
-			data, err := loadDeploymentData(t.Context())
+			data, err := loadDeploymentData()
 			require.NoError(t, err, "Failed to load deployment data")
 
 			requestID := ""

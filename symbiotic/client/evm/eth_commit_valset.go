@@ -69,7 +69,7 @@ func (e *Client) CommitValsetHeader(
 
 	tx, err := settlement.CommitValSetHeader(txOpts, headerDTO, extraDataDTO, proof)
 	if err != nil {
-		return symbiotic.TxResult{}, e.formatEVMContractError(gen.ISettlementMetaData, err)
+		return symbiotic.TxResult{}, e.formatEVMContractError(gen.SettlementMetaData, err)
 	}
 
 	receipt, err := bind.WaitMined(ctx, e.conns[addr.ChainId], tx)

@@ -30,7 +30,7 @@ func TestAggregatorSignatureSync(t *testing.T) {
 	ctx := t.Context()
 
 	// Load deployment data to get contract addresses and environment info
-	deploymentData, err := loadDeploymentData(ctx)
+	deploymentData, err := loadDeploymentData()
 	require.NoError(t, err, "Failed to load deployment data")
 
 	// Identify aggregators

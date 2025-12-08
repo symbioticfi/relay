@@ -78,10 +78,10 @@ type conn interface {
 	bind.DeployBackend
 }
 
-var _ driverContract = (*gen.IValSetDriverCaller)(nil)
+var _ driverContract = (*gen.ValSetDriverCaller)(nil)
 
 // driverContract defines the interface for driver contract operations
-// gen.IValSetDriverCaller implements this interface
+// gen.ValSetDriverCaller implements this interface
 type driverContract interface {
 	GetConfigAt(opts *bind.CallOpts, timestamp *big.Int) (gen.IValSetDriverConfig, error)
 	GetCurrentEpoch(opts *bind.CallOpts) (*big.Int, error)
@@ -147,7 +147,7 @@ func NewEvmClient(ctx context.Context, cfg Config) (*Client, error) {
 		return nil, errors.Errorf("driver's chain rpc url omitted")
 	}
 
-	driver, err := gen.NewIValSetDriverCaller(cfg.DriverAddress.Address, conns[cfg.DriverAddress.ChainId])
+	driver, err := gen.NewValSetDriverCaller(cfg.DriverAddress.Address, conns[cfg.DriverAddress.ChainId])
 	if err != nil {
 		return nil, errors.Errorf("failed to create driver contract: %w", err)
 	}
@@ -220,12 +220,10 @@ func (e *Client) GetConfig(ctx context.Context, timestamp symbiotic.Timestamp, e
 				QuorumThreshold: symbiotic.ToQuorumThresholdPct(v.QuorumThreshold),
 			}
 		}),
-		NumCommitters:  dtoConfig.NumCommitters.Uint64(),
-		NumAggregators: dtoConfig.NumAggregators.Uint64(),
-		EpochDuration:  epochDuration,
-
-		// TODO: get from contract
-		CommitterSlotDuration: 10,
+		NumCommitters:         dtoConfig.NumCommitters.Uint64(),
+		NumAggregators:        dtoConfig.NumAggregators.Uint64(),
+		EpochDuration:         epochDuration,
+		CommitterSlotDuration: dtoConfig.CommitterSlotDuration.Uint64(),
 	}, nil
 }
 
@@ -241,7 +239,7 @@ func (e *Client) GetCurrentEpoch(ctx context.Context) (_ symbiotic.Epoch, err er
 		Context:     toCtx,
 	})
 	if err != nil {
-		return 0, errors.Errorf("failed to call getCurrentEpoch: %w", e.formatEVMContractError(gen.IValSetDriverMetaData, err))
+		return 0, errors.Errorf("failed to call getCurrentEpoch: %w", e.formatEVMContractError(gen.ValSetDriverMetaData, err))
 	}
 	return symbiotic.Epoch(epoch.Uint64()), nil
 }
@@ -258,7 +256,7 @@ func (e *Client) GetCurrentEpochDuration(ctx context.Context) (_ uint64, err err
 		Context:     toCtx,
 	})
 	if err != nil {
-		return 0, errors.Errorf("failed to call getCurrentEpochDuration: %w", e.formatEVMContractError(gen.IValSetDriverMetaData, err))
+		return 0, errors.Errorf("failed to call getCurrentEpochDuration: %w", e.formatEVMContractError(gen.ValSetDriverMetaData, err))
 	}
 	return epochDuration.Uint64(), nil
 }
@@ -275,7 +273,7 @@ func (e *Client) GetEpochDuration(ctx context.Context, epoch symbiotic.Epoch) (_
 		Context:     toCtx,
 	}, new(big.Int).SetUint64(uint64(epoch)))
 	if err != nil {
-		return 0, errors.Errorf("failed to call getEpochDuration: %w", e.formatEVMContractError(gen.IValSetDriverMetaData, err))
+		return 0, errors.Errorf("failed to call getEpochDuration: %w", e.formatEVMContractError(gen.ValSetDriverMetaData, err))
 	}
 	return epochDuration.Uint64(), nil
 }
@@ -292,7 +290,7 @@ func (e *Client) GetEpochStart(ctx context.Context, epoch symbiotic.Epoch) (_ sy
 		Context:     toCtx,
 	}, new(big.Int).SetUint64(uint64(epoch)))
 	if err != nil {
-		return 0, errors.Errorf("failed to call getEpochStart: %w", e.formatEVMContractError(gen.IValSetDriverMetaData, err))
+		return 0, errors.Errorf("failed to call getEpochStart: %w", e.formatEVMContractError(gen.ValSetDriverMetaData, err))
 	}
 	return symbiotic.Timestamp(epochStart.Uint64()), nil
 }
@@ -634,7 +632,7 @@ func (e *Client) GetVotingPowers(ctx context.Context, address symbiotic.CrossCha
 		Context:     toCtx,
 	}, [][]byte{}, new(big.Int).SetUint64(uint64(timestamp)))
 	if err != nil {
-		return nil, errors.Errorf("failed to call getVotingPowersAt: %w", e.formatEVMContractError(gen.IVotingPowerProviderMetaData, err))
+		return nil, errors.Errorf("failed to call getVotingPowersAt: %w", e.formatEVMContractError(gen.VotingPowerProviderMetaData, err))
 	}
 
 	return lo.Map(votingPowersAt, func(v gen.IVotingPowerProviderOperatorVotingPower, _ int) symbiotic.OperatorVotingPower {
@@ -667,7 +665,7 @@ func (e *Client) GetOperators(ctx context.Context, address symbiotic.CrossChainA
 		Context:     toCtx,
 	}, new(big.Int).SetUint64(uint64(timestamp)))
 	if err != nil {
-		return nil, errors.Errorf("failed to call getOperatorsAt: %w", e.formatEVMContractError(gen.IVotingPowerProviderMetaData, err))
+		return nil, errors.Errorf("failed to call getOperatorsAt: %w", e.formatEVMContractError(gen.VotingPowerProviderMetaData, err))
 	}
 
 	return operators, nil
@@ -690,7 +688,7 @@ func (e *Client) GetKeysOperators(ctx context.Context, address symbiotic.CrossCh
 		Context:     toCtx,
 	}, new(big.Int).SetUint64(uint64(timestamp)))
 	if err != nil {
-		return nil, errors.Errorf("failed to call getKeysOperatorsAt: %w", e.formatEVMContractError(gen.IKeyRegistryMetaData, err))
+		return nil, errors.Errorf("failed to call getKeysOperatorsAt: %w", e.formatEVMContractError(gen.KeyRegistryMetaData, err))
 	}
 
 	return operators, nil
@@ -722,7 +720,7 @@ func (e *Client) GetKeys(ctx context.Context, address symbiotic.CrossChainAddres
 		Context:     toCtx,
 	}, new(big.Int).SetUint64(uint64(timestamp)))
 	if err != nil {
-		return nil, errors.Errorf("failed to call getKeysAt: %w", e.formatEVMContractError(gen.IKeyRegistryMetaData, err))
+		return nil, errors.Errorf("failed to call getKeysAt: %w", e.formatEVMContractError(gen.KeyRegistryMetaData, err))
 	}
 
 	return lo.Map(keys, func(v gen.IKeyRegistryOperatorWithKeys, _ int) symbiotic.OperatorWithKeys {
@@ -753,7 +751,7 @@ func (e *Client) IsValsetHeaderCommittedAtEpochs(ctx context.Context, addr symbi
 		return nil, errors.New("multicall not available on this chain")
 	}
 
-	abi, err := gen.ISettlementMetaData.GetAbi()
+	abi, err := gen.SettlementMetaData.GetAbi()
 	if err != nil {
 		return nil, errors.Errorf("failed to get ABI: %v", err)
 	}
@@ -870,40 +868,40 @@ func (e *Client) formatEVMError(err error) error {
 	return errors.Errorf("%w: %s", err, errDef.String())
 }
 
-func (e *Client) getSettlementContract(addr symbiotic.CrossChainAddress) (*gen.ISettlement, error) {
+func (e *Client) getSettlementContract(addr symbiotic.CrossChainAddress) (*gen.Settlement, error) {
 	client, ok := e.conns[addr.ChainId]
 	if !ok {
 		return nil, errors.Errorf("no connection for chain ID %d: %w", addr.ChainId, entity.ErrChainNotFound)
 	}
 
-	return gen.NewISettlement(addr.Address, client)
+	return gen.NewSettlement(addr.Address, client)
 }
 
-func (e *Client) getVotingPowerProviderContract(addr symbiotic.CrossChainAddress) (*gen.IVotingPowerProviderCaller, error) {
+func (e *Client) getVotingPowerProviderContract(addr symbiotic.CrossChainAddress) (*gen.VotingPowerProviderCaller, error) {
 	client, ok := e.conns[addr.ChainId]
 	if !ok {
 		return nil, errors.Errorf("no connection for chain ID %d: %w", addr.ChainId, entity.ErrChainNotFound)
 	}
 
-	return gen.NewIVotingPowerProviderCaller(addr.Address, client)
+	return gen.NewVotingPowerProviderCaller(addr.Address, client)
 }
 
-func (e *Client) getVotingPowerProviderContractTransactor(addr symbiotic.CrossChainAddress) (*gen.IVotingPowerProvider, error) {
+func (e *Client) getVotingPowerProviderContractTransactor(addr symbiotic.CrossChainAddress) (*gen.VotingPowerProvider, error) {
 	client, ok := e.conns[addr.ChainId]
 	if !ok {
 		return nil, errors.Errorf("no connection for chain ID %d: %w", addr.ChainId, entity.ErrChainNotFound)
 	}
 
-	return gen.NewIVotingPowerProvider(addr.Address, client)
+	return gen.NewVotingPowerProvider(addr.Address, client)
 }
 
-func (e *Client) getKeyRegistryContract(addr symbiotic.CrossChainAddress) (*gen.IKeyRegistry, error) {
+func (e *Client) getKeyRegistryContract(addr symbiotic.CrossChainAddress) (*gen.KeyRegistry, error) {
 	client, ok := e.conns[addr.ChainId]
 	if !ok {
 		return nil, errors.Errorf("no connection for chain ID %d: %w", addr.ChainId, entity.ErrChainNotFound)
 	}
 
-	return gen.NewIKeyRegistry(addr.Address, client)
+	return gen.NewKeyRegistry(addr.Address, client)
 }
 
 func (e *Client) getOperatorRegistryContract(addr symbiotic.CrossChainAddress) (*gen.OperatorRegistry, error) {
@@ -917,10 +915,10 @@ func (e *Client) getOperatorRegistryContract(addr symbiotic.CrossChainAddress) (
 
 func findErrorBySelector(errSelector string) (abi.Error, bool) {
 	errorDefs := map[string]*bind.MetaData{
-		"settlement":          gen.ISettlementMetaData,
-		"driver":              gen.IValSetDriverMetaData,
-		"votingPowerProvider": gen.IVotingPowerProviderMetaData,
-		"keyRegistry":         gen.IKeyRegistryMetaData,
+		"settlement":          gen.SettlementMetaData,
+		"driver":              gen.ValSetDriverMetaData,
+		"votingPowerProvider": gen.VotingPowerProviderMetaData,
+		"keyRegistry":         gen.KeyRegistryMetaData,
 	}
 
 	for contract, meta := range errorDefs {
