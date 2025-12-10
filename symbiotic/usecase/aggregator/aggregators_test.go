@@ -34,7 +34,7 @@ func TestSimpleAggregator(t *testing.T) {
 	require.NoError(t, err)
 	valset, signatures, keyTag := genCorrectTest(10, []int{1, 2, 3})
 
-	proof, err := agg.Aggregate(valset, keyTag, signatures[0].MessageHash, signatures)
+	proof, err := agg.Aggregate(valset, signatures)
 	if err != nil {
 		panic(err)
 	}
@@ -57,7 +57,7 @@ func TestInvalidSimpleAggregator(t *testing.T) {
 		panic(err)
 	}
 
-	proof, err := agg.Aggregate(valset, keyTag, signatures[0].MessageHash, signatures)
+	proof, err := agg.Aggregate(valset, signatures)
 	if err != nil {
 		panic(err)
 	}
@@ -125,7 +125,7 @@ func TestZkAggregator(t *testing.T) {
 	agg, err := blsBn254ZK.NewAggregator(prover)
 	require.NoError(t, err)
 	valset, signatures, keyTag := genCorrectTest(10, []int{1, 2, 3})
-	proof, err := agg.Aggregate(valset, keyTag, signatures[0].MessageHash, signatures)
+	proof, err := agg.Aggregate(valset, signatures)
 	if err != nil {
 		panic(err)
 	}

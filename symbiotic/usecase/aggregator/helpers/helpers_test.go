@@ -20,9 +20,7 @@ func TestCompareMessageHasher_WithMatchingHashes_ReturnsTrue(t *testing.T) {
 		{MessageHash: msgHash},
 	}
 
-	result := CompareMessageHasher(signatures, msgHash)
-
-	assert.True(t, result)
+	assert.NoError(t, CheckSignaturesHaveSameTagAndMessageHash(signatures))
 }
 
 func TestCompareMessageHasher_WithDifferentHash_ReturnsFalse(t *testing.T) {
@@ -34,18 +32,17 @@ func TestCompareMessageHasher_WithDifferentHash_ReturnsFalse(t *testing.T) {
 		{MessageHash: msgHash},
 	}
 
-	result := CompareMessageHasher(signatures, msgHash)
-
-	assert.False(t, result)
+	assert.Error(t, CheckSignaturesHaveSameTagAndMessageHash(signatures), "")
 }
 
 func TestCompareMessageHasher_WithEmptySignatures_ReturnsTrue(t *testing.T) {
 	msgHash := []byte("test-message-hash")
-	signatures := []symbiotic.Signature{}
+	signatures := []symbiotic.Signature{
+		{MessageHash: msgHash},
+	}
 
-	result := CompareMessageHasher(signatures, msgHash)
-
-	assert.True(t, result)
+	err := CheckSignaturesHaveSameTagAndMessageHash(signatures)
+	assert.NoError(t, err)
 }
 
 func TestCompareMessageHasher_WithSingleSignature_ReturnsCorrectResult(t *testing.T) {
@@ -53,19 +50,19 @@ func TestCompareMessageHasher_WithSingleSignature_ReturnsCorrectResult(t *testin
 		name           string
 		msgHash        []byte
 		signatureHash  []byte
-		expectedResult bool
+		expectedResult string
 	}{
 		{
 			name:           "matching single signature",
 			msgHash:        []byte("test-hash"),
 			signatureHash:  []byte("test-hash"),
-			expectedResult: true,
+			expectedResult: "",
 		},
 		{
 			name:           "non-matching single signature",
 			msgHash:        []byte("test-hash"),
 			signatureHash:  []byte("different-hash"),
-			expectedResult: false,
+			expectedResult: "",
 		},
 	}
 
@@ -73,9 +70,13 @@ func TestCompareMessageHasher_WithSingleSignature_ReturnsCorrectResult(t *testin
 		t.Run(tt.name, func(t *testing.T) {
 			signatures := []symbiotic.Signature{{MessageHash: tt.signatureHash}}
 
-			result := CompareMessageHasher(signatures, tt.msgHash)
-
-			assert.Equal(t, tt.expectedResult, result)
+			err := CheckSignaturesHaveSameTagAndMessageHash(signatures)
+			if tt.expectedResult != "" {
+				require.Error(t, err)
+				require.EqualError(t, err, tt.expectedResult)
+				return
+			}
+			require.NoError(t, err)
 		})
 	}
 }

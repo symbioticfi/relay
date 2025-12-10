@@ -24,6 +24,9 @@ type repository interface {
 	GetAllSignatures(ctx context.Context, requestID common.Hash) ([]symbiotic.Signature, error)
 	GetConfigByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.NetworkConfig, error)
 	GetSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error)
+	GetSignatureRequestsWithoutAggregationProof(ctx context.Context, epoch symbiotic.Epoch, limit int, lastHash common.Hash) ([]symbiotic.SignatureRequestWithID, error)
+	GetLatestValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
+	RemoveAggregationProofPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error
 }
 
 type p2pClient interface {
@@ -36,7 +39,7 @@ type metrics interface {
 }
 
 type aggregator interface {
-	Aggregate(valset symbiotic.ValidatorSet, keyTag symbiotic.KeyTag, messageHash []byte, signatures []symbiotic.Signature) (symbiotic.AggregationProof, error)
+	Aggregate(valset symbiotic.ValidatorSet, signatures []symbiotic.Signature) (symbiotic.AggregationProof, error)
 }
 
 type keyProvider interface {
@@ -82,36 +85,39 @@ func NewAggregatorApp(cfg Config) (*AggregatorApp, error) {
 
 func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg symbiotic.Signature) error {
 	ctx = log.WithComponent(ctx, "aggregator")
-	ctx = log.WithAttrs(ctx,
-		slog.Uint64("epoch", uint64(msg.Epoch)),
-		slog.String("requestId", msg.RequestID().Hex()),
+	slog.DebugContext(ctx, "Received signature processed message",
+		"message", msg,
+		"epoch", msg.Epoch,
+		"requestId", msg.RequestID().Hex(),
 	)
-	slog.DebugContext(ctx, "Received signature processed message", "message", msg)
 
-	_, err := s.cfg.Repo.GetAggregationProof(ctx, msg.RequestID())
+	return s.TryAggregateProofForRequestID(ctx, msg.RequestID())
+}
+
+func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, requestID common.Hash) error {
+	ctx = log.WithComponent(ctx, "aggregator")
+	ctx = log.WithAttrs(ctx,
+		slog.String("requestId", requestID.Hex()),
+	)
+
+	_, err := s.cfg.Repo.GetAggregationProof(ctx, requestID)
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		return errors.Errorf("failed to get aggregation proof: %w", err)
 	}
 	if err == nil {
-		slog.DebugContext(ctx, "Skipped aggregation, proof already exists", "request", msg)
+		slog.DebugContext(ctx, "Skipped aggregation, proof already exists")
 		return nil
 	}
 
-	signatureMap, err := s.cfg.Repo.GetSignatureMap(ctx, msg.RequestID())
+	signatureMap, err := s.cfg.Repo.GetSignatureMap(ctx, requestID)
 	if err != nil {
 		return errors.Errorf("failed to get valset signature map: %w", err)
 	}
 
-	if signatureMap.RequestID != msg.RequestID() || signatureMap.Epoch != msg.Epoch {
-		return errors.Errorf("signature map context mismatch: map %s/%d vs msg %s/%d",
-			signatureMap.RequestID.Hex(), signatureMap.Epoch,
-			msg.RequestID().Hex(), msg.Epoch,
-		)
-	}
+	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(signatureMap.Epoch)))
 
 	// Get validator set for quorum threshold checks
-	// todo load only valset header when totalVotingPower is added to it
-	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, msg.Epoch)
+	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, signatureMap.Epoch)
 	if err != nil {
 		return errors.Errorf("failed to get validator set: %w", err)
 	}
@@ -131,7 +137,7 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 		if !validatorSet.IsAggregator(onchainKey) {
 			slog.DebugContext(ctx, "Skipped aggregation, not an aggregator for this validator set",
 				"key", onchainKey,
-				"epoch", msg.Epoch,
+				"epoch", signatureMap.Epoch,
 				"aggIndices", validatorSet.AggregatorIndices,
 			)
 			return nil
@@ -159,13 +165,13 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 
 	appAggregationStart := time.Now()
 
-	sigs, err := s.cfg.Repo.GetAllSignatures(ctx, msg.RequestID())
+	sigs, err := s.cfg.Repo.GetAllSignatures(ctx, requestID)
 	slog.DebugContext(ctx, "Loaded signatures for aggregation", "count", len(sigs))
 	if err != nil {
 		return errors.Errorf("failed to get signature aggregated message: %w", err)
 	}
 
-	networkConfig, err := s.cfg.Repo.GetConfigByEpoch(ctx, msg.Epoch)
+	networkConfig, err := s.cfg.Repo.GetConfigByEpoch(ctx, signatureMap.Epoch)
 	if err != nil {
 		return errors.Errorf("failed to get network config: %w", err)
 	}
@@ -173,12 +179,7 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 	slog.DebugContext(ctx, "Loaded network config", "networkConfig", networkConfig)
 
 	onlyAggregateStart := time.Now()
-	proofData, err := s.cfg.Aggregator.Aggregate(
-		validatorSet,
-		msg.KeyTag,
-		msg.MessageHash,
-		sigs,
-	)
+	proofData, err := s.cfg.Aggregator.Aggregate(validatorSet, sigs)
 	if err != nil {
 		return errors.Errorf("failed to prove: %w", err)
 	}
@@ -196,6 +197,55 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 
 	slog.InfoContext(ctx, "Aggregation completed, proof broadcast via p2p",
 		"totalDuration", time.Since(appAggregationStart).String())
+
+	return nil
+}
+
+const epochsToCheckForMissingProofs = 20
+
+func (s *AggregatorApp) TryAggregateRequestsWithoutProof(ctx context.Context) error {
+	latestEpoch, err := s.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
+	if err != nil {
+		return errors.Errorf("failed to get latest epoch: %w", err)
+	}
+
+	startEpoch := symbiotic.Epoch(0)
+	if latestEpoch >= symbiotic.Epoch(epochsToCheckForMissingProofs) {
+		startEpoch = latestEpoch - symbiotic.Epoch(epochsToCheckForMissingProofs)
+	}
+
+	for epoch := latestEpoch; epoch >= startEpoch; epoch-- {
+		var lastHash common.Hash
+		requests, err := s.cfg.Repo.GetSignatureRequestsWithoutAggregationProof(ctx, epoch, 10, lastHash)
+		if err != nil {
+			return errors.Errorf("failed to get signature requests without aggregation proof for epoch %d: %w", epoch, err)
+		}
+
+		if len(requests) == 0 {
+			continue // No more requests for this epoch
+		}
+
+		// Collect request ids
+		for _, req := range requests {
+			if !req.KeyTag.Type().AggregationKey() {
+				continue // Skip non-aggregation requests
+			}
+
+			err := s.TryAggregateProofForRequestID(ctx, req.RequestID)
+			if err != nil {
+				return errors.Errorf("failed to try aggregate proof for request ID %s: %w", req.RequestID.Hex(), err)
+			}
+			// remove pending from db
+			err = s.cfg.Repo.RemoveAggregationProofPending(ctx, req.RequiredEpoch, req.RequestID)
+			// ignore not found and tx conflict errors, as they indicate the proof was already processed or is being processed
+			if err != nil && !errors.Is(err, entity.ErrEntityNotFound) && !errors.Is(err, entity.ErrTxConflict) {
+				return errors.Errorf("failed to remove aggregation proof from pending collection: %w", err)
+			}
+
+			lastHash = req.RequestID
+		}
+
+	}
 
 	return nil
 }

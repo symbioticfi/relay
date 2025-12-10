@@ -46,16 +46,15 @@ func TestAggregator_Aggregate_WithMismatchedMessageHashes_ReturnsError(t *testin
 	require.NoError(t, err)
 
 	valset := symbiotic.ValidatorSet{}
-	keyTag := symbiotic.KeyTag(1)
-	messageHash := []byte("test-message")
 	signatures := []symbiotic.Signature{
 		{MessageHash: []byte("different-message")},
+		{MessageHash: []byte("first-message")},
 	}
 
-	_, err = agg.Aggregate(valset, keyTag, messageHash, signatures)
+	_, err = agg.Aggregate(valset, signatures)
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "message hashes mismatch")
+	assert.Contains(t, err.Error(), "signatures have different message hashes")
 }
 
 func TestValidatorSetMimcAccumulator_WithNoValidators_ReturnsZeroHash(t *testing.T) {

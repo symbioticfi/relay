@@ -27,15 +27,13 @@ func NewAggregator(prover types.Prover) (*Aggregator, error) {
 	}, nil
 }
 
-func (a Aggregator) Aggregate(
-	valset symbiotic.ValidatorSet,
-	keyTag symbiotic.KeyTag,
-	messageHash []byte,
-	signatures []symbiotic.Signature,
-) (symbiotic.AggregationProof, error) {
-	if !helpers.CompareMessageHasher(signatures, messageHash) {
-		return symbiotic.AggregationProof{}, errors.New("message hashes mismatch")
+func (a Aggregator) Aggregate(valset symbiotic.ValidatorSet, signatures []symbiotic.Signature) (symbiotic.AggregationProof, error) {
+	if err := helpers.CheckSignaturesHaveSameTagAndMessageHash(signatures); err != nil {
+		return symbiotic.AggregationProof{}, errors.Errorf("invalid signatures: %w", err)
 	}
+
+	keyTag := signatures[0].KeyTag
+	messageHash := signatures[0].MessageHash
 
 	aggG1Sig := new(bn254.G1Affine)
 	aggG2Key := new(bn254.G2Affine)

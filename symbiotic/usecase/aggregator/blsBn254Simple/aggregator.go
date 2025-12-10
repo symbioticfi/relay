@@ -85,19 +85,15 @@ func createABITypes() (abiTypes, error) {
 	}, nil
 }
 
-func (a Aggregator) Aggregate(
-	valset symbiotic.ValidatorSet,
-	keyTag symbiotic.KeyTag,
-	messageHash []byte,
-	signatures []symbiotic.Signature,
-) (symbiotic.AggregationProof, error) {
-	if !helpers.CompareMessageHasher(signatures, messageHash) {
-		return symbiotic.AggregationProof{}, errors.New("message hashes mismatch")
+func (a Aggregator) Aggregate(valset symbiotic.ValidatorSet, signatures []symbiotic.Signature) (symbiotic.AggregationProof, error) {
+	if err := helpers.CheckSignaturesHaveSameTagAndMessageHash(signatures); err != nil {
+		return symbiotic.AggregationProof{}, errors.Errorf("invalid signatures: %w", err)
 	}
 	if err := valset.Validators.CheckIsSortedByOperatorAddressAsc(); err != nil {
 		return symbiotic.AggregationProof{}, errors.Errorf("valset is not sorted by operator address asc: %w", err)
 	}
 
+	keyTag := signatures[0].KeyTag
 	validatorsData, err := processValidators(valset.Validators, keyTag)
 	if err != nil {
 		return symbiotic.AggregationProof{}, err
@@ -208,7 +204,7 @@ func (a Aggregator) Aggregate(
 	proofBytes = append(proofBytes, nonSignersBytes...)
 
 	return symbiotic.AggregationProof{
-		MessageHash: messageHash,
+		MessageHash: signatures[0].MessageHash,
 		KeyTag:      keyTag,
 		Epoch:       valset.Epoch,
 		Proof:       proofBytes,
