@@ -491,7 +491,7 @@ func createValidatorSetWithCount(t *testing.T, epoch symbiotic.Epoch, quorumThre
 		CaptureTimestamp: 1234567890,
 		QuorumThreshold:  symbiotic.ToVotingPower(quorumThreshold),
 		Validators:       validatorsList,
-		Status:           symbiotic.ValidatorSetStatus(symbiotic.HeaderCommitted),
+		Status:           symbiotic.HeaderCommitted,
 	}, privateKeys
 }
 

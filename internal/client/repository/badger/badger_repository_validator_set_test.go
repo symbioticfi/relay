@@ -529,7 +529,7 @@ func randomValidatorSet(t *testing.T, epoch symbiotic.Epoch) symbiotic.Validator
 				},
 			},
 		},
-		Status:            symbiotic.ValidatorSetStatus(symbiotic.HeaderCommitted),
+		Status:            symbiotic.HeaderCommitted,
 		AggregatorIndices: []uint32{},
 		CommitterIndices:  []uint32{},
 	}

@@ -10,9 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
-	"google.golang.org/protobuf/proto"
-
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	"google.golang.org/protobuf/proto"
 )
 
 type Config struct {

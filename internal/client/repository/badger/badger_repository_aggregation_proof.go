@@ -68,7 +68,7 @@ func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.
 		}
 
 		return nil
-	}, lock{lockMap: &r.proofsMutexMap, key: requestID})
+	}, &r.proofsMutexMap, requestID)
 }
 
 func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error) {

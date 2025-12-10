@@ -52,7 +52,7 @@ func TestRepository_PruneAllEntityTypes(t *testing.T) {
 		CaptureTimestamp: 1234567890,
 		QuorumThreshold:  symbiotic.ToVotingPower(big.NewInt(500)),
 		Validators:       []symbiotic.Validator{validator},
-		Status:           symbiotic.ValidatorSetStatus(symbiotic.HeaderDerived),
+		Status:           symbiotic.HeaderDerived,
 	}
 
 	err = repo.saveValidatorSet(ctx, valset)
@@ -222,7 +222,7 @@ func TestRepository_PruneEntityTypes_Separately(t *testing.T) {
 			Keys:        []symbiotic.ValidatorKey{{Tag: symbiotic.KeyTag(15), Payload: randomBytes(t, 96)}},
 			Vaults:      []symbiotic.ValidatorVault{{ChainID: 1, Vault: common.BytesToAddress(randomBytes(t, 20)), VotingPower: symbiotic.ToVotingPower(big.NewInt(1000))}},
 		}},
-		Status: symbiotic.ValidatorSetStatus(symbiotic.HeaderDerived),
+		Status: symbiotic.HeaderDerived,
 	}
 	err = repo.saveValidatorSet(ctx, valset)
 	require.NoError(t, err)

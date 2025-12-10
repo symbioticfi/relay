@@ -35,7 +35,7 @@ type repo interface {
 	SaveNextValsetData(ctx context.Context, data entity.NextValsetData) error
 	GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
 	GetValsetHeaderProofForEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.AggregationProof, error)
-	UpdateValidatorSetStatus(ctx context.Context, epoch symbiotic.Epoch, item symbiotic.ValidatorSetStatusItem) error
+	UpdateValidatorSetStatus(ctx context.Context, epoch symbiotic.Epoch, item symbiotic.ValidatorSetStatus) error
 	GetLatestAggregatedValsetHeader(ctx context.Context) (symbiotic.ValidatorSetHeader, error)
 }
 

@@ -225,7 +225,7 @@ func (r *Repository) SaveFirstUncommittedValidatorSetEpoch(ctx context.Context, 
 		}
 
 		return nil
-	}, lock{lockMap: &r.valsetMutexMap, key: epoch})
+	}, &r.valsetMutexMap, epoch)
 }
 
 func (r *Repository) UpdateValidatorSetStatusAndRemovePendingProof(ctx context.Context, valset symbiotic.ValidatorSet) error {
@@ -242,37 +242,28 @@ func (r *Repository) UpdateValidatorSetStatusAndRemovePendingProof(ctx context.C
 	})
 }
 
-func (r *Repository) UpdateValidatorSetStatus(ctx context.Context, epoch symbiotic.Epoch, item symbiotic.ValidatorSetStatusItem) error {
+func (r *Repository) UpdateValidatorSetStatus(ctx context.Context, epoch symbiotic.Epoch, status symbiotic.ValidatorSetStatus) error {
 	return r.doUpdateInTxWithLock(ctx, "UpdateValidatorSetStatus", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		statusKey := keyValidatorSetStatus(epoch)
-		currentStatusBytes, err := txn.Get(statusKey)
+		_, err := txn.Get(statusKey)
 		if err != nil {
 			return errors.Errorf("failed to get validator set status key: %w", err)
 		}
-		currentStatusValue, err := currentStatusBytes.ValueCopy(nil)
-		if err != nil {
-			return errors.Errorf("failed to copy current validator set status value: %w", err)
-		}
-		if len(currentStatusValue) != 1 {
-			return errors.New("failed to get current validator set status value: invalid length")
-		}
-		currentStatus := symbiotic.ValidatorSetStatus(currentStatusValue[0])
-		currentStatus.TurnOn(item)
 
-		statusBytes := []byte{uint8(currentStatus)}
+		statusBytes := []byte{uint8(status)}
 		if err = txn.Set(statusKey, statusBytes); err != nil {
 			return errors.Errorf("failed to store validator set status: %w", err)
 		}
 
-		if currentStatus.IsOn(symbiotic.HeaderAggregated) {
+		if status == symbiotic.HeaderAggregated {
 			if err := r.updateLatestEpochIfNeeded(ctx, []byte(latestAggregatedValidatorSetEpochKey), epoch); err != nil {
 				return errors.Errorf("failed to update latest aggregated validator set epoch: %w", err)
 			}
 		}
 
 		return nil
-	}, lock{lockMap: &r.valsetMutexMap, key: epoch})
+	}, &r.valsetMutexMap, epoch)
 }
 
 func (r *Repository) updateLatestEpochIfNeeded(ctx context.Context, key []byte, epoch symbiotic.Epoch) error {
@@ -654,10 +645,7 @@ func (r *Repository) GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (
 		}
 
 		epoch, err = extractEpochFromValue(value)
-		if err != nil {
-			return errors.Errorf("failed to extract epoch from value: %w", err)
-		}
-		return nil
+		return err
 	})
 }
 

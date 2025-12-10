@@ -12,13 +12,6 @@ import (
 )
 
 func (r *Repository) SaveNextValsetData(ctx context.Context, data entity.NextValsetData) error {
-	locks := []lock{
-		{lockMap: &r.valsetMutexMap, key: data.NextValidatorSet.Epoch},
-	}
-	if data.PrevValidatorSet.Epoch != data.NextValidatorSet.Epoch {
-		locks = append(locks, lock{lockMap: &r.valsetMutexMap, key: data.PrevValidatorSet.Epoch})
-	}
-
 	return r.doUpdateInTxWithLock(ctx, "SaveNextValsetData", func(ctx context.Context) error {
 		// Save previous validator set and config
 		if err := r.saveConfig(ctx, data.PrevNetworkConfig, data.PrevValidatorSet.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
@@ -63,7 +56,7 @@ func (r *Repository) SaveNextValsetData(ctx context.Context, data entity.NextVal
 		}
 
 		return nil
-	}, locks...)
+	}, &r.valsetMutexMap, data.NextValidatorSet.Epoch)
 }
 
 // saveValsetHeaderRequestIDEpochMapping saves bidirectional mapping between epoch and validator set header request ID

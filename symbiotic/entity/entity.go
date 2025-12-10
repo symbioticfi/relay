@@ -45,44 +45,12 @@ var (
 )
 
 type ValidatorSetStatus uint8
-type ValidatorSetStatusItem uint8
 
 const (
-	HeaderDerived    ValidatorSetStatusItem = 2 << 0
-	HeaderSigned     ValidatorSetStatusItem = 2 << 1
-	HeaderAggregated ValidatorSetStatusItem = 2 << 2
-	HeaderCommitted  ValidatorSetStatusItem = 2 << 3
-	HeaderMissed     ValidatorSetStatusItem = 2 << 4
+	HeaderDerived ValidatorSetStatus = iota
+	HeaderAggregated
+	HeaderCommitted
 )
-
-func (s ValidatorSetStatus) IsOn(v ValidatorSetStatusItem) bool {
-	return (s & ValidatorSetStatus(v)) != 0
-}
-
-func (s *ValidatorSetStatus) TurnOn(v ValidatorSetStatusItem) {
-	var turnOns, turnOffs []ValidatorSetStatusItem
-	switch v {
-	case HeaderDerived:
-		turnOns = append(turnOns, HeaderDerived)
-	case HeaderSigned:
-		turnOns = append(turnOns, HeaderDerived, HeaderSigned)
-	case HeaderAggregated:
-		turnOns = append(turnOns, HeaderDerived, HeaderSigned, HeaderAggregated)
-	case HeaderCommitted:
-		turnOns = append(turnOns, HeaderDerived, HeaderSigned, HeaderAggregated, HeaderCommitted)
-		turnOffs = append(turnOffs, HeaderMissed)
-	case HeaderMissed:
-		turnOns = append(turnOns, HeaderMissed)
-		turnOffs = append(turnOffs, HeaderCommitted)
-	}
-
-	for _, on := range turnOns {
-		*s |= ValidatorSetStatus(on)
-	}
-	for _, off := range turnOffs {
-		*s &^= ValidatorSetStatus(off)
-	}
-}
 
 type RawSignature []byte
 type RawMessageHash []byte
@@ -169,17 +137,13 @@ func (q QuorumThresholdPct) MarshalJSON() ([]byte, error) {
 }
 
 func (s ValidatorSetStatus) MarshalJSON() ([]byte, error) {
-	switch {
-	case s.IsOn(HeaderCommitted):
-		return []byte("\"Committed\""), nil
-	case s.IsOn(HeaderMissed):
-		return []byte("\"Missed\""), nil
-	case s.IsOn(HeaderAggregated):
-		return []byte("\"Aggregated\""), nil
-	case s.IsOn(HeaderSigned):
-		return []byte("\"Signed\""), nil
-	case s.IsOn(HeaderDerived):
+	switch s {
+	case HeaderDerived:
 		return []byte("\"Derived\""), nil
+	case HeaderAggregated:
+		return []byte("\"Aggregated\""), nil
+	case HeaderCommitted:
+		return []byte("\"Committed\""), nil
 	default:
 		return []byte("\"Unknown\""), nil
 	}

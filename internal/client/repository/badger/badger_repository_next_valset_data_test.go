@@ -66,11 +66,11 @@ func newTestNextValsetData(t *testing.T) entity.NextValsetData {
 	t.Helper()
 
 	prevValidatorSet := randomValidatorSet(t, 1)
-	prevValidatorSet.Status.TurnOn(symbiotic.HeaderCommitted)
+	prevValidatorSet.Status = symbiotic.HeaderCommitted
 	prevNetworkConfig := randomNetworkConfig(t)
 
 	nextValidatorSet := randomValidatorSet(t, 2)
-	nextValidatorSet.Status.TurnOn(symbiotic.HeaderDerived)
+	nextValidatorSet.Status = symbiotic.HeaderDerived
 	nextNetworkConfig := randomNetworkConfig(t)
 
 	requestID := common.BytesToHash(randomBytes(t, 32))

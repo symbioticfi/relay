@@ -21,7 +21,6 @@ var zeroHeaderHash = common.HexToHash("0x868e09d528a16744c1f38ea3c10cc2251e01a45
 type repo interface {
 	GetConfigByEpoch(_ context.Context, epoch symbiotic.Epoch) (symbiotic.NetworkConfig, error)
 	GetValidatorSetByEpoch(_ context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error)
-	UpdateValidatorSetStatus(ctx context.Context, epoch symbiotic.Epoch, item symbiotic.ValidatorSetStatusItem) error
 	UpdateValidatorSetStatusAndRemovePendingProof(ctx context.Context, valset symbiotic.ValidatorSet) error
 	GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
 	SaveFirstUncommittedValidatorSetEpoch(_ context.Context, epoch symbiotic.Epoch) error
@@ -162,7 +161,7 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 			return errors.Errorf("failed to get validator set for epoch %d: %w", epoch, err)
 		}
 
-		if valset.Status.IsOn(symbiotic.HeaderCommitted) {
+		if valset.Status == symbiotic.HeaderCommitted {
 			continue
 		}
 
@@ -209,9 +208,6 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 			slog.InfoContext(ctx, "Validator set is committed", "epoch", epoch)
 			s.cfg.Metrics.ObserveEpoch("committed", uint64(valset.Epoch))
 		} else {
-			if err := s.cfg.Repo.UpdateValidatorSetStatus(ctx, valset.Epoch, symbiotic.HeaderMissed); err != nil {
-				return errors.Errorf("failed to save validator set: %w", err)
-			}
 			slog.InfoContext(ctx, "Validator set is missing", "epoch", epoch)
 			s.cfg.Metrics.ObserveEpoch("missed", uint64(valset.Epoch))
 		}

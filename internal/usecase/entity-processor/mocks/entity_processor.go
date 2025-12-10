@@ -147,7 +147,7 @@ func (mr *MockRepositoryMockRecorder) SaveSignature(ctx, signature, validator, a
 }
 
 // UpdateValidatorSetStatus mocks base method.
-func (m *MockRepository) UpdateValidatorSetStatus(ctx context.Context, epoch entity.Epoch, item entity.ValidatorSetStatusItem) error {
+func (m *MockRepository) UpdateValidatorSetStatus(ctx context.Context, epoch entity.Epoch, item entity.ValidatorSetStatus) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateValidatorSetStatus", ctx, epoch, item)
 	ret0, _ := ret[0].(error)

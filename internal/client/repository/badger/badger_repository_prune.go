@@ -149,7 +149,7 @@ func (r *Repository) pruneValidatorSets(ctx context.Context, epoch symbiotic.Epo
 		}
 
 		return nil
-	}, lock{lockMap: &r.valsetMutexMap, key: epoch})
+	}, &r.valsetMutexMap, epoch)
 
 	if err != nil {
 		return errors.Errorf("failed to prune validator sets: %w", err)
@@ -227,7 +227,7 @@ func (r *Repository) pruneSignatureEntities(ctx context.Context, epoch symbiotic
 		}
 
 		return nil
-	}, lock{lockMap: &r.signatureMutexMap, key: requestID})
+	}, &r.signatureMutexMap, requestID)
 }
 
 func (r *Repository) pruneAggregationProof(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
@@ -243,7 +243,7 @@ func (r *Repository) pruneAggregationProof(ctx context.Context, epoch symbiotic.
 		}
 
 		return nil
-	}, lock{lockMap: &r.proofsMutexMap, key: requestID})
+	}, &r.proofsMutexMap, requestID)
 }
 
 // PruneRequestIDEpochIndices removes the request ID epoch indices for the given epoch.

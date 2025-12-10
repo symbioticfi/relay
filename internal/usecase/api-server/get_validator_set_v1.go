@@ -88,16 +88,13 @@ func convertValidatorToPB(v symbiotic.Validator) *apiv1.Validator {
 }
 
 func convertValidatorSetStatusToPB(status symbiotic.ValidatorSetStatus) apiv1.ValidatorSetStatus {
-	switch {
-	case status.IsOn(symbiotic.HeaderCommitted):
-		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED
-	case status.IsOn(symbiotic.HeaderMissed):
-		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_MISSED
-	case status.IsOn(symbiotic.HeaderAggregated):
-		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_AGGREGATED
-	case status.IsOn(symbiotic.HeaderDerived):
+	switch status {
+	case symbiotic.HeaderDerived:
 		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_DERIVED
-
+	case symbiotic.HeaderAggregated:
+		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_AGGREGATED
+	case symbiotic.HeaderCommitted:
+		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED
 	default:
 		return apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_UNSPECIFIED
 	}
