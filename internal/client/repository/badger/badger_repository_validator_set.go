@@ -248,7 +248,7 @@ func (r *Repository) UpdateValidatorSetStatus(ctx context.Context, epoch symbiot
 			return errors.Errorf("failed to store validator set status: %w", err)
 		}
 
-		if status == symbiotic.HeaderAggregated {
+		if status >= symbiotic.HeaderAggregated {
 			if err := r.updateLatestEpochIfNeeded(ctx, []byte(latestAggregatedValidatorSetEpochKey), epoch); err != nil {
 				return errors.Errorf("failed to update latest aggregated validator set epoch: %w", err)
 			}
