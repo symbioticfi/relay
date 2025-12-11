@@ -22,8 +22,8 @@ func keyAggregationProofCommited(epoch symbiotic.Epoch) []byte {
 	return append([]byte(aggregationProofCommitPrefix), epoch.Bytes()...)
 }
 
-func (r *Repository) SaveProofCommitPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
-	return r.doUpdateInTx(ctx, "SaveProofCommitPending", func(ctx context.Context) error {
+func (r *Repository) saveProofCommitPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
+	return r.doUpdateInTx(ctx, "saveProofCommitPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		_, err := txn.Get(keyAggregationProofCommited(epoch))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
@@ -41,8 +41,8 @@ func (r *Repository) SaveProofCommitPending(ctx context.Context, epoch symbiotic
 	})
 }
 
-func (r *Repository) RemoveProofCommitPending(ctx context.Context, epoch symbiotic.Epoch) error {
-	return r.doUpdateInTx(ctx, "RemoveProofCommitPending", func(ctx context.Context) error {
+func (r *Repository) removeProofCommitPending(ctx context.Context, epoch symbiotic.Epoch) error {
+	return r.doUpdateInTx(ctx, "removeProofCommitPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		pendingKey := keyAggregationProofCommited(epoch)
 

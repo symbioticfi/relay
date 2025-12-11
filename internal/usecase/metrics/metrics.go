@@ -38,6 +38,10 @@ type Metrics struct {
 	evmCommitGasUsed  *prometheus.HistogramVec
 	evmCommitGasPrice *prometheus.HistogramVec
 
+	// epoch
+	epochsTotal *prometheus.GaugeVec
+	epochTime   *prometheus.GaugeVec
+
 	// pruner
 	prunedEpochsTotal *prometheus.CounterVec
 }
@@ -203,6 +207,18 @@ func newMetrics(registerer prometheus.Registerer) *Metrics {
 	)
 	all = append(all, m.requestsInFlight)
 
+	m.epochsTotal = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "symbiotic_relay_epochs_total",
+		Help: "Latest number of epochs",
+	}, []string{"type"})
+	all = append(all, m.epochsTotal)
+
+	m.epochTime = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "symbiotic_relay_epoch_time_seconds",
+		Help: "Time of the latest epoch in seconds",
+	}, []string{"type"})
+	all = append(all, m.epochTime)
+
 	m.prunedEpochsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "symbiotic_relay_pruned_epochs_total",
 		Help: "Total number of epochs pruned from storage",
@@ -273,4 +289,9 @@ func (m *Metrics) ObserveRepoQueryTotalDuration(queryName, status string, d time
 
 func (m *Metrics) IncPrunedEpochsCount(entityType string) {
 	m.prunedEpochsTotal.WithLabelValues(entityType).Inc()
+}
+
+func (m *Metrics) ObserveEpoch(epochType string, epochNumber uint64) {
+	m.epochsTotal.WithLabelValues(epochType).Set(float64(epochNumber))
+	m.epochTime.WithLabelValues(epochType).Set(float64(time.Now().Unix()))
 }

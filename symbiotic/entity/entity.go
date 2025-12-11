@@ -50,7 +50,6 @@ const (
 	HeaderDerived ValidatorSetStatus = iota
 	HeaderAggregated
 	HeaderCommitted
-	HeaderMissed
 )
 
 type RawSignature []byte
@@ -83,6 +82,16 @@ type Timestamp uint64
 // Example: Epoch(51).Bytes() < Epoch(501).Bytes() when comparing bytes lexicographically.
 func (e Epoch) Bytes() []byte {
 	return paddedUint64(uint64(e))
+}
+
+// EpochFromBytes decodes a BigEndian encoded byte slice back to an Epoch.
+// This is the inverse operation of Epoch.Bytes().
+// Returns an error if the input is not exactly 8 bytes long.
+func EpochFromBytes(b []byte) (Epoch, error) {
+	if len(b) != 8 {
+		return 0, errors.Errorf("invalid epoch bytes length: expected 8, got %d", len(b))
+	}
+	return Epoch(binary.BigEndian.Uint64(b)), nil
 }
 
 func (raw RawSignature) MarshalText() ([]byte, error) {
@@ -135,8 +144,6 @@ func (s ValidatorSetStatus) MarshalJSON() ([]byte, error) {
 		return []byte("\"Aggregated\""), nil
 	case HeaderCommitted:
 		return []byte("\"Committed\""), nil
-	case HeaderMissed:
-		return []byte("\"Missed\""), nil
 	default:
 		return []byte("\"Unknown\""), nil
 	}

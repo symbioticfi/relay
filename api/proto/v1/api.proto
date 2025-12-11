@@ -496,9 +496,6 @@ enum ValidatorSetStatus {
 
   // Committed status
   VALIDATOR_SET_STATUS_COMMITTED = 3;
-
-  // Missed status
-  VALIDATOR_SET_STATUS_MISSED = 4;
 }
 
 // Validator information

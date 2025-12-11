@@ -13,6 +13,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
+	"github.com/symbioticfi/relay/internal/entity"
 	entity_processor "github.com/symbioticfi/relay/internal/usecase/entity-processor"
 	entity_mocks "github.com/symbioticfi/relay/internal/usecase/entity-processor/mocks"
 	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
@@ -106,6 +107,7 @@ func newTestSetup(t *testing.T) *testSetup {
 		Aggregator:               mockEntityAggregator,
 		AggProofSignal:           mockEntityAggProofSignal,
 		SignatureProcessedSignal: signatureProcessedSignal,
+		Metrics:                  doNothingMetrics{},
 	})
 	require.NoError(t, err)
 
@@ -149,6 +151,16 @@ func newPrivateKey(t *testing.T) crypto.PrivateKey {
 	return privateKey
 }
 
+func randomNetworkConfig() symbiotic.NetworkConfig {
+	return symbiotic.NetworkConfig{
+		VerificationType:     symbiotic.VerificationTypeBlsBn254Simple,
+		RequiredHeaderKeyTag: symbiotic.KeyTag(15),
+		EpochDuration:        uint64(time.Minute.Seconds()),
+		NumAggregators:       1,
+		NumCommitters:        1,
+	}
+}
+
 func createTestValidatorSet(t *testing.T, setup *testSetup, privateKey crypto.PrivateKey) symbiotic.ValidatorSet {
 	t.Helper()
 	vs := symbiotic.ValidatorSet{
@@ -169,7 +181,18 @@ func createTestValidatorSet(t *testing.T, setup *testSetup, privateKey crypto.Pr
 		}},
 	}
 
-	require.NoError(t, setup.repo.SaveValidatorSet(t.Context(), vs))
+	require.NoError(t, setup.repo.SaveNextValsetData(t.Context(), entity.NextValsetData{
+		NextValidatorSet:     vs,
+		NextNetworkConfig:    randomNetworkConfig(),
+		PrevValidatorSet:     vs,
+		PrevNetworkConfig:    randomNetworkConfig(),
+		SignatureRequest:     nil,
+		ValidatorSetMetadata: symbiotic.ValidatorSetMetadata{},
+	}))
 
 	return vs
 }
+
+type doNothingMetrics struct{}
+
+func (d doNothingMetrics) ObserveEpoch(epochType string, epochNumber uint64) {}

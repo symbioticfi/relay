@@ -125,7 +125,7 @@ func TestCachedRepository_ValidatorSet(t *testing.T) {
 	require.Error(t, err)
 
 	// Save validator set
-	err = cachedRepo.SaveValidatorSet(ctx, testValidatorSet)
+	err = cachedRepo.saveValidatorSet(ctx, testValidatorSet)
 	require.NoError(t, err)
 
 	// Test cache hit - should retrieve from cache

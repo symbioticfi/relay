@@ -158,6 +158,7 @@ func runApp(ctx context.Context) error {
 		Aggregator:               agg,
 		AggProofSignal:           aggProofReadySignal,
 		SignatureProcessedSignal: signatureProcessedSignal,
+		Metrics:                  mtr,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create entity processor: %w", err)
@@ -276,9 +277,11 @@ func runApp(ctx context.Context) error {
 	slog.InfoContext(ctx, "Created signer app, starting")
 
 	statusTracker, err := valsetStatusTracker.New(valsetStatusTracker.Config{
-		EvmClient:       evmClient,
-		Repo:            repo,
-		PollingInterval: time.Second * 5,
+		EvmClient:            evmClient,
+		Repo:                 repo,
+		PollingInterval:      time.Second * 5,
+		EpochPollingInterval: time.Minute,
+		Metrics:              mtr,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create valset status tracker: %w", err)
@@ -386,12 +389,6 @@ func runApp(ctx context.Context) error {
 	}
 
 	err = aggProofReadySignal.SetHandlers(
-		func(ctx context.Context, msg symbiotic.AggregationProof) error {
-			if err := statusTracker.HandleProofAggregated(ctx, msg); err != nil {
-				return errors.Errorf("failed to handle proof aggregated by valset status tracker: %w", err)
-			}
-			return nil
-		},
 		api.HandleProofAggregated(),
 	)
 	if err != nil {
@@ -420,6 +417,16 @@ func runApp(ctx context.Context) error {
 			return errors.Errorf("failed to start sync runner: %w", err)
 		}
 		slog.InfoContext(ctx, "Sync finished stopped")
+		return nil
+	})
+
+	eg.Go(func() error {
+		err := statusTracker.RunEpochTracker(egCtx)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.ErrorContext(ctx, "Epoch tracker failed", "error", err)
+			return errors.Errorf("failed to start epoch tracker: %w", err)
+		}
+		slog.InfoContext(ctx, "Epoch tracker stopped")
 		return nil
 	})
 

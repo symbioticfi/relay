@@ -1289,11 +1289,10 @@
         "VALIDATOR_SET_STATUS_UNSPECIFIED",
         "VALIDATOR_SET_STATUS_DERIVED",
         "VALIDATOR_SET_STATUS_AGGREGATED",
-        "VALIDATOR_SET_STATUS_COMMITTED",
-        "VALIDATOR_SET_STATUS_MISSED"
+        "VALIDATOR_SET_STATUS_COMMITTED"
       ],
       "default": "VALIDATOR_SET_STATUS_UNSPECIFIED",
-      "description": "- VALIDATOR_SET_STATUS_UNSPECIFIED: Default/unknown status\n - VALIDATOR_SET_STATUS_DERIVED: Derived status\n - VALIDATOR_SET_STATUS_AGGREGATED: Aggregated status\n - VALIDATOR_SET_STATUS_COMMITTED: Committed status\n - VALIDATOR_SET_STATUS_MISSED: Missed status",
+      "description": "- VALIDATOR_SET_STATUS_UNSPECIFIED: Default/unknown status\n - VALIDATOR_SET_STATUS_DERIVED: Derived status\n - VALIDATOR_SET_STATUS_AGGREGATED: Aggregated status\n - VALIDATOR_SET_STATUS_COMMITTED: Committed status",
       "title": "Validator set status enumeration"
     },
     "ValidatorVault": {

@@ -19,13 +19,13 @@ func keyNetworkConfig(epoch symbiotic.Epoch) []byte {
 	return epochKey(networkConfigPrefix, epoch)
 }
 
-func (r *Repository) SaveConfig(ctx context.Context, config symbiotic.NetworkConfig, epoch symbiotic.Epoch) error {
+func (r *Repository) saveConfig(ctx context.Context, config symbiotic.NetworkConfig, epoch symbiotic.Epoch) error {
 	configBytes, err := networkConfigToBytes(config)
 	if err != nil {
 		return errors.Errorf("failed to marshal network config: %w", err)
 	}
 
-	return r.doUpdateInTx(ctx, "SaveConfig", func(ctx context.Context) error {
+	return r.doUpdateInTx(ctx, "saveConfig", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		_, err := txn.Get(keyNetworkConfig(epoch))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {

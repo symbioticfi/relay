@@ -34,6 +34,8 @@ type repo interface {
 	GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch symbiotic.Epoch, limit int) ([]symbiotic.ProofCommitKey, error)
 	SaveNextValsetData(ctx context.Context, data entity.NextValsetData) error
 	GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
+	UpdateValidatorSetStatus(ctx context.Context, epoch symbiotic.Epoch, item symbiotic.ValidatorSetStatus) error
+	GetLatestAggregatedValsetHeader(ctx context.Context) (symbiotic.ValidatorSetHeader, error)
 }
 
 type deriver interface {
@@ -43,6 +45,7 @@ type deriver interface {
 
 type metrics interface {
 	ObserveAggregationProofSize(proofSize int, validatorCount int)
+	ObserveEpoch(epochType string, epochNumber uint64)
 }
 
 type keyProvider interface {
@@ -398,7 +401,16 @@ func (s *Service) process(
 	}
 	s.cfg.Signer.EnqueueRequestID(metadata.RequestID)
 
-	slog.DebugContext(ctx, "Marked proof commit as pending", "epoch", valSet.Epoch, "requestId", extendedSig.RequestID().Hex())
+	_, err = s.cfg.Repo.GetAggregationProof(ctx, metadata.RequestID)
+	if proofFound := err == nil; proofFound {
+		if err := s.cfg.Repo.UpdateValidatorSetStatus(ctx, valSet.Epoch, symbiotic.HeaderAggregated); err != nil {
+			return errors.Errorf("failed to update validator set status to aggregated for epoch %d: %w", valSet.Epoch, err)
+		}
+	} else if !errors.Is(err, entity.ErrEntityNotFound) {
+		return errors.Errorf("failed to get valset header proof for epoch %d: %w", valSet.Epoch, err)
+	}
+
+	slog.DebugContext(ctx, "Saved next valset data and marked proof commit as pending", "epoch", valSet.Epoch, "requestId", extendedSig.RequestID().Hex())
 	return nil
 }
 

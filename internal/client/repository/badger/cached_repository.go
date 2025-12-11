@@ -79,7 +79,7 @@ func (r *CachedRepository) GetConfigByEpoch(ctx context.Context, epoch symbiotic
 }
 
 func (r *CachedRepository) SaveConfig(ctx context.Context, config symbiotic.NetworkConfig, epoch symbiotic.Epoch) error {
-	err := r.Repository.SaveConfig(ctx, config, epoch)
+	err := r.saveConfig(ctx, config, epoch)
 	if err != nil {
 		return err
 	}
@@ -120,26 +120,6 @@ func (r *CachedRepository) GetValidatorSetMetadata(ctx context.Context, epoch sy
 	// Store in cache for future use
 	r.validatorSetMetadataCache.Add(epoch, validatorSetMetadata)
 	return validatorSetMetadata, nil
-}
-
-func (r *CachedRepository) SaveValidatorSet(ctx context.Context, validatorSet symbiotic.ValidatorSet) error {
-	err := r.Repository.SaveValidatorSet(ctx, validatorSet)
-	if err != nil {
-		return err
-	}
-	// Cache the newly saved validator set
-	r.validatorSetCache.Add(validatorSet.Epoch, validatorSet)
-	return nil
-}
-
-func (r *CachedRepository) SaveValidatorSetMetadata(ctx context.Context, validatorSetMetadata symbiotic.ValidatorSetMetadata) error {
-	err := r.Repository.SaveValidatorSetMetadata(ctx, validatorSetMetadata)
-	if err != nil {
-		return err
-	}
-	// Cache the newly saved validator set
-	r.validatorSetMetadataCache.Add(validatorSetMetadata.Epoch, validatorSetMetadata)
-	return nil
 }
 
 // PruneValsetEntities delegates to the underlying repository and evicts validator set caches.

@@ -55,7 +55,7 @@ func TestRepository_PruneAllEntityTypes(t *testing.T) {
 		Status:           symbiotic.HeaderDerived,
 	}
 
-	err = repo.SaveValidatorSet(ctx, valset)
+	err = repo.saveValidatorSet(ctx, valset)
 	require.NoError(t, err)
 
 	// 2. Save network config
@@ -73,7 +73,7 @@ func TestRepository_PruneAllEntityTypes(t *testing.T) {
 		NumCommitters:           3,
 		NumAggregators:          5,
 	}
-	err = repo.SaveConfig(ctx, networkConfig, epoch)
+	err = repo.saveConfig(ctx, networkConfig, epoch)
 	require.NoError(t, err)
 
 	// 3. Save signature request and compute requestID
@@ -96,7 +96,7 @@ func TestRepository_PruneAllEntityTypes(t *testing.T) {
 	requestID := signature.RequestID()
 
 	// 4. Save proof commit pending
-	err = repo.SaveProofCommitPending(ctx, epoch, requestID)
+	err = repo.saveProofCommitPending(ctx, epoch, requestID)
 	require.NoError(t, err)
 
 	// 5. Save signature request
@@ -224,7 +224,7 @@ func TestRepository_PruneEntityTypes_Separately(t *testing.T) {
 		}},
 		Status: symbiotic.HeaderDerived,
 	}
-	err = repo.SaveValidatorSet(ctx, valset)
+	err = repo.saveValidatorSet(ctx, valset)
 	require.NoError(t, err)
 
 	// 2. Save network config
@@ -242,7 +242,7 @@ func TestRepository_PruneEntityTypes_Separately(t *testing.T) {
 		NumCommitters:           3,
 		NumAggregators:          5,
 	}
-	err = repo.SaveConfig(ctx, networkConfig, epoch)
+	err = repo.saveConfig(ctx, networkConfig, epoch)
 	require.NoError(t, err)
 
 	// 3. Create signature and proof entities
@@ -262,7 +262,7 @@ func TestRepository_PruneEntityTypes_Separately(t *testing.T) {
 	}
 	requestID := signature.RequestID()
 
-	err = repo.SaveProofCommitPending(ctx, epoch, requestID)
+	err = repo.saveProofCommitPending(ctx, epoch, requestID)
 	require.NoError(t, err)
 	err = repo.SaveSignatureRequest(ctx, requestID, sigRequest)
 	require.NoError(t, err)

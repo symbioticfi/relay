@@ -16,14 +16,14 @@ func TestBadgerRepository_NetworkConfig(t *testing.T) {
 
 	config := randomNetworkConfig(t)
 
-	err := repo.SaveConfig(t.Context(), config, 1)
+	err := repo.saveConfig(t.Context(), config, 1)
 	require.NoError(t, err)
 
 	loadedConfig, err := repo.GetConfigByEpoch(t.Context(), 1)
 	require.NoError(t, err)
 	require.Equal(t, config, loadedConfig)
 
-	err = repo.SaveConfig(t.Context(), config, 1)
+	err = repo.saveConfig(t.Context(), config, 1)
 	require.ErrorIs(t, err, entity.ErrEntityAlreadyExist)
 }
 
