@@ -245,6 +245,9 @@ func (s *AggregatorApp) TryAggregateRequestsWithoutProof(ctx context.Context) er
 			lastHash = req.RequestID
 		}
 
+		if epoch == startEpoch {
+			break // Prevent underflow when decrementing from 0
+		}
 	}
 
 	return nil
