@@ -156,12 +156,6 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregati
 	if err := s.cfg.Repo.UpdateValidatorSetStatus(ctx, aggregationProof.Epoch, symbiotic.HeaderAggregated); err != nil {
 		return errors.Errorf("failed to update validator set status: %w", err)
 	}
-	latestAggregatedHeader, err := s.cfg.Repo.GetLatestAggregatedValsetHeader(ctx)
-	if latestFound := err == nil; latestFound {
-		s.cfg.Metrics.ObserveEpoch("aggregated", uint64(latestAggregatedHeader.Epoch))
-	} else if !errors.Is(err, entity.ErrEntityNotFound) {
-		return errors.Errorf("failed to get latest aggregated valset header: %w", err)
-	}
 
 	slog.DebugContext(ctx, "Proof saved")
 

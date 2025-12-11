@@ -71,14 +71,6 @@ func keyValidatorSetMetadata(epoch symbiotic.Epoch) []byte {
 	return epochKey(validatorSetMetadataPrefix, epoch)
 }
 
-func keyValsetHeaderRequestIDToEpoch(requestID common.Hash) []byte {
-	return []byte("valset_header_request_id_to_epoch:" + requestID.Hex())
-}
-
-func keyValsetHeaderEpochToRequestID(epoch symbiotic.Epoch) []byte {
-	return epochKey("valset_header_epoch_to_request_id:", epoch)
-}
-
 func (r *Repository) saveValidatorSetMetadata(ctx context.Context, data symbiotic.ValidatorSetMetadata) error {
 	metadataBytes, err := validatorSetMetadataToBytes(data)
 	if err != nil {
@@ -256,7 +248,7 @@ func (r *Repository) UpdateValidatorSetStatus(ctx context.Context, epoch symbiot
 			return errors.Errorf("failed to store validator set status: %w", err)
 		}
 
-		if status == symbiotic.HeaderAggregated {
+		if status >= symbiotic.HeaderAggregated {
 			if err := r.updateLatestEpochIfNeeded(ctx, []byte(latestAggregatedValidatorSetEpochKey), epoch); err != nil {
 				return errors.Errorf("failed to update latest aggregated validator set epoch: %w", err)
 			}

@@ -33,10 +33,11 @@ type metrics interface {
 }
 
 type Config struct {
-	EvmClient       evm.IEvmClient `validate:"required"`
-	Repo            repo           `validate:"required"`
-	PollingInterval time.Duration  `validate:"required,gt=0"`
-	Metrics         metrics        `validate:"required"`
+	EvmClient            evm.IEvmClient `validate:"required"`
+	Repo                 repo           `validate:"required"`
+	PollingInterval      time.Duration  `validate:"required,gt=0"`
+	EpochPollingInterval time.Duration  `validate:"required,gt=0"`
+	Metrics              metrics        `validate:"required"`
 }
 
 type Service struct {
@@ -206,22 +207,13 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 				return errors.Errorf("failed to save validator set and remove pending proof: %w", err)
 			}
 			slog.InfoContext(ctx, "Validator set is committed", "epoch", epoch)
-			s.cfg.Metrics.ObserveEpoch("committed", uint64(valset.Epoch))
 		} else {
 			slog.InfoContext(ctx, "Validator set is missing", "epoch", epoch)
-			s.cfg.Metrics.ObserveEpoch("missed", uint64(valset.Epoch))
 		}
 	}
 
 	if err := s.cfg.Repo.SaveFirstUncommittedValidatorSetEpoch(ctx, symbiotic.Epoch(lastCommittedEpoch+1)); err != nil {
 		return errors.Errorf("failed to save last uncommitted validator set: %w", err)
-	}
-
-	latestAggregatedValsetHeader, err := s.cfg.Repo.GetLatestAggregatedValsetHeader(ctx)
-	if found := err == nil; found {
-		s.cfg.Metrics.ObserveEpoch("aggregated", uint64(latestAggregatedValsetHeader.Epoch))
-	} else if !errors.Is(err, entity.ErrEntityNotFound) {
-		return errors.Errorf("failed to get latest aggregated valset header: %w", err)
 	}
 
 	return nil
@@ -232,7 +224,6 @@ func (s *Service) findLatestNonZeroSettlements(ctx context.Context) ([]symbiotic
 	if err != nil {
 		return nil, errors.Errorf("failed to get current epoch: %w", err)
 	}
-	s.cfg.Metrics.ObserveEpoch("current", uint64(currentEpoch))
 
 	for epoch := currentEpoch; ; epoch-- {
 		config, err := s.cfg.Repo.GetConfigByEpoch(ctx, epoch)
@@ -261,4 +252,50 @@ func (s *Service) findLatestNonZeroSettlements(ctx context.Context) ([]symbiotic
 	}
 
 	return nil, nil
+}
+
+func (s *Service) RunEpochTracker(ctx context.Context) error {
+	ctx = log.WithComponent(ctx, "epoch_tracker")
+
+	slog.InfoContext(ctx, "Starting epoch tracker service", "epochPollingInterval", s.cfg.EpochPollingInterval)
+
+	timer := time.NewTimer(0)
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-timer.C:
+			if err := s.trackEpochs(ctx); err != nil {
+				slog.ErrorContext(ctx, "Failed to track epochs", "error", err)
+			}
+			timer.Reset(s.cfg.EpochPollingInterval)
+		}
+	}
+}
+
+func (s *Service) trackEpochs(ctx context.Context) error {
+	latestDerived, err := s.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
+	if err == nil {
+		s.cfg.Metrics.ObserveEpoch("derived", uint64(latestDerived))
+	} else if !errors.Is(err, entity.ErrEntityNotFound) {
+		return errors.Errorf("failed to get latest validator set epoch: %w", err)
+	}
+
+	latestAggregated, err := s.cfg.Repo.GetLatestAggregatedValsetHeader(ctx)
+	if err == nil {
+		s.cfg.Metrics.ObserveEpoch("aggregated", uint64(latestAggregated.Epoch))
+	} else if !errors.Is(err, entity.ErrEntityNotFound) {
+		return errors.Errorf("failed to get latest aggregated valset header: %w", err)
+	}
+
+	firstUncommitted, err := s.cfg.Repo.GetFirstUncommittedValidatorSetEpoch(ctx)
+	if err == nil {
+		if firstUncommitted > 0 {
+			s.cfg.Metrics.ObserveEpoch("committed", uint64(firstUncommitted-1))
+		}
+	} else if !errors.Is(err, entity.ErrEntityNotFound) {
+		return errors.Errorf("failed to get first uncommitted validator set epoch: %w", err)
+	}
+
+	return nil
 }
