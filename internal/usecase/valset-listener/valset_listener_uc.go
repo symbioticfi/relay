@@ -34,7 +34,6 @@ type repo interface {
 	GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch symbiotic.Epoch, limit int) ([]symbiotic.ProofCommitKey, error)
 	SaveNextValsetData(ctx context.Context, data entity.NextValsetData) error
 	GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
-	GetValsetHeaderProofForEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.AggregationProof, error)
 	UpdateValidatorSetStatus(ctx context.Context, epoch symbiotic.Epoch, item symbiotic.ValidatorSetStatus) error
 	GetLatestAggregatedValsetHeader(ctx context.Context) (symbiotic.ValidatorSetHeader, error)
 }
@@ -408,7 +407,7 @@ func (s *Service) process(
 	}
 	s.cfg.Metrics.ObserveEpoch("derived", uint64(latestHeader.Epoch))
 
-	_, err = s.cfg.Repo.GetValsetHeaderProofForEpoch(ctx, valSet.Epoch)
+	_, err = s.cfg.Repo.GetAggregationProof(ctx, metadata.RequestID)
 	if proofFound := err == nil; proofFound {
 		if err := s.cfg.Repo.UpdateValidatorSetStatus(ctx, valSet.Epoch, symbiotic.HeaderAggregated); err != nil {
 			return errors.Errorf("failed to update validator set status to aggregated for epoch %d: %w", valSet.Epoch, err)

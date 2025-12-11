@@ -3,12 +3,9 @@ package badger
 import (
 	"context"
 
-	"github.com/dgraph-io/badger/v4"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
 	"github.com/symbioticfi/relay/internal/entity"
-	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func (r *Repository) SaveNextValsetData(ctx context.Context, data entity.NextValsetData) error {
@@ -20,12 +17,6 @@ func (r *Repository) SaveNextValsetData(ctx context.Context, data entity.NextVal
 
 		if err := r.saveValidatorSet(ctx, data.PrevValidatorSet); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
 			return errors.Errorf("failed to save validator set for epoch %d: %w", data.PrevValidatorSet.Epoch, err)
-		}
-
-		// save bidirectional mapping between next epoch and validator set header request ID
-		err := r.saveValsetHeaderRequestIDEpochMapping(ctx, data.NextValidatorSet.Epoch, data.ValidatorSetMetadata.RequestID)
-		if err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
-			return errors.Errorf("failed to save valset header request ID epoch mapping: %w", err)
 		}
 
 		// Save next validator set and config
@@ -57,68 +48,4 @@ func (r *Repository) SaveNextValsetData(ctx context.Context, data entity.NextVal
 
 		return nil
 	}, &r.valsetMutexMap, data.NextValidatorSet.Epoch)
-}
-
-// saveValsetHeaderRequestIDEpochMapping saves bidirectional mapping between epoch and validator set header request ID
-func (r *Repository) saveValsetHeaderRequestIDEpochMapping(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
-	return r.doUpdateInTx(ctx, "saveValsetHeaderRequestIDEpochMapping", func(ctx context.Context) error {
-		txn := getTxn(ctx)
-
-		// Check if request ID → epoch mapping already exists
-		requestIDToEpochKey := keyValsetHeaderRequestIDToEpoch(requestID)
-		existingEpoch, err := txn.Get(requestIDToEpochKey)
-		if err == nil {
-			value, err := existingEpoch.ValueCopy(nil)
-			if err != nil {
-				return errors.Errorf("failed to read existing request ID mapping: %w", err)
-			}
-
-			currentEpoch, err := symbiotic.EpochFromBytes(value)
-			if err != nil {
-				return errors.Errorf("failed to decode existing request ID mapping epoch: %w", err)
-			}
-
-			if currentEpoch != epoch {
-				return errors.Errorf("valset header request ID already mapped to epoch %d", currentEpoch)
-			}
-
-			return nil
-		}
-		if !errors.Is(err, badger.ErrKeyNotFound) {
-			return errors.Errorf("failed to check existing request ID mapping: %w", err)
-		}
-
-		// Check if epoch → request ID mapping already exists
-		epochToRequestIDKey := keyValsetHeaderEpochToRequestID(epoch)
-		existingRequestID, err := txn.Get(epochToRequestIDKey)
-		if err == nil {
-			value, err := existingRequestID.ValueCopy(nil)
-			if err != nil {
-				return errors.Errorf("failed to read existing epoch mapping: %w", err)
-			}
-
-			currentRequestID := common.BytesToHash(value)
-			if currentRequestID != requestID {
-				return errors.Errorf("epoch %d already mapped to different request ID %s", epoch, currentRequestID.Hex())
-			}
-
-			return nil
-		}
-
-		if !errors.Is(err, badger.ErrKeyNotFound) {
-			return errors.Errorf("failed to check existing epoch mapping: %w", err)
-		}
-
-		// Save request ID → epoch mapping
-		if err := txn.Set(requestIDToEpochKey, epoch.Bytes()); err != nil {
-			return errors.Errorf("failed to save request ID to epoch mapping: %w", err)
-		}
-
-		// Save epoch → request ID mapping
-		if err := txn.Set(epochToRequestIDKey, requestID.Bytes()); err != nil {
-			return errors.Errorf("failed to save epoch to request ID mapping: %w", err)
-		}
-
-		return nil
-	})
 }

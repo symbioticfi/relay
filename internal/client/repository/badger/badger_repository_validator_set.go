@@ -71,14 +71,6 @@ func keyValidatorSetMetadata(epoch symbiotic.Epoch) []byte {
 	return epochKey(validatorSetMetadataPrefix, epoch)
 }
 
-func keyValsetHeaderRequestIDToEpoch(requestID common.Hash) []byte {
-	return []byte("valset_header_request_id_to_epoch:" + requestID.Hex())
-}
-
-func keyValsetHeaderEpochToRequestID(epoch symbiotic.Epoch) []byte {
-	return epochKey("valset_header_epoch_to_request_id:", epoch)
-}
-
 func (r *Repository) saveValidatorSetMetadata(ctx context.Context, data symbiotic.ValidatorSetMetadata) error {
 	metadataBytes, err := validatorSetMetadataToBytes(data)
 	if err != nil {
