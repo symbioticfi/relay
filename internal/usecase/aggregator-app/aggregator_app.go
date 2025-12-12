@@ -214,8 +214,8 @@ func (s *AggregatorApp) TryAggregateRequestsWithoutProof(ctx context.Context) er
 		startEpoch = latestEpoch - symbiotic.Epoch(epochsToCheckForMissingProofs)
 	}
 
+	var lastHash common.Hash
 	for epoch := latestEpoch; epoch >= startEpoch; epoch-- {
-		var lastHash common.Hash
 		requests, err := s.cfg.Repo.GetSignatureRequestsWithoutAggregationProof(ctx, epoch, 10, lastHash)
 		if err != nil {
 			return errors.Errorf("failed to get signature requests without aggregation proof for epoch %d: %w", epoch, err)

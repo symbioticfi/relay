@@ -32,7 +32,7 @@ func TestCompareMessageHasher_WithDifferentHash_ReturnsFalse(t *testing.T) {
 		{MessageHash: msgHash},
 	}
 
-	assert.Error(t, CheckSignaturesHaveSameTagAndMessageHash(signatures), "")
+	assert.Error(t, CheckSignaturesHaveSameTagAndMessageHash(signatures))
 }
 
 func TestCompareMessageHasher_WithEmptySignatures_ReturnsTrue(t *testing.T) {
