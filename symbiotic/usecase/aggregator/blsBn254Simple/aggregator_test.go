@@ -330,7 +330,7 @@ func TestAggregator_Aggregate_WithEmptySignatures_Fail(t *testing.T) {
 	signatures := []symbiotic.Signature{}
 
 	_, err = agg.Aggregate(valset, signatures)
-	require.EqualError(t, err, "empty signatures slice")
+	require.EqualError(t, err, "invalid signatures: empty signatures slice")
 }
 
 func TestAggregator_Aggregate_WithMismatchedMessageHashes_ReturnsError(t *testing.T) {

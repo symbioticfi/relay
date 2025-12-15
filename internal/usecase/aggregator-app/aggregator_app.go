@@ -211,7 +211,7 @@ func (s *AggregatorApp) TryAggregateRequestsWithoutProof(ctx context.Context) er
 
 	startEpoch := symbiotic.Epoch(0)
 	if latestEpoch >= symbiotic.Epoch(epochsToCheckForMissingProofs) {
-		startEpoch = latestEpoch - symbiotic.Epoch(epochsToCheckForMissingProofs)
+		startEpoch = latestEpoch - symbiotic.Epoch(epochsToCheckForMissingProofs) + 1
 	}
 
 	var lastHash common.Hash
@@ -234,12 +234,6 @@ func (s *AggregatorApp) TryAggregateRequestsWithoutProof(ctx context.Context) er
 			err := s.TryAggregateProofForRequestID(ctx, req.RequestID)
 			if err != nil {
 				return errors.Errorf("failed to try aggregate proof for request ID %s: %w", req.RequestID.Hex(), err)
-			}
-			// remove pending from db
-			err = s.cfg.Repo.RemoveAggregationProofPending(ctx, req.RequiredEpoch, req.RequestID)
-			// ignore not found and tx conflict errors, as they indicate the proof was already processed or is being processed
-			if err != nil && !errors.Is(err, entity.ErrEntityNotFound) && !errors.Is(err, entity.ErrTxConflict) {
-				return errors.Errorf("failed to remove aggregation proof from pending collection: %w", err)
 			}
 
 			lastHash = req.RequestID

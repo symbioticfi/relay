@@ -86,9 +86,6 @@ func createABITypes() (abiTypes, error) {
 }
 
 func (a Aggregator) Aggregate(valset symbiotic.ValidatorSet, signatures []symbiotic.Signature) (symbiotic.AggregationProof, error) {
-	if len(signatures) == 0 {
-		return symbiotic.AggregationProof{}, errors.New("empty signatures slice")
-	}
 	if err := helpers.CheckSignaturesHaveSameTagAndMessageHash(signatures); err != nil {
 		return symbiotic.AggregationProof{}, errors.Errorf("invalid signatures: %w", err)
 	}
@@ -96,8 +93,11 @@ func (a Aggregator) Aggregate(valset symbiotic.ValidatorSet, signatures []symbio
 		return symbiotic.AggregationProof{}, errors.Errorf("valset is not sorted by operator address asc: %w", err)
 	}
 
+	//nolint:gosec // we have already checked that signatures length is > 0
 	keyTag := signatures[0].KeyTag
+	//nolint:gosec // we have already checked that signatures length is > 0
 	messageHash := signatures[0].MessageHash
+
 	validatorsData, err := processValidators(valset.Validators, keyTag)
 	if err != nil {
 		return symbiotic.AggregationProof{}, err
