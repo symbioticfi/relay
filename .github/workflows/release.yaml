@@ -47,13 +47,13 @@ jobs:
           cat CHANGELOG.md
 
       - name: Download relay utils artifacts
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # pin@v5.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # pin@v7.0.0
         with:
           pattern: relay_utils_*
           merge-multiple: true
       
       - name: Download relay sidecar artifacts
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # pin@v5.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # pin@v7.0.0
         with:
           pattern: relay_sidecar_*
           merge-multiple: true
