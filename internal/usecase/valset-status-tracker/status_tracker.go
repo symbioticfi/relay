@@ -12,7 +12,6 @@ import (
 
 	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
-	"github.com/symbioticfi/relay/symbiotic/client/evm"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
@@ -32,12 +31,20 @@ type metrics interface {
 	ObserveEpoch(epochType string, epochNumber uint64)
 }
 
+type evmClient interface {
+	GetConfig(ctx context.Context, timestamp symbiotic.Timestamp, epoch symbiotic.Epoch) (symbiotic.NetworkConfig, error)
+	GetCurrentEpoch(ctx context.Context) (symbiotic.Epoch, error)
+	GetEpochStart(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.Timestamp, error)
+	GetHeaderHashAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch) (common.Hash, error)
+	GetLastCommittedHeaderEpoch(ctx context.Context, addr symbiotic.CrossChainAddress, evmOptions ...symbiotic.EVMOption) (symbiotic.Epoch, error)
+}
+
 type Config struct {
-	EvmClient            evm.IEvmClient `validate:"required"`
-	Repo                 repo           `validate:"required"`
-	PollingInterval      time.Duration  `validate:"required,gt=0"`
-	EpochPollingInterval time.Duration  `validate:"required,gt=0"`
-	Metrics              metrics        `validate:"required"`
+	EvmClient            evmClient     `validate:"required"`
+	Repo                 repo          `validate:"required"`
+	PollingInterval      time.Duration `validate:"required,gt=0"`
+	EpochPollingInterval time.Duration `validate:"required,gt=0"`
+	Metrics              metrics       `validate:"required"`
 }
 
 type Service struct {

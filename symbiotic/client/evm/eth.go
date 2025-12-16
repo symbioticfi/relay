@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/samber/lo"
 
@@ -78,11 +79,12 @@ type conn interface {
 	bind.DeployBackend
 }
 
-var _ driverContract = (*gen.ValSetDriverCaller)(nil)
+var _ driverContract = (*gen.ValSetDriver)(nil)
 
 // driverContract defines the interface for driver contract operations
 // gen.ValSetDriverCaller implements this interface
 type driverContract interface {
+	// read-only methods
 	GetConfigAt(opts *bind.CallOpts, timestamp *big.Int) (gen.IValSetDriverConfig, error)
 	GetCurrentEpoch(opts *bind.CallOpts) (*big.Int, error)
 	GetCurrentEpochDuration(opts *bind.CallOpts) (*big.Int, error)
@@ -90,6 +92,10 @@ type driverContract interface {
 	GetEpochStart(opts *bind.CallOpts, epoch *big.Int) (*big.Int, error)
 	SUBNETWORK(opts *bind.CallOpts) ([32]byte, error)
 	NETWORK(opts *bind.CallOpts) (common.Address, error)
+
+	// write-only methods
+	RemoveSettlement(opts *bind.TransactOpts, settlement gen.IValSetDriverCrossChainAddress) (*types.Transaction, error)
+	AddSettlement(opts *bind.TransactOpts, settlement gen.IValSetDriverCrossChainAddress) (*types.Transaction, error)
 }
 
 type Config struct {
@@ -147,7 +153,7 @@ func NewEvmClient(ctx context.Context, cfg Config) (*Client, error) {
 		return nil, errors.Errorf("driver's chain rpc url omitted")
 	}
 
-	driver, err := gen.NewValSetDriverCaller(cfg.DriverAddress.Address, conns[cfg.DriverAddress.ChainId])
+	driver, err := gen.NewValSetDriver(cfg.DriverAddress.Address, conns[cfg.DriverAddress.ChainId])
 	if err != nil {
 		return nil, errors.Errorf("failed to create driver contract: %w", err)
 	}
