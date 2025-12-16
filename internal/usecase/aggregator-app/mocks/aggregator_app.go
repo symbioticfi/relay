@@ -90,6 +90,21 @@ func (mr *MockrepositoryMockRecorder) GetConfigByEpoch(ctx, epoch any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigByEpoch", reflect.TypeOf((*Mockrepository)(nil).GetConfigByEpoch), ctx, epoch)
 }
 
+// GetLatestValidatorSetEpoch mocks base method.
+func (m *Mockrepository) GetLatestValidatorSetEpoch(ctx context.Context) (entity0.Epoch, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLatestValidatorSetEpoch", ctx)
+	ret0, _ := ret[0].(entity0.Epoch)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLatestValidatorSetEpoch indicates an expected call of GetLatestValidatorSetEpoch.
+func (mr *MockrepositoryMockRecorder) GetLatestValidatorSetEpoch(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestValidatorSetEpoch", reflect.TypeOf((*Mockrepository)(nil).GetLatestValidatorSetEpoch), ctx)
+}
+
 // GetSignatureMap mocks base method.
 func (m *Mockrepository) GetSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error) {
 	m.ctrl.T.Helper()
@@ -120,6 +135,21 @@ func (mr *MockrepositoryMockRecorder) GetSignatureRequest(arg0, requestID any) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureRequest", reflect.TypeOf((*Mockrepository)(nil).GetSignatureRequest), arg0, requestID)
 }
 
+// GetSignatureRequestsWithoutAggregationProof mocks base method.
+func (m *Mockrepository) GetSignatureRequestsWithoutAggregationProof(ctx context.Context, epoch entity0.Epoch, limit int, lastHash common.Hash) ([]entity0.SignatureRequestWithID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSignatureRequestsWithoutAggregationProof", ctx, epoch, limit, lastHash)
+	ret0, _ := ret[0].([]entity0.SignatureRequestWithID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSignatureRequestsWithoutAggregationProof indicates an expected call of GetSignatureRequestsWithoutAggregationProof.
+func (mr *MockrepositoryMockRecorder) GetSignatureRequestsWithoutAggregationProof(ctx, epoch, limit, lastHash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureRequestsWithoutAggregationProof", reflect.TypeOf((*Mockrepository)(nil).GetSignatureRequestsWithoutAggregationProof), ctx, epoch, limit, lastHash)
+}
+
 // GetValidatorSetByEpoch mocks base method.
 func (m *Mockrepository) GetValidatorSetByEpoch(ctx context.Context, epoch entity0.Epoch) (entity0.ValidatorSet, error) {
 	m.ctrl.T.Helper()
@@ -133,6 +163,20 @@ func (m *Mockrepository) GetValidatorSetByEpoch(ctx context.Context, epoch entit
 func (mr *MockrepositoryMockRecorder) GetValidatorSetByEpoch(ctx, epoch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSetByEpoch", reflect.TypeOf((*Mockrepository)(nil).GetValidatorSetByEpoch), ctx, epoch)
+}
+
+// RemoveAggregationProofPending mocks base method.
+func (m *Mockrepository) RemoveAggregationProofPending(ctx context.Context, epoch entity0.Epoch, requestID common.Hash) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveAggregationProofPending", ctx, epoch, requestID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemoveAggregationProofPending indicates an expected call of RemoveAggregationProofPending.
+func (mr *MockrepositoryMockRecorder) RemoveAggregationProofPending(ctx, epoch, requestID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveAggregationProofPending", reflect.TypeOf((*Mockrepository)(nil).RemoveAggregationProofPending), ctx, epoch, requestID)
 }
 
 // Mockp2pClient is a mock of p2pClient interface.
@@ -246,18 +290,18 @@ func (m *Mockaggregator) EXPECT() *MockaggregatorMockRecorder {
 }
 
 // Aggregate mocks base method.
-func (m *Mockaggregator) Aggregate(valset entity0.ValidatorSet, keyTag entity0.KeyTag, messageHash []byte, signatures []entity0.Signature) (entity0.AggregationProof, error) {
+func (m *Mockaggregator) Aggregate(valset entity0.ValidatorSet, signatures []entity0.Signature) (entity0.AggregationProof, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Aggregate", valset, keyTag, messageHash, signatures)
+	ret := m.ctrl.Call(m, "Aggregate", valset, signatures)
 	ret0, _ := ret[0].(entity0.AggregationProof)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Aggregate indicates an expected call of Aggregate.
-func (mr *MockaggregatorMockRecorder) Aggregate(valset, keyTag, messageHash, signatures any) *gomock.Call {
+func (mr *MockaggregatorMockRecorder) Aggregate(valset, signatures any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Aggregate", reflect.TypeOf((*Mockaggregator)(nil).Aggregate), valset, keyTag, messageHash, signatures)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Aggregate", reflect.TypeOf((*Mockaggregator)(nil).Aggregate), valset, signatures)
 }
 
 // MockkeyProvider is a mock of keyProvider interface.

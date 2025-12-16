@@ -320,21 +320,17 @@ func TestCalcAlpha_WithSameInputs_ReturnsSameAlpha(t *testing.T) {
 	assert.Equal(t, alpha1, alpha2)
 }
 
-func TestAggregator_Aggregate_WithEmptySignatures_Succeeds(t *testing.T) {
+func TestAggregator_Aggregate_WithEmptySignatures_Fail(t *testing.T) {
 	agg, err := NewAggregator()
 	require.NoError(t, err)
 
 	valset := symbiotic.ValidatorSet{
 		Validators: []symbiotic.Validator{},
 	}
-	keyTag := symbiotic.KeyTag(1)
-	messageHash := []byte("test-message")
 	signatures := []symbiotic.Signature{}
 
-	proof, err := agg.Aggregate(valset, keyTag, messageHash, signatures)
-
-	require.NoError(t, err)
-	assert.NotNil(t, proof)
+	_, err = agg.Aggregate(valset, signatures)
+	require.EqualError(t, err, "invalid signatures: empty signatures slice")
 }
 
 func TestAggregator_Aggregate_WithMismatchedMessageHashes_ReturnsError(t *testing.T) {
@@ -342,16 +338,16 @@ func TestAggregator_Aggregate_WithMismatchedMessageHashes_ReturnsError(t *testin
 	require.NoError(t, err)
 
 	valset := symbiotic.ValidatorSet{}
-	keyTag := symbiotic.KeyTag(1)
 	messageHash := []byte("test-message")
 	signatures := []symbiotic.Signature{
 		{MessageHash: []byte("different-message")},
+		{MessageHash: messageHash},
 	}
 
-	_, err = agg.Aggregate(valset, keyTag, messageHash, signatures)
+	_, err = agg.Aggregate(valset, signatures)
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "message hashes mismatch")
+	assert.Contains(t, err.Error(), "signatures have different message hashes")
 }
 
 func TestAggregator_Verify_WithInvalidMessageHashLength_ReturnsError(t *testing.T) {

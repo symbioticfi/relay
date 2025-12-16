@@ -431,6 +431,10 @@ func runApp(ctx context.Context) error {
 	})
 
 	eg.Go(func() error {
+		return aggApp.TryAggregateRequestsWithoutProof(ctx)
+	})
+
+	eg.Go(func() error {
 		prunerService.Start(egCtx)
 		slog.InfoContext(ctx, "Pruner stopped")
 		return nil
