@@ -921,10 +921,11 @@ func (e *Client) getOperatorRegistryContract(addr symbiotic.CrossChainAddress) (
 
 func findErrorBySelector(errSelector string) (abi.Error, bool) {
 	errorDefs := map[string]*bind.MetaData{
+		"keyRegistry":         gen.KeyRegistryMetaData,
+		"operatorRegistry":    gen.OperatorRegistryMetaData,
 		"settlement":          gen.SettlementMetaData,
 		"driver":              gen.ValSetDriverMetaData,
 		"votingPowerProvider": gen.VotingPowerProviderMetaData,
-		"keyRegistry":         gen.KeyRegistryMetaData,
 	}
 
 	for contract, meta := range errorDefs {
