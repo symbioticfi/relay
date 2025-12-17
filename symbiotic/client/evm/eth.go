@@ -3,8 +3,6 @@ package evm
 import (
 	"context"
 	_ "embed"
-	"encoding/hex"
-	"log/slog"
 	"math/big"
 	"regexp"
 	"time"
@@ -17,7 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
@@ -845,33 +842,6 @@ func (e *Client) formatEVMContractError(meta metadata, originalErr error) error 
 	}
 
 	return errors.Errorf("%w: %s", originalErr, contractError.String())
-}
-
-func (e *Client) formatEVMError(err error) error {
-	type jsonError interface {
-		Error() string
-		ErrorData() interface{}
-		ErrorCode() int
-	}
-	var errData jsonError
-	if !errors.As(err, &errData) {
-		return err
-	}
-	if errData.ErrorCode() != 3 && errData.ErrorData() == nil {
-		return err
-	}
-
-	matches := customErrRegExp.FindStringSubmatch(errData.Error())
-	if len(matches) < 1 {
-		return err
-	}
-
-	errDef, ok := findErrorBySelector(matches[0])
-	if !ok {
-		return err
-	}
-
-	return errors.Errorf("%w: %s", err, errDef.String())
 }
 
 func (e *Client) getSettlementContract(addr symbiotic.CrossChainAddress) (*gen.Settlement, error) {
