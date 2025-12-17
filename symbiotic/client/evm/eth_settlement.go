@@ -65,7 +65,7 @@ func (e *Client) doTransaction(ctx context.Context, method string, addr symbioti
 
 	tx, err := f(txOpts)
 	if err != nil {
-		return symbiotic.TxResult{}, e.formatEVMContractError(gen.SettlementMetaData, err)
+		return symbiotic.TxResult{}, e.formatEVMError(err)
 	}
 
 	receipt, err := bind.WaitMined(ctx, e.conns[addr.ChainId], tx)
