@@ -16,8 +16,7 @@ import (
 func TestEpochProgression(t *testing.T) {
 	t.Log("Starting epoch progression test...")
 
-	deployData, err := loadDeploymentData()
-	require.NoError(t, err, "Failed to load deployment data")
+	deployData := loadDeploymentData(t)
 
 	config := evm.Config{
 		ChainURLs: settlementChains,

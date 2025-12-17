@@ -3,11 +3,14 @@ package evm
 import (
 	"context"
 	_ "embed"
+	"encoding/hex"
+	"log/slog"
 	"math/big"
 	"regexp"
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/samber/lo"
 
@@ -844,6 +847,33 @@ func (e *Client) formatEVMContractError(meta metadata, originalErr error) error 
 	return errors.Errorf("%w: %s", originalErr, contractError.String())
 }
 
+func (e *Client) formatEVMError(err error) error {
+	type jsonError interface {
+		Error() string
+		ErrorData() interface{}
+		ErrorCode() int
+	}
+	var errData jsonError
+	if !errors.As(err, &errData) {
+		return err
+	}
+	if errData.ErrorCode() != 3 && errData.ErrorData() == nil {
+		return err
+	}
+
+	matches := customErrRegExp.FindStringSubmatch(errData.Error())
+	if len(matches) < 1 {
+		return err
+	}
+
+	errDef, ok := findErrorBySelector(matches[0])
+	if !ok {
+		return err
+	}
+
+	return errors.Errorf("%w: %s", err, errDef.String())
+}
+
 func (e *Client) getSettlementContract(addr symbiotic.CrossChainAddress) (*gen.Settlement, error) {
 	client, ok := e.conns[addr.ChainId]
 	if !ok {
@@ -853,16 +883,7 @@ func (e *Client) getSettlementContract(addr symbiotic.CrossChainAddress) (*gen.S
 	return gen.NewSettlement(addr.Address, client)
 }
 
-func (e *Client) getVotingPowerProviderContract(addr symbiotic.CrossChainAddress) (*gen.VotingPowerProviderCaller, error) {
-	client, ok := e.conns[addr.ChainId]
-	if !ok {
-		return nil, errors.Errorf("no connection for chain ID %d: %w", addr.ChainId, entity.ErrChainNotFound)
-	}
-
-	return gen.NewVotingPowerProviderCaller(addr.Address, client)
-}
-
-func (e *Client) getVotingPowerProviderContractTransactor(addr symbiotic.CrossChainAddress) (*gen.VotingPowerProvider, error) {
+func (e *Client) getVotingPowerProviderContract(addr symbiotic.CrossChainAddress) (*gen.VotingPowerProvider, error) {
 	client, ok := e.conns[addr.ChainId]
 	if !ok {
 		return nil, errors.Errorf("no connection for chain ID %d: %w", addr.ChainId, entity.ErrChainNotFound)

@@ -39,7 +39,7 @@ func (e *Client) SetGenesis(
 		return symbiotic.TxResult{}, errors.Errorf("failed to get settlement contract: %w", err)
 	}
 
-	return e.doTransaction(ctx, "SetGenesis", addr, func(txOpts *bind.TransactOpts) (*types.Transaction, error) {
+	return e.doTransaction(ctx, "SetGenesis", addr.ChainId, func(txOpts *bind.TransactOpts) (*types.Transaction, error) {
 		return settlement.SetGenesis(txOpts, headerDTO, extraDataDTO)
 	})
 }

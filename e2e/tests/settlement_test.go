@@ -24,11 +24,10 @@ import (
 // This test validates that the relay network can dynamically handle settlement chain
 // configuration changes across epoch boundaries and properly commits validator sets
 // to all active settlement chains.
-func TestRemoveSettlement(t *testing.T) {
+func TestRemoveAndAddSettlement(t *testing.T) {
 	t.Log("Starting TestRemoveSettlement - testing settlement lifecycle management")
 
-	deploymentData, err := loadDeploymentData()
-	require.NoError(t, err, "Failed to load deployment data")
+	deploymentData := loadDeploymentData(t)
 	evmClient := createEVMClient(t, deploymentData)
 	deriver, err := valsetDeriver.NewDeriver(evmClient)
 	require.NoError(t, err)

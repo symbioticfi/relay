@@ -38,8 +38,7 @@ func TestAggregatorSignatureSync(t *testing.T) {
 	ctx := t.Context()
 
 	// Load deployment data to get contract addresses and environment info
-	deploymentData, err := loadDeploymentData()
-	require.NoError(t, err, "Failed to load deployment data")
+	deploymentData := loadDeploymentData(t)
 
 	// Identify aggregators
 	onlySignerIndex := -1
@@ -152,8 +151,7 @@ func TestAggregatorProofSync(t *testing.T) {
 	ctx := t.Context()
 
 	// Load deployment data to get contract addresses and environment info
-	deploymentData, err := loadDeploymentData()
-	require.NoError(t, err, "Failed to load deployment data")
+	deploymentData := loadDeploymentData(t)
 
 	// Step 1: Get current epoch from EVM client
 	evmClient := createEVMClient(t, deploymentData)
@@ -288,17 +286,29 @@ func waitForHealthy(ctx context.Context, healthURL string, timeout time.Duration
 // createEVMClient creates an EVM client for interacting with the blockchain
 func createEVMClient(t *testing.T, deploymentData RelayContractsData) *evm.Client {
 	t.Helper()
+	return createEVMClientWithEVMKey(t, deploymentData, getFunderPrivateKey(t))
+}
+
+func getFunderPrivateKey(t *testing.T) crypto.PrivateKey {
+	t.Helper()
+	pk, err := crypto.NewPrivateKey(symbiotic.KeyTypeEcdsaSecp256k1, common.Hex2Bytes(testPrivateKeyHex))
+	require.NoError(t, err)
+	return pk
+}
+
+// createEVMClient creates an EVM client for interacting with the blockchain
+func createEVMClientWithEVMKey(t *testing.T, deploymentData RelayContractsData, privateKey crypto.PrivateKey) *evm.Client {
+	t.Helper()
 	kp, err := keyprovider.NewSimpleKeystoreProvider()
 	require.NoError(t, err)
-	privateKey, err := crypto.NewPrivateKey(symbiotic.KeyTypeEcdsaSecp256k1, common.Hex2Bytes(testPrivateKeyHex))
-	require.NoError(t, err)
-	err = kp.AddKeyByNamespaceTypeId(keyprovider.EVM_KEY_NAMESPACE, symbiotic.KeyTypeEcdsaSecp256k1, 31337, privateKey)
+
+	err = kp.AddKeyByNamespaceTypeId(keyprovider.EVM_KEY_NAMESPACE, symbiotic.KeyTypeEcdsaSecp256k1, driverChainID, privateKey)
 	require.NoError(t, err)
 
 	config := evm.Config{
 		ChainURLs: settlementChains,
 		DriverAddress: symbiotic.CrossChainAddress{
-			ChainId: 31337,
+			ChainId: driverChainID,
 			Address: common.HexToAddress(deploymentData.GetDriverAddress()),
 		},
 		RequestTimeout: 10 * time.Second,

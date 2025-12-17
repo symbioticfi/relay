@@ -41,7 +41,7 @@ func (e *Client) CommitValsetHeader(
 		return symbiotic.TxResult{}, errors.Errorf("failed to get settlement contract: %w", err)
 	}
 
-	tx, err := e.doTransaction(ctx, "CommitValsetHeader", addr, func(txOpts *bind.TransactOpts) (*types.Transaction, error) {
+	tx, err := e.doTransaction(ctx, "CommitValsetHeader", addr.ChainId, func(txOpts *bind.TransactOpts) (*types.Transaction, error) {
 		return settlement.CommitValSetHeader(txOpts, headerDTO, extraDataDTO, proof)
 	})
 	if err != nil {

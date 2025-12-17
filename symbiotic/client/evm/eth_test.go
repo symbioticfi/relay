@@ -980,7 +980,7 @@ func TestGetVotingPowerProviderContractTransactor_NoConnection_ReturnsError(t *t
 		Address: common.HexToAddress("0x1234567890123456789012345678901234567890"),
 	}
 
-	result, err := client.getVotingPowerProviderContractTransactor(addr)
+	result, err := client.getVotingPowerProviderContract(addr)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no connection for chain ID")
@@ -1011,7 +1011,7 @@ func TestGetVotingPowerProviderContractTransactor_WithConnection_ReturnsContract
 		metrics: mockMetrics,
 	}
 
-	result, err := client.getVotingPowerProviderContractTransactor(addr)
+	result, err := client.getVotingPowerProviderContract(addr)
 
 	require.NoError(t, err)
 	assert.NotNil(t, result)
