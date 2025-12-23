@@ -793,6 +793,22 @@ False if this node should wait (another group is active). When multiple validato
 all return true simultaneously, enabling coordinated redundancy. </p></td>
                 </tr>
               
+                <tr>
+                  <td>slot_start_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td>optional</td>
+                  <td><p>Start time of the current active slot (only populated when is_active = true).
+This marks the beginning of the time window during which this node should be active. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>slot_end_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td>optional</td>
+                  <td><p>End time of the current active slot (only populated when is_active = true).
+This marks the end of the time window during which this node should be active. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 

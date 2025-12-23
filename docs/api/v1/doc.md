@@ -272,6 +272,8 @@ Response indicating whether the current node should be active now.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | is_active | [bool](#bool) |  | True if this node is active in the current time slot and should perform the scheduled action. False if this node should wait (another group is active). When multiple validators share a slot, all return true simultaneously, enabling coordinated redundancy. |
+| slot_start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | Start time of the current active slot (only populated when is_active = true). This marks the beginning of the time window during which this node should be active. |
+| slot_end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | End time of the current active slot (only populated when is_active = true). This marks the end of the time window during which this node should be active. |
 
 
 

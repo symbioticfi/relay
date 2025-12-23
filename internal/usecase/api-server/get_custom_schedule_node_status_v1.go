@@ -11,6 +11,7 @@ import (
 	"github.com/go-errors/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
@@ -69,12 +70,14 @@ func (h *grpcHandler) GetCustomScheduleNodeStatus(ctx context.Context, req *apiv
 	val, ok := activeValidators.FindValidatorByKey(validatorSet.RequiredKeyTag, pubkey)
 	if !ok {
 		return &apiv1.GetCustomScheduleNodeStatusResponse{
-			IsActive: false,
+			IsActive:      false,
+			SlotStartTime: nil,
+			SlotEndTime:   nil,
 		}, nil
 	}
 
 	// Check if node is active in the custom schedule
-	isActive, err := isNodeActiveInCustomSchedule(
+	isActive, slotStartTime, err := isNodeActiveInCustomSchedule(
 		activeValidators,
 		epochRequested,
 		req.GetSeed(),
@@ -89,12 +92,23 @@ func (h *grpcHandler) GetCustomScheduleNodeStatus(ctx context.Context, req *apiv
 		return nil, errors.Errorf("failed to determine if node is active in custom schedule: %w", err)
 	}
 
-	return &apiv1.GetCustomScheduleNodeStatusResponse{
-		IsActive: isActive,
-	}, nil
+	response := &apiv1.GetCustomScheduleNodeStatusResponse{
+		IsActive:      isActive,
+		SlotStartTime: nil,
+		SlotEndTime:   nil,
+	}
+
+	// Only populate slot times if the node is active
+	if isActive {
+		response.SlotStartTime = timestamppb.New(slotStartTime)
+		response.SlotEndTime = timestamppb.New(slotStartTime.Add(time.Duration(req.GetSlotDurationSeconds()) * time.Second))
+	}
+
+	return response, nil
 }
 
 // isNodeActiveInCustomSchedule checks if the node is active at the current time in a custom schedule
+// Returns: isActive, slotStartTime, slotEndTime, error
 func isNodeActiveInCustomSchedule(
 	activeValidators symbiotic.Validators,
 	epoch symbiotic.Epoch,
@@ -105,7 +119,7 @@ func isNodeActiveInCustomSchedule(
 	maxParticipantsPerSlot uint32,
 	minParticipantsPerSlot uint32,
 	localAddress common.Address,
-) (bool, error) {
+) (bool, time.Time, error) {
 	// Create a deterministic random number generator seeded with epoch and seed
 	rng := createSeededRNG(epoch, seed)
 
@@ -123,23 +137,27 @@ func isNodeActiveInCustomSchedule(
 	// Calculate number of groups based on max and min constraints
 	maxGroups := len(activeValidators) / int(maxParticipantsPerSlot)
 	remainder := len(activeValidators) % int(maxParticipantsPerSlot)
-	if remainder >= int(minParticipantsPerSlot) {
+	if remainder != 0 && remainder >= int(minParticipantsPerSlot) {
 		maxGroups++
 	}
 
 	// If no valid groups can be formed, no validator is active
 	if maxGroups == 0 {
-		return false, errors.Errorf("no valid groups can be formed with the given parameters. Total validators=%d, maxParticipantsPerSlot=%d, minParticipantsPerSlot=%d", len(activeValidators), maxParticipantsPerSlot, minParticipantsPerSlot)
+		return false, time.Time{}, errors.Errorf("no valid groups can be formed with the given parameters. Total validators=%d, maxParticipantsPerSlot=%d, minParticipantsPerSlot=%d", len(activeValidators), maxParticipantsPerSlot, minParticipantsPerSlot)
 	}
 
 	// Calculate current slot number
-	elapsedTime := currentTime().Sub(epochStartTime)
+	now := currentTime()
+	elapsedTime := now.Sub(epochStartTime)
 	if elapsedTime < 0 {
 		// Current time is before epoch start
-		return false, nil
+		return false, time.Time{}, nil
 	}
 
 	currentSlot := uint64(elapsedTime.Seconds()) / slotDurationSeconds
+
+	// Calculate slot start and end times
+	slotStart := epochStartTime.Add(time.Duration(currentSlot*slotDurationSeconds) * time.Second)
 
 	// Groups cycle through slots using modulo
 	groupIdx := currentSlot % uint64(maxGroups)
@@ -153,11 +171,11 @@ func isNodeActiveInCustomSchedule(
 
 	for i := startIdx; i < endIdx; i++ {
 		if activeValidators[indices[i]].Operator == localAddress {
-			return true, nil
+			return true, slotStart, nil
 		}
 	}
 
-	return false, nil
+	return false, time.Time{}, nil
 }
 
 // createSeededRNG creates a deterministic random number generator seeded with epoch and seed bytes
