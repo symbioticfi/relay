@@ -15,6 +15,8 @@
     - [GetAggregationStatusResponse](#api-proto-v1-GetAggregationStatusResponse)
     - [GetCurrentEpochRequest](#api-proto-v1-GetCurrentEpochRequest)
     - [GetCurrentEpochResponse](#api-proto-v1-GetCurrentEpochResponse)
+    - [GetCustomScheduleNodeStatusRequest](#api-proto-v1-GetCustomScheduleNodeStatusRequest)
+    - [GetCustomScheduleNodeStatusResponse](#api-proto-v1-GetCustomScheduleNodeStatusResponse)
     - [GetLastAllCommittedRequest](#api-proto-v1-GetLastAllCommittedRequest)
     - [GetLastAllCommittedResponse](#api-proto-v1-GetLastAllCommittedResponse)
     - [GetLastAllCommittedResponse.EpochInfosEntry](#api-proto-v1-GetLastAllCommittedResponse-EpochInfosEntry)
@@ -234,6 +236,42 @@ Response message for getting current epoch
 | ----- | ---- | ----- | ----------- |
 | epoch | [uint64](#uint64) |  | Epoch number |
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Epoch start time |
+
+
+
+
+
+
+<a name="api-proto-v1-GetCustomScheduleNodeStatusRequest"></a>
+
+### GetCustomScheduleNodeStatusRequest
+Request to check if the current node should be active in a custom schedule.
+The validator set is divided into groups that rotate through time slots.
+Use this to coordinate distributed tasks among multiple application instances.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| epoch | [uint64](#uint64) | optional | Epoch number to use for the validator set (optional, defaults to current epoch) |
+| seed | [bytes](#bytes) | optional | Custom seed for randomizing the schedule (optional). Different seeds produce different schedules for the same epoch, allowing multiple independent scheduling schemes. If not provided, the schedule is deterministic based on epoch alone. |
+| slot_duration_seconds | [uint64](#uint64) |  | Duration of each time slot in seconds. Determines how frequently active groups rotate. Example: 60 seconds means a new group becomes active every minute. |
+| max_participants_per_slot | [uint32](#uint32) |  | Maximum validators per group. Controls redundancy: 1 for single-instance actions (less redundancy), 2&#43; for multi-instance actions (more reliability). All validators in a group are active simultaneously. |
+| min_participants_per_slot | [uint32](#uint32) |  | Minimum validators required to form a remainder group. When dividing validators into groups, any remainder smaller than this is not scheduled. Set equal to max for strict group sizes. |
+
+
+
+
+
+
+<a name="api-proto-v1-GetCustomScheduleNodeStatusResponse"></a>
+
+### GetCustomScheduleNodeStatusResponse
+Response indicating whether the current node should be active now.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| is_active | [bool](#bool) |  | True if this node is active in the current time slot and should perform the scheduled action. False if this node should wait (another group is active). When multiple validators share a slot, all return true simultaneously, enabling coordinated redundancy. |
 
 
 
@@ -966,6 +1004,7 @@ SymbioticAPI provides access to the Symbiotic relay functions
 | GetLastCommitted | [GetLastCommittedRequest](#api-proto-v1-GetLastCommittedRequest) | [GetLastCommittedResponse](#api-proto-v1-GetLastCommittedResponse) | Get last committed epoch for a specific settlement chain |
 | GetLastAllCommitted | [GetLastAllCommittedRequest](#api-proto-v1-GetLastAllCommittedRequest) | [GetLastAllCommittedResponse](#api-proto-v1-GetLastAllCommittedResponse) | Get last committed epochs for all settlement chains |
 | GetValidatorSetMetadata | [GetValidatorSetMetadataRequest](#api-proto-v1-GetValidatorSetMetadataRequest) | [GetValidatorSetMetadataResponse](#api-proto-v1-GetValidatorSetMetadataResponse) | Get validator set metadata like extra data and request id to fetch aggregation and signature requests |
+| GetCustomScheduleNodeStatus | [GetCustomScheduleNodeStatusRequest](#api-proto-v1-GetCustomScheduleNodeStatusRequest) | [GetCustomScheduleNodeStatusResponse](#api-proto-v1-GetCustomScheduleNodeStatusResponse) | Checks if the current node should be active based on a custom schedule derived from the validator set. This enables external applications to use the relay&#39;s validator set for coordinating distributed tasks, such as deciding which application instances should commit data on-chain or perform other coordinated actions. The schedule ensures deterministic but randomized selection of active nodes at any given time. |
 | ListenSignatures | [ListenSignaturesRequest](#api-proto-v1-ListenSignaturesRequest) | [ListenSignaturesResponse](#api-proto-v1-ListenSignaturesResponse) stream | Stream signatures in real-time. If start_epoch is provided, sends historical data first |
 | ListenProofs | [ListenProofsRequest](#api-proto-v1-ListenProofsRequest) | [ListenProofsResponse](#api-proto-v1-ListenProofsResponse) stream | Stream aggregation proofs in real-time. If start_epoch is provided, sends historical data first |
 | ListenValidatorSet | [ListenValidatorSetRequest](#api-proto-v1-ListenValidatorSetRequest) | [ListenValidatorSetResponse](#api-proto-v1-ListenValidatorSetResponse) stream | Stream validator set changes in real-time. If start_epoch is provided, sends historical data first |
