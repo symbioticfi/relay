@@ -277,7 +277,7 @@ func TestGetCustomScheduleNodeStatus(t *testing.T) {
 
 		require.NoError(t, err)
 		require.NotNil(t, response)
-		require.False(t, response.IsActive) // Should return false, not error
+		require.False(t, response.GetIsActive()) // Should return false, not error
 	})
 
 	t.Run("Error_KeyProviderFailure", func(t *testing.T) {
@@ -479,14 +479,14 @@ func TestIsNodeActiveInCustomSchedule_DifferentSeeds(t *testing.T) {
 	require.NoError(t, err1)
 	require.NoError(t, err2)
 	// Different seeds should potentially produce different schedules
-	require.Equal(t, false, isActive1)
-	require.Equal(t, true, isActive2)
+	require.False(t, isActive1)
+	require.True(t, isActive2)
 }
 
 func TestIsNodeActiveInCustomSchedule_GroupCycling(t *testing.T) {
 	validatorSet := createTestValidatorSetWithMultipleValidators(symbiotic.Epoch(5))
 	activeValidators := validatorSet.Validators.GetActiveValidators()
-	require.Equal(t, 2, len(activeValidators), "Should have 2 active validators")
+	require.Len(t, activeValidators, 2, "Should have 2 active validators")
 
 	firstValidator := activeValidators[0].Operator
 	epochStart := time.Unix(int64(validatorSet.CaptureTimestamp), 0)
@@ -530,7 +530,7 @@ func TestIsNodeActiveInCustomSchedule_GroupCycling(t *testing.T) {
 func TestIsNodeActiveInCustomSchedule_RemainderGroup(t *testing.T) {
 	validatorSet := createTestValidatorSetWithMultipleValidators(symbiotic.Epoch(5))
 	activeValidators := validatorSet.Validators.GetActiveValidators()
-	require.Equal(t, 2, len(activeValidators), "Should have 2 active validators")
+	require.Len(t, activeValidators, 2, "Should have 2 active validators")
 
 	epochStart := time.Unix(int64(validatorSet.CaptureTimestamp), 0)
 	currentTimeFunc := func() time.Time {
@@ -565,7 +565,7 @@ func TestIsNodeActiveInCustomSchedule_RemainderGroup(t *testing.T) {
 func TestIsNodeActiveInCustomSchedule_MultipleValidatorsInSameGroup(t *testing.T) {
 	validatorSet := createTestValidatorSetWithMultipleValidators(symbiotic.Epoch(5))
 	activeValidators := validatorSet.Validators.GetActiveValidators()
-	require.Equal(t, 2, len(activeValidators), "Should have 2 active validators")
+	require.Len(t, activeValidators, 2, "Should have 2 active validators")
 
 	epochStart := time.Unix(int64(validatorSet.CaptureTimestamp), 0)
 	currentTimeFunc := func() time.Time {
@@ -607,7 +607,7 @@ func TestIsNodeActiveInCustomSchedule_MultipleValidatorsInSameGroup(t *testing.T
 func TestIsNodeActiveInCustomSchedule_TooFewValidators(t *testing.T) {
 	validatorSet := createTestValidatorSetWithMultipleValidators(symbiotic.Epoch(5))
 	activeValidators := validatorSet.Validators.GetActiveValidators()
-	require.Equal(t, 2, len(activeValidators), "Should have 2 active validators")
+	require.Len(t, activeValidators, 2, "Should have 2 active validators")
 
 	epochStart := time.Unix(int64(validatorSet.CaptureTimestamp), 0)
 	currentTimeFunc := func() time.Time {

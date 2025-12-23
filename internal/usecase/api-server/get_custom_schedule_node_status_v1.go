@@ -19,13 +19,13 @@ import (
 // GetCustomScheduleNodeStatus handles the gRPC GetCustomScheduleNodeStatus request
 func (h *grpcHandler) GetCustomScheduleNodeStatus(ctx context.Context, req *apiv1.GetCustomScheduleNodeStatusRequest) (*apiv1.GetCustomScheduleNodeStatusResponse, error) {
 	// Validate request parameters
-	if req.SlotDurationSeconds == 0 {
+	if req.GetSlotDurationSeconds() == 0 {
 		return nil, status.Error(codes.InvalidArgument, "slot_duration_seconds must be greater than 0")
 	}
-	if req.MaxParticipantsPerSlot == 0 {
+	if req.GetMaxParticipantsPerSlot() == 0 {
 		return nil, status.Error(codes.InvalidArgument, "max_participants_per_slot must be greater than 0")
 	}
-	if req.MinParticipantsPerSlot > req.MaxParticipantsPerSlot {
+	if req.GetMinParticipantsPerSlot() > req.GetMaxParticipantsPerSlot() {
 		return nil, status.Error(codes.InvalidArgument, "min_participants_per_slot cannot be greater than max_participants_per_slot")
 	}
 
@@ -77,12 +77,12 @@ func (h *grpcHandler) GetCustomScheduleNodeStatus(ctx context.Context, req *apiv
 	isActive, err := isNodeActiveInCustomSchedule(
 		activeValidators,
 		epochRequested,
-		req.Seed,
+		req.GetSeed(),
 		epochStartTime,
 		time.Now,
-		req.SlotDurationSeconds,
-		req.MaxParticipantsPerSlot,
-		req.MinParticipantsPerSlot,
+		req.GetSlotDurationSeconds(),
+		req.GetMaxParticipantsPerSlot(),
+		req.GetMinParticipantsPerSlot(),
 		val.Operator,
 	)
 	if err != nil {
@@ -175,5 +175,5 @@ func createSeededRNG(epoch symbiotic.Epoch, seed []byte) *rand.Rand {
 
 	// Create new random source and generator
 	source := rand.NewSource(seedValue)
-	return rand.New(source)
+	return rand.New(source) //nolint:gosec // we need deterministic randomness here so need to use math/rand
 }
