@@ -543,6 +543,71 @@
         ]
       }
     },
+    "/v1/validator-set/custom-schedule/node-status": {
+      "get": {
+        "summary": "Checks if the current node should be active based on a custom schedule derived from the validator set.\nThis enables external applications to use the relay's validator set for coordinating distributed tasks,\nsuch as deciding which application instances should commit data on-chain or perform other coordinated actions.\nThe schedule ensures deterministic but randomized selection of active nodes at any given time.",
+        "operationId": "SymbioticAPIService_GetCustomScheduleNodeStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetCustomScheduleNodeStatusResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "epoch",
+            "description": "Epoch number to use for the validator set (optional, defaults to current epoch)",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "seed",
+            "description": "Custom seed for randomizing the schedule (optional). Different seeds produce different schedules\nfor the same epoch, allowing multiple independent scheduling schemes. If not provided, the schedule\nis deterministic based on epoch alone.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "slotDurationSeconds",
+            "description": "Duration of each time slot in seconds. Determines how frequently active groups rotate.\nExample: 60 seconds means a new group becomes active every minute.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "maxParticipantsPerSlot",
+            "description": "Maximum validators per group. Controls redundancy: 1 for single-instance actions (less redundancy),\n2+ for multi-instance actions (more reliability). All validators in a group are active simultaneously.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "minParticipantsPerSlot",
+            "description": "Minimum validators required to form a remainder group. When dividing validators into groups,\nany remainder smaller than this is not scheduled. Set equal to max for strict group sizes.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "SymbioticAPIService"
+        ]
+      }
+    },
     "/v1/validator-set/header": {
       "get": {
         "summary": "Get validator set header",
@@ -845,6 +910,26 @@
         }
       },
       "title": "Response message for getting current epoch"
+    },
+    "GetCustomScheduleNodeStatusResponse": {
+      "type": "object",
+      "properties": {
+        "isActive": {
+          "type": "boolean",
+          "description": "True if this node is active in the current time slot and should perform the scheduled action.\nFalse if this node should wait (another group is active). When multiple validators share a slot,\nall return true simultaneously, enabling coordinated redundancy."
+        },
+        "slotStartTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Start time of the current active slot (only populated when is_active = true).\nThis marks the beginning of the time window during which this node should be active."
+        },
+        "slotEndTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "End time of the current active slot (only populated when is_active = true).\nThis marks the end of the time window during which this node should be active."
+        }
+      },
+      "description": "Response indicating whether the current node should be active now."
     },
     "GetLastAllCommittedResponse": {
       "type": "object",

@@ -340,6 +340,17 @@ func (va Validators) SortByVotingPowerDescAndOperatorAddressAsc() {
 	})
 }
 
+func (va Validators) FindValidatorByKey(keyTag KeyTag, publicKey []byte) (Validator, bool) {
+	for _, validator := range va {
+		for _, key := range validator.Keys {
+			if key.Tag == keyTag && slices.Equal(key.Payload, publicKey) {
+				return validator, true
+			}
+		}
+	}
+	return Validator{}, false
+}
+
 func (va Validators) SortByOperatorAddressAsc() {
 	slices.SortFunc(va, func(a, b Validator) int {
 		return a.Operator.Cmp(b.Operator)
@@ -521,14 +532,7 @@ func (v ValidatorSet) IsActiveCommitter(
 }
 
 func (v ValidatorSet) FindValidatorByKey(keyTag KeyTag, publicKey []byte) (Validator, bool) { // DON'T USE INSIDE LOOPS
-	for _, validator := range v.Validators {
-		for _, key := range validator.Keys {
-			if key.Tag == keyTag && slices.Equal(key.Payload, publicKey) {
-				return validator, true
-			}
-		}
-	}
-	return Validator{}, false
+	return v.Validators.FindValidatorByKey(keyTag, publicKey)
 }
 
 type ValidatorSetHash struct {
