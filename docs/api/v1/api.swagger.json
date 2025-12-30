@@ -918,15 +918,15 @@
           "type": "boolean",
           "description": "True if this node is active in the current time slot and should perform the scheduled action.\nFalse if this node should wait (another group is active). When multiple validators share a slot,\nall return true simultaneously, enabling coordinated redundancy."
         },
-        "slotStartTime": {
+        "currentSlotStartTime": {
           "type": "string",
           "format": "date-time",
-          "description": "Start time of the current active slot (only populated when is_active = true).\nThis marks the beginning of the time window during which this node should be active."
+          "description": "Start time of the current active slot. This marks the beginning of the current slot time window.\nCan be used to determine how much time is left in the slot."
         },
-        "slotEndTime": {
+        "currentSlotEndTime": {
           "type": "string",
           "format": "date-time",
-          "description": "End time of the current active slot (only populated when is_active = true).\nThis marks the end of the time window during which this node should be active."
+          "description": "End time of the current active slot. This marks the end of the current slot time window.\nCan be used to determine how much time is left in the slot."
         }
       },
       "description": "Response indicating whether the current node should be active now."

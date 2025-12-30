@@ -294,14 +294,14 @@ type GetCustomScheduleNodeStatusResponse struct {
 	// False if this node should wait (another group is active). When multiple validators share a slot,
 	// all return true simultaneously, enabling coordinated redundancy.
 	IsActive bool `protobuf:"varint,1,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`
-	// Start time of the current active slot (only populated when is_active = true).
-	// This marks the beginning of the time window during which this node should be active.
-	SlotStartTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=slot_start_time,json=slotStartTime,proto3,oneof" json:"slot_start_time,omitempty"`
-	// End time of the current active slot (only populated when is_active = true).
-	// This marks the end of the time window during which this node should be active.
-	SlotEndTime   *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=slot_end_time,json=slotEndTime,proto3,oneof" json:"slot_end_time,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Start time of the current active slot. This marks the beginning of the current slot time window.
+	// Can be used to determine how much time is left in the slot.
+	CurrentSlotStartTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=current_slot_start_time,json=currentSlotStartTime,proto3" json:"current_slot_start_time,omitempty"`
+	// End time of the current active slot. This marks the end of the current slot time window.
+	// Can be used to determine how much time is left in the slot.
+	CurrentSlotEndTime *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=current_slot_end_time,json=currentSlotEndTime,proto3" json:"current_slot_end_time,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *GetCustomScheduleNodeStatusResponse) Reset() {
@@ -341,16 +341,16 @@ func (x *GetCustomScheduleNodeStatusResponse) GetIsActive() bool {
 	return false
 }
 
-func (x *GetCustomScheduleNodeStatusResponse) GetSlotStartTime() *timestamppb.Timestamp {
+func (x *GetCustomScheduleNodeStatusResponse) GetCurrentSlotStartTime() *timestamppb.Timestamp {
 	if x != nil {
-		return x.SlotStartTime
+		return x.CurrentSlotStartTime
 	}
 	return nil
 }
 
-func (x *GetCustomScheduleNodeStatusResponse) GetSlotEndTime() *timestamppb.Timestamp {
+func (x *GetCustomScheduleNodeStatusResponse) GetCurrentSlotEndTime() *timestamppb.Timestamp {
 	if x != nil {
-		return x.SlotEndTime
+		return x.CurrentSlotEndTime
 	}
 	return nil
 }
@@ -3088,13 +3088,11 @@ const file_v1_api_proto_rawDesc = "" +
 	"\x19max_participants_per_slot\x18\x04 \x01(\rR\x16maxParticipantsPerSlot\x129\n" +
 	"\x19min_participants_per_slot\x18\x05 \x01(\rR\x16minParticipantsPerSlotB\b\n" +
 	"\x06_epochB\a\n" +
-	"\x05_seed\"\xf6\x01\n" +
+	"\x05_seed\"\xe4\x01\n" +
 	"#GetCustomScheduleNodeStatusResponse\x12\x1b\n" +
-	"\tis_active\x18\x01 \x01(\bR\bisActive\x12G\n" +
-	"\x0fslot_start_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\rslotStartTime\x88\x01\x01\x12C\n" +
-	"\rslot_end_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampH\x01R\vslotEndTime\x88\x01\x01B\x12\n" +
-	"\x10_slot_start_timeB\x10\n" +
-	"\x0e_slot_end_time\"\x86\x01\n" +
+	"\tis_active\x18\x01 \x01(\bR\bisActive\x12Q\n" +
+	"\x17current_slot_start_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x14currentSlotStartTime\x12M\n" +
+	"\x15current_slot_end_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x12currentSlotEndTime\"\x86\x01\n" +
 	"\x12SignMessageRequest\x12\x17\n" +
 	"\akey_tag\x18\x01 \x01(\rR\x06keyTag\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\fR\amessage\x12*\n" +
@@ -3397,8 +3395,8 @@ var file_v1_api_proto_goTypes = []any{
 	(*timestamppb.Timestamp)(nil),                 // 57: google.protobuf.Timestamp
 }
 var file_v1_api_proto_depIdxs = []int32{
-	57, // 0: api.proto.v1.GetCustomScheduleNodeStatusResponse.slot_start_time:type_name -> google.protobuf.Timestamp
-	57, // 1: api.proto.v1.GetCustomScheduleNodeStatusResponse.slot_end_time:type_name -> google.protobuf.Timestamp
+	57, // 0: api.proto.v1.GetCustomScheduleNodeStatusResponse.current_slot_start_time:type_name -> google.protobuf.Timestamp
+	57, // 1: api.proto.v1.GetCustomScheduleNodeStatusResponse.current_slot_end_time:type_name -> google.protobuf.Timestamp
 	39, // 2: api.proto.v1.ListenSignaturesResponse.signature:type_name -> api.proto.v1.Signature
 	37, // 3: api.proto.v1.ListenProofsResponse.aggregation_proof:type_name -> api.proto.v1.AggregationProof
 	55, // 4: api.proto.v1.ListenValidatorSetResponse.validator_set:type_name -> api.proto.v1.ValidatorSet
@@ -3482,7 +3480,6 @@ func file_v1_api_proto_init() {
 		return
 	}
 	file_v1_api_proto_msgTypes[0].OneofWrappers = []any{}
-	file_v1_api_proto_msgTypes[1].OneofWrappers = []any{}
 	file_v1_api_proto_msgTypes[2].OneofWrappers = []any{}
 	file_v1_api_proto_msgTypes[4].OneofWrappers = []any{}
 	file_v1_api_proto_msgTypes[6].OneofWrappers = []any{}

@@ -794,19 +794,19 @@ all return true simultaneously, enabling coordinated redundancy. </p></td>
                 </tr>
               
                 <tr>
-                  <td>slot_start_time</td>
+                  <td>current_slot_start_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td>optional</td>
-                  <td><p>Start time of the current active slot (only populated when is_active = true).
-This marks the beginning of the time window during which this node should be active. </p></td>
+                  <td></td>
+                  <td><p>Start time of the current active slot. This marks the beginning of the current slot time window.
+Can be used to determine how much time is left in the slot. </p></td>
                 </tr>
               
                 <tr>
-                  <td>slot_end_time</td>
+                  <td>current_slot_end_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td>optional</td>
-                  <td><p>End time of the current active slot (only populated when is_active = true).
-This marks the end of the time window during which this node should be active. </p></td>
+                  <td></td>
+                  <td><p>End time of the current active slot. This marks the end of the current slot time window.
+Can be used to determine how much time is left in the slot. </p></td>
                 </tr>
               
             </tbody>
