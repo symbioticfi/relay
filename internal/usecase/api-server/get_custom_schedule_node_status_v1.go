@@ -66,45 +66,67 @@ func (h *grpcHandler) GetCustomScheduleNodeStatus(ctx context.Context, req *apiv
 		return nil, status.Error(codes.Internal, "no active validators found in validator set")
 	}
 
+	currentSlot, slotStartTime, err := getCurrentSlot(
+		epochStartTime,
+		time.Now,
+		req.GetSlotDurationSeconds(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	slotEndTime := slotStartTime.Add(time.Duration(req.GetSlotDurationSeconds()) * time.Second)
+
 	// Dev: currently only returns schedule for active validators so returning false if not active in valset
 	val, ok := activeValidators.FindValidatorByKey(validatorSet.RequiredKeyTag, pubkey)
 	if !ok {
 		return &apiv1.GetCustomScheduleNodeStatusResponse{
-			IsActive:      false,
-			SlotStartTime: nil,
-			SlotEndTime:   nil,
+			IsActive:             false,
+			CurrentSlotEndTime:   timestamppb.New(slotEndTime),
+			CurrentSlotStartTime: timestamppb.New(slotStartTime),
 		}, nil
 	}
 
 	// Check if node is active in the custom schedule
-	isActive, slotStartTime, err := isNodeActiveInCustomSchedule(
+	isActive, err := isNodeActiveInCustomSchedule(
 		activeValidators,
 		epochRequested,
 		req.GetSeed(),
-		epochStartTime,
-		time.Now,
-		req.GetSlotDurationSeconds(),
+		currentSlot,
 		req.GetMaxParticipantsPerSlot(),
 		req.GetMinParticipantsPerSlot(),
 		val.Operator,
 	)
 	if err != nil {
-		return nil, errors.Errorf("failed to determine if node is active in custom schedule: %w", err)
+		return nil, err
 	}
 
-	response := &apiv1.GetCustomScheduleNodeStatusResponse{
-		IsActive:      isActive,
-		SlotStartTime: nil,
-		SlotEndTime:   nil,
+	return &apiv1.GetCustomScheduleNodeStatusResponse{
+		IsActive:             isActive,
+		CurrentSlotEndTime:   timestamppb.New(slotEndTime),
+		CurrentSlotStartTime: timestamppb.New(slotStartTime),
+	}, nil
+}
+
+// getCurrentSlot calculates the current slot number and its start time based on epoch start time and slot duration
+// Returns: currentSlot, slotStartTime, error
+func getCurrentSlot(
+	epochStartTime time.Time,
+	currentTimeFunc func() time.Time,
+	slotDurationSeconds uint64,
+) (uint64, time.Time, error) {
+	// Calculate current slot number
+	now := currentTimeFunc()
+	elapsedTime := now.Sub(epochStartTime)
+	if elapsedTime < 0 {
+		// Current time is before epoch start
+		return 0, time.Time{}, status.Error(codes.InvalidArgument, "epoch has not started yet")
 	}
 
-	// Only populate slot times if the node is active
-	if isActive {
-		response.SlotStartTime = timestamppb.New(slotStartTime)
-		response.SlotEndTime = timestamppb.New(slotStartTime.Add(time.Duration(req.GetSlotDurationSeconds()) * time.Second))
-	}
+	currentSlot := uint64(elapsedTime.Seconds()) / slotDurationSeconds
 
-	return response, nil
+	// Calculate slot start and end times
+	return currentSlot, epochStartTime.Add(time.Duration(currentSlot*slotDurationSeconds) * time.Second), nil
 }
 
 // isNodeActiveInCustomSchedule checks if the node is active at the current time in a custom schedule
@@ -113,13 +135,11 @@ func isNodeActiveInCustomSchedule(
 	activeValidators symbiotic.Validators,
 	epoch symbiotic.Epoch,
 	seed []byte,
-	epochStartTime time.Time,
-	currentTime func() time.Time,
-	slotDurationSeconds uint64,
+	currentSlot uint64,
 	maxParticipantsPerSlot uint32,
 	minParticipantsPerSlot uint32,
 	localAddress common.Address,
-) (bool, time.Time, error) {
+) (bool, error) {
 	// Create a deterministic random number generator seeded with epoch and seed
 	rng := createSeededRNG(epoch, seed)
 
@@ -143,21 +163,8 @@ func isNodeActiveInCustomSchedule(
 
 	// If no valid groups can be formed, no validator is active
 	if maxGroups == 0 {
-		return false, time.Time{}, errors.Errorf("no valid groups can be formed with the given parameters. Total validators=%d, maxParticipantsPerSlot=%d, minParticipantsPerSlot=%d", len(activeValidators), maxParticipantsPerSlot, minParticipantsPerSlot)
+		return false, status.Errorf(codes.InvalidArgument, "no valid groups can be formed with the given parameters. Total validators=%d, maxParticipantsPerSlot=%d, minParticipantsPerSlot=%d", len(activeValidators), maxParticipantsPerSlot, minParticipantsPerSlot)
 	}
-
-	// Calculate current slot number
-	now := currentTime()
-	elapsedTime := now.Sub(epochStartTime)
-	if elapsedTime < 0 {
-		// Current time is before epoch start
-		return false, time.Time{}, nil
-	}
-
-	currentSlot := uint64(elapsedTime.Seconds()) / slotDurationSeconds
-
-	// Calculate slot start and end times
-	slotStart := epochStartTime.Add(time.Duration(currentSlot*slotDurationSeconds) * time.Second)
 
 	// Groups cycle through slots using modulo
 	groupIdx := currentSlot % uint64(maxGroups)
@@ -171,11 +178,11 @@ func isNodeActiveInCustomSchedule(
 
 	for i := startIdx; i < endIdx; i++ {
 		if activeValidators[indices[i]].Operator == localAddress {
-			return true, slotStart, nil
+			return true, nil
 		}
 	}
 
-	return false, time.Time{}, nil
+	return false, nil
 }
 
 // createSeededRNG creates a deterministic random number generator seeded with epoch and seed bytes

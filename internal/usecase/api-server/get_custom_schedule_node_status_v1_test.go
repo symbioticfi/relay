@@ -279,12 +279,12 @@ func TestGetCustomScheduleNodeStatus(t *testing.T) {
 		require.True(t, response.GetIsActive())
 
 		// Verify slot times are populated
-		require.NotNil(t, response.GetSlotStartTime())
-		require.NotNil(t, response.GetSlotEndTime())
+		require.NotNil(t, response.GetCurrentSlotStartTime())
+		require.NotNil(t, response.GetCurrentSlotEndTime())
 
 		// Verify slot duration is correct
-		slotStart := response.GetSlotStartTime().AsTime()
-		slotEnd := response.GetSlotEndTime().AsTime()
+		slotStart := response.GetCurrentSlotStartTime().AsTime()
+		slotEnd := response.GetCurrentSlotEndTime().AsTime()
 		require.Equal(t, 60*time.Second, slotEnd.Sub(slotStart))
 	})
 
@@ -328,9 +328,9 @@ func TestGetCustomScheduleNodeStatus(t *testing.T) {
 		require.NotNil(t, response)
 		require.False(t, response.GetIsActive()) // Should return false, not error
 
-		// Verify slot times are not populated when inactive
-		require.Nil(t, response.GetSlotStartTime())
-		require.Nil(t, response.GetSlotEndTime())
+		// Verify slot times are still populated even when inactive (showing current slot)
+		require.NotNil(t, response.GetCurrentSlotStartTime())
+		require.NotNil(t, response.GetCurrentSlotEndTime())
 	})
 
 	t.Run("Error_KeyProviderFailure", func(t *testing.T) {
@@ -379,27 +379,21 @@ func TestIsNodeActiveInCustomSchedule_SingleValidator(t *testing.T) {
 	activeValidators := validatorSet.Validators.GetActiveValidators()
 	localAddress := activeValidators[0].Operator
 
-	epochStart := time.Unix(int64(validatorSet.CaptureTimestamp), 0)
-	currentTimeFunc := func() time.Time {
-		return epochStart.Add(30 * time.Second) // 30 seconds into epoch
-	}
+	currentSlot := uint64(0) // First slot
 
-	isActive, slotStart, err := isNodeActiveInCustomSchedule(
+	isActive, err := isNodeActiveInCustomSchedule(
 		activeValidators,
 		symbiotic.Epoch(5),
 		[]byte("test-seed"),
-		epochStart,
-		currentTimeFunc,
-		60, // 60 second slots
-		1,  // max 1 per slot
-		1,  // min 1 per slot
+		currentSlot,
+		1, // max 1 per slot
+		1, // min 1 per slot
 		localAddress,
 	)
 
 	require.NoError(t, err)
 	// With only 1 active validator, it should always be active in slot 0
 	require.True(t, isActive)
-	require.Equal(t, epochStart, slotStart)
 }
 
 func TestIsNodeActiveInCustomSchedule_MultipleValidators(t *testing.T) {
@@ -407,24 +401,16 @@ func TestIsNodeActiveInCustomSchedule_MultipleValidators(t *testing.T) {
 	activeValidators := validatorSet.Validators.GetActiveValidators()
 	firstValidator := activeValidators[0].Operator
 
-	epochStart := time.Unix(int64(validatorSet.CaptureTimestamp), 0)
-
 	// Test that the validator is active in exactly one slot per cycle
 	foundActiveSlot := -1
 	for slotNum := 0; slotNum < 3; slotNum++ {
-		currentTimeFunc := func() time.Time {
-			return epochStart.Add(time.Duration(slotNum*60+30) * time.Second)
-		}
-
-		isActive, _, err := isNodeActiveInCustomSchedule(
+		isActive, err := isNodeActiveInCustomSchedule(
 			activeValidators,
 			symbiotic.Epoch(5),
 			[]byte("test-seed"),
-			epochStart,
-			currentTimeFunc,
-			60, // 60 second slots
-			1,  // max 1 per slot
-			1,  // min 1 per slot
+			uint64(slotNum),
+			1, // max 1 per slot
+			1, // min 1 per slot
 			firstValidator,
 		)
 
@@ -439,31 +425,23 @@ func TestIsNodeActiveInCustomSchedule_MultipleValidators(t *testing.T) {
 	require.GreaterOrEqual(t, foundActiveSlot, 0, "Validator should be active in at least one slot")
 }
 
-func TestIsNodeActiveInCustomSchedule_BeforeEpochStart(t *testing.T) {
+func TestGetCurrentSlot_BeforeEpochStart(t *testing.T) {
 	validatorSet := createTestValidatorSet(symbiotic.Epoch(5))
-	activeValidators := validatorSet.Validators.GetActiveValidators()
-	localAddress := activeValidators[0].Operator
-
 	epochStart := time.Unix(int64(validatorSet.CaptureTimestamp), 0)
 	currentTimeFunc := func() time.Time {
 		return epochStart.Add(-30 * time.Second) // Before epoch start
 	}
 
-	isActive, slotStart, err := isNodeActiveInCustomSchedule(
-		activeValidators,
-		symbiotic.Epoch(5),
-		[]byte("test-seed"),
+	currentSlot, slotStart, err := getCurrentSlot(
 		epochStart,
 		currentTimeFunc,
 		60,
-		1,
-		1,
-		localAddress,
 	)
 
-	require.NoError(t, err)
-	// Should not be active before epoch starts
-	require.False(t, isActive)
+	// Should return an error when current time is before epoch start
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "epoch has not started yet")
+	require.Equal(t, uint64(0), currentSlot)
 	require.True(t, slotStart.IsZero())
 }
 
@@ -472,18 +450,13 @@ func TestIsNodeActiveInCustomSchedule_NotInValidatorSet(t *testing.T) {
 	activeValidators := validatorSet.Validators.GetActiveValidators()
 	nonExistentAddress := common.HexToAddress("0x9999999999999999999999999999999999999999")
 
-	epochStart := time.Unix(int64(validatorSet.CaptureTimestamp), 0)
-	currentTimeFunc := func() time.Time {
-		return epochStart.Add(30 * time.Second)
-	}
+	currentSlot := uint64(0) // First slot
 
-	isActive, slotStart, err := isNodeActiveInCustomSchedule(
+	isActive, err := isNodeActiveInCustomSchedule(
 		activeValidators,
 		symbiotic.Epoch(5),
 		[]byte("test-seed"),
-		epochStart,
-		currentTimeFunc,
-		60,
+		currentSlot,
 		1,
 		1,
 		nonExistentAddress,
@@ -492,7 +465,6 @@ func TestIsNodeActiveInCustomSchedule_NotInValidatorSet(t *testing.T) {
 	require.NoError(t, err)
 	// Should not be active if address is not in validator set
 	require.False(t, isActive)
-	require.True(t, slotStart.IsZero())
 }
 
 func TestIsNodeActiveInCustomSchedule_DifferentSeeds(t *testing.T) {
@@ -500,33 +472,26 @@ func TestIsNodeActiveInCustomSchedule_DifferentSeeds(t *testing.T) {
 	activeValidators := validatorSet.Validators.GetActiveValidators()
 	localAddress := activeValidators[0].Operator
 
-	epochStart := time.Unix(int64(validatorSet.CaptureTimestamp), 0)
-	currentTimeFunc := func() time.Time {
-		return epochStart.Add(30 * time.Second) // First slot
-	}
+	currentSlot := uint64(0) // First slot
 
 	seed1 := []byte("seed-1")
 	seed2 := []byte("seed-2")
 
-	isActive1, _, err1 := isNodeActiveInCustomSchedule(
+	isActive1, err1 := isNodeActiveInCustomSchedule(
 		activeValidators,
 		symbiotic.Epoch(5),
 		seed1,
-		epochStart,
-		currentTimeFunc,
-		60,
+		currentSlot,
 		1,
 		1,
 		localAddress,
 	)
 
-	isActive2, _, err2 := isNodeActiveInCustomSchedule(
+	isActive2, err2 := isNodeActiveInCustomSchedule(
 		activeValidators,
 		symbiotic.Epoch(5),
 		seed2,
-		epochStart,
-		currentTimeFunc,
-		60,
+		currentSlot,
 		1,
 		1,
 		localAddress,
@@ -545,33 +510,25 @@ func TestIsNodeActiveInCustomSchedule_GroupCycling(t *testing.T) {
 	require.Len(t, activeValidators, 2, "Should have 2 active validators")
 
 	firstValidator := activeValidators[0].Operator
-	epochStart := time.Unix(int64(validatorSet.CaptureTimestamp), 0)
 
 	// With 2 validators and max 1 per slot, we have 2 groups
 	// Groups should cycle: slot 0 -> group 0, slot 1 -> group 1, slot 2 -> group 0, etc.
 
-	slot0Func := func() time.Time { return epochStart.Add(30 * time.Second) }  // Slot 0
-	slot2Func := func() time.Time { return epochStart.Add(150 * time.Second) } // Slot 2 (should cycle back)
-
-	active0, _, err0 := isNodeActiveInCustomSchedule(
+	active0, err0 := isNodeActiveInCustomSchedule(
 		activeValidators,
 		symbiotic.Epoch(5),
 		[]byte("test-seed"),
-		epochStart,
-		slot0Func,
-		60,
+		0, // Slot 0
 		1,
 		1,
 		firstValidator,
 	)
 
-	active2, _, err2 := isNodeActiveInCustomSchedule(
+	active2, err2 := isNodeActiveInCustomSchedule(
 		activeValidators,
 		symbiotic.Epoch(5),
 		[]byte("test-seed"),
-		epochStart,
-		slot2Func,
-		60,
+		2, // Slot 2 (should cycle back)
 		1,
 		1,
 		firstValidator,
@@ -588,22 +545,17 @@ func TestIsNodeActiveInCustomSchedule_RemainderGroup(t *testing.T) {
 	activeValidators := validatorSet.Validators.GetActiveValidators()
 	require.Len(t, activeValidators, 2, "Should have 2 active validators")
 
-	epochStart := time.Unix(int64(validatorSet.CaptureTimestamp), 0)
-	currentTimeFunc := func() time.Time {
-		return epochStart.Add(30 * time.Second)
-	}
+	currentSlot := uint64(0) // First slot
 
 	// With 2 validators, max 3, min 1: should create 1 group with 2 validators
 	// (remainder 2 >= min 1, but since it's less than a full group, all go in one group)
 	foundActive := false
 	for _, val := range activeValidators {
-		isActive, _, err := isNodeActiveInCustomSchedule(
+		isActive, err := isNodeActiveInCustomSchedule(
 			activeValidators,
 			symbiotic.Epoch(5),
 			[]byte("test-seed"),
-			epochStart,
-			currentTimeFunc,
-			60,
+			currentSlot,
 			3, // max 3 per slot
 			1, // min 1 per slot
 			val.Operator,
@@ -623,32 +575,25 @@ func TestIsNodeActiveInCustomSchedule_MultipleValidatorsInSameGroup(t *testing.T
 	activeValidators := validatorSet.Validators.GetActiveValidators()
 	require.Len(t, activeValidators, 2, "Should have 2 active validators")
 
-	epochStart := time.Unix(int64(validatorSet.CaptureTimestamp), 0)
-	currentTimeFunc := func() time.Time {
-		return epochStart.Add(30 * time.Second) // Slot 0
-	}
+	currentSlot := uint64(0) // First slot
 
 	// With 2 validators, max 2, min 1: should create 1 group with both validators
-	validator1Active, slotStart1, err1 := isNodeActiveInCustomSchedule(
+	validator1Active, err1 := isNodeActiveInCustomSchedule(
 		activeValidators,
 		symbiotic.Epoch(5),
 		[]byte("test-seed"),
-		epochStart,
-		currentTimeFunc,
-		60,
+		currentSlot,
 		2, // max 2 per slot - both validators fit in one group
 		1, // min 1 per slot
 		activeValidators[0].Operator,
 	)
 	require.NoError(t, err1)
 
-	validator2Active, slotStart2, err2 := isNodeActiveInCustomSchedule(
+	validator2Active, err2 := isNodeActiveInCustomSchedule(
 		activeValidators,
 		symbiotic.Epoch(5),
 		[]byte("test-seed"),
-		epochStart,
-		currentTimeFunc,
-		60,
+		currentSlot,
 		2, // max 2 per slot - both validators fit in one group
 		1, // min 1 per slot
 		activeValidators[1].Operator,
@@ -658,10 +603,6 @@ func TestIsNodeActiveInCustomSchedule_MultipleValidatorsInSameGroup(t *testing.T
 	// BOTH validators should be active in the same slot since they're in the same group
 	require.True(t, validator1Active, "First validator should be active in slot 0")
 	require.True(t, validator2Active, "Second validator should be active in slot 0")
-
-	// Both should have the same slot start time
-	require.Equal(t, slotStart1, slotStart2, "Both validators should have the same slot start time")
-	require.Equal(t, epochStart, slotStart1)
 }
 
 func TestIsNodeActiveInCustomSchedule_TooFewValidators(t *testing.T) {
@@ -669,20 +610,15 @@ func TestIsNodeActiveInCustomSchedule_TooFewValidators(t *testing.T) {
 	activeValidators := validatorSet.Validators.GetActiveValidators()
 	require.Len(t, activeValidators, 2, "Should have 2 active validators")
 
-	epochStart := time.Unix(int64(validatorSet.CaptureTimestamp), 0)
-	currentTimeFunc := func() time.Time {
-		return epochStart.Add(30 * time.Second)
-	}
+	currentSlot := uint64(0) // First slot
 
 	// With 2 validators, max 5, min 3: no valid groups can be formed
 	// (remainder 2 < min 3)
-	isActive, slotStart, err := isNodeActiveInCustomSchedule(
+	isActive, err := isNodeActiveInCustomSchedule(
 		activeValidators,
 		symbiotic.Epoch(5),
 		[]byte("test-seed"),
-		epochStart,
-		currentTimeFunc,
-		60,
+		currentSlot,
 		5, // max 5 per slot
 		3, // min 3 per slot
 		activeValidators[0].Operator,
@@ -692,7 +628,48 @@ func TestIsNodeActiveInCustomSchedule_TooFewValidators(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "no valid groups can be formed")
 	require.False(t, isActive, "Should not be active when group constraints cannot be met")
-	require.True(t, slotStart.IsZero())
+}
+
+func TestGetCurrentSlot(t *testing.T) {
+	t.Run("Success_SlotCalculation", func(t *testing.T) {
+		validatorSet := createTestValidatorSet(symbiotic.Epoch(5))
+		epochStart := time.Unix(int64(validatorSet.CaptureTimestamp), 0)
+
+		// Test slot 0 (0-60 seconds)
+		currentTimeFunc := func() time.Time {
+			return epochStart.Add(30 * time.Second)
+		}
+
+		currentSlot, slotStart, err := getCurrentSlot(
+			epochStart,
+			currentTimeFunc,
+			60,
+		)
+
+		require.NoError(t, err)
+		require.Equal(t, uint64(0), currentSlot)
+		require.Equal(t, epochStart, slotStart)
+	})
+
+	t.Run("Success_SlotCalculation_SecondSlot", func(t *testing.T) {
+		validatorSet := createTestValidatorSet(symbiotic.Epoch(5))
+		epochStart := time.Unix(int64(validatorSet.CaptureTimestamp), 0)
+
+		// Test slot 1 (60-120 seconds)
+		currentTimeFunc := func() time.Time {
+			return epochStart.Add(90 * time.Second)
+		}
+
+		currentSlot, slotStart, err := getCurrentSlot(
+			epochStart,
+			currentTimeFunc,
+			60,
+		)
+
+		require.NoError(t, err)
+		require.Equal(t, uint64(1), currentSlot)
+		require.Equal(t, epochStart.Add(60*time.Second), slotStart)
+	})
 }
 
 func TestCreateSeededRNG(t *testing.T) {

@@ -200,13 +200,13 @@ message GetCustomScheduleNodeStatusResponse {
   // all return true simultaneously, enabling coordinated redundancy.
   bool is_active = 1;
   
-  // Start time of the current active slot (only populated when is_active = true).
-  // This marks the beginning of the time window during which this node should be active.
-  optional google.protobuf.Timestamp slot_start_time = 2;
+  // Start time of the current active slot. This marks the beginning of the current slot time window.
+  // Can be used to determine how much time is left in the slot.
+  google.protobuf.Timestamp current_slot_start_time = 2;
   
-  // End time of the current active slot (only populated when is_active = true).
-  // This marks the end of the time window during which this node should be active.
-  optional google.protobuf.Timestamp slot_end_time = 3;
+  // End time of the current active slot. This marks the end of the current slot time window.
+  // Can be used to determine how much time is left in the slot.
+  google.protobuf.Timestamp current_slot_end_time = 3;
 }
 
 // Request message for signing a message
