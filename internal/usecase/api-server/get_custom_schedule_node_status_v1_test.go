@@ -440,7 +440,7 @@ func TestGetCurrentSlot_BeforeEpochStart(t *testing.T) {
 
 	// Should return an error when current time is before epoch start
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "Epoch has not started yet")
+	require.Contains(t, err.Error(), "epoch has not started yet")
 	require.Equal(t, uint64(0), currentSlot)
 	require.True(t, slotStart.IsZero())
 }
