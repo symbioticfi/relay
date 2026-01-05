@@ -37,6 +37,7 @@ const (
 	SymbioticAPIService_GetLastCommitted_FullMethodName              = "/api.proto.v1.SymbioticAPIService/GetLastCommitted"
 	SymbioticAPIService_GetLastAllCommitted_FullMethodName           = "/api.proto.v1.SymbioticAPIService/GetLastAllCommitted"
 	SymbioticAPIService_GetValidatorSetMetadata_FullMethodName       = "/api.proto.v1.SymbioticAPIService/GetValidatorSetMetadata"
+	SymbioticAPIService_GetCustomScheduleNodeStatus_FullMethodName   = "/api.proto.v1.SymbioticAPIService/GetCustomScheduleNodeStatus"
 	SymbioticAPIService_ListenSignatures_FullMethodName              = "/api.proto.v1.SymbioticAPIService/ListenSignatures"
 	SymbioticAPIService_ListenProofs_FullMethodName                  = "/api.proto.v1.SymbioticAPIService/ListenProofs"
 	SymbioticAPIService_ListenValidatorSet_FullMethodName            = "/api.proto.v1.SymbioticAPIService/ListenValidatorSet"
@@ -84,6 +85,11 @@ type SymbioticAPIServiceClient interface {
 	GetLastAllCommitted(ctx context.Context, in *GetLastAllCommittedRequest, opts ...grpc.CallOption) (*GetLastAllCommittedResponse, error)
 	// Get validator set metadata like extra data and request id to fetch aggregation and signature requests
 	GetValidatorSetMetadata(ctx context.Context, in *GetValidatorSetMetadataRequest, opts ...grpc.CallOption) (*GetValidatorSetMetadataResponse, error)
+	// Checks if the current node should be active based on a custom schedule derived from the validator set.
+	// This enables external applications to use the relay's validator set for coordinating distributed tasks,
+	// such as deciding which application instances should commit data on-chain or perform other coordinated actions.
+	// The schedule ensures deterministic but randomized selection of active nodes at any given time.
+	GetCustomScheduleNodeStatus(ctx context.Context, in *GetCustomScheduleNodeStatusRequest, opts ...grpc.CallOption) (*GetCustomScheduleNodeStatusResponse, error)
 	// Stream signatures in real-time. If start_epoch is provided, sends historical data first
 	ListenSignatures(ctx context.Context, in *ListenSignaturesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ListenSignaturesResponse], error)
 	// Stream aggregation proofs in real-time. If start_epoch is provided, sends historical data first
@@ -280,6 +286,16 @@ func (c *symbioticAPIServiceClient) GetValidatorSetMetadata(ctx context.Context,
 	return out, nil
 }
 
+func (c *symbioticAPIServiceClient) GetCustomScheduleNodeStatus(ctx context.Context, in *GetCustomScheduleNodeStatusRequest, opts ...grpc.CallOption) (*GetCustomScheduleNodeStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetCustomScheduleNodeStatusResponse)
+	err := c.cc.Invoke(ctx, SymbioticAPIService_GetCustomScheduleNodeStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *symbioticAPIServiceClient) ListenSignatures(ctx context.Context, in *ListenSignaturesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ListenSignaturesResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &SymbioticAPIService_ServiceDesc.Streams[0], SymbioticAPIService_ListenSignatures_FullMethodName, cOpts...)
@@ -379,6 +395,11 @@ type SymbioticAPIServiceServer interface {
 	GetLastAllCommitted(context.Context, *GetLastAllCommittedRequest) (*GetLastAllCommittedResponse, error)
 	// Get validator set metadata like extra data and request id to fetch aggregation and signature requests
 	GetValidatorSetMetadata(context.Context, *GetValidatorSetMetadataRequest) (*GetValidatorSetMetadataResponse, error)
+	// Checks if the current node should be active based on a custom schedule derived from the validator set.
+	// This enables external applications to use the relay's validator set for coordinating distributed tasks,
+	// such as deciding which application instances should commit data on-chain or perform other coordinated actions.
+	// The schedule ensures deterministic but randomized selection of active nodes at any given time.
+	GetCustomScheduleNodeStatus(context.Context, *GetCustomScheduleNodeStatusRequest) (*GetCustomScheduleNodeStatusResponse, error)
 	// Stream signatures in real-time. If start_epoch is provided, sends historical data first
 	ListenSignatures(*ListenSignaturesRequest, grpc.ServerStreamingServer[ListenSignaturesResponse]) error
 	// Stream aggregation proofs in real-time. If start_epoch is provided, sends historical data first
@@ -448,6 +469,9 @@ func (UnimplementedSymbioticAPIServiceServer) GetLastAllCommitted(context.Contex
 }
 func (UnimplementedSymbioticAPIServiceServer) GetValidatorSetMetadata(context.Context, *GetValidatorSetMetadataRequest) (*GetValidatorSetMetadataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetValidatorSetMetadata not implemented")
+}
+func (UnimplementedSymbioticAPIServiceServer) GetCustomScheduleNodeStatus(context.Context, *GetCustomScheduleNodeStatusRequest) (*GetCustomScheduleNodeStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCustomScheduleNodeStatus not implemented")
 }
 func (UnimplementedSymbioticAPIServiceServer) ListenSignatures(*ListenSignaturesRequest, grpc.ServerStreamingServer[ListenSignaturesResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method ListenSignatures not implemented")
@@ -803,6 +827,24 @@ func _SymbioticAPIService_GetValidatorSetMetadata_Handler(srv interface{}, ctx c
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SymbioticAPIService_GetCustomScheduleNodeStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCustomScheduleNodeStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SymbioticAPIServiceServer).GetCustomScheduleNodeStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SymbioticAPIService_GetCustomScheduleNodeStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SymbioticAPIServiceServer).GetCustomScheduleNodeStatus(ctx, req.(*GetCustomScheduleNodeStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SymbioticAPIService_ListenSignatures_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(ListenSignaturesRequest)
 	if err := stream.RecvMsg(m); err != nil {
@@ -914,6 +956,10 @@ var SymbioticAPIService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetValidatorSetMetadata",
 			Handler:    _SymbioticAPIService_GetValidatorSetMetadata_Handler,
+		},
+		{
+			MethodName: "GetCustomScheduleNodeStatus",
+			Handler:    _SymbioticAPIService_GetCustomScheduleNodeStatus_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

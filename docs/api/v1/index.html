@@ -223,6 +223,14 @@
                 </li>
               
                 <li>
+                  <a href="#api.proto.v1.GetCustomScheduleNodeStatusRequest"><span class="badge">M</span>GetCustomScheduleNodeStatusRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#api.proto.v1.GetCustomScheduleNodeStatusResponse"><span class="badge">M</span>GetCustomScheduleNodeStatusResponse</a>
+                </li>
+              
+                <li>
                   <a href="#api.proto.v1.GetLastAllCommittedRequest"><span class="badge">M</span>GetLastAllCommittedRequest</a>
                 </li>
               
@@ -700,6 +708,105 @@
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
                   <td><p>Epoch start time </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.GetCustomScheduleNodeStatusRequest">GetCustomScheduleNodeStatusRequest</h3>
+        <p>Request to check if the current node should be active in a custom schedule.</p><p>The validator set is divided into groups that rotate through time slots.</p><p>Use this to coordinate distributed tasks among multiple application instances.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>epoch</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td>optional</td>
+                  <td><p>Epoch number to use for the validator set (optional, defaults to current epoch) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>seed</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td>optional</td>
+                  <td><p>Custom seed for randomizing the schedule (optional). Different seeds produce different schedules
+for the same epoch, allowing multiple independent scheduling schemes. If not provided, the schedule
+is deterministic based on epoch alone. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>slot_duration_seconds</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>Duration of each time slot in seconds. Determines how frequently active groups rotate.
+Example: 60 seconds means a new group becomes active every minute. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>max_participants_per_slot</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>Maximum validators per group. Controls redundancy: 1 for single-instance actions (less redundancy),
+2&#43; for multi-instance actions (more reliability). All validators in a group are active simultaneously. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>min_participants_per_slot</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>Minimum validators required to form a remainder group. When dividing validators into groups,
+any remainder smaller than this is not scheduled. Set equal to max for strict group sizes. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="api.proto.v1.GetCustomScheduleNodeStatusResponse">GetCustomScheduleNodeStatusResponse</h3>
+        <p>Response indicating whether the current node should be active now.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>is_active</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>True if this node is active in the current time slot and should perform the scheduled action.
+False if this node should wait (another group is active). When multiple validators share a slot,
+all return true simultaneously, enabling coordinated redundancy. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>current_slot_start_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>Start time of the current active slot. This marks the beginning of the current slot time window.
+Can be used to determine how much time is left in the slot. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>current_slot_end_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>End time of the current active slot. This marks the end of the current slot time window.
+Can be used to determine how much time is left in the slot. </p></td>
                 </tr>
               
             </tbody>
@@ -2211,6 +2318,16 @@ If not provided, only validator sets generated after stream creation will be sen
               </tr>
             
               <tr>
+                <td>GetCustomScheduleNodeStatus</td>
+                <td><a href="#api.proto.v1.GetCustomScheduleNodeStatusRequest">GetCustomScheduleNodeStatusRequest</a></td>
+                <td><a href="#api.proto.v1.GetCustomScheduleNodeStatusResponse">GetCustomScheduleNodeStatusResponse</a></td>
+                <td><p>Checks if the current node should be active based on a custom schedule derived from the validator set.
+This enables external applications to use the relay&#39;s validator set for coordinating distributed tasks,
+such as deciding which application instances should commit data on-chain or perform other coordinated actions.
+The schedule ensures deterministic but randomized selection of active nodes at any given time.</p></td>
+              </tr>
+            
+              <tr>
                 <td>ListenSignatures</td>
                 <td><a href="#api.proto.v1.ListenSignaturesRequest">ListenSignaturesRequest</a></td>
                 <td><a href="#api.proto.v1.ListenSignaturesResponse">ListenSignaturesResponse</a> stream</td>
@@ -2425,6 +2542,16 @@ If not provided, only validator sets generated after stream creation will be sen
                 <td>GetValidatorSetMetadata</td>
                 <td>GET</td>
                 <td>/v1/validator-set/metadata</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetCustomScheduleNodeStatus</td>
+                <td>GET</td>
+                <td>/v1/validator-set/custom-schedule/node-status</td>
                 <td></td>
               </tr>
               
