@@ -312,8 +312,6 @@ func createEVMClient(t *testing.T, deploymentData RelayContractsData) *evm.Clien
 }
 
 // waitForEpoch waits until the specified epoch is reached
-//
-//nolint:unparam // timeout may be useful in the future
 func waitForEpoch(ctx context.Context, client *evm.Client, targetEpoch symbiotic.Epoch, timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
