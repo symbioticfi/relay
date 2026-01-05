@@ -67,7 +67,7 @@ func TestRemoveSettlement(t *testing.T) {
 	t.Run("add settlement back", func(t *testing.T) {
 		t.Log("Step 2: Verifying settlement removal and re-adding settlement")
 
-		err = waitForEpoch(t.Context(), evmClient, oneSettlementEpoch, waitEpochTimeout)
+		err = waitForEpoch(t.Context(), evmClient, oneSettlementEpoch, time.Minute*3)
 		require.NoError(t, err, "Failed to wait for next epoch")
 		t.Logf("Reached epoch %d", oneSettlementEpoch)
 
