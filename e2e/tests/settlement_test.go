@@ -60,14 +60,14 @@ func TestRemoveSettlement(t *testing.T) {
 		t.Logf("Successfully removed settlement. Tx hash: %s", txResult.TxHash.Hex())
 	})
 
-	oneSettlementEpoch := currentEpoch + 1
+	oneSettlementEpoch := currentEpoch + 2
 	t.Logf("Will wait for epoch %d to verify removal", oneSettlementEpoch)
 
 	var oneSettlementConfig entity.NetworkConfig
 	t.Run("add settlement back", func(t *testing.T) {
 		t.Log("Step 2: Verifying settlement removal and re-adding settlement")
 
-		err = waitForEpoch(t.Context(), evmClient, oneSettlementEpoch)
+		err = waitForEpoch(t.Context(), evmClient, oneSettlementEpoch, waitEpochTimeout)
 		require.NoError(t, err, "Failed to wait for next epoch")
 		t.Logf("Reached epoch %d", oneSettlementEpoch)
 
@@ -95,17 +95,34 @@ func TestRemoveSettlement(t *testing.T) {
 	t.Run("set genesis with re-added settlement", func(t *testing.T) {
 		t.Log("Step 3: Setting genesis for re-added settlement chain")
 
+		// Query the last committed epoch on the unmodified settlement to handle edge cases
+		// where the addition happens slightly delayed and oneSettlementEpoch+1 might've been committed
+		unmodifiedSettlement := oneSettlementConfig.Settlements[0]
+		lastCommittedEpoch, err := evmClient.GetLastCommittedHeaderEpoch(t.Context(), unmodifiedSettlement)
+		require.NoError(t, err, "Failed to get last committed epoch on unmodified settlement")
+		t.Logf("Last committed epoch on unmodified settlement (ChainID: %d): %d", unmodifiedSettlement.ChainId, lastCommittedEpoch)
+
+		genesisEpoch := lastCommittedEpoch + 1
+		t.Logf("Using epoch %d for genesis (last committed + 1)", genesisEpoch)
+
 		client := getGRPCClient(t, 0)
 		t.Log("Waiting for validator set metadata to be available")
 		var nextMetadata *apiv1.GetValidatorSetMetadataResponse
 		err = waitForErrorIsNil(t.Context(), time.Second*30, func() error {
 			nextMetadata, err = client.GetValidatorSetMetadata(t.Context(), &apiv1.GetValidatorSetMetadataRequest{
-				Epoch: (*uint64)(&oneSettlementEpoch),
+				Epoch: (*uint64)(&genesisEpoch),
 			})
 			return err
 		})
 		require.NoError(t, err)
-		t.Logf("Retrieved validator set metadata for epoch %d with %d extra data entries", oneSettlementEpoch, len(nextMetadata.ExtraData))
+		t.Logf("Retrieved validator set metadata for epoch %d with %d extra data entries", genesisEpoch, len(nextMetadata.ExtraData))
+
+		// Get config for the genesis epoch
+		genesisCaptureTimestamp, err := evmClient.GetEpochStart(t.Context(), genesisEpoch)
+		require.NoError(t, err, "Failed to get epoch start timestamp for genesis epoch")
+
+		genesisConfig, err := evmClient.GetConfig(t.Context(), genesisCaptureTimestamp, genesisEpoch)
+		require.NoError(t, err, "Failed to get network config for genesis epoch")
 
 		extraData := lo.Map(nextMetadata.ExtraData, func(item *apiv1.ExtraData, index int) entity.ExtraData {
 			return entity.ExtraData{
@@ -114,8 +131,8 @@ func TestRemoveSettlement(t *testing.T) {
 			}
 		})
 
-		t.Logf("Deriving validator set for epoch %d", oneSettlementEpoch)
-		newValset, err := deriver.GetValidatorSet(t.Context(), oneSettlementEpoch, oneSettlementConfig)
+		t.Logf("Deriving validator set for epoch %d", genesisEpoch)
+		newValset, err := deriver.GetValidatorSet(t.Context(), genesisEpoch, genesisConfig)
 		require.NoError(t, err)
 		header, err := newValset.GetHeader()
 		require.NoError(t, err)
@@ -133,7 +150,7 @@ func TestRemoveSettlement(t *testing.T) {
 	t.Run("final check", func(t *testing.T) {
 		t.Log("Step 4: Verifying settlement re-addition and commitment to both chains")
 
-		err = waitForEpoch(t.Context(), evmClient, backTwoSettlementsEpoch)
+		err = waitForEpoch(t.Context(), evmClient, backTwoSettlementsEpoch, waitEpochTimeout)
 		require.NoError(t, err, "Failed to wait for epoch after next")
 		t.Logf("Reached epoch %d", backTwoSettlementsEpoch)
 
