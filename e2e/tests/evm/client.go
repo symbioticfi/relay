@@ -44,6 +44,10 @@ func NewClient(t *testing.T, cfg Config) *Client {
 	}
 }
 
+func (e *Client) Close() {
+	e.client.Close()
+}
+
 func (e *Client) TransferMockToken(ctx context.Context, tokenAddress, to common.Address, amount *big.Int) (symbiotic.TxResult, error) {
 	erc20, err := gen.NewMockERC20(tokenAddress, e.client)
 	if err != nil {

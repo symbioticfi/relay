@@ -1,9 +1,8 @@
 package tests
 
 import (
+	"bytes"
 	"context"
-	"crypto/rand"
-	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -16,16 +15,20 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/require"
 
+	apiv1 "github.com/symbioticfi/relay/api/client/v1"
 	testEth "github.com/symbioticfi/relay/e2e/tests/evm"
+	"github.com/symbioticfi/relay/symbiotic/client/evm"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 	valsetDeriver "github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver"
 )
 
+// 4. проверить, что он генерит подписи
+// 5. стопнуть лишнего оператора
 func TestAddAndRemoveOperator(t *testing.T) {
 	deploymentData := loadDeploymentData(t)
 
-	opData := createOperator(t)
+	opData := createExtraOperator(t)
 
 	opEVMClient := createEVMClientWithEVMKey(t, deploymentData, opData.privateKey)
 	_, err := opEVMClient.RegisterOperator(t.Context(), symbiotic.CrossChainAddress{
@@ -43,7 +46,68 @@ func TestAddAndRemoveOperator(t *testing.T) {
 	_, err = opTestEVM.OptIn(t.Context(), common.HexToAddress(deploymentData.MainChain.Addresses.OperatorNetworkOptInService), common.HexToAddress(deploymentData.MainChain.Addresses.Network))
 	require.NoError(t, err)
 
-	_, err = opEVMClient.RegisterOperatorVotingPowerProvider(t.Context(), symbiotic.CrossChainAddress{
+	registerExtraOperator(t, opEVMClient, opData.address)
+	initVault(t, opTestEVM, funderTestEVM, opData.address)
+
+	require.NoError(t, waitForErrorIsNil(t.Context(), time.Minute, func() error {
+		deriver, err := valsetDeriver.NewDeriver(opEVMClient)
+		if err != nil {
+			return err
+		}
+
+		currentEpoch, err := opEVMClient.GetCurrentEpoch(t.Context())
+		if err != nil {
+			return err
+		}
+
+		captureTimestamp, err := opEVMClient.GetEpochStart(t.Context(), currentEpoch)
+		if err != nil {
+			return err
+		}
+
+		currentConfig, err := opEVMClient.GetConfig(t.Context(), captureTimestamp, currentEpoch)
+		if err != nil {
+			return err
+		}
+
+		valset, err := deriver.GetValidatorSet(t.Context(), currentEpoch, currentConfig)
+		if err != nil {
+			return err
+		}
+		if int64(len(valset.Validators)) != deploymentData.Env.Operators+1 {
+			return errors.Errorf("expected %d validators, got %d", deploymentData.Env.Operators+1, len(valset.Validators))
+		}
+
+		return nil
+	}))
+
+	currentEpoch, err := opEVMClient.GetCurrentEpoch(t.Context())
+	require.NoError(t, err)
+
+	time.Sleep(time.Minute)
+
+	extraClient := getGRPCClient(t, int(deploymentData.Env.Operators))
+	resp, err := extraClient.GetSignaturesByEpoch(t.Context(),
+		&apiv1.GetSignaturesByEpochRequest{
+			Epoch: uint64(currentEpoch),
+		},
+	)
+	require.NoError(t, err)
+
+	for _, signature := range resp.GetSignatures() {
+		if bytes.Compare(signature.GetPublicKey(), opData.privateKey.PublicKey().OnChain()) == 0 {
+			t.Log("found signature from extra operator")
+			return
+		}
+	}
+
+	t.Fatal("did not find signature from extra operator")
+}
+
+func registerExtraOperator(t *testing.T, opEVMClient *evm.Client, opAddress common.Address) {
+	deploymentData := loadDeploymentData(t)
+
+	_, err := opEVMClient.RegisterOperatorVotingPowerProvider(t.Context(), symbiotic.CrossChainAddress{
 		ChainId: deploymentData.Driver.ChainId,
 		Address: common.HexToAddress(deploymentData.MainChain.Addresses.VotingPowerProvider),
 	})
@@ -53,16 +117,21 @@ func TestAddAndRemoveOperator(t *testing.T) {
 		registered, err := opEVMClient.IsOperatorRegistered(t.Context(), symbiotic.CrossChainAddress{
 			ChainId: deploymentData.Driver.ChainId,
 			Address: common.HexToAddress(deploymentData.MainChain.Addresses.VotingPowerProvider),
-		}, symbiotic.CrossChainAddress{ChainId: deploymentData.Driver.ChainId, Address: opData.address})
+		}, symbiotic.CrossChainAddress{ChainId: deploymentData.Driver.ChainId, Address: opAddress})
 		require.NoError(t, err)
 		if !registered {
-			return errors.Errorf("operator %s not registered yet", opData.address.Hex())
+			return errors.Errorf("operator %s not registered yet", opAddress.Hex())
 		}
 
 		return nil
 	}))
+}
 
-	vaultAddress, err := funderTestEVM.GetAutoDeployVault(t.Context(), common.HexToAddress(deploymentData.MainChain.Addresses.VotingPowerProvider), opData.address)
+func initVault(t *testing.T, opTestEVM *testEth.Client, funderTestEVM *testEth.Client, address common.Address) {
+	deploymentData := loadDeploymentData(t)
+	stakingAmount := big.NewInt(1e5)
+
+	vaultAddress, err := funderTestEVM.GetAutoDeployVault(t.Context(), common.HexToAddress(deploymentData.MainChain.Addresses.VotingPowerProvider), address)
 	require.NoError(t, err)
 
 	_, err = opTestEVM.OptIn(t.Context(), common.HexToAddress(deploymentData.MainChain.Addresses.OperatorVaultOptInService), vaultAddress)
@@ -73,33 +142,18 @@ func TestAddAndRemoveOperator(t *testing.T) {
 
 	_, err = funderTestEVM.VaultDeposit(t.Context(), vaultAddress, common.HexToAddress(deploymentData.MainChain.Addresses.StakingToken), stakingAmount)
 	require.NoError(t, err)
-
-	time.Sleep(time.Minute)
-
-	deriver, err := valsetDeriver.NewDeriver(opEVMClient)
-	require.NoError(t, err)
-
-	currentEpoch, err := opEVMClient.GetCurrentEpoch(t.Context())
-	require.NoError(t, err, "Failed to get current epoch")
-	t.Logf("Current epoch: %d", currentEpoch)
-
-	captureTimestamp, err := opEVMClient.GetEpochStart(t.Context(), currentEpoch)
-	require.NoError(t, err, "Failed to get epoch start timestamp")
-
-	currentConfig, err := opEVMClient.GetConfig(t.Context(), captureTimestamp, currentEpoch)
-	require.NoError(t, err, "Failed to get network config")
-
-	valset, err := deriver.GetValidatorSet(t.Context(), currentEpoch, currentConfig)
-	require.NoError(t, err)
-	fmt.Println(valset) // TODO remove
 }
 
 func createTestEVM(t *testing.T, chainURL string, privateKey crypto.PrivateKey) *testEth.Client {
 	t.Helper()
-	return testEth.NewClient(t, testEth.Config{
+	client := testEth.NewClient(t, testEth.Config{
 		ChainURL:   chainURL,
 		PrivateKey: privateKey,
 	})
+	t.Cleanup(func() {
+		client.Close()
+	})
+	return client
 }
 
 type operatorData struct {
@@ -107,13 +161,22 @@ type operatorData struct {
 	address    common.Address
 }
 
-func createOperator(t *testing.T) operatorData {
+// createExtraOperator creates an operator using the extra relay's private key.
+// The extra relay is not part of the validator set and uses a deterministic key
+// based on the formula: BASE_PRIVATE_KEY + operators (matching generate_network.sh).
+func createExtraOperator(t *testing.T) operatorData {
 	t.Helper()
 	deploymentData := loadDeploymentData(t)
 
+	// Matches generate_network.sh: BASE_PRIVATE_KEY + operators
+	// BASE_PRIVATE_KEY = 1000000000000000000
+	baseKey := big.NewInt(1000000000000000000)
+	operators := big.NewInt(deploymentData.Env.Operators)
+	extraKeyInt := new(big.Int).Add(baseKey, operators)
+
+	// Convert to 32-byte padded bytes
 	pkBytes := make([]byte, 32)
-	_, err := rand.Read(pkBytes)
-	require.NoError(t, err)
+	extraKeyInt.FillBytes(pkBytes)
 
 	privateKey, err := crypto.NewPrivateKey(symbiotic.KeyTypeEcdsaSecp256k1, pkBytes)
 	require.NoError(t, err)
