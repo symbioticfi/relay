@@ -17,6 +17,7 @@ import (
 
 	apiv1 "github.com/symbioticfi/relay/api/client/v1"
 	testEth "github.com/symbioticfi/relay/e2e/tests/evm"
+	key_registerer "github.com/symbioticfi/relay/internal/usecase/key-registerer"
 	"github.com/symbioticfi/relay/symbiotic/client/evm"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
@@ -94,8 +95,11 @@ func TestAddAndRemoveOperator(t *testing.T) {
 	)
 	require.NoError(t, err)
 
+	require.Len(t, resp.GetSignatures(), int(deploymentData.Env.Operators+1))
 	for _, signature := range resp.GetSignatures() {
-		if bytes.Compare(signature.GetPublicKey(), opData.privateKey.PublicKey().OnChain()) == 0 {
+		pk, err := crypto.NewPrivateKey(symbiotic.KeyTypeBlsBn254, opData.privateKey.Bytes())
+		require.NoError(t, err)
+		if bytes.Compare(signature.GetPublicKey(), pk.PublicKey().OnChain()) == 0 {
 			t.Log("found signature from extra operator")
 			return
 		}
@@ -173,10 +177,12 @@ func createExtraOperator(t *testing.T) operatorData {
 	baseKey := big.NewInt(1000000000000000000)
 	operators := big.NewInt(deploymentData.Env.Operators)
 	extraKeyInt := new(big.Int).Add(baseKey, operators)
+	extraSecondaryKeyInt := new(big.Int).Add(extraKeyInt, big.NewInt(10000))
 
-	// Convert to 32-byte padded bytes
 	pkBytes := make([]byte, 32)
 	extraKeyInt.FillBytes(pkBytes)
+	pkSecondaryBytes := make([]byte, 32)
+	extraSecondaryKeyInt.FillBytes(pkSecondaryBytes)
 
 	privateKey, err := crypto.NewPrivateKey(symbiotic.KeyTypeEcdsaSecp256k1, pkBytes)
 	require.NoError(t, err)
@@ -185,11 +191,30 @@ func createExtraOperator(t *testing.T) operatorData {
 	ecdsaKey, err := ethCrypto.ToECDSA(privateKey.Bytes())
 	require.NoError(t, err)
 	operatorAddress := ethCrypto.PubkeyToAddress(ecdsaKey.PublicKey)
+	t.Logf("Extra operator address: %s", operatorAddress.Hex())
 
 	_, err = fundOperator(t.Context(), getFunderPrivateKey(t), settlementChains[0], symbiotic.CrossChainAddress{
 		ChainId: deploymentData.Driver.ChainId,
 		Address: operatorAddress,
 	}, big.NewInt(1e18))
+	require.NoError(t, err)
+
+	blsPrivateKey, err := crypto.NewPrivateKey(symbiotic.KeyTypeBlsBn254, pkBytes)
+	require.NoError(t, err)
+	blsPrivateKeySecondary, err := crypto.NewPrivateKey(symbiotic.KeyTypeBlsBn254, pkSecondaryBytes)
+	require.NoError(t, err)
+
+	opEVMClient := createEVMClientWithEVMKey(t, deploymentData, privateKey)
+	registerer, err := key_registerer.NewRegisterer(key_registerer.Config{EVMClient: opEVMClient})
+	require.NoError(t, err)
+
+	_, err = registerer.Register(t.Context(), blsPrivateKey, symbiotic.KeyTag(15), operatorAddress)
+	require.NoError(t, err)
+
+	_, err = registerer.Register(t.Context(), privateKey, symbiotic.KeyTag(16), operatorAddress)
+	require.NoError(t, err)
+
+	_, err = registerer.Register(t.Context(), blsPrivateKeySecondary, symbiotic.KeyTag(11), operatorAddress)
 	require.NoError(t, err)
 
 	return operatorData{

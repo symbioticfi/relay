@@ -21,7 +21,7 @@ import (
 )
 
 type signer interface {
-	EnqueueRequestID(requestID common.Hash)
+	EnqueueRequestID(ctx context.Context, requestID common.Hash)
 }
 
 type repo interface {
@@ -372,6 +372,7 @@ func (s *Service) process(
 	// if we are a signer, sign the commitment, otherwise just save the metadata
 	var signatureRequest *symbiotic.SignatureRequest
 	if prevValSet.IsSigner(onchainKey) {
+		slog.DebugContext(ctx, "Node is a signer for previous validator set, creating signature request")
 		signatureRequest = &symbiotic.SignatureRequest{
 			KeyTag:        prevValSet.RequiredKeyTag,
 			RequiredEpoch: prevValSet.Epoch,
@@ -408,7 +409,9 @@ func (s *Service) process(
 	if err = s.cfg.Repo.SaveNextValsetData(ctx, data); err != nil {
 		return errors.Errorf("failed to save validator set data: %w", err)
 	}
-	s.cfg.Signer.EnqueueRequestID(metadata.RequestID)
+	if signatureRequest != nil {
+		s.cfg.Signer.EnqueueRequestID(ctx, metadata.RequestID)
+	}
 
 	_, err = s.cfg.Repo.GetAggregationProof(ctx, metadata.RequestID)
 	if proofFound := err == nil; proofFound {

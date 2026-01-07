@@ -562,7 +562,7 @@ func processValidators(validators []symbiotic.Validator, keyTag symbiotic.KeyTag
 
 		keyBytes, ok := val.FindKeyByKeyTag(keyTag)
 		if !ok {
-			return nil, errors.Errorf("failed to find key by keyTag for validator %s", val.Operator.Hex())
+			return nil, errors.Errorf("failed to find key by keyTag %s for validator %s", keyTag, val.Operator.Hex())
 		}
 
 		g1Key := new(bn254.G1Affine)
