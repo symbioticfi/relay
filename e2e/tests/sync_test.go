@@ -8,13 +8,22 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
 	apiv1 "github.com/symbioticfi/relay/api/client/v1"
+	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
 	"github.com/symbioticfi/relay/symbiotic/client/evm"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 	valsetDeriver "github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver"
 )
+
+// testPrivateKeyHex is the well-known Hardhat/Anvil test account #0 private key
+// from /e2e/contracts/network-scripts/deploy.sh
+const testPrivateKeyHex = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+
+const waitEpochTimeout = 2 * time.Minute
 
 // TestAggregatorSignatureSync tests that aggregators can sync missed signatures
 // and generate proofs even when they were offline during signature collection.
@@ -87,7 +96,7 @@ func TestAggregatorSignatureSync(t *testing.T) {
 	// During this time, signers will generate signatures but aggregators are offline
 	t.Log("Step 3: Waiting for next epoch to trigger signature generation...")
 
-	err = waitForEpoch(ctx, evmClient, nextEpoch, 2*time.Minute)
+	err = waitForEpoch(ctx, evmClient, nextEpoch, waitEpochTimeout)
 	require.NoError(t, err, "Failed to wait for next epoch")
 	t.Logf("Reached epoch %d", nextEpoch)
 
@@ -140,6 +149,97 @@ func TestAggregatorSignatureSync(t *testing.T) {
 	t.Log("✅ Signature sync test completed successfully")
 }
 
+func TestAggregatorProofSync(t *testing.T) {
+	ctx := t.Context()
+
+	// Load deployment data to get contract addresses and environment info
+	deploymentData, err := loadDeploymentData()
+	require.NoError(t, err, "Failed to load deployment data")
+
+	// Step 1: Get current epoch from EVM client
+	evmClient := createEVMClient(t, deploymentData)
+	currentEpoch, err := evmClient.GetCurrentEpoch(ctx)
+	require.NoError(t, err, "Failed to get current epoch")
+	t.Logf("Step 1: Current epoch: %d", currentEpoch)
+
+	t.Logf("Identifying signer-only nodes for next epoch %d...", currentEpoch+1)
+	deriver, err := valsetDeriver.NewDeriver(evmClient)
+	require.NoError(t, err, "Failed to create valset deriver")
+
+	captureTimestamp, err := evmClient.GetEpochStart(ctx, currentEpoch)
+	require.NoError(t, err, "Failed to get epoch start timestamp")
+
+	nwConfig, err := evmClient.GetConfig(ctx, captureTimestamp, currentEpoch)
+	require.NoError(t, err, "Failed to get network config")
+
+	nextEpoch := currentEpoch + 1
+	nextValset, err := deriver.GetValidatorSet(ctx, nextEpoch, nwConfig)
+	require.NoError(t, err, "Failed to get validator set")
+
+	// Identify only signers
+	onlySignerIndex := -1
+	for i, sidecarConfig := range deploymentData.Env.GetSidecarConfigs() {
+		onChainKey := sidecarConfig.RequiredSymKey.PublicKey().OnChain()
+		if nextValset.IsSigner(onChainKey) && !nextValset.IsAggregator(onChainKey) {
+			onlySignerIndex = i
+		}
+	}
+	require.Greater(t, onlySignerIndex, -1, "No signer-only node found in test environment")
+
+	t.Logf("Signer-only node index: %d", onlySignerIndex)
+
+	// Step 2: Stop signer container
+	t.Log("Step 2: Stopping only signer container...")
+	container := deploymentData.Env.GetSidecarConfigs()[onlySignerIndex].ContainerName
+	err = stopContainer(ctx, container)
+	require.NoError(t, err, "Failed to stop only signer container %d", onlySignerIndex)
+	t.Logf("Stopped only signer %d", onlySignerIndex)
+
+	// Step 3: Wait for next epoch to trigger proof generation
+	t.Log("Step 3: Waiting for next epoch to trigger proof generation...")
+
+	err = waitForEpoch(ctx, evmClient, nextEpoch, waitEpochTimeout)
+	require.NoError(t, err, "Failed to wait for next epoch")
+	t.Logf("Reached epoch %d", nextEpoch)
+
+	t.Log("Step 4: Verifying other operator has proof...")
+	anotherSignerIndex := lo.If(onlySignerIndex == 0, 1).Else(0)
+	client := getGRPCClient(t, anotherSignerIndex)
+	var metadataResp *apiv1.GetValidatorSetMetadataResponse
+	err = waitForErrorIsNil(ctx, time.Second*30, func() error {
+		metadataResp, err = client.GetValidatorSetMetadata(ctx, &apiv1.GetValidatorSetMetadataRequest{
+			Epoch: (*uint64)(&nextEpoch),
+		})
+		return err
+	})
+	require.NoError(t, err)
+
+	// Step 5: Start signer back up
+	t.Log("Step 5: Starting aggregator containers back up...")
+	err = startContainer(ctx, container)
+	require.NoError(t, err, "Failed to restart only signer container %d", onlySignerIndex)
+	t.Logf("Restarted only signer container %d", onlySignerIndex)
+
+	t.Log("Step 6: Verifying only signer have synced proof...")
+
+	healthEndpoint := getHealthEndpoint(onlySignerIndex)
+	err = waitForHealthy(ctx, healthEndpoint, 60*time.Second)
+	require.NoError(t, err, "Only signer %d failed to become healthy after restart", onlySignerIndex)
+	t.Logf("Only signer %d is healthy", onlySignerIndex)
+
+	err = waitForErrorIsNil(ctx, time.Second*30, func() error {
+		_, err = client.GetAggregationProof(ctx, &apiv1.GetAggregationProofRequest{
+			RequestId: metadataResp.GetRequestId(),
+		})
+		return err
+	})
+	require.NoError(t, err, "Failed to get aggregation proof from only signer %d", onlySignerIndex)
+
+	t.Logf("Only signer %d has synced signatures and generated proof", onlySignerIndex)
+
+	t.Log("✅ Proof sync test completed successfully")
+}
+
 func waitForErrorIsNil(ctx context.Context, timeout time.Duration, f func() error) error {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -189,6 +289,13 @@ func waitForHealthy(ctx context.Context, healthURL string, timeout time.Duration
 // createEVMClient creates an EVM client for interacting with the blockchain
 func createEVMClient(t *testing.T, deploymentData RelayContractsData) *evm.Client {
 	t.Helper()
+	kp, err := keyprovider.NewSimpleKeystoreProvider()
+	require.NoError(t, err)
+	privateKey, err := crypto.NewPrivateKey(symbiotic.KeyTypeEcdsaSecp256k1, common.Hex2Bytes(testPrivateKeyHex))
+	require.NoError(t, err)
+	err = kp.AddKeyByNamespaceTypeId(keyprovider.EVM_KEY_NAMESPACE, symbiotic.KeyTypeEcdsaSecp256k1, 31337, privateKey)
+	require.NoError(t, err)
+
 	config := evm.Config{
 		ChainURLs: settlementChains,
 		DriverAddress: symbiotic.CrossChainAddress{
@@ -196,7 +303,7 @@ func createEVMClient(t *testing.T, deploymentData RelayContractsData) *evm.Clien
 			Address: common.HexToAddress(deploymentData.GetDriverAddress()),
 		},
 		RequestTimeout: 10 * time.Second,
-		KeyProvider:    &testMockKeyProvider{},
+		KeyProvider:    kp,
 	}
 
 	evmClient, err := evm.NewEvmClient(t.Context(), config)
@@ -206,7 +313,7 @@ func createEVMClient(t *testing.T, deploymentData RelayContractsData) *evm.Clien
 }
 
 // waitForEpoch waits until the specified epoch is reached
-func waitForEpoch(ctx context.Context, client evm.IEvmClient, targetEpoch symbiotic.Epoch, timeout time.Duration) error {
+func waitForEpoch(ctx context.Context, client *evm.Client, targetEpoch symbiotic.Epoch, timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 

@@ -739,7 +739,9 @@ func (v ValidatorSetHeader) Hash() (common.Hash, error) {
 }
 
 type TxResult struct {
-	TxHash common.Hash
+	TxHash            common.Hash
+	GasUsed           uint64
+	EffectiveGasPrice *big.Int
 }
 
 type ChainURL struct {

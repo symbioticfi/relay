@@ -15,7 +15,6 @@ import (
 	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/signals"
-	"github.com/symbioticfi/relay/symbiotic/client/evm"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
@@ -53,8 +52,18 @@ type keyProvider interface {
 	GetOnchainKeyFromCache(keyTag symbiotic.KeyTag) (symbiotic.CompactPublicKey, error)
 }
 
+type evmClient interface {
+	GetCurrentEpoch(ctx context.Context) (symbiotic.Epoch, error)
+	GetEpochStart(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.Timestamp, error)
+	GetConfig(ctx context.Context, timestamp symbiotic.Timestamp, epoch symbiotic.Epoch) (symbiotic.NetworkConfig, error)
+	CommitValsetHeader(ctx context.Context, addr symbiotic.CrossChainAddress, header symbiotic.ValidatorSetHeader, extraData []symbiotic.ExtraData, proof []byte) (symbiotic.TxResult, error)
+	IsValsetHeaderCommittedAtEpochs(ctx context.Context, addr symbiotic.CrossChainAddress, epochs []symbiotic.Epoch) ([]bool, error)
+	GetLastCommittedHeaderEpoch(ctx context.Context, addr symbiotic.CrossChainAddress, evmOptions ...symbiotic.EVMOption) (symbiotic.Epoch, error)
+	IsValsetHeaderCommittedAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch, opts ...symbiotic.EVMOption) (_ bool, err error)
+}
+
 type Config struct {
-	EvmClient           evm.IEvmClient                          `validate:"required"`
+	EvmClient           evmClient                               `validate:"required"`
 	Repo                repo                                    `validate:"required"`
 	Deriver             deriver                                 `validate:"required"`
 	PollingInterval     time.Duration                           `validate:"required,gt=0"`

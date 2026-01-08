@@ -4,14 +4,11 @@ import (
 	"context"
 	"log/slog"
 	"math/big"
-	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 
-	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
 	"github.com/symbioticfi/relay/symbiotic/client/evm/gen"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -23,29 +20,6 @@ func (e *Client) CommitValsetHeader(
 	extraData []symbiotic.ExtraData,
 	proof []byte,
 ) (_ symbiotic.TxResult, err error) {
-	pk, err := e.cfg.KeyProvider.GetPrivateKeyByNamespaceTypeId(
-		keyprovider.EVM_KEY_NAMESPACE,
-		symbiotic.KeyTypeEcdsaSecp256k1,
-		int(addr.ChainId),
-	)
-	if err != nil {
-		return symbiotic.TxResult{}, err
-	}
-	ecdsaKey, err := crypto.ToECDSA(pk.Bytes())
-	if err != nil {
-		return symbiotic.TxResult{}, err
-	}
-	txOpts, err := bind.NewKeyedTransactorWithChainID(ecdsaKey, new(big.Int).SetUint64(addr.ChainId))
-	if err != nil {
-		return symbiotic.TxResult{}, errors.Errorf("failed to create new keyed transactor: %w", err)
-	}
-	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
-	defer cancel()
-	defer func(now time.Time) {
-		e.observeMetrics("CommitValSetHeader", addr.ChainId, err, now)
-	}(time.Now())
-	txOpts.Context = tmCtx
-
 	headerDTO := gen.ISettlementValSetHeader{
 		Version:            header.Version,
 		RequiredKeyTag:     uint8(header.RequiredKeyTag),
@@ -67,25 +41,15 @@ func (e *Client) CommitValsetHeader(
 		return symbiotic.TxResult{}, errors.Errorf("failed to get settlement contract: %w", err)
 	}
 
-	tx, err := settlement.CommitValSetHeader(txOpts, headerDTO, extraDataDTO, proof)
+	tx, err := e.doTransaction(ctx, "CommitValsetHeader", addr, func(txOpts *bind.TransactOpts) (*types.Transaction, error) {
+		return settlement.CommitValSetHeader(txOpts, headerDTO, extraDataDTO, proof)
+	})
 	if err != nil {
-		return symbiotic.TxResult{}, e.formatEVMContractError(gen.SettlementMetaData, err)
+		return symbiotic.TxResult{}, errors.Errorf("failed to commit valset header: %w", err)
 	}
 
-	receipt, err := bind.WaitMined(ctx, e.conns[addr.ChainId], tx)
-	if err != nil {
-		return symbiotic.TxResult{}, errors.Errorf("failed to wait for tx mining: %w", err)
-	}
+	slog.DebugContext(ctx, "Valset header committed", "receipt", tx)
+	e.metrics.ObserveCommitValsetHeaderParams(addr.ChainId, tx.GasUsed, tx.EffectiveGasPrice)
 
-	if receipt.Status == types.ReceiptStatusFailed {
-		return symbiotic.TxResult{}, errors.New("transaction reverted on chain")
-	}
-
-	slog.DebugContext(ctx, "Valset header committed", "receipt", receipt)
-
-	e.metrics.ObserveCommitValsetHeaderParams(addr.ChainId, receipt.GasUsed, receipt.EffectiveGasPrice)
-
-	return symbiotic.TxResult{
-		TxHash: receipt.TxHash,
-	}, nil
+	return tx, nil
 }
