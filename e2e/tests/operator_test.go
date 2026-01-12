@@ -27,29 +27,49 @@ import (
 // 4. проверить, что он генерит подписи
 // 5. стопнуть лишнего оператора
 func TestAddAndRemoveOperator(t *testing.T) {
+	t.Log("=== Starting TestAddAndRemoveOperator ===")
+
 	deploymentData := loadDeploymentData(t)
+	t.Logf("Deployment data loaded: chainId=%d, existingOperators=%d", deploymentData.Driver.ChainId, deploymentData.Env.Operators)
 
+	t.Log("Creating extra operator with keys...")
 	opData := createExtraOperator(t)
+	t.Logf("Extra operator created: address=%s", opData.address.Hex())
 
+	t.Log("Creating EVM client for extra operator...")
 	opEVMClient := createEVMClientWithEVMKey(t, deploymentData, opData.privateKey)
+	t.Logf("Registering operator in OperatorRegistry at %s...", deploymentData.MainChain.Addresses.OperatorRegistry)
 	_, err := opEVMClient.RegisterOperator(t.Context(), symbiotic.CrossChainAddress{
 		ChainId: deploymentData.Driver.ChainId,
 		Address: common.HexToAddress(deploymentData.MainChain.Addresses.OperatorRegistry),
 	})
 	require.NoError(t, err)
+	t.Log("Operator registered in OperatorRegistry")
 
+	t.Log("Creating funder EVM client...")
 	funderTestEVM := createTestEVM(t, settlementChains[0], getFunderPrivateKey(t))
 	stakingAmount := big.NewInt(1e5)
+	t.Logf("Transferring %s staking tokens to operator %s...", stakingAmount.String(), opData.address.Hex())
 	_, err = funderTestEVM.TransferMockToken(t.Context(), common.HexToAddress(deploymentData.MainChain.Addresses.StakingToken), opData.address, stakingAmount)
 	require.NoError(t, err)
+	t.Log("Staking tokens transferred to operator")
 
+	t.Log("Creating operator's test EVM client...")
 	opTestEVM := createTestEVM(t, settlementChains[0], opData.privateKey)
+	t.Logf("Operator opting into network at %s...", deploymentData.MainChain.Addresses.Network)
 	_, err = opTestEVM.OptIn(t.Context(), common.HexToAddress(deploymentData.MainChain.Addresses.OperatorNetworkOptInService), common.HexToAddress(deploymentData.MainChain.Addresses.Network))
 	require.NoError(t, err)
+	t.Log("Operator opted into network")
 
+	t.Log("Registering extra operator in VotingPowerProvider...")
 	registerExtraOperator(t, opEVMClient, opData.address)
-	initVault(t, opTestEVM, funderTestEVM, opData.address)
+	t.Log("Extra operator registered in VotingPowerProvider")
 
+	t.Log("Initializing vault for operator...")
+	initVault(t, opTestEVM, funderTestEVM, opData.address)
+	t.Log("Vault initialized for operator")
+
+	t.Logf("Waiting for validator set to include %d validators (existing %d + 1 new)...", deploymentData.Env.Operators+1, deploymentData.Env.Operators)
 	require.NoError(t, waitForErrorIsNil(t.Context(), time.Minute, func() error {
 		deriver, err := valsetDeriver.NewDeriver(opEVMClient)
 		if err != nil {
@@ -75,32 +95,46 @@ func TestAddAndRemoveOperator(t *testing.T) {
 		if err != nil {
 			return err
 		}
+		t.Logf("Current epoch %d has %d validators (expecting %d)", currentEpoch, len(valset.Validators), deploymentData.Env.Operators+1)
 		if int64(len(valset.Validators)) != deploymentData.Env.Operators+1 {
 			return errors.Errorf("expected %d validators, got %d", deploymentData.Env.Operators+1, len(valset.Validators))
 		}
 
 		return nil
 	}))
+	t.Log("Validator set now includes the extra operator")
 
 	currentEpoch, err := opEVMClient.GetCurrentEpoch(t.Context())
 	require.NoError(t, err)
+	t.Logf("Current epoch: %d", currentEpoch)
 
+	t.Log("Waiting 1 minute for signatures to be generated...")
 	time.Sleep(time.Minute)
+	t.Log("Wait complete, checking signatures...")
 
+	t.Logf("Getting gRPC client for extra operator (index %d)...", deploymentData.Env.Operators)
 	extraClient := getGRPCClient(t, int(deploymentData.Env.Operators))
+	t.Logf("Fetching signatures for epoch %d...", currentEpoch)
 	resp, err := extraClient.GetSignaturesByEpoch(t.Context(),
 		&apiv1.GetSignaturesByEpochRequest{
 			Epoch: uint64(currentEpoch),
 		},
 	)
 	require.NoError(t, err)
+	t.Logf("Received %d signatures for epoch %d", len(resp.GetSignatures()), currentEpoch)
 
 	require.Len(t, resp.GetSignatures(), int(deploymentData.Env.Operators+1))
-	for _, signature := range resp.GetSignatures() {
-		pk, err := crypto.NewPrivateKey(symbiotic.KeyTypeBlsBn254, opData.privateKey.Bytes())
-		require.NoError(t, err)
-		if bytes.Compare(signature.GetPublicKey(), pk.PublicKey().OnChain()) == 0 {
-			t.Log("found signature from extra operator")
+	t.Logf("Signature count matches expected: %d", deploymentData.Env.Operators+1)
+
+	pk, err := crypto.NewPrivateKey(symbiotic.KeyTypeBlsBn254, opData.privateKey.Bytes())
+	require.NoError(t, err)
+	expectedPubKey := pk.PublicKey().Raw()
+	t.Logf("Looking for signature from extra operator with public key: %x", expectedPubKey)
+
+	for i, signature := range resp.GetSignatures() {
+		t.Logf("Signature %d: pubKey=%x, requestId=%s", i, signature.GetPublicKey(), signature.GetRequestId())
+		if bytes.Equal(signature.GetPublicKey(), expectedPubKey) {
+			t.Log("=== SUCCESS: Found signature from extra operator ===")
 			return
 		}
 	}
@@ -109,14 +143,18 @@ func TestAddAndRemoveOperator(t *testing.T) {
 }
 
 func registerExtraOperator(t *testing.T, opEVMClient *evm.Client, opAddress common.Address) {
+	t.Helper()
 	deploymentData := loadDeploymentData(t)
 
+	t.Logf("[registerExtraOperator] Registering operator %s in VotingPowerProvider at %s...", opAddress.Hex(), deploymentData.MainChain.Addresses.VotingPowerProvider)
 	_, err := opEVMClient.RegisterOperatorVotingPowerProvider(t.Context(), symbiotic.CrossChainAddress{
 		ChainId: deploymentData.Driver.ChainId,
 		Address: common.HexToAddress(deploymentData.MainChain.Addresses.VotingPowerProvider),
 	})
 	require.NoError(t, err)
+	t.Log("[registerExtraOperator] RegisterOperatorVotingPowerProvider transaction sent")
 
+	t.Log("[registerExtraOperator] Waiting for operator registration to be confirmed on-chain...")
 	require.NoError(t, waitForErrorIsNil(t.Context(), time.Minute, func() error {
 		registered, err := opEVMClient.IsOperatorRegistered(t.Context(), symbiotic.CrossChainAddress{
 			ChainId: deploymentData.Driver.ChainId,
@@ -124,28 +162,38 @@ func registerExtraOperator(t *testing.T, opEVMClient *evm.Client, opAddress comm
 		}, symbiotic.CrossChainAddress{ChainId: deploymentData.Driver.ChainId, Address: opAddress})
 		require.NoError(t, err)
 		if !registered {
+			t.Logf("[registerExtraOperator] Operator %s not registered yet, retrying...", opAddress.Hex())
 			return errors.Errorf("operator %s not registered yet", opAddress.Hex())
 		}
-
+		t.Logf("[registerExtraOperator] Operator %s registration confirmed", opAddress.Hex())
 		return nil
 	}))
 }
 
 func initVault(t *testing.T, opTestEVM *testEth.Client, funderTestEVM *testEth.Client, address common.Address) {
+	t.Helper()
 	deploymentData := loadDeploymentData(t)
 	stakingAmount := big.NewInt(1e5)
 
+	t.Logf("[initVault] Getting auto-deploy vault for operator %s from VotingPowerProvider %s...", address.Hex(), deploymentData.MainChain.Addresses.VotingPowerProvider)
 	vaultAddress, err := funderTestEVM.GetAutoDeployVault(t.Context(), common.HexToAddress(deploymentData.MainChain.Addresses.VotingPowerProvider), address)
 	require.NoError(t, err)
+	t.Logf("[initVault] Vault address: %s", vaultAddress.Hex())
 
+	t.Logf("[initVault] Operator opting into vault %s via OperatorVaultOptInService %s...", vaultAddress.Hex(), deploymentData.MainChain.Addresses.OperatorVaultOptInService)
 	_, err = opTestEVM.OptIn(t.Context(), common.HexToAddress(deploymentData.MainChain.Addresses.OperatorVaultOptInService), vaultAddress)
 	require.NoError(t, err)
+	t.Log("[initVault] Operator opted into vault")
 
+	t.Logf("[initVault] Approving %s staking tokens for vault %s...", stakingAmount.String(), vaultAddress.Hex())
 	_, err = funderTestEVM.ApproveMockToken(t.Context(), common.HexToAddress(deploymentData.MainChain.Addresses.StakingToken), vaultAddress, stakingAmount)
 	require.NoError(t, err)
+	t.Log("[initVault] Token approval complete")
 
+	t.Logf("[initVault] Depositing %s tokens into vault %s...", stakingAmount.String(), vaultAddress.Hex())
 	_, err = funderTestEVM.VaultDeposit(t.Context(), vaultAddress, common.HexToAddress(deploymentData.MainChain.Addresses.StakingToken), stakingAmount)
 	require.NoError(t, err)
+	t.Log("[initVault] Vault deposit complete")
 }
 
 func createTestEVM(t *testing.T, chainURL string, privateKey crypto.PrivateKey) *testEth.Client {
@@ -172,12 +220,15 @@ func createExtraOperator(t *testing.T) operatorData {
 	t.Helper()
 	deploymentData := loadDeploymentData(t)
 
+	t.Logf("[createExtraOperator] Creating extra operator (existing operators: %d)", deploymentData.Env.Operators)
+
 	// Matches generate_network.sh: BASE_PRIVATE_KEY + operators
 	// BASE_PRIVATE_KEY = 1000000000000000000
 	baseKey := big.NewInt(1000000000000000000)
 	operators := big.NewInt(deploymentData.Env.Operators)
 	extraKeyInt := new(big.Int).Add(baseKey, operators)
 	extraSecondaryKeyInt := new(big.Int).Add(extraKeyInt, big.NewInt(10000))
+	t.Logf("[createExtraOperator] Derived key: baseKey=%s + operators=%d = %s", baseKey.String(), deploymentData.Env.Operators, extraKeyInt.String())
 
 	pkBytes := make([]byte, 32)
 	extraKeyInt.FillBytes(pkBytes)
@@ -186,37 +237,49 @@ func createExtraOperator(t *testing.T) operatorData {
 
 	privateKey, err := crypto.NewPrivateKey(symbiotic.KeyTypeEcdsaSecp256k1, pkBytes)
 	require.NoError(t, err)
+	t.Log("[createExtraOperator] Created ECDSA private key")
 
 	// Derive Ethereum address from private key
 	ecdsaKey, err := ethCrypto.ToECDSA(privateKey.Bytes())
 	require.NoError(t, err)
 	operatorAddress := ethCrypto.PubkeyToAddress(ecdsaKey.PublicKey)
-	t.Logf("Extra operator address: %s", operatorAddress.Hex())
+	t.Logf("[createExtraOperator] Operator address: %s", operatorAddress.Hex())
 
+	t.Logf("[createExtraOperator] Funding operator with 1 ETH on chain %d...", deploymentData.Driver.ChainId)
 	_, err = fundOperator(t.Context(), getFunderPrivateKey(t), settlementChains[0], symbiotic.CrossChainAddress{
 		ChainId: deploymentData.Driver.ChainId,
 		Address: operatorAddress,
 	}, big.NewInt(1e18))
 	require.NoError(t, err)
+	t.Log("[createExtraOperator] Operator funded")
 
 	blsPrivateKey, err := crypto.NewPrivateKey(symbiotic.KeyTypeBlsBn254, pkBytes)
 	require.NoError(t, err)
 	blsPrivateKeySecondary, err := crypto.NewPrivateKey(symbiotic.KeyTypeBlsBn254, pkSecondaryBytes)
 	require.NoError(t, err)
+	t.Logf("[createExtraOperator] Created BLS keys - primary pubKey: %x", blsPrivateKey.PublicKey().OnChain())
 
+	t.Log("[createExtraOperator] Creating EVM client and key registerer...")
 	opEVMClient := createEVMClientWithEVMKey(t, deploymentData, privateKey)
 	registerer, err := key_registerer.NewRegisterer(key_registerer.Config{EVMClient: opEVMClient})
 	require.NoError(t, err)
 
+	t.Logf("[createExtraOperator] Registering BLS key with keyTag=15 for operator %s...", operatorAddress.Hex())
 	_, err = registerer.Register(t.Context(), blsPrivateKey, symbiotic.KeyTag(15), operatorAddress)
 	require.NoError(t, err)
+	t.Log("[createExtraOperator] BLS key (keyTag=15) registered")
 
+	t.Logf("[createExtraOperator] Registering ECDSA key with keyTag=16 for operator %s...", operatorAddress.Hex())
 	_, err = registerer.Register(t.Context(), privateKey, symbiotic.KeyTag(16), operatorAddress)
 	require.NoError(t, err)
+	t.Log("[createExtraOperator] ECDSA key (keyTag=16) registered")
 
+	t.Logf("[createExtraOperator] Registering secondary BLS key with keyTag=11 for operator %s...", operatorAddress.Hex())
 	_, err = registerer.Register(t.Context(), blsPrivateKeySecondary, symbiotic.KeyTag(11), operatorAddress)
 	require.NoError(t, err)
+	t.Log("[createExtraOperator] Secondary BLS key (keyTag=11) registered")
 
+	t.Logf("[createExtraOperator] Extra operator created successfully: address=%s", operatorAddress.Hex())
 	return operatorData{
 		privateKey: privateKey,
 		address:    operatorAddress,

@@ -8,6 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
 	apiv1 "github.com/symbioticfi/relay/api/client/v1"
