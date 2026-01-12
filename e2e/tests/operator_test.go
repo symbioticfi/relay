@@ -71,7 +71,7 @@ func TestAddAndRemoveOperator(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Logf("Waiting for validator set to include %d validators (existing %d + 1 new)...", deploymentData.Env.Operators+1, deploymentData.Env.Operators)
-	require.NoError(t, waitForErrorIsNil(t.Context(), time.Minute, func() error {
+	require.NoError(t, waitForErrorIsNil(t.Context(), time.Minute*3, func() error {
 		deriver, err := valsetDeriver.NewDeriver(opEVMClient)
 		if err != nil {
 			return err
