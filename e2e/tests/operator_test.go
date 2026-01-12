@@ -24,8 +24,6 @@ import (
 	valsetDeriver "github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver"
 )
 
-// 4. проверить, что он генерит подписи
-// 5. стопнуть лишнего оператора
 func TestAddAndRemoveOperator(t *testing.T) {
 	t.Log("=== Starting TestAddAndRemoveOperator ===")
 
@@ -69,6 +67,9 @@ func TestAddAndRemoveOperator(t *testing.T) {
 	initVault(t, opTestEVM, funderTestEVM, opData.address)
 	t.Log("Vault initialized for operator")
 
+	privateKey, err := crypto.NewPrivateKey(symbiotic.KeyTypeBlsBn254, opData.privateKey.Bytes())
+	require.NoError(t, err)
+
 	t.Logf("Waiting for validator set to include %d validators (existing %d + 1 new)...", deploymentData.Env.Operators+1, deploymentData.Env.Operators)
 	require.NoError(t, waitForErrorIsNil(t.Context(), time.Minute, func() error {
 		deriver, err := valsetDeriver.NewDeriver(opEVMClient)
@@ -100,6 +101,11 @@ func TestAddAndRemoveOperator(t *testing.T) {
 			return errors.Errorf("expected %d validators, got %d", deploymentData.Env.Operators+1, len(valset.Validators))
 		}
 
+		validator, found := valset.FindValidatorByKey(symbiotic.KeyTag(15), privateKey.PublicKey().OnChain())
+		require.Truef(t, found, "extra operator's BLS key not found in validator set")
+		t.Logf("Found extra operator's key in validator set")
+		require.Len(t, validator.Keys, 3)
+
 		return nil
 	}))
 	t.Log("Validator set now includes the extra operator")
@@ -108,38 +114,37 @@ func TestAddAndRemoveOperator(t *testing.T) {
 	require.NoError(t, err)
 	t.Logf("Current epoch: %d", currentEpoch)
 
-	t.Log("Waiting 1 minute for signatures to be generated...")
-	time.Sleep(time.Minute)
-	t.Log("Wait complete, checking signatures...")
-
 	t.Logf("Getting gRPC client for extra operator (index %d)...", deploymentData.Env.Operators)
 	extraClient := getGRPCClient(t, int(deploymentData.Env.Operators))
 	t.Logf("Fetching signatures for epoch %d...", currentEpoch)
-	resp, err := extraClient.GetSignaturesByEpoch(t.Context(),
-		&apiv1.GetSignaturesByEpochRequest{
-			Epoch: uint64(currentEpoch),
-		},
-	)
-	require.NoError(t, err)
-	t.Logf("Received %d signatures for epoch %d", len(resp.GetSignatures()), currentEpoch)
 
-	require.Len(t, resp.GetSignatures(), int(deploymentData.Env.Operators+1))
-	t.Logf("Signature count matches expected: %d", deploymentData.Env.Operators+1)
+	err = waitForErrorIsNil(t.Context(), time.Minute*3, func() error {
+		resp, err := extraClient.GetSignaturesByEpoch(t.Context(),
+			&apiv1.GetSignaturesByEpochRequest{
+				Epoch: uint64(currentEpoch),
+			},
+		)
+		require.NoError(t, err)
+		t.Logf("Received %d signatures for epoch %d", len(resp.GetSignatures()), currentEpoch)
 
-	pk, err := crypto.NewPrivateKey(symbiotic.KeyTypeBlsBn254, opData.privateKey.Bytes())
-	require.NoError(t, err)
-	expectedPubKey := pk.PublicKey().Raw()
-	t.Logf("Looking for signature from extra operator with public key: %x", expectedPubKey)
-
-	for i, signature := range resp.GetSignatures() {
-		t.Logf("Signature %d: pubKey=%x, requestId=%s", i, signature.GetPublicKey(), signature.GetRequestId())
-		if bytes.Equal(signature.GetPublicKey(), expectedPubKey) {
-			t.Log("=== SUCCESS: Found signature from extra operator ===")
-			return
+		if len(resp.GetSignatures()) != int(deploymentData.Env.Operators+1) {
+			return errors.Errorf("expected %d signatures, got %d", deploymentData.Env.Operators+1, len(resp.GetSignatures()))
 		}
-	}
 
-	t.Fatal("did not find signature from extra operator")
+		expectedPubKey := privateKey.PublicKey().Raw()
+		t.Logf("Looking for signature from extra operator with public key: %x", expectedPubKey)
+
+		for i, signature := range resp.GetSignatures() {
+			t.Logf("Signature %d: pubKey=%x, requestId=%s", i, signature.GetPublicKey(), signature.GetRequestId())
+			if bytes.Equal(signature.GetPublicKey(), expectedPubKey) {
+				t.Log("=== SUCCESS: Found signature from extra operator ===")
+				return nil
+			}
+		}
+
+		return errors.New("did not find signature from extra operator")
+	})
+	require.NoError(t, err)
 }
 
 func registerExtraOperator(t *testing.T, opEVMClient *evm.Client, opAddress common.Address) {

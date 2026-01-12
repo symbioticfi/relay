@@ -74,7 +74,11 @@ func (e *Client) doTransaction(ctx context.Context, method string, chainID uint6
 	}
 
 	if receipt.Status == types.ReceiptStatusFailed {
-		return symbiotic.TxResult{}, errors.New("transaction reverted on chain")
+		return symbiotic.TxResult{
+			TxHash:            receipt.TxHash,
+			GasUsed:           receipt.GasUsed,
+			EffectiveGasPrice: receipt.EffectiveGasPrice,
+		}, errors.New("transaction reverted on chain")
 	}
 
 	return symbiotic.TxResult{

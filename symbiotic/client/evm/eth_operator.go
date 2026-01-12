@@ -38,7 +38,7 @@ func (e *Client) RegisterKey(
 		return symbiotic.TxResult{}, errors.Errorf("failed to get key registry contract: %w", err)
 	}
 
-	return e.doTransaction(ctx, "SetKey", e.driverChainID, func(txOpts *bind.TransactOpts) (*types.Transaction, error) {
+	return e.doTransaction(ctx, "SetKey", keyRegistryAddr.ChainId, func(txOpts *bind.TransactOpts) (*types.Transaction, error) {
 		return registry.SetKey(txOpts, uint8(keyTag), key, signature, extraData)
 	})
 }
