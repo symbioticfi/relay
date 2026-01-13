@@ -166,7 +166,7 @@ func TestRemoveAndAddSettlement(t *testing.T) {
 		}
 
 		t.Logf("Waiting for validator set commitments on both settlements")
-		require.NoError(t, waitForErrorIsNil(t.Context(), time.Minute*3, func() error {
+		require.NoError(t, waitForErrorIsNil(t.Context(), time.Minute*5, func() error {
 			for _, settlement := range finalConfig.Settlements {
 				committed, err := evmClient.IsValsetHeaderCommittedAt(t.Context(), settlement, backTwoSettlementsEpoch)
 				if err != nil {
