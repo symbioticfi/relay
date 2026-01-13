@@ -153,14 +153,14 @@ func TestRemoveAndAddSettlement(t *testing.T) {
 		require.NoError(t, err, "Failed to wait for epoch after next")
 		t.Logf("Reached epoch %d", backTwoSettlementsEpoch)
 
-		finalCaptureTimestamp, err := evmClient.GetEpochStart(t.Context(), oneSettlementEpoch+1)
+		finalCaptureTimestamp, err := evmClient.GetEpochStart(t.Context(), backTwoSettlementsEpoch)
 		require.NoError(t, err, "Failed to get epoch start timestamp")
 
-		finalConfig, err := evmClient.GetConfig(t.Context(), finalCaptureTimestamp, oneSettlementEpoch+1)
+		finalConfig, err := evmClient.GetConfig(t.Context(), finalCaptureTimestamp, backTwoSettlementsEpoch)
 		require.NoError(t, err, "Failed to get network config")
 
 		require.Len(t, finalConfig.Settlements, 2, "Expected exactly two settlements after re-adding")
-		t.Logf("Settlement re-addition confirmed in epoch %d - settlements count: %d", oneSettlementEpoch+1, len(finalConfig.Settlements))
+		t.Logf("Settlement re-addition confirmed in epoch %d - settlements count: %d", backTwoSettlementsEpoch, len(finalConfig.Settlements))
 		for i, settlement := range finalConfig.Settlements {
 			t.Logf("Settlement %d - ChainID: %d, Address: %s", i, settlement.ChainId, settlement.Address.Hex())
 		}
@@ -170,9 +170,11 @@ func TestRemoveAndAddSettlement(t *testing.T) {
 			for _, settlement := range finalConfig.Settlements {
 				committed, err := evmClient.IsValsetHeaderCommittedAt(t.Context(), settlement, backTwoSettlementsEpoch)
 				if err != nil {
+					t.Logf("Error checking valset header commitment on settlement ChainID %d: %v", settlement.ChainId, err)
 					return err
 				}
 				if !committed {
+					t.Logf("Valset header not yet committed on settlement ChainID %d", settlement.ChainId)
 					return errors.Errorf("valset header not committed for settlement %d", settlement.ChainId)
 				}
 			}
