@@ -110,7 +110,7 @@ func (r *Registerer) Register(
 	// Use the adjusted signature for registration
 	txResult, err := r.evmClient.RegisterKey(ctx, networkConfig.KeysProvider, kt, key, signature, extraData)
 	if err != nil {
-		return symbiotic.TxResult{}, errors.Errorf("failed to register key: %w", err)
+		return txResult, errors.Errorf("failed to register key: %w", err)
 	}
 
 	return txResult, nil

@@ -40,7 +40,7 @@ func (e *Client) RegisterKey(
 
 	return e.doTransaction(ctx, "SetKey", keyRegistryAddr.ChainId, func(txOpts *bind.TransactOpts) (*types.Transaction, error) {
 		return registry.SetKey(txOpts, uint8(keyTag), key, signature, extraData)
-	})
+	}, symbiotic.WithGasLimitMultiplier(1.3))
 }
 
 func (e *Client) InvalidateOldSignatures(

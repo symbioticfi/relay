@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -39,7 +40,9 @@ func (e *Client) AddSettlement(
 	})
 }
 
-func (e *Client) doTransaction(ctx context.Context, method string, chainID uint64, f func(opts *bind.TransactOpts) (*types.Transaction, error)) (symbiotic.TxResult, error) {
+func (e *Client) doTransaction(ctx context.Context, method string, chainID uint64, f func(opts *bind.TransactOpts) (*types.Transaction, error), opts ...symbiotic.EVMOption) (symbiotic.TxResult, error) {
+	evmOpts := symbiotic.AppliedEVMOptions(opts...)
+
 	pk, err := e.cfg.KeyProvider.GetPrivateKeyByNamespaceTypeId(
 		keyprovider.EVM_KEY_NAMESPACE,
 		symbiotic.KeyTypeEcdsaSecp256k1,
@@ -63,6 +66,29 @@ func (e *Client) doTransaction(ctx context.Context, method string, chainID uint6
 	}(time.Now())
 	txOpts.Context = tmCtx
 
+	// If GasLimitMultiplier is set, estimate gas and apply multiplier
+	if evmOpts.GasLimitMultiplier > 0 {
+		txOpts.NoSend = true
+		dryRunTx, err := f(txOpts)
+		if err != nil {
+			return symbiotic.TxResult{}, e.formatEVMError(err)
+		}
+
+		msg := ethereum.CallMsg{
+			From:  txOpts.From,
+			To:    dryRunTx.To(),
+			Data:  dryRunTx.Data(),
+			Value: dryRunTx.Value(),
+		}
+		estimatedGas, err := e.conns[chainID].EstimateGas(tmCtx, msg)
+		if err != nil {
+			return symbiotic.TxResult{}, errors.Errorf("failed to estimate gas: %w", err)
+		}
+
+		txOpts.GasLimit = uint64(float64(estimatedGas) * evmOpts.GasLimitMultiplier)
+		txOpts.NoSend = false
+	}
+
 	tx, err := f(txOpts)
 	if err != nil {
 		return symbiotic.TxResult{}, e.formatEVMError(err)
@@ -78,7 +104,7 @@ func (e *Client) doTransaction(ctx context.Context, method string, chainID uint6
 			TxHash:            receipt.TxHash,
 			GasUsed:           receipt.GasUsed,
 			EffectiveGasPrice: receipt.EffectiveGasPrice,
-		}, errors.New("transaction reverted on chain")
+		}, errors.Errorf("transaction %s reverted on chain (gasUsed: %d)", receipt.TxHash.Hex(), receipt.GasUsed)
 	}
 
 	return symbiotic.TxResult{
