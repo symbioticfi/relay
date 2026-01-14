@@ -11,7 +11,7 @@ import (
 
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	symbioticCrypto "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
-	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/bls12381Bn254"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/bls12381"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/blsBn254"
 )
 
@@ -94,8 +94,8 @@ func (r *Registerer) Register(
 		}
 		rawByte := blsKey.G2().RawBytes()
 		extraData = rawByte[:]
-	case symbiotic.KeyTypeBls12381Bn254:
-		blsKey, err := bls12381Bn254.FromRaw(pk.PublicKey().Raw())
+	case symbiotic.KeyTypeBls12381:
+		blsKey, err := bls12381.FromRaw(pk.PublicKey().Raw())
 		if err != nil {
 			return symbiotic.TxResult{}, errors.Errorf("failed to parse BLS public key: %w", err)
 		}
