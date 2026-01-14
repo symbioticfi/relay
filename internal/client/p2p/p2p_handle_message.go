@@ -62,10 +62,10 @@ func (s *Service) handleAggregatedProofReadyMessage(pubSubMsg *pubsub.Message) e
 
 	// Validate the signaturesAggregated message
 	if len(signaturesAggregated.GetMessageHash()) > maxMsgHashSize {
-		return errors.Errorf("aggregation proof message hash size exceeds maximum allowed size: %d bytes", maxMsgHashSize)
+		return errors.Errorf("aggregation proof message hash %x size exceeds maximum allowed size: %d bytes", signaturesAggregated.GetMessageHash(), maxMsgHashSize)
 	}
 	if len(signaturesAggregated.GetProof()) > maxProofSize {
-		return errors.Errorf("aggregation proof size exceeds maximum allowed size: %d bytes", maxProofSize)
+		return errors.Errorf("aggregation proof %x size exceeds maximum allowed size: %d bytes", signaturesAggregated.GetProof(), maxProofSize)
 	}
 
 	msg := symbiotic.AggregationProof{

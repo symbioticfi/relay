@@ -31,7 +31,7 @@ func TestKeyTag_MarshalText(t *testing.T) {
 		{0x0F, "BLS-BN254/15"},
 		{0x10, "ECDSA-SECP256K1/0"},
 		{0x1F, "ECDSA-SECP256K1/15"},
-		{0x20, "BLS12381-BN254/0"},
+		{0x20, "BLS12-381/0"},
 		{0xFF, "UNKNOWN/15"},
 	}
 	for _, c := range cases {
@@ -53,7 +53,7 @@ func TestKeyTag_String(t *testing.T) {
 		{0x00, "BLS-BN254/0"},
 		{0x10, "ECDSA-SECP256K1/0"},
 		{0x1F, "ECDSA-SECP256K1/15"},
-		{0x20, "BLS12381-BN254/0"},
+		{0x20, "BLS12-381/0"},
 		{0xFF, "UNKNOWN/15"},
 	}
 	for _, c := range cases {
