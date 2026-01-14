@@ -26,6 +26,11 @@ jobs:
     strategy:
       matrix:
         config:
+          - name: "Simple Setup"
+            operators: 4
+            commiters: 1
+            aggregators: 1
+            verification_type: 1
           - name: "ZK Aggregator Test"
             operators: 10
             commiters: 3
