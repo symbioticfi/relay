@@ -1,4 +1,4 @@
-package bls12381Bn254
+package bls12381
 
 import (
 	"fmt"
@@ -47,7 +47,7 @@ func GenerateKey() (*PrivateKey, error) {
 	var err error
 	sk, err = sk.SetRandom()
 	if err != nil {
-		return nil, errors.Errorf("bls12381Bn254: failed to generate key: %w", err)
+		return nil, errors.Errorf("bls12381: failed to generate key: %w", err)
 	}
 	return &PrivateKey{privateKey: sk.BigInt(new(big.Int))}, nil
 }
@@ -61,7 +61,7 @@ func (k *PrivateKey) Sign(msg []byte) (Signature, MessageHash, error) {
 	hash := HashMessage(msg)
 	g1Hash, err := HashToG1(hash)
 	if err != nil {
-		return nil, nil, errors.Errorf("bls12381Bn254: failed to map hash to G1: %w", err)
+		return nil, nil, errors.Errorf("bls12381: failed to map hash to G1: %w", err)
 	}
 
 	var g1Sig bls12381.G1Affine
@@ -73,7 +73,7 @@ func (k *PrivateKey) Sign(msg []byte) (Signature, MessageHash, error) {
 func HashToG1(data []byte) (*bls12381.G1Affine, error) {
 	point, err := bls12381.HashToG1(data, []byte(hashToG1Domain))
 	if err != nil {
-		return nil, errors.Errorf("bls12381Bn254: failed to hash to G1: %w", err)
+		return nil, errors.Errorf("bls12381: failed to hash to G1: %w", err)
 	}
 	return &point, nil
 }
@@ -100,17 +100,17 @@ func (k *PublicKey) Verify(msg Message, sig Signature) error {
 
 func (k *PublicKey) VerifyWithHash(msgHash MessageHash, sig Signature) error {
 	if len(msgHash) != MessageHashLength {
-		return errors.Errorf("bls12381Bn254: invalid message hash length")
+		return errors.Errorf("bls12381: invalid message hash length")
 	}
 
 	g1Hash, err := HashToG1(msgHash)
 	if err != nil {
-		return errors.Errorf("bls12381Bn254: failed to hash message to G1: %w", err)
+		return errors.Errorf("bls12381: failed to hash message to G1: %w", err)
 	}
 
 	var g1Sig bls12381.G1Affine
 	if _, err = g1Sig.SetBytes(sig); err != nil {
-		return errors.Errorf("bls12381Bn254: failed to set big into G1: %w", err)
+		return errors.Errorf("bls12381: failed to set big into G1: %w", err)
 	}
 
 	_, _, _, g2Gen := bls12381.Generators()
@@ -122,17 +122,23 @@ func (k *PublicKey) VerifyWithHash(msgHash MessageHash, sig Signature) error {
 
 	ok, err := bls12381.PairingCheck(g1P[:], g1Q[:])
 	if err != nil {
-		return errors.Errorf("bls12381Bn254: pairing check failed: %w", err)
+		return errors.Errorf("bls12381: pairing check failed: %w", err)
 	}
 	if !ok {
-		return errors.Errorf("bls12381Bn254: invalid signature")
+		return errors.Errorf("bls12381: invalid signature")
 	}
 	return nil
 }
 
 // OnChain might be one way operation, meaning that it's impossible to reconstruct PublicKey from compact
 func (k *PublicKey) OnChain() CompactPublicKey {
-	return k.g1PubKey.Marshal()
+	// DEV: g1PubKey Marshalled is 96 bytes in total, x and y each 48bytes
+	// but onchain we need to pad each field to 64 bytes, hence we manually pad it here
+	pk := k.g1PubKey.Marshal()
+	paddedPk := make([]byte, 128)
+	copy(paddedPk[16:64], pk[0:48])   // x coordinate
+	copy(paddedPk[80:128], pk[48:96]) // y coordinate
+	return paddedPk
 }
 
 func (k *PublicKey) Raw() RawPublicKey {
@@ -155,20 +161,20 @@ func (k *PublicKey) MarshalText() ([]byte, error) {
 
 func FromRaw(rawKey RawPublicKey) (*PublicKey, error) {
 	if rawKey == nil {
-		return nil, errors.New("bls12381Bn254: nil raw key")
+		return nil, errors.New("bls12381: nil raw key")
 	}
 	if len(rawKey) != RawKeyLength {
-		return nil, errors.Errorf("bls12381Bn254: invalid raw key length, expected %d, got %d", RawKeyLength, len(rawKey))
+		return nil, errors.Errorf("bls12381: invalid raw key length, expected %d, got %d", RawKeyLength, len(rawKey))
 	}
 
 	var g1 bls12381.G1Affine
 	var g2 bls12381.G2Affine
 
 	if _, err := g1.SetBytes(rawKey[:bls12381.SizeOfG1AffineCompressed]); err != nil {
-		return nil, errors.Errorf("bls12381Bn254: failed to unmarshal G1 pubkey: %w", err)
+		return nil, errors.Errorf("bls12381: failed to unmarshal G1 pubkey: %w", err)
 	}
 	if _, err := g2.SetBytes(rawKey[bls12381.SizeOfG1AffineCompressed:]); err != nil {
-		return nil, errors.Errorf("bls12381Bn254: failed to unmarshal G2 pubkey: %w", err)
+		return nil, errors.Errorf("bls12381: failed to unmarshal G2 pubkey: %w", err)
 	}
 
 	return &PublicKey{g1PubKey: g1, g2PubKey: g2}, nil

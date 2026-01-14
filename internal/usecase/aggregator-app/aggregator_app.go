@@ -85,6 +85,15 @@ func NewAggregatorApp(cfg Config) (*AggregatorApp, error) {
 
 func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg symbiotic.Signature) error {
 	ctx = log.WithComponent(ctx, "aggregator")
+	if !msg.KeyTag.Type().AggregationKey() {
+		slog.DebugContext(ctx, "Skipped processing signature processed message, key tag is not for aggregation",
+			"message", msg,
+			"epoch", msg.Epoch,
+			"requestId", msg.RequestID().Hex(),
+			"keyTag", msg.KeyTag.String(),
+		)
+		return nil
+	}
 	slog.DebugContext(ctx, "Received signature processed message",
 		"message", msg,
 		"epoch", msg.Epoch,

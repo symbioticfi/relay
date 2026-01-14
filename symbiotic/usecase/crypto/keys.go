@@ -6,7 +6,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/symbioticfi/relay/internal/client/repository/cache"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
-	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/bls12381Bn254"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/bls12381"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/blsBn254"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto/ecdsaSecp256k1"
 )
@@ -74,8 +74,8 @@ func NewPublicKey(keyType symbiotic.KeyType, keyBytes symbiotic.RawPublicKey) (P
 		pubkey, err = blsBn254.FromRaw(keyBytes)
 	case symbiotic.KeyTypeEcdsaSecp256k1:
 		pubkey, err = ecdsaSecp256k1.FromRaw(keyBytes)
-	case symbiotic.KeyTypeBls12381Bn254:
-		pubkey, err = bls12381Bn254.FromRaw(keyBytes)
+	case symbiotic.KeyTypeBls12381:
+		pubkey, err = bls12381.FromRaw(keyBytes)
 	case symbiotic.KeyTypeInvalid:
 		return nil, errors.New("unsupported key type")
 	default:
@@ -99,8 +99,8 @@ func NewPrivateKey(keyType symbiotic.KeyType, keyBytes []byte) (PrivateKey, erro
 		return blsBn254.NewPrivateKey(keyBytes)
 	case symbiotic.KeyTypeEcdsaSecp256k1:
 		return ecdsaSecp256k1.NewPrivateKey(keyBytes)
-	case symbiotic.KeyTypeBls12381Bn254:
-		return bls12381Bn254.NewPrivateKey(keyBytes)
+	case symbiotic.KeyTypeBls12381:
+		return bls12381.NewPrivateKey(keyBytes)
 	case symbiotic.KeyTypeInvalid:
 		return nil, errors.New("unsupported key type")
 	}
@@ -113,8 +113,8 @@ func HashMessage(keyType symbiotic.KeyType, msg []byte) (symbiotic.RawMessageHas
 		return blsBn254.HashMessage(msg), nil
 	case symbiotic.KeyTypeEcdsaSecp256k1:
 		return ecdsaSecp256k1.HashMessage(msg), nil
-	case symbiotic.KeyTypeBls12381Bn254:
-		return bls12381Bn254.HashMessage(msg), nil
+	case symbiotic.KeyTypeBls12381:
+		return bls12381.HashMessage(msg), nil
 	case symbiotic.KeyTypeInvalid:
 		return nil, errors.New("unsupported key type")
 	}
@@ -127,8 +127,8 @@ func GeneratePrivateKey(keyType symbiotic.KeyType) (PrivateKey, error) {
 		return blsBn254.GenerateKey()
 	case symbiotic.KeyTypeEcdsaSecp256k1:
 		return ecdsaSecp256k1.GenerateKey()
-	case symbiotic.KeyTypeBls12381Bn254:
-		return bls12381Bn254.GenerateKey()
+	case symbiotic.KeyTypeBls12381:
+		return bls12381.GenerateKey()
 	case symbiotic.KeyTypeInvalid:
 		return nil, errors.New("unsupported key type")
 	}
