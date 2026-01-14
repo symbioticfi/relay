@@ -348,60 +348,6 @@ EOF
 EOF
     done
 
-    # Extra relay for testing (not part of validator set)
-    local extra_idx=$((operators + 1))
-    local extra_port=$((relay_start_port + operators))
-    local extra_storage_dir="data-$(printf "%02d" $extra_idx)"
-    local extra_key_decimal=$((BASE_PRIVATE_KEY + operators))
-    local extra_secondary_key_decimal=$((BASE_PRIVATE_KEY + operators + 10000))
-    local extra_key_hex=$(printf "%064x" $extra_key_decimal)
-    local extra_secondary_key_hex=$(printf "%064x" $extra_secondary_key_decimal)
-
-    mkdir -p "$network_dir/$extra_storage_dir"
-    chmod 777 "$network_dir/$extra_storage_dir"
-
-    cat >> "$network_dir/docker-compose.yml" << EOF
-
-  # Extra relay (not in validator set, for testing)
-  relay-sidecar-extra:
-    image: relay_sidecar:dev
-    container_name: symbiotic-relay-extra
-    command:
-      - sh
-      - -c
-      - "chmod 777 /app/$extra_storage_dir /deploy-data 2>/dev/null || true && /workspace/scripts/sidecar-start.sh symb/0/15/0x$extra_key_hex,symb/0/11/0x$extra_secondary_key_hex,symb/1/0/0x$extra_key_hex,evm/1/31337/0x$extra_key_hex,evm/1/31338/0x$extra_key_hex,p2p/1/1/$extra_key_hex /app/$extra_storage_dir $circuits_param"
-    ports:
-      - "$extra_port:8080"
-    volumes:
-      - ../:/workspace
-      - ./$extra_storage_dir:/app/$extra_storage_dir
-      - ./deploy-data:/deploy-data
-EOF
-
-    if [ "$verification_type" = "0" ]; then
-        cat >> "$network_dir/docker-compose.yml" << EOF
-      - ./circuits:/app/circuits
-EOF
-    fi
-
-    cat >> "$network_dir/docker-compose.yml" << EOF
-    depends_on:
-      genesis-generator:
-        condition: service_completed_successfully
-    networks:
-      - symbiotic-network
-    restart: unless-stopped
-    environment:
-      - MAX_VALIDATORS=10
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/healthz"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-EOF
-
     cat >> "$network_dir/docker-compose.yml" << EOF
 
 networks:

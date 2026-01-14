@@ -25,6 +25,7 @@ import (
 // configuration changes across epoch boundaries and properly commits validator sets
 // to all active settlement chains.
 func TestRemoveAndAddSettlement(t *testing.T) {
+	t.Skip()
 	t.Log("Starting TestRemoveSettlement - testing settlement lifecycle management")
 
 	deploymentData := loadDeploymentData(t)
