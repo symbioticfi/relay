@@ -20,13 +20,13 @@ func (s *Service) handleSignatureReadyMessage(pubSubMsg *pubsub.Message) error {
 
 	// Validate the signature message
 	if len(signature.GetPublicKey()) > maxPubKeySize {
-		return errors.Errorf("public key size exceeds maximum allowed size: %d bytes", maxPubKeySize)
+		return errors.Errorf("public key %x size exceeds maximum allowed size: %d bytes", signature.GetPublicKey(), maxPubKeySize)
 	}
 	if len(signature.GetSignature()) > maxSignatureSize {
-		return errors.Errorf("signature size exceeds maximum allowed size: %d bytes", maxSignatureSize)
+		return errors.Errorf("signature %x size exceeds maximum allowed size: %d bytes", signature.GetSignature(), maxSignatureSize)
 	}
 	if len(signature.GetMessageHash()) > maxMsgHashSize {
-		return errors.Errorf("message hash size exceeds maximum allowed size: %d bytes", maxMsgHashSize)
+		return errors.Errorf("message hash %x size exceeds maximum allowed size: %d bytes", signature.GetMessageHash(), maxMsgHashSize)
 	}
 
 	pubKey, err := crypto.NewPublicKey(symbiotic.KeyTag(signature.GetKeyTag()).Type(), signature.GetPublicKey())
@@ -62,10 +62,10 @@ func (s *Service) handleAggregatedProofReadyMessage(pubSubMsg *pubsub.Message) e
 
 	// Validate the signaturesAggregated message
 	if len(signaturesAggregated.GetMessageHash()) > maxMsgHashSize {
-		return errors.Errorf("aggregation proof message hash size exceeds maximum allowed size: %d bytes", maxMsgHashSize)
+		return errors.Errorf("aggregation proof message hash %x size exceeds maximum allowed size: %d bytes", signaturesAggregated.GetMessageHash(), maxMsgHashSize)
 	}
 	if len(signaturesAggregated.GetProof()) > maxProofSize {
-		return errors.Errorf("aggregation proof size exceeds maximum allowed size: %d bytes", maxProofSize)
+		return errors.Errorf("aggregation proof %x size exceeds maximum allowed size: %d bytes", signaturesAggregated.GetProof(), maxProofSize)
 	}
 
 	msg := symbiotic.AggregationProof{

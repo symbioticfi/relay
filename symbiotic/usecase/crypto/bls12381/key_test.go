@@ -1,4 +1,4 @@
-package bls12381Bn254
+package bls12381
 
 import (
 	"crypto/rand"
@@ -96,24 +96,24 @@ func TestInvalidVerification(t *testing.T) {
 	public := private.PublicKey()
 
 	err = public.VerifyWithHash([]byte{1}, nil)
-	require.EqualError(t, err, "bls12381Bn254: invalid message hash length")
+	require.EqualError(t, err, "bls12381: invalid message hash length")
 
 	err = public.VerifyWithHash(make([]byte, 32), nil)
-	require.EqualError(t, err, "bls12381Bn254: failed to set big into G1: short buffer")
+	require.EqualError(t, err, "bls12381: failed to set big into G1: short buffer")
 
 	err = public.VerifyWithHash(make([]byte, 32), make([]byte, 65))
-	require.EqualError(t, err, "bls12381Bn254: failed to set big into G1: short buffer")
+	require.EqualError(t, err, "bls12381: failed to set big into G1: short buffer")
 }
 
 func TestFromRaw(t *testing.T) {
 	_, err := FromRaw(nil)
-	require.EqualError(t, err, "bls12381Bn254: nil raw key")
+	require.EqualError(t, err, "bls12381: nil raw key")
 
 	_, err = FromRaw([]byte("invalid public key"))
-	require.EqualError(t, err, "bls12381Bn254: invalid raw key length, expected 144, got 18")
+	require.EqualError(t, err, "bls12381: invalid raw key length, expected 144, got 18")
 
 	_, err = FromRaw(make([]byte, 144))
-	require.EqualError(t, err, "bls12381Bn254: failed to unmarshal G1 pubkey: short buffer")
+	require.EqualError(t, err, "bls12381: failed to unmarshal G1 pubkey: short buffer")
 }
 
 func randData(t *testing.T) []byte {
