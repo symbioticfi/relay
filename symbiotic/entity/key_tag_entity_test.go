@@ -12,7 +12,7 @@ func TestKeyTag_Type(t *testing.T) {
 	}{
 		{0x00, KeyTypeBlsBn254},
 		{0x10, KeyTypeEcdsaSecp256k1},
-		{0x20, KeyTypeBls12381Bn254},
+		{0x20, KeyTypeBls12381},
 		{0xFF, KeyTypeInvalid},
 	}
 	for _, c := range cases {
@@ -71,7 +71,7 @@ func TestKeyType_String(t *testing.T) {
 	}{
 		{KeyTypeBlsBn254, BLS_BN254_TYPE},
 		{KeyTypeEcdsaSecp256k1, ECDSA_SECP256K1_TYPE},
-		{KeyTypeBls12381Bn254, BLS_12381_BN254_TYPE},
+		{KeyTypeBls12381, BLS12_381_TYPE},
 		{KeyTypeInvalid, INVALID_TYPE},
 	}
 	for _, c := range cases {
@@ -93,7 +93,7 @@ func TestKeyTypeFromString(t *testing.T) {
 	}{
 		{BLS_BN254_TYPE, KeyTypeBlsBn254, false},
 		{ECDSA_SECP256K1_TYPE, KeyTypeEcdsaSecp256k1, false},
-		{BLS_12381_BN254_TYPE, KeyTypeBls12381Bn254, false},
+		{BLS12_381_TYPE, KeyTypeBls12381, false},
 		{"invalid", KeyTypeInvalid, false},
 	}
 	for _, c := range cases {
