@@ -36,7 +36,6 @@ const waitEpochTimeout = 2 * time.Minute
 // 5. Start aggregators back up
 // 6. Verify aggregators sync missed signatures and generate proofs
 func TestAggregatorSignatureSync(t *testing.T) {
-	t.Skip()
 	ctx := t.Context()
 
 	// Load deployment data to get contract addresses and environment info
@@ -150,7 +149,6 @@ func TestAggregatorSignatureSync(t *testing.T) {
 }
 
 func TestAggregatorProofSync(t *testing.T) {
-	t.Skip()
 	ctx := t.Context()
 
 	// Load deployment data to get contract addresses and environment info
