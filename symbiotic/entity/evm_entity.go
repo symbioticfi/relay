@@ -14,7 +14,8 @@ type EVMOptions struct {
 
 func AppliedEVMOptions(opts ...EVMOption) *EVMOptions {
 	options := &EVMOptions{
-		BlockNumber: BlockNumberFinalized,
+		BlockNumber:        BlockNumberFinalized,
+		GasLimitMultiplier: .0,
 	}
 	for _, o := range opts {
 		o(options)

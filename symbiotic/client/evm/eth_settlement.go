@@ -66,6 +66,10 @@ func (e *Client) doTransaction(ctx context.Context, method string, chainID uint6
 	}(time.Now())
 	txOpts.Context = tmCtx
 
+	if !e.conns[chainID].hasMaxPriorityFeePerGasMethod {
+		txOpts.GasPrice = big.NewInt(2_000_000_000) // 2 GWei
+	}
+
 	// If GasLimitMultiplier is set, estimate gas and apply multiplier
 	if evmOpts.GasLimitMultiplier > 0 {
 		txOpts.NoSend = true

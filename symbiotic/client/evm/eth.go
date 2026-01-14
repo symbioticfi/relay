@@ -118,11 +118,17 @@ func (c Config) Validate() error {
 type Client struct {
 	cfg Config
 
-	conns         map[uint64]conn
+	conns         map[uint64]clientWithInfo
 	driver        driverContract
 	driverChainID uint64
 
 	metrics metrics
+}
+
+type clientWithInfo struct {
+	conn
+
+	hasMaxPriorityFeePerGasMethod bool
 }
 
 func NewEvmClient(ctx context.Context, cfg Config) (*Client, error) {
@@ -130,7 +136,7 @@ func NewEvmClient(ctx context.Context, cfg Config) (*Client, error) {
 		return nil, errors.Errorf("failed to validate config: %w", err)
 	}
 
-	conns := make(map[uint64]conn)
+	conns := make(map[uint64]clientWithInfo)
 
 	for _, chainURL := range cfg.ChainURLs {
 		client, err := ethclient.DialContext(ctx, chainURL)
@@ -142,7 +148,16 @@ func NewEvmClient(ctx context.Context, cfg Config) (*Client, error) {
 			return nil, errors.Errorf("failed to get chain ID: %w", err)
 		}
 
-		conns[chainID.Uint64()] = client
+		tip := new(big.Int)
+		err = client.Client().CallContext(ctx, tip, "eth_maxPriorityFeePerGas")
+		if err != nil {
+			slog.WarnContext(ctx, "eth_maxPriorityFeePerGas method not supported by the node", "chainID", chainID.Uint64(), "error", err)
+		}
+
+		conns[chainID.Uint64()] = clientWithInfo{
+			conn:                          client,
+			hasMaxPriorityFeePerGasMethod: tip.Cmp(big.NewInt(0)) > 0,
+		}
 
 		if cfg.Metrics != nil {
 			cfg.Metrics.ObserveEVMMethodCall("CommitValSetHeader", chainID.Uint64(), "success", 0)

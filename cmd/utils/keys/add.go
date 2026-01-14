@@ -19,6 +19,13 @@ var addKeyCmd = &cobra.Command{
 			return errors.New("add --generate if private key omitted")
 		}
 
+		if !addFlags.EvmNs && !addFlags.RelayNs && !addFlags.P2PNs {
+			return errors.New("either --evm or --relay or --p2p must be specified")
+		}
+		if (addFlags.EvmNs && addFlags.RelayNs) || (addFlags.EvmNs && addFlags.P2PNs) || (addFlags.RelayNs && addFlags.P2PNs) {
+			return errors.New("only one namespace can be specified at a time")
+		}
+
 		if addFlags.EvmNs {
 			if addFlags.ChainID < 0 {
 				return errors.New("chain ID is required for evm namespace, use --chain-id=0 for default key for all chains")

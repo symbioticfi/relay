@@ -35,7 +35,7 @@ func TestVerifyQuorumSig_NoSettlementContract_ReturnsError(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -77,7 +77,7 @@ func TestVerifyQuorumSig_ContextTimeout_ReturnsError(t *testing.T) {
 			RequestTimeout: 1 * time.Millisecond,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -115,7 +115,7 @@ func TestVerifyQuorumSig_InvalidChainID_ReturnsError(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -154,7 +154,7 @@ func TestVerifyQuorumSig_EmptyProof_HandlesCorrectly(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -192,7 +192,7 @@ func TestVerifyQuorumSig_EmptyMessage_HandlesCorrectly(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -230,7 +230,7 @@ func TestVerifyQuorumSig_NilThreshold_HandlesCorrectly(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -268,7 +268,7 @@ func TestVerifyQuorumSig_ZeroEpoch_HandlesCorrectly(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
