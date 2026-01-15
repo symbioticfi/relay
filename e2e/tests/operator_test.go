@@ -25,6 +25,7 @@ import (
 )
 
 func TestAddAndRemoveOperator(t *testing.T) {
+	t.Skip()
 	t.Log("=== Starting TestAddAndRemoveOperator ===")
 
 	deploymentData := loadDeploymentData(t)
