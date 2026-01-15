@@ -145,6 +145,49 @@ func TestAddAndRemoveOperator(t *testing.T) {
 		return errors.New("did not find signature from extra operator")
 	})
 	require.NoError(t, err)
+
+	t.Logf("[registerExtraOperator] Registering operator %s in VotingPowerProvider at %s...", opData.address.Hex(), deploymentData.MainChain.Addresses.VotingPowerProvider)
+	_, err = opEVMClient.UnregisterOperatorVotingPowerProvider(t.Context(), symbiotic.CrossChainAddress{
+		ChainId: deploymentData.Driver.ChainId,
+		Address: common.HexToAddress(deploymentData.MainChain.Addresses.VotingPowerProvider),
+	})
+	require.NoError(t, err)
+	t.Log("[registerExtraOperator] RegisterOperatorVotingPowerProvider transaction sent")
+
+	t.Logf("Waiting for validator set to exclude extra validator")
+	require.NoError(t, waitForErrorIsNil(t.Context(), time.Minute*3, func() error {
+		deriver, err := valsetDeriver.NewDeriver(opEVMClient)
+		if err != nil {
+			return err
+		}
+
+		currentEpoch, err := opEVMClient.GetCurrentEpoch(t.Context())
+		if err != nil {
+			return err
+		}
+
+		captureTimestamp, err := opEVMClient.GetEpochStart(t.Context(), currentEpoch)
+		if err != nil {
+			return err
+		}
+
+		currentConfig, err := opEVMClient.GetConfig(t.Context(), captureTimestamp, currentEpoch)
+		if err != nil {
+			return err
+		}
+
+		valset, err := deriver.GetValidatorSet(t.Context(), currentEpoch, currentConfig)
+		if err != nil {
+			return err
+		}
+		t.Logf("Current epoch %d has %d validators (expecting %d)", currentEpoch, len(valset.Validators), deploymentData.Env.Operators)
+		if int64(len(valset.Validators)) != deploymentData.Env.Operators {
+			return errors.Errorf("expected %d validators, got %d", deploymentData.Env.Operators, len(valset.Validators))
+		}
+
+		return nil
+	}))
+	t.Log("Validator set now excludes the extra operator")
 }
 
 func registerExtraOperator(t *testing.T, opEVMClient *evm.Client, opAddress common.Address) {

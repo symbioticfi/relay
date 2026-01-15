@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"log/slog"
 	"math/big"
+	"net/http"
 	"regexp"
 	"time"
 
@@ -148,15 +149,20 @@ func NewEvmClient(ctx context.Context, cfg Config) (*Client, error) {
 			return nil, errors.Errorf("failed to get chain ID: %w", err)
 		}
 
-		tip := new(big.Int)
-		err = client.Client().CallContext(ctx, tip, "eth_maxPriorityFeePerGas")
+		var tip *hexutil.Big
+		err = client.Client().CallContext(ctx, &tip, "eth_maxPriorityFeePerGas")
 		if err != nil {
-			slog.WarnContext(ctx, "eth_maxPriorityFeePerGas method not supported by the node", "chainID", chainID.Uint64(), "error", err)
+			var httpError rpc.HTTPError
+			if errors.As(err, &httpError) && httpError.StatusCode == http.StatusBadRequest {
+				slog.WarnContext(ctx, "eth_maxPriorityFeePerGas method not supported by the node", "chainID", chainID.Uint64(), "error", err)
+			} else {
+				return nil, errors.Errorf("failed to call eth_maxPriorityFeePerGas: %w", err)
+			}
 		}
 
 		conns[chainID.Uint64()] = clientWithInfo{
 			conn:                          client,
-			hasMaxPriorityFeePerGasMethod: tip.Cmp(big.NewInt(0)) > 0,
+			hasMaxPriorityFeePerGasMethod: tip != nil && tip.ToInt().Cmp(big.NewInt(0)) > 0,
 		}
 
 		if cfg.Metrics != nil {
