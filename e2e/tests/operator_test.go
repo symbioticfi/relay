@@ -72,31 +72,12 @@ func TestAddAndRemoveOperator(t *testing.T) {
 
 	t.Logf("Waiting for validator set to include %d validators (existing %d + 1 new)...", deploymentData.Env.Operators+1, deploymentData.Env.Operators)
 	require.NoError(t, waitForErrorIsNil(t.Context(), time.Minute*3, func() error {
-		deriver, err := valsetDeriver.NewDeriver(opEVMClient)
+		valset, err := getValset(t, opEVMClient)
 		if err != nil {
 			return err
 		}
 
-		currentEpoch, err := opEVMClient.GetCurrentEpoch(t.Context())
-		if err != nil {
-			return err
-		}
-
-		captureTimestamp, err := opEVMClient.GetEpochStart(t.Context(), currentEpoch)
-		if err != nil {
-			return err
-		}
-
-		currentConfig, err := opEVMClient.GetConfig(t.Context(), captureTimestamp, currentEpoch)
-		if err != nil {
-			return err
-		}
-
-		valset, err := deriver.GetValidatorSet(t.Context(), currentEpoch, currentConfig)
-		if err != nil {
-			return err
-		}
-		t.Logf("Current epoch %d has %d validators (expecting %d)", currentEpoch, len(valset.Validators), deploymentData.Env.Operators+1)
+		t.Logf("Current epoch %d has %d validators (expecting %d)", valset.Epoch, len(valset.Validators), deploymentData.Env.Operators+1)
 		if int64(len(valset.Validators)) != deploymentData.Env.Operators+1 {
 			return errors.Errorf("expected %d validators, got %d", deploymentData.Env.Operators+1, len(valset.Validators))
 		}
@@ -156,27 +137,7 @@ func TestAddAndRemoveOperator(t *testing.T) {
 
 	t.Logf("Waiting for validator set to exclude extra validator")
 	require.NoError(t, waitForErrorIsNil(t.Context(), time.Minute*3, func() error {
-		deriver, err := valsetDeriver.NewDeriver(opEVMClient)
-		if err != nil {
-			return err
-		}
-
-		currentEpoch, err := opEVMClient.GetCurrentEpoch(t.Context())
-		if err != nil {
-			return err
-		}
-
-		captureTimestamp, err := opEVMClient.GetEpochStart(t.Context(), currentEpoch)
-		if err != nil {
-			return err
-		}
-
-		currentConfig, err := opEVMClient.GetConfig(t.Context(), captureTimestamp, currentEpoch)
-		if err != nil {
-			return err
-		}
-
-		valset, err := deriver.GetValidatorSet(t.Context(), currentEpoch, currentConfig)
+		valset, err := getValset(t, opEVMClient)
 		if err != nil {
 			return err
 		}
@@ -188,6 +149,36 @@ func TestAddAndRemoveOperator(t *testing.T) {
 		return nil
 	}))
 	t.Log("Validator set now excludes the extra operator")
+}
+
+func getValset(t *testing.T, opEVMClient *evm.Client) (symbiotic.ValidatorSet, error) {
+	t.Helper()
+	deriver, err := valsetDeriver.NewDeriver(opEVMClient)
+	if err != nil {
+		return symbiotic.ValidatorSet{}, err
+	}
+
+	currentEpoch, err := opEVMClient.GetCurrentEpoch(t.Context())
+	if err != nil {
+		return symbiotic.ValidatorSet{}, err
+	}
+
+	captureTimestamp, err := opEVMClient.GetEpochStart(t.Context(), currentEpoch)
+	if err != nil {
+		return symbiotic.ValidatorSet{}, err
+	}
+
+	currentConfig, err := opEVMClient.GetConfig(t.Context(), captureTimestamp, currentEpoch)
+	if err != nil {
+		return symbiotic.ValidatorSet{}, err
+	}
+
+	valset, err := deriver.GetValidatorSet(t.Context(), currentEpoch, currentConfig)
+	if err != nil {
+		return symbiotic.ValidatorSet{}, err
+	}
+
+	return valset, nil
 }
 
 func registerExtraOperator(t *testing.T, opEVMClient *evm.Client, opAddress common.Address) {
