@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"math/big"
+	"strings"
 	"testing"
 	"time"
 
@@ -25,7 +26,6 @@ import (
 )
 
 func TestAddAndRemoveOperator(t *testing.T) {
-	t.Skip()
 	t.Log("=== Starting TestAddAndRemoveOperator ===")
 
 	deploymentData := loadDeploymentData(t)
@@ -42,7 +42,9 @@ func TestAddAndRemoveOperator(t *testing.T) {
 		ChainId: deploymentData.Driver.ChainId,
 		Address: common.HexToAddress(deploymentData.MainChain.Addresses.OperatorRegistry),
 	})
-	require.NoError(t, err)
+	if !strings.Contains(err.Error(), "error OperatorAlreadyRegistered()") {
+		require.NoError(t, err)
+	}
 	t.Log("Operator registered in OperatorRegistry")
 
 	t.Log("Creating funder EVM client...")
@@ -57,7 +59,9 @@ func TestAddAndRemoveOperator(t *testing.T) {
 	opTestEVM := createTestEVM(t, settlementChains[0], opData.privateKey)
 	t.Logf("Operator opting into network at %s...", deploymentData.MainChain.Addresses.Network)
 	_, err = opTestEVM.OptIn(t.Context(), common.HexToAddress(deploymentData.MainChain.Addresses.OperatorNetworkOptInService), common.HexToAddress(deploymentData.MainChain.Addresses.Network))
-	require.NoError(t, err)
+	if !strings.Contains(err.Error(), "custom error 0xdcdeaba3") { // already opted in
+		require.NoError(t, err)
+	}
 	t.Log("Operator opted into network")
 
 	t.Log("Registering extra operator in VotingPowerProvider...")
@@ -142,7 +146,7 @@ func TestAddAndRemoveOperator(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		t.Logf("Current epoch %d has %d validators (expecting %d)", currentEpoch, len(valset.Validators), deploymentData.Env.Operators)
+		t.Logf("Current epoch %d has %d validators (expecting %d)", valset.Epoch, len(valset.Validators), deploymentData.Env.Operators)
 		if int64(len(valset.Validators)) != deploymentData.Env.Operators {
 			return errors.Errorf("expected %d validators, got %d", deploymentData.Env.Operators, len(valset.Validators))
 		}
@@ -222,7 +226,9 @@ func initVault(t *testing.T, opTestEVM *testEth.Client, funderTestEVM *testEth.C
 
 	t.Logf("[initVault] Operator opting into vault %s via OperatorVaultOptInService %s...", vaultAddress.Hex(), deploymentData.MainChain.Addresses.OperatorVaultOptInService)
 	_, err = opTestEVM.OptIn(t.Context(), common.HexToAddress(deploymentData.MainChain.Addresses.OperatorVaultOptInService), vaultAddress)
-	require.NoError(t, err)
+	if !strings.Contains(err.Error(), "custom error 0xdcdeaba3") { // already opted in
+		require.NoError(t, err)
+	}
 	t.Log("[initVault] Operator opted into vault")
 
 	t.Logf("[initVault] Approving %s staking tokens for vault %s...", stakingAmount.String(), vaultAddress.Hex())
