@@ -42,7 +42,7 @@ func TestAddAndRemoveOperator(t *testing.T) {
 		ChainId: deploymentData.Driver.ChainId,
 		Address: common.HexToAddress(deploymentData.MainChain.Addresses.OperatorRegistry),
 	})
-	if !strings.Contains(err.Error(), "error OperatorAlreadyRegistered()") {
+	if err != nil && !strings.Contains(err.Error(), "error OperatorAlreadyRegistered()") {
 		require.NoError(t, err)
 	}
 	t.Log("Operator registered in OperatorRegistry")
@@ -59,7 +59,7 @@ func TestAddAndRemoveOperator(t *testing.T) {
 	opTestEVM := createTestEVM(t, settlementChains[0], opData.privateKey)
 	t.Logf("Operator opting into network at %s...", deploymentData.MainChain.Addresses.Network)
 	_, err = opTestEVM.OptIn(t.Context(), common.HexToAddress(deploymentData.MainChain.Addresses.OperatorNetworkOptInService), common.HexToAddress(deploymentData.MainChain.Addresses.Network))
-	if !strings.Contains(err.Error(), "custom error 0xdcdeaba3") { // already opted in
+	if err != nil && !strings.Contains(err.Error(), "custom error 0xdcdeaba3") { // already opted in
 		require.NoError(t, err)
 	}
 	t.Log("Operator opted into network")
