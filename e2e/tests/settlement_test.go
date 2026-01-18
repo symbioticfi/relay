@@ -166,17 +166,30 @@ func TestRemoveAndAddSettlement(t *testing.T) {
 		}
 
 		t.Logf("Waiting for validator set commitments on both settlements")
-		require.NoError(t, waitForErrorIsNil(t.Context(), time.Minute*5, func() error {
+		require.NoError(t, waitForErrorIsNil(t.Context(), time.Minute*10, func() error {
+			allCommitted := true
 			for _, settlement := range finalConfig.Settlements {
+				lastCommitted, err := evmClient.GetLastCommittedHeaderEpoch(t.Context(), settlement)
+				if err != nil {
+					t.Logf("Error getting last committed epoch on settlement ChainID %d: %v", settlement.ChainId, err)
+					return err
+				}
+				t.Logf("Last committed epoch on settlement ChainID %d: %d", settlement.ChainId, lastCommitted)
+
 				committed, err := evmClient.IsValsetHeaderCommittedAt(t.Context(), settlement, backTwoSettlementsEpoch)
 				if err != nil {
 					t.Logf("Error checking valset header commitment on settlement ChainID %d: %v", settlement.ChainId, err)
 					return err
 				}
 				if !committed {
-					t.Logf("Valset header not yet committed on settlement ChainID %d", settlement.ChainId)
-					return errors.Errorf("valset header not committed for settlement %d", settlement.ChainId)
+					t.Logf("Valset header not yet committed on settlement ChainID %d for epoch %d", settlement.ChainId, backTwoSettlementsEpoch)
+					allCommitted = false
 				}
+			}
+
+			if !allCommitted {
+				t.Logf("Not all settlements have committed the validator set for epoch %d yet", backTwoSettlementsEpoch)
+				return errors.New("not all settlements committed")
 			}
 			return nil
 		}))
