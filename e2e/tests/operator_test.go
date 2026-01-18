@@ -226,7 +226,7 @@ func initVault(t *testing.T, opTestEVM *testEth.Client, funderTestEVM *testEth.C
 
 	t.Logf("[initVault] Operator opting into vault %s via OperatorVaultOptInService %s...", vaultAddress.Hex(), deploymentData.MainChain.Addresses.OperatorVaultOptInService)
 	_, err = opTestEVM.OptIn(t.Context(), common.HexToAddress(deploymentData.MainChain.Addresses.OperatorVaultOptInService), vaultAddress)
-	if !strings.Contains(err.Error(), "custom error 0xdcdeaba3") { // already opted in
+	if err != nil && !strings.Contains(err.Error(), "custom error 0xdcdeaba3") { // already opted in
 		require.NoError(t, err)
 	}
 	t.Log("[initVault] Operator opted into vault")
