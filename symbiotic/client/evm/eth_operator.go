@@ -22,7 +22,7 @@ func (e *Client) RegisterOperator(
 		return symbiotic.TxResult{}, errors.Errorf("failed to get operator registry contract: %w", err)
 	}
 
-	return e.doTransaction(ctx, "RegisterOperator", e.driverChainID, registry.RegisterOperator)
+	return e.doTransaction(ctx, "RegisterOperator", e.cfg.DriverAddress, registry.RegisterOperator)
 }
 
 func (e *Client) RegisterKey(
@@ -38,7 +38,7 @@ func (e *Client) RegisterKey(
 		return symbiotic.TxResult{}, errors.Errorf("failed to get key registry contract: %w", err)
 	}
 
-	return e.doTransaction(ctx, "SetKey", keyRegistryAddr.ChainId, func(txOpts *bind.TransactOpts) (*types.Transaction, error) {
+	return e.doTransaction(ctx, "SetKey", keyRegistryAddr, func(txOpts *bind.TransactOpts) (*types.Transaction, error) {
 		return registry.SetKey(txOpts, uint8(keyTag), key, signature, extraData)
 	}, symbiotic.WithGasLimitMultiplier(1.3))
 }
@@ -52,7 +52,7 @@ func (e *Client) InvalidateOldSignatures(
 		return symbiotic.TxResult{}, errors.Errorf("failed to get voting power provider contract: %w", err)
 	}
 
-	return e.doTransaction(ctx, "InvalidateOldSignatures", e.driverChainID, votingPowerProvider.InvalidateOldSignatures)
+	return e.doTransaction(ctx, "InvalidateOldSignatures", e.cfg.DriverAddress, votingPowerProvider.InvalidateOldSignatures)
 }
 
 func (e *Client) RegisterOperatorVotingPowerProvider(
@@ -64,7 +64,7 @@ func (e *Client) RegisterOperatorVotingPowerProvider(
 		return symbiotic.TxResult{}, errors.Errorf("failed to get voting power provider contract: %w", err)
 	}
 
-	return e.doTransaction(ctx, "RegisterOperatorVotingPowerProvider", e.driverChainID, votingPowerProvider.RegisterOperator)
+	return e.doTransaction(ctx, "RegisterOperatorVotingPowerProvider", e.cfg.DriverAddress, votingPowerProvider.RegisterOperator)
 }
 
 func (e *Client) IsOperatorRegistered(
@@ -97,5 +97,5 @@ func (e *Client) UnregisterOperatorVotingPowerProvider(
 		return symbiotic.TxResult{}, errors.Errorf("failed to get voting power provider contract: %w", err)
 	}
 
-	return e.doTransaction(ctx, "UnregisterOperatorVotingPowerProvider", e.driverChainID, votingPowerProvider.UnregisterOperator)
+	return e.doTransaction(ctx, "UnregisterOperatorVotingPowerProvider", e.cfg.DriverAddress, votingPowerProvider.UnregisterOperator)
 }

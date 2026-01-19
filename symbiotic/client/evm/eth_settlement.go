@@ -20,7 +20,7 @@ func (e *Client) RemoveSettlement(
 	ctx context.Context,
 	settlementAddr symbiotic.CrossChainAddress,
 ) (_ symbiotic.TxResult, err error) {
-	return e.doTransaction(ctx, "RemoveSettlement", e.driverChainID, func(txOpts *bind.TransactOpts) (*types.Transaction, error) {
+	return e.doTransaction(ctx, "RemoveSettlement", e.cfg.DriverAddress, func(txOpts *bind.TransactOpts) (*types.Transaction, error) {
 		return e.driver.RemoveSettlement(txOpts, gen.IValSetDriverCrossChainAddress{
 			ChainId: settlementAddr.ChainId,
 			Addr:    settlementAddr.Address,
@@ -32,7 +32,7 @@ func (e *Client) AddSettlement(
 	ctx context.Context,
 	settlementAddr symbiotic.CrossChainAddress,
 ) (_ symbiotic.TxResult, err error) {
-	return e.doTransaction(ctx, "AddSettlement", e.driverChainID, func(txOpts *bind.TransactOpts) (*types.Transaction, error) {
+	return e.doTransaction(ctx, "AddSettlement", e.cfg.DriverAddress, func(txOpts *bind.TransactOpts) (*types.Transaction, error) {
 		return e.driver.AddSettlement(txOpts, gen.IValSetDriverCrossChainAddress{
 			ChainId: settlementAddr.ChainId,
 			Addr:    settlementAddr.Address,
@@ -40,13 +40,13 @@ func (e *Client) AddSettlement(
 	})
 }
 
-func (e *Client) doTransaction(ctx context.Context, method string, chainID uint64, f func(opts *bind.TransactOpts) (*types.Transaction, error), opts ...symbiotic.EVMOption) (symbiotic.TxResult, error) {
+func (e *Client) doTransaction(ctx context.Context, method string, addr symbiotic.CrossChainAddress, f func(opts *bind.TransactOpts) (*types.Transaction, error), opts ...symbiotic.EVMOption) (symbiotic.TxResult, error) {
 	evmOpts := symbiotic.AppliedEVMOptions(opts...)
 
 	pk, err := e.cfg.KeyProvider.GetPrivateKeyByNamespaceTypeId(
 		keyprovider.EVM_KEY_NAMESPACE,
 		symbiotic.KeyTypeEcdsaSecp256k1,
-		int(chainID),
+		int(addr.ChainId),
 	)
 	if err != nil {
 		return symbiotic.TxResult{}, err
@@ -55,7 +55,7 @@ func (e *Client) doTransaction(ctx context.Context, method string, chainID uint6
 	if err != nil {
 		return symbiotic.TxResult{}, err
 	}
-	txOpts, err := bind.NewKeyedTransactorWithChainID(ecdsaKey, new(big.Int).SetUint64(chainID))
+	txOpts, err := bind.NewKeyedTransactorWithChainID(ecdsaKey, new(big.Int).SetUint64(addr.ChainId))
 	if err != nil {
 		return symbiotic.TxResult{}, errors.Errorf("failed to create new keyed transactor: %w", err)
 	}
@@ -66,7 +66,7 @@ func (e *Client) doTransaction(ctx context.Context, method string, chainID uint6
 	}(time.Now())
 	txOpts.Context = tmCtx
 
-	if !e.conns[chainID].hasMaxPriorityFeePerGasMethod {
+	if !e.conns[addr.ChainId].hasMaxPriorityFeePerGasMethod {
 		txOpts.GasPrice = big.NewInt(2_000_000_000) // 2 GWei
 	}
 
@@ -84,7 +84,7 @@ func (e *Client) doTransaction(ctx context.Context, method string, chainID uint6
 			Data:  dryRunTx.Data(),
 			Value: dryRunTx.Value(),
 		}
-		estimatedGas, err := e.conns[chainID].EstimateGas(tmCtx, msg)
+		estimatedGas, err := e.conns[addr.ChainId].EstimateGas(tmCtx, msg)
 		if err != nil {
 			return symbiotic.TxResult{}, errors.Errorf("failed to estimate gas: %w", err)
 		}
@@ -98,7 +98,7 @@ func (e *Client) doTransaction(ctx context.Context, method string, chainID uint6
 		return symbiotic.TxResult{}, e.formatEVMError(err)
 	}
 
-	receipt, err := bind.WaitMined(ctx, e.conns[chainID], tx)
+	receipt, err := bind.WaitMined(ctx, e.conns[addr.ChainId], tx)
 	if err != nil {
 		return symbiotic.TxResult{}, errors.Errorf("failed to wait for tx mining: %w", err)
 	}
