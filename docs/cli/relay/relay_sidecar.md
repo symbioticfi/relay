@@ -27,6 +27,7 @@ relay_sidecar [flags]
       --driver.address string                   Driver contract address
       --driver.chain-id uint                    Driver contract chain id
       --evm.chains strings                      Chains, comma separated rpc-url,..
+      --evm.fallback-gas-price uint             Gas price in wei when eth_maxPriorityFeePerGas is not supported (default: 2 GWei)
       --evm.max-calls int                       Max calls in multicall
       --force-role.aggregator                   Force node to act as aggregator regardless of deterministic scheduling
       --force-role.committer                    Force node to act as committer regardless of deterministic scheduling
