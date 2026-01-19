@@ -67,7 +67,11 @@ func (e *Client) doTransaction(ctx context.Context, method string, addr symbioti
 	txOpts.Context = tmCtx
 
 	if !e.conns[addr.ChainId].hasMaxPriorityFeePerGasMethod {
-		txOpts.GasPrice = big.NewInt(2_000_000_000) // 2 GWei
+		gasPrice := e.cfg.FallbackGasPrice
+		if gasPrice == 0 {
+			gasPrice = 2_000_000_000 // default: 2 GWei
+		}
+		txOpts.GasPrice = new(big.Int).SetUint64(gasPrice)
 	}
 
 	// If GasLimitMultiplier is set, estimate gas and apply multiplier

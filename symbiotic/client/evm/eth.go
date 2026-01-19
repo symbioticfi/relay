@@ -100,12 +100,13 @@ type driverContract interface {
 }
 
 type Config struct {
-	ChainURLs      []string                    `validate:"required"`
-	DriverAddress  symbiotic.CrossChainAddress `validate:"required"`
-	RequestTimeout time.Duration               `validate:"required,gt=0"`
-	KeyProvider    keyProvider
-	Metrics        metrics
-	MaxCalls       int
+	ChainURLs        []string                    `validate:"required"`
+	DriverAddress    symbiotic.CrossChainAddress `validate:"required"`
+	RequestTimeout   time.Duration               `validate:"required,gt=0"`
+	KeyProvider      keyProvider
+	Metrics          metrics
+	MaxCalls         int
+	FallbackGasPrice uint64 // Gas price in wei to use when eth_maxPriorityFeePerGas is not supported (default: 2 GWei)
 }
 
 func (c Config) Validate() error {

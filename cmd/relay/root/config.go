@@ -171,8 +171,9 @@ type P2PConfig struct {
 }
 
 type EvmConfig struct {
-	Chains   []string `mapstructure:"chains" validate:"required"`
-	MaxCalls int      `mapstructure:"max-calls"`
+	Chains           []string `mapstructure:"chains" validate:"required"`
+	MaxCalls         int      `mapstructure:"max-calls"`
+	FallbackGasPrice uint64   `mapstructure:"fallback-gas-price"`
 }
 
 type ForceRole struct {
@@ -244,6 +245,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("p2p.mdns", false, "Enable mDNS discovery for P2P")
 	rootCmd.PersistentFlags().StringSlice("evm.chains", nil, "Chains, comma separated rpc-url,..")
 	rootCmd.PersistentFlags().Int("evm.max-calls", 0, "Max calls in multicall")
+	rootCmd.PersistentFlags().Uint64("evm.fallback-gas-price", 0, "Gas price in wei when eth_maxPriorityFeePerGas is not supported (default: 2 GWei)")
 	rootCmd.PersistentFlags().Bool("force-role.aggregator", false, "Force node to act as aggregator regardless of deterministic scheduling")
 	rootCmd.PersistentFlags().Bool("force-role.committer", false, "Force node to act as committer regardless of deterministic scheduling")
 	rootCmd.PersistentFlags().Uint64("retention.valset-epochs", 0, "Number of historical validator set epochs to retain (0 = unlimited)")
@@ -387,6 +389,9 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("evm.max-calls", cmd.PersistentFlags().Lookup("evm.max-calls")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("evm.fallback-gas-price", cmd.PersistentFlags().Lookup("evm.fallback-gas-price")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("force-role.aggregator", cmd.PersistentFlags().Lookup("force-role.aggregator")); err != nil {
