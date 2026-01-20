@@ -141,6 +141,49 @@ func (c *CMDSecretKey) Type() string {
 	return "secret-key"
 }
 
+// CMDGasPriceMap is a map of chain ID to gas price in wei
+// Used for per-chain fallback gas price configuration
+type CMDGasPriceMap map[uint64]uint64
+
+func (m *CMDGasPriceMap) String() string {
+	if m == nil || len(*m) == 0 {
+		return ""
+	}
+	parts := make([]string, 0, len(*m))
+	for chainID, gasPrice := range *m {
+		parts = append(parts, fmt.Sprintf("%d=%d", chainID, gasPrice))
+	}
+	return strings.Join(parts, ",")
+}
+
+func (m *CMDGasPriceMap) Set(str string) error {
+	if str == "" {
+		return nil
+	}
+	if *m == nil {
+		*m = make(map[uint64]uint64)
+	}
+	// Parse format: chainID=gasPrice
+	parts := strings.Split(str, "=")
+	if len(parts) != 2 {
+		return errors.Errorf("invalid gas price format: %s, expected chainID=gasPrice", str)
+	}
+	chainID, err := strconv.ParseUint(parts[0], 10, 64)
+	if err != nil {
+		return errors.Errorf("invalid chain ID: %s", parts[0])
+	}
+	gasPrice, err := strconv.ParseUint(parts[1], 10, 64)
+	if err != nil {
+		return errors.Errorf("invalid gas price: %s", parts[1])
+	}
+	(*m)[chainID] = gasPrice
+	return nil
+}
+
+func (m *CMDGasPriceMap) Type() string {
+	return "gas-price-map"
+}
+
 type KeyStore struct {
 	Path     string `json:"path"`
 	Password string `json:"password"`
@@ -171,9 +214,9 @@ type P2PConfig struct {
 }
 
 type EvmConfig struct {
-	Chains           []string `mapstructure:"chains" validate:"required"`
-	MaxCalls         int      `mapstructure:"max-calls"`
-	FallbackGasPrice uint64   `mapstructure:"fallback-gas-price"`
+	Chains            []string       `mapstructure:"chains" validate:"required"`
+	MaxCalls          int            `mapstructure:"max-calls"`
+	FallbackGasPrices CMDGasPriceMap `mapstructure:"fallback-gas-prices"`
 }
 
 type ForceRole struct {
@@ -245,7 +288,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("p2p.mdns", false, "Enable mDNS discovery for P2P")
 	rootCmd.PersistentFlags().StringSlice("evm.chains", nil, "Chains, comma separated rpc-url,..")
 	rootCmd.PersistentFlags().Int("evm.max-calls", 0, "Max calls in multicall")
-	rootCmd.PersistentFlags().Uint64("evm.fallback-gas-price", 0, "Gas price in wei when eth_maxPriorityFeePerGas is not supported (default: 2 GWei)")
+	rootCmd.PersistentFlags().Var(&CMDGasPriceMap{}, "evm.fallback-gas-prices", "Per-chain gas prices in wei (chainID=gasPrice), repeatable")
 	rootCmd.PersistentFlags().Bool("force-role.aggregator", false, "Force node to act as aggregator regardless of deterministic scheduling")
 	rootCmd.PersistentFlags().Bool("force-role.committer", false, "Force node to act as committer regardless of deterministic scheduling")
 	rootCmd.PersistentFlags().Uint64("retention.valset-epochs", 0, "Number of historical validator set epochs to retain (0 = unlimited)")
@@ -256,6 +299,26 @@ func addRootFlags(cmd *cobra.Command) {
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
+	// Handle CMDGasPriceMap from YAML map[string]interface{}
+	if toType == reflect.TypeOf(CMDGasPriceMap{}) && fromType.Kind() == reflect.Map {
+		result := make(CMDGasPriceMap)
+		iter := reflect.ValueOf(from).MapRange()
+		for iter.Next() {
+			keyStr := fmt.Sprintf("%v", iter.Key().Interface())
+			chainID, err := strconv.ParseUint(keyStr, 10, 64)
+			if err != nil {
+				return nil, errors.Errorf("invalid chain ID in fallback-gas-prices: %s", keyStr)
+			}
+			valStr := fmt.Sprintf("%v", iter.Value().Interface())
+			gasPrice, err := strconv.ParseUint(valStr, 10, 64)
+			if err != nil {
+				return nil, errors.Errorf("invalid gas price for chain %d: %s", chainID, valStr)
+			}
+			result[chainID] = gasPrice
+		}
+		return result, nil
+	}
+
 	if fromType.Kind() != reflect.String {
 		// if not string return as is
 		return from, nil
@@ -391,7 +454,7 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	if err := v.BindPFlag("evm.max-calls", cmd.PersistentFlags().Lookup("evm.max-calls")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("evm.fallback-gas-price", cmd.PersistentFlags().Lookup("evm.fallback-gas-price")); err != nil {
+	if err := v.BindPFlag("evm.fallback-gas-prices", cmd.PersistentFlags().Lookup("evm.fallback-gas-prices")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("force-role.aggregator", cmd.PersistentFlags().Lookup("force-role.aggregator")); err != nil {

@@ -92,11 +92,11 @@ func runApp(ctx context.Context) error {
 			ChainId: cfg.Driver.ChainID,
 			Address: common.HexToAddress(cfg.Driver.Address),
 		},
-		RequestTimeout:   time.Second * 5,
-		KeyProvider:      keyProvider,
-		Metrics:          mtr,
-		MaxCalls:         cfg.Evm.MaxCalls,
-		FallbackGasPrice: cfg.Evm.FallbackGasPrice,
+		RequestTimeout:    time.Second * 5,
+		KeyProvider:       keyProvider,
+		Metrics:           mtr,
+		MaxCalls:          cfg.Evm.MaxCalls,
+		FallbackGasPrices: cfg.Evm.FallbackGasPrices,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create symbiotic client: %w", err)

@@ -70,9 +70,12 @@ evm:
   chains:
     - "http://127.0.0.1:8545"
   max-calls: 30
-  # Gas price in wei to use when eth_maxPriorityFeePerGas is not supported by the node
-  # Default: 2000000000 (2 GWei)
-  # fallback-gas-price: 2000000000
+  # Per-chain gas prices in wei when eth_maxPriorityFeePerGas is not supported
+  # Key is chain ID, value is gas price in wei
+  # Default: 2000000000 (2 GWei) if chain is not specified
+  # fallback-gas-prices:
+  #   "31337": 2000000000    # Local chain: 2 GWei
+  #   "11155420": 1000000000 # OP Sepolia: 1 GWei
 
 # Aggregation Policy
 aggregation-policy-max-unsigners: 50
