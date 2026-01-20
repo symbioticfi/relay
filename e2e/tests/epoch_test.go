@@ -31,10 +31,10 @@ func TestEpochProgression(t *testing.T) {
 	evmClient, err := evm.NewEvmClient(t.Context(), config)
 	require.NoError(t, err, "Failed to create EVM client")
 
-	waitForNextCommitment(t, evmClient, deployData.Env.EpochTime)
+	waitForNextCommitment(t, evmClient)
 }
 
-func waitForNextCommitment(t *testing.T, evmClient *evm.Client, epochTime uint64) {
+func waitForNextCommitment(t *testing.T, evmClient *evm.Client) {
 	t.Helper()
 
 	deployData := loadDeploymentData(t)

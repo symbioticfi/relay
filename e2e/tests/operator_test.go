@@ -46,7 +46,7 @@ func TestAddAndRemoveOperator(t *testing.T) {
 	unregisterOperator(t, extraData)
 	registerOperator(t, someOperator)
 
-	waitForNextCommitment(t, createEVMClientWithEVMKey(t, deployData, extraData.privateKey), deployData.Env.EpochTime)
+	waitForNextCommitment(t, createEVMClientWithEVMKey(t, deployData, extraData.privateKey))
 }
 
 func checkOperatorProducesSignatures(t *testing.T, opData operatorData) {
