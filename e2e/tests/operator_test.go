@@ -28,24 +28,25 @@ import (
 func TestAddAndRemoveOperator(t *testing.T) {
 	t.Log("=== Starting TestAddAndRemoveOperator ===")
 
-	deploymentData := loadDeploymentData(t)
-	t.Logf("Deployment data loaded: chainId=%d, existingOperators=%d", deploymentData.Driver.ChainId, deploymentData.Env.Operators)
+	deployData := loadDeploymentData(t)
+	t.Logf("Deployment data loaded: chainId=%d, existingOperators=%d", deployData.Driver.ChainId, deployData.Env.Operators)
 
 	extraData := createExtraOperator(t)
-
 	someOperator := newOperatorData(t, 1)
-	unregisterOperator(t, someOperator)
 
+	unregisterOperator(t, someOperator)
 	registerOperator(t, extraData)
 
 	initVault(t, extraData)
 
-	waitOperatorIncludedIntoValset(t, extraData, int(deploymentData.Env.Operators))
+	waitOperatorIncludedIntoValset(t, extraData, int(deployData.Env.Operators))
 
 	checkOperatorProducesSignatures(t, extraData)
 
 	unregisterOperator(t, extraData)
 	registerOperator(t, someOperator)
+
+	waitForNextCommitment(t, createEVMClientWithEVMKey(t, deployData, extraData.privateKey), deployData.Env.EpochTime)
 }
 
 func checkOperatorProducesSignatures(t *testing.T, opData operatorData) {

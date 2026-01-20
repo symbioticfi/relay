@@ -100,7 +100,7 @@ unit-test:
 
 .PHONY: e2e-test
 e2e-test:
-	cd e2e/tests && go test -v -timeout 30m
+	cd e2e/tests && go test -v -timeout 40m
 
 .PHONY: gen-abi
 gen-abi:
