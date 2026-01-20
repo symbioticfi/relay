@@ -31,78 +31,38 @@ func TestAddAndRemoveOperator(t *testing.T) {
 	deploymentData := loadDeploymentData(t)
 	t.Logf("Deployment data loaded: chainId=%d, existingOperators=%d", deploymentData.Driver.ChainId, deploymentData.Env.Operators)
 
-	t.Log("Creating extra operator with keys...")
-	opData := createExtraOperator(t)
-	t.Logf("Extra operator created: address=%s", opData.address.Hex())
+	extraData := createExtraOperator(t)
 
-	t.Log("Creating EVM client for extra operator...")
+	someOperator := newOperatorData(t, 1)
+	unregisterOperator(t, someOperator)
+
+	registerOperator(t, extraData)
+
+	initVault(t, extraData)
+
+	waitOperatorIncludedIntoValset(t, extraData, int(deploymentData.Env.Operators))
+
+	checkOperatorProducesSignatures(t, extraData)
+
+	unregisterOperator(t, extraData)
+	registerOperator(t, someOperator)
+}
+
+func checkOperatorProducesSignatures(t *testing.T, opData operatorData) {
+	t.Helper()
+	deploymentData := loadDeploymentData(t)
 	opEVMClient := createEVMClientWithEVMKey(t, deploymentData, opData.privateKey)
-	t.Logf("Registering operator in OperatorRegistry at %s...", deploymentData.MainChain.Addresses.OperatorRegistry)
-	_, err := opEVMClient.RegisterOperator(t.Context(), symbiotic.CrossChainAddress{
-		ChainId: deploymentData.Driver.ChainId,
-		Address: common.HexToAddress(deploymentData.MainChain.Addresses.OperatorRegistry),
-	})
-	if err != nil && !strings.Contains(err.Error(), "error OperatorAlreadyRegistered()") {
-		require.NoError(t, err)
-	}
-	t.Log("Operator registered in OperatorRegistry")
-
-	t.Log("Creating funder EVM client...")
-	funderTestEVM := createTestEVM(t, settlementChains[0], getFunderPrivateKey(t))
-	stakingAmount := big.NewInt(1e5)
-	t.Logf("Transferring %s staking tokens to operator %s...", stakingAmount.String(), opData.address.Hex())
-	_, err = funderTestEVM.TransferMockToken(t.Context(), common.HexToAddress(deploymentData.MainChain.Addresses.StakingToken), opData.address, stakingAmount)
-	require.NoError(t, err)
-	t.Log("Staking tokens transferred to operator")
-
-	t.Log("Creating operator's test EVM client...")
-	opTestEVM := createTestEVM(t, settlementChains[0], opData.privateKey)
-	t.Logf("Operator opting into network at %s...", deploymentData.MainChain.Addresses.Network)
-	_, err = opTestEVM.OptIn(t.Context(), common.HexToAddress(deploymentData.MainChain.Addresses.OperatorNetworkOptInService), common.HexToAddress(deploymentData.MainChain.Addresses.Network))
-	if err != nil && !strings.Contains(err.Error(), "custom error 0xdcdeaba3") { // already opted in
-		require.NoError(t, err)
-	}
-	t.Log("Operator opted into network")
-
-	t.Log("Registering extra operator in VotingPowerProvider...")
-	registerExtraOperator(t, opEVMClient, opData.address)
-	t.Log("Extra operator registered in VotingPowerProvider")
-
-	t.Log("Initializing vault for operator...")
-	initVault(t, opTestEVM, funderTestEVM, opData.address)
-	t.Log("Vault initialized for operator")
-
-	privateKey, err := crypto.NewPrivateKey(symbiotic.KeyTypeBlsBn254, opData.privateKey.Bytes())
-	require.NoError(t, err)
-
-	t.Logf("Waiting for validator set to include %d validators (existing %d + 1 new)...", deploymentData.Env.Operators+1, deploymentData.Env.Operators)
-	require.NoError(t, waitForErrorIsNil(t.Context(), time.Minute*3, func() error {
-		valset, err := getValset(t, opEVMClient)
-		if err != nil {
-			return err
-		}
-
-		t.Logf("Current epoch %d has %d validators (expecting %d)", valset.Epoch, len(valset.Validators), deploymentData.Env.Operators+1)
-		if int64(len(valset.Validators)) != deploymentData.Env.Operators+1 {
-			return errors.Errorf("expected %d validators, got %d", deploymentData.Env.Operators+1, len(valset.Validators))
-		}
-
-		validator, found := valset.FindValidatorByKey(symbiotic.KeyTag(15), privateKey.PublicKey().OnChain())
-		require.Truef(t, found, "extra operator's BLS key not found in validator set")
-		t.Logf("Found extra operator's key in validator set")
-		require.Len(t, validator.Keys, 3)
-
-		return nil
-	}))
-	t.Log("Validator set now includes the extra operator")
 
 	currentEpoch, err := opEVMClient.GetCurrentEpoch(t.Context())
 	require.NoError(t, err)
 	t.Logf("Current epoch: %d", currentEpoch)
 
-	t.Logf("Getting gRPC client for extra operator (index %d)...", deploymentData.Env.Operators)
-	extraClient := getGRPCClient(t, int(deploymentData.Env.Operators))
+	t.Logf("Getting gRPC client for extra operator (index %d)...", opData.number)
+	extraClient := getGRPCClient(t, opData.number)
 	t.Logf("Fetching signatures for epoch %d...", currentEpoch)
+
+	privateKey, err := crypto.NewPrivateKey(symbiotic.KeyTypeBlsBn254, opData.privateKey.Bytes())
+	require.NoError(t, err)
 
 	err = waitForErrorIsNil(t.Context(), time.Minute*3, func() error {
 		resp, err := extraClient.GetSignaturesByEpoch(t.Context(),
@@ -112,10 +72,6 @@ func TestAddAndRemoveOperator(t *testing.T) {
 		)
 		require.NoError(t, err)
 		t.Logf("Received %d signatures for epoch %d", len(resp.GetSignatures()), currentEpoch)
-
-		if len(resp.GetSignatures()) != int(deploymentData.Env.Operators+1) {
-			return errors.Errorf("expected %d signatures, got %d", deploymentData.Env.Operators+1, len(resp.GetSignatures()))
-		}
 
 		expectedPubKey := privateKey.PublicKey().Raw()
 		t.Logf("Looking for signature from extra operator with public key: %x", expectedPubKey)
@@ -131,24 +87,80 @@ func TestAddAndRemoveOperator(t *testing.T) {
 		return errors.New("did not find signature from extra operator")
 	})
 	require.NoError(t, err)
+}
 
-	t.Logf("[registerExtraOperator] Registering operator %s in VotingPowerProvider at %s...", opData.address.Hex(), deploymentData.MainChain.Addresses.VotingPowerProvider)
-	_, err = opEVMClient.UnregisterOperatorVotingPowerProvider(t.Context(), symbiotic.CrossChainAddress{
+func waitOperatorIncludedIntoValset(t *testing.T, opData operatorData, expectedCount int) {
+	t.Helper()
+
+	deploymentData := loadDeploymentData(t)
+	opEVMClient := createEVMClientWithEVMKey(t, deploymentData, opData.privateKey)
+
+	privateKey, err := crypto.NewPrivateKey(symbiotic.KeyTypeBlsBn254, opData.privateKey.Bytes())
+	require.NoError(t, err)
+
+	t.Logf("Waiting for validator set to include %d validators", expectedCount)
+	require.NoError(t, waitForErrorIsNil(t.Context(), time.Minute*3, func() error {
+		valset := getValset(t, opEVMClient)
+
+		t.Logf("Current epoch %d has %d validators (expecting %d)", valset.Epoch, len(valset.Validators), expectedCount)
+		if len(valset.Validators) != expectedCount {
+			return errors.Errorf("expected %d validators, got %d", expectedCount, len(valset.Validators))
+		}
+
+		validator, found := valset.FindValidatorByKey(symbiotic.KeyTag(15), privateKey.PublicKey().OnChain())
+		if !found {
+			return errors.New("extra operator's BLS key not found in validator set")
+		}
+		t.Logf("Found extra operator's key in validator set")
+		require.Len(t, validator.Keys, 3)
+
+		return nil
+	}))
+	t.Log("Validator set now includes the extra operator")
+}
+
+func getValset(t *testing.T, opEVMClient *evm.Client) symbiotic.ValidatorSet {
+	t.Helper()
+	deriver, err := valsetDeriver.NewDeriver(opEVMClient)
+	require.NoError(t, err)
+
+	currentEpoch, err := opEVMClient.GetCurrentEpoch(t.Context())
+	require.NoError(t, err)
+
+	captureTimestamp, err := opEVMClient.GetEpochStart(t.Context(), currentEpoch)
+	require.NoError(t, err)
+
+	currentConfig, err := opEVMClient.GetConfig(t.Context(), captureTimestamp, currentEpoch)
+	require.NoError(t, err)
+
+	valset, err := deriver.GetValidatorSet(t.Context(), currentEpoch, currentConfig)
+	require.NoError(t, err)
+
+	return valset
+}
+
+func unregisterOperator(t *testing.T, opData operatorData) {
+	t.Helper()
+
+	opEVMClient := createEVMClientWithEVMKey(t, loadDeploymentData(t), opData.privateKey)
+	prevValset := getValset(t, opEVMClient)
+
+	deploymentData := loadDeploymentData(t)
+	t.Logf("Unregistering operator %s in VotingPowerProvider at %s...", opData.address.Hex(), deploymentData.MainChain.Addresses.VotingPowerProvider)
+	_, err := opEVMClient.UnregisterOperatorVotingPowerProvider(t.Context(), symbiotic.CrossChainAddress{
 		ChainId: deploymentData.Driver.ChainId,
 		Address: common.HexToAddress(deploymentData.MainChain.Addresses.VotingPowerProvider),
 	})
 	require.NoError(t, err)
-	t.Log("[registerExtraOperator] RegisterOperatorVotingPowerProvider transaction sent")
+	t.Log("UnregisterOperatorVotingPowerProvider transaction sent")
 
-	t.Logf("Waiting for validator set to exclude extra validator")
+	t.Logf("Waiting for validator set to exclude validator")
 	require.NoError(t, waitForErrorIsNil(t.Context(), time.Minute*3, func() error {
-		valset, err := getValset(t, opEVMClient)
-		if err != nil {
-			return err
-		}
-		t.Logf("Current epoch %d has %d validators (expecting %d)", valset.Epoch, len(valset.Validators), deploymentData.Env.Operators)
-		if int64(len(valset.Validators)) != deploymentData.Env.Operators {
-			return errors.Errorf("expected %d validators, got %d", deploymentData.Env.Operators, len(valset.Validators))
+		valset := getValset(t, opEVMClient)
+
+		t.Logf("Current epoch %d has %d validators (expecting %d)", valset.Epoch, len(valset.Validators), len(prevValset.Validators)-1)
+		if len(valset.Validators) != len(prevValset.Validators)-1 {
+			return errors.Errorf("expected %d validators, got %d", len(prevValset.Validators)-1, len(valset.Validators))
 		}
 
 		return nil
@@ -156,71 +168,61 @@ func TestAddAndRemoveOperator(t *testing.T) {
 	t.Log("Validator set now excludes the extra operator")
 }
 
-func getValset(t *testing.T, opEVMClient *evm.Client) (symbiotic.ValidatorSet, error) {
-	t.Helper()
-	deriver, err := valsetDeriver.NewDeriver(opEVMClient)
-	if err != nil {
-		return symbiotic.ValidatorSet{}, err
-	}
-
-	currentEpoch, err := opEVMClient.GetCurrentEpoch(t.Context())
-	if err != nil {
-		return symbiotic.ValidatorSet{}, err
-	}
-
-	captureTimestamp, err := opEVMClient.GetEpochStart(t.Context(), currentEpoch)
-	if err != nil {
-		return symbiotic.ValidatorSet{}, err
-	}
-
-	currentConfig, err := opEVMClient.GetConfig(t.Context(), captureTimestamp, currentEpoch)
-	if err != nil {
-		return symbiotic.ValidatorSet{}, err
-	}
-
-	valset, err := deriver.GetValidatorSet(t.Context(), currentEpoch, currentConfig)
-	if err != nil {
-		return symbiotic.ValidatorSet{}, err
-	}
-
-	return valset, nil
-}
-
-func registerExtraOperator(t *testing.T, opEVMClient *evm.Client, opAddress common.Address) {
+func registerOperator(t *testing.T, opData operatorData) {
 	t.Helper()
 	deploymentData := loadDeploymentData(t)
+	opEVMClient := createEVMClientWithEVMKey(t, deploymentData, opData.privateKey)
 
-	t.Logf("[registerExtraOperator] Registering operator %s in VotingPowerProvider at %s...", opAddress.Hex(), deploymentData.MainChain.Addresses.VotingPowerProvider)
+	t.Log("Registering operator in VotingPowerProvider...")
+
+	t.Logf("[registerOperator] Registering operator %s in VotingPowerProvider at %s...", opData.address.Hex(), deploymentData.MainChain.Addresses.VotingPowerProvider)
 	_, err := opEVMClient.RegisterOperatorVotingPowerProvider(t.Context(), symbiotic.CrossChainAddress{
 		ChainId: deploymentData.Driver.ChainId,
 		Address: common.HexToAddress(deploymentData.MainChain.Addresses.VotingPowerProvider),
 	})
 	require.NoError(t, err)
-	t.Log("[registerExtraOperator] RegisterOperatorVotingPowerProvider transaction sent")
+	t.Log("[registerOperator] RegisterOperatorVotingPowerProvider transaction sent")
 
-	t.Log("[registerExtraOperator] Waiting for operator registration to be confirmed on-chain...")
+	t.Log("[registerOperator] Waiting for operator registration to be confirmed on-chain...")
 	require.NoError(t, waitForErrorIsNil(t.Context(), time.Minute, func() error {
 		registered, err := opEVMClient.IsOperatorRegistered(t.Context(), symbiotic.CrossChainAddress{
 			ChainId: deploymentData.Driver.ChainId,
 			Address: common.HexToAddress(deploymentData.MainChain.Addresses.VotingPowerProvider),
-		}, symbiotic.CrossChainAddress{ChainId: deploymentData.Driver.ChainId, Address: opAddress})
+		}, symbiotic.CrossChainAddress{ChainId: deploymentData.Driver.ChainId, Address: opData.address})
 		require.NoError(t, err)
+
 		if !registered {
-			t.Logf("[registerExtraOperator] Operator %s not registered yet, retrying...", opAddress.Hex())
-			return errors.Errorf("operator %s not registered yet", opAddress.Hex())
+			t.Logf("[registerOperator] Operator %s not registered yet, retrying...", opData.address.Hex())
+			return errors.Errorf("operator %s not registered yet", opData.address.Hex())
 		}
-		t.Logf("[registerExtraOperator] Operator %s registration confirmed", opAddress.Hex())
+		t.Logf("[registerOperator] Operator %s registration confirmed", opData.address.Hex())
 		return nil
 	}))
+
+	t.Log("Extra operator registered in VotingPowerProvider")
+
+	opTestEVM := createTestEVM(t, settlementChains[0], opData.privateKey)
+	t.Logf("Operator opting into network at %s...", deploymentData.MainChain.Addresses.Network)
+	_, err = opTestEVM.OptIn(t.Context(), common.HexToAddress(deploymentData.MainChain.Addresses.OperatorNetworkOptInService), common.HexToAddress(deploymentData.MainChain.Addresses.Network))
+	if err != nil && !strings.Contains(err.Error(), "custom error 0xdcdeaba3") { // already opted in
+		require.NoError(t, err)
+	}
+	t.Log("Operator opted into network")
 }
 
-func initVault(t *testing.T, opTestEVM *testEth.Client, funderTestEVM *testEth.Client, address common.Address) {
+func initVault(t *testing.T, opData operatorData) {
 	t.Helper()
+	t.Log("Initializing vault for operator...")
+
 	deploymentData := loadDeploymentData(t)
+	createTestEVM(t, settlementChains[0], opData.privateKey)
 	stakingAmount := big.NewInt(1e5)
 
-	t.Logf("[initVault] Getting auto-deploy vault for operator %s from VotingPowerProvider %s...", address.Hex(), deploymentData.MainChain.Addresses.VotingPowerProvider)
-	vaultAddress, err := funderTestEVM.GetAutoDeployVault(t.Context(), common.HexToAddress(deploymentData.MainChain.Addresses.VotingPowerProvider), address)
+	funderTestEVM := createTestEVM(t, settlementChains[0], getFunderPrivateKey(t))
+	opTestEVM := createTestEVM(t, settlementChains[0], opData.privateKey)
+
+	t.Logf("[initVault] Getting auto-deploy vault for operator %s from VotingPowerProvider %s...", opData.address.Hex(), deploymentData.MainChain.Addresses.VotingPowerProvider)
+	vaultAddress, err := funderTestEVM.GetAutoDeployVault(t.Context(), common.HexToAddress(deploymentData.MainChain.Addresses.VotingPowerProvider), opData.address)
 	require.NoError(t, err)
 	t.Logf("[initVault] Vault address: %s", vaultAddress.Hex())
 
@@ -240,6 +242,8 @@ func initVault(t *testing.T, opTestEVM *testEth.Client, funderTestEVM *testEth.C
 	_, err = funderTestEVM.VaultDeposit(t.Context(), vaultAddress, common.HexToAddress(deploymentData.MainChain.Addresses.StakingToken), stakingAmount)
 	require.NoError(t, err)
 	t.Log("[initVault] Vault deposit complete")
+
+	t.Log("Vault initialized for operator")
 }
 
 func createTestEVM(t *testing.T, chainURL string, privateKey crypto.PrivateKey) *testEth.Client {
@@ -254,27 +258,16 @@ func createTestEVM(t *testing.T, chainURL string, privateKey crypto.PrivateKey) 
 	return client
 }
 
-type operatorData struct {
-	privateKey crypto.PrivateKey
-	address    common.Address
-}
-
-// createExtraOperator creates an operator using the extra relay's private key.
-// The extra relay is not part of the validator set and uses a deterministic key
-// based on the formula: BASE_PRIVATE_KEY + operators (matching generate_network.sh).
-func createExtraOperator(t *testing.T) operatorData {
+func newOperatorData(t *testing.T, operatorNumber int64) operatorData {
 	t.Helper()
-	deploymentData := loadDeploymentData(t)
-
-	t.Logf("[createExtraOperator] Creating extra operator (existing operators: %d)", deploymentData.Env.Operators)
 
 	// Matches generate_network.sh: BASE_PRIVATE_KEY + operators
 	// BASE_PRIVATE_KEY = 1000000000000000000
 	baseKey := big.NewInt(1000000000000000000)
-	operators := big.NewInt(deploymentData.Env.Operators)
+	operators := big.NewInt(operatorNumber)
 	extraKeyInt := new(big.Int).Add(baseKey, operators)
 	extraSecondaryKeyInt := new(big.Int).Add(extraKeyInt, big.NewInt(10000))
-	t.Logf("[createExtraOperator] Derived key: baseKey=%s + operators=%d = %s", baseKey.String(), deploymentData.Env.Operators, extraKeyInt.String())
+	t.Logf("[createExtraOperator] Derived key: baseKey=%s + operators=%d = %s", baseKey.String(), operatorNumber, extraKeyInt.String())
 
 	pkBytes := make([]byte, 32)
 	extraKeyInt.FillBytes(pkBytes)
@@ -283,21 +276,11 @@ func createExtraOperator(t *testing.T) operatorData {
 
 	privateKey, err := crypto.NewPrivateKey(symbiotic.KeyTypeEcdsaSecp256k1, pkBytes)
 	require.NoError(t, err)
-	t.Log("[createExtraOperator] Created ECDSA private key")
 
 	// Derive Ethereum address from private key
 	ecdsaKey, err := ethCrypto.ToECDSA(privateKey.Bytes())
 	require.NoError(t, err)
 	operatorAddress := ethCrypto.PubkeyToAddress(ecdsaKey.PublicKey)
-	t.Logf("[createExtraOperator] Operator address: %s", operatorAddress.Hex())
-
-	t.Logf("[createExtraOperator] Funding operator with 1 ETH on chain %d...", deploymentData.Driver.ChainId)
-	_, err = fundOperator(t.Context(), getFunderPrivateKey(t), settlementChains[0], symbiotic.CrossChainAddress{
-		ChainId: deploymentData.Driver.ChainId,
-		Address: operatorAddress,
-	}, big.NewInt(1e18))
-	require.NoError(t, err)
-	t.Log("[createExtraOperator] Operator funded")
 
 	blsPrivateKey, err := crypto.NewPrivateKey(symbiotic.KeyTypeBlsBn254, pkBytes)
 	require.NoError(t, err)
@@ -305,31 +288,84 @@ func createExtraOperator(t *testing.T) operatorData {
 	require.NoError(t, err)
 	t.Logf("[createExtraOperator] Created BLS keys - primary pubKey: %x", blsPrivateKey.PublicKey().OnChain())
 
+	return operatorData{
+		number:                 int(operatorNumber),
+		privateKey:             privateKey,
+		blsPrivateKey:          blsPrivateKey,
+		blsPrivateKeySecondary: blsPrivateKeySecondary,
+		address:                operatorAddress,
+	}
+}
+
+type operatorData struct {
+	number                 int
+	privateKey             crypto.PrivateKey
+	address                common.Address
+	blsPrivateKey          crypto.PrivateKey
+	blsPrivateKeySecondary crypto.PrivateKey
+}
+
+// createExtraOperator creates an operator using the extra relay's private key.
+// The extra relay is not part of the validator set and uses a deterministic key
+// based on the formula: BASE_PRIVATE_KEY + operators (matching generate_network.sh).
+func createExtraOperator(t *testing.T) operatorData {
+	t.Helper()
+	t.Log("Creating extra operator with keys...")
+	deploymentData := loadDeploymentData(t)
+
+	t.Logf("[createExtraOperator] Creating extra operator (existing operators: %d)", deploymentData.Env.Operators)
+
+	opData := newOperatorData(t, deploymentData.Env.Operators)
+
+	t.Logf("[createExtraOperator] Funding operator with 1 ETH on chain %d...", deploymentData.Driver.ChainId)
+	_, err := fundOperator(t.Context(), getFunderPrivateKey(t), settlementChains[0], symbiotic.CrossChainAddress{
+		ChainId: deploymentData.Driver.ChainId,
+		Address: opData.address,
+	}, big.NewInt(1e18))
+	require.NoError(t, err)
+	t.Log("[createExtraOperator] Operator funded")
+
 	t.Log("[createExtraOperator] Creating EVM client and key registerer...")
-	opEVMClient := createEVMClientWithEVMKey(t, deploymentData, privateKey)
+	opEVMClient := createEVMClientWithEVMKey(t, deploymentData, opData.privateKey)
 	registerer, err := key_registerer.NewRegisterer(key_registerer.Config{EVMClient: opEVMClient})
 	require.NoError(t, err)
 
-	t.Logf("[createExtraOperator] Registering BLS key with keyTag=15 for operator %s...", operatorAddress.Hex())
-	_, err = registerer.Register(t.Context(), blsPrivateKey, symbiotic.KeyTag(15), operatorAddress)
+	t.Logf("[createExtraOperator] Registering BLS key with keyTag=15 for operator %s...", opData.address.Hex())
+	_, err = registerer.Register(t.Context(), opData.blsPrivateKey, symbiotic.KeyTag(15), opData.address)
 	require.NoError(t, err)
 	t.Log("[createExtraOperator] BLS key (keyTag=15) registered")
 
-	t.Logf("[createExtraOperator] Registering ECDSA key with keyTag=16 for operator %s...", operatorAddress.Hex())
-	_, err = registerer.Register(t.Context(), privateKey, symbiotic.KeyTag(16), operatorAddress)
+	t.Logf("[createExtraOperator] Registering ECDSA key with keyTag=16 for operator %s...", opData.address.Hex())
+	_, err = registerer.Register(t.Context(), opData.privateKey, symbiotic.KeyTag(16), opData.address)
 	require.NoError(t, err)
 	t.Log("[createExtraOperator] ECDSA key (keyTag=16) registered")
 
-	t.Logf("[createExtraOperator] Registering secondary BLS key with keyTag=11 for operator %s...", operatorAddress.Hex())
-	_, err = registerer.Register(t.Context(), blsPrivateKeySecondary, symbiotic.KeyTag(11), operatorAddress)
+	t.Logf("[createExtraOperator] Registering secondary BLS key with keyTag=11 for operator %s...", opData.address.Hex())
+	_, err = registerer.Register(t.Context(), opData.blsPrivateKeySecondary, symbiotic.KeyTag(11), opData.address)
 	require.NoError(t, err)
 	t.Log("[createExtraOperator] Secondary BLS key (keyTag=11) registered")
 
-	t.Logf("[createExtraOperator] Extra operator created successfully: address=%s", operatorAddress.Hex())
-	return operatorData{
-		privateKey: privateKey,
-		address:    operatorAddress,
+	t.Logf("Registering operator in OperatorRegistry at %s...", deploymentData.MainChain.Addresses.OperatorRegistry)
+	_, err = opEVMClient.RegisterOperator(t.Context(), symbiotic.CrossChainAddress{
+		ChainId: deploymentData.Driver.ChainId,
+		Address: common.HexToAddress(deploymentData.MainChain.Addresses.OperatorRegistry),
+	})
+	if err != nil && !strings.Contains(err.Error(), "error OperatorAlreadyRegistered()") {
+		require.NoError(t, err)
 	}
+	t.Log("Operator registered in OperatorRegistry")
+
+	t.Log("Creating funder EVM client...")
+	funderTestEVM := createTestEVM(t, settlementChains[0], getFunderPrivateKey(t))
+	stakingAmount := big.NewInt(1e5)
+	t.Logf("Transferring %s staking tokens to operator %s...", stakingAmount.String(), opData.address.Hex())
+	_, err = funderTestEVM.TransferMockToken(t.Context(), common.HexToAddress(deploymentData.MainChain.Addresses.StakingToken), opData.address, stakingAmount)
+	require.NoError(t, err)
+	t.Log("Staking tokens transferred to operator")
+
+	t.Logf("Extra operator created: address=%s", opData.address.Hex())
+
+	return opData
 }
 
 func fundOperator(

@@ -2,10 +2,14 @@ package evm
 
 import (
 	"context"
+	"encoding/hex"
+	"log/slog"
 	"math/big"
+	"regexp"
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -141,7 +145,7 @@ func (e *Client) doTransaction(ctx context.Context, f func(opts *bind.TransactOp
 
 	tx, err := f(txOpts)
 	if err != nil {
-		return symbiotic.TxResult{}, err
+		return symbiotic.TxResult{}, e.formatEVMError(err)
 	}
 
 	receipt, err := bind.WaitMined(ctx, e.client, tx)
@@ -158,4 +162,59 @@ func (e *Client) doTransaction(ctx context.Context, f func(opts *bind.TransactOp
 		GasUsed:           receipt.GasUsed,
 		EffectiveGasPrice: receipt.EffectiveGasPrice,
 	}, nil
+}
+
+var customErrRegExp = regexp.MustCompile(`0x[0-9a-fA-F]{8}`)
+
+func (e *Client) formatEVMError(err error) error {
+	type jsonError interface {
+		Error() string
+		ErrorData() interface{}
+		ErrorCode() int
+	}
+	var errData jsonError
+	if !errors.As(err, &errData) {
+		return err
+	}
+	if errData.ErrorCode() != 3 && errData.ErrorData() == nil {
+		return err
+	}
+
+	matches := customErrRegExp.FindStringSubmatch(errData.Error())
+	if len(matches) < 1 {
+		return err
+	}
+
+	errDef, ok := findErrorBySelector(matches[0])
+	if !ok {
+		return err
+	}
+
+	return errors.Errorf("%w: %s", err, errDef.String())
+}
+
+func findErrorBySelector(errSelector string) (abi.Error, bool) {
+	errorDefs := map[string]*bind.MetaData{
+		"mockERC20":                 gen.MockERC20MetaData,
+		"opNetVaultAutodeployLogic": gen.OpNetVaultAutoDeployLogicMetaData,
+		"optInService":              gen.OptInServiceMetaData,
+		"vault":                     gen.VaultMetaData,
+	}
+
+	for contract, meta := range errorDefs {
+		contractAbi, err := meta.GetAbi()
+		if err != nil {
+			slog.Warn("Failed to get ABI", "contract", contract, "error", err)
+			return abi.Error{}, false
+		}
+
+		for _, errDef := range contractAbi.Errors {
+			selector := hex.EncodeToString(crypto.Keccak256([]byte(errDef.Sig))[:4])
+			if "0x"+selector == errSelector {
+				return errDef, true
+			}
+		}
+	}
+
+	return abi.Error{}, false
 }
