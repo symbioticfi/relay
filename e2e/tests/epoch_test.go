@@ -35,6 +35,8 @@ func TestEpochProgression(t *testing.T) {
 }
 
 func waitForNextCommitment(t *testing.T, evmClient *evm.Client, epochTime uint64) {
+	t.Helper()
+
 	deployData := loadDeploymentData(t)
 	cfg, err := evmClient.GetConfig(t.Context(), symbiotic.Timestamp(time.Now().Unix()), 0)
 	require.NoError(t, err, "Failed to get settlement config")
@@ -60,6 +62,8 @@ func waitForNextCommitment(t *testing.T, evmClient *evm.Client, epochTime uint64
 }
 
 func waitForCommitmentInEpoch(t *testing.T, evmClient *evm.Client, epochTime uint64, waitForEpoch symbiotic.Epoch) {
+	t.Helper()
+
 	cfg, err := evmClient.GetConfig(t.Context(), symbiotic.Timestamp(time.Now().Unix()), 0)
 	require.NoError(t, err, "Failed to get settlement config")
 
