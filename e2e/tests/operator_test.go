@@ -32,7 +32,7 @@ func TestAddAndRemoveOperator(t *testing.T) {
 	t.Logf("Deployment data loaded: chainId=%d, existingOperators=%d", deployData.Driver.ChainId, deployData.Env.Operators)
 
 	extraData := createExtraOperator(t)
-	someOperator := newOperatorData(t, 1)
+	someOperator := getOperatorData(t, 1)
 
 	unregisterOperator(t, someOperator)
 	registerOperator(t, extraData)
@@ -174,8 +174,6 @@ func registerOperator(t *testing.T, opData operatorData) {
 	deploymentData := loadDeploymentData(t)
 	opEVMClient := createEVMClientWithEVMKey(t, deploymentData, opData.privateKey)
 
-	t.Log("Registering operator in VotingPowerProvider...")
-
 	t.Logf("[registerOperator] Registering operator %s in VotingPowerProvider at %s...", opData.address.Hex(), deploymentData.MainChain.Addresses.VotingPowerProvider)
 	_, err := opEVMClient.RegisterOperatorVotingPowerProvider(t.Context(), symbiotic.CrossChainAddress{
 		ChainId: deploymentData.Driver.ChainId,
@@ -200,20 +198,20 @@ func registerOperator(t *testing.T, opData operatorData) {
 		return nil
 	}))
 
-	t.Log("Extra operator registered in VotingPowerProvider")
+	t.Log("[registerOperator] Operator registered in VotingPowerProvider")
 
 	opTestEVM := createTestEVM(t, settlementChains[0], opData.privateKey)
-	t.Logf("Operator opting into network at %s...", deploymentData.MainChain.Addresses.Network)
+	t.Logf("[registerOperator] Opting operator into network at %s...", deploymentData.MainChain.Addresses.Network)
 	_, err = opTestEVM.OptIn(t.Context(), common.HexToAddress(deploymentData.MainChain.Addresses.OperatorNetworkOptInService), common.HexToAddress(deploymentData.MainChain.Addresses.Network))
 	if err != nil && !strings.Contains(err.Error(), "custom error 0xdcdeaba3") { // already opted in
 		require.NoError(t, err)
 	}
-	t.Log("Operator opted into network")
+	t.Log("[registerOperator] Operator opted into network")
 }
 
 func initVault(t *testing.T, opData operatorData) {
 	t.Helper()
-	t.Log("Initializing vault for operator...")
+	t.Log("[initVault] Initializing vault for operator...")
 
 	deploymentData := loadDeploymentData(t)
 	createTestEVM(t, settlementChains[0], opData.privateKey)
@@ -244,7 +242,7 @@ func initVault(t *testing.T, opData operatorData) {
 	require.NoError(t, err)
 	t.Log("[initVault] Vault deposit complete")
 
-	t.Log("Vault initialized for operator")
+	t.Log("[initVault] Vault initialized for operator")
 }
 
 func createTestEVM(t *testing.T, chainURL string, privateKey crypto.PrivateKey) *testEth.Client {
@@ -259,7 +257,7 @@ func createTestEVM(t *testing.T, chainURL string, privateKey crypto.PrivateKey) 
 	return client
 }
 
-func newOperatorData(t *testing.T, operatorNumber int64) operatorData {
+func getOperatorData(t *testing.T, operatorNumber int64) operatorData {
 	t.Helper()
 
 	// Matches generate_network.sh: BASE_PRIVATE_KEY + operators
@@ -268,7 +266,7 @@ func newOperatorData(t *testing.T, operatorNumber int64) operatorData {
 	operators := big.NewInt(operatorNumber)
 	extraKeyInt := new(big.Int).Add(baseKey, operators)
 	extraSecondaryKeyInt := new(big.Int).Add(extraKeyInt, big.NewInt(10000))
-	t.Logf("[createExtraOperator] Derived key: baseKey=%s + operators=%d = %s", baseKey.String(), operatorNumber, extraKeyInt.String())
+	t.Logf("[getOperatorData] Derived key: baseKey=%s + operators=%d = %s", baseKey.String(), operatorNumber, extraKeyInt.String())
 
 	pkBytes := make([]byte, 32)
 	extraKeyInt.FillBytes(pkBytes)
@@ -287,7 +285,7 @@ func newOperatorData(t *testing.T, operatorNumber int64) operatorData {
 	require.NoError(t, err)
 	blsPrivateKeySecondary, err := crypto.NewPrivateKey(symbiotic.KeyTypeBlsBn254, pkSecondaryBytes)
 	require.NoError(t, err)
-	t.Logf("[createExtraOperator] Created BLS keys - primary pubKey: %x", blsPrivateKey.PublicKey().OnChain())
+	t.Logf("[getOperatorData] Created BLS keys - primary pubKey: %x", blsPrivateKey.PublicKey().OnChain())
 
 	return operatorData{
 		number:                 int(operatorNumber),
@@ -311,12 +309,12 @@ type operatorData struct {
 // based on the formula: BASE_PRIVATE_KEY + operators (matching generate_network.sh).
 func createExtraOperator(t *testing.T) operatorData {
 	t.Helper()
-	t.Log("Creating extra operator with keys...")
+	t.Log("[createExtraOperator] Creating extra operator with keys...")
 	deploymentData := loadDeploymentData(t)
 
 	t.Logf("[createExtraOperator] Creating extra operator (existing operators: %d)", deploymentData.Env.Operators)
 
-	opData := newOperatorData(t, deploymentData.Env.Operators)
+	opData := getOperatorData(t, deploymentData.Env.Operators)
 
 	t.Logf("[createExtraOperator] Funding operator with 1 ETH on chain %d...", deploymentData.Driver.ChainId)
 	_, err := fundOperator(t.Context(), getFunderPrivateKey(t), settlementChains[0], symbiotic.CrossChainAddress{
@@ -346,7 +344,7 @@ func createExtraOperator(t *testing.T) operatorData {
 	require.NoError(t, err)
 	t.Log("[createExtraOperator] Secondary BLS key (keyTag=11) registered")
 
-	t.Logf("Registering operator in OperatorRegistry at %s...", deploymentData.MainChain.Addresses.OperatorRegistry)
+	t.Logf("[createExtraOperator] Registering operator in OperatorRegistry at %s...", deploymentData.MainChain.Addresses.OperatorRegistry)
 	_, err = opEVMClient.RegisterOperator(t.Context(), symbiotic.CrossChainAddress{
 		ChainId: deploymentData.Driver.ChainId,
 		Address: common.HexToAddress(deploymentData.MainChain.Addresses.OperatorRegistry),
@@ -354,17 +352,9 @@ func createExtraOperator(t *testing.T) operatorData {
 	if err != nil && !strings.Contains(err.Error(), "error OperatorAlreadyRegistered()") {
 		require.NoError(t, err)
 	}
-	t.Log("Operator registered in OperatorRegistry")
+	t.Log("[createExtraOperator] Operator registered in OperatorRegistry")
 
-	t.Log("Creating funder EVM client...")
-	funderTestEVM := createTestEVM(t, settlementChains[0], getFunderPrivateKey(t))
-	stakingAmount := big.NewInt(1e5)
-	t.Logf("Transferring %s staking tokens to operator %s...", stakingAmount.String(), opData.address.Hex())
-	_, err = funderTestEVM.TransferMockToken(t.Context(), common.HexToAddress(deploymentData.MainChain.Addresses.StakingToken), opData.address, stakingAmount)
-	require.NoError(t, err)
-	t.Log("Staking tokens transferred to operator")
-
-	t.Logf("Extra operator created: address=%s", opData.address.Hex())
+	t.Logf("[createExtraOperator] Extra operator created: address=%s", opData.address.Hex())
 
 	return opData
 }

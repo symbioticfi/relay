@@ -288,7 +288,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("p2p.mdns", false, "Enable mDNS discovery for P2P")
 	rootCmd.PersistentFlags().StringSlice("evm.chains", nil, "Chains, comma separated rpc-url,..")
 	rootCmd.PersistentFlags().Int("evm.max-calls", 0, "Max calls in multicall")
-	rootCmd.PersistentFlags().Var(&CMDGasPriceMap{}, "evm.fallback-gas-prices", "Per-chain gas prices in wei (chainID=gasPrice), repeatable")
+	rootCmd.PersistentFlags().Var(&CMDGasPriceMap{}, "evm.fallback-gas-prices", "Per-chain fallback gas prices in wei when eth_maxPriorityFeePerGas is not supported (e.g., --evm.fallback-gas-prices 1=2000000000)")
 	rootCmd.PersistentFlags().Bool("force-role.aggregator", false, "Force node to act as aggregator regardless of deterministic scheduling")
 	rootCmd.PersistentFlags().Bool("force-role.committer", false, "Force node to act as committer regardless of deterministic scheduling")
 	rootCmd.PersistentFlags().Uint64("retention.valset-epochs", 0, "Number of historical validator set epochs to retain (0 = unlimited)")
