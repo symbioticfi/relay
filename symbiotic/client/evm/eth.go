@@ -6,10 +6,12 @@ import (
 	"encoding/hex"
 	"log/slog"
 	"math/big"
+	"net/http"
 	"regexp"
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/samber/lo"
 
@@ -17,7 +19,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
@@ -99,12 +100,13 @@ type driverContract interface {
 }
 
 type Config struct {
-	ChainURLs      []string                    `validate:"required"`
-	DriverAddress  symbiotic.CrossChainAddress `validate:"required"`
-	RequestTimeout time.Duration               `validate:"required,gt=0"`
-	KeyProvider    keyProvider
-	Metrics        metrics
-	MaxCalls       int
+	ChainURLs         []string                    `validate:"required"`
+	DriverAddress     symbiotic.CrossChainAddress `validate:"required"`
+	RequestTimeout    time.Duration               `validate:"required,gt=0"`
+	KeyProvider       keyProvider
+	Metrics           metrics
+	MaxCalls          int
+	FallbackGasPrices map[uint64]uint64 // Per-chain gas price in wei when eth_maxPriorityFeePerGas is not supported (default: 2 GWei)
 }
 
 func (c Config) Validate() error {
@@ -118,11 +120,17 @@ func (c Config) Validate() error {
 type Client struct {
 	cfg Config
 
-	conns         map[uint64]conn
+	conns         map[uint64]clientWithInfo
 	driver        driverContract
 	driverChainID uint64
 
 	metrics metrics
+}
+
+type clientWithInfo struct {
+	conn
+
+	hasMaxPriorityFeePerGasMethod bool
 }
 
 func NewEvmClient(ctx context.Context, cfg Config) (*Client, error) {
@@ -130,7 +138,7 @@ func NewEvmClient(ctx context.Context, cfg Config) (*Client, error) {
 		return nil, errors.Errorf("failed to validate config: %w", err)
 	}
 
-	conns := make(map[uint64]conn)
+	conns := make(map[uint64]clientWithInfo)
 
 	for _, chainURL := range cfg.ChainURLs {
 		client, err := ethclient.DialContext(ctx, chainURL)
@@ -142,7 +150,20 @@ func NewEvmClient(ctx context.Context, cfg Config) (*Client, error) {
 			return nil, errors.Errorf("failed to get chain ID: %w", err)
 		}
 
-		conns[chainID.Uint64()] = client
+		var tip *hexutil.Big
+		err = client.Client().CallContext(ctx, &tip, "eth_maxPriorityFeePerGas")
+		if err != nil {
+			var httpError rpc.HTTPError
+			if !errors.As(err, &httpError) && httpError.StatusCode == http.StatusBadRequest {
+				return nil, errors.Errorf("failed to call eth_maxPriorityFeePerGas: %w", err)
+			}
+			slog.WarnContext(ctx, "eth_maxPriorityFeePerGas method not supported by the node", "chainID", chainID.Uint64(), "error", err)
+		}
+
+		conns[chainID.Uint64()] = clientWithInfo{
+			conn:                          client,
+			hasMaxPriorityFeePerGasMethod: tip != nil && tip.ToInt().Cmp(big.NewInt(0)) > 0,
+		}
 
 		if cfg.Metrics != nil {
 			cfg.Metrics.ObserveEVMMethodCall("CommitValSetHeader", chainID.Uint64(), "success", 0)
@@ -883,16 +904,7 @@ func (e *Client) getSettlementContract(addr symbiotic.CrossChainAddress) (*gen.S
 	return gen.NewSettlement(addr.Address, client)
 }
 
-func (e *Client) getVotingPowerProviderContract(addr symbiotic.CrossChainAddress) (*gen.VotingPowerProviderCaller, error) {
-	client, ok := e.conns[addr.ChainId]
-	if !ok {
-		return nil, errors.Errorf("no connection for chain ID %d: %w", addr.ChainId, entity.ErrChainNotFound)
-	}
-
-	return gen.NewVotingPowerProviderCaller(addr.Address, client)
-}
-
-func (e *Client) getVotingPowerProviderContractTransactor(addr symbiotic.CrossChainAddress) (*gen.VotingPowerProvider, error) {
+func (e *Client) getVotingPowerProviderContract(addr symbiotic.CrossChainAddress) (*gen.VotingPowerProvider, error) {
 	client, ok := e.conns[addr.ChainId]
 	if !ok {
 		return nil, errors.Errorf("no connection for chain ID %d: %w", addr.ChainId, entity.ErrChainNotFound)

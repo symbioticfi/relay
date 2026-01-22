@@ -25,7 +25,7 @@ func TestMulticallExists_NoConnection_ReturnsError(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -55,7 +55,7 @@ func TestMulticallExists_CodeAtFails_ReturnsError(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   map[uint64]conn{chainID: mockConn},
+		conns:   map[uint64]clientWithInfo{chainID: {conn: mockConn}},
 		metrics: mockMetrics,
 	}
 
@@ -84,7 +84,7 @@ func TestMulticallExists_CodeExists_ReturnsTrue(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   map[uint64]conn{chainID: mockConn},
+		conns:   map[uint64]clientWithInfo{chainID: {conn: mockConn}},
 		metrics: mockMetrics,
 	}
 
@@ -112,7 +112,7 @@ func TestMulticallExists_NoCode_ReturnsFalse(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   map[uint64]conn{chainID: mockConn},
+		conns:   map[uint64]clientWithInfo{chainID: {conn: mockConn}},
 		metrics: mockMetrics,
 	}
 
@@ -138,7 +138,7 @@ func TestMulticall_NoConnection_ReturnsError(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 

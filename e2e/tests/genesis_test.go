@@ -16,8 +16,7 @@ import (
 func TestGenesisDone(t *testing.T) {
 	t.Log("Starting genesis generation test...")
 
-	deployData, err := loadDeploymentData()
-	require.NoError(t, err, "Failed to load deployment data")
+	deployData := loadDeploymentData(t)
 
 	config := evm.Config{
 		ChainURLs: settlementChains,
@@ -49,8 +48,7 @@ func TestGenesisDone(t *testing.T) {
 
 // TestContractData tests that the data in the contract matches expected values
 func TestContractData(t *testing.T) {
-	deployData, err := loadDeploymentData()
-	require.NoError(t, err, "Failed to load deployment data")
+	deployData := loadDeploymentData(t)
 
 	expectedContractData := getExpectedDataFromContracts(t, deployData)
 

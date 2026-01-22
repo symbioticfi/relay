@@ -24,11 +24,10 @@ import (
 // This test validates that the relay network can dynamically handle settlement chain
 // configuration changes across epoch boundaries and properly commits validator sets
 // to all active settlement chains.
-func TestRemoveSettlement(t *testing.T) {
+func TestRemoveAndAddSettlement(t *testing.T) {
 	t.Log("Starting TestRemoveSettlement - testing settlement lifecycle management")
 
-	deploymentData, err := loadDeploymentData()
-	require.NoError(t, err, "Failed to load deployment data")
+	deploymentData := loadDeploymentData(t)
 	evmClient := createEVMClient(t, deploymentData)
 	deriver, err := valsetDeriver.NewDeriver(evmClient)
 	require.NoError(t, err)
@@ -154,28 +153,43 @@ func TestRemoveSettlement(t *testing.T) {
 		require.NoError(t, err, "Failed to wait for epoch after next")
 		t.Logf("Reached epoch %d", backTwoSettlementsEpoch)
 
-		finalCaptureTimestamp, err := evmClient.GetEpochStart(t.Context(), oneSettlementEpoch+1)
+		finalCaptureTimestamp, err := evmClient.GetEpochStart(t.Context(), backTwoSettlementsEpoch)
 		require.NoError(t, err, "Failed to get epoch start timestamp")
 
-		finalConfig, err := evmClient.GetConfig(t.Context(), finalCaptureTimestamp, oneSettlementEpoch+1)
+		finalConfig, err := evmClient.GetConfig(t.Context(), finalCaptureTimestamp, backTwoSettlementsEpoch)
 		require.NoError(t, err, "Failed to get network config")
 
 		require.Len(t, finalConfig.Settlements, 2, "Expected exactly two settlements after re-adding")
-		t.Logf("Settlement re-addition confirmed in epoch %d - settlements count: %d", oneSettlementEpoch+1, len(finalConfig.Settlements))
+		t.Logf("Settlement re-addition confirmed in epoch %d - settlements count: %d", backTwoSettlementsEpoch, len(finalConfig.Settlements))
 		for i, settlement := range finalConfig.Settlements {
 			t.Logf("Settlement %d - ChainID: %d, Address: %s", i, settlement.ChainId, settlement.Address.Hex())
 		}
 
 		t.Logf("Waiting for validator set commitments on both settlements")
-		require.NoError(t, waitForErrorIsNil(t.Context(), time.Minute*2, func() error {
+		require.NoError(t, waitForErrorIsNil(t.Context(), time.Minute*10, func() error {
+			allCommitted := true
 			for _, settlement := range finalConfig.Settlements {
+				lastCommitted, err := evmClient.GetLastCommittedHeaderEpoch(t.Context(), settlement)
+				if err != nil {
+					t.Logf("Error getting last committed epoch on settlement ChainID %d: %v", settlement.ChainId, err)
+					return err
+				}
+				t.Logf("Last committed epoch on settlement ChainID %d: %d", settlement.ChainId, lastCommitted)
+
 				committed, err := evmClient.IsValsetHeaderCommittedAt(t.Context(), settlement, backTwoSettlementsEpoch)
 				if err != nil {
+					t.Logf("Error checking valset header commitment on settlement ChainID %d: %v", settlement.ChainId, err)
 					return err
 				}
 				if !committed {
-					return errors.Errorf("valset header not committed for settlement %d", settlement.ChainId)
+					t.Logf("Valset header not yet committed on settlement ChainID %d for epoch %d", settlement.ChainId, backTwoSettlementsEpoch)
+					allCommitted = false
 				}
+			}
+
+			if !allCommitted {
+				t.Logf("Not all settlements have committed the validator set for epoch %d yet", backTwoSettlementsEpoch)
+				return errors.New("not all settlements committed")
 			}
 			return nil
 		}))

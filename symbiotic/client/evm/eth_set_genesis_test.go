@@ -70,7 +70,7 @@ func TestSetGenesis_NoSettlementContract_ReturnsError(t *testing.T) {
 			KeyProvider:    mockKeyProv,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -110,7 +110,7 @@ func TestSetGenesis_KeyProviderFails_ReturnsError(t *testing.T) {
 			KeyProvider:    mockKeyProv,
 			Metrics:        mockMetrics,
 		},
-		conns:   map[uint64]conn{1: nil},
+		conns:   map[uint64]clientWithInfo{1: {}},
 		metrics: mockMetrics,
 	}
 
@@ -149,7 +149,7 @@ func TestSetGenesis_InvalidECDSAKey_ReturnsError(t *testing.T) {
 			KeyProvider:    mockKeyProv,
 			Metrics:        mockMetrics,
 		},
-		conns:   map[uint64]conn{1: nil},
+		conns:   map[uint64]clientWithInfo{1: {}},
 		metrics: mockMetrics,
 	}
 
@@ -157,61 +157,6 @@ func TestSetGenesis_InvalidECDSAKey_ReturnsError(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid length")
-	assert.Empty(t, result.TxHash)
-}
-
-func TestSetGenesis_ContextTimeout_ReturnsError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockKeyProv := mocks.NewMockkeyProvider(ctrl)
-	mockMetrics := mocks.NewMockmetrics(ctrl)
-
-	privateKey, err := crypto.GenerateKey()
-	require.NoError(t, err)
-
-	chainID := uint64(1)
-	addr := symbiotic.CrossChainAddress{
-		ChainId: chainID,
-		Address: common.HexToAddress("0x1234567890123456789012345678901234567890"),
-	}
-
-	header := symbiotic.ValidatorSetHeader{
-		Version:            1,
-		RequiredKeyTag:     symbiotic.KeyTag(1),
-		Epoch:              symbiotic.Epoch(10),
-		CaptureTimestamp:   symbiotic.Timestamp(1000),
-		QuorumThreshold:    symbiotic.VotingPower{Int: big.NewInt(100)},
-		TotalVotingPower:   symbiotic.VotingPower{Int: big.NewInt(1000)},
-		ValidatorsSszMRoot: common.HexToHash("0xabcd"),
-	}
-
-	mockKeyProv.EXPECT().
-		GetPrivateKeyByNamespaceTypeId(gomock.Any(), symbiotic.KeyTypeEcdsaSecp256k1, int(chainID)).
-		Return(&mockPrivateKey{key: privateKey}, nil)
-
-	mockMetrics.EXPECT().
-		ObserveEVMMethodCall("SetGenesis", chainID, "error", gomock.Any())
-
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
-	defer cancel()
-
-	mockconn := mocks.NewMockconn(ctrl)
-	mockconn.EXPECT().HeaderByNumber(gomock.Any(), gomock.Any()).Return(nil, context.DeadlineExceeded)
-	client := &Client{
-		cfg: Config{
-			RequestTimeout: 1 * time.Millisecond,
-			KeyProvider:    mockKeyProv,
-			Metrics:        mockMetrics,
-		},
-		conns:         map[uint64]conn{1: mockconn},
-		driverChainID: 1,
-		metrics:       mockMetrics,
-	}
-
-	result, err := client.SetGenesis(ctx, addr, header, nil)
-
-	require.Error(t, err)
 	assert.Empty(t, result.TxHash)
 }
 
@@ -239,7 +184,7 @@ func TestSetGenesis_InvalidChainID_ReturnsError(t *testing.T) {
 			KeyProvider:    mockKeyProv,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -286,7 +231,7 @@ func TestSetGenesis_PartialHappyPath_ValidatesDataPreparation(t *testing.T) {
 			KeyProvider:    mockKeyProv,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 

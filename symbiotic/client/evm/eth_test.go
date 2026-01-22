@@ -31,10 +31,10 @@ func TestGetChains_WithMultipleChains_ReturnsAllChainIDs(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns: map[uint64]conn{
-			1:  mockConn1,
-			2:  mockConn2,
-			56: mockConn3,
+		conns: map[uint64]clientWithInfo{
+			1:  {conn: mockConn1},
+			2:  {conn: mockConn2},
+			56: {conn: mockConn3},
 		},
 		metrics: mockMetrics,
 	}
@@ -58,7 +58,7 @@ func TestGetChains_WithNoChains_ReturnsEmptySlice(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -80,8 +80,8 @@ func TestGetChains_WithSingleChain_ReturnsSingleChainID(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns: map[uint64]conn{
-			1: mockConn,
+		conns: map[uint64]clientWithInfo{
+			1: {conn: mockConn},
 		},
 		metrics: mockMetrics,
 	}
@@ -106,7 +106,7 @@ func TestObserveMetrics_WithMetricsEnabled_CallsObserveEVMMethodCall(t *testing.
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -128,7 +128,7 @@ func TestObserveMetrics_WithError_CallsWithErrorStatus(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -142,7 +142,7 @@ func TestObserveMetrics_WithNilMetrics_DoesNotPanic(t *testing.T) {
 		cfg: Config{
 			RequestTimeout: 5 * time.Second,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: nil,
 	}
 
@@ -173,7 +173,7 @@ func TestIsValsetHeaderCommittedAt_NoConnection_ReturnsError(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -204,7 +204,7 @@ func TestGetHeaderHash_NoConnection_ReturnsError(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -235,7 +235,7 @@ func TestGetHeaderHashAt_NoConnection_ReturnsError(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -266,7 +266,7 @@ func TestGetLastCommittedHeaderEpoch_NoConnection_ReturnsError(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -297,7 +297,7 @@ func TestGetCaptureTimestampFromValsetHeaderAt_NoConnection_ReturnsError(t *test
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -328,7 +328,7 @@ func TestGetValSetHeaderAt_NoConnection_ReturnsError(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -359,7 +359,7 @@ func TestGetValSetHeader_NoConnection_ReturnsError(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -390,7 +390,7 @@ func TestGetEip712Domain_NoConnection_ReturnsError(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -421,7 +421,7 @@ func TestGetVotingPowerProviderEip712Domain_NoConnection_ReturnsError(t *testing
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -452,7 +452,7 @@ func TestGetOperatorNonce_NoConnection_ReturnsError(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -484,7 +484,7 @@ func TestGetVotingPowers_MulticallCheckFails_ReturnsError(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -515,7 +515,7 @@ func TestGetOperators_NoConnection_ReturnsError(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -546,7 +546,7 @@ func TestGetKeysOperators_NoConnection_ReturnsError(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -577,7 +577,7 @@ func TestGetKeys_MulticallCheckFails_ReturnsError(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -608,7 +608,7 @@ func TestIsValsetHeaderCommittedAtEpochs_MulticallCheckFails_ReturnsError(t *tes
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -773,7 +773,7 @@ func TestFormatEVMContractError_WithNonJSONError_ReturnsOriginalError(t *testing
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -803,7 +803,7 @@ func TestGetVotingPowers_WithNoMulticall_ReturnsError(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -833,7 +833,7 @@ func TestGetKeys_WithNoMulticall_ReturnsError(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -854,7 +854,7 @@ func TestGetSettlementContract_NoConnection_ReturnsError(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -889,8 +889,10 @@ func TestGetSettlementContract_WithConnection_ReturnsContract(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns: map[uint64]conn{
-			chainID: mockConn,
+		conns: map[uint64]clientWithInfo{
+			chainID: {
+				conn: mockConn,
+			},
 		},
 		metrics: mockMetrics,
 	}
@@ -912,7 +914,7 @@ func TestGetVotingPowerProviderContract_NoConnection_ReturnsError(t *testing.T) 
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -947,8 +949,8 @@ func TestGetVotingPowerProviderContract_WithConnection_ReturnsContract(t *testin
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns: map[uint64]conn{
-			chainID: mockConn,
+		conns: map[uint64]clientWithInfo{
+			chainID: {conn: mockConn},
 		},
 		metrics: mockMetrics,
 	}
@@ -970,7 +972,7 @@ func TestGetVotingPowerProviderContractTransactor_NoConnection_ReturnsError(t *t
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -980,7 +982,7 @@ func TestGetVotingPowerProviderContractTransactor_NoConnection_ReturnsError(t *t
 		Address: common.HexToAddress("0x1234567890123456789012345678901234567890"),
 	}
 
-	result, err := client.getVotingPowerProviderContractTransactor(addr)
+	result, err := client.getVotingPowerProviderContract(addr)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no connection for chain ID")
@@ -1005,13 +1007,16 @@ func TestGetVotingPowerProviderContractTransactor_WithConnection_ReturnsContract
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns: map[uint64]conn{
-			chainID: mockConn,
+		conns: map[uint64]clientWithInfo{
+			chainID: {
+				conn:                          mockConn,
+				hasMaxPriorityFeePerGasMethod: false,
+			},
 		},
 		metrics: mockMetrics,
 	}
 
-	result, err := client.getVotingPowerProviderContractTransactor(addr)
+	result, err := client.getVotingPowerProviderContract(addr)
 
 	require.NoError(t, err)
 	assert.NotNil(t, result)
@@ -1028,7 +1033,7 @@ func TestGetKeyRegistryContract_NoConnection_ReturnsError(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -1063,8 +1068,8 @@ func TestGetKeyRegistryContract_WithConnection_ReturnsContract(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns: map[uint64]conn{
-			chainID: mockConn,
+		conns: map[uint64]clientWithInfo{
+			chainID: {conn: mockConn},
 		},
 		metrics: mockMetrics,
 	}
@@ -1086,7 +1091,7 @@ func TestGetOperatorRegistryContract_NoConnection_ReturnsError(t *testing.T) {
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns:   make(map[uint64]conn),
+		conns:   make(map[uint64]clientWithInfo),
 		metrics: mockMetrics,
 	}
 
@@ -1121,8 +1126,8 @@ func TestGetOperatorRegistryContract_WithConnection_ReturnsContract(t *testing.T
 			RequestTimeout: 5 * time.Second,
 			Metrics:        mockMetrics,
 		},
-		conns: map[uint64]conn{
-			chainID: mockConn,
+		conns: map[uint64]clientWithInfo{
+			chainID: {conn: mockConn},
 		},
 		metrics: mockMetrics,
 	}

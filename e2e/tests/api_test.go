@@ -16,6 +16,8 @@ import (
 	valsetDeriver "github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver"
 )
 
+const driverChainID = 31337
+
 // ContractExpectedData holds expected values derived from smart contracts
 type ContractExpectedData struct {
 	CurrentEpoch         symbiotic.Epoch
@@ -33,7 +35,7 @@ func getExpectedDataFromContracts(t *testing.T, relayContracts RelayContractsDat
 	config := evm.Config{
 		ChainURLs: settlementChains,
 		DriverAddress: symbiotic.CrossChainAddress{
-			ChainId: 31337,
+			ChainId: driverChainID,
 			Address: common.HexToAddress(relayContracts.GetDriverAddress()),
 		},
 		RequestTimeout: 10 * time.Second,
@@ -152,8 +154,7 @@ func validateValidatorSetAgainstExpected(t *testing.T, apiResponse *apiv1.GetVal
 func TestRelayAPIConnectivity(t *testing.T) {
 	t.Log("Starting relay API connectivity test...")
 
-	data, err := loadDeploymentData()
-	require.NoError(t, err, "Failed to load deployment data")
+	data := loadDeploymentData(t)
 
 	for i := range data.Env.GetSidecarConfigs() {
 		t.Run(fmt.Sprintf("Connect_%d", getContainerPort(i)), func(t *testing.T) {
@@ -178,8 +179,7 @@ func TestRelayAPIConnectivity(t *testing.T) {
 func TestValidatorSetAPI(t *testing.T) {
 	t.Log("Starting validator set API test...")
 
-	deploymentData, err := loadDeploymentData()
-	require.NoError(t, err, "Failed to load deployment data")
+	deploymentData := loadDeploymentData(t)
 
 	client := getGRPCClient(t, 0)
 

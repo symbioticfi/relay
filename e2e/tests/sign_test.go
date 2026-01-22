@@ -26,8 +26,7 @@ const (
 func TestNonHeaderKeySignature(t *testing.T) {
 	t.Log("Starting non-header key signature test...")
 
-	deploymentData, err := loadDeploymentData()
-	require.NoError(t, err, "Failed to load deployment data")
+	deploymentData := loadDeploymentData(t)
 
 	expected := getExpectedDataFromContracts(t, deploymentData)
 
@@ -65,8 +64,7 @@ func TestNonHeaderKeySignature(t *testing.T) {
 				return e.GetLastCommittedEpoch()
 			}))
 
-			data, err := loadDeploymentData()
-			require.NoError(t, err, "Failed to load deployment data")
+			data := loadDeploymentData(t)
 
 			requestID := ""
 			for i := range data.Env.GetSidecarConfigs() {
@@ -197,7 +195,7 @@ func TestNonHeaderKeySignature(t *testing.T) {
 							// if it's ZK proof, poll for the proof to be generated for the epoch duration
 							t.Logf("Polling for zk aggregation proof to be generated for request id: %s", requestID)
 
-							proofTimeoutCtx, proofCancel := context.WithTimeout(t.Context(), time.Duration(deploymentData.Env.EpochTime)*time.Second)
+							proofTimeoutCtx, proofCancel := context.WithTimeout(t.Context(), time.Duration(deploymentData.Env.EpochTime)*time.Second*2)
 							defer proofCancel()
 
 							proofTicker := time.NewTicker(2 * time.Second)

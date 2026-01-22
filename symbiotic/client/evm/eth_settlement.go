@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -39,7 +40,9 @@ func (e *Client) AddSettlement(
 	})
 }
 
-func (e *Client) doTransaction(ctx context.Context, method string, addr symbiotic.CrossChainAddress, f func(opts *bind.TransactOpts) (*types.Transaction, error)) (symbiotic.TxResult, error) {
+func (e *Client) doTransaction(ctx context.Context, method string, addr symbiotic.CrossChainAddress, f func(opts *bind.TransactOpts) (*types.Transaction, error), opts ...symbiotic.EVMOption) (symbiotic.TxResult, error) {
+	evmOpts := symbiotic.AppliedEVMOptions(opts...)
+
 	pk, err := e.cfg.KeyProvider.GetPrivateKeyByNamespaceTypeId(
 		keyprovider.EVM_KEY_NAMESPACE,
 		symbiotic.KeyTypeEcdsaSecp256k1,
@@ -63,6 +66,37 @@ func (e *Client) doTransaction(ctx context.Context, method string, addr symbioti
 	}(time.Now())
 	txOpts.Context = tmCtx
 
+	if !e.conns[addr.ChainId].hasMaxPriorityFeePerGasMethod {
+		gasPrice, ok := e.cfg.FallbackGasPrices[addr.ChainId]
+		if !ok {
+			gasPrice = 2_000_000_000 // default: 2 GWei
+		}
+		txOpts.GasPrice = new(big.Int).SetUint64(gasPrice)
+	}
+
+	// If GasLimitMultiplier is set, estimate gas and apply multiplier
+	if evmOpts.GasLimitMultiplier > 0 {
+		txOpts.NoSend = true
+		dryRunTx, err := f(txOpts)
+		if err != nil {
+			return symbiotic.TxResult{}, e.formatEVMError(err)
+		}
+
+		msg := ethereum.CallMsg{
+			From:  txOpts.From,
+			To:    dryRunTx.To(),
+			Data:  dryRunTx.Data(),
+			Value: dryRunTx.Value(),
+		}
+		estimatedGas, err := e.conns[addr.ChainId].EstimateGas(tmCtx, msg)
+		if err != nil {
+			return symbiotic.TxResult{}, errors.Errorf("failed to estimate gas: %w", err)
+		}
+
+		txOpts.GasLimit = uint64(float64(estimatedGas) * evmOpts.GasLimitMultiplier)
+		txOpts.NoSend = false
+	}
+
 	tx, err := f(txOpts)
 	if err != nil {
 		return symbiotic.TxResult{}, e.formatEVMError(err)
@@ -74,7 +108,11 @@ func (e *Client) doTransaction(ctx context.Context, method string, addr symbioti
 	}
 
 	if receipt.Status == types.ReceiptStatusFailed {
-		return symbiotic.TxResult{}, errors.New("transaction reverted on chain")
+		return symbiotic.TxResult{
+			TxHash:            receipt.TxHash,
+			GasUsed:           receipt.GasUsed,
+			EffectiveGasPrice: receipt.EffectiveGasPrice,
+		}, errors.Errorf("transaction %s reverted on chain (gasUsed: %d)", receipt.TxHash.Hex(), receipt.GasUsed)
 	}
 
 	return symbiotic.TxResult{

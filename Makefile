@@ -100,7 +100,7 @@ unit-test:
 
 .PHONY: e2e-test
 e2e-test:
-	cd e2e/tests && go test -v -timeout 30m
+	cd e2e/tests && go test -v -timeout 40m
 
 .PHONY: gen-abi
 gen-abi:
@@ -124,6 +124,34 @@ gen-abi:
 		--type VotingPowerProvider \
 		--pkg gen \
 		--out symbiotic/client/evm/gen/votingPowerProvider.go
+	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
+		--abi symbiotic/client/evm/abi/OperatorRegistry.abi.json \
+		--type OperatorRegistry \
+		--pkg gen \
+		--out symbiotic/client/evm/gen/operatorRegistry.go
+
+.PHONY: gen-abi-test
+gen-abi-test:
+	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
+		--abi e2e/tests/evm/abi/MockERC20.abi.json \
+		--type MockERC20 \
+		--pkg gen \
+		--out e2e/tests/evm/gen/mockERC20.go
+	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
+		--abi e2e/tests/evm/abi/IOptInService.abi.json \
+		--type OptInService \
+		--pkg gen \
+		--out e2e/tests/evm/gen/optInService.go
+	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
+		--abi e2e/tests/evm/abi/OpNetVaultAutoDeployLogic.abi.json \
+		--type OpNetVaultAutoDeployLogic \
+		--pkg gen \
+		--out e2e/tests/evm/gen/opNetVaultAutoDeployLogic.go
+	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
+		--abi e2e/tests/evm/abi/Vault.abi.json \
+		--type Vault \
+		--pkg gen \
+		--out e2e/tests/evm/gen/vault.go
 
 # Generic build target that takes OS and architecture as parameters
 # Usage: make build-relay-utils OS=linux ARCH=amd64

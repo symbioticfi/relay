@@ -112,8 +112,9 @@ func (s *SignerApp) RequestSignature(ctx context.Context, req symbiotic.Signatur
 	return requestId, nil
 }
 
-func (s *SignerApp) EnqueueRequestID(requestID common.Hash) {
+func (s *SignerApp) EnqueueRequestID(ctx context.Context, requestID common.Hash) {
 	s.queue.Add(requestID)
+	slog.DebugContext(ctx, "Enqueued signature request", "requestId", requestID.Hex())
 }
 
 func (s *SignerApp) completeSign(ctx context.Context, req symbiotic.SignatureRequest, p2pService p2pService) error {
