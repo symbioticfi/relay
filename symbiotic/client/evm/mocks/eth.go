@@ -1200,6 +1200,21 @@ func (mr *MockvotingPowerProviderContractMockRecorder) GetVotingPowersAt(opts, e
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVotingPowersAt", reflect.TypeOf((*MockvotingPowerProviderContract)(nil).GetVotingPowersAt), opts, extraData, timestamp)
 }
 
+// IsOperatorRegistered mocks base method.
+func (m *MockvotingPowerProviderContract) IsOperatorRegistered(opts *bind.CallOpts, operator common.Address) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsOperatorRegistered", opts, operator)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IsOperatorRegistered indicates an expected call of IsOperatorRegistered.
+func (mr *MockvotingPowerProviderContractMockRecorder) IsOperatorRegistered(opts, operator any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsOperatorRegistered", reflect.TypeOf((*MockvotingPowerProviderContract)(nil).IsOperatorRegistered), opts, operator)
+}
+
 // Nonces mocks base method.
 func (m *MockvotingPowerProviderContract) Nonces(opts *bind.CallOpts, owner common.Address) (*big.Int, error) {
 	m.ctrl.T.Helper()
