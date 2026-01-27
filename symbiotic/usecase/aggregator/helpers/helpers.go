@@ -8,17 +8,27 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/go-errors/errors"
 
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-func CompareMessageHasher(signatures []symbiotic.Signature, msgHash []byte) bool {
+func CheckSignaturesHaveSameTagAndMessageHash(signatures []symbiotic.Signature) error {
+	if len(signatures) == 0 {
+		return errors.New("empty signatures slice")
+	}
+
+	keyTag := signatures[0].KeyTag
+	msgHash := signatures[0].MessageHash
 	for i := range signatures {
+		if signatures[i].KeyTag != keyTag {
+			return errors.New("signatures have different key tags")
+		}
 		if !bytes.Equal(msgHash, signatures[i].MessageHash) {
-			return false
+			return errors.New("signatures have different message hashes")
 		}
 	}
-	return true
+	return nil
 }
 
 func GetExtraDataKey(verificationType symbiotic.VerificationType, nameHash common.Hash) (common.Hash, error) {

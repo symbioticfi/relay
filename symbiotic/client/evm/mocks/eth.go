@@ -807,6 +807,21 @@ func (m *MockdriverContract) EXPECT() *MockdriverContractMockRecorder {
 	return m.recorder
 }
 
+// AddSettlement mocks base method.
+func (m *MockdriverContract) AddSettlement(opts *bind.TransactOpts, settlement gen.IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddSettlement", opts, settlement)
+	ret0, _ := ret[0].(*types.Transaction)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddSettlement indicates an expected call of AddSettlement.
+func (mr *MockdriverContractMockRecorder) AddSettlement(opts, settlement any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSettlement", reflect.TypeOf((*MockdriverContract)(nil).AddSettlement), opts, settlement)
+}
+
 // GetConfigAt mocks base method.
 func (m *MockdriverContract) GetConfigAt(opts *bind.CallOpts, timestamp *big.Int) (gen.IValSetDriverConfig, error) {
 	m.ctrl.T.Helper()
@@ -895,6 +910,21 @@ func (m *MockdriverContract) NETWORK(opts *bind.CallOpts) (common.Address, error
 func (mr *MockdriverContractMockRecorder) NETWORK(opts any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NETWORK", reflect.TypeOf((*MockdriverContract)(nil).NETWORK), opts)
+}
+
+// RemoveSettlement mocks base method.
+func (m *MockdriverContract) RemoveSettlement(opts *bind.TransactOpts, settlement gen.IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveSettlement", opts, settlement)
+	ret0, _ := ret[0].(*types.Transaction)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RemoveSettlement indicates an expected call of RemoveSettlement.
+func (mr *MockdriverContractMockRecorder) RemoveSettlement(opts, settlement any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveSettlement", reflect.TypeOf((*MockdriverContract)(nil).RemoveSettlement), opts, settlement)
 }
 
 // SUBNETWORK mocks base method.

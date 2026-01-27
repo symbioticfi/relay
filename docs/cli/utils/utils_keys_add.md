@@ -11,7 +11,7 @@ utils keys add [flags]
 ### Options
 
 ```
-      --chain-id int16       chain id for evm keys, use 0 for default key for all chains (default -1)
+      --chain-id int         chain id for evm keys, use 0 for default key for all chains (default -1)
       --evm                  use evm namespace keys
       --force                force overwrite key
       --generate             generate key

@@ -136,6 +136,16 @@ service SymbioticAPIService {
     };
   }
 
+  // Checks if the current node should be active based on a custom schedule derived from the validator set.
+  // This enables external applications to use the relay's validator set for coordinating distributed tasks,
+  // such as deciding which application instances should commit data on-chain or perform other coordinated actions.
+  // The schedule ensures deterministic but randomized selection of active nodes at any given time.
+  rpc GetCustomScheduleNodeStatus(GetCustomScheduleNodeStatusRequest) returns (GetCustomScheduleNodeStatusResponse) {
+    option (google.api.http) = {
+      get: "/v1/validator-set/custom-schedule/node-status"
+    };
+  }
+
   // Stream signatures in real-time. If start_epoch is provided, sends historical data first
   rpc ListenSignatures(ListenSignaturesRequest) returns (stream ListenSignaturesResponse) {
     option (google.api.http) = {
@@ -156,6 +166,47 @@ service SymbioticAPIService {
       get: "/v1/stream/validator-set"
     };
   }
+}
+
+// Request to check if the current node should be active in a custom schedule.
+// The validator set is divided into groups that rotate through time slots.
+// Use this to coordinate distributed tasks among multiple application instances.
+message GetCustomScheduleNodeStatusRequest {
+  // Epoch number to use for the validator set (optional, defaults to current epoch)
+  optional uint64 epoch = 1;
+  
+  // Custom seed for randomizing the schedule (optional). Different seeds produce different schedules
+  // for the same epoch, allowing multiple independent scheduling schemes. If not provided, the schedule
+  // is deterministic based on epoch alone.
+  optional bytes seed = 2;
+  
+  // Duration of each time slot in seconds. Determines how frequently active groups rotate.
+  // Example: 60 seconds means a new group becomes active every minute.
+  uint64 slot_duration_seconds = 3;
+  
+  // Maximum validators per group. Controls redundancy: 1 for single-instance actions (less redundancy),
+  // 2+ for multi-instance actions (more reliability). All validators in a group are active simultaneously.
+  uint32 max_participants_per_slot = 4;
+  
+  // Minimum validators required to form a remainder group. When dividing validators into groups,
+  // any remainder smaller than this is not scheduled. Set equal to max for strict group sizes.
+  uint32 min_participants_per_slot = 5;
+}
+
+// Response indicating whether the current node should be active now.
+message GetCustomScheduleNodeStatusResponse {
+  // True if this node is active in the current time slot and should perform the scheduled action.
+  // False if this node should wait (another group is active). When multiple validators share a slot,
+  // all return true simultaneously, enabling coordinated redundancy.
+  bool is_active = 1;
+  
+  // Start time of the current active slot. This marks the beginning of the current slot time window.
+  // Can be used to determine how much time is left in the slot.
+  google.protobuf.Timestamp current_slot_start_time = 2;
+  
+  // End time of the current active slot. This marks the end of the current slot time window.
+  // Can be used to determine how much time is left in the slot.
+  google.protobuf.Timestamp current_slot_end_time = 3;
 }
 
 // Request message for signing a message
@@ -496,9 +547,6 @@ enum ValidatorSetStatus {
 
   // Committed status
   VALIDATOR_SET_STATUS_COMMITTED = 3;
-
-  // Missed status
-  VALIDATOR_SET_STATUS_MISSED = 4;
 }
 
 // Validator information

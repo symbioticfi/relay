@@ -12,7 +12,6 @@ import (
 	gostream "github.com/libp2p/go-libp2p-gostream"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
-	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
@@ -23,6 +22,7 @@ import (
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/tracing"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 const grpcProtocolTag protocol.ID = "/relay/v1/grpc"

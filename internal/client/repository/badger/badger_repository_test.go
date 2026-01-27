@@ -180,3 +180,164 @@ func TestKeyRequestIDEpochAll(t *testing.T) {
 	require.Equal(t, "request_id_epoch", string(prefix), "base prefix must be 'request_id_epoch'")
 	require.Len(t, prefix, 16, "base prefix must be 16 bytes")
 }
+
+func TestExtractEpochFromKey(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		epoch  symbiotic.Epoch
+		prefix string
+	}{
+		{
+			name:   "epoch 0",
+			epoch:  0,
+			prefix: "validator_set_header:",
+		},
+		{
+			name:   "epoch 1",
+			epoch:  1,
+			prefix: "validator_set_header:",
+		},
+		{
+			name:   "epoch 58",
+			epoch:  58,
+			prefix: "test_prefix:",
+		},
+		{
+			name:   "large epoch",
+			epoch:  999999999,
+			prefix: "config:",
+		},
+		{
+			name:   "max uint64 epoch",
+			epoch:  ^symbiotic.Epoch(0),
+			prefix: "some_key:",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			key := append([]byte(tt.prefix), tt.epoch.Bytes()...)
+
+			extractedEpoch, err := extractEpochFromKey(key, tt.prefix)
+			require.NoError(t, err)
+			require.Equal(t, tt.epoch, extractedEpoch)
+		})
+	}
+}
+
+func TestExtractEpochFromKey_Errors(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		key    []byte
+		prefix string
+	}{
+		{
+			name:   "invalid key length - too short",
+			key:    []byte("validator_set_header:"),
+			prefix: "validator_set_header:",
+		},
+		{
+			name:   "invalid key length - too long",
+			key:    append([]byte("validator_set_header:"), []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}...),
+			prefix: "validator_set_header:",
+		},
+		{
+			name:   "wrong prefix",
+			key:    append([]byte("wrong_prefix:"), symbiotic.Epoch(1).Bytes()...),
+			prefix: "validator_set_header:",
+		},
+		{
+			name:   "empty key",
+			key:    []byte{},
+			prefix: "validator_set_header:",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := extractEpochFromKey(tt.key, tt.prefix)
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestExtractEpochFromValue(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		epoch symbiotic.Epoch
+	}{
+		{
+			name:  "epoch 0",
+			epoch: 0,
+		},
+		{
+			name:  "epoch 1",
+			epoch: 1,
+		},
+		{
+			name:  "epoch 58",
+			epoch: 58,
+		},
+		{
+			name:  "large epoch",
+			epoch: 999999999,
+		},
+		{
+			name:  "max uint64 epoch",
+			epoch: ^symbiotic.Epoch(0),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			value := tt.epoch.Bytes()
+
+			extractedEpoch, err := extractEpochFromValue(value)
+			require.NoError(t, err)
+			require.Equal(t, tt.epoch, extractedEpoch)
+		})
+	}
+}
+
+func TestExtractEpochFromValue_Errors(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		value []byte
+	}{
+		{
+			name:  "empty value",
+			value: []byte{},
+		},
+		{
+			name:  "too short - 7 bytes",
+			value: []byte{1, 2, 3, 4, 5, 6, 7},
+		},
+		{
+			name:  "too long - 9 bytes",
+			value: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9},
+		},
+		{
+			name:  "too short - 1 byte",
+			value: []byte{1},
+		},
+		{
+			name:  "too long - 16 bytes",
+			value: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := extractEpochFromValue(tt.value)
+			require.Error(t, err)
+		})
+	}
+}

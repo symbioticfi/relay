@@ -57,10 +57,8 @@ func (r *Repository) doUpdateInTxWithLock(ctx context.Context, name string, f fu
 	}
 	activeMutex := mutexInterface.(*mutexWithUseTime)
 
-	tracing.AddEvent(span, "acquiring_lock")
 	activeMutex.lock()
 	defer activeMutex.unlock()
-	tracing.AddEvent(span, "lock_acquired")
 
 	err := r.doUpdateInTx(ctx, name, f)
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) && !errors.Is(err, entity.ErrEntityAlreadyExist) {
@@ -143,7 +141,6 @@ func (r *Repository) doViewInTx(ctx context.Context, name string, f func(ctx con
 
 	queryName := "view:" + name
 
-	tracing.AddEvent(span, "starting_view_transaction")
 	err := r.db.View(func(txn *badger.Txn) error {
 		txnCtx := r.withName(
 			context.WithValue(ctx, badgerTxnKey, txn),
@@ -162,7 +159,6 @@ func (r *Repository) doViewInTx(ctx context.Context, name string, f func(ctx con
 		return errors.Errorf("failed to do view in tx: %w", err)
 	}
 
-	tracing.AddEvent(span, "view_transaction_completed")
 	return nil
 }
 

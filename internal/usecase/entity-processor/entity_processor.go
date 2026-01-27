@@ -25,6 +25,8 @@ type Repository interface {
 	GetValidatorSetByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error)
 	GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error)
 	SaveProof(ctx context.Context, aggregationProof symbiotic.AggregationProof) error
+	UpdateValidatorSetStatus(ctx context.Context, epoch symbiotic.Epoch, item symbiotic.ValidatorSetStatus) error
+	GetLatestAggregatedValsetHeader(ctx context.Context) (symbiotic.ValidatorSetHeader, error)
 }
 
 type Aggregator interface {
@@ -35,11 +37,16 @@ type AggProofSignal interface {
 	Emit(payload symbiotic.AggregationProof) error
 }
 
+type Metrics interface {
+	ObserveEpoch(epochType string, epochNumber uint64)
+}
+
 type Config struct {
 	Repo                     Repository                           `validate:"required"`
 	Aggregator               Aggregator                           `validate:"required"`
 	AggProofSignal           AggProofSignal                       `validate:"required"`
 	SignatureProcessedSignal *signals.Signal[symbiotic.Signature] `validate:"required"`
+	Metrics                  Metrics                              `validate:"required"`
 }
 
 func (c Config) Validate() error {
@@ -187,6 +194,10 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregati
 	if err := s.cfg.Repo.SaveProof(ctx, aggregationProof); err != nil {
 		tracing.RecordError(span, err)
 		return errors.Errorf("failed to add aggregation proof: %w", err)
+	}
+
+	if err := s.cfg.Repo.UpdateValidatorSetStatus(ctx, aggregationProof.Epoch, symbiotic.HeaderAggregated); err != nil {
+		return errors.Errorf("failed to update validator set status: %w", err)
 	}
 
 	slog.DebugContext(ctx, "Proof saved")

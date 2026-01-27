@@ -15,24 +15,23 @@ type ValidatorSetStatus = apiv1.ValidatorSetStatus
 // Enum constants
 const (
 	// ErrorCode values
-	ErrorCode_ERROR_CODE_UNSPECIFIED = apiv1.ErrorCode_ERROR_CODE_UNSPECIFIED
-	ErrorCode_ERROR_CODE_NO_DATA = apiv1.ErrorCode_ERROR_CODE_NO_DATA
-	ErrorCode_ERROR_CODE_INTERNAL = apiv1.ErrorCode_ERROR_CODE_INTERNAL
+	ErrorCode_ERROR_CODE_UNSPECIFIED    = apiv1.ErrorCode_ERROR_CODE_UNSPECIFIED
+	ErrorCode_ERROR_CODE_NO_DATA        = apiv1.ErrorCode_ERROR_CODE_NO_DATA
+	ErrorCode_ERROR_CODE_INTERNAL       = apiv1.ErrorCode_ERROR_CODE_INTERNAL
 	ErrorCode_ERROR_CODE_NOT_AGGREGATOR = apiv1.ErrorCode_ERROR_CODE_NOT_AGGREGATOR
 
 	// SigningStatus values
 	SigningStatus_SIGNING_STATUS_UNSPECIFIED = apiv1.SigningStatus_SIGNING_STATUS_UNSPECIFIED
-	SigningStatus_SIGNING_STATUS_PENDING = apiv1.SigningStatus_SIGNING_STATUS_PENDING
-	SigningStatus_SIGNING_STATUS_COMPLETED = apiv1.SigningStatus_SIGNING_STATUS_COMPLETED
-	SigningStatus_SIGNING_STATUS_FAILED = apiv1.SigningStatus_SIGNING_STATUS_FAILED
-	SigningStatus_SIGNING_STATUS_TIMEOUT = apiv1.SigningStatus_SIGNING_STATUS_TIMEOUT
+	SigningStatus_SIGNING_STATUS_PENDING     = apiv1.SigningStatus_SIGNING_STATUS_PENDING
+	SigningStatus_SIGNING_STATUS_COMPLETED   = apiv1.SigningStatus_SIGNING_STATUS_COMPLETED
+	SigningStatus_SIGNING_STATUS_FAILED      = apiv1.SigningStatus_SIGNING_STATUS_FAILED
+	SigningStatus_SIGNING_STATUS_TIMEOUT     = apiv1.SigningStatus_SIGNING_STATUS_TIMEOUT
 
 	// ValidatorSetStatus values
 	ValidatorSetStatus_VALIDATOR_SET_STATUS_UNSPECIFIED = apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_UNSPECIFIED
-	ValidatorSetStatus_VALIDATOR_SET_STATUS_DERIVED = apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_DERIVED
-	ValidatorSetStatus_VALIDATOR_SET_STATUS_AGGREGATED = apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_AGGREGATED
-	ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED = apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED
-	ValidatorSetStatus_VALIDATOR_SET_STATUS_MISSED = apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_MISSED
+	ValidatorSetStatus_VALIDATOR_SET_STATUS_DERIVED     = apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_DERIVED
+	ValidatorSetStatus_VALIDATOR_SET_STATUS_AGGREGATED  = apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_AGGREGATED
+	ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED   = apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED
 )
 
 // Request types
@@ -40,6 +39,7 @@ type GetAggregationProofRequest = apiv1.GetAggregationProofRequest
 type GetAggregationProofsByEpochRequest = apiv1.GetAggregationProofsByEpochRequest
 type GetAggregationStatusRequest = apiv1.GetAggregationStatusRequest
 type GetCurrentEpochRequest = apiv1.GetCurrentEpochRequest
+type GetCustomScheduleNodeStatusRequest = apiv1.GetCustomScheduleNodeStatusRequest
 type GetLastAllCommittedRequest = apiv1.GetLastAllCommittedRequest
 type GetLastCommittedRequest = apiv1.GetLastCommittedRequest
 type GetLocalValidatorRequest = apiv1.GetLocalValidatorRequest
@@ -64,6 +64,7 @@ type GetAggregationProofResponse = apiv1.GetAggregationProofResponse
 type GetAggregationProofsByEpochResponse = apiv1.GetAggregationProofsByEpochResponse
 type GetAggregationStatusResponse = apiv1.GetAggregationStatusResponse
 type GetCurrentEpochResponse = apiv1.GetCurrentEpochResponse
+type GetCustomScheduleNodeStatusResponse = apiv1.GetCustomScheduleNodeStatusResponse
 type GetLastAllCommittedResponse = apiv1.GetLastAllCommittedResponse
 type GetLastCommittedResponse = apiv1.GetLastCommittedResponse
 type GetLocalValidatorResponse = apiv1.GetLocalValidatorResponse

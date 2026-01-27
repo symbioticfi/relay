@@ -254,7 +254,7 @@ func (s *Service) processPendingProof(ctx context.Context, proofKey symbiotic.Pr
 		return errors.Errorf("failed to get onchain key from cache: %w", err)
 	}
 
-	validator, found := targetValset.FindValidatorByKey(symbiotic.ValsetHeaderKeyTag, pubkey)
+	validator, found := targetValset.FindValidatorByKey(header.RequiredKeyTag, pubkey)
 	if !found {
 		return errors.Errorf("local validator not found")
 	}

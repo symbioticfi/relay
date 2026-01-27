@@ -16,6 +16,8 @@ import (
 	valsetDeriver "github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver"
 )
 
+const driverChainID = 31337
+
 // ContractExpectedData holds expected values derived from smart contracts
 type ContractExpectedData struct {
 	CurrentEpoch         symbiotic.Epoch
@@ -33,7 +35,7 @@ func getExpectedDataFromContracts(t *testing.T, relayContracts RelayContractsDat
 	config := evm.Config{
 		ChainURLs: settlementChains,
 		DriverAddress: symbiotic.CrossChainAddress{
-			ChainId: 31337,
+			ChainId: driverChainID,
 			Address: common.HexToAddress(relayContracts.GetDriverAddress()),
 		},
 		RequestTimeout: 10 * time.Second,
@@ -152,14 +154,16 @@ func validateValidatorSetAgainstExpected(t *testing.T, apiResponse *apiv1.GetVal
 func TestRelayAPIConnectivity(t *testing.T) {
 	t.Log("Starting relay API connectivity test...")
 
-	for i := range globalTestEnv.SidecarConfigs {
-		t.Run(fmt.Sprintf("Connect_%s", globalTestEnv.GetContainerPort(i)), func(t *testing.T) {
+	data := loadDeploymentData(t)
+
+	for i := range data.Env.GetSidecarConfigs() {
+		t.Run(fmt.Sprintf("Connect_%d", getContainerPort(i)), func(t *testing.T) {
 			t.Logf("Testing connection to %d", i)
 
 			ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 			defer cancel()
 
-			client := globalTestEnv.GetGRPCClient(t, i)
+			client := getGRPCClient(t, i)
 			epochResp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
 			require.NoErrorf(t, err, "Failed to get current epoch from %d", i)
 			require.NotNil(t, epochResp.GetStartTime(), "Epoch start time should be set")
@@ -175,10 +179,9 @@ func TestRelayAPIConnectivity(t *testing.T) {
 func TestValidatorSetAPI(t *testing.T) {
 	t.Log("Starting validator set API test...")
 
-	deploymentData, err := loadDeploymentData(t.Context())
-	require.NoError(t, err, "Failed to load deployment data")
+	deploymentData := loadDeploymentData(t)
 
-	client := globalTestEnv.GetGRPCClient(t, 0)
+	client := getGRPCClient(t, 0)
 
 	const retryAttempts = 4
 	for i := 0; i < retryAttempts; i++ {
@@ -274,7 +277,7 @@ func TestAPIsSequence(t *testing.T) {
 func testListenSignaturesAPI(t *testing.T) {
 	t.Log("Starting ListenSignatures API test...")
 
-	client := globalTestEnv.GetGRPCClient(t, 0)
+	client := getGRPCClient(t, 0)
 
 	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
@@ -312,7 +315,7 @@ func testListenSignaturesAPI(t *testing.T) {
 func testListenProofsAPI(t *testing.T) {
 	t.Log("Starting ListenProofs API test...")
 
-	client := globalTestEnv.GetGRPCClient(t, 0)
+	client := getGRPCClient(t, 0)
 
 	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
@@ -350,7 +353,7 @@ func testListenProofsAPI(t *testing.T) {
 func testListenValidatorSetAPI(t *testing.T) {
 	t.Log("Starting ListenValidatorSet API test...")
 
-	client := globalTestEnv.GetGRPCClient(t, 0)
+	client := getGRPCClient(t, 0)
 
 	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
@@ -388,7 +391,7 @@ func testListenValidatorSetAPI(t *testing.T) {
 func testGetSignaturesByEpochAPI(t *testing.T) {
 	t.Log("Starting GetSignaturesByEpoch API test...")
 
-	client := globalTestEnv.GetGRPCClient(t, 0)
+	client := getGRPCClient(t, 0)
 
 	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
@@ -417,7 +420,7 @@ func testGetSignaturesByEpochAPI(t *testing.T) {
 func testGetAggregationProofsByEpochAPI(t *testing.T) {
 	t.Log("Starting GetAggregationProofsByEpoch API test...")
 
-	client := globalTestEnv.GetGRPCClient(t, 0)
+	client := getGRPCClient(t, 0)
 
 	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
@@ -446,7 +449,7 @@ func testGetAggregationProofsByEpochAPI(t *testing.T) {
 func testGetValidatorByKeyAPI(t *testing.T) {
 	t.Log("Starting GetValidatorByKey API test...")
 
-	client := globalTestEnv.GetGRPCClient(t, 0)
+	client := getGRPCClient(t, 0)
 
 	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
@@ -477,7 +480,7 @@ func testGetValidatorByKeyAPI(t *testing.T) {
 func testGetSignatureRequestIDsByEpochAPI(t *testing.T) {
 	t.Log("Starting GetSignatureRequestIDsByEpoch API test...")
 
-	client := globalTestEnv.GetGRPCClient(t, 0)
+	client := getGRPCClient(t, 0)
 
 	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
@@ -506,7 +509,7 @@ func testGetSignatureRequestIDsByEpochAPI(t *testing.T) {
 func testGetSignatureRequestsByEpochAPI(t *testing.T) {
 	t.Log("Starting GetSignatureRequestsByEpoch API test...")
 
-	client := globalTestEnv.GetGRPCClient(t, 0)
+	client := getGRPCClient(t, 0)
 
 	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
@@ -550,7 +553,7 @@ func testGetSignatureRequestsByEpochAPI(t *testing.T) {
 func testGetSignatureRequestAPI(t *testing.T) {
 	t.Log("Starting GetSignatureRequest API test...")
 
-	client := globalTestEnv.GetGRPCClient(t, 0)
+	client := getGRPCClient(t, 0)
 
 	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
@@ -600,7 +603,7 @@ func testGetSignatureRequestAPI(t *testing.T) {
 func testGetLocalValidatorAPI(t *testing.T) {
 	t.Log("Starting GetLocalValidator API test...")
 
-	client := globalTestEnv.GetGRPCClient(t, 0)
+	client := getGRPCClient(t, 0)
 
 	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()

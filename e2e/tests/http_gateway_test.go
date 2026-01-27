@@ -21,7 +21,7 @@ import (
 // httpGatewayBaseURL constructs the base URL for HTTP gateway requests
 func httpGatewayBaseURL(t *testing.T) string {
 	t.Helper()
-	return fmt.Sprintf("http://localhost:%s/api/v1", globalTestEnv.GetContainerPort(0))
+	return fmt.Sprintf("http://localhost:%d/api/v1", getContainerPort(0))
 }
 
 // TestHTTPGateway_GetCurrentEpoch tests the HTTP gateway GET endpoint for current epoch
@@ -30,7 +30,7 @@ func TestHTTPGateway_GetCurrentEpoch(t *testing.T) {
 	defer cancel()
 
 	// Get expected data from gRPC API
-	grpcClient := globalTestEnv.GetGRPCClient(t, 0)
+	grpcClient := getGRPCClient(t, 0)
 	grpcResp, err := grpcClient.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
 	require.NoError(t, err, "Failed to get current epoch from gRPC")
 
@@ -77,7 +77,7 @@ func TestHTTPGateway_GetValidatorSet(t *testing.T) {
 	defer cancel()
 
 	// Get expected data from gRPC API
-	grpcClient := globalTestEnv.GetGRPCClient(t, 0)
+	grpcClient := getGRPCClient(t, 0)
 	grpcResp, err := grpcClient.GetValidatorSet(ctx, &apiv1.GetValidatorSetRequest{})
 	require.NoError(t, err, "Failed to get validator set from gRPC")
 
@@ -118,7 +118,7 @@ func TestHTTPGateway_GetValidatorSet(t *testing.T) {
 
 // TestHTTPGateway_StreamProofs tests the HTTP gateway streaming endpoint for proofs
 func TestHTTPGateway_StreamProofs(t *testing.T) {
-	ctx, cancel := context.WithTimeout(t.Context(), 120*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 180*time.Second)
 	defer cancel()
 
 	// Make HTTP streaming request
@@ -129,7 +129,7 @@ func TestHTTPGateway_StreamProofs(t *testing.T) {
 	require.NoError(t, err, "Failed to create HTTP request")
 
 	httpClient := &http.Client{
-		Timeout: 120 * time.Second,
+		Timeout: 180 * time.Second,
 	}
 	httpResp, err := httpClient.Do(httpReq)
 	require.NoError(t, err, "Failed to make HTTP streaming request")

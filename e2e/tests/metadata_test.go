@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	apiv1 "github.com/symbioticfi/relay/api/client/v1"
-	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 // TestGetValidatorSetMetadata tests the GetValidatorSetMetadata API endpoint
@@ -17,10 +16,9 @@ import (
 func TestGetValidatorSetMetadata(t *testing.T) {
 	t.Log("Starting validator set metadata API test...")
 
-	_, err := loadDeploymentData(t.Context())
-	require.NoError(t, err, "Failed to load deployment data")
+	_ = loadDeploymentData(t)
 
-	client := globalTestEnv.GetGRPCClient(t, 0)
+	client := getGRPCClient(t, 0)
 
 	// Get last committed epochs to find a committed epoch ≥1 for testing
 	// We need committed epochs because that's when proofs and signatures are available
@@ -109,7 +107,7 @@ func TestGetValidatorSetMetadata(t *testing.T) {
 			require.NoError(t, err, "Failed to get signature request using request id from metadata")
 
 			// Validate the signature request
-			require.Equal(t, uint32(symbiotic.ValsetHeaderKeyTag), sigReqResp.GetSignatureRequest().GetKeyTag(),
+			require.Equal(t, uint32(15), sigReqResp.GetSignatureRequest().GetKeyTag(),
 				"Key tag should be ValsetHeaderKeyTag")
 			require.Equal(t, committedEpoch-1, sigReqResp.GetSignatureRequest().GetRequiredEpoch(),
 				"Required epoch should match committed - 1 epoch")
@@ -197,12 +195,11 @@ func TestGetValidatorSetMetadata(t *testing.T) {
 func TestGetLastAllCommitted(t *testing.T) {
 	t.Log("Starting GetLastAllCommitted API test...")
 
-	deploymentData, err := loadDeploymentData(t.Context())
-	require.NoError(t, err, "Failed to load deployment data")
+	deploymentData := loadDeploymentData(t)
 
 	t.Logf("Testing GetLastAllCommitted API on %d", 0)
 
-	client := globalTestEnv.GetGRPCClient(t, 0)
+	client := getGRPCClient(t, 0)
 
 	// Get expected data from contracts to validate against
 	expected := getExpectedDataFromContracts(t, deploymentData)

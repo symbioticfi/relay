@@ -170,11 +170,6 @@ func TestConvertValidatorSetStatusToPB_AllStatuses(t *testing.T) {
 			expected: apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_COMMITTED,
 		},
 		{
-			name:     "HeaderMissed",
-			status:   symbiotic.HeaderMissed,
-			expected: apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_MISSED,
-		},
-		{
 			name:     "UnknownStatus",
 			status:   symbiotic.ValidatorSetStatus(255),
 			expected: apiv1.ValidatorSetStatus_VALIDATOR_SET_STATUS_UNSPECIFIED,

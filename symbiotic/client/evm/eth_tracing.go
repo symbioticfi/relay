@@ -665,6 +665,62 @@ func (t tracingDriver) NETWORK(opts *bind.CallOpts) (common.Address, error) {
 	return network, nil
 }
 
+func (t tracingDriver) RemoveSettlement(opts *bind.TransactOpts, settlement gen.IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	ctx := opts.Context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	ctx, span := tracing.StartClientSpan(ctx, "evm.RemoveSettlement",
+		tracing.AttrMethodName.String("RemoveSettlement"),
+		tracing.AttrChainID.Int64(int64(settlement.ChainId)),
+		tracing.AttrAddress.String(settlement.Addr.Hex()),
+	)
+	defer span.End()
+
+	opts.Context = ctx
+
+	tx, err := t.base.RemoveSettlement(opts, settlement)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return nil, err
+	}
+
+	tracing.SetAttributes(span,
+		attribute.String("response.txHash", tx.Hash().Hex()),
+	)
+
+	return tx, nil
+}
+
+func (t tracingDriver) AddSettlement(opts *bind.TransactOpts, settlement gen.IValSetDriverCrossChainAddress) (*types.Transaction, error) {
+	ctx := opts.Context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	ctx, span := tracing.StartClientSpan(ctx, "evm.AddSettlement",
+		tracing.AttrMethodName.String("AddSettlement"),
+		tracing.AttrChainID.Int64(int64(settlement.ChainId)),
+		tracing.AttrAddress.String(settlement.Addr.Hex()),
+	)
+	defer span.End()
+
+	opts.Context = ctx
+
+	tx, err := t.base.AddSettlement(opts, settlement)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return nil, err
+	}
+
+	tracing.SetAttributes(span,
+		attribute.String("response.txHash", tx.Hash().Hex()),
+	)
+
+	return tx, nil
+}
+
 type tracingSettlement struct {
 	base settlementContract
 }
@@ -1074,6 +1130,33 @@ func (t tracingVotingPowerProvider) Eip712Domain(opts *bind.CallOpts) (symbiotic
 	)
 
 	return domain, nil
+}
+
+func (t tracingVotingPowerProvider) IsOperatorRegistered(opts *bind.CallOpts, operator common.Address) (bool, error) {
+	ctx := opts.Context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	ctx, span := tracing.StartClientSpan(ctx, "evm.IsOperatorRegistered",
+		tracing.AttrMethodName.String("IsOperatorRegistered"),
+		tracing.AttrAddress.String(operator.Hex()),
+	)
+	defer span.End()
+
+	opts.Context = ctx
+
+	registered, err := t.base.IsOperatorRegistered(opts, operator)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return false, err
+	}
+
+	tracing.SetAttributes(span,
+		attribute.Bool("response.registered", registered),
+	)
+
+	return registered, nil
 }
 
 type tracingVotingPowerProviderTransactor struct {

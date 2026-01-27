@@ -13,7 +13,6 @@ import (
 	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/tracing"
-	"github.com/symbioticfi/relay/symbiotic/client/evm"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
@@ -22,17 +21,31 @@ var zeroHeaderHash = common.HexToHash("0x868e09d528a16744c1f38ea3c10cc2251e01a45
 type repo interface {
 	GetConfigByEpoch(_ context.Context, epoch symbiotic.Epoch) (symbiotic.NetworkConfig, error)
 	GetValidatorSetByEpoch(_ context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error)
-	UpdateValidatorSetStatus(ctx context.Context, valset symbiotic.ValidatorSet) error
 	UpdateValidatorSetStatusAndRemovePendingProof(ctx context.Context, valset symbiotic.ValidatorSet) error
 	GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
 	SaveFirstUncommittedValidatorSetEpoch(_ context.Context, epoch symbiotic.Epoch) error
 	GetLatestValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
+	GetLatestAggregatedValsetHeader(ctx context.Context) (symbiotic.ValidatorSetHeader, error)
+}
+
+type metrics interface {
+	ObserveEpoch(epochType string, epochNumber uint64)
+}
+
+type evmClient interface {
+	GetConfig(ctx context.Context, timestamp symbiotic.Timestamp, epoch symbiotic.Epoch) (symbiotic.NetworkConfig, error)
+	GetCurrentEpoch(ctx context.Context) (symbiotic.Epoch, error)
+	GetEpochStart(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.Timestamp, error)
+	GetHeaderHashAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch) (common.Hash, error)
+	GetLastCommittedHeaderEpoch(ctx context.Context, addr symbiotic.CrossChainAddress, evmOptions ...symbiotic.EVMOption) (symbiotic.Epoch, error)
 }
 
 type Config struct {
-	EvmClient       evm.IEvmClient `validate:"required"`
-	Repo            repo           `validate:"required"`
-	PollingInterval time.Duration  `validate:"required,gt=0"`
+	EvmClient            evmClient     `validate:"required"`
+	Repo                 repo          `validate:"required"`
+	PollingInterval      time.Duration `validate:"required,gt=0"`
+	EpochPollingInterval time.Duration `validate:"required,gt=0"`
+	Metrics              metrics       `validate:"required"`
 }
 
 type Service struct {
@@ -105,38 +118,6 @@ func (s *Service) Start(ctx context.Context) error {
 			timer.Reset(s.cfg.PollingInterval)
 		}
 	}
-}
-
-func (s *Service) HandleProofAggregated(ctx context.Context, msg symbiotic.AggregationProof) error {
-	ctx, span := tracing.StartSpan(ctx, "status_tracker.HandleProofAggregated",
-		tracing.AttrEpoch.Int64(int64(msg.Epoch)),
-		tracing.AttrRequestID.String(msg.RequestID().Hex()),
-	)
-	defer span.End()
-
-	tracing.AddEvent(span, "loading_validator_set")
-	valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, msg.Epoch)
-	if err != nil {
-		tracing.RecordError(span, err)
-		return errors.Errorf("failed to get validator set: %w", err)
-	}
-
-	if valset.Status != symbiotic.HeaderDerived {
-		tracing.AddEvent(span, "already_aggregated")
-		slog.DebugContext(ctx, "Validator set is already aggregated or committed", "epoch", valset.Epoch)
-		return nil
-	}
-
-	tracing.AddEvent(span, "updating_status")
-	valset.Status = symbiotic.HeaderAggregated
-	if err := s.cfg.Repo.UpdateValidatorSetStatus(ctx, valset); err != nil {
-		tracing.RecordError(span, err)
-		return errors.Errorf("failed to save validator set: %w", err)
-	}
-
-	slog.InfoContext(ctx, "Validator set is aggregated", "epoch", valset.Epoch)
-
-	return nil
 }
 
 func (s *Service) trackCommittedEpochs(ctx context.Context) error {
@@ -241,18 +222,11 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 		}
 
 		if isCommitted {
-			valset.Status = symbiotic.HeaderCommitted
-
 			if err := s.cfg.Repo.UpdateValidatorSetStatusAndRemovePendingProof(ctx, valset); err != nil {
 				return errors.Errorf("failed to save validator set and remove pending proof: %w", err)
 			}
 			slog.InfoContext(ctx, "Validator set is committed", "epoch", epoch)
 		} else {
-			valset.Status = symbiotic.HeaderMissed
-
-			if err := s.cfg.Repo.UpdateValidatorSetStatus(ctx, valset); err != nil {
-				return errors.Errorf("failed to save validator set: %w", err)
-			}
 			slog.InfoContext(ctx, "Validator set is missing", "epoch", epoch)
 		}
 	}
@@ -297,4 +271,50 @@ func (s *Service) findLatestNonZeroSettlements(ctx context.Context) ([]symbiotic
 	}
 
 	return nil, nil
+}
+
+func (s *Service) RunEpochTracker(ctx context.Context) error {
+	ctx = log.WithComponent(ctx, "epoch_tracker")
+
+	slog.InfoContext(ctx, "Starting epoch tracker service", "epochPollingInterval", s.cfg.EpochPollingInterval)
+
+	timer := time.NewTimer(0)
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-timer.C:
+			if err := s.trackEpochs(ctx); err != nil {
+				slog.ErrorContext(ctx, "Failed to track epochs", "error", err)
+			}
+			timer.Reset(s.cfg.EpochPollingInterval)
+		}
+	}
+}
+
+func (s *Service) trackEpochs(ctx context.Context) error {
+	latestDerived, err := s.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
+	if err == nil {
+		s.cfg.Metrics.ObserveEpoch("derived", uint64(latestDerived))
+	} else if !errors.Is(err, entity.ErrEntityNotFound) {
+		return errors.Errorf("failed to get latest validator set epoch: %w", err)
+	}
+
+	latestAggregated, err := s.cfg.Repo.GetLatestAggregatedValsetHeader(ctx)
+	if err == nil {
+		s.cfg.Metrics.ObserveEpoch("aggregated", uint64(latestAggregated.Epoch))
+	} else if !errors.Is(err, entity.ErrEntityNotFound) {
+		return errors.Errorf("failed to get latest aggregated valset header: %w", err)
+	}
+
+	firstUncommitted, err := s.cfg.Repo.GetFirstUncommittedValidatorSetEpoch(ctx)
+	if err == nil {
+		if firstUncommitted > 0 {
+			s.cfg.Metrics.ObserveEpoch("committed", uint64(firstUncommitted-1))
+		}
+	} else if !errors.Is(err, entity.ErrEntityNotFound) {
+		return errors.Errorf("failed to get first uncommitted validator set epoch: %w", err)
+	}
+
+	return nil
 }

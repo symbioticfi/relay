@@ -1,6 +1,7 @@
 package blsBn254Simple
 
 import (
+	"context"
 	"math/big"
 	"testing"
 
@@ -320,41 +321,40 @@ func TestCalcAlpha_WithSameInputs_ReturnsSameAlpha(t *testing.T) {
 	assert.Equal(t, alpha1, alpha2)
 }
 
-func TestAggregator_Aggregate_WithEmptySignatures_Succeeds(t *testing.T) {
+func TestAggregator_Aggregate_WithEmptySignatures_Fail(t *testing.T) {
+	ctx := context.Background()
 	agg, err := NewAggregator()
 	require.NoError(t, err)
 
 	valset := symbiotic.ValidatorSet{
 		Validators: []symbiotic.Validator{},
 	}
-	keyTag := symbiotic.KeyTag(1)
-	messageHash := []byte("test-message")
 	signatures := []symbiotic.Signature{}
 
-	proof, err := agg.Aggregate(t.Context(), valset, keyTag, messageHash, signatures)
-
-	require.NoError(t, err)
-	assert.NotNil(t, proof)
+	_, err = agg.Aggregate(ctx, valset, signatures)
+	require.EqualError(t, err, "invalid signatures: empty signatures slice")
 }
 
 func TestAggregator_Aggregate_WithMismatchedMessageHashes_ReturnsError(t *testing.T) {
+	ctx := context.Background()
 	agg, err := NewAggregator()
 	require.NoError(t, err)
 
 	valset := symbiotic.ValidatorSet{}
-	keyTag := symbiotic.KeyTag(1)
 	messageHash := []byte("test-message")
 	signatures := []symbiotic.Signature{
 		{MessageHash: []byte("different-message")},
+		{MessageHash: messageHash},
 	}
 
-	_, err = agg.Aggregate(t.Context(), valset, keyTag, messageHash, signatures)
+	_, err = agg.Aggregate(ctx, valset, signatures)
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "message hashes mismatch")
+	assert.Contains(t, err.Error(), "signatures have different message hashes")
 }
 
 func TestAggregator_Verify_WithInvalidMessageHashLength_ReturnsError(t *testing.T) {
+	ctx := context.Background()
 	agg, err := NewAggregator()
 	require.NoError(t, err)
 
@@ -365,7 +365,7 @@ func TestAggregator_Verify_WithInvalidMessageHashLength_ReturnsError(t *testing.
 		Proof:       make([]byte, 224),
 	}
 
-	success, err := agg.Verify(t.Context(), valset, keyTag, proof)
+	success, err := agg.Verify(ctx, valset, keyTag, proof)
 
 	require.Error(t, err)
 	assert.False(t, success)
@@ -373,6 +373,7 @@ func TestAggregator_Verify_WithInvalidMessageHashLength_ReturnsError(t *testing.
 }
 
 func TestAggregator_Verify_WithShortProof_ReturnsError(t *testing.T) {
+	ctx := context.Background()
 	agg, err := NewAggregator()
 	require.NoError(t, err)
 
@@ -383,7 +384,7 @@ func TestAggregator_Verify_WithShortProof_ReturnsError(t *testing.T) {
 		Proof:       make([]byte, 100),
 	}
 
-	success, err := agg.Verify(t.Context(), valset, keyTag, proof)
+	success, err := agg.Verify(ctx, valset, keyTag, proof)
 
 	require.Error(t, err)
 	assert.False(t, success)
@@ -484,6 +485,7 @@ func TestAggregator_CalculateValidatorsKeccak_WithDifferentData_ReturnsDifferent
 }
 
 func TestAggregator_GenerateExtraData_WithValidValidatorSet_ReturnsExtraData(t *testing.T) {
+	ctx := context.Background()
 	agg, err := NewAggregator()
 	require.NoError(t, err)
 
@@ -508,7 +510,7 @@ func TestAggregator_GenerateExtraData_WithValidValidatorSet_ReturnsExtraData(t *
 
 	keyTags := []symbiotic.KeyTag{symbiotic.KeyTag(1)}
 
-	result, err := agg.GenerateExtraData(t.Context(), valset, keyTags)
+	result, err := agg.GenerateExtraData(ctx, valset, keyTags)
 
 	require.NoError(t, err)
 	assert.NotEmpty(t, result)
@@ -516,6 +518,7 @@ func TestAggregator_GenerateExtraData_WithValidValidatorSet_ReturnsExtraData(t *
 }
 
 func TestAggregator_GenerateExtraData_WithMultipleKeyTags_ReturnsMultipleExtraData(t *testing.T) {
+	ctx := context.Background()
 	agg, err := NewAggregator()
 	require.NoError(t, err)
 
@@ -548,7 +551,7 @@ func TestAggregator_GenerateExtraData_WithMultipleKeyTags_ReturnsMultipleExtraDa
 
 	keyTags := []symbiotic.KeyTag{symbiotic.KeyTag(1), symbiotic.KeyTag(2)}
 
-	result, err := agg.GenerateExtraData(t.Context(), valset, keyTags)
+	result, err := agg.GenerateExtraData(ctx, valset, keyTags)
 
 	require.NoError(t, err)
 	assert.NotEmpty(t, result)
@@ -556,6 +559,7 @@ func TestAggregator_GenerateExtraData_WithMultipleKeyTags_ReturnsMultipleExtraDa
 }
 
 func TestAggregator_GenerateExtraData_ReturnsSortedData(t *testing.T) {
+	ctx := context.Background()
 	agg, err := NewAggregator()
 	require.NoError(t, err)
 
@@ -580,7 +584,7 @@ func TestAggregator_GenerateExtraData_ReturnsSortedData(t *testing.T) {
 
 	keyTags := []symbiotic.KeyTag{symbiotic.KeyTag(1)}
 
-	result, err := agg.GenerateExtraData(t.Context(), valset, keyTags)
+	result, err := agg.GenerateExtraData(ctx, valset, keyTags)
 
 	require.NoError(t, err)
 	require.NotEmpty(t, result)

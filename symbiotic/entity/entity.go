@@ -50,10 +50,7 @@ const (
 	HeaderDerived ValidatorSetStatus = iota
 	HeaderAggregated
 	HeaderCommitted
-	HeaderMissed
 )
-
-const ValsetHeaderKeyTag = KeyTag(15)
 
 type RawSignature []byte
 type RawMessageHash []byte
@@ -85,6 +82,16 @@ type Timestamp uint64
 // Example: Epoch(51).Bytes() < Epoch(501).Bytes() when comparing bytes lexicographically.
 func (e Epoch) Bytes() []byte {
 	return paddedUint64(uint64(e))
+}
+
+// EpochFromBytes decodes a BigEndian encoded byte slice back to an Epoch.
+// This is the inverse operation of Epoch.Bytes().
+// Returns an error if the input is not exactly 8 bytes long.
+func EpochFromBytes(b []byte) (Epoch, error) {
+	if len(b) != 8 {
+		return 0, errors.Errorf("invalid epoch bytes length: expected 8, got %d", len(b))
+	}
+	return Epoch(binary.BigEndian.Uint64(b)), nil
 }
 
 func (raw RawSignature) MarshalText() ([]byte, error) {
@@ -137,8 +144,6 @@ func (s ValidatorSetStatus) MarshalJSON() ([]byte, error) {
 		return []byte("\"Aggregated\""), nil
 	case HeaderCommitted:
 		return []byte("\"Committed\""), nil
-	case HeaderMissed:
-		return []byte("\"Missed\""), nil
 	default:
 		return []byte("\"Unknown\""), nil
 	}
@@ -335,6 +340,17 @@ func (va Validators) SortByVotingPowerDescAndOperatorAddressAsc() {
 	})
 }
 
+func (va Validators) FindValidatorByKey(keyTag KeyTag, publicKey []byte) (Validator, bool) {
+	for _, validator := range va {
+		for _, key := range validator.Keys {
+			if key.Tag == keyTag && slices.Equal(key.Payload, publicKey) {
+				return validator, true
+			}
+		}
+	}
+	return Validator{}, false
+}
+
 func (va Validators) SortByOperatorAddressAsc() {
 	slices.SortFunc(va, func(a, b Validator) int {
 		return a.Operator.Cmp(b.Operator)
@@ -516,14 +532,7 @@ func (v ValidatorSet) IsActiveCommitter(
 }
 
 func (v ValidatorSet) FindValidatorByKey(keyTag KeyTag, publicKey []byte) (Validator, bool) { // DON'T USE INSIDE LOOPS
-	for _, validator := range v.Validators {
-		for _, key := range validator.Keys {
-			if key.Tag == keyTag && slices.Equal(key.Payload, publicKey) {
-				return validator, true
-			}
-		}
-	}
-	return Validator{}, false
+	return v.Validators.FindValidatorByKey(keyTag, publicKey)
 }
 
 type ValidatorSetHash struct {
@@ -730,7 +739,9 @@ func (v ValidatorSetHeader) Hash() (common.Hash, error) {
 }
 
 type TxResult struct {
-	TxHash common.Hash
+	TxHash            common.Hash
+	GasUsed           uint64
+	EffectiveGasPrice *big.Int
 }
 
 type ChainURL struct {

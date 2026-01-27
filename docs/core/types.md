@@ -144,12 +144,6 @@ Underlying type: `uint8` (in fact used only 4 bits, except `KeyTypeInvalid`)
 
 Underlying type: `uint8`
 
-Reserved values:
-
-| Name | Value | Description |
-| --- | --- | --- |
-| `ValsetHeaderKeyTag` | 15 | Reserved key tag for validator set header commitments |
-
 ### VerificationType
 
 | Name | Value | Description |

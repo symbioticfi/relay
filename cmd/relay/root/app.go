@@ -93,10 +93,11 @@ func runApp(ctx context.Context) error {
 			ChainId: cfg.Driver.ChainID,
 			Address: common.HexToAddress(cfg.Driver.Address),
 		},
-		RequestTimeout: time.Second * 5,
-		KeyProvider:    keyProvider,
-		Metrics:        mtr,
-		MaxCalls:       cfg.Evm.MaxCalls,
+		RequestTimeout:    time.Second * 5,
+		KeyProvider:       keyProvider,
+		Metrics:           mtr,
+		MaxCalls:          cfg.Evm.MaxCalls,
+		FallbackGasPrices: cfg.Evm.FallbackGasPrices,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create symbiotic client: %w", err)
@@ -159,6 +160,7 @@ func runApp(ctx context.Context) error {
 		Aggregator:               agg,
 		AggProofSignal:           aggProofReadySignal,
 		SignatureProcessedSignal: signatureProcessedSignal,
+		Metrics:                  mtr,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create entity processor: %w", err)
@@ -304,9 +306,11 @@ func runApp(ctx context.Context) error {
 	slog.InfoContext(ctx, "Created signer app, starting")
 
 	statusTracker, err := valsetStatusTracker.New(valsetStatusTracker.Config{
-		EvmClient:       evmClient,
-		Repo:            repo,
-		PollingInterval: time.Second * 5,
+		EvmClient:            evmClient,
+		Repo:                 repo,
+		PollingInterval:      time.Second * 5,
+		EpochPollingInterval: time.Minute,
+		Metrics:              mtr,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create valset status tracker: %w", err)
@@ -414,12 +418,6 @@ func runApp(ctx context.Context) error {
 	}
 
 	err = aggProofReadySignal.SetHandlers(
-		func(ctx context.Context, msg symbiotic.AggregationProof) error {
-			if err := statusTracker.HandleProofAggregated(ctx, msg); err != nil {
-				return errors.Errorf("failed to handle proof aggregated by valset status tracker: %w", err)
-			}
-			return nil
-		},
 		api.HandleProofAggregated(),
 	)
 	if err != nil {
@@ -449,6 +447,20 @@ func runApp(ctx context.Context) error {
 		}
 		slog.InfoContext(ctx, "Sync finished stopped")
 		return nil
+	})
+
+	eg.Go(func() error {
+		err := statusTracker.RunEpochTracker(egCtx)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.ErrorContext(ctx, "Epoch tracker failed", "error", err)
+			return errors.Errorf("failed to start epoch tracker: %w", err)
+		}
+		slog.InfoContext(ctx, "Epoch tracker stopped")
+		return nil
+	})
+
+	eg.Go(func() error {
+		return aggApp.TryAggregateRequestsWithoutProof(ctx)
 	})
 
 	eg.Go(func() error {

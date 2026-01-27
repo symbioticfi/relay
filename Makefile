@@ -27,7 +27,7 @@ endif
 .PHONY: local-setup
 local-setup:
 	cd e2e && \
-	GENERATE_SIDECARS=true bash setup.sh && \
+	bash setup.sh && \
 	cd temp-network && \
 	docker compose up -d
 
@@ -100,30 +100,58 @@ unit-test:
 
 .PHONY: e2e-test
 e2e-test:
-	cd e2e/tests && go test -v -timeout 30m
+	cd e2e/tests && go test -v -timeout 40m
 
 .PHONY: gen-abi
 gen-abi:
 	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
-		--abi symbiotic/client/evm/abi/IValSetDriver.abi.json \
-		--type IValSetDriver \
+		--abi symbiotic/client/evm/abi/ValSetDriver.abi.json \
+		--type ValSetDriver \
 		--pkg gen \
 		--out symbiotic/client/evm/gen/valsetDriver.go
 	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
-		--abi symbiotic/client/evm/abi/ISettlement.abi.json \
-		--type ISettlement \
+		--abi symbiotic/client/evm/abi/Settlement.abi.json \
+		--type Settlement \
 		--pkg gen \
 		--out symbiotic/client/evm/gen/settlement.go
 	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
-		--abi symbiotic/client/evm/abi/IKeyRegistry.abi.json \
-		--type IKeyRegistry \
+		--abi symbiotic/client/evm/abi/KeyRegistry.abi.json \
+		--type KeyRegistry \
 		--pkg gen \
 		--out symbiotic/client/evm/gen/keyRegistry.go
 	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
-		--abi symbiotic/client/evm/abi/IVotingPowerProvider.abi.json \
-		--type IVotingPowerProvider \
+		--abi symbiotic/client/evm/abi/VotingPowerProvider.abi.json \
+		--type VotingPowerProvider \
 		--pkg gen \
 		--out symbiotic/client/evm/gen/votingPowerProvider.go
+	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
+		--abi symbiotic/client/evm/abi/OperatorRegistry.abi.json \
+		--type OperatorRegistry \
+		--pkg gen \
+		--out symbiotic/client/evm/gen/operatorRegistry.go
+
+.PHONY: gen-abi-test
+gen-abi-test:
+	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
+		--abi e2e/tests/evm/abi/MockERC20.abi.json \
+		--type MockERC20 \
+		--pkg gen \
+		--out e2e/tests/evm/gen/mockERC20.go
+	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
+		--abi e2e/tests/evm/abi/IOptInService.abi.json \
+		--type OptInService \
+		--pkg gen \
+		--out e2e/tests/evm/gen/optInService.go
+	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
+		--abi e2e/tests/evm/abi/OpNetVaultAutoDeployLogic.abi.json \
+		--type OpNetVaultAutoDeployLogic \
+		--pkg gen \
+		--out e2e/tests/evm/gen/opNetVaultAutoDeployLogic.go
+	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
+		--abi e2e/tests/evm/abi/Vault.abi.json \
+		--type Vault \
+		--pkg gen \
+		--out e2e/tests/evm/gen/vault.go
 
 # Generic build target that takes OS and architecture as parameters
 # Usage: make build-relay-utils OS=linux ARCH=amd64

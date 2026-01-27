@@ -35,10 +35,15 @@ func NewAggregator(prover types.Prover) (*Aggregator, error) {
 func (a Aggregator) Aggregate(
 	ctx context.Context,
 	valset symbiotic.ValidatorSet,
-	keyTag symbiotic.KeyTag,
-	messageHash []byte,
 	signatures []symbiotic.Signature,
 ) (symbiotic.AggregationProof, error) {
+	if err := helpers.CheckSignaturesHaveSameTagAndMessageHash(signatures); err != nil {
+		return symbiotic.AggregationProof{}, errors.Errorf("invalid signatures: %w", err)
+	}
+
+	keyTag := signatures[0].KeyTag
+	messageHash := signatures[0].MessageHash
+
 	ctx, span := tracing.StartSpan(ctx, "aggregator.Aggregate",
 		tracing.AttrEpoch.Int64(int64(valset.Epoch)),
 		tracing.AttrValidatorCount.Int(len(valset.Validators)),
@@ -48,19 +53,12 @@ func (a Aggregator) Aggregate(
 	)
 	defer span.End()
 
-	tracing.AddEvent(span, "validating_inputs")
-	if !helpers.CompareMessageHasher(signatures, messageHash) {
-		err := errors.New("message hashes mismatch")
-		tracing.RecordError(span, err)
-		return symbiotic.AggregationProof{}, err
-	}
-
+	tracing.AddEvent(span, "aggregating_signatures")
 	aggG1Sig := new(bn254.G1Affine)
 	aggG2Key := new(bn254.G2Affine)
 	signers := make(map[common.Address]bool)
 	valKeysToIdx := helpers.GetValidatorsIndexesMapByKey(valset, keyTag)
 
-	tracing.AddEvent(span, "aggregating_signatures")
 	for _, sig := range signatures {
 		pubKey, err := blsBn254.FromRaw(sig.PublicKey.Raw())
 		if err != nil {

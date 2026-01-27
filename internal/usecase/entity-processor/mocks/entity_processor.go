@@ -57,6 +57,21 @@ func (mr *MockRepositoryMockRecorder) GetAggregationProof(ctx, requestID any) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAggregationProof", reflect.TypeOf((*MockRepository)(nil).GetAggregationProof), ctx, requestID)
 }
 
+// GetLatestAggregatedValsetHeader mocks base method.
+func (m *MockRepository) GetLatestAggregatedValsetHeader(ctx context.Context) (entity.ValidatorSetHeader, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLatestAggregatedValsetHeader", ctx)
+	ret0, _ := ret[0].(entity.ValidatorSetHeader)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLatestAggregatedValsetHeader indicates an expected call of GetLatestAggregatedValsetHeader.
+func (mr *MockRepositoryMockRecorder) GetLatestAggregatedValsetHeader(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestAggregatedValsetHeader", reflect.TypeOf((*MockRepository)(nil).GetLatestAggregatedValsetHeader), ctx)
+}
+
 // GetSignatureByIndex mocks base method.
 func (m *MockRepository) GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (entity.Signature, error) {
 	m.ctrl.T.Helper()
@@ -129,6 +144,20 @@ func (m *MockRepository) SaveSignature(ctx context.Context, signature entity.Sig
 func (mr *MockRepositoryMockRecorder) SaveSignature(ctx, signature, validator, activeIndex any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveSignature", reflect.TypeOf((*MockRepository)(nil).SaveSignature), ctx, signature, validator, activeIndex)
+}
+
+// UpdateValidatorSetStatus mocks base method.
+func (m *MockRepository) UpdateValidatorSetStatus(ctx context.Context, epoch entity.Epoch, item entity.ValidatorSetStatus) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateValidatorSetStatus", ctx, epoch, item)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateValidatorSetStatus indicates an expected call of UpdateValidatorSetStatus.
+func (mr *MockRepositoryMockRecorder) UpdateValidatorSetStatus(ctx, epoch, item any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateValidatorSetStatus", reflect.TypeOf((*MockRepository)(nil).UpdateValidatorSetStatus), ctx, epoch, item)
 }
 
 // MockAggregator is a mock of Aggregator interface.
@@ -206,4 +235,40 @@ func (m *MockAggProofSignal) Emit(payload entity.AggregationProof) error {
 func (mr *MockAggProofSignalMockRecorder) Emit(payload any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Emit", reflect.TypeOf((*MockAggProofSignal)(nil).Emit), payload)
+}
+
+// MockMetrics is a mock of Metrics interface.
+type MockMetrics struct {
+	ctrl     *gomock.Controller
+	recorder *MockMetricsMockRecorder
+	isgomock struct{}
+}
+
+// MockMetricsMockRecorder is the mock recorder for MockMetrics.
+type MockMetricsMockRecorder struct {
+	mock *MockMetrics
+}
+
+// NewMockMetrics creates a new mock instance.
+func NewMockMetrics(ctrl *gomock.Controller) *MockMetrics {
+	mock := &MockMetrics{ctrl: ctrl}
+	mock.recorder = &MockMetricsMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockMetrics) EXPECT() *MockMetricsMockRecorder {
+	return m.recorder
+}
+
+// ObserveEpoch mocks base method.
+func (m *MockMetrics) ObserveEpoch(epochType string, epochNumber uint64) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "ObserveEpoch", epochType, epochNumber)
+}
+
+// ObserveEpoch indicates an expected call of ObserveEpoch.
+func (mr *MockMetricsMockRecorder) ObserveEpoch(epochType, epochNumber any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ObserveEpoch", reflect.TypeOf((*MockMetrics)(nil).ObserveEpoch), epochType, epochNumber)
 }

@@ -8,12 +8,14 @@ const (
 )
 
 type EVMOptions struct {
-	BlockNumber BlockNumber
+	BlockNumber        BlockNumber
+	GasLimitMultiplier float64
 }
 
 func AppliedEVMOptions(opts ...EVMOption) *EVMOptions {
 	options := &EVMOptions{
-		BlockNumber: BlockNumberFinalized,
+		BlockNumber:        BlockNumberFinalized,
+		GasLimitMultiplier: .0,
 	}
 	for _, o := range opts {
 		o(options)
@@ -26,5 +28,11 @@ type EVMOption func(options *EVMOptions)
 func WithEVMBlockNumber(blockNumber BlockNumber) EVMOption {
 	return func(o *EVMOptions) {
 		o.BlockNumber = blockNumber
+	}
+}
+
+func WithGasLimitMultiplier(multiplier float64) EVMOption {
+	return func(o *EVMOptions) {
+		o.GasLimitMultiplier = multiplier
 	}
 }

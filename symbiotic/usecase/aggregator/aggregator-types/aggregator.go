@@ -10,7 +10,7 @@ import (
 )
 
 type Aggregator interface {
-	Aggregate(ctx context.Context, valset symbiotic.ValidatorSet, keyTag symbiotic.KeyTag, messageHash []byte, signatures []symbiotic.Signature) (symbiotic.AggregationProof, error)
+	Aggregate(ctx context.Context, valset symbiotic.ValidatorSet, signatures []symbiotic.Signature) (symbiotic.AggregationProof, error)
 	Verify(ctx context.Context, valset symbiotic.ValidatorSet, keyTag symbiotic.KeyTag, aggregationProof symbiotic.AggregationProof) (bool, error)
 	GenerateExtraData(ctx context.Context, valset symbiotic.ValidatorSet, keyTags []symbiotic.KeyTag) ([]symbiotic.ExtraData, error)
 }

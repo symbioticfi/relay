@@ -1,6 +1,8 @@
 package p2p
 
 import (
+	"fmt"
+	"log"
 	"testing"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -46,7 +48,7 @@ func TestHandleSignatureReadyMessage_WithOversizedPublicKey_ReturnsError(t *test
 	err = service.handleSignatureReadyMessage(pubSubMsg)
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "public key size exceeds maximum")
+	assert.Contains(t, err.Error(), fmt.Sprintf("public key %x size exceeds maximum", oversizedPubKey))
 }
 
 func TestHandleSignatureReadyMessage_WithOversizedSignature_ReturnsError(t *testing.T) {
@@ -82,7 +84,7 @@ func TestHandleSignatureReadyMessage_WithOversizedSignature_ReturnsError(t *test
 	err = service.handleSignatureReadyMessage(pubSubMsg)
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "signature size exceeds maximum")
+	assert.Contains(t, err.Error(), fmt.Sprintf("signature %x size exceeds maximum", oversizedSig))
 }
 
 func TestHandleSignatureReadyMessage_WithOversizedMessageHash_ReturnsError(t *testing.T) {
@@ -118,7 +120,7 @@ func TestHandleSignatureReadyMessage_WithOversizedMessageHash_ReturnsError(t *te
 	err = service.handleSignatureReadyMessage(pubSubMsg)
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "message hash size exceeds maximum")
+	assert.Contains(t, err.Error(), fmt.Sprintf("message hash %x size exceeds maximum", oversizedHash))
 }
 
 func TestHandleSignatureReadyMessage_WithInvalidPublicKey_ReturnsError(t *testing.T) {
@@ -188,7 +190,7 @@ func TestHandleAggregatedProofReadyMessage_WithOversizedMessageHash_ReturnsError
 	err = service.handleAggregatedProofReadyMessage(pubSubMsg)
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "aggregation proof message hash size exceeds maximum")
+	assert.Contains(t, err.Error(), fmt.Sprintf("aggregation proof message hash %x size exceeds maximum", oversizedHash))
 }
 
 func TestHandleAggregatedProofReadyMessage_WithOversizedProof_ReturnsError(t *testing.T) {
@@ -223,7 +225,8 @@ func TestHandleAggregatedProofReadyMessage_WithOversizedProof_ReturnsError(t *te
 	err = service.handleAggregatedProofReadyMessage(pubSubMsg)
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "aggregation proof size exceeds maximum")
+	log.Println(err.Error())
+	assert.Contains(t, err.Error(), fmt.Sprintf("aggregation proof %x size exceeds maximum", oversizedProof))
 }
 
 func TestUnmarshalMessage_WithInvalidP2PMessage_ReturnsError(t *testing.T) {

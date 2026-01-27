@@ -36,8 +36,7 @@ const (
 	topicAggProofReady  = topicPrefix + "/proof/ready"
 
 	maxP2PMessageSize = 1<<20 + 1024 // 1 MiB + 1 KiB for overhead
-	maxRequestIDSize  = 32
-	maxPubKeySize     = 96
+	maxPubKeySize     = 144          // BLS12381 pubkey is 144 bytes
 	maxSignatureSize  = 96
 	maxMsgHashSize    = 64
 	maxProofSize      = 1 << 20

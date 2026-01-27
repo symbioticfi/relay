@@ -91,10 +91,17 @@ func createABITypes() (abiTypes, error) {
 func (a Aggregator) Aggregate(
 	ctx context.Context,
 	valset symbiotic.ValidatorSet,
-	keyTag symbiotic.KeyTag,
-	messageHash []byte,
 	signatures []symbiotic.Signature,
 ) (symbiotic.AggregationProof, error) {
+	if err := helpers.CheckSignaturesHaveSameTagAndMessageHash(signatures); err != nil {
+		return symbiotic.AggregationProof{}, errors.Errorf("invalid signatures: %w", err)
+	}
+
+	//nolint:gosec // we have already checked that signatures length is > 0
+	keyTag := signatures[0].KeyTag
+	//nolint:gosec // we have already checked that signatures length is > 0
+	messageHash := signatures[0].MessageHash
+
 	_, span := tracing.StartSpan(ctx, "aggregator.Aggregate",
 		tracing.AttrEpoch.Int64(int64(valset.Epoch)),
 		tracing.AttrValidatorCount.Int(len(valset.Validators)),
@@ -105,11 +112,6 @@ func (a Aggregator) Aggregate(
 	defer span.End()
 
 	tracing.AddEvent(span, "validating_inputs")
-	if !helpers.CompareMessageHasher(signatures, messageHash) {
-		err := errors.New("message hashes mismatch")
-		tracing.RecordError(span, err)
-		return symbiotic.AggregationProof{}, err
-	}
 	if err := valset.Validators.CheckIsSortedByOperatorAddressAsc(); err != nil {
 		tracing.RecordError(span, err)
 		return symbiotic.AggregationProof{}, errors.Errorf("valset is not sorted by operator address asc: %w", err)
@@ -648,7 +650,7 @@ func processValidators(validators []symbiotic.Validator, keyTag symbiotic.KeyTag
 
 		keyBytes, ok := val.FindKeyByKeyTag(keyTag)
 		if !ok {
-			return nil, errors.Errorf("failed to find key by keyTag for validator %s", val.Operator.Hex())
+			return nil, errors.Errorf("failed to find key by keyTag %s for validator %s", keyTag, val.Operator.Hex())
 		}
 
 		g1Key := new(bn254.G1Affine)

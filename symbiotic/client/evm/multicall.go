@@ -80,7 +80,7 @@ func (e *Client) multicall(ctx context.Context, chainId uint64, calls []Call) (_
 }
 
 func (e *Client) getVotingPowersMulticall(ctx context.Context, address symbiotic.CrossChainAddress, timestamp symbiotic.Timestamp) ([]symbiotic.OperatorVotingPower, error) {
-	abi, err := gen.IVotingPowerProviderMetaData.GetAbi()
+	abi, err := gen.VotingPowerProviderMetaData.GetAbi()
 	if err != nil {
 		return nil, errors.Errorf("failed to get ABI: %v", err)
 	}
@@ -137,7 +137,7 @@ func (e *Client) getVotingPowersMulticall(ctx context.Context, address symbiotic
 }
 
 func (e *Client) getKeysMulticall(ctx context.Context, address symbiotic.CrossChainAddress, timestamp symbiotic.Timestamp) (_ []symbiotic.OperatorWithKeys, err error) {
-	abi, err := gen.IKeyRegistryMetaData.GetAbi()
+	abi, err := gen.KeyRegistryMetaData.GetAbi()
 	if err != nil {
 		return nil, errors.Errorf("failed to get ABI: %v", err)
 	}

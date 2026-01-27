@@ -38,7 +38,7 @@ func TestGetLocalValidator_Success(t *testing.T) {
 
 	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(currentEpoch, nil)
 	mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, requestedEpoch).Return(validatorSet, nil)
-	mockKeyProvider.EXPECT().GetOnchainKeyFromCache(symbiotic.ValsetHeaderKeyTag).Return(localKey, nil)
+	mockKeyProvider.EXPECT().GetOnchainKeyFromCache(symbiotic.KeyTag(15)).Return(localKey, nil)
 
 	req := &apiv1.GetLocalValidatorRequest{
 		Epoch: (*uint64)(&requestedEpoch),
@@ -76,7 +76,7 @@ func TestGetLocalValidator_UseCurrentEpoch(t *testing.T) {
 
 	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(currentEpoch, nil)
 	mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, currentEpoch).Return(validatorSet, nil)
-	mockKeyProvider.EXPECT().GetOnchainKeyFromCache(symbiotic.ValsetHeaderKeyTag).Return(localKey, nil)
+	mockKeyProvider.EXPECT().GetOnchainKeyFromCache(symbiotic.KeyTag(15)).Return(localKey, nil)
 
 	req := &apiv1.GetLocalValidatorRequest{}
 
@@ -141,7 +141,7 @@ func TestGetLocalValidator_ErrorWhenKeyProviderFails(t *testing.T) {
 
 	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(currentEpoch, nil)
 	mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, requestedEpoch).Return(validatorSet, nil)
-	mockKeyProvider.EXPECT().GetOnchainKeyFromCache(symbiotic.ValsetHeaderKeyTag).Return(symbiotic.CompactPublicKey(""), expectedError)
+	mockKeyProvider.EXPECT().GetOnchainKeyFromCache(symbiotic.KeyTag(15)).Return(symbiotic.CompactPublicKey(""), expectedError)
 
 	req := &apiv1.GetLocalValidatorRequest{
 		Epoch: (*uint64)(&requestedEpoch),
@@ -177,7 +177,7 @@ func TestGetLocalValidator_ErrorWhenValidatorNotFound(t *testing.T) {
 
 	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(currentEpoch, nil)
 	mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, requestedEpoch).Return(validatorSet, nil)
-	mockKeyProvider.EXPECT().GetOnchainKeyFromCache(symbiotic.ValsetHeaderKeyTag).Return(localKey, nil)
+	mockKeyProvider.EXPECT().GetOnchainKeyFromCache(symbiotic.KeyTag(15)).Return(localKey, nil)
 
 	req := &apiv1.GetLocalValidatorRequest{
 		Epoch: (*uint64)(&requestedEpoch),

@@ -190,12 +190,6 @@ KeyTag = (KeyType << 4) | KeyID
 - `0x11` = ECDSA secp256k1, ID 1
 - `0x20` = BLS12381 BN254, ID 0
 
-## Reserved Key Tags
-
-| Key Tag | Value | Description |
-|---------|-------|-------------|
-| `ValsetHeaderKeyTag` | 15 (0x0F) | Reserved for validator set header commitments. |
-
 ## References
 
 - [`Types`](./types.md) for complete type definitions

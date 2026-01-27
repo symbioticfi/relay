@@ -17,14 +17,13 @@ import (
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/signals"
 	"github.com/symbioticfi/relay/pkg/tracing"
-	"github.com/symbioticfi/relay/symbiotic/client/evm"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 type signer interface {
-	EnqueueRequestID(requestID common.Hash)
+	EnqueueRequestID(ctx context.Context, requestID common.Hash)
 }
 
 type repo interface {
@@ -36,6 +35,8 @@ type repo interface {
 	GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch symbiotic.Epoch, limit int) ([]symbiotic.ProofCommitKey, error)
 	SaveNextValsetData(ctx context.Context, data entity.NextValsetData) error
 	GetFirstUncommittedValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
+	UpdateValidatorSetStatus(ctx context.Context, epoch symbiotic.Epoch, item symbiotic.ValidatorSetStatus) error
+	GetLatestAggregatedValsetHeader(ctx context.Context) (symbiotic.ValidatorSetHeader, error)
 }
 
 type deriver interface {
@@ -45,6 +46,7 @@ type deriver interface {
 
 type metrics interface {
 	ObserveAggregationProofSize(proofSize int, validatorCount int)
+	ObserveEpoch(epochType string, epochNumber uint64)
 }
 
 type keyProvider interface {
@@ -52,8 +54,18 @@ type keyProvider interface {
 	GetOnchainKeyFromCache(keyTag symbiotic.KeyTag) (symbiotic.CompactPublicKey, error)
 }
 
+type evmClient interface {
+	GetCurrentEpoch(ctx context.Context) (symbiotic.Epoch, error)
+	GetEpochStart(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.Timestamp, error)
+	GetConfig(ctx context.Context, timestamp symbiotic.Timestamp, epoch symbiotic.Epoch) (symbiotic.NetworkConfig, error)
+	CommitValsetHeader(ctx context.Context, addr symbiotic.CrossChainAddress, header symbiotic.ValidatorSetHeader, extraData []symbiotic.ExtraData, proof []byte) (symbiotic.TxResult, error)
+	IsValsetHeaderCommittedAtEpochs(ctx context.Context, addr symbiotic.CrossChainAddress, epochs []symbiotic.Epoch) ([]bool, error)
+	GetLastCommittedHeaderEpoch(ctx context.Context, addr symbiotic.CrossChainAddress, evmOptions ...symbiotic.EVMOption) (symbiotic.Epoch, error)
+	IsValsetHeaderCommittedAt(ctx context.Context, addr symbiotic.CrossChainAddress, epoch symbiotic.Epoch, opts ...symbiotic.EVMOption) (_ bool, err error)
+}
+
 type Config struct {
-	EvmClient           evm.IEvmClient                          `validate:"required"`
+	EvmClient           evmClient                               `validate:"required"`
 	Repo                repo                                    `validate:"required"`
 	Deriver             deriver                                 `validate:"required"`
 	PollingInterval     time.Duration                           `validate:"required,gt=0"`
@@ -428,6 +440,7 @@ func (s *Service) process(
 	var signatureRequest *symbiotic.SignatureRequest
 	if prevValSet.IsSigner(onchainKey) {
 		tracing.AddEvent(span, "creating_signature_request")
+		slog.DebugContext(ctx, "Node is a signer for previous validator set, creating signature request")
 		signatureRequest = &symbiotic.SignatureRequest{
 			KeyTag:        prevValSet.RequiredKeyTag,
 			RequiredEpoch: prevValSet.Epoch,
@@ -468,9 +481,20 @@ func (s *Service) process(
 		tracing.RecordError(span, err)
 		return err
 	}
-	s.cfg.Signer.EnqueueRequestID(metadata.RequestID)
+	if signatureRequest != nil {
+		s.cfg.Signer.EnqueueRequestID(ctx, metadata.RequestID)
+	}
 
-	slog.DebugContext(ctx, "Marked proof commit as pending", "epoch", valSet.Epoch, "requestId", extendedSig.RequestID().Hex())
+	_, err = s.cfg.Repo.GetAggregationProof(ctx, metadata.RequestID)
+	if proofFound := err == nil; proofFound {
+		if err := s.cfg.Repo.UpdateValidatorSetStatus(ctx, valSet.Epoch, symbiotic.HeaderAggregated); err != nil {
+			return errors.Errorf("failed to update validator set status to aggregated for epoch %d: %w", valSet.Epoch, err)
+		}
+	} else if !errors.Is(err, entity.ErrEntityNotFound) {
+		return errors.Errorf("failed to get valset header proof for epoch %d: %w", valSet.Epoch, err)
+	}
+
+	slog.DebugContext(ctx, "Saved next valset data and marked proof commit as pending", "epoch", valSet.Epoch, "requestId", extendedSig.RequestID().Hex())
 	return nil
 }
 

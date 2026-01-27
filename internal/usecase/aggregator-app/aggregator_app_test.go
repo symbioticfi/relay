@@ -172,7 +172,7 @@ func setupSuccessfulAggregationMocks(setup *testSetup, msg symbiotic.Signature, 
 	setup.mockRepo.EXPECT().GetConfigByEpoch(gomock.Any(), msg.Epoch).Return(networkConfig, nil)
 	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
 
-	setup.mockAggregator.EXPECT().Aggregate(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(proofData, nil)
+	setup.mockAggregator.EXPECT().Aggregate(gomock.Any(), gomock.Any(), gomock.Any()).Return(proofData, nil)
 
 	setup.mockP2PClient.EXPECT().BroadcastSignatureAggregatedMessage(gomock.Any(), proofData).Return(nil)
 

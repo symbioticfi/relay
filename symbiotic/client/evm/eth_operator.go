@@ -6,254 +6,96 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/go-errors/errors"
 
-	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func (e *Client) RegisterOperator(
 	ctx context.Context,
-	addr symbiotic.CrossChainAddress,
+	opRegistryAddr symbiotic.CrossChainAddress,
 ) (_ symbiotic.TxResult, err error) {
-	pk, err := e.cfg.KeyProvider.GetPrivateKeyByNamespaceTypeId(
-		keyprovider.EVM_KEY_NAMESPACE,
-		symbiotic.KeyTypeEcdsaSecp256k1,
-		int(addr.ChainId),
-	)
+	registry, err := e.getOperatorRegistryContract(opRegistryAddr)
 	if err != nil {
-		return symbiotic.TxResult{}, err
-	}
-	ecdsaKey, err := crypto.ToECDSA(pk.Bytes())
-	if err != nil {
-		return symbiotic.TxResult{}, err
-	}
-	txOpts, err := bind.NewKeyedTransactorWithChainID(ecdsaKey, new(big.Int).SetUint64(addr.ChainId))
-	if err != nil {
-		return symbiotic.TxResult{}, errors.Errorf("failed to create new keyed transactor: %w", err)
+		return symbiotic.TxResult{}, errors.Errorf("failed to get operator registry contract: %w", err)
 	}
 
-	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
-	defer cancel()
-	defer func(now time.Time) {
-		e.observeMetrics("RegisterOperator", addr.ChainId, err, now)
-	}(time.Now())
-	txOpts.Context = tmCtx
-
-	registry, err := e.getOperatorRegistryContract(addr)
-	if err != nil {
-		return symbiotic.TxResult{}, errors.Errorf("failed to get settlement contract: %w", err)
-	}
-
-	tx, err := registry.RegisterOperator(txOpts)
-	if err != nil {
-		return symbiotic.TxResult{}, e.formatEVMError(err)
-	}
-
-	receipt, err := e.waitTxMined(tmCtx, addr.ChainId, tx)
-	if err != nil {
-		return symbiotic.TxResult{}, err
-	}
-
-	return symbiotic.TxResult{
-		TxHash: receipt.TxHash,
-	}, nil
+	return e.doTransaction(ctx, "RegisterOperator", e.cfg.DriverAddress, registry.RegisterOperator)
 }
 
 func (e *Client) RegisterKey(
 	ctx context.Context,
-	addr symbiotic.CrossChainAddress,
+	keyRegistryAddr symbiotic.CrossChainAddress,
 	keyTag symbiotic.KeyTag,
 	key symbiotic.CompactPublicKey,
 	signature symbiotic.RawSignature,
 	extraData []byte,
 ) (_ symbiotic.TxResult, err error) {
-	pk, err := e.cfg.KeyProvider.GetPrivateKeyByNamespaceTypeId(
-		keyprovider.EVM_KEY_NAMESPACE,
-		symbiotic.KeyTypeEcdsaSecp256k1,
-		int(addr.ChainId),
-	)
+	registry, err := e.getKeyRegistryContract(keyRegistryAddr)
 	if err != nil {
-		return symbiotic.TxResult{}, err
-	}
-	ecdsaKey, err := crypto.ToECDSA(pk.Bytes())
-	if err != nil {
-		return symbiotic.TxResult{}, err
+		return symbiotic.TxResult{}, errors.Errorf("failed to get key registry contract: %w", err)
 	}
 
-	txOpts, err := bind.NewKeyedTransactorWithChainID(ecdsaKey, new(big.Int).SetUint64(addr.ChainId))
-	if err != nil {
-		return symbiotic.TxResult{}, errors.Errorf("failed to create new keyed transactor: %w", err)
-	}
-
-	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
-	defer cancel()
-	defer func(now time.Time) {
-		e.observeMetrics("SetKey", addr.ChainId, err, now)
-	}(time.Now())
-	txOpts.Context = tmCtx
-
-	registry, err := e.getKeyRegistryContract(addr)
-	if err != nil {
-		return symbiotic.TxResult{}, errors.Errorf("failed to get settlement contract: %w", err)
-	}
-
-	tx, err := registry.SetKey(txOpts, uint8(keyTag), key, signature, extraData)
-	if err != nil {
-		return symbiotic.TxResult{}, e.formatEVMError(err)
-	}
-
-	receipt, err := e.waitTxMined(tmCtx, addr.ChainId, tx)
-	if err != nil {
-		return symbiotic.TxResult{}, err
-	}
-
-	return symbiotic.TxResult{
-		TxHash: receipt.TxHash,
-	}, nil
+	return e.doTransaction(ctx, "SetKey", keyRegistryAddr, func(txOpts *bind.TransactOpts) (*types.Transaction, error) {
+		return registry.SetKey(txOpts, uint8(keyTag), key, signature, extraData)
+	}, symbiotic.WithGasLimitMultiplier(1.3))
 }
 
 func (e *Client) InvalidateOldSignatures(
 	ctx context.Context,
-	addr symbiotic.CrossChainAddress,
+	votingPowerProviderAddr symbiotic.CrossChainAddress,
 ) (_ symbiotic.TxResult, err error) {
-	pk, err := e.cfg.KeyProvider.GetPrivateKeyByNamespaceTypeId(
-		keyprovider.EVM_KEY_NAMESPACE,
-		symbiotic.KeyTypeEcdsaSecp256k1,
-		int(addr.ChainId),
-	)
-	if err != nil {
-		return symbiotic.TxResult{}, err
-	}
-	ecdsaKey, err := crypto.ToECDSA(pk.Bytes())
-	if err != nil {
-		return symbiotic.TxResult{}, err
-	}
-	txOpts, err := bind.NewKeyedTransactorWithChainID(ecdsaKey, new(big.Int).SetUint64(addr.ChainId))
-	if err != nil {
-		return symbiotic.TxResult{}, errors.Errorf("failed to create new keyed transactor: %w", err)
-	}
-
-	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
-	defer cancel()
-	defer func(now time.Time) {
-		e.observeMetrics("InvalidateOldSignatures", addr.ChainId, err, now)
-	}(time.Now())
-	txOpts.Context = tmCtx
-
-	votingPowerProvider, err := e.getVotingPowerProviderContractTransactor(addr)
+	votingPowerProvider, err := e.getVotingPowerProviderContractTransactor(votingPowerProviderAddr)
 	if err != nil {
 		return symbiotic.TxResult{}, errors.Errorf("failed to get voting power provider contract: %w", err)
 	}
 
-	tx, err := votingPowerProvider.InvalidateOldSignatures(txOpts)
-	if err != nil {
-		return symbiotic.TxResult{}, e.formatEVMError(err)
-	}
-
-	receipt, err := e.waitTxMined(tmCtx, addr.ChainId, tx)
-	if err != nil {
-		return symbiotic.TxResult{}, err
-	}
-
-	return symbiotic.TxResult{
-		TxHash: receipt.TxHash,
-	}, nil
+	return e.doTransaction(ctx, "InvalidateOldSignatures", e.cfg.DriverAddress, votingPowerProvider.InvalidateOldSignatures)
 }
 
 func (e *Client) RegisterOperatorVotingPowerProvider(
 	ctx context.Context,
-	addr symbiotic.CrossChainAddress,
+	votingPowerProviderAddr symbiotic.CrossChainAddress,
 ) (_ symbiotic.TxResult, err error) {
-	pk, err := e.cfg.KeyProvider.GetPrivateKeyByNamespaceTypeId(
-		keyprovider.EVM_KEY_NAMESPACE,
-		symbiotic.KeyTypeEcdsaSecp256k1,
-		int(addr.ChainId),
-	)
-	if err != nil {
-		return symbiotic.TxResult{}, err
-	}
-	ecdsaKey, err := crypto.ToECDSA(pk.Bytes())
-	if err != nil {
-		return symbiotic.TxResult{}, err
-	}
-	txOpts, err := bind.NewKeyedTransactorWithChainID(ecdsaKey, new(big.Int).SetUint64(addr.ChainId))
-	if err != nil {
-		return symbiotic.TxResult{}, errors.Errorf("failed to create new keyed transactor: %w", err)
-	}
-
-	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
-	defer cancel()
-	defer func(now time.Time) {
-		e.observeMetrics("RegisterOperatorVotingPowerProvider", addr.ChainId, err, now)
-	}(time.Now())
-	txOpts.Context = tmCtx
-
-	votingPowerProvider, err := e.getVotingPowerProviderContractTransactor(addr)
+	votingPowerProvider, err := e.getVotingPowerProviderContractTransactor(votingPowerProviderAddr)
 	if err != nil {
 		return symbiotic.TxResult{}, errors.Errorf("failed to get voting power provider contract: %w", err)
 	}
 
-	tx, err := votingPowerProvider.RegisterOperator(txOpts)
+	return e.doTransaction(ctx, "RegisterOperatorVotingPowerProvider", e.cfg.DriverAddress, votingPowerProvider.RegisterOperator)
+}
+
+func (e *Client) IsOperatorRegistered(
+	ctx context.Context,
+	votingPowerProviderAddr, operator symbiotic.CrossChainAddress,
+) (_ bool, err error) {
+	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
+	defer cancel()
+	defer func(now time.Time) {
+		e.observeMetrics("IsOperatorRegistered", e.driverChainID, err, now)
+	}(time.Now())
+
+	votingPowerProvider, err := e.getVotingPowerProviderContract(votingPowerProviderAddr)
 	if err != nil {
-		return symbiotic.TxResult{}, e.formatEVMError(err)
+		return false, errors.Errorf("failed to get voting power provider contract: %w", err)
 	}
 
-	receipt, err := e.waitTxMined(tmCtx, addr.ChainId, tx)
-	if err != nil {
-		return symbiotic.TxResult{}, err
-	}
-
-	return symbiotic.TxResult{
-		TxHash: receipt.TxHash,
-	}, nil
+	return votingPowerProvider.IsOperatorRegistered(&bind.CallOpts{
+		BlockNumber: new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()),
+		Context:     toCtx,
+	}, operator.Address)
 }
 
 func (e *Client) UnregisterOperatorVotingPowerProvider(
 	ctx context.Context,
-	addr symbiotic.CrossChainAddress,
+	votingPowerProviderAddr symbiotic.CrossChainAddress,
 ) (_ symbiotic.TxResult, err error) {
-	pk, err := e.cfg.KeyProvider.GetPrivateKeyByNamespaceTypeId(
-		keyprovider.EVM_KEY_NAMESPACE,
-		symbiotic.KeyTypeEcdsaSecp256k1,
-		int(addr.ChainId),
-	)
-	if err != nil {
-		return symbiotic.TxResult{}, err
-	}
-	ecdsaKey, err := crypto.ToECDSA(pk.Bytes())
-	if err != nil {
-		return symbiotic.TxResult{}, err
-	}
-	txOpts, err := bind.NewKeyedTransactorWithChainID(ecdsaKey, new(big.Int).SetUint64(addr.ChainId))
-	if err != nil {
-		return symbiotic.TxResult{}, errors.Errorf("failed to create new keyed transactor: %w", err)
-	}
-
-	tmCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
-	defer cancel()
-	defer func(now time.Time) {
-		e.observeMetrics("UnregisterOperatorVotingPowerProvider", addr.ChainId, err, now)
-	}(time.Now())
-	txOpts.Context = tmCtx
-
-	votingPowerProvider, err := e.getVotingPowerProviderContractTransactor(addr)
+	votingPowerProvider, err := e.getVotingPowerProviderContractTransactor(votingPowerProviderAddr)
 	if err != nil {
 		return symbiotic.TxResult{}, errors.Errorf("failed to get voting power provider contract: %w", err)
 	}
 
-	tx, err := votingPowerProvider.UnregisterOperator(txOpts)
-	if err != nil {
-		return symbiotic.TxResult{}, e.formatEVMError(err)
-	}
-
-	receipt, err := e.waitTxMined(tmCtx, addr.ChainId, tx)
-	if err != nil {
-		return symbiotic.TxResult{}, err
-	}
-
-	return symbiotic.TxResult{
-		TxHash: receipt.TxHash,
-	}, nil
+	return e.doTransaction(ctx, "UnregisterOperatorVotingPowerProvider", e.cfg.DriverAddress, votingPowerProvider.UnregisterOperator)
 }

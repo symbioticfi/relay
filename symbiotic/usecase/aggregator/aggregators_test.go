@@ -31,22 +31,23 @@ func (m *mockProver) Verify(ctx context.Context, valsetLen int, publicInputHash 
 }
 
 func TestSimpleAggregator(t *testing.T) {
+	ctx := context.Background()
 	agg, err := blsBn254Simple.NewAggregator()
 	require.NoError(t, err)
-
 	valset, signatures, keyTag := genCorrectTest(10, []int{1, 2, 3})
 
-	proof, err := agg.Aggregate(t.Context(), valset, keyTag, signatures[0].MessageHash, signatures)
+	proof, err := agg.Aggregate(ctx, valset, signatures)
 	if err != nil {
 		panic(err)
 	}
 
-	success, err := agg.Verify(t.Context(), valset, keyTag, proof)
+	success, err := agg.Verify(ctx, valset, keyTag, proof)
 	require.NoError(t, err)
 	require.True(t, success, "verification failed")
 }
 
 func TestInvalidSimpleAggregator(t *testing.T) {
+	ctx := context.Background()
 	agg, err := blsBn254Simple.NewAggregator()
 	require.NoError(t, err)
 	valset, signatures, keyTag := genCorrectTest(10, []int{1, 2, 3})
@@ -59,12 +60,12 @@ func TestInvalidSimpleAggregator(t *testing.T) {
 		panic(err)
 	}
 
-	proof, err := agg.Aggregate(t.Context(), valset, keyTag, signatures[0].MessageHash, signatures)
+	proof, err := agg.Aggregate(ctx, valset, signatures)
 	if err != nil {
 		panic(err)
 	}
 
-	success, err := agg.Verify(t.Context(), valset, keyTag, proof)
+	success, err := agg.Verify(ctx, valset, keyTag, proof)
 	if err == nil {
 		t.Fatal(errors.New("verification passed"))
 	}
@@ -74,10 +75,11 @@ func TestInvalidSimpleAggregator(t *testing.T) {
 }
 
 func TestSimpleAggregatorExtraData(t *testing.T) {
+	ctx := context.Background()
 	valset, keyTag := genExtraDataTest(t)
 	agg, err := blsBn254Simple.NewAggregator()
 	require.NoError(t, err)
-	data, err := agg.GenerateExtraData(t.Context(), valset, []symbiotic.KeyTag{keyTag})
+	data, err := agg.GenerateExtraData(ctx, valset, []symbiotic.KeyTag{keyTag})
 	require.NoError(t, err)
 	expected := [][]string{
 		{
@@ -98,11 +100,12 @@ func TestSimpleAggregatorExtraData(t *testing.T) {
 
 func TestAggregatorZKExtraData(t *testing.T) {
 	t.Skipf("it works too long, so set skip here. For local debugging can remove this skip")
+	ctx := context.Background()
 	valset, keyTag := genExtraDataTest(t)
 	prover := proof.NewZkProver("circuits")
 	agg, err := blsBn254ZK.NewAggregator(prover)
 	require.NoError(t, err)
-	data, err := agg.GenerateExtraData(t.Context(), valset, []symbiotic.KeyTag{keyTag})
+	data, err := agg.GenerateExtraData(ctx, valset, []symbiotic.KeyTag{keyTag})
 	require.NoError(t, err)
 	expected := [][]string{
 		{
@@ -123,17 +126,17 @@ func TestAggregatorZKExtraData(t *testing.T) {
 
 func TestZkAggregator(t *testing.T) {
 	t.Skipf("it works too long, so set skip here. For local debugging can remove this skip")
+	ctx := context.Background()
 	prover := proof.NewZkProver("circuits")
 	agg, err := blsBn254ZK.NewAggregator(prover)
 	require.NoError(t, err)
-
 	valset, signatures, keyTag := genCorrectTest(10, []int{1, 2, 3})
-	proof, err := agg.Aggregate(t.Context(), valset, keyTag, signatures[0].MessageHash, signatures)
+	proof, err := agg.Aggregate(ctx, valset, signatures)
 	if err != nil {
 		panic(err)
 	}
 
-	success, err := agg.Verify(t.Context(), valset, keyTag, proof)
+	success, err := agg.Verify(ctx, valset, keyTag, proof)
 	if err != nil {
 		panic(err)
 	}

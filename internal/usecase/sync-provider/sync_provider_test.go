@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
@@ -30,14 +31,23 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 	privateKey1 := newPrivateKey(t)
 	signatureRequest := createTestSignatureRequest(t)
 	validatorSet := createTestValidatorSet(t, privateKey, privateKey1)
-	require.NoError(t, peerRepo.SaveValidatorSet(t.Context(), validatorSet))
-	require.NoError(t, requesterRepo.SaveValidatorSet(t.Context(), validatorSet))
+	nextValsetData := entity.NextValsetData{
+		NextValidatorSet:     validatorSet,
+		NextNetworkConfig:    randomNetworkConfig(),
+		PrevValidatorSet:     validatorSet,
+		PrevNetworkConfig:    randomNetworkConfig(),
+		SignatureRequest:     &signatureRequest,
+		ValidatorSetMetadata: symbiotic.ValidatorSetMetadata{},
+	}
+	require.NoError(t, peerRepo.SaveNextValsetData(t.Context(), nextValsetData))
+	require.NoError(t, requesterRepo.SaveNextValsetData(t.Context(), nextValsetData))
 
 	peerEntityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo:                     peerRepo,
 		Aggregator:               createMockAggregator(t),
 		AggProofSignal:           createMockAggProofSignal(t),
 		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+		Metrics:                  doNothingMetrics{},
 	})
 	require.NoError(t, err)
 
@@ -46,6 +56,7 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 		Aggregator:               createMockAggregator(t),
 		AggProofSignal:           createMockAggProofSignal(t),
 		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+		Metrics:                  doNothingMetrics{},
 	})
 	require.NoError(t, err)
 
@@ -175,7 +186,7 @@ func createTestRepo(t *testing.T) *badger.Repository {
 func createTestSignatureRequest(t *testing.T) symbiotic.SignatureRequest {
 	t.Helper()
 	return symbiotic.SignatureRequest{
-		KeyTag:        symbiotic.ValsetHeaderKeyTag,
+		KeyTag:        symbiotic.KeyTag(15),
 		RequiredEpoch: symbiotic.Epoch(1),
 		Message:       randomBytes(t, 100), // Random message makes each request unique
 	}
@@ -202,7 +213,7 @@ func createTestValidatorSet(t *testing.T, privateKey ...crypto.PrivateKey) symbi
 			IsActive:    true,
 			Keys: []symbiotic.ValidatorKey{
 				{
-					Tag:     symbiotic.ValsetHeaderKeyTag,
+					Tag:     symbiotic.KeyTag(15),
 					Payload: pk.PublicKey().OnChain(),
 				},
 			},
@@ -210,7 +221,7 @@ func createTestValidatorSet(t *testing.T, privateKey ...crypto.PrivateKey) symbi
 	}
 	return symbiotic.ValidatorSet{
 		Version:         1,
-		RequiredKeyTag:  symbiotic.ValsetHeaderKeyTag,
+		RequiredKeyTag:  symbiotic.KeyTag(15),
 		Epoch:           1,
 		QuorumThreshold: symbiotic.ToVotingPower(big.NewInt(670)),
 		Validators:      validators,
@@ -232,7 +243,7 @@ func createTestValidatorSetWithMultipleValidators(t *testing.T, count int) (symb
 			IsActive:    true,
 			Keys: []symbiotic.ValidatorKey{
 				{
-					Tag:     symbiotic.ValsetHeaderKeyTag,
+					Tag:     symbiotic.KeyTag(15),
 					Payload: privateKey.PublicKey().OnChain(), // Same key for all validators for simplicity
 				},
 			},
@@ -241,7 +252,7 @@ func createTestValidatorSetWithMultipleValidators(t *testing.T, count int) (symb
 
 	return symbiotic.ValidatorSet{
 		Version:         1,
-		RequiredKeyTag:  symbiotic.ValsetHeaderKeyTag,
+		RequiredKeyTag:  symbiotic.KeyTag(15),
 		Epoch:           1,
 		QuorumThreshold: symbiotic.ToVotingPower(big.NewInt(670)),
 		Validators:      validators,
@@ -267,6 +278,7 @@ func TestHandleWantSignaturesRequest_EmptyRequest(t *testing.T) {
 		Aggregator:               createMockAggregator(t),
 		AggProofSignal:           createMockAggProofSignal(t),
 		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+		Metrics:                  doNothingMetrics{},
 	})
 	require.NoError(t, err)
 
@@ -302,8 +314,16 @@ func TestHandleWantSignaturesRequest_MaxResponseSignatureCountLimit(t *testing.T
 	validatorSet, privateKeys := createTestValidatorSetWithMultipleValidators(t, 5) // Create 5 validators
 	signatureRequest := createTestSignatureRequest(t)
 
+	nextValsetData := entity.NextValsetData{
+		NextValidatorSet:     validatorSet,
+		NextNetworkConfig:    randomNetworkConfig(),
+		PrevValidatorSet:     validatorSet,
+		PrevNetworkConfig:    randomNetworkConfig(),
+		SignatureRequest:     &signatureRequest,
+		ValidatorSetMetadata: symbiotic.ValidatorSetMetadata{},
+	}
 	// Setup repository with validator set and signature request
-	require.NoError(t, repo.SaveValidatorSet(t.Context(), validatorSet))
+	require.NoError(t, repo.SaveNextValsetData(t.Context(), nextValsetData))
 
 	// Store multiple signatures by validator index
 	entityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
@@ -311,6 +331,7 @@ func TestHandleWantSignaturesRequest_MaxResponseSignatureCountLimit(t *testing.T
 		Aggregator:               createMockAggregator(t),
 		AggProofSignal:           createMockAggProofSignal(t),
 		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+		Metrics:                  doNothingMetrics{},
 	})
 	require.NoError(t, err)
 	var requestID common.Hash
@@ -394,6 +415,7 @@ func TestHandleWantSignaturesRequest_MultipleRequestIDs(t *testing.T) {
 		Aggregator:               createMockAggregator(t),
 		AggProofSignal:           createMockAggProofSignal(t),
 		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+		Metrics:                  doNothingMetrics{},
 	})
 	require.NoError(t, err)
 
@@ -413,8 +435,17 @@ func TestHandleWantSignaturesRequest_MultipleRequestIDs(t *testing.T) {
 	signatureRequest1 := createTestSignatureRequest(t)
 	signatureRequest2 := createTestSignatureRequest(t)
 
+	nextValsetData := entity.NextValsetData{
+		NextValidatorSet:     validatorSet,
+		NextNetworkConfig:    randomNetworkConfig(),
+		PrevValidatorSet:     validatorSet,
+		PrevNetworkConfig:    randomNetworkConfig(),
+		SignatureRequest:     &signatureRequest1,
+		ValidatorSetMetadata: symbiotic.ValidatorSetMetadata{},
+	}
+
 	// Setup repository
-	require.NoError(t, repo.SaveValidatorSet(t.Context(), validatorSet))
+	require.NoError(t, repo.SaveNextValsetData(t.Context(), nextValsetData))
 
 	signature, hash, err := privateKeys[0].Sign(signatureRequest1.Message)
 	require.NoError(t, err)
@@ -472,14 +503,24 @@ func TestHandleWantSignaturesRequest_PartialSignatureAvailability(t *testing.T) 
 	validatorSet, privateKeys := createTestValidatorSetWithMultipleValidators(t, 4) // Create 4 validators
 	signatureRequest := createTestSignatureRequest(t)
 
+	nextValsetData := entity.NextValsetData{
+		NextValidatorSet:     validatorSet,
+		NextNetworkConfig:    randomNetworkConfig(),
+		PrevValidatorSet:     validatorSet,
+		PrevNetworkConfig:    randomNetworkConfig(),
+		SignatureRequest:     &signatureRequest,
+		ValidatorSetMetadata: symbiotic.ValidatorSetMetadata{},
+	}
+
 	// Setup repository
-	require.NoError(t, repo.SaveValidatorSet(t.Context(), validatorSet))
+	require.NoError(t, repo.SaveNextValsetData(t.Context(), nextValsetData))
 
 	entityProcessor, err := entity_processor.NewEntityProcessor(entity_processor.Config{
 		Repo:                     repo,
 		Aggregator:               createMockAggregator(t),
 		AggProofSignal:           createMockAggProofSignal(t),
 		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+		Metrics:                  doNothingMetrics{},
 	})
 	require.NoError(t, err)
 
@@ -536,3 +577,17 @@ func TestHandleWantSignaturesRequest_PartialSignatureAvailability(t *testing.T) 
 	require.NotContains(t, validatorIndices, uint32(1))
 	require.NotContains(t, validatorIndices, uint32(3))
 }
+
+func randomNetworkConfig() symbiotic.NetworkConfig {
+	return symbiotic.NetworkConfig{
+		VerificationType:     symbiotic.VerificationTypeBlsBn254Simple,
+		RequiredHeaderKeyTag: symbiotic.KeyTag(15),
+		EpochDuration:        uint64(time.Minute.Seconds()),
+		NumAggregators:       1,
+		NumCommitters:        1,
+	}
+}
+
+type doNothingMetrics struct{}
+
+func (d doNothingMetrics) ObserveEpoch(epochType string, epochNumber uint64) {}
