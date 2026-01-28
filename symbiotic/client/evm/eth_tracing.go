@@ -49,7 +49,6 @@ func newTracingConn(chainID uint64, base conn) conn {
 }
 
 func (t *tracingConn) CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error) {
-	ctx = ensureContext(ctx)
 	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.CodeAt",
 		t.spanAttributes("CodeAt",
 			tracing.AttrAddress.String(contract.Hex()),
@@ -72,7 +71,6 @@ func (t *tracingConn) CodeAt(ctx context.Context, contract common.Address, block
 }
 
 func (t *tracingConn) CodeAtHash(ctx context.Context, contract common.Address, blockHash common.Hash) ([]byte, error) {
-	ctx = ensureContext(ctx)
 	blockHasher, ok := t.base.(bind.BlockHashContractCaller)
 	if !ok {
 		return nil, bind.ErrNoBlockHashState
@@ -100,7 +98,6 @@ func (t *tracingConn) CodeAtHash(ctx context.Context, contract common.Address, b
 }
 
 func (t *tracingConn) CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
-	ctx = ensureContext(ctx)
 	attrs := append(t.spanAttributes("CallContract",
 		attribute.String("block.number", blockNumberValue(blockNumber)),
 	), callMsgAttributes(call)...)
@@ -122,7 +119,6 @@ func (t *tracingConn) CallContract(ctx context.Context, call ethereum.CallMsg, b
 }
 
 func (t *tracingConn) CallContractAtHash(ctx context.Context, call ethereum.CallMsg, blockHash common.Hash) ([]byte, error) {
-	ctx = ensureContext(ctx)
 	blockHasher, ok := t.base.(bind.BlockHashContractCaller)
 	if !ok {
 		return nil, bind.ErrNoBlockHashState
@@ -149,7 +145,6 @@ func (t *tracingConn) CallContractAtHash(ctx context.Context, call ethereum.Call
 }
 
 func (t *tracingConn) PendingCallContract(ctx context.Context, call ethereum.CallMsg) ([]byte, error) {
-	ctx = ensureContext(ctx)
 	pendingCaller, ok := t.base.(bind.PendingContractCaller)
 	if !ok {
 		return nil, bind.ErrNoPendingState
@@ -174,7 +169,6 @@ func (t *tracingConn) PendingCallContract(ctx context.Context, call ethereum.Cal
 }
 
 func (t *tracingConn) HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error) {
-	ctx = ensureContext(ctx)
 	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.HeaderByNumber",
 		t.spanAttributes("HeaderByNumber",
 			attribute.String("block.number", blockNumberValue(number)),
@@ -199,7 +193,6 @@ func (t *tracingConn) HeaderByNumber(ctx context.Context, number *big.Int) (*typ
 }
 
 func (t *tracingConn) PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error) {
-	ctx = ensureContext(ctx)
 	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.PendingCodeAt",
 		t.spanAttributes("PendingCodeAt",
 			tracing.AttrAddress.String(account.Hex()),
@@ -221,7 +214,6 @@ func (t *tracingConn) PendingCodeAt(ctx context.Context, account common.Address)
 }
 
 func (t *tracingConn) PendingNonceAt(ctx context.Context, account common.Address) (uint64, error) {
-	ctx = ensureContext(ctx)
 	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.PendingNonceAt",
 		t.spanAttributes("PendingNonceAt",
 			tracing.AttrAddress.String(account.Hex()),
@@ -243,7 +235,6 @@ func (t *tracingConn) PendingNonceAt(ctx context.Context, account common.Address
 }
 
 func (t *tracingConn) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
-	ctx = ensureContext(ctx)
 	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.SuggestGasPrice",
 		t.spanAttributes("SuggestGasPrice")...,
 	)
@@ -263,7 +254,6 @@ func (t *tracingConn) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
 }
 
 func (t *tracingConn) SuggestGasTipCap(ctx context.Context) (*big.Int, error) {
-	ctx = ensureContext(ctx)
 	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.SuggestGasTipCap",
 		t.spanAttributes("SuggestGasTipCap")...,
 	)
@@ -283,7 +273,6 @@ func (t *tracingConn) SuggestGasTipCap(ctx context.Context) (*big.Int, error) {
 }
 
 func (t *tracingConn) EstimateGas(ctx context.Context, call ethereum.CallMsg) (uint64, error) {
-	ctx = ensureContext(ctx)
 	attrs := append(t.spanAttributes("EstimateGas"), callMsgAttributes(call)...)
 
 	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.EstimateGas", attrs...)
@@ -303,7 +292,6 @@ func (t *tracingConn) EstimateGas(ctx context.Context, call ethereum.CallMsg) (u
 }
 
 func (t *tracingConn) SendTransaction(ctx context.Context, tx *types.Transaction) error {
-	ctx = ensureContext(ctx)
 	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.SendTransaction",
 		t.spanAttributes("SendTransaction",
 			tracing.AttrTxHash.String(tx.Hash().Hex()),
@@ -332,7 +320,6 @@ func (t *tracingConn) SendTransaction(ctx context.Context, tx *types.Transaction
 }
 
 func (t *tracingConn) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
-	ctx = ensureContext(ctx)
 	attrs := append(t.spanAttributes("FilterLogs"), filterQueryAttributes(q)...)
 
 	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.FilterLogs", attrs...)
@@ -352,7 +339,6 @@ func (t *tracingConn) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([
 }
 
 func (t *tracingConn) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error) {
-	ctx = ensureContext(ctx)
 	attrs := append(t.spanAttributes("SubscribeFilterLogs"), filterQueryAttributes(q)...)
 
 	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.SubscribeFilterLogs", attrs...)
@@ -368,7 +354,6 @@ func (t *tracingConn) SubscribeFilterLogs(ctx context.Context, q ethereum.Filter
 }
 
 func (t *tracingConn) TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
-	ctx = ensureContext(ctx)
 	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.TransactionReceipt",
 		t.spanAttributes("TransactionReceipt",
 			tracing.AttrTxHash.String(txHash.Hex()),
@@ -400,14 +385,6 @@ func (t *tracingConn) spanAttributes(method string, extra ...attribute.KeyValue)
 	}
 
 	return append(attrs, extra...)
-}
-
-func ensureContext(ctx context.Context) context.Context {
-	if ctx == nil {
-		return context.Background()
-	}
-
-	return ctx
 }
 
 func blockNumberValue(blockNumber *big.Int) string {
