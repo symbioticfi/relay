@@ -133,7 +133,6 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 		return nil
 	}
 
-	tracing.AddEvent(span, "loading_signature_map")
 	signatureMap, err := s.cfg.Repo.GetSignatureMap(ctx, requestID)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -143,7 +142,6 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(signatureMap.Epoch)))
 	tracing.SetAttributes(span, tracing.AttrEpoch.Int64(int64(signatureMap.Epoch)))
 
-	tracing.AddEvent(span, "loading_validator_set")
 	// Get validator set for quorum threshold checks
 	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, signatureMap.Epoch)
 	if err != nil {
@@ -153,7 +151,6 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 
 	tracing.SetAttributes(span, tracing.AttrValidatorCount.Int(len(validatorSet.Validators)))
 
-	tracing.AddEvent(span, "checking_aggregator_role")
 	if s.cfg.ForceAggregator {
 		slog.DebugContext(ctx, "Force aggregator mode enabled")
 	} else {
@@ -183,7 +180,6 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 
 	totalActiveVotingPower := validatorSet.GetTotalActiveVotingPower()
 
-	tracing.AddEvent(span, "checking_quorum")
 	if !s.cfg.AggregationPolicy.ShouldAggregate(signatureMap, validatorSet) {
 		tracing.AddEvent(span, "quorum_not_reached")
 		tracing.SetAttributes(span,
@@ -209,7 +205,6 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 
 	appAggregationStart := time.Now()
 
-	tracing.AddEvent(span, "loading_signatures")
 	sigs, err := s.cfg.Repo.GetAllSignatures(ctx, requestID)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -218,7 +213,6 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 	tracing.SetAttributes(span, tracing.AttrSignatureCount.Int(len(sigs)))
 	slog.DebugContext(ctx, "Loaded signatures for aggregation", "count", len(sigs))
 
-	tracing.AddEvent(span, "loading_network_config")
 	networkConfig, err := s.cfg.Repo.GetConfigByEpoch(ctx, signatureMap.Epoch)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -227,7 +221,6 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 
 	slog.DebugContext(ctx, "Loaded network config", "networkConfig", networkConfig)
 
-	tracing.AddEvent(span, "aggregating_proof")
 	onlyAggregateStart := time.Now()
 	proofData, err := s.cfg.Aggregator.Aggregate(ctx, validatorSet, sigs)
 	if err != nil {
@@ -242,7 +235,6 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 		"duration", time.Since(appAggregationStart).String(),
 	)
 
-	tracing.AddEvent(span, "broadcasting_proof")
 	err = s.cfg.P2PClient.BroadcastSignatureAggregatedMessage(ctx, proofData)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -327,7 +319,6 @@ func (s *AggregatorApp) GetAggregationStatus(ctx context.Context, requestID comm
 		return symbiotic.AggregationStatus{}, err
 	}
 
-	tracing.AddEvent(span, "loading_signatures")
 	signatures, err := s.cfg.Repo.GetAllSignatures(ctx, requestID)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -336,14 +327,12 @@ func (s *AggregatorApp) GetAggregationStatus(ctx context.Context, requestID comm
 
 	tracing.SetAttributes(span, tracing.AttrSignatureCount.Int(len(signatures)))
 
-	tracing.AddEvent(span, "loading_validator_set")
 	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, signatureRequest.RequiredEpoch)
 	if err != nil {
 		tracing.RecordError(span, err)
 		return symbiotic.AggregationStatus{}, errors.Errorf("failed to get validator set: %w", err)
 	}
 
-	tracing.AddEvent(span, "finding_validators")
 	validators, err := validatorSet.FindValidatorsByKeys(signatureRequest.KeyTag, extractPublicKeys(signatures))
 	if err != nil {
 		tracing.RecordError(span, err)

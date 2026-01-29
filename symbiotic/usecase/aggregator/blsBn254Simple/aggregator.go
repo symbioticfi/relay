@@ -111,13 +111,11 @@ func (a Aggregator) Aggregate(
 	)
 	defer span.End()
 
-	tracing.AddEvent(span, "validating_inputs")
 	if err := valset.Validators.CheckIsSortedByOperatorAddressAsc(); err != nil {
 		tracing.RecordError(span, err)
 		return symbiotic.AggregationProof{}, errors.Errorf("valset is not sorted by operator address asc: %w", err)
 	}
 
-	tracing.AddEvent(span, "processing_validators")
 	validatorsData, err := processValidators(valset.Validators, keyTag)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -132,7 +130,6 @@ func (a Aggregator) Aggregate(
 
 	valKeysToIdx := helpers.GetValidatorsIndexesMapByKey(valset, keyTag)
 
-	tracing.AddEvent(span, "aggregating_signatures")
 	for _, sig := range signatures {
 		pubKey, err := blsBn254.FromRaw(sig.PublicKey.Raw())
 		if err != nil {
@@ -183,7 +180,6 @@ func (a Aggregator) Aggregate(
 		aggG2Key = aggG2Key.Add(aggG2Key, pubKey.G2())
 	}
 
-	tracing.AddEvent(span, "identifying_non_signers")
 	for i, val := range validatorsData {
 		if _, isSigner := signersMap[val.KeySerialized]; !isSigner {
 			nonSigners = append(nonSigners, i)
@@ -238,7 +234,6 @@ func (a Aggregator) Aggregate(
 		nonSignersBytes = append(nonSignersBytes, bidEndianBytes...)
 	}
 
-	tracing.AddEvent(span, "assembling_proof")
 	// Assemble proof
 	proofBytes := bytes.Clone(aggG1SigBytes)
 	proofBytes = append(proofBytes, aggG2KeyBytes...)
@@ -246,7 +241,6 @@ func (a Aggregator) Aggregate(
 	proofBytes = append(proofBytes, nonSignersBytes...)
 
 	tracing.SetAttributes(span, tracing.AttrProofSize.Int(len(proofBytes)))
-	tracing.AddEvent(span, "aggregation_completed")
 
 	return symbiotic.AggregationProof{
 		MessageHash: messageHash,
@@ -271,7 +265,6 @@ func (a Aggregator) Verify(
 	)
 	defer span.End()
 
-	tracing.AddEvent(span, "validating_inputs")
 	// Check key tag type
 	if keyTag.Type() != symbiotic.KeyTypeBlsBn254 {
 		err := errors.New("unsupported key tag")
@@ -291,7 +284,6 @@ func (a Aggregator) Verify(
 		return false, err
 	}
 
-	tracing.AddEvent(span, "parsing_proof_components")
 	// Parse proof components
 	offset := 0
 	length := 64
@@ -447,7 +439,6 @@ func (a Aggregator) Verify(
 		}
 	}
 
-	tracing.AddEvent(span, "checking_quorum")
 	// Check quorum using the same logic as Solidity
 	totalActiveVotingPower := valset.GetTotalActiveVotingPower()
 	signersVotingPower := new(big.Int).Sub(totalActiveVotingPower.Int, &nonSignersVotingPower)
@@ -458,7 +449,6 @@ func (a Aggregator) Verify(
 		return false, err
 	}
 
-	tracing.AddEvent(span, "verifying_bls_signature")
 	// Get aggregated public key from valset (equivalent to extra data in Solidity)
 	aggregatedPubKeys := helpers.GetAggregatedPubKeys(valset, []symbiotic.KeyTag{keyTag})
 	if len(aggregatedPubKeys) == 0 {
@@ -509,7 +499,6 @@ func (a Aggregator) Verify(
 		return false, err
 	}
 
-	tracing.AddEvent(span, "verification_successful")
 	return true, nil
 }
 
@@ -575,7 +564,6 @@ func (a Aggregator) GenerateExtraData(ctx context.Context, valset symbiotic.Vali
 			return nil, errors.Errorf("failed to get extra data key: %w", err)
 		}
 
-		tracing.AddEvent(span, "calculating_validators_keccak")
 		keccakHashAccumulator, err := a.calculateValidatorsKeccak(validatorsData)
 		if err != nil {
 			tracing.RecordError(span, err)
@@ -601,7 +589,6 @@ func (a Aggregator) GenerateExtraData(ctx context.Context, valset symbiotic.Vali
 			return nil, errors.Errorf("failed to deserialize G1: %w", err)
 		}
 
-		tracing.AddEvent(span, "compressing_g1_key")
 		compressedG1, err := compress(keyG1Raw)
 		if err != nil {
 			tracing.RecordError(span, err)
@@ -612,11 +599,8 @@ func (a Aggregator) GenerateExtraData(ctx context.Context, valset symbiotic.Vali
 			Key:   activeAggregatedKeyKey,
 			Value: compressedG1,
 		})
-
-		tracing.AddEvent(span, "key_tag_processed")
 	}
 
-	tracing.AddEvent(span, "sorting_extra_data")
 	// sort extra data by key to ensure deterministic order
 	sort.Slice(extraData, func(i, j int) bool {
 		return bytes.Compare(extraData[i].Key[:], extraData[j].Key[:]) < 0

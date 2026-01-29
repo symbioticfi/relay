@@ -254,7 +254,6 @@ func (s *Service) broadcast(ctx context.Context, topicName string, data []byte) 
 	)
 	defer span.End()
 
-	tracing.AddEvent(span, "looking_up_topic")
 	topic, ok := s.topicsMap[topicName]
 	if !ok {
 		err := errors.Errorf("topic %s not found", topicName)
@@ -262,7 +261,6 @@ func (s *Service) broadcast(ctx context.Context, topicName string, data []byte) 
 		return err
 	}
 
-	tracing.AddEvent(span, "creating_message")
 	msg := prototypes.P2PMessage{
 		Sender:       s.host.ID().String(),
 		Timestamp:    time.Now().Unix(),
@@ -277,7 +275,6 @@ func (s *Service) broadcast(ctx context.Context, topicName string, data []byte) 
 		msg.TraceContext = carrier
 	}
 
-	tracing.AddEvent(span, "marshaling_message")
 	// Marshal and send the message
 	data, err := proto.Marshal(&msg)
 	if err != nil {

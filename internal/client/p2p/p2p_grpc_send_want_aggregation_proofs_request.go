@@ -18,20 +18,14 @@ import (
 
 // SendWantAggregationProofsRequest sends a synchronous aggregation proof request to a peer
 func (s *Service) SendWantAggregationProofsRequest(ctx context.Context, request entity.WantAggregationProofsRequest) (entity.WantAggregationProofsResponse, error) {
-	ctx, span := tracing.StartClientSpan(ctx, "p2p.SendWantAggregationProofsRequest")
+	ctx, span := tracing.StartClientSpan(ctx, "p2p.SendWantAggregationProofsRequest", tracing.AttrRequestIDCount.Int(len(request.RequestIDs)))
 	defer span.End()
-
-	tracing.SetAttributes(span,
-		tracing.AttrRequestIDCount.Int(len(request.RequestIDs)),
-	)
 
 	ctx = log.WithComponent(ctx, "p2p")
 
-	tracing.AddEvent(span, "converting_request")
 	// Convert entity request to protobuf
 	protoReq := entityToProtoAggregationProofRequest(request)
 
-	tracing.AddEvent(span, "selecting_peer")
 	// Select a peer for the request
 	peerID, err := s.selectPeerForSync()
 	if err != nil {
@@ -41,7 +35,6 @@ func (s *Service) SendWantAggregationProofsRequest(ctx context.Context, request 
 
 	tracing.SetAttributes(span, tracing.AttrPeerID.String(peerID.String()))
 
-	tracing.AddEvent(span, "sending_request")
 	// Send request to the selected peer
 	response, err := s.sendAggregationProofRequestToPeer(ctx, peerID, protoReq)
 	if err != nil {
@@ -49,7 +42,6 @@ func (s *Service) SendWantAggregationProofsRequest(ctx context.Context, request 
 		return entity.WantAggregationProofsResponse{}, errors.Errorf("failed to get aggregation proofs from peer %s: %w", peerID, err)
 	}
 
-	tracing.AddEvent(span, "converting_response")
 	entityResp := protoToEntityAggregationProofResponse(response)
 
 	tracing.SetAttributes(span,

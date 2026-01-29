@@ -35,7 +35,6 @@ func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, p2pMs
 
 	msg := p2pMsg.Message
 
-	tracing.AddEvent(span, "processing_aggregation_proof")
 	err := s.cfg.EntityProcessor.ProcessAggregationProof(ctx, msg)
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityAlreadyExist) {
@@ -47,6 +46,5 @@ func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, p2pMs
 		return err
 	}
 
-	tracing.AddEvent(span, "aggregation_proof_processed")
 	return nil
 }

@@ -140,7 +140,6 @@ func (p *ZkProver) Verify(ctx context.Context, valsetLen int, publicInputHash co
 		return false, err
 	}
 
-	tracing.AddEvent(span, "preparing_inputs")
 	valsetLen = getOptimalN(valsetLen)
 	assignment := Circuit{}
 	publicInputHashInt := new(big.Int).SetBytes(publicInputHash[:])
@@ -150,11 +149,9 @@ func (p *ZkProver) Verify(ctx context.Context, valsetLen int, publicInputHash co
 
 	slog.DebugContext(ctx, "[Verify] input hash", "hash", hex.EncodeToString(publicInputHashInt.Bytes()))
 
-	tracing.AddEvent(span, "creating_witness")
 	witness, _ := frontend.NewWitness(&assignment, ecc.BN254.ScalarField(), frontend.PublicOnly())
 	publicWitness, _ := witness.Public()
 
-	tracing.AddEvent(span, "deserializing_proof")
 	//nolint:gosec // G602: proofBytes length is validated by caller, slicing is safe
 	rawProofBytes := bytes.Clone(proofBytes[:256])
 	rawProofBytes = append(rawProofBytes, []byte{0, 0, 0, 1}...) //dirty hack
@@ -169,7 +166,6 @@ func (p *ZkProver) Verify(ctx context.Context, valsetLen int, publicInputHash co
 		return false, err
 	}
 
-	tracing.AddEvent(span, "loading_verification_key")
 	vk, ok := p.vk[valsetLen]
 	if !ok {
 		err := errors.Errorf("failed to find verification key for valset length %d", valsetLen)
@@ -177,7 +173,6 @@ func (p *ZkProver) Verify(ctx context.Context, valsetLen int, publicInputHash co
 		return false, err
 	}
 
-	tracing.AddEvent(span, "verifying_groth16_proof")
 	err = groth16.Verify(proof, vk, publicWitness, backend.WithVerifierHashToFieldFunction(sha256.New()))
 	if err != nil {
 		err = errors.Errorf("failed to verify: %w", err)
@@ -185,7 +180,6 @@ func (p *ZkProver) Verify(ctx context.Context, valsetLen int, publicInputHash co
 		return false, err
 	}
 
-	tracing.AddEvent(span, "verification_successful")
 	return true, nil
 }
 
@@ -201,7 +195,6 @@ func (p *ZkProver) Prove(ctx context.Context, proveInput ProveInput) (ProofData,
 		return ProofData{}, err
 	}
 
-	tracing.AddEvent(span, "loading_circuit_parameters")
 	pk := p.pk[len(proveInput.ValidatorData)]
 	vk := p.vk[len(proveInput.ValidatorData)]
 	r1cs, ok := p.cs[len(proveInput.ValidatorData)]
@@ -211,7 +204,6 @@ func (p *ZkProver) Prove(ctx context.Context, proveInput ProveInput) (ProofData,
 		return ProofData{}, err
 	}
 
-	tracing.AddEvent(span, "creating_witness")
 	// witness definition
 	assignment := Circuit{}
 	setCircuitData(&assignment, proveInput)
@@ -227,7 +219,6 @@ func (p *ZkProver) Prove(ctx context.Context, proveInput ProveInput) (ProofData,
 		return ProofData{}, errors.Errorf("failed to create public witness: %w", err)
 	}
 
-	tracing.AddEvent(span, "generating_groth16_proof")
 	// groth16: Prove & Verify
 	proof, err := groth16.Prove(r1cs, pk, witness, backend.WithProverHashToFieldFunction(sha256.New()))
 	if err != nil {
@@ -235,7 +226,6 @@ func (p *ZkProver) Prove(ctx context.Context, proveInput ProveInput) (ProofData,
 		return ProofData{}, errors.Errorf("failed to prove: %w", err)
 	}
 
-	tracing.AddEvent(span, "formatting_public_inputs")
 	publicInputs := publicWitness.Vector().(fr.Vector)
 	// Format for the specific Solidity interface
 	formattedInputs := make([]*big.Int, 0, len(publicInputs))
@@ -257,7 +247,6 @@ func (p *ZkProver) Prove(ctx context.Context, proveInput ProveInput) (ProofData,
 		panic("proof does not implement MarshalSolidity()")
 	}
 
-	tracing.AddEvent(span, "verifying_proof")
 	// verify proof
 	err = groth16.Verify(proof, vk, publicWitness, backend.WithVerifierHashToFieldFunction(sha256.New()))
 	if err != nil {
@@ -265,7 +254,6 @@ func (p *ZkProver) Prove(ctx context.Context, proveInput ProveInput) (ProofData,
 		return ProofData{}, err
 	}
 
-	tracing.AddEvent(span, "serializing_proof")
 	// Serialize the proof
 	var proofBuffer bytes.Buffer
 	_, err = proof.WriteRawTo(&proofBuffer)
@@ -298,7 +286,6 @@ func (p *ZkProver) Prove(ctx context.Context, proveInput ProveInput) (ProofData,
 
 	_, nonSignersAggVotingPower, totalVotingPower := getNonSignersData(proveInput.ValidatorData)
 
-	tracing.AddEvent(span, "proof_generation_completed")
 	return ProofData{
 		Proof:                 proofBytes[:256],
 		Commitments:           proofBytes[260:324],

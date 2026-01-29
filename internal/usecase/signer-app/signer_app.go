@@ -98,7 +98,6 @@ func (s *SignerApp) RequestSignature(ctx context.Context, req symbiotic.Signatur
 		return common.Hash{}, err
 	}
 
-	tracing.AddEvent(span, "hashing_message")
 	msgHash, err := crypto.HashMessage(req.KeyTag.Type(), req.Message)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -114,14 +113,12 @@ func (s *SignerApp) RequestSignature(ctx context.Context, req symbiotic.Signatur
 	requestId := extendedSignature.RequestID()
 	tracing.SetAttributes(span, tracing.AttrRequestID.String(requestId.Hex()))
 
-	tracing.AddEvent(span, "saving_request")
 	err = s.cfg.Repo.SaveSignatureRequest(ctx, requestId, req)
 	if err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
 		tracing.RecordError(span, err)
 		return common.Hash{}, errors.Errorf("failed to get signature request: %w", err)
 	}
 
-	tracing.AddEvent(span, "queuing_for_signing")
 	s.queue.Add(requestId)
 
 	tracing.AddEvent(span, "signature_requested")
@@ -161,7 +158,6 @@ func (s *SignerApp) completeSign(ctx context.Context, requestID common.Hash, p2p
 		return errors.Errorf("failed to get validator set: %w", err)
 	}
 
-	tracing.AddEvent(span, "getting_private_key")
 	private, err := s.cfg.KeyProvider.GetPrivateKey(req.KeyTag)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -200,7 +196,6 @@ func (s *SignerApp) completeSign(ctx context.Context, requestID common.Hash, p2p
 
 	timeAppSignStart := time.Now()
 
-	tracing.AddEvent(span, "signing_message")
 	pkSignStart := time.Now()
 	signature, hash, err := private.Sign(req.Message)
 	if err != nil {

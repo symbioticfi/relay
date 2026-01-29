@@ -36,7 +36,6 @@ func (s *Service) SendWantSignaturesRequest(ctx context.Context, request entity.
 
 	ctx = log.WithComponent(ctx, "p2p")
 
-	tracing.AddEvent(span, "converting_request")
 	// Convert entity request to protobuf
 	protoReq, err := entityToProtoRequest(request)
 	if err != nil {
@@ -44,7 +43,6 @@ func (s *Service) SendWantSignaturesRequest(ctx context.Context, request entity.
 		return entity.WantSignaturesResponse{}, errors.Errorf("failed to convert request: %w", err)
 	}
 
-	tracing.AddEvent(span, "selecting_peer")
 	// Select a peer for the request
 	peerID, err := s.selectPeerForSync()
 	if err != nil {
@@ -54,7 +52,6 @@ func (s *Service) SendWantSignaturesRequest(ctx context.Context, request entity.
 
 	tracing.SetAttributes(span, tracing.AttrPeerID.String(peerID.String()))
 
-	tracing.AddEvent(span, "sending_request")
 	// Send request to the selected peer
 	response, err := s.sendRequestToPeer(ctx, peerID, protoReq)
 	if err != nil {
@@ -62,7 +59,6 @@ func (s *Service) SendWantSignaturesRequest(ctx context.Context, request entity.
 		return entity.WantSignaturesResponse{}, errors.Errorf("failed to get signatures from peer %s: %w", peerID, err)
 	}
 
-	tracing.AddEvent(span, "converting_response")
 	// Convert protobuf response to entity
 	entityResp := protoToEntityResponse(ctx, response)
 

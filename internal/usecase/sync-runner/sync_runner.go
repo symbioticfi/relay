@@ -98,7 +98,6 @@ func (s *Runner) runSignatureSync(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, s.cfg.SyncTimeout)
 	defer cancel()
 
-	tracing.AddEvent(span, "building_request")
 	request, err := s.cfg.Provider.BuildWantSignaturesRequest(ctx)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -114,7 +113,6 @@ func (s *Runner) runSignatureSync(ctx context.Context) error {
 		return nil
 	}
 
-	tracing.AddEvent(span, "requesting_from_peers")
 	response, err := s.cfg.P2PService.SendWantSignaturesRequest(ctx, request)
 	if err != nil {
 		if errors.Is(err, entity.ErrNoPeers) {
@@ -125,7 +123,6 @@ func (s *Runner) runSignatureSync(ctx context.Context) error {
 		return errors.Errorf("failed to send want signatures request: %w", err)
 	}
 
-	tracing.AddEvent(span, "processing_response")
 	slog.DebugContext(ctx, "Received signature response", "signaturesCount", len(response.Signatures))
 
 	stats := s.cfg.Provider.ProcessReceivedSignatures(ctx, response, request.WantSignatures)
@@ -159,7 +156,6 @@ func (s *Runner) runAggregationProofSync(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, s.cfg.SyncTimeout)
 	defer cancel()
 
-	tracing.AddEvent(span, "building_request")
 	request, err := s.cfg.Provider.BuildWantAggregationProofsRequest(ctx)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -174,7 +170,6 @@ func (s *Runner) runAggregationProofSync(ctx context.Context) error {
 		return nil
 	}
 
-	tracing.AddEvent(span, "requesting_from_peers")
 	response, err := s.cfg.P2PService.SendWantAggregationProofsRequest(ctx, request)
 	if err != nil {
 		if errors.Is(err, entity.ErrNoPeers) {
@@ -185,7 +180,6 @@ func (s *Runner) runAggregationProofSync(ctx context.Context) error {
 		return errors.Errorf("failed to send want aggregation proofs request: %w", err)
 	}
 
-	tracing.AddEvent(span, "processing_response")
 	slog.DebugContext(ctx, "Received aggregation proof response", "proofsCount", len(response.Proofs))
 
 	stats, err := s.cfg.Provider.ProcessReceivedAggregationProofs(ctx, response)

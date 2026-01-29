@@ -105,7 +105,6 @@ func (s *Service) runPruning(ctx context.Context) error {
 
 	start := time.Now()
 
-	tracing.AddEvent(span, "loading_latest_epoch")
 	latestEpoch, err := s.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityNotFound) {
@@ -118,32 +117,27 @@ func (s *Service) runPruning(ctx context.Context) error {
 
 	tracing.SetAttributes(span, tracing.AttrEpoch.Int64(int64(latestEpoch)))
 
-	tracing.AddEvent(span, "loading_oldest_epoch")
 	oldestStoredEpoch, err := s.cfg.Repo.GetOldestValidatorSetEpoch(ctx)
 	if err != nil {
 		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get oldest validator set epoch: %w", err)
 	}
 
-	tracing.AddEvent(span, "pruning_valsets")
 	valsetCount, err := s.pruneValsetEntities(ctx, latestEpoch, oldestStoredEpoch)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to prune valset entities", "error", err)
 	}
 
-	tracing.AddEvent(span, "pruning_proofs")
 	proofCount, err := s.pruneProofEntities(ctx, latestEpoch, oldestStoredEpoch)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to prune proof entities", "error", err)
 	}
 
-	tracing.AddEvent(span, "pruning_signatures")
 	signatureCount, err := s.pruneSignatureEntities(ctx, latestEpoch, oldestStoredEpoch)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to prune signature entities", "error", err)
 	}
 
-	tracing.AddEvent(span, "pruning_indices")
 	indexCount, err := s.pruneRequestIDEpochIndices(ctx, latestEpoch, oldestStoredEpoch)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to prune request ID epoch indices", "error", err)
@@ -236,7 +230,6 @@ func (s *Service) pruneEntities(
 		return 0, nil
 	}
 
-	tracing.AddEvent(span, "calculating_retention_window")
 	retentionWindow := symbiotic.Epoch(retentionEpochs)
 	if latestEpoch < retentionWindow {
 		tracing.AddEvent(span, "skipped_insufficient_epochs")
@@ -249,7 +242,6 @@ func (s *Service) pruneEntities(
 		return 0, nil
 	}
 
-	tracing.AddEvent(span, "pruning_epochs")
 	count := uint64(0)
 	for epoch := oldestStoredEpoch; epoch < oldestToKeep; epoch++ {
 		slog.DebugContext(ctx, "Pruning entities", "entityType", entityType, "epoch", epoch)
@@ -264,7 +256,6 @@ func (s *Service) pruneEntities(
 	}
 
 	tracing.SetAttributes(span, tracing.AttrEpochCount.Int(int(count)))
-	tracing.AddEvent(span, "pruning_completed")
 
 	return count, nil
 }

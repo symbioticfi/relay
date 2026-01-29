@@ -76,7 +76,6 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 		return nil
 	}
 
-	tracing.AddEvent(span, "processing_signature")
 	err := s.cfg.EntityProcessor.ProcessSignature(ctx, msg, false)
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityAlreadyExist) {
@@ -88,6 +87,5 @@ func (s *SignatureListenerUseCase) HandleSignatureReceivedMessage(ctx context.Co
 	}
 
 	slog.InfoContext(ctx, "Listener processed received signature")
-	tracing.AddEvent(span, "signature_processed")
 	return nil
 }

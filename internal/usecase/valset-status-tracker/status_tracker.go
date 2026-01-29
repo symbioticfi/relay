@@ -124,14 +124,12 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 	ctx, span := tracing.StartSpan(ctx, "status_tracker.TrackCommittedEpochs")
 	defer span.End()
 
-	tracing.AddEvent(span, "loading_uncommitted_epoch")
 	firstUncommittedEpoch, err := s.cfg.Repo.GetFirstUncommittedValidatorSetEpoch(ctx)
 	if err != nil {
 		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get first uncommitted validator set epoch: %w", err)
 	}
 
-	tracing.AddEvent(span, "loading_latest_epoch")
 	latestEpoch, err := s.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityNotFound) {
@@ -149,7 +147,6 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 		return nil
 	}
 
-	tracing.AddEvent(span, "finding_settlements")
 	settlements, err := s.findLatestNonZeroSettlements(ctx)
 	if err != nil {
 		tracing.RecordError(span, err)

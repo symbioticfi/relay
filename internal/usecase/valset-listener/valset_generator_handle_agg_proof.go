@@ -52,7 +52,6 @@ func (s *Service) tryToCommitPendingProofs(ctx context.Context) (uint64, error) 
 	ctx, span := tracing.StartSpan(ctx, "valset_listener.TryToCommitPendingProofs")
 	defer span.End()
 
-	tracing.AddEvent(span, "loading_latest_validator_set")
 	valsetHeader, err := s.cfg.Repo.GetLatestValidatorSetHeader(ctx)
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		tracing.RecordError(span, err)
@@ -77,7 +76,6 @@ func (s *Service) tryToCommitPendingProofs(ctx context.Context) (uint64, error) 
 		return 0, nil
 	}
 
-	tracing.AddEvent(span, "loading_network_config")
 	nwCfg, err := s.cfg.Repo.GetConfigByEpoch(ctx, valsetHeader.Epoch)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -94,7 +92,6 @@ func (s *Service) tryToCommitPendingProofs(ctx context.Context) (uint64, error) 
 		attribute.Int64("tick_interval", int64(tickInterval)),
 	)
 
-	tracing.AddEvent(span, "checking_committer_role")
 	if s.cfg.ForceCommitter {
 		tracing.SetAttributes(span, attribute.Bool("force_committer", true))
 		slog.DebugContext(ctx, "Force committer mode enabled", "epoch", valsetHeader.Epoch)
@@ -128,7 +125,6 @@ func (s *Service) tryToCommitPendingProofs(ctx context.Context) (uint64, error) 
 		tracing.AddEvent(span, "confirmed_active_committer")
 	}
 
-	tracing.AddEvent(span, "detecting_last_committed_epoch_from_db")
 	lastCommittedEpoch := s.detectLastCommittedEpochFromDB(ctx)
 
 	tracing.SetAttributes(span, attribute.Int64("last_committed_epoch", int64(lastCommittedEpoch)))
@@ -161,7 +157,6 @@ func (s *Service) tryToCommitPendingProofs(ctx context.Context) (uint64, error) 
 		}
 	}
 
-	tracing.AddEvent(span, "loading_pending_proofs")
 	pendingProofs, err := s.cfg.Repo.GetPendingProofCommitsSinceEpoch(ctx, lastCommittedEpoch+1, commitCheckBatchSize)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -176,7 +171,6 @@ func (s *Service) tryToCommitPendingProofs(ctx context.Context) (uint64, error) 
 		return tickInterval, nil
 	}
 
-	tracing.AddEvent(span, "processing_pending_proofs")
 	processedCount := 0
 	for _, proofKey := range pendingProofs {
 		err = s.processPendingProof(ctx, proofKey)
@@ -210,7 +204,6 @@ func (s *Service) processPendingProof(ctx context.Context, proofKey symbiotic.Pr
 	)
 	slog.DebugContext(ctx, "Found pending proof commit")
 
-	tracing.AddEvent(span, "loading_proof")
 	proof, err := s.cfg.Repo.GetAggregationProof(ctx, proofKey.RequestID)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -219,7 +212,6 @@ func (s *Service) processPendingProof(ctx context.Context, proofKey symbiotic.Pr
 
 	tracing.SetAttributes(span, tracing.AttrProofSize.Int(len(proof.Proof)))
 
-	tracing.AddEvent(span, "loading_validator_set")
 	targetValset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, proofKey.Epoch)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -229,14 +221,12 @@ func (s *Service) processPendingProof(ctx context.Context, proofKey symbiotic.Pr
 	tracing.SetAttributes(span, tracing.AttrValidatorCount.Int(len(targetValset.Validators)))
 	s.cfg.Metrics.ObserveAggregationProofSize(len(proof.Proof), len(targetValset.Validators))
 
-	tracing.AddEvent(span, "loading_config")
 	config, err := s.cfg.EvmClient.GetConfig(ctx, targetValset.CaptureTimestamp, proofKey.Epoch)
 	if err != nil {
 		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get config for epoch %d: %w", proofKey.Epoch, err)
 	}
 
-	tracing.AddEvent(span, "generating_extra_data")
 	extraData, err := s.cfg.Aggregator.GenerateExtraData(ctx, targetValset, config.RequiredKeyTags)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -264,7 +254,6 @@ func (s *Service) processPendingProof(ctx context.Context, proofKey symbiotic.Pr
 
 	slog.DebugContext(ctx, "Committing proof to settlements", "header", header, "extraData", extraData)
 
-	tracing.AddEvent(span, "committing_to_settlements")
 	ok, err := s.commitValsetToAllSettlements(ctx, config, header, extraData, proof.Proof)
 	if !ok {
 		_err := errors.Errorf("failed to commit valset to all settlements for epoch %d, error=%w", proofKey.Epoch, err)

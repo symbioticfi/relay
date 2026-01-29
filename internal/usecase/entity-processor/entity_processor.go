@@ -89,7 +89,6 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature symbio
 	)
 	slog.DebugContext(ctx, "Started processing signature", "self", self)
 
-	tracing.AddEvent(span, "looking_up_validator")
 	validator, activeIndex, err := s.cfg.Repo.GetValidatorByKey(ctx, signature.Epoch, signature.KeyTag, signature.PublicKey.OnChain())
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -106,7 +105,6 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature symbio
 			return err
 		}
 
-		tracing.AddEvent(span, "checking_signature_existence")
 		_, err = s.cfg.Repo.GetSignatureByIndex(ctx, signature.RequestID(), activeIndex)
 		if err == nil {
 			tracing.AddEvent(span, "signature_already_exists")
@@ -117,7 +115,6 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature symbio
 			return errors.Errorf("failed to check existing signature: %w", err)
 		}
 
-		tracing.AddEvent(span, "verifying_signature")
 		err = signature.PublicKey.VerifyWithHash(signature.MessageHash, signature.Signature)
 		if err != nil {
 			tracing.RecordError(span, err)
@@ -125,7 +122,6 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature symbio
 		}
 	}
 
-	tracing.AddEvent(span, "saving_signature")
 	if err := s.cfg.Repo.SaveSignature(ctx, signature, validator, activeIndex); err != nil {
 		tracing.RecordError(span, err)
 		return errors.Errorf("failed to add signature: %w", err)
@@ -137,7 +133,6 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature symbio
 		return errors.Errorf("failed to emit signature processed signal: %w", err)
 	}
 
-	tracing.AddEvent(span, "signature_processed")
 	return nil
 }
 
@@ -158,7 +153,6 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregati
 	)
 	slog.DebugContext(ctx, "Started processing aggregation proof")
 
-	tracing.AddEvent(span, "checking_proof_existence")
 	_, err := s.cfg.Repo.GetAggregationProof(ctx, aggregationProof.RequestID())
 	if err == nil {
 		tracing.AddEvent(span, "proof_already_exists")
@@ -169,7 +163,6 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregati
 		return errors.Errorf("failed to check existing aggregation proof: %w", err)
 	}
 
-	tracing.AddEvent(span, "loading_validator_set")
 	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, aggregationProof.Epoch)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -178,7 +171,6 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregati
 
 	tracing.SetAttributes(span, tracing.AttrValidatorCount.Int(len(validatorSet.Validators)))
 
-	tracing.AddEvent(span, "verifying_proof")
 	ok, err := s.cfg.Aggregator.Verify(ctx, validatorSet, aggregationProof.KeyTag, aggregationProof)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -190,7 +182,6 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregati
 		return err
 	}
 
-	tracing.AddEvent(span, "saving_proof")
 	if err := s.cfg.Repo.SaveProof(ctx, aggregationProof); err != nil {
 		tracing.RecordError(span, err)
 		return errors.Errorf("failed to add aggregation proof: %w", err)
@@ -202,12 +193,10 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregati
 
 	slog.DebugContext(ctx, "Proof saved")
 
-	tracing.AddEvent(span, "emitting_signal")
 	if err := s.cfg.AggProofSignal.Emit(aggregationProof); err != nil {
 		tracing.RecordError(span, err)
 		return errors.Errorf("failed to emit aggregation proof signal: %w", err)
 	}
 
-	tracing.AddEvent(span, "proof_processed")
 	return nil
 }

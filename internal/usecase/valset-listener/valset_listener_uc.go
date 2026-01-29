@@ -139,7 +139,6 @@ func (s *Service) determineStartupSyncRangeAndLoadMissingEpochs(ctx context.Cont
 	ctx, span := tracing.StartSpan(ctx, "valset_listener.DetermineStartupSyncRangeAndLoadMissingEpochs")
 	defer span.End()
 
-	tracing.AddEvent(span, "determining_startup_sync_range")
 	fromEpoch, toEpoch, err := s.determineStartupSyncRange(ctx)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -152,13 +151,11 @@ func (s *Service) determineStartupSyncRangeAndLoadMissingEpochs(ctx context.Cont
 		attribute.Int64("epochs_to_sync", int64(toEpoch-fromEpoch+1)),
 	)
 
-	tracing.AddEvent(span, "loading_missing_epochs")
 	if _, err := s.tryLoadMissingEpochs(ctx, fromEpoch, toEpoch); err != nil {
 		tracing.RecordError(span, err)
 		return errors.Errorf("failed to load missing epochs: %w", err)
 	}
 
-	tracing.AddEvent(span, "startup_sync_completed")
 	return nil
 }
 
@@ -186,7 +183,6 @@ func (s *Service) determineSteadySyncRangeAndLoadMissingEpochs(ctx context.Conte
 	ctx, span := tracing.StartSpan(ctx, "valset_listener.DetermineSteadySyncRangeAndLoadMissingEpochs")
 	defer span.End()
 
-	tracing.AddEvent(span, "determining_steady_sync_range")
 	fromEpoch, toEpoch, err := s.determineSteadySyncRange(ctx)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -204,7 +200,6 @@ func (s *Service) determineSteadySyncRangeAndLoadMissingEpochs(ctx context.Conte
 		attribute.Int64("epochs_to_sync", epochsToSync),
 	)
 
-	tracing.AddEvent(span, "loading_missing_epochs")
 	timeUntilNextEpoch, err := s.tryLoadMissingEpochs(ctx, fromEpoch, toEpoch)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -215,7 +210,6 @@ func (s *Service) determineSteadySyncRangeAndLoadMissingEpochs(ctx context.Conte
 		attribute.String("time_until_next_epoch", timeUntilNextEpoch.String()),
 	)
 
-	tracing.AddEvent(span, "steady_sync_completed")
 	return timeUntilNextEpoch, nil
 }
 
@@ -403,21 +397,18 @@ func (s *Service) process(
 	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(valSet.Epoch)))
 	slog.DebugContext(ctx, "Started processing valset for epoch")
 
-	tracing.AddEvent(span, "getting_network_data")
 	networkData, err := s.getNetworkData(ctx, config)
 	if err != nil {
 		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get network data: %w", err)
 	}
 
-	tracing.AddEvent(span, "generating_extra_data")
 	extraData, err := s.cfg.Aggregator.GenerateExtraData(ctx, valSet, config.RequiredKeyTags)
 	if err != nil {
 		tracing.RecordError(span, err)
 		return errors.Errorf("failed to generate extra data: %w", err)
 	}
 
-	tracing.AddEvent(span, "computing_commitment")
 	header, err := valSet.GetHeader()
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -429,7 +420,6 @@ func (s *Service) process(
 		return errors.Errorf("failed to get header commitment hash: %w", err)
 	}
 
-	tracing.AddEvent(span, "checking_signer_role")
 	onchainKey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(prevValSet.RequiredKeyTag)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -475,7 +465,6 @@ func (s *Service) process(
 		SignatureRequest:     signatureRequest,
 		ValidatorSetMetadata: metadata,
 	}
-	tracing.AddEvent(span, "saving_next_valset_data")
 	if err = s.cfg.Repo.SaveNextValsetData(ctx, data); err != nil {
 		err = errors.Errorf("failed to save validator set data: %w", err)
 		tracing.RecordError(span, err)
@@ -566,21 +555,18 @@ func (s *Service) derive(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.
 	)
 	defer span.End()
 
-	tracing.AddEvent(span, "getting_epoch_start")
 	epochStart, err := s.cfg.EvmClient.GetEpochStart(ctx, epoch)
 	if err != nil {
 		tracing.RecordError(span, err)
 		return symbiotic.ValidatorSet{}, symbiotic.NetworkConfig{}, errors.Errorf("failed to get epoch start for epoch %d: %w", epoch, err)
 	}
 
-	tracing.AddEvent(span, "loading_network_config")
 	config, err := s.cfg.EvmClient.GetConfig(ctx, epochStart, epoch)
 	if err != nil {
 		tracing.RecordError(span, err)
 		return symbiotic.ValidatorSet{}, symbiotic.NetworkConfig{}, errors.Errorf("failed to get network config for epoch %d: %w", epoch, err)
 	}
 
-	tracing.AddEvent(span, "deriving_validator_set")
 	valset, err := s.cfg.Deriver.GetValidatorSet(ctx, epoch, config)
 	if err != nil {
 		tracing.RecordError(span, err)

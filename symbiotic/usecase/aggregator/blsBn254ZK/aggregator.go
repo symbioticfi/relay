@@ -53,7 +53,6 @@ func (a Aggregator) Aggregate(
 	)
 	defer span.End()
 
-	tracing.AddEvent(span, "aggregating_signatures")
 	aggG1Sig := new(bn254.G1Affine)
 	aggG2Key := new(bn254.G2Affine)
 	signers := make(map[common.Address]bool)
@@ -87,7 +86,6 @@ func (a Aggregator) Aggregate(
 		signers[val.Operator] = true
 	}
 
-	tracing.AddEvent(span, "building_validator_data")
 	var validatorsData []proof.ValidatorData
 	for _, val := range valset.Validators {
 		if val.IsActive {
@@ -113,7 +111,6 @@ func (a Aggregator) Aggregate(
 		}
 	}
 
-	tracing.AddEvent(span, "hashing_message_to_g1")
 	messageG1, err := blsBn254.HashToG1(messageHash)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -121,7 +118,6 @@ func (a Aggregator) Aggregate(
 	}
 	messageG1Bn254 := bn254.G1Affine{X: messageG1.X, Y: messageG1.Y}
 
-	tracing.AddEvent(span, "generating_zk_proof")
 	proverInput := proof.ProveInput{
 		ValidatorData:   proof.NormalizeValset(validatorsData),
 		MessageG1:       messageG1Bn254,
@@ -137,7 +133,6 @@ func (a Aggregator) Aggregate(
 
 	proofBytes := proofData.Marshal()
 	tracing.SetAttributes(span, tracing.AttrProofSize.Int(len(proofBytes)))
-	tracing.AddEvent(span, "aggregation_completed")
 
 	return symbiotic.AggregationProof{
 		MessageHash: messageHash,
@@ -170,7 +165,6 @@ func (a Aggregator) Verify(
 		}
 	}
 
-	tracing.AddEvent(span, "calculating_mimc_accumulator")
 	mimcAccum, err := validatorSetMimcAccumulator(valset.Validators, keyTag)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -179,7 +173,6 @@ func (a Aggregator) Verify(
 	// last 32 bytes is aggVotingPowerBytes
 	aggVotingPowerBytes := aggregationProof.Proof[len(aggregationProof.Proof)-32:]
 
-	tracing.AddEvent(span, "hashing_message_to_g1")
 	messageG1, err := blsBn254.HashToG1(aggregationProof.MessageHash)
 	if err != nil {
 		tracing.RecordError(span, err)
@@ -187,20 +180,17 @@ func (a Aggregator) Verify(
 	}
 	messageG1Bytes := messageG1.RawBytes() // non compressed
 
-	tracing.AddEvent(span, "preparing_public_inputs")
 	inpBytes := mimcAccum[:]
 	inpBytes = append(inpBytes, aggVotingPowerBytes...)
 	inpBytes = append(inpBytes, messageG1Bytes[:]...)
 	inpHash := crypto.Keccak256Hash(inpBytes)
 
-	tracing.AddEvent(span, "verifying_zk_proof")
 	ok, err := a.prover.Verify(ctx, activeVals, inpHash, aggregationProof.Proof)
 	if err != nil {
 		tracing.RecordError(span, err)
 		return false, err
 	}
 
-	tracing.AddEvent(span, "checking_quorum")
 	aggVotingPower := new(big.Int).SetBytes(aggVotingPowerBytes)
 	if aggVotingPower.Cmp(valset.QuorumThreshold.Int) < 0 {
 		err := errors.Errorf("agg voting power %s is less than quorum threshold %s", aggVotingPower.String(), valset.QuorumThreshold.String())
@@ -208,7 +198,6 @@ func (a Aggregator) Verify(
 		return false, err
 	}
 
-	tracing.AddEvent(span, "verification_successful")
 	return ok, nil
 }
 
@@ -240,7 +229,6 @@ func (a Aggregator) GenerateExtraData(ctx context.Context, valset symbiotic.Vali
 	for _, key := range aggregatedPubKeys {
 		tracing.AddEvent(span, "processing_key_tag", tracing.AttrKeyTag.String(key.Tag.String()))
 
-		tracing.AddEvent(span, "calculating_mimc_accumulator")
 		mimcAccumulator, err := validatorSetMimcAccumulator(valset.Validators, key.Tag)
 		if err != nil {
 			tracing.RecordError(span, err)
@@ -261,7 +249,6 @@ func (a Aggregator) GenerateExtraData(ctx context.Context, valset symbiotic.Vali
 		tracing.AddEvent(span, "key_tag_processed")
 	}
 
-	tracing.AddEvent(span, "sorting_extra_data")
 	// sort extra data by key to ensure deterministic order
 	sort.Slice(extraData, func(i, j int) bool {
 		return bytes.Compare(extraData[i].Key[:], extraData[j].Key[:]) < 0
