@@ -6,8 +6,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/symbioticfi/relay/internal/entity"
+	"github.com/symbioticfi/relay/pkg/tracing"
 )
 
 // ProcessReceivedSignatures validates and processes signatures received from peer nodes during
@@ -33,6 +35,12 @@ import (
 //   - Returns comprehensive statistics for monitoring and debugging
 //   - Logs warnings for validation failures and errors
 func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.WantSignaturesResponse, wantSignatures map[common.Hash]entity.Bitmap) entity.SignatureProcessingStats {
+	ctx, span := tracing.StartSpan(ctx, "sync-provider.ProcessReceivedSignatures",
+		attribute.Int("request.signatures_count", len(response.Signatures)),
+		attribute.Int("request.want_signatures_count", len(wantSignatures)),
+	)
+	defer span.End()
+
 	var stats entity.SignatureProcessingStats
 
 	for requestID, signatures := range response.Signatures {
@@ -85,6 +93,15 @@ func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.
 			stats.ProcessedCount++
 		}
 	}
+
+	tracing.SetAttributes(span,
+		attribute.Int("response.processed_count", stats.ProcessedCount),
+		attribute.Int("response.already_exist_count", stats.AlreadyExistCount),
+		attribute.Int("response.unrequested_hash_count", stats.UnrequestedHashCount),
+		attribute.Int("response.unrequested_signature_count", stats.UnrequestedSignatureCount),
+		attribute.Int("response.signature_request_fail_count", stats.SignatureRequestFailCount),
+		attribute.Int("response.processing_fail_count", stats.ProcessingFailCount),
+	)
 
 	return stats
 }

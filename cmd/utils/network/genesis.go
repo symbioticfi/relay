@@ -116,7 +116,7 @@ var genesisCmd = &cobra.Command{
 		}
 
 		// extra data generation is also clear but still in deriver
-		extraData, err := aggregator.GenerateExtraData(newValset, networkConfig.RequiredKeyTags)
+		extraData, err := aggregator.GenerateExtraData(ctx, newValset, networkConfig.RequiredKeyTags)
 		if err != nil {
 			return errors.Errorf("failed to generate extra data: %w", err)
 		}

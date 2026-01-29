@@ -100,3 +100,8 @@ pruner:
   # Examples: 30m, 1h, 6h, 24h
   interval: 1h
 
+
+tracing:
+  enabled: false
+  endpoint: "localhost:4317"
+  sample-rate: 1.0

@@ -34,6 +34,7 @@ import (
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/proof"
 	"github.com/symbioticfi/relay/pkg/signals"
+	"github.com/symbioticfi/relay/pkg/tracing"
 	"github.com/symbioticfi/relay/symbiotic/client/evm"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator"
@@ -227,6 +228,33 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create p2p service: %w", err)
 	}
 	defer p2pService.Close()
+
+	// Initialize tracing with instance ID from P2P service
+	if cfg.Tracing.Enabled {
+		tracer, err := tracing.New(ctx, tracing.Config{
+			Enabled:    cfg.Tracing.Enabled,
+			Endpoint:   cfg.Tracing.Endpoint,
+			SampleRate: cfg.Tracing.SampleRate,
+			InstanceID: p2pService.ID(), // Use P2P ID as unique instance identifier
+			Version:    Version,
+		})
+		if err != nil {
+			return errors.Errorf("failed to create tracer: %w", err)
+		}
+		defer func() {
+			shutdownCtx, shutdownCancel := context.WithTimeout(ctx, 5*time.Second)
+			defer shutdownCancel()
+			if err := tracer.Shutdown(shutdownCtx); err != nil {
+				slog.ErrorContext(ctx, "Failed to shutdown tracer", "error", err)
+			}
+		}()
+		slog.InfoContext(ctx, "Tracing enabled",
+			"endpoint", cfg.Tracing.Endpoint,
+			"service", tracing.ServiceName,
+			"instanceId", p2pService.ID(),
+			"sampleRate", cfg.Tracing.SampleRate,
+		)
+	}
 
 	eg.Go(func() error {
 		err := signer.HandleSignatureRequests(egCtx, cfg.SignalCfg.WorkerCount, p2pService)

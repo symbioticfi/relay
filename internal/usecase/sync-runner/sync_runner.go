@@ -8,9 +8,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
+	"github.com/symbioticfi/relay/pkg/tracing"
 )
 
 type p2pService interface {
@@ -89,16 +91,24 @@ func (s *Runner) Start(ctx context.Context) error {
 }
 
 func (s *Runner) runSignatureSync(ctx context.Context) error {
+	ctx, span := tracing.StartSpan(ctx, "sync_runner.SyncSignatures")
+	defer span.End()
+
 	// Create context with timeout for signature sync
 	ctx, cancel := context.WithTimeout(ctx, s.cfg.SyncTimeout)
 	defer cancel()
+
 	request, err := s.cfg.Provider.BuildWantSignaturesRequest(ctx)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to build want signatures request: %w", err)
 	}
+
+	tracing.SetAttributes(span, tracing.AttrSignatureCount.Int(len(request.WantSignatures)))
 	s.cfg.Metrics.ObserveP2PSyncRequestedHashes(len(request.WantSignatures))
 
 	if len(request.WantSignatures) == 0 {
+		tracing.AddEvent(span, "no_pending_requests")
 		slog.InfoContext(ctx, "No pending signature requests found")
 		return nil
 	}
@@ -109,6 +119,7 @@ func (s *Runner) runSignatureSync(ctx context.Context) error {
 			slog.DebugContext(ctx, "No peers available to request signatures from")
 			return nil
 		}
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to send want signatures request: %w", err)
 	}
 
@@ -116,6 +127,7 @@ func (s *Runner) runSignatureSync(ctx context.Context) error {
 
 	stats := s.cfg.Provider.ProcessReceivedSignatures(ctx, response, request.WantSignatures)
 
+	tracing.SetAttributes(span, tracing.AttrSignatureCount.Int(stats.ProcessedCount))
 	slog.InfoContext(ctx, "Signature sync completed",
 		"processed", stats.ProcessedCount,
 		"totalFails", stats.TotalErrors(),
@@ -137,16 +149,23 @@ func (s *Runner) runSignatureSync(ctx context.Context) error {
 }
 
 func (s *Runner) runAggregationProofSync(ctx context.Context) error {
+	ctx, span := tracing.StartSpan(ctx, "sync_runner.SyncAggregationProofs")
+	defer span.End()
+
 	// Create context with timeout for aggregation proof sync
 	ctx, cancel := context.WithTimeout(ctx, s.cfg.SyncTimeout)
 	defer cancel()
+
 	request, err := s.cfg.Provider.BuildWantAggregationProofsRequest(ctx)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to build want aggregation proofs request: %w", err)
 	}
+
 	s.cfg.Metrics.ObserveP2PSyncRequestedAggregationProofs(len(request.RequestIDs))
 
 	if len(request.RequestIDs) == 0 {
+		tracing.AddEvent(span, "no_pending_requests")
 		slog.InfoContext(ctx, "No pending aggregation proof requests found")
 		return nil
 	}
@@ -157,6 +176,7 @@ func (s *Runner) runAggregationProofSync(ctx context.Context) error {
 			slog.DebugContext(ctx, "No peers available to request aggregation proofs from")
 			return nil
 		}
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to send want aggregation proofs request: %w", err)
 	}
 
@@ -164,9 +184,11 @@ func (s *Runner) runAggregationProofSync(ctx context.Context) error {
 
 	stats, err := s.cfg.Provider.ProcessReceivedAggregationProofs(ctx, response)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to process received aggregation proofs: %w", err)
 	}
 
+	tracing.SetAttributes(span, attribute.Int("processed_count", stats.ProcessedCount))
 	slog.InfoContext(ctx, "Aggregation proof sync completed",
 		"processed", stats.ProcessedCount,
 		"totalFails", stats.TotalErrors(),

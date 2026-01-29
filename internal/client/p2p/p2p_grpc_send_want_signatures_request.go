@@ -12,43 +12,61 @@ import (
 	gostream "github.com/libp2p/go-libp2p-gostream"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
-	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
 	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
 	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
+	"github.com/symbioticfi/relay/pkg/tracing"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 const grpcProtocolTag protocol.ID = "/relay/v1/grpc"
 
 // SendWantSignaturesRequest sends a synchronous signature request to a peer
 func (s *Service) SendWantSignaturesRequest(ctx context.Context, request entity.WantSignaturesRequest) (entity.WantSignaturesResponse, error) {
+	ctx, span := tracing.StartClientSpan(ctx, "p2p.SendWantSignaturesRequest",
+		tracing.AttrSignatureCount.Int(len(request.WantSignatures)),
+	)
+	defer span.End()
+
 	ctx = log.WithComponent(ctx, "p2p")
 
 	// Convert entity request to protobuf
 	protoReq, err := entityToProtoRequest(request)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return entity.WantSignaturesResponse{}, errors.Errorf("failed to convert request: %w", err)
 	}
 
 	// Select a peer for the request
 	peerID, err := s.selectPeerForSync()
 	if err != nil {
+		tracing.RecordError(span, err)
 		return entity.WantSignaturesResponse{}, errors.Errorf("failed to select peer: %w", err)
 	}
+
+	tracing.SetAttributes(span, tracing.AttrPeerID.String(peerID.String()))
 
 	// Send request to the selected peer
 	response, err := s.sendRequestToPeer(ctx, peerID, protoReq)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return entity.WantSignaturesResponse{}, errors.Errorf("failed to get signatures from peer %s: %w", peerID, err)
 	}
 
 	// Convert protobuf response to entity
 	entityResp := protoToEntityResponse(ctx, response)
 
+	tracing.SetAttributes(span,
+		tracing.AttrSignatureCount.Int(len(entityResp.Signatures)),
+	)
+
+	tracing.AddEvent(span, "request_completed")
 	return entityResp, nil
 }
 
@@ -76,7 +94,7 @@ func (s *Service) sendRequestToPeer(ctx context.Context, peerID peer.ID, req *pr
 }
 
 // createGRPCConnection creates a gRPC connection to a peer over libp2p
-func (s *Service) createGRPCConnection(_ context.Context, peerID peer.ID) (*grpc.ClientConn, error) {
+func (s *Service) createGRPCConnection(ctx context.Context, peerID peer.ID) (*grpc.ClientConn, error) {
 	dialOpts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithContextDialer(func(ctx context.Context, peerIdStr string) (net.Conn, error) {
@@ -96,6 +114,13 @@ func (s *Service) createGRPCConnection(_ context.Context, peerID peer.ID) (*grpc
 			grpc.MaxCallRecvMsgSize(maxP2PMessageSize),
 			grpc.MaxCallSendMsgSize(maxP2PMessageSize),
 		),
+	}
+
+	// Attach tracing interceptors whenever we have a valid span context so trace headers propagate
+	if spanCtx := trace.SpanFromContext(ctx).SpanContext(); spanCtx.IsValid() {
+		dialOpts = append(dialOpts,
+			grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+		)
 	}
 
 	conn, err := grpc.NewClient("passthrough:///"+peerID.String(), dialOpts...)

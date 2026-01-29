@@ -185,18 +185,18 @@ func (m *MockAggregator) EXPECT() *MockAggregatorMockRecorder {
 }
 
 // Verify mocks base method.
-func (m *MockAggregator) Verify(valset entity.ValidatorSet, keyTag entity.KeyTag, aggregationProof entity.AggregationProof) (bool, error) {
+func (m *MockAggregator) Verify(ctx context.Context, valset entity.ValidatorSet, keyTag entity.KeyTag, aggregationProof entity.AggregationProof) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Verify", valset, keyTag, aggregationProof)
+	ret := m.ctrl.Call(m, "Verify", ctx, valset, keyTag, aggregationProof)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Verify indicates an expected call of Verify.
-func (mr *MockAggregatorMockRecorder) Verify(valset, keyTag, aggregationProof any) *gomock.Call {
+func (mr *MockAggregatorMockRecorder) Verify(ctx, valset, keyTag, aggregationProof any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Verify", reflect.TypeOf((*MockAggregator)(nil).Verify), valset, keyTag, aggregationProof)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Verify", reflect.TypeOf((*MockAggregator)(nil).Verify), ctx, valset, keyTag, aggregationProof)
 }
 
 // MockAggProofSignal is a mock of AggProofSignal interface.

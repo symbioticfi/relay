@@ -5,8 +5,11 @@ import (
 	"log/slog"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
+	"github.com/symbioticfi/relay/pkg/tracing"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 
@@ -81,15 +84,23 @@ func NewSignerApp(cfg Config) (*SignerApp, error) {
 // RequestSignature creates a signature request and queues it for signing, returns requestID
 // The actual signing is done in the background by workers
 func (s *SignerApp) RequestSignature(ctx context.Context, req symbiotic.SignatureRequest) (common.Hash, error) {
+	ctx, span := tracing.StartServerSpan(ctx, "signer.RequestSignature",
+		tracing.AttrEpoch.Int64(int64(req.RequiredEpoch)),
+		tracing.AttrKeyTag.String(req.KeyTag.String()),
+	)
+	defer span.End()
 	ctx = log.WithComponent(ctx, "signer")
 	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(req.RequiredEpoch)))
 
 	if !req.KeyTag.Type().SignerKey() {
-		return common.Hash{}, errors.Errorf("key tag %s is not a signing key", req.KeyTag)
+		err := errors.Errorf("key tag %s is not a signing key", req.KeyTag)
+		tracing.RecordError(span, err)
+		return common.Hash{}, err
 	}
 
 	msgHash, err := crypto.HashMessage(req.KeyTag.Type(), req.Message)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return common.Hash{}, errors.Errorf("failed to hash message: %w", err)
 	}
 
@@ -100,14 +111,17 @@ func (s *SignerApp) RequestSignature(ctx context.Context, req symbiotic.Signatur
 	}
 
 	requestId := extendedSignature.RequestID()
+	tracing.SetAttributes(span, tracing.AttrRequestID.String(requestId.Hex()))
 
 	err = s.cfg.Repo.SaveSignatureRequest(ctx, requestId, req)
 	if err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
+		tracing.RecordError(span, err)
 		return common.Hash{}, errors.Errorf("failed to get signature request: %w", err)
 	}
 
 	s.queue.Add(requestId)
 
+	tracing.AddEvent(span, "signature_requested")
 	// does not return the actual signature yet
 	return requestId, nil
 }
@@ -117,32 +131,53 @@ func (s *SignerApp) EnqueueRequestID(ctx context.Context, requestID common.Hash)
 	slog.DebugContext(ctx, "Enqueued signature request", "requestId", requestID.Hex())
 }
 
-func (s *SignerApp) completeSign(ctx context.Context, req symbiotic.SignatureRequest, p2pService p2pService) error {
+func (s *SignerApp) completeSign(ctx context.Context, requestID common.Hash, p2pService p2pService) error {
+	ctx, span := tracing.StartSpan(ctx, "signer.completeSign",
+		tracing.AttrRequestID.String(requestID.Hex()),
+	)
+	defer span.End()
+	ctx = log.WithAttrs(ctx, slog.String("requestId", requestID.Hex()))
+
+	req, err := s.cfg.Repo.GetSignatureRequest(ctx, requestID)
+	if err != nil {
+		return errors.Errorf("failed to get signature request for requestId %s : %w", requestID.Hex(), err)
+	}
 	ctx = log.WithAttrs(ctx,
 		slog.Uint64("epoch", uint64(req.RequiredEpoch)),
 		slog.Uint64("keyTag", uint64(req.KeyTag)),
 	)
+
+	span.SetAttributes(
+		tracing.AttrEpoch.Int64(int64(req.RequiredEpoch)),
+		tracing.AttrKeyTag.String(req.KeyTag.String()),
+	)
+
 	valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, req.RequiredEpoch)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get validator set: %w", err)
 	}
 
 	private, err := s.cfg.KeyProvider.GetPrivateKey(req.KeyTag)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get private key: %w", err)
 	}
 
 	onchainKey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(valset.RequiredKeyTag)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get onchain symb key from cache: %w", err)
 	}
 
 	if !valset.IsSigner(onchainKey) {
+		tracing.AddEvent(span, "not_a_signer_skipping")
 		slog.DebugContext(ctx, "Skipped signing, not a signer for this validator set",
 			"key", onchainKey,
 		)
 		msgHash, err := crypto.HashMessage(req.KeyTag.Type(), req.Message)
 		if err != nil {
+			tracing.RecordError(span, err)
 			return errors.Errorf("failed to hash message: %w", err)
 		}
 
@@ -153,6 +188,7 @@ func (s *SignerApp) completeSign(ctx context.Context, req symbiotic.SignatureReq
 			PublicKey:   private.PublicKey(),
 		}
 		if err := s.cfg.Repo.RemoveSignaturePending(ctx, req.RequiredEpoch, extendedSignature.RequestID()); err != nil {
+			tracing.RecordError(span, err)
 			return errors.Errorf("failed to remove self signature request pending: %w", err)
 		}
 		return nil
@@ -163,6 +199,7 @@ func (s *SignerApp) completeSign(ctx context.Context, req symbiotic.SignatureReq
 	pkSignStart := time.Now()
 	signature, hash, err := private.Sign(req.Message)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to sign valset header hash: %w", err)
 	}
 	s.cfg.Metrics.ObservePKSignDuration(time.Since(pkSignStart))
@@ -180,17 +217,22 @@ func (s *SignerApp) completeSign(ctx context.Context, req symbiotic.SignatureReq
 	if err := s.cfg.EntityProcessor.ProcessSignature(ctx, extendedSignature, true); err != nil {
 		if errors.Is(err, entity.ErrEntityAlreadyExist) {
 			slog.InfoContext(ctx, "Skipped signature, already exists")
+			tracing.AddEvent(span, "signature_already_exists")
 			return nil
 		}
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to process signature: %w", err)
 	}
 
 	if err := s.cfg.Repo.RemoveSignaturePending(ctx, req.RequiredEpoch, extendedSignature.RequestID()); err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to remove self signature request pending: %w", err)
 	}
 
+	tracing.AddEvent(span, "broadcasting_signature")
 	err = p2pService.BroadcastSignatureGeneratedMessage(ctx, extendedSignature)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to broadcast signature: %w", err)
 	}
 
@@ -241,13 +283,7 @@ func (s *SignerApp) worker(ctx context.Context, id int, p2pService p2pService) {
 		func() {
 			defer s.queue.Done(item)
 
-			req, err := s.cfg.Repo.GetSignatureRequest(ctx, item)
-			if err != nil {
-				slog.ErrorContext(ctx, "Failed to get signature request from repo", "requestId", item.Hex(), "error", err)
-				return
-			}
-
-			if err = s.completeSign(ctx, req, p2pService); err != nil {
+			if err := s.completeSign(ctx, item, p2pService); err != nil {
 				slog.ErrorContext(ctx, "Failed to complete sign for request", "requestId", item.Hex(), "error", err)
 				return
 			}
@@ -256,15 +292,21 @@ func (s *SignerApp) worker(ctx context.Context, id int, p2pService p2pService) {
 }
 
 func (s *SignerApp) handleMissedSignaturesOnce(ctx context.Context) error {
+	ctx, span := tracing.StartSpan(ctx, "signer.handleMissedSignaturesOnce")
+	defer span.End()
+
+	tracing.AddEvent(span, "fetching_pending_requests")
 	pendingRequests, err := s.cfg.Repo.GetSignaturePending(ctx, 10)
 	if err != nil {
 		return errors.Errorf("failed to get self signature requests pending: %w", err)
 	}
 	if len(pendingRequests) == 0 {
+		tracing.AddEvent(span, "no_pending_requests")
 		slog.DebugContext(ctx, "No pending self signature requests found")
 		return nil
 	}
 
+	tracing.AddEvent(span, "queuing_pending_requests", attribute.Int("count", len(pendingRequests)))
 	slog.InfoContext(ctx, "Found pending self signature requests", "count", len(pendingRequests))
 	for _, reqID := range pendingRequests {
 		slog.InfoContext(ctx, "Queued pending self signature request", "requestId", reqID.Hex())

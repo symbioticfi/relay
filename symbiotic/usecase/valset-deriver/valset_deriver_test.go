@@ -740,7 +740,7 @@ func TestDeriver_GetNetworkData(t *testing.T) {
 					Version:           "1",
 					ChainId:           big.NewInt(111),
 					VerifyingContract: common.HexToAddress("0x123"),
-					Salt:              big.NewInt(222),
+					Salt:              [32]byte{1, 2, 3},
 					Extensions:        []*big.Int{big.NewInt(333)},
 				}, nil)
 			},
@@ -754,7 +754,7 @@ func TestDeriver_GetNetworkData(t *testing.T) {
 					Version:           "1",
 					ChainId:           big.NewInt(111),
 					VerifyingContract: common.HexToAddress("0x123"),
-					Salt:              big.NewInt(222),
+					Salt:              [32]byte{1, 2, 3},
 					Extensions:        []*big.Int{big.NewInt(333)},
 				},
 			},

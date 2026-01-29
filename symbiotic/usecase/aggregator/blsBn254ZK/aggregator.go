@@ -2,8 +2,11 @@ package blsBn254ZK
 
 import (
 	"bytes"
+	"context"
 	"math/big"
 	"sort"
+
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/symbioticfi/relay/pkg/proof"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
@@ -15,6 +18,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
+
+	"github.com/symbioticfi/relay/pkg/tracing"
 )
 
 type Aggregator struct {
@@ -27,13 +32,26 @@ func NewAggregator(prover types.Prover) (*Aggregator, error) {
 	}, nil
 }
 
-func (a Aggregator) Aggregate(valset symbiotic.ValidatorSet, signatures []symbiotic.Signature) (symbiotic.AggregationProof, error) {
+func (a Aggregator) Aggregate(
+	ctx context.Context,
+	valset symbiotic.ValidatorSet,
+	signatures []symbiotic.Signature,
+) (symbiotic.AggregationProof, error) {
 	if err := helpers.CheckSignaturesHaveSameTagAndMessageHash(signatures); err != nil {
 		return symbiotic.AggregationProof{}, errors.Errorf("invalid signatures: %w", err)
 	}
 
 	keyTag := signatures[0].KeyTag
 	messageHash := signatures[0].MessageHash
+
+	ctx, span := tracing.StartSpan(ctx, "aggregator.Aggregate",
+		tracing.AttrEpoch.Int64(int64(valset.Epoch)),
+		tracing.AttrValidatorCount.Int(len(valset.Validators)),
+		tracing.AttrSignatureCount.Int(len(signatures)),
+		tracing.AttrKeyTag.String(keyTag.String()),
+		tracing.AttrProofType.String("bls-bn254-zk"),
+	)
+	defer span.End()
 
 	aggG1Sig := new(bn254.G1Affine)
 	aggG2Key := new(bn254.G2Affine)
@@ -43,12 +61,15 @@ func (a Aggregator) Aggregate(valset symbiotic.ValidatorSet, signatures []symbio
 	for _, sig := range signatures {
 		pubKey, err := blsBn254.FromRaw(sig.PublicKey.Raw())
 		if err != nil {
+			tracing.RecordError(span, err)
 			return symbiotic.AggregationProof{}, err
 		}
 
 		idx, ok := valKeysToIdx[string(pubKey.OnChain())]
 		if !ok {
-			return symbiotic.AggregationProof{}, errors.New("failed to find validator by key")
+			err := errors.New("failed to find validator by key")
+			tracing.RecordError(span, err)
+			return symbiotic.AggregationProof{}, err
 		}
 		val := valset.Validators[idx]
 		if !val.IsActive {
@@ -57,6 +78,7 @@ func (a Aggregator) Aggregate(valset symbiotic.ValidatorSet, signatures []symbio
 		g1Sig := new(bn254.G1Affine)
 		_, err = g1Sig.SetBytes(sig.Signature)
 		if err != nil {
+			tracing.RecordError(span, err)
 			return symbiotic.AggregationProof{}, err
 		}
 		aggG1Sig = aggG1Sig.Add(aggG1Sig, g1Sig)
@@ -69,12 +91,15 @@ func (a Aggregator) Aggregate(valset symbiotic.ValidatorSet, signatures []symbio
 		if val.IsActive {
 			keyBytes, ok := val.FindKeyByKeyTag(keyTag)
 			if !ok {
-				return symbiotic.AggregationProof{}, errors.New("failed to find key by keyTag")
+				err := errors.New("failed to find key by keyTag")
+				tracing.RecordError(span, err)
+				return symbiotic.AggregationProof{}, err
 			}
 			_, isSigner := signers[val.Operator]
 			g1Key := new(bn254.G1Affine)
 			_, err := g1Key.SetBytes(keyBytes)
 			if err != nil {
+				tracing.RecordError(span, err)
 				return symbiotic.AggregationProof{}, errors.Errorf("failed to deserialize G1 key: %w", err)
 			}
 
@@ -88,6 +113,7 @@ func (a Aggregator) Aggregate(valset symbiotic.ValidatorSet, signatures []symbio
 
 	messageG1, err := blsBn254.HashToG1(messageHash)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return symbiotic.AggregationProof{}, err
 	}
 	messageG1Bn254 := bn254.G1Affine{X: messageG1.X, Y: messageG1.Y}
@@ -99,24 +125,39 @@ func (a Aggregator) Aggregate(valset symbiotic.ValidatorSet, signatures []symbio
 		SignersAggKeyG2: *aggG2Key,
 	}
 
-	proofData, err := a.prover.Prove(proverInput)
+	proofData, err := a.prover.Prove(ctx, proverInput)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return symbiotic.AggregationProof{}, err
 	}
+
+	proofBytes := proofData.Marshal()
+	tracing.SetAttributes(span, tracing.AttrProofSize.Int(len(proofBytes)))
 
 	return symbiotic.AggregationProof{
 		MessageHash: messageHash,
 		KeyTag:      keyTag,
 		Epoch:       valset.Epoch,
-		Proof:       proofData.Marshal(),
+		Proof:       proofBytes,
 	}, nil
 }
 
 func (a Aggregator) Verify(
+	ctx context.Context,
 	valset symbiotic.ValidatorSet,
 	keyTag symbiotic.KeyTag,
 	aggregationProof symbiotic.AggregationProof,
 ) (bool, error) {
+	ctx, span := tracing.StartSpan(ctx, "aggregator.Verify",
+		tracing.AttrEpoch.Int64(int64(valset.Epoch)),
+		tracing.AttrValidatorCount.Int(len(valset.Validators)),
+		tracing.AttrKeyTag.String(keyTag.String()),
+		tracing.AttrProofType.String("bls-bn254-zk"),
+		tracing.AttrProofSize.Int(len(aggregationProof.Proof)),
+	)
+	defer span.End()
+
+	tracing.AddEvent(span, "counting_active_validators")
 	activeVals := 0
 	for _, val := range valset.Validators {
 		if val.IsActive {
@@ -126,6 +167,7 @@ func (a Aggregator) Verify(
 
 	mimcAccum, err := validatorSetMimcAccumulator(valset.Validators, keyTag)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return false, err
 	}
 	// last 32 bytes is aggVotingPowerBytes
@@ -133,6 +175,7 @@ func (a Aggregator) Verify(
 
 	messageG1, err := blsBn254.HashToG1(aggregationProof.MessageHash)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return false, errors.Errorf("failed to hash message to G1: %w", err)
 	}
 	messageG1Bytes := messageG1.RawBytes() // non compressed
@@ -142,24 +185,34 @@ func (a Aggregator) Verify(
 	inpBytes = append(inpBytes, messageG1Bytes[:]...)
 	inpHash := crypto.Keccak256Hash(inpBytes)
 
-	ok, err := a.prover.Verify(activeVals, inpHash, aggregationProof.Proof)
+	ok, err := a.prover.Verify(ctx, activeVals, inpHash, aggregationProof.Proof)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return false, err
 	}
 
 	aggVotingPower := new(big.Int).SetBytes(aggVotingPowerBytes)
 	if aggVotingPower.Cmp(valset.QuorumThreshold.Int) < 0 {
-		return false, errors.Errorf("agg voting power %s is less than quorum threshold %s", aggVotingPower.String(), valset.QuorumThreshold.String())
+		err := errors.Errorf("agg voting power %s is less than quorum threshold %s", aggVotingPower.String(), valset.QuorumThreshold.String())
+		tracing.RecordError(span, err)
+		return false, err
 	}
 
 	return ok, nil
 }
 
-func (a Aggregator) GenerateExtraData(valset symbiotic.ValidatorSet, keyTags []symbiotic.KeyTag) ([]symbiotic.ExtraData, error) {
+func (a Aggregator) GenerateExtraData(ctx context.Context, valset symbiotic.ValidatorSet, keyTags []symbiotic.KeyTag) ([]symbiotic.ExtraData, error) {
+	_, span := tracing.StartSpan(ctx, "GenerateExtraData",
+		tracing.AttrEpoch.Int64(int64(valset.Epoch)),
+		tracing.AttrValidatorCount.Int(len(valset.Validators)),
+	)
+	defer span.End()
+
 	extraData := make([]symbiotic.ExtraData, 0)
 
 	totalActiveValidatorsKey, err := helpers.GetExtraDataKey(symbiotic.VerificationTypeBlsBn254ZK, symbiotic.ZkVerificationTotalActiveValidatorsHash)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return nil, errors.Errorf("failed to get extra data key: %w", err)
 	}
 
@@ -174,13 +227,17 @@ func (a Aggregator) GenerateExtraData(valset symbiotic.ValidatorSet, keyTags []s
 	aggregatedPubKeys := helpers.GetAggregatedPubKeys(valset, keyTags)
 
 	for _, key := range aggregatedPubKeys {
+		tracing.AddEvent(span, "processing_key_tag", tracing.AttrKeyTag.String(key.Tag.String()))
+
 		mimcAccumulator, err := validatorSetMimcAccumulator(valset.Validators, key.Tag)
 		if err != nil {
+			tracing.RecordError(span, err)
 			return nil, errors.Errorf("failed to generate validator set MiMC accumulator: %w", err)
 		}
 
 		validatorSetHashKey, err := helpers.GetExtraDataKeyTagged(symbiotic.VerificationTypeBlsBn254ZK, key.Tag, symbiotic.ZkVerificationValidatorSetHashMimcHash)
 		if err != nil {
+			tracing.RecordError(span, err)
 			return nil, errors.Errorf("failed to get extra data key: %w", err)
 		}
 
@@ -188,6 +245,8 @@ func (a Aggregator) GenerateExtraData(valset symbiotic.ValidatorSet, keyTags []s
 			Key:   validatorSetHashKey,
 			Value: mimcAccumulator,
 		})
+
+		tracing.AddEvent(span, "key_tag_processed")
 	}
 
 	// sort extra data by key to ensure deterministic order
@@ -195,6 +254,7 @@ func (a Aggregator) GenerateExtraData(valset symbiotic.ValidatorSet, keyTags []s
 		return bytes.Compare(extraData[i].Key[:], extraData[j].Key[:]) < 0
 	})
 
+	tracing.SetAttributes(span, attribute.Int("extra_data.len", len(extraData)))
 	return extraData, nil
 }
 

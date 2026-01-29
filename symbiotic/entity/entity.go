@@ -308,13 +308,13 @@ type OperatorWithKeys struct {
 	Keys     []ValidatorKey
 }
 
-type Eip712Domain struct {
+type Eip712Domain = struct {
 	Fields            [1]byte
 	Name              string
 	Version           string
 	ChainId           *big.Int
 	VerifyingContract common.Address
-	Salt              *big.Int
+	Salt              [32]byte
 	Extensions        []*big.Int
 }
 

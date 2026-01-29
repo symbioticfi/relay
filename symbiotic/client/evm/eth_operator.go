@@ -47,7 +47,7 @@ func (e *Client) InvalidateOldSignatures(
 	ctx context.Context,
 	votingPowerProviderAddr symbiotic.CrossChainAddress,
 ) (_ symbiotic.TxResult, err error) {
-	votingPowerProvider, err := e.getVotingPowerProviderContract(votingPowerProviderAddr)
+	votingPowerProvider, err := e.getVotingPowerProviderContractTransactor(votingPowerProviderAddr)
 	if err != nil {
 		return symbiotic.TxResult{}, errors.Errorf("failed to get voting power provider contract: %w", err)
 	}
@@ -59,7 +59,7 @@ func (e *Client) RegisterOperatorVotingPowerProvider(
 	ctx context.Context,
 	votingPowerProviderAddr symbiotic.CrossChainAddress,
 ) (_ symbiotic.TxResult, err error) {
-	votingPowerProvider, err := e.getVotingPowerProviderContract(votingPowerProviderAddr)
+	votingPowerProvider, err := e.getVotingPowerProviderContractTransactor(votingPowerProviderAddr)
 	if err != nil {
 		return symbiotic.TxResult{}, errors.Errorf("failed to get voting power provider contract: %w", err)
 	}
@@ -92,7 +92,7 @@ func (e *Client) UnregisterOperatorVotingPowerProvider(
 	ctx context.Context,
 	votingPowerProviderAddr symbiotic.CrossChainAddress,
 ) (_ symbiotic.TxResult, err error) {
-	votingPowerProvider, err := e.getVotingPowerProviderContract(votingPowerProviderAddr)
+	votingPowerProvider, err := e.getVotingPowerProviderContractTransactor(votingPowerProviderAddr)
 	if err != nil {
 		return symbiotic.TxResult{}, errors.Errorf("failed to get voting power provider contract: %w", err)
 	}

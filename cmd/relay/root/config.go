@@ -45,6 +45,7 @@ type config struct {
 	ForceRole  ForceRole            `mapstructure:"force-role"`
 	Retention  RetentionConfig      `mapstructure:"retention"`
 	Pruner     PrunerConfig         `mapstructure:"pruner"`
+	Tracing    TracingConfig        `mapstructure:"tracing"`
 }
 
 type LogConfig struct {
@@ -235,6 +236,12 @@ type PrunerConfig struct {
 	Interval time.Duration `mapstructure:"interval"`
 }
 
+type TracingConfig struct {
+	Enabled    bool    `mapstructure:"enabled"`
+	Endpoint   string  `mapstructure:"endpoint"`
+	SampleRate float64 `mapstructure:"sample-rate"`
+}
+
 func (c config) Validate() error {
 	validate := validator.New()
 	if err := validate.Struct(c); err != nil {
@@ -296,6 +303,9 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Uint64("retention.signature-epochs", 0, "Number of historical signature epochs to retain (0 = unlimited)")
 	rootCmd.PersistentFlags().Bool("pruner.enabled", false, "Enable automatic pruning of old epoch data (default: false)")
 	rootCmd.PersistentFlags().Duration("pruner.interval", time.Hour, "How often to run pruning (default: 1h)")
+	rootCmd.PersistentFlags().Bool("tracing.enabled", false, "Enable distributed tracing")
+	rootCmd.PersistentFlags().String("tracing.endpoint", "localhost:4317", "OTLP endpoint for tracing (e.g., Jaeger)")
+	rootCmd.PersistentFlags().Float64("tracing.sample-rate", 1.0, "Trace sampling rate (0.0 to 1.0)")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
@@ -476,6 +486,15 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("pruner.interval", cmd.PersistentFlags().Lookup("pruner.interval")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("tracing.enabled", cmd.PersistentFlags().Lookup("tracing.enabled")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("tracing.endpoint", cmd.PersistentFlags().Lookup("tracing.endpoint")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("tracing.sample-rate", cmd.PersistentFlags().Lookup("tracing.sample-rate")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 

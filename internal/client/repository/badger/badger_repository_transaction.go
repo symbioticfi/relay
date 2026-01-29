@@ -11,6 +11,7 @@ import (
 	"github.com/samber/lo"
 
 	"github.com/symbioticfi/relay/internal/entity"
+	"github.com/symbioticfi/relay/pkg/tracing"
 )
 
 type ctxTxnKey struct{}
@@ -45,6 +46,9 @@ func (m *mutexWithUseTime) tryLock() bool {
 }
 
 func (r *Repository) doUpdateInTxWithLock(ctx context.Context, name string, f func(ctx context.Context) error, lockMap *sync.Map, key any) error {
+	ctx, span := tracing.StartDBSpan(ctx, "updateWithLock", name)
+	defer span.End()
+
 	mutexInterface, ok := lockMap.Load(key)
 	if !ok {
 		newMutex := &mutexWithUseTime{}
@@ -56,10 +60,17 @@ func (r *Repository) doUpdateInTxWithLock(ctx context.Context, name string, f fu
 	activeMutex.lock()
 	defer activeMutex.unlock()
 
-	return r.doUpdateInTx(ctx, name, f)
+	err := r.doUpdateInTx(ctx, name, f)
+	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) && !errors.Is(err, entity.ErrEntityAlreadyExist) {
+		tracing.RecordError(span, err)
+	}
+	return err
 }
 
 func (r *Repository) doUpdateInTx(ctx context.Context, name string, f func(ctx context.Context) error) error {
+	ctx, span := tracing.StartDBSpan(ctx, "update", name)
+	defer span.End()
+
 	if getTxn(ctx) != nil {
 		startSingle := time.Now()
 
@@ -68,11 +79,17 @@ func (r *Repository) doUpdateInTx(ctx context.Context, name string, f func(ctx c
 		prevName := nameFromCtx(ctx)
 		queryName := prevName + "/update:" + name
 		r.metrics.ObserveRepoQueryDuration(queryName, lo.Ternary(err == nil, "ok", "error"), time.Since(startSingle))
+
+		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) && !errors.Is(err, entity.ErrEntityAlreadyExist) {
+			tracing.RecordError(span, err)
+		}
 		return err
 	}
 
 	queryName := "update:" + name
 	start := time.Now()
+
+	tracing.AddEvent(span, "starting_transaction")
 	err := r.db.Update(func(txn *badger.Txn) error {
 		txnCtx := r.withName(
 			context.WithValue(ctx, badgerTxnKey, txn),
@@ -84,6 +101,7 @@ func (r *Repository) doUpdateInTx(ctx context.Context, name string, f func(ctx c
 	status := lo.Ternary(err == nil, "ok", "error")
 	if errors.Is(err, badger.ErrConflict) {
 		status = "conflict"
+		tracing.AddEvent(span, "transaction_conflict")
 		err = errors.Errorf("transaction conflict: %w", entity.ErrTxConflict)
 	} else if err != nil {
 		err = errors.Errorf("failed to do update in tx: %w", err)
@@ -92,10 +110,19 @@ func (r *Repository) doUpdateInTx(ctx context.Context, name string, f func(ctx c
 	r.metrics.ObserveRepoQueryDuration(queryName, status, time.Since(start))
 	r.metrics.ObserveRepoQueryTotalDuration(queryName, status, time.Since(start))
 
+	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) && !errors.Is(err, entity.ErrEntityAlreadyExist) {
+		tracing.RecordError(span, err)
+	} else {
+		tracing.AddEvent(span, "transaction_committed")
+	}
+
 	return err
 }
 
 func (r *Repository) doViewInTx(ctx context.Context, name string, f func(ctx context.Context) error) error {
+	ctx, span := tracing.StartDBSpan(ctx, "view", name)
+	defer span.End()
+
 	if getTxn(ctx) != nil {
 		startSingle := time.Now()
 
@@ -104,11 +131,16 @@ func (r *Repository) doViewInTx(ctx context.Context, name string, f func(ctx con
 		prevName := nameFromCtx(ctx)
 		queryName := prevName + "/view:" + name
 		r.metrics.ObserveRepoQueryDuration(queryName, lo.Ternary(err == nil, "ok", "error"), time.Since(startSingle))
+
+		if err != nil {
+			tracing.RecordError(span, err)
+		}
 		return err
 	}
 	start := time.Now()
 
 	queryName := "view:" + name
+
 	err := r.db.View(func(txn *badger.Txn) error {
 		txnCtx := r.withName(
 			context.WithValue(ctx, badgerTxnKey, txn),
@@ -116,15 +148,16 @@ func (r *Repository) doViewInTx(ctx context.Context, name string, f func(ctx con
 		)
 		return f(txnCtx)
 	})
-	if err != nil {
-		r.metrics.ObserveRepoQueryDuration(queryName, "error", time.Since(start))
-		r.metrics.ObserveRepoQueryTotalDuration(queryName, "error", time.Since(start))
 
+	r.metrics.ObserveRepoQueryDuration(queryName, lo.Ternary(err == nil, "ok", "error"), time.Since(start))
+	r.metrics.ObserveRepoQueryTotalDuration(queryName, lo.Ternary(err == nil, "ok", "error"), time.Since(start))
+
+	if err != nil {
+		if !errors.Is(err, entity.ErrEntityNotFound) {
+			tracing.RecordError(span, err)
+		}
 		return errors.Errorf("failed to do view in tx: %w", err)
 	}
-
-	r.metrics.ObserveRepoQueryDuration(queryName, "ok", time.Since(start))
-	r.metrics.ObserveRepoQueryTotalDuration(queryName, "ok", time.Since(start))
 
 	return nil
 }

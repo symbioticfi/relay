@@ -239,7 +239,7 @@ func TestUnmarshalMessage_WithInvalidP2PMessage_ReturnsError(t *testing.T) {
 	}
 
 	var signature prototypes.Signature
-	err := unmarshalMessage(pubSubMsg, &signature)
+	_, err := unmarshalMessage(pubSubMsg, &signature)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to unmarshal message")
@@ -260,7 +260,7 @@ func TestUnmarshalMessage_WithInvalidInnerMessage_ReturnsError(t *testing.T) {
 	}
 
 	var signature prototypes.Signature
-	err = unmarshalMessage(pubSubMsg, &signature)
+	_, err = unmarshalMessage(pubSubMsg, &signature)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to unmarshal message")

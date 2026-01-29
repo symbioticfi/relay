@@ -1,6 +1,7 @@
 package blsBn254ZK
 
 import (
+	"context"
 	"math/big"
 	"testing"
 
@@ -15,11 +16,11 @@ import (
 
 type mockProver struct{}
 
-func (m *mockProver) Prove(proveInput proof.ProveInput) (proof.ProofData, error) {
+func (m *mockProver) Prove(ctx context.Context, proveInput proof.ProveInput) (proof.ProofData, error) {
 	return proof.ProofData{}, nil
 }
 
-func (m *mockProver) Verify(valsetLen int, publicInputHash common.Hash, proofBytes []byte) (bool, error) {
+func (m *mockProver) Verify(ctx context.Context, valsetLen int, publicInputHash common.Hash, proofBytes []byte) (bool, error) {
 	return true, nil
 }
 
@@ -51,7 +52,7 @@ func TestAggregator_Aggregate_WithMismatchedMessageHashes_ReturnsError(t *testin
 		{MessageHash: []byte("first-message")},
 	}
 
-	_, err = agg.Aggregate(valset, signatures)
+	_, err = agg.Aggregate(t.Context(), valset, signatures)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "signatures have different message hashes")
@@ -338,7 +339,7 @@ func TestAggregator_GenerateExtraData_WithValidValidators_ReturnsExtraData(t *te
 
 	keyTags := []symbiotic.KeyTag{symbiotic.KeyTag(1)}
 
-	result, err := agg.GenerateExtraData(valset, keyTags)
+	result, err := agg.GenerateExtraData(t.Context(), valset, keyTags)
 
 	require.NoError(t, err)
 	assert.NotEmpty(t, result)
@@ -378,7 +379,7 @@ func TestAggregator_GenerateExtraData_WithMultipleKeyTags_ReturnsMultipleExtraDa
 
 	keyTags := []symbiotic.KeyTag{symbiotic.KeyTag(1), symbiotic.KeyTag(2)}
 
-	result, err := agg.GenerateExtraData(valset, keyTags)
+	result, err := agg.GenerateExtraData(t.Context(), valset, keyTags)
 
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, len(result), 3)
@@ -409,7 +410,7 @@ func TestAggregator_GenerateExtraData_ReturnsSortedData(t *testing.T) {
 
 	keyTags := []symbiotic.KeyTag{symbiotic.KeyTag(1)}
 
-	result, err := agg.GenerateExtraData(valset, keyTags)
+	result, err := agg.GenerateExtraData(t.Context(), valset, keyTags)
 
 	require.NoError(t, err)
 	require.NotEmpty(t, result)
@@ -450,7 +451,7 @@ func TestAggregator_Verify_WithInvalidMessageHash_ReturnsError(t *testing.T) {
 		Proof:       proofBytes,
 	}
 
-	success, err := agg.Verify(valset, keyTag, aggregationProof)
+	success, err := agg.Verify(t.Context(), valset, keyTag, aggregationProof)
 
 	require.Error(t, err)
 	assert.False(t, success)
@@ -487,7 +488,7 @@ func TestAggregator_Verify_WithInsufficientVotingPower_ReturnsError(t *testing.T
 		Proof:       proofBytes,
 	}
 
-	success, err := agg.Verify(valset, keyTag, proof)
+	success, err := agg.Verify(t.Context(), valset, keyTag, proof)
 
 	require.Error(t, err)
 	assert.False(t, success)

@@ -6,9 +6,11 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
+	"github.com/symbioticfi/relay/pkg/tracing"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
@@ -34,157 +36,229 @@ func (s *Service) StartCommitterLoop(ctx context.Context) error {
 		case <-ticker.C:
 			slog.DebugContext(ctx, "Valset committer tick")
 		}
-		// get latest known valset
-		valsetHeader, err := s.cfg.Repo.GetLatestValidatorSetHeader(ctx)
-		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
-			slog.ErrorContext(ctx, "Failed to get latest signed epoch", "error", err)
-			continue
-		}
-		if errors.Is(err, entity.ErrEntityNotFound) {
-			continue
-		}
 
-		valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, valsetHeader.Epoch)
+		tickInterval, err := s.tryToCommitPendingProofs(ctx)
 		if err != nil {
-			slog.ErrorContext(ctx, "Failed to get validator set by epoch", "error", err, "epoch", valsetHeader.Epoch)
-			continue
+			slog.ErrorContext(ctx, "Error in valset committer loop", "error", err)
 		}
 
-		// if latest valset is already committed, nothing to do
-		if valset.Status == symbiotic.HeaderCommitted {
-			slog.DebugContext(ctx, "Latest validator set already committed. skipping commit loop", "epoch", valset.Epoch)
-			continue
-		}
-
-		nwCfg, err := s.cfg.Repo.GetConfigByEpoch(ctx, valsetHeader.Epoch)
-		if err != nil {
-			slog.ErrorContext(ctx, "Failed to get network config by epoch", "error", err, "epoch", valsetHeader.Epoch)
-			continue
-		}
-
-		tickInterval := nwCfg.CommitterSlotDuration / 2
-		if tickInterval < minCommitterPollIntervalSeconds {
-			tickInterval = minCommitterPollIntervalSeconds
-		}
-
-		ticker.Reset(time.Duration(tickInterval) * time.Second)
-
-		if s.cfg.ForceCommitter {
-			slog.DebugContext(ctx, "Force committer mode enabled", "epoch", valsetHeader.Epoch)
-		} else {
-			onchainKey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(valset.RequiredKeyTag)
-			if err != nil {
-				if errors.Is(err, entity.ErrKeyNotFound) {
-					slog.DebugContext(ctx, "Skipped proof commitment, no onchain key for required key tag", "keyTag", valset.RequiredKeyTag, "epoch", valsetHeader.Epoch)
-					continue
-				}
-				return errors.Errorf("failed to get onchain key for required key tag %s: %w", valset.RequiredKeyTag, err)
-			}
-
-			now := symbiotic.Timestamp(uint64(time.Now().Unix()))
-
-			if !valset.IsActiveCommitter(ctx, nwCfg.CommitterSlotDuration, now, minCommitterPollIntervalSeconds, onchainKey) {
-				slog.DebugContext(ctx, "Skipped proof commitment, not a committer for this validator set",
-					"key", onchainKey,
-					"epoch", valset.Epoch,
-					"committerSlotDuration", nwCfg.CommitterSlotDuration,
-					"now", now,
-					"minPollInterval", minCommitterPollIntervalSeconds,
-					"committerIndices", valset.CommitterIndices,
-				)
-				continue
-			}
-		}
-
-		// get lat committed epoch
-		lastCommittedEpoch := s.detectLastCommittedEpochFromDB(ctx)
-
-		if lastCommittedEpoch >= valset.Epoch {
-			slog.DebugContext(ctx, "No pending proofs to commit, all epochs committed", "lastCommittedEpoch", lastCommittedEpoch, "knownValsetEpoch", valset.Epoch)
-			continue
-		}
-
-		slog.DebugContext(ctx, "Detected last committed epoch", "lastCommittedEpoch", lastCommittedEpoch, "knownValsetEpoch", valset.Epoch)
-
-		// Dev: we check if the no. of uncommitted epochs is > the batch size then there's a chance
-		// that we might've already committed some epochs but those are not finalized,
-		// hence to optimize for both time and network calls we directly check on the
-		// settlement layers to see what's the latest(not finalized) commit
-		if valset.Epoch-lastCommittedEpoch > symbiotic.Epoch(commitCheckBatchSize) {
-			newLastCommit := s.detectLastCommittedEpochFromChain(ctx, nwCfg)
-			if newLastCommit > lastCommittedEpoch {
-				slog.InfoContext(ctx, "Number of uncommitted epochs exceeds batch size, updated last committed epoch based on settlement chain data",
-					"oldLastCommittedEpoch", lastCommittedEpoch,
-					"newLastCommittedEpoch", newLastCommit,
-				)
-				lastCommittedEpoch = newLastCommit
-			}
-		}
-
-		pendingProofs, err := s.cfg.Repo.GetPendingProofCommitsSinceEpoch(ctx, lastCommittedEpoch+1, commitCheckBatchSize)
-		if err != nil {
-			return errors.Errorf("failed to get pending proof commits since epoch %d: %w", valset.Epoch, err)
-		}
-
-		if len(pendingProofs) == 0 {
-			slog.DebugContext(ctx, "No pending proof commits found")
-			continue
-		}
-
-		for _, proofKey := range pendingProofs {
-			err = s.processPendingProof(ctx, proofKey)
-			if err != nil {
-				slog.ErrorContext(ctx, "Error processing pending proof",
-					slog.String("requestId", proofKey.RequestID.Hex()),
-					slog.Uint64("epoch", uint64(proofKey.Epoch)),
-					slog.String("error", err.Error()),
-				)
-				break
-			}
+		if tickInterval > 0 {
+			ticker.Reset(time.Duration(tickInterval) * time.Second)
 		}
 	}
 }
 
+func (s *Service) tryToCommitPendingProofs(ctx context.Context) (uint64, error) {
+	ctx, span := tracing.StartSpan(ctx, "valset_listener.TryToCommitPendingProofs")
+	defer span.End()
+
+	valsetHeader, err := s.cfg.Repo.GetLatestValidatorSetHeader(ctx)
+	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
+		tracing.RecordError(span, err)
+		return 0, errors.Errorf("failed to get latest signed epoch: %w", err)
+	}
+	if errors.Is(err, entity.ErrEntityNotFound) {
+		tracing.AddEvent(span, "no_validator_sets_found")
+		return 0, nil
+	}
+
+	tracing.SetAttributes(span, tracing.AttrEpoch.Int64(int64(valsetHeader.Epoch)))
+
+	valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, valsetHeader.Epoch)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return 0, errors.Errorf("failed to get validator set by epoch %d: %w", valsetHeader.Epoch, err)
+	}
+
+	if valset.Status == symbiotic.HeaderCommitted {
+		tracing.AddEvent(span, "already_committed")
+		slog.DebugContext(ctx, "Latest validator set already committed. skipping commit loop", "epoch", valset.Epoch)
+		return 0, nil
+	}
+
+	nwCfg, err := s.cfg.Repo.GetConfigByEpoch(ctx, valsetHeader.Epoch)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return 0, errors.Errorf("failed to get network config by epoch %d: %w", valsetHeader.Epoch, err)
+	}
+
+	tickInterval := nwCfg.CommitterSlotDuration / 2
+	if tickInterval < minCommitterPollIntervalSeconds {
+		tickInterval = minCommitterPollIntervalSeconds
+	}
+
+	tracing.SetAttributes(span,
+		tracing.AttrValidatorCount.Int(len(valset.Validators)),
+		attribute.Int64("tick_interval", int64(tickInterval)),
+	)
+
+	if s.cfg.ForceCommitter {
+		tracing.SetAttributes(span, attribute.Bool("force_committer", true))
+		slog.DebugContext(ctx, "Force committer mode enabled", "epoch", valsetHeader.Epoch)
+	} else {
+		onchainKey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(valset.RequiredKeyTag)
+		if err != nil {
+			if errors.Is(err, entity.ErrKeyNotFound) {
+				tracing.AddEvent(span, "skipped_no_key")
+				slog.DebugContext(ctx, "Skipped proof commitment, no onchain key for required key tag", "keyTag", valset.RequiredKeyTag, "epoch", valsetHeader.Epoch)
+				return tickInterval, nil
+			}
+			tracing.RecordError(span, err)
+			return tickInterval, errors.Errorf("failed to get onchain key for required key tag %s: %w", valset.RequiredKeyTag, err)
+		}
+
+		now := symbiotic.Timestamp(uint64(time.Now().Unix()))
+
+		if !valset.IsActiveCommitter(ctx, nwCfg.CommitterSlotDuration, now, minCommitterPollIntervalSeconds, onchainKey) {
+			tracing.AddEvent(span, "skipped_not_active_committer")
+			slog.DebugContext(ctx, "Skipped proof commitment, not a committer for this validator set",
+				"key", onchainKey,
+				"epoch", valset.Epoch,
+				"committerSlotDuration", nwCfg.CommitterSlotDuration,
+				"now", now,
+				"minPollInterval", minCommitterPollIntervalSeconds,
+				"committerIndices", valset.CommitterIndices,
+			)
+			return tickInterval, nil
+		}
+
+		tracing.AddEvent(span, "confirmed_active_committer")
+	}
+
+	lastCommittedEpoch := s.detectLastCommittedEpochFromDB(ctx)
+
+	tracing.SetAttributes(span, attribute.Int64("last_committed_epoch", int64(lastCommittedEpoch)))
+
+	if lastCommittedEpoch >= valset.Epoch {
+		tracing.AddEvent(span, "all_epochs_committed")
+		slog.DebugContext(ctx, "No pending proofs to commit, all epochs committed", "lastCommittedEpoch", lastCommittedEpoch, "knownValsetEpoch", valset.Epoch)
+		return tickInterval, nil
+	}
+
+	slog.DebugContext(ctx, "Detected last committed epoch", "lastCommittedEpoch", lastCommittedEpoch, "knownValsetEpoch", valset.Epoch)
+
+	uncommittedCount := valset.Epoch - lastCommittedEpoch
+	tracing.SetAttributes(span, attribute.Int64("uncommitted_epochs", int64(uncommittedCount)))
+
+	// Dev: we check if the no. of uncommitted epochs is > the batch size then there's a chance
+	// that we might've already committed some epochs but those are not finalized,
+	// hence to optimize for both time and network calls we directly check on the
+	// settlement layers to see what's the latest(not finalized) commit
+	if uncommittedCount > symbiotic.Epoch(commitCheckBatchSize) {
+		tracing.AddEvent(span, "detecting_last_committed_epoch_from_chain")
+		newLastCommit := s.detectLastCommittedEpochFromChain(ctx, nwCfg)
+		if newLastCommit > lastCommittedEpoch {
+			tracing.SetAttributes(span, attribute.Int64("last_committed_epoch_updated", int64(newLastCommit)))
+			slog.InfoContext(ctx, "Number of uncommitted epochs exceeds batch size, updated last committed epoch based on settlement chain data",
+				"oldLastCommittedEpoch", lastCommittedEpoch,
+				"newLastCommittedEpoch", newLastCommit,
+			)
+			lastCommittedEpoch = newLastCommit
+		}
+	}
+
+	pendingProofs, err := s.cfg.Repo.GetPendingProofCommitsSinceEpoch(ctx, lastCommittedEpoch+1, commitCheckBatchSize)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return tickInterval, errors.Errorf("failed to get pending proof commits since epoch %d: %w", valset.Epoch, err)
+	}
+
+	tracing.SetAttributes(span, attribute.Int("pending_proofs_count", len(pendingProofs)))
+
+	if len(pendingProofs) == 0 {
+		tracing.AddEvent(span, "no_pending_proofs")
+		slog.DebugContext(ctx, "No pending proof commits found")
+		return tickInterval, nil
+	}
+
+	processedCount := 0
+	for _, proofKey := range pendingProofs {
+		err = s.processPendingProof(ctx, proofKey)
+		if err != nil {
+			tracing.RecordError(span, err)
+			slog.ErrorContext(ctx, "Error processing pending proof",
+				slog.String("requestId", proofKey.RequestID.Hex()),
+				slog.Uint64("epoch", uint64(proofKey.Epoch)),
+				slog.String("error", err.Error()),
+			)
+			break
+		}
+		processedCount++
+	}
+
+	tracing.SetAttributes(span, attribute.Int("processed_count", processedCount))
+
+	return tickInterval, nil
+}
+
 func (s *Service) processPendingProof(ctx context.Context, proofKey symbiotic.ProofCommitKey) error {
+	ctx, span := tracing.StartSpan(ctx, "valset_listener.ProcessPendingProof",
+		tracing.AttrRequestID.String(proofKey.RequestID.Hex()),
+		tracing.AttrEpoch.Int64(int64(proofKey.Epoch)),
+	)
+	defer span.End()
+
 	ctx = log.WithAttrs(ctx,
 		slog.String("requestId", proofKey.RequestID.Hex()),
 		slog.Uint64("epoch", uint64(proofKey.Epoch)),
 	)
 	slog.DebugContext(ctx, "Found pending proof commit")
 
-	// get proof
 	proof, err := s.cfg.Repo.GetAggregationProof(ctx, proofKey.RequestID)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get aggregation proof for request ID %s: %w", proofKey.RequestID.Hex(), err)
 	}
 
+	tracing.SetAttributes(span, tracing.AttrProofSize.Int(len(proof.Proof)))
+
 	targetValset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, proofKey.Epoch)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get validator set by epoch %d: %w", proofKey.Epoch, err)
 	}
 
+	tracing.SetAttributes(span, tracing.AttrValidatorCount.Int(len(targetValset.Validators)))
 	s.cfg.Metrics.ObserveAggregationProofSize(len(proof.Proof), len(targetValset.Validators))
 
 	config, err := s.cfg.EvmClient.GetConfig(ctx, targetValset.CaptureTimestamp, proofKey.Epoch)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get config for epoch %d: %w", proofKey.Epoch, err)
 	}
 
-	extraData, err := s.cfg.Aggregator.GenerateExtraData(targetValset, config.RequiredKeyTags)
+	extraData, err := s.cfg.Aggregator.GenerateExtraData(ctx, targetValset, config.RequiredKeyTags)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to generate extra data for validator set: %w", err)
 	}
 
 	header, err := targetValset.GetHeader()
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get validator set header: %w", err)
 	}
+
+	pubkey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(header.RequiredKeyTag)
+	if err != nil {
+		return errors.Errorf("failed to get onchain key from cache: %w", err)
+	}
+
+	validator, found := targetValset.FindValidatorByKey(header.RequiredKeyTag, pubkey)
+	if !found {
+		return errors.Errorf("local validator not found")
+	}
+
+	ctx = log.WithAttrs(ctx, slog.String("validatorAddress", validator.Operator.Hex()))
+	tracing.SetAttributes(span, tracing.AttrValidatorAddress.String(validator.Operator.Hex()))
 
 	slog.DebugContext(ctx, "Committing proof to settlements", "header", header, "extraData", extraData)
 
 	ok, err := s.commitValsetToAllSettlements(ctx, config, header, extraData, proof.Proof)
 	if !ok {
-		return errors.Errorf("failed to commit valset to all settlements for epoch %d, error=%w", proofKey.Epoch, err)
+		_err := errors.Errorf("failed to commit valset to all settlements for epoch %d, error=%w", proofKey.Epoch, err)
+		tracing.RecordError(span, _err)
+		return _err
 	} else if err != nil {
 		// on partial failure just log error and continue, we will retry later
 		slog.ErrorContext(ctx, "Failed to commit valset to some settlements", "error", err)

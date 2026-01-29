@@ -6,8 +6,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/symbioticfi/relay/internal/entity"
+	"github.com/symbioticfi/relay/pkg/tracing"
 )
 
 // HandleWantSignaturesRequest processes a peer's request for missing signatures and returns
@@ -27,6 +29,11 @@ import (
 //   - Skips validator indices where signatures are not found locally
 //   - Returns empty signatures map for request ids where no matching signatures are found
 func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity.WantSignaturesRequest) (entity.WantSignaturesResponse, error) {
+	ctx, span := tracing.StartSpan(ctx, "sync-provider.HandleWantSignaturesRequest",
+		attribute.Int("request.want_signatures_count", len(request.WantSignatures)),
+	)
+	defer span.End()
+
 	slog.InfoContext(ctx, "Handling want signatures request", "requestCount", len(request.WantSignatures))
 
 	response := entity.WantSignaturesResponse{
@@ -77,6 +84,11 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity
 	}
 
 	slog.InfoContext(ctx, "Want signatures request handled", "responseSignatures", totalSignatureCount, "responseRequests", len(response.Signatures))
+
+	tracing.SetAttributes(span,
+		attribute.Int("response.signatures_count", totalSignatureCount),
+		attribute.Int("response.requests_count", len(response.Signatures)),
+	)
 
 	return response, nil
 }

@@ -290,18 +290,18 @@ func (m *Mockaggregator) EXPECT() *MockaggregatorMockRecorder {
 }
 
 // Aggregate mocks base method.
-func (m *Mockaggregator) Aggregate(valset entity0.ValidatorSet, signatures []entity0.Signature) (entity0.AggregationProof, error) {
+func (m *Mockaggregator) Aggregate(ctx context.Context, valset entity0.ValidatorSet, signatures []entity0.Signature) (entity0.AggregationProof, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Aggregate", valset, signatures)
+	ret := m.ctrl.Call(m, "Aggregate", ctx, valset, signatures)
 	ret0, _ := ret[0].(entity0.AggregationProof)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Aggregate indicates an expected call of Aggregate.
-func (mr *MockaggregatorMockRecorder) Aggregate(valset, signatures any) *gomock.Call {
+func (mr *MockaggregatorMockRecorder) Aggregate(ctx, valset, signatures any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Aggregate", reflect.TypeOf((*Mockaggregator)(nil).Aggregate), valset, signatures)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Aggregate", reflect.TypeOf((*Mockaggregator)(nil).Aggregate), ctx, valset, signatures)
 }
 
 // MockkeyProvider is a mock of keyProvider interface.

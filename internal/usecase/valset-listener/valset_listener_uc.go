@@ -11,10 +11,12 @@ import (
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/log"
 	"github.com/symbioticfi/relay/pkg/signals"
+	"github.com/symbioticfi/relay/pkg/tracing"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
@@ -115,31 +117,46 @@ func (s *Service) LoadAllMissingEpochs(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-retryTimer.C:
-			fromEpoch, toEpoch, err := s.determineStartupSyncRange(ctx)
-			if err != nil {
-				retryCount++
-				if retryCount >= maxRetries {
-					return errors.Errorf("failed to load missing epochs after %d retries: %w", maxRetries, err)
-				}
-				slog.ErrorContext(ctx, "Failed to load missing epochs, retrying", "error", err, "attempt", retryCount, "maxRetries", maxRetries)
-				retryTimer.Reset(time.Second * 2)
-				continue
+			err := s.determineStartupSyncRangeAndLoadMissingEpochs(ctx)
+			if err == nil {
+				slog.InfoContext(ctx, "Successfully loaded all missing epochs")
+				return nil
 			}
 
-			if _, err := s.tryLoadMissingEpochs(ctx, fromEpoch, toEpoch); err != nil {
-				retryCount++
-				if retryCount >= maxRetries {
-					return errors.Errorf("failed to load missing epochs after %d retries: %w", maxRetries, err)
-				}
-				slog.ErrorContext(ctx, "Failed to load missing epochs, retrying", "error", err, "attempt", retryCount, "maxRetries", maxRetries)
-				retryTimer.Reset(time.Second * 2)
-				continue
+			slog.ErrorContext(ctx, "Failed to load missing epochs, retrying", "error", err, "attempt", retryCount, "maxRetries", maxRetries)
+
+			retryCount++
+			if retryCount >= maxRetries {
+				return errors.Errorf("failed to load missing epochs after %d retries: %w", maxRetries, err)
 			}
 
-			slog.InfoContext(ctx, "Successfully loaded all missing epochs")
-			return nil
+			retryTimer.Reset(time.Second * 2)
 		}
 	}
+}
+
+func (s *Service) determineStartupSyncRangeAndLoadMissingEpochs(ctx context.Context) error {
+	ctx, span := tracing.StartSpan(ctx, "valset_listener.DetermineStartupSyncRangeAndLoadMissingEpochs")
+	defer span.End()
+
+	fromEpoch, toEpoch, err := s.determineStartupSyncRange(ctx)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return errors.Errorf("failed to determine startup sync range: %w", err)
+	}
+
+	tracing.SetAttributes(span,
+		attribute.Int64("from_epoch", int64(fromEpoch)),
+		attribute.Int64("to_epoch", int64(toEpoch)),
+		attribute.Int64("epochs_to_sync", int64(toEpoch-fromEpoch+1)),
+	)
+
+	if _, err := s.tryLoadMissingEpochs(ctx, fromEpoch, toEpoch); err != nil {
+		tracing.RecordError(span, err)
+		return errors.Errorf("failed to load missing epochs: %w", err)
+	}
+
+	return nil
 }
 
 func (s *Service) Start(ctx context.Context) error {
@@ -153,21 +170,47 @@ func (s *Service) Start(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-timer.C:
-			fromEpoch, toEpoch, err := s.determineSteadySyncRange(ctx)
+			timerInterval, err := s.determineSteadySyncRangeAndLoadMissingEpochs(ctx)
 			if err != nil {
-				slog.ErrorContext(ctx, "Failed to determine sync range", "error", err)
-				timer.Reset(s.cfg.PollingInterval)
-				continue
+				slog.ErrorContext(ctx, "Failed to load missing epochs", "error", err)
 			}
-
-			timeUntilNextEpoch, err := s.tryLoadMissingEpochs(ctx, fromEpoch, toEpoch)
-			if err != nil {
-				slog.ErrorContext(ctx, "Failed to process epochs", "error", err)
-			}
-
-			timer.Reset(timeUntilNextEpoch)
+			timer.Reset(timerInterval)
 		}
 	}
+}
+
+func (s *Service) determineSteadySyncRangeAndLoadMissingEpochs(ctx context.Context) (time.Duration, error) {
+	ctx, span := tracing.StartSpan(ctx, "valset_listener.DetermineSteadySyncRangeAndLoadMissingEpochs")
+	defer span.End()
+
+	fromEpoch, toEpoch, err := s.determineSteadySyncRange(ctx)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return s.cfg.PollingInterval, errors.Errorf("failed to determine steady sync range: %w", err)
+	}
+
+	epochsToSync := int64(0)
+	if toEpoch >= fromEpoch {
+		epochsToSync = int64(toEpoch - fromEpoch + 1)
+	}
+
+	tracing.SetAttributes(span,
+		attribute.Int64("from_epoch", int64(fromEpoch)),
+		attribute.Int64("to_epoch", int64(toEpoch)),
+		attribute.Int64("epochs_to_sync", epochsToSync),
+	)
+
+	timeUntilNextEpoch, err := s.tryLoadMissingEpochs(ctx, fromEpoch, toEpoch)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return timeUntilNextEpoch, errors.Errorf("failed to load missing epochs: %w", err)
+	}
+
+	tracing.SetAttributes(span,
+		attribute.String("time_until_next_epoch", timeUntilNextEpoch.String()),
+	)
+
+	return timeUntilNextEpoch, nil
 }
 
 func (s *Service) determineStartupSyncRange(ctx context.Context) (from symbiotic.Epoch, to symbiotic.Epoch, err error) {
@@ -253,6 +296,11 @@ func (s *Service) determineSyncRangeFromLatestWithHeader(
 			)
 		}
 	}
+
+	slog.InfoContext(ctx, "Determined sync range from latest header",
+		"latestStoredEpoch", latestHeader.Epoch,
+		"currentEpoch", currentEpoch,
+	)
 
 	return latestHeader.Epoch + 1, currentEpoch, nil
 }
@@ -342,36 +390,46 @@ func (s *Service) process(
 	valSet symbiotic.ValidatorSet,
 	config symbiotic.NetworkConfig,
 ) error {
+	ctx, span := tracing.StartSpan(ctx, "valset_listener.Process",
+		tracing.AttrEpoch.Int64(int64(valSet.Epoch)),
+	)
+	defer span.End()
 	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(valSet.Epoch)))
 	slog.DebugContext(ctx, "Started processing valset for epoch")
 
 	networkData, err := s.getNetworkData(ctx, config)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get network data: %w", err)
 	}
 
-	extraData, err := s.cfg.Aggregator.GenerateExtraData(valSet, config.RequiredKeyTags)
+	extraData, err := s.cfg.Aggregator.GenerateExtraData(ctx, valSet, config.RequiredKeyTags)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to generate extra data: %w", err)
 	}
 
 	header, err := valSet.GetHeader()
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get validator set header: %w", err)
 	}
 	commitmentData, err := s.headerCommitmentData(networkData, header, extraData)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get header commitment hash: %w", err)
 	}
 
 	onchainKey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(prevValSet.RequiredKeyTag)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get onchain symb key from cache: %w", err)
 	}
 
 	// if we are a signer, sign the commitment, otherwise just save the metadata
 	var signatureRequest *symbiotic.SignatureRequest
 	if prevValSet.IsSigner(onchainKey) {
+		tracing.AddEvent(span, "creating_signature_request")
 		slog.DebugContext(ctx, "Node is a signer for previous validator set, creating signature request")
 		signatureRequest = &symbiotic.SignatureRequest{
 			KeyTag:        prevValSet.RequiredKeyTag,
@@ -382,6 +440,7 @@ func (s *Service) process(
 
 	msgHash, err := crypto.HashMessage(prevValSet.RequiredKeyTag.Type(), commitmentData)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return errors.Errorf("failed to hash message: %w", err)
 	}
 
@@ -407,7 +466,9 @@ func (s *Service) process(
 		ValidatorSetMetadata: metadata,
 	}
 	if err = s.cfg.Repo.SaveNextValsetData(ctx, data); err != nil {
-		return errors.Errorf("failed to save validator set data: %w", err)
+		err = errors.Errorf("failed to save validator set data: %w", err)
+		tracing.RecordError(span, err)
+		return err
 	}
 	if signatureRequest != nil {
 		s.cfg.Signer.EnqueueRequestID(ctx, metadata.RequestID)
@@ -489,18 +550,26 @@ func (s *Service) headerCommitmentData(
 }
 
 func (s *Service) derive(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, symbiotic.NetworkConfig, error) {
+	ctx, span := tracing.StartSpan(ctx, "valset_listener.Derive",
+		tracing.AttrEpoch.Int64(int64(epoch)),
+	)
+	defer span.End()
+
 	epochStart, err := s.cfg.EvmClient.GetEpochStart(ctx, epoch)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return symbiotic.ValidatorSet{}, symbiotic.NetworkConfig{}, errors.Errorf("failed to get epoch start for epoch %d: %w", epoch, err)
 	}
 
 	config, err := s.cfg.EvmClient.GetConfig(ctx, epochStart, epoch)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return symbiotic.ValidatorSet{}, symbiotic.NetworkConfig{}, errors.Errorf("failed to get network config for epoch %d: %w", epoch, err)
 	}
 
 	valset, err := s.cfg.Deriver.GetValidatorSet(ctx, epoch, config)
 	if err != nil {
+		tracing.RecordError(span, err)
 		return symbiotic.ValidatorSet{}, symbiotic.NetworkConfig{}, errors.Errorf("failed to derive validator set extra for epoch %d: %w", epoch, err)
 	}
 

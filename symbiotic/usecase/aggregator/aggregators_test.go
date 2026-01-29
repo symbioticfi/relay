@@ -1,6 +1,7 @@
 package aggregator
 
 import (
+	"context"
 	"encoding/hex"
 	"math/big"
 	"testing"
@@ -21,11 +22,11 @@ import (
 
 type mockProver struct{}
 
-func (m *mockProver) Prove(proveInput proof.ProveInput) (proof.ProofData, error) {
+func (m *mockProver) Prove(ctx context.Context, proveInput proof.ProveInput) (proof.ProofData, error) {
 	return proof.ProofData{}, nil
 }
 
-func (m *mockProver) Verify(valsetLen int, publicInputHash common.Hash, proofBytes []byte) (bool, error) {
+func (m *mockProver) Verify(ctx context.Context, valsetLen int, publicInputHash common.Hash, proofBytes []byte) (bool, error) {
 	return true, nil
 }
 
@@ -34,12 +35,12 @@ func TestSimpleAggregator(t *testing.T) {
 	require.NoError(t, err)
 	valset, signatures, keyTag := genCorrectTest(10, []int{1, 2, 3})
 
-	proof, err := agg.Aggregate(valset, signatures)
+	proof, err := agg.Aggregate(t.Context(), valset, signatures)
 	if err != nil {
 		panic(err)
 	}
 
-	success, err := agg.Verify(valset, keyTag, proof)
+	success, err := agg.Verify(t.Context(), valset, keyTag, proof)
 	require.NoError(t, err)
 	require.True(t, success, "verification failed")
 }
@@ -57,12 +58,12 @@ func TestInvalidSimpleAggregator(t *testing.T) {
 		panic(err)
 	}
 
-	proof, err := agg.Aggregate(valset, signatures)
+	proof, err := agg.Aggregate(t.Context(), valset, signatures)
 	if err != nil {
 		panic(err)
 	}
 
-	success, err := agg.Verify(valset, keyTag, proof)
+	success, err := agg.Verify(t.Context(), valset, keyTag, proof)
 	if err == nil {
 		t.Fatal(errors.New("verification passed"))
 	}
@@ -75,7 +76,7 @@ func TestSimpleAggregatorExtraData(t *testing.T) {
 	valset, keyTag := genExtraDataTest(t)
 	agg, err := blsBn254Simple.NewAggregator()
 	require.NoError(t, err)
-	data, err := agg.GenerateExtraData(valset, []symbiotic.KeyTag{keyTag})
+	data, err := agg.GenerateExtraData(t.Context(), valset, []symbiotic.KeyTag{keyTag})
 	require.NoError(t, err)
 	expected := [][]string{
 		{
@@ -100,7 +101,7 @@ func TestAggregatorZKExtraData(t *testing.T) {
 	prover := proof.NewZkProver("circuits")
 	agg, err := blsBn254ZK.NewAggregator(prover)
 	require.NoError(t, err)
-	data, err := agg.GenerateExtraData(valset, []symbiotic.KeyTag{keyTag})
+	data, err := agg.GenerateExtraData(t.Context(), valset, []symbiotic.KeyTag{keyTag})
 	require.NoError(t, err)
 	expected := [][]string{
 		{
@@ -125,12 +126,12 @@ func TestZkAggregator(t *testing.T) {
 	agg, err := blsBn254ZK.NewAggregator(prover)
 	require.NoError(t, err)
 	valset, signatures, keyTag := genCorrectTest(10, []int{1, 2, 3})
-	proof, err := agg.Aggregate(valset, signatures)
+	proof, err := agg.Aggregate(t.Context(), valset, signatures)
 	if err != nil {
 		panic(err)
 	}
 
-	success, err := agg.Verify(valset, keyTag, proof)
+	success, err := agg.Verify(t.Context(), valset, keyTag, proof)
 	if err != nil {
 		panic(err)
 	}

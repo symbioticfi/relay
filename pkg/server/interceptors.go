@@ -110,3 +110,21 @@ func StreamPanicRecoveryInterceptor() grpc.StreamServerInterceptor {
 		return handler(srv, stream)
 	}
 }
+
+// TraceContextInterceptor enriches the context with trace information for structured logging
+func TraceContextInterceptor() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		// Enrich context with trace_id and span_id from OpenTelemetry span
+		ctx = log.WithTraceContext(ctx)
+		return handler(ctx, req)
+	}
+}
+
+// StreamTraceContextInterceptor enriches the context with trace information for streaming RPCs
+func StreamTraceContextInterceptor() grpc.StreamServerInterceptor {
+	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		// Enrich context with trace_id and span_id from OpenTelemetry span
+		ctx := log.WithTraceContext(stream.Context())
+		return handler(srv, &wrappedStream{stream, ctx})
+	}
+}

@@ -96,6 +96,7 @@ type P2PMessage struct {
 	Sender        string                 `protobuf:"bytes,1,opt,name=sender,proto3" json:"sender,omitempty"`
 	Timestamp     int64                  `protobuf:"varint,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	Data          []byte                 `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
+	TraceContext  map[string]string      `protobuf:"bytes,4,rep,name=trace_context,json=traceContext,proto3" json:"trace_context,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -147,6 +148,13 @@ func (x *P2PMessage) GetTimestamp() int64 {
 func (x *P2PMessage) GetData() []byte {
 	if x != nil {
 		return x.Data
+	}
+	return nil
+}
+
+func (x *P2PMessage) GetTraceContext() map[string]string {
+	if x != nil {
+		return x.TraceContext
 	}
 	return nil
 }
@@ -515,12 +523,16 @@ const file_v1_message_proto_rawDesc = "" +
 	"\akey_tag\x18\x02 \x01(\rR\x06keyTag\x12\x14\n" +
 	"\x05epoch\x18\x03 \x01(\x04R\x05epoch\x12!\n" +
 	"\fmessage_hash\x18\x04 \x01(\fR\vmessageHash\x12\x14\n" +
-	"\x05proof\x18\x05 \x01(\fR\x05proof\"V\n" +
+	"\x05proof\x18\x05 \x01(\fR\x05proof\"\xf8\x01\n" +
 	"\n" +
 	"P2PMessage\x12\x16\n" +
 	"\x06sender\x18\x01 \x01(\tR\x06sender\x12\x1c\n" +
 	"\ttimestamp\x18\x02 \x01(\x03R\ttimestamp\x12\x12\n" +
-	"\x04data\x18\x03 \x01(\fR\x04data\"\xcc\x01\n" +
+	"\x04data\x18\x03 \x01(\fR\x04data\x12_\n" +
+	"\rtrace_context\x18\x04 \x03(\v2:.internal.client.p2p.proto.v1.P2PMessage.TraceContextEntryR\ftraceContext\x1a?\n" +
+	"\x11TraceContextEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xcc\x01\n" +
 	"\x15WantSignaturesRequest\x12p\n" +
 	"\x0fwant_signatures\x18\x01 \x03(\v2G.internal.client.p2p.proto.v1.WantSignaturesRequest.WantSignaturesEntryR\x0ewantSignatures\x1aA\n" +
 	"\x13WantSignaturesEntry\x12\x10\n" +
@@ -572,7 +584,7 @@ func file_v1_message_proto_rawDescGZIP() []byte {
 	return file_v1_message_proto_rawDescData
 }
 
-var file_v1_message_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_v1_message_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_v1_message_proto_goTypes = []any{
 	(*AggregationProof)(nil),              // 0: internal.client.p2p.proto.v1.AggregationProof
 	(*P2PMessage)(nil),                    // 1: internal.client.p2p.proto.v1.P2PMessage
@@ -583,27 +595,29 @@ var file_v1_message_proto_goTypes = []any{
 	(*Signature)(nil),                     // 6: internal.client.p2p.proto.v1.Signature
 	(*WantAggregationProofsRequest)(nil),  // 7: internal.client.p2p.proto.v1.WantAggregationProofsRequest
 	(*WantAggregationProofsResponse)(nil), // 8: internal.client.p2p.proto.v1.WantAggregationProofsResponse
-	nil,                                   // 9: internal.client.p2p.proto.v1.WantSignaturesRequest.WantSignaturesEntry
-	nil,                                   // 10: internal.client.p2p.proto.v1.WantSignaturesResponse.SignaturesEntry
-	nil,                                   // 11: internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntry
+	nil,                                   // 9: internal.client.p2p.proto.v1.P2PMessage.TraceContextEntry
+	nil,                                   // 10: internal.client.p2p.proto.v1.WantSignaturesRequest.WantSignaturesEntry
+	nil,                                   // 11: internal.client.p2p.proto.v1.WantSignaturesResponse.SignaturesEntry
+	nil,                                   // 12: internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntry
 }
 var file_v1_message_proto_depIdxs = []int32{
-	9,  // 0: internal.client.p2p.proto.v1.WantSignaturesRequest.want_signatures:type_name -> internal.client.p2p.proto.v1.WantSignaturesRequest.WantSignaturesEntry
-	10, // 1: internal.client.p2p.proto.v1.WantSignaturesResponse.signatures:type_name -> internal.client.p2p.proto.v1.WantSignaturesResponse.SignaturesEntry
-	5,  // 2: internal.client.p2p.proto.v1.ValidatorSignatureList.signatures:type_name -> internal.client.p2p.proto.v1.ValidatorSignature
-	6,  // 3: internal.client.p2p.proto.v1.ValidatorSignature.signature:type_name -> internal.client.p2p.proto.v1.Signature
-	11, // 4: internal.client.p2p.proto.v1.WantAggregationProofsResponse.proofs:type_name -> internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntry
-	4,  // 5: internal.client.p2p.proto.v1.WantSignaturesResponse.SignaturesEntry.value:type_name -> internal.client.p2p.proto.v1.ValidatorSignatureList
-	0,  // 6: internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntry.value:type_name -> internal.client.p2p.proto.v1.AggregationProof
-	2,  // 7: internal.client.p2p.proto.v1.SymbioticP2PService.WantSignatures:input_type -> internal.client.p2p.proto.v1.WantSignaturesRequest
-	7,  // 8: internal.client.p2p.proto.v1.SymbioticP2PService.WantAggregationProofs:input_type -> internal.client.p2p.proto.v1.WantAggregationProofsRequest
-	3,  // 9: internal.client.p2p.proto.v1.SymbioticP2PService.WantSignatures:output_type -> internal.client.p2p.proto.v1.WantSignaturesResponse
-	8,  // 10: internal.client.p2p.proto.v1.SymbioticP2PService.WantAggregationProofs:output_type -> internal.client.p2p.proto.v1.WantAggregationProofsResponse
-	9,  // [9:11] is the sub-list for method output_type
-	7,  // [7:9] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	9,  // 0: internal.client.p2p.proto.v1.P2PMessage.trace_context:type_name -> internal.client.p2p.proto.v1.P2PMessage.TraceContextEntry
+	10, // 1: internal.client.p2p.proto.v1.WantSignaturesRequest.want_signatures:type_name -> internal.client.p2p.proto.v1.WantSignaturesRequest.WantSignaturesEntry
+	11, // 2: internal.client.p2p.proto.v1.WantSignaturesResponse.signatures:type_name -> internal.client.p2p.proto.v1.WantSignaturesResponse.SignaturesEntry
+	5,  // 3: internal.client.p2p.proto.v1.ValidatorSignatureList.signatures:type_name -> internal.client.p2p.proto.v1.ValidatorSignature
+	6,  // 4: internal.client.p2p.proto.v1.ValidatorSignature.signature:type_name -> internal.client.p2p.proto.v1.Signature
+	12, // 5: internal.client.p2p.proto.v1.WantAggregationProofsResponse.proofs:type_name -> internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntry
+	4,  // 6: internal.client.p2p.proto.v1.WantSignaturesResponse.SignaturesEntry.value:type_name -> internal.client.p2p.proto.v1.ValidatorSignatureList
+	0,  // 7: internal.client.p2p.proto.v1.WantAggregationProofsResponse.ProofsEntry.value:type_name -> internal.client.p2p.proto.v1.AggregationProof
+	2,  // 8: internal.client.p2p.proto.v1.SymbioticP2PService.WantSignatures:input_type -> internal.client.p2p.proto.v1.WantSignaturesRequest
+	7,  // 9: internal.client.p2p.proto.v1.SymbioticP2PService.WantAggregationProofs:input_type -> internal.client.p2p.proto.v1.WantAggregationProofsRequest
+	3,  // 10: internal.client.p2p.proto.v1.SymbioticP2PService.WantSignatures:output_type -> internal.client.p2p.proto.v1.WantSignaturesResponse
+	8,  // 11: internal.client.p2p.proto.v1.SymbioticP2PService.WantAggregationProofs:output_type -> internal.client.p2p.proto.v1.WantAggregationProofsResponse
+	10, // [10:12] is the sub-list for method output_type
+	8,  // [8:10] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_v1_message_proto_init() }
@@ -617,7 +631,7 @@ func file_v1_message_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_message_proto_rawDesc), len(file_v1_message_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
