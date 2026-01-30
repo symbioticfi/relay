@@ -32,11 +32,13 @@ Please name your branches according to the purpose of the work:
 ## Pull Request Process
 
 - 🔀 **Always create pull requests targeting the `main` branch** (unless backporting fixes to a release branch).
-- ✅ Make sure your branch is up to date with `main` before opening a PR.
+- ✅ Make sure your branch is up to date with `main` (or the target `release-x.y` branch) before opening a PR.
 - ✅ Ensure your code builds and passes all tests.
 - ✅ Follow Go best practices and run a linter by running `make lint`.
 - 📝 Use clear and descriptive PR titles.
 - 📌 Link related issues in the PR description (`Fixes #123`, `Closes #456`, etc.).
+
+> **Note**: CI workflows (tests, linting, code quality checks) run automatically on all PRs to `main` and `release-*` branches, as well as on direct commits to these branches.
 
 ### PR Checklist
 

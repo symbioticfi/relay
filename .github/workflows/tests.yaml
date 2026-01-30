@@ -2,9 +2,15 @@
 name: "CI Pipeline"
 
 on:
+  push:
+    branches:
+      - main
+      - 'release-*'
   pull_request:
     types: [opened, synchronize, reopened]
-    branches: [main]
+    branches:
+      - main
+      - 'release-*'
   workflow_call:
 
 env:
