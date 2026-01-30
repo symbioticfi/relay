@@ -616,7 +616,7 @@ Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for our branching strategy, PR 
 
 ### Key Points:
 
-- **Target branch**: Always create PRs against `dev`, never `main`
+- **Target branch**: Always create PRs against `main` (unless backporting to a release branch)
 - **Tests**: Ensure all tests pass before submitting PR
 - **Linting**: Run `make lint` and fix all issues
 - **Documentation**: Update docs when changing APIs or behavior
