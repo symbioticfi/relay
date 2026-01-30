@@ -121,11 +121,11 @@ docker run -v $(pwd)/config.yaml:/config.yaml \
 Docker Hub: https://hub.docker.com/r/symbioticfi/relay
 
 
-## Build localy
+## Build Locally
 
 ### Dependencies
 
-- **Go 1.24.3+**
+- **Go 1.25.3+**
 - **Docker & Docker Compose** (for local setup and E2E tests)
 - **Node.js & Foundry** (for contract compilation in E2E)
 

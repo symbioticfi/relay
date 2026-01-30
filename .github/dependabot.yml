@@ -7,7 +7,7 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
-    target-branch: "dev"
+    target-branch: "main"
   
   # Enable version updates for go
   - package-ecosystem: "gomod"
@@ -15,7 +15,7 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
-    target-branch: "dev"
+    target-branch: "main"
 
   # Enable version updates for github-actions
   - package-ecosystem: "github-actions"
@@ -23,4 +23,4 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
-    target-branch: "dev"
+    target-branch: "main"
