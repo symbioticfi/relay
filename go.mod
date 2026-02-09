@@ -27,7 +27,7 @@ require (
 	github.com/prometheus/client_golang v1.23.2
 	github.com/pterm/pterm v0.12.82
 	github.com/samber/lo v1.52.0
-	github.com/samber/slog-multi v1.7.0
+	github.com/samber/slog-multi v1.7.1
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
@@ -177,7 +177,7 @@ require (
 	github.com/rs/zerolog v1.34.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sagikazarmark/locafero v0.11.0 // indirect
-	github.com/samber/slog-common v0.19.0 // indirect
+	github.com/samber/slog-common v0.20.0 // indirect
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect
 	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
