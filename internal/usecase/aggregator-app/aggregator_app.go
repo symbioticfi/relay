@@ -269,7 +269,11 @@ func (s *AggregatorApp) TryAggregateRequestsWithoutProof(ctx context.Context) er
 			return errors.Errorf("failed to get signature requests without aggregation proof for epoch %d: %w", epoch, err)
 		}
 
-		if len(requests) == 0 {
+		if epoch == startEpoch {
+			if len(requests) == 0 {
+				break
+			}
+		} else if len(requests) == 0 {
 			continue // No more requests for this epoch
 		}
 
@@ -288,7 +292,7 @@ func (s *AggregatorApp) TryAggregateRequestsWithoutProof(ctx context.Context) er
 		}
 
 		if epoch == startEpoch {
-			break // Prevent underflow when decrementing from 0
+			break // Prevent underflow when decrementing unsigned epoch
 		}
 	}
 
