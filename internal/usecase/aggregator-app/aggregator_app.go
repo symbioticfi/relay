@@ -262,18 +262,23 @@ func (s *AggregatorApp) TryAggregateRequestsWithoutProof(ctx context.Context) er
 		startEpoch = latestEpoch - symbiotic.Epoch(epochsToCheckForMissingProofs) + 1
 	}
 
+	if latestEpoch < startEpoch {
+		return nil
+	}
+
 	var lastHash common.Hash
-	for epoch := latestEpoch; epoch >= startEpoch; epoch-- {
+	for epoch := latestEpoch; ; epoch-- {
 		requests, err := s.cfg.Repo.GetSignatureRequestsWithoutAggregationProof(ctx, epoch, 10, lastHash)
 		if err != nil {
 			return errors.Errorf("failed to get signature requests without aggregation proof for epoch %d: %w", epoch, err)
 		}
 
-		if epoch == startEpoch {
-			if len(requests) == 0 {
+		if len(requests) == 0 {
+			// Don't carry pagination state across epochs.
+			lastHash = common.Hash{}
+			if epoch == startEpoch {
 				break
 			}
-		} else if len(requests) == 0 {
 			continue // No more requests for this epoch
 		}
 
