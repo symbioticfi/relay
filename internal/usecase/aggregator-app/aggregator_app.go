@@ -254,6 +254,10 @@ const epochsToCheckForMissingProofs = 20
 func (s *AggregatorApp) TryAggregateRequestsWithoutProof(ctx context.Context) error {
 	latestEpoch, err := s.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 	if err != nil {
+		if errors.Is(err, entity.ErrEntityNotFound) {
+			slog.DebugContext(ctx, "No validator sets synced yet, skipping aggregation catch-up")
+			return nil
+		}
 		return errors.Errorf("failed to get latest epoch: %w", err)
 	}
 
@@ -266,34 +270,30 @@ func (s *AggregatorApp) TryAggregateRequestsWithoutProof(ctx context.Context) er
 		return nil
 	}
 
-	var lastHash common.Hash
 	for epoch := latestEpoch; ; epoch-- {
-		requests, err := s.cfg.Repo.GetSignatureRequestsWithoutAggregationProof(ctx, epoch, 10, lastHash)
-		if err != nil {
-			return errors.Errorf("failed to get signature requests without aggregation proof for epoch %d: %w", epoch, err)
-		}
+		var lastHash common.Hash
+		for {
+			requests, err := s.cfg.Repo.GetSignatureRequestsWithoutAggregationProof(ctx, epoch, 10, lastHash)
+			if err != nil {
+				return errors.Errorf("failed to get signature requests without aggregation proof for epoch %d: %w", epoch, err)
+			}
 
-		if len(requests) == 0 {
-			// Don't carry pagination state across epochs.
-			lastHash = common.Hash{}
-			if epoch == startEpoch {
+			if len(requests) == 0 {
 				break
 			}
-			continue // No more requests for this epoch
-		}
 
-		// Collect request ids
-		for _, req := range requests {
-			if !req.KeyTag.Type().AggregationKey() {
-				continue // Skip non-aggregation requests
+			for _, req := range requests {
+				if !req.KeyTag.Type().AggregationKey() {
+					continue // Skip non-aggregation requests
+				}
+
+				err := s.TryAggregateProofForRequestID(ctx, req.RequestID)
+				if err != nil {
+					return errors.Errorf("failed to try aggregate proof for request ID %s: %w", req.RequestID.Hex(), err)
+				}
 			}
 
-			err := s.TryAggregateProofForRequestID(ctx, req.RequestID)
-			if err != nil {
-				return errors.Errorf("failed to try aggregate proof for request ID %s: %w", req.RequestID.Hex(), err)
-			}
-
-			lastHash = req.RequestID
+			lastHash = requests[len(requests)-1].RequestID
 		}
 
 		if epoch == startEpoch {
