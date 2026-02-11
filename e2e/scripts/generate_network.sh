@@ -171,10 +171,12 @@ generate_docker_compose() {
         # Make sure the directory is writable
         chmod 777 "$storage_dir"
 
-        # Create storage directory for copy sidecar
-        local storage_dir_copy="$network_dir/data-$(printf "%02d" $i)-copy"
-        mkdir -p "$storage_dir_copy"
-        chmod 777 "$storage_dir_copy"
+        # Create storage directory for copy sidecar (every 2nd operator)
+        if [ $((i % 2)) -eq 0 ]; then
+            local storage_dir_copy="$network_dir/data-$(printf "%02d" $i)-copy"
+            mkdir -p "$storage_dir_copy"
+            chmod 777 "$storage_dir_copy"
+        fi
     done
 
     local anvil_port=8545
@@ -354,7 +356,8 @@ EOF
 
 EOF
 
-        # Generate copy sidecar with same private keys but different port and storage
+        # Generate copy sidecar for every 2nd operator
+        if [ $((i % 2)) -eq 0 ]; then
         local copy_port=$((relay_start_port + 100 + i - 1))
         local copy_storage_dir="data-$(printf "%02d" $i)-copy"
 
@@ -400,6 +403,7 @@ EOF
       start_period: 40s
 
 EOF
+        fi
     done
 
     # Extra relay for testing (not part of validator set)
