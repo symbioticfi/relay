@@ -172,7 +172,7 @@ generate_docker_compose() {
         chmod 777 "$storage_dir"
 
         # Create storage directory for copy sidecar (every 2nd operator)
-        if [ $((i % 2)) -eq 0 ]; then
+        if [ $((i % 3)) -eq 0 ]; then
             local storage_dir_copy="$network_dir/data-$(printf "%02d" $i)-copy"
             mkdir -p "$storage_dir_copy"
             chmod 777 "$storage_dir_copy"
@@ -357,7 +357,7 @@ EOF
 EOF
 
         # Generate copy sidecar for every 2nd operator
-        if [ $((i % 2)) -eq 0 ]; then
+        if [ $((i % 3)) -eq 0 ]; then
         local copy_port=$((relay_start_port + 100 + i - 1))
         local copy_storage_dir="data-$(printf "%02d" $i)-copy"
         local COPY_P2P_KEY_DECIMAL=$(($BASE_PRIVATE_KEY + $key_index + 30000))
