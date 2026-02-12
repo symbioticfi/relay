@@ -254,6 +254,10 @@ const epochsToCheckForMissingProofs = 20
 func (s *AggregatorApp) TryAggregateRequestsWithoutProof(ctx context.Context) error {
 	latestEpoch, err := s.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 	if err != nil {
+		if errors.Is(err, entity.ErrEntityNotFound) {
+			slog.DebugContext(ctx, "No validator sets synced yet, skipping aggregation catch-up")
+			return nil
+		}
 		return errors.Errorf("failed to get latest epoch: %w", err)
 	}
 
@@ -262,33 +266,38 @@ func (s *AggregatorApp) TryAggregateRequestsWithoutProof(ctx context.Context) er
 		startEpoch = latestEpoch - symbiotic.Epoch(epochsToCheckForMissingProofs) + 1
 	}
 
-	var lastHash common.Hash
-	for epoch := latestEpoch; epoch >= startEpoch; epoch-- {
-		requests, err := s.cfg.Repo.GetSignatureRequestsWithoutAggregationProof(ctx, epoch, 10, lastHash)
-		if err != nil {
-			return errors.Errorf("failed to get signature requests without aggregation proof for epoch %d: %w", epoch, err)
-		}
+	if latestEpoch < startEpoch {
+		return nil
+	}
 
-		if len(requests) == 0 {
-			continue // No more requests for this epoch
-		}
-
-		// Collect request ids
-		for _, req := range requests {
-			if !req.KeyTag.Type().AggregationKey() {
-				continue // Skip non-aggregation requests
-			}
-
-			err := s.TryAggregateProofForRequestID(ctx, req.RequestID)
+	for epoch := latestEpoch; ; epoch-- {
+		var lastHash common.Hash
+		for {
+			requests, err := s.cfg.Repo.GetSignatureRequestsWithoutAggregationProof(ctx, epoch, 10, lastHash)
 			if err != nil {
-				return errors.Errorf("failed to try aggregate proof for request ID %s: %w", req.RequestID.Hex(), err)
+				return errors.Errorf("failed to get signature requests without aggregation proof for epoch %d: %w", epoch, err)
 			}
 
-			lastHash = req.RequestID
+			if len(requests) == 0 {
+				break
+			}
+
+			for _, req := range requests {
+				if !req.KeyTag.Type().AggregationKey() {
+					continue // Skip non-aggregation requests
+				}
+
+				err := s.TryAggregateProofForRequestID(ctx, req.RequestID)
+				if err != nil {
+					return errors.Errorf("failed to try aggregate proof for request ID %s: %w", req.RequestID.Hex(), err)
+				}
+			}
+
+			lastHash = requests[len(requests)-1].RequestID
 		}
 
 		if epoch == startEpoch {
-			break // Prevent underflow when decrementing from 0
+			break // Prevent underflow when decrementing unsigned epoch
 		}
 	}
 
