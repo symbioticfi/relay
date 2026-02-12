@@ -360,17 +360,19 @@ EOF
         if [ $((i % 2)) -eq 0 ]; then
         local copy_port=$((relay_start_port + 100 + i - 1))
         local copy_storage_dir="data-$(printf "%02d" $i)-copy"
+        local COPY_P2P_KEY_DECIMAL=$(($BASE_PRIVATE_KEY + $key_index + 30000))
+        local COPY_P2P_KEY_HEX=$(printf "%064x" $COPY_P2P_KEY_DECIMAL)
 
         cat >> "$network_dir/docker-compose.yml" << EOF
 
-  # Relay sidecar $i copy (same keys, for testing multiple instances)
+  # Relay sidecar $i copy (same keys, different p2p identity)
   relay-sidecar-$i-copy:
     image: relay_sidecar:dev
     container_name: symbiotic-relay-$i-copy
     command:
       - sh
       - -c
-      - "chmod 777 /app/$copy_storage_dir /deploy-data 2>/dev/null || true && /workspace/scripts/sidecar-start.sh symb/0/15/0x$SYMB_PRIVATE_KEY_HEX,symb/0/11/0x$SYMB_SECONDARY_PRIVATE_KEY_HEX,symb/2/1/0x$SYMB_BLS12381_PRIVATE_KEY_HEX,symb/1/0/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31337/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31338/0x$SYMB_PRIVATE_KEY_HEX,p2p/1/1/$SYMB_PRIVATE_KEY_HEX /app/$copy_storage_dir $circuits_param"
+      - "chmod 777 /app/$copy_storage_dir /deploy-data 2>/dev/null || true && /workspace/scripts/sidecar-start.sh symb/0/15/0x$SYMB_PRIVATE_KEY_HEX,symb/0/11/0x$SYMB_SECONDARY_PRIVATE_KEY_HEX,symb/2/1/0x$SYMB_BLS12381_PRIVATE_KEY_HEX,symb/1/0/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31337/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31338/0x$SYMB_PRIVATE_KEY_HEX,p2p/1/1/$COPY_P2P_KEY_HEX /app/$copy_storage_dir $circuits_param"
     ports:
       - "$copy_port:8080"
     volumes:
