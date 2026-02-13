@@ -52,7 +52,7 @@ func TestAggregatorSignatureSync(t *testing.T) {
 	t.Logf("Step 1: Current epoch: %d", currentEpoch)
 
 	t.Logf("Identifying aggregators and signer-only nodes for next epoch %d...", currentEpoch+1)
-	deriver, err := valsetDeriver.NewDeriver(evmClient)
+	deriver, err := valsetDeriver.NewDeriver(evmClient, nil)
 	require.NoError(t, err, "Failed to create valset deriver")
 
 	captureTimestamp, err := evmClient.GetEpochStart(ctx, currentEpoch)
@@ -161,7 +161,7 @@ func TestAggregatorProofSync(t *testing.T) {
 	t.Logf("Step 1: Current epoch: %d", currentEpoch)
 
 	t.Logf("Identifying signer-only nodes for next epoch %d...", currentEpoch+1)
-	deriver, err := valsetDeriver.NewDeriver(evmClient)
+	deriver, err := valsetDeriver.NewDeriver(evmClient, nil)
 	require.NoError(t, err, "Failed to create valset deriver")
 
 	captureTimestamp, err := evmClient.GetEpochStart(ctx, currentEpoch)
