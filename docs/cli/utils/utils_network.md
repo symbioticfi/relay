@@ -7,11 +7,13 @@ Network tool
 ### Options
 
 ```
-  -c, --chains strings          Chains rpc url, comma separated
-      --driver.address string   Driver contract address
-      --driver.chainid uint     Driver contract chain id
-  -e, --epoch uint              Network epoch to fetch info
-  -h, --help                    help for network
+  -c, --chains strings                                   Chains rpc url, comma separated
+      --config string                                    Path to config file with external-voting-power-providers settings
+      --driver.address string                            Driver contract address
+      --driver.chainid uint                              Driver contract chain id
+  -e, --epoch uint                                       Network epoch to fetch info
+      --external-voting-power-providers stringToString   External voting power providers mapping in format 'providerId=url' (e.g. '0x11223344556677889900=127.0.0.1:50051') (default [])
+  -h, --help                                             help for network
 ```
 
 ### Options inherited from parent commands

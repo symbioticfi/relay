@@ -246,3 +246,42 @@ func (mr *MockEvmClientMockRecorder) IsValsetHeaderCommittedAt(ctx, addr, epoch 
 	varargs := append([]any{ctx, addr, epoch}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsValsetHeaderCommittedAt", reflect.TypeOf((*MockEvmClient)(nil).IsValsetHeaderCommittedAt), varargs...)
 }
+
+// MockexternalVotingPowerClient is a mock of externalVotingPowerClient interface.
+type MockexternalVotingPowerClient struct {
+	ctrl     *gomock.Controller
+	recorder *MockexternalVotingPowerClientMockRecorder
+	isgomock struct{}
+}
+
+// MockexternalVotingPowerClientMockRecorder is the mock recorder for MockexternalVotingPowerClient.
+type MockexternalVotingPowerClientMockRecorder struct {
+	mock *MockexternalVotingPowerClient
+}
+
+// NewMockexternalVotingPowerClient creates a new mock instance.
+func NewMockexternalVotingPowerClient(ctrl *gomock.Controller) *MockexternalVotingPowerClient {
+	mock := &MockexternalVotingPowerClient{ctrl: ctrl}
+	mock.recorder = &MockexternalVotingPowerClientMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockexternalVotingPowerClient) EXPECT() *MockexternalVotingPowerClientMockRecorder {
+	return m.recorder
+}
+
+// GetVotingPowers mocks base method.
+func (m *MockexternalVotingPowerClient) GetVotingPowers(ctx context.Context, address entity.CrossChainAddress, timestamp entity.Timestamp) ([]entity.OperatorVotingPower, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVotingPowers", ctx, address, timestamp)
+	ret0, _ := ret[0].([]entity.OperatorVotingPower)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetVotingPowers indicates an expected call of GetVotingPowers.
+func (mr *MockexternalVotingPowerClientMockRecorder) GetVotingPowers(ctx, address, timestamp any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVotingPowers", reflect.TypeOf((*MockexternalVotingPowerClient)(nil).GetVotingPowers), ctx, address, timestamp)
+}

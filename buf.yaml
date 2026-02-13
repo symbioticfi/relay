@@ -1,6 +1,7 @@
 version: v2
 modules:
   - path: api/proto
+  - path: votingpower/proto
 deps:
   - buf.build/googleapis/googleapis
 lint:
@@ -8,4 +9,3 @@ lint:
     - STANDARD
   except:
     - PACKAGE_DIRECTORY_MATCH
-

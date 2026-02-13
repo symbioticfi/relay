@@ -44,7 +44,7 @@ var infoCmd = &cobra.Command{
 			return err
 		}
 
-		providerConfigs, err := cmdhelpers.ExternalVotingPowerProviderConfigs(globalFlags.ConfigPath, globalFlags.ExternalVotingPowerProviders)
+		providerConfigs, err := cmdhelpers.ExternalVotingPowerProviderConfigs(infoFlags.ConfigPath, infoFlags.ExternalVotingPowerProviders)
 		if err != nil {
 			return err
 		}
