@@ -87,11 +87,11 @@ generate-badger-types:
 
 .PHONY: generate-client-types
 generate-client-types:
-	go run hack/codegen/generate-client-types.go
+	go run hack/codegen/generate-api-client-types/main.go
 
 .PHONY: generate-votingpower-server-types
 generate-votingpower-server-types:
-	go run hack/codegen/generate-votingpower-server-types.go
+	go run hack/codegen/generate-votingpower-server-types/main.go
 
 .PHONY: generate-cli-docs
 generate-cli-docs:

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net"
 	"time"
@@ -8,12 +9,12 @@ import (
 	serverv1 "github.com/symbioticfi/relay/votingpower/server/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
-	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 )
 
 func main() {
-	lis, err := net.Listen("tcp", ":9090")
+	lis, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", "127.0.0.1:9090")
 	if err != nil {
 		log.Fatalf("listen failed: %v", err)
 	}
