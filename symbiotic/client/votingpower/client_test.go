@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
-	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/metadata"
 
 	votingpowerv1 "github.com/symbioticfi/relay/internal/gen/votingpower/v1"
@@ -58,7 +58,7 @@ func (s *testServer) metadata() metadata.MD {
 func startTestServer(t *testing.T, srv *testServer) (string, *health.Server) {
 	t.Helper()
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	listener, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 
 	grpcServer := grpc.NewServer()
@@ -170,7 +170,7 @@ func TestClient_GetVotingPowers_EmptyResponse(t *testing.T) {
 
 	result, err := client.GetVotingPowers(context.Background(), providerAddress(id), 100)
 	require.NoError(t, err)
-	require.Len(t, result, 0)
+	require.Empty(t, result)
 }
 
 func TestClient_GetVotingPowers_InvalidOperator(t *testing.T) {

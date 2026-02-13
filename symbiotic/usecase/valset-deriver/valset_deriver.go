@@ -148,7 +148,6 @@ func (v *Deriver) getVotingPowersFromProviders(
 	g.SetLimit(10)
 
 	for i, provider := range providers {
-		i, provider := i, provider
 		g.Go(func() error {
 			var (
 				votingPowers []symbiotic.OperatorVotingPower

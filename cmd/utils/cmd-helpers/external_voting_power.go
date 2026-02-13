@@ -1,8 +1,7 @@
 package cmdhelpers
 
 import (
-	"fmt"
-
+	"github.com/go-errors/errors"
 	"github.com/spf13/viper"
 	"github.com/symbioticfi/relay/symbiotic/client/votingpower"
 )
@@ -15,14 +14,14 @@ func ExternalVotingPowerProviderConfigs(
 		v := viper.New()
 		v.SetConfigFile(configPath)
 		if err := v.ReadInConfig(); err != nil {
-			return nil, fmt.Errorf("failed to read config file %q: %w", configPath, err)
+			return nil, errors.Errorf("failed to read config file %q: %w", configPath, err)
 		}
 
 		var cfg struct {
 			ExternalVotingPowerProviders []votingpower.ProviderConfig `mapstructure:"external-voting-power-providers"`
 		}
 		if err := v.Unmarshal(&cfg); err != nil {
-			return nil, fmt.Errorf("failed to parse external voting power providers from config: %w", err)
+			return nil, errors.Errorf("failed to parse external voting power providers from config: %w", err)
 		}
 		return cfg.ExternalVotingPowerProviders, nil
 	}

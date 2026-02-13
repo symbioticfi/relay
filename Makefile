@@ -62,8 +62,8 @@ install-tools:
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.6
 	go install github.com/bufbuild/buf/cmd/buf@v1.59.0
-	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest
-	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest
+	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.25.1
+	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.25.1
 
 .PHONY: generate-mocks
 generate-mocks:
@@ -87,11 +87,11 @@ generate-badger-types:
 
 .PHONY: generate-client-types
 generate-client-types:
-	go run hack/codegen/generate-client-types.go
+	go run hack/codegen/generate-api-client-types/main.go
 
 .PHONY: generate-votingpower-server-types
 generate-votingpower-server-types:
-	go run hack/codegen/generate-votingpower-server-types.go
+	go run hack/codegen/generate-votingpower-server-types/main.go
 
 .PHONY: generate-cli-docs
 generate-cli-docs:
