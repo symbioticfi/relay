@@ -15,7 +15,7 @@ import (
 	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/metadata"
 
-	votingpowerv1 "github.com/symbioticfi/relay/internal/gen/api/votingpower/v1"
+	votingpowerv1 "github.com/symbioticfi/relay/internal/gen/votingpower/v1"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 

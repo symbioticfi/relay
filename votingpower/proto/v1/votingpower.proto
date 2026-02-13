@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package votingpower.v1;
 
-option go_package = "github.com/symbioticfi/relay/internal/gen/api/votingpower/v1;votingpowerv1";
+option go_package = "github.com/symbioticfi/relay/internal/gen/votingpower/v1;votingpowerv1";
 
 // VotingPowerProviderService is implemented by external voting power providers.
 service VotingPowerProviderService {

@@ -43,9 +43,6 @@ func request_SymbioticAPIService_SignMessage_0(ctx context.Context, marshaler ru
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	msg, err := client.SignMessage(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
@@ -68,9 +65,6 @@ func request_SymbioticAPIService_GetAggregationProof_0(ctx context.Context, mars
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["request_id"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "request_id")
@@ -107,9 +101,6 @@ func request_SymbioticAPIService_GetAggregationProofsByEpoch_0(ctx context.Conte
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["epoch"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "epoch")
@@ -145,9 +136,6 @@ func request_SymbioticAPIService_GetCurrentEpoch_0(ctx context.Context, marshale
 		protoReq GetCurrentEpochRequest
 		metadata runtime.ServerMetadata
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	msg, err := client.GetCurrentEpoch(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
@@ -167,9 +155,6 @@ func request_SymbioticAPIService_GetSignatures_0(ctx context.Context, marshaler 
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["request_id"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "request_id")
@@ -206,9 +191,6 @@ func request_SymbioticAPIService_GetSignaturesByEpoch_0(ctx context.Context, mar
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["epoch"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "epoch")
@@ -245,9 +227,6 @@ func request_SymbioticAPIService_GetSignatureRequestIDsByEpoch_0(ctx context.Con
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["epoch"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "epoch")
@@ -284,9 +263,6 @@ func request_SymbioticAPIService_GetSignatureRequestsByEpoch_0(ctx context.Conte
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["epoch"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "epoch")
@@ -323,9 +299,6 @@ func request_SymbioticAPIService_GetSignatureRequest_0(ctx context.Context, mars
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["request_id"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "request_id")
@@ -362,9 +335,6 @@ func request_SymbioticAPIService_GetAggregationStatus_0(ctx context.Context, mar
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["request_id"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "request_id")
@@ -402,9 +372,6 @@ func request_SymbioticAPIService_GetValidatorSet_0(ctx context.Context, marshale
 		protoReq GetValidatorSetRequest
 		metadata runtime.ServerMetadata
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
@@ -438,9 +405,6 @@ func request_SymbioticAPIService_GetValidatorByAddress_0(ctx context.Context, ma
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["address"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "address")
@@ -491,9 +455,6 @@ func request_SymbioticAPIService_GetValidatorByKey_0(ctx context.Context, marsha
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["key_tag"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "key_tag")
@@ -559,9 +520,6 @@ func request_SymbioticAPIService_GetLocalValidator_0(ctx context.Context, marsha
 		protoReq GetLocalValidatorRequest
 		metadata runtime.ServerMetadata
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
@@ -594,9 +552,6 @@ func request_SymbioticAPIService_GetValidatorSetHeader_0(ctx context.Context, ma
 		protoReq GetValidatorSetHeaderRequest
 		metadata runtime.ServerMetadata
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
@@ -628,9 +583,6 @@ func request_SymbioticAPIService_GetLastCommitted_0(ctx context.Context, marshal
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["settlement_chain_id"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "settlement_chain_id")
@@ -666,9 +618,6 @@ func request_SymbioticAPIService_GetLastAllCommitted_0(ctx context.Context, mars
 		protoReq GetLastAllCommittedRequest
 		metadata runtime.ServerMetadata
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	msg, err := client.GetLastAllCommitted(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
@@ -689,9 +638,6 @@ func request_SymbioticAPIService_GetValidatorSetMetadata_0(ctx context.Context, 
 		protoReq GetValidatorSetMetadataRequest
 		metadata runtime.ServerMetadata
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
@@ -724,9 +670,6 @@ func request_SymbioticAPIService_GetCustomScheduleNodeStatus_0(ctx context.Conte
 		protoReq GetCustomScheduleNodeStatusRequest
 		metadata runtime.ServerMetadata
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
@@ -759,9 +702,6 @@ func request_SymbioticAPIService_ListenSignatures_0(ctx context.Context, marshal
 		protoReq ListenSignaturesRequest
 		metadata runtime.ServerMetadata
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
@@ -787,9 +727,6 @@ func request_SymbioticAPIService_ListenProofs_0(ctx context.Context, marshaler r
 		protoReq ListenProofsRequest
 		metadata runtime.ServerMetadata
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
@@ -815,9 +752,6 @@ func request_SymbioticAPIService_ListenValidatorSet_0(ctx context.Context, marsh
 		protoReq ListenValidatorSetRequest
 		metadata runtime.ServerMetadata
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}

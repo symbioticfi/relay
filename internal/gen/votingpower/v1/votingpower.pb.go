@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        (unknown)
-// source: votingpower/v1/votingpower.proto
+// source: v1/votingpower.proto
 
 package votingpowerv1
 
@@ -31,7 +31,7 @@ type GetVotingPowersAtRequest struct {
 
 func (x *GetVotingPowersAtRequest) Reset() {
 	*x = GetVotingPowersAtRequest{}
-	mi := &file_votingpower_v1_votingpower_proto_msgTypes[0]
+	mi := &file_v1_votingpower_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -43,7 +43,7 @@ func (x *GetVotingPowersAtRequest) String() string {
 func (*GetVotingPowersAtRequest) ProtoMessage() {}
 
 func (x *GetVotingPowersAtRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_votingpower_v1_votingpower_proto_msgTypes[0]
+	mi := &file_v1_votingpower_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -56,7 +56,7 @@ func (x *GetVotingPowersAtRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetVotingPowersAtRequest.ProtoReflect.Descriptor instead.
 func (*GetVotingPowersAtRequest) Descriptor() ([]byte, []int) {
-	return file_votingpower_v1_votingpower_proto_rawDescGZIP(), []int{0}
+	return file_v1_votingpower_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *GetVotingPowersAtRequest) GetTimestamp() uint64 {
@@ -75,7 +75,7 @@ type GetVotingPowersAtResponse struct {
 
 func (x *GetVotingPowersAtResponse) Reset() {
 	*x = GetVotingPowersAtResponse{}
-	mi := &file_votingpower_v1_votingpower_proto_msgTypes[1]
+	mi := &file_v1_votingpower_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -87,7 +87,7 @@ func (x *GetVotingPowersAtResponse) String() string {
 func (*GetVotingPowersAtResponse) ProtoMessage() {}
 
 func (x *GetVotingPowersAtResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_votingpower_v1_votingpower_proto_msgTypes[1]
+	mi := &file_v1_votingpower_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -100,7 +100,7 @@ func (x *GetVotingPowersAtResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetVotingPowersAtResponse.ProtoReflect.Descriptor instead.
 func (*GetVotingPowersAtResponse) Descriptor() ([]byte, []int) {
-	return file_votingpower_v1_votingpower_proto_rawDescGZIP(), []int{1}
+	return file_v1_votingpower_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *GetVotingPowersAtResponse) GetVotingPowers() []*OperatorVotingPower {
@@ -122,7 +122,7 @@ type OperatorVotingPower struct {
 
 func (x *OperatorVotingPower) Reset() {
 	*x = OperatorVotingPower{}
-	mi := &file_votingpower_v1_votingpower_proto_msgTypes[2]
+	mi := &file_v1_votingpower_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -134,7 +134,7 @@ func (x *OperatorVotingPower) String() string {
 func (*OperatorVotingPower) ProtoMessage() {}
 
 func (x *OperatorVotingPower) ProtoReflect() protoreflect.Message {
-	mi := &file_votingpower_v1_votingpower_proto_msgTypes[2]
+	mi := &file_v1_votingpower_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -147,7 +147,7 @@ func (x *OperatorVotingPower) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OperatorVotingPower.ProtoReflect.Descriptor instead.
 func (*OperatorVotingPower) Descriptor() ([]byte, []int) {
-	return file_votingpower_v1_votingpower_proto_rawDescGZIP(), []int{2}
+	return file_v1_votingpower_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *OperatorVotingPower) GetOperator() string {
@@ -164,11 +164,11 @@ func (x *OperatorVotingPower) GetVotingPower() string {
 	return ""
 }
 
-var File_votingpower_v1_votingpower_proto protoreflect.FileDescriptor
+var File_v1_votingpower_proto protoreflect.FileDescriptor
 
-const file_votingpower_v1_votingpower_proto_rawDesc = "" +
+const file_v1_votingpower_proto_rawDesc = "" +
 	"\n" +
-	" votingpower/v1/votingpower.proto\x12\x0evotingpower.v1\"8\n" +
+	"\x14v1/votingpower.proto\x12\x0evotingpower.v1\"8\n" +
 	"\x18GetVotingPowersAtRequest\x12\x1c\n" +
 	"\ttimestamp\x18\x01 \x01(\x04R\ttimestamp\"e\n" +
 	"\x19GetVotingPowersAtResponse\x12H\n" +
@@ -177,28 +177,28 @@ const file_votingpower_v1_votingpower_proto_rawDesc = "" +
 	"\boperator\x18\x01 \x01(\tR\boperator\x12!\n" +
 	"\fvoting_power\x18\x02 \x01(\tR\vvotingPower2\x86\x01\n" +
 	"\x1aVotingPowerProviderService\x12h\n" +
-	"\x11GetVotingPowersAt\x12(.votingpower.v1.GetVotingPowersAtRequest\x1a).votingpower.v1.GetVotingPowersAtResponseB\xcb\x01\n" +
-	"\x12com.votingpower.v1B\x10VotingpowerProtoP\x01ZJgithub.com/symbioticfi/relay/internal/gen/api/votingpower/v1;votingpowerv1\xa2\x02\x03VXX\xaa\x02\x0eVotingpower.V1\xca\x02\x0eVotingpower\\V1\xe2\x02\x1aVotingpower\\V1\\GPBMetadata\xea\x02\x0fVotingpower::V1b\x06proto3"
+	"\x11GetVotingPowersAt\x12(.votingpower.v1.GetVotingPowersAtRequest\x1a).votingpower.v1.GetVotingPowersAtResponseB\xc7\x01\n" +
+	"\x12com.votingpower.v1B\x10VotingpowerProtoP\x01ZFgithub.com/symbioticfi/relay/internal/gen/votingpower/v1;votingpowerv1\xa2\x02\x03VXX\xaa\x02\x0eVotingpower.V1\xca\x02\x0eVotingpower\\V1\xe2\x02\x1aVotingpower\\V1\\GPBMetadata\xea\x02\x0fVotingpower::V1b\x06proto3"
 
 var (
-	file_votingpower_v1_votingpower_proto_rawDescOnce sync.Once
-	file_votingpower_v1_votingpower_proto_rawDescData []byte
+	file_v1_votingpower_proto_rawDescOnce sync.Once
+	file_v1_votingpower_proto_rawDescData []byte
 )
 
-func file_votingpower_v1_votingpower_proto_rawDescGZIP() []byte {
-	file_votingpower_v1_votingpower_proto_rawDescOnce.Do(func() {
-		file_votingpower_v1_votingpower_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_votingpower_v1_votingpower_proto_rawDesc), len(file_votingpower_v1_votingpower_proto_rawDesc)))
+func file_v1_votingpower_proto_rawDescGZIP() []byte {
+	file_v1_votingpower_proto_rawDescOnce.Do(func() {
+		file_v1_votingpower_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_v1_votingpower_proto_rawDesc), len(file_v1_votingpower_proto_rawDesc)))
 	})
-	return file_votingpower_v1_votingpower_proto_rawDescData
+	return file_v1_votingpower_proto_rawDescData
 }
 
-var file_votingpower_v1_votingpower_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
-var file_votingpower_v1_votingpower_proto_goTypes = []any{
+var file_v1_votingpower_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_v1_votingpower_proto_goTypes = []any{
 	(*GetVotingPowersAtRequest)(nil),  // 0: votingpower.v1.GetVotingPowersAtRequest
 	(*GetVotingPowersAtResponse)(nil), // 1: votingpower.v1.GetVotingPowersAtResponse
 	(*OperatorVotingPower)(nil),       // 2: votingpower.v1.OperatorVotingPower
 }
-var file_votingpower_v1_votingpower_proto_depIdxs = []int32{
+var file_v1_votingpower_proto_depIdxs = []int32{
 	2, // 0: votingpower.v1.GetVotingPowersAtResponse.voting_powers:type_name -> votingpower.v1.OperatorVotingPower
 	0, // 1: votingpower.v1.VotingPowerProviderService.GetVotingPowersAt:input_type -> votingpower.v1.GetVotingPowersAtRequest
 	1, // 2: votingpower.v1.VotingPowerProviderService.GetVotingPowersAt:output_type -> votingpower.v1.GetVotingPowersAtResponse
@@ -209,26 +209,26 @@ var file_votingpower_v1_votingpower_proto_depIdxs = []int32{
 	0, // [0:1] is the sub-list for field type_name
 }
 
-func init() { file_votingpower_v1_votingpower_proto_init() }
-func file_votingpower_v1_votingpower_proto_init() {
-	if File_votingpower_v1_votingpower_proto != nil {
+func init() { file_v1_votingpower_proto_init() }
+func file_v1_votingpower_proto_init() {
+	if File_v1_votingpower_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_votingpower_v1_votingpower_proto_rawDesc), len(file_votingpower_v1_votingpower_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_votingpower_proto_rawDesc), len(file_v1_votingpower_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_votingpower_v1_votingpower_proto_goTypes,
-		DependencyIndexes: file_votingpower_v1_votingpower_proto_depIdxs,
-		MessageInfos:      file_votingpower_v1_votingpower_proto_msgTypes,
+		GoTypes:           file_v1_votingpower_proto_goTypes,
+		DependencyIndexes: file_v1_votingpower_proto_depIdxs,
+		MessageInfos:      file_v1_votingpower_proto_msgTypes,
 	}.Build()
-	File_votingpower_v1_votingpower_proto = out.File
-	file_votingpower_v1_votingpower_proto_goTypes = nil
-	file_votingpower_v1_votingpower_proto_depIdxs = nil
+	File_v1_votingpower_proto = out.File
+	file_v1_votingpower_proto_goTypes = nil
+	file_v1_votingpower_proto_depIdxs = nil
 }

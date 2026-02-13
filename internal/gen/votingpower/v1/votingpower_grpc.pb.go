@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             (unknown)
-// source: votingpower/v1/votingpower.proto
+// source: v1/votingpower.proto
 
 package votingpowerv1
 
@@ -124,5 +124,5 @@ var VotingPowerProviderService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "votingpower/v1/votingpower.proto",
+	Metadata: "v1/votingpower.proto",
 }
