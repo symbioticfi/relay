@@ -1,11 +1,14 @@
 package network
 
 import (
+	"log/slog"
 	"time"
 
+	cmdhelpers "github.com/symbioticfi/relay/cmd/utils/cmd-helpers"
 	keyprovider "github.com/symbioticfi/relay/internal/usecase/key-provider"
 	"github.com/symbioticfi/relay/internal/usecase/metrics"
 	"github.com/symbioticfi/relay/symbiotic/client/evm"
+	"github.com/symbioticfi/relay/symbiotic/client/votingpower"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	valsetDeriver "github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver"
 
@@ -43,12 +46,27 @@ var infoCmd = &cobra.Command{
 			return err
 		}
 
+		providerConfigs, err := cmdhelpers.ExternalVotingPowerProviderConfigs(globalFlags.ConfigPath, globalFlags.ExternalVotingPowerProviders)
 		if err != nil {
-			return errors.Errorf("Failed to get evm client: %v", err)
+			return err
 		}
-		deriver, err := valsetDeriver.NewDeriver(evmClient)
+
+		var externalVPClient *votingpower.Client
+		if len(providerConfigs) > 0 {
+			externalVPClient, err = votingpower.NewClient(ctx, providerConfigs)
+			if err != nil {
+				return errors.Errorf("failed to create external voting power client: %w", err)
+			}
+			defer func() {
+				if err := externalVPClient.Close(); err != nil {
+					slog.WarnContext(ctx, "Failed to close external voting power client", "error", err)
+				}
+			}()
+		}
+
+		deriver, err := valsetDeriver.NewDeriver(evmClient, externalVPClient)
 		if err != nil {
-			return errors.Errorf("Failed to create deriver: %v", err)
+			return errors.Errorf("failed to create deriver: %w", err)
 		}
 
 		epoch := symbiotic.Epoch(globalFlags.Epoch)

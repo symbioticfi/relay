@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package votingpower.v1;
+
+option go_package = "github.com/symbioticfi/relay/internal/gen/api/votingpower/v1;votingpowerv1";
+
+// VotingPowerProviderService is implemented by external voting power providers.
+service VotingPowerProviderService {
+  // GetVotingPowersAt returns voting power for operators at a specific timestamp.
+  rpc GetVotingPowersAt(GetVotingPowersAtRequest) returns (GetVotingPowersAtResponse);
+}
+
+message GetVotingPowersAtRequest {
+  // Unix timestamp in seconds.
+  uint64 timestamp = 1;
+}
+
+message GetVotingPowersAtResponse {
+  repeated OperatorVotingPower voting_powers = 1;
+}
+
+message OperatorVotingPower {
+  // Operator address as hex string.
+  string operator = 1;
+
+  // Decimal string voting power.
+  string voting_power = 2;
+}

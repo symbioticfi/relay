@@ -29,7 +29,7 @@ func TestRemoveAndAddSettlement(t *testing.T) {
 
 	deploymentData := loadDeploymentData(t)
 	evmClient := createEVMClient(t, deploymentData)
-	deriver, err := valsetDeriver.NewDeriver(evmClient)
+	deriver, err := valsetDeriver.NewDeriver(evmClient, nil)
 	require.NoError(t, err)
 
 	var currentEpoch entity.Epoch

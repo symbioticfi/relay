@@ -60,7 +60,7 @@ func getExpectedDataFromContracts(t *testing.T, relayContracts RelayContractsDat
 	networkConfig, err := evmClient.GetConfig(ctx, epochStart, currentEpoch)
 	require.NoError(t, err, "Failed to get network config from contract")
 
-	deriver, err := valsetDeriver.NewDeriver(evmClient)
+	deriver, err := valsetDeriver.NewDeriver(evmClient, nil)
 	require.NoError(t, err, "Failed to create validator set deriver")
 
 	expectedValset, err := deriver.GetValidatorSet(ctx, currentEpoch, networkConfig)

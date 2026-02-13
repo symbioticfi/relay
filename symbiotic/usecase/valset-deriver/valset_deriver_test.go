@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"math/big"
 	"slices"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
@@ -16,6 +18,21 @@ import (
 	"github.com/symbioticfi/relay/symbiotic/usecase/ssz"
 	"github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver/mocks"
 )
+
+type testExternalVotingPowerClient struct {
+	getVotingPowers func(ctx context.Context, address symbiotic.CrossChainAddress, timestamp symbiotic.Timestamp) ([]symbiotic.OperatorVotingPower, error)
+}
+
+func (t *testExternalVotingPowerClient) GetVotingPowers(
+	ctx context.Context,
+	address symbiotic.CrossChainAddress,
+	timestamp symbiotic.Timestamp,
+) ([]symbiotic.OperatorVotingPower, error) {
+	if t.getVotingPowers == nil {
+		return nil, nil
+	}
+	return t.getVotingPowers(ctx, address, timestamp)
+}
 
 func TestDeriver_calcQuorumThreshold(t *testing.T) {
 	tests := []struct {
@@ -796,7 +813,7 @@ func TestDeriver_GetNetworkData(t *testing.T) {
 			mockEvmClient := mocks.NewMockEvmClient(ctrl)
 			tt.setupMocks(mockEvmClient)
 
-			d, err := NewDeriver(mockEvmClient)
+			d, err := NewDeriver(mockEvmClient, nil)
 			require.NoError(t, err)
 
 			result, err := d.GetNetworkData(context.Background(), tt.addr)
@@ -920,6 +937,144 @@ func TestDeriver_fillValidators_VaultLimitExceeded(t *testing.T) {
 		require.Len(t, validator.Keys, 1)
 		require.Equal(t, symbiotic.KeyTag(15), validator.Keys[0].Tag)
 	})
+}
+
+func TestDeriver_getVotingPowersFromProviders_MixedRouting(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockEvmClient := mocks.NewMockEvmClient(ctrl)
+	timestamp := symbiotic.Timestamp(123)
+	evmProvider := symbiotic.CrossChainAddress{
+		ChainId: 1,
+		Address: common.HexToAddress("0x0000000000000000000000000000000000000011"),
+	}
+	externalProvider := symbiotic.CrossChainAddress{
+		ChainId: 0,
+		Address: common.HexToAddress("0x1122334455667788990000000000000000000000"),
+	}
+
+	mockEvmClient.EXPECT().
+		GetVotingPowers(gomock.Any(), evmProvider, timestamp).
+		Return([]symbiotic.OperatorVotingPower{
+			{
+				Operator: common.HexToAddress("0x0000000000000000000000000000000000000001"),
+				Vaults: []symbiotic.VaultVotingPower{
+					{
+						Vault:       common.HexToAddress("0x0000000000000000000000000000000000000011"),
+						VotingPower: symbiotic.ToVotingPower(big.NewInt(10)),
+					},
+				},
+			},
+		}, nil)
+
+	externalCalled := false
+	externalClient := &testExternalVotingPowerClient{
+		getVotingPowers: func(_ context.Context, address symbiotic.CrossChainAddress, _ symbiotic.Timestamp) ([]symbiotic.OperatorVotingPower, error) {
+			externalCalled = true
+			require.Equal(t, externalProvider, address)
+			return []symbiotic.OperatorVotingPower{
+				{
+					Operator: common.HexToAddress("0x0000000000000000000000000000000000000002"),
+					Vaults: []symbiotic.VaultVotingPower{
+						{
+							Vault:       externalProvider.Address,
+							VotingPower: symbiotic.ToVotingPower(big.NewInt(20)),
+						},
+					},
+				},
+			}, nil
+		},
+	}
+
+	d, err := NewDeriver(mockEvmClient, externalClient)
+	require.NoError(t, err)
+
+	result, err := d.getVotingPowersFromProviders(context.Background(), []symbiotic.CrossChainAddress{evmProvider, externalProvider}, timestamp)
+	require.NoError(t, err)
+	require.True(t, externalCalled)
+	require.Len(t, result, 2)
+	require.Equal(t, uint64(1), result[0].chainId)
+	require.Equal(t, uint64(0), result[1].chainId)
+}
+
+func TestDeriver_getVotingPowersFromProviders_NoExternalClient(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d, err := NewDeriver(mocks.NewMockEvmClient(ctrl), nil)
+	require.NoError(t, err)
+
+	_, err = d.getVotingPowersFromProviders(context.Background(), []symbiotic.CrossChainAddress{{
+		ChainId: 0,
+		Address: common.HexToAddress("0x1122334455667788990000000000000000000000"),
+	}}, symbiotic.Timestamp(1))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "external voting power client is not configured")
+}
+
+func TestDeriver_getVotingPowersFromProviders_ErrorPropagation(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	externalClient := &testExternalVotingPowerClient{
+		getVotingPowers: func(_ context.Context, _ symbiotic.CrossChainAddress, _ symbiotic.Timestamp) ([]symbiotic.OperatorVotingPower, error) {
+			return nil, errors.New("external provider failure")
+		},
+	}
+
+	d, err := NewDeriver(mocks.NewMockEvmClient(ctrl), externalClient)
+	require.NoError(t, err)
+
+	_, err = d.getVotingPowersFromProviders(context.Background(), []symbiotic.CrossChainAddress{{
+		ChainId: 0,
+		Address: common.HexToAddress("0x1122334455667788990000000000000000000000"),
+	}}, symbiotic.Timestamp(1))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "external provider failure")
+}
+
+func TestDeriver_getVotingPowersFromProviders_ConcurrencyLimit(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	var inFlight int64
+	var maxInFlight int64
+
+	externalClient := &testExternalVotingPowerClient{
+		getVotingPowers: func(_ context.Context, _ symbiotic.CrossChainAddress, _ symbiotic.Timestamp) ([]symbiotic.OperatorVotingPower, error) {
+			current := atomic.AddInt64(&inFlight, 1)
+			for {
+				prev := atomic.LoadInt64(&maxInFlight)
+				if current <= prev {
+					break
+				}
+				if atomic.CompareAndSwapInt64(&maxInFlight, prev, current) {
+					break
+				}
+			}
+
+			time.Sleep(40 * time.Millisecond)
+			atomic.AddInt64(&inFlight, -1)
+			return []symbiotic.OperatorVotingPower{}, nil
+		},
+	}
+
+	d, err := NewDeriver(mocks.NewMockEvmClient(ctrl), externalClient)
+	require.NoError(t, err)
+
+	providers := make([]symbiotic.CrossChainAddress, 25)
+	for i := 0; i < len(providers); i++ {
+		providers[i] = symbiotic.CrossChainAddress{
+			ChainId: 0,
+			Address: common.HexToAddress(fmt.Sprintf("0x%040x", i+1)),
+		}
+	}
+
+	_, err = d.getVotingPowersFromProviders(context.Background(), providers, symbiotic.Timestamp(1))
+	require.NoError(t, err)
+	require.LessOrEqual(t, maxInFlight, int64(10))
+	require.Greater(t, maxInFlight, int64(1))
 }
 
 func TestDeriver_GetSchedulerInfo(t *testing.T) {

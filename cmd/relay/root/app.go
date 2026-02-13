@@ -36,6 +36,7 @@ import (
 	"github.com/symbioticfi/relay/pkg/signals"
 	"github.com/symbioticfi/relay/pkg/tracing"
 	"github.com/symbioticfi/relay/symbiotic/client/evm"
+	"github.com/symbioticfi/relay/symbiotic/client/votingpower"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator"
 	symbioticCrypto "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
@@ -103,7 +104,20 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create symbiotic client: %w", err)
 	}
 
-	deriver, err := valsetDeriver.NewDeriver(evmClient)
+	var externalVPClient *votingpower.Client
+	if len(cfg.ExternalVotingPowerProviders) > 0 {
+		externalVPClient, err = votingpower.NewClient(ctx, cfg.ExternalVotingPowerProviders)
+		if err != nil {
+			return errors.Errorf("failed to create external voting power client: %w", err)
+		}
+		defer func() {
+			if err := externalVPClient.Close(); err != nil {
+				slog.WarnContext(ctx, "Failed to close external voting power client", "error", err)
+			}
+		}()
+	}
+
+	deriver, err := valsetDeriver.NewDeriver(evmClient, externalVPClient)
 	if err != nil {
 		return errors.Errorf("failed to create valset deriver: %w", err)
 	}
