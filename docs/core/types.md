@@ -28,7 +28,7 @@ The document contains abstract core types definitions with fields size and their
 
 | Field | Type | Size(b) | Description |
 |-------|------|------|-------------|
-| `ChainId` | `uint64` | 8 | Chain ID where the contract is deployed |
+| `ChainId` | `uint64` | 8 | Chain ID where the contract is deployed. For voting power providers, `0` means external provider routing via local relay config |
 | `Address` | `address` | 20 | Contract address on the specified chain |
 
 ### QuorumThreshold

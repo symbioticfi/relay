@@ -122,7 +122,7 @@ func waitOperatorIncludedIntoValset(t *testing.T, opData operatorData, expectedC
 
 func getValset(t *testing.T, opEVMClient *evm.Client) symbiotic.ValidatorSet {
 	t.Helper()
-	deriver, err := valsetDeriver.NewDeriver(opEVMClient)
+	deriver, err := valsetDeriver.NewDeriver(opEVMClient, nil)
 	require.NoError(t, err)
 
 	currentEpoch, err := opEVMClient.GetCurrentEpoch(t.Context())

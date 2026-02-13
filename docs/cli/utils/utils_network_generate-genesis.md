@@ -22,11 +22,13 @@ utils network generate-genesis [flags]
 ### Options inherited from parent commands
 
 ```
-  -c, --chains strings          Chains rpc url, comma separated
-      --driver.address string   Driver contract address
-      --driver.chainid uint     Driver contract chain id
-      --log.level string        log level(info, debug, warn, error) (default "info")
-      --log.mode string         log mode(pretty, text, json) (default "text")
+  -c, --chains strings                                   Chains rpc url, comma separated
+      --config string                                    Path to config file with external-voting-power-providers settings
+      --driver.address string                            Driver contract address
+      --driver.chainid uint                              Driver contract chain id
+      --external-voting-power-providers stringToString   External voting power providers mapping in format 'providerId=url' (e.g. '0x11223344556677889900=127.0.0.1:50051') (default [])
+      --log.level string                                 log level(info, debug, warn, error) (default "info")
+      --log.mode string                                  log mode(pretty, text, json) (default "text")
 ```
 
 ### SEE ALSO
