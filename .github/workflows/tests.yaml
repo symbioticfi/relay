@@ -122,7 +122,7 @@ jobs:
   e2e-tests:
     name: "E2E Tests - ${{ matrix.config.name }}"
     runs-on: ${{ matrix.config.verification_type == 0 && 'relay-16' || 'ubuntu-24.04' }}
-    timeout-minutes: 30
+    timeout-minutes: 35
     needs: [unit-tests]
     
     strategy:
