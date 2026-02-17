@@ -26,31 +26,6 @@
       },
       "additionalProperties": {}
     },
-    "GetVotingPowersAtResponse": {
-      "type": "object",
-      "properties": {
-        "votingPowers": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/OperatorVotingPower"
-          }
-        }
-      }
-    },
-    "OperatorVotingPower": {
-      "type": "object",
-      "properties": {
-        "operator": {
-          "type": "string",
-          "description": "Operator address as hex string."
-        },
-        "votingPower": {
-          "type": "string",
-          "description": "Decimal string voting power."
-        }
-      }
-    },
     "Status": {
       "type": "object",
       "properties": {
