@@ -22,6 +22,7 @@ import (
 
 const externalVotingPowerBonus = int64(100)
 const externalVotingPowerChainID = votingpowerclient.ExternalVotingPowerChainIDMin
+const maxEpochTransitionsToWait = 2
 
 var externalProviderID = [10]byte{0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0x00}
 
@@ -139,7 +140,7 @@ func cleanupExternalVotingPowerProviders(
 	adminEVM *evmtest.Client,
 	driverAddress common.Address,
 ) error {
-	for iteration := 0; iteration < 3; iteration++ {
+	for iteration := 0; iteration < maxEpochTransitionsToWait; iteration++ {
 		currentEpoch, err := evmClient.GetCurrentEpoch(ctx)
 		if err != nil {
 			return err
@@ -193,7 +194,7 @@ func ensureExternalProviderAbsent(
 	externalProvider symbiotic.CrossChainAddress,
 	currentEpoch symbiotic.Epoch,
 ) error {
-	for epoch := currentEpoch + 1; epoch <= currentEpoch+8; epoch++ {
+	for epoch := currentEpoch + 1; epoch <= currentEpoch+maxEpochTransitionsToWait; epoch++ {
 		if err := waitForEpoch(ctx, evmClient, epoch, waitEpochTimeout); err != nil {
 			return err
 		}
