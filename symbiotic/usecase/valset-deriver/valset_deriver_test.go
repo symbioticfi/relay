@@ -950,7 +950,7 @@ func TestDeriver_getVotingPowersFromProviders_MixedRouting(t *testing.T) {
 		Address: common.HexToAddress("0x0000000000000000000000000000000000000011"),
 	}
 	externalProvider := symbiotic.CrossChainAddress{
-		ChainId: 0,
+		ChainId: 4_000_000_001,
 		Address: common.HexToAddress("0x1122334455667788990000000000000000000000"),
 	}
 
@@ -995,7 +995,38 @@ func TestDeriver_getVotingPowersFromProviders_MixedRouting(t *testing.T) {
 	require.True(t, externalCalled)
 	require.Len(t, result, 2)
 	require.Equal(t, uint64(1), result[0].chainId)
-	require.Equal(t, uint64(0), result[1].chainId)
+	require.Equal(t, uint64(4_000_000_001), result[1].chainId)
+}
+
+func TestDeriver_getVotingPowersFromProviders_ChainIDZeroUsesEVM(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockEvmClient := mocks.NewMockEvmClient(ctrl)
+	timestamp := symbiotic.Timestamp(123)
+	provider := symbiotic.CrossChainAddress{
+		ChainId: 0,
+		Address: common.HexToAddress("0x0000000000000000000000000000000000000011"),
+	}
+
+	mockEvmClient.EXPECT().
+		GetVotingPowers(gomock.Any(), provider, timestamp).
+		Return([]symbiotic.OperatorVotingPower{}, nil)
+
+	externalCalled := false
+	externalClient := &testExternalVotingPowerClient{
+		getVotingPowers: func(_ context.Context, _ symbiotic.CrossChainAddress, _ symbiotic.Timestamp) ([]symbiotic.OperatorVotingPower, error) {
+			externalCalled = true
+			return []symbiotic.OperatorVotingPower{}, nil
+		},
+	}
+
+	d, err := NewDeriver(mockEvmClient, externalClient)
+	require.NoError(t, err)
+
+	_, err = d.getVotingPowersFromProviders(context.Background(), []symbiotic.CrossChainAddress{provider}, timestamp)
+	require.NoError(t, err)
+	require.False(t, externalCalled)
 }
 
 func TestDeriver_getVotingPowersFromProviders_NoExternalClient(t *testing.T) {
@@ -1006,11 +1037,31 @@ func TestDeriver_getVotingPowersFromProviders_NoExternalClient(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = d.getVotingPowersFromProviders(context.Background(), []symbiotic.CrossChainAddress{{
-		ChainId: 0,
+		ChainId: 4_000_000_001,
 		Address: common.HexToAddress("0x1122334455667788990000000000000000000000"),
 	}}, symbiotic.Timestamp(1))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "external voting power client is not configured")
+}
+
+func TestDeriver_getVotingPowersFromProviders_TypedNilExternalClient(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	var typedNilExternalClient *testExternalVotingPowerClient
+
+	d, err := NewDeriver(mocks.NewMockEvmClient(ctrl), typedNilExternalClient)
+	require.NoError(t, err)
+
+	var gotErr error
+	require.NotPanics(t, func() {
+		_, gotErr = d.getVotingPowersFromProviders(context.Background(), []symbiotic.CrossChainAddress{{
+			ChainId: 4_000_000_001,
+			Address: common.HexToAddress("0x1122334455667788990000000000000000000000"),
+		}}, symbiotic.Timestamp(1))
+	})
+	require.Error(t, gotErr)
+	require.Contains(t, gotErr.Error(), "external voting power client is not configured")
 }
 
 func TestDeriver_getVotingPowersFromProviders_ErrorPropagation(t *testing.T) {
@@ -1027,7 +1078,7 @@ func TestDeriver_getVotingPowersFromProviders_ErrorPropagation(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = d.getVotingPowersFromProviders(context.Background(), []symbiotic.CrossChainAddress{{
-		ChainId: 0,
+		ChainId: 4_000_000_001,
 		Address: common.HexToAddress("0x1122334455667788990000000000000000000000"),
 	}}, symbiotic.Timestamp(1))
 	require.Error(t, err)
@@ -1066,7 +1117,7 @@ func TestDeriver_getVotingPowersFromProviders_ConcurrencyLimit(t *testing.T) {
 	providers := make([]symbiotic.CrossChainAddress, 25)
 	for i := 0; i < len(providers); i++ {
 		providers[i] = symbiotic.CrossChainAddress{
-			ChainId: 0,
+			ChainId: 4_000_000_001 + uint64(i),
 			Address: common.HexToAddress(fmt.Sprintf("0x%040x", i+1)),
 		}
 	}

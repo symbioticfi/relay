@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"maps"
 	"math/big"
+	"reflect"
 	"slices"
 	"strconv"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/samber/lo"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/symbioticfi/relay/symbiotic/client/votingpower"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/ssz"
 )
@@ -53,10 +55,33 @@ type Deriver struct {
 
 // NewDeriver creates a new valset deriver
 func NewDeriver(evmClient evmClient, externalVPClient externalVotingPowerClient) (*Deriver, error) {
+	externalVPClient = normalizeExternalVotingPowerClient(externalVPClient)
+
 	return &Deriver{
 		evmClient:        evmClient,
 		externalVPClient: externalVPClient,
 	}, nil
+}
+
+func normalizeExternalVotingPowerClient(client externalVotingPowerClient) externalVotingPowerClient {
+	if client == nil {
+		return nil
+	}
+
+	clientVal := reflect.ValueOf(client)
+	kind := clientVal.Kind()
+	if kind == reflect.Ptr ||
+		kind == reflect.Map ||
+		kind == reflect.Slice ||
+		kind == reflect.Interface ||
+		kind == reflect.Func ||
+		kind == reflect.Chan {
+		if clientVal.IsNil() {
+			return nil
+		}
+	}
+
+	return client
 }
 
 func (v *Deriver) GetNetworkData(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.NetworkData, error) {
@@ -154,7 +179,7 @@ func (v *Deriver) getVotingPowersFromProviders(
 				err          error
 			)
 
-			if provider.ChainId == 0 {
+			if votingpower.IsExternalVotingPowerChainID(provider.ChainId) {
 				if v.externalVPClient == nil {
 					return errors.Errorf("failed to get voting powers from provider %s: external voting power client is not configured", provider.Address.Hex())
 				}

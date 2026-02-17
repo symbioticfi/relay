@@ -87,7 +87,10 @@ func testProviderID() ProviderID {
 func providerAddress(id ProviderID) symbiotic.CrossChainAddress {
 	var addr common.Address
 	copy(addr[:10], id[:])
-	return symbiotic.CrossChainAddress{ChainId: 0, Address: addr}
+	return symbiotic.CrossChainAddress{
+		ChainId: 4_000_000_001,
+		Address: addr,
+	}
 }
 
 func TestNewClient_DuplicateProviderID(t *testing.T) {
@@ -226,6 +229,39 @@ func TestClient_GetVotingPowers_UnknownProvider(t *testing.T) {
 	require.Contains(t, err.Error(), "not configured")
 }
 
+func TestClient_GetVotingPowers_UsesProviderIDRouting(t *testing.T) {
+	srv := &testServer{fn: func(_ context.Context, _ *votingpowerv1.GetVotingPowersAtRequest, _ int) (*votingpowerv1.GetVotingPowersAtResponse, error) {
+		return &votingpowerv1.GetVotingPowersAtResponse{
+			VotingPowers: []*votingpowerv1.OperatorVotingPower{
+				{
+					Operator:    "0x0000000000000000000000000000000000000001",
+					VotingPower: "1",
+				},
+			},
+		}, nil
+	}}
+	url, _ := startTestServer(t, srv)
+	id := testProviderID()
+
+	client, err := NewClient(context.Background(), []ProviderConfig{{ID: providerIDString(id), URL: url}})
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, client.Close()) })
+
+	// Provider address prefix should be the routing key, chain ID is not.
+	provider := symbiotic.CrossChainAddress{
+		ChainId: 4_000_000_001,
+		Address: common.HexToAddress("0x9988776655443322110000000000000000000000"),
+	}
+
+	_, err = client.GetVotingPowers(context.Background(), provider, 100)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "not configured")
+
+	provider = providerAddress(id)
+	_, err = client.GetVotingPowers(context.Background(), provider, 100)
+	require.NoError(t, err)
+}
+
 func TestClient_GetVotingPowers_NoRetry(t *testing.T) {
 	srv := &testServer{fn: func(_ context.Context, _ *votingpowerv1.GetVotingPowersAtRequest, _ int) (*votingpowerv1.GetVotingPowersAtResponse, error) {
 		return nil, context.DeadlineExceeded
@@ -242,15 +278,15 @@ func TestClient_GetVotingPowers_NoRetry(t *testing.T) {
 	require.Equal(t, 1, srv.callCount())
 }
 
-func TestClient_NewClient_HealthCheckFailure(t *testing.T) {
+func TestClient_NewClient_DoesNotRequireHealthCheckOnInit(t *testing.T) {
 	srv := &testServer{}
 	url, healthServer := startTestServer(t, srv)
 	id := testProviderID()
 
 	healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
-	_, err := NewClient(context.Background(), []ProviderConfig{{ID: providerIDString(id), URL: url}})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "not serving")
+	client, err := NewClient(context.Background(), []ProviderConfig{{ID: providerIDString(id), URL: url}})
+	require.NoError(t, err)
+	require.NoError(t, client.Close())
 }
 
 func TestClient_GetVotingPowers_Headers(t *testing.T) {

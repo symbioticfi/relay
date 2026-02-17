@@ -78,7 +78,8 @@ evm:
   #   "11155420": 1000000000 # OP Sepolia: 1 GWei
 
 # External Voting Power Providers (optional)
-# Used when a voting power provider in on-chain config has chain-id = 0.
+# Used when a voting power provider in on-chain config has chain-id in
+# reserved external range [4_000_000_000..4_100_000_000].
 # Provider ID is read from the first 10 bytes of provider address.
 # external-voting-power-providers:
 #   - id: "0x11223344556677889900"

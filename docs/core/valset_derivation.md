@@ -12,11 +12,11 @@ The valset derivation process is responsible for computing and storing validator
    - The epoch start timestamp
    - Network configuration (see [`NetworkConfig`](./types.md#networkconfig)) including:
      - VotingPowerProvider contract addresses (deployed on multiple chains)
-     - External voting power providers (`chainId = 0`, resolved by local relay config)
+     - External voting power providers (`chainId` in reserved range `4_000_000_000..4_100_000_000`, resolved by local relay config)
      - KeyRegistry contract address
      - Validator set formation rules (min/max voting power, validator limits, etc.)
 
-3. **Cross-Chain Voting Power Aggregation**: The system queries voting powers from all configured providers in parallel. Providers with non-zero `chainId` are queried through EVM contracts; providers with `chainId = 0` are queried through configured external gRPC services. All queries use finalized on-chain state for config/timestamp inputs. The derivation is fail-closed: any provider error fails the epoch.
+3. **Cross-Chain Voting Power Aggregation**: The system queries voting powers from all configured providers in parallel. Providers with `chainId` in reserved external range `4_000_000_000..4_100_000_000` are queried through configured external gRPC services; all other providers are queried through EVM contracts. For external providers, provider ID is read from the first 10 bytes of provider address and resolved via local relay config. All queries use finalized on-chain state for config/timestamp inputs. The derivation is fail-closed: any provider error fails the epoch.
 
 4. **Key Retrieval**: The system fetches operator keys from the KeyRegistry contract at the epoch timestamp, again using finalized blocks.
 
