@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/symbioticfi/relay/e2e/tests/evm/gen"
+	drivergen "github.com/symbioticfi/relay/symbiotic/client/evm/gen"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
@@ -130,6 +131,44 @@ func (e *Client) IsAutoDeployEnabled(ctx context.Context, autoDeployVaultAddress
 	return enabled, nil
 }
 
+func (e *Client) AddVotingPowerProvider(
+	ctx context.Context,
+	driverAddress common.Address,
+	providerChainID uint64,
+	providerAddress common.Address,
+) (symbiotic.TxResult, error) {
+	driver, err := drivergen.NewValSetDriver(driverAddress, e.client)
+	if err != nil {
+		return symbiotic.TxResult{}, errors.Errorf("failed to instantiate valset driver: %w", err)
+	}
+
+	return e.doTransaction(ctx, func(opts *bind.TransactOpts) (*types.Transaction, error) {
+		return driver.AddVotingPowerProvider(opts, drivergen.IValSetDriverCrossChainAddress{
+			ChainId: providerChainID,
+			Addr:    providerAddress,
+		})
+	})
+}
+
+func (e *Client) RemoveVotingPowerProvider(
+	ctx context.Context,
+	driverAddress common.Address,
+	providerChainID uint64,
+	providerAddress common.Address,
+) (symbiotic.TxResult, error) {
+	driver, err := drivergen.NewValSetDriver(driverAddress, e.client)
+	if err != nil {
+		return symbiotic.TxResult{}, errors.Errorf("failed to instantiate valset driver: %w", err)
+	}
+
+	return e.doTransaction(ctx, func(opts *bind.TransactOpts) (*types.Transaction, error) {
+		return driver.RemoveVotingPowerProvider(opts, drivergen.IValSetDriverCrossChainAddress{
+			ChainId: providerChainID,
+			Addr:    providerAddress,
+		})
+	})
+}
+
 func (e *Client) doTransaction(ctx context.Context, f func(opts *bind.TransactOpts) (*types.Transaction, error)) (symbiotic.TxResult, error) {
 	ecdsaKey, err := crypto.ToECDSA(e.cfg.PrivateKey.Bytes())
 	if err != nil {
@@ -199,6 +238,7 @@ func findErrorBySelector(errSelector string) (abi.Error, bool) {
 		"opNetVaultAutodeployLogic": gen.OpNetVaultAutoDeployLogicMetaData,
 		"optInService":              gen.OptInServiceMetaData,
 		"vault":                     gen.VaultMetaData,
+		"valSetDriver":              drivergen.ValSetDriverMetaData,
 	}
 
 	for contract, meta := range errorDefs {
