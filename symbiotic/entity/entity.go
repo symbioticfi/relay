@@ -116,24 +116,24 @@ func (raw RawProof) MarshalText() ([]byte, error) {
 
 func (vp VotingPower) MarshalJSON() ([]byte, error) {
 	// dirty hack to force using string instead of float in json
-	return []byte(fmt.Sprintf("\"%s\"", vp.String())), nil
+	return fmt.Appendf(nil, "\"%s\"", vp.String()), nil
 }
 
 func (e Epoch) MarshalJSON() ([]byte, error) {
 	// dirty hack to force using string instead of float in json
-	return []byte(fmt.Sprintf("\"%d\"", e)), nil
+	return fmt.Appendf(nil, "\"%d\"", e), nil
 }
 
 func (e Timestamp) MarshalJSON() ([]byte, error) {
 	// dirty hack to force using string instead of float in json
-	return []byte(fmt.Sprintf("\"%d\"", e)), nil
+	return fmt.Appendf(nil, "\"%d\"", e), nil
 }
 
 func (q QuorumThresholdPct) MarshalJSON() ([]byte, error) {
 	maxQ := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
 	share := new(big.Float).Quo(new(big.Float).SetInt(q.Int), new(big.Float).SetInt(maxQ))
 	pct := new(big.Float).Mul(share, big.NewFloat(100.0))
-	return []byte(fmt.Sprintf("\"%s %%\"", pct.Text('f', 5))), nil
+	return fmt.Appendf(nil, "\"%s %%\"", pct.Text('f', 5)), nil
 }
 
 func (s ValidatorSetStatus) MarshalJSON() ([]byte, error) {

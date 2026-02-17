@@ -61,7 +61,7 @@ func newMetrics(registerer prometheus.Registerer) *Metrics {
 	defaultPercentiles := map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001}
 	defaultBuckets := []float64{.001, .005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 7.5, 10, 15, 20, 30, 60}
 
-	var all []prometheus.Collector
+	var all []prometheus.Collector //nolint:prealloc // We want to keep the metrics grouped for readability
 
 	m.pkSignDuration = prometheus.NewSummary(prometheus.SummaryOpts{
 		Name:       "symbiotic_relay_private_key_sign_duration_seconds",

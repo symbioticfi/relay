@@ -15,7 +15,7 @@ import (
 )
 
 func keyAggregationProof(requestID common.Hash) []byte {
-	return []byte(fmt.Sprintf("aggregation_proof:%s", requestID.Hex()))
+	return fmt.Appendf(nil, "aggregation_proof:%s", requestID.Hex())
 }
 
 const aggregationProofPendingPrefix = "aggregation_proof_pending:"

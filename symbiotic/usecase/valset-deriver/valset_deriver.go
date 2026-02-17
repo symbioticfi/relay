@@ -196,7 +196,7 @@ func GetSchedulerInfo(_ context.Context, valset symbiotic.ValidatorSet, config s
 
 // Helper function for wrap-around search
 func findNextAvailableIndex(startIndex uint32, validatorCount int, usedIndices map[uint32]struct{}) uint32 {
-	for offset := 0; offset < validatorCount; offset++ {
+	for offset := range validatorCount {
 		candidateIndex := (startIndex + uint32(offset)) % uint32(validatorCount)
 		if _, exists := usedIndices[candidateIndex]; !exists {
 			return candidateIndex

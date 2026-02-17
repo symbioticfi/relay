@@ -253,7 +253,7 @@ func (s *SignerApp) HandleSignatureRequests(ctx context.Context, workerCount int
 	defer ticker.Stop()
 
 	// start workers
-	for i := 0; i < workerCount; i++ {
+	for i := range workerCount {
 		go s.worker(ctx, i+1, p2pService)
 	}
 
