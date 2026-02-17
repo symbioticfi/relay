@@ -275,7 +275,7 @@ func (v *SszValidator) UnmarshalSSZ(buf []byte) error {
 			return err
 		}
 		v.Keys = make([]*SszKey, num)
-		for ii := 0; ii < num; ii++ {
+		for ii := range num {
 			if v.Keys[ii] == nil {
 				v.Keys[ii] = new(SszKey)
 			}
@@ -293,7 +293,7 @@ func (v *SszValidator) UnmarshalSSZ(buf []byte) error {
 			return err
 		}
 		v.Vaults = make([]*SszVault, num)
-		for ii := 0; ii < num; ii++ {
+		for ii := range num {
 			if v.Vaults[ii] == nil {
 				v.Vaults[ii] = new(SszVault)
 			}

@@ -193,10 +193,7 @@ func (s *Service) pruneSignatureEntities(ctx context.Context, latestEpoch, oldes
 // proof and signatures have been pruned for a given requestID.
 func (s *Service) pruneRequestIDEpochIndices(ctx context.Context, latestEpoch, oldestStoredEpoch symbiotic.Epoch) (uint64, error) {
 	// Use the maximum of proof and signature retention to determine the range to scan
-	maxRetention := s.cfg.ProofRetentionEpochs
-	if s.cfg.SignatureRetentionEpochs > maxRetention {
-		maxRetention = s.cfg.SignatureRetentionEpochs
-	}
+	maxRetention := max(s.cfg.SignatureRetentionEpochs, s.cfg.ProofRetentionEpochs)
 
 	return s.pruneEntities(
 		ctx,

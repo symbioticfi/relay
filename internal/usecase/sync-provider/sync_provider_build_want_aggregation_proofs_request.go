@@ -70,9 +70,9 @@ func (s *Syncer) BuildWantAggregationProofsRequest(ctx context.Context) (entity.
 				}
 				allRequestIDs = append(allRequestIDs, req.RequestID)
 				totalRequests++
-				lastHash = req.RequestID // Update for pagination
 			}
 
+			lastHash = requests[len(requests)-1].RequestID // Update for pagination
 			remaining = s.cfg.MaxAggProofRequestsPerSync - totalRequests
 		}
 

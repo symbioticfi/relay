@@ -44,6 +44,7 @@ linters:
     - iotamixing
     - loggercheck
     - makezero
+    - modernize
     - mirror
     - misspell
     - musttag
@@ -200,10 +201,12 @@ linters:
         - name: error-strings
         - name: errorf
         - name: file-header
+        - name: forbidden-call-in-wg-go
 #        - name: flag-parameter
         - name: function-result-limit
         - name: identical-branches
         - name: imports-blocklist
+        - name: inefficient-map-lookup
         - name: increment-decrement
         - name: indent-error-flow
         - name: modifies-parameter
@@ -225,6 +228,7 @@ linters:
         - name: unconditional-recursion
         - name: unexported-naming
         - name: unexported-return
+        - name: unnecessary-if
         - name: unnecessary-stmt
         - name: unreachable-code
         - name: useless-break
@@ -240,6 +244,9 @@ linters:
       ignore-package-globs:
         - github.com/symbioticfi/relay/internal/*
         - golang.org/x/sync/errgroup
+    modernize:
+      disable:
+        - any
     funcorder:
       constructor: true
       struct-method: false
@@ -259,6 +266,8 @@ linters:
           - goconst
           - exhaustruct
           - wrapcheck
+          - prealloc
+          - modernize
         path: _test\.go
       - path: _test\.go
         text: 'subtests should call t.Parallel'

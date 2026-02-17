@@ -16,7 +16,7 @@ import (
 )
 
 func keySignature(requestID common.Hash, validatorIndex uint32) []byte {
-	return []byte(fmt.Sprintf("signature:%s:%010d", requestID.Hex(), validatorIndex))
+	return fmt.Appendf(nil, "signature:%s:%010d", requestID.Hex(), validatorIndex)
 }
 
 func keySignatureRequestIDPrefix(requestID common.Hash) []byte {

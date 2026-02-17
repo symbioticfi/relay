@@ -20,7 +20,7 @@ type SecretKeyMapFlag struct {
 }
 
 func (s *SecretKeyMapFlag) String() string {
-	parts := make([]string, 0)
+	parts := make([]string, 0, len(s.Secrets))
 	for chainID, key := range s.Secrets {
 		parts = append(parts, fmt.Sprintf("%d:%s", chainID, key))
 	}
@@ -35,9 +35,9 @@ func (s *SecretKeyMapFlag) Set(val string) error {
 	}
 
 	result := make(map[uint64]string)
-	pairs := strings.Split(val, ",")
+	pairs := strings.SplitSeq(val, ",")
 
-	for _, pair := range pairs {
+	for pair := range pairs {
 		kv := strings.SplitN(pair, ":", 2)
 		if len(kv) != 2 {
 			return errors.Errorf("invalid format (expected chainId:key): %s", pair)

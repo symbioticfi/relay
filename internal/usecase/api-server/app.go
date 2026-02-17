@@ -299,7 +299,7 @@ func (a *SymbioticServer) Start(ctx context.Context) error {
 		const maxRetries = 5
 		var lastErr error
 
-		for i := 0; i < maxRetries; i++ {
+		for i := range maxRetries {
 			if i > 0 {
 				backoff := time.Duration(50*(1<<uint(i-1))) * time.Millisecond
 				slog.DebugContext(logCtx, "Retrying HTTP gateway connection",

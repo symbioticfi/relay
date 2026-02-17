@@ -171,10 +171,7 @@ func isNodeActiveInCustomSchedule(
 
 	// Check if local validator is in the current group
 	startIdx := groupIdx * uint64(maxParticipantsPerSlot)
-	endIdx := (groupIdx + 1) * uint64(maxParticipantsPerSlot)
-	if endIdx > uint64(len(indices)) {
-		endIdx = uint64(len(indices))
-	}
+	endIdx := min((groupIdx+1)*uint64(maxParticipantsPerSlot), uint64(len(indices)))
 
 	for i := startIdx; i < endIdx; i++ {
 		if activeValidators[indices[i]].Operator == localAddress {

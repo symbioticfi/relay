@@ -62,9 +62,8 @@ func New(ctx context.Context, cfg Config) (*Tracer, error) {
 		resource.WithAttributes(
 			semconv.ServiceVersionKey.String(cfg.Version),
 		),
+		resource.WithHost(),
 	}
-
-	resourceAttrs = append(resourceAttrs, resource.WithHost())
 
 	res, err := resource.New(ctx, resourceAttrs...)
 	if err != nil {

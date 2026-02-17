@@ -83,8 +83,7 @@ func (s *CMDSecretKeySlice) String() string {
 }
 
 func (s *CMDSecretKeySlice) Set(str string) error {
-	strs := strings.Split(str, ",")
-	for _, elem := range strs {
+	for elem := range strings.SplitSeq(str, ",") {
 		key := CMDSecretKey{}
 		err := key.Set(elem)
 		if err != nil {
@@ -312,7 +311,7 @@ func addRootFlags(cmd *cobra.Command) {
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
 	// Handle CMDGasPriceMap from YAML map[string]interface{}
-	if toType == reflect.TypeOf(CMDGasPriceMap{}) && fromType.Kind() == reflect.Map {
+	if toType == reflect.TypeFor[CMDGasPriceMap]() && fromType.Kind() == reflect.Map {
 		result := make(CMDGasPriceMap)
 		iter := reflect.ValueOf(from).MapRange()
 		for iter.Next() {
@@ -337,7 +336,7 @@ func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interfa
 	}
 
 	// Handle time.Duration specifically
-	if toType == reflect.TypeOf(time.Duration(0)) {
+	if toType == reflect.TypeFor[time.Duration]() {
 		duration, err := time.ParseDuration(from.(string))
 		if err != nil {
 			return nil, errors.Errorf("failed to parse duration: %w", err)
@@ -345,7 +344,7 @@ func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interfa
 		return duration, nil
 	}
 
-	flagType := reflect.TypeOf((*pflag.Value)(nil))
+	flagType := reflect.TypeFor[*pflag.Value]()
 
 	// if fromType implements pflag.Value then we can parse it from string
 	if reflect.PointerTo(toType).Implements(flagType.Elem()) {
