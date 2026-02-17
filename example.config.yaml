@@ -77,6 +77,20 @@ evm:
   #   "31337": 2000000000    # Local chain: 2 GWei
   #   "11155420": 1000000000 # OP Sepolia: 1 GWei
 
+# External Voting Power Providers (optional)
+# Used when a voting power provider in on-chain config has chain-id in
+# reserved external range [4_000_000_000..4_100_000_000].
+# Provider ID is read from the first 10 bytes of provider address.
+# external-voting-power-providers:
+#   - id: "0x11223344556677889900"
+#     url: "dns:///beacon-vp:50051"
+#     secure: false
+#     # ca-cert-file: "/path/to/ca.pem"
+#     # server-name: "beacon-vp.internal"
+#     # timeout: 5s
+#     # headers:
+#     #   authorization: "Bearer <token>"
+
 # Aggregation Policy
 aggregation-policy-max-unsigners: 50
 

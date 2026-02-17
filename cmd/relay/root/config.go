@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/symbioticfi/relay/pkg/signals"
+	"github.com/symbioticfi/relay/symbiotic/client/votingpower"
 
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
@@ -30,22 +31,23 @@ type config struct {
 	CircuitsDir  string `mapstructure:"circuits-dir"`
 	MaxUnsigners uint64 `mapstructure:"aggregation-policy-max-unsigners"`
 
-	Log        LogConfig            `mapstructure:"log" validate:"required"`
-	API        APIConfig            `mapstructure:"api" validate:"required"`
-	Metrics    MetricsConfig        `mapstructure:"metrics"`
-	Driver     CMDCrossChainAddress `mapstructure:"driver" validate:"required"`
-	SecretKeys CMDSecretKeySlice    `mapstructure:"secret-keys"`
-	KeyStore   KeyStore             `mapstructure:"keystore"`
-	SignalCfg  signals.Config       `mapstructure:"signal"`
-	Cache      CacheConfig          `mapstructure:"cache"`
-	Sync       SyncConfig           `mapstructure:"sync"`
-	KeyCache   KeyCache             `mapstructure:"key-cache"`
-	P2P        P2PConfig            `mapstructure:"p2p" validate:"required"`
-	Evm        EvmConfig            `mapstructure:"evm" validate:"required"`
-	ForceRole  ForceRole            `mapstructure:"force-role"`
-	Retention  RetentionConfig      `mapstructure:"retention"`
-	Pruner     PrunerConfig         `mapstructure:"pruner"`
-	Tracing    TracingConfig        `mapstructure:"tracing"`
+	Log                          LogConfig                    `mapstructure:"log" validate:"required"`
+	API                          APIConfig                    `mapstructure:"api" validate:"required"`
+	Metrics                      MetricsConfig                `mapstructure:"metrics"`
+	Driver                       CMDCrossChainAddress         `mapstructure:"driver" validate:"required"`
+	SecretKeys                   CMDSecretKeySlice            `mapstructure:"secret-keys"`
+	KeyStore                     KeyStore                     `mapstructure:"keystore"`
+	SignalCfg                    signals.Config               `mapstructure:"signal"`
+	Cache                        CacheConfig                  `mapstructure:"cache"`
+	Sync                         SyncConfig                   `mapstructure:"sync"`
+	KeyCache                     KeyCache                     `mapstructure:"key-cache"`
+	P2P                          P2PConfig                    `mapstructure:"p2p" validate:"required"`
+	Evm                          EvmConfig                    `mapstructure:"evm" validate:"required"`
+	ExternalVotingPowerProviders []votingpower.ProviderConfig `mapstructure:"external-voting-power-providers"`
+	ForceRole                    ForceRole                    `mapstructure:"force-role"`
+	Retention                    RetentionConfig              `mapstructure:"retention"`
+	Pruner                       PrunerConfig                 `mapstructure:"pruner"`
+	Tracing                      TracingConfig                `mapstructure:"tracing"`
 }
 
 type LogConfig struct {

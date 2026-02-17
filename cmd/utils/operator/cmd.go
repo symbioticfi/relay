@@ -42,11 +42,12 @@ type GlobalFlags struct {
 }
 
 type InfoFlags struct {
-	Epoch    uint64
-	Full     bool
-	Path     string
-	Password string
-	KeyTag   uint8
+	Epoch                        uint64
+	Path                         string
+	Password                     string
+	KeyTag                       uint8
+	ConfigPath                   string
+	ExternalVotingPowerProviders map[string]string
 }
 
 type RegisterKeyFlags struct {
@@ -107,6 +108,13 @@ func initFlags() {
 	infoCmd.PersistentFlags().StringVarP(&infoFlags.Path, "path", "p", "./keystore.jks", "Path to keystore")
 	infoCmd.PersistentFlags().StringVar(&infoFlags.Password, "password", "", "Keystore password")
 	infoCmd.PersistentFlags().Uint8Var(&infoFlags.KeyTag, "key-tag", uint8(symbiotic.KeyTypeInvalid), "key tag")
+	infoCmd.PersistentFlags().StringVar(&infoFlags.ConfigPath, "config", "", "Path to config file with external-voting-power-providers settings")
+	infoCmd.PersistentFlags().StringToStringVar(
+		&infoFlags.ExternalVotingPowerProviders,
+		"external-voting-power-providers",
+		nil,
+		"External voting power providers mapping in format 'providerId=url' (e.g. '0x11223344556677889900=127.0.0.1:50051')",
+	)
 	if err := infoCmd.MarkPersistentFlagRequired("key-tag"); err != nil {
 		panic(err)
 	}
