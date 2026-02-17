@@ -20,7 +20,7 @@ type SecretKeyMapFlag struct {
 }
 
 func (s *SecretKeyMapFlag) String() string {
-	parts := make([]string, 0)
+	parts := make([]string, 0, len(s.Secrets))
 	for chainID, key := range s.Secrets {
 		parts = append(parts, fmt.Sprintf("%d:%s", chainID, key))
 	}

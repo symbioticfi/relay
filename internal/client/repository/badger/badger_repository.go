@@ -10,8 +10,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
-	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"google.golang.org/protobuf/proto"
+
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 type Config struct {
@@ -76,10 +77,10 @@ func (r *Repository) Close() error {
 
 type doNothingLog struct{}
 
-func (l doNothingLog) Errorf(s string, args ...interface{})   {}
-func (l doNothingLog) Warningf(s string, args ...interface{}) {}
-func (l doNothingLog) Infof(s string, args ...interface{})    {}
-func (l doNothingLog) Debugf(s string, args ...interface{})   {}
+func (l doNothingLog) Errorf(s string, args ...any)   {}
+func (l doNothingLog) Warningf(s string, args ...any) {}
+func (l doNothingLog) Infof(s string, args ...any)    {}
+func (l doNothingLog) Debugf(s string, args ...any)   {}
 
 type DoNothingMetrics struct {
 }

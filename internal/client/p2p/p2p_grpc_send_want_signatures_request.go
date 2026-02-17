@@ -221,7 +221,7 @@ func entityToProtoResponse(resp entity.WantSignaturesResponse) *prototypes.WantS
 
 	for hash, sigList := range resp.Signatures {
 		// Convert validator signatures
-		var protoSigs []*prototypes.ValidatorSignature
+		protoSigs := make([]*prototypes.ValidatorSignature, 0, len(sigList))
 		for _, validatorSig := range sigList {
 			protoSig := &prototypes.ValidatorSignature{
 				ValidatorIndex: validatorSig.ValidatorIndex,

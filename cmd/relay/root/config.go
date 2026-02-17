@@ -81,8 +81,7 @@ func (s *CMDSecretKeySlice) String() string {
 }
 
 func (s *CMDSecretKeySlice) Set(str string) error {
-	strs := strings.Split(str, ",")
-	for _, elem := range strs {
+	for elem := range strings.SplitSeq(str, ",") {
 		key := CMDSecretKey{}
 		err := key.Set(elem)
 		if err != nil {
@@ -310,7 +309,7 @@ func addRootFlags(cmd *cobra.Command) {
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
 	// Handle CMDGasPriceMap from YAML map[string]interface{}
-	if toType == reflect.TypeOf(CMDGasPriceMap{}) && fromType.Kind() == reflect.Map {
+	if toType == reflect.TypeFor[CMDGasPriceMap]() && fromType.Kind() == reflect.Map {
 		result := make(CMDGasPriceMap)
 		iter := reflect.ValueOf(from).MapRange()
 		for iter.Next() {
