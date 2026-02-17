@@ -119,7 +119,7 @@ func notErrorLevel(_ context.Context, r slog.Record) bool {
 type humanDuration time.Duration
 
 func (d humanDuration) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf(`"%s"`, time.Duration(d).String())), nil
+	return fmt.Appendf(nil, `"%s"`, time.Duration(d).String()), nil
 }
 
 func replaceAttr(groups []string, a slog.Attr) slog.Attr {

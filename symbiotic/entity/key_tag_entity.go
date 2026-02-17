@@ -40,13 +40,13 @@ func (kt KeyTag) MarshalText() (text []byte, err error) {
 	keyID := uint8(kt) & 0x0F
 	switch keyType {
 	case KeyTypeBlsBn254:
-		return []byte(fmt.Sprintf("%d (BLS-BN254/%d)", uint8(kt), keyID)), nil
+		return fmt.Appendf(nil, "%d (BLS-BN254/%d)", uint8(kt), keyID), nil
 	case KeyTypeEcdsaSecp256k1:
-		return []byte(fmt.Sprintf("%d (ECDSA-SECP256K1/%d)", uint8(kt), keyID)), nil
+		return fmt.Appendf(nil, "%d (ECDSA-SECP256K1/%d)", uint8(kt), keyID), nil
 	case KeyTypeBls12381:
-		return []byte(fmt.Sprintf("%d (BLS12-381/%d)", uint8(kt), keyID)), nil
+		return fmt.Appendf(nil, "%d (BLS12-381/%d)", uint8(kt), keyID), nil
 	case KeyTypeInvalid:
-		return []byte(fmt.Sprintf("%d (UNKNOWN/%d)", uint8(kt), keyID)), nil
+		return fmt.Appendf(nil, "%d (UNKNOWN/%d)", uint8(kt), keyID), nil
 	}
 	return nil, errors.Errorf("unsupported key type: %d", keyType)
 }

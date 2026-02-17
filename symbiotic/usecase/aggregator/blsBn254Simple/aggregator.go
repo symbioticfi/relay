@@ -396,7 +396,7 @@ func (a Aggregator) Verify(
 	nonSignersPublicKeyG1 = new(bn254.G1Affine) // Initialize to zero point
 
 	var prevNonSignerIndex uint16
-	for i := 0; i < nonSignersLength; i++ {
+	for i := range nonSignersLength {
 		currentNonSignerIndex := binary.BigEndian.Uint16(nonSignersRaw[i*2 : (i+1)*2])
 
 		// Validate non-signer index

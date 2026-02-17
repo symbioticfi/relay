@@ -44,7 +44,7 @@ linters:
     - iotamixing
     - loggercheck
     - makezero
-#    - modernize
+    - modernize
     - mirror
     - misspell
     - musttag
@@ -244,6 +244,9 @@ linters:
       ignore-package-globs:
         - github.com/symbioticfi/relay/internal/*
         - golang.org/x/sync/errgroup
+    modernize:
+      disable:
+        - any
     funcorder:
       constructor: true
       struct-method: false

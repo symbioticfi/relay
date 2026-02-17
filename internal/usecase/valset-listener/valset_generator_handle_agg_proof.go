@@ -82,10 +82,7 @@ func (s *Service) tryToCommitPendingProofs(ctx context.Context) (uint64, error) 
 		return 0, errors.Errorf("failed to get network config by epoch %d: %w", valsetHeader.Epoch, err)
 	}
 
-	tickInterval := nwCfg.CommitterSlotDuration / 2
-	if tickInterval < minCommitterPollIntervalSeconds {
-		tickInterval = minCommitterPollIntervalSeconds
-	}
+	tickInterval := max(nwCfg.CommitterSlotDuration/2, minCommitterPollIntervalSeconds)
 
 	tracing.SetAttributes(span,
 		tracing.AttrValidatorCount.Int(len(valset.Validators)),

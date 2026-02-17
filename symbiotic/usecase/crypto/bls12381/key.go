@@ -156,7 +156,7 @@ func (k *PublicKey) G2() *bls12381.G2Affine {
 func (k *PublicKey) MarshalText() ([]byte, error) {
 	g1Bytes := k.g1PubKey.Bytes()
 	g2Bytes := k.g2PubKey.Bytes()
-	return []byte(fmt.Sprintf("G1/%s;G2/%s", hexutil.Encode(g1Bytes[:]), hexutil.Encode(g2Bytes[:]))), nil
+	return fmt.Appendf(nil, "G1/%s;G2/%s", hexutil.Encode(g1Bytes[:]), hexutil.Encode(g2Bytes[:])), nil
 }
 
 func FromRaw(rawKey RawPublicKey) (*PublicKey, error) {
