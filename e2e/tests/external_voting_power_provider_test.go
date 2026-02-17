@@ -180,7 +180,7 @@ func cleanupExternalVotingPowerProviders(
 		}
 
 		nextEpoch := currentEpoch + 1
-		if err := waitForEpoch(ctx, evmClient, nextEpoch, waitEpochTimeout); err != nil {
+		if err := waitForEpoch(ctx, evmClient, nextEpoch, waitEpochTimeout()); err != nil {
 			return err
 		}
 	}
@@ -195,7 +195,7 @@ func ensureExternalProviderAbsent(
 	currentEpoch symbiotic.Epoch,
 ) error {
 	for epoch := currentEpoch + 1; epoch <= currentEpoch+maxEpochTransitionsToWait; epoch++ {
-		if err := waitForEpoch(ctx, evmClient, epoch, waitEpochTimeout); err != nil {
+		if err := waitForEpoch(ctx, evmClient, epoch, waitEpochTimeout()); err != nil {
 			return err
 		}
 

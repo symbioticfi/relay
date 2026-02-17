@@ -3,6 +3,8 @@ package tests
 import (
 	"context"
 	"net/http"
+	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -22,8 +24,6 @@ import (
 // testPrivateKeyHex is the well-known Hardhat/Anvil test account #0 private key
 // from /e2e/contracts/network-scripts/deploy.sh
 const testPrivateKeyHex = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-
-const waitEpochTimeout = 2 * time.Minute
 
 // TestAggregatorSignatureSync tests that aggregators can sync missed signatures
 // and generate proofs even when they were offline during signature collection.
@@ -95,7 +95,7 @@ func TestAggregatorSignatureSync(t *testing.T) {
 	// During this time, signers will generate signatures but aggregators are offline
 	t.Log("Step 3: Waiting for next epoch to trigger signature generation...")
 
-	err = waitForEpoch(ctx, evmClient, nextEpoch, waitEpochTimeout)
+	err = waitForEpoch(ctx, evmClient, nextEpoch, waitEpochTimeout())
 	require.NoError(t, err, "Failed to wait for next epoch")
 	t.Logf("Reached epoch %d", nextEpoch)
 
@@ -196,7 +196,7 @@ func TestAggregatorProofSync(t *testing.T) {
 	// Step 3: Wait for next epoch to trigger proof generation
 	t.Log("Step 3: Waiting for next epoch to trigger proof generation...")
 
-	err = waitForEpoch(ctx, evmClient, nextEpoch, waitEpochTimeout)
+	err = waitForEpoch(ctx, evmClient, nextEpoch, waitEpochTimeout())
 	require.NoError(t, err, "Failed to wait for next epoch")
 	t.Logf("Reached epoch %d", nextEpoch)
 
@@ -346,4 +346,15 @@ func waitForEpoch(ctx context.Context, client *evm.Client, targetEpoch symbiotic
 			}
 		}
 	}
+}
+
+func waitEpochTimeout() time.Duration {
+	epochSeconds := 60
+	if raw := os.Getenv("EPOCH_TIME"); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
+			epochSeconds = parsed
+		}
+	}
+
+	return 2 * time.Duration(epochSeconds) * time.Second
 }
