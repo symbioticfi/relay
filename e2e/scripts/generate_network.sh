@@ -170,6 +170,13 @@ generate_docker_compose() {
         mkdir -p "$storage_dir"
         # Make sure the directory is writable
         chmod 777 "$storage_dir"
+
+        # Create storage directory for copy sidecar (every 2nd operator)
+        if [ $((i % 3)) -eq 0 ]; then
+            local storage_dir_copy="$network_dir/data-$(printf "%02d" $i)-copy"
+            mkdir -p "$storage_dir_copy"
+            chmod 777 "$storage_dir_copy"
+        fi
     done
 
     local anvil_port=8545
@@ -348,6 +355,57 @@ EOF
       start_period: 40s
 
 EOF
+
+        # Generate copy sidecar for every 2nd operator
+        if [ $((i % 3)) -eq 0 ]; then
+        local copy_port=$((relay_start_port + 100 + i - 1))
+        local copy_storage_dir="data-$(printf "%02d" $i)-copy"
+        local COPY_P2P_KEY_DECIMAL=$(($BASE_PRIVATE_KEY + $key_index + 30000))
+        local COPY_P2P_KEY_HEX=$(printf "%064x" $COPY_P2P_KEY_DECIMAL)
+
+        cat >> "$network_dir/docker-compose.yml" << EOF
+
+  # Relay sidecar $i copy (same keys, different p2p identity)
+  relay-sidecar-$i-copy:
+    image: relay_sidecar:dev
+    container_name: symbiotic-relay-$i-copy
+    command:
+      - sh
+      - -c
+      - "chmod 777 /app/$copy_storage_dir /deploy-data 2>/dev/null || true && /workspace/scripts/sidecar-start.sh symb/0/15/0x$SYMB_PRIVATE_KEY_HEX,symb/0/11/0x$SYMB_SECONDARY_PRIVATE_KEY_HEX,symb/2/1/0x$SYMB_BLS12381_PRIVATE_KEY_HEX,symb/1/0/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31337/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31338/0x$SYMB_PRIVATE_KEY_HEX,p2p/1/1/$COPY_P2P_KEY_HEX /app/$copy_storage_dir $circuits_param"
+    ports:
+      - "$copy_port:8080"
+    volumes:
+      - ../:/workspace
+      - ./$copy_storage_dir:/app/$copy_storage_dir
+      - ./deploy-data:/deploy-data
+EOF
+
+        # Add circuits volume only if verification type is 0
+        if [ "$verification_type" = "0" ]; then
+            cat >> "$network_dir/docker-compose.yml" << EOF
+      - ./circuits:/app/circuits
+EOF
+        fi
+
+        cat >> "$network_dir/docker-compose.yml" << EOF
+    depends_on:
+      genesis-generator:
+        condition: service_completed_successfully
+    networks:
+      - symbiotic-network
+    restart: unless-stopped
+    environment:
+      - MAX_VALIDATORS=10
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+EOF
+        fi
     done
 
     # Extra relay for testing (not part of validator set)
