@@ -492,7 +492,7 @@ func TestRepository_GetValidatorSetsByEpoch(t *testing.T) {
 
 func setupTestRepository(t *testing.T) *Repository {
 	t.Helper()
-	repo, err := New(Config{Dir: t.TempDir(), Metrics: DoNothingMetrics{}})
+	repo, err := New(Config{Dir: t.TempDir(), Metrics: DoNothingMetrics{}, BlockCacheSize: -1})
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		err := repo.Close()

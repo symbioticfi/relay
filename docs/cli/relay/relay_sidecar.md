@@ -20,13 +20,13 @@ relay_sidecar [flags]
       --api.listen string                        API Server listener address
       --api.max-allowed-streams uint             Max allowed streams count API Server (default 100)
       --api.verbose-logging                      Enable verbose logging for the API Server
-      --badger.block-cache-size int              BadgerDB block cache size in bytes, 0 = disabled, -1 = badger default (256 MB), default: 128 MB (default 134217728)
-      --badger.compact-l0-on-close               BadgerDB compact L0 on graceful shutdown (badger default: false) (default true)
-      --badger.mem-table-size int                BadgerDB memtable size in bytes, 32 MB (badger default: 64 MB) (default 33554432)
-      --badger.num-level-zero-tables int         BadgerDB L0 tables before compaction triggers (badger default: 5) (default 3)
-      --badger.num-level-zero-tables-stall int   BadgerDB L0 tables before writes stall (badger default: 15) (default 8)
-      --badger.num-memtables int                 BadgerDB number of memtables (badger default: 5) (default 3)
-      --badger.value-log-file-size int           BadgerDB value log file size in bytes, 512 MB (badger default: ~1 GB) (default 536870912)
+      --badger.block-cache-size int              BadgerDB block cache size in bytes, 0 = disabled (default 134217728)
+      --badger.compact-l0-on-close               BadgerDB compact L0 on graceful shutdown (default true)
+      --badger.mem-table-size int                BadgerDB memtable size in bytes (default 33554432)
+      --badger.num-level-zero-tables int         BadgerDB L0 tables before compaction triggers (default 3)
+      --badger.num-level-zero-tables-stall int   BadgerDB L0 tables before writes stall (default 8)
+      --badger.num-memtables int                 BadgerDB number of memtables (default 3)
+      --badger.value-log-file-size int           BadgerDB value log file size in bytes, 512 MB (default 536870912)
       --cache.network-config-size int            Network config cache size (default 10)
       --cache.validator-set-size int             Validator set cache size (default 10)
       --circuits-dir string                      Directory path to load zk circuits from, if empty then zp prover is disabled

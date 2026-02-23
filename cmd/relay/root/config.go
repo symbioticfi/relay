@@ -264,7 +264,6 @@ func (c config) Validate() error {
 	}
 
 	// Validate badger: num-level-zero-tables-stall must be > num-level-zero-tables (badger fatals otherwise).
-	// Use effective values: zero means "use badger default" (tables=5, stall=15).
 	effectiveL0Tables := c.Badger.NumLevelZeroTables
 	if effectiveL0Tables == 0 {
 		effectiveL0Tables = 5 // badger default
@@ -331,13 +330,13 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("tracing.enabled", false, "Enable distributed tracing")
 	rootCmd.PersistentFlags().String("tracing.endpoint", "localhost:4317", "OTLP endpoint for tracing (e.g., Jaeger)")
 	rootCmd.PersistentFlags().Float64("tracing.sample-rate", 1.0, "Trace sampling rate (0.0 to 1.0)")
-	rootCmd.PersistentFlags().Int64("badger.block-cache-size", 134217728, "BadgerDB block cache size in bytes, 0 = disabled, -1 = badger default (256 MB), default: 128 MB")
-	rootCmd.PersistentFlags().Int64("badger.mem-table-size", 33554432, "BadgerDB memtable size in bytes, 32 MB (badger default: 64 MB)")
-	rootCmd.PersistentFlags().Int("badger.num-memtables", 3, "BadgerDB number of memtables (badger default: 5)")
-	rootCmd.PersistentFlags().Int("badger.num-level-zero-tables", 3, "BadgerDB L0 tables before compaction triggers (badger default: 5)")
-	rootCmd.PersistentFlags().Int("badger.num-level-zero-tables-stall", 8, "BadgerDB L0 tables before writes stall (badger default: 15)")
-	rootCmd.PersistentFlags().Bool("badger.compact-l0-on-close", true, "BadgerDB compact L0 on graceful shutdown (badger default: false)")
-	rootCmd.PersistentFlags().Int64("badger.value-log-file-size", 536870912, "BadgerDB value log file size in bytes, 512 MB (badger default: ~1 GB)")
+	rootCmd.PersistentFlags().Int64("badger.block-cache-size", 134217728, "BadgerDB block cache size in bytes, 0 = disabled")
+	rootCmd.PersistentFlags().Int64("badger.mem-table-size", 33554432, "BadgerDB memtable size in bytes")
+	rootCmd.PersistentFlags().Int("badger.num-memtables", 3, "BadgerDB number of memtables")
+	rootCmd.PersistentFlags().Int("badger.num-level-zero-tables", 3, "BadgerDB L0 tables before compaction triggers")
+	rootCmd.PersistentFlags().Int("badger.num-level-zero-tables-stall", 8, "BadgerDB L0 tables before writes stall")
+	rootCmd.PersistentFlags().Bool("badger.compact-l0-on-close", true, "BadgerDB compact L0 on graceful shutdown")
+	rootCmd.PersistentFlags().Int64("badger.value-log-file-size", 536870912, "BadgerDB value log file size in bytes, 512 MB")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {

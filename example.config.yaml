@@ -102,7 +102,7 @@ pruner:
 
 
 # BadgerDB Storage Engine Tuning (optional)
-# See docs/compaction.md and docs/memory.md for details
+# See https://github.com/dgraph-io/badger/blob/main/options.go#L123 for details
 badger:
   block-cache-size: 134217728     # 128 MB (badger default: 256 MB)
   mem-table-size: 33554432        # 32 MB (badger default: 64 MB)
