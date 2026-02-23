@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: PR Agent action step
         id: pragent
-        uses: qodo-ai/pr-agent@d36ad319f7fb0049205017405a71275c41599587   # pin@v0.31
+        uses: qodo-ai/pr-agent@1b0609a013f53694c36d457149bde70abf50c048   # pin@v0.32
         env:
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
