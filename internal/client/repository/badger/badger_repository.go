@@ -20,6 +20,13 @@ type Config struct {
 	Metrics                  metrics       `validate:"required"`
 	MutexCleanupInterval     time.Duration // How often to run mutex cleanup (e.g., 1 hour). Zero disables cleanup.
 	MutexCleanupStaleTimeout time.Duration // Remove mutexes not used for this duration, default 1 hour.
+	BlockCacheSize           int64
+	MemTableSize             int64
+	NumMemtables             int
+	NumLevelZeroTables       int
+	NumLevelZeroTablesStall  int
+	CompactL0OnClose         bool
+	ValueLogFileSize         int64
 }
 
 func (c Config) Validate() error {
@@ -52,6 +59,7 @@ func New(cfg Config) (*Repository, error) {
 
 	opts := badger.DefaultOptions(cfg.Dir)
 	opts.Logger = doNothingLog{}
+	applyBadgerTuning(&opts, cfg)
 
 	db, err := badger.Open(opts)
 	if err != nil {
@@ -67,6 +75,33 @@ func New(cfg Config) (*Repository, error) {
 	repo.startMutexCleanup(cfg.MutexCleanupInterval, cfg.MutexCleanupStaleTimeout)
 
 	return repo, nil
+}
+
+// applyBadgerTuning overrides badger.Options with non-zero config values.
+// Zero values are left as badger defaults, allowing tests to omit tuning fields.
+func applyBadgerTuning(opts *badger.Options, cfg Config) {
+	if cfg.BlockCacheSize != 0 {
+		opts.BlockCacheSize = cfg.BlockCacheSize
+	}
+	if cfg.MemTableSize != 0 {
+		opts.MemTableSize = cfg.MemTableSize
+	}
+	if cfg.NumMemtables != 0 {
+		opts.NumMemtables = cfg.NumMemtables
+	}
+	if cfg.NumLevelZeroTables != 0 {
+		opts.NumLevelZeroTables = cfg.NumLevelZeroTables
+	}
+	if cfg.NumLevelZeroTablesStall != 0 {
+		opts.NumLevelZeroTablesStall = cfg.NumLevelZeroTablesStall
+	}
+	if cfg.ValueLogFileSize != 0 {
+		opts.ValueLogFileSize = cfg.ValueLogFileSize
+	}
+	// CompactL0OnClose is a bool — always apply since the tuned default is true
+	// and badger's default is false. When cfg comes from CLI flags, the default is true.
+	// When cfg comes from tests (zero-value), this is a no-op (false == badger default).
+	opts.CompactL0OnClose = cfg.CompactL0OnClose
 }
 
 func (r *Repository) Close() error {
