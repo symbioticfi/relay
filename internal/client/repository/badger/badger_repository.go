@@ -20,7 +20,7 @@ type Config struct {
 	Metrics                  metrics       `validate:"required"`
 	MutexCleanupInterval     time.Duration // How often to run mutex cleanup (e.g., 1 hour). Zero disables cleanup.
 	MutexCleanupStaleTimeout time.Duration // Remove mutexes not used for this duration, default 1 hour.
-	BlockCacheSize           int64
+	BlockCacheSize           int64         // -1 = use badger default, 0 = disabled, >0 = size in bytes
 	MemTableSize             int64
 	NumMemtables             int
 	NumLevelZeroTables       int
@@ -77,10 +77,11 @@ func New(cfg Config) (*Repository, error) {
 	return repo, nil
 }
 
-// applyBadgerTuning overrides badger.Options with non-zero config values.
-// Zero values are left as badger defaults, allowing tests to omit tuning fields.
+// applyBadgerTuning overrides badger.Options with config values.
+// For most fields, zero means "use badger default". For BlockCacheSize,
+// -1 means "use badger default", 0 means "disabled", >0 means explicit size.
 func applyBadgerTuning(opts *badger.Options, cfg Config) {
-	if cfg.BlockCacheSize != 0 {
+	if cfg.BlockCacheSize >= 0 {
 		opts.BlockCacheSize = cfg.BlockCacheSize
 	}
 	if cfg.MemTableSize != 0 {

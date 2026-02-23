@@ -263,11 +263,19 @@ func (c config) Validate() error {
 		return errors.Errorf("sync.epochs (%d) cannot exceed retention.valset-epochs (%d)", c.Sync.EpochsToSync, c.Retention.ValSetEpochs)
 	}
 
-	// Validate badger: num-level-zero-tables-stall must be > num-level-zero-tables (badger fatals otherwise)
-	if c.Badger.NumLevelZeroTables > 0 && c.Badger.NumLevelZeroTablesStall > 0 &&
-		c.Badger.NumLevelZeroTablesStall <= c.Badger.NumLevelZeroTables {
-		return errors.Errorf("badger.num-level-zero-tables-stall (%d) must be greater than badger.num-level-zero-tables (%d)",
-			c.Badger.NumLevelZeroTablesStall, c.Badger.NumLevelZeroTables)
+	// Validate badger: num-level-zero-tables-stall must be > num-level-zero-tables (badger fatals otherwise).
+	// Use effective values: zero means "use badger default" (tables=5, stall=15).
+	effectiveL0Tables := c.Badger.NumLevelZeroTables
+	if effectiveL0Tables == 0 {
+		effectiveL0Tables = 5 // badger default
+	}
+	effectiveL0Stall := c.Badger.NumLevelZeroTablesStall
+	if effectiveL0Stall == 0 {
+		effectiveL0Stall = 15 // badger default
+	}
+	if effectiveL0Stall <= effectiveL0Tables {
+		return errors.Errorf("badger.num-level-zero-tables-stall (effective %d) must be greater than badger.num-level-zero-tables (effective %d)",
+			effectiveL0Stall, effectiveL0Tables)
 	}
 
 	return nil
@@ -323,7 +331,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("tracing.enabled", false, "Enable distributed tracing")
 	rootCmd.PersistentFlags().String("tracing.endpoint", "localhost:4317", "OTLP endpoint for tracing (e.g., Jaeger)")
 	rootCmd.PersistentFlags().Float64("tracing.sample-rate", 1.0, "Trace sampling rate (0.0 to 1.0)")
-	rootCmd.PersistentFlags().Int64("badger.block-cache-size", 134217728, "BadgerDB block cache size in bytes, 0 = disabled, 128 MB (badger default: 256 MB)")
+	rootCmd.PersistentFlags().Int64("badger.block-cache-size", 134217728, "BadgerDB block cache size in bytes, 0 = disabled, -1 = badger default (256 MB), default: 128 MB")
 	rootCmd.PersistentFlags().Int64("badger.mem-table-size", 33554432, "BadgerDB memtable size in bytes, 32 MB (badger default: 64 MB)")
 	rootCmd.PersistentFlags().Int("badger.num-memtables", 3, "BadgerDB number of memtables (badger default: 5)")
 	rootCmd.PersistentFlags().Int("badger.num-level-zero-tables", 3, "BadgerDB L0 tables before compaction triggers (badger default: 5)")
