@@ -249,6 +249,7 @@ type BadgerConfig struct {
 	NumLevelZeroTables      int   `mapstructure:"num-level-zero-tables"`
 	NumLevelZeroTablesStall int   `mapstructure:"num-level-zero-tables-stall"`
 	CompactL0OnClose        bool  `mapstructure:"compact-l0-on-close"`
+	NumCompactors           int   `mapstructure:"num-compactors"`
 	ValueLogFileSize        int64 `mapstructure:"value-log-file-size"`
 }
 
@@ -336,6 +337,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Int("badger.num-level-zero-tables", 3, "BadgerDB L0 tables before compaction triggers")
 	rootCmd.PersistentFlags().Int("badger.num-level-zero-tables-stall", 8, "BadgerDB L0 tables before writes stall")
 	rootCmd.PersistentFlags().Bool("badger.compact-l0-on-close", true, "BadgerDB compact L0 on graceful shutdown")
+	rootCmd.PersistentFlags().Int("badger.num-compactors", 2, "BadgerDB concurrent compaction goroutines")
 	rootCmd.PersistentFlags().Int64("badger.value-log-file-size", 536870912, "BadgerDB value log file size in bytes, 512 MB")
 }
 
@@ -544,6 +546,9 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("badger.compact-l0-on-close", cmd.PersistentFlags().Lookup("badger.compact-l0-on-close")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("badger.num-compactors", cmd.PersistentFlags().Lookup("badger.num-compactors")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("badger.value-log-file-size", cmd.PersistentFlags().Lookup("badger.value-log-file-size")); err != nil {

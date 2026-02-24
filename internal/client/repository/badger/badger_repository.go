@@ -26,6 +26,7 @@ type Config struct {
 	NumLevelZeroTables       int
 	NumLevelZeroTablesStall  int
 	CompactL0OnClose         bool
+	NumCompactors            int
 	ValueLogFileSize         int64
 }
 
@@ -98,6 +99,9 @@ func applyBadgerTuning(opts *badger.Options, cfg Config) {
 	}
 	if cfg.ValueLogFileSize != 0 {
 		opts.ValueLogFileSize = cfg.ValueLogFileSize
+	}
+	if cfg.NumCompactors != 0 {
+		opts.NumCompactors = cfg.NumCompactors
 	}
 	// CompactL0OnClose is a bool — always apply since the tuned default is true
 	// and badger's default is false. When cfg comes from CLI flags, the default is true.

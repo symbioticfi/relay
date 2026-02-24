@@ -110,6 +110,7 @@ badger:
   num-level-zero-tables: 3        # (badger default: 5)
   num-level-zero-tables-stall: 8  # (badger default: 15)
   compact-l0-on-close: true       # (badger default: false)
+  num-compactors: 2               # concurrent compaction goroutines (badger default: 4)
   value-log-file-size: 536870912  # 512 MB (badger default: ~1 GB)
 
 tracing:

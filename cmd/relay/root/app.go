@@ -119,6 +119,7 @@ func runApp(ctx context.Context) error {
 		NumLevelZeroTables:       cfg.Badger.NumLevelZeroTables,
 		NumLevelZeroTablesStall:  cfg.Badger.NumLevelZeroTablesStall,
 		CompactL0OnClose:         cfg.Badger.CompactL0OnClose,
+		NumCompactors:            cfg.Badger.NumCompactors,
 		ValueLogFileSize:         cfg.Badger.ValueLogFileSize,
 	})
 	if err != nil {
