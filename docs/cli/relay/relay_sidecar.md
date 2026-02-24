@@ -23,6 +23,7 @@ relay_sidecar [flags]
       --badger.block-cache-size int              BadgerDB block cache size in bytes, 0 = disabled (default 134217728)
       --badger.compact-l0-on-close               BadgerDB compact L0 on graceful shutdown (default true)
       --badger.mem-table-size int                BadgerDB memtable size in bytes (default 33554432)
+      --badger.num-compactors int                BadgerDB concurrent compaction goroutines (default 2)
       --badger.num-level-zero-tables int         BadgerDB L0 tables before compaction triggers (default 3)
       --badger.num-level-zero-tables-stall int   BadgerDB L0 tables before writes stall (default 8)
       --badger.num-memtables int                 BadgerDB number of memtables (default 3)
