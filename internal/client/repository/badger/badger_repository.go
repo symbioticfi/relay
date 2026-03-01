@@ -2,6 +2,7 @@ package badger
 
 import (
 	"bytes"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -58,8 +59,8 @@ func New(cfg Config) (*Repository, error) {
 		return nil, errors.Errorf("failed to validate config: %w", err)
 	}
 
-	opts := badger.DefaultOptions(cfg.Dir)
-	opts.Logger = doNothingLog{}
+	opts := badger.DefaultOptions(cfg.Dir).
+		WithLogger(&slogBadgerLogger{})
 	applyBadgerTuning(&opts, cfg)
 
 	db, err := badger.Open(opts)
@@ -115,12 +116,20 @@ func (r *Repository) Close() error {
 	return r.db.Close()
 }
 
-type doNothingLog struct{}
+type slogBadgerLogger struct{}
 
-func (l doNothingLog) Errorf(s string, args ...any)   {}
-func (l doNothingLog) Warningf(s string, args ...any) {}
-func (l doNothingLog) Infof(s string, args ...any)    {}
-func (l doNothingLog) Debugf(s string, args ...any)   {}
+func (l *slogBadgerLogger) Errorf(s string, args ...any) {
+	slog.Error(fmt.Sprintf(s, args...), "component", "badger")
+}
+func (l *slogBadgerLogger) Warningf(s string, args ...any) {
+	slog.Warn(fmt.Sprintf(s, args...), "component", "badger")
+}
+func (l *slogBadgerLogger) Infof(s string, args ...any) {
+	slog.Info(fmt.Sprintf(s, args...), "component", "badger")
+}
+func (l *slogBadgerLogger) Debugf(s string, args ...any) {
+	slog.Debug(fmt.Sprintf(s, args...), "component", "badger")
+}
 
 type DoNothingMetrics struct {
 }
