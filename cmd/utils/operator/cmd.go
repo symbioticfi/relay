@@ -46,8 +46,7 @@ type InfoFlags struct {
 	Path                         string
 	Password                     string
 	KeyTag                       uint8
-	ConfigPath                   string
-	ExternalVotingPowerProviders map[string]string
+	ExternalVotingPowerProviders []string
 }
 
 type RegisterKeyFlags struct {
@@ -108,12 +107,11 @@ func initFlags() {
 	infoCmd.PersistentFlags().StringVarP(&infoFlags.Path, "path", "p", "./keystore.jks", "Path to keystore")
 	infoCmd.PersistentFlags().StringVar(&infoFlags.Password, "password", "", "Keystore password")
 	infoCmd.PersistentFlags().Uint8Var(&infoFlags.KeyTag, "key-tag", uint8(symbiotic.KeyTypeInvalid), "key tag")
-	infoCmd.PersistentFlags().StringVar(&infoFlags.ConfigPath, "config", "", "Path to config file with external-voting-power-providers settings")
-	infoCmd.PersistentFlags().StringToStringVar(
+	infoCmd.PersistentFlags().StringArrayVar(
 		&infoFlags.ExternalVotingPowerProviders,
-		"external-voting-power-providers",
+		"external-voting-power-provider",
 		nil,
-		"External voting power providers mapping in format 'providerId=url' (e.g. '0x11223344556677889900=127.0.0.1:50051')",
+		"External voting power provider config in format 'id=<id>,url=<url>[,secure=<bool>][,ca-cert-file=<path>][,server-name=<name>][,timeout=<duration>][,headers=<k:v|k2:v2>]'",
 	)
 	if err := infoCmd.MarkPersistentFlagRequired("key-tag"); err != nil {
 		panic(err)

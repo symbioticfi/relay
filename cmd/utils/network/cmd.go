@@ -31,8 +31,7 @@ type GlobalFlags struct {
 	DriverAddress                string
 	DriverChainId                uint64
 	Epoch                        uint64
-	ConfigPath                   string
-	ExternalVotingPowerProviders map[string]string
+	ExternalVotingPowerProviders []string
 }
 
 type InfoFlags struct {
@@ -59,12 +58,11 @@ func initFlags() {
 	networkCmd.PersistentFlags().StringVar(&globalFlags.DriverAddress, "driver.address", "", "Driver contract address")
 	networkCmd.PersistentFlags().Uint64Var(&globalFlags.DriverChainId, "driver.chainid", 0, "Driver contract chain id")
 	networkCmd.PersistentFlags().Uint64VarP(&globalFlags.Epoch, "epoch", "e", 0, "Network epoch to fetch info")
-	networkCmd.PersistentFlags().StringVar(&globalFlags.ConfigPath, "config", "", "Path to config file with external-voting-power-providers settings")
-	networkCmd.PersistentFlags().StringToStringVar(
+	networkCmd.PersistentFlags().StringArrayVar(
 		&globalFlags.ExternalVotingPowerProviders,
-		"external-voting-power-providers",
+		"external-voting-power-provider",
 		nil,
-		"External voting power providers mapping in format 'providerId=url' (e.g. '0x11223344556677889900=127.0.0.1:50051')",
+		"External voting power provider config in format 'id=<id>,url=<url>[,secure=<bool>][,ca-cert-file=<path>][,server-name=<name>][,timeout=<duration>][,headers=<k:v|k2:v2>]'",
 	)
 	if err := networkCmd.MarkPersistentFlagRequired("chains"); err != nil {
 		panic(err)

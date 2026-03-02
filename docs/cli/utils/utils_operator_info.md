@@ -11,13 +11,12 @@ utils operator info [flags]
 ### Options
 
 ```
-      --config string                                    Path to config file with external-voting-power-providers settings
-  -e, --epoch uint                                       Network epoch to fetch info
-      --external-voting-power-providers stringToString   External voting power providers mapping in format 'providerId=url' (e.g. '0x11223344556677889900=127.0.0.1:50051') (default [])
-  -h, --help                                             help for info
-      --key-tag uint8                                    key tag (default 255)
-      --password string                                  Keystore password
-  -p, --path string                                      Path to keystore (default "./keystore.jks")
+  -e, --epoch uint                                   Network epoch to fetch info
+      --external-voting-power-provider stringArray   External voting power provider config in format 'id=<id>,url=<url>[,secure=<bool>][,ca-cert-file=<path>][,server-name=<name>][,timeout=<duration>][,headers=<k:v|k2:v2>]'
+  -h, --help                                         help for info
+      --key-tag uint8                                key tag (default 255)
+      --password string                              Keystore password
+  -p, --path string                                  Path to keystore (default "./keystore.jks")
 ```
 
 ### Options inherited from parent commands
