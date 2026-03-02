@@ -294,7 +294,7 @@ func (p *ZkProver) Prove(ctx context.Context, proveInput ProveInput) (ProofData,
 	}, nil
 }
 
-//nolint:revive // function-result-limit: This function needs to return multiple complex types for cryptographic operations
+//revive:disable-next-line:function-result-limit // This function returns multiple cryptographic artifacts by design.
 func (p *ZkProver) loadOrInit(valsetLen int) (constraint.ConstraintSystem, groth16.ProvingKey, groth16.VerifyingKey, error) {
 	slog.Info("Loading or initializing zk circuit files", "valsetLen", valsetLen, "dir", p.circuitsDir)
 	suffix := strconv.Itoa(valsetLen)

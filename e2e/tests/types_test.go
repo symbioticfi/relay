@@ -4,20 +4,26 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pelletier/go-toml/v2"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
 
 	apiv1 "github.com/symbioticfi/relay/api/client/v1"
+	votingpowerv1 "github.com/symbioticfi/relay/internal/gen/votingpower/v1"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
@@ -301,6 +307,59 @@ func getGRPCClient(t *testing.T, index int) *apiv1.SymbioticClient {
 
 func getHealthEndpoint(i int) string {
 	return fmt.Sprintf("http://localhost:%d/healthz", getContainerPort(i))
+}
+
+type bonusVotingPowerServer struct {
+	votingpowerv1.UnimplementedVotingPowerProviderServiceServer
+
+	operators   []common.Address
+	votingPower int64
+}
+
+func (s *bonusVotingPowerServer) GetVotingPowersAt(
+	_ context.Context,
+	_ *votingpowerv1.GetVotingPowersAtRequest,
+) (*votingpowerv1.GetVotingPowersAtResponse, error) {
+	resp := &votingpowerv1.GetVotingPowersAtResponse{
+		VotingPowers: make([]*votingpowerv1.OperatorVotingPower, 0, len(s.operators)),
+	}
+
+	for _, operator := range s.operators {
+		resp.VotingPowers = append(resp.VotingPowers, &votingpowerv1.OperatorVotingPower{
+			Operator:    operator.Hex(),
+			VotingPower: big.NewInt(s.votingPower).String(),
+		})
+	}
+
+	return resp, nil
+}
+
+func startBonusVotingPowerServer(t *testing.T, operators []common.Address, votingPower int64) string {
+	t.Helper()
+
+	listener, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+
+	grpcServer := grpc.NewServer()
+	healthServer := health.NewServer()
+	healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
+	grpc_health_v1.RegisterHealthServer(grpcServer, healthServer)
+	votingpowerv1.RegisterVotingPowerProviderServiceServer(grpcServer, &bonusVotingPowerServer{
+		operators:   operators,
+		votingPower: votingPower,
+	})
+
+	go func() {
+		_ = grpcServer.Serve(listener)
+	}()
+
+	t.Cleanup(func() {
+		healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+		grpcServer.Stop()
+		_ = listener.Close()
+	})
+
+	return listener.Addr().String()
 }
 
 func startContainer(ctx context.Context, container string) error {

@@ -27,10 +27,11 @@ var networkCmd = &cobra.Command{
 }
 
 type GlobalFlags struct {
-	Chains        []string
-	DriverAddress string
-	DriverChainId uint64
-	Epoch         uint64
+	Chains                       []string
+	DriverAddress                string
+	DriverChainId                uint64
+	Epoch                        uint64
+	ExternalVotingPowerProviders []string
 }
 
 type InfoFlags struct {
@@ -57,6 +58,12 @@ func initFlags() {
 	networkCmd.PersistentFlags().StringVar(&globalFlags.DriverAddress, "driver.address", "", "Driver contract address")
 	networkCmd.PersistentFlags().Uint64Var(&globalFlags.DriverChainId, "driver.chainid", 0, "Driver contract chain id")
 	networkCmd.PersistentFlags().Uint64VarP(&globalFlags.Epoch, "epoch", "e", 0, "Network epoch to fetch info")
+	networkCmd.PersistentFlags().StringArrayVar(
+		&globalFlags.ExternalVotingPowerProviders,
+		"external-voting-power-provider",
+		nil,
+		"External voting power provider config in format 'id=<id>,url=<url>[,secure=<bool>][,ca-cert-file=<path>][,server-name=<name>][,timeout=<duration>][,headers=<k:v|k2:v2>]'",
+	)
 	if err := networkCmd.MarkPersistentFlagRequired("chains"); err != nil {
 		panic(err)
 	}
