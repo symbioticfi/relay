@@ -121,6 +121,8 @@ func runApp(ctx context.Context) error {
 		CompactL0OnClose:         cfg.Badger.CompactL0OnClose,
 		NumCompactors:            cfg.Badger.NumCompactors,
 		ValueLogFileSize:         cfg.Badger.ValueLogFileSize,
+		ValueLogGCInterval:       cfg.Badger.ValueLogGCInterval,
+		ValueLogGCDiscardRatio:   cfg.Badger.ValueLogGCDiscardRatio,
 	})
 	if err != nil {
 		return errors.Errorf("failed to create badger repository: %w", err)

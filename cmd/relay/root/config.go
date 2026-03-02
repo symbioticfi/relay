@@ -243,14 +243,16 @@ type TracingConfig struct {
 }
 
 type BadgerConfig struct {
-	BlockCacheSize          int64 `mapstructure:"block-cache-size"`
-	MemTableSize            int64 `mapstructure:"mem-table-size"`
-	NumMemtables            int   `mapstructure:"num-memtables"`
-	NumLevelZeroTables      int   `mapstructure:"num-level-zero-tables"`
-	NumLevelZeroTablesStall int   `mapstructure:"num-level-zero-tables-stall"`
-	CompactL0OnClose        bool  `mapstructure:"compact-l0-on-close"`
-	NumCompactors           int   `mapstructure:"num-compactors"`
-	ValueLogFileSize        int64 `mapstructure:"value-log-file-size"`
+	BlockCacheSize          int64         `mapstructure:"block-cache-size"`
+	MemTableSize            int64         `mapstructure:"mem-table-size"`
+	NumMemtables            int           `mapstructure:"num-memtables"`
+	NumLevelZeroTables      int           `mapstructure:"num-level-zero-tables"`
+	NumLevelZeroTablesStall int           `mapstructure:"num-level-zero-tables-stall"`
+	CompactL0OnClose        bool          `mapstructure:"compact-l0-on-close"`
+	NumCompactors           int           `mapstructure:"num-compactors"`
+	ValueLogFileSize        int64         `mapstructure:"value-log-file-size"`
+	ValueLogGCInterval      time.Duration `mapstructure:"value-log-gc-interval"`
+	ValueLogGCDiscardRatio  float64       `mapstructure:"value-log-gc-discard-ratio"`
 }
 
 func (c config) Validate() error {
@@ -339,6 +341,8 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("badger.compact-l0-on-close", true, "BadgerDB compact L0 on graceful shutdown")
 	rootCmd.PersistentFlags().Int("badger.num-compactors", 2, "BadgerDB concurrent compaction goroutines")
 	rootCmd.PersistentFlags().Int64("badger.value-log-file-size", 536870912, "BadgerDB value log file size in bytes, 512 MB")
+	rootCmd.PersistentFlags().Duration("badger.value-log-gc-interval", 5*time.Minute, "BadgerDB value log GC interval, 0 = disabled")
+	rootCmd.PersistentFlags().Float64("badger.value-log-gc-discard-ratio", 0.5, "BadgerDB value log GC discard ratio (0.0-1.0)")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
@@ -552,6 +556,12 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("badger.value-log-file-size", cmd.PersistentFlags().Lookup("badger.value-log-file-size")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("badger.value-log-gc-interval", cmd.PersistentFlags().Lookup("badger.value-log-gc-interval")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("badger.value-log-gc-discard-ratio", cmd.PersistentFlags().Lookup("badger.value-log-gc-discard-ratio")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 
