@@ -123,8 +123,18 @@ Configuration changes apply by epoch, not mid-epoch.
 
 Utility commands can load external provider mappings from:
 
-- `--config` (`external-voting-power-providers` section)
-- `--external-voting-power-providers` flag (`providerId=url`)
+- repeatable `--external-voting-power-provider` flag in format:
+  - `id=<id>,url=<url>[,secure=<bool>][,ca-cert-file=<path>][,server-name=<name>][,timeout=<duration>][,headers=<k:v|k2:v2>]`
+
+Example:
+
+```bash
+./relay_utils network info \
+  --chains http://127.0.0.1:8545 \
+  --driver.address 0x1234... \
+  --driver.chainid 1 \
+  --external-voting-power-provider "id=0x11223344556677889900,url=dns:///vp:50051,secure=true,ca-cert-file=/etc/ca.pem,server-name=vp.internal,timeout=5s,headers=authorization:BearerX|x-request-id:abc"
+```
 
 See:
 
