@@ -1,11 +1,11 @@
 package cmdhelpers
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/go-errors/errors"
 	"github.com/symbioticfi/relay/symbiotic/client/votingpower"
 )
 
@@ -16,7 +16,7 @@ func ExternalVotingPowerProviderConfigs(
 	for i, entry := range entries {
 		cfg, err := parseProviderConfigEntry(entry)
 		if err != nil {
-			return nil, fmt.Errorf("invalid external voting power provider entry %d: %w", i+1, err)
+			return nil, errors.Errorf("invalid external voting power provider entry %d: %w", i+1, err)
 		}
 		providerConfigs = append(providerConfigs, cfg)
 	}
@@ -27,14 +27,13 @@ func ExternalVotingPowerProviderConfigs(
 func parseProviderConfigEntry(entry string) (votingpower.ProviderConfig, error) {
 	entry = strings.TrimSpace(entry)
 	if entry == "" {
-		return votingpower.ProviderConfig{}, fmt.Errorf("entry is empty")
+		return votingpower.ProviderConfig{}, errors.New("entry is empty")
 	}
 
 	cfg := votingpower.ProviderConfig{}
 	seen := make(map[string]struct{})
 
-	parts := strings.Split(entry, ",")
-	for _, part := range parts {
+	for part := range strings.SplitSeq(entry, ",") {
 		part = strings.TrimSpace(part)
 		if part == "" {
 			continue
@@ -42,15 +41,15 @@ func parseProviderConfigEntry(entry string) (votingpower.ProviderConfig, error) 
 
 		kv := strings.SplitN(part, "=", 2)
 		if len(kv) != 2 {
-			return votingpower.ProviderConfig{}, fmt.Errorf("invalid key=value pair %q", part)
+			return votingpower.ProviderConfig{}, errors.Errorf("invalid key=value pair %q", part)
 		}
 		key := strings.TrimSpace(kv[0])
 		value := strings.TrimSpace(kv[1])
 		if key == "" {
-			return votingpower.ProviderConfig{}, fmt.Errorf("field name is empty")
+			return votingpower.ProviderConfig{}, errors.New("field name is empty")
 		}
 		if _, ok := seen[key]; ok {
-			return votingpower.ProviderConfig{}, fmt.Errorf("duplicate field %q", key)
+			return votingpower.ProviderConfig{}, errors.Errorf("duplicate field %q", key)
 		}
 		seen[key] = struct{}{}
 
@@ -62,7 +61,7 @@ func parseProviderConfigEntry(entry string) (votingpower.ProviderConfig, error) 
 		case "secure":
 			secure, err := strconv.ParseBool(value)
 			if err != nil {
-				return votingpower.ProviderConfig{}, fmt.Errorf("invalid secure value %q: %w", value, err)
+				return votingpower.ProviderConfig{}, errors.Errorf("invalid secure value %q: %w", value, err)
 			}
 			cfg.Secure = secure
 		case "ca-cert-file":
@@ -72,25 +71,25 @@ func parseProviderConfigEntry(entry string) (votingpower.ProviderConfig, error) 
 		case "timeout":
 			timeout, err := time.ParseDuration(value)
 			if err != nil {
-				return votingpower.ProviderConfig{}, fmt.Errorf("invalid timeout value %q: %w", value, err)
+				return votingpower.ProviderConfig{}, errors.Errorf("invalid timeout value %q: %w", value, err)
 			}
 			cfg.Timeout = timeout
 		case "headers":
 			headers, err := parseHeaders(value)
 			if err != nil {
-				return votingpower.ProviderConfig{}, fmt.Errorf("invalid headers value %q: %w", value, err)
+				return votingpower.ProviderConfig{}, errors.Errorf("invalid headers value %q: %w", value, err)
 			}
 			cfg.Headers = headers
 		default:
-			return votingpower.ProviderConfig{}, fmt.Errorf("unknown field %q", key)
+			return votingpower.ProviderConfig{}, errors.Errorf("unknown field %q", key)
 		}
 	}
 
 	if strings.TrimSpace(cfg.ID) == "" {
-		return votingpower.ProviderConfig{}, fmt.Errorf("id is required")
+		return votingpower.ProviderConfig{}, errors.New("id is required")
 	}
 	if strings.TrimSpace(cfg.URL) == "" {
-		return votingpower.ProviderConfig{}, fmt.Errorf("url is required")
+		return votingpower.ProviderConfig{}, errors.New("url is required")
 	}
 
 	return cfg, nil
@@ -103,20 +102,19 @@ func parseHeaders(raw string) (map[string]string, error) {
 	}
 
 	headers := make(map[string]string)
-	items := strings.Split(raw, "|")
-	for _, item := range items {
+	for item := range strings.SplitSeq(raw, "|") {
 		item = strings.TrimSpace(item)
 		if item == "" {
 			continue
 		}
 		kv := strings.SplitN(item, ":", 2)
 		if len(kv) != 2 {
-			return nil, fmt.Errorf("expected key:value, got %q", item)
+			return nil, errors.Errorf("expected key:value, got %q", item)
 		}
 		key := strings.TrimSpace(kv[0])
 		value := strings.TrimSpace(kv[1])
 		if key == "" {
-			return nil, fmt.Errorf("header key is empty")
+			return nil, errors.New("header key is empty")
 		}
 		headers[key] = value
 	}
