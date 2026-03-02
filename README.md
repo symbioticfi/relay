@@ -55,8 +55,6 @@ The relay exposes both gRPC and HTTP/JSON REST APIs for interacting with the net
 
 - **Documentation**: [docs/votingpower/v1/doc.md](docs/votingpower/v1/doc.md)
 - **Proto Definitions**: [votingpower/proto/v1/votingpower.proto](votingpower/proto/v1/votingpower.proto)
-- **Go Server Package**: [votingpower/server/v1/](votingpower/server/v1/)
-- **Server Example**: [votingpower/server/examples/](votingpower/server/examples/)
 
 ### HTTP/JSON REST API Gateway
 

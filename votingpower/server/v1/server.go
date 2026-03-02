@@ -19,8 +19,8 @@ func RegisterVotingPowerProviderServiceServer(registrar grpc.ServiceRegistrar, s
 	votingpowerv1.RegisterVotingPowerProviderServiceServer(registrar, srv)
 }
 
-func (s *Server) GetVotingPowersAt(_ context.Context, _ *GetVotingPowersAtRequest) (*GetVotingPowersAtResponse, error) {
-	return &GetVotingPowersAtResponse{
-		VotingPowers: []*OperatorVotingPower{},
+func (s *Server) GetVotingPowersAt(_ context.Context, _ *votingpowerv1.GetVotingPowersAtRequest) (*votingpowerv1.GetVotingPowersAtResponse, error) {
+	return &votingpowerv1.GetVotingPowersAtResponse{
+		VotingPowers: []*votingpowerv1.OperatorVotingPower{},
 	}, nil
 }
