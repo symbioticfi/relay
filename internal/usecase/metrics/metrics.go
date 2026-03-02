@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 )
 
 type Config struct {
@@ -224,6 +225,34 @@ func newMetrics(registerer prometheus.Registerer) *Metrics {
 		Help: "Total number of epochs pruned from storage",
 	}, []string{"entity_type"})
 	all = append(all, m.prunedEpochsTotal)
+
+	// BadgerDB expvar metrics bridged to Prometheus.
+	// BadgerDB registers these via expvar in init(); we expose them on /metrics.
+	badgerExpvarCollector := collectors.NewExpvarCollector(map[string]*prometheus.Desc{
+		// Cumulative counters (expvar.Int)
+		"badger_read_num_vlog":              prometheus.NewDesc("badger_read_num_vlog", "Cumulative number of reads from vlog", nil, nil),
+		"badger_read_bytes_vlog":            prometheus.NewDesc("badger_read_bytes_vlog", "Cumulative bytes read from vlog", nil, nil),
+		"badger_write_num_vlog":             prometheus.NewDesc("badger_write_num_vlog", "Cumulative number of writes to vlog", nil, nil),
+		"badger_write_bytes_vlog":           prometheus.NewDesc("badger_write_bytes_vlog", "Cumulative bytes written to vlog", nil, nil),
+		"badger_read_bytes_lsm":             prometheus.NewDesc("badger_read_bytes_lsm", "Cumulative bytes read from LSM tree", nil, nil),
+		"badger_write_bytes_l0":             prometheus.NewDesc("badger_write_bytes_l0", "Cumulative bytes written to L0", nil, nil),
+		"badger_get_num_user":               prometheus.NewDesc("badger_get_num_user", "Total number of user get requests", nil, nil),
+		"badger_put_num_user":               prometheus.NewDesc("badger_put_num_user", "Total number of user put requests", nil, nil),
+		"badger_write_bytes_user":           prometheus.NewDesc("badger_write_bytes_user", "Total bytes written by user", nil, nil),
+		"badger_get_num_memtable":           prometheus.NewDesc("badger_get_num_memtable", "Number of memtable gets", nil, nil),
+		"badger_get_with_result_num_user":   prometheus.NewDesc("badger_get_with_result_num_user", "Number of gets that returned a result", nil, nil),
+		"badger_iterator_num_user":          prometheus.NewDesc("badger_iterator_num_user", "Number of iterators created", nil, nil),
+		"badger_compaction_current_num_lsm": prometheus.NewDesc("badger_compaction_current_num_lsm", "Number of tables currently being compacted", nil, nil),
+
+		// Maps (expvar.Map) — one variable label for the map key
+		"badger_size_bytes_lsm":             prometheus.NewDesc("badger_size_bytes_lsm", "LSM tree size in bytes", []string{"dir"}, nil),
+		"badger_size_bytes_vlog":            prometheus.NewDesc("badger_size_bytes_vlog", "Value log size in bytes", []string{"dir"}, nil),
+		"badger_write_pending_num_memtable": prometheus.NewDesc("badger_write_pending_num_memtable", "Pending memtable writes", []string{"dir"}, nil),
+		"badger_get_num_lsm":                prometheus.NewDesc("badger_get_num_lsm", "Number of LSM gets per level", []string{"level"}, nil),
+		"badger_hit_num_lsm_bloom_filter":   prometheus.NewDesc("badger_hit_num_lsm_bloom_filter", "LSM bloom filter hits per level", []string{"level"}, nil),
+		"badger_write_bytes_compaction":     prometheus.NewDesc("badger_write_bytes_compaction", "Bytes written by compaction per level", []string{"level"}, nil),
+	})
+	all = append(all, badgerExpvarCollector)
 
 	registerer.MustRegister(all...)
 	return m

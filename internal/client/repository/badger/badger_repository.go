@@ -2,6 +2,7 @@ package badger
 
 import (
 	"bytes"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -20,6 +21,16 @@ type Config struct {
 	Metrics                  metrics       `validate:"required"`
 	MutexCleanupInterval     time.Duration // How often to run mutex cleanup (e.g., 1 hour). Zero disables cleanup.
 	MutexCleanupStaleTimeout time.Duration // Remove mutexes not used for this duration, default 1 hour.
+	ValueLogGCInterval       time.Duration // How often to run value log GC (e.g., 5m). Zero disables GC.
+	ValueLogGCDiscardRatio   float64       // Discard ratio threshold for GC (0.0-1.0). Default 0.5.
+	BlockCacheSize           int64         // -1 = use badger default, 0 = disabled, >0 = size in bytes
+	MemTableSize             int64
+	NumMemtables             int
+	NumLevelZeroTables       int
+	NumLevelZeroTablesStall  int
+	CompactL0OnClose         bool
+	NumCompactors            int
+	ValueLogFileSize         int64
 }
 
 func (c Config) Validate() error {
@@ -43,6 +54,7 @@ type Repository struct {
 	valsetMutexMap    sync.Map // map[epoch]*mutexWithUseTime
 
 	cleanupStop chan struct{}
+	gcStop      chan struct{}
 }
 
 func New(cfg Config) (*Repository, error) {
@@ -50,8 +62,9 @@ func New(cfg Config) (*Repository, error) {
 		return nil, errors.Errorf("failed to validate config: %w", err)
 	}
 
-	opts := badger.DefaultOptions(cfg.Dir)
-	opts.Logger = doNothingLog{}
+	opts := badger.DefaultOptions(cfg.Dir).
+		WithLogger(&slogBadgerLogger{})
+	applyBadgerTuning(&opts, cfg)
 
 	db, err := badger.Open(opts)
 	if err != nil {
@@ -65,22 +78,60 @@ func New(cfg Config) (*Repository, error) {
 
 	// Start mutex cleanup goroutine if configured
 	repo.startMutexCleanup(cfg.MutexCleanupInterval, cfg.MutexCleanupStaleTimeout)
+	repo.startValueLogGC(cfg.ValueLogGCInterval, cfg.ValueLogGCDiscardRatio)
 
 	return repo, nil
 }
 
+// applyBadgerTuning overrides badger.Options with config values.
+// For most fields, zero means "use badger default". For BlockCacheSize,
+// -1 means "use badger default", 0 means "disabled", >0 means explicit size.
+func applyBadgerTuning(opts *badger.Options, cfg Config) {
+	if cfg.BlockCacheSize >= 0 {
+		opts.BlockCacheSize = cfg.BlockCacheSize
+	}
+	if cfg.MemTableSize != 0 {
+		opts.MemTableSize = cfg.MemTableSize
+	}
+	if cfg.NumMemtables != 0 {
+		opts.NumMemtables = cfg.NumMemtables
+	}
+	if cfg.NumLevelZeroTables != 0 {
+		opts.NumLevelZeroTables = cfg.NumLevelZeroTables
+	}
+	if cfg.NumLevelZeroTablesStall != 0 {
+		opts.NumLevelZeroTablesStall = cfg.NumLevelZeroTablesStall
+	}
+	if cfg.ValueLogFileSize != 0 {
+		opts.ValueLogFileSize = cfg.ValueLogFileSize
+	}
+	if cfg.NumCompactors != 0 {
+		opts.NumCompactors = cfg.NumCompactors
+	}
+	// CompactL0OnClose is a bool — always apply since the tuned default is true
+	// and badger's default is false. When cfg comes from CLI flags, the default is true.
+	// When cfg comes from tests (zero-value), this is a no-op (false == badger default).
+	opts.CompactL0OnClose = cfg.CompactL0OnClose
+}
+
 func (r *Repository) Close() error {
-	// Stop the mutex cleanup goroutine before closing the database
 	r.stopMutexCleanup()
+	r.stopValueLogGC()
 	return r.db.Close()
 }
 
-type doNothingLog struct{}
+type slogBadgerLogger struct{}
 
-func (l doNothingLog) Errorf(s string, args ...any)   {}
-func (l doNothingLog) Warningf(s string, args ...any) {}
-func (l doNothingLog) Infof(s string, args ...any)    {}
-func (l doNothingLog) Debugf(s string, args ...any)   {}
+func (l *slogBadgerLogger) Errorf(s string, args ...any) {
+	slog.Error(fmt.Sprintf(s, args...), "component", "badger")
+}
+func (l *slogBadgerLogger) Warningf(s string, args ...any) {
+	slog.Warn(fmt.Sprintf(s, args...), "component", "badger")
+}
+func (l *slogBadgerLogger) Infof(s string, args ...any) {
+	slog.Info(fmt.Sprintf(s, args...), "component", "badger")
+}
+func (l *slogBadgerLogger) Debugf(string, ...any) {}
 
 type DoNothingMetrics struct {
 }
@@ -142,6 +193,44 @@ func (r *Repository) startMutexCleanup(interval, staleTimeout time.Duration) {
 func (r *Repository) stopMutexCleanup() {
 	if r.cleanupStop != nil {
 		close(r.cleanupStop)
+	}
+}
+
+func (r *Repository) startValueLogGC(interval time.Duration, discardRatio float64) {
+	if interval == 0 {
+		return
+	}
+	if discardRatio == 0 {
+		discardRatio = 0.5
+	}
+
+	r.gcStop = make(chan struct{})
+
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		slog.Info("Value log GC started", "component", "badger", "interval", interval, "discardRatio", discardRatio)
+
+		for {
+			select {
+			case <-ticker.C:
+				for range 10 {
+					if r.db.RunValueLogGC(discardRatio) == nil {
+						break
+					}
+				}
+			case <-r.gcStop:
+				slog.Info("Value log GC stopped", "component", "badger")
+				return
+			}
+		}
+	}()
+}
+
+func (r *Repository) stopValueLogGC() {
+	if r.gcStop != nil {
+		close(r.gcStop)
 	}
 }
 
