@@ -46,6 +46,7 @@ type config struct {
 	Retention  RetentionConfig      `mapstructure:"retention"`
 	Pruner     PrunerConfig         `mapstructure:"pruner"`
 	Tracing    TracingConfig        `mapstructure:"tracing"`
+	Badger     BadgerConfig         `mapstructure:"badger"`
 }
 
 type LogConfig struct {
@@ -241,6 +242,19 @@ type TracingConfig struct {
 	SampleRate float64 `mapstructure:"sample-rate"`
 }
 
+type BadgerConfig struct {
+	BlockCacheSize          int64         `mapstructure:"block-cache-size"`
+	MemTableSize            int64         `mapstructure:"mem-table-size"`
+	NumMemtables            int           `mapstructure:"num-memtables"`
+	NumLevelZeroTables      int           `mapstructure:"num-level-zero-tables"`
+	NumLevelZeroTablesStall int           `mapstructure:"num-level-zero-tables-stall"`
+	CompactL0OnClose        bool          `mapstructure:"compact-l0-on-close"`
+	NumCompactors           int           `mapstructure:"num-compactors"`
+	ValueLogFileSize        int64         `mapstructure:"value-log-file-size"`
+	ValueLogGCInterval      time.Duration `mapstructure:"value-log-gc-interval"`
+	ValueLogGCDiscardRatio  float64       `mapstructure:"value-log-gc-discard-ratio"`
+}
+
 func (c config) Validate() error {
 	validate := validator.New()
 	if err := validate.Struct(c); err != nil {
@@ -250,6 +264,20 @@ func (c config) Validate() error {
 	// Validate that sync.epochs doesn't exceed retention.valset-epochs
 	if c.Retention.ValSetEpochs > 0 && c.Sync.EpochsToSync > c.Retention.ValSetEpochs {
 		return errors.Errorf("sync.epochs (%d) cannot exceed retention.valset-epochs (%d)", c.Sync.EpochsToSync, c.Retention.ValSetEpochs)
+	}
+
+	// Validate badger: num-level-zero-tables-stall must be > num-level-zero-tables (badger fatals otherwise).
+	effectiveL0Tables := c.Badger.NumLevelZeroTables
+	if effectiveL0Tables == 0 {
+		effectiveL0Tables = 5 // badger default
+	}
+	effectiveL0Stall := c.Badger.NumLevelZeroTablesStall
+	if effectiveL0Stall == 0 {
+		effectiveL0Stall = 15 // badger default
+	}
+	if effectiveL0Stall <= effectiveL0Tables {
+		return errors.Errorf("badger.num-level-zero-tables-stall (effective %d) must be greater than badger.num-level-zero-tables (effective %d)",
+			effectiveL0Stall, effectiveL0Tables)
 	}
 
 	return nil
@@ -305,6 +333,16 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("tracing.enabled", false, "Enable distributed tracing")
 	rootCmd.PersistentFlags().String("tracing.endpoint", "localhost:4317", "OTLP endpoint for tracing (e.g., Jaeger)")
 	rootCmd.PersistentFlags().Float64("tracing.sample-rate", 1.0, "Trace sampling rate (0.0 to 1.0)")
+	rootCmd.PersistentFlags().Int64("badger.block-cache-size", 134217728, "BadgerDB block cache size in bytes, 0 = disabled")
+	rootCmd.PersistentFlags().Int64("badger.mem-table-size", 33554432, "BadgerDB memtable size in bytes")
+	rootCmd.PersistentFlags().Int("badger.num-memtables", 3, "BadgerDB number of memtables")
+	rootCmd.PersistentFlags().Int("badger.num-level-zero-tables", 3, "BadgerDB L0 tables before compaction triggers")
+	rootCmd.PersistentFlags().Int("badger.num-level-zero-tables-stall", 8, "BadgerDB L0 tables before writes stall")
+	rootCmd.PersistentFlags().Bool("badger.compact-l0-on-close", true, "BadgerDB compact L0 on graceful shutdown")
+	rootCmd.PersistentFlags().Int("badger.num-compactors", 2, "BadgerDB concurrent compaction goroutines")
+	rootCmd.PersistentFlags().Int64("badger.value-log-file-size", 536870912, "BadgerDB value log file size in bytes, 512 MB")
+	rootCmd.PersistentFlags().Duration("badger.value-log-gc-interval", 5*time.Minute, "BadgerDB value log GC interval, 0 = disabled")
+	rootCmd.PersistentFlags().Float64("badger.value-log-gc-discard-ratio", 0.5, "BadgerDB value log GC discard ratio (0.0-1.0)")
 }
 
 func DecodeFlagToStruct(fromType reflect.Type, toType reflect.Type, from interface{}) (interface{}, error) {
@@ -494,6 +532,36 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("tracing.sample-rate", cmd.PersistentFlags().Lookup("tracing.sample-rate")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("badger.block-cache-size", cmd.PersistentFlags().Lookup("badger.block-cache-size")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("badger.mem-table-size", cmd.PersistentFlags().Lookup("badger.mem-table-size")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("badger.num-memtables", cmd.PersistentFlags().Lookup("badger.num-memtables")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("badger.num-level-zero-tables", cmd.PersistentFlags().Lookup("badger.num-level-zero-tables")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("badger.num-level-zero-tables-stall", cmd.PersistentFlags().Lookup("badger.num-level-zero-tables-stall")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("badger.compact-l0-on-close", cmd.PersistentFlags().Lookup("badger.compact-l0-on-close")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("badger.num-compactors", cmd.PersistentFlags().Lookup("badger.num-compactors")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("badger.value-log-file-size", cmd.PersistentFlags().Lookup("badger.value-log-file-size")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("badger.value-log-gc-interval", cmd.PersistentFlags().Lookup("badger.value-log-gc-interval")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("badger.value-log-gc-discard-ratio", cmd.PersistentFlags().Lookup("badger.value-log-gc-discard-ratio")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 

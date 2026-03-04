@@ -362,7 +362,7 @@ func createMockSignatureProcessedSignal(t *testing.T) *signals.Signal[symbiotic.
 
 func setupTestRepository(t *testing.T) *badger.Repository {
 	t.Helper()
-	repo, err := badger.New(badger.Config{Dir: t.TempDir(), Metrics: badger.DoNothingMetrics{}})
+	repo, err := badger.New(badger.Config{Dir: t.TempDir(), Metrics: badger.DoNothingMetrics{}, BlockCacheSize: -1})
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		err := repo.Close()

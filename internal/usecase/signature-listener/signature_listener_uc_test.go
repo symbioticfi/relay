@@ -64,8 +64,9 @@ func newTestSetup(t *testing.T) *testSetup {
 	t.Helper()
 
 	repo, err := badger.New(badger.Config{
-		Dir:     t.TempDir(),
-		Metrics: badger.DoNothingMetrics{},
+		Dir:            t.TempDir(),
+		Metrics:        badger.DoNothingMetrics{},
+		BlockCacheSize: -1,
 	})
 	require.NoError(t, err)
 

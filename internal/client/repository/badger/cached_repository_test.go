@@ -16,7 +16,7 @@ func TestCachedRepository_NetworkConfig(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create base repository
-	baseRepo, err := New(Config{Dir: tempDir, Metrics: DoNothingMetrics{}})
+	baseRepo, err := New(Config{Dir: tempDir, Metrics: DoNothingMetrics{}, BlockCacheSize: -1})
 	require.NoError(t, err)
 	defer func() {
 		err := baseRepo.Close()
@@ -62,7 +62,7 @@ func TestCachedRepository_InheritedMethods(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create base repository
-	baseRepo, err := New(Config{Dir: tempDir, Metrics: DoNothingMetrics{}})
+	baseRepo, err := New(Config{Dir: tempDir, Metrics: DoNothingMetrics{}, BlockCacheSize: -1})
 	require.NoError(t, err)
 	defer func() {
 		err := baseRepo.Close()
@@ -87,7 +87,7 @@ func TestCachedRepository_ValidatorSet(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create base repository
-	baseRepo, err := New(Config{Dir: tempDir, Metrics: DoNothingMetrics{}})
+	baseRepo, err := New(Config{Dir: tempDir, Metrics: DoNothingMetrics{}, BlockCacheSize: -1})
 	require.NoError(t, err)
 	defer func() {
 		err := baseRepo.Close()

@@ -101,6 +101,20 @@ pruner:
   interval: 1h
 
 
+# BadgerDB Storage Engine Tuning (optional)
+# See https://github.com/dgraph-io/badger/blob/main/options.go#L123 for details
+badger:
+  block-cache-size: 134217728     # 128 MB (badger default: 256 MB)
+  mem-table-size: 33554432        # 32 MB (badger default: 64 MB)
+  num-memtables: 3                # (badger default: 5)
+  num-level-zero-tables: 3        # (badger default: 5)
+  num-level-zero-tables-stall: 8  # (badger default: 15)
+  compact-l0-on-close: true       # (badger default: false)
+  num-compactors: 2               # concurrent compaction goroutines (badger default: 4)
+  value-log-file-size: 536870912  # 512 MB (badger default: ~1 GB)
+  value-log-gc-interval: 5m      # how often to run value log GC, 0 = disabled (default: 5m)
+  value-log-gc-discard-ratio: 0.5 # discard ratio threshold for GC (default: 0.5)
+
 tracing:
   enabled: false
   endpoint: "localhost:4317"
