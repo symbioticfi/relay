@@ -9,10 +9,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
-	pb "github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
+	"github.com/symbioticfi/relay/internal/client/repository/codec"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
-	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 func keySignature(requestID common.Hash, validatorIndex uint32) []byte {
@@ -201,35 +200,7 @@ func gatAllSignatures(txn *badger.Txn, requestID common.Hash) ([]symbiotic.Signa
 	return signatures, nil
 }
 
-func signatureToBytes(sig symbiotic.Signature) ([]byte, error) {
-	return marshalProto(&pb.Signature{
-		MessageHash:  sig.MessageHash,
-		KeyTag:       uint32(sig.KeyTag),
-		Epoch:        uint64(sig.Epoch),
-		Signature:    sig.Signature,
-		RawPublicKey: sig.PublicKey.Raw(),
-	})
-}
-
-func bytesToSignature(value []byte) (symbiotic.Signature, error) {
-	signaturePB := &pb.Signature{}
-	if err := unmarshalProto(value, signaturePB); err != nil {
-		return symbiotic.Signature{}, errors.Errorf("failed to unmarshal signature: %w", err)
-	}
-
-	signature := symbiotic.Signature{
-		MessageHash: signaturePB.GetMessageHash(),
-		KeyTag:      symbiotic.KeyTag(signaturePB.GetKeyTag()),
-		Epoch:       symbiotic.Epoch(signaturePB.GetEpoch()),
-		Signature:   signaturePB.GetSignature(),
-	}
-
-	publicKey, err := crypto.NewPublicKey(signature.KeyTag.Type(), signaturePB.GetRawPublicKey())
-	if err != nil {
-		return symbiotic.Signature{}, errors.Errorf("failed to get public key from raw: %w", err)
-	}
-
-	signature.PublicKey = publicKey
-
-	return signature, nil
-}
+var (
+	signatureToBytes = codec.SignatureToBytes
+	bytesToSignature = codec.BytesToSignature
+)

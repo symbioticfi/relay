@@ -9,7 +9,7 @@ import (
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
-	pb "github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
+	"github.com/symbioticfi/relay/internal/client/repository/codec"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -184,28 +184,10 @@ func getAggregationProofByEpochFromItem(txn *badger.Txn, it *badger.Iterator) (s
 	return proof, nil
 }
 
-func aggregationProofToBytes(ap symbiotic.AggregationProof) ([]byte, error) {
-	return marshalProto(&pb.AggregationProof{
-		MessageHash: ap.MessageHash,
-		KeyTag:      uint32(ap.KeyTag),
-		Epoch:       uint64(ap.Epoch),
-		Proof:       ap.Proof,
-	})
-}
-
-func bytesToAggregationProof(value []byte) (symbiotic.AggregationProof, error) {
-	aggregationProof := &pb.AggregationProof{}
-	if err := unmarshalProto(value, aggregationProof); err != nil {
-		return symbiotic.AggregationProof{}, errors.Errorf("failed to unmarshal aggregation proof: %w", err)
-	}
-
-	return symbiotic.AggregationProof{
-		MessageHash: aggregationProof.GetMessageHash(),
-		KeyTag:      symbiotic.KeyTag(aggregationProof.GetKeyTag()),
-		Epoch:       symbiotic.Epoch(aggregationProof.GetEpoch()),
-		Proof:       aggregationProof.GetProof(),
-	}, nil
-}
+var (
+	aggregationProofToBytes = codec.AggregationProofToBytes
+	bytesToAggregationProof = codec.BytesToAggregationProof
+)
 
 func (r *Repository) saveAggregationProofPending(ctx context.Context, requestID common.Hash, epoch symbiotic.Epoch) error {
 	return r.doUpdateInTx(ctx, "saveAggregationProofPending", func(ctx context.Context) error {

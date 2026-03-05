@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
-	pb "github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
+	"github.com/symbioticfi/relay/internal/client/repository/codec"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -131,26 +131,10 @@ func (r *Repository) RemoveSignaturePending(ctx context.Context, epoch symbiotic
 	})
 }
 
-func signatureRequestToBytes(req symbiotic.SignatureRequest) ([]byte, error) {
-	return marshalProto(&pb.SignatureRequest{
-		KeyTag:        uint32(req.KeyTag),
-		RequiredEpoch: uint64(req.RequiredEpoch),
-		Message:       req.Message,
-	})
-}
-
-func bytesToSignatureRequest(data []byte) (symbiotic.SignatureRequest, error) {
-	signatureRequest := &pb.SignatureRequest{}
-	if err := unmarshalProto(data, signatureRequest); err != nil {
-		return symbiotic.SignatureRequest{}, errors.Errorf("failed to unmarshal signature request: %w", err)
-	}
-
-	return symbiotic.SignatureRequest{
-		KeyTag:        symbiotic.KeyTag(signatureRequest.GetKeyTag()),
-		RequiredEpoch: symbiotic.Epoch(signatureRequest.GetRequiredEpoch()),
-		Message:       signatureRequest.GetMessage(),
-	}, nil
-}
+var (
+	signatureRequestToBytes = codec.SignatureRequestToBytes
+	bytesToSignatureRequest = codec.BytesToSignatureRequest
+)
 
 func (r *Repository) GetSignatureRequest(ctx context.Context, requestID common.Hash) (symbiotic.SignatureRequest, error) {
 	var req symbiotic.SignatureRequest

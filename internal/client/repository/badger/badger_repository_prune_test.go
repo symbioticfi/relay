@@ -73,7 +73,7 @@ func TestRepository_PruneAllEntityTypes(t *testing.T) {
 		NumCommitters:           3,
 		NumAggregators:          5,
 	}
-	err = repo.saveConfig(ctx, networkConfig, epoch)
+	err = repo.SaveConfig(ctx, networkConfig, epoch)
 	require.NoError(t, err)
 
 	// 3. Save signature request and compute requestID
@@ -242,7 +242,7 @@ func TestRepository_PruneEntityTypes_Separately(t *testing.T) {
 		NumCommitters:           3,
 		NumAggregators:          5,
 	}
-	err = repo.saveConfig(ctx, networkConfig, epoch)
+	err = repo.SaveConfig(ctx, networkConfig, epoch)
 	require.NoError(t, err)
 
 	// 3. Create signature and proof entities

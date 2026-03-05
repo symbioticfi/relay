@@ -7,6 +7,7 @@ log:
 
 # Storage
 storage-dir: ".data"
+# storage-type: "badger"  # Storage backend: "badger" (default) or "bbolt"
 # circuits-dir: ""  # Optional: Path to ZK circuits directory
 
 # API Server Configuration
@@ -100,6 +101,12 @@ pruner:
   # Examples: 30m, 1h, 6h, 24h
   interval: 1h
 
+
+# bbolt Storage Engine Tuning (optional, only used when storage-type: "bbolt")
+# bbolt uses a B+tree with single-writer model for predictable write latency
+# bbolt:
+#   no-sync: false              # Disable fsync after each commit (unsafe, for testing only)
+#   initial-mmap-size: 0        # Initial mmap size in bytes (0 = default)
 
 # BadgerDB Storage Engine Tuning (optional)
 # See https://github.com/dgraph-io/badger/blob/main/options.go#L123 for details
