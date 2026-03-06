@@ -60,6 +60,7 @@ export EPOCH_TIME=${EPOCH_TIME}
 export BLOCK_TIME=${BLOCK_TIME}
 export FINALITY_BLOCKS=${FINALITY_BLOCKS}
 export COMMITTER_SLOT_DURATION=${COMMITTER_SLOT_DURATION}
+export STORAGE_TYPE=${STORAGE_TYPE}
 
 # Call the generate network script
 ./scripts/generate_network.sh

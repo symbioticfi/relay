@@ -12,7 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/symbioticfi/relay/internal/client/repository/badger"
+	badgerrepo "github.com/symbioticfi/relay/internal/client/repository/badger"
+	bboltrepo "github.com/symbioticfi/relay/internal/client/repository/bbolt"
+	"github.com/symbioticfi/relay/internal/client/repository/cached"
+	"github.com/symbioticfi/relay/internal/client/repository/repoutil"
 	"github.com/symbioticfi/relay/internal/entity"
 	entity_processor "github.com/symbioticfi/relay/internal/usecase/entity-processor"
 	entity_mocks "github.com/symbioticfi/relay/internal/usecase/entity-processor/mocks"
@@ -24,66 +27,82 @@ import (
 )
 
 func TestSign_HappyPath(t *testing.T) {
-	setup := newTestSetup(t)
-	req := createTestSignatureRequest(lo.RandomString(100, lo.AllCharset))
-	privateKey := newPrivateKey(t)
-	createTestValidatorSet(t, setup, privateKey)
+	for name, newRepo := range backends() {
+		t.Run(name, func(t *testing.T) {
+			setup := newTestSetup(t, newRepo)
+			req := createTestSignatureRequest(lo.RandomString(100, lo.AllCharset))
+			privateKey := newPrivateKey(t)
+			createTestValidatorSet(t, setup, privateKey)
 
-	// Add the private key to the real key provider
-	require.NoError(t, setup.keyProvider.AddKey(req.KeyTag, privateKey))
+			// Add the private key to the real key provider
+			require.NoError(t, setup.keyProvider.AddKey(req.KeyTag, privateKey))
 
-	// Mock the remaining dependencies
-	setup.mockP2P.EXPECT().BroadcastSignatureGeneratedMessage(gomock.Any(), gomock.Any()).Return(nil)
-	setup.mockMetrics.EXPECT().ObservePKSignDuration(gomock.Any())
-	setup.mockMetrics.EXPECT().ObserveAppSignDuration(gomock.Any())
+			// Mock the remaining dependencies
+			setup.mockP2P.EXPECT().BroadcastSignatureGeneratedMessage(gomock.Any(), gomock.Any()).Return(nil)
+			setup.mockMetrics.EXPECT().ObservePKSignDuration(gomock.Any())
+			setup.mockMetrics.EXPECT().ObserveAppSignDuration(gomock.Any())
 
-	go setup.app.HandleSignatureRequests(t.Context(), 1, setup.mockP2P)
+			go setup.app.HandleSignatureRequests(t.Context(), 1, setup.mockP2P)
 
-	// Sign
-	reqID, err := setup.app.RequestSignature(t.Context(), req)
-	require.NoError(t, err)
+			// Sign
+			reqID, err := setup.app.RequestSignature(t.Context(), req)
+			require.NoError(t, err)
 
-	// Verify that signature request was saved
-	savedReq, err := setup.repo.GetSignatureRequest(t.Context(), reqID)
-	require.NoError(t, err)
-	require.Equal(t, req.KeyTag, savedReq.KeyTag)
-	require.Equal(t, req.RequiredEpoch, savedReq.RequiredEpoch)
-	require.Equal(t, req.Message, savedReq.Message)
+			// Verify that signature request was saved
+			savedReq, err := setup.repo.GetSignatureRequest(t.Context(), reqID)
+			require.NoError(t, err)
+			require.Equal(t, req.KeyTag, savedReq.KeyTag)
+			require.Equal(t, req.RequiredEpoch, savedReq.RequiredEpoch)
+			require.Equal(t, req.Message, savedReq.Message)
 
-	time.Sleep(time.Second)
+			time.Sleep(time.Second)
 
-	// Verify that signature is correct
-	signatures, err := setup.repo.GetAllSignatures(t.Context(), reqID)
-	require.NoError(t, err)
-	require.Len(t, signatures, 1)
+			// Verify that signature is correct
+			signatures, err := setup.repo.GetAllSignatures(t.Context(), reqID)
+			require.NoError(t, err)
+			require.Len(t, signatures, 1)
 
-	require.NoError(t, privateKey.PublicKey().Verify(req.Message, signatures[0].Signature))
+			require.NoError(t, privateKey.PublicKey().Verify(req.Message, signatures[0].Signature))
+		})
+	}
 }
 
 type testSetup struct {
 	ctrl        *gomock.Controller
-	repo        *badger.Repository
+	repo        cached.Repository
 	keyProvider *keyprovider.SimpleKeystoreProvider
 	mockP2P     *mocks.Mockp2pService
 	mockMetrics *mocks.Mockmetrics
 	app         *SignerApp
 }
 
-func newTestSetup(t *testing.T) *testSetup {
+type repoFactory func(t *testing.T) cached.Repository
+
+func backends() map[string]repoFactory {
+	return map[string]repoFactory{
+		"badger": func(t *testing.T) cached.Repository {
+			t.Helper()
+			repo, err := badgerrepo.New(badgerrepo.Config{Dir: t.TempDir(), Metrics: repoutil.DoNothingMetrics{}, BlockCacheSize: -1})
+			require.NoError(t, err)
+			t.Cleanup(func() { require.NoError(t, repo.Close()) })
+			return repo
+		},
+		"bbolt": func(t *testing.T) cached.Repository {
+			t.Helper()
+			repo, err := bboltrepo.New(bboltrepo.Config{Dir: t.TempDir(), Metrics: repoutil.DoNothingMetrics{}})
+			require.NoError(t, err)
+			t.Cleanup(func() { require.NoError(t, repo.Close()) })
+			return repo
+		},
+	}
+}
+
+func newTestSetup(t *testing.T, newRepo repoFactory) *testSetup {
 	t.Helper()
 	slog.SetLogLoggerLevel(slog.LevelDebug)
 	ctrl := gomock.NewController(t)
 
-	repo, err := badger.New(badger.Config{
-		Dir:            t.TempDir(),
-		Metrics:        badger.DoNothingMetrics{},
-		BlockCacheSize: -1,
-	})
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		repo.Close()
-	})
+	repo := newRepo(t)
 
 	keyProvider, err := keyprovider.NewSimpleKeystoreProvider()
 	require.NoError(t, err)

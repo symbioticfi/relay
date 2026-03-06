@@ -30,6 +30,8 @@ relay_sidecar [flags]
       --badger.value-log-file-size int            BadgerDB value log file size in bytes, 512 MB (default 536870912)
       --badger.value-log-gc-discard-ratio float   BadgerDB value log GC discard ratio (0.0-1.0) (default 0.5)
       --badger.value-log-gc-interval duration     BadgerDB value log GC interval, 0 = disabled (default 5m0s)
+      --bbolt.initial-mmap-size int               Initial mmap size in bytes (0 = default)
+      --bbolt.no-sync                             Disable fsync after each commit (unsafe, faster)
       --cache.network-config-size int             Network config cache size (default 10)
       --cache.validator-set-size int              Validator set cache size (default 10)
       --circuits-dir string                       Directory path to load zk circuits from, if empty then zp prover is disabled
@@ -63,6 +65,7 @@ relay_sidecar [flags]
       --signal.buffer-size int                    Signal buffer size (default 20)
       --signal.worker-count int                   Signal worker count (default 10)
       --storage-dir string                        Dir to store data (default ".data")
+      --storage-type string                       Storage backend type (badger, bbolt) (default "badger")
       --sync.enabled                              Enable signature syncer (default true)
       --sync.epochs uint                          Epochs to sync (default 5)
       --sync.period duration                      Signature sync period (default 5s)

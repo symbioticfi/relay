@@ -11,7 +11,7 @@ import (
 func (r *Repository) SaveNextValsetData(ctx context.Context, data entity.NextValsetData) error {
 	return r.doUpdateInTxWithLock(ctx, "SaveNextValsetData", func(ctx context.Context) error {
 		// Save previous validator set and config
-		if err := r.saveConfig(ctx, data.PrevNetworkConfig, data.PrevValidatorSet.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
+		if err := r.SaveConfig(ctx, data.PrevNetworkConfig, data.PrevValidatorSet.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
 			return errors.Errorf("failed to save network config for epoch %d: %w", data.PrevValidatorSet.Epoch, err)
 		}
 
@@ -20,7 +20,7 @@ func (r *Repository) SaveNextValsetData(ctx context.Context, data entity.NextVal
 		}
 
 		// Save next validator set and config
-		if err := r.saveConfig(ctx, data.NextNetworkConfig, data.NextValidatorSet.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
+		if err := r.SaveConfig(ctx, data.NextNetworkConfig, data.NextValidatorSet.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
 			return errors.Errorf("failed to save network config for epoch %d: %w", data.NextValidatorSet.Epoch, err)
 		}
 

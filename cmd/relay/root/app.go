@@ -17,6 +17,8 @@ import (
 
 	"github.com/symbioticfi/relay/internal/client/p2p"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
+	bboltrepo "github.com/symbioticfi/relay/internal/client/repository/bbolt"
+	"github.com/symbioticfi/relay/internal/client/repository/cached"
 	"github.com/symbioticfi/relay/internal/entity"
 	aggregationPolicy "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
 	aggregatorApp "github.com/symbioticfi/relay/internal/usecase/aggregator-app"
@@ -122,28 +124,45 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create valset deriver: %w", err)
 	}
 
-	baseRepo, err := badger.New(badger.Config{
-		Dir:                      cfg.StorageDir,
-		Metrics:                  mtr,
-		MutexCleanupInterval:     time.Hour,
-		MutexCleanupStaleTimeout: time.Hour - time.Minute,
-		BlockCacheSize:           cfg.Badger.BlockCacheSize,
-		MemTableSize:             cfg.Badger.MemTableSize,
-		NumMemtables:             cfg.Badger.NumMemtables,
-		NumLevelZeroTables:       cfg.Badger.NumLevelZeroTables,
-		NumLevelZeroTablesStall:  cfg.Badger.NumLevelZeroTablesStall,
-		CompactL0OnClose:         cfg.Badger.CompactL0OnClose,
-		NumCompactors:            cfg.Badger.NumCompactors,
-		ValueLogFileSize:         cfg.Badger.ValueLogFileSize,
-		ValueLogGCInterval:       cfg.Badger.ValueLogGCInterval,
-		ValueLogGCDiscardRatio:   cfg.Badger.ValueLogGCDiscardRatio,
-	})
-	if err != nil {
-		return errors.Errorf("failed to create badger repository: %w", err)
+	var baseRepo cached.Repository
+	switch cfg.StorageType {
+	case "bbolt":
+		repo, err := bboltrepo.New(bboltrepo.Config{
+			Dir:             cfg.StorageDir,
+			Metrics:         mtr,
+			NoSync:          cfg.Bbolt.NoSync,
+			InitialMmapSize: cfg.Bbolt.InitialMmapSize,
+		})
+		if err != nil {
+			return errors.Errorf("failed to create bbolt repository: %w", err)
+		}
+		defer repo.Close()
+		baseRepo = repo
+	default:
+		repo, err := badger.New(badger.Config{
+			Dir:                      cfg.StorageDir,
+			Metrics:                  mtr,
+			MutexCleanupInterval:     time.Hour,
+			MutexCleanupStaleTimeout: time.Hour - time.Minute,
+			BlockCacheSize:           cfg.Badger.BlockCacheSize,
+			MemTableSize:             cfg.Badger.MemTableSize,
+			NumMemtables:             cfg.Badger.NumMemtables,
+			NumLevelZeroTables:       cfg.Badger.NumLevelZeroTables,
+			NumLevelZeroTablesStall:  cfg.Badger.NumLevelZeroTablesStall,
+			CompactL0OnClose:         cfg.Badger.CompactL0OnClose,
+			NumCompactors:            cfg.Badger.NumCompactors,
+			ValueLogFileSize:         cfg.Badger.ValueLogFileSize,
+			ValueLogGCInterval:       cfg.Badger.ValueLogGCInterval,
+			ValueLogGCDiscardRatio:   cfg.Badger.ValueLogGCDiscardRatio,
+		})
+		if err != nil {
+			return errors.Errorf("failed to create badger repository: %w", err)
+		}
+		defer repo.Close()
+		baseRepo = repo
 	}
-	defer baseRepo.Close()
 
-	repo, err := badger.NewCached(baseRepo, badger.CachedConfig{
+	repo, err := cached.NewCached(baseRepo, cached.Config{
 		NetworkConfigCacheSize: cfg.Cache.NetworkConfigCacheSize,
 		ValidatorSetCacheSize:  cfg.Cache.ValidatorSetCacheSize,
 	})
