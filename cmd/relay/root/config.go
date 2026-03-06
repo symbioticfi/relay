@@ -50,7 +50,7 @@ type config struct {
 	Pruner                       PrunerConfig                 `mapstructure:"pruner"`
 	Tracing                      TracingConfig                `mapstructure:"tracing"`
 	Badger                       BadgerConfig                 `mapstructure:"badger"`
-	Bbolt      BboltConfig          `mapstructure:"bbolt"`
+	Bbolt                        BboltConfig                  `mapstructure:"bbolt"`
 }
 
 type LogConfig struct {
