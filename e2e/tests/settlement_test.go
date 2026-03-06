@@ -29,7 +29,7 @@ func TestRemoveAndAddSettlement(t *testing.T) {
 
 	deploymentData := loadDeploymentData(t)
 	evmClient := createEVMClient(t, deploymentData)
-	deriver, err := valsetDeriver.NewDeriver(evmClient)
+	deriver, err := valsetDeriver.NewDeriver(evmClient, nil)
 	require.NoError(t, err)
 
 	var currentEpoch entity.Epoch
@@ -149,7 +149,7 @@ func TestRemoveAndAddSettlement(t *testing.T) {
 	t.Run("final check", func(t *testing.T) {
 		t.Log("Step 4: Verifying settlement re-addition and commitment to both chains")
 
-		err = waitForEpoch(t.Context(), evmClient, backTwoSettlementsEpoch, waitEpochTimeout)
+		err = waitForEpoch(t.Context(), evmClient, backTwoSettlementsEpoch, waitEpochTimeout())
 		require.NoError(t, err, "Failed to wait for epoch after next")
 		t.Logf("Reached epoch %d", backTwoSettlementsEpoch)
 

@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"maps"
 	"math/big"
+	"reflect"
 	"slices"
 	"strconv"
 
@@ -12,7 +13,9 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
+	"golang.org/x/sync/errgroup"
 
+	"github.com/symbioticfi/relay/symbiotic/client/votingpower"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/ssz"
 )
@@ -40,16 +43,45 @@ type evmClient interface {
 	GetOperators(ctx context.Context, address symbiotic.CrossChainAddress, timestamp symbiotic.Timestamp) ([]common.Address, error)
 }
 
+type externalVotingPowerClient interface {
+	GetVotingPowers(ctx context.Context, address symbiotic.CrossChainAddress, timestamp symbiotic.Timestamp) ([]symbiotic.OperatorVotingPower, error)
+}
+
 // Deriver coordinates the ETH services
 type Deriver struct {
-	evmClient evmClient
+	evmClient        evmClient
+	externalVPClient externalVotingPowerClient
 }
 
 // NewDeriver creates a new valset deriver
-func NewDeriver(evmClient evmClient) (*Deriver, error) {
+func NewDeriver(evmClient evmClient, externalVPClient externalVotingPowerClient) (*Deriver, error) {
+	externalVPClient = normalizeExternalVotingPowerClient(externalVPClient)
+
 	return &Deriver{
-		evmClient: evmClient,
+		evmClient:        evmClient,
+		externalVPClient: externalVPClient,
 	}, nil
+}
+
+func normalizeExternalVotingPowerClient(client externalVotingPowerClient) externalVotingPowerClient {
+	if client == nil {
+		return nil
+	}
+
+	clientVal := reflect.ValueOf(client)
+	kind := clientVal.Kind()
+	if kind == reflect.Ptr ||
+		kind == reflect.Map ||
+		kind == reflect.Slice ||
+		kind == reflect.Interface ||
+		kind == reflect.Func ||
+		kind == reflect.Chan {
+		if clientVal.IsNil() {
+			return nil
+		}
+	}
+
+	return client
 }
 
 func (v *Deriver) GetNetworkData(ctx context.Context, addr symbiotic.CrossChainAddress) (symbiotic.NetworkData, error) {
@@ -87,20 +119,10 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch symbiotic.Epoch, co
 	}
 	slog.DebugContext(ctx, "Got current valset timestamp", "timestamp", strconv.Itoa(int(timestamp)), "epoch", epoch)
 
-	// Get voting powers from all voting power providers
-	allVotingPowers := make([]dtoOperatorVotingPower, len(config.VotingPowerProviders))
-	for i, provider := range config.VotingPowerProviders {
-		votingPowers, err := v.evmClient.GetVotingPowers(ctx, provider, timestamp)
-		if err != nil {
-			return symbiotic.ValidatorSet{}, errors.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
-		}
-
-		slog.DebugContext(ctx, "Got voting powers from provider", "provider", provider.Address.Hex(), "votingPowers", votingPowers)
-
-		allVotingPowers[i] = dtoOperatorVotingPower{
-			chainId:      provider.ChainId,
-			votingPowers: votingPowers,
-		}
+	// Get voting powers from all voting power providers.
+	allVotingPowers, err := v.getVotingPowersFromProviders(ctx, config.VotingPowerProviders, timestamp)
+	if err != nil {
+		return symbiotic.ValidatorSet{}, err
 	}
 
 	// Get keys from the keys provider
@@ -139,6 +161,51 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch symbiotic.Epoch, co
 	valset.CommitterIndices = commIndices
 
 	return valset, nil
+}
+
+func (v *Deriver) getVotingPowersFromProviders(
+	ctx context.Context,
+	providers []symbiotic.CrossChainAddress,
+	timestamp symbiotic.Timestamp,
+) ([]dtoOperatorVotingPower, error) {
+	allVotingPowers := make([]dtoOperatorVotingPower, len(providers))
+	g, gCtx := errgroup.WithContext(ctx)
+	g.SetLimit(10)
+
+	for i, provider := range providers {
+		g.Go(func() error {
+			var (
+				votingPowers []symbiotic.OperatorVotingPower
+				err          error
+			)
+
+			if votingpower.IsExternalVotingPowerChainID(provider.ChainId) {
+				if v.externalVPClient == nil {
+					return errors.Errorf("failed to get voting powers from provider %s: external voting power client is not configured", provider.Address.Hex())
+				}
+				slog.DebugContext(gCtx, "Fetching voting powers from external provider", "provider", provider.Address.Hex())
+				votingPowers, err = v.externalVPClient.GetVotingPowers(gCtx, provider, timestamp)
+			} else {
+				slog.DebugContext(gCtx, "Fetching voting powers from EVM provider", "provider", provider.Address.Hex(), "chainId", provider.ChainId)
+				votingPowers, err = v.evmClient.GetVotingPowers(gCtx, provider, timestamp)
+			}
+			if err != nil {
+				return errors.Errorf("failed to get voting powers from provider %s: %w", provider.Address.Hex(), err)
+			}
+
+			slog.DebugContext(gCtx, "Got voting powers from provider", "provider", provider.Address.Hex(), "votingPowers", votingPowers)
+			allVotingPowers[i] = dtoOperatorVotingPower{
+				chainId:      provider.ChainId,
+				votingPowers: votingPowers,
+			}
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	return allVotingPowers, nil
 }
 
 func GetSchedulerInfo(_ context.Context, valset symbiotic.ValidatorSet, config symbiotic.NetworkConfig) (aggIndices []uint32, commIndices []uint32, err error) {
