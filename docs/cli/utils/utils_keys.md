@@ -25,5 +25,6 @@ Keys tool
 * [utils keys add](utils_keys_add.md)	 - Add key
 * [utils keys list](utils_keys_list.md)	 - Print all keys
 * [utils keys remove](utils_keys_remove.md)	 - Remove key
+* [utils keys sign](utils_keys_sign.md)	 - Sign a message with a relay key
 * [utils keys update](utils_keys_update.md)	 - Update key
 

@@ -11,6 +11,7 @@ func NewKeysCmd() *cobra.Command {
 	keysCmd.AddCommand(addKeyCmd)
 	keysCmd.AddCommand(removeKeyCmd)
 	keysCmd.AddCommand(updateKeyCmd)
+	keysCmd.AddCommand(signKeyCmd)
 
 	initFlags()
 
@@ -56,11 +57,17 @@ type UpdateFlags struct {
 	Force      bool
 }
 
+type SignFlags struct {
+	KeyTag     uint8
+	MessageHex string
+}
+
 var globalFlags GlobalFlags
 var addFlags AddFlags
 
 var removeFlags RemoveFlags
 var updateFlags UpdateFlags
+var signFlags SignFlags
 
 func initFlags() {
 	keysCmd.PersistentFlags().StringVarP(&globalFlags.Path, "path", "p", "./keystore.jks", "Path to keystore")
@@ -88,4 +95,7 @@ func initFlags() {
 	updateKeyCmd.PersistentFlags().StringVar(&updateFlags.PrivateKey, "private-key", "", "private key to add in hex")
 	updateKeyCmd.PersistentFlags().BoolVar(&updateFlags.Force, "force", false, "force overwrite key")
 	updateKeyCmd.PersistentFlags().BoolVar(&updateFlags.P2PNs, "p2p", false, "use p2p key")
+
+	signKeyCmd.PersistentFlags().Uint8Var(&signFlags.KeyTag, "key-tag", uint8(symbiotic.KeyTypeInvalid), "key tag for relay keys")
+	signKeyCmd.PersistentFlags().StringVar(&signFlags.MessageHex, "message-hex", "", "raw message bytes to sign in hex")
 }
