@@ -8,7 +8,7 @@ require (
 	github.com/consensys/gnark-crypto v0.19.2 // pinned with replace
 	github.com/dgraph-io/badger/v4 v4.9.1
 	github.com/elastic/go-freelru v0.16.0
-	github.com/ethereum/go-ethereum v1.17.0
+	github.com/ethereum/go-ethereum v1.17.1
 	github.com/ferranbt/fastssz v1.0.0
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/go-errors/errors v1.5.1
