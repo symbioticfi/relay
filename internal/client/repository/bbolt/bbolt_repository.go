@@ -89,7 +89,12 @@ func New(cfg Config) (*Repository, error) {
 		return nil, errors.Errorf("failed to initialize buckets: %w", err)
 	}
 
-	return &Repository{db: db, metrics: cfg.Metrics}, nil
+	return &Repository{
+		db:                db,
+		metrics:           cfg.Metrics,
+		signatureMutexMap: sync.Map{},
+		proofsMutexMap:    sync.Map{},
+	}, nil
 }
 
 func (r *Repository) Close() error {
