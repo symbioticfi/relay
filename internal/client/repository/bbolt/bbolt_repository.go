@@ -3,8 +3,10 @@ package bbolt
 import (
 	"context"
 	"encoding/binary"
+	"log/slog"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-errors/errors"
@@ -13,15 +15,18 @@ import (
 
 	"github.com/symbioticfi/relay/internal/client/repository/cached"
 	"github.com/symbioticfi/relay/internal/client/repository/repoutil"
+	"github.com/symbioticfi/relay/pkg/tracing"
 )
 
 var _ cached.Repository = (*Repository)(nil)
 
 type Config struct {
-	Dir             string           `validate:"required"`
-	Metrics         repoutil.Metrics `validate:"required"`
-	NoSync          bool
-	InitialMmapSize int
+	Dir                      string           `validate:"required"`
+	Metrics                  repoutil.Metrics `validate:"required"`
+	NoSync                   bool
+	InitialMmapSize          int
+	MutexCleanupInterval     time.Duration
+	MutexCleanupStaleTimeout time.Duration
 }
 
 var (
@@ -52,12 +57,35 @@ var allBuckets = [][]byte{
 	bucketMeta,
 }
 
+type mutexWithUseTime struct {
+	mutex        sync.Mutex
+	lastAccessNs atomic.Int64
+}
+
+func (m *mutexWithUseTime) lock() {
+	m.mutex.Lock()
+	m.lastAccessNs.Store(time.Now().UnixNano())
+}
+
+func (m *mutexWithUseTime) unlock() {
+	m.mutex.Unlock()
+}
+
+func (m *mutexWithUseTime) lastAccess() time.Time {
+	return time.Unix(0, m.lastAccessNs.Load())
+}
+
+func (m *mutexWithUseTime) tryLock() bool {
+	return m.mutex.TryLock()
+}
+
 type Repository struct {
 	db      *bolt.DB
 	metrics repoutil.Metrics
 
-	signatureMutexMap sync.Map // map[common.Hash]*sync.Mutex
-	proofsMutexMap    sync.Map // map[common.Hash]*sync.Mutex
+	signatureMutexMap sync.Map // map[common.Hash]*mutexWithUseTime
+
+	cleanupStop chan struct{}
 }
 
 func New(cfg Config) (*Repository, error) {
@@ -89,16 +117,97 @@ func New(cfg Config) (*Repository, error) {
 		return nil, errors.Errorf("failed to initialize buckets: %w", err)
 	}
 
-	return &Repository{
-		db:                db,
-		metrics:           cfg.Metrics,
-		signatureMutexMap: sync.Map{},
-		proofsMutexMap:    sync.Map{},
-	}, nil
+	repo := &Repository{
+		db:      db,
+		metrics: cfg.Metrics,
+	}
+
+	repo.startMutexCleanup(cfg.MutexCleanupInterval, cfg.MutexCleanupStaleTimeout)
+
+	return repo, nil
 }
 
 func (r *Repository) Close() error {
+	r.stopMutexCleanup()
 	return r.db.Close()
+}
+
+func (r *Repository) startMutexCleanup(interval, staleTimeout time.Duration) {
+	if interval == 0 {
+		return
+	}
+
+	r.cleanupStop = make(chan struct{})
+
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		slog.Info("Starting mutex cleanup goroutine",
+			"component", "bbolt",
+			"interval", interval,
+			"staleTimeout", staleTimeout,
+		)
+
+		for {
+			select {
+			case <-ticker.C:
+				r.cleanupStaleMutexes(staleTimeout)
+			case <-r.cleanupStop:
+				return
+			}
+		}
+	}()
+}
+
+func (r *Repository) stopMutexCleanup() {
+	if r.cleanupStop != nil {
+		close(r.cleanupStop)
+	}
+}
+
+func (r *Repository) cleanupStaleMutexes(staleTimeout time.Duration) {
+	if staleTimeout == 0 {
+		staleTimeout = time.Hour
+	}
+
+	staleThreshold := time.Now().Add(-staleTimeout)
+	count := cleanupMutexMap(&r.signatureMutexMap, staleThreshold)
+
+	if count > 0 {
+		slog.Info("Cleaned up stale mutexes",
+			"component", "bbolt",
+			"signatureMutexes", count,
+		)
+	}
+}
+
+func cleanupMutexMap(mutexMap *sync.Map, staleThreshold time.Time) int {
+	var count int
+
+	mutexMap.Range(func(key, value any) bool {
+		mutex := value.(*mutexWithUseTime)
+
+		if !mutex.lastAccess().Before(staleThreshold) {
+			return true
+		}
+
+		if !mutex.tryLock() {
+			return true
+		}
+		defer mutex.unlock()
+
+		// Double-check after acquiring lock
+		if !mutex.lastAccess().Before(staleThreshold) {
+			return true
+		}
+
+		mutexMap.Delete(key)
+		count++
+		return true
+	})
+
+	return count
 }
 
 // Key encoding helpers — all use raw bytes for efficiency.
@@ -164,10 +273,15 @@ func getTx(ctx context.Context) *bolt.Tx {
 }
 
 func (r *Repository) doView(ctx context.Context, name string, fn func(tx *bolt.Tx) error) error {
+	ctx, span := tracing.StartSpan(ctx, "bbolt.view:"+name)
+	defer span.End()
+
 	start := time.Now()
 	var err error
+	nested := false
 
 	if tx := getTx(ctx); tx != nil {
+		nested = true
 		err = fn(tx)
 	} else {
 		err = r.db.View(fn)
@@ -176,16 +290,27 @@ func (r *Repository) doView(ctx context.Context, name string, fn func(tx *bolt.T
 	status := "ok"
 	if err != nil {
 		status = statusError
+		tracing.RecordError(span, err)
 	}
-	r.metrics.ObserveRepoQueryDuration(name, status, time.Since(start))
+
+	d := time.Since(start)
+	r.metrics.ObserveRepoQueryDuration(name, status, d)
+	if !nested {
+		r.metrics.ObserveRepoQueryTotalDuration(name, status, d)
+	}
 	return err
 }
 
 func (r *Repository) doUpdate(ctx context.Context, name string, fn func(tx *bolt.Tx) error) error {
+	ctx, span := tracing.StartSpan(ctx, "bbolt.update:"+name)
+	defer span.End()
+
 	start := time.Now()
 	var err error
+	nested := false
 
 	if tx := getTx(ctx); tx != nil && tx.Writable() {
+		nested = true
 		err = fn(tx)
 	} else {
 		err = r.db.Update(fn)
@@ -194,16 +319,27 @@ func (r *Repository) doUpdate(ctx context.Context, name string, fn func(tx *bolt
 	status := "ok"
 	if err != nil {
 		status = statusError
+		tracing.RecordError(span, err)
 	}
-	r.metrics.ObserveRepoQueryDuration(name, status, time.Since(start))
+
+	d := time.Since(start)
+	r.metrics.ObserveRepoQueryDuration(name, status, d)
+	if !nested {
+		r.metrics.ObserveRepoQueryTotalDuration(name, status, d)
+	}
 	return err
 }
 
 func (r *Repository) doBatch(ctx context.Context, name string, fn func(tx *bolt.Tx) error) error {
+	ctx, span := tracing.StartSpan(ctx, "bbolt.batch:"+name)
+	defer span.End()
+
 	start := time.Now()
 	var err error
+	nested := false
 
 	if tx := getTx(ctx); tx != nil && tx.Writable() {
+		nested = true
 		err = fn(tx)
 	} else {
 		err = r.db.Batch(fn)
@@ -212,15 +348,31 @@ func (r *Repository) doBatch(ctx context.Context, name string, fn func(tx *bolt.
 	status := "ok"
 	if err != nil {
 		status = statusError
+		tracing.RecordError(span, err)
 	}
-	r.metrics.ObserveRepoQueryDuration(name, status, time.Since(start))
+
+	d := time.Since(start)
+	r.metrics.ObserveRepoQueryDuration(name, status, d)
+	if !nested {
+		r.metrics.ObserveRepoQueryTotalDuration(name, status, d)
+	}
 	return err
 }
 
 func (r *Repository) doUpdateWithLock(ctx context.Context, name string, fn func(ctx context.Context) error, lockMap *sync.Map, key any) error {
-	mu, _ := lockMap.LoadOrStore(key, &sync.Mutex{})
-	mu.(*sync.Mutex).Lock()
-	defer mu.(*sync.Mutex).Unlock()
+	ctx, span := tracing.StartSpan(ctx, "bbolt.updateWithLock:"+name)
+	defer span.End()
+
+	mutexInterface, ok := lockMap.Load(key)
+	if !ok {
+		newMutex := &mutexWithUseTime{}
+		newMutex.lastAccessNs.Store(time.Now().UnixNano())
+		mutexInterface, _ = lockMap.LoadOrStore(key, newMutex)
+	}
+	activeMutex := mutexInterface.(*mutexWithUseTime)
+
+	activeMutex.lock()
+	defer activeMutex.unlock()
 
 	start := time.Now()
 
@@ -231,7 +383,11 @@ func (r *Repository) doUpdateWithLock(ctx context.Context, name string, fn func(
 	status := "ok"
 	if err != nil {
 		status = statusError
+		tracing.RecordError(span, err)
 	}
-	r.metrics.ObserveRepoQueryDuration(name, status, time.Since(start))
+
+	d := time.Since(start)
+	r.metrics.ObserveRepoQueryDuration(name, status, d)
+	r.metrics.ObserveRepoQueryTotalDuration(name, status, d)
 	return err
 }

@@ -265,14 +265,16 @@ func TestRepository_PruneRequestIDEpochIndices(t *testing.T) {
 	}))
 	require.NoError(t, repo.saveSignature(context.Background(), 0, signature))
 
-	requestIDs := repo.getRequestIDsByEpoch(ctx, epoch)
+	requestIDs, err := repo.getRequestIDsByEpoch(ctx, epoch)
+	require.NoError(t, err)
 	require.Len(t, requestIDs, 1)
 
 	t.Run("index remains when only proof is deleted", func(t *testing.T) {
 		require.NoError(t, repo.PruneProofEntities(ctx, epoch))
 		require.NoError(t, repo.PruneRequestIDEpochIndices(ctx, epoch))
 
-		remainingIDs := repo.getRequestIDsByEpoch(ctx, epoch)
+		remainingIDs, err := repo.getRequestIDsByEpoch(ctx, epoch)
+		require.NoError(t, err)
 		require.Len(t, remainingIDs, 1)
 	})
 
@@ -280,7 +282,8 @@ func TestRepository_PruneRequestIDEpochIndices(t *testing.T) {
 		require.NoError(t, repo.PruneSignatureEntitiesForEpoch(ctx, epoch))
 		require.NoError(t, repo.PruneRequestIDEpochIndices(ctx, epoch))
 
-		finalIDs := repo.getRequestIDsByEpoch(ctx, epoch)
+		finalIDs, err := repo.getRequestIDsByEpoch(ctx, epoch)
+		require.NoError(t, err)
 		require.Empty(t, finalIDs)
 	})
 }

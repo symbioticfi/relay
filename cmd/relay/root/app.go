@@ -128,10 +128,12 @@ func runApp(ctx context.Context) error {
 	switch cfg.StorageType {
 	case "bbolt":
 		repo, err := bboltrepo.New(bboltrepo.Config{
-			Dir:             cfg.StorageDir,
-			Metrics:         mtr,
-			NoSync:          cfg.Bbolt.NoSync,
-			InitialMmapSize: cfg.Bbolt.InitialMmapSize,
+			Dir:                      cfg.StorageDir,
+			Metrics:                  mtr,
+			NoSync:                   cfg.Bbolt.NoSync,
+			InitialMmapSize:          cfg.Bbolt.InitialMmapSize,
+			MutexCleanupInterval:     time.Hour,
+			MutexCleanupStaleTimeout: time.Hour - time.Minute,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create bbolt repository: %w", err)

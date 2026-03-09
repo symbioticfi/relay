@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/go-errors/errors"
 	bolt "go.etcd.io/bbolt"
 
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
@@ -55,7 +56,6 @@ func (r *Repository) PruneProofEntities(ctx context.Context, epoch symbiotic.Epo
 			pendingKey := epochHashKey(uint64(epoch), requestID.Bytes())
 			tx.Bucket(bucketAggProofPending).Delete(pendingKey) //nolint:errcheck // bbolt Delete only errors on readonly tx
 
-			r.proofsMutexMap.Delete(requestID)
 		}
 
 		return nil
@@ -63,7 +63,10 @@ func (r *Repository) PruneProofEntities(ctx context.Context, epoch symbiotic.Epo
 }
 
 func (r *Repository) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch symbiotic.Epoch) error {
-	requestIDs := r.getRequestIDsByEpoch(ctx, epoch)
+	requestIDs, err := r.getRequestIDsByEpoch(ctx, epoch)
+	if err != nil {
+		return errors.Errorf("failed to get request IDs for epoch %d: %w", epoch, err)
+	}
 	slog.DebugContext(ctx, "Pruning signature entities", "requestCount", len(requestIDs))
 
 	return r.doUpdate(ctx, "PruneSignatureEntitiesForEpoch", func(tx *bolt.Tx) error {
@@ -92,7 +95,10 @@ func (r *Repository) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch s
 }
 
 func (r *Repository) PruneRequestIDEpochIndices(ctx context.Context, epoch symbiotic.Epoch) error {
-	requestIDs := r.getRequestIDsByEpoch(ctx, epoch)
+	requestIDs, err := r.getRequestIDsByEpoch(ctx, epoch)
+	if err != nil {
+		return errors.Errorf("failed to get request IDs for epoch %d: %w", epoch, err)
+	}
 	slog.DebugContext(ctx, "Pruning request ID epoch indices", "epoch", epoch, "requestCount", len(requestIDs))
 
 	return r.doUpdate(ctx, "PruneRequestIDEpochIndices", func(tx *bolt.Tx) error {
@@ -114,13 +120,13 @@ func (r *Repository) PruneRequestIDEpochIndices(ctx context.Context, epoch symbi
 	})
 }
 
-func (r *Repository) getRequestIDsByEpoch(ctx context.Context, epoch symbiotic.Epoch) []common.Hash {
+func (r *Repository) getRequestIDsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]common.Hash, error) {
 	var requestIDs []common.Hash
-	r.doView(ctx, "getRequestIDsByEpoch", func(tx *bolt.Tx) error { //nolint:errcheck // callback always returns nil
+	err := r.doView(ctx, "getRequestIDsByEpoch", func(tx *bolt.Tx) error {
 		requestIDs = getRequestIDsByEpochTx(tx, epoch)
 		return nil
 	})
-	return requestIDs
+	return requestIDs, err
 }
 
 func getRequestIDsByEpochTx(tx *bolt.Tx, epoch symbiotic.Epoch) []common.Hash {
@@ -139,7 +145,7 @@ func getRequestIDsByEpochTx(tx *bolt.Tx, epoch symbiotic.Epoch) []common.Hash {
 
 func deletePrefixedKeys(b *bolt.Bucket, prefix []byte) {
 	c := b.Cursor()
-	for k, _ := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Next() {
+	for k, _ := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Seek(prefix) {
 		c.Delete() //nolint:errcheck // bbolt cursor Delete only errors on readonly tx
 	}
 }
