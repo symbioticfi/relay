@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/go-errors/errors"
@@ -54,6 +55,9 @@ var allBuckets = [][]byte{
 type Repository struct {
 	db      *bolt.DB
 	metrics repoutil.Metrics
+
+	signatureMutexMap sync.Map // map[common.Hash]*sync.Mutex
+	proofsMutexMap    sync.Map // map[common.Hash]*sync.Mutex
 }
 
 func New(cfg Config) (*Repository, error) {
@@ -199,6 +203,25 @@ func (r *Repository) doBatch(ctx context.Context, name string, fn func(tx *bolt.
 	} else {
 		err = r.db.Batch(fn)
 	}
+
+	status := "ok"
+	if err != nil {
+		status = statusError
+	}
+	r.metrics.ObserveRepoQueryDuration(name, status, time.Since(start))
+	return err
+}
+
+func (r *Repository) doUpdateWithLock(ctx context.Context, name string, fn func(ctx context.Context) error, lockMap *sync.Map, key any) error {
+	mu, _ := lockMap.LoadOrStore(key, &sync.Mutex{})
+	mu.(*sync.Mutex).Lock()
+	defer mu.(*sync.Mutex).Unlock()
+
+	start := time.Now()
+
+	err := r.db.Update(func(tx *bolt.Tx) error {
+		return fn(withTx(ctx, tx))
+	})
 
 	status := "ok"
 	if err != nil {

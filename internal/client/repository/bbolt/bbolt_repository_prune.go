@@ -54,6 +54,8 @@ func (r *Repository) PruneProofEntities(ctx context.Context, epoch symbiotic.Epo
 			// Delete aggregation proof pending
 			pendingKey := epochHashKey(uint64(epoch), requestID.Bytes())
 			tx.Bucket(bucketAggProofPending).Delete(pendingKey) //nolint:errcheck // bbolt Delete only errors on readonly tx
+
+			r.proofsMutexMap.Delete(requestID)
 		}
 
 		return nil
@@ -82,6 +84,8 @@ func (r *Repository) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch s
 
 			// Delete request ID index
 			tx.Bucket(bucketRequestIDIndex).Delete(requestID.Bytes()) //nolint:errcheck // bbolt Delete only errors on readonly tx
+
+			r.signatureMutexMap.Delete(requestID)
 		}
 		return nil
 	})
