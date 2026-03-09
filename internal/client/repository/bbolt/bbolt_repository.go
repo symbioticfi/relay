@@ -118,8 +118,10 @@ func New(cfg Config) (*Repository, error) {
 	}
 
 	repo := &Repository{
-		db:      db,
-		metrics: cfg.Metrics,
+		db:                db,
+		metrics:           cfg.Metrics,
+		signatureMutexMap: sync.Map{},
+		cleanupStop:       make(chan struct{}),
 	}
 
 	repo.startMutexCleanup(cfg.MutexCleanupInterval, cfg.MutexCleanupStaleTimeout)
@@ -136,8 +138,6 @@ func (r *Repository) startMutexCleanup(interval, staleTimeout time.Duration) {
 	if interval == 0 {
 		return
 	}
-
-	r.cleanupStop = make(chan struct{})
 
 	go func() {
 		ticker := time.NewTicker(interval)
@@ -161,9 +161,7 @@ func (r *Repository) startMutexCleanup(interval, staleTimeout time.Duration) {
 }
 
 func (r *Repository) stopMutexCleanup() {
-	if r.cleanupStop != nil {
-		close(r.cleanupStop)
-	}
+	close(r.cleanupStop)
 }
 
 func (r *Repository) cleanupStaleMutexes(staleTimeout time.Duration) {

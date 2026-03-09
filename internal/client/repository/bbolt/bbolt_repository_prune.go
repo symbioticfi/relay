@@ -55,7 +55,6 @@ func (r *Repository) PruneProofEntities(ctx context.Context, epoch symbiotic.Epo
 			// Delete aggregation proof pending
 			pendingKey := epochHashKey(uint64(epoch), requestID.Bytes())
 			tx.Bucket(bucketAggProofPending).Delete(pendingKey) //nolint:errcheck // bbolt Delete only errors on readonly tx
-
 		}
 
 		return nil
