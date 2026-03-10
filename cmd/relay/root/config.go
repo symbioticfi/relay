@@ -28,6 +28,7 @@ import (
 // 3. config.yaml file (specified by --config or default "config.yaml")
 type config struct {
 	StorageDir   string `mapstructure:"storage-dir"`
+	StorageType  string `mapstructure:"storage-type"`
 	CircuitsDir  string `mapstructure:"circuits-dir"`
 	MaxUnsigners uint64 `mapstructure:"aggregation-policy-max-unsigners"`
 
@@ -49,6 +50,7 @@ type config struct {
 	Pruner                       PrunerConfig                 `mapstructure:"pruner"`
 	Tracing                      TracingConfig                `mapstructure:"tracing"`
 	Badger                       BadgerConfig                 `mapstructure:"badger"`
+	Bbolt                        BboltConfig                  `mapstructure:"bbolt"`
 }
 
 type LogConfig struct {
@@ -244,6 +246,11 @@ type TracingConfig struct {
 	SampleRate float64 `mapstructure:"sample-rate"`
 }
 
+type BboltConfig struct {
+	NoSync          bool `mapstructure:"no-sync"`
+	InitialMmapSize int  `mapstructure:"initial-mmap-size"`
+}
+
 type BadgerConfig struct {
 	BlockCacheSize          int64         `mapstructure:"block-cache-size"`
 	MemTableSize            int64         `mapstructure:"mem-table-size"`
@@ -268,18 +275,24 @@ func (c config) Validate() error {
 		return errors.Errorf("sync.epochs (%d) cannot exceed retention.valset-epochs (%d)", c.Sync.EpochsToSync, c.Retention.ValSetEpochs)
 	}
 
+	if c.StorageType != "" && c.StorageType != "badger" && c.StorageType != "bbolt" {
+		return errors.Errorf("invalid storage-type %q: must be \"badger\" or \"bbolt\"", c.StorageType)
+	}
+
 	// Validate badger: num-level-zero-tables-stall must be > num-level-zero-tables (badger fatals otherwise).
-	effectiveL0Tables := c.Badger.NumLevelZeroTables
-	if effectiveL0Tables == 0 {
-		effectiveL0Tables = 5 // badger default
-	}
-	effectiveL0Stall := c.Badger.NumLevelZeroTablesStall
-	if effectiveL0Stall == 0 {
-		effectiveL0Stall = 15 // badger default
-	}
-	if effectiveL0Stall <= effectiveL0Tables {
-		return errors.Errorf("badger.num-level-zero-tables-stall (effective %d) must be greater than badger.num-level-zero-tables (effective %d)",
-			effectiveL0Stall, effectiveL0Tables)
+	if c.StorageType == "" || c.StorageType == "badger" {
+		effectiveL0Tables := c.Badger.NumLevelZeroTables
+		if effectiveL0Tables == 0 {
+			effectiveL0Tables = 5 // badger default
+		}
+		effectiveL0Stall := c.Badger.NumLevelZeroTablesStall
+		if effectiveL0Stall == 0 {
+			effectiveL0Stall = 15 // badger default
+		}
+		if effectiveL0Stall <= effectiveL0Tables {
+			return errors.Errorf("badger.num-level-zero-tables-stall (effective %d) must be greater than badger.num-level-zero-tables (effective %d)",
+				effectiveL0Stall, effectiveL0Tables)
+		}
 	}
 
 	return nil
@@ -295,6 +308,9 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().String("log.level", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().String("log.mode", "json", "Log mode (text, pretty, json)")
 	rootCmd.PersistentFlags().String("storage-dir", ".data", "Dir to store data")
+	rootCmd.PersistentFlags().String("storage-type", "badger", "Storage backend type (badger, bbolt)")
+	rootCmd.PersistentFlags().Bool("bbolt.no-sync", false, "Disable fsync after each commit (unsafe, faster)")
+	rootCmd.PersistentFlags().Int("bbolt.initial-mmap-size", 0, "Initial mmap size in bytes (0 = default)")
 	rootCmd.PersistentFlags().String("circuits-dir", "", "Directory path to load zk circuits from, if empty then zp prover is disabled")
 	rootCmd.PersistentFlags().Uint64("aggregation-policy-max-unsigners", 50, "Max unsigners for low cost agg policy")
 	rootCmd.PersistentFlags().String("api.listen", "", "API Server listener address")
@@ -414,6 +430,15 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("storage-dir", cmd.PersistentFlags().Lookup("storage-dir")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("storage-type", cmd.PersistentFlags().Lookup("storage-type")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("bbolt.no-sync", cmd.PersistentFlags().Lookup("bbolt.no-sync")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("bbolt.initial-mmap-size", cmd.PersistentFlags().Lookup("bbolt.initial-mmap-size")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("circuits-dir", cmd.PersistentFlags().Lookup("circuits-dir")); err != nil {

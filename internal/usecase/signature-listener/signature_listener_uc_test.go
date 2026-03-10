@@ -10,7 +10,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/symbioticfi/relay/internal/client/repository/badger"
+	badgerrepo "github.com/symbioticfi/relay/internal/client/repository/badger"
+	bboltrepo "github.com/symbioticfi/relay/internal/client/repository/bbolt"
+	"github.com/symbioticfi/relay/internal/client/repository/cached"
+	"github.com/symbioticfi/relay/internal/client/repository/repoutil"
 	intEntity "github.com/symbioticfi/relay/internal/entity"
 	entity_processor "github.com/symbioticfi/relay/internal/usecase/entity-processor"
 	"github.com/symbioticfi/relay/internal/usecase/entity-processor/mocks"
@@ -20,59 +23,54 @@ import (
 )
 
 func TestHandleSignatureReceivedMessage_HappyPath(t *testing.T) {
-	setup := newTestSetup(t)
+	for name, newRepo := range backends() {
+		t.Run(name, func(t *testing.T) {
+			setup := newTestSetup(t, newRepo)
 
-	// Create real private key for signing
-	privateKey := newPrivateKey(t)
-	msg := "test-message-to-sign"
+			// Create real private key for signing
+			privateKey := newPrivateKey(t)
+			msg := "test-message-to-sign"
 
-	// Create signature with the private key
-	signature, hash, err := privateKey.Sign([]byte(msg))
-	require.NoError(t, err)
+			// Create signature with the private key
+			signature, hash, err := privateKey.Sign([]byte(msg))
+			require.NoError(t, err)
 
-	// Create validator set with the matching public key
-	validatorSet := setup.createTestValidatorSetWithKey(t, privateKey)
+			// Create validator set with the matching public key
+			validatorSet := setup.createTestValidatorSetWithKey(t, privateKey)
 
-	// Create P2P message with real signature
-	p2pMsg := createTestP2PMessageWithSignature(privateKey, hash, signature)
+			// Create P2P message with real signature
+			p2pMsg := createTestP2PMessageWithSignature(privateKey, hash, signature)
 
-	// Execute
-	require.NoError(t, setup.useCase.HandleSignatureReceivedMessage(t.Context(), p2pMsg))
+			// Execute
+			require.NoError(t, setup.useCase.HandleSignatureReceivedMessage(t.Context(), p2pMsg))
 
-	// Verify that signature was saved
-	signatures, err := setup.repo.GetAllSignatures(t.Context(), p2pMsg.Message.RequestID())
-	require.NoError(t, err)
-	require.Len(t, signatures, 1)
+			// Verify that signature was saved
+			signatures, err := setup.repo.GetAllSignatures(t.Context(), p2pMsg.Message.RequestID())
+			require.NoError(t, err)
+			require.Len(t, signatures, 1)
 
-	// Verify the signature matches what we expect
-	require.Equal(t, hash, signatures[0].MessageHash)
-	require.Equal(t, signature, signatures[0].Signature)
-	require.Equal(t, privateKey.PublicKey().Raw(), signatures[0].PublicKey.Raw())
+			// Verify the signature matches what we expect
+			require.Equal(t, hash, signatures[0].MessageHash)
+			require.Equal(t, signature, signatures[0].Signature)
+			require.Equal(t, privateKey.PublicKey().Raw(), signatures[0].PublicKey.Raw())
 
-	// Verify that signature map was updated
-	signatureMap, err := setup.repo.GetSignatureMap(t.Context(), p2pMsg.Message.RequestID())
-	require.NoError(t, err)
-	require.Equal(t, 0, signatureMap.CurrentVotingPower.Cmp(validatorSet.Validators[0].VotingPower.Int))
+			// Verify that signature map was updated
+			signatureMap, err := setup.repo.GetSignatureMap(t.Context(), p2pMsg.Message.RequestID())
+			require.NoError(t, err)
+			require.Equal(t, 0, signatureMap.CurrentVotingPower.Cmp(validatorSet.Validators[0].VotingPower.Int))
+		})
+	}
 }
 
 type testSetup struct {
-	repo    *badger.Repository
+	repo    cached.Repository
 	useCase *SignatureListenerUseCase
 }
 
-func newTestSetup(t *testing.T) *testSetup {
+func newTestSetup(t *testing.T, newRepo repoFactory) *testSetup {
 	t.Helper()
 
-	repo, err := badger.New(badger.Config{
-		Dir:            t.TempDir(),
-		Metrics:        badger.DoNothingMetrics{},
-		BlockCacheSize: -1,
-	})
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		repo.Close()
-	})
+	repo := newRepo(t)
 
 	// Create mock aggregator for entity processor
 	ctrl := gomock.NewController(t)
@@ -111,6 +109,27 @@ func newTestSetup(t *testing.T) *testSetup {
 	return &testSetup{
 		repo:    repo,
 		useCase: useCase,
+	}
+}
+
+type repoFactory func(t *testing.T) cached.Repository
+
+func backends() map[string]repoFactory {
+	return map[string]repoFactory{
+		"badger": func(t *testing.T) cached.Repository {
+			t.Helper()
+			repo, err := badgerrepo.New(badgerrepo.Config{Dir: t.TempDir(), Metrics: repoutil.DoNothingMetrics{}, BlockCacheSize: -1})
+			require.NoError(t, err)
+			t.Cleanup(func() { require.NoError(t, repo.Close()) })
+			return repo
+		},
+		"bbolt": func(t *testing.T) cached.Repository {
+			t.Helper()
+			repo, err := bboltrepo.New(bboltrepo.Config{Dir: t.TempDir(), Metrics: repoutil.DoNothingMetrics{}})
+			require.NoError(t, err)
+			t.Cleanup(func() { require.NoError(t, repo.Close()) })
+			return repo
+		},
 	}
 }
 
