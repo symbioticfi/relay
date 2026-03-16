@@ -23,7 +23,6 @@ var _ cached.Repository = (*Repository)(nil)
 type Config struct {
 	Dir                      string           `validate:"required"`
 	Metrics                  repoutil.Metrics `validate:"required"`
-	NoSync                   bool
 	InitialMmapSize          int
 	MutexCleanupInterval     time.Duration
 	MutexCleanupStaleTimeout time.Duration
@@ -95,7 +94,6 @@ func New(cfg Config) (*Repository, error) {
 
 	opts := &bolt.Options{
 		Timeout:         1 * time.Second,
-		NoSync:          cfg.NoSync,
 		InitialMmapSize: cfg.InitialMmapSize,
 	}
 

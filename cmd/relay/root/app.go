@@ -130,7 +130,6 @@ func runApp(ctx context.Context) error {
 		repo, err := bboltrepo.New(bboltrepo.Config{
 			Dir:                      cfg.StorageDir,
 			Metrics:                  mtr,
-			NoSync:                   cfg.Bbolt.NoSync,
 			InitialMmapSize:          cfg.Bbolt.InitialMmapSize,
 			MutexCleanupInterval:     time.Hour,
 			MutexCleanupStaleTimeout: time.Hour - time.Minute,

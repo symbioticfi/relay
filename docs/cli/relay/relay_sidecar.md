@@ -31,7 +31,6 @@ relay_sidecar [flags]
       --badger.value-log-gc-discard-ratio float   BadgerDB value log GC discard ratio (0.0-1.0) (default 0.5)
       --badger.value-log-gc-interval duration     BadgerDB value log GC interval, 0 = disabled (default 5m0s)
       --bbolt.initial-mmap-size int               Initial mmap size in bytes (0 = default)
-      --bbolt.no-sync                             Disable fsync after each commit (unsafe, faster)
       --cache.network-config-size int             Network config cache size (default 10)
       --cache.validator-set-size int              Validator set cache size (default 10)
       --circuits-dir string                       Directory path to load zk circuits from, if empty then zp prover is disabled

@@ -63,13 +63,12 @@ type testBackend struct {
 	cleanup    func()
 }
 
-func setupBbolt(b *testing.B, numValidators int, noSync bool) testBackend {
+func setupBbolt(b *testing.B, numValidators int) testBackend {
 	b.Helper()
 	dir := b.TempDir()
 	repo, err := bboltrepo.New(bboltrepo.Config{
 		Dir:     dir,
 		Metrics: repoutil.DoNothingMetrics{},
-		NoSync:  noSync,
 	})
 	if err != nil {
 		b.Fatalf("failed to create bbolt repo: %v", err)
@@ -323,13 +322,7 @@ func BenchmarkSaveSignature(b *testing.B) {
 		cfg.validators, cfg.requestInterval, cfg.duration, numRequests)
 
 	b.Run("bbolt", func(b *testing.B) {
-		backend := setupBbolt(b, cfg.validators, false)
-		defer backend.cleanup()
-		runLoadTest(b, backend, cfg, numRequests)
-	})
-
-	b.Run("bbolt-nosync", func(b *testing.B) {
-		backend := setupBbolt(b, cfg.validators, true)
+		backend := setupBbolt(b, cfg.validators)
 		defer backend.cleanup()
 		runLoadTest(b, backend, cfg, numRequests)
 	})

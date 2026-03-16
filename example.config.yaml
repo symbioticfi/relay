@@ -119,7 +119,6 @@ pruner:
 # bbolt Storage Engine Tuning (optional, only used when storage-type: "bbolt")
 # bbolt uses a B+tree with single-writer model for predictable write latency
 # bbolt:
-#   no-sync: false              # Disable fsync after each commit (unsafe, for testing only)
 #   initial-mmap-size: 0        # Initial mmap size in bytes (0 = default)
 
 # BadgerDB Storage Engine Tuning (optional)

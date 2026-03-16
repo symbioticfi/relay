@@ -247,8 +247,7 @@ type TracingConfig struct {
 }
 
 type BboltConfig struct {
-	NoSync          bool `mapstructure:"no-sync"`
-	InitialMmapSize int  `mapstructure:"initial-mmap-size"`
+	InitialMmapSize int `mapstructure:"initial-mmap-size"`
 }
 
 type BadgerConfig struct {
@@ -309,7 +308,6 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().String("log.mode", "json", "Log mode (text, pretty, json)")
 	rootCmd.PersistentFlags().String("storage-dir", ".data", "Dir to store data")
 	rootCmd.PersistentFlags().String("storage-type", "badger", "Storage backend type (badger, bbolt)")
-	rootCmd.PersistentFlags().Bool("bbolt.no-sync", false, "Disable fsync after each commit (unsafe, faster)")
 	rootCmd.PersistentFlags().Int("bbolt.initial-mmap-size", 0, "Initial mmap size in bytes (0 = default)")
 	rootCmd.PersistentFlags().String("circuits-dir", "", "Directory path to load zk circuits from, if empty then zp prover is disabled")
 	rootCmd.PersistentFlags().Uint64("aggregation-policy-max-unsigners", 50, "Max unsigners for low cost agg policy")
@@ -433,9 +431,6 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("storage-type", cmd.PersistentFlags().Lookup("storage-type")); err != nil {
-		return errors.Errorf("failed to bind flag: %w", err)
-	}
-	if err := v.BindPFlag("bbolt.no-sync", cmd.PersistentFlags().Lookup("bbolt.no-sync")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("bbolt.initial-mmap-size", cmd.PersistentFlags().Lookup("bbolt.initial-mmap-size")); err != nil {
