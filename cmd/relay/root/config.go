@@ -22,7 +22,10 @@ import (
 )
 
 // The config can be populated from command-line flags, environment variables, and a config.yaml file.
-const storageTypeBadger = "badger"
+const (
+	storageTypeBadger = "badger"
+	storageTypeBbolt  = "bbolt"
+)
 
 // Priority order (highest to lowest):
 // 1. Command-line flags
@@ -276,7 +279,7 @@ func (c config) Validate() error {
 		return errors.Errorf("sync.epochs (%d) cannot exceed retention.valset-epochs (%d)", c.Sync.EpochsToSync, c.Retention.ValSetEpochs)
 	}
 
-	if c.StorageType != "" && c.StorageType != storageTypeBadger && c.StorageType != "bbolt" {
+	if c.StorageType != "" && c.StorageType != storageTypeBadger && c.StorageType != storageTypeBbolt {
 		return errors.Errorf("invalid storage-type %q: must be \"badger\" or \"bbolt\"", c.StorageType)
 	}
 
@@ -309,7 +312,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().String("log.level", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().String("log.mode", "json", "Log mode (text, pretty, json)")
 	rootCmd.PersistentFlags().String("storage-dir", ".data", "Dir to store data")
-	rootCmd.PersistentFlags().String("storage-type", "bbolt", "Storage backend type (badger, bbolt)")
+	rootCmd.PersistentFlags().String("storage-type", storageTypeBbolt, "Storage backend type (badger, bbolt)")
 	rootCmd.PersistentFlags().Int("bbolt.initial-mmap-size", 0, "Initial mmap size in bytes (0 = default)")
 	rootCmd.PersistentFlags().String("circuits-dir", "", "Directory path to load zk circuits from, if empty then zp prover is disabled")
 	rootCmd.PersistentFlags().Uint64("aggregation-policy-max-unsigners", 50, "Max unsigners for low cost agg policy")

@@ -46,13 +46,16 @@ import (
 	valsetDeriver "github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver"
 )
 
-var badgerFilePatterns = []string{"*.vlog", "MANIFEST"}
+var (
+	badgerFilePatterns = []string{"*.vlog", "MANIFEST"}
+	bboltFilePatterns  = []string{"relay.db"}
+)
 
-func detectBadgerFiles(dir string) (bool, error) {
-	for _, pattern := range badgerFilePatterns {
+func detectStorageFiles(dir string, patterns []string) (bool, error) {
+	for _, pattern := range patterns {
 		matches, err := filepath.Glob(filepath.Join(dir, pattern))
 		if err != nil {
-			return false, errors.Errorf("failed to check for BadgerDB files: %w", err)
+			return false, errors.Errorf("failed to check for storage files: %w", err)
 		}
 		if len(matches) > 0 {
 			return true, nil
@@ -143,6 +146,18 @@ func runApp(ctx context.Context) error {
 	var baseRepo cached.Repository
 	switch cfg.StorageType {
 	case storageTypeBadger:
+		found, err := detectStorageFiles(cfg.StorageDir, bboltFilePatterns)
+		if err != nil {
+			return err
+		}
+		if found {
+			return errors.Errorf(
+				"storage directory %q contains bbolt files but storage type is %q; "+
+					"either remove the bbolt files or set storage-type: \"bbolt\" explicitly in config",
+				cfg.StorageDir, cfg.StorageType,
+			)
+		}
+
 		repo, err := badger.New(badger.Config{
 			Dir:                      cfg.StorageDir,
 			Metrics:                  mtr,
@@ -165,7 +180,7 @@ func runApp(ctx context.Context) error {
 		defer repo.Close()
 		baseRepo = repo
 	default:
-		found, err := detectBadgerFiles(cfg.StorageDir)
+		found, err := detectStorageFiles(cfg.StorageDir, badgerFilePatterns)
 		if err != nil {
 			return err
 		}
