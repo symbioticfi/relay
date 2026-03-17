@@ -39,7 +39,9 @@ func (r *Repository) SaveProof(ctx context.Context, aggregationProof symbiotic.A
 
 		// Remove from pending in the same transaction
 		pendingKey := epochHashKey(uint64(aggregationProof.Epoch), requestID.Bytes())
-		tx.Bucket(bucketAggProofPending).Delete(pendingKey) //nolint:errcheck // bbolt Delete only errors on readonly tx
+		if err := tx.Bucket(bucketAggProofPending).Delete(pendingKey); err != nil {
+			return errors.Errorf("failed to delete pending agg proof: %w", err)
+		}
 
 		return nil
 	})

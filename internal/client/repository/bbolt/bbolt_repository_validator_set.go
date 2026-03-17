@@ -119,7 +119,9 @@ func (r *Repository) UpdateValidatorSetStatusAndRemovePendingProof(ctx context.C
 		}
 
 		// Remove pending proof commit (ignore not found)
-		tx.Bucket(bucketAggProofCommits).Delete(ek) //nolint:errcheck // bbolt Delete only errors on readonly tx
+		if err := tx.Bucket(bucketAggProofCommits).Delete(ek); err != nil {
+			return errors.Errorf("failed to delete pending proof commit: %w", err)
+		}
 
 		return nil
 	})

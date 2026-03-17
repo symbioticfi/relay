@@ -17,7 +17,9 @@ func (r *Repository) PruneValsetEntities(ctx context.Context, epoch symbiotic.Ep
 		ek := epochBytes(uint64(epoch))
 
 		// Delete network config
-		tx.Bucket(bucketNetworkConfigs).Delete(ek) //nolint:errcheck // bbolt Delete only errors on readonly tx
+		if err := tx.Bucket(bucketNetworkConfigs).Delete(ek); err != nil {
+			return errors.Errorf("failed to delete network config: %w", err)
+		}
 
 		// Delete static validator set keys
 		for _, bucket := range [][]byte{
@@ -26,13 +28,19 @@ func (r *Repository) PruneValsetEntities(ctx context.Context, epoch symbiotic.Ep
 			bucketValidatorSetMeta,
 			bucketActiveValCounts,
 		} {
-			tx.Bucket(bucket).Delete(ek) //nolint:errcheck // bbolt Delete only errors on readonly tx
+			if err := tx.Bucket(bucket).Delete(ek); err != nil {
+				return errors.Errorf("failed to delete from bucket %s: %w", bucket, err)
+			}
 		}
 
 		// Delete all validators for this epoch
 		prefix := epochBytes(uint64(epoch))
-		deletePrefixedKeys(tx.Bucket(bucketValidators), prefix)
-		deletePrefixedKeys(tx.Bucket(bucketValidatorKeyLookups), prefix)
+		if err := deletePrefixedKeys(tx.Bucket(bucketValidators), prefix); err != nil {
+			return errors.Errorf("failed to delete validators: %w", err)
+		}
+		if err := deletePrefixedKeys(tx.Bucket(bucketValidatorKeyLookups), prefix); err != nil {
+			return errors.Errorf("failed to delete validator key lookups: %w", err)
+		}
 
 		return nil
 	})
@@ -43,18 +51,24 @@ func (r *Repository) PruneProofEntities(ctx context.Context, epoch symbiotic.Epo
 		ek := epochBytes(uint64(epoch))
 
 		// Delete proof commits
-		tx.Bucket(bucketAggProofCommits).Delete(ek) //nolint:errcheck // bbolt Delete only errors on readonly tx
+		if err := tx.Bucket(bucketAggProofCommits).Delete(ek); err != nil {
+			return errors.Errorf("failed to delete proof commits: %w", err)
+		}
 
 		// Find all request IDs for this epoch
 		requestIDs := getRequestIDsByEpochTx(tx, epoch)
 
 		for _, requestID := range requestIDs {
 			// Delete aggregation proof
-			tx.Bucket(bucketAggregationProofs).Delete(requestID.Bytes()) //nolint:errcheck // bbolt Delete only errors on readonly tx
+			if err := tx.Bucket(bucketAggregationProofs).Delete(requestID.Bytes()); err != nil {
+				return errors.Errorf("failed to delete aggregation proof: %w", err)
+			}
 
 			// Delete aggregation proof pending
 			pendingKey := epochHashKey(uint64(epoch), requestID.Bytes())
-			tx.Bucket(bucketAggProofPending).Delete(pendingKey) //nolint:errcheck // bbolt Delete only errors on readonly tx
+			if err := tx.Bucket(bucketAggProofPending).Delete(pendingKey); err != nil {
+				return errors.Errorf("failed to delete pending agg proof: %w", err)
+			}
 		}
 
 		return nil
@@ -72,20 +86,30 @@ func (r *Repository) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch s
 		for _, requestID := range requestIDs {
 			// Delete all signatures for this requestID
 			sigPrefix := requestID.Bytes()
-			deletePrefixedKeys(tx.Bucket(bucketSignatures), sigPrefix)
+			if err := deletePrefixedKeys(tx.Bucket(bucketSignatures), sigPrefix); err != nil {
+				return errors.Errorf("failed to delete signatures: %w", err)
+			}
 
 			// Delete signature map
-			tx.Bucket(bucketSignatureMaps).Delete(requestID.Bytes()) //nolint:errcheck // bbolt Delete only errors on readonly tx
+			if err := tx.Bucket(bucketSignatureMaps).Delete(requestID.Bytes()); err != nil {
+				return errors.Errorf("failed to delete signature map: %w", err)
+			}
 
 			// Delete signature request
 			reqKey := epochHashKey(uint64(epoch), requestID.Bytes())
-			tx.Bucket(bucketSignatureRequests).Delete(reqKey) //nolint:errcheck // bbolt Delete only errors on readonly tx
+			if err := tx.Bucket(bucketSignatureRequests).Delete(reqKey); err != nil {
+				return errors.Errorf("failed to delete signature request: %w", err)
+			}
 
 			// Delete signature pending
-			tx.Bucket(bucketSignaturePending).Delete(reqKey) //nolint:errcheck // bbolt Delete only errors on readonly tx
+			if err := tx.Bucket(bucketSignaturePending).Delete(reqKey); err != nil {
+				return errors.Errorf("failed to delete signature pending: %w", err)
+			}
 
 			// Delete request ID index
-			tx.Bucket(bucketRequestIDIndex).Delete(requestID.Bytes()) //nolint:errcheck // bbolt Delete only errors on readonly tx
+			if err := tx.Bucket(bucketRequestIDIndex).Delete(requestID.Bytes()); err != nil {
+				return errors.Errorf("failed to delete request ID index: %w", err)
+			}
 
 			r.signatureMutexMap.Delete(requestID)
 		}
@@ -113,7 +137,9 @@ func (r *Repository) PruneRequestIDEpochIndices(ctx context.Context, epoch symbi
 
 			// Both gone, safe to delete
 			epochKey := epochHashKey(uint64(epoch), requestID.Bytes())
-			tx.Bucket(bucketRequestIDEpochs).Delete(epochKey) //nolint:errcheck // bbolt Delete only errors on readonly tx
+			if err := tx.Bucket(bucketRequestIDEpochs).Delete(epochKey); err != nil {
+				return errors.Errorf("failed to delete request ID epoch index: %w", err)
+			}
 		}
 		return nil
 	})
@@ -142,9 +168,12 @@ func getRequestIDsByEpochTx(tx *bolt.Tx, epoch symbiotic.Epoch) []common.Hash {
 	return requestIDs
 }
 
-func deletePrefixedKeys(b *bolt.Bucket, prefix []byte) {
+func deletePrefixedKeys(b *bolt.Bucket, prefix []byte) error {
 	c := b.Cursor()
 	for k, _ := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Seek(prefix) {
-		c.Delete() //nolint:errcheck // bbolt cursor Delete only errors on readonly tx
+		if err := c.Delete(); err != nil {
+			return err
+		}
 	}
+	return nil
 }

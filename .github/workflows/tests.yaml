@@ -206,7 +206,7 @@ jobs:
           echo "  - Epoch Time: ${{ env.EPOCH_TIME }}s"
           echo "  - Block Time: ${{ env.BLOCK_TIME }}s"
           echo "  - Finality Blocks: ${{ env.FINALITY_BLOCKS }}"
-          echo "  - Storage Type: ${{ env.STORAGE_TYPE || 'default (badger)' }}"
+          echo "  - Storage Type: ${{ env.STORAGE_TYPE || 'default (bbolt)' }}"
 
           cd e2e
           chmod +x setup.sh
@@ -312,7 +312,7 @@ jobs:
             echo "  - Epoch Time: ${{ env.EPOCH_TIME }}s"
             echo "  - Block Time: ${{ env.BLOCK_TIME }}s"
             echo "  - Finality Blocks: ${{ env.FINALITY_BLOCKS }}"
-            echo "  - Storage Type: ${{ env.STORAGE_TYPE || 'default (badger)' }}"
+            echo "  - Storage Type: ${{ env.STORAGE_TYPE || 'default (bbolt)' }}"
             echo ""
             echo "=== Available Log Files ==="
             echo "containers/status-overview.log - Container status summary"
