@@ -64,7 +64,7 @@ relay_sidecar [flags]
       --signal.buffer-size int                    Signal buffer size (default 20)
       --signal.worker-count int                   Signal worker count (default 10)
       --storage-dir string                        Dir to store data (default ".data")
-      --storage-type string                       Storage backend type (badger, bbolt) (default "badger")
+      --storage-type string                       Storage backend type (badger, bbolt) (default "bbolt")
       --sync.enabled                              Enable signature syncer (default true)
       --sync.epochs uint                          Epochs to sync (default 5)
       --sync.period duration                      Signature sync period (default 5s)

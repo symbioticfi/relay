@@ -127,7 +127,7 @@ get_config_from_env() {
     print_status "  Block time: $block_time seconds (BLOCK_TIME=${BLOCK_TIME:-default})"
     print_status "  Finality blocks: $finality_blocks (FINALITY_BLOCKS=${FINALITY_BLOCKS:-default})"
     print_status "  Committer slot duration: $committer_slot_duration seconds (COMMITTER_SLOT_DURATION=${COMMITTER_SLOT_DURATION:-default})"
-    print_status "  Storage type: ${STORAGE_TYPE:-default (badger)} (STORAGE_TYPE=${STORAGE_TYPE:-default})"
+    print_status "  Storage type: ${STORAGE_TYPE:-default (bbolt)} (STORAGE_TYPE=${STORAGE_TYPE:-default})"
 }
 
 # Function to generate Docker Compose file

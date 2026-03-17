@@ -22,6 +22,8 @@ import (
 )
 
 // The config can be populated from command-line flags, environment variables, and a config.yaml file.
+const storageTypeBadger = "badger"
+
 // Priority order (highest to lowest):
 // 1. Command-line flags
 // 2. Environment variables (prefixed with SYMB_ and dashes replaced by underscores)
@@ -274,12 +276,12 @@ func (c config) Validate() error {
 		return errors.Errorf("sync.epochs (%d) cannot exceed retention.valset-epochs (%d)", c.Sync.EpochsToSync, c.Retention.ValSetEpochs)
 	}
 
-	if c.StorageType != "" && c.StorageType != "badger" && c.StorageType != "bbolt" {
+	if c.StorageType != "" && c.StorageType != storageTypeBadger && c.StorageType != "bbolt" {
 		return errors.Errorf("invalid storage-type %q: must be \"badger\" or \"bbolt\"", c.StorageType)
 	}
 
 	// Validate badger: num-level-zero-tables-stall must be > num-level-zero-tables (badger fatals otherwise).
-	if c.StorageType == "" || c.StorageType == "badger" {
+	if c.StorageType == storageTypeBadger {
 		effectiveL0Tables := c.Badger.NumLevelZeroTables
 		if effectiveL0Tables == 0 {
 			effectiveL0Tables = 5 // badger default
@@ -307,7 +309,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().String("log.level", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().String("log.mode", "json", "Log mode (text, pretty, json)")
 	rootCmd.PersistentFlags().String("storage-dir", ".data", "Dir to store data")
-	rootCmd.PersistentFlags().String("storage-type", "badger", "Storage backend type (badger, bbolt)")
+	rootCmd.PersistentFlags().String("storage-type", "bbolt", "Storage backend type (badger, bbolt)")
 	rootCmd.PersistentFlags().Int("bbolt.initial-mmap-size", 0, "Initial mmap size in bytes (0 = default)")
 	rootCmd.PersistentFlags().String("circuits-dir", "", "Directory path to load zk circuits from, if empty then zp prover is disabled")
 	rootCmd.PersistentFlags().Uint64("aggregation-policy-max-unsigners", 50, "Max unsigners for low cost agg policy")
