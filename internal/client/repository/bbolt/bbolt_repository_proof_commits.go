@@ -1,10 +1,8 @@
 package bbolt
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
-	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
@@ -41,16 +39,17 @@ func (r *Repository) GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch
 
 	err := r.doView(ctx, "GetPendingProofCommitsSinceEpoch", func(tx *bolt.Tx) error {
 		c := tx.Bucket(bucketAggProofCommits).Cursor()
+		seekKey := epochBytes(uint64(epoch))
 
-		for k, v := c.First(); k != nil; k, v = c.Next() {
+		for k, v := c.Seek(seekKey); k != nil; k, v = c.Next() {
 			if len(k) != 8 || len(v) != 32 {
 				continue
 			}
-			keyEpoch := symbiotic.Epoch(binary.BigEndian.Uint64(k))
-			if keyEpoch < epoch {
-				continue
+			if limit > 0 && len(keys) >= limit {
+				break
 			}
 
+			keyEpoch := symbiotic.Epoch(binary.BigEndian.Uint64(k))
 			keys = append(keys, symbiotic.ProofCommitKey{
 				Epoch:     keyEpoch,
 				RequestID: common.BytesToHash(v),
@@ -58,20 +57,6 @@ func (r *Repository) GetPendingProofCommitsSinceEpoch(ctx context.Context, epoch
 		}
 		return nil
 	})
-	if err != nil {
-		return nil, err
-	}
 
-	sort.Slice(keys, func(i, j int) bool {
-		if keys[i].Epoch != keys[j].Epoch {
-			return keys[i].Epoch < keys[j].Epoch
-		}
-		return bytes.Compare(keys[i].RequestID[:], keys[j].RequestID[:]) < 0
-	})
-
-	if limit > 0 && len(keys) > limit {
-		keys = keys[:limit]
-	}
-
-	return keys, nil
+	return keys, err
 }
