@@ -14,6 +14,27 @@ import (
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
+func putAggregationProofTx(tx *bolt.Tx, requestIDBytes []byte, data []byte, epoch symbiotic.Epoch) error {
+	b := tx.Bucket(bucketAggregationProofs)
+	if b.Get(requestIDBytes) != nil {
+		return errors.Errorf("aggregation proof already exists: %w", entity.ErrEntityAlreadyExist)
+	}
+
+	if err := b.Put(requestIDBytes, data); err != nil {
+		return errors.Errorf("failed to store aggregation proof: %w", err)
+	}
+
+	// Maintain request_id_epochs index
+	epochKey := epochHashKey(uint64(epoch), requestIDBytes)
+	if tx.Bucket(bucketRequestIDEpochs).Get(epochKey) == nil {
+		if err := tx.Bucket(bucketRequestIDEpochs).Put(epochKey, []byte{}); err != nil {
+			return errors.Errorf("failed to store request id epoch link: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.Hash, ap symbiotic.AggregationProof) error {
 	data, err := codec.AggregationProofToBytes(ap)
 	if err != nil {
@@ -21,24 +42,7 @@ func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.
 	}
 
 	return r.doUpdate(ctx, "saveAggregationProof", func(tx *bolt.Tx) error {
-		b := tx.Bucket(bucketAggregationProofs)
-		if b.Get(requestID.Bytes()) != nil {
-			return errors.Errorf("aggregation proof already exists: %w", entity.ErrEntityAlreadyExist)
-		}
-
-		if err := b.Put(requestID.Bytes(), data); err != nil {
-			return errors.Errorf("failed to store aggregation proof: %w", err)
-		}
-
-		// Maintain request_id_epochs index
-		epochKey := epochHashKey(uint64(ap.Epoch), requestID.Bytes())
-		if tx.Bucket(bucketRequestIDEpochs).Get(epochKey) == nil {
-			if err := tx.Bucket(bucketRequestIDEpochs).Put(epochKey, []byte{}); err != nil {
-				return errors.Errorf("failed to store request id epoch link: %w", err)
-			}
-		}
-
-		return nil
+		return putAggregationProofTx(tx, requestID.Bytes(), data, ap.Epoch)
 	})
 }
 
