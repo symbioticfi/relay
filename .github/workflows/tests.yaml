@@ -133,12 +133,12 @@ jobs:
             commiters: 1
             aggregators: 1
             verification_type: 1
-          - name: "Simple Setup (bbolt)"
+          - name: "Simple Setup (badger)"
             operators: 4
             commiters: 1
             aggregators: 1
             verification_type: 1
-            storage_type: "bbolt"
+            storage_type: "badger"
           - name: "Multi Committer and Aggregator"
             operators: 10
             commiters: 2

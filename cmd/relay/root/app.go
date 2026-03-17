@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -44,6 +45,21 @@ import (
 	symbioticCrypto "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 	valsetDeriver "github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver"
 )
+
+var badgerFilePatterns = []string{"*.vlog", "MANIFEST"}
+
+func detectBadgerFiles(dir string) (bool, error) {
+	for _, pattern := range badgerFilePatterns {
+		matches, err := filepath.Glob(filepath.Join(dir, pattern))
+		if err != nil {
+			return false, errors.Errorf("failed to check for BadgerDB files: %w", err)
+		}
+		if len(matches) > 0 {
+			return true, nil
+		}
+	}
+	return false, nil
+}
 
 func runApp(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
@@ -126,20 +142,7 @@ func runApp(ctx context.Context) error {
 
 	var baseRepo cached.Repository
 	switch cfg.StorageType {
-	case "bbolt":
-		repo, err := bboltrepo.New(bboltrepo.Config{
-			Dir:                      cfg.StorageDir,
-			Metrics:                  mtr,
-			InitialMmapSize:          cfg.Bbolt.InitialMmapSize,
-			MutexCleanupInterval:     time.Hour,
-			MutexCleanupStaleTimeout: time.Hour - time.Minute,
-		})
-		if err != nil {
-			return errors.Errorf("failed to create bbolt repository: %w", err)
-		}
-		defer repo.Close()
-		baseRepo = repo
-	default:
+	case storageTypeBadger:
 		repo, err := badger.New(badger.Config{
 			Dir:                      cfg.StorageDir,
 			Metrics:                  mtr,
@@ -158,6 +161,31 @@ func runApp(ctx context.Context) error {
 		})
 		if err != nil {
 			return errors.Errorf("failed to create badger repository: %w", err)
+		}
+		defer repo.Close()
+		baseRepo = repo
+	default:
+		found, err := detectBadgerFiles(cfg.StorageDir)
+		if err != nil {
+			return err
+		}
+		if found {
+			return errors.Errorf(
+				"storage directory %q contains BadgerDB files but storage type is %q; "+
+					"either remove the BadgerDB files or set storage-type: \"badger\" explicitly in config",
+				cfg.StorageDir, cfg.StorageType,
+			)
+		}
+
+		repo, err := bboltrepo.New(bboltrepo.Config{
+			Dir:                      cfg.StorageDir,
+			Metrics:                  mtr,
+			InitialMmapSize:          cfg.Bbolt.InitialMmapSize,
+			MutexCleanupInterval:     time.Hour,
+			MutexCleanupStaleTimeout: time.Hour - time.Minute,
+		})
+		if err != nil {
+			return errors.Errorf("failed to create bbolt repository: %w", err)
 		}
 		defer repo.Close()
 		baseRepo = repo
