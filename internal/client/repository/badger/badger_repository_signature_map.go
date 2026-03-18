@@ -2,14 +2,13 @@ package badger
 
 import (
 	"context"
-	"math/big"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
-	pb "github.com/symbioticfi/relay/internal/client/repository/badger/proto/v1"
+
+	"github.com/symbioticfi/relay/internal/client/repository/codec"
 	"github.com/symbioticfi/relay/internal/entity"
-	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func keySignatureMap(requestID common.Hash) []byte {
@@ -69,44 +68,7 @@ func (r *Repository) getSignatureMap(ctx context.Context, requestID common.Hash)
 	return vm, nil
 }
 
-func signatureMapToBytes(vm entity.SignatureMap) ([]byte, error) {
-	bitmapBytes, err := vm.SignedValidatorsBitmap.ToBytes()
-	if err != nil {
-		return nil, errors.Errorf("failed to serialize roaring bitmap: %w", err)
-	}
-
-	return marshalProto(&pb.SignatureMap{
-		RequestId:              vm.RequestID.Bytes(),
-		Epoch:                  uint64(vm.Epoch),
-		SignedValidatorsBitmap: bitmapBytes,
-		CurrentVotingPower:     vm.CurrentVotingPower.String(),
-		TotalValidators:        vm.TotalValidators,
-	})
-}
-
-func bytesToSignatureMap(data []byte) (entity.SignatureMap, error) {
-	signatureMap := &pb.SignatureMap{}
-	if err := unmarshalProto(data, signatureMap); err != nil {
-		return entity.SignatureMap{}, errors.Errorf("failed to unmarshal signature map: %w", err)
-	}
-
-	requestId := common.BytesToHash(signatureMap.GetRequestId())
-
-	bitmap, err := entity.BitmapFromBytes(signatureMap.GetSignedValidatorsBitmap())
-	if err != nil {
-		return entity.SignatureMap{}, errors.Errorf("failed to deserialize bitmap: %w", err)
-	}
-
-	currentVotingPower, ok := new(big.Int).SetString(signatureMap.GetCurrentVotingPower(), 10)
-	if !ok {
-		return entity.SignatureMap{}, errors.Errorf("failed to parse current voting power: %s", signatureMap.GetCurrentVotingPower())
-	}
-
-	return entity.SignatureMap{
-		RequestID:              requestId,
-		Epoch:                  symbiotic.Epoch(signatureMap.GetEpoch()),
-		SignedValidatorsBitmap: bitmap,
-		CurrentVotingPower:     symbiotic.ToVotingPower(currentVotingPower),
-		TotalValidators:        signatureMap.GetTotalValidators(),
-	}, nil
-}
+var (
+	signatureMapToBytes = codec.SignatureMapToBytes
+	bytesToSignatureMap = codec.BytesToSignatureMap
+)
