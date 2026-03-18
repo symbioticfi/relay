@@ -122,6 +122,8 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 		slog.String("requestId", requestID.Hex()),
 	)
 
+	slog.DebugContext(ctx, "Started proof aggregation for request")
+
 	_, err := s.cfg.Repo.GetAggregationProof(ctx, requestID)
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		tracing.RecordError(span, err)
@@ -253,6 +255,8 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 const epochsToCheckForMissingProofs = 20
 
 func (s *AggregatorApp) TryAggregateRequestsWithoutProof(ctx context.Context) error {
+	ctx = log.WithComponent(ctx, "aggregator")
+
 	latestEpoch, err := s.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityNotFound) {
@@ -271,6 +275,12 @@ func (s *AggregatorApp) TryAggregateRequestsWithoutProof(ctx context.Context) er
 		return nil
 	}
 
+	slog.InfoContext(ctx, "Starting aggregation catch-up for requests without proof",
+		"startEpoch", startEpoch,
+		"latestEpoch", latestEpoch,
+	)
+
+	aggregated := 0
 	for epoch := latestEpoch; ; epoch-- {
 		var lastHash common.Hash
 		for {
@@ -292,6 +302,7 @@ func (s *AggregatorApp) TryAggregateRequestsWithoutProof(ctx context.Context) er
 				if err != nil {
 					return errors.Errorf("failed to try aggregate proof for request ID %s: %w", req.RequestID.Hex(), err)
 				}
+				aggregated++
 			}
 
 			lastHash = requests[len(requests)-1].RequestID
@@ -301,6 +312,8 @@ func (s *AggregatorApp) TryAggregateRequestsWithoutProof(ctx context.Context) er
 			break // Prevent underflow when decrementing unsigned epoch
 		}
 	}
+
+	slog.InfoContext(ctx, "Aggregation catch-up completed", "aggregated", aggregated)
 
 	return nil
 }

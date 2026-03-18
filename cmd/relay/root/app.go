@@ -547,7 +547,13 @@ func runApp(ctx context.Context) error {
 	})
 
 	eg.Go(func() error {
-		return aggApp.TryAggregateRequestsWithoutProof(ctx)
+		err := aggApp.TryAggregateRequestsWithoutProof(ctx)
+		if err != nil {
+			slog.ErrorContext(ctx, "Aggregation catch-up failed", "error", err)
+			return errors.Errorf("failed aggregation catch-up: %w", err)
+		}
+		slog.InfoContext(ctx, "Aggregation catch-up finished")
+		return nil
 	})
 
 	eg.Go(func() error {
