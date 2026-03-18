@@ -50,6 +50,15 @@ type keyProvider interface {
 
 type aggregatorPolicy = aggregationPolicyTypes.AggregationPolicy
 
+type ProofCatchupConfig struct {
+	Enabled             bool
+	Interval            time.Duration `validate:"gte=0"`
+	EpochsToCheck       int           `validate:"gte=0"`
+	EpochsOffset        int           `validate:"gte=0"`
+	MaxRequestsPerCycle int           `validate:"gte=0"`
+	MaxProofsPerCycle   int           `validate:"gte=0"`
+}
+
 type Config struct {
 	Repo              repository       `validate:"required"`
 	P2PClient         p2pClient        `validate:"required"`
@@ -58,11 +67,21 @@ type Config struct {
 	AggregationPolicy aggregatorPolicy `validate:"required"`
 	KeyProvider       keyProvider      `validate:"required"`
 	ForceAggregator   bool
+	ProofCatchup      ProofCatchupConfig
 }
 
 func (c Config) Validate() error {
 	if err := validate.New().Struct(c); err != nil {
 		return errors.Errorf("failed to validate config: %w", err)
+	}
+
+	if c.ProofCatchup.Enabled {
+		if c.ProofCatchup.Interval <= 0 {
+			return errors.New("proof catchup interval must be greater than zero when enabled")
+		}
+		if c.ProofCatchup.EpochsToCheck <= 0 {
+			return errors.New("proof catchup epochs-to-check must be greater than zero when enabled")
+		}
 	}
 
 	return nil
@@ -108,10 +127,11 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 		"requestId", msg.RequestID().Hex(),
 	)
 
-	return s.TryAggregateProofForRequestID(ctx, msg.RequestID())
+	_, err := s.TryAggregateProofForRequestID(ctx, msg.RequestID())
+	return err
 }
 
-func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, requestID common.Hash) error {
+func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error) {
 	ctx, span := tracing.StartSpan(ctx, "aggregator.TryAggregateProofForRequestID",
 		tracing.AttrRequestID.String(requestID.Hex()),
 	)
@@ -127,18 +147,18 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 	_, err := s.cfg.Repo.GetAggregationProof(ctx, requestID)
 	if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 		tracing.RecordError(span, err)
-		return errors.Errorf("failed to get aggregation proof: %w", err)
+		return symbiotic.AggregationProof{}, errors.Errorf("failed to get aggregation proof: %w", err)
 	}
 	if err == nil {
 		tracing.AddEvent(span, "proof_already_exists")
 		slog.DebugContext(ctx, "Skipped aggregation, proof already exists")
-		return nil
+		return symbiotic.AggregationProof{}, nil
 	}
 
 	signatureMap, err := s.cfg.Repo.GetSignatureMap(ctx, requestID)
 	if err != nil {
 		tracing.RecordError(span, err)
-		return errors.Errorf("failed to get valset signature map: %w", err)
+		return symbiotic.AggregationProof{}, errors.Errorf("failed to get valset signature map: %w", err)
 	}
 
 	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(signatureMap.Epoch)))
@@ -148,7 +168,7 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, signatureMap.Epoch)
 	if err != nil {
 		tracing.RecordError(span, err)
-		return errors.Errorf("failed to get validator set: %w", err)
+		return symbiotic.AggregationProof{}, errors.Errorf("failed to get validator set: %w", err)
 	}
 
 	tracing.SetAttributes(span, tracing.AttrValidatorCount.Int(len(validatorSet.Validators)))
@@ -161,10 +181,10 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 			if errors.Is(err, entity.ErrKeyNotFound) {
 				tracing.AddEvent(span, "skipped_not_key_not_found")
 				slog.DebugContext(ctx, "Skipped aggregation, no onchain key for required key tag", "keyTag", validatorSet.RequiredKeyTag)
-				return nil
+				return symbiotic.AggregationProof{}, nil
 			}
 			tracing.RecordError(span, err)
-			return errors.Errorf("failed to get private key for required key tag %s: %w", validatorSet.RequiredKeyTag, err)
+			return symbiotic.AggregationProof{}, errors.Errorf("failed to get private key for required key tag %s: %w", validatorSet.RequiredKeyTag, err)
 		}
 
 		if !validatorSet.IsAggregator(onchainKey) {
@@ -175,7 +195,7 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 				"aggIndices", validatorSet.AggregatorIndices,
 				"ourIndex", validatorSet.ValidatorIndex(onchainKey),
 			)
-			return nil
+			return symbiotic.AggregationProof{}, nil
 		}
 	}
 
@@ -193,7 +213,7 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 			"quorumThreshold", validatorSet.QuorumThreshold.String(),
 			"totalActiveVotingPower", totalActiveVotingPower.String(),
 		)
-		return nil
+		return symbiotic.AggregationProof{}, nil
 	}
 
 	tracing.AddEvent(span, "quorum_reached")
@@ -211,7 +231,7 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 	sigs, err := s.cfg.Repo.GetAllSignatures(ctx, requestID)
 	if err != nil {
 		tracing.RecordError(span, err)
-		return errors.Errorf("failed to get signature aggregated message: %w", err)
+		return symbiotic.AggregationProof{}, errors.Errorf("failed to get signature aggregated message: %w", err)
 	}
 	tracing.SetAttributes(span, tracing.AttrSignatureCount.Int(len(sigs)))
 	slog.DebugContext(ctx, "Loaded signatures for aggregation", "count", len(sigs))
@@ -219,7 +239,7 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 	networkConfig, err := s.cfg.Repo.GetConfigByEpoch(ctx, signatureMap.Epoch)
 	if err != nil {
 		tracing.RecordError(span, err)
-		return errors.Errorf("failed to get network config: %w", err)
+		return symbiotic.AggregationProof{}, errors.Errorf("failed to get network config: %w", err)
 	}
 
 	slog.DebugContext(ctx, "Loaded network config", "networkConfig", networkConfig)
@@ -228,7 +248,7 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 	proofData, err := s.cfg.Aggregator.Aggregate(ctx, validatorSet, sigs)
 	if err != nil {
 		tracing.RecordError(span, err)
-		return errors.Errorf("failed to prove: %w", err)
+		return symbiotic.AggregationProof{}, errors.Errorf("failed to prove: %w", err)
 	}
 	s.cfg.Metrics.ObserveOnlyAggregateDuration(time.Since(onlyAggregateStart))
 
@@ -241,7 +261,7 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 	err = s.cfg.P2PClient.BroadcastSignatureAggregatedMessage(ctx, proofData)
 	if err != nil {
 		tracing.RecordError(span, err)
-		return errors.Errorf("failed to broadcast signature aggregated message: %w", err)
+		return symbiotic.AggregationProof{}, errors.Errorf("failed to broadcast signature aggregated message: %w", err)
 	}
 	s.cfg.Metrics.ObserveAppAggregateDuration(time.Since(appAggregationStart))
 
@@ -249,14 +269,10 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 	slog.InfoContext(ctx, "Aggregation completed, proof broadcast via p2p",
 		"totalDuration", time.Since(appAggregationStart).String())
 
-	return nil
+	return proofData, nil
 }
 
-const epochsToCheckForMissingProofs = 20
-
-func (s *AggregatorApp) TryAggregateRequestsWithoutProof(ctx context.Context) error {
-	ctx = log.WithComponent(ctx, "aggregator")
-
+func (s *AggregatorApp) tryAggregateRequestsWithoutProof(ctx context.Context) error {
 	latestEpoch, err := s.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityNotFound) {
@@ -266,22 +282,28 @@ func (s *AggregatorApp) TryAggregateRequestsWithoutProof(ctx context.Context) er
 		return errors.Errorf("failed to get latest epoch: %w", err)
 	}
 
+	catchupCfg := s.cfg.ProofCatchup
+
+	var scanFrom symbiotic.Epoch
+	if symbiotic.Epoch(catchupCfg.EpochsOffset) <= latestEpoch {
+		scanFrom = latestEpoch - symbiotic.Epoch(catchupCfg.EpochsOffset)
+	}
+
 	startEpoch := symbiotic.Epoch(0)
-	if latestEpoch >= symbiotic.Epoch(epochsToCheckForMissingProofs) {
-		startEpoch = latestEpoch - symbiotic.Epoch(epochsToCheckForMissingProofs) + 1
+	if scanFrom >= symbiotic.Epoch(catchupCfg.EpochsToCheck) {
+		startEpoch = scanFrom - symbiotic.Epoch(catchupCfg.EpochsToCheck) + 1
 	}
 
-	if latestEpoch < startEpoch {
-		return nil
-	}
-
-	slog.InfoContext(ctx, "Starting aggregation catch-up for requests without proof",
-		"startEpoch", startEpoch,
+	slog.InfoContext(ctx, "Started aggregation catch-up for requests without proof",
 		"latestEpoch", latestEpoch,
+		"scanFrom", scanFrom,
+		"startEpoch", startEpoch,
 	)
 
-	aggregated := 0
-	for epoch := latestEpoch; ; epoch-- {
+	requestsChecked := 0
+	proofsGenerated := 0
+
+	for epoch := scanFrom; ; epoch-- {
 		var lastHash common.Hash
 		for {
 			requests, err := s.cfg.Repo.GetSignatureRequestsWithoutAggregationProof(ctx, epoch, 10, lastHash)
@@ -295,14 +317,41 @@ func (s *AggregatorApp) TryAggregateRequestsWithoutProof(ctx context.Context) er
 
 			for _, req := range requests {
 				if !req.KeyTag.Type().AggregationKey() {
-					continue // Skip non-aggregation requests
+					continue
 				}
 
-				err := s.TryAggregateProofForRequestID(ctx, req.RequestID)
-				if err != nil {
-					return errors.Errorf("failed to try aggregate proof for request ID %s: %w", req.RequestID.Hex(), err)
+				if catchupCfg.MaxRequestsPerCycle > 0 && requestsChecked >= catchupCfg.MaxRequestsPerCycle {
+					slog.InfoContext(ctx, "Aggregation catch-up reached max requests per cycle",
+						"requestsChecked", requestsChecked,
+						"proofsGenerated", proofsGenerated,
+					)
+					return nil
 				}
-				aggregated++
+
+				proof, err := s.TryAggregateProofForRequestID(ctx, req.RequestID)
+				requestsChecked++
+				if err != nil {
+					if ctx.Err() != nil {
+						return ctx.Err()
+					}
+					slog.ErrorContext(ctx, "Failed to aggregate proof for request, skipping",
+						"requestId", req.RequestID.Hex(),
+						"epoch", epoch,
+						"error", err,
+					)
+					continue
+				}
+
+				if len(proof.Proof) > 0 {
+					proofsGenerated++
+					if catchupCfg.MaxProofsPerCycle > 0 && proofsGenerated >= catchupCfg.MaxProofsPerCycle {
+						slog.InfoContext(ctx, "Aggregation catch-up reached max proofs per cycle",
+							"requestsChecked", requestsChecked,
+							"proofsGenerated", proofsGenerated,
+						)
+						return nil
+					}
+				}
 			}
 
 			lastHash = requests[len(requests)-1].RequestID
@@ -313,9 +362,45 @@ func (s *AggregatorApp) TryAggregateRequestsWithoutProof(ctx context.Context) er
 		}
 	}
 
-	slog.InfoContext(ctx, "Aggregation catch-up completed", "aggregated", aggregated)
+	slog.InfoContext(ctx, "Aggregation catch-up completed",
+		"requestsChecked", requestsChecked,
+		"proofsGenerated", proofsGenerated,
+	)
 
 	return nil
+}
+
+func (s *AggregatorApp) StartCatchupLoop(ctx context.Context) error {
+	ctx = log.WithComponent(ctx, "aggregator")
+
+	if !s.cfg.ProofCatchup.Enabled {
+		slog.InfoContext(ctx, "Proof catch-up loop disabled")
+		return nil
+	}
+
+	slog.InfoContext(ctx, "Started proof catch-up loop",
+		"interval", s.cfg.ProofCatchup.Interval,
+		"epochsToCheck", s.cfg.ProofCatchup.EpochsToCheck,
+		"epochsOffset", s.cfg.ProofCatchup.EpochsOffset,
+		"maxRequestsPerCycle", s.cfg.ProofCatchup.MaxRequestsPerCycle,
+		"maxProofsPerCycle", s.cfg.ProofCatchup.MaxProofsPerCycle,
+	)
+
+	timer := time.NewTimer(0) // Fire immediately on first tick
+	defer timer.Stop()
+
+	for {
+		select {
+		case <-timer.C:
+			if err := s.tryAggregateRequestsWithoutProof(ctx); err != nil {
+				slog.ErrorContext(ctx, "Proof catch-up cycle failed", "error", err)
+			}
+			timer.Reset(s.cfg.ProofCatchup.Interval)
+		case <-ctx.Done():
+			slog.InfoContext(ctx, "Proof catch-up loop stopped")
+			return nil
+		}
+	}
 }
 
 func (s *AggregatorApp) GetAggregationStatus(ctx context.Context, requestID common.Hash) (symbiotic.AggregationStatus, error) {

@@ -459,6 +459,14 @@ func runApp(ctx context.Context) error {
 		AggregationPolicy: aggPolicy,
 		KeyProvider:       keyProvider,
 		ForceAggregator:   cfg.ForceRole.Aggregator,
+		ProofCatchup: aggregatorApp.ProofCatchupConfig{
+			Enabled:             cfg.AggregationCatchup.Enabled,
+			Interval:            cfg.AggregationCatchup.Interval,
+			EpochsToCheck:       cfg.AggregationCatchup.EpochsToCheck,
+			EpochsOffset:        cfg.AggregationCatchup.EpochsOffset,
+			MaxRequestsPerCycle: cfg.AggregationCatchup.MaxRequestsPerCycle,
+			MaxProofsPerCycle:   cfg.AggregationCatchup.MaxProofsPerCycle,
+		},
 	})
 	if err != nil {
 		return errors.Errorf("failed to create aggregator app: %w", err)
@@ -547,13 +555,7 @@ func runApp(ctx context.Context) error {
 	})
 
 	eg.Go(func() error {
-		err := aggApp.TryAggregateRequestsWithoutProof(ctx)
-		if err != nil {
-			slog.ErrorContext(ctx, "Aggregation catch-up failed", "error", err)
-			return errors.Errorf("failed aggregation catch-up: %w", err)
-		}
-		slog.InfoContext(ctx, "Aggregation catch-up finished")
-		return nil
+		return aggApp.StartCatchupLoop(egCtx)
 	})
 
 	eg.Go(func() error {
