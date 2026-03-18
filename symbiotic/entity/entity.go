@@ -445,6 +445,16 @@ func (v ValidatorSet) IsCommitter(requiredKey []byte) bool {
 	return ok
 }
 
+func (v ValidatorSet) ValidatorIndex(requiredKey []byte) int {
+	for idx, validator := range v.Validators {
+		key, found := validator.FindKeyByKeyTag(v.RequiredKeyTag)
+		if found && bytes.Equal(key, requiredKey) {
+			return idx
+		}
+	}
+	return -1
+}
+
 func (v ValidatorSet) IsSigner(requiredKey CompactPublicKey) bool {
 	for _, validator := range v.Validators {
 		key, found := validator.FindKeyByKeyTag(v.RequiredKeyTag)

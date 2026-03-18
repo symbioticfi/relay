@@ -2,6 +2,7 @@
 .claude/
 .local/
 .cache
+.gocache
 
 CLAUDE.md
 go.sum

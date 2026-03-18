@@ -171,6 +171,7 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 				"key", onchainKey,
 				"epoch", signatureMap.Epoch,
 				"aggIndices", validatorSet.AggregatorIndices,
+				"ourIndex", validatorSet.ValidatorIndex(onchainKey),
 			)
 			return nil
 		}
