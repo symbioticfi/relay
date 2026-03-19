@@ -555,6 +555,16 @@ func runApp(ctx context.Context) error {
 	})
 
 	eg.Go(func() error {
+		err := aggApp.HandleAggregationRequests(egCtx, cfg.SignalCfg.WorkerCount)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.ErrorContext(ctx, "Aggregation requests handler failed", "error", err)
+			return errors.Errorf("failed to handle aggregation requests: %w", err)
+		}
+		slog.InfoContext(ctx, "Aggregation requests handler stopped")
+		return nil
+	})
+
+	eg.Go(func() error {
 		return aggApp.StartCatchupLoop(egCtx)
 	})
 

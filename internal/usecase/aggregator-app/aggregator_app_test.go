@@ -202,7 +202,7 @@ func TestHandleSignatureGeneratedMessage_LowLatencyPolicy_QuorumNotReached(t *te
 	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
 
 	// Execute
-	err := setup.app.HandleSignatureProcessedMessage(t.Context(), msg)
+	_, err := setup.app.TryAggregateProofForRequestID(t.Context(), msg.RequestID())
 
 	// Verify - should return nil (no error) when quorum not reached, no aggregation
 	require.NoError(t, err)
@@ -219,7 +219,7 @@ func TestHandleSignatureGeneratedMessage_LowLatencyPolicy_QuorumReached(t *testi
 	setupSuccessfulAggregationMocks(setup, msg, testingData)
 
 	// Execute
-	err := setup.app.HandleSignatureProcessedMessage(ctx, msg)
+	_, err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
 
 	// Verify - should successfully aggregate when quorum reached
 	require.NoError(t, err)
@@ -240,7 +240,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumNotReached(t *testi
 	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
 
 	// Execute
-	err := setup.app.HandleSignatureProcessedMessage(ctx, msg)
+	_, err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
 
 	// Verify - should return nil (no error) when quorum not reached, no aggregation
 	require.NoError(t, err)
@@ -259,7 +259,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_TooManyUnsi
 	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
 
 	// Execute
-	err := setup.app.HandleSignatureProcessedMessage(ctx, msg)
+	_, err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
 
 	// Verify - should not aggregate due to too many unsigners
 	require.NoError(t, err)
@@ -276,7 +276,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_AcceptableU
 	setupSuccessfulAggregationMocks(setup, msg, testingData)
 
 	// Execute
-	err := setup.app.HandleSignatureProcessedMessage(ctx, msg)
+	_, err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
 
 	// Verify - should successfully aggregate when unsigners within limit
 	require.NoError(t, err)
@@ -293,7 +293,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_ExactUnsign
 	setupSuccessfulAggregationMocks(setup, msg, testingData)
 
 	// Execute
-	err := setup.app.HandleSignatureProcessedMessage(ctx, msg)
+	_, err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
 
 	// Verify - should successfully aggregate when exactly at unsigners limit
 	require.NoError(t, err)
@@ -310,7 +310,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_AllValidatorsSigned(t *te
 	setupSuccessfulAggregationMocks(setup, msg, testingData)
 
 	// Execute
-	err := setup.app.HandleSignatureProcessedMessage(ctx, msg)
+	_, err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
 
 	// Verify - should successfully aggregate when all validators signed
 	require.NoError(t, err)
@@ -331,7 +331,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_ZeroMaxUnsigners(t *testi
 	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
 
 	// Execute
-	err := setup.app.HandleSignatureProcessedMessage(ctx, msg)
+	_, err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
 
 	// Verify - should not aggregate due to any unsigners when maxUnsigners=0
 	require.NoError(t, err)
@@ -349,7 +349,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_HighMaxUnsigners(t *testi
 	setupSuccessfulAggregationMocks(setup, msg, testingData)
 
 	// Execute
-	err := setup.app.HandleSignatureProcessedMessage(ctx, msg)
+	_, err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
 
 	// Verify - should successfully aggregate with high unsigners limit
 	require.NoError(t, err)

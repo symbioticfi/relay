@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	validate "github.com/go-playground/validator/v10"
+	"k8s.io/client-go/util/workqueue"
 
 	"github.com/symbioticfi/relay/internal/entity"
 	aggregationPolicyTypes "github.com/symbioticfi/relay/internal/usecase/aggregation-policy/types"
@@ -88,7 +89,8 @@ func (c Config) Validate() error {
 }
 
 type AggregatorApp struct {
-	cfg Config
+	cfg   Config
+	queue *workqueue.Typed[common.Hash]
 }
 
 func NewAggregatorApp(cfg Config) (*AggregatorApp, error) {
@@ -97,20 +99,14 @@ func NewAggregatorApp(cfg Config) (*AggregatorApp, error) {
 	}
 
 	app := &AggregatorApp{
-		cfg: cfg,
+		cfg:   cfg,
+		queue: workqueue.NewTyped[common.Hash](),
 	}
 
 	return app, nil
 }
 
 func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg symbiotic.Signature) error {
-	ctx, span := tracing.StartConsumerSpan(ctx, "aggregator.HandleSignatureProcessed",
-		tracing.AttrRequestID.String(msg.RequestID().Hex()),
-		tracing.AttrEpoch.Int64(int64(msg.Epoch)),
-		tracing.AttrKeyTag.String(msg.KeyTag.String()),
-	)
-	defer span.End()
-
 	ctx = log.WithComponent(ctx, "aggregator")
 	if !msg.KeyTag.Type().AggregationKey() {
 		slog.DebugContext(ctx, "Skipped processing signature processed message, key tag is not for aggregation",
@@ -127,8 +123,48 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 		"requestId", msg.RequestID().Hex(),
 	)
 
-	_, err := s.TryAggregateProofForRequestID(ctx, msg.RequestID())
-	return err
+	s.queue.Add(msg.RequestID())
+	return nil
+}
+
+func (s *AggregatorApp) EnqueueRequestID(ctx context.Context, requestID common.Hash) {
+	s.queue.Add(requestID)
+	slog.DebugContext(ctx, "Enqueued aggregation request", "requestId", requestID.Hex())
+}
+
+func (s *AggregatorApp) HandleAggregationRequests(ctx context.Context, workerCount int) error {
+	ctx = log.WithComponent(ctx, "aggregator")
+
+	for i := range workerCount {
+		go s.worker(ctx, i+1)
+	}
+
+	<-ctx.Done()
+	s.queue.ShutDown()
+	slog.InfoContext(ctx, "Aggregation workers stopped")
+	return nil
+}
+
+func (s *AggregatorApp) worker(ctx context.Context, id int) {
+	slog.InfoContext(ctx, "Aggregation worker started", "workerId", id)
+	for {
+		requestID, shutdown := s.queue.Get()
+		if shutdown {
+			slog.InfoContext(ctx, "Aggregation worker shutting down", "workerId", id)
+			return
+		}
+
+		func() {
+			defer s.queue.Done(requestID)
+
+			if _, err := s.TryAggregateProofForRequestID(ctx, requestID); err != nil {
+				slog.ErrorContext(ctx, "Failed to aggregate proof for request",
+					"requestId", requestID.Hex(),
+					"error", err,
+				)
+			}
+		}()
+	}
 }
 
 func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error) {
