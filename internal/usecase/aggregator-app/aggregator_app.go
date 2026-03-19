@@ -49,6 +49,10 @@ type keyProvider interface {
 	GetOnchainKeyFromCache(keyTag symbiotic.KeyTag) (symbiotic.CompactPublicKey, error)
 }
 
+type entityProcessor interface {
+	ProcessAggregationProof(ctx context.Context, proof symbiotic.AggregationProof, self bool) error
+}
+
 type aggregatorPolicy = aggregationPolicyTypes.AggregationPolicy
 
 type ProofCatchupConfig struct {
@@ -64,6 +68,7 @@ type Config struct {
 	Repo              repository       `validate:"required"`
 	P2PClient         p2pClient        `validate:"required"`
 	Aggregator        aggregator       `validate:"required"`
+	EntityProcessor   entityProcessor  `validate:"required"`
 	Metrics           metrics          `validate:"required"`
 	AggregationPolicy aggregatorPolicy `validate:"required"`
 	KeyProvider       keyProvider      `validate:"required"`
@@ -293,6 +298,14 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 	slog.InfoContext(ctx, "Aggregation proof created",
 		"duration", time.Since(appAggregationStart).String(),
 	)
+
+	if err := s.cfg.EntityProcessor.ProcessAggregationProof(ctx, proofData, true); err != nil {
+		if !errors.Is(err, entity.ErrEntityAlreadyExist) {
+			tracing.RecordError(span, err)
+			return symbiotic.AggregationProof{}, errors.Errorf("failed to process aggregation proof: %w", err)
+		}
+		slog.DebugContext(ctx, "Skipped saving proof, already exists")
+	}
 
 	err = s.cfg.P2PClient.BroadcastSignatureAggregatedMessage(ctx, proofData)
 	if err != nil {

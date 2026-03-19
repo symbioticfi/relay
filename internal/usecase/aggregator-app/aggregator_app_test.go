@@ -23,13 +23,14 @@ import (
 )
 
 type testSetup struct {
-	ctrl           *gomock.Controller
-	mockRepo       *mocks.Mockrepository
-	mockP2PClient  *mocks.Mockp2pClient
-	mockAggregator *mocks.Mockaggregator
-	mockMetrics    *mocks.Mockmetrics
-	app            *AggregatorApp
-	privateKey     crypto.PrivateKey
+	ctrl                *gomock.Controller
+	mockRepo            *mocks.Mockrepository
+	mockP2PClient       *mocks.Mockp2pClient
+	mockAggregator      *mocks.Mockaggregator
+	mockEntityProcessor *mocks.MockentityProcessor
+	mockMetrics         *mocks.Mockmetrics
+	app                 *AggregatorApp
+	privateKey          crypto.PrivateKey
 }
 
 func newTestSetup(t *testing.T, policyType symbiotic.AggregationPolicyType, maxUnsigners uint64) *testSetup {
@@ -40,6 +41,7 @@ func newTestSetup(t *testing.T, policyType symbiotic.AggregationPolicyType, maxU
 	mockRepo := mocks.NewMockrepository(ctrl)
 	mockP2PClient := mocks.NewMockp2pClient(ctrl)
 	mockAggregator := mocks.NewMockaggregator(ctrl)
+	mockEntityProcessor := mocks.NewMockentityProcessor(ctrl)
 	mockMetrics := mocks.NewMockmetrics(ctrl)
 	aggPolicy, err := aggregationPolicy.NewAggregationPolicy(policyType, maxUnsigners)
 	require.NoError(t, err)
@@ -56,6 +58,7 @@ func newTestSetup(t *testing.T, policyType symbiotic.AggregationPolicyType, maxU
 		Repo:              mockRepo,
 		P2PClient:         mockP2PClient,
 		Aggregator:        mockAggregator,
+		EntityProcessor:   mockEntityProcessor,
 		Metrics:           mockMetrics,
 		AggregationPolicy: aggPolicy,
 		KeyProvider:       keyprovider.NewCacheKeyProvider(kp),
@@ -70,13 +73,14 @@ func newTestSetup(t *testing.T, policyType symbiotic.AggregationPolicyType, maxU
 	require.NoError(t, err)
 
 	return &testSetup{
-		ctrl:           ctrl,
-		mockRepo:       mockRepo,
-		mockP2PClient:  mockP2PClient,
-		mockAggregator: mockAggregator,
-		mockMetrics:    mockMetrics,
-		app:            app,
-		privateKey:     privateKey,
+		ctrl:                ctrl,
+		mockRepo:            mockRepo,
+		mockP2PClient:       mockP2PClient,
+		mockAggregator:      mockAggregator,
+		mockEntityProcessor: mockEntityProcessor,
+		mockMetrics:         mockMetrics,
+		app:                 app,
+		privateKey:          privateKey,
 	}
 }
 
@@ -182,6 +186,7 @@ func setupSuccessfulAggregationMocks(setup *testSetup, msg symbiotic.Signature, 
 
 	setup.mockAggregator.EXPECT().Aggregate(gomock.Any(), gomock.Any(), gomock.Any()).Return(proofData, nil)
 
+	setup.mockEntityProcessor.EXPECT().ProcessAggregationProof(gomock.Any(), proofData, true).Return(nil)
 	setup.mockP2PClient.EXPECT().BroadcastSignatureAggregatedMessage(gomock.Any(), proofData).Return(nil)
 
 	setup.mockMetrics.EXPECT().ObserveOnlyAggregateDuration(gomock.Any())
@@ -406,6 +411,7 @@ func newTestSetupWithCatchup(t *testing.T, catchupCfg ProofCatchupConfig) *testS
 	mockRepo := mocks.NewMockrepository(ctrl)
 	mockP2PClient := mocks.NewMockp2pClient(ctrl)
 	mockAggregator := mocks.NewMockaggregator(ctrl)
+	mockEntityProcessor := mocks.NewMockentityProcessor(ctrl)
 	mockMetrics := mocks.NewMockmetrics(ctrl)
 	aggPolicy, err := aggregationPolicy.NewAggregationPolicy(symbiotic.AggregationPolicyLowLatency, 0)
 	require.NoError(t, err)
@@ -421,6 +427,7 @@ func newTestSetupWithCatchup(t *testing.T, catchupCfg ProofCatchupConfig) *testS
 		Repo:              mockRepo,
 		P2PClient:         mockP2PClient,
 		Aggregator:        mockAggregator,
+		EntityProcessor:   mockEntityProcessor,
 		Metrics:           mockMetrics,
 		AggregationPolicy: aggPolicy,
 		KeyProvider:       keyprovider.NewCacheKeyProvider(kp),
@@ -429,13 +436,14 @@ func newTestSetupWithCatchup(t *testing.T, catchupCfg ProofCatchupConfig) *testS
 	require.NoError(t, err)
 
 	return &testSetup{
-		ctrl:           ctrl,
-		mockRepo:       mockRepo,
-		mockP2PClient:  mockP2PClient,
-		mockAggregator: mockAggregator,
-		mockMetrics:    mockMetrics,
-		app:            app,
-		privateKey:     privateKey,
+		ctrl:                ctrl,
+		mockRepo:            mockRepo,
+		mockP2PClient:       mockP2PClient,
+		mockAggregator:      mockAggregator,
+		mockEntityProcessor: mockEntityProcessor,
+		mockMetrics:         mockMetrics,
+		app:                 app,
+		privateKey:          privateKey,
 	}
 }
 

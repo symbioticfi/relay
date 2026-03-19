@@ -45,7 +45,7 @@ type metrics interface {
 
 type entityProcessor interface {
 	ProcessSignature(ctx context.Context, signature symbiotic.Signature, self bool) error
-	ProcessAggregationProof(ctx context.Context, proof symbiotic.AggregationProof) error
+	ProcessAggregationProof(ctx context.Context, proof symbiotic.AggregationProof, self bool) error
 }
 
 type Config struct {

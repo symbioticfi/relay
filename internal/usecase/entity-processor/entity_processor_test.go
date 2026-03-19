@@ -582,7 +582,7 @@ func TestEntityProcessor_ProcessAggregationProof_SuccessfullyProcesses(t *testin
 			})
 			require.NoError(t, err)
 
-			err = processor.ProcessAggregationProof(t.Context(), msg)
+			err = processor.ProcessAggregationProof(t.Context(), msg, false)
 			require.NoError(t, err)
 
 			// Verify aggregation proof was saved
@@ -629,7 +629,7 @@ func TestEntityProcessor_ProcessAggregationProof_HandlesMissingPendingGracefully
 			})
 			require.NoError(t, err)
 
-			err = processor.ProcessAggregationProof(t.Context(), msg)
+			err = processor.ProcessAggregationProof(t.Context(), msg, false)
 			require.NoError(t, err)
 
 			// Verify aggregation proof was still saved
@@ -671,11 +671,11 @@ func TestEntityProcessor_ProcessAggregationProof_FailsWhenAlreadyExists(t *testi
 			})
 			require.NoError(t, err)
 
-			err = processor.ProcessAggregationProof(t.Context(), msg)
+			err = processor.ProcessAggregationProof(t.Context(), msg, false)
 			require.NoError(t, err)
 
 			// Attempt to process same aggregation proof should fail
-			err = processor.ProcessAggregationProof(t.Context(), msg)
+			err = processor.ProcessAggregationProof(t.Context(), msg, false)
 			require.Error(t, err)
 			require.Contains(t, err.Error(), "aggregation proof already exists for request ID")
 			require.ErrorIs(t, err, entity.ErrEntityAlreadyExist)
@@ -786,7 +786,7 @@ func TestEntityProcessor_ProcessSignature_FullSignatureToAggregationProofFlow(t 
 				Proof:       randomBytes(t, 96),
 			}
 
-			err = processor.ProcessAggregationProof(t.Context(), msg)
+			err = processor.ProcessAggregationProof(t.Context(), msg, false)
 			require.NoError(t, err)
 
 			// Verify aggregation proof was saved

@@ -37,7 +37,7 @@ func (s *Syncer) ProcessReceivedAggregationProofs(ctx context.Context, response 
 // processSingleAggregationProof processes a single aggregation proof
 func (s *Syncer) processSingleAggregationProof(ctx context.Context, proof symbiotic.AggregationProof, stats *entity.AggregationProofProcessingStats) {
 	// Process the aggregation proof using the signature processor
-	if err := s.cfg.EntityProcessor.ProcessAggregationProof(ctx, proof); err != nil {
+	if err := s.cfg.EntityProcessor.ProcessAggregationProof(ctx, proof, false); err != nil {
 		if errors.Is(err, entity.ErrEntityAlreadyExist) {
 			stats.AlreadyExistCount++
 			return

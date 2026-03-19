@@ -455,6 +455,7 @@ func runApp(ctx context.Context) error {
 		Repo:              repo,
 		P2PClient:         p2pService,
 		Aggregator:        agg,
+		EntityProcessor:   entityProcessor,
 		Metrics:           mtr,
 		AggregationPolicy: aggPolicy,
 		KeyProvider:       keyProvider,
