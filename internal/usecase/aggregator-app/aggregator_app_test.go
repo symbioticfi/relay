@@ -12,8 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/go-errors/errors"
-
 	"github.com/symbioticfi/relay/internal/entity"
 	aggregationPolicy "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
 	"github.com/symbioticfi/relay/internal/usecase/aggregator-app/mocks"
@@ -207,7 +205,7 @@ func TestHandleSignatureGeneratedMessage_LowLatencyPolicy_QuorumNotReached(t *te
 	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
 
 	// Execute
-	_, err := setup.app.TryAggregateProofForRequestID(t.Context(), msg.RequestID())
+	err := setup.app.TryAggregateProofForRequestID(t.Context(), msg.RequestID())
 
 	// Verify - should return nil (no error) when quorum not reached, no aggregation
 	require.NoError(t, err)
@@ -224,7 +222,7 @@ func TestHandleSignatureGeneratedMessage_LowLatencyPolicy_QuorumReached(t *testi
 	setupSuccessfulAggregationMocks(setup, msg, testingData)
 
 	// Execute
-	_, err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
+	err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
 
 	// Verify - should successfully aggregate when quorum reached
 	require.NoError(t, err)
@@ -245,7 +243,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumNotReached(t *testi
 	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
 
 	// Execute
-	_, err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
+	err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
 
 	// Verify - should return nil (no error) when quorum not reached, no aggregation
 	require.NoError(t, err)
@@ -264,7 +262,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_TooManyUnsi
 	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
 
 	// Execute
-	_, err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
+	err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
 
 	// Verify - should not aggregate due to too many unsigners
 	require.NoError(t, err)
@@ -281,7 +279,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_AcceptableU
 	setupSuccessfulAggregationMocks(setup, msg, testingData)
 
 	// Execute
-	_, err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
+	err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
 
 	// Verify - should successfully aggregate when unsigners within limit
 	require.NoError(t, err)
@@ -298,7 +296,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_QuorumReached_ExactUnsign
 	setupSuccessfulAggregationMocks(setup, msg, testingData)
 
 	// Execute
-	_, err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
+	err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
 
 	// Verify - should successfully aggregate when exactly at unsigners limit
 	require.NoError(t, err)
@@ -315,7 +313,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_AllValidatorsSigned(t *te
 	setupSuccessfulAggregationMocks(setup, msg, testingData)
 
 	// Execute
-	_, err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
+	err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
 
 	// Verify - should successfully aggregate when all validators signed
 	require.NoError(t, err)
@@ -336,7 +334,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_ZeroMaxUnsigners(t *testi
 	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
 
 	// Execute
-	_, err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
+	err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
 
 	// Verify - should not aggregate due to any unsigners when maxUnsigners=0
 	require.NoError(t, err)
@@ -354,7 +352,7 @@ func TestHandleSignatureGeneratedMessage_LowCostPolicy_HighMaxUnsigners(t *testi
 	setupSuccessfulAggregationMocks(setup, msg, testingData)
 
 	// Execute
-	_, err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
+	err := setup.app.TryAggregateProofForRequestID(ctx, msg.RequestID())
 
 	// Verify - should successfully aggregate with high unsigners limit
 	require.NoError(t, err)
@@ -492,28 +490,22 @@ func TestCatchup_MaxRequestsPerCycleLimit(t *testing.T) {
 
 	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(gomock.Any()).Return(symbiotic.Epoch(1), nil)
 
-	reqID1 := common.HexToHash("0x01")
-	reqID2 := common.HexToHash("0x02")
-	reqID3 := common.HexToHash("0x03")
-
-	// Return 3 requests, but limit is 2
+	// Return 3 requests, but limit is 2 — only 2 should be enqueued
 	setup.mockRepo.EXPECT().GetSignatureRequestsWithoutAggregationProof(gomock.Any(), symbiotic.Epoch(1), 10, common.Hash{}).
 		Return([]symbiotic.SignatureRequestWithID{
-			{SignatureRequest: symbiotic.SignatureRequest{KeyTag: symbiotic.KeyTag(15), RequiredEpoch: 1}, RequestID: reqID1},
-			{SignatureRequest: symbiotic.SignatureRequest{KeyTag: symbiotic.KeyTag(15), RequiredEpoch: 1}, RequestID: reqID2},
-			{SignatureRequest: symbiotic.SignatureRequest{KeyTag: symbiotic.KeyTag(15), RequiredEpoch: 1}, RequestID: reqID3},
+			{SignatureRequest: symbiotic.SignatureRequest{KeyTag: symbiotic.KeyTag(15), RequiredEpoch: 1}, RequestID: common.HexToHash("0x01")},
+			{SignatureRequest: symbiotic.SignatureRequest{KeyTag: symbiotic.KeyTag(15), RequiredEpoch: 1}, RequestID: common.HexToHash("0x02")},
+			{SignatureRequest: symbiotic.SignatureRequest{KeyTag: symbiotic.KeyTag(15), RequiredEpoch: 1}, RequestID: common.HexToHash("0x03")},
 		}, nil)
-
-	// Only 2 requests should be processed (proof already exists for both — quick skip path)
-	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), reqID1).Return(symbiotic.AggregationProof{}, nil)
-	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), reqID2).Return(symbiotic.AggregationProof{}, nil)
-	// reqID3 should NOT be called — limit reached
 
 	err := setup.app.tryAggregateRequestsWithoutProof(t.Context())
 	require.NoError(t, err)
+
+	// Verify only 2 items were enqueued
+	require.Equal(t, 2, setup.app.queue.Len())
 }
 
-func TestCatchup_PerRequestErrorSkipped(t *testing.T) {
+func TestCatchup_EnqueuesAllRequests(t *testing.T) {
 	setup := newTestSetupWithCatchup(t, ProofCatchupConfig{
 		Enabled:       true,
 		Interval:      time.Minute,
@@ -522,53 +514,18 @@ func TestCatchup_PerRequestErrorSkipped(t *testing.T) {
 
 	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(gomock.Any()).Return(symbiotic.Epoch(0), nil)
 
-	reqID1 := common.HexToHash("0x01")
-	reqID2 := common.HexToHash("0x02")
-
 	setup.mockRepo.EXPECT().GetSignatureRequestsWithoutAggregationProof(gomock.Any(), symbiotic.Epoch(0), 10, common.Hash{}).
 		Return([]symbiotic.SignatureRequestWithID{
-			{SignatureRequest: symbiotic.SignatureRequest{KeyTag: symbiotic.KeyTag(15), RequiredEpoch: 0}, RequestID: reqID1},
-			{SignatureRequest: symbiotic.SignatureRequest{KeyTag: symbiotic.KeyTag(15), RequiredEpoch: 0}, RequestID: reqID2},
+			{SignatureRequest: symbiotic.SignatureRequest{KeyTag: symbiotic.KeyTag(15), RequiredEpoch: 0}, RequestID: common.HexToHash("0x01")},
+			{SignatureRequest: symbiotic.SignatureRequest{KeyTag: symbiotic.KeyTag(15), RequiredEpoch: 0}, RequestID: common.HexToHash("0x02")},
 		}, nil)
 	// Second page: empty
-	setup.mockRepo.EXPECT().GetSignatureRequestsWithoutAggregationProof(gomock.Any(), symbiotic.Epoch(0), 10, reqID2).
+	setup.mockRepo.EXPECT().GetSignatureRequestsWithoutAggregationProof(gomock.Any(), symbiotic.Epoch(0), 10, common.HexToHash("0x02")).
 		Return(nil, nil)
-
-	// First request fails with an error
-	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), reqID1).Return(symbiotic.AggregationProof{}, errors.New("storage error"))
-
-	// Second request should still be processed (proof already exists — quick skip)
-	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), reqID2).Return(symbiotic.AggregationProof{}, nil)
 
 	err := setup.app.tryAggregateRequestsWithoutProof(t.Context())
 	require.NoError(t, err)
-}
 
-func TestCatchup_ContextCancelledReturnsImmediately(t *testing.T) {
-	setup := newTestSetupWithCatchup(t, ProofCatchupConfig{
-		Enabled:       true,
-		Interval:      time.Minute,
-		EpochsToCheck: 20,
-	})
-
-	ctx, cancel := context.WithCancel(t.Context())
-
-	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(gomock.Any()).Return(symbiotic.Epoch(0), nil)
-
-	reqID1 := common.HexToHash("0x01")
-
-	setup.mockRepo.EXPECT().GetSignatureRequestsWithoutAggregationProof(gomock.Any(), symbiotic.Epoch(0), 10, common.Hash{}).
-		Return([]symbiotic.SignatureRequestWithID{
-			{SignatureRequest: symbiotic.SignatureRequest{KeyTag: symbiotic.KeyTag(15), RequiredEpoch: 0}, RequestID: reqID1},
-		}, nil)
-
-	// First request fails, AND context is cancelled
-	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), reqID1).
-		DoAndReturn(func(_ context.Context, _ common.Hash) (symbiotic.AggregationProof, error) {
-			cancel()
-			return symbiotic.AggregationProof{}, errors.New("storage error")
-		})
-
-	err := setup.app.tryAggregateRequestsWithoutProof(ctx)
-	require.ErrorIs(t, err, context.Canceled)
+	// Both requests should be enqueued
+	require.Equal(t, 2, setup.app.queue.Len())
 }

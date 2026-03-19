@@ -466,7 +466,6 @@ func runApp(ctx context.Context) error {
 			EpochsToCheck:       cfg.Aggregation.Catchup.EpochsToCheck,
 			EpochsOffset:        cfg.Aggregation.Catchup.EpochsOffset,
 			MaxRequestsPerCycle: cfg.Aggregation.Catchup.MaxRequestsPerCycle,
-			MaxProofsPerCycle:   cfg.Aggregation.Catchup.MaxProofsPerCycle,
 		},
 	})
 	if err != nil {

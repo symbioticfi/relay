@@ -247,7 +247,7 @@ type PrunerConfig struct {
 }
 
 type AggregationConfig struct {
-	WorkerCount int                      `mapstructure:"worker-count"`
+	WorkerCount int                      `mapstructure:"worker-count" validate:"min=1"`
 	Catchup     AggregationCatchupConfig `mapstructure:"catchup"`
 }
 
@@ -257,7 +257,6 @@ type AggregationCatchupConfig struct {
 	EpochsToCheck       int           `mapstructure:"epochs-to-check"`
 	EpochsOffset        int           `mapstructure:"epochs-offset"`
 	MaxRequestsPerCycle int           `mapstructure:"max-requests-per-cycle"`
-	MaxProofsPerCycle   int           `mapstructure:"max-proofs-per-cycle"`
 }
 
 type TracingConfig struct {
@@ -372,7 +371,6 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Int("aggregation.catchup.epochs-to-check", 20, "Number of epochs to scan per catch-up cycle")
 	rootCmd.PersistentFlags().Int("aggregation.catchup.epochs-offset", 0, "Epochs back from latest to start scanning")
 	rootCmd.PersistentFlags().Int("aggregation.catchup.max-requests-per-cycle", 0, "Max requests to check per cycle (0 = unlimited)")
-	rootCmd.PersistentFlags().Int("aggregation.catchup.max-proofs-per-cycle", 100, "Max proofs to generate per cycle (0 = unlimited)")
 	rootCmd.PersistentFlags().Bool("tracing.enabled", false, "Enable distributed tracing")
 	rootCmd.PersistentFlags().String("tracing.endpoint", "localhost:4317", "OTLP endpoint for tracing (e.g., Jaeger)")
 	rootCmd.PersistentFlags().Float64("tracing.sample-rate", 1.0, "Trace sampling rate (0.0 to 1.0)")
@@ -590,9 +588,6 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("aggregation.catchup.max-requests-per-cycle", cmd.PersistentFlags().Lookup("aggregation.catchup.max-requests-per-cycle")); err != nil {
-		return errors.Errorf("failed to bind flag: %w", err)
-	}
-	if err := v.BindPFlag("aggregation.catchup.max-proofs-per-cycle", cmd.PersistentFlags().Lookup("aggregation.catchup.max-proofs-per-cycle")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("tracing.enabled", cmd.PersistentFlags().Lookup("tracing.enabled")); err != nil {
