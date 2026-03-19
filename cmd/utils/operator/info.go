@@ -119,7 +119,7 @@ var infoCmd = &cobra.Command{
 		}
 
 		leveledList := pterm.LeveledList{}
-		leveledList = cmdhelpers.PrintTreeValidator(leveledList, validator, valset.GetTotalActiveVotingPower().Int)
+		leveledList = cmdhelpers.PrintTreeValidator(leveledList, validator, valset)
 		text, _ := pterm.DefaultTree.WithRoot(putils.TreeFromLeveledList(leveledList)).Srender()
 		panels := pterm.Panels{{{Data: pterm.DefaultBox.WithTitle("Operator info").Sprint(text)}}}
 		pterm.DefaultPanel.WithPanels(panels).Render()

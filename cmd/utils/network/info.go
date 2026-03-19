@@ -182,13 +182,13 @@ var infoCmd = &cobra.Command{
 		if infoFlags.ValidatorsFull {
 			panels = append(panels, []pterm.Panel{
 				{Data: pterm.DefaultBox.WithTitle("Validators").Sprint(
-					printValidatorsTree(&valset),
+					printValidatorsTree(valset),
 				)},
 			})
 		} else if infoFlags.Validators {
 			panels = append(panels, []pterm.Panel{
 				{Data: pterm.DefaultBox.WithTitle("Validators").Sprint(
-					printValidatorsTable(&valset),
+					printValidatorsTable(valset),
 				)},
 			})
 		}

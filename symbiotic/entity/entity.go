@@ -435,17 +435,17 @@ type ValidatorSet struct {
 	CommitterIndices  []uint32
 }
 
-func (v ValidatorSet) IsAggregator(requiredKey []byte) bool {
+func (v ValidatorSet) IsAggregator(requiredKey CompactPublicKey) bool {
 	_, ok := v.findMembership(v.AggregatorIndices, requiredKey)
 	return ok
 }
 
-func (v ValidatorSet) IsCommitter(requiredKey []byte) bool {
+func (v ValidatorSet) IsCommitter(requiredKey CompactPublicKey) bool {
 	_, ok := v.findMembership(v.CommitterIndices, requiredKey)
 	return ok
 }
 
-func (v ValidatorSet) ValidatorIndex(requiredKey []byte) int {
+func (v ValidatorSet) ValidatorIndex(requiredKey CompactPublicKey) int {
 	for idx, validator := range v.Validators {
 		key, found := validator.FindKeyByKeyTag(v.RequiredKeyTag)
 		if found && bytes.Equal(key, requiredKey) {

@@ -74,7 +74,7 @@ func GetPassword() (string, error) {
 	return string(passwordBytes), nil
 }
 
-func PrintTreeValidator(leveledList pterm.LeveledList, validator symbiotic.Validator, totalVotingPower *big.Int) pterm.LeveledList {
+func PrintTreeValidator(leveledList pterm.LeveledList, validator symbiotic.Validator, valset symbiotic.ValidatorSet) pterm.LeveledList {
 	leveledList = append(leveledList, pterm.LeveledListItem{
 		Level: 0,
 		Text:  fmt.Sprintf("Validator: %s", validator.Operator.String()),
@@ -93,7 +93,7 @@ func PrintTreeValidator(leveledList pterm.LeveledList, validator symbiotic.Valid
 		Level: 1,
 		Text: fmt.Sprintf("Voting Power: %d (%0.3f%%)",
 			validator.VotingPower.Int,
-			GetPct(validator.VotingPower.Int, totalVotingPower),
+			GetPct(validator.VotingPower.Int, valset.GetTotalActiveVotingPower().Int),
 		),
 	})
 
@@ -140,6 +140,16 @@ func PrintTreeValidator(leveledList pterm.LeveledList, validator symbiotic.Valid
 			Level: 3,
 			Text:  fmt.Sprintf("PubKey: %s", pubkeyText),
 		})
+		if key.Tag.Type().AggregationKey() {
+			leveledList = append(leveledList, pterm.LeveledListItem{
+				Level: 3,
+				Text:  fmt.Sprintf("Aggregator: %t", valset.IsAggregator(key.Payload)),
+			})
+			leveledList = append(leveledList, pterm.LeveledListItem{
+				Level: 3,
+				Text:  fmt.Sprintf("Committer: %t", valset.IsCommitter(key.Payload)),
+			})
+		}
 	}
 
 	return leveledList
