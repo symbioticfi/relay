@@ -455,10 +455,18 @@ func runApp(ctx context.Context) error {
 		Repo:              repo,
 		P2PClient:         p2pService,
 		Aggregator:        agg,
+		EntityProcessor:   entityProcessor,
 		Metrics:           mtr,
 		AggregationPolicy: aggPolicy,
 		KeyProvider:       keyProvider,
 		ForceAggregator:   cfg.ForceRole.Aggregator,
+		ProofCatchup: aggregatorApp.ProofCatchupConfig{
+			Enabled:             cfg.Aggregation.Catchup.Enabled,
+			Interval:            cfg.Aggregation.Catchup.Interval,
+			EpochsToCheck:       cfg.Aggregation.Catchup.EpochsToCheck,
+			EpochsOffset:        cfg.Aggregation.Catchup.EpochsOffset,
+			MaxRequestsPerCycle: cfg.Aggregation.Catchup.MaxRequestsPerCycle,
+		},
 	})
 	if err != nil {
 		return errors.Errorf("failed to create aggregator app: %w", err)
@@ -547,7 +555,17 @@ func runApp(ctx context.Context) error {
 	})
 
 	eg.Go(func() error {
-		return aggApp.TryAggregateRequestsWithoutProof(ctx)
+		err := aggApp.HandleAggregationRequests(egCtx, cfg.Aggregation.WorkerCount)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.ErrorContext(ctx, "Aggregation requests handler failed", "error", err)
+			return errors.Errorf("failed to handle aggregation requests: %w", err)
+		}
+		slog.InfoContext(ctx, "Aggregation requests handler stopped")
+		return nil
+	})
+
+	eg.Go(func() error {
+		return aggApp.StartCatchupLoop(egCtx)
 	})
 
 	eg.Go(func() error {

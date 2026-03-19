@@ -282,17 +282,17 @@ func (m *MockentityProcessor) EXPECT() *MockentityProcessorMockRecorder {
 }
 
 // ProcessAggregationProof mocks base method.
-func (m *MockentityProcessor) ProcessAggregationProof(ctx context.Context, proof entity.AggregationProof) error {
+func (m *MockentityProcessor) ProcessAggregationProof(ctx context.Context, proof entity.AggregationProof, self bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ProcessAggregationProof", ctx, proof)
+	ret := m.ctrl.Call(m, "ProcessAggregationProof", ctx, proof, self)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ProcessAggregationProof indicates an expected call of ProcessAggregationProof.
-func (mr *MockentityProcessorMockRecorder) ProcessAggregationProof(ctx, proof any) *gomock.Call {
+func (mr *MockentityProcessorMockRecorder) ProcessAggregationProof(ctx, proof, self any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessAggregationProof", reflect.TypeOf((*MockentityProcessor)(nil).ProcessAggregationProof), ctx, proof)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessAggregationProof", reflect.TypeOf((*MockentityProcessor)(nil).ProcessAggregationProof), ctx, proof, self)
 }
 
 // ProcessSignature mocks base method.

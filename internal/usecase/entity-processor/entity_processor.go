@@ -136,8 +136,9 @@ func (s *EntityProcessor) ProcessSignature(ctx context.Context, signature symbio
 	return nil
 }
 
-// ProcessAggregationProof processes an aggregation proof by saving it and removing from pending collection
-func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregationProof symbiotic.AggregationProof) error {
+// ProcessAggregationProof processes an aggregation proof by saving it and removing from pending collection.
+// When self is true, verification is skipped (proof was generated locally).
+func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregationProof symbiotic.AggregationProof, self bool) error {
 	ctx, span := tracing.StartSpan(ctx, "entity_processor.ProcessAggregationProof",
 		tracing.AttrRequestID.String(aggregationProof.RequestID().Hex()),
 		tracing.AttrEpoch.Int64(int64(aggregationProof.Epoch)),
@@ -151,7 +152,7 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregati
 		slog.Uint64("epoch", uint64(aggregationProof.Epoch)),
 		slog.Uint64("keyTag", uint64(aggregationProof.KeyTag)),
 	)
-	slog.DebugContext(ctx, "Started processing aggregation proof")
+	slog.DebugContext(ctx, "Started processing aggregation proof", "self", self)
 
 	_, err := s.cfg.Repo.GetAggregationProof(ctx, aggregationProof.RequestID())
 	if err == nil {
@@ -163,23 +164,25 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregati
 		return errors.Errorf("failed to check existing aggregation proof: %w", err)
 	}
 
-	validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, aggregationProof.Epoch)
-	if err != nil {
-		tracing.RecordError(span, err)
-		return errors.Errorf("failed to get validator set for epoch %d: %w", aggregationProof.Epoch, err)
-	}
+	if !self {
+		validatorSet, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, aggregationProof.Epoch)
+		if err != nil {
+			tracing.RecordError(span, err)
+			return errors.Errorf("failed to get validator set for epoch %d: %w", aggregationProof.Epoch, err)
+		}
 
-	tracing.SetAttributes(span, tracing.AttrValidatorCount.Int(len(validatorSet.Validators)))
+		tracing.SetAttributes(span, tracing.AttrValidatorCount.Int(len(validatorSet.Validators)))
 
-	ok, err := s.cfg.Aggregator.Verify(ctx, validatorSet, aggregationProof.KeyTag, aggregationProof)
-	if err != nil {
-		tracing.RecordError(span, err)
-		return errors.Errorf("failed to verify aggregation proof: %w", err)
-	}
-	if !ok {
-		err := errors.Errorf("aggregation proof invalid")
-		tracing.RecordError(span, err)
-		return err
+		ok, err := s.cfg.Aggregator.Verify(ctx, validatorSet, aggregationProof.KeyTag, aggregationProof)
+		if err != nil {
+			tracing.RecordError(span, err)
+			return errors.Errorf("failed to verify aggregation proof: %w", err)
+		}
+		if !ok {
+			err := errors.Errorf("aggregation proof invalid")
+			tracing.RecordError(span, err)
+			return err
+		}
 	}
 
 	if err := s.cfg.Repo.SaveProof(ctx, aggregationProof); err != nil {

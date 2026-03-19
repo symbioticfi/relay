@@ -82,13 +82,11 @@ func printNetworkInfo(epoch symbiotic.Epoch, epochStart symbiotic.Timestamp, net
 	return infoText
 }
 
-func printValidatorsTree(valset *symbiotic.ValidatorSet) string {
+func printValidatorsTree(valset symbiotic.ValidatorSet) string {
 	leveledList := pterm.LeveledList{}
 
-	validators := valset.Validators
-
-	for _, validator := range validators {
-		leveledList = cmdhelpers.PrintTreeValidator(leveledList, validator, valset.GetTotalActiveVotingPower().Int)
+	for _, validator := range valset.Validators {
+		leveledList = cmdhelpers.PrintTreeValidator(leveledList, validator, valset)
 	}
 
 	// Render the tree structure using the default tree printer.
@@ -96,14 +94,12 @@ func printValidatorsTree(valset *symbiotic.ValidatorSet) string {
 	return text
 }
 
-func printValidatorsTable(valset *symbiotic.ValidatorSet) string {
+func printValidatorsTable(valset symbiotic.ValidatorSet) string {
 	tableData := pterm.TableData{
 		{"Address", "Status", "Voting Power", "Vaults", "Keys"},
 	}
 
-	validators := valset.Validators
-
-	for _, validator := range validators {
+	for _, validator := range valset.Validators {
 		status := pterm.FgRed.Sprint("inactive")
 		if validator.IsActive {
 			status = pterm.FgGreen.Sprint("active")

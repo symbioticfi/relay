@@ -357,3 +357,41 @@ func (mr *MockkeyProviderMockRecorder) GetPrivateKey(keyTag any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPrivateKey", reflect.TypeOf((*MockkeyProvider)(nil).GetPrivateKey), keyTag)
 }
+
+// MockentityProcessor is a mock of entityProcessor interface.
+type MockentityProcessor struct {
+	ctrl     *gomock.Controller
+	recorder *MockentityProcessorMockRecorder
+	isgomock struct{}
+}
+
+// MockentityProcessorMockRecorder is the mock recorder for MockentityProcessor.
+type MockentityProcessorMockRecorder struct {
+	mock *MockentityProcessor
+}
+
+// NewMockentityProcessor creates a new mock instance.
+func NewMockentityProcessor(ctrl *gomock.Controller) *MockentityProcessor {
+	mock := &MockentityProcessor{ctrl: ctrl}
+	mock.recorder = &MockentityProcessorMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockentityProcessor) EXPECT() *MockentityProcessorMockRecorder {
+	return m.recorder
+}
+
+// ProcessAggregationProof mocks base method.
+func (m *MockentityProcessor) ProcessAggregationProof(ctx context.Context, proof entity0.AggregationProof, self bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProcessAggregationProof", ctx, proof, self)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ProcessAggregationProof indicates an expected call of ProcessAggregationProof.
+func (mr *MockentityProcessorMockRecorder) ProcessAggregationProof(ctx, proof, self any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessAggregationProof", reflect.TypeOf((*MockentityProcessor)(nil).ProcessAggregationProof), ctx, proof, self)
+}

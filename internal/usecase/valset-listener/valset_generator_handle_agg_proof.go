@@ -115,6 +115,7 @@ func (s *Service) tryToCommitPendingProofs(ctx context.Context) (uint64, error) 
 				"now", now,
 				"minPollInterval", minCommitterPollIntervalSeconds,
 				"committerIndices", valset.CommitterIndices,
+				"ourIndex", valset.ValidatorIndex(onchainKey),
 			)
 			return tickInterval, nil
 		}

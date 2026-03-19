@@ -35,7 +35,7 @@ func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, p2pMs
 
 	msg := p2pMsg.Message
 
-	err := s.cfg.EntityProcessor.ProcessAggregationProof(ctx, msg)
+	err := s.cfg.EntityProcessor.ProcessAggregationProof(ctx, msg, false)
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityAlreadyExist) {
 			slog.DebugContext(ctx, "Skipped aggregation proof, already exists")
