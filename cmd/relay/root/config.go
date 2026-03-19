@@ -53,7 +53,7 @@ type config struct {
 	ForceRole                    ForceRole                    `mapstructure:"force-role"`
 	Retention                    RetentionConfig              `mapstructure:"retention"`
 	Pruner                       PrunerConfig                 `mapstructure:"pruner"`
-	AggregationCatchup           AggregationCatchupConfig     `mapstructure:"aggregation-catchup"`
+	Aggregation                  AggregationConfig            `mapstructure:"aggregation"`
 	Tracing                      TracingConfig                `mapstructure:"tracing"`
 	Badger                       BadgerConfig                 `mapstructure:"badger"`
 	Bbolt                        BboltConfig                  `mapstructure:"bbolt"`
@@ -246,6 +246,11 @@ type PrunerConfig struct {
 	Interval time.Duration `mapstructure:"interval"`
 }
 
+type AggregationConfig struct {
+	WorkerCount int                      `mapstructure:"worker-count"`
+	Catchup     AggregationCatchupConfig `mapstructure:"catchup"`
+}
+
 type AggregationCatchupConfig struct {
 	Enabled             bool          `mapstructure:"enabled"`
 	Interval            time.Duration `mapstructure:"interval"`
@@ -361,12 +366,13 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Uint64("retention.signature-epochs", 0, "Number of historical signature epochs to retain (0 = unlimited)")
 	rootCmd.PersistentFlags().Bool("pruner.enabled", false, "Enable automatic pruning of old epoch data (default: false)")
 	rootCmd.PersistentFlags().Duration("pruner.interval", time.Hour, "How often to run pruning (default: 1h)")
-	rootCmd.PersistentFlags().Bool("aggregation-catchup.enabled", true, "Enable periodic aggregation catch-up loop")
-	rootCmd.PersistentFlags().Duration("aggregation-catchup.interval", time.Minute, "How often to run aggregation catch-up")
-	rootCmd.PersistentFlags().Int("aggregation-catchup.epochs-to-check", 20, "Number of epochs to scan per catch-up cycle")
-	rootCmd.PersistentFlags().Int("aggregation-catchup.epochs-offset", 0, "Epochs back from latest to start scanning")
-	rootCmd.PersistentFlags().Int("aggregation-catchup.max-requests-per-cycle", 0, "Max requests to check per cycle (0 = unlimited)")
-	rootCmd.PersistentFlags().Int("aggregation-catchup.max-proofs-per-cycle", 100, "Max proofs to generate per cycle (0 = unlimited)")
+	rootCmd.PersistentFlags().Int("aggregation.worker-count", 10, "Max simultaneous proof aggregations, reduce for ZK circuits with high memory and cpu usage")
+	rootCmd.PersistentFlags().Bool("aggregation.catchup.enabled", true, "Enable periodic aggregation catch-up loop")
+	rootCmd.PersistentFlags().Duration("aggregation.catchup.interval", time.Minute, "How often to run aggregation catch-up")
+	rootCmd.PersistentFlags().Int("aggregation.catchup.epochs-to-check", 20, "Number of epochs to scan per catch-up cycle")
+	rootCmd.PersistentFlags().Int("aggregation.catchup.epochs-offset", 0, "Epochs back from latest to start scanning")
+	rootCmd.PersistentFlags().Int("aggregation.catchup.max-requests-per-cycle", 0, "Max requests to check per cycle (0 = unlimited)")
+	rootCmd.PersistentFlags().Int("aggregation.catchup.max-proofs-per-cycle", 100, "Max proofs to generate per cycle (0 = unlimited)")
 	rootCmd.PersistentFlags().Bool("tracing.enabled", false, "Enable distributed tracing")
 	rootCmd.PersistentFlags().String("tracing.endpoint", "localhost:4317", "OTLP endpoint for tracing (e.g., Jaeger)")
 	rootCmd.PersistentFlags().Float64("tracing.sample-rate", 1.0, "Trace sampling rate (0.0 to 1.0)")
@@ -568,22 +574,25 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	if err := v.BindPFlag("pruner.interval", cmd.PersistentFlags().Lookup("pruner.interval")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("aggregation-catchup.enabled", cmd.PersistentFlags().Lookup("aggregation-catchup.enabled")); err != nil {
+	if err := v.BindPFlag("aggregation.worker-count", cmd.PersistentFlags().Lookup("aggregation.worker-count")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("aggregation-catchup.interval", cmd.PersistentFlags().Lookup("aggregation-catchup.interval")); err != nil {
+	if err := v.BindPFlag("aggregation.catchup.enabled", cmd.PersistentFlags().Lookup("aggregation.catchup.enabled")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("aggregation-catchup.epochs-to-check", cmd.PersistentFlags().Lookup("aggregation-catchup.epochs-to-check")); err != nil {
+	if err := v.BindPFlag("aggregation.catchup.interval", cmd.PersistentFlags().Lookup("aggregation.catchup.interval")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("aggregation-catchup.epochs-offset", cmd.PersistentFlags().Lookup("aggregation-catchup.epochs-offset")); err != nil {
+	if err := v.BindPFlag("aggregation.catchup.epochs-to-check", cmd.PersistentFlags().Lookup("aggregation.catchup.epochs-to-check")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("aggregation-catchup.max-requests-per-cycle", cmd.PersistentFlags().Lookup("aggregation-catchup.max-requests-per-cycle")); err != nil {
+	if err := v.BindPFlag("aggregation.catchup.epochs-offset", cmd.PersistentFlags().Lookup("aggregation.catchup.epochs-offset")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
-	if err := v.BindPFlag("aggregation-catchup.max-proofs-per-cycle", cmd.PersistentFlags().Lookup("aggregation-catchup.max-proofs-per-cycle")); err != nil {
+	if err := v.BindPFlag("aggregation.catchup.max-requests-per-cycle", cmd.PersistentFlags().Lookup("aggregation.catchup.max-requests-per-cycle")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("aggregation.catchup.max-proofs-per-cycle", cmd.PersistentFlags().Lookup("aggregation.catchup.max-proofs-per-cycle")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("tracing.enabled", cmd.PersistentFlags().Lookup("tracing.enabled")); err != nil {

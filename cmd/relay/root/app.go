@@ -460,12 +460,12 @@ func runApp(ctx context.Context) error {
 		KeyProvider:       keyProvider,
 		ForceAggregator:   cfg.ForceRole.Aggregator,
 		ProofCatchup: aggregatorApp.ProofCatchupConfig{
-			Enabled:             cfg.AggregationCatchup.Enabled,
-			Interval:            cfg.AggregationCatchup.Interval,
-			EpochsToCheck:       cfg.AggregationCatchup.EpochsToCheck,
-			EpochsOffset:        cfg.AggregationCatchup.EpochsOffset,
-			MaxRequestsPerCycle: cfg.AggregationCatchup.MaxRequestsPerCycle,
-			MaxProofsPerCycle:   cfg.AggregationCatchup.MaxProofsPerCycle,
+			Enabled:             cfg.Aggregation.Catchup.Enabled,
+			Interval:            cfg.Aggregation.Catchup.Interval,
+			EpochsToCheck:       cfg.Aggregation.Catchup.EpochsToCheck,
+			EpochsOffset:        cfg.Aggregation.Catchup.EpochsOffset,
+			MaxRequestsPerCycle: cfg.Aggregation.Catchup.MaxRequestsPerCycle,
+			MaxProofsPerCycle:   cfg.Aggregation.Catchup.MaxProofsPerCycle,
 		},
 	})
 	if err != nil {
@@ -555,7 +555,7 @@ func runApp(ctx context.Context) error {
 	})
 
 	eg.Go(func() error {
-		err := aggApp.HandleAggregationRequests(egCtx, cfg.SignalCfg.WorkerCount)
+		err := aggApp.HandleAggregationRequests(egCtx, cfg.Aggregation.WorkerCount)
 		if err != nil && !errors.Is(err, context.Canceled) {
 			slog.ErrorContext(ctx, "Aggregation requests handler failed", "error", err)
 			return errors.Errorf("failed to handle aggregation requests: %w", err)
