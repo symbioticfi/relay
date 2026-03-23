@@ -247,8 +247,9 @@ type PrunerConfig struct {
 }
 
 type AggregationConfig struct {
-	WorkerCount int                      `mapstructure:"worker-count" validate:"min=1"`
-	Catchup     AggregationCatchupConfig `mapstructure:"catchup"`
+	WorkerCount           int                      `mapstructure:"worker-count" validate:"min=1"`
+	CrossEpochAggregation bool                     `mapstructure:"cross-epoch-aggregation"`
+	Catchup               AggregationCatchupConfig `mapstructure:"catchup"`
 }
 
 type AggregationCatchupConfig struct {
@@ -366,6 +367,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("pruner.enabled", false, "Enable automatic pruning of old epoch data (default: false)")
 	rootCmd.PersistentFlags().Duration("pruner.interval", time.Hour, "How often to run pruning (default: 1h)")
 	rootCmd.PersistentFlags().Int("aggregation.worker-count", 10, "Max simultaneous proof aggregations, reduce for ZK circuits with high memory and cpu usage")
+	rootCmd.PersistentFlags().Bool("aggregation.cross-epoch-aggregation", false, "Allow latest-epoch aggregators to aggregate proofs for older epochs when original aggregators are offline")
 	rootCmd.PersistentFlags().Bool("aggregation.catchup.enabled", true, "Enable periodic aggregation catch-up loop")
 	rootCmd.PersistentFlags().Duration("aggregation.catchup.interval", time.Minute, "How often to run aggregation catch-up")
 	rootCmd.PersistentFlags().Int("aggregation.catchup.epochs-to-check", 20, "Number of epochs to scan per catch-up cycle")
@@ -573,6 +575,9 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("aggregation.worker-count", cmd.PersistentFlags().Lookup("aggregation.worker-count")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("aggregation.cross-epoch-aggregation", cmd.PersistentFlags().Lookup("aggregation.cross-epoch-aggregation")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("aggregation.catchup.enabled", cmd.PersistentFlags().Lookup("aggregation.catchup.enabled")); err != nil {

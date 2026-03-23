@@ -64,15 +64,16 @@ type ProofCatchupConfig struct {
 }
 
 type Config struct {
-	Repo              repository       `validate:"required"`
-	P2PClient         p2pClient        `validate:"required"`
-	Aggregator        aggregator       `validate:"required"`
-	EntityProcessor   entityProcessor  `validate:"required"`
-	Metrics           metrics          `validate:"required"`
-	AggregationPolicy aggregatorPolicy `validate:"required"`
-	KeyProvider       keyProvider      `validate:"required"`
-	ForceAggregator   bool
-	ProofCatchup      ProofCatchupConfig
+	Repo                  repository       `validate:"required"`
+	P2PClient             p2pClient        `validate:"required"`
+	Aggregator            aggregator       `validate:"required"`
+	EntityProcessor       entityProcessor  `validate:"required"`
+	Metrics               metrics          `validate:"required"`
+	AggregationPolicy     aggregatorPolicy `validate:"required"`
+	KeyProvider           keyProvider      `validate:"required"`
+	ForceAggregator       bool
+	CrossEpochAggregation bool
+	ProofCatchup          ProofCatchupConfig
 }
 
 func (c Config) Validate() error {
@@ -227,7 +228,8 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 			return errors.Errorf("failed to get private key for required key tag %s: %w", validatorSet.RequiredKeyTag, err)
 		}
 
-		if !validatorSet.IsAggregator(onchainKey) {
+		if !validatorSet.IsAggregator(onchainKey) &&
+			(!s.cfg.CrossEpochAggregation || !s.isLatestEpochAggregator(ctx, signatureMap.Epoch, onchainKey)) {
 			tracing.AddEvent(span, "skipped_not_aggregator")
 			slog.DebugContext(ctx, "Skipped aggregation, not an aggregator for this validator set",
 				"key", onchainKey,
@@ -318,6 +320,26 @@ func (s *AggregatorApp) TryAggregateProofForRequestID(ctx context.Context, reque
 		"totalDuration", time.Since(appAggregationStart).String())
 
 	return nil
+}
+
+func (s *AggregatorApp) isLatestEpochAggregator(ctx context.Context, requestEpoch symbiotic.Epoch, onchainKey symbiotic.CompactPublicKey) bool {
+	latestEpoch, err := s.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
+	if err != nil {
+		slog.DebugContext(ctx, "Cross-epoch fallback: failed to get latest epoch", "error", err)
+		return false
+	}
+
+	if requestEpoch >= latestEpoch {
+		return false
+	}
+
+	latestValset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, latestEpoch)
+	if err != nil {
+		slog.DebugContext(ctx, "Cross-epoch fallback: failed to get latest validator set", "error", err, "latestEpoch", latestEpoch)
+		return false
+	}
+
+	return latestValset.IsAggregator(onchainKey)
 }
 
 func (s *AggregatorApp) tryAggregateRequestsWithoutProof(ctx context.Context) error {

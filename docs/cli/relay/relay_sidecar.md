@@ -21,6 +21,7 @@ relay_sidecar [flags]
       --aggregation.catchup.epochs-to-check int          Number of epochs to scan per catch-up cycle (default 20)
       --aggregation.catchup.interval duration            How often to run aggregation catch-up (default 1m0s)
       --aggregation.catchup.max-requests-per-cycle int   Max requests to check per cycle (0 = unlimited)
+      --aggregation.cross-epoch-aggregation              Allow latest-epoch aggregators to aggregate proofs for older epochs when original aggregators are offline
       --aggregation.worker-count int                     Max simultaneous proof aggregations, reduce for ZK circuits with high memory and cpu usage (default 10)
       --api.http-gateway                                 Enable HTTP/JSON REST API gateway on /api/v1/* path
       --api.listen string                                API Server listener address

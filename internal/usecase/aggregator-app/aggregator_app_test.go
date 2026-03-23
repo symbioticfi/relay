@@ -529,3 +529,168 @@ func TestCatchup_EnqueuesAllRequests(t *testing.T) {
 	// Both requests should be enqueued
 	require.Equal(t, 2, setup.app.queue.Len())
 }
+
+// CROSS-EPOCH AGGREGATION TESTS
+
+func newTestSetupWithCrossEpoch(t *testing.T) *testSetup {
+	t.Helper()
+	ctrl := gomock.NewController(t)
+	t.Cleanup(ctrl.Finish)
+
+	mockRepo := mocks.NewMockrepository(ctrl)
+	mockP2PClient := mocks.NewMockp2pClient(ctrl)
+	mockAggregator := mocks.NewMockaggregator(ctrl)
+	mockEntityProcessor := mocks.NewMockentityProcessor(ctrl)
+	mockMetrics := mocks.NewMockmetrics(ctrl)
+	aggPolicy, err := aggregationPolicy.NewAggregationPolicy(symbiotic.AggregationPolicyLowLatency, 0)
+	require.NoError(t, err)
+
+	privateKey, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
+	require.NoError(t, err)
+
+	kp, err := keyprovider.NewSimpleKeystoreProvider()
+	require.NoError(t, err)
+	require.NoError(t, kp.AddKey(15, privateKey))
+
+	app, err := NewAggregatorApp(Config{
+		Repo:                  mockRepo,
+		P2PClient:             mockP2PClient,
+		Aggregator:            mockAggregator,
+		EntityProcessor:       mockEntityProcessor,
+		Metrics:               mockMetrics,
+		AggregationPolicy:     aggPolicy,
+		KeyProvider:           keyprovider.NewCacheKeyProvider(kp),
+		CrossEpochAggregation: true,
+		ProofCatchup: ProofCatchupConfig{
+			Enabled:       true,
+			Interval:      time.Minute,
+			EpochsToCheck: 20,
+		},
+	})
+	require.NoError(t, err)
+
+	return &testSetup{
+		ctrl:                ctrl,
+		mockRepo:            mockRepo,
+		mockP2PClient:       mockP2PClient,
+		mockAggregator:      mockAggregator,
+		mockEntityProcessor: mockEntityProcessor,
+		mockMetrics:         mockMetrics,
+		app:                 app,
+		privateKey:          privateKey,
+	}
+}
+
+func TestCrossEpochAggregation_AggregatesForOldEpoch(t *testing.T) {
+	setup := newTestSetupWithCrossEpoch(t)
+	msg := createTestSignatureExtended(t, setup.privateKey)
+	// msg has epoch=1, we'll make latest epoch=5
+
+	requestEpoch := symbiotic.Epoch(1)
+	latestEpoch := symbiotic.Epoch(5)
+
+	// Request's epoch data — node is NOT aggregator for epoch 1
+	testingData := createTestDataWithQuorum(msg.RequestID(), requestEpoch, true, setup.privateKey)
+	testingData.ValidatorSet.AggregatorIndices = []uint32{} // not an aggregator for this epoch
+
+	// Latest epoch data — node IS aggregator
+	latestValset := symbiotic.ValidatorSet{
+		Version:        1,
+		RequiredKeyTag: symbiotic.KeyTag(15),
+		Epoch:          latestEpoch,
+		Validators: []symbiotic.Validator{{
+			Operator:    common.HexToAddress("0x01"),
+			VotingPower: symbiotic.ToVotingPower(big.NewInt(100)),
+			IsActive:    true,
+			Keys:        []symbiotic.ValidatorKey{{Tag: symbiotic.KeyTag(15), Payload: setup.privateKey.PublicKey().OnChain()}},
+		}},
+		AggregatorIndices: []uint32{0},
+	}
+
+	// Mocks
+	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
+	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestID()).Return(testingData.SignatureMap, nil)
+	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), requestEpoch).Return(testingData.ValidatorSet, nil)
+	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(gomock.Any()).Return(latestEpoch, nil)
+	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), latestEpoch).Return(latestValset, nil)
+
+	// Should proceed with aggregation
+	setup.mockRepo.EXPECT().GetAllSignatures(gomock.Any(), msg.RequestID()).Return(nil, nil)
+	setup.mockRepo.EXPECT().GetConfigByEpoch(gomock.Any(), requestEpoch).Return(symbiotic.NetworkConfig{}, nil)
+	proofData := symbiotic.AggregationProof{KeyTag: msg.KeyTag, Epoch: msg.Epoch, MessageHash: msg.MessageHash, Proof: []byte("test-proof")}
+	setup.mockAggregator.EXPECT().Aggregate(gomock.Any(), gomock.Any(), gomock.Any()).Return(proofData, nil)
+	setup.mockEntityProcessor.EXPECT().ProcessAggregationProof(gomock.Any(), proofData, true).Return(nil)
+	setup.mockP2PClient.EXPECT().BroadcastSignatureAggregatedMessage(gomock.Any(), proofData).Return(nil)
+	setup.mockMetrics.EXPECT().ObserveOnlyAggregateDuration(gomock.Any())
+	setup.mockMetrics.EXPECT().ObserveAppAggregateDuration(gomock.Any())
+
+	err := setup.app.TryAggregateProofForRequestID(t.Context(), msg.RequestID())
+	require.NoError(t, err)
+}
+
+func TestCrossEpochAggregation_SkipsWhenDisabled(t *testing.T) {
+	setup := newTestSetup(t, symbiotic.AggregationPolicyLowLatency, 0)
+	// CrossEpochAggregation is false by default in newTestSetup
+	msg := createTestSignatureExtended(t, setup.privateKey)
+
+	requestEpoch := symbiotic.Epoch(1)
+
+	testingData := createTestDataWithQuorum(msg.RequestID(), requestEpoch, true, setup.privateKey)
+	testingData.ValidatorSet.AggregatorIndices = []uint32{} // not an aggregator
+
+	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
+	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestID()).Return(testingData.SignatureMap, nil)
+	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), requestEpoch).Return(testingData.ValidatorSet, nil)
+	// Should NOT call GetLatestValidatorSetEpoch — cross-epoch is disabled
+
+	err := setup.app.TryAggregateProofForRequestID(t.Context(), msg.RequestID())
+	require.NoError(t, err)
+}
+
+func TestCrossEpochAggregation_SkipsWhenRequestIsLatestEpoch(t *testing.T) {
+	setup := newTestSetupWithCrossEpoch(t)
+	msg := createTestSignatureExtended(t, setup.privateKey)
+
+	requestEpoch := symbiotic.Epoch(1)
+
+	testingData := createTestDataWithQuorum(msg.RequestID(), requestEpoch, true, setup.privateKey)
+	testingData.ValidatorSet.AggregatorIndices = []uint32{} // not an aggregator
+
+	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
+	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestID()).Return(testingData.SignatureMap, nil)
+	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), requestEpoch).Return(testingData.ValidatorSet, nil)
+	// Latest epoch == request epoch → no fallback
+	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(gomock.Any()).Return(requestEpoch, nil)
+
+	err := setup.app.TryAggregateProofForRequestID(t.Context(), msg.RequestID())
+	require.NoError(t, err)
+}
+
+func TestCrossEpochAggregation_SkipsWhenNotAggregatorForLatestEpoch(t *testing.T) {
+	setup := newTestSetupWithCrossEpoch(t)
+	msg := createTestSignatureExtended(t, setup.privateKey)
+
+	requestEpoch := symbiotic.Epoch(1)
+	latestEpoch := symbiotic.Epoch(5)
+
+	testingData := createTestDataWithQuorum(msg.RequestID(), requestEpoch, true, setup.privateKey)
+	testingData.ValidatorSet.AggregatorIndices = []uint32{} // not an aggregator for epoch 1
+
+	// Latest epoch — node is also NOT aggregator
+	latestValset := symbiotic.ValidatorSet{
+		Version:           1,
+		RequiredKeyTag:    symbiotic.KeyTag(15),
+		Epoch:             latestEpoch,
+		Validators:        []symbiotic.Validator{{Operator: common.HexToAddress("0x99"), VotingPower: symbiotic.ToVotingPower(big.NewInt(100)), IsActive: true}},
+		AggregatorIndices: []uint32{0}, // different validator
+	}
+
+	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), msg.RequestID()).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
+	setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), msg.RequestID()).Return(testingData.SignatureMap, nil)
+	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), requestEpoch).Return(testingData.ValidatorSet, nil)
+	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(gomock.Any()).Return(latestEpoch, nil)
+	setup.mockRepo.EXPECT().GetValidatorSetByEpoch(gomock.Any(), latestEpoch).Return(latestValset, nil)
+
+	err := setup.app.TryAggregateProofForRequestID(t.Context(), msg.RequestID())
+	require.NoError(t, err)
+}

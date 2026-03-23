@@ -452,14 +452,15 @@ func runApp(ctx context.Context) error {
 
 	var aggApp *aggregatorApp.AggregatorApp
 	aggApp, err = aggregatorApp.NewAggregatorApp(aggregatorApp.Config{
-		Repo:              repo,
-		P2PClient:         p2pService,
-		Aggregator:        agg,
-		EntityProcessor:   entityProcessor,
-		Metrics:           mtr,
-		AggregationPolicy: aggPolicy,
-		KeyProvider:       keyProvider,
-		ForceAggregator:   cfg.ForceRole.Aggregator,
+		Repo:                  repo,
+		P2PClient:             p2pService,
+		Aggregator:            agg,
+		EntityProcessor:       entityProcessor,
+		Metrics:               mtr,
+		AggregationPolicy:     aggPolicy,
+		KeyProvider:           keyProvider,
+		ForceAggregator:       cfg.ForceRole.Aggregator,
+		CrossEpochAggregation: cfg.Aggregation.CrossEpochAggregation,
 		ProofCatchup: aggregatorApp.ProofCatchupConfig{
 			Enabled:             cfg.Aggregation.Catchup.Enabled,
 			Interval:            cfg.Aggregation.Catchup.Interval,
