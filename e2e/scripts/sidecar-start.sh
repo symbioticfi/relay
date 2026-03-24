@@ -60,6 +60,10 @@ tracing:
 
 EOFCONFIG
 
+if [ -n "$STORAGE_TYPE" ]; then
+  echo "storage-type: \"$STORAGE_TYPE\"" >> /tmp/sidecar.yaml
+fi
+
 # Ensure environment variables are explicitly preserved
 export MAX_VALIDATORS="${MAX_VALIDATORS:-}"
 

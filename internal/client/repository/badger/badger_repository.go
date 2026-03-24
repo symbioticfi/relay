@@ -11,10 +11,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
-	"google.golang.org/protobuf/proto"
-
+	"github.com/symbioticfi/relay/internal/client/repository/cached"
+	"github.com/symbioticfi/relay/internal/client/repository/repoutil"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
+
+var _ cached.Repository = (*Repository)(nil)
 
 type Config struct {
 	Dir                      string        `validate:"required"`
@@ -40,10 +42,7 @@ func (c Config) Validate() error {
 	return nil
 }
 
-type metrics interface {
-	ObserveRepoQueryDuration(queryName string, status string, d time.Duration)
-	ObserveRepoQueryTotalDuration(queryName string, status string, d time.Duration)
-}
+type metrics = repoutil.Metrics
 
 type Repository struct {
 	db      *badger.DB
@@ -133,28 +132,7 @@ func (l *slogBadgerLogger) Infof(s string, args ...any) {
 }
 func (l *slogBadgerLogger) Debugf(string, ...any) {}
 
-type DoNothingMetrics struct {
-}
-
-func (m DoNothingMetrics) ObserveRepoQueryDuration(queryName string, status string, d time.Duration) {
-}
-func (m DoNothingMetrics) ObserveRepoQueryTotalDuration(queryName string, status string, d time.Duration) {
-}
-
-func marshalProto(msg proto.Message) ([]byte, error) {
-	data, err := proto.Marshal(msg)
-	if err != nil {
-		return nil, errors.Errorf("failed to marshal proto: %v", err)
-	}
-	return data, nil
-}
-
-func unmarshalProto(data []byte, msg proto.Message) error {
-	if err := proto.Unmarshal(data, msg); err != nil {
-		return errors.Errorf("failed to unmarshal proto: %v", err)
-	}
-	return nil
-}
+type DoNothingMetrics = repoutil.DoNothingMetrics
 
 // startMutexCleanup starts a background goroutine that periodically cleans up stale mutexes
 func (r *Repository) startMutexCleanup(interval, staleTimeout time.Duration) {
