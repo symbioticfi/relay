@@ -16,7 +16,6 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
-	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -636,7 +635,7 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	}
 
 	err := v.ReadInConfig()
-	if err != nil && !errors.Is(err, viper.ConfigFileNotFoundError{}) && !errors.As(err, lo.ToPtr(&fs.PathError{})) {
+	if err != nil && !errors.Is(err, viper.ConfigFileNotFoundError{}) && !errors.As(err, new(fs.PathError)) {
 		return errors.Errorf("failed to read config file: %w", err)
 	}
 

@@ -25,11 +25,12 @@ type settlementReplicaData struct {
 }
 
 func printAddresses(driver symbiotic.CrossChainAddress, networkConfig *symbiotic.NetworkConfig) string {
-	addressesTableData := pterm.TableData{
-		{"Type", "Chain ID", "Address"},
-		{"Driver", strconv.FormatUint(driver.ChainId, 10), driver.Address.String()},
-		{"KeyRegistry", strconv.FormatUint(networkConfig.KeysProvider.ChainId, 10), networkConfig.KeysProvider.Address.String()},
-	}
+	addressesTableData := make(pterm.TableData, 0, 3+len(networkConfig.VotingPowerProviders)+len(networkConfig.Settlements))
+	addressesTableData = append(addressesTableData,
+		[]string{"Type", "Chain ID", "Address"},
+		[]string{"Driver", strconv.FormatUint(driver.ChainId, 10), driver.Address.String()},
+		[]string{"KeyRegistry", strconv.FormatUint(networkConfig.KeysProvider.ChainId, 10), networkConfig.KeysProvider.Address.String()},
+	)
 	for _, provider := range networkConfig.VotingPowerProviders {
 		addressesTableData = append(addressesTableData, []string{
 			"VotingPowerProvider",
@@ -95,9 +96,8 @@ func printValidatorsTree(valset symbiotic.ValidatorSet) string {
 }
 
 func printValidatorsTable(valset symbiotic.ValidatorSet) string {
-	tableData := pterm.TableData{
-		{"Address", "Status", "Voting Power", "Vaults", "Keys"},
-	}
+	tableData := make(pterm.TableData, 0, 1+len(valset.Validators))
+	tableData = append(tableData, []string{"Address", "Status", "Voting Power", "Vaults", "Keys"})
 
 	for _, validator := range valset.Validators {
 		status := pterm.FgRed.Sprint("inactive")
@@ -140,7 +140,8 @@ func printHeaderTable(header symbiotic.ValidatorSetHeader) string {
 }
 
 func printExtraDataTable(extraData symbiotic.ExtraDataList) string {
-	extraDataTable := pterm.TableData{{"Key", "Value"}}
+	extraDataTable := make(pterm.TableData, 0, 1+len(extraData))
+	extraDataTable = append(extraDataTable, []string{"Key", "Value"})
 
 	for _, extraData := range extraData {
 		extraDataTable = append(extraDataTable, []string{
@@ -208,9 +209,8 @@ func printSettlementData(
 	networkConfig symbiotic.NetworkConfig,
 	settlementData []settlementReplicaData,
 ) string {
-	tableData := pterm.TableData{
-		{"Address", "ChainID", "Status", "Integrity", "Latest Committed Epoch", "Missed Epochs", "Header hash"},
-	}
+	tableData := make(pterm.TableData, 0, 1+len(networkConfig.Settlements))
+	tableData = append(tableData, []string{"Address", "ChainID", "Status", "Integrity", "Latest Committed Epoch", "Missed Epochs", "Header hash"})
 
 	for i, settlement := range networkConfig.Settlements {
 		hash := "N/A"
