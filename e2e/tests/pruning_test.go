@@ -3,6 +3,7 @@ package tests
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/require"
 	bolt "go.etcd.io/bbolt"
 
@@ -65,7 +67,7 @@ func TestPruningE2E_RemovesAllNonExcludedEntities(t *testing.T) {
 		readUint64Env("RETENTION_SIGNATURE_EPOCHS", 2),
 		readUint64Env("RETENTION_PROOF_EPOCHS", 2),
 	)
-	require.Greater(t, maxRetention, uint64(0), "pruning test requires positive retention")
+	require.Positive(t, maxRetention, "pruning test requires positive retention")
 
 	t.Log("Step 4: Waiting until the target epoch is eligible for pruning...")
 	pruneReadyEpoch := targetEpoch + symbiotic.Epoch(maxRetention)
@@ -97,7 +99,7 @@ func TestPruningE2E_RemovesAllNonExcludedEntities(t *testing.T) {
 			finalAfter = after
 		}
 		if len(remaining) > 0 {
-			return fmt.Errorf("found unpruned entities:\n%s", formatRemainingEntities(remaining))
+			return errors.Errorf("found unpruned entities:\n%s", formatRemainingEntities(remaining))
 		}
 		return nil
 	}))
@@ -166,11 +168,11 @@ func waitForRequestSignatures(t *testing.T, client *apiv1.SymbioticClient, reque
 			return err
 		}
 		if len(resp.GetSignatures()) == 0 {
-			return fmt.Errorf("no signatures available for request %s yet", requestID)
+			return errors.Errorf("no signatures available for request %s yet", requestID)
 		}
 		threshold := signerCount*2/3 + 1
 		if len(resp.GetSignatures()) < threshold {
-			return fmt.Errorf("received %d signatures, need at least %d", len(resp.GetSignatures()), threshold)
+			return errors.Errorf("received %d signatures, need at least %d", len(resp.GetSignatures()), threshold)
 		}
 		return nil
 	}))
@@ -187,7 +189,7 @@ func waitForRequestProof(t *testing.T, client *apiv1.SymbioticClient, requestID 
 			return err
 		}
 		if resp.GetAggregationProof() == nil || len(resp.GetAggregationProof().GetProof()) == 0 {
-			return fmt.Errorf("aggregation proof for request %s is empty", requestID)
+			return errors.Errorf("aggregation proof for request %s is empty", requestID)
 		}
 		return nil
 	}))
@@ -205,7 +207,7 @@ func waitForAPIEpoch(
 			return err
 		}
 		if symbiotic.Epoch(resp.GetEpoch()) < targetEpoch {
-			return fmt.Errorf("current epoch %d is below target epoch %d", resp.GetEpoch(), targetEpoch)
+			return errors.Errorf("current epoch %d is below target epoch %d", resp.GetEpoch(), targetEpoch)
 		}
 		return nil
 	})
@@ -261,7 +263,7 @@ func scanBboltStorage(
 				remaining = append(remaining, remainingEntity{
 					Type:     entityType,
 					Location: string(name),
-					Key:      fmt.Sprintf("%x", k),
+					Key:      hex.EncodeToString(k),
 				})
 			}
 			return nil
@@ -314,7 +316,7 @@ func scanBadgerStorage(
 			remaining = append(remaining, remainingEntity{
 				Type:     entityType,
 				Location: "badger",
-				Key:      fmt.Sprintf("%x", key),
+				Key:      hex.EncodeToString(key),
 			})
 		}
 		return nil
