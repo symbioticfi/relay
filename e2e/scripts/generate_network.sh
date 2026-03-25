@@ -128,6 +128,11 @@ get_config_from_env() {
     print_status "  Finality blocks: $finality_blocks (FINALITY_BLOCKS=${FINALITY_BLOCKS:-default})"
     print_status "  Committer slot duration: $committer_slot_duration seconds (COMMITTER_SLOT_DURATION=${COMMITTER_SLOT_DURATION:-default})"
     print_status "  Storage type: ${STORAGE_TYPE:-default (bbolt)} (STORAGE_TYPE=${STORAGE_TYPE:-default})"
+    print_status "  Retention valset epochs: ${RETENTION_VALSET_EPOCHS:-1000}"
+    print_status "  Retention signature epochs: ${RETENTION_SIGNATURE_EPOCHS:-1000}"
+    print_status "  Retention proof epochs: ${RETENTION_PROOF_EPOCHS:-1000}"
+    print_status "  Pruner interval: ${PRUNER_INTERVAL:-1m}"
+    print_status "  Sync epochs: ${SYNC_EPOCHS:-1000}"
 }
 
 # Function to generate Docker Compose file
@@ -342,6 +347,11 @@ EOF
     environment:
       - MAX_VALIDATORS=10
       - STORAGE_TYPE=${STORAGE_TYPE:-}
+      - RETENTION_VALSET_EPOCHS=${RETENTION_VALSET_EPOCHS:-}
+      - RETENTION_SIGNATURE_EPOCHS=${RETENTION_SIGNATURE_EPOCHS:-}
+      - RETENTION_PROOF_EPOCHS=${RETENTION_PROOF_EPOCHS:-}
+      - PRUNER_INTERVAL=${PRUNER_INTERVAL:-}
+      - SYNC_EPOCHS=${SYNC_EPOCHS:-}
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/healthz"]
       interval: 30s
@@ -398,6 +408,11 @@ EOF
     environment:
       - MAX_VALIDATORS=10
       - STORAGE_TYPE=${STORAGE_TYPE:-}
+      - RETENTION_VALSET_EPOCHS=${RETENTION_VALSET_EPOCHS:-}
+      - RETENTION_SIGNATURE_EPOCHS=${RETENTION_SIGNATURE_EPOCHS:-}
+      - RETENTION_PROOF_EPOCHS=${RETENTION_PROOF_EPOCHS:-}
+      - PRUNER_INTERVAL=${PRUNER_INTERVAL:-}
+      - SYNC_EPOCHS=${SYNC_EPOCHS:-}
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/healthz"]
       interval: 30s

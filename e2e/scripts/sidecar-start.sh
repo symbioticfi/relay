@@ -1,6 +1,11 @@
 #!/bin/sh
 
 DRIVER_ADDRESS=0x43C27243F96591892976FFf886511807B65a33d5
+RETENTION_VALSET_EPOCHS=${RETENTION_VALSET_EPOCHS:-1000}
+RETENTION_SIGNATURE_EPOCHS=${RETENTION_SIGNATURE_EPOCHS:-1000}
+RETENTION_PROOF_EPOCHS=${RETENTION_PROOF_EPOCHS:-1000}
+PRUNER_INTERVAL=${PRUNER_INTERVAL:-1m}
+SYNC_EPOCHS=${SYNC_EPOCHS:-1000}
 
 cat > /tmp/sidecar.yaml << EOFCONFIG
 # Logging
@@ -39,19 +44,19 @@ evm:
 
 # Retention config
 retention:
-  valset-epochs: 1000
-  signature-epochs: 1000
-  proof-epochs: 1000
+  valset-epochs: ${RETENTION_VALSET_EPOCHS}
+  signature-epochs: ${RETENTION_SIGNATURE_EPOCHS}
+  proof-epochs: ${RETENTION_PROOF_EPOCHS}
 
 sync:
   enabled: true
   period: 5s
   timeout: 1m
-  epochs: 1000
+  epochs: ${SYNC_EPOCHS}
 
 pruner:
   enabled: true
-  interval: 1m
+  interval: ${PRUNER_INTERVAL}
 
 tracing:
   enabled: false

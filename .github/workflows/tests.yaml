@@ -339,3 +339,92 @@ jobs:
           path: e2e/logs/
           retention-days: 7
           if-no-files-found: warn
+
+  e2e-pruning-tests:
+    name: "E2E Pruning Tests - ${{ matrix.config.name }}"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    needs: [unit-tests]
+
+    strategy:
+      matrix:
+        config:
+          - name: "Pruning Setup (bbolt)"
+            storage_type: ""
+          - name: "Pruning Setup (badger)"
+            storage_type: "badger"
+
+    env:
+      OPERATORS: 4
+      COMMITERS: 1
+      AGGREGATORS: 1
+      VERIFICATION_TYPE: 1
+      EPOCH_TIME: 60
+      BLOCK_TIME: 1
+      FINALITY_BLOCKS: 2
+      STORAGE_TYPE: ${{ matrix.config.storage_type }}
+      RETENTION_VALSET_EPOCHS: 2
+      RETENTION_SIGNATURE_EPOCHS: 2
+      RETENTION_PROOF_EPOCHS: 2
+      PRUNER_INTERVAL: 5s
+      SYNC_EPOCHS: 2
+      E2E_PRUNING_TEST: 1
+
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          fetch-depth: 0
+
+      - name: "Configure Private Repository Access"
+        run: |
+          git config --global url.https://x-oauth-basic:${{ secrets.GITHUB_TOKEN }}@github.com/.insteadOf https://github.com/
+          echo "GOPRIVATE=github.com/symbioticfi/relay" >> $GITHUB_ENV
+
+      - name: "Setup Go Environment"
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: "go.sum"
+
+      - name: "Setup Node.js Environment"
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: "Setup Foundry Toolchain"
+        uses: foundry-rs/foundry-toolchain@82dee4ba654bd2146511f85f0d013af94670c4de # v1.4.0
+        with:
+          version: ${{ env.FOUNDRY_VERSION }}
+
+      - name: "Setup Docker Buildx"
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+      - name: "Install Go Dependencies"
+        run: go mod download
+
+      - name: "Initialize Pruning E2E Test Environment"
+        run: |
+          echo "Configuring pruning E2E test environment..."
+          echo "  - Storage Type: ${{ env.STORAGE_TYPE || 'default (bbolt)' }}"
+          echo "  - Retention Valset Epochs: ${{ env.RETENTION_VALSET_EPOCHS }}"
+          echo "  - Retention Signature Epochs: ${{ env.RETENTION_SIGNATURE_EPOCHS }}"
+          echo "  - Retention Proof Epochs: ${{ env.RETENTION_PROOF_EPOCHS }}"
+          echo "  - Pruner Interval: ${{ env.PRUNER_INTERVAL }}"
+
+          cd e2e
+          chmod +x setup.sh
+          ./setup.sh
+          cd ../
+          chmod -R 777 e2e/
+
+      - name: "Start Pruning Test Network"
+        run: |
+          cd e2e/temp-network
+          docker compose up -d
+          sleep 30
+
+      - name: "Execute Pruning E2E Tests"
+        run: |
+          make e2e-pruning-test

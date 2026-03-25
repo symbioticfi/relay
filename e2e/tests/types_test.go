@@ -177,6 +177,16 @@ type tomlNetworkData struct {
 	ValSetDriver        uint64   `toml:"valSetDriver"`
 }
 
+func loadEnvInfo(t *testing.T) EnvInfo {
+	t.Helper()
+
+	envInfo := EnvInfo{}
+	err := envconfig.Process("", &envInfo)
+	require.NoError(t, err, "Failed to process environment variables")
+
+	return envInfo
+}
+
 func loadDeploymentData(t *testing.T) RelayContractsData {
 	t.Helper()
 
@@ -252,9 +262,7 @@ func loadDeploymentData(t *testing.T) RelayContractsData {
 		},
 	}
 
-	relayContracts.Env = EnvInfo{}
-	err = envconfig.Process("", &relayContracts.Env)
-	require.NoError(t, err, "Failed to process environment variables")
+	relayContracts.Env = loadEnvInfo(t)
 
 	return relayContracts
 }
