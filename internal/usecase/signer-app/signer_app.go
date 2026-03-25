@@ -53,6 +53,7 @@ type Config struct {
 	Repo            repo            `validate:"required"`
 	EntityProcessor entityProcessor `validate:"required"`
 	Metrics         metrics         `validate:"required"`
+	SelfP2PID       string          `validate:"required"`
 }
 
 func (c Config) Validate() error {

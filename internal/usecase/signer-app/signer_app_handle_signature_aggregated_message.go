@@ -33,6 +33,12 @@ func (s *SignerApp) HandleSignaturesAggregatedMessage(ctx context.Context, p2pMs
 		slog.String("requestId", p2pMsg.Message.RequestID().Hex()),
 	)
 
+	if p2pMsg.SenderInfo.Sender == s.cfg.SelfP2PID {
+		slog.DebugContext(ctx, "Skipped aggregation proof from self, already stored by aggregator")
+		tracing.AddEvent(span, "ignored_self_message")
+		return nil
+	}
+
 	msg := p2pMsg.Message
 
 	err := s.cfg.EntityProcessor.ProcessAggregationProof(ctx, msg, false)

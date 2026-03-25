@@ -265,11 +265,18 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create syncer: %w", err)
 	}
 
+	p2pService, discoveryService, err := initP2PService(ctx, cfg, keyProvider, syncProvider, mtr)
+	if err != nil {
+		return errors.Errorf("failed to create p2p service: %w", err)
+	}
+	defer p2pService.Close()
+
 	signer, err := signerApp.NewSignerApp(signerApp.Config{
 		KeyProvider:     keyProvider,
 		Repo:            repo,
 		EntityProcessor: entityProcessor,
 		Metrics:         mtr,
+		SelfP2PID:       p2pService.ID(),
 	})
 	if err != nil {
 		return errors.Errorf("failed to create signer app: %w", err)
@@ -309,12 +316,6 @@ func runApp(ctx context.Context) error {
 		slog.InfoContext(ctx, "Valset listener stopped")
 		return nil
 	})
-
-	p2pService, discoveryService, err := initP2PService(ctx, cfg, keyProvider, syncProvider, mtr)
-	if err != nil {
-		return errors.Errorf("failed to create p2p service: %w", err)
-	}
-	defer p2pService.Close()
 
 	// Initialize tracing with instance ID from P2P service
 	if cfg.Tracing.Enabled {
