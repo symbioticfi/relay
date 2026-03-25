@@ -120,7 +120,7 @@ func (s *SignerApp) RequestSignature(ctx context.Context, req symbiotic.Signatur
 		return common.Hash{}, errors.Errorf("failed to get signature request: %w", err)
 	}
 
-	s.queue.Add(requestId)
+	s.EnqueueRequestID(ctx, requestId)
 
 	tracing.AddEvent(span, "signature_requested")
 	// does not return the actual signature yet
@@ -138,6 +138,7 @@ func (s *SignerApp) completeSign(ctx context.Context, requestID common.Hash, p2p
 	)
 	defer span.End()
 	ctx = log.WithAttrs(ctx, slog.String("requestId", requestID.Hex()))
+	slog.DebugContext(ctx, "Starting to complete signature for request")
 
 	req, err := s.cfg.Repo.GetSignatureRequest(ctx, requestID)
 	if err != nil {
@@ -311,7 +312,7 @@ func (s *SignerApp) handleMissedSignaturesOnce(ctx context.Context) error {
 	slog.InfoContext(ctx, "Found pending self signature requests", "count", len(pendingRequests))
 	for _, reqID := range pendingRequests {
 		slog.InfoContext(ctx, "Queued pending self signature request", "requestId", reqID.Hex())
-		s.queue.Add(reqID)
+		s.EnqueueRequestID(ctx, reqID)
 	}
 	return nil
 }
