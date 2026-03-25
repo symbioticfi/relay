@@ -354,25 +354,30 @@ func (s *AggregatorApp) tryAggregateRequestsWithoutProof(ctx context.Context) er
 
 	catchupCfg := s.cfg.ProofCatchup
 
-	var scanFrom symbiotic.Epoch
+	// Catch-up scans a bounded window of older epochs for missing proofs.
+	// EpochsOffset skips recent "hot" epochs still being actively aggregated.
+	// EpochsToCheck limits how far back we look.
+	// Example: latestEpoch=100, EpochsOffset=5, EpochsToCheck=20
+	//   scanEnd = 100 - 5 = 95, startEpoch = 95 - 20 + 1 = 76 → scans 76..95
+	var scanEnd symbiotic.Epoch
 	if symbiotic.Epoch(catchupCfg.EpochsOffset) <= latestEpoch {
-		scanFrom = latestEpoch - symbiotic.Epoch(catchupCfg.EpochsOffset)
+		scanEnd = latestEpoch - symbiotic.Epoch(catchupCfg.EpochsOffset)
 	}
 
 	startEpoch := symbiotic.Epoch(0)
-	if scanFrom >= symbiotic.Epoch(catchupCfg.EpochsToCheck) {
-		startEpoch = scanFrom - symbiotic.Epoch(catchupCfg.EpochsToCheck) + 1
+	if scanEnd >= symbiotic.Epoch(catchupCfg.EpochsToCheck) {
+		startEpoch = scanEnd - symbiotic.Epoch(catchupCfg.EpochsToCheck) + 1
 	}
 
 	slog.InfoContext(ctx, "Started aggregation catch-up for requests without proof",
 		"latestEpoch", latestEpoch,
-		"scanFrom", scanFrom,
+		"scanEnd", scanEnd,
 		"startEpoch", startEpoch,
 	)
 
 	requestsEnqueued := 0
 
-	for epoch := scanFrom; ; epoch-- {
+	for epoch := scanEnd; ; epoch-- {
 		var lastHash common.Hash
 		for {
 			requests, err := s.cfg.Repo.GetSignatureRequestsWithoutAggregationProof(ctx, epoch, 10, lastHash)
