@@ -205,6 +205,7 @@ func (s *SignerApp) completeSign(ctx context.Context, requestID common.Hash, p2p
 		return errors.Errorf("failed to sign valset header hash: %w", err)
 	}
 	s.cfg.Metrics.ObservePKSignDuration(time.Since(pkSignStart))
+	slog.DebugContext(ctx, "Message signed", "signDuration", time.Since(pkSignStart))
 
 	extendedSignature := symbiotic.Signature{
 		MessageHash: hash,
@@ -238,10 +239,11 @@ func (s *SignerApp) completeSign(ctx context.Context, requestID common.Hash, p2p
 		return errors.Errorf("failed to broadcast signature: %w", err)
 	}
 
-	slog.InfoContext(ctx, "Message signed",
+	slog.InfoContext(ctx, "Message signed and broadcasted",
 		"hash", hash,
 		"signature", signature,
 		"duration", time.Since(timeAppSignStart),
+		"signDuration", time.Since(pkSignStart),
 	)
 	s.cfg.Metrics.ObserveAppSignDuration(time.Since(timeAppSignStart))
 
