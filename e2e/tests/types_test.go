@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
@@ -185,6 +186,24 @@ func loadEnvInfo(t *testing.T) EnvInfo {
 	require.NoError(t, err, "Failed to process environment variables")
 
 	return envInfo
+}
+
+func readPositiveIntEnv(name string, fallback int) int {
+	if raw := os.Getenv(name); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
+			return parsed
+		}
+	}
+	return fallback
+}
+
+func readPositiveDurationEnv(name string, fallback time.Duration) time.Duration {
+	if raw := os.Getenv(name); raw != "" {
+		if parsed, err := time.ParseDuration(raw); err == nil && parsed > 0 {
+			return parsed
+		}
+	}
+	return fallback
 }
 
 func loadDeploymentData(t *testing.T) RelayContractsData {

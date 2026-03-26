@@ -3,8 +3,6 @@ package tests
 import (
 	"context"
 	"net/http"
-	"os"
-	"strconv"
 	"testing"
 	"time"
 
@@ -349,12 +347,6 @@ func waitForEpoch(ctx context.Context, client *evm.Client, targetEpoch symbiotic
 }
 
 func waitEpochTimeout() time.Duration {
-	epochSeconds := 60
-	if raw := os.Getenv("EPOCH_TIME"); raw != "" {
-		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
-			epochSeconds = parsed
-		}
-	}
-
+	epochSeconds := readPositiveIntEnv("EPOCH_TIME", 60)
 	return 2 * time.Duration(epochSeconds) * time.Second
 }

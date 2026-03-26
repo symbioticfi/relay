@@ -2,12 +2,11 @@ package tests
 
 import (
 	"bytes"
-	"context"
 	"encoding/hex"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -15,6 +14,7 @@ import (
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	bolt "go.etcd.io/bbolt"
 
@@ -24,26 +24,13 @@ import (
 
 type pruningEntityType string
 
-const entityMeta pruningEntityType = "meta"
-
 type remainingEntity struct {
 	Type     pruningEntityType
 	Location string
 	Key      string
 }
 
-type excludedEntityTypes map[pruningEntityType]string
-
-func (e excludedEntityTypes) contains(entityType pruningEntityType) bool {
-	_, ok := e[entityType]
-	return ok
-}
-
 func TestPruningE2E_RemovesAllNonExcludedEntities(t *testing.T) {
-	if os.Getenv("E2E_PRUNING_TEST") == "" {
-		t.Skip("set E2E_PRUNING_TEST=1 to run pruning e2e tests")
-	}
-
 	t.Log("Starting pruning e2e test...")
 
 	ctx := t.Context()
@@ -54,55 +41,90 @@ func TestPruningE2E_RemovesAllNonExcludedEntities(t *testing.T) {
 	targetEpoch := getCommittedEpochForPruning(t, client)
 	t.Logf("Using committed epoch %d", targetEpoch)
 
-	t.Log("Step 2: Creating a real signature request for the target epoch...")
-	requestID := createPruningRequest(t, targetEpoch, envInfo)
-	t.Logf("Created pruning request %s", requestID)
+	t.Log("Step 2: Creating a real signing request for the target epoch...")
+	requestID := createSignatureRequestForEpoch(t, targetEpoch, envInfo)
+	t.Logf("Created signing request %s", requestID)
 
 	t.Log("Step 3: Waiting for signatures and aggregation proof...")
 	waitForRequestSignatures(t, client, requestID, len(envInfo.GetSidecarConfigs()))
 	waitForRequestProof(t, client, requestID)
 
+	retentionValsetEpochs := uint64(readPositiveIntEnv("RETENTION_VALSET_EPOCHS", 2))
+	retentionSignatureEpochs := uint64(readPositiveIntEnv("RETENTION_SIGNATURE_EPOCHS", 2))
+	retentionProofEpochs := uint64(readPositiveIntEnv("RETENTION_PROOF_EPOCHS", 2))
+	useBadgerStorage := strings.EqualFold(os.Getenv("STORAGE_TYPE"), "badger")
+
 	maxRetention := max(
-		readUint64Env("RETENTION_VALSET_EPOCHS", 2),
-		readUint64Env("RETENTION_SIGNATURE_EPOCHS", 2),
-		readUint64Env("RETENTION_PROOF_EPOCHS", 2),
+		retentionValsetEpochs,
+		retentionSignatureEpochs,
+		retentionProofEpochs,
 	)
 	require.Positive(t, maxRetention, "pruning test requires positive retention")
 
 	t.Log("Step 4: Waiting until the target epoch is eligible for pruning...")
 	pruneReadyEpoch := targetEpoch + symbiotic.Epoch(maxRetention)
-	require.NoError(t, waitForAPIEpoch(ctx, client, pruneReadyEpoch, 3*waitEpochTimeout()))
+	require.NoError(t, waitForErrorIsNil(ctx, 3*waitEpochTimeout(), func() error {
+		resp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
+		if err != nil {
+			return err
+		}
+		if symbiotic.Epoch(resp.GetEpoch()) < pruneReadyEpoch {
+			return errors.Errorf("current epoch %d is below target epoch %d", resp.GetEpoch(), pruneReadyEpoch)
+		}
+		return nil
+	}))
 	t.Logf("Epoch %d is now eligible for pruning", targetEpoch)
 
-	excluded := excludedEntityTypes{
-		entityMeta: "meta stores global pointers rather than pruned epoch entities",
+	scanSidecarIndex := 0
+	if useBadgerStorage {
+		scanSidecarIndex = len(envInfo.GetSidecarConfigs()) - 1
 	}
+
 	debugScan := os.Getenv("PRUNING_SCAN_DEBUG") != ""
 	var before, finalAfter []remainingEntity
-	if debugScan {
+	if debugScan && !useBadgerStorage {
 		var err error
-		before, err = scanSidecarStorage(0, targetEpoch, common.HexToHash(requestID), nil)
+		before, err = scanSidecarStorage(scanSidecarIndex, targetEpoch, common.HexToHash(requestID))
 		require.NoError(t, err)
 	}
 
 	t.Log("Step 5: Waiting for pruning and verifying that no non-excluded entities remain...")
-	require.NoError(t, waitForErrorIsNil(ctx, pruningTimeout(), func() error {
-		remaining, err := scanSidecarStorage(0, targetEpoch, common.HexToHash(requestID), excluded)
+	if useBadgerStorage {
+		t.Log("Waiting for a few pruner intervals before scanning badger storage offline...")
+		time.Sleep(badgerOfflineScanDelay())
+
+		t.Log("Stopping one sidecar to scan badger storage offline...")
+		stopSidecarForStorageScan(t, scanSidecarIndex)
+
+		remaining, err := scanSidecarStorage(scanSidecarIndex, targetEpoch, common.HexToHash(requestID))
 		if err != nil {
-			return err
+			t.Fatal(err)
 		}
 		if debugScan {
-			after, scanErr := scanSidecarStorage(0, targetEpoch, common.HexToHash(requestID), nil)
-			if scanErr != nil {
-				return scanErr
-			}
-			finalAfter = after
+			finalAfter = remaining
 		}
 		if len(remaining) > 0 {
-			return errors.Errorf("found unpruned entities:\n%s", formatRemainingEntities(remaining))
+			t.Fatalf("found unpruned entities:\n%s", formatRemainingEntities(remaining))
 		}
-		return nil
-	}))
+	} else {
+		require.NoError(t, waitForErrorIsNil(ctx, pruningTimeout(), func() error {
+			remaining, err := scanSidecarStorage(scanSidecarIndex, targetEpoch, common.HexToHash(requestID))
+			if err != nil {
+				return err
+			}
+			if debugScan {
+				after, scanErr := scanSidecarStorage(scanSidecarIndex, targetEpoch, common.HexToHash(requestID))
+				if scanErr != nil {
+					return scanErr
+				}
+				finalAfter = after
+			}
+			if len(remaining) > 0 {
+				return errors.Errorf("found unpruned entities:\n%s", formatRemainingEntities(remaining))
+			}
+			return nil
+		}))
+	}
 
 	if debugScan {
 		t.Logf("before pruning:\n%s", formatRemainingEntities(before))
@@ -118,22 +140,14 @@ func getCommittedEpochForPruning(t *testing.T, client *apiv1.SymbioticClient) sy
 
 	resp, err := client.GetLastAllCommitted(t.Context(), &apiv1.GetLastAllCommittedRequest{})
 	require.NoError(t, err)
+	require.NotEmpty(t, resp.GetEpochInfos(), "expected at least one committed epoch")
 
-	var minEpoch uint64
-	first := true
-	for _, info := range resp.GetEpochInfos() {
-		epoch := info.GetLastCommittedEpoch()
-		if first || epoch < minEpoch {
-			minEpoch = epoch
-			first = false
-		}
-	}
-	require.False(t, first, "expected at least one committed epoch")
-
-	return symbiotic.Epoch(minEpoch)
+	return symbiotic.Epoch(lo.Min(lo.Map(lo.Values(resp.GetEpochInfos()), func(info *apiv1.ChainEpochInfo, _ int) uint64 {
+		return info.GetLastCommittedEpoch()
+	})))
 }
 
-func createPruningRequest(t *testing.T, epoch symbiotic.Epoch, envInfo EnvInfo) string {
+func createSignatureRequestForEpoch(t *testing.T, epoch symbiotic.Epoch, envInfo EnvInfo) string {
 	t.Helper()
 
 	msg := fmt.Sprintf("pruning-e2e-%d", time.Now().UnixNano())
@@ -141,11 +155,21 @@ func createPruningRequest(t *testing.T, epoch symbiotic.Epoch, envInfo EnvInfo) 
 
 	for i := range envInfo.GetSidecarConfigs() {
 		client := getGRPCClient(t, i)
-		resp, err := client.SignMessage(t.Context(), &apiv1.SignMessageRequest{
-			KeyTag:        15,
-			Message:       []byte(msg),
-			RequiredEpoch: (*uint64)(&epoch),
-		})
+		var (
+			resp *apiv1.SignMessageResponse
+			err  error
+		)
+
+		for attempts := 1; attempts <= 3; attempts++ {
+			resp, err = client.SignMessage(t.Context(), &apiv1.SignMessageRequest{
+				KeyTag:        15,
+				Message:       []byte(msg),
+				RequiredEpoch: (*uint64)(&epoch),
+			})
+			if err == nil {
+				break
+			}
+		}
 		require.NoErrorf(t, err, "failed to sign message on sidecar %d", i)
 		require.NotEmpty(t, resp.GetRequestId())
 
@@ -195,27 +219,9 @@ func waitForRequestProof(t *testing.T, client *apiv1.SymbioticClient, requestID 
 	}))
 }
 
-func waitForAPIEpoch(
-	ctx context.Context,
-	client *apiv1.SymbioticClient,
-	targetEpoch symbiotic.Epoch,
-	timeout time.Duration,
-) error {
-	return waitForErrorIsNil(ctx, timeout, func() error {
-		resp, err := client.GetCurrentEpoch(ctx, &apiv1.GetCurrentEpochRequest{})
-		if err != nil {
-			return err
-		}
-		if symbiotic.Epoch(resp.GetEpoch()) < targetEpoch {
-			return errors.Errorf("current epoch %d is below target epoch %d", resp.GetEpoch(), targetEpoch)
-		}
-		return nil
-	})
-}
-
 func pruningTimeout() time.Duration {
 	base := waitEpochTimeout()
-	interval := readDurationEnv("PRUNER_INTERVAL", time.Minute)
+	interval := readPositiveDurationEnv("PRUNER_INTERVAL", time.Minute)
 	return base + 4*interval
 }
 
@@ -223,19 +229,30 @@ func scanSidecarStorage(
 	sidecarIndex int,
 	targetEpoch symbiotic.Epoch,
 	requestID common.Hash,
-	excluded excludedEntityTypes,
 ) ([]remainingEntity, error) {
 	if strings.EqualFold(os.Getenv("STORAGE_TYPE"), "badger") {
-		return scanBadgerStorage(sidecarIndex, targetEpoch, requestID, excluded)
+		return scanBadgerStorage(sidecarIndex, targetEpoch, requestID)
 	}
-	return scanBboltStorage(sidecarIndex, targetEpoch, requestID, excluded)
+	return scanBboltStorage(sidecarIndex, targetEpoch, requestID)
+}
+
+func stopSidecarForStorageScan(t *testing.T, sidecarIndex int) {
+	t.Helper()
+
+	containerName := fmt.Sprintf("symbiotic-relay-%d", sidecarIndex+1)
+	cmd := exec.CommandContext(t.Context(), "docker", "stop", "--time", "1", containerName)
+	output, err := cmd.CombinedOutput()
+	require.NoErrorf(t, err, "failed to stop %s: %s", containerName, string(output))
+}
+
+func badgerOfflineScanDelay() time.Duration {
+	return 4 * readPositiveDurationEnv("PRUNER_INTERVAL", time.Minute)
 }
 
 func scanBboltStorage(
 	sidecarIndex int,
 	targetEpoch symbiotic.Epoch,
 	requestID common.Hash,
-	excluded excludedEntityTypes,
 ) ([]remainingEntity, error) {
 	dbPath := filepath.Join("..", "temp-network", sidecarStorageDir(sidecarIndex), "relay.db")
 	db, err := bolt.Open(dbPath, 0o600, &bolt.Options{ReadOnly: true, Timeout: time.Second})
@@ -257,9 +274,6 @@ func scanBboltStorage(
 				if !matchesPrunedEntity(k, v, epochBytes, requestIDBytes, requestIDHex) {
 					continue
 				}
-				if excluded.contains(entityType) {
-					continue
-				}
 				remaining = append(remaining, remainingEntity{
 					Type:     entityType,
 					Location: string(name),
@@ -276,7 +290,6 @@ func scanBadgerStorage(
 	sidecarIndex int,
 	targetEpoch symbiotic.Epoch,
 	requestID common.Hash,
-	excluded excludedEntityTypes,
 ) ([]remainingEntity, error) {
 	dir := filepath.Join("..", "temp-network", sidecarStorageDir(sidecarIndex))
 	opts := badger.DefaultOptions(dir).
@@ -310,9 +323,6 @@ func scanBadgerStorage(
 				continue
 			}
 			entityType := badgerEntityType(key)
-			if excluded.contains(entityType) {
-				continue
-			}
 			remaining = append(remaining, remainingEntity{
 				Type:     entityType,
 				Location: "badger",
@@ -363,30 +373,6 @@ func bboltEpochBytes(epoch uint64) []byte {
 	b[6] = byte(epoch >> 8)
 	b[7] = byte(epoch)
 	return b
-}
-
-func readUint64Env(name string, fallback uint64) uint64 {
-	raw := os.Getenv(name)
-	if raw == "" {
-		return fallback
-	}
-	parsed, err := strconv.ParseUint(raw, 10, 64)
-	if err != nil || parsed == 0 {
-		return fallback
-	}
-	return parsed
-}
-
-func readDurationEnv(name string, fallback time.Duration) time.Duration {
-	raw := os.Getenv(name)
-	if raw == "" {
-		return fallback
-	}
-	parsed, err := time.ParseDuration(raw)
-	if err != nil || parsed <= 0 {
-		return fallback
-	}
-	return parsed
 }
 
 func formatRemainingEntities(entities []remainingEntity) string {
