@@ -2,7 +2,6 @@ package p2p
 
 import (
 	"fmt"
-	"log"
 	"testing"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -225,7 +224,6 @@ func TestHandleAggregatedProofReadyMessage_WithOversizedProof_ReturnsError(t *te
 	err = service.handleAggregatedProofReadyMessage(pubSubMsg)
 
 	require.Error(t, err)
-	log.Println(err.Error())
 	assert.Contains(t, err.Error(), fmt.Sprintf("aggregation proof %x size exceeds maximum", oversizedProof))
 }
 

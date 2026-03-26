@@ -56,7 +56,7 @@ func GenerateKey() (*PrivateKey, error) {
 }
 
 func (k *PrivateKey) Bytes() []byte {
-	return k.privateKey.D.FillBytes(make([]byte, 32))
+	return crypto.FromECDSA(&k.privateKey)
 }
 
 func (k *PrivateKey) Sign(msg []byte) (Signature, MessageHash, error) {

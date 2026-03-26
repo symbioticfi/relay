@@ -1,6 +1,6 @@
 version: "2"
 run:
-  go: "1.25"
+  go: "1.26"
   build-tags:
     - integration
   tests: true
@@ -277,6 +277,8 @@ linters:
         text: 'shadow: declaration of "err" shadows declaration at line'
       - path: (.+)\.go$
         text: G115
+      - path: (.+)\.go$
+        text: G706
       - path: cmd/utils/
         text: "use of `fmt.Printf` forbidden"
     paths:
