@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -17,6 +18,8 @@ import (
 
 	"github.com/symbioticfi/relay/internal/client/p2p"
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
+	bboltrepo "github.com/symbioticfi/relay/internal/client/repository/bbolt"
+	"github.com/symbioticfi/relay/internal/client/repository/cached"
 	"github.com/symbioticfi/relay/internal/entity"
 	aggregationPolicy "github.com/symbioticfi/relay/internal/usecase/aggregation-policy"
 	aggregatorApp "github.com/symbioticfi/relay/internal/usecase/aggregator-app"
@@ -42,6 +45,24 @@ import (
 	symbioticCrypto "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 	valsetDeriver "github.com/symbioticfi/relay/symbiotic/usecase/valset-deriver"
 )
+
+var (
+	badgerFilePatterns = []string{"*.vlog", "MANIFEST"}
+	bboltFilePatterns  = []string{"relay.db"}
+)
+
+func detectStorageFiles(dir string, patterns []string) (bool, error) {
+	for _, pattern := range patterns {
+		matches, err := filepath.Glob(filepath.Join(dir, pattern))
+		if err != nil {
+			return false, errors.Errorf("failed to check for storage files: %w", err)
+		}
+		if len(matches) > 0 {
+			return true, nil
+		}
+	}
+	return false, nil
+}
 
 func runApp(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
@@ -122,28 +143,70 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create valset deriver: %w", err)
 	}
 
-	baseRepo, err := badger.New(badger.Config{
-		Dir:                      cfg.StorageDir,
-		Metrics:                  mtr,
-		MutexCleanupInterval:     time.Hour,
-		MutexCleanupStaleTimeout: time.Hour - time.Minute,
-		BlockCacheSize:           cfg.Badger.BlockCacheSize,
-		MemTableSize:             cfg.Badger.MemTableSize,
-		NumMemtables:             cfg.Badger.NumMemtables,
-		NumLevelZeroTables:       cfg.Badger.NumLevelZeroTables,
-		NumLevelZeroTablesStall:  cfg.Badger.NumLevelZeroTablesStall,
-		CompactL0OnClose:         cfg.Badger.CompactL0OnClose,
-		NumCompactors:            cfg.Badger.NumCompactors,
-		ValueLogFileSize:         cfg.Badger.ValueLogFileSize,
-		ValueLogGCInterval:       cfg.Badger.ValueLogGCInterval,
-		ValueLogGCDiscardRatio:   cfg.Badger.ValueLogGCDiscardRatio,
-	})
-	if err != nil {
-		return errors.Errorf("failed to create badger repository: %w", err)
-	}
-	defer baseRepo.Close()
+	var baseRepo cached.Repository
+	switch cfg.StorageType {
+	case storageTypeBadger:
+		found, err := detectStorageFiles(cfg.StorageDir, bboltFilePatterns)
+		if err != nil {
+			return err
+		}
+		if found {
+			return errors.Errorf(
+				"storage directory %q contains bbolt files but storage type is %q; "+
+					"either remove the bbolt files or set storage-type: \"bbolt\" explicitly in config",
+				cfg.StorageDir, cfg.StorageType,
+			)
+		}
 
-	repo, err := badger.NewCached(baseRepo, badger.CachedConfig{
+		repo, err := badger.New(badger.Config{
+			Dir:                      cfg.StorageDir,
+			Metrics:                  mtr,
+			MutexCleanupInterval:     time.Hour,
+			MutexCleanupStaleTimeout: time.Hour - time.Minute,
+			BlockCacheSize:           cfg.Badger.BlockCacheSize,
+			MemTableSize:             cfg.Badger.MemTableSize,
+			NumMemtables:             cfg.Badger.NumMemtables,
+			NumLevelZeroTables:       cfg.Badger.NumLevelZeroTables,
+			NumLevelZeroTablesStall:  cfg.Badger.NumLevelZeroTablesStall,
+			CompactL0OnClose:         cfg.Badger.CompactL0OnClose,
+			NumCompactors:            cfg.Badger.NumCompactors,
+			ValueLogFileSize:         cfg.Badger.ValueLogFileSize,
+			ValueLogGCInterval:       cfg.Badger.ValueLogGCInterval,
+			ValueLogGCDiscardRatio:   cfg.Badger.ValueLogGCDiscardRatio,
+		})
+		if err != nil {
+			return errors.Errorf("failed to create badger repository: %w", err)
+		}
+		defer repo.Close()
+		baseRepo = repo
+	default:
+		found, err := detectStorageFiles(cfg.StorageDir, badgerFilePatterns)
+		if err != nil {
+			return err
+		}
+		if found {
+			return errors.Errorf(
+				"storage directory %q contains BadgerDB files but storage type is %q; "+
+					"either remove the BadgerDB files or set storage-type: \"badger\" explicitly in config",
+				cfg.StorageDir, cfg.StorageType,
+			)
+		}
+
+		repo, err := bboltrepo.New(bboltrepo.Config{
+			Dir:                      cfg.StorageDir,
+			Metrics:                  mtr,
+			InitialMmapSize:          cfg.Bbolt.InitialMmapSize,
+			MutexCleanupInterval:     time.Hour,
+			MutexCleanupStaleTimeout: time.Hour - time.Minute,
+		})
+		if err != nil {
+			return errors.Errorf("failed to create bbolt repository: %w", err)
+		}
+		defer repo.Close()
+		baseRepo = repo
+	}
+
+	repo, err := cached.NewCached(baseRepo, cached.Config{
 		NetworkConfigCacheSize: cfg.Cache.NetworkConfigCacheSize,
 		ValidatorSetCacheSize:  cfg.Cache.ValidatorSetCacheSize,
 	})
