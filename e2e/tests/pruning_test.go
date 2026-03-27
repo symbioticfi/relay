@@ -82,35 +82,28 @@ func TestPruningE2E_RemovesAllNonExcludedEntities(t *testing.T) {
 	t.Logf("Epoch %d is now eligible for pruning", targetEpoch)
 
 	scope := buildPruningScope(targetEpoch, common.HexToHash(requestID))
-	var lastRemaining []remainingEntity
 
 	t.Log("Step 5: Waiting for pruning and verifying that no non-excluded entities remain...")
-	if strings.EqualFold(os.Getenv("STORAGE_TYPE"), "badger") {
-		time.Sleep(badgerOfflineScanDelay(t))
-		require.NoError(t, stopSidecarForStorageScan(t, scanSidecarIndex, envInfo))
-		defer func() {
-			require.NoError(t, startSidecarAfterStorageScan(t, scanSidecarIndex, envInfo))
-		}()
-
-		remaining, err := scanSidecarStorage(scanSidecarIndex, scope)
-		require.NoError(t, err)
-		require.Emptyf(t, remaining, "found unpruned entities:\n%s", formatRemainingEntities(remaining))
-		t.Log("Pruning e2e test completed successfully")
-		return
-	}
-
-	err := waitForErrorIsNil(ctx, pruningTimeout(t), func() error {
+	require.NoError(t, waitForErrorIsNil(ctx, pruningTimeout(t), func() error {
 		remaining, err := scanSidecarStorage(scanSidecarIndex, scope)
 		if err != nil {
 			return err
 		}
-		lastRemaining = remaining
 		if len(remaining) > 0 {
 			return errors.Errorf("found unpruned entities:\n%s", formatRemainingEntities(remaining))
 		}
 		return nil
-	})
-	require.NoErrorf(t, err, "last remaining entities before timeout:\n%s", formatRemainingEntities(lastRemaining))
+	}))
+
+	time.Sleep(offlineScanDelay(t))
+	require.NoError(t, stopSidecarForStorageScan(t, scanSidecarIndex, envInfo))
+	defer func() {
+		require.NoError(t, startSidecarAfterStorageScan(t, scanSidecarIndex, envInfo))
+	}()
+
+	remaining, err := scanSidecarStorage(scanSidecarIndex, scope)
+	require.NoError(t, err)
+	require.Emptyf(t, remaining, "found unpruned entities:\n%s", formatRemainingEntities(remaining))
 
 	t.Log("Pruning e2e test completed successfully")
 }
@@ -282,7 +275,7 @@ func pruningTimeout(t *testing.T) time.Duration {
 	return waitEpochTimeout() + 4*interval
 }
 
-func badgerOfflineScanDelay(t *testing.T) time.Duration {
+func offlineScanDelay(t *testing.T) time.Duration {
 	t.Helper()
 
 	interval, err := time.ParseDuration(loadSidecarConfig(t).Pruner.Interval)
