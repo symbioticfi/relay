@@ -38,15 +38,15 @@ sync:
   enabled: true
   period: 5s
   timeout: 1m
-  epochs: 1000
+  epochs: 2
 
 # Retention config
 retention:
-  valset-epochs: 1000
-  signature-epochs: 1000
-  proof-epochs: 1000
+  valset-epochs: 2
+  signature-epochs: 2
+  proof-epochs: 2
 
 pruner:
   enabled: true
 
-  interval: 1m
+  interval: 5s

@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
@@ -22,6 +21,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
+	"gopkg.in/yaml.v3"
 
 	apiv1 "github.com/symbioticfi/relay/api/client/v1"
 	votingpowerv1 "github.com/symbioticfi/relay/internal/gen/votingpower/v1"
@@ -106,6 +106,26 @@ type RelaySidecarConfig struct {
 	RequiredSymKey crypto.PrivateKey
 }
 
+type relaySidecarSyncConfig struct {
+	Epochs int `yaml:"epochs"`
+}
+
+type relaySidecarRetentionConfig struct {
+	ValsetEpochs    int `yaml:"valset-epochs"`
+	SignatureEpochs int `yaml:"signature-epochs"`
+	ProofEpochs     int `yaml:"proof-epochs"`
+}
+
+type relaySidecarPrunerConfig struct {
+	Interval string `yaml:"interval"`
+}
+
+type relaySidecarFileConfig struct {
+	Sync      relaySidecarSyncConfig      `yaml:"sync"`
+	Retention relaySidecarRetentionConfig `yaml:"retention"`
+	Pruner    relaySidecarPrunerConfig    `yaml:"pruner"`
+}
+
 func (i EnvInfo) GetSidecarConfigs() []RelaySidecarConfig {
 	const basePrivateKey = 1000000000000000000
 
@@ -188,18 +208,22 @@ func loadEnvInfo(t *testing.T) EnvInfo {
 	return envInfo
 }
 
+func loadSidecarConfig(t *testing.T) relaySidecarFileConfig {
+	t.Helper()
+
+	data, err := os.ReadFile("sidecar.yaml")
+	require.NoError(t, err, "Failed to read sidecar config file")
+
+	var cfg relaySidecarFileConfig
+	err = yaml.Unmarshal(data, &cfg)
+	require.NoError(t, err, "Failed to parse sidecar config YAML")
+
+	return cfg
+}
+
 func readPositiveIntEnv(name string, fallback int) int {
 	if raw := os.Getenv(name); raw != "" {
 		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
-			return parsed
-		}
-	}
-	return fallback
-}
-
-func readPositiveDurationEnv(name string, fallback time.Duration) time.Duration {
-	if raw := os.Getenv(name); raw != "" {
-		if parsed, err := time.ParseDuration(raw); err == nil && parsed > 0 {
 			return parsed
 		}
 	}

@@ -150,28 +150,7 @@ jobs:
             aggregators: 3
             verification_type: 0
             epoch_time: 120
-          - name: "Pruning Setup"
-            operators: 4
-            commiters: 1
-            aggregators: 1
-            verification_type: 1
-            retention_valset_epochs: 2
-            retention_signature_epochs: 2
-            retention_proof_epochs: 2
-            pruner_interval: "5s"
-            sync_epochs: 2
-          - name: "Pruning Setup (badger)"
-            operators: 4
-            commiters: 1
-            aggregators: 1
-            verification_type: 1
-            storage_type: "badger"
-            retention_valset_epochs: 2
-            retention_signature_epochs: 2
-            retention_proof_epochs: 2
-            pruner_interval: "5s"
-            sync_epochs: 2
-    
+
     env:
       # E2E Test Configuration
       OPERATORS: ${{ matrix.config.operators }}
@@ -182,11 +161,6 @@ jobs:
       BLOCK_TIME: 1
       FINALITY_BLOCKS: 2
       STORAGE_TYPE: ${{ matrix.config.storage_type || '' }}
-      RETENTION_VALSET_EPOCHS: ${{ matrix.config.retention_valset_epochs || '' }}
-      RETENTION_SIGNATURE_EPOCHS: ${{ matrix.config.retention_signature_epochs || '' }}
-      RETENTION_PROOF_EPOCHS: ${{ matrix.config.retention_proof_epochs || '' }}
-      PRUNER_INTERVAL: ${{ matrix.config.pruner_interval || '' }}
-      SYNC_EPOCHS: ${{ matrix.config.sync_epochs || '' }}
 
     steps:
       - name: "Checkout Repository"
@@ -233,13 +207,6 @@ jobs:
           echo "  - Block Time: ${{ env.BLOCK_TIME }}s"
           echo "  - Finality Blocks: ${{ env.FINALITY_BLOCKS }}"
           echo "  - Storage Type: ${{ env.STORAGE_TYPE || 'default (bbolt)' }}"
-          if [ -n "${{ env.RETENTION_VALSET_EPOCHS }}" ] || [ -n "${{ env.RETENTION_SIGNATURE_EPOCHS }}" ] || [ -n "${{ env.RETENTION_PROOF_EPOCHS }}" ] || [ -n "${{ env.PRUNER_INTERVAL }}" ] || [ -n "${{ env.SYNC_EPOCHS }}" ]; then
-            echo "  - Retention Valset Epochs: ${{ env.RETENTION_VALSET_EPOCHS }}"
-            echo "  - Retention Signature Epochs: ${{ env.RETENTION_SIGNATURE_EPOCHS }}"
-            echo "  - Retention Proof Epochs: ${{ env.RETENTION_PROOF_EPOCHS }}"
-            echo "  - Pruner Interval: ${{ env.PRUNER_INTERVAL }}"
-            echo "  - Sync Epochs: ${{ env.SYNC_EPOCHS }}"
-          fi
 
           cd e2e
           chmod +x setup.sh

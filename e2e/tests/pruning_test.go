@@ -30,12 +30,23 @@ type remainingEntity struct {
 	Key      string
 }
 
+type pruningScope struct {
+	epochBytes     []byte
+	requestIDBytes [][]byte
+	requestIDHexes [][]byte
+}
+
 func TestPruningE2E_RemovesAllNonExcludedEntities(t *testing.T) {
 	t.Log("Starting pruning e2e test...")
 
 	ctx := t.Context()
 	envInfo := loadEnvInfo(t)
+	sidecarConfig := loadSidecarConfig(t)
 	client := getGRPCClient(t, 0)
+	scanSidecarIndex := 0
+	if strings.EqualFold(os.Getenv("STORAGE_TYPE"), "badger") {
+		scanSidecarIndex = int(envInfo.Operators)
+	}
 
 	t.Log("Step 1: Finding a committed epoch for pruning...")
 	targetEpoch := getCommittedEpochForPruning(t, client)
@@ -49,15 +60,10 @@ func TestPruningE2E_RemovesAllNonExcludedEntities(t *testing.T) {
 	waitForRequestSignatures(t, client, requestID, len(envInfo.GetSidecarConfigs()))
 	waitForRequestProof(t, client, requestID)
 
-	retentionValsetEpochs := uint64(readPositiveIntEnv("RETENTION_VALSET_EPOCHS", 2))
-	retentionSignatureEpochs := uint64(readPositiveIntEnv("RETENTION_SIGNATURE_EPOCHS", 2))
-	retentionProofEpochs := uint64(readPositiveIntEnv("RETENTION_PROOF_EPOCHS", 2))
-	useBadgerStorage := strings.EqualFold(os.Getenv("STORAGE_TYPE"), "badger")
-
 	maxRetention := max(
-		retentionValsetEpochs,
-		retentionSignatureEpochs,
-		retentionProofEpochs,
+		uint64(sidecarConfig.Retention.ValsetEpochs),
+		uint64(sidecarConfig.Retention.SignatureEpochs),
+		uint64(sidecarConfig.Retention.ProofEpochs),
 	)
 	require.Positive(t, maxRetention, "pruning test requires positive retention")
 
@@ -75,64 +81,91 @@ func TestPruningE2E_RemovesAllNonExcludedEntities(t *testing.T) {
 	}))
 	t.Logf("Epoch %d is now eligible for pruning", targetEpoch)
 
-	scanSidecarIndex := 0
-	if useBadgerStorage {
-		scanSidecarIndex = len(envInfo.GetSidecarConfigs()) - 1
-	}
-
-	debugScan := os.Getenv("PRUNING_SCAN_DEBUG") != ""
-	var before, finalAfter []remainingEntity
-	if debugScan && !useBadgerStorage {
-		var err error
-		before, err = scanSidecarStorage(scanSidecarIndex, targetEpoch, common.HexToHash(requestID))
-		require.NoError(t, err)
-	}
+	scope := buildPruningScope(targetEpoch, common.HexToHash(requestID))
+	var lastRemaining []remainingEntity
 
 	t.Log("Step 5: Waiting for pruning and verifying that no non-excluded entities remain...")
-	if useBadgerStorage {
-		t.Log("Waiting for a few pruner intervals before scanning badger storage offline...")
-		time.Sleep(badgerOfflineScanDelay())
+	if strings.EqualFold(os.Getenv("STORAGE_TYPE"), "badger") {
+		time.Sleep(badgerOfflineScanDelay(t))
+		require.NoError(t, stopSidecarForStorageScan(t, scanSidecarIndex, envInfo))
+		defer func() {
+			require.NoError(t, startSidecarAfterStorageScan(t, scanSidecarIndex, envInfo))
+		}()
 
-		t.Log("Stopping one sidecar to scan badger storage offline...")
-		stopSidecarForStorageScan(t, scanSidecarIndex)
+		remaining, err := scanSidecarStorage(scanSidecarIndex, scope)
+		require.NoError(t, err)
+		require.Emptyf(t, remaining, "found unpruned entities:\n%s", formatRemainingEntities(remaining))
+		t.Log("Pruning e2e test completed successfully")
+		return
+	}
 
-		remaining, err := scanSidecarStorage(scanSidecarIndex, targetEpoch, common.HexToHash(requestID))
+	err := waitForErrorIsNil(ctx, pruningTimeout(t), func() error {
+		remaining, err := scanSidecarStorage(scanSidecarIndex, scope)
 		if err != nil {
-			t.Fatal(err)
+			return err
 		}
-		if debugScan {
-			finalAfter = remaining
-		}
+		lastRemaining = remaining
 		if len(remaining) > 0 {
-			t.Fatalf("found unpruned entities:\n%s", formatRemainingEntities(remaining))
+			return errors.Errorf("found unpruned entities:\n%s", formatRemainingEntities(remaining))
 		}
-	} else {
-		require.NoError(t, waitForErrorIsNil(ctx, pruningTimeout(), func() error {
-			remaining, err := scanSidecarStorage(scanSidecarIndex, targetEpoch, common.HexToHash(requestID))
-			if err != nil {
-				return err
-			}
-			if debugScan {
-				after, scanErr := scanSidecarStorage(scanSidecarIndex, targetEpoch, common.HexToHash(requestID))
-				if scanErr != nil {
-					return scanErr
-				}
-				finalAfter = after
-			}
-			if len(remaining) > 0 {
-				return errors.Errorf("found unpruned entities:\n%s", formatRemainingEntities(remaining))
-			}
-			return nil
-		}))
-	}
-
-	if debugScan {
-		t.Logf("before pruning:\n%s", formatRemainingEntities(before))
-		t.Logf("after pruning:\n%s", formatRemainingEntities(finalAfter))
-		t.Logf("pruned entities:\n%s", formatRemainingEntities(diffRemainingEntities(before, finalAfter)))
-	}
+		return nil
+	})
+	require.NoErrorf(t, err, "last remaining entities before timeout:\n%s", formatRemainingEntities(lastRemaining))
 
 	t.Log("Pruning e2e test completed successfully")
+}
+
+func TestMatchesPrunedEntity(t *testing.T) {
+	t.Parallel()
+
+	requestID := common.HexToHash("0x4b939f34668a2b051228cf038dd1654aa57dbac80053cd68fee2e9d68eb9c5a6")
+	scope := buildPruningScope(symbiotic.Epoch(15), requestID)
+
+	t.Run("matches epoch in key", func(t *testing.T) {
+		key := append([]byte("validator:"), append(symbiotic.Epoch(15).Bytes(), []byte(":0xoperator")...)...)
+		require.True(t, matchesPrunedEntity(key, []byte("ignored"), scope))
+	})
+
+	t.Run("matches request id in key", func(t *testing.T) {
+		key := append([]byte("signature:"), requestID.Bytes()...)
+		require.True(t, matchesPrunedEntity(key, []byte("ignored"), scope))
+	})
+
+	t.Run("does not match unrelated value bytes", func(t *testing.T) {
+		key := append([]byte("validator:"), append(symbiotic.Epoch(16).Bytes(), []byte(":0xoperator")...)...)
+		value := append([]byte("payload:"), symbiotic.Epoch(15).Bytes()...)
+		require.False(t, matchesPrunedEntity(key, value, scope))
+	})
+}
+
+func stopSidecarForStorageScan(t *testing.T, sidecarIndex int, envInfo EnvInfo) error {
+	t.Helper()
+
+	serviceName := storageScanSidecarName(sidecarIndex, envInfo)
+	cmd := exec.CommandContext(t.Context(), "docker", "compose", "stop", "-t", "1", serviceName)
+	cmd.Dir = filepath.Join("..", "temp-network")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return errors.Errorf("failed to stop %s: %w: %s", serviceName, err, strings.TrimSpace(string(output)))
+	}
+	return nil
+}
+
+func startSidecarAfterStorageScan(t *testing.T, sidecarIndex int, envInfo EnvInfo) error {
+	t.Helper()
+
+	serviceName := storageScanSidecarName(sidecarIndex, envInfo)
+	if err := startContainer(t.Context(), serviceName); err != nil {
+		return errors.Errorf("failed to start %s: %w", serviceName, err)
+	}
+	return nil
+}
+
+func storageScanSidecarName(sidecarIndex int, envInfo EnvInfo) string {
+	if sidecarIndex >= int(envInfo.Operators) {
+		return "relay-sidecar-extra"
+	}
+	return fmt.Sprintf("relay-sidecar-%d", sidecarIndex+1)
 }
 
 func getCommittedEpochForPruning(t *testing.T, client *apiv1.SymbioticClient) symbiotic.Epoch {
@@ -219,40 +252,37 @@ func waitForRequestProof(t *testing.T, client *apiv1.SymbioticClient, requestID 
 	}))
 }
 
-func pruningTimeout() time.Duration {
-	base := waitEpochTimeout()
-	interval := readPositiveDurationEnv("PRUNER_INTERVAL", time.Minute)
-	return base + 4*interval
+func pruningTimeout(t *testing.T) time.Duration {
+	t.Helper()
+
+	interval, err := time.ParseDuration(loadSidecarConfig(t).Pruner.Interval)
+	require.NoError(t, err)
+
+	return waitEpochTimeout() + 4*interval
+}
+
+func badgerOfflineScanDelay(t *testing.T) time.Duration {
+	t.Helper()
+
+	interval, err := time.ParseDuration(loadSidecarConfig(t).Pruner.Interval)
+	require.NoError(t, err)
+
+	return 4 * interval
 }
 
 func scanSidecarStorage(
 	sidecarIndex int,
-	targetEpoch symbiotic.Epoch,
-	requestID common.Hash,
+	scope pruningScope,
 ) ([]remainingEntity, error) {
 	if strings.EqualFold(os.Getenv("STORAGE_TYPE"), "badger") {
-		return scanBadgerStorage(sidecarIndex, targetEpoch, requestID)
+		return scanBadgerStorage(sidecarIndex, scope)
 	}
-	return scanBboltStorage(sidecarIndex, targetEpoch, requestID)
-}
-
-func stopSidecarForStorageScan(t *testing.T, sidecarIndex int) {
-	t.Helper()
-
-	containerName := fmt.Sprintf("symbiotic-relay-%d", sidecarIndex+1)
-	cmd := exec.CommandContext(t.Context(), "docker", "stop", "--time", "1", containerName)
-	output, err := cmd.CombinedOutput()
-	require.NoErrorf(t, err, "failed to stop %s: %s", containerName, string(output))
-}
-
-func badgerOfflineScanDelay() time.Duration {
-	return 4 * readPositiveDurationEnv("PRUNER_INTERVAL", time.Minute)
+	return scanBboltStorage(sidecarIndex, scope)
 }
 
 func scanBboltStorage(
 	sidecarIndex int,
-	targetEpoch symbiotic.Epoch,
-	requestID common.Hash,
+	scope pruningScope,
 ) ([]remainingEntity, error) {
 	dbPath := filepath.Join("..", "temp-network", sidecarStorageDir(sidecarIndex), "relay.db")
 	db, err := bolt.Open(dbPath, 0o600, &bolt.Options{ReadOnly: true, Timeout: time.Second})
@@ -261,9 +291,6 @@ func scanBboltStorage(
 	}
 	defer db.Close()
 
-	epochBytes := bboltEpochBytes(uint64(targetEpoch))
-	requestIDBytes := requestID.Bytes()
-	requestIDHex := requestID.Hex()
 	var remaining []remainingEntity
 
 	err = db.View(func(tx *bolt.Tx) error {
@@ -271,7 +298,7 @@ func scanBboltStorage(
 			entityType := pruningEntityType(name)
 			cursor := bucket.Cursor()
 			for k, v := cursor.First(); k != nil; k, v = cursor.Next() {
-				if !matchesPrunedEntity(k, v, epochBytes, requestIDBytes, requestIDHex) {
+				if !matchesPrunedEntity(k, v, scope) {
 					continue
 				}
 				remaining = append(remaining, remainingEntity{
@@ -288,8 +315,7 @@ func scanBboltStorage(
 
 func scanBadgerStorage(
 	sidecarIndex int,
-	targetEpoch symbiotic.Epoch,
-	requestID common.Hash,
+	scope pruningScope,
 ) ([]remainingEntity, error) {
 	dir := filepath.Join("..", "temp-network", sidecarStorageDir(sidecarIndex))
 	opts := badger.DefaultOptions(dir).
@@ -303,9 +329,6 @@ func scanBadgerStorage(
 	}
 	defer db.Close()
 
-	epochBytes := targetEpoch.Bytes()
-	requestIDBytes := requestID.Bytes()
-	requestIDHex := requestID.Hex()
 	var remaining []remainingEntity
 
 	err = db.View(func(txn *badger.Txn) error {
@@ -319,7 +342,7 @@ func scanBadgerStorage(
 			if err != nil {
 				return err
 			}
-			if !matchesPrunedEntity(key, value, epochBytes, requestIDBytes, requestIDHex) {
+			if !matchesPrunedEntity(key, value, scope) {
 				continue
 			}
 			entityType := badgerEntityType(key)
@@ -345,34 +368,35 @@ func badgerEntityType(key []byte) pruningEntityType {
 	return pruningEntityType(key)
 }
 
-func matchesPrunedEntity(key, value, epochBytes, requestIDBytes []byte, requestIDHex string) bool {
-	if bytes.Contains(key, requestIDBytes) || bytes.Contains(value, requestIDBytes) {
-		return true
+func buildPruningScope(targetEpoch symbiotic.Epoch, seedRequestID common.Hash) pruningScope {
+	scope := pruningScope{
+		epochBytes:     targetEpoch.Bytes(),
+		requestIDBytes: nil,
+		requestIDHexes: nil,
 	}
-	if bytes.Contains(key, []byte(requestIDHex)) || bytes.Contains(value, []byte(requestIDHex)) {
-		return true
+	if seedRequestID != (common.Hash{}) {
+		scope.requestIDBytes = [][]byte{seedRequestID.Bytes()}
+		scope.requestIDHexes = [][]byte{[]byte(seedRequestID.Hex())}
 	}
-	if bytes.Contains(key, epochBytes) || bytes.Contains(value, epochBytes) {
-		return true
+	return scope
+}
+
+func matchesPrunedEntity(key, _ []byte, scope pruningScope) bool {
+	for _, requestIDBytes := range scope.requestIDBytes {
+		if bytes.Contains(key, requestIDBytes) {
+			return true
+		}
 	}
-	return false
+	for _, requestIDHex := range scope.requestIDHexes {
+		if bytes.Contains(key, requestIDHex) {
+			return true
+		}
+	}
+	return bytes.Contains(key, scope.epochBytes)
 }
 
 func sidecarStorageDir(sidecarIndex int) string {
 	return fmt.Sprintf("data-%02d", sidecarIndex+1)
-}
-
-func bboltEpochBytes(epoch uint64) []byte {
-	b := make([]byte, 8)
-	b[0] = byte(epoch >> 56)
-	b[1] = byte(epoch >> 48)
-	b[2] = byte(epoch >> 40)
-	b[3] = byte(epoch >> 32)
-	b[4] = byte(epoch >> 24)
-	b[5] = byte(epoch >> 16)
-	b[6] = byte(epoch >> 8)
-	b[7] = byte(epoch)
-	return b
 }
 
 func formatRemainingEntities(entities []remainingEntity) string {
@@ -384,24 +408,4 @@ func formatRemainingEntities(entities []remainingEntity) string {
 		lines = append(lines, fmt.Sprintf("- %s [%s] %s", entity.Type, entity.Location, entity.Key))
 	}
 	return strings.Join(lines, "\n")
-}
-
-func diffRemainingEntities(before, after []remainingEntity) []remainingEntity {
-	afterSet := make(map[string]struct{}, len(after))
-	for _, entity := range after {
-		afterSet[remainingEntityKey(entity)] = struct{}{}
-	}
-
-	diff := make([]remainingEntity, 0, len(before))
-	for _, entity := range before {
-		if _, ok := afterSet[remainingEntityKey(entity)]; ok {
-			continue
-		}
-		diff = append(diff, entity)
-	}
-	return diff
-}
-
-func remainingEntityKey(entity remainingEntity) string {
-	return fmt.Sprintf("%s|%s|%s", entity.Type, entity.Location, entity.Key)
 }
