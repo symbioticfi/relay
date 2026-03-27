@@ -1,21 +1,21 @@
-# `utils operator register-key` Command Reference
+# `utils operator register-key-artifact` Command Reference
 
-## utils operator register-key
+## utils operator register-key-artifact
 
-Register operator key in key registry
+Build operator key registration artifact without submitting a transaction
 
 ```
-utils operator register-key [flags]
+utils operator register-key-artifact [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help                       help for register-key
+  -h, --help                       help for register-key-artifact
       --key-tag uint8              key tag (default 255)
+      --operator-address string    operator address used for artifact generation
       --password string            Keystore password
   -p, --path string                Path to keystore (default "./keystore.jks")
-      --secret-keys secretKeyMap   Secret key for key register in format 'chainId:key' (e.g. '1:0xabc')
 ```
 
 ### Options inherited from parent commands

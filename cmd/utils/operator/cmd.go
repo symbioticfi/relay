@@ -18,6 +18,7 @@ import (
 func NewOperatorCmd() *cobra.Command {
 	operatorCmd.AddCommand(infoCmd)
 	operatorCmd.AddCommand(registerKeyCmd)
+	operatorCmd.AddCommand(registerKeyArtifactCmd)
 	operatorCmd.AddCommand(invalidateOldSignaturesCmd)
 	operatorCmd.AddCommand(registerOperatorWithSignatureCmd)
 	operatorCmd.AddCommand(unregisterOperatorWithSignatureCmd)
@@ -56,6 +57,13 @@ type RegisterKeyFlags struct {
 	KeyTag   uint8
 }
 
+type RegisterKeyArtifactFlags struct {
+	Path            string
+	Password        string
+	KeyTag          uint8
+	OperatorAddress string
+}
+
 type InvalidateOldSignaturesFlags struct {
 	Secrets cmdhelpers.SecretKeyMapFlag
 }
@@ -79,6 +87,7 @@ type UnregisterOperatorFlags struct {
 var globalFlags GlobalFlags
 var infoFlags InfoFlags
 var registerKeyFlags RegisterKeyFlags
+var registerKeyArtifactFlags RegisterKeyArtifactFlags
 var invalidateOldSignaturesFlags InvalidateOldSignaturesFlags
 var registerOperatorWithSignatureFlags RegisterOperatorWithSignatureFlags
 var unregisterOperatorWithSignatureFlags UnregisterOperatorWithSignatureFlags
@@ -122,6 +131,14 @@ func initFlags() {
 	registerKeyCmd.PersistentFlags().StringVar(&registerKeyFlags.Password, "password", "", "Keystore password")
 	registerKeyCmd.PersistentFlags().Uint8Var(&registerKeyFlags.KeyTag, "key-tag", uint8(symbiotic.KeyTypeInvalid), "key tag")
 	if err := registerKeyCmd.MarkPersistentFlagRequired("key-tag"); err != nil {
+		panic(err)
+	}
+
+	registerKeyArtifactCmd.PersistentFlags().StringVarP(&registerKeyArtifactFlags.Path, "path", "p", "./keystore.jks", "Path to keystore")
+	registerKeyArtifactCmd.PersistentFlags().StringVar(&registerKeyArtifactFlags.Password, "password", "", "Keystore password")
+	registerKeyArtifactCmd.PersistentFlags().Uint8Var(&registerKeyArtifactFlags.KeyTag, "key-tag", uint8(symbiotic.KeyTypeInvalid), "key tag")
+	registerKeyArtifactCmd.PersistentFlags().StringVar(&registerKeyArtifactFlags.OperatorAddress, "operator-address", "", "operator address used for artifact generation")
+	if err := registerKeyArtifactCmd.MarkPersistentFlagRequired("key-tag"); err != nil {
 		panic(err)
 	}
 
