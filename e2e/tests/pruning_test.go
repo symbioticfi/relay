@@ -84,17 +84,6 @@ func TestPruningE2E_RemovesAllNonExcludedEntities(t *testing.T) {
 	scope := buildPruningScope(targetEpoch, common.HexToHash(requestID))
 
 	t.Log("Step 5: Waiting for pruning and verifying that no non-excluded entities remain...")
-	require.NoError(t, waitForErrorIsNil(ctx, pruningTimeout(t), func() error {
-		remaining, err := scanSidecarStorage(scanSidecarIndex, scope)
-		if err != nil {
-			return err
-		}
-		if len(remaining) > 0 {
-			return errors.Errorf("found unpruned entities:\n%s", formatRemainingEntities(remaining))
-		}
-		return nil
-	}))
-
 	time.Sleep(offlineScanDelay(t))
 	require.NoError(t, stopSidecarForStorageScan(t, scanSidecarIndex, envInfo))
 	defer func() {
@@ -264,15 +253,6 @@ func waitForRequestProof(t *testing.T, client *apiv1.SymbioticClient, requestID 
 		}
 		return nil
 	}))
-}
-
-func pruningTimeout(t *testing.T) time.Duration {
-	t.Helper()
-
-	interval, err := time.ParseDuration(loadSidecarConfig(t).Pruner.Interval)
-	require.NoError(t, err)
-
-	return waitEpochTimeout() + 4*interval
 }
 
 func offlineScanDelay(t *testing.T) time.Duration {
