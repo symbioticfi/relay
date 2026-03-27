@@ -16,7 +16,6 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
-	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -53,6 +52,7 @@ type config struct {
 	ForceRole                    ForceRole                    `mapstructure:"force-role"`
 	Retention                    RetentionConfig              `mapstructure:"retention"`
 	Pruner                       PrunerConfig                 `mapstructure:"pruner"`
+	Aggregation                  AggregationConfig            `mapstructure:"aggregation"`
 	Tracing                      TracingConfig                `mapstructure:"tracing"`
 	Badger                       BadgerConfig                 `mapstructure:"badger"`
 	Bbolt                        BboltConfig                  `mapstructure:"bbolt"`
@@ -245,6 +245,20 @@ type PrunerConfig struct {
 	Interval time.Duration `mapstructure:"interval"`
 }
 
+type AggregationConfig struct {
+	WorkerCount           int                      `mapstructure:"worker-count" validate:"min=1"`
+	CrossEpochAggregation bool                     `mapstructure:"cross-epoch-aggregation"`
+	Catchup               AggregationCatchupConfig `mapstructure:"catchup"`
+}
+
+type AggregationCatchupConfig struct {
+	Enabled             bool          `mapstructure:"enabled"`
+	Interval            time.Duration `mapstructure:"interval"`
+	EpochsToCheck       int           `mapstructure:"epochs-to-check"`
+	EpochsOffset        int           `mapstructure:"epochs-offset"`
+	MaxRequestsPerCycle int           `mapstructure:"max-requests-per-cycle"`
+}
+
 type TracingConfig struct {
 	Enabled    bool    `mapstructure:"enabled"`
 	Endpoint   string  `mapstructure:"endpoint"`
@@ -351,6 +365,13 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Uint64("retention.signature-epochs", 0, "Number of historical signature epochs to retain (0 = unlimited)")
 	rootCmd.PersistentFlags().Bool("pruner.enabled", false, "Enable automatic pruning of old epoch data (default: false)")
 	rootCmd.PersistentFlags().Duration("pruner.interval", time.Hour, "How often to run pruning (default: 1h)")
+	rootCmd.PersistentFlags().Int("aggregation.worker-count", 10, "Max simultaneous proof aggregations, reduce for ZK circuits with high memory and cpu usage")
+	rootCmd.PersistentFlags().Bool("aggregation.cross-epoch-aggregation", false, "Allow latest-epoch aggregators to aggregate proofs for older epochs when original aggregators are offline")
+	rootCmd.PersistentFlags().Bool("aggregation.catchup.enabled", true, "Enable periodic aggregation catch-up loop")
+	rootCmd.PersistentFlags().Duration("aggregation.catchup.interval", time.Minute, "How often to run aggregation catch-up")
+	rootCmd.PersistentFlags().Int("aggregation.catchup.epochs-to-check", 20, "Number of epochs to scan per catch-up cycle")
+	rootCmd.PersistentFlags().Int("aggregation.catchup.epochs-offset", 0, "Epochs back from latest to start scanning")
+	rootCmd.PersistentFlags().Int("aggregation.catchup.max-requests-per-cycle", 0, "Max requests to check per cycle (0 = unlimited)")
 	rootCmd.PersistentFlags().Bool("tracing.enabled", false, "Enable distributed tracing")
 	rootCmd.PersistentFlags().String("tracing.endpoint", "localhost:4317", "OTLP endpoint for tracing (e.g., Jaeger)")
 	rootCmd.PersistentFlags().Float64("tracing.sample-rate", 1.0, "Trace sampling rate (0.0 to 1.0)")
@@ -552,6 +573,27 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	if err := v.BindPFlag("pruner.interval", cmd.PersistentFlags().Lookup("pruner.interval")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
+	if err := v.BindPFlag("aggregation.worker-count", cmd.PersistentFlags().Lookup("aggregation.worker-count")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("aggregation.cross-epoch-aggregation", cmd.PersistentFlags().Lookup("aggregation.cross-epoch-aggregation")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("aggregation.catchup.enabled", cmd.PersistentFlags().Lookup("aggregation.catchup.enabled")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("aggregation.catchup.interval", cmd.PersistentFlags().Lookup("aggregation.catchup.interval")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("aggregation.catchup.epochs-to-check", cmd.PersistentFlags().Lookup("aggregation.catchup.epochs-to-check")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("aggregation.catchup.epochs-offset", cmd.PersistentFlags().Lookup("aggregation.catchup.epochs-offset")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("aggregation.catchup.max-requests-per-cycle", cmd.PersistentFlags().Lookup("aggregation.catchup.max-requests-per-cycle")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
 	if err := v.BindPFlag("tracing.enabled", cmd.PersistentFlags().Lookup("tracing.enabled")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
@@ -593,7 +635,7 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	}
 
 	err := v.ReadInConfig()
-	if err != nil && !errors.Is(err, viper.ConfigFileNotFoundError{}) && !errors.As(err, lo.ToPtr(&fs.PathError{})) {
+	if err != nil && !errors.Is(err, viper.ConfigFileNotFoundError{}) && !errors.As(err, new(fs.PathError)) {
 		return errors.Errorf("failed to read config file: %w", err)
 	}
 

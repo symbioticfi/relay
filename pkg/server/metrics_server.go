@@ -49,7 +49,7 @@ func initMetricsHandler(_ MetricsConfig) http.Handler {
 }
 
 func (s *MetricsServer) Serve(ctx context.Context) error {
-	go func() {
+	go func() { //nolint:gosec // we must use separate context for shutdown
 		<-ctx.Done()
 		ctxShutdown, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()

@@ -115,6 +115,31 @@ pruner:
   # Examples: 30m, 1h, 6h, 24h
   interval: 1h
 
+# Aggregation Configuration
+aggregation:
+  # Max simultaneous proof aggregations (default: 10)
+  worker-count: 10
+
+  # Catch-up: periodically retries aggregation for requests that don't have a proof yet
+  catchup:
+    # Enable periodic catch-up loop (default: true)
+    enabled: true
+
+    # How often to run catch-up cycles (default: 1m)
+    interval: 1m
+
+    # Number of recent epochs to scan per cycle (default: 20)
+    epochs-to-check: 20
+
+    # How many epochs back from latest to start scanning (default: 0)
+    # 0 = start from latest epoch
+    epochs-offset: 0
+
+    # Max requests to check per cycle, 0 = unlimited (default: 0)
+    max-requests-per-cycle: 0
+
+    # Max proofs to generate per cycle, 0 = unlimited (default: 100)
+    max-proofs-per-cycle: 100
 
 # bbolt Storage Engine Tuning (default, only used when storage-type: "bbolt")
 # bbolt uses a B+tree with single-writer model for predictable write latency

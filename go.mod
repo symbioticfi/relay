@@ -1,9 +1,9 @@
 module github.com/symbioticfi/relay
 
-go 1.25.3
+go 1.26.1
 
 require (
-	github.com/RoaringBitmap/roaring/v2 v2.15.0
+	github.com/RoaringBitmap/roaring/v2 v2.16.0
 	github.com/consensys/gnark v0.0.0-00010101000000-000000000000 // pinned with replace
 	github.com/consensys/gnark-crypto v0.19.2 // pinned with replace
 	github.com/dgraph-io/badger/v4 v4.9.1
@@ -17,13 +17,13 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.3
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/libp2p/go-libp2p v0.47.0
+	github.com/libp2p/go-libp2p v0.48.0
 	github.com/libp2p/go-libp2p-gostream v0.6.0
-	github.com/libp2p/go-libp2p-kad-dht v0.38.0
+	github.com/libp2p/go-libp2p-kad-dht v0.39.0
 	github.com/libp2p/go-libp2p-pubsub v0.15.0
 	github.com/multiformats/go-multiaddr v0.16.1
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
-	github.com/pelletier/go-toml/v2 v2.2.4
+	github.com/pelletier/go-toml/v2 v2.3.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/pterm/pterm v0.12.83
 	github.com/samber/lo v1.53.0
@@ -42,17 +42,19 @@ require (
 	golang.org/x/net v0.52.0
 	golang.org/x/sync v0.20.0
 	golang.org/x/term v0.41.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20260316180232-0b37fe3546d5
-	google.golang.org/grpc v1.79.2
+	google.golang.org/genproto/googleapis/api v0.0.0-20260319201613-d00831a3d3e7
+	google.golang.org/grpc v1.79.3
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/client-go v0.35.2
+	k8s.io/client-go v0.35.3
 )
 
 require (
 	atomicgo.dev/cursor v0.2.0 // indirect
 	atomicgo.dev/keyboard v0.2.9 // indirect
 	atomicgo.dev/schedule v0.1.0 // indirect
+	filippo.io/bigmod v0.1.1-0.20260103110540-f8a47775ebe5 // indirect
+	filippo.io/keygen v0.0.0-20260114151900-8e2790ea4c5b // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProjectZKM/Ziren/crates/go-runtime/zkvm_runtime v0.0.0-20260309015608-bb9dacb41b4e // indirect
 	github.com/benbjohnson/clock v1.3.5 // indirect
@@ -144,21 +146,18 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 // indirect
 	github.com/pion/datachannel v1.6.0 // indirect
-	github.com/pion/dtls/v2 v2.2.12 // indirect
 	github.com/pion/dtls/v3 v3.1.2 // indirect
-	github.com/pion/ice/v4 v4.2.1 // indirect
+	github.com/pion/ice/v4 v4.2.2 // indirect
 	github.com/pion/interceptor v0.1.44 // indirect
 	github.com/pion/logging v0.2.4 // indirect
 	github.com/pion/mdns/v2 v2.1.0 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/rtcp v1.2.16 // indirect
 	github.com/pion/rtp v1.10.1 // indirect
-	github.com/pion/sctp v1.9.2 // indirect
+	github.com/pion/sctp v1.9.4 // indirect
 	github.com/pion/sdp/v3 v3.0.18 // indirect
 	github.com/pion/srtp/v3 v3.0.10 // indirect
-	github.com/pion/stun v0.6.1 // indirect
 	github.com/pion/stun/v3 v3.1.1 // indirect
-	github.com/pion/transport/v2 v2.2.10 // indirect
 	github.com/pion/transport/v4 v4.0.1 // indirect
 	github.com/pion/turn/v4 v4.1.4 // indirect
 	github.com/pion/webrtc/v4 v4.2.9 // indirect
@@ -199,17 +198,17 @@ require (
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.49.0 // indirect
-	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa // indirect
-	golang.org/x/mod v0.33.0 // indirect
+	golang.org/x/exp v0.0.0-20260312153236-7ab1446f8b90 // indirect
+	golang.org/x/mod v0.34.0 // indirect
 	golang.org/x/sys v0.42.0 // indirect
-	golang.org/x/telemetry v0.0.0-20260306145045-e526e8a188f5 // indirect
+	golang.org/x/telemetry v0.0.0-20260316223853-b6b0c46d1ccd // indirect
 	golang.org/x/text v0.35.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	golang.org/x/tools v0.42.0 // indirect
+	golang.org/x/tools v0.43.0 // indirect
 	gonum.org/v1/gonum v0.17.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260311181403-84a4fc48630c // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260319201613-d00831a3d3e7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apimachinery v0.35.2 // indirect
+	k8s.io/apimachinery v0.35.3 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/utils v0.0.0-20260108192941-914a6e750570 // indirect
 	lukechampine.com/blake3 v1.4.1 // indirect
