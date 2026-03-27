@@ -125,30 +125,48 @@ func stopSidecarForStorageScan(t *testing.T, sidecarIndex int, envInfo EnvInfo) 
 
 	serviceName := storageScanSidecarName(sidecarIndex, envInfo)
 	storageDir := sidecarStorageDir(sidecarIndex)
+
+	stopCmd := exec.CommandContext(t.Context(), "docker", "compose", "stop", "-t", "1", serviceName)
+	stopCmd.Dir = filepath.Join("..", "temp-network")
+	output, err := stopCmd.CombinedOutput()
+	if err != nil {
+		return errors.Errorf("failed to stop %s: %w: %s", serviceName, err, strings.TrimSpace(string(output)))
+	}
+
+	if err := waitForErrorIsNil(t.Context(), 30*time.Second, func() error {
+		cmd := exec.CommandContext(t.Context(), "docker", "compose", "ps", "--status", "running", "--services", serviceName)
+		cmd.Dir = filepath.Join("..", "temp-network")
+		psOutput, err := cmd.CombinedOutput()
+		if err != nil {
+			return errors.Errorf("failed to inspect %s state: %w: %s", serviceName, err, strings.TrimSpace(string(psOutput)))
+		}
+		if strings.TrimSpace(string(psOutput)) != "" {
+			return errors.Errorf("%s is still running", serviceName)
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+
 	chmodCmd := exec.CommandContext(
 		t.Context(),
 		"docker",
 		"compose",
-		"exec",
-		"-T",
+		"run",
+		"--rm",
+		"--no-deps",
 		"-u",
 		"0",
-		serviceName,
+		"--entrypoint",
 		"sh",
+		serviceName,
 		"-c",
 		fmt.Sprintf("chmod -R 755 /app/%s", storageDir),
 	)
 	chmodCmd.Dir = filepath.Join("..", "temp-network")
-	output, err := chmodCmd.CombinedOutput()
+	output, err = chmodCmd.CombinedOutput()
 	if err != nil {
 		return errors.Errorf("failed to fix permissions for %s: %w: %s", serviceName, err, strings.TrimSpace(string(output)))
-	}
-
-	cmd := exec.CommandContext(t.Context(), "docker", "compose", "stop", "-t", "1", serviceName)
-	cmd.Dir = filepath.Join("..", "temp-network")
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		return errors.Errorf("failed to stop %s: %w: %s", serviceName, err, strings.TrimSpace(string(output)))
 	}
 
 	return nil
