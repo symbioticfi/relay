@@ -32,3 +32,4 @@ utils operator register-key [flags]
 ### SEE ALSO
 
 * [utils operator](utils_operator.md)	 - Operator tool
+

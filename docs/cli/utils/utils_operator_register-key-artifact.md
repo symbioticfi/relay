@@ -11,11 +11,11 @@ utils operator register-key-artifact [flags]
 ### Options
 
 ```
-  -h, --help                       help for register-key-artifact
-      --key-tag uint8              key tag (default 255)
-      --operator-address string    operator address used for artifact generation
-      --password string            Keystore password
-  -p, --path string                Path to keystore (default "./keystore.jks")
+  -h, --help                      help for register-key-artifact
+      --key-tag uint8             key tag (default 255)
+      --operator-address string   operator address used for artifact generation
+      --password string           Keystore password
+  -p, --path string               Path to keystore (default "./keystore.jks")
 ```
 
 ### Options inherited from parent commands
@@ -32,3 +32,4 @@ utils operator register-key-artifact [flags]
 ### SEE ALSO
 
 * [utils operator](utils_operator.md)	 - Operator tool
+

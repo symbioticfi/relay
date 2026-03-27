@@ -32,3 +32,4 @@ Operator tool
 * [utils operator register-operator-with-signature](utils_operator_register-operator-with-signature.md)	 - Generate EIP-712 signature for operator registration
 * [utils operator unregister-operator](utils_operator_unregister-operator.md)	 - Unregister operator on-chain via VotingPowerProvider
 * [utils operator unregister-operator-with-signature](utils_operator_unregister-operator-with-signature.md)	 - Generate EIP-712 signature for operator unregistration
+
