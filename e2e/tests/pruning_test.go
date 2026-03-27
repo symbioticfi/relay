@@ -142,18 +142,31 @@ func stopSidecarForStorageScan(t *testing.T, sidecarIndex int, envInfo EnvInfo) 
 	t.Helper()
 
 	serviceName := storageScanSidecarName(sidecarIndex, envInfo)
-	cmd := exec.CommandContext(t.Context(), "docker", "compose", "stop", "-t", "1", serviceName)
-	cmd.Dir = filepath.Join("..", "temp-network")
-	output, err := cmd.CombinedOutput()
+	storageDir := sidecarStorageDir(sidecarIndex)
+	chmodCmd := exec.CommandContext(
+		t.Context(),
+		"docker",
+		"compose",
+		"exec",
+		"-T",
+		"-u",
+		"0",
+		serviceName,
+		"sh",
+		"-c",
+		fmt.Sprintf("chmod -R 755 /app/%s", storageDir),
+	)
+	chmodCmd.Dir = filepath.Join("..", "temp-network")
+	output, err := chmodCmd.CombinedOutput()
 	if err != nil {
-		return errors.Errorf("failed to stop %s: %w: %s", serviceName, err, strings.TrimSpace(string(output)))
+		return errors.Errorf("failed to fix permissions for %s: %w: %s", serviceName, err, strings.TrimSpace(string(output)))
 	}
 
-	storageDir := filepath.Join("..", "temp-network", sidecarStorageDir(sidecarIndex))
-	chmodCmd := exec.CommandContext(t.Context(), "chmod", "-R", "755", storageDir)
-	output, err = chmodCmd.CombinedOutput()
+	cmd := exec.CommandContext(t.Context(), "docker", "compose", "stop", "-t", "1", serviceName)
+	cmd.Dir = filepath.Join("..", "temp-network")
+	output, err = cmd.CombinedOutput()
 	if err != nil {
-		return errors.Errorf("failed to fix permissions on %s: %w: %s", storageDir, err, strings.TrimSpace(string(output)))
+		return errors.Errorf("failed to stop %s: %w: %s", serviceName, err, strings.TrimSpace(string(output)))
 	}
 
 	return nil
