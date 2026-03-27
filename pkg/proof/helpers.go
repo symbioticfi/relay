@@ -80,17 +80,13 @@ func HashValset(valset []ValidatorData) []byte {
 	zeroPoint := new(bn254.G1Affine)
 	zeroPoint.SetInfinity()
 	for i := range valset {
-		//nolint:gosec // G602: i is always in range as we iterate over valset
 		if valset[i].Key.X.Cmp(&zeroPoint.X) == 0 && valset[i].Key.Y.Cmp(&zeroPoint.Y) == 0 {
 			break
 		}
 
-		//nolint:gosec // G602: i is always in range as we iterate over valset
 		xBytes := valset[i].Key.X.Bytes()
-		//nolint:gosec // G602: i is always in range as we iterate over valset
 		yBytes := valset[i].Key.Y.Bytes()
 
-		// hash by limbs as it's done inside circuit
 		h.Write(xBytes[24:32])
 		h.Write(xBytes[16:24])
 		h.Write(xBytes[8:16])
@@ -102,7 +98,6 @@ func HashValset(valset []ValidatorData) []byte {
 		h.Write(yBytes[0:8])
 
 		votingPowerBuf := make([]byte, 32)
-		//nolint:gosec // G602: i is always in range as we iterate over valset
 		valset[i].VotingPower.FillBytes(votingPowerBuf)
 		h.Write(votingPowerBuf)
 

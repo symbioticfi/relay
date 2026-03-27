@@ -379,10 +379,11 @@ func (t *tracingConn) TransactionReceipt(ctx context.Context, txHash common.Hash
 }
 
 func (t *tracingConn) spanAttributes(method string, extra ...attribute.KeyValue) []attribute.KeyValue {
-	attrs := []attribute.KeyValue{
+	attrs := make([]attribute.KeyValue, 0, 2+len(extra))
+	attrs = append(attrs,
 		tracing.AttrChainID.Int64(int64(t.chainID)),
 		tracing.AttrMethodName.String(method),
-	}
+	)
 
 	return append(attrs, extra...)
 }

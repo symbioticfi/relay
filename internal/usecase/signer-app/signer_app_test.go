@@ -139,6 +139,7 @@ func newTestSetup(t *testing.T, newRepo repoFactory) *testSetup {
 		Repo:            repo,
 		EntityProcessor: processor,
 		Metrics:         mockMetrics,
+		SelfP2PID:       "test-self-p2p-id",
 	}
 
 	app, err := NewSignerApp(cfg)

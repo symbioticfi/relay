@@ -265,11 +265,18 @@ func runApp(ctx context.Context) error {
 		return errors.Errorf("failed to create syncer: %w", err)
 	}
 
+	p2pService, discoveryService, err := initP2PService(ctx, cfg, keyProvider, syncProvider, mtr)
+	if err != nil {
+		return errors.Errorf("failed to create p2p service: %w", err)
+	}
+	defer p2pService.Close()
+
 	signer, err := signerApp.NewSignerApp(signerApp.Config{
 		KeyProvider:     keyProvider,
 		Repo:            repo,
 		EntityProcessor: entityProcessor,
 		Metrics:         mtr,
+		SelfP2PID:       p2pService.ID(),
 	})
 	if err != nil {
 		return errors.Errorf("failed to create signer app: %w", err)
@@ -309,12 +316,6 @@ func runApp(ctx context.Context) error {
 		slog.InfoContext(ctx, "Valset listener stopped")
 		return nil
 	})
-
-	p2pService, discoveryService, err := initP2PService(ctx, cfg, keyProvider, syncProvider, mtr)
-	if err != nil {
-		return errors.Errorf("failed to create p2p service: %w", err)
-	}
-	defer p2pService.Close()
 
 	// Initialize tracing with instance ID from P2P service
 	if cfg.Tracing.Enabled {
@@ -452,13 +453,22 @@ func runApp(ctx context.Context) error {
 
 	var aggApp *aggregatorApp.AggregatorApp
 	aggApp, err = aggregatorApp.NewAggregatorApp(aggregatorApp.Config{
-		Repo:              repo,
-		P2PClient:         p2pService,
-		Aggregator:        agg,
-		Metrics:           mtr,
-		AggregationPolicy: aggPolicy,
-		KeyProvider:       keyProvider,
-		ForceAggregator:   cfg.ForceRole.Aggregator,
+		Repo:                  repo,
+		P2PClient:             p2pService,
+		Aggregator:            agg,
+		EntityProcessor:       entityProcessor,
+		Metrics:               mtr,
+		AggregationPolicy:     aggPolicy,
+		KeyProvider:           keyProvider,
+		ForceAggregator:       cfg.ForceRole.Aggregator,
+		CrossEpochAggregation: cfg.Aggregation.CrossEpochAggregation,
+		ProofCatchup: aggregatorApp.ProofCatchupConfig{
+			Enabled:             cfg.Aggregation.Catchup.Enabled,
+			Interval:            cfg.Aggregation.Catchup.Interval,
+			EpochsToCheck:       cfg.Aggregation.Catchup.EpochsToCheck,
+			EpochsOffset:        cfg.Aggregation.Catchup.EpochsOffset,
+			MaxRequestsPerCycle: cfg.Aggregation.Catchup.MaxRequestsPerCycle,
+		},
 	})
 	if err != nil {
 		return errors.Errorf("failed to create aggregator app: %w", err)
@@ -547,7 +557,17 @@ func runApp(ctx context.Context) error {
 	})
 
 	eg.Go(func() error {
-		return aggApp.TryAggregateRequestsWithoutProof(ctx)
+		err := aggApp.HandleAggregationRequests(egCtx, cfg.Aggregation.WorkerCount)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.ErrorContext(ctx, "Aggregation requests handler failed", "error", err)
+			return errors.Errorf("failed to handle aggregation requests: %w", err)
+		}
+		slog.InfoContext(ctx, "Aggregation requests handler stopped")
+		return nil
+	})
+
+	eg.Go(func() error {
+		return aggApp.StartCatchupLoop(egCtx)
 	})
 
 	eg.Go(func() error {

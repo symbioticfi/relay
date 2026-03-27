@@ -52,7 +52,12 @@ func TestECDSAKeys(t *testing.T) {
 	t.Run("VerifyFromNewPublicKey", func(t *testing.T) {
 		key, ok := public.(*PublicKey)
 		require.True(t, ok)
-		newPublic := NewPublicKey(key.pubKey.X, key.pubKey.Y)
+		ecPub, err := crypto.DecompressPubkey(key.Raw())
+		require.NoError(t, err)
+		rawUncompressed := crypto.FromECDSAPub(ecPub)
+		x := new(big.Int).SetBytes(rawUncompressed[1:33])
+		y := new(big.Int).SetBytes(rawUncompressed[33:65])
+		newPublic := NewPublicKey(x, y)
 
 		err = newPublic.VerifyWithHash(hash, sign)
 		require.NoError(t, err)
