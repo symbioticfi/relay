@@ -148,6 +148,14 @@ func stopSidecarForStorageScan(t *testing.T, sidecarIndex int, envInfo EnvInfo) 
 	if err != nil {
 		return errors.Errorf("failed to stop %s: %w: %s", serviceName, err, strings.TrimSpace(string(output)))
 	}
+
+	storageDir := filepath.Join("..", "temp-network", sidecarStorageDir(sidecarIndex))
+	chmodCmd := exec.CommandContext(t.Context(), "chmod", "-R", "755", storageDir)
+	output, err = chmodCmd.CombinedOutput()
+	if err != nil {
+		return errors.Errorf("failed to fix permissions on %s: %w: %s", storageDir, err, strings.TrimSpace(string(output)))
+	}
+
 	return nil
 }
 
