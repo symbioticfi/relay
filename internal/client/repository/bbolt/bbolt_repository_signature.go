@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"log/slog"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
@@ -188,7 +189,7 @@ func (r *Repository) rebuildSignatureMap(ctx context.Context, requestID common.H
 		_ = sm.SetValidatorPresent(activeIndex, validator.VotingPower)
 	}
 
-	entry := &signatureMapEntry{val: sm}
+	entry := &signatureMapEntry{mu: sync.Mutex{}, val: sm}
 	actualI, _ := r.signatureMapCache.LoadOrStore(requestID, entry)
 	actual := actualI.(*signatureMapEntry)
 
