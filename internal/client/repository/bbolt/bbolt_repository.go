@@ -372,7 +372,7 @@ func (r *Repository) doUpdateWithLock(ctx context.Context, name string, fn func(
 
 	start := time.Now()
 
-	err := r.db.Update(func(tx *bolt.Tx) error {
+	err := r.db.Batch(func(tx *bolt.Tx) error {
 		return fn(withTx(ctx, tx))
 	})
 
