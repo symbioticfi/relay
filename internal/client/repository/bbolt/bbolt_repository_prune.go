@@ -111,7 +111,7 @@ func (r *Repository) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch s
 				return errors.Errorf("failed to delete request ID index: %w", err)
 			}
 
-			r.signatureMutexMap.Delete(requestID)
+			r.signatureMapCache.Delete(requestID)
 		}
 		return nil
 	})

@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"path/filepath"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/go-errors/errors"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/symbioticfi/relay/internal/client/repository/cached"
 	"github.com/symbioticfi/relay/internal/client/repository/repoutil"
+	"github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/tracing"
 )
 
@@ -56,33 +56,16 @@ var allBuckets = [][]byte{
 	bucketMeta,
 }
 
-type mutexWithUseTime struct {
-	mutex        sync.Mutex
-	lastAccessNs atomic.Int64
-}
-
-func (m *mutexWithUseTime) lock() {
-	m.mutex.Lock()
-	m.lastAccessNs.Store(time.Now().UnixNano())
-}
-
-func (m *mutexWithUseTime) unlock() {
-	m.mutex.Unlock()
-}
-
-func (m *mutexWithUseTime) lastAccess() time.Time {
-	return time.Unix(0, m.lastAccessNs.Load())
-}
-
-func (m *mutexWithUseTime) tryLock() bool {
-	return m.mutex.TryLock()
+type signatureMapEntry struct {
+	mu  sync.Mutex
+	val entity.SignatureMap
 }
 
 type Repository struct {
 	db      *bolt.DB
 	metrics repoutil.Metrics
 
-	signatureMutexMap sync.Map // map[common.Hash]*mutexWithUseTime
+	signatureMapCache sync.Map // map[common.Hash]*signatureMapEntry
 
 	cleanupStop chan struct{}
 }
@@ -118,7 +101,7 @@ func New(cfg Config) (*Repository, error) {
 	repo := &Repository{
 		db:                db,
 		metrics:           cfg.Metrics,
-		signatureMutexMap: sync.Map{},
+		signatureMapCache: sync.Map{},
 		cleanupStop:       make(chan struct{}),
 	}
 
@@ -162,48 +145,8 @@ func (r *Repository) stopMutexCleanup() {
 	close(r.cleanupStop)
 }
 
-func (r *Repository) cleanupStaleMutexes(staleTimeout time.Duration) {
-	if staleTimeout == 0 {
-		staleTimeout = time.Hour
-	}
-
-	staleThreshold := time.Now().Add(-staleTimeout)
-	count := cleanupMutexMap(&r.signatureMutexMap, staleThreshold)
-
-	if count > 0 {
-		slog.Info("Cleaned up stale mutexes",
-			"component", "bbolt",
-			"signatureMutexes", count,
-		)
-	}
-}
-
-func cleanupMutexMap(mutexMap *sync.Map, staleThreshold time.Time) int {
-	var count int
-
-	mutexMap.Range(func(key, value any) bool {
-		mutex := value.(*mutexWithUseTime)
-
-		if !mutex.lastAccess().Before(staleThreshold) {
-			return true
-		}
-
-		if !mutex.tryLock() {
-			return true
-		}
-		defer mutex.unlock()
-
-		// Double-check after acquiring lock
-		if !mutex.lastAccess().Before(staleThreshold) {
-			return true
-		}
-
-		mutexMap.Delete(key)
-		count++
-		return true
-	})
-
-	return count
+func (r *Repository) cleanupStaleMutexes(_ time.Duration) {
+	// signatureMapCache entries are evicted by the pruner, no time-based cleanup needed
 }
 
 // Key encoding helpers — all use raw bytes for efficiency.
@@ -352,38 +295,5 @@ func (r *Repository) doBatch(ctx context.Context, name string, fn func(tx *bolt.
 	if !nested {
 		r.metrics.ObserveRepoQueryTotalDuration(name, status, d)
 	}
-	return err
-}
-
-func (r *Repository) doUpdateWithLock(ctx context.Context, name string, fn func(ctx context.Context) error, lockMap *sync.Map, key any) error {
-	ctx, span := tracing.StartSpan(ctx, "bbolt.updateWithLock:"+name)
-	defer span.End()
-
-	mutexInterface, ok := lockMap.Load(key)
-	if !ok {
-		newMutex := &mutexWithUseTime{}
-		newMutex.lastAccessNs.Store(time.Now().UnixNano())
-		mutexInterface, _ = lockMap.LoadOrStore(key, newMutex)
-	}
-	activeMutex := mutexInterface.(*mutexWithUseTime)
-
-	activeMutex.lock()
-	defer activeMutex.unlock()
-
-	start := time.Now()
-
-	err := r.db.Batch(func(tx *bolt.Tx) error {
-		return fn(withTx(ctx, tx))
-	})
-
-	status := "ok"
-	if err != nil {
-		status = statusError
-		tracing.RecordError(span, err)
-	}
-
-	d := time.Since(start)
-	r.metrics.ObserveRepoQueryDuration(name, status, d)
-	r.metrics.ObserveRepoQueryTotalDuration(name, status, d)
 	return err
 }
