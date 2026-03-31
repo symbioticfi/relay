@@ -206,6 +206,7 @@ func (s *SignerApp) completeSign(ctx context.Context, requestID common.Hash, p2p
 	}
 	s.cfg.Metrics.ObservePKSignDuration(time.Since(pkSignStart))
 	slog.DebugContext(ctx, "Message signed", "signDuration", time.Since(pkSignStart))
+	signDuration := time.Since(pkSignStart)
 
 	extendedSignature := symbiotic.Signature{
 		MessageHash: hash,
@@ -217,6 +218,7 @@ func (s *SignerApp) completeSign(ctx context.Context, requestID common.Hash, p2p
 
 	ctx = log.WithAttrs(ctx, slog.String("requestId", extendedSignature.RequestID().Hex()))
 
+	processSignStart := time.Now()
 	if err := s.cfg.EntityProcessor.ProcessSignature(ctx, extendedSignature, true); err != nil {
 		if errors.Is(err, entity.ErrEntityAlreadyExist) {
 			slog.InfoContext(ctx, "Skipped signature, already exists")
@@ -226,11 +228,13 @@ func (s *SignerApp) completeSign(ctx context.Context, requestID common.Hash, p2p
 		tracing.RecordError(span, err)
 		return errors.Errorf("failed to process signature: %w", err)
 	}
+	processSignatureDuration := time.Since(processSignStart)
 
 	if err := s.cfg.Repo.RemoveSignaturePending(ctx, req.RequiredEpoch, extendedSignature.RequestID()); err != nil {
 		tracing.RecordError(span, err)
 		return errors.Errorf("failed to remove self signature request pending: %w", err)
 	}
+	removeSignatureDuration := time.Since(processSignStart) - processSignatureDuration
 
 	tracing.AddEvent(span, "broadcasting_signature")
 	err = p2pService.BroadcastSignatureGeneratedMessage(ctx, extendedSignature)
@@ -243,7 +247,9 @@ func (s *SignerApp) completeSign(ctx context.Context, requestID common.Hash, p2p
 		"hash", hash,
 		"signature", signature,
 		"duration", time.Since(timeAppSignStart),
-		"signDuration", time.Since(pkSignStart),
+		"signDuration", signDuration,
+		"processSignatureDuration", processSignatureDuration,
+		"removeSignatureDuration", removeSignatureDuration,
 	)
 	s.cfg.Metrics.ObserveAppSignDuration(time.Since(timeAppSignStart))
 

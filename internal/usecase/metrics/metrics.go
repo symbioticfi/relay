@@ -24,6 +24,7 @@ type Metrics struct {
 	aggregationProofSize   *prometheus.HistogramVec
 
 	// p2p
+	p2pBroadcastDuration           *prometheus.SummaryVec
 	p2pPeerMessagesSent            *prometheus.CounterVec
 	p2pSyncProcessedSignatures     *prometheus.CounterVec
 	p2pSyncRequestedHashes         prometheus.Counter
@@ -91,6 +92,13 @@ func newMetrics(registerer prometheus.Registerer) *Metrics {
 		Objectives: defaultPercentiles,
 	})
 	all = append(all, m.appAggregationDuration)
+
+	m.p2pBroadcastDuration = prometheus.NewSummaryVec(prometheus.SummaryOpts{
+		Name:       "symbiotic_relay_p2p_broadcast_duration_seconds",
+		Help:       "Duration of P2P broadcast in seconds",
+		Objectives: defaultPercentiles,
+	}, []string{"topic", "status"})
+	all = append(all, m.p2pBroadcastDuration)
 
 	m.p2pPeerMessagesSent = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "symbiotic_relay_p2p_peer_sent_messages_total",
@@ -272,6 +280,10 @@ func (m *Metrics) ObserveOnlyAggregateDuration(d time.Duration) {
 
 func (m *Metrics) ObserveAppAggregateDuration(d time.Duration) {
 	m.appAggregationDuration.Observe(d.Seconds())
+}
+
+func (m *Metrics) ObserveP2PBroadcastDuration(topic, status string, d time.Duration) {
+	m.p2pBroadcastDuration.WithLabelValues(topic, status).Observe(d.Seconds())
 }
 
 func (m *Metrics) ObserveP2PPeerMessageSent(messageType, status string) {
