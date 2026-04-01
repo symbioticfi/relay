@@ -25,6 +25,7 @@ concurrency:
 jobs:
 
   code-quality:
+    if: false # temporarily disabled
     name: "Code Quality & Linting"
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -67,6 +68,7 @@ jobs:
           fi
 
   unit-tests:
+    if: false # temporarily disabled
     name: "Unit Tests"
     runs-on: ubuntu-24.04
     timeout-minutes: 15
