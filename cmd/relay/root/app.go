@@ -197,6 +197,10 @@ func runApp(ctx context.Context) error {
 			Metrics:          mtr,
 			InitialMmapSize:  cfg.Bbolt.InitialMmapSize,
 			StatsLogInterval: 30 * time.Second,
+			CompactOnStartup: cfg.Bbolt.CompactOnStartup,
+			NoFreelistSync:   cfg.Bbolt.NoFreelistSync,
+			MaxBatchDelay:    cfg.Bbolt.MaxBatchDelay,
+			MaxBatchSize:     cfg.Bbolt.MaxBatchSize,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create bbolt repository: %w", err)

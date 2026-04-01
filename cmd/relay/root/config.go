@@ -266,7 +266,11 @@ type TracingConfig struct {
 }
 
 type BboltConfig struct {
-	InitialMmapSize int `mapstructure:"initial-mmap-size"`
+	InitialMmapSize  int           `mapstructure:"initial-mmap-size"`
+	CompactOnStartup bool          `mapstructure:"compact-on-startup"`
+	NoFreelistSync   bool          `mapstructure:"no-freelist-sync"`
+	MaxBatchDelay    time.Duration `mapstructure:"max-batch-delay"`
+	MaxBatchSize     int           `mapstructure:"max-batch-size"`
 }
 
 type BadgerConfig struct {
@@ -328,6 +332,10 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().String("storage-dir", ".data", "Dir to store data")
 	rootCmd.PersistentFlags().String("storage-type", storageTypeBbolt, "Storage backend type (badger, bbolt)")
 	rootCmd.PersistentFlags().Int("bbolt.initial-mmap-size", 0, "Initial mmap size in bytes (0 = default)")
+	rootCmd.PersistentFlags().Bool("bbolt.compact-on-startup", true, "Compact database on startup to reclaim free pages")
+	rootCmd.PersistentFlags().Bool("bbolt.no-freelist-sync", false, "Skip writing freelist to disk on every commit (faster writes, slower startup)")
+	rootCmd.PersistentFlags().Duration("bbolt.max-batch-delay", 0, "Max delay before flushing a batch write (0 = bbolt default 10ms)")
+	rootCmd.PersistentFlags().Int("bbolt.max-batch-size", 0, "Max operations per batch write (0 = bbolt default 1000)")
 	rootCmd.PersistentFlags().String("circuits-dir", "", "Directory path to load zk circuits from, if empty then zp prover is disabled")
 	rootCmd.PersistentFlags().Uint64("aggregation-policy-max-unsigners", 50, "Max unsigners for low cost agg policy")
 	rootCmd.PersistentFlags().String("api.listen", "", "API Server listener address")
@@ -460,6 +468,18 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("bbolt.initial-mmap-size", cmd.PersistentFlags().Lookup("bbolt.initial-mmap-size")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("bbolt.compact-on-startup", cmd.PersistentFlags().Lookup("bbolt.compact-on-startup")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("bbolt.no-freelist-sync", cmd.PersistentFlags().Lookup("bbolt.no-freelist-sync")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("bbolt.max-batch-delay", cmd.PersistentFlags().Lookup("bbolt.max-batch-delay")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("bbolt.max-batch-size", cmd.PersistentFlags().Lookup("bbolt.max-batch-size")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("circuits-dir", cmd.PersistentFlags().Lookup("circuits-dir")); err != nil {

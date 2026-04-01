@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"log/slog"
+	"os"
 	"path/filepath"
 	"sync"
 	"time"
@@ -25,6 +26,10 @@ type Config struct {
 	Metrics          repoutil.Metrics `validate:"required"`
 	InitialMmapSize  int
 	StatsLogInterval time.Duration
+	CompactOnStartup bool
+	NoFreelistSync   bool
+	MaxBatchDelay    time.Duration
+	MaxBatchSize     int
 }
 
 var (
@@ -69,9 +74,63 @@ type Repository struct {
 	cleanupStop chan struct{}
 }
 
+func compactDB(dbPath string) error {
+	info, err := os.Stat(dbPath)
+	if err != nil {
+		return nil // DB doesn't exist yet, nothing to compact
+	}
+	origSize := info.Size()
+
+	start := time.Now()
+
+	src, err := bolt.Open(dbPath, 0600, &bolt.Options{ReadOnly: true, Timeout: 5 * time.Second})
+	if err != nil {
+		return errors.Errorf("failed to open source db: %w", err)
+	}
+	defer src.Close()
+
+	tmpPath := dbPath + ".compact"
+	dst, err := bolt.Open(tmpPath, 0600, &bolt.Options{Timeout: 5 * time.Second})
+	if err != nil {
+		return errors.Errorf("failed to create compact db: %w", err)
+	}
+
+	if err := bolt.Compact(dst, src, 0); err != nil {
+		dst.Close()
+		os.Remove(tmpPath)
+		return errors.Errorf("compaction failed: %w", err)
+	}
+	dst.Close()
+	src.Close()
+
+	compactSize, _ := os.Stat(tmpPath)
+
+	if err := os.Rename(tmpPath, dbPath); err != nil {
+		os.Remove(tmpPath)
+		return errors.Errorf("failed to replace db with compacted version: %w", err)
+	}
+
+	slog.Info("DB compacted",
+		"component", "bbolt",
+		"duration", time.Since(start),
+		"before", origSize,
+		"after", compactSize.Size(),
+		"ratio", float64(origSize)/float64(compactSize.Size()),
+	)
+	return nil
+}
+
 func New(cfg Config) (*Repository, error) {
 	if err := validator.New().Struct(cfg); err != nil {
 		return nil, errors.Errorf("failed to validate config: %w", err)
+	}
+
+	dbPath := filepath.Join(cfg.Dir, "relay.db")
+
+	if cfg.CompactOnStartup {
+		if err := compactDB(dbPath); err != nil {
+			slog.Warn("DB compaction failed, continuing with original", "error", err)
+		}
 	}
 
 	opts := &bolt.Options{
@@ -79,14 +138,18 @@ func New(cfg Config) (*Repository, error) {
 		InitialMmapSize: cfg.InitialMmapSize,
 	}
 
-	dbPath := filepath.Join(cfg.Dir, "relay.db")
 	db, err := bolt.Open(dbPath, 0600, opts)
 	if err != nil {
 		return nil, errors.Errorf("failed to open bbolt database: %w", err)
 	}
 
-	db.MaxBatchDelay = 50 * time.Millisecond
-	db.MaxBatchSize = 10_000
+	db.NoFreelistSync = cfg.NoFreelistSync
+	if cfg.MaxBatchDelay > 0 {
+		db.MaxBatchDelay = cfg.MaxBatchDelay
+	}
+	if cfg.MaxBatchSize > 0 {
+		db.MaxBatchSize = cfg.MaxBatchSize
+	}
 
 	if err := db.Update(func(tx *bolt.Tx) error {
 		for _, name := range allBuckets {
