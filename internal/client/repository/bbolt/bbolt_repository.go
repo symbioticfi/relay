@@ -21,11 +21,10 @@ import (
 var _ cached.Repository = (*Repository)(nil)
 
 type Config struct {
-	Dir                      string           `validate:"required"`
-	Metrics                  repoutil.Metrics `validate:"required"`
-	InitialMmapSize          int
-	MutexCleanupInterval     time.Duration
-	MutexCleanupStaleTimeout time.Duration
+	Dir              string           `validate:"required"`
+	Metrics          repoutil.Metrics `validate:"required"`
+	InitialMmapSize  int
+	StatsLogInterval time.Duration
 }
 
 var (
@@ -86,6 +85,9 @@ func New(cfg Config) (*Repository, error) {
 		return nil, errors.Errorf("failed to open bbolt database: %w", err)
 	}
 
+	db.MaxBatchDelay = 50 * time.Millisecond
+	db.MaxBatchSize = 10_000
+
 	if err := db.Update(func(tx *bolt.Tx) error {
 		for _, name := range allBuckets {
 			if _, err := tx.CreateBucketIfNotExists(name); err != nil {
@@ -105,17 +107,17 @@ func New(cfg Config) (*Repository, error) {
 		cleanupStop:       make(chan struct{}),
 	}
 
-	repo.startMutexCleanup(cfg.MutexCleanupInterval, cfg.MutexCleanupStaleTimeout)
+	repo.startStatsLogger(cfg.StatsLogInterval)
 
 	return repo, nil
 }
 
 func (r *Repository) Close() error {
-	r.stopMutexCleanup()
+	close(r.cleanupStop)
 	return r.db.Close()
 }
 
-func (r *Repository) startMutexCleanup(interval, staleTimeout time.Duration) {
+func (r *Repository) startStatsLogger(interval time.Duration) {
 	if interval == 0 {
 		return
 	}
@@ -124,16 +126,12 @@ func (r *Repository) startMutexCleanup(interval, staleTimeout time.Duration) {
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 
-		slog.Info("Starting mutex cleanup goroutine",
-			"component", "bbolt",
-			"interval", interval,
-			"staleTimeout", staleTimeout,
-		)
+		var prevTxStats bolt.TxStats
 
 		for {
 			select {
 			case <-ticker.C:
-				r.cleanupStaleMutexes(staleTimeout)
+				r.logStats(&prevTxStats)
 			case <-r.cleanupStop:
 				return
 			}
@@ -141,12 +139,34 @@ func (r *Repository) startMutexCleanup(interval, staleTimeout time.Duration) {
 	}()
 }
 
-func (r *Repository) stopMutexCleanup() {
-	close(r.cleanupStop)
-}
+func (r *Repository) logStats(prevTxStats *bolt.TxStats) {
+	stats := r.db.Stats()
+	txDiff := stats.TxStats.Sub(prevTxStats)
+	*prevTxStats = stats.TxStats
 
-func (r *Repository) cleanupStaleMutexes(_ time.Duration) {
-	// signatureMapCache entries are evicted by the pruner, no time-based cleanup needed
+	// Only log when there was write activity
+	if txDiff.GetWriteTime() == 0 && txDiff.GetSpillTime() == 0 {
+		return
+	}
+
+	slog.Info("BBolt stats",
+		"component", "bbolt",
+		// DB-level: open read txns can block page reclamation and slow writes
+		"openReadTxns", stats.OpenTxN,
+		"freePages", stats.FreePageN,
+		"pendingPages", stats.PendingPageN,
+		// Write breakdown since last log:
+		// spillTime = B-tree restructuring (CPU-bound)
+		// writeTime = disk write + fsync (IO-bound) — this is the fsync cost
+		"spillTime", txDiff.GetSpillTime(),
+		"writeTime", txDiff.GetWriteTime(),
+		// How many write operations happened
+		"writes", txDiff.GetWrite(),
+		"spills", txDiff.GetSpill(),
+		"splits", txDiff.GetSplit(),
+		"rebalances", txDiff.GetRebalance(),
+		"rebalanceTime", txDiff.GetRebalanceTime(),
+	)
 }
 
 // Key encoding helpers — all use raw bytes for efficiency.
@@ -252,7 +272,7 @@ func (r *Repository) doUpdate(ctx context.Context, name string, fn func(tx *bolt
 		nested = true
 		err = fn(tx)
 	} else {
-		err = r.db.Update(fn)
+		err = r.db.Batch(fn)
 	}
 
 	status := "ok"

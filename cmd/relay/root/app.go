@@ -193,11 +193,10 @@ func runApp(ctx context.Context) error {
 		}
 
 		repo, err := bboltrepo.New(bboltrepo.Config{
-			Dir:                      cfg.StorageDir,
-			Metrics:                  mtr,
-			InitialMmapSize:          cfg.Bbolt.InitialMmapSize,
-			MutexCleanupInterval:     time.Hour,
-			MutexCleanupStaleTimeout: time.Hour - time.Minute,
+			Dir:              cfg.StorageDir,
+			Metrics:          mtr,
+			InitialMmapSize:  cfg.Bbolt.InitialMmapSize,
+			StatsLogInterval: 30 * time.Second,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create bbolt repository: %w", err)
