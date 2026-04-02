@@ -1,6 +1,7 @@
 package operator
 
 import (
+	"context"
 	"log/slog"
 	"strconv"
 	"time"
@@ -20,6 +21,27 @@ import (
 	symbioticCrypto "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
+type registerKeyBuilder interface {
+	Register(
+		ctx context.Context,
+		pk symbioticCrypto.PrivateKey,
+		kt symbiotic.KeyTag,
+		operatorAddress common.Address,
+	) (symbiotic.TxResult, error)
+}
+
+var newRegisterKeyMetrics = func() *metrics.Metrics {
+	return metrics.New(metrics.Config{})
+}
+
+var newRegisterKeyEVMClient = func(ctx context.Context, cfg evm.Config) (evm.IEvmClient, error) {
+	return evm.NewEvmClient(ctx, cfg)
+}
+
+var newRegisterKeyBuilder = func(evmClient evm.IEvmClient) (registerKeyBuilder, error) {
+	return key_registerer.NewRegisterer(key_registerer.Config{EVMClient: evmClient})
+}
+
 var registerKeyCmd = &cobra.Command{
 	Use:   "register-key",
 	Short: "Register operator key in key registry",
@@ -32,7 +54,7 @@ var registerKeyCmd = &cobra.Command{
 			return err
 		}
 
-		evmClient, err := evm.NewEvmClient(ctx, evm.Config{
+		evmClient, err := newRegisterKeyEVMClient(ctx, evm.Config{
 			ChainURLs: globalFlags.Chains,
 			DriverAddress: symbiotic.CrossChainAddress{
 				ChainId: globalFlags.DriverChainId,
@@ -40,17 +62,16 @@ var registerKeyCmd = &cobra.Command{
 			},
 			RequestTimeout: 5 * time.Second,
 			KeyProvider:    kp,
-			Metrics:        metrics.New(metrics.Config{}),
+			Metrics:        newRegisterKeyMetrics(),
 		})
 		if err != nil {
 			return err
 		}
 
-		// TODO multiple chains key registration support
-		if len(evmClient.GetChains()) != 1 {
-			return errors.New("only single chain is supported")
+		chainId, err := registerKeyChainID(ctx, evmClient)
+		if err != nil {
+			return errors.Errorf("failed to resolve key registry chain: %w", err)
 		}
-		chainId := evmClient.GetChains()[0]
 
 		privateKeyInput := pterm.DefaultInteractiveTextInput.WithMask("*")
 		secret, ok := registerKeyFlags.Secrets.Secrets[chainId]
@@ -95,9 +116,7 @@ var registerKeyCmd = &cobra.Command{
 		}
 		operator := crypto.PubkeyToAddress(ecdsaPk.PublicKey)
 
-		keyReg, err := key_registerer.NewRegisterer(key_registerer.Config{
-			EVMClient: evmClient,
-		})
+		keyReg, err := newRegisterKeyBuilder(evmClient)
 		if err != nil {
 			return errors.Errorf("failed to create registerer: %w", err)
 		}
@@ -112,4 +131,23 @@ var registerKeyCmd = &cobra.Command{
 
 		return nil
 	},
+}
+
+func registerKeyChainID(ctx context.Context, evmClient evm.IEvmClient) (uint64, error) {
+	currentOnchainEpoch, err := evmClient.GetCurrentEpoch(ctx)
+	if err != nil {
+		return 0, errors.Errorf("failed to get current epoch: %w", err)
+	}
+
+	captureTimestamp, err := evmClient.GetEpochStart(ctx, currentOnchainEpoch)
+	if err != nil {
+		return 0, errors.Errorf("failed to get capture timestamp: %w", err)
+	}
+
+	networkConfig, err := evmClient.GetConfig(ctx, captureTimestamp, currentOnchainEpoch)
+	if err != nil {
+		return 0, errors.Errorf("failed to get config: %w", err)
+	}
+
+	return networkConfig.KeysProvider.ChainId, nil
 }
