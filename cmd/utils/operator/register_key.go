@@ -3,6 +3,7 @@ package operator
 import (
 	"context"
 	"log/slog"
+	"slices"
 	"strconv"
 	"time"
 
@@ -71,6 +72,9 @@ var registerKeyCmd = &cobra.Command{
 		chainId, err := registerKeyChainID(ctx, evmClient)
 		if err != nil {
 			return errors.Errorf("failed to resolve key registry chain: %w", err)
+		}
+		if !hasConfiguredChain(evmClient.GetChains(), chainId) {
+			return errors.Errorf("keys provider chain %d is not configured", chainId)
 		}
 
 		privateKeyInput := pterm.DefaultInteractiveTextInput.WithMask("*")
@@ -150,4 +154,8 @@ func registerKeyChainID(ctx context.Context, evmClient evm.IEvmClient) (uint64, 
 	}
 
 	return networkConfig.KeysProvider.ChainId, nil
+}
+
+func hasConfiguredChain(configuredChainIDs []uint64, targetChainID uint64) bool {
+	return slices.Contains(configuredChainIDs, targetChainID)
 }

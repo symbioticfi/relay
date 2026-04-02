@@ -41,6 +41,7 @@ func TestRegisterKeyUsesKeysProviderChainSecret(t *testing.T) {
 			Address: common.HexToAddress("0x0000000000000000000000000000000000000137"),
 		},
 	}, nil)
+	mockEVMClient.EXPECT().GetChains().Return([]uint64{1, 137})
 
 	builder := &capturingRegisterKeyBuilder{}
 	restore := stubRegisterKeyCommandDependencies(t, mockEVMClient, builder)
@@ -62,6 +63,37 @@ func TestRegisterKeyUsesKeysProviderChainSecret(t *testing.T) {
 	expectedOperator, err := operatorAddressFromSecret(keysProviderSecret)
 	require.NoError(t, err)
 	require.Equal(t, expectedOperator, builder.operatorAddress)
+}
+
+func TestRegisterKeyFailsWhenKeysProviderChainIsNotConfigured(t *testing.T) {
+	keyTag, err := symbiotic.KeyTagFromTypeAndId(symbiotic.KeyTypeEcdsaSecp256k1, 1)
+	require.NoError(t, err)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockEVMClient := evmmocks.NewMockIEvmClient(ctrl)
+	mockEVMClient.EXPECT().GetCurrentEpoch(gomock.Any()).Return(symbiotic.Epoch(7), nil)
+	mockEVMClient.EXPECT().GetEpochStart(gomock.Any(), symbiotic.Epoch(7)).Return(symbiotic.Timestamp(123), nil)
+	mockEVMClient.EXPECT().GetConfig(gomock.Any(), symbiotic.Timestamp(123), symbiotic.Epoch(7)).Return(symbiotic.NetworkConfig{
+		KeysProvider: symbiotic.CrossChainAddress{
+			ChainId: 137,
+			Address: common.HexToAddress("0x0000000000000000000000000000000000000137"),
+		},
+	}, nil)
+	mockEVMClient.EXPECT().GetChains().Return([]uint64{1})
+
+	builder := &capturingRegisterKeyBuilder{}
+	restore := stubRegisterKeyCommandDependencies(t, mockEVMClient, builder)
+	defer restore()
+
+	output, err := runOperatorCommand(t,
+		"register-key",
+		"--key-tag", keyTagArg(keyTag),
+	)
+	require.EqualError(t, err, "keys provider chain 137 is not configured")
+	require.Contains(t, output, "keys provider chain 137 is not configured")
+	require.False(t, builder.registerCalled)
 }
 
 func stubRegisterKeyCommandDependencies(t *testing.T, evmClient *evmmocks.MockIEvmClient, builder registerKeyBuilder) func() {
