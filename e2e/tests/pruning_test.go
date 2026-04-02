@@ -83,15 +83,13 @@ func TestPruningE2E_RemovesAllNonExcludedEntities(t *testing.T) {
 
 	scope := buildPruningScope(targetEpoch, common.HexToHash(requestID))
 
-	t.Log("Step 5: Waiting for pruning and verifying that no non-excluded entities remain...")
-	time.Sleep(offlineScanDelay(t))
-	require.NoError(t, stopSidecarForStorageScan(t, scanSidecarIndex, envInfo))
-	defer func() {
-		require.NoError(t, startSidecarAfterStorageScan(t, scanSidecarIndex, envInfo))
-	}()
+	t.Log("Step 5: Capturing actual epoch-scoped keys present in storage before pruning...")
+	prePruneEntities := scanSidecarStorageOffline(t, scanSidecarIndex, envInfo, scope)
+	require.NotEmptyf(t, prePruneEntities, "expected to find epoch-scoped keys before pruning, got none for scope:\n%s", formatRemainingEntities(prePruneEntities))
 
-	remaining, err := scanSidecarStorage(scanSidecarIndex, scope)
-	require.NoError(t, err)
+	t.Log("Step 6: Waiting for pruning and verifying that no non-excluded entities remain...")
+	time.Sleep(offlineScanDelay(t))
+	remaining := scanSidecarStorageOffline(t, scanSidecarIndex, envInfo, scope)
 	require.Emptyf(t, remaining, "found unpruned entities:\n%s", formatRemainingEntities(remaining))
 
 	t.Log("Pruning e2e test completed successfully")
@@ -158,6 +156,19 @@ func startSidecarAfterStorageScan(t *testing.T, sidecarIndex int, envInfo EnvInf
 		return errors.Errorf("failed to start %s: %w", serviceName, err)
 	}
 	return nil
+}
+
+func scanSidecarStorageOffline(t *testing.T, sidecarIndex int, envInfo EnvInfo, scope pruningScope) []remainingEntity {
+	t.Helper()
+
+	require.NoError(t, stopSidecarForStorageScan(t, sidecarIndex, envInfo))
+	defer func() {
+		require.NoError(t, startSidecarAfterStorageScan(t, sidecarIndex, envInfo))
+	}()
+
+	remaining, err := scanSidecarStorage(sidecarIndex, scope)
+	require.NoError(t, err)
+	return remaining
 }
 
 func storageScanSidecarName(sidecarIndex int, envInfo EnvInfo) string {

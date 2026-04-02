@@ -5,12 +5,12 @@ on:
   push:
     branches:
       - main
-      - 'release-*'
+      - "release-*"
   pull_request:
     types: [opened, synchronize, reopened]
     branches:
       - main
-      - 'release-*'
+      - "release-*"
   workflow_call:
 
 env:
@@ -23,12 +23,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-
   code-quality:
     name: "Code Quality & Linting"
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    
+
     steps:
       - name: "Checkout Repository"
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
@@ -39,7 +38,7 @@ jobs:
         run: |
           git config --global url.https://x-oauth-basic:${{ secrets.GITHUB_TOKEN }}@github.com/.insteadOf https://github.com/
           echo "GOPRIVATE=github.com/symbioticfi/relay" >> $GITHUB_ENV
-          
+
       - name: "Setup Go Environment"
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
@@ -71,7 +70,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     needs: [code-quality]
-    
+
     steps:
       - name: "Checkout Repository"
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
@@ -82,7 +81,7 @@ jobs:
         run: |
           git config --global url.https://x-oauth-basic:${{ secrets.GITHUB_TOKEN }}@github.com/.insteadOf https://github.com/
           echo "GOPRIVATE=github.com/symbioticfi/relay" >> $GITHUB_ENV
-          
+
       - name: "Setup Go Environment"
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
@@ -115,16 +114,15 @@ jobs:
         with:
           message: |
             ## 🧪 Test Coverage Report
-            
-            **Coverage:** `${{ steps.coverage.outputs.coverage }}`
 
+            **Coverage:** `${{ steps.coverage.outputs.coverage }}`
 
   e2e-tests:
     name: "E2E Tests - ${{ matrix.config.name }}"
     runs-on: ${{ matrix.config.verification_type == 0 && 'relay-16' || 'ubuntu-24.04' }}
-    timeout-minutes: 35
+    timeout-minutes: 40
     needs: [unit-tests]
-    
+
     strategy:
       matrix:
         config:
@@ -219,10 +217,10 @@ jobs:
           cd e2e/temp-network
           echo "Starting Docker Compose network..."
           docker compose up -d
-          
+
           echo "Waiting for services to initialize..."
           sleep 30
-          
+
           echo "✅ Network startup completed"
 
       - name: "Execute E2E Tests"
@@ -230,23 +228,22 @@ jobs:
           echo "Running End-to-End tests..."
           make e2e-test
 
-
       - name: "Collect Diagnostic Information"
         if: failure()
         run: |
           cd e2e
           echo "❌ Test failure detected - collecting diagnostic information..."
-          
+
           # Create organized logs directory structure
           mkdir -p logs/{containers,system,summary}
-          
+
           echo "Gathering container information..."
           # Get active containers (excluding anvil containers which are noisy)
           CONTAINER_IDS=$(docker ps -a --format "table {{.ID}}\t{{.Names}}" | grep -v -E "(anvil|buildx_buildkit|CONTAINER)" | awk '{print $1}' | tr '\n' ' ')
-          
+
           if [ -n "$CONTAINER_IDS" ]; then
             echo "Found active containers: $(echo $CONTAINER_IDS | wc -w)"
-            
+
             # Container status overview
             {
               echo "=== Container Status Overview ==="
@@ -256,12 +253,12 @@ jobs:
               echo ""
               docker ps -a --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -v -E "(anvil|buildx_buildkit)"
             } > logs/containers/status-overview.log
-            
+
             # Individual container logs
             for container_id in $CONTAINER_IDS; do
               if [ -n "$container_id" ]; then
                 CONTAINER_NAME=$(docker inspect --format='{{.Name}}' $container_id 2>/dev/null | sed 's/^\/*//' || echo "container-$container_id")
-                
+
                 echo "Collecting logs for: $CONTAINER_NAME"
                 {
                   echo "=== Container: $CONTAINER_NAME ($container_id) ==="
@@ -275,7 +272,7 @@ jobs:
           else
             echo "⚠️ No active containers found (excluding anvil)" > logs/containers/status-overview.log
           fi
-          
+
           echo "Gathering system information..."
           {
             echo "=== System Diagnostics ==="
@@ -293,7 +290,7 @@ jobs:
             echo "=== Docker Images ==="
             docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
           } > logs/system/diagnostics.log
-          
+
           echo "Creating test summary..."
           {
             echo "=== E2E Test Failure Summary ==="
@@ -334,7 +331,7 @@ jobs:
             echo "3. Verify test configuration parameters"
             echo "4. Consider adjusting timeout values if needed"
           } > logs/summary/failure-report.log
-          
+
           echo "✅ Diagnostic collection completed"
           echo "Log file summary:"
           find logs -type f -name "*.log" -exec echo "  - {}" \; | sort
