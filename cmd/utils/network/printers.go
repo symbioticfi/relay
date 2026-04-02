@@ -97,22 +97,25 @@ func printValidatorsTree(valset symbiotic.ValidatorSet) string {
 
 func printValidatorsTable(valset symbiotic.ValidatorSet) string {
 	tableData := make(pterm.TableData, 0, 1+len(valset.Validators))
-	tableData = append(tableData, []string{"Address", "Status", "Voting Power", "Vaults", "Keys"})
+	tableData = append(tableData, []string{"#", "Address", "Status", "Voting Power", "Vaults", "Keys", "Aggregator", "Committer"})
 
-	for _, validator := range valset.Validators {
-		status := pterm.FgRed.Sprint("inactive")
-		if validator.IsActive {
-			status = pterm.FgGreen.Sprint("active")
-		}
+	for i, validator := range valset.Validators {
+		requiredKey, found := validator.FindKeyByKeyTag(valset.RequiredKeyTag)
+		isAggregator := validator.IsActive && found && valset.IsAggregator(requiredKey)
+		isCommitter := validator.IsActive && found && valset.IsCommitter(requiredKey)
+
 		pct := new(big.Float).SetInt(validator.VotingPower.Int)
 		pct = pct.Mul(pct, big.NewFloat(100))
 		pct = pct.Quo(pct, new(big.Float).SetInt(valset.GetTotalActiveVotingPower().Int))
 		tableData = append(tableData, []string{
+			strconv.Itoa(i + 1),
 			validator.Operator.String(),
-			status,
+			lo.Ternary(validator.IsActive, pterm.FgGreen.Sprint("active"), pterm.FgRed.Sprint("inactive")),
 			fmt.Sprintf("%v (%0.3f)%%", validator.VotingPower, pct),
 			strconv.Itoa(len(validator.Vaults)),
 			strconv.Itoa(len(validator.Keys)),
+			lo.Ternary(isAggregator, pterm.FgGreen.Sprint("yes"), pterm.FgRed.Sprint("no")),
+			lo.Ternary(isCommitter, pterm.FgGreen.Sprint("yes"), pterm.FgRed.Sprint("no")),
 		})
 	}
 	text, _ := pterm.DefaultTable.WithHasHeader().WithData(tableData).Srender()

@@ -467,7 +467,7 @@ func (v ValidatorSet) IsSigner(requiredKey CompactPublicKey) bool {
 
 func (v ValidatorSet) findMembership(indexArray []uint32, requiredKey []byte) (uint32, bool) {
 	for _, validator := range indexArray {
-		key, found := v.Validators[validator].FindKeyByKeyTag(v.RequiredKeyTag)
+		key, found := v.Validators.GetActiveValidators()[validator].FindKeyByKeyTag(v.RequiredKeyTag)
 		if found && bytes.Equal(key, requiredKey) {
 			return validator, true
 		}
