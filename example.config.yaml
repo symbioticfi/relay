@@ -145,6 +145,11 @@ aggregation:
 # bbolt uses a B+tree with single-writer model for predictable write latency
 # bbolt:
 #   initial-mmap-size: 0        # Initial mmap size in bytes (0 = default)
+#   compact-on-startup: true    # Compact database on startup to reclaim free pages (default: true)
+#   no-freelist-sync: false     # Skip writing freelist to disk on every commit (faster writes, slower startup)
+#   max-batch-delay: 0          # Max delay before flushing a batch write (0 = bbolt default 10ms)
+#   max-batch-size: 0           # Max operations per batch write (0 = bbolt default 1000)
+#   stats-log-interval: 30s     # Interval for logging database stats (0 = disabled)
 
 # BadgerDB Storage Engine Tuning (optional, only used when storage-type: "badger")
 # See https://github.com/dgraph-io/badger/blob/main/options.go#L123 for details

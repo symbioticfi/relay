@@ -271,6 +271,7 @@ type BboltConfig struct {
 	NoFreelistSync   bool          `mapstructure:"no-freelist-sync"`
 	MaxBatchDelay    time.Duration `mapstructure:"max-batch-delay"`
 	MaxBatchSize     int           `mapstructure:"max-batch-size"`
+	StatsLogInterval time.Duration `mapstructure:"stats-log-interval"`
 }
 
 type BadgerConfig struct {
@@ -336,6 +337,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("bbolt.no-freelist-sync", false, "Skip writing freelist to disk on every commit (faster writes, slower startup)")
 	rootCmd.PersistentFlags().Duration("bbolt.max-batch-delay", 0, "Max delay before flushing a batch write (0 = bbolt default 10ms)")
 	rootCmd.PersistentFlags().Int("bbolt.max-batch-size", 0, "Max operations per batch write (0 = bbolt default 1000)")
+	rootCmd.PersistentFlags().Duration("bbolt.stats-log-interval", 30*time.Second, "Interval for logging bbolt database stats (0 = disabled)")
 	rootCmd.PersistentFlags().String("circuits-dir", "", "Directory path to load zk circuits from, if empty then zp prover is disabled")
 	rootCmd.PersistentFlags().Uint64("aggregation-policy-max-unsigners", 50, "Max unsigners for low cost agg policy")
 	rootCmd.PersistentFlags().String("api.listen", "", "API Server listener address")
@@ -480,6 +482,9 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("bbolt.max-batch-size", cmd.PersistentFlags().Lookup("bbolt.max-batch-size")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("bbolt.stats-log-interval", cmd.PersistentFlags().Lookup("bbolt.stats-log-interval")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("circuits-dir", cmd.PersistentFlags().Lookup("circuits-dir")); err != nil {

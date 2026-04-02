@@ -236,6 +236,7 @@ func (s *SignerApp) completeSign(ctx context.Context, requestID common.Hash, p2p
 	}
 	removeSignatureDuration := time.Since(processSignStart) - processSignatureDuration
 
+	broadcastStart := time.Now()
 	tracing.AddEvent(span, "broadcasting_signature")
 	err = p2pService.BroadcastSignatureGeneratedMessage(ctx, extendedSignature)
 	if err != nil {
@@ -250,6 +251,7 @@ func (s *SignerApp) completeSign(ctx context.Context, requestID common.Hash, p2p
 		"signDuration", signDuration,
 		"processSignatureDuration", processSignatureDuration,
 		"removeSignatureDuration", removeSignatureDuration,
+		"broadcastDuration", time.Since(broadcastStart),
 	)
 	s.cfg.Metrics.ObserveAppSignDuration(time.Since(timeAppSignStart))
 

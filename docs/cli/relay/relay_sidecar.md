@@ -37,11 +37,12 @@ relay_sidecar [flags]
       --badger.value-log-file-size int                   BadgerDB value log file size in bytes, 512 MB (default 536870912)
       --badger.value-log-gc-discard-ratio float          BadgerDB value log GC discard ratio (0.0-1.0) (default 0.5)
       --badger.value-log-gc-interval duration            BadgerDB value log GC interval, 0 = disabled (default 5m0s)
-      --bbolt.compact-on-startup                         Compact database on startup to reclaim free pages
+      --bbolt.compact-on-startup                         Compact database on startup to reclaim free pages (default true)
       --bbolt.initial-mmap-size int                      Initial mmap size in bytes (0 = default)
       --bbolt.max-batch-delay duration                   Max delay before flushing a batch write (0 = bbolt default 10ms)
       --bbolt.max-batch-size int                         Max operations per batch write (0 = bbolt default 1000)
       --bbolt.no-freelist-sync                           Skip writing freelist to disk on every commit (faster writes, slower startup)
+      --bbolt.stats-log-interval duration                Interval for logging bbolt database stats (0 = disabled) (default 30s)
       --cache.network-config-size int                    Network config cache size (default 10)
       --cache.validator-set-size int                     Validator set cache size (default 10)
       --circuits-dir string                              Directory path to load zk circuits from, if empty then zp prover is disabled
