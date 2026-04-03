@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"log/slog"
-	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
@@ -140,60 +139,33 @@ func (r *Repository) GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.E
 }
 
 func (r *Repository) UpdateSignatureMap(ctx context.Context, vm entity.SignatureMap) error {
-	entryI, _ := r.signatureMapCache.LoadOrStore(vm.RequestID, &signatureMapEntry{})
-	entry := entryI.(*signatureMapEntry)
-	entry.mu.Lock()
-	entry.val = vm
-	entry.mu.Unlock()
-	return nil
+	data, err := codec.SignatureMapToBytes(vm)
+	if err != nil {
+		return errors.Errorf("failed to marshal signature map: %w", err)
+	}
+
+	return r.doBatch(ctx, "UpdateSignatureMap", func(tx *bolt.Tx) error {
+		return tx.Bucket(bucketSignatureMaps).Put(vm.RequestID.Bytes(), data)
+	})
 }
 
 func (r *Repository) GetSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error) {
-	if entryI, ok := r.signatureMapCache.Load(requestID); ok {
-		entry := entryI.(*signatureMapEntry)
-		entry.mu.Lock()
-		val := entry.val
-		entry.mu.Unlock()
-		return val, nil
-	}
+	var vm entity.SignatureMap
 
-	return r.rebuildSignatureMap(ctx, requestID)
-}
-
-func (r *Repository) rebuildSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error) {
-	signatures, err := r.GetAllSignatures(ctx, requestID)
-	if err != nil {
-		return entity.SignatureMap{}, errors.Errorf("failed to get signatures for rebuild: %w", err)
-	}
-	if len(signatures) == 0 {
-		return entity.SignatureMap{}, errors.Errorf("no signatures found for request id %s: %w", requestID.Hex(), entity.ErrEntityNotFound)
-	}
-
-	epoch := signatures[0].Epoch
-	totalActive, err := r.GetActiveValidatorCountByEpoch(ctx, epoch)
-	if err != nil {
-		return entity.SignatureMap{}, errors.Errorf("failed to get active validator count: %w", err)
-	}
-
-	sm := entity.NewSignatureMap(requestID, epoch, totalActive)
-
-	for _, sig := range signatures {
-		validator, activeIndex, err := r.GetValidatorByKey(ctx, sig.Epoch, sig.KeyTag, sig.PublicKey.OnChain())
-		if err != nil {
-			slog.WarnContext(ctx, "Skipping signature during rebuild — validator not found",
-				"requestId", requestID.Hex(),
-				"error", err,
-			)
-			continue
+	err := r.doView(ctx, "GetSignatureMap", func(tx *bolt.Tx) error {
+		v := tx.Bucket(bucketSignatureMaps).Get(requestID.Bytes())
+		if v == nil {
+			return errors.Errorf("no signature map found for request id %s: %w", requestID.Hex(), entity.ErrEntityNotFound)
 		}
-		_ = sm.SetValidatorPresent(activeIndex, validator.VotingPower)
-	}
 
-	entry := &signatureMapEntry{mu: sync.Mutex{}, val: sm}
-	actualI, _ := r.signatureMapCache.LoadOrStore(requestID, entry)
-	actual := actualI.(*signatureMapEntry)
-
-	return actual.val, nil
+		var err error
+		vm, err = codec.BytesToSignatureMap(v)
+		if err != nil {
+			return errors.Errorf("failed to unmarshal signature map: %w", err)
+		}
+		return nil
+	})
+	return vm, err
 }
 
 func (r *Repository) SaveSignatureRequest(ctx context.Context, requestID common.Hash, req symbiotic.SignatureRequest) error {
