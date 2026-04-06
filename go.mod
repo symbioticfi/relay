@@ -43,7 +43,7 @@ require (
 	golang.org/x/sync v0.20.0
 	golang.org/x/term v0.41.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20260319201613-d00831a3d3e7
-	google.golang.org/grpc v1.79.3
+	google.golang.org/grpc v1.80.0
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/client-go v0.35.3
