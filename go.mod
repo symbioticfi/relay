@@ -12,7 +12,7 @@ require (
 	github.com/ferranbt/fastssz v1.0.0
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/go-errors/errors v1.5.1
-	github.com/go-playground/validator/v10 v10.30.1
+	github.com/go-playground/validator/v10 v10.30.2
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.3
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0
