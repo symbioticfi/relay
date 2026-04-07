@@ -563,7 +563,7 @@ func TestGetValidatorsIndexesMapByKey_WithMixedActiveInactive_ReturnsOnlyActiveV
 
 	require.Len(t, result, 2)
 	assert.Equal(t, 0, result[string(keyPayload1)])
-	assert.Equal(t, 2, result[string(keyPayload3)])
+	assert.Equal(t, 1, result[string(keyPayload3)])
 	_, exists := result[string(keyPayload2)]
 	assert.False(t, exists)
 }

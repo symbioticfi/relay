@@ -74,7 +74,7 @@ func printNetworkInfo(epoch symbiotic.Epoch, epochStart symbiotic.Timestamp, net
 	t := time.Unix(int64(epochStart), 0)
 	tFormatted := t.Format("2006-01-02 15:04:05")
 	infoText += fmt.Sprintf("Epoch start: %d (%s)\n", epochStart, tFormatted)
-	infoText += fmt.Sprintf("Validators: %d\n", len(valset.Validators))
+	infoText += fmt.Sprintf("Validators: %d (active: %d)\n", len(valset.Validators), valset.GetTotalActiveValidators())
 	infoText += fmt.Sprintf("Total voting power: %v\n", valset.GetTotalActiveVotingPower())
 	infoText += fmt.Sprintf("Voting power providers: %d\n", len(networkConfig.VotingPowerProviders))
 	infoText += fmt.Sprintf("Settlements: %d\n", len(networkConfig.Settlements))

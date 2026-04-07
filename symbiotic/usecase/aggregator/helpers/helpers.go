@@ -141,11 +141,7 @@ func GetExtraDataKeyIndexed(
 func GetValidatorsIndexesMapByKey(valset symbiotic.ValidatorSet, keyTag symbiotic.KeyTag) map[string]int {
 	keysMap := make(map[string]int)
 
-	for i, validator := range valset.Validators {
-		if !validator.IsActive {
-			continue
-		}
-
+	for i, validator := range valset.Validators.GetActiveValidators() {
 		for _, key := range validator.Keys {
 			if key.Tag == keyTag {
 				keysMap[string(key.Payload)] = i
