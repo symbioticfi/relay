@@ -446,7 +446,7 @@ func (v ValidatorSet) IsCommitter(requiredKey CompactPublicKey) bool {
 }
 
 func (v ValidatorSet) ValidatorIndex(requiredKey CompactPublicKey) int {
-	for idx, validator := range v.Validators {
+	for idx, validator := range v.Validators.GetActiveValidators() {
 		key, found := validator.FindKeyByKeyTag(v.RequiredKeyTag)
 		if found && bytes.Equal(key, requiredKey) {
 			return idx
@@ -456,7 +456,7 @@ func (v ValidatorSet) ValidatorIndex(requiredKey CompactPublicKey) int {
 }
 
 func (v ValidatorSet) IsSigner(requiredKey CompactPublicKey) bool {
-	for _, validator := range v.Validators {
+	for _, validator := range v.Validators.GetActiveValidators() {
 		key, found := validator.FindKeyByKeyTag(v.RequiredKeyTag)
 		if found && bytes.Equal(key, requiredKey) {
 			return true
@@ -467,7 +467,12 @@ func (v ValidatorSet) IsSigner(requiredKey CompactPublicKey) bool {
 
 func (v ValidatorSet) findMembership(indexArray []uint32, requiredKey []byte) (uint32, bool) {
 	for _, validator := range indexArray {
-		key, found := v.Validators.GetActiveValidators()[validator].FindKeyByKeyTag(v.RequiredKeyTag)
+		activeValidators := v.Validators.GetActiveValidators()
+		if int(validator) >= len(activeValidators) {
+			slog.Warn("Validator index out of range", "validatorIndex", validator, "activeValidatorsCount", len(activeValidators))
+			continue
+		}
+		key, found := activeValidators[validator].FindKeyByKeyTag(v.RequiredKeyTag)
 		if found && bytes.Equal(key, requiredKey) {
 			return validator, true
 		}
@@ -608,13 +613,7 @@ func (v ValidatorSet) GetTotalActiveVotingPower() VotingPower {
 }
 
 func (v ValidatorSet) GetTotalActiveValidators() int64 {
-	totalActive := int64(0)
-	for _, validator := range v.Validators {
-		if validator.IsActive {
-			totalActive++
-		}
-	}
-	return totalActive
+	return int64(len(v.Validators.GetActiveValidators()))
 }
 
 func (v ValidatorSet) GetHeader() (ValidatorSetHeader, error) {

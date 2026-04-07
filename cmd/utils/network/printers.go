@@ -108,7 +108,7 @@ func printValidatorsTable(valset symbiotic.ValidatorSet) string {
 		pct = pct.Mul(pct, big.NewFloat(100))
 		pct = pct.Quo(pct, new(big.Float).SetInt(valset.GetTotalActiveVotingPower().Int))
 		tableData = append(tableData, []string{
-			strconv.Itoa(i + 1),
+			strconv.Itoa(i),
 			validator.Operator.String(),
 			lo.Ternary(validator.IsActive, pterm.FgGreen.Sprint("active"), pterm.FgRed.Sprint("inactive")),
 			fmt.Sprintf("%v (%0.3f)%%", validator.VotingPower, pct),
