@@ -71,10 +71,10 @@ type Repository interface {
 	SaveNextValsetData(ctx context.Context, data entity.NextValsetData) error
 
 	// Pruning
-	PruneValsetEntities(ctx context.Context, epoch symbiotic.Epoch) error
-	PruneProofEntities(ctx context.Context, epoch symbiotic.Epoch) error
-	PruneSignatureEntitiesForEpoch(ctx context.Context, epoch symbiotic.Epoch) error
-	PruneRequestIDEpochIndices(ctx context.Context, epoch symbiotic.Epoch) error
+	PruneValsetEntities(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error
+	PruneProofEntities(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error
+	PruneSignatureEntitiesForEpoch(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error
+	PruneRequestIDEpochIndices(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error
 }
 
 type Config struct {
@@ -173,8 +173,8 @@ func (r *CachedRepository) GetValidatorSetMetadata(ctx context.Context, epoch sy
 	return metadata, nil
 }
 
-func (r *CachedRepository) PruneValsetEntities(ctx context.Context, epoch symbiotic.Epoch) error {
-	if err := r.Repository.PruneValsetEntities(ctx, epoch); err != nil {
+func (r *CachedRepository) PruneValsetEntities(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error {
+	if err := r.Repository.PruneValsetEntities(ctx, epoch, 0); err != nil {
 		return err
 	}
 	r.evictValsetCaches(epoch)

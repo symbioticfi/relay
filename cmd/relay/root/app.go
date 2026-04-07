@@ -376,6 +376,7 @@ func runApp(ctx context.Context) error {
 		Metrics:                  mtr,
 		Enabled:                  cfg.Pruner.Enabled,
 		Interval:                 cfg.Pruner.Interval,
+		PruneBatchSize:           cfg.Pruner.BatchSize,
 		ValsetRetentionEpochs:    cfg.Retention.ValSetEpochs,
 		ProofRetentionEpochs:     cfg.Retention.ProofEpochs,
 		SignatureRetentionEpochs: cfg.Retention.SignatureEpochs,

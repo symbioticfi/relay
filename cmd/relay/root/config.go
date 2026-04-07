@@ -241,8 +241,9 @@ type RetentionConfig struct {
 }
 
 type PrunerConfig struct {
-	Enabled  bool          `mapstructure:"enabled"`
-	Interval time.Duration `mapstructure:"interval"`
+	Enabled   bool          `mapstructure:"enabled"`
+	Interval  time.Duration `mapstructure:"interval"`
+	BatchSize int           `mapstructure:"batch-size"`
 }
 
 type AggregationConfig struct {
@@ -375,6 +376,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Uint64("retention.signature-epochs", 0, "Number of historical signature epochs to retain (0 = unlimited)")
 	rootCmd.PersistentFlags().Bool("pruner.enabled", false, "Enable automatic pruning of old epoch data (default: false)")
 	rootCmd.PersistentFlags().Duration("pruner.interval", time.Hour, "How often to run pruning (default: 1h)")
+	rootCmd.PersistentFlags().Int("pruner.batch-size", 10, "Number of request IDs to delete per database transaction during pruning (0 = unbatched)")
 	rootCmd.PersistentFlags().Int("aggregation.worker-count", 10, "Max simultaneous proof aggregations, reduce for ZK circuits with high memory and cpu usage")
 	rootCmd.PersistentFlags().Bool("aggregation.cross-epoch-aggregation", false, "Allow latest-epoch aggregators to aggregate proofs for older epochs when original aggregators are offline")
 	rootCmd.PersistentFlags().Bool("aggregation.catchup.enabled", true, "Enable periodic aggregation catch-up loop")
@@ -596,6 +598,9 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("pruner.interval", cmd.PersistentFlags().Lookup("pruner.interval")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("pruner.batch-size", cmd.PersistentFlags().Lookup("pruner.batch-size")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("aggregation.worker-count", cmd.PersistentFlags().Lookup("aggregation.worker-count")); err != nil {
