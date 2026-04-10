@@ -46,6 +46,12 @@ func (c Config) Validate() error {
 	if c.Enabled && c.Interval <= 0 {
 		return errors.New("pruner interval must be greater than zero when enabled")
 	}
+	if c.ValsetRetentionEpochs > 0 && c.ProofRetentionEpochs > 0 && c.ValsetRetentionEpochs < c.ProofRetentionEpochs {
+		return errors.Errorf("ValsetRetentionEpochs (%d) must be >= ProofRetentionEpochs (%d)", c.ValsetRetentionEpochs, c.ProofRetentionEpochs)
+	}
+	if c.ValsetRetentionEpochs > 0 && c.SignatureRetentionEpochs > 0 && c.ValsetRetentionEpochs < c.SignatureRetentionEpochs {
+		return errors.Errorf("ValsetRetentionEpochs (%d) must be >= SignatureRetentionEpochs (%d)", c.ValsetRetentionEpochs, c.SignatureRetentionEpochs)
+	}
 	return nil
 }
 
