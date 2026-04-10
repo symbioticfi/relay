@@ -123,7 +123,7 @@ func TestGetOptimalN(t *testing.T) {
 
 // TestNormalizeValset tests the NormalizeValset function
 func TestNormalizeValset(t *testing.T) {
-	t.Run("sorts validators by key", func(t *testing.T) {
+	t.Run("sorts validators by key lexicographically", func(t *testing.T) {
 		valset := []ValidatorData{
 			{
 				PrivateKey:  big.NewInt(30),
@@ -153,12 +153,14 @@ func TestNormalizeValset(t *testing.T) {
 		// Should be sorted and padded to 10
 		require.Len(t, result, 10)
 
-		// Check that first 3 are sorted (we need to verify sorting logic)
-		// The sorting is done by key.X or key.Y comparison
+		// Verify lexicographic ordering: X is primary key, Y is tiebreaker
 		for i := 0; i < 2; i++ {
 			cmpX := result[i].Key.X.Cmp(&result[i+1].Key.X)
-			cmpY := result[i].Key.Y.Cmp(&result[i+1].Key.Y)
-			assert.True(t, cmpX < 0 || cmpY < 0, "validators should be sorted")
+			assert.True(t, cmpX <= 0, "validators should be sorted by X ascending")
+			if cmpX == 0 {
+				cmpY := result[i].Key.Y.Cmp(&result[i+1].Key.Y)
+				assert.True(t, cmpY < 0, "validators with equal X should be sorted by Y ascending")
+			}
 		}
 
 		// Check that remaining slots are padded with zero points
@@ -168,6 +170,46 @@ func TestNormalizeValset(t *testing.T) {
 			assert.Equal(t, zeroPoint.X, result[i].Key.X, "padding should have zero X")
 			assert.Equal(t, zeroPoint.Y, result[i].Key.Y, "padding should have zero Y")
 			assert.Equal(t, big.NewInt(0), result[i].VotingPower, "padding should have zero voting power")
+		}
+	})
+
+	t.Run("deterministic ordering is idempotent", func(t *testing.T) {
+		t.Setenv("MAX_VALIDATORS", "10")
+
+		// Create validators with various private keys to get different curve points
+		privKeys := []*big.Int{
+			big.NewInt(7), big.NewInt(42), big.NewInt(13),
+			big.NewInt(99), big.NewInt(3), big.NewInt(55),
+		}
+		valset := make([]ValidatorData, len(privKeys))
+		for i, pk := range privKeys {
+			valset[i] = ValidatorData{
+				PrivateKey:  pk,
+				Key:         getPubkeyG1(pk),
+				KeyG2:       getPubkeyG2(pk),
+				VotingPower: big.NewInt(100),
+			}
+		}
+
+		result1 := NormalizeValset(valset)
+
+		// Shuffle and normalize again — should produce the same order
+		shuffled := make([]ValidatorData, len(privKeys))
+		order := []int{4, 1, 5, 0, 3, 2}
+		for i, idx := range order {
+			shuffled[i] = ValidatorData{
+				PrivateKey:  privKeys[idx],
+				Key:         getPubkeyG1(privKeys[idx]),
+				KeyG2:       getPubkeyG2(privKeys[idx]),
+				VotingPower: big.NewInt(100),
+			}
+		}
+
+		result2 := NormalizeValset(shuffled)
+
+		for i := 0; i < len(privKeys); i++ {
+			assert.Equal(t, result1[i].Key.X, result2[i].Key.X, "X mismatch at index %d", i)
+			assert.Equal(t, result1[i].Key.Y, result2[i].Key.Y, "Y mismatch at index %d", i)
 		}
 	})
 
