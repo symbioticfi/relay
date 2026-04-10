@@ -25,22 +25,29 @@ func (h *grpcHandler) ListenProofs(
 	defer h.proofsHub.Unsubscribe(subscriptionID.String())
 
 	if epoch := req.GetStartEpoch(); epoch != 0 {
-		proofs, err := h.cfg.Repo.GetAggregationProofsStartingFromEpoch(ctx, symbiotic.Epoch(epoch))
+		latestEpoch, err := h.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 		if err != nil {
 			return err
 		}
 
-		for _, proof := range proofs {
-			if err = stream.Send(&apiv1.ListenProofsResponse{
-				RequestId: proof.RequestID().Hex(),
-				Epoch:     uint64(proof.Epoch),
-				AggregationProof: &apiv1.AggregationProof{
-					MessageHash: proof.MessageHash,
-					Proof:       proof.Proof,
-					RequestId:   proof.RequestID().Hex(),
-				},
-			}); err != nil {
+		for e := symbiotic.Epoch(epoch); e <= latestEpoch; e++ {
+			proofs, err := h.cfg.Repo.GetAggregationProofsByEpoch(ctx, e)
+			if err != nil {
 				return err
+			}
+
+			for _, proof := range proofs {
+				if err = stream.Send(&apiv1.ListenProofsResponse{
+					RequestId: proof.RequestID().Hex(),
+					Epoch:     uint64(proof.Epoch),
+					AggregationProof: &apiv1.AggregationProof{
+						MessageHash: proof.MessageHash,
+						Proof:       proof.Proof,
+						RequestId:   proof.RequestID().Hex(),
+					},
+				}); err != nil {
+					return err
+				}
 			}
 		}
 	}

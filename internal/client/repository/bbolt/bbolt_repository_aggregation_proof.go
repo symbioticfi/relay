@@ -65,34 +65,6 @@ func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.H
 	return ap, err
 }
 
-func (r *Repository) GetAggregationProofsStartingFromEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.AggregationProof, error) {
-	var proofs []symbiotic.AggregationProof
-
-	err := r.doView(ctx, "GetAggregationProofsStartingFromEpoch", func(tx *bolt.Tx) error {
-		prefix := epochBytes(uint64(epoch))
-		c := tx.Bucket(bucketRequestIDEpochs).Cursor()
-
-		for k, _ := c.Seek(prefix); k != nil; k, _ = c.Next() {
-			if len(k) < 40 {
-				continue
-			}
-			requestID := common.BytesToHash(k[8:40])
-			v := tx.Bucket(bucketAggregationProofs).Get(requestID.Bytes())
-			if v == nil {
-				continue
-			}
-			proof, err := codec.BytesToAggregationProof(v)
-			if err != nil {
-				slog.ErrorContext(ctx, "Failed to unmarshal aggregation proof", "requestId", requestID.Hex())
-				continue
-			}
-			proofs = append(proofs, proof)
-		}
-		return nil
-	})
-	return proofs, err
-}
-
 func (r *Repository) GetAggregationProofsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.AggregationProof, error) {
 	var proofs []symbiotic.AggregationProof
 

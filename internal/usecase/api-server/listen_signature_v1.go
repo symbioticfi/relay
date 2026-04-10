@@ -25,18 +25,25 @@ func (h *grpcHandler) ListenSignatures(
 	defer h.signatureHub.Unsubscribe(subscriptionID.String())
 
 	if epoch := req.GetStartEpoch(); epoch != 0 {
-		signatures, err := h.cfg.Repo.GetSignaturesStartingFromEpoch(ctx, symbiotic.Epoch(epoch))
+		latestEpoch, err := h.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 		if err != nil {
 			return err
 		}
 
-		for _, signature := range signatures {
-			if err = stream.Send(&apiv1.ListenSignaturesResponse{
-				RequestId: signature.RequestID().Hex(),
-				Epoch:     uint64(signature.Epoch),
-				Signature: convertSignatureToPB(signature),
-			}); err != nil {
+		for e := symbiotic.Epoch(epoch); e <= latestEpoch; e++ {
+			signatures, err := h.cfg.Repo.GetSignaturesByEpoch(ctx, e)
+			if err != nil {
 				return err
+			}
+
+			for _, signature := range signatures {
+				if err = stream.Send(&apiv1.ListenSignaturesResponse{
+					RequestId: signature.RequestID().Hex(),
+					Epoch:     uint64(signature.Epoch),
+					Signature: convertSignatureToPB(signature),
+				}); err != nil {
+					return err
+				}
 			}
 		}
 	}

@@ -101,36 +101,6 @@ func (r *Repository) GetSignatureByIndex(ctx context.Context, requestID common.H
 	return signature, err
 }
 
-func (r *Repository) GetSignaturesStartingFromEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error) {
-	var signatures []symbiotic.Signature
-
-	return signatures, r.doViewInTx(ctx, "GetSignaturesStartingFromEpoch", func(ctx context.Context) error {
-		txn := getTxn(ctx)
-
-		startKey := keyRequestIDEpochPrefix(epoch)
-		opts := badger.DefaultIteratorOptions
-		opts.Prefix = keyRequestIDEpochAll()
-
-		it := txn.NewIterator(opts)
-		defer it.Close()
-
-		for it.Seek(startKey); it.Valid(); it.Next() {
-			signaturesFromItem, err := r.getSignaturesByEpochFromItem(txn, it)
-			if err != nil {
-				if errors.Is(err, errCorruptedRequestIDEpochLink) {
-					slog.ErrorContext(ctx, errCorruptedRequestIDEpochLink.Error(), "key", string(it.Item().Key()))
-					continue
-				}
-				return err
-			}
-
-			signatures = append(signatures, signaturesFromItem...)
-		}
-
-		return nil
-	})
-}
-
 func (r *Repository) GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error) {
 	var signatures []symbiotic.Signature
 

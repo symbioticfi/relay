@@ -182,52 +182,6 @@ func (r *Repository) getAllValidatorsByEpoch(tx *bolt.Tx, epoch symbiotic.Epoch)
 	return validators, nil
 }
 
-func (r *Repository) GetValidatorSetsStartingFromEpoch(ctx context.Context, startEpoch symbiotic.Epoch) ([]symbiotic.ValidatorSet, error) {
-	var sets []symbiotic.ValidatorSet
-
-	err := r.doView(ctx, "GetValidatorSetsStartingFromEpoch", func(tx *bolt.Tx) error {
-		seekKey := epochBytes(uint64(startEpoch))
-		c := tx.Bucket(bucketValidatorSetHeaders).Cursor()
-
-		for k, headerValue := c.Seek(seekKey); k != nil; k, headerValue = c.Next() {
-			header, err := codec.BytesToValidatorSetHeader(headerValue)
-			if err != nil {
-				return errors.Errorf("failed to unmarshal validator set header: %w", err)
-			}
-
-			statusVal := tx.Bucket(bucketValidatorSetStatus).Get(k)
-			if statusVal == nil || len(statusVal) != 1 {
-				continue
-			}
-			status := symbiotic.ValidatorSetStatus(statusVal[0])
-
-			validators, err := r.getAllValidatorsByEpoch(tx, header.Epoch)
-			if err != nil {
-				return errors.Errorf("failed to get validators for epoch %d: %w", header.Epoch, err)
-			}
-
-			aggIndices, commIndices, err := codec.ExtractAdditionalInfoFromHeaderData(headerValue)
-			if err != nil {
-				return errors.Errorf("failed to extract bitmap indices: %w", err)
-			}
-
-			sets = append(sets, symbiotic.ValidatorSet{
-				Version:           header.Version,
-				RequiredKeyTag:    header.RequiredKeyTag,
-				Epoch:             header.Epoch,
-				CaptureTimestamp:  header.CaptureTimestamp,
-				QuorumThreshold:   header.QuorumThreshold,
-				Validators:        validators,
-				Status:            status,
-				AggregatorIndices: aggIndices,
-				CommitterIndices:  commIndices,
-			})
-		}
-		return nil
-	})
-	return sets, err
-}
-
 func (r *Repository) GetValidatorSetByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error) {
 	var vs symbiotic.ValidatorSet
 

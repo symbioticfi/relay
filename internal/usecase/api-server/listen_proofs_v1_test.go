@@ -103,7 +103,9 @@ func TestListenProofs_OnlyHistoricalData(t *testing.T) {
 	stream := &mockProofsStream{ctx: ctx}
 
 	startEpoch := uint64(3)
-	mockRepo.EXPECT().GetAggregationProofsStartingFromEpoch(ctx, symbiotic.Epoch(startEpoch)).Return(expectedProofs, nil)
+	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(4), nil)
+	mockRepo.EXPECT().GetAggregationProofsByEpoch(ctx, symbiotic.Epoch(3)).Return(expectedProofs[:2], nil)
+	mockRepo.EXPECT().GetAggregationProofsByEpoch(ctx, symbiotic.Epoch(4)).Return(expectedProofs[2:], nil)
 
 	req := &apiv1.ListenProofsRequest{
 		StartEpoch: &startEpoch,
@@ -208,7 +210,8 @@ func TestListenProofs_HistoricalAndBroadcast(t *testing.T) {
 	}
 
 	startEpoch := uint64(3)
-	mockRepo.EXPECT().GetAggregationProofsStartingFromEpoch(ctx, symbiotic.Epoch(startEpoch)).Return(historicalProofs, nil)
+	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(3), nil)
+	mockRepo.EXPECT().GetAggregationProofsByEpoch(ctx, symbiotic.Epoch(3)).Return(historicalProofs, nil)
 
 	req := &apiv1.ListenProofsRequest{
 		StartEpoch: &startEpoch,
@@ -262,7 +265,7 @@ func TestListenProofs_RepositoryError(t *testing.T) {
 
 	startEpoch := uint64(3)
 	expectedError := errors.New("database connection failed")
-	mockRepo.EXPECT().GetAggregationProofsStartingFromEpoch(ctx, symbiotic.Epoch(startEpoch)).Return(nil, expectedError)
+	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(0), expectedError)
 
 	req := &apiv1.ListenProofsRequest{
 		StartEpoch: &startEpoch,
@@ -309,7 +312,8 @@ func TestListenProofs_StreamSendError(t *testing.T) {
 	}
 
 	startEpoch := uint64(3)
-	mockRepo.EXPECT().GetAggregationProofsStartingFromEpoch(ctx, symbiotic.Epoch(startEpoch)).Return(expectedProofs, nil)
+	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(3), nil)
+	mockRepo.EXPECT().GetAggregationProofsByEpoch(ctx, symbiotic.Epoch(3)).Return(expectedProofs, nil)
 
 	req := &apiv1.ListenProofsRequest{
 		StartEpoch: &startEpoch,
@@ -409,7 +413,8 @@ func TestListenProofs_EmptyHistoricalData(t *testing.T) {
 	}
 
 	startEpoch := uint64(3)
-	mockRepo.EXPECT().GetAggregationProofsStartingFromEpoch(ctx, symbiotic.Epoch(startEpoch)).Return([]symbiotic.AggregationProof{}, nil)
+	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(3), nil)
+	mockRepo.EXPECT().GetAggregationProofsByEpoch(ctx, symbiotic.Epoch(3)).Return([]symbiotic.AggregationProof{}, nil)
 
 	req := &apiv1.ListenProofsRequest{
 		StartEpoch: &startEpoch,

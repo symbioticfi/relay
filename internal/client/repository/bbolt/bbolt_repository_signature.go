@@ -90,30 +90,6 @@ func (r *Repository) GetSignatureByIndex(ctx context.Context, requestID common.H
 	return sig, err
 }
 
-func (r *Repository) GetSignaturesStartingFromEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error) {
-	var signatures []symbiotic.Signature
-
-	err := r.doView(ctx, "GetSignaturesStartingFromEpoch", func(tx *bolt.Tx) error {
-		prefix := epochBytes(uint64(epoch))
-		c := tx.Bucket(bucketRequestIDEpochs).Cursor()
-
-		for k, _ := c.Seek(prefix); k != nil; k, _ = c.Next() {
-			if len(k) < 40 {
-				continue
-			}
-			requestID := common.BytesToHash(k[8:40])
-			sigs, err := getAllSignatures(tx, requestID)
-			if err != nil {
-				slog.ErrorContext(ctx, "Corrupted request id epoch link", "key", hex.EncodeToString(k))
-				continue
-			}
-			signatures = append(signatures, sigs...)
-		}
-		return nil
-	})
-	return signatures, err
-}
-
 func (r *Repository) GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error) {
 	var signatures []symbiotic.Signature
 

@@ -98,36 +98,6 @@ func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.H
 	})
 }
 
-func (r *Repository) GetAggregationProofsStartingFromEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.AggregationProof, error) {
-	var proofs []symbiotic.AggregationProof
-
-	return proofs, r.doViewInTx(ctx, "GetAggregationProofsStartingFromEpoch", func(ctx context.Context) error {
-		txn := getTxn(ctx)
-
-		startKey := keyRequestIDEpochPrefix(epoch)
-		opts := badger.DefaultIteratorOptions
-		opts.Prefix = keyRequestIDEpochAll()
-
-		it := txn.NewIterator(opts)
-		defer it.Close()
-
-		for it.Seek(startKey); it.Valid(); it.Next() {
-			proof, err := getAggregationProofByEpochFromItem(txn, it)
-			if err != nil {
-				if errors.Is(err, errCorruptedRequestIDEpochLink) {
-					slog.ErrorContext(ctx, errCorruptedRequestIDEpochLink.Error(), "key", string(it.Item().Key()))
-					continue
-				}
-				return err
-			}
-
-			proofs = append(proofs, proof)
-		}
-
-		return nil
-	})
-}
-
 func (r *Repository) GetAggregationProofsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.AggregationProof, error) {
 	var proofs []symbiotic.AggregationProof
 
