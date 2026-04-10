@@ -24,7 +24,7 @@ type provider interface {
 	BuildWantSignaturesRequest(ctx context.Context) (entity.WantSignaturesRequest, error)
 	ProcessReceivedSignatures(ctx context.Context, response entity.WantSignaturesResponse, wantSignatures map[common.Hash]entity.Bitmap) entity.SignatureProcessingStats
 	BuildWantAggregationProofsRequest(ctx context.Context) (entity.WantAggregationProofsRequest, error)
-	ProcessReceivedAggregationProofs(ctx context.Context, response entity.WantAggregationProofsResponse) (entity.AggregationProofProcessingStats, error)
+	ProcessReceivedAggregationProofs(ctx context.Context, response entity.WantAggregationProofsResponse, requestedIDs []common.Hash) (entity.AggregationProofProcessingStats, error)
 }
 
 type metrics interface {
@@ -182,7 +182,7 @@ func (s *Runner) runAggregationProofSync(ctx context.Context) error {
 
 	slog.DebugContext(ctx, "Received aggregation proof response", "proofsCount", len(response.Proofs))
 
-	stats, err := s.cfg.Provider.ProcessReceivedAggregationProofs(ctx, response)
+	stats, err := s.cfg.Provider.ProcessReceivedAggregationProofs(ctx, response, request.RequestIDs)
 	if err != nil {
 		tracing.RecordError(span, err)
 		return errors.Errorf("failed to process received aggregation proofs: %w", err)
