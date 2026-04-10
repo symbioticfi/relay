@@ -238,5 +238,3 @@ func TestRepository_FirstUncommittedValidatorSetEpoch_EmptyRepository(t *testing
 		assert.Equal(t, symbiotic.Epoch(0), epoch)
 	})
 }
-
-

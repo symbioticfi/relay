@@ -156,10 +156,10 @@ func TestNormalizeValset(t *testing.T) {
 		// Verify lexicographic ordering: X is primary key, Y is tiebreaker
 		for i := 0; i < 2; i++ {
 			cmpX := result[i].Key.X.Cmp(&result[i+1].Key.X)
-			assert.True(t, cmpX <= 0, "validators should be sorted by X ascending")
+			assert.LessOrEqual(t, cmpX, 0, "validators should be sorted by X ascending")
 			if cmpX == 0 {
 				cmpY := result[i].Key.Y.Cmp(&result[i+1].Key.Y)
-				assert.True(t, cmpY < 0, "validators with equal X should be sorted by Y ascending")
+				assert.Negative(t, cmpY, "validators with equal X should be sorted by Y ascending")
 			}
 		}
 

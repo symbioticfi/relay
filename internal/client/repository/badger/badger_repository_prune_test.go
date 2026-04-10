@@ -386,7 +386,6 @@ func TestRepository_PruneAggregationProof_IndexCleanup(t *testing.T) {
 			require.Len(t, proofs, 1)
 			require.Equal(t, requestIDs[i], proofs[0].RequestID())
 		}
-
 	})
 
 	// Prune the middle epoch (101)
@@ -424,7 +423,6 @@ func TestRepository_PruneAggregationProof_IndexCleanup(t *testing.T) {
 		require.Len(t, proofs, 1)
 		require.Equal(t, requestIDs[2], proofs[0].RequestID())
 	})
-
 }
 
 func TestRepository_PruneRequestIDEpochIndices_DifferentRetentionSettings(t *testing.T) {
