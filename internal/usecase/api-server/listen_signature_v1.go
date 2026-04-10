@@ -1,7 +1,9 @@
 package api_server
 
 import (
+	"github.com/go-errors/errors"
 	"github.com/google/uuid"
+	"github.com/symbioticfi/relay/internal/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"google.golang.org/grpc"
@@ -27,7 +29,10 @@ func (h *grpcHandler) ListenSignatures(
 	if epoch := req.GetStartEpoch(); epoch != 0 {
 		latestEpoch, err := h.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 		if err != nil {
-			return err
+			if !errors.Is(err, entity.ErrEntityNotFound) {
+				return err
+			}
+			latestEpoch = 0
 		}
 
 		for e := symbiotic.Epoch(epoch); e <= latestEpoch; e++ {

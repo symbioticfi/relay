@@ -29,7 +29,10 @@ func (h *grpcHandler) ListenValidatorSet(
 	if epoch := req.GetStartEpoch(); epoch != 0 {
 		latestEpoch, err := h.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 		if err != nil {
-			return err
+			if !errors.Is(err, entity.ErrEntityNotFound) {
+				return err
+			}
+			latestEpoch = 0
 		}
 
 		for e := symbiotic.Epoch(epoch); e <= latestEpoch; e++ {
