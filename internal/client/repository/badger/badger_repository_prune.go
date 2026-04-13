@@ -7,6 +7,7 @@ import (
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
+	"github.com/samber/lo"
 
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -33,12 +34,13 @@ func (r *Repository) PruneProofEntities(ctx context.Context, epoch symbiotic.Epo
 		return errors.Errorf("failed to get request IDs: %w", err)
 	}
 
-	for _, requestID := range requestIDs {
-		if err := r.pruneAggregationProof(ctx, epoch, requestID); err != nil {
-			return errors.Errorf("failed to prune aggregation proof for request %s: %w", requestID.Hex(), err)
+	for _, chunk := range lo.Chunk(requestIDs, pruneBatchSize(batchSize, len(requestIDs))) {
+		for _, requestID := range chunk {
+			if err := r.pruneAggregationProof(ctx, epoch, requestID); err != nil {
+				return errors.Errorf("failed to prune aggregation proof for request %s: %w", requestID.Hex(), err)
+			}
+			r.proofsMutexMap.Delete(requestID)
 		}
-
-		r.proofsMutexMap.Delete(requestID)
 	}
 
 	return nil
@@ -52,12 +54,13 @@ func (r *Repository) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch s
 
 	slog.DebugContext(ctx, "Pruning signature entities", "requestCount", len(requestIDs))
 
-	for _, requestID := range requestIDs {
-		if err := r.pruneSignatureEntities(ctx, epoch, requestID); err != nil {
-			return errors.Errorf("failed to prune signature entities for request %s: %w", requestID.Hex(), err)
+	for _, chunk := range lo.Chunk(requestIDs, pruneBatchSize(batchSize, len(requestIDs))) {
+		for _, requestID := range chunk {
+			if err := r.pruneSignatureEntities(ctx, epoch, requestID); err != nil {
+				return errors.Errorf("failed to prune signature entities for request %s: %w", requestID.Hex(), err)
+			}
+			r.signatureMutexMap.Delete(requestID)
 		}
-
-		r.signatureMutexMap.Delete(requestID)
 	}
 
 	return nil
@@ -238,9 +241,11 @@ func (r *Repository) PruneRequestIDEpochIndices(ctx context.Context, epoch symbi
 
 	slog.DebugContext(ctx, "Pruning request ID epoch indices", "epoch", epoch, "requestCount", len(requestIDs))
 
-	for _, requestID := range requestIDs {
-		if err := r.deleteRequestIDEpochIndex(ctx, epoch, requestID); err != nil {
-			return errors.Errorf("failed to delete request ID epoch index for request %s: %w", requestID.Hex(), err)
+	for _, chunk := range lo.Chunk(requestIDs, pruneBatchSize(batchSize, len(requestIDs))) {
+		for _, requestID := range chunk {
+			if err := r.deleteRequestIDEpochIndex(ctx, epoch, requestID); err != nil {
+				return errors.Errorf("failed to delete request ID epoch index for request %s: %w", requestID.Hex(), err)
+			}
 		}
 	}
 
@@ -279,4 +284,11 @@ func (r *Repository) deleteRequestIDEpochIndex(ctx context.Context, epoch symbio
 		}
 		return nil
 	})
+}
+
+func pruneBatchSize(batchSize, total int) int {
+	if batchSize <= 0 {
+		return max(total, 1)
+	}
+	return batchSize
 }
