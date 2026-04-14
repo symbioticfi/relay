@@ -24,14 +24,17 @@ var _ cached.Repository = (*Repository)(nil)
 type Config struct {
 	Dir                      string           `validate:"required"`
 	Metrics                  repoutil.Metrics `validate:"required"`
+	DBFilename               string
 	InitialMmapSize          int
 	MutexCleanupInterval     time.Duration
 	MutexCleanupStaleTimeout time.Duration
 	StatsLogInterval         time.Duration
 	CompactOnStartup         bool
 	NoFreelistSync           bool
+	NoSync                   bool
 	MaxBatchDelay            time.Duration
 	MaxBatchSize             int
+	FreelistType             bolt.FreelistType
 }
 
 var (
@@ -93,7 +96,7 @@ type Repository struct {
 	cleanupStop chan struct{}
 }
 
-func compactDB(dbPath string) error {
+func compactDB(dbPath string, freelistType bolt.FreelistType) error {
 	info, err := os.Stat(dbPath)
 	if err != nil {
 		return nil // DB doesn't exist yet, nothing to compact
@@ -102,14 +105,14 @@ func compactDB(dbPath string) error {
 
 	start := time.Now()
 
-	src, err := bolt.Open(dbPath, 0600, &bolt.Options{ReadOnly: true, Timeout: 5 * time.Second})
+	src, err := bolt.Open(dbPath, 0600, &bolt.Options{ReadOnly: true, Timeout: 5 * time.Second, FreelistType: freelistType})
 	if err != nil {
 		return errors.Errorf("failed to open source db: %w", err)
 	}
 	defer src.Close()
 
 	tmpPath := dbPath + ".compact"
-	dst, err := bolt.Open(tmpPath, 0600, &bolt.Options{Timeout: 5 * time.Second})
+	dst, err := bolt.Open(tmpPath, 0600, &bolt.Options{Timeout: 5 * time.Second, FreelistType: freelistType})
 	if err != nil {
 		return errors.Errorf("failed to create compact db: %w", err)
 	}
@@ -144,10 +147,14 @@ func New(cfg Config) (*Repository, error) {
 		return nil, errors.Errorf("failed to validate config: %w", err)
 	}
 
-	dbPath := filepath.Join(cfg.Dir, "relay.db")
+	filename := cfg.DBFilename
+	if filename == "" {
+		filename = "relay.db"
+	}
+	dbPath := filepath.Join(cfg.Dir, filename)
 
 	if cfg.CompactOnStartup {
-		if err := compactDB(dbPath); err != nil {
+		if err := compactDB(dbPath, cfg.FreelistType); err != nil {
 			slog.Warn("DB compaction failed, continuing with original", "error", err)
 		}
 	}
@@ -155,6 +162,7 @@ func New(cfg Config) (*Repository, error) {
 	opts := &bolt.Options{
 		Timeout:         1 * time.Second,
 		InitialMmapSize: cfg.InitialMmapSize,
+		FreelistType:    cfg.FreelistType,
 	}
 
 	db, err := bolt.Open(dbPath, 0600, opts)
@@ -163,6 +171,7 @@ func New(cfg Config) (*Repository, error) {
 	}
 
 	db.NoFreelistSync = cfg.NoFreelistSync
+	db.NoSync = cfg.NoSync
 	if cfg.MaxBatchDelay > 0 {
 		db.MaxBatchDelay = cfg.MaxBatchDelay
 	}
@@ -198,6 +207,24 @@ func New(cfg Config) (*Repository, error) {
 func (r *Repository) Close() error {
 	close(r.cleanupStop)
 	return r.db.Close()
+}
+
+func (r *Repository) Stats() bolt.Stats {
+	return r.db.Stats()
+}
+
+// ApplyBatchOpts mutates batch/sync settings on the open DB. Intended for the
+// benchmark tool to switch between "fast populate" (NoSync=true) and realistic
+// bench-write semantics without reopening the file — reopening a large sync-off
+// DB is expensive (full freelist scan).
+func (r *Repository) ApplyBatchOpts(noSync bool, maxBatchDelay time.Duration, maxBatchSize int) {
+	r.db.NoSync = noSync
+	if maxBatchDelay > 0 {
+		r.db.MaxBatchDelay = maxBatchDelay
+	}
+	if maxBatchSize > 0 {
+		r.db.MaxBatchSize = maxBatchSize
+	}
 }
 
 func (r *Repository) startMutexCleanup(interval, staleTimeout time.Duration) {
