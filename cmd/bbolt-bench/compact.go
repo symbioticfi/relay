@@ -36,19 +36,26 @@ func runCompact(cfg CompactConfig) (time.Duration, error) {
 
 	removeIfExists(cfg.Output)
 
-	src, err := bolt.Open(cfg.DBPath, 0600, &bolt.Options{ReadOnly: true, Timeout: 5 * time.Second})
+	freelistType := bolt.FreelistType(flagFreelistType)
+	src, err := bolt.Open(cfg.DBPath, 0600, &bolt.Options{
+		ReadOnly: true, Timeout: 5 * time.Second, FreelistType: freelistType,
+	})
 	if err != nil {
 		return 0, fmt.Errorf("open source db: %w", err)
 	}
 	defer src.Close()
 
-	dst, err := bolt.Open(cfg.Output, 0600, &bolt.Options{Timeout: 5 * time.Second})
+	dst, err := bolt.Open(cfg.Output, 0600, &bolt.Options{
+		Timeout: 5 * time.Second, FreelistType: freelistType,
+	})
 	if err != nil {
 		return 0, fmt.Errorf("create destination db: %w", err)
 	}
 
+	const compactTxMaxSize = 64 << 20 // 64 MB per transaction to avoid OOM on large DBs
+
 	start := time.Now()
-	if err := bolt.Compact(dst, src, 0); err != nil {
+	if err := bolt.Compact(dst, src, compactTxMaxSize); err != nil {
 		dst.Close()
 		return 0, fmt.Errorf("compact: %w", err)
 	}

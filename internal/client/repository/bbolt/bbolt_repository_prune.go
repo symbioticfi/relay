@@ -122,7 +122,7 @@ func (r *Repository) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch s
 		}
 
 		for _, requestID := range chunk {
-			r.signatureMutexMap.Delete(requestID)
+			r.signatureMapCache.Delete(requestID)
 		}
 	}
 

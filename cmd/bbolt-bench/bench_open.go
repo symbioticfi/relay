@@ -34,7 +34,7 @@ func init() {
 func runBenchOpen(cfg BenchOpenConfig) (time.Duration, error) {
 	fmt.Printf("\nBenchmarking DB open (iterations=%d, no-freelist-sync=%v)...\n",
 		cfg.Iterations, cfg.NoFreelistSync)
-	fmt.Printf("File size: %s\n", formatBytes(fileSize(cfg.DBPath)))
+	fmt.Printf("File size: %s, freelist-type: %s\n", formatBytes(fileSize(cfg.DBPath)), flagFreelistType)
 
 	durations := make([]time.Duration, cfg.Iterations)
 

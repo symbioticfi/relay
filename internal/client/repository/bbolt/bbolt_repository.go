@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/go-errors/errors"
@@ -65,33 +64,11 @@ var allBuckets = [][]byte{
 	bucketMeta,
 }
 
-type mutexWithUseTime struct {
-	mutex        sync.Mutex
-	lastAccessNs atomic.Int64
-}
-
-func (m *mutexWithUseTime) lock() {
-	m.mutex.Lock()
-	m.lastAccessNs.Store(time.Now().UnixNano())
-}
-
-func (m *mutexWithUseTime) unlock() {
-	m.mutex.Unlock()
-}
-
-func (m *mutexWithUseTime) lastAccess() time.Time {
-	return time.Unix(0, m.lastAccessNs.Load())
-}
-
-func (m *mutexWithUseTime) tryLock() bool {
-	return m.mutex.TryLock()
-}
-
 type Repository struct {
 	db      *bolt.DB
 	metrics repoutil.Metrics
 
-	signatureMutexMap sync.Map // map[common.Hash]*mutexWithUseTime
+	signatureMapCache sync.Map // map[common.Hash]entity.SignatureMap
 
 	cleanupStop chan struct{}
 }
@@ -117,7 +94,8 @@ func compactDB(dbPath string, freelistType bolt.FreelistType) error {
 		return errors.Errorf("failed to create compact db: %w", err)
 	}
 
-	if err := bolt.Compact(dst, src, 0); err != nil {
+	const compactTxMaxSize = 64 << 20 // 64 MB per transaction to limit memory usage
+	if err := bolt.Compact(dst, src, compactTxMaxSize); err != nil {
 		dst.Close()
 		os.Remove(tmpPath)
 		return errors.Errorf("compaction failed: %w", err)
@@ -192,13 +170,10 @@ func New(cfg Config) (*Repository, error) {
 	}
 
 	repo := &Repository{
-		db:                db,
-		metrics:           cfg.Metrics,
-		signatureMutexMap: sync.Map{},
-		cleanupStop:       make(chan struct{}),
+		db:          db,
+		metrics:     cfg.Metrics,
+		cleanupStop: make(chan struct{}),
 	}
-
-	repo.startMutexCleanup(cfg.MutexCleanupInterval, cfg.MutexCleanupStaleTimeout)
 	repo.startStatsLogger(cfg.StatsLogInterval)
 
 	return repo, nil
@@ -225,76 +200,6 @@ func (r *Repository) ApplyBatchOpts(noSync bool, maxBatchDelay time.Duration, ma
 	if maxBatchSize > 0 {
 		r.db.MaxBatchSize = maxBatchSize
 	}
-}
-
-func (r *Repository) startMutexCleanup(interval, staleTimeout time.Duration) {
-	if interval == 0 {
-		return
-	}
-
-	go func() {
-		ticker := time.NewTicker(interval)
-		defer ticker.Stop()
-
-		slog.Info("Starting mutex cleanup goroutine",
-			"component", "bbolt",
-			"interval", interval,
-			"staleTimeout", staleTimeout,
-		)
-
-		for {
-			select {
-			case <-ticker.C:
-				r.cleanupStaleMutexes(staleTimeout)
-			case <-r.cleanupStop:
-				return
-			}
-		}
-	}()
-}
-
-func (r *Repository) cleanupStaleMutexes(staleTimeout time.Duration) {
-	if staleTimeout == 0 {
-		staleTimeout = time.Hour
-	}
-
-	staleThreshold := time.Now().Add(-staleTimeout)
-	count := cleanupMutexMap(&r.signatureMutexMap, staleThreshold)
-
-	if count > 0 {
-		slog.Info("Cleaned up stale mutexes",
-			"component", "bbolt",
-			"signatureMutexes", count,
-		)
-	}
-}
-
-func cleanupMutexMap(mutexMap *sync.Map, staleThreshold time.Time) int {
-	var count int
-
-	mutexMap.Range(func(key, value any) bool {
-		mutex := value.(*mutexWithUseTime)
-
-		if !mutex.lastAccess().Before(staleThreshold) {
-			return true
-		}
-
-		if !mutex.tryLock() {
-			return true
-		}
-		defer mutex.unlock()
-
-		// Double-check after acquiring lock
-		if !mutex.lastAccess().Before(staleThreshold) {
-			return true
-		}
-
-		mutexMap.Delete(key)
-		count++
-		return true
-	})
-
-	return count
 }
 
 func (r *Repository) startStatsLogger(interval time.Duration) {
@@ -495,38 +400,5 @@ func (r *Repository) doBatch(ctx context.Context, name string, fn func(tx *bolt.
 	if !nested {
 		r.metrics.ObserveRepoQueryTotalDuration(name, status, d)
 	}
-	return err
-}
-
-func (r *Repository) doUpdateWithLock(ctx context.Context, name string, fn func(ctx context.Context) error, lockMap *sync.Map, key any) error {
-	ctx, span := tracing.StartSpan(ctx, "bbolt.updateWithLock:"+name)
-	defer span.End()
-
-	mutexInterface, ok := lockMap.Load(key)
-	if !ok {
-		newMutex := &mutexWithUseTime{}
-		newMutex.lastAccessNs.Store(time.Now().UnixNano())
-		mutexInterface, _ = lockMap.LoadOrStore(key, newMutex)
-	}
-	activeMutex := mutexInterface.(*mutexWithUseTime)
-
-	activeMutex.lock()
-	defer activeMutex.unlock()
-
-	start := time.Now()
-
-	err := r.db.Update(func(tx *bolt.Tx) error {
-		return fn(withTx(ctx, tx))
-	})
-
-	status := "ok"
-	if err != nil {
-		status = statusError
-		tracing.RecordError(span, err)
-	}
-
-	d := time.Since(start)
-	r.metrics.ObserveRepoQueryDuration(name, status, d)
-	r.metrics.ObserveRepoQueryTotalDuration(name, status, d)
 	return err
 }
