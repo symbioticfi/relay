@@ -733,15 +733,15 @@ func TestEntityProcessor_ProcessSignature_SaveAggregationProofPendingForNonAggre
 			param := randomSignatureExtendedForKeyWithParams(t, privateKeys[0][0x10], req)
 			require.NoError(t, repo.SaveSignatureRequest(t.Context(), param.RequestID(), req))
 
+			// Verify signature request was saved but NOT to pending collection
 			savedReq, err := repo.GetSignatureRequest(t.Context(), param.RequestID())
 			require.NoError(t, err)
 			require.Equal(t, req, savedReq)
 
-			// Pending marker is created in SaveSignatureRequest for all key types,
-			// non-aggregation keys are cleaned up lazily during sync/catch-up
+			// Verify no pending aggregation proof requests
 			pendingAggRequests, err := repo.GetSignatureRequestsWithoutAggregationProof(t.Context(), req.RequiredEpoch, 10, common.Hash{})
 			require.NoError(t, err)
-			require.Len(t, pendingAggRequests, 1)
+			require.Empty(t, pendingAggRequests)
 		})
 	}
 }

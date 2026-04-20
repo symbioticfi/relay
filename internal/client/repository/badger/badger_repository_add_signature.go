@@ -56,5 +56,36 @@ func (r *Repository) SaveSignature(ctx context.Context, signature symbiotic.Sign
 		return err
 	}
 
+	// outside previous transaction, check if we can remove from pending collection
+	if signature.KeyTag.Type().AggregationKey() {
+		_, err := r.GetAggregationProof(ctx, signature.RequestID())
+		if err != nil {
+			if !errors.Is(err, entity.ErrEntityNotFound) {
+				return errors.Errorf("failed to get aggregation proof: %v", err)
+			}
+			// Blindly save to pending aggregation proof collection
+			// syncer will remove it from collection once proof is found
+			if err := r.saveAggregationProofPending(ctx, signature.RequestID(), signature.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) && !errors.Is(err, entity.ErrTxConflict) {
+				// ignore ErrEntityAlreadyExist and ErrTxConflict - it means it's already there or being processed
+				return errors.Errorf("failed to save aggregation proof to pending collection: %v", err)
+			}
+		}
+	} else {
+		if len(signatureMap.GetMissingValidators().ToArray()) == 0 {
+			// for non aggregation keys, we wait for all validators to sign and then remove
+			// the pending aggregation marker to stop syncing signatures for this request
+			err := r.RemoveAggregationProofPending(ctx, signature.Epoch, signature.RequestID())
+			if err != nil && !errors.Is(err, entity.ErrEntityNotFound) && !errors.Is(err, entity.ErrTxConflict) {
+				return errors.Errorf("failed to remove signature request from pending collection: %v", err)
+			}
+		} else {
+			// Save to pending aggregation proof collection, to sync for missing signatures
+			// syncer will remove it from collection once all signatures are found
+			if err := r.saveAggregationProofPending(ctx, signature.RequestID(), signature.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) && !errors.Is(err, entity.ErrTxConflict) {
+				// ignore ErrEntityAlreadyExist and ErrTxConflict - it means it's already there or being processed
+				return errors.Errorf("failed to save aggregation proof to pending collection: %v", err)
+			}
+		}
+	}
 	return nil
 }

@@ -29,6 +29,29 @@ func (r *Repository) SaveSignature(ctx context.Context, signature symbiotic.Sign
 		"presentValidators", signatureMap.SignedValidatorsBitmap.ToArray(),
 	)
 
+	if signature.KeyTag.Type().AggregationKey() {
+		_, err := r.GetAggregationProof(ctx, signature.RequestID())
+		if err != nil {
+			if !errors.Is(err, entity.ErrEntityNotFound) {
+				return errors.Errorf("failed to get aggregation proof: %w", err)
+			}
+			if err := r.saveAggregationProofPending(ctx, signature.RequestID(), signature.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
+				return errors.Errorf("failed to save aggregation proof to pending collection: %w", err)
+			}
+		}
+	} else {
+		if len(signatureMap.GetMissingValidators().ToArray()) == 0 {
+			err := r.RemoveAggregationProofPending(ctx, signature.Epoch, signature.RequestID())
+			if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
+				return errors.Errorf("failed to remove signature request from pending collection: %w", err)
+			}
+		} else {
+			if err := r.saveAggregationProofPending(ctx, signature.RequestID(), signature.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
+				return errors.Errorf("failed to save aggregation proof to pending collection: %w", err)
+			}
+		}
+	}
+
 	return nil
 }
 

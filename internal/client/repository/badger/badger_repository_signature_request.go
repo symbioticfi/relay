@@ -74,13 +74,6 @@ func (r *Repository) SaveSignatureRequest(ctx context.Context, requestID common.
 		if err := r.saveSignaturePending(ctx, requestID, req); err != nil {
 			return errors.Errorf("failed to save signature request to pending collection: %v", err)
 		}
-
-		// Save pending aggregation proof marker
-		pendingKey := keyAggregationProofPending(req.RequiredEpoch, requestID)
-		if err := getTxn(ctx).Set(pendingKey, []byte{}); err != nil {
-			return errors.Errorf("failed to save pending agg proof: %v", err)
-		}
-
 		return nil
 	})
 }

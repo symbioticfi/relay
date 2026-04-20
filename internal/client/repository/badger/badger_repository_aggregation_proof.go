@@ -9,6 +9,7 @@ import (
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
+
 	"github.com/symbioticfi/relay/internal/client/repository/codec"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
@@ -189,11 +190,34 @@ var (
 	bytesToAggregationProof = codec.BytesToAggregationProof
 )
 
+func (r *Repository) saveAggregationProofPending(ctx context.Context, requestID common.Hash, epoch symbiotic.Epoch) error {
+	return r.doUpdateInTx(ctx, "saveAggregationProofPending", func(ctx context.Context) error {
+		txn := getTxn(ctx)
+		pendingKey := keyAggregationProofPending(epoch, requestID)
+
+		_, err := txn.Get(pendingKey)
+		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
+			return errors.Errorf("failed to check pending aggregation proof: %w", err)
+		}
+		if err == nil {
+			return errors.Errorf("pending aggregation proof already exists: %w", entity.ErrEntityAlreadyExist)
+		}
+
+		// Store just a marker (empty value) - we don't need the full request data here
+		err = txn.Set(pendingKey, []byte{})
+		if err != nil {
+			return errors.Errorf("failed to store pending aggregation proof: %w", err)
+		}
+		return nil
+	})
+}
+
 func (r *Repository) RemoveAggregationProofPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
 	return r.doUpdateInTx(ctx, "RemoveAggregationProofPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		pendingKey := keyAggregationProofPending(epoch, requestID)
 
+		// Check if exists before removing
 		_, err := txn.Get(pendingKey)
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
@@ -202,7 +226,8 @@ func (r *Repository) RemoveAggregationProofPending(ctx context.Context, epoch sy
 			return errors.Errorf("failed to check pending aggregation proof: %w", err)
 		}
 
-		if err := txn.Delete(pendingKey); err != nil {
+		err = txn.Delete(pendingKey)
+		if err != nil {
 			return errors.Errorf("failed to delete pending aggregation proof: %w", err)
 		}
 
@@ -216,25 +241,29 @@ func (r *Repository) GetSignatureRequestsWithoutAggregationProof(ctx context.Con
 	return requests, r.doViewInTx(ctx, "GetSignatureRequestsWithoutAggregationProof", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 
+		// Iterate through pending aggregation proof markers
 		prefix := keyAggregationProofPendingEpochPrefix(epoch)
 		opts := badger.DefaultIteratorOptions
 		opts.Prefix = prefix
-		opts.PrefetchValues = false
+		opts.PrefetchValues = false // We don't need the values, just the keys
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
 		seekKey := prefix
 		if lastHash != (common.Hash{}) {
+			// Subsequent pages: seek to the record after lastHash
 			seekKey = keyAggregationProofPending(epoch, lastHash)
 		}
 
 		count := 0
 		it.Seek(seekKey)
+		// If we're seeking from a specific hash and positioned exactly on that key, skip it (already returned in previous page)
 		if lastHash != (common.Hash{}) && it.ValidForPrefix(prefix) && bytes.Equal(it.Item().Key(), seekKey) {
 			it.Next()
 		}
 
 		for ; it.ValidForPrefix(prefix); it.Next() {
+			// Stop if we've reached the limit
 			if limit > 0 && count >= limit {
 				break
 			}
@@ -244,10 +273,13 @@ func (r *Repository) GetSignatureRequestsWithoutAggregationProof(ctx context.Con
 				return err
 			}
 
+			// Get the actual signature request
 			sigReqKey := keySignatureRequest(epoch, requestID)
 			sigReqItem, err := txn.Get(sigReqKey)
 			if err != nil {
 				if errors.Is(err, badger.ErrKeyNotFound) {
+					// This shouldn't happen - pending marker exists but signature request doesn't
+					// Skip this entry and continue
 					continue
 				}
 				return errors.Errorf("failed to get signature request for hash %s: %w", requestID.Hex(), err)

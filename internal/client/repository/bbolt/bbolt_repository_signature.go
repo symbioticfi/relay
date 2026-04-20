@@ -260,11 +260,6 @@ func (r *Repository) SaveSignatureRequest(ctx context.Context, requestID common.
 			return errors.Errorf("failed to store pending signature: %w", err)
 		}
 
-		// Save pending aggregation proof marker
-		if err := tx.Bucket(bucketAggProofPending).Put(pendingKey, []byte{}); err != nil {
-			return errors.Errorf("failed to store pending agg proof: %w", err)
-		}
-
 		return nil
 	})
 }
