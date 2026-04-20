@@ -498,6 +498,11 @@ func TestCatchup_MaxRequestsPerCycleLimit(t *testing.T) {
 			{SignatureRequest: symbiotic.SignatureRequest{KeyTag: symbiotic.KeyTag(15), RequiredEpoch: 1}, RequestID: common.HexToHash("0x03")},
 		}, nil)
 
+	// Catch-up checks if proof exists for each request before enqueuing
+	// All 3 are checked, but only 2 enqueued due to limit
+	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), gomock.Any()).
+		Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound).Times(3)
+
 	err := setup.app.tryAggregateRequestsWithoutProof(t.Context())
 	require.NoError(t, err)
 
@@ -522,6 +527,10 @@ func TestCatchup_EnqueuesAllRequests(t *testing.T) {
 	// Second page: empty
 	setup.mockRepo.EXPECT().GetSignatureRequestsWithoutAggregationProof(gomock.Any(), symbiotic.Epoch(0), 10, common.HexToHash("0x02")).
 		Return(nil, nil)
+
+	// Catch-up checks if proof exists for each request before enqueuing
+	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), gomock.Any()).
+		Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound).Times(2)
 
 	err := setup.app.tryAggregateRequestsWithoutProof(t.Context())
 	require.NoError(t, err)

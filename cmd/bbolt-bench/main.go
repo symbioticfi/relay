@@ -23,12 +23,16 @@ var (
 )
 
 func main() {
+	if err := run(); err != nil {
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	stop := installTimestampedStdout()
 	defer stop()
 
-	if err := rootCmd.Execute(); err != nil {
-		os.Exit(1)
-	}
+	return rootCmd.Execute()
 }
 
 // installTimestampedStdout pipes os.Stdout through a goroutine that prepends
@@ -43,9 +47,7 @@ func installTimestampedStdout() func() {
 	os.Stdout = pw
 
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		br := bufio.NewReader(pr)
 		atLineStart := true
 		buf := make([]byte, 4096)
@@ -58,7 +60,7 @@ func installTimestampedStdout() func() {
 				return
 			}
 		}
-	}()
+	})
 
 	return func() {
 		pw.Close()

@@ -205,6 +205,8 @@ func runApp(ctx context.Context) error {
 			FreelistType:             bolt.FreelistType(cfg.Bbolt.FreelistType),
 			MaxBatchDelay:            cfg.Bbolt.MaxBatchDelay,
 			MaxBatchSize:             cfg.Bbolt.MaxBatchSize,
+			DBFilename:               "relay.db",
+			NoSync:                   false,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create bbolt repository: %w", err)

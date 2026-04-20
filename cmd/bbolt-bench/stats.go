@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"sort"
+	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -29,7 +30,7 @@ func printTxStatsDelta(before, after bolt.TxStats) {
 }
 
 func printLatencyStats(label string, samples []time.Duration, totalDuration time.Duration, requestCount int, validators ...int) {
-	sort.Slice(samples, func(i, j int) bool { return samples[i] < samples[j] })
+	slices.Sort(samples)
 
 	numValidators := 0
 	if len(validators) > 0 {
@@ -161,7 +162,7 @@ func formatInt(n int) string {
 	if n < 0 {
 		return "-" + formatInt(-n)
 	}
-	s := fmt.Sprintf("%d", n)
+	s := strconv.Itoa(n)
 	if len(s) <= 3 {
 		return s
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -199,8 +199,8 @@ var runAllCmd = &cobra.Command{
 				fmt.Printf("  [bench-write after pruning epoch %d]\n", pruneEpoch)
 				pruneResult, err := runBenchWriteOnRepo(workRepo, BenchWriteConfig{
 					DBPath: dbPath, NoFreelistSync: noFreelistSync,
-					WriteEpoch:    latestEpoch,
-					Requests:      requests, Validators: validators,
+					WriteEpoch: latestEpoch,
+					Requests:   requests, Validators: validators,
 					MaxBatchDelay: benchDelay, MaxBatchSize: benchSize,
 				}, fmt.Sprintf("after pruning epoch %d (%s)", pruneEpoch, mode))
 				if err != nil {
@@ -370,6 +370,6 @@ func init() {
 func sortDurations(samples []time.Duration) []time.Duration {
 	cp := make([]time.Duration, len(samples))
 	copy(cp, samples)
-	sort.Slice(cp, func(i, j int) bool { return cp[i] < cp[j] })
+	slices.Sort(cp)
 	return cp
 }

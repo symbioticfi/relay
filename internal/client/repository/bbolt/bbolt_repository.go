@@ -170,9 +170,10 @@ func New(cfg Config) (*Repository, error) {
 	}
 
 	repo := &Repository{
-		db:          db,
-		metrics:     cfg.Metrics,
-		cleanupStop: make(chan struct{}),
+		db:                db,
+		metrics:           cfg.Metrics,
+		cleanupStop:       make(chan struct{}),
+		signatureMapCache: sync.Map{},
 	}
 	repo.startStatsLogger(cfg.StatsLogInterval)
 

@@ -97,9 +97,7 @@ func populateSingleEpoch(repo *bboltrepo.Repository, td *TestData, epoch int, re
 	var completed atomic.Int64
 
 	for range workers {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for r := range reqCh {
 				if firstErr.Load() != nil {
 					return
@@ -128,7 +126,7 @@ func populateSingleEpoch(repo *bboltrepo.Repository, td *TestData, epoch int, re
 
 				completed.Add(1)
 			}
-		}()
+		})
 	}
 
 	progressDone := make(chan struct{})

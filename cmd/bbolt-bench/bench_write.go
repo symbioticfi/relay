@@ -78,10 +78,10 @@ func init() {
 }
 
 type requestWork struct {
-	index      int
+	index       int
 	messageHash []byte
-	sigs       []symbiotic.Signature
-	epoch      symbiotic.Epoch
+	sigs        []symbiotic.Signature
+	epoch       symbiotic.Epoch
 }
 
 func runBenchWrite(cfg BenchWriteConfig, label string) (BenchWriteResult, error) {
@@ -133,10 +133,7 @@ func runBenchWriteOnRepo(repo *bboltrepo.Repository, cfg BenchWriteConfig, label
 		}
 	}
 
-	concurrency := cfg.Concurrency
-	if concurrency < 1 {
-		concurrency = 1
-	}
+	concurrency := max(cfg.Concurrency, 1)
 
 	statsBefore := repo.Stats()
 
@@ -175,9 +172,7 @@ func runBenchWriteOnRepo(repo *bboltrepo.Repository, cfg BenchWriteConfig, label
 		var wg sync.WaitGroup
 
 		for range concurrency {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				for w := range ch {
 					reqStart := time.Now()
 					requestID := w.sigs[0].RequestID()
@@ -209,7 +204,7 @@ func runBenchWriteOnRepo(repo *bboltrepo.Repository, cfg BenchWriteConfig, label
 
 					samples[w.index] = time.Since(reqStart)
 				}
-			}()
+			})
 		}
 
 		for _, w := range work {
