@@ -121,17 +121,6 @@ func (r *Repository) GetAggregationProofsByEpoch(ctx context.Context, epoch symb
 	return proofs, err
 }
 
-func (r *Repository) saveAggregationProofPending(ctx context.Context, requestID common.Hash, epoch symbiotic.Epoch) error {
-	return r.doUpdate(ctx, "saveAggregationProofPending", func(tx *bolt.Tx) error {
-		key := epochHashKey(uint64(epoch), requestID.Bytes())
-		b := tx.Bucket(bucketAggProofPending)
-		if b.Get(key) != nil {
-			return errors.Errorf("pending aggregation proof already exists: %w", entity.ErrEntityAlreadyExist)
-		}
-		return b.Put(key, []byte{})
-	})
-}
-
 func (r *Repository) RemoveAggregationProofPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
 	return r.doUpdate(ctx, "RemoveAggregationProofPending", func(tx *bolt.Tx) error {
 		key := epochHashKey(uint64(epoch), requestID.Bytes())

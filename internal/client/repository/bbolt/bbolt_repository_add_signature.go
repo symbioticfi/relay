@@ -3,19 +3,27 @@ package bbolt
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
+	bolt "go.etcd.io/bbolt"
 
+	"github.com/symbioticfi/relay/internal/client/repository/codec"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func (r *Repository) SaveSignature(ctx context.Context, signature symbiotic.Signature, validator symbiotic.Validator, activeIndex uint32) error {
-	if err := r.saveSignature(ctx, activeIndex, signature); err != nil {
+	start := time.Now()
+
+	if err := r.saveSignatureWithPending(ctx, activeIndex, signature); err != nil {
 		return errors.Errorf("failed to save signature: %w", err)
 	}
 
+	saveDuration := time.Since(start)
+
+	cacheStart := time.Now()
 	signatureMap, err := r.addToSignatureMapCache(ctx, signature.RequestID(), signature.Epoch, activeIndex, validator.VotingPower)
 	if err != nil {
 		return errors.Errorf("failed to update signature map cache: %w", err)
@@ -27,32 +35,57 @@ func (r *Repository) SaveSignature(ctx context.Context, signature symbiotic.Sign
 		"epoch", signature.Epoch,
 		"totalSignatures", signatureMap.SignedValidatorsBitmap.GetCardinality(),
 		"presentValidators", signatureMap.SignedValidatorsBitmap.ToArray(),
+		"saveDuration", saveDuration,
+		"cacheDuration", time.Since(cacheStart),
 	)
 
-	if signature.KeyTag.Type().AggregationKey() {
-		_, err := r.GetAggregationProof(ctx, signature.RequestID())
-		if err != nil {
-			if !errors.Is(err, entity.ErrEntityNotFound) {
-				return errors.Errorf("failed to get aggregation proof: %w", err)
-			}
-			if err := r.saveAggregationProofPending(ctx, signature.RequestID(), signature.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
-				return errors.Errorf("failed to save aggregation proof to pending collection: %w", err)
-			}
-		}
-	} else {
-		if len(signatureMap.GetMissingValidators().ToArray()) == 0 {
-			err := r.RemoveAggregationProofPending(ctx, signature.Epoch, signature.RequestID())
-			if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
-				return errors.Errorf("failed to remove signature request from pending collection: %w", err)
-			}
-		} else {
-			if err := r.saveAggregationProofPending(ctx, signature.RequestID(), signature.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
-				return errors.Errorf("failed to save aggregation proof to pending collection: %w", err)
-			}
-		}
+	return nil
+}
+
+func (r *Repository) saveSignatureWithPending(ctx context.Context, validatorIndex uint32, sig symbiotic.Signature) error {
+	data, err := codec.SignatureToBytes(sig)
+	if err != nil {
+		return errors.Errorf("failed to marshal signature: %w", err)
 	}
 
-	return nil
+	requestID := sig.RequestID()
+	pendingKey := epochHashKey(uint64(sig.Epoch), requestID.Bytes())
+
+	return r.doBatch(ctx, "saveSignatureWithPending", func(tx *bolt.Tx) error {
+		key := signatureKey(requestID.Bytes(), validatorIndex)
+
+		if tx.Bucket(bucketSignatures).Get(key) != nil {
+			return nil
+		}
+
+		if err := tx.Bucket(bucketSignatures).Put(key, data); err != nil {
+			return errors.Errorf("failed to store signature: %w", err)
+		}
+
+		// Maintain request_id_epochs index
+		epochKey := epochHashKey(uint64(sig.Epoch), requestID.Bytes())
+		if tx.Bucket(bucketRequestIDEpochs).Get(epochKey) == nil {
+			if err := tx.Bucket(bucketRequestIDEpochs).Put(epochKey, []byte{}); err != nil {
+				return errors.Errorf("failed to store request id epoch link: %w", err)
+			}
+		}
+
+		// Save pending proof if aggregation proof does not exist yet
+		if sig.KeyTag.Type().AggregationKey() {
+			if tx.Bucket(bucketAggregationProofs).Get(requestID.Bytes()) != nil {
+				return nil
+			}
+		}
+
+		pendingBucket := tx.Bucket(bucketAggProofPending)
+		if pendingBucket.Get(pendingKey) == nil {
+			if err := pendingBucket.Put(pendingKey, []byte{}); err != nil {
+				return errors.Errorf("failed to store pending proof: %w", err)
+			}
+		}
+
+		return nil
+	})
 }
 
 func (r *Repository) addToSignatureMapCache(ctx context.Context, requestID common.Hash, epoch symbiotic.Epoch, activeIndex uint32, votingPower symbiotic.VotingPower) (entity.SignatureMap, error) {

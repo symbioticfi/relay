@@ -70,7 +70,7 @@ func TestRepository_PruneAllEntityTypes(t *testing.T) {
 	err = repo.SaveSignatureRequest(ctx, requestID, sigRequest)
 	require.NoError(t, err)
 
-	err = repo.saveSignature(ctx, 0, signature)
+	err = repo.saveSignatureWithPending(ctx, 0, signature)
 	require.NoError(t, err)
 
 	sigMap := entity.SignatureMap{
@@ -180,7 +180,7 @@ func TestRepository_PruneEntityTypes_Separately(t *testing.T) {
 		RequiredEpoch: epoch,
 		Message:       randomBytes(t, 32),
 	}))
-	require.NoError(t, repo.saveSignature(ctx, 0, signature))
+	require.NoError(t, repo.saveSignatureWithPending(ctx, 0, signature))
 	require.NoError(t, repo.UpdateSignatureMap(ctx, entity.SignatureMap{
 		RequestID:              requestID,
 		Epoch:                  epoch,
@@ -263,7 +263,7 @@ func TestRepository_PruneRequestIDEpochIndices(t *testing.T) {
 		KeyTag:  symbiotic.KeyTag(15),
 		Message: message,
 	}))
-	require.NoError(t, repo.saveSignature(context.Background(), 0, signature))
+	require.NoError(t, repo.saveSignatureWithPending(context.Background(), 0, signature))
 
 	requestIDs, err := repo.getRequestIDsByEpoch(ctx, epoch)
 	require.NoError(t, err)
@@ -339,7 +339,7 @@ func TestRepository_PruneBatching(t *testing.T) {
 			RequiredEpoch: epoch,
 			Message:       msg,
 		}))
-		require.NoError(t, repo.saveSignature(ctx, 0, sig))
+		require.NoError(t, repo.saveSignatureWithPending(ctx, 0, sig))
 		require.NoError(t, repo.UpdateSignatureMap(ctx, entity.SignatureMap{
 			RequestID:              requestID,
 			Epoch:                  epoch,

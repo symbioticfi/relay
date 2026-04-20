@@ -16,31 +16,6 @@ import (
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-func (r *Repository) saveSignature(ctx context.Context, validatorIndex uint32, sig symbiotic.Signature) error {
-	data, err := codec.SignatureToBytes(sig)
-	if err != nil {
-		return errors.Errorf("failed to marshal signature: %w", err)
-	}
-
-	return r.doBatch(ctx, "saveSignature", func(tx *bolt.Tx) error {
-		requestID := sig.RequestID()
-		key := signatureKey(requestID.Bytes(), validatorIndex)
-		if err := tx.Bucket(bucketSignatures).Put(key, data); err != nil {
-			return errors.Errorf("failed to store signature: %w", err)
-		}
-
-		// Maintain request_id_epochs index
-		epochKey := epochHashKey(uint64(sig.Epoch), requestID.Bytes())
-		if tx.Bucket(bucketRequestIDEpochs).Get(epochKey) == nil {
-			if err := tx.Bucket(bucketRequestIDEpochs).Put(epochKey, []byte{}); err != nil {
-				return errors.Errorf("failed to store request id epoch link: %w", err)
-			}
-		}
-
-		return nil
-	})
-}
-
 func (r *Repository) GetAllSignatures(ctx context.Context, requestID common.Hash) ([]symbiotic.Signature, error) {
 	var signatures []symbiotic.Signature
 
