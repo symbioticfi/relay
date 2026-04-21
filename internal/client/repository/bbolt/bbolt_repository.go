@@ -70,7 +70,7 @@ type Repository struct {
 
 	signatureMapCache sync.Map // map[common.Hash]entity.SignatureMap
 
-	cleanupStop chan struct{}
+	done chan struct{}
 }
 
 func compactDB(dbPath string, freelistType bolt.FreelistType) error {
@@ -172,16 +172,17 @@ func New(cfg Config) (*Repository, error) {
 	repo := &Repository{
 		db:                db,
 		metrics:           cfg.Metrics,
-		cleanupStop:       make(chan struct{}),
+		done:              make(chan struct{}),
 		signatureMapCache: sync.Map{},
 	}
 	repo.startStatsLogger(cfg.StatsLogInterval)
+	repo.startSizeReporter()
 
 	return repo, nil
 }
 
 func (r *Repository) Close() error {
-	close(r.cleanupStop)
+	close(r.done)
 	return r.db.Close()
 }
 
@@ -218,11 +219,37 @@ func (r *Repository) startStatsLogger(interval time.Duration) {
 			select {
 			case <-ticker.C:
 				r.logStats(&prevTxStats)
-			case <-r.cleanupStop:
+			case <-r.done:
 				return
 			}
 		}
 	}()
+}
+
+func (r *Repository) startSizeReporter() {
+	r.reportDBSize() // report once at startup
+
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				r.reportDBSize()
+			case <-r.done:
+				return
+			}
+		}
+	}()
+}
+
+func (r *Repository) reportDBSize() {
+	info, err := os.Stat(r.db.Path())
+	if err != nil {
+		return
+	}
+	r.metrics.SetDBSizeBytes(float64(info.Size()))
 }
 
 func (r *Repository) logStats(prevTxStats *bolt.TxStats) {

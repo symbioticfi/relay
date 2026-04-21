@@ -46,6 +46,9 @@ type Metrics struct {
 
 	// pruner
 	prunedEpochsTotal *prometheus.CounterVec
+
+	// storage
+	dbSizeBytes prometheus.Gauge
 }
 
 func New(cfg Config) *Metrics {
@@ -234,6 +237,12 @@ func newMetrics(registerer prometheus.Registerer) *Metrics {
 	}, []string{"entity_type"})
 	all = append(all, m.prunedEpochsTotal)
 
+	m.dbSizeBytes = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "symbiotic_relay_db_size_bytes",
+		Help: "Database size in bytes",
+	})
+	all = append(all, m.dbSizeBytes)
+
 	// BadgerDB expvar metrics bridged to Prometheus.
 	// BadgerDB registers these via expvar in init(); we expose them on /metrics.
 	badgerExpvarCollector := collectors.NewExpvarCollector(map[string]*prometheus.Desc{
@@ -326,6 +335,10 @@ func (m *Metrics) ObserveRepoQueryDuration(queryName, status string, d time.Dura
 
 func (m *Metrics) ObserveRepoQueryTotalDuration(queryName, status string, d time.Duration) {
 	m.repoQueryTotalDuration.WithLabelValues(queryName, status).Observe(d.Seconds())
+}
+
+func (m *Metrics) SetDBSizeBytes(sizeBytes float64) {
+	m.dbSizeBytes.Set(sizeBytes)
 }
 
 func (m *Metrics) IncPrunedEpochsCount(entityType string) {
