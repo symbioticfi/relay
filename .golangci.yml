@@ -281,11 +281,6 @@ linters:
         text: G706
       - path: cmd/utils/
         text: "use of `fmt.Printf` forbidden"
-      - path: cmd/bbolt-bench
-        linters:
-          - gochecknoinits
-          - forbidigo
-          - exhaustruct
     paths:
       - third_party$
       - builtin$

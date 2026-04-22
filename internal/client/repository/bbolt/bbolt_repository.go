@@ -33,7 +33,7 @@ type Config struct {
 	NoSync                   bool
 	MaxBatchDelay            time.Duration
 	MaxBatchSize             int
-	FreelistType             bolt.FreelistType
+	FreelistType             string
 }
 
 var (
@@ -131,8 +131,13 @@ func New(cfg Config) (*Repository, error) {
 	}
 	dbPath := filepath.Join(cfg.Dir, filename)
 
+	freeListType := bolt.FreelistArrayType
+	if cfg.FreelistType == "hashmap" {
+		freeListType = bolt.FreelistMapType
+	}
+
 	if cfg.CompactOnStartup {
-		if err := compactDB(dbPath, cfg.FreelistType); err != nil {
+		if err := compactDB(dbPath, freeListType); err != nil {
 			slog.Warn("DB compaction failed, continuing with original", "error", err)
 		}
 	}
@@ -140,7 +145,7 @@ func New(cfg Config) (*Repository, error) {
 	opts := &bolt.Options{
 		Timeout:         1 * time.Second,
 		InitialMmapSize: cfg.InitialMmapSize,
-		FreelistType:    cfg.FreelistType,
+		FreelistType:    freeListType,
 	}
 
 	db, err := bolt.Open(dbPath, 0600, opts)
@@ -188,20 +193,6 @@ func (r *Repository) Close() error {
 
 func (r *Repository) Stats() bolt.Stats {
 	return r.db.Stats()
-}
-
-// ApplyBatchOpts mutates batch/sync settings on the open DB. Intended for the
-// benchmark tool to switch between "fast populate" (NoSync=true) and realistic
-// bench-write semantics without reopening the file — reopening a large sync-off
-// DB is expensive (full freelist scan).
-func (r *Repository) ApplyBatchOpts(noSync bool, maxBatchDelay time.Duration, maxBatchSize int) {
-	r.db.NoSync = noSync
-	if maxBatchDelay > 0 {
-		r.db.MaxBatchDelay = maxBatchDelay
-	}
-	if maxBatchSize > 0 {
-		r.db.MaxBatchSize = maxBatchSize
-	}
 }
 
 func (r *Repository) startStatsLogger(interval time.Duration) {

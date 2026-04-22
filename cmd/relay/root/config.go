@@ -270,7 +270,6 @@ type BboltConfig struct {
 	InitialMmapSize  int           `mapstructure:"initial-mmap-size"`
 	CompactOnStartup bool          `mapstructure:"compact-on-startup"`
 	NoFreelistSync   bool          `mapstructure:"no-freelist-sync"`
-	FreelistType     string        `mapstructure:"freelist-type" validate:"omitempty,oneof=array hashmap"`
 	MaxBatchDelay    time.Duration `mapstructure:"max-batch-delay"`
 	MaxBatchSize     int           `mapstructure:"max-batch-size"`
 	StatsLogInterval time.Duration `mapstructure:"stats-log-interval"`

@@ -14,7 +14,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
-	bolt "go.etcd.io/bbolt"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/symbioticfi/relay/internal/client/p2p"
@@ -202,7 +201,7 @@ func runApp(ctx context.Context) error {
 			StatsLogInterval:         cfg.Bbolt.StatsLogInterval,
 			CompactOnStartup:         cfg.Bbolt.CompactOnStartup,
 			NoFreelistSync:           cfg.Bbolt.NoFreelistSync,
-			FreelistType:             bolt.FreelistType(cfg.Bbolt.FreelistType),
+			FreelistType:             "array",
 			MaxBatchDelay:            cfg.Bbolt.MaxBatchDelay,
 			MaxBatchSize:             cfg.Bbolt.MaxBatchSize,
 			DBFilename:               "relay.db",
