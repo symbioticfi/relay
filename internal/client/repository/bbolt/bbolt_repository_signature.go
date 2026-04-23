@@ -204,29 +204,31 @@ func (r *Repository) rebuildSignatureMap(ctx context.Context, requestID common.H
 }
 
 func (r *Repository) SaveSignatureRequest(ctx context.Context, requestID common.Hash, req symbiotic.SignatureRequest) error {
+	data, err := codec.SignatureRequestToBytes(req)
+	if err != nil {
+		return errors.Errorf("failed to marshal signature request: %w", err)
+	}
+	primaryKey := epochHashKey(uint64(req.RequiredEpoch), requestID.Bytes())
+	pendingKey := epochHashKey(uint64(req.RequiredEpoch), requestID.Bytes())
+	epochData := epochBytes(uint64(req.RequiredEpoch))
+
 	return r.doUpdate(ctx, "SaveSignatureRequest", func(tx *bolt.Tx) error {
 		// Save signature request
-		primaryKey := epochHashKey(uint64(req.RequiredEpoch), requestID.Bytes())
 		b := tx.Bucket(bucketSignatureRequests)
 		if b.Get(primaryKey) != nil {
 			return errors.Errorf("signature request already exists: %w", entity.ErrEntityAlreadyExist)
 		}
 
-		data, err := codec.SignatureRequestToBytes(req)
-		if err != nil {
-			return errors.Errorf("failed to marshal signature request: %w", err)
-		}
 		if err := b.Put(primaryKey, data); err != nil {
 			return errors.Errorf("failed to store signature request: %w", err)
 		}
 
 		// Save request ID index: requestID → epoch bytes
-		if err := tx.Bucket(bucketRequestIDIndex).Put(requestID.Bytes(), epochBytes(uint64(req.RequiredEpoch))); err != nil {
+		if err := tx.Bucket(bucketRequestIDIndex).Put(requestID.Bytes(), epochData); err != nil {
 			return errors.Errorf("failed to store request id index: %w", err)
 		}
 
 		// Save pending signature marker
-		pendingKey := epochHashKey(uint64(req.RequiredEpoch), requestID.Bytes())
 		pendingBucket := tx.Bucket(bucketSignaturePending)
 		if pendingBucket.Get(pendingKey) != nil {
 			return nil // Already pending
