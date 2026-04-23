@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	common "github.com/ethereum/go-ethereum/common"
 	entity "github.com/symbioticfi/relay/symbiotic/entity"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -107,46 +108,75 @@ func (mr *MockrepoMockRecorder) GetOldestValidatorSetEpoch(ctx any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOldestValidatorSetEpoch", reflect.TypeOf((*Mockrepo)(nil).GetOldestValidatorSetEpoch), ctx)
 }
 
-// PruneProofEntities mocks base method.
-func (m *Mockrepo) PruneProofEntities(ctx context.Context, epoch entity.Epoch, batchSize int) error {
+// GetRequestIDsByEpoch mocks base method.
+func (m *Mockrepo) GetRequestIDsByEpoch(ctx context.Context, epoch entity.Epoch, limit int) ([]common.Hash, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PruneProofEntities", ctx, epoch, batchSize)
+	ret := m.ctrl.Call(m, "GetRequestIDsByEpoch", ctx, epoch, limit)
+	ret0, _ := ret[0].([]common.Hash)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRequestIDsByEpoch indicates an expected call of GetRequestIDsByEpoch.
+func (mr *MockrepoMockRecorder) GetRequestIDsByEpoch(ctx, epoch, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRequestIDsByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetRequestIDsByEpoch), ctx, epoch, limit)
+}
+
+// PruneEpochIndicesByRequestIDs mocks base method.
+func (m *Mockrepo) PruneEpochIndicesByRequestIDs(ctx context.Context, epoch entity.Epoch, requestIDs []common.Hash, batchSize int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PruneEpochIndicesByRequestIDs", ctx, epoch, requestIDs, batchSize)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// PruneProofEntities indicates an expected call of PruneProofEntities.
-func (mr *MockrepoMockRecorder) PruneProofEntities(ctx, epoch, batchSize any) *gomock.Call {
+// PruneEpochIndicesByRequestIDs indicates an expected call of PruneEpochIndicesByRequestIDs.
+func (mr *MockrepoMockRecorder) PruneEpochIndicesByRequestIDs(ctx, epoch, requestIDs, batchSize any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PruneProofEntities", reflect.TypeOf((*Mockrepo)(nil).PruneProofEntities), ctx, epoch, batchSize)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PruneEpochIndicesByRequestIDs", reflect.TypeOf((*Mockrepo)(nil).PruneEpochIndicesByRequestIDs), ctx, epoch, requestIDs, batchSize)
 }
 
-// PruneRequestIDEpochIndices mocks base method.
-func (m *Mockrepo) PruneRequestIDEpochIndices(ctx context.Context, epoch entity.Epoch, batchSize int) error {
+// PruneProofCommits mocks base method.
+func (m *Mockrepo) PruneProofCommits(ctx context.Context, epoch entity.Epoch) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PruneRequestIDEpochIndices", ctx, epoch, batchSize)
+	ret := m.ctrl.Call(m, "PruneProofCommits", ctx, epoch)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// PruneRequestIDEpochIndices indicates an expected call of PruneRequestIDEpochIndices.
-func (mr *MockrepoMockRecorder) PruneRequestIDEpochIndices(ctx, epoch, batchSize any) *gomock.Call {
+// PruneProofCommits indicates an expected call of PruneProofCommits.
+func (mr *MockrepoMockRecorder) PruneProofCommits(ctx, epoch any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PruneRequestIDEpochIndices", reflect.TypeOf((*Mockrepo)(nil).PruneRequestIDEpochIndices), ctx, epoch, batchSize)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PruneProofCommits", reflect.TypeOf((*Mockrepo)(nil).PruneProofCommits), ctx, epoch)
 }
 
-// PruneSignatureEntitiesForEpoch mocks base method.
-func (m *Mockrepo) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch entity.Epoch, batchSize int) error {
+// PruneProofsByRequestIDs mocks base method.
+func (m *Mockrepo) PruneProofsByRequestIDs(ctx context.Context, epoch entity.Epoch, requestIDs []common.Hash, batchSize int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PruneSignatureEntitiesForEpoch", ctx, epoch, batchSize)
+	ret := m.ctrl.Call(m, "PruneProofsByRequestIDs", ctx, epoch, requestIDs, batchSize)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// PruneSignatureEntitiesForEpoch indicates an expected call of PruneSignatureEntitiesForEpoch.
-func (mr *MockrepoMockRecorder) PruneSignatureEntitiesForEpoch(ctx, epoch, batchSize any) *gomock.Call {
+// PruneProofsByRequestIDs indicates an expected call of PruneProofsByRequestIDs.
+func (mr *MockrepoMockRecorder) PruneProofsByRequestIDs(ctx, epoch, requestIDs, batchSize any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PruneSignatureEntitiesForEpoch", reflect.TypeOf((*Mockrepo)(nil).PruneSignatureEntitiesForEpoch), ctx, epoch, batchSize)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PruneProofsByRequestIDs", reflect.TypeOf((*Mockrepo)(nil).PruneProofsByRequestIDs), ctx, epoch, requestIDs, batchSize)
+}
+
+// PruneSignaturesByRequestIDs mocks base method.
+func (m *Mockrepo) PruneSignaturesByRequestIDs(ctx context.Context, epoch entity.Epoch, requestIDs []common.Hash, batchSize int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PruneSignaturesByRequestIDs", ctx, epoch, requestIDs, batchSize)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PruneSignaturesByRequestIDs indicates an expected call of PruneSignaturesByRequestIDs.
+func (mr *MockrepoMockRecorder) PruneSignaturesByRequestIDs(ctx, epoch, requestIDs, batchSize any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PruneSignaturesByRequestIDs", reflect.TypeOf((*Mockrepo)(nil).PruneSignaturesByRequestIDs), ctx, epoch, requestIDs, batchSize)
 }
 
 // PruneValsetEntities mocks base method.

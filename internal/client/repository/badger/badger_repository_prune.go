@@ -23,46 +23,6 @@ func (r *Repository) PruneValsetEntities(ctx context.Context, epoch symbiotic.Ep
 	return nil
 }
 
-func (r *Repository) PruneProofEntities(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error {
-	if err := r.pruneProofCommits(ctx, epoch); err != nil {
-		return errors.Errorf("failed to prune proof commits: %w", err)
-	}
-
-	requestIDs, err := r.getRequestIDsByEpoch(ctx, epoch)
-	if err != nil {
-		return errors.Errorf("failed to get request IDs: %w", err)
-	}
-
-	for _, requestID := range requestIDs {
-		if err := r.pruneAggregationProof(ctx, epoch, requestID); err != nil {
-			return errors.Errorf("failed to prune aggregation proof for request %s: %w", requestID.Hex(), err)
-		}
-
-		r.proofsMutexMap.Delete(requestID)
-	}
-
-	return nil
-}
-
-func (r *Repository) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error {
-	requestIDs, err := r.getRequestIDsByEpoch(ctx, epoch)
-	if err != nil {
-		return errors.Errorf("failed to get request IDs: %w", err)
-	}
-
-	slog.DebugContext(ctx, "Pruning signature entities", "requestCount", len(requestIDs))
-
-	for _, requestID := range requestIDs {
-		if err := r.pruneSignatureEntities(ctx, epoch, requestID); err != nil {
-			return errors.Errorf("failed to prune signature entities for request %s: %w", requestID.Hex(), err)
-		}
-
-		r.signatureMutexMap.Delete(requestID)
-	}
-
-	return nil
-}
-
 func (r *Repository) pruneProofCommits(ctx context.Context, epoch symbiotic.Epoch) error {
 	return r.doUpdateInTx(ctx, "pruneProofCommits", func(ctx context.Context) error {
 		txn := getTxn(ctx)
@@ -138,7 +98,7 @@ func (r *Repository) pruneValidatorSets(ctx context.Context, epoch symbiotic.Epo
 	return nil
 }
 
-func (r *Repository) getRequestIDsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]common.Hash, error) {
+func (r *Repository) getRequestIDsByEpoch(ctx context.Context, epoch symbiotic.Epoch, limit int) ([]common.Hash, error) {
 	var requestIDs []common.Hash
 
 	err := r.doViewInTx(ctx, "getRequestIDsByEpoch", func(ctx context.Context) error {
@@ -163,6 +123,9 @@ func (r *Repository) getRequestIDsByEpoch(ctx context.Context, epoch symbiotic.E
 				continue
 			}
 			requestIDs = append(requestIDs, requestID)
+			if limit > 0 && len(requestIDs) >= limit {
+				break
+			}
 		}
 
 		return nil
@@ -224,27 +187,6 @@ func (r *Repository) pruneAggregationProof(ctx context.Context, epoch symbiotic.
 
 		return nil
 	}, &r.proofsMutexMap, requestID)
-}
-
-// PruneRequestIDEpochIndices removes the request ID epoch indices for the given epoch.
-// This should be called AFTER both PruneProofEntities and PruneSignatureEntitiesForEpoch
-// to ensure that the index is only deleted when both the aggregation proof and signatures
-// have been removed. This handles cases where proof and signature retention settings differ.
-func (r *Repository) PruneRequestIDEpochIndices(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error {
-	requestIDs, err := r.getRequestIDsByEpoch(ctx, epoch)
-	if err != nil {
-		return errors.Errorf("failed to get request IDs: %w", err)
-	}
-
-	slog.DebugContext(ctx, "Pruning request ID epoch indices", "epoch", epoch, "requestCount", len(requestIDs))
-
-	for _, requestID := range requestIDs {
-		if err := r.deleteRequestIDEpochIndex(ctx, epoch, requestID); err != nil {
-			return errors.Errorf("failed to delete request ID epoch index for request %s: %w", requestID.Hex(), err)
-		}
-	}
-
-	return nil
 }
 
 // deleteRequestIDEpochIndex deletes the request ID epoch index entry if both

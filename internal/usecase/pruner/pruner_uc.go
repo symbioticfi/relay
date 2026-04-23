@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 
@@ -23,10 +24,12 @@ type metrics interface {
 type repo interface {
 	GetOldestValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
 	GetLatestValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
+	GetRequestIDsByEpoch(ctx context.Context, epoch symbiotic.Epoch, limit int) ([]common.Hash, error)
 	PruneValsetEntities(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error
-	PruneProofEntities(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error
-	PruneSignatureEntitiesForEpoch(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error
-	PruneRequestIDEpochIndices(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error
+	PruneProofCommits(ctx context.Context, epoch symbiotic.Epoch) error
+	PruneProofsByRequestIDs(ctx context.Context, epoch symbiotic.Epoch, requestIDs []common.Hash, batchSize int) error
+	PruneSignaturesByRequestIDs(ctx context.Context, epoch symbiotic.Epoch, requestIDs []common.Hash, batchSize int) error
+	PruneEpochIndicesByRequestIDs(ctx context.Context, epoch symbiotic.Epoch, requestIDs []common.Hash, batchSize int) error
 }
 
 type Config struct {
@@ -105,8 +108,6 @@ func (s *Service) runPruning(ctx context.Context) error {
 	ctx, span := tracing.StartSpan(ctx, "pruner.RunPruning")
 	defer span.End()
 
-	start := time.Now()
-
 	latestEpoch, err := s.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityNotFound) {
@@ -125,136 +126,114 @@ func (s *Service) runPruning(ctx context.Context) error {
 		return errors.Errorf("failed to get oldest validator set epoch: %w", err)
 	}
 
-	valsetCount, err := s.pruneValsetEntities(ctx, latestEpoch, oldestStoredEpoch)
-	if err != nil {
-		slog.ErrorContext(ctx, "Failed to prune valset entities", "error", err)
-	}
+	s.pruneEntityType(ctx, latestEpoch, oldestStoredEpoch, s.cfg.ProofRetentionEpochs, "proof", s.pruneProofBatch)
+	s.pruneEntityType(ctx, latestEpoch, oldestStoredEpoch, s.cfg.SignatureRetentionEpochs, "signature", s.pruneSignatureBatch)
+	s.pruneEntityType(ctx, latestEpoch, oldestStoredEpoch, s.cfg.ValsetRetentionEpochs, "valset", s.pruneValsetEpoch)
 
-	proofCount, err := s.pruneProofEntities(ctx, latestEpoch, oldestStoredEpoch)
-	if err != nil {
-		slog.ErrorContext(ctx, "Failed to prune proof entities", "error", err)
-	}
-
-	signatureCount, err := s.pruneSignatureEntities(ctx, latestEpoch, oldestStoredEpoch)
-	if err != nil {
-		slog.ErrorContext(ctx, "Failed to prune signature entities", "error", err)
-	}
-
-	indexCount, err := s.pruneRequestIDEpochIndices(ctx, latestEpoch, oldestStoredEpoch)
-	if err != nil {
-		slog.ErrorContext(ctx, "Failed to prune request ID epoch indices", "error", err)
-	}
-
-	slog.InfoContext(ctx, "Pruning completed",
-		"valsetEpochs", valsetCount,
-		"proofEpochs", proofCount,
-		"signatureEpochs", signatureCount,
-		"indexCleanupEpochs", indexCount,
-		"duration", time.Since(start),
-	)
+	maxRetention := max(s.cfg.SignatureRetentionEpochs, s.cfg.ProofRetentionEpochs)
+	s.pruneEntityType(ctx, latestEpoch, oldestStoredEpoch, maxRetention, "requestIdEpochIndex", s.pruneIndexBatch)
 
 	return nil
 }
 
-func (s *Service) pruneValsetEntities(ctx context.Context, latestEpoch, oldestStoredEpoch symbiotic.Epoch) (uint64, error) {
-	return s.pruneEntities(
-		ctx,
-		latestEpoch,
-		oldestStoredEpoch,
-		s.cfg.ValsetRetentionEpochs,
-		"valset",
-		s.cfg.Repo.PruneValsetEntities,
-	)
-}
-
-func (s *Service) pruneProofEntities(ctx context.Context, latestEpoch, oldestStoredEpoch symbiotic.Epoch) (uint64, error) {
-	return s.pruneEntities(
-		ctx,
-		latestEpoch,
-		oldestStoredEpoch,
-		s.cfg.ProofRetentionEpochs,
-		"proof",
-		s.cfg.Repo.PruneProofEntities,
-	)
-}
-
-func (s *Service) pruneSignatureEntities(ctx context.Context, latestEpoch, oldestStoredEpoch symbiotic.Epoch) (uint64, error) {
-	return s.pruneEntities(
-		ctx,
-		latestEpoch,
-		oldestStoredEpoch,
-		s.cfg.SignatureRetentionEpochs,
-		"signature",
-		s.cfg.Repo.PruneSignatureEntitiesForEpoch,
-	)
-}
-
-// pruneRequestIDEpochIndices cleans up request ID epoch indices for old epochs.
-// It uses the maximum retention window of proofs and signatures to determine which epochs
-// might have indices to clean up. The actual deletion only happens if both the aggregation
-// proof and signatures have been pruned for a given requestID.
-func (s *Service) pruneRequestIDEpochIndices(ctx context.Context, latestEpoch, oldestStoredEpoch symbiotic.Epoch) (uint64, error) {
-	// Use the maximum of proof and signature retention to determine the range to scan
-	maxRetention := max(s.cfg.SignatureRetentionEpochs, s.cfg.ProofRetentionEpochs)
-
-	return s.pruneEntities(
-		ctx,
-		latestEpoch,
-		oldestStoredEpoch,
-		maxRetention,
-		"requestIdEpochIndex",
-		s.cfg.Repo.PruneRequestIDEpochIndices,
-	)
-}
-
-// pruneEntities is a common utility function that implements the pruning logic for all entity types.
-// It calculates the retention window and iterates through epochs to delete, calling the provided
-// pruneFunc for each epoch.
-func (s *Service) pruneEntities(
+// pruneEntityType finds the oldest epoch outside the retention window and calls batchFunc.
+// Stateless: completed epochs have their data removed, so getRequestIDsByEpoch returns fewer results next tick.
+func (s *Service) pruneEntityType(
 	ctx context.Context,
 	latestEpoch, oldestStoredEpoch symbiotic.Epoch,
 	retentionEpochs uint64,
 	entityType string,
-	pruneFunc func(context.Context, symbiotic.Epoch, int) error,
-) (uint64, error) {
-	ctx, span := tracing.StartSpan(ctx, "pruner.pruneEntities")
-	defer span.End()
-
-	tracing.SetAttributes(span,
-		tracing.AttrEpoch.Int64(int64(latestEpoch)),
-	)
-
+	batchFunc func(ctx context.Context, epoch symbiotic.Epoch) (done bool, err error),
+) {
 	if retentionEpochs == 0 {
-		tracing.AddEvent(span, "skipped_no_retention")
-		return 0, nil
+		return
 	}
 
 	retentionWindow := symbiotic.Epoch(retentionEpochs)
 	if latestEpoch < retentionWindow {
-		tracing.AddEvent(span, "skipped_insufficient_epochs")
-		return 0, nil
+		return
 	}
 
 	oldestToKeep := latestEpoch - retentionWindow + 1
 	if oldestStoredEpoch >= oldestToKeep {
-		tracing.AddEvent(span, "skipped_no_epochs_to_prune")
-		return 0, nil
+		return
 	}
 
-	count := uint64(0)
 	for epoch := oldestStoredEpoch; epoch < oldestToKeep; epoch++ {
-		slog.DebugContext(ctx, "Pruning entities", "entityType", entityType, "epoch", epoch)
-
-		if err := pruneFunc(ctx, epoch, s.cfg.PruneBatchSize); err != nil {
-			tracing.RecordError(span, err)
-			return count, errors.Errorf("failed to prune %s entities for epoch %d: %w", entityType, epoch, err)
+		done, err := batchFunc(ctx, epoch)
+		if err != nil {
+			slog.ErrorContext(ctx, "Failed to prune entities",
+				"entityType", entityType, "epoch", epoch, "error", err)
+			return
 		}
 
-		count++
-		s.cfg.Metrics.IncPrunedEpochsCount(entityType)
+		if done {
+			s.cfg.Metrics.IncPrunedEpochsCount(entityType)
+			continue
+		}
+
+		return // still has work in this epoch, continue next tick
+	}
+}
+
+func (s *Service) pruneProofBatch(ctx context.Context, epoch symbiotic.Epoch) (bool, error) {
+	if err := s.cfg.Repo.PruneProofCommits(ctx, epoch); err != nil {
+		return false, errors.Errorf("failed to prune proof commits: %w", err)
 	}
 
-	tracing.SetAttributes(span, tracing.AttrEpochCount.Int(int(count)))
+	requestIDs, err := s.cfg.Repo.GetRequestIDsByEpoch(ctx, epoch, s.cfg.PruneBatchSize)
+	if err != nil {
+		return false, errors.Errorf("failed to get request IDs: %w", err)
+	}
 
-	return count, nil
+	if len(requestIDs) == 0 {
+		return true, nil
+	}
+
+	if err := s.cfg.Repo.PruneProofsByRequestIDs(ctx, epoch, requestIDs, s.cfg.PruneBatchSize); err != nil {
+		return false, errors.Errorf("failed to prune proofs: %w", err)
+	}
+
+	return false, nil
+}
+
+func (s *Service) pruneSignatureBatch(ctx context.Context, epoch symbiotic.Epoch) (bool, error) {
+	requestIDs, err := s.cfg.Repo.GetRequestIDsByEpoch(ctx, epoch, s.cfg.PruneBatchSize)
+	if err != nil {
+		return false, errors.Errorf("failed to get request IDs: %w", err)
+	}
+
+	if len(requestIDs) == 0 {
+		return true, nil
+	}
+
+	if err := s.cfg.Repo.PruneSignaturesByRequestIDs(ctx, epoch, requestIDs, s.cfg.PruneBatchSize); err != nil {
+		return false, errors.Errorf("failed to prune signatures: %w", err)
+	}
+
+	return false, nil
+}
+
+func (s *Service) pruneIndexBatch(ctx context.Context, epoch symbiotic.Epoch) (bool, error) {
+	requestIDs, err := s.cfg.Repo.GetRequestIDsByEpoch(ctx, epoch, s.cfg.PruneBatchSize)
+	if err != nil {
+		return false, errors.Errorf("failed to get request IDs: %w", err)
+	}
+
+	if len(requestIDs) == 0 {
+		return true, nil
+	}
+
+	if err := s.cfg.Repo.PruneEpochIndicesByRequestIDs(ctx, epoch, requestIDs, s.cfg.PruneBatchSize); err != nil {
+		return false, errors.Errorf("failed to prune epoch indices: %w", err)
+	}
+
+	return false, nil
+}
+
+func (s *Service) pruneValsetEpoch(ctx context.Context, epoch symbiotic.Epoch) (bool, error) {
+	if err := s.cfg.Repo.PruneValsetEntities(ctx, epoch, 0); err != nil {
+		return false, errors.Errorf("failed to prune valset entities: %w", err)
+	}
+	return true, nil
 }

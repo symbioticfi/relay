@@ -68,9 +68,9 @@ relay_sidecar [flags]
       --p2p.dht-mode string                              DHT mode: auto, server, client, disabled (default "server")
       --p2p.listen string                                P2P listen address
       --p2p.mdns                                         Enable mDNS discovery for P2P
-      --pruner.batch-size int                            Number of request IDs to delete per database transaction during pruning (0 = unbatched) (default 10)
+      --pruner.batch-size int                            Number of request IDs to process per pruning tick (0 = unbatched) (default 1000)
       --pruner.enabled                                   Enable automatic pruning of old epoch data (default: false)
-      --pruner.interval duration                         How often to run pruning (default: 1h) (default 1h0m0s)
+      --pruner.interval duration                         How often to run a pruning tick (default 1m0s)
       --retention.proof-epochs uint                      Number of historical proof epochs to retain (0 = unlimited)
       --retention.signature-epochs uint                  Number of historical signature epochs to retain (0 = unlimited)
       --retention.valset-epochs uint                     Number of historical validator set epochs to retain (0 = unlimited)
