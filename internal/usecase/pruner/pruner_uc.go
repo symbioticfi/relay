@@ -108,10 +108,6 @@ func (s *Service) runPruning(ctx context.Context) error {
 	ctx, span := tracing.StartSpan(ctx, "pruner.RunPruning")
 	defer span.End()
 
-	start := time.Now()
-
-	slog.InfoContext(ctx, "Pruning tick started")
-
 	latestEpoch, err := s.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityNotFound) {
@@ -132,19 +128,10 @@ func (s *Service) runPruning(ctx context.Context) error {
 
 	s.pruneEntityType(ctx, latestEpoch, oldestStoredEpoch, s.cfg.ProofRetentionEpochs, "proof", s.pruneProofBatch)
 	s.pruneEntityType(ctx, latestEpoch, oldestStoredEpoch, s.cfg.SignatureRetentionEpochs, "signature", s.pruneSignatureBatch)
+	s.pruneEntityType(ctx, latestEpoch, oldestStoredEpoch, s.cfg.ValsetRetentionEpochs, "valset", s.pruneValsetEpoch)
 
 	maxRetention := max(s.cfg.SignatureRetentionEpochs, s.cfg.ProofRetentionEpochs)
 	s.pruneEntityType(ctx, latestEpoch, oldestStoredEpoch, maxRetention, "requestIdEpochIndex", s.pruneIndexBatch)
-
-	// Valset must be pruned last — GetOldestValidatorSetEpoch drives epoch iteration for all entity types,
-	// so deleting a valset before its request data is fully pruned would skip the remaining work.
-	s.pruneEntityType(ctx, latestEpoch, oldestStoredEpoch, s.cfg.ValsetRetentionEpochs, "valset", s.pruneValsetEpoch)
-
-	slog.InfoContext(ctx, "Pruning tick completed",
-		"latestEpoch", latestEpoch,
-		"oldestStoredEpoch", oldestStoredEpoch,
-		"duration", time.Since(start),
-	)
 
 	return nil
 }
@@ -181,15 +168,11 @@ func (s *Service) pruneEntityType(
 		}
 
 		if done {
-			slog.InfoContext(ctx, "Epoch pruned",
-				"entityType", entityType, "epoch", epoch)
 			s.cfg.Metrics.IncPrunedEpochsCount(entityType)
 			continue
 		}
 
-		slog.InfoContext(ctx, "Epoch partially pruned, continuing next tick",
-			"entityType", entityType, "epoch", epoch)
-		return
+		return // still has work in this epoch, continue next tick
 	}
 }
 
@@ -211,9 +194,6 @@ func (s *Service) pruneProofBatch(ctx context.Context, epoch symbiotic.Epoch) (b
 		return false, errors.Errorf("failed to prune proofs: %w", err)
 	}
 
-	slog.InfoContext(ctx, "Pruned proof batch",
-		"epoch", epoch, "requestIds", len(requestIDs))
-
 	return false, nil
 }
 
@@ -230,9 +210,6 @@ func (s *Service) pruneSignatureBatch(ctx context.Context, epoch symbiotic.Epoch
 	if err := s.cfg.Repo.PruneSignaturesByRequestIDs(ctx, epoch, requestIDs, s.cfg.PruneBatchSize); err != nil {
 		return false, errors.Errorf("failed to prune signatures: %w", err)
 	}
-
-	slog.InfoContext(ctx, "Pruned signature batch",
-		"epoch", epoch, "requestIds", len(requestIDs))
 
 	return false, nil
 }
@@ -251,23 +228,10 @@ func (s *Service) pruneIndexBatch(ctx context.Context, epoch symbiotic.Epoch) (b
 		return false, errors.Errorf("failed to prune epoch indices: %w", err)
 	}
 
-	slog.InfoContext(ctx, "Pruned index batch",
-		"epoch", epoch, "requestIds", len(requestIDs))
-
 	return false, nil
 }
 
 func (s *Service) pruneValsetEpoch(ctx context.Context, epoch symbiotic.Epoch) (bool, error) {
-	requestIDs, err := s.cfg.Repo.GetRequestIDsByEpoch(ctx, epoch, 1)
-	if err != nil {
-		return false, errors.Errorf("failed to check remaining request IDs: %w", err)
-	}
-
-	if len(requestIDs) > 0 {
-		slog.InfoContext(ctx, "Valset pruning deferred, request data still exists", "epoch", epoch)
-		return false, nil
-	}
-
 	if err := s.cfg.Repo.PruneValsetEntities(ctx, epoch, 0); err != nil {
 		return false, errors.Errorf("failed to prune valset entities: %w", err)
 	}
