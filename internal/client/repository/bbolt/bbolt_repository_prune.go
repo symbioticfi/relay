@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
@@ -79,6 +80,20 @@ func (r *Repository) PruneProofEntities(ctx context.Context, epoch symbiotic.Epo
 		}); err != nil {
 			return err
 		}
+
+		if func() bool {
+			t := time.NewTimer(time.Second)
+			defer t.Stop()
+			select {
+			case <-t.C:
+				return false
+			case <-ctx.Done():
+				return true
+			}
+		}() {
+			slog.DebugContext(ctx, "Pruning interrupted by context cancellation", "epoch", epoch)
+			break
+		}
 	}
 
 	return nil
@@ -124,6 +139,20 @@ func (r *Repository) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch s
 		for _, requestID := range chunk {
 			r.signatureMapCache.Delete(requestID)
 		}
+
+		if func() bool {
+			t := time.NewTimer(time.Second)
+			defer t.Stop()
+			select {
+			case <-t.C:
+				return false
+			case <-ctx.Done():
+				return true
+			}
+		}() {
+			slog.DebugContext(ctx, "Pruning interrupted by context cancellation", "epoch", epoch)
+			break
+		}
 	}
 
 	return nil
@@ -154,6 +183,20 @@ func (r *Repository) PruneRequestIDEpochIndices(ctx context.Context, epoch symbi
 			return nil
 		}); err != nil {
 			return err
+		}
+
+		if func() bool {
+			t := time.NewTimer(time.Second)
+			defer t.Stop()
+			select {
+			case <-t.C:
+				return false
+			case <-ctx.Done():
+				return true
+			}
+		}() {
+			slog.DebugContext(ctx, "Pruning interrupted by context cancellation", "epoch", epoch)
+			break
 		}
 	}
 
