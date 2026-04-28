@@ -111,16 +111,14 @@ pruner:
   # Enable automatic pruning (default: false for safety)
   enabled: false
 
-  # How often to run a pruning tick (default: 1m)
-  # Each tick processes up to batch-size request IDs per entity type,
-  # spreading the DB load evenly over time instead of burst-deleting entire epochs.
-  interval: 1m
+  # How often to run the pruning process (default: 1h)
+  # Examples: 30m, 1h, 6h, 24h
+  interval: 1h
 
-  # Number of request IDs to process per pruning tick (default: 1000)
-  # Lower values = less DB pressure per tick, higher values = faster pruning.
-  # With interval=1m and batch-size=1000, one epoch (~36k requests) is pruned in ~36 minutes.
-  # 0 = process all request IDs in a single tick (not recommended for large datasets)
-  batch-size: 1000
+  # Number of request IDs to delete per database transaction during pruning
+  # Lower values = shorter write lock durations, higher values = fewer transactions
+  # 0 = process all request IDs in a single transaction (not recommended for large datasets)
+  batch-size: 100
 
 # Aggregation Configuration
 aggregation:

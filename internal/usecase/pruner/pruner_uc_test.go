@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
@@ -12,258 +11,234 @@ import (
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-func TestPruner_DripPruning_SingleEpoch(t *testing.T) {
+func TestPruner_RetentionCalculation(t *testing.T) {
 	t.Parallel()
+
+	tests := []struct {
+		name                string
+		retention           uint64
+		latestEpoch         symbiotic.Epoch
+		oldestStoredEpoch   symbiotic.Epoch
+		expectedPruneEpochs []symbiotic.Epoch
+		expectedNoPrune     bool
+	}{
+		{
+			name:                "retention=4, latestEpoch=10 should keep exactly 4 epochs (7-10)",
+			retention:           4,
+			latestEpoch:         10,
+			oldestStoredEpoch:   0,
+			expectedPruneEpochs: []symbiotic.Epoch{0, 1, 2, 3, 4, 5, 6},
+			expectedNoPrune:     false,
+		},
+		{
+			name:                "retention=4, latestEpoch=4 should keep exactly 4 epochs (1-4)",
+			retention:           4,
+			latestEpoch:         4,
+			oldestStoredEpoch:   0,
+			expectedPruneEpochs: []symbiotic.Epoch{0},
+			expectedNoPrune:     false,
+		},
+		{
+			name:                "retention=4, latestEpoch=3 should not prune (less than retention)",
+			retention:           4,
+			latestEpoch:         3,
+			oldestStoredEpoch:   0,
+			expectedPruneEpochs: nil,
+			expectedNoPrune:     true,
+		},
+		{
+			name:                "retention=1, latestEpoch=5 should keep only latest epoch",
+			retention:           1,
+			latestEpoch:         5,
+			oldestStoredEpoch:   0,
+			expectedPruneEpochs: []symbiotic.Epoch{0, 1, 2, 3, 4},
+			expectedNoPrune:     false,
+		},
+		{
+			name:                "retention=10, latestEpoch=100 should keep exactly 10 epochs (91-100)",
+			retention:           10,
+			latestEpoch:         100,
+			oldestStoredEpoch:   0,
+			expectedPruneEpochs: makeRange(0, 90),
+			expectedNoPrune:     false,
+		},
+		{
+			name:                "oldestStoredEpoch already within retention window",
+			retention:           4,
+			latestEpoch:         10,
+			oldestStoredEpoch:   7,
+			expectedPruneEpochs: nil,
+			expectedNoPrune:     true,
+		},
+		{
+			name:                "oldestStoredEpoch partially in pruning range",
+			retention:           4,
+			latestEpoch:         10,
+			oldestStoredEpoch:   5,
+			expectedPruneEpochs: []symbiotic.Epoch{5, 6},
+			expectedNoPrune:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			mockRepo := mocks.NewMockrepo(ctrl)
+			mockMetrics := mocks.NewMockmetrics(ctrl)
+
+			ctx := context.Background()
+
+			// Set expectations: expect calls for each epoch to be pruned
+			if !tt.expectedNoPrune {
+				for _, epoch := range tt.expectedPruneEpochs {
+					mockRepo.EXPECT().PruneValsetEntities(gomock.Any(), epoch, 0).Return(nil)
+					mockMetrics.EXPECT().IncPrunedEpochsCount("valset")
+				}
+			}
+
+			service := &Service{
+				cfg: Config{
+					Repo:                  mockRepo,
+					Metrics:               mockMetrics,
+					ValsetRetentionEpochs: tt.retention,
+				},
+			}
+
+			count, err := service.pruneValsetEntities(ctx, tt.latestEpoch, tt.oldestStoredEpoch)
+			require.NoError(t, err)
+
+			expectedCount := uint64(len(tt.expectedPruneEpochs))
+			require.Equal(t, expectedCount, count, "pruned epoch count mismatch")
+		})
+	}
+}
+
+func TestPruner_RetentionCalculation_AllEntityTypes(t *testing.T) {
+	t.Parallel()
+
 	ctrl := gomock.NewController(t)
 	mockRepo := mocks.NewMockrepo(ctrl)
 	mockMetrics := mocks.NewMockmetrics(ctrl)
+
+	ctx := context.Background()
+	retention := uint64(4)
+	latestEpoch := symbiotic.Epoch(10)
+	oldestStoredEpoch := symbiotic.Epoch(0)
+
+	// Expected to prune epochs 0-6, keep 7-10 (4 epochs)
+	expectedPruneEpochs := []symbiotic.Epoch{0, 1, 2, 3, 4, 5, 6}
+
+	t.Run("valset entities", func(t *testing.T) {
+		for _, epoch := range expectedPruneEpochs {
+			mockRepo.EXPECT().PruneValsetEntities(gomock.Any(), epoch, 0).Return(nil)
+			mockMetrics.EXPECT().IncPrunedEpochsCount("valset")
+		}
+
+		service := &Service{
+			cfg: Config{
+				Repo:                  mockRepo,
+				Metrics:               mockMetrics,
+				ValsetRetentionEpochs: retention,
+			},
+		}
+
+		count, err := service.pruneValsetEntities(ctx, latestEpoch, oldestStoredEpoch)
+		require.NoError(t, err)
+		require.Equal(t, uint64(7), count)
+	})
+
+	t.Run("proof entities", func(t *testing.T) {
+		for _, epoch := range expectedPruneEpochs {
+			mockRepo.EXPECT().PruneProofEntities(gomock.Any(), epoch, 0).Return(nil)
+			mockMetrics.EXPECT().IncPrunedEpochsCount("proof")
+		}
+
+		service := &Service{
+			cfg: Config{
+				Repo:                 mockRepo,
+				Metrics:              mockMetrics,
+				ProofRetentionEpochs: retention,
+			},
+		}
+
+		count, err := service.pruneProofEntities(ctx, latestEpoch, oldestStoredEpoch)
+		require.NoError(t, err)
+		require.Equal(t, uint64(7), count)
+	})
+
+	t.Run("signature entities", func(t *testing.T) {
+		for _, epoch := range expectedPruneEpochs {
+			mockRepo.EXPECT().PruneSignatureEntitiesForEpoch(gomock.Any(), epoch, 0).Return(nil)
+			mockMetrics.EXPECT().IncPrunedEpochsCount("signature")
+		}
+
+		service := &Service{
+			cfg: Config{
+				Repo:                     mockRepo,
+				Metrics:                  mockMetrics,
+				SignatureRetentionEpochs: retention,
+			},
+		}
+
+		count, err := service.pruneSignatureEntities(ctx, latestEpoch, oldestStoredEpoch)
+		require.NoError(t, err)
+		require.Equal(t, uint64(7), count)
+	})
+}
+
+func TestPruner_EdgeCases(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	mockRepo := mocks.NewMockrepo(ctrl)
+	mockMetrics := mocks.NewMockmetrics(ctrl)
+
 	ctx := context.Background()
 
-	batchSize := 2
-	requestIDs := []common.Hash{
-		common.HexToHash("0x01"),
-		common.HexToHash("0x02"),
-		common.HexToHash("0x03"),
-	}
+	t.Run("retention=0 should not prune", func(t *testing.T) {
+		service := &Service{
+			cfg: Config{
+				Repo:                  mockRepo,
+				Metrics:               mockMetrics,
+				ValsetRetentionEpochs: 0,
+			},
+		}
 
-	service := &Service{
-		cfg: Config{
-			Repo:                     mockRepo,
-			Metrics:                  mockMetrics,
-			SignatureRetentionEpochs: 4,
-			PruneBatchSize:           batchSize,
-		},
-	}
+		count, err := service.pruneValsetEntities(ctx, 100, 0)
+		require.NoError(t, err)
+		require.Equal(t, uint64(0), count)
+	})
 
-	// Tick 1: returns 2 requestIDs (batch size), processes them
-	mockRepo.EXPECT().GetRequestIDsByEpoch(gomock.Any(), symbiotic.Epoch(0), batchSize).Return(requestIDs[:2], nil)
-	mockRepo.EXPECT().PruneSignaturesByRequestIDs(gomock.Any(), symbiotic.Epoch(0), requestIDs[:2], batchSize).Return(nil)
+	t.Run("latestEpoch equals retention should keep all epochs starting from 1", func(t *testing.T) {
+		retention := uint64(5)
+		latestEpoch := symbiotic.Epoch(5)
+		oldestStoredEpoch := symbiotic.Epoch(0)
 
-	done, err := service.pruneSignatureBatch(ctx, symbiotic.Epoch(0))
-	require.NoError(t, err)
-	require.False(t, done)
+		// Should prune epoch 0, keep 1-5 (5 epochs)
+		mockRepo.EXPECT().PruneValsetEntities(gomock.Any(), symbiotic.Epoch(0), 0).Return(nil)
+		mockMetrics.EXPECT().IncPrunedEpochsCount("valset")
 
-	// Tick 2: returns 1 requestID (remaining), processes it
-	mockRepo.EXPECT().GetRequestIDsByEpoch(gomock.Any(), symbiotic.Epoch(0), batchSize).Return(requestIDs[2:], nil)
-	mockRepo.EXPECT().PruneSignaturesByRequestIDs(gomock.Any(), symbiotic.Epoch(0), requestIDs[2:], batchSize).Return(nil)
+		service := &Service{
+			cfg: Config{
+				Repo:                  mockRepo,
+				Metrics:               mockMetrics,
+				ValsetRetentionEpochs: retention,
+			},
+		}
 
-	done, err = service.pruneSignatureBatch(ctx, symbiotic.Epoch(0))
-	require.NoError(t, err)
-	require.False(t, done)
-
-	// Tick 3: returns 0 requestIDs, epoch is done
-	mockRepo.EXPECT().GetRequestIDsByEpoch(gomock.Any(), symbiotic.Epoch(0), batchSize).Return(nil, nil)
-
-	done, err = service.pruneSignatureBatch(ctx, symbiotic.Epoch(0))
-	require.NoError(t, err)
-	require.True(t, done)
+		count, err := service.pruneValsetEntities(ctx, latestEpoch, oldestStoredEpoch)
+		require.NoError(t, err)
+		require.Equal(t, uint64(1), count)
+	})
 }
 
-func TestPruner_DripPruning_ProofBatch(t *testing.T) {
-	t.Parallel()
-	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockrepo(ctrl)
-	mockMetrics := mocks.NewMockmetrics(ctrl)
-	ctx := context.Background()
-
-	batchSize := 10
-	requestIDs := []common.Hash{common.HexToHash("0x01")}
-
-	service := &Service{
-		cfg: Config{
-			Repo:                 mockRepo,
-			Metrics:              mockMetrics,
-			ProofRetentionEpochs: 4,
-			PruneBatchSize:       batchSize,
-		},
+// Helper function to generate a range of epochs
+func makeRange(start, end symbiotic.Epoch) []symbiotic.Epoch {
+	result := make([]symbiotic.Epoch, 0, end-start+1)
+	for i := start; i <= end; i++ {
+		result = append(result, i)
 	}
-
-	// Tick 1: has requestIDs, prune proofs
-	mockRepo.EXPECT().PruneProofCommits(gomock.Any(), symbiotic.Epoch(0)).Return(nil)
-	mockRepo.EXPECT().GetRequestIDsByEpoch(gomock.Any(), symbiotic.Epoch(0), batchSize).Return(requestIDs, nil)
-	mockRepo.EXPECT().PruneProofsByRequestIDs(gomock.Any(), symbiotic.Epoch(0), requestIDs, batchSize).Return(nil)
-
-	done, err := service.pruneProofBatch(ctx, symbiotic.Epoch(0))
-	require.NoError(t, err)
-	require.False(t, done)
-
-	// Tick 2: no more requestIDs
-	mockRepo.EXPECT().PruneProofCommits(gomock.Any(), symbiotic.Epoch(0)).Return(nil)
-	mockRepo.EXPECT().GetRequestIDsByEpoch(gomock.Any(), symbiotic.Epoch(0), batchSize).Return(nil, nil)
-
-	done, err = service.pruneProofBatch(ctx, symbiotic.Epoch(0))
-	require.NoError(t, err)
-	require.True(t, done)
-}
-
-func TestPruner_PruneEntityType_SkipsWhenInRetentionWindow(t *testing.T) {
-	t.Parallel()
-	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockrepo(ctrl)
-	mockMetrics := mocks.NewMockmetrics(ctrl)
-
-	service := &Service{
-		cfg: Config{
-			Repo:                     mockRepo,
-			Metrics:                  mockMetrics,
-			SignatureRetentionEpochs: 4,
-			PruneBatchSize:           10,
-		},
-	}
-
-	// latestEpoch=10, retention=4, oldestStored=7
-	// oldestToKeep = 10 - 4 + 1 = 7, 7 >= 7 → nothing to prune
-	service.pruneEntityType(
-		context.Background(),
-		symbiotic.Epoch(10), symbiotic.Epoch(7),
-		4, "signature",
-		func(ctx context.Context, epoch symbiotic.Epoch) (bool, error) {
-			t.Fatal("should not be called")
-			return false, nil
-		},
-	)
-}
-
-func TestPruner_PruneEntityType_DoneMovesToNextEpoch(t *testing.T) {
-	t.Parallel()
-	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockrepo(ctrl)
-	mockMetrics := mocks.NewMockmetrics(ctrl)
-
-	service := &Service{
-		cfg: Config{
-			Repo:                     mockRepo,
-			Metrics:                  mockMetrics,
-			SignatureRetentionEpochs: 4,
-			PruneBatchSize:           10,
-		},
-	}
-
-	// latestEpoch=10, retention=4, oldestStored=5
-	// oldestToKeep = 10 - 4 + 1 = 7
-	// epochs to prune: 5, 6
-	var calledEpochs []symbiotic.Epoch
-	mockMetrics.EXPECT().IncPrunedEpochsCount("test").Times(2)
-
-	service.pruneEntityType(
-		context.Background(),
-		symbiotic.Epoch(10), symbiotic.Epoch(5),
-		4, "test",
-		func(ctx context.Context, epoch symbiotic.Epoch) (bool, error) {
-			calledEpochs = append(calledEpochs, epoch)
-			return true, nil // always done immediately
-		},
-	)
-
-	require.Equal(t, []symbiotic.Epoch{5, 6}, calledEpochs)
-}
-
-func TestPruner_PruneEntityType_NotDoneStops(t *testing.T) {
-	t.Parallel()
-	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockrepo(ctrl)
-	mockMetrics := mocks.NewMockmetrics(ctrl)
-
-	service := &Service{
-		cfg: Config{
-			Repo:                     mockRepo,
-			Metrics:                  mockMetrics,
-			SignatureRetentionEpochs: 4,
-			PruneBatchSize:           10,
-		},
-	}
-
-	// batchFunc returns done=false on epoch 5, should stop after one call
-	callCount := 0
-	service.pruneEntityType(
-		context.Background(),
-		symbiotic.Epoch(10), symbiotic.Epoch(5),
-		4, "test",
-		func(ctx context.Context, epoch symbiotic.Epoch) (bool, error) {
-			callCount++
-			require.Equal(t, symbiotic.Epoch(5), epoch)
-			return false, nil
-		},
-	)
-
-	require.Equal(t, 1, callCount)
-}
-
-func TestPruner_RetentionZeroSkips(t *testing.T) {
-	t.Parallel()
-	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockrepo(ctrl)
-	mockMetrics := mocks.NewMockmetrics(ctrl)
-
-	service := &Service{
-		cfg: Config{
-			Repo:    mockRepo,
-			Metrics: mockMetrics,
-		},
-	}
-
-	service.pruneEntityType(
-		context.Background(),
-		symbiotic.Epoch(100), symbiotic.Epoch(0),
-		0, "test",
-		func(ctx context.Context, epoch symbiotic.Epoch) (bool, error) {
-			t.Fatal("should not be called with retention=0")
-			return false, nil
-		},
-	)
-}
-
-func TestPruner_ValsetPruneAlwaysDone(t *testing.T) {
-	t.Parallel()
-	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockrepo(ctrl)
-	mockMetrics := mocks.NewMockmetrics(ctrl)
-	ctx := context.Background()
-
-	service := &Service{
-		cfg: Config{
-			Repo:    mockRepo,
-			Metrics: mockMetrics,
-		},
-	}
-
-	mockRepo.EXPECT().PruneValsetEntities(gomock.Any(), symbiotic.Epoch(5), 0).Return(nil)
-
-	done, err := service.pruneValsetEpoch(ctx, symbiotic.Epoch(5))
-	require.NoError(t, err)
-	require.True(t, done)
-}
-
-func TestPruner_IndexBatch(t *testing.T) {
-	t.Parallel()
-	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockrepo(ctrl)
-	mockMetrics := mocks.NewMockmetrics(ctrl)
-	ctx := context.Background()
-
-	batchSize := 5
-	requestIDs := []common.Hash{common.HexToHash("0x01"), common.HexToHash("0x02")}
-
-	service := &Service{
-		cfg: Config{
-			Repo:           mockRepo,
-			Metrics:        mockMetrics,
-			PruneBatchSize: batchSize,
-		},
-	}
-
-	// Tick 1: has requestIDs
-	mockRepo.EXPECT().GetRequestIDsByEpoch(gomock.Any(), symbiotic.Epoch(0), batchSize).Return(requestIDs, nil)
-	mockRepo.EXPECT().PruneEpochIndicesByRequestIDs(gomock.Any(), symbiotic.Epoch(0), requestIDs, batchSize).Return(nil)
-
-	done, err := service.pruneIndexBatch(ctx, symbiotic.Epoch(0))
-	require.NoError(t, err)
-	require.False(t, done)
-
-	// Tick 2: empty
-	mockRepo.EXPECT().GetRequestIDsByEpoch(gomock.Any(), symbiotic.Epoch(0), batchSize).Return(nil, nil)
-
-	done, err = service.pruneIndexBatch(ctx, symbiotic.Epoch(0))
-	require.NoError(t, err)
-	require.True(t, done)
+	return result
 }

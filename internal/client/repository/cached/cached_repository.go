@@ -72,13 +72,9 @@ type Repository interface {
 
 	// Pruning
 	PruneValsetEntities(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error
-
-	// Drip Pruning
-	GetRequestIDsByEpoch(ctx context.Context, epoch symbiotic.Epoch, limit int) ([]common.Hash, error)
-	PruneProofCommits(ctx context.Context, epoch symbiotic.Epoch) error
-	PruneProofsByRequestIDs(ctx context.Context, epoch symbiotic.Epoch, requestIDs []common.Hash, batchSize int) error
-	PruneSignaturesByRequestIDs(ctx context.Context, epoch symbiotic.Epoch, requestIDs []common.Hash, batchSize int) error
-	PruneEpochIndicesByRequestIDs(ctx context.Context, epoch symbiotic.Epoch, requestIDs []common.Hash, batchSize int) error
+	PruneProofEntities(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error
+	PruneSignatureEntitiesForEpoch(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error
+	PruneRequestIDEpochIndices(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error
 }
 
 type Config struct {
