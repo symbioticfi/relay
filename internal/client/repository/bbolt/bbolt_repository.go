@@ -82,13 +82,21 @@ func compactDB(dbPath string, freelistType bolt.FreelistType) error {
 
 	start := time.Now()
 
-	src, err := bolt.Open(dbPath, 0600, &bolt.Options{ReadOnly: true, Timeout: 5 * time.Second, FreelistType: freelistType})
+	// Open source in writable mode to acquire an exclusive flock for the whole
+	// compaction window. This prevents any other process from opening the DB
+	// between Compact and Rename, which would otherwise observe an inode swap.
+	src, err := bolt.Open(dbPath, 0600, &bolt.Options{Timeout: 5 * time.Second, FreelistType: freelistType})
 	if err != nil {
-		return errors.Errorf("failed to open source db: %w", err)
+		return errors.Errorf("failed to acquire exclusive lock on source db: %w", err)
 	}
 	defer src.Close()
 
 	tmpPath := dbPath + ".compact"
+	// Drop any stale tmp file from a previously crashed compaction so we don't
+	// merge into pre-existing data.
+	if err := os.Remove(tmpPath); err != nil && !os.IsNotExist(err) {
+		return errors.Errorf("failed to remove stale compact tmp file: %w", err)
+	}
 	dst, err := bolt.Open(tmpPath, 0600, &bolt.Options{Timeout: 5 * time.Second, FreelistType: freelistType})
 	if err != nil {
 		return errors.Errorf("failed to create compact db: %w", err)
@@ -100,9 +108,14 @@ func compactDB(dbPath string, freelistType bolt.FreelistType) error {
 		os.Remove(tmpPath)
 		return errors.Errorf("compaction failed: %w", err)
 	}
-	dst.Close()
-	src.Close()
+	if err := dst.Close(); err != nil {
+		os.Remove(tmpPath)
+		return errors.Errorf("failed to close compacted db: %w", err)
+	}
 
+	// Rename happens while src still holds the exclusive flock on dbPath, so
+	// no concurrent opener can race in and observe the swapped inode. The
+	// deferred src.Close() releases the lock on the now-unlinked old inode.
 	if err := os.Rename(tmpPath, dbPath); err != nil {
 		os.Remove(tmpPath)
 		return errors.Errorf("failed to replace db with compacted version: %w", err)
