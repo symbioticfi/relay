@@ -103,20 +103,23 @@ jobs:
             echo "coverage=${COVERAGE_VALUE}" >> $GITHUB_OUTPUT
             echo "COVERAGE=${COVERAGE_VALUE}" >> $GITHUB_ENV
             echo "Test Coverage: ${COVERAGE_VALUE}"
+            {
+              echo "## 🧪 Test Coverage Report"
+              echo ""
+              echo "**Coverage:** \`${COVERAGE_VALUE}\`"
+            } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "coverage=Not available" >> $GITHUB_OUTPUT
             echo "COVERAGE=Not available" >> $GITHUB_ENV
             echo "⚠️ Coverage file not found"
           fi
 
-      - name: "Post Coverage Report to PR"
-        if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
-        uses: mshick/add-pr-comment@b8f338c590a895d50bcbfa6c5859251edc8952fc # v2.8.2
+      - name: "Upload Coverage to Codecov"
+        if: github.actor != 'dependabot[bot]'
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
-          message: |
-            ## 🧪 Test Coverage Report
-            
-            **Coverage:** `${{ steps.coverage.outputs.coverage }}`
+          files: ./coverage.out
+          fail_ci_if_error: false
 
 
   e2e-tests:
