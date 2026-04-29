@@ -103,20 +103,27 @@ func compactDB(dbPath string, freelistType bolt.FreelistType) error {
 	dst.Close()
 	src.Close()
 
-	compactSize, _ := os.Stat(tmpPath)
-
 	if err := os.Rename(tmpPath, dbPath); err != nil {
 		os.Remove(tmpPath)
 		return errors.Errorf("failed to replace db with compacted version: %w", err)
 	}
 
-	slog.Info("DB compacted",
+	compactInfo, err := os.Stat(dbPath)
+	if err != nil {
+		return errors.Errorf("failed to stat compacted db: %w", err)
+	}
+	compactSize := compactInfo.Size()
+
+	logAttrs := []any{
 		"component", "bbolt",
 		"duration", time.Since(start),
 		"before", origSize,
-		"after", compactSize.Size(),
-		"ratio", float64(origSize)/float64(compactSize.Size()),
-	)
+		"after", compactSize,
+	}
+	if compactSize > 0 {
+		logAttrs = append(logAttrs, "ratio", float64(origSize)/float64(compactSize))
+	}
+	slog.Info("DB compacted", logAttrs...)
 	return nil
 }
 
