@@ -466,8 +466,8 @@ func (v ValidatorSet) IsSigner(requiredKey CompactPublicKey) bool {
 }
 
 func (v ValidatorSet) findMembership(indexArray []uint32, requiredKey []byte) (uint32, bool) {
+	activeValidators := v.Validators.GetActiveValidators()
 	for _, validator := range indexArray {
-		activeValidators := v.Validators.GetActiveValidators()
 		if int(validator) >= len(activeValidators) {
 			slog.Warn("Validator index out of range", "validatorIndex", validator, "activeValidatorsCount", len(activeValidators))
 			continue
