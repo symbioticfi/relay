@@ -420,18 +420,18 @@ func TestGetExtraDataKeyIndexed_WithLargeIndex_ReturnsHash(t *testing.T) {
 	assert.NotEqual(t, common.Hash{}, result)
 }
 
-func TestGetValidatorsIndexesMapByKey_WithNoValidators_ReturnsEmptyMap(t *testing.T) {
+func TestGetActiveValidatorsIndexesMapByKey_WithNoValidators_ReturnsEmptyMap(t *testing.T) {
 	valset := symbiotic.ValidatorSet{
 		Validators: []symbiotic.Validator{},
 	}
 	keyTag := symbiotic.KeyTag(1)
 
-	result := GetValidatorsIndexesMapByKey(valset, keyTag)
+	result := GetActiveValidatorsIndexesMapByKey(valset, keyTag)
 
 	assert.Empty(t, result)
 }
 
-func TestGetValidatorsIndexesMapByKey_WithInactiveValidators_ReturnsEmptyMap(t *testing.T) {
+func TestGetActiveValidatorsIndexesMapByKey_WithInactiveValidators_ReturnsEmptyMap(t *testing.T) {
 	valset := symbiotic.ValidatorSet{
 		Validators: []symbiotic.Validator{
 			{
@@ -447,12 +447,12 @@ func TestGetValidatorsIndexesMapByKey_WithInactiveValidators_ReturnsEmptyMap(t *
 	}
 	keyTag := symbiotic.KeyTag(1)
 
-	result := GetValidatorsIndexesMapByKey(valset, keyTag)
+	result := GetActiveValidatorsIndexesMapByKey(valset, keyTag)
 
 	assert.Empty(t, result)
 }
 
-func TestGetValidatorsIndexesMapByKey_WithSingleActiveValidator_ReturnsMapWithOneEntry(t *testing.T) {
+func TestGetActiveValidatorsIndexesMapByKey_WithSingleActiveValidator_ReturnsMapWithOneEntry(t *testing.T) {
 	keyPayload := []byte("key-payload")
 	valset := symbiotic.ValidatorSet{
 		Validators: []symbiotic.Validator{
@@ -469,13 +469,13 @@ func TestGetValidatorsIndexesMapByKey_WithSingleActiveValidator_ReturnsMapWithOn
 	}
 	keyTag := symbiotic.KeyTag(1)
 
-	result := GetValidatorsIndexesMapByKey(valset, keyTag)
+	result := GetActiveValidatorsIndexesMapByKey(valset, keyTag)
 
 	require.Len(t, result, 1)
 	assert.Equal(t, 0, result[string(keyPayload)])
 }
 
-func TestGetValidatorsIndexesMapByKey_WithMultipleActiveValidators_ReturnsMapWithAllEntries(t *testing.T) {
+func TestGetActiveValidatorsIndexesMapByKey_WithMultipleActiveValidators_ReturnsMapWithAllEntries(t *testing.T) {
 	keyPayload1 := []byte("key-payload-1")
 	keyPayload2 := []byte("key-payload-2")
 	keyPayload3 := []byte("key-payload-3")
@@ -513,7 +513,7 @@ func TestGetValidatorsIndexesMapByKey_WithMultipleActiveValidators_ReturnsMapWit
 	}
 	keyTag := symbiotic.KeyTag(1)
 
-	result := GetValidatorsIndexesMapByKey(valset, keyTag)
+	result := GetActiveValidatorsIndexesMapByKey(valset, keyTag)
 
 	require.Len(t, result, 3)
 	assert.Equal(t, 0, result[string(keyPayload1)])
@@ -521,7 +521,7 @@ func TestGetValidatorsIndexesMapByKey_WithMultipleActiveValidators_ReturnsMapWit
 	assert.Equal(t, 2, result[string(keyPayload3)])
 }
 
-func TestGetValidatorsIndexesMapByKey_WithMixedActiveInactive_ReturnsOnlyActiveValidators(t *testing.T) {
+func TestGetActiveValidatorsIndexesMapByKey_WithMixedActiveInactive_ReturnsOnlyActiveValidators(t *testing.T) {
 	keyPayload1 := []byte("key-payload-1")
 	keyPayload2 := []byte("key-payload-2")
 	keyPayload3 := []byte("key-payload-3")
@@ -559,7 +559,7 @@ func TestGetValidatorsIndexesMapByKey_WithMixedActiveInactive_ReturnsOnlyActiveV
 	}
 	keyTag := symbiotic.KeyTag(1)
 
-	result := GetValidatorsIndexesMapByKey(valset, keyTag)
+	result := GetActiveValidatorsIndexesMapByKey(valset, keyTag)
 
 	require.Len(t, result, 2)
 	assert.Equal(t, 0, result[string(keyPayload1)])
@@ -568,7 +568,7 @@ func TestGetValidatorsIndexesMapByKey_WithMixedActiveInactive_ReturnsOnlyActiveV
 	assert.False(t, exists)
 }
 
-func TestGetValidatorsIndexesMapByKey_WithNonMatchingKeyTag_ReturnsEmptyMap(t *testing.T) {
+func TestGetActiveValidatorsIndexesMapByKey_WithNonMatchingKeyTag_ReturnsEmptyMap(t *testing.T) {
 	valset := symbiotic.ValidatorSet{
 		Validators: []symbiotic.Validator{
 			{
@@ -584,12 +584,12 @@ func TestGetValidatorsIndexesMapByKey_WithNonMatchingKeyTag_ReturnsEmptyMap(t *t
 	}
 	keyTag := symbiotic.KeyTag(2)
 
-	result := GetValidatorsIndexesMapByKey(valset, keyTag)
+	result := GetActiveValidatorsIndexesMapByKey(valset, keyTag)
 
 	assert.Empty(t, result)
 }
 
-func TestGetValidatorsIndexesMapByKey_WithValidatorHavingMultipleKeys_OnlyMapsMatchingKeyTag(t *testing.T) {
+func TestGetActiveValidatorsIndexesMapByKey_WithValidatorHavingMultipleKeys_OnlyMapsMatchingKeyTag(t *testing.T) {
 	keyPayload1 := []byte("key-payload-1")
 	keyPayload2 := []byte("key-payload-2")
 
@@ -612,7 +612,7 @@ func TestGetValidatorsIndexesMapByKey_WithValidatorHavingMultipleKeys_OnlyMapsMa
 	}
 	keyTag := symbiotic.KeyTag(1)
 
-	result := GetValidatorsIndexesMapByKey(valset, keyTag)
+	result := GetActiveValidatorsIndexesMapByKey(valset, keyTag)
 
 	require.Len(t, result, 1)
 	assert.Equal(t, 0, result[string(keyPayload1)])

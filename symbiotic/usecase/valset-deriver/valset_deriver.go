@@ -209,6 +209,13 @@ func (v *Deriver) getVotingPowersFromProviders(
 }
 
 func GetSchedulerInfo(_ context.Context, valset symbiotic.ValidatorSet, config symbiotic.NetworkConfig) (aggIndices []uint32, commIndices []uint32, err error) {
+	// header.Hash() is computed over the full validator set, so the full slice
+	// must be in a deterministic order across nodes — otherwise scheduler
+	// assignments diverge silently.
+	if err := valset.Validators.CheckIsSortedByOperatorAddressAsc(); err != nil {
+		return nil, nil, err
+	}
+
 	aggregatorIndices := map[uint32]struct{}{}
 	committerIndices := map[uint32]struct{}{}
 

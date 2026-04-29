@@ -158,7 +158,7 @@ func New(cfg Config) (*Repository, error) {
 
 	if cfg.CompactOnStartup {
 		if err := compactDB(dbPath, freeListType); err != nil {
-			slog.Warn("DB compaction failed, continuing with original", "error", err)
+			return nil, errors.Errorf("startup db compaction failed: %w", err)
 		}
 	}
 

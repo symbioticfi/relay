@@ -57,7 +57,7 @@ func (a Aggregator) Aggregate(
 	aggG2Key := new(bn254.G2Affine)
 	signers := make(map[common.Address]bool)
 	activeValidators := valset.Validators.GetActiveValidators()
-	valKeysToIdx := helpers.GetValidatorsIndexesMapByKey(valset, keyTag)
+	valKeysToIdx := helpers.GetActiveValidatorsIndexesMapByKey(valset, keyTag)
 
 	for _, sig := range signatures {
 		pubKey, err := blsBn254.FromRaw(sig.PublicKey.Raw())

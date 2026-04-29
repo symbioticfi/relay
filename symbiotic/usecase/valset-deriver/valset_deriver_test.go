@@ -1235,6 +1235,33 @@ func TestDeriver_GetSchedulerInfo(t *testing.T) {
 			expectedCommIndices: []uint32{},
 			expectError:         false,
 		},
+		{
+			name: "unsorted validators should error",
+			valset: symbiotic.ValidatorSet{
+				Validators: symbiotic.Validators{
+					{
+						Operator:    common.HexToAddress("0x2222222222222222222222222222222222222222"),
+						VotingPower: symbiotic.ToVotingPower(big.NewInt(2000)),
+						IsActive:    true,
+					},
+					{
+						Operator:    common.HexToAddress("0x1111111111111111111111111111111111111111"),
+						VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
+						IsActive:    true,
+					},
+				},
+				Version:          1,
+				RequiredKeyTag:   15,
+				Epoch:            100,
+				CaptureTimestamp: 1234567890,
+			},
+			config: symbiotic.NetworkConfig{
+				NumAggregators: 1,
+				NumCommitters:  1,
+			},
+			expectError: true,
+			errorMsg:    "validators are not sorted",
+		},
 	}
 
 	for _, tt := range tests {
