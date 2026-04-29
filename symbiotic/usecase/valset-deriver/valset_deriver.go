@@ -209,11 +209,6 @@ func (v *Deriver) getVotingPowersFromProviders(
 }
 
 func GetSchedulerInfo(_ context.Context, valset symbiotic.ValidatorSet, config symbiotic.NetworkConfig) (aggIndices []uint32, commIndices []uint32, err error) {
-	// ensure validators sorted already, function expects sorted list
-	if err := valset.Validators.GetActiveValidators().CheckIsSortedByOperatorAddressAsc(); err != nil {
-		return nil, nil, err
-	}
-
 	aggregatorIndices := map[uint32]struct{}{}
 	committerIndices := map[uint32]struct{}{}
 
