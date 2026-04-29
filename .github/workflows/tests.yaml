@@ -120,7 +120,6 @@ jobs:
         with:
           files: ./coverage.out
           fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
 
 
   e2e-tests:
