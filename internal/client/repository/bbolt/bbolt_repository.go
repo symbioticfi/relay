@@ -28,12 +28,12 @@ type Config struct {
 	MutexCleanupInterval     time.Duration
 	MutexCleanupStaleTimeout time.Duration
 	StatsLogInterval         time.Duration
+	PrunePause               time.Duration
 	CompactOnStartup         bool
 	NoFreelistSync           bool
 	NoSync                   bool
 	MaxBatchDelay            time.Duration
 	MaxBatchSize             int
-	FreelistType             string
 }
 
 var (
@@ -70,10 +70,12 @@ type Repository struct {
 
 	signatureMapCache sync.Map // map[common.Hash]entity.SignatureMap
 
+	prunePause time.Duration
+
 	done chan struct{}
 }
 
-func compactDB(dbPath string, freelistType bolt.FreelistType) error {
+func compactDB(dbPath string) error {
 	info, err := os.Stat(dbPath)
 	if err != nil {
 		return nil // DB doesn't exist yet, nothing to compact
@@ -85,7 +87,7 @@ func compactDB(dbPath string, freelistType bolt.FreelistType) error {
 	// Open source in writable mode to acquire an exclusive flock for the whole
 	// compaction window. This prevents any other process from opening the DB
 	// between Compact and Rename, which would otherwise observe an inode swap.
-	src, err := bolt.Open(dbPath, 0600, &bolt.Options{Timeout: 5 * time.Second, FreelistType: freelistType})
+	src, err := bolt.Open(dbPath, 0600, &bolt.Options{Timeout: 5 * time.Second, FreelistType: bolt.FreelistArrayType})
 	if err != nil {
 		return errors.Errorf("failed to acquire exclusive lock on source db: %w", err)
 	}
@@ -97,7 +99,7 @@ func compactDB(dbPath string, freelistType bolt.FreelistType) error {
 	if err := os.Remove(tmpPath); err != nil && !os.IsNotExist(err) {
 		return errors.Errorf("failed to remove stale compact tmp file: %w", err)
 	}
-	dst, err := bolt.Open(tmpPath, 0600, &bolt.Options{Timeout: 5 * time.Second, FreelistType: freelistType})
+	dst, err := bolt.Open(tmpPath, 0600, &bolt.Options{Timeout: 5 * time.Second, FreelistType: bolt.FreelistArrayType})
 	if err != nil {
 		return errors.Errorf("failed to create compact db: %w", err)
 	}
@@ -151,13 +153,8 @@ func New(cfg Config) (*Repository, error) {
 	}
 	dbPath := filepath.Join(cfg.Dir, filename)
 
-	freeListType := bolt.FreelistArrayType
-	if cfg.FreelistType == "hashmap" {
-		freeListType = bolt.FreelistMapType
-	}
-
 	if cfg.CompactOnStartup {
-		if err := compactDB(dbPath, freeListType); err != nil {
+		if err := compactDB(dbPath); err != nil {
 			return nil, errors.Errorf("startup db compaction failed: %w", err)
 		}
 	}
@@ -165,7 +162,7 @@ func New(cfg Config) (*Repository, error) {
 	opts := &bolt.Options{
 		Timeout:         1 * time.Second,
 		InitialMmapSize: cfg.InitialMmapSize,
-		FreelistType:    freeListType,
+		FreelistType:    bolt.FreelistArrayType,
 	}
 
 	db, err := bolt.Open(dbPath, 0600, opts)
@@ -199,6 +196,7 @@ func New(cfg Config) (*Repository, error) {
 		metrics:           cfg.Metrics,
 		done:              make(chan struct{}),
 		signatureMapCache: sync.Map{},
+		prunePause:        cfg.PrunePause,
 	}
 	repo.startStatsLogger(cfg.StatsLogInterval)
 	repo.startSizeReporter()

@@ -174,7 +174,7 @@ func (r *CachedRepository) GetValidatorSetMetadata(ctx context.Context, epoch sy
 }
 
 func (r *CachedRepository) PruneValsetEntities(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error {
-	if err := r.Repository.PruneValsetEntities(ctx, epoch, 0); err != nil {
+	if err := r.Repository.PruneValsetEntities(ctx, epoch, batchSize); err != nil {
 		return err
 	}
 	r.evictValsetCaches(epoch)

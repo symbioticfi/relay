@@ -152,10 +152,10 @@ aggregation:
 #   initial-mmap-size: 0        # Initial mmap size in bytes (0 = default)
 #   compact-on-startup: true    # Compact database on startup to reclaim free pages (default: true)
 #   no-freelist-sync: false     # Skip writing freelist to disk on every commit (faster writes, slower startup)
-#   freelist-type: ""           # Freelist backend type: "array" (default) or "hashmap" (faster on large/fragmented DBs)
-#   max-batch-delay: 0          # Max delay before flushing a batch write (0 = bbolt default 10ms)
+#   max-batch-delay: 2ms        # Max delay before flushing a batch write (default: 2ms; 0 = bbolt default 10ms)
 #   max-batch-size: 0           # Max operations per batch write (0 = bbolt default 1000)
-#   stats-log-interval: 30s     # Interval for logging database stats (0 = disabled)
+#   stats-log-interval: 0       # Interval for logging database stats (default: 0 = disabled)
+#   prune-pause: 100ms          # Pause between prune batches to yield to writers (default: 100ms; 0 = no pause)
 
 # BadgerDB Storage Engine Tuning (optional, only used when storage-type: "badger")
 # See https://github.com/dgraph-io/badger/blob/main/options.go#L123 for details

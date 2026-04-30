@@ -81,17 +81,7 @@ func (r *Repository) PruneProofEntities(ctx context.Context, epoch symbiotic.Epo
 			return err
 		}
 
-		if func() bool {
-			t := time.NewTimer(time.Second)
-			defer t.Stop()
-			select {
-			case <-t.C:
-				return false
-			case <-ctx.Done():
-				return true
-			}
-		}() {
-			slog.DebugContext(ctx, "Pruning interrupted by context cancellation", "epoch", epoch)
+		if r.pausePrune(ctx, epoch) {
 			break
 		}
 	}
@@ -140,17 +130,7 @@ func (r *Repository) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch s
 			r.signatureMapCache.Delete(requestID)
 		}
 
-		if func() bool {
-			t := time.NewTimer(time.Second)
-			defer t.Stop()
-			select {
-			case <-t.C:
-				return false
-			case <-ctx.Done():
-				return true
-			}
-		}() {
-			slog.DebugContext(ctx, "Pruning interrupted by context cancellation", "epoch", epoch)
+		if r.pausePrune(ctx, epoch) {
 			break
 		}
 	}
@@ -185,17 +165,7 @@ func (r *Repository) PruneRequestIDEpochIndices(ctx context.Context, epoch symbi
 			return err
 		}
 
-		if func() bool {
-			t := time.NewTimer(time.Second)
-			defer t.Stop()
-			select {
-			case <-t.C:
-				return false
-			case <-ctx.Done():
-				return true
-			}
-		}() {
-			slog.DebugContext(ctx, "Pruning interrupted by context cancellation", "epoch", epoch)
+		if r.pausePrune(ctx, epoch) {
 			break
 		}
 	}
@@ -241,4 +211,25 @@ func pruneBatchSize(batchSize, total int) int {
 		return max(total, 1)
 	}
 	return batchSize
+}
+
+// pausePrune sleeps for the configured prune pause window or returns early if ctx is cancelled.
+// Returns true if pruning should stop (ctx cancelled), false otherwise.
+func (r *Repository) pausePrune(ctx context.Context, epoch symbiotic.Epoch) bool {
+	if r.prunePause <= 0 {
+		if ctx.Err() != nil {
+			slog.DebugContext(ctx, "Pruning interrupted by context cancellation", "epoch", epoch)
+			return true
+		}
+		return false
+	}
+	t := time.NewTimer(r.prunePause)
+	defer t.Stop()
+	select {
+	case <-t.C:
+		return false
+	case <-ctx.Done():
+		slog.DebugContext(ctx, "Pruning interrupted by context cancellation", "epoch", epoch)
+		return true
+	}
 }
