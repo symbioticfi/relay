@@ -302,8 +302,9 @@ func markValidatorsActive(config symbiotic.NetworkConfig, validators symbiotic.V
 			break
 		}
 
-		// Check if validator has at least one key
-		if len(validators[i].Keys) == 0 {
+		// Validators must have at least one key, and when configured,
+		// they must include every required key tag.
+		if !hasRequiredKeys(validators[i], config.RequiredKeyTags) {
 			continue
 		}
 
@@ -322,6 +323,29 @@ func markValidatorsActive(config symbiotic.NetworkConfig, validators symbiotic.V
 			}
 		}
 	}
+}
+
+func hasRequiredKeys(validator symbiotic.Validator, requiredKeyTags []symbiotic.KeyTag) bool {
+	if len(validator.Keys) == 0 {
+		return false
+	}
+
+	if len(requiredKeyTags) == 0 {
+		return true
+	}
+
+	availableTags := make(map[symbiotic.KeyTag]struct{}, len(validator.Keys))
+	for _, key := range validator.Keys {
+		availableTags[key.Tag] = struct{}{}
+	}
+
+	for _, tag := range requiredKeyTags {
+		if _, ok := availableTags[tag]; !ok {
+			return false
+		}
+	}
+
+	return true
 }
 
 func fillValidators(votingPowers []dtoOperatorVotingPower, keys []symbiotic.OperatorWithKeys) symbiotic.Validators {

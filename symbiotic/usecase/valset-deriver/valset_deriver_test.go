@@ -529,6 +529,76 @@ func TestDeriver_fillValidatorsActive(t *testing.T) {
 			},
 		},
 		{
+			name: "validator missing one required key tag should be inactive",
+			config: symbiotic.NetworkConfig{
+				MinInclusionVotingPower: symbiotic.ToVotingPower(big.NewInt(100)),
+				MaxVotingPower:          symbiotic.ToVotingPower(big.NewInt(0)),
+				MaxValidatorsCount:      symbiotic.ToVotingPower(big.NewInt(0)),
+				RequiredKeyTags:         []symbiotic.KeyTag{15, 16},
+			},
+			validators: symbiotic.Validators{
+				{
+					Operator:    common.HexToAddress("0x123"),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(500)),
+					IsActive:    false,
+					Keys: []symbiotic.ValidatorKey{
+						{Tag: symbiotic.KeyTag(15), Payload: symbiotic.CompactPublicKey("key1")},
+					},
+				},
+				{
+					Operator:    common.HexToAddress("0x456"),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(300)),
+					IsActive:    false,
+					Keys: []symbiotic.ValidatorKey{
+						{Tag: symbiotic.KeyTag(15), Payload: symbiotic.CompactPublicKey("key2")},
+						{Tag: symbiotic.KeyTag(16), Payload: symbiotic.CompactPublicKey("key3")},
+					},
+				},
+			},
+			expectedTotalVotingPower:   big.NewInt(300),
+			expectedActiveValidators:   []common.Address{common.HexToAddress("0x456")},
+			expectedInactiveValidators: []common.Address{common.HexToAddress("0x123")},
+			expectedVotingPowers: map[string]*big.Int{
+				"0x123": big.NewInt(500),
+				"0x456": big.NewInt(300),
+			},
+		},
+		{
+			name: "validator with all required key tags should be active",
+			config: symbiotic.NetworkConfig{
+				MinInclusionVotingPower: symbiotic.ToVotingPower(big.NewInt(100)),
+				MaxVotingPower:          symbiotic.ToVotingPower(big.NewInt(0)),
+				MaxValidatorsCount:      symbiotic.ToVotingPower(big.NewInt(0)),
+				RequiredKeyTags:         []symbiotic.KeyTag{15, 16},
+			},
+			validators: symbiotic.Validators{
+				{
+					Operator:    common.HexToAddress("0x123"),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(500)),
+					IsActive:    false,
+					Keys: []symbiotic.ValidatorKey{
+						{Tag: symbiotic.KeyTag(15), Payload: symbiotic.CompactPublicKey("key1")},
+						{Tag: symbiotic.KeyTag(16), Payload: symbiotic.CompactPublicKey("key2")},
+					},
+				},
+				{
+					Operator:    common.HexToAddress("0x456"),
+					VotingPower: symbiotic.ToVotingPower(big.NewInt(300)),
+					IsActive:    false,
+					Keys: []symbiotic.ValidatorKey{
+						{Tag: symbiotic.KeyTag(15), Payload: symbiotic.CompactPublicKey("key3")},
+					},
+				},
+			},
+			expectedTotalVotingPower:   big.NewInt(500),
+			expectedActiveValidators:   []common.Address{common.HexToAddress("0x123")},
+			expectedInactiveValidators: []common.Address{common.HexToAddress("0x456")},
+			expectedVotingPowers: map[string]*big.Int{
+				"0x123": big.NewInt(500),
+				"0x456": big.NewInt(300),
+			},
+		},
+		{
 			name: "max voting power capping",
 			config: symbiotic.NetworkConfig{
 				MinInclusionVotingPower: symbiotic.ToVotingPower(big.NewInt(100)),
