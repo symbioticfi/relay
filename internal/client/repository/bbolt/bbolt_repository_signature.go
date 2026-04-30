@@ -120,16 +120,21 @@ func (r *Repository) UpdateSignatureMap(_ context.Context, vm entity.SignatureMa
 
 func (r *Repository) GetSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error) {
 	if raw, ok := r.signatureMapCache.Load(requestID); ok {
-		return raw.(entity.SignatureMap), nil
+		sm := raw.(entity.SignatureMap)
+		return sm.Clone(), nil
 	}
 
-	sm, err := r.rebuildSignatureMap(ctx, requestID)
+	res, err, _ := r.signatureMapLoader.Do(requestID.Hex(), func() (any, error) {
+		return r.rebuildSignatureMap(ctx, requestID)
+	})
 	if err != nil {
 		return entity.SignatureMap{}, err
 	}
 
-	r.signatureMapCache.Store(requestID, sm)
-	return sm, nil
+	rebuilt := res.(entity.SignatureMap)
+	actual, _ := r.signatureMapCache.LoadOrStore(requestID, rebuilt)
+	sm := actual.(entity.SignatureMap)
+	return sm.Clone(), nil
 }
 
 func (r *Repository) rebuildSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error) {

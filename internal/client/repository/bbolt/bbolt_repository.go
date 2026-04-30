@@ -12,6 +12,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
 	bolt "go.etcd.io/bbolt"
+	"golang.org/x/sync/singleflight"
 
 	"github.com/symbioticfi/relay/internal/client/repository/cached"
 	"github.com/symbioticfi/relay/internal/client/repository/repoutil"
@@ -68,7 +69,8 @@ type Repository struct {
 	db      *bolt.DB
 	metrics repoutil.Metrics
 
-	signatureMapCache sync.Map // map[common.Hash]entity.SignatureMap
+	signatureMapCache  sync.Map // map[common.Hash]entity.SignatureMap
+	signatureMapLoader singleflight.Group
 
 	prunePause time.Duration
 
@@ -192,11 +194,12 @@ func New(cfg Config) (*Repository, error) {
 	}
 
 	repo := &Repository{
-		db:                db,
-		metrics:           cfg.Metrics,
-		done:              make(chan struct{}),
-		signatureMapCache: sync.Map{},
-		prunePause:        cfg.PrunePause,
+		db:                 db,
+		metrics:            cfg.Metrics,
+		done:               make(chan struct{}),
+		signatureMapCache:  sync.Map{},
+		signatureMapLoader: singleflight.Group{},
+		prunePause:         cfg.PrunePause,
 	}
 	repo.startStatsLogger(cfg.StatsLogInterval)
 	repo.startSizeReporter()

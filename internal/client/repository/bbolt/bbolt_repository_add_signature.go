@@ -24,7 +24,7 @@ func (r *Repository) SaveSignature(ctx context.Context, signature symbiotic.Sign
 	saveDuration := time.Since(start)
 
 	cacheStart := time.Now()
-	signatureMap, err := r.addToSignatureMapCache(ctx, signature.RequestID(), signature.Epoch, activeIndex, validator.VotingPower)
+	signatureMap, err := r.addToSignatureMapCache(ctx, signature.RequestID(), activeIndex, validator.VotingPower)
 	if err != nil {
 		return errors.Errorf("failed to update signature map cache: %w", err)
 	}
@@ -88,22 +88,20 @@ func (r *Repository) saveSignatureWithPending(ctx context.Context, validatorInde
 	})
 }
 
-func (r *Repository) addToSignatureMapCache(ctx context.Context, requestID common.Hash, epoch symbiotic.Epoch, activeIndex uint32, votingPower symbiotic.VotingPower) (entity.SignatureMap, error) {
+func (r *Repository) addToSignatureMapCache(ctx context.Context, requestID common.Hash, activeIndex uint32, votingPower symbiotic.VotingPower) (entity.SignatureMap, error) {
 	for {
 		raw, ok := r.signatureMapCache.Load(requestID)
 		if !ok {
-			totalActive, err := r.GetActiveValidatorCountByEpoch(ctx, epoch)
+			base, err := r.loadSignatureMap(ctx, requestID)
 			if err != nil {
-				return entity.SignatureMap{}, errors.Errorf("failed to get active validator count: %w", err)
+				return entity.SignatureMap{}, errors.Errorf("failed to load signature map: %w", err)
 			}
-			sm := entity.NewSignatureMap(requestID, epoch, totalActive)
-			_ = sm.SetValidatorPresent(activeIndex, votingPower)
-
-			actual, loaded := r.signatureMapCache.LoadOrStore(requestID, sm)
+			actual, loaded := r.signatureMapCache.LoadOrStore(requestID, base)
 			if !loaded {
-				return sm, nil
+				raw = base
+			} else {
+				raw = actual
 			}
-			raw = actual
 		}
 
 		old := raw.(entity.SignatureMap)
@@ -117,4 +115,21 @@ func (r *Repository) addToSignatureMapCache(ctx context.Context, requestID commo
 			return cloned, nil
 		}
 	}
+}
+
+// loadSignatureMap rebuilds the signature map for requestID from the database, deduplicating
+// concurrent rebuilds via singleflight. Returns ErrEntityNotFound transparently if the request
+// has no signatures yet — the caller's CAS path will populate the map on subsequent calls.
+func (r *Repository) loadSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error) {
+	res, err, _ := r.signatureMapLoader.Do(requestID.Hex(), func() (any, error) {
+		sm, err := r.rebuildSignatureMap(ctx, requestID)
+		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
+			return entity.SignatureMap{}, err
+		}
+		return sm, nil
+	})
+	if err != nil {
+		return entity.SignatureMap{}, err
+	}
+	return res.(entity.SignatureMap), nil
 }
