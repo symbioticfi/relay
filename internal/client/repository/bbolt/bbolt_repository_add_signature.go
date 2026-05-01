@@ -49,7 +49,7 @@ func (r *Repository) saveSignatureWithPending(ctx context.Context, validatorInde
 	}
 
 	requestID := sig.RequestID()
-	pendingKey := epochHashKey(uint64(sig.Epoch), requestID.Bytes())
+	epochKey := epochHashKey(uint64(sig.Epoch), requestID.Bytes())
 
 	return r.doBatch(ctx, "saveSignatureWithPending", func(tx *bolt.Tx) error {
 		key := signatureKey(requestID.Bytes(), validatorIndex)
@@ -63,7 +63,6 @@ func (r *Repository) saveSignatureWithPending(ctx context.Context, validatorInde
 		}
 
 		// Maintain request_id_epochs index
-		epochKey := epochHashKey(uint64(sig.Epoch), requestID.Bytes())
 		if tx.Bucket(bucketRequestIDEpochs).Get(epochKey) == nil {
 			if err := tx.Bucket(bucketRequestIDEpochs).Put(epochKey, []byte{}); err != nil {
 				return errors.Errorf("failed to store request id epoch link: %w", err)
@@ -78,8 +77,8 @@ func (r *Repository) saveSignatureWithPending(ctx context.Context, validatorInde
 		}
 
 		pendingBucket := tx.Bucket(bucketAggProofPending)
-		if pendingBucket.Get(pendingKey) == nil {
-			if err := pendingBucket.Put(pendingKey, []byte{}); err != nil {
+		if pendingBucket.Get(epochKey) == nil {
+			if err := pendingBucket.Put(epochKey, []byte{}); err != nil {
 				return errors.Errorf("failed to store pending proof: %w", err)
 			}
 		}
