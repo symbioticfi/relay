@@ -79,8 +79,7 @@ func TestRepository_PruneAllEntityTypes(t *testing.T) {
 		SignedValidatorsBitmap: entity.NewBitmapOf(0),
 		CurrentVotingPower:     symbiotic.ToVotingPower(big.NewInt(1000)),
 	}
-	err = repo.UpdateSignatureMap(ctx, sigMap)
-	require.NoError(t, err)
+	repo.signatureMapCache.Store(requestID, sigMap)
 
 	aggProof := symbiotic.AggregationProof{
 		MessageHash: messageHash,
@@ -181,12 +180,12 @@ func TestRepository_PruneEntityTypes_Separately(t *testing.T) {
 		Message:       randomBytes(t, 32),
 	}))
 	require.NoError(t, repo.saveSignatureWithPending(ctx, 0, signature))
-	require.NoError(t, repo.UpdateSignatureMap(ctx, entity.SignatureMap{
+	repo.signatureMapCache.Store(requestID, entity.SignatureMap{
 		RequestID:              requestID,
 		Epoch:                  epoch,
 		SignedValidatorsBitmap: entity.NewBitmapOf(0),
 		CurrentVotingPower:     symbiotic.ToVotingPower(big.NewInt(1000)),
-	}))
+	})
 	require.NoError(t, repo.saveAggregationProof(ctx, requestID, symbiotic.AggregationProof{
 		MessageHash: messageHash,
 		KeyTag:      symbiotic.KeyTag(15),
@@ -340,12 +339,12 @@ func TestRepository_PruneBatching(t *testing.T) {
 			Message:       msg,
 		}))
 		require.NoError(t, repo.saveSignatureWithPending(ctx, 0, sig))
-		require.NoError(t, repo.UpdateSignatureMap(ctx, entity.SignatureMap{
+		repo.signatureMapCache.Store(requestID, entity.SignatureMap{
 			RequestID:              requestID,
 			Epoch:                  epoch,
 			SignedValidatorsBitmap: entity.NewBitmapOf(0),
 			CurrentVotingPower:     symbiotic.ToVotingPower(big.NewInt(1000)),
-		}))
+		})
 		require.NoError(t, repo.saveAggregationProof(ctx, requestID, symbiotic.AggregationProof{
 			MessageHash: messageHash,
 			KeyTag:      symbiotic.KeyTag(15),

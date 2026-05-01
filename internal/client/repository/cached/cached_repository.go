@@ -22,7 +22,6 @@ type Repository interface {
 	GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error)
 
 	// Signature Maps
-	UpdateSignatureMap(ctx context.Context, vm entity.SignatureMap) error
 	GetSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error)
 
 	// Signature Requests

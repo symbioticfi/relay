@@ -113,11 +113,6 @@ func (r *Repository) GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.E
 	return signatures, err
 }
 
-func (r *Repository) UpdateSignatureMap(_ context.Context, vm entity.SignatureMap) error {
-	r.signatureMapCache.Store(vm.RequestID, vm)
-	return nil
-}
-
 func (r *Repository) GetSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error) {
 	if raw, ok := r.signatureMapCache.Load(requestID); ok {
 		sm := raw.(entity.SignatureMap)

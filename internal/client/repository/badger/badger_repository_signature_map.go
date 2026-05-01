@@ -15,13 +15,13 @@ func keySignatureMap(requestID common.Hash) []byte {
 	return []byte("signature_map:" + requestID.Hex())
 }
 
-func (r *Repository) UpdateSignatureMap(ctx context.Context, vm entity.SignatureMap) error {
+func (r *Repository) updateSignatureMap(ctx context.Context, vm entity.SignatureMap) error {
 	bytes, err := signatureMapToBytes(vm)
 	if err != nil {
 		return errors.Errorf("failed to marshal valset signature map: %w", err)
 	}
 
-	return r.doUpdateInTx(ctx, "UpdateSignatureMap", func(ctx context.Context) error {
+	return r.doUpdateInTx(ctx, "updateSignatureMap", func(ctx context.Context) error {
 		key := keySignatureMap(vm.RequestID)
 
 		err = getTxn(ctx).Set(key, bytes)

@@ -116,7 +116,7 @@ func TestRepository_PruneAllEntityTypes(t *testing.T) {
 		SignedValidatorsBitmap: entity.NewBitmapOf(0),
 		CurrentVotingPower:     symbiotic.ToVotingPower(big.NewInt(1000)),
 	}
-	err = repo.UpdateSignatureMap(ctx, sigMap)
+	err = repo.updateSignatureMap(ctx, sigMap)
 	require.NoError(t, err)
 
 	// 8. Save aggregation proof
@@ -276,7 +276,7 @@ func TestRepository_PruneEntityTypes_Separately(t *testing.T) {
 		SignedValidatorsBitmap: entity.NewBitmapOf(0),
 		CurrentVotingPower:     symbiotic.ToVotingPower(big.NewInt(1000)),
 	}
-	err = repo.UpdateSignatureMap(ctx, sigMap)
+	err = repo.updateSignatureMap(ctx, sigMap)
 	require.NoError(t, err)
 	aggProof := symbiotic.AggregationProof{
 		MessageHash: messageHash,

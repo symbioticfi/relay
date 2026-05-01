@@ -35,7 +35,7 @@ func (r *Repository) SaveSignature(ctx context.Context, signature symbiotic.Sign
 			return errors.Errorf("failed to set validator present for request id %s: %w", signature.RequestID().Hex(), err)
 		}
 
-		if err = r.UpdateSignatureMap(ctx, signatureMap); err != nil {
+		if err = r.updateSignatureMap(ctx, signatureMap); err != nil {
 			return errors.Errorf("failed to update valset signature map: %w", err)
 		}
 

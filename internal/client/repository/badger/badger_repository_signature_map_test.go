@@ -70,7 +70,7 @@ func TestBadgerRepository_SignatureMap(t *testing.T) {
 	vm2 := randomSignatureMap(t, requestID2)
 
 	t.Run("UpdateSignatureMap - Success", func(t *testing.T) {
-		err := repo.UpdateSignatureMap(context.Background(), vm1)
+		err := repo.updateSignatureMap(context.Background(), vm1)
 		require.NoError(t, err)
 
 		// Verify data was saved correctly
@@ -81,7 +81,7 @@ func TestBadgerRepository_SignatureMap(t *testing.T) {
 
 	t.Run("UpdateSignatureMap - Update Existing", func(t *testing.T) {
 		// Save initial signature map
-		err := repo.UpdateSignatureMap(context.Background(), vm1)
+		err := repo.updateSignatureMap(context.Background(), vm1)
 		require.NoError(t, err)
 
 		// Update with modified data
@@ -89,7 +89,7 @@ func TestBadgerRepository_SignatureMap(t *testing.T) {
 		updatedVM.Epoch = vm1.Epoch + 1
 		updatedVM.CurrentVotingPower = symbiotic.ToVotingPower(big.NewInt(999))
 
-		err = repo.UpdateSignatureMap(context.Background(), updatedVM)
+		err = repo.updateSignatureMap(context.Background(), updatedVM)
 		require.NoError(t, err)
 
 		// Verify updated data
@@ -100,9 +100,9 @@ func TestBadgerRepository_SignatureMap(t *testing.T) {
 
 	t.Run("GetSignatureMap - Success", func(t *testing.T) {
 		// Save two different signature maps
-		err := repo.UpdateSignatureMap(context.Background(), vm1)
+		err := repo.updateSignatureMap(context.Background(), vm1)
 		require.NoError(t, err)
-		err = repo.UpdateSignatureMap(context.Background(), vm2)
+		err = repo.updateSignatureMap(context.Background(), vm2)
 		require.NoError(t, err)
 
 		// Retrieve first signature map
@@ -133,7 +133,7 @@ func TestBadgerRepository_SignatureMap(t *testing.T) {
 			hashes[i] = randomRequestID(t)
 			vms[i] = randomSignatureMap(t, hashes[i])
 
-			err := repo.UpdateSignatureMap(context.Background(), vms[i])
+			err := repo.updateSignatureMap(context.Background(), vms[i])
 			require.NoError(t, err)
 		}
 
@@ -247,7 +247,7 @@ func TestSignatureMapTransactions(t *testing.T) {
 
 		err := repo.doUpdateInTx(context.Background(), "test", func(ctx context.Context) error {
 			// Update within transaction
-			err := repo.UpdateSignatureMap(ctx, vm)
+			err := repo.updateSignatureMap(ctx, vm)
 			require.NoError(t, err)
 
 			// Get within same transaction - should work
@@ -271,7 +271,7 @@ func TestSignatureMapTransactions(t *testing.T) {
 
 		// Transaction that will rollback due to error
 		err := repo.doUpdateInTx(context.Background(), "test", func(ctx context.Context) error {
-			err := repo.UpdateSignatureMap(ctx, vm)
+			err := repo.updateSignatureMap(ctx, vm)
 			require.NoError(t, err)
 
 			// Verify data exists within transaction
@@ -293,7 +293,7 @@ func TestSignatureMapTransactions(t *testing.T) {
 		// Setup existing data
 		existingHash := randomRequestID(t)
 		existingVM := randomSignatureMap(t, existingHash)
-		err := repo.UpdateSignatureMap(context.Background(), existingVM)
+		err := repo.updateSignatureMap(context.Background(), existingVM)
 		require.NoError(t, err)
 
 		newHash := randomRequestID(t)
@@ -306,7 +306,7 @@ func TestSignatureMapTransactions(t *testing.T) {
 			assertSignatureMapsEqual(t, existingVM, retrieved)
 
 			// Write new data
-			err = repo.UpdateSignatureMap(ctx, newVM)
+			err = repo.updateSignatureMap(ctx, newVM)
 			require.NoError(t, err)
 
 			// Read newly written data within same transaction
@@ -372,7 +372,7 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 			CurrentVotingPower:     symbiotic.ToVotingPower(big.NewInt(0)),
 		}
 
-		err := repo.UpdateSignatureMap(context.Background(), vm)
+		err := repo.updateSignatureMap(context.Background(), vm)
 		require.NoError(t, err)
 
 		retrieved, err := repo.GetSignatureMap(context.Background(), common.Hash{})
@@ -389,7 +389,7 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 			CurrentVotingPower:     symbiotic.ToVotingPower(big.NewInt(1)),
 		}
 
-		err := repo.UpdateSignatureMap(context.Background(), vm)
+		err := repo.updateSignatureMap(context.Background(), vm)
 		require.NoError(t, err)
 
 		retrieved, err := repo.GetSignatureMap(context.Background(), vm.RequestID)
@@ -412,7 +412,7 @@ func TestSignatureMapEdgeCases(t *testing.T) {
 			CurrentVotingPower:     symbiotic.ToVotingPower(big.NewInt(5000)),
 		}
 
-		err := repo.UpdateSignatureMap(context.Background(), vm)
+		err := repo.updateSignatureMap(context.Background(), vm)
 		require.NoError(t, err)
 
 		retrieved, err := repo.GetSignatureMap(context.Background(), vm.RequestID)
