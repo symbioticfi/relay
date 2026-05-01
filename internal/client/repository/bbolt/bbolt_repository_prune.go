@@ -192,10 +192,16 @@ func getRequestIDsByEpochTx(tx *bolt.Tx, epoch symbiotic.Epoch) []common.Hash {
 	return requestIDs
 }
 
+// deletePrefixedKeys buffers all matching keys during a single forward scan, then deletes
+// them. The naive c.Delete()+re-Seek loop is O(N·log N) on B+tree height; this is O(N).
 func deletePrefixedKeys(b *bolt.Bucket, prefix []byte) error {
 	c := b.Cursor()
-	for k, _ := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Seek(prefix) {
-		if err := c.Delete(); err != nil {
+	var keys [][]byte
+	for k, _ := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Next() {
+		keys = append(keys, append([]byte(nil), k...))
+	}
+	for _, k := range keys {
+		if err := b.Delete(k); err != nil {
 			return err
 		}
 	}
