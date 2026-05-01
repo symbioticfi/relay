@@ -469,8 +469,10 @@ func (v ValidatorSet) findMembership(indexArray []uint32, requiredKey []byte) (u
 	activeValidators := v.Validators.GetActiveValidators()
 	for _, validator := range indexArray {
 		if int(validator) >= len(activeValidators) {
-			slog.Warn("Validator index out of range", "validatorIndex", validator, "activeValidatorsCount", len(activeValidators))
-			continue
+			// Unreachable in normal operation: scheduler picks indices in [0, len(activeValidators))
+			// at derivation, and the (Validators, AggregatorIndices, CommitterIndices) tuple is
+			// stored together — so a violation means data corruption or a scheduler bug.
+			panic(fmt.Sprintf("validator index %d out of range (active validators count: %d) — corrupted valset or scheduler bug", validator, len(activeValidators)))
 		}
 		key, found := activeValidators[validator].FindKeyByKeyTag(v.RequiredKeyTag)
 		if found && bytes.Equal(key, requiredKey) {
