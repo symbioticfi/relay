@@ -97,6 +97,13 @@ func (r *Repository) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch s
 	slog.DebugContext(ctx, "Pruning signature entities", "requestCount", len(requestIDs))
 
 	for _, chunk := range lo.Chunk(requestIDs, pruneBatchSize(batchSize, len(requestIDs))) {
+		// Invalidate cache BEFORE DB delete: a concurrent reader on cache miss
+		// would rebuild from DB; if we deleted the cache after the DB delete,
+		// the reader could see a stale cached map for an already-pruned request.
+		for _, requestID := range chunk {
+			r.signatureMapCache.Delete(requestID)
+		}
+
 		if err := r.doBatch(ctx, "PruneSignatureEntitiesForEpoch:batch", func(tx *bolt.Tx) error {
 			for _, requestID := range chunk {
 				sigPrefix := requestID.Bytes()
@@ -120,10 +127,6 @@ func (r *Repository) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch s
 			return nil
 		}); err != nil {
 			return err
-		}
-
-		for _, requestID := range chunk {
-			r.signatureMapCache.Delete(requestID)
 		}
 
 		if r.pausePrune(ctx, epoch) {
