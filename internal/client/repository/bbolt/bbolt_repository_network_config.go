@@ -17,7 +17,7 @@ func (r *Repository) SaveConfig(ctx context.Context, config symbiotic.NetworkCon
 		return errors.Errorf("failed to marshal network config: %w", err)
 	}
 
-	return r.doUpdate(ctx, "SaveConfig", func(tx *bolt.Tx) error {
+	return r.doBatch(ctx, "SaveConfig", func(tx *bolt.Tx) error {
 		ek := epochBytes(uint64(epoch))
 		b := tx.Bucket(bucketNetworkConfigs)
 		if b.Get(ek) != nil {

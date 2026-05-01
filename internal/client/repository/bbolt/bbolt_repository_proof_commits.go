@@ -13,7 +13,7 @@ import (
 )
 
 func (r *Repository) saveProofCommitPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
-	return r.doUpdate(ctx, "saveProofCommitPending", func(tx *bolt.Tx) error {
+	return r.doBatch(ctx, "saveProofCommitPending", func(tx *bolt.Tx) error {
 		ek := epochBytes(uint64(epoch))
 		b := tx.Bucket(bucketAggProofCommits)
 		if b.Get(ek) != nil {
@@ -24,7 +24,7 @@ func (r *Repository) saveProofCommitPending(ctx context.Context, epoch symbiotic
 }
 
 func (r *Repository) removeProofCommitPending(ctx context.Context, epoch symbiotic.Epoch) error {
-	return r.doUpdate(ctx, "removeProofCommitPending", func(tx *bolt.Tx) error {
+	return r.doBatch(ctx, "removeProofCommitPending", func(tx *bolt.Tx) error {
 		ek := epochBytes(uint64(epoch))
 		b := tx.Bucket(bucketAggProofCommits)
 		if b.Get(ek) == nil {

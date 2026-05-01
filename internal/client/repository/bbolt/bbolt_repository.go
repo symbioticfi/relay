@@ -384,35 +384,10 @@ func (r *Repository) doView(ctx context.Context, name string, fn func(tx *bolt.T
 	return err
 }
 
-func (r *Repository) doUpdate(ctx context.Context, name string, fn func(tx *bolt.Tx) error) error {
-	ctx, span := tracing.StartSpan(ctx, "bbolt.update:"+name)
-	defer span.End()
-
-	start := time.Now()
-	var err error
-	nested := false
-
-	if tx := getTx(ctx); tx != nil && tx.Writable() {
-		nested = true
-		err = fn(tx)
-	} else {
-		err = r.db.Batch(fn)
-	}
-
-	status := "ok"
-	if err != nil {
-		status = statusError
-		tracing.RecordError(span, err)
-	}
-
-	d := time.Since(start)
-	r.metrics.ObserveRepoQueryDuration(name, status, d)
-	if !nested {
-		r.metrics.ObserveRepoQueryTotalDuration(name, status, d)
-	}
-	return err
-}
-
+// doBatch wraps db.Batch, which coalesces concurrent writers into a single bbolt
+// transaction. The callback fn MUST be idempotent: bbolt re-runs it if the batch
+// transaction commits but a peer's callback panics, or on internal retry. Do not
+// rely on side effects performed before the final, committed call.
 func (r *Repository) doBatch(ctx context.Context, name string, fn func(tx *bolt.Tx) error) error {
 	ctx, span := tracing.StartSpan(ctx, "bbolt.batch:"+name)
 	defer span.End()

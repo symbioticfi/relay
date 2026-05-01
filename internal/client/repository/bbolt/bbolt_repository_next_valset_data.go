@@ -10,7 +10,7 @@ import (
 )
 
 func (r *Repository) SaveNextValsetData(ctx context.Context, data entity.NextValsetData) error {
-	return r.doUpdate(ctx, "SaveNextValsetData", func(tx *bolt.Tx) error {
+	return r.doBatch(ctx, "SaveNextValsetData", func(tx *bolt.Tx) error {
 		txCtx := withTx(ctx, tx)
 
 		if err := r.SaveConfig(txCtx, data.PrevNetworkConfig, data.PrevValidatorSet.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {

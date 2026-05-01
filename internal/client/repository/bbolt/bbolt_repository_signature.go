@@ -212,7 +212,7 @@ func (r *Repository) SaveSignatureRequest(ctx context.Context, requestID common.
 	pendingKey := epochHashKey(uint64(req.RequiredEpoch), requestID.Bytes())
 	epochData := epochBytes(uint64(req.RequiredEpoch))
 
-	return r.doUpdate(ctx, "SaveSignatureRequest", func(tx *bolt.Tx) error {
+	return r.doBatch(ctx, "SaveSignatureRequest", func(tx *bolt.Tx) error {
 		// Save signature request
 		b := tx.Bucket(bucketSignatureRequests)
 		if b.Get(primaryKey) != nil {
@@ -370,7 +370,7 @@ func (r *Repository) GetSignaturePending(ctx context.Context, limit int) ([]comm
 }
 
 func (r *Repository) RemoveSignaturePending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
-	return r.doUpdate(ctx, "RemoveSignaturePending", func(tx *bolt.Tx) error {
+	return r.doBatch(ctx, "RemoveSignaturePending", func(tx *bolt.Tx) error {
 		key := epochHashKey(uint64(epoch), requestID.Bytes())
 		return tx.Bucket(bucketSignaturePending).Delete(key)
 	})

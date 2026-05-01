@@ -15,7 +15,7 @@ import (
 )
 
 func (r *Repository) PruneValsetEntities(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error {
-	return r.doUpdate(ctx, "PruneValsetEntities", func(tx *bolt.Tx) error {
+	return r.doBatch(ctx, "PruneValsetEntities", func(tx *bolt.Tx) error {
 		ek := epochBytes(uint64(epoch))
 
 		// Delete network config
@@ -49,7 +49,7 @@ func (r *Repository) PruneValsetEntities(ctx context.Context, epoch symbiotic.Ep
 }
 
 func (r *Repository) PruneProofEntities(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error {
-	if err := r.doUpdate(ctx, "PruneProofEntities:commits", func(tx *bolt.Tx) error {
+	if err := r.doBatch(ctx, "PruneProofEntities:commits", func(tx *bolt.Tx) error {
 		ek := epochBytes(uint64(epoch))
 		if err := tx.Bucket(bucketAggProofCommits).Delete(ek); err != nil {
 			return errors.Errorf("failed to delete proof commits: %w", err)
@@ -65,7 +65,7 @@ func (r *Repository) PruneProofEntities(ctx context.Context, epoch symbiotic.Epo
 	}
 
 	for _, chunk := range lo.Chunk(requestIDs, pruneBatchSize(batchSize, len(requestIDs))) {
-		if err := r.doUpdate(ctx, "PruneProofEntities:batch", func(tx *bolt.Tx) error {
+		if err := r.doBatch(ctx, "PruneProofEntities:batch", func(tx *bolt.Tx) error {
 			for _, requestID := range chunk {
 				if err := tx.Bucket(bucketAggregationProofs).Delete(requestID.Bytes()); err != nil {
 					return errors.Errorf("failed to delete aggregation proof: %w", err)
@@ -97,7 +97,7 @@ func (r *Repository) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch s
 	slog.DebugContext(ctx, "Pruning signature entities", "requestCount", len(requestIDs))
 
 	for _, chunk := range lo.Chunk(requestIDs, pruneBatchSize(batchSize, len(requestIDs))) {
-		if err := r.doUpdate(ctx, "PruneSignatureEntitiesForEpoch:batch", func(tx *bolt.Tx) error {
+		if err := r.doBatch(ctx, "PruneSignatureEntitiesForEpoch:batch", func(tx *bolt.Tx) error {
 			for _, requestID := range chunk {
 				sigPrefix := requestID.Bytes()
 				if err := deletePrefixedKeys(tx.Bucket(bucketSignatures), sigPrefix); err != nil {
@@ -142,7 +142,7 @@ func (r *Repository) PruneRequestIDEpochIndices(ctx context.Context, epoch symbi
 	slog.DebugContext(ctx, "Pruning request ID epoch indices", "epoch", epoch, "requestCount", len(requestIDs))
 
 	for _, chunk := range lo.Chunk(requestIDs, pruneBatchSize(batchSize, len(requestIDs))) {
-		if err := r.doUpdate(ctx, "PruneRequestIDEpochIndices:batch", func(tx *bolt.Tx) error {
+		if err := r.doBatch(ctx, "PruneRequestIDEpochIndices:batch", func(tx *bolt.Tx) error {
 			for _, requestID := range chunk {
 				if tx.Bucket(bucketAggregationProofs).Get(requestID.Bytes()) != nil {
 					continue
