@@ -104,10 +104,6 @@ func (r *Repository) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch s
 					return errors.Errorf("failed to delete signatures: %w", err)
 				}
 
-				if err := tx.Bucket(bucketSignatureMaps).Delete(requestID.Bytes()); err != nil {
-					return errors.Errorf("failed to delete signature map: %w", err)
-				}
-
 				reqKey := epochHashKey(uint64(epoch), requestID.Bytes())
 				if err := tx.Bucket(bucketSignatureRequests).Delete(reqKey); err != nil {
 					return errors.Errorf("failed to delete signature request: %w", err)

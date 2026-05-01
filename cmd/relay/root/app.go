@@ -193,19 +193,17 @@ func runApp(ctx context.Context) error {
 		}
 
 		repo, err := bboltrepo.New(bboltrepo.Config{
-			Dir:                      cfg.StorageDir,
-			Metrics:                  mtr,
-			InitialMmapSize:          cfg.Bbolt.InitialMmapSize,
-			MutexCleanupInterval:     time.Hour,
-			MutexCleanupStaleTimeout: time.Hour - time.Minute,
-			StatsLogInterval:         cfg.Bbolt.StatsLogInterval,
-			PrunePause:               cfg.Bbolt.PrunePause,
-			CompactOnStartup:         cfg.Bbolt.CompactOnStartup,
-			NoFreelistSync:           cfg.Bbolt.NoFreelistSync,
-			MaxBatchDelay:            cfg.Bbolt.MaxBatchDelay,
-			MaxBatchSize:             cfg.Bbolt.MaxBatchSize,
-			DBFilename:               "relay.db",
-			NoSync:                   false,
+			Dir:              cfg.StorageDir,
+			Metrics:          mtr,
+			InitialMmapSize:  cfg.Bbolt.InitialMmapSize,
+			StatsLogInterval: cfg.Bbolt.StatsLogInterval,
+			PrunePause:       cfg.Bbolt.PrunePause,
+			CompactOnStartup: cfg.Bbolt.CompactOnStartup,
+			NoFreelistSync:   cfg.Bbolt.NoFreelistSync,
+			MaxBatchDelay:    cfg.Bbolt.MaxBatchDelay,
+			MaxBatchSize:     cfg.Bbolt.MaxBatchSize,
+			DBFilename:       "relay.db",
+			NoSync:           false,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create bbolt repository: %w", err)

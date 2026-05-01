@@ -22,24 +22,21 @@ import (
 var _ cached.Repository = (*Repository)(nil)
 
 type Config struct {
-	Dir                      string           `validate:"required"`
-	Metrics                  repoutil.Metrics `validate:"required"`
-	DBFilename               string
-	InitialMmapSize          int
-	MutexCleanupInterval     time.Duration
-	MutexCleanupStaleTimeout time.Duration
-	StatsLogInterval         time.Duration
-	PrunePause               time.Duration
-	CompactOnStartup         bool
-	NoFreelistSync           bool
-	NoSync                   bool
-	MaxBatchDelay            time.Duration
-	MaxBatchSize             int
+	Dir              string           `validate:"required"`
+	Metrics          repoutil.Metrics `validate:"required"`
+	DBFilename       string
+	InitialMmapSize  int
+	StatsLogInterval time.Duration
+	PrunePause       time.Duration
+	CompactOnStartup bool
+	NoFreelistSync   bool
+	NoSync           bool
+	MaxBatchDelay    time.Duration
+	MaxBatchSize     int
 }
 
 var (
 	bucketSignatures          = []byte("signatures")
-	bucketSignatureMaps       = []byte("signature_maps")
 	bucketSignatureRequests   = []byte("signature_requests")
 	bucketSignaturePending    = []byte("signature_pending")
 	bucketRequestIDIndex      = []byte("request_id_index")
@@ -58,7 +55,7 @@ var (
 )
 
 var allBuckets = [][]byte{
-	bucketSignatures, bucketSignatureMaps, bucketSignatureRequests, bucketSignaturePending,
+	bucketSignatures, bucketSignatureRequests, bucketSignaturePending,
 	bucketRequestIDIndex, bucketRequestIDEpochs, bucketAggregationProofs, bucketAggProofPending,
 	bucketAggProofCommits, bucketValidatorSetHeaders, bucketValidatorSetStatus, bucketValidatorSetMeta,
 	bucketValidators, bucketValidatorKeyLookups, bucketActiveValCounts, bucketNetworkConfigs,
