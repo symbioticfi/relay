@@ -200,7 +200,7 @@ func New(cfg Config) (*Repository, error) {
 		prunePause:         cfg.PrunePause,
 	}
 	repo.startStatsLogger(cfg.StatsLogInterval)
-	repo.startSizeReporter()
+	repo.startSizeReporter(cfg.StatsLogInterval)
 
 	return repo, nil
 }
@@ -237,11 +237,15 @@ func (r *Repository) startStatsLogger(interval time.Duration) {
 	})
 }
 
-func (r *Repository) startSizeReporter() {
+func (r *Repository) startSizeReporter(interval time.Duration) {
+	if interval == 0 {
+		return
+	}
+
 	r.reportDBSize() // report once at startup
 
 	r.bgWg.Go(func() {
-		ticker := time.NewTicker(30 * time.Second)
+		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 
 		for {
