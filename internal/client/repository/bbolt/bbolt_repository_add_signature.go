@@ -95,37 +95,39 @@ func (r *Repository) addToSignatureMapCache(ctx context.Context, requestID commo
 			if err != nil {
 				return entity.SignatureMap{}, errors.Errorf("failed to load signature map: %w", err)
 			}
-			actual, loaded := r.signatureMapCache.LoadOrStore(requestID, base)
-			if !loaded {
-				raw = base
-			} else {
-				raw = actual
-			}
+			raw = base
 		}
 
 		old := raw.(entity.SignatureMap)
 		if old.SignedValidatorsBitmap.Contains(activeIndex) {
-			return old, nil
+			return old.Clone(), nil
 		}
 
 		cloned := old.Clone()
-		_ = cloned.SetValidatorPresent(activeIndex, votingPower)
+		if err := cloned.SetValidatorPresent(activeIndex, votingPower); err != nil {
+			return entity.SignatureMap{}, errors.Errorf("failed to set validator present (activeIndex=%d, totalValidators=%d): %w", activeIndex, cloned.TotalValidators, err)
+		}
 		if r.signatureMapCache.CompareAndSwap(requestID, raw, cloned) {
-			return cloned, nil
+			return cloned.Clone(), nil
 		}
 	}
 }
 
-// loadSignatureMap rebuilds the signature map for requestID from the database, deduplicating
-// concurrent rebuilds via singleflight. Returns ErrEntityNotFound transparently if the request
-// has no signatures yet — the caller's CAS path will populate the map on subsequent calls.
+// loadSignatureMap returns the signature map for requestID, populating the cache atomically
+// with an entry shared by all concurrent callers.
+// Propagates ErrEntityNotFound from the rebuild without populating the cache, so callers
+// (e.g. GetSignatureMap) can distinguish "no signatures yet" from a real cache hit.
 func (r *Repository) loadSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error) {
 	res, err, _ := r.signatureMapLoader.Do(requestID.Hex(), func() (any, error) {
+		if cached, ok := r.signatureMapCache.Load(requestID); ok {
+			return cached, nil
+		}
 		sm, err := r.rebuildSignatureMap(ctx, requestID)
-		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
+		if err != nil {
 			return entity.SignatureMap{}, err
 		}
-		return sm, nil
+		actual, _ := r.signatureMapCache.LoadOrStore(requestID, sm)
+		return actual, nil
 	})
 	if err != nil {
 		return entity.SignatureMap{}, err

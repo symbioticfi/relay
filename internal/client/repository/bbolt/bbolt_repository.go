@@ -198,6 +198,7 @@ func New(cfg Config) (*Repository, error) {
 		signatureMapCache:  sync.Map{},
 		signatureMapLoader: singleflight.Group{},
 		prunePause:         cfg.PrunePause,
+		bgWg:               sync.WaitGroup{},
 	}
 	repo.startStatsLogger(cfg.StatsLogInterval)
 	repo.startSizeReporter(cfg.StatsLogInterval)
