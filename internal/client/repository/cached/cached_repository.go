@@ -137,6 +137,7 @@ func (r *CachedRepository) GetConfigByEpoch(ctx context.Context, epoch symbiotic
 }
 
 func (r *CachedRepository) SaveConfig(ctx context.Context, config symbiotic.NetworkConfig, epoch symbiotic.Epoch) error {
+	r.networkConfigCache.Delete(epoch)
 	if err := r.Repository.SaveConfig(ctx, config, epoch); err != nil {
 		return err
 	}
@@ -173,14 +174,18 @@ func (r *CachedRepository) GetValidatorSetMetadata(ctx context.Context, epoch sy
 }
 
 func (r *CachedRepository) PruneValsetEntities(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error {
+	r.evictValsetCaches(epoch)
 	if err := r.Repository.PruneValsetEntities(ctx, epoch, batchSize); err != nil {
 		return err
 	}
-	r.evictValsetCaches(epoch)
 	return nil
 }
 
 func (r *CachedRepository) SaveNextValsetData(ctx context.Context, data entity.NextValsetData) error {
+	r.evictValsetCaches(data.PrevValidatorSet.Epoch)
+	r.evictValsetCaches(data.NextValidatorSet.Epoch)
+	r.validatorSetMetadataCache.Delete(data.ValidatorSetMetadata.Epoch)
+
 	if err := r.Repository.SaveNextValsetData(ctx, data); err != nil {
 		return err
 	}
