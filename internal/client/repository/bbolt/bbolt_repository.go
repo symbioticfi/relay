@@ -72,6 +72,7 @@ type Repository struct {
 	prunePause time.Duration
 
 	done chan struct{}
+	bgWg sync.WaitGroup
 }
 
 func compactDB(dbPath string) error {
@@ -206,6 +207,7 @@ func New(cfg Config) (*Repository, error) {
 
 func (r *Repository) Close() error {
 	close(r.done)
+	r.bgWg.Wait()
 	return r.db.Close()
 }
 
@@ -218,7 +220,7 @@ func (r *Repository) startStatsLogger(interval time.Duration) {
 		return
 	}
 
-	go func() {
+	r.bgWg.Go(func() {
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 
@@ -232,13 +234,13 @@ func (r *Repository) startStatsLogger(interval time.Duration) {
 				return
 			}
 		}
-	}()
+	})
 }
 
 func (r *Repository) startSizeReporter() {
 	r.reportDBSize() // report once at startup
 
-	go func() {
+	r.bgWg.Go(func() {
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
 
@@ -250,7 +252,7 @@ func (r *Repository) startSizeReporter() {
 				return
 			}
 		}
-	}()
+	})
 }
 
 func (r *Repository) reportDBSize() {
