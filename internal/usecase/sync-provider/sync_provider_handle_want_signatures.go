@@ -49,6 +49,15 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity
 			break
 		}
 
+		// Guard against oversized bitmaps to avoid excessive DB lookups
+		if requestedIndices.GetCardinality() > uint64(s.cfg.MaxResponseSignatureCount) {
+			slog.WarnContext(ctx, "Requested indices cardinality exceeds limit, truncating",
+				"cardinality", requestedIndices.GetCardinality(),
+				"limit", s.cfg.MaxResponseSignatureCount,
+				"requestID", requestID.Hex(),
+			)
+		}
+
 		var validatorSigs []entity.ValidatorSignature
 
 		// Iterate over requested validator indices and get signatures directly
