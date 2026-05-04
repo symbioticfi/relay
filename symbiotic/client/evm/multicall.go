@@ -27,7 +27,10 @@ func (e *Client) multicallExists(ctx context.Context, chainId uint64) (bool, err
 		return false, errors.Errorf("no connection for chain ID %d: %w", chainId, entity.ErrChainNotFound)
 	}
 
-	code, err := client.CodeAt(ctx, common.HexToAddress(Multicall3), new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()))
+	toCtx, cancel := context.WithTimeout(ctx, e.cfg.RequestTimeout)
+	defer cancel()
+
+	code, err := client.CodeAt(toCtx, common.HexToAddress(Multicall3), new(big.Int).SetInt64(rpc.FinalizedBlockNumber.Int64()))
 	if err != nil {
 		return false, errors.Errorf("failed to get Multicall3 code: %w", err)
 	}
