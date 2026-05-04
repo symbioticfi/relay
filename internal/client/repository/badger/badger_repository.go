@@ -125,34 +125,38 @@ func (r *Repository) Close() error {
 	return r.db.Close()
 }
 
-// maxValueLogGCIterations bounds the value-log GC loop in Flatten. Each successful
-// RunValueLogGC rewrites at most one vlog file, so this caps the total number of
-// rewrites at a safe-but-large value to prevent pathological infinite loops if
-// badger ever returns nil indefinitely.
-const maxValueLogGCIterations = 100
+// MaxValueLogGCIterations bounds the value-log GC loop in Flatten. Each
+// successful RunValueLogGC rewrites at most one vlog file, so this caps the
+// total number of rewrites at a safe-but-large value to prevent pathological
+// infinite loops if badger ever returns nil indefinitely. Exported so callers
+// can include the value in user-facing messages.
+const MaxValueLogGCIterations = 100
 
 // Flatten compacts all SST levels into the lowest possible LSM structure and then
 // repeatedly runs value-log GC at the Config-supplied ValueLogGCDiscardRatio
-// (default 0.5) until no more rewrites are needed (or the iteration cap is hit).
-// Intended for offline maintenance (e.g. one-shot CLI) — must not run alongside
-// active write traffic.
-func (r *Repository) Flatten(workers int) error {
+// (default 0.5) until no more rewrites are needed. Intended for offline
+// maintenance (e.g. one-shot CLI) — must not run alongside active write traffic.
+//
+// The bool return is true if the value-log GC loop hit MaxValueLogGCIterations
+// without observing ErrNoRewrite — in that case there may still be reclaimable
+// space and re-running Flatten is recommended. Callers should surface this
+// signal to the operator (a fresh sidecar startup will also keep grinding).
+func (r *Repository) Flatten(workers int) (capHit bool, err error) {
 	if workers <= 0 {
 		workers = 1
 	}
 	if err := r.db.Flatten(workers); err != nil {
-		return errors.Errorf("badger flatten failed: %w", err)
+		return false, errors.Errorf("badger flatten failed: %w", err)
 	}
-	for range maxValueLogGCIterations {
+	for range MaxValueLogGCIterations {
 		if err := r.db.RunValueLogGC(r.valueLogGCDiscardRatio); err != nil {
 			if errors.Is(err, badger.ErrNoRewrite) {
-				return nil
+				return false, nil
 			}
-			return errors.Errorf("badger value log gc failed: %w", err)
+			return false, errors.Errorf("badger value log gc failed: %w", err)
 		}
 	}
-	slog.Warn("badger value log GC reached iteration cap", "component", "badger", "cap", maxValueLogGCIterations)
-	return nil
+	return true, nil
 }
 
 type slogBadgerLogger struct{}

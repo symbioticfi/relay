@@ -17,5 +17,6 @@ Utils tool
 * [utils keys](utils_keys.md)	 - Keys tool
 * [utils network](utils_network.md)	 - Network tool
 * [utils operator](utils_operator.md)	 - Operator tool
+* [utils prune](utils_prune.md)	 - Prune old epoch data from the relay storage (offline)
 * [utils version](utils_version.md)	 - Print the version of the utils tool
 

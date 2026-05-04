@@ -30,7 +30,8 @@ var (
 )
 
 func run(ctx context.Context, f Flags) error {
-	ctx = signalContext(ctx)
+	ctx, stop := signal.NotifyContext(ctx, syscall.SIGTERM, syscall.SIGINT)
+	defer stop()
 
 	if f.ValsetEpochs == 0 && f.ProofEpochs == 0 && f.SignatureEpochs == 0 && !f.Compact {
 		return errors.New("nothing to do: pass at least one --retention.* flag or --compact")
@@ -59,11 +60,13 @@ func runBbolt(ctx context.Context, f Flags) error {
 		Dir:        f.StorageDir,
 		DBFilename: bboltDBFilename,
 		Metrics:    repoutil.DoNothingMetrics{},
-		// Speed-tuned for offline use: no fsync per write, bigger batches,
-		// no inter-batch yielding, no startup compaction (handled below).
+		// Speed-tuned for offline use: no fsync per write, no inter-batch
+		// yielding, no startup compaction (handled below). The prune path
+		// uses db.Batch internally; with a single offline writer no peers
+		// join the batch, so MaxBatchDelay = per-call flush wait. Drop from
+		// bbolt's 10ms default to 1ms.
 		PrunePause:       0,
 		MaxBatchDelay:    time.Millisecond,
-		MaxBatchSize:     10000,
 		NoSync:           true,
 		NoFreelistSync:   true,
 		CompactOnStartup: false,
@@ -97,33 +100,32 @@ func runBbolt(ctx context.Context, f Flags) error {
 	}
 
 	if f.Compact {
-		before, _ := fileSize(dbPath)
+		before, beforeErr := fileSize(dbPath)
 		spinner, _ := pterm.DefaultSpinner.Start("Compacting bbolt database…")
 		start := time.Now()
 		if err := bbolt.CompactDB(dbPath); err != nil {
 			spinner.Fail("Compaction failed")
 			return errors.Errorf("bbolt compaction failed: %w", err)
 		}
-		after, _ := fileSize(dbPath)
+		after, afterErr := fileSize(dbPath)
 		spinner.Success("Compaction done")
-		printSizeReport(before, after, time.Since(start))
+		printSizeReport(before, beforeErr, after, afterErr, time.Since(start))
 	}
 
 	return nil
 }
 
 func runBadger(ctx context.Context, f Flags) error {
+	// Use badger's own defaults for sizing/compaction knobs (zero values
+	// fall through in applyBadgerTuning). Hard-coding here would silently
+	// diverge from the sidecar config and create vlog files of mismatched
+	// sizes on the next live-run. CompactL0OnClose=true ensures the final
+	// L0 compaction runs when we Close after Flatten.
 	repo, err := badger.New(badger.Config{
-		Dir:                     f.StorageDir,
-		Metrics:                 repoutil.DoNothingMetrics{},
-		BlockCacheSize:          -1, // badger default
-		MemTableSize:            128 << 20,
-		NumMemtables:            5,
-		NumLevelZeroTables:      5,
-		NumLevelZeroTablesStall: 15,
-		CompactL0OnClose:        true,
-		NumCompactors:           4,
-		ValueLogFileSize:        1 << 30,
+		Dir:              f.StorageDir,
+		Metrics:          repoutil.DoNothingMetrics{},
+		BlockCacheSize:   -1, // -1 = badger default; 0 means "disabled"
+		CompactL0OnClose: true,
 	})
 	if err != nil {
 		return errors.Errorf("failed to open badger repository at %s (relay still running, or directory locked?): %w", f.StorageDir, err)
@@ -149,14 +151,19 @@ func runBadger(ctx context.Context, f Flags) error {
 	}
 
 	if f.Compact {
-		before, _ := dirSize(f.StorageDir)
+		before, beforeErr := dirSize(f.StorageDir)
 		spinner, _ := pterm.DefaultSpinner.Start("Flattening badger LSM + value log GC…")
 		start := time.Now()
-		if err := repo.Flatten(f.BadgerFlattenWorkers); err != nil {
+		capHit, err := repo.Flatten(f.BadgerFlattenWorkers)
+		if err != nil {
 			spinner.Fail("Flatten failed")
 			return errors.Errorf("badger flatten failed: %w", err)
 		}
 		spinner.Success("Flatten done")
+		if capHit {
+			pterm.Warning.Printf("value-log GC hit iteration cap (%d) — re-run with --compact to continue reclaiming space\n",
+				badger.MaxValueLogGCIterations)
+		}
 		// Final L0 compaction happens in Close (CompactL0OnClose=true).
 		// Mark closed before the error check so the deferred Close can't run
 		// on a partially-closed DB.
@@ -164,8 +171,8 @@ func runBadger(ctx context.Context, f Flags) error {
 		if err := repo.Close(); err != nil {
 			return errors.Errorf("failed to close badger repository: %w", err)
 		}
-		after, _ := dirSize(f.StorageDir)
-		printSizeReport(before, after, time.Since(start))
+		after, afterErr := dirSize(f.StorageDir)
+		printSizeReport(before, beforeErr, after, afterErr, time.Since(start))
 	}
 
 	return nil
@@ -246,9 +253,14 @@ func dirSize(dir string) (int64, error) {
 	return total, err
 }
 
-func printSizeReport(before, after int64, duration time.Duration) {
+func printSizeReport(before int64, beforeErr error, after int64, afterErr error, duration time.Duration) {
+	d := duration.Round(time.Millisecond)
+	if beforeErr != nil || afterErr != nil {
+		pterm.Info.Printf("Compaction took %s (size unavailable: before=%v after=%v)\n", d, beforeErr, afterErr)
+		return
+	}
 	pterm.Info.Printf("Size: %s → %s (%.1f%% reduction) in %s\n",
-		humanBytes(before), humanBytes(after), reductionPct(before, after), duration.Round(time.Millisecond))
+		humanBytes(before), humanBytes(after), reductionPct(before, after), d)
 }
 
 func reductionPct(before, after int64) float64 {
@@ -270,20 +282,4 @@ func humanBytes(n int64) string {
 		exp++
 	}
 	return pterm.Sprintf("%.2f %ciB", float64(n)/float64(div), suffixes[exp])
-}
-
-func signalContext(ctx context.Context) context.Context {
-	cnCtx, cancel := context.WithCancel(ctx)
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGTERM, syscall.SIGINT)
-	go func() {
-		defer signal.Stop(c)
-		select {
-		case <-c:
-			pterm.Warning.Println("Received termination signal, shutting down...")
-			cancel()
-		case <-cnCtx.Done():
-		}
-	}()
-	return cnCtx
 }

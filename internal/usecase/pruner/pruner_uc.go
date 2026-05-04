@@ -2,6 +2,7 @@ package pruner
 
 import (
 	"context"
+	stderrors "errors"
 	"log/slog"
 	"time"
 
@@ -135,24 +136,33 @@ func (s *Service) RunOnce(ctx context.Context) error {
 		return errors.Errorf("failed to get oldest validator set epoch: %w", err)
 	}
 
+	// Each entity-type pass is independent: a failure of one does not invalidate
+	// the others (e.g. proof pruning can succeed even if a single signature
+	// epoch fails). Continue on error and join failures so callers (sidecar
+	// loop logger, CLI exit code) can react.
+	var errs []error
 	valsetCount, err := s.pruneValsetEntities(ctx, latestEpoch, oldestStoredEpoch)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to prune valset entities", "error", err)
+		errs = append(errs, errors.Errorf("valset: %w", err))
 	}
 
 	proofCount, err := s.pruneProofEntities(ctx, latestEpoch, oldestStoredEpoch)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to prune proof entities", "error", err)
+		errs = append(errs, errors.Errorf("proof: %w", err))
 	}
 
 	signatureCount, err := s.pruneSignatureEntities(ctx, latestEpoch, oldestStoredEpoch)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to prune signature entities", "error", err)
+		errs = append(errs, errors.Errorf("signature: %w", err))
 	}
 
 	indexCount, err := s.pruneRequestIDEpochIndices(ctx, latestEpoch, oldestStoredEpoch)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to prune request ID epoch indices", "error", err)
+		errs = append(errs, errors.Errorf("requestIdEpochIndex: %w", err))
 	}
 
 	slog.InfoContext(ctx, "Pruning completed",
@@ -163,7 +173,7 @@ func (s *Service) RunOnce(ctx context.Context) error {
 		"duration", time.Since(start),
 	)
 
-	return nil
+	return stderrors.Join(errs...)
 }
 
 func (s *Service) pruneValsetEntities(ctx context.Context, latestEpoch, oldestStoredEpoch symbiotic.Epoch) (uint64, error) {
