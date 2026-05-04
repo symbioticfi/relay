@@ -217,10 +217,11 @@ type KeyCache struct {
 }
 
 type P2PConfig struct {
-	ListenAddress string   `mapstructure:"listen" validate:"required"`
-	Bootnodes     []string `mapstructure:"bootnodes"`
-	DHTMode       string   `mapstructure:"dht-mode" validate:"oneof=auto server client disabled"`
-	MDnsEnabled   bool     `mapstructure:"mdns"`
+	ListenAddress  string        `mapstructure:"listen" validate:"required"`
+	Bootnodes      []string      `mapstructure:"bootnodes"`
+	DHTMode        string        `mapstructure:"dht-mode" validate:"oneof=auto server client disabled"`
+	MDnsEnabled    bool          `mapstructure:"mdns"`
+	PublishTimeout time.Duration `mapstructure:"publish-timeout"`
 }
 
 type EvmConfig struct {
@@ -355,6 +356,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringSlice("p2p.bootnodes", nil, "List of bootnodes in multiaddr format")
 	rootCmd.PersistentFlags().String("p2p.dht-mode", "server", "DHT mode: auto, server, client, disabled")
 	rootCmd.PersistentFlags().Bool("p2p.mdns", false, "Enable mDNS discovery for P2P")
+	rootCmd.PersistentFlags().Duration("p2p.publish-timeout", 10*time.Second, "Maximum time a single pubsub publish may block")
 	rootCmd.PersistentFlags().StringSlice("evm.chains", nil, "Chains, comma separated rpc-url,..")
 	rootCmd.PersistentFlags().Int("evm.max-calls", 0, "Max calls in multicall")
 	rootCmd.PersistentFlags().Var(&CMDGasPriceMap{}, "evm.fallback-gas-prices", "Per-chain fallback gas prices in wei when eth_maxPriorityFeePerGas is not supported (e.g., --evm.fallback-gas-prices 1=2000000000)")
@@ -541,6 +543,9 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("p2p.mdns", cmd.PersistentFlags().Lookup("p2p.mdns")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("p2p.publish-timeout", cmd.PersistentFlags().Lookup("p2p.publish-timeout")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("evm.chains", cmd.PersistentFlags().Lookup("evm.chains")); err != nil {
