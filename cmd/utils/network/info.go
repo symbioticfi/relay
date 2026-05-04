@@ -20,6 +20,12 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// maxEpochsToCheck caps how many epochs the `network info` command scans when
+// counting missed valset header commitments. Above this we log a warning and
+// truncate to avoid an O(N) allocation on operator misconfiguration (e.g., RPC
+// returning an absurdly large epoch number).
+const maxEpochsToCheck = 100_000
+
 var infoCmd = &cobra.Command{
 	Use:   "info",
 	Short: "Print network information",
@@ -149,7 +155,14 @@ var infoCmd = &cobra.Command{
 					}
 					settlementData[i].LastCommittedHeaderEpoch = uint64(lastCommittedHeaderEpoch)
 
-					allEpochsFromZero := lo.RepeatBy(int(epoch+1), func(i int) symbiotic.Epoch {
+					epochCount := uint64(epoch) + 1
+					if epochCount > maxEpochsToCheck {
+						slog.WarnContext(egCtx, "Epoch count exceeds safety limit; missed epoch count may be inaccurate",
+							"epoch", epoch, "limit", maxEpochsToCheck,
+						)
+						epochCount = maxEpochsToCheck
+					}
+					allEpochsFromZero := lo.RepeatBy(int(epochCount), func(i int) symbiotic.Epoch {
 						return symbiotic.Epoch(i)
 					})
 
