@@ -108,7 +108,7 @@ func (k *KeystoreProvider) HasKeyByNamespaceTypeId(namespace string, keyType sym
 }
 
 func (k *KeystoreProvider) AddKey(namespace string, keyTag symbiotic.KeyTag, privateKey crypto.PrivateKey, password string, force bool) error {
-	exists, err := k.HasKey(keyTag)
+	exists, err := k.HasKeyByNamespaceTypeId(namespace, keyTag.Type(), int(keyTag&0x0F))
 	if err != nil {
 		return err
 	}
