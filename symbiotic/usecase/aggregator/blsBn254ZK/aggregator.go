@@ -22,6 +22,11 @@ import (
 	"github.com/symbioticfi/relay/pkg/tracing"
 )
 
+// MinProofSize is the minimum byte length of a valid ZK aggregation proof:
+// 256 bytes of proof data + 128 bytes of public inputs. Anything shorter
+// cannot be parsed and would panic on the fixed-offset slicing below.
+const MinProofSize = 384
+
 type Aggregator struct {
 	prover types.Prover
 }
@@ -157,11 +162,8 @@ func (a Aggregator) Verify(
 	)
 	defer span.End()
 
-	// Minimum ZK proof size: 256 bytes proof + 128 bytes public inputs = 384 bytes.
-	// The last 32 bytes are used as aggVotingPowerBytes, so proof must be at least 32 bytes.
-	const minProofSize = 384
-	if len(aggregationProof.Proof) < minProofSize {
-		err := errors.Errorf("proof length %d is below minimum required %d bytes", len(aggregationProof.Proof), minProofSize)
+	if len(aggregationProof.Proof) < MinProofSize {
+		err := errors.Errorf("proof length %d is below minimum required %d bytes", len(aggregationProof.Proof), MinProofSize)
 		tracing.RecordError(span, err)
 		return false, err
 	}

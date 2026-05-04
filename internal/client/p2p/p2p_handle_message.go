@@ -8,6 +8,7 @@ import (
 	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
 	p2pEntity "github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator/blsBn254ZK"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
@@ -68,11 +69,11 @@ func (s *Service) handleAggregatedProofReadyMessage(pubSubMsg *pubsub.Message) e
 	if len(signaturesAggregated.GetProof()) > maxProofSize {
 		return errors.Errorf("aggregation proof %x size exceeds maximum allowed size: %d bytes", signaturesAggregated.GetProof(), maxProofSize)
 	}
-	// Minimum proof size: ZK proofs need at least 384 bytes (256 proof bytes + 128 public inputs).
-	// Simple proofs can be empty. Reject proofs that are too short to prevent panic on slicing.
-	const minZKProofSize = 384
-	if len(signaturesAggregated.GetProof()) > 0 && len(signaturesAggregated.GetProof()) < minZKProofSize {
-		return errors.Errorf("aggregation proof size %d is below minimum required %d bytes", len(signaturesAggregated.GetProof()), minZKProofSize)
+	// Simple proofs are allowed to be empty; non-empty proofs must be at least
+	// the ZK minimum (the larger of the two formats) to avoid downstream panics
+	// on fixed-offset slicing.
+	if l := len(signaturesAggregated.GetProof()); l > 0 && l < blsBn254ZK.MinProofSize {
+		return errors.Errorf("aggregation proof size %d is below minimum required %d bytes", l, blsBn254ZK.MinProofSize)
 	}
 
 	msg := symbiotic.AggregationProof{
