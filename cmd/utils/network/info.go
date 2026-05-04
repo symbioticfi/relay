@@ -75,8 +75,8 @@ var infoCmd = &cobra.Command{
 			return errors.Errorf("failed to create deriver: %w", err)
 		}
 
-		epoch := symbiotic.Epoch(globalFlags.Epoch)
-		if globalFlags.Epoch == 0 {
+		epoch := symbiotic.Epoch(infoFlags.Epoch)
+		if infoFlags.Epoch == 0 {
 			epoch, err = evmClient.GetCurrentEpoch(ctx)
 			if err != nil {
 				return errors.Errorf("Failed to get current epoch: %w", err)
