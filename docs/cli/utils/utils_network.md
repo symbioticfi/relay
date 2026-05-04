@@ -10,7 +10,6 @@ Network tool
   -c, --chains strings                               Chains rpc url, comma separated
       --driver.address string                        Driver contract address
       --driver.chainid uint                          Driver contract chain id
-  -e, --epoch uint                                   Network epoch to fetch info
       --external-voting-power-provider stringArray   External voting power provider config in format 'id=<id>,url=<url>[,secure=<bool>][,ca-cert-file=<path>][,server-name=<name>][,timeout=<duration>][,headers=<k:v|k2:v2>]'
   -h, --help                                         help for network
 ```
