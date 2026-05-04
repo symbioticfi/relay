@@ -640,7 +640,7 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	}
 
 	err := v.ReadInConfig()
-	if err != nil && !errors.Is(err, viper.ConfigFileNotFoundError{}) && !errors.As(err, new(fs.PathError)) {
+	if err != nil && !errors.Is(err, viper.ConfigFileNotFoundError{}) && !errors.As(err, new(*fs.PathError)) {
 		return errors.Errorf("failed to read config file: %w", err)
 	}
 
