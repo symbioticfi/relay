@@ -284,8 +284,10 @@ func (m *Metrics) ObserveEVMMethodCall(method string, chainID uint64, status str
 
 func (m *Metrics) ObserveCommitValsetHeaderParams(chainID uint64, gasUsed uint64, effectiveGasPrice *big.Int) {
 	m.evmCommitGasUsed.WithLabelValues(strconv.FormatInt(int64(chainID), 10)).Observe(float64(gasUsed))
-	gasPrice, _ := effectiveGasPrice.Float64()
-	m.evmCommitGasPrice.WithLabelValues(strconv.FormatInt(int64(chainID), 10)).Observe(gasPrice)
+	if effectiveGasPrice != nil {
+		gasPrice, _ := effectiveGasPrice.Float64()
+		m.evmCommitGasPrice.WithLabelValues(strconv.FormatInt(int64(chainID), 10)).Observe(gasPrice)
+	}
 }
 
 func (m *Metrics) ObserveP2PSyncSignaturesProcessed(resultType string, count int) {
