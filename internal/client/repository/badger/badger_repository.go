@@ -52,6 +52,8 @@ type Repository struct {
 	proofsMutexMap    sync.Map // map[requestId]*mutexWithUseTime
 	valsetMutexMap    sync.Map // map[epoch]*mutexWithUseTime
 
+	valueLogGCDiscardRatio float64
+
 	done chan struct{}
 }
 
@@ -69,10 +71,15 @@ func New(cfg Config) (*Repository, error) {
 		return nil, errors.Errorf("failed to open badger database: %w", err)
 	}
 
+	discardRatio := cfg.ValueLogGCDiscardRatio
+	if discardRatio == 0 {
+		discardRatio = 0.5
+	}
 	repo := &Repository{
-		db:      db,
-		metrics: cfg.Metrics,
-		done:    make(chan struct{}),
+		db:                     db,
+		metrics:                cfg.Metrics,
+		valueLogGCDiscardRatio: discardRatio,
+		done:                   make(chan struct{}),
 	}
 
 	repo.startMutexCleanup(cfg.MutexCleanupInterval, cfg.MutexCleanupStaleTimeout)
@@ -116,6 +123,36 @@ func applyBadgerTuning(opts *badger.Options, cfg Config) {
 func (r *Repository) Close() error {
 	close(r.done)
 	return r.db.Close()
+}
+
+// maxValueLogGCIterations bounds the value-log GC loop in Flatten. Each successful
+// RunValueLogGC rewrites at most one vlog file, so this caps the total number of
+// rewrites at a safe-but-large value to prevent pathological infinite loops if
+// badger ever returns nil indefinitely.
+const maxValueLogGCIterations = 100
+
+// Flatten compacts all SST levels into the lowest possible LSM structure and then
+// repeatedly runs value-log GC at the Config-supplied ValueLogGCDiscardRatio
+// (default 0.5) until no more rewrites are needed (or the iteration cap is hit).
+// Intended for offline maintenance (e.g. one-shot CLI) — must not run alongside
+// active write traffic.
+func (r *Repository) Flatten(workers int) error {
+	if workers <= 0 {
+		workers = 1
+	}
+	if err := r.db.Flatten(workers); err != nil {
+		return errors.Errorf("badger flatten failed: %w", err)
+	}
+	for range maxValueLogGCIterations {
+		if err := r.db.RunValueLogGC(r.valueLogGCDiscardRatio); err != nil {
+			if errors.Is(err, badger.ErrNoRewrite) {
+				return nil
+			}
+			return errors.Errorf("badger value log gc failed: %w", err)
+		}
+	}
+	slog.Warn("badger value log GC reached iteration cap", "component", "badger", "cap", maxValueLogGCIterations)
+	return nil
 }
 
 type slogBadgerLogger struct{}

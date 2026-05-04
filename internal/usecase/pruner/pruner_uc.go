@@ -20,6 +20,13 @@ type metrics interface {
 	IncPrunedEpochsCount(entityType string)
 }
 
+// NoopMetrics is a no-op implementation of the pruner's metrics interface.
+// Useful for tests and one-shot CLI uses where Prometheus reporting is
+// undesirable.
+type NoopMetrics struct{}
+
+func (NoopMetrics) IncPrunedEpochsCount(string) {}
+
 type repo interface {
 	GetOldestValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
 	GetLatestValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
@@ -91,7 +98,7 @@ func (s *Service) Start(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
-			if err := s.runPruning(ctx); err != nil {
+			if err := s.RunOnce(ctx); err != nil {
 				slog.ErrorContext(ctx, "Pruning failed", "error", err)
 			}
 		case <-ctx.Done():
@@ -101,7 +108,10 @@ func (s *Service) Start(ctx context.Context) {
 	}
 }
 
-func (s *Service) runPruning(ctx context.Context) error {
+// RunOnce executes a single pruning pass over the repository: prunes valset, proof,
+// signature and request-id-epoch entities according to the configured retention values.
+// Safe to call without Start (e.g. from a one-shot CLI).
+func (s *Service) RunOnce(ctx context.Context) error {
 	ctx, span := tracing.StartSpan(ctx, "pruner.RunPruning")
 	defer span.End()
 

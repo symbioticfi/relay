@@ -75,7 +75,10 @@ type Repository struct {
 	bgWg sync.WaitGroup
 }
 
-func compactDB(dbPath string) error {
+// CompactDB rewrites the bbolt file at dbPath into a compacted copy and atomically
+// replaces the original. Acquires an exclusive flock on the source for the entire
+// rewrite, so no other process may have the database open while this runs.
+func CompactDB(dbPath string) error {
 	info, err := os.Stat(dbPath)
 	if err != nil {
 		return nil // DB doesn't exist yet, nothing to compact
@@ -154,7 +157,7 @@ func New(cfg Config) (*Repository, error) {
 	dbPath := filepath.Join(cfg.Dir, filename)
 
 	if cfg.CompactOnStartup {
-		if err := compactDB(dbPath); err != nil {
+		if err := CompactDB(dbPath); err != nil {
 			return nil, errors.Errorf("startup db compaction failed: %w", err)
 		}
 	}
