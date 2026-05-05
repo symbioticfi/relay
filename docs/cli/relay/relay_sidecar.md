@@ -42,7 +42,6 @@ relay_sidecar [flags]
       --bbolt.max-batch-delay duration                   Max delay before flushing a batch write (0 = bbolt default 10ms) (default 2ms)
       --bbolt.max-batch-size int                         Max operations per batch write (0 = bbolt default 1000)
       --bbolt.no-freelist-sync                           Skip writing freelist to disk on every commit (faster writes, slower startup)
-      --bbolt.prune-pause duration                       Pause between bbolt prune batches to yield to writers (0 = no pause) (default 100ms)
       --bbolt.stats-log-interval duration                Interval for logging bbolt database stats (0 = disabled)
       --cache.network-config-size int                    Network config cache size (default 10)
       --cache.validator-set-size int                     Validator set cache size (default 10)
@@ -68,6 +67,7 @@ relay_sidecar [flags]
       --p2p.dht-mode string                              DHT mode: auto, server, client, disabled (default "server")
       --p2p.listen string                                P2P listen address
       --p2p.mdns                                         Enable mDNS discovery for P2P
+      --pruner.batch-pause duration                      Pause between prune batches to yield to live writers (bbolt only — badger has no batching) (0 = no pause) (default 100ms)
       --pruner.batch-size int                            Number of request IDs to delete per database transaction during pruning (0 = unbatched) (default 100)
       --pruner.enabled                                   Enable automatic pruning of old epoch data (default: false)
       --pruner.interval duration                         How often to run pruning (default: 1h) (default 1h0m0s)

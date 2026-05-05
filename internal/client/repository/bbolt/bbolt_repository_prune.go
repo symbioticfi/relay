@@ -196,7 +196,10 @@ func getRequestIDsByEpochTx(tx *bolt.Tx, epoch symbiotic.Epoch) []common.Hash {
 }
 
 // deletePrefixedKeys buffers all matching keys during a single forward scan, then deletes
-// them. The naive c.Delete()+re-Seek loop is O(N·log N) on B+tree height; this is O(N).
+// them by key. The naive c.Delete()+re-Seek loop re-descends the B+tree from the root on
+// every iteration (cursor is invalidated after Delete), so its scan cost is O(N·log N).
+// Here the scan is O(N) — one Seek plus linear Next() walks across linked leaf pages —
+// while deletion stays O(log N) per key but avoids the redundant re-seek churn.
 func deletePrefixedKeys(b *bolt.Bucket, prefix []byte) error {
 	c := b.Cursor()
 	var keys [][]byte
