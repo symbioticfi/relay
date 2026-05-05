@@ -46,6 +46,10 @@ type Config struct {
 	ProofRetentionEpochs     uint64
 	SignatureRetentionEpochs uint64
 	PruneBatchSize           int `validate:"gte=0"`
+	// ProgressFn is invoked once with current=0 when a non-empty entity-type
+	// pass starts (so the caller knows the total) and again after each pruned
+	// epoch with current=1..total. Optional; nil disables progress reporting.
+	ProgressFn func(entityType string, current, total uint64)
 }
 
 func (c Config) Validate() error {
@@ -139,30 +143,45 @@ func (s *Service) RunOnce(ctx context.Context) error {
 	// Each entity-type pass is independent: a failure of one does not invalidate
 	// the others (e.g. proof pruning can succeed even if a single signature
 	// epoch fails). Continue on error and join failures so callers (sidecar
-	// loop logger, CLI exit code) can react.
+	// loop logger, CLI exit code) can react. Context cancellation, however,
+	// short-circuits the remaining passes.
+	//
+	// Order matters for crash safety: the valset pass MUST be last. Subsequent
+	// runs use GetOldestValidatorSetEpoch as the lower bound for proof /
+	// signature / requestIdEpochIndex loops; if valset gets pruned first and we
+	// crash before the dependent passes finish, the next run's lower bound will
+	// jump forward and the orphaned dependents will never be reclaimed.
 	var errs []error
-	valsetCount, err := s.pruneValsetEntities(ctx, latestEpoch, oldestStoredEpoch)
-	if err != nil {
-		slog.ErrorContext(ctx, "Failed to prune valset entities", "error", err)
-		errs = append(errs, errors.Errorf("valset: %w", err))
-	}
+	var proofCount, signatureCount, indexCount, valsetCount uint64
 
-	proofCount, err := s.pruneProofEntities(ctx, latestEpoch, oldestStoredEpoch)
+	proofCount, err = s.pruneProofEntities(ctx, latestEpoch, oldestStoredEpoch)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to prune proof entities", "error", err)
 		errs = append(errs, errors.Errorf("proof: %w", err))
 	}
 
-	signatureCount, err := s.pruneSignatureEntities(ctx, latestEpoch, oldestStoredEpoch)
-	if err != nil {
-		slog.ErrorContext(ctx, "Failed to prune signature entities", "error", err)
-		errs = append(errs, errors.Errorf("signature: %w", err))
+	if ctx.Err() == nil {
+		signatureCount, err = s.pruneSignatureEntities(ctx, latestEpoch, oldestStoredEpoch)
+		if err != nil {
+			slog.ErrorContext(ctx, "Failed to prune signature entities", "error", err)
+			errs = append(errs, errors.Errorf("signature: %w", err))
+		}
 	}
 
-	indexCount, err := s.pruneRequestIDEpochIndices(ctx, latestEpoch, oldestStoredEpoch)
-	if err != nil {
-		slog.ErrorContext(ctx, "Failed to prune request ID epoch indices", "error", err)
-		errs = append(errs, errors.Errorf("requestIdEpochIndex: %w", err))
+	if ctx.Err() == nil {
+		indexCount, err = s.pruneRequestIDEpochIndices(ctx, latestEpoch, oldestStoredEpoch)
+		if err != nil {
+			slog.ErrorContext(ctx, "Failed to prune request ID epoch indices", "error", err)
+			errs = append(errs, errors.Errorf("requestIdEpochIndex: %w", err))
+		}
+	}
+
+	if ctx.Err() == nil {
+		valsetCount, err = s.pruneValsetEntities(ctx, latestEpoch, oldestStoredEpoch)
+		if err != nil {
+			slog.ErrorContext(ctx, "Failed to prune valset entities", "error", err)
+			errs = append(errs, errors.Errorf("valset: %w", err))
+		}
 	}
 
 	slog.InfoContext(ctx, "Pruning completed",
@@ -261,8 +280,17 @@ func (s *Service) pruneEntities(
 		return 0, nil
 	}
 
+	total := uint64(oldestToKeep - oldestStoredEpoch)
+	if s.cfg.ProgressFn != nil {
+		s.cfg.ProgressFn(entityType, 0, total)
+	}
+
 	count := uint64(0)
 	for epoch := oldestStoredEpoch; epoch < oldestToKeep; epoch++ {
+		if err := ctx.Err(); err != nil {
+			return count, err
+		}
+
 		slog.DebugContext(ctx, "Pruning entities", "entityType", entityType, "epoch", epoch)
 
 		if err := pruneFunc(ctx, epoch, s.cfg.PruneBatchSize); err != nil {
@@ -272,6 +300,9 @@ func (s *Service) pruneEntities(
 
 		count++
 		s.cfg.Metrics.IncPrunedEpochsCount(entityType)
+		if s.cfg.ProgressFn != nil {
+			s.cfg.ProgressFn(entityType, count, total)
+		}
 	}
 
 	tracing.SetAttributes(span, tracing.AttrEpochCount.Int(int(count)))

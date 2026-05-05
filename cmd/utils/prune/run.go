@@ -2,6 +2,8 @@ package prune
 
 import (
 	"context"
+	"io"
+	"log/slog"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -33,6 +35,10 @@ func run(ctx context.Context, f Flags) error {
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
 
+	// Silence library slog so it doesn't interleave with pterm output and
+	// break spinner animations. Errors propagate via returned error values.
+	slog.SetDefault(slog.New(slog.NewTextHandler(io.Discard, nil)))
+
 	if f.ValsetEpochs == 0 && f.ProofEpochs == 0 && f.SignatureEpochs == 0 && !f.Compact {
 		return errors.New("nothing to do: pass at least one --retention.* flag or --compact")
 	}
@@ -56,6 +62,8 @@ func run(ctx context.Context, f Flags) error {
 func runBbolt(ctx context.Context, f Flags) error {
 	dbPath := filepath.Join(f.StorageDir, bboltDBFilename)
 
+	openSpinner, _ := pterm.DefaultSpinner.Start("Opening bbolt database…")
+	openStart := time.Now()
 	repo, err := bbolt.New(bbolt.Config{
 		Dir:        f.StorageDir,
 		DBFilename: bboltDBFilename,
@@ -72,8 +80,10 @@ func runBbolt(ctx context.Context, f Flags) error {
 		CompactOnStartup: false,
 	})
 	if err != nil {
+		openSpinner.Fail("Failed to open bbolt database")
 		return errors.Errorf("failed to open bbolt repository at %s (relay still running, or directory locked?): %w", f.StorageDir, err)
 	}
+	openSpinner.Success(pterm.Sprintf("Opened bbolt database in %s", time.Since(openStart).Round(time.Millisecond)))
 	closed := false
 	defer func() {
 		if !closed {
@@ -94,10 +104,14 @@ func runBbolt(ctx context.Context, f Flags) error {
 		return err
 	}
 
+	closeSpinner, _ := pterm.DefaultSpinner.Start("Closing bbolt database…")
+	closeStart := time.Now()
 	closed = true
 	if err := repo.Close(); err != nil {
+		closeSpinner.Fail("Failed to close bbolt database")
 		return errors.Errorf("failed to close bbolt repository: %w", err)
 	}
+	closeSpinner.Success(pterm.Sprintf("Closed bbolt database in %s", time.Since(closeStart).Round(time.Millisecond)))
 
 	if f.Compact {
 		before, beforeErr := fileSize(dbPath)
@@ -121,6 +135,8 @@ func runBadger(ctx context.Context, f Flags) error {
 	// diverge from the sidecar config and create vlog files of mismatched
 	// sizes on the next live-run. CompactL0OnClose=true ensures the final
 	// L0 compaction runs when we Close after Flatten.
+	openSpinner, _ := pterm.DefaultSpinner.Start("Opening badger database…")
+	openStart := time.Now()
 	repo, err := badger.New(badger.Config{
 		Dir:              f.StorageDir,
 		Metrics:          repoutil.DoNothingMetrics{},
@@ -128,8 +144,10 @@ func runBadger(ctx context.Context, f Flags) error {
 		CompactL0OnClose: true,
 	})
 	if err != nil {
+		openSpinner.Fail("Failed to open badger database")
 		return errors.Errorf("failed to open badger repository at %s (relay still running, or directory locked?): %w", f.StorageDir, err)
 	}
+	openSpinner.Success(pterm.Sprintf("Opened badger database in %s", time.Since(openStart).Round(time.Millisecond)))
 	closed := false
 	defer func() {
 		if !closed {
@@ -167,10 +185,14 @@ func runBadger(ctx context.Context, f Flags) error {
 		// Final L0 compaction happens in Close (CompactL0OnClose=true).
 		// Mark closed before the error check so the deferred Close can't run
 		// on a partially-closed DB.
+		closeSpinner, _ := pterm.DefaultSpinner.Start("Closing badger database (final L0 compaction)…")
+		closeStart := time.Now()
 		closed = true
 		if err := repo.Close(); err != nil {
+			closeSpinner.Fail("Failed to close badger database")
 			return errors.Errorf("failed to close badger repository: %w", err)
 		}
+		closeSpinner.Success(pterm.Sprintf("Closed badger database in %s", time.Since(closeStart).Round(time.Millisecond)))
 		after, afterErr := dirSize(f.StorageDir)
 		printSizeReport(before, beforeErr, after, afterErr, time.Since(start))
 	}
@@ -183,18 +205,69 @@ func runPruneOnce(ctx context.Context, cfg pruner.Config, f Flags) error {
 		pterm.Info.Println("Skipping pruning (no --retention.* flags set)")
 		return nil
 	}
+	pterm.Info.Printf("Pruning (valset=%d proof=%d signature=%d)…\n",
+		f.ValsetEpochs, f.ProofEpochs, f.SignatureEpochs)
+
+	progress := newProgressReporter()
+	cfg.ProgressFn = progress.Report
+
 	svc, err := pruner.New(cfg)
 	if err != nil {
 		return errors.Errorf("failed to construct pruner: %w", err)
 	}
-	pterm.Info.Printf("Pruning (valset=%d proof=%d signature=%d)…\n",
-		f.ValsetEpochs, f.ProofEpochs, f.SignatureEpochs)
 	start := time.Now()
 	if err := svc.RunOnce(ctx); err != nil {
+		progress.Stop()
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			pterm.Warning.Printf("Pruning interrupted after %s\n", time.Since(start).Round(time.Millisecond))
+			return err
+		}
 		return errors.Errorf("pruning failed: %w", err)
 	}
+	progress.Stop()
 	pterm.Success.Printf("Pruning completed in %s\n", time.Since(start).Round(time.Millisecond))
 	return nil
+}
+
+// progressReporter drives a sequence of pterm progress bars: one bar per
+// entity-type, each starting at 0 and advancing as epochs are pruned. The
+// bars stack vertically since pruner pass ordering is sequential.
+type progressReporter struct {
+	bar           *pterm.ProgressbarPrinter
+	currentEntity string
+	currentValue  uint64
+}
+
+func newProgressReporter() *progressReporter {
+	return &progressReporter{}
+}
+
+func (p *progressReporter) Report(entityType string, current, total uint64) {
+	if entityType != p.currentEntity {
+		p.Stop()
+		bar, err := pterm.DefaultProgressbar.
+			WithTotal(int(total)).
+			WithTitle(entityType).
+			WithShowElapsedTime(true).
+			Start()
+		if err != nil {
+			return
+		}
+		p.bar = bar
+		p.currentEntity = entityType
+		p.currentValue = 0
+	}
+	if p.bar != nil && current > p.currentValue {
+		p.bar.Add(int(current - p.currentValue))
+		p.currentValue = current
+	}
+}
+
+func (p *progressReporter) Stop() {
+	if p.bar != nil {
+		_, _ = p.bar.Stop()
+		p.bar = nil
+	}
 }
 
 func detectStorageType(dir string) (string, error) {
