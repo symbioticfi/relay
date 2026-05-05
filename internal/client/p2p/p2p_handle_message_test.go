@@ -21,6 +21,7 @@ import (
 	p2pEntity "github.com/symbioticfi/relay/internal/entity"
 	"github.com/symbioticfi/relay/pkg/signals"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator/blsBn254ZK"
 	symbioticCrypto "github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
@@ -228,7 +229,7 @@ func TestService_AggregatedProofIntegrationSuccessful(t *testing.T) {
 		KeyTag:      symbiotic.KeyTag(1),
 		Epoch:       symbiotic.Epoch(456),
 		MessageHash: symbiotic.RawMessageHash("test aggregation proof hash"),
-		Proof:       symbiotic.RawProof("test aggregation proof data"),
+		Proof:       make([]byte, blsBn254ZK.MinProofSize),
 	}
 
 	err = service1.BroadcastSignatureAggregatedMessage(ctx, testProofMsg)
