@@ -336,7 +336,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().String("storage-type", storageTypeBbolt, "Storage backend type (badger, bbolt)")
 	rootCmd.PersistentFlags().Int("bbolt.initial-mmap-size", 0, "Initial mmap size in bytes (0 = default)")
 	rootCmd.PersistentFlags().Bool("bbolt.compact-on-startup", true, "Compact database on startup to reclaim free pages")
-	rootCmd.PersistentFlags().Bool("bbolt.no-freelist-sync", false, "Skip writing freelist to disk on every commit (faster writes, slower startup)")
+	rootCmd.PersistentFlags().Bool("bbolt.no-freelist-sync", true, "Skip writing freelist to disk on every commit (faster writes, slower startup)")
 	rootCmd.PersistentFlags().Duration("bbolt.max-batch-delay", 2*time.Millisecond, "Max delay before flushing a batch write (0 = bbolt default 10ms)")
 	rootCmd.PersistentFlags().Int("bbolt.max-batch-size", 0, "Max operations per batch write (0 = bbolt default 1000)")
 	rootCmd.PersistentFlags().Duration("bbolt.stats-log-interval", 0, "Interval for logging bbolt database stats (0 = disabled)")
