@@ -241,9 +241,10 @@ type RetentionConfig struct {
 }
 
 type PrunerConfig struct {
-	Enabled   bool          `mapstructure:"enabled"`
-	Interval  time.Duration `mapstructure:"interval"`
-	BatchSize int           `mapstructure:"batch-size"`
+	Enabled    bool          `mapstructure:"enabled"`
+	Interval   time.Duration `mapstructure:"interval"`
+	BatchSize  int           `mapstructure:"batch-size"`
+	BatchPause time.Duration `mapstructure:"batch-pause"`
 }
 
 type AggregationConfig struct {
@@ -273,7 +274,6 @@ type BboltConfig struct {
 	MaxBatchDelay    time.Duration `mapstructure:"max-batch-delay"`
 	MaxBatchSize     int           `mapstructure:"max-batch-size"`
 	StatsLogInterval time.Duration `mapstructure:"stats-log-interval"`
-	PrunePause       time.Duration `mapstructure:"prune-pause"`
 }
 
 type BadgerConfig struct {
@@ -336,11 +336,10 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().String("storage-type", storageTypeBbolt, "Storage backend type (badger, bbolt)")
 	rootCmd.PersistentFlags().Int("bbolt.initial-mmap-size", 0, "Initial mmap size in bytes (0 = default)")
 	rootCmd.PersistentFlags().Bool("bbolt.compact-on-startup", true, "Compact database on startup to reclaim free pages")
-	rootCmd.PersistentFlags().Bool("bbolt.no-freelist-sync", false, "Skip writing freelist to disk on every commit (faster writes, slower startup)")
+	rootCmd.PersistentFlags().Bool("bbolt.no-freelist-sync", true, "Skip writing freelist to disk on every commit (faster writes, slower startup)")
 	rootCmd.PersistentFlags().Duration("bbolt.max-batch-delay", 2*time.Millisecond, "Max delay before flushing a batch write (0 = bbolt default 10ms)")
 	rootCmd.PersistentFlags().Int("bbolt.max-batch-size", 0, "Max operations per batch write (0 = bbolt default 1000)")
 	rootCmd.PersistentFlags().Duration("bbolt.stats-log-interval", 0, "Interval for logging bbolt database stats (0 = disabled)")
-	rootCmd.PersistentFlags().Duration("bbolt.prune-pause", 100*time.Millisecond, "Pause between bbolt prune batches to yield to writers (0 = no pause)")
 	rootCmd.PersistentFlags().String("circuits-dir", "", "Directory path to load zk circuits from, if empty then zp prover is disabled")
 	rootCmd.PersistentFlags().Uint64("aggregation-policy-max-unsigners", 50, "Max unsigners for low cost agg policy")
 	rootCmd.PersistentFlags().String("api.listen", "", "API Server listener address")
@@ -379,6 +378,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("pruner.enabled", false, "Enable automatic pruning of old epoch data (default: false)")
 	rootCmd.PersistentFlags().Duration("pruner.interval", time.Hour, "How often to run pruning (default: 1h)")
 	rootCmd.PersistentFlags().Int("pruner.batch-size", 100, "Number of request IDs to delete per database transaction during pruning (0 = unbatched)")
+	rootCmd.PersistentFlags().Duration("pruner.batch-pause", 100*time.Millisecond, "Pause between prune batches to yield to live writers (bbolt only — badger has no batching) (0 = no pause)")
 	rootCmd.PersistentFlags().Int("aggregation.worker-count", 10, "Max simultaneous proof aggregations, reduce for ZK circuits with high memory and cpu usage")
 	rootCmd.PersistentFlags().Bool("aggregation.cross-epoch-aggregation", false, "Allow latest-epoch aggregators to aggregate proofs for older epochs when original aggregators are offline")
 	rootCmd.PersistentFlags().Bool("aggregation.catchup.enabled", true, "Enable periodic aggregation catch-up loop")
@@ -489,9 +489,6 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("bbolt.stats-log-interval", cmd.PersistentFlags().Lookup("bbolt.stats-log-interval")); err != nil {
-		return errors.Errorf("failed to bind flag: %w", err)
-	}
-	if err := v.BindPFlag("bbolt.prune-pause", cmd.PersistentFlags().Lookup("bbolt.prune-pause")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("circuits-dir", cmd.PersistentFlags().Lookup("circuits-dir")); err != nil {
@@ -606,6 +603,9 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("pruner.batch-size", cmd.PersistentFlags().Lookup("pruner.batch-size")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("pruner.batch-pause", cmd.PersistentFlags().Lookup("pruner.batch-pause")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("aggregation.worker-count", cmd.PersistentFlags().Lookup("aggregation.worker-count")); err != nil {

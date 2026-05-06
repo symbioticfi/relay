@@ -197,7 +197,7 @@ func runApp(ctx context.Context) error {
 			Metrics:          mtr,
 			InitialMmapSize:  cfg.Bbolt.InitialMmapSize,
 			StatsLogInterval: cfg.Bbolt.StatsLogInterval,
-			PrunePause:       cfg.Bbolt.PrunePause,
+			PrunePause:       cfg.Pruner.BatchPause,
 			CompactOnStartup: cfg.Bbolt.CompactOnStartup,
 			NoFreelistSync:   cfg.Bbolt.NoFreelistSync,
 			MaxBatchDelay:    cfg.Bbolt.MaxBatchDelay,
