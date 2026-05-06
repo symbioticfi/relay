@@ -50,14 +50,14 @@ func TestRepository_GetAggregationProofsByEpoch(t *testing.T) {
 	require.NoError(t, repo.saveAggregationProof(t.Context(), ap2.RequestID(), ap2))
 
 	t.Run("get aggregation proofs for epoch 1", func(t *testing.T) {
-		proofs, err := repo.GetAggregationProofsByEpoch(t.Context(), 1)
+		proofs, _, err := repo.GetAggregationProofsByEpoch(t.Context(), 1, 0, nil)
 		require.NoError(t, err)
 		require.Len(t, proofs, 1)
 		require.Equal(t, ap1, proofs[0])
 	})
 
 	t.Run("get aggregation proofs for non-existent epoch", func(t *testing.T) {
-		proofs, err := repo.GetAggregationProofsByEpoch(t.Context(), 10)
+		proofs, _, err := repo.GetAggregationProofsByEpoch(t.Context(), 10, 0, nil)
 		require.NoError(t, err)
 		require.Empty(t, proofs)
 	})

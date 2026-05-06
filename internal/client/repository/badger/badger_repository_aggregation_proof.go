@@ -98,20 +98,56 @@ func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.H
 	})
 }
 
-func (r *Repository) GetAggregationProofsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.AggregationProof, error) {
-	var proofs []symbiotic.AggregationProof
+// GetAggregationProofsByEpoch returns one page of aggregation proofs for the
+// given epoch, paginated via opaque cursor `from` (32-byte requestID raw).
+// Iterates the request_id_epoch index (sorted by requestID within epoch);
+// nextFrom == nil signals the last page.
+func (r *Repository) GetAggregationProofsByEpoch(
+	ctx context.Context,
+	epoch symbiotic.Epoch,
+	pageSize int,
+	from []byte,
+) ([]symbiotic.AggregationProof, []byte, error) {
+	fromHash, err := decodeHashCursor(from)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	return proofs, r.doViewInTx(ctx, "GetAggregationProofsByEpoch", func(ctx context.Context) error {
+	var (
+		proofs     []symbiotic.AggregationProof
+		lastID     common.Hash
+		filledFull bool
+	)
+
+	err = r.doViewInTx(ctx, "GetAggregationProofsByEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-
-		startKey := keyRequestIDEpochPrefix(epoch)
+		prefix := keyRequestIDEpochPrefix(epoch)
 		opts := badger.DefaultIteratorOptions
 		opts.Prefix = keyRequestIDEpochAll()
-
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
-		for it.Seek(startKey); it.ValidForPrefix(startKey); it.Next() {
+		seekKey := prefix
+		if fromHash != (common.Hash{}) {
+			seekKey = keyRequestIDEpoch(epoch, fromHash)
+		}
+
+		it.Seek(seekKey)
+		if fromHash != (common.Hash{}) && it.ValidForPrefix(prefix) && bytes.Equal(it.Item().Key(), seekKey) {
+			it.Next()
+		}
+
+		count := 0
+		for ; it.ValidForPrefix(prefix); it.Next() {
+			if pageSize > 0 && count >= pageSize {
+				filledFull = true
+				return nil
+			}
+			id, err := extractRequestIDFromEpochKey(it.Item().Key())
+			if err != nil {
+				slog.ErrorContext(ctx, errCorruptedRequestIDEpochLink.Error(), "key", string(it.Item().Key()))
+				continue
+			}
 			proof, err := getAggregationProofByEpochFromItem(txn, it)
 			if err != nil {
 				if errors.Is(err, errCorruptedRequestIDEpochLink) {
@@ -120,12 +156,20 @@ func (r *Repository) GetAggregationProofsByEpoch(ctx context.Context, epoch symb
 				}
 				return err
 			}
-
 			proofs = append(proofs, proof)
+			lastID = id
+			count++
 		}
-
 		return nil
 	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if !filledFull {
+		return proofs, nil, nil
+	}
+	return proofs, encodeHashCursor(lastID), nil
 }
 
 func getAggregationProofByEpochFromItem(txn *badger.Txn, it *badger.Iterator) (symbiotic.AggregationProof, error) {

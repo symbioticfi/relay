@@ -14,4 +14,5 @@ const (
 	ErrNoPeers            = StringError("no peers available")
 	ErrTxConflict         = StringError("transaction conflict")
 	ErrKeyNotFound        = StringError("key not found")
+	ErrInvalidCursor      = StringError("invalid pagination cursor")
 )

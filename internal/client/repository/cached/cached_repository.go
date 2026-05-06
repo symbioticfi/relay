@@ -18,7 +18,10 @@ type Repository interface {
 	SaveSignature(ctx context.Context, signature symbiotic.Signature, validator symbiotic.Validator, activeIndex uint32) error
 	GetAllSignatures(ctx context.Context, requestID common.Hash) ([]symbiotic.Signature, error)
 	GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (symbiotic.Signature, error)
-	GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error)
+	// GetSignaturesByEpoch lists signatures of an epoch one page at a time.
+	// `from` is an opaque cursor (nil to start); returns (items, nextFrom, err).
+	// nextFrom == nil signals the last page; invalid `from` returns entity.ErrInvalidCursor.
+	GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.Epoch, pageSize int, from []byte) ([]symbiotic.Signature, []byte, error)
 
 	// Signature Maps
 	UpdateSignatureMap(ctx context.Context, vm entity.SignatureMap) error
@@ -27,16 +30,15 @@ type Repository interface {
 	// Signature Requests
 	SaveSignatureRequest(ctx context.Context, requestID common.Hash, req symbiotic.SignatureRequest) error
 	GetSignatureRequest(ctx context.Context, requestID common.Hash) (symbiotic.SignatureRequest, error)
-	GetSignatureRequestsByEpoch(ctx context.Context, epoch symbiotic.Epoch, limit int, lastHash common.Hash) ([]symbiotic.SignatureRequest, error)
-	GetSignatureRequestsWithIDByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]entity.SignatureRequestWithID, error)
-	GetSignatureRequestIDsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]common.Hash, error)
+	GetSignatureRequestsWithIDByEpoch(ctx context.Context, epoch symbiotic.Epoch, pageSize int, from []byte) ([]entity.SignatureRequestWithID, []byte, error)
+	GetSignatureRequestIDsByEpoch(ctx context.Context, epoch symbiotic.Epoch, pageSize int, from []byte) ([]common.Hash, []byte, error)
 	GetSignaturePending(ctx context.Context, limit int) ([]common.Hash, error)
 	RemoveSignaturePending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error
 
 	// Aggregation Proofs
 	SaveProof(ctx context.Context, aggregationProof symbiotic.AggregationProof) error
 	GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error)
-	GetAggregationProofsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.AggregationProof, error)
+	GetAggregationProofsByEpoch(ctx context.Context, epoch symbiotic.Epoch, pageSize int, from []byte) ([]symbiotic.AggregationProof, []byte, error)
 	GetSignatureRequestsWithoutAggregationProof(ctx context.Context, epoch symbiotic.Epoch, limit int, lastHash common.Hash) ([]symbiotic.SignatureRequestWithID, error)
 	RemoveAggregationProofPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error
 

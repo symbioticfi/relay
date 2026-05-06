@@ -111,8 +111,8 @@ func TestListenSignatures_OnlyHistoricalData(t *testing.T) {
 
 	startEpoch := uint64(5)
 	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(6), nil)
-	mockRepo.EXPECT().GetSignaturesByEpoch(ctx, symbiotic.Epoch(5)).Return(expectedSignatures[:2], nil)
-	mockRepo.EXPECT().GetSignaturesByEpoch(ctx, symbiotic.Epoch(6)).Return(expectedSignatures[2:], nil)
+	mockRepo.EXPECT().GetSignaturesByEpoch(ctx, symbiotic.Epoch(5), gomock.Any(), gomock.Any()).Return(expectedSignatures[:2], []byte(nil), nil)
+	mockRepo.EXPECT().GetSignaturesByEpoch(ctx, symbiotic.Epoch(6), gomock.Any(), gomock.Any()).Return(expectedSignatures[2:], []byte(nil), nil)
 
 	req := &apiv1.ListenSignaturesRequest{
 		StartEpoch: &startEpoch,
@@ -227,7 +227,7 @@ func TestListenSignatures_HistoricalAndBroadcast(t *testing.T) {
 
 	startEpoch := uint64(5)
 	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(5), nil)
-	mockRepo.EXPECT().GetSignaturesByEpoch(ctx, symbiotic.Epoch(5)).Return(historicalSignatures, nil)
+	mockRepo.EXPECT().GetSignaturesByEpoch(ctx, symbiotic.Epoch(5), gomock.Any(), gomock.Any()).Return(historicalSignatures, []byte(nil), nil)
 
 	req := &apiv1.ListenSignaturesRequest{
 		StartEpoch: &startEpoch,
@@ -334,7 +334,7 @@ func TestListenSignatures_StreamSendError(t *testing.T) {
 
 	startEpoch := uint64(5)
 	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(5), nil)
-	mockRepo.EXPECT().GetSignaturesByEpoch(ctx, symbiotic.Epoch(5)).Return(expectedSignatures, nil)
+	mockRepo.EXPECT().GetSignaturesByEpoch(ctx, symbiotic.Epoch(5), gomock.Any(), gomock.Any()).Return(expectedSignatures, []byte(nil), nil)
 
 	req := &apiv1.ListenSignaturesRequest{
 		StartEpoch: &startEpoch,

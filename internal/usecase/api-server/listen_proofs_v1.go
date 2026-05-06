@@ -36,23 +36,31 @@ func (h *grpcHandler) ListenProofs(
 		}
 
 		for e := symbiotic.Epoch(epoch); e <= latestEpoch; e++ {
-			proofs, err := h.cfg.Repo.GetAggregationProofsByEpoch(ctx, e)
-			if err != nil {
-				return err
-			}
-
-			for _, proof := range proofs {
-				if err = stream.Send(&apiv1.ListenProofsResponse{
-					RequestId: proof.RequestID().Hex(),
-					Epoch:     uint64(proof.Epoch),
-					AggregationProof: &apiv1.AggregationProof{
-						MessageHash: proof.MessageHash,
-						Proof:       proof.Proof,
-						RequestId:   proof.RequestID().Hex(),
-					},
-				}); err != nil {
+			var from []byte
+			for {
+				proofs, next, err := h.cfg.Repo.GetAggregationProofsByEpoch(ctx, e, maxListPageSize, from)
+				if err != nil {
 					return err
 				}
+
+				for _, proof := range proofs {
+					if err = stream.Send(&apiv1.ListenProofsResponse{
+						RequestId: proof.RequestID().Hex(),
+						Epoch:     uint64(proof.Epoch),
+						AggregationProof: &apiv1.AggregationProof{
+							MessageHash: proof.MessageHash,
+							Proof:       proof.Proof,
+							RequestId:   proof.RequestID().Hex(),
+						},
+					}); err != nil {
+						return err
+					}
+				}
+
+				if next == nil {
+					break
+				}
+				from = next
 			}
 		}
 	}

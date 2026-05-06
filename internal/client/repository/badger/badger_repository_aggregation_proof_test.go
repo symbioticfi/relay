@@ -79,7 +79,7 @@ func TestBadgerRepository_GetAggregationProofsByEpoch(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("get aggregation proofs for epoch 2", func(t *testing.T) {
-		proofs, err := repo.GetAggregationProofsByEpoch(t.Context(), 2)
+		proofs, _, err := repo.GetAggregationProofsByEpoch(t.Context(), 2, 0, nil)
 		require.NoError(t, err)
 
 		require.Len(t, proofs, 1)
@@ -88,7 +88,7 @@ func TestBadgerRepository_GetAggregationProofsByEpoch(t *testing.T) {
 	})
 
 	t.Run("get aggregation proofs for epoch 1", func(t *testing.T) {
-		proofs, err := repo.GetAggregationProofsByEpoch(t.Context(), 1)
+		proofs, _, err := repo.GetAggregationProofsByEpoch(t.Context(), 1, 0, nil)
 		require.NoError(t, err)
 
 		require.Len(t, proofs, 1)
@@ -97,7 +97,7 @@ func TestBadgerRepository_GetAggregationProofsByEpoch(t *testing.T) {
 	})
 
 	t.Run("get aggregation proofs for epoch 3", func(t *testing.T) {
-		proofs, err := repo.GetAggregationProofsByEpoch(t.Context(), 3)
+		proofs, _, err := repo.GetAggregationProofsByEpoch(t.Context(), 3, 0, nil)
 		require.NoError(t, err)
 
 		require.Len(t, proofs, 1)
@@ -106,7 +106,7 @@ func TestBadgerRepository_GetAggregationProofsByEpoch(t *testing.T) {
 	})
 
 	t.Run("get aggregation proofs for non-existent epoch", func(t *testing.T) {
-		proofs, err := repo.GetAggregationProofsByEpoch(t.Context(), 10)
+		proofs, _, err := repo.GetAggregationProofsByEpoch(t.Context(), 10, 0, nil)
 		require.NoError(t, err)
 		require.Empty(t, proofs)
 	})

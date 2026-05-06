@@ -90,28 +90,84 @@ func (r *Repository) GetSignatureByIndex(ctx context.Context, requestID common.H
 	return sig, err
 }
 
-func (r *Repository) GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error) {
-	var signatures []symbiotic.Signature
+// GetSignaturesByEpoch returns one page of signatures for the given epoch,
+// paginated via 36-byte composite cursor `from` (requestID || BE32(vIdx)).
+// Pagination is per-signature so pageSize is honored exactly even when groups
+// are large. nextFrom == nil signals the last page.
+func (r *Repository) GetSignaturesByEpoch(
+	ctx context.Context,
+	epoch symbiotic.Epoch,
+	pageSize int,
+	from []byte,
+) ([]symbiotic.Signature, []byte, error) {
+	fromRequestID, fromVIdx, err := decodeSignatureCursor(from)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	err := r.doView(ctx, "GetSignaturesByEpoch", func(tx *bolt.Tx) error {
-		prefix := epochBytes(uint64(epoch))
-		c := tx.Bucket(bucketRequestIDEpochs).Cursor()
+	var (
+		signatures    []symbiotic.Signature
+		lastRequestID common.Hash
+		lastVIdx      uint32
+		filledFull    bool
+	)
 
-		for k, _ := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Next() {
+	err = r.doView(ctx, "GetSignaturesByEpoch", func(tx *bolt.Tx) error {
+		idxPrefix := epochBytes(uint64(epoch))
+		idxC := tx.Bucket(bucketRequestIDEpochs).Cursor()
+
+		idxSeekKey := idxPrefix
+		if fromRequestID != (common.Hash{}) {
+			idxSeekKey = epochHashKey(uint64(epoch), fromRequestID.Bytes())
+		}
+
+		count := 0
+	outer:
+		for k, _ := idxC.Seek(idxSeekKey); k != nil && bytes.HasPrefix(k, idxPrefix); k, _ = idxC.Next() {
 			if len(k) < 40 {
 				continue
 			}
-			requestID := common.BytesToHash(k[8:40])
-			sigs, err := getAllSignatures(tx, requestID)
-			if err != nil {
-				slog.ErrorContext(ctx, "Corrupted request id epoch link", "key", hex.EncodeToString(k))
-				continue
+			currentRequestID := common.BytesToHash(k[8:40])
+
+			startVIdx := uint32(0)
+			if currentRequestID == fromRequestID && fromVIdx > 0 {
+				startVIdx = fromVIdx + 1
 			}
-			signatures = append(signatures, sigs...)
+
+			sigC := tx.Bucket(bucketSignatures).Cursor()
+			sigPrefix := currentRequestID.Bytes()
+			sigSeekKey := signatureKey(currentRequestID.Bytes(), startVIdx)
+
+			for sk, sv := sigC.Seek(sigSeekKey); sk != nil && bytes.HasPrefix(sk, sigPrefix); sk, sv = sigC.Next() {
+				if pageSize > 0 && count >= pageSize {
+					filledFull = true
+					break outer
+				}
+				if len(sk) != 36 {
+					continue
+				}
+				vIdx := binary.BigEndian.Uint32(sk[32:])
+				sig, err := codec.BytesToSignature(sv)
+				if err != nil {
+					slog.ErrorContext(ctx, "Failed to unmarshal signature", "key", hex.EncodeToString(sk), "error", err)
+					continue
+				}
+				signatures = append(signatures, sig)
+				lastRequestID = currentRequestID
+				lastVIdx = vIdx
+				count++
+			}
 		}
 		return nil
 	})
-	return signatures, err
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if !filledFull {
+		return signatures, nil, nil
+	}
+	return signatures, encodeSignatureCursor(lastRequestID, lastVIdx), nil
 }
 
 func (r *Repository) UpdateSignatureMap(ctx context.Context, vm entity.SignatureMap) error {
@@ -207,83 +263,131 @@ func (r *Repository) GetSignatureRequest(ctx context.Context, requestID common.H
 	return req, err
 }
 
-func (r *Repository) GetSignatureRequestsByEpoch(ctx context.Context, epoch symbiotic.Epoch, limit int, lastHash common.Hash) ([]symbiotic.SignatureRequest, error) {
-	var requests []symbiotic.SignatureRequest
+// GetSignatureRequestsWithIDByEpoch returns one page of signature requests for
+// the given epoch, paginated via opaque cursor `from` (32-byte requestID raw).
+// nextFrom == nil signals the last page.
+func (r *Repository) GetSignatureRequestsWithIDByEpoch(
+	ctx context.Context,
+	epoch symbiotic.Epoch,
+	pageSize int,
+	from []byte,
+) ([]entity.SignatureRequestWithID, []byte, error) {
+	fromHash, err := decodeHashCursor(from)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	err := r.doView(ctx, "GetSignatureRequestsByEpoch", func(tx *bolt.Tx) error {
-		prefix := epochBytes(uint64(epoch))
-		b := tx.Bucket(bucketSignatureRequests)
-		c := b.Cursor()
+	var (
+		requests   []entity.SignatureRequestWithID
+		lastID     common.Hash
+		filledFull bool
+	)
 
-		seekKey := prefix
-		if lastHash != (common.Hash{}) {
-			seekKey = epochHashKey(uint64(epoch), lastHash.Bytes())
-		}
-
-		count := 0
-		k, v := c.Seek(seekKey)
-		if lastHash != (common.Hash{}) && k != nil && bytes.Equal(k, seekKey) {
-			k, v = c.Next()
-		}
-
-		for ; k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
-			if limit > 0 && count >= limit {
-				break
-			}
-			req, err := codec.BytesToSignatureRequest(v)
-			if err != nil {
-				return errors.Errorf("failed to unmarshal signature request: %w", err)
-			}
-			requests = append(requests, req)
-			count++
-		}
-		return nil
-	})
-	return requests, err
-}
-
-func (r *Repository) GetSignatureRequestsWithIDByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]entity.SignatureRequestWithID, error) {
-	var requests []entity.SignatureRequestWithID
-
-	err := r.doView(ctx, "GetSignatureRequestsWithIDByEpoch", func(tx *bolt.Tx) error {
+	err = r.doView(ctx, "GetSignatureRequestsWithIDByEpoch", func(tx *bolt.Tx) error {
 		prefix := epochBytes(uint64(epoch))
 		c := tx.Bucket(bucketSignatureRequests).Cursor()
 
-		for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
+		seekKey := prefix
+		if fromHash != (common.Hash{}) {
+			seekKey = epochHashKey(uint64(epoch), fromHash.Bytes())
+		}
+
+		k, v := c.Seek(seekKey)
+		if fromHash != (common.Hash{}) && k != nil && bytes.Equal(k, seekKey) {
+			k, v = c.Next()
+		}
+
+		count := 0
+		for ; k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
+			if pageSize > 0 && count >= pageSize {
+				filledFull = true
+				return nil
+			}
 			if len(k) < 40 {
 				continue
 			}
-			requestID := common.BytesToHash(k[8:40])
+			id := common.BytesToHash(k[8:40])
 			req, err := codec.BytesToSignatureRequest(v)
 			if err != nil {
 				return errors.Errorf("failed to unmarshal signature request: %w", err)
 			}
 			requests = append(requests, entity.SignatureRequestWithID{
-				RequestID:        requestID,
+				RequestID:        id,
 				SignatureRequest: req,
 			})
+			lastID = id
+			count++
 		}
 		return nil
 	})
-	return requests, err
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if !filledFull {
+		return requests, nil, nil
+	}
+	return requests, encodeHashCursor(lastID), nil
 }
 
-func (r *Repository) GetSignatureRequestIDsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]common.Hash, error) {
-	var ids []common.Hash
+// GetSignatureRequestIDsByEpoch returns one page of request IDs for the given
+// epoch (keys only — no value materialization). Cursor format same as
+// GetSignatureRequestsWithIDByEpoch.
+func (r *Repository) GetSignatureRequestIDsByEpoch(
+	ctx context.Context,
+	epoch symbiotic.Epoch,
+	pageSize int,
+	from []byte,
+) ([]common.Hash, []byte, error) {
+	fromHash, err := decodeHashCursor(from)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	err := r.doView(ctx, "GetSignatureRequestIDsByEpoch", func(tx *bolt.Tx) error {
+	var (
+		ids        []common.Hash
+		lastID     common.Hash
+		filledFull bool
+	)
+
+	err = r.doView(ctx, "GetSignatureRequestIDsByEpoch", func(tx *bolt.Tx) error {
 		prefix := epochBytes(uint64(epoch))
 		c := tx.Bucket(bucketSignatureRequests).Cursor()
 
-		for k, _ := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Next() {
+		seekKey := prefix
+		if fromHash != (common.Hash{}) {
+			seekKey = epochHashKey(uint64(epoch), fromHash.Bytes())
+		}
+
+		k, _ := c.Seek(seekKey)
+		if fromHash != (common.Hash{}) && k != nil && bytes.Equal(k, seekKey) {
+			k, _ = c.Next()
+		}
+
+		count := 0
+		for ; k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Next() {
+			if pageSize > 0 && count >= pageSize {
+				filledFull = true
+				return nil
+			}
 			if len(k) < 40 {
 				continue
 			}
-			ids = append(ids, common.BytesToHash(k[8:40]))
+			id := common.BytesToHash(k[8:40])
+			ids = append(ids, id)
+			lastID = id
+			count++
 		}
 		return nil
 	})
-	return ids, err
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if !filledFull {
+		return ids, nil, nil
+	}
+	return ids, encodeHashCursor(lastID), nil
 }
 
 func (r *Repository) GetSignaturePending(ctx context.Context, limit int) ([]common.Hash, error) {

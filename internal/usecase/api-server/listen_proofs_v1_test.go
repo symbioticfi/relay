@@ -104,8 +104,8 @@ func TestListenProofs_OnlyHistoricalData(t *testing.T) {
 
 	startEpoch := uint64(3)
 	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(4), nil)
-	mockRepo.EXPECT().GetAggregationProofsByEpoch(ctx, symbiotic.Epoch(3)).Return(expectedProofs[:2], nil)
-	mockRepo.EXPECT().GetAggregationProofsByEpoch(ctx, symbiotic.Epoch(4)).Return(expectedProofs[2:], nil)
+	mockRepo.EXPECT().GetAggregationProofsByEpoch(ctx, symbiotic.Epoch(3), gomock.Any(), gomock.Any()).Return(expectedProofs[:2], []byte(nil), nil)
+	mockRepo.EXPECT().GetAggregationProofsByEpoch(ctx, symbiotic.Epoch(4), gomock.Any(), gomock.Any()).Return(expectedProofs[2:], []byte(nil), nil)
 
 	req := &apiv1.ListenProofsRequest{
 		StartEpoch: &startEpoch,
@@ -211,7 +211,7 @@ func TestListenProofs_HistoricalAndBroadcast(t *testing.T) {
 
 	startEpoch := uint64(3)
 	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(3), nil)
-	mockRepo.EXPECT().GetAggregationProofsByEpoch(ctx, symbiotic.Epoch(3)).Return(historicalProofs, nil)
+	mockRepo.EXPECT().GetAggregationProofsByEpoch(ctx, symbiotic.Epoch(3), gomock.Any(), gomock.Any()).Return(historicalProofs, []byte(nil), nil)
 
 	req := &apiv1.ListenProofsRequest{
 		StartEpoch: &startEpoch,
@@ -313,7 +313,7 @@ func TestListenProofs_StreamSendError(t *testing.T) {
 
 	startEpoch := uint64(3)
 	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(3), nil)
-	mockRepo.EXPECT().GetAggregationProofsByEpoch(ctx, symbiotic.Epoch(3)).Return(expectedProofs, nil)
+	mockRepo.EXPECT().GetAggregationProofsByEpoch(ctx, symbiotic.Epoch(3), gomock.Any(), gomock.Any()).Return(expectedProofs, []byte(nil), nil)
 
 	req := &apiv1.ListenProofsRequest{
 		StartEpoch: &startEpoch,
@@ -414,7 +414,7 @@ func TestListenProofs_EmptyHistoricalData(t *testing.T) {
 
 	startEpoch := uint64(3)
 	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(3), nil)
-	mockRepo.EXPECT().GetAggregationProofsByEpoch(ctx, symbiotic.Epoch(3)).Return([]symbiotic.AggregationProof{}, nil)
+	mockRepo.EXPECT().GetAggregationProofsByEpoch(ctx, symbiotic.Epoch(3), gomock.Any(), gomock.Any()).Return([]symbiotic.AggregationProof{}, []byte(nil), nil)
 
 	req := &apiv1.ListenProofsRequest{
 		StartEpoch: &startEpoch,

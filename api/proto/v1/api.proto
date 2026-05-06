@@ -291,6 +291,10 @@ message GetAggregationProofRequest {
 message GetAggregationProofsByEpochRequest {
   // Epoch number
   uint64 epoch = 1;
+  // Maximum number of items to return. 0 = server default (100). Server clamps to max (1000).
+  uint32 page_size = 2;
+  // Opaque pagination cursor from a previous response's `next_from`. Empty string starts from the beginning.
+  string from = 3;
 }
 
 // Request message for getting current epoch
@@ -305,6 +309,10 @@ message GetSignaturesRequest {
 message GetSignaturesByEpochRequest {
   // Epoch number
   uint64 epoch = 1;
+  // Maximum number of items to return. 0 = server default (100). Server clamps to max (1000).
+  uint32 page_size = 2;
+  // Opaque pagination cursor from a previous response's `next_from`. Empty string starts from the beginning.
+  string from = 3;
 }
 
 // Response message for getting signatures
@@ -317,30 +325,44 @@ message GetSignaturesResponse {
 message GetSignaturesByEpochResponse {
   // List of signatures
   repeated Signature signatures = 1;
+  // Cursor to retrieve the next page. Empty when this is the last page.
+  string next_from = 2;
 }
 
 // Request message for getting all signature request IDs by epoch
 message GetSignatureRequestIDsByEpochRequest {
   // Epoch number
   uint64 epoch = 1;
+  // Maximum number of items to return. 0 = server default (1000). Server clamps to max (10000).
+  uint32 page_size = 2;
+  // Opaque pagination cursor from a previous response's `next_from`. Empty string starts from the beginning.
+  string from = 3;
 }
 
 // Response message for getting all signature request IDs by epoch
 message GetSignatureRequestIDsByEpochResponse {
   // List of all signature request IDs for the epoch
   repeated string request_ids = 1;
+  // Cursor to retrieve the next page. Empty when this is the last page.
+  string next_from = 2;
 }
 
 // Request message for getting all signature requests by epoch
 message GetSignatureRequestsByEpochRequest {
   // Epoch number
   uint64 epoch = 1;
+  // Maximum number of items to return. 0 = server default (100). Server clamps to max (1000).
+  uint32 page_size = 2;
+  // Opaque pagination cursor from a previous response's `next_from`. Empty string starts from the beginning.
+  string from = 3;
 }
 
 // Response message for getting all signature requests by epoch
 message GetSignatureRequestsByEpochResponse {
   // List of all signature requests for the epoch
   repeated SignatureRequest signature_requests = 1;
+  // Cursor to retrieve the next page. Empty when this is the last page.
+  string next_from = 2;
 }
 
 // Request message for getting signature request
@@ -436,6 +458,8 @@ message GetAggregationProofResponse {
 // Response message for getting aggregation proof
 message GetAggregationProofsByEpochResponse {
   repeated AggregationProof aggregation_proofs = 1;
+  // Cursor to retrieve the next page. Empty when this is the last page.
+  string next_from = 2;
 }
 
 // Response message for getting aggregation proof

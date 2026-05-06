@@ -36,19 +36,27 @@ func (h *grpcHandler) ListenSignatures(
 		}
 
 		for e := symbiotic.Epoch(epoch); e <= latestEpoch; e++ {
-			signatures, err := h.cfg.Repo.GetSignaturesByEpoch(ctx, e)
-			if err != nil {
-				return err
-			}
-
-			for _, signature := range signatures {
-				if err = stream.Send(&apiv1.ListenSignaturesResponse{
-					RequestId: signature.RequestID().Hex(),
-					Epoch:     uint64(signature.Epoch),
-					Signature: convertSignatureToPB(signature),
-				}); err != nil {
+			var from []byte
+			for {
+				signatures, next, err := h.cfg.Repo.GetSignaturesByEpoch(ctx, e, maxListPageSize, from)
+				if err != nil {
 					return err
 				}
+
+				for _, signature := range signatures {
+					if err = stream.Send(&apiv1.ListenSignaturesResponse{
+						RequestId: signature.RequestID().Hex(),
+						Epoch:     uint64(signature.Epoch),
+						Signature: convertSignatureToPB(signature),
+					}); err != nil {
+						return err
+					}
+				}
+
+				if next == nil {
+					break
+				}
+				from = next
 			}
 		}
 	}

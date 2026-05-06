@@ -44,10 +44,13 @@ type repo interface {
 	GetLatestValidatorSetHeader(_ context.Context) (symbiotic.ValidatorSetHeader, error)
 	GetLatestValidatorSetEpoch(_ context.Context) (symbiotic.Epoch, error)
 	GetValidatorSetMetadata(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSetMetadata, error)
-	GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error)
-	GetSignatureRequestIDsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]common.Hash, error)
-	GetSignatureRequestsWithIDByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]entity.SignatureRequestWithID, error)
-	GetAggregationProofsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.AggregationProof, error)
+	// Listing methods. `from` is an opaque cursor returned by a previous call (nil to start).
+	// Returns (items, nextFrom, err). nextFrom == nil signals last page.
+	// Invalid `from` (wrong size / format) returns entity.ErrInvalidCursor.
+	GetSignatureRequestIDsByEpoch(ctx context.Context, epoch symbiotic.Epoch, pageSize int, from []byte) ([]common.Hash, []byte, error)
+	GetSignatureRequestsWithIDByEpoch(ctx context.Context, epoch symbiotic.Epoch, pageSize int, from []byte) ([]entity.SignatureRequestWithID, []byte, error)
+	GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.Epoch, pageSize int, from []byte) ([]symbiotic.Signature, []byte, error)
+	GetAggregationProofsByEpoch(ctx context.Context, epoch symbiotic.Epoch, pageSize int, from []byte) ([]symbiotic.AggregationProof, []byte, error)
 }
 type evmClient interface {
 	GetCurrentEpoch(ctx context.Context) (symbiotic.Epoch, error)

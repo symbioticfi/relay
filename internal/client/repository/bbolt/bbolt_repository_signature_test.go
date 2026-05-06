@@ -154,21 +154,21 @@ func TestRepository_GetSignaturesByEpoch(t *testing.T) {
 	require.NoError(t, repo.saveSignature(context.Background(), 1, sig2))
 
 	t.Run("get signatures for epoch 1", func(t *testing.T) {
-		signatures, err := repo.GetSignaturesByEpoch(context.Background(), 1)
+		signatures, _, err := repo.GetSignaturesByEpoch(context.Background(), 1, 0, nil)
 		require.NoError(t, err)
 		require.Len(t, signatures, 1)
 		require.Equal(t, sig1, signatures[0])
 	})
 
 	t.Run("get signatures for epoch 2", func(t *testing.T) {
-		signatures, err := repo.GetSignaturesByEpoch(context.Background(), 2)
+		signatures, _, err := repo.GetSignaturesByEpoch(context.Background(), 2, 0, nil)
 		require.NoError(t, err)
 		require.Len(t, signatures, 1)
 		require.Equal(t, sig2, signatures[0])
 	})
 
 	t.Run("get signatures for non-existent epoch", func(t *testing.T) {
-		signatures, err := repo.GetSignaturesByEpoch(context.Background(), 10)
+		signatures, _, err := repo.GetSignaturesByEpoch(context.Background(), 10, 0, nil)
 		require.NoError(t, err)
 		require.Empty(t, signatures)
 	})

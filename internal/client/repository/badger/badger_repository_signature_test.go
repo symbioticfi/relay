@@ -203,7 +203,7 @@ func TestBadgerRepository_GetSignaturesByEpoch(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("get signatures for epoch 2", func(t *testing.T) {
-		signatures, err := repo.GetSignaturesByEpoch(context.Background(), 2)
+		signatures, _, err := repo.GetSignaturesByEpoch(context.Background(), 2, 0, nil)
 		require.NoError(t, err)
 
 		require.Len(t, signatures, 1)
@@ -212,7 +212,7 @@ func TestBadgerRepository_GetSignaturesByEpoch(t *testing.T) {
 	})
 
 	t.Run("get signatures for epoch 1", func(t *testing.T) {
-		signatures, err := repo.GetSignaturesByEpoch(context.Background(), 1)
+		signatures, _, err := repo.GetSignaturesByEpoch(context.Background(), 1, 0, nil)
 		require.NoError(t, err)
 
 		require.Len(t, signatures, 1)
@@ -221,7 +221,7 @@ func TestBadgerRepository_GetSignaturesByEpoch(t *testing.T) {
 	})
 
 	t.Run("get signatures for epoch 3", func(t *testing.T) {
-		signatures, err := repo.GetSignaturesByEpoch(context.Background(), 3)
+		signatures, _, err := repo.GetSignaturesByEpoch(context.Background(), 3, 0, nil)
 		require.NoError(t, err)
 
 		require.Len(t, signatures, 1)
@@ -230,7 +230,7 @@ func TestBadgerRepository_GetSignaturesByEpoch(t *testing.T) {
 	})
 
 	t.Run("get signatures for non-existent epoch", func(t *testing.T) {
-		signatures, err := repo.GetSignaturesByEpoch(context.Background(), 10)
+		signatures, _, err := repo.GetSignaturesByEpoch(context.Background(), 10, 0, nil)
 		require.NoError(t, err)
 		require.Empty(t, signatures)
 	})

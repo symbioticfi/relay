@@ -381,7 +381,7 @@ func TestRepository_PruneAggregationProof_IndexCleanup(t *testing.T) {
 	// Verify all proofs exist before pruning
 	t.Run("verify all proofs exist before pruning", func(t *testing.T) {
 		for i, epoch := range epochs {
-			proofs, err := repo.GetAggregationProofsByEpoch(ctx, epoch)
+			proofs, _, err := repo.GetAggregationProofsByEpoch(ctx, epoch, 0, nil)
 			require.NoError(t, err)
 			require.Len(t, proofs, 1)
 			require.Equal(t, requestIDs[i], proofs[0].RequestID())
@@ -404,7 +404,7 @@ func TestRepository_PruneAggregationProof_IndexCleanup(t *testing.T) {
 
 	// Verify GetAggregationProofsByEpoch returns empty for pruned epoch
 	t.Run("GetAggregationProofsByEpoch returns empty for pruned epoch", func(t *testing.T) {
-		proofs, err := repo.GetAggregationProofsByEpoch(ctx, epochs[1])
+		proofs, _, err := repo.GetAggregationProofsByEpoch(ctx, epochs[1], 0, nil)
 		require.NoError(t, err, "GetAggregationProofsByEpoch should not error on pruned epoch")
 		require.Empty(t, proofs, "GetAggregationProofsByEpoch should return empty slice for pruned epoch")
 	})
@@ -412,13 +412,13 @@ func TestRepository_PruneAggregationProof_IndexCleanup(t *testing.T) {
 	// Verify GetAggregationProofsByEpoch still works for non-pruned epochs
 	t.Run("GetAggregationProofsByEpoch works for non-pruned epochs", func(t *testing.T) {
 		// First epoch should still have its proof
-		proofs, err := repo.GetAggregationProofsByEpoch(ctx, epochs[0])
+		proofs, _, err := repo.GetAggregationProofsByEpoch(ctx, epochs[0], 0, nil)
 		require.NoError(t, err)
 		require.Len(t, proofs, 1)
 		require.Equal(t, requestIDs[0], proofs[0].RequestID())
 
 		// Last epoch should still have its proof
-		proofs, err = repo.GetAggregationProofsByEpoch(ctx, epochs[2])
+		proofs, _, err = repo.GetAggregationProofsByEpoch(ctx, epochs[2], 0, nil)
 		require.NoError(t, err)
 		require.Len(t, proofs, 1)
 		require.Equal(t, requestIDs[2], proofs[0].RequestID())
