@@ -120,7 +120,7 @@ func (c *CMDSecretKey) String() string {
 func (c *CMDSecretKey) Set(str string) error {
 	strs := strings.Split(str, "/")
 	if len(strs) != 4 {
-		return errors.Errorf("invalid secret key format: %s, expected {namespace}/{type}/{id}", str)
+		return errors.Errorf("invalid secret key format: %s, expected {namespace}/{type}/{id}/{secret}", str)
 	}
 	c.Namespace = strs[0]
 	c.Secret = strs[3]
@@ -340,7 +340,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Duration("bbolt.max-batch-delay", 2*time.Millisecond, "Max delay before flushing a batch write (0 = bbolt default 10ms)")
 	rootCmd.PersistentFlags().Int("bbolt.max-batch-size", 0, "Max operations per batch write (0 = bbolt default 1000)")
 	rootCmd.PersistentFlags().Duration("bbolt.stats-log-interval", 0, "Interval for logging bbolt database stats (0 = disabled)")
-	rootCmd.PersistentFlags().String("circuits-dir", "", "Directory path to load zk circuits from, if empty then zp prover is disabled")
+	rootCmd.PersistentFlags().String("circuits-dir", "", "Directory path to load zk circuits from, if empty then zk prover is disabled")
 	rootCmd.PersistentFlags().Uint64("aggregation-policy-max-unsigners", 50, "Max unsigners for low cost agg policy")
 	rootCmd.PersistentFlags().String("api.listen", "", "API Server listener address")
 	rootCmd.PersistentFlags().Uint64("api.max-allowed-streams", 100, "Max allowed streams count API Server")
@@ -350,7 +350,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("metrics.pprof", false, "Enable pprof debug endpoints")
 	rootCmd.PersistentFlags().Uint64("driver.chain-id", 0, "Driver contract chain id")
 	rootCmd.PersistentFlags().String("driver.address", "", "Driver contract address")
-	rootCmd.PersistentFlags().Var(&CMDSecretKeySlice{}, "secret-keys", "Secret keys, comma separated {namespace}/{type}/{id}/{key},..")
+	rootCmd.PersistentFlags().Var(&CMDSecretKeySlice{}, "secret-keys", "Secret keys, comma separated {namespace}/{type}/{id}/{secret},..")
 	rootCmd.PersistentFlags().String("keystore.path", "", "Path to optional keystore file, if provided will be used instead of secret-keys flag")
 	rootCmd.PersistentFlags().String("keystore.password", "", "Password for the keystore file, if provided will be used to decrypt the keystore file")
 	rootCmd.PersistentFlags().Int64("signal.worker-count", 10, "Signal worker count")
@@ -360,7 +360,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("sync.enabled", true, "Enable signature syncer")
 	rootCmd.PersistentFlags().Duration("sync.period", time.Second*5, "Signature sync period")
 	rootCmd.PersistentFlags().Duration("sync.timeout", time.Minute, "Signature sync timeout")
-	rootCmd.PersistentFlags().Uint64("sync.epochs", 5, "Epochs to sync")
+	rootCmd.PersistentFlags().Uint64("sync.epochs", 5, "Number of recent epochs to sync from peers on startup")
 	rootCmd.PersistentFlags().Int("key-cache.size", 100, "Key cache size")
 	rootCmd.PersistentFlags().Bool("key-cache.enabled", true, "Enable key cache")
 	rootCmd.PersistentFlags().String("p2p.listen", "", "P2P listen address")
@@ -375,8 +375,8 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Uint64("retention.valset-epochs", 0, "Number of historical validator set epochs to retain (0 = unlimited)")
 	rootCmd.PersistentFlags().Uint64("retention.proof-epochs", 0, "Number of historical proof epochs to retain (0 = unlimited)")
 	rootCmd.PersistentFlags().Uint64("retention.signature-epochs", 0, "Number of historical signature epochs to retain (0 = unlimited)")
-	rootCmd.PersistentFlags().Bool("pruner.enabled", false, "Enable automatic pruning of old epoch data (default: false)")
-	rootCmd.PersistentFlags().Duration("pruner.interval", time.Hour, "How often to run pruning (default: 1h)")
+	rootCmd.PersistentFlags().Bool("pruner.enabled", false, "Enable automatic pruning of old epoch data")
+	rootCmd.PersistentFlags().Duration("pruner.interval", time.Hour, "How often to run pruning")
 	rootCmd.PersistentFlags().Int("pruner.batch-size", 100, "Number of request IDs to delete per database transaction during pruning (0 = unbatched)")
 	rootCmd.PersistentFlags().Duration("pruner.batch-pause", 100*time.Millisecond, "Pause between prune batches to yield to live writers (bbolt only — badger has no batching) (0 = no pause)")
 	rootCmd.PersistentFlags().Int("aggregation.worker-count", 10, "Max simultaneous proof aggregations, reduce for ZK circuits with high memory and cpu usage")
@@ -384,7 +384,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("aggregation.catchup.enabled", true, "Enable periodic aggregation catch-up loop")
 	rootCmd.PersistentFlags().Duration("aggregation.catchup.interval", time.Minute, "How often to run aggregation catch-up")
 	rootCmd.PersistentFlags().Int("aggregation.catchup.epochs-to-check", 20, "Number of epochs to scan per catch-up cycle")
-	rootCmd.PersistentFlags().Int("aggregation.catchup.epochs-offset", 0, "Epochs back from latest to start scanning")
+	rootCmd.PersistentFlags().Int("aggregation.catchup.epochs-offset", 0, "Number of epochs back from latest to skip before scanning begins")
 	rootCmd.PersistentFlags().Int("aggregation.catchup.max-requests-per-cycle", 0, "Max requests to check per cycle (0 = unlimited)")
 	rootCmd.PersistentFlags().Bool("tracing.enabled", false, "Enable distributed tracing")
 	rootCmd.PersistentFlags().String("tracing.endpoint", "localhost:4317", "OTLP endpoint for tracing (e.g., Jaeger)")
