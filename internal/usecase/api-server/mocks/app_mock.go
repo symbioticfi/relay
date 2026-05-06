@@ -98,18 +98,19 @@ func (mr *MockrepoMockRecorder) GetAggregationProof(ctx, requestID any) *gomock.
 }
 
 // GetAggregationProofsByEpoch mocks base method.
-func (m *Mockrepo) GetAggregationProofsByEpoch(ctx context.Context, epoch entity0.Epoch) ([]entity0.AggregationProof, error) {
+func (m *Mockrepo) GetAggregationProofsByEpoch(ctx context.Context, epoch entity0.Epoch, pageSize int, from []byte) ([]entity0.AggregationProof, []byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAggregationProofsByEpoch", ctx, epoch)
+	ret := m.ctrl.Call(m, "GetAggregationProofsByEpoch", ctx, epoch, pageSize, from)
 	ret0, _ := ret[0].([]entity0.AggregationProof)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].([]byte)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // GetAggregationProofsByEpoch indicates an expected call of GetAggregationProofsByEpoch.
-func (mr *MockrepoMockRecorder) GetAggregationProofsByEpoch(ctx, epoch any) *gomock.Call {
+func (mr *MockrepoMockRecorder) GetAggregationProofsByEpoch(ctx, epoch, pageSize, from any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAggregationProofsByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetAggregationProofsByEpoch), ctx, epoch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAggregationProofsByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetAggregationProofsByEpoch), ctx, epoch, pageSize, from)
 }
 
 // GetAllSignatures mocks base method.
@@ -173,48 +174,51 @@ func (mr *MockrepoMockRecorder) GetSignatureRequest(ctx, requestID any) *gomock.
 }
 
 // GetSignatureRequestIDsByEpoch mocks base method.
-func (m *Mockrepo) GetSignatureRequestIDsByEpoch(ctx context.Context, epoch entity0.Epoch) ([]common.Hash, error) {
+func (m *Mockrepo) GetSignatureRequestIDsByEpoch(ctx context.Context, epoch entity0.Epoch, pageSize int, from []byte) ([]common.Hash, []byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSignatureRequestIDsByEpoch", ctx, epoch)
+	ret := m.ctrl.Call(m, "GetSignatureRequestIDsByEpoch", ctx, epoch, pageSize, from)
 	ret0, _ := ret[0].([]common.Hash)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].([]byte)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // GetSignatureRequestIDsByEpoch indicates an expected call of GetSignatureRequestIDsByEpoch.
-func (mr *MockrepoMockRecorder) GetSignatureRequestIDsByEpoch(ctx, epoch any) *gomock.Call {
+func (mr *MockrepoMockRecorder) GetSignatureRequestIDsByEpoch(ctx, epoch, pageSize, from any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureRequestIDsByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetSignatureRequestIDsByEpoch), ctx, epoch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureRequestIDsByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetSignatureRequestIDsByEpoch), ctx, epoch, pageSize, from)
 }
 
 // GetSignatureRequestsWithIDByEpoch mocks base method.
-func (m *Mockrepo) GetSignatureRequestsWithIDByEpoch(ctx context.Context, epoch entity0.Epoch) ([]entity.SignatureRequestWithID, error) {
+func (m *Mockrepo) GetSignatureRequestsWithIDByEpoch(ctx context.Context, epoch entity0.Epoch, pageSize int, from []byte) ([]entity.SignatureRequestWithID, []byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSignatureRequestsWithIDByEpoch", ctx, epoch)
+	ret := m.ctrl.Call(m, "GetSignatureRequestsWithIDByEpoch", ctx, epoch, pageSize, from)
 	ret0, _ := ret[0].([]entity.SignatureRequestWithID)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].([]byte)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // GetSignatureRequestsWithIDByEpoch indicates an expected call of GetSignatureRequestsWithIDByEpoch.
-func (mr *MockrepoMockRecorder) GetSignatureRequestsWithIDByEpoch(ctx, epoch any) *gomock.Call {
+func (mr *MockrepoMockRecorder) GetSignatureRequestsWithIDByEpoch(ctx, epoch, pageSize, from any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureRequestsWithIDByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetSignatureRequestsWithIDByEpoch), ctx, epoch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignatureRequestsWithIDByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetSignatureRequestsWithIDByEpoch), ctx, epoch, pageSize, from)
 }
 
 // GetSignaturesByEpoch mocks base method.
-func (m *Mockrepo) GetSignaturesByEpoch(ctx context.Context, epoch entity0.Epoch) ([]entity0.Signature, error) {
+func (m *Mockrepo) GetSignaturesByEpoch(ctx context.Context, epoch entity0.Epoch, pageSize int, from []byte) ([]entity0.Signature, []byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSignaturesByEpoch", ctx, epoch)
+	ret := m.ctrl.Call(m, "GetSignaturesByEpoch", ctx, epoch, pageSize, from)
 	ret0, _ := ret[0].([]entity0.Signature)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].([]byte)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // GetSignaturesByEpoch indicates an expected call of GetSignaturesByEpoch.
-func (mr *MockrepoMockRecorder) GetSignaturesByEpoch(ctx, epoch any) *gomock.Call {
+func (mr *MockrepoMockRecorder) GetSignaturesByEpoch(ctx, epoch, pageSize, from any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignaturesByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetSignaturesByEpoch), ctx, epoch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignaturesByEpoch", reflect.TypeOf((*Mockrepo)(nil).GetSignaturesByEpoch), ctx, epoch, pageSize, from)
 }
 
 // GetValidatorSetByEpoch mocks base method.
