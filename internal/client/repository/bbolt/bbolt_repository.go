@@ -64,6 +64,7 @@ var allBuckets = [][]byte{
 
 type Repository struct {
 	db      *bolt.DB
+	dbPath  string
 	metrics repoutil.Metrics
 
 	signatureMapCache  sync.Map // map[common.Hash]entity.SignatureMap
@@ -79,22 +80,46 @@ type Repository struct {
 // replaces the original. Acquires an exclusive flock on the source for the entire
 // rewrite, so no other process may have the database open while this runs.
 func CompactDB(dbPath string) error {
-	info, err := os.Stat(dbPath)
-	if err != nil {
+	if _, err := os.Stat(dbPath); err != nil {
 		return nil // DB doesn't exist yet, nothing to compact
 	}
-	origSize := info.Size()
-
-	start := time.Now()
 
 	// Open source in writable mode to acquire an exclusive flock for the whole
 	// compaction window. This prevents any other process from opening the DB
 	// between Compact and Rename, which would otherwise observe an inode swap.
-	src, err := bolt.Open(dbPath, 0600, &bolt.Options{Timeout: 5 * time.Second, FreelistType: bolt.FreelistArrayType})
+	src, err := bolt.Open(dbPath, 0600, &bolt.Options{Timeout: 5 * time.Second, NoFreelistSync: false})
 	if err != nil {
 		return errors.Errorf("failed to acquire exclusive lock on source db: %w", err)
 	}
 	defer src.Close()
+
+	return compactSrcInto(src, dbPath)
+}
+
+// Compact rewrites the underlying bbolt file into a compacted copy and
+// atomically replaces the original, reusing the already-open *bolt.DB handle
+// as source. Avoids the cost of a fresh RW open (freelist build, flock).
+//
+// After Compact returns, the in-memory handle on the receiver still points to
+// the now-unlinked old inode — the on-disk file is the new compacted one. The
+// caller MUST Close() the repository before doing anything else; further
+// reads/writes through this handle will operate on the stale inode.
+func (r *Repository) Compact() error {
+	return compactSrcInto(r.db, r.dbPath)
+}
+
+// compactSrcInto runs bolt.Compact from src into a tmp file next to dbPath,
+// then atomically renames into place. Caller is responsible for ensuring src
+// holds an exclusive flock on dbPath for the duration so no concurrent opener
+// can observe the inode swap.
+func compactSrcInto(src *bolt.DB, dbPath string) error {
+	info, err := os.Stat(dbPath)
+	if err != nil {
+		return errors.Errorf("failed to stat source db: %w", err)
+	}
+	origSize := info.Size()
+
+	start := time.Now()
 
 	tmpPath := dbPath + ".compact"
 	// Drop any stale tmp file from a previously crashed compaction so we don't
@@ -119,8 +144,7 @@ func CompactDB(dbPath string) error {
 	}
 
 	// Rename happens while src still holds the exclusive flock on dbPath, so
-	// no concurrent opener can race in and observe the swapped inode. The
-	// deferred src.Close() releases the lock on the now-unlinked old inode.
+	// no concurrent opener can race in and observe the swapped inode.
 	if err := os.Rename(tmpPath, dbPath); err != nil {
 		os.Remove(tmpPath)
 		return errors.Errorf("failed to replace db with compacted version: %w", err)
@@ -166,6 +190,7 @@ func New(cfg Config) (*Repository, error) {
 		Timeout:         1 * time.Second,
 		InitialMmapSize: cfg.InitialMmapSize,
 		FreelistType:    bolt.FreelistArrayType,
+		PreLoadFreelist: false,
 	}
 
 	db, err := bolt.Open(dbPath, 0600, opts)
@@ -196,6 +221,7 @@ func New(cfg Config) (*Repository, error) {
 
 	repo := &Repository{
 		db:                 db,
+		dbPath:             dbPath,
 		metrics:            cfg.Metrics,
 		done:               make(chan struct{}),
 		signatureMapCache:  sync.Map{},

@@ -62,6 +62,31 @@ func run(ctx context.Context, f Flags) error {
 func runBbolt(ctx context.Context, f Flags) error {
 	dbPath := filepath.Join(f.StorageDir, bboltDBFilename)
 
+	hasPrune := f.ValsetEpochs > 0 || f.ProofEpochs > 0 || f.SignatureEpochs > 0
+	if hasPrune {
+		// Open repo once, run prune, and (if --compact) reuse the same handle
+		// for compaction so we don't pay a second RW open + freelist build.
+		return runBboltSession(ctx, f)
+	}
+
+	// Compact-only: skip our RW open entirely. CompactDB opens its own handle.
+	if f.Compact {
+		before, beforeErr := fileSize(dbPath)
+		spinner, _ := pterm.DefaultSpinner.Start("Compacting bbolt database…")
+		start := time.Now()
+		if err := bbolt.CompactDB(dbPath); err != nil {
+			spinner.Fail("Compaction failed")
+			return errors.Errorf("bbolt compaction failed: %w", err)
+		}
+		after, afterErr := fileSize(dbPath)
+		spinner.Success("Compaction done")
+		printSizeReport(before, beforeErr, after, afterErr, time.Since(start))
+	}
+
+	return nil
+}
+
+func runBboltSession(ctx context.Context, f Flags) error {
 	openSpinner, _ := pterm.DefaultSpinner.Start("Opening bbolt database…")
 	openStart := time.Now()
 	repo, err := bbolt.New(bbolt.Config{
@@ -76,7 +101,7 @@ func runBbolt(ctx context.Context, f Flags) error {
 		PrunePause:       0,
 		MaxBatchDelay:    time.Millisecond,
 		NoSync:           true,
-		NoFreelistSync:   true,
+		NoFreelistSync:   false,
 		CompactOnStartup: false,
 	})
 	if err != nil {
@@ -104,20 +129,12 @@ func runBbolt(ctx context.Context, f Flags) error {
 		return err
 	}
 
-	closeSpinner, _ := pterm.DefaultSpinner.Start("Closing bbolt database…")
-	closeStart := time.Now()
-	closed = true
-	if err := repo.Close(); err != nil {
-		closeSpinner.Fail("Failed to close bbolt database")
-		return errors.Errorf("failed to close bbolt repository: %w", err)
-	}
-	closeSpinner.Success(pterm.Sprintf("Closed bbolt database in %s", time.Since(closeStart).Round(time.Millisecond)))
-
-	if f.Compact {
+	dbPath := filepath.Join(f.StorageDir, bboltDBFilename)
+	if f.Compact && ctx.Err() == nil {
 		before, beforeErr := fileSize(dbPath)
-		spinner, _ := pterm.DefaultSpinner.Start("Compacting bbolt database…")
+		spinner, _ := pterm.DefaultSpinner.Start("Compacting bbolt database (reusing open handle)…")
 		start := time.Now()
-		if err := bbolt.CompactDB(dbPath); err != nil {
+		if err := repo.Compact(); err != nil {
 			spinner.Fail("Compaction failed")
 			return errors.Errorf("bbolt compaction failed: %w", err)
 		}
@@ -126,6 +143,14 @@ func runBbolt(ctx context.Context, f Flags) error {
 		printSizeReport(before, beforeErr, after, afterErr, time.Since(start))
 	}
 
+	closeSpinner, _ := pterm.DefaultSpinner.Start("Closing bbolt database…")
+	closeStart := time.Now()
+	closed = true
+	if err := repo.Close(); err != nil {
+		closeSpinner.Fail("Failed to close bbolt database")
+		return errors.Errorf("failed to close bbolt repository: %w", err)
+	}
+	closeSpinner.Success(pterm.Sprintf("Closed bbolt database in %s", time.Since(closeStart).Round(time.Millisecond)))
 	return nil
 }
 
