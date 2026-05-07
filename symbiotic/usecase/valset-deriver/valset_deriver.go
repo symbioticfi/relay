@@ -209,7 +209,9 @@ func (v *Deriver) getVotingPowersFromProviders(
 }
 
 func GetSchedulerInfo(_ context.Context, valset symbiotic.ValidatorSet, config symbiotic.NetworkConfig) (aggIndices []uint32, commIndices []uint32, err error) {
-	// ensure validators sorted already, function expects sorted list
+	// header.Hash() is computed over the full validator set, so the full slice
+	// must be in a deterministic order across nodes — otherwise scheduler
+	// assignments diverge silently.
 	if err := valset.Validators.CheckIsSortedByOperatorAddressAsc(); err != nil {
 		return nil, nil, err
 	}
@@ -227,7 +229,7 @@ func GetSchedulerInfo(_ context.Context, valset symbiotic.ValidatorSet, config s
 		return nil, nil, errors.Errorf("failed to hash valset header: %w", err)
 	}
 
-	validatorCount := len(valset.Validators)
+	validatorCount := len(valset.Validators.GetActiveValidators())
 	if validatorCount == 0 {
 		return []uint32{}, []uint32{}, nil
 	}
@@ -292,6 +294,10 @@ func markValidatorsActive(config symbiotic.NetworkConfig, validators symbiotic.V
 
 	for i := range validators {
 		// Check minimum voting power if configured
+		if validators[i].VotingPower.Sign() == 0 {
+			break
+		}
+
 		if validators[i].VotingPower.Cmp(config.MinInclusionVotingPower.Int) < 0 {
 			break
 		}

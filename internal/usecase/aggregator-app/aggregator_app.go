@@ -391,6 +391,17 @@ func (s *AggregatorApp) tryAggregateRequestsWithoutProof(ctx context.Context) er
 
 			for _, req := range requests {
 				if !req.KeyTag.Type().AggregationKey() {
+					// Non-aggregation key — clean up pending only when all signatures collected
+					sigMap, err := s.cfg.Repo.GetSignatureMap(ctx, req.RequestID)
+					if err == nil && sigMap.GetMissingValidators().IsEmpty() {
+						_ = s.cfg.Repo.RemoveAggregationProofPending(ctx, req.RequiredEpoch, req.RequestID)
+					}
+					continue
+				}
+
+				// Check if proof already exists — clean up stale pending marker
+				if _, err := s.cfg.Repo.GetAggregationProof(ctx, req.RequestID); err == nil {
+					_ = s.cfg.Repo.RemoveAggregationProofPending(ctx, req.RequiredEpoch, req.RequestID)
 					continue
 				}
 

@@ -93,7 +93,7 @@ func TestPruner_RetentionCalculation(t *testing.T) {
 			// Set expectations: expect calls for each epoch to be pruned
 			if !tt.expectedNoPrune {
 				for _, epoch := range tt.expectedPruneEpochs {
-					mockRepo.EXPECT().PruneValsetEntities(gomock.Any(), epoch).Return(nil)
+					mockRepo.EXPECT().PruneValsetEntities(gomock.Any(), epoch, 0).Return(nil)
 					mockMetrics.EXPECT().IncPrunedEpochsCount("valset")
 				}
 			}
@@ -132,7 +132,7 @@ func TestPruner_RetentionCalculation_AllEntityTypes(t *testing.T) {
 
 	t.Run("valset entities", func(t *testing.T) {
 		for _, epoch := range expectedPruneEpochs {
-			mockRepo.EXPECT().PruneValsetEntities(gomock.Any(), epoch).Return(nil)
+			mockRepo.EXPECT().PruneValsetEntities(gomock.Any(), epoch, 0).Return(nil)
 			mockMetrics.EXPECT().IncPrunedEpochsCount("valset")
 		}
 
@@ -151,7 +151,7 @@ func TestPruner_RetentionCalculation_AllEntityTypes(t *testing.T) {
 
 	t.Run("proof entities", func(t *testing.T) {
 		for _, epoch := range expectedPruneEpochs {
-			mockRepo.EXPECT().PruneProofEntities(gomock.Any(), epoch).Return(nil)
+			mockRepo.EXPECT().PruneProofEntities(gomock.Any(), epoch, 0).Return(nil)
 			mockMetrics.EXPECT().IncPrunedEpochsCount("proof")
 		}
 
@@ -170,7 +170,7 @@ func TestPruner_RetentionCalculation_AllEntityTypes(t *testing.T) {
 
 	t.Run("signature entities", func(t *testing.T) {
 		for _, epoch := range expectedPruneEpochs {
-			mockRepo.EXPECT().PruneSignatureEntitiesForEpoch(gomock.Any(), epoch).Return(nil)
+			mockRepo.EXPECT().PruneSignatureEntitiesForEpoch(gomock.Any(), epoch, 0).Return(nil)
 			mockMetrics.EXPECT().IncPrunedEpochsCount("signature")
 		}
 
@@ -217,7 +217,7 @@ func TestPruner_EdgeCases(t *testing.T) {
 		oldestStoredEpoch := symbiotic.Epoch(0)
 
 		// Should prune epoch 0, keep 1-5 (5 epochs)
-		mockRepo.EXPECT().PruneValsetEntities(gomock.Any(), symbiotic.Epoch(0)).Return(nil)
+		mockRepo.EXPECT().PruneValsetEntities(gomock.Any(), symbiotic.Epoch(0), 0).Return(nil)
 		mockMetrics.EXPECT().IncPrunedEpochsCount("valset")
 
 		service := &Service{

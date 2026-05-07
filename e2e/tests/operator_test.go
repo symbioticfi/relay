@@ -113,7 +113,7 @@ func waitOperatorIncludedIntoValset(t *testing.T, opData operatorData, expectedC
 			return errors.New("extra operator's BLS key not found in validator set")
 		}
 		t.Logf("Found extra operator's key in validator set")
-		require.Len(t, validator.Keys, 3)
+		require.Len(t, validator.Keys, 4)
 
 		return nil
 	}))
@@ -266,12 +266,15 @@ func getOperatorData(t *testing.T, operatorNumber int64) operatorData {
 	operators := big.NewInt(operatorNumber)
 	extraKeyInt := new(big.Int).Add(baseKey, operators)
 	extraSecondaryKeyInt := new(big.Int).Add(extraKeyInt, big.NewInt(10000))
+	extraBls12381KeyInt := new(big.Int).Add(extraKeyInt, big.NewInt(20000))
 	t.Logf("[getOperatorData] Derived key: baseKey=%s + operators=%d = %s", baseKey.String(), operatorNumber, extraKeyInt.String())
 
 	pkBytes := make([]byte, 32)
 	extraKeyInt.FillBytes(pkBytes)
 	pkSecondaryBytes := make([]byte, 32)
 	extraSecondaryKeyInt.FillBytes(pkSecondaryBytes)
+	pkBls12381Bytes := make([]byte, 32)
+	extraBls12381KeyInt.FillBytes(pkBls12381Bytes)
 
 	privateKey, err := crypto.NewPrivateKey(symbiotic.KeyTypeEcdsaSecp256k1, pkBytes)
 	require.NoError(t, err)
@@ -285,6 +288,8 @@ func getOperatorData(t *testing.T, operatorNumber int64) operatorData {
 	require.NoError(t, err)
 	blsPrivateKeySecondary, err := crypto.NewPrivateKey(symbiotic.KeyTypeBlsBn254, pkSecondaryBytes)
 	require.NoError(t, err)
+	bls12381PrivateKey, err := crypto.NewPrivateKey(symbiotic.KeyTypeBls12381, pkBls12381Bytes)
+	require.NoError(t, err)
 	t.Logf("[getOperatorData] Created BLS keys - primary pubKey: %x", blsPrivateKey.PublicKey().OnChain())
 
 	return operatorData{
@@ -292,6 +297,7 @@ func getOperatorData(t *testing.T, operatorNumber int64) operatorData {
 		privateKey:             privateKey,
 		blsPrivateKey:          blsPrivateKey,
 		blsPrivateKeySecondary: blsPrivateKeySecondary,
+		bls12381PrivateKey:     bls12381PrivateKey,
 		address:                operatorAddress,
 	}
 }
@@ -302,6 +308,7 @@ type operatorData struct {
 	address                common.Address
 	blsPrivateKey          crypto.PrivateKey
 	blsPrivateKeySecondary crypto.PrivateKey
+	bls12381PrivateKey     crypto.PrivateKey
 }
 
 // createExtraOperator creates an operator using the extra relay's private key.
@@ -343,6 +350,11 @@ func createExtraOperator(t *testing.T) operatorData {
 	_, err = registerer.Register(t.Context(), opData.blsPrivateKeySecondary, symbiotic.KeyTag(11), opData.address)
 	require.NoError(t, err)
 	t.Log("[createExtraOperator] Secondary BLS key (keyTag=11) registered")
+
+	t.Logf("[createExtraOperator] Registering BLS12-381 key with keyTag=33 for operator %s...", opData.address.Hex())
+	_, err = registerer.Register(t.Context(), opData.bls12381PrivateKey, symbiotic.KeyTag(33), opData.address)
+	require.NoError(t, err)
+	t.Log("[createExtraOperator] BLS12-381 key (keyTag=33) registered")
 
 	t.Logf("[createExtraOperator] Registering operator in OperatorRegistry at %s...", deploymentData.MainChain.Addresses.OperatorRegistry)
 	_, err = opEVMClient.RegisterOperator(t.Context(), symbiotic.CrossChainAddress{

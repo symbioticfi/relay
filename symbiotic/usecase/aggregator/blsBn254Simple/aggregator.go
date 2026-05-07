@@ -128,7 +128,7 @@ func (a Aggregator) Aggregate(
 	aggG1Sig := new(bn254.G1Affine)
 	aggG2Key := new(bn254.G2Affine)
 
-	valKeysToIdx := helpers.GetValidatorsIndexesMapByKey(valset, keyTag)
+	valKeysToIdx := helpers.GetActiveValidatorsIndexesMapByKey(valset, keyTag)
 
 	for _, sig := range signatures {
 		pubKey, err := blsBn254.FromRaw(sig.PublicKey.Raw())
@@ -137,16 +137,10 @@ func (a Aggregator) Aggregate(
 			return symbiotic.AggregationProof{}, err
 		}
 
-		idx, ok := valKeysToIdx[string(pubKey.OnChain())]
-		if !ok {
+		if _, ok := valKeysToIdx[string(pubKey.OnChain())]; !ok {
 			err := errors.New("failed to find validator by key")
 			tracing.RecordError(span, err)
 			return symbiotic.AggregationProof{}, err
-		}
-
-		val := valset.Validators[idx]
-		if !val.IsActive {
-			continue
 		}
 
 		g1Key := new(bn254.G1Affine)

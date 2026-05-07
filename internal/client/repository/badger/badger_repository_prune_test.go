@@ -116,7 +116,7 @@ func TestRepository_PruneAllEntityTypes(t *testing.T) {
 		SignedValidatorsBitmap: entity.NewBitmapOf(0),
 		CurrentVotingPower:     symbiotic.ToVotingPower(big.NewInt(1000)),
 	}
-	err = repo.UpdateSignatureMap(ctx, sigMap)
+	err = repo.updateSignatureMap(ctx, sigMap)
 	require.NoError(t, err)
 
 	// 8. Save aggregation proof
@@ -159,13 +159,13 @@ func TestRepository_PruneAllEntityTypes(t *testing.T) {
 	// Execute: Prune all entity types for the epoch
 	t.Run("prune all entity types", func(t *testing.T) {
 		// Prune in reverse dependency order
-		err := repo.PruneSignatureEntitiesForEpoch(ctx, epoch)
+		err := repo.PruneSignatureEntitiesForEpoch(ctx, epoch, 0)
 		require.NoError(t, err)
 
-		err = repo.PruneProofEntities(ctx, epoch)
+		err = repo.PruneProofEntities(ctx, epoch, 0)
 		require.NoError(t, err)
 
-		err = repo.PruneValsetEntities(ctx, epoch)
+		err = repo.PruneValsetEntities(ctx, epoch, 0)
 		require.NoError(t, err)
 	})
 
@@ -276,7 +276,7 @@ func TestRepository_PruneEntityTypes_Separately(t *testing.T) {
 		SignedValidatorsBitmap: entity.NewBitmapOf(0),
 		CurrentVotingPower:     symbiotic.ToVotingPower(big.NewInt(1000)),
 	}
-	err = repo.UpdateSignatureMap(ctx, sigMap)
+	err = repo.updateSignatureMap(ctx, sigMap)
 	require.NoError(t, err)
 	aggProof := symbiotic.AggregationProof{
 		MessageHash: messageHash,
@@ -289,7 +289,7 @@ func TestRepository_PruneEntityTypes_Separately(t *testing.T) {
 
 	// Test: Prune only signatures, verify proofs and valsets remain
 	t.Run("prune signatures only", func(t *testing.T) {
-		err := repo.PruneSignatureEntitiesForEpoch(ctx, epoch)
+		err := repo.PruneSignatureEntitiesForEpoch(ctx, epoch, 0)
 		require.NoError(t, err)
 
 		// Signatures should be deleted
@@ -313,7 +313,7 @@ func TestRepository_PruneEntityTypes_Separately(t *testing.T) {
 
 	// Test: Prune proofs, verify valsets remain
 	t.Run("prune proofs after signatures", func(t *testing.T) {
-		err := repo.PruneProofEntities(ctx, epoch)
+		err := repo.PruneProofEntities(ctx, epoch, 0)
 		require.NoError(t, err)
 
 		// Proofs should be deleted
@@ -329,7 +329,7 @@ func TestRepository_PruneEntityTypes_Separately(t *testing.T) {
 
 	// Test: Prune valsets last
 	t.Run("prune valsets after proofs", func(t *testing.T) {
-		err := repo.PruneValsetEntities(ctx, epoch)
+		err := repo.PruneValsetEntities(ctx, epoch, 0)
 		require.NoError(t, err)
 
 		// Validator sets should be deleted
@@ -390,7 +390,7 @@ func TestRepository_PruneAggregationProof_IndexCleanup(t *testing.T) {
 
 	// Prune the middle epoch (101)
 	t.Run("prune middle epoch", func(t *testing.T) {
-		err := repo.PruneProofEntities(ctx, epochs[1])
+		err := repo.PruneProofEntities(ctx, epochs[1], 0)
 		require.NoError(t, err)
 
 		// Direct get should fail
@@ -398,7 +398,7 @@ func TestRepository_PruneAggregationProof_IndexCleanup(t *testing.T) {
 		require.ErrorIs(t, err, entity.ErrEntityNotFound)
 
 		// Clean up indices (since no signatures exist in this test, indices should be deleted)
-		err = repo.PruneRequestIDEpochIndices(ctx, epochs[1])
+		err = repo.PruneRequestIDEpochIndices(ctx, epochs[1], 0)
 		require.NoError(t, err)
 	})
 
@@ -480,11 +480,11 @@ func TestRepository_PruneRequestIDEpochIndices_DifferentRetentionSettings(t *tes
 
 	// Scenario 1: Delete only proof, index should remain (signature still exists)
 	t.Run("index remains when only proof is deleted", func(t *testing.T) {
-		err := repo.PruneProofEntities(ctx, epoch)
+		err := repo.PruneProofEntities(ctx, epoch, 0)
 		require.NoError(t, err)
 
 		// Try to clean up indices
-		err = repo.PruneRequestIDEpochIndices(ctx, epoch)
+		err = repo.PruneRequestIDEpochIndices(ctx, epoch, 0)
 		require.NoError(t, err)
 
 		// Index should still exist because signatures are still there
@@ -495,11 +495,11 @@ func TestRepository_PruneRequestIDEpochIndices_DifferentRetentionSettings(t *tes
 
 	// Scenario 2: Now delete signatures, index should be removed
 	t.Run("index is deleted when both proof and signatures are gone", func(t *testing.T) {
-		err := repo.PruneSignatureEntitiesForEpoch(ctx, epoch)
+		err := repo.PruneSignatureEntitiesForEpoch(ctx, epoch, 0)
 		require.NoError(t, err)
 
 		// Try to clean up indices again
-		err = repo.PruneRequestIDEpochIndices(ctx, epoch)
+		err = repo.PruneRequestIDEpochIndices(ctx, epoch, 0)
 		require.NoError(t, err)
 
 		// Now index should be gone
@@ -558,11 +558,11 @@ func TestRepository_PruneRequestIDEpochIndices_SignaturesDeletedFirst(t *testing
 
 	// Scenario 1: Delete only signatures, index should remain (proof still exists)
 	t.Run("index remains when only signatures are deleted", func(t *testing.T) {
-		err := repo.PruneSignatureEntitiesForEpoch(ctx, epoch)
+		err := repo.PruneSignatureEntitiesForEpoch(ctx, epoch, 0)
 		require.NoError(t, err)
 
 		// Try to clean up indices
-		err = repo.PruneRequestIDEpochIndices(ctx, epoch)
+		err = repo.PruneRequestIDEpochIndices(ctx, epoch, 0)
 		require.NoError(t, err)
 
 		// Index should still exist because proof is still there
@@ -573,11 +573,11 @@ func TestRepository_PruneRequestIDEpochIndices_SignaturesDeletedFirst(t *testing
 
 	// Scenario 2: Now delete proof, index should be removed
 	t.Run("index is deleted when both signatures and proof are gone", func(t *testing.T) {
-		err := repo.PruneProofEntities(ctx, epoch)
+		err := repo.PruneProofEntities(ctx, epoch, 0)
 		require.NoError(t, err)
 
 		// Try to clean up indices again
-		err = repo.PruneRequestIDEpochIndices(ctx, epoch)
+		err = repo.PruneRequestIDEpochIndices(ctx, epoch, 0)
 		require.NoError(t, err)
 
 		// Now index should be gone

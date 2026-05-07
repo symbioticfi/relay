@@ -23,10 +23,10 @@ type metrics interface {
 type repo interface {
 	GetOldestValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
 	GetLatestValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
-	PruneValsetEntities(ctx context.Context, epoch symbiotic.Epoch) error
-	PruneProofEntities(ctx context.Context, epoch symbiotic.Epoch) error
-	PruneSignatureEntitiesForEpoch(ctx context.Context, epoch symbiotic.Epoch) error
-	PruneRequestIDEpochIndices(ctx context.Context, epoch symbiotic.Epoch) error
+	PruneValsetEntities(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error
+	PruneProofEntities(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error
+	PruneSignatureEntitiesForEpoch(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error
+	PruneRequestIDEpochIndices(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error
 }
 
 type Config struct {
@@ -37,6 +37,7 @@ type Config struct {
 	ValsetRetentionEpochs    uint64
 	ProofRetentionEpochs     uint64
 	SignatureRetentionEpochs uint64
+	PruneBatchSize           int `validate:"gte=0"`
 }
 
 func (c Config) Validate() error {
@@ -84,6 +85,7 @@ func (s *Service) Start(ctx context.Context) {
 
 	slog.InfoContext(ctx, "Starting pruner",
 		"interval", s.cfg.Interval,
+		"pruneBatchSize", s.cfg.PruneBatchSize,
 		"valsetRetentionEpochs", s.cfg.ValsetRetentionEpochs,
 		"proofRetentionEpochs", s.cfg.ProofRetentionEpochs,
 		"signatureRetentionEpochs", s.cfg.SignatureRetentionEpochs,
@@ -219,7 +221,7 @@ func (s *Service) pruneEntities(
 	latestEpoch, oldestStoredEpoch symbiotic.Epoch,
 	retentionEpochs uint64,
 	entityType string,
-	pruneFunc func(context.Context, symbiotic.Epoch) error,
+	pruneFunc func(context.Context, symbiotic.Epoch, int) error,
 ) (uint64, error) {
 	ctx, span := tracing.StartSpan(ctx, "pruner.pruneEntities")
 	defer span.End()
@@ -249,7 +251,7 @@ func (s *Service) pruneEntities(
 	for epoch := oldestStoredEpoch; epoch < oldestToKeep; epoch++ {
 		slog.DebugContext(ctx, "Pruning entities", "entityType", entityType, "epoch", epoch)
 
-		if err := pruneFunc(ctx, epoch); err != nil {
+		if err := pruneFunc(ctx, epoch, s.cfg.PruneBatchSize); err != nil {
 			tracing.RecordError(span, err)
 			return count, errors.Errorf("failed to prune %s entities for epoch %d: %w", entityType, epoch, err)
 		}

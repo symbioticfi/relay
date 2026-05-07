@@ -2,6 +2,8 @@ package p2p
 
 import (
 	"context"
+	"log/slog"
+	"time"
 
 	"github.com/go-errors/errors"
 	"google.golang.org/protobuf/proto"
@@ -11,6 +13,7 @@ import (
 )
 
 func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg symbiotic.Signature) error {
+	start := time.Now()
 	dto := prototypes.Signature{
 		KeyTag:      uint32(msg.KeyTag),
 		Epoch:       uint64(msg.Epoch),
@@ -24,5 +27,12 @@ func (s *Service) BroadcastSignatureGeneratedMessage(ctx context.Context, msg sy
 		return errors.Errorf("failed to marshal signature generated message: %w", err)
 	}
 
-	return s.broadcast(ctx, topicSignatureReady, data)
+	err = s.broadcast(ctx, topicSignatureReady, data)
+	if err != nil {
+		return err
+	}
+
+	slog.DebugContext(ctx, "Broadcasted signature generated message", "duration", time.Since(start))
+
+	return nil
 }

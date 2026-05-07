@@ -3,71 +3,134 @@ package bbolt
 import (
 	"context"
 	"log/slog"
+	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
+	bolt "go.etcd.io/bbolt"
 
+	"github.com/symbioticfi/relay/internal/client/repository/codec"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
 func (r *Repository) SaveSignature(ctx context.Context, signature symbiotic.Signature, validator symbiotic.Validator, activeIndex uint32) error {
-	return r.doUpdateWithLock(ctx, "SaveSignature", func(ctx context.Context) error {
-		signatureMap, err := r.GetSignatureMap(ctx, signature.RequestID())
-		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
-			return errors.Errorf("failed to get valset signature map: %w", err)
+	start := time.Now()
+
+	if err := r.saveSignatureWithPending(ctx, activeIndex, signature); err != nil {
+		return errors.Errorf("failed to save signature: %w", err)
+	}
+
+	saveDuration := time.Since(start)
+
+	cacheStart := time.Now()
+	signatureMap, err := r.addToSignatureMapCache(ctx, signature.RequestID(), activeIndex, validator.VotingPower)
+	if err != nil {
+		return errors.Errorf("failed to update signature map cache: %w", err)
+	}
+
+	slog.DebugContext(ctx, "Saved signature for validator",
+		"activeIndex", activeIndex,
+		"requestId", signature.RequestID().Hex(),
+		"epoch", signature.Epoch,
+		"totalSignatures", signatureMap.SignedValidatorsBitmap.GetCardinality(),
+		"presentValidators", signatureMap.SignedValidatorsBitmap.ToArray(),
+		"saveDuration", saveDuration,
+		"cacheDuration", time.Since(cacheStart),
+	)
+
+	return nil
+}
+
+func (r *Repository) saveSignatureWithPending(ctx context.Context, validatorIndex uint32, sig symbiotic.Signature) error {
+	data, err := codec.SignatureToBytes(sig)
+	if err != nil {
+		return errors.Errorf("failed to marshal signature: %w", err)
+	}
+
+	requestID := sig.RequestID()
+	epochKey := epochHashKey(uint64(sig.Epoch), requestID.Bytes())
+
+	return r.doBatch(ctx, "saveSignatureWithPending", func(tx *bolt.Tx) error {
+		key := signatureKey(requestID.Bytes(), validatorIndex)
+
+		if tx.Bucket(bucketSignatures).Get(key) != nil {
+			return nil
 		}
-		if errors.Is(err, entity.ErrEntityNotFound) {
-			totalActiveValidators, err := r.GetActiveValidatorCountByEpoch(ctx, signature.Epoch)
-			if err != nil {
-				return errors.Errorf("failed to get active validator count for epoch %d: %w", signature.Epoch, err)
+
+		if err := tx.Bucket(bucketSignatures).Put(key, data); err != nil {
+			return errors.Errorf("failed to store signature: %w", err)
+		}
+
+		// Maintain request_id_epochs index
+		if tx.Bucket(bucketRequestIDEpochs).Get(epochKey) == nil {
+			if err := tx.Bucket(bucketRequestIDEpochs).Put(epochKey, []byte{}); err != nil {
+				return errors.Errorf("failed to store request id epoch link: %w", err)
 			}
-			signatureMap = entity.NewSignatureMap(signature.RequestID(), signature.Epoch, totalActiveValidators)
 		}
 
-		if err = signatureMap.SetValidatorPresent(activeIndex, validator.VotingPower); err != nil {
-			return errors.Errorf("failed to set validator present for request id %s: %w", signature.RequestID().Hex(), err)
-		}
-
-		if err = r.UpdateSignatureMap(ctx, signatureMap); err != nil {
-			return errors.Errorf("failed to update valset signature map: %w", err)
-		}
-
-		if err = r.saveSignature(ctx, activeIndex, signature); err != nil {
-			return errors.Errorf("failed to save signature: %w", err)
-		}
-
-		slog.DebugContext(ctx, "Saved signature for validator",
-			"activeIndex", activeIndex,
-			"requestId", signature.RequestID().Hex(),
-			"epoch", signature.Epoch,
-			"totalSignatures", signatureMap.SignedValidatorsBitmap.GetCardinality(),
-			"presentValidators", signatureMap.SignedValidatorsBitmap.ToArray(),
-		)
-
-		// Handle pending aggregation proof management (inside lock to avoid stale snapshot)
-		if signature.KeyTag.Type().AggregationKey() {
-			_, err := r.GetAggregationProof(ctx, signature.RequestID())
-			if err != nil {
-				if !errors.Is(err, entity.ErrEntityNotFound) {
-					return errors.Errorf("failed to get aggregation proof: %w", err)
-				}
-				if err := r.saveAggregationProofPending(ctx, signature.RequestID(), signature.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
-					return errors.Errorf("failed to save aggregation proof to pending collection: %w", err)
-				}
+		// Save pending proof if aggregation proof does not exist yet
+		if sig.KeyTag.Type().AggregationKey() {
+			if tx.Bucket(bucketAggregationProofs).Get(requestID.Bytes()) != nil {
+				return nil
 			}
-		} else {
-			if len(signatureMap.GetMissingValidators().ToArray()) == 0 {
-				err := r.RemoveAggregationProofPending(ctx, signature.Epoch, signature.RequestID())
-				if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
-					return errors.Errorf("failed to remove signature request from pending collection: %w", err)
-				}
-			} else {
-				if err := r.saveAggregationProofPending(ctx, signature.RequestID(), signature.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
-					return errors.Errorf("failed to save aggregation proof to pending collection: %w", err)
-				}
+		}
+
+		pendingBucket := tx.Bucket(bucketAggProofPending)
+		if pendingBucket.Get(epochKey) == nil {
+			if err := pendingBucket.Put(epochKey, []byte{}); err != nil {
+				return errors.Errorf("failed to store pending proof: %w", err)
 			}
 		}
 
 		return nil
-	}, &r.signatureMutexMap, signature.RequestID())
+	})
+}
+
+func (r *Repository) addToSignatureMapCache(ctx context.Context, requestID common.Hash, activeIndex uint32, votingPower symbiotic.VotingPower) (entity.SignatureMap, error) {
+	for {
+		raw, ok := r.signatureMapCache.Load(requestID)
+		if !ok {
+			base, err := r.loadSignatureMap(ctx, requestID)
+			if err != nil {
+				return entity.SignatureMap{}, errors.Errorf("failed to load signature map: %w", err)
+			}
+			raw = base
+		}
+
+		old := raw.(entity.SignatureMap)
+		if old.SignedValidatorsBitmap.Contains(activeIndex) {
+			return old.Clone(), nil
+		}
+
+		cloned := old.Clone()
+		if err := cloned.SetValidatorPresent(activeIndex, votingPower); err != nil {
+			return entity.SignatureMap{}, errors.Errorf("failed to set validator present (activeIndex=%d, totalValidators=%d): %w", activeIndex, cloned.TotalValidators, err)
+		}
+		if r.signatureMapCache.CompareAndSwap(requestID, raw, cloned) {
+			return cloned.Clone(), nil
+		}
+	}
+}
+
+// loadSignatureMap returns the signature map for requestID, populating the cache atomically
+// with an entry shared by all concurrent callers.
+// Propagates ErrEntityNotFound from the rebuild without populating the cache, so callers
+// (e.g. GetSignatureMap) can distinguish "no signatures yet" from a real cache hit.
+func (r *Repository) loadSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error) {
+	res, err, _ := r.signatureMapLoader.Do(requestID.Hex(), func() (any, error) {
+		if cached, ok := r.signatureMapCache.Load(requestID); ok {
+			return cached, nil
+		}
+		sm, err := r.rebuildSignatureMap(ctx, requestID)
+		if err != nil {
+			return entity.SignatureMap{}, err
+		}
+		actual, _ := r.signatureMapCache.LoadOrStore(requestID, sm)
+		return actual, nil
+	})
+	if err != nil {
+		return entity.SignatureMap{}, err
+	}
+	return res.(entity.SignatureMap), nil
 }

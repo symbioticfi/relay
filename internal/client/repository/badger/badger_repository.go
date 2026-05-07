@@ -52,8 +52,7 @@ type Repository struct {
 	proofsMutexMap    sync.Map // map[requestId]*mutexWithUseTime
 	valsetMutexMap    sync.Map // map[epoch]*mutexWithUseTime
 
-	cleanupStop chan struct{}
-	gcStop      chan struct{}
+	done chan struct{}
 }
 
 func New(cfg Config) (*Repository, error) {
@@ -73,11 +72,12 @@ func New(cfg Config) (*Repository, error) {
 	repo := &Repository{
 		db:      db,
 		metrics: cfg.Metrics,
+		done:    make(chan struct{}),
 	}
 
-	// Start mutex cleanup goroutine if configured
 	repo.startMutexCleanup(cfg.MutexCleanupInterval, cfg.MutexCleanupStaleTimeout)
 	repo.startValueLogGC(cfg.ValueLogGCInterval, cfg.ValueLogGCDiscardRatio)
+	repo.startSizeReporter()
 
 	return repo, nil
 }
@@ -114,8 +114,7 @@ func applyBadgerTuning(opts *badger.Options, cfg Config) {
 }
 
 func (r *Repository) Close() error {
-	r.stopMutexCleanup()
-	r.stopValueLogGC()
+	close(r.done)
 	return r.db.Close()
 }
 
@@ -134,44 +133,24 @@ func (l *slogBadgerLogger) Debugf(string, ...any) {}
 
 type DoNothingMetrics = repoutil.DoNothingMetrics
 
-// startMutexCleanup starts a background goroutine that periodically cleans up stale mutexes
 func (r *Repository) startMutexCleanup(interval, staleTimeout time.Duration) {
-	// If interval is 0, cleanup is disabled
 	if interval == 0 {
-		slog.Info("Mutex cleanup disabled (interval is 0)")
 		return
 	}
 
-	r.cleanupStop = make(chan struct{})
-
 	go func() {
-		cleanupTicker := time.NewTicker(interval)
-		defer func() {
-			cleanupTicker.Stop()
-		}()
-
-		slog.Info("Starting mutex cleanup goroutine",
-			"interval", interval,
-			"staleTimeout", staleTimeout,
-		)
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
 
 		for {
 			select {
-			case <-cleanupTicker.C:
+			case <-ticker.C:
 				r.cleanupStaleMutexes(staleTimeout)
-			case <-r.cleanupStop:
-				slog.Info("Stopping mutex cleanup goroutine")
+			case <-r.done:
 				return
 			}
 		}
 	}()
-}
-
-// stopMutexCleanup stops the background cleanup goroutine
-func (r *Repository) stopMutexCleanup() {
-	if r.cleanupStop != nil {
-		close(r.cleanupStop)
-	}
 }
 
 func (r *Repository) startValueLogGC(interval time.Duration, discardRatio float64) {
@@ -182,13 +161,9 @@ func (r *Repository) startValueLogGC(interval time.Duration, discardRatio float6
 		discardRatio = 0.5
 	}
 
-	r.gcStop = make(chan struct{})
-
 	go func() {
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
-
-		slog.Info("Value log GC started", "component", "badger", "interval", interval, "discardRatio", discardRatio)
 
 		for {
 			select {
@@ -198,18 +173,34 @@ func (r *Repository) startValueLogGC(interval time.Duration, discardRatio float6
 						break
 					}
 				}
-			case <-r.gcStop:
-				slog.Info("Value log GC stopped", "component", "badger")
+			case <-r.done:
 				return
 			}
 		}
 	}()
 }
 
-func (r *Repository) stopValueLogGC() {
-	if r.gcStop != nil {
-		close(r.gcStop)
-	}
+func (r *Repository) startSizeReporter() {
+	r.reportDBSize()
+
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				r.reportDBSize()
+			case <-r.done:
+				return
+			}
+		}
+	}()
+}
+
+func (r *Repository) reportDBSize() {
+	lsm, vlog := r.db.Size()
+	r.metrics.SetDBSizeBytes(float64(lsm + vlog))
 }
 
 // cleanupStaleMutexes removes mutexes that haven't been used for longer than cleanupStaleAfter

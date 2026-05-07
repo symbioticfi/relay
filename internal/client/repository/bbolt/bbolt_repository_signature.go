@@ -16,31 +16,6 @@ import (
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-func (r *Repository) saveSignature(ctx context.Context, validatorIndex uint32, sig symbiotic.Signature) error {
-	data, err := codec.SignatureToBytes(sig)
-	if err != nil {
-		return errors.Errorf("failed to marshal signature: %w", err)
-	}
-
-	return r.doBatch(ctx, "saveSignature", func(tx *bolt.Tx) error {
-		requestID := sig.RequestID()
-		key := signatureKey(requestID.Bytes(), validatorIndex)
-		if err := tx.Bucket(bucketSignatures).Put(key, data); err != nil {
-			return errors.Errorf("failed to store signature: %w", err)
-		}
-
-		// Maintain request_id_epochs index
-		epochKey := epochHashKey(uint64(sig.Epoch), requestID.Bytes())
-		if tx.Bucket(bucketRequestIDEpochs).Get(epochKey) == nil {
-			if err := tx.Bucket(bucketRequestIDEpochs).Put(epochKey, []byte{}); err != nil {
-				return errors.Errorf("failed to store request id epoch link: %w", err)
-			}
-		}
-
-		return nil
-	})
-}
-
 func (r *Repository) GetAllSignatures(ctx context.Context, requestID common.Hash) ([]symbiotic.Signature, error) {
 	var signatures []symbiotic.Signature
 
@@ -170,60 +145,116 @@ func (r *Repository) GetSignaturesByEpoch(
 	return signatures, encodeSignatureCursor(lastRequestID, lastVIdx), nil
 }
 
-func (r *Repository) UpdateSignatureMap(ctx context.Context, vm entity.SignatureMap) error {
-	data, err := codec.SignatureMapToBytes(vm)
-	if err != nil {
-		return errors.Errorf("failed to marshal signature map: %w", err)
+func (r *Repository) GetSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error) {
+	if raw, ok := r.signatureMapCache.Load(requestID); ok {
+		sm := raw.(entity.SignatureMap)
+		return sm.Clone(), nil
 	}
 
-	return r.doBatch(ctx, "UpdateSignatureMap", func(tx *bolt.Tx) error {
-		return tx.Bucket(bucketSignatureMaps).Put(vm.RequestID.Bytes(), data)
-	})
+	sm, err := r.loadSignatureMap(ctx, requestID)
+	if err != nil {
+		return entity.SignatureMap{}, err
+	}
+	return sm.Clone(), nil
 }
 
-func (r *Repository) GetSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error) {
-	var vm entity.SignatureMap
+func (r *Repository) rebuildSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error) {
+	var sm entity.SignatureMap
 
-	err := r.doView(ctx, "GetSignatureMap", func(tx *bolt.Tx) error {
-		v := tx.Bucket(bucketSignatureMaps).Get(requestID.Bytes())
-		if v == nil {
-			return errors.Errorf("no signature map found for request id %s: %w", requestID.Hex(), entity.ErrEntityNotFound)
+	err := r.doView(ctx, "rebuildSignatureMap", func(tx *bolt.Tx) error {
+		// Scan stored signatures: extract activeIndices and discover epoch from first signature
+		sigPrefix := requestID.Bytes()
+		sc := tx.Bucket(bucketSignatures).Cursor()
+
+		var epoch symbiotic.Epoch
+		var activeIndices []uint32
+		epochFound := false
+
+		for k, v := sc.Seek(sigPrefix); k != nil && bytes.HasPrefix(k, sigPrefix); k, v = sc.Next() {
+			if len(k) != 36 { // 32 (requestID) + 4 (activeIndex)
+				continue
+			}
+			activeIndices = append(activeIndices, binary.BigEndian.Uint32(k[32:]))
+
+			if !epochFound {
+				sig, err := codec.BytesToSignature(v)
+				if err != nil {
+					return errors.Errorf("failed to unmarshal signature: %w", err)
+				}
+				epoch = sig.Epoch
+				epochFound = true
+			}
 		}
 
-		var err error
-		vm, err = codec.BytesToSignatureMap(v)
-		if err != nil {
-			return errors.Errorf("failed to unmarshal signature map: %w", err)
+		if !epochFound {
+			return errors.Errorf("no signatures found for request id %s: %w", requestID.Hex(), entity.ErrEntityNotFound)
 		}
+
+		countVal := tx.Bucket(bucketActiveValCounts).Get(epochBytes(uint64(epoch)))
+		if countVal == nil {
+			return errors.Errorf("no active validator count for epoch %d: %w", epoch, entity.ErrEntityNotFound)
+		}
+		totalActive := binary.BigEndian.Uint32(countVal)
+
+		// Build activeIndex → votingPower from stored validators
+		votingPowers := make(map[uint32]symbiotic.VotingPower)
+		prefix := epochBytes(uint64(epoch))
+		c := tx.Bucket(bucketValidators).Cursor()
+		for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
+			val, storedActiveIdx, err := codec.BytesToValidator(v)
+			if err != nil {
+				return errors.Errorf("failed to unmarshal validator: %w", err)
+			}
+			if val.IsActive {
+				votingPowers[storedActiveIdx] = val.VotingPower
+			}
+		}
+
+		sm = entity.NewSignatureMap(requestID, epoch, totalActive)
+		for _, activeIdx := range activeIndices {
+			vp, ok := votingPowers[activeIdx]
+			if !ok {
+				continue
+			}
+			_ = sm.SetValidatorPresent(activeIdx, vp)
+		}
+
 		return nil
 	})
-	return vm, err
+
+	if err != nil {
+		return entity.SignatureMap{}, err
+	}
+
+	return sm, nil
 }
 
 func (r *Repository) SaveSignatureRequest(ctx context.Context, requestID common.Hash, req symbiotic.SignatureRequest) error {
-	return r.doUpdate(ctx, "SaveSignatureRequest", func(tx *bolt.Tx) error {
+	data, err := codec.SignatureRequestToBytes(req)
+	if err != nil {
+		return errors.Errorf("failed to marshal signature request: %w", err)
+	}
+	primaryKey := epochHashKey(uint64(req.RequiredEpoch), requestID.Bytes())
+	pendingKey := epochHashKey(uint64(req.RequiredEpoch), requestID.Bytes())
+	epochData := epochBytes(uint64(req.RequiredEpoch))
+
+	return r.doBatch(ctx, "SaveSignatureRequest", func(tx *bolt.Tx) error {
 		// Save signature request
-		primaryKey := epochHashKey(uint64(req.RequiredEpoch), requestID.Bytes())
 		b := tx.Bucket(bucketSignatureRequests)
 		if b.Get(primaryKey) != nil {
 			return errors.Errorf("signature request already exists: %w", entity.ErrEntityAlreadyExist)
 		}
 
-		data, err := codec.SignatureRequestToBytes(req)
-		if err != nil {
-			return errors.Errorf("failed to marshal signature request: %w", err)
-		}
 		if err := b.Put(primaryKey, data); err != nil {
 			return errors.Errorf("failed to store signature request: %w", err)
 		}
 
 		// Save request ID index: requestID → epoch bytes
-		if err := tx.Bucket(bucketRequestIDIndex).Put(requestID.Bytes(), epochBytes(uint64(req.RequiredEpoch))); err != nil {
+		if err := tx.Bucket(bucketRequestIDIndex).Put(requestID.Bytes(), epochData); err != nil {
 			return errors.Errorf("failed to store request id index: %w", err)
 		}
 
 		// Save pending signature marker
-		pendingKey := epochHashKey(uint64(req.RequiredEpoch), requestID.Bytes())
 		pendingBucket := tx.Bucket(bucketSignaturePending)
 		if pendingBucket.Get(pendingKey) != nil {
 			return nil // Already pending
@@ -413,7 +444,7 @@ func (r *Repository) GetSignaturePending(ctx context.Context, limit int) ([]comm
 }
 
 func (r *Repository) RemoveSignaturePending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
-	return r.doUpdate(ctx, "RemoveSignaturePending", func(tx *bolt.Tx) error {
+	return r.doBatch(ctx, "RemoveSignaturePending", func(tx *bolt.Tx) error {
 		key := epochHashKey(uint64(epoch), requestID.Bytes())
 		return tx.Bucket(bucketSignaturePending).Delete(key)
 	})
