@@ -82,8 +82,9 @@ func (r *Repository) GetAggregationProofsByEpoch(
 	}
 
 	var (
-		proofs []symbiotic.AggregationProof
-		lastID common.Hash
+		proofs   []symbiotic.AggregationProof
+		lastID   common.Hash
+		moreLeft bool
 	)
 
 	err = r.doView(ctx, "GetAggregationProofsByEpoch", func(tx *bolt.Tx) error {
@@ -102,6 +103,7 @@ func (r *Repository) GetAggregationProofsByEpoch(
 
 		for ; k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Next() {
 			if pageSize > 0 && len(proofs) >= pageSize {
+				moreLeft = true
 				return nil
 			}
 			if len(k) < 40 {
@@ -126,7 +128,7 @@ func (r *Repository) GetAggregationProofsByEpoch(
 		return nil, nil, err
 	}
 
-	if pageSize == 0 || len(proofs) < pageSize {
+	if !moreLeft {
 		return proofs, nil, nil
 	}
 	return proofs, repoutil.EncodeHashCursor(lastID), nil

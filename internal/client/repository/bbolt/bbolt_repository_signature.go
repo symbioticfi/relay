@@ -85,6 +85,7 @@ func (r *Repository) GetSignaturesByEpoch(
 		signatures    []symbiotic.Signature
 		lastRequestID common.Hash
 		lastVIdx      uint32
+		moreLeft      bool
 	)
 
 	err = r.doView(ctx, "GetSignaturesByEpoch", func(tx *bolt.Tx) error {
@@ -116,6 +117,7 @@ func (r *Repository) GetSignaturesByEpoch(
 
 			for sk, sv := sigC.Seek(sigSeekKey); sk != nil && bytes.HasPrefix(sk, sigPrefix); sk, sv = sigC.Next() {
 				if pageSize > 0 && len(signatures) >= pageSize {
+					moreLeft = true
 					break outer
 				}
 				if len(sk) != 36 {
@@ -138,7 +140,7 @@ func (r *Repository) GetSignaturesByEpoch(
 		return nil, nil, err
 	}
 
-	if pageSize == 0 || len(signatures) < pageSize {
+	if !moreLeft {
 		return signatures, nil, nil
 	}
 	return signatures, repoutil.EncodeSignatureCursor(lastRequestID, lastVIdx), nil
@@ -310,6 +312,7 @@ func (r *Repository) GetSignatureRequestsWithIDByEpoch(
 	var (
 		requests []entity.SignatureRequestWithID
 		lastID   common.Hash
+		moreLeft bool
 	)
 
 	err = r.doView(ctx, "GetSignatureRequestsWithIDByEpoch", func(tx *bolt.Tx) error {
@@ -328,6 +331,7 @@ func (r *Repository) GetSignatureRequestsWithIDByEpoch(
 
 		for ; k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
 			if pageSize > 0 && len(requests) >= pageSize {
+				moreLeft = true
 				return nil
 			}
 			if len(k) < 40 {
@@ -350,7 +354,7 @@ func (r *Repository) GetSignatureRequestsWithIDByEpoch(
 		return nil, nil, err
 	}
 
-	if pageSize == 0 || len(requests) < pageSize {
+	if !moreLeft {
 		return requests, nil, nil
 	}
 	return requests, repoutil.EncodeHashCursor(lastID), nil
@@ -371,8 +375,9 @@ func (r *Repository) GetSignatureRequestIDsByEpoch(
 	}
 
 	var (
-		ids    []common.Hash
-		lastID common.Hash
+		ids      []common.Hash
+		lastID   common.Hash
+		moreLeft bool
 	)
 
 	err = r.doView(ctx, "GetSignatureRequestIDsByEpoch", func(tx *bolt.Tx) error {
@@ -391,6 +396,7 @@ func (r *Repository) GetSignatureRequestIDsByEpoch(
 
 		for ; k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Next() {
 			if pageSize > 0 && len(ids) >= pageSize {
+				moreLeft = true
 				return nil
 			}
 			if len(k) < 40 {
@@ -406,7 +412,7 @@ func (r *Repository) GetSignatureRequestIDsByEpoch(
 		return nil, nil, err
 	}
 
-	if pageSize == 0 || len(ids) < pageSize {
+	if !moreLeft {
 		return ids, nil, nil
 	}
 	return ids, repoutil.EncodeHashCursor(lastID), nil

@@ -138,6 +138,7 @@ func (r *Repository) GetSignaturesByEpoch(
 		signatures    []symbiotic.Signature
 		lastRequestID common.Hash
 		lastVIdx      uint32
+		moreLeft      bool
 	)
 
 	err = r.doViewInTx(ctx, "GetSignaturesByEpoch", func(ctx context.Context) error {
@@ -181,6 +182,7 @@ func (r *Repository) GetSignaturesByEpoch(
 			for sigIt.Seek(keySignature(currentRequestID, startVIdx)); sigIt.ValidForPrefix(sigPrefix); sigIt.Next() {
 				if pageSize > 0 && len(signatures) >= pageSize {
 					sigIt.Close()
+					moreLeft = true
 					break outer
 				}
 				vIdx, err := extractValidatorIndexFromSignatureKey(sigIt.Item().Key())
@@ -210,7 +212,7 @@ func (r *Repository) GetSignaturesByEpoch(
 		return nil, nil, err
 	}
 
-	if pageSize == 0 || len(signatures) < pageSize {
+	if !moreLeft {
 		return signatures, nil, nil
 	}
 	return signatures, repoutil.EncodeSignatureCursor(lastRequestID, lastVIdx), nil

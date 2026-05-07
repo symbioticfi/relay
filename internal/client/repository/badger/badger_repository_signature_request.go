@@ -193,6 +193,7 @@ func (r *Repository) GetSignatureRequestsWithIDByEpoch(
 	var (
 		requests []entity.SignatureRequestWithID
 		lastID   common.Hash
+		moreLeft bool
 	)
 
 	err = r.doViewInTx(ctx, "GetSignatureRequestsWithIDByEpoch", func(ctx context.Context) error {
@@ -216,6 +217,7 @@ func (r *Repository) GetSignatureRequestsWithIDByEpoch(
 
 		for ; it.ValidForPrefix(prefix); it.Next() {
 			if pageSize > 0 && len(requests) >= pageSize {
+				moreLeft = true
 				return nil
 			}
 			item := it.Item()
@@ -243,7 +245,7 @@ func (r *Repository) GetSignatureRequestsWithIDByEpoch(
 		return nil, nil, err
 	}
 
-	if pageSize == 0 || len(requests) < pageSize {
+	if !moreLeft {
 		return requests, nil, nil
 	}
 	return requests, repoutil.EncodeHashCursor(lastID), nil
@@ -266,6 +268,7 @@ func (r *Repository) GetSignatureRequestIDsByEpoch(
 	var (
 		requestIDs []common.Hash
 		lastID     common.Hash
+		moreLeft   bool
 	)
 
 	err = r.doViewInTx(ctx, "GetSignatureRequestIDsByEpoch", func(ctx context.Context) error {
@@ -289,6 +292,7 @@ func (r *Repository) GetSignatureRequestIDsByEpoch(
 
 		for ; it.ValidForPrefix(prefix); it.Next() {
 			if pageSize > 0 && len(requestIDs) >= pageSize {
+				moreLeft = true
 				return nil
 			}
 			id, err := extractRequestIDFromEpochDelimitedKey(it.Item().Key(), keySignatureRequestPrefix)
@@ -304,7 +308,7 @@ func (r *Repository) GetSignatureRequestIDsByEpoch(
 		return nil, nil, err
 	}
 
-	if pageSize == 0 || len(requestIDs) < pageSize {
+	if !moreLeft {
 		return requestIDs, nil, nil
 	}
 	return requestIDs, repoutil.EncodeHashCursor(lastID), nil

@@ -116,8 +116,9 @@ func (r *Repository) GetAggregationProofsByEpoch(
 	}
 
 	var (
-		proofs []symbiotic.AggregationProof
-		lastID common.Hash
+		proofs   []symbiotic.AggregationProof
+		lastID   common.Hash
+		moreLeft bool
 	)
 
 	err = r.doViewInTx(ctx, "GetAggregationProofsByEpoch", func(ctx context.Context) error {
@@ -141,6 +142,7 @@ func (r *Repository) GetAggregationProofsByEpoch(
 
 		for ; it.ValidForPrefix(prefix); it.Next() {
 			if pageSize > 0 && len(proofs) >= pageSize {
+				moreLeft = true
 				return nil
 			}
 			id, err := extractRequestIDFromEpochKey(it.Item().Key())
@@ -165,7 +167,7 @@ func (r *Repository) GetAggregationProofsByEpoch(
 		return nil, nil, err
 	}
 
-	if pageSize == 0 || len(proofs) < pageSize {
+	if !moreLeft {
 		return proofs, nil, nil
 	}
 	return proofs, repoutil.EncodeHashCursor(lastID), nil
