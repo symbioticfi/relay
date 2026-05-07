@@ -105,6 +105,9 @@ func runBboltSession(ctx context.Context, f Flags) error {
 		Metrics:          repoutil.DoNothingMetrics{},
 		PrunePause:       0,
 		MaxBatchDelay:    time.Millisecond,
+		MaxBatchSize:     0,
+		InitialMmapSize:  0,
+		StatsLogInterval: 0,
 		NoSync:           false,
 		NoFreelistSync:   false,
 		CompactOnStartup: false,
@@ -168,10 +171,20 @@ func runBadger(ctx context.Context, f Flags) error {
 	openSpinner, _ := pterm.DefaultSpinner.Start("Opening badger database…")
 	openStart := time.Now()
 	repo, err := badger.New(badger.Config{
-		Dir:              f.StorageDir,
-		Metrics:          repoutil.DoNothingMetrics{},
-		BlockCacheSize:   -1, // -1 = badger default; 0 means "disabled"
-		CompactL0OnClose: true,
+		Dir:                      f.StorageDir,
+		Metrics:                  repoutil.DoNothingMetrics{},
+		BlockCacheSize:           -1, // -1 = badger default; 0 means "disabled"
+		CompactL0OnClose:         true,
+		MutexCleanupInterval:     0,
+		MutexCleanupStaleTimeout: 0,
+		ValueLogGCInterval:       0,
+		ValueLogGCDiscardRatio:   0,
+		MemTableSize:             0,
+		NumMemtables:             0,
+		NumLevelZeroTables:       0,
+		NumLevelZeroTablesStall:  0,
+		NumCompactors:            0,
+		ValueLogFileSize:         0,
 	})
 	if err != nil {
 		openSpinner.Fail("Failed to open badger database")
