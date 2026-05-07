@@ -11,6 +11,7 @@ type Flags struct {
 	SignatureEpochs      uint64
 	Compact              bool
 	BadgerFlattenWorkers int
+	PruneBatchSize       int
 }
 
 var flags Flags
@@ -40,6 +41,7 @@ func NewPruneCmd() *cobra.Command {
 	cmd.Flags().Uint64Var(&flags.SignatureEpochs, "retention.signature-epochs", 0, "Keep this many most-recent epochs of signatures (0 = skip)")
 	cmd.Flags().BoolVar(&flags.Compact, "compact", false, "After pruning, compact the database file (bbolt: rewrite; badger: Flatten + value log GC)")
 	cmd.Flags().IntVar(&flags.BadgerFlattenWorkers, "badger.flatten-workers", 4, "Number of parallel workers for badger Flatten (only when --compact is set)")
+	cmd.Flags().IntVar(&flags.PruneBatchSize, "prune-batch-size", 1000, "Number of request IDs to delete per database transaction (larger = faster but holds writer lock longer)")
 
 	return cmd
 }

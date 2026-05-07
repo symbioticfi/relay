@@ -32,6 +32,8 @@ var (
 )
 
 func run(ctx context.Context, f Flags) error {
+	totalStart := time.Now()
+
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
 
@@ -49,14 +51,20 @@ func run(ctx context.Context, f Flags) error {
 	}
 	pterm.Info.Printf("Detected %s storage in %s\n", storageType, f.StorageDir)
 
+	var runErr error
 	switch storageType {
 	case storageTypeBbolt:
-		return runBbolt(ctx, f)
+		runErr = runBbolt(ctx, f)
 	case storageTypeBadger:
-		return runBadger(ctx, f)
+		runErr = runBadger(ctx, f)
 	default:
 		return errors.Errorf("unsupported storage type: %s", storageType)
 	}
+	if runErr != nil {
+		return runErr
+	}
+	pterm.Success.Printf("Total time: %s\n", time.Since(totalStart).Round(time.Millisecond))
+	return nil
 }
 
 func runBbolt(ctx context.Context, f Flags) error {
@@ -72,6 +80,7 @@ func runBbolt(ctx context.Context, f Flags) error {
 	// Compact-only: skip our RW open entirely. CompactDB opens its own handle.
 	if f.Compact {
 		before, beforeErr := fileSize(dbPath)
+		pterm.Info.Println("Compaction rewrites the entire database file — this may take a while, please wait.")
 		spinner, _ := pterm.DefaultSpinner.Start("Compacting bbolt database…")
 		start := time.Now()
 		if err := bbolt.CompactDB(dbPath); err != nil {
@@ -79,8 +88,9 @@ func runBbolt(ctx context.Context, f Flags) error {
 			return errors.Errorf("bbolt compaction failed: %w", err)
 		}
 		after, afterErr := fileSize(dbPath)
-		spinner.Success("Compaction done")
-		printSizeReport(before, beforeErr, after, afterErr, time.Since(start))
+		compactDuration := time.Since(start).Round(time.Millisecond)
+		spinner.Success(pterm.Sprintf("Compaction completed in %s", compactDuration))
+		printSizeReport(before, beforeErr, after, afterErr, compactDuration)
 	}
 
 	return nil
@@ -124,7 +134,7 @@ func runBboltSession(ctx context.Context, f Flags) error {
 		ValsetRetentionEpochs:    f.ValsetEpochs,
 		ProofRetentionEpochs:     f.ProofEpochs,
 		SignatureRetentionEpochs: f.SignatureEpochs,
-		PruneBatchSize:           1000,
+		PruneBatchSize:           f.PruneBatchSize,
 	}, f); err != nil {
 		return err
 	}
@@ -132,6 +142,7 @@ func runBboltSession(ctx context.Context, f Flags) error {
 	dbPath := filepath.Join(f.StorageDir, bboltDBFilename)
 	if f.Compact && ctx.Err() == nil {
 		before, beforeErr := fileSize(dbPath)
+		pterm.Info.Println("Compaction rewrites the entire database file — this may take a while, please wait.")
 		spinner, _ := pterm.DefaultSpinner.Start("Compacting bbolt database (reusing open handle)…")
 		start := time.Now()
 		if err := repo.Compact(); err != nil {
@@ -139,8 +150,9 @@ func runBboltSession(ctx context.Context, f Flags) error {
 			return errors.Errorf("bbolt compaction failed: %w", err)
 		}
 		after, afterErr := fileSize(dbPath)
-		spinner.Success("Compaction done")
-		printSizeReport(before, beforeErr, after, afterErr, time.Since(start))
+		compactDuration := time.Since(start).Round(time.Millisecond)
+		spinner.Success(pterm.Sprintf("Compaction completed in %s", compactDuration))
+		printSizeReport(before, beforeErr, after, afterErr, compactDuration)
 	}
 
 	closeSpinner, _ := pterm.DefaultSpinner.Start("Closing bbolt database…")
@@ -195,6 +207,7 @@ func runBadger(ctx context.Context, f Flags) error {
 
 	if f.Compact {
 		before, beforeErr := dirSize(f.StorageDir)
+		pterm.Info.Println("Compaction rewrites LSM levels and runs value-log GC — this may take a while, please wait.")
 		spinner, _ := pterm.DefaultSpinner.Start("Flattening badger LSM + value log GC…")
 		start := time.Now()
 		capHit, err := repo.Flatten(f.BadgerFlattenWorkers)
@@ -202,7 +215,7 @@ func runBadger(ctx context.Context, f Flags) error {
 			spinner.Fail("Flatten failed")
 			return errors.Errorf("badger flatten failed: %w", err)
 		}
-		spinner.Success("Flatten done")
+		spinner.Success(pterm.Sprintf("Flatten completed in %s", time.Since(start).Round(time.Millisecond)))
 		if capHit {
 			pterm.Warning.Printf("value-log GC hit iteration cap (%d) — re-run with --compact to continue reclaiming space\n",
 				badger.MaxValueLogGCIterations)
@@ -219,7 +232,9 @@ func runBadger(ctx context.Context, f Flags) error {
 		}
 		closeSpinner.Success(pterm.Sprintf("Closed badger database in %s", time.Since(closeStart).Round(time.Millisecond)))
 		after, afterErr := dirSize(f.StorageDir)
-		printSizeReport(before, beforeErr, after, afterErr, time.Since(start))
+		compactDuration := time.Since(start).Round(time.Millisecond)
+		pterm.Success.Printf("Compaction completed in %s\n", compactDuration)
+		printSizeReport(before, beforeErr, after, afterErr, compactDuration)
 	}
 
 	return nil
