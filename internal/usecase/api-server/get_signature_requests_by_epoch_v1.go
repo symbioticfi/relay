@@ -5,16 +5,12 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"github.com/symbioticfi/relay/internal/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-// GetSignatureRequestsByEpoch handles the gRPC GetSignatureRequestsByEpoch request.
-// Returns one page of signature requests (cursor-paginated via opaque `from`/`next_from`).
 func (h *grpcHandler) GetSignatureRequestsByEpoch(ctx context.Context, req *apiv1.GetSignatureRequestsByEpochRequest) (*apiv1.GetSignatureRequestsByEpochResponse, error) {
 	pageSize := clampPageSize(int(req.GetPageSize()), defaultListPageSize, maxListPageSize)
 
@@ -25,8 +21,8 @@ func (h *grpcHandler) GetSignatureRequestsByEpoch(ctx context.Context, req *apiv
 
 	signatureRequestsWithID, next, err := h.cfg.Repo.GetSignatureRequestsWithIDByEpoch(ctx, symbiotic.Epoch(req.GetEpoch()), pageSize, from)
 	if err != nil {
-		if errors.Is(err, entity.ErrInvalidCursor) {
-			return nil, status.Errorf(codes.InvalidArgument, "%v", err)
+		if e := asCursorErr(err); e != nil {
+			return nil, e
 		}
 		return nil, errors.Errorf("failed to get signature requests by epoch: %w", err)
 	}

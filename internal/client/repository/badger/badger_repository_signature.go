@@ -12,6 +12,7 @@ import (
 	"github.com/go-errors/errors"
 
 	"github.com/symbioticfi/relay/internal/client/repository/codec"
+	"github.com/symbioticfi/relay/internal/client/repository/repoutil"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -128,7 +129,7 @@ func (r *Repository) GetSignaturesByEpoch(
 	pageSize int,
 	from []byte,
 ) ([]symbiotic.Signature, []byte, error) {
-	fromRequestID, fromVIdx, err := decodeSignatureCursor(from)
+	fromRequestID, fromVIdx, err := repoutil.DecodeSignatureCursor(from)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -137,7 +138,6 @@ func (r *Repository) GetSignaturesByEpoch(
 		signatures    []symbiotic.Signature
 		lastRequestID common.Hash
 		lastVIdx      uint32
-		filledFull    bool
 	)
 
 	err = r.doViewInTx(ctx, "GetSignaturesByEpoch", func(ctx context.Context) error {
@@ -157,7 +157,6 @@ func (r *Repository) GetSignaturesByEpoch(
 			idxSeekKey = keyRequestIDEpoch(epoch, fromRequestID)
 		}
 
-		count := 0
 	outer:
 		for idxIt.Seek(idxSeekKey); idxIt.ValidForPrefix(idxPrefix); idxIt.Next() {
 			currentRequestID, err := extractRequestIDFromEpochKey(idxIt.Item().Key())
@@ -167,8 +166,10 @@ func (r *Repository) GetSignaturesByEpoch(
 			}
 
 			// Within the cursor's group, skip already-returned signatures.
+			// fromRequestID is zero only when from == nil, so a hash match
+			// here implies a real cursor — fromVIdx may legitimately be 0.
 			startVIdx := uint32(0)
-			if currentRequestID == fromRequestID && fromVIdx > 0 {
+			if currentRequestID == fromRequestID {
 				startVIdx = fromVIdx + 1
 			}
 
@@ -178,9 +179,8 @@ func (r *Repository) GetSignaturesByEpoch(
 			sigIt := txn.NewIterator(sigOpts)
 
 			for sigIt.Seek(keySignature(currentRequestID, startVIdx)); sigIt.ValidForPrefix(sigPrefix); sigIt.Next() {
-				if pageSize > 0 && count >= pageSize {
+				if pageSize > 0 && len(signatures) >= pageSize {
 					sigIt.Close()
-					filledFull = true
 					break outer
 				}
 				vIdx, err := extractValidatorIndexFromSignatureKey(sigIt.Item().Key())
@@ -201,7 +201,6 @@ func (r *Repository) GetSignaturesByEpoch(
 				signatures = append(signatures, sig)
 				lastRequestID = currentRequestID
 				lastVIdx = vIdx
-				count++
 			}
 			sigIt.Close()
 		}
@@ -211,10 +210,10 @@ func (r *Repository) GetSignaturesByEpoch(
 		return nil, nil, err
 	}
 
-	if !filledFull {
+	if pageSize == 0 || len(signatures) < pageSize {
 		return signatures, nil, nil
 	}
-	return signatures, encodeSignatureCursor(lastRequestID, lastVIdx), nil
+	return signatures, repoutil.EncodeSignatureCursor(lastRequestID, lastVIdx), nil
 }
 
 func gatAllSignatures(txn *badger.Txn, requestID common.Hash) ([]symbiotic.Signature, error) {

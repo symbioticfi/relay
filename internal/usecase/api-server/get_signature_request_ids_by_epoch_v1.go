@@ -6,16 +6,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/samber/lo"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
-	internalentity "github.com/symbioticfi/relay/internal/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
 	"github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-// GetSignatureRequestIDsByEpoch handles the gRPC GetSignatureRequestIDsByEpoch request.
-// Returns one page of request IDs (cursor-paginated via opaque `from`/`next_from`).
 func (h *grpcHandler) GetSignatureRequestIDsByEpoch(ctx context.Context, req *apiv1.GetSignatureRequestIDsByEpochRequest) (*apiv1.GetSignatureRequestIDsByEpochResponse, error) {
 	pageSize := clampPageSize(int(req.GetPageSize()), defaultIDListPageSize, maxIDListPageSize)
 
@@ -26,8 +21,8 @@ func (h *grpcHandler) GetSignatureRequestIDsByEpoch(ctx context.Context, req *ap
 
 	requestIDs, next, err := h.cfg.Repo.GetSignatureRequestIDsByEpoch(ctx, entity.Epoch(req.GetEpoch()), pageSize, from)
 	if err != nil {
-		if errors.Is(err, internalentity.ErrInvalidCursor) {
-			return nil, status.Errorf(codes.InvalidArgument, "%v", err)
+		if e := asCursorErr(err); e != nil {
+			return nil, e
 		}
 		return nil, errors.Errorf("failed to get signature request IDs by epoch: %w", err)
 	}

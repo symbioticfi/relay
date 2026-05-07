@@ -3,8 +3,11 @@ package api_server
 import (
 	"encoding/base64"
 
+	"github.com/go-errors/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/symbioticfi/relay/internal/entity"
 )
 
 // Server-side defaults and clamps for *ByEpoch listing endpoints. These bound
@@ -53,4 +56,14 @@ func encodeCursor(b []byte) string {
 		return ""
 	}
 	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+// asCursorErr returns a non-nil InvalidArgument status when err wraps
+// entity.ErrInvalidCursor, and nil otherwise — letting callers fall through to
+// their own wrapping for unrelated repo errors.
+func asCursorErr(err error) error {
+	if errors.Is(err, entity.ErrInvalidCursor) {
+		return status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	return nil
 }

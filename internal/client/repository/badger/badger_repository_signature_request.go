@@ -9,6 +9,7 @@ import (
 	"github.com/go-errors/errors"
 
 	"github.com/symbioticfi/relay/internal/client/repository/codec"
+	"github.com/symbioticfi/relay/internal/client/repository/repoutil"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -184,15 +185,14 @@ func (r *Repository) GetSignatureRequestsWithIDByEpoch(
 	pageSize int,
 	from []byte,
 ) ([]entity.SignatureRequestWithID, []byte, error) {
-	fromHash, err := decodeHashCursor(from)
+	fromHash, err := repoutil.DecodeHashCursor(from)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	var (
-		requests   []entity.SignatureRequestWithID
-		lastID     common.Hash
-		filledFull bool
+		requests []entity.SignatureRequestWithID
+		lastID   common.Hash
 	)
 
 	err = r.doViewInTx(ctx, "GetSignatureRequestsWithIDByEpoch", func(ctx context.Context) error {
@@ -200,7 +200,6 @@ func (r *Repository) GetSignatureRequestsWithIDByEpoch(
 		prefix := keySignatureRequestEpochPrefix(epoch)
 		opts := badger.DefaultIteratorOptions
 		opts.Prefix = prefix
-		opts.PrefetchValues = true
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
@@ -215,10 +214,8 @@ func (r *Repository) GetSignatureRequestsWithIDByEpoch(
 			it.Next()
 		}
 
-		count := 0
 		for ; it.ValidForPrefix(prefix); it.Next() {
-			if pageSize > 0 && count >= pageSize {
-				filledFull = true
+			if pageSize > 0 && len(requests) >= pageSize {
 				return nil
 			}
 			item := it.Item()
@@ -239,7 +236,6 @@ func (r *Repository) GetSignatureRequestsWithIDByEpoch(
 				SignatureRequest: req,
 			})
 			lastID = requestID
-			count++
 		}
 		return nil
 	})
@@ -247,10 +243,10 @@ func (r *Repository) GetSignatureRequestsWithIDByEpoch(
 		return nil, nil, err
 	}
 
-	if !filledFull {
+	if pageSize == 0 || len(requests) < pageSize {
 		return requests, nil, nil
 	}
-	return requests, encodeHashCursor(lastID), nil
+	return requests, repoutil.EncodeHashCursor(lastID), nil
 }
 
 // GetSignatureRequestIDsByEpoch returns one page of request IDs for the given
@@ -262,7 +258,7 @@ func (r *Repository) GetSignatureRequestIDsByEpoch(
 	pageSize int,
 	from []byte,
 ) ([]common.Hash, []byte, error) {
-	fromHash, err := decodeHashCursor(from)
+	fromHash, err := repoutil.DecodeHashCursor(from)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -270,7 +266,6 @@ func (r *Repository) GetSignatureRequestIDsByEpoch(
 	var (
 		requestIDs []common.Hash
 		lastID     common.Hash
-		filledFull bool
 	)
 
 	err = r.doViewInTx(ctx, "GetSignatureRequestIDsByEpoch", func(ctx context.Context) error {
@@ -292,10 +287,8 @@ func (r *Repository) GetSignatureRequestIDsByEpoch(
 			it.Next()
 		}
 
-		count := 0
 		for ; it.ValidForPrefix(prefix); it.Next() {
-			if pageSize > 0 && count >= pageSize {
-				filledFull = true
+			if pageSize > 0 && len(requestIDs) >= pageSize {
 				return nil
 			}
 			id, err := extractRequestIDFromEpochDelimitedKey(it.Item().Key(), keySignatureRequestPrefix)
@@ -304,7 +297,6 @@ func (r *Repository) GetSignatureRequestIDsByEpoch(
 			}
 			requestIDs = append(requestIDs, id)
 			lastID = id
-			count++
 		}
 		return nil
 	})
@@ -312,10 +304,10 @@ func (r *Repository) GetSignatureRequestIDsByEpoch(
 		return nil, nil, err
 	}
 
-	if !filledFull {
+	if pageSize == 0 || len(requestIDs) < pageSize {
 		return requestIDs, nil, nil
 	}
-	return requestIDs, encodeHashCursor(lastID), nil
+	return requestIDs, repoutil.EncodeHashCursor(lastID), nil
 }
 
 func (r *Repository) GetSignaturePending(ctx context.Context, limit int) ([]common.Hash, error) {

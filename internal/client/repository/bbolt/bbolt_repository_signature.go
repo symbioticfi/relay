@@ -12,6 +12,7 @@ import (
 	bolt "go.etcd.io/bbolt"
 
 	"github.com/symbioticfi/relay/internal/client/repository/codec"
+	"github.com/symbioticfi/relay/internal/client/repository/repoutil"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -75,7 +76,7 @@ func (r *Repository) GetSignaturesByEpoch(
 	pageSize int,
 	from []byte,
 ) ([]symbiotic.Signature, []byte, error) {
-	fromRequestID, fromVIdx, err := decodeSignatureCursor(from)
+	fromRequestID, fromVIdx, err := repoutil.DecodeSignatureCursor(from)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -84,7 +85,6 @@ func (r *Repository) GetSignaturesByEpoch(
 		signatures    []symbiotic.Signature
 		lastRequestID common.Hash
 		lastVIdx      uint32
-		filledFull    bool
 	)
 
 	err = r.doView(ctx, "GetSignaturesByEpoch", func(tx *bolt.Tx) error {
@@ -96,7 +96,6 @@ func (r *Repository) GetSignaturesByEpoch(
 			idxSeekKey = epochHashKey(uint64(epoch), fromRequestID.Bytes())
 		}
 
-		count := 0
 	outer:
 		for k, _ := idxC.Seek(idxSeekKey); k != nil && bytes.HasPrefix(k, idxPrefix); k, _ = idxC.Next() {
 			if len(k) < 40 {
@@ -104,8 +103,10 @@ func (r *Repository) GetSignaturesByEpoch(
 			}
 			currentRequestID := common.BytesToHash(k[8:40])
 
+			// fromRequestID is zero only when from == nil, so a hash match
+			// here implies a real cursor — fromVIdx may legitimately be 0.
 			startVIdx := uint32(0)
-			if currentRequestID == fromRequestID && fromVIdx > 0 {
+			if currentRequestID == fromRequestID {
 				startVIdx = fromVIdx + 1
 			}
 
@@ -114,8 +115,7 @@ func (r *Repository) GetSignaturesByEpoch(
 			sigSeekKey := signatureKey(currentRequestID.Bytes(), startVIdx)
 
 			for sk, sv := sigC.Seek(sigSeekKey); sk != nil && bytes.HasPrefix(sk, sigPrefix); sk, sv = sigC.Next() {
-				if pageSize > 0 && count >= pageSize {
-					filledFull = true
+				if pageSize > 0 && len(signatures) >= pageSize {
 					break outer
 				}
 				if len(sk) != 36 {
@@ -130,7 +130,6 @@ func (r *Repository) GetSignaturesByEpoch(
 				signatures = append(signatures, sig)
 				lastRequestID = currentRequestID
 				lastVIdx = vIdx
-				count++
 			}
 		}
 		return nil
@@ -139,10 +138,10 @@ func (r *Repository) GetSignaturesByEpoch(
 		return nil, nil, err
 	}
 
-	if !filledFull {
+	if pageSize == 0 || len(signatures) < pageSize {
 		return signatures, nil, nil
 	}
-	return signatures, encodeSignatureCursor(lastRequestID, lastVIdx), nil
+	return signatures, repoutil.EncodeSignatureCursor(lastRequestID, lastVIdx), nil
 }
 
 func (r *Repository) GetSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error) {
@@ -303,15 +302,14 @@ func (r *Repository) GetSignatureRequestsWithIDByEpoch(
 	pageSize int,
 	from []byte,
 ) ([]entity.SignatureRequestWithID, []byte, error) {
-	fromHash, err := decodeHashCursor(from)
+	fromHash, err := repoutil.DecodeHashCursor(from)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	var (
-		requests   []entity.SignatureRequestWithID
-		lastID     common.Hash
-		filledFull bool
+		requests []entity.SignatureRequestWithID
+		lastID   common.Hash
 	)
 
 	err = r.doView(ctx, "GetSignatureRequestsWithIDByEpoch", func(tx *bolt.Tx) error {
@@ -328,10 +326,8 @@ func (r *Repository) GetSignatureRequestsWithIDByEpoch(
 			k, v = c.Next()
 		}
 
-		count := 0
 		for ; k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
-			if pageSize > 0 && count >= pageSize {
-				filledFull = true
+			if pageSize > 0 && len(requests) >= pageSize {
 				return nil
 			}
 			if len(k) < 40 {
@@ -347,7 +343,6 @@ func (r *Repository) GetSignatureRequestsWithIDByEpoch(
 				SignatureRequest: req,
 			})
 			lastID = id
-			count++
 		}
 		return nil
 	})
@@ -355,10 +350,10 @@ func (r *Repository) GetSignatureRequestsWithIDByEpoch(
 		return nil, nil, err
 	}
 
-	if !filledFull {
+	if pageSize == 0 || len(requests) < pageSize {
 		return requests, nil, nil
 	}
-	return requests, encodeHashCursor(lastID), nil
+	return requests, repoutil.EncodeHashCursor(lastID), nil
 }
 
 // GetSignatureRequestIDsByEpoch returns one page of request IDs for the given
@@ -370,15 +365,14 @@ func (r *Repository) GetSignatureRequestIDsByEpoch(
 	pageSize int,
 	from []byte,
 ) ([]common.Hash, []byte, error) {
-	fromHash, err := decodeHashCursor(from)
+	fromHash, err := repoutil.DecodeHashCursor(from)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	var (
-		ids        []common.Hash
-		lastID     common.Hash
-		filledFull bool
+		ids    []common.Hash
+		lastID common.Hash
 	)
 
 	err = r.doView(ctx, "GetSignatureRequestIDsByEpoch", func(tx *bolt.Tx) error {
@@ -395,10 +389,8 @@ func (r *Repository) GetSignatureRequestIDsByEpoch(
 			k, _ = c.Next()
 		}
 
-		count := 0
 		for ; k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Next() {
-			if pageSize > 0 && count >= pageSize {
-				filledFull = true
+			if pageSize > 0 && len(ids) >= pageSize {
 				return nil
 			}
 			if len(k) < 40 {
@@ -407,7 +399,6 @@ func (r *Repository) GetSignatureRequestIDsByEpoch(
 			id := common.BytesToHash(k[8:40])
 			ids = append(ids, id)
 			lastID = id
-			count++
 		}
 		return nil
 	})
@@ -415,10 +406,10 @@ func (r *Repository) GetSignatureRequestIDsByEpoch(
 		return nil, nil, err
 	}
 
-	if !filledFull {
+	if pageSize == 0 || len(ids) < pageSize {
 		return ids, nil, nil
 	}
-	return ids, encodeHashCursor(lastID), nil
+	return ids, repoutil.EncodeHashCursor(lastID), nil
 }
 
 func (r *Repository) GetSignaturePending(ctx context.Context, limit int) ([]common.Hash, error) {

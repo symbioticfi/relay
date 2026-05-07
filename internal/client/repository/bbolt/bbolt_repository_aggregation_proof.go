@@ -10,6 +10,7 @@ import (
 	bolt "go.etcd.io/bbolt"
 
 	"github.com/symbioticfi/relay/internal/client/repository/codec"
+	"github.com/symbioticfi/relay/internal/client/repository/repoutil"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -75,15 +76,14 @@ func (r *Repository) GetAggregationProofsByEpoch(
 	pageSize int,
 	from []byte,
 ) ([]symbiotic.AggregationProof, []byte, error) {
-	fromHash, err := decodeHashCursor(from)
+	fromHash, err := repoutil.DecodeHashCursor(from)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	var (
-		proofs     []symbiotic.AggregationProof
-		lastID     common.Hash
-		filledFull bool
+		proofs []symbiotic.AggregationProof
+		lastID common.Hash
 	)
 
 	err = r.doView(ctx, "GetAggregationProofsByEpoch", func(tx *bolt.Tx) error {
@@ -100,10 +100,8 @@ func (r *Repository) GetAggregationProofsByEpoch(
 			k, _ = c.Next()
 		}
 
-		count := 0
 		for ; k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Next() {
-			if pageSize > 0 && count >= pageSize {
-				filledFull = true
+			if pageSize > 0 && len(proofs) >= pageSize {
 				return nil
 			}
 			if len(k) < 40 {
@@ -121,7 +119,6 @@ func (r *Repository) GetAggregationProofsByEpoch(
 			}
 			proofs = append(proofs, proof)
 			lastID = id
-			count++
 		}
 		return nil
 	})
@@ -129,10 +126,10 @@ func (r *Repository) GetAggregationProofsByEpoch(
 		return nil, nil, err
 	}
 
-	if !filledFull {
+	if pageSize == 0 || len(proofs) < pageSize {
 		return proofs, nil, nil
 	}
-	return proofs, encodeHashCursor(lastID), nil
+	return proofs, repoutil.EncodeHashCursor(lastID), nil
 }
 
 func (r *Repository) RemoveAggregationProofPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {

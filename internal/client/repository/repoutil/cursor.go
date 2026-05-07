@@ -1,4 +1,4 @@
-package badger
+package repoutil
 
 import (
 	"encoding/binary"
@@ -17,9 +17,9 @@ import (
 //     Signatures listing because pagination is per-signature within a group.
 const signatureCursorLen = common.HashLength + 4
 
-// decodeHashCursor parses a 32-byte cursor. Nil/empty cursor → zero-hash (start).
-// Wrong length → entity.ErrInvalidCursor wrapped with details.
-func decodeHashCursor(from []byte) (common.Hash, error) {
+// DecodeHashCursor parses a 32-byte cursor. Empty cursor → zero-hash (start).
+// Wrong length → entity.ErrInvalidCursor.
+func DecodeHashCursor(from []byte) (common.Hash, error) {
 	if len(from) == 0 {
 		return common.Hash{}, nil
 	}
@@ -29,14 +29,14 @@ func decodeHashCursor(from []byte) (common.Hash, error) {
 	return common.BytesToHash(from), nil
 }
 
-// encodeHashCursor returns the raw bytes of a hash cursor.
-func encodeHashCursor(h common.Hash) []byte {
+// EncodeHashCursor returns the raw bytes of a hash cursor.
+func EncodeHashCursor(h common.Hash) []byte {
 	return h.Bytes()
 }
 
-// decodeSignatureCursor parses a 36-byte composite cursor (requestID + vIdx).
-// Nil/empty cursor → (zero-hash, 0) meaning "start from the beginning".
-func decodeSignatureCursor(from []byte) (common.Hash, uint32, error) {
+// DecodeSignatureCursor parses a 36-byte composite cursor (requestID + vIdx).
+// Empty cursor → (zero-hash, 0) meaning "start from the beginning".
+func DecodeSignatureCursor(from []byte) (common.Hash, uint32, error) {
 	if len(from) == 0 {
 		return common.Hash{}, 0, nil
 	}
@@ -46,8 +46,8 @@ func decodeSignatureCursor(from []byte) (common.Hash, uint32, error) {
 	return common.BytesToHash(from[:common.HashLength]), binary.BigEndian.Uint32(from[common.HashLength:]), nil
 }
 
-// encodeSignatureCursor packs (hash, vIdx) into the 36-byte cursor format.
-func encodeSignatureCursor(h common.Hash, vIdx uint32) []byte {
+// EncodeSignatureCursor packs (hash, vIdx) into the 36-byte cursor format.
+func EncodeSignatureCursor(h common.Hash, vIdx uint32) []byte {
 	buf := make([]byte, signatureCursorLen)
 	copy(buf, h.Bytes())
 	binary.BigEndian.PutUint32(buf[common.HashLength:], vIdx)
