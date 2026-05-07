@@ -5,6 +5,7 @@ import (
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/go-errors/errors"
+
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )

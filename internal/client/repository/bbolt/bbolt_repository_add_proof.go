@@ -18,7 +18,7 @@ func (r *Repository) SaveProof(ctx context.Context, aggregationProof symbiotic.A
 		return errors.Errorf("failed to marshal aggregation proof: %w", err)
 	}
 
-	return r.doUpdate(ctx, "SaveProof", func(tx *bolt.Tx) error {
+	return r.doBatch(ctx, "SaveProof", func(tx *bolt.Tx) error {
 		if err := putAggregationProofTx(tx, requestID.Bytes(), data, aggregationProof.Epoch); err != nil {
 			return err
 		}

@@ -39,7 +39,7 @@ func TestRepository_Signature(t *testing.T) {
 	}
 
 	t.Run("saveSignature and GetSignatureByIndex", func(t *testing.T) {
-		err := repo.saveSignature(context.Background(), 5, sig1)
+		err := repo.saveSignatureWithPending(context.Background(), 5, sig1)
 		require.NoError(t, err)
 
 		retrievedSig, err := repo.GetSignatureByIndex(context.Background(), sig1.RequestID(), 5)
@@ -54,9 +54,9 @@ func TestRepository_Signature(t *testing.T) {
 	})
 
 	t.Run("GetAllSignatures - multiple signatures", func(t *testing.T) {
-		err := repo.saveSignature(context.Background(), 10, sig1)
+		err := repo.saveSignatureWithPending(context.Background(), 10, sig1)
 		require.NoError(t, err)
-		err = repo.saveSignature(context.Background(), 20, sig2)
+		err = repo.saveSignatureWithPending(context.Background(), 20, sig2)
 		require.NoError(t, err)
 
 		signatures, err := repo.GetAllSignatures(context.Background(), sig1.RequestID())
@@ -99,7 +99,7 @@ func TestRepository_SignatureOrdering(t *testing.T) {
 		pubs = append(pubs, priv.PublicKey())
 		sigCopy := sig
 		sigCopy.PublicKey = priv.PublicKey()
-		err = repo.saveSignature(context.Background(), index, sigCopy)
+		err = repo.saveSignatureWithPending(context.Background(), index, sigCopy)
 		require.NoError(t, err)
 	}
 
@@ -160,9 +160,9 @@ func TestRepository_GetSignaturesStartingFromEpoch(t *testing.T) {
 		PublicKey:   priv3.PublicKey(),
 	}
 
-	require.NoError(t, repo.saveSignature(context.Background(), 1, sig1))
-	require.NoError(t, repo.saveSignature(context.Background(), 1, sig2))
-	require.NoError(t, repo.saveSignature(context.Background(), 1, sig3))
+	require.NoError(t, repo.saveSignatureWithPending(context.Background(), 1, sig1))
+	require.NoError(t, repo.saveSignatureWithPending(context.Background(), 1, sig2))
+	require.NoError(t, repo.saveSignatureWithPending(context.Background(), 1, sig3))
 
 	t.Run("get signatures starting from epoch 2", func(t *testing.T) {
 		signatures, err := repo.GetSignaturesStartingFromEpoch(context.Background(), 2)
@@ -213,8 +213,8 @@ func TestRepository_GetSignaturesByEpoch(t *testing.T) {
 		PublicKey:   priv2.PublicKey(),
 	}
 
-	require.NoError(t, repo.saveSignature(context.Background(), 1, sig1))
-	require.NoError(t, repo.saveSignature(context.Background(), 1, sig2))
+	require.NoError(t, repo.saveSignatureWithPending(context.Background(), 1, sig1))
+	require.NoError(t, repo.saveSignatureWithPending(context.Background(), 1, sig2))
 
 	t.Run("get signatures for epoch 1", func(t *testing.T) {
 		signatures, err := repo.GetSignaturesByEpoch(context.Background(), 1)

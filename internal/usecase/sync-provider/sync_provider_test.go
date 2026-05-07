@@ -114,10 +114,6 @@ func TestAskSignatures_HandleWantSignaturesRequest_Integration(t *testing.T) {
 			require.NoError(t, peerRepo.SaveSignatureRequest(t.Context(), requestID, signatureRequest))
 			require.NoError(t, requesterRepo.SaveSignatureRequest(t.Context(), requestID, signatureRequest))
 
-			// Requester needs SignatureMap for BuildWantSignaturesRequest to work
-			signatureMap := entity.NewSignatureMap(requestID, signatureRequest.RequiredEpoch, uint32(len(validatorSet.Validators)))
-			require.NoError(t, requesterRepo.UpdateSignatureMap(t.Context(), signatureMap))
-
 			// Create peer syncer first (with a temporary mock)
 			peerSyncer, err := New(Config{
 				Repo:                        peerRepo,

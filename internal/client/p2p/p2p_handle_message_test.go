@@ -196,7 +196,8 @@ func (m *mockMetrics) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	}
 }
 
-func (m *mockMetrics) ObserveP2PPeerMessageSent(messageType, status string) {}
+func (m *mockMetrics) ObserveP2PBroadcastDuration(topic, status string, d time.Duration) {}
+func (m *mockMetrics) ObserveP2PPeerMessageSent(messageType, status string)              {}
 
 func TestService_AggregatedProofIntegrationSuccessful(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)

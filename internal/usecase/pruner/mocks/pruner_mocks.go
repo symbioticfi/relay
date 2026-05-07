@@ -108,57 +108,57 @@ func (mr *MockrepoMockRecorder) GetOldestValidatorSetEpoch(ctx any) *gomock.Call
 }
 
 // PruneProofEntities mocks base method.
-func (m *Mockrepo) PruneProofEntities(ctx context.Context, epoch entity.Epoch) error {
+func (m *Mockrepo) PruneProofEntities(ctx context.Context, epoch entity.Epoch, batchSize int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PruneProofEntities", ctx, epoch)
+	ret := m.ctrl.Call(m, "PruneProofEntities", ctx, epoch, batchSize)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // PruneProofEntities indicates an expected call of PruneProofEntities.
-func (mr *MockrepoMockRecorder) PruneProofEntities(ctx, epoch any) *gomock.Call {
+func (mr *MockrepoMockRecorder) PruneProofEntities(ctx, epoch, batchSize any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PruneProofEntities", reflect.TypeOf((*Mockrepo)(nil).PruneProofEntities), ctx, epoch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PruneProofEntities", reflect.TypeOf((*Mockrepo)(nil).PruneProofEntities), ctx, epoch, batchSize)
 }
 
 // PruneRequestIDEpochIndices mocks base method.
-func (m *Mockrepo) PruneRequestIDEpochIndices(ctx context.Context, epoch entity.Epoch) error {
+func (m *Mockrepo) PruneRequestIDEpochIndices(ctx context.Context, epoch entity.Epoch, batchSize int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PruneRequestIDEpochIndices", ctx, epoch)
+	ret := m.ctrl.Call(m, "PruneRequestIDEpochIndices", ctx, epoch, batchSize)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // PruneRequestIDEpochIndices indicates an expected call of PruneRequestIDEpochIndices.
-func (mr *MockrepoMockRecorder) PruneRequestIDEpochIndices(ctx, epoch any) *gomock.Call {
+func (mr *MockrepoMockRecorder) PruneRequestIDEpochIndices(ctx, epoch, batchSize any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PruneRequestIDEpochIndices", reflect.TypeOf((*Mockrepo)(nil).PruneRequestIDEpochIndices), ctx, epoch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PruneRequestIDEpochIndices", reflect.TypeOf((*Mockrepo)(nil).PruneRequestIDEpochIndices), ctx, epoch, batchSize)
 }
 
 // PruneSignatureEntitiesForEpoch mocks base method.
-func (m *Mockrepo) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch entity.Epoch) error {
+func (m *Mockrepo) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch entity.Epoch, batchSize int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PruneSignatureEntitiesForEpoch", ctx, epoch)
+	ret := m.ctrl.Call(m, "PruneSignatureEntitiesForEpoch", ctx, epoch, batchSize)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // PruneSignatureEntitiesForEpoch indicates an expected call of PruneSignatureEntitiesForEpoch.
-func (mr *MockrepoMockRecorder) PruneSignatureEntitiesForEpoch(ctx, epoch any) *gomock.Call {
+func (mr *MockrepoMockRecorder) PruneSignatureEntitiesForEpoch(ctx, epoch, batchSize any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PruneSignatureEntitiesForEpoch", reflect.TypeOf((*Mockrepo)(nil).PruneSignatureEntitiesForEpoch), ctx, epoch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PruneSignatureEntitiesForEpoch", reflect.TypeOf((*Mockrepo)(nil).PruneSignatureEntitiesForEpoch), ctx, epoch, batchSize)
 }
 
 // PruneValsetEntities mocks base method.
-func (m *Mockrepo) PruneValsetEntities(ctx context.Context, epoch entity.Epoch) error {
+func (m *Mockrepo) PruneValsetEntities(ctx context.Context, epoch entity.Epoch, batchSize int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PruneValsetEntities", ctx, epoch)
+	ret := m.ctrl.Call(m, "PruneValsetEntities", ctx, epoch, batchSize)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // PruneValsetEntities indicates an expected call of PruneValsetEntities.
-func (mr *MockrepoMockRecorder) PruneValsetEntities(ctx, epoch any) *gomock.Call {
+func (mr *MockrepoMockRecorder) PruneValsetEntities(ctx, epoch, batchSize any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PruneValsetEntities", reflect.TypeOf((*Mockrepo)(nil).PruneValsetEntities), ctx, epoch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PruneValsetEntities", reflect.TypeOf((*Mockrepo)(nil).PruneValsetEntities), ctx, epoch, batchSize)
 }

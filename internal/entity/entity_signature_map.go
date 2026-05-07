@@ -46,6 +46,16 @@ func (vm *SignatureMap) ThresholdReached(quorumThreshold symbiotic.VotingPower) 
 	return vm.CurrentVotingPower.Cmp(quorumThreshold.Int) >= 0
 }
 
+func (vm *SignatureMap) Clone() SignatureMap {
+	return SignatureMap{
+		RequestID:              vm.RequestID,
+		Epoch:                  vm.Epoch,
+		SignedValidatorsBitmap: Bitmap{Bitmap: vm.SignedValidatorsBitmap.Clone()},
+		CurrentVotingPower:     symbiotic.ToVotingPower(new(big.Int).Set(vm.CurrentVotingPower.Int)),
+		TotalValidators:        vm.TotalValidators,
+	}
+}
+
 func (vm *SignatureMap) GetMissingValidators() Bitmap {
 	missing := vm.SignedValidatorsBitmap.Clone()
 	missing.FlipInt(0, int(vm.TotalValidators))

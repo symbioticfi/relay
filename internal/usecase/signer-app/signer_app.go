@@ -205,6 +205,8 @@ func (s *SignerApp) completeSign(ctx context.Context, requestID common.Hash, p2p
 		return errors.Errorf("failed to sign valset header hash: %w", err)
 	}
 	s.cfg.Metrics.ObservePKSignDuration(time.Since(pkSignStart))
+	slog.DebugContext(ctx, "Message signed", "signDuration", time.Since(pkSignStart))
+	signDuration := time.Since(pkSignStart)
 
 	extendedSignature := symbiotic.Signature{
 		MessageHash: hash,
@@ -216,6 +218,7 @@ func (s *SignerApp) completeSign(ctx context.Context, requestID common.Hash, p2p
 
 	ctx = log.WithAttrs(ctx, slog.String("requestId", extendedSignature.RequestID().Hex()))
 
+	processSignStart := time.Now()
 	if err := s.cfg.EntityProcessor.ProcessSignature(ctx, extendedSignature, true); err != nil {
 		if errors.Is(err, entity.ErrEntityAlreadyExist) {
 			slog.InfoContext(ctx, "Skipped signature, already exists")
@@ -225,12 +228,15 @@ func (s *SignerApp) completeSign(ctx context.Context, requestID common.Hash, p2p
 		tracing.RecordError(span, err)
 		return errors.Errorf("failed to process signature: %w", err)
 	}
+	processSignatureDuration := time.Since(processSignStart)
 
 	if err := s.cfg.Repo.RemoveSignaturePending(ctx, req.RequiredEpoch, extendedSignature.RequestID()); err != nil {
 		tracing.RecordError(span, err)
 		return errors.Errorf("failed to remove self signature request pending: %w", err)
 	}
+	removeSignatureDuration := time.Since(processSignStart) - processSignatureDuration
 
+	broadcastStart := time.Now()
 	tracing.AddEvent(span, "broadcasting_signature")
 	err = p2pService.BroadcastSignatureGeneratedMessage(ctx, extendedSignature)
 	if err != nil {
@@ -238,10 +244,14 @@ func (s *SignerApp) completeSign(ctx context.Context, requestID common.Hash, p2p
 		return errors.Errorf("failed to broadcast signature: %w", err)
 	}
 
-	slog.InfoContext(ctx, "Message signed",
+	slog.InfoContext(ctx, "Message signed and broadcasted",
 		"hash", hash,
 		"signature", signature,
 		"duration", time.Since(timeAppSignStart),
+		"signDuration", signDuration,
+		"processSignatureDuration", processSignatureDuration,
+		"removeSignatureDuration", removeSignatureDuration,
+		"broadcastDuration", time.Since(broadcastStart),
 	)
 	s.cfg.Metrics.ObserveAppSignDuration(time.Since(timeAppSignStart))
 

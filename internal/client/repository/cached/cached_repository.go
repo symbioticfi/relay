@@ -22,7 +22,6 @@ type Repository interface {
 	GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error)
 
 	// Signature Maps
-	UpdateSignatureMap(ctx context.Context, vm entity.SignatureMap) error
 	GetSignatureMap(ctx context.Context, requestID common.Hash) (entity.SignatureMap, error)
 
 	// Signature Requests
@@ -71,10 +70,10 @@ type Repository interface {
 	SaveNextValsetData(ctx context.Context, data entity.NextValsetData) error
 
 	// Pruning
-	PruneValsetEntities(ctx context.Context, epoch symbiotic.Epoch) error
-	PruneProofEntities(ctx context.Context, epoch symbiotic.Epoch) error
-	PruneSignatureEntitiesForEpoch(ctx context.Context, epoch symbiotic.Epoch) error
-	PruneRequestIDEpochIndices(ctx context.Context, epoch symbiotic.Epoch) error
+	PruneValsetEntities(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error
+	PruneProofEntities(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error
+	PruneSignatureEntitiesForEpoch(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error
+	PruneRequestIDEpochIndices(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error
 }
 
 type Config struct {
@@ -138,6 +137,7 @@ func (r *CachedRepository) GetConfigByEpoch(ctx context.Context, epoch symbiotic
 }
 
 func (r *CachedRepository) SaveConfig(ctx context.Context, config symbiotic.NetworkConfig, epoch symbiotic.Epoch) error {
+	r.networkConfigCache.Delete(epoch)
 	if err := r.Repository.SaveConfig(ctx, config, epoch); err != nil {
 		return err
 	}
@@ -173,15 +173,19 @@ func (r *CachedRepository) GetValidatorSetMetadata(ctx context.Context, epoch sy
 	return metadata, nil
 }
 
-func (r *CachedRepository) PruneValsetEntities(ctx context.Context, epoch symbiotic.Epoch) error {
-	if err := r.Repository.PruneValsetEntities(ctx, epoch); err != nil {
+func (r *CachedRepository) PruneValsetEntities(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error {
+	r.evictValsetCaches(epoch)
+	if err := r.Repository.PruneValsetEntities(ctx, epoch, batchSize); err != nil {
 		return err
 	}
-	r.evictValsetCaches(epoch)
 	return nil
 }
 
 func (r *CachedRepository) SaveNextValsetData(ctx context.Context, data entity.NextValsetData) error {
+	r.evictValsetCaches(data.PrevValidatorSet.Epoch)
+	r.evictValsetCaches(data.NextValidatorSet.Epoch)
+	r.validatorSetMetadataCache.Delete(data.ValidatorSetMetadata.Epoch)
+
 	if err := r.Repository.SaveNextValsetData(ctx, data); err != nil {
 		return err
 	}
