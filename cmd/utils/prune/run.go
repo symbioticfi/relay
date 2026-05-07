@@ -100,17 +100,12 @@ func runBboltSession(ctx context.Context, f Flags) error {
 	openSpinner, _ := pterm.DefaultSpinner.Start("Opening bbolt database…")
 	openStart := time.Now()
 	repo, err := bbolt.New(bbolt.Config{
-		Dir:        f.StorageDir,
-		DBFilename: bboltDBFilename,
-		Metrics:    repoutil.DoNothingMetrics{},
-		// Speed-tuned for offline use: no fsync per write, no inter-batch
-		// yielding, no startup compaction (handled below). The prune path
-		// uses db.Batch internally; with a single offline writer no peers
-		// join the batch, so MaxBatchDelay = per-call flush wait. Drop from
-		// bbolt's 10ms default to 1ms.
+		Dir:              f.StorageDir,
+		DBFilename:       bboltDBFilename,
+		Metrics:          repoutil.DoNothingMetrics{},
 		PrunePause:       0,
 		MaxBatchDelay:    time.Millisecond,
-		NoSync:           true,
+		NoSync:           false,
 		NoFreelistSync:   false,
 		CompactOnStartup: false,
 	})
@@ -167,11 +162,6 @@ func runBboltSession(ctx context.Context, f Flags) error {
 }
 
 func runBadger(ctx context.Context, f Flags) error {
-	// Use badger's own defaults for sizing/compaction knobs (zero values
-	// fall through in applyBadgerTuning). Hard-coding here would silently
-	// diverge from the sidecar config and create vlog files of mismatched
-	// sizes on the next live-run. CompactL0OnClose=true ensures the final
-	// L0 compaction runs when we Close after Flatten.
 	openSpinner, _ := pterm.DefaultSpinner.Start("Opening badger database…")
 	openStart := time.Now()
 	repo, err := badger.New(badger.Config{

@@ -21,9 +21,6 @@ type metrics interface {
 	IncPrunedEpochsCount(entityType string)
 }
 
-// NoopMetrics is a no-op implementation of the pruner's metrics interface.
-// Useful for tests and one-shot CLI uses where Prometheus reporting is
-// undesirable.
 type NoopMetrics struct{}
 
 func (NoopMetrics) IncPrunedEpochsCount(string) {}
