@@ -100,12 +100,18 @@ func CompactDB(dbPath string) error {
 // atomically replaces the original, reusing the already-open *bolt.DB handle
 // as source. Avoids the cost of a fresh RW open (freelist build, flock).
 //
-// After Compact returns, the in-memory handle on the receiver still points to
-// the now-unlinked old inode — the on-disk file is the new compacted one. The
-// caller MUST Close() the repository before doing anything else; further
-// reads/writes through this handle will operate on the stale inode.
-func (r *Repository) Compact() error {
-	return compactSrcInto(r.db, r.dbPath)
+// The receiver's handle points at the now-unlinked old inode after the rename,
+// so the only safe action is closing it. CompactAndClose closes the handle
+// internally (even on compaction failure) to make the foot-gun unreachable.
+// The Repository is unusable after this call returns; do not invoke Close
+// afterwards.
+func (r *Repository) CompactAndClose() error {
+	compactErr := compactSrcInto(r.db, r.dbPath)
+	closeErr := r.db.Close()
+	if compactErr != nil {
+		return compactErr
+	}
+	return closeErr
 }
 
 // compactSrcInto runs bolt.Compact from src into a tmp file next to dbPath,

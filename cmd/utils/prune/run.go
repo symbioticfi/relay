@@ -140,7 +140,9 @@ func runBboltSession(ctx context.Context, f Flags) error {
 		pterm.Info.Println("Compaction rewrites the entire database file — this may take a while, please wait.")
 		spinner, _ := pterm.DefaultSpinner.Start("Compacting bbolt database…")
 		start := time.Now()
-		if err := repo.Compact(); err != nil {
+		err := repo.CompactAndClose()
+		closed = true // CompactAndClose always closes the handle, success or failure.
+		if err != nil {
 			spinner.Fail("Compaction failed")
 			return errors.Errorf("bbolt compaction failed: %w", err)
 		}
@@ -148,6 +150,7 @@ func runBboltSession(ctx context.Context, f Flags) error {
 		compactDuration := time.Since(start).Round(time.Millisecond)
 		spinner.Success(pterm.Sprintf("Compaction completed in %s", compactDuration))
 		printSizeReport(before, beforeErr, after, afterErr, compactDuration)
+		return nil
 	}
 
 	closeSpinner, _ := pterm.DefaultSpinner.Start("Closing bbolt database…")
@@ -190,7 +193,7 @@ func runBadger(ctx context.Context, f Flags) error {
 		ValsetRetentionEpochs:    f.ValsetEpochs,
 		ProofRetentionEpochs:     f.ProofEpochs,
 		SignatureRetentionEpochs: f.SignatureEpochs,
-		PruneBatchSize:           1000,
+		PruneBatchSize:           f.PruneBatchSize,
 	}, f); err != nil {
 		return err
 	}

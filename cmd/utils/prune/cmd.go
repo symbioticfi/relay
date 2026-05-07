@@ -20,16 +20,9 @@ func NewPruneCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "prune",
 		Short: "Prune old epoch data from the relay storage (offline)",
-		Long: "Opens the relay storage directory in offline mode (no live writers) and " +
-			"prunes valset / proof / signature entities older than the configured retention. " +
-			"Optionally compacts the underlying database file when --compact is set.\n\n" +
-			"The relay sidecar must be stopped while this command runs. Both bbolt and " +
-			"badger acquire an exclusive file-lock on open, so a still-running sidecar " +
-			"will surface as a clear open-error rather than silently corrupting state.\n\n" +
-			"WARNING: for speed, bbolt is opened with NoSync and NoFreelistSync. A SIGKILL " +
-			"or power loss mid-prune will not corrupt the file (bbolt MVCC is durable on " +
-			"transaction boundaries), but the next open may be slower as the freelist is " +
-			"rebuilt. Let this command finish; do not kill -9.",
+		Long: "Offline pruning of valset / proof / signature entities older than the " +
+			"configured retention. Optionally compacts the database when --compact is set. " +
+			"The sidecar must be stopped (the DB is opened with an exclusive file-lock).",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return run(cmd.Context(), flags)
 		},
