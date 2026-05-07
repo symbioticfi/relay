@@ -143,7 +143,7 @@ func runBboltSession(ctx context.Context, f Flags) error {
 	if f.Compact && ctx.Err() == nil {
 		before, beforeErr := fileSize(dbPath)
 		pterm.Info.Println("Compaction rewrites the entire database file — this may take a while, please wait.")
-		spinner, _ := pterm.DefaultSpinner.Start("Compacting bbolt database (reusing open handle)…")
+		spinner, _ := pterm.DefaultSpinner.Start("Compacting bbolt database…")
 		start := time.Now()
 		if err := repo.Compact(); err != nil {
 			spinner.Fail("Compaction failed")
@@ -245,7 +245,7 @@ func runPruneOnce(ctx context.Context, cfg pruner.Config, f Flags) error {
 		pterm.Info.Println("Skipping pruning (no --retention.* flags set)")
 		return nil
 	}
-	pterm.Info.Printf("Pruning (valset=%d proof=%d signature=%d)…\n",
+	pterm.Info.Printf("Pruning: keeping last %d valset / %d proof / %d signature epochs; older epochs will be deleted…\n",
 		f.ValsetEpochs, f.ProofEpochs, f.SignatureEpochs)
 
 	progress := newProgressReporter()
@@ -287,7 +287,7 @@ func (p *progressReporter) Report(entityType string, current, total uint64) {
 		p.Stop()
 		bar, err := pterm.DefaultProgressbar.
 			WithTotal(int(total)).
-			WithTitle(entityType).
+			WithTitle(pterm.Sprintf("Deleting %d %s epochs", total, entityType)).
 			WithShowElapsedTime(true).
 			Start()
 		if err != nil {
