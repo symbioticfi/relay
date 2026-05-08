@@ -3,6 +3,7 @@ package p2p
 import (
 	"context"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/go-errors/errors"
@@ -118,6 +119,9 @@ type Service struct {
 	metrics                     metrics
 	topicsMap                   map[string]*pubsub.Topic
 	p2pGRPCHandler              prototypes.SymbioticP2PServiceServer
+	peerSyncMu                  sync.RWMutex
+	peerSyncState               map[peer.ID]peerSyncFailure
+	now                         func() time.Time
 }
 
 // NewService creates a new P2P service with the given configuration
@@ -170,6 +174,8 @@ func NewService(ctx context.Context, cfg Config, signalCfg signals.Config) (*Ser
 		signatureReceivedHandler:    signals.New[p2pEntity.P2PMessage[symbiotic.Signature]](signalCfg, "signatureReceive", nil),
 		signaturesAggregatedHandler: signals.New[p2pEntity.P2PMessage[symbiotic.AggregationProof]](signalCfg, "signaturesAggregated", nil),
 		metrics:                     cfg.Metrics,
+		peerSyncState:               make(map[peer.ID]peerSyncFailure),
+		now:                         time.Now,
 
 		topicsMap: map[string]*pubsub.Topic{
 			topicSignatureReady: signatureReadyTopic,
