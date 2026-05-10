@@ -32,7 +32,7 @@ func NewPruneCmd() *cobra.Command {
 	cmd.Flags().Uint64Var(&flags.ValsetEpochs, "retention.valset-epochs", 0, "Keep this many most-recent epochs of valset data (0 = skip)")
 	cmd.Flags().Uint64Var(&flags.ProofEpochs, "retention.proof-epochs", 0, "Keep this many most-recent epochs of aggregation proofs (0 = skip)")
 	cmd.Flags().Uint64Var(&flags.SignatureEpochs, "retention.signature-epochs", 0, "Keep this many most-recent epochs of signatures (0 = skip)")
-	cmd.Flags().BoolVar(&flags.Compact, "compact", false, "After pruning, compact the database file (bbolt: rewrite; badger: Flatten + value log GC)")
+	cmd.Flags().BoolVar(&flags.Compact, "compact", true, "After pruning, compact the database file (bbolt: rewrite; badger: Flatten + value log GC)")
 	cmd.Flags().IntVar(&flags.BadgerFlattenWorkers, "badger.flatten-workers", 4, "Number of parallel workers for badger Flatten (only when --compact is set)")
 	cmd.Flags().IntVar(&flags.PruneBatchSize, "prune-batch-size", 1000, "Number of request IDs to delete per database transaction (larger = faster but holds writer lock longer)")
 

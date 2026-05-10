@@ -16,7 +16,7 @@ utils prune [flags]
 
 ```
       --badger.flatten-workers int        Number of parallel workers for badger Flatten (only when --compact is set) (default 4)
-      --compact                           After pruning, compact the database file (bbolt: rewrite; badger: Flatten + value log GC)
+      --compact                           After pruning, compact the database file (bbolt: rewrite; badger: Flatten + value log GC) (default true)
   -h, --help                              help for prune
       --prune-batch-size int              Number of request IDs to delete per database transaction (larger = faster but holds writer lock longer) (default 1000)
       --retention.proof-epochs uint       Keep this many most-recent epochs of aggregation proofs (0 = skip)
