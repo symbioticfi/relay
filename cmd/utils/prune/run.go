@@ -45,6 +45,22 @@ func run(ctx context.Context, f Flags) error {
 		return errors.New("nothing to do: pass at least one --retention.* flag or --compact")
 	}
 
+	// Mirror pruner.Config.Validate so we fail before opening the DB (which
+	// takes an exclusive lock and may take seconds on large stores).
+	if f.ValsetEpochs > 0 {
+		if f.ProofEpochs == 0 || f.SignatureEpochs == 0 {
+			return errors.New("--retention.valset-epochs requires --retention.proof-epochs and --retention.signature-epochs to also be set (otherwise pruning valset entities would orphan proof/signature data)")
+		}
+		if f.ProofEpochs > f.ValsetEpochs {
+			return errors.Errorf("--retention.proof-epochs (%d) must be <= --retention.valset-epochs (%d) to avoid orphaning proofs whose valset has been pruned",
+				f.ProofEpochs, f.ValsetEpochs)
+		}
+		if f.SignatureEpochs > f.ValsetEpochs {
+			return errors.Errorf("--retention.signature-epochs (%d) must be <= --retention.valset-epochs (%d) to avoid orphaning signatures whose valset has been pruned",
+				f.SignatureEpochs, f.ValsetEpochs)
+		}
+	}
+
 	storageType, err := detectStorageType(f.StorageDir)
 	if err != nil {
 		return err

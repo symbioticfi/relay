@@ -56,6 +56,24 @@ func (c Config) Validate() error {
 	if c.Enabled && c.Interval <= 0 {
 		return errors.New("pruner interval must be greater than zero when enabled")
 	}
+	// Pruning a valset epoch without also pruning the proof / signature data
+	// for that epoch leaves orphans (the dependent rows still reference an
+	// epoch whose validator set is gone). Require proof + signature retention
+	// whenever valset retention is set, and keep them no larger than valset
+	// retention so the dependents are removed first.
+	if c.ValsetRetentionEpochs > 0 {
+		if c.ProofRetentionEpochs == 0 || c.SignatureRetentionEpochs == 0 {
+			return errors.New("retention.valset-epochs requires retention.proof-epochs and retention.signature-epochs to also be set (otherwise pruning valset entities would orphan proof/signature data)")
+		}
+		if c.ProofRetentionEpochs > c.ValsetRetentionEpochs {
+			return errors.Errorf("retention.proof-epochs (%d) must be <= retention.valset-epochs (%d) to avoid orphaning proofs whose valset has been pruned",
+				c.ProofRetentionEpochs, c.ValsetRetentionEpochs)
+		}
+		if c.SignatureRetentionEpochs > c.ValsetRetentionEpochs {
+			return errors.Errorf("retention.signature-epochs (%d) must be <= retention.valset-epochs (%d) to avoid orphaning signatures whose valset has been pruned",
+				c.SignatureRetentionEpochs, c.ValsetRetentionEpochs)
+		}
+	}
 	return nil
 }
 
