@@ -2,6 +2,7 @@ package badger
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"log/slog"
 	"sync"
@@ -11,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
+
 	"github.com/symbioticfi/relay/internal/client/repository/cached"
 	"github.com/symbioticfi/relay/internal/client/repository/repoutil"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
@@ -141,14 +143,21 @@ const MaxValueLogGCIterations = 100
 // without observing ErrNoRewrite — in that case there may still be reclaimable
 // space and re-running Flatten is recommended. Callers should surface this
 // signal to the operator (a fresh sidecar startup will also keep grinding).
-func (r *Repository) Flatten(workers int) (capHit bool, err error) {
+func (r *Repository) Flatten(ctx context.Context, workers int) (capHit bool, err error) {
 	if workers <= 0 {
 		workers = 1
 	}
+	// db.Flatten and RunValueLogGC are blocking and don't accept a ctx, so we
+	// can only honor cancellation between phases / iterations. A SIGINT received
+	// mid-flatten will not abort the in-flight LSM rewrite (badger has no API
+	// for that); the second Ctrl+C / SIGKILL is the operator's escape hatch.
 	if err := r.db.Flatten(workers); err != nil {
 		return false, errors.Errorf("badger flatten failed: %w", err)
 	}
 	for range MaxValueLogGCIterations {
+		if err := ctx.Err(); err != nil {
+			return false, err
+		}
 		if err := r.db.RunValueLogGC(r.valueLogGCDiscardRatio); err != nil {
 			if errors.Is(err, badger.ErrNoRewrite) {
 				return false, nil

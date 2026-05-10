@@ -8,6 +8,10 @@ Prune old epoch data from the relay storage (offline)
 
 Offline pruning of valset / proof / signature entities older than the configured retention. Optionally compacts the database when --compact is set. The sidecar must be stopped (the DB is opened with an exclusive file-lock).
 
+WARNING: this command rewrites the storage directory in place. Take a filesystem-level backup of --storage-dir before running. bbolt compaction writes to a tmp file and atomically renames, so the original survives a crash; badger compaction relies on its WAL/manifest for recovery, which is crash-safe by design but not bulletproof under SIGKILL or disk failure.
+
+Pass --yes / -y to skip the interactive backup confirmation (required in non-interactive environments such as CI).
+
 ```
 utils prune [flags]
 ```
@@ -23,6 +27,7 @@ utils prune [flags]
       --retention.signature-epochs uint   Keep this many most-recent epochs of signatures (0 = skip)
       --retention.valset-epochs uint      Keep this many most-recent epochs of valset data (0 = skip)
       --storage-dir string                Directory containing the relay storage (badger or bbolt) (default ".data")
+  -y, --yes                               Skip the interactive backup confirmation prompt (required for non-interactive use, e.g. CI)
 ```
 
 ### Options inherited from parent commands

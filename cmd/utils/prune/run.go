@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/pterm/pterm"
+	"golang.org/x/term"
 
 	"github.com/symbioticfi/relay/internal/client/repository/badger"
 	"github.com/symbioticfi/relay/internal/client/repository/bbolt"
@@ -66,6 +67,10 @@ func run(ctx context.Context, f Flags) error {
 		return err
 	}
 	pterm.Info.Printf("Detected %s storage in %s\n", storageType, f.StorageDir)
+
+	if err := confirmBackup(f, storageType); err != nil {
+		return err
+	}
 
 	var runErr error
 	switch storageType {
@@ -232,7 +237,7 @@ func runBadger(ctx context.Context, f Flags) error {
 		pterm.Info.Println("Compaction rewrites LSM levels and runs value-log GC — this may take a while, please wait.")
 		spinner, _ := pterm.DefaultSpinner.Start("Flattening badger LSM + value log GC…")
 		start := time.Now()
-		capHit, err := repo.Flatten(f.BadgerFlattenWorkers)
+		capHit, err := repo.Flatten(ctx, f.BadgerFlattenWorkers)
 		if err != nil {
 			spinner.Fail("Flatten failed")
 			return errors.Errorf("badger flatten failed: %w", err)
@@ -330,6 +335,43 @@ func (p *progressReporter) Stop() {
 		_, _ = p.bar.Stop()
 		p.bar = nil
 	}
+}
+
+func confirmBackup(f Flags, storageType string) error {
+	absPath, err := filepath.Abs(f.StorageDir)
+	if err != nil {
+		absPath = f.StorageDir
+	}
+
+	pterm.Warning.Println("This command rewrites the relay storage in place.")
+	switch storageType {
+	case storageTypeBbolt:
+		pterm.Warning.Println("bbolt compaction writes to a tmp file and atomically renames, so a crash leaves the original DB intact — but a backup is still recommended.")
+	case storageTypeBadger:
+		pterm.Warning.Println("badger compaction relies on its WAL/manifest for crash recovery; SIGKILL or disk failure mid-flatten can leave the store in a state requiring badger's recovery path.")
+	}
+	pterm.Warning.Printf("Storage path: %s\n", absPath)
+
+	if f.AssumeYes {
+		pterm.Info.Println("Skipping backup confirmation (--yes).")
+		return nil
+	}
+
+	if !term.IsTerminal(int(os.Stdin.Fd())) {
+		return errors.New("backup confirmation requires an interactive terminal; rerun with --yes once you have backed up the storage directory")
+	}
+
+	confirmed, err := pterm.DefaultInteractiveConfirm.
+		WithDefaultValue(false).
+		WithDefaultText(pterm.Sprintf("Have you taken a backup of %s?", absPath)).
+		Show()
+	if err != nil {
+		return errors.Errorf("failed to read backup confirmation: %w", err)
+	}
+	if !confirmed {
+		return errors.New("aborted: take a backup of the storage directory and re-run, or pass --yes to skip this prompt")
+	}
+	return nil
 }
 
 func detectStorageType(dir string) (string, error) {
