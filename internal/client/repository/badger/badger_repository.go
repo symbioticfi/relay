@@ -2,6 +2,7 @@ package badger
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"log/slog"
 	"sync"
@@ -11,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"github.com/go-playground/validator/v10"
+
 	"github.com/symbioticfi/relay/internal/client/repository/cached"
 	"github.com/symbioticfi/relay/internal/client/repository/repoutil"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
@@ -52,6 +54,8 @@ type Repository struct {
 	proofsMutexMap    sync.Map // map[requestId]*mutexWithUseTime
 	valsetMutexMap    sync.Map // map[epoch]*mutexWithUseTime
 
+	valueLogGCDiscardRatio float64
+
 	done chan struct{}
 }
 
@@ -69,10 +73,15 @@ func New(cfg Config) (*Repository, error) {
 		return nil, errors.Errorf("failed to open badger database: %w", err)
 	}
 
+	discardRatio := cfg.ValueLogGCDiscardRatio
+	if discardRatio == 0 {
+		discardRatio = 0.5
+	}
 	repo := &Repository{
-		db:      db,
-		metrics: cfg.Metrics,
-		done:    make(chan struct{}),
+		db:                     db,
+		metrics:                cfg.Metrics,
+		valueLogGCDiscardRatio: discardRatio,
+		done:                   make(chan struct{}),
 	}
 
 	repo.startMutexCleanup(cfg.MutexCleanupInterval, cfg.MutexCleanupStaleTimeout)
@@ -116,6 +125,47 @@ func applyBadgerTuning(opts *badger.Options, cfg Config) {
 func (r *Repository) Close() error {
 	close(r.done)
 	return r.db.Close()
+}
+
+// MaxValueLogGCIterations bounds the value-log GC loop in Flatten. Each
+// successful RunValueLogGC rewrites at most one vlog file, so this caps the
+// total number of rewrites at a safe-but-large value to prevent pathological
+// infinite loops if badger ever returns nil indefinitely. Exported so callers
+// can include the value in user-facing messages.
+const MaxValueLogGCIterations = 100
+
+// Flatten compacts all SST levels into the lowest possible LSM structure and then
+// repeatedly runs value-log GC at the Config-supplied ValueLogGCDiscardRatio
+// (default 0.5) until no more rewrites are needed. Intended for offline
+// maintenance (e.g. one-shot CLI) — must not run alongside active write traffic.
+//
+// The bool return is true if the value-log GC loop hit MaxValueLogGCIterations
+// without observing ErrNoRewrite — in that case there may still be reclaimable
+// space and re-running Flatten is recommended. Callers should surface this
+// signal to the operator (a fresh sidecar startup will also keep grinding).
+func (r *Repository) Flatten(ctx context.Context, workers int) (capHit bool, err error) {
+	if workers <= 0 {
+		workers = 1
+	}
+	// db.Flatten and RunValueLogGC are blocking and don't accept a ctx, so we
+	// can only honor cancellation between phases / iterations. A SIGINT received
+	// mid-flatten will not abort the in-flight LSM rewrite (badger has no API
+	// for that); the second Ctrl+C / SIGKILL is the operator's escape hatch.
+	if err := r.db.Flatten(workers); err != nil {
+		return false, errors.Errorf("badger flatten failed: %w", err)
+	}
+	for range MaxValueLogGCIterations {
+		if err := ctx.Err(); err != nil {
+			return false, err
+		}
+		if err := r.db.RunValueLogGC(r.valueLogGCDiscardRatio); err != nil {
+			if errors.Is(err, badger.ErrNoRewrite) {
+				return false, nil
+			}
+			return false, errors.Errorf("badger value log gc failed: %w", err)
+		}
+	}
+	return true, nil
 }
 
 type slogBadgerLogger struct{}
