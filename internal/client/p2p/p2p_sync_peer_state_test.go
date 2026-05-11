@@ -47,7 +47,8 @@ func TestSelectPeerForSync_FallsBackWhenAllPeersAreCooledDown(t *testing.T) {
 func TestMarkPeerSyncFailure_IncreasesCooldown(t *testing.T) {
 	now := time.Date(2026, 5, 8, 12, 0, 0, 0, time.UTC)
 	service := &Service{
-		peerSyncState: make(map[peer.ID]peerSyncFailure),
+		syncPeerBackoff: DefaultSyncPeerBackoffConfig(),
+		peerSyncState:   make(map[peer.ID]peerSyncFailure),
 		now: func() time.Time {
 			return now
 		},
@@ -59,19 +60,34 @@ func TestMarkPeerSyncFailure_IncreasesCooldown(t *testing.T) {
 
 	state := service.peerSyncState[peerID]
 	require.Equal(t, 1, state.consecutiveFailures)
-	require.Equal(t, now.Add(syncPeerFailureBaseCooldown), state.cooldownUntil)
+	require.Equal(t, now.Add(service.nextSyncPeerCooldown(0)), state.cooldownUntil)
 
-	now = now.Add(syncPeerFailureBaseCooldown + time.Second)
+	now = now.Add(service.nextSyncPeerCooldown(0) + time.Second)
 
 	service.markPeerSyncFailure(peerID)
 
 	state = service.peerSyncState[peerID]
 	require.Equal(t, 2, state.consecutiveFailures)
-	require.Equal(t, now.Add(syncPeerFailureBaseCooldown*2), state.cooldownUntil)
+	require.Equal(t, now.Add(service.nextSyncPeerCooldown(1)), state.cooldownUntil)
+}
+
+func TestNextSyncPeerCooldown_UsesConfiguredBackoffAndCap(t *testing.T) {
+	service := &Service{
+		syncPeerBackoff: SyncPeerBackoffConfig{
+			MinBackoff: 10 * time.Second,
+			Base:       3,
+			MaxBackoff: time.Minute,
+		},
+	}
+
+	require.Equal(t, 10*time.Second, service.nextSyncPeerCooldown(0))
+	require.Equal(t, 30*time.Second, service.nextSyncPeerCooldown(1))
+	require.Equal(t, time.Minute, service.nextSyncPeerCooldown(2))
 }
 
 func TestMarkPeerSyncSuccess_ClearsFailureState(t *testing.T) {
 	service := &Service{
+		syncPeerBackoff: DefaultSyncPeerBackoffConfig(),
 		peerSyncState: map[peer.ID]peerSyncFailure{
 			peer.ID("peer-1"): {
 				consecutiveFailures: 2,
@@ -112,8 +128,9 @@ func newServiceWithConnectedPeers(t *testing.T, peerCount int, now time.Time) (*
 	}
 
 	service := &Service{
-		host:          clientHost,
-		peerSyncState: make(map[peer.ID]peerSyncFailure),
+		host:            clientHost,
+		syncPeerBackoff: DefaultSyncPeerBackoffConfig(),
+		peerSyncState:   make(map[peer.ID]peerSyncFailure),
 		now: func() time.Time {
 			return now
 		},
