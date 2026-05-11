@@ -1,14 +1,10 @@
 package p2p
 
 import (
+	"math"
 	"time"
 
 	"github.com/libp2p/go-libp2p/core/peer"
-)
-
-const (
-	syncPeerFailureBaseCooldown = 15 * time.Second
-	syncPeerFailureMaxCooldown  = 2 * time.Minute
 )
 
 type peerSyncFailure struct {
@@ -54,7 +50,7 @@ func (s *Service) markPeerSyncFailure(peerID peer.ID) {
 
 	state := s.peerSyncState[peerID]
 	state.consecutiveFailures++
-	state.cooldownUntil = s.currentTime().Add(nextSyncPeerCooldown(state.consecutiveFailures))
+	state.cooldownUntil = s.currentTime().Add(s.nextSyncPeerCooldown(state.consecutiveFailures - 1))
 	s.peerSyncState[peerID] = state
 }
 
@@ -69,18 +65,16 @@ func (s *Service) markPeerSyncSuccess(peerID peer.ID) {
 	delete(s.peerSyncState, peerID)
 }
 
-func nextSyncPeerCooldown(failures int) time.Duration {
-	if failures <= 1 {
-		return syncPeerFailureBaseCooldown
+func (s *Service) nextSyncPeerCooldown(failureCount int) time.Duration {
+	if failureCount < 0 {
+		failureCount = 0
 	}
 
-	cooldown := syncPeerFailureBaseCooldown
-	for i := 1; i < failures; i++ {
-		cooldown *= 2
-		if cooldown >= syncPeerFailureMaxCooldown {
-			return syncPeerFailureMaxCooldown
-		}
+	cfg := normalizeSyncPeerBackoffConfig(s.syncPeerBackoff)
+	cooldown := float64(cfg.MinBackoff) * math.Pow(cfg.Base, float64(failureCount))
+	if cooldown > float64(cfg.MaxBackoff) {
+		cooldown = float64(cfg.MaxBackoff)
 	}
 
-	return cooldown
+	return time.Duration(cooldown)
 }
