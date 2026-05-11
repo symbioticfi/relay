@@ -2,6 +2,7 @@ package pruner
 
 import (
 	"context"
+	stderrors "errors"
 	"log/slog"
 	"time"
 
@@ -19,6 +20,10 @@ import (
 type metrics interface {
 	IncPrunedEpochsCount(entityType string)
 }
+
+type NoopMetrics struct{}
+
+func (NoopMetrics) IncPrunedEpochsCount(string) {}
 
 type repo interface {
 	GetOldestValidatorSetEpoch(ctx context.Context) (symbiotic.Epoch, error)
@@ -38,6 +43,10 @@ type Config struct {
 	ProofRetentionEpochs     uint64
 	SignatureRetentionEpochs uint64
 	PruneBatchSize           int `validate:"gte=0"`
+	// ProgressFn is invoked once with current=0 when a non-empty entity-type
+	// pass starts (so the caller knows the total) and again after each pruned
+	// epoch with current=1..total. Optional; nil disables progress reporting.
+	ProgressFn func(entityType string, current, total uint64)
 }
 
 func (c Config) Validate() error {
@@ -47,11 +56,23 @@ func (c Config) Validate() error {
 	if c.Enabled && c.Interval <= 0 {
 		return errors.New("pruner interval must be greater than zero when enabled")
 	}
-	if c.ValsetRetentionEpochs > 0 && c.ProofRetentionEpochs > 0 && c.ValsetRetentionEpochs < c.ProofRetentionEpochs {
-		return errors.Errorf("ValsetRetentionEpochs (%d) must be >= ProofRetentionEpochs (%d)", c.ValsetRetentionEpochs, c.ProofRetentionEpochs)
-	}
-	if c.ValsetRetentionEpochs > 0 && c.SignatureRetentionEpochs > 0 && c.ValsetRetentionEpochs < c.SignatureRetentionEpochs {
-		return errors.Errorf("ValsetRetentionEpochs (%d) must be >= SignatureRetentionEpochs (%d)", c.ValsetRetentionEpochs, c.SignatureRetentionEpochs)
+	// Pruning a valset epoch without also pruning the proof / signature data
+	// for that epoch leaves orphans (the dependent rows still reference an
+	// epoch whose validator set is gone). Require proof + signature retention
+	// whenever valset retention is set, and keep them no larger than valset
+	// retention so the dependents are removed first.
+	if c.ValsetRetentionEpochs > 0 {
+		if c.ProofRetentionEpochs == 0 || c.SignatureRetentionEpochs == 0 {
+			return errors.New("retention.valset-epochs requires retention.proof-epochs and retention.signature-epochs to also be set (otherwise pruning valset entities would orphan proof/signature data)")
+		}
+		if c.ProofRetentionEpochs > c.ValsetRetentionEpochs {
+			return errors.Errorf("retention.proof-epochs (%d) must be <= retention.valset-epochs (%d) to avoid orphaning proofs whose valset has been pruned",
+				c.ProofRetentionEpochs, c.ValsetRetentionEpochs)
+		}
+		if c.SignatureRetentionEpochs > c.ValsetRetentionEpochs {
+			return errors.Errorf("retention.signature-epochs (%d) must be <= retention.valset-epochs (%d) to avoid orphaning signatures whose valset has been pruned",
+				c.SignatureRetentionEpochs, c.ValsetRetentionEpochs)
+		}
 	}
 	return nil
 }
@@ -97,7 +118,7 @@ func (s *Service) Start(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
-			if err := s.runPruning(ctx); err != nil {
+			if err := s.RunOnce(ctx); err != nil {
 				slog.ErrorContext(ctx, "Pruning failed", "error", err)
 			}
 		case <-ctx.Done():
@@ -107,7 +128,10 @@ func (s *Service) Start(ctx context.Context) {
 	}
 }
 
-func (s *Service) runPruning(ctx context.Context) error {
+// RunOnce executes a single pruning pass over the repository: prunes valset, proof,
+// signature and request-id-epoch entities according to the configured retention values.
+// Safe to call without Start (e.g. from a one-shot CLI).
+func (s *Service) RunOnce(ctx context.Context) error {
 	ctx, span := tracing.StartSpan(ctx, "pruner.RunPruning")
 	defer span.End()
 
@@ -131,24 +155,48 @@ func (s *Service) runPruning(ctx context.Context) error {
 		return errors.Errorf("failed to get oldest validator set epoch: %w", err)
 	}
 
-	valsetCount, err := s.pruneValsetEntities(ctx, latestEpoch, oldestStoredEpoch)
-	if err != nil {
-		slog.ErrorContext(ctx, "Failed to prune valset entities", "error", err)
-	}
+	// Each entity-type pass is independent: a failure of one does not invalidate
+	// the others (e.g. proof pruning can succeed even if a single signature
+	// epoch fails). Continue on error and join failures so callers (sidecar
+	// loop logger, CLI exit code) can react. Context cancellation, however,
+	// short-circuits the remaining passes.
+	//
+	// Order matters for crash safety: the valset pass MUST be last. Subsequent
+	// runs use GetOldestValidatorSetEpoch as the lower bound for proof /
+	// signature / requestIdEpochIndex loops; if valset gets pruned first and we
+	// crash before the dependent passes finish, the next run's lower bound will
+	// jump forward and the orphaned dependents will never be reclaimed.
+	var errs []error
+	var proofCount, signatureCount, indexCount, valsetCount uint64
 
-	proofCount, err := s.pruneProofEntities(ctx, latestEpoch, oldestStoredEpoch)
+	proofCount, err = s.pruneProofEntities(ctx, latestEpoch, oldestStoredEpoch)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to prune proof entities", "error", err)
+		errs = append(errs, errors.Errorf("proof: %w", err))
 	}
 
-	signatureCount, err := s.pruneSignatureEntities(ctx, latestEpoch, oldestStoredEpoch)
-	if err != nil {
-		slog.ErrorContext(ctx, "Failed to prune signature entities", "error", err)
+	if ctx.Err() == nil {
+		signatureCount, err = s.pruneSignatureEntities(ctx, latestEpoch, oldestStoredEpoch)
+		if err != nil {
+			slog.ErrorContext(ctx, "Failed to prune signature entities", "error", err)
+			errs = append(errs, errors.Errorf("signature: %w", err))
+		}
 	}
 
-	indexCount, err := s.pruneRequestIDEpochIndices(ctx, latestEpoch, oldestStoredEpoch)
-	if err != nil {
-		slog.ErrorContext(ctx, "Failed to prune request ID epoch indices", "error", err)
+	if ctx.Err() == nil {
+		indexCount, err = s.pruneRequestIDEpochIndices(ctx, latestEpoch, oldestStoredEpoch)
+		if err != nil {
+			slog.ErrorContext(ctx, "Failed to prune request ID epoch indices", "error", err)
+			errs = append(errs, errors.Errorf("requestIdEpochIndex: %w", err))
+		}
+	}
+
+	if ctx.Err() == nil {
+		valsetCount, err = s.pruneValsetEntities(ctx, latestEpoch, oldestStoredEpoch)
+		if err != nil {
+			slog.ErrorContext(ctx, "Failed to prune valset entities", "error", err)
+			errs = append(errs, errors.Errorf("valset: %w", err))
+		}
 	}
 
 	slog.InfoContext(ctx, "Pruning completed",
@@ -159,7 +207,7 @@ func (s *Service) runPruning(ctx context.Context) error {
 		"duration", time.Since(start),
 	)
 
-	return nil
+	return stderrors.Join(errs...)
 }
 
 func (s *Service) pruneValsetEntities(ctx context.Context, latestEpoch, oldestStoredEpoch symbiotic.Epoch) (uint64, error) {
@@ -247,8 +295,17 @@ func (s *Service) pruneEntities(
 		return 0, nil
 	}
 
+	total := uint64(oldestToKeep - oldestStoredEpoch)
+	if s.cfg.ProgressFn != nil {
+		s.cfg.ProgressFn(entityType, 0, total)
+	}
+
 	count := uint64(0)
 	for epoch := oldestStoredEpoch; epoch < oldestToKeep; epoch++ {
+		if err := ctx.Err(); err != nil {
+			return count, err
+		}
+
 		slog.DebugContext(ctx, "Pruning entities", "entityType", entityType, "epoch", epoch)
 
 		if err := pruneFunc(ctx, epoch, s.cfg.PruneBatchSize); err != nil {
@@ -258,6 +315,9 @@ func (s *Service) pruneEntities(
 
 		count++
 		s.cfg.Metrics.IncPrunedEpochsCount(entityType)
+		if s.cfg.ProgressFn != nil {
+			s.cfg.ProgressFn(entityType, count, total)
+		}
 	}
 
 	tracing.SetAttributes(span, tracing.AttrEpochCount.Int(int(count)))

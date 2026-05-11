@@ -301,6 +301,24 @@ func (c config) Validate() error {
 		return errors.Errorf("sync.epochs (%d) cannot exceed retention.valset-epochs (%d)", c.Sync.EpochsToSync, c.Retention.ValSetEpochs)
 	}
 
+	// Pruning valset entities without also pruning the dependent proof /
+	// signature data leaves orphans, so require all three to be set together
+	// when valset retention is configured, and keep proof / signature retention
+	// no larger than valset retention so dependents are removed first.
+	if c.Retention.ValSetEpochs > 0 {
+		if c.Retention.ProofEpochs == 0 || c.Retention.SignatureEpochs == 0 {
+			return errors.New("retention.valset-epochs requires retention.proof-epochs and retention.signature-epochs to also be set (otherwise pruning valset entities would orphan proof/signature data)")
+		}
+		if c.Retention.ProofEpochs > c.Retention.ValSetEpochs {
+			return errors.Errorf("retention.proof-epochs (%d) must be <= retention.valset-epochs (%d) to avoid orphaning proofs whose valset has been pruned",
+				c.Retention.ProofEpochs, c.Retention.ValSetEpochs)
+		}
+		if c.Retention.SignatureEpochs > c.Retention.ValSetEpochs {
+			return errors.Errorf("retention.signature-epochs (%d) must be <= retention.valset-epochs (%d) to avoid orphaning signatures whose valset has been pruned",
+				c.Retention.SignatureEpochs, c.Retention.ValSetEpochs)
+		}
+	}
+
 	if c.StorageType != "" && c.StorageType != storageTypeBadger && c.StorageType != storageTypeBbolt {
 		return errors.Errorf("invalid storage-type %q: must be \"badger\" or \"bbolt\"", c.StorageType)
 	}
