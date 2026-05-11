@@ -8,7 +8,7 @@ import (
 	prototypes "github.com/symbioticfi/relay/internal/client/p2p/proto/v1"
 	p2pEntity "github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
-	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator/blsBn254ZK"
+	"github.com/symbioticfi/relay/symbiotic/usecase/aggregator/blsBn254Simple"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
@@ -69,11 +69,12 @@ func (s *Service) handleAggregatedProofReadyMessage(pubSubMsg *pubsub.Message) e
 	if len(signaturesAggregated.GetProof()) > maxProofSize {
 		return errors.Errorf("aggregation proof %x size exceeds maximum allowed size: %d bytes", signaturesAggregated.GetProof(), maxProofSize)
 	}
-	// Simple proofs are allowed to be empty; non-empty proofs must be at least
-	// the ZK minimum (the larger of the two formats) to avoid downstream panics
-	// on fixed-offset slicing.
-	if l := len(signaturesAggregated.GetProof()); l > 0 && l < blsBn254ZK.MinProofSize {
-		return errors.Errorf("aggregation proof size %d is below minimum required %d bytes", l, blsBn254ZK.MinProofSize)
+	// The Simple format is the smaller of the two; the ZK verifier enforces
+	// its own larger minimum at parse time. Use the Simple floor here as a
+	// cheap defence against obviously-bogus messages before they reach the
+	// scheme-specific decoder.
+	if l := len(signaturesAggregated.GetProof()); l < blsBn254Simple.MinProofSize {
+		return errors.Errorf("aggregation proof size %d is below minimum required %d bytes", l, blsBn254Simple.MinProofSize)
 	}
 
 	msg := symbiotic.AggregationProof{

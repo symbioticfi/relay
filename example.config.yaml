@@ -65,6 +65,7 @@ p2p:
   bootnodes: []
   dht-mode: "disabled"
   mdns: true
+  publish-timeout: 10s  # Maximum time a single pubsub publish may block
 
 # EVM Configuration
 evm:

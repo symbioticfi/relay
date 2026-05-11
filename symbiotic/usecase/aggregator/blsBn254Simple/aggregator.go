@@ -24,6 +24,11 @@ import (
 
 const maxValidators = 65_536
 
+// MinProofSize is the smallest valid Simple aggregation proof:
+// 64 (sigBytes) + 64 (apkBytes) + 64 (apkG2BytesFirstHalf) + 32 (nonSignersLength) = 224.
+// Anything shorter cannot be parsed and would panic on fixed-offset slicing below.
+const MinProofSize = 224
+
 type abiTypes struct {
 	g1Type             abi.Type
 	g2Type             abi.Type
@@ -272,7 +277,7 @@ func (a Aggregator) Verify(
 		return false, err
 	}
 
-	if len(aggregationProof.Proof) < 224 {
+	if len(aggregationProof.Proof) < MinProofSize {
 		err := errors.New("aggregation proof is too short")
 		tracing.RecordError(span, err)
 		return false, err
