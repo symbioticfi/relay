@@ -139,18 +139,18 @@ func (c Config) withDefaults() Config {
 }
 
 func (c Config) Validate() error {
-	c = c.withDefaults()
+	cfg := c.withDefaults()
 
-	if err := validator.New().Struct(c); err != nil {
+	if err := validator.New().Struct(cfg); err != nil {
 		return errors.Errorf("invalid P2P config: %w", err)
 	}
-	if c.SyncPeerBackoff.MinBackoff <= 0 {
+	if cfg.SyncPeerBackoff.MinBackoff <= 0 {
 		return errors.New("invalid P2P config: sync peer backoff min-backoff must be greater than 0")
 	}
-	if c.SyncPeerBackoff.Base < 1 {
+	if cfg.SyncPeerBackoff.Base < 1 {
 		return errors.New("invalid P2P config: sync peer backoff base must be greater than or equal to 1")
 	}
-	if c.SyncPeerBackoff.MaxBackoff < c.SyncPeerBackoff.MinBackoff {
+	if cfg.SyncPeerBackoff.MaxBackoff < cfg.SyncPeerBackoff.MinBackoff {
 		return errors.New("invalid P2P config: sync peer backoff max-backoff must be greater than or equal to min-backoff")
 	}
 
