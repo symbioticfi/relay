@@ -155,18 +155,20 @@ var infoCmd = &cobra.Command{
 					}
 					settlementData[i].LastCommittedHeaderEpoch = uint64(lastCommittedHeaderEpoch)
 
+					startEpoch := symbiotic.Epoch(0)
 					epochCount := uint64(epoch) + 1
 					if epochCount > maxEpochsToCheck {
-						slog.WarnContext(egCtx, "Epoch count exceeds safety limit; missed epoch count may be inaccurate",
+						slog.WarnContext(egCtx, "Epoch range exceeds safety limit; missed epoch count is computed only over the most recent epochs",
 							"epoch", epoch, "limit", maxEpochsToCheck,
 						)
 						epochCount = maxEpochsToCheck
+						startEpoch = epoch - symbiotic.Epoch(maxEpochsToCheck-1)
 					}
-					allEpochsFromZero := lo.RepeatBy(int(epochCount), func(i int) symbiotic.Epoch {
-						return symbiotic.Epoch(i)
+					epochsToCheck := lo.RepeatBy(int(epochCount), func(i int) symbiotic.Epoch {
+						return startEpoch + symbiotic.Epoch(i)
 					})
 
-					commitmentResults, err := evmClient.IsValsetHeaderCommittedAtEpochs(egCtx, settlement, allEpochsFromZero)
+					commitmentResults, err := evmClient.IsValsetHeaderCommittedAtEpochs(egCtx, settlement, epochsToCheck)
 					if err != nil {
 						return errors.Errorf("Failed to check epoch commitments: %w", err)
 					}

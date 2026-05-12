@@ -24,6 +24,9 @@ import (
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
+// maxVotingPower is 2^256 - 1, the largest value that fits in the 32-byte SSZ field.
+var maxVotingPower = new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(1))
+
 const (
 	defaultTimeout = 5 * time.Second
 )
@@ -122,9 +125,6 @@ func (c *Client) GetVotingPowers(
 	if err != nil {
 		return nil, errors.Errorf("external provider %s GetVotingPowersAt failed: %w", providerIDString(id), err)
 	}
-
-	// maxVotingPower is 2^256 - 1, the maximum value that fits in 32 bytes (SSZ field size).
-	maxVotingPower := new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(1))
 
 	agg := map[common.Address]*big.Int{}
 	for _, vp := range resp.GetVotingPowers() {

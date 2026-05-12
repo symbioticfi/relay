@@ -45,17 +45,8 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity
 	for requestID, requestedIndices := range request.WantSignatures {
 		// Check signature count limit before processing each request
 		if totalSignatureCount >= s.cfg.MaxResponseSignatureCount {
-			slog.DebugContext(ctx, "Response signature limit reached, stopping collection", "totalCollected", totalSignatureCount, "limit", s.cfg.MaxResponseSignatureCount)
+			slog.WarnContext(ctx, "Response signature limit reached, stopping collection", "totalCollected", totalSignatureCount, "limit", s.cfg.MaxResponseSignatureCount)
 			break
-		}
-
-		// Guard against oversized bitmaps to avoid excessive DB lookups
-		if requestedIndices.GetCardinality() > uint64(s.cfg.MaxResponseSignatureCount) {
-			slog.WarnContext(ctx, "Requested indices cardinality exceeds limit, truncating",
-				"cardinality", requestedIndices.GetCardinality(),
-				"limit", s.cfg.MaxResponseSignatureCount,
-				"requestID", requestID.Hex(),
-			)
 		}
 
 		var validatorSigs []entity.ValidatorSignature
