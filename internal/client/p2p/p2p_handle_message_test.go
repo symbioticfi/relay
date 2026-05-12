@@ -68,23 +68,21 @@ func TestService_IntegrationSuccessful(t *testing.T) {
 		PublicKey:   priv.PublicKey(),
 	}
 
-	// Send the message from service1
-	err = service1.BroadcastSignatureGeneratedMessage(ctx, testSignatureMsg)
-	require.NoError(t, err)
+	// Publish until service2 receives, retrying every 500ms. A publish into an
+	// empty gossipsub mesh (which can happen on slow CI before GRAFT lands)
+	// is silently dropped — retrying papers over that race without needing to
+	// reach into gossipsub internals.
+	broadcastUntilReceived(ctx, t, done, func() error {
+		return service1.BroadcastSignatureGeneratedMessage(ctx, testSignatureMsg)
+	})
 
-	select {
-	case <-done:
-		// Verify the received message
-		assert.Equal(t, service1.host.ID().String(), receivedMsg.SenderInfo.Sender)
-		assert.NotNil(t, receivedMsg.SenderInfo.PublicKey)
-		assert.Equal(t, testSignatureMsg.KeyTag, receivedMsg.Message.KeyTag)
-		assert.Equal(t, testSignatureMsg.Epoch, receivedMsg.Message.Epoch)
-		assert.Equal(t, testSignatureMsg.MessageHash, receivedMsg.Message.MessageHash)
-		assert.Equal(t, testSignatureMsg.Signature, receivedMsg.Message.Signature)
-		assert.Equal(t, testSignatureMsg.PublicKey, receivedMsg.Message.PublicKey)
-	case <-ctx.Done():
-		require.Fail(t, "Test timed out waiting for message")
-	}
+	assert.Equal(t, service1.host.ID().String(), receivedMsg.SenderInfo.Sender)
+	assert.NotNil(t, receivedMsg.SenderInfo.PublicKey)
+	assert.Equal(t, testSignatureMsg.KeyTag, receivedMsg.Message.KeyTag)
+	assert.Equal(t, testSignatureMsg.Epoch, receivedMsg.Message.Epoch)
+	assert.Equal(t, testSignatureMsg.MessageHash, receivedMsg.Message.MessageHash)
+	assert.Equal(t, testSignatureMsg.Signature, receivedMsg.Message.Signature)
+	assert.Equal(t, testSignatureMsg.PublicKey, receivedMsg.Message.PublicKey)
 }
 
 // TestService_IntegrationFailedSignature tests P2P communication with a message that fails signature verification
@@ -115,19 +113,25 @@ func TestService_IntegrationFailedSignature(t *testing.T) {
 	priv, err := symbioticCrypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
 	require.NoError(t, err)
 
-	// Send the message from service1
-	err = service1.BroadcastSignatureGeneratedMessage(ctx, symbiotic.Signature{
-		PublicKey: priv.PublicKey(),
+	// Publish until the rejection arrives (or test ctx expires) — see comment
+	// on broadcastUntilReceived in TestService_IntegrationSuccessful.
+	rejected := make(chan struct{})
+	var rejectEvt *pubsub_pb.TraceEvent
+	go func() {
+		select {
+		case rejectEvt = <-tr.rejectCh:
+			close(rejected)
+		case <-ctx.Done():
+		}
+	}()
+	broadcastUntilReceived(ctx, t, rejected, func() error {
+		return service1.BroadcastSignatureGeneratedMessage(ctx, symbiotic.Signature{
+			PublicKey: priv.PublicKey(),
+		})
 	})
-	require.NoError(t, err)
 
-	select {
-	case evt := <-tr.rejectCh:
-		require.Equal(t, topicSignatureReady, lo.FromPtr(evt.RejectMessage.Topic))
-		require.Equal(t, "unexpected signature", lo.FromPtr(evt.RejectMessage.Reason))
-	case <-ctx.Done():
-		require.Fail(t, "Test timed out waiting for message")
-	}
+	require.Equal(t, topicSignatureReady, lo.FromPtr(rejectEvt.RejectMessage.Topic))
+	require.Equal(t, "unexpected signature", lo.FromPtr(rejectEvt.RejectMessage.Reason))
 }
 
 func createTestService(t *testing.T, skipMessageSigning bool, tracer pubsub.EventTracer) *Service {
@@ -233,18 +237,40 @@ func TestService_AggregatedProofIntegrationSuccessful(t *testing.T) {
 		Proof:       make([]byte, blsBn254ZK.MinProofSize),
 	}
 
-	err = service1.BroadcastSignatureAggregatedMessage(ctx, testProofMsg)
-	require.NoError(t, err)
+	broadcastUntilReceived(ctx, t, done, func() error {
+		return service1.BroadcastSignatureAggregatedMessage(ctx, testProofMsg)
+	})
 
-	select {
-	case <-done:
-		assert.Equal(t, service1.host.ID().String(), receivedMsg.SenderInfo.Sender)
-		assert.NotNil(t, receivedMsg.SenderInfo.PublicKey)
-		assert.Equal(t, testProofMsg.KeyTag, receivedMsg.Message.KeyTag)
-		assert.Equal(t, testProofMsg.Epoch, receivedMsg.Message.Epoch)
-		assert.Equal(t, testProofMsg.MessageHash, receivedMsg.Message.MessageHash)
-		assert.Equal(t, testProofMsg.Proof, receivedMsg.Message.Proof)
-	case <-ctx.Done():
-		require.Fail(t, "Test timed out waiting for aggregated proof message")
+	assert.Equal(t, service1.host.ID().String(), receivedMsg.SenderInfo.Sender)
+	assert.NotNil(t, receivedMsg.SenderInfo.PublicKey)
+	assert.Equal(t, testProofMsg.KeyTag, receivedMsg.Message.KeyTag)
+	assert.Equal(t, testProofMsg.Epoch, receivedMsg.Message.Epoch)
+	assert.Equal(t, testProofMsg.MessageHash, receivedMsg.Message.MessageHash)
+	assert.Equal(t, testProofMsg.Proof, receivedMsg.Message.Proof)
+}
+
+// broadcastUntilReceived publishes via `publish` repeatedly (every 500ms) until
+// `done` closes or `ctx` expires. A publish into an empty gossipsub mesh
+// returns nil but delivers nothing; retrying papers over that race instead of
+// reaching into the mesh state from the test.
+func broadcastUntilReceived(ctx context.Context, t *testing.T, done <-chan struct{}, publish func() error) {
+	t.Helper()
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+
+	if err := publish(); err != nil {
+		t.Fatalf("initial publish failed: %v", err)
+	}
+	for {
+		select {
+		case <-done:
+			return
+		case <-ctx.Done():
+			t.Fatalf("test timed out waiting for message; never delivered")
+		case <-ticker.C:
+			if err := publish(); err != nil {
+				t.Fatalf("publish retry failed: %v", err)
+			}
+		}
 	}
 }
