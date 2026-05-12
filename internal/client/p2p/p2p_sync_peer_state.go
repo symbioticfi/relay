@@ -49,8 +49,8 @@ func (s *Service) markPeerSyncFailure(peerID peer.ID) {
 	}
 
 	state := s.peerSyncState[peerID]
+	state.cooldownUntil = s.currentTime().Add(s.nextSyncPeerCooldown(state.consecutiveFailures))
 	state.consecutiveFailures++
-	state.cooldownUntil = s.currentTime().Add(s.nextSyncPeerCooldown(state.consecutiveFailures - 1))
 	s.peerSyncState[peerID] = state
 }
 
@@ -70,11 +70,8 @@ func (s *Service) nextSyncPeerCooldown(failureCount int) time.Duration {
 		failureCount = 0
 	}
 
-	cfg := normalizeSyncPeerBackoffConfig(s.syncPeerBackoff)
-	cooldown := float64(cfg.MinBackoff) * math.Pow(cfg.Base, float64(failureCount))
-	if cooldown > float64(cfg.MaxBackoff) {
-		cooldown = float64(cfg.MaxBackoff)
-	}
+	cfg := s.syncPeerBackoff
+	cooldown := math.Min(float64(cfg.MinBackoff)*math.Pow(cfg.Base, float64(failureCount)), float64(cfg.MaxBackoff))
 
 	return time.Duration(cooldown)
 }
