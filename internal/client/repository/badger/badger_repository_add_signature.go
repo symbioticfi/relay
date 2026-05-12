@@ -11,8 +11,11 @@ import (
 )
 
 func (r *Repository) SaveSignature(ctx context.Context, signature symbiotic.Signature, validator symbiotic.Validator, activeIndex uint32) error {
-	return r.doUpdateInTxWithLock(ctx, "SaveSignature", func(ctx context.Context) error {
-		signatureMap, err := r.GetSignatureMap(ctx, signature.RequestID())
+	var signatureMap entity.SignatureMap
+
+	if err := r.doUpdateInTxWithLock(ctx, "SaveSignature", func(ctx context.Context) error {
+		var err error
+		signatureMap, err = r.GetSignatureMap(ctx, signature.RequestID())
 		if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
 			return errors.Errorf("failed to get valset signature map: %w", err)
 		}
@@ -44,30 +47,36 @@ func (r *Repository) SaveSignature(ctx context.Context, signature symbiotic.Sign
 			"presentValidators", signatureMap.SignedValidatorsBitmap.ToArray(),
 		)
 
-		// Handle pending aggregation proof management (inside lock to avoid stale snapshot)
-		if signature.KeyTag.Type().AggregationKey() {
-			_, err := r.GetAggregationProof(ctx, signature.RequestID())
-			if err != nil {
-				if !errors.Is(err, entity.ErrEntityNotFound) {
-					return errors.Errorf("failed to get aggregation proof: %v", err)
-				}
-				if err := r.saveAggregationProofPending(ctx, signature.RequestID(), signature.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) && !errors.Is(err, entity.ErrTxConflict) {
-					return errors.Errorf("failed to save aggregation proof to pending collection: %v", err)
-				}
+		return nil
+	}, &r.signatureMutexMap, signature.RequestID()); err != nil {
+		return err
+	}
+
+	// Handle pending aggregation proof management (outside lock; cross-feature
+	// races with SaveProof on the same R were observed to cause badger SSI
+	// conflicts when this block sat inside the transaction).
+	if signature.KeyTag.Type().AggregationKey() {
+		_, err := r.GetAggregationProof(ctx, signature.RequestID())
+		if err != nil {
+			if !errors.Is(err, entity.ErrEntityNotFound) {
+				return errors.Errorf("failed to get aggregation proof: %w", err)
 			}
-		} else {
-			if len(signatureMap.GetMissingValidators().ToArray()) == 0 {
-				err := r.RemoveAggregationProofPending(ctx, signature.Epoch, signature.RequestID())
-				if err != nil && !errors.Is(err, entity.ErrEntityNotFound) && !errors.Is(err, entity.ErrTxConflict) {
-					return errors.Errorf("failed to remove signature request from pending collection: %v", err)
-				}
-			} else {
-				if err := r.saveAggregationProofPending(ctx, signature.RequestID(), signature.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) && !errors.Is(err, entity.ErrTxConflict) {
-					return errors.Errorf("failed to save aggregation proof to pending collection: %v", err)
-				}
+			if err := r.saveAggregationProofPending(ctx, signature.RequestID(), signature.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
+				return errors.Errorf("failed to save aggregation proof to pending collection: %w", err)
 			}
 		}
+	} else {
+		if len(signatureMap.GetMissingValidators().ToArray()) == 0 {
+			err := r.RemoveAggregationProofPending(ctx, signature.Epoch, signature.RequestID())
+			if err != nil && !errors.Is(err, entity.ErrEntityNotFound) {
+				return errors.Errorf("failed to remove signature request from pending collection: %w", err)
+			}
+		} else {
+			if err := r.saveAggregationProofPending(ctx, signature.RequestID(), signature.Epoch); err != nil && !errors.Is(err, entity.ErrEntityAlreadyExist) {
+				return errors.Errorf("failed to save aggregation proof to pending collection: %w", err)
+			}
+		}
+	}
 
-		return nil
-	}, &r.signatureMutexMap, signature.RequestID())
+	return nil
 }
