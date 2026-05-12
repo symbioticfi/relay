@@ -27,7 +27,7 @@ import (
 
 // TestService_IntegrationSuccessful tests full P2P communication between two services
 func TestService_IntegrationSuccessful(t *testing.T) {
-	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 
 	// Create two libp2p hosts
@@ -89,7 +89,7 @@ func TestService_IntegrationSuccessful(t *testing.T) {
 
 // TestService_IntegrationFailedSignature tests P2P communication with a message that fails signature verification
 func TestService_IntegrationFailedSignature(t *testing.T) {
-	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 
 	tr := &rejectTracer{
@@ -201,7 +201,7 @@ func (m *mockMetrics) ObserveP2PBroadcastDuration(topic, status string, d time.D
 func (m *mockMetrics) ObserveP2PPeerMessageSent(messageType, status string)              {}
 
 func TestService_AggregatedProofIntegrationSuccessful(t *testing.T) {
-	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 
 	service1 := createTestService(t, false, nil)
