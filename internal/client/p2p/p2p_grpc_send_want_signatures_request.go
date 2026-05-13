@@ -55,9 +55,12 @@ func (s *Service) SendWantSignaturesRequest(ctx context.Context, request entity.
 	// Send request to the selected peer
 	response, err := s.sendRequestToPeer(ctx, peerID, protoReq)
 	if err != nil {
+		s.markPeerSyncFailure(peerID)
 		tracing.RecordError(span, err)
 		return entity.WantSignaturesResponse{}, errors.Errorf("failed to get signatures from peer %s: %w", peerID, err)
 	}
+
+	s.markPeerSyncSuccess(peerID)
 
 	// Convert protobuf response to entity
 	entityResp := protoToEntityResponse(ctx, response)
@@ -189,6 +192,11 @@ func (s *Service) selectPeerForSync() (peer.ID, error) {
 	peers := s.host.Network().Peers()
 	if len(peers) == 0 {
 		return "", errors.Errorf("no peers available for sync: %w", entity.ErrNoPeers)
+	}
+
+	eligiblePeers := s.getEligibleSyncPeers(peers)
+	if len(eligiblePeers) != 0 {
+		peers = eligiblePeers
 	}
 
 	//nolint:gosec // G404: non-cryptographic random selection

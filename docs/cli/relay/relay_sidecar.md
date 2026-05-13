@@ -68,6 +68,9 @@ relay_sidecar [flags]
       --p2p.listen string                                P2P listen address
       --p2p.mdns                                         Enable mDNS discovery for P2P
       --p2p.publish-timeout duration                     Maximum time a single pubsub publish may block (default 10s)
+      --p2p.sync-peer-backoff.base float                 Exponential base for failed sync peer cooldown backoff (default 2)
+      --p2p.sync-peer-backoff.max-backoff duration       Maximum cooldown before retrying a failed sync peer (default 2m0s)
+      --p2p.sync-peer-backoff.min-backoff duration       Minimum cooldown before retrying a failed sync peer (default 15s)
       --pruner.batch-pause duration                      Pause between prune batches to yield to live writers (bbolt only — badger has no batching) (0 = no pause) (default 100ms)
       --pruner.batch-size int                            Number of request IDs to delete per database transaction during pruning (0 = unbatched) (default 100)
       --pruner.enabled                                   Enable automatic pruning of old epoch data

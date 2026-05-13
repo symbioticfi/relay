@@ -663,11 +663,12 @@ func initP2PService(ctx context.Context, cfg config, keyProvider keyprovider.Key
 	}
 
 	p2pCfg := p2p.Config{
-		Host:           h,
-		Metrics:        mtr,
-		Discovery:      p2p.DefaultDiscoveryConfig(),
-		Handler:        p2p.NewP2PHandler(provider),
-		PublishTimeout: cfg.P2P.PublishTimeout,
+		Host:            h,
+		Metrics:         mtr,
+		Discovery:       p2p.DefaultDiscoveryConfig(),
+		Handler:         p2p.NewP2PHandler(provider),
+		PublishTimeout:  cfg.P2P.PublishTimeout,
+		SyncPeerBackoff: cfg.P2P.SyncPeerBackoff,
 	}
 	if len(cfg.P2P.Bootnodes) > 0 {
 		p2pCfg.Discovery.BootstrapPeers = cfg.P2P.Bootnodes
