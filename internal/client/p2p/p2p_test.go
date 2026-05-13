@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"testing"
+	"time"
 
 	"github.com/libp2p/go-libp2p"
 	"github.com/stretchr/testify/assert"
@@ -88,4 +89,34 @@ func TestDefaultDiscoveryConfig_ReturnsValidConfig(t *testing.T) {
 	assert.Equal(t, 20, cfg.MaxDHTReconnectPeerCount)
 	assert.NotZero(t, cfg.DHTPeerDiscoveryInterval)
 	assert.NotZero(t, cfg.DHTRoutingTableRefreshInterval)
+}
+
+func TestDefaultSyncPeerBackoffConfig_ReturnsValidConfig(t *testing.T) {
+	cfg := DefaultSyncPeerBackoffConfig()
+
+	assert.NotZero(t, cfg.MinBackoff)
+	assert.GreaterOrEqual(t, cfg.Base, 1.0)
+	assert.GreaterOrEqual(t, cfg.MaxBackoff, cfg.MinBackoff)
+}
+
+func TestConfig_Validate_InvalidSyncPeerBackoff(t *testing.T) {
+	host, err := libp2p.New()
+	require.NoError(t, err)
+	defer host.Close()
+
+	cfg := Config{
+		Host:      host,
+		Metrics:   &mockMetrics{},
+		Discovery: DefaultDiscoveryConfig(),
+		SyncPeerBackoff: SyncPeerBackoffConfig{
+			MinBackoff: time.Second,
+			Base:       0.5,
+			MaxBackoff: 2 * time.Second,
+		},
+		Handler: &GRPCHandler{syncHandler: &mockSyncRequestHandler{}},
+	}
+
+	err = cfg.Validate()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "sync peer backoff base")
 }
