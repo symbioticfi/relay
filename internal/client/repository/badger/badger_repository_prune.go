@@ -38,7 +38,7 @@ func (r *Repository) PruneProofEntities(ctx context.Context, epoch symbiotic.Epo
 			return errors.Errorf("failed to prune aggregation proof for request %s: %w", requestID.Hex(), err)
 		}
 
-		r.proofsMutexMap.Delete(requestID)
+		r.requestIDMutexMap.Delete(requestID)
 	}
 
 	return nil
@@ -57,7 +57,7 @@ func (r *Repository) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch s
 			return errors.Errorf("failed to prune signature entities for request %s: %w", requestID.Hex(), err)
 		}
 
-		r.signatureMutexMap.Delete(requestID)
+		r.requestIDMutexMap.Delete(requestID)
 	}
 
 	return nil
@@ -207,7 +207,7 @@ func (r *Repository) pruneSignatureEntities(ctx context.Context, epoch symbiotic
 		}
 
 		return nil
-	}, &r.signatureMutexMap, requestID)
+	}, &r.requestIDMutexMap, requestID)
 }
 
 func (r *Repository) pruneAggregationProof(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
@@ -223,7 +223,7 @@ func (r *Repository) pruneAggregationProof(ctx context.Context, epoch symbiotic.
 		}
 
 		return nil
-	}, &r.proofsMutexMap, requestID)
+	}, &r.requestIDMutexMap, requestID)
 }
 
 // PruneRequestIDEpochIndices removes the request ID epoch indices for the given epoch.

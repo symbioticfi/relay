@@ -65,7 +65,7 @@ func (r *Repository) saveSignatureRequestToKey(ctx context.Context, req symbioti
 }
 
 func (r *Repository) SaveSignatureRequest(ctx context.Context, requestID common.Hash, req symbiotic.SignatureRequest) error {
-	return r.doUpdateInTx(ctx, "SaveSignatureRequest", func(ctx context.Context) error {
+	return r.doUpdateInTxWithLock(ctx, "SaveSignatureRequest", func(ctx context.Context) error {
 		if err := r.saveSignatureRequest(ctx, requestID, req); err != nil {
 			return err
 		}
@@ -76,7 +76,7 @@ func (r *Repository) SaveSignatureRequest(ctx context.Context, requestID common.
 			return errors.Errorf("failed to save signature request to pending collection: %v", err)
 		}
 		return nil
-	})
+	}, &r.requestIDMutexMap, requestID)
 }
 
 func (r *Repository) saveSignatureRequest(ctx context.Context, requestID common.Hash, req symbiotic.SignatureRequest) error {

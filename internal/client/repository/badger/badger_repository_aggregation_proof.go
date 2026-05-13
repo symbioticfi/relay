@@ -32,12 +32,17 @@ func keyAggregationProofPendingEpochPrefix(epoch symbiotic.Epoch) []byte {
 }
 
 func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.Hash, ap symbiotic.AggregationProof) error {
+	return r.doUpdateInTxWithLock(ctx, "saveAggregationProof", func(ctx context.Context) error {
+		return r.writeAggregationProof(ctx, requestID, ap)
+	}, &r.requestIDMutexMap, requestID)
+}
+
+func (r *Repository) writeAggregationProof(ctx context.Context, requestID common.Hash, ap symbiotic.AggregationProof) error {
 	proofBytes, err := aggregationProofToBytes(ap)
 	if err != nil {
 		return errors.Errorf("failed to marshal aggregation proof: %w", err)
 	}
-
-	return r.doUpdateInTxWithLock(ctx, "saveAggregationProof", func(ctx context.Context) error {
+	return r.doUpdateInTx(ctx, "writeAggregationProof", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 
 		valueKey := keyAggregationProof(requestID)
@@ -69,7 +74,7 @@ func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.
 		}
 
 		return nil
-	}, &r.proofsMutexMap, requestID)
+	})
 }
 
 func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error) {
@@ -217,21 +222,18 @@ func (r *Repository) saveAggregationProofPending(ctx context.Context, requestID 
 			return errors.Errorf("pending aggregation proof already exists: %w", entity.ErrEntityAlreadyExist)
 		}
 
-		// Store just a marker (empty value) - we don't need the full request data here
-		err = txn.Set(pendingKey, []byte{})
-		if err != nil {
+		if err := txn.Set(pendingKey, []byte{}); err != nil {
 			return errors.Errorf("failed to store pending aggregation proof: %w", err)
 		}
 		return nil
 	})
 }
 
-func (r *Repository) RemoveAggregationProofPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
-	return r.doUpdateInTx(ctx, "RemoveAggregationProofPending", func(ctx context.Context) error {
+func (r *Repository) removeAggregationProofPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
+	return r.doUpdateInTx(ctx, "removeAggregationProofPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		pendingKey := keyAggregationProofPending(epoch, requestID)
 
-		// Check if exists before removing
 		_, err := txn.Get(pendingKey)
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
@@ -240,13 +242,17 @@ func (r *Repository) RemoveAggregationProofPending(ctx context.Context, epoch sy
 			return errors.Errorf("failed to check pending aggregation proof: %w", err)
 		}
 
-		err = txn.Delete(pendingKey)
-		if err != nil {
+		if err := txn.Delete(pendingKey); err != nil {
 			return errors.Errorf("failed to delete pending aggregation proof: %w", err)
 		}
-
 		return nil
 	})
+}
+
+func (r *Repository) RemoveAggregationProofPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
+	return r.doUpdateInTxWithLock(ctx, "RemoveAggregationProofPending", func(ctx context.Context) error {
+		return r.removeAggregationProofPending(ctx, epoch, requestID)
+	}, &r.requestIDMutexMap, requestID)
 }
 
 func (r *Repository) GetSignatureRequestsWithoutAggregationProof(ctx context.Context, epoch symbiotic.Epoch, limit int, lastHash common.Hash) ([]symbiotic.SignatureRequestWithID, error) {
