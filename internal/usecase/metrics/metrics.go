@@ -24,6 +24,7 @@ type Metrics struct {
 	aggregationProofSize   *prometheus.HistogramVec
 
 	// p2p
+	p2pBroadcastDuration           *prometheus.SummaryVec
 	p2pPeerMessagesSent            *prometheus.CounterVec
 	p2pSyncProcessedSignatures     *prometheus.CounterVec
 	p2pSyncRequestedHashes         prometheus.Counter
@@ -45,6 +46,9 @@ type Metrics struct {
 
 	// pruner
 	prunedEpochsTotal *prometheus.CounterVec
+
+	// storage
+	dbSizeBytes prometheus.Gauge
 }
 
 func New(cfg Config) *Metrics {
@@ -91,6 +95,13 @@ func newMetrics(registerer prometheus.Registerer) *Metrics {
 		Objectives: defaultPercentiles,
 	})
 	all = append(all, m.appAggregationDuration)
+
+	m.p2pBroadcastDuration = prometheus.NewSummaryVec(prometheus.SummaryOpts{
+		Name:       "symbiotic_relay_p2p_broadcast_duration_seconds",
+		Help:       "Duration of P2P broadcast in seconds",
+		Objectives: defaultPercentiles,
+	}, []string{"topic", "status"})
+	all = append(all, m.p2pBroadcastDuration)
 
 	m.p2pPeerMessagesSent = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "symbiotic_relay_p2p_peer_sent_messages_total",
@@ -226,6 +237,12 @@ func newMetrics(registerer prometheus.Registerer) *Metrics {
 	}, []string{"entity_type"})
 	all = append(all, m.prunedEpochsTotal)
 
+	m.dbSizeBytes = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "symbiotic_relay_db_size_bytes",
+		Help: "Database size in bytes",
+	})
+	all = append(all, m.dbSizeBytes)
+
 	// BadgerDB expvar metrics bridged to Prometheus.
 	// BadgerDB registers these via expvar in init(); we expose them on /metrics.
 	badgerExpvarCollector := collectors.NewExpvarCollector(map[string]*prometheus.Desc{
@@ -274,6 +291,10 @@ func (m *Metrics) ObserveAppAggregateDuration(d time.Duration) {
 	m.appAggregationDuration.Observe(d.Seconds())
 }
 
+func (m *Metrics) ObserveP2PBroadcastDuration(topic, status string, d time.Duration) {
+	m.p2pBroadcastDuration.WithLabelValues(topic, status).Observe(d.Seconds())
+}
+
 func (m *Metrics) ObserveP2PPeerMessageSent(messageType, status string) {
 	m.p2pPeerMessagesSent.WithLabelValues(messageType, status).Add(1)
 }
@@ -284,8 +305,10 @@ func (m *Metrics) ObserveEVMMethodCall(method string, chainID uint64, status str
 
 func (m *Metrics) ObserveCommitValsetHeaderParams(chainID uint64, gasUsed uint64, effectiveGasPrice *big.Int) {
 	m.evmCommitGasUsed.WithLabelValues(strconv.FormatInt(int64(chainID), 10)).Observe(float64(gasUsed))
-	gasPrice, _ := effectiveGasPrice.Float64()
-	m.evmCommitGasPrice.WithLabelValues(strconv.FormatInt(int64(chainID), 10)).Observe(gasPrice)
+	if effectiveGasPrice != nil {
+		gasPrice, _ := effectiveGasPrice.Float64()
+		m.evmCommitGasPrice.WithLabelValues(strconv.FormatInt(int64(chainID), 10)).Observe(gasPrice)
+	}
 }
 
 func (m *Metrics) ObserveP2PSyncSignaturesProcessed(resultType string, count int) {
@@ -314,6 +337,10 @@ func (m *Metrics) ObserveRepoQueryDuration(queryName, status string, d time.Dura
 
 func (m *Metrics) ObserveRepoQueryTotalDuration(queryName, status string, d time.Duration) {
 	m.repoQueryTotalDuration.WithLabelValues(queryName, status).Observe(d.Seconds())
+}
+
+func (m *Metrics) SetDBSizeBytes(sizeBytes float64) {
+	m.dbSizeBytes.Set(sizeBytes)
 }
 
 func (m *Metrics) IncPrunedEpochsCount(entityType string) {

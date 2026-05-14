@@ -24,6 +24,11 @@ import (
 
 const maxValidators = 65_536
 
+// MinProofSize is the smallest valid Simple aggregation proof:
+// 64 (sigBytes) + 64 (apkBytes) + 64 (apkG2BytesFirstHalf) + 32 (nonSignersLength) = 224.
+// Anything shorter cannot be parsed and would panic on fixed-offset slicing below.
+const MinProofSize = 224
+
 type abiTypes struct {
 	g1Type             abi.Type
 	g2Type             abi.Type
@@ -128,7 +133,7 @@ func (a Aggregator) Aggregate(
 	aggG1Sig := new(bn254.G1Affine)
 	aggG2Key := new(bn254.G2Affine)
 
-	valKeysToIdx := helpers.GetValidatorsIndexesMapByKey(valset, keyTag)
+	valKeysToIdx := helpers.GetActiveValidatorsIndexesMapByKey(valset, keyTag)
 
 	for _, sig := range signatures {
 		pubKey, err := blsBn254.FromRaw(sig.PublicKey.Raw())
@@ -137,16 +142,10 @@ func (a Aggregator) Aggregate(
 			return symbiotic.AggregationProof{}, err
 		}
 
-		idx, ok := valKeysToIdx[string(pubKey.OnChain())]
-		if !ok {
+		if _, ok := valKeysToIdx[string(pubKey.OnChain())]; !ok {
 			err := errors.New("failed to find validator by key")
 			tracing.RecordError(span, err)
 			return symbiotic.AggregationProof{}, err
-		}
-
-		val := valset.Validators[idx]
-		if !val.IsActive {
-			continue
 		}
 
 		g1Key := new(bn254.G1Affine)
@@ -278,7 +277,7 @@ func (a Aggregator) Verify(
 		return false, err
 	}
 
-	if len(aggregationProof.Proof) < 224 {
+	if len(aggregationProof.Proof) < MinProofSize {
 		err := errors.New("aggregation proof is too short")
 		tracing.RecordError(span, err)
 		return false, err

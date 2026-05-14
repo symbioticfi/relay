@@ -52,21 +52,15 @@ func (s *Syncer) BuildWantAggregationProofsRequest(ctx context.Context) (entity.
 				break // No more requests for this epoch
 			}
 
-			// Collect request ids
 			for _, req := range requests {
 				if !req.KeyTag.Type().AggregationKey() {
-					continue // Skip non-aggregation requests
+					continue
 				}
-				// check if proof exists
+				// Check if proof already exists — clean up stale pending marker
 				_, err := s.cfg.Repo.GetAggregationProof(ctx, req.RequestID)
 				if err == nil {
-					// remove pending from db
-					err = s.cfg.Repo.RemoveAggregationProofPending(ctx, req.RequiredEpoch, req.RequestID)
-					// ignore not found and tx conflict errors, as they indicate the proof was already processed or is being processed
-					if err != nil && !errors.Is(err, entity.ErrEntityNotFound) && !errors.Is(err, entity.ErrTxConflict) {
-						return entity.WantAggregationProofsRequest{}, errors.Errorf("failed to remove aggregation proof from pending collection: %w", err)
-					}
-					continue // Proof already exists, skip
+					_ = s.cfg.Repo.RemoveAggregationProofPending(ctx, req.RequiredEpoch, req.RequestID)
+					continue
 				}
 				allRequestIDs = append(allRequestIDs, req.RequestID)
 				totalRequests++

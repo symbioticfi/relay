@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/pflag"
 
+	p2pclient "github.com/symbioticfi/relay/internal/client/p2p"
 	"github.com/symbioticfi/relay/pkg/signals"
 	"github.com/symbioticfi/relay/symbiotic/client/votingpower"
 
@@ -120,7 +121,7 @@ func (c *CMDSecretKey) String() string {
 func (c *CMDSecretKey) Set(str string) error {
 	strs := strings.Split(str, "/")
 	if len(strs) != 4 {
-		return errors.Errorf("invalid secret key format: %s, expected {namespace}/{type}/{id}", str)
+		return errors.Errorf("invalid secret key format: %s, expected {namespace}/{type}/{id}/{secret}", str)
 	}
 	c.Namespace = strs[0]
 	c.Secret = strs[3]
@@ -217,10 +218,12 @@ type KeyCache struct {
 }
 
 type P2PConfig struct {
-	ListenAddress string   `mapstructure:"listen" validate:"required"`
-	Bootnodes     []string `mapstructure:"bootnodes"`
-	DHTMode       string   `mapstructure:"dht-mode" validate:"oneof=auto server client disabled"`
-	MDnsEnabled   bool     `mapstructure:"mdns"`
+	ListenAddress   string                          `mapstructure:"listen" validate:"required"`
+	Bootnodes       []string                        `mapstructure:"bootnodes"`
+	DHTMode         string                          `mapstructure:"dht-mode" validate:"oneof=auto server client disabled"`
+	MDnsEnabled     bool                            `mapstructure:"mdns"`
+	PublishTimeout  time.Duration                   `mapstructure:"publish-timeout"`
+	SyncPeerBackoff p2pclient.SyncPeerBackoffConfig `mapstructure:"sync-peer-backoff"`
 }
 
 type EvmConfig struct {
@@ -241,8 +244,10 @@ type RetentionConfig struct {
 }
 
 type PrunerConfig struct {
-	Enabled  bool          `mapstructure:"enabled"`
-	Interval time.Duration `mapstructure:"interval"`
+	Enabled    bool          `mapstructure:"enabled"`
+	Interval   time.Duration `mapstructure:"interval"`
+	BatchSize  int           `mapstructure:"batch-size"`
+	BatchPause time.Duration `mapstructure:"batch-pause"`
 }
 
 type AggregationConfig struct {
@@ -266,7 +271,12 @@ type TracingConfig struct {
 }
 
 type BboltConfig struct {
-	InitialMmapSize int `mapstructure:"initial-mmap-size"`
+	InitialMmapSize  int           `mapstructure:"initial-mmap-size"`
+	CompactOnStartup bool          `mapstructure:"compact-on-startup"`
+	NoFreelistSync   bool          `mapstructure:"no-freelist-sync"`
+	MaxBatchDelay    time.Duration `mapstructure:"max-batch-delay"`
+	MaxBatchSize     int           `mapstructure:"max-batch-size"`
+	StatsLogInterval time.Duration `mapstructure:"stats-log-interval"`
 }
 
 type BadgerConfig struct {
@@ -293,8 +303,35 @@ func (c config) Validate() error {
 		return errors.Errorf("sync.epochs (%d) cannot exceed retention.valset-epochs (%d)", c.Sync.EpochsToSync, c.Retention.ValSetEpochs)
 	}
 
+	// Pruning valset entities without also pruning the dependent proof /
+	// signature data leaves orphans, so require all three to be set together
+	// when valset retention is configured, and keep proof / signature retention
+	// no larger than valset retention so dependents are removed first.
+	if c.Retention.ValSetEpochs > 0 {
+		if c.Retention.ProofEpochs == 0 || c.Retention.SignatureEpochs == 0 {
+			return errors.New("retention.valset-epochs requires retention.proof-epochs and retention.signature-epochs to also be set (otherwise pruning valset entities would orphan proof/signature data)")
+		}
+		if c.Retention.ProofEpochs > c.Retention.ValSetEpochs {
+			return errors.Errorf("retention.proof-epochs (%d) must be <= retention.valset-epochs (%d) to avoid orphaning proofs whose valset has been pruned",
+				c.Retention.ProofEpochs, c.Retention.ValSetEpochs)
+		}
+		if c.Retention.SignatureEpochs > c.Retention.ValSetEpochs {
+			return errors.Errorf("retention.signature-epochs (%d) must be <= retention.valset-epochs (%d) to avoid orphaning signatures whose valset has been pruned",
+				c.Retention.SignatureEpochs, c.Retention.ValSetEpochs)
+		}
+	}
+
 	if c.StorageType != "" && c.StorageType != storageTypeBadger && c.StorageType != storageTypeBbolt {
 		return errors.Errorf("invalid storage-type %q: must be \"badger\" or \"bbolt\"", c.StorageType)
+	}
+	if c.P2P.SyncPeerBackoff.MinBackoff <= 0 {
+		return errors.New("p2p.sync-peer-backoff.min-backoff must be greater than 0")
+	}
+	if c.P2P.SyncPeerBackoff.Base < 1 {
+		return errors.New("p2p.sync-peer-backoff.base must be greater than or equal to 1")
+	}
+	if c.P2P.SyncPeerBackoff.MaxBackoff < c.P2P.SyncPeerBackoff.MinBackoff {
+		return errors.New("p2p.sync-peer-backoff.max-backoff must be greater than or equal to min-backoff")
 	}
 
 	// Validate badger: num-level-zero-tables-stall must be > num-level-zero-tables (badger fatals otherwise).
@@ -322,13 +359,19 @@ var (
 
 func addRootFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVar(&configFile, "config", "config.yaml", "Path to config file")
+	defaultSyncPeerBackoff := p2pclient.DefaultSyncPeerBackoffConfig()
 
 	rootCmd.PersistentFlags().String("log.level", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().String("log.mode", "json", "Log mode (text, pretty, json)")
 	rootCmd.PersistentFlags().String("storage-dir", ".data", "Dir to store data")
 	rootCmd.PersistentFlags().String("storage-type", storageTypeBbolt, "Storage backend type (badger, bbolt)")
 	rootCmd.PersistentFlags().Int("bbolt.initial-mmap-size", 0, "Initial mmap size in bytes (0 = default)")
-	rootCmd.PersistentFlags().String("circuits-dir", "", "Directory path to load zk circuits from, if empty then zp prover is disabled")
+	rootCmd.PersistentFlags().Bool("bbolt.compact-on-startup", true, "Compact database on startup to reclaim free pages")
+	rootCmd.PersistentFlags().Bool("bbolt.no-freelist-sync", true, "Skip writing freelist to disk on every commit (faster writes, slower startup)")
+	rootCmd.PersistentFlags().Duration("bbolt.max-batch-delay", 2*time.Millisecond, "Max delay before flushing a batch write (0 = bbolt default 10ms)")
+	rootCmd.PersistentFlags().Int("bbolt.max-batch-size", 0, "Max operations per batch write (0 = bbolt default 1000)")
+	rootCmd.PersistentFlags().Duration("bbolt.stats-log-interval", 0, "Interval for logging bbolt database stats (0 = disabled)")
+	rootCmd.PersistentFlags().String("circuits-dir", "", "Directory path to load zk circuits from, if empty then zk prover is disabled")
 	rootCmd.PersistentFlags().Uint64("aggregation-policy-max-unsigners", 50, "Max unsigners for low cost agg policy")
 	rootCmd.PersistentFlags().String("api.listen", "", "API Server listener address")
 	rootCmd.PersistentFlags().Uint64("api.max-allowed-streams", 100, "Max allowed streams count API Server")
@@ -338,7 +381,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("metrics.pprof", false, "Enable pprof debug endpoints")
 	rootCmd.PersistentFlags().Uint64("driver.chain-id", 0, "Driver contract chain id")
 	rootCmd.PersistentFlags().String("driver.address", "", "Driver contract address")
-	rootCmd.PersistentFlags().Var(&CMDSecretKeySlice{}, "secret-keys", "Secret keys, comma separated {namespace}/{type}/{id}/{key},..")
+	rootCmd.PersistentFlags().Var(&CMDSecretKeySlice{}, "secret-keys", "Secret keys, comma separated {namespace}/{type}/{id}/{secret},..")
 	rootCmd.PersistentFlags().String("keystore.path", "", "Path to optional keystore file, if provided will be used instead of secret-keys flag")
 	rootCmd.PersistentFlags().String("keystore.password", "", "Password for the keystore file, if provided will be used to decrypt the keystore file")
 	rootCmd.PersistentFlags().Int64("signal.worker-count", 10, "Signal worker count")
@@ -348,13 +391,17 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Bool("sync.enabled", true, "Enable signature syncer")
 	rootCmd.PersistentFlags().Duration("sync.period", time.Second*5, "Signature sync period")
 	rootCmd.PersistentFlags().Duration("sync.timeout", time.Minute, "Signature sync timeout")
-	rootCmd.PersistentFlags().Uint64("sync.epochs", 5, "Epochs to sync")
+	rootCmd.PersistentFlags().Uint64("sync.epochs", 5, "Number of recent epochs to sync from peers on startup")
 	rootCmd.PersistentFlags().Int("key-cache.size", 100, "Key cache size")
 	rootCmd.PersistentFlags().Bool("key-cache.enabled", true, "Enable key cache")
 	rootCmd.PersistentFlags().String("p2p.listen", "", "P2P listen address")
 	rootCmd.PersistentFlags().StringSlice("p2p.bootnodes", nil, "List of bootnodes in multiaddr format")
 	rootCmd.PersistentFlags().String("p2p.dht-mode", "server", "DHT mode: auto, server, client, disabled")
 	rootCmd.PersistentFlags().Bool("p2p.mdns", false, "Enable mDNS discovery for P2P")
+	rootCmd.PersistentFlags().Duration("p2p.publish-timeout", 10*time.Second, "Maximum time a single pubsub publish may block")
+	rootCmd.PersistentFlags().Duration("p2p.sync-peer-backoff.min-backoff", defaultSyncPeerBackoff.MinBackoff, "Minimum cooldown before retrying a failed sync peer")
+	rootCmd.PersistentFlags().Float64("p2p.sync-peer-backoff.base", defaultSyncPeerBackoff.Base, "Exponential base for failed sync peer cooldown backoff")
+	rootCmd.PersistentFlags().Duration("p2p.sync-peer-backoff.max-backoff", defaultSyncPeerBackoff.MaxBackoff, "Maximum cooldown before retrying a failed sync peer")
 	rootCmd.PersistentFlags().StringSlice("evm.chains", nil, "Chains, comma separated rpc-url,..")
 	rootCmd.PersistentFlags().Int("evm.max-calls", 0, "Max calls in multicall")
 	rootCmd.PersistentFlags().Var(&CMDGasPriceMap{}, "evm.fallback-gas-prices", "Per-chain fallback gas prices in wei when eth_maxPriorityFeePerGas is not supported (e.g., --evm.fallback-gas-prices 1=2000000000)")
@@ -363,14 +410,16 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Uint64("retention.valset-epochs", 0, "Number of historical validator set epochs to retain (0 = unlimited)")
 	rootCmd.PersistentFlags().Uint64("retention.proof-epochs", 0, "Number of historical proof epochs to retain (0 = unlimited)")
 	rootCmd.PersistentFlags().Uint64("retention.signature-epochs", 0, "Number of historical signature epochs to retain (0 = unlimited)")
-	rootCmd.PersistentFlags().Bool("pruner.enabled", false, "Enable automatic pruning of old epoch data (default: false)")
-	rootCmd.PersistentFlags().Duration("pruner.interval", time.Hour, "How often to run pruning (default: 1h)")
+	rootCmd.PersistentFlags().Bool("pruner.enabled", false, "Enable automatic pruning of old epoch data")
+	rootCmd.PersistentFlags().Duration("pruner.interval", time.Hour, "How often to run pruning")
+	rootCmd.PersistentFlags().Int("pruner.batch-size", 100, "Number of request IDs to delete per database transaction during pruning (0 = unbatched)")
+	rootCmd.PersistentFlags().Duration("pruner.batch-pause", 100*time.Millisecond, "Pause between prune batches to yield to live writers (bbolt only — badger has no batching) (0 = no pause)")
 	rootCmd.PersistentFlags().Int("aggregation.worker-count", 10, "Max simultaneous proof aggregations, reduce for ZK circuits with high memory and cpu usage")
 	rootCmd.PersistentFlags().Bool("aggregation.cross-epoch-aggregation", false, "Allow latest-epoch aggregators to aggregate proofs for older epochs when original aggregators are offline")
 	rootCmd.PersistentFlags().Bool("aggregation.catchup.enabled", true, "Enable periodic aggregation catch-up loop")
 	rootCmd.PersistentFlags().Duration("aggregation.catchup.interval", time.Minute, "How often to run aggregation catch-up")
 	rootCmd.PersistentFlags().Int("aggregation.catchup.epochs-to-check", 20, "Number of epochs to scan per catch-up cycle")
-	rootCmd.PersistentFlags().Int("aggregation.catchup.epochs-offset", 0, "Epochs back from latest to start scanning")
+	rootCmd.PersistentFlags().Int("aggregation.catchup.epochs-offset", 0, "Number of epochs back from latest to skip before scanning begins")
 	rootCmd.PersistentFlags().Int("aggregation.catchup.max-requests-per-cycle", 0, "Max requests to check per cycle (0 = unlimited)")
 	rootCmd.PersistentFlags().Bool("tracing.enabled", false, "Enable distributed tracing")
 	rootCmd.PersistentFlags().String("tracing.endpoint", "localhost:4317", "OTLP endpoint for tracing (e.g., Jaeger)")
@@ -462,6 +511,21 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	if err := v.BindPFlag("bbolt.initial-mmap-size", cmd.PersistentFlags().Lookup("bbolt.initial-mmap-size")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
+	if err := v.BindPFlag("bbolt.compact-on-startup", cmd.PersistentFlags().Lookup("bbolt.compact-on-startup")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("bbolt.no-freelist-sync", cmd.PersistentFlags().Lookup("bbolt.no-freelist-sync")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("bbolt.max-batch-delay", cmd.PersistentFlags().Lookup("bbolt.max-batch-delay")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("bbolt.max-batch-size", cmd.PersistentFlags().Lookup("bbolt.max-batch-size")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("bbolt.stats-log-interval", cmd.PersistentFlags().Lookup("bbolt.stats-log-interval")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
 	if err := v.BindPFlag("circuits-dir", cmd.PersistentFlags().Lookup("circuits-dir")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
@@ -543,6 +607,18 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	if err := v.BindPFlag("p2p.mdns", cmd.PersistentFlags().Lookup("p2p.mdns")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
+	if err := v.BindPFlag("p2p.publish-timeout", cmd.PersistentFlags().Lookup("p2p.publish-timeout")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("p2p.sync-peer-backoff.min-backoff", cmd.PersistentFlags().Lookup("p2p.sync-peer-backoff.min-backoff")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("p2p.sync-peer-backoff.base", cmd.PersistentFlags().Lookup("p2p.sync-peer-backoff.base")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("p2p.sync-peer-backoff.max-backoff", cmd.PersistentFlags().Lookup("p2p.sync-peer-backoff.max-backoff")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
 	if err := v.BindPFlag("evm.chains", cmd.PersistentFlags().Lookup("evm.chains")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
@@ -571,6 +647,12 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("pruner.interval", cmd.PersistentFlags().Lookup("pruner.interval")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("pruner.batch-size", cmd.PersistentFlags().Lookup("pruner.batch-size")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("pruner.batch-pause", cmd.PersistentFlags().Lookup("pruner.batch-pause")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("aggregation.worker-count", cmd.PersistentFlags().Lookup("aggregation.worker-count")); err != nil {
@@ -635,7 +717,7 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 	}
 
 	err := v.ReadInConfig()
-	if err != nil && !errors.Is(err, viper.ConfigFileNotFoundError{}) && !errors.As(err, new(fs.PathError)) {
+	if err != nil && !errors.Is(err, viper.ConfigFileNotFoundError{}) && !errors.As(err, new(*fs.PathError)) {
 		return errors.Errorf("failed to read config file: %w", err)
 	}
 

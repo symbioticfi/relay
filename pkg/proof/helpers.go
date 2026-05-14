@@ -161,8 +161,11 @@ func getAggSignature(message bn254.G1Affine, valset *[]ValidatorData) (signature
 func NormalizeValset(valset []ValidatorData) []ValidatorData {
 	// Sort validators by key in ascending order
 	sort.Slice(valset, func(i, j int) bool {
-		// Compare keys (lower first)
-		return valset[i].Key.X.Cmp(&valset[j].Key.X) < 0 || valset[i].Key.Y.Cmp(&valset[j].Key.Y) < 0
+		cmpX := valset[i].Key.X.Cmp(&valset[j].Key.X)
+		if cmpX != 0 {
+			return cmpX < 0
+		}
+		return valset[i].Key.Y.Cmp(&valset[j].Key.Y) < 0
 	})
 	n := getOptimalN(len(valset))
 	normalizedValset := make([]ValidatorData, n)

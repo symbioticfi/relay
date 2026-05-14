@@ -70,7 +70,7 @@ func TestRepository_PruneAllEntityTypes(t *testing.T) {
 	err = repo.SaveSignatureRequest(ctx, requestID, sigRequest)
 	require.NoError(t, err)
 
-	err = repo.saveSignature(ctx, 0, signature)
+	err = repo.saveSignatureWithPending(ctx, 0, signature)
 	require.NoError(t, err)
 
 	sigMap := entity.SignatureMap{
@@ -79,8 +79,7 @@ func TestRepository_PruneAllEntityTypes(t *testing.T) {
 		SignedValidatorsBitmap: entity.NewBitmapOf(0),
 		CurrentVotingPower:     symbiotic.ToVotingPower(big.NewInt(1000)),
 	}
-	err = repo.UpdateSignatureMap(ctx, sigMap)
-	require.NoError(t, err)
+	repo.signatureMapCache.Store(requestID, sigMap)
 
 	aggProof := symbiotic.AggregationProof{
 		MessageHash: messageHash,
@@ -107,13 +106,13 @@ func TestRepository_PruneAllEntityTypes(t *testing.T) {
 	})
 
 	t.Run("prune all entity types", func(t *testing.T) {
-		err := repo.PruneSignatureEntitiesForEpoch(ctx, epoch)
+		err := repo.PruneSignatureEntitiesForEpoch(ctx, epoch, 0)
 		require.NoError(t, err)
 
-		err = repo.PruneProofEntities(ctx, epoch)
+		err = repo.PruneProofEntities(ctx, epoch, 0)
 		require.NoError(t, err)
 
-		err = repo.PruneValsetEntities(ctx, epoch)
+		err = repo.PruneValsetEntities(ctx, epoch, 0)
 		require.NoError(t, err)
 	})
 
@@ -180,13 +179,13 @@ func TestRepository_PruneEntityTypes_Separately(t *testing.T) {
 		RequiredEpoch: epoch,
 		Message:       randomBytes(t, 32),
 	}))
-	require.NoError(t, repo.saveSignature(ctx, 0, signature))
-	require.NoError(t, repo.UpdateSignatureMap(ctx, entity.SignatureMap{
+	require.NoError(t, repo.saveSignatureWithPending(ctx, 0, signature))
+	repo.signatureMapCache.Store(requestID, entity.SignatureMap{
 		RequestID:              requestID,
 		Epoch:                  epoch,
 		SignedValidatorsBitmap: entity.NewBitmapOf(0),
 		CurrentVotingPower:     symbiotic.ToVotingPower(big.NewInt(1000)),
-	}))
+	})
 	require.NoError(t, repo.saveAggregationProof(ctx, requestID, symbiotic.AggregationProof{
 		MessageHash: messageHash,
 		KeyTag:      symbiotic.KeyTag(15),
@@ -195,7 +194,7 @@ func TestRepository_PruneEntityTypes_Separately(t *testing.T) {
 	}))
 
 	t.Run("prune signatures only", func(t *testing.T) {
-		require.NoError(t, repo.PruneSignatureEntitiesForEpoch(ctx, epoch))
+		require.NoError(t, repo.PruneSignatureEntitiesForEpoch(ctx, epoch, 0))
 
 		_, err = repo.GetSignatureByIndex(ctx, requestID, 0)
 		require.ErrorIs(t, err, entity.ErrEntityNotFound)
@@ -211,7 +210,7 @@ func TestRepository_PruneEntityTypes_Separately(t *testing.T) {
 	})
 
 	t.Run("prune proofs after signatures", func(t *testing.T) {
-		require.NoError(t, repo.PruneProofEntities(ctx, epoch))
+		require.NoError(t, repo.PruneProofEntities(ctx, epoch, 0))
 
 		_, err = repo.GetAggregationProof(ctx, requestID)
 		require.ErrorIs(t, err, entity.ErrEntityNotFound)
@@ -220,7 +219,7 @@ func TestRepository_PruneEntityTypes_Separately(t *testing.T) {
 	})
 
 	t.Run("prune valsets after proofs", func(t *testing.T) {
-		require.NoError(t, repo.PruneValsetEntities(ctx, epoch))
+		require.NoError(t, repo.PruneValsetEntities(ctx, epoch, 0))
 
 		_, err = repo.GetValidatorSetByEpoch(ctx, epoch)
 		require.ErrorIs(t, err, entity.ErrEntityNotFound)
@@ -263,15 +262,15 @@ func TestRepository_PruneRequestIDEpochIndices(t *testing.T) {
 		KeyTag:  symbiotic.KeyTag(15),
 		Message: message,
 	}))
-	require.NoError(t, repo.saveSignature(context.Background(), 0, signature))
+	require.NoError(t, repo.saveSignatureWithPending(context.Background(), 0, signature))
 
 	requestIDs, err := repo.getRequestIDsByEpoch(ctx, epoch)
 	require.NoError(t, err)
 	require.Len(t, requestIDs, 1)
 
 	t.Run("index remains when only proof is deleted", func(t *testing.T) {
-		require.NoError(t, repo.PruneProofEntities(ctx, epoch))
-		require.NoError(t, repo.PruneRequestIDEpochIndices(ctx, epoch))
+		require.NoError(t, repo.PruneProofEntities(ctx, epoch, 0))
+		require.NoError(t, repo.PruneRequestIDEpochIndices(ctx, epoch, 0))
 
 		remainingIDs, err := repo.getRequestIDsByEpoch(ctx, epoch)
 		require.NoError(t, err)
@@ -279,11 +278,95 @@ func TestRepository_PruneRequestIDEpochIndices(t *testing.T) {
 	})
 
 	t.Run("index is deleted when both proof and signatures are gone", func(t *testing.T) {
-		require.NoError(t, repo.PruneSignatureEntitiesForEpoch(ctx, epoch))
-		require.NoError(t, repo.PruneRequestIDEpochIndices(ctx, epoch))
+		require.NoError(t, repo.PruneSignatureEntitiesForEpoch(ctx, epoch, 0))
+		require.NoError(t, repo.PruneRequestIDEpochIndices(ctx, epoch, 0))
 
 		finalIDs, err := repo.getRequestIDsByEpoch(ctx, epoch)
 		require.NoError(t, err)
 		require.Empty(t, finalIDs)
 	})
+}
+
+func TestRepository_PruneBatching(t *testing.T) {
+	t.Parallel()
+	repo := setupTestRepository(t)
+	ctx := t.Context()
+
+	epoch := symbiotic.Epoch(100)
+
+	priv, err := crypto.GeneratePrivateKey(symbiotic.KeyTypeBlsBn254)
+	require.NoError(t, err)
+
+	valset := symbiotic.ValidatorSet{
+		Version:          1,
+		RequiredKeyTag:   symbiotic.KeyTag(15),
+		Epoch:            epoch,
+		CaptureTimestamp: 1234567890,
+		QuorumThreshold:  symbiotic.ToVotingPower(big.NewInt(500)),
+		Validators: []symbiotic.Validator{{
+			Operator:    common.BytesToAddress(randomBytes(t, 20)),
+			VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
+			IsActive:    true,
+			Keys:        []symbiotic.ValidatorKey{{Tag: symbiotic.KeyTag(15), Payload: randomBytes(t, 96)}},
+			Vaults:      []symbiotic.ValidatorVault{{ChainID: 1, Vault: common.BytesToAddress(randomBytes(t, 20)), VotingPower: symbiotic.ToVotingPower(big.NewInt(1000))}},
+		}},
+		Status: symbiotic.HeaderDerived,
+	}
+	require.NoError(t, repo.saveValidatorSet(ctx, valset))
+
+	var requestIDs []common.Hash
+	for i := range 5 {
+		msg := randomBytes(t, 32)
+		_, messageHash, err := priv.Sign(msg)
+		require.NoError(t, err)
+
+		sig := symbiotic.Signature{
+			KeyTag:      symbiotic.KeyTag(15),
+			Epoch:       epoch,
+			MessageHash: messageHash,
+			Signature:   randomBytes(t, 96),
+			PublicKey:   priv.PublicKey(),
+		}
+		requestID := sig.RequestID()
+		requestIDs = append(requestIDs, requestID)
+
+		if i == 0 {
+			require.NoError(t, repo.saveProofCommitPending(ctx, epoch, requestID))
+		}
+		require.NoError(t, repo.SaveSignatureRequest(ctx, requestID, symbiotic.SignatureRequest{
+			KeyTag:        symbiotic.KeyTag(15),
+			RequiredEpoch: epoch,
+			Message:       msg,
+		}))
+		require.NoError(t, repo.saveSignatureWithPending(ctx, 0, sig))
+		repo.signatureMapCache.Store(requestID, entity.SignatureMap{
+			RequestID:              requestID,
+			Epoch:                  epoch,
+			SignedValidatorsBitmap: entity.NewBitmapOf(0),
+			CurrentVotingPower:     symbiotic.ToVotingPower(big.NewInt(1000)),
+		})
+		require.NoError(t, repo.saveAggregationProof(ctx, requestID, symbiotic.AggregationProof{
+			MessageHash: messageHash,
+			KeyTag:      symbiotic.KeyTag(15),
+			Epoch:       epoch,
+			Proof:       randomBytes(t, 96),
+		}))
+	}
+
+	require.NoError(t, repo.PruneSignatureEntitiesForEpoch(ctx, epoch, 2))
+	require.NoError(t, repo.PruneProofEntities(ctx, epoch, 2))
+	require.NoError(t, repo.PruneRequestIDEpochIndices(ctx, epoch, 2))
+
+	for _, requestID := range requestIDs {
+		_, err := repo.GetSignatureByIndex(ctx, requestID, 0)
+		require.ErrorIs(t, err, entity.ErrEntityNotFound)
+		_, err = repo.GetSignatureMap(ctx, requestID)
+		require.ErrorIs(t, err, entity.ErrEntityNotFound)
+		_, err = repo.GetAggregationProof(ctx, requestID)
+		require.ErrorIs(t, err, entity.ErrEntityNotFound)
+	}
+
+	finalIDs, err := repo.getRequestIDsByEpoch(ctx, epoch)
+	require.NoError(t, err)
+	require.Empty(t, finalIDs)
 }

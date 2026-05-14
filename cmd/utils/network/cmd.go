@@ -30,7 +30,6 @@ type GlobalFlags struct {
 	Chains                       []string
 	DriverAddress                string
 	DriverChainId                uint64
-	Epoch                        uint64
 	ExternalVotingPowerProviders []string
 }
 
@@ -39,6 +38,7 @@ type InfoFlags struct {
 	ValidatorsFull bool
 	Addresses      bool
 	Settlement     bool
+	Epoch          uint64
 }
 
 type GenesisFlags struct {
@@ -57,7 +57,6 @@ func initFlags() {
 	networkCmd.PersistentFlags().StringSliceVarP(&globalFlags.Chains, "chains", "c", nil, "Chains rpc url, comma separated")
 	networkCmd.PersistentFlags().StringVar(&globalFlags.DriverAddress, "driver.address", "", "Driver contract address")
 	networkCmd.PersistentFlags().Uint64Var(&globalFlags.DriverChainId, "driver.chainid", 0, "Driver contract chain id")
-	networkCmd.PersistentFlags().Uint64VarP(&globalFlags.Epoch, "epoch", "e", 0, "Network epoch to fetch info")
 	networkCmd.PersistentFlags().StringArrayVar(
 		&globalFlags.ExternalVotingPowerProviders,
 		"external-voting-power-provider",
@@ -78,6 +77,7 @@ func initFlags() {
 	infoCmd.PersistentFlags().BoolVarP(&infoFlags.ValidatorsFull, "validators-full", "V", false, "Print full validators info")
 	infoCmd.PersistentFlags().BoolVarP(&infoFlags.Addresses, "addresses", "a", false, "Print addresses")
 	infoCmd.PersistentFlags().BoolVarP(&infoFlags.Settlement, "settlement", "s", false, "Print settlement info")
+	infoCmd.PersistentFlags().Uint64VarP(&infoFlags.Epoch, "epoch", "e", 0, "Network epoch to fetch info (0 = current)")
 
 	genesisCmd.PersistentFlags().BoolVar(&genesisFlags.Commit, "commit", false, "Commit genesis flag")
 	genesisCmd.PersistentFlags().Var(&genesisFlags.Secrets, "secret-keys", "Secret key for genesis commit  in format 'chainId:key,chainId:key' (e.g. '1:0xabc,137:0xdef')")

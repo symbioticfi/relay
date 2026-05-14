@@ -593,6 +593,20 @@
                   <td><p>Epoch number </p></td>
                 </tr>
               
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>Maximum number of items to return. 0 = server default (100). Server clamps to max (1000). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>from</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Opaque pagination cursor from a previous response&#39;s `next_from`. Empty string starts from the beginning. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -615,6 +629,13 @@
                   <td><a href="#api.proto.v1.AggregationProof">AggregationProof</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_from</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Cursor to retrieve the next page. Empty when this is the last page. </p></td>
                 </tr>
               
             </tbody>
@@ -1005,6 +1026,20 @@ Can be used to determine how much time is left in the slot. </p></td>
                   <td><p>Epoch number </p></td>
                 </tr>
               
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>Maximum number of items to return. 0 = server default (1000). Server clamps to max (10000). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>from</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Opaque pagination cursor from a previous response&#39;s `next_from`. Empty string starts from the beginning. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -1027,6 +1062,13 @@ Can be used to determine how much time is left in the slot. </p></td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p>List of all signature request IDs for the epoch </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_from</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Cursor to retrieve the next page. Empty when this is the last page. </p></td>
                 </tr>
               
             </tbody>
@@ -1101,6 +1143,20 @@ Can be used to determine how much time is left in the slot. </p></td>
                   <td><p>Epoch number </p></td>
                 </tr>
               
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>Maximum number of items to return. 0 = server default (100). Server clamps to max (1000). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>from</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Opaque pagination cursor from a previous response&#39;s `next_from`. Empty string starts from the beginning. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -1123,6 +1179,13 @@ Can be used to determine how much time is left in the slot. </p></td>
                   <td><a href="#api.proto.v1.SignatureRequest">SignatureRequest</a></td>
                   <td>repeated</td>
                   <td><p>List of all signature requests for the epoch </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_from</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Cursor to retrieve the next page. Empty when this is the last page. </p></td>
                 </tr>
               
             </tbody>
@@ -1149,6 +1212,20 @@ Can be used to determine how much time is left in the slot. </p></td>
                   <td><p>Epoch number </p></td>
                 </tr>
               
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#uint32">uint32</a></td>
+                  <td></td>
+                  <td><p>Maximum number of items to return. 0 = server default (100). Server clamps to max (1000). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>from</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Opaque pagination cursor from a previous response&#39;s `next_from`. Empty string starts from the beginning. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -1171,6 +1248,13 @@ Can be used to determine how much time is left in the slot. </p></td>
                   <td><a href="#api.proto.v1.Signature">Signature</a></td>
                   <td>repeated</td>
                   <td><p>List of signatures </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_from</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Cursor to retrieve the next page. Empty when this is the last page. </p></td>
                 </tr>
               
             </tbody>

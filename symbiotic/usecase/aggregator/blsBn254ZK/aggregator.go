@@ -22,6 +22,11 @@ import (
 	"github.com/symbioticfi/relay/pkg/tracing"
 )
 
+// MinProofSize is the minimum byte length of a valid ZK aggregation proof:
+// 256 bytes of proof data + 128 bytes of public inputs. Anything shorter
+// cannot be parsed and would panic on the fixed-offset slicing below.
+const MinProofSize = 384
+
 type Aggregator struct {
 	prover types.Prover
 }
@@ -56,7 +61,8 @@ func (a Aggregator) Aggregate(
 	aggG1Sig := new(bn254.G1Affine)
 	aggG2Key := new(bn254.G2Affine)
 	signers := make(map[common.Address]bool)
-	valKeysToIdx := helpers.GetValidatorsIndexesMapByKey(valset, keyTag)
+	activeValidators := valset.Validators.GetActiveValidators()
+	valKeysToIdx := helpers.GetActiveValidatorsIndexesMapByKey(valset, keyTag)
 
 	for _, sig := range signatures {
 		pubKey, err := blsBn254.FromRaw(sig.PublicKey.Raw())
@@ -71,10 +77,7 @@ func (a Aggregator) Aggregate(
 			tracing.RecordError(span, err)
 			return symbiotic.AggregationProof{}, err
 		}
-		val := valset.Validators[idx]
-		if !val.IsActive {
-			continue
-		}
+		val := activeValidators[idx]
 		g1Sig := new(bn254.G1Affine)
 		_, err = g1Sig.SetBytes(sig.Signature)
 		if err != nil {
@@ -87,28 +90,26 @@ func (a Aggregator) Aggregate(
 	}
 
 	var validatorsData []proof.ValidatorData
-	for _, val := range valset.Validators {
-		if val.IsActive {
-			keyBytes, ok := val.FindKeyByKeyTag(keyTag)
-			if !ok {
-				err := errors.New("failed to find key by keyTag")
-				tracing.RecordError(span, err)
-				return symbiotic.AggregationProof{}, err
-			}
-			_, isSigner := signers[val.Operator]
-			g1Key := new(bn254.G1Affine)
-			_, err := g1Key.SetBytes(keyBytes)
-			if err != nil {
-				tracing.RecordError(span, err)
-				return symbiotic.AggregationProof{}, errors.Errorf("failed to deserialize G1 key: %w", err)
-			}
-
-			validatorsData = append(validatorsData, proof.ValidatorData{
-				Key:         *g1Key,
-				IsNonSigner: !isSigner,
-				VotingPower: val.VotingPower.Int,
-			})
+	for _, val := range activeValidators {
+		keyBytes, ok := val.FindKeyByKeyTag(keyTag)
+		if !ok {
+			err := errors.New("failed to find key by keyTag")
+			tracing.RecordError(span, err)
+			return symbiotic.AggregationProof{}, err
 		}
+		_, isSigner := signers[val.Operator]
+		g1Key := new(bn254.G1Affine)
+		_, err := g1Key.SetBytes(keyBytes)
+		if err != nil {
+			tracing.RecordError(span, err)
+			return symbiotic.AggregationProof{}, errors.Errorf("failed to deserialize G1 key: %w", err)
+		}
+
+		validatorsData = append(validatorsData, proof.ValidatorData{
+			Key:         *g1Key,
+			IsNonSigner: !isSigner,
+			VotingPower: val.VotingPower.Int,
+		})
 	}
 
 	messageG1, err := blsBn254.HashToG1(messageHash)
@@ -157,13 +158,14 @@ func (a Aggregator) Verify(
 	)
 	defer span.End()
 
-	tracing.AddEvent(span, "counting_active_validators")
-	activeVals := 0
-	for _, val := range valset.Validators {
-		if val.IsActive {
-			activeVals++
-		}
+	if len(aggregationProof.Proof) < MinProofSize {
+		err := errors.Errorf("proof length %d is below minimum required %d bytes", len(aggregationProof.Proof), MinProofSize)
+		tracing.RecordError(span, err)
+		return false, err
 	}
+
+	tracing.AddEvent(span, "counting_active_validators")
+	activeVals := len(valset.Validators.GetActiveValidators())
 
 	mimcAccum, err := validatorSetMimcAccumulator(valset.Validators, keyTag)
 	if err != nil {

@@ -361,8 +361,10 @@ EOF
     local extra_storage_dir="data-$(printf "%02d" $extra_idx)"
     local extra_key_decimal=$((BASE_PRIVATE_KEY + operators))
     local extra_secondary_key_decimal=$((BASE_PRIVATE_KEY + operators + 10000))
+    local extra_bls12381_key_decimal=$((BASE_PRIVATE_KEY + operators + 20000))
     local extra_key_hex=$(printf "%064x" $extra_key_decimal)
     local extra_secondary_key_hex=$(printf "%064x" $extra_secondary_key_decimal)
+    local extra_bls12381_key_hex=$(printf "%064x" $extra_bls12381_key_decimal)
 
     mkdir -p "$network_dir/$extra_storage_dir"
     chmod 777 "$network_dir/$extra_storage_dir"
@@ -377,7 +379,7 @@ EOF
     command:
       - sh
       - -c
-      - "/workspace/scripts/sidecar-start.sh symb/0/15/0x$extra_key_hex,symb/0/11/0x$extra_secondary_key_hex,symb/1/0/0x$extra_key_hex,evm/1/31337/0x$extra_key_hex,evm/1/31338/0x$extra_key_hex,p2p/1/1/$extra_key_hex /app/$extra_storage_dir $circuits_param"
+      - "/workspace/scripts/sidecar-start.sh symb/0/15/0x$extra_key_hex,symb/0/11/0x$extra_secondary_key_hex,symb/2/1/0x$extra_bls12381_key_hex,symb/1/0/0x$extra_key_hex,evm/1/31337/0x$extra_key_hex,evm/1/31338/0x$extra_key_hex,p2p/1/1/$extra_key_hex /app/$extra_storage_dir $circuits_param"
     ports:
       - "$extra_port:8080"
     volumes:

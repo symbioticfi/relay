@@ -98,18 +98,25 @@ func (rc *RelayClient) GetSignatures(ctx context.Context, requestID string) (*cl
 	return rc.client.GetSignatures(ctx, req)
 }
 
-// GetSignatureRequestIDsByEpoch gets all signature request IDs for a given epoch
-func (rc *RelayClient) GetSignatureRequestIDsByEpoch(ctx context.Context, epoch uint64) (*client.GetSignatureRequestIDsByEpochResponse, error) {
+// GetSignatureRequestIDsByEpoch gets one page of signature request IDs for a
+// given epoch. pageSize=0 lets the server pick a default; from="" starts from
+// the beginning. Use the response's NextFrom to fetch subsequent pages.
+func (rc *RelayClient) GetSignatureRequestIDsByEpoch(ctx context.Context, epoch uint64, pageSize uint32, from string) (*client.GetSignatureRequestIDsByEpochResponse, error) {
 	req := &client.GetSignatureRequestIDsByEpochRequest{
-		Epoch: epoch,
+		Epoch:    epoch,
+		PageSize: pageSize,
+		From:     from,
 	}
 	return rc.client.GetSignatureRequestIDsByEpoch(ctx, req)
 }
 
-// GetSignatureRequestsByEpoch gets all signature requests for a given epoch
-func (rc *RelayClient) GetSignatureRequestsByEpoch(ctx context.Context, epoch uint64) (*client.GetSignatureRequestsByEpochResponse, error) {
+// GetSignatureRequestsByEpoch gets one page of signature requests for a given
+// epoch. See GetSignatureRequestIDsByEpoch for pagination semantics.
+func (rc *RelayClient) GetSignatureRequestsByEpoch(ctx context.Context, epoch uint64, pageSize uint32, from string) (*client.GetSignatureRequestsByEpochResponse, error) {
 	req := &client.GetSignatureRequestsByEpochRequest{
-		Epoch: epoch,
+		Epoch:    epoch,
+		PageSize: pageSize,
+		From:     from,
 	}
 	return rc.client.GetSignatureRequestsByEpoch(ctx, req)
 }
@@ -265,54 +272,62 @@ func main() {
 		}
 	}
 
-	// Example 7: Get signature request IDs by epoch
-	fmt.Println("\n=== Getting Signature Request IDs by Epoch ===")
+	// Example 7: Get signature request IDs by epoch (paginated — loop until next_from is empty).
+	fmt.Println("\n=== Getting Signature Request IDs by Epoch (paginated) ===")
 	if epochResponse != nil {
-		requestIDsResp, err := relayClient.GetSignatureRequestIDsByEpoch(ctx, epochResponse.GetEpoch())
-		if err != nil {
-			fmt.Printf("Failed to get signature request IDs: %v\n", err)
-		} else {
-			fmt.Printf("Number of signature request IDs for epoch %d: %d\n", epochResponse.GetEpoch(), len(requestIDsResp.GetRequestIds()))
-
-			// Display first few request IDs
-			maxDisplay := 5
-			if len(requestIDsResp.GetRequestIds()) > 0 {
-				fmt.Println("Sample request IDs:")
-				for i, reqID := range requestIDsResp.GetRequestIds() {
-					if i >= maxDisplay {
-						fmt.Printf("... and %d more\n", len(requestIDsResp.GetRequestIds())-maxDisplay)
-						break
-					}
-					fmt.Printf("  %d. %s\n", i+1, reqID)
-				}
+		var allIDs []string
+		from := ""
+		for {
+			page, err := relayClient.GetSignatureRequestIDsByEpoch(ctx, epochResponse.GetEpoch(), 0, from)
+			if err != nil {
+				fmt.Printf("Failed to get signature request IDs: %v\n", err)
+				break
 			}
+			allIDs = append(allIDs, page.GetRequestIds()...)
+			if page.GetNextFrom() == "" {
+				break
+			}
+			from = page.GetNextFrom()
+		}
+		fmt.Printf("Total signature request IDs for epoch %d: %d\n", epochResponse.GetEpoch(), len(allIDs))
+		maxDisplay := 5
+		for i, reqID := range allIDs {
+			if i >= maxDisplay {
+				fmt.Printf("... and %d more\n", len(allIDs)-maxDisplay)
+				break
+			}
+			fmt.Printf("  %d. %s\n", i+1, reqID)
 		}
 	}
 
-	// Example 8: Get signature requests by epoch
-	fmt.Println("\n=== Getting Signature Requests by Epoch ===")
+	// Example 8: Get signature requests by epoch (paginated).
+	fmt.Println("\n=== Getting Signature Requests by Epoch (paginated) ===")
 	if epochResponse != nil {
-		signatureRequestsResp, err := relayClient.GetSignatureRequestsByEpoch(ctx, epochResponse.GetEpoch())
-		if err != nil {
-			fmt.Printf("Failed to get signature requests: %v\n", err)
-		} else {
-			fmt.Printf("Number of signature requests for epoch %d: %d\n", epochResponse.GetEpoch(), len(signatureRequestsResp.GetSignatureRequests()))
-
-			// Display first few signature requests
-			maxDisplay := 3
-			if len(signatureRequestsResp.GetSignatureRequests()) > 0 {
-				fmt.Println("Sample signature requests:")
-				for i, sigReq := range signatureRequestsResp.GetSignatureRequests() {
-					if i >= maxDisplay {
-						fmt.Printf("... and %d more\n", len(signatureRequestsResp.GetSignatureRequests())-maxDisplay)
-						break
-					}
-					fmt.Printf("  %d. Request ID: %s\n", i+1, sigReq.GetRequestId())
-					fmt.Printf("     Key Tag: %d\n", sigReq.GetKeyTag())
-					fmt.Printf("     Message Length: %d bytes\n", len(sigReq.GetMessage()))
-					fmt.Printf("     Required Epoch: %d\n", sigReq.GetRequiredEpoch())
-				}
+		var allReqs []*client.SignatureRequest
+		from := ""
+		for {
+			page, err := relayClient.GetSignatureRequestsByEpoch(ctx, epochResponse.GetEpoch(), 0, from)
+			if err != nil {
+				fmt.Printf("Failed to get signature requests: %v\n", err)
+				break
 			}
+			allReqs = append(allReqs, page.GetSignatureRequests()...)
+			if page.GetNextFrom() == "" {
+				break
+			}
+			from = page.GetNextFrom()
+		}
+		fmt.Printf("Total signature requests for epoch %d: %d\n", epochResponse.GetEpoch(), len(allReqs))
+		maxDisplay := 3
+		for i, sigReq := range allReqs {
+			if i >= maxDisplay {
+				fmt.Printf("... and %d more\n", len(allReqs)-maxDisplay)
+				break
+			}
+			fmt.Printf("  %d. Request ID: %s\n", i+1, sigReq.GetRequestId())
+			fmt.Printf("     Key Tag: %d\n", sigReq.GetKeyTag())
+			fmt.Printf("     Message Length: %d bytes\n", len(sigReq.GetMessage()))
+			fmt.Printf("     Required Epoch: %d\n", sigReq.GetRequiredEpoch())
 		}
 	}
 

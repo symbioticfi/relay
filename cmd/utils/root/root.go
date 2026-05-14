@@ -6,6 +6,7 @@ import (
 	"github.com/symbioticfi/relay/cmd/utils/keys"
 	"github.com/symbioticfi/relay/cmd/utils/network"
 	"github.com/symbioticfi/relay/cmd/utils/operator"
+	"github.com/symbioticfi/relay/cmd/utils/prune"
 	"github.com/symbioticfi/relay/pkg/log"
 
 	"github.com/pterm/pterm"
@@ -29,6 +30,7 @@ func NewRootCommand() *cobra.Command {
 	rootCmd.AddCommand(keys.NewKeysCmd())
 	rootCmd.AddCommand(network.NewNetworkCmd())
 	rootCmd.AddCommand(operator.NewOperatorCmd())
+	rootCmd.AddCommand(prune.NewPruneCmd())
 	rootCmd.AddCommand(versionCommand)
 
 	return rootCmd

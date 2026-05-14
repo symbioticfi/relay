@@ -4,16 +4,18 @@ import (
 	"bytes"
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
+	"github.com/samber/lo"
 	bolt "go.etcd.io/bbolt"
 
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-func (r *Repository) PruneValsetEntities(ctx context.Context, epoch symbiotic.Epoch) error {
-	return r.doUpdate(ctx, "PruneValsetEntities", func(tx *bolt.Tx) error {
+func (r *Repository) PruneValsetEntities(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error {
+	return r.doBatch(ctx, "PruneValsetEntities", func(tx *bolt.Tx) error {
 		ek := epochBytes(uint64(epoch))
 
 		// Delete network config
@@ -46,103 +48,128 @@ func (r *Repository) PruneValsetEntities(ctx context.Context, epoch symbiotic.Ep
 	})
 }
 
-func (r *Repository) PruneProofEntities(ctx context.Context, epoch symbiotic.Epoch) error {
-	return r.doUpdate(ctx, "PruneProofEntities", func(tx *bolt.Tx) error {
+func (r *Repository) PruneProofEntities(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error {
+	if err := r.doBatch(ctx, "PruneProofEntities:commits", func(tx *bolt.Tx) error {
 		ek := epochBytes(uint64(epoch))
-
-		// Delete proof commits
 		if err := tx.Bucket(bucketAggProofCommits).Delete(ek); err != nil {
 			return errors.Errorf("failed to delete proof commits: %w", err)
 		}
+		return nil
+	}); err != nil {
+		return err
+	}
 
-		// Find all request IDs for this epoch
-		requestIDs := getRequestIDsByEpochTx(tx, epoch)
+	requestIDs, err := r.getRequestIDsByEpoch(ctx, epoch)
+	if err != nil {
+		return errors.Errorf("failed to get request IDs for epoch %d: %w", epoch, err)
+	}
 
-		for _, requestID := range requestIDs {
-			// Delete aggregation proof
-			if err := tx.Bucket(bucketAggregationProofs).Delete(requestID.Bytes()); err != nil {
-				return errors.Errorf("failed to delete aggregation proof: %w", err)
+	for _, chunk := range lo.Chunk(requestIDs, pruneBatchSize(batchSize, len(requestIDs))) {
+		if err := r.doBatch(ctx, "PruneProofEntities:batch", func(tx *bolt.Tx) error {
+			for _, requestID := range chunk {
+				if err := tx.Bucket(bucketAggregationProofs).Delete(requestID.Bytes()); err != nil {
+					return errors.Errorf("failed to delete aggregation proof: %w", err)
+				}
+
+				pendingKey := epochHashKey(uint64(epoch), requestID.Bytes())
+				if err := tx.Bucket(bucketAggProofPending).Delete(pendingKey); err != nil {
+					return errors.Errorf("failed to delete pending agg proof: %w", err)
+				}
 			}
-
-			// Delete aggregation proof pending
-			pendingKey := epochHashKey(uint64(epoch), requestID.Bytes())
-			if err := tx.Bucket(bucketAggProofPending).Delete(pendingKey); err != nil {
-				return errors.Errorf("failed to delete pending agg proof: %w", err)
-			}
+			return nil
+		}); err != nil {
+			return err
 		}
 
-		return nil
-	})
+		if r.pausePrune(ctx, epoch) {
+			break
+		}
+	}
+
+	return nil
 }
 
-func (r *Repository) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch symbiotic.Epoch) error {
+func (r *Repository) PruneSignatureEntitiesForEpoch(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error {
 	requestIDs, err := r.getRequestIDsByEpoch(ctx, epoch)
 	if err != nil {
 		return errors.Errorf("failed to get request IDs for epoch %d: %w", epoch, err)
 	}
 	slog.DebugContext(ctx, "Pruning signature entities", "requestCount", len(requestIDs))
 
-	return r.doUpdate(ctx, "PruneSignatureEntitiesForEpoch", func(tx *bolt.Tx) error {
-		for _, requestID := range requestIDs {
-			// Delete all signatures for this requestID
-			sigPrefix := requestID.Bytes()
-			if err := deletePrefixedKeys(tx.Bucket(bucketSignatures), sigPrefix); err != nil {
-				return errors.Errorf("failed to delete signatures: %w", err)
-			}
-
-			// Delete signature map
-			if err := tx.Bucket(bucketSignatureMaps).Delete(requestID.Bytes()); err != nil {
-				return errors.Errorf("failed to delete signature map: %w", err)
-			}
-
-			// Delete signature request
-			reqKey := epochHashKey(uint64(epoch), requestID.Bytes())
-			if err := tx.Bucket(bucketSignatureRequests).Delete(reqKey); err != nil {
-				return errors.Errorf("failed to delete signature request: %w", err)
-			}
-
-			// Delete signature pending
-			if err := tx.Bucket(bucketSignaturePending).Delete(reqKey); err != nil {
-				return errors.Errorf("failed to delete signature pending: %w", err)
-			}
-
-			// Delete request ID index
-			if err := tx.Bucket(bucketRequestIDIndex).Delete(requestID.Bytes()); err != nil {
-				return errors.Errorf("failed to delete request ID index: %w", err)
-			}
-
-			r.signatureMutexMap.Delete(requestID)
+	for _, chunk := range lo.Chunk(requestIDs, pruneBatchSize(batchSize, len(requestIDs))) {
+		// Invalidate cache BEFORE DB delete: a concurrent reader on cache miss
+		// would rebuild from DB; if we deleted the cache after the DB delete,
+		// the reader could see a stale cached map for an already-pruned request.
+		for _, requestID := range chunk {
+			r.signatureMapCache.Delete(requestID)
 		}
-		return nil
-	})
+
+		if err := r.doBatch(ctx, "PruneSignatureEntitiesForEpoch:batch", func(tx *bolt.Tx) error {
+			for _, requestID := range chunk {
+				sigPrefix := requestID.Bytes()
+				if err := deletePrefixedKeys(tx.Bucket(bucketSignatures), sigPrefix); err != nil {
+					return errors.Errorf("failed to delete signatures: %w", err)
+				}
+
+				reqKey := epochHashKey(uint64(epoch), requestID.Bytes())
+				if err := tx.Bucket(bucketSignatureRequests).Delete(reqKey); err != nil {
+					return errors.Errorf("failed to delete signature request: %w", err)
+				}
+
+				if err := tx.Bucket(bucketSignaturePending).Delete(reqKey); err != nil {
+					return errors.Errorf("failed to delete signature pending: %w", err)
+				}
+
+				if err := tx.Bucket(bucketRequestIDIndex).Delete(requestID.Bytes()); err != nil {
+					return errors.Errorf("failed to delete request ID index: %w", err)
+				}
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
+
+		if r.pausePrune(ctx, epoch) {
+			break
+		}
+	}
+
+	return nil
 }
 
-func (r *Repository) PruneRequestIDEpochIndices(ctx context.Context, epoch symbiotic.Epoch) error {
+func (r *Repository) PruneRequestIDEpochIndices(ctx context.Context, epoch symbiotic.Epoch, batchSize int) error {
 	requestIDs, err := r.getRequestIDsByEpoch(ctx, epoch)
 	if err != nil {
 		return errors.Errorf("failed to get request IDs for epoch %d: %w", epoch, err)
 	}
 	slog.DebugContext(ctx, "Pruning request ID epoch indices", "epoch", epoch, "requestCount", len(requestIDs))
 
-	return r.doUpdate(ctx, "PruneRequestIDEpochIndices", func(tx *bolt.Tx) error {
-		for _, requestID := range requestIDs {
-			// Check if aggregation proof still exists
-			if tx.Bucket(bucketAggregationProofs).Get(requestID.Bytes()) != nil {
-				continue
-			}
-			// Check if request ID index still exists
-			if tx.Bucket(bucketRequestIDIndex).Get(requestID.Bytes()) != nil {
-				continue
-			}
+	for _, chunk := range lo.Chunk(requestIDs, pruneBatchSize(batchSize, len(requestIDs))) {
+		if err := r.doBatch(ctx, "PruneRequestIDEpochIndices:batch", func(tx *bolt.Tx) error {
+			for _, requestID := range chunk {
+				if tx.Bucket(bucketAggregationProofs).Get(requestID.Bytes()) != nil {
+					continue
+				}
+				if tx.Bucket(bucketRequestIDIndex).Get(requestID.Bytes()) != nil {
+					continue
+				}
 
-			// Both gone, safe to delete
-			epochKey := epochHashKey(uint64(epoch), requestID.Bytes())
-			if err := tx.Bucket(bucketRequestIDEpochs).Delete(epochKey); err != nil {
-				return errors.Errorf("failed to delete request ID epoch index: %w", err)
+				epochKey := epochHashKey(uint64(epoch), requestID.Bytes())
+				if err := tx.Bucket(bucketRequestIDEpochs).Delete(epochKey); err != nil {
+					return errors.Errorf("failed to delete request ID epoch index: %w", err)
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
-		return nil
-	})
+
+		if r.pausePrune(ctx, epoch) {
+			break
+		}
+	}
+
+	return nil
 }
 
 func (r *Repository) getRequestIDsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]common.Hash, error) {
@@ -168,12 +195,49 @@ func getRequestIDsByEpochTx(tx *bolt.Tx, epoch symbiotic.Epoch) []common.Hash {
 	return requestIDs
 }
 
+// deletePrefixedKeys buffers all matching keys during a single forward scan, then deletes
+// them by key. The naive c.Delete()+re-Seek loop re-descends the B+tree from the root on
+// every iteration (cursor is invalidated after Delete), so its scan cost is O(N·log N).
+// Here the scan is O(N) — one Seek plus linear Next() walks across linked leaf pages —
+// while deletion stays O(log N) per key but avoids the redundant re-seek churn.
 func deletePrefixedKeys(b *bolt.Bucket, prefix []byte) error {
 	c := b.Cursor()
-	for k, _ := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Seek(prefix) {
-		if err := c.Delete(); err != nil {
+	var keys [][]byte
+	for k, _ := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Next() {
+		keys = append(keys, append([]byte(nil), k...))
+	}
+	for _, k := range keys {
+		if err := b.Delete(k); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func pruneBatchSize(batchSize, total int) int {
+	if batchSize <= 0 {
+		return max(total, 1)
+	}
+	return batchSize
+}
+
+// pausePrune sleeps for the configured prune pause window or returns early if ctx is cancelled.
+// Returns true if pruning should stop (ctx cancelled), false otherwise.
+func (r *Repository) pausePrune(ctx context.Context, epoch symbiotic.Epoch) bool {
+	if r.prunePause <= 0 {
+		if ctx.Err() != nil {
+			slog.DebugContext(ctx, "Pruning interrupted by context cancellation", "epoch", epoch)
+			return true
+		}
+		return false
+	}
+	t := time.NewTimer(r.prunePause)
+	defer t.Stop()
+	select {
+	case <-t.C:
+		return false
+	case <-ctx.Done():
+		slog.DebugContext(ctx, "Pruning interrupted by context cancellation", "epoch", epoch)
+		return true
+	}
 }

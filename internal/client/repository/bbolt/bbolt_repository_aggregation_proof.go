@@ -10,6 +10,7 @@ import (
 	bolt "go.etcd.io/bbolt"
 
 	"github.com/symbioticfi/relay/internal/client/repository/codec"
+	"github.com/symbioticfi/relay/internal/client/repository/repoutil"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -41,7 +42,7 @@ func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.
 		return errors.Errorf("failed to marshal aggregation proof: %w", err)
 	}
 
-	return r.doUpdate(ctx, "saveAggregationProof", func(tx *bolt.Tx) error {
+	return r.doBatch(ctx, "saveAggregationProof", func(tx *bolt.Tx) error {
 		return putAggregationProofTx(tx, requestID.Bytes(), data, ap.Epoch)
 	})
 }
@@ -65,75 +66,76 @@ func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.H
 	return ap, err
 }
 
-func (r *Repository) GetAggregationProofsStartingFromEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.AggregationProof, error) {
-	var proofs []symbiotic.AggregationProof
+// GetAggregationProofsByEpoch returns one page of aggregation proofs for the
+// given epoch, paginated via opaque cursor `from` (32-byte requestID raw).
+// Iterates the request_id_epoch index sorted by requestID within epoch.
+// nextFrom == nil signals the last page.
+func (r *Repository) GetAggregationProofsByEpoch(
+	ctx context.Context,
+	epoch symbiotic.Epoch,
+	pageSize int,
+	from []byte,
+) ([]symbiotic.AggregationProof, []byte, error) {
+	fromHash, err := repoutil.DecodeHashCursor(from)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	err := r.doView(ctx, "GetAggregationProofsStartingFromEpoch", func(tx *bolt.Tx) error {
+	var (
+		proofs   []symbiotic.AggregationProof
+		lastID   common.Hash
+		moreLeft bool
+	)
+
+	err = r.doView(ctx, "GetAggregationProofsByEpoch", func(tx *bolt.Tx) error {
 		prefix := epochBytes(uint64(epoch))
 		c := tx.Bucket(bucketRequestIDEpochs).Cursor()
 
-		for k, _ := c.Seek(prefix); k != nil; k, _ = c.Next() {
+		seekKey := prefix
+		if fromHash != (common.Hash{}) {
+			seekKey = epochHashKey(uint64(epoch), fromHash.Bytes())
+		}
+
+		k, _ := c.Seek(seekKey)
+		if fromHash != (common.Hash{}) && k != nil && bytes.Equal(k, seekKey) {
+			k, _ = c.Next()
+		}
+
+		for ; k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Next() {
+			if pageSize > 0 && len(proofs) >= pageSize {
+				moreLeft = true
+				return nil
+			}
 			if len(k) < 40 {
 				continue
 			}
-			requestID := common.BytesToHash(k[8:40])
-			v := tx.Bucket(bucketAggregationProofs).Get(requestID.Bytes())
+			id := common.BytesToHash(k[8:40])
+			v := tx.Bucket(bucketAggregationProofs).Get(id.Bytes())
 			if v == nil {
 				continue
 			}
 			proof, err := codec.BytesToAggregationProof(v)
 			if err != nil {
-				slog.ErrorContext(ctx, "Failed to unmarshal aggregation proof", "requestId", requestID.Hex())
+				slog.ErrorContext(ctx, "Failed to unmarshal aggregation proof", "requestId", id.Hex())
 				continue
 			}
 			proofs = append(proofs, proof)
+			lastID = id
 		}
 		return nil
 	})
-	return proofs, err
-}
+	if err != nil {
+		return nil, nil, err
+	}
 
-func (r *Repository) GetAggregationProofsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.AggregationProof, error) {
-	var proofs []symbiotic.AggregationProof
-
-	err := r.doView(ctx, "GetAggregationProofsByEpoch", func(tx *bolt.Tx) error {
-		prefix := epochBytes(uint64(epoch))
-		c := tx.Bucket(bucketRequestIDEpochs).Cursor()
-
-		for k, _ := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Next() {
-			if len(k) < 40 {
-				continue
-			}
-			requestID := common.BytesToHash(k[8:40])
-			v := tx.Bucket(bucketAggregationProofs).Get(requestID.Bytes())
-			if v == nil {
-				continue
-			}
-			proof, err := codec.BytesToAggregationProof(v)
-			if err != nil {
-				slog.ErrorContext(ctx, "Failed to unmarshal aggregation proof", "requestId", requestID.Hex())
-				continue
-			}
-			proofs = append(proofs, proof)
-		}
-		return nil
-	})
-	return proofs, err
-}
-
-func (r *Repository) saveAggregationProofPending(ctx context.Context, requestID common.Hash, epoch symbiotic.Epoch) error {
-	return r.doUpdate(ctx, "saveAggregationProofPending", func(tx *bolt.Tx) error {
-		key := epochHashKey(uint64(epoch), requestID.Bytes())
-		b := tx.Bucket(bucketAggProofPending)
-		if b.Get(key) != nil {
-			return errors.Errorf("pending aggregation proof already exists: %w", entity.ErrEntityAlreadyExist)
-		}
-		return b.Put(key, []byte{})
-	})
+	if !moreLeft {
+		return proofs, nil, nil
+	}
+	return proofs, repoutil.EncodeHashCursor(lastID), nil
 }
 
 func (r *Repository) RemoveAggregationProofPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
-	return r.doUpdate(ctx, "RemoveAggregationProofPending", func(tx *bolt.Tx) error {
+	return r.doBatch(ctx, "RemoveAggregationProofPending", func(tx *bolt.Tx) error {
 		key := epochHashKey(uint64(epoch), requestID.Bytes())
 		b := tx.Bucket(bucketAggProofPending)
 		if b.Get(key) == nil {

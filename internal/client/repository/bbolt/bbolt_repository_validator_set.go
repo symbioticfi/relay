@@ -31,7 +31,7 @@ func (r *Repository) saveValidatorSet(ctx context.Context, valset symbiotic.Vali
 		return errors.Errorf("failed to marshal validator set header: %w", err)
 	}
 
-	return r.doUpdate(ctx, "saveValidatorSet", func(tx *bolt.Tx) error {
+	return r.doBatch(ctx, "saveValidatorSet", func(tx *bolt.Tx) error {
 		ek := epochBytes(uint64(valset.Epoch))
 
 		// Check if exists
@@ -101,13 +101,13 @@ func updateLatestEpochIfNeeded(tx *bolt.Tx, key []byte, epoch symbiotic.Epoch) e
 }
 
 func (r *Repository) SaveFirstUncommittedValidatorSetEpoch(ctx context.Context, epoch symbiotic.Epoch) error {
-	return r.doUpdate(ctx, "SaveFirstUncommittedValidatorSetEpoch", func(tx *bolt.Tx) error {
+	return r.doBatch(ctx, "SaveFirstUncommittedValidatorSetEpoch", func(tx *bolt.Tx) error {
 		return tx.Bucket(bucketMeta).Put(metaFirstUncommittedValsetEpoch, epochBytes(uint64(epoch)))
 	})
 }
 
 func (r *Repository) UpdateValidatorSetStatusAndRemovePendingProof(ctx context.Context, valset symbiotic.ValidatorSet) error {
-	return r.doUpdate(ctx, "UpdateValidatorSetStatusAndRemovePendingProof", func(tx *bolt.Tx) error {
+	return r.doBatch(ctx, "UpdateValidatorSetStatusAndRemovePendingProof", func(tx *bolt.Tx) error {
 		ek := epochBytes(uint64(valset.Epoch))
 
 		if tx.Bucket(bucketValidatorSetStatus).Get(ek) == nil {
@@ -128,7 +128,7 @@ func (r *Repository) UpdateValidatorSetStatusAndRemovePendingProof(ctx context.C
 }
 
 func (r *Repository) UpdateValidatorSetStatus(ctx context.Context, epoch symbiotic.Epoch, status symbiotic.ValidatorSetStatus) error {
-	return r.doUpdate(ctx, "UpdateValidatorSetStatus", func(tx *bolt.Tx) error {
+	return r.doBatch(ctx, "UpdateValidatorSetStatus", func(tx *bolt.Tx) error {
 		ek := epochBytes(uint64(epoch))
 		b := tx.Bucket(bucketValidatorSetStatus)
 
@@ -180,52 +180,6 @@ func (r *Repository) getAllValidatorsByEpoch(tx *bolt.Tx, epoch symbiotic.Epoch)
 
 	validators.SortByOperatorAddressAsc()
 	return validators, nil
-}
-
-func (r *Repository) GetValidatorSetsStartingFromEpoch(ctx context.Context, startEpoch symbiotic.Epoch) ([]symbiotic.ValidatorSet, error) {
-	var sets []symbiotic.ValidatorSet
-
-	err := r.doView(ctx, "GetValidatorSetsStartingFromEpoch", func(tx *bolt.Tx) error {
-		seekKey := epochBytes(uint64(startEpoch))
-		c := tx.Bucket(bucketValidatorSetHeaders).Cursor()
-
-		for k, headerValue := c.Seek(seekKey); k != nil; k, headerValue = c.Next() {
-			header, err := codec.BytesToValidatorSetHeader(headerValue)
-			if err != nil {
-				return errors.Errorf("failed to unmarshal validator set header: %w", err)
-			}
-
-			statusVal := tx.Bucket(bucketValidatorSetStatus).Get(k)
-			if statusVal == nil || len(statusVal) != 1 {
-				continue
-			}
-			status := symbiotic.ValidatorSetStatus(statusVal[0])
-
-			validators, err := r.getAllValidatorsByEpoch(tx, header.Epoch)
-			if err != nil {
-				return errors.Errorf("failed to get validators for epoch %d: %w", header.Epoch, err)
-			}
-
-			aggIndices, commIndices, err := codec.ExtractAdditionalInfoFromHeaderData(headerValue)
-			if err != nil {
-				return errors.Errorf("failed to extract bitmap indices: %w", err)
-			}
-
-			sets = append(sets, symbiotic.ValidatorSet{
-				Version:           header.Version,
-				RequiredKeyTag:    header.RequiredKeyTag,
-				Epoch:             header.Epoch,
-				CaptureTimestamp:  header.CaptureTimestamp,
-				QuorumThreshold:   header.QuorumThreshold,
-				Validators:        validators,
-				Status:            status,
-				AggregatorIndices: aggIndices,
-				CommitterIndices:  commIndices,
-			})
-		}
-		return nil
-	})
-	return sets, err
 }
 
 func (r *Repository) GetValidatorSetByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error) {
@@ -406,7 +360,7 @@ func (r *Repository) saveValidatorSetMetadata(ctx context.Context, data symbioti
 		return errors.Errorf("failed to marshal validator set metadata: %w", err)
 	}
 
-	return r.doUpdate(ctx, "saveValidatorSetMetadata", func(tx *bolt.Tx) error {
+	return r.doBatch(ctx, "saveValidatorSetMetadata", func(tx *bolt.Tx) error {
 		ek := epochBytes(uint64(data.Epoch))
 		b := tx.Bucket(bucketValidatorSetMeta)
 		if b.Get(ek) != nil {

@@ -238,35 +238,3 @@ func TestRepository_FirstUncommittedValidatorSetEpoch_EmptyRepository(t *testing
 		assert.Equal(t, symbiotic.Epoch(0), epoch)
 	})
 }
-
-func TestRepository_GetValidatorSetsByEpoch(t *testing.T) {
-	repo := setupTestRepository(t)
-
-	vs1 := randomValidatorSet(t, 1)
-	vs2 := randomValidatorSet(t, 2)
-	vs3 := randomValidatorSet(t, 3)
-
-	require.NoError(t, repo.saveValidatorSet(t.Context(), vs1))
-	require.NoError(t, repo.saveValidatorSet(t.Context(), vs2))
-	require.NoError(t, repo.saveValidatorSet(t.Context(), vs3))
-
-	t.Run("get validator sets starting from epoch 2", func(t *testing.T) {
-		validatorSets, err := repo.GetValidatorSetsStartingFromEpoch(t.Context(), 2)
-		require.NoError(t, err)
-		require.Len(t, validatorSets, 2)
-		assert.Equal(t, symbiotic.Epoch(2), validatorSets[0].Epoch)
-		assert.Equal(t, symbiotic.Epoch(3), validatorSets[1].Epoch)
-	})
-
-	t.Run("get validator sets starting from epoch 1", func(t *testing.T) {
-		validatorSets, err := repo.GetValidatorSetsStartingFromEpoch(t.Context(), 1)
-		require.NoError(t, err)
-		require.Len(t, validatorSets, 3)
-	})
-
-	t.Run("get validator sets starting from non-existent epoch", func(t *testing.T) {
-		validatorSets, err := repo.GetValidatorSetsStartingFromEpoch(t.Context(), 10)
-		require.NoError(t, err)
-		assert.Empty(t, validatorSets)
-	})
-}

@@ -90,11 +90,21 @@ func (s *Syncer) buildWantSignaturesMap(ctx context.Context) (map[common.Hash]en
 			for _, req := range requests {
 				reqSignatureID := req.RequestID
 
+				// For aggregation keys, check if proof already exists — clean up pending
+				if req.KeyTag.Type().AggregationKey() {
+					if _, err := s.cfg.Repo.GetAggregationProof(ctx, reqSignatureID); err == nil {
+						_ = s.cfg.Repo.RemoveAggregationProofPending(ctx, req.RequiredEpoch, reqSignatureID)
+						lastHash = reqSignatureID
+						continue
+					}
+				}
+
 				// Get current signature map
 				sigMap, err := s.cfg.Repo.GetSignatureMap(ctx, reqSignatureID)
 				if err != nil {
 					if errors.Is(err, entity.ErrEntityNotFound) {
 						// No signatures yet, all validators are missing
+						lastHash = reqSignatureID
 						continue
 					}
 					return nil, errors.Errorf("failed to get signature map for request %s: %w", reqSignatureID.Hex(), err)
@@ -102,7 +112,12 @@ func (s *Syncer) buildWantSignaturesMap(ctx context.Context) (map[common.Hash]en
 
 				// Get missing validators from signature map
 				missingValidators := sigMap.GetMissingValidators()
-				if !missingValidators.IsEmpty() {
+				if missingValidators.IsEmpty() {
+					// For non-aggregation keys: all signatures collected — clean up pending
+					if !req.KeyTag.Type().AggregationKey() {
+						_ = s.cfg.Repo.RemoveAggregationProofPending(ctx, req.RequiredEpoch, reqSignatureID)
+					}
+				} else {
 					wantSignatures[reqSignatureID] = missingValidators
 				}
 

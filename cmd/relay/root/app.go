@@ -193,11 +193,17 @@ func runApp(ctx context.Context) error {
 		}
 
 		repo, err := bboltrepo.New(bboltrepo.Config{
-			Dir:                      cfg.StorageDir,
-			Metrics:                  mtr,
-			InitialMmapSize:          cfg.Bbolt.InitialMmapSize,
-			MutexCleanupInterval:     time.Hour,
-			MutexCleanupStaleTimeout: time.Hour - time.Minute,
+			Dir:              cfg.StorageDir,
+			Metrics:          mtr,
+			InitialMmapSize:  cfg.Bbolt.InitialMmapSize,
+			StatsLogInterval: cfg.Bbolt.StatsLogInterval,
+			PrunePause:       cfg.Pruner.BatchPause,
+			CompactOnStartup: cfg.Bbolt.CompactOnStartup,
+			NoFreelistSync:   cfg.Bbolt.NoFreelistSync,
+			MaxBatchDelay:    cfg.Bbolt.MaxBatchDelay,
+			MaxBatchSize:     cfg.Bbolt.MaxBatchSize,
+			DBFilename:       "relay.db",
+			NoSync:           false,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create bbolt repository: %w", err)
@@ -371,6 +377,7 @@ func runApp(ctx context.Context) error {
 		Metrics:                  mtr,
 		Enabled:                  cfg.Pruner.Enabled,
 		Interval:                 cfg.Pruner.Interval,
+		PruneBatchSize:           cfg.Pruner.BatchSize,
 		ValsetRetentionEpochs:    cfg.Retention.ValSetEpochs,
 		ProofRetentionEpochs:     cfg.Retention.ProofEpochs,
 		SignatureRetentionEpochs: cfg.Retention.SignatureEpochs,
@@ -656,10 +663,12 @@ func initP2PService(ctx context.Context, cfg config, keyProvider keyprovider.Key
 	}
 
 	p2pCfg := p2p.Config{
-		Host:      h,
-		Metrics:   mtr,
-		Discovery: p2p.DefaultDiscoveryConfig(),
-		Handler:   p2p.NewP2PHandler(provider),
+		Host:            h,
+		Metrics:         mtr,
+		Discovery:       p2p.DefaultDiscoveryConfig(),
+		Handler:         p2p.NewP2PHandler(provider),
+		PublishTimeout:  cfg.P2P.PublishTimeout,
+		SyncPeerBackoff: cfg.P2P.SyncPeerBackoff,
 	}
 	if len(cfg.P2P.Bootnodes) > 0 {
 		p2pCfg.Discovery.BootstrapPeers = cfg.P2P.Bootnodes

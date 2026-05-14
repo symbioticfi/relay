@@ -17,7 +17,7 @@ relay_sidecar [flags]
 ```
       --aggregation-policy-max-unsigners uint            Max unsigners for low cost agg policy (default 50)
       --aggregation.catchup.enabled                      Enable periodic aggregation catch-up loop (default true)
-      --aggregation.catchup.epochs-offset int            Epochs back from latest to start scanning
+      --aggregation.catchup.epochs-offset int            Number of epochs back from latest to skip before scanning begins
       --aggregation.catchup.epochs-to-check int          Number of epochs to scan per catch-up cycle (default 20)
       --aggregation.catchup.interval duration            How often to run aggregation catch-up (default 1m0s)
       --aggregation.catchup.max-requests-per-cycle int   Max requests to check per cycle (0 = unlimited)
@@ -37,10 +37,15 @@ relay_sidecar [flags]
       --badger.value-log-file-size int                   BadgerDB value log file size in bytes, 512 MB (default 536870912)
       --badger.value-log-gc-discard-ratio float          BadgerDB value log GC discard ratio (0.0-1.0) (default 0.5)
       --badger.value-log-gc-interval duration            BadgerDB value log GC interval, 0 = disabled (default 5m0s)
+      --bbolt.compact-on-startup                         Compact database on startup to reclaim free pages (default true)
       --bbolt.initial-mmap-size int                      Initial mmap size in bytes (0 = default)
+      --bbolt.max-batch-delay duration                   Max delay before flushing a batch write (0 = bbolt default 10ms) (default 2ms)
+      --bbolt.max-batch-size int                         Max operations per batch write (0 = bbolt default 1000)
+      --bbolt.no-freelist-sync                           Skip writing freelist to disk on every commit (faster writes, slower startup) (default true)
+      --bbolt.stats-log-interval duration                Interval for logging bbolt database stats (0 = disabled)
       --cache.network-config-size int                    Network config cache size (default 10)
       --cache.validator-set-size int                     Validator set cache size (default 10)
-      --circuits-dir string                              Directory path to load zk circuits from, if empty then zp prover is disabled
+      --circuits-dir string                              Directory path to load zk circuits from, if empty then zk prover is disabled
       --config string                                    Path to config file (default "config.yaml")
       --driver.address string                            Driver contract address
       --driver.chain-id uint                             Driver contract chain id
@@ -62,18 +67,24 @@ relay_sidecar [flags]
       --p2p.dht-mode string                              DHT mode: auto, server, client, disabled (default "server")
       --p2p.listen string                                P2P listen address
       --p2p.mdns                                         Enable mDNS discovery for P2P
-      --pruner.enabled                                   Enable automatic pruning of old epoch data (default: false)
-      --pruner.interval duration                         How often to run pruning (default: 1h) (default 1h0m0s)
+      --p2p.publish-timeout duration                     Maximum time a single pubsub publish may block (default 10s)
+      --p2p.sync-peer-backoff.base float                 Exponential base for failed sync peer cooldown backoff (default 2)
+      --p2p.sync-peer-backoff.max-backoff duration       Maximum cooldown before retrying a failed sync peer (default 2m0s)
+      --p2p.sync-peer-backoff.min-backoff duration       Minimum cooldown before retrying a failed sync peer (default 15s)
+      --pruner.batch-pause duration                      Pause between prune batches to yield to live writers (bbolt only — badger has no batching) (0 = no pause) (default 100ms)
+      --pruner.batch-size int                            Number of request IDs to delete per database transaction during pruning (0 = unbatched) (default 100)
+      --pruner.enabled                                   Enable automatic pruning of old epoch data
+      --pruner.interval duration                         How often to run pruning (default 1h0m0s)
       --retention.proof-epochs uint                      Number of historical proof epochs to retain (0 = unlimited)
       --retention.signature-epochs uint                  Number of historical signature epochs to retain (0 = unlimited)
       --retention.valset-epochs uint                     Number of historical validator set epochs to retain (0 = unlimited)
-      --secret-keys secret-key-slice                     Secret keys, comma separated {namespace}/{type}/{id}/{key},..
+      --secret-keys secret-key-slice                     Secret keys, comma separated {namespace}/{type}/{id}/{secret},..
       --signal.buffer-size int                           Signal buffer size (default 20)
       --signal.worker-count int                          Signal worker count (default 10)
       --storage-dir string                               Dir to store data (default ".data")
       --storage-type string                              Storage backend type (badger, bbolt) (default "bbolt")
       --sync.enabled                                     Enable signature syncer (default true)
-      --sync.epochs uint                                 Epochs to sync (default 5)
+      --sync.epochs uint                                 Number of recent epochs to sync from peers on startup (default 5)
       --sync.period duration                             Signature sync period (default 5s)
       --sync.timeout duration                            Signature sync timeout (default 1m0s)
       --tracing.enabled                                  Enable distributed tracing

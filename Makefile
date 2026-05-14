@@ -98,9 +98,9 @@ generate-cli-docs:
 .PHONY: unit-test
 unit-test:
 	go test $(shell go list ./... | grep -v '/e2e/') -v -covermode atomic -race -coverprofile=cover.out.tmp -coverpkg=$(shell go list ./... | grep -v '/e2e/' | tr '\n' ',')
-	cat cover.out.tmp | grep -v "gen"  | grep -v "mocks" > coverage.tmp.txt # strip out generated files
-	go tool cover -func coverage.tmp.txt > coverage.txt
-	rm cover.out.tmp coverage.tmp.txt
+	cat cover.out.tmp | grep -v "gen"  | grep -v "mocks" > coverage.out # strip out generated files
+	go tool cover -func coverage.out > coverage.txt
+	rm cover.out.tmp
 
 .PHONY: e2e-test
 e2e-test:

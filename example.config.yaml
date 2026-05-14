@@ -65,6 +65,7 @@ p2p:
   bootnodes: []
   dht-mode: "disabled"
   mdns: true
+  publish-timeout: 10s  # Maximum time a single pubsub publish may block
 
 # EVM Configuration
 evm:
@@ -115,6 +116,15 @@ pruner:
   # Examples: 30m, 1h, 6h, 24h
   interval: 1h
 
+  # Number of request IDs to delete per database transaction during pruning
+  # Lower values = shorter write lock durations, higher values = fewer transactions
+  # 0 = process all request IDs in a single transaction (not recommended for large datasets)
+  batch-size: 100
+
+  # Pause between prune batches to yield to live writers (default: 100ms; 0 = no pause)
+  # bbolt only — badger has no batching and ignores this value
+  batch-pause: 100ms
+
 # Aggregation Configuration
 aggregation:
   # Max simultaneous proof aggregations (default: 10)
@@ -145,6 +155,11 @@ aggregation:
 # bbolt uses a B+tree with single-writer model for predictable write latency
 # bbolt:
 #   initial-mmap-size: 0        # Initial mmap size in bytes (0 = default)
+#   compact-on-startup: true    # Compact database on startup to reclaim free pages (default: true)
+#   no-freelist-sync: false     # Skip writing freelist to disk on every commit (faster writes, slower startup)
+#   max-batch-delay: 2ms        # Max delay before flushing a batch write (default: 2ms; 0 = bbolt default 10ms)
+#   max-batch-size: 0           # Max operations per batch write (0 = bbolt default 1000)
+#   stats-log-interval: 0       # Interval for logging database stats (default: 0 = disabled)
 
 # BadgerDB Storage Engine Tuning (optional, only used when storage-type: "badger")
 # See https://github.com/dgraph-io/badger/blob/main/options.go#L123 for details

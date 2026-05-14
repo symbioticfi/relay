@@ -838,7 +838,11 @@ func (x *GetAggregationProofRequest) GetRequestId() string {
 type GetAggregationProofsByEpochRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Epoch number
-	Epoch         uint64 `protobuf:"varint,1,opt,name=epoch,proto3" json:"epoch,omitempty"`
+	Epoch uint64 `protobuf:"varint,1,opt,name=epoch,proto3" json:"epoch,omitempty"`
+	// Maximum number of items to return. 0 = server default (100). Server clamps to max (1000).
+	PageSize uint32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	// Opaque pagination cursor from a previous response's `next_from`. Empty string starts from the beginning.
+	From          string `protobuf:"bytes,3,opt,name=from,proto3" json:"from,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -878,6 +882,20 @@ func (x *GetAggregationProofsByEpochRequest) GetEpoch() uint64 {
 		return x.Epoch
 	}
 	return 0
+}
+
+func (x *GetAggregationProofsByEpochRequest) GetPageSize() uint32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *GetAggregationProofsByEpochRequest) GetFrom() string {
+	if x != nil {
+		return x.From
+	}
+	return ""
 }
 
 // Request message for getting current epoch
@@ -966,7 +984,11 @@ func (x *GetSignaturesRequest) GetRequestId() string {
 type GetSignaturesByEpochRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Epoch number
-	Epoch         uint64 `protobuf:"varint,1,opt,name=epoch,proto3" json:"epoch,omitempty"`
+	Epoch uint64 `protobuf:"varint,1,opt,name=epoch,proto3" json:"epoch,omitempty"`
+	// Maximum number of items to return. 0 = server default (100). Server clamps to max (1000).
+	PageSize uint32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	// Opaque pagination cursor from a previous response's `next_from`. Empty string starts from the beginning.
+	From          string `protobuf:"bytes,3,opt,name=from,proto3" json:"from,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1006,6 +1028,20 @@ func (x *GetSignaturesByEpochRequest) GetEpoch() uint64 {
 		return x.Epoch
 	}
 	return 0
+}
+
+func (x *GetSignaturesByEpochRequest) GetPageSize() uint32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *GetSignaturesByEpochRequest) GetFrom() string {
+	if x != nil {
+		return x.From
+	}
+	return ""
 }
 
 // Response message for getting signatures
@@ -1058,7 +1094,9 @@ func (x *GetSignaturesResponse) GetSignatures() []*Signature {
 type GetSignaturesByEpochResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// List of signatures
-	Signatures    []*Signature `protobuf:"bytes,1,rep,name=signatures,proto3" json:"signatures,omitempty"`
+	Signatures []*Signature `protobuf:"bytes,1,rep,name=signatures,proto3" json:"signatures,omitempty"`
+	// Cursor to retrieve the next page. Empty when this is the last page.
+	NextFrom      string `protobuf:"bytes,2,opt,name=next_from,json=nextFrom,proto3" json:"next_from,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1100,11 +1138,22 @@ func (x *GetSignaturesByEpochResponse) GetSignatures() []*Signature {
 	return nil
 }
 
+func (x *GetSignaturesByEpochResponse) GetNextFrom() string {
+	if x != nil {
+		return x.NextFrom
+	}
+	return ""
+}
+
 // Request message for getting all signature request IDs by epoch
 type GetSignatureRequestIDsByEpochRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Epoch number
-	Epoch         uint64 `protobuf:"varint,1,opt,name=epoch,proto3" json:"epoch,omitempty"`
+	Epoch uint64 `protobuf:"varint,1,opt,name=epoch,proto3" json:"epoch,omitempty"`
+	// Maximum number of items to return. 0 = server default (1000). Server clamps to max (10000).
+	PageSize uint32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	// Opaque pagination cursor from a previous response's `next_from`. Empty string starts from the beginning.
+	From          string `protobuf:"bytes,3,opt,name=from,proto3" json:"from,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1146,11 +1195,27 @@ func (x *GetSignatureRequestIDsByEpochRequest) GetEpoch() uint64 {
 	return 0
 }
 
+func (x *GetSignatureRequestIDsByEpochRequest) GetPageSize() uint32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *GetSignatureRequestIDsByEpochRequest) GetFrom() string {
+	if x != nil {
+		return x.From
+	}
+	return ""
+}
+
 // Response message for getting all signature request IDs by epoch
 type GetSignatureRequestIDsByEpochResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// List of all signature request IDs for the epoch
-	RequestIds    []string `protobuf:"bytes,1,rep,name=request_ids,json=requestIds,proto3" json:"request_ids,omitempty"`
+	RequestIds []string `protobuf:"bytes,1,rep,name=request_ids,json=requestIds,proto3" json:"request_ids,omitempty"`
+	// Cursor to retrieve the next page. Empty when this is the last page.
+	NextFrom      string `protobuf:"bytes,2,opt,name=next_from,json=nextFrom,proto3" json:"next_from,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1192,11 +1257,22 @@ func (x *GetSignatureRequestIDsByEpochResponse) GetRequestIds() []string {
 	return nil
 }
 
+func (x *GetSignatureRequestIDsByEpochResponse) GetNextFrom() string {
+	if x != nil {
+		return x.NextFrom
+	}
+	return ""
+}
+
 // Request message for getting all signature requests by epoch
 type GetSignatureRequestsByEpochRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Epoch number
-	Epoch         uint64 `protobuf:"varint,1,opt,name=epoch,proto3" json:"epoch,omitempty"`
+	Epoch uint64 `protobuf:"varint,1,opt,name=epoch,proto3" json:"epoch,omitempty"`
+	// Maximum number of items to return. 0 = server default (100). Server clamps to max (1000).
+	PageSize uint32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	// Opaque pagination cursor from a previous response's `next_from`. Empty string starts from the beginning.
+	From          string `protobuf:"bytes,3,opt,name=from,proto3" json:"from,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1238,13 +1314,29 @@ func (x *GetSignatureRequestsByEpochRequest) GetEpoch() uint64 {
 	return 0
 }
 
+func (x *GetSignatureRequestsByEpochRequest) GetPageSize() uint32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *GetSignatureRequestsByEpochRequest) GetFrom() string {
+	if x != nil {
+		return x.From
+	}
+	return ""
+}
+
 // Response message for getting all signature requests by epoch
 type GetSignatureRequestsByEpochResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// List of all signature requests for the epoch
 	SignatureRequests []*SignatureRequest `protobuf:"bytes,1,rep,name=signature_requests,json=signatureRequests,proto3" json:"signature_requests,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// Cursor to retrieve the next page. Empty when this is the last page.
+	NextFrom      string `protobuf:"bytes,2,opt,name=next_from,json=nextFrom,proto3" json:"next_from,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetSignatureRequestsByEpochResponse) Reset() {
@@ -1282,6 +1374,13 @@ func (x *GetSignatureRequestsByEpochResponse) GetSignatureRequests() []*Signatur
 		return x.SignatureRequests
 	}
 	return nil
+}
+
+func (x *GetSignatureRequestsByEpochResponse) GetNextFrom() string {
+	if x != nil {
+		return x.NextFrom
+	}
+	return ""
 }
 
 // Request message for getting signature request
@@ -1899,8 +1998,10 @@ func (x *GetAggregationProofResponse) GetAggregationProof() *AggregationProof {
 type GetAggregationProofsByEpochResponse struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	AggregationProofs []*AggregationProof    `protobuf:"bytes,1,rep,name=aggregation_proofs,json=aggregationProofs,proto3" json:"aggregation_proofs,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// Cursor to retrieve the next page. Empty when this is the last page.
+	NextFrom      string `protobuf:"bytes,2,opt,name=next_from,json=nextFrom,proto3" json:"next_from,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetAggregationProofsByEpochResponse) Reset() {
@@ -1938,6 +2039,13 @@ func (x *GetAggregationProofsByEpochResponse) GetAggregationProofs() []*Aggregat
 		return x.AggregationProofs
 	}
 	return nil
+}
+
+func (x *GetAggregationProofsByEpochResponse) GetNextFrom() string {
+	if x != nil {
+		return x.NextFrom
+	}
+	return ""
 }
 
 // Response message for getting aggregation proof
@@ -3128,32 +3236,43 @@ const file_v1_api_proto_rawDesc = "" +
 	"\rvalidator_set\x18\x01 \x01(\v2\x1a.api.proto.v1.ValidatorSetR\fvalidatorSet\";\n" +
 	"\x1aGetAggregationProofRequest\x12\x1d\n" +
 	"\n" +
-	"request_id\x18\x01 \x01(\tR\trequestId\":\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\"k\n" +
 	"\"GetAggregationProofsByEpochRequest\x12\x14\n" +
-	"\x05epoch\x18\x01 \x01(\x04R\x05epoch\"\x18\n" +
+	"\x05epoch\x18\x01 \x01(\x04R\x05epoch\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\rR\bpageSize\x12\x12\n" +
+	"\x04from\x18\x03 \x01(\tR\x04from\"\x18\n" +
 	"\x16GetCurrentEpochRequest\"5\n" +
 	"\x14GetSignaturesRequest\x12\x1d\n" +
 	"\n" +
-	"request_id\x18\x01 \x01(\tR\trequestId\"3\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\"d\n" +
 	"\x1bGetSignaturesByEpochRequest\x12\x14\n" +
-	"\x05epoch\x18\x01 \x01(\x04R\x05epoch\"P\n" +
+	"\x05epoch\x18\x01 \x01(\x04R\x05epoch\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\rR\bpageSize\x12\x12\n" +
+	"\x04from\x18\x03 \x01(\tR\x04from\"P\n" +
 	"\x15GetSignaturesResponse\x127\n" +
 	"\n" +
 	"signatures\x18\x01 \x03(\v2\x17.api.proto.v1.SignatureR\n" +
-	"signatures\"W\n" +
+	"signatures\"t\n" +
 	"\x1cGetSignaturesByEpochResponse\x127\n" +
 	"\n" +
 	"signatures\x18\x01 \x03(\v2\x17.api.proto.v1.SignatureR\n" +
-	"signatures\"<\n" +
+	"signatures\x12\x1b\n" +
+	"\tnext_from\x18\x02 \x01(\tR\bnextFrom\"m\n" +
 	"$GetSignatureRequestIDsByEpochRequest\x12\x14\n" +
-	"\x05epoch\x18\x01 \x01(\x04R\x05epoch\"H\n" +
+	"\x05epoch\x18\x01 \x01(\x04R\x05epoch\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\rR\bpageSize\x12\x12\n" +
+	"\x04from\x18\x03 \x01(\tR\x04from\"e\n" +
 	"%GetSignatureRequestIDsByEpochResponse\x12\x1f\n" +
 	"\vrequest_ids\x18\x01 \x03(\tR\n" +
-	"requestIds\":\n" +
+	"requestIds\x12\x1b\n" +
+	"\tnext_from\x18\x02 \x01(\tR\bnextFrom\"k\n" +
 	"\"GetSignatureRequestsByEpochRequest\x12\x14\n" +
-	"\x05epoch\x18\x01 \x01(\x04R\x05epoch\"t\n" +
+	"\x05epoch\x18\x01 \x01(\x04R\x05epoch\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\rR\bpageSize\x12\x12\n" +
+	"\x04from\x18\x03 \x01(\tR\x04from\"\x91\x01\n" +
 	"#GetSignatureRequestsByEpochResponse\x12M\n" +
-	"\x12signature_requests\x18\x01 \x03(\v2\x1e.api.proto.v1.SignatureRequestR\x11signatureRequests\";\n" +
+	"\x12signature_requests\x18\x01 \x03(\v2\x1e.api.proto.v1.SignatureRequestR\x11signatureRequests\x12\x1b\n" +
+	"\tnext_from\x18\x02 \x01(\tR\bnextFrom\";\n" +
 	"\x1aGetSignatureRequestRequest\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\"<\n" +
@@ -3195,9 +3314,10 @@ const file_v1_api_proto_rawDesc = "" +
 	"\x1bGetSignatureRequestResponse\x12K\n" +
 	"\x11signature_request\x18\x01 \x01(\v2\x1e.api.proto.v1.SignatureRequestR\x10signatureRequest\"j\n" +
 	"\x1bGetAggregationProofResponse\x12K\n" +
-	"\x11aggregation_proof\x18\x01 \x01(\v2\x1e.api.proto.v1.AggregationProofR\x10aggregationProof\"t\n" +
+	"\x11aggregation_proof\x18\x01 \x01(\v2\x1e.api.proto.v1.AggregationProofR\x10aggregationProof\"\x91\x01\n" +
 	"#GetAggregationProofsByEpochResponse\x12M\n" +
-	"\x12aggregation_proofs\x18\x01 \x03(\v2\x1e.api.proto.v1.AggregationProofR\x11aggregationProofs\"j\n" +
+	"\x12aggregation_proofs\x18\x01 \x03(\v2\x1e.api.proto.v1.AggregationProofR\x11aggregationProofs\x12\x1b\n" +
+	"\tnext_from\x18\x02 \x01(\tR\bnextFrom\"j\n" +
 	"\x10AggregationProof\x12!\n" +
 	"\fmessage_hash\x18\x02 \x01(\fR\vmessageHash\x12\x14\n" +
 	"\x05proof\x18\x03 \x01(\fR\x05proof\x12\x1d\n" +
