@@ -102,7 +102,7 @@ func (e *Client) doTransaction(ctx context.Context, method string, addr symbioti
 		return symbiotic.TxResult{}, e.formatEVMError(err)
 	}
 
-	receipt, err := bind.WaitMined(ctx, e.conns[addr.ChainId], tx)
+	receipt, err := bind.WaitMined(tmCtx, e.conns[addr.ChainId], tx)
 	if err != nil {
 		return symbiotic.TxResult{}, errors.Errorf("failed to wait for tx mining: %w", err)
 	}

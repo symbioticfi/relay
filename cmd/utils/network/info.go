@@ -20,6 +20,12 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// maxEpochsToCheck caps how many epochs the `network info` command scans when
+// counting missed valset header commitments. Above this we log a warning and
+// truncate to avoid an O(N) allocation on operator misconfiguration (e.g., RPC
+// returning an absurdly large epoch number).
+const maxEpochsToCheck = 100_000
+
 var infoCmd = &cobra.Command{
 	Use:   "info",
 	Short: "Print network information",
@@ -69,8 +75,8 @@ var infoCmd = &cobra.Command{
 			return errors.Errorf("failed to create deriver: %w", err)
 		}
 
-		epoch := symbiotic.Epoch(globalFlags.Epoch)
-		if globalFlags.Epoch == 0 {
+		epoch := symbiotic.Epoch(infoFlags.Epoch)
+		if infoFlags.Epoch == 0 {
 			epoch, err = evmClient.GetCurrentEpoch(ctx)
 			if err != nil {
 				return errors.Errorf("Failed to get current epoch: %w", err)
@@ -149,11 +155,20 @@ var infoCmd = &cobra.Command{
 					}
 					settlementData[i].LastCommittedHeaderEpoch = uint64(lastCommittedHeaderEpoch)
 
-					allEpochsFromZero := lo.RepeatBy(int(epoch+1), func(i int) symbiotic.Epoch {
-						return symbiotic.Epoch(i)
+					startEpoch := symbiotic.Epoch(0)
+					epochCount := uint64(epoch) + 1
+					if epochCount > maxEpochsToCheck {
+						slog.WarnContext(egCtx, "Epoch range exceeds safety limit; missed epoch count is computed only over the most recent epochs",
+							"epoch", epoch, "limit", maxEpochsToCheck,
+						)
+						epochCount = maxEpochsToCheck
+						startEpoch = epoch - symbiotic.Epoch(maxEpochsToCheck-1)
+					}
+					epochsToCheck := lo.RepeatBy(int(epochCount), func(i int) symbiotic.Epoch {
+						return startEpoch + symbiotic.Epoch(i)
 					})
 
-					commitmentResults, err := evmClient.IsValsetHeaderCommittedAtEpochs(egCtx, settlement, allEpochsFromZero)
+					commitmentResults, err := evmClient.IsValsetHeaderCommittedAtEpochs(egCtx, settlement, epochsToCheck)
 					if err != nil {
 						return errors.Errorf("Failed to check epoch commitments: %w", err)
 					}

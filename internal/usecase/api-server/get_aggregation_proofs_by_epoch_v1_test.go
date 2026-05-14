@@ -33,7 +33,7 @@ func TestGetAggregationProofsByEpoch_Success(t *testing.T) {
 		},
 	}
 
-	setup.mockRepo.EXPECT().GetAggregationProofsByEpoch(ctx, requestedEpoch).Return(expectedProofs, nil)
+	setup.mockRepo.EXPECT().GetAggregationProofsByEpoch(ctx, requestedEpoch, defaultListPageSize, []byte(nil)).Return(expectedProofs, []byte(nil), nil)
 
 	req := &apiv1.GetAggregationProofsByEpochRequest{
 		Epoch: uint64(requestedEpoch),
@@ -56,7 +56,7 @@ func TestGetAggregationProofsByEpoch_EmptyResult(t *testing.T) {
 
 	requestedEpoch := symbiotic.Epoch(15)
 
-	setup.mockRepo.EXPECT().GetAggregationProofsByEpoch(ctx, requestedEpoch).Return([]symbiotic.AggregationProof{}, nil)
+	setup.mockRepo.EXPECT().GetAggregationProofsByEpoch(ctx, requestedEpoch, defaultListPageSize, []byte(nil)).Return([]symbiotic.AggregationProof{}, []byte(nil), nil)
 
 	req := &apiv1.GetAggregationProofsByEpochRequest{
 		Epoch: uint64(requestedEpoch),
@@ -76,7 +76,7 @@ func TestGetAggregationProofsByEpoch_RepositoryError(t *testing.T) {
 	requestedEpoch := symbiotic.Epoch(3)
 	expectedError := errors.New("storage unavailable")
 
-	setup.mockRepo.EXPECT().GetAggregationProofsByEpoch(ctx, requestedEpoch).Return(nil, expectedError)
+	setup.mockRepo.EXPECT().GetAggregationProofsByEpoch(ctx, requestedEpoch, defaultListPageSize, []byte(nil)).Return(nil, []byte(nil), expectedError)
 
 	req := &apiv1.GetAggregationProofsByEpochRequest{
 		Epoch: uint64(requestedEpoch),

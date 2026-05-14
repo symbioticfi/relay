@@ -1,15 +1,18 @@
 package badger
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
+	"strconv"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 
 	"github.com/symbioticfi/relay/internal/client/repository/codec"
+	"github.com/symbioticfi/relay/internal/client/repository/repoutil"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -20,6 +23,21 @@ func keySignature(requestID common.Hash, validatorIndex uint32) []byte {
 
 func keySignatureRequestIDPrefix(requestID common.Hash) []byte {
 	return []byte("signature:" + requestID.Hex() + ":")
+}
+
+// extractValidatorIndexFromSignatureKey parses the trailing 10-digit vIdx
+// out of `signature:<hex>:<NNNNNNNNNN>`. Returns an error if the key shape is
+// unexpected (corrupted store).
+func extractValidatorIndexFromSignatureKey(key []byte) (uint32, error) {
+	idx := bytes.LastIndexByte(key, ':')
+	if idx < 0 || idx == len(key)-1 {
+		return 0, errors.Errorf("invalid signature key shape: %q", string(key))
+	}
+	v, err := strconv.ParseUint(string(key[idx+1:]), 10, 32)
+	if err != nil {
+		return 0, errors.Errorf("invalid validator index in key %q: %w", string(key), err)
+	}
+	return uint32(v), nil
 }
 
 func (r *Repository) saveSignature(
@@ -101,75 +119,103 @@ func (r *Repository) GetSignatureByIndex(ctx context.Context, requestID common.H
 	return signature, err
 }
 
-func (r *Repository) GetSignaturesStartingFromEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error) {
-	var signatures []symbiotic.Signature
-
-	return signatures, r.doViewInTx(ctx, "GetSignaturesStartingFromEpoch", func(ctx context.Context) error {
-		txn := getTxn(ctx)
-
-		startKey := keyRequestIDEpochPrefix(epoch)
-		opts := badger.DefaultIteratorOptions
-		opts.Prefix = keyRequestIDEpochAll()
-
-		it := txn.NewIterator(opts)
-		defer it.Close()
-
-		for it.Seek(startKey); it.Valid(); it.Next() {
-			signaturesFromItem, err := r.getSignaturesByEpochFromItem(txn, it)
-			if err != nil {
-				if errors.Is(err, errCorruptedRequestIDEpochLink) {
-					slog.ErrorContext(ctx, errCorruptedRequestIDEpochLink.Error(), "key", string(it.Item().Key()))
-					continue
-				}
-				return err
-			}
-
-			signatures = append(signatures, signaturesFromItem...)
-		}
-
-		return nil
-	})
-}
-
-func (r *Repository) GetSignaturesByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.Signature, error) {
-	var signatures []symbiotic.Signature
-
-	return signatures, r.doViewInTx(ctx, "GetSignaturesByEpoch", func(ctx context.Context) error {
-		txn := getTxn(ctx)
-
-		startKey := keyRequestIDEpochPrefix(epoch)
-		opts := badger.DefaultIteratorOptions
-		opts.Prefix = keyRequestIDEpochAll()
-
-		it := txn.NewIterator(opts)
-		defer it.Close()
-
-		for it.Seek(startKey); it.ValidForPrefix(startKey); it.Next() {
-			signaturesFromItem, err := r.getSignaturesByEpochFromItem(txn, it)
-			if err != nil {
-				if errors.Is(err, errCorruptedRequestIDEpochLink) {
-					slog.ErrorContext(ctx, errCorruptedRequestIDEpochLink.Error(), "key", string(it.Item().Key()))
-					continue
-				}
-				return err
-			}
-
-			signatures = append(signatures, signaturesFromItem...)
-		}
-
-		return nil
-	})
-}
-
-func (r *Repository) getSignaturesByEpochFromItem(txn *badger.Txn, it *badger.Iterator) ([]symbiotic.Signature, error) {
-	key := it.Item().Key()
-
-	requestID, err := extractRequestIDFromEpochKey(key)
+// GetSignaturesByEpoch returns one page of signatures for the given epoch,
+// paginated via 36-byte composite cursor `from` (requestID || BE32(vIdx)).
+// Pagination is per-signature so pageSize is honored exactly even when groups
+// (signatures sharing a requestID) are large. nextFrom == nil signals last page.
+func (r *Repository) GetSignaturesByEpoch(
+	ctx context.Context,
+	epoch symbiotic.Epoch,
+	pageSize int,
+	from []byte,
+) ([]symbiotic.Signature, []byte, error) {
+	fromRequestID, fromVIdx, err := repoutil.DecodeSignatureCursor(from)
 	if err != nil {
-		return nil, errors.Join(errCorruptedRequestIDEpochLink, err)
+		return nil, nil, err
 	}
 
-	return gatAllSignatures(txn, requestID)
+	var (
+		signatures    []symbiotic.Signature
+		lastRequestID common.Hash
+		lastVIdx      uint32
+		moreLeft      bool
+	)
+
+	err = r.doViewInTx(ctx, "GetSignaturesByEpoch", func(ctx context.Context) error {
+		txn := getTxn(ctx)
+		idxPrefix := keyRequestIDEpochPrefix(epoch)
+		idxOpts := badger.DefaultIteratorOptions
+		idxOpts.Prefix = keyRequestIDEpochAll()
+		idxOpts.PrefetchValues = false
+		idxIt := txn.NewIterator(idxOpts)
+		defer idxIt.Close()
+
+		// Seek to the index entry for fromRequestID (or start). We do NOT
+		// skip-on-exact-match: when the cursor lands on a known requestID we
+		// still need to read its remaining signatures (vIdx > fromVIdx).
+		idxSeekKey := idxPrefix
+		if fromRequestID != (common.Hash{}) {
+			idxSeekKey = keyRequestIDEpoch(epoch, fromRequestID)
+		}
+
+	outer:
+		for idxIt.Seek(idxSeekKey); idxIt.ValidForPrefix(idxPrefix); idxIt.Next() {
+			currentRequestID, err := extractRequestIDFromEpochKey(idxIt.Item().Key())
+			if err != nil {
+				slog.ErrorContext(ctx, errCorruptedRequestIDEpochLink.Error(), "key", string(idxIt.Item().Key()))
+				continue
+			}
+
+			// Within the cursor's group, skip already-returned signatures.
+			// fromRequestID is zero only when from == nil, so a hash match
+			// here implies a real cursor — fromVIdx may legitimately be 0.
+			startVIdx := uint32(0)
+			if currentRequestID == fromRequestID {
+				startVIdx = fromVIdx + 1
+			}
+
+			sigPrefix := keySignatureRequestIDPrefix(currentRequestID)
+			sigOpts := badger.DefaultIteratorOptions
+			sigOpts.Prefix = sigPrefix
+			sigIt := txn.NewIterator(sigOpts)
+
+			for sigIt.Seek(keySignature(currentRequestID, startVIdx)); sigIt.ValidForPrefix(sigPrefix); sigIt.Next() {
+				if pageSize > 0 && len(signatures) >= pageSize {
+					sigIt.Close()
+					moreLeft = true
+					break outer
+				}
+				vIdx, err := extractValidatorIndexFromSignatureKey(sigIt.Item().Key())
+				if err != nil {
+					sigIt.Close()
+					return err
+				}
+				value, err := sigIt.Item().ValueCopy(nil)
+				if err != nil {
+					sigIt.Close()
+					return errors.Errorf("failed to copy signature value: %w", err)
+				}
+				sig, err := bytesToSignature(value)
+				if err != nil {
+					sigIt.Close()
+					return errors.Errorf("failed to unmarshal signature: %w", err)
+				}
+				signatures = append(signatures, sig)
+				lastRequestID = currentRequestID
+				lastVIdx = vIdx
+			}
+			sigIt.Close()
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if !moreLeft {
+		return signatures, nil, nil
+	}
+	return signatures, repoutil.EncodeSignatureCursor(lastRequestID, lastVIdx), nil
 }
 
 func gatAllSignatures(txn *badger.Txn, requestID common.Hash) ([]symbiotic.Signature, error) {

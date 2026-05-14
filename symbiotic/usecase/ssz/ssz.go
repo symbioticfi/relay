@@ -3,6 +3,7 @@
 package ssz
 
 import (
+	"math/big"
 	"sort"
 
 	ssz "github.com/ferranbt/fastssz"
@@ -123,14 +124,15 @@ func (v *SszVault) MarshalSSZTo(buf []byte) ([]byte, error) {
 	dst = append(dst, v.Vault.Bytes()...)
 
 	// Field (2) 'VotingPower'
-	dst = append(dst, v.VotingPower.Bytes()...)
+	votingPowerBuf := make([]byte, 32)
+	v.VotingPower.FillBytes(votingPowerBuf)
+	dst = append(dst, votingPowerBuf...)
 
 	return dst, nil
 }
 
 // UnmarshalSSZ ssz unmarshals the Vault object
 func (v *SszVault) UnmarshalSSZ(buf []byte) error {
-	var err error
 	size := uint64(len(buf))
 	if size != 60 {
 		return ssz.ErrSize
@@ -140,12 +142,12 @@ func (v *SszVault) UnmarshalSSZ(buf []byte) error {
 	v.ChainId = ssz.UnmarshallUint64(buf[0:8])
 
 	// Field (1) 'OperatorVault'
-	copy(v.Vault.Bytes(), buf[8:28])
+	v.Vault = common.BytesToAddress(buf[8:28])
 
 	// Field (2) 'VotingPower'
-	copy(v.VotingPower.Bytes(), buf[28:60])
+	v.VotingPower = new(big.Int).SetBytes(buf[28:60])
 
-	return err
+	return nil
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the Vault object
@@ -195,7 +197,9 @@ func (v *SszValidator) MarshalSSZTo(buf []byte) ([]byte, error) {
 	dst = append(dst, v.Operator.Bytes()...)
 
 	// Field (1) 'VotingPower'
-	dst = append(dst, v.VotingPower.Bytes()...)
+	validatorVPBuf := make([]byte, 32)
+	v.VotingPower.FillBytes(validatorVPBuf)
+	dst = append(dst, validatorVPBuf...)
 
 	// Field (2) 'IsActive'
 	dst = ssz.MarshalBool(dst, v.IsActive)
@@ -245,10 +249,10 @@ func (v *SszValidator) UnmarshalSSZ(buf []byte) error {
 	var o3, o4 uint64
 
 	// Field (0) 'Operator'
-	copy(v.Operator.Bytes(), buf[0:20])
+	v.Operator = common.BytesToAddress(buf[0:20])
 
 	// Field (1) 'VotingPower'
-	copy(v.VotingPower.Bytes(), buf[20:52])
+	v.VotingPower = new(big.Int).SetBytes(buf[20:52])
 
 	// Field (2) 'IsActive'
 	v.IsActive = ssz.UnmarshalBool(buf[52:53])

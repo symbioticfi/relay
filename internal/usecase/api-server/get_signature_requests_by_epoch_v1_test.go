@@ -41,7 +41,7 @@ func TestGetSignatureRequestsByEpoch_Success(t *testing.T) {
 		},
 	}
 
-	setup.mockRepo.EXPECT().GetSignatureRequestsWithIDByEpoch(ctx, requestedEpoch).Return(expectedRequests, nil)
+	setup.mockRepo.EXPECT().GetSignatureRequestsWithIDByEpoch(ctx, requestedEpoch, defaultListPageSize, []byte(nil)).Return(expectedRequests, []byte(nil), nil)
 
 	req := &apiv1.GetSignatureRequestsByEpochRequest{
 		Epoch: uint64(requestedEpoch),
@@ -72,7 +72,7 @@ func TestGetSignatureRequestsByEpoch_EmptyResult(t *testing.T) {
 
 	requestedEpoch := symbiotic.Epoch(10)
 
-	setup.mockRepo.EXPECT().GetSignatureRequestsWithIDByEpoch(ctx, requestedEpoch).Return([]entity.SignatureRequestWithID{}, nil)
+	setup.mockRepo.EXPECT().GetSignatureRequestsWithIDByEpoch(ctx, requestedEpoch, defaultListPageSize, []byte(nil)).Return([]entity.SignatureRequestWithID{}, []byte(nil), nil)
 
 	req := &apiv1.GetSignatureRequestsByEpochRequest{
 		Epoch: uint64(requestedEpoch),
@@ -92,7 +92,7 @@ func TestGetSignatureRequestsByEpoch_RepositoryError(t *testing.T) {
 	requestedEpoch := symbiotic.Epoch(5)
 	expectedError := errors.New("database connection failed")
 
-	setup.mockRepo.EXPECT().GetSignatureRequestsWithIDByEpoch(ctx, requestedEpoch).Return(nil, expectedError)
+	setup.mockRepo.EXPECT().GetSignatureRequestsWithIDByEpoch(ctx, requestedEpoch, defaultListPageSize, []byte(nil)).Return(nil, []byte(nil), expectedError)
 
 	req := &apiv1.GetSignatureRequestsByEpochRequest{
 		Epoch: uint64(requestedEpoch),
