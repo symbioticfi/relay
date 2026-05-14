@@ -1,7 +1,9 @@
 package api_server
 
 import (
+	"github.com/go-errors/errors"
 	"github.com/google/uuid"
+	"github.com/symbioticfi/relay/internal/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"google.golang.org/grpc"
@@ -25,12 +27,23 @@ func (h *grpcHandler) ListenValidatorSet(
 	defer h.validatorSetsHub.Unsubscribe(subscriptionID.String())
 
 	if epoch := req.GetStartEpoch(); epoch != 0 {
-		validatorSets, err := h.cfg.Repo.GetValidatorSetsStartingFromEpoch(ctx, symbiotic.Epoch(epoch))
+		latestEpoch, err := h.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 		if err != nil {
-			return err
+			if !errors.Is(err, entity.ErrEntityNotFound) {
+				return err
+			}
+			latestEpoch = 0
 		}
 
-		for _, valSet := range validatorSets {
+		for e := symbiotic.Epoch(epoch); e <= latestEpoch; e++ {
+			valSet, err := h.cfg.Repo.GetValidatorSetByEpoch(ctx, e)
+			if err != nil {
+				if errors.Is(err, entity.ErrEntityNotFound) {
+					continue
+				}
+				return err
+			}
+
 			if err = stream.Send(convertValidatorSetToStreamResponse(valSet)); err != nil {
 				return err
 			}

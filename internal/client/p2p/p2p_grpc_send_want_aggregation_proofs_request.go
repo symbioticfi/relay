@@ -38,9 +38,12 @@ func (s *Service) SendWantAggregationProofsRequest(ctx context.Context, request 
 	// Send request to the selected peer
 	response, err := s.sendAggregationProofRequestToPeer(ctx, peerID, protoReq)
 	if err != nil {
+		s.markPeerSyncFailure(peerID)
 		tracing.RecordError(span, err)
 		return entity.WantAggregationProofsResponse{}, errors.Errorf("failed to get aggregation proofs from peer %s: %w", peerID, err)
 	}
+
+	s.markPeerSyncSuccess(peerID)
 
 	entityResp := protoToEntityAggregationProofResponse(response)
 

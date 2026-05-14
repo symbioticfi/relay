@@ -89,36 +89,36 @@ func TestRepository_GetSignatureRequestsByEpoch(t *testing.T) {
 	})
 
 	t.Run("get all requests for epoch", func(t *testing.T) {
-		results, err := repo.GetSignatureRequestsByEpoch(t.Context(), epoch, 0, common.Hash{})
+		results, _, err := repo.GetSignatureRequestsWithIDByEpoch(t.Context(), epoch, 0, nil)
 		require.NoError(t, err)
 		require.Len(t, results, 5)
 
 		for i, result := range results {
-			require.Equal(t, requests[i].req, result)
+			require.Equal(t, requests[i].req, result.SignatureRequest)
 		}
 	})
 
 	t.Run("get requests with limit", func(t *testing.T) {
-		results, err := repo.GetSignatureRequestsByEpoch(t.Context(), epoch, 3, common.Hash{})
+		results, _, err := repo.GetSignatureRequestsWithIDByEpoch(t.Context(), epoch, 3, nil)
 		require.NoError(t, err)
 		require.Len(t, results, 3)
 	})
 
 	t.Run("cursor-based pagination", func(t *testing.T) {
-		firstPage, err := repo.GetSignatureRequestsByEpoch(t.Context(), epoch, 2, common.Hash{})
+		firstPage, _, err := repo.GetSignatureRequestsWithIDByEpoch(t.Context(), epoch, 2, nil)
 		require.NoError(t, err)
 		require.Len(t, firstPage, 2)
 
 		lastHash := requests[1].hash
-		secondPage, err := repo.GetSignatureRequestsByEpoch(t.Context(), epoch, 2, lastHash)
+		secondPage, _, err := repo.GetSignatureRequestsWithIDByEpoch(t.Context(), epoch, 2, lastHash.Bytes())
 		require.NoError(t, err)
 		require.Len(t, secondPage, 2)
-		require.Equal(t, requests[2].req, secondPage[0])
-		require.Equal(t, requests[3].req, secondPage[1])
+		require.Equal(t, requests[2].req, secondPage[0].SignatureRequest)
+		require.Equal(t, requests[3].req, secondPage[1].SignatureRequest)
 	})
 
 	t.Run("empty epoch", func(t *testing.T) {
-		results, err := repo.GetSignatureRequestsByEpoch(t.Context(), symbiotic.Epoch(999), 0, common.Hash{})
+		results, _, err := repo.GetSignatureRequestsWithIDByEpoch(t.Context(), symbiotic.Epoch(999), 0, nil)
 		require.NoError(t, err)
 		require.Empty(t, results)
 	})
@@ -146,7 +146,7 @@ func TestRepository_GetSignatureRequestIDsByEpoch(t *testing.T) {
 	})
 
 	t.Run("get all request IDs for epoch", func(t *testing.T) {
-		results, err := repo.GetSignatureRequestIDsByEpoch(t.Context(), epoch)
+		results, _, err := repo.GetSignatureRequestIDsByEpoch(t.Context(), epoch, 0, nil)
 		require.NoError(t, err)
 		require.Len(t, results, 5)
 
@@ -156,7 +156,7 @@ func TestRepository_GetSignatureRequestIDsByEpoch(t *testing.T) {
 	})
 
 	t.Run("empty epoch returns no IDs", func(t *testing.T) {
-		results, err := repo.GetSignatureRequestIDsByEpoch(t.Context(), symbiotic.Epoch(999))
+		results, _, err := repo.GetSignatureRequestIDsByEpoch(t.Context(), symbiotic.Epoch(999), 0, nil)
 		require.NoError(t, err)
 		require.Empty(t, results)
 	})
@@ -184,7 +184,7 @@ func TestRepository_GetSignatureRequestsWithIDByEpoch(t *testing.T) {
 	})
 
 	t.Run("get all requests with IDs for epoch", func(t *testing.T) {
-		results, err := repo.GetSignatureRequestsWithIDByEpoch(t.Context(), epoch)
+		results, _, err := repo.GetSignatureRequestsWithIDByEpoch(t.Context(), epoch, 0, nil)
 		require.NoError(t, err)
 		require.Len(t, results, 5)
 
@@ -195,7 +195,7 @@ func TestRepository_GetSignatureRequestsWithIDByEpoch(t *testing.T) {
 	})
 
 	t.Run("empty epoch returns empty list", func(t *testing.T) {
-		results, err := repo.GetSignatureRequestsWithIDByEpoch(t.Context(), symbiotic.Epoch(999))
+		results, _, err := repo.GetSignatureRequestsWithIDByEpoch(t.Context(), symbiotic.Epoch(999), 0, nil)
 		require.NoError(t, err)
 		require.Empty(t, results)
 	})

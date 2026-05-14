@@ -3,6 +3,7 @@ package p2p
 import (
 	"context"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/go-errors/errors"
@@ -40,6 +41,9 @@ const (
 	maxSignatureSize  = 96
 	maxMsgHashSize    = 64
 	maxProofSize      = 1 << 20
+
+	// defaultPublishTimeout is used when Config.PublishTimeout is zero.
+	defaultPublishTimeout = 10 * time.Second
 )
 
 type metrics interface {
@@ -47,6 +51,36 @@ type metrics interface {
 	ObserveP2PPeerMessageSent(messageType, status string)
 	UnaryServerInterceptor() grpc.UnaryServerInterceptor
 	StreamServerInterceptor() grpc.StreamServerInterceptor
+}
+
+type SyncPeerBackoffConfig struct {
+	MinBackoff time.Duration `mapstructure:"min-backoff"`
+	Base       float64       `mapstructure:"base"`
+	MaxBackoff time.Duration `mapstructure:"max-backoff"`
+}
+
+func DefaultSyncPeerBackoffConfig() SyncPeerBackoffConfig {
+	return SyncPeerBackoffConfig{
+		MinBackoff: 15 * time.Second,
+		Base:       2,
+		MaxBackoff: 2 * time.Minute,
+	}
+}
+
+func normalizeSyncPeerBackoffConfig(cfg SyncPeerBackoffConfig) SyncPeerBackoffConfig {
+	defaults := DefaultSyncPeerBackoffConfig()
+
+	if cfg.MinBackoff == 0 {
+		cfg.MinBackoff = defaults.MinBackoff
+	}
+	if cfg.Base == 0 {
+		cfg.Base = defaults.Base
+	}
+	if cfg.MaxBackoff == 0 {
+		cfg.MaxBackoff = defaults.MaxBackoff
+	}
+
+	return cfg
 }
 
 // DiscoveryConfig contains discovery protocol configuration
@@ -97,13 +131,33 @@ type Config struct {
 	SkipMessageSign bool
 	Metrics         metrics         `validate:"required"`
 	Discovery       DiscoveryConfig `validate:"required"`
+	SyncPeerBackoff SyncPeerBackoffConfig
 	EventTracer     pubsub.EventTracer
 	Handler         prototypes.SymbioticP2PServiceServer `validate:"required"`
+	// PublishTimeout caps how long pubsub.Topic.Publish may block on a single
+	// broadcast. Zero falls back to defaultPublishTimeout.
+	PublishTimeout time.Duration
+}
+
+func (c Config) withDefaults() Config {
+	c.SyncPeerBackoff = normalizeSyncPeerBackoffConfig(c.SyncPeerBackoff)
+	return c
 }
 
 func (c Config) Validate() error {
-	if err := validator.New().Struct(c); err != nil {
+	cfg := c.withDefaults()
+
+	if err := validator.New().Struct(cfg); err != nil {
 		return errors.Errorf("invalid P2P config: %w", err)
+	}
+	if cfg.SyncPeerBackoff.MinBackoff <= 0 {
+		return errors.New("invalid P2P config: sync peer backoff min-backoff must be greater than 0")
+	}
+	if cfg.SyncPeerBackoff.Base < 1 {
+		return errors.New("invalid P2P config: sync peer backoff base must be greater than or equal to 1")
+	}
+	if cfg.SyncPeerBackoff.MaxBackoff < cfg.SyncPeerBackoff.MinBackoff {
+		return errors.New("invalid P2P config: sync peer backoff max-backoff must be greater than or equal to min-backoff")
 	}
 
 	return nil
@@ -118,10 +172,16 @@ type Service struct {
 	metrics                     metrics
 	topicsMap                   map[string]*pubsub.Topic
 	p2pGRPCHandler              prototypes.SymbioticP2PServiceServer
+	publishTimeout              time.Duration
+	syncPeerBackoff             SyncPeerBackoffConfig
+	peerSyncMu                  sync.RWMutex
+	peerSyncState               map[peer.ID]peerSyncFailure
+	now                         func() time.Time
 }
 
 // NewService creates a new P2P service with the given configuration
 func NewService(ctx context.Context, cfg Config, signalCfg signals.Config) (*Service, error) {
+	cfg = cfg.withDefaults()
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
@@ -164,12 +224,21 @@ func NewService(ctx context.Context, cfg Config, signalCfg signals.Config) (*Ser
 		return nil, errors.Errorf("failed to subscribe to agg proof ready topic: %w", err)
 	}
 
+	publishTimeout := cfg.PublishTimeout
+	if publishTimeout <= 0 {
+		publishTimeout = defaultPublishTimeout
+	}
+
 	service := &Service{
 		ctx:                         log.WithAttrs(ctx, slog.String("component", "p2p")),
 		host:                        h,
 		signatureReceivedHandler:    signals.New[p2pEntity.P2PMessage[symbiotic.Signature]](signalCfg, "signatureReceive", nil),
 		signaturesAggregatedHandler: signals.New[p2pEntity.P2PMessage[symbiotic.AggregationProof]](signalCfg, "signaturesAggregated", nil),
 		metrics:                     cfg.Metrics,
+		publishTimeout:              publishTimeout,
+		syncPeerBackoff:             cfg.SyncPeerBackoff,
+		peerSyncState:               make(map[peer.ID]peerSyncFailure),
+		now:                         time.Now,
 
 		topicsMap: map[string]*pubsub.Topic{
 			topicSignatureReady: signatureReadyTopic,
@@ -288,7 +357,9 @@ func (s *Service) broadcast(ctx context.Context, topicName string, data []byte) 
 	}
 
 	tracing.AddEvent(span, "publishing_to_topic")
-	err = topic.Publish(ctx, data)
+	publishCtx, publishCancel := context.WithTimeout(ctx, s.publishTimeout)
+	defer publishCancel()
+	err = topic.Publish(publishCtx, data)
 	if err != nil {
 		s.metrics.ObserveP2PPeerMessageSent(topicName, "error")
 		s.metrics.ObserveP2PBroadcastDuration(topicName, "error", time.Since(start))

@@ -101,6 +101,8 @@ func local_request_SymbioticAPIService_GetAggregationProof_0(ctx context.Context
 	return msg, metadata, err
 }
 
+var filter_SymbioticAPIService_GetAggregationProofsByEpoch_0 = &utilities.DoubleArray{Encoding: map[string]int{"epoch": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+
 func request_SymbioticAPIService_GetAggregationProofsByEpoch_0(ctx context.Context, marshaler runtime.Marshaler, client SymbioticAPIServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq GetAggregationProofsByEpochRequest
@@ -117,6 +119,12 @@ func request_SymbioticAPIService_GetAggregationProofsByEpoch_0(ctx context.Conte
 	protoReq.Epoch, err = runtime.Uint64(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "epoch", err)
+	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SymbioticAPIService_GetAggregationProofsByEpoch_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := client.GetAggregationProofsByEpoch(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
@@ -135,6 +143,12 @@ func local_request_SymbioticAPIService_GetAggregationProofsByEpoch_0(ctx context
 	protoReq.Epoch, err = runtime.Uint64(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "epoch", err)
+	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SymbioticAPIService_GetAggregationProofsByEpoch_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.GetAggregationProofsByEpoch(ctx, &protoReq)
 	return msg, metadata, err
@@ -200,6 +214,8 @@ func local_request_SymbioticAPIService_GetSignatures_0(ctx context.Context, mars
 	return msg, metadata, err
 }
 
+var filter_SymbioticAPIService_GetSignaturesByEpoch_0 = &utilities.DoubleArray{Encoding: map[string]int{"epoch": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+
 func request_SymbioticAPIService_GetSignaturesByEpoch_0(ctx context.Context, marshaler runtime.Marshaler, client SymbioticAPIServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq GetSignaturesByEpochRequest
@@ -216,6 +232,12 @@ func request_SymbioticAPIService_GetSignaturesByEpoch_0(ctx context.Context, mar
 	protoReq.Epoch, err = runtime.Uint64(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "epoch", err)
+	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SymbioticAPIService_GetSignaturesByEpoch_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := client.GetSignaturesByEpoch(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
@@ -235,9 +257,17 @@ func local_request_SymbioticAPIService_GetSignaturesByEpoch_0(ctx context.Contex
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "epoch", err)
 	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SymbioticAPIService_GetSignaturesByEpoch_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
 	msg, err := server.GetSignaturesByEpoch(ctx, &protoReq)
 	return msg, metadata, err
 }
+
+var filter_SymbioticAPIService_GetSignatureRequestIDsByEpoch_0 = &utilities.DoubleArray{Encoding: map[string]int{"epoch": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 
 func request_SymbioticAPIService_GetSignatureRequestIDsByEpoch_0(ctx context.Context, marshaler runtime.Marshaler, client SymbioticAPIServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
@@ -255,6 +285,12 @@ func request_SymbioticAPIService_GetSignatureRequestIDsByEpoch_0(ctx context.Con
 	protoReq.Epoch, err = runtime.Uint64(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "epoch", err)
+	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SymbioticAPIService_GetSignatureRequestIDsByEpoch_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := client.GetSignatureRequestIDsByEpoch(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
@@ -274,9 +310,17 @@ func local_request_SymbioticAPIService_GetSignatureRequestIDsByEpoch_0(ctx conte
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "epoch", err)
 	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SymbioticAPIService_GetSignatureRequestIDsByEpoch_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
 	msg, err := server.GetSignatureRequestIDsByEpoch(ctx, &protoReq)
 	return msg, metadata, err
 }
+
+var filter_SymbioticAPIService_GetSignatureRequestsByEpoch_0 = &utilities.DoubleArray{Encoding: map[string]int{"epoch": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 
 func request_SymbioticAPIService_GetSignatureRequestsByEpoch_0(ctx context.Context, marshaler runtime.Marshaler, client SymbioticAPIServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
@@ -295,6 +339,12 @@ func request_SymbioticAPIService_GetSignatureRequestsByEpoch_0(ctx context.Conte
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "epoch", err)
 	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SymbioticAPIService_GetSignatureRequestsByEpoch_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
 	msg, err := client.GetSignatureRequestsByEpoch(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
@@ -312,6 +362,12 @@ func local_request_SymbioticAPIService_GetSignatureRequestsByEpoch_0(ctx context
 	protoReq.Epoch, err = runtime.Uint64(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "epoch", err)
+	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SymbioticAPIService_GetSignatureRequestsByEpoch_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.GetSignatureRequestsByEpoch(ctx, &protoReq)
 	return msg, metadata, err

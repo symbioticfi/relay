@@ -9,6 +9,7 @@ import (
 	"github.com/go-errors/errors"
 
 	"github.com/symbioticfi/relay/internal/client/repository/codec"
+	"github.com/symbioticfi/relay/internal/client/repository/repoutil"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -64,7 +65,7 @@ func (r *Repository) saveSignatureRequestToKey(ctx context.Context, req symbioti
 }
 
 func (r *Repository) SaveSignatureRequest(ctx context.Context, requestID common.Hash, req symbiotic.SignatureRequest) error {
-	return r.doUpdateInTx(ctx, "SaveSignatureRequest", func(ctx context.Context) error {
+	return r.doUpdateInTxWithLock(ctx, "SaveSignatureRequest", func(ctx context.Context) error {
 		if err := r.saveSignatureRequest(ctx, requestID, req); err != nil {
 			return err
 		}
@@ -75,7 +76,7 @@ func (r *Repository) SaveSignatureRequest(ctx context.Context, requestID common.
 			return errors.Errorf("failed to save signature request to pending collection: %v", err)
 		}
 		return nil
-	})
+	}, &r.requestIDMutexMap, requestID)
 }
 
 func (r *Repository) saveSignatureRequest(ctx context.Context, requestID common.Hash, req symbiotic.SignatureRequest) error {
@@ -175,150 +176,142 @@ func (r *Repository) GetSignatureRequest(ctx context.Context, requestID common.H
 	})
 }
 
-// getSignatureRequestsByEpochWithKeys is a generic method for retrieving signature requests by epoch
-// using provided prefix and key generation function
-func (r *Repository) getSignatureRequestsByEpochWithKeys(
+// GetSignatureRequestsWithIDByEpoch returns one page of signature requests for
+// the given epoch, paginated via opaque cursor `from` (32-byte requestID raw).
+// nextFrom == nil signals the last page; invalid `from` returns entity.ErrInvalidCursor.
+func (r *Repository) GetSignatureRequestsWithIDByEpoch(
 	ctx context.Context,
 	epoch symbiotic.Epoch,
-	limit int,
-	lastHash common.Hash,
-	prefix []byte,
-	keyFunc func(symbiotic.Epoch, common.Hash) []byte,
-) ([]symbiotic.SignatureRequest, error) {
-	var requests []symbiotic.SignatureRequest
+	pageSize int,
+	from []byte,
+) ([]entity.SignatureRequestWithID, []byte, error) {
+	fromHash, err := repoutil.DecodeHashCursor(from)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	return requests, r.doViewInTx(ctx, "getSignatureRequestsByEpochWithKeys", func(ctx context.Context) error {
+	var (
+		requests []entity.SignatureRequestWithID
+		lastID   common.Hash
+		moreLeft bool
+	)
+
+	err = r.doViewInTx(ctx, "GetSignatureRequestsWithIDByEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
+		prefix := keySignatureRequestEpochPrefix(epoch)
 		opts := badger.DefaultIteratorOptions
 		opts.Prefix = prefix
-		opts.PrefetchValues = true
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
 		seekKey := prefix
-		if lastHash != (common.Hash{}) {
-			// Subsequent pages: seek to the record after lastHash
-			seekKey = keyFunc(epoch, lastHash)
+		if fromHash != (common.Hash{}) {
+			seekKey = keySignatureRequest(epoch, fromHash)
 		}
 
-		count := 0
 		it.Seek(seekKey)
-		// If we're seeking from a specific hash and positioned exactly on that key, skip it (already returned in previous page)
-		if lastHash != (common.Hash{}) && it.ValidForPrefix(prefix) && bytes.Equal(it.Item().Key(), seekKey) {
+		// Skip exact-match cursor item (already returned in previous page).
+		if fromHash != (common.Hash{}) && it.ValidForPrefix(prefix) && bytes.Equal(it.Item().Key(), seekKey) {
 			it.Next()
 		}
 
 		for ; it.ValidForPrefix(prefix); it.Next() {
-			// Stop if we've reached the limit
-			if limit > 0 && count >= limit {
-				break
+			if pageSize > 0 && len(requests) >= pageSize {
+				moreLeft = true
+				return nil
 			}
-
 			item := it.Item()
-			value, err := item.ValueCopy(nil)
-			if err != nil {
-				return errors.Errorf("failed to copy signature request value: %w", err)
-			}
-
-			req, err := bytesToSignatureRequest(value)
-			if err != nil {
-				return errors.Errorf("failed to unmarshal signature request: %w", err)
-			}
-
-			requests = append(requests, req)
-			count++
-		}
-
-		return nil
-	})
-}
-
-// GetSignatureRequestsWithIDByEpoch gets all signature requests with their request IDs for a given epoch
-func (r *Repository) GetSignatureRequestsWithIDByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]entity.SignatureRequestWithID, error) {
-	var requests []entity.SignatureRequestWithID
-
-	return requests, r.doViewInTx(ctx, "GetSignatureRequestsWithIDByEpoch", func(ctx context.Context) error {
-		txn := getTxn(ctx)
-
-		opts := badger.DefaultIteratorOptions
-		prefix := keySignatureRequestEpochPrefix(epoch)
-		opts.Prefix = prefix
-		it := txn.NewIterator(opts)
-		defer it.Close()
-
-		it.Seek(prefix)
-
-		for ; it.ValidForPrefix(prefix); it.Next() {
-			item := it.Item()
-
-			// Extract request ID from key
 			requestID, err := extractRequestIDFromEpochDelimitedKey(item.Key(), keySignatureRequestPrefix)
 			if err != nil {
 				return err
 			}
-
 			value, err := item.ValueCopy(nil)
 			if err != nil {
 				return errors.Errorf("failed to copy signature request value: %w", err)
 			}
-
 			req, err := bytesToSignatureRequest(value)
 			if err != nil {
 				return errors.Errorf("failed to unmarshal signature request: %w", err)
 			}
-
 			requests = append(requests, entity.SignatureRequestWithID{
 				RequestID:        requestID,
 				SignatureRequest: req,
 			})
+			lastID = requestID
 		}
-
 		return nil
 	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if !moreLeft {
+		return requests, nil, nil
+	}
+	return requests, repoutil.EncodeHashCursor(lastID), nil
 }
 
-// GetSignatureRequestsByEpoch gets signature requests for a given epoch with pagination
-func (r *Repository) GetSignatureRequestsByEpoch(ctx context.Context, epoch symbiotic.Epoch, limit int, lastHash common.Hash) ([]symbiotic.SignatureRequest, error) {
-	return r.getSignatureRequestsByEpochWithKeys(
-		ctx,
-		epoch,
-		limit,
-		lastHash,
-		keySignatureRequestEpochPrefix(epoch),
-		keySignatureRequest,
+// GetSignatureRequestIDsByEpoch returns one page of request IDs for the given
+// epoch (keys only — no value materialization). Cursor format same as
+// GetSignatureRequestsWithIDByEpoch.
+func (r *Repository) GetSignatureRequestIDsByEpoch(
+	ctx context.Context,
+	epoch symbiotic.Epoch,
+	pageSize int,
+	from []byte,
+) ([]common.Hash, []byte, error) {
+	fromHash, err := repoutil.DecodeHashCursor(from)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var (
+		requestIDs []common.Hash
+		lastID     common.Hash
+		moreLeft   bool
 	)
-}
 
-func (r *Repository) GetSignatureRequestIDsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]common.Hash, error) {
-	var requestIDs []common.Hash
-
-	return requestIDs, r.doViewInTx(ctx, "GetSignatureRequestIDsByEpoch", func(ctx context.Context) error {
+	err = r.doViewInTx(ctx, "GetSignatureRequestIDsByEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-
-		// Iterate through signature request keys without fetching values
-		opts := badger.DefaultIteratorOptions
 		prefix := keySignatureRequestEpochPrefix(epoch)
+		opts := badger.DefaultIteratorOptions
 		opts.Prefix = prefix
-		opts.PrefetchValues = false // Don't fetch values - we only need keys
+		opts.PrefetchValues = false
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
-		it.Seek(prefix)
+		seekKey := prefix
+		if fromHash != (common.Hash{}) {
+			seekKey = keySignatureRequest(epoch, fromHash)
+		}
+
+		it.Seek(seekKey)
+		if fromHash != (common.Hash{}) && it.ValidForPrefix(prefix) && bytes.Equal(it.Item().Key(), seekKey) {
+			it.Next()
+		}
 
 		for ; it.ValidForPrefix(prefix); it.Next() {
-			item := it.Item()
-
-			// Extract request ID from key
-			requestID, err := extractRequestIDFromEpochDelimitedKey(item.Key(), keySignatureRequestPrefix)
+			if pageSize > 0 && len(requestIDs) >= pageSize {
+				moreLeft = true
+				return nil
+			}
+			id, err := extractRequestIDFromEpochDelimitedKey(it.Item().Key(), keySignatureRequestPrefix)
 			if err != nil {
 				return err
 			}
-
-			requestIDs = append(requestIDs, requestID)
+			requestIDs = append(requestIDs, id)
+			lastID = id
 		}
-
 		return nil
 	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if !moreLeft {
+		return requestIDs, nil, nil
+	}
+	return requestIDs, repoutil.EncodeHashCursor(lastID), nil
 }
 
 func (r *Repository) GetSignaturePending(ctx context.Context, limit int) ([]common.Hash, error) {

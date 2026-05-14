@@ -445,7 +445,7 @@ func TestAggregator_Verify_WithInvalidMessageHash_ReturnsError(t *testing.T) {
 	}
 	keyTag := symbiotic.KeyTag(1)
 
-	proofBytes := make([]byte, 64)
+	proofBytes := make([]byte, MinProofSize)
 	aggregationProof := symbiotic.AggregationProof{
 		MessageHash: []byte("invalid"),
 		Proof:       proofBytes,
@@ -482,7 +482,7 @@ func TestAggregator_Verify_WithInsufficientVotingPower_ReturnsError(t *testing.T
 	}
 	keyTag := symbiotic.KeyTag(1)
 
-	proofBytes := make([]byte, 64)
+	proofBytes := make([]byte, MinProofSize)
 	proof := symbiotic.AggregationProof{
 		MessageHash: make([]byte, 32),
 		Proof:       proofBytes,

@@ -7,6 +7,8 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/require"
+
+	"github.com/symbioticfi/relay/internal/entity"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/metadata"
 
@@ -87,7 +89,10 @@ func TestListenValidatorSet_OnlyHistoricalData(t *testing.T) {
 	stream := &mockValidatorSetsStream{ctx: ctx}
 
 	startEpoch := uint64(1)
-	mockRepo.EXPECT().GetValidatorSetsStartingFromEpoch(ctx, symbiotic.Epoch(startEpoch)).Return(expectedValidatorSets, nil)
+	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(3), nil)
+	mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, symbiotic.Epoch(1)).Return(expectedValidatorSets[0], nil)
+	mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, symbiotic.Epoch(2)).Return(expectedValidatorSets[1], nil)
+	mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, symbiotic.Epoch(3)).Return(expectedValidatorSets[2], nil)
 
 	req := &apiv1.ListenValidatorSetRequest{
 		StartEpoch: &startEpoch,
@@ -176,7 +181,9 @@ func TestListenValidatorSet_HistoricalAndBroadcast(t *testing.T) {
 	}
 
 	startEpoch := uint64(1)
-	mockRepo.EXPECT().GetValidatorSetsStartingFromEpoch(ctx, symbiotic.Epoch(startEpoch)).Return(historicalValidatorSets, nil)
+	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(2), nil)
+	mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, symbiotic.Epoch(1)).Return(historicalValidatorSets[0], nil)
+	mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, symbiotic.Epoch(2)).Return(historicalValidatorSets[1], nil)
 
 	req := &apiv1.ListenValidatorSetRequest{
 		StartEpoch: &startEpoch,
@@ -225,7 +232,7 @@ func TestListenValidatorSet_RepositoryError(t *testing.T) {
 
 	startEpoch := uint64(1)
 	expectedError := errors.New("database connection failed")
-	mockRepo.EXPECT().GetValidatorSetsStartingFromEpoch(ctx, symbiotic.Epoch(startEpoch)).Return(nil, expectedError)
+	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(0), expectedError)
 
 	req := &apiv1.ListenValidatorSetRequest{
 		StartEpoch: &startEpoch,
@@ -267,7 +274,8 @@ func TestListenValidatorSet_StreamSendError(t *testing.T) {
 	}
 
 	startEpoch := uint64(1)
-	mockRepo.EXPECT().GetValidatorSetsStartingFromEpoch(ctx, symbiotic.Epoch(startEpoch)).Return(expectedValidatorSets, nil)
+	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(1), nil)
+	mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, symbiotic.Epoch(1)).Return(expectedValidatorSets[0], nil)
 
 	req := &apiv1.ListenValidatorSetRequest{
 		StartEpoch: &startEpoch,
@@ -345,7 +353,8 @@ func TestListenValidatorSet_EmptyHistoricalData(t *testing.T) {
 	}
 
 	startEpoch := uint64(1)
-	mockRepo.EXPECT().GetValidatorSetsStartingFromEpoch(ctx, symbiotic.Epoch(startEpoch)).Return([]symbiotic.ValidatorSet{}, nil)
+	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(1), nil)
+	mockRepo.EXPECT().GetValidatorSetByEpoch(ctx, symbiotic.Epoch(1)).Return(symbiotic.ValidatorSet{}, entity.ErrEntityNotFound)
 
 	req := &apiv1.ListenValidatorSetRequest{
 		StartEpoch: &startEpoch,

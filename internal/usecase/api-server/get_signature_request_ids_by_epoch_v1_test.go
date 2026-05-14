@@ -24,7 +24,7 @@ func TestGetSignatureRequestIDsByEpoch_Success(t *testing.T) {
 		common.HexToHash("0x12345678123456781234567812345678123456781234567812345678123456789"),
 	}
 
-	setup.mockRepo.EXPECT().GetSignatureRequestIDsByEpoch(ctx, requestedEpoch).Return(expectedIDs, nil)
+	setup.mockRepo.EXPECT().GetSignatureRequestIDsByEpoch(ctx, requestedEpoch, defaultIDListPageSize, []byte(nil)).Return(expectedIDs, []byte(nil), nil)
 
 	req := &apiv1.GetSignatureRequestIDsByEpochRequest{
 		Epoch: uint64(requestedEpoch),
@@ -46,7 +46,7 @@ func TestGetSignatureRequestIDsByEpoch_EmptyResult(t *testing.T) {
 
 	requestedEpoch := symbiotic.Epoch(10)
 
-	setup.mockRepo.EXPECT().GetSignatureRequestIDsByEpoch(ctx, requestedEpoch).Return([]common.Hash{}, nil)
+	setup.mockRepo.EXPECT().GetSignatureRequestIDsByEpoch(ctx, requestedEpoch, defaultIDListPageSize, []byte(nil)).Return([]common.Hash{}, []byte(nil), nil)
 
 	req := &apiv1.GetSignatureRequestIDsByEpochRequest{
 		Epoch: uint64(requestedEpoch),
@@ -66,7 +66,7 @@ func TestGetSignatureRequestIDsByEpoch_RepositoryError(t *testing.T) {
 	requestedEpoch := symbiotic.Epoch(5)
 	expectedError := errors.New("database connection failed")
 
-	setup.mockRepo.EXPECT().GetSignatureRequestIDsByEpoch(ctx, requestedEpoch).Return(nil, expectedError)
+	setup.mockRepo.EXPECT().GetSignatureRequestIDsByEpoch(ctx, requestedEpoch, defaultIDListPageSize, []byte(nil)).Return(nil, []byte(nil), expectedError)
 
 	req := &apiv1.GetSignatureRequestIDsByEpochRequest{
 		Epoch: uint64(requestedEpoch),
