@@ -11,6 +11,7 @@ import (
 	"github.com/go-errors/errors"
 
 	"github.com/symbioticfi/relay/internal/client/repository/codec"
+	"github.com/symbioticfi/relay/internal/client/repository/repoutil"
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
@@ -31,12 +32,17 @@ func keyAggregationProofPendingEpochPrefix(epoch symbiotic.Epoch) []byte {
 }
 
 func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.Hash, ap symbiotic.AggregationProof) error {
+	return r.doUpdateInTxWithLock(ctx, "saveAggregationProof", func(ctx context.Context) error {
+		return r.writeAggregationProof(ctx, requestID, ap)
+	}, &r.requestIDMutexMap, requestID)
+}
+
+func (r *Repository) writeAggregationProof(ctx context.Context, requestID common.Hash, ap symbiotic.AggregationProof) error {
 	proofBytes, err := aggregationProofToBytes(ap)
 	if err != nil {
 		return errors.Errorf("failed to marshal aggregation proof: %w", err)
 	}
-
-	return r.doUpdateInTxWithLock(ctx, "saveAggregationProof", func(ctx context.Context) error {
+	return r.doUpdateInTx(ctx, "writeAggregationProof", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 
 		valueKey := keyAggregationProof(requestID)
@@ -68,7 +74,7 @@ func (r *Repository) saveAggregationProof(ctx context.Context, requestID common.
 		}
 
 		return nil
-	}, &r.proofsMutexMap, requestID)
+	})
 }
 
 func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error) {
@@ -99,20 +105,56 @@ func (r *Repository) GetAggregationProof(ctx context.Context, requestID common.H
 	})
 }
 
-func (r *Repository) GetAggregationProofsStartingFromEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.AggregationProof, error) {
-	var proofs []symbiotic.AggregationProof
+// GetAggregationProofsByEpoch returns one page of aggregation proofs for the
+// given epoch, paginated via opaque cursor `from` (32-byte requestID raw).
+// Iterates the request_id_epoch index (sorted by requestID within epoch);
+// nextFrom == nil signals the last page.
+func (r *Repository) GetAggregationProofsByEpoch(
+	ctx context.Context,
+	epoch symbiotic.Epoch,
+	pageSize int,
+	from []byte,
+) ([]symbiotic.AggregationProof, []byte, error) {
+	fromHash, err := repoutil.DecodeHashCursor(from)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	return proofs, r.doViewInTx(ctx, "GetAggregationProofsStartingFromEpoch", func(ctx context.Context) error {
+	var (
+		proofs   []symbiotic.AggregationProof
+		lastID   common.Hash
+		moreLeft bool
+	)
+
+	err = r.doViewInTx(ctx, "GetAggregationProofsByEpoch", func(ctx context.Context) error {
 		txn := getTxn(ctx)
-
-		startKey := keyRequestIDEpochPrefix(epoch)
+		prefix := keyRequestIDEpochPrefix(epoch)
 		opts := badger.DefaultIteratorOptions
 		opts.Prefix = keyRequestIDEpochAll()
-
+		opts.PrefetchValues = false // index entries are key-only; the proof value comes from a separate Get.
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
-		for it.Seek(startKey); it.Valid(); it.Next() {
+		seekKey := prefix
+		if fromHash != (common.Hash{}) {
+			seekKey = keyRequestIDEpoch(epoch, fromHash)
+		}
+
+		it.Seek(seekKey)
+		if fromHash != (common.Hash{}) && it.ValidForPrefix(prefix) && bytes.Equal(it.Item().Key(), seekKey) {
+			it.Next()
+		}
+
+		for ; it.ValidForPrefix(prefix); it.Next() {
+			if pageSize > 0 && len(proofs) >= pageSize {
+				moreLeft = true
+				return nil
+			}
+			id, err := extractRequestIDFromEpochKey(it.Item().Key())
+			if err != nil {
+				slog.ErrorContext(ctx, errCorruptedRequestIDEpochLink.Error(), "key", string(it.Item().Key()))
+				continue
+			}
 			proof, err := getAggregationProofByEpochFromItem(txn, it)
 			if err != nil {
 				if errors.Is(err, errCorruptedRequestIDEpochLink) {
@@ -121,42 +163,19 @@ func (r *Repository) GetAggregationProofsStartingFromEpoch(ctx context.Context, 
 				}
 				return err
 			}
-
 			proofs = append(proofs, proof)
+			lastID = id
 		}
-
 		return nil
 	})
-}
+	if err != nil {
+		return nil, nil, err
+	}
 
-func (r *Repository) GetAggregationProofsByEpoch(ctx context.Context, epoch symbiotic.Epoch) ([]symbiotic.AggregationProof, error) {
-	var proofs []symbiotic.AggregationProof
-
-	return proofs, r.doViewInTx(ctx, "GetAggregationProofsByEpoch", func(ctx context.Context) error {
-		txn := getTxn(ctx)
-
-		startKey := keyRequestIDEpochPrefix(epoch)
-		opts := badger.DefaultIteratorOptions
-		opts.Prefix = keyRequestIDEpochAll()
-
-		it := txn.NewIterator(opts)
-		defer it.Close()
-
-		for it.Seek(startKey); it.ValidForPrefix(startKey); it.Next() {
-			proof, err := getAggregationProofByEpochFromItem(txn, it)
-			if err != nil {
-				if errors.Is(err, errCorruptedRequestIDEpochLink) {
-					slog.ErrorContext(ctx, errCorruptedRequestIDEpochLink.Error(), "key", string(it.Item().Key()))
-					continue
-				}
-				return err
-			}
-
-			proofs = append(proofs, proof)
-		}
-
-		return nil
-	})
+	if !moreLeft {
+		return proofs, nil, nil
+	}
+	return proofs, repoutil.EncodeHashCursor(lastID), nil
 }
 
 func getAggregationProofByEpochFromItem(txn *badger.Txn, it *badger.Iterator) (symbiotic.AggregationProof, error) {
@@ -203,21 +222,18 @@ func (r *Repository) saveAggregationProofPending(ctx context.Context, requestID 
 			return errors.Errorf("pending aggregation proof already exists: %w", entity.ErrEntityAlreadyExist)
 		}
 
-		// Store just a marker (empty value) - we don't need the full request data here
-		err = txn.Set(pendingKey, []byte{})
-		if err != nil {
+		if err := txn.Set(pendingKey, []byte{}); err != nil {
 			return errors.Errorf("failed to store pending aggregation proof: %w", err)
 		}
 		return nil
 	})
 }
 
-func (r *Repository) RemoveAggregationProofPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
-	return r.doUpdateInTx(ctx, "RemoveAggregationProofPending", func(ctx context.Context) error {
+func (r *Repository) removeAggregationProofPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
+	return r.doUpdateInTx(ctx, "removeAggregationProofPending", func(ctx context.Context) error {
 		txn := getTxn(ctx)
 		pendingKey := keyAggregationProofPending(epoch, requestID)
 
-		// Check if exists before removing
 		_, err := txn.Get(pendingKey)
 		if err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
@@ -226,13 +242,17 @@ func (r *Repository) RemoveAggregationProofPending(ctx context.Context, epoch sy
 			return errors.Errorf("failed to check pending aggregation proof: %w", err)
 		}
 
-		err = txn.Delete(pendingKey)
-		if err != nil {
+		if err := txn.Delete(pendingKey); err != nil {
 			return errors.Errorf("failed to delete pending aggregation proof: %w", err)
 		}
-
 		return nil
 	})
+}
+
+func (r *Repository) RemoveAggregationProofPending(ctx context.Context, epoch symbiotic.Epoch, requestID common.Hash) error {
+	return r.doUpdateInTxWithLock(ctx, "RemoveAggregationProofPending", func(ctx context.Context) error {
+		return r.removeAggregationProofPending(ctx, epoch, requestID)
+	}, &r.requestIDMutexMap, requestID)
 }
 
 func (r *Repository) GetSignatureRequestsWithoutAggregationProof(ctx context.Context, epoch symbiotic.Epoch, limit int, lastHash common.Hash) ([]symbiotic.SignatureRequestWithID, error) {

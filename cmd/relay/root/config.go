@@ -222,6 +222,7 @@ type P2PConfig struct {
 	Bootnodes       []string                        `mapstructure:"bootnodes"`
 	DHTMode         string                          `mapstructure:"dht-mode" validate:"oneof=auto server client disabled"`
 	MDnsEnabled     bool                            `mapstructure:"mdns"`
+	PublishTimeout  time.Duration                   `mapstructure:"publish-timeout"`
 	SyncPeerBackoff p2pclient.SyncPeerBackoffConfig `mapstructure:"sync-peer-backoff"`
 }
 
@@ -397,6 +398,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringSlice("p2p.bootnodes", nil, "List of bootnodes in multiaddr format")
 	rootCmd.PersistentFlags().String("p2p.dht-mode", "server", "DHT mode: auto, server, client, disabled")
 	rootCmd.PersistentFlags().Bool("p2p.mdns", false, "Enable mDNS discovery for P2P")
+	rootCmd.PersistentFlags().Duration("p2p.publish-timeout", 10*time.Second, "Maximum time a single pubsub publish may block")
 	rootCmd.PersistentFlags().Duration("p2p.sync-peer-backoff.min-backoff", defaultSyncPeerBackoff.MinBackoff, "Minimum cooldown before retrying a failed sync peer")
 	rootCmd.PersistentFlags().Float64("p2p.sync-peer-backoff.base", defaultSyncPeerBackoff.Base, "Exponential base for failed sync peer cooldown backoff")
 	rootCmd.PersistentFlags().Duration("p2p.sync-peer-backoff.max-backoff", defaultSyncPeerBackoff.MaxBackoff, "Maximum cooldown before retrying a failed sync peer")
@@ -603,6 +605,9 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("p2p.mdns", cmd.PersistentFlags().Lookup("p2p.mdns")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("p2p.publish-timeout", cmd.PersistentFlags().Lookup("p2p.publish-timeout")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("p2p.sync-peer-backoff.min-backoff", cmd.PersistentFlags().Lookup("p2p.sync-peer-backoff.min-backoff")); err != nil {

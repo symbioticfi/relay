@@ -164,6 +164,8 @@ Request message for getting aggregation proof
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | epoch | [uint64](#uint64) |  | Epoch number |
+| page_size | [uint32](#uint32) |  | Maximum number of items to return. 0 = server default (100). Server clamps to max (1000). |
+| from | [string](#string) |  | Opaque pagination cursor from a previous response&#39;s `next_from`. Empty string starts from the beginning. |
 
 
 
@@ -179,6 +181,7 @@ Response message for getting aggregation proof
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | aggregation_proofs | [AggregationProof](#api-proto-v1-AggregationProof) | repeated |  |
+| next_from | [string](#string) |  | Cursor to retrieve the next page. Empty when this is the last page. |
 
 
 
@@ -394,6 +397,8 @@ Request message for getting all signature request IDs by epoch
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | epoch | [uint64](#uint64) |  | Epoch number |
+| page_size | [uint32](#uint32) |  | Maximum number of items to return. 0 = server default (1000). Server clamps to max (10000). |
+| from | [string](#string) |  | Opaque pagination cursor from a previous response&#39;s `next_from`. Empty string starts from the beginning. |
 
 
 
@@ -409,6 +414,7 @@ Response message for getting all signature request IDs by epoch
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | request_ids | [string](#string) | repeated | List of all signature request IDs for the epoch |
+| next_from | [string](#string) |  | Cursor to retrieve the next page. Empty when this is the last page. |
 
 
 
@@ -454,6 +460,8 @@ Request message for getting all signature requests by epoch
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | epoch | [uint64](#uint64) |  | Epoch number |
+| page_size | [uint32](#uint32) |  | Maximum number of items to return. 0 = server default (100). Server clamps to max (1000). |
+| from | [string](#string) |  | Opaque pagination cursor from a previous response&#39;s `next_from`. Empty string starts from the beginning. |
 
 
 
@@ -469,6 +477,7 @@ Response message for getting all signature requests by epoch
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | signature_requests | [SignatureRequest](#api-proto-v1-SignatureRequest) | repeated | List of all signature requests for the epoch |
+| next_from | [string](#string) |  | Cursor to retrieve the next page. Empty when this is the last page. |
 
 
 
@@ -484,6 +493,8 @@ Request message for getting signatures by epoch
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | epoch | [uint64](#uint64) |  | Epoch number |
+| page_size | [uint32](#uint32) |  | Maximum number of items to return. 0 = server default (100). Server clamps to max (1000). |
+| from | [string](#string) |  | Opaque pagination cursor from a previous response&#39;s `next_from`. Empty string starts from the beginning. |
 
 
 
@@ -499,6 +510,7 @@ Response message for getting signatures by epoch
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | signatures | [Signature](#api-proto-v1-Signature) | repeated | List of signatures |
+| next_from | [string](#string) |  | Cursor to retrieve the next page. Empty when this is the last page. |
 
 
 

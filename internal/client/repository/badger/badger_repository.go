@@ -50,8 +50,7 @@ type Repository struct {
 	db      *badger.DB
 	metrics metrics
 
-	signatureMutexMap sync.Map // map[requestId]*mutexWithUseTime
-	proofsMutexMap    sync.Map // map[requestId]*mutexWithUseTime
+	requestIDMutexMap sync.Map // map[requestId]*mutexWithUseTime
 	valsetMutexMap    sync.Map // map[epoch]*mutexWithUseTime
 
 	valueLogGCDiscardRatio float64
@@ -263,14 +262,12 @@ func (r *Repository) cleanupStaleMutexes(staleTimeout time.Duration) {
 	now := time.Now()
 	staleThreshold := now.Add(-staleTimeout)
 
-	signatureCount := cleanupMutexMap(&r.signatureMutexMap, staleThreshold)
-	proofsCount := cleanupMutexMap(&r.proofsMutexMap, staleThreshold)
+	requestIDCount := cleanupMutexMap(&r.requestIDMutexMap, staleThreshold)
 	valsetCount := cleanupMutexMap(&r.valsetMutexMap, staleThreshold)
 
-	if signatureCount > 0 || proofsCount > 0 || valsetCount > 0 {
+	if requestIDCount > 0 || valsetCount > 0 {
 		slog.Info("Cleaned up stale mutexes",
-			"signatureMutexes", signatureCount,
-			"proofsMutexes", proofsCount,
+			"requestIDMutexes", requestIDCount,
 			"valsetMutexes", valsetCount,
 			"staleThreshold", staleThreshold,
 		)

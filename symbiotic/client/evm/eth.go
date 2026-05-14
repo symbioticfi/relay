@@ -193,7 +193,7 @@ func NewEvmClient(ctx context.Context, cfg Config) (*Client, error) {
 		err = client.Client().CallContext(ctx, &tip, "eth_maxPriorityFeePerGas")
 		if err != nil {
 			var httpError rpc.HTTPError
-			if !errors.As(err, &httpError) && httpError.StatusCode == http.StatusBadRequest {
+			if !errors.As(err, &httpError) || httpError.StatusCode != http.StatusBadRequest {
 				return nil, errors.Errorf("failed to call eth_maxPriorityFeePerGas: %w", err)
 			}
 			slog.WarnContext(ctx, "eth_maxPriorityFeePerGas method not supported by the node", "chainID", chainID.Uint64(), "error", err)

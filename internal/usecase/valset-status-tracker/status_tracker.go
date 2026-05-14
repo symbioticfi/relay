@@ -172,8 +172,7 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 		valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, symbiotic.Epoch(epoch))
 		if err != nil {
 			if errors.Is(err, entity.ErrEntityNotFound) {
-				slog.DebugContext(ctx, "No uncommitted valset found, waiting...", "epoch", epoch)
-				break
+				continue
 			}
 			return errors.Errorf("failed to get validator set for epoch %d: %w", epoch, err)
 		}

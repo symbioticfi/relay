@@ -1,7 +1,9 @@
 package api_server
 
 import (
+	"github.com/go-errors/errors"
 	"github.com/google/uuid"
+	"github.com/symbioticfi/relay/internal/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"google.golang.org/grpc"
@@ -25,22 +27,40 @@ func (h *grpcHandler) ListenProofs(
 	defer h.proofsHub.Unsubscribe(subscriptionID.String())
 
 	if epoch := req.GetStartEpoch(); epoch != 0 {
-		proofs, err := h.cfg.Repo.GetAggregationProofsStartingFromEpoch(ctx, symbiotic.Epoch(epoch))
+		latestEpoch, err := h.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 		if err != nil {
-			return err
+			if !errors.Is(err, entity.ErrEntityNotFound) {
+				return err
+			}
+			latestEpoch = 0
 		}
 
-		for _, proof := range proofs {
-			if err = stream.Send(&apiv1.ListenProofsResponse{
-				RequestId: proof.RequestID().Hex(),
-				Epoch:     uint64(proof.Epoch),
-				AggregationProof: &apiv1.AggregationProof{
-					MessageHash: proof.MessageHash,
-					Proof:       proof.Proof,
-					RequestId:   proof.RequestID().Hex(),
-				},
-			}); err != nil {
-				return err
+		for e := symbiotic.Epoch(epoch); e <= latestEpoch; e++ {
+			var from []byte
+			for {
+				proofs, next, err := h.cfg.Repo.GetAggregationProofsByEpoch(ctx, e, maxListPageSize, from)
+				if err != nil {
+					return err
+				}
+
+				for _, proof := range proofs {
+					if err = stream.Send(&apiv1.ListenProofsResponse{
+						RequestId: proof.RequestID().Hex(),
+						Epoch:     uint64(proof.Epoch),
+						AggregationProof: &apiv1.AggregationProof{
+							MessageHash: proof.MessageHash,
+							Proof:       proof.Proof,
+							RequestId:   proof.RequestID().Hex(),
+						},
+					}); err != nil {
+						return err
+					}
+				}
+
+				if next == nil {
+					break
+				}
+				from = next
 			}
 		}
 	}

@@ -3,6 +3,7 @@ package sync_provider
 import (
 	"context"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
 	"go.opentelemetry.io/otel/attribute"
 
@@ -11,17 +12,27 @@ import (
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-// ProcessReceivedAggregationProofs processes aggregation proofs received from peers
-func (s *Syncer) ProcessReceivedAggregationProofs(ctx context.Context, response entity.WantAggregationProofsResponse) (entity.AggregationProofProcessingStats, error) {
+// ProcessReceivedAggregationProofs processes aggregation proofs received from peers,
+// filtering out any proofs that were not explicitly requested.
+func (s *Syncer) ProcessReceivedAggregationProofs(ctx context.Context, response entity.WantAggregationProofsResponse, requestedIDs []common.Hash) (entity.AggregationProofProcessingStats, error) {
 	ctx, span := tracing.StartSpan(ctx, "sync-provider.ProcessReceivedAggregationProofs",
 		attribute.Int("request.proofs_count", len(response.Proofs)),
+		attribute.Int("request.requested_ids_count", len(requestedIDs)),
 	)
 	defer span.End()
 
 	stats := entity.AggregationProofProcessingStats{}
 
-	// Process each received aggregation proof
-	for _, proof := range response.Proofs {
+	requestedSet := make(map[common.Hash]struct{}, len(requestedIDs))
+	for _, id := range requestedIDs {
+		requestedSet[id] = struct{}{}
+	}
+
+	for requestID, proof := range response.Proofs {
+		if _, ok := requestedSet[requestID]; !ok {
+			stats.UnrequestedProofCount++
+			continue
+		}
 		s.processSingleAggregationProof(ctx, proof, &stats)
 	}
 

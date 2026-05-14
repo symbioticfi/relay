@@ -1,7 +1,9 @@
 package api_server
 
 import (
+	"github.com/go-errors/errors"
 	"github.com/google/uuid"
+	"github.com/symbioticfi/relay/internal/entity"
 	apiv1 "github.com/symbioticfi/relay/internal/gen/api/v1"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"google.golang.org/grpc"
@@ -25,18 +27,36 @@ func (h *grpcHandler) ListenSignatures(
 	defer h.signatureHub.Unsubscribe(subscriptionID.String())
 
 	if epoch := req.GetStartEpoch(); epoch != 0 {
-		signatures, err := h.cfg.Repo.GetSignaturesStartingFromEpoch(ctx, symbiotic.Epoch(epoch))
+		latestEpoch, err := h.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
 		if err != nil {
-			return err
+			if !errors.Is(err, entity.ErrEntityNotFound) {
+				return err
+			}
+			latestEpoch = 0
 		}
 
-		for _, signature := range signatures {
-			if err = stream.Send(&apiv1.ListenSignaturesResponse{
-				RequestId: signature.RequestID().Hex(),
-				Epoch:     uint64(signature.Epoch),
-				Signature: convertSignatureToPB(signature),
-			}); err != nil {
-				return err
+		for e := symbiotic.Epoch(epoch); e <= latestEpoch; e++ {
+			var from []byte
+			for {
+				signatures, next, err := h.cfg.Repo.GetSignaturesByEpoch(ctx, e, maxListPageSize, from)
+				if err != nil {
+					return err
+				}
+
+				for _, signature := range signatures {
+					if err = stream.Send(&apiv1.ListenSignaturesResponse{
+						RequestId: signature.RequestID().Hex(),
+						Epoch:     uint64(signature.Epoch),
+						Signature: convertSignatureToPB(signature),
+					}); err != nil {
+						return err
+					}
+				}
+
+				if next == nil {
+					break
+				}
+				from = next
 			}
 		}
 	}

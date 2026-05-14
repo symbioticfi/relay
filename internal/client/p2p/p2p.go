@@ -41,6 +41,9 @@ const (
 	maxSignatureSize  = 96
 	maxMsgHashSize    = 64
 	maxProofSize      = 1 << 20
+
+	// defaultPublishTimeout is used when Config.PublishTimeout is zero.
+	defaultPublishTimeout = 10 * time.Second
 )
 
 type metrics interface {
@@ -131,6 +134,9 @@ type Config struct {
 	SyncPeerBackoff SyncPeerBackoffConfig
 	EventTracer     pubsub.EventTracer
 	Handler         prototypes.SymbioticP2PServiceServer `validate:"required"`
+	// PublishTimeout caps how long pubsub.Topic.Publish may block on a single
+	// broadcast. Zero falls back to defaultPublishTimeout.
+	PublishTimeout time.Duration
 }
 
 func (c Config) withDefaults() Config {
@@ -166,6 +172,7 @@ type Service struct {
 	metrics                     metrics
 	topicsMap                   map[string]*pubsub.Topic
 	p2pGRPCHandler              prototypes.SymbioticP2PServiceServer
+	publishTimeout              time.Duration
 	syncPeerBackoff             SyncPeerBackoffConfig
 	peerSyncMu                  sync.RWMutex
 	peerSyncState               map[peer.ID]peerSyncFailure
@@ -217,12 +224,18 @@ func NewService(ctx context.Context, cfg Config, signalCfg signals.Config) (*Ser
 		return nil, errors.Errorf("failed to subscribe to agg proof ready topic: %w", err)
 	}
 
+	publishTimeout := cfg.PublishTimeout
+	if publishTimeout <= 0 {
+		publishTimeout = defaultPublishTimeout
+	}
+
 	service := &Service{
 		ctx:                         log.WithAttrs(ctx, slog.String("component", "p2p")),
 		host:                        h,
 		signatureReceivedHandler:    signals.New[p2pEntity.P2PMessage[symbiotic.Signature]](signalCfg, "signatureReceive", nil),
 		signaturesAggregatedHandler: signals.New[p2pEntity.P2PMessage[symbiotic.AggregationProof]](signalCfg, "signaturesAggregated", nil),
 		metrics:                     cfg.Metrics,
+		publishTimeout:              publishTimeout,
 		syncPeerBackoff:             cfg.SyncPeerBackoff,
 		peerSyncState:               make(map[peer.ID]peerSyncFailure),
 		now:                         time.Now,
@@ -344,7 +357,9 @@ func (s *Service) broadcast(ctx context.Context, topicName string, data []byte) 
 	}
 
 	tracing.AddEvent(span, "publishing_to_topic")
-	err = topic.Publish(ctx, data)
+	publishCtx, publishCancel := context.WithTimeout(ctx, s.publishTimeout)
+	defer publishCancel()
+	err = topic.Publish(publishCtx, data)
 	if err != nil {
 		s.metrics.ObserveP2PPeerMessageSent(topicName, "error")
 		s.metrics.ObserveP2PBroadcastDuration(topicName, "error", time.Since(start))

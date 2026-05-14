@@ -110,7 +110,9 @@ func TestListenSignatures_OnlyHistoricalData(t *testing.T) {
 	stream := &mockSignaturesStream{ctx: ctx}
 
 	startEpoch := uint64(5)
-	mockRepo.EXPECT().GetSignaturesStartingFromEpoch(ctx, symbiotic.Epoch(startEpoch)).Return(expectedSignatures, nil)
+	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(6), nil)
+	mockRepo.EXPECT().GetSignaturesByEpoch(ctx, symbiotic.Epoch(5), gomock.Any(), gomock.Any()).Return(expectedSignatures[:2], []byte(nil), nil)
+	mockRepo.EXPECT().GetSignaturesByEpoch(ctx, symbiotic.Epoch(6), gomock.Any(), gomock.Any()).Return(expectedSignatures[2:], []byte(nil), nil)
 
 	req := &apiv1.ListenSignaturesRequest{
 		StartEpoch: &startEpoch,
@@ -224,7 +226,8 @@ func TestListenSignatures_HistoricalAndBroadcast(t *testing.T) {
 	}
 
 	startEpoch := uint64(5)
-	mockRepo.EXPECT().GetSignaturesStartingFromEpoch(ctx, symbiotic.Epoch(startEpoch)).Return(historicalSignatures, nil)
+	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(5), nil)
+	mockRepo.EXPECT().GetSignaturesByEpoch(ctx, symbiotic.Epoch(5), gomock.Any(), gomock.Any()).Return(historicalSignatures, []byte(nil), nil)
 
 	req := &apiv1.ListenSignaturesRequest{
 		StartEpoch: &startEpoch,
@@ -279,7 +282,7 @@ func TestListenSignatures_RepositoryError(t *testing.T) {
 
 	startEpoch := uint64(5)
 	expectedError := errors.New("database connection failed")
-	mockRepo.EXPECT().GetSignaturesStartingFromEpoch(ctx, symbiotic.Epoch(startEpoch)).Return(nil, expectedError)
+	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(0), expectedError)
 
 	req := &apiv1.ListenSignaturesRequest{
 		StartEpoch: &startEpoch,
@@ -330,7 +333,8 @@ func TestListenSignatures_StreamSendError(t *testing.T) {
 	}
 
 	startEpoch := uint64(5)
-	mockRepo.EXPECT().GetSignaturesStartingFromEpoch(ctx, symbiotic.Epoch(startEpoch)).Return(expectedSignatures, nil)
+	mockRepo.EXPECT().GetLatestValidatorSetEpoch(ctx).Return(symbiotic.Epoch(5), nil)
+	mockRepo.EXPECT().GetSignaturesByEpoch(ctx, symbiotic.Epoch(5), gomock.Any(), gomock.Any()).Return(expectedSignatures, []byte(nil), nil)
 
 	req := &apiv1.ListenSignaturesRequest{
 		StartEpoch: &startEpoch,

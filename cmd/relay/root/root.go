@@ -17,8 +17,8 @@ func NewRootCommand() *cobra.Command {
 	slog.Info("Running relay_sidecar command",
 		"version", Version,
 		"buildTime", BuildTime,
-		"args", os.Args,
 	)
+	slog.Debug("CLI arguments", "args", os.Args)
 
 	addRootFlags(rootCmd)
 
