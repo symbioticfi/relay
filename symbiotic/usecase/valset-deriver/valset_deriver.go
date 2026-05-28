@@ -260,7 +260,8 @@ func GetSchedulerInfo(_ context.Context, valset symbiotic.ValidatorSet, config s
 		committerIndices[foundIndex] = struct{}{}
 	}
 
-	return slices.Collect(maps.Keys(aggregatorIndices)), slices.Collect(maps.Keys(committerIndices)), nil
+	// need to return sorted ascending order indices because serialization uses bitmap which only returns sorted values when unpacking
+	return slices.Sorted(maps.Keys(aggregatorIndices)), slices.Sorted(maps.Keys(committerIndices)), nil
 }
 
 // Helper function for wrap-around search
