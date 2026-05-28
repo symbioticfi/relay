@@ -186,13 +186,22 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregati
 		}
 	}
 
+	valsetProofTargetEpoch, isValsetProof, err := s.valsetProofTargetEpoch(ctx, aggregationProof)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return err
+	}
+
 	if err := s.cfg.Repo.SaveProof(ctx, aggregationProof); err != nil {
 		tracing.RecordError(span, err)
 		return errors.Errorf("failed to add aggregation proof: %w", err)
 	}
 
-	if err := s.markValidatorSetAggregatedIfValsetProof(ctx, aggregationProof); err != nil {
-		return err
+	if isValsetProof {
+		if err := s.cfg.Repo.UpdateValidatorSetStatus(ctx, valsetProofTargetEpoch, symbiotic.HeaderAggregated); err != nil {
+			tracing.RecordError(span, err)
+			return errors.Errorf("failed to update validator set status: %w", err)
+		}
 	}
 
 	slog.DebugContext(ctx, "Proof saved")
@@ -205,22 +214,22 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregati
 	return nil
 }
 
-func (s *EntityProcessor) markValidatorSetAggregatedIfValsetProof(ctx context.Context, aggregationProof symbiotic.AggregationProof) error {
-	metadata, err := s.cfg.Repo.GetValidatorSetMetadata(ctx, aggregationProof.Epoch)
+func (s *EntityProcessor) valsetProofTargetEpoch(
+	ctx context.Context,
+	aggregationProof symbiotic.AggregationProof,
+) (symbiotic.Epoch, bool, error) {
+	targetEpoch := aggregationProof.Epoch + 1
+	metadata, err := s.cfg.Repo.GetValidatorSetMetadata(ctx, targetEpoch)
 	if err != nil {
 		if errors.Is(err, entity.ErrEntityNotFound) {
-			return nil
+			return 0, false, nil
 		}
-		return errors.Errorf("failed to get validator set metadata for epoch %d: %w", aggregationProof.Epoch, err)
+		return 0, false, errors.Errorf("failed to get validator set metadata for epoch %d: %w", targetEpoch, err)
 	}
 
 	if metadata.RequestID != aggregationProof.RequestID() {
-		return nil
+		return 0, false, nil
 	}
 
-	if err := s.cfg.Repo.UpdateValidatorSetStatus(ctx, aggregationProof.Epoch, symbiotic.HeaderAggregated); err != nil {
-		return errors.Errorf("failed to update validator set status: %w", err)
-	}
-
-	return nil
+	return targetEpoch, true, nil
 }
