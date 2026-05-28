@@ -640,6 +640,128 @@ func TestEntityProcessor_ProcessAggregationProof_HandlesMissingPendingGracefully
 	}
 }
 
+func TestEntityProcessor_ProcessAggregationProof_DoesNotUpdateValidatorSetStatusForUnrelatedProof(t *testing.T) {
+	t.Parallel()
+
+	for name, newRepo := range backends() {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			repo := newRepo(t)
+			epoch := symbiotic.Epoch(250)
+
+			valset, _ := createValidatorSetWithCount(t, epoch, big.NewInt(670), 4)
+			valset.Status = symbiotic.HeaderDerived
+
+			valsetHeaderRequestID := common.BytesToHash(randomBytes(t, 32))
+			err := repo.SaveNextValsetData(t.Context(), entity.NextValsetData{
+				NextValidatorSet:     valset,
+				NextNetworkConfig:    randomNetworkConfig(),
+				PrevValidatorSet:     valset,
+				PrevNetworkConfig:    randomNetworkConfig(),
+				SignatureRequest:     nil,
+				ValidatorSetMetadata: symbiotic.ValidatorSetMetadata{RequestID: valsetHeaderRequestID, Epoch: epoch},
+			})
+			require.NoError(t, err)
+
+			storedValset, err := repo.GetValidatorSetByEpoch(t.Context(), epoch)
+			require.NoError(t, err)
+			require.Equal(t, symbiotic.HeaderDerived, storedValset.Status)
+
+			req := randomSignatureRequest(t, epoch)
+			msg := symbiotic.AggregationProof{
+				KeyTag:      req.KeyTag,
+				Epoch:       req.RequiredEpoch,
+				MessageHash: computeMessageHash(t, req.KeyTag, req.Message),
+				Proof:       randomBytes(t, 96),
+			}
+
+			require.NotEqual(t, valsetHeaderRequestID, msg.RequestID(), "repro needs a non-valset request ID")
+			require.NoError(t, repo.SaveSignatureRequest(t.Context(), msg.RequestID(), req))
+
+			processor, err := NewEntityProcessor(Config{
+				Repo:                     repo,
+				Aggregator:               createMockAggregator(t),
+				AggProofSignal:           createMockAggProofSignal(t),
+				SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+				Metrics:                  doNothingMetrics{},
+			})
+			require.NoError(t, err)
+
+			err = processor.ProcessAggregationProof(t.Context(), msg, false)
+			require.NoError(t, err)
+
+			storedValset, err = repo.GetValidatorSetByEpoch(t.Context(), epoch)
+			require.NoError(t, err)
+			require.Equal(t, symbiotic.HeaderDerived, storedValset.Status)
+
+			_, err = repo.GetAggregationProof(t.Context(), valsetHeaderRequestID)
+			require.ErrorIs(t, err, entity.ErrEntityNotFound)
+
+			_, err = repo.GetLatestAggregatedValsetHeader(t.Context())
+			require.ErrorIs(t, err, entity.ErrEntityNotFound)
+		})
+	}
+}
+
+func TestEntityProcessor_ProcessAggregationProof_UpdatesValidatorSetStatusForValsetProof(t *testing.T) {
+	t.Parallel()
+
+	for name, newRepo := range backends() {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			repo := newRepo(t)
+			epoch := symbiotic.Epoch(251)
+
+			valset, _ := createValidatorSetWithCount(t, epoch, big.NewInt(670), 4)
+			valset.Status = symbiotic.HeaderDerived
+
+			req := randomSignatureRequest(t, epoch)
+			msg := symbiotic.AggregationProof{
+				KeyTag:      req.KeyTag,
+				Epoch:       req.RequiredEpoch,
+				MessageHash: computeMessageHash(t, req.KeyTag, req.Message),
+				Proof:       randomBytes(t, 96),
+			}
+
+			err := repo.SaveNextValsetData(t.Context(), entity.NextValsetData{
+				NextValidatorSet:     valset,
+				NextNetworkConfig:    randomNetworkConfig(),
+				PrevValidatorSet:     valset,
+				PrevNetworkConfig:    randomNetworkConfig(),
+				SignatureRequest:     nil,
+				ValidatorSetMetadata: symbiotic.ValidatorSetMetadata{RequestID: msg.RequestID(), Epoch: epoch},
+			})
+			require.NoError(t, err)
+			require.NoError(t, repo.SaveSignatureRequest(t.Context(), msg.RequestID(), req))
+
+			processor, err := NewEntityProcessor(Config{
+				Repo:                     repo,
+				Aggregator:               createMockAggregator(t),
+				AggProofSignal:           createMockAggProofSignal(t),
+				SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+				Metrics:                  doNothingMetrics{},
+			})
+			require.NoError(t, err)
+
+			err = processor.ProcessAggregationProof(t.Context(), msg, false)
+			require.NoError(t, err)
+
+			storedValset, err := repo.GetValidatorSetByEpoch(t.Context(), epoch)
+			require.NoError(t, err)
+			require.Equal(t, symbiotic.HeaderAggregated, storedValset.Status)
+
+			expectedHeader, err := valset.GetHeader()
+			require.NoError(t, err)
+
+			latestAggregated, err := repo.GetLatestAggregatedValsetHeader(t.Context())
+			require.NoError(t, err)
+			require.Equal(t, expectedHeader, latestAggregated)
+		})
+	}
+}
+
 func TestEntityProcessor_ProcessAggregationProof_FailsWhenAlreadyExists(t *testing.T) {
 	t.Parallel()
 

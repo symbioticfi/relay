@@ -118,6 +118,21 @@ func (mr *MockRepositoryMockRecorder) GetValidatorSetByEpoch(ctx, epoch any) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSetByEpoch", reflect.TypeOf((*MockRepository)(nil).GetValidatorSetByEpoch), ctx, epoch)
 }
 
+// GetValidatorSetMetadata mocks base method.
+func (m *MockRepository) GetValidatorSetMetadata(ctx context.Context, epoch entity.Epoch) (entity.ValidatorSetMetadata, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetValidatorSetMetadata", ctx, epoch)
+	ret0, _ := ret[0].(entity.ValidatorSetMetadata)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetValidatorSetMetadata indicates an expected call of GetValidatorSetMetadata.
+func (mr *MockRepositoryMockRecorder) GetValidatorSetMetadata(ctx, epoch any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSetMetadata", reflect.TypeOf((*MockRepository)(nil).GetValidatorSetMetadata), ctx, epoch)
+}
+
 // SaveProof mocks base method.
 func (m *MockRepository) SaveProof(ctx context.Context, aggregationProof entity.AggregationProof) error {
 	m.ctrl.T.Helper()
