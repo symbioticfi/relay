@@ -2,6 +2,7 @@ package sync_provider
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-errors/errors"
@@ -30,6 +31,14 @@ func (s *Syncer) ProcessReceivedAggregationProofs(ctx context.Context, response 
 
 	for requestID, proof := range response.Proofs {
 		if _, ok := requestedSet[requestID]; !ok {
+			stats.UnrequestedProofCount++
+			continue
+		}
+		proofRequestID := proof.RequestID()
+		if proofRequestID != requestID {
+			slog.WarnContext(ctx, "Received aggregation proof with mismatched request ID",
+				"requestId", requestID.Hex(),
+				"proofRequestId", proofRequestID.Hex())
 			stats.UnrequestedProofCount++
 			continue
 		}

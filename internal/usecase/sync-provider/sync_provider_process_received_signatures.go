@@ -53,6 +53,16 @@ func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.
 				continue
 			}
 
+			signatureRequestID := validatorSig.Signature.RequestID()
+			if signatureRequestID != requestID {
+				slog.WarnContext(ctx, "Received signature with mismatched request ID",
+					"requestId", requestID.Hex(),
+					"signatureRequestId", signatureRequestID.Hex(),
+					"validatorIndex", validatorSig.ValidatorIndex)
+				stats.UnrequestedHashCount++
+				continue
+			}
+
 			if !requestedBitmap.Contains(validatorSig.ValidatorIndex) {
 				slog.WarnContext(ctx, "Received unrequested signature",
 					"requestId", requestID.Hex(),
@@ -67,6 +77,24 @@ func (s *Syncer) ProcessReceivedSignatures(ctx context.Context, response entity.
 				slog.WarnContext(ctx, "Failed to get signature request for processing",
 					"requestId", requestID.Hex(), "error", err)
 				stats.SignatureRequestFailCount++
+				continue
+			}
+
+			_, activeIndex, err := s.cfg.Repo.GetValidatorByKey(ctx, validatorSig.Signature.Epoch, validatorSig.Signature.KeyTag, validatorSig.Signature.PublicKey.OnChain())
+			if err != nil {
+				slog.WarnContext(ctx, "Failed to get validator for received signature",
+					"requestId", requestID.Hex(),
+					"validatorIndex", validatorSig.ValidatorIndex,
+					"error", err)
+				stats.ProcessingFailCount++
+				continue
+			}
+			if activeIndex != validatorSig.ValidatorIndex {
+				slog.WarnContext(ctx, "Received signature with mismatched validator index",
+					"requestId", requestID.Hex(),
+					"claimedValidatorIndex", validatorSig.ValidatorIndex,
+					"actualValidatorIndex", activeIndex)
+				stats.UnrequestedSignatureCount++
 				continue
 			}
 
