@@ -173,12 +173,20 @@ func (s *Service) tryToCommitPendingProofs(ctx context.Context) (uint64, error) 
 	for _, proofKey := range pendingProofs {
 		err = s.processPendingProof(ctx, proofKey)
 		if err != nil {
-			tracing.RecordError(span, err)
-			slog.ErrorContext(ctx, "Error processing pending proof",
-				slog.String("requestId", proofKey.RequestID.Hex()),
-				slog.Uint64("epoch", uint64(proofKey.Epoch)),
-				slog.String("error", err.Error()),
-			)
+			if errors.Is(err, entity.ErrEntityNotFound) {
+				slog.DebugContext(ctx, "Error processing pending proof",
+					slog.String("requestId", proofKey.RequestID.Hex()),
+					slog.Uint64("epoch", uint64(proofKey.Epoch)),
+					slog.String("error", err.Error()),
+				)
+			} else {
+				tracing.RecordError(span, err)
+				slog.ErrorContext(ctx, "Error processing pending proof",
+					slog.String("requestId", proofKey.RequestID.Hex()),
+					slog.Uint64("epoch", uint64(proofKey.Epoch)),
+					slog.String("error", err.Error()),
+				)
+			}
 			break
 		}
 		processedCount++

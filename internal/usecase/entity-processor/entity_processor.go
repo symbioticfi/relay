@@ -23,6 +23,7 @@ type Repository interface {
 	GetSignatureByIndex(ctx context.Context, requestID common.Hash, validatorIndex uint32) (symbiotic.Signature, error)
 	GetValidatorByKey(ctx context.Context, epoch symbiotic.Epoch, keyTag symbiotic.KeyTag, publicKey []byte) (symbiotic.Validator, uint32, error)
 	GetValidatorSetByEpoch(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSet, error)
+	GetValidatorSetMetadata(ctx context.Context, epoch symbiotic.Epoch) (symbiotic.ValidatorSetMetadata, error)
 	GetAggregationProof(ctx context.Context, requestID common.Hash) (symbiotic.AggregationProof, error)
 	SaveProof(ctx context.Context, aggregationProof symbiotic.AggregationProof) error
 	UpdateValidatorSetStatus(ctx context.Context, epoch symbiotic.Epoch, item symbiotic.ValidatorSetStatus) error
@@ -185,13 +186,22 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregati
 		}
 	}
 
+	valsetProofTargetEpoch, isValsetProof, err := s.valsetProofTargetEpoch(ctx, aggregationProof)
+	if err != nil {
+		tracing.RecordError(span, err)
+		return err
+	}
+
 	if err := s.cfg.Repo.SaveProof(ctx, aggregationProof); err != nil {
 		tracing.RecordError(span, err)
 		return errors.Errorf("failed to add aggregation proof: %w", err)
 	}
 
-	if err := s.cfg.Repo.UpdateValidatorSetStatus(ctx, aggregationProof.Epoch, symbiotic.HeaderAggregated); err != nil {
-		return errors.Errorf("failed to update validator set status: %w", err)
+	if isValsetProof {
+		if err := s.cfg.Repo.UpdateValidatorSetStatus(ctx, valsetProofTargetEpoch, symbiotic.HeaderAggregated); err != nil {
+			tracing.RecordError(span, err)
+			return errors.Errorf("failed to update validator set status: %w", err)
+		}
 	}
 
 	slog.DebugContext(ctx, "Proof saved")
@@ -202,4 +212,24 @@ func (s *EntityProcessor) ProcessAggregationProof(ctx context.Context, aggregati
 	}
 
 	return nil
+}
+
+func (s *EntityProcessor) valsetProofTargetEpoch(
+	ctx context.Context,
+	aggregationProof symbiotic.AggregationProof,
+) (symbiotic.Epoch, bool, error) {
+	targetEpoch := aggregationProof.Epoch + 1
+	metadata, err := s.cfg.Repo.GetValidatorSetMetadata(ctx, targetEpoch)
+	if err != nil {
+		if errors.Is(err, entity.ErrEntityNotFound) {
+			return 0, false, nil
+		}
+		return 0, false, errors.Errorf("failed to get validator set metadata for epoch %d: %w", targetEpoch, err)
+	}
+
+	if metadata.RequestID != aggregationProof.RequestID() {
+		return 0, false, nil
+	}
+
+	return targetEpoch, true, nil
 }

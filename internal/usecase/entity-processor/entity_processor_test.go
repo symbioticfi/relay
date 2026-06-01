@@ -2,6 +2,7 @@ package entity_processor
 
 import (
 	"crypto/rand"
+	stderrors "errors"
 	"math/big"
 	"testing"
 	"time"
@@ -638,6 +639,185 @@ func TestEntityProcessor_ProcessAggregationProof_HandlesMissingPendingGracefully
 			require.Equal(t, msg, savedProof)
 		})
 	}
+}
+
+func TestEntityProcessor_ProcessAggregationProof_DoesNotUpdateValidatorSetStatusForUnrelatedProof(t *testing.T) {
+	t.Parallel()
+
+	for name, newRepo := range backends() {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			repo := newRepo(t)
+			signingEpoch := symbiotic.Epoch(250)
+			targetEpoch := symbiotic.Epoch(251)
+
+			prevValset, _ := createValidatorSetWithCount(t, signingEpoch, big.NewInt(670), 4)
+			targetValset, _ := createValidatorSetWithCount(t, targetEpoch, big.NewInt(670), 4)
+			prevValset.Status = symbiotic.HeaderCommitted
+			targetValset.Status = symbiotic.HeaderDerived
+
+			valsetHeaderRequestID := common.BytesToHash(randomBytes(t, 32))
+			err := repo.SaveNextValsetData(t.Context(), entity.NextValsetData{
+				NextValidatorSet:     targetValset,
+				NextNetworkConfig:    randomNetworkConfig(),
+				PrevValidatorSet:     prevValset,
+				PrevNetworkConfig:    randomNetworkConfig(),
+				SignatureRequest:     nil,
+				ValidatorSetMetadata: symbiotic.ValidatorSetMetadata{RequestID: valsetHeaderRequestID, Epoch: targetEpoch},
+			})
+			require.NoError(t, err)
+
+			storedValset, err := repo.GetValidatorSetByEpoch(t.Context(), targetEpoch)
+			require.NoError(t, err)
+			require.Equal(t, symbiotic.HeaderDerived, storedValset.Status)
+
+			req := randomSignatureRequest(t, signingEpoch)
+			msg := symbiotic.AggregationProof{
+				KeyTag:      req.KeyTag,
+				Epoch:       req.RequiredEpoch,
+				MessageHash: computeMessageHash(t, req.KeyTag, req.Message),
+				Proof:       randomBytes(t, 96),
+			}
+
+			require.NotEqual(t, valsetHeaderRequestID, msg.RequestID(), "repro needs a non-valset request ID")
+			require.NoError(t, repo.SaveSignatureRequest(t.Context(), msg.RequestID(), req))
+
+			processor, err := NewEntityProcessor(Config{
+				Repo:                     repo,
+				Aggregator:               createMockAggregator(t),
+				AggProofSignal:           createMockAggProofSignal(t),
+				SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+				Metrics:                  doNothingMetrics{},
+			})
+			require.NoError(t, err)
+
+			err = processor.ProcessAggregationProof(t.Context(), msg, false)
+			require.NoError(t, err)
+
+			storedValset, err = repo.GetValidatorSetByEpoch(t.Context(), targetEpoch)
+			require.NoError(t, err)
+			require.Equal(t, symbiotic.HeaderDerived, storedValset.Status)
+
+			_, err = repo.GetAggregationProof(t.Context(), valsetHeaderRequestID)
+			require.ErrorIs(t, err, entity.ErrEntityNotFound)
+
+			_, err = repo.GetLatestAggregatedValsetHeader(t.Context())
+			require.ErrorIs(t, err, entity.ErrEntityNotFound)
+		})
+	}
+}
+
+func TestEntityProcessor_ProcessAggregationProof_UpdatesValidatorSetStatusForValsetProof(t *testing.T) {
+	t.Parallel()
+
+	for name, newRepo := range backends() {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			repo := newRepo(t)
+			signingEpoch := symbiotic.Epoch(250)
+			targetEpoch := symbiotic.Epoch(251)
+
+			prevValset, _ := createValidatorSetWithCount(t, signingEpoch, big.NewInt(670), 4)
+			targetValset, _ := createValidatorSetWithCount(t, targetEpoch, big.NewInt(670), 4)
+			prevValset.Status = symbiotic.HeaderCommitted
+			targetValset.Status = symbiotic.HeaderDerived
+
+			req := randomSignatureRequest(t, signingEpoch)
+			msg := symbiotic.AggregationProof{
+				KeyTag:      req.KeyTag,
+				Epoch:       req.RequiredEpoch,
+				MessageHash: computeMessageHash(t, req.KeyTag, req.Message),
+				Proof:       randomBytes(t, 96),
+			}
+
+			err := repo.SaveNextValsetData(t.Context(), entity.NextValsetData{
+				NextValidatorSet:     targetValset,
+				NextNetworkConfig:    randomNetworkConfig(),
+				PrevValidatorSet:     prevValset,
+				PrevNetworkConfig:    randomNetworkConfig(),
+				SignatureRequest:     nil,
+				ValidatorSetMetadata: symbiotic.ValidatorSetMetadata{RequestID: msg.RequestID(), Epoch: targetEpoch},
+			})
+			require.NoError(t, err)
+			require.NoError(t, repo.SaveSignatureRequest(t.Context(), msg.RequestID(), req))
+
+			processor, err := NewEntityProcessor(Config{
+				Repo:                     repo,
+				Aggregator:               createMockAggregator(t),
+				AggProofSignal:           createMockAggProofSignal(t),
+				SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+				Metrics:                  doNothingMetrics{},
+			})
+			require.NoError(t, err)
+
+			err = processor.ProcessAggregationProof(t.Context(), msg, false)
+			require.NoError(t, err)
+
+			storedPrevValset, err := repo.GetValidatorSetByEpoch(t.Context(), signingEpoch)
+			require.NoError(t, err)
+			require.Equal(t, symbiotic.HeaderCommitted, storedPrevValset.Status)
+
+			storedTargetValset, err := repo.GetValidatorSetByEpoch(t.Context(), targetEpoch)
+			require.NoError(t, err)
+			require.Equal(t, symbiotic.HeaderAggregated, storedTargetValset.Status)
+
+			expectedHeader, err := targetValset.GetHeader()
+			require.NoError(t, err)
+
+			latestAggregated, err := repo.GetLatestAggregatedValsetHeader(t.Context())
+			require.NoError(t, err)
+			require.Equal(t, expectedHeader, latestAggregated)
+		})
+	}
+}
+
+func TestEntityProcessor_ProcessAggregationProof_FailsBeforeSavingWhenValsetMetadataLookupFails(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	repo := mocks.NewMockRepository(ctrl)
+	aggregator := mocks.NewMockAggregator(ctrl)
+	aggProofSignal := mocks.NewMockAggProofSignal(ctrl)
+
+	msg := symbiotic.AggregationProof{
+		KeyTag:      symbiotic.KeyTag(15),
+		Epoch:       symbiotic.Epoch(250),
+		MessageHash: randomBytes(t, 32),
+		Proof:       randomBytes(t, 96),
+	}
+	repoErr := stderrors.New("metadata lookup failed")
+
+	repo.EXPECT().
+		GetAggregationProof(gomock.Any(), msg.RequestID()).
+		Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
+	repo.EXPECT().
+		GetValidatorSetMetadata(gomock.Any(), msg.Epoch+1).
+		Return(symbiotic.ValidatorSetMetadata{}, repoErr)
+	repo.EXPECT().
+		SaveProof(gomock.Any(), gomock.Any()).
+		Times(0)
+	repo.EXPECT().
+		UpdateValidatorSetStatus(gomock.Any(), gomock.Any(), gomock.Any()).
+		Times(0)
+	aggProofSignal.EXPECT().
+		Emit(gomock.Any()).
+		Times(0)
+
+	processor, err := NewEntityProcessor(Config{
+		Repo:                     repo,
+		Aggregator:               aggregator,
+		AggProofSignal:           aggProofSignal,
+		SignatureProcessedSignal: createMockSignatureProcessedSignal(t),
+		Metrics:                  doNothingMetrics{},
+	})
+	require.NoError(t, err)
+
+	err = processor.ProcessAggregationProof(t.Context(), msg, true)
+	require.Error(t, err)
+	require.ErrorIs(t, err, repoErr)
+	require.Contains(t, err.Error(), "failed to get validator set metadata")
 }
 
 func TestEntityProcessor_ProcessAggregationProof_FailsWhenAlreadyExists(t *testing.T) {
