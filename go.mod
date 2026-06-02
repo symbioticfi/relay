@@ -3,7 +3,7 @@ module github.com/symbioticfi/relay
 go 1.26.1
 
 require (
-	github.com/RoaringBitmap/roaring/v2 v2.18.0
+	github.com/RoaringBitmap/roaring/v2 v2.18.2
 	github.com/consensys/gnark v0.0.0-00010101000000-000000000000 // pinned with replace
 	github.com/consensys/gnark-crypto v0.20.1 // pinned with replace
 	github.com/dgraph-io/badger/v4 v4.9.1
