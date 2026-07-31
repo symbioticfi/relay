@@ -1,4 +1,8 @@
 PACKAGE=github.com/symbioticfi/relay
+# Pinned: abigen output changes between releases, and CI verifies that
+# `make generate` leaves no diff. Bump deliberately and commit the regenerated
+# bindings in the same change.
+ABIGEN_VERSION ?= v1.17.5
 IMAGE_REPO ?= relay_sidecar
 BUILD_TIME ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 
@@ -108,27 +112,27 @@ e2e-test:
 
 .PHONY: gen-abi
 gen-abi:
-	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
+	go run github.com/ethereum/go-ethereum/cmd/abigen@$(ABIGEN_VERSION) \
 		--abi symbiotic/client/evm/abi/ValSetDriver.abi.json \
 		--type ValSetDriver \
 		--pkg gen \
 		--out symbiotic/client/evm/gen/valsetDriver.go
-	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
+	go run github.com/ethereum/go-ethereum/cmd/abigen@$(ABIGEN_VERSION) \
 		--abi symbiotic/client/evm/abi/Settlement.abi.json \
 		--type Settlement \
 		--pkg gen \
 		--out symbiotic/client/evm/gen/settlement.go
-	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
+	go run github.com/ethereum/go-ethereum/cmd/abigen@$(ABIGEN_VERSION) \
 		--abi symbiotic/client/evm/abi/KeyRegistry.abi.json \
 		--type KeyRegistry \
 		--pkg gen \
 		--out symbiotic/client/evm/gen/keyRegistry.go
-	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
+	go run github.com/ethereum/go-ethereum/cmd/abigen@$(ABIGEN_VERSION) \
 		--abi symbiotic/client/evm/abi/VotingPowerProvider.abi.json \
 		--type VotingPowerProvider \
 		--pkg gen \
 		--out symbiotic/client/evm/gen/votingPowerProvider.go
-	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
+	go run github.com/ethereum/go-ethereum/cmd/abigen@$(ABIGEN_VERSION) \
 		--abi symbiotic/client/evm/abi/OperatorRegistry.abi.json \
 		--type OperatorRegistry \
 		--pkg gen \
@@ -136,22 +140,22 @@ gen-abi:
 
 .PHONY: gen-abi-test
 gen-abi-test:
-	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
+	go run github.com/ethereum/go-ethereum/cmd/abigen@$(ABIGEN_VERSION) \
 		--abi e2e/tests/evm/abi/MockERC20.abi.json \
 		--type MockERC20 \
 		--pkg gen \
 		--out e2e/tests/evm/gen/mockERC20.go
-	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
+	go run github.com/ethereum/go-ethereum/cmd/abigen@$(ABIGEN_VERSION) \
 		--abi e2e/tests/evm/abi/IOptInService.abi.json \
 		--type OptInService \
 		--pkg gen \
 		--out e2e/tests/evm/gen/optInService.go
-	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
+	go run github.com/ethereum/go-ethereum/cmd/abigen@$(ABIGEN_VERSION) \
 		--abi e2e/tests/evm/abi/OpNetVaultAutoDeployLogic.abi.json \
 		--type OpNetVaultAutoDeployLogic \
 		--pkg gen \
 		--out e2e/tests/evm/gen/opNetVaultAutoDeployLogic.go
-	go run github.com/ethereum/go-ethereum/cmd/abigen@latest \
+	go run github.com/ethereum/go-ethereum/cmd/abigen@$(ABIGEN_VERSION) \
 		--abi e2e/tests/evm/abi/Vault.abi.json \
 		--type Vault \
 		--pkg gen \
