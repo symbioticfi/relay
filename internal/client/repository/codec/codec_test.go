@@ -12,7 +12,11 @@ import (
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 )
 
-func TestValidatorSetHeaderRoundTrip_PreservesCommitterOrder(t *testing.T) {
+// Committer indices serialize as a bitmap, so the round-trip returns the set in
+// ascending order rather than any insertion order (see the deriver, which sorts
+// them for exactly this reason). Slot rotation indexes into that slice, so a
+// dropped or spurious member would hand a slot to the wrong validator.
+func TestValidatorSetHeaderRoundTrip_PreservesCommitterSet(t *testing.T) {
 	t.Parallel()
 
 	const slotDuration = uint64(100)
@@ -51,13 +55,14 @@ func TestValidatorSetHeaderRoundTrip_PreservesCommitterOrder(t *testing.T) {
 				},
 			},
 		},
-		CommitterIndices: []uint32{2, 0, 1},
+		// A strict subset, ascending, as the deriver emits it.
+		CommitterIndices: []uint32{0, 2},
 	}
 
 	require.True(
 		t,
-		valset.IsActiveCommitter(context.Background(), slotDuration, 1050, 0, publicKey3),
-		"sanity check: validator 2 should own the first slot before storage round-trip",
+		valset.IsActiveCommitter(context.Background(), slotDuration, 1050, 0, publicKey1),
+		"sanity check: validator 0 should own the first slot before storage round-trip",
 	)
 
 	headerBytes, err := ValidatorSetHeaderToBytes(valset)
@@ -70,7 +75,7 @@ func TestValidatorSetHeaderRoundTrip_PreservesCommitterOrder(t *testing.T) {
 		t,
 		valset.CommitterIndices,
 		committerIndices,
-		"header round-trip should preserve committer order because slot rotation depends on it",
+		"header round-trip should preserve the committer set in ascending order",
 	)
 
 	roundTripped := valset
@@ -78,7 +83,12 @@ func TestValidatorSetHeaderRoundTrip_PreservesCommitterOrder(t *testing.T) {
 
 	assert.True(
 		t,
-		roundTripped.IsActiveCommitter(context.Background(), slotDuration, 1050, 0, publicKey3),
+		roundTripped.IsActiveCommitter(context.Background(), slotDuration, 1050, 0, publicKey1),
 		"the same validator should still own the first slot after header round-trip",
+	)
+	assert.False(
+		t,
+		roundTripped.IsActiveCommitter(context.Background(), slotDuration, 1050, 0, publicKey2),
+		"a non-committer should not gain a slot through the round-trip",
 	)
 }
