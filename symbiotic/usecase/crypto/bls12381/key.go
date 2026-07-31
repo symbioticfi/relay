@@ -113,12 +113,28 @@ func (k *PublicKey) VerifyWithHash(msgHash MessageHash, sig Signature) error {
 		return errors.Errorf("bls12381: failed to set big into G1: %w", err)
 	}
 
-	_, _, _, g2Gen := bls12381.Generators()
-	var negSig bls12381.G1Affine
-	negSig.Neg(&g1Sig)
+	// A zero key would make the keypair binding below vacuous.
+	if k.g1PubKey.IsInfinity() {
+		return errors.Errorf("bls12381: zero public key")
+	}
 
-	g1P := [2]bls12381.G1Affine{*g1Hash, negSig}
-	g1Q := [2]bls12381.G2Affine{k.g2PubKey, g2Gen}
+	_, _, g1Gen, g2Gen := bls12381.Generators()
+	var negG2Gen bls12381.G2Affine
+	negG2Gen.Neg(&g2Gen)
+
+	// Folds two equations under a Fiat-Shamir challenge: the signature check
+	// e(H(m), G2) == e(sig, g2Gen), and the keypair binding
+	// e(G1, g2Gen) == e(g1Gen, G2). Without the binding, a G2 taken from an
+	// untrusted message is never tied to the G1 a validator is identified by,
+	// so anyone could sign under someone else's identity.
+	alpha := keypairChallenge(&g1Sig, &k.g1PubKey, &k.g2PubKey, g1Hash)
+
+	var sigTerm, msgTerm bls12381.G1Affine
+	sigTerm.ScalarMultiplication(&k.g1PubKey, alpha).Add(&sigTerm, &g1Sig)
+	msgTerm.ScalarMultiplication(&g1Gen, alpha).Add(&msgTerm, g1Hash)
+
+	g1P := [2]bls12381.G1Affine{sigTerm, msgTerm}
+	g1Q := [2]bls12381.G2Affine{negG2Gen, k.g2PubKey}
 
 	ok, err := bls12381.PairingCheck(g1P[:], g1Q[:])
 	if err != nil {
@@ -128,6 +144,18 @@ func (k *PublicKey) VerifyWithHash(msgHash MessageHash, sig Signature) error {
 		return errors.Errorf("bls12381: invalid signature")
 	}
 	return nil
+}
+
+// keypairChallenge commits to every point so the two folded equations cannot be
+// made to cancel each other out.
+func keypairChallenge(sig, g1PubKey *bls12381.G1Affine, g2PubKey *bls12381.G2Affine, msg *bls12381.G1Affine) *big.Int {
+	sigBytes := sig.Marshal()
+	g1Bytes := g1PubKey.Marshal()
+	g2Bytes := g2PubKey.Marshal()
+	msgBytes := msg.Marshal()
+
+	h := crypto.Keccak256(sigBytes, g1Bytes, g2Bytes, msgBytes)
+	return new(big.Int).Mod(new(big.Int).SetBytes(h), fr.Modulus())
 }
 
 // OnChain might be one way operation, meaning that it's impossible to reconstruct PublicKey from compact
