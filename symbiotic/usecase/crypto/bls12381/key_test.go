@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"testing"
 
+	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/stretchr/testify/require"
 )
 
@@ -114,6 +115,36 @@ func TestFromRaw(t *testing.T) {
 
 	_, err = FromRaw(make([]byte, 144))
 	require.EqualError(t, err, "bls12381: failed to unmarshal G1 pubkey: short buffer")
+}
+
+// A key is a (G1, G2) pair sharing one secret scalar, but validators are
+// identified by G1 alone. Verification must therefore prove the supplied G2
+// belongs to that same G1, or anyone can pair a victim's G1 with their own G2
+// and sign under the victim's identity.
+func TestBLSKeysRejectUnboundG2(t *testing.T) {
+	victim, err := GenerateKey()
+	require.NoError(t, err)
+	victimPub, ok := victim.PublicKey().(*PublicKey)
+	require.True(t, ok)
+
+	msg := randData(t)
+	msgHash := HashMessage(msg)
+
+	attackerScalar := big.NewInt(0xDEADBEEF)
+	_, _, _, g2Gen := bls12381.Generators()
+	var attackerG2 bls12381.G2Affine
+	attackerG2.ScalarMultiplication(&g2Gen, attackerScalar)
+
+	g1Hash, err := HashToG1(msgHash)
+	require.NoError(t, err)
+	var sig bls12381.G1Affine
+	sig.ScalarMultiplication(g1Hash, attackerScalar)
+
+	forged := NewPublicKey(victimPub.g1PubKey, attackerG2)
+	require.Equal(t, victimPub.OnChain(), forged.OnChain(), "forgery keeps the victim's identity")
+
+	require.Error(t, forged.VerifyWithHash(msgHash, sig.Marshal()))
+	require.Error(t, forged.Verify(msg, sig.Marshal()))
 }
 
 func randData(t *testing.T) []byte {
