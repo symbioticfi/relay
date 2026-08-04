@@ -110,6 +110,10 @@ unit-test:
 e2e-test:
 	cd e2e/tests && go test -v -timeout 40m
 
+.PHONY: e2e-pruning-test
+e2e-pruning-test:
+	cd e2e/tests && go test -v -timeout 40m -run 'TestPruning'
+
 .PHONY: gen-abi
 gen-abi:
 	go run github.com/ethereum/go-ethereum/cmd/abigen@$(ABIGEN_VERSION) \

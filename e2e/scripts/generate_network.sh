@@ -177,6 +177,8 @@ generate_docker_compose() {
     local anvil_settlement_port=8546
     local relay_start_port=8081
     local sum_start_port=9091
+    local host_uid=${HOST_UID:-$(id -u)}
+    local host_gid=${HOST_GID:-$(id -g)}
     
     # Calculate timestamp as current unix timestamp + 5 seconds
     local timestamp=$(($(date +%s) + 5))
@@ -313,10 +315,11 @@ EOF
   relay-sidecar-$i:
     image: relay_sidecar:dev
     container_name: symbiotic-relay-$i
+    user: "$host_uid:$host_gid"
     command:
       - sh
       - -c
-      - "chmod 777 /app/$storage_dir /deploy-data 2>/dev/null || true && /workspace/scripts/sidecar-start.sh symb/0/15/0x$SYMB_PRIVATE_KEY_HEX,symb/0/11/0x$SYMB_SECONDARY_PRIVATE_KEY_HEX,symb/2/1/0x$SYMB_BLS12381_PRIVATE_KEY_HEX,symb/1/0/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31337/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31338/0x$SYMB_PRIVATE_KEY_HEX,p2p/1/1/$SYMB_PRIVATE_KEY_HEX /app/$storage_dir $circuits_param"
+      - "/workspace/scripts/sidecar-start.sh symb/0/15/0x$SYMB_PRIVATE_KEY_HEX,symb/0/11/0x$SYMB_SECONDARY_PRIVATE_KEY_HEX,symb/2/1/0x$SYMB_BLS12381_PRIVATE_KEY_HEX,symb/1/0/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31337/0x$SYMB_PRIVATE_KEY_HEX,evm/1/31338/0x$SYMB_PRIVATE_KEY_HEX,p2p/1/1/$SYMB_PRIVATE_KEY_HEX /app/$storage_dir $circuits_param"
     ports:
       - "$port:8080"
     volumes:
@@ -372,10 +375,11 @@ EOF
   relay-sidecar-extra:
     image: relay_sidecar:dev
     container_name: symbiotic-relay-extra
+    user: "$host_uid:$host_gid"
     command:
       - sh
       - -c
-      - "chmod 777 /app/$extra_storage_dir /deploy-data 2>/dev/null || true && /workspace/scripts/sidecar-start.sh symb/0/15/0x$extra_key_hex,symb/0/11/0x$extra_secondary_key_hex,symb/2/1/0x$extra_bls12381_key_hex,symb/1/0/0x$extra_key_hex,evm/1/31337/0x$extra_key_hex,evm/1/31338/0x$extra_key_hex,p2p/1/1/$extra_key_hex /app/$extra_storage_dir $circuits_param"
+      - "/workspace/scripts/sidecar-start.sh symb/0/15/0x$extra_key_hex,symb/0/11/0x$extra_secondary_key_hex,symb/2/1/0x$extra_bls12381_key_hex,symb/1/0/0x$extra_key_hex,evm/1/31337/0x$extra_key_hex,evm/1/31338/0x$extra_key_hex,p2p/1/1/$extra_key_hex /app/$extra_storage_dir $circuits_param"
     ports:
       - "$extra_port:8080"
     volumes:
