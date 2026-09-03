@@ -421,14 +421,14 @@ func (s *Service) process(
 	}
 
 	onchainKey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(prevValSet.RequiredKeyTag)
-	if err != nil {
+	if err != nil && (!s.cfg.ForceCommitter || !errors.Is(err, entity.ErrKeyNotFound)) {
 		tracing.RecordError(span, err)
 		return errors.Errorf("failed to get onchain symb key from cache: %w", err)
 	}
 
 	// if we are a signer, sign the commitment, otherwise just save the metadata
 	var signatureRequest *symbiotic.SignatureRequest
-	if prevValSet.IsSigner(onchainKey) {
+	if err == nil && prevValSet.IsSigner(onchainKey) {
 		tracing.AddEvent(span, "creating_signature_request")
 		slog.DebugContext(ctx, "Node is a signer for previous validator set, creating signature request")
 		signatureRequest = &symbiotic.SignatureRequest{

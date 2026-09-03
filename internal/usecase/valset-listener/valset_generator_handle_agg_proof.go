@@ -246,17 +246,19 @@ func (s *Service) processPendingProof(ctx context.Context, proofKey symbiotic.Pr
 	}
 
 	pubkey, err := s.cfg.KeyProvider.GetOnchainKeyFromCache(header.RequiredKeyTag)
-	if err != nil {
+	if err != nil && (!s.cfg.ForceCommitter || !errors.Is(err, entity.ErrKeyNotFound)) {
 		return errors.Errorf("failed to get onchain key from cache: %w", err)
 	}
-
-	validator, found := targetValset.FindValidatorByKey(header.RequiredKeyTag, pubkey)
-	if !found {
-		return errors.Errorf("local validator not found")
+	if err == nil {
+		validator, found := targetValset.FindValidatorByKey(header.RequiredKeyTag, pubkey)
+		if !found && !s.cfg.ForceCommitter {
+			return errors.Errorf("local validator not found")
+		}
+		if found {
+			ctx = log.WithAttrs(ctx, slog.String("validatorAddress", validator.Operator.Hex()))
+			tracing.SetAttributes(span, tracing.AttrValidatorAddress.String(validator.Operator.Hex()))
+		}
 	}
-
-	ctx = log.WithAttrs(ctx, slog.String("validatorAddress", validator.Operator.Hex()))
-	tracing.SetAttributes(span, tracing.AttrValidatorAddress.String(validator.Operator.Hex()))
 
 	slog.DebugContext(ctx, "Committing proof to settlements", "header", header, "extraData", extraData)
 
