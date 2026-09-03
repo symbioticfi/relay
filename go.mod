@@ -19,7 +19,7 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/libp2p/go-libp2p v0.48.0
 	github.com/libp2p/go-libp2p-gostream v0.6.0
-	github.com/libp2p/go-libp2p-kad-dht v0.39.2
+	github.com/libp2p/go-libp2p-kad-dht v0.40.0
 	github.com/libp2p/go-libp2p-pubsub v0.16.0
 	github.com/multiformats/go-multiaddr v0.16.1
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
@@ -102,7 +102,7 @@ require (
 	github.com/ipfs/boxo v0.39.0 // indirect
 	github.com/ipfs/go-cid v0.6.1 // indirect
 	github.com/ipfs/go-datastore v0.9.1 // indirect
-	github.com/ipfs/go-log/v2 v2.9.1 // indirect
+	github.com/ipfs/go-log/v2 v2.9.2 // indirect
 	github.com/ipld/go-ipld-prime v0.23.0 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/jbenet/go-temp-err-catcher v0.1.0 // indirect
