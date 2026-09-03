@@ -125,7 +125,7 @@ jobs:
   e2e-tests:
     name: "E2E Tests - ${{ matrix.config.name }}"
     runs-on: ${{ matrix.config.verification_type == 0 && 'relay-16' || 'ubuntu-24.04' }}
-    timeout-minutes: 35
+    timeout-minutes: 45
     needs: [unit-tests]
     
     strategy:
@@ -189,7 +189,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: "Setup Foundry Toolchain"
-        uses: foundry-rs/foundry-toolchain@c7450ba673e133f5ee30098b3b54f444d3a2ca2d # v1.8.0
+        uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
         with:
           version: ${{ env.FOUNDRY_VERSION }}
 

@@ -251,12 +251,13 @@ func (s *Service) processPendingProof(ctx context.Context, proofKey symbiotic.Pr
 	}
 
 	validator, found := targetValset.FindValidatorByKey(header.RequiredKeyTag, pubkey)
-	if !found {
+	if !found && !s.cfg.ForceCommitter {
 		return errors.Errorf("local validator not found")
 	}
-
-	ctx = log.WithAttrs(ctx, slog.String("validatorAddress", validator.Operator.Hex()))
-	tracing.SetAttributes(span, tracing.AttrValidatorAddress.String(validator.Operator.Hex()))
+	if found {
+		ctx = log.WithAttrs(ctx, slog.String("validatorAddress", validator.Operator.Hex()))
+		tracing.SetAttributes(span, tracing.AttrValidatorAddress.String(validator.Operator.Hex()))
+	}
 
 	slog.DebugContext(ctx, "Committing proof to settlements", "header", header, "extraData", extraData)
 

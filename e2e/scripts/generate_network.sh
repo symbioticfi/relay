@@ -400,6 +400,7 @@ EOF
     environment:
       - MAX_VALIDATORS=10
       - STORAGE_TYPE=${STORAGE_TYPE:-}
+      - SYMB_FORCE_ROLE_COMMITTER=true
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/healthz"]
       interval: 30s
