@@ -18,8 +18,6 @@ func NewRootCommand() *cobra.Command {
 		"version", Version,
 		"buildTime", BuildTime,
 	)
-	slog.Debug("CLI arguments", "args", os.Args)
-
 	addRootFlags(rootCmd)
 
 	return rootCmd

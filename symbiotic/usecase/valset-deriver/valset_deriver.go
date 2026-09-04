@@ -230,6 +230,12 @@ func GetSchedulerInfo(_ context.Context, valset symbiotic.ValidatorSet, config s
 	}
 
 	validatorCount := len(valset.Validators.GetActiveValidators())
+	if config.NumAggregators > uint64(validatorCount) {
+		return nil, nil, errors.Errorf("number of aggregators %d exceeds active validator count %d", config.NumAggregators, validatorCount)
+	}
+	if config.NumCommitters > uint64(validatorCount) {
+		return nil, nil, errors.Errorf("number of committers %d exceeds active validator count %d", config.NumCommitters, validatorCount)
+	}
 	if validatorCount == 0 {
 		return []uint32{}, []uint32{}, nil
 	}

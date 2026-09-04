@@ -1,12 +1,14 @@
 package keyprovider
 
 import (
+	"os"
 	"testing"
 
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 
+	"github.com/pavlo-v-chernykh/keystore-go/v4"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,6 +18,11 @@ func TestNewKeystore(t *testing.T) {
 
 	_, err := NewKeystoreProvider(path, password)
 	require.NoError(t, err)
+}
+
+func TestNewKeystoreRejectsEmptyPassword(t *testing.T) {
+	_, err := NewKeystoreProvider(t.TempDir()+"/TMP-keystore", "")
+	require.ErrorContains(t, err, "password cannot be empty")
 }
 
 func TestAddKey(t *testing.T) {
@@ -80,6 +87,24 @@ func TestCreateAndReopen(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, storedPk.Bytes(), pk)
+
+	info, err := os.Stat(path)
+	require.NoError(t, err)
+	require.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+
+	f, err := os.Open(path)
+	require.NoError(t, err)
+	defer f.Close()
+
+	rawKeystore := keystore.New()
+	require.NoError(t, rawKeystore.Load(f, []byte(password)))
+	alias, err := KeyTagToAlias(15)
+	require.NoError(t, err)
+	_, err = rawKeystore.GetPrivateKeyEntry(alias, []byte{})
+	require.Error(t, err)
+	entry, err := rawKeystore.GetPrivateKeyEntry(alias, []byte(password))
+	require.NoError(t, err)
+	require.Equal(t, pk, entry.PrivateKey)
 }
 
 func TestDefaultEVMKey(t *testing.T) {

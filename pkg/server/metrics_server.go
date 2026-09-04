@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"net/http/pprof"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -15,6 +16,7 @@ import (
 type MetricsConfig struct {
 	Address           string
 	ReadHeaderTimeout time.Duration
+	ServePprof        bool
 }
 
 func (c MetricsConfig) Validate() error {
@@ -41,9 +43,25 @@ func NewMetricsServer(cfg MetricsConfig) (*MetricsServer, error) {
 	}, nil
 }
 
-func initMetricsHandler(_ MetricsConfig) http.Handler {
+func initMetricsHandler(cfg MetricsConfig) http.Handler {
 	r := chi.NewRouter()
 	r.Handle("/metrics", promhttp.Handler())
+	if cfg.ServePprof {
+		r.HandleFunc("/pprof", func(w http.ResponseWriter, req *http.Request) {
+			http.Redirect(w, req, req.RequestURI+"/", http.StatusMovedPermanently)
+		})
+		r.HandleFunc("/pprof/", pprof.Index)
+		r.HandleFunc("/pprof/cmdline", pprof.Cmdline)
+		r.HandleFunc("/pprof/profile", pprof.Profile)
+		r.HandleFunc("/pprof/symbol", pprof.Symbol)
+		r.HandleFunc("/pprof/trace", pprof.Trace)
+		r.Handle("/pprof/goroutine", pprof.Handler("goroutine"))
+		r.Handle("/pprof/threadcreate", pprof.Handler("threadcreate"))
+		r.Handle("/pprof/mutex", pprof.Handler("mutex"))
+		r.Handle("/pprof/heap", pprof.Handler("heap"))
+		r.Handle("/pprof/block", pprof.Handler("block"))
+		r.Handle("/pprof/allocs", pprof.Handler("allocs"))
+	}
 
 	return r
 }

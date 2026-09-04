@@ -15,17 +15,22 @@ import (
 )
 
 type KeystoreProvider struct {
-	ks       keystore.KeyStore
-	filePath string
+	ks            keystore.KeyStore
+	filePath      string
+	storePassword string
 }
 
 func NewKeystoreProvider(filePath, password string) (*KeystoreProvider, error) {
+	if password == "" {
+		return nil, errors.New("keystore password cannot be empty")
+	}
+
 	ks := keystore.New()
 
 	f, err := os.Open(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return &KeystoreProvider{ks: ks, filePath: filePath}, nil
+			return &KeystoreProvider{ks: ks, filePath: filePath, storePassword: password}, nil
 		}
 		return nil, err
 	}
@@ -35,7 +40,7 @@ func NewKeystoreProvider(filePath, password string) (*KeystoreProvider, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &KeystoreProvider{ks: ks, filePath: filePath}, nil
+	return &KeystoreProvider{ks: ks, filePath: filePath, storePassword: password}, nil
 }
 
 func (k *KeystoreProvider) GetAliases() []string {
@@ -52,7 +57,22 @@ func (k *KeystoreProvider) GetPrivateKey(keyTag symbiotic.KeyTag) (crypto.Privat
 }
 
 func (k *KeystoreProvider) GetPrivateKeyByAlias(alias string) (crypto.PrivateKey, error) {
-	entry, err := k.ks.GetPrivateKeyEntry(alias, []byte{})
+	entry, err := k.ks.GetPrivateKeyEntry(alias, []byte(k.storePassword))
+	if err != nil {
+		// Older relay versions encrypted entries with an empty password even when
+		// the keystore itself had a password. Migrate such entries on first use.
+		legacyEntry, legacyErr := k.ks.GetPrivateKeyEntry(alias, []byte{})
+		if legacyErr == nil {
+			if setErr := k.ks.SetPrivateKeyEntry(alias, legacyEntry, []byte(k.storePassword)); setErr != nil {
+				return nil, errors.Errorf("failed to migrate legacy keystore entry %q: %w", alias, setErr)
+			}
+			if dumpErr := k.dump(k.storePassword); dumpErr != nil {
+				return nil, errors.Errorf("failed to persist migrated keystore entry %q: %w", alias, dumpErr)
+			}
+			entry = legacyEntry
+			err = nil
+		}
+	}
 	if err != nil {
 		if errors.Is(err, keystore.ErrEntryNotFound) {
 			return nil, errors.New(entity.ErrKeyNotFound)
@@ -108,6 +128,9 @@ func (k *KeystoreProvider) HasKeyByNamespaceTypeId(namespace string, keyType sym
 }
 
 func (k *KeystoreProvider) AddKey(namespace string, keyTag symbiotic.KeyTag, privateKey crypto.PrivateKey, password string, force bool) error {
+	if err := k.validatePassword(password); err != nil {
+		return err
+	}
 	exists, err := k.HasKeyByNamespaceTypeId(namespace, keyTag.Type(), int(keyTag&0x0F))
 	if err != nil {
 		return err
@@ -126,7 +149,7 @@ func (k *KeystoreProvider) AddKey(namespace string, keyTag symbiotic.KeyTag, pri
 		CreationTime:     time.Now(),
 		PrivateKey:       privateKey.Bytes(),
 		CertificateChain: nil,
-	}, []byte{})
+	}, []byte(k.storePassword))
 	if err != nil {
 		return err
 	}
@@ -144,6 +167,9 @@ func (k *KeystoreProvider) AddKey(namespace string, keyTag symbiotic.KeyTag, pri
 }
 
 func (k *KeystoreProvider) DeleteKey(keyTag symbiotic.KeyTag, password string) error {
+	if err := k.validatePassword(password); err != nil {
+		return err
+	}
 	exists, err := k.HasKey(keyTag)
 	if err != nil {
 		return err
@@ -169,6 +195,9 @@ func (k *KeystoreProvider) DeleteKey(keyTag symbiotic.KeyTag, password string) e
 }
 
 func (k *KeystoreProvider) AddKeyByNamespaceTypeId(ns string, tp symbiotic.KeyType, id int, privateKey crypto.PrivateKey, password string, force bool) error {
+	if err := k.validatePassword(password); err != nil {
+		return err
+	}
 	exists, err := k.HasKeyByNamespaceTypeId(ns, tp, id)
 	if err != nil {
 		return err
@@ -187,7 +216,7 @@ func (k *KeystoreProvider) AddKeyByNamespaceTypeId(ns string, tp symbiotic.KeyTy
 		CreationTime:     time.Now(),
 		PrivateKey:       privateKey.Bytes(),
 		CertificateChain: nil,
-	}, []byte{})
+	}, []byte(k.storePassword))
 	if err != nil {
 		return err
 	}
@@ -205,6 +234,9 @@ func (k *KeystoreProvider) AddKeyByNamespaceTypeId(ns string, tp symbiotic.KeyTy
 }
 
 func (k *KeystoreProvider) DeleteKeyByNamespaceTypeId(ns string, tp symbiotic.KeyType, id int, password string) error {
+	if err := k.validatePassword(password); err != nil {
+		return err
+	}
 	exists, err := k.HasKeyByNamespaceTypeId(ns, tp, id)
 	if err != nil {
 		return err
@@ -229,13 +261,20 @@ func (k *KeystoreProvider) DeleteKeyByNamespaceTypeId(ns string, tp symbiotic.Ke
 	return nil
 }
 
+func (k *KeystoreProvider) validatePassword(password string) error {
+	if password != k.storePassword {
+		return errors.New("keystore password does not match the loaded keystore")
+	}
+	return nil
+}
+
 func (k *KeystoreProvider) dump(password string) error {
 	dir := filepath.Dir(k.filePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
 
-	f, err := os.Create(k.filePath)
+	f, err := os.OpenFile(k.filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		slog.Error("Failed to create file", "error", err.Error(), "path", k.filePath)
 		return err
@@ -246,6 +285,9 @@ func (k *KeystoreProvider) dump(password string) error {
 			slog.Warn("Failed to close file", "error", err.Error())
 		}
 	}()
+	if err := f.Chmod(0o600); err != nil {
+		return err
+	}
 
 	err = k.ks.Store(f, []byte(password))
 	if err != nil {

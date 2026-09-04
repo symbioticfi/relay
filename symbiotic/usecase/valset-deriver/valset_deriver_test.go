@@ -1238,8 +1238,8 @@ func TestDeriver_GetSchedulerInfo(t *testing.T) {
 				NumCommitters:  1,
 			},
 			// These expected values are deterministic based on the hash calculation
-			expectedAggIndices:  []uint32{2, 0}, // Calculated deterministically from hash
-			expectedCommIndices: []uint32{1},    // Calculated deterministically from hash
+			expectedAggIndices:  []uint32{0, 1}, // Calculated deterministically from hash
+			expectedCommIndices: []uint32{2},    // Calculated deterministically from hash
 			expectError:         false,
 		},
 		{
@@ -1289,7 +1289,7 @@ func TestDeriver_GetSchedulerInfo(t *testing.T) {
 			expectError:         false,
 		},
 		{
-			name: "empty validator set",
+			name: "empty validator set rejects configured roles",
 			valset: symbiotic.ValidatorSet{
 				Validators:       symbiotic.Validators{},
 				Version:          1,
@@ -1301,9 +1301,52 @@ func TestDeriver_GetSchedulerInfo(t *testing.T) {
 				NumAggregators: 2,
 				NumCommitters:  1,
 			},
-			expectedAggIndices:  []uint32{},
-			expectedCommIndices: []uint32{},
-			expectError:         false,
+			expectError: true,
+			errorMsg:    "number of aggregators 2 exceeds active validator count 0",
+		},
+		{
+			name: "aggregator count exceeds active validators",
+			valset: symbiotic.ValidatorSet{
+				Validators: symbiotic.Validators{
+					{
+						Operator:    common.HexToAddress("0x1111111111111111111111111111111111111111"),
+						VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
+						IsActive:    true,
+					},
+				},
+				Version:          1,
+				RequiredKeyTag:   15,
+				Epoch:            50,
+				CaptureTimestamp: 1234567890,
+			},
+			config: symbiotic.NetworkConfig{
+				NumAggregators: 2,
+				NumCommitters:  1,
+			},
+			expectError: true,
+			errorMsg:    "number of aggregators 2 exceeds active validator count 1",
+		},
+		{
+			name: "committer count exceeds active validators",
+			valset: symbiotic.ValidatorSet{
+				Validators: symbiotic.Validators{
+					{
+						Operator:    common.HexToAddress("0x1111111111111111111111111111111111111111"),
+						VotingPower: symbiotic.ToVotingPower(big.NewInt(1000)),
+						IsActive:    true,
+					},
+				},
+				Version:          1,
+				RequiredKeyTag:   15,
+				Epoch:            50,
+				CaptureTimestamp: 1234567890,
+			},
+			config: symbiotic.NetworkConfig{
+				NumAggregators: 1,
+				NumCommitters:  2,
+			},
+			expectError: true,
+			errorMsg:    "number of committers 2 exceeds active validator count 1",
 		},
 		{
 			name: "unsorted validators should error",

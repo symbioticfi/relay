@@ -3,6 +3,7 @@ package aggregator_app
 import (
 	"context"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -16,6 +17,11 @@ import (
 	"github.com/symbioticfi/relay/pkg/tracing"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
+)
+
+const (
+	defaultMaxPendingRequests  = 1000
+	defaultMaxRequestsPerCycle = 100
 )
 
 //go:generate mockgen -source=aggregator_app.go -destination=mocks/aggregator_app.go -package=mocks
@@ -73,6 +79,7 @@ type Config struct {
 	KeyProvider           keyProvider      `validate:"required"`
 	ForceAggregator       bool
 	CrossEpochAggregation bool
+	MaxPendingRequests    int `validate:"gte=0"`
 	ProofCatchup          ProofCatchupConfig
 }
 
@@ -94,13 +101,20 @@ func (c Config) Validate() error {
 }
 
 type AggregatorApp struct {
-	cfg   Config
-	queue *workqueue.Typed[common.Hash]
+	cfg       Config
+	queue     *workqueue.Typed[common.Hash]
+	enqueueMu sync.Mutex
 }
 
 func NewAggregatorApp(cfg Config) (*AggregatorApp, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, errors.Errorf("failed to validate config: %w", err)
+	}
+	if cfg.MaxPendingRequests == 0 {
+		cfg.MaxPendingRequests = defaultMaxPendingRequests
+	}
+	if cfg.ProofCatchup.MaxRequestsPerCycle == 0 {
+		cfg.ProofCatchup.MaxRequestsPerCycle = defaultMaxRequestsPerCycle
 	}
 
 	app := &AggregatorApp{
@@ -133,6 +147,17 @@ func (s *AggregatorApp) HandleSignatureProcessedMessage(ctx context.Context, msg
 }
 
 func (s *AggregatorApp) EnqueueRequestID(ctx context.Context, requestID common.Hash) {
+	s.enqueueMu.Lock()
+	defer s.enqueueMu.Unlock()
+
+	if s.queue.Len() >= s.cfg.MaxPendingRequests {
+		slog.WarnContext(ctx, "Skipped aggregation request because queue is full",
+			"requestId", requestID.Hex(),
+			"maxPendingRequests", s.cfg.MaxPendingRequests,
+		)
+		return
+	}
+
 	s.queue.Add(requestID)
 	slog.DebugContext(ctx, "Enqueued aggregation request", "requestId", requestID.Hex())
 }

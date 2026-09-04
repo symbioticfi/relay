@@ -171,7 +171,9 @@ func (v *SszVault) HashTreeRootWith(hh ssz.HashWalker) error {
 	hh.PutBytes(v.Vault.Bytes())
 
 	// Field (2) 'VotingPower'
-	hh.PutBytes(v.VotingPower.Bytes())
+	votingPowerBuf := make([]byte, 32)
+	v.VotingPower.FillBytes(votingPowerBuf)
+	hh.PutBytes(votingPowerBuf)
 
 	hh.Merkleize(indx)
 
@@ -335,7 +337,9 @@ func (v *SszValidator) HashTreeRootWith(hh ssz.HashWalker) error {
 	hh.PutBytes(v.Operator.Bytes())
 
 	// Field (1) 'VotingPower'
-	hh.PutBytes(v.VotingPower.Bytes())
+	votingPowerBuf := make([]byte, 32)
+	v.VotingPower.FillBytes(votingPowerBuf)
+	hh.PutBytes(votingPowerBuf)
 
 	// Field (2) 'IsActive'
 	hh.PutBool(v.IsActive)

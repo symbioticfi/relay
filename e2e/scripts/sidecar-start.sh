@@ -15,7 +15,7 @@ api:
 
 # Metrics Configuration
 metrics:
-  pprof: true
+  pprof: false
 
 # Driver Contract
 driver:

@@ -262,13 +262,15 @@ func (s *Service) processPendingProof(ctx context.Context, proofKey symbiotic.Pr
 	slog.DebugContext(ctx, "Committing proof to settlements", "header", header, "extraData", extraData)
 
 	ok, err := s.commitValsetToAllSettlements(ctx, config, header, extraData, proof.Proof)
+	if err != nil {
+		commitErr := errors.Errorf("failed to commit valset to every settlement for epoch %d: %w", proofKey.Epoch, err)
+		tracing.RecordError(span, commitErr)
+		return commitErr
+	}
 	if !ok {
-		_err := errors.Errorf("failed to commit valset to all settlements for epoch %d, error=%w", proofKey.Epoch, err)
-		tracing.RecordError(span, _err)
-		return _err
-	} else if err != nil {
-		// on partial failure just log error and continue, we will retry later
-		slog.ErrorContext(ctx, "Failed to commit valset to some settlements", "error", err)
+		commitErr := errors.Errorf("failed to commit valset to every settlement for epoch %d", proofKey.Epoch)
+		tracing.RecordError(span, commitErr)
+		return commitErr
 	}
 
 	return nil
@@ -289,6 +291,7 @@ func (s *Service) detectLastCommittedEpochFromDB(ctx context.Context) symbiotic.
 
 func (s *Service) detectLastCommittedEpochFromChain(ctx context.Context, config symbiotic.NetworkConfig) symbiotic.Epoch {
 	minVal := symbiotic.Epoch(0)
+	found := false
 	for _, settlement := range config.Settlements {
 		lastCommittedEpoch, err := s.cfg.EvmClient.GetLastCommittedHeaderEpoch(ctx, settlement, symbiotic.WithEVMBlockNumber(symbiotic.BlockNumberLatest))
 		if err != nil {
@@ -296,8 +299,9 @@ func (s *Service) detectLastCommittedEpochFromChain(ctx context.Context, config 
 			// skip chain if networking issue, we will recheck again anyway and if the rpc/chain recovers we will detect issue later
 			continue
 		}
-		if minVal == 0 {
+		if !found {
 			minVal = lastCommittedEpoch
+			found = true
 		} else if lastCommittedEpoch < minVal {
 			minVal = lastCommittedEpoch
 		}

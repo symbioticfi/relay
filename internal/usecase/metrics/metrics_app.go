@@ -14,6 +14,7 @@ import (
 type AppConfig struct {
 	Address           string        `validate:"required"`
 	ReadHeaderTimeout time.Duration `validate:"required,gt=0"`
+	ServePprof        bool
 }
 
 func (c AppConfig) Validate() error {
@@ -36,6 +37,7 @@ func NewApp(cfg AppConfig) (*App, error) {
 	srv, err := server.NewMetricsServer(server.MetricsConfig{
 		Address:           cfg.Address,
 		ReadHeaderTimeout: cfg.ReadHeaderTimeout,
+		ServePprof:        cfg.ServePprof,
 	})
 	if err != nil {
 		return nil, errors.Errorf("failed to create metrics server: %w", err)

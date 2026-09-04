@@ -458,6 +458,33 @@ func TestCatchup_NoEpochsSynced(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestNewAggregatorApp_AppliesSafeQueueDefaults(t *testing.T) {
+	setup := newTestSetupWithCatchup(t, ProofCatchupConfig{
+		Enabled:       true,
+		Interval:      time.Minute,
+		EpochsToCheck: 20,
+	})
+
+	require.Equal(t, defaultMaxPendingRequests, setup.app.cfg.MaxPendingRequests)
+	require.Equal(t, defaultMaxRequestsPerCycle, setup.app.cfg.ProofCatchup.MaxRequestsPerCycle)
+}
+
+func TestEnqueueRequestID_StopsAtPendingLimit(t *testing.T) {
+	setup := newTestSetupWithCatchup(t, ProofCatchupConfig{
+		Enabled:             true,
+		Interval:            time.Minute,
+		EpochsToCheck:       20,
+		MaxRequestsPerCycle: 10,
+	})
+	setup.app.cfg.MaxPendingRequests = 2
+
+	setup.app.EnqueueRequestID(t.Context(), common.HexToHash("0x01"))
+	setup.app.EnqueueRequestID(t.Context(), common.HexToHash("0x02"))
+	setup.app.EnqueueRequestID(t.Context(), common.HexToHash("0x03"))
+
+	require.Equal(t, 2, setup.app.queue.Len())
+}
+
 func TestCatchup_SmallChainScansAllEpochs(t *testing.T) {
 	setup := newTestSetupWithCatchup(t, ProofCatchupConfig{
 		Enabled:       true,

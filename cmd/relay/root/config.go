@@ -252,6 +252,7 @@ type PrunerConfig struct {
 
 type AggregationConfig struct {
 	WorkerCount           int                      `mapstructure:"worker-count" validate:"min=1"`
+	MaxPendingRequests    int                      `mapstructure:"max-pending-requests" validate:"gte=0"`
 	CrossEpochAggregation bool                     `mapstructure:"cross-epoch-aggregation"`
 	Catchup               AggregationCatchupConfig `mapstructure:"catchup"`
 }
@@ -332,6 +333,9 @@ func (c config) Validate() error {
 	}
 	if c.P2P.SyncPeerBackoff.MaxBackoff < c.P2P.SyncPeerBackoff.MinBackoff {
 		return errors.New("p2p.sync-peer-backoff.max-backoff must be greater than or equal to min-backoff")
+	}
+	if c.Metrics.PprofEnabled && (c.Metrics.ListenAddress == "" || c.Metrics.ListenAddress == c.API.ListenAddress) {
+		return errors.New("metrics.pprof requires a dedicated metrics.listen address different from api.listen")
 	}
 
 	// Validate badger: num-level-zero-tables-stall must be > num-level-zero-tables (badger fatals otherwise).
@@ -415,12 +419,13 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Int("pruner.batch-size", 100, "Number of request IDs to delete per database transaction during pruning (0 = unbatched)")
 	rootCmd.PersistentFlags().Duration("pruner.batch-pause", 100*time.Millisecond, "Pause between prune batches to yield to live writers (bbolt only — badger has no batching) (0 = no pause)")
 	rootCmd.PersistentFlags().Int("aggregation.worker-count", 10, "Max simultaneous proof aggregations, reduce for ZK circuits with high memory and cpu usage")
+	rootCmd.PersistentFlags().Int("aggregation.max-pending-requests", 1000, "Max pending aggregation requests held in memory")
 	rootCmd.PersistentFlags().Bool("aggregation.cross-epoch-aggregation", false, "Allow latest-epoch aggregators to aggregate proofs for older epochs when original aggregators are offline")
 	rootCmd.PersistentFlags().Bool("aggregation.catchup.enabled", true, "Enable periodic aggregation catch-up loop")
 	rootCmd.PersistentFlags().Duration("aggregation.catchup.interval", time.Minute, "How often to run aggregation catch-up")
 	rootCmd.PersistentFlags().Int("aggregation.catchup.epochs-to-check", 20, "Number of epochs to scan per catch-up cycle")
 	rootCmd.PersistentFlags().Int("aggregation.catchup.epochs-offset", 0, "Number of epochs back from latest to skip before scanning begins")
-	rootCmd.PersistentFlags().Int("aggregation.catchup.max-requests-per-cycle", 0, "Max requests to check per cycle (0 = unlimited)")
+	rootCmd.PersistentFlags().Int("aggregation.catchup.max-requests-per-cycle", 100, "Max requests to check per cycle (0 uses the safe default of 100)")
 	rootCmd.PersistentFlags().Bool("tracing.enabled", false, "Enable distributed tracing")
 	rootCmd.PersistentFlags().String("tracing.endpoint", "localhost:4317", "OTLP endpoint for tracing (e.g., Jaeger)")
 	rootCmd.PersistentFlags().Float64("tracing.sample-rate", 1.0, "Trace sampling rate (0.0 to 1.0)")
@@ -656,6 +661,9 @@ func initConfig(cmd *cobra.Command, _ []string) error {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("aggregation.worker-count", cmd.PersistentFlags().Lookup("aggregation.worker-count")); err != nil {
+		return errors.Errorf("failed to bind flag: %w", err)
+	}
+	if err := v.BindPFlag("aggregation.max-pending-requests", cmd.PersistentFlags().Lookup("aggregation.max-pending-requests")); err != nil {
 		return errors.Errorf("failed to bind flag: %w", err)
 	}
 	if err := v.BindPFlag("aggregation.cross-epoch-aggregation", cmd.PersistentFlags().Lookup("aggregation.cross-epoch-aggregation")); err != nil {

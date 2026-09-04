@@ -149,24 +149,12 @@ func setupHttpProxy(ctx context.Context, grpcAddr string, httpMux *http.ServeMux
 		return nil
 	}
 
-	// Mount the gateway under /api prefix with CORS and streaming support
+	// Mount the gateway under /api prefix with streaming support. Cross-origin
+	// access is intentionally not enabled because this API can request signatures.
 	httpMux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		// Check if gateway is initialized
 		if conn == nil {
 			http.Error(w, "Gateway not ready", http.StatusServiceUnavailable)
-			return
-		}
-
-		// Set CORS headers
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept")
-		w.Header().Set("Access-Control-Expose-Headers", "Content-Length, Content-Type")
-		w.Header().Set("Access-Control-Max-Age", "86400") // 24 hours
-
-		// Handle preflight OPTIONS request
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 

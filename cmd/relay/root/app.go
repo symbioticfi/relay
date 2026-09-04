@@ -469,6 +469,7 @@ func runApp(ctx context.Context) error {
 		KeyProvider:           keyProvider,
 		ForceAggregator:       cfg.ForceRole.Aggregator,
 		CrossEpochAggregation: cfg.Aggregation.CrossEpochAggregation,
+		MaxPendingRequests:    cfg.Aggregation.MaxPendingRequests,
 		ProofCatchup: aggregatorApp.ProofCatchupConfig{
 			Enabled:             cfg.Aggregation.Catchup.Enabled,
 			Interval:            cfg.Aggregation.Catchup.Interval,
@@ -495,7 +496,6 @@ func runApp(ctx context.Context) error {
 		Deriver:                deriver,
 		Metrics:                mtr,
 		ServeMetrics:           serveMetricsOnAPIAddress,
-		ServePprof:             cfg.Metrics.PprofEnabled,
 		ServeHTTPGateway:       cfg.API.HTTPGateway,
 		VerboseLogging:         cfg.API.VerboseLogging,
 		MaxAllowedStreamsCount: int(cfg.API.MaxAllowedStreams),
@@ -597,6 +597,7 @@ func runApp(ctx context.Context) error {
 		mtrApp, err := metrics.NewApp(metrics.AppConfig{
 			Address:           cfg.Metrics.ListenAddress,
 			ReadHeaderTimeout: time.Second * 5,
+			ServePprof:        cfg.Metrics.PprofEnabled,
 		})
 		if err != nil {
 			return errors.Errorf("failed to create metrics app: %w", err)

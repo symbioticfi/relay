@@ -130,6 +130,9 @@ aggregation:
   # Max simultaneous proof aggregations (default: 10)
   worker-count: 10
 
+  # Max pending aggregation requests held in memory (default: 1000)
+  max-pending-requests: 1000
+
   # Catch-up: periodically retries aggregation for requests that don't have a proof yet
   catchup:
     # Enable periodic catch-up loop (default: true)
@@ -145,11 +148,8 @@ aggregation:
     # 0 = start from latest epoch
     epochs-offset: 0
 
-    # Max requests to check per cycle, 0 = unlimited (default: 0)
-    max-requests-per-cycle: 0
-
-    # Max proofs to generate per cycle, 0 = unlimited (default: 100)
-    max-proofs-per-cycle: 100
+    # Max requests to check per cycle (default: 100; 0 also uses 100)
+    max-requests-per-cycle: 100
 
 # bbolt Storage Engine Tuning (default, only used when storage-type: "bbolt")
 # bbolt uses a B+tree with single-writer model for predictable write latency
