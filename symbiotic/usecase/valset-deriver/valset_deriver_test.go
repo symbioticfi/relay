@@ -1593,3 +1593,59 @@ func TestDeriver_findNextAvailableIndex_Panic(t *testing.T) {
 		findNextAvailableIndex(0, 3, usedIndices)
 	}, "should panic when no indices are available")
 }
+
+func TestCommittedHeaderValidation(t *testing.T) {
+	valset := symbiotic.ValidatorSet{Version: 1, Epoch: 2, QuorumThreshold: symbiotic.ToVotingPower(big.NewInt(0))}
+	header, err := valset.GetHeader()
+	require.NoError(t, err)
+	hash, err := header.Hash()
+	require.NoError(t, err)
+	for _, tc := range []struct {
+		name      string
+		committed bool
+		hash      common.Hash
+		rpcError  error
+		wantError bool
+	}{
+		{"uncommitted", false, common.Hash{}, nil, false},
+		{"matching", true, hash, nil, false},
+		{"mismatch", true, common.Hash{1}, nil, true},
+		{"RPC error", false, common.Hash{}, errors.New("offline"), true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			client := mocks.NewMockEvmClient(gomock.NewController(t))
+			settlement := symbiotic.CrossChainAddress{ChainId: 1}
+			client.EXPECT().IsValsetHeaderCommittedAt(gomock.Any(), settlement, valset.Epoch).Return(tc.committed, tc.rpcError)
+			if tc.committed {
+				client.EXPECT().GetHeaderHashAt(gomock.Any(), settlement, valset.Epoch).Return(tc.hash, nil)
+			}
+			d := Deriver{evmClient: client}
+			err := d.validateCommittedHeader(t.Context(), valset, []symbiotic.CrossChainAddress{settlement})
+			if tc.wantError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestSchedulerRejectsCombinedVotingPowerOverflow(t *testing.T) {
+	power := symbiotic.ToVotingPower(new(big.Int).Lsh(big.NewInt(1), 255))
+	inputs := []dtoOperatorVotingPower{}
+	for chain := uint64(1); chain <= 2; chain++ {
+		inputs = append(inputs, dtoOperatorVotingPower{
+			chainId: chain,
+			votingPowers: []symbiotic.OperatorVotingPower{{
+				Operator: common.Address{1},
+				Vaults:   []symbiotic.VaultVotingPower{{Vault: common.Address{2}, VotingPower: power}},
+			}},
+		})
+	}
+	validators := fillValidators(inputs, nil)
+	require.Equal(t, 257, validators[0].VotingPower.BitLen())
+	_, _, err := GetSchedulerInfo(t.Context(), symbiotic.ValidatorSet{
+		Version: 1, Validators: validators, QuorumThreshold: symbiotic.ToVotingPower(big.NewInt(0)),
+	}, symbiotic.NetworkConfig{})
+	require.Error(t, err)
+}

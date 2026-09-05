@@ -507,34 +507,49 @@ func TestCatchup_SmallChainScansAllEpochs(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestCatchup_MaxRequestsPerCycleLimit(t *testing.T) {
-	setup := newTestSetupWithCatchup(t, ProofCatchupConfig{
-		Enabled:             true,
-		Interval:            time.Minute,
-		EpochsToCheck:       20,
-		MaxRequestsPerCycle: 2,
-	})
-
-	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(gomock.Any()).Return(symbiotic.Epoch(1), nil)
-
-	// Even an oversized repository page cannot exceed the inspection budget.
-	setup.mockRepo.EXPECT().GetSignatureRequestsWithoutAggregationProof(gomock.Any(), symbiotic.Epoch(1), 2, common.Hash{}).
-		Return([]symbiotic.SignatureRequestWithID{
-			{SignatureRequest: symbiotic.SignatureRequest{KeyTag: symbiotic.KeyTag(15), RequiredEpoch: 1}, RequestID: common.HexToHash("0x01")},
-			{SignatureRequest: symbiotic.SignatureRequest{KeyTag: symbiotic.KeyTag(15), RequiredEpoch: 1}, RequestID: common.HexToHash("0x02")},
-			{SignatureRequest: symbiotic.SignatureRequest{KeyTag: symbiotic.KeyTag(15), RequiredEpoch: 1}, RequestID: common.HexToHash("0x03")},
-		}, nil)
-
-	// Catch-up checks if proof exists for each request before enqueuing
-	// Only two records may be checked or enqueued.
-	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), gomock.Any()).
-		Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound).Times(2)
-
-	err := setup.app.tryAggregateRequestsWithoutProof(t.Context())
-	require.NoError(t, err)
-
-	// Verify only 2 items were enqueued
-	require.Equal(t, 2, setup.app.queue.Len())
+func TestCatchup_BudgetAndCursor(t *testing.T) {
+	for _, keyTag := range []symbiotic.KeyTag{15, 16} {
+		t.Run(keyTag.String(), func(t *testing.T) {
+			setup := newTestSetupWithCatchup(t, ProofCatchupConfig{
+				Enabled: true, Interval: time.Minute, EpochsToCheck: 1, MaxRequestsPerCycle: 2,
+			})
+			requests := []symbiotic.SignatureRequestWithID{
+				{RequestID: common.Hash{1}, SignatureRequest: symbiotic.SignatureRequest{KeyTag: keyTag, RequiredEpoch: 1}},
+				{RequestID: common.Hash{2}, SignatureRequest: symbiotic.SignatureRequest{KeyTag: keyTag, RequiredEpoch: 1}},
+				{RequestID: common.Hash{3}, SignatureRequest: symbiotic.SignatureRequest{KeyTag: keyTag, RequiredEpoch: 1}},
+			}
+			setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(gomock.Any()).Return(symbiotic.Epoch(1), nil).Times(2)
+			// Even an oversized page cannot bypass the inspection budget.
+			setup.mockRepo.EXPECT().GetSignatureRequestsWithoutAggregationProof(gomock.Any(), symbiotic.Epoch(1), 2, common.Hash{}).Return(requests, nil)
+			setup.mockRepo.EXPECT().GetSignatureRequestsWithoutAggregationProof(gomock.Any(), symbiotic.Epoch(1), 2, requests[1].RequestID).Return(requests[2:], nil)
+			setup.mockRepo.EXPECT().GetSignatureRequestsWithoutAggregationProof(gomock.Any(), symbiotic.Epoch(1), 1, requests[2].RequestID).Return(nil, nil)
+			for _, req := range requests {
+				if keyTag.Type().AggregationKey() {
+					setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), req.RequestID).Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound)
+				} else {
+					setup.mockRepo.EXPECT().GetSignatureMap(gomock.Any(), req.RequestID).Return(entity.SignatureMap{}, entity.ErrEntityNotFound)
+				}
+			}
+			require.NoError(t, setup.app.tryAggregateRequestsWithoutProof(t.Context()))
+			if keyTag.Type().AggregationKey() {
+				require.Equal(t, 2, setup.app.queue.Len())
+				for setup.app.queue.Len() > 0 {
+					id, _ := setup.app.queue.Get()
+					require.NotEqual(t, requests[2].RequestID, id)
+					setup.app.queue.Done(id)
+				}
+			}
+			require.NoError(t, setup.app.tryAggregateRequestsWithoutProof(t.Context()))
+			if keyTag.Type().AggregationKey() {
+				require.Equal(t, 1, setup.app.queue.Len())
+				id, _ := setup.app.queue.Get()
+				require.Equal(t, requests[2].RequestID, id)
+				setup.app.queue.Done(id)
+			} else {
+				require.Zero(t, setup.app.queue.Len())
+			}
+		})
+	}
 }
 
 func TestCatchup_EnqueuesAllRequests(t *testing.T) {

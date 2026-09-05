@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/go-errors/errors"
+	"github.com/stretchr/testify/require"
 )
 
 // mockFlusher implements http.Flusher for testing
@@ -464,5 +465,35 @@ func TestSSEResponseWriter_RealWorldScenario(t *testing.T) {
 	// Verify the JSON is complete and valid
 	if !strings.Contains(output, largeJSON) {
 		t.Errorf("Expected output to contain complete JSON")
+	}
+}
+
+func TestHTTPGatewayRejectsUnsafeRequests(t *testing.T) {
+	mux := http.NewServeMux()
+	setupHttpProxy(t.Context(), "", mux)
+	for _, tc := range []struct {
+		name, origin, contentType, fetchSite string
+		status                               int
+	}{
+		{"native", "", "application/json", "", http.StatusServiceUnavailable},
+		{"same origin", "http://relay.example", "application/json; charset=utf-8", "same-origin", http.StatusServiceUnavailable},
+		{"simple post", "", "text/plain", "", http.StatusUnsupportedMediaType},
+		{"foreign plain text", "http://evil.example", "text/plain", "cross-site", http.StatusForbidden},
+		{"foreign JSON", "http://evil.example", "application/json", "", http.StatusForbidden},
+		{"null origin", "null", "application/json", "", http.StatusForbidden},
+		{"different port", "http://relay.example:8080", "application/json", "", http.StatusForbidden},
+		{"different scheme", "https://relay.example", "application/json", "", http.StatusForbidden},
+		{"cross-site without origin", "", "application/json", "cross-site", http.StatusForbidden},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "http://relay.example/api/v1/sign", nil)
+			req.Header.Set("Origin", tc.origin)
+			req.Header.Set("Content-Type", tc.contentType)
+			req.Header.Set("Sec-Fetch-Site", tc.fetchSite)
+			response := httptest.NewRecorder()
+			mux.ServeHTTP(response, req)
+			// Safe requests reach the uninitialized gateway; unsafe ones stop before it.
+			require.Equal(t, tc.status, response.Code)
+		})
 	}
 }

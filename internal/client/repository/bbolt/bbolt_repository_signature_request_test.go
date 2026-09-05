@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
+	"github.com/symbioticfi/relay/internal/client/repository/repoutil"
 
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 
@@ -199,4 +200,27 @@ func TestRepository_GetSignatureRequestsWithIDByEpoch(t *testing.T) {
 		require.NoError(t, err)
 		require.Empty(t, results)
 	})
+}
+
+func TestSignatureRequestPageByteBudget(t *testing.T) {
+	repo := setupTestRepository(t)
+	message := make([]byte, repoutil.MaxSignatureRequestPageBytes/2+1)
+	for _, id := range []common.Hash{{1}, {2}} {
+		require.NoError(t, repo.SaveSignatureRequest(t.Context(), id, symbiotic.SignatureRequest{
+			KeyTag: 15, RequiredEpoch: 1, Message: message,
+		}))
+	}
+	var cursor []byte
+	for _, id := range []common.Hash{{1}, {2}} {
+		rows, next, err := repo.GetSignatureRequestsWithIDByEpoch(t.Context(), 1, 1000, cursor)
+		require.NoError(t, err)
+		require.Len(t, rows, 1)
+		require.Equal(t, id, rows[0].RequestID)
+		require.Equal(t, message, []byte(rows[0].SignatureRequest.Message))
+		cursor = next
+		if id == (common.Hash{1}) {
+			require.NotEmpty(t, cursor)
+		}
+	}
+	require.Empty(t, cursor)
 }
