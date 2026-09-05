@@ -295,9 +295,8 @@ func (s *Service) detectLastCommittedEpochFromChain(ctx context.Context, config 
 	for _, settlement := range config.Settlements {
 		lastCommittedEpoch, err := s.cfg.EvmClient.GetLastCommittedHeaderEpoch(ctx, settlement, symbiotic.WithEVMBlockNumber(symbiotic.BlockNumberLatest))
 		if err != nil {
-			slog.WarnContext(ctx, "Failed to get last committed epoch for settlement, skipping", "settlement", settlement, "error", err)
-			// skip chain if networking issue, we will recheck again anyway and if the rpc/chain recovers we will detect issue later
-			continue
+			slog.WarnContext(ctx, "Cannot advance commit cursor without every settlement", "settlement", settlement, "error", err)
+			return 0
 		}
 		if !found {
 			minVal = lastCommittedEpoch

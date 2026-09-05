@@ -24,6 +24,7 @@ Keys tool
 * [utils](utils.md)	 - Utils tool
 * [utils keys add](utils_keys_add.md)	 - Add key
 * [utils keys list](utils_keys_list.md)	 - Print all keys
+* [utils keys migrate](utils_keys_migrate.md)	 - Atomically encrypt all legacy keystore entries with the store password
 * [utils keys remove](utils_keys_remove.md)	 - Remove key
 * [utils keys update](utils_keys_update.md)	 - Update key
 

@@ -115,6 +115,9 @@ func (v *SszVault) MarshalSSZ() ([]byte, error) {
 
 // MarshalSSZTo ssz marshals the Vault object to a target array
 func (v *SszVault) MarshalSSZTo(buf []byte) ([]byte, error) {
+	if err := validateVotingPower(v.VotingPower); err != nil {
+		return nil, err
+	}
 	dst := buf
 
 	// Field (0) 'ChainId'
@@ -162,6 +165,9 @@ func (v *SszVault) HashTreeRoot() ([32]byte, error) {
 
 // HashTreeRootWith ssz hashes the Vault object with a hasher
 func (v *SszVault) HashTreeRootWith(hh ssz.HashWalker) error {
+	if err := validateVotingPower(v.VotingPower); err != nil {
+		return err
+	}
 	indx := hh.Index()
 
 	// Field (0) 'ChainId'
@@ -171,9 +177,9 @@ func (v *SszVault) HashTreeRootWith(hh ssz.HashWalker) error {
 	hh.PutBytes(v.Vault.Bytes())
 
 	// Field (2) 'VotingPower'
-	votingPowerBuf := make([]byte, 32)
-	v.VotingPower.FillBytes(votingPowerBuf)
-	hh.PutBytes(votingPowerBuf)
+	// Version 1 consensus uses the legacy minimal-byte leaf. Changing padding
+	// requires a coordinated protocol version upgrade, not a local security fix.
+	hh.PutBytes(v.VotingPower.Bytes())
 
 	hh.Merkleize(indx)
 
@@ -192,6 +198,9 @@ func (v *SszValidator) MarshalSSZ() ([]byte, error) {
 
 // MarshalSSZTo ssz marshals the Validator object to a target array
 func (v *SszValidator) MarshalSSZTo(buf []byte) ([]byte, error) {
+	if err := validateVotingPower(v.VotingPower); err != nil {
+		return nil, err
+	}
 	dst := buf
 	offset := int(61)
 
@@ -331,15 +340,18 @@ func (v *SszValidator) HashTreeRoot() ([32]byte, error) {
 
 // HashTreeRootWith ssz hashes the Validator object with a hasher
 func (v *SszValidator) HashTreeRootWith(hh ssz.HashWalker) error {
+	if err := validateVotingPower(v.VotingPower); err != nil {
+		return err
+	}
 	indx := hh.Index()
 
 	// Field (0) 'Operator'
 	hh.PutBytes(v.Operator.Bytes())
 
 	// Field (1) 'VotingPower'
-	votingPowerBuf := make([]byte, 32)
-	v.VotingPower.FillBytes(votingPowerBuf)
-	hh.PutBytes(votingPowerBuf)
+	// Version 1 consensus uses the legacy minimal-byte leaf. Changing padding
+	// requires a coordinated protocol version upgrade, not a local security fix.
+	hh.PutBytes(v.VotingPower.Bytes())
 
 	// Field (2) 'IsActive'
 	hh.PutBool(v.IsActive)
@@ -742,4 +754,11 @@ func (v *SszVault) ProveVaultVotingPower() (*ssz.Proof, error) {
 	}
 
 	return vaultVotingPowerProof, nil
+}
+
+func validateVotingPower(power *big.Int) error {
+	if power == nil || power.Sign() < 0 || power.BitLen() > 256 {
+		return errors.New("voting power must be an unsigned 256-bit integer")
+	}
+	return nil
 }

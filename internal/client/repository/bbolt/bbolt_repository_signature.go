@@ -329,6 +329,7 @@ func (r *Repository) GetSignatureRequestsWithIDByEpoch(
 			k, v = c.Next()
 		}
 
+		pageBytes := 0
 		for ; k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
 			if pageSize > 0 && len(requests) >= pageSize {
 				moreLeft = true
@@ -338,6 +339,14 @@ func (r *Repository) GetSignatureRequestsWithIDByEpoch(
 				continue
 			}
 			id := common.BytesToHash(k[8:40])
+			if len(v) > repoutil.MaxSignatureRequestPageBytes {
+				return errors.New("signature request exceeds page byte limit")
+			}
+			if pageBytes+len(v) > repoutil.MaxSignatureRequestPageBytes {
+				moreLeft = true
+				return nil
+			}
+			pageBytes += len(v)
 			req, err := codec.BytesToSignatureRequest(v)
 			if err != nil {
 				return errors.Errorf("failed to unmarshal signature request: %w", err)

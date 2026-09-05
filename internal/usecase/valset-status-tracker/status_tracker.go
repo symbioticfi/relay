@@ -168,16 +168,18 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 		lastCommittedEpoch = min(lastCommittedEpoch, uint64(lce))
 	}
 
-	for epoch := uint64(firstUncommittedEpoch); epoch <= lastCommittedEpoch; epoch++ {
+	nextUncommitted := firstUncommittedEpoch
+	for epoch := uint64(firstUncommittedEpoch); epoch <= min(lastCommittedEpoch, uint64(latestEpoch)); epoch++ {
 		valset, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, symbiotic.Epoch(epoch))
 		if err != nil {
 			if errors.Is(err, entity.ErrEntityNotFound) {
-				continue
+				break
 			}
 			return errors.Errorf("failed to get validator set for epoch %d: %w", epoch, err)
 		}
 
 		if valset.Status == symbiotic.HeaderCommitted {
+			nextUncommitted = symbiotic.Epoch(epoch + 1)
 			continue
 		}
 
@@ -187,6 +189,8 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 		}
 
 		if len(config.Settlements) == 0 {
+			// This epoch has no settlement obligations, unlike a missing local set.
+			nextUncommitted = symbiotic.Epoch(epoch + 1)
 			continue
 		}
 
@@ -217,17 +221,18 @@ func (s *Service) trackCommittedEpochs(ctx context.Context) error {
 			}
 		}
 
-		if isCommitted {
-			if err := s.cfg.Repo.UpdateValidatorSetStatusAndRemovePendingProof(ctx, valset); err != nil {
-				return errors.Errorf("failed to save validator set and remove pending proof: %w", err)
-			}
-			slog.InfoContext(ctx, "Validator set is committed", "epoch", epoch)
-		} else {
+		if !isCommitted {
 			slog.InfoContext(ctx, "Validator set is missing", "epoch", epoch)
+			break
 		}
+		if err := s.cfg.Repo.UpdateValidatorSetStatusAndRemovePendingProof(ctx, valset); err != nil {
+			return errors.Errorf("failed to save validator set and remove pending proof: %w", err)
+		}
+		slog.InfoContext(ctx, "Validator set is committed", "epoch", epoch)
+		nextUncommitted = symbiotic.Epoch(epoch + 1)
 	}
 
-	if err := s.cfg.Repo.SaveFirstUncommittedValidatorSetEpoch(ctx, symbiotic.Epoch(lastCommittedEpoch+1)); err != nil {
+	if err := s.cfg.Repo.SaveFirstUncommittedValidatorSetEpoch(ctx, nextUncommitted); err != nil {
 		return errors.Errorf("failed to save last uncommitted validator set: %w", err)
 	}
 

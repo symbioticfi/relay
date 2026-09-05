@@ -350,6 +350,21 @@ func runApp(ctx context.Context) error {
 		)
 	}
 
+	statusTracker, err := valsetStatusTracker.New(valsetStatusTracker.Config{
+		EvmClient:            evmClient,
+		Repo:                 repo,
+		PollingInterval:      time.Second * 5,
+		EpochPollingInterval: time.Minute,
+		Metrics:              mtr,
+	})
+	if err != nil {
+		return errors.Errorf("failed to create valset status tracker: %w", err)
+	}
+
+	if err := statusTracker.TrackMissingEpochsStatuses(ctx); err != nil {
+		return errors.Errorf("failed to track missing epochs statuses: %w", err)
+	}
+
 	eg.Go(func() error {
 		err := signer.HandleSignatureRequests(egCtx, cfg.SignalCfg.WorkerCount, p2pService)
 		if err != nil && !errors.Is(err, context.Canceled) {
@@ -399,21 +414,6 @@ func runApp(ctx context.Context) error {
 	}
 
 	slog.InfoContext(ctx, "Created signer app, starting")
-
-	statusTracker, err := valsetStatusTracker.New(valsetStatusTracker.Config{
-		EvmClient:            evmClient,
-		Repo:                 repo,
-		PollingInterval:      time.Second * 5,
-		EpochPollingInterval: time.Minute,
-		Metrics:              mtr,
-	})
-	if err != nil {
-		return errors.Errorf("failed to create valset status tracker: %w", err)
-	}
-
-	if err := statusTracker.TrackMissingEpochsStatuses(ctx); err != nil {
-		return errors.Errorf("failed to track missing epochs statuses: %w", err)
-	}
 
 	signListener, err := signatureListener.New(signatureListener.Config{
 		Repo:            repo,

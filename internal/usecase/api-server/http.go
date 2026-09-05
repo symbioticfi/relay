@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"mime"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 
@@ -152,6 +154,10 @@ func setupHttpProxy(ctx context.Context, grpcAddr string, httpMux *http.ServeMux
 	// Mount the gateway under /api prefix with streaming support. Cross-origin
 	// access is intentionally not enabled because this API can request signatures.
 	httpMux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
+		if !allowAPIRequest(w, r) {
+			return
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, 6*1024*1024)
 		// Check if gateway is initialized
 		if conn == nil {
 			http.Error(w, "Gateway not ready", http.StatusServiceUnavailable)
@@ -172,4 +178,33 @@ func setupHttpProxy(ctx context.Context, grpcAddr string, httpMux *http.ServeMux
 	})
 
 	return startFn
+}
+
+// CORS alone does not prevent simple cross-origin POST requests from executing.
+func allowAPIRequest(w http.ResponseWriter, r *http.Request) bool {
+	switch r.Method {
+	case http.MethodGet, http.MethodHead, http.MethodOptions:
+		return true
+	}
+	if r.Header.Get("Sec-Fetch-Site") == "cross-site" {
+		http.Error(w, "Cross-origin request forbidden", http.StatusForbidden)
+		return false
+	}
+	if origin := r.Header.Get("Origin"); origin != "" {
+		parsed, err := url.Parse(origin)
+		scheme := "http"
+		if r.TLS != nil {
+			scheme = "https"
+		}
+		if err != nil || parsed.Scheme != scheme || parsed.Host != r.Host || parsed.User != nil || parsed.Path != "" || parsed.RawQuery != "" || parsed.Fragment != "" {
+			http.Error(w, "Cross-origin request forbidden", http.StatusForbidden)
+			return false
+		}
+	}
+	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if err != nil || mediaType != "application/json" {
+		http.Error(w, "Content-Type must be application/json", http.StatusUnsupportedMediaType)
+		return false
+	}
+	return true
 }

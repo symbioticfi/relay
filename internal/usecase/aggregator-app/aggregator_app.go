@@ -101,9 +101,13 @@ func (c Config) Validate() error {
 }
 
 type AggregatorApp struct {
-	cfg       Config
-	queue     *workqueue.Typed[common.Hash]
-	enqueueMu sync.Mutex
+	cfg            Config
+	queue          *workqueue.Typed[common.Hash]
+	enqueueMu      sync.Mutex
+	catchupMu      sync.Mutex
+	catchupEpoch   symbiotic.Epoch
+	catchupHash    common.Hash
+	catchupStarted bool
 }
 
 func NewAggregatorApp(cfg Config) (*AggregatorApp, error) {
@@ -368,91 +372,80 @@ func (s *AggregatorApp) isLatestEpochAggregator(ctx context.Context, requestEpoc
 }
 
 func (s *AggregatorApp) tryAggregateRequestsWithoutProof(ctx context.Context) error {
-	latestEpoch, err := s.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
+	s.catchupMu.Lock()
+	defer s.catchupMu.Unlock()
+	latest, err := s.cfg.Repo.GetLatestValidatorSetEpoch(ctx)
+	if errors.Is(err, entity.ErrEntityNotFound) {
+		return nil
+	}
 	if err != nil {
-		if errors.Is(err, entity.ErrEntityNotFound) {
-			slog.DebugContext(ctx, "No validator sets synced yet, skipping aggregation catch-up")
-			return nil
+		return err
+	}
+	cfg := s.cfg.ProofCatchup
+	if symbiotic.Epoch(cfg.EpochsOffset) > latest {
+		return nil
+	}
+	end := latest - symbiotic.Epoch(cfg.EpochsOffset)
+	start := symbiotic.Epoch(0)
+	if cfg.EpochsToCheck > 0 && end >= symbiotic.Epoch(cfg.EpochsToCheck) {
+		start = end - symbiotic.Epoch(cfg.EpochsToCheck) + 1
+	}
+	if !s.catchupStarted || s.catchupEpoch < start || s.catchupEpoch > end {
+		s.catchupEpoch, s.catchupHash, s.catchupStarted = end, common.Hash{}, true
+	}
+	limit := cfg.MaxRequestsPerCycle
+	if limit <= 0 {
+		limit = defaultMaxRequestsPerCycle
+	}
+	// Count inspected records, not just successful enqueues. Retain the cursor
+	// across cycles so permanently incomplete requests cannot starve later ones.
+	for inspected := 0; inspected < limit; {
+		if err := ctx.Err(); err != nil {
+			return err
 		}
-		return errors.Errorf("failed to get latest epoch: %w", err)
-	}
-
-	catchupCfg := s.cfg.ProofCatchup
-
-	// Catch-up scans a bounded window of older epochs for missing proofs.
-	// EpochsOffset skips recent "hot" epochs still being actively aggregated.
-	// EpochsToCheck limits how far back we look.
-	// Example: latestEpoch=100, EpochsOffset=5, EpochsToCheck=20
-	//   scanEnd = 100 - 5 = 95, startEpoch = 95 - 20 + 1 = 76 → scans 76..95
-	var scanEnd symbiotic.Epoch
-	if symbiotic.Epoch(catchupCfg.EpochsOffset) <= latestEpoch {
-		scanEnd = latestEpoch - symbiotic.Epoch(catchupCfg.EpochsOffset)
-	}
-
-	startEpoch := symbiotic.Epoch(0)
-	if scanEnd >= symbiotic.Epoch(catchupCfg.EpochsToCheck) {
-		startEpoch = scanEnd - symbiotic.Epoch(catchupCfg.EpochsToCheck) + 1
-	}
-
-	slog.InfoContext(ctx, "Started aggregation catch-up for requests without proof",
-		"latestEpoch", latestEpoch,
-		"scanEnd", scanEnd,
-		"startEpoch", startEpoch,
-	)
-
-	requestsEnqueued := 0
-
-	for epoch := scanEnd; ; epoch-- {
-		var lastHash common.Hash
-		for {
-			requests, err := s.cfg.Repo.GetSignatureRequestsWithoutAggregationProof(ctx, epoch, 10, lastHash)
-			if err != nil {
-				return errors.Errorf("failed to get signature requests without aggregation proof for epoch %d: %w", epoch, err)
+		requests, err := s.cfg.Repo.GetSignatureRequestsWithoutAggregationProof(ctx, s.catchupEpoch, min(10, limit-inspected), s.catchupHash)
+		if err != nil {
+			return err
+		}
+		if len(requests) == 0 {
+			if s.catchupEpoch == start {
+				s.catchupStarted = false
+				return nil
 			}
-
-			if len(requests) == 0 {
-				break
+			s.catchupEpoch--
+			s.catchupHash = common.Hash{}
+			// Empty epochs also consume the scan budget.
+			inspected++
+			continue
+		}
+		for _, req := range requests {
+			if inspected >= limit {
+				return nil
 			}
-
-			for _, req := range requests {
-				if !req.KeyTag.Type().AggregationKey() {
-					// Non-aggregation key — clean up pending only when all signatures collected
-					sigMap, err := s.cfg.Repo.GetSignatureMap(ctx, req.RequestID)
-					if err == nil && sigMap.GetMissingValidators().IsEmpty() {
-						_ = s.cfg.Repo.RemoveAggregationProofPending(ctx, req.RequiredEpoch, req.RequestID)
+			inspected++
+			s.catchupHash = req.RequestID
+			if !req.KeyTag.Type().AggregationKey() {
+				sigMap, err := s.cfg.Repo.GetSignatureMap(ctx, req.RequestID)
+				if err == nil && sigMap.GetMissingValidators().IsEmpty() {
+					if err := s.cfg.Repo.RemoveAggregationProofPending(ctx, req.RequiredEpoch, req.RequestID); err != nil {
+						return err
 					}
-					continue
 				}
-
-				// Check if proof already exists — clean up stale pending marker
-				if _, err := s.cfg.Repo.GetAggregationProof(ctx, req.RequestID); err == nil {
-					_ = s.cfg.Repo.RemoveAggregationProofPending(ctx, req.RequiredEpoch, req.RequestID)
-					continue
-				}
-
-				if catchupCfg.MaxRequestsPerCycle > 0 && requestsEnqueued >= catchupCfg.MaxRequestsPerCycle {
-					slog.InfoContext(ctx, "Aggregation catch-up reached max requests per cycle",
-						"requestsEnqueued", requestsEnqueued,
-					)
-					return nil
-				}
-
-				s.EnqueueRequestID(ctx, req.RequestID)
-				requestsEnqueued++
+				continue
 			}
-
-			lastHash = requests[len(requests)-1].RequestID
-		}
-
-		if epoch == startEpoch {
-			break // Prevent underflow when decrementing unsigned epoch
+			_, err := s.cfg.Repo.GetAggregationProof(ctx, req.RequestID)
+			if err == nil {
+				if err := s.cfg.Repo.RemoveAggregationProofPending(ctx, req.RequiredEpoch, req.RequestID); err != nil {
+					return err
+				}
+				continue
+			}
+			if !errors.Is(err, entity.ErrEntityNotFound) {
+				return err
+			}
+			s.EnqueueRequestID(ctx, req.RequestID)
 		}
 	}
-
-	slog.InfoContext(ctx, "Aggregation catch-up completed",
-		"requestsEnqueued", requestsEnqueued,
-	)
-
 	return nil
 }
 

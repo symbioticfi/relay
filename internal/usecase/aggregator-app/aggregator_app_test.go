@@ -517,8 +517,8 @@ func TestCatchup_MaxRequestsPerCycleLimit(t *testing.T) {
 
 	setup.mockRepo.EXPECT().GetLatestValidatorSetEpoch(gomock.Any()).Return(symbiotic.Epoch(1), nil)
 
-	// Return 3 requests, but limit is 2 — only 2 should be enqueued
-	setup.mockRepo.EXPECT().GetSignatureRequestsWithoutAggregationProof(gomock.Any(), symbiotic.Epoch(1), 10, common.Hash{}).
+	// Even an oversized repository page cannot exceed the inspection budget.
+	setup.mockRepo.EXPECT().GetSignatureRequestsWithoutAggregationProof(gomock.Any(), symbiotic.Epoch(1), 2, common.Hash{}).
 		Return([]symbiotic.SignatureRequestWithID{
 			{SignatureRequest: symbiotic.SignatureRequest{KeyTag: symbiotic.KeyTag(15), RequiredEpoch: 1}, RequestID: common.HexToHash("0x01")},
 			{SignatureRequest: symbiotic.SignatureRequest{KeyTag: symbiotic.KeyTag(15), RequiredEpoch: 1}, RequestID: common.HexToHash("0x02")},
@@ -526,9 +526,9 @@ func TestCatchup_MaxRequestsPerCycleLimit(t *testing.T) {
 		}, nil)
 
 	// Catch-up checks if proof exists for each request before enqueuing
-	// All 3 are checked, but only 2 enqueued due to limit
+	// Only two records may be checked or enqueued.
 	setup.mockRepo.EXPECT().GetAggregationProof(gomock.Any(), gomock.Any()).
-		Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound).Times(3)
+		Return(symbiotic.AggregationProof{}, entity.ErrEntityNotFound).Times(2)
 
 	err := setup.app.tryAggregateRequestsWithoutProof(t.Context())
 	require.NoError(t, err)

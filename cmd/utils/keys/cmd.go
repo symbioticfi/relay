@@ -11,6 +11,7 @@ func NewKeysCmd() *cobra.Command {
 	keysCmd.AddCommand(addKeyCmd)
 	keysCmd.AddCommand(removeKeyCmd)
 	keysCmd.AddCommand(updateKeyCmd)
+	keysCmd.AddCommand(migrateKeysCmd)
 
 	initFlags()
 

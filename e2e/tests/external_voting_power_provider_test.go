@@ -61,7 +61,7 @@ func TestExternalVotingPowerProvider_AddsBonusForExistingOperators(t *testing.T)
 
 	targetEpoch := currentEpoch
 	cfgWithoutExternal := currentCfg
-	cfgWithoutExternal.VotingPowerProviders = cfgWithoutExternal.VotingPowerProviders[:0]
+	cfgWithoutExternal.VotingPowerProviders = nil
 	for _, provider := range currentCfg.VotingPowerProviders {
 		if provider.ChainId == 0 && provider.Address == (common.Address{}) {
 			continue
@@ -73,7 +73,11 @@ func TestExternalVotingPowerProvider_AddsBonusForExistingOperators(t *testing.T)
 	}
 
 	cfgForExternalBonus := cfgWithoutExternal
-	cfgForExternalBonus.VotingPowerProviders = append(cfgForExternalBonus.VotingPowerProviders, externalProvider)
+	cfgForExternalBonus.VotingPowerProviders = append(append([]symbiotic.CrossChainAddress(nil), cfgWithoutExternal.VotingPowerProviders...), externalProvider)
+	// This is a hypothetical recalculation of an existing epoch with an added
+	// bonus, not the set committed for that epoch. Canonical derivation rejects
+	// mismatching committed headers; there are no settlements for this scenario.
+	cfgForExternalBonus.Settlements = nil
 
 	baselineDeriver, err := valsetDeriver.NewDeriver(evmClient, nil)
 	require.NoError(t, err, "Failed to create baseline valset deriver")

@@ -1,20 +1,22 @@
 package keyprovider
 
 import (
+	"bytes"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
-
-	"github.com/symbioticfi/relay/internal/entity"
-	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
-	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 
 	"github.com/go-errors/errors"
 	"github.com/pavlo-v-chernykh/keystore-go/v4"
+	"github.com/symbioticfi/relay/internal/entity"
+	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
+	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 )
 
 type KeystoreProvider struct {
+	mu            sync.RWMutex
 	ks            keystore.KeyStore
 	filePath      string
 	storePassword string
@@ -24,26 +26,46 @@ func NewKeystoreProvider(filePath, password string) (*KeystoreProvider, error) {
 	if password == "" {
 		return nil, errors.New("keystore password cannot be empty")
 	}
-
-	ks := keystore.New()
-
+	k := &KeystoreProvider{ks: keystore.New(), filePath: filePath, storePassword: password}
 	f, err := os.Open(filePath)
+	if os.IsNotExist(err) {
+		return k, nil
+	}
 	if err != nil {
-		if os.IsNotExist(err) {
-			return &KeystoreProvider{ks: ks, filePath: filePath, storePassword: password}, nil
-		}
 		return nil, err
 	}
 	defer f.Close()
-
-	err = ks.Load(f, []byte(password))
-	if err != nil {
+	if err := k.ks.Load(f, []byte(password)); err != nil {
 		return nil, err
 	}
-	return &KeystoreProvider{ks: ks, filePath: filePath, storePassword: password}, nil
+	// Normalize every legacy entry before publishing the provider. Reading a
+	// mounted secret must never write to disk; persistence is an explicit action.
+	legacy := false
+	for _, alias := range k.ks.Aliases() {
+		if !k.ks.IsPrivateKeyEntry(alias) {
+			continue
+		}
+		if _, err := k.ks.GetPrivateKeyEntry(alias, []byte(password)); err == nil {
+			continue
+		}
+		entry, err := k.ks.GetPrivateKeyEntry(alias, nil)
+		if err != nil {
+			return nil, errors.Errorf("failed to decrypt entry %q: %w", alias, err)
+		}
+		if err := k.ks.SetPrivateKeyEntry(alias, entry, []byte(password)); err != nil {
+			return nil, err
+		}
+		legacy = true
+	}
+	if legacy {
+		slog.Warn("Legacy keystore entries detected; run relay_utils keys migrate on a writable copy to encrypt all entries at rest")
+	}
+	return k, nil
 }
 
 func (k *KeystoreProvider) GetAliases() []string {
+	k.mu.RLock()
+	defer k.mu.RUnlock()
 	return k.ks.Aliases()
 }
 
@@ -52,31 +74,17 @@ func (k *KeystoreProvider) GetPrivateKey(keyTag symbiotic.KeyTag) (crypto.Privat
 	if err != nil {
 		return nil, err
 	}
-
 	return k.GetPrivateKeyByAlias(alias)
 }
 
 func (k *KeystoreProvider) GetPrivateKeyByAlias(alias string) (crypto.PrivateKey, error) {
+	k.mu.RLock()
+	defer k.mu.RUnlock()
 	entry, err := k.ks.GetPrivateKeyEntry(alias, []byte(k.storePassword))
-	if err != nil {
-		// Older relay versions encrypted entries with an empty password even when
-		// the keystore itself had a password. Migrate such entries on first use.
-		legacyEntry, legacyErr := k.ks.GetPrivateKeyEntry(alias, []byte{})
-		if legacyErr == nil {
-			if setErr := k.ks.SetPrivateKeyEntry(alias, legacyEntry, []byte(k.storePassword)); setErr != nil {
-				return nil, errors.Errorf("failed to migrate legacy keystore entry %q: %w", alias, setErr)
-			}
-			if dumpErr := k.dump(k.storePassword); dumpErr != nil {
-				return nil, errors.Errorf("failed to persist migrated keystore entry %q: %w", alias, dumpErr)
-			}
-			entry = legacyEntry
-			err = nil
-		}
+	if errors.Is(err, keystore.ErrEntryNotFound) {
+		return nil, errors.New(entity.ErrKeyNotFound)
 	}
 	if err != nil {
-		if errors.Is(err, keystore.ErrEntryNotFound) {
-			return nil, errors.New(entity.ErrKeyNotFound)
-		}
 		return nil, err
 	}
 	_, keyType, _, err := AliasToKeyTypeId(alias)
@@ -92,19 +100,11 @@ func (k *KeystoreProvider) GetPrivateKeyByNamespaceTypeId(namespace string, keyT
 		return nil, err
 	}
 	key, err := k.GetPrivateKeyByAlias(alias)
-	if err != nil {
-		if errors.Is(err, entity.ErrKeyNotFound) && namespace == EVM_KEY_NAMESPACE {
-			// For EVM keys, we check for default key with chain ID 0 if the requested chain id is absent
-			slog.Warn("Key not found, falling back to default EVM key", "alias", alias)
-			defaultAlias, err := ToAlias(EVM_KEY_NAMESPACE, keyType, DEFAULT_EVM_CHAIN_ID)
-			if err != nil {
-				return nil, err
-			}
-			return k.GetPrivateKeyByAlias(defaultAlias)
-		}
-		return nil, err
+	if errors.Is(err, entity.ErrKeyNotFound) && namespace == EVM_KEY_NAMESPACE && id != DEFAULT_EVM_CHAIN_ID {
+		slog.Warn("Key not found, falling back to default EVM key", "alias", alias)
+		return k.GetPrivateKeyByNamespaceTypeId(namespace, keyType, DEFAULT_EVM_CHAIN_ID)
 	}
-	return key, nil
+	return key, err
 }
 
 func (k *KeystoreProvider) HasKey(keyTag symbiotic.KeyTag) (bool, error) {
@@ -112,187 +112,125 @@ func (k *KeystoreProvider) HasKey(keyTag symbiotic.KeyTag) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return k.ks.IsPrivateKeyEntry(alias), nil
+	return k.HasKeyByAlias(alias)
 }
 
 func (k *KeystoreProvider) HasKeyByAlias(alias string) (bool, error) {
+	k.mu.RLock()
+	defer k.mu.RUnlock()
 	return k.ks.IsPrivateKeyEntry(alias), nil
 }
 
-func (k *KeystoreProvider) HasKeyByNamespaceTypeId(namespace string, keyType symbiotic.KeyType, id int) (bool, error) {
-	alias, err := ToAlias(namespace, keyType, id)
+func (k *KeystoreProvider) HasKeyByNamespaceTypeId(ns string, tp symbiotic.KeyType, id int) (bool, error) {
+	alias, err := ToAlias(ns, tp, id)
 	if err != nil {
 		return false, err
 	}
-	return k.ks.IsPrivateKeyEntry(alias), nil
+	return k.HasKeyByAlias(alias)
 }
 
-func (k *KeystoreProvider) AddKey(namespace string, keyTag symbiotic.KeyTag, privateKey crypto.PrivateKey, password string, force bool) error {
-	if err := k.validatePassword(password); err != nil {
-		return err
-	}
-	exists, err := k.HasKeyByNamespaceTypeId(namespace, keyTag.Type(), int(keyTag&0x0F))
+func (k *KeystoreProvider) AddKey(ns string, tag symbiotic.KeyTag, key crypto.PrivateKey, password string, force bool) error {
+	alias, err := KeyTagToAliasWithNS(ns, tag)
 	if err != nil {
 		return err
 	}
-
-	if exists && !force {
-		return errors.New("key already exists")
-	}
-
-	alias, err := KeyTagToAliasWithNS(namespace, keyTag)
-	if err != nil {
-		return err
-	}
-
-	err = k.ks.SetPrivateKeyEntry(alias, keystore.PrivateKeyEntry{
-		CreationTime:     time.Now(),
-		PrivateKey:       privateKey.Bytes(),
-		CertificateChain: nil,
-	}, []byte(k.storePassword))
-	if err != nil {
-		return err
-	}
-
-	err = k.dump(password)
-	if err != nil {
-		return err
-	}
-
-	if exists {
-		slog.Info("Key updated")
-	}
-
-	return nil
+	return k.add(alias, key, password, force)
 }
 
-func (k *KeystoreProvider) DeleteKey(keyTag symbiotic.KeyTag, password string) error {
-	if err := k.validatePassword(password); err != nil {
-		return err
-	}
-	exists, err := k.HasKey(keyTag)
-	if err != nil {
-		return err
-	}
-
-	if !exists {
-		return errors.New("key does not exist")
-	}
-
-	alias, err := KeyTagToAlias(keyTag)
-	if err != nil {
-		return err
-	}
-
-	k.ks.DeleteEntry(alias)
-
-	err = k.dump(password)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (k *KeystoreProvider) AddKeyByNamespaceTypeId(ns string, tp symbiotic.KeyType, id int, privateKey crypto.PrivateKey, password string, force bool) error {
-	if err := k.validatePassword(password); err != nil {
-		return err
-	}
-	exists, err := k.HasKeyByNamespaceTypeId(ns, tp, id)
-	if err != nil {
-		return err
-	}
-
-	if exists && !force {
-		return errors.New("key already exists")
-	}
-
+func (k *KeystoreProvider) AddKeyByNamespaceTypeId(ns string, tp symbiotic.KeyType, id int, key crypto.PrivateKey, password string, force bool) error {
 	alias, err := ToAlias(ns, tp, id)
 	if err != nil {
 		return err
 	}
+	return k.add(alias, key, password, force)
+}
 
-	err = k.ks.SetPrivateKeyEntry(alias, keystore.PrivateKeyEntry{
-		CreationTime:     time.Now(),
-		PrivateKey:       privateKey.Bytes(),
-		CertificateChain: nil,
-	}, []byte(k.storePassword))
+func (k *KeystoreProvider) add(alias string, key crypto.PrivateKey, password string, force bool) error {
+	return k.mutate(password, func(ks keystore.KeyStore) error {
+		if ks.IsPrivateKeyEntry(alias) && !force {
+			return errors.New("key already exists")
+		}
+		return ks.SetPrivateKeyEntry(alias, keystore.PrivateKeyEntry{
+			CreationTime: time.Now(), PrivateKey: key.Bytes(),
+		}, []byte(password))
+	})
+}
+
+func (k *KeystoreProvider) DeleteKey(tag symbiotic.KeyTag, password string) error {
+	alias, err := KeyTagToAlias(tag)
 	if err != nil {
 		return err
 	}
-
-	err = k.dump(password)
-	if err != nil {
-		return err
-	}
-
-	if exists {
-		slog.Info("Key updated")
-	}
-
-	return nil
+	return k.remove(alias, password)
 }
 
 func (k *KeystoreProvider) DeleteKeyByNamespaceTypeId(ns string, tp symbiotic.KeyType, id int, password string) error {
-	if err := k.validatePassword(password); err != nil {
-		return err
-	}
-	exists, err := k.HasKeyByNamespaceTypeId(ns, tp, id)
-	if err != nil {
-		return err
-	}
-
-	if !exists {
-		return errors.New("key does not exist")
-	}
-
 	alias, err := ToAlias(ns, tp, id)
 	if err != nil {
 		return err
 	}
-
-	k.ks.DeleteEntry(alias)
-
-	err = k.dump(password)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return k.remove(alias, password)
 }
 
-func (k *KeystoreProvider) validatePassword(password string) error {
+func (k *KeystoreProvider) remove(alias, password string) error {
+	return k.mutate(password, func(ks keystore.KeyStore) error {
+		if !ks.IsPrivateKeyEntry(alias) {
+			return errors.New("key does not exist")
+		}
+		ks.DeleteEntry(alias)
+		return nil
+	})
+}
+
+// Migrate persists all legacy entries, including keys not used by this node.
+func (k *KeystoreProvider) Migrate(password string) error {
+	return k.mutate(password, func(keystore.KeyStore) error { return nil })
+}
+
+// Mutations are serialized and become visible only after atomic persistence.
+func (k *KeystoreProvider) mutate(password string, change func(keystore.KeyStore) error) error {
+	k.mu.Lock()
+	defer k.mu.Unlock()
 	if password != k.storePassword {
 		return errors.New("keystore password does not match the loaded keystore")
 	}
-	return nil
-}
-
-func (k *KeystoreProvider) dump(password string) error {
+	var data bytes.Buffer
+	if err := k.ks.Store(&data, []byte(password)); err != nil {
+		return err
+	}
+	next := keystore.New()
+	if err := next.Load(&data, []byte(password)); err != nil {
+		return err
+	}
+	if err := change(next); err != nil {
+		return err
+	}
+	data.Reset()
+	if err := next.Store(&data, []byte(password)); err != nil {
+		return err
+	}
 	dir := filepath.Dir(k.filePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
-
-	f, err := os.OpenFile(k.filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
-	if err != nil {
-		slog.Error("Failed to create file", "error", err.Error(), "path", k.filePath)
-		return err
-	}
-
-	defer func() {
-		if err := f.Close(); err != nil {
-			slog.Warn("Failed to close file", "error", err.Error())
-		}
-	}()
-	if err := f.Chmod(0o600); err != nil {
-		return err
-	}
-
-	err = k.ks.Store(f, []byte(password))
+	f, err := os.CreateTemp(dir, ".keystore-*")
 	if err != nil {
 		return err
 	}
-
+	defer os.Remove(f.Name())
+	defer f.Close()
+	if _, err := f.Write(data.Bytes()); err != nil {
+		return err
+	}
+	if err := f.Sync(); err != nil {
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	if err := os.Rename(f.Name(), k.filePath); err != nil {
+		return err
+	}
+	k.ks = next
 	return nil
 }

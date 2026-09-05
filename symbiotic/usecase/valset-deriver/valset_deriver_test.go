@@ -1238,8 +1238,8 @@ func TestDeriver_GetSchedulerInfo(t *testing.T) {
 				NumCommitters:  1,
 			},
 			// These expected values are deterministic based on the hash calculation
-			expectedAggIndices:  []uint32{0, 1}, // Calculated deterministically from hash
-			expectedCommIndices: []uint32{2},    // Calculated deterministically from hash
+			expectedAggIndices:  []uint32{2, 0}, // Version 1 consensus golden
+			expectedCommIndices: []uint32{1},    // Version 1 consensus golden
 			expectError:         false,
 		},
 		{

@@ -20,12 +20,12 @@ import (
 // 2. For each requested validator index, directly retrieves the signature using GetSignatureByIndex
 // 3. Builds a response containing validator signatures organized by request id
 //
-// The response is limited by MaxResponseSignatureCount to prevent memory exhaustion
-// and network congestion during P2P synchronization.
+// MaxResponseSignatureCount bounds database lookups (including misses), and
+// therefore also bounds the response size during P2P synchronization.
 //
 // Behavior:
 //   - Processes requests in iteration order (map iteration is non-deterministic)
-//   - Stops processing when MaxResponseSignatureCount limit is reached
+//   - Stops processing when the lookup budget is exhausted
 //   - Skips validator indices where signatures are not found locally
 //   - Returns empty signatures map for request ids where no matching signatures are found
 func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity.WantSignaturesRequest) (entity.WantSignaturesResponse, error) {
@@ -41,10 +41,14 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity
 	}
 
 	totalSignatureCount := 0
+	lookups := 0
+	if len(request.WantSignatures) > s.cfg.MaxSignatureRequestsPerSync {
+		return response, errors.New("too many signature requests")
+	}
 
 	for requestID, requestedIndices := range request.WantSignatures {
-		// Check signature count limit before processing each request
-		if totalSignatureCount >= s.cfg.MaxResponseSignatureCount {
+		// Missing signatures consume the same budget as successful lookups.
+		if lookups >= s.cfg.MaxResponseSignatureCount {
 			slog.WarnContext(ctx, "Response signature limit reached, stopping collection", "totalCollected", totalSignatureCount, "limit", s.cfg.MaxResponseSignatureCount)
 			break
 		}
@@ -55,13 +59,17 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity
 		it := requestedIndices.Iterator()
 		for it.HasNext() {
 			validatorIndex := it.Next()
-			// Check limit before processing each signature
-			if totalSignatureCount >= s.cfg.MaxResponseSignatureCount {
+			// Check the work budget before each lookup.
+			if lookups >= s.cfg.MaxResponseSignatureCount {
 				slog.DebugContext(ctx, "Response signature limit reached during iteration, stopping", "totalCollected", totalSignatureCount, "limit", s.cfg.MaxResponseSignatureCount)
 				break
 			}
 
 			// Get signature by validator index directly
+			if err := ctx.Err(); err != nil {
+				return response, err
+			}
+			lookups++
 			sig, err := s.cfg.Repo.GetSignatureByIndex(ctx, requestID, validatorIndex)
 			if err != nil {
 				if errors.Is(err, entity.ErrEntityNotFound) {

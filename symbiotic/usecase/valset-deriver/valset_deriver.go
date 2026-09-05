@@ -134,6 +134,9 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch symbiotic.Epoch, co
 
 	// form validators list from voting powers and keys using config
 	validators := v.formValidators(config, allVotingPowers, keys)
+	if validators.GetTotalActiveVotingPower().BitLen() > 256 {
+		return symbiotic.ValidatorSet{}, errors.New("total voting power exceeds uint256")
+	}
 
 	// calc new quorum threshold
 	quorumThreshold, err := config.CalcQuorumThreshold(validators.GetTotalActiveVotingPower())
@@ -159,8 +162,40 @@ func (v *Deriver) GetValidatorSet(ctx context.Context, epoch symbiotic.Epoch, co
 	}
 	valset.AggregatorIndices = aggIndices
 	valset.CommitterIndices = commIndices
-
+	if err := v.validateCommittedHeader(ctx, valset, config.Settlements); err != nil {
+		return symbiotic.ValidatorSet{}, err
+	}
 	return valset, nil
+}
+
+func (v *Deriver) validateCommittedHeader(ctx context.Context, valset symbiotic.ValidatorSet, settlements []symbiotic.CrossChainAddress) error {
+	// A historical set must agree with every already committed settlement before
+	// it is persisted or can be used for signing and aggregation.
+	header, err := valset.GetHeader()
+	if err != nil {
+		return err
+	}
+	hash, err := header.Hash()
+	if err != nil {
+		return err
+	}
+	for _, settlement := range settlements {
+		committed, err := v.evmClient.IsValsetHeaderCommittedAt(ctx, settlement, valset.Epoch)
+		if err != nil {
+			return errors.Errorf("check committed header: %w", err)
+		}
+		if !committed {
+			continue
+		}
+		canonical, err := v.evmClient.GetHeaderHashAt(ctx, settlement, valset.Epoch)
+		if err != nil {
+			return err
+		}
+		if canonical != hash {
+			return errors.Errorf("derived header for epoch %d differs from committed header on chain %d", valset.Epoch, settlement.ChainId)
+		}
+	}
+	return nil
 }
 
 func (v *Deriver) getVotingPowersFromProviders(

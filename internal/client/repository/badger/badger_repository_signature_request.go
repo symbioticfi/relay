@@ -201,6 +201,7 @@ func (r *Repository) GetSignatureRequestsWithIDByEpoch(
 		prefix := keySignatureRequestEpochPrefix(epoch)
 		opts := badger.DefaultIteratorOptions
 		opts.Prefix = prefix
+		opts.PrefetchValues = false
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
@@ -215,6 +216,7 @@ func (r *Repository) GetSignatureRequestsWithIDByEpoch(
 			it.Next()
 		}
 
+		pageBytes := int64(0)
 		for ; it.ValidForPrefix(prefix); it.Next() {
 			if pageSize > 0 && len(requests) >= pageSize {
 				moreLeft = true
@@ -225,6 +227,14 @@ func (r *Repository) GetSignatureRequestsWithIDByEpoch(
 			if err != nil {
 				return err
 			}
+			if item.ValueSize() > repoutil.MaxSignatureRequestPageBytes {
+				return errors.New("signature request exceeds page byte limit")
+			}
+			if pageBytes+item.ValueSize() > repoutil.MaxSignatureRequestPageBytes {
+				moreLeft = true
+				return nil
+			}
+			pageBytes += item.ValueSize()
 			value, err := item.ValueCopy(nil)
 			if err != nil {
 				return errors.Errorf("failed to copy signature request value: %w", err)
