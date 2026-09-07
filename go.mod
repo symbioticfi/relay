@@ -6,7 +6,7 @@ require (
 	github.com/RoaringBitmap/roaring/v2 v2.18.2
 	github.com/consensys/gnark v0.0.0-00010101000000-000000000000 // pinned with replace
 	github.com/consensys/gnark-crypto v0.20.1 // pinned with replace
-	github.com/dgraph-io/badger/v4 v4.9.1
+	github.com/dgraph-io/badger/v4 v4.9.6
 	github.com/elastic/go-freelru v0.16.0
 	github.com/ethereum/go-ethereum v1.17.3
 	github.com/ferranbt/fastssz v1.0.0
