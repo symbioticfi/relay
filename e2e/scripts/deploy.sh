@@ -24,7 +24,7 @@ if [ "${VERIFICATION_TYPE}" = "0" ]; then
 fi
 
 echo "Deploying contracts..."
-./node_modules/@symbioticfi/relay-contracts/script/relay-deploy.sh script/MyRelayDeploy.sol script/my-relay-deploy.toml --broadcast --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 -vvvvv
+bash ./node_modules/@symbioticfi/relay-contracts/script/relay-deploy.sh script/MyRelayDeploy.sol script/my-relay-deploy.toml --broadcast --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 -vvvvv
 
 echo 'Waiting for deployment completion...'
 until [ -f /deploy-data/deployment-completed.json ]; do sleep 2; done
