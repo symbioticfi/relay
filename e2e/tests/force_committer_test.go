@@ -158,17 +158,26 @@ func TestForceCommitterOutsideValidatorSet(t *testing.T) {
 func restoreScheduledCommitters(t *testing.T, deploymentData RelayContractsData, indexes []int, requestID string) {
 	t.Helper()
 
+	const restoreAttempts = 3
 	for _, index := range indexes {
 		container := deploymentData.Env.GetSidecarConfigs()[index].ContainerName
-		require.NoErrorf(t, startContainer(t.Context(), container), "failed to restart scheduled committer %s", container)
-		require.NoErrorf(t, waitForHealthy(t.Context(), getHealthEndpoint(index), 2*time.Minute),
-			"scheduled committer %s did not become healthy", container)
+		var syncErr error
+		for attempt := range restoreAttempts {
+			require.NoErrorf(t, startContainer(t.Context(), container), "failed to restart scheduled committer %s", container)
+			require.NoErrorf(t, waitForHealthy(t.Context(), getHealthEndpoint(index), 2*time.Minute),
+				"scheduled committer %s did not become healthy", container)
 
-		client := getGRPCClient(t, index)
-		require.NoErrorf(t, waitForErrorIsNil(t.Context(), forceCommitterTimeout(deploymentData.Env.EpochTime), func() error {
-			_, err := client.GetAggregationProof(t.Context(), &apiv1.GetAggregationProofRequest{RequestId: requestID})
-			return err
-		}), "scheduled committer %s did not catch up the aggregation proof", container)
+			client := getGRPCClient(t, index)
+			syncErr = waitForErrorIsNil(t.Context(), 30*time.Second, func() error {
+				_, err := client.GetAggregationProof(t.Context(), &apiv1.GetAggregationProofRequest{RequestId: requestID})
+				return err
+			})
+			if syncErr == nil {
+				break
+			}
+			t.Logf("Scheduled committer %s did not reconnect after attempt %d", container, attempt+1)
+		}
+		require.NoErrorf(t, syncErr, "scheduled committer %s did not catch up the aggregation proof", container)
 	}
 }
 
