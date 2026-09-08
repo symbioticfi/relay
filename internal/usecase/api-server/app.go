@@ -17,7 +17,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
+	"golang.org/x/net/http2/h2c" //nolint:staticcheck // Preserve HTTP/1.1 Upgrade; net/http only supports prior knowledge.
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -260,7 +260,7 @@ func NewSymbioticServer(ctx context.Context, cfg Config) (*SymbioticServer, erro
 
 // createMuxHandler creates a handler that multiplexes between gRPC and HTTP
 func createMuxHandler(grpcServer *grpc.Server, httpHandler http.Handler) http.Handler {
-	return h2c.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return h2c.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { //nolint:staticcheck // Preserve HTTP/1.1 Upgrade alongside prior knowledge.
 		// Check if this is a gRPC request
 		if r.ProtoMajor == 2 && strings.HasPrefix(r.Header.Get("Content-Type"), "application/grpc") {
 			// Handle gRPC request
