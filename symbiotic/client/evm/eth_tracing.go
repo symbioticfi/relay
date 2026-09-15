@@ -378,6 +378,29 @@ func (t *tracingConn) TransactionReceipt(ctx context.Context, txHash common.Hash
 	return receipt, nil
 }
 
+func (t *tracingConn) TransactionByHash(ctx context.Context, txHash common.Hash) (*types.Transaction, bool, error) {
+	ctx, span := tracing.StartClientSpan(ctx, "evm.rpc.TransactionByHash",
+		t.spanAttributes("TransactionByHash",
+			tracing.AttrTxHash.String(txHash.Hex()),
+		)...,
+	)
+	defer span.End()
+
+	tx, isPending, err := t.base.TransactionByHash(ctx, txHash)
+	if err != nil {
+		if !errors.Is(err, ethereum.NotFound) {
+			tracing.RecordError(span, err)
+		}
+		return nil, false, err
+	}
+
+	tracing.SetAttributes(span,
+		attribute.Bool("tx.pending", isPending),
+	)
+
+	return tx, isPending, nil
+}
+
 func (t *tracingConn) spanAttributes(method string, extra ...attribute.KeyValue) []attribute.KeyValue {
 	attrs := make([]attribute.KeyValue, 0, 2+len(extra))
 	attrs = append(attrs,
