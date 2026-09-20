@@ -325,14 +325,15 @@ func (a Aggregator) Verify(
 
 	// Parse validators data length
 	lengthBig := new(big.Int).SetBytes(aggregationProof.Proof[offset : offset+32])
-	if lengthBig.Uint64() == 0 {
+	if lengthBig.Sign() == 0 {
 		return false, nil
 	}
 
-	validatorsDataLength := int(lengthBig.Int64())
-	if validatorsDataLength > maxValidators {
+	// Validate the full uint256 before narrowing it or calculating offsets.
+	if !lengthBig.IsUint64() || lengthBig.Uint64() > maxValidators {
 		return false, errors.New("too many validators")
 	}
+	validatorsDataLength := int(lengthBig.Uint64())
 
 	// Calculate non-signers offset
 	nonSignersOffset := 224 + validatorsDataLength*64
@@ -341,7 +342,7 @@ func (a Aggregator) Verify(
 	}
 
 	// Verify validators data hash matches
-	length = 32 + 64*int(lengthBig.Int64())
+	length = 32 + 64*validatorsDataLength
 	validatorsDataBytes := make([]byte, 32, 32+length)
 	validatorsDataBytes[31] = 32
 	validatorsDataBytes = append(validatorsDataBytes, aggregationProof.Proof[offset:offset+length]...)
