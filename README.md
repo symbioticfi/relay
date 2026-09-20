@@ -279,6 +279,14 @@ retention:
                                        # N > 0 = sync only last N epochs (for fresh nodes only)
 ```
 
+Legacy keystores with a nonempty store password are detected and automatically
+re-encrypted on first open, using an atomic replacement with file mode 0600.
+Migration requires write access to the containing directory; if it fails, opening
+the provider fails. Already migrated files are not rewritten and can be opened
+from read-only storage. An incorrect password never triggers migration. No
+separate migration command is needed. Legacy keystores with an empty store
+password must be converted to a nonempty password before use with this provider.
+
 #### Data Retention
 
 Control historical data sync for new nodes:
