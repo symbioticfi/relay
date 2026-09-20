@@ -328,6 +328,12 @@ func (s *Service) tryLoadMissingEpochs(ctx context.Context, nextEpoch, currentEp
 			if err != nil {
 				return s.cfg.PollingInterval, errors.Errorf("failed to derive previous validator set for epoch %d: %w", prevEpoch, err)
 			}
+		} else {
+			// Loading the set alone would overwrite its cached config with a zero value.
+			prevNetworkConfig, err = s.cfg.Repo.GetConfigByEpoch(ctx, prevEpoch)
+			if err != nil {
+				return s.cfg.PollingInterval, errors.Errorf("failed to get previous network config for epoch %d: %w", prevEpoch, err)
+			}
 		}
 		slog.DebugContext(ctx, "Loaded previous validator set", "epoch", prevEpoch)
 	}
