@@ -234,7 +234,9 @@ func GetSchedulerInfo(_ context.Context, valset symbiotic.ValidatorSet, config s
 		return []uint32{}, []uint32{}, nil
 	}
 
-	for i := 1; i <= int(config.NumAggregators); i++ {
+	// A shrinking active set can have fewer validators than the configured roles.
+	// Clamp before converting the uint64 config values to int.
+	for i := 1; i <= int(min(config.NumAggregators, uint64(validatorCount))); i++ {
 		hash := new(big.Int).SetBytes(
 			crypto.Keccak256Hash(
 				[]byte(aggregatorRoleType),
@@ -247,7 +249,7 @@ func GetSchedulerInfo(_ context.Context, valset symbiotic.ValidatorSet, config s
 		aggregatorIndices[foundIndex] = struct{}{}
 	}
 
-	for i := 1; i <= int(config.NumCommitters); i++ {
+	for i := 1; i <= int(min(config.NumCommitters, uint64(validatorCount))); i++ {
 		hash := new(big.Int).SetBytes(
 			crypto.Keccak256Hash(
 				[]byte(committerRoleType),
