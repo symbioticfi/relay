@@ -51,6 +51,8 @@ The relay exposes both gRPC and HTTP/JSON REST APIs for interacting with the net
 - **Go Client**: [api/client/v1/](api/client/v1/)
 - **Client Examples**: [api/client/examples/](api/client/examples/)
 
+Requests for unavailable epochs are rejected before persistence. Missing keys are checked by the signing worker; requests remain pending for retry after the keys become available.
+
 ### Voting Power Provider API
 
 - **Documentation**: [docs/votingpower/v1/doc.md](docs/votingpower/v1/doc.md)

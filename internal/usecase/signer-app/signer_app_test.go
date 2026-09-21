@@ -70,6 +70,19 @@ func TestSign_HappyPath(t *testing.T) {
 	}
 }
 
+func TestUnavailableEpochIsNotPersisted(t *testing.T) {
+	setup := newTestSetup(t, backends()["bbolt"])
+	req := createTestSignatureRequest("missing epoch")
+	_, err := setup.app.RequestSignature(t.Context(), req)
+	require.ErrorIs(t, err, entity.ErrEntityNotFound)
+
+	hash, err := crypto.HashMessage(req.KeyTag.Type(), req.Message)
+	require.NoError(t, err)
+	id := (symbiotic.Signature{KeyTag: req.KeyTag, Epoch: req.RequiredEpoch, MessageHash: hash}).RequestID()
+	_, err = setup.repo.GetSignatureRequest(t.Context(), id)
+	require.ErrorIs(t, err, entity.ErrEntityNotFound)
+}
+
 type testSetup struct {
 	ctrl        *gomock.Controller
 	repo        cached.Repository

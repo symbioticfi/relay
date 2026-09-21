@@ -15,4 +15,5 @@ const (
 	ErrTxConflict         = StringError("transaction conflict")
 	ErrKeyNotFound        = StringError("key not found")
 	ErrInvalidCursor      = StringError("invalid pagination cursor")
+	ErrInvalidRequest     = StringError("invalid request")
 )
