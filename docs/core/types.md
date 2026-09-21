@@ -35,8 +35,8 @@ The document contains abstract core types definitions with fields size and their
 
 | Field | Type | Size(b) | Description |
 |-------|------|------|-------------|
-| `KeyTag` | `KeyTag` | 8 | Chain ID where the contract is deployed |
-| `QuorumThreshold` | `uint248` | 31 | Contract address on the specified chain |
+| `KeyTag` | [`KeyTag`](#keytag) | 1 | Key type and ID this quorum threshold applies to |
+| `QuorumThreshold` | `uint248` | 31 | Voting-power fraction, scaled so that 10^18 represents 100% |
 
 ### ValidatorSet
 
