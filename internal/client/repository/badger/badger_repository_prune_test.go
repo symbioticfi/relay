@@ -586,3 +586,19 @@ func TestRepository_PruneRequestIDEpochIndices_SignaturesDeletedFirst(t *testing
 		require.Empty(t, finalIDs, "Index should be deleted when both signatures and proof are gone")
 	})
 }
+
+// A newly saved request must be discoverable by pruning before any signature exists.
+func TestUnsignedRequestIsIndexedForPruning(t *testing.T) {
+	repo := setupTestRepository(t)
+	ctx := t.Context()
+	epoch := symbiotic.Epoch(4)
+	id := common.Hash{1}
+	require.NoError(t, repo.SaveSignatureRequest(ctx, id, symbiotic.SignatureRequest{RequiredEpoch: epoch, Message: []byte{1}}))
+	// The existing proof reader must tolerate indexed requests without a proof.
+	proofs, _, err := repo.GetAggregationProofsByEpoch(ctx, epoch, 1, nil)
+	require.NoError(t, err)
+	require.Empty(t, proofs)
+	require.NoError(t, repo.PruneSignatureEntitiesForEpoch(ctx, epoch, 1))
+	_, err = repo.GetSignatureRequest(ctx, id)
+	require.ErrorIs(t, err, entity.ErrEntityNotFound)
+}
