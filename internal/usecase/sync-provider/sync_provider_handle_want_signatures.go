@@ -17,7 +17,7 @@ import (
 //
 // The method performs the following operations:
 // 1. Iterates through each request id in the incoming request
-// 2. For each requested validator index, directly retrieves the signature using GetSignatureByIndex
+// 2. Intersects requested validator indices with locally available signatures
 // 3. Builds a response containing validator signatures organized by request id
 //
 // The response is limited by MaxResponseSignatureCount to prevent memory exhaustion
@@ -43,6 +43,9 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity
 	totalSignatureCount := 0
 
 	for requestID, requestedIndices := range request.WantSignatures {
+		if err := ctx.Err(); err != nil {
+			return response, err
+		}
 		// Check signature count limit before processing each request
 		if totalSignatureCount >= s.cfg.MaxResponseSignatureCount {
 			slog.WarnContext(ctx, "Response signature limit reached, stopping collection", "totalCollected", totalSignatureCount, "limit", s.cfg.MaxResponseSignatureCount)
@@ -51,8 +54,20 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity
 
 		var validatorSigs []entity.ValidatorSignature
 
-		// Iterate over requested validator indices and get signatures directly
-		it := requestedIndices.Iterator()
+		if requestedIndices.Bitmap == nil || requestedIndices.IsEmpty() {
+			continue
+		}
+		signatureMap, err := s.cfg.Repo.GetSignatureMap(ctx, requestID)
+		if errors.Is(err, entity.ErrEntityNotFound) {
+			continue
+		}
+		if err != nil {
+			return response, errors.Errorf("failed to get signature map for request %s: %w", requestID.Hex(), err)
+		}
+		// Intersect a copy so the request and repository bitmaps remain unchanged.
+		available := signatureMap.SignedValidatorsBitmap.Clone()
+		available.And(requestedIndices.Bitmap)
+		it := available.Iterator()
 		for it.HasNext() {
 			validatorIndex := it.Next()
 			// Check limit before processing each signature
@@ -62,6 +77,9 @@ func (s *Syncer) HandleWantSignaturesRequest(ctx context.Context, request entity
 			}
 
 			// Get signature by validator index directly
+			if err := ctx.Err(); err != nil {
+				return response, err
+			}
 			sig, err := s.cfg.Repo.GetSignatureByIndex(ctx, requestID, validatorIndex)
 			if err != nil {
 				if errors.Is(err, entity.ErrEntityNotFound) {

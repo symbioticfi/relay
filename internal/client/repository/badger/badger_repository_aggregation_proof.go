@@ -157,6 +157,9 @@ func (r *Repository) GetAggregationProofsByEpoch(
 			}
 			proof, err := getAggregationProofByEpochFromItem(txn, it)
 			if err != nil {
+				if errors.Is(err, badger.ErrKeyNotFound) {
+					continue
+				}
 				if errors.Is(err, errCorruptedRequestIDEpochLink) {
 					slog.ErrorContext(ctx, errCorruptedRequestIDEpochLink.Error(), "key", string(it.Item().Key()))
 					continue

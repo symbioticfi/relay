@@ -27,6 +27,8 @@ func convertToGRPCError(ctx context.Context, err error) error {
 
 	// Handle known entity errors
 	switch {
+	case errors.Is(err, entity.ErrInvalidRequest):
+		return status.Error(codes.InvalidArgument, "Invalid signing request")
 	case errors.Is(err, entity.ErrNotAnAggregator):
 		return status.Error(codes.PermissionDenied, "Not an aggregator node")
 	case errors.Is(err, entity.ErrEntityNotFound):

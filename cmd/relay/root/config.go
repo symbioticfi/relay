@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"maps"
 	"reflect"
 	"strconv"
 	"strings"
@@ -171,24 +172,40 @@ func (m *CMDGasPriceMap) Set(str string) error {
 	if str == "" {
 		return nil
 	}
+	// Viper passes String() back to Set(), including all comma-separated entries.
+	// Validate the entire list before applying it to preserve prior flags on error.
+	parsed := make(CMDGasPriceMap)
+	for entry := range strings.SplitSeq(str, ",") {
+		chainID, gasPrice, err := parseGasPriceEntry(entry)
+		if err != nil {
+			return err
+		}
+		parsed[chainID] = gasPrice
+	}
 	if *m == nil {
-		*m = make(map[uint64]uint64)
+		*m = parsed
+	} else {
+		maps.Copy(*m, parsed)
 	}
-	// Parse format: chainID=gasPrice
-	parts := strings.Split(str, "=")
-	if len(parts) != 2 {
-		return errors.Errorf("invalid gas price format: %s, expected chainID=gasPrice", str)
-	}
-	chainID, err := strconv.ParseUint(parts[0], 10, 64)
-	if err != nil {
-		return errors.Errorf("invalid chain ID: %s", parts[0])
-	}
-	gasPrice, err := strconv.ParseUint(parts[1], 10, 64)
-	if err != nil {
-		return errors.Errorf("invalid gas price: %s", parts[1])
-	}
-	(*m)[chainID] = gasPrice
 	return nil
+}
+
+func parseGasPriceEntry(entry string) (chainID, gasPrice uint64, err error) {
+	parts := strings.Split(entry, "=")
+	if len(parts) != 2 {
+		return 0, 0, errors.Errorf("invalid gas price format: %s, expected chainID=gasPrice", entry)
+	}
+	chainIDText, gasPriceText := parts[0], parts[1]
+
+	chainID, err = strconv.ParseUint(chainIDText, 10, 64)
+	if err != nil {
+		return 0, 0, errors.Errorf("invalid chain ID: %s", chainIDText)
+	}
+	gasPrice, err = strconv.ParseUint(gasPriceText, 10, 64)
+	if err != nil {
+		return 0, 0, errors.Errorf("invalid gas price: %s", gasPriceText)
+	}
+	return chainID, gasPrice, nil
 }
 
 func (m *CMDGasPriceMap) Type() string {
@@ -404,7 +421,7 @@ func addRootFlags(cmd *cobra.Command) {
 	rootCmd.PersistentFlags().Duration("p2p.sync-peer-backoff.max-backoff", defaultSyncPeerBackoff.MaxBackoff, "Maximum cooldown before retrying a failed sync peer")
 	rootCmd.PersistentFlags().StringSlice("evm.chains", nil, "Chains, comma separated rpc-url,..")
 	rootCmd.PersistentFlags().Int("evm.max-calls", 0, "Max calls in multicall")
-	rootCmd.PersistentFlags().Var(&CMDGasPriceMap{}, "evm.fallback-gas-prices", "Per-chain fallback gas prices in wei when eth_maxPriorityFeePerGas is not supported (e.g., --evm.fallback-gas-prices 1=2000000000)")
+	rootCmd.PersistentFlags().Var(&CMDGasPriceMap{}, "evm.fallback-gas-prices", "Per-chain fallback gas prices in wei when eth_maxPriorityFeePerGas is not supported (e.g., --evm.fallback-gas-prices=31337=2000000000,11155420=1000000000; flag can be repeated)")
 	rootCmd.PersistentFlags().Bool("force-role.aggregator", false, "Force node to act as aggregator regardless of deterministic scheduling")
 	rootCmd.PersistentFlags().Bool("force-role.committer", false, "Force node to act as committer regardless of deterministic scheduling")
 	rootCmd.PersistentFlags().Uint64("retention.valset-epochs", 0, "Number of historical validator set epochs to retain (0 = unlimited)")

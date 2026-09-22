@@ -585,3 +585,20 @@ func TestAggregator_GenerateExtraData_ReturnsSortedData(t *testing.T) {
 		assert.Negative(t, result[i].Key.Cmp(result[i+1].Key), "extra data should be sorted by key")
 	}
 }
+
+func TestVerifyRejectsValidatorCountBeforeIntegerConversion(t *testing.T) {
+	agg, err := NewAggregator()
+	require.NoError(t, err)
+	for _, count := range []*big.Int{
+		new(big.Int).Lsh(big.NewInt(1), 63),
+		new(big.Int).Lsh(big.NewInt(1), 64),
+	} {
+		t.Run(count.String(), func(t *testing.T) {
+			proof := make([]byte, MinProofSize)
+			count.FillBytes(proof[192:224])
+			ok, err := agg.Verify(t.Context(), symbiotic.ValidatorSet{}, 0, symbiotic.AggregationProof{Proof: proof, MessageHash: make([]byte, 32)})
+			require.ErrorContains(t, err, "too many validators")
+			require.False(t, ok)
+		})
+	}
+}
