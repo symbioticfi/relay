@@ -1,12 +1,15 @@
 package keyprovider
 
 import (
+	"os"
 	"testing"
+	"time"
 
 	"github.com/symbioticfi/relay/internal/entity"
 	symbiotic "github.com/symbioticfi/relay/symbiotic/entity"
 	"github.com/symbioticfi/relay/symbiotic/usecase/crypto"
 
+	"github.com/pavlo-v-chernykh/keystore-go/v4"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,6 +19,11 @@ func TestNewKeystore(t *testing.T) {
 
 	_, err := NewKeystoreProvider(path, password)
 	require.NoError(t, err)
+}
+
+func TestNewKeystoreRejectsEmptyPassword(t *testing.T) {
+	_, err := NewKeystoreProvider(t.TempDir()+"/TMP-keystore", "")
+	require.ErrorContains(t, err, "password cannot be empty")
 }
 
 func TestAddKey(t *testing.T) {
@@ -80,6 +88,21 @@ func TestCreateAndReopen(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, storedPk.Bytes(), pk)
+
+	info, err := os.Stat(path)
+	require.NoError(t, err)
+	require.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+
+	f, err := os.Open(path)
+	require.NoError(t, err)
+	defer f.Close()
+
+	rawKeystore := keystore.New()
+	require.NoError(t, rawKeystore.Load(f, []byte(password)))
+	alias, err := KeyTagToAlias(15)
+	require.NoError(t, err)
+	_, err = rawKeystore.GetPrivateKeyEntry(alias, []byte{})
+	require.Error(t, err)
 }
 
 func TestDefaultEVMKey(t *testing.T) {
@@ -106,4 +129,63 @@ func TestDefaultEVMKey(t *testing.T) {
 	// shouldn't work for other chains
 	_, err = kp.GetPrivateKeyByNamespaceTypeId(SYMBIOTIC_KEY_NAMESPACE, symbiotic.KeyTypeBlsBn254, 11)
 	require.ErrorIs(t, err, entity.ErrKeyNotFound, "expected entry not found error for non-existing key")
+}
+
+func legacyKeystore(t *testing.T) (string, []string) {
+	t.Helper()
+	path := t.TempDir() + "/legacy.jks"
+	ks := keystore.New()
+	relayAlias, err := KeyTagToAlias(15)
+	require.NoError(t, err)
+	evmAlias, err := ToAlias(EVM_KEY_NAMESPACE, 0, 0)
+	require.NoError(t, err)
+	aliases := []string{relayAlias, evmAlias}
+	for _, alias := range aliases {
+		require.NoError(t, ks.SetPrivateKeyEntry(alias, keystore.PrivateKeyEntry{CreationTime: time.Now(), PrivateKey: []byte{1}}, nil))
+	}
+	f, err := os.Create(path)
+	require.NoError(t, err)
+	require.NoError(t, ks.Store(f, []byte("password")))
+	require.NoError(t, f.Close())
+	return path, aliases
+}
+
+func TestLegacyKeystoreMigratesOnOpen(t *testing.T) {
+	path, aliases := legacyKeystore(t)
+	_, err := NewKeystoreProvider(path, "password")
+	require.NoError(t, err)
+	f, err := os.Open(path)
+	require.NoError(t, err)
+	ks := keystore.New()
+	require.NoError(t, ks.Load(f, []byte("password")))
+	require.NoError(t, f.Close())
+	for _, alias := range aliases {
+		_, err := ks.GetPrivateKeyEntry(alias, nil)
+		require.Error(t, err)
+	}
+	kp, err := NewKeystoreProvider(path, "password")
+	require.NoError(t, err)
+	for _, alias := range aliases {
+		key, err := kp.GetPrivateKeyByAlias(alias)
+		require.NoError(t, err)
+		require.Equal(t, []byte{1}, key.Bytes())
+	}
+}
+
+func TestKeystoreMutationFailuresPreserveState(t *testing.T) {
+	path, aliases := legacyKeystore(t)
+	kp, err := NewKeystoreProvider(path, "password")
+	require.NoError(t, err)
+	before, err := os.ReadFile(path)
+	require.NoError(t, err)
+	require.Error(t, kp.remove(aliases[0], "wrong password"))
+	// Renaming a file over a directory fails even when tests run as root.
+	kp.filePath = t.TempDir()
+	require.Error(t, kp.remove(aliases[0], "password"))
+	exists, err := kp.HasKeyByAlias(aliases[0])
+	require.NoError(t, err)
+	require.True(t, exists)
+	after, err := os.ReadFile(path)
+	require.NoError(t, err)
+	require.Equal(t, before, after)
 }

@@ -86,8 +86,7 @@ func TestBadgerRepository_GetSignatureRequestsByEpoch(t *testing.T) {
 
 	requests := make([]reqWithTargetID, 5)
 	for i := 0; i < 5; i++ {
-		req := randomSignatureRequestForEpoch(t, epoch)
-		req.Message = append([]byte(strconv.Itoa(i)+"-"), req.Message...)
+		req := symbiotic.SignatureRequest{KeyTag: 15, RequiredEpoch: epoch, Message: []byte("pagination-" + strconv.Itoa(i))}
 		requests[i].req = req
 		requests[i].hash = signatureRequestID(t, req)
 

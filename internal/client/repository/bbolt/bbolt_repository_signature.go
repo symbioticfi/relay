@@ -255,6 +255,10 @@ func (r *Repository) SaveSignatureRequest(ctx context.Context, requestID common.
 			return errors.Errorf("failed to store request id index: %w", err)
 		}
 
+		if err := tx.Bucket(bucketRequestIDEpochs).Put(primaryKey, []byte{}); err != nil {
+			return errors.Errorf("failed to store request epoch index: %w", err)
+		}
+
 		// Save pending signature marker
 		pendingBucket := tx.Bucket(bucketSignaturePending)
 		if pendingBucket.Get(pendingKey) != nil {

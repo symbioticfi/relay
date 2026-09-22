@@ -78,6 +78,9 @@ evm:
   # fallback-gas-prices:
   #   "31337": 2000000000    # Local chain: 2 GWei
   #   "11155420": 1000000000 # OP Sepolia: 1 GWei
+  # Equivalent CLI forms (comma-separated or repeated flags):
+  #   --evm.fallback-gas-prices=31337=2000000000,11155420=1000000000
+  #   --evm.fallback-gas-prices=31337=2000000000 --evm.fallback-gas-prices=11155420=1000000000
 
 # External Voting Power Providers (optional)
 # Used when a voting power provider in on-chain config has chain-id in

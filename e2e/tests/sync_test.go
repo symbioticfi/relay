@@ -25,8 +25,8 @@ import (
 // from /e2e/contracts/network-scripts/deploy.sh
 const testPrivateKeyHex = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 
-// TestAggregatorSignatureSync tests that aggregators can sync missed signatures
-// and generate proofs even when they were offline during signature collection.
+// TestAggregatorSignatureSync checks proof availability on each recovered aggregator
+// after it was offline during signature collection. Proofs may be generated or synced.
 //
 // Test scenario:
 // 1. Get current epoch from EVM client
@@ -34,7 +34,7 @@ const testPrivateKeyHex = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784
 // 3. Wait for next epoch to trigger signature generation by signers
 // 4. Verify signers have generated signatures
 // 5. Start aggregators back up
-// 6. Verify aggregators sync missed signatures and generate proofs
+// 6. Verify each recovered aggregator has the proof
 func TestAggregatorSignatureSync(t *testing.T) {
 	ctx := t.Context()
 
@@ -124,10 +124,11 @@ func TestAggregatorSignatureSync(t *testing.T) {
 		t.Logf("Restarted aggregator container %d", aggIndex)
 	}
 
-	// Step 6: Verify aggregators have synced and generated proofs
-	t.Log("Step 6: Verifying aggregators have synced signatures and generated proofs...")
+	// Step 6: Verify each restarted aggregator has the proof
+	t.Log("Step 6: Verifying each restarted aggregator has the proof...")
 
 	for _, aggIndex := range aggregatorIndexes {
+		aggregatorClient := getGRPCClient(t, aggIndex)
 		// Wait for aggregator to be healthy
 		healthEndpoint := getHealthEndpoint(aggIndex)
 		err := waitForHealthy(ctx, healthEndpoint, 60*time.Second)
@@ -135,14 +136,14 @@ func TestAggregatorSignatureSync(t *testing.T) {
 		t.Logf("Aggregator %d is healthy", aggIndex)
 
 		err = waitForErrorIsNil(ctx, time.Second*30, func() error {
-			_, err = client.GetAggregationProof(ctx, &apiv1.GetAggregationProofRequest{
+			_, err = aggregatorClient.GetAggregationProof(ctx, &apiv1.GetAggregationProofRequest{
 				RequestId: metadataResp.GetRequestId(),
 			})
 			return err
 		})
 		require.NoError(t, err, "Failed to get aggregation proof from aggregator %d", aggIndex)
 
-		t.Logf("Aggregator %d has synced signatures and generated proof", aggIndex)
+		t.Logf("Aggregator %d has the proof after restart", aggIndex)
 	}
 
 	t.Log("✅ Signature sync test completed successfully")
@@ -225,15 +226,16 @@ func TestAggregatorProofSync(t *testing.T) {
 	require.NoError(t, err, "Only signer %d failed to become healthy after restart", onlySignerIndex)
 	t.Logf("Only signer %d is healthy", onlySignerIndex)
 
+	recoveredClient := getGRPCClient(t, onlySignerIndex)
 	err = waitForErrorIsNil(ctx, time.Second*30, func() error {
-		_, err = client.GetAggregationProof(ctx, &apiv1.GetAggregationProofRequest{
+		_, err = recoveredClient.GetAggregationProof(ctx, &apiv1.GetAggregationProofRequest{
 			RequestId: metadataResp.GetRequestId(),
 		})
 		return err
 	})
 	require.NoError(t, err, "Failed to get aggregation proof from only signer %d", onlySignerIndex)
 
-	t.Logf("Only signer %d has synced signatures and generated proof", onlySignerIndex)
+	t.Logf("Only signer %d has the proof after restart", onlySignerIndex)
 
 	t.Log("✅ Proof sync test completed successfully")
 }
