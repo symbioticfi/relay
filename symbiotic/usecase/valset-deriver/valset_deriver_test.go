@@ -1550,3 +1550,20 @@ func TestDeriver_findNextAvailableIndex_Panic(t *testing.T) {
 		findNextAvailableIndex(0, 3, usedIndices)
 	}, "should panic when no indices are available")
 }
+
+func TestSchedulerClampsRolesToActiveValidators(t *testing.T) {
+	valset := symbiotic.ValidatorSet{
+		Version: 1,
+		Validators: symbiotic.Validators{
+			{Operator: common.Address{1}, VotingPower: symbiotic.ToVotingPower(big.NewInt(10)), IsActive: true},
+			{Operator: common.Address{2}, VotingPower: symbiotic.ToVotingPower(big.NewInt(10)), IsActive: false},
+			{Operator: common.Address{3}, VotingPower: symbiotic.ToVotingPower(big.NewInt(10)), IsActive: true},
+		},
+	}
+	for _, roles := range []uint64{3, 1 << 63, ^uint64(0)} {
+		agg, comm, err := GetSchedulerInfo(t.Context(), valset, symbiotic.NetworkConfig{NumAggregators: roles, NumCommitters: roles})
+		require.NoError(t, err)
+		require.Equal(t, []uint32{0, 1}, agg)
+		require.Equal(t, []uint32{0, 1}, comm)
+	}
+}

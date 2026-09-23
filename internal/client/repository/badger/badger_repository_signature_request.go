@@ -92,6 +92,9 @@ func (r *Repository) saveSignatureRequest(ctx context.Context, requestID common.
 			return errors.Errorf("failed to store signature request id index: %w", err)
 		}
 
+		if err := getTxn(ctx).Set(keyRequestIDEpoch(req.RequiredEpoch, requestID), []byte{}); err != nil {
+			return errors.Errorf("failed to store request epoch index: %w", err)
+		}
 		return nil
 	})
 }

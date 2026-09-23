@@ -370,3 +370,15 @@ func TestRepository_PruneBatching(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, finalIDs)
 }
+
+// A newly saved request must be discoverable by pruning before any signature exists.
+func TestUnsignedRequestIsIndexedForPruning(t *testing.T) {
+	repo := setupTestRepository(t)
+	ctx := t.Context()
+	epoch := symbiotic.Epoch(4)
+	id := common.Hash{1}
+	require.NoError(t, repo.SaveSignatureRequest(ctx, id, symbiotic.SignatureRequest{RequiredEpoch: epoch, Message: []byte{1}}))
+	require.NoError(t, repo.PruneSignatureEntitiesForEpoch(ctx, epoch, 1))
+	_, err := repo.GetSignatureRequest(ctx, id)
+	require.ErrorIs(t, err, entity.ErrEntityNotFound)
+}

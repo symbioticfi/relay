@@ -12,7 +12,7 @@ utils network generate-genesis [flags]
 
 ```
       --commit                     Commit genesis flag
-  -e, --epoch int                  Epoch to generate genesis for (default: current epoch - 1) (default -1)
+  -e, --epoch int                  Epoch to generate genesis for (default: current epoch) (default -1)
   -h, --help                       help for generate-genesis
   -j, --json                       Print as json
   -o, --output string              Output file path

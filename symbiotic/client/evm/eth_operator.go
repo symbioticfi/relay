@@ -22,7 +22,7 @@ func (e *Client) RegisterOperator(
 		return symbiotic.TxResult{}, errors.Errorf("failed to get operator registry contract: %w", err)
 	}
 
-	return e.doTransaction(ctx, "RegisterOperator", e.cfg.DriverAddress, registry.RegisterOperator)
+	return e.doTransaction(ctx, "RegisterOperator", opRegistryAddr, registry.RegisterOperator)
 }
 
 func (e *Client) RegisterKey(
@@ -52,7 +52,7 @@ func (e *Client) InvalidateOldSignatures(
 		return symbiotic.TxResult{}, errors.Errorf("failed to get voting power provider contract: %w", err)
 	}
 
-	return e.doTransaction(ctx, "InvalidateOldSignatures", e.cfg.DriverAddress, votingPowerProvider.InvalidateOldSignatures)
+	return e.doTransaction(ctx, "InvalidateOldSignatures", votingPowerProviderAddr, votingPowerProvider.InvalidateOldSignatures)
 }
 
 func (e *Client) RegisterOperatorVotingPowerProvider(
@@ -64,7 +64,7 @@ func (e *Client) RegisterOperatorVotingPowerProvider(
 		return symbiotic.TxResult{}, errors.Errorf("failed to get voting power provider contract: %w", err)
 	}
 
-	return e.doTransaction(ctx, "RegisterOperatorVotingPowerProvider", e.cfg.DriverAddress, votingPowerProvider.RegisterOperator)
+	return e.doTransaction(ctx, "RegisterOperatorVotingPowerProvider", votingPowerProviderAddr, votingPowerProvider.RegisterOperator)
 }
 
 func (e *Client) IsOperatorRegistered(
@@ -97,5 +97,5 @@ func (e *Client) UnregisterOperatorVotingPowerProvider(
 		return symbiotic.TxResult{}, errors.Errorf("failed to get voting power provider contract: %w", err)
 	}
 
-	return e.doTransaction(ctx, "UnregisterOperatorVotingPowerProvider", e.cfg.DriverAddress, votingPowerProvider.UnregisterOperator)
+	return e.doTransaction(ctx, "UnregisterOperatorVotingPowerProvider", votingPowerProviderAddr, votingPowerProvider.UnregisterOperator)
 }

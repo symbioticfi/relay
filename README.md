@@ -51,6 +51,8 @@ The relay exposes both gRPC and HTTP/JSON REST APIs for interacting with the net
 - **Go Client**: [api/client/v1/](api/client/v1/)
 - **Client Examples**: [api/client/examples/](api/client/examples/)
 
+Requests for unavailable epochs are rejected before persistence. Missing keys are checked by the signing worker; requests remain pending for retry after the keys become available.
+
 ### Voting Power Provider API
 
 - **Documentation**: [docs/votingpower/v1/doc.md](docs/votingpower/v1/doc.md)
@@ -278,6 +280,14 @@ retention:
                                        # 0 = unlimited (sync from genesis)
                                        # N > 0 = sync only last N epochs (for fresh nodes only)
 ```
+
+Legacy keystores with a nonempty store password are detected and automatically
+re-encrypted on first open, using an atomic replacement with file mode 0600.
+Migration requires write access to the containing directory; if it fails, opening
+the provider fails. Already migrated files are not rewritten and can be opened
+from read-only storage. An incorrect password never triggers migration. No
+separate migration command is needed. Legacy keystores with an empty store
+password must be converted to a nonempty password before use with this provider.
 
 #### Data Retention
 

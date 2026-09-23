@@ -85,6 +85,9 @@ func NewSignerApp(cfg Config) (*SignerApp, error) {
 // RequestSignature creates a signature request and queues it for signing, returns requestID
 // The actual signing is done in the background by workers
 func (s *SignerApp) RequestSignature(ctx context.Context, req symbiotic.SignatureRequest) (common.Hash, error) {
+	if err := ctx.Err(); err != nil {
+		return common.Hash{}, err
+	}
 	ctx, span := tracing.StartServerSpan(ctx, "signer.RequestSignature",
 		tracing.AttrEpoch.Int64(int64(req.RequiredEpoch)),
 		tracing.AttrKeyTag.String(req.KeyTag.String()),
@@ -94,9 +97,14 @@ func (s *SignerApp) RequestSignature(ctx context.Context, req symbiotic.Signatur
 	ctx = log.WithAttrs(ctx, slog.Uint64("epoch", uint64(req.RequiredEpoch)))
 
 	if !req.KeyTag.Type().SignerKey() {
-		err := errors.Errorf("key tag %s is not a signing key", req.KeyTag)
+		err := errors.Errorf("%w: key tag %s is not a signing key", entity.ErrInvalidRequest, req.KeyTag)
 		tracing.RecordError(span, err)
 		return common.Hash{}, err
+	}
+	// Reject unavailable epochs before writing durable state. Key availability is
+	// checked by the worker so pending requests can recover after a key reload.
+	if _, err := s.cfg.Repo.GetValidatorSetByEpoch(ctx, req.RequiredEpoch); err != nil {
+		return common.Hash{}, errors.Errorf("requested epoch is unavailable: %w", err)
 	}
 
 	msgHash, err := crypto.HashMessage(req.KeyTag.Type(), req.Message)
