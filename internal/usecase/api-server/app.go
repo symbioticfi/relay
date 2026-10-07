@@ -270,7 +270,7 @@ func createMuxHandler(grpcServer *grpc.Server, httpHandler http.Handler) http.Ha
 
 		// Handle as HTTP request (documentation, health checks, etc.)
 		httpHandler.ServeHTTP(w, r)
-	}), &http2.Server{})
+	}), &http2.Server{}) //nolint:staticcheck // Preserve HTTP/1.1 Upgrade alongside prior knowledge.
 }
 
 func (a *SymbioticServer) Start(ctx context.Context) error {

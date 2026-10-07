@@ -12,7 +12,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
-	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -130,8 +129,8 @@ func TestService_IntegrationFailedSignature(t *testing.T) {
 		})
 	})
 
-	require.Equal(t, topicSignatureReady, lo.FromPtr(rejectEvt.RejectMessage.Topic))
-	require.Equal(t, "unexpected signature", lo.FromPtr(rejectEvt.RejectMessage.Reason))
+	require.Equal(t, topicSignatureReady, rejectEvt.GetRejectMessage().GetTopic())
+	require.Equal(t, "unexpected signature", rejectEvt.GetRejectMessage().GetReason())
 }
 
 func createTestService(t *testing.T, skipMessageSigning bool, tracer pubsub.EventTracer) *Service {
@@ -180,7 +179,7 @@ type rejectTracer struct {
 }
 
 func (rt *rejectTracer) Trace(evt *pubsub_pb.TraceEvent) {
-	if *evt.Type != pubsub_pb.TraceEvent_REJECT_MESSAGE {
+	if evt.GetType() != pubsub_pb.TraceEvent_REJECT_MESSAGE {
 		return
 	}
 	rt.rejectCh <- evt
