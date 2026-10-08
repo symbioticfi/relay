@@ -132,7 +132,7 @@ Docker Hub: https://hub.docker.com/r/symbioticfi/relay
 
 ### Dependencies
 
-- **Go 1.26.1+**
+- **Go 1.26.8+**
 - **Docker & Docker Compose** (for local setup and E2E tests)
 - **Node.js & Foundry** (for contract compilation in E2E)
 

@@ -69,7 +69,7 @@ func (s *DiscoveryService) initDHT(ctx context.Context) error {
 		return errors.Errorf("failed to parse bootstrap peers: %w", err)
 	}
 	s.bootstrapPeers = bootnodes
-	kdht, err := dht.New(ctx, s.host,
+	kdht, err := dht.New(s.host,
 		dht.Mode(mode),
 		dht.ProtocolPrefix(ProtocolPrefix),
 		dht.RoutingTableRefreshPeriod(s.cfg.Discovery.DHTRoutingTableRefreshInterval),
