@@ -24,7 +24,7 @@ require (
 	github.com/multiformats/go-multiaddr v0.16.1
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
 	github.com/pelletier/go-toml/v2 v2.4.3
-	github.com/prometheus/client_golang v1.24.1
+	github.com/prometheus/client_golang v1.25.0
 	github.com/pterm/pterm v0.12.83
 	github.com/samber/lo v1.53.0
 	github.com/samber/slog-multi v1.8.0
@@ -104,7 +104,7 @@ require (
 	github.com/ipld/go-ipld-prime v0.24.0 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/jbenet/go-temp-err-catcher v0.1.0 // indirect
-	github.com/klauspost/compress v1.19.1 // indirect
+	github.com/klauspost/compress v1.20.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.4.0 // indirect
 	github.com/koron/go-ssdp v0.9.1 // indirect
 	github.com/leodido/go-urn v1.5.0 // indirect
@@ -160,9 +160,9 @@ require (
 	github.com/pion/turn/v5 v5.0.3 // indirect
 	github.com/pion/webrtc/v4 v4.2.12 // indirect
 	github.com/polydawn/refmt v0.90.0 // indirect
-	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.70.1 // indirect
-	github.com/prometheus/procfs v0.21.1 // indirect
+	github.com/prometheus/client_model v0.6.3 // indirect
+	github.com/prometheus/common v0.72.0 // indirect
+	github.com/prometheus/procfs v0.22.0 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
 	github.com/quic-go/quic-go v0.62.0 // indirect
 	github.com/quic-go/webtransport-go v0.13.0 // indirect
