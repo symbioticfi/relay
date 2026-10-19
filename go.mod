@@ -10,7 +10,7 @@ require (
 	github.com/elastic/go-freelru v0.16.0
 	github.com/ethereum/go-ethereum v1.17.7
 	github.com/ferranbt/fastssz v1.0.0
-	github.com/go-chi/chi/v5 v5.3.2
+	github.com/go-chi/chi/v5 v5.5.0
 	github.com/go-errors/errors v1.5.1
 	github.com/go-playground/validator/v10 v10.30.5
 	github.com/google/uuid v1.6.0
