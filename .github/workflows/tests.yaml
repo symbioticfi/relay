@@ -189,7 +189,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: "Setup Foundry Toolchain"
-        uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
+        uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1.9.2
         with:
           version: ${{ env.FOUNDRY_VERSION }}
 
