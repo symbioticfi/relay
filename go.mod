@@ -17,10 +17,10 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.4
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.31.0
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/libp2p/go-libp2p v0.50.0
+	github.com/libp2p/go-libp2p v0.51.0
 	github.com/libp2p/go-libp2p-gostream v0.6.0
 	github.com/libp2p/go-libp2p-kad-dht v0.42.2
-	github.com/libp2p/go-libp2p-pubsub v0.18.0
+	github.com/libp2p/go-libp2p-pubsub v0.19.0
 	github.com/multiformats/go-multiaddr v0.16.1
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
 	github.com/pelletier/go-toml/v2 v2.4.3
@@ -164,7 +164,7 @@ require (
 	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
-	github.com/quic-go/quic-go v0.62.0 // indirect
+	github.com/quic-go/quic-go v0.64.1 // indirect
 	github.com/quic-go/webtransport-go v0.13.0 // indirect
 	github.com/ronanh/intcomp v1.1.1 // indirect
 	github.com/rs/zerolog v1.35.1 // indirect
