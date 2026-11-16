@@ -4,8 +4,7 @@ WORKDIR /app
 
 # Cache go mod dependencies
 COPY go.mod go.sum ./
-RUN --mount=type=cache,target=/go/pkg/mod \
-    go mod download
+RUN go mod download
 
 COPY . ./
 
@@ -16,15 +15,10 @@ ENV GOOS=$TARGETOS
 ARG TARGETARCH
 ENV GOARCH=$TARGETARCH
 
-# Cache build artifacts
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'github.com/symbioticfi/relay/cmd/utils/root.Version=${APP_VERSION}' -X 'github.com/symbioticfi/relay/cmd/utils/root.BuildTime=${BUILD_TIME}'" -o relay_utils ./cmd/utils && \
+RUN CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'github.com/symbioticfi/relay/cmd/utils/root.Version=${APP_VERSION}' -X 'github.com/symbioticfi/relay/cmd/utils/root.BuildTime=${BUILD_TIME}'" -o relay_utils ./cmd/utils && \
     chmod a+x relay_utils
 
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'github.com/symbioticfi/relay/cmd/relay/root.Version=${APP_VERSION}' -X 'github.com/symbioticfi/relay/cmd/relay/root.BuildTime=${BUILD_TIME}'" -o relay_sidecar ./cmd/relay && \
+RUN CGO_ENABLED=0 go build -ldflags "-extldflags '-static' -X 'github.com/symbioticfi/relay/cmd/relay/root.Version=${APP_VERSION}' -X 'github.com/symbioticfi/relay/cmd/relay/root.BuildTime=${BUILD_TIME}'" -o relay_sidecar ./cmd/relay && \
     chmod a+x relay_sidecar
 
 FROM alpine:latest
